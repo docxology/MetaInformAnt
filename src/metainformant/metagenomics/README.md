@@ -2,11 +2,6 @@
 
 Microbiome and metagenomic analysis: amplicon profiling (16S/ITS), shotgun metagenomics, community diversity, functional annotation, and differential abundance testing.
 
-## Overview
-
-Microbiome and metagenomic analysis: amplicon profiling (16S/ITS), shotgun metagenomics, community diversity, functional annotation, and differential abundance testing.
-
-
 ## Table of Contents
 
 - [Architecture](#architecture)
@@ -67,9 +62,9 @@ graph TD
 ```python
 from metainformant.metagenomics.amplicon import otu_clustering, asv_denoising, taxonomy
 
-otus = otu_clustering.cluster(sequences, threshold=0.97)
-asvs = asv_denoising.denoise(sequences)
-classified = taxonomy.classify(asvs)
+otus = otu_clustering.cluster_otus(sequences, threshold=0.97)
+asvs = asv_denoising.denoise_sequences(sequences)
+classified = taxonomy.classify_taxonomy(sequences, reference_db, reference_taxonomy)
 ```
 
 ### Shotgun Metagenomics
@@ -77,9 +72,9 @@ classified = taxonomy.classify(asvs)
 ```python
 from metainformant.metagenomics.shotgun import assembly, binning, profiling
 
-contigs = assembly.assemble(reads)
-bins = binning.bin_contigs(contigs, coverage)
-profile = profiling.profile_community(reads)
+contigs = assembly.assemble_contigs(reads, k_range=[21, 33])
+bins = binning.bin_contigs(contig_sequences, coverage)
+profile = profiling.profile_community(reads, reference_sequences=refs, reference_taxonomy=tax)
 ```
 
 ### Community Diversity
@@ -96,22 +91,20 @@ profile = profiling.profile_community(reads)
 ```python
 from metainformant.metagenomics.functional import annotation, pathways
 
-genes = annotation.predict_orfs(contigs)
-pathway_results = pathways.reconstruct(annotation.annotate(genes))
+orfs = annotation.predict_orfs(contigs)
+annotations = annotation.annotate_genes(protein_sequences, hmm_db=profiles)
+pathway_results = pathways.reconstruct_pathways(gene_to_kos)
 ```
 
 ## Quick Start
 
 ```python
-from metainformant.metagenomics.amplicon import asv_denoising, taxonomy
 from metainformant.metagenomics.diversity import metrics
 from metainformant.metagenomics.comparative import differential_abundance
 
-# Amplicon profiling -> diversity -> differential abundance
-asvs = asv_denoising.denoise(marker_sequences)
-taxa = taxonomy.classify(asvs)
-alpha = metrics.shannon(abundance_table)
-results = differential_abundance.test(abundance_table, groups=sample_groups)
+# Diversity -> differential abundance
+alpha = metrics.alpha_diversity(abundances, metric="shannon")
+results = differential_abundance.differential_abundance(counts, groups, taxa_names)
 ```
 
 ## Integration
@@ -120,9 +113,9 @@ results = differential_abundance.test(abundance_table, groups=sample_groups)
 from metainformant.metagenomics.diversity import metrics
 from metainformant.ecology.analysis import community
 
-# Metagenomic diversity feeds into ecological community analysis
-diversity_values = metrics.shannon(abundance_table)
-community_result = community.analyze(diversity_values)
+# Community ecology metrics complement metagenomic diversity
+alpha = metrics.alpha_diversity(abundances, metric="shannon")
+ecology_indices = community.community_metrics(abundances)
 ```
 
 ## Related

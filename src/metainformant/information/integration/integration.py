@@ -266,7 +266,7 @@ def singlecell_integration(
         if cell_types is None:
             raise ValueError("cell_types required for cell_type_entropy method")
 
-        unique_types = list(set(cell_types))
+        unique_types = sorted(set(cell_types))
         results["num_cell_types"] = len(unique_types)
 
         # Compute entropy of cell type distribution
@@ -355,7 +355,7 @@ def multiomics_integration(
                 dna_result = dna_integration(seqs)
                 metrics = dna_result.get("integrated_metrics", {})
                 results[f"{platform_name}_entropy"] = metrics.get("mean_entropy", 0.0)
-            except (ValueError, Exception) as e:
+            except Exception as e:
                 logger.warning(f"Failed {platform_name} integration: {e}")
                 results[f"{platform_name}_entropy"] = 0.0
 

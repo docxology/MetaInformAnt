@@ -13,7 +13,7 @@ def _data_path() -> Path:
     return Path(__file__).parent.parent / "data" / "ontology" / "go_mini.obo"
 
 
-def test_load_go_and_traverse(tmp_path: Path) -> None:
+def test_load_go_and_traverse(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     onto = load_go_obo(_data_path())
     assert len(onto) >= 4
 
@@ -29,12 +29,14 @@ def test_load_go_and_traverse(tmp_path: Path) -> None:
     assert sg.has_term(parent)
     assert sg.has_term(child)
 
-    # Write a summary under output/
+    # Write a summary under the default output/ dir, isolated to tmp_path via cwd
+    monkeypatch.chdir(tmp_path)
     out = write_go_summary(onto)
     assert out.exists()
+    assert out.parent == Path("output")
 
     # Validate GO ontology
-    is_valid, errors = validate_go_ontology(onto)
+    validate_go_ontology(onto)
 
 
 def test_validate_go_ontology(tmp_path: Path) -> None:

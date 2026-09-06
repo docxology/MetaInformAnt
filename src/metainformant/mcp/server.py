@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import json
 import sys
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from typing import Any, TextIO
 
 from metainformant.mcp.registry import SchemaError, ToolRegistry
@@ -134,13 +134,15 @@ class MCPServer:
         request_id = message.get("id")
         if not isinstance(method, str) or not method:
             return _error_response(request_id, INVALID_REQUEST, "missing method")
-        params = message.get("params") or {}
-        if not isinstance(params, dict):
-            return _error_response(request_id, INVALID_PARAMS, "params must be an object")
+        # Notifications (no "id") never produce a response, whatever their
+        # params look like; ``exit`` shuts the server down cleanly.
         if "id" not in message:
             if method == "exit":
                 raise SystemExit(0)
             return None
+        params = message.get("params") or {}
+        if not isinstance(params, dict):
+            return _error_response(request_id, INVALID_PARAMS, "params must be an object")
 
         if method == "initialize":
             requested = params.get("protocolVersion")
@@ -187,7 +189,15 @@ class MCPServer:
             return _error_response(request_id, INVALID_PARAMS, "params.arguments must be an object")
         try:
             result = self.registry.call(name, arguments)
+            # Serialization happens inside the tool error boundary so a
+            # handler returning a non-JSON value surfaces as a tool error
+            # instead of crashing the dispatch with a bare internal error.
+            text = json.dumps(result, indent=2)
         except KeyError:
+            # A KeyError from inside a handler is not the same as a lookup
+            # miss on an unregistered tool; only the latter is INVALID_PARAMS.
+            if name in self.registry.names():
+                return _error_response(request_id, INTERNAL_ERROR, f"tool {name!r} failed: missing key in result")
             return _error_response(request_id, INVALID_PARAMS, f"unknown tool: {name!r}")
         except SchemaError as exc:
             return _error_response(request_id, INVALID_PARAMS, str(exc))
@@ -197,7 +207,7 @@ class MCPServer:
             "jsonrpc": "2.0",
             "id": request_id,
             "result": {
-                "content": [{"type": "text", "text": json.dumps(result, indent=2)}],
+                "content": [{"type": "text", "text": text}],
                 "structuredContent": result,
                 "isError": False,
             },
@@ -259,7 +269,7 @@ def build_default_registry() -> ToolRegistry:
 
 
 def serve_stdio(
-    registry: Iterable[ToolRegistry] | None = None,
+    registry: ToolRegistry | MCPServer | None = None,
     stdin: TextIO | None = None,
     stdout: TextIO | None = None,
     stderr: TextIO | None = None,
@@ -267,7 +277,7 @@ def serve_stdio(
     """Run the stdio server loop with the default registry."""
 
     active = registry if registry is not None else build_default_registry()
-    server = active if isinstance(active, MCPServer) else MCPServer(active)  # type: ignore[arg-type]
+    server = active if isinstance(active, MCPServer) else MCPServer(active)
     return server.serve(stdin=stdin, stdout=stdout, stderr=stderr)
 
 

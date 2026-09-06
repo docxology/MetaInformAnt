@@ -15,6 +15,13 @@ from metainformant.core.utils import logging
 logger = logging.get_logger(__name__)
 
 
+def _open_fastq_text(path: Path) -> IO[str]:
+    """Open a FASTQ file as text, transparently handling gzip."""
+    opener: Callable[..., IO[str]] = gzip.open if path.suffix == ".gz" else open
+    mode = "rt" if path.suffix == ".gz" else "r"
+    return opener(path, mode)
+
+
 def read_fastq(path: str | Path) -> Dict[str, Tuple[str, str]]:
     """Read sequences and quality scores from a FASTQ file.
 
@@ -41,11 +48,7 @@ def read_fastq(path: str | Path) -> Dict[str, Tuple[str, str]]:
 
     reads = {}
 
-    # Open file (handle gzip compression)
-    opener: Callable[..., IO[str]] = gzip.open if path.suffix == ".gz" else open
-    mode = "rt" if path.suffix == ".gz" else "r"
-
-    with opener(path, mode) as f:
+    with _open_fastq_text(path) as f:
         while True:
             # Read four lines: header, sequence, +, quality
             header_line = f.readline().strip()
@@ -192,12 +195,9 @@ def filter_reads(fastq_path: str | Path, min_quality: int = 20) -> Iterator[str]
         >>> len(filtered) % 4 == 0  # FASTQ records come in groups of 4
         True
     """
-    # Open file (handle gzip compression)
     path = Path(fastq_path)
-    opener: Callable[..., IO[str]] = gzip.open if path.suffix == ".gz" else open
-    mode = "rt" if path.suffix == ".gz" else "r"
 
-    with opener(path, mode) as f:
+    with _open_fastq_text(path) as f:
         while True:
             # Read complete FASTQ record
             lines = []
@@ -334,11 +334,7 @@ def average_phred_by_position(fastq_path: str | Path) -> Dict[int, float]:
 
     position_qualities = defaultdict(list)
 
-    # Open file (handle gzip compression)
-    opener = gzip.open if fastq_path.suffix == ".gz" else open
-    mode = "rt" if fastq_path.suffix == ".gz" else "r"
-
-    with opener(fastq_path, mode) as f:
+    with _open_fastq_text(fastq_path) as f:
         line_num = 0
         for line in f:
             line_num += 1
@@ -371,11 +367,7 @@ def iter_fastq(fastq_path: str | Path) -> Iterator[Tuple[str, str, str]]:
     if not fastq_path.exists():
         raise FileNotFoundError(f"FASTQ file not found: {fastq_path}")
 
-    # Open file (handle gzip compression)
-    opener: Callable[..., IO[str]] = gzip.open if fastq_path.suffix == ".gz" else open
-    mode = "rt" if fastq_path.suffix == ".gz" else "r"
-
-    with opener(fastq_path, mode) as f:
+    with _open_fastq_text(fastq_path) as f:
         while True:
             # Read four lines: header, sequence, +, quality
             header_line = f.readline().strip()
@@ -467,15 +459,11 @@ def summarize_fastq(fastq_path: str | Path) -> Dict[str, float]:
     if not fastq_path.exists():
         raise FileNotFoundError(f"FASTQ file not found: {fastq_path}")
 
-    # Open file (handle gzip compression)
-    opener: Callable[..., IO[str]] = gzip.open if fastq_path.suffix == ".gz" else open
-    mode = "rt" if fastq_path.suffix == ".gz" else "r"
-
     summary = {"total_reads": 0, "total_bases": 0, "min_length": float("inf"), "max_length": 0, "mean_length": 0.0}
 
     lengths = []
 
-    with opener(fastq_path, mode) as f:
+    with _open_fastq_text(fastq_path) as f:
         line_num = 0
         for line in f:
             line_num += 1

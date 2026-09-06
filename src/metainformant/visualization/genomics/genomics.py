@@ -61,30 +61,30 @@ def manhattan_plot(
         fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (12, 6)))
 
     # Prepare data
+    if data.empty:
+        raise ValueError("Manhattan plot requires at least one data row")
     plot_data = data.copy()
     plot_data["logP"] = -np.log10(plot_data[pval_col].clip(lower=1e-300))  # Avoid log(0)
 
     # Calculate cumulative positions for chromosomes
     chromosomes = sorted(plot_data[chr_col].unique())
-    chr_starts = {}
     cumulative_pos = 0
 
     for chr_num in chromosomes:
         chr_mask = plot_data[chr_col] == chr_num
-        chr_starts[chr_num] = cumulative_pos
         plot_data.loc[chr_mask, "cumulative_pos"] = plot_data.loc[chr_mask, pos_col] + cumulative_pos
         cumulative_pos += plot_data.loc[chr_mask, pos_col].max() + 1e7  # Add gap between chromosomes
 
     # Plot points colored by chromosome
     colors = plt.cm.tab10(np.linspace(0, 1, len(chromosomes)))
+    point_kwargs = {"s": kwargs.pop("s", 1), "alpha": kwargs.pop("alpha", 0.8)}
     for i, chr_num in enumerate(chromosomes):
         chr_mask = plot_data[chr_col] == chr_num
         ax.scatter(
             plot_data.loc[chr_mask, "cumulative_pos"],
             plot_data.loc[chr_mask, "logP"],
             c=[colors[i]],
-            s=kwargs.get("s", 1),
-            alpha=kwargs.get("alpha", 0.8),
+            **point_kwargs,
             **kwargs,
         )
 
@@ -113,8 +113,7 @@ def manhattan_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Manhattan plot saved to {output_path}")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
 
     return ax
 
@@ -174,8 +173,8 @@ def volcano_plot(
         plot_data[log2fc_col],
         plot_data["logP"],
         c=colors,
-        s=kwargs.get("s", 20),
-        alpha=kwargs.get("alpha", 0.6),
+        s=kwargs.pop("s", 20),
+        alpha=kwargs.pop("alpha", 0.6),
         **kwargs,
     )
 
@@ -190,7 +189,7 @@ def volcano_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Volcano plot saved to {output_path}")
 
     return ax
@@ -252,8 +251,8 @@ def regional_plot(
     ax.scatter(
         region_data["relative_pos"],
         region_data["logP"],
-        s=kwargs.get("s", 30),
-        alpha=kwargs.get("alpha", 0.7),
+        s=kwargs.pop("s", 30),
+        alpha=kwargs.pop("alpha", 0.7),
         **kwargs,
     )
 
@@ -267,7 +266,7 @@ def regional_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Regional plot saved to {output_path}")
 
     return ax
@@ -316,8 +315,8 @@ def circular_manhattan_plot(
             ax.scatter(
                 relative_angles,
                 chr_data["logP"],
-                s=kwargs.get("s", 2),
-                alpha=kwargs.get("alpha", 0.7),
+                s=kwargs.pop("s", 2),
+                alpha=kwargs.pop("alpha", 0.7),
                 label=f"Chr {chr_num}" if i < 5 else "",  # Label first few chromosomes
                 **kwargs,
             )
@@ -332,7 +331,7 @@ def circular_manhattan_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Circular Manhattan plot saved to {output_path}")
 
     return ax
@@ -397,7 +396,7 @@ def chromosome_ideogram(*, ax: Axes | None = None, output_path: str | Path | Non
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Chromosome ideogram saved to {output_path}")
 
     return ax
@@ -435,8 +434,10 @@ def coverage_plot(
     if ax is None:
         fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (12, 4)))
 
-    ax.plot(positions, coverage, **kwargs)
-    ax.fill_between(positions, coverage, alpha=0.3, **kwargs)
+    line_kwargs = dict(kwargs)
+    fill_kwargs = {"alpha": kwargs.pop("alpha", 0.3), **kwargs}
+    ax.plot(positions, coverage, **line_kwargs)
+    ax.fill_between(positions, coverage, **fill_kwargs)
 
     ax.set_xlabel("Genomic Position")
     ax.set_ylabel("Coverage Depth")
@@ -445,7 +446,7 @@ def coverage_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Coverage plot saved to {output_path}")
 
     return ax
@@ -481,10 +482,10 @@ def variant_plot(
     positions = variants["POS"].values
     y_values = np.ones(len(positions))  # Default y-position
 
-    # Add some jitter for visibility
-    y_values += np.random.uniform(-0.1, 0.1, len(positions))
+    # Add deterministic jitter for visibility (fixed seed: reproducible output)
+    y_values += np.random.default_rng(0).uniform(-0.1, 0.1, len(positions))
 
-    ax.scatter(positions, y_values, s=kwargs.get("s", 10), alpha=0.7, **kwargs)
+    ax.scatter(positions, y_values, s=kwargs.pop("s", 10), alpha=kwargs.pop("alpha", 0.7), **kwargs)
 
     ax.set_xlabel("Genomic Position")
     ax.set_ylabel("Variants")
@@ -493,7 +494,7 @@ def variant_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Variant plot saved to {output_path}")
 
     return ax

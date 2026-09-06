@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - phenotype
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/phenotype`
+- **Path**: `src/metainformant/phenotype` (repo-relative)
 - **Purpose**: Phenotype module for MetaInformAnt.
 - **Domain**: metainformant
 

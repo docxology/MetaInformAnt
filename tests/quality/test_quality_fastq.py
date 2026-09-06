@@ -6,6 +6,8 @@ Real implementationing used - all tests use real data and computational methods.
 
 from __future__ import annotations
 
+import gzip
+
 import pytest
 
 from metainformant.quality.io.fastq import (
@@ -15,9 +17,12 @@ from metainformant.quality.io.fastq import (
     basic_statistics,
     duplication_levels,
     gc_content_distribution,
+    n_content_per_position,
     overrepresented_sequences,
     per_base_quality,
+    per_sequence_quality,
     quality_score_distribution,
+    read_fastq_records,
     sequence_length_distribution,
 )
 
@@ -488,3 +493,85 @@ class TestEdgeCases:
 
         # Should handle without errors
         assert len(distribution) >= 2
+
+
+class TestFastqRecordValidation:
+    """FastqRecord rejects structurally invalid records."""
+
+    def test_rejects_bad_header(self):
+        with pytest.raises(ValueError, match="Invalid FASTQ header"):
+            FastqRecord("read1", "ACGT", "+", "IIII")
+
+    def test_rejects_bad_quality_header(self):
+        with pytest.raises(ValueError, match="Invalid FASTQ quality header"):
+            FastqRecord("@read1", "ACGT", "-", "IIII")
+
+    def test_rejects_length_mismatch(self):
+        with pytest.raises(ValueError, match="lengths don't match"):
+            FastqRecord("@read1", "ACGT", "+", "II")
+
+    def test_quality_scores_decode_phred(self):
+        record = _make_record("read1", "ACGT", "IIII")
+        assert record.quality_scores() == [40, 40, 40, 40]  # ord('I') - 33
+        assert record.mean_quality() == 40.0
+
+
+class TestReadFastqRecords:
+    """Streaming reader handles plain and gzip input, and error paths."""
+
+    def _write_fixtures(self, tmp_path):
+        text = (
+            "@r1 desc\nACGTACGTAC\n+\nIIIIIIIIII\n"
+            "@r2 desc\nGGTTAAGGCC\n+\nHHHHHHHHHH\n"
+        )
+        plain = tmp_path / "sample.fastq"
+        plain.write_text(text)
+        gz = tmp_path / "sample.fastq.gz"
+        with gzip.open(gz, "wt") as fh:
+            fh.write(text)
+        return plain, gz
+
+    def test_roundtrip_plain_and_gzip(self, tmp_path):
+        plain, gz = self._write_fixtures(tmp_path)
+        for path in (plain, gz):
+            got = list(read_fastq_records(path))
+            assert [r.header for r in got] == ["@r1 desc", "@r2 desc"]
+            assert [r.sequence for r in got] == ["ACGTACGTAC", "GGTTAAGGCC"]
+            assert got[0].gc_content() == 50.0
+
+    def test_max_records_limits_output(self, tmp_path):
+        text = "".join(f"@r{i}\nACGT\n+\nIIII\n" for i in range(5))
+        path = tmp_path / "multi.fastq"
+        path.write_text(text)
+        got = list(read_fastq_records(path, max_records=2))
+        assert [r.header for r in got] == ["@r0", "@r1"]
+
+    def test_incomplete_record_raises_valueerror(self, tmp_path):
+        path = tmp_path / "truncated.fastq"
+        path.write_text("@r1\nACGT\n+\n")  # missing quality line
+        with pytest.raises(ValueError, match="Incomplete FASTQ record"):
+            list(read_fastq_records(path))
+
+    def test_malformed_header_raises_valueerror(self, tmp_path):
+        """Format errors surface as ValueError, not an IOError wrapper."""
+        path = tmp_path / "bad.fastq"
+        path.write_text("r1\nACGT\n+\nIIII\n")
+        with pytest.raises(ValueError, match="Invalid FASTQ header"):
+            list(read_fastq_records(path))
+
+
+class TestPerSequenceQualityAndNContent:
+    def test_per_sequence_quality_bins_by_mean_quality(self):
+        reads = [_make_record("a", "ACGT", "IIII"), _make_record("b", "ACGT", "!!!!")]
+        result = per_sequence_quality(reads)
+        bins = {b["bin_start"]: b["count"] for b in result["bins"]}
+        assert bins[0] == 1  # '!!!!' decodes to mean quality 0
+        assert bins[40] == 1  # 'IIII' decodes to mean quality 40
+
+        reads = [_make_record("a", "NATT", "IIII"), _make_record("b", "ATNT", "IIII")]
+        result = n_content_per_position(reads)
+        counts = {p["position"]: p["n_count"] for p in result["positions"]}
+        assert counts[1] == 1
+        assert counts[2] == 0
+        assert counts[3] == 1
+        assert counts[4] == 0

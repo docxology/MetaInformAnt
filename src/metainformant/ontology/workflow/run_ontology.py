@@ -121,10 +121,8 @@ def _save_tsv(rows: list[dict], path: Path, fields: list[str] | None = None) -> 
 
 def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root: Path) -> None:
     """Run the full ontology analysis workflow."""
-    config.get("gwas", {})
 
     ont_cfg = config.get("ontology", {})
-    paths_cfg = config.get("paths", {})
 
     taxon_id: int = int(ont_cfg.get("taxon_id", 7460))
     top_n: int = int(ont_cfg.get("top_n_hits", 20))
@@ -250,7 +248,6 @@ def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root
     try:
         # 1. Map NCBI gene symbols → UniProtKB accessions for hit genes
         symbol_to_uniprot = map_symbols_to_uniprot(hit_genes, taxon_id=taxon_id, rate_limit_s=rate_limit_s)
-        uniprot_hit_genes = []
         for sym in hit_genes:
             mapped = symbol_to_uniprot.get(sym, [])
             if mapped:

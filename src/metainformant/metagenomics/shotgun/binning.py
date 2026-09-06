@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import itertools
 import math
+import random
 from collections import defaultdict
 from dataclasses import dataclass, field
 
@@ -71,10 +72,6 @@ _BACTERIAL_MARKERS = [
     "rnhB",
     "ychF",
 ]
-
-# Representative k-mer signatures for marker gene detection (simplified)
-# In production, HMM profiles would be used instead
-_MARKER_SIGNATURES: dict[str, list[str]] = {}
 
 
 @dataclass
@@ -226,9 +223,7 @@ def _kmeans_cluster(
     Returns:
         List of cluster assignments (indices).
     """
-    import random as rng
-
-    rng.seed(seed)
+    rng = random.Random(seed)
 
     n = len(features)
     dim = len(features[0]) if features else 0
@@ -664,32 +659,6 @@ def _detect_markers_by_composition(sequence: str, total_length: int) -> dict[str
 
     if not sequence or total_length == 0:
         return detected
-
-    # Estimate number of expected ORFs (~1 gene per 1000 bp)
-    total_length / 1000
-
-    # Marker gene probability based on genome completeness estimate
-    # Average bacterial genome has ~3500 genes, we have 36 markers
-    len(_BACTERIAL_MARKERS) / 3500
-
-    # GC content can indicate genome completeness
-    gc_count = sequence.count("G") + sequence.count("C")
-    valid = sum(1 for c in sequence if c in "ACGT")
-    gc_count / valid if valid > 0 else 0.5
-
-    # K-mer complexity: high complexity indicates real genomic content
-    kmer_k = 6
-    observed_kmers: set[str] = set()
-    for i in range(len(sequence) - kmer_k + 1):
-        kmer = sequence[i : i + kmer_k]
-        if all(c in "ACGT" for c in kmer):
-            observed_kmers.add(kmer)
-    max_possible = min(4**kmer_k, len(sequence) - kmer_k + 1)
-    complexity = len(observed_kmers) / max_possible if max_possible > 0 else 0.0
-
-    # Estimate markers: combination of size and complexity
-    base_detection_rate = min(1.0, total_length / 3_500_000)
-    base_detection_rate * min(1.0, complexity * 1.5)
 
     # Assign markers probabilistically based on sequence regions
     # Split sequence into windows and check for marker-like regions

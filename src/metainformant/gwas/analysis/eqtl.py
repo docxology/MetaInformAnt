@@ -65,12 +65,14 @@ def run_eqtl_analysis(
 
     transcripts = E.columns if max_transcripts is None else E.columns[:max_transcripts]
 
+    # Covariate rows are invariant across the variant/transcript loops
+    covariate_rows = C.T.values.tolist() if C is not None else None
+
     for transcript_id in transcripts:
         phenotype = E[transcript_id]
 
         for variant_id in G.columns:
             try:
-                covariate_rows = C.T.values.tolist() if C is not None else None
                 assoc_stats = association_test_linear(
                     genotypes=G[variant_id].astype(float).tolist(),
                     phenotypes=phenotype.astype(float).tolist(),

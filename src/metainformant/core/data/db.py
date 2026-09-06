@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import contextlib
 import re
+from collections.abc import Iterable
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from metainformant.core.utils.logging import get_logger
@@ -25,6 +26,28 @@ except ImportError:
     psycopg2 = None  # type: ignore[assignment]  # stubs type the import as Module; keep the optional fallback name
     HAS_PSYCOPG2 = False
     # Use lazy warning - only warn when database functionality is actually used
+
+
+# Simple SQL identifiers (table/column names) that may be interpolated into
+# DDL statements after validation.
+_SQL_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+# SQL type expressions for DDL column definitions: words, sizes, and array
+# markers only -- no quotes, semicolons, comments, or shell metacharacters.
+_SQL_TYPE_RE = re.compile(r"^[A-Za-z0-9_ (),\[\]]+$")
+
+
+def _validate_sql_identifiers(table: str, columns: Iterable[str]) -> None:
+    """Validate names that will be interpolated into SQL DDL/DML statements.
+
+    Raises:
+        ValueError: If the table name or any column name is not a simple
+            SQL identifier.
+    """
+
+    if not _SQL_IDENTIFIER_RE.fullmatch(table) or not all(
+        _SQL_IDENTIFIER_RE.fullmatch(column) for column in columns
+    ):
+        raise ValueError("table and column names must be simple SQL identifiers")
 
 
 class PostgresConnection:
@@ -221,14 +244,12 @@ class PostgresConnection:
             return 0
 
         try:
-            identifier = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-            if not identifier.fullmatch(table) or not all(identifier.fullmatch(column) for column in columns):
-                raise ValueError("table and column names must be simple SQL identifiers")
+            _validate_sql_identifiers(table, columns)
             with conn.cursor() as cursor:
                 # Create placeholders for bulk insert
                 placeholders = ", ".join(["%s"] * len(columns))
-                # Table and column names are checked against the identifier
-                # pattern immediately above before interpolation.
+                # Table and column names are validated by
+                # _validate_sql_identifiers before interpolation.
                 query = f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({placeholders})"  # nosec B608
 
                 # Insert in batches
@@ -267,6 +288,12 @@ class PostgresConnection:
             RuntimeError: If table creation fails
         """
         try:
+            _validate_sql_identifiers(table_name, schema.keys())
+            for col_type in schema.values():
+                if not _SQL_TYPE_RE.fullmatch(col_type):
+                    raise ValueError(
+                        f"column type {col_type!r} must be a simple SQL type expression"
+                    )
             exists_clause = "IF NOT EXISTS" if if_not_exists else ""
 
             columns_def = ", ".join(f"{col} {col_type}" for col, col_type in schema.items())

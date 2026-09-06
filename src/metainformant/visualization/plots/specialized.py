@@ -88,13 +88,13 @@ def plot_venn_diagram(
         elif len(set_data) == 3:
             venn.venn3(set_data, set_labels=set_names, ax=ax, **kwargs)
         else:
-            venn.venn4(set_data, set_labels=set_names, ax=ax, **kwargs)
+            raise ValueError("Venn diagrams support at most 3 sets; matplotlib-venn provides venn2/venn3")
 
     ax.set_title("Venn Diagram")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Venn diagram saved to {output_path}")
 
     return ax
@@ -246,7 +246,7 @@ def plot_sankey_diagram(
 
         if output_path:
             paths.ensure_directory(Path(output_path).parent)
-            save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+            save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
             logger.info(f"Flow diagram saved to {output_path}")
 
         return fig
@@ -281,8 +281,9 @@ def plot_chord_diagram(
 
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize, subplot_kw={"projection": "polar"})
-
     n = matrix.shape[0]
+    if labels is not None and len(labels) != n:
+        raise ValueError(f"Number of labels ({len(labels)}) must match matrix dimension ({n})")
     angles = np.linspace(0, 2 * np.pi, n, endpoint=False)
 
     # Normalize matrix for chord thickness
@@ -326,7 +327,7 @@ def plot_chord_diagram(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Chord diagram saved to {output_path}")
 
     return ax
@@ -372,7 +373,7 @@ def plot_alluvial_diagram(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Alluvial diagram saved to {output_path}")
 
     return ax
@@ -442,7 +443,7 @@ def plot_circular_barplot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Circular bar plot saved to {output_path}")
 
     return ax
@@ -495,7 +496,7 @@ def plot_network_circular_layout(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Circular network plot saved to {output_path}")
 
     return ax
@@ -535,7 +536,7 @@ def plot_upset_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(fig, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"UpSet plot saved to {output_path}")
 
     return fig

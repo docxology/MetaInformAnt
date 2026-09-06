@@ -70,7 +70,7 @@ def hash_directory(path: str | Path, pattern: str = "**/*") -> dict[str, str]:
         if file_path.is_file():
             try:
                 hashes[str(file_path.relative_to(p))] = sha256_file(file_path)
-            except (OSError, IOError):
+            except OSError:
                 # Skip files that can't be read
                 continue
 
@@ -82,5 +82,5 @@ def verify_file_integrity(file_path: str | Path, expected_hash: str) -> bool:
     try:
         actual_hash = sha256_file(file_path)
         return actual_hash == expected_hash
-    except (OSError, IOError):
+    except OSError:
         return False

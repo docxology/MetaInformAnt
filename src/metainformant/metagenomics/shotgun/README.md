@@ -30,8 +30,9 @@ Shotgun metagenomics analysis providing de Bruijn graph assembly, tetranucleotid
 ```python
 from metainformant.metagenomics.shotgun import assembly, binning, profiling
 
-contigs = assembly.assemble_contigs(reads, k=31)
+contigs = assembly.assemble_contigs(reads, k_range=[21, 33])
 stats = assembly.calculate_assembly_stats(contigs)
-bins = binning.bin_contigs(contigs, coverage_data)
-profile = profiling.profile_community(reads, kmer_index)
+bins = binning.bin_contigs(contig_sequences, coverage_data)
+index = profiling.build_kmer_index(refs, taxonomy, k=31)
+profile = profiling.profile_community(reads, database=index)
 ```

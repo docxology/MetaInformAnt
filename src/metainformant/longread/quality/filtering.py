@@ -365,7 +365,19 @@ def split_chimeric_reads(
         qual_str = _get_quality(read) or ""
         read_id = _get_read_id(read)
 
-        if seq is None or len(seq) < min_fragment_length:
+        if seq is None:
+            logger.warning(f"split_chimeric_reads: read {read_id} has no sequence; skipping")
+            continue
+        if len(seq) < min_fragment_length:
+            # Too short to be chimeric: pass through unchanged
+            result.append(
+                ReadRecord(
+                    read_id=read_id,
+                    sequence=seq,
+                    quality_string=qual_str,
+                    metadata={"chimeric": False},
+                )
+            )
             continue
 
         # Detect internal adapters

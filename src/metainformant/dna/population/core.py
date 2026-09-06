@@ -350,6 +350,9 @@ def fay_wu_h_from_sequences(seqs: Sequence[str], outgroup: str | None = None) ->
     H = π - θ_H, where θ_H weights each SNP by the square of its derived
     allele frequency. This statistic detects positive selection.
 
+    θ_H is normalized per site (divided by the alignment length) so that H
+    is length-independent and directly comparable to the per-site π.
+
     When no outgroup is provided, the most frequent allele at each site
     is assumed to be ancestral (parsimony assumption).
 
@@ -417,8 +420,11 @@ def fay_wu_h_from_sequences(seqs: Sequence[str], outgroup: str | None = None) ->
             if allele != ancestral:
                 # This is a derived allele
                 i = count  # Frequency count of derived allele
-                # Contribution: 2 * i^2 / (n * (n-1))
                 theta_h += (2 * i * i) / (n * (n - 1))
+
+    # Normalize θ_H per site so H is length-independent and comparable to
+    # the per-site π (raw accumulation above is a sum over sites).
+    theta_h /= seq_len
 
     # Fay and Wu's H = π - θ_H
     h = pi - theta_h
@@ -513,20 +519,28 @@ def linkage_disequilibrium(seqs: Sequence[str], pos1: int, pos2: int) -> float:
     if pos1 >= len(seqs[0]) or pos2 >= len(seqs[0]):
         raise ValueError("Position out of sequence bounds")
 
-    # Get alleles at both positions
-    alleles1 = [seq[pos1].upper() for seq in seqs if seq[pos1].upper() in "ATCG"]
-    alleles2 = [seq[pos2].upper() for seq in seqs if seq[pos2].upper() in "ATCG"]
+    # Keep a sequence only if it has valid (non-ambiguous, non-gap) alleles
+    # at BOTH positions, so haplotypes are always paired from the same
+    # sequence.
+    alleles1: List[str] = []
+    alleles2: List[str] = []
+    for seq in seqs:
+        a1 = seq[pos1].upper()
+        a2 = seq[pos2].upper()
+        if a1 in "ATCG" and a2 in "ATCG":
+            alleles1.append(a1)
+            alleles2.append(a2)
 
-    if len(alleles1) != len(alleles2):
-        raise ValueError("Positions have different numbers of valid alleles")
+    n = len(alleles1)
+
+    if n < 2:
+        return 0.0
 
     # Calculate haplotype frequencies
     haplotypes: Dict[Tuple[str, str], int] = {}
     for a1, a2 in zip(alleles1, alleles2):
         hap = (a1, a2)
         haplotypes[hap] = haplotypes.get(hap, 0) + 1
-
-    n = len(alleles1)
 
     # Calculate D = p_AB - p_A * p_B
     # Where A and B are derived alleles (assuming first allele is ancestral)

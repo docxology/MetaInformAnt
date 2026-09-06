@@ -848,7 +848,6 @@ def _is_step_completed(step_name: str, step_params: dict, config: AmalgkitWorkfl
         Tuple of (is_completed: bool, completion_indicator: Optional[str])
     """
     work_dir = config.work_dir
-    config.extra_config.get("steps", {})
 
     if step_name == "metadata":
         metadata_file = work_dir / "metadata" / "metadata.tsv"

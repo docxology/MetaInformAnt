@@ -100,38 +100,12 @@ class TaxonomyNode:
         return result
 
 
-def _build_kmer_profiles(
-    reference_db: dict[str, str],
-    k: int = 8,
-) -> dict[str, set[str]]:
-    """Build k-mer profiles for reference sequences.
-
-    Args:
-        reference_db: Mapping of reference IDs to sequences.
-        k: K-mer size.
-
-    Returns:
-        Mapping of reference IDs to sets of k-mers.
-    """
-    profiles: dict[str, set[str]] = {}
-    for ref_id, seq in reference_db.items():
-        seq_upper = seq.upper()
-        kmers = set()
-        for i in range(len(seq_upper) - k + 1):
-            kmer = seq_upper[i : i + k]
-            if all(c in "ACGT" for c in kmer):
-                kmers.add(kmer)
-        profiles[ref_id] = kmers
-    return profiles
-
-
 def _naive_bayes_classify(
     query_seq: str,
     reference_db: dict[str, str],
     reference_taxonomy: dict[str, list[tuple[str, str]]],
     k: int = 8,
     bootstrap_n: int = 100,
-    bootstrap_threshold: float = 0.8,
 ) -> TaxonomyAssignment:
     """Classify a query sequence using naive Bayes k-mer approach.
 
@@ -148,7 +122,6 @@ def _naive_bayes_classify(
         reference_taxonomy: Taxonomy for each reference sequence.
         k: K-mer size for classification.
         bootstrap_n: Number of bootstrap iterations for confidence.
-        bootstrap_threshold: Minimum bootstrap ratio for confident assignment.
 
     Returns:
         TaxonomyAssignment with lineage and per-rank confidence scores.
@@ -444,7 +417,6 @@ def classify_taxonomy(
                 reference_taxonomy=reference_taxonomy,
                 k=k,
                 bootstrap_n=bootstrap_n,
-                bootstrap_threshold=confidence_threshold,
             )
         else:
             assignment = _blast_classify(
@@ -565,7 +537,7 @@ def calculate_confidence(
             "mean": mean_conf,
             "median": median_conf,
             "fraction_confident": fraction_confident,
-            "n": float(n),
+            "n": n,
         }
 
     return result

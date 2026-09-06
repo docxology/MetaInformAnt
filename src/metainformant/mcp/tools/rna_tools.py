@@ -9,9 +9,13 @@ from __future__ import annotations
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from metainformant.mcp.tools._spec import read_table, validate_output_dir
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 RATE_SCRIPT = REPO_ROOT / "scripts" / "rna" / "analyze_campaign_rate.py"
@@ -83,7 +87,7 @@ def _handle_atlas_plot(
     return {"output": str(path), "plot_type": plot_type}
 
 
-def _load_species_profiles(profile_dir: Path) -> dict:
+def _load_species_profiles(profile_dir: Path) -> dict[str, pd.DataFrame]:
     """Load per-species TPM tables (<species>.csv|tsv, genes x conditions) from a dir."""
     import pandas as pd
 
@@ -94,7 +98,7 @@ def _load_species_profiles(profile_dir: Path) -> dict:
         sep = "\t" if path.suffix.lower() in {".tsv", ".tab"} else ","
         profiles[path.stem] = pd.read_csv(path, sep=sep, index_col=0)
     if not profiles:
-        return {"error": f"no per-species CSV/TSV tables found in {profile_dir}"}
+        raise ValueError(f"no per-species CSV/TSV tables found in {profile_dir}")
     return profiles
 
 
@@ -104,16 +108,15 @@ def _handle_conservation_profiles(profile_dir: str, output_dir: str) -> dict:
     profile_dir must contain per-species TPM distribution CSVs as consumed by
     metainformant.rna.analysis.conservation_profiles. Descriptive only.
     """
-    from pathlib import Path as _Path
-
     from metainformant.rna.analysis import conservation_profiles as cp
 
-    profiles_path = _Path(profile_dir).expanduser()
+    profiles_path = Path(profile_dir).expanduser()
     if not profiles_path.is_dir():
         return {"error": f"profile_dir not found: {profiles_path}"}
-    species_profiles = _load_species_profiles(profiles_path)
-    if isinstance(species_profiles, dict) and "error" in species_profiles:
-        return species_profiles
+    try:
+        species_profiles = _load_species_profiles(profiles_path)
+    except ValueError as exc:
+        return {"error": str(exc)}
     out_dir = validate_output_dir(output_dir)
     try:
         summary = cp.summarize_profile_conservation(cp.compute_profile_conservation(species_profiles))
@@ -210,11 +213,12 @@ def _handle_normalize_counts(
     lengths = None
     if gene_lengths is not None:
         lengths = read_table(gene_lengths, index_col=None)
-        if lengths.shape[1] == 1:
-            lengths = lengths.set_index(lengths.columns[0]).iloc[:, 0]
-        else:
-            lengths = lengths.set_index(lengths.columns[0])
-        lengths = lengths.iloc[:, 0] if lengths.ndim > 1 else lengths
+        lengths = lengths.set_index(lengths.columns[0])
+        if lengths.shape[1] < 1:
+            raise ValueError(
+                f"gene_lengths file needs a gene label column plus a length column: {gene_lengths}"
+            )
+        lengths = lengths.iloc[:, 0]
     result = normalize_counts(frame, method=method, gene_lengths=lengths)
     out_dir = validate_output_dir(output_dir)
     out_path = out_dir / f"normalized_{method}.csv"
@@ -261,13 +265,16 @@ def _handle_duplication_specificity(expression_table: str, bridge_table: str, sp
 
 NORMALIZE_SPEC: dict[str, Any] = {
     "name": "rna_normalize_counts",
-    "description": "Normalize a raw gene x sample count matrix (cpm|tpm|rpkm|quantile).",
+    "description": "Normalize a raw gene x sample count matrix (cpm|tpm|rpkm|log2cpm|quantile|median_ratio).",
     "input_schema": {
         "type": "object",
         "properties": {
             "counts_table": {"type": "string"},
             "output_dir": {"type": "string"},
-            "method": {"type": "string", "enum": ["cpm", "tpm", "rpkm", "quantile"]},
+            "method": {
+                "type": "string",
+                "enum": ["cpm", "tpm", "rpkm", "log2cpm", "quantile", "median_ratio"],
+            },
             "gene_lengths": {"type": "string"},
         },
         "required": ["counts_table", "output_dir"],

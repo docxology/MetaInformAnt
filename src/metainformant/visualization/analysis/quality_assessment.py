@@ -7,7 +7,7 @@ batch effect diagnostics, and data integrity metrics.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Iterable, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,6 +19,27 @@ from metainformant.core.utils import logging
 from metainformant.visualization.config.conventions import save_figure_deterministic
 
 logger = logging.get_logger(__name__)
+
+
+def _save_figure(ax: Axes, output_path: str | Path | None, message: str) -> None:
+    """Persist the plotted figure (``ax.figure``) to *output_path* when requested."""
+    if output_path:
+        paths.ensure_directory(Path(output_path).parent)
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+        logger.info(message)
+
+
+def _annotate_bars(ax: Axes, bars: Iterable[Any], values: Iterable[Any], fmt: str, offset: float = 0.0) -> None:
+    """Write *fmt*-formatted value labels centered above each bar."""
+    for bar, value in zip(bars, values):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + offset,
+            fmt.format(value),
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
 
 
 def plot_coverage_uniformity(
@@ -77,10 +98,7 @@ def plot_coverage_uniformity(
         bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8),
     )
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Coverage uniformity plot saved to {output_path}")
+    _save_figure(ax, output_path, f"Coverage uniformity plot saved to {output_path}")
 
     return ax
 
@@ -122,10 +140,7 @@ def plot_error_profiles(
     ax.grid(True, alpha=0.3)
     ax.set_yscale("log")
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Error profiles plot saved to {output_path}")
+    _save_figure(ax, output_path, f"Error profiles plot saved to {output_path}")
 
     return ax
 
@@ -199,15 +214,7 @@ def plot_batch_effects_qc(
             axes[plot_idx].set_title("Batch Separation Quality")
             axes[plot_idx].tick_params(axis="x", rotation=45)
             axes[plot_idx].grid(True, alpha=0.3, axis="y")
-            for bar, score in zip(bars, scores):
-                axes[plot_idx].text(
-                    bar.get_x() + bar.get_width() / 2,
-                    bar.get_height() + 0.01,
-                    f"{score:.3f}",
-                    ha="center",
-                    va="bottom",
-                    fontsize=8,
-                )
+            _annotate_bars(axes[plot_idx], bars, scores, "{:.3f}", offset=0.01)
         plot_idx += 1
 
     if "batch_de_stats" in batch_qc_data:
@@ -245,10 +252,7 @@ def plot_batch_effects_qc(
 
     plt.tight_layout()
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Batch effects QC plot saved to {output_path}")
+    _save_figure(axes[0], output_path, f"Batch effects QC plot saved to {output_path}")
 
     return axes[0]
 
@@ -302,19 +306,8 @@ def plot_data_integrity_metrics(
     ax.set_xticklabels(metrics, rotation=45, ha="right")
     ax.grid(True, alpha=0.3, axis="y")
 
-    for bar, value in zip(bars, values):
-        ax.text(
-            bar.get_x() + bar.get_width() / 2,
-            bar.get_height() + 0.01,
-            f"{value:.3f}",
-            ha="center",
-            va="bottom",
-            fontsize=8,
-        )
+    _annotate_bars(ax, bars, values, "{:.3f}", offset=0.01)
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Data integrity metrics plot saved to {output_path}")
+    _save_figure(ax, output_path, f"Data integrity metrics plot saved to {output_path}")
 
     return ax

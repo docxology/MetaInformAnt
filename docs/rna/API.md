@@ -70,6 +70,8 @@ assert [name for name, _ in steps] == [
     "metadata", "select", "getfastq", "integrate", "quant",
     "merge", "wsfilter", "finalize", "sanity",
 ]
+# Without ortholog parameters. When ortholog inputs are configured,
+# plan_workflow inserts "cstmm" and "csfilter" after "wsfilter".
 ```
 
 (quant)=

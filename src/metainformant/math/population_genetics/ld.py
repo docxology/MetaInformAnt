@@ -5,6 +5,7 @@ This module provides mathematical functions for analyzing linkage disequilibrium
 
 from __future__ import annotations
 
+import math
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
@@ -195,8 +196,6 @@ def haldane_d_to_c(genetic_distance: float) -> float:
     Returns:
         Recombination fraction (0 <= c <= 0.5)
     """
-    import math
-
     return 0.5 * (1 - math.exp(-2 * genetic_distance))
 
 
@@ -212,8 +211,6 @@ def kosambi_c_to_d(recombination_fraction: float) -> float:
     Returns:
         Genetic distance in Morgans
     """
-    import math
-
     if not (0 <= recombination_fraction <= 0.5):
         raise ValueError("Recombination fraction must be between 0 and 0.5")
 
@@ -237,8 +234,6 @@ def kosambi_d_to_c(genetic_distance: float) -> float:
     Returns:
         Recombination fraction (0 <= c <= 0.5)
     """
-    import math
-
     if genetic_distance < 0:
         raise ValueError("Genetic distance cannot be negative")
 

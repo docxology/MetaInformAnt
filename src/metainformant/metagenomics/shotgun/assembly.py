@@ -118,31 +118,6 @@ def _calculate_gc(sequence: str) -> float:
     return gc_count / valid_bases if valid_bases > 0 else 0.0
 
 
-def _build_de_bruijn_graph(reads: list[str], k: int) -> dict[str, list[str]]:
-    """Build a de Bruijn graph from reads using k-mers.
-
-    Each k-mer is an edge from its (k-1)-prefix to its (k-1)-suffix.
-
-    Args:
-        reads: List of sequencing read strings.
-        k: K-mer size.
-
-    Returns:
-        Adjacency list: prefix -> [list of suffixes].
-    """
-    graph: dict[str, list[str]] = defaultdict(list)
-    for read in reads:
-        seq = read.upper()
-        for i in range(len(seq) - k + 1):
-            kmer = seq[i : i + k]
-            if any(c not in "ACGT" for c in kmer):
-                continue
-            prefix = kmer[:-1]
-            suffix = kmer[1:]
-            graph[prefix].append(suffix)
-    return dict(graph)
-
-
 def _compute_node_degrees(graph: dict[str, list[str]]) -> tuple[dict[str, int], dict[str, int]]:
     """Compute in-degree and out-degree for each node.
 
@@ -490,22 +465,10 @@ def scaffold_contigs(
         if px != py:
             parent[px] = py
 
-    scaffold_members: dict[int, list[int]] = {i: [i] for i in range(len(contigs))}
-
     for a, b, count in scaffold_edges:
         ra, rb = find(a), find(b)
         if ra != rb:
             union(ra, rb)
-            new_root = find(ra)
-            # Merge member lists
-            if new_root == find(ra):
-                members_a = scaffold_members.pop(ra, [ra])
-                members_b = scaffold_members.pop(rb, [rb])
-                scaffold_members[new_root] = members_a + members_b
-            else:
-                members_a = scaffold_members.pop(ra, [ra])
-                members_b = scaffold_members.pop(rb, [rb])
-                scaffold_members[new_root] = members_b + members_a
 
     # Rebuild scaffold member sets based on final parent
     final_groups: dict[int, list[int]] = defaultdict(list)

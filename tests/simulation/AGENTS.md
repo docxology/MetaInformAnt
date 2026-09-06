@@ -1,7 +1,7 @@
 # AGENTS.md — `MetaInformAnt/tests/simulation/`
 
 tests for the simulation module.
-Files (verified 2026-08-29): __init__.py, test_simulation.py, test_simulation_agents.py, test_simulation_popgen.py, test_simulation_rna_advanced.py, test_simulation_workflow.py.
+Files (verified 2026-09-05): __init__.py, test_simulation.py, test_simulation_agents.py, test_simulation_benchmark.py, test_simulation_methylation.py, test_simulation_popgen.py, test_simulation_rng.py, test_simulation_rna_advanced.py, test_simulation_workflow.py.
 
 
 ## Conventions

@@ -7,7 +7,7 @@ Specialized visualization functions for metagenomic data, including Krona-style 
 | File | Purpose |
 |------|---------|
 | `__init__.py` | Exports plots submodule |
-| `plots.py` | All metagenomics visualization functions using matplotlib/seaborn |
+| `plots.py` | All metagenomics visualization functions using matplotlib |
 
 ## Key Functions
 
@@ -27,6 +27,6 @@ from metainformant.metagenomics.visualization import plots
 
 plots.plot_krona_chart(taxonomy_data, output_path="output/krona.png")
 plots.plot_stacked_bar(abundance_table, output_path="output/barplot.png")
-plots.plot_rarefaction_curves(rarefaction_data, output_path="output/rarefaction.png")
-plots.plot_ordination(coords, groups, output_path="output/pcoa.png")
+plots.plot_rarefaction_curves(otu_table, step=20, output_path="output/rarefaction.png", seed=42)
+plots.plot_ordination(distance_matrix, groups=sample_groups, output_path="output/pcoa.png")
 ```

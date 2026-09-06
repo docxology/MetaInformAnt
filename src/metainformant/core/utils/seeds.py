@@ -8,10 +8,9 @@ domain module (simulation, math, rna, ...) can import them from
 from __future__ import annotations
 
 import hashlib
-from typing import List
 
 
-def deterministic_replicate_seeds(base_seed: int, n_replicates: int) -> List[int]:
+def deterministic_replicate_seeds(base_seed: int, n_replicates: int) -> list[int]:
     """Stable, order-independent replicate seeds derived from one base seed.
 
     Campaign simulation sweeps need each replicate to have a reproducible but
@@ -32,7 +31,7 @@ def deterministic_replicate_seeds(base_seed: int, n_replicates: int) -> List[int
     """
     if n_replicates < 1:
         raise ValueError("n_replicates must be >= 1")
-    seeds: List[int] = []
+    seeds: list[int] = []
     for index in range(n_replicates):
         digest = hashlib.sha256(f"{base_seed}:{index}".encode("utf-8")).digest()
         seeds.append(int.from_bytes(digest[:8], "big") & 0x7FFFFFFFFFFFFFFF)

@@ -51,7 +51,7 @@ class OverlapResult:
         overlap_bp: Number of overlapping base pairs.
         overlap_fraction_variant: Fraction of the variant overlapping the feature.
         overlap_fraction_feature: Fraction of the feature overlapping the variant.
-        relationship: Relationship type ('overlap', 'contained_in', 'contains', 'upstream', 'downstream').
+        relationship: Relationship type ('overlap', 'contained_in', 'contains').
     """
 
     variant_chrom: str

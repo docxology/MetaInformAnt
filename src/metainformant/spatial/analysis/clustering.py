@@ -143,7 +143,6 @@ def build_spatial_graph(
         rows_list: list[int] = []
         cols_list: list[int] = []
         for i, j in edges:
-            d = float(np.linalg.norm(coords[i] - coords[j]))
             rows_list.extend([i, j])
             cols_list.extend([j, i])
 
@@ -684,6 +683,7 @@ def spatial_domains(
     # Iterative spatial smoothing refinement
     smoothing_factor = 0.3  # blend ratio for neighbor averaging
     prev_labels = labels.copy()
+    iterations_run = max_iterations
 
     for iteration in range(max_iterations):
         # Smooth expression PCA by neighborhood
@@ -701,6 +701,7 @@ def spatial_domains(
         changed = np.sum(labels != prev_labels)
         if changed == 0:
             logger.info(f"Spatial domains converged after {iteration + 1} iterations")
+            iterations_run = iteration + 1
             break
         prev_labels = labels.copy()
 
@@ -712,9 +713,8 @@ def spatial_domains(
         n_clusters=n_found,
         method="spatial_domains",
         metadata={
-            "n_pcs": n_components,
+            "iterations": iterations_run,
             "n_neighbors": n_neighbors,
-            "iterations": iteration + 1 if "iteration" in dir() else max_iterations,
             "smoothing_factor": smoothing_factor,
         },
     )

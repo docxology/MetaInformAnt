@@ -214,8 +214,9 @@ def quality_weighted_consensus(sequences: List[str], qualities: List[List[int]])
             quality = qual_list[pos]
 
             if base in "ATCG":
-                # Use quality as weight (Phred score)
-                weight = 10 ** (quality / -10.0)  # Convert to probability
+                # Weight by the probability the base was called correctly:
+                # 10 ** (-q/10) is the error probability (Phred definition).
+                weight = 1.0 - 10 ** (quality / -10.0)
                 weighted_counts[base] += weight
 
         # Find base with highest weighted count
@@ -405,7 +406,7 @@ def find_consensus_breaks(sequences: List[str], window_size: int = 10) -> List[T
     breaks = []
     seq_length = len(sequences[0])
 
-    for start in range(0, seq_length - window_size + 1, window_size // 2):
+    for start in range(0, seq_length - window_size + 1, max(1, window_size // 2)):
         end = min(start + window_size, seq_length)
 
         # Extract window from all sequences

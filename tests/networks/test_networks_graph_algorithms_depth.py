@@ -12,8 +12,8 @@ import networkx as nx
 import pytest
 
 from metainformant.networks.analysis.graph_algorithms import (
-    centrality_measures,
     export_network,
+    centrality_measures,
     filter_network,
     get_connected_components,
     import_network,
@@ -22,6 +22,7 @@ from metainformant.networks.analysis.graph_algorithms import (
     network_union,
     shortest_paths,
 )
+from metainformant.networks.analysis.graph_core import BiologicalNetwork
 
 
 def _star_graph() -> nx.Graph:
@@ -245,3 +246,28 @@ class TestFilterNetwork:
         g = _star_graph()
         filter_network(g, min_degree=4)
         assert g.number_of_nodes() == 5  # original untouched
+
+
+class TestBiologicalWrapperBranches:
+    """Behavior that differs for BiologicalNetwork inputs."""
+
+    def test_all_pairs_on_biological_network_fills_inf(self) -> None:
+        net = BiologicalNetwork()
+        net.add_edge(0, 1)
+        net.add_node(2)  # isolated: unreachable from everything
+        distances = shortest_paths(net)
+        assert distances[0][1] == 1
+        assert distances[1][0] == 1
+        # Unreachable pairs keep the documented infinity sentinel; the
+        # diagonal is the 0-length path to itself.
+        assert distances[0][2] == float("inf")
+        assert distances[2][0] == float("inf")
+        assert distances[2][2] == 0
+
+    def test_filter_network_preserves_metadata(self) -> None:
+        net = BiologicalNetwork(metadata={"source": "stringdb"})
+        net.add_edge(0, 1, weight=0.1)
+        net.add_edge(1, 2, weight=0.9)
+        filtered = filter_network(net, min_weight=0.5)
+        assert filtered.metadata == {"source": "stringdb"}
+        assert set(filtered.graph.edges()) == {(1, 2)}

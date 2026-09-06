@@ -8,7 +8,7 @@ This module provides functionality organized into the following structure:
 
 ## Subpackages
 
-- `analysis/` — exports: `autocorrelation`, `clustering`, `deconvolution`, `neighborhood`
+- `analysis/` — exports: `autocorrelation`, `clustering`, `deconvolution`, `neighborhood`, `spatially_variable_genes`
 - `communication/` — exports: `cell_communication`
 - `deconvolution/` — exports: `spatial_deconvolution`
 - `integration/` — exports: `scrna_mapping`

@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from metainformant.gwas.visualization.statistical.comparison import (
+    analyze_genetic_architecture,
     concordance_plot,
     cross_cohort_forest,
     miami_plot,
@@ -156,3 +159,31 @@ def test_concordance_plot_perfect_correlation(tmp_path: Path) -> None:
     assert result["status"] == "success"
     assert output_path.exists()
     assert result["correlation"] > 0.99  # Should be nearly perfect correlation
+
+
+def test_analyze_genetic_architecture_uses_p_column() -> None:
+    """Architecture metrics derive from the P column; non-DataFrame or P-less inputs are skipped."""
+    pd = pytest.importorskip("pandas")
+
+    df = pd.DataFrame({"P": [0.5] * 100 + [1e-9]})
+    architecture = analyze_genetic_architecture(
+        {
+            "PopA": {"results": df},
+            "PopB": {"results": {"not": "a dataframe"}},
+        }
+    )
+
+    assert "PopA" in architecture
+    assert "PopB" not in architecture
+    assert architecture["PopA"]["lambda_gc"] == pytest.approx(1.0, abs=0.01)
+    assert architecture["PopA"]["heritability"] == pytest.approx(0.5, abs=0.01)
+    assert architecture["PopA"]["polygenicity"] == pytest.approx(1 / 101)
+
+
+def test_analyze_genetic_architecture_skips_missing_p_column() -> None:
+    """A DataFrame without a P column contributes no entry."""
+    pd = pytest.importorskip("pandas")
+
+    architecture = analyze_genetic_architecture({"PopC": {"results": pd.DataFrame({"BETA": [1.0]})}})
+
+    assert architecture == {}

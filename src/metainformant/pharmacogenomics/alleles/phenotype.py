@@ -19,7 +19,12 @@ from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
-from .diplotype import _ACTIVITY_SCORE_TABLES, Diplotype, determine_diplotype
+from .diplotype import (
+    _ACTIVITY_SCORE_TABLES,
+    _normalize_allele_name,
+    Diplotype,
+    determine_diplotype,
+)
 
 logger = get_logger(__name__)
 
@@ -321,11 +326,12 @@ def population_phenotype_frequencies(
     """
     gene_upper = gene.upper()
 
-    # Normalize allele names
+    scoring_table = _ACTIVITY_SCORE_TABLES.get(gene_upper, {})
+
+    # Normalize allele names (non-star designations already in the table are kept)
     alleles: dict[str, float] = {}
     for name, freq in allele_frequencies.items():
-        norm_name = name if name.startswith("*") else f"*{name}"
-        alleles[norm_name] = freq
+        alleles[_normalize_allele_name(name, gene_upper, scoring_table)] = freq
 
     # Verify frequencies sum to ~1.0
     total_freq = sum(alleles.values())
@@ -343,8 +349,6 @@ def population_phenotype_frequencies(
     phenotype_freqs: dict[str, float] = {
         p.abbreviation: 0.0 for p in MetabolizerPhenotype if p != MetabolizerPhenotype.INDETERMINATE
     }
-
-    scoring_table = _ACTIVITY_SCORE_TABLES.get(gene_upper, {})
 
     for i, a1 in enumerate(allele_names):
         for j, a2 in enumerate(allele_names):

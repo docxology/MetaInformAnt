@@ -118,7 +118,6 @@ def plot_krona_chart(
         depth: int,
         start_angle: float,
         end_angle: float,
-        parent_color: str | tuple[float, float, float, float] | None = None,
     ) -> None:
         nonlocal color_idx
         if depth >= max_depth or not node:
@@ -165,7 +164,7 @@ def plot_krona_chart(
                     rotation=0,
                 )
 
-            _draw_ring(data["_children"], depth + 1, current_angle, current_angle + span, color)
+            _draw_ring(data["_children"], depth + 1, current_angle, current_angle + span)
             current_angle += span
 
     _draw_ring(tree, 0, 0, 2 * math.pi)
@@ -371,15 +370,13 @@ def plot_ordination(
     # 1. Compute squared distances
     D2 = [[d**2 for d in row] for row in D]
 
-    # 2. Double centering: B = -0.5 * J * D^2 * J, where J = I - 1/n * 11'
     row_means = [sum(row) / n for row in D2]
     grand_mean = sum(row_means) / n
-
+    col_means = [sum(D2[k][j] for k in range(n)) / n for j in range(n)]
     B = [[0.0] * n for _ in range(n)]
     for i in range(n):
-        col_mean_cache = [sum(D2[k][j] for k in range(n)) / n for j in range(n)]
         for j in range(n):
-            B[i][j] = -0.5 * (D2[i][j] - row_means[i] - col_mean_cache[j] + grand_mean)
+            B[i][j] = -0.5 * (D2[i][j] - row_means[i] - col_means[j] + grand_mean)
 
     # 3. Power iteration for top 2 eigenvectors
     coords = _power_iteration_2d(B, n)

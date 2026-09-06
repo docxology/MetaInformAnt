@@ -88,6 +88,44 @@ def test_tools_call_unknown_tool_returns_invalid_params() -> None:
     assert "unknown tool" in response["error"]["message"]
 
 
+def test_tools_call_non_serializable_result_returns_tool_internal_error() -> None:
+    """A handler result the JSON encoder cannot handle stays inside the tool
+    error boundary instead of escaping as a generic server failure."""
+
+    reg = ToolRegistry()
+    reg.register(
+        Tool(
+            name="bad_json",
+            description="returns a non-JSON-serializable value",
+            input_schema={"type": "object", "properties": {}},
+            handler=lambda args: {"payload": {1, 2}},
+        )
+    )
+    server = MCPServer(reg)
+    response = server.handle_request(_request("tools/call", params={"name": "bad_json", "arguments": {}}))
+    assert response is not None and response["error"]["code"] == -32603
+    assert "bad_json" in response["error"]["message"]
+
+
+def test_tools_call_handler_key_error_is_internal_error_not_unknown_tool() -> None:
+    """A KeyError raised inside a registered handler is not misreported as an
+    unknown-tool dispatch miss."""
+
+    reg = ToolRegistry()
+    reg.register(
+        Tool(
+            name="keyerror_tool",
+            description="handler raises KeyError internally",
+            input_schema={"type": "object", "properties": {}},
+            handler=lambda args: {}["missing"],
+        )
+    )
+    server = MCPServer(reg)
+    response = server.handle_request(_request("tools/call", params={"name": "keyerror_tool", "arguments": {}}))
+    assert response is not None and response["error"]["code"] == -32603
+    assert "keyerror_tool" in response["error"]["message"]
+
+
 def test_unknown_method_returns_method_not_found() -> None:
     server = MCPServer(_make_registry())
     response = server.handle_request(_request("wat/nope"))
@@ -105,6 +143,21 @@ def test_malformed_json_line_returns_parse_error() -> None:
 def test_notification_without_id_produces_no_response() -> None:
     server = MCPServer(_make_registry())
     assert server.handle_request({"jsonrpc": "2.0", "method": "notifications/initialized"}) is None
+
+
+def test_notification_with_invalid_params_produces_no_response() -> None:
+    """JSON-RPC notifications never get responses, even malformed ones."""
+
+    server = MCPServer(_make_registry())
+    notification = {"jsonrpc": "2.0", "method": "tools/list", "params": ["not-an-object"]}
+    assert server.handle_request(notification) is None
+
+
+def test_exit_notification_with_unexpected_params_still_shuts_down() -> None:
+    server = MCPServer(_make_registry())
+    with pytest.raises(SystemExit) as excinfo:
+        server.handle_request({"jsonrpc": "2.0", "method": "exit", "params": ["unexpected"]})
+    assert excinfo.value.code == 0
 
 
 def test_resources_list_and_read_round_trip() -> None:

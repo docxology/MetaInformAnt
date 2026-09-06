@@ -419,7 +419,7 @@ def simulate_bottleneck_population(
 
     for gen, size in enumerate(population_sizes):
         expected_mutations = size * 1000 * mutation_rate
-        mutations_this_gen = rng.poisson(expected_mutations)  # type: ignore[attr-defined]  # known latent bug
+        mutations_this_gen = np.random.poisson(expected_mutations)
         total_mutations += mutations_this_gen
         mutation_trajectory.append(total_mutations)
 
@@ -535,7 +535,7 @@ def simulate_population_expansion(
         diversity_trajectory.append(current_diversity)
 
         expected_mutations = size * 1000 * mutation_rate
-        mutations_this_gen = rng.poisson(expected_mutations)  # type: ignore[attr-defined]  # known latent bug
+        mutations_this_gen = np.random.poisson(expected_mutations)
         total_mutations += mutations_this_gen
         mutation_trajectory.append(total_mutations)
 
@@ -607,9 +607,16 @@ def generate_site_frequency_spectrum(
             weights = [w / total for w in weights]
             freq = rng.choices(range(1, n_samples), weights=weights)[0]
         elif demographic_model == "expansion":
-            # Favor low frequency variants
+            # Favor low frequency variants (zipf requires exponent > 1; for
+            # alpha <= 1 fall back to the neutral 1/i weighting)
             alpha = parameters.get("alpha", 1.0)
-            freq = min(rng.zipf(alpha), n_samples - 1)  # type: ignore[attr-defined]  # known latent bug
+            if alpha > 1.0:
+                freq = min(int(np.random.zipf(alpha)), n_samples - 1)
+            else:
+                weights = [1.0 / i for i in range(1, n_samples)]
+                total = sum(weights)
+                weights = [w / total for w in weights]
+                freq = rng.choices(range(1, n_samples), weights=weights)[0]
         elif demographic_model == "bottleneck":
             # Favor high frequency variants
             bottleneck_strength = parameters.get("bottleneck_strength", 0.1)
@@ -781,7 +788,7 @@ def simulate_admixture(
 
         # Add some drift
         for i in range(n_populations):
-            drift_effect = rng.normal(0, 0.01)  # type: ignore[attr-defined]  # known latent bug
+            drift_effect = np.random.normal(0, 0.01)
             new_frequencies[i] += drift_effect
             new_frequencies[i] = np.clip(new_frequencies[i], 0.0, 1.0)
 

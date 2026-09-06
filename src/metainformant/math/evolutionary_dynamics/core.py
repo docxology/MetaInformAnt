@@ -84,8 +84,6 @@ def lotka_volterra_step(
     new_prey = max(0, new_prey)
     new_predator = max(0, new_predator)
 
-    new_predator = max(0, new_predator)
-
     return new_prey, new_predator
 
 
@@ -109,8 +107,6 @@ def replicator_derivative(frequencies: List[float], fitness_matrix: np.ndarray) 
     avg_fitness = np.dot(x, fitness)
 
     # Replicator equation: dx_i/dt = x_i * (f_i(x) - phi(x))
-    derivatives = x * (fitness - avg_fitness)
-
     derivatives = x * (fitness - avg_fitness)
 
     return [float(d) for d in derivatives]

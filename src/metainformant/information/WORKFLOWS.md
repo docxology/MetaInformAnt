@@ -2,6 +2,8 @@
 
 Step-by-step workflow documentation for common information-theoretic analysis tasks.
 
+All import paths and result keys below match the current `metainformant.information` API.
+
 ## Workflow 1: Sequence Information Analysis
 
 ### Objective
@@ -17,22 +19,18 @@ dna_seqs = read_fasta("data/sequences.fasta")
 
 2. **Calculate Information Profile**
 ```python
-from metainformant.information import information_profile
+from metainformant.information.metrics.analysis import information_profile
 profile = information_profile(list(dna_seqs.values()), k=2)
+print(f"Mean entropy: {profile['statistics']['mean_entropy']:.3f} bits")
 ```
 
 3. **Analyze Individual Sequences**
 ```python
-from metainformant.information import analyze_sequence_information
+from metainformant.information.metrics.analysis import analyze_sequence_information
 for seq_id, seq in dna_seqs.items():
     analysis = analyze_sequence_information(seq, k_values=[1, 2, 3])
-    print(f"{seq_id}: entropy={analysis['kmer_analyses'][1]['entropy']:.3f}")
-```
-
-4. **Visualize Results**
-```python
-from metainformant.information.visualization import plot_information_profile
-plot_information_profile(profile, output_path="output/information/profile.png")
+    entropy = analysis["k_mer_analysis"]["k1"]["entropy"]
+    print(f"{seq_id}: 1-mer entropy={entropy:.3f}")
 ```
 
 ## Workflow 2: Network Information Analysis
@@ -42,36 +40,32 @@ Analyze information flow and structure in biological networks.
 
 ### Steps
 
-1. **Load Network**
+1. **Build a Network**
 ```python
-from metainformant.networks import create_network
-network = create_network(["A", "B", "C", "D"], directed=False)
-network.add_edge("A", "B")
-network.add_edge("B", "C")
+import networkx as nx
+G = nx.Graph()
+G.add_edges_from([("A", "B"), ("B", "C"), ("C", "D")])
 ```
 
 2. **Calculate Network Entropy**
 ```python
-from metainformant.information.networks import network_entropy
-entropy = network_entropy(network)
+from metainformant.information.integration.networks import network_entropy
+entropy = network_entropy(G)
 ```
 
 3. **Analyze Information Flow**
 ```python
-from metainformant.information.networks import information_flow
-flow = information_flow(network, source_nodes=["A"], target_nodes=["D"])
+from metainformant.information.integration.networks import information_flow
+flow = information_flow(G, source_nodes=["A"], target_nodes=["D"], steps=50)
+print(f"Path length entropy: {flow['path_length_entropy']:.3f} bits")
 ```
 
-4. **Calculate MI Matrix**
+4. **Build an Information Flow Network from Time Series**
 ```python
-from metainformant.information.networks import mutual_information_network
-mi_matrix = mutual_information_network(network)
-```
-
-5. **Visualize Network**
-```python
-from metainformant.information.visualization import plot_mi_network
-plot_mi_network(mi_matrix, labels=["A", "B", "C", "D"], output_path="output/information/network.png")
+from metainformant.information.network_info.information_flow import information_flow_network
+time_series = {"A": [...], "B": [...], "C": [...], "D": [...]}  # equal-length series
+result = information_flow_network(time_series, method="transfer_entropy", threshold=0.05)
+print(result["edges"])  # significant directed edges
 ```
 
 ## Workflow 3: Multi-Omics Information Integration
@@ -91,7 +85,7 @@ proteomics = np.load("data/proteomics.npy")
 
 2. **Calculate Platform Entropy**
 ```python
-from metainformant.information import multiomics_integration
+from metainformant.information.integration import multiomics_integration
 results = multiomics_integration(
     genomics_data=genomics,
     transcriptomics_data=transcriptomics,
@@ -132,14 +126,15 @@ y = np.load("data/labels.npy")
 
 2. **Calculate Feature MI**
 ```python
-from metainformant.information import ml_integration
+from metainformant.information.integration import ml_integration
 results = ml_integration(X, y, method="feature_mi")
 ```
 
 3. **Select Top Features**
 ```python
-top_features = results["top_features"][:50]  # Top 50 features
-X_selected = X[:, top_features]
+top_features = results["top_features"]  # list of {"index": int, "mi": float}
+top_indices = [f["index"] for f in top_features[:50]]  # top 50 features
+X_selected = X[:, top_indices]
 ```
 
 4. **Train Model with Selected Features**
@@ -164,8 +159,8 @@ fasta_files = list(Path("data").glob("*.fasta"))
 
 2. **Batch Analysis**
 ```python
-from metainformant.information import batch_entropy_analysis
 from metainformant.dna.sequence.core import read_fasta
+from metainformant.information.workflow import batch_entropy_analysis
 
 all_results = {}
 for fasta_file in fasta_files:
@@ -176,9 +171,9 @@ for fasta_file in fasta_files:
 
 3. **Generate Report**
 ```python
-from metainformant.information import information_report
+from metainformant.information.workflow import information_report
 information_report(
-    all_results,
+    results,
     output_path="docs/information/batch_report.md",
     format="markdown"
 )
@@ -199,17 +194,21 @@ samples = np.random.normal(0, 1, 1000)
 
 2. **Estimate Differential Entropy**
 ```python
-from metainformant.information import differential_entropy
+from metainformant.information.metrics.core.continuous import differential_entropy
 h = differential_entropy(samples, method="histogram", bins=20)
 ```
 
 3. **Compare with Estimation Methods**
 ```python
-from metainformant.information.continuous import entropy_estimation
-h_plugin = entropy_estimation(samples, method="plugin")
-h_mm = entropy_estimation(samples, method="miller_madow")
-print(f"Plugin: {h_plugin:.3f}, Miller-Madow: {h_mm:.3f}")
+from metainformant.information.metrics.core.continuous import entropy_estimation
+h_hist = entropy_estimation(samples, method="histogram")
+h_knn = entropy_estimation(samples, method="knn")
+print(f"Histogram: {h_hist:.3f}, k-NN: {h_knn:.3f}")
 ```
+
+Note: the histogram/kde/knn methods estimate *differential* (continuous) entropy.
+Discrete estimators such as plugin/Miller-Madow live in
+`metainformant.information.metrics.core.estimation` and operate on counts.
 
 ## Workflow 7: Semantic Information Analysis
 
@@ -228,38 +227,38 @@ gene_annotations = {
 
 2. **Calculate Information Content**
 ```python
-from metainformant.information import information_content_from_annotations
-term_ic = information_content_from_annotations(gene_annotations)
+from metainformant.information.metrics.advanced.semantic import (
+    information_content_from_annotations,
+)
+# Per-term IC: returns -log2(fraction of genes annotated with the term)
+ic_bp = information_content_from_annotations(gene_annotations, "GO:0008150")
 ```
 
 3. **Calculate Semantic Similarity**
 ```python
-from metainformant.information import semantic_similarity_matrix
-terms = list(term_ic.keys())
-similarity_matrix = semantic_similarity_matrix(terms, term_ic)
-```
+from metainformant.information.metrics.advanced.semantic import semantic_similarity_matrix
+from metainformant.information.metrics.advanced.semantic import information_content
 
-4. **Visualize Similarity Network**
-```python
-from metainformant.information.visualization import plot_semantic_similarity_network
-plot_semantic_similarity_network(
-    similarity_matrix,
-    terms,
-    output_path="output/information/semantic_network.png"
-)
+# Build per-term IC values and a term -> parent-terms hierarchy
+term_frequencies = {"GO:0008150": 2, "GO:0003674": 1, "GO:0005524": 1}
+term_ic = {t: information_content(term_frequencies, t) for t in term_frequencies}
+hierarchy = {"GO:0003674": {"GO:0008150"}, "GO:0005524": {"GO:0008150"}}
+
+terms = list(term_ic)
+similarity_matrix = semantic_similarity_matrix(terms, term_ic, hierarchy)
 ```
 
 ## Workflow 8: Complete Information Analysis Pipeline
 
 ### Objective
-End-to-end information-theoretic analysis from raw data to visualization.
+End-to-end information-theoretic analysis from raw data to report.
 
 ### Steps
 
 1. **Data Loading and Preprocessing**
 ```python
 from metainformant.dna.sequence.core import read_fasta
-from metainformant.information import information_workflow
+from metainformant.information.workflow import information_workflow
 
 seqs = read_fasta("data/sequences.fasta")
 seq_list = list(seqs.values())
@@ -276,7 +275,7 @@ results = information_workflow(
 
 3. **Generate Report**
 ```python
-from metainformant.information import information_report
+from metainformant.information.workflow import information_report
 information_report(
     results,
     output_path="docs/information/full_report.md",
@@ -284,22 +283,10 @@ information_report(
 )
 ```
 
-4. **Visualization**
+4. **Inspect Aggregate Results**
 ```python
-from metainformant.information.visualization import (
-    plot_information_profile,
-    plot_entropy_distribution,
-)
-
-# Plot profile
-profile = results["profiles"][1]
-plot_information_profile(profile, output_path="output/information/profile.png")
-
-# Plot entropy distribution
-entropies = [r["entropy"] for r in results.get("sequences", [])]
-if entropies:
-    plot_entropy_distribution(entropies, output_path="output/information/entropy_dist.png")
+print(results["aggregate_results"]["k_mer_statistics"]["k1"]["mean_entropy"])
+print(results["workflow_status"], f"{results['processing_time']:.2f}s")
 ```
 
 These workflows provide step-by-step guides for common information-theoretic analysis tasks in biological data.
-

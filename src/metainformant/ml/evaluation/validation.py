@@ -30,6 +30,15 @@ except ImportError:
     logger.warning("scikit-learn not available, ML validation disabled")
 
 
+def _make_cv_splitter(
+    y: np.ndarray, cv: int, random_state: int | None
+) -> "StratifiedKFold | KFold":
+    """Choose stratified folds for classification-like targets, KFold otherwise."""
+    if len(np.unique(y)) < 20:  # Classification-like
+        return StratifiedKFold(n_splits=cv, shuffle=True, random_state=random_state)
+    return KFold(n_splits=cv, shuffle=True, random_state=random_state)
+
+
 def train_test_split_biological(
     X: np.ndarray,
     y: np.ndarray,
@@ -166,9 +175,8 @@ def permutation_importance_biological(
 
     # Get baseline score
     baseline_score = cross_val_score(
-        model, X, y, cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state), scoring=scoring
+        model, X, y, cv=_make_cv_splitter(y, cv=5, random_state=random_state), scoring=scoring
     ).mean()
-
     n_features = X.shape[1]
     importance_scores = np.zeros((n_features, n_repeats))
     feature_names = getattr(X, "columns", None)
@@ -189,7 +197,7 @@ def permutation_importance_biological(
                 model,
                 X_permuted,
                 y,
-                cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state),
+                cv=_make_cv_splitter(y, cv=5, random_state=random_state),
                 scoring=scoring,
             ).mean()
 
@@ -370,7 +378,8 @@ def compare_validation_strategies(
                     score = r2_score(y_test, y_pred)
 
             elif strategy.endswith("fold_cv"):
-                cv_folds = int(strategy.split("_")[0])
+                # Strategies look like "5fold_cv"; the fold count precedes "fold".
+                cv_folds = int(strategy.split("fold")[0])
                 scores = cross_validation_scores(model_factory(), X, y, cv=cv_folds, random_state=random_state)
                 score = scores.get("accuracy", scores.get("r2", np.array([0]))).mean()
 

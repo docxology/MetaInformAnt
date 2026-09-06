@@ -7,11 +7,24 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from metainformant.core.utils.errors import ValidationError
 from metainformant.visualization.analysis.quality import (
     plot_adapter_content,
+    plot_batch_effects_qc,
+    plot_coverage_uniformity,
+    plot_data_integrity_metrics,
+    plot_error_profiles,
     plot_gc_distribution,
+    plot_kmer_profiles,
     plot_length_distribution,
+    plot_multiomics_quality_overview,
+    plot_overrepresented_sequences,
+    plot_per_base_quality_boxplot,
+    plot_protein_structure_quality,
     plot_quality_metrics,
+    plot_sequence_duplication_levels,
+    plot_singlecell_qc_metrics,
+    plot_vcf_quality_metrics,
 )
 
 
@@ -201,3 +214,467 @@ class TestPlotLengthDistribution:
 
         with pytest.raises(ValueError, match="cannot be empty"):
             plot_length_distribution(length_data)
+
+
+class TestPlotPerBaseQualityBoxplot:
+    """Test plot_per_base_quality_boxplot function."""
+
+    def test_basic_boxplot_mixed_keys(self):
+        """Test boxplot with range-string and integer position keys."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        rng = np.random.default_rng(42)
+        per_base_qualities = {
+            "1-10": rng.uniform(20, 40, 50),
+            "11-20": rng.uniform(25, 40, 50),
+            21: rng.uniform(25, 38, 50),
+        }
+
+        ax = plot_per_base_quality_boxplot(per_base_qualities)
+        assert ax is not None
+        assert len(ax.lines) > 0  # boxplot whiskers/medians drawn
+        assert ax.get_title() == "Per-Base Quality Scores"
+        plt.close("all")
+
+    def test_boxplot_with_output_path(self, tmp_path: Path):
+        """Test boxplot saved to output path."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        rng = np.random.default_rng(7)
+        per_base_qualities = {"1-5": rng.uniform(30, 40, 30), "6-10": rng.uniform(28, 38, 30)}
+        output_path = tmp_path / "per_base_quality.png"
+
+        ax = plot_per_base_quality_boxplot(per_base_qualities, output_path=output_path)
+        assert ax is not None
+        assert output_path.exists()
+        plt.close("all")
+
+
+class TestPlotSequenceDuplicationLevels:
+    """Test plot_sequence_duplication_levels function."""
+
+    def test_basic_duplication_levels(self):
+        """Test duplication level bar chart creation."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        duplication_levels = {"1": 60.0, "2": 25.0, "3": 10.0, "4": 5.0}
+
+        ax = plot_sequence_duplication_levels(duplication_levels)
+        assert ax is not None
+        assert len(ax.patches) == 4
+        assert ax.get_title() == "Sequence Duplication Levels"
+        plt.close("all")
+
+    def test_duplication_levels_with_output_path(self, tmp_path: Path):
+        """Test duplication levels plot saved to output path."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        duplication_levels = {"1": 70.0, "2": 20.0, "3": 10.0}
+        output_path = tmp_path / "duplication.png"
+
+        ax = plot_sequence_duplication_levels(duplication_levels, output_path=output_path)
+        assert ax is not None
+        assert output_path.exists()
+        plt.close("all")
+
+
+class TestPlotOverrepresentedSequences:
+    """Test plot_overrepresented_sequences function."""
+
+    def test_basic_overrepresented_sequences(self, tmp_path: Path):
+        """Test horizontal bar chart for overrepresented sequences."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        seqs = [
+            {"sequence": "ACGTACGTACGTACGTACGTACGT", "count": 1200, "percentage": 2.5},
+            {"sequence": "TTGGCATTGCATGGACTTGA", "count": 800, "percentage": 1.8},
+        ]
+        output_path = tmp_path / "overrepresented.png"
+
+        ax = plot_overrepresented_sequences(seqs, output_path=output_path)
+        assert ax is not None
+        assert len(ax.patches) == 2
+        assert output_path.exists()
+        plt.close("all")
+
+    def test_empty_list_renders_placeholder(self):
+        """Test empty sequence list renders a placeholder without raising."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        ax = plot_overrepresented_sequences([])
+        assert ax is not None
+        assert ax.get_title() == "Overrepresented Sequences"
+        plt.close("all")
+
+
+class TestPlotKmerProfiles:
+    """Test plot_kmer_profiles function."""
+
+    def test_basic_kmer_profiles(self):
+        """Test top-N k-mer bar chart creation."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        rng = np.random.default_rng(3)
+        kmer_counts = {
+            f"{'ACGT'[i % 4]}{'TGCA'[i % 4]}{'GCAT'[i % 4]}{i:02d}": int(rng.integers(10, 1000)) for i in range(30)
+        }
+
+        ax = plot_kmer_profiles(kmer_counts, top_n=10)
+        assert ax is not None
+        assert len(ax.patches) == 10
+        assert "Top 10" in ax.get_title()
+        plt.close("all")
+
+    def test_kmer_profiles_with_output_path(self, tmp_path: Path):
+        """Test k-mer profile plot saved to output path."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        kmer_counts = {"AAAA": 500, "AAAC": 400, "AAGG": 300}
+        output_path = tmp_path / "kmers.png"
+
+        ax = plot_kmer_profiles(kmer_counts, output_path=output_path)
+        assert ax is not None
+        assert output_path.exists()
+        plt.close("all")
+
+
+class TestPlotVcfQualityMetrics:
+    """Test plot_vcf_quality_metrics function."""
+
+    def test_full_vcf_metrics(self, tmp_path: Path):
+        """Test all six VCF QC panels render and save."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        rng = np.random.default_rng(11)
+        vcf_qc_data = {
+            "qual_distribution": {"qualities": [10, 20, 30, 40], "counts": [5, 12, 8, 2]},
+            "depth_distribution": {"depths": [5, 10, 20, 30], "counts": [8, 12, 6, 1]},
+            "allele_frequencies": rng.uniform(0.0, 0.5, 100),
+            "variant_types": {"SNP": 80, "INDEL": 20},
+            "titv_by_qual": {"qualities": [20, 30, 40], "titv_ratios": [1.9, 2.1, 2.2]},
+            "summary_stats": {"n_variants": 1000, "mean_depth": 25.0},
+        }
+        output_path = tmp_path / "vcf_qc.png"
+
+        ax = plot_vcf_quality_metrics(vcf_qc_data, output_path=output_path)
+        assert ax is not None
+        assert output_path.exists()
+        plt.close("all")
+
+    def test_partial_vcf_metrics(self):
+        """Test VCF QC plot with only some sections present."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        ax = plot_vcf_quality_metrics({"allele_frequencies": [0.1, 0.2, 0.3]})
+        assert ax is not None
+        plt.close("all")
+
+
+class TestPlotSinglecellQcMetrics:
+    """Test plot_singlecell_qc_metrics function."""
+
+    def test_basic_singlecell_metrics(self, tmp_path: Path):
+        """Test single-cell QC histograms and correlation panel."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        rng = np.random.default_rng(5)
+        qc_metrics = {
+            "n_counts": rng.exponential(5000, 200),
+            "n_genes": rng.exponential(3000, 200),
+            "percent_mito": rng.uniform(0, 20, 200),
+            "doublet_score": rng.uniform(0, 1, 200),
+        }
+        output_path = tmp_path / "singlecell_qc.png"
+
+        ax = plot_singlecell_qc_metrics(qc_metrics, output_path=output_path)
+        assert ax is not None
+        assert output_path.exists()
+        plt.close("all")
+
+    def test_minimal_singlecell_metrics(self):
+        """Test single-cell QC plot with a single metric (no correlation panel)."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        rng = np.random.default_rng(6)
+        ax = plot_singlecell_qc_metrics({"n_counts": rng.exponential(5000, 100)})
+        assert ax is not None
+        plt.close("all")
+
+
+class TestPlotProteinStructureQuality:
+    """Test plot_protein_structure_quality function."""
+
+    def test_full_structure_metrics(self, tmp_path: Path):
+        """Test protein structure panels with dict-valued scores."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        rng = np.random.default_rng(13)
+        structure_quality = {
+            "b_factors": rng.normal(30, 5, 100),
+            "ramachandran_stats": {"favored": 0.9, "allowed": 0.08, "outliers": 0.02},
+            "clash_score": {"severe": 2, "mild": 10},
+            "overall_quality": {"ramachandran": 0.95, "clashscore": 0.8},
+        }
+        output_path = tmp_path / "protein_qc.png"
+
+        ax = plot_protein_structure_quality(structure_quality, output_path=output_path)
+        assert ax is not None
+        assert output_path.exists()
+        plt.close("all")
+
+    def test_scalar_scores(self):
+        """Test protein structure panels with scalar clash and quality scores."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        structure_quality = {"clash_score": 4.5, "overall_quality": 0.88}
+
+        ax = plot_protein_structure_quality(structure_quality)
+        assert ax is not None
+        plt.close("all")
+
+
+class TestPlotMultiomicsQualityOverview:
+    """Test plot_multiomics_quality_overview function."""
+
+    def test_basic_overview_with_output_path(self, tmp_path: Path):
+        """Test radar overview across omics layers, including an empty report."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        quality_reports = {
+            "Transcriptomics": {"overall_quality": 0.92},
+            "Proteomics": {"quality_score": 0.85},
+            "Metabolomics": {},
+        }
+        output_path = tmp_path / "multiomics_qc.png"
+
+        ax = plot_multiomics_quality_overview(quality_reports, output_path=output_path)
+        assert ax is not None
+        assert output_path.exists()
+        plt.close("all")
+
+
+class TestPlotCoverageUniformity:
+    """Test plot_coverage_uniformity function."""
+
+    def test_basic_coverage_with_output_path(self, tmp_path: Path):
+        """Test coverage plot with default x axis."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        rng = np.random.default_rng(17)
+        coverage = rng.poisson(30, 200).astype(float)
+        output_path = tmp_path / "coverage.png"
+
+        ax = plot_coverage_uniformity(coverage, output_path=output_path)
+        assert ax is not None
+        assert ax.get_xlabel() == "Position"
+        assert output_path.exists()
+        plt.close("all")
+
+    def test_coverage_with_genomic_positions(self):
+        """Test coverage plot with explicit positions labels the x axis."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        rng = np.random.default_rng(19)
+        coverage = rng.poisson(25, 100).astype(float)
+        positions = np.arange(1, 101)
+
+        ax = plot_coverage_uniformity(coverage, positions=positions)
+        assert ax is not None
+        assert ax.get_xlabel() == "Genomic Position"
+        plt.close("all")
+
+    def test_rejects_non_array_coverage(self):
+        """Test that a plain list is rejected by type validation."""
+        with pytest.raises(ValidationError):
+            plot_coverage_uniformity([10.0, 20.0, 30.0])
+
+
+class TestPlotErrorProfiles:
+    """Test plot_error_profiles function."""
+
+    def test_basic_error_profiles_with_output_path(self, tmp_path: Path):
+        """Test error profile lines render on a log axis and save."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        rng = np.random.default_rng(23)
+        profiles = {
+            "mismatch": np.clip(rng.exponential(0.001, 100), 1e-6, None),
+            "indel": np.clip(rng.exponential(0.0005, 100), 1e-6, None),
+        }
+        output_path = tmp_path / "error_profiles.png"
+
+        ax = plot_error_profiles(profiles, output_path=output_path)
+        assert ax is not None
+        assert ax.get_yscale() == "log"
+        assert len(ax.lines) == 2
+        assert output_path.exists()
+        plt.close("all")
+
+
+class TestPlotBatchEffectsQc:
+    """Test plot_batch_effects_qc function."""
+
+    def test_full_batch_panels(self, tmp_path: Path):
+        """Test all six batch-effect panels render and save."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        rng = np.random.default_rng(29)
+        batch_qc_data = {
+            "batch_sizes": {"batchA": 50, "batchB": 60},
+            "batch_pca": {
+                "pc1": rng.normal(0, 1, 20),
+                "pc2": rng.normal(0, 1, 20),
+                "batches": ["batchA"] * 10 + ["batchB"] * 10,
+            },
+            "silhouette_scores": {"batchA": 0.45, "batchB": 0.52},
+            "batch_de_stats": {"batches": ["batchA_vs_batchB"], "n_de_genes": [120]},
+            "batch_variance": {"PC1": 0.5, "PC2": 0.3},
+            "correction_metrics": {"kBET": 0.1},
+        }
+        output_path = tmp_path / "batch_qc.png"
+
+        ax = plot_batch_effects_qc(batch_qc_data, output_path=output_path)
+        assert ax is not None
+        assert output_path.exists()
+        plt.close("all")
+
+
+class TestPlotDataIntegrityMetrics:
+    """Test plot_data_integrity_metrics function."""
+
+    def test_numeric_metrics_are_plotted(self):
+        """Test that only numeric integrity metrics become bars."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        integrity_metrics = {
+            "missing_rate": 0.05,
+            "error_rate": 0.005,
+            "completeness": 0.95,
+            "valid_records": 0.99,
+            "dataset_name": "should_be_ignored",
+        }
+
+        ax = plot_data_integrity_metrics(integrity_metrics)
+        assert ax is not None
+        assert len(ax.patches) == 4  # non-numeric value skipped
+        plt.close("all")
+
+    def test_integrity_metrics_with_output_path(self, tmp_path: Path):
+        """Test integrity metrics plot saved to output path."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        integrity_metrics = {"missing_rate": 0.02, "completeness": 0.98}
+        output_path = tmp_path / "integrity.png"
+
+        ax = plot_data_integrity_metrics(integrity_metrics, output_path=output_path)
+        assert ax is not None
+        assert output_path.exists()
+        plt.close("all")
+
+
+class TestQualityModuleAggregation:
+    """Test the quality module's aggregation of the focused submodules."""
+
+    def test_quality_module_reexports_sibling_implementations(self):
+        """Test that quality re-exports the focused submodule functions."""
+        from metainformant.visualization.analysis import (
+            quality,
+            quality_assessment,
+            quality_omics,
+            quality_sequencing,
+        )
+
+        assert quality.plot_quality_metrics is quality_sequencing.plot_quality_metrics
+        assert quality.plot_gc_distribution is quality_sequencing.plot_gc_distribution
+        assert quality.plot_kmer_profiles is quality_sequencing.plot_kmer_profiles
+        assert quality.plot_vcf_quality_metrics is quality_omics.plot_vcf_quality_metrics
+        assert quality.plot_singlecell_qc_metrics is quality_omics.plot_singlecell_qc_metrics
+        assert quality.plot_coverage_uniformity is quality_assessment.plot_coverage_uniformity
+        assert quality.plot_batch_effects_qc is quality_assessment.plot_batch_effects_qc
+
+    def test_gc_distribution_explicit_bins(self):
+        """Regression: explicit bins kwarg must not collide with the internal default."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        ax = plot_gc_distribution([40, 45, 50, 35, 55], bins=5)
+        assert ax is not None
+        assert len(ax.patches) == 5
+        plt.close("all")
+
+    def test_length_distribution_explicit_bins(self):
+        """Regression: explicit bins kwarg must not collide with the internal default."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        ax = plot_length_distribution([100, 120, 140, 160, 180], bins=5)
+        assert ax is not None
+        assert len(ax.patches) == 5
+        plt.close("all")

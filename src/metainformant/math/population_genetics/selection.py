@@ -43,7 +43,7 @@ def kin_selection_response(
     Supports multiple calling conventions:
     - kin_selection_response(r, b, c) - relatedness, benefit, cost
     - kin_selection_response(relatedness=r, benefit=b, cost=c)
-    - kin_selection_response(individual_fitness, kin_fitness, relatedness) - legacy
+    - kin_selection_response(individual_fitness=cost, kin_fitness=benefit) - legacy keyword form
 
     Hamilton's rule: r*b - c > 0 for altruism to evolve
 
@@ -191,8 +191,8 @@ def selection_differential(fitness_values: List[float], trait_values: List[float
     """Calculate selection differential.
 
     Args:
-        trait_values: List of trait values
-        fitness_values: Corresponding fitness values
+        fitness_values: List of fitness values
+        trait_values: Corresponding trait values
 
     Returns:
         Selection differential (S)
@@ -220,8 +220,8 @@ def selection_gradient(fitness_values: List[float], trait_values: List[float]) -
     """Calculate selection gradient.
 
     Args:
-        trait_values: List of trait values
-        fitness_values: Corresponding fitness values
+        fitness_values: List of fitness values
+        trait_values: Corresponding trait values
 
     Returns:
         Selection gradient (β)
@@ -272,8 +272,8 @@ def selection_intensity(fitness_values: List[float], trait_values: List[float]) 
     """Calculate selection intensity.
 
     Args:
-        trait_values: List of trait values
-        fitness_values: Corresponding fitness values
+        fitness_values: List of fitness values
+        trait_values: Corresponding trait values
 
     Returns:
         Selection intensity (i)
@@ -283,9 +283,6 @@ def selection_intensity(fitness_values: List[float], trait_values: List[float]) 
 
     S = selection_differential(fitness_values, trait_values)
     sigma = standard_deviation(trait_values)
-
-    if sigma == 0:
-        return 0.0
 
     if sigma == 0:
         return 0.0

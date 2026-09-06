@@ -15,6 +15,7 @@ import pandas as pd
 from scipy import sparse
 from scipy.cluster.hierarchy import fcluster, linkage
 from scipy.spatial.distance import pdist
+from scipy.stats import ranksums
 
 from metainformant.core.data import validation
 from metainformant.core.utils import errors, logging
@@ -166,14 +167,13 @@ def leiden_clustering(
     X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     # Construct kNN graph
-    X.shape[0]
     distances = _compute_pairwise_distances(X)
 
     # Build adjacency matrix
     adjacency = _build_knn_adjacency(distances, n_neighbors)
 
     # Convert to networkx graph
-    G = nx.from_scipy_sparse_matrix(adjacency) if sparse.issparse(adjacency) else nx.from_numpy_matrix(adjacency)
+    G = _graph_from_adjacency(adjacency)
 
     # Perform Leiden clustering
     partition = leidenalg.find_partition(
@@ -244,7 +244,7 @@ def louvain_clustering(
     adjacency = _build_knn_adjacency(distances, n_neighbors)
 
     # Convert to networkx graph
-    G = nx.from_scipy_sparse_matrix(adjacency) if sparse.issparse(adjacency) else nx.from_numpy_matrix(adjacency)
+    G = _graph_from_adjacency(adjacency)
 
     # Perform Louvain clustering
     partition = community_louvain.best_partition(G, resolution=resolution, random_state=random_state)
@@ -411,6 +411,7 @@ def hierarchical_clustering(
     if linkage_method == "ward":
         metric = "euclidean"
 
+    linkage_matrix = None
     # Compute distance matrix
     if X.shape[0] > 1000:
         # For large datasets, use random subset for hierarchical clustering
@@ -447,7 +448,7 @@ def hierarchical_clustering(
         "n_clusters": n_clusters,
         "linkage_method": linkage_method,
         "metric": metric,
-        "linkage_matrix_shape": linkage_matrix.shape if "linkage_matrix" in locals() else None,
+        "linkage_matrix_shape": linkage_matrix.shape if linkage_matrix is not None else None,
     }
 
     logger.info(f"Hierarchical clustering completed: found {n_clusters} clusters")
@@ -522,11 +523,8 @@ def find_marker_genes(data: SingleCellData, groupby: str, method: str = "t-test"
                     # Approximate p-value (simplified)
                     df = min(n_in, n_out) - 1
                     p_val = 2 * (1 - _student_t_cdf(abs(t_stat), df))
-
             elif method == "wilcoxon":
                 # Simplified Wilcoxon rank-sum test
-                from scipy.stats import ranksums
-
                 try:
                     t_stat, p_val = ranksums(expr_in, expr_out)
                 except (ValueError, TypeError, RuntimeError):
@@ -557,7 +555,22 @@ def find_marker_genes(data: SingleCellData, groupby: str, method: str = "t-test"
                 }
             )
 
-    # Convert to DataFrame and sort
+    # Convert to DataFrame and sort; an empty result set (e.g. zero genes)
+    # would otherwise crash sort_values on missing columns
+    if not marker_results:
+        return pd.DataFrame(
+            columns=[
+                "gene",
+                "group",
+                "mean_expr",
+                "mean_expr_other",
+                "log_fold_change",
+                "pct_expressed",
+                "statistic",
+                "p_value",
+                "method",
+            ]
+        )
     results_df = pd.DataFrame(marker_results)
     results_df = results_df.sort_values(["group", "p_value"])
 
@@ -726,6 +739,20 @@ def compute_cluster_silhouette(
         return {"error": str(e)}
 
 
+def _graph_from_adjacency(adjacency: Any) -> Any:
+    """Build an undirected networkx graph from a weighted adjacency matrix.
+
+    networkx 3.0 removed ``from_scipy_sparse_matrix``/``from_numpy_matrix``
+    in favour of the array-based constructors; fall back to the legacy
+    names so both major networkx lines are supported.
+    """
+    if sparse.issparse(adjacency):
+        builder = getattr(nx, "from_scipy_sparse_array", None) or nx.from_scipy_sparse_matrix
+    else:
+        builder = getattr(nx, "from_numpy_array", None) or nx.from_numpy_matrix
+    return builder(adjacency)
+
+
 def _compute_pairwise_distances(X: np.ndarray) -> np.ndarray:
     """Compute pairwise distances between cells."""
     # Use Euclidean distance for simplicity
@@ -801,9 +828,6 @@ def evaluate_clustering_performance(
         "n_clusters": n_clusters,
         "cluster_sizes": [int(np.sum(clusters == c)) for c in np.unique(clusters)],
     }
-
-    # Unsupervised metrics
-    data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     try:
         silhouette = compute_cluster_silhouette(data, cluster_col)

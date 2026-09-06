@@ -369,8 +369,6 @@ def validate_deconvolution(
     cell_types = estimated["cell_types"]
     confidence = np.asarray(estimated["confidence_scores"], dtype=np.float64)
 
-    proportions.shape[0]
-
     # Normalization check: rows should sum to ~1
     row_sums = proportions.sum(axis=1)
     norm_ok = bool(np.allclose(row_sums, 1.0, atol=0.05))
@@ -433,6 +431,8 @@ def niche_identification(
     proportions: Any,
     coordinates: list[tuple[float, float]],
     n_niches: int = 5,
+    *,
+    seed: int | None = None,
 ) -> dict[str, Any]:
     """Identify tissue niches from cell type composition and spatial proximity.
 
@@ -445,6 +445,8 @@ def niche_identification(
         proportions: Cell type proportions matrix (n_spots x n_types).
         coordinates: List of (x, y) coordinate tuples for each spot.
         n_niches: Number of niches to identify.
+        seed: Optional random seed for the k-means initialization. When None
+            (default), the global numpy random state is used.
 
     Returns:
         Dictionary with keys:
@@ -482,7 +484,7 @@ def niche_identification(
     features = np.hstack([prop_norm, coords_scaled])
 
     # K-means clustering
-    labels = _kmeans(features, n_niches, max_iter=100)
+    labels = _kmeans(features, n_niches, max_iter=100, seed=seed)
 
     # Compute niche compositions
     niche_compositions: dict[int, list[float]] = {}
@@ -593,6 +595,7 @@ def _kmeans(
     data: Any,
     k: int,
     max_iter: int = 100,
+    seed: int | None = None,
 ) -> Any:
     """Simple k-means clustering implementation.
 
@@ -602,6 +605,8 @@ def _kmeans(
         data: Feature matrix (n_samples x n_features).
         k: Number of clusters.
         max_iter: Maximum number of iterations.
+        seed: Optional random seed for k-means++ initialization. When None
+            (default), the global numpy random state is used.
 
     Returns:
         Array of cluster labels (n_samples,).
@@ -610,7 +615,8 @@ def _kmeans(
 
     # K-means++ initialization
     centers = np.zeros((k, data.shape[1]), dtype=np.float64)
-    first_idx = np.random.randint(0, n_samples)
+    rng = np.random.RandomState(seed) if seed is not None else np.random
+    first_idx = rng.randint(0, n_samples)
     centers[0] = data[first_idx]
 
     for c in range(1, k):
@@ -619,7 +625,7 @@ def _kmeans(
             axis=0,
         )
         dists /= dists.sum() + 1e-15
-        next_idx = np.random.choice(n_samples, p=dists)
+        next_idx = rng.choice(n_samples, p=dists)
         centers[c] = data[next_idx]
 
     labels = np.zeros(n_samples, dtype=np.int64)

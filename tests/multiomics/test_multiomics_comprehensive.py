@@ -7,7 +7,9 @@ and integration workflows.
 from __future__ import annotations
 
 from pathlib import Path
-
+import re
+import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
@@ -18,6 +20,11 @@ from metainformant.multiomics.analysis.integration import (
     integrate_omics_data,
     joint_nmf,
     joint_pca,
+)
+
+from metainformant.multiomics.visualization.visualization import (
+    plot_multiomics_correlation_heatmap,
+    plot_omics_layer_comparison,
 )
 
 
@@ -279,3 +286,36 @@ class TestCanonicalCorrelation:
 
         # First canonical correlation should be high
         assert correlations[0] > 0.8
+
+
+class TestVisualization:
+    """Tests for multiomics plotting helpers (Agg backend, no display needed)."""
+
+    def setup_method(self):
+        matplotlib.use("Agg")
+        plt.close("all")
+
+    def teardown_method(self):
+        plt.close("all")
+
+    def test_layer_comparison_rejects_unknown_metric(self):
+        """Unknown comparison metrics fail loudly instead of plotting zeros."""
+        rng = np.random.RandomState(0)
+        datasets = {"a": rng.randn(6, 4), "b": rng.randn(6, 4)}
+        with pytest.raises(ValueError, match="comparison_metric"):
+            plot_omics_layer_comparison(datasets, comparison_metric="manhattan")
+
+    def test_layer_comparison_annotates_formatted_values(self):
+        """Heatmap cell annotations render formatted metric values, not the format spec."""
+        rng = np.random.RandomState(0)
+        datasets = {"a": rng.randn(6, 4), "b": rng.randn(6, 3)}
+        ax = plot_omics_layer_comparison(datasets, comparison_metric="correlation")
+        texts = [t.get_text() for t in ax.texts]
+        assert len(texts) == 4  # 2 x 2 omics grid
+        assert all(re.fullmatch(r"-?\d+\.\d{2}", text) for text in texts)
+
+    def test_correlation_heatmap_returns_titled_axes(self):
+        """Correlation heatmap returns matplotlib axes with the expected title."""
+        correlation = np.array([[1.0, 0.5], [0.5, 1.0]])
+        ax = plot_multiomics_correlation_heatmap(correlation, ["rna", "protein"])
+        assert ax.get_title() == "Multi-Omics Correlation Matrix"

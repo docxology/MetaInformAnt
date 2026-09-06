@@ -4,7 +4,7 @@
 
 ## Capabilities
 
-GCP Compute Engine VM lifecycle management for running large-scale amalgkit RNA-seq pipelines: VM creation/teardown, Docker container deployment, genome preparation orchestration, and result exfiltration.
+GCP Compute Engine VM lifecycle management for running large-scale amalgkit RNA-seq pipelines: VM creation/teardown, SSH-based pipeline monitoring, GCS result sync, and result download (`scripts/cloud/cloud_startup.sh` and `scripts/cloud/download_results.sh` are invoked by the deployer; Docker builds and genome prep happen inside those scripts/on the VM).
 
 ## Subpackages
 

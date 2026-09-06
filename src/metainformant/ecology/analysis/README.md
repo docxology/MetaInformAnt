@@ -33,7 +33,7 @@ Community ecology analysis including diversity indices, functional traits, speci
 from metainformant.ecology.analysis.community import calculate_diversity, beta_diversity
 from metainformant.ecology.analysis.ordination import pcoa, distance_matrix
 
-indices = calculate_diversity([10, 20, 30, 5], method="shannon")
+indices = calculate_diversity([[10, 20, 30, 5]], method="shannon")
 dist = distance_matrix(communities, method="bray_curtis")
 coords = pcoa(dist, n_components=2)
 ```

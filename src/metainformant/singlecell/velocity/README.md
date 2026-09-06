@@ -24,7 +24,7 @@ RNA velocity estimation from spliced/unspliced count matrices for inferring futu
 ```python
 from metainformant.singlecell.velocity import rna_velocity
 
-velocity = rna_velocity.compute_velocity(spliced, unspliced, model="steady_state")
-embedding = rna_velocity.velocity_embedding(velocity, umap_coords)
-pseudotime = rna_velocity.velocity_pseudotime(velocity, embedding)
+result = rna_velocity.compute_velocity(spliced, unspliced, gene_names, method="steady_state")
+embedding = rna_velocity.velocity_embedding(result["velocity_matrix"], umap_coords)
+pseudotime = rna_velocity.velocity_pseudotime(result["velocity_matrix"], umap_coords)
 ```

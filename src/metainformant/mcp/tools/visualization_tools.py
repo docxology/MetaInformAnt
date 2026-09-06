@@ -12,9 +12,6 @@ def _handle_chart(
     x: list[float],
     y: list[float] | None,
     output_dir: str,
-    title: str = "",
-    x_label: str = "",
-    y_label: str = "",
 ) -> dict:
     """Render a basic chart (line|scatter|bar) with repo chart conventions."""
     import numpy as np
@@ -50,9 +47,6 @@ TOOL_SPEC: dict[str, Any] = {
             "x": {"type": "array", "items": {"type": "number"}},
             "y": {"type": "array", "items": {"type": "number"}},
             "output_dir": {"type": "string"},
-            "title": {"type": "string"},
-            "x_label": {"type": "string"},
-            "y_label": {"type": "string"},
         },
         "required": ["kind", "x", "output_dir"],
     },

@@ -26,8 +26,8 @@ ChromHMM-style chromatin state discovery from histone modification data using Ga
 ```python
 from metainformant.epigenome.chromatin_state import state_learning
 
-states = state_learning.learn_chromatin_states(signal_matrix, n_states=10)
-assignments = state_learning.assign_states(signal_matrix, states)
-interpretation = state_learning.interpret_states(states)
-enrichment = state_learning.compute_state_enrichment(assignments, annotations)
+model = state_learning.learn_chromatin_states(signal_matrix, n_states=10)
+assignments = state_learning.assign_states(new_signal_matrix, model)
+interpretation = state_learning.interpret_states(model["emission_params"], mark_names)
+enrichment = state_learning.compute_state_enrichment(assignments, annotations, n_states=10)
 ```

@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import math
 import random
+from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
@@ -312,6 +313,7 @@ def nri_nti(
     tree: dict,
     communities: list[list[str]],
     n_randomizations: int = 999,
+    seed: int | None = None,
 ) -> dict:
     """Compute Net Relatedness Index (NRI) and Nearest Taxon Index (NTI).
 
@@ -335,6 +337,7 @@ def nri_nti(
     """
     all_tips = _get_all_tips(tree)
     pw_dist = _pairwise_distances(tree)
+    rng = random.Random(seed) if seed is not None else random
 
     def _mpd(taxa: list[str]) -> float:
         if len(taxa) < 2:
@@ -382,7 +385,7 @@ def nri_nti(
         null_mpds = []
         null_mntds = []
         for _ in range(n_randomizations):
-            rand_taxa = random.sample(all_tips, min(len(valid_taxa), len(all_tips)))
+            rand_taxa = rng.sample(all_tips, min(len(valid_taxa), len(all_tips)))
             null_mpds.append(_mpd(rand_taxa))
             null_mntds.append(_mntd(rand_taxa))
 
@@ -424,6 +427,7 @@ def phylogenetic_signal(
     tree: dict,
     trait_values: dict,
     method: str = "blomberg_k",
+    seed: int | None = None,
 ) -> dict:
     """Test for phylogenetic signal in a continuous trait.
 
@@ -450,10 +454,11 @@ def phylogenetic_signal(
     traits = [float(trait_values[t]) for t in valid_taxa]
     trait_mean = sum(traits) / n
 
+    rng = random.Random(seed) if seed is not None else random
     if method == "blomberg_k":
-        return _blomberg_k(valid_taxa, traits, trait_mean, pw_dist, n)
+        return _blomberg_k(valid_taxa, traits, trait_mean, pw_dist, n, rng=rng)
     elif method == "pagel_lambda":
-        return _pagel_lambda(valid_taxa, traits, trait_mean, pw_dist, n)
+        return _pagel_lambda(valid_taxa, traits, trait_mean, pw_dist, n, rng=rng)
     else:
         raise ValueError(f"Unknown method '{method}'. Use 'blomberg_k' or 'pagel_lambda'.")
 
@@ -464,6 +469,7 @@ def _blomberg_k(
     trait_mean: float,
     pw_dist: dict[tuple[str, str], float],
     n: int,
+    rng: Any = random,
 ) -> dict:
     """Compute Blomberg's K statistic."""
     # MSE0: observed mean squared error
@@ -492,7 +498,7 @@ def _blomberg_k(
     count_ge = 0
     for _ in range(n_rand):
         perm_traits = list(traits)
-        random.shuffle(perm_traits)
+        rng.shuffle(perm_traits)
         perm_mse0 = sum((t - trait_mean) ** 2 for t in perm_traits) / (n - 1)
 
         tw_diff = 0.0
@@ -529,8 +535,8 @@ def _pagel_lambda(
     trait_mean: float,
     pw_dist: dict[tuple[str, str], float],
     n: int,
+    rng: Any = random,
 ) -> dict:
-    """Approximate Pagel's lambda using correlation of trait differences with distances."""
     # Compute correlation between |trait_i - trait_j| and phylo distance
     diffs = []
     dists = []
@@ -562,7 +568,7 @@ def _pagel_lambda(
     count_ge = 0
     for _ in range(n_rand):
         perm = list(traits)
-        random.shuffle(perm)
+        rng.shuffle(perm)
         perm_diffs = []
         for i in range(n):
             for j in range(i + 1, n):
@@ -757,12 +763,12 @@ def _neighbor_joining(dist: list[list[float]], names: list[str]) -> dict:
                     min_q = q
                     mi, mj = i_idx, j_idx
 
-        # Branch lengths
+        # Branch lengths: clamp bl_i first so the sibling branch keeps the
+        # original distance sum (bl_i + bl_j == d[mi][mj])
         denom = 2.0 * (m - 2) if m > 2 else 2.0
-        bl_i = d[mi][mj] / 2.0 + (r[mi] - r[mj]) / denom
-        bl_j = d[mi][mj] - bl_i
-        bl_i = max(0.0, bl_i)
-        bl_j = max(0.0, bl_j)
+        bl_i = max(0.0, d[mi][mj] / 2.0 + (r[mi] - r[mj]) / denom)
+        bl_i = min(bl_i, d[mi][mj])
+        bl_j = max(0.0, d[mi][mj] - bl_i)
 
         child_i = nodes[mi].copy()
         child_i["branch_length"] = bl_i

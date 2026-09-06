@@ -87,7 +87,9 @@ from metainformant.epigenome.chromatin_state.state_learning import learn_chromat
 from metainformant.epigenome.workflow.workflow import EpigenomeConfig
 
 # GMM-based state learning from histone mark signals
-states = learn_chromatin_states(signal_matrix, n_states=15, mark_names=["H3K4me3", "H3K27ac"])
+model = learn_chromatin_states(signal_matrix, n_states=15)
+
+states = interpret_states(model["emission_params"], mark_names=["H3K4me3", "H3K27ac"])
 
 # Configure integrated pipeline
 config = EpigenomeConfig(

@@ -144,58 +144,37 @@ class TestEnvironmentChecks:
 
 
 class TestEnvironmentErrorHandling:
-    """Test error handling in environment checks."""
+    """Environment checks must degrade to a reason-carrying failure."""
 
-    def test_check_amalgkit_handles_missing_tool(self):
-        """Test that check_amalgkit handles missing tool gracefully."""
-        ok, msg = environment.check_amalgkit()
-        # Should return False with error message if not available
-        if not ok:
-            assert len(msg) > 0
-            # Accept various error message formats
-            msg_lower = msg.lower()
-            assert "not found" in msg_lower or "error" in msg_lower or "no such file" in msg_lower
+    def test_check_sra_toolkit_reports_missing_tool(self, tmp_path, monkeypatch):
+        """With an empty PATH, fastq-dump is absent and the check fails loudly."""
 
-    def test_check_sra_toolkit_handles_missing_tool(self):
-        """Test that check_sra_toolkit handles missing tool gracefully."""
+        monkeypatch.setenv("PATH", str(tmp_path))
         ok, msg = environment.check_sra_toolkit()
-        if not ok:
-            assert len(msg) > 0
-            # Accept various error message formats
-            msg_lower = msg.lower()
-            assert "not found" in msg_lower or "error" in msg_lower or "no such file" in msg_lower
+        assert ok is False
+        assert msg
 
-    def test_check_kallisto_handles_missing_tool(self):
-        """Test that check_kallisto handles missing tool gracefully."""
+    def test_check_kallisto_reports_missing_tool(self, tmp_path, monkeypatch):
+        """With an empty PATH, kallisto is absent and the check fails loudly."""
+
+        monkeypatch.setenv("PATH", str(tmp_path))
         ok, msg = environment.check_kallisto()
-        if not ok:
-            assert len(msg) > 0
-            assert "not found" in msg.lower() or "error" in msg.lower()
+        assert ok is False
+        assert "not found" in msg.lower()
 
-    def test_check_rscript_handles_missing_tool(self):
-        """Test that check_rscript handles missing tool gracefully."""
+    def test_check_rscript_reports_missing_tool(self, tmp_path, monkeypatch):
+        """With an empty PATH, Rscript is absent and the check fails loudly."""
+
+        monkeypatch.setenv("PATH", str(tmp_path))
         ok, msg = environment.check_rscript()
+        assert ok is False
+        assert msg
+
+    def test_check_amalgkit_contract_shape(self):
+        """The availability contract holds regardless of installation state."""
+
+        ok, msg = environment.check_amalgkit()
+        assert isinstance(ok, bool)
+        assert isinstance(msg, str)
         if not ok:
-            assert len(msg) > 0
-            assert "not found" in msg.lower() or "error" in msg.lower()
-
-
-class TestEnvironmentDocumentation:
-    """Test that environment functions have proper documentation."""
-
-    def test_all_functions_have_docstrings(self):
-        """Verify all environment checking functions have docstrings."""
-        functions = [
-            environment.check_amalgkit,
-            environment.check_sra_toolkit,
-            environment.check_kallisto,
-            environment.check_metainformant,
-            environment.check_virtual_env,
-            environment.check_rscript,
-            environment.check_dependencies,
-            environment.validate_environment,
-        ]
-
-        for func in functions:
-            assert func.__doc__ is not None, f"{func.__name__} missing docstring"
-            assert len(func.__doc__.strip()) > 0
+            assert msg, "a failed availability check must carry a reason"

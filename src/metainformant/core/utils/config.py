@@ -62,6 +62,9 @@ def load_postgres_config_from_env(prefix: str = "PG") -> PostgresConfig | None:
     try:
         port = int(port_str)
     except ValueError:
+        from .logging import get_logger
+
+        get_logger(__name__).warning("Invalid %s_PORT value %r; falling back to 5432", prefix, port_str)
         port = 5432
 
     return PostgresConfig(host=host, port=port, database=database, user=user, password=password)
@@ -172,7 +175,10 @@ def load_mapping_from_file(config_path: str | Path) -> dict[str, Any]:
     if suffix == ".json":
         import json
 
-        return dict(json.loads(text))
+        data = json.loads(text)
+        if not isinstance(data, dict):
+            raise ValueError("Top-level JSON must be a mapping")
+        return dict(data)
 
     raise ValueError(f"Unsupported config format: {suffix}")
 

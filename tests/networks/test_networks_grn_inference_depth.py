@@ -29,6 +29,12 @@ from metainformant.networks.regulatory.grn_inference import (
     score_regulators,
     validate_grn,
 )
+from metainformant.networks.regulatory.motif_analysis import (
+    build_pwm,
+    find_tf_binding_motifs,
+    scan_sequence_for_motifs,
+    score_motif_match,
+)
 
 RNG = np.random.default_rng(42)
 
@@ -522,3 +528,85 @@ class TestValidateGrn:
         ]
         result = validate_grn(predicted, known)
         assert result["auroc"] == 1.0
+
+
+class TestMotifAnalysis:
+    """Cover metainformant.networks.regulatory.motif_analysis (no prior coverage)."""
+
+    def test_build_pwm_probabilities_sum_to_one(self) -> None:
+        pwm = build_pwm(["ACGT", "ACGT", "ACGA"])
+        assert len(pwm) == 4
+        for pos in pwm:
+            assert sum(pos.values()) == pytest.approx(1.0)
+        # Position 3 is majority T (two of three sequences end in T)
+        assert pwm[3]["T"] == pytest.approx((2.0 + 0.01) / (3.0 + 4 * 0.01))
+
+    def test_build_pwm_rejects_bad_input(self) -> None:
+        with pytest.raises(ValueError, match="empty"):
+            build_pwm([])
+        with pytest.raises(ValueError, match="equal length"):
+            build_pwm(["ACGT", "AC"])
+
+    def test_score_motif_match(self) -> None:
+        pwm = build_pwm(["ACGTAC"] * 6)
+        # Consensus match scores higher than a poor match
+        good = score_motif_match("ACGTAC", pwm)
+        bad = score_motif_match("TTTTTT", pwm)
+        assert good > bad
+        # Uniform PWM gives exactly zero log-odds
+        uniform = [{nt: 0.25 for nt in "ACGT"} for _ in range(4)]
+        assert score_motif_match("ACGT", uniform) == 0.0
+
+    def test_score_motif_match_short_sequence_raises(self) -> None:
+        pwm = build_pwm(["ACGTAC"])
+        with pytest.raises(ValueError, match="must be >= PWM length"):
+            score_motif_match("ACG", pwm)
+
+    def test_find_tf_binding_motifs_finds_planted_motif(self) -> None:
+        rng = np.random.default_rng(13)
+        bases = "ACGT"
+        sequences = []
+        for _ in range(12):
+            flank1 = "".join(rng.choice(list(bases)) for _ in range(10))
+            flank2 = "".join(rng.choice(list(bases)) for _ in range(10))
+            sequences.append(flank1 + "TACGTA" + flank2)
+        motifs = find_tf_binding_motifs(sequences, k_min=6, k_max=6, top_n=5)
+        assert motifs, "planted motif should be discovered"
+        top = motifs[0]
+        assert top["n_occurrences"] >= 1
+        assert 0.0 <= top["p_value"] <= 1.0
+        assert len(top["pwm"]) == 6
+        assert all(c in "ACGT" for c in top["consensus"])
+
+    def test_find_tf_binding_motifs_rejects_bad_input(self) -> None:
+        with pytest.raises(ValueError, match="empty"):
+            find_tf_binding_motifs([])
+        with pytest.raises(ValueError, match="Unsupported method"):
+            find_tf_binding_motifs(["ACGTAC"], method="gibbs")
+
+    def test_scan_sequence_for_motifs_forward_and_reverse(self) -> None:
+        # Palindromic motif: matches on both strands at the same site
+        pwm = build_pwm(["TACGTA"] * 5)
+        seq = "GGGGTACGTAGGG"
+        matches = scan_sequence_for_motifs(seq, {"M1": pwm}, threshold=0.9)
+        forward = [m for m in matches if m["strand"] == "+"]
+        assert any(m["position"] == 4 for m in forward)
+
+        # Non-palindromic motif (rc of ACGTAC is GTACGT): verify strand handling
+        pwm2 = build_pwm(["ACGTAC"] * 5)
+        seq2 = "GGGGGTACGTAAA"
+        matches2 = scan_sequence_for_motifs(seq2, {"M2": pwm2}, threshold=0.9)
+        reverse = [m for m in matches2 if m["strand"] == "-"]
+        assert reverse, "reverse-complement match should be reported"
+        for m in reverse:
+            assert 0 <= m["position"] <= len(seq2) - 6
+
+        # Forward-only scan must never report reverse-strand matches
+        forward_only = scan_sequence_for_motifs(seq2, {"M2": pwm2}, threshold=0.9, scan_reverse=False)
+        assert all(m["strand"] == "+" for m in forward_only)
+
+    def test_scan_sequence_for_motifs_rejects_empty(self) -> None:
+        with pytest.raises(ValueError, match="sequence must not be empty"):
+            scan_sequence_for_motifs("", {"M1": build_pwm(["ACGT"])})
+        with pytest.raises(ValueError, match="motif_library must not be empty"):
+            scan_sequence_for_motifs("ACGTACGT", {})

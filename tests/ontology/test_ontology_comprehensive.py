@@ -240,3 +240,127 @@ class TestEdgeCases:
 
         with pytest.raises(TermNotFoundError, match="not found in ontology"):
             ancestors(onto, "GO:0008150")
+
+
+class TestGoEnrichment:
+    """Tests for enrich_genes in core.go."""
+
+    def _annotations(self):
+        return {
+            "GO:0001": {f"GENE{i}" for i in range(1, 11)},
+            "GO:0002": {f"GENE{i}" for i in range(11, 31)},
+        }
+
+    def test_fisher_enrichment_finds_enriched_term(self):
+        from metainformant.ontology.core.go import enrich_genes
+
+        genes = [f"GENE{i}" for i in range(1, 6)]
+        background = [f"GENE{i}" for i in range(1, 51)]
+        df = enrich_genes(genes, background, self._annotations(), method="fisher")
+        assert not df.empty
+        top = df.iloc[0]
+        assert top["go_term"] == "GO:0001"
+        assert top["observed"] == 5
+        assert top["p_value"] < 0.05
+        assert 0.0 <= top["bonferroni_p"] <= 1.0
+
+    def test_hypergeometric_method_matches_fisher_direction(self):
+        from metainformant.ontology.core.go import enrich_genes
+
+        genes = [f"GENE{i}" for i in range(1, 6)]
+        background = [f"GENE{i}" for i in range(1, 51)]
+        df = enrich_genes(genes, background, self._annotations(), method="hypergeometric")
+        assert not df.empty
+        assert df.iloc[0]["go_term"] == "GO:0001"
+
+    def test_invalid_method_raises(self):
+        from metainformant.ontology.core.go import enrich_genes
+
+        with pytest.raises(ValueError, match="Unsupported method"):
+            enrich_genes(["GENE1"], None, self._annotations(), method="chi2")
+
+    def test_genes_outside_background_filtered(self):
+        from metainformant.ontology.core.go import enrich_genes
+
+        df = enrich_genes(["NOGENE1", "NOGENE2"], ["GENE1"], self._annotations())
+        assert df.empty
+
+
+class TestSemanticSimilarity:
+    """Tests for semantic_similarity in core.go."""
+
+    def _inputs(self):
+        term_ic = {"A": 0.1, "B": 1.0, "C": 2.0}
+        hierarchy = {"B": {"A"}, "C": {"A", "B"}}
+        return term_ic, hierarchy
+
+    def test_resnik_is_mica_ic(self):
+        from metainformant.ontology.core.go import semantic_similarity
+
+        term_ic, hierarchy = self._inputs()
+        assert semantic_similarity("B", "C", term_ic, hierarchy, method="resnik") == pytest.approx(1.0)
+
+    def test_lin(self):
+        from metainformant.ontology.core.go import semantic_similarity
+
+        term_ic, hierarchy = self._inputs()
+        assert semantic_similarity("B", "C", term_ic, hierarchy, method="lin") == pytest.approx(2 / 3)
+
+    def test_jiang_conrath_bounded(self):
+        from metainformant.ontology.core.go import semantic_similarity
+
+        term_ic, hierarchy = self._inputs()
+        sim = semantic_similarity("B", "C", term_ic, hierarchy, method="jiang-conrath")
+        assert 0.0 <= sim <= 1.0
+        assert sim == pytest.approx(0.75)
+
+    def test_missing_term_returns_zero(self):
+        from metainformant.ontology.core.go import semantic_similarity
+
+        term_ic, hierarchy = self._inputs()
+        assert semantic_similarity("B", "MISSING", term_ic, hierarchy) == 0.0
+
+    def test_invalid_method_raises(self):
+        from metainformant.ontology.core.go import semantic_similarity
+
+        term_ic, hierarchy = self._inputs()
+        with pytest.raises(ValueError, match="Unsupported method"):
+            semantic_similarity("B", "C", term_ic, hierarchy, method="cosine")
+
+
+class TestTermIcAndHierarchy:
+    """Tests for calculate_term_ic and build_hierarchy_dict."""
+
+    def test_calculate_term_ic(self):
+        import math
+
+        from metainformant.ontology.core.go import calculate_term_ic
+
+        onto = Ontology()
+        onto.add_term(Term(term_id="A", name="root"))
+        onto.add_term(Term(term_id="B", name="child", is_a_parents=["A"]))
+        ic = calculate_term_ic(onto, {"B": 1}, total_annotations=2)
+        assert ic["B"] == pytest.approx(-math.log2(0.5))
+        assert ic["A"] == 0.0
+
+    def test_build_hierarchy_dict(self):
+        from metainformant.ontology.core.go import build_hierarchy_dict
+
+        onto = Ontology()
+        onto.add_term(Term(term_id="A", name="root"))
+        onto.add_term(Term(term_id="B", name="child", is_a_parents=["A"]))
+        hierarchy = build_hierarchy_dict(onto)
+        assert hierarchy["B"] == {"A"}
+        assert hierarchy["A"] == set()
+
+
+class TestCountGoScripts:
+    """Tests for count_go_scripts."""
+
+    def test_counts_go_named_scripts(self, tmp_path: Path):
+        from metainformant.ontology.core.go import count_go_scripts
+
+        (tmp_path / "go_analysis.py").write_text("print('go')")
+        (tmp_path / "helper.r").write_text("x <- 1")
+        (tmp_path / "notes.txt").write_text("not a script")
+        assert count_go_scripts(tmp_path) == 1

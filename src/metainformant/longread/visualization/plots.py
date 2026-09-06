@@ -59,8 +59,10 @@ def _apply_style() -> None:
     """Apply consistent plot styling."""
     if HAS_SEABORN:
         sns.set_theme(style="whitegrid", palette="deep")
+    elif "seaborn-v0_8-whitegrid" in plt.style.available:
+        plt.style.use("seaborn-v0_8-whitegrid")
     else:
-        plt.style.use("seaborn-v0_8-whitegrid") if "seaborn-v0_8-whitegrid" in plt.style.available else None
+        logger.debug("seaborn style unavailable; using default matplotlib styling")
 
 
 def plot_read_length_histogram(
@@ -97,8 +99,16 @@ def plot_read_length_histogram(
     # Extract lengths
     lengths = _extract_lengths(reads)
     if not lengths:
-        logger.warning("No read lengths to plot")
-        return Path(output_path)
+        logger.warning("No read lengths to plot; saving empty plot")
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.set_title(title)
+        ax.set_xlabel("Read length (bp)")
+        ax.set_ylabel("Count")
+        fig.savefig(output_path, dpi=300, bbox_inches="tight")
+        plt.close(fig)
+        return output_path
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -215,8 +225,16 @@ def plot_quality_vs_length(
             qualities.append(qual)
 
     if not lengths:
-        logger.warning("No reads with both length and quality data")
-        return Path(output_path)
+        logger.warning("No reads with both length and quality data; saving empty plot")
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.set_title(title)
+        ax.set_xlabel("Read Length (bp)")
+        ax.set_ylabel("Mean Quality Score (Phred)")
+        fig.savefig(output_path, dpi=300, bbox_inches="tight")
+        plt.close(fig)
+        return output_path
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)

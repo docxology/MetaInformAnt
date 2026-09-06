@@ -323,6 +323,21 @@ class TestCheckContraindications:
         result = check_contraindications("aspirin", "Poor Metabolizer")
         assert result["contraindicated"] is False
 
+    def test_severity_reflects_highest_gene_interaction(self) -> None:
+        # warfarin/CYP2C9 PM is major but not contraindicated; the reported
+        # severity must use clinical ordering, not string comparison.
+        result = check_contraindications("warfarin", "Poor Metabolizer")
+        assert result["contraindicated"] is False
+        assert result["severity"] == "Major"
+        assert "dose modification" in result["overall_recommendation"]
+
+    def test_contraindicated_reports_major_severity(self) -> None:
+        result = check_contraindications("voriconazole", "Ultrarapid Metabolizer")
+        assert result["contraindicated"] is True
+        assert result["severity"] == "Major"
+        assert len(result["gene_interactions"]) == 1
+        assert result["gene_interactions"][0]["gene"] == "CYP2C19"
+
 
 class TestPolypharmacyAnalysis:
     """Tests for polypharmacy analysis."""

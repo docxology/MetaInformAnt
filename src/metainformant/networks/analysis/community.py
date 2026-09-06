@@ -55,6 +55,46 @@ def _as_networkx_graph(graph: Any) -> Any:
     return graph
 
 
+def _trivial_partition(graph: Any) -> list[list[str]] | None:
+    """Return the trivial partition for empty or edgeless graphs, else None."""
+    if graph.number_of_nodes() == 0:
+        return []
+    if graph.number_of_edges() == 0:
+        return [[node] for node in graph.nodes()]
+    return None
+
+
+def _communities_sorted_by_size(communities: Any) -> list[list[str]]:
+    """Convert communities (frozensets, lists, ...) to lists sorted largest first."""
+    community_lists = [list(community) for community in communities]
+    community_lists.sort(key=len, reverse=True)
+    return community_lists
+
+
+def _community_size_stats(community_sizes: list[int]) -> dict[str, Any]:
+    """Build the shared community-size statistics block."""
+    return {
+        "mean": float(np.mean(community_sizes)),
+        "std": float(np.std(community_sizes)),
+        "min": int(np.min(community_sizes)),
+        "max": int(np.max(community_sizes)),
+        "sizes": community_sizes,
+    }
+
+
+def _collect_conductances(graph: Any, community_lists: list[list[str]]) -> list[float]:
+    """Compute conductance per community, skipping failures and whole-graph sets."""
+    conductances: list[float] = []
+    for community in community_lists:
+        if len(community) < len(graph.nodes()):
+            try:
+                conductance = nx.algorithms.cuts.conductance(graph, community)
+                conductances.append(conductance)
+            except (nx.NetworkXError, ZeroDivisionError):
+                pass
+    return conductances
+
+
 def _communities_to_lists(communities: Any, graph: Any | None = None) -> list[list[str]]:
     """Normalize community mappings or iterable communities to list-of-lists."""
     valid_nodes = set(graph.nodes()) if graph is not None and hasattr(graph, "nodes") else None
@@ -112,10 +152,9 @@ def louvain_communities(
         raise ImportError("python-louvain required for Louvain method")
 
     graph = _as_networkx_graph(graph)
-    if graph.number_of_nodes() == 0:
-        return []
-    if graph.number_of_edges() == 0:
-        return [[node] for node in graph.nodes()]
+    trivial = _trivial_partition(graph)
+    if trivial is not None:
+        return trivial
 
     # Set random seed if provided
     if random_state is not None:
@@ -125,16 +164,11 @@ def louvain_communities(
     # Run Louvain algorithm
     partition = community_louvain.best_partition(graph, resolution=resolution, randomize=randomize, **kwargs)
 
-    # Convert partition to community lists
-    communities: dict[Any, list[Any]] = {}
+    # Convert partition to community lists, sorted by size (largest first)
+    grouped: dict[Any, list[Any]] = {}
     for node, community_id in partition.items():
-        if community_id not in communities:
-            communities[community_id] = []
-        communities[community_id].append(node)
-
-    # Sort communities by size (largest first)
-    community_lists = list(communities.values())
-    community_lists.sort(key=len, reverse=True)
+        grouped.setdefault(community_id, []).append(node)
+    community_lists = _communities_sorted_by_size(grouped.values())
 
     logger.info(f"Louvain detected {len(community_lists)} communities")
     return community_lists
@@ -165,10 +199,9 @@ def leiden_communities(
         raise ImportError("networkx required for community detection")
 
     graph = _as_networkx_graph(graph)
-    if graph.number_of_nodes() == 0:
-        return []
-    if graph.number_of_edges() == 0:
-        return [[node] for node in graph.nodes()]
+    trivial = _trivial_partition(graph)
+    if trivial is not None:
+        return trivial
 
     try:
         import igraph as ig  # noqa: F401
@@ -191,11 +224,8 @@ def leiden_communities(
         ig_graph, la.ModularityVertexPartition, resolution_parameter=resolution, n_iterations=n_iterations, **kwargs
     )
 
-    # Convert back to community lists
-    communities = [list(partition.subgraph(i).vs["name"]) for i in range(len(partition))]
-
-    # Sort by size
-    communities.sort(key=len, reverse=True)
+    # Convert back to community lists, sorted by size
+    communities = _communities_sorted_by_size(partition.subgraph(i).vs["name"] for i in range(len(partition)))
 
     logger.info(f"Leiden detected {len(communities)} communities")
     return communities
@@ -259,10 +289,9 @@ def greedy_modularity_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
         raise ImportError("networkx required for community detection")
 
     graph = _as_networkx_graph(graph)
-    if graph.number_of_nodes() == 0:
-        return []
-    if graph.number_of_edges() == 0:
-        return [[node] for node in graph.nodes()]
+    trivial = _trivial_partition(graph)
+    if trivial is not None:
+        return trivial
 
     greedy_kwargs = _networkx_greedy_kwargs(kwargs)
     try:
@@ -272,8 +301,7 @@ def greedy_modularity_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
         communities = list(nx.algorithms.community.modularity_max.greedy_modularity_communities(graph, **greedy_kwargs))
 
     # Convert frozensets to lists and sort by size
-    community_lists = [list(comm) for comm in communities]
-    community_lists.sort(key=len, reverse=True)
+    community_lists = _communities_sorted_by_size(communities)
 
     logger.info(f"Greedy modularity detected {len(community_lists)} communities")
     return community_lists
@@ -316,8 +344,7 @@ def girvan_newman_communities(graph: Any, n_communities: Optional[int] = None, *
                 break
 
     # Convert to lists and sort by size
-    community_lists = [list(comm) for comm in communities]
-    community_lists.sort(key=len, reverse=True)
+    community_lists = _communities_sorted_by_size(communities)
 
     logger.info(f"Girvan-Newman detected {len(community_lists)} communities")
     return community_lists
@@ -343,16 +370,14 @@ def label_propagation_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
         raise ImportError("networkx required for community detection")
 
     graph = _as_networkx_graph(graph)
-    if graph.number_of_nodes() == 0:
-        return []
-    if graph.number_of_edges() == 0:
-        return [[node] for node in graph.nodes()]
+    trivial = _trivial_partition(graph)
+    if trivial is not None:
+        return trivial
 
     communities = list(nx.algorithms.community.label_propagation_communities(graph, **kwargs))
 
     # Convert frozensets to lists and sort by size
-    community_lists = [list(comm) for comm in communities]
-    community_lists.sort(key=len, reverse=True)
+    community_lists = _communities_sorted_by_size(communities)
 
     logger.info(f"Label propagation detected {len(community_lists)} communities")
     return community_lists
@@ -375,16 +400,14 @@ def asyn_lpa_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
         raise ImportError("networkx required for community detection")
 
     graph = _as_networkx_graph(graph)
-    if graph.number_of_nodes() == 0:
-        return []
-    if graph.number_of_edges() == 0:
-        return [[node] for node in graph.nodes()]
+    trivial = _trivial_partition(graph)
+    if trivial is not None:
+        return trivial
 
     communities = list(nx.algorithms.community.asyn_lpa_communities(graph, **kwargs))
 
     # Convert to lists and sort by size
-    community_lists = [list(comm) for comm in communities]
-    community_lists.sort(key=len, reverse=True)
+    community_lists = _communities_sorted_by_size(communities)
 
     logger.info(f"Asynchronous LPA detected {len(community_lists)} communities")
     return community_lists
@@ -414,8 +437,7 @@ def fluid_communities(graph: Any, k: int, **kwargs: Any) -> List[List[str]]:
     communities = list(nx.algorithms.community.asyn_fluidc(graph, k, **kwargs))
 
     # Convert to lists and sort by size
-    community_lists = [list(comm) for comm in communities]
-    community_lists.sort(key=len, reverse=True)
+    community_lists = _communities_sorted_by_size(communities)
 
     logger.info(f"Fluid communities detected {len(community_lists)} communities")
     return community_lists
@@ -522,25 +544,12 @@ def evaluate_communities(graph: Any, communities: List[List[str]] | Dict[str, in
     evaluation = {
         "n_communities": n_communities,
         "modularity": modularity,
-        "community_sizes": {
-            "mean": float(np.mean(community_sizes)),
-            "std": float(np.std(community_sizes)),
-            "min": int(np.min(community_sizes)),
-            "max": int(np.max(community_sizes)),
-            "sizes": community_sizes,
-        },
+        "community_sizes": _community_size_stats(community_sizes),
         "coverage": sum(community_sizes) / len(graph.nodes()) if graph.nodes() else 0,
     }
 
     # Calculate conductance for each community
-    conductances = []
-    for community in communities:
-        if len(community) < len(graph.nodes()):
-            try:
-                conductance = nx.algorithms.cuts.conductance(graph, community)
-                conductances.append(conductance)
-            except (nx.NetworkXError, ZeroDivisionError):
-                pass
+    conductances = _collect_conductances(graph, communities)
 
     if conductances:
         evaluation["conductance"] = {
@@ -842,13 +851,7 @@ def community_metrics(graph: Any, communities: List[List[str]]) -> Dict[str, Any
 
     metrics["n_communities"] = len(community_lists)
     metrics["num_communities"] = len(community_lists)
-    metrics["community_sizes"] = {
-        "mean": float(np.mean(community_sizes)),
-        "std": float(np.std(community_sizes)),
-        "min": int(np.min(community_sizes)),
-        "max": int(np.max(community_sizes)),
-        "sizes": community_sizes,
-    }
+    metrics["community_sizes"] = _community_size_stats(community_sizes)
 
     # Modularity
     try:
@@ -868,14 +871,7 @@ def community_metrics(graph: Any, communities: List[List[str]]) -> Dict[str, Any
     metrics["internal_edge_ratio"] = internal_edges / total_edges if total_edges else 0.0
 
     # Conductance for each community
-    conductances = []
-    for community in community_lists:
-        if len(community) < len(graph.nodes()):
-            try:
-                conductance = nx.algorithms.cuts.conductance(graph, community)
-                conductances.append(conductance)
-            except (nx.NetworkXError, ZeroDivisionError):
-                pass
+    conductances = _collect_conductances(graph, community_lists)
 
     if conductances:
         metrics["conductance"] = {

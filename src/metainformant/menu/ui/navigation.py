@@ -122,17 +122,13 @@ class MenuSystem:
         Returns:
             True if navigation successful, False if at root
         """
-        result = self.history.pop()
-        if result is None:
+        if len(self.history.menu_ids) <= 1:
             return False
 
-        # Pop current menu, get previous
-        if self.history.menu_ids:
-            prev_menu_id = self.history.menu_ids[-1]
-            self.current_menu_id = prev_menu_id
-            return True
-
-        return False
+        # Pop current menu, land on the previous one
+        self.history.pop()
+        self.current_menu_id = self.history.menu_ids[-1]
+        return True
 
 
 def navigate_to_submenu(menu_system: MenuSystem, submenu_id: str) -> None:

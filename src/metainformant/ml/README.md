@@ -70,8 +70,9 @@ X_umap = umap_reduction(X, n_components=2, n_neighbors=15)
 
 ```python
 from metainformant.ml.llm.ollama.client import OllamaClient
+from metainformant.ml.llm.ollama.config import OllamaConfig
 
-client = OllamaClient(base_url="http://localhost:11434")
+client = OllamaClient(OllamaConfig(host="http://localhost:11434", model="llama3"))
 response = client.generate("Summarize this gene annotation", model="llama3")
 print(response.text, response.tokens_per_second)
 ```

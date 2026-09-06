@@ -17,9 +17,11 @@ import pytest
 
 from metainformant.math.core.utilities import (
     correlation_coefficient,
+    covariance,
     fisher_exact_test,
     jensen_shannon_divergence,
     linear_regression,
+    r_squared,
     shannon_entropy,
 )
 
@@ -313,3 +315,41 @@ class TestJensenShannonDivergence:
         q = np.random.dirichlet([1] * 10)
         divergence = jensen_shannon_divergence(p.tolist(), q.tolist())
         assert 0 <= divergence <= 1.0
+
+
+class TestRSquared:
+    """Test r_squared function (regression and LD modes)."""
+
+    def test_regression_mode_perfect_fit(self):
+        x = [1.0, 2.0, 3.0, 4.0]
+        y = [2.0, 4.0, 6.0, 8.0]
+        assert r_squared(x, y) == pytest.approx(1.0)
+
+    def test_regression_mode_requires_y(self):
+        with pytest.raises(ValueError, match="y is required"):
+            r_squared([1.0, 2.0, 3.0])
+
+    def test_ld_mode_known_value(self):
+        # D = 0.5 - 0.6*0.7 = 0.08; r2 = D^2 / (0.6*0.4*0.7*0.3)
+        expected = (0.08**2) / (0.6 * 0.4 * 0.7 * 0.3)
+        assert r_squared(0.6, 0.4, 0.7, 0.3, 0.5) == pytest.approx(expected)
+
+    def test_ld_mode_zero_denominator(self):
+        # Any zero allele frequency makes the denominator 0
+        assert r_squared(0.0, 1.0, 0.7, 0.3, 0.0) == 0.0
+
+
+class TestCovariance:
+    """Test covariance function."""
+
+    def test_perfect_linear_relationship(self):
+        x = [1.0, 2.0, 3.0, 4.0]
+        y = [2.0, 4.0, 6.0, 8.0]
+        assert covariance(x, y) == pytest.approx(2.5)  # population covariance (ddof=0)
+
+    def test_mismatched_lengths_raise(self):
+        with pytest.raises(ValueError, match="equal length"):
+            covariance([1.0, 2.0], [1.0])
+
+    def test_too_few_points_returns_zero(self):
+        assert covariance([1.0], [2.0]) == 0.0

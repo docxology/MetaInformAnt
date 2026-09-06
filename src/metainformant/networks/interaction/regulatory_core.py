@@ -273,13 +273,14 @@ def analyze_regulatory_dynamics(
 
     # Simple regulatory dynamics simulation
     # Each node's state is influenced by its regulators
+    node_index = {node: i for i, node in enumerate(nodes)}
     for t in range(1, time_steps + 1):
         for i, node in enumerate(nodes):
             regulators = list(regulatory_graph.predecessors(node))
 
             if regulators:
                 # Simple averaging of regulator states
-                regulator_states = [states[t - 1, nodes.index(reg)] for reg in regulators]
+                regulator_states = [states[t - 1, node_index[reg]] for reg in regulators]
                 new_state = np.mean(regulator_states)
 
                 # Add some noise and decay
@@ -440,6 +441,12 @@ def export_regulatory_network(regulatory_graph: Any, output_file: str, format: s
     logger.info(f"Exported regulatory network to {output_file} ({format} format)")
 
 
+def _register_regulation(network: "GeneRegulatoryNetwork", tf: str, target: str) -> None:
+    """Record a TF->target regulation in the network's TF/target mappings."""
+    network.tf_targets.setdefault(tf, []).append(target)
+    network.target_tfs.setdefault(target, []).append(tf)
+
+
 class GeneRegulatoryNetwork:
     """A gene regulatory network class for analyzing transcriptional regulation.
 
@@ -537,18 +544,8 @@ class GeneRegulatoryNetwork:
                     tf = parts[0]
                     target = parts[1]
                     confidence = float(parts[2]) if len(parts) > 2 else 1.0
-
-                    # Add edge from TF to target
                     network.graph.add_edge(tf, target, weight=confidence, type="regulates")
-
-                    # Update mappings
-                    if tf not in network.tf_targets:
-                        network.tf_targets[tf] = []
-                    network.tf_targets[tf].append(target)
-
-                    if target not in network.target_tfs:
-                        network.target_tfs[target] = []
-                    network.target_tfs[target].append(tf)
+                    _register_regulation(network, tf, target)
 
         network.metadata["source_file"] = str(filepath)
         network.metadata["n_regulations"] = len(network.graph.edges())
@@ -575,15 +572,7 @@ class GeneRegulatoryNetwork:
 
         for tf, target, confidence in interactions:
             network.graph.add_edge(tf, target, weight=confidence, type="regulates")
-
-            # Update mappings
-            if tf not in network.tf_targets:
-                network.tf_targets[tf] = []
-            network.tf_targets[tf].append(target)
-
-            if target not in network.target_tfs:
-                network.target_tfs[target] = []
-            network.target_tfs[target].append(tf)
+            _register_regulation(network, tf, target)
 
         network.metadata["n_regulations"] = len(interactions)
         network.metadata["n_tfs"] = len(network.tf_targets)

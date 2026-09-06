@@ -28,7 +28,7 @@ Functional metagenomics analysis providing ORF prediction, HMM-based gene annota
 from metainformant.metagenomics.functional import annotation, pathways
 
 orfs = annotation.predict_orfs(contigs, min_length=100)
-annotations = annotation.annotate_genes(orfs, database="KEGG")
-pathway_results = pathways.reconstruct_pathways(annotations)
-completeness = pathways.calculate_pathway_completeness(pathway_results)
+annotations = annotation.annotate_genes(protein_sequences, hmm_db=profiles)
+pathway_results = pathways.reconstruct_pathways(gene_to_kos)
+completeness = pathways.calculate_pathway_completeness(pathway_def, observed_kos)
 ```

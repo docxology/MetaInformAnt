@@ -161,9 +161,7 @@ def export_network(graph: Any, filepath: str | Path, format: str = "json") -> No
     if not HAS_NETWORKX:
         raise ImportError("networkx required for network export")
 
-    # Handle BiologicalNetwork
-    if isinstance(graph, BiologicalNetwork):
-        graph = graph.graph
+    graph = _as_networkx_graph(graph)
 
     filepath = Path(filepath)
 
@@ -263,10 +261,11 @@ def network_similarity(graph1: Any, graph2: Any, method: str = "summary") -> Dic
     Args:
         graph1: First network (NetworkX graph or BiologicalNetwork)
         graph2: Second network (NetworkX graph or BiologicalNetwork)
-        method: Similarity method ('jaccard', 'dice', 'overlap')
-
+        method: Similarity method ('summary', 'jaccard', 'dice', 'overlap').
+            'summary' returns node and edge Jaccard scores as a dict; the
+            others return a single float score.
     Returns:
-        Similarity score between 0 and 1
+        Similarity score between 0 and 1 (float), or a dict of scores for 'summary'
     """
     if not HAS_NETWORKX:
         raise ImportError("networkx required for network similarity")
@@ -324,13 +323,8 @@ def extract_subgraph(graph: Any, nodes: List[str]) -> BiologicalNetwork:
     if not HAS_NETWORKX:
         raise ImportError("networkx required for subgraph extraction")
 
-    # Handle BiologicalNetwork
-    if isinstance(graph, BiologicalNetwork):
-        source_graph = graph.graph
-        directed = graph.is_directed()
-    else:
-        source_graph = graph
-        directed = source_graph.is_directed()
+    source_graph = _as_networkx_graph(graph)
+    directed = source_graph.is_directed()
 
     sg = source_graph.subgraph(nodes)
 
@@ -365,15 +359,9 @@ def filter_network(
     if min_edge_weight is not None:
         min_weight = min_edge_weight
 
-    # Handle BiologicalNetwork
-    if isinstance(graph, BiologicalNetwork):
-        source_graph = graph.graph
-        directed = graph.is_directed()
-        metadata = graph.metadata
-    else:
-        source_graph = graph
-        directed = source_graph.is_directed()
-        metadata = {}
+    source_graph = _as_networkx_graph(graph)
+    directed = source_graph.is_directed()
+    metadata = graph.metadata if isinstance(graph, BiologicalNetwork) else {}
 
     # Create copy to modify
     filtered_graph = source_graph.copy()
@@ -418,9 +406,7 @@ def get_connected_components(graph: Any) -> List[List[str]]:
     if not HAS_NETWORKX:
         raise ImportError("networkx required for connected components")
 
-    # Handle BiologicalNetwork
-    if isinstance(graph, BiologicalNetwork):
-        graph = graph.graph
+    graph = _as_networkx_graph(graph)
 
     if graph.is_directed():
         components = list(nx.weakly_connected_components(graph))
@@ -608,15 +594,9 @@ def shortest_paths(graph: Any, source: str | None = None, target: str | None = N
 
 def remove_node(graph: Any, node: str) -> None:
     """Remove a node from a BiologicalNetwork or NetworkX graph."""
-    if isinstance(graph, BiologicalNetwork):
-        graph.remove_node(node)
-    else:
-        graph.remove_node(node)
+    graph.remove_node(node)
 
 
 def remove_edge(graph: Any, source: str, target: str) -> None:
     """Remove an edge from a BiologicalNetwork or NetworkX graph."""
-    if isinstance(graph, BiologicalNetwork):
-        graph.remove_edge(source, target)
-    else:
-        graph.remove_edge(source, target)
+    graph.remove_edge(source, target)

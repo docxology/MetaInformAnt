@@ -265,3 +265,31 @@ class TestBiomarkerDiscovery:
         counts, groups, taxa = simple_count_matrix
         with pytest.raises(ValueError, match="Invalid method"):
             biomarker_discovery(counts, groups, taxa, method="xgboost")
+
+
+class TestBiomarkerDiscoveryValidation:
+    """Input validation for biomarker discovery."""
+
+    def test_mismatched_groups_length_raises(
+        self,
+        simple_count_matrix: tuple[list[list[int]], list[int], list[str]],
+    ) -> None:
+        counts, _, taxa = simple_count_matrix
+        with pytest.raises(ValueError, match="groups length"):
+            biomarker_discovery(counts, [0, 0], taxa)
+
+
+class TestDifferentialAbundanceDirection:
+    """Fold-change direction must match group dominance."""
+
+    def test_log2fc_direction(
+        self,
+        count_matrix_two_groups: tuple[list[list[int]], list[int], list[str]],
+    ) -> None:
+        counts, groups, taxa = count_matrix_two_groups
+        results = differential_abundance(counts, groups, taxa, method="aldex2_like")
+        by_taxon = {r["taxon"]: r for r in results}
+        # log2fc = log2((mean_group0 + 1) / (mean_group1 + 1)):
+        # taxon_A dominates group 0 -> positive; taxon_B dominates group 1 -> negative
+        assert by_taxon["taxon_A"]["log2fc"] > 0
+        assert by_taxon["taxon_B"]["log2fc"] < 0

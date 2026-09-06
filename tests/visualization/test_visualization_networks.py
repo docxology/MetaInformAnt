@@ -232,3 +232,69 @@ class TestPlotCommunityNetwork:
 
         with pytest.raises(ImportError, match="NetworkX required"):
             plot_community_network(invalid_graph, communities)
+
+
+class TestKwargsForwarding:
+    """Regression: style and layout kwargs must not leak into nx.draw as duplicates."""
+
+    def test_basic_network_accepts_style_kwargs(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        G = nx.path_graph(4)
+
+        ax = plot_network_basic(G, node_size=50, with_labels=False)
+        assert ax is not None
+        plt.close("all")
+
+    def test_force_directed_accepts_layout_kwargs(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        G = nx.path_graph(4)
+
+        ax = plot_network_force_directed(G, layout_kwargs={"seed": 1})
+        assert ax is not None
+        plt.close("all")
+
+    def test_basic_network_accepts_layout_kwargs(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        G = nx.path_graph(4)
+
+        ax = plot_network_basic(G, layout_kwargs={"seed": 2})
+        assert ax is not None
+        plt.close("all")
+
+    def test_circular_network_accepts_style_kwargs(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        G = nx.path_graph(4)
+
+        ax = plot_network_circular(G, node_color="red", width=2)
+        assert ax is not None
+        plt.close("all")
+
+    def test_community_network_unassigned_legend_entry(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        G = nx.path_graph(4)
+        communities = {"0": 0, "1": 0, "2": 1}  # node "3" unassigned
+
+        ax = plot_community_network(G, communities)
+        legend_texts = [text.get_text() for text in ax.get_legend().get_texts()]
+        assert any("Unassigned" in text for text in legend_texts)
+        plt.close("all")

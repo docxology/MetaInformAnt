@@ -202,14 +202,31 @@ class TestIdentifyWithAdducts:
         mz = 180.0634 + COMMON_ADDUCTS["[M-H]-"]
         results = identify_with_adducts(np.array([mz]), db, ppm_tolerance=10.0, ion_mode="negative")
         assert len(results) == 1
-        if results[0]:
-            assert all("-" in m.adduct_type for m in results[0])
+        assert results[0]
+        assert all(m.adduct_type.endswith("]-") for m in results[0])
 
     def test_custom_adducts(self) -> None:
         db = {"test_met": 100.0}
         custom = {"[M+2H]2+": 1.00728}
         results = identify_with_adducts(np.array([101.00728]), db, adducts=custom, ppm_tolerance=10.0)
         assert len(results) == 1
+
+    def test_positive_mode_excludes_negative_adducts(self) -> None:
+        """Default positive-mode adducts must not include negative-mode ions."""
+        db = {"formate_only": 155.0}
+        mz = 155.0 + COMMON_ADDUCTS["[M+FA-H]-"]
+        results = identify_with_adducts(np.array([mz]), db, ppm_tolerance=10.0, ion_mode="positive")
+        assert all(m.adduct_type.endswith("]+") for matches in results for m in matches)
+
+    def test_negative_mode_matches_formate_adduct(self) -> None:
+        """[M+FA-H]- remains available in negative mode."""
+        db = {"analyte": 155.0}
+        mz = 155.0 + COMMON_ADDUCTS["[M+FA-H]-"]
+        results = identify_with_adducts(np.array([mz]), db, ppm_tolerance=10.0, ion_mode="negative")
+        matched = [m for m in results[0] if m.adduct_type == "[M+FA-H]-"]
+        assert matched
+        assert matched[0].matched_name == "analyte"
+        assert matched[0].delta_ppm == pytest.approx(0.0, abs=1e-3)
 
 
 class TestMissingValueImputation:

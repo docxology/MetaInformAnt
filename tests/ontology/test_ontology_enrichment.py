@@ -252,3 +252,75 @@ class TestCompareEnrichments:
     def test_empty_results(self):
         result = compare_enrichments([], [])
         assert len(result["shared_terms"]) == 0
+
+
+class TestInternalStatsHelpers:
+    """Test log-combinatoric and multiple-testing helpers with known values."""
+
+    def test_log_comb_known_values(self):
+        import math
+
+        from metainformant.ontology.pathway_enrichment.enrichment import _log_comb
+
+        assert _log_comb(5, 2) == pytest.approx(math.log(10))
+        assert _log_comb(10, 0) == 0.0
+        assert _log_comb(10, 11) == float("-inf")
+
+    def test_hypergeometric_sf_known_value(self):
+        from metainformant.ontology.pathway_enrichment.enrichment import _hypergeometric_sf
+
+        # P(X >= 1), X ~ Hypergeometric(M=10, n=5, N=5): 1 - C(5,0)C(5,5)/C(10,5) = 1 - 1/252
+        assert _hypergeometric_sf(1, 10, 5, 5) == pytest.approx(1 - 1 / 252)
+        assert _hypergeometric_sf(0, 10, 5, 5) == 1.0
+
+    def test_fdr_correction_matches_bh(self):
+        from metainformant.ontology.pathway_enrichment.enrichment import _fdr_correction
+
+        p = [0.01, 0.04, 0.03, 0.005]
+        adj = _fdr_correction(p)
+        # BH on sorted [0.005, 0.01, 0.03, 0.04]:
+        # rank4: 0.04*4/4=0.04; rank3: min(0.03*4/3=0.04, 0.04)=0.04;
+        # rank2: min(0.01*4/2=0.02, 0.04)=0.02; rank1: min(0.005*4=0.02, 0.02)=0.02
+        assert adj == pytest.approx([0.02, 0.04, 0.04, 0.02])
+
+    def test_fdr_correction_empty(self):
+        from metainformant.ontology.pathway_enrichment.enrichment import _fdr_correction
+
+        assert _fdr_correction([]) == []
+
+
+class TestComputeEnrichmentScoreEdgeCases:
+    def test_all_hits_degenerate(self):
+        ranked_list = ["A", "B", "C"]
+        result = compute_enrichment_score(ranked_list, {"A", "B", "C"})
+        assert result["es"] == 0.0
+        assert result["running_es"] == [0.0, 0.0, 0.0]
+
+
+class TestPathwayNetworkClusters:
+    def test_clusters_group_similar_pathways(self):
+        enrichment_results = [
+            {"term_id": "pathway_A", "p_value": 0.01, "adjusted_p": 0.03},
+            {"term_id": "pathway_B", "p_value": 0.02, "adjusted_p": 0.05},
+            {"term_id": "pathway_C", "p_value": 0.03, "adjusted_p": 0.06},
+        ]
+        gene_sets = _make_gene_sets()
+        result = pathway_network(enrichment_results, gene_sets, similarity_threshold=0.1)
+        clusters = sorted(sorted(c) for c in result["clusters"])
+        # A and B share 3/7 genes; C is disjoint -> two clusters
+        assert clusters == [["pathway_A", "pathway_B"], ["pathway_C"]]
+
+
+class TestCompareEnrichmentsCategories:
+    def test_unique_categories_and_discordance(self):
+        results_a = [{"term_id": "T1", "adjusted_p": 0.01, "es": 2.0}]
+        results_b = [
+            {"term_id": "T1", "adjusted_p": 0.01, "es": -2.0},  # opposite direction
+            {"term_id": "T2", "adjusted_p": 0.01, "es": 1.0},
+        ]
+        result = compare_enrichments(results_a, results_b)
+        assert result["concordance"] == 0.0
+        assert result["unique_b"] == ["T2"]
+        categories = {e["term_id"]: e["category"] for e in result["comparison_table"]}
+        assert categories["T1"] == "shared"
+        assert categories["T2"] == "unique_b"

@@ -92,15 +92,17 @@ graph TD
 ## Quick Start
 
 ```python
-from metainformant.longread.workflow.orchestrator import LongReadOrchestrator, PipelineStep
-from metainformant.longread.io import fast5, bam
-from metainformant.longread.quality import metrics, filtering
+from metainformant.longread.workflow.orchestrator import LongReadOrchestrator
+from metainformant.longread.workflow.pipelines import get_qc_pipeline_config
 
-# Run a full long-read pipeline
-orchestrator = LongReadOrchestrator()
-result = orchestrator.run(input_dir="data/nanopore_run/")
+# Run the QC pipeline over a directory of reads
+config = get_qc_pipeline_config()
+orchestrator = LongReadOrchestrator(config, "output/longread/")
+result = orchestrator.run_qc_pipeline("data/nanopore_run/")
 
 # Or work with individual submodules
+from metainformant.longread.io import fast5, bam
+from metainformant.longread.quality import metrics, filtering
 from metainformant.longread.analysis import modified_bases, structural
 from metainformant.longread.assembly import overlap, consensus, hybrid
 from metainformant.longread.methylation import calling
@@ -116,7 +118,7 @@ from metainformant.longread.analysis import structural
 from metainformant.structural_variants import population
 
 # SV calls from long reads feed into population-level SV analysis
-sv_calls = structural.call_variants(alignments)
+sv_calls = structural.detect_sv_from_long_reads(alignments)
 pop_result = population.analyze(sv_calls, sample_metadata)
 ```
 

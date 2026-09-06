@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from metainformant.math.population_genetics.ld import haldane_c_to_d, haldane_d_to_c, kosambi_c_to_d, kosambi_d_to_c
 from metainformant.math.population_genetics.statistics import expected_r2_from_Ne_c
 
@@ -23,3 +25,26 @@ def test_expected_r2_from_Ne_c():
     c = 0.01
     r2 = expected_r2_from_Ne_c(Ne, c)
     assert abs(r2 - (1.0 / (1.0 + 4.0 * Ne * c))) < 1e-18
+
+
+def test_haldane_mapping_boundaries():
+    assert haldane_c_to_d(0.0) == 0.0
+    assert haldane_c_to_d(0.5) == float("inf")
+    assert haldane_d_to_c(0.0) == 0.0
+    with pytest.raises(ValueError, match="between 0 and 0.5"):
+        haldane_c_to_d(0.6)
+
+
+def test_kosambi_mapping_boundaries():
+    assert kosambi_c_to_d(0.0) == 0.0
+    assert kosambi_c_to_d(0.5) == float("inf")
+    assert kosambi_d_to_c(0.0) == 0.0
+    with pytest.raises(ValueError, match="between 0 and 0.5"):
+        kosambi_c_to_d(-0.1)
+    with pytest.raises(ValueError, match="negative"):
+        kosambi_d_to_c(-1.0)
+
+
+def test_expected_r2_from_Ne_c_rejects_missing_Ne():
+    with pytest.raises(ValueError, match="Ne must be provided"):
+        expected_r2_from_Ne_c(0.01, None)

@@ -51,6 +51,8 @@ graph TD
 | [`engine/`](engine/) | `BasePipelineManager` with TUI visualization, `PipelineItem`, `Stage` lifecycle |
 | [`execution/`](execution/) | Config-driven workflow execution with `validate_config_file` |
 | [`ui/`](ui/) | `TerminalInterface` for real-time pipeline monitoring |
+| `db.py` | Compatibility re-export of `metainformant.core.data.db` |
+| `ncbi.py` | NCBI contact policy (`resolve_ncbi_contact`, `NCBIContact`) |
 | Runtime output | Discovery caches and generated files belong under repository `output/`, not under `src/metainformant/core/` |
 
 ## Key Capabilities
@@ -63,7 +65,7 @@ from metainformant.core.io import io
 data = io.load_json("config/settings.json")       # auto-detects .gz
 io.dump_json(result, "output/result.json.gz")      # atomic write + gzip
 config = io.load_yaml("config/workflow.yaml")
-io.dump_csv(rows, "output/data.csv", header=["id", "value"])
+io.write_delimited(rows, "output/data.csv")         # CSV rows (delimiter="\t" for TSV)
 ```
 
 ### Path Security and Configuration
@@ -79,18 +81,31 @@ cfg = config.load_mapping_from_file("config/workflow.yaml")
 cfg = config.apply_env_overrides(cfg, prefix="RNA")
 ```
 
-Compatibility shims `metainformant.core.utils.config` and
-`metainformant.core.io.paths` re-export these canonical APIs for older callers.
-Use the canonical imports in new code.
+`metainformant.core.utils.config` and `metainformant.core.io.paths` define the
+canonical implementations of these helpers. The one compatibility shim in
+`core` is `metainformant.core.db`, which re-exports `metainformant.core.data.db`.
 
 ### Pipeline Orchestration
 
 ```python
-from metainformant.core.engine.workflow_manager import BasePipelineManager, PipelineItem, Stage
+from metainformant.core.engine.workflow_manager import BasePipelineManager, PipelineItem, PipelinePhase, Stage
 
-manager = BasePipelineManager(name="my-pipeline", max_workers=4)
-items = [PipelineItem(item_id=s) for s in ["SRR001", "SRR002"]]
-manager.run(items, phases=["download", "process", "merge"])
+def download_phase(manager, items):
+    for item in items:
+        manager.mark_running(item)
+        # ... perform the download ...
+        manager.mark_done(item)
+
+manager = BasePipelineManager(
+    phases=[
+        PipelinePhase(name="Download", handler=download_phase),
+        PipelinePhase(name="Process", handler=process_phase),
+    ],
+    max_threads=4,
+)
+manager.add_item("SRR001")
+manager.add_item("SRR002")
+results = manager.run()  # {"SRR001": True, "SRR002": True}
 ```
 
 ## Quick Start

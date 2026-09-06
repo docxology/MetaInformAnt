@@ -28,6 +28,6 @@ from metainformant.multiomics.survival import analysis
 cox = analysis.cox_regression(time, event, covariates, covariate_names=names)
 km = analysis.kaplan_meier(time, event)
 lr = analysis.log_rank_test(time, event, groups)
-model = analysis.multi_omic_survival_model(time, event, omic_features)
+model = analysis.multi_omic_survival_model(omic_features, time, event)
 c_index = analysis.compute_concordance_index(predicted_risk, time, event)
 ```

@@ -218,7 +218,6 @@ class ContaminationDetector:
         for adapter in adapters:
             adapter_matches = 0
             match_positions = []
-
             for seq in sequences:
                 # Check for exact adapter matches
                 if adapter in seq:
@@ -226,14 +225,13 @@ class ContaminationDetector:
                     # Find position
                     pos = seq.find(adapter)
                     match_positions.append(pos)
-
-                # Also check for partial matches at sequence ends
-                seq_start = seq[: len(adapter)]
-                seq_end = seq[-len(adapter) :]
-
-                if adapter.startswith(seq_start[:10]) or adapter.endswith(seq_end[-10:]):
-                    adapter_matches += 1
-                    match_positions.append(-1)  # End match
+                else:
+                    # Partial matches: read truncated mid-adapter at either end
+                    prefix = seq[: len(adapter)]
+                    suffix = seq[-len(adapter) :]
+                    if adapter.startswith(prefix) or adapter.endswith(suffix):
+                        adapter_matches += 1
+                        match_positions.append(-1)  # End match
 
             contamination_rate = adapter_matches / total_sequences
 
@@ -330,14 +328,17 @@ class ContaminationDetector:
 
         # Calculate contamination severity score
         severity_scores = []
-        for analysis_name, analysis_result in results.items():
-            if analysis_result.get("detected", False):
-                if "contamination_rate" in analysis_result:
-                    severity_scores.append(analysis_result["contamination_rate"] * 100)
-                elif "duplication_rate" in analysis_result:
-                    severity_scores.append(analysis_result["duplication_rate"] * 100)
-                else:
-                    severity_scores.append(50)  # Default severity for detected contamination
+        for analysis_result in results.values():
+            if not analysis_result.get("detected", False):
+                continue
+            rates = [c["contamination_rate"] for c in analysis_result.get("contaminants", [])]
+            rates += [a["contamination_rate"] for a in analysis_result.get("adapters", [])]
+            if "duplication_rate" in analysis_result:
+                rates.append(analysis_result["duplication_rate"])
+            if rates:
+                severity_scores.append(max(rates) * 100)
+            else:
+                severity_scores.append(50)  # Detected contamination without a quantifiable rate
 
         overall_severity = np.mean(severity_scores) if severity_scores else 0
 
@@ -360,6 +361,24 @@ class ContaminationDetector:
             return "low"
         else:
             return "none"
+
+
+def _longest_shared_substring_len(seq: str, genome: str) -> int:
+    """Return the length of the longest substring of ``seq`` found in ``genome``.
+
+    Uses binary search over the match length: if a substring of length ``k``
+    occurs in ``genome``, a substring of every shorter length does too.
+    """
+    if not seq or not genome:
+        return 0
+    lo, hi = 0, len(seq)
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        if any(seq[start : start + mid] in genome for start in range(len(seq) - mid + 1)):
+            lo = mid
+        else:
+            hi = mid - 1
+    return lo
 
 
 def detect_rna_contamination(dna_sequences: List[str]) -> Dict[str, Any]:
@@ -392,7 +411,7 @@ def detect_vector_contamination(sequences: List[str], vector_sequences: Optional
                 matched.append(vector_name)
         if not matched and vector_sequences:
             for vs in vector_sequences:
-                if vs in seq:
+                if vs.upper() in seq.upper():
                     matched.append(vs)
         if matched:
             results[str(idx)] = matched
@@ -433,14 +452,7 @@ def detect_cross_species_contamination(
         for species, genome in reference_genomes.items():
             if len(seq) == 0:
                 continue
-            match_len = 0
-            for k in range(len(seq), 0, -1):
-                for start in range(len(seq) - k + 1):
-                    if seq[start : start + k] in genome:
-                        match_len = max(match_len, k)
-                        break
-                if match_len >= k:
-                    break
+            match_len = _longest_shared_substring_len(seq, genome)
             score = match_len / len(seq) if len(seq) > 0 else 0
             if score > best_score:
                 best_score = score
@@ -463,13 +475,7 @@ def detect_mycoplasma_contamination(
             if seq in mycoplasma_genome or mycoplasma_genome in seq:
                 detected = True
             elif len(seq) >= 8:
-                for k in range(min(len(seq), len(mycoplasma_genome)), 7, -1):
-                    for start in range(len(seq) - k + 1):
-                        if seq[start : start + k] in mycoplasma_genome:
-                            detected = True
-                            break
-                    if detected:
-                        break
+                detected = _longest_shared_substring_len(seq, mycoplasma_genome) >= 8
         if not detected:
             for pattern in patterns:
                 if pattern in seq:
@@ -509,7 +515,7 @@ def generate_contamination_report(
     report_lines.append("METAINFORMANT Contamination Analysis Report")
     report_lines.append("=" * 60)
     report_lines.append("")
-    all_sample_ids: set = set()
+    all_sample_ids: set[str] = set()
     for category, matches in contamination_results.items():
         if category == "summary":
             continue

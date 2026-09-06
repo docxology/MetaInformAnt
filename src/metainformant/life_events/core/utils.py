@@ -6,6 +6,7 @@ and analyzing life event sequences.
 
 from __future__ import annotations
 
+import json
 import random
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -209,8 +210,6 @@ def load_sequences_from_json(json_path: str | Path) -> List[EventSequence]:
     Returns:
         List of EventSequence objects
     """
-    import json
-    from pathlib import Path
 
     json_path = Path(json_path)
     if not json_path.exists():

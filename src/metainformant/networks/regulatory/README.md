@@ -32,7 +32,7 @@ from metainformant.networks.regulatory import grn_inference, motif_analysis
 
 grn = grn_inference.infer_grn_correlation(expression_matrix, gene_names)
 grn_mi = grn_inference.infer_grn_mutual_info(expression_matrix, gene_names)
-motifs = grn_inference.compute_network_motifs(grn, motif_size=3)
+motifs = grn_inference.compute_network_motifs(grn["edges"], motif_size=3)
 pwm = motif_analysis.build_pwm(aligned_sequences)
 hits = motif_analysis.scan_sequence_for_motifs(sequence, motif_library)
 ```

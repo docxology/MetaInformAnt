@@ -6,6 +6,8 @@ of population differentiation from allele frequency data.
 
 from __future__ import annotations
 
+import math
+import zlib
 from typing import Dict, List, Tuple
 
 import numpy as np
@@ -166,7 +168,7 @@ def weirs_fst(haplotype_counts: Dict[str, int], population_labels: List[str]) ->
         return 0.0
 
     # Get unique populations
-    populations = list(set(population_labels))
+    populations = sorted(set(population_labels))
     n_pops = len(populations)
 
     if n_pops < 2:
@@ -196,7 +198,10 @@ def weirs_fst(haplotype_counts: Dict[str, int], population_labels: List[str]) ->
     for pop in populations:
         pop_weight = pop_sizes[pop] / total_n
         pop_freqs[pop] = {
-            h: freq * (1 + 0.1 * (hash(pop + h) % 10 - 5) / 5 * pop_weight) for h, freq in overall_freqs.items()
+            # Deterministic per-(population, haplotype) jitter: built-in hash() is
+            # salted per process and would make F_ST non-reproducible across runs.
+            h: freq * (1 + 0.1 * ((zlib.crc32((pop + h).encode("utf-8")) % 10 - 5) / 5) * pop_weight)
+            for h, freq in overall_freqs.items()
         }
         # Normalize
         total_freq = sum(pop_freqs[pop].values())
@@ -240,8 +245,6 @@ def fst_confidence_interval(fst_value: float, sample_size: int, confidence_level
     Returns:
         Tuple of (lower_bound, upper_bound)
     """
-    import math
-
     # Calculate standard error using Weir & Cockerham approximation
     # SE(F_ST) ≈ sqrt(F_ST * (1 - F_ST) / n) for large samples
     # For small samples, add correction factor

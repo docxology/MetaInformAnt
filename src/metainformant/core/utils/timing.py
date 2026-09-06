@@ -68,7 +68,7 @@ class Timer:
     """
 
     def __init__(self) -> None:
-        self._start: float = 0.0
+        self._start: float | None = None
         self._end: float | None = None
 
     def __enter__(self) -> Timer:
@@ -81,7 +81,9 @@ class Timer:
 
     @property
     def elapsed(self) -> float:
-        """Elapsed time in seconds."""
+        """Elapsed time in seconds (0.0 before the timer is started)."""
+        if self._start is None:
+            return 0.0
         end = self._end if self._end is not None else time.perf_counter()
         return end - self._start
 

@@ -5,6 +5,7 @@ Tests that all step runners can be invoked and handle real subcommand execution.
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -31,6 +32,6 @@ def test_each_step_runner_invokes_real_subcommand(tmp_path: Path):
         res = runner({}, work_dir=work_dir, log_dir=log_dir)
         called.append(name)
         # Do not assert return code strictly; some steps may fail without inputs
-        assert hasattr(res, "returncode")
+        assert isinstance(res, subprocess.CompletedProcess), f"{name} returned {type(res)}"
 
     assert set(called) == set(step_mod.STEP_RUNNERS)

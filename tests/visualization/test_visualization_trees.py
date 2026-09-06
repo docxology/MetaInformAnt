@@ -264,3 +264,75 @@ class TestTreeAnnotationPlot:
         ax = tree_annotation_plot(G, {})
         assert ax is not None
         plt.close("all")
+
+
+class TestKwargsForwarding:
+    """Regression: style and layout kwargs must not be forwarded twice to nx.draw."""
+
+    def test_phylo_tree_accepts_style_kwargs(self):
+        if not HAS_NETWORKX:
+            pytest.skip("NetworkX required for phylogenetic tree plotting")
+
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        G = nx.DiGraph()
+        G.add_edges_from([("root", "A"), ("root", "B")])
+
+        ax = plot_phylo_tree(G, node_size=100, with_labels=False)
+        assert ax is not None
+        plt.close("all")
+
+    def test_unrooted_tree_accepts_layout_kwargs(self):
+        if not HAS_NETWORKX:
+            pytest.skip("NetworkX required for phylogenetic tree plotting")
+
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        G = nx.Graph()
+        G.add_edges_from([("A", "B"), ("B", "C")])
+
+        ax = unrooted_tree_plot(G, layout_kwargs={"seed": 7})
+        assert ax is not None
+        plt.close("all")
+
+    def test_annotation_plot_accepts_style_kwargs_and_renders_labels(self):
+        if not HAS_NETWORKX:
+            pytest.skip("NetworkX required for phylogenetic tree plotting")
+
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        G = nx.DiGraph()
+        G.add_edges_from([("root", "A"), ("root", "B")])
+        annotations = {"A": {"color": "#D32F2F", "label": "duplication"}}
+
+        ax = tree_annotation_plot(G, annotations, node_size=150, with_labels=True)
+        assert ax is not None
+        assert any("duplication" in text.get_text() for text in ax.texts)
+        plt.close("all")
+
+
+class TestConvertTreeToNetworkx:
+    def test_unsupported_tree_format_raises(self):
+        if not HAS_NETWORKX:
+            pytest.skip("NetworkX required for phylogenetic tree plotting")
+
+        with pytest.raises(ValueError, match="Unsupported tree format"):
+            tree_module._convert_tree_to_networkx(42)
+
+    def test_dict_tree_becomes_directed_graph(self):
+        if not HAS_NETWORKX:
+            pytest.skip("NetworkX required for phylogenetic tree plotting")
+
+        tree = {"root": {"A": None, "B": None}}
+        G = tree_module._convert_tree_to_networkx(tree)
+
+        assert set(G.edges()) == {("root", "A"), ("root", "B")}

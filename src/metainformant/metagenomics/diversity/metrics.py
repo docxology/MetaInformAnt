@@ -759,24 +759,6 @@ def _compute_ss_within(
         Within-group sum of squared distances.
     """
     ss_within = 0.0
-
-    for grp in unique_groups:
-        grp_indices = [i for i, g in enumerate(groups) if g == grp]
-        n_grp = len(grp_indices)
-        if n_grp <= 1:
-            continue
-
-        for ii in range(len(grp_indices)):
-            for jj in range(ii + 1, len(grp_indices)):
-                i = grp_indices[ii]
-                j = grp_indices[jj]
-                ss_within += dist_matrix[i][j] ** 2
-
-        ss_within /= 1  # Already summed; normalize per group below
-
-    # Normalize: sum(d^2) / n_i for each group
-    # Re-compute with proper normalization
-    ss_within = 0.0
     for grp in unique_groups:
         grp_indices = [i for i, g in enumerate(groups) if g == grp]
         n_grp = len(grp_indices)

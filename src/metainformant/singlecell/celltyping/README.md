@@ -25,6 +25,6 @@ Marker-based cell type annotation and classification for single-cell data. Suppo
 from metainformant.singlecell.celltyping import annotation
 
 labels = annotation.annotate_by_markers(expression_matrix, marker_genes, gene_names)
-transferred = annotation.transfer_labels(reference, query, ref_labels)
+transferred = annotation.transfer_labels(reference, ref_labels, query)
 composition = annotation.cell_type_composition(labels, sample_ids)
 ```

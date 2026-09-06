@@ -31,6 +31,19 @@ except ImportError:
     HAS_NETWORKX = False
 
 
+def _save_plot(ax: Axes, output_path: str | Path, label: str) -> str:
+    """Ensure the output directory exists and save the plotted figure deterministically.
+
+    Consolidates the repeated ensure_directory / save_figure_deterministic / logger
+    triple used by every plot function in this module. Saves ``ax.figure`` so the
+    plotted figure is written even when a different pyplot figure is current.
+    """
+    paths.ensure_directory(Path(output_path).parent)
+    save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+    logger.info(f"{label} saved to {output_path}")
+    return str(output_path)
+
+
 def plot_entropy_profile(
     entropy_data: dict[str, List[float]],
     *,
@@ -75,9 +88,7 @@ def plot_entropy_profile(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Entropy profile plot saved to {output_path}")
+        _save_plot(ax, output_path, "Entropy profile plot")
 
     return ax
 
@@ -133,9 +144,7 @@ def plot_mutual_information_matrix(
     ax.grid(False)  # Turn off grid for cleaner heatmap
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Mutual information matrix plot saved to {output_path}")
+        _save_plot(ax, output_path, "Mutual information matrix plot")
 
     return ax
 
@@ -191,9 +200,7 @@ def plot_renyi_spectra(
         ax.legend()
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Rényi spectra plot saved to {output_path}")
+        _save_plot(ax, output_path, "Rényi spectra plot")
 
     return ax
 
@@ -250,9 +257,7 @@ def plot_information_landscape(
     ax.set_title("Information Landscape")
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Information landscape plot saved to {output_path}")
+        _save_plot(ax, output_path, "Information landscape plot")
 
     return ax
 
@@ -327,8 +332,6 @@ def plot_information_network(
     ax.set_title("Information Flow Network")
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Information network plot saved to {output_path}")
+        _save_plot(ax, output_path, "Information network plot")
 
     return ax

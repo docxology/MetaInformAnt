@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - life_events
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/life_events`
+- **Path**: `src/metainformant/life_events`
 - **Purpose**: Life events and trajectory analysis module for METAINFORMANT.
 - **Domain**: metainformant
 

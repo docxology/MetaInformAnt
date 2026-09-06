@@ -1,6 +1,9 @@
 """Deep tests for metainformant.math.population_genetics.fst (real computation, no test doubles)."""
 
 import math
+import os
+import subprocess
+import sys
 
 import numpy as np
 import pytest
@@ -168,3 +171,39 @@ class TestFstFromHeterozygosity:
 
     def test_complete_differentiation(self) -> None:
         assert fst_from_heterozygosity(0.0, 0.5) == 1.0
+
+
+class TestFstFromHeterozygosityClamping:
+    def test_hs_greater_than_ht_clamps_to_zero(self) -> None:
+        assert fst_from_heterozygosity(0.6, 0.5) == 0.0
+
+
+class TestFstConfidenceIntervalEdges:
+    def test_sample_size_below_two_raises(self) -> None:
+        with pytest.raises(ValueError, match="at least 2"):
+            fst_confidence_interval(0.2, 1)
+
+    def test_ninety_percent_interval_narrower_than_ninety_five(self) -> None:
+        lo90, hi90 = fst_confidence_interval(0.2, 50, confidence_level=0.90)
+        lo95, hi95 = fst_confidence_interval(0.2, 50, confidence_level=0.95)
+        assert lo90 <= 0.2 <= hi90
+        assert (hi90 - lo90) < (hi95 - lo95)
+
+
+class TestWeirsFstDeterminism:
+    def test_label_order_and_population_order_independent(self) -> None:
+        counts = {"AT": 10, "AG": 15, "GT": 8, "GG": 12}
+        labels = ["pop1"] * 22 + ["pop2"] * 23
+        assert weirs_fst(counts, labels) == pytest.approx(weirs_fst(counts, list(reversed(labels))))
+
+    def test_stable_across_interpreter_processes(self) -> None:
+        # Regression: per-process salted string hash made F_ST non-reproducible
+        code = (
+            "from metainformant.math.population_genetics.fst import weirs_fst;"
+            'print(weirs_fst({"AT": 10, "AG": 15, "GT": 8, "GG": 12}, ["pop1"] * 22 + ["pop2"] * 23))'
+        )
+        env = dict(os.environ, PYTHONHASHSEED="1")
+        first = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, env=env, check=True)
+        env2 = dict(os.environ, PYTHONHASHSEED="2")
+        second = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, env=env2, check=True)
+        assert first.stdout.strip() == second.stdout.strip()

@@ -303,9 +303,7 @@ class PhenotypePipeline:
         if data is None:
             return {"status": "skipped", "reason": "no_data"}
 
-        # Apply preprocessing based on phenotype type
         params = self.config.parameters.get("preprocess", {})
-        params.get("normalize", False)
         filter_missing = params.get("filter_missing", True)
 
         processed = data

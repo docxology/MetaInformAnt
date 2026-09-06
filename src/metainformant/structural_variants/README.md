@@ -96,6 +96,9 @@ graph TD
 | `filter_by_size` | Filter SVs by minimum/maximum size |
 | `filter_by_frequency` | Remove common population variants |
 | `apply_blacklist` | Exclude calls in known problematic regions |
+| `merge_callsets` | Merge multi-caller callsets by reciprocal overlap into consensus calls |
+| `survivor_merge` | SURVIVOR-style breakpoint-distance merging (VCF files or dicts) |
+| `deduplicate_variants` | Remove duplicate calls, keeping the highest-quality call |
 
 ### Population Analysis
 
@@ -116,19 +119,17 @@ from metainformant.structural_variants.detection.sv_calling import call_structur
 from metainformant.structural_variants.filtering.quality_filter import filter_by_quality
 from metainformant.structural_variants.population.sv_population import sv_allele_frequency
 
-# Detect CNVs from read depth
-cnv_result = detect_cnv_from_depth(
-    depths=[120, 115, 60, 55, 58, 110, 125],
-    chrom="chr1",
-    bin_size=10000,
-)
+# Detect CNVs from per-chromosome read-depth windows
+cnv_results = detect_cnv_from_depth({"chr1": [120, 115, 60, 55, 58, 110, 125]}, window_size=10000)
 
-# Call SVs from aligned reads
-sv_calls = call_structural_variants(reads=aligned_reads, chrom="chr1")
+# Call SVs from aligned reads (list of alignment dicts)
+sv_calls = call_structural_variants(aligned_reads, min_support=3)
 
-# Filter and compute population frequencies
-filtered = filter_by_quality(sv_calls, min_quality=20.0)
-freq = sv_allele_frequency(sv_calls=filtered, samples=sample_ids)
+# Filter by quality (returns (variants, FilterStats))
+filtered, stats = filter_by_quality(sv_calls, min_qual=20.0)
+
+# Compute allele frequencies from a genotype matrix (n_svs x n_samples)
+freq = sv_allele_frequency(genotype_matrix)
 ```
 
 ## Integration
@@ -140,10 +141,10 @@ from metainformant.structural_variants.annotation.overlap import annotate_gene_o
 from metainformant.structural_variants.population.sv_population import sv_association_test
 
 # Annotate SVs with gene overlaps
-annotated = annotate_gene_overlap(sv_calls=filtered, gene_intervals=gene_db)
+annotated = annotate_gene_overlap(filtered, gene_db)
 
-# Test association with phenotype
-assoc = sv_association_test(genotypes=gt_matrix, phenotypes=pheno_values)
+# Test association with phenotype (genotypes per sample)
+assoc = sv_association_test(genotypes, pheno_values)
 ```
 
 ## Related

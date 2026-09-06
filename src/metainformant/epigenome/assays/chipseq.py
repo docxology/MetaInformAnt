@@ -164,7 +164,6 @@ def load_chip_peaks(path: str | Path, format: str = "narrowpeak") -> List[ChIPPe
                     chromosome = parts[0]
                     start = int(parts[1])
                     end = int(parts[2])
-                    parts[3] if len(parts) > 3 else f"peak_{line_num}"
                     score = float(parts[4]) if len(parts) > 4 else 0.0
                     strand = parts[5] if len(parts) > 5 else "."
 

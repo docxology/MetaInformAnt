@@ -65,11 +65,14 @@ def perform_multifactor_anova(df: pd.DataFrame, formula: str) -> Dict[str, Any]:
         warnings.simplefilter("ignore", category=RuntimeWarning)
         warnings.filterwarnings("ignore", message="covariance of constraints does not have full rank")
 
+        model = None
         try:
             model = ols(formula, data=df).fit()
             # Type 2 ANOVA is standard for unbalanced designs
             anova_table = sm.stats.anova_lm(model, typ=2)
         except Exception:
+            if model is None:
+                return {"error": "Model could not be fit."}
             try:
                 anova_table = sm.stats.anova_lm(model, typ=1)
             except Exception:

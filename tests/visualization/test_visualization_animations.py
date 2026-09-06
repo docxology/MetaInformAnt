@@ -274,3 +274,77 @@ class TestAnimateTrajectory:
                 animate_trajectory(trajectories)
         finally:
             animation_module.HAS_NUMPY = original
+
+
+class TestAnimationKwargs:
+    """figsize/anim_kwargs must configure the animation, not leak into plotting calls."""
+
+    def test_time_series_animation_accepts_figsize(self):
+        """Test that a figsize kwarg sizes the figure instead of reaching ax.plot."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        data = np.random.randn(2, 10)
+
+        fig, anim = animate_time_series(data, figsize=(9, 4))
+        assert fig.get_figwidth() == 9
+        assert fig.get_figheight() == 4
+        assert anim is not None
+        plt.close("all")
+
+    def test_time_series_animation_accepts_anim_kwargs(self):
+        """Test that anim_kwargs reach FuncAnimation instead of ax.plot."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        data = np.random.randn(2, 10)
+
+        fig, anim = animate_time_series(data, anim_kwargs={"save_count": 3})
+        assert fig is not None
+        assert anim is not None
+        plt.close("all")
+
+    def test_clustering_animation_accepts_figsize(self):
+        """Test that a figsize kwarg is accepted by the clustering animation."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        data = np.random.randn(10, 2)
+        cluster_labels = [np.random.randint(0, 2, 10) for _ in range(2)]
+
+        fig, anim = animate_clustering(data, cluster_labels, figsize=(5, 5))
+        assert fig.get_figwidth() == 5
+        assert anim is not None
+        plt.close("all")
+
+    def test_trajectory_animation_accepts_figsize(self):
+        """Test that a figsize kwarg is accepted by the trajectory animation."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        trajectory = np.array([[i, i**2] for i in range(5)], dtype=float)
+
+        fig, anim = animate_trajectory([trajectory], figsize=(6, 3))
+        assert fig.get_figwidth() == 6
+        assert anim is not None
+        plt.close("all")
+
+    def test_evolution_animation_accepts_figsize(self):
+        """Test that a figsize kwarg is accepted by the evolution animation."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        fig, anim = animate_evolution(["ATCG", "ATCA"], figsize=(4, 2))
+        assert fig.get_figheight() == 2
+        assert anim is not None
+        plt.close("all")

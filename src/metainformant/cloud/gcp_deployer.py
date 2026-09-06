@@ -333,7 +333,8 @@ class GCPDeployer:
         print(f"   🗺️  Zone: {self.cfg.zone}")
 
         print("\n⏳ Waiting for SSH access...")
-        if self.wait_for_ssh(max_wait=300):
+        ssh_ready = self.wait_for_ssh(max_wait=300)
+        if ssh_ready:
             print("   ✓ SSH ready")
         else:
             print("   ⚠ SSH not ready after 5 min — VM may still be booting")
@@ -348,4 +349,4 @@ class GCPDeployer:
         print("\n   Monitor with: python scripts/cloud/deploy_gcp.py status")
         print("   View logs:    python scripts/cloud/deploy_gcp.py logs")
 
-        return {"vm": result, "ssh_ready": True, "status": vm_status}
+        return {"vm": result, "ssh_ready": ssh_ready, "status": vm_status}

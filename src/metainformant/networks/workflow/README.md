@@ -21,8 +21,10 @@ High-level workflow orchestration for multi-step network analyses combining grap
 |--------|-------------|
 | `NetworkWorkflow.build_network()` | Build a network from edge lists or correlation matrices |
 | `NetworkWorkflow.detect_communities()` | Run community detection on the built network |
-| `NetworkWorkflow.enrich_pathways()` | Perform pathway enrichment analysis |
-| `NetworkWorkflow.analyze_ppi()` | Run protein-protein interaction analysis |
+| `NetworkWorkflow.analyze_metrics()` | Compute network metrics and centrality measures |
+| `NetworkWorkflow.run_pathway_enrichment()` | Perform pathway enrichment on a gene list |
+| `NetworkWorkflow.export_results()` | Export analysis results to files |
+| `NetworkWorkflow.summary()` | Return a summary of completed steps and key results |
 
 ## Usage
 
@@ -31,6 +33,7 @@ from metainformant.networks.workflow.workflow import NetworkWorkflow
 from metainformant.networks.config.config import NetworkWorkflowConfig
 
 wf = NetworkWorkflow(config=NetworkWorkflowConfig())
-wf.build_network(edges=edge_list).detect_communities().enrich_pathways()
+wf.build_network(edges=edge_list).detect_communities().analyze_metrics()
+wf.run_pathway_enrichment(gene_list=gene_list, pathway_data=pathway_data)
 results = wf.results
 ```

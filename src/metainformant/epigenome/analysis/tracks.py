@@ -145,12 +145,13 @@ class GenomicTrack:
                         feature["value"] = (feature["value"] - min_val) / (max_val - min_val)
 
         elif method == "zscore":
-            mean_val = statistics.mean(all_values)
-            std_val = statistics.stdev(all_values)
-            if std_val > 0:
-                for features in self.data.values():
-                    for feature in features:
-                        feature["value"] = (feature["value"] - mean_val) / std_val
+            if len(all_values) > 1:
+                mean_val = statistics.mean(all_values)
+                std_val = statistics.stdev(all_values)
+                if std_val > 0:
+                    for features in self.data.values():
+                        for feature in features:
+                            feature["value"] = (feature["value"] - mean_val) / std_val
 
         elif method == "robust":
             # Use median and MAD (median absolute deviation)
@@ -283,7 +284,6 @@ def load_bedgraph_track(path: str | Path, name: str = "", description: str = "")
         logger.error(f"Error loading BEDgraph track from {path}: {e}")
         raise errors.IOError(f"Failed to load BEDgraph track: {e}") from e
 
-    logger.info(f"Loaded BEDgraph track with {track.get_total_features()} features")
     logger.info(f"Loaded BEDgraph track with {track.get_total_features()} features")
     return track
 
@@ -484,8 +484,8 @@ def merge_tracks(tracks: List[GenomicTrack], operation: str = "union") -> Genomi
 
         if operation == "union":
             # Merge overlapping features
-            merged_track.merge_overlapping_features(chromosome)
             merged_track.data[chromosome] = all_features
+            merged_track.merge_overlapping_features(chromosome)
 
         elif operation in ["mean", "max"]:
             # Group overlapping features and aggregate values

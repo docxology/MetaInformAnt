@@ -725,13 +725,6 @@ def functional_beta_diversity(
     pooled_traits = list(community1_traits) + list(community2_traits)
     pooled_abundances = [a * scale1 for a in community1_abundances] + [a * scale2 for a in community2_abundances]
 
-    # Renormalise pooled abundances so they sum to a positive total for Rao
-    pool_total = sum(pooled_abundances)
-    if pool_total > 0:
-        pooled_abundances = [a / pool_total for a in pooled_abundances]
-    # Make them look like "counts" by multiplying -- Rao already normalises
-    pooled_abundances = [a * 100 for a in pooled_abundances]
-
     q_pool = raos_quadratic_entropy(pooled_traits, pooled_abundances)
 
     # Total beta = pooled Q minus mean of individual Q values

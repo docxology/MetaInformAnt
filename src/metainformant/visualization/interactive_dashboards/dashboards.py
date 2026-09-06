@@ -553,9 +553,9 @@ def create_dashboard(
             - layout: Layout used.
     """
     n = len(panels)
-
-    # Compute positions
-    if layout == "grid":
+    if n == 0:
+        cols, rows = 1, 1
+    elif layout == "grid":
         cols = math.ceil(math.sqrt(n))
         rows = math.ceil(n / cols)
     elif layout == "rows":

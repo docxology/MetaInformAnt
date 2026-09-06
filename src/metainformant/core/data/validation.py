@@ -89,10 +89,10 @@ def validate_path_exists(path: str | Path, name: str = "path") -> Path:
     Example:
         file_path = validate_path_exists("data/file.txt", "input_file")
     """
-    p = Path(path)
+    p = Path(path).expanduser().resolve()
     if not p.exists():
         raise ValidationError(f"{name} does not exist: {path}")
-    return p.expanduser().resolve()
+    return p
 
 
 def validate_path_is_file(path: str | Path, name: str = "path") -> Path:
@@ -243,12 +243,14 @@ def validate_json_schema(data: dict[str, Any], schema_path: str | Path) -> None:
 
         schema = load_json(schema_path)
         jsonschema.validate(instance=data, schema=schema)
-    except ImportError:
-        raise ValidationError("jsonschema package required for JSON Schema validation. Install with: uv add jsonschema")
+    except ImportError as e:
+        raise ValidationError(
+            "jsonschema package required for JSON Schema validation. Install with: uv add jsonschema"
+        ) from e
     except json.JSONDecodeError as e:
-        raise ValidationError(f"Invalid JSON schema file {schema_path}: {e}")
+        raise ValidationError(f"Invalid JSON schema file {schema_path}: {e}") from e
     except jsonschema.ValidationError as e:
-        raise ValidationError(f"Data validation failed: {e.message}")
+        raise ValidationError(f"Data validation failed: {e.message}") from e
 
 
 def validator(func: Callable[[Any], bool]) -> Callable[[Any], None]:

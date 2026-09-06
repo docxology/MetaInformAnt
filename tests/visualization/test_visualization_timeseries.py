@@ -322,3 +322,54 @@ class TestPlotTrendAnalysis:
 
         with pytest.raises(ValueError, match="cannot be empty"):
             plot_trend_analysis(data)
+
+
+class TestBranchAndFormattingGaps:
+    """Tests for uncovered plot branches and formatting behavior."""
+
+    def test_seasonal_decomposition_with_existing_ax(self):
+        """Test seasonal decomposition builds its 4 panels on the provided axes' figure."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        dates = pd.date_range("2020-01-01", periods=100, freq="D")
+        data = pd.Series(np.sin(np.arange(100) * 0.1), index=dates)
+        fig, ax = plt.subplots()
+
+        result = plot_seasonal_decomposition(data, ax=ax)
+        assert result is not None
+        assert len(ax.figure.axes) >= 5  # original ax plus the 4 decomposition panels
+        plt.close("all")
+
+    def test_forecast_confidence_intervals_missing_columns(self):
+        """Test forecast plot ignores confidence intervals lacking lower/upper columns."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        historical = pd.Series(np.arange(10.0))
+        forecast = pd.Series(np.arange(10.0, 15.0))
+        ci = pd.DataFrame({"bad": [1.0] * 5})  # No 'lower'/'upper' columns
+
+        ax = plot_forecast(historical, forecast, confidence_intervals=ci)
+        assert ax is not None
+        assert len(ax.lines) == 2  # Historical and forecast lines only
+        plt.close("all")
+
+    def test_trend_analysis_reports_direction(self):
+        """Test trend analysis annotates the detected trend direction."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        dates = pd.date_range("2020-01-01", periods=60, freq="D")
+        data = pd.Series(np.linspace(10, 0, 60), index=dates)  # Decreasing
+
+        ax = plot_trend_analysis(data)
+        assert ax is not None
+        assert any("decreasing" in text.get_text() for text in ax.texts)
+        plt.close("all")

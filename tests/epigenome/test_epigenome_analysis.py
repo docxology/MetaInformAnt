@@ -372,3 +372,43 @@ class TestGenerateTrackReport:
         track = GenomicTrack()
         report = generate_track_report(track)
         assert "GENOMIC TRACK ANALYSIS REPORT" in report
+
+
+class TestMergeTracksUnionMergesOverlaps:
+    """Regression: union must merge overlapping features, not concatenate."""
+
+    def test_union_merges_overlapping_features(self) -> None:
+        t1 = GenomicTrack()
+        t1.add_feature("chr1", 0, 100, value=1.0)
+        t2 = GenomicTrack()
+        t2.add_feature("chr1", 50, 150, value=2.0)
+
+        merged = merge_tracks([t1, t2], operation="union")
+
+        feats = merged.get_features("chr1")
+        assert len(feats) == 1
+        assert feats[0]["start"] == 0
+        assert feats[0]["end"] == 150
+
+
+class TestNormalizeValuesGuards:
+    """Regression: zscore no longer crashes on a single feature."""
+
+    def test_zscore_single_feature_is_noop(self) -> None:
+        track = GenomicTrack()
+        track.add_feature("chr1", 0, 10, value=5.0)
+
+        track.normalize_values(method="zscore")
+
+        assert track.get_features("chr1")[0]["value"] == 5.0
+
+    def test_robust_normalization_centers_median(self) -> None:
+        track = GenomicTrack()
+        for i, value in enumerate([1.0, 2.0, 3.0, 100.0, 2.5]):
+            track.add_feature("chr1", i * 10, i * 10 + 5, value=value)
+
+        track.normalize_values(method="robust")
+
+        # Median (2.5) maps to 0 under median/MAD normalization
+        values = [f["value"] for f in track.get_features("chr1")]
+        assert values[4] == 0.0

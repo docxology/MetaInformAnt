@@ -14,23 +14,12 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 import numpy as np
 
 from metainformant.core.utils import logging
+from metainformant.life_events.core.utils import _sequence_to_tokens
 
 if TYPE_CHECKING:
     from metainformant.life_events.core.events import EventSequence
 
 logger = logging.get_logger(__name__)
-
-
-def _sequence_to_tokens(sequence: Any) -> List[str]:
-    """Normalize EventSequence objects and token lists to event tokens."""
-    if hasattr(sequence, "events"):
-        return [
-            f"{event.domain}:{event.event_type}" if getattr(event, "domain", None) else str(event.event_type)
-            for event in sequence.events
-        ]
-    if isinstance(sequence, str):
-        return [sequence]
-    return [str(event) for event in sequence]
 
 
 class MultiTaskPredictor:

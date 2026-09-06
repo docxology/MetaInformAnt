@@ -100,7 +100,7 @@ def age_structure_model(
     Raises:
         ValueError: If parameters are invalid
     """
-    if len(fertility_rates) != len(survival_rates) != len(initial_age_structure):
+    if len(fertility_rates) != len(survival_rates) or len(survival_rates) != len(initial_age_structure):
         raise ValueError("All parameter arrays must have the same length")
     if generations < 0:
         raise ValueError("Number of generations cannot be negative")

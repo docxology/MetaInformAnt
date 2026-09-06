@@ -258,3 +258,28 @@ class TestValidatorDecorator:
         is_even(4, "number")
         with pytest.raises(ValidationError, match="number failed validation"):
             is_even(3, "number")
+
+
+class TestPathExpansion:
+    """Regression tests for user-path expansion in path validators."""
+
+    def test_validate_path_exists_expands_home(self, tmp_path, monkeypatch):
+        """A ``~/...`` path must be expanded before the existence check."""
+
+        target = tmp_path / "campaign" / "reads.fastq"
+        target.parent.mkdir(parents=True)
+        target.write_text("reads", encoding="utf-8")
+
+        monkeypatch.setenv("HOME", str(tmp_path))
+
+        resolved = validate_path_exists("~/campaign/reads.fastq", name="reads")
+        assert resolved == target.resolve()
+
+    def test_validate_path_is_file_expands_home(self, tmp_path, monkeypatch):
+        target = tmp_path / "data.csv"
+        target.write_text("a,b\n1,2\n", encoding="utf-8")
+
+        monkeypatch.setenv("HOME", str(tmp_path))
+
+        resolved = validate_path_is_file("~/data.csv")
+        assert resolved == target.resolve()

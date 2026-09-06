@@ -14,14 +14,6 @@ from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 
-# Optional numpy for vectorized operations
-try:
-    import numpy as np
-
-    HAS_NUMPY = True
-except ImportError:
-    HAS_NUMPY = False
-    np = None
 
 # Optional scipy for statistical tests
 try:
@@ -375,7 +367,6 @@ def call_peaks_broad(
         bg = max(local_bg, global_lambda, 1e-10)
         pval = _poisson_pvalue(signal[i], bg)
         pvalues.append(pval)
-
     # Stringent threshold for seed peaks
     stringent_threshold = p_threshold / 10.0
 
@@ -392,6 +383,10 @@ def call_peaks_broad(
             seed_end = i + 1 if (i == n - 1 and pvalues[i] <= stringent_threshold) else i
             seeds.append({"start": seed_start, "end": seed_end})
             in_seed = False
+
+    if in_seed:
+        # Seed opened at the final position and never closed by the loop
+        seeds.append({"start": seed_start, "end": n})
 
     logger.debug("Found %d seed regions at stringent threshold", len(seeds))
 

@@ -224,3 +224,60 @@ class TestPlotDifferentialExpression:
 
         with pytest.raises(ValueError, match="must contain an adjusted p-value column"):
             plot_differential_expression(de_data)
+
+
+class TestKwargsForwarding:
+    """Regression: style kwargs must not be forwarded twice to the plotting call."""
+
+    def test_heatmap_accepts_cmap_and_center(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        data = pd.DataFrame(
+            np.random.randn(5, 4), index=[f"g{i}" for i in range(5)], columns=[f"s{i}" for i in range(4)]
+        )
+
+        ax = plot_expression_heatmap(data, cmap="viridis", center=0)
+        assert ax is not None
+        plt.close("all")
+
+    def test_heatmap_accepts_annot_and_fmt(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        data = pd.DataFrame(np.random.randn(3, 3), index=["a", "b", "c"], columns=["x", "y", "z"])
+
+        ax = plot_expression_heatmap(data, annot=True, fmt=".1f")
+        assert ax is not None
+        plt.close("all")
+
+    def test_differential_expression_accepts_size_and_alpha(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        de_data = pd.DataFrame({"log2FoldChange": [1.5, -2.0, 0.5], "padj": [1e-6, 1e-2, 0.5]})
+
+        ax = plot_differential_expression(de_data, s=30, alpha=0.5)
+        assert ax is not None
+        plt.close("all")
+
+    def test_differential_expression_sizes_scale_with_basemean(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        de_data = pd.DataFrame(
+            {"log2FoldChange": [0.1, 0.2, 0.3, 0.4], "padj": [0.5, 0.6, 0.7, 0.8], "baseMean": [1.0, 10.0, 50.0, 100.0]}
+        )
+
+        ax = plot_differential_expression(de_data)
+        sizes = ax.collections[0].get_sizes()
+        assert sizes.max() > sizes.min()
+        plt.close("all")

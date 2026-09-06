@@ -76,7 +76,9 @@ def plot_fst_matrix(
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved F_ST matrix plot to {output_file}")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_tajima_d_distribution(tajima_d_values: List[float], output_file: Optional[str] = None) -> Optional[Any]:
@@ -115,7 +117,9 @@ def plot_tajima_d_distribution(tajima_d_values: List[float], output_file: Option
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved Tajima's D distribution plot to {output_file}")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_selection_statistics(statistics: Dict[str, List[float]], output_file: Optional[str] = None) -> Optional[Any]:
@@ -157,7 +161,9 @@ def plot_selection_statistics(statistics: Dict[str, List[float]], output_file: O
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved selection statistics plot to {output_file}")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_population_diversity(
@@ -195,7 +201,7 @@ def plot_population_diversity(
 
     # Add value labels on bars
     for bar, value in zip(bars, diversities):
-        plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.001, ".4f", ha="center", va="bottom")
+        plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.001, f"{value:.4f}", ha="center", va="bottom")
 
     plt.grid(True, alpha=0.3, axis="y")
 
@@ -203,7 +209,9 @@ def plot_population_diversity(
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved population diversity plot to {output_file}")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_ld_decay(ld_data: List[Tuple[int, float]], output_file: Optional[str] = None) -> Optional[Any]:
@@ -246,7 +254,7 @@ def plot_ld_decay(ld_data: List[Tuple[int, float]], output_file: Optional[str] =
             popt, _ = curve_fit(exp_decay, distances, ld_values, p0=[1, 0.1])
             x_fit = np.linspace(min(distances), max(distances), 100)
             y_fit = exp_decay(x_fit, *popt)
-            plt.plot(x_fit, y_fit, "--", color="red", alpha=0.7, label=".3f")
+            plt.plot(x_fit, y_fit, "--", color="red", alpha=0.7, label=f"Exponential fit (b={popt[1]:.3f})")
         except ImportError:
             pass  # scipy not available
 
@@ -260,7 +268,9 @@ def plot_ld_decay(ld_data: List[Tuple[int, float]], output_file: Optional[str] =
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved LD decay plot to {output_file}")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_population_structure(
@@ -329,7 +339,9 @@ def plot_population_structure(
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved population structure plot to {output_file}")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_demographic_history(
@@ -368,13 +380,15 @@ def plot_demographic_history(
 
     # Add generation markers
     for gen, ne in zip(generations, ne_estimates):
-        plt.annotate(".0f", (gen, ne), xytext=(5, 5), textcoords="offset points", fontsize=8, alpha=0.8)
+        plt.annotate(f"{ne:.0f}", (gen, ne), xytext=(5, 5), textcoords="offset points", fontsize=8, alpha=0.8)
 
     if output_file:
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved demographic history plot to {output_file}")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def create_population_summary_plot(
@@ -439,7 +453,7 @@ def create_population_summary_plot(
             ax.text(
                 bar.get_x() + bar.get_width() / 2,
                 bar.get_height() + max(values) * 0.01,
-                ".4f",
+                f"{value:.4f}",
                 ha="center",
                 va="bottom",
                 fontsize=8,
@@ -451,7 +465,8 @@ def create_population_summary_plot(
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved population summary plot to {output_file}")
 
-    return plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_mutation_spectrum(mutation_counts: Dict[str, int], output_file: Optional[str] = None) -> Optional[Any]:
@@ -503,7 +518,9 @@ def plot_mutation_spectrum(mutation_counts: Dict[str, int], output_file: Optiona
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved mutation spectrum plot to {output_file}")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_allele_frequency_spectrum(allele_frequencies: List[float], output_file: Optional[str] = None) -> Optional[Any]:
@@ -548,7 +565,9 @@ def plot_allele_frequency_spectrum(allele_frequencies: List[float], output_file:
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved allele frequency spectrum plot to {output_file}")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_bootstrap_distribution(
@@ -616,4 +635,6 @@ def plot_bootstrap_distribution(
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved bootstrap distribution plot to {output_file}")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig

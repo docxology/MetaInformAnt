@@ -28,7 +28,7 @@ from metainformant.simulation.workflow.workflow import (
     validate_simulation_output,
 )
 
-config = create_simulation_config("population_genetics", {"n_populations": 3})
+config = create_simulation_config("population_genetics", {"population_size": 200, "n_snps": 500})
 results = run_simulation_workflow(config)
-valid, issues = validate_simulation_output(results, {"min_samples": 100})
+valid, issues = validate_simulation_output(results, {"required_fields": ["simulation_type"]})
 ```

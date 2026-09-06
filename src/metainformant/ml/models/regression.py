@@ -219,30 +219,30 @@ def train_regressor(X: np.ndarray, y: np.ndarray, method: str = "rf", **kwargs: 
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for regression")
 
-    # Select and configure regressor
+    # Select and configure regressor. Extract known keys from kwargs so the
+    # explicit keyword arguments below do not collide with **kwargs.
+    kwargs = dict(kwargs)
+    n_estimators = kwargs.pop("n_estimators", 100)
+    random_state = kwargs.pop("random_state", 42)
+    alpha = kwargs.pop("alpha", 1.0)
+    l1_ratio = kwargs.pop("l1_ratio", 0.5)
+    kernel = kwargs.pop("kernel", "rbf")
+    C = kwargs.pop("C", 1.0)
+
     if method == "rf":
-        model = RandomForestRegressor(
-            n_estimators=kwargs.get("n_estimators", 100), random_state=kwargs.get("random_state", 42), **kwargs
-        )
+        model = RandomForestRegressor(n_estimators=n_estimators, random_state=random_state, **kwargs)
     elif method == "gb":
-        model = GradientBoostingRegressor(
-            n_estimators=kwargs.get("n_estimators", 100), random_state=kwargs.get("random_state", 42), **kwargs
-        )
+        model = GradientBoostingRegressor(n_estimators=n_estimators, random_state=random_state, **kwargs)
     elif method == "linear":
         model = LinearRegression(**kwargs)
     elif method == "ridge":
-        model = Ridge(alpha=kwargs.get("alpha", 1.0), random_state=kwargs.get("random_state", 42), **kwargs)
+        model = Ridge(alpha=alpha, random_state=random_state, **kwargs)
     elif method == "lasso":
-        model = Lasso(alpha=kwargs.get("alpha", 1.0), random_state=kwargs.get("random_state", 42), **kwargs)
+        model = Lasso(alpha=alpha, random_state=random_state, **kwargs)
     elif method == "elasticnet":
-        model = ElasticNet(
-            alpha=kwargs.get("alpha", 1.0),
-            l1_ratio=kwargs.get("l1_ratio", 0.5),
-            random_state=kwargs.get("random_state", 42),
-            **kwargs,
-        )
+        model = ElasticNet(alpha=alpha, l1_ratio=l1_ratio, random_state=random_state, **kwargs)
     elif method == "svr":
-        model = SVR(kernel=kwargs.get("kernel", "rbf"), C=kwargs.get("C", 1.0), **kwargs)
+        model = SVR(kernel=kernel, C=C, **kwargs)
     else:
         raise ValueError(f"Unknown regression method: {method}")
 

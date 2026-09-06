@@ -29,6 +29,8 @@ from typing import List
 
 import pytest
 
+from metainformant.core.utils.errors import ValidationError
+
 from metainformant.ecology.analysis.indicators import (
     anosim,
     cluster_communities,
@@ -187,8 +189,8 @@ class TestDistanceMatrix:
             distance_matrix([[1, 2], [3, 4]], method="hamming")
 
     def test_empty_raises(self) -> None:
-        """Empty input raises ValueError."""
-        with pytest.raises((ValueError, Exception)):
+        """Empty input raises ValidationError."""
+        with pytest.raises(ValidationError):
             distance_matrix([], method="bray_curtis")
 
     def test_unequal_vector_lengths_raises(self) -> None:
@@ -296,6 +298,12 @@ class TestNMDS:
         r1 = nmds(dm, n_components=2, n_init=2, max_iter=50, seed=123)
         r2 = nmds(dm, n_components=2, n_init=2, max_iter=50, seed=123)
         assert abs(r1["stress"] - r2["stress"]) < 1e-10
+
+    def test_nmds_zero_max_iter(self) -> None:
+        """max_iter=0 must not crash (regression: NameError on loop variable)."""
+        dm = [[0, 1, 2], [1, 0, 1.5], [2, 1.5, 0]]
+        result = nmds(dm, n_components=2, n_init=1, max_iter=0, seed=42)
+        assert result["stress"] >= 0.0
 
     def test_nmds_n_components_too_large_raises(self) -> None:
         """n_components >= n raises ValueError."""
@@ -885,3 +893,22 @@ class TestBuildSimpleTree:
         dm = [[0, 1], [1, 0]]
         with pytest.raises(ValueError, match="Unknown method"):
             build_simple_tree(dm, ["A", "B"], method="parsimony")
+
+
+class TestNriNtiSeedReproducibility:
+    """nri_nti accepts a seed for reproducible randomizations."""
+
+    def test_same_seed_same_result(self, simple_tree: dict) -> None:
+        communities = [["A", "B", "C"], ["B", "C", "D"]]
+        r1 = nri_nti(simple_tree, communities, n_randomizations=50, seed=7)
+        r2 = nri_nti(simple_tree, communities, n_randomizations=50, seed=7)
+        assert r1["nri"] == r2["nri"]
+        assert r1["nti"] == r2["nti"]
+        assert r1["p_values"]["nri"] == r2["p_values"]["nri"]
+        assert r1["p_values"]["nti"] == r2["p_values"]["nti"]
+
+    def test_different_seed_valid_result(self, simple_tree: dict) -> None:
+        communities = [["A", "B", "C"]]
+        result = nri_nti(simple_tree, communities, n_randomizations=200, seed=99)
+        assert all(0.0 <= p <= 1.0 for p in result["p_values"]["nri"])
+        assert all(0.0 <= p <= 1.0 for p in result["p_values"]["nti"])

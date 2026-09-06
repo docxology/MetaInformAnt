@@ -117,6 +117,30 @@ class TestCombatIntegration:
 
 
 # ---------------------------------------------------------------------------
+# bbknn_integration (single-dataset, batch-aware; previously untested)
+# ---------------------------------------------------------------------------
+
+
+class TestBbknnIntegration:
+    def test_adds_metadata_and_embedding(self) -> None:
+        from metainformant.singlecell.data.integration import bbknn_integration
+
+        data = _make_batched_counts()
+        result = bbknn_integration(data.copy(), batch_key="batch")
+
+        assert result.X.shape == data.X.shape
+        assert result.uns["bbknn"]["batch_key"] == "batch"
+        assert result.uns["bbknn"]["n_batches"] == 2
+        assert result.uns["bbknn"]["batch_adjacency_shape"] == (data.n_obs, data.n_obs)
+
+    def test_missing_batch_key_raises(self) -> None:
+        from metainformant.singlecell.data.integration import bbknn_integration
+
+        with pytest.raises(Exception):
+            bbknn_integration(_make_batched_counts(), batch_key="missing")
+
+
+# ---------------------------------------------------------------------------
 # integrate_multiple_batches (regression: mnn/scanorama branches previously
 # dropped batch_key, raising TypeError)
 # ---------------------------------------------------------------------------

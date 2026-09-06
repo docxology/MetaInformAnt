@@ -777,21 +777,20 @@ def write_quant_provenance(
     )
     if quant_file is None:
         raise OSError(f"No recognized quantification output found in {sample_path}")
-    if quant_file is not None and not quant_file.is_absolute():
+    if not quant_file.is_absolute():
         quant_file = sample_path / quant_file
     quant_file_name: str | None = None
     quant_file_sha256: str | None = None
-    if quant_file is not None:
-        try:
-            relative_quant_file = quant_file.resolve().relative_to(sample_path.resolve())
-        except (OSError, ValueError):
-            relative_quant_file = Path(quant_file.name)
-        if relative_quant_file.parent != Path(".") or not quant_file.is_file():
-            raise OSError(f"Quantification file must be a file directly in {sample_path}")
-        quant_file_name = relative_quant_file.name
-        quant_file_sha256 = digest_file(quant_file)
-        if quant_file_sha256 is None:
-            raise OSError(f"Unable to hash quantification file: {quant_file}")
+    try:
+        relative_quant_file = quant_file.resolve().relative_to(sample_path.resolve())
+    except (OSError, ValueError):
+        relative_quant_file = Path(quant_file.name)
+    if relative_quant_file.parent != Path(".") or not quant_file.is_file():
+        raise OSError(f"Quantification file must be a file directly in {sample_path}")
+    quant_file_name = relative_quant_file.name
+    quant_file_sha256 = digest_file(quant_file)
+    if quant_file_sha256 is None:
+        raise OSError(f"Unable to hash quantification file: {quant_file}")
     # Content-deterministic payload: no wall-clock fields.  This sidecar is
     # re-verified fail-closed on every resume; any restart-varying byte would
     # invalidate reusable quantification work.  Recency lives in the

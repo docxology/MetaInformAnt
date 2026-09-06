@@ -4,7 +4,7 @@ Provides sample-level and gene-level quality metrics, library complexity
 estimation, and saturation curve analysis for RNA-seq count data.
 
 This module provides REAL implementations using numpy, scipy, and pandas.
-Real implementationing, no placeholder data.
+Real implementations throughout; no placeholder data.
 """
 
 from __future__ import annotations
@@ -168,7 +168,10 @@ def detect_outlier_samples(
         # MAD calculation for total counts
         median_tc = np.median(total_counts)
         mad_tc = np.median(np.abs(total_counts - median_tc))
-        # Scale factor for consistency with normal distribution
+        # Scale factor for consistency with normal distribution. A zero MAD
+        # (all samples identical on the metric) falls back to 1.0, so any
+        # sample deviating from the median by more than ``threshold`` counts
+        # as an outlier — degenerate by design for constant inputs.
         mad_tc_scaled = 1.4826 * mad_tc if mad_tc > 0 else 1.0
 
         # MAD calculation for detected genes

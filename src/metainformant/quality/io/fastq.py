@@ -110,8 +110,7 @@ def read_fastq_records(path: str | Path, max_records: int | None = None) -> Iter
                 record = FastqRecord(*lines)
                 yield record
                 record_count += 1
-
-    except Exception as e:
+    except OSError as e:
         logger.error(f"Error reading FASTQ file {path}: {e}")
         raise errors.IOError(f"Failed to read FASTQ file: {e}") from e
 
@@ -327,6 +326,14 @@ def gc_content_distribution(records: List[FastqRecord]) -> Dict[str, Any]:
     return {"bins": bins}
 
 
+ILLUMINA_ADAPTERS = [
+    "AGATCGGAAGAG",  # TruSeq Universal Adapter
+    "GATCGGAAGAG",  # TruSeq Adapter, Read 1
+    "AGATCGGAAGAGCGGTTCAGCAGGAATGCCGAG",  # TruSeq Adapter, Read 2
+    "CTGTCTCTTAT",  # Nextera Transposase Sequence
+]
+
+
 def adapter_content(records: List[FastqRecord], adapters: List[str] | None = None) -> Dict[str, Any]:
     """Detect adapter content in sequences.
 
@@ -340,14 +347,8 @@ def adapter_content(records: List[FastqRecord], adapters: List[str] | None = Non
     if not records:
         return {}
 
-    # Default Illumina adapters
     if adapters is None:
-        adapters = [
-            "AGATCGGAAGAG",  # TruSeq Universal Adapter
-            "GATCGGAAGAG",  # TruSeq Adapter, Read 1
-            "AGATCGGAAGAGCGGTTCAGCAGGAATGCCGAG",  # TruSeq Adapter, Read 2
-            "CTGTCTCTTAT",  # Nextera Transposase Sequence
-        ]
+        adapters = list(ILLUMINA_ADAPTERS)
 
     results: Dict[str, Any] = {}
     for adapter in adapters:

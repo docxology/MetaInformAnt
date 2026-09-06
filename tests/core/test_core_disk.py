@@ -5,7 +5,11 @@ Tests disk space monitoring and management functions following real-implementati
 
 from __future__ import annotations
 
+import os
+import time
 from pathlib import Path
+
+import pytest
 
 from metainformant.core.io import disk
 
@@ -137,3 +141,107 @@ class TestRecommendedTempDir:
         output_dir.mkdir()
         temp_dir = disk.get_recommended_temp_dir(tmp_path)
         assert isinstance(temp_dir, Path)
+
+
+class TestFreeSpaceAndSizes:
+    """Tests for get_free_space, get_directory_size, and get_largest_files."""
+
+    def test_get_free_space_returns_nonnegative_int(self, tmp_path):
+        free = disk.get_free_space(tmp_path)
+        assert isinstance(free, int)
+        assert free >= 0
+
+    def test_get_directory_size_sums_files_recursively(self, tmp_path):
+        (tmp_path / "a.txt").write_bytes(b"x" * 100)
+        sub = tmp_path / "sub"
+        sub.mkdir()
+        (sub / "b.bin").write_bytes(b"y" * 50)
+        assert disk.get_directory_size(tmp_path) == 150
+
+    def test_get_directory_size_missing_dir_is_zero(self, tmp_path):
+        assert disk.get_directory_size(tmp_path / "missing") == 0
+
+    def test_get_largest_files_sorted_and_capped(self, tmp_path):
+        (tmp_path / "small.txt").write_bytes(b"x")
+        (tmp_path / "large.txt").write_bytes(b"x" * 100)
+        (tmp_path / "medium.txt").write_bytes(b"x" * 10)
+        top = disk.get_largest_files(tmp_path, n=2)
+        assert [path.name for path, _ in top] == ["large.txt", "medium.txt"]
+        assert top[0][1] == 100
+
+    def test_get_largest_files_missing_dir_is_empty(self, tmp_path):
+        assert disk.get_largest_files(tmp_path / "missing") == []
+
+
+class TestCleanupFunctions:
+    """Tests for cleanup_temp_files and cleanup_old_files."""
+
+    def test_cleanup_temp_files_removes_only_old_files(self, tmp_path):
+        old = tmp_path / "old.tmp"
+        old.write_text("stale")
+        old_time = time.time() - 48 * 3600
+        os.utime(old, (old_time, old_time))
+        fresh = tmp_path / "fresh.tmp"
+        fresh.write_text("current")
+
+        removed = disk.cleanup_temp_files(tmp_path, max_age_hours=24)
+
+        assert removed == 1
+        assert fresh.exists()
+
+    def test_cleanup_temp_files_missing_dir_returns_zero(self, tmp_path):
+        assert disk.cleanup_temp_files(tmp_path / "missing") == 0
+
+    def test_cleanup_old_files_respects_exclude_patterns(self, tmp_path):
+        old_time = time.time() - 60 * 24 * 3600
+        keep = tmp_path / "important.keep"
+        keep.write_text("keep me")
+        drop = tmp_path / "scratch.csv"
+        drop.write_text("drop me")
+        for path in (keep, drop):
+            os.utime(path, (old_time, old_time))
+
+        removed = disk.cleanup_old_files(tmp_path, max_age_days=30, exclude_patterns=["*.keep"])
+
+        assert removed == 1
+        assert keep.exists()
+        assert not drop.exists()
+
+
+class TestMonitorAndSafeRemove:
+    """Tests for monitor_disk_space, ensure_disk_space, and safe_remove_directory."""
+
+    def test_monitor_disk_space_reports_ok_when_below_thresholds(self, tmp_path):
+        result = disk.monitor_disk_space(tmp_path, warning_threshold=1.1, critical_threshold=1.2)
+        assert result["status"] == "ok"
+        assert result["usage"]["path"] == str(tmp_path)
+
+    def test_monitor_disk_space_flags_warning_when_over_threshold(self, tmp_path):
+        result = disk.monitor_disk_space(tmp_path, warning_threshold=-1.0, critical_threshold=2.0)
+        assert result["status"] == "warning"
+
+    def test_ensure_disk_space_sufficient_returns_true(self, tmp_path):
+        assert disk.ensure_disk_space(tmp_path, 1) is True
+
+    def test_ensure_disk_space_insufficient_raises(self, tmp_path):
+        with pytest.raises(RuntimeError, match="Insufficient disk space"):
+            disk.ensure_disk_space(tmp_path, 10**30)
+
+    def test_safe_remove_directory_removes_tree(self, tmp_path):
+        victim = tmp_path / "victim"
+        (victim / "nested").mkdir(parents=True)
+        (victim / "nested" / "file.txt").write_text("data")
+
+        assert disk.safe_remove_directory(victim) is True
+        assert not victim.exists()
+
+    def test_safe_remove_directory_missing_dir_is_success(self, tmp_path):
+        assert disk.safe_remove_directory(tmp_path / "ghost") is True
+
+    def test_safe_remove_directory_refuses_oversized(self, tmp_path):
+        victim = tmp_path / "big"
+        victim.mkdir()
+        (victim / "payload.bin").write_bytes(b"\0" * (2 * 1024 * 1024))
+
+        assert disk.safe_remove_directory(victim, confirm_size_mb=1) is False
+        assert victim.exists()

@@ -21,22 +21,12 @@ from metainformant.core.utils import logging
 logger = logging.get_logger(__name__)
 
 try:
-    import seaborn as sns
-
-    HAS_SEABORN = True
-except ImportError:
-    HAS_SEABORN = False
-    sns = None
-
-try:
-    import plotly.express as px
     import plotly.graph_objects as go
 
     HAS_PLOTLY = True
 except ImportError:
     HAS_PLOTLY = False
     go = None
-    px = None
 
 
 def plot_species_abundance_distribution(
@@ -196,9 +186,14 @@ def plot_community_composition(
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
 
-    # Normalize to proportions
+    # Normalize to proportions; zero-sum rows contribute no bar height
     row_sums = community_matrix.sum(axis=1, keepdims=True)
-    proportions = community_matrix / row_sums
+    proportions = np.divide(
+        community_matrix,
+        row_sums,
+        out=np.zeros(community_matrix.shape, dtype=float),
+        where=row_sums > 0,
+    )
 
     # Plot stacked bars
     bottom = np.zeros(community_matrix.shape[0])

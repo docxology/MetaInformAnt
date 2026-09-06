@@ -37,6 +37,16 @@ def _as_networkx_graph(graph: Any) -> Any:
     return graph.graph if isinstance(graph, BiologicalNetwork) else graph
 
 
+def _require_pandas() -> Any:
+    """Import and return pandas, raising a consistent ImportError."""
+    try:
+        import pandas
+
+        return pandas
+    except ImportError:
+        raise ImportError("pandas required for DataFrame operations")
+
+
 class BiologicalNetwork:
     """A biological network class wrapping NetworkX functionality.
 
@@ -148,7 +158,7 @@ class BiologicalNetwork:
             weight_key: Key for weight attribute
 
         Returns:
-            Edge weight value, or 1.0 if not found
+            Edge weight value, or None if the edge does not exist
         """
         if self.graph.has_edge(source, target):
             return cast("float | None", self.graph[source][target].get(weight_key, 1.0))
@@ -382,10 +392,7 @@ def add_nodes_from_dataframe(
     if not HAS_NETWORKX:
         raise ImportError("networkx required for node addition")
 
-    try:
-        import pandas as pd
-    except ImportError:
-        raise ImportError("pandas required for DataFrame operations")
+    pd = _require_pandas()
 
     if not isinstance(df, pd.DataFrame):
         raise ValueError("df must be a pandas DataFrame")
@@ -430,10 +437,7 @@ def add_edges_from_dataframe(
     if not HAS_NETWORKX:
         raise ImportError("networkx required for edge addition")
 
-    try:
-        import pandas as pd
-    except ImportError:
-        raise ImportError("pandas required for DataFrame operations")
+    pd = _require_pandas()
 
     if not isinstance(df, pd.DataFrame):
         raise ValueError("df must be a pandas DataFrame")
@@ -551,10 +555,7 @@ def get_node_attributes_dataframe(graph: Any) -> Any:
     if not HAS_NETWORKX:
         raise ImportError("networkx required for DataFrame conversion")
 
-    try:
-        import pandas as pd
-    except ImportError:
-        raise ImportError("pandas required for DataFrame operations")
+    pd = _require_pandas()
 
     # Get all node attributes
     node_attrs = {}
@@ -585,10 +586,7 @@ def get_edge_attributes_dataframe(graph: Any) -> Any:
     if not HAS_NETWORKX:
         raise ImportError("networkx required for DataFrame conversion")
 
-    try:
-        import pandas as pd
-    except ImportError:
-        raise ImportError("pandas required for DataFrame operations")
+    pd = _require_pandas()
 
     # Get all edge attributes
     edge_data = []
@@ -869,57 +867,51 @@ def add_edges_from_correlation(
     if not HAS_NETWORKX:
         raise ImportError("networkx required for graph operations")
 
-    try:
-        import pandas as pd
+    pd = _require_pandas()
+    is_dataframe = isinstance(correlation_matrix, pd.DataFrame)
 
-        is_dataframe = isinstance(correlation_matrix, pd.DataFrame)
-
-        if is_dataframe:
-            if correlation_matrix.shape[0] == correlation_matrix.shape[1] and list(correlation_matrix.index) == list(
-                correlation_matrix.columns
-            ):
-                nodes = list(correlation_matrix.index)
-                corr_data = correlation_matrix.values
-            else:
-                nodes = list(correlation_matrix.index)
-                ranked = correlation_matrix.rank(axis=1) if method == "spearman" else correlation_matrix
-                corr_data = np.corrcoef(ranked.values)
+    if is_dataframe:
+        if correlation_matrix.shape[0] == correlation_matrix.shape[1] and list(correlation_matrix.index) == list(
+            correlation_matrix.columns
+        ):
+            nodes = list(correlation_matrix.index)
+            corr_data = correlation_matrix.values
         else:
-            matrix = np.asarray(correlation_matrix, dtype=float)
-            if matrix.ndim != 2:
-                raise ValueError("correlation_matrix must be a 2D matrix")
-            if node_names is not None and len(node_names) not in matrix.shape:
-                raise ValueError("correlation matrix dimensions don't match node names")
-            if matrix.shape[0] == matrix.shape[1] and (node_names is None or len(node_names) == matrix.shape[0]):
-                nodes = node_names if node_names is not None else [f"Node_{i}" for i in range(matrix.shape[0])]
-                corr_data = matrix
-            else:
-                nodes = node_names if node_names is not None else [f"Node_{i}" for i in range(matrix.shape[0])]
-                ranked = (
-                    np.apply_along_axis(lambda row: np.argsort(np.argsort(row)), 1, matrix)
-                    if method == "spearman"
-                    else matrix
-                )
-                corr_data = np.corrcoef(ranked)
+            nodes = list(correlation_matrix.index)
+            ranked = correlation_matrix.rank(axis=1) if method == "spearman" else correlation_matrix
+            corr_data = np.corrcoef(ranked.values)
+    else:
+        matrix = np.asarray(correlation_matrix, dtype=float)
+        if matrix.ndim != 2:
+            raise ValueError("correlation_matrix must be a 2D matrix")
+        if node_names is not None and len(node_names) not in matrix.shape:
+            raise ValueError("correlation matrix dimensions don't match node names")
+        if matrix.shape[0] == matrix.shape[1] and (node_names is None or len(node_names) == matrix.shape[0]):
+            nodes = node_names if node_names is not None else [f"Node_{i}" for i in range(matrix.shape[0])]
+            corr_data = matrix
+        else:
+            nodes = node_names if node_names is not None else [f"Node_{i}" for i in range(matrix.shape[0])]
+            ranked = (
+                np.apply_along_axis(lambda row: np.argsort(np.argsort(row)), 1, matrix)
+                if method == "spearman"
+                else matrix
+            )
+            corr_data = np.corrcoef(ranked)
 
-        # Ensure graph has all nodes
-        graph.add_nodes_from(nodes)
+    # Ensure graph has all nodes
+    graph.add_nodes_from(nodes)
 
-        candidate_edges = []
-        for i in range(len(nodes)):
-            for j in range(i + 1, len(nodes)):
-                corr_value = abs(corr_data[i, j])
-                if corr_value >= threshold:
-                    candidate_edges.append((nodes[i], nodes[j], float(corr_value)))
+    candidate_edges = []
+    for i in range(len(nodes)):
+        for j in range(i + 1, len(nodes)):
+            corr_value = abs(corr_data[i, j])
+            if corr_value >= threshold:
+                candidate_edges.append((nodes[i], nodes[j], float(corr_value)))
 
-        if max_edges is not None:
-            candidate_edges = sorted(candidate_edges, key=lambda edge: edge[2], reverse=True)[:max_edges]
+    if max_edges is not None:
+        candidate_edges = sorted(candidate_edges, key=lambda edge: edge[2], reverse=True)[:max_edges]
 
-        for source, target, corr_value in candidate_edges:
-            graph.add_edge(source, target, weight=corr_value)
+    for source, target, corr_value in candidate_edges:
+        graph.add_edge(source, target, weight=corr_value)
 
-        logger.info(f"Added edges from correlation matrix (threshold={threshold})")
-
-    except Exception as e:
-        logger.error(f"Failed to add edges from correlation: {e}")
-        raise
+    logger.info(f"Added edges from correlation matrix (threshold={threshold})")

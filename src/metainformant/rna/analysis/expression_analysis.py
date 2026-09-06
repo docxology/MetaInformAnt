@@ -128,9 +128,6 @@ def differential_expression(
     if len(unique_conditions) != 2:
         raise ValueError(f"Expected exactly 2 conditions, got {len(unique_conditions)}: {unique_conditions}")
 
-    if len(conditions) != len(counts_df.columns):
-        raise ValueError(f"Conditions length ({len(conditions)}) doesn't match samples ({len(counts_df.columns)})")
-
     # Determine reference and treatment conditions
     if reference is None:
         reference = sorted(unique_conditions)[0]
@@ -221,7 +218,9 @@ def _de_deseq2_like(
         if not np.isnan(log2fc_nb):
             log2fc = log2fc_nb
 
-        # Wald statistic approximation
+        # Wald statistic approximation (heuristic, NOT a calibrated Wald z):
+        # log2 fold change divided by a raw-count-scale standard error. The
+        # p-value comes from the NB test above, never from this statistic.
         # Standard error from negative binomial model
         all_counts = np.concatenate([ref_counts, treat_counts])
         if all_counts.var() > all_counts.mean():
@@ -523,7 +522,7 @@ def pca_analysis(
     expression_df: pd.DataFrame,
     n_components: int = 2,
     scale: bool = True,
-) -> Dict:
+) -> Dict[str, Any]:
     """Perform PCA on expression data.
 
     Reduces dimensionality of expression data for visualization and

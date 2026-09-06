@@ -32,5 +32,5 @@ from metainformant.ecology.visualization.visualization import (
 )
 
 plot_species_abundance_distribution(abundances, output_path="output/sad.png")
-plot_beta_diversity_ordination(coords, groups=labels, output_path="output/ord.png")
+plot_beta_diversity_ordination(coords, sample_groups=labels, output_path="output/ord.png")
 ```

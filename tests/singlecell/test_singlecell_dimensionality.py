@@ -26,10 +26,15 @@ from metainformant.core.utils.errors import ValidationError
 from metainformant.singlecell.analysis.dimensionality import (
     SKLEARN_AVAILABLE,
     compute_diffusion_map,
+    compute_dimensionality_metrics,
     compute_neighbors,
     compute_pca,
     compute_tsne,
     compute_umap,
+    diffusion_map_reduction,
+    factor_analysis_reduction,
+    ica_reduction,
+    mds_reduction,
     select_hvgs,
 )
 from metainformant.singlecell.data.preprocessing import SingleCellData, log_transform, normalize_counts, scale_data
@@ -604,3 +609,111 @@ class TestEdgeCases:
         # PCA should still work
         data = compute_pca(data, n_components=10)
         assert "X_pca" in data.obsm
+
+
+@pytest.mark.skipif(not SKLEARN_AVAILABLE, reason="sklearn not available")
+class TestIcaAndFactorAnalysis:
+    """Coverage for ica_reduction and factor_analysis_reduction."""
+
+    def setup_method(self):
+        rng = np.random.RandomState(42)
+        self.test_data = SingleCellData(rng.normal(0, 1, (60, 25)))
+
+    def test_ica_reduction_adds_coordinates(self):
+        data = ica_reduction(self.test_data, n_components=3, random_state=0)
+        assert "IC1" in data.obs.columns
+        assert "IC3" in data.obs.columns
+        assert "IC4" not in data.obs.columns
+        assert "ICs" in data.varm
+        assert data.uns["ica"]["n_components"] == 3
+
+    def test_factor_analysis_adds_coordinates(self):
+        data = factor_analysis_reduction(self.test_data, n_components=2, random_state=0)
+        assert "FA1" in data.obs.columns
+        assert "FA2" in data.obs.columns
+        assert "FA_loadings" in data.varm
+        assert data.uns["factor_analysis"]["n_components"] == 2
+
+    def test_ica_requires_sklearn(self, monkeypatch):
+        import metainformant.singlecell.analysis.pca_methods as pca_module
+
+        monkeypatch.setattr(pca_module, "HAS_SKLEARN", False)
+        with pytest.raises(ImportError):
+            ica_reduction(self.test_data, n_components=2)
+
+    def test_factor_analysis_requires_sklearn(self, monkeypatch):
+        import metainformant.singlecell.analysis.pca_methods as pca_module
+
+        monkeypatch.setattr(pca_module, "HAS_SKLEARN", False)
+        with pytest.raises(ImportError):
+            factor_analysis_reduction(self.test_data, n_components=2)
+
+
+@pytest.mark.skipif(not SKLEARN_AVAILABLE, reason="sklearn not available")
+class TestMDSReduction:
+    def test_preserves_pairwise_distances(self):
+        """Regression: the precomputed distance matrix used to be passed to
+        MDS as a raw feature matrix, distorting the embedding. Metric MDS on
+        dissimilarities from a nearly-2D configuration must recover them
+        almost exactly (near-zero stress)."""
+        rng = np.random.RandomState(0)
+        t = np.linspace(0, 1, 30)
+        X = np.column_stack([t, np.zeros(30), rng.normal(0, 1e-6, (30, 3))])
+
+        result = mds_reduction(SingleCellData(X), n_components=2, random_state=0)
+
+        assert "MDS1" in result.obs.columns
+        assert result.uns["mds"]["stress"] < 0.01
+
+        from sklearn.metrics.pairwise import euclidean_distances
+
+        emb = result.obs[["MDS1", "MDS2"]].values
+        corr = np.corrcoef(euclidean_distances(X).flatten(), euclidean_distances(emb).flatten())[0, 1]
+        assert corr > 0.99
+
+    def test_nonmetric_mds_runs(self):
+        X = np.random.RandomState(1).normal(0, 1, (25, 6))
+        result = mds_reduction(SingleCellData(X), n_components=2, metric=False, random_state=0)
+        assert "MDS1" in result.obs.columns
+        assert "mds" in result.uns
+
+
+class TestDiffusionMapReduction:
+    def test_adds_dc_coordinates(self):
+        X = np.random.RandomState(0).normal(0, 1, (40, 8))
+        result = diffusion_map_reduction(SingleCellData(X), n_components=3, n_neighbors=5)
+        assert "DC1" in result.obs.columns
+        assert "DC3" in result.obs.columns
+        info = result.uns["diffusion_map"]
+        assert info["n_components"] == 3
+        assert len(info["eigenvalues"]) == 3
+
+    def test_invalid_parameters_raise(self):
+        data = SingleCellData(np.random.RandomState(0).normal(0, 1, (30, 5)))
+        with pytest.raises(ValidationError):
+            diffusion_map_reduction(data, n_components=1)
+        with pytest.raises(ValidationError):
+            diffusion_map_reduction(data, n_neighbors=2)
+
+
+@pytest.mark.skipif(not SKLEARN_AVAILABLE, reason="sklearn not available")
+class TestDimensionalityMetrics:
+    def test_metrics_for_embedding(self):
+        rng = np.random.RandomState(0)
+        X = rng.normal(0, 1, (50, 10))
+        data = SingleCellData(X)
+        data.obs["PC1"] = X[:, 0]
+        data.obs["PC2"] = X[:, 1]
+
+        metrics = compute_dimensionality_metrics(data, ["PC1", "PC2"])
+
+        assert {"distance_correlation", "trustworthiness", "continuity", "neighborhood_size"}.issubset(metrics)
+        assert -1.0 <= metrics["distance_correlation"] <= 1.0
+        assert 0.0 <= metrics["trustworthiness"] <= 1.0
+        assert 0.0 <= metrics["continuity"] <= 1.0
+
+    def test_missing_columns_raise(self):
+        data = SingleCellData(np.random.RandomState(0).normal(0, 1, (20, 5)))
+        data.obs["PC1"] = data.X[:, 0]
+        with pytest.raises(ValidationError):
+            compute_dimensionality_metrics(data, ["PC1", "MISSING"])

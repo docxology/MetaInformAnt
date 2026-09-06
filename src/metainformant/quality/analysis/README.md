@@ -19,10 +19,10 @@ Quality scoring, contamination detection, and outlier analysis for sequencing da
 | `detect_adapter_contamination()` | Identify adapter sequence remnants |
 | `generate_contamination_report()` | Full contamination screening report |
 | `calculate_quality_score()` | Composite quality score for FASTQ, VCF, or BAM |
-| `detect_outliers()` | Statistical outlier detection (IQR or z-score) |
-| `calculate_data_integrity_score()` | Data completeness and consistency score |
+| `detect_outliers()` | Statistical outlier detection (IQR, z-score, or modified z-score) |
+| `calculate_data_integrity_score()` | Data completeness and consistency score (FASTQ checks) |
 | `generate_quality_report()` | Multi-section quality assessment report |
-| `batch_quality_analysis()` | Run quality analysis across multiple samples |
+| `batch_quality_analysis()` | Run FASTQ quality analysis across multiple files |
 
 ## Usage
 
@@ -32,5 +32,8 @@ from metainformant.quality.analysis.contamination import ContaminationDetector
 
 score = calculate_quality_score(fastq_data, data_type="fastq")
 outliers = detect_outliers(quality_values, method="iqr")
-detector = ContaminationDetector(sequences)
+detector = ContaminationDetector()  # optionally: ContaminationDetector(reference_genomes={"human": seq})
+
+# GC metric helpers expect percentages on a 0-100 scale (e.g. 45.0), matching
+# FastqRecord.gc_content().
 ```

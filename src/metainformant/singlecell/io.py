@@ -91,6 +91,7 @@ def fetch_atlas_datasets(datasets: List[str], output_base: str | Path) -> List[P
             continue
 
         ds_dir = output_base / ds_name
+        ds_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Fetching {ds_name} ({acc}) -> {ds_dir}")
 
         if acc.startswith("GSE"):
@@ -133,7 +134,7 @@ def run_salmon_alevin(
     subprocess.run(cmd, check=True)
 
 
-def run_seurat_integration(input_dirs: dict, output_dir: Path, resolution: float = 0.8) -> Path:
+def run_seurat_integration(input_dirs: dict[str, Path], output_dir: Path, resolution: float = 0.8) -> Path:
     """Stub for Seurat integration (usually calls an R script)."""
     output_dir.mkdir(parents=True, exist_ok=True)
     logger.info(f"Running Seurat integration (resolution={resolution}) into {output_dir}...")

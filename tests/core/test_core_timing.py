@@ -570,3 +570,14 @@ class TestIntegration:
         assert all(r == "result" for r in results)
         assert 0.15 < overall.elapsed < 0.35  # 3 calls at 10/sec
         assert "complex_function completed in" in caplog.text
+
+
+class TestTimerInitialState:
+    """Regression tests for Timer state before entering the context."""
+
+    def test_timer_elapsed_before_start_is_zero(self) -> None:
+        """Elapsed before __enter__ must be 0.0, not system uptime."""
+
+        timer = Timer()
+        assert timer.elapsed == 0.0
+        assert timer.elapsed_ms == 0.0

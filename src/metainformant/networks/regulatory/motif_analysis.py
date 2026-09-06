@@ -94,7 +94,6 @@ def build_pwm(
 
     logger.info("Building PWM from %d sequences of length %d", len(sequences), seq_len)
 
-    len(sequences)
     pwm: list[dict[str, float]] = []
 
     for pos in range(seq_len):
@@ -214,9 +213,10 @@ def find_tf_binding_motifs(
                     total_fg_kmers += 1
 
     # Count k-mers in background (or use uniform expectation)
+    bg_counts: Counter[str] | None = None
+    total_bg_kmers = 0
     if background_sequences:
-        bg_counts: Counter[str] = Counter()
-        total_bg_kmers = 0
+        bg_counts = Counter()
         for seq in background_sequences:
             seq_upper = seq.upper()
             for k in range(k_min, k_max + 1):
@@ -225,9 +225,6 @@ def find_tf_binding_motifs(
                     if all(c in "ACGT" for c in kmer):
                         bg_counts[kmer] += 1
                         total_bg_kmers += 1
-    else:
-        bg_counts = None  # type: ignore[assignment]
-        total_bg_kmers = 0
 
     # Score each k-mer by overrepresentation
     scored_kmers: list[tuple[str, float, int, float]] = []
@@ -484,51 +481,29 @@ def scan_sequence_for_motifs(
         if score_range < 1e-10:
             continue
 
-        # Scan forward strand
-        for i in range(len(seq_upper) - motif_len + 1):
-            subseq = seq_upper[i : i + motif_len]
-            if not all(c in "ACGT" for c in subseq):
-                continue
-
-            raw_score = 0.0
-            for pos, pos_freqs in enumerate(pwm):
-                nt = subseq[pos]
-                freq = pos_freqs.get(nt, 0.001)
-                raw_score += math.log2(freq / 0.25)
-
-            normalized = (raw_score - min_score) / score_range
-            if normalized >= threshold:
-                matches.append(
-                    {
-                        "motif_id": motif_id,
-                        "position": i,
-                        "strand": "+",
-                        "score": round(normalized, 6),
-                    }
-                )
-
-        # Scan reverse strand
+        # Scan both strands; reverse-strand positions map to forward coordinates
+        strands: list[tuple[str, str]] = [("+", seq_upper)]
         if scan_reverse and rc_seq:
-            for i in range(len(rc_seq) - motif_len + 1):
-                subseq = rc_seq[i : i + motif_len]
+            strands.append(("-", rc_seq))
+
+        for strand, target_seq in strands:
+            for i in range(len(target_seq) - motif_len + 1):
+                subseq = target_seq[i : i + motif_len]
                 if not all(c in "ACGT" for c in subseq):
                     continue
 
                 raw_score = 0.0
                 for pos, pos_freqs in enumerate(pwm):
-                    nt = subseq[pos]
-                    freq = pos_freqs.get(nt, 0.001)
-                    raw_score += math.log2(freq / 0.25)
+                    raw_score += math.log2(pos_freqs.get(subseq[pos], 0.001) / 0.25)
 
                 normalized = (raw_score - min_score) / score_range
                 if normalized >= threshold:
-                    # Convert position to forward strand coordinates
-                    fwd_pos = len(seq_upper) - i - motif_len
+                    position = i if strand == "+" else len(seq_upper) - i - motif_len
                     matches.append(
                         {
                             "motif_id": motif_id,
-                            "position": fwd_pos,
-                            "strand": "-",
+                            "position": position,
+                            "strand": strand,
                             "score": round(normalized, 6),
                         }
                     )

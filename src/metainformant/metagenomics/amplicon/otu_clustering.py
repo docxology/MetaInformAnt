@@ -108,20 +108,7 @@ def calculate_identity(seq1: str, seq2: str) -> float:
     # Three matrices: M (match/mismatch), X (gap in seq2), Y (gap in seq1)
     NEG_INF = float("-inf")
 
-    # For memory efficiency, use two-row approach
-    [NEG_INF] * (m + 1)
-    [NEG_INF] * (m + 1)
-    [NEG_INF] * (m + 1)
-
-    [NEG_INF] * (m + 1)
-    [NEG_INF] * (m + 1)
-    [NEG_INF] * (m + 1)
-
-    # Traceback matrices (we need full matrices for traceback)
-    [[0] * (m + 1) for _ in range(n + 1)]
-    [[0] * (m + 1) for _ in range(n + 1)]
-    [[0] * (m + 1) for _ in range(n + 1)]
-
+    # Store all rows for traceback
     # Store all rows for traceback
     all_m = [[NEG_INF] * (m + 1) for _ in range(n + 1)]
     all_x = [[NEG_INF] * (m + 1) for _ in range(n + 1)]
@@ -162,9 +149,6 @@ def calculate_identity(seq1: str, seq2: str) -> float:
             y_from_m = all_m[i][j - 1] + gap_open + gap_extend
             y_from_y = all_y[i][j - 1] + gap_extend
             all_y[i][j] = max(y_from_m, y_from_y)
-
-    # Best terminal score
-    max(all_m[n][m], all_x[n][m], all_y[n][m])
 
     # Traceback to count matches
     i, j = n, m

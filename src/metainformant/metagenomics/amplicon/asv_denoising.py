@@ -114,12 +114,6 @@ def estimate_error_rates(
 
     logger.info(f"Estimating error rates from {len(quality_scores)} reads")
 
-    # Build quality -> error probability mapping from observed scores
-    all_scores: Counter[int] = Counter()
-    for scores in quality_scores:
-        for q in scores:
-            all_scores[q] += 1
-
     quality_error_rates: dict[int, float] = {}
     for q in range(0, 42):  # Phred scores typically 0-41
         # P_error = 10^(-Q/10)

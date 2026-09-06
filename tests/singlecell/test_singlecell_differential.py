@@ -155,6 +155,20 @@ class TestDifferentialExpression:
         # gene_0 has only 1 expressing cell per group (< 3), should be skipped
         assert "g0" not in gene_set
 
+    def test_all_zero_expression_returns_empty(self) -> None:
+        """Genes with no expressing cells anywhere are filtered by min_cells."""
+        matrix = np.zeros((20, 5)).tolist()
+        groups = [0] * 10 + [1] * 10
+        results = differential_expression(matrix, groups, [f"g{i}" for i in range(5)])
+        assert results == []
+
+    def test_adjusted_p_at_least_raw_p(self) -> None:
+        """Benjamini-Hochberg adjusted p-values never fall below raw ones."""
+        matrix, groups, gene_names = _make_de_data()
+        results = differential_expression(matrix, groups, gene_names, method="wilcoxon")
+        for r in results:
+            assert r["adjusted_p"] >= r["p_value"] - 1e-12
+
 
 # ---------------------------------------------------------------------------
 # pseudobulk_de
@@ -405,3 +419,10 @@ class TestGeneSetScoring:
     def test_gene_names_mismatch_raises(self) -> None:
         with pytest.raises(ValueError, match="must match"):
             gene_set_scoring([[1.0, 2.0]], {"s": ["g"]}, ["a"])
+
+    def test_mean_method_separates_elevated_cells(self) -> None:
+        """Mean scores must be higher for cells with elevated pathway genes."""
+        matrix, gene_sets, gene_names = self._make_scoring_data()
+        result = gene_set_scoring(matrix, gene_sets, gene_names, method="mean", seed=0)
+        scores = result["scores"]["pathway_A"]
+        assert np.mean(scores[:25]) > np.mean(scores[25:])

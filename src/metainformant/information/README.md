@@ -29,6 +29,7 @@ graph TD
 
         MA[metrics/advanced/] --> |geometry.py| FG[Fisher-Rao, Hellinger]
         MA --> |channel.py| CH[Channel Capacity]
+        MA --> |hypothesis.py| HT[Permutation Tests]
         MA --> |decomposition.py| DC[PID, Synergy]
         MA --> |semantic.py| SEM[Semantic Similarity]
 
@@ -69,7 +70,7 @@ graph TD
 
 | Module | Purpose |
 |--------|---------|
-| [`metrics/`](metrics/) | Information-theoretic measures organized into `core/` (syntactic, continuous, estimation), `advanced/` (geometry, channel, decomposition, semantic), and `analysis/` (information profiles) |
+| [`metrics/`](metrics/) | Information-theoretic measures organized into `core/` (syntactic, continuous, estimation), `advanced/` (geometry, channel, decomposition, hypothesis, semantic), and `analysis/` (information profiles, advanced analysis) |
 | [`network_info/`](network_info/) | Transfer entropy, Granger causality, information flow networks |
 | [`integration/`](integration/) | Cross-omic information integration (DNA, RNA, single-cell) |
 | [`workflow/`](workflow/) | Batch entropy analysis and end-to-end pipelines |

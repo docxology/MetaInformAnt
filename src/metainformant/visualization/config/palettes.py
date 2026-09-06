@@ -97,9 +97,14 @@ def categorical(n: int, *, palette: str = "wong") -> List[str]:
         n: Number of colors needed.
         palette: ``"wong"`` (default, 8 colors), ``"tol"`` (7 colors), or
             ``"ibm"`` (5 colors). Falls back to matplotlib tab20 for n > palette size.
+
+        Raises:
+            ValueError: If *palette* is not one of ``"wong"``, ``"tol"``, ``"ibm"``.
     """
-    palettes = {"wong": WONG, "tol": TOL_BRIGHT, "ibm": IBM_COLORBLIND}
-    base = palettes.get(palette, WONG)
+    palettes_map = {"wong": WONG, "tol": TOL_BRIGHT, "ibm": IBM_COLORBLIND}
+    if palette not in palettes_map:
+        raise ValueError(f"Unknown palette '{palette}'. Available: {sorted(palettes_map)}")
+    base = palettes_map[palette]
     if n <= len(base):
         return base[:n]
     # Fall back to tab20 for larger needs
@@ -138,13 +143,14 @@ def significance_palette() -> Dict[str, str]:
 
 def significance_color(pvalue: float) -> str:
     """Return a color string for a given p-value."""
+    palette = significance_palette()
     if pvalue < 0.001:
-        return "#D32F2F"
+        return palette["highly_significant"]
     if pvalue < 0.01:
-        return "#FF9800"
+        return palette["significant"]
     if pvalue < 0.05:
-        return "#FFC107"
-    return "#9E9E9E"
+        return palette["marginally_significant"]
+    return palette["not_significant"]
 
 
 def heatmap_cmap(name: str = "expression") -> mcolors.Colormap:

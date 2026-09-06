@@ -528,10 +528,13 @@ def _ibs_kinship(genotype_matrix: List[List[int]]) -> List[List[float]]:
 
 
 def _astle_kinship(genotype_matrix: List[List[int]]) -> List[List[float]]:
-    """Compute kinship matrix using Astle-Balding method.
+    """Compute kinship matrix using the Astle-Balding standardization.
 
-    The Astle-Balding method computes relatedness using standardized genotypes
-    centered by allele frequency.
+    Note: with the current standardization ``(g - 2p) / sqrt(2p(1-p))`` and
+    per-locus-pair normalization by the valid-locus count, this is numerically
+    identical to the Yang GRM implemented in ``_yang_kinship``; the two entry
+    points are kept for API stability. (A weighted Astle-Balding variant would
+    normalize by the sum of ``2p(1-p)`` across loci instead.)
 
     Args:
         genotype_matrix: Genotype matrix (variants x samples)
@@ -539,46 +542,7 @@ def _astle_kinship(genotype_matrix: List[List[int]]) -> List[List[float]]:
     Returns:
         Kinship matrix
     """
-    n_samples = len(genotype_matrix[0])
-    n_variants = len(genotype_matrix)
-    kinship = [[0.0] * n_samples for _ in range(n_samples)]
-
-    # Compute allele frequencies
-    allele_freqs = []
-    for locus in genotype_matrix:
-        valid = [g for g in locus if g >= 0]
-        if valid:
-            freq = sum(valid) / (2 * len(valid))  # Divide by 2 because diploid
-            allele_freqs.append(max(0.01, min(0.99, freq)))  # Bound away from 0 and 1
-        else:
-            allele_freqs.append(0.5)
-
-    # Standardize genotypes and compute kinship
-    for i in range(n_samples):
-        for j in range(i, n_samples):
-            kinship_sum = 0.0
-            valid_count = 0
-
-            for v in range(n_variants):
-                gi = genotype_matrix[v][i]
-                gj = genotype_matrix[v][j]
-
-                if gi >= 0 and gj >= 0:
-                    p = allele_freqs[v]
-                    var = 2 * p * (1 - p)
-                    if var > 0:
-                        # Standardized genotype contribution
-                        zi = (gi - 2 * p) / math.sqrt(var)
-                        zj = (gj - 2 * p) / math.sqrt(var)
-                        kinship_sum += zi * zj
-                        valid_count += 1
-
-            if valid_count > 0:
-                kinship_value = kinship_sum / valid_count
-                kinship[i][j] = kinship_value
-                kinship[j][i] = kinship_value
-
-    return kinship
+    return _yang_kinship(genotype_matrix)
 
 
 def _yang_kinship(genotype_matrix: List[List[int]]) -> List[List[float]]:

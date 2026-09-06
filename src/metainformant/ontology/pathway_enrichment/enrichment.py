@@ -354,7 +354,6 @@ def gsea(
     """
     ranked_list = [g[0] for g in ranked_genes]
     rank_weights = [float(g[1]) for g in ranked_genes]
-    len(ranked_list)
 
     results: list[dict] = []
 

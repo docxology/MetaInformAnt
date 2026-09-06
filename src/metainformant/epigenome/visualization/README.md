@@ -30,6 +30,6 @@ from metainformant.epigenome.visualization.visualization import (
     plot_methylation_profile, plot_chipseq_peaks
 )
 
-fig = plot_methylation_profile(meth_data, region="chr1:1M-2M", output_path="output/meth.png")
-fig = plot_chipseq_peaks(peaks, output_path="output/chip_peaks.png")
+axes = plot_methylation_profile(meth_data, output_path="output/meth.png")
+axes = plot_chipseq_peaks(peaks, chromosome="chr1", output_path="output/chip_peaks.png")
 ```

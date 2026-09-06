@@ -387,7 +387,7 @@ def _traceback_local(
     i, j = start_i, start_j
     DIAGONAL, UP, LEFT, STOP = 0, 1, 2, 3
 
-    while traceback_matrix[i, j] != STOP:
+    while i > 0 and j > 0 and traceback_matrix[i, j] != STOP:
         if traceback_matrix[i, j] == DIAGONAL:
             aligned_seq1.append(seq1[i - 1])
             aligned_seq2.append(seq2[j - 1])
@@ -403,16 +403,13 @@ def _traceback_local(
             j -= 1
         else:
             break
-
-        if i < 0 or j < 0:
-            break
-
     # Reverse the sequences since we built them backwards
     aligned_seq1.reverse()
     aligned_seq2.reverse()
 
-    # Calculate start positions in original sequences
-    start_pos_seq1 = i if i >= 0 else 0
-    start_pos_seq2 = j if j >= 0 else 0
+    # Start positions: after the loop, (i, j) is the cell before the first
+    # consumed character, i.e. the 0-based start of the local alignment.
+    start_pos_seq1 = i
+    start_pos_seq2 = j
 
     return "".join(aligned_seq1), "".join(aligned_seq2), (start_pos_seq1, start_pos_seq2)

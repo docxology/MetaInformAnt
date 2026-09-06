@@ -8,10 +8,12 @@ This module provides functionality organized into the following structure:
 
 ## Subpackages
 
+- `annotation/` — exports: `build_background_from_vcf_genes`, `genes_to_go_annotations`, `gwas_hits_to_genes`, `rank_genes_by_pvalue`
 - `core/` — exports: `go`, `obo`, `types`
 - `pathway_enrichment/` — exports: `enrichment`
 - `query/` — exports: `query`, `serialize`
-- `visualization/` — exports: `visualization`
+- `visualization/` — exports: `enrichment_dotplot`, `enrichment_score_plot`, `pathway_network_plot`
+- `workflow/` — exports: `run_ontology`
 
 ## Rules
 

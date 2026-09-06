@@ -82,8 +82,10 @@ DEFAULT_OUTPUT = Path("output/amalgkit")
 def load_counts(db_path: Path = DEFAULT_DB) -> Dict[str, Dict[str, int]]:
     """Load species × state counts from the progress database."""
     conn = sqlite3.connect(str(db_path))
-    rows = conn.execute("SELECT species, state, COUNT(*) FROM samples GROUP BY species, state").fetchall()
-    conn.close()
+    try:
+        rows = conn.execute("SELECT species, state, COUNT(*) FROM samples GROUP BY species, state").fetchall()
+    finally:
+        conn.close()
 
     result: Dict[str, Dict[str, int]] = {}
     for sp, state, count in rows:
@@ -96,11 +98,13 @@ def load_counts(db_path: Path = DEFAULT_DB) -> Dict[str, Dict[str, int]]:
 def load_failed_details(db_path: Path = DEFAULT_DB) -> List[Dict[str, Any]]:
     """Load failed sample details."""
     conn = sqlite3.connect(str(db_path))
-    rows = conn.execute(
-        "SELECT species, srr_id, error, updated_at FROM samples "
-        "WHERE state = 'failed' ORDER BY species, updated_at DESC"
-    ).fetchall()
-    conn.close()
+    try:
+        rows = conn.execute(
+            "SELECT species, srr_id, error, updated_at FROM samples "
+            "WHERE state = 'failed' ORDER BY species, updated_at DESC"
+        ).fetchall()
+    finally:
+        conn.close()
     return [{"species": r[0], "srr_id": r[1], "error": r[2], "when": r[3]} for r in rows]
 
 
@@ -250,9 +254,7 @@ def plot_overall_donut(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) -> None:
             sizes.append(totals[s])
             clrs.append(COLORS[s])
 
-    wedges, _ = ax.pie(
-        sizes, colors=clrs, startangle=90, wedgeprops={"width": 0.32, "edgecolor": "white", "linewidth": 2.5}
-    )
+    ax.pie(sizes, colors=clrs, startangle=90, wedgeprops={"width": 0.32, "edgecolor": "white", "linewidth": 2.5})
 
     # Center stats
     quant = totals.get("quantified", 0)

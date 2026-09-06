@@ -269,7 +269,7 @@ class AmalgkitRunLayout:
         """Get path to the merged expression table."""
         if self.merge_dir is None:
             raise ValueError("AmalgkitRunLayout.merge_dir is not configured")
-        return self.merge_dir / "expression_matrix.tsv"
+        return self.merge_dir / "merged_abundance.tsv"
 
     @classmethod
     def from_work_dir(cls, work_dir: str | Path) -> "AmalgkitRunLayout":

@@ -16,8 +16,6 @@ from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-_ENV_PREFIX = "LR_"
-
 
 @dataclass
 class RunSummary:
@@ -289,6 +287,11 @@ def build_run_summary(
     return summary
 
 
+def _fmt_num(value: Any) -> str:
+    """Format a stat with thousands separators; missing values render as 'N/A'."""
+    return f"{value:,}" if isinstance(value, (int, float)) and not isinstance(value, bool) else str(value)
+
+
 def export_run_summary(
     summary: RunSummary,
     output_path: Path | str,
@@ -327,10 +330,10 @@ def export_run_summary(
             lines.extend(
                 [
                     "--- Quality Control ---",
-                    f"  Total reads:   {summary.qc_stats.get('total_reads', 'N/A'):,}",
-                    f"  Total bases:   {summary.qc_stats.get('total_bases', 'N/A'):,}",
-                    f"  N50:           {summary.qc_stats.get('n50', 'N/A'):,}",
-                    f"  Mean length:   {summary.qc_stats.get('mean_length', 'N/A'):,.1f}",
+                    f"  Total reads:   {_fmt_num(summary.qc_stats.get('total_reads', 'N/A'))}",
+                    f"  Total bases:   {_fmt_num(summary.qc_stats.get('total_bases', 'N/A'))}",
+                    f"  N50:           {_fmt_num(summary.qc_stats.get('n50', 'N/A'))}",
+                    f"  Mean length:   {_fmt_num(summary.qc_stats.get('mean_length', 'N/A'))}",
                     f"  Mean quality:  {summary.qc_stats.get('mean_quality', 'N/A')}",
                     "",
                 ]
@@ -340,10 +343,10 @@ def export_run_summary(
             lines.extend(
                 [
                     "--- Assembly ---",
-                    f"  Contigs:       {summary.assembly_stats.get('total_contigs', 'N/A'):,}",
-                    f"  Total bases:   {summary.assembly_stats.get('total_bases', 'N/A'):,}",
-                    f"  N50:           {summary.assembly_stats.get('n50', 'N/A'):,}",
-                    f"  Largest:       {summary.assembly_stats.get('largest_contig', 'N/A'):,}",
+                    f"  Contigs:       {_fmt_num(summary.assembly_stats.get('total_contigs', 'N/A'))}",
+                    f"  Total bases:   {_fmt_num(summary.assembly_stats.get('total_bases', 'N/A'))}",
+                    f"  N50:           {_fmt_num(summary.assembly_stats.get('n50', 'N/A'))}",
+                    f"  Largest:       {_fmt_num(summary.assembly_stats.get('largest_contig', 'N/A'))}",
                     "",
                 ]
             )
@@ -353,8 +356,8 @@ def export_run_summary(
                 [
                     "--- Methylation ---",
                     f"  Mod type:      {summary.methylation_stats.get('modification_type', 'N/A')}",
-                    f"  Total sites:   {summary.methylation_stats.get('total_sites', 'N/A'):,}",
-                    f"  Methylated:    {summary.methylation_stats.get('methylated_sites', 'N/A'):,}",
+                    f"  Total sites:   {_fmt_num(summary.methylation_stats.get('total_sites', 'N/A'))}",
+                    f"  Methylated:    {_fmt_num(summary.methylation_stats.get('methylated_sites', 'N/A'))}",
                     f"  Global rate:   {summary.methylation_stats.get('global_methylation_rate', 'N/A')}",
                     "",
                 ]

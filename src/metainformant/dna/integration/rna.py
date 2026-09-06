@@ -7,7 +7,7 @@ and cross-omics correlation studies.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from metainformant.core.utils import logging
 
@@ -37,34 +37,45 @@ def find_open_reading_frames(dna_sequence: str) -> List[Tuple[int, int, str]]:
 def predict_transcription_start_sites(dna_sequence: str, window_size: int = 50) -> List[Tuple[int, float]]:
     """Predict transcription start sites using sequence motifs.
 
+    Each distinct TATA box occurrence in the sequence is reported exactly
+    once, keyed by its absolute start position. (The previous sliding-window
+    implementation re-detected the same box from every window start and
+    emitted many duplicate entries per box with varying scores.)
+
     Args:
         dna_sequence: DNA sequence to analyze
-        window_size: Window size around potential TSS
+        window_size: Retained for API compatibility; scoring no longer
+            depends on an arbitrary sliding-window offset.
 
     Returns:
-        List of tuples (position, score) for potential TSS
+        List of tuples (position, score) for potential TSS in ascending
+        position order. ``position`` is the absolute box start plus the box
+        length (as before). Scoring rule (deterministic, applied per box):
+        1.0 when the box has at least 20 bp of upstream sequence context
+        and at least 10 bp of downstream context after the box end, 0.5
+        otherwise. Matches are case-insensitive.
 
     Example:
         >>> dna = "TTTTATAATTTTT"
         >>> tss = predict_transcription_start_sites(dna)
-        >>> isinstance(tss, list)
+        >>> tss == [(7, 0.5)]
         True
     """
-    # Look for TATA box and other promoter elements
     tata_box = "TATA"
+    sequence = dna_sequence.upper()
 
-    potential_tss = []
-
-    # Scan for TATA box
-    for i in range(len(dna_sequence) - len(tata_box) + 1):
-        window = dna_sequence[i : i + window_size].upper()
-
-        # Check for TATA box approximately 25-35bp upstream of TSS
-        tata_pos = window.find(tata_box)
-        if tata_pos != -1 and tata_pos < window_size - 10:  # Leave room for downstream elements
-            # Calculate position score (simplified)
-            score = 1.0 if tata_pos >= 20 and tata_pos <= 35 else 0.5
-            potential_tss.append((i + tata_pos + len(tata_box), score))
+    potential_tss: List[Tuple[int, float]] = []
+    search_start = 0
+    while True:
+        box_start = sequence.find(tata_box, search_start)
+        if box_start == -1:
+            break
+        box_end = box_start + len(tata_box)
+        has_upstream_room = box_start >= 20
+        has_downstream_room = box_end + 10 <= len(sequence)
+        score = 1.0 if has_upstream_room and has_downstream_room else 0.5
+        potential_tss.append((box_end, score))
+        search_start = box_start + 1
 
     return potential_tss
 
@@ -77,7 +88,8 @@ def find_transcription_factor_binding_sites(dna_sequence: str, tf_motifs: Dict[s
         tf_motifs: Dictionary mapping TF names to consensus sequences
 
     Returns:
-        Dictionary mapping TF names to binding site positions
+        Dictionary mapping each motif sequence to the positions where it
+        occurs in the sequence (keys are motif sequences, not TF names)
 
     Example:
         >>> dna = "GGGAATTTCCGGG"
@@ -161,36 +173,72 @@ def analyze_gene_structure(dna_sequence: str) -> Dict[str, Any]:
     }
 
 
+def _gene_gc_content(feature: Any) -> Optional[float]:
+    """Extract per-gene GC content from a per-gene DNA feature entry.
+
+    Accepts a DNA sequence string, a feature dict with a "gc_content" key,
+    or a feature dict with a "sequence" key. Returns None when no usable
+    GC value can be derived.
+    """
+    if isinstance(feature, str):
+        sequence = feature.upper()
+        if not sequence:
+            return None
+        return (sequence.count("G") + sequence.count("C")) / len(sequence)
+    if isinstance(feature, dict):
+        if "gc_content" in feature:
+            return float(feature["gc_content"])
+        nested = feature.get("sequence")
+        if isinstance(nested, str) and nested:
+            nested_upper = nested.upper()
+            return (nested_upper.count("G") + nested_upper.count("C")) / len(nested_upper)
+    return None
+
+
 def correlate_dna_with_rna_expression(
     dna_features: Dict[str, Any], rna_expression: Dict[str, float]
 ) -> Dict[str, float]:
     """Correlate DNA sequence features with RNA expression levels.
 
     Args:
-        dna_features: Dictionary with DNA sequence features
+        dna_features: Dictionary mapping gene IDs to per-gene DNA features.
+            Each value may be a feature dict (e.g. ``{"gc_content": 0.6}``),
+            a DNA sequence string, or a feature dict with a "sequence" key;
+            per-gene GC content is derived accordingly.
         rna_expression: Dictionary mapping gene IDs to expression levels
 
     Returns:
-        Dictionary with correlation results
+        Dictionary with correlation results. ``"gc_expression"`` is the
+        Pearson correlation between per-gene GC content and expression
+        levels over the genes present in both inputs. Returns an empty
+        dict when either input is empty or fewer than two shared genes
+        yield a usable GC value.
 
     Example:
-        >>> dna_feat = {"gc_content": 0.6, "orf_count": 2}
+        >>> dna_feat = {"gene1": {"gc_content": 0.6}, "gene2": {"gc_content": 0.4}}
         >>> rna_expr = {"gene1": 100.0, "gene2": 50.0}
         >>> correlation = correlate_dna_with_rna_expression(dna_feat, rna_expr)
         >>> isinstance(correlation, dict)
         True
     """
-    correlations = {}
+    correlations: Dict[str, float] = {}
 
-    # Simple correlation analysis
-    if "gc_content" in dna_features and rna_expression:
-        # GC content vs expression correlation
-        gc_values = [dna_features["gc_content"]] * len(rna_expression)
-        expr_values = list(rna_expression.values())
+    if not dna_features or not rna_expression:
+        return correlations
 
-        if len(gc_values) == len(expr_values) and len(gc_values) > 1:
-            correlation = calculate_correlation(gc_values, expr_values)
-            correlations["gc_expression"] = correlation
+    gc_values: List[float] = []
+    expr_values: List[float] = []
+    for gene, expression in rna_expression.items():
+        if gene not in dna_features:
+            continue
+        gc = _gene_gc_content(dna_features[gene])
+        if gc is None:
+            continue
+        gc_values.append(gc)
+        expr_values.append(expression)
+
+    if len(gc_values) > 1:
+        correlations["gc_expression"] = calculate_correlation(gc_values, expr_values)
 
     return correlations
 
@@ -349,8 +397,24 @@ def predict_gene_function_from_sequence(dna_sequence: str) -> Dict[str, Any]:
         >>> "protein_features" in function
         True
     """
-    # Analyze sequence features
-    gc_content = (dna_sequence.count("G") + dna_sequence.count("C")) / len(dna_sequence)
+    # Neutral result for empty/whitespace-only input (same shape as below)
+    if not dna_sequence.strip():
+        return {
+            "gc_content": 0.0,
+            "orf_count": 0,
+            "protein_features": {
+                "codon_usage": {},
+                "cai": 0.0,
+                "protein_length": 0,
+                "coding_sequence_length": len(dna_sequence),
+            },
+            "regulatory_elements": {"tata_box": [], "caat_box": [], "gc_box": [], "enhancer_motifs": []},
+            "predicted_function": "unknown",
+        }
+
+    # Analyze sequence features (case-insensitive GC counting)
+    upper_sequence = dna_sequence.upper()
+    gc_content = (upper_sequence.count("G") + upper_sequence.count("C")) / len(dna_sequence)
 
     # Find ORFs
     orfs = find_open_reading_frames(dna_sequence)

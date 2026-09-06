@@ -1,11 +1,13 @@
 # Cloud Module
 
-Cloud deployment and infrastructure automation for METAINFORMANT bioinformatics workflows.
+GCP VM lifecycle management for METAINFORMANT pipeline workloads.
 
 ## Overview
 
-Cloud deployment and infrastructure automation for METAINFORMANT bioinformatics workflows.
-
+The `metainformant.cloud` module creates, monitors, and tears down Google Cloud
+Compute Engine VMs that run the amalgkit RNA-seq pipeline at scale. It shells
+out to the `gcloud` CLI via `subprocess` — no Google Cloud Python SDK is
+required.
 
 ## Table of Contents
 
@@ -13,13 +15,9 @@ Cloud deployment and infrastructure automation for METAINFORMANT bioinformatics 
 - [Key Components](#key-components)
   - [CloudConfig (`cloud_config.py`)](#cloudconfig-cloud_configpy)
   - [GCPDeployer (`gcp_deployer.py`)](#gcpdeployer-gcp_deployerpy)
-- [Genome Preparation](#genome-preparation)
-  - [Reference Genome Indexing](#reference-genome-indexing)
-  - [Caching Strategy](#caching-strategy)
 - [Workflow Example: RNA-seq on Cloud](#workflow-example-rna-seq-on-cloud)
+- [CLI](#cli)
 - [Cost Optimization](#cost-optimization)
-  - [Preemptible VMs (70-80% savings)](#preemptible-vms-70-80-savings)
-  - [Cost Estimation](#cost-estimation)
 - [Troubleshooting](#troubleshooting)
 - [See Also](#see-also)
 
@@ -27,224 +25,161 @@ Cloud deployment and infrastructure automation for METAINFORMANT bioinformatics 
 
 ```mermaid
 flowchart TD
-    A[User Request] --> B[CloudConfig]
+    A[User / deploy_gcp.py] --> B[CloudConfig]
     B --> C[GCPDeployer]
 
-    C --> D[VM Provisioning]
-    D --> E[Environment Setup]
-    E --> F[Docker Build]
-    F --> G[Pipeline Execution]
-    G --> H[Results Collection]
+    C -->|gcloud CLI| D[VM Provisioning]
+    C -->|gcloud compute ssh| E[Pipeline Monitoring]
+    C -->|gcloud compute scp| F[Results Download]
 
-    H --> I[VM Tear-down]
-
-    subgraph "GCP Resources"
-        D --> Compute[Compute Engine]
-        E --> Storage[Cloud Storage]
-        E --> Network[VPC Firewall]
-    end
-
-    subgraph "Container Layer"
-        F --> Image[Docker Image]
-        Image --> Container[Running Container]
-        Container --> Tools[Bioinformatics Tools]
-    end
+    D --> G[cloud_startup.sh via instance metadata]
+    G --> H[Docker Build + Pipeline Execution on VM]
+    H --> E
 ```
 
 ## Key Components
 
 ### CloudConfig (`cloud_config.py`)
 
-Configuration management for cloud deployments:
+Configuration for a GCP compute instance running the pipeline:
 
 ```python
 from metainformant.cloud import CloudConfig
 
 config = CloudConfig(
-    project_id="my-gcp-project",
-    region="us-central1",
+    project="my-gcp-project",
     zone="us-central1-a",
-    machine_type="n1-standard-8",
-    disk_size_gb=100,
-    docker_image="metainformant/amplicon:latest",
-    startup_script="scripts/cloud/cloud_startup.sh"
+    machine_type="n2-highcpu-96",
+    disk_size_gb=500,
+    spot=True,
 )
+errors = config.validate()  # list of validation errors ([] when valid)
 ```
 
 **Configuration Fields:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `project_id` | str | GCP project ID (required) |
-| `region` | str | GCP region (default: `us-central1`) |
-| `zone` | str | GCP zone (default: `us-central1-a`) |
-| `machine_type` | str | Compute Engine machine type (default: `n1-standard-8`) |
-| `disk_size_gb` | int | Boot disk size in GB (default: 100) |
-| `docker_image` | str | Docker image to deploy |
-| `preemptible` | bool | Use preemptible VMs for cost savings (default: `False`) |
-| `network` | str | VPC network name (default: `default`) |
-| `service_account` | str | Service account email (optional) |
-| `scopes` | list[str] | OAuth2 scopes (default: cloud-platform) |
-| `startup_script` | str | Path to startup script |
-| `shutdown_script` | str | Path to shutdown script (optional) |
-| `metadata` | dict | Custom metadata key-value pairs |
-| `labels` | dict | Resource labels for organization |
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `project` | str | `""` | GCP project ID (required; `validate()` enforces) |
+| `zone` | str | `us-central1-a` | GCP zone |
+| `instance_name` | str | `metainformant-pipeline` | VM instance name |
+| `machine_type` | str | `n2-highcpu-96` | Compute Engine machine type |
+| `disk_size_gb` | int | `500` | Boot disk size in GB (`validate()` warns below 100) |
+| `local_ssd_count` | int | `0` | Number of attached NVMe local SSDs |
+| `spot` | bool | `True` | Spot pricing with `STOP` on termination |
+| `max_gb` | float | `20.0` | Max sample size in GB for the pipeline |
+| `workers` | int | `80` | Parallel download/quant workers |
+| `threads` | int | `96` | Total CPU threads for the pipeline |
+| `gcs_bucket` | str | `""` | Optional GCS bucket for result sync |
+| `repo_url` | str | MetaInformAnt GitHub URL | Git URL cloned on the VM |
+| `repo_branch` | str | `main` | Git branch checked out on the VM |
+| `docker_image` | str | `metainformant-pipeline` | Docker image built on-VM |
+| `service_account_email` | str | `""` | Optional service account for the VM |
+| `config_dir` / `output_dir` | str | `config/amalgkit` / `output/amalgkit` | Pipeline paths |
+| `image_family` / `image_project` | str | `debian-12` / `debian-cloud` | Boot image |
+
+**Methods:**
+
+| Member | Description |
+|--------|-------------|
+| `startup_script_path` | Property: `Path` to `scripts/cloud/cloud_startup.sh` |
+| `validate()` | Returns a list of validation error strings (empty = valid) |
+| `to_metadata()` | Pipeline params as GCP instance metadata key-value pairs |
 
 ### GCPDeployer (`gcp_deployer.py`)
 
-VM lifecycle management and job execution:
+VM lifecycle management via the `gcloud` CLI:
 
 ```python
-from metainformant.cloud import GCPDeployer
+from metainformant.cloud import CloudConfig, GCPDeployer
 
-deployer = GCPDeployer(config)
+deployer = GCPDeployer(CloudConfig(project="my-gcp-project"))
 
-# Start VM and wait for initialization
-instance = deployer.create_instance("my-analysis-001")
-
-# Upload data to VM
-deployer.upload_directory("local/data/", "/home/user/data/", instance_name=instance.name)
-
-# Execute command on VM
-result = deployer.execute_command(
-    "uv run metainformant rna workflow --config config.yaml",
-    instance_name=instance.name
-)
-
-# Download results
-deployer.download_directory("/home/user/output/", "local/results/", instance_name=instance.name)
-
-# Clean up
-deployer.delete_instance(instance.name)
+cmd = deployer.create_vm(dry_run=True)   # preview the full gcloud command
+deployer.full_deploy()                   # create VM, wait up to 5 min for SSH
+deployer.get_vm_status()                 # describe → dict ({"status": "NOT_FOUND"} if absent)
+deployer.get_pipeline_status()           # remote progress via SSH
+deployer.tail_logs(lines=50)             # docker logs from the pipeline container
+deployer.sync_to_gcs()                   # requires cfg.gcs_bucket
+deployer.download_results("output/amalgkit")
+deployer.stop_vm()                       # -> bool
+deployer.start_vm()                      # -> bool
+deployer.delete_vm()                     # deletes VM and all disks
 ```
 
 **Methods:**
 
 | Method | Description |
 |--------|-------------|
-| `create_instance(name, labels=None)` | Create new Compute Engine VM |
-| `delete_instance(instance_name)` | Delete VM and attached resources |
-| `get_instance(instance_name)` | Get instance status |
-| `list_instances()` | List all project instances |
-| `wait_for_ready(instance_name, timeout=600)` | Block until VM SSH-accessible |
-| `upload_file(local, remote, instance_name)` | Upload single file via SCP |
-| `upload_directory(local, remote, instance_name)` | Recursively upload directory |
-| `download_file(remote, local, instance_name)` | Download single file |
-| `download_directory(remote, local, instance_name)` | Recursively download directory |
-| `execute_command(command, instance_name, capture_output=True)` | Run shell command on VM |
-| `stream_logs(instance_name, filter=None)` | Stream Cloud Logging entries |
-
-## Genome Preparation
-
-### Reference Genome Indexing
-
-```python
-from metainformant.cloud.genome_prep import prepare_genome_index
-
-# Download and index genome (runs on cloud VM)
-index_path = prepare_genome_index(
-    accession="GCA_003254395.2",  # Apis mellifera
-    output_dir="/data/genomes/",
-    tools=["samtools", "bwa", "hisat2"],
-    overwrite=False
-)
-```
-
-**Supported tools:**
-- BWA-MEM (`bwa index`)
-- HISAT2 (`hisat2-build`)
-- STAR (`STAR --runMode genomeGenerate`)
-- Bowtie2 (`bowtie2-build`)
-- SAMtools FASTA index (`samtools faidx`)
-
-### Caching Strategy
-
-Pre-downloaded genomes cached in GCS bucket:
-```
-gs://metainformant-genomes/
- amellifera/
- GCA_003254395.2.fna.gz
- GCA_003254395.2.bwa.index.tar.gz
- metadata.json
-```
-
-If genome already cached → instantly download from bucket. Otherwise fetch from NCBI and upload to cache.
+| `gcloud_installed()` | Static: `True` if `gcloud` is on `PATH` |
+| `create_vm(dry_run=False)` | Create the VM with the startup script and metadata; returns instance dict (or dry-run command dict) |
+| `delete_vm()` | Delete VM and disks; `True` on success |
+| `stop_vm()` / `start_vm()` | Stop (keep) / start the VM; `True` on success |
+| `get_vm_status()` | `gcloud compute instances describe` JSON as dict |
+| `get_pipeline_status()` | SSH: run `scripts/rna/check_pipeline_status.py` on the VM |
+| `tail_logs(lines=50)` | SSH: tail the `metainformant-pipeline` container logs |
+| `get_startup_log()` | SSH: read the VM startup-script log |
+| `download_results(local_dir="output/amalgkit")` | Run `scripts/cloud/download_results.sh` (direct `gcloud scp` fallback) |
+| `sync_to_gcs()` | SSH: `gsutil -m rsync` project output to `gs://<bucket>/amalgkit/` |
+| `wait_for_ssh(max_wait=300)` | Poll SSH every 10 s until ready or timeout |
+| `full_deploy()` | Create VM, wait for SSH, return `{"vm", "ssh_ready", "status"}` |
 
 ## Workflow Example: RNA-seq on Cloud
 
 ```python
 from metainformant.cloud import CloudConfig, GCPDeployer
 
-config = CloudConfig.from_yaml("config/cloud_deploy.yaml")
+config = CloudConfig(
+    project="my-gcp-project",
+    workers=80,
+    threads=96,
+    gcs_bucket="my-results-bucket",
+)
 deployer = GCPDeployer(config)
 
-# 1. Create VM
-instance = deployer.create_instance("rna-pipeline-20250115")
+result = deployer.full_deploy()          # VM boots; startup script starts the pipeline
+print(result["ssh_ready"], result["status"])
 
-# 2. Upload FASTQ data
-deployer.upload_directory("data/fastq/", "/data/fastq/", instance_name=instance.name)
-
-# 3. Upload config
-deployer.upload_file("config/amalgkit.yaml", "/config/pipeline.yaml", instance_name=instance.name)
-
-# 4. Execute pipeline
-result = deployer.execute_command(
-    "cd /work && uv run python scripts/rna/run_all_species.py --config-dir projects/hymenoptera_amalgkit/config/amalgkit --data-root /data/amalgkit --dry-run",
-    instance_name=instance.name
-)
-print(f"Pipeline exit code: {result.returncode}")
-
-# 5. Download results
-deployer.download_directory("/work/output/", "output/cloud_run/", instance_name=instance.name)
-
-# 6. Clean up
-deployer.delete_instance(instance.name)
+deployer.get_pipeline_status()           # poll progress
+deployer.download_results("output/amalgkit")
+deployer.delete_vm()
 ```
+
+## CLI
+
+`scripts/cloud/deploy_gcp.py` wraps the deployer:
+
+```bash
+python scripts/cloud/deploy_gcp.py deploy --project my-project [options]
+python scripts/cloud/deploy_gcp.py status --project my-project
+python scripts/cloud/deploy_gcp.py logs --lines 50
+python scripts/cloud/deploy_gcp.py startup-log
+python scripts/cloud/deploy_gcp.py download --output output/amalgkit
+python scripts/cloud/deploy_gcp.py stop | start | destroy
+```
+
+Supporting scripts live in `scripts/cloud/` (`cloud_startup.sh`,
+`download_results.sh`, `install_gcloud.sh`, `vm_setup.sh`, `prep_genomes.py`).
 
 ## Cost Optimization
 
-### Preemptible VMs (70-80% savings)
-
-```python
-config = CloudConfig(
-    preemptible=True,
-    max_run_time_hours=6,  # Preemptible limit is 24h
-    retry_on_preempt=True  # Auto-restart on fresh VM
-)
-```
-
-| Instance Type | On-Demand | Preemptible | Savings |
-|---------------|-----------|-------------|---------|
-| n1-standard-8 | $0.38/hr | $0.10/hr | 74% |
-| n1-standard-16 | $0.76/hr | $0.20/hr | 74% |
-
-### Cost Estimation
-
-```python
-cost = config.estimate_cost(runtime_hours=6, machine_type="n1-standard-8")
-print(f"Estimated: ${cost:.2f}")  # "Estimated: $4.80"
-```
+`CloudConfig.spot` defaults to `True`, which provisions the VM with
+`--provisioning-model SPOT --instance-termination-action STOP`. The default
+`n2-highcpu-96` shape is sized for the 96-thread pipeline default.
 
 ## Troubleshooting
 
-| Failure | Cause | Fix |
-|---------|-------|-----|
-| `PERMISSION_DENIED` | Missing IAM roles | Grant `compute.instanceAdmin.v1` + `storage.objectAdmin` |
-| `INSUFFICIENT_CPU` | Quota exhausted | Request quota increase or change region |
-| `STARTUP_SCRIPT_FAILED` | Missing dependency | Check `/var/log/startupscript.log` on VM |
-| `SSH_TIMEOUT` | Firewall blocking | Allow TCP:22 in VPC firewall rules |
-
----
-
-**Next:** [RNA Pipeline](../rna/) | [GWAS Pipeline](../gwas/) | [Orchestration Guide](../../../docs/rna/ORCHESTRATION.md)
-
----
+| Symptom | Check |
+|---------|-------|
+| `gcloud CLI not found` on deploy | Run `bash scripts/cloud/install_gcloud.sh` |
+| VM created but SSH never ready | `deployer.get_startup_log()`; check firewall allows TCP:22 |
+| Pipeline not progressing | `deployer.get_pipeline_status()`; container logs via `deployer.tail_logs()` |
+| `create_vm` raises `Invalid config` | Inspect `CloudConfig.validate()` errors (missing project, small disk, workers/threads < 1) |
 
 ## See Also
 
-- **Documentation**: [docs/cloud/index.md](../../../docs/cloud/index.md) — Architecture, deployment guides, cost optimization
-- **API Reference**: [docs/cloud/SPEC.md](../../../docs/cloud/SPEC.md) — Full type signatures, error codes, JSON schemas
-- **Troubleshooting**: [docs/cloud/TROUBLESHOOTING.md](../../../docs/cloud/TROUBLESHOOTING.md)
-- **Economics**: [docs/cloud/ECONOMICS.md](../../../docs/cloud/ECONOMICS.md) — Cost profiles, VM strategies, budget tracking
-- **GWAS Pipeline**: [docs/gwas/index.md](../../../docs/gwas/index.md) — Can also be deployed via `deploy_gcp.py`
-- **Mothership**: [README.md](../README.md) — Project homepage
+- **Documentation**: [docs/cloud/index.md](../../../docs/cloud/index.md)
+- **API Reference**: [SPEC.md](SPEC.md)
+- **RNA Pipeline**: [../rna/](../rna/)
+- **GWAS Pipeline**: [../gwas/](../gwas/)
+- **Mothership**: [README.md](../README.md)

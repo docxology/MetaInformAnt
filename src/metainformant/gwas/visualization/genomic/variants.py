@@ -371,7 +371,9 @@ def missingness_plot(
     """Create a plot showing missing genotype data patterns.
 
     Args:
-        vcf_path: Path to VCF file (string or Path) or parsed VCF data dictionary
+        vcf_path: Path to VCF file (string or Path) or dict with a
+            "genotypes" key in VARIANT-major order (rows = variants,
+            columns = samples), as produced by ``_parse_vcf_basic``.
         output_file: Optional output file path
         title: Plot title
         by_sample: If True, plot by sample; if False, by variant. Must be bool or None.

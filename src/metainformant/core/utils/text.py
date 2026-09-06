@@ -153,11 +153,14 @@ def truncate_text(text: str, max_length: int, suffix: str = "...") -> str:
         suffix: Suffix to add when truncating
 
     Returns:
-        Truncated text
+        Truncated text of at most ``max_length`` characters
     """
     if len(text) <= max_length:
         return text
-    return text[: max_length - len(suffix)] + suffix
+    # A suffix longer than the budget would otherwise produce a string
+    # longer than max_length (negative slice); keep the result bounded.
+    keep = max(max_length - len(suffix), 0)
+    return text[:keep] + suffix
 
 
 def count_words(text: str) -> int:
@@ -182,5 +185,5 @@ def extract_email_addresses(text: str) -> list[str]:
     Returns:
         List of email addresses found
     """
-    email_pattern = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
+    email_pattern = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"
     return re.findall(email_pattern, text)

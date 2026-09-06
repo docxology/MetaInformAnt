@@ -7,6 +7,7 @@ analysis, and other integrative approaches.
 
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -126,9 +127,6 @@ class MultiOmicsData:
 
         if common_samples is None or len(common_samples) == 0:
             raise ValueError("No common samples found across omics datasets")
-
-        # Warn if samples don't fully overlap
-        import warnings
 
         all_samples = set()
         for df in self.data.values():
@@ -697,19 +695,13 @@ def _subset_variant_matrix(
     variant_ids: Optional[List[str]] = None,
 ) -> pd.DataFrame:
     """Subset a sample-by-variant matrix with clear missing-id errors."""
-    if sample_ids is not None:
-        missing_samples = [sample for sample in sample_ids if sample not in matrix.index]
-        if missing_samples:
-            raise ValueError(f"Sample IDs not found in variant data: {missing_samples}")
-        matrix = matrix.loc[sample_ids]
-
-    if variant_ids is not None:
-        missing_variants = [variant for variant in variant_ids if variant not in matrix.columns]
-        if missing_variants:
-            raise ValueError(f"Variant IDs not found in variant data: {missing_variants}")
-        matrix = matrix.loc[:, variant_ids]
-
-    return matrix
+    return _subset_omics_matrix(
+        matrix,
+        sample_ids=sample_ids,
+        feature_ids=variant_ids,
+        feature_label="Variant",
+        data_label="variant data",
+    )
 
 
 def _read_tabular_omics_data(data: Union[pd.DataFrame, str, Path], data_name: str) -> pd.DataFrame:
@@ -738,18 +730,19 @@ def _subset_omics_matrix(
     feature_ids: Optional[List[str]] = None,
     *,
     feature_label: str,
+    data_label: str = "omics data",
 ) -> pd.DataFrame:
     """Subset a sample-by-feature matrix with explicit missing-id errors."""
     if sample_ids is not None:
         missing_samples = [sample for sample in sample_ids if sample not in matrix.index]
         if missing_samples:
-            raise ValueError(f"Sample IDs not found in omics data: {missing_samples}")
+            raise ValueError(f"Sample IDs not found in {data_label}: {missing_samples}")
         matrix = matrix.loc[sample_ids]
 
     if feature_ids is not None:
         missing_features = [feature for feature in feature_ids if feature not in matrix.columns]
         if missing_features:
-            raise ValueError(f"{feature_label} IDs not found in omics data: {missing_features}")
+            raise ValueError(f"{feature_label} IDs not found in {data_label}: {missing_features}")
         matrix = matrix.loc[:, feature_ids]
 
     return matrix
@@ -1007,94 +1000,6 @@ def from_metabolomics(metabolomics_data: pd.DataFrame, normalize: bool = True, *
         )
 
     return processed_data
-
-
-def _integrate_by_correlation(aligned_data: Dict[str, pd.DataFrame], **kwargs: Any) -> Dict[str, Any]:
-    """Integrate omics data by computing cross-omics correlations."""
-    logger.info("Integrating by correlation analysis")
-
-    results: Dict[str, Any] = {}
-
-    # Compute pairwise correlations between all omics types
-    omics_types = list(aligned_data.keys())
-    correlation_matrices = {}
-
-    for i, omics1 in enumerate(omics_types):
-        for j, omics2 in enumerate(omics_types):
-            if i < j:  # Upper triangle only
-                data1 = aligned_data[omics1].values
-                data2 = aligned_data[omics2].values
-
-                # Compute correlation matrix
-                corr_matrix = np.corrcoef(data1.T, data2.T)[: data1.shape[1], data1.shape[1] :]
-
-                correlation_matrices[f"{omics1}_{omics2}"] = {
-                    "correlation_matrix": corr_matrix,
-                    "mean_correlation": np.mean(np.abs(corr_matrix)),
-                    "max_correlation": np.max(np.abs(corr_matrix)),
-                    "omics1_features": aligned_data[omics1].columns.tolist(),
-                    "omics2_features": aligned_data[omics2].columns.tolist(),
-                }
-
-    results["correlation_matrices"] = correlation_matrices
-
-    # Find most correlated feature pairs
-    top_correlations = []
-    for pair_name, corr_data in correlation_matrices.items():
-        corr_matrix = corr_data["correlation_matrix"]
-        features1 = corr_data["omics1_features"]
-        features2 = corr_data["omics2_features"]
-
-        # Find top correlations
-        n_top = min(100, corr_matrix.size)  # Top 100 or all if fewer
-        flat_indices = np.argsort(np.abs(corr_matrix).flatten())[-n_top:]
-
-        for idx in flat_indices:
-            i, j = np.unravel_index(idx, corr_matrix.shape)
-            top_correlations.append(
-                {
-                    "omics_pair": pair_name,
-                    "feature1": features1[i],
-                    "feature2": features2[j],
-                    "correlation": corr_matrix[i, j],
-                }
-            )
-
-    results["top_correlations"] = sorted(top_correlations, key=lambda x: abs(x["correlation"]), reverse=True)
-
-    return results
-
-
-def _validate_omics_data_compatibility(omics_data: Dict[str, pd.DataFrame]) -> None:
-    """Validate that omics datasets are compatible for integration."""
-    if not omics_data:
-        raise errors.ValidationError("No omics data provided")
-
-    # Check that all datasets have samples (rows)
-    for omics_type, data in omics_data.items():
-        if data.shape[0] == 0:
-            raise errors.ValidationError(f"{omics_type} data has no samples")
-
-        if data.shape[1] == 0:
-            raise errors.ValidationError(f"{omics_type} data has no features")
-
-    # Check for reasonable sample overlap (at least some samples should be shared)
-    sample_sets = []
-    for data in omics_data.values():
-        if hasattr(data, "index"):
-            sample_sets.append(set(data.index))
-        else:
-            sample_sets.append(set(range(data.shape[0])))
-
-    intersection = set.intersection(*sample_sets)
-    if len(intersection) == 0:
-        raise errors.ValidationError("No common samples found across all omics datasets")
-
-    union = set.union(*sample_sets)
-    overlap_fraction = len(intersection) / len(union)
-
-    if overlap_fraction < 0.1:  # Less than 10% overlap
-        logger.warning(f"Low sample overlap across datasets: {overlap_fraction:.1%}")
 
 
 def compute_multiomics_similarity(omics_data: Dict[str, pd.DataFrame], method: str = "correlation") -> np.ndarray:

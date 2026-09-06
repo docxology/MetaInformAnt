@@ -190,6 +190,20 @@ def test_scrape_single_species_saves_file(antwiki_scraper_config: AntWikiScraper
 
 
 @pytest.mark.network
+def test_confidence_score_includes_taxonomy(antwiki_scraper_config: AntWikiScraperConfig) -> None:
+    """Regression: subfamily/tribe must contribute through data['taxonomy']."""
+    scraper = AntWikiScraper(antwiki_scraper_config)
+    data = scraper.scrape_species_page("Camponotus_pennsylvanicus")
+    assert data is not None
+    # genus (0.5) + subfamily (0.3) + tribe (0.2) -> full 30% taxonomy weight
+    # body length + head width + color -> full 30% morphology weight
+    # foraging + nest (no colony size) -> 80% of the 20% behavior weight
+    # habitat + regions -> full 20% ecology weight
+    assert data["confidence_score"] == pytest.approx(0.3 + 0.3 + 0.8 * 0.2 + 0.2)
+    scraper.close()
+
+
+@pytest.mark.network
 @pytest.mark.slow
 def test_get_species_list(antwiki_scraper_config: AntWikiScraperConfig) -> None:
     """Test deterministic species-list discovery."""

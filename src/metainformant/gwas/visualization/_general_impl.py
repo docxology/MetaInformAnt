@@ -435,7 +435,7 @@ def qq_plot(
 
             gc_result = genomic_control(p_values=p_vals.tolist())
             lambda_gc = gc_result.get("lambda_gc", 1.0) if isinstance(gc_result, dict) else 1.0
-        except (ImportError, Exception):
+        except Exception:
             median_p = float(np.median(p_vals))
             if 0 < median_p < 1 and _has_scipy:
                 chi2_median = float(scipy_stats.chi2.ppf(1.0 - median_p, df=1))

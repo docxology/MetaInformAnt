@@ -68,6 +68,13 @@ class TestPredictDrugInteraction:
         assert result["mechanism"] == "None identified"
         assert "No known interaction" in result["description"]
 
+    def test_clopidogrel_omeprazole_is_major(self) -> None:
+        # The database previously contained a duplicate moderate entry for this
+        # pair that silently overwrote the major record.
+        result = predict_drug_interaction("clopidogrel", "omeprazole")
+        assert result["severity"] == "major"
+        assert result["evidence_level"] == "A"
+
     def test_custom_database_used_instead_of_builtin(self) -> None:
         custom = {
             ("x-drug", "y-drug"): {

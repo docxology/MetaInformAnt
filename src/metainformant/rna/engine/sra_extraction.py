@@ -114,6 +114,11 @@ def extract_sra_directly(config: AmalgkitWorkflowConfig, sra_dir: Path, output_d
         if list(sample_out_dir.glob("*.fastq.gz")):
             return True
 
+        # fasterq-dump refuses to run when its output files already exist; a
+        # previous failed attempt leaves non-gzipped partials behind.
+        for stale_fastq in sample_out_dir.glob("*.fastq"):
+            logger.info(f"Removing stale partial FASTQ before retry: {stale_fastq.name}")
+            stale_fastq.unlink(missing_ok=True)
         try:
             cmd = [
                 fasterq_dump,
@@ -245,11 +250,10 @@ def manual_integration_fallback(config: AmalgkitWorkflowConfig) -> bool:
 
     quant_out_dir = Path(steps_config.get("quant", {}).get("out_dir", config.work_dir))
     quant_input_dir = quant_out_dir / "getfastq"
-    quant_input_dir.mkdir(parents=True, exist_ok=True)
 
     found_any = False
 
-    for fastq_file in getfastq_dir.glob("**/*.fastq*"):
+    for fastq_file in list(getfastq_dir.glob("**/*.fastq")) + list(getfastq_dir.glob("**/*.fastq.gz")):
         if fastq_file.is_file():
             sample_id = None
             if fastq_file.parent.name.startswith(("SRR", "ERR", "DRR")):

@@ -14,7 +14,7 @@ This module provides functionality organized into the following structure:
 - `epidemiology/` — exports: `models`
 - `evolutionary_dynamics/` — exports: `core`, `egt`
 - `perception/` — exports: `psychophysics`, `signal_detection`
-- `population_genetics/` — exports: `coalescent`, `core`, `demography`, `effective_size`, `fst`
+- `population_genetics/` — exports: `coalescent`, `core`, `demography`, `effective_size`, `fst`, `ld`, `selection`, `statistics`
 - `quantitative_genetics/` — exports: `core`, `price`
 
 ## Statistical-claim boundary

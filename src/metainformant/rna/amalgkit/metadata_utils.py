@@ -1,5 +1,6 @@
 """Utilities for Amalgkit metadata manipulation."""
 
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -66,8 +67,14 @@ def deduplicate_metadata(file_path: str | Path, output_path: str | Path | None =
         if initial_count > final_count:
             logger.info(f"Deduplicated {path.name}: {initial_count} -> {final_count} rows")
 
-        # Save cleaned metadata
-        df.to_csv(output_path, sep="\t", index=False)
+        # Save cleaned metadata atomically: a crash mid-write must not corrupt
+        # an irreplaceable campaign metadata file.
+        temporary = Path(output_path).with_name(f".{Path(output_path).name}.tmp")
+        try:
+            df.to_csv(temporary, sep="\t", index=False)
+            os.replace(temporary, output_path)
+        finally:
+            temporary.unlink(missing_ok=True)
         return True
 
     except Exception as e:

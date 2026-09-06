@@ -243,7 +243,8 @@ def bootstrap_confidence_interval(
         n_bootstraps: Number of bootstrap resamples
 
     Returns:
-        Tuple of (lower_bound, upper_bound)
+        Dictionary with keys ``statistic``, ``ci_lower``, ``ci_upper``,
+        ``confidence_level`` and ``n_bootstrap`.
     """
     if n_bootstrap is not None:
         n_bootstraps = n_bootstrap

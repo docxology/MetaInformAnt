@@ -197,11 +197,6 @@ def detect_microhomology(
     if not flanking_seq:
         return ""
 
-    if isinstance(breakpoint, Breakpoint):
-        pass
-    else:
-        breakpoint.get("position", 0)
-
     seq = flanking_seq.upper()
     mid = len(seq) // 2
 

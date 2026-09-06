@@ -18,14 +18,24 @@ import pandas as pd
 import pytest
 
 from metainformant.singlecell.analysis.clustering import (
+    HAS_IGRAPH,
+    HAS_LEIDEN,
+    HAS_LOUVAIN,
+    HAS_NETWORKX,
+    _graph_from_adjacency,
     compute_cluster_composition,
     compute_cluster_silhouette,
     evaluate_clustering_performance,
     find_marker_genes,
+    hierarchical_clustering,
     kmeans_clustering,
+    leiden_clustering,
+    louvain_clustering,
 )
+from scipy import sparse
 from metainformant.singlecell.analysis.trajectory import (
     compute_diffusion_pseudotime,
+    compute_pseudotime_from_dimensionality_reduction,
     compute_trajectory_entropy,
     dpt_trajectory,
     find_trajectory_branches,
@@ -265,3 +275,101 @@ class TestTrajectoryAnalysis:
         assert entropy["n_windows"] == len(entropy["entropy_profile"])
         for value in entropy["entropy_profile"]:
             assert value >= 0.0
+
+
+# ---------------------------------------------------------------------------
+# hierarchical_clustering
+# ---------------------------------------------------------------------------
+
+
+class TestHierarchicalClustering:
+    def test_recovers_two_clusters(self) -> None:
+        data = hierarchical_clustering(_make_clustered_data(), n_clusters=2)
+        assert "hierarchical_cluster" in data.obs.columns
+        labels = data.obs["hierarchical_cluster"].values
+        assert len(set(labels[:30])) == 1
+        assert len(set(labels[30:])) == 1
+        assert set(labels[30:]) != set(labels[:30])
+
+    def test_uns_records_linkage_shape(self) -> None:
+        data = hierarchical_clustering(_make_clustered_data(), n_clusters=2)
+        info = data.uns["hierarchical_clustering"]
+        assert info["n_clusters"] == 2
+        assert info["linkage_method"] == "ward"
+        assert info["linkage_matrix_shape"] is not None
+
+    def test_invalid_linkage_method_raises(self) -> None:
+        with pytest.raises(Exception):
+            hierarchical_clustering(_make_clustered_data(), n_clusters=2, linkage_method="nope")
+
+
+# ---------------------------------------------------------------------------
+# Graph-based clustering (dependency-aware) and networkx-3 regression
+# ---------------------------------------------------------------------------
+
+
+class TestGraphConstruction:
+    def test_graph_from_sparse_adjacency(self) -> None:
+        """networkx 3.x removed from_scipy_sparse_matrix/from_numpy_matrix;
+        the module must build graphs through a supported constructor."""
+        adjacency = sparse.csr_matrix(np.array([[0.0, 2.0], [2.0, 0.0]]))
+        graph = _graph_from_adjacency(adjacency)
+        assert graph.number_of_nodes() == 2
+        assert graph.number_of_edges() == 1
+        assert graph[0][1]["weight"] == 2.0
+
+    def test_graph_from_dense_adjacency(self) -> None:
+        graph = _graph_from_adjacency(np.array([[0.0, 1.0, 0.0], [1.0, 0.0, 1.0], [0.0, 1.0, 0.0]]))
+        assert graph.number_of_nodes() == 3
+        assert graph.number_of_edges() == 2
+
+
+@pytest.mark.skipif(not (HAS_NETWORKX and HAS_IGRAPH and HAS_LEIDEN), reason="graph clustering deps not available")
+class TestLeidenClustering:
+    def test_adds_clusters_to_obs(self) -> None:
+        data = leiden_clustering(_make_clustered_data(), resolution=1.0, n_neighbors=5)
+        assert "leiden_cluster" in data.obs.columns
+        assert data.uns["leiden_clustering"]["n_clusters"] >= 1
+
+
+@pytest.mark.skipif(not (HAS_NETWORKX and HAS_LOUVAIN), reason="graph clustering deps not available")
+class TestLouvainClustering:
+    def test_adds_clusters_to_obs(self) -> None:
+        data = louvain_clustering(_make_clustered_data(), resolution=1.0, n_neighbors=5)
+        assert "louvain_cluster" in data.obs.columns
+        assert data.uns["louvain_clustering"]["n_clusters"] >= 1
+
+
+# ---------------------------------------------------------------------------
+# Embedding-based pseudotime and entropy edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestEmbeddingPseudotime:
+    def test_pseudotime_monotonic_from_root(self) -> None:
+        data = _make_trajectory_data()
+        data.obs["PC1"] = np.linspace(0.0, 1.0, data.n_obs)
+        result = compute_pseudotime_from_dimensionality_reduction(data, ["PC1"], root_cell=0)
+        assert "embedding_pseudotime" in result.obs.columns
+        pseudotime = result.obs["embedding_pseudotime"].values
+        assert np.all(np.diff(pseudotime) >= -1e-9)
+        assert pseudotime[0] == pytest.approx(0.0)
+        assert result.uns["embedding_pseudotime"]["root_cell"] == 0
+        # original object must remain untouched
+        assert "embedding_pseudotime" not in data.obs.columns
+
+    def test_missing_dimension_columns_raise(self) -> None:
+        with pytest.raises(Exception):
+            compute_pseudotime_from_dimensionality_reduction(_make_trajectory_data(), ["NOPE"])
+
+
+class TestTrajectoryEntropyEdgeCases:
+    def test_window_larger_than_dataset_raises(self) -> None:
+        data = dpt_trajectory(_make_trajectory_data(), root_cell=0)
+        with pytest.raises(Exception):
+            compute_trajectory_entropy(data, pseudotime_col="dpt_pseudotime", window_size=1000)
+
+    def test_window_zero_raises(self) -> None:
+        data = dpt_trajectory(_make_trajectory_data(), root_cell=0)
+        with pytest.raises(Exception):
+            compute_trajectory_entropy(data, pseudotime_col="dpt_pseudotime", window_size=0)

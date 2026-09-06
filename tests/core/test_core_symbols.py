@@ -154,3 +154,44 @@ class TestFuzzyFindSymbol:
         results = symbols.fuzzy_find_symbol("XyzAbc123", "function", repo_root, threshold=0.9)
         assert isinstance(results, list)
         # Should return empty or very few results with high threshold
+
+
+class TestCachedIndexTypes:
+    """Tests that cached indexes preserve declared field types."""
+
+    def test_cached_index_returns_path_objects(self, tmp_path):
+        """Cache round-trip must return Path file_path values, not raw strings."""
+
+        pkg = tmp_path / "samplepkg"
+        pkg.mkdir()
+        (pkg / "mod.py").write_text(
+            "def sampled_function(a, b=1):\n"
+            "    '''Sample docstring.'''\n"
+            "    return a + b\n",
+            encoding="utf-8",
+        )
+
+        # First call builds and writes the cache; second call reads it back.
+        symbols.index_functions(pkg, use_cache=True)
+        index = symbols.index_functions(pkg, use_cache=True)
+
+        defs = index["sampled_function"]
+        assert defs, "expected indexed function in cached index"
+        for defn in defs:
+            assert isinstance(defn.file_path, Path)
+
+    def test_find_symbol_references_skips_vendored_trees(self, tmp_path):
+        """Reference scanning must not descend into vendored/generated trees."""
+
+        repo = tmp_path / "repo"
+        pkg = repo / "pkg"
+        vendored = repo / ".venv" / "lib" / "vendored"
+        pkg.mkdir(parents=True)
+        vendored.mkdir(parents=True)
+        (pkg / "app.py").write_text("handler = widget\n", encoding="utf-8")
+        (vendored / "site.py").write_text("handler = widget\n", encoding="utf-8")
+
+        references = symbols.find_symbol_references("widget", repo)
+
+        assert all(".venv" not in str(ref.file_path) for ref in references)
+        assert references, "expected at least the pkg reference"

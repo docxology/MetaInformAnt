@@ -33,7 +33,7 @@ from metainformant.epigenome.workflow.workflow import (
 )
 
 config = load_epigenome_config("config/epigenome.yaml")
-meth_results = run_methylation_workflow(config)
-chip_results = run_chipseq_workflow(config)
-integrated = integrate_epigenome_results(config)
+meth_results = run_methylation_workflow("data/methylation/", "output/methylation/", config)
+chip_results = run_chipseq_workflow("data/chipseq/", "output/chipseq/", config)
+integrated = integrate_epigenome_results(meth_results, chip_results, atac_results, output_dir="output/integrated/")
 ```

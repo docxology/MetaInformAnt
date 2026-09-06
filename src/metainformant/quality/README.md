@@ -1,10 +1,10 @@
 # Quality Module
 
-Sequencing quality control -- FASTQ analysis, contamination detection, composite quality scoring, and MultiQC report integration.
+Sequencing quality control -- FASTQ analysis, contamination detection, composite quality scoring, and QC report generation.
 
 ## Overview
 
-Sequencing quality control -- FASTQ analysis, contamination detection, composite quality scoring, and MultiQC report integration.
+Sequencing quality control -- FASTQ analysis, contamination detection, composite quality scoring, and QC report generation.
 
 
 ## Table of Contents
@@ -28,7 +28,7 @@ graph TD
         A[analysis/] --> |metrics.py| QM[Quality Scoring & Metrics]
         A --> |contamination.py| CD[Contamination Detection]
 
-        R[reporting/] --> |multiqc_integration.py| MQ[MultiQC Integration]
+        R[reporting/] --> |multiqc_integration.py| MQ[QC Reporting]
     end
 
     FQ --> QM
@@ -90,7 +90,7 @@ score = calculate_quality_score(qc_data, data_type="fastq")
 | `calculate_coverage_metrics` | Depth-of-coverage statistics |
 | `calculate_gc_metrics` | GC content distribution analysis |
 | `detect_outliers` | IQR/Z-score outlier detection |
-| `batch_quality_analysis` | Multi-sample batch QC comparison |
+| `batch_quality_analysis` | Per-file FASTQ QC analysis across many files |
 
 ## Submodules
 
@@ -99,7 +99,7 @@ score = calculate_quality_score(qc_data, data_type="fastq")
 | [`io/`](io/) | FASTQ parsing (`FastqRecord`, `read_fastq_records`), filtering |
 | [`analysis/`](analysis/) | Quality metrics (`calculate_quality_score`) and contamination (`ContaminationDetector`) |
 | [`batch/`](batch/) | Batch effect detection (PVCA, silhouette) and ComBat-like correction |
-| [`reporting/`](reporting/) | MultiQC integration and report generation |
+| [`reporting/`](reporting/) | QC report generation, threshold checking, and trend analysis |
 
 ## Quick Start
 

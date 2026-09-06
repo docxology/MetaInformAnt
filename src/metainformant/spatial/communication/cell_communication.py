@@ -16,6 +16,7 @@ Optional dependencies:
 from __future__ import annotations
 
 from collections import defaultdict
+import zlib
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger
@@ -46,6 +47,8 @@ def compute_ligand_receptor_interactions(
     expression: Any,
     cell_types: list[str],
     lr_database: dict[str, list[dict[str, str]]] | None = None,
+    *,
+    seed: int | None = None,
 ) -> dict[str, Any]:
     """Compute ligand-receptor interaction scores between cell types.
 
@@ -67,6 +70,8 @@ def compute_ligand_receptor_interactions(
             ``"pairs"`` mapping to a list of dicts, each with ``"ligand"``
             (gene name) and ``"receptor"`` (gene name). If None, uses the
             built-in database from ``default_lr_database()``.
+        seed: Optional random seed for the permutation test. When None
+            (default), the global numpy random state is used.
 
     Returns:
         Dictionary with keys:
@@ -128,10 +133,11 @@ def compute_ligand_receptor_interactions(
 
                 score = (ligand_expr * receptor_expr) / (bg_ligand * bg_receptor)
 
-                # Permutation p-value
+                # Permutation p-value (optionally seeded for reproducibility)
+                rng = np.random.RandomState(seed) if seed is not None else np.random
                 perm_scores = []
                 for _ in range(n_permutations):
-                    perm_labels = np.random.permutation(labels)
+                    perm_labels = rng.permutation(labels)
                     source_mask = perm_labels == source
                     target_mask = perm_labels == target
 
@@ -217,7 +223,6 @@ def spatial_interaction_score(
 
     data = np.asarray(expression, dtype=np.float64)
     coords = np.asarray(coordinates, dtype=np.float64)
-    data.shape[0]
 
     # Compute pairwise distances
     if HAS_SCIPY:
@@ -383,7 +388,7 @@ def build_communication_network(
 def default_lr_database() -> dict[str, list[dict[str, str]]]:
     """Return built-in ligand-receptor pair database.
 
-    Provides a curated subset of approximately 200 ligand-receptor pairs
+    Provides a curated subset of 95 ligand-receptor pairs
     covering major signaling pathways including chemokines, growth factors,
     Wnt, Notch, Hedgehog, TGF-beta, interleukins, and adhesion molecules.
     Gene names follow HGNC nomenclature.
@@ -637,8 +642,9 @@ def _gene_name_to_index(gene_name: str, n_genes: int) -> int | None:
             return idx
         return None
     except ValueError:
-        # Hash the gene name to a deterministic index
-        h = hash(gene_name) % n_genes
+        # Map the gene name to a stable index (independent of the interpreter
+        # hash seed, so results are reproducible across processes/runs)
+        h = zlib.crc32(gene_name.encode("utf-8")) % n_genes
         return h
 
 

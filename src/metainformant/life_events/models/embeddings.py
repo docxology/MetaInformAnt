@@ -12,20 +12,9 @@ from typing import Any, Dict, List
 import numpy as np
 
 from metainformant.core.utils import logging
+from metainformant.life_events.core.utils import _sequence_to_tokens
 
 logger = logging.get_logger(__name__)
-
-
-def _sequence_to_tokens(sequence: Any) -> List[str]:
-    """Normalize EventSequence objects and token lists to strings."""
-    if hasattr(sequence, "events"):
-        return [
-            f"{event.domain}:{event.event_type}" if getattr(event, "domain", None) else str(event.event_type)
-            for event in sequence.events
-        ]
-    if isinstance(sequence, str):
-        return [sequence]
-    return [str(event) for event in sequence]
 
 
 def learn_event_embeddings(

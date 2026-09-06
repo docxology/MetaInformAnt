@@ -8,8 +8,8 @@ DNA sequence analysis and genomics module for METAINFORMANT.
 - **Component Type**: Source Code
 
 ## Data Structures
-- **Sub-packages**: analysis, assembly, io, methylation, sequence, structural, variants, visualization, workflow
-- **Key Concepts**: Sequence analysis, variant calling, assembly, methylation
+- **Sub-packages**: alignment, annotation, expression, external, integration, io, phylogeny, population, sequence, variation
+- **Key Concepts**: sequence analysis, k-mers and motifs, pairwise/MSA alignment, phylogenetic tree construction and analysis, population genetics statistics, variant calling and VCF I/O, codon usage, transcription/translation, NCBI Entrez integration, FASTQ I/O
 
 ## API Definition
 ### Exports

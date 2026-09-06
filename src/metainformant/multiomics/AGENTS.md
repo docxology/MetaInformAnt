@@ -8,7 +8,7 @@ This module provides functionality organized into the following structure:
 
 ## Subpackages
 
-- `analysis/` — exports: `integration`
+- `analysis/` — exports: `integration`, `descriptive_summary`
 - `methods/` — exports: `factorization`, `clustering`
 - `pathways/` — exports: `enrichment`
 - `survival/` — exports: `analysis`

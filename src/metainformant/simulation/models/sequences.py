@@ -141,7 +141,6 @@ def mutate_sequence(seq: str, n_mut: int, *, rng: random.Random | None = None) -
         TypeError: If seq is not a string
     """
     validation.validate_type(seq, str, "seq")
-    validation.validate_range(n_mut, min_val=0, name="n_mut")
     validation.validate_range(n_mut, min_val=0, max_val=len(seq), name="n_mut")
 
     rng = coerce_rng(rng)

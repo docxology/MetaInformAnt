@@ -75,6 +75,14 @@ def test_correction_helpers_annotate_association_rows() -> None:
     assert _lambda_gc_from_associations(rows) is not None
 
 
+def test_lambda_gc_from_associations_uses_genomic_control_math() -> None:
+    """Lambda must be the chi2-median genomic-control statistic, not median(p)-based."""
+    assert _lambda_gc_from_associations([{"p_value": 0.5} for _ in range(10)]) == pytest.approx(1.0, abs=1e-3)
+    assert _lambda_gc_from_associations([{"p_value": 1e-10}] * 5 + [{"p_value": 0.5}] * 5) > 5
+    assert _lambda_gc_from_associations([]) is None
+    assert _lambda_gc_from_associations([{"p_value": 1.0}]) is None
+
+
 def test_write_summary_outputs_uses_standard_files(tmp_path: Path) -> None:
     """Summary output helper should write all standard GWAS report artifacts."""
     assoc_results = [{"beta": 0.5, "se": 0.1, "p_value": 1e-6, "q_value": 2e-6, "n_samples": 10, "maf": 0.3}]

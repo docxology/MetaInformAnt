@@ -1,7 +1,7 @@
 # AGENTS.md — `MetaInformAnt/tests/ontology/`
 
 tests for the ontology module.
-Files (verified 2026-08-29): __init__.py, test_ontology_api.py, test_ontology_comprehensive.py, test_ontology_enrichment.py, test_ontology_go_basic.py, test_ontology_obo_parser.py, test_ontology_query.py, test_ontology_serialization.py … (11 files).
+Files (verified 2026-09-05): __init__.py, test_ontology_annotation_regression.py, test_ontology_api.py, test_ontology_comprehensive.py, test_ontology_enrichment.py, test_ontology_go_basic.py, test_ontology_obo_parser.py, test_ontology_query.py, test_ontology_serialize.py, test_ontology_serialization.py, test_ontology_types.py, test_ontology_visualization.py (12 files).
 
 
 ## Conventions

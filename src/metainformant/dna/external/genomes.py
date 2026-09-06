@@ -148,8 +148,6 @@ def is_valid_assembly_accession(accession: str) -> bool:
         >>> is_valid_assembly_accession("invalid")
         False
     """
-    import re
-
     # NCBI assembly accession patterns
     # GCF_##########.## or GCA_##########
     pattern = r"^(GCF|GCA)_[0-9]{9,}(\.[0-9]+)?$"
@@ -196,11 +194,9 @@ def get_genome_metadata(accession: str) -> Dict[str, Any]:
         accession: Genome accession
 
     Returns:
-        Dictionary with genome metadata
-
-    Raises:
-        ValueError: If accession is invalid
-        requests.RequestException: If API request fails
+        Dictionary with genome metadata; on request failure or when no
+        report is available, returns ``{"accession": <accession>,
+        "error": <message>}`` instead of raising.
 
     Example:
         >>> # This would query NCBI for metadata
@@ -450,13 +446,9 @@ def get_chromosome_lengths(
                             # Extract chromosome name from title
                             chrom_name = acc
                             if "chromosome" in title.lower():
-                                # Try to extract chromosome number
-                                import re
-
                                 match = re.search(r"chromosome\s+(\w+)", title, re.IGNORECASE)
                                 if match:
                                     chrom_name = f"chr{match.group(1)}"
-
                             if length > 0:
                                 chromosome_lengths[chrom_name] = length
 

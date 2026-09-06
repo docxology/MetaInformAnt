@@ -6,7 +6,8 @@ Mathematical foundations for population genetics: coalescent theory, demography,
 
 | File | Purpose |
 |------|---------|
-| `coalescent.py` | Coalescent theory: TMRCA, Watterson theta, Tajima's D, SFS |
+| `coalescent.py` | Coalescent theory: TMRCA, Watterson theta, Tajima's D, SFS, coalescent simulation |
+| `core.py` | Core primitives: Hardy-Weinberg genotype frequencies, heterozygosity decay, inbreeding, mutation-selection balance |
 | `demography.py` | Growth models: exponential, logistic, age structure, bottleneck |
 | `effective_size.py` | Effective population size under sex ratio and demographic scenarios |
 | `fst.py` | F-statistics: FST from allele frequencies, Weir's FST, pairwise matrices |

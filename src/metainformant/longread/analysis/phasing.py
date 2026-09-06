@@ -558,22 +558,8 @@ def _greedy_max_cut(
         adj[i].append((j, w))
         adj[j].append((i, w))
 
-    # Greedy assignment
-    # Start with the first node in partition 0
+    # Greedy assignment: start with the first node in partition 0
     for node in range(1, num_nodes):
-        # Calculate benefit of placing in partition 0 vs 1
-        benefit_0 = 0.0  # Total weight of cut edges if in partition 0
-        benefit_1 = 0.0  # Total weight of cut edges if in partition 1
-
-        for neighbor, weight in adj[node]:
-            if neighbor >= node:
-                continue  # Only consider already-assigned nodes
-
-            if assignment[neighbor] == 0:
-                benefit_1 += weight  # In partition 1, this crosses the cut
-            else:
-                benefit_0 += weight  # In partition 0, this crosses the cut
-
         # For phasing, negative weights mean anti-phase (should be in different partitions)
         # Positive weights mean in-phase (should be in same partition)
         # We want to maximize: sum of |w| for edges crossing the cut if w < 0,

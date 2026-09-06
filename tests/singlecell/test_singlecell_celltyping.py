@@ -182,6 +182,44 @@ class TestAnnotateByMarkers:
         result = annotate_by_markers(matrix, marker_genes, method="scoring")
         assert len(result["cell_labels"]) == 30
 
+    def test_correlation_method_recovers_known_types(self) -> None:
+        """Regression: the correlation method used to return 0.0 for every
+        cell with >= 2 markers, making it useless for annotation. Marker
+        structure must now be recoverable via method="correlation"."""
+        matrix, gene_names, marker_genes = _make_expression_matrix(seed=5)
+        result = annotate_by_markers(matrix, marker_genes, gene_names=gene_names, method="correlation")
+        unique_labels = set(result["cell_labels"])
+        for t_name in marker_genes:
+            assert t_name in unique_labels, f"Expected {t_name} to appear in correlation labels"
+
+    def test_correlation_scores_positive_for_marker_expressing_cells(self) -> None:
+        rng = np.random.RandomState(3)
+        gene_names = [f"g{i}" for i in range(30)]
+        matrix = np.zeros((6, 30))
+        matrix[:, :10] = rng.exponential(3.0, (6, 10))
+        result = annotate_by_markers(
+            matrix,
+            {"A": gene_names[:10]},
+            gene_names=gene_names,
+            method="correlation",
+        )
+        for score in result["confidence_scores"]:
+            assert score > 0.0
+
+    def test_correlation_constant_row_scores_zero(self) -> None:
+        """A constant expression row has zero variance; correlation is
+        undefined and must fall back to 0.0 instead of raising."""
+        matrix = [[1.0] * 10, [2.0] * 10]
+        gene_names = [f"g{i}" for i in range(10)]
+        result = annotate_by_markers(
+            matrix,
+            {"A": gene_names[:3]},
+            gene_names=gene_names,
+            method="correlation",
+        )
+        for score in result["confidence_scores"]:
+            assert score == 0.0
+
 
 # ---------------------------------------------------------------------------
 # score_cell_type

@@ -485,7 +485,7 @@ def cluster_communities(
         method: Linkage method -- ``"upgma"`` (average), ``"single"``, or
             ``"complete"``.
         n_clusters: If provided, cut the dendrogram to yield this many
-            clusters. Must satisfy ``2 <= n_clusters <= N``.
+            clusters. Must satisfy ``1 <= n_clusters <= N``.
 
     Returns:
         Dictionary with keys:

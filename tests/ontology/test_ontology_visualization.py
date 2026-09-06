@@ -159,6 +159,16 @@ class TestPlotGOEnrichmentBarplot:
         plot_go_enrichment_barplot(results, ax=ax)
         assert ax is not None
 
+    def test_value_labels_are_formatted_numbers(self):
+        """Regression: bar value labels must show the p-value, not a literal format string."""
+        results = [{"term": "GO:0001", "pvalue": 0.01}, {"term": "GO:0002", "pvalue": 0.1}]
+        fig, ax = plt.subplots()
+        plot_go_enrichment_barplot(results, ax=ax)
+        texts = [t.get_text() for t in ax.texts]
+        assert texts, "expected value labels on bars"
+        assert "2.00" in texts  # -log10(0.01)
+        assert ".2f" not in texts
+
 
 # ---------------------------------------------------------------------------
 # plot_go_enrichment_dotplot

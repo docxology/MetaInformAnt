@@ -5,4 +5,6 @@ Simulates DNA methylation patterns for benchmarking and method development.
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from . import simulator
+
+__all__ = ["simulator"]

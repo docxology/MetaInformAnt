@@ -269,3 +269,28 @@ class TestComparePathwayProfiles:
     def test_empty_samples(self) -> None:
         result = compare_pathway_profiles({})
         assert result == {}
+
+
+class TestPredictOrfsPartial:
+    """Partial ORFs at sequence edges must be flagged."""
+
+    def test_orf_without_stop_is_partial(self) -> None:
+        # Start codon + 40 codons, sequence ends before any stop codon
+        seq = "ATG" + "GCT" * 40
+        orfs = predict_orfs(seq, min_length=90)
+        assert len(orfs) >= 1
+        assert any(orf.partial for orf in orfs)
+        for orf in orfs:
+            if orf.partial:
+                assert len(orf.nucleotide_seq) >= 90
+
+
+class TestAnnotateGenesECExtraction:
+    """EC numbers embedded in family IDs must be extracted."""
+
+    def test_ec_number_extracted(self, simple_hmm_db: dict) -> None:
+        hmm_db = {"FAM;EC:1.1.1.1": simple_hmm_db["COG:C0001"]}
+        sequences = {"gene1": "AAAAAAAGGGLLM" * 3}
+        results = annotate_genes(sequences, hmm_db=hmm_db, min_score=1.0)
+        assert results[0].gene_families == ["FAM;EC:1.1.1.1"]
+        assert results[0].ec_numbers == ["1.1.1.1"]

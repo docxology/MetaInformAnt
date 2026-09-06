@@ -6,6 +6,7 @@ Real implementationing used - all tests use real computational methods and data 
 
 from __future__ import annotations
 
+from metainformant.core.utils import errors
 import numpy as np
 import pandas as pd
 import pytest
@@ -13,8 +14,11 @@ import pytest
 from metainformant.multiomics.analysis.integration import (
     MultiOmicsData,
     canonical_correlation,
+    compute_multiomics_similarity,
     find_multiomics_modules,
     from_dna_variants,
+    from_epigenome_data,
+    from_metabolomics,
     from_protein_abundance,
     from_rna_expression,
     integrate_omics_data,
@@ -693,3 +697,78 @@ class TestIntegrationEdgeCases:
         with pytest.warns(UserWarning, match="Only 3 samples are common"):
             omics_data = MultiOmicsData(genomics=data1, transcriptomics=data2)
             assert omics_data.n_samples == 3
+
+
+class TestComputeMultiomicsSimilarity:
+    """Test sample-similarity computation across concatenated omics layers."""
+
+    def test_unsupported_method_raises(self):
+        """Unknown similarity methods are rejected with a clear error."""
+        with pytest.raises(errors.ValidationError, match="Unsupported similarity method"):
+            compute_multiomics_similarity(self._aligned_omics(), method="jaccard")
+
+    def _aligned_omics(self):
+        rng = np.random.RandomState(7)
+        samples = [f"S{i}" for i in range(12)]
+        return {
+            "rna": pd.DataFrame(rng.randn(12, 8), index=samples, columns=[f"G{i}" for i in range(8)]),
+            "protein": pd.DataFrame(rng.randn(12, 5), index=samples, columns=[f"P{i}" for i in range(5)]),
+        }
+
+    def test_correlation_similarity_shape_symmetry_and_diagonal(self):
+        """Correlation similarity is a symmetric matrix with unit diagonal."""
+        sim = compute_multiomics_similarity(self._aligned_omics(), method="correlation")
+        assert sim.shape == (12, 12)
+        np.testing.assert_allclose(np.diag(sim), 1.0, atol=1e-10)
+        np.testing.assert_allclose(sim, sim.T, atol=1e-10)
+
+    def test_euclidean_similarity_in_unit_range(self):
+        """Inverse-distance similarity stays in (0, 1]."""
+        sim = compute_multiomics_similarity(self._aligned_omics(), method="euclidean")
+        assert sim.shape == (12, 12)
+        assert np.all(sim > 0)
+        assert np.all(sim <= 1)
+
+    def test_cosine_similarity_shape(self):
+        """Cosine similarity returns one row/column per sample."""
+        sim = compute_multiomics_similarity(self._aligned_omics(), method="cosine")
+        assert sim.shape == (12, 12)
+
+
+class TestMetabolomicsAndEpigenomeConverters:
+    """Test metabolomics and epigenome converters."""
+
+    def test_from_metabolomics_zscores_columns(self):
+        """Normalization log-transforms positive data and z-scores each column."""
+        rng = np.random.RandomState(3)
+        data = pd.DataFrame(rng.lognormal(size=(15, 4)), columns=[f"M{i}" for i in range(4)])
+        result = from_metabolomics(data, normalize=True)
+        np.testing.assert_allclose(result.mean(axis=0), 0.0, atol=1e-10)
+        np.testing.assert_allclose(result.std(axis=0, ddof=0), 1.0, atol=1e-10)
+
+    def test_from_metabolomics_normalize_false_returns_copy(self):
+        """With normalize=False the input is returned as an untouched copy."""
+        data = pd.DataFrame({"M1": [1.0, 2.0], "M2": [3.0, 4.0]})
+        result = from_metabolomics(data, normalize=False)
+        pd.testing.assert_frame_equal(result, data)
+        result.iloc[0, 0] = -999.0
+        assert data.iloc[0, 0] == 1.0
+
+    def test_from_epigenome_data_returns_copy(self):
+        """Epigenome data passes through as a copy regardless of data_type."""
+        data = pd.DataFrame({"CpG1": [0.1, 0.8], "CpG2": [0.4, 0.6]})
+        result = from_epigenome_data(data, data_type="methylation")
+        pd.testing.assert_frame_equal(result, data)
+        assert result is not data
+
+
+class TestMultiOmicsDataMetadataHelpers:
+    """Test add_metadata/get_metadata helpers."""
+
+    def test_add_and_get_metadata(self):
+        """Metadata columns can be added after construction and read back."""
+        data = pd.DataFrame(np.random.randn(3, 2), index=["A", "B", "C"])
+        omics_data = MultiOmicsData(transcriptomics=data)
+        assert omics_data.get_metadata("batch") is None
+        omics_data.add_metadata("batch", [1, 2, 1])
+        assert list(omics_data.get_metadata("batch")) == [1, 2, 1]

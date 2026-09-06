@@ -84,7 +84,7 @@ simpson = calculate_diversity([[10, 20, 30, 40]], method="simpson")
 
 | Function | Module | Description |
 |----------|--------|-------------|
-| `functional_richness` | `analysis.functional` | FRic from convex hull volume |
+| `functional_richness` | `analysis.functional` | FRic via convex hull area (2D) or bounding-box volume (>=3 traits) |
 | `functional_evenness` | `analysis.functional` | FEve from minimum spanning tree |
 | `functional_divergence` | `analysis.functional` | FDiv weighted divergence |
 | `raos_quadratic_entropy` | `analysis.functional` | Rao's quadratic entropy |
@@ -123,9 +123,9 @@ fd = functional_diversity_suite(trait_matrix=traits, abundances=abund)
 
 ## Integration
 
-- **DNA** -- Phylogenetic diversity metrics use tree structures from `metainformant.dna.phylogeny`
 - **Information** -- Shannon entropy connects community diversity to information theory
-- **Simulation** -- Agent-based ecological models via `metainformant.simulation`
+- **Visualization** -- Plotting utilities follow `metainformant.visualization` conventions
+- **Simulation** -- Agent-based ecological models can consume community structures produced here (no direct import today)
 
 ## Related
 - [API Reference](SPEC.md) — Type signatures, error codes, data structures

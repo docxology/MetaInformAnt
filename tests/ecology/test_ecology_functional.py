@@ -21,6 +21,8 @@ from typing import List
 
 import pytest
 
+from metainformant.core.utils.errors import ValidationError
+
 from metainformant.ecology.analysis.functional import (
     community_weighted_mean,
     functional_beta_diversity,
@@ -130,8 +132,8 @@ class TestTraitDistanceMatrix:
             trait_distance_matrix([[1, 2], [3, 4]], method="hamming")
 
     def test_empty_raises(self) -> None:
-        """Empty trait matrix raises ValueError."""
-        with pytest.raises((ValueError, Exception)):
+        """Empty trait matrix raises ValidationError."""
+        with pytest.raises(ValidationError):
             trait_distance_matrix([], method="euclidean")
 
 
@@ -178,8 +180,8 @@ class TestFunctionalRichness:
         assert functional_richness([[1.0, 2.0]]) == 0.0
 
     def test_fric_empty_raises(self) -> None:
-        """Empty trait matrix raises ValueError."""
-        with pytest.raises((ValueError, Exception)):
+        """Empty trait matrix raises ValidationError."""
+        with pytest.raises(ValidationError):
             functional_richness([])
 
     def test_fric_abundance_mismatch_raises(self) -> None:

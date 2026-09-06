@@ -408,3 +408,23 @@ class TestLongReadOrchestrator:
         assert isinstance(result, PipelineResult)
         assert result.pipeline_name == "assembly"
         assert result.total_duration > 0
+
+
+class TestEmptyInputPlotsWriteFiles:
+    """Regression: plots with no data still write the output file they return."""
+
+    def test_read_length_histogram_empty_input_writes_file(self, tmp_path: Path) -> None:
+        from metainformant.longread.visualization.plots import plot_read_length_histogram
+
+        out = tmp_path / "empty_hist.png"
+        result = plot_read_length_histogram([], out)
+        assert result == out
+        assert out.exists() and out.stat().st_size > 0
+
+    def test_quality_vs_length_empty_input_writes_file(self, tmp_path: Path) -> None:
+        from metainformant.longread.visualization.plots import plot_quality_vs_length
+
+        out = tmp_path / "empty_scatter.png"
+        result = plot_quality_vs_length([], out)
+        assert result == out
+        assert out.exists() and out.stat().st_size > 0

@@ -1,7 +1,7 @@
 # AGENTS.md — `MetaInformAnt/tests/dna/`
 
 tests for DNA/sequence/alignment/phylogeny modules.
-Files (verified 2026-08-29): __init__.py, test_dna_accession.py, test_dna_alignment.py, test_dna_codon_usage.py, test_dna_compatibility_facades.py, test_dna_comprehensive.py, test_dna_consensus.py, test_dna_distances.py … (38 files).
+Files (verified 2026-09-05): __init__.py plus 39 test modules (test_dna_accession.py, test_dna_alignment.py, test_dna_codon_usage.py, test_dna_compatibility_facades.py, test_dna_comprehensive.py, test_dna_consensus.py, test_dna_distances.py, …, test_dna_variation_new.py).
 
 
 ## Children (documented on disk)

@@ -11,7 +11,7 @@ Spatial transcriptomics analysis: platform I/O (Visium, MERFISH, Xenium), spatia
 
 ## Data Structures
 
-- **Sub-packages**: io, analysis, communication, deconvolution, integration, visualization
+- **Sub-packages**: io, analysis, communication, deconvolution, integration, niche, visualization
 - **Key Concepts**: `SpatialDataset`, `TissuePosition`, Moran's I, ligand-receptor scoring
 
 ## API Definition

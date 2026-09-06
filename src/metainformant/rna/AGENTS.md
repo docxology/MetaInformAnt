@@ -34,7 +34,7 @@ See `tests/REAL_IMPLEMENTATION_TESTING_POLICY.md` for the full policy.
 ## Related Documentation
 
 - **Module guide**: [../../../docs/rna/](../../../docs/rna/) — In-depth usage, architecture, and examples
-- **API reference**: [SPEC.md](SPEC.md) — Type signatures, data structures, error codes
+- **Module specification**: [SPEC.md](SPEC.md) — Scope, packages, public interfaces, and invariants
 - **Core infrastructure**: [../core/AGENTS.md](../core/AGENTS.md) — Shared utilities (logging, config, I/O)
 - **Full module index**: [../../../docs/index.md](../../../docs/index.md) — Overview of all METAINFORMANT modules
 - **Dna module**: [../dna/AGENTS.md](../dna/AGENTS.md)

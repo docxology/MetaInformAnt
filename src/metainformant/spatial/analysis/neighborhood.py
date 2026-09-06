@@ -516,13 +516,9 @@ def ripley_k(
             area=area,
         )
 
-    n / area  # intensity estimate
-
     # Bounding box for edge correction
     x_min, y_min = pts.min(axis=0)
     x_max, y_max = pts.max(axis=0)
-    x_max - x_min
-    y_max - y_min
 
     def _compute_k(point_set: Any, n_pts: int) -> Any:
         """Compute K(r) for a set of points with isotropic edge correction."""

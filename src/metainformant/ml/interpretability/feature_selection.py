@@ -12,18 +12,15 @@ import math
 import random
 from collections import defaultdict
 from typing import Any
-
 from metainformant.core.utils.logging import get_logger
+from metainformant.ml._numeric import HAS_NUMPY, get_shape, to_1d_list, to_2d_list
 
 logger = get_logger(__name__)
 
 # Optional dependencies
 try:
     import numpy as np
-
-    HAS_NUMPY = True
 except ImportError:
-    HAS_NUMPY = False
     np = None
 
 try:
@@ -32,50 +29,6 @@ try:
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
-
-
-def _to_2d_list(X: Any) -> list[list[float]]:
-    """Convert input matrix to list of lists.
-
-    Args:
-        X: Input matrix (numpy array or list of lists).
-
-    Returns:
-        Matrix as list of lists.
-    """
-    if HAS_NUMPY and isinstance(X, np.ndarray):
-        return [[float(X[i, j]) for j in range(X.shape[1])] for i in range(X.shape[0])]
-    return [[float(v) for v in row] for row in X]
-
-
-def _to_1d_list(y: Any) -> list[float]:
-    """Convert input vector to list of floats.
-
-    Args:
-        y: Input vector.
-
-    Returns:
-        Vector as list of floats.
-    """
-    if HAS_NUMPY and isinstance(y, np.ndarray):
-        return [float(v) for v in y.ravel()]
-    return [float(v) for v in y]
-
-
-def _get_shape(X: Any) -> tuple[int, int]:
-    """Get shape of 2D matrix.
-
-    Args:
-        X: Input matrix.
-
-    Returns:
-        Tuple of (n_rows, n_cols).
-    """
-    if HAS_NUMPY and isinstance(X, np.ndarray):
-        return int(X.shape[0]), int(X.shape[1])
-    n_rows = len(X)
-    n_cols = len(X[0]) if n_rows > 0 else 0
-    return n_rows, n_cols
 
 
 def _compute_feature_importances_rf(
@@ -219,9 +172,9 @@ def boruta_selection(
     Raises:
         ValueError: If X and y have incompatible shapes.
     """
-    n_samples, n_features = _get_shape(X)
-    X_list = _to_2d_list(X)
-    y_list = _to_1d_list(y)
+    n_samples, n_features = get_shape(X)
+    X_list = to_2d_list(X)
+    y_list = to_1d_list(y)
 
     if len(y_list) != n_samples:
         raise ValueError(f"y length ({len(y_list)}) must match X rows ({n_samples})")
@@ -398,9 +351,9 @@ def recursive_elimination(
     """
     _validate_model_contract(model)
 
-    n_samples, total_features = _get_shape(X)
-    X_list = _to_2d_list(X)
-    y_list = _to_1d_list(y)
+    n_samples, total_features = get_shape(X)
+    X_list = to_2d_list(X)
+    y_list = to_1d_list(y)
 
     if n_features > total_features:
         raise ValueError(f"n_features ({n_features}) must be <= total features ({total_features})")
@@ -625,9 +578,9 @@ def stability_selection(
     Raises:
         ValueError: If X and y have incompatible shapes.
     """
-    n_samples, n_features = _get_shape(X)
-    X_list = _to_2d_list(X)
-    y_list = _to_1d_list(y)
+    n_samples, n_features = get_shape(X)
+    X_list = to_2d_list(X)
+    y_list = to_1d_list(y)
 
     if len(y_list) != n_samples:
         raise ValueError(f"y length ({len(y_list)}) must match X rows ({n_samples})")
@@ -774,9 +727,9 @@ def mutual_information_selection(
     Raises:
         ValueError: If X and y have incompatible shapes.
     """
-    n_samples, total_features = _get_shape(X)
-    X_list = _to_2d_list(X)
-    y_list = _to_1d_list(y)
+    n_samples, total_features = get_shape(X)
+    X_list = to_2d_list(X)
+    y_list = to_1d_list(y)
 
     if len(y_list) != n_samples:
         raise ValueError(f"y length ({len(y_list)}) must match X rows ({n_samples})")

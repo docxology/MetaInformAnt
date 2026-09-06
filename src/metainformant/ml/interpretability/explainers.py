@@ -11,18 +11,15 @@ from __future__ import annotations
 import math
 import random
 from typing import Any
-
 from metainformant.core.utils.logging import get_logger
+from metainformant.ml._numeric import HAS_NUMPY, get_shape, to_1d_list, to_2d_list
 
 logger = get_logger(__name__)
 
 # Optional dependencies
 try:
     import numpy as np
-
-    HAS_NUMPY = True
 except ImportError:
-    HAS_NUMPY = False
     np = None
 
 try:
@@ -32,50 +29,6 @@ try:
 except ImportError:
     HAS_SCIPY = False
     scipy_stats = None
-
-
-def _to_2d_list(X: Any) -> list[list[float]]:
-    """Convert input matrix to a list of lists of floats.
-
-    Args:
-        X: Input matrix (numpy array or list of lists).
-
-    Returns:
-        Matrix as list of lists.
-    """
-    if HAS_NUMPY and isinstance(X, np.ndarray):
-        return [[float(X[i, j]) for j in range(X.shape[1])] for i in range(X.shape[0])]
-    return [[float(v) for v in row] for row in X]
-
-
-def _to_1d_list(y: Any) -> list[float]:
-    """Convert input vector to a list of floats.
-
-    Args:
-        y: Input vector (numpy array or list).
-
-    Returns:
-        Vector as list of floats.
-    """
-    if HAS_NUMPY and isinstance(y, np.ndarray):
-        return [float(v) for v in y.ravel()]
-    return [float(v) for v in y]
-
-
-def _get_shape(X: Any) -> tuple[int, int]:
-    """Get shape of a 2D matrix.
-
-    Args:
-        X: Input matrix.
-
-    Returns:
-        Tuple of (n_rows, n_cols).
-    """
-    if HAS_NUMPY and isinstance(X, np.ndarray):
-        return int(X.shape[0]), int(X.shape[1])
-    n_rows = len(X)
-    n_cols = len(X[0]) if n_rows > 0 else 0
-    return n_rows, n_cols
 
 
 def _predict_helper(model: Any, X: list[list[float]]) -> list[float]:
@@ -162,9 +115,9 @@ def compute_permutation_importance(
     Raises:
         ValueError: If X and y have incompatible shapes.
     """
-    n_samples, n_features = _get_shape(X)
-    y_list = _to_1d_list(y)
-    X_list = _to_2d_list(X)
+    n_samples, n_features = get_shape(X)
+    y_list = to_1d_list(y)
+    X_list = to_2d_list(X)
 
     if len(y_list) != n_samples:
         raise ValueError(f"y length ({len(y_list)}) must match X rows ({n_samples})")
@@ -256,11 +209,11 @@ def compute_shap_values_kernel(
     Raises:
         ValueError: If X is empty.
     """
-    n_instances, n_features = _get_shape(X)
+    n_instances, n_features = get_shape(X)
     if n_instances == 0:
         raise ValueError("X must not be empty")
 
-    X_list = _to_2d_list(X)
+    X_list = to_2d_list(X)
 
     logger.info(
         "Computing Kernel SHAP: %d instances, %d features, %d coalition samples",
@@ -271,7 +224,7 @@ def compute_shap_values_kernel(
 
     # Compute background (mean of X or provided background)
     if background is not None:
-        bg_list = _to_2d_list(background)
+        bg_list = to_2d_list(background)
     else:
         bg_list = [X_list[0][:]]  # Use first instance as simple background
         for j in range(n_features):
@@ -627,8 +580,8 @@ def feature_interaction(
     Raises:
         ValueError: If feature indices are out of range or equal.
     """
-    n_samples, n_features = _get_shape(X)
-    X_list = _to_2d_list(X)
+    n_samples, n_features = get_shape(X)
+    X_list = to_2d_list(X)
 
     if feature_i == feature_j:
         raise ValueError("feature_i and feature_j must be different")
@@ -745,8 +698,8 @@ def partial_dependence(
     Raises:
         ValueError: If feature index is out of range.
     """
-    n_samples, n_features = _get_shape(X)
-    X_list = _to_2d_list(X)
+    n_samples, n_features = get_shape(X)
+    X_list = to_2d_list(X)
 
     if feature < 0 or feature >= n_features:
         raise ValueError(f"feature ({feature}) out of range [0, {n_features})")
@@ -820,9 +773,9 @@ def compute_attention_weights(
     if hasattr(model, "get_attention_weights"):
         try:
             if HAS_NUMPY:
-                weights = model.get_attention_weights(np.array(_to_2d_list(X)))
+                weights = model.get_attention_weights(np.array(to_2d_list(X)))
             else:
-                weights = model.get_attention_weights(_to_2d_list(X))
+                weights = model.get_attention_weights(to_2d_list(X))
 
             if isinstance(weights, dict):
                 return weights

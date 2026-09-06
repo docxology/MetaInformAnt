@@ -15,6 +15,7 @@ downstream analysis for the current Amalgkit 0.16.60 contract.
 | `engine/` | Streaming production, workflow planning, SQLite progress, and provenance |
 | `retrieval/` | ENA/SRA retrieval helpers |
 | `splicing/` | Alternative-splicing analysis |
+| `deconvolution/` | Cell-type deconvolution from bulk RNA-seq |
 
 ## Current stages
 

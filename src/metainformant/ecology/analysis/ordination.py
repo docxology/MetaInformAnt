@@ -234,7 +234,6 @@ def _isotonic_regression(values: np.ndarray, weights: Optional[np.ndarray] = Non
 
 
 def _kruskal_stress(
-    d_orig: np.ndarray,
     d_config: np.ndarray,
     d_hat: np.ndarray,
 ) -> float:
@@ -243,8 +242,7 @@ def _kruskal_stress(
     stress = sqrt( sum((d_hat - d_config)^2) / sum(d_config^2) )
 
     Args:
-        d_orig: Original distances (upper triangle, flattened).
-        d_config: Distances in the current configuration (same shape).
+        d_config: Distances in the current configuration (upper triangle, flattened).
         d_hat: Disparities from isotonic regression (same shape).
 
     Returns:
@@ -351,6 +349,7 @@ def nmds(
 
         stress_prev = float("inf")
         step_size = 0.05
+        iteration = 0
 
         for iteration in range(1, max_iter + 1):
             # Current configuration distances
@@ -363,7 +362,7 @@ def nmds(
             d_hat[rank_order] = d_hat_sorted
 
             # Compute stress
-            stress = _kruskal_stress(d_orig, d_config, d_hat)
+            stress = _kruskal_stress(d_config, d_hat)
 
             # Check convergence
             if abs(stress_prev - stress) < tol:
@@ -400,7 +399,7 @@ def nmds(
         d_hat_sorted = _isotonic_regression(d_sorted)
         d_hat = np.empty_like(d_config)
         d_hat[rank_order] = d_hat_sorted
-        stress = _kruskal_stress(d_orig, d_config, d_hat)
+        stress = _kruskal_stress(d_config, d_hat)
 
         if stress < best_stress:
             best_stress = stress
@@ -717,9 +716,10 @@ def procrustes(
     """Procrustes rotation to optimally superimpose two ordination configurations.
 
     Translates, uniformly scales, and rotates *coords2* to best match
-    *coords1* in the least-squares sense.  This is the orthogonal Procrustes
-    analysis (no reflection allowed by default, but reflection is included
-    when it reduces the residual).
+    *coords1* in the least-squares sense.  This is orthogonal Procrustes
+    analysis with reflection prevention: when the optimal orthogonal
+    transform has det < 0 (a reflection), the last column of V is flipped
+    so only proper rotations are applied.
 
     Args:
         coords1: Reference configuration of shape (n, p).

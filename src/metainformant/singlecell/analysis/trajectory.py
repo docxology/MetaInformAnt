@@ -280,6 +280,7 @@ def compute_pseudotime_from_dimensionality_reduction(
     # Normalize pseudotime to [0, 1]
     pseudotime = (pseudotime - np.min(pseudotime)) / (np.max(pseudotime) - np.min(pseudotime))
 
+    result.obs = result.obs.copy() if result.obs is not None else pd.DataFrame()
     result.obs["embedding_pseudotime"] = pseudotime
 
     # Store metadata
@@ -373,6 +374,10 @@ def compute_trajectory_entropy(data: SingleCellData, pseudotime_col: str, window
     sorted_indices = np.argsort(pseudotime)
     X_sorted = X[sorted_indices]
     pseudotime_sorted = pseudotime[sorted_indices]
+    if window_size < 1 or window_size > len(X_sorted):
+        raise errors.ValidationError(
+            f"window_size must be between 1 and the number of cells ({len(X_sorted)}), got {window_size}"
+        )
 
     # Compute entropy in sliding windows
     n_windows = len(X_sorted) - window_size + 1

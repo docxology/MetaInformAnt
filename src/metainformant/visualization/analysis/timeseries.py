@@ -35,6 +35,19 @@ except ImportError:
     HAS_STATSMODELS = False
 
 
+def _save_plot(ax: Axes, output_path: str | Path, label: str) -> str:
+    """Ensure the output directory exists and save the plotted figure deterministically.
+
+    Consolidates the repeated ensure_directory / save_figure_deterministic / logger
+    triple used by every plot function in this module. Saves ``ax.figure`` so the
+    plotted figure is written even when a different pyplot figure is current.
+    """
+    paths.ensure_directory(Path(output_path).parent)
+    save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+    logger.info(f"{label} saved to {output_path}")
+    return str(output_path)
+
+
 def plot_time_series(
     data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
@@ -75,9 +88,7 @@ def plot_time_series(
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Time series plot saved to {output_path}")
+        _save_plot(ax, output_path, "Time series plot")
 
     return ax
 
@@ -117,9 +128,7 @@ def plot_autocorrelation(
     ax.set_title("Autocorrelation Function (ACF)")
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Autocorrelation plot saved to {output_path}")
+        _save_plot(ax, output_path, "Autocorrelation plot")
 
     return ax
 
@@ -193,9 +202,7 @@ def plot_seasonal_decomposition(
     plt.tight_layout()
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Seasonal decomposition plot saved to {output_path}")
+        _save_plot(axes[0], output_path, "Seasonal decomposition plot")
 
     return axes[0]  # Return first axis for consistency
 
@@ -262,9 +269,7 @@ def plot_forecast(
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Forecast plot saved to {output_path}")
+        _save_plot(ax, output_path, "Forecast plot")
 
     return ax
 
@@ -326,8 +331,6 @@ def plot_trend_analysis(
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Trend analysis plot saved to {output_path}")
+        _save_plot(ax, output_path, "Trend analysis plot")
 
     return ax

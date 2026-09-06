@@ -142,10 +142,6 @@ def hybrid_assemble(
         len(short_seqs),
     )
 
-    # Step 1: Build k-mer database from short reads
-    kmer_db = _build_kmer_database(short_seqs, kmer_size)
-    logger.info("Built k-mer database: %d unique k-mers", len(kmer_db))
-
     # Step 2: Correct long reads
     corrected = correct_with_short_reads(long_seqs, short_seqs, kmer_size=kmer_size)
     corrected_seqs = [

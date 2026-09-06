@@ -204,17 +204,7 @@ def infer_grn(
 
                 correlation = abs(corr_matrix[tf_idx, j])
                 if correlation >= threshold:
-                    # Add edge from TF to target
-                    network.graph.add_edge(tf, target, weight=correlation, type="regulates")
-
-                    # Update mappings
-                    if tf not in network.tf_targets:
-                        network.tf_targets[tf] = []
-                    network.tf_targets[tf].append(target)
-
-                    if target not in network.target_tfs:
-                        network.target_tfs[target] = []
-                    network.target_tfs[target].append(tf)
+                    network.add_regulation(tf, target, weight=correlation, type="regulates")
 
     elif method == "mutual_info":
         # Use mutual information for inference
@@ -226,6 +216,8 @@ def infer_grn(
             tf_genes = gene_names
 
         for tf in tf_genes:
+            if tf not in gene_names:
+                continue
             tf_idx = gene_names.index(tf)
             tf_expression = expression_matrix[:, tf_idx]
 
@@ -239,16 +231,7 @@ def infer_grn(
                 mi = mutual_info_regression(tf_expression.reshape(-1, 1), target_expression)[0]
 
                 if mi >= threshold:
-                    network.graph.add_edge(tf, target, weight=mi, type="regulates")
-
-                    # Update mappings
-                    if tf not in network.tf_targets:
-                        network.tf_targets[tf] = []
-                    network.tf_targets[tf].append(target)
-
-                    if target not in network.target_tfs:
-                        network.target_tfs[target] = []
-                    network.target_tfs[target].append(tf)
+                    network.add_regulation(tf, target, weight=mi, type="regulates")
 
     else:
         raise ValueError(f"Unknown GRN inference method: {method}")

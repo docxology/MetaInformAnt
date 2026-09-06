@@ -203,7 +203,6 @@ def plot_go_enrichment_barplot(
     # Extract data
     terms = [result.get("term", f"Term {i}") for i, result in enumerate(enrichment_results)]
     pvalues = [-np.log10(result.get("pvalue", 1.0)) for result in enrichment_results]
-    [result.get("fold_change", 1.0) for result in enrichment_results]
 
     # Sort by significance
     sorted_idx = np.argsort(pvalues)[::-1]
@@ -220,8 +219,10 @@ def plot_go_enrichment_barplot(
     ax.set_title("GO Enrichment Analysis")
 
     # Add value labels on bars
-    for i, (bar, pval) in enumerate(zip(bars, pvalues)):
-        ax.text(bar.get_width() + 0.1, bar.get_y() + bar.get_height() / 2, ".2f", ha="left", va="center", fontsize=8)
+    for bar, pval in zip(bars, pvalues):
+        ax.text(
+            bar.get_width() + 0.1, bar.get_y() + bar.get_height() / 2, f"{pval:.2f}", ha="left", va="center", fontsize=8
+        )
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)

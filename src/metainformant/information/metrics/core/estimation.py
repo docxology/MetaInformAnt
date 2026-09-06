@@ -197,8 +197,6 @@ def mutual_information_estimator(
     x_counts = Counter(x)
     y_counts = Counter(y)
 
-    len(x)
-
     # I(X;Y) = H(X) + H(Y) - H(X,Y)
     h_x = entropy_estimator(x_counts, method=method, bias_correction=bias_correction)
     h_y = entropy_estimator(y_counts, method=method, bias_correction=bias_correction)

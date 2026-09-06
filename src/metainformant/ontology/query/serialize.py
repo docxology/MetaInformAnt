@@ -7,7 +7,7 @@ including JSON, OBO, and NetworkX graph formats.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from metainformant.core.data import validation
 from metainformant.core.io import dump_json, load_json
@@ -207,6 +207,11 @@ def _save_obo_format(onto: Ontology, path: Path) -> None:
 
     lines.append("")  # Empty line after header
 
+    # Index relationships by source term once (avoids O(terms x relationships) scan)
+    rels_by_source: Dict[str, List[Relationship]] = {}
+    for rel in onto.relationships:
+        rels_by_source.setdefault(rel.source, []).append(rel)
+
     # Write terms
     for term in onto.terms.values():
         lines.append("[Term]")
@@ -237,9 +242,8 @@ def _save_obo_format(onto: Ontology, path: Path) -> None:
             lines.append("is_obsolete: true")
 
         # Add relationships for this term
-        for rel in onto.relationships:
-            if rel.source == term.id:
-                lines.append(f"{rel.relation_type}: {rel.target}")
+        for rel in rels_by_source.get(term.id, []):
+            lines.append(f"{rel.relation_type}: {rel.target}")
 
         lines.append("")  # Empty line after term
 

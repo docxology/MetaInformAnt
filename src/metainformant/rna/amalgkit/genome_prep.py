@@ -155,7 +155,7 @@ def download_rna_fasta_from_ftp(accession: str, output_dir: Path, **kwargs: Any)
 
     output_path = output_dir / (filename if filename else Path(target_url).name)
 
-    if output_path.exists():
+    if output_path.exists() and output_path.stat().st_size > 0:
         logger.info(f"File already exists: {output_path}")
         return output_path
 
@@ -347,7 +347,6 @@ def orchestrate_genome_setup(
     # We typically need to unzip first for some tools, but kallisto handles gz mostly?
     # Actually kallisto index typically accepts .gz.
 
-    work_dir / "index"  # Standard amalgkit location
     index_path = get_expected_index_path(work_dir, species_name)
 
     if not kwargs.get("skip_build"):

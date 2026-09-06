@@ -10,6 +10,7 @@ import pytest
 from metainformant.ontology.core.types import Ontology, Term
 from metainformant.ontology.query.query import (
     ancestors,
+    calculate_ic_map,
     clear_cache,
     common_ancestors,
     descendants,
@@ -19,8 +20,13 @@ from metainformant.ontology.query.query import (
     get_leaves,
     get_roots,
     get_subontology,
+    get_subontology_stats,
+    information_content,
+    most_informative_common_ancestor,
     path_to_root,
     set_cache_enabled,
+    shortest_path,
+    validate_ontology_integrity,
 )
 
 
@@ -359,12 +365,145 @@ class TestGetRootsAndLeaves:
 class TestCaching:
     """Test caching functionality."""
 
-    def test_cache_enabled_disabled(self):
-        """Test enabling/disabling cache."""
+    def test_cache_hit_and_disable(self):
+        """Test that cached queries return consistent results and disabling forces recompute."""
+        onto = _make_chain_ontology()
         set_cache_enabled(True)
+        clear_cache()
+        first = ancestors(onto, "C")
+        second = ancestors(onto, "C")  # served from cache
+        assert first == second
         set_cache_enabled(False)
+        clear_cache()
+        third = ancestors(onto, "C")
+        assert third == first
+        set_cache_enabled(True)
         clear_cache()
 
     def test_clear_cache(self):
         """Test clearing cache."""
         clear_cache()  # Should not raise
+
+
+def _make_chain_ontology():
+    """Build A -> B -> C via real add_term (populates parents_of and relationships)."""
+    onto = Ontology()
+    onto.add_term(Term("A", "Term A", namespace="test"))
+    onto.add_term(Term("B", "Term B", namespace="test", is_a_parents=["A"]))
+    onto.add_term(Term("C", "Term C", namespace="test", is_a_parents=["B"]))
+    return onto
+
+
+class TestInformationContent:
+    """Test information_content and calculate_ic_map."""
+
+    def test_ic_leaf_is_zero(self):
+        onto = _make_chain_ontology()
+        assert information_content(onto, "C") == 0.0
+
+    def test_ic_internal_term_positive(self):
+        onto = _make_chain_ontology()
+        # A has 2 descendants out of 3 terms -> -ln(2/3) > 0
+        ic_a = information_content(onto, "A")
+        assert ic_a > 0.0
+        import math
+
+        assert ic_a == pytest.approx(-math.log(2 / 3))
+
+    def test_ic_missing_term_raises(self):
+        from metainformant.core.utils.errors import TermNotFoundError
+
+        onto = _make_chain_ontology()
+        with pytest.raises(TermNotFoundError, match="not found in ontology"):
+            information_content(onto, "MISSING")
+
+    def test_calculate_ic_map_covers_all_terms(self):
+        onto = _make_chain_ontology()
+        ic_map = calculate_ic_map(onto)
+        assert set(ic_map.keys()) == {"A", "B", "C"}
+        assert ic_map["C"] == 0.0
+        assert ic_map["B"] > ic_map["A"] > 0.0  # fewer descendants -> higher IC
+
+
+class TestMostInformativeCommonAncestor:
+    """Test MICA computation."""
+
+    def test_mica_is_highest_ic_common_ancestor(self):
+        # Two siblings under B: common ancestors are B and A; B has higher IC
+        onto = Ontology()
+        onto.add_term(Term("A", "root"))
+        onto.add_term(Term("B", "mid", is_a_parents=["A"]))
+        onto.add_term(Term("C", "child1", is_a_parents=["B"]))
+        onto.add_term(Term("D", "child2", is_a_parents=["B"]))
+        ic_map = {"A": 1.0, "B": 2.0}
+        assert most_informative_common_ancestor(onto, "C", "D", ic_map) == "B"
+
+    def test_mica_no_common_ancestors_raises(self):
+        onto = Ontology()
+        onto.add_term(Term("A", "Term A"))
+        onto.add_term(Term("B", "Term B"))
+        with pytest.raises(ValueError, match="No common ancestors"):
+            most_informative_common_ancestor(onto, "A", "B", {"A": 1.0})
+
+
+class TestShortestPath:
+    """Test shortest_path between terms."""
+
+    def test_shortest_path_down_hierarchy(self):
+        onto = _make_chain_ontology()
+        assert shortest_path(onto, "A", "C") == ["A", "B", "C"]
+
+    def test_shortest_path_undirected(self):
+        onto = _make_chain_ontology()
+        assert shortest_path(onto, "C", "A") == ["C", "B", "A"]
+
+    def test_shortest_path_disconnected(self):
+        onto = _make_chain_ontology()
+        onto.add_term(Term("Z", "Term Z"))
+        assert shortest_path(onto, "A", "Z") == []
+
+
+class TestSubontologyStats:
+    """Test get_subontology_stats."""
+
+    def test_stats_keys_and_values(self):
+        onto = _make_chain_ontology()
+        stats = get_subontology_stats(onto)
+        assert stats["num_terms"] == 3
+        assert stats["num_relationships"] == 2
+        assert stats["num_roots"] == 1
+        assert stats["num_leaves"] == 1
+        assert stats["namespace_distribution"] == {"test": 3}
+        assert stats["depth_stats"]["max"] == 2
+
+
+class TestValidateOntologyIntegrity:
+    """Test validate_ontology_integrity."""
+
+    def test_valid_ontology(self):
+        onto = _make_chain_ontology()
+        is_valid, errors = validate_ontology_integrity(onto)
+        assert is_valid
+        assert errors == []
+
+    def test_dangling_relationship_target(self):
+        from metainformant.ontology.core.types import create_relationship
+
+        onto = Ontology()
+        onto.add_term(Term("A", "Term A"))
+        onto.add_relationship(create_relationship("A", "MISSING", "part_of"))
+        is_valid, errors = validate_ontology_integrity(onto)
+        assert not is_valid
+        assert any("MISSING" in e for e in errors)
+
+    def test_duplicate_relationship_flagged(self):
+        from metainformant.ontology.core.types import create_relationship
+
+        onto = Ontology()
+        onto.add_term(Term("A", "Term A"))
+        onto.add_term(Term("B", "Term B"))
+        onto.add_relationship(create_relationship("A", "B", "part_of"))
+        onto.add_relationship(create_relationship("A", "B", "part_of"))
+        is_valid, errors = validate_ontology_integrity(onto)
+        assert not is_valid
+        assert any("Duplicate relationship" in e for e in errors)

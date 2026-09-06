@@ -25,6 +25,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -570,8 +571,6 @@ def run_amalgkit(
     stdout_fh = None
     stderr_fh = None
     if log_dir:
-        import time
-
         ts = int(time.time())
         log_dir_path = Path(log_dir)
         log_dir_path.mkdir(parents=True, exist_ok=True)
@@ -596,8 +595,6 @@ def run_amalgkit(
             metadata_val = params.get("metadata")
             if out_dir_val:
                 out_dir = Path(str(out_dir_val))
-                import uuid
-
                 hb_path = out_dir / ".downloads" / f"amalgkit-{subcommand}-{uuid.uuid4().hex[:8]}.heartbeat.json"
 
                 # Determine watch directory
@@ -963,8 +960,8 @@ def getfastq(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: An
     # callers that need a different recovery policy.
     default_retries = 1 if not p_dict else 3
     default_delay = 0 if not p_dict else 5
-    max_retries = int(kwargs.get("max_retries", default_retries))
-    retry_delay = float(kwargs.get("retry_delay", default_delay))
+    max_retries = int(kwargs.pop("max_retries", default_retries))
+    retry_delay = float(kwargs.pop("retry_delay", default_delay))
     if max_retries < 1:
         raise ValueError("max_retries must be at least 1")
 
@@ -972,9 +969,8 @@ def getfastq(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: An
     for attempt in range(1, max_retries + 1):
         if attempt > 1:
             logger.info(f"Retry attempt {attempt}/{max_retries} for getfastq...")
-            import time
 
-            time.sleep(retry_delay * attempt)  # Exponential backoff
+            time.sleep(retry_delay * attempt)  # Linear backoff between attempts
 
         try:
             if jobs > 1:
@@ -1007,6 +1003,10 @@ def getfastq(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: An
             if result.stderr:
                 logger.warning(f"Error: {result.stderr[:500]}")
 
+        except subprocess.CalledProcessError:
+            # check=True is a caller-requested hard-failure contract: re-raise
+            # instead of downgrading the failure to a retryable CompletedProcess.
+            raise
         except Exception as e:
             logger.error(f"getfastq exception on attempt {attempt}/{max_retries}: {e}")
             last_result = subprocess.CompletedProcess(
@@ -1054,24 +1054,29 @@ def _split_metadata_by_worker(metadata_path: Path, n_workers: int) -> List[Path]
     chunk_paths = []
     temp_dir = Path(tempfile.mkdtemp(prefix="amalgkit_parallel_"))
 
-    for i in range(n_workers):
-        start_idx = i * chunk_size
-        end_idx = min((i + 1) * chunk_size, n_samples)
+    try:
+        for i in range(n_workers):
+            start_idx = i * chunk_size
+            end_idx = min((i + 1) * chunk_size, n_samples)
 
-        if start_idx >= n_samples:
-            break
+            if start_idx >= n_samples:
+                break
 
-        chunk_rows = rows[start_idx:end_idx]
-        if not chunk_rows:
-            continue
+            chunk_rows = rows[start_idx:end_idx]
+            if not chunk_rows:
+                continue
 
-        chunk_path = temp_dir / f"metadata_chunk_{i}.tsv"
-        with open(chunk_path, "w", newline="") as f:
-            writer = csv.writer(f, delimiter="\t")
-            writer.writerow(header)
-            writer.writerows(chunk_rows)
+            chunk_path = temp_dir / f"metadata_chunk_{i}.tsv"
+            with open(chunk_path, "w", newline="") as f:
+                writer = csv.writer(f, delimiter="\t")
+                writer.writerow(header)
+                writer.writerows(chunk_rows)
 
-        chunk_paths.append(chunk_path)
+            chunk_paths.append(chunk_path)
+    except BaseException:
+        # Never leak a chunk temp dir when splitting fails mid-write.
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        raise
 
     return chunk_paths
 
@@ -1127,7 +1132,14 @@ def _run_parallel_getfastq(
         else:
             single_params = params
 
-        return run_amalgkit("getfastq", single_params, **kwargs)
+        try:
+            # A lone chunk may still live in the split temp dir; reclaim it
+            # after the run. The [metadata_path] no-row placeholder must not
+            # be deleted.
+            return run_amalgkit("getfastq", single_params, **kwargs)
+        finally:
+            if chunk_paths[0] != metadata_path:
+                shutil.rmtree(chunk_paths[0].parent, ignore_errors=True)
 
     logger.info(f"Parallelizing getfastq with {len(chunk_paths)} workers")
 

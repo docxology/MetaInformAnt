@@ -21,6 +21,10 @@ Integration methods for combining genomics, transcriptomics, proteomics, and epi
 | `from_rna_expression()` | Convert expression matrix to integration-ready format |
 | `from_protein_abundance()` | Convert protein quantification to integration-ready format |
 | `from_epigenome_data()` | Convert methylation or ChIP data to integration-ready format |
+| `from_metabolomics()` | Convert metabolomics measurements (log/z-score normalization) |
+| `compute_multiomics_similarity()` | Sample-by-sample similarity from concatenated layers |
+| `find_multiomics_modules()` | Joint-NMF-based co-regulated feature modules |
+| `descriptive_summary` | Per-block statistics and cross-omics Spearman correlations |
 
 ## Usage
 
@@ -31,7 +35,7 @@ from metainformant.multiomics.analysis.integration import (
     joint_pca,
 )
 
-multi = MultiOmicsData(layers={"rna": rna_df, "protein": prot_df})
-integrated = integrate_omics_data([rna_df, prot_df])
-components = joint_pca(integrated, n_components=10)
+multi = MultiOmicsData(data={"rna": rna_df, "protein": prot_df})
+integrated = integrate_omics_data({"rna": rna_df, "protein": prot_df})
+embeddings, loadings, variance = joint_pca(integrated, n_components=10)
 ```

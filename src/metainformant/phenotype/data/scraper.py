@@ -430,12 +430,13 @@ class AntWikiScraper:
         score_components = []
 
         # Taxonomic information (30%)
+        taxonomy = data.get("taxonomy", {})
         tax_score = 0.0
         if data.get("genus"):
             tax_score += 0.5
-        if data.get("subfamily"):
+        if taxonomy.get("subfamily"):
             tax_score += 0.3
-        if data.get("tribe"):
+        if taxonomy.get("tribe"):
             tax_score += 0.2
         score_components.append(tax_score * 0.3)
 

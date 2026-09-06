@@ -6,6 +6,7 @@ including Hardy-Weinberg equilibrium, selection models, and demographic calculat
 
 from __future__ import annotations
 
+import math
 from typing import Tuple
 
 
@@ -16,10 +17,8 @@ def hardy_weinberg_genotype_freqs(allele_a_frequency: float) -> Tuple[float, flo
         allele_a_frequency: Frequency of allele A (0.0 to 1.0)
 
     Returns:
-        Tuple of (AA_frequency, Aa_frequency, aa_frequency)
-
-    Raises:
-        ValueError: If allele frequency is not between 0 and 1
+        Tuple of (AA_frequency, Aa_frequency, aa_frequency); zeros if the
+        frequency falls outside [0, 1].
 
     Example:
         >>> hardy_weinberg_genotype_freqs(0.6)
@@ -120,6 +119,4 @@ def mutation_selection_balance_recessive(mutation_rate: float, selection_coeffic
     Returns:
         Equilibrium frequency (q)
     """
-    import math
-
     return math.sqrt(mutation_rate / selection_coefficient)

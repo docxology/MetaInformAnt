@@ -1511,10 +1511,10 @@ def test_campaign_ncbi_settings_preserve_global_configuration(tmp_path: Path) ->
     assert str(data_root / ".sra-cache") in settings_path.read_text()
 
 
-
 def _stub_preflight(_data_root: object, **_kwargs: object) -> dict[str, str]:
     """These tests exercise later failure paths; the preflight has its own tests."""
     return {"data_root": "stub", "amalgkit_cli": "stub"}
+
 
 def test_run_all_keeps_submitted_sample_tasks_bounded(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A large task list never exceeds the configured in-flight window."""
@@ -1718,6 +1718,7 @@ def test_run_all_routes_deferred_ncbi_acquisition_back_to_primary_lane(
     monkeypatch.setattr(orchestrator, "discover_species_tasks", lambda *_args: [task])
     monkeypatch.setattr(orchestrator, "process_single_sample", fake_process)
     monkeypatch.setattr(orchestrator, "_download_fastq_ncbi_only", fake_fallback)
+    monkeypatch.setattr(orchestrator_module, "run_campaign_preflight", _stub_preflight)
 
     orchestrator.run_all(
         ["amalgkit_test_species.yaml"],
@@ -1792,6 +1793,7 @@ def test_deferred_ncbi_fallback_does_not_starve_primary_executor(
     monkeypatch.setattr(orchestrator, "discover_species_tasks", lambda *_args: tasks)
     monkeypatch.setattr(orchestrator, "process_single_sample", fake_process)
     monkeypatch.setattr(orchestrator, "_download_fastq_ncbi_only", blocking_fallback)
+    monkeypatch.setattr(orchestrator_module, "run_campaign_preflight", _stub_preflight)
 
     orchestrator.run_all(
         ["amalgkit_test_species.yaml"],

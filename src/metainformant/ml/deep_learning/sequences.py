@@ -2,8 +2,7 @@
 
 Implements 1D convolutional neural networks for DNA/RNA sequence
 classification and regression tasks. Uses pure NumPy for inference
-to avoid hard PyTorch/TensorFlow dependencies; training utilities
-are available when torch is importable.
+to avoid hard PyTorch/TensorFlow dependencies.
 """
 
 from __future__ import annotations

@@ -8,7 +8,7 @@ duplication, overrepresented sequences, and k-mer profiles.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Iterable, List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,13 +21,26 @@ from metainformant.visualization.config.conventions import save_figure_determini
 
 logger = logging.get_logger(__name__)
 
-try:
-    import seaborn as sns
 
-    HAS_SEABORN = True
-except ImportError:
-    HAS_SEABORN = False
-    sns = None
+def _save_figure(ax: Axes, output_path: str | Path | None, message: str) -> None:
+    """Persist the plotted figure (``ax.figure``) to *output_path* when requested."""
+    if output_path:
+        paths.ensure_directory(Path(output_path).parent)
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+        logger.info(message)
+
+
+def _annotate_bars(ax: Axes, bars: Iterable[Any], values: Iterable[Any], fmt: str, offset: float = 0.0) -> None:
+    """Write *fmt*-formatted value labels centered above each bar."""
+    for bar, value in zip(bars, values):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + offset,
+            fmt.format(value),
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
 
 
 def plot_quality_metrics(
@@ -86,22 +99,11 @@ def plot_quality_metrics(
         axes[3].set_ylabel("Value")
         axes[3].set_title("Basic Statistics")
         axes[3].tick_params(axis="x", rotation=45)
-        for bar, value in zip(bars, stat_values):
-            axes[3].text(
-                bar.get_x() + bar.get_width() / 2,
-                bar.get_height(),
-                f"{value:.0f}",
-                ha="center",
-                va="bottom",
-                fontsize=8,
-            )
+        _annotate_bars(axes[3], bars, stat_values, "{:.0f}")
 
     plt.tight_layout()
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Quality metrics plot saved to {output_path}")
+    _save_figure(axes[0], output_path, f"Quality metrics plot saved to {output_path}")
 
     return axes[0]
 
@@ -145,15 +147,9 @@ def plot_adapter_content(
     ax.set_xticklabels(adapters_sorted, rotation=45, ha="right")
     ax.grid(True, alpha=0.3)
 
-    for bar, pct in zip(bars, percentages_sorted):
-        ax.text(
-            bar.get_x() + bar.get_width() / 2, bar.get_height(), f"{pct:.1f}%", ha="center", va="bottom", fontsize=8
-        )
+    _annotate_bars(ax, bars, percentages_sorted, "{:.1f}%")
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Adapter content plot saved to {output_path}")
+    _save_figure(ax, output_path, f"Adapter content plot saved to {output_path}")
 
     return ax
 
@@ -197,10 +193,7 @@ def plot_gc_distribution(
         bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8),
     )
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"GC distribution plot saved to {output_path}")
+    _save_figure(ax, output_path, f"GC distribution plot saved to {output_path}")
 
     return ax
 
@@ -245,10 +238,7 @@ def plot_length_distribution(
         bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8),
     )
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Length distribution plot saved to {output_path}")
+    _save_figure(ax, output_path, f"Length distribution plot saved to {output_path}")
 
     return ax
 
@@ -299,10 +289,7 @@ def plot_per_base_quality_boxplot(
     ax.set_title("Per-Base Quality Scores")
     ax.grid(True, alpha=0.3)
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Per-base quality boxplot saved to {output_path}")
+    _save_figure(ax, output_path, f"Per-base quality boxplot saved to {output_path}")
 
     return ax
 
@@ -342,20 +329,9 @@ def plot_sequence_duplication_levels(
     ax.set_xticklabels(levels, rotation=45, ha="right")
     ax.grid(True, alpha=0.3, axis="y")
 
-    for bar, pct in zip(bars, percentages):
-        ax.text(
-            bar.get_x() + bar.get_width() / 2,
-            bar.get_height() + 0.5,
-            f"{pct:.1f}%",
-            ha="center",
-            va="bottom",
-            fontsize=8,
-        )
+    _annotate_bars(ax, bars, percentages, "{:.1f}%", offset=0.5)
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Sequence duplication levels plot saved to {output_path}")
+    _save_figure(ax, output_path, f"Sequence duplication levels plot saved to {output_path}")
 
     return ax
 
@@ -411,10 +387,7 @@ def plot_overrepresented_sequences(
             fontsize=8,
         )
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Overrepresented sequences plot saved to {output_path}")
+    _save_figure(ax, output_path, f"Overrepresented sequences plot saved to {output_path}")
 
     return ax
 
@@ -456,19 +429,8 @@ def plot_kmer_profiles(
     ax.set_xticklabels(kmers, rotation=45, ha="right")
     ax.grid(True, alpha=0.3, axis="y")
 
-    for bar, count in zip(bars, counts):
-        ax.text(
-            bar.get_x() + bar.get_width() / 2,
-            bar.get_height() + max(counts) * 0.01,
-            f"{count}",
-            ha="center",
-            va="bottom",
-            fontsize=8,
-        )
+    _annotate_bars(ax, bars, counts, "{}", offset=max(counts) * 0.01)
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"K-mer profiles plot saved to {output_path}")
+    _save_figure(ax, output_path, f"K-mer profiles plot saved to {output_path}")
 
     return ax

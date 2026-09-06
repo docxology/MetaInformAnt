@@ -196,3 +196,95 @@ class TestOntology:
         onto = Ontology()
         with pytest.raises(KeyError, match="not found"):
             onto.get_relationships("NONEXISTENT")
+
+
+class TestFactories:
+    """Test create_term / create_relationship / create_ontology factories."""
+
+    def test_create_term_factory(self):
+        from metainformant.ontology.core.types import create_term
+
+        term = create_term(
+            id="GO:0008150",
+            name="biological_process",
+            namespace="biological_process",
+            synonyms=["bp"],
+            extra_key="extra",
+        )
+        assert term.id == "GO:0008150"
+        assert term.term_id == "GO:0008150"
+        assert term.synonyms == ["bp"]
+        assert term.metadata == {"extra_key": "extra"}
+        assert str(term) == "GO:0008150: biological_process"
+
+    def test_create_relationship_factory(self):
+        from metainformant.ontology.core.types import create_relationship
+
+        rel = create_relationship("GO:0009987", "GO:0008150", "is_a", evidence="IEA")
+        assert rel.source == "GO:0009987"
+        assert rel.metadata == {"evidence": "IEA"}
+        assert str(rel) == "GO:0009987 is_a GO:0008150"
+
+    def test_create_relationship_validation(self):
+        from metainformant.core.utils.errors import ValidationError
+        from metainformant.ontology.core.types import create_relationship
+
+        with pytest.raises(ValidationError, match="source cannot be empty"):
+            create_relationship("", "GO:1", "is_a")
+
+    def test_create_ontology_factory(self):
+        from metainformant.ontology.core.types import create_ontology, create_relationship, create_term
+
+        t = create_term(id="GO:1", name="child", is_a_parents=["GO:0"])
+        root = create_term(id="GO:0", name="root")
+        onto = create_ontology(
+            terms={"GO:0": root, "GO:1": t},
+            relationships=[create_relationship("GO:1", "GO:0", "is_a")],
+            format_version="1.2",
+        )
+        assert len(onto) == 2
+        assert onto.metadata["format_version"] == "1.2"
+        assert onto.parents_of["GO:1"] == {"GO:0"}
+
+
+class TestOntologyTraversal:
+    """Test ancestor/descendant and non-is_a branches of Ontology methods."""
+
+    def _ontology(self) -> Ontology:
+        onto = Ontology()
+        onto.add_term(Term("A", "root"))
+        onto.add_term(Term("B", "child", is_a_parents=["A"]))
+        onto.add_term(Term("C", "grandchild", is_a_parents=["B"]))
+        return onto
+
+    def test_get_ancestors_and_descendants(self):
+        onto = self._ontology()
+        assert onto.get_ancestors("C") == {"A", "B"}
+        assert onto.get_descendants("A") == {"B", "C"}
+
+    def test_get_children_and_parents_non_is_a(self):
+        from metainformant.ontology.core.types import create_relationship
+
+        onto = self._ontology()
+        onto.add_relationship(create_relationship("B", "A", "part_of"))
+        assert onto.get_children("A", relation_type="part_of") == {"B"}
+        assert onto.get_parents("B", relation_type="part_of") == {"A"}
+
+    def test_add_relationship_updates_is_a_mappings(self):
+        from metainformant.ontology.core.types import create_relationship
+
+        onto = self._ontology()
+        onto.add_term(Term("D", "other", is_a_parents=[]))
+        onto.add_relationship(create_relationship("D", "A", "is_a"))
+        assert onto.parents_of["D"] == {"A"}
+        assert "D" in onto.children_of["A"]
+
+    def test_str_and_len(self):
+        onto = self._ontology()
+        assert len(onto) == 3
+        assert "3 terms" in str(onto)
+
+    def test_get_roots_and_leaves(self):
+        onto = self._ontology()
+        assert onto.get_roots() == {"A"}
+        assert onto.get_leaves() == {"C"}

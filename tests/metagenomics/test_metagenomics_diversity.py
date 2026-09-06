@@ -339,3 +339,50 @@ class TestOrdination:
         dm = [[0.0, 0.5], [0.5, 0.0]]
         with pytest.raises(ValueError, match="Invalid method"):
             ordination(dm, method="invalid")
+
+
+class TestAlphaDiversityEdgeCases:
+    """Edge cases for alpha diversity."""
+
+    def test_all_zero_abundances_return_zeros(self) -> None:
+        result = alpha_diversity([0, 0, 0], metric="shannon")
+        assert result["value"] == 0.0
+        assert result["n_species"] == 0
+        assert result["total_count"] == 0.0
+
+
+class TestRarefyNegativeDepth:
+    """Negative depth must raise."""
+
+    def test_negative_depth_raises(self) -> None:
+        with pytest.raises(ValueError, match="non-negative"):
+            rarefy([10, 5], -1)
+
+
+class TestRarefactionExplicitDepths:
+    """Explicit depths are honored and out-of-range depths filtered."""
+
+    def test_explicit_depths_and_filtering(self, diverse_community: list[int]) -> None:
+        total = sum(diverse_community)
+        result = rarefaction_curve(diverse_community, depths=[1, 5, total + 100], n_iterations=3, seed=1)
+        assert result["depths"] == [1, 5]
+        assert len(result["mean_species"]) == 2
+        assert len(result["std_species"]) == 2
+
+
+class TestPermanovaInputValidation:
+    """PERMANOVA input validation."""
+
+    def test_mismatched_groups_length_raises(self) -> None:
+        dm = [[0.0, 0.5], [0.5, 0.0]]
+        with pytest.raises(ValueError, match="must match"):
+            permanova(dm, ["A", "B", "A"])
+
+
+class TestOrdinationInputValidation:
+    """Ordination input validation."""
+
+    def test_non_square_matrix_raises(self) -> None:
+        dm = [[0.0, 0.5, 0.2], [0.5, 0.0, 0.3]]
+        with pytest.raises(ValueError, match="square"):
+            ordination(dm, method="pcoa")

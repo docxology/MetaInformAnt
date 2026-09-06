@@ -420,3 +420,29 @@ class TestIOEdgeCases:
 
         loaded = io.load_json(json_file)
         assert loaded == data
+
+    def test_atomic_json_failure_leaves_no_temp_file(self, tmp_path: Path) -> None:
+        from metainformant.core.io.errors import IOError as CoreIOError
+
+        json_file = tmp_path / "doomed.json"
+
+        with pytest.raises(CoreIOError):
+            io.dump_json({"bad": {1, 2}}, json_file, atomic=True)  # sets are not JSON-serializable
+
+        assert not json_file.exists()
+        assert not json_file.with_suffix(".json.tmp").exists()
+
+    def test_atomic_delimited_failure_leaves_no_temp_file(self, tmp_path: Path) -> None:
+        from metainformant.core.io.errors import IOError as CoreIOError
+
+        csv_file = tmp_path / "doomed.csv"
+
+        class BadRow(dict):
+            def get(self, key, default=None):
+                raise RuntimeError("exploded mid-write")
+
+        with pytest.raises(CoreIOError):
+            io.write_delimited([{"a": 1}, BadRow(a=2)], csv_file, atomic=True)
+
+        assert not csv_file.exists()
+        assert not csv_file.with_suffix(".csv.tmp").exists()

@@ -1,11 +1,11 @@
 # AGENTS.md — `MetaInformAnt/tests/math/`
 
 tests for the math module (population genetics, Bayesian, decision theory…).
-Files (verified 2026-08-29): __init__.py, test_math.py, test_math_bayesian.py, test_math_coalescent.py, test_math_coalescent_expectations.py, test_math_coalescent_extras.py, test_math_comprehensive.py, test_math_decision.py … (26 files).
+Files (verified 2026-09-05): 28 test modules + `__init__.py`, covering population genetics (coalescent, demography, effective size, Fst, LD, selection, statistics, popgen shim), core utilities, Bayesian inference, decision theory, epidemiology, evolutionary dynamics, perception, and quantitative genetics.
 
 
 ## Conventions
 - Real implementations with small deterministic data; the lexical no-mocks gate
   applies (no `MagicMock`/`unittest.mock`).
-- Run: `env -u VIRTUAL_ENV uv run pytest -q tests/math` (unverified — not run in this pass).
+- Run: `env -u VIRTUAL_ENV .venv/bin/python -m pytest -q tests/math -p no:cacheprovider` (verified 2026-09-05: 274 passed pre-review).
 Repo-wide policy: see the repository-root `AGENTS.md`.

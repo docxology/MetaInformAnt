@@ -151,6 +151,11 @@ class TestComputeVelocity:
         result = compute_velocity(np.array(s), np.array(u), gn)
         assert len(result["velocity_matrix"]) == 30
 
+    def test_unsupported_matrix_type_raises(self) -> None:
+        """Inputs that are neither lists, arrays, nor array-like must fail loudly."""
+        with pytest.raises(TypeError, match="Unsupported matrix type"):
+            compute_velocity(3.14, [[0.1, 0.2]], ["a", "b"])  # type: ignore[arg-type]
+
 
 # ---------------------------------------------------------------------------
 # velocity_embedding

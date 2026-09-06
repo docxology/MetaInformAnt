@@ -173,6 +173,21 @@ class TestMenuSystem:
         assert success is False
         assert system.current_menu_id == "root"
 
+    def test_go_back_at_root_preserves_history(self) -> None:
+        """A failed go-back at root must not wipe the navigation history."""
+        menus = {
+            "root": Menu(id="root", title="Root", items=[]),
+            "sub": Menu(id="sub", title="Sub", items=[]),
+        }
+        system = MenuSystem(menus=menus, current_menu_id="root")
+        assert system.go_back() is False
+        assert system.history.menu_ids == ["root"]
+        assert system.history.get_path() == ["Root"]
+        # Navigation keeps working after the failed go-back
+        assert system.navigate_to("sub") is True
+        assert system.go_back() is True
+        assert system.current_menu_id == "root"
+
 
 class TestNavigationFunctions:
     """Tests for navigation module functions."""

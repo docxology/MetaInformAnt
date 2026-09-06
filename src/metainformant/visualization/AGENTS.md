@@ -8,8 +8,8 @@ This module provides functionality organized into the following structure:
 
 ## Subpackages
 
-- `analysis/` — exports: `dimred`, `information`, `math_plots`, `quality`, `quality_assessment`, `quality_omics`, `simulation_plots`
-- `config/` — exports: `palettes`, `themes`
+- `analysis/` — exports: `dimred`, `information`, `math_plots`, `quality`, `quality_assessment`, `quality_omics`, `quality_sequencing`, `simulation_plots`, `statistical`, `timeseries`
+- `config/` — exports: `conventions`, `palettes`, `themes`
 - `dashboards/` — exports: `composite`, `interactive`
 - `genomics/` — exports: `expression`, `genomics`, `networks`, `trees`
 - `interactive_dashboards/` — exports: `dashboards`

@@ -8,10 +8,9 @@ following the shared contract in `_spec.py`: `name`, `description`,
 
 `catalog.py` adapts every spec into `metainformant.mcp.registry.Tool` records
 for `ToolRegistry.register_module_tools("metainformant.mcp.tools.catalog")`;
-the stdio server currently registers via the registry lane's
-`metainformant.mcp.tool_adapters` (amalgkit_monitor only), so exposing the
-catalog through the server is a one-entry addition to `TOOLS_MODULES` in
-`metainformant/mcp/__init__.py`.
+the stdio server registers both lanes: `metainformant.mcp.tool_adapters`
+(amalgkit_monitor) and `metainformant.mcp.tools.catalog` (all `*_tools.py`
+specs) via `TOOLS_MODULES` in `metainformant/mcp/__init__.py`.
 
 Invariants:
 - Handlers are deterministic; identical inputs -> identical outputs.
@@ -26,7 +25,9 @@ Invariants:
 Tests: `tests/mcp/test_tools_specs.py` (contract),
 `test_tools_handlers.py` (behavior, real synthetic data),
 `test_tools_subprocess.py` (fresh-interpreter round trips),
-`test_tools_catalog.py` (registry round trip + stdio listing).
+`test_tools_catalog.py` (registry round trip + stdio listing),
+`test_tools_server_e2e.py` (end-to-end server round trip),
+`test_mcp_monitor.py` (monitor adapter).
 Run one test file per pytest invocation.
 
 Repo-wide policy: see the repository-root `AGENTS.md`.

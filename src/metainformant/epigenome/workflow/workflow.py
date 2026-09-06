@@ -289,8 +289,12 @@ def run_chipseq_workflow(
                 format_type = _detect_peak_format(file_path)
                 peaks = load_chip_peaks(file_path, format=format_type)
 
-                # Filter peaks
+                # Filter by score, then apply the configured FDR threshold
+                # where q-values are available (narrowPeak/broadPeak)
                 filtered_peaks = filter_peaks_by_score(peaks, min_score=config.chipseq_qvalue_threshold)
+                filtered_peaks = [
+                    p for p in filtered_peaks if p.q_value is None or p.q_value <= config.chipseq_qvalue_threshold
+                ]
 
                 # Filter by length
                 filtered_peaks = [
@@ -423,9 +427,17 @@ def run_atacseq_workflow(
 
                 format_type = _detect_peak_format(file_path)
                 peaks = load_atac_peaks(file_path, format=format_type)
-
-                # Filter peaks (using accessibility score as threshold)
-                filtered_peaks = [p for p in peaks if p.accessibility_score >= config.atacseq_qvalue_threshold]
+                # Filter peaks: apply FDR where q-values exist; fall back to
+                # the accessibility-score floor for formats without significance
+                filtered_peaks = [
+                    p
+                    for p in peaks
+                    if (
+                        p.q_value <= config.atacseq_qvalue_threshold
+                        if p.q_value is not None
+                        else p.accessibility_score >= config.atacseq_qvalue_threshold
+                    )
+                ]
 
                 # Filter by length
                 filtered_peaks = [
@@ -805,6 +817,7 @@ def _analyze_methylation_atac_associations(
     in_closed = 0
 
     meth_values_accessible = []
+    meth_values_near_accessible = []
     meth_values_closed = []
 
     for meth in meth_sites:
@@ -846,7 +859,7 @@ def _analyze_methylation_atac_associations(
         elif min_distance <= max_dist:
             near_accessible += 1
             if meth_level is not None:
-                meth_values_accessible.append(meth_level)
+                meth_values_near_accessible.append(meth_level)
         else:
             in_closed += 1
             if meth_level is not None:
@@ -866,6 +879,9 @@ def _analyze_methylation_atac_associations(
     if meth_values_accessible:
         mean_accessible = sum(meth_values_accessible) / len(meth_values_accessible)
         associations["statistics"]["mean_methylation_accessible"] = mean_accessible
+    if meth_values_near_accessible:
+        mean_near = sum(meth_values_near_accessible) / len(meth_values_near_accessible)
+        associations["statistics"]["mean_methylation_near_accessible"] = mean_near
     if meth_values_closed:
         mean_closed = sum(meth_values_closed) / len(meth_values_closed)
         associations["statistics"]["mean_methylation_closed"] = mean_closed

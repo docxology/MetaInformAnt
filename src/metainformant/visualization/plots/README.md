@@ -8,6 +8,7 @@ General-purpose plotting library covering basic charts, animations, multidimensi
 |------|---------|
 | `animations.py` | Animated time series, evolution, clustering, network, and trajectory |
 | `basic.py` | Line, scatter, heatmap, bar, pie, area, and step plots |
+| `cross_species.py` | Cross-species comparisons: family legends, divergence heatmaps, species summaries, top-pair panels |
 | `general.py` | Convenience wrappers: expression heatmap, PCA, volcano, Manhattan |
 | `multidim.py` | Pairwise relationships, parallel coordinates, radar, 3D scatter |
 | `specialized.py` | Venn, Sankey, chord, alluvial, circular bar, UpSet plots |
@@ -18,7 +19,7 @@ General-purpose plotting library covering basic charts, animations, multidimensi
 |----------|-------------|
 | `lineplot()` | Basic line plot with optional styling |
 | `scatter_plot()` | 2D scatter plot with grouping support |
-| `heatmap()` | Matrix heatmap with clustering |
+| `heatmap()` | Matrix heatmap (imshow) with colorbar |
 | `animate_time_series()` | Animated line chart over time |
 | `animate_evolution()` | Animated evolutionary trajectory |
 | `plot_pairwise_relationships()` | Scatterplot matrix for multi-variable data |

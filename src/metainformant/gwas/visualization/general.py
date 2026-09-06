@@ -147,17 +147,10 @@ def _compute_genome_axis(rows: List[Dict[str, Any]]) -> tuple[Dict[str, float], 
 
 
 def _lambda_gc_from_pvalues(p_values: Sequence[float]) -> Optional[float]:
-    valid = [float(p) for p in p_values if math.isfinite(float(p)) and 0 < float(p) <= 1]
-    if not valid:
-        return None
-    if HAS_SCIPY and _scipy_stats is not None:
-        chi2 = np.asarray([float(_scipy_stats.chi2.isf(min(max(p, 1e-300), 1.0), 1)) for p in valid])
-    else:
-        chi2 = np.asarray([-2.0 * math.log(max(p, 1e-300)) for p in valid])
-    chi2 = chi2[np.isfinite(chi2)]
-    if chi2.size == 0:
-        return None
-    return float(np.median(chi2) / EXPECTED_MEDIAN_CHI2_1DF)
+    """Compute λ_GC via the canonical genomic-control helper (p → χ²(1) → median)."""
+    from metainformant.gwas.analysis.correction import lambda_gc_from_p_values
+
+    return lambda_gc_from_p_values([float(p) for p in p_values if math.isfinite(float(p)) and 0 < float(p) <= 1])
 
 
 def _qq_confidence_band(n: int, alpha: float = 0.05) -> tuple[Any, Any, Any]:

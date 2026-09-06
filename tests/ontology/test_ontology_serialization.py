@@ -200,3 +200,63 @@ class TestMergeOntologies:
         onto1 = _make_test_ontology()
         with pytest.raises(ValueError):
             merge_ontologies(onto1, conflict_resolution="invalid")
+
+
+class TestOboRoundtrip:
+    def test_obo_save_load_preserves_terms_and_relationships(self, tmp_path):
+        onto = _make_test_ontology()
+        path = tmp_path / "roundtrip.obo"
+        save_ontology(onto, path, format="obo")
+        loaded = load_ontology(path, format="obo")
+
+        assert len(loaded) == 3
+        for term_id in onto.terms:
+            assert loaded.has_term(term_id)
+        # is_a relationships survive the roundtrip through the parents_of index
+        assert loaded.parents_of["GO:0009987"] == {"GO:0008150"}
+        assert loaded.parents_of["GO:0006950"] == {"GO:0008150"}
+
+    def test_obo_save_writes_obsolete_and_synonyms(self, tmp_path):
+        from metainformant.ontology.core.types import create_term
+
+        onto = create_ontology(
+            terms={
+                "GO:1": create_term(
+                    id="GO:1", name="obsolete term", is_obsolete=True, synonyms=["old name"], xrefs=["PMID:1"]
+                )
+            }
+        )
+        path = tmp_path / "obsolete.obo"
+        save_ontology(onto, path, format="obo")
+        content = path.read_text()
+        assert "is_obsolete: true" in content
+        assert 'synonym: "old name" EXACT []' in content
+        assert "xref: PMID:1" in content
+
+
+class TestExportOntologyStats:
+    def test_export_stats_json(self, tmp_path):
+        from metainformant.ontology.query.serialize import export_ontology_stats
+
+        onto = _make_test_ontology()
+        path = tmp_path / "stats.json"
+        export_ontology_stats(onto, path)
+
+        import json
+
+        stats = json.loads(path.read_text())
+        assert stats["num_terms"] == 3
+        assert stats["num_relationships"] == 2
+        assert stats["exported_by"] == "metainformant"
+        assert stats["relationship_type_distribution"] == {"is_a": 2}
+
+    def test_export_stats_includes_name_lengths(self, tmp_path):
+        from metainformant.ontology.query.serialize import export_ontology_stats
+
+        onto = _make_test_ontology()
+        path = tmp_path / "stats2.json"
+        export_ontology_stats(onto, path)
+        import json
+
+        stats = json.loads(path.read_text())
+        assert stats["term_name_stats"]["max_length"] == len("response_to_stress")

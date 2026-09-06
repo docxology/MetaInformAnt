@@ -13,6 +13,7 @@ from typing import Any, Dict, Optional, cast
 import numpy as np
 
 from metainformant.core.utils import logging
+from metainformant.gwas.analysis.correction import lambda_gc_from_p_values
 
 logger = logging.get_logger(__name__)
 
@@ -457,7 +458,7 @@ def effect_size_qq(results: Any, output_file: Optional[str | Path] = None) -> Op
     cbar.set_label("Absolute Effect Size", fontsize=12)
 
     # Add inflation factor annotation
-    lambda_gc = np.median(p_values) / 0.456
+    lambda_gc = lambda_gc_from_p_values(p_values.tolist()) or 1.0
     ax.text(
         0.05,
         0.95,

@@ -61,7 +61,8 @@ def animate_time_series(
 
     validation.validate_type(data, (np.ndarray, list), "data")
 
-    fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 6)))
+    anim_kwargs = kwargs.pop("anim_kwargs", {})
+    fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 6)))
 
     if isinstance(data, list):
         data = np.array(data)
@@ -92,7 +93,7 @@ def animate_time_series(
         return lines
 
     anim = FuncAnimation(
-        fig, animate, frames=data.shape[1], interval=interval, blit=True, **kwargs.get("anim_kwargs", {})
+        fig, animate, frames=data.shape[1], interval=interval, blit=True, **anim_kwargs
     )
 
     if output_path:
@@ -126,7 +127,8 @@ def animate_evolution(
     if not sequences:
         raise ValueError("Sequences list cannot be empty")
 
-    fig, ax = plt.subplots(figsize=kwargs.get("figsize", (12, 8)))
+    anim_kwargs = kwargs.pop("anim_kwargs", {})
+    fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (12, 8)))
 
     # Setup the plot
     text_objects = []
@@ -172,7 +174,7 @@ def animate_evolution(
         frames=total_frames,
         interval=interval,
         blit=False,  # Text animation doesn't work well with blit
-        **kwargs.get("anim_kwargs", {}),
+        **anim_kwargs,
     )
 
     if output_path:
@@ -222,7 +224,8 @@ def animate_clustering(
     if not cluster_labels_over_time:
         raise ValueError("Cluster labels over time cannot be empty")
 
-    fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 8)))
+    anim_kwargs = kwargs.pop("anim_kwargs", {})
+    fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 8)))
 
     # Setup the plot
     scatter = ax.scatter(data[:, 0], data[:, 1], c=cluster_labels_over_time[0], cmap="tab10", alpha=0.7, **kwargs)
@@ -244,7 +247,7 @@ def animate_clustering(
         frames=len(cluster_labels_over_time),
         interval=interval,
         blit=True,
-        **kwargs.get("anim_kwargs", {}),
+        **anim_kwargs,
     )
 
     if output_path:
@@ -281,13 +284,8 @@ def animate_network(
     if not graphs_over_time:
         raise ValueError("Graphs over time cannot be empty")
 
-    fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 8)))
-
-    # Get all possible nodes across all time points
-    all_nodes: Any = set()
-    for G in graphs_over_time:
-        all_nodes.update(G.nodes())
-    all_nodes = sorted(all_nodes)
+    anim_kwargs = kwargs.pop("anim_kwargs", {})
+    fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 8)))
 
     # Fixed positions for consistent layout
     pos = nx.spring_layout(graphs_over_time[0], seed=42)
@@ -333,7 +331,7 @@ def animate_network(
         frames=len(graphs_over_time),
         interval=interval,
         blit=False,  # Network drawing doesn't work well with blit
-        **kwargs.get("anim_kwargs", {}),
+        **anim_kwargs,
     )
 
     if output_path:
@@ -379,7 +377,8 @@ def animate_trajectory(
             raise ValueError("Each trajectory must be a 2D array with shape (n_points, 2)")
         traj_arrays.append(traj)
 
-    fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 8)))
+    anim_kwargs = kwargs.pop("anim_kwargs", {})
+    fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 8)))
 
     # Setup the plot
     colors = plt.cm.tab10(np.linspace(0, 1, len(traj_arrays)))
@@ -423,7 +422,7 @@ def animate_trajectory(
 
         return points + trails
 
-    anim = FuncAnimation(fig, animate, frames=max_frames, interval=interval, blit=True, **kwargs.get("anim_kwargs", {}))
+    anim = FuncAnimation(fig, animate, frames=max_frames, interval=interval, blit=True, **anim_kwargs)
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)

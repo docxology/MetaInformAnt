@@ -15,16 +15,16 @@ Data loading, peak analysis, and quality metrics for the three core epigenomic a
 | Function | Description |
 |----------|-------------|
 | `load_atac_peaks()` | Parse ATAC-seq narrowPeak file into ATACPeak list |
-| `calculate_atac_statistics()` | Peak width distribution, signal stats, FRiP |
+| `calculate_atac_statistics()` | Peak width distribution and signal statistics |
 | `identify_tss_enrichment()` | Score ATAC signal enrichment around TSS sites |
-| `find_tf_binding_sites()` | Identify transcription factor motifs within peaks |
+| `find_tf_binding_sites()` | TF motif screening within peaks (simulated; requires sequence data for real scanning) |
 | `load_chip_peaks()` | Parse ChIP-seq narrowPeak file into ChIPPeak list |
 | `filter_peaks_by_score()` | Threshold-based peak filtering with optional top-N |
 | `calculate_peak_enrichment()` | Fold enrichment of peaks in genomic regions |
-| `find_motifs_in_peaks()` | Motif scanning within ChIP-seq peak sequences |
+| `find_motifs_in_peaks()` | Motif screening within ChIP-seq peaks (simulated; requires sequence data for real scanning) |
 | `load_methylation_bedgraph()` | Parse methylation BedGraph with coverage filtering |
 | `find_differentially_methylated_regions()` | Detect DMRs between conditions |
-| `identify_cpg_islands()` | Locate CpG islands by GC content and CpG ratio |
+| `identify_cpg_islands()` | Sliding-window CpG island detection (GC/CpG ratio estimated from methylation level) |
 | `calculate_methylation_entropy()` | Shannon entropy of methylation levels per region |
 
 ## Usage

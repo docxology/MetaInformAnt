@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from metainformant.phenotype.workflow.pipeline import (
     PhenotypePipeline,
     PipelineConfig,
@@ -353,3 +355,91 @@ class TestBehavioralAnalyzer:
         assert result.success is True
         analysis = result.outputs["analyze"]["results"]["behavioral"]
         assert "n_items" in analysis
+
+
+class TestPipelineFailureHandling:
+    def test_failing_step_marks_result_failed(self):
+        cfg = PipelineConfig(steps=["load", "boom"])
+        pipeline = PhenotypePipeline(cfg)
+
+        def boom():
+            raise RuntimeError("kaboom")
+
+        pipeline.register_step("boom", boom)
+        result = pipeline.run(data={"key": "value"})
+        assert result.success is False
+        assert any("Step 'boom' failed: kaboom" in e for e in result.errors)
+        # Steps after the failure are not executed
+        assert "boom" not in result.outputs
+
+    def test_unknown_step_records_error(self):
+        cfg = PipelineConfig(steps=["load", "does_not_exist"])
+        pipeline = PhenotypePipeline(cfg)
+        result = pipeline.run(data={"key": "value"})
+        assert result.success is False
+        assert any("Unknown step: does_not_exist" in e for e in result.errors)
+
+
+class TestTypedAnalyzers:
+    def _run_analyze(self, phenotype_type, data):
+        cfg = PipelineConfig(phenotype_types=[phenotype_type], steps=["load", "analyze"])
+        pipeline = PhenotypePipeline(cfg)
+        result = pipeline.run(data=data)
+        assert result.success is True
+        return result.outputs["analyze"]["results"][phenotype_type]
+
+    def test_behavioral_analyzer_with_sequences(self):
+        from metainformant.phenotype.behavior.ethogram import Ethogram
+        from metainformant.phenotype.behavior.sequence import BehaviorEvent, BehaviorSequence
+
+        eth = Ethogram({"F": "Foraging", "R": "Resting"})
+        seqs = [
+            BehaviorSequence([BehaviorEvent(0, "F", 5.0), BehaviorEvent(5, "R", 5.0)], eth),
+            BehaviorSequence([BehaviorEvent(0, "F", 2.0), BehaviorEvent(2, "R", 8.0)], eth),
+        ]
+        analysis = self._run_analyze("behavioral", seqs)
+        assert analysis["n_sequences"] == 2
+        assert 0 < analysis["mean_diversity"] <= 1.0
+
+    def test_chemical_analyzer_with_profiles(self):
+        from metainformant.phenotype.chemical.compound import Compound
+        from metainformant.phenotype.chemical.profile import ChemicalProfile
+
+        profiles = [
+            ChemicalProfile("s1", {Compound("A"): 5.0, Compound("B"): 5.0}),
+            ChemicalProfile("s2", {Compound("A"): 10.0}),
+        ]
+        analysis = self._run_analyze("chemical", profiles)
+        assert analysis["n_profiles"] == 2
+        assert analysis["mean_diversity"] > 0
+
+    def test_electronic_analyzer_with_trajectories(self):
+        from metainformant.phenotype.electronic.tracking import TrackingPoint, Trajectory
+
+        trajs = [
+            Trajectory("a", [TrackingPoint(0, 0, 0), TrackingPoint(3, 0, 1)]),
+            Trajectory("b", [TrackingPoint(0, 0, 0), TrackingPoint(1, 0, 1)]),
+        ]
+        analysis = self._run_analyze("electronic", trajs)
+        assert analysis["n_trajectories"] == 2
+        assert analysis["mean_distance"] == pytest.approx((3.0 + 1.0) / 2)
+
+    def test_sonic_analyzer_with_signals(self):
+        from metainformant.phenotype.sonic.signal import AcousticSignal
+
+        signals = [AcousticSignal.generate_tone(440.0, 0.1), AcousticSignal.generate_tone(880.0, 0.1)]
+        analysis = self._run_analyze("sonic", signals)
+        assert analysis["n_signals"] == 2
+        assert analysis["mean_dominant_freq"] == pytest.approx((440.0 + 880.0) / 2, abs=2.0)
+
+    def test_morphological_analyzer_with_profiles(self):
+        from metainformant.phenotype.morphological.measurement import Measurement
+        from metainformant.phenotype.morphological.profile import MorphometricProfile
+
+        profiles = [
+            MorphometricProfile("s1", [Measurement("hw", 1.0), Measurement("hl", 2.0)]),
+            MorphometricProfile("s2", [Measurement("hw", 3.0), Measurement("hl", 4.0)]),
+        ]
+        analysis = self._run_analyze("morphological", profiles)
+        assert analysis["hw"]["mean"] == pytest.approx(2.0)
+        assert analysis["hl"]["n"] == 2

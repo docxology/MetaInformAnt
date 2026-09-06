@@ -5,6 +5,8 @@ REAL IMPLEMENTATION POLICY: All tests use real implementations.
 
 from __future__ import annotations
 
+import random
+
 import pytest
 
 from metainformant.math.bayesian.inference import (
@@ -282,3 +284,42 @@ class TestComputeWAIC:
     def test_ragged_raises(self):
         with pytest.raises(ValueError, match="observations"):
             compute_waic([[-1.0, -2.0], [-1.0]])
+
+    def test_single_sample(self):
+        # With one posterior sample, p_waic must be 0 and WAIC = -2 * lppd
+        result = compute_waic([[-1.0, -2.0]])
+        assert result["p_waic"] == 0.0
+        assert result["waic"] == pytest.approx(-2.0 * result["lppd"])
+
+
+class TestMHDeterminism:
+    def test_seeded_runs_identical(self):
+        def log_post(params):
+            return -0.5 * params[0] ** 2
+
+        random.seed(20260905)
+        first = metropolis_hastings(log_post, [0.0], n_samples=800, burn_in=200, proposal_scale=0.8)
+        random.seed(20260905)
+        second = metropolis_hastings(log_post, [0.0], n_samples=800, burn_in=200, proposal_scale=0.8)
+
+        assert first["samples"] == second["samples"]
+        assert first["acceptance_rate"] == second["acceptance_rate"]
+        assert first["log_posteriors"] == second["log_posteriors"]
+
+
+class TestABCRejectionNoAcceptance:
+    def test_zero_acceptances(self):
+        random.seed(7)
+
+        def simulator(params):
+            return [params[0]]
+
+        def prior_sampler():
+            return [random.uniform(0, 1)]
+
+        # Observed summary far outside the prior support: nothing is accepted.
+        result = abc_rejection(simulator, [100.0], prior_sampler, n_simulations=200, tolerance=0.01)
+        assert result["accepted_params"] == []
+        assert result["distances"] == []
+        assert result["acceptance_rate"] == 0.0
+        assert result["posterior_summary"] == {}

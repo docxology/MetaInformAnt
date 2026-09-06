@@ -685,6 +685,25 @@ class TestLifeCourseAnalysis:
         result = predict_life_course_outcomes(sequences, prediction_horizon=2.0)
         assert result["prediction_horizon"] == 2.0
 
+    def test_aggregate_with_explicit_time_windows(self, sequences):
+        from metainformant.phenotype.analysis.life_course import aggregate_temporal_phenotypes
+
+        result = aggregate_temporal_phenotypes(
+            sequences,
+            time_window_years=5.0,
+            time_windows=[(0.0, 1000.0), (1000.0, 2000.0)],
+        )
+        assert result["time_windows"] == [(0.0, 1000.0), (1000.0, 2000.0)]
+        assert result["aggregates"]["total_events"] > 0
+        assert result["aggregates"]["total_people"] == 5
+
+    def test_aggregate_rejects_non_list(self):
+        from metainformant.core.utils.errors import ValidationError
+        from metainformant.phenotype.analysis.life_course import aggregate_temporal_phenotypes
+
+        with pytest.raises(ValidationError):
+            aggregate_temporal_phenotypes("not-a-list")
+
 
 # ============================================================
 # WORKFLOW PIPELINE

@@ -322,3 +322,73 @@ class TestBiplot:
 
         with pytest.raises(ImportError, match="scikit-learn required"):
             biplot(data, pca_like_model)
+
+
+class TestExistingAxesValidationAndLabels:
+    """Tests for caller-provided axes, data validation gaps, and feature labeling."""
+
+    def test_pca_plot_with_existing_ax(self):
+        """Test PCA plot drawn onto caller-provided axes."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        np.random.seed(42)
+        data = np.random.randn(40, 5)
+        fig, ax = plt.subplots()
+
+        result = plot_pca(data, ax=ax)
+        assert result is ax
+        assert len(ax.collections) > 0
+        plt.close("all")
+
+    def test_pca_plot_1d_data(self):
+        """Test PCA plot rejects 1D input data."""
+        data = np.random.randn(20)
+
+        with pytest.raises(ValueError, match="Data must be 2D"):
+            plot_pca(data)
+
+    def test_tsne_plot_1d_data(self):
+        """Test t-SNE plot rejects 1D input data."""
+        data = np.random.randn(20)
+
+        with pytest.raises(ValueError, match="Data must be 2D"):
+            plot_tsne(data)
+
+    def test_pca_loadings_feature_labels_from_dataframe(self):
+        """Test PCA loadings plot annotates features when fitted on a DataFrame."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        np.random.seed(42)
+        data = pd.DataFrame(np.random.randn(50, 4), columns=["gene1", "gene2", "gene3", "gene4"])
+        pca = PCA(n_components=2)
+        pca.fit(data)
+
+        ax = plot_pca_loadings(pca)
+        assert ax is not None
+        annotated = {text.get_text() for text in ax.texts}
+        assert {"gene1", "gene2", "gene3", "gene4"} <= annotated
+        plt.close("all")
+
+    def test_biplot_labels_features(self):
+        """Test biplot annotates feature names (numpy input gets generated names)."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        np.random.seed(42)
+        data = np.random.randn(50, 4)
+        pca = PCA(n_components=2)
+        pca.fit(data)
+
+        ax = biplot(data, pca)
+        assert ax is not None
+        annotated = {text.get_text() for text in ax.texts}
+        assert annotated == {"Feature_0", "Feature_1", "Feature_2", "Feature_3"}
+        plt.close("all")

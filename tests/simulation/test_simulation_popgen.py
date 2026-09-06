@@ -4,13 +4,17 @@ from __future__ import annotations
 
 import random
 
+import numpy as np
+import pytest
+
 from metainformant.simulation.models.popgen import (
     generate_genotype_matrix,
     generate_linkage_disequilibrium_data,
     generate_population_sequences,
     generate_site_frequency_spectrum,
-    generate_two_populations,
+    simulate_admixture,
     simulate_bottleneck_population,
+    generate_two_populations,
     simulate_population_expansion,
 )
 
@@ -302,3 +306,125 @@ class TestGenerateLinkageDisequilibriumData:
             allele_frequencies=freqs,
         )
         assert len(genotypes) == 100
+
+
+class TestBottleneckStatsInterface:
+    """Test the statistics interface of simulate_bottleneck_population.
+
+    Regression tests: this interface previously called ``rng.poisson`` on a
+    ``random.Random`` and raised AttributeError at runtime.
+    """
+
+    def test_stats_interface_returns_trajectory(self):
+        """Test that the default interface returns simulation statistics."""
+        result = simulate_bottleneck_population(
+            initial_size=100,
+            bottleneck_size=10,
+            final_size=100,
+            generations=6,
+            rng=random.Random(42),
+        )
+        assert isinstance(result, dict)
+        assert len(result["population_sizes"]) == 6
+        assert result["population_sizes"][:2] == [100, 100]  # pre-bottleneck
+        assert result["bottleneck_start"] == 2
+        assert result["bottleneck_end"] == 4
+        assert result["population_sizes"][3] == 10  # during bottleneck
+        assert result["total_mutations"] >= 0
+        assert 0.0 < result["final_diversity"] <= 1.0
+
+    def test_stats_interface_is_deterministic(self):
+        """Test reproducibility with a seeded RNG."""
+        kwargs = dict(initial_size=50, bottleneck_size=5, final_size=50, generations=6)
+        result_a = simulate_bottleneck_population(**kwargs, rng=random.Random(7))
+        result_b = simulate_bottleneck_population(**kwargs, rng=random.Random(7))
+        assert result_a == result_b
+
+
+class TestExpansionStatsInterface:
+    """Test the statistics interface of simulate_population_expansion.
+
+    Regression tests: this interface previously called ``rng.poisson`` on a
+    ``random.Random`` and raised AttributeError at runtime.
+    """
+
+    def test_stats_interface_returns_trajectory(self):
+        """Test that the default interface returns simulation statistics."""
+        result = simulate_population_expansion(
+            initial_size=100,
+            final_size=1000,
+            expansion_time=5,
+            rng=random.Random(42),
+        )
+        assert isinstance(result, dict)
+        assert len(result["population_sizes"]) == 6  # expansion_time + 1
+        assert result["population_sizes"][0] == 100
+        assert result["population_sizes"][-1] == pytest.approx(1000, abs=1)
+        assert result["growth_rate"] > 0
+        assert result["total_mutations"] >= 0
+        assert result["final_diversity"] <= 1.0
+
+
+class TestSFSExpansionModel:
+    """Test the expansion demographic model of generate_site_frequency_spectrum.
+
+    Regression tests: this model previously called ``rng.zipf`` on a
+    ``random.Random`` and raised AttributeError at runtime.
+    """
+
+    def test_expansion_model_default_alpha(self):
+        """Test that the default alpha (1.0) produces a valid SFS."""
+        sfs = generate_site_frequency_spectrum(
+            n_samples=10,
+            n_sites=100,
+            demographic_model="expansion",
+            rng=random.Random(42),
+        )
+        assert sum(sfs) == 100
+        assert all(count >= 0 for count in sfs)
+
+    def test_expansion_model_favors_rare_alleles(self):
+        """Test that zipf-distributed frequencies favor low-frequency variants."""
+        sfs = generate_site_frequency_spectrum(
+            n_samples=50,
+            n_sites=500,
+            demographic_model="expansion",
+            parameters={"alpha": 2.0},
+            rng=random.Random(42),
+        )
+        assert sfs[0] > sfs[-1]  # singletons more common than high-frequency variants
+
+    def test_expansion_model_custom_alpha_changes_spectrum(self):
+        """Test that a provided alpha parameter is honored."""
+        kwargs = dict(n_samples=10, n_sites=100, demographic_model="expansion")
+        sfs_default = generate_site_frequency_spectrum(**kwargs, rng=random.Random(42))
+        sfs_alpha2 = generate_site_frequency_spectrum(**kwargs, parameters={"alpha": 2.0}, rng=random.Random(42))
+        assert sfs_default != sfs_alpha2
+
+
+class TestSimulateAdmixture:
+    """Test population admixture simulation.
+
+    Regression tests: the drift step previously called ``rng.normal`` on a
+    ``random.Random`` and raised AttributeError at runtime.
+    """
+
+    def test_basic_admixture(self):
+        """Test that admixture runs and produces a frequency trajectory."""
+        proportions = np.array([[0.9, 0.1], [0.1, 0.9]])
+        result = simulate_admixture(2, [10, 10], proportions, 3, rng=random.Random(42))
+        assert len(result["frequency_trajectory"]) == 4  # generations + 1
+        assert len(result["ancestral_frequencies"]) == 2
+        assert result["generations"] == 3
+        assert result["migration_rate"] == 0.01
+        for freqs in result["frequency_trajectory"]:
+            assert all(0.0 <= f <= 1.0 for f in freqs)
+
+    def test_admixture_is_deterministic(self):
+        """Test reproducibility with a seeded RNG."""
+        proportions = np.array([[0.9, 0.1], [0.1, 0.9]])
+        result_a = simulate_admixture(2, [10, 10], proportions, 3, rng=random.Random(7))
+        result_b = simulate_admixture(2, [10, 10], proportions, 3, rng=random.Random(7))
+        assert all(
+            np.array_equal(a, b) for a, b in zip(result_a["frequency_trajectory"], result_b["frequency_trajectory"])
+        )

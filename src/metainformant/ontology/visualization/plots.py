@@ -131,7 +131,6 @@ def enrichment_dotplot(
     adj_ps = [max(r.get("adjusted_p", r.get("p_value", 1.0)), 1e-300) for r in top]
     neg_log_ps = [-math.log10(p) for p in adj_ps]
     overlaps = [r.get("n_overlap", r.get("observed", 1)) for r in top]
-    [r.get("n_genes", r.get("term_size", 1)) for r in top]
     query_sizes = [r.get("query_size", max(overlaps) or 1) for r in top]
     gene_ratios = [ov / qs if qs > 0 else 0.0 for ov, qs in zip(overlaps, query_sizes)]
 

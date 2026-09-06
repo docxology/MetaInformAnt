@@ -7,7 +7,7 @@ This module provides specialized tools for analyzing protein-protein interaction
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
 
 from metainformant.core import io
 from metainformant.core.utils import logging
@@ -119,16 +119,20 @@ def load_ppi_network(ppi_file: Union[str, Path], format: str = "tsv", **kwargs: 
     G = nx.Graph()
 
     for protein1, protein2, score in ppi_data:
-        if G.has_edge(protein1, protein2):
-            # Update existing edge with higher score
-            current_score = G[protein1][protein2].get("weight", 0)
-            if score > current_score:
-                G[protein1][protein2]["weight"] = score
-        else:
-            G.add_edge(protein1, protein2, weight=score)
+        _add_ppi_edge(G, protein1, protein2, score)
 
     logger.info(f"Loaded PPI network: {len(G.nodes())} proteins, {len(G.edges())} interactions")
     return G
+
+
+def _add_ppi_edge(G: Any, protein1: str, protein2: str, score: float) -> None:
+    """Add an interaction edge, keeping the higher score on duplicates."""
+    if G.has_edge(protein1, protein2):
+        current_score = G[protein1][protein2].get("weight", 0)
+        if score > current_score:
+            G[protein1][protein2]["weight"] = score
+    else:
+        G.add_edge(protein1, protein2, weight=score)
 
 
 def construct_ppi_network_from_interactions(interactions: List[Tuple[str, str, float]], **kwargs: Any) -> Any:
@@ -150,13 +154,7 @@ def construct_ppi_network_from_interactions(interactions: List[Tuple[str, str, f
     G = nx.Graph(**kwargs)
 
     for protein1, protein2, score in interactions:
-        if G.has_edge(protein1, protein2):
-            # Keep higher score
-            current_score = G[protein1][protein2].get("weight", 0)
-            if score > current_score:
-                G[protein1][protein2]["weight"] = score
-        else:
-            G.add_edge(protein1, protein2, weight=score)
+        _add_ppi_edge(G, protein1, protein2, score)
 
     logger.info(f"Constructed PPI network: {len(G.nodes())} proteins, {len(G.edges())} interactions")
     return G
@@ -278,6 +276,8 @@ def find_ppi_hubs(
     if degree_threshold is None:
         # Use percentile threshold
         degree_values = list(degrees.values())
+        if not HAS_NUMPY:
+            raise ImportError("numpy required for percentile-based hub identification")
         degree_threshold = int(np.percentile(degree_values, percentile))
 
     # Find hubs
@@ -398,7 +398,7 @@ def ppi_network_comparison(ppi_graph1: Any, ppi_graph2: Any, **kwargs: Any) -> D
         "common_proteins": len(common_proteins),
         "unique_to_1": len(proteins1 - proteins2),
         "unique_to_2": len(proteins2 - proteins1),
-        "jaccard_similarity": len(common_proteins) / len(proteins1 | proteins2),
+        "jaccard_similarity": len(common_proteins) / len(proteins1 | proteins2) if proteins1 | proteins2 else 0.0,
     }
 
     # Common interactions
@@ -410,7 +410,7 @@ def ppi_network_comparison(ppi_graph1: Any, ppi_graph2: Any, **kwargs: Any) -> D
         "common_interactions": len(common_edges),
         "unique_to_1": len(edges1 - edges2),
         "unique_to_2": len(edges2 - edges1),
-        "jaccard_similarity": len(common_edges) / len(edges1 | edges2),
+        "jaccard_similarity": len(common_edges) / len(edges1 | edges2) if edges1 | edges2 else 0.0,
     }
 
     return comparison
@@ -456,7 +456,11 @@ def ppi_network_enrichment(
     total_possible_interactions = n_background * (n_background - 1) / 2
     observed_background_interactions = len(ppi_graph.edges())
 
-    expected_interactions = observed_background_interactions * (n_test * (n_test - 1) / 2) / total_possible_interactions
+    expected_interactions = (
+        observed_background_interactions * (n_test * (n_test - 1) / 2) / total_possible_interactions
+        if total_possible_interactions > 0
+        else 0.0
+    )
 
     # Calculate enrichment statistics
     enrichment_ratio = observed_interactions / expected_interactions if expected_interactions > 0 else 1.0
@@ -848,26 +852,31 @@ class ProteinNetwork:
 
     def filter_by_confidence(self, threshold: float) -> "ProteinNetwork":
         """Return a network containing interactions at or above confidence threshold."""
-        filtered = ProteinNetwork(name=f"{self.name}_confidence_{threshold}".strip("_"))
-        filtered.protein_metadata = {protein: data.copy() for protein, data in self._protein_metadata.items()}
-        for source, target, attrs in self._interactions:
-            confidence = float(attrs.get("confidence", attrs.get("weight", 1.0)))
-            if confidence >= threshold:
-                evidence = list(attrs.get("evidence_types", []))
-                extra = {k: v for k, v in attrs.items() if k not in {"confidence", "evidence_types", "weight"}}
-                filtered.add_interaction(source, target, confidence, evidence, **extra)
-        return filtered
+
+        def keep(attrs: dict[str, Any]) -> bool:
+            return float(attrs.get("confidence", attrs.get("weight", 1.0))) >= threshold
+
+        return self._filtered_network(keep, f"{self.name}_confidence_{threshold}".strip("_"))
 
     def filter_by_evidence(self, evidence_type: str) -> "ProteinNetwork":
         """Return a network containing interactions with a requested evidence type."""
-        filtered = ProteinNetwork(name=f"{self.name}_{evidence_type}".strip("_"))
+
+        def keep(attrs: dict[str, Any]) -> bool:
+            return evidence_type in attrs.get("evidence_types", [])
+
+        return self._filtered_network(keep, f"{self.name}_{evidence_type}".strip("_"))
+
+    def _filtered_network(self, keep: Callable[[dict[str, Any]], bool], name: str) -> "ProteinNetwork":
+        """Build a copy of this network keeping interactions where ``keep`` is true."""
+        filtered = ProteinNetwork(name=name)
         filtered.protein_metadata = {protein: data.copy() for protein, data in self._protein_metadata.items()}
         for source, target, attrs in self._interactions:
+            if not keep(attrs):
+                continue
+            confidence = float(attrs.get("confidence", attrs.get("weight", 1.0)))
             evidence = list(attrs.get("evidence_types", []))
-            if evidence_type in evidence:
-                confidence = float(attrs.get("confidence", attrs.get("weight", 1.0)))
-                extra = {k: v for k, v in attrs.items() if k not in {"confidence", "evidence_types", "weight"}}
-                filtered.add_interaction(source, target, confidence, evidence, **extra)
+            extra = {k: v for k, v in attrs.items() if k not in {"confidence", "evidence_types", "weight"}}
+            filtered.add_interaction(source, target, confidence, evidence, **extra)
         return filtered
 
     def get_network_statistics(self) -> dict[str, Any]:
@@ -878,7 +887,7 @@ class ProteinNetwork:
         return {
             "num_proteins": len(self.graph.nodes()),
             "num_interactions": len(self._interactions),
-            "avg_confidence": float(np.mean(confidences)) if confidences else 0.0,
+            "avg_confidence": float(sum(confidences) / len(confidences)) if confidences else 0.0,
             "density": float(nx.density(self.graph)) if self.graph.number_of_nodes() > 1 else 0.0,
         }
 
@@ -987,7 +996,8 @@ def _predict_by_similarity(
                     continue
 
                 protein_neighbors = set(known_network.graph.neighbors(protein))
-                similarity = len(target_neighbors & protein_neighbors) / len(target_neighbors | protein_neighbors)
+                union = target_neighbors | protein_neighbors
+                similarity = len(target_neighbors & protein_neighbors) / len(union) if union else 0.0
 
                 if similarity >= threshold:
                     candidate_predictions.append(

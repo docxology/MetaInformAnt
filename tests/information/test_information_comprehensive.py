@@ -811,6 +811,13 @@ class TestAnalysis:
         with pytest.raises(ValueError, match="too short"):
             analyze_sequence_information("ATCG")
 
+    def test_analyze_sequence_entropy_with_empty_k_values(self) -> None:
+        from metainformant.information.metrics.analysis import analyze_sequence_information
+
+        # Entropy method must work even when no k-mer analysis runs (k_values empty)
+        result = analyze_sequence_information("ATCGATCGATCG", k_values=[], methods=["entropy"])
+        assert "shannon_entropy" in result["methods"]["entropy"]
+
     def test_analyze_sequence_complexity(self) -> None:
         from metainformant.information.metrics.analysis import analyze_sequence_information
 
@@ -997,6 +1004,17 @@ class TestWorkflows:
         information_report(results, output_path=output_path, format="json")
         assert output_path.exists()
 
+    def test_information_report_text(self, tmp_path: Path) -> None:
+        from metainformant.information.workflow.workflows import information_report, information_workflow
+
+        # Sequences must be >= 10 chars for analyze_sequence_information
+        sequences = ["ATCGATCGATCG", "GCTAGCTAGCTA"]
+        results = information_workflow(sequences, k_values=[1])
+        output_path = tmp_path / "report.txt"
+        information_report(results, output_path=output_path, format="text")
+        assert output_path.exists()
+        content = output_path.read_text()
+        assert "INFORMATION ANALYSIS REPORT" in content
 
 # ============================================================
 # Integration tests

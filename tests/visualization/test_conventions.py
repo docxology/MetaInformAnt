@@ -78,6 +78,21 @@ class TestCategoryStyle:
         assert set(styles) == {"x", "y"}
 
 
+class TestCategoryStyleCycling:
+    def test_styles_cycle_beyond_palette_size(self) -> None:
+        labels = [f"cat_{i:02d}" for i in range(11)]
+        styles = category_style(labels)
+        assert len(styles) == 11
+        ordered = [styles[label] for label in sorted(styles)]
+        colors = [style[0] for style in ordered]
+        hatches = [style[1] for style in ordered]
+        assert all(color in OKABE_ITO for color in colors)
+        assert all(hatch in CATEGORY_HATCHES for hatch in hatches)
+        # 11th label wraps back to the third palette entry (indices cycle mod 8)
+        assert colors[10] == OKABE_ITO[10 % len(OKABE_ITO)]
+        assert hatches[10] == CATEGORY_HATCHES[10 % len(CATEGORY_HATCHES)]
+
+
 class TestAddLogZeroMark:
     def test_draws_reference_line_on_log_y_axis(self) -> None:
         fig, ax = plt.subplots()

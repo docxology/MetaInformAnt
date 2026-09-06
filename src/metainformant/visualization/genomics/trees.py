@@ -67,12 +67,12 @@ def plot_phylo_tree(tree: Any, *, ax: Axes | None = None, output_path: str | Pat
         G,
         pos=pos,
         ax=ax,
-        with_labels=kwargs.get("with_labels", True),
-        node_color=kwargs.get("node_color", "lightgray"),
-        node_size=kwargs.get("node_size", 200),
-        edge_color=kwargs.get("edge_color", "black"),
-        width=kwargs.get("width", 1),
-        arrows=kwargs.get("arrows", False),  # Usually no arrows in trees
+        with_labels=kwargs.pop("with_labels", True),
+        node_color=kwargs.pop("node_color", "lightgray"),
+        node_size=kwargs.pop("node_size", 200),
+        edge_color=kwargs.pop("edge_color", "black"),
+        width=kwargs.pop("width", 1),
+        arrows=kwargs.pop("arrows", False),  # Usually no arrows in trees
         **kwargs,
     )
 
@@ -82,7 +82,7 @@ def plot_phylo_tree(tree: Any, *, ax: Axes | None = None, output_path: str | Pat
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Phylogenetic tree plot saved to {output_path}")
 
     return ax
@@ -125,12 +125,12 @@ def circular_tree_plot(
         G,
         pos=pos,
         ax=ax,
-        with_labels=kwargs.get("with_labels", True),
-        node_color=kwargs.get("node_color", "lightblue"),
-        node_size=kwargs.get("node_size", 150),
-        edge_color=kwargs.get("edge_color", "gray"),
-        width=kwargs.get("width", 1),
-        arrows=kwargs.get("arrows", False),
+        with_labels=kwargs.pop("with_labels", True),
+        node_color=kwargs.pop("node_color", "lightblue"),
+        node_size=kwargs.pop("node_size", 150),
+        edge_color=kwargs.pop("edge_color", "gray"),
+        width=kwargs.pop("width", 1),
+        arrows=kwargs.pop("arrows", False),
         **kwargs,
     )
 
@@ -139,7 +139,7 @@ def circular_tree_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Circular phylogenetic tree plot saved to {output_path}")
 
     return ax
@@ -175,18 +175,19 @@ def unrooted_tree_plot(
         G = _convert_tree_to_networkx(tree, directed=False)
 
     # Use spring layout for unrooted trees (approximates unrooted layout)
-    pos = nx.spring_layout(G, **kwargs.get("layout_kwargs", {"seed": 42}))
+    layout_kwargs = kwargs.pop("layout_kwargs", {"seed": 42})
+    pos = nx.spring_layout(G, **layout_kwargs)
 
     # Draw unrooted tree
     nx.draw(
         G,
         pos=pos,
         ax=ax,
-        with_labels=kwargs.get("with_labels", True),
-        node_color=kwargs.get("node_color", "lightgreen"),
-        node_size=kwargs.get("node_size", 200),
-        edge_color=kwargs.get("edge_color", "black"),
-        width=kwargs.get("width", 1.5),
+        with_labels=kwargs.pop("with_labels", True),
+        node_color=kwargs.pop("node_color", "lightgreen"),
+        node_size=kwargs.pop("node_size", 200),
+        edge_color=kwargs.pop("edge_color", "black"),
+        width=kwargs.pop("width", 1.5),
         **kwargs,
     )
 
@@ -194,7 +195,7 @@ def unrooted_tree_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Unrooted phylogenetic tree plot saved to {output_path}")
 
     return ax
@@ -245,7 +246,7 @@ def tree_comparison_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(axes[0].figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Tree comparison plot saved to {output_path}")
 
     return cast("Axes", axes[0])  # Return first axes for consistency
@@ -299,17 +300,16 @@ def tree_annotation_plot(
     # Use hierarchical layout
     pos = _hierarchical_tree_layout(G)
 
-    # Draw annotated tree
     nx.draw(
         G,
         pos=pos,
         ax=ax,
-        with_labels=kwargs.get("with_labels", True),
+        with_labels=kwargs.pop("with_labels", True),
         node_color=node_colors,
-        node_size=kwargs.get("node_size", 250),
-        edge_color=kwargs.get("edge_color", "black"),
-        width=kwargs.get("width", 1.2),
-        arrows=kwargs.get("arrows", False),
+        node_size=kwargs.pop("node_size", 250),
+        edge_color=kwargs.pop("edge_color", "black"),
+        width=kwargs.pop("width", 1.2),
+        arrows=kwargs.pop("arrows", False),
         **kwargs,
     )
 
@@ -340,7 +340,7 @@ def tree_annotation_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Annotated phylogenetic tree plot saved to {output_path}")
 
     return ax
@@ -442,8 +442,6 @@ def _hierarchical_tree_layout(G: nx.DiGraph) -> Dict[str, Tuple[float, float]]:
             else:
                 levels[node] = 0
 
-    # Assign positions
-    max(levels.values()) if levels else 0
     nodes_per_level: Dict[Any, list[Any]] = {}
     for node, level in levels.items():
         if level not in nodes_per_level:

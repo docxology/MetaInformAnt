@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import time
+from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
@@ -73,8 +74,6 @@ def batch_entropy_analysis(
             try:
                 # Calculate entropy for k-mers
                 kmers = [sequence[j : j + k] for j in range(len(sequence) - k + 1)]
-                from collections import Counter
-
                 kmer_counts = Counter(kmers)
 
                 entropy_val = estimation.entropy_estimator(kmer_counts, method=method, **kwargs)
@@ -246,8 +245,6 @@ def _aggregate_sequence_analyses(analyses: List[Dict[str, Any]]) -> Dict[str, An
 
     # Aggregate sequence types
     seq_types = [item.get("sequence_type", "unknown") for item in analyses]
-    from collections import Counter
-
     aggregate["sequence_types"] = dict(Counter(seq_types))
 
     # Aggregate k-mer statistics
@@ -595,8 +592,12 @@ def _generate_text_report(results: Dict[str, Any]) -> str:
 
         if "entropy_statistics" in agg:
             lines.append("Entropy Statistics:")
-            for method, stats in agg["entropy_statistics"].items():
-                lines.append(f"  {method}: {stats['mean']:.3f} ± {stats['std']:.3f}")
+            ent_stats = agg["entropy_statistics"]
+            if isinstance(ent_stats, dict) and "mean" in ent_stats:
+                lines.append(
+                    f"  Shannon entropy: {ent_stats['mean']:.3f} ± {ent_stats.get('std', 0):.3f}"
+                    f" (n={ent_stats.get('n_sequences', 'N/A')})"
+                )
             lines.append("")
 
     return "\n".join(lines)

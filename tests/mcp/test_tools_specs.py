@@ -31,10 +31,11 @@ def test_every_spec_has_required_keys(key: str) -> None:
         assert key in spec, f"{spec.get('name')} missing {key}"
 
 
-@pytest.mark.parametrize("writes", ["read-only", "output-dir-only"])
-def test_every_spec_declares_allowed_writes_class(writes: str) -> None:
+def test_every_spec_declares_allowed_writes_class() -> None:
     classes = {s["writes"] for s in _all_specs()}
     assert classes <= {"read-only", "output-dir-only"}
+    # Both classes are actually in use; otherwise the allow-list is untested.
+    assert classes == {"read-only", "output-dir-only"}
 
 
 def test_input_schemas_are_json_serializable_objects() -> None:

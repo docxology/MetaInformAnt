@@ -12,7 +12,7 @@ FASTQ file reading and per-read quality analysis including base quality, GC cont
 
 | Symbol | Description |
 |--------|-------------|
-| `FastqRecord` | Dataclass for a single FASTQ read (header, sequence, quality) |
+| `FastqRecord` | Class for a single FASTQ read (header, sequence, quality) with validation |
 | `read_fastq_records()` | Iterator over FASTQ records from file path |
 | `analyze_fastq_quality()` | Complete quality analysis of a FASTQ file |
 | `basic_statistics()` | Read count, total bases, mean quality, mean length |

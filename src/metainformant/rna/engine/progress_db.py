@@ -375,7 +375,7 @@ class ProgressDB:
             for r in rows
         ]
 
-    def get_excluded_srr_ids(self, species: str, reason_code: Optional[str] = None) -> set:
+    def get_excluded_srr_ids(self, species: str, reason_code: Optional[str] = None) -> set[str]:
         """Return the set of excluded SRR IDs for a species.
 
         With ``reason_code`` given, only exclusions carrying that code are

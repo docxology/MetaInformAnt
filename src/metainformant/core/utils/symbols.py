@@ -42,6 +42,18 @@ class SymbolReference:
     is_definition: bool = False
 
 
+def _symbol_from_cached(def_data: dict[str, Any]) -> SymbolDefinition:
+    """Rebuild a :class:`SymbolDefinition` from cached JSON.
+
+    JSON has no path type, so ``file_path`` arrives as ``str``; coerce it back
+    to the declared ``Path`` field instead of storing mistyped values.
+    """
+
+    data = dict(def_data)
+    data["file_path"] = Path(data["file_path"])
+    return SymbolDefinition(**data)
+
+
 def _resolve_cache_root(path: str | Path) -> Path:
     """Resolve cache root to the repository root when ``path`` is inside it."""
     candidate = Path(path).resolve()
@@ -180,7 +192,7 @@ def index_functions(repo_root: str | Path, use_cache: bool = True) -> dict[str, 
             if cached_data:
                 cached_index: dict[str, list[SymbolDefinition]] = {}
                 for name, defs in cached_data.items():
-                    cached_index[name] = [SymbolDefinition(**def_data) for def_data in defs]
+                    cached_index[name] = [_symbol_from_cached(def_data) for def_data in defs]
                 return cached_index
         except Exception:
             # Cache invalid, rebuild
@@ -270,7 +282,7 @@ def index_classes(repo_root: str | Path, use_cache: bool = True) -> dict[str, li
             if cached_data:
                 cached_index: dict[str, list[SymbolDefinition]] = {}
                 for name, defs in cached_data.items():
-                    cached_index[name] = [SymbolDefinition(**def_data) for def_data in defs]
+                    cached_index[name] = [_symbol_from_cached(def_data) for def_data in defs]
                 return cached_index
         except Exception:
             pass
@@ -428,11 +440,8 @@ def find_symbol_references(symbol_name: str, repo_root: str | Path) -> list[Symb
         )
         references.append(ref)
 
-    # Then find usages
-    for py_file in repo_root.rglob("*.py"):
-        if "__pycache__" in str(py_file) or ".pyc" in str(py_file):
-            continue
-
+    # Then find usages, skipping generated/vendored trees like the indexers do
+    for py_file in _iter_python_files(repo_root):
         try:
             with open(py_file, "rt", encoding="utf-8") as f:
                 content = f.read()

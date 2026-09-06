@@ -18,6 +18,8 @@ from pathlib import Path
 
 import pytest
 
+from metainformant.core.utils.errors import ValidationError
+
 from metainformant.epigenome.assays.methylation import (
     MethylationSite,
     calculate_methylation_entropy,
@@ -202,7 +204,7 @@ class TestMethylationEntropy:
         # Sites spread evenly across bins [0,0.2,...,1.0); 25 bp spacing so the
         # 20-site block spans > window_size (200 bp).
         levels = [0.0, 0.2, 0.4, 0.6, 0.8]
-        sites = [_site("chr1", 1000 + i * 25, int(l * 100), 100) for i, l in enumerate(levels * 4)]
+        sites = [_site("chr1", 1000 + i * 25, int(level * 100), 100) for i, level in enumerate(levels * 4)]
         profile = calculate_methylation_entropy({"chr1": sites}, window_size=200)
         assert "chr1" in profile
         positions, entropies = zip(*profile["chr1"])
@@ -235,3 +237,41 @@ class TestMethylationReport:
         assert "DNA METHYLATION ANALYSIS REPORT" in report
         assert "Total Sites" in report
         assert "chr1" in report
+
+
+class TestFindDMRsMaxGap:
+    """max_gap opt-in splits distant significant sites into separate DMRs."""
+
+    def _two_distant_blocks(self) -> tuple[dict, dict]:
+        near1 = [_site("chr1", 1000 + i * 20, 2, 10) for i in range(4)]
+        far1 = [_site("chr1", 500000 + i * 20, 2, 10) for i in range(4)]
+        near2 = [_site("chr1", 1000 + i * 20, 8, 10) for i in range(4)]
+        far2 = [_site("chr1", 500000 + i * 20, 8, 10) for i in range(4)]
+        return {"chr1": near1 + far1}, {"chr1": near2 + far2}
+
+    def test_default_chains_distant_sites(self) -> None:
+        cond1, cond2 = self._two_distant_blocks()
+        dmrs = find_differentially_methylated_regions(cond1, cond2, min_sites=3)
+        assert len(dmrs) == 1  # historical behaviour
+
+    def test_max_gap_splits_blocks(self) -> None:
+        cond1, cond2 = self._two_distant_blocks()
+        dmrs = find_differentially_methylated_regions(cond1, cond2, min_sites=3, max_gap=1000)
+        assert len(dmrs) == 2
+        assert dmrs[0]["end"] < dmrs[1]["start"]
+
+
+class TestMethylationSiteValidation:
+    """MethylationSite rejects structurally invalid data."""
+
+    def test_rejects_negative_position(self) -> None:
+        with pytest.raises(ValidationError):
+            MethylationSite(chromosome="chr1", position=-1, methylated_reads=1, total_reads=10)
+
+    def test_rejects_total_below_methylated(self) -> None:
+        with pytest.raises(ValidationError):
+            MethylationSite(chromosome="chr1", position=100, methylated_reads=11, total_reads=10)
+
+    def test_rejects_negative_methylated_reads(self) -> None:
+        with pytest.raises(ValidationError):
+            MethylationSite(chromosome="chr1", position=100, methylated_reads=-1, total_reads=10)

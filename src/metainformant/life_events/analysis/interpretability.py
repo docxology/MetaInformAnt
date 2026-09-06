@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 
 from metainformant.core.utils import logging
+from metainformant.life_events.core.utils import _sequence_to_tokens
 
 logger = logging.get_logger(__name__)
 
@@ -97,17 +98,6 @@ def attention_weights(
         "message": "Attention weights not available for this model type. "
         "Use transformer models or tree/linear models for feature attribution.",
     }
-
-
-def _sequence_to_tokens(sequence: Any) -> List[str]:
-    if hasattr(sequence, "events"):
-        return [
-            f"{event.domain}:{event.event_type}" if getattr(event, "domain", None) else str(event.event_type)
-            for event in sequence.events
-        ]
-    if isinstance(sequence, str):
-        return [sequence]
-    return [str(event) for event in sequence]
 
 
 def event_importance(
@@ -303,7 +293,7 @@ def temporal_patterns(sequences: List[Any], predictions: Optional[Any] = None, t
         return {"position_importance": position_importance, "max_sequence_length": max_len}
 
     patterns = []
-    event_counts_by_time: Dict[str, Any] = {}
+    event_counts_by_time: Dict[int, Any] = {}
 
     for seq in sequences:
         if not hasattr(seq, "events"):
@@ -316,7 +306,7 @@ def temporal_patterns(sequences: List[Any], predictions: Optional[Any] = None, t
                 event_type = event.event_type
 
                 # Count events by time window
-                time_key = timestamp // (time_window * 24 * 60 * 60)  # Convert to window index
+                time_key = int(timestamp.timestamp()) // (time_window * 24 * 60 * 60)  # Window index
 
                 if time_key not in event_counts_by_time:
                     event_counts_by_time[time_key] = {}
@@ -328,11 +318,11 @@ def temporal_patterns(sequences: List[Any], predictions: Optional[Any] = None, t
                     prev_timestamp = events[i - 1].timestamp
                     time_diff = timestamp - prev_timestamp
 
-                    if time_diff <= time_window * 24 * 60 * 60:  # Within time window
+                    if time_diff.total_seconds() <= time_window * 24 * 60 * 60:  # Within time window
                         pattern = {
                             "event1": events[i - 1].event_type,
                             "event2": event_type,
-                            "time_diff_days": time_diff / (24 * 60 * 60),
+                            "time_diff_days": time_diff.total_seconds() / (24 * 60 * 60),
                             "sequence_count": 1,
                         }
                         patterns.append(pattern)

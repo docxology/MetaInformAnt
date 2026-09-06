@@ -331,29 +331,59 @@ def get_sequence_features(
     if not record:
         return []
 
-    # Basic parsing of GenBank features (simplified)
-    features = []
+    return _parse_feature_table(record)
 
-    # Look for FEATURES section
-    lines = record.split("\n")
+
+def _parse_feature_table(text: str) -> List[Dict[str, Any]]:
+    """Parse the FEATURES section of a GenBank flat-file record.
+
+    Feature rows are indented by exactly five spaces (feature key followed
+    by its location); qualifier rows are indented deeper and start with
+    ``/``. Continuation lines of a wrapped qualifier value are joined onto
+    that value.
+
+    Args:
+        text: Full GenBank record text
+
+    Returns:
+        List of ``{"type", "location", "qualifiers"}`` dicts, where
+        ``qualifiers`` maps qualifier names to their unquoted string values.
+    """
+    features: List[Dict[str, Any]] = []
+    current: Optional[Dict[str, Any]] = None
     in_features = False
 
-    for line in lines:
+    for line in text.split("\n"):
         if line.startswith("FEATURES"):
             in_features = True
             continue
-        elif in_features and line.startswith("ORIGIN"):
+        if in_features and (line.startswith("ORIGIN") or line.startswith("//")):
             break
+        if not in_features or not line.strip():
+            continue
 
-        if in_features and line.strip():
-            # Parse feature lines (simplified)
-            if not line.startswith(" "):
-                # Feature type line
-                parts = line.strip().split()
-                if len(parts) >= 2:
-                    feature_type = parts[0]
-                    location = parts[1]
-                    features.append({"type": feature_type, "location": location, "qualifiers": {}})
+        stripped = line.strip()
+        if line.startswith("     ") and not line.startswith("      "):
+            # Feature row: feature key (columns 6+) followed by its location
+            parts = stripped.split(None, 1)
+            if len(parts) == 2:
+                current = {"type": parts[0], "location": parts[1], "qualifiers": {}}
+                features.append(current)
+        elif current is not None:
+            if stripped.startswith("/"):
+                name, _, value = stripped[1:].partition("=")
+                current["qualifiers"][name.strip()] = value.strip()
+            elif current["qualifiers"]:
+                # Continuation of a wrapped qualifier value
+                last_name = next(reversed(current["qualifiers"]))
+                current["qualifiers"][last_name] += " " + stripped
+
+    # Unquote qualifier values once, after any wrapped continuation lines
+    for feature in features:
+        for name, value in feature["qualifiers"].items():
+            if value.startswith('"'):
+                closing = value.rfind('"')
+                feature["qualifiers"][name] = value[1:closing] if closing > 0 else value[1:]
 
     return features
 
@@ -415,7 +445,8 @@ def link_nucleotide_to_protein(accession: str, api_key: Optional[str] = None, em
         email: Email address
 
     Returns:
-        List of linked protein accessions
+        List of linked protein record UIDs (numeric NCBI identifiers;
+        elink returns numeric UIDs, not accessions)
     """
     client = EntrezClient(api_key=api_key, email=email)
 

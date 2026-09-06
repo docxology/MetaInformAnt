@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from typing import Any, Literal, Optional
 
 from metainformant.core.utils.logging import get_logger
-from metainformant.spatial.analysis.autocorrelation import spatial_weights_matrix
+from metainformant.spatial.analysis.autocorrelation import morans_i, spatial_weights_matrix
 
 logger = get_logger(__name__)
 
@@ -113,8 +113,6 @@ def detect_spatially_variable_genes(
         raise ValueError(f"got {len(genes)} gene names for {X.shape[0]} rows")
 
     W = spatial_weights_matrix(coords, method=method, k=k)
-
-    from metainformant.spatial.analysis.autocorrelation import morans_i
 
     gene_names: list[str] = []
     i_vals: list[float] = []

@@ -42,10 +42,8 @@ class Diplotype:
     def __post_init__(self) -> None:
         """Normalize diplotype representation (sort alleles alphabetically)."""
         self.gene = self.gene.upper()
-        if not self.allele1.startswith("*"):
-            self.allele1 = f"*{self.allele1}"
-        if not self.allele2.startswith("*"):
-            self.allele2 = f"*{self.allele2}"
+        self.allele1 = _normalize_allele_name(self.allele1, self.gene)
+        self.allele2 = _normalize_allele_name(self.allele2, self.gene)
         # Canonical ordering: lower allele first
         if self.allele1 > self.allele2:
             self.allele1, self.allele2 = self.allele2, self.allele1
@@ -153,6 +151,19 @@ _ACTIVITY_SCORE_TABLES: dict[str, dict[str, float]] = {
 }
 
 
+def _normalize_allele_name(name: str, gene: str, scoring_table: dict[str, float] | None = None) -> str:
+    """Normalize an allele name for scoring-table lookup.
+
+    Star allele names are prefixed with ``*`` when missing. Names already
+    present in the scoring table are returned unchanged, so non-star allele
+    designations (e.g. DPYD's "c.2846A>T" and "HapB3") are preserved.
+    """
+    if name.startswith("*"):
+        return name
+    table = scoring_table if scoring_table is not None else _ACTIVITY_SCORE_TABLES.get(gene.upper(), {})
+    return name if name in table else f"*{name}"
+
+
 def determine_diplotype(
     allele1: str | StarAllele,
     allele2: str | StarAllele,
@@ -180,11 +191,6 @@ def determine_diplotype(
     # Extract allele names
     name1 = allele1.name if isinstance(allele1, StarAllele) else allele1
     name2 = allele2.name if isinstance(allele2, StarAllele) else allele2
-
-    if not name1.startswith("*"):
-        name1 = f"*{name1}"
-    if not name2.startswith("*"):
-        name2 = f"*{name2}"
 
     # Calculate activity score
     activity = calculate_activity_score_from_alleles(name1, name2, gene_upper, scoring_table)
@@ -226,9 +232,9 @@ def calculate_activity_score_from_alleles(
     gene_upper = gene.upper()
     table = scoring_table if scoring_table is not None else _ACTIVITY_SCORE_TABLES.get(gene_upper, {})
 
-    # Normalize allele names
-    name1 = allele1_name if allele1_name.startswith("*") else f"*{allele1_name}"
-    name2 = allele2_name if allele2_name.startswith("*") else f"*{allele2_name}"
+    # Normalize allele names (non-star designations already in the table are kept)
+    name1 = _normalize_allele_name(allele1_name, gene_upper, table)
+    name2 = _normalize_allele_name(allele2_name, gene_upper, table)
 
     score1 = table.get(name1, 1.0)  # Default to 1.0 (normal function) if unknown
     score2 = table.get(name2, 1.0)
@@ -273,7 +279,6 @@ def resolve_ambiguous_diplotypes(
     1. Prefer diplotypes with known activity scores for both alleles
     2. Among scored diplotypes, prefer the one with the highest activity score
        (conservative: assume best-case metabolism)
-    3. If tied, prefer diplotypes containing more common alleles (*1, *2)
 
     Args:
         possible_diplotypes: List of possible Diplotype objects

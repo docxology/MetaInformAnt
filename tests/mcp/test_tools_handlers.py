@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from metainformant.mcp.tools import (
     core_tools,
@@ -81,7 +82,7 @@ def test_gwas_phenotype_summary_real_table(tmp_path: Path) -> None:
     assert result["n_samples"] == 4
     assert abs(result["numeric_summary"]["t1"]["mean"] - 2.5) < 1e-9
     persisted = json.loads((out / "phenotype_summary.json").read_text())
-    assert persisted == {k: v for k, v in result.items() if k != "output"}
+    assert persisted == result
 
 
 def test_gwas_hwe_extreme_counts() -> None:
@@ -239,3 +240,54 @@ def test_rna_duplication_specificity_unknown_species(tmp_path: Path) -> None:
     pd.DataFrame({"apis": ["g1"]}, index=["og1"]).to_csv(bt)
     result = rna_tools._handle_duplication_specificity(str(et), str(bt), "nope", str(tmp_path))
     assert "error" in result
+
+
+def test_gwas_phenotype_summary_degenerate_std_is_null_not_nan(tmp_path: Path) -> None:
+    """A single-row trait has undefined std; it must serialize as null (strict JSON)."""
+
+    ph = tmp_path / "pheno_single.csv"
+    pd.DataFrame({"t1": [5.0]}, index=["s0"]).to_csv(ph)
+    result = gwas_tools._handle_phenotype_summary(str(ph))
+    assert result["numeric_summary"]["t1"]["std"] is None
+    assert result["numeric_summary"]["t1"]["mean"] == 5.0
+
+
+def test_rna_normalize_counts_rejects_geneless_length_file(tmp_path: Path) -> None:
+    """A gene_lengths file without a gene label column cannot be aligned to counts."""
+
+    counts = tmp_path / "counts.csv"
+    lengths = tmp_path / "lengths.csv"
+    pd.DataFrame({"s1": [10, 20], "s2": [30, 40]}, index=["g1", "g2"]).to_csv(counts)
+    pd.DataFrame({"len": [100, 200]}).to_csv(lengths, index=False)
+    with pytest.raises(ValueError, match="gene label column"):
+        rna_tools._handle_normalize_counts(str(counts), str(tmp_path), method="tpm", gene_lengths=str(lengths))
+
+
+def test_amalgkit_monitor_handler_reports_withheld_inference(tmp_path: Path) -> None:
+    """The registered adapter executes the real monitor and withholds inference."""
+
+    from metainformant.mcp.tool_adapters import _run_amalgkit_monitor
+
+    data_root = tmp_path / "campaign"
+    (data_root / "results").mkdir(parents=True)
+
+    result = _run_amalgkit_monitor({"data_root": str(data_root), "inspect_processes": False})
+
+    assert isinstance(result, dict)
+    assert result["status"] in {"running", "stopped"}
+    assert result["readiness"]["biological_inference"] == "withheld"
+    assert result["evidence"]["data_root"] == str(data_root.resolve())
+
+
+def test_core_path_resolve_safe_verdict_describes_resolved_path(tmp_path: Path) -> None:
+    target = tmp_path / "regular.txt"
+    target.write_text("ok", encoding="utf-8")
+    result = core_tools._handle_path_resolve(str(tmp_path / "sub" / ".." / "regular.txt"))
+    assert result["path"] == str(target)
+    assert result["safe"] is True
+
+
+def test_math_popgen_summary_reports_honest_fst_key() -> None:
+    result = math_tools._handle_popgen_summary(0.3)
+    assert "expected_heterozygosity_hw" not in result
+    assert 0.0 <= result["fst_example_p_vs_1_minus_p"] <= 1.0

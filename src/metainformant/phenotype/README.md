@@ -4,8 +4,7 @@ Multi-modal phenotype analysis for social insects -- morphological traits, behav
 
 ## Overview
 
-Multi-modal phenotype analysis for social insects -- morphological traits, behavioral patterns, chemical profiles, life course trajectories, and AntWiki data integration.
-
+Multi-modal phenotype analysis for social insects -- morphological traits, behavioral patterns, chemical profiles, acoustic signals, electronic tracking, life course trajectories, and AntWiki data integration.
 
 ## Table of Contents
 
@@ -96,7 +95,7 @@ stats_summary = calculate_summary_stats(df, "queen_score", "population")
 | `perform_anova` | Parametric variance testing |
 | `perform_kruskal` | Non-parametric variance testing |
 | `perform_ttest` | Pairwise independent contrast testing |
-| `correlate_phenotypes` | Pearson/Spearman trait correlation matrix |
+| `correlate_phenotypes` | Pearson trait correlation matrix |
 
 ### Visualization
 
@@ -114,13 +113,14 @@ stats_summary = calculate_summary_stats(df, "queen_score", "population")
 
 | Module | Purpose |
 |--------|---------|
-| [`analysis/`](analysis/) | Life course trajectories, temporal phenotype extraction |
+| [`analysis/`](analysis/) | Life course trajectories, statistical testing (`statistical.py`), multivariate statistics (`multivariate.py`) |
 | [`behavior/`](behavior/) | Behavioral phenotype classification |
 | [`chemical/`](chemical/) | Cuticular hydrocarbon and chemical profiles |
 | [`data/`](data/) | AntWiki scraping (`AntWikiScraperConfig`) and record loading (`AntWikiRecord`) |
 | [`electronic/`](electronic/) | Electronic phenotyping methods |
 | [`gwas_integration/`](gwas_integration/) | GWAS-phenotype association linking |
 | [`integration/`](integration/) | Cross-domain phenotype integration |
+| `mappings.py` | BeeWAS biological-group and strain mapping constants |
 | [`morphological/`](morphological/) | Morphometric trait measurement and analysis |
 | [`sonic/`](sonic/) | Acoustic phenotype recording and analysis |
 | [`visualization/`](visualization/) | Trait distribution, correlation, trajectory plots |

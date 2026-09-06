@@ -82,14 +82,9 @@ def dump_json(obj: Any, path: str | Path, *, indent: int | None = None, atomic: 
 
     try:
         if atomic:
-            # Atomic write: write to temp file, then rename
-            # For .gz files, keep .gz extension on temp file so compression works
-            if is_gzipped:
-                # For file.json.gz, create file.json.gz.tmp
-                temp_path = p.with_suffix(p.suffix + ".tmp")
-            else:
-                temp_path = p.with_suffix(p.suffix + ".tmp")
-
+            # Atomic write: write to temp file, then rename.
+            # Keep the .gz suffix on the temp file so compression works.
+            temp_path = p.with_suffix(p.suffix + ".tmp")
             if is_gzipped:
                 with gzip.open(temp_path, "wt", encoding="utf-8") as fh:
                     json.dump(obj, fh, indent=indent, sort_keys=True)
@@ -105,6 +100,8 @@ def dump_json(obj: Any, path: str | Path, *, indent: int | None = None, atomic: 
                 with open_text_auto(p, mode="wt") as fh:
                     json.dump(obj, fh, indent=indent, sort_keys=True)
     except Exception as e:
+        if atomic:
+            temp_path.unlink(missing_ok=True)
         raise CoreIOError(f"Failed to write JSON file {path}: {e}") from e
 
 
@@ -293,6 +290,8 @@ def write_jsonl(rows: Iterable[Mapping[str, Any]], path: str | Path, *, atomic: 
                         fh.write(json.dumps(dict(row)))
                         fh.write("\n")
     except Exception as e:
+        if atomic:
+            temp_path.unlink(missing_ok=True)
         raise CoreIOError(f"Failed to write JSONL file {path}: {e}") from e
 
 
@@ -344,6 +343,7 @@ def write_delimited(
 
     p = Path(path)
     ensure_directory(p.parent)
+    temp_path: Path | None = None
 
     try:
         rows_iter = iter(rows)
@@ -378,6 +378,8 @@ def write_delimited(
                 for row in rows_iter:
                     writer.writerow({k: row.get(k, "") for k in fieldnames})
     except Exception as e:
+        if temp_path is not None:
+            temp_path.unlink(missing_ok=True)
         raise CoreIOError(f"Failed to write delimited file {path}: {e}") from e
 
 

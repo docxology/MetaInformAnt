@@ -24,7 +24,7 @@ Single-cell RNA-seq analysis: preprocessing, dimensionality reduction, clusterin
 graph TD
     subgraph "Single-Cell Module"
         DA[data/] --> |preprocessing.py| SC[SingleCellData + QC]
-        DA --> |integration.py| BI[Batch Correction: BBKNN, MNN]
+        DA --> |integration.py| BI[Batch Correction: BBKNN, Harmony, MNN, Scanorama, ComBat]
 
         AN[analysis/] --> |clustering.py| CL[Leiden, Louvain, K-means]
         AN --> |dimensionality.py| DR[PCA, UMAP, t-SNE]
@@ -42,13 +42,14 @@ graph TD
 
 | Module | Purpose |
 |--------|---------|
-| [`data/`](data/) | `SingleCellData` class, QC filtering, batch integration (`bbknn_integration`) |
+| [`data/`](data/) | `SingleCellData` container, `load_count_matrix`, QC (`calculate_qc_metrics`), filtering (`filter_cells`, `filter_genes`), normalization (`normalize_counts`, `log_transform`, `scale_data`), HVG selection (`identify_highly_variable_genes`), batch integration (`bbknn_integration`, `harmony_integration`, `mnn_integration`, `scanorama_integration`, `combat_integration`) |
 | [`analysis/`](analysis/) | `leiden_clustering`, `compute_pca`, `compute_umap`, `compute_diffusion_pseudotime` |
 | [`celltyping/`](celltyping/) | Automated cell type annotation from marker genes |
 | [`differential/`](differential/) | Differential expression testing between clusters |
 | [`doublet/`](doublet/) | Simulation-based doublet detection (Scrublet-style KNN scoring) |
 | [`velocity/`](velocity/) | RNA velocity estimation for dynamic trajectories |
 | [`visualization/`](visualization/) | `plot_umap`, trajectory plots, QC visualizations |
+| [`io.py`](io.py) | GEO/SRA downloads (`download_geo_supplementary`, `download_sra_fastqs`, `fetch_atlas_datasets`), Salmon alevin quantification, external pipeline entry points |
 
 ## Key Capabilities
 

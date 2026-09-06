@@ -92,6 +92,14 @@ def parse_obo(path: str | Path) -> Ontology:
             term = _parse_term_stanza(stanza_lines)
             if term:
                 terms[term.id] = term
+        elif stanza_type == "Typedef":
+            typedef_info = _parse_typedef_stanza(stanza_lines)
+            if typedef_info:
+                header_metadata[f"typedef:{typedef_info['id']}"] = typedef_info
+        elif stanza_type == "Instance":
+            instance_info = _parse_instance_stanza(stanza_lines)
+            if instance_info:
+                header_metadata[f"instance:{instance_info['id']}"] = instance_info
 
     # Build relationships from term relationships
     relationships = _extract_relationships_from_terms(terms)

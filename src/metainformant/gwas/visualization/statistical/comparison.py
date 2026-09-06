@@ -12,6 +12,7 @@ from typing import Any, Dict, Optional, Sequence
 import numpy as np
 
 from metainformant.core.utils import logging
+from metainformant.gwas.analysis.correction import lambda_gc_from_p_values
 
 logger = logging.get_logger(__name__)
 
@@ -448,12 +449,12 @@ def analyze_genetic_architecture(
 
     for pop_name, pop_info in pop_data.items():
         results = pop_info.get("results")
-        if not hasattr(results, "columns") or "P" in results.columns:
+        if not hasattr(results, "columns") or "P" not in results.columns:
             continue
 
         # Estimate heritability (simplified)
         p_values = results["P"].dropna().values
-        lambda_gc = np.median(p_values) / 0.456  # Approximate genomic control
+        lambda_gc = lambda_gc_from_p_values(p_values.tolist()) or 1.0
         h2_estimate = min(lambda_gc / (lambda_gc + 1), 1.0)  # Simplified
 
         # Estimate polygenicity (simplified)

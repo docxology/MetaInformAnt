@@ -154,6 +154,11 @@ def filter_variants_by_quality(vcf_data: Dict[str, Any], min_qual: float = 20.0)
 def filter_variants_by_maf(vcf_data: Dict[str, Any], min_maf: float = 0.01) -> Dict[str, Any]:
     """Filter variants by minor allele frequency.
 
+    The minor allele frequency is computed from called genotypes only; samples
+    with missing genotypes ('./.') are excluded from the denominator. For a
+    biallelic site MAF equals min(alt_af, 1 - alt_af), so a fully homozygous
+    alternate variant has MAF 0.0.
+
     Args:
         vcf_data: Parsed VCF data
         min_maf: Minimum minor allele frequency
@@ -164,13 +169,15 @@ def filter_variants_by_maf(vcf_data: Dict[str, Any], min_maf: float = 0.01) -> D
     filtered_variants = []
 
     for variant in vcf_data["variants"]:
-        # Calculate MAF from sample data
+        # Collect alt allele counts from called sample genotypes
+        n_called = 0
         allele_counts: Dict[int, int] = {}
 
         for sample_data in variant["samples"].values():
             if "GT" in sample_data:
                 gt = sample_data["GT"]
                 if gt not in [".", "./."]:
+                    n_called += 1
                     # Parse genotype (e.g., "0/1", "1/1")
                     alleles = []
                     for allele in gt.split("/"):
@@ -183,10 +190,11 @@ def filter_variants_by_maf(vcf_data: Dict[str, Any], min_maf: float = 0.01) -> D
                         if allele > 0:  # Not reference
                             allele_counts[allele] = allele_counts.get(allele, 0) + 1
 
-        # Calculate MAF
-        total_alleles = len(variant["samples"]) * 2  # Diploid
+        # Calculate MAF over called genotypes only
+        total_alleles = n_called * 2  # Diploid
         if total_alleles > 0:
-            maf = min(allele_counts.values()) / total_alleles if allele_counts else 0.0
+            alt_af = sum(allele_counts.values()) / total_alleles
+            maf = min(alt_af, 1.0 - alt_af)
             if maf >= min_maf:
                 filtered_variants.append(variant)
 
@@ -206,7 +214,9 @@ def calculate_variant_statistics(vcf_data: Dict[str, Any]) -> Dict[str, Any]:
         vcf_data: Parsed VCF data
 
     Returns:
-        Statistics dictionary
+        Statistics dictionary. The ``transition_transversion_ratio`` entry is
+        0.0 when no transitions or transversions are observed, and
+        ``float("inf")`` when only transitions are observed.
     """
     variants = vcf_data["variants"]
     if not variants:
@@ -215,6 +225,7 @@ def calculate_variant_statistics(vcf_data: Dict[str, Any]) -> Dict[str, Any]:
     stats: Dict[str, Any] = {
         "total_variants": len(variants),
         "snps": 0,
+        "mnvs": 0,
         "indels": 0,
         "multiallelic": 0,
         "transitions": 0,
@@ -229,8 +240,9 @@ def calculate_variant_statistics(vcf_data: Dict[str, Any]) -> Dict[str, Any]:
         ref = variant["ref"].upper()
         alts = [alt.upper() for alt in variant["alt"]]
 
-        # Count SNPs vs indels
+        # Count SNPs vs MNVs vs indels
         is_snp = all(len(ref) == len(alt) == 1 for alt in alts)
+        is_mnv = bool(alts) and all(len(ref) == len(alt) > 1 for alt in alts)
         if is_snp:
             stats["snps"] += 1
 
@@ -240,6 +252,9 @@ def calculate_variant_statistics(vcf_data: Dict[str, Any]) -> Dict[str, Any]:
                     stats["transitions"] += 1
                 elif len(alt) == 1:
                     stats["transversions"] += 1
+        elif is_mnv:
+            # Equal-length multi-base substitution (e.g., AT -> GC)
+            stats["mnvs"] += 1
         else:
             stats["indels"] += 1
 
@@ -266,8 +281,11 @@ def calculate_variant_statistics(vcf_data: Dict[str, Any]) -> Dict[str, Any]:
             stats["variant_types"][var_type] = stats["variant_types"].get(var_type, 0) + 1
 
     # Calculate ratios
-    if stats["transitions"] + stats["transversions"] > 0:
+    if stats["transversions"] > 0:
         stats["transition_transversion_ratio"] = stats["transitions"] / stats["transversions"]
+    elif stats["transitions"] > 0:
+        # All substitutions are transitions: mathematically infinite Ti/Tv
+        stats["transition_transversion_ratio"] = float("inf")
     else:
         stats["transition_transversion_ratio"] = 0.0
 
@@ -286,11 +304,15 @@ def annotate_variants(vcf_data: Dict[str, Any], annotations: Dict[str, Dict[str,
     Returns:
         Annotated VCF data
     """
+
     annotated_variants = []
 
     for variant in vcf_data["variants"]:
         variant_id = variant["id"]
         if variant_id in annotations:
+            # Copy the variant and its INFO dict so the caller's data is untouched
+            variant = dict(variant)
+            variant["info"] = dict(variant["info"])
             # Add annotations to INFO field
             variant["info"].update(annotations[variant_id])
 
@@ -525,8 +547,8 @@ _GENETIC_CODE: Dict[str, str] = {
 def predict_variant_effect(ref: str, alt: str, position: int, coding_sequence: str) -> Dict[str, Any]:
     """Predict the effect of a variant on protein coding.
 
-    Determines whether a variant causes a synonymous, missense, nonsense, or frameshift
-    change by translating the original and mutated codons using the standard genetic code.
+    Determines whether a variant causes a synonymous, missense, nonsense, frameshift,
+    in-frame indel, or multi-nucleotide substitution (MNV) effect.
 
     Args:
         ref: Reference allele string (e.g., "A", "AT")
@@ -537,7 +559,7 @@ def predict_variant_effect(ref: str, alt: str, position: int, coding_sequence: s
     Returns:
         Dictionary with keys:
             - effect_type: One of 'synonymous', 'missense', 'nonsense', 'frameshift',
-              'splice_site', 'intergenic'
+              'inframe_indel', 'mnv', 'intergenic'
             - original_codon: The reference codon (or None if not applicable)
             - mutated_codon: The mutated codon (or None if not applicable)
             - original_aa: The reference amino acid (or None)
@@ -576,25 +598,23 @@ def predict_variant_effect(ref: str, alt: str, position: int, coding_sequence: s
     if position >= len(coding_sequence) or not coding_sequence:
         return result
 
-    # Check for frameshift: indels where length difference is not a multiple of 3
+    # Indels: frameshift when the length difference is not a multiple of 3,
+    # otherwise an in-frame insertion/deletion
     ref_len = len(ref)
     alt_len = len(alt)
     if ref_len != alt_len:
-        length_diff = abs(ref_len - alt_len)
-        if length_diff % 3 != 0:
+        if abs(ref_len - alt_len) % 3 != 0:
             result["effect_type"] = "frameshift"
-            return result
+        else:
+            result["effect_type"] = "inframe_indel"
+        return result
 
-    # Check for splice site proximity (within 2 bp of exon boundary)
-    # Splice sites are at the very start or end of the coding sequence
-    if position < 2 or position >= len(coding_sequence) - 2:
-        # Only flag as splice_site for SNPs at the boundaries, not for all boundary variants
-        if ref_len == 1 and alt_len == 1 and (position < 2 or position >= len(coding_sequence) - 2):
-            # Check if this is truly at a boundary (first/last 2 bases)
-            if position < 2 or position >= len(coding_sequence) - 2:
-                pass  # Continue to codon analysis; splice_site only if at exact boundary
+    # Equal-length multi-base substitution (MNV, e.g., AT -> GC)
+    if ref_len > 1:
+        result["effect_type"] = "mnv"
+        return result
 
-    # For SNPs or in-frame substitutions, analyze codon impact
+    # For SNPs, analyze codon impact
     if ref_len == 1 and alt_len == 1:
         codon_index = position // 3
         codon_start = codon_index * 3
@@ -682,10 +702,11 @@ def calculate_ti_tv_ratio(vcf_data: Dict[str, Any]) -> float:
 
 
 def summarize_variants_by_chromosome(vcf_data: Dict[str, Any]) -> Dict[str, Dict[str, int]]:
-    """Group variant counts by chromosome with SNP/indel breakdown.
+    """Group variant counts by chromosome with SNP/MNV/indel breakdown.
 
-    Iterates through all variants in the VCF data and categorizes each as either
-    a SNP (single nucleotide polymorphism) or indel (insertion/deletion) per chromosome.
+    Iterates through all variants in the VCF data and categorizes each as a SNP
+    (single nucleotide polymorphism), an MNV (equal-length multi-base
+    substitution), or an indel (insertion/deletion) per chromosome.
 
     Args:
         vcf_data: Parsed VCF data dictionary from parse_vcf(), containing a 'variants' list
@@ -695,6 +716,7 @@ def summarize_variants_by_chromosome(vcf_data: Dict[str, Any]) -> Dict[str, Dict
         Dictionary mapping chromosome names to count dictionaries, each containing:
             - total: Total variant count on this chromosome
             - snp: Number of SNPs
+            - mnv: Number of equal-length multi-base substitutions (MNVs)
             - indel: Number of indels (insertions and deletions)
 
     Example:
@@ -717,7 +739,7 @@ def summarize_variants_by_chromosome(vcf_data: Dict[str, Any]) -> Dict[str, Dict
         chrom = variant["chrom"]
 
         if chrom not in chrom_summary:
-            chrom_summary[chrom] = {"total": 0, "snp": 0, "indel": 0}
+            chrom_summary[chrom] = {"total": 0, "snp": 0, "mnv": 0, "indel": 0}
 
         chrom_summary[chrom]["total"] += 1
 
@@ -726,8 +748,12 @@ def summarize_variants_by_chromosome(vcf_data: Dict[str, Any]) -> Dict[str, Dict
 
         # A variant is a SNP only if all alt alleles are single-base substitutions
         is_snp = all(len(ref) == 1 and len(alt) == 1 for alt in alts) and len(alts) > 0
+        # An MNV is an equal-length multi-base substitution (e.g., AT -> GC)
+        is_mnv = len(alts) > 0 and all(len(ref) == len(alt) > 1 for alt in alts)
         if is_snp:
             chrom_summary[chrom]["snp"] += 1
+        elif is_mnv:
+            chrom_summary[chrom]["mnv"] += 1
         else:
             chrom_summary[chrom]["indel"] += 1
 

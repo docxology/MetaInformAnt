@@ -579,24 +579,24 @@ def write_filtered_vcf(filtered_data: Dict[str, Any], output_path: Union[str, Pa
                 f"{variant.get('qual', '.')}\t{variant.get('filter', 'PASS')}\t"
                 f"{variant.get('info', '.')}\t{variant.get('format', 'GT')}"
             )
-            # Write genotypes (convert numeric to VCF GT format)
-            variant_count = len(filtered_data.get("variants", []))
+            # Write genotypes (convert numeric to VCF GT format).
+            # "genotypes" is sample-major ([sample][variant]), matching
+            # parse_vcf_full/apply_qc_filters/subset_vcf_data; for variant i,
+            # each sample contributes row s, column i.
             all_genotypes = filtered_data.get("genotypes", [])
-            if not all_genotypes:
-                all_genotypes = [[] for _ in range(variant_count)]
-            if i < len(all_genotypes):
-                for gt in all_genotypes[i]:
-                    # Convert numeric genotype to VCF GT format
-                    if gt < 0:
-                        f.write("\t./.")  # Missing genotype
-                    elif gt == 0:
-                        f.write("\t0/0")  # Homozygous reference
-                    elif gt == 1:
-                        f.write("\t0/1")  # Heterozygous
-                    elif gt == 2:
-                        f.write("\t1/1")  # Homozygous alternate
-                    else:
-                        f.write(f"\t{gt}/{gt}")  # Generic case
+            for sample_gts in all_genotypes:
+                gt = sample_gts[i] if i < len(sample_gts) else -1
+                # Convert numeric genotype to VCF GT format
+                if gt < 0:
+                    f.write("\t./.")  # Missing genotype
+                elif gt == 0:
+                    f.write("\t0/0")  # Homozygous reference
+                elif gt == 1:
+                    f.write("\t0/1")  # Heterozygous
+                elif gt == 2:
+                    f.write("\t1/1")  # Homozygous alternate
+                else:
+                    f.write(f"\t{gt}/{gt}")  # Generic case
             f.write("\n")
 
     logger.info(f"Filtered VCF written with {len(filtered_data.get('variants', []))} variants")

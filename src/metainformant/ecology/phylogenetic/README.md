@@ -27,7 +27,7 @@ from metainformant.ecology.phylogenetic import diversity
 
 pd_value = diversity.faiths_pd(tree, taxa_present=["sp_A", "sp_B"])
 unifrac = diversity.compute_unifrac(tree, community_a, community_b)
-nri, nti = diversity.nri_nti(tree, community_taxa)
+result = diversity.nri_nti(tree, community_taxa)  # dict with "nri", "nti", "p_values", "ses_values"
 signal = diversity.phylogenetic_signal(tree, trait_values)
 tree = diversity.build_simple_tree(distance_matrix, labels, method="upgma")
 ```

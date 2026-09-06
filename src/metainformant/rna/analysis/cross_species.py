@@ -366,20 +366,6 @@ def compute_expression_conservation(
     for gene in shared_genes:
         vals_a = expr_a.loc[gene, expr_a_columns].values.astype(float)
         vals_b = expr_b.loc[gene, shared_columns].values.astype(float)
-        min_len = len(shared_columns)
-
-        if min_len < 2:
-            # Cannot compute correlation with fewer than 2 data points
-            results.append(
-                {
-                    "gene_id": gene,
-                    "correlation": np.nan,
-                    "p_value": np.nan,
-                    "p_value_adjusted": np.nan,
-                    "conserved": False,
-                }
-            )
-            continue
 
         if method == "spearman":
             corr, pval = stats.spearmanr(vals_a, vals_b)

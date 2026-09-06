@@ -159,6 +159,27 @@ class TestDataLoading:
         assert sc_data.n_obs == 20
         assert sc_data.n_vars == 10
 
+    def test_load_count_matrix_mtx(self, tmp_path):
+        """Test loading Matrix Market format with genes and barcodes files."""
+        from scipy.io import mmwrite
+
+        X = np.random.poisson(2, (10, 15)).astype(float)  # 10 genes x 15 cells (mtx convention)
+        mmwrite(tmp_path / "matrix.mtx", X)
+        (tmp_path / "genes.tsv").write_text("\n".join(f"GENE_{i}" for i in range(10)) + "\n")
+        (tmp_path / "barcodes.tsv").write_text("\n".join(f"CELL_{i}" for i in range(15)) + "\n")
+
+        sc_data = load_count_matrix(
+            tmp_path / "matrix.mtx",
+            format="mtx",
+            genes_file=tmp_path / "genes.tsv",
+            barcodes_file=tmp_path / "barcodes.tsv",
+        )
+
+        assert sc_data.n_obs == 15
+        assert sc_data.n_vars == 10
+        assert list(sc_data.var.index.astype(str)) == [f"GENE_{i}" for i in range(10)]
+        assert list(sc_data.obs.index.astype(str)) == [f"CELL_{i}" for i in range(15)]
+
 
 class TestQualityControl:
     """Test quality control functions."""
@@ -238,6 +259,34 @@ class TestQualityControl:
         # Check that filtered genes meet criteria
         assert all(filtered_data.var["n_cells"] >= 2)
         assert all(filtered_data.var["total_counts"] >= 5)
+
+    def test_filter_cells_preserves_obsm_and_layers(self):
+        """Filtering must subset (not drop) obsm, layers, and keep varm."""
+        data = calculate_qc_metrics(self.test_data)
+        data.obsm["X_pca"] = np.arange(data.n_obs * 2, dtype=float).reshape(data.n_obs, 2)
+        data.layers["counts"] = data.X.copy()
+        data.varm["gene_meta"] = np.arange(data.n_vars, dtype=float)
+
+        filtered_data = filter_cells(data, min_genes=1)
+        n_kept = filtered_data.n_obs
+
+        assert filtered_data.obsm["X_pca"].shape == (n_kept, 2)
+        assert filtered_data.layers["counts"].shape == (n_kept, data.n_vars)
+        assert filtered_data.varm["gene_meta"].shape == (data.n_vars,)
+
+    def test_filter_genes_preserves_varm_and_layers(self):
+        """Gene filtering must subset (not drop) varm, layers, and keep obsm."""
+        data = calculate_qc_metrics(self.test_data)
+        data.varm["gene_meta"] = np.arange(data.n_vars, dtype=float)
+        data.layers["counts"] = data.X.copy()
+        data.obsm["X_pca"] = np.arange(data.n_obs * 2, dtype=float).reshape(data.n_obs, 2)
+
+        filtered_data = filter_genes(data, min_cells=1)
+        n_kept = filtered_data.n_vars
+
+        assert filtered_data.varm["gene_meta"].shape == (n_kept,)
+        assert filtered_data.layers["counts"].shape == (data.n_obs, n_kept)
+        assert filtered_data.obsm["X_pca"].shape == (data.n_obs, 2)
 
 
 class TestNormalization:
@@ -323,6 +372,17 @@ class TestNormalization:
         # Should be approximately zero-centered (per gene)
         gene_means = np.mean(scaled_data.X, axis=0)
         assert np.allclose(gene_means, 0, atol=1e-10)
+
+    def test_scale_data_without_zero_centering(self):
+        """zero_center=False keeps the mean offset and records no gene means."""
+        log_data = log_transform(normalize_counts(self.test_data))
+
+        scaled_data = scale_data(log_data, zero_center=False, max_value=10)
+
+        assert scaled_data.uns["scaling"]["zero_centered"] is False
+        assert scaled_data.uns["scaling"]["gene_means"] is None
+        # Without centering the per-gene means should be positive, not zero
+        assert np.mean(np.mean(scaled_data.X, axis=0)) > 0
 
 
 class TestIntegrationWorkflow:

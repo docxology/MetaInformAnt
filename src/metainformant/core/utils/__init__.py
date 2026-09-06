@@ -1,13 +1,13 @@
 """Core utilities for METAINFORMANT bioinformatics toolkit.
 
-This module provides foundational utility functions used across all domain modules.
-Import utilities directly from this package for convenient access.
+This package re-exports the utility submodules; access helpers through their
+submodule so imports stay explicit and import cycles stay cheap.
 
 Example:
-    from metainformant.core.utils import get_logger, load_mapping_from_file
+    from metainformant.core.utils import config, logging
 
-    logger = get_logger(__name__)
-    config = load_mapping_from_file("settings.yaml")"""
+    logger = logging.get_logger(__name__)
+    config_data = config.load_mapping_from_file("settings.yaml")"""
 
 from __future__ import annotations
 

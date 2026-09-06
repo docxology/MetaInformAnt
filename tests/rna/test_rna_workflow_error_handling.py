@@ -439,3 +439,45 @@ class TestEarlyExitAndValidation:
         status = get_sample_pipeline_status("SRR123456", cfg.work_dir, fastq_dir=tmp_path / "fastq")
         assert status["extraction"] is True
         assert len(status["diagnostics"]["fastq_files"]) == 2
+
+
+class TestGetfastqRetryContract:
+    """getfastq retry knobs must not leak into the subprocess surface."""
+
+    def test_retry_kwargs_are_not_forwarded_to_run_amalgkit(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """max_retries/retry_delay configure the loop, not the amalgkit command."""
+
+        import metainformant.rna.amalgkit._amalgkit_impl as impl
+
+        recorded_kwargs: list[dict] = []
+
+        def fake_run_amalgkit(subcommand, params, **kwargs):
+            recorded_kwargs.append(dict(kwargs))
+            return subprocess.CompletedProcess(["amalgkit", "getfastq"], 0, "", "")
+
+        monkeypatch.setattr(impl, "run_amalgkit", fake_run_amalgkit)
+
+        result = impl.getfastq({"out_dir": str(tmp_path)}, max_retries=2, retry_delay=0)
+
+        assert result.returncode == 0
+        assert recorded_kwargs, "the amalgkit backend must be invoked"
+        for kwargs in recorded_kwargs:
+            assert "max_retries" not in kwargs
+            assert "retry_delay" not in kwargs
+
+    def test_check_true_propagates_called_process_error(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """check=True is a hard-failure contract: no rc=1 CompletedProcess downgrade."""
+
+        import metainformant.rna.amalgkit._amalgkit_impl as impl
+
+        def failing_run(subcommand, params, **kwargs):
+            raise subprocess.CalledProcessError(1, ["amalgkit", "getfastq"])
+
+        monkeypatch.setattr(impl, "run_amalgkit", failing_run)
+
+        with pytest.raises(subprocess.CalledProcessError):
+            impl.getfastq({"out_dir": str(tmp_path)}, check=True)

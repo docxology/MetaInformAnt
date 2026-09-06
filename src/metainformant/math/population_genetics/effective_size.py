@@ -29,8 +29,6 @@ def effective_size_sex_ratio(male_size: float, female_size: float, sex_ratio: fl
     if not (0 < sex_ratio < 1):
         raise ValueError("Sex ratio must be between 0 and 1")
 
-    male_size + female_size
-
     # Wright's formula for unequal sex ratios
     # Ne = 4 * Nm * Nf / (Nm + Nf)
     # Adjusted for sex ratio

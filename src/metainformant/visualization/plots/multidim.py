@@ -33,6 +33,14 @@ except ImportError:
     HAS_SEABORN = False
 
 
+def _save_fig(ax: Axes, output_path: str | Path | None, label: str) -> None:
+    """Persist the plotted figure (``ax.figure``) when *output_path* is requested."""
+    if output_path:
+        paths.ensure_directory(Path(output_path).parent)
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+        logger.info(f"{label} saved to {output_path}")
+
+
 def plot_pairwise_relationships(
     data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
@@ -115,9 +123,8 @@ def plot_parallel_coordinates(
         plot_data = normalized_data
 
     # Create parallel coordinates plot
-    if HAS_SEABORN and color_col:
+    if HAS_SEABORN and color_col and color_col in plot_data.columns:
         # Use seaborn for better coloring
-        kwargs.pop("palette", "husl")
         for category in plot_data[color_col].unique():
             subset = plot_data[plot_data[color_col] == category]
             ax.plot(subset.drop(columns=[color_col]).T.values, alpha=0.7, label=str(category))
@@ -138,10 +145,7 @@ def plot_parallel_coordinates(
     # Add grid for better readability
     ax.grid(True, alpha=0.3)
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Parallel coordinates plot saved to {output_path}")
+    _save_fig(ax, output_path, "Parallel coordinates plot")
 
     return ax
 
@@ -200,10 +204,7 @@ def plot_radar_chart(
     if len(numeric_data) > 1:
         ax.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1))
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Radar chart saved to {output_path}")
+    _save_fig(ax, output_path, "Radar chart")
 
     return ax
 
@@ -272,9 +273,6 @@ def plot_3d_scatter(
     cast("Any", ax).set_zlabel(z_col)
     ax.set_title("3D Scatter Plot")
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"3D scatter plot saved to {output_path}")
+    _save_fig(ax, output_path, "3D scatter plot")
 
     return ax

@@ -10,9 +10,9 @@ This module provides functionality organized into the following structure:
 
 - `database/` — exports: `interpro`, `uniprot`
 - `domains/` — exports: `classification`, `detection`
-- `function/` — exports: `prediction`
+- `function/` — exports: `prediction` (re-export facade), `prediction_core`, `prediction_analysis`
 - `sequence/` — exports: `alignment`, `proteomes`, `sequences`
-- `structure/` — exports: `alphafold`, `analysis`, `contacts`, `general`, `io`
+- `structure/` — exports: `alphafold`, `analysis`, `contacts`, `general`, `io`, `pdb`, `secondary`
 - `visualization/` — exports: `general`
 - `workflow/` — exports: `orchestration`
 
@@ -22,6 +22,8 @@ This module provides functionality organized into the following structure:
 - Use `metainformant.core.io` for domain data file I/O. Direct stdlib parsing is allowed in core, protocol adapters, subprocess/CLI glue, and narrow parser internals when covered by tests.
 - Follow REAL IMPLEMENTATION policy — all tests must use real implementations
 - Use `uv` for dependency management
+- Kyte-Doolittle hydropathy values come from the canonical
+  `sequence.sequences.KD_HYDROPHOBICITY` table; do not re-declare local copies.
 
 ## Related Documentation
 

@@ -41,7 +41,7 @@ retrieval, domain analysis, structure prediction, and workflow orchestration.
 ### Exports — `database/interpro.py`
 
 - `fetch_interpro_domains`, `fetch_interpro_by_accession`, `search_interpro_entries` — InterPro REST helpers; honor `PROT_TIMEOUT`
-- `parse_interpro_xml` — Parse InterProScan-style XML domain annotations
+- `parse_interpro_results` — Parse InterProScan-style XML domain annotations
 - `get_interpro_hierarchy`, `get_interpro_statistics`, `find_similar_interpro_entries` — Explicitly unsupported and raise `NotImplementedError`
 
 ### Exports — `sequence/sequences.py`

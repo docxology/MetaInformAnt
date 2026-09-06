@@ -9,11 +9,14 @@ from __future__ import annotations
 
 import importlib.util
 import math
+from collections import Counter
+from itertools import combinations
 from typing import Any, Dict, List, Optional
 
 import numpy as np
 
 from metainformant.core.utils import logging
+from metainformant.information.metrics.core import syntactic
 
 logger = logging.get_logger(__name__)
 
@@ -70,7 +73,6 @@ def _shannon_network_entropy(G: Any, attribute: Optional[str] = None) -> float:
             return 0.0
 
         degrees = [d for n, d in G.degree()]
-        from collections import Counter
 
         degree_counts = Counter(degrees)
 
@@ -91,7 +93,6 @@ def _shannon_network_entropy(G: Any, attribute: Optional[str] = None) -> float:
             raise ValueError(f"Attribute '{attribute}' not found in graph nodes")
 
         attr_values = list(nx.get_node_attributes(G, attribute).values())
-        from collections import Counter
 
         attr_counts = Counter(attr_values)
 
@@ -137,7 +138,7 @@ def _von_neumann_entropy(G: Any) -> float:
         for val in eigenvals:
             entropy -= val * math.log2(val)
 
-        return float(entropy.real)  # Return real part
+        return float(entropy)
 
     except np.linalg.LinAlgError:
         logger.warning("Eigenvalue calculation failed, using approximation")
@@ -539,7 +540,6 @@ def _entropy_centrality(G: Any, normalized: bool = True) -> Dict[str, float]:
 
         # Degree distribution of neighbors
         neighbor_degrees = [G.degree(n) for n in neighbors]
-        from collections import Counter
 
         degree_counts = Counter(neighbor_degrees)
 
@@ -692,8 +692,6 @@ def _count_motifs(graph: Any, motif_size: int) -> Dict[str, int]:
         return motif_counts
 
     # Sample node combinations for large graphs
-    from itertools import combinations
-
     node_combos = list(combinations(nodes, motif_size))
 
     # Limit enumeration for large graphs
@@ -756,8 +754,6 @@ def information_graph_distance(graph1: Any, graph2: Any, method: str = "entropy"
         degrees1 = [d for n, d in G1.degree()]
         degrees2 = [d for n, d in G2.degree()]
 
-        from collections import Counter
-
         dist1 = Counter(degrees1)
         dist2 = Counter(degrees2)
 
@@ -770,7 +766,6 @@ def information_graph_distance(graph1: Any, graph2: Any, method: str = "entropy"
         probs2 = [dist2.get(d, 0) / total2 for d in all_degrees]
 
         # Calculate Jensen-Shannon divergence
-        from metainformant.information.metrics.core import syntactic
 
         jsd = syntactic.jensen_shannon_divergence(probs1, probs2)
 

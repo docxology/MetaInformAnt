@@ -281,9 +281,7 @@ def plot_gene_expression_map(
     gene_idx = gene_names.index(gene)
 
     expression = spatial_data.expression
-    if sp_sparse is not None and sp_sparse.issparse(expression):
-        expr_values = np.asarray(expression[:, gene_idx].toarray()).flatten()
-    elif hasattr(expression, "toarray"):
+    if hasattr(expression, "toarray"):
         expr_values = np.asarray(expression[:, gene_idx].toarray()).flatten()
     else:
         expr_values = np.asarray(expression[:, gene_idx]).flatten()
@@ -367,7 +365,6 @@ def plot_neighborhood_graph(
     _ensure_plotting_deps()
 
     coords = np.asarray(coordinates, dtype=np.float64)
-    coords.shape[0]
 
     if sp_sparse is not None and sp_sparse.issparse(spatial_graph):
         adj = spatial_graph

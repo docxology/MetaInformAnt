@@ -17,14 +17,15 @@ Handler contract:
 from __future__ import annotations
 
 import json
-from collections.abc import Sequence
+import math
+from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
-
-Handler = Callable[..., dict]
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import pandas as pd
+
+Handler = Callable[..., dict[str, Any]]
 
 
 def validate_output_dir(path: str | Path) -> Path:
@@ -40,9 +41,27 @@ def validate_output_dir(path: str | Path) -> Path:
     return resolved
 
 
+def json_safe_float(value: Any) -> float | None:
+    """Return ``value`` as a plain float, with NaN/inf mapped to None.
+
+    Strict JSON has no NaN/Infinity tokens, so descriptive statistics over
+    degenerate inputs (e.g. std of a single row) must surface as null.
+    """
+    number = float(value)
+    if math.isnan(number) or math.isinf(number):
+        return None
+    return number
+
+
 def dump_json(obj: Any, path: Path) -> Path:
-    """Write deterministic JSON (sorted keys, fixed indent) and return path."""
-    path.write_text(json.dumps(obj, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    """Write deterministic JSON (sorted keys, fixed indent) and return path.
+
+    ``allow_nan=False`` makes any non-JSON-safe float a loud error instead of
+    a silently invalid artifact; use :func:`json_safe_float` when converting
+    possibly-degenerate statistics.
+    """
+    payload = json.dumps(obj, indent=2, sort_keys=True, allow_nan=False)
+    path.write_text(payload + "\n", encoding="utf-8")
     return path
 
 
@@ -64,4 +83,4 @@ def read_table(
     return pd.read_csv(p, sep=sep, index_col=index_col)
 
 
-__all__ = ["Handler", "validate_output_dir", "dump_json", "read_table"]
+__all__ = ["Handler", "validate_output_dir", "dump_json", "json_safe_float", "read_table"]

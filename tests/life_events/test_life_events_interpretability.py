@@ -5,6 +5,10 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from datetime import datetime
+
+from metainformant.life_events.core.events import Event, EventSequence
+
 from metainformant.life_events.analysis.interpretability import (
     event_importance,
     feature_attribution,
@@ -100,6 +104,36 @@ def test_temporal_patterns_length_mismatch():
 
     with pytest.raises(ValueError, match="must match"):
         temporal_patterns(sequences, predictions)
+
+
+def test_temporal_patterns_with_event_sequences():
+    """Temporal pattern analysis supports EventSequence objects with datetimes."""
+    sequences = [
+        EventSequence(
+            "p1",
+            [
+                Event("diagnosis", datetime(2020, 1, 1), "health"),
+                Event("recovered", datetime(2020, 1, 10), "health"),
+            ],
+        ),
+        EventSequence(
+            "p2",
+            [
+                Event("marriage", datetime(2021, 6, 1), "family"),
+                Event("had_child", datetime(2021, 6, 21), "family"),
+            ],
+        ),
+    ]
+
+    result = temporal_patterns(sequences)
+
+    assert result["statistics"]["total_sequences"] == 2
+    assert result["statistics"]["total_patterns"] == 2
+    assert result["statistics"]["time_window_days"] == 30
+    pattern = next(p for p in result["patterns"] if p["event1"] == "marriage")
+    assert pattern["avg_time_diff"] == pytest.approx(20.0)
+    # Time windows are keyed by epoch window index (int, not datetime)
+    assert all(isinstance(key, int) for key in result["time_windows"])
 
 
 def test_attention_weights():

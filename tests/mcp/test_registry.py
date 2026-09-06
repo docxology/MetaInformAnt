@@ -70,6 +70,8 @@ def test_duplicate_registration_rejected() -> None:
         {"type": "object", "properties": {}, "required": "a"},  # required not a list
         {"type": "object", "properties": {}, "required": ["ghost"]},  # undeclared required
         {"type": "object", "properties": {"e": {"type": "string", "enum": []}}},
+        {"type": "object", "properties": {"e": {"type": "string", "enum": [1, 2]}}},  # enum/type mismatch
+        {"type": "object", "properties": {"n": {"type": "integer", "enum": [True]}}},  # bool is not an integer
     ],
 )
 def test_invalid_schemas_rejected_at_registration(schema: Any) -> None:

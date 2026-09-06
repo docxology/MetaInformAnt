@@ -30,6 +30,6 @@ from metainformant.multiomics.visualization.visualization import (
     plot_multiomics_pca,
 )
 
-plot_multiomics_correlation_heatmap(rna_df, prot_df, output_path="output/corr.png")
-plot_multiomics_pca(integrated, color_by="layer", output_path="output/pca.png")
+plot_multiomics_correlation_heatmap(corr_matrix, ["rna", "protein"], output_path="output/corr.png")
+plot_multiomics_pca(integrated_features, sample_labels=sample_names, output_path="output/pca.png")
 ```

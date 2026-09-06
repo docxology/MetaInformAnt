@@ -56,9 +56,8 @@ from metainformant.life_events.core.events import Event, EventSequence, EventDat
 event = Event(event_type="diagnosis", timestamp="2024-01-15", domain="health",
               attributes={"condition": "hypertension"})
 
-# Build event sequences
-seq = EventSequence(entity_id="patient_001")
-seq.add_event(event)
+# Build event sequences (constructor sorts events by timestamp)
+seq = EventSequence("patient_001", [event])
 ```
 
 ### Embedding and Representation Learning
@@ -96,8 +95,7 @@ seq.add_event(event)
 | [`models/`](models/) | Event embeddings and representation learning |
 | [`analysis/`](analysis/) | Model interpretability, attention weights, feature attribution |
 | [`survival/`](survival/) | Kaplan-Meier, Cox PH, competing risks, recurrent events |
-| [`visualization/`](visualization/) | Event timeline and survival curve plots |
-| [`workflow/`](workflow/) | Life course analysis, population comparison, intervention analysis |
+| [`visualization/`](visualization/) | Event timeline, statistical, and transition-network plots |
 
 ## Quick Start
 
@@ -107,10 +105,11 @@ from metainformant.life_events.models.embeddings import learn_event_embeddings
 from metainformant.life_events.survival.time_to_event import kaplan_meier_estimator
 from metainformant.life_events.workflow.workflow import analyze_life_course
 
-# Build event sequences
-seq = EventSequence(entity_id="subject_001")
-seq.add_event(Event(event_type="job_change", timestamp="2023-06-01", domain="occupation"))
-seq.add_event(Event(event_type="diagnosis", timestamp="2024-01-15", domain="health"))
+# Build event sequences (constructor sorts events by timestamp)
+seq = EventSequence("subject_001", [
+    Event(event_type="job_change", timestamp="2023-06-01", domain="occupation"),
+    Event(event_type="diagnosis", timestamp="2024-01-15", domain="health"),
+])
 
 # Learn embeddings across a cohort
 embeddings = learn_event_embeddings(sequences=[seq], embedding_dim=64)

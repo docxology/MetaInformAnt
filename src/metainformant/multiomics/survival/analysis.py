@@ -120,32 +120,22 @@ def cox_regression(
         eta = X @ beta
         exp_eta = np.exp(eta - eta.max())  # numerical stability
 
-        # Cumulative sums for risk set (already sorted descending by time,
-        # so forward cumsum gives the risk set at each time)
-        # We need cumsum from the end (latest time first after descending sort
-        # means first entry is latest time; risk set at time t includes all
-        # subjects with observed time >= t)
-        # After descending sort: t[0] >= t[1] >= ... >= t[n-1]
-        # Risk set at t[i] includes subjects 0..i (those with time >= t[i])
-        # But with descending sort that reverses intuition -- let's use
-        # ascending sort and reverse cumsum instead.
-
-        # Re-sort ascending
+        # Ascending view of the descending-sorted arrays: the risk set at
+        # time t[i] covers all subjects with observed time >= t[i], so the
+        # per-time risk sums are reverse cumulative sums over this view.
         asc = np.argsort(t)
         t_asc = t[asc]
         d_asc = d[asc]
         X_asc = X[asc]
         exp_eta_asc = exp_eta[asc]
 
-        # Risk set at time t[i]: indices j where t_asc[j] >= t_asc[i]
         # Reverse cumulative sums
         S0 = np.cumsum(exp_eta_asc[::-1])[::-1]  # sum exp_eta for risk set
         S1 = np.cumsum((X_asc * exp_eta_asc[:, None])[::-1], axis=0)[::-1]
         S2_diag = np.cumsum((X_asc**2 * exp_eta_asc[:, None])[::-1], axis=0)[::-1]
 
-        # Gradient and Hessian
+        # Gradient and log partial likelihood
         gradient = np.zeros(p, dtype=np.float64)
-        hessian = np.zeros((p, p), dtype=np.float64)
         log_lik = 0.0
 
         for i in range(n):
@@ -156,15 +146,6 @@ def cox_regression(
             mean_x = s1_i / s0_i
             gradient += X_asc[i] - mean_x
             log_lik += float(np.dot(X_asc[i], beta)) - math.log(s0_i)
-
-            # Hessian contribution
-            for j1 in range(p):
-                for j2 in range(p):
-                    hessian[j1, j2] -= (
-                        (S2_diag[i, j1] / s0_i * (j1 == j2) - s1_i[j1] * s1_i[j2] / (s0_i**2))
-                        if j1 == j2
-                        else (-s1_i[j1] * s1_i[j2] / (s0_i**2))
-                    )
 
         # Simplified Hessian (diagonal + off-diagonal from S1 outer product)
         hessian_full = np.zeros((p, p), dtype=np.float64)
@@ -594,13 +575,12 @@ def multi_omic_survival_model(
     exp_eta = np.ones(n, dtype=np.float64)
     S0 = np.cumsum(exp_eta[::-1])[::-1]
     grad0 = np.zeros(p, dtype=np.float64)
+    S1 = np.cumsum((X_std * exp_eta[:, None])[::-1], axis=0)[::-1]
     for i in range(n):
         if d_arr[i] == 0:
             continue
         s0_i = S0[i] + 1e-10
-        cum_weighted = np.cumsum((X_std * exp_eta[:, None])[::-1], axis=0)[::-1]
-        s1_i = cum_weighted[i]
-        grad0 += X_std[i] - s1_i / s0_i
+        grad0 += X_std[i] - S1[i] / s0_i
 
     lam_max = float(np.max(np.abs(grad0))) / n
     lam = lam_max * 0.1
@@ -822,7 +802,7 @@ def compute_concordance_index(
         for j in range(n):
             if i == j:
                 continue
-            if time[j] <= time[i] and event[j] == 1 and j != i:
+            if time[j] <= time[i] and event[j] == 1:
                 # j had event no later than i -- skip (i is the one with event)
                 # Only count pairs where i's event time < j's time or j is censored after
                 continue

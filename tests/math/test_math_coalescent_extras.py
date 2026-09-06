@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from metainformant.math.population_genetics.coalescent import expected_pairwise_diversity, tajima_constants, tajimas_D
+from metainformant.math.population_genetics.coalescent import (
+    expected_pairwise_diversity,
+    expected_sfs_counts,
+    tajima_constants,
+    tajimas_D,
+)
 
 
 def test_expected_pairwise_diversity_and_tajima_constants():
@@ -20,3 +25,13 @@ def test_tajimas_D_zero_when_pi_matches_S_over_a1():
     pi = S / const["a1"] if const["a1"] > 0 else 0.0
     D = tajimas_D(S, pi, n)
     assert abs(D) < 1e-9
+
+
+def test_expected_sfs_counts_degenerate_sample():
+    assert expected_sfs_counts(1, 0.5) == []
+    assert expected_sfs_counts(0, 0.5) == []
+
+
+def test_tajimas_D_zero_variance_guard():
+    # n=2 gives e1 = e2 = 0, so the variance guard returns 0.0
+    assert tajimas_D(0.5, 1, 2) == 0.0

@@ -218,3 +218,22 @@ class TestBuildBackgroundFromVcfGenes:
     def test_empty_gene_fields_skipped(self):
         annotations = [{"nearest_gene": "", "nearby_genes": [{"gene_name": ""}]}]
         assert build_background_from_vcf_genes(annotations) == []
+
+
+class TestHpoPhenotypeMappingOffline:
+    """map_phenotype_to_hpo synonym map resolves without any network access."""
+
+    def test_honey_yield_synonym(self):
+        from metainformant.ontology.core.hpo import map_phenotype_to_hpo
+
+        assert map_phenotype_to_hpo("honey yield") == ["HP:0000118"]
+
+    def test_synonym_match_is_case_insensitive_and_substring(self):
+        from metainformant.ontology.core.hpo import map_phenotype_to_hpo
+
+        assert map_phenotype_to_hpo("  Average Body Weight (g)  ") == ["HP:0004324"]
+
+    def test_body_mass_index_synonym(self):
+        from metainformant.ontology.core.hpo import map_phenotype_to_hpo
+
+        assert map_phenotype_to_hpo("body mass index") == ["HP:0002860"]

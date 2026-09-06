@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import Sequence, Tuple
 
-import numpy as np
-
 from metainformant.math.population_genetics.core import hardy_weinberg_genotype_freqs
 from metainformant.math.population_genetics.fst import fst_from_allele_freqs
 
@@ -19,7 +17,9 @@ def hardy_weinberg_allele_freqs(p: float, q: float | None = None) -> Tuple[float
 
 def fst_from_freqs(freq1: Sequence[float], freq2: Sequence[float]) -> float:
     """Compatibility wrapper for FST from allele-frequency vectors."""
-    return fst_from_allele_freqs(np.asarray(freq1, dtype=float), np.asarray(freq2, dtype=float))
+    # Convert to lists: fst_from_allele_freqs validates with plain truthiness,
+    # which is ambiguous for multi-element numpy arrays.
+    return fst_from_allele_freqs(list(freq1), list(freq2))
 
 
 __all__ = [

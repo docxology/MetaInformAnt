@@ -31,26 +31,60 @@ except ImportError:
     sns = None
 
 try:
-    import plotly.express as px
     import plotly.graph_objects as go
 
     HAS_PLOTLY = True
 except ImportError:
     HAS_PLOTLY = False
     go = None
-    px = None
 
 
-def _save_plot(output_path: str | Path, label: str) -> str:
-    """Ensure the output directory exists and save the current pyplot figure deterministically.
+def _save_plot(ax: Axes, output_path: str | Path, label: str) -> str:
+    """Ensure the output directory exists and save the plotted figure deterministically.
 
     Consolidates the repeated ensure_directory / save_figure_deterministic / logger
-    triple used by every plot function in this module (behavior identical).
+    triple used by every plot function in this module. Saves ``ax.figure`` so the
+    plotted figure is written even when a different pyplot figure is current.
     """
     paths.ensure_directory(Path(output_path).parent)
-    save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+    save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
     logger.info(f"{label} saved to {output_path}")
     return str(output_path)
+
+
+def _save_animation(anim: animation.FuncAnimation, output_path: str | Path, label: str) -> None:
+    """Save an animation as GIF (by filename suffix) or MP4 fallback, creating the directory first."""
+    paths.ensure_directory(Path(output_path).parent)
+    save_path = Path(output_path)
+    if save_path.suffix.lower() == ".gif":
+        anim.save(str(save_path), writer="pillow")
+    else:
+        anim.save(str(save_path.with_suffix(".mp4")), writer="ffmpeg")
+    logger.info(f"{label} saved to {save_path}")
+
+
+def _plot_stat_bars(ax: Axes, stats: Dict[str, Any], *, color: str, title: str) -> None:
+    """Render a summary-statistics bar chart with value labels (shared by two simulation plots)."""
+    stat_names = list(stats.keys())
+    stat_values = list(stats.values())
+
+    bars = ax.bar(range(len(stat_names)), stat_values, alpha=0.7, color=color)
+    ax.set_xticks(range(len(stat_names)))
+    ax.set_xticklabels(stat_names, rotation=45, ha="right")
+    ax.set_ylabel("Value")
+    ax.set_title(title)
+    ax.grid(True, alpha=0.3, axis="y")
+
+    # Add value labels
+    for bar, value in zip(bars, stat_values):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + 0.01,
+            f"{value:.2f}",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
 
 
 def plot_sequence_evolution(
@@ -100,7 +134,7 @@ def plot_sequence_evolution(
     cbar.set_label("Mutation (1) / No Change (0)")
 
     if output_path:
-        output_path = _save_plot(output_path, "Sequence evolution plot")
+        output_path = _save_plot(ax, output_path, "Sequence evolution plot")
 
     return ax
 
@@ -155,13 +189,7 @@ def animate_sequence_evolution(
     anim = animation.FuncAnimation(fig, animate, frames=generations, interval=interval, blit=False)
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_path = Path(output_path)
-        if save_path.suffix.lower() == ".gif":
-            anim.save(str(save_path), writer="pillow")
-        else:
-            anim.save(str(save_path.with_suffix(".mp4")), writer="ffmpeg")
-        logger.info(f"Sequence evolution animation saved to {save_path}")
+        _save_animation(anim, output_path, "Sequence evolution animation")
 
     return fig, anim
 
@@ -188,12 +216,8 @@ def plot_rnaseq_simulation_results(
     """
     validation.validate_type(rnaseq_data, dict, "rnaseq_data")
 
-    if ax is None:
-        fig, axes = plt.subplots(2, 3, figsize=figsize)
-        axes = axes.flatten()
-    else:
-        fig, axes = plt.subplots(2, 3, figsize=figsize)
-        axes = axes.flatten()
+    fig, axes = plt.subplots(2, 3, figsize=figsize)
+    axes = axes.flatten()
 
     plot_idx = 0
 
@@ -283,7 +307,7 @@ def plot_rnaseq_simulation_results(
     plt.tight_layout()
 
     if output_path:
-        output_path = _save_plot(output_path, "RNA-seq simulation results plot")
+        output_path = _save_plot(axes[0], output_path, "RNA-seq simulation results plot")
 
     first_ax: Axes = axes[0]
     return first_ax
@@ -330,7 +354,7 @@ def plot_population_dynamics_simulation(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = _save_plot(output_path, "Population dynamics simulation plot")
+        output_path = _save_plot(ax, output_path, "Population dynamics simulation plot")
 
     return ax
 
@@ -357,12 +381,8 @@ def plot_agent_based_model_results(
     """
     validation.validate_type(agent_data, dict, "agent_data")
 
-    if ax is None:
-        fig, axes = plt.subplots(2, 2, figsize=figsize)
-        axes = axes.flatten()
-    else:
-        fig, axes = plt.subplots(2, 2, figsize=figsize)
-        axes = axes.flatten()
+    fig, axes = plt.subplots(2, 2, figsize=figsize)
+    axes = axes.flatten()
 
     # Plot 1: Agent positions over time (if available)
     if "agent_positions" in agent_data:
@@ -436,31 +456,12 @@ def plot_agent_based_model_results(
     # Plot 4: Simulation summary statistics
     if "simulation_stats" in agent_data:
         stats = agent_data["simulation_stats"]
-        stat_names = list(stats.keys())
-        stat_values = list(stats.values())
-
-        bars = axes[3].bar(range(len(stat_names)), stat_values, alpha=0.7, color="green")
-        axes[3].set_xticks(range(len(stat_names)))
-        axes[3].set_xticklabels(stat_names, rotation=45, ha="right")
-        axes[3].set_ylabel("Value")
-        axes[3].set_title("Simulation Statistics")
-        axes[3].grid(True, alpha=0.3, axis="y")
-
-        # Add value labels
-        for bar, value in zip(bars, stat_values):
-            axes[3].text(
-                bar.get_x() + bar.get_width() / 2,
-                bar.get_height() + 0.01,
-                f"{value:.2f}",
-                ha="center",
-                va="bottom",
-                fontsize=8,
-            )
+        _plot_stat_bars(axes[3], stats, color="green", title="Simulation Statistics")
 
     plt.tight_layout()
 
     if output_path:
-        output_path = _save_plot(output_path, "Agent-based model results plot")
+        output_path = _save_plot(axes[0], output_path, "Agent-based model results plot")
 
     first_ax: Axes = axes[0]
     return first_ax
@@ -488,12 +489,8 @@ def plot_evolutionary_simulation_summary(
     """
     validation.validate_type(evolution_data, dict, "evolution_data")
 
-    if ax is None:
-        fig, axes = plt.subplots(2, 3, figsize=figsize)
-        axes = axes.flatten()
-    else:
-        fig, axes = plt.subplots(2, 3, figsize=figsize)
-        axes = axes.flatten()
+    fig, axes = plt.subplots(2, 3, figsize=figsize)
+    axes = axes.flatten()
 
     plot_idx = 0
 
@@ -579,31 +576,12 @@ def plot_evolutionary_simulation_summary(
     # Plot 6: Final simulation statistics
     if "final_stats" in evolution_data:
         stats = evolution_data["final_stats"]
-        stat_names = list(stats.keys())
-        stat_values = list(stats.values())
-
-        bars = axes[plot_idx].bar(range(len(stat_names)), stat_values, alpha=0.7, color="brown")
-        axes[plot_idx].set_xticks(range(len(stat_names)))
-        axes[plot_idx].set_xticklabels(stat_names, rotation=45, ha="right")
-        axes[plot_idx].set_ylabel("Value")
-        axes[plot_idx].set_title("Final Statistics")
-        axes[plot_idx].grid(True, alpha=0.3, axis="y")
-
-        # Add value labels
-        for bar, value in zip(bars, stat_values):
-            axes[plot_idx].text(
-                bar.get_x() + bar.get_width() / 2,
-                bar.get_height() + 0.01,
-                f"{value:.2f}",
-                ha="center",
-                va="bottom",
-                fontsize=8,
-            )
+        _plot_stat_bars(axes[plot_idx], stats, color="brown", title="Final Statistics")
 
     plt.tight_layout()
 
     if output_path:
-        output_path = _save_plot(output_path, "Evolutionary simulation summary plot")
+        output_path = _save_plot(axes[0], output_path, "Evolutionary simulation summary plot")
 
     first_ax: Axes = axes[0]
     return first_ax
@@ -658,7 +636,7 @@ def plot_simulation_parameter_sensitivity(
         )
 
     if output_path:
-        output_path = _save_plot(output_path, "Simulation parameter sensitivity plot")
+        output_path = _save_plot(ax, output_path, "Simulation parameter sensitivity plot")
 
     return ax
 
@@ -715,13 +693,7 @@ def animate_population_dynamics(
     anim = animation.FuncAnimation(fig, animate, frames=len(population_history), interval=interval, blit=True)
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_path = Path(output_path)
-        if save_path.suffix.lower() == ".gif":
-            anim.save(str(save_path), writer="pillow")
-        else:
-            anim.save(str(save_path.with_suffix(".mp4")), writer="ffmpeg")
-        logger.info(f"Population dynamics animation saved to {save_path}")
+        _save_animation(anim, output_path, "Population dynamics animation")
 
     return fig, anim
 
@@ -774,7 +746,7 @@ def plot_simulation_validation_comparison(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = _save_plot(output_path, "Simulation validation comparison plot")
+        output_path = _save_plot(ax, output_path, "Simulation validation comparison plot")
 
     return ax
 

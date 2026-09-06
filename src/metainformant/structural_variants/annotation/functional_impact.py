@@ -403,7 +403,6 @@ def score_pathogenicity(
     end = variant.get("end", 0)
     size = abs(end - start)
 
-    len(annotations.get("overlapping_genes", []))
     n_dosage = len(annotations.get("dosage_sensitive_genes", []))
     tad_disrupted = annotations.get("tad_disrupted", False)
     impact_level = annotations.get("impact_level", "MODIFIER")

@@ -26,7 +26,8 @@ uv run python -m metainformant.mcp.server
 - Protocol version: `2024-11-05` (echoed back to the client on initialize).
 - Error semantics: parse failures `-32700`; non-object requests `-32600`;
   unknown methods `-32601`; bad params / schema violations / unknown tool or
-  resource `-32602`; handler failures `-32603`.
+  resource `-32602`; handler failures `-32603` (including non-JSON-serializable
+  results and `KeyError`s raised inside a registered handler).
 - Notifications (no `id`) produce no response.
 - Nothing that is not a JSON-RPC response is ever written to stdout.
 
@@ -42,7 +43,8 @@ uv run python -m metainformant.mcp.server
   schema before invoking the handler (`SchemaError` on violation).
 - Supported schema subset: `type` (object/string/integer/number/boolean/array),
   `required`, `properties`, `enum`, `additionalProperties: false`. `bool` is
-  not accepted where `integer`/`number` is declared.
+  not accepted where `integer`/`number` is declared, and enum values must
+  match the declared property type (checked at registration).
 
 ### Bundled tool adapter (`metainformant.mcp.tool_adapters`)
 
@@ -102,5 +104,4 @@ env -u VIRTUAL_ENV uv run pytest -q tests/mcp/test_registry.py tests/mcp/test_se
 ## Non-Goals For This Pass
 
 - no SSE/HTTP transport;
-- no prompts/list or sampling surfaces;
-- no `run_workflow` or `list_outputs` tools (see `tools/` subpackage).
+- no prompts/list or sampling surfaces.

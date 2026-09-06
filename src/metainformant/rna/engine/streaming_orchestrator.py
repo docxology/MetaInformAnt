@@ -4185,5 +4185,5 @@ class StreamingPipelineOrchestrator:
                 d = c.get("downloaded", 0) + c.get("downloading", 0)
                 pct = (q / total * 100) if total > 0 else 0
                 logger.info(f"{sp.ljust(30)} | {q}/{total} ({pct:3.0f}%) | " f"Fail: {f:3} | Pend: {p:3} | DL: {d:3}")
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Final results summary unavailable: %s", exc)

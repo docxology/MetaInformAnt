@@ -69,7 +69,6 @@ def generate_config_yaml(
             - accession (str): Assembly accession (e.g., "GCF_000001405.40")
             - assembly_name (str): Assembly name
             - level (str): Assembly level
-            - annotation_release (str): Annotation release number
         repo_root: Optional path to repository root for setting work_dir
 
     Returns:
@@ -126,18 +125,10 @@ def generate_config_yaml(
         yaml_lines.append(f"      level: {genome_info.get('level', 'unknown')}")
 
         # FTP URL construction (NCBI standard pattern)
-        accession = genome_info.get("accession", "")
-        if accession.startswith("GCF_"):
-            # RefSeq FTP URL pattern
-            ftp_url = f"ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/{accession[:7]}/{accession[8:11]}/{accession[12:]}"
-        elif accession.startswith("GCA_"):
-            # GenBank FTP URL pattern
-            ftp_url = f"ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/{accession[:7]}/{accession[8:11]}/{accession[12:]}"
-        else:
-            ftp_url = ""
-
+        ftp_url = _construct_ftp_path(genome_info.get("accession", ""))
         if ftp_url:
-            yaml_lines.append(f"      ftp_url: {ftp_url}")
+            accession = genome_info.get("accession", "")
+            yaml_lines.append(f"      ftp_url: {ftp_url}/{accession}")
 
     yaml_lines.append("")
 

@@ -14,6 +14,7 @@ import random
 import pytest
 
 from metainformant.epigenome.peak_calling.peak_detection import (
+    _benjamini_hochberg,
     call_peaks_broad,
     call_peaks_simple,
     compute_frip,
@@ -540,3 +541,28 @@ class TestDifferentialPeaks:
     def test_empty_peaks_both(self) -> None:
         results = differential_peaks([], [], [1.0] * 100, [1.0] * 100)
         assert results == []
+
+
+class TestBenjaminiHochberg:
+    """BH correction produces monotone, bounded q-values."""
+
+    def test_qvalues_monotone_and_bounded(self) -> None:
+        pvals = [0.001, 0.001, 0.01, 0.2, 0.5, 0.9]
+
+        qvals = _benjamini_hochberg(pvals)
+
+        assert len(qvals) == len(pvals)
+        assert qvals == sorted(qvals)  # non-decreasing for ascending p-values
+        assert all(0.0 <= q <= 1.0 for q in qvals)
+
+
+class TestCallPeaksBroadEdgeCases:
+    """Regression: a seed opening at the final position is not dropped."""
+
+    def test_enrichment_at_last_position_detected(self) -> None:
+        signal = [0.0] * 499 + [50.0]
+
+        peaks = call_peaks_broad(signal, p_threshold=0.1, broad_cutoff=0.5, min_length=1)
+
+        assert peaks, "broad peak at the final position was dropped"
+        assert peaks[0]["end"] == len(signal)

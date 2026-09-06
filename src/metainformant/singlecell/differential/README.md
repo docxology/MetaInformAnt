@@ -24,7 +24,7 @@ Statistical testing for differential gene expression between cell groups. Suppor
 ```python
 from metainformant.singlecell.differential import expression
 
-results = expression.differential_expression(matrix, groups, method="wilcoxon")
-pseudobulk = expression.pseudobulk_de(matrix, groups, sample_ids)
+results = expression.differential_expression(matrix, groups, gene_names, method="wilcoxon")
+pseudobulk = expression.pseudobulk_de(matrix, cell_labels, sample_ids, groups)
 volcano = expression.volcano_data(results)
 ```

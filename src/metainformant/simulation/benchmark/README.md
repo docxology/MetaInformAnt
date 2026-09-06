@@ -26,5 +26,5 @@ from metainformant.simulation.benchmark import generators
 
 data = generators.generate_benchmark_dataset(task="classification", n_samples=500, seed=42)
 expression = generators.generate_synthetic_expression(n_genes=1000, n_samples=20)
-report = generators.benchmark_suite(dataset, methods=[method_a, method_b])
+report = generators.benchmark_suite(methods={"method_a": method_a, "method_b": method_b}, dataset=dataset)
 ```

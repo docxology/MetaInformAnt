@@ -192,7 +192,6 @@ def _parse_fast5_read_group(read_group: Any, group_name: str) -> Fast5Read:
     # Basecalls if available
     sequence = None
     quality_string = None
-    [k for k in read_group.keys() if k.startswith("Analyses")]
     if "Analyses" in read_group:
         analyses = read_group["Analyses"]
         # Look for Basecall_1D groups

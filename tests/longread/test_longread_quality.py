@@ -11,7 +11,8 @@ from typing import Any
 
 import pytest
 
-from metainformant.longread.utils.summary import generate_qc_summary
+from metainformant.longread.quality.filtering import ReadRecord, split_chimeric_reads
+from metainformant.longread.utils.summary import RunSummary, export_run_summary, generate_qc_summary
 from metainformant.longread.workflow.reporting import (
     QCReport,
     export_report,
@@ -338,3 +339,64 @@ class TestGenerateRunSummary:
         assert run2["pipeline_name"] == "assembly"
         assert run2["success"] is False
         assert run2["steps_failed"] == 1
+
+
+class TestSplitChimericShortReadPassthrough:
+    """Regression: reads too short to be chimeric pass through unchanged."""
+
+    def test_short_reads_not_dropped(self) -> None:
+        short = ReadRecord(read_id="short1", sequence="ACGTACGTACGTACGT", quality_string="I" * 16)
+        long_read = ReadRecord(read_id="long1", sequence="A" * 2000, quality_string="I" * 2000)
+
+        result = split_chimeric_reads([short, long_read], min_fragment_length=500)
+
+        ids = [r.read_id for r in result]
+        assert "short1" in ids
+        assert len(result) == 2
+
+    def test_empty_sequence_read_passes_through(self) -> None:
+        """Empty-sequence reads are not chimeric and pass through unchanged."""
+        no_seq = ReadRecord(read_id="noseq", sequence="")
+
+        result = split_chimeric_reads([no_seq])
+
+        assert len(result) == 1
+        assert result[0].read_id == "noseq"
+        assert result[0].metadata.get("chimeric") is False
+
+
+class TestExportRunSummaryText:
+    """Regression: text export tolerates stats dicts with missing keys."""
+
+    def test_text_export_with_missing_stat_keys(self, tmp_path: Path) -> None:
+        summary = RunSummary(
+            run_id="run1",
+            sample_name="sample1",
+            qc_stats={"mean_quality": 12.5},  # total_reads/total_bases/n50/mean_length missing
+            methylation_stats={"modification_type": "5mC"},  # site counts missing
+        )
+        out = tmp_path / "summary.txt"
+
+        path = export_run_summary(summary, out, format="text")
+
+        assert path == out
+        assert out.exists()
+        assert "N/A" in out.read_text()
+
+    def test_text_export_formats_present_numbers(self, tmp_path: Path) -> None:
+        summary = RunSummary(
+            run_id="run2",
+            qc_stats={"total_reads": 12345, "total_bases": 9876543, "n50": 4321, "mean_length": 800.5},
+        )
+        out = tmp_path / "summary2.txt"
+
+        export_run_summary(summary, out, format="text")
+
+        content = out.read_text()
+        assert "12,345" in content
+        assert "9,876,543" in content
+
+    def test_text_export_invalid_format_raises(self, tmp_path: Path) -> None:
+        summary = RunSummary(run_id="r3")
+        with pytest.raises(ValueError, match="Unsupported format"):
+            export_run_summary(summary, tmp_path / "s.xyz", format="xyz")

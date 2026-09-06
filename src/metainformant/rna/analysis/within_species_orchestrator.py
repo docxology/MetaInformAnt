@@ -5,7 +5,7 @@ and principal component analysis, processing amalgkit matrix outputs.
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional, Sequence
 
 import numpy as np
 import pandas as pd
@@ -13,6 +13,8 @@ import pandas as pd
 from metainformant.core.utils import logging
 from metainformant.rna.analysis.expression_analysis import differential_expression, pca_analysis, prepare_volcano_data
 
+
+DEFAULT_CONDITION_COLUMNS: tuple[str, ...] = ("tissue", "sex", "caste", "developmental_stage")
 logger = logging.get_logger(__name__)
 
 
@@ -41,8 +43,10 @@ class WithinSpeciesOrchestrator:
         sample_col = "run" if "run" in self.metadata_df.columns else self.metadata_df.columns[0]
         self.metadata_df.set_index(sample_col, inplace=True)
 
-        # Align columns
-        common_samples = list(set(self.counts_df.columns) & set(self.metadata_df.index))
+        # Align columns; preserve the abundance-matrix column order so runs
+        # are deterministic (a bare set intersection would scramble order).
+        metadata_index = set(self.metadata_df.index)
+        common_samples = [c for c in self.counts_df.columns if c in metadata_index]
         if not common_samples:
             raise ValueError("No common samples between abundance matrix and metadata.")
 
@@ -102,12 +106,14 @@ class WithinSpeciesOrchestrator:
 
         return volcano_data
 
-    def run_all(self, condition_cols: List[str] = ["tissue", "sex", "caste", "developmental_stage"]) -> None:
+    def run_all(self, condition_cols: Optional[Sequence[str]] = None) -> None:
         """Execute full within-species analysis suite."""
+
+        columns = list(condition_cols) if condition_cols is not None else list(DEFAULT_CONDITION_COLUMNS)
         self.load_data()
         self.run_pca()
 
-        for col in condition_cols:
+        for col in columns:
             try:
                 self.run_differential_expression(col)
             except Exception as e:

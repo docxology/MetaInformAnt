@@ -152,6 +152,61 @@ def test_reclaim_sample_raw_inputs_preserves_symlinked_raw_file(tmp_path: Path) 
     assert external.exists()
 
 
+def test_reclaim_sample_raw_inputs_does_not_match_longer_accessions(tmp_path: Path) -> None:
+    """An accession that is a strict prefix of another must not select its files."""
+
+    work_dir = tmp_path / "work"
+    flat = work_dir / "getfastq"
+    flat.mkdir(parents=True)
+    (flat / "SRR1234567_1.fastq.gz").write_bytes(b"other run")  # longer accession
+    (flat / "SRR123456_1.fastq.gz").write_bytes(b"target run")  # reclaimed run
+
+    result = reclaim_sample_raw_inputs(work_dir, "SRR123456")
+
+    assert result["files_deleted"] == 1
+    assert (flat / "SRR1234567_1.fastq.gz").exists()
+    assert not (flat / "SRR123456_1.fastq.gz").exists()
+
+
+def test_reclaim_sample_raw_inputs_excludes_failed_unlink_from_accounting(tmp_path: Path) -> None:
+    """Files that cannot be removed must not be counted as freed."""
+
+    work_dir = tmp_path / "work"
+    sample_dir = work_dir / "getfastq" / "SRR123456"
+    sample_dir.mkdir(parents=True)
+    target = sample_dir / "SRR123456_1.fastq.gz"
+    target.write_bytes(b"x" * 100)
+    sample_dir.chmod(0o500)  # read/execute only: unlink is denied
+    try:
+        result = reclaim_sample_raw_inputs(work_dir, "SRR123456")
+    finally:
+        sample_dir.chmod(0o700)  # restore so pytest can clean up
+
+    assert result["files_deleted"] == 0
+    assert result["bytes_freed"] == 0
+    assert result["paths"] == []
+    assert result["errors"], "the failed unlink must be reported"
+    assert target.exists()
+
+
+def test_reclaim_sample_raw_inputs_does_not_descend_symlinked_dir(tmp_path: Path) -> None:
+    """Traversal must not follow a symlinked directory inside the sample dir."""
+
+    work_dir = tmp_path / "work"
+    nested = work_dir / "getfastq" / "SRR123456" / "nested"
+    nested.mkdir(parents=True)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    outside_file = outside / "SRR123456_1.fastq.gz"
+    outside_file.write_bytes(b"outside payload")
+    (nested / "link").symlink_to(outside, target_is_directory=True)
+
+    result = reclaim_sample_raw_inputs(work_dir, "SRR123456")
+
+    assert result["files_deleted"] == 0
+    assert outside_file.exists()
+
+
 # ===========================================================================
 # check_disk_space
 # ===========================================================================

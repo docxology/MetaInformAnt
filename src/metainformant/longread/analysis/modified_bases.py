@@ -2,8 +2,8 @@
 
 Provides methylation calling (5mC, 6mA) from nanopore signal features,
 per-region aggregation, and differential methylation analysis. Uses real
-statistical methods including beta-binomial modeling and signal-level
-feature extraction.
+statistical methods (Fisher's exact test with a chi-squared fallback) and
+signal-level feature extraction.
 
 Optional dependencies:
     - numpy: For numerical computation
@@ -632,8 +632,9 @@ def differential_methylation(
 ) -> list[DifferentialMethylationResult]:
     """Detect differentially methylated loci between two samples.
 
-    Uses Fisher's exact test (or beta-binomial test when scipy is available)
-    to identify positions with statistically significant methylation differences.
+    Uses Fisher's exact test (falling back to a chi-squared approximation
+    when scipy is unavailable) to identify positions with statistically
+    significant methylation differences.
 
     Performs Benjamini-Hochberg correction for multiple testing.
 

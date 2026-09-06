@@ -69,7 +69,6 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="metainformant.rna.engine.exclusions",
         description="Record and inspect sample exclusions in the progress database",
-        parents=[common],
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -109,7 +108,11 @@ def main(argv: list[str] | None = None) -> int:
             if bool(args.tsv) == bool(args.srr):
                 logger.error("Provide exactly one of --tsv or --srr")
                 return 2
-            entries = _load_tsv_entries(args.tsv) if args.tsv else [{"srr_id": srr} for srr in args.srr]
+            try:
+                entries = _load_tsv_entries(args.tsv)
+            except ValueError as exc:
+                logger.error(str(exc))
+                return 2
             for entry in entries:
                 entry["reason_code"] = args.reason_code
                 entry["reason_detail"] = args.reason_detail

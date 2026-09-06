@@ -119,7 +119,6 @@ def genomic_overview(
     """
     fig = plt.figure(figsize=figsize)
     gs = gridspec.GridSpec(2, 3, figure=fig, hspace=0.35, wspace=0.3)
-    panel_idx = 0
 
     # Panel 1 — expression heatmap
     if "expression" in data:
@@ -129,7 +128,6 @@ def genomic_overview(
             im = ax.imshow(expr.values[:20, :20], cmap="RdBu_r", aspect="auto")
             ax.set_title("Expression Heatmap (top 20)")
             plt.colorbar(im, ax=ax, fraction=0.046)
-        panel_idx += 1
 
     # Panel 2 — PCA scatter
     if "pca_data" in data:
@@ -140,22 +138,24 @@ def genomic_overview(
             ax.set_xlabel("PC1")
             ax.set_ylabel("PC2")
             ax.set_title("PCA")
-        panel_idx += 1
 
     # Panel 3 — QQ plot
     if "pvalues" in data:
         ax = fig.add_subplot(gs[0, 2])
         pvals = np.asarray(data["pvalues"])
         pvals = pvals[pvals > 0]
-        observed = -np.log10(np.sort(pvals))
-        expected = -np.log10(np.linspace(1 / len(pvals), 1, len(pvals)))
-        ax.scatter(expected, observed, s=10, alpha=0.6)
-        lim = max(observed.max(), expected.max()) * 1.05
-        ax.plot([0, lim], [0, lim], "r--", alpha=0.7)
+        if pvals.size:
+            observed = -np.log10(np.sort(pvals))
+            expected = -np.log10(np.linspace(1 / len(pvals), 1, len(pvals)))
+            ax.scatter(expected, observed, s=10, alpha=0.6)
+            lim = max(observed.max(), expected.max()) * 1.05
+            ax.plot([0, lim], [0, lim], "r--", alpha=0.7)
+        else:
+            ax.text(0.5, 0.5, "No valid p-values", transform=ax.transAxes, ha="center", va="center")
+            logger.warning("QQ plot skipped: no p-values greater than zero")
         ax.set_xlabel("Expected -log10(p)")
         ax.set_ylabel("Observed -log10(p)")
         ax.set_title("QQ Plot")
-        panel_idx += 1
 
     # Panel 4 — volcano plot
     if "log2fc" in data and "pvalues" in data:
@@ -172,7 +172,6 @@ def genomic_overview(
         ax.set_xlabel("log2 Fold Change")
         ax.set_ylabel("-log10(p)")
         ax.set_title("Volcano Plot")
-        panel_idx += 1
 
     # Panel 5 — GC content
     if "gc_content" in data:
@@ -182,7 +181,6 @@ def genomic_overview(
         ax.set_xlabel("GC Content (%)")
         ax.set_ylabel("Frequency")
         ax.set_title("GC Distribution")
-        panel_idx += 1
 
     # Panel 6 — quality scores
     if "quality_scores" in data:
@@ -192,7 +190,6 @@ def genomic_overview(
         ax.set_xlabel("Quality Score")
         ax.set_ylabel("Frequency")
         ax.set_title("Quality Distribution")
-        panel_idx += 1
 
     fig.suptitle("Genomic Overview Dashboard", fontsize=16, fontweight="bold")
 

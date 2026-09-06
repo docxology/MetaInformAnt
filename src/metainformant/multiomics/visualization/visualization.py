@@ -187,6 +187,9 @@ def plot_omics_layer_comparison(
         matplotlib Axes object
     """
     validation.validate_type(omics_datasets, dict, "omics_datasets")
+    valid_metrics = {"correlation", "euclidean", "cosine"}
+    if comparison_metric not in valid_metrics:
+        raise ValueError(f"comparison_metric must be one of {valid_metrics}, got '{comparison_metric}'")
 
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
@@ -235,7 +238,7 @@ def plot_omics_layer_comparison(
             ax.text(
                 j,
                 i,
-                ".2f",
+                f"{comparison_matrix[i, j]:.2f}",
                 ha="center",
                 va="center",
                 color="white" if comparison_matrix[i, j] > np.mean(comparison_matrix) else "black",
@@ -594,7 +597,6 @@ def create_interactive_multiomics_dashboard(
 
     # Add network plot (simplified)
     if "network_data" in multiomics_data:
-        multiomics_data["network_data"]
         # Simplified network visualization
         fig.add_trace(go.Scatter(x=[0, 1, 2], y=[0, 1, 0], mode="markers+lines"), row=2, col=1)
 

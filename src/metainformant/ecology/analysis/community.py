@@ -64,8 +64,8 @@ def calculate_single_diversity(abundances: List[float], method: str) -> float:
     Returns:
         Diversity index value
     """
-    # Filter out zero abundances and ensure positive values
-    abundances = [max(0, x) for x in abundances if x > 0]
+    # Filter out zero abundances (negative values are not valid abundances)
+    abundances = [x for x in abundances if x > 0]
 
     if len(abundances) == 0:
         return 0.0
@@ -216,8 +216,9 @@ def rarefaction_curve(abundances: List[float], max_samples: Optional[int] = None
 
         for abundance in counts:
             if abundance > 0:
-                # Hypergeometric expectation
-                prob = 1.0 - math.exp(-n * abundance / total_individuals)
+                # Probability the species is present in a sample of n individuals:
+                # 1 - C(N - a, n) / C(N, n) (hypergeometric detection probability)
+                prob = 1.0 - math.comb(total_individuals - abundance, n) / math.comb(total_individuals, n)
                 expected_richness += prob
 
         curve.append((n, expected_richness))
@@ -490,6 +491,9 @@ def calculate_biodiversity_indices(
                 # calculate_diversity only returns a dict for dict input; community_data is
                 # a list, so fall back to the same zeros used when the index fails.
                 results[index_name] = [0.0] * len(community_data)
+        except ValueError:
+            # Invalid index name / method: surface the error to the caller
+            raise
         except Exception as e:
             logger.warning(f"Could not calculate {index_name} index: {e}")
             results[index_name] = [0.0] * len(community_data)
@@ -592,7 +596,7 @@ def generate_ecology_report(
 
     # Basic statistics
     report_lines.append(f"Number of Communities: {len(community_data)}")
-    total_species = len(set(sum([list(range(len(comm))) for comm in community_data], [])))
+    total_species = len({j for comm in community_data for j, v in enumerate(comm) if v > 0})
     report_lines.append(f"Total Species Detected: {total_species}")
     report_lines.append("")
 

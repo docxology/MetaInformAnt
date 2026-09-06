@@ -337,7 +337,7 @@ def extract_methylation_tags(alignment: LongReadAlignment) -> dict[str, Any]:
             ref_pos = None
             for qpos, rpos in alignment.aligned_pairs:
                 if qpos == abs_pos and rpos is not None:
-                    ref_pos = rpos + alignment.reference_start
+                    ref_pos = rpos
                     break
 
             prob = probs[i] / 255.0 if i < len(probs) else 0.0

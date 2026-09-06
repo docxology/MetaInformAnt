@@ -183,6 +183,14 @@ class TestJointNMF:
             H = np.array(H_vals)
             assert np.all(H >= -1e-10)
 
+    def test_zero_max_iter_returns_unconverged(self):
+        """max_iter=0 performs no updates and reports an infinite error without crashing."""
+        data = _make_nonneg_data(n_samples=8, n_features_a=4, n_features_b=3)
+        result = joint_nmf(data, k=2, max_iter=0)
+        assert result["n_iter"] == 0
+        assert result["converged"] is False
+        assert result["reconstruction_error"] == float("inf")
+
 
 # ===================================================================
 # MOFA Tests

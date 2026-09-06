@@ -299,6 +299,52 @@ class TestCalculateQualityScore:
         with pytest.raises(ValueError, match="Unsupported data type"):
             calculate_quality_score({}, data_type="xyz")
 
+    def test_fastq_score_penalizes_poor_run(self):
+        """A poor run must not grade A: overall score is component-weighted."""
+        data = {
+            "basic_statistics": {"mean_quality": 20.0},
+            "adapter_content": {"adapters": {"a1": {"positions": [{"percentage": 20.0}]}}},
+        }
+        result = calculate_quality_score(data, data_type="fastq")
+        assert result["overall_score"] < 50
+        assert result["grade"] == "F"
+
+    def test_fastq_perfect_run_scores_100(self):
+        data = {
+            "basic_statistics": {"mean_quality": 40.0},
+            "per_base_quality": {"positions": [{"mean": 30.0} for _ in range(10)]},
+            "gc_content_distribution": {"bins": [{"bin_start": 40, "count": 10}]},
+            "adapter_content": {"adapters": {}},
+        }
+        result = calculate_quality_score(data, data_type="fastq")
+        assert result["max_possible_score"] == pytest.approx(100.0)
+        assert result["overall_score"] == pytest.approx(100.0)
+        assert result["grade"] == "A"
+
+    def test_fastq_max_possible_is_sum_of_present_weights(self):
+        data = {"basic_statistics": {"mean_quality": 40.0}}
+        result = calculate_quality_score(data, data_type="fastq")
+        assert result["max_possible_score"] == pytest.approx(40.0)
+        assert result["overall_score"] == pytest.approx(100.0)
+
+    def test_vcf_score_penalizes_low_pass_rate(self):
+        data = {
+            "quality_scores": [5.0, 5.0, 5.0],
+            "filter_stats": {"total": 100, "PASS": 1},
+        }
+        result = calculate_quality_score(data, data_type="vcf")
+        assert result["overall_score"] < 50
+
+    def test_bam_score_penalizes_poor_mapping(self):
+        data = {
+            "mapping_quality": [0, 0, 0],
+            "mapped_reads": 0,
+            "total_reads": 1000,
+            "properly_paired": 0,
+            "duplicate_rate": 0.5,
+        }
+        result = calculate_quality_score(data, data_type="bam")
+        assert result["overall_score"] < 50
 
 # ---------------------------------------------------------------------------
 # detect_outliers

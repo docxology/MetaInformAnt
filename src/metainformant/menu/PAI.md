@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - menu
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/menu`
+- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/menu`
 - **Purpose**: Interactive menu and CLI interface for METAINFORMANT.
 - **Domain**: metainformant
 

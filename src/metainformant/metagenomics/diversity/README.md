@@ -27,6 +27,6 @@ from metainformant.metagenomics.diversity import metrics
 
 alpha = metrics.alpha_diversity(abundances, metric="shannon")
 beta = metrics.beta_diversity(samples, metric="bray_curtis")
-curve = metrics.rarefaction_curve(abundances, steps=20)
-perm = metrics.permanova(distance_matrix, groups, permutations=999)
+curve = metrics.rarefaction_curve(abundances, n_iterations=20, seed=42)
+perm = metrics.permanova(distance_matrix, groups, n_permutations=999)
 ```

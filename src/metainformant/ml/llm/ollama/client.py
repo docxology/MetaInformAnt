@@ -226,6 +226,11 @@ class OllamaClient:
 
                 return json.loads(response.read().decode("utf-8"))
 
+            except urllib.error.HTTPError as e:
+                # HTTPError is a subclass of URLError; it must be caught first
+                # so API-level failures surface immediately instead of being
+                # retried as connection errors.
+                raise RuntimeError(f"Ollama API error {e.code}: {e.read().decode('utf-8')}") from e
             except urllib.error.URLError as e:
                 if attempt < self.config.max_retries - 1:
                     wait_time = 2**attempt
@@ -233,8 +238,6 @@ class OllamaClient:
                     time.sleep(wait_time)
                 else:
                     raise ConnectionError(f"Failed to connect to Ollama at {self.config.host}: {e}") from e
-            except urllib.error.HTTPError as e:
-                raise RuntimeError(f"Ollama API error {e.code}: {e.read().decode('utf-8')}") from e
 
     def _stream_response(self, response: Iterable[bytes]) -> Iterator[dict]:
         """Stream NDJSON response from Ollama.

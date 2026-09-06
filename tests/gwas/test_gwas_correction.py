@@ -3,8 +3,14 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
-from metainformant.gwas.analysis.correction import bonferroni_correction, fdr_correction, genomic_control
+from metainformant.gwas.analysis.correction import (
+    bonferroni_correction,
+    fdr_correction,
+    genomic_control,
+    lambda_gc_from_p_values,
+)
 
 
 def test_bonferroni_correction_basic() -> None:
@@ -119,3 +125,41 @@ def test_genomic_control_inflation() -> None:
     assert result["status"] == "success"
     # Lambda_GC might be > 1 if there's real signal or inflation
     assert result["lambda_gc"] > 0
+
+
+def test_lambda_gc_from_p_values_null_is_near_one() -> None:
+    """Uniform p-values should give lambda close to 1 under the exact chi2 conversion."""
+    np.random.seed(42)
+    p_values = list(np.random.uniform(0, 1, 10000))
+
+    lambda_gc = lambda_gc_from_p_values(p_values)
+
+    assert lambda_gc is not None
+    assert 0.8 < lambda_gc < 1.2
+
+
+def test_lambda_gc_from_p_values_detects_inflation() -> None:
+    """A mixture of strong signals must push the chi2 median far above the null median."""
+    p_values = [1e-10] * 50 + [0.5] * 50
+
+    lambda_gc = lambda_gc_from_p_values(p_values)
+
+    assert lambda_gc is not None
+    assert lambda_gc > 5
+
+
+def test_lambda_gc_from_p_values_matches_genomic_control() -> None:
+    """The shared helper and genomic_control must agree on the same p-value set."""
+    p_values = [0.001, 0.01, 0.1, 0.5, 0.9]
+
+    result = genomic_control(p_values=p_values)
+
+    assert isinstance(result, dict)
+    assert lambda_gc_from_p_values(p_values) == pytest.approx(result["lambda_gc"])
+
+
+def test_lambda_gc_from_p_values_invalid_input() -> None:
+    """Empty or all-invalid p-values return None; invalid entries are skipped."""
+    assert lambda_gc_from_p_values([]) is None
+    assert lambda_gc_from_p_values([0.0, -0.5, 1.5, float("nan")]) is None
+    assert lambda_gc_from_p_values([0.5, "not-a-p-value", None]) == pytest.approx(1.0, abs=0.01)

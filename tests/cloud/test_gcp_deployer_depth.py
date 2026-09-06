@@ -7,6 +7,7 @@ first on PATH (same pattern as tests/gwas/test_gwas_sra_environment.py).
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
 from pathlib import Path
@@ -19,6 +20,16 @@ from metainformant.cloud.gcp_deployer import GCPDeployer
 STUB = """#!/bin/sh
 # Record argv and emit a canned JSON response.
 printf '%s\n' "$*" >> "$GCLOUD_CALL_LOG"
+if [ -n "$GCLOUD_STDOUT_FILE" ]; then cat "$GCLOUD_STDOUT_FILE"; fi
+exit 0
+"""
+
+FAIL_SSH_STUB = """#!/bin/sh
+# Record argv and fail SSH probes; everything else succeeds silently.
+case "$*" in
+  *compute*ssh*) exit 1 ;;
+esac
+printf '%s\\n' "$*" >> "$GCLOUD_CALL_LOG"
 if [ -n "$GCLOUD_STDOUT_FILE" ]; then cat "$GCLOUD_STDOUT_FILE"; fi
 exit 0
 """
@@ -125,3 +136,42 @@ def test_sync_to_gcs_requires_bucket(tmp_path: Path, stubbed_gcloud: dict[str, P
     deployer = _deployer(tmp_path, gcs_bucket="my-bucket")
     assert deployer.sync_to_gcs() is True
     assert "gs://my-bucket/amalgkit/" in stubbed_gcloud["log"].read_text()
+
+
+def test_full_deploy_reports_ssh_ready(tmp_path: Path, stubbed_gcloud: dict[str, Path]) -> None:
+    deployer = _deployer(tmp_path)
+    result = deployer.full_deploy()
+    assert result["ssh_ready"] is True
+    calls = stubbed_gcloud["log"].read_text()
+    assert "compute instances create metainformant-pipeline" in calls
+    assert "compute ssh metainformant-pipeline" in calls
+
+
+def test_full_deploy_reports_ssh_unavailable(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A wait_for_ssh timeout must be reflected in the result, not hardcoded True."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    tool = bin_dir / "gcloud"
+    tool.write_text(FAIL_SSH_STUB, encoding="utf-8")
+    tool.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{bin_dir}{os.pathsep}{os.environ['PATH']}")
+    monkeypatch.setenv("GCLOUD_CALL_LOG", str(tmp_path / "calls.log"))
+    monkeypatch.delenv("GCLOUD_STDOUT_FILE", raising=False)
+
+    # Fake clock: wait_for_ssh is bounded by time.time(), so shortening the
+    # sleep alone cannot speed up the timeout path.
+    clock = {"now": 0.0}
+
+    def fake_time() -> float:
+        return clock["now"]
+
+    def fake_sleep(seconds: float) -> None:
+        clock["now"] += seconds
+
+    gcp_time = importlib.import_module("metainformant.cloud.gcp_deployer").time
+    monkeypatch.setattr(gcp_time, "time", fake_time)
+    monkeypatch.setattr(gcp_time, "sleep", fake_sleep)
+
+    deployer = _deployer(tmp_path)
+    result = deployer.full_deploy()
+    assert result["ssh_ready"] is False

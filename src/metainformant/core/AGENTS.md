@@ -11,10 +11,9 @@ This module provides functionality organized into the following structure:
 - `data/` — exports: `db`, `validation`
 - `engine/` — exports: `workflow_manager`
 - `execution/` — exports: `discovery`, `parallel`, `workflow`
-- `io/` — exports: `atomic`, `cache`, `checksums`, `disk`, `download`
-- `output/`
+- `io/` — exports: `atomic`, `cache`, `checksums`, `data_root`, `disk`, `download`, `download_manager`, `download_robust`, `errors`, `io`, `paths`, `sra_environment`
 - `ui/` — exports: `tui`
-- `utils/` — exports: `config`, `errors`, `hash`, `logging`, `optional_deps`
+- `utils/` — exports: `batches`, `config`, `errors`, `hash`, `logging`, `newick`, `optional_deps`, `progress`, `seeds`, `symbols`, `text`, `timing`, `watchdog`
 
 ## Rules
 

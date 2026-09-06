@@ -309,9 +309,7 @@ def compute_bayes_factor(
 
     # Jeffreys' scale interpretation
     abs_log_bf = abs(log_bf)
-    if abs_log_bf < math.log(1):
-        interpretation = "No evidence"
-    elif abs_log_bf < math.log(3):
+    if abs_log_bf < math.log(3):
         interpretation = "Anecdotal evidence"
     elif abs_log_bf < math.log(10):
         interpretation = "Moderate evidence"
@@ -547,10 +545,6 @@ def compute_dic(
     # Deviance = -2 * log_likelihood
     deviances = [-2.0 * ll for ll in log_likelihoods]
     d_bar = _mean(deviances)
-
-    # Compute mean parameters
-    n_params = len(parameters[0])
-    [_mean([parameters[s][p] for s in range(len(parameters))]) for p in range(n_params)]
 
     # Deviance at mean parameters
     mean_ll = _mean(log_likelihoods)

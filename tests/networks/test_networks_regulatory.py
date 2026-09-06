@@ -7,13 +7,23 @@ Real implementationing used - all tests use real computational methods and data.
 from __future__ import annotations
 
 import numpy as np
+import pandas as pd
+import pytest
 
 from metainformant.networks.analysis.graph import BiologicalNetwork
 from metainformant.networks.interaction.regulatory import (
     GeneRegulatoryNetwork,
+    analyze_regulatory_dynamics,
+    analyze_regulatory_motifs,
+    calculate_regulatory_influence,
+    construct_regulatory_network,
+    export_regulatory_network,
+    identify_regulatory_hubs,
     infer_grn,
+    infer_regulatory_network_from_expression,
     pathway_regulation_analysis,
     regulatory_motifs,
+    regulatory_network_stability_analysis,
 )
 
 
@@ -709,3 +719,221 @@ class TestNewRegulatoryFunctions:
         # Test non-existent regulation
         validation2 = validate_regulation(grn, "TF1", "GENE2", min_confidence=0.5)
         assert validation2["exists"] is False
+
+
+class TestRegulatoryCoreFunctions:
+    """Cover previously untested regulatory_core module-level functions."""
+
+    def _star_graph(self):
+        return construct_regulatory_network(
+            regulators=["TF1", "TF2"],
+            targets=["G1", "G2", "G3"],
+            interactions=[
+                ("TF1", "G1", "activation"),
+                ("TF1", "G2", "activation"),
+                ("TF1", "G3", "repression"),
+                ("TF2", "G1", "activation"),
+            ],
+        )
+
+    def test_construct_regulatory_network(self):
+        g = self._star_graph()
+        assert set(g.nodes()) == {"TF1", "TF2", "G1", "G2", "G3"}
+        assert g.number_of_edges() == 4
+        assert g["TF1"]["G3"]["interaction_type"] == "repression"
+
+    def test_construct_ignores_unknown_nodes(self):
+        g = construct_regulatory_network(
+            regulators=["TF1"],
+            targets=["G1"],
+            interactions=[("TF1", "G1", "activation"), ("GHOST", "G1", "activation")],
+        )
+        assert g.number_of_edges() == 1
+
+    def test_analyze_regulatory_motifs_graph_level(self):
+        g = self._star_graph()
+        result = analyze_regulatory_motifs(g, motif_types=["feed_forward"])
+        assert result["network_size"] == 5
+        assert result["motif_types_analyzed"] == ["feed_forward"]
+        assert "feed_forward_loops" in result["motifs"]
+        assert "cascades" not in result["motifs"]
+
+    def test_calculate_regulatory_influence_decay(self):
+        g = construct_regulatory_network(
+            regulators=["TF1"],
+            targets=["G1", "G2"],
+            interactions=[("TF1", "G1", "activation"), ("G1", "G2", "activation")],
+        )
+        result = calculate_regulatory_influence(g, ["TF1"])
+        scores = result["influence_scores"]
+        assert scores["TF1"] == 1.0  # self-influence is the maximum
+        assert scores["G1"] == pytest.approx(0.5)  # 1 / (distance 1 + 1)
+        assert scores["G2"] == pytest.approx(1 / 3)  # 1 / (distance 2 + 1)
+
+    def test_calculate_regulatory_influence_no_valid_sources(self):
+        g = self._star_graph()
+        assert calculate_regulatory_influence(g, ["MISSING"]) == {"error": "No valid source nodes found"}
+
+    def test_identify_regulatory_hubs_top_fraction(self):
+        g = self._star_graph()
+        hubs = identify_regulatory_hubs(g, direction="out")
+        assert hubs[0] == ("TF1", 3)  # top 10% of 4 nodes -> strongest out-degree
+
+    def test_identify_regulatory_hubs_in_direction(self):
+        g = self._star_graph()
+        hubs = identify_regulatory_hubs(g, direction="in")
+        assert hubs[0] == ("G1", 2)
+
+    def test_identify_regulatory_hubs_unknown_direction_raises(self):
+        with pytest.raises(ValueError, match="Unknown direction"):
+            identify_regulatory_hubs(self._star_graph(), direction="sideways")
+
+    def test_stability_analysis(self):
+        result = regulatory_network_stability_analysis(self._star_graph())
+        assert result["structural_stability"]["connected"] is True
+        assert "average_path_length" in result["structural_stability"]
+        assert result["dynamical_stability"]["n_feedback_loops"] == 0
+        assert "motifs" in result["dynamical_stability"]
+
+    def test_export_regulatory_network_sif_and_json(self, tmp_path):
+        g = self._star_graph()
+        sif_path = tmp_path / "net.sif"
+        export_regulatory_network(g, str(sif_path), format="sif")
+        lines = sif_path.read_text().strip().splitlines()
+        assert len(lines) == 4
+        assert "TF1\trepression\tG3" in lines
+
+        json_path = tmp_path / "net.json"
+        export_regulatory_network(g, str(json_path), format="json")
+        assert '"TF1"' in json_path.read_text()
+
+    def test_export_regulatory_network_unknown_format_raises(self, tmp_path):
+        with pytest.raises(ValueError, match="Unsupported export format"):
+            export_regulatory_network(self._star_graph(), str(tmp_path / "x.yaml"), format="yaml")
+
+    def test_analyze_regulatory_dynamics_trajectory_shape(self):
+        g = self._star_graph()
+        result = analyze_regulatory_dynamics(g, {"TF1": 1.0, "G1": 0.5}, time_steps=4)
+        assert result["time_steps"] == 4
+        for gene in ("TF1", "G1", "G2", "G3"):
+            traj = result["dynamics"][gene]["trajectory"]
+            assert len(traj) == 5  # time_steps + 1
+            assert result["dynamics"][gene]["initial_state"] == {"TF1": 1.0, "G1": 0.5}.get(gene, 0.0)
+
+
+class TestGeneRegulatoryNetworkIO:
+    """Cover from_* constructors, queries, and summary on GeneRegulatoryNetwork."""
+
+    def test_from_tf_target_file(self, tmp_path):
+        f = tmp_path / "tf_targets.tsv"
+        f.write_text("TF1\tG1\t0.9\nTF1\tG2\n", encoding="utf-8")
+        grn = GeneRegulatoryNetwork.from_tf_target_file(f)
+        assert grn.name == "tf_targets"
+        assert grn.get_tf_targets("TF1") == ["G1", "G2"]
+        weights = sorted(reg[2]["weight"] for reg in grn.regulations)
+        assert weights == [0.9, 1.0]  # missing confidence defaults to 1.0
+        assert grn.metadata["n_regulations"] == 2
+        assert grn.metadata["source_file"] == str(f)
+
+    def test_from_interactions(self):
+        grn = GeneRegulatoryNetwork.from_interactions([("TF1", "G1", 0.5), ("TF2", "G1", 0.7)], name="inter")
+        assert grn.name == "inter"
+        assert sorted(grn.get_regulators("G1")) == ["TF1", "TF2"]
+        assert grn.metadata["n_tfs"] == 2
+
+    def test_find_common_targets_and_shared_regulators(self):
+        grn = GeneRegulatoryNetwork.from_interactions(
+            [("TF1", "G1", 0.5), ("TF1", "G2", 0.5), ("TF2", "G2", 0.5), ("TF2", "G3", 0.5)]
+        )
+        assert grn.find_common_targets("TF1", "TF2") == ["G2"]
+        assert grn.find_shared_regulators("G1", "G2") == ["TF1"]
+        assert grn.find_common_targets("TF1", "TF3") == []
+
+    def test_regulatory_motifs_method(self):
+        grn = GeneRegulatoryNetwork("motifs")
+        grn.add_regulation("TF1", "TF2", confidence=0.9)
+        grn.add_regulation("TF2", "T", confidence=0.8)
+        grn.add_regulation("TF1", "T", confidence=0.7)
+        grn.add_regulation("TF3", "TF3", confidence=0.6)  # auto-regulation
+        grn.add_regulation("TF4", "TF5", confidence=0.6)
+        grn.add_regulation("TF5", "TF4", confidence=0.6)  # mutual regulation
+        for gene in ("TF1", "TF2", "TF3", "TF4", "TF5"):
+            grn.add_transcription_factor(gene)
+
+        motifs = grn.regulatory_motifs()
+        assert ["TF1", "TF2", "T"] in motifs["feed_forward"]
+        assert ["TF3"] in motifs["auto_regulation"]
+        assert ["TF4", "TF5"] in motifs["mutual_regulation"]
+
+    def test_network_summary(self):
+        grn = GeneRegulatoryNetwork.from_interactions([("TF1", "G1", 0.9)], name="sum")
+        summary = grn.network_summary()
+        assert summary["name"] == "sum"
+        assert summary["n_nodes"] == 2
+        assert summary["n_edges"] == 1
+        assert summary["n_tfs"] == 1
+        assert 0.0 <= summary["density"] <= 1.0
+        assert summary["motifs"]["feed_forward"] == 0
+
+
+class TestInferRegulatoryNetworkFromExpression:
+    def _expression_frame(self):
+        rng = np.random.default_rng(3)
+        tf1 = rng.normal(size=40)
+        # Genes as rows, samples as columns
+        return pd.DataFrame(
+            [
+                tf1,
+                tf1 + rng.normal(scale=0.05, size=40),  # strongly correlated with TF1
+                rng.normal(size=40),  # independent
+            ],
+            index=["TF1", "T1", "T2"],
+        )
+
+    def test_correlation_inference(self):
+        g = infer_regulatory_network_from_expression(
+            self._expression_frame(), regulators=["TF1"], method="correlation", threshold=0.5
+        )
+        assert g.has_edge("TF1", "T1")
+        assert not g.has_edge("TF1", "T2")
+        assert g["TF1"]["T1"]["method"] == "correlation"
+
+    def test_correlation_inference_removes_isolated_targets(self):
+        g = infer_regulatory_network_from_expression(
+            self._expression_frame(), regulators=["TF1"], method="correlation", threshold=0.99
+        )
+        assert "T2" not in g.nodes()  # isolated nodes removed
+
+    def test_mutual_info_inference(self):
+        g = infer_regulatory_network_from_expression(
+            self._expression_frame(), regulators=["TF1"], method="mutual_info", threshold=0.3
+        )
+        assert g.has_edge("TF1", "T1")
+        assert g["TF1"]["T1"]["method"] == "mutual_info"
+
+    def test_non_dataframe_input_raises(self):
+        with pytest.raises(ValueError, match="must be a pandas DataFrame"):
+            infer_regulatory_network_from_expression([[1.0, 2.0]], regulators=["TF1"])
+
+    def test_unknown_method_raises(self):
+        with pytest.raises(ValueError, match="Unknown inference method"):
+            infer_regulatory_network_from_expression(self._expression_frame(), regulators=["TF1"], method="granger")
+
+    def test_grnboost2_not_implemented(self):
+        with pytest.raises(NotImplementedError):
+            infer_regulatory_network_from_expression(self._expression_frame(), regulators=["TF1"], method="grnboost2")
+
+    def test_infer_grn_mutual_info_skips_unknown_tf_genes(self):
+        # Regression: unknown TF names used to crash with ValueError from list.index()
+        rng = np.random.default_rng(5)
+        expression = rng.normal(size=(30, 4))
+        gene_names = ["Gene_0", "Gene_1", "Gene_2", "Gene_3"]
+        grn = infer_grn(
+            expression_data=expression,
+            gene_names=gene_names,
+            method="mutual_info",
+            threshold=0.9,
+            tf_genes=["Gene_0", "UNKNOWN_TF"],
+        )
+        assert isinstance(grn, GeneRegulatoryNetwork)
+        assert "UNKNOWN_TF" not in grn.transcription_factors

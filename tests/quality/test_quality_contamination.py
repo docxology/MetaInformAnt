@@ -1,6 +1,9 @@
 """Tests for contamination detection functionality."""
 
+import pytest
+
 from metainformant.quality.analysis.contamination import (
+    ContaminationDetector,
     detect_adapter_contamination,
     detect_cross_species_contamination,
     detect_mycoplasma_contamination,
@@ -160,3 +163,60 @@ class TestContaminationReport:
 
         assert "METAINFORMANT Contamination Analysis Report" in report
         assert "Total samples analyzed: 0" in report
+
+
+class TestDetectorAdapterContamination:
+    """Regression tests for the class-based adapter detector."""
+
+    def test_sequence_counted_once_per_adapter(self):
+        """A sequence matching an adapter adds exactly one match."""
+        adapter = "AGATCGGAAGAG"
+        detector = ContaminationDetector()
+        sequences = [adapter + "TTTT", "GGGG" + adapter, "ACGTACGTACGTACGT"]
+
+        result = detector.detect_adapter_contamination(sequences)
+
+        entry = next(a for a in result["adapters"] if a["adapter_sequence"] == adapter)
+        assert entry["matches"] == 2
+        assert entry["contamination_rate"] == pytest.approx(2 / 3)
+
+    def test_coincidental_short_prefix_not_flagged(self):
+        """A read sharing the adapter's first bases without adapter DNA is clean."""
+        detector = ContaminationDetector()
+        # Shares 'AGATCGGAAA' prefix context with the TruSeq adapter but is not adapter DNA
+        sequences = ["AGATCGGAAATTACGGCATA"]
+
+        result = detector.detect_adapter_contamination(sequences)
+
+        assert result["detected"] is False
+
+
+class TestUserVectorCaseInsensitivity:
+    def test_user_vector_matches_uppercase_reads(self):
+        """User-supplied lowercase vectors match uppercase reads."""
+        sequences = ["TTTTGGGGCCCCAAAAGCGA"]  # matches no built-in vector
+
+        results = detect_vector_contamination(sequences, vector_sequences=["ttttggggccccaaaa"])
+
+        assert "0" in results
+        assert "ttttggggccccaaaa" in results["0"]
+
+
+class TestComprehensiveSeverity:
+    def test_severity_uses_actual_contamination_rates(self):
+        """Severity derives from detected rates, not a hardcoded default."""
+        detector = ContaminationDetector()
+        sequences = [
+            "AGATCGGAAGAGACGTAC",
+            "AGATCGGAAGAGTTTTTT",
+            "ACGTACGTACGTACGTA",
+        ]
+
+        result = detector.comprehensive_contamination_analysis(sequences)
+
+        assert result["summary"]["contamination_detected"] is True
+        expected = max(
+            a["contamination_rate"] for a in result["adapter_contamination"]["adapters"]
+        ) * 100
+        assert result["summary"]["overall_severity_score"] == pytest.approx(expected)
+        assert result["summary"]["severity_level"] == "high"

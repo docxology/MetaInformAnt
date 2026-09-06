@@ -7,6 +7,8 @@ using real file system operations (real-implementation policy).
 
 from __future__ import annotations
 
+import pytest
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -1004,6 +1006,23 @@ class TestSetupVdbConfig:
         # Empty dict is falsy -> treated as "no getfastq params" -> returns unchanged
         result = setup_vdb_config(config, steps)
         assert result == steps
+
+    def test_disk_guard_failure_propagates(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The fail-closed disk guard must not be swallowed by the best-effort
+        SRA-environment setup: a critically full disk aborts planning."""
+
+        def _raise_disk_guard(*args: Any, **kwargs: Any) -> float:
+            raise RuntimeError("CRITICAL: Disk space too low")
+
+        monkeypatch.setattr(
+            "metainformant.rna.engine.workflow_steps.check_disk_space_or_fail",
+            _raise_disk_guard,
+        )
+        config = _make_config(tmp_path)
+        steps: List[Tuple[str, Dict[str, Any]]] = [("getfastq", {"out_dir": str(tmp_path / "fastq")})]
+
+        with pytest.raises(RuntimeError, match="CRITICAL: Disk space too low"):
+            setup_vdb_config(config, steps)
 
 
 # ===================================================================

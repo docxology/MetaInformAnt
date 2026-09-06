@@ -1,10 +1,14 @@
 # Networks Module
 
-Biological network construction, community detection, and pathway analysis for protein-protein interaction, regulatory, and co-expression networks.
+Biological network construction, graph algorithms, community detection, and
+pathway analysis for protein-protein interaction, regulatory, and co-expression
+networks.
 
 ## Overview
 
-Biological network construction, community detection, and pathway analysis for protein-protein interaction, regulatory, and co-expression networks.
+Biological network construction, graph algorithms, community detection, and
+pathway analysis for protein-protein interaction, regulatory, and co-expression
+networks.
 
 
 ## Table of Contents
@@ -47,11 +51,11 @@ graph TD
 ```python
 from metainformant.networks.analysis.graph import create_network, centrality_measures, network_metrics
 
-# Build a biological network
-G = create_network(nodes=["TP53", "BRCA1", "MDM2"], directed=False)
+# Build a biological network from an edge list
+G = create_network([("TP53", "MDM2"), ("BRCA1", "TP53")], directed=False)
 
 # Compute centrality and topology
-centrality = centrality_measures(G, methods=["degree", "betweenness", "closeness"])
+centrality = centrality_measures(G)
 metrics = network_metrics(G)
 ```
 
@@ -60,7 +64,7 @@ metrics = network_metrics(G)
 | Function | Module | Description |
 |----------|--------|-------------|
 | `louvain_communities` | `analysis.community` | Louvain modularity optimization |
-| `label_propagation` | `analysis.community` | Label propagation clustering |
+| `label_propagation_communities` | `analysis.community` | Label propagation clustering |
 | `centrality_measures` | `analysis.graph` | Degree, betweenness, closeness centrality |
 | `get_connected_components` | `analysis.graph` | Connected component extraction |
 
@@ -92,7 +96,7 @@ from metainformant.networks.analysis.community import louvain_communities
 from metainformant.networks.analysis.pathway import pathway_enrichment_analysis
 
 # Build and analyze a PPI network
-G = create_network(nodes=gene_list)
+G = create_network(gene_list)
 G = add_edges_from_interactions(G, interaction_pairs)
 
 # Detect protein complexes via community detection

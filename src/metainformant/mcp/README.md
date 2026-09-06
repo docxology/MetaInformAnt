@@ -24,6 +24,7 @@ from metainformant.mcp.tools import amalgkit_monitor
 | `registry` | Declarative `Tool`/`ToolRegistry` with schema validation | Implemented |
 | `tool_adapters` | Bundled tool adapters wired into the default registry | Implemented |
 | `tools.amalgkit_monitor` | Inspect local Amalgkit/RNA workflow progress | Implemented |
+| `tools.catalog` | Adapts the 20 `TOOL_SPEC` tools from `tools/*_tools.py` into the default registry | Implemented |
 
 ## Quick Start (client)
 

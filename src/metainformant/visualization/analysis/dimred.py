@@ -39,6 +39,72 @@ except ImportError:
     HAS_SKLEARN = False
 
 
+def _save_plot(ax: Axes, output_path: str | Path, label: str) -> str:
+    """Ensure the output directory exists and save the plotted figure deterministically.
+
+    Consolidates the repeated ensure_directory / save_figure_deterministic / logger
+    triple used by every plot function in this module. Saves ``ax.figure`` so the
+    plotted figure is written even when a different pyplot figure is current.
+    """
+    paths.ensure_directory(Path(output_path).parent)
+    save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+    logger.info(f"{label} saved to {output_path}")
+    return str(output_path)
+
+
+def _prepare_embedding_data(data: np.ndarray | pd.DataFrame, n_components: int) -> np.ndarray:
+    """Validate embedding input data and component count (shared by PCA/UMAP/t-SNE plots)."""
+    validation.validate_type(data, (np.ndarray, pd.DataFrame), "data")
+
+    data_array = data.values if isinstance(data, pd.DataFrame) else data
+
+    if data_array.ndim != 2:
+        raise ValueError("Data must be 2D")
+
+    if n_components not in (2, 3):
+        raise ValueError("n_components must be 2 or 3")
+
+    return data_array
+
+
+def _plot_embedding(
+    ax: Axes | None,
+    result: np.ndarray,
+    n_components: int,
+    axis_labels: tuple[str, str, str],
+    titles: tuple[str, str],
+    **kwargs: Any,
+) -> Axes:
+    """Scatter a 2- or 3-column embedding onto ``ax`` (creating axes as needed).
+
+    Shared scaffolding for the PCA/UMAP/t-SNE scatter plots; ``axis_labels`` are
+    the x/y(/z) axis labels and ``titles`` the 2D/3D plot titles.
+    """
+    if n_components == 2:
+        if ax is None:
+            fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 6)))
+
+        ax.scatter(result[:, 0], result[:, 1], **kwargs)
+        ax.set_xlabel(axis_labels[0])
+        ax.set_ylabel(axis_labels[1])
+        ax.set_title(titles[0])
+    else:  # 3D
+        if ax is None:
+            fig = plt.figure(figsize=kwargs.pop("figsize", (10, 8)))
+            ax = fig.add_subplot(111, projection="3d")
+
+        # mpl_toolkits.mplot3d exposes no mypy-visible stubs; the 3D axes are
+        # dynamically typed here so scatter's zs slot and set_zlabel resolve.
+        ax_3d: Any = ax
+        ax_3d.scatter(result[:, 0], result[:, 1], result[:, 2], **kwargs)
+        ax_3d.set_xlabel(axis_labels[0])
+        ax_3d.set_ylabel(axis_labels[1])
+        ax_3d.set_zlabel(axis_labels[2])
+        ax_3d.set_title(titles[1])
+
+    return ax
+
+
 def plot_pca(
     data: np.ndarray | pd.DataFrame,
     *,
@@ -66,49 +132,28 @@ def plot_pca(
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for PCA plotting")
 
-    validation.validate_type(data, (np.ndarray, pd.DataFrame), "data")
-
-    if isinstance(data, pd.DataFrame):
-        data_array = data.values
-    else:
-        data_array = data
-
-    if data_array.ndim != 2:
-        raise ValueError("Data must be 2D")
-
-    if n_components not in [2, 3]:
-        raise ValueError("n_components must be 2 or 3")
+    data_array = _prepare_embedding_data(data, n_components)
 
     # Perform PCA
     pca = PCA(n_components=n_components)
     pca_result = pca.fit_transform(data_array)
+    evr = pca.explained_variance_ratio_
 
-    if n_components == 2:
-        if ax is None:
-            fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 6)))
-
-        ax.scatter(pca_result[:, 0], pca_result[:, 1], **kwargs)
-        ax.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0]:.1%} variance)")
-        ax.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1]:.1%} variance)")
-        ax.set_title("PCA Plot")
-    else:  # 3D
-        if ax is None:
-            fig = plt.figure(figsize=kwargs.pop("figsize", (10, 8)))
-            ax = fig.add_subplot(111, projection="3d")
-
-        # mpl_toolkits.mplot3d exposes no mypy-visible stubs; the 3D axes are
-        # dynamically typed here so scatter's zs slot and set_zlabel resolve.
-        ax_3d: Any = ax
-        ax_3d.scatter(pca_result[:, 0], pca_result[:, 1], pca_result[:, 2], **kwargs)
-        ax_3d.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0]:.1%} variance)")
-        ax_3d.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1]:.1%} variance)")
-        ax_3d.set_zlabel(f"PC3 ({pca.explained_variance_ratio_[2]:.1%} variance)")
-        ax_3d.set_title("3D PCA Plot")
+    ax = _plot_embedding(
+        ax,
+        pca_result,
+        n_components,
+        axis_labels=(
+            f"PC1 ({evr[0]:.1%} variance)",
+            f"PC2 ({evr[1]:.1%} variance)",
+            f"PC3 ({evr[2]:.1%} variance)" if n_components == 3 else "",
+        ),
+        titles=("PCA Plot", "3D PCA Plot"),
+        **kwargs,
+    )
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"PCA plot saved to {output_path}")
+        _save_plot(ax, output_path, "PCA plot")
 
     return ax
 
@@ -142,49 +187,23 @@ def plot_umap(
     except ImportError:
         raise ImportError("umap-learn required for UMAP plotting")
 
-    validation.validate_type(data, (np.ndarray, pd.DataFrame), "data")
-
-    if isinstance(data, pd.DataFrame):
-        data_array = data.values
-    else:
-        data_array = data
-
-    if data_array.ndim != 2:
-        raise ValueError("Data must be 2D")
-
-    if n_components not in [2, 3]:
-        raise ValueError("n_components must be 2 or 3")
+    data_array = _prepare_embedding_data(data, n_components)
 
     # Perform UMAP
     reducer = umap.UMAP(n_components=n_components, random_state=42)
     umap_result = reducer.fit_transform(data_array)
 
-    if n_components == 2:
-        if ax is None:
-            fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 6)))
-
-        ax.scatter(umap_result[:, 0], umap_result[:, 1], **kwargs)
-        ax.set_xlabel("UMAP 1")
-        ax.set_ylabel("UMAP 2")
-        ax.set_title("UMAP Plot")
-    else:  # 3D
-        if ax is None:
-            fig = plt.figure(figsize=kwargs.pop("figsize", (10, 8)))
-            ax = fig.add_subplot(111, projection="3d")
-
-        # mpl_toolkits.mplot3d exposes no mypy-visible stubs; the 3D axes are
-        # dynamically typed here so scatter's zs slot and set_zlabel resolve.
-        ax_3d: Any = ax
-        ax_3d.scatter(umap_result[:, 0], umap_result[:, 1], umap_result[:, 2], **kwargs)
-        ax_3d.set_xlabel("UMAP 1")
-        ax_3d.set_ylabel("UMAP 2")
-        ax_3d.set_zlabel("UMAP 3")
-        ax_3d.set_title("3D UMAP Plot")
+    ax = _plot_embedding(
+        ax,
+        umap_result,
+        n_components,
+        axis_labels=("UMAP 1", "UMAP 2", "UMAP 3"),
+        titles=("UMAP Plot", "3D UMAP Plot"),
+        **kwargs,
+    )
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"UMAP plot saved to {output_path}")
+        _save_plot(ax, output_path, "UMAP plot")
 
     return ax
 
@@ -221,18 +240,7 @@ def plot_tsne(
     except ImportError:
         raise ImportError("scikit-learn required for t-SNE plotting")
 
-    validation.validate_type(data, (np.ndarray, pd.DataFrame), "data")
-
-    if isinstance(data, pd.DataFrame):
-        data_array = data.values
-    else:
-        data_array = data
-
-    if data_array.ndim != 2:
-        raise ValueError("Data must be 2D")
-
-    if n_components not in [2, 3]:
-        raise ValueError("n_components must be 2 or 3")
+    data_array = _prepare_embedding_data(data, n_components)
 
     # Perform t-SNE (may be slow for large datasets)
     # Perplexity must be less than n_samples; default to min(30, n-1)
@@ -240,32 +248,17 @@ def plot_tsne(
     tsne = TSNE(n_components=n_components, perplexity=perplexity, random_state=42)
     tsne_result = tsne.fit_transform(data_array)
 
-    if n_components == 2:
-        if ax is None:
-            fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 6)))
-
-        ax.scatter(tsne_result[:, 0], tsne_result[:, 1], **kwargs)
-        ax.set_xlabel("t-SNE 1")
-        ax.set_ylabel("t-SNE 2")
-        ax.set_title("t-SNE Plot")
-    else:  # 3D
-        if ax is None:
-            fig = plt.figure(figsize=kwargs.pop("figsize", (10, 8)))
-            ax = fig.add_subplot(111, projection="3d")
-
-        # mpl_toolkits.mplot3d exposes no mypy-visible stubs; the 3D axes are
-        # dynamically typed here so scatter's zs slot and set_zlabel resolve.
-        ax_3d: Any = ax
-        ax_3d.scatter(tsne_result[:, 0], tsne_result[:, 1], tsne_result[:, 2], **kwargs)
-        ax_3d.set_xlabel("t-SNE 1")
-        ax_3d.set_ylabel("t-SNE 2")
-        ax_3d.set_zlabel("t-SNE 3")
-        ax_3d.set_title("3D t-SNE Plot")
+    ax = _plot_embedding(
+        ax,
+        tsne_result,
+        n_components,
+        axis_labels=("t-SNE 1", "t-SNE 2", "t-SNE 3"),
+        titles=("t-SNE Plot", "3D t-SNE Plot"),
+        **kwargs,
+    )
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"t-SNE plot saved to {output_path}")
+        _save_plot(ax, output_path, "t-SNE plot")
 
     return ax
 
@@ -311,8 +304,8 @@ def plot_pca_loadings(
     ax.scatter(loadings[:, 0], loadings[:, 1], **kwargs)
 
     # Add feature labels if available
-    if hasattr(pca_model, "_feature_names_in"):
-        feature_names = pca_model._feature_names_in
+    if hasattr(pca_model, "feature_names_in_"):
+        feature_names = pca_model.feature_names_in_
         for i, name in enumerate(feature_names):
             ax.annotate(
                 name, (loadings[i, 0], loadings[i, 1]), xytext=(5, 5), textcoords="offset points", fontsize=8, alpha=0.8
@@ -325,9 +318,7 @@ def plot_pca_loadings(
     ax.set_title("PCA Loadings Plot")
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"PCA loadings plot saved to {output_path}")
+        _save_plot(ax, output_path, "PCA loadings plot")
 
     return ax
 
@@ -363,11 +354,9 @@ def biplot(
 
     if isinstance(data, pd.DataFrame):
         data_array = data.values
-        data.index.tolist()
         feature_names = data.columns.tolist()
     else:
         data_array = data
-        [f"Sample_{i}" for i in range(data_array.shape[0])]
         feature_names = [f"Feature_{i}" for i in range(data_array.shape[1])]
 
     # Validate PCA model
@@ -418,8 +407,6 @@ def biplot(
     ax.legend()
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"PCA biplot saved to {output_path}")
+        _save_plot(ax, output_path, "PCA biplot")
 
     return ax

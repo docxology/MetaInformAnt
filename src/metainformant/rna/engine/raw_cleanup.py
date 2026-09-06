@@ -10,6 +10,7 @@ metadata, indexes, quantification tables, and evidence are never candidates.
 
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 from typing import Any, Iterator
@@ -33,6 +34,17 @@ def _is_raw_read_name(name: str) -> bool:
     return name.endswith(_RAW_SUFFIXES) or ".fastq.gz.invalid" in name
 
 
+def _has_accession_boundary(name: str, run_accession: str) -> bool:
+    """Return whether *name* addresses *run_accession*, not a longer accession.
+
+    A valid accession can be a strict prefix of another (``SRR123456`` and
+    ``SRR1234567``); a flat downloader output always carries ``_`` or ``.``
+    directly after the accession stem.
+    """
+
+    return name.startswith(f"{run_accession}_") or name.startswith(f"{run_accession}.")
+
+
 def _sample_input_roots(work_dir: Path, run_accession: str) -> Iterator[Path]:
     """Yield supported per-sample input directories without following links."""
 
@@ -49,7 +61,7 @@ def _flat_input_files(work_dir: Path, run_accession: str) -> Iterator[Path]:
         if not base.is_dir():
             continue
         for path in base.iterdir():
-            if path.is_file() and path.name.startswith(run_accession) and _is_raw_read_name(path.name):
+            if path.is_file() and _has_accession_boundary(path.name, run_accession) and _is_raw_read_name(path.name):
                 yield path
 
 
@@ -89,9 +101,10 @@ def reclaim_sample_raw_inputs(
             result["protected_paths"].append(str(candidate))
             result["errors"].append(f"refused to follow symlinked raw directory: {candidate}")
             continue
-        for path in candidate.rglob("*"):
-            if path.is_file() and _is_raw_read_name(path.name):
-                files.append(path)
+        for dirpath, _dirnames, filenames in os.walk(candidate, followlinks=False):
+            for name in filenames:
+                if _is_raw_read_name(name):
+                    files.append(Path(dirpath) / name)
 
     seen: set[Path] = set()
     for path in files:
@@ -105,11 +118,11 @@ def reclaim_sample_raw_inputs(
         seen.add(resolved)
         try:
             size = path.stat().st_size
+            if not dry_run:
+                path.unlink()
             result["bytes_freed"] += size
             result["files_deleted"] += 1
             result["paths"].append(str(path))
-            if not dry_run:
-                path.unlink()
         except OSError as exc:
             result["errors"].append(f"{path}: {exc}")
 

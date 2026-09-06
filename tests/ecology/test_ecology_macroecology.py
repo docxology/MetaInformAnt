@@ -22,6 +22,8 @@ from __future__ import annotations
 
 from typing import List
 
+from metainformant.core.utils.errors import ValidationError
+
 import matplotlib
 
 matplotlib.use("Agg")
@@ -177,8 +179,8 @@ class TestFitLogseries:
         assert result["alpha"] == 0.0
 
     def test_logseries_empty_raises(self) -> None:
-        """Empty input raises ValueError."""
-        with pytest.raises((ValueError, Exception)):
+        """Empty input raises ValidationError."""
+        with pytest.raises(ValidationError):
             fit_logseries([])
 
     def test_logseries_realistic(self, realistic_abundances: List[float]) -> None:
@@ -221,6 +223,13 @@ class TestFitLognormal:
         """Single species yields sigma=0."""
         result = fit_lognormal([100])
         assert result["sigma"] == 0.0
+
+    def test_lognormal_octave_zero_spans_one_to_two(self) -> None:
+        """Octave 0 integrates [1, 2): a=1 species fall in octave 0 (regression)."""
+        result = fit_lognormal([1, 1, 1, 2])
+        # Octave 0 holds the three a=1 species; octave 1 holds a=2
+        assert result["expected_frequencies"][0] > 0
+        assert len(result["expected_frequencies"]) == 2
 
 
 # ============================================================================
@@ -429,13 +438,22 @@ class TestDistanceDecay:
     def test_decay_b_positive(self) -> None:
         """Decay rate b should be positive for declining similarity."""
         result = distance_decay([1, 5, 10, 20], [0.9, 0.6, 0.3, 0.1])
-        # At least one model should have b > 0
-        assert result["exponential"]["b"] > -10  # b is negated in the code
+        assert result["exponential"]["b"] > 0  # declining similarity -> positive decay rate
 
     def test_decay_mismatched_lengths_raises(self) -> None:
         """Mismatched lengths raise ValueError."""
         with pytest.raises(ValueError, match="same length"):
             distance_decay([1, 5], [0.9])
+
+    def test_bootstrap_ci_all_resamples_failed_raises(self) -> None:
+        """If every resample fails, an error surfaces instead of (0.0, 0.0)."""
+        from metainformant.ecology.analysis.macroecology import bootstrap_ci
+
+        def always_fails(_x, _y):
+            raise ValueError("boom")
+
+        with pytest.raises(ValueError, match="bootstrap resamples failed"):
+            bootstrap_ci([1.0, 2.0, 3.0, 4.0], [1.0, 2.0, 3.0, 4.0], always_fails, n_bootstrap=10)
 
     def test_decay_too_few_points_raises(self) -> None:
         """Fewer than 2 points raise ValueError."""
@@ -747,9 +765,5 @@ class TestVisualization:
         """Saving a plot to a file via output_path works."""
         data = np.array([50, 30, 20, 10], dtype=float)
         outfile = tmp_path / "test_plot.png"
-        # The function saves to parent dir path returned by ensure_directory
-        # We just verify it doesn't raise
-        ax = plot_species_abundance_distribution(data)
-        fig = ax.get_figure()
-        fig.savefig(str(outfile), dpi=72)
+        plot_species_abundance_distribution(data, output_path=str(outfile))
         assert outfile.exists()

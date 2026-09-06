@@ -41,7 +41,11 @@ TOOL_SPEC_MODULES: tuple[str, ...] = (
 
 
 def iter_tool_specs() -> Iterator[dict[str, Any]]:
-    """Yield every registered TOOL_SPEC across the catalog modules."""
+    """Yield every registered TOOL_SPEC across the catalog modules.
+
+    A module that declares neither ``ALL_SPECS`` nor ``TOOL_SPEC`` is a wiring
+    mistake and fails loudly instead of silently dropping its tools.
+    """
     for module_name in TOOL_SPEC_MODULES:
         module = importlib.import_module(module_name)
         specs = getattr(module, "ALL_SPECS", None)
@@ -49,7 +53,11 @@ def iter_tool_specs() -> Iterator[dict[str, Any]]:
             spec = getattr(module, "TOOL_SPEC", None)
             if spec is not None:
                 specs = [spec]
-        yield from specs or []
+        if not specs:
+            raise ValueError(
+                f"module {module_name!r} declares no TOOL_SPEC/ALL_SPECS constant"
+            )
+        yield from specs
 
 
 def _adapt_handler(handler: Any) -> Any:

@@ -59,8 +59,6 @@ def plot_event_timeline(
     events = sorted(events, key=lambda x: x.timestamp)
 
     # Plot events
-    [event.timestamp for event in events]
-    [event.event_type for event in events]
 
     # Create scatter plot with different colors for domains
     domains = [event.domain for event in events] if hasattr(events[0], "domain") else ["default"] * len(events)
@@ -395,7 +393,6 @@ def plot_temporal_patterns(
     if all_timestamps:
         min_time = min(all_timestamps)
         max_time = max(all_timestamps)
-        max_time - min_time
 
         for i, seq in enumerate(sequences):
             seq_color = colors[i]

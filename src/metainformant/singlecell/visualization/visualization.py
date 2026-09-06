@@ -28,6 +28,46 @@ except ImportError:
     logger.warning("matplotlib not available - visualization functions will return None")
 
 
+def _scatter_obs(
+    ax: Any,
+    x: np.ndarray,
+    y: np.ndarray,
+    data: SingleCellData,
+    color: Optional[str],
+    kwargs: dict,
+) -> None:
+    """Scatter-plot embedding coordinates, coloring by an obs column when given."""
+    alpha = kwargs.get("alpha", 0.6)
+    size = kwargs.get("s", 20)
+
+    if color and data.obs is not None and color in data.obs.columns:
+        colors = data.obs[color].values
+
+        # Handle categorical colors
+        if not np.issubdtype(colors.dtype, np.number):
+            unique_colors = np.unique(colors)
+            color_map = plt.cm.tab10(np.linspace(0, 1, len(unique_colors)))
+            color_dict = dict(zip(unique_colors, color_map))
+
+            for cat, cat_color in color_dict.items():
+                mask = colors == cat
+                ax.scatter(x[mask], y[mask], c=[cat_color], label=str(cat), alpha=alpha, s=size)
+
+            ax.legend(title=color, bbox_to_anchor=(1.05, 1), loc="upper left")
+        else:
+            scatter = ax.scatter(
+                x,
+                y,
+                c=colors,
+                cmap=kwargs.get("cmap", "viridis"),
+                alpha=alpha,
+                s=size,
+            )
+            plt.colorbar(scatter, ax=ax, label=color)
+    else:
+        ax.scatter(x, y, alpha=alpha, s=size)
+
+
 def plot_umap(data: SingleCellData, color: Optional[str] = None, **kwargs: Any) -> Any:
     """Create UMAP plot of single-cell data.
 
@@ -64,40 +104,7 @@ def plot_umap(data: SingleCellData, color: Optional[str] = None, **kwargs: Any) 
     y = data.obs[y_col].values
 
     # Color handling
-    if color and data.obs is not None and color in data.obs.columns:
-        colors = data.obs[color].values
-
-        # Handle categorical colors
-        if not np.issubdtype(colors.dtype, np.number):
-            unique_colors = np.unique(colors)
-            color_map = plt.cm.tab10(np.linspace(0, 1, len(unique_colors)))
-            color_dict = dict(zip(unique_colors, color_map))
-
-            for cat, cat_color in color_dict.items():
-                mask = colors == cat
-                ax.scatter(
-                    x[mask],
-                    y[mask],
-                    c=[cat_color],
-                    label=str(cat),
-                    alpha=kwargs.get("alpha", 0.6),
-                    s=kwargs.get("s", 20),
-                )
-
-            ax.legend(title=color, bbox_to_anchor=(1.05, 1), loc="upper left")
-        else:
-            scatter = ax.scatter(
-                x,
-                y,
-                c=colors,
-                cmap=kwargs.get("cmap", "viridis"),
-                alpha=kwargs.get("alpha", 0.6),
-                s=kwargs.get("s", 20),
-            )
-            plt.colorbar(scatter, ax=ax, label=color)
-    else:
-        ax.scatter(x, y, alpha=kwargs.get("alpha", 0.6), s=kwargs.get("s", 20))
-
+    _scatter_obs(ax, x, y, data, color, kwargs)
     ax.set_xlabel(x_col)
     ax.set_ylabel(y_col)
     ax.set_title("UMAP Projection")
@@ -142,39 +149,7 @@ def plot_tsne(data: SingleCellData, color: Optional[str] = None, **kwargs: Any) 
     y = data.obs[y_col].values
 
     # Color handling (same as UMAP)
-    if color and data.obs is not None and color in data.obs.columns:
-        colors = data.obs[color].values
-
-        if not np.issubdtype(colors.dtype, np.number):
-            unique_colors = np.unique(colors)
-            color_map = plt.cm.tab10(np.linspace(0, 1, len(unique_colors)))
-            color_dict = dict(zip(unique_colors, color_map))
-
-            for cat, cat_color in color_dict.items():
-                mask = colors == cat
-                ax.scatter(
-                    x[mask],
-                    y[mask],
-                    c=[cat_color],
-                    label=str(cat),
-                    alpha=kwargs.get("alpha", 0.6),
-                    s=kwargs.get("s", 20),
-                )
-
-            ax.legend(title=color, bbox_to_anchor=(1.05, 1), loc="upper left")
-        else:
-            scatter = ax.scatter(
-                x,
-                y,
-                c=colors,
-                cmap=kwargs.get("cmap", "viridis"),
-                alpha=kwargs.get("alpha", 0.6),
-                s=kwargs.get("s", 20),
-            )
-            plt.colorbar(scatter, ax=ax, label=color)
-    else:
-        ax.scatter(x, y, alpha=kwargs.get("alpha", 0.6), s=kwargs.get("s", 20))
-
+    _scatter_obs(ax, x, y, data, color, kwargs)
     ax.set_xlabel(x_col)
     ax.set_ylabel(y_col)
     ax.set_title("t-SNE Projection")
@@ -225,39 +200,7 @@ def plot_pca(data: SingleCellData, color: Optional[str] = None, n_components: in
         x = data.obs[x_col].values
         y = data.obs[y_col].values
 
-        if color and data.obs is not None and color in data.obs.columns:
-            colors = data.obs[color].values
-
-            if not np.issubdtype(colors.dtype, np.number):
-                unique_colors = np.unique(colors)
-                color_map = plt.cm.tab10(np.linspace(0, 1, len(unique_colors)))
-                color_dict = dict(zip(unique_colors, color_map))
-
-                for cat, cat_color in color_dict.items():
-                    mask = colors == cat
-                    ax.scatter(
-                        x[mask],
-                        y[mask],
-                        c=[cat_color],
-                        label=str(cat),
-                        alpha=kwargs.get("alpha", 0.6),
-                        s=kwargs.get("s", 20),
-                    )
-
-                ax.legend(title=color, bbox_to_anchor=(1.05, 1), loc="upper left")
-            else:
-                scatter = ax.scatter(
-                    x,
-                    y,
-                    c=colors,
-                    cmap=kwargs.get("cmap", "viridis"),
-                    alpha=kwargs.get("alpha", 0.6),
-                    s=kwargs.get("s", 20),
-                )
-                plt.colorbar(scatter, ax=ax, label=color)
-        else:
-            ax.scatter(x, y, alpha=kwargs.get("alpha", 0.6), s=kwargs.get("s", 20))
-
+        _scatter_obs(ax, x, y, data, color, kwargs)
         ax.set_xlabel(x_col)
         ax.set_ylabel(y_col)
         ax.set_title("PCA Projection")
@@ -574,16 +517,22 @@ def plot_qc_metrics(data: SingleCellData, **kwargs: Any) -> Any:
 
     validation.validate_type(data, SingleCellData, "data")
 
-    if data.obs is None or "n_counts" not in data.obs.columns:
+    if data.obs is None:
         logger.warning("QC metrics not found. Run calculate_qc_metrics first.")
-        data = data  # Would call calculate_qc_metrics in real implementation
+        counts_col = None
+        mito_col = None
+    else:
+        counts_col = next((c for c in ("total_counts", "n_counts") if c in data.obs.columns), None)
+        mito_col = next((c for c in ("pct_mt", "pct_mito") if c in data.obs.columns), None)
+        if counts_col is None:
+            logger.warning("QC metrics not found. Run calculate_qc_metrics first.")
 
     fig, axes = plt.subplots(2, 2, figsize=kwargs.get("figsize", (12, 10)))
 
     # Histogram of total counts
-    if "n_counts" in data.obs.columns:
-        axes[0, 0].hist(data.obs["n_counts"], bins=50, alpha=0.7, color="blue", edgecolor="black")
-        axes[0, 0].axvline(data.obs["n_counts"].median(), color="red", linestyle="--", label="Median")
+    if counts_col is not None:
+        axes[0, 0].hist(data.obs[counts_col], bins=50, alpha=0.7, color="blue", edgecolor="black")
+        axes[0, 0].axvline(data.obs[counts_col].median(), color="red", linestyle="--", label="Median")
         axes[0, 0].set_xlabel("Total Counts")
         axes[0, 0].set_ylabel("Number of Cells")
         axes[0, 0].set_title("Total Counts Distribution")
@@ -599,16 +548,16 @@ def plot_qc_metrics(data: SingleCellData, **kwargs: Any) -> Any:
         axes[0, 1].legend()
 
     # Scatter plot: counts vs genes
-    if "n_counts" in data.obs.columns and "n_genes" in data.obs.columns:
-        axes[1, 0].scatter(data.obs["n_counts"], data.obs["n_genes"], alpha=0.6, s=20, color="purple")
+    if counts_col is not None and "n_genes" in data.obs.columns:
+        axes[1, 0].scatter(data.obs[counts_col], data.obs["n_genes"], alpha=0.6, s=20, color="purple")
         axes[1, 0].set_xlabel("Total Counts")
         axes[1, 0].set_ylabel("Number of Genes")
         axes[1, 0].set_title("Counts vs Genes")
 
     # Mitochondrial percentage histogram
-    if "pct_mito" in data.obs.columns:
-        axes[1, 1].hist(data.obs["pct_mito"], bins=50, alpha=0.7, color="red", edgecolor="black")
-        axes[1, 1].axvline(data.obs["pct_mito"].median(), color="blue", linestyle="--", label="Median")
+    if mito_col is not None:
+        axes[1, 1].hist(data.obs[mito_col], bins=50, alpha=0.7, color="red", edgecolor="black")
+        axes[1, 1].axvline(data.obs[mito_col].median(), color="blue", linestyle="--", label="Median")
         axes[1, 1].set_xlabel("Mitochondrial Percentage")
         axes[1, 1].set_ylabel("Number of Cells")
         axes[1, 1].set_title("Mitochondrial Content")

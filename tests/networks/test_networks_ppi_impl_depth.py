@@ -590,3 +590,38 @@ class TestUtilityFunctions:
         out = tmp_path / "all.tsv"
         export_to_string_format(net, out)
         assert len(out.read_text().strip().splitlines()) == 3  # header + 2 edges
+
+
+class TestDegenerateInputs:
+    """Regression tests: graph corner cases must not raise ZeroDivisionError."""
+
+    def test_similarity_with_isolated_proteins(self) -> None:
+        import networkx as nx
+
+        g = nx.Graph()
+        g.add_edge("A", "B", weight=1.0)
+        g.add_node("ISO1")
+        g.add_node("ISO2")
+        net = ProteinNetwork(graph=g)
+        preds = predict_interactions(["ISO1"], known_network=net, method="similarity")
+        assert preds["ISO1"] == []
+
+    def test_enrichment_with_single_protein_background(self) -> None:
+        import networkx as nx
+
+        g = nx.Graph()
+        g.add_node("A")
+        result = ppi_network_enrichment(["A"], g)
+        assert result["test_proteins"] == 1
+        assert result["observed_interactions"] == 0
+        assert result["expected_interactions"] == 0.0
+        assert result["enrichment_ratio"] == 1.0
+
+    def test_comparison_of_empty_networks(self) -> None:
+        import networkx as nx
+
+        comp = ppi_network_comparison(nx.Graph(), nx.Graph())
+        assert comp["protein_overlap"]["common_proteins"] == 0
+        assert comp["protein_overlap"]["jaccard_similarity"] == 0.0
+        assert comp["interaction_overlap"]["common_interactions"] == 0
+        assert comp["interaction_overlap"]["jaccard_similarity"] == 0.0

@@ -8,7 +8,7 @@ Tests for LLM module.
 - **Component Type**: Test Suite
 
 ## 💾 Data Structures
-- **Modules**: 3 Python modules
+- **Modules**: 5 Python modules
 - **Key Concepts**: Refer to Pydantic models in source.
 
 ## 🔌 API Definition
@@ -16,3 +16,5 @@ Tests for LLM module.
 - `__init__.py`
 - `test_ollama_chains.py`
 - `test_ollama_client.py`
+- `test_ollama_local_server.py`
+- `test_ollama_prompts.py`

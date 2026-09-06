@@ -21,5 +21,3 @@ __all__ = [
     "plot_sequence_length_distribution",
     "plot_domain_distribution",
 ]
-
-__all__ = ["network", "statistical", "timeline"]

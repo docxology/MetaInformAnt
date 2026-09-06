@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 import statistics
+from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -16,6 +17,8 @@ import numpy as np
 from scipy import stats
 
 from metainformant.core.utils import logging
+from metainformant.quality.io.fastq import analyze_fastq_quality
+
 
 logger = logging.get_logger(__name__)
 
@@ -42,12 +45,12 @@ def calculate_quality_score(data: Dict[str, Any], data_type: str = "fastq") -> D
 
 def _calculate_fastq_quality_score(data: Dict[str, Any]) -> Dict[str, Any]:
     """Calculate quality score for FASTQ data."""
-    score_components = {}
+    score_components: Dict[str, Dict[str, Any]] = {}
 
     # Basic statistics component (40% weight)
     if "basic_statistics" in data:
-        stats = data["basic_statistics"]
-        mean_qual = stats.get("mean_quality", 0)
+        basic = data["basic_statistics"]
+        mean_qual = basic.get("mean_quality", 0)
         # Quality score: 0-40 points based on mean quality
         qual_score = min(40, max(0, (mean_qual - 20) * 2))  # 20 = 0 points, 40 = 40 points
         score_components["basic_quality"] = {
@@ -71,7 +74,7 @@ def _calculate_fastq_quality_score(data: Dict[str, Any]) -> Dict[str, Any]:
                 degradation = initial_mean - final_mean
 
                 # Score: 0-30 points, penalty for >5 point degradation
-                pbq_score = max(0, 30 - degradation * 2)
+                pbq_score = min(30, max(0, 30 - degradation * 2))
                 score_components["per_base_quality"] = {
                     "score": pbq_score,
                     "weight": 0.3,
@@ -115,23 +118,7 @@ def _calculate_fastq_quality_score(data: Dict[str, Any]) -> Dict[str, Any]:
             "details": f"Max adapter content: {max_adapter_percent:.1f}%",
         }
 
-    # Calculate total score
-    total_score = 0
-    max_score = 0
-
-    for component in score_components.values():
-        total_score += component["score"]
-        max_score += component["score"] / component["weight"] * component["weight"]
-
-    overall_score = (total_score / max_score * 100) if max_score > 0 else 0
-
-    return {
-        "overall_score": overall_score,
-        "total_score": total_score,
-        "max_possible_score": max_score,
-        "components": score_components,
-        "grade": _score_to_grade(overall_score),
-    }
+    return _finalize_score(score_components)
 
 
 def _calculate_vcf_quality_score(data: Dict[str, Any]) -> Dict[str, Any]:
@@ -198,13 +185,6 @@ def _calculate_vcf_quality_score(data: Dict[str, Any]) -> Dict[str, Any]:
                 "details": f"Mean GQ: {mean_gq:.1f}",
             }
 
-    # Calculate total score
-    total_score = sum(c["score"] for c in score_components.values())
-    max_score = (
-        sum(c["score"] / c["weight"] * c["weight"] for c in score_components.values()) if score_components else 100
-    )
-    overall_score = (total_score / max_score * 100) if max_score > 0 else 0
-
     # If no components were calculated, return error state
     if not score_components:
         return {
@@ -214,13 +194,7 @@ def _calculate_vcf_quality_score(data: Dict[str, Any]) -> Dict[str, Any]:
             "error": "No VCF quality metrics provided - cannot calculate score",
         }
 
-    return {
-        "overall_score": overall_score,
-        "total_score": total_score,
-        "max_possible_score": max_score,
-        "components": score_components,
-        "grade": _score_to_grade(overall_score),
-    }
+    return _finalize_score(score_components)
 
 
 def _calculate_bam_quality_score(data: Dict[str, Any]) -> Dict[str, Any]:
@@ -233,7 +207,7 @@ def _calculate_bam_quality_score(data: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dictionary with overall_score, components breakdown, and grade
     """
-    score_components = {}
+    score_components: Dict[str, Dict[str, Any]] = {}
 
     # Mapping quality component (35% weight)
     if "mapping_quality" in data:
@@ -285,13 +259,6 @@ def _calculate_bam_quality_score(data: Dict[str, Any]) -> Dict[str, Any]:
             "details": f"Duplicate rate: {dup_rate:.1%}",
         }
 
-    # Calculate total score
-    total_score = sum(c["score"] for c in score_components.values())
-    max_score = (
-        sum(c["score"] / c["weight"] * c["weight"] for c in score_components.values()) if score_components else 100
-    )
-    overall_score = (total_score / max_score * 100) if max_score > 0 else 0
-
     # If no components were calculated, return error state
     if not score_components:
         return {
@@ -301,13 +268,7 @@ def _calculate_bam_quality_score(data: Dict[str, Any]) -> Dict[str, Any]:
             "error": "No BAM quality metrics provided - cannot calculate score",
         }
 
-    return {
-        "overall_score": overall_score,
-        "total_score": total_score,
-        "max_possible_score": max_score,
-        "components": score_components,
-        "grade": _score_to_grade(overall_score),
-    }
+    return _finalize_score(score_components)
 
 
 def _score_to_grade(score: float) -> str:
@@ -322,6 +283,26 @@ def _score_to_grade(score: float) -> str:
         return "D"
     else:
         return "F"
+
+
+def _finalize_score(score_components: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    """Aggregate weighted score components into an overall score.
+
+    Each component is scored against a nominal maximum of ``weight * 100``
+    points, so the maximum possible score is the sum of the present
+    component weights scaled to the same 0-100 range.
+    """
+    total_score = sum(c["score"] for c in score_components.values())
+    max_score = sum(c["weight"] for c in score_components.values()) * 100
+    overall_score = (total_score / max_score * 100) if max_score > 0 else 0
+
+    return {
+        "overall_score": overall_score,
+        "total_score": total_score,
+        "max_possible_score": max_score,
+        "components": score_components,
+        "grade": _score_to_grade(overall_score),
+    }
 
 
 def detect_outliers(data: List[float], method: str = "iqr", threshold: float = 1.5) -> Dict[str, Any]:
@@ -356,16 +337,26 @@ def detect_outliers(data: List[float], method: str = "iqr", threshold: float = 1
                 outlier_indices.append(i)
 
     elif method == "zscore":
-        z_scores = np.abs(stats.zscore(data_array))
-        outlier_indices = np.where(z_scores > threshold)[0].tolist()
-        outliers = data_array[outlier_indices].tolist()
+        if float(np.std(data_array)) == 0.0:
+            # Constant data: no value deviates from the mean, so no outliers
+            outliers = []
+            outlier_indices = []
+        else:
+            z_scores = np.abs(stats.zscore(data_array))
+            outlier_indices = np.where(z_scores > threshold)[0].tolist()
+            outliers = data_array[outlier_indices].tolist()
 
     elif method == "modified_zscore":
         median = np.median(data_array)
         mad = np.median(np.abs(data_array - median))
-        modified_z_scores = 0.6745 * (data_array - median) / mad
-        outlier_indices = np.where(np.abs(modified_z_scores) > threshold)[0].tolist()
-        outliers = data_array[outlier_indices].tolist()
+        if mad == 0:
+            # Constant data: every deviation is zero, so no outliers
+            outliers = []
+            outlier_indices = []
+        else:
+            modified_z_scores = 0.6745 * (data_array - median) / mad
+            outlier_indices = np.where(np.abs(modified_z_scores) > threshold)[0].tolist()
+            outliers = data_array[outlier_indices].tolist()
 
     else:
         raise ValueError(f"Unsupported outlier detection method: {method}")
@@ -382,6 +373,9 @@ def detect_outliers(data: List[float], method: str = "iqr", threshold: float = 1
 
 def calculate_data_integrity_score(data: Dict[str, Any], data_type: str = "fastq") -> Dict[str, Any]:
     """Calculate data integrity score based on various checks.
+
+    Integrity checks are currently implemented for FASTQ data only;
+    other data types return zero checks and an integrity score of 0.
 
     Args:
         data: Quality metrics data
@@ -584,7 +578,10 @@ def generate_quality_report(
 def batch_quality_analysis(
     file_paths: List[str | Path], data_type: str = "fastq", n_reads: Optional[int] = None
 ) -> Dict[str, Any]:
-    """Perform quality analysis on multiple files.
+    """Perform quality analysis on multiple FASTQ files.
+
+    Only ``data_type="fastq"`` performs per-file analysis; other data
+    types are scored against empty quality data and yield no components.
 
     Args:
         file_paths: List of file paths to analyze
@@ -600,8 +597,6 @@ def batch_quality_analysis(
         try:
             logger.info(f"Analyzing {file_path}")
             if data_type == "fastq":
-                from metainformant.quality.io.fastq import analyze_fastq_quality
-
                 quality_data = analyze_fastq_quality(file_path, n_reads)
             else:
                 # Placeholder for other data types
@@ -618,7 +613,7 @@ def batch_quality_analysis(
         except Exception as e:
             logger.error(f"Failed to analyze {file_path}: {e}")
             results[str(file_path)] = {
-                "error": str(e),
+                "error": f"{type(e).__name__}: {e}",
                 "status": "failed",
             }
 
@@ -754,7 +749,7 @@ def calculate_gc_metrics(gc_content: List[float]) -> Dict[str, Any]:
     """Calculate GC content metrics.
 
     Args:
-        gc_content: List of GC content values (0-1)
+        gc_content: List of GC content percentages (0-100)
 
     Returns:
         Dictionary with GC content metrics
@@ -774,7 +769,7 @@ def calculate_gc_metrics(gc_content: List[float]) -> Dict[str, Any]:
     }
 
     # GC distribution analysis
-    bins = [0, 0.3, 0.4, 0.5, 0.6, 0.7, 1.0]
+    bins = [0, 30, 40, 50, 60, 70, 100]
     hist, bin_edges = np.histogram(gc_array, bins=bins)
 
     distribution = {}
@@ -821,7 +816,6 @@ def calculate_length_metrics(lengths: List[int]) -> Dict[str, Any]:
     if len(lengths) > 1:
         metrics["length_range"] = metrics["max_length"] - metrics["min_length"]
         # Most common lengths
-        from collections import Counter
 
         length_counts = Counter(lengths)
         most_common = length_counts.most_common(5)
@@ -918,7 +912,6 @@ def calculate_complexity_metrics(sequences: List[str]) -> Dict[str, Any]:
             all_kmers.extend(kmers)
 
     if all_kmers:
-        from collections import Counter
 
         kmer_counts = Counter(all_kmers)
         total_kmers = len(all_kmers)

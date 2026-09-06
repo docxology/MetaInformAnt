@@ -40,18 +40,25 @@ def neighbor_joining_tree(id_to_seq: Dict[str, str]) -> Tree:
     active_taxa = set(taxa)
 
     while len(active_taxa) > 2:
-        # Find closest pair
-        min_dist = float("inf")
+        # Select the pair minimizing the neighbor-joining Q-criterion
+        # Q(i, j) = (n - 2) * d(i, j) - r(i) - r(j)
+        active_list = sorted(active_taxa)  # Deterministic tie-breaking
+        n_active = len(active_list)
+        idx_of = {taxon: taxa.index(taxon) for taxon in active_list}
+        row_sums = {
+            taxon: sum(distance_matrix[idx_of[taxon]][idx_of[other]] for other in active_list if other != taxon)
+            for taxon in active_list
+        }
+
+        min_q = float("inf")
         closest_pair = None
-
-        active_list = list(active_taxa)
-        for i in range(len(active_list)):
-            for j in range(i + 1, len(active_list)):
+        for i in range(n_active):
+            for j in range(i + 1, n_active):
                 taxon1, taxon2 = active_list[i], active_list[j]
-                idx1, idx2 = taxa.index(taxon1), taxa.index(taxon2)
-
-                if distance_matrix[idx1][idx2] < min_dist:
-                    min_dist = distance_matrix[idx1][idx2]
+                q = (n_active - 2) * distance_matrix[idx_of[taxon1]][idx_of[taxon2]]
+                q -= row_sums[taxon1] + row_sums[taxon2]
+                if q < min_q:
+                    min_q = q
                     closest_pair = (taxon1, taxon2)
 
         if not closest_pair:
@@ -59,6 +66,7 @@ def neighbor_joining_tree(id_to_seq: Dict[str, str]) -> Tree:
 
         taxon1, taxon2 = closest_pair
         idx1, idx2 = taxa.index(taxon1), taxa.index(taxon2)
+        min_dist = distance_matrix[idx1][idx2]
 
         # Calculate branch lengths
         r1 = sum(
@@ -123,13 +131,14 @@ def upgma_tree(id_to_seq: Dict[str, str]) -> Tree:
     tree: Tree = {taxon: None for taxon in taxa}
     active_taxa = set(taxa)
     cluster_sizes = {taxon: 1 for taxon in taxa}
+    cluster_heights: Dict[str, float] = {taxon: 0.0 for taxon in taxa}
 
     while len(active_taxa) > 1:
         # Find closest pair
         min_dist = float("inf")
         closest_pair = None
 
-        active_list = list(active_taxa)
+        active_list = sorted(active_taxa)  # Deterministic tie-breaking
         for i in range(len(active_list)):
             for j in range(i + 1, len(active_list)):
                 taxon1, taxon2 = active_list[i], active_list[j]
@@ -152,15 +161,20 @@ def upgma_tree(id_to_seq: Dict[str, str]) -> Tree:
 
         new_node = f"Cluster_{len(tree)}"
 
-        # Calculate branch lengths
-        branch1 = min_dist / 2
-        branch2 = min_dist / 2
+        # New cluster height is half the merge distance; each child branch
+        # extends from its current cluster height up to the new height.
+        height1 = cluster_heights.get(taxon1, 0.0)
+        height2 = cluster_heights.get(taxon2, 0.0)
+        new_height = min_dist / 2
+        branch1 = new_height - height1
+        branch2 = new_height - height2
 
         # Update tree
         tree[new_node] = {taxon1: branch1, taxon2: branch2}
 
         # Update cluster sizes
         cluster_sizes[new_node] = total_size
+        cluster_heights[new_node] = new_height
 
         # Remove old taxa and add new node
         active_taxa.remove(taxon1)
@@ -213,7 +227,7 @@ def nj_tree_from_kmer(id_to_seq: Dict[str, str], *, k: int = 3, metric: str = "c
         min_dist = float("inf")
         closest_pair = None
 
-        active_list = list(active_taxa)
+        active_list = sorted(active_taxa)  # Deterministic tie-breaking
         n_active = len(active_list)
 
         for i in range(len(active_list)):

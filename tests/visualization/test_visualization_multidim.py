@@ -253,3 +253,60 @@ class TestPlot3DScatter:
         assert ax is not None
         assert output_path.exists()
         plt.close("all")
+
+
+class TestEdgeCases:
+    """Edge-case behavior of the multidim plotting helpers."""
+
+    def test_parallel_coordinates_unknown_color_column_falls_back(self):
+        """An unknown color column must fall back to plain lines, not KeyError."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        data = pd.DataFrame({"var1": np.random.randn(8), "var2": np.random.randn(8)})
+
+        ax = plot_parallel_coordinates(data, color="nonexistent")
+        assert ax is not None
+        assert len(ax.lines) == 8
+        plt.close("all")
+
+    def test_radar_chart_on_provided_polar_axes(self):
+        """Radar chart must draw onto a caller-supplied polar axes."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        data = pd.DataFrame({"a": [0.8, 0.6], "b": [0.7, 0.9], "c": [0.9, 0.5]})
+        fig = plt.figure()
+        ax = fig.add_subplot(111, polar=True)
+
+        result = plot_radar_chart(data, ax=ax)
+        assert result is ax
+        plt.close("all")
+
+    def test_pairwise_relationships_with_output_path(self, tmp_path: Path):
+        """Pairplot must save its own figure when an output path is given."""
+        if not HAS_SEABORN:
+            pytest.skip("seaborn required for pairwise relationships plotting")
+
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        data = pd.DataFrame({"var1": np.random.randn(20), "var2": np.random.randn(20)})
+        output_path = tmp_path / "pairplot.png"
+
+        plot_pairwise_relationships(data, output_path=output_path)
+        assert output_path.exists()
+        plt.close("all")
+
+    def test_3d_scatter_insufficient_columns_on_provided_axes(self):
+        """Validation must fire before any axes handling."""
+        data = pd.DataFrame({"x": [1, 2, 3], "y": [4, 5, 6]})
+
+        with pytest.raises(ValueError, match="at least 3 numeric columns"):
+            plot_3d_scatter(data)

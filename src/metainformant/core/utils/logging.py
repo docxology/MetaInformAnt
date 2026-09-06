@@ -9,6 +9,20 @@ from __future__ import annotations
 import json
 import logging
 import os
+from typing import Any
+
+
+def _console_handler() -> logging.StreamHandler:
+    """Build a console handler with the shared METAINFORMANT formatter."""
+
+    handler = logging.StreamHandler()
+    handler.setFormatter(
+        logging.Formatter(
+            fmt="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+    )
+    return handler
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -22,13 +36,7 @@ def get_logger(name: str) -> logging.Logger:
     """
     logger = logging.getLogger(name)
     if not logger.handlers:
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            fmt="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+        logger.addHandler(_console_handler())
         logger.setLevel(logging.INFO)
     return logger
 
@@ -47,18 +55,14 @@ def setup_logger(name: str, log_file: str | None = None, level: str = "INFO") ->
     logger = logging.getLogger(name)
     logger.setLevel(getattr(logging, level.upper()))
 
-    # Clear existing handlers
-    logger.handlers.clear()
-
-    formatter = logging.Formatter(
-        fmt="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
+    # Close and clear existing handlers so repeated setup does not leak
+    # open FileHandler descriptors.
+    for handler in list(logger.handlers):
+        logger.removeHandler(handler)
+        handler.close()
 
     # Console handler
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
+    logger.addHandler(_console_handler())
 
     # File handler if specified
     if log_file:
@@ -67,7 +71,12 @@ def setup_logger(name: str, log_file: str | None = None, level: str = "INFO") ->
         Path(log_file).parent.mkdir(parents=True, exist_ok=True)
 
         file_handler = logging.FileHandler(log_file)
-        file_handler.setFormatter(formatter)
+        file_handler.setFormatter(
+            logging.Formatter(
+                fmt="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+        )
         logger.addHandler(file_handler)
 
     return logger
@@ -90,13 +99,7 @@ def get_logger_with_level(name: str, level: str | int | None = None) -> logging.
     """
     logger = logging.getLogger(name)
     if not logger.handlers:
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            fmt="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+        logger.addHandler(_console_handler())
 
     # Set level
     if level is None:
@@ -128,7 +131,7 @@ def configure_logging_from_env(default_level: str = "INFO") -> None:
 
 
 def log_with_metadata(
-    logger: logging.Logger, message: str, metadata: dict, *, level: str = "INFO", structured: bool = False
+    logger: logging.Logger, message: str, metadata: dict[str, Any], *, level: str = "INFO", structured: bool = False
 ) -> None:
     """Log message with structured metadata.
 
@@ -155,10 +158,9 @@ def log_with_metadata(
     if structured:
         # For structured logging, log metadata as separate JSON entry
         metadata_str = json.dumps(metadata, default=str)
-        logger.log(log_level, f"{message}")
+        logger.log(log_level, message)
         logger.log(log_level, f"METADATA: {metadata_str}")
     else:
         # Format metadata as JSON appended to message
         metadata_str = json.dumps(metadata, default=str)
-        full_message = f"{message} | {metadata_str}"
-        logger.log(log_level, full_message)
+        logger.log(log_level, f"{message} | {metadata_str}")

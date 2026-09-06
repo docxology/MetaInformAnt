@@ -25,6 +25,7 @@ from metainformant.spatial.io.visium import (
     TissuePosition,
     create_spatial_dataset,
     filter_tissue_spots,
+    load_visium,
     read_tissue_positions,
 )
 from metainformant.spatial.io.xenium import (
@@ -249,6 +250,24 @@ class TestAggregateToCell:
         cd3e_idx = gene_names.index("CD3E")
         assert counts[0, cd3e_idx] == 2
 
+    def test_nearest_centroid_assignment(self) -> None:
+        # No pre-assigned cell ids: transcripts fall back to nearest-centroid
+        spots = [
+            TranscriptSpot(gene="CD3E", x=1.0, y=1.0),
+            TranscriptSpot(gene="CD8A", x=9.0, y=9.0),
+            TranscriptSpot(gene="CD3E", x=9.2, y=9.0),
+        ]
+        cells = [
+            CellMetadata(cell_id="c1", x=0.0, y=0.0),
+            CellMetadata(cell_id="c2", x=10.0, y=10.0),
+        ]
+        counts, cell_ids, gene_names = aggregate_to_cells(spots, cells)
+        assert cell_ids == ["c1", "c2"]
+        assert counts.shape == (2, 2)
+        assert counts[0, gene_names.index("CD3E")] == 1
+        assert counts[1, gene_names.index("CD8A")] == 1
+        assert counts[1, gene_names.index("CD3E")] == 1
+
 
 class TestLoadMerfish:
     def test_missing_directory_raises(self, tmp_path: Path) -> None:
@@ -367,3 +386,81 @@ class TestLoadXenium:
     def test_missing_directory_raises(self, tmp_path: Path) -> None:
         with pytest.raises(FileNotFoundError):
             load_xenium(tmp_path / "nonexistent_dir")
+
+
+class TestLoadVisium:
+    def test_load_mex_directory(self, tmp_path: Path) -> None:
+        self._write_visium_run(tmp_path)
+        ds = load_visium(tmp_path / "visium_run", load_image=False)
+        assert ds.platform == "visium"
+        assert ds.n_genes == 3
+        assert ds.gene_names == ["G0", "G1", "G2"]
+        assert ds.gene_ids == ["id0", "id1", "id2"]
+        # BC2 is off-tissue and must be dropped; matrix rows follow the kept barcodes
+        assert ds.barcodes == ["BC0", "BC1", "BC3"]
+        assert ds.n_spots == 3
+        np.testing.assert_allclose(ds.coordinates, [[10.0, 20.0], [30.0, 40.0], [70.0, 80.0]])
+        assert ds.expression.shape == (3, 3)
+        # BC3 carries 3 counts of G1
+        assert float(ds.expression[2, 1]) == 3.0
+        assert ds.scale_factors["spot_diameter_fullres"] == 65.0
+        assert ds.tissue_positions[0].barcode == "BC0"
+        assert ds.metadata["in_tissue_only"] is True
+
+    def test_no_matrix_raises(self, tmp_path: Path) -> None:
+        with pytest.raises(FileNotFoundError, match="No expression matrix"):
+            load_visium(tmp_path, load_image=False)
+
+    def _write_visium_run(self, base: Path) -> None:
+        from scipy import sparse as sp_sparse
+        from scipy.io import mmwrite
+
+        mex = base / "visium_run" / "filtered_feature_bc_matrix"
+        mex.mkdir(parents=True)
+        # 10x MEX convention: genes x barcodes
+        mat = sp_sparse.csr_matrix(np.array([[1, 0, 2, 0], [0, 1, 0, 3], [4, 0, 0, 1]]))
+        mmwrite(mex / "matrix.mtx", mat)
+        (mex / "barcodes.tsv").write_text("BC0\nBC1\nBC2\nBC3\n")
+        (mex / "features.tsv").write_text("id0\tG0\nid1\tG1\nid2\tG2\n")
+
+        spatial_dir = base / "visium_run" / "spatial"
+        spatial_dir.mkdir()
+        (spatial_dir / "tissue_positions.csv").write_text(
+            "barcode,in_tissue,array_row,array_col,pixel_row,pixel_col\n"
+            "BC0,1,0,0,10.0,20.0\n"
+            "BC1,1,0,1,30.0,40.0\n"
+            "BC2,0,1,0,50.0,60.0\n"
+            "BC3,1,1,1,70.0,80.0\n"
+        )
+        (spatial_dir / "scalefactors_json.json").write_text('{"spot_diameter_fullres": 65.0}')
+
+
+class TestLoadXeniumMex:
+    def _write_xenium_run(self, base: Path) -> None:
+        from scipy import sparse as sp_sparse
+        from scipy.io import mmwrite
+
+        mex = base / "cell_feature_matrix"
+        mex.mkdir(parents=True)
+        # genes x cells (10x MEX convention)
+        mat = sp_sparse.csr_matrix(np.array([[5, 0], [0, 7]]))
+        mmwrite(mex / "matrix.mtx", mat)
+        (mex / "barcodes.tsv").write_text("c1\nc2\n")
+        (mex / "features.tsv").write_text("gid0\tCD3E\ngid1\tCD8A\n")
+        (base / "cells.csv").write_text("cell_id,x_centroid,y_centroid\nc1,1.5,2.5\nc2,3.5,4.5\n")
+
+    def test_load_mex_directory(self, tmp_path: Path) -> None:
+        self._write_xenium_run(tmp_path)
+        ds = load_xenium(tmp_path)
+        assert ds.metadata["platform"] == "xenium"
+        assert ds.n_cells == 2
+        assert ds.n_genes == 2
+        assert ds.cell_ids == ["c1", "c2"]
+        assert ds.gene_names == ["CD3E", "CD8A"]
+        assert ds.gene_ids == ["gid0", "gid1"]
+        np.testing.assert_allclose(ds.coordinates, [[1.5, 2.5], [3.5, 4.5]])
+        assert float(ds.expression[1, 1]) == 7.0
+
+    def test_no_feature_matrix_raises(self, tmp_path: Path) -> None:
+        with pytest.raises(FileNotFoundError, match="No cell_feature_matrix"):
+            load_xenium(tmp_path)

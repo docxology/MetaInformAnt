@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from metainformant.gwas.analysis.quality import apply_qc_filters, parse_vcf_full
+from metainformant.gwas.analysis.quality import apply_qc_filters, parse_vcf_full, write_filtered_vcf
 
 
 def test_parse_vcf_full_basic(tmp_path: Path) -> None:
@@ -156,3 +156,47 @@ chr1	100	rs1	A	G	60	PASS	.	GT	0/0	0/0	0/0	0/0	0/0	1/1	1/1	1/1	1/1	1/1
 
     assert result["status"] == "success"
     # Variant with extreme HWE violation might be filtered
+
+
+QC_ROUNDTRIP_VCF = """##fileformat=VCFv4.2
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Total Depth">
+#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tS1\tS2\tS3
+chr1\t100\trs1\tA\tG\t50\tPASS\tDP=10\tGT\t1/1\t0/0\t0/1
+chr1\t200\trs2\tA\tT\t50\tPASS\tDP=10\tGT\t0/1\t1/1\t0/0
+chr1\t300\trs3\tA\tC\t50\tPASS\tDP=10\tGT\t0/0\t0/1\t1/1
+"""
+
+
+def test_write_filtered_vcf_round_trip_preserves_orientation(tmp_path: Path) -> None:
+    """Written genotypes must keep sample-major orientation: column i per variant."""
+    vcf_file = tmp_path / "in.vcf"
+    vcf_file.write_text(QC_ROUNDTRIP_VCF)
+    parsed = parse_vcf_full(vcf_file)
+
+    out_vcf = tmp_path / "out.vcf"
+    write_filtered_vcf(parsed, out_vcf)
+
+    lines = out_vcf.read_text().splitlines()
+    data_lines = [ln for ln in lines if not ln.startswith("#")]
+    # rs1 columns are S1=1/1, S2=0/0, S3=0/1 — sample order must be preserved
+    assert data_lines[0].split("\t")[9:] == ["1/1", "0/0", "0/1"]
+    assert data_lines[1].split("\t")[9:] == ["0/1", "1/1", "0/0"]
+    assert data_lines[2].split("\t")[9:] == ["0/0", "0/1", "1/1"]
+
+    reparsed = parse_vcf_full(out_vcf)
+    assert reparsed["samples"] == ["S1", "S2", "S3"]
+    assert reparsed["genotypes"].tolist() == [[2, 1, 0], [0, 2, 1], [1, 0, 2]]
+
+
+def test_write_filtered_vcf_after_qc_keeps_sample_columns(tmp_path: Path) -> None:
+    """QC output written back to VCF must retain per-sample genotype columns."""
+    vcf_file = tmp_path / "in.vcf"
+    vcf_file.write_text(QC_ROUNDTRIP_VCF)
+    qc = apply_qc_filters(vcf_file, {"min_maf": 0.0, "max_missing": 1.0, "min_hwe_p": 0.0})
+    assert qc["num_variants_after"] == 3
+
+    out_vcf = tmp_path / "qc.vcf"
+    write_filtered_vcf(qc["filtered_data"], out_vcf)
+
+    reparsed = parse_vcf_full(out_vcf)
+    assert reparsed["genotypes"].tolist() == [[2, 1, 0], [0, 2, 1], [1, 0, 2]]

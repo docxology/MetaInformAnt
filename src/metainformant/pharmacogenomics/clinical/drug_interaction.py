@@ -39,6 +39,16 @@ class InteractionSeverity(str, Enum):
         return self in (InteractionSeverity.MAJOR, InteractionSeverity.MODERATE)
 
 
+# Clinical ordering of severity levels (NONE < MINOR < MODERATE < MAJOR). Lexicographic
+# comparison of the string values is not a valid severity ordering.
+_SEVERITY_RANK: dict[InteractionSeverity, int] = {
+    InteractionSeverity.NONE: 0,
+    InteractionSeverity.MINOR: 1,
+    InteractionSeverity.MODERATE: 2,
+    InteractionSeverity.MAJOR: 3,
+}
+
+
 @dataclass
 class DrugRecommendation:
     """Represents a pharmacogenomic drug recommendation.
@@ -401,7 +411,7 @@ def check_contraindications(
             )
             if info["contraindicated"]:
                 any_contraindicated = True
-            if info["severity"].value > max_severity.value:
+            if _SEVERITY_RANK[info["severity"]] > _SEVERITY_RANK[max_severity]:
                 max_severity = info["severity"]
 
     if any_contraindicated:

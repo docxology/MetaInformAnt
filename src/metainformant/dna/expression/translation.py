@@ -91,8 +91,9 @@ def translate(rna_seq: str, genetic_code: int = 1) -> str:
     Returns:
         Amino acid sequence string
 
-    Raises:
-        ValueError: If sequence length is not divisible by 3 or contains invalid characters
+    Warnings:
+        Logs a warning (does not raise) if sequence length is not divisible
+        by 3; the trailing partial codon is ignored.
     """
     if not rna_seq:
         return ""
@@ -138,7 +139,12 @@ def translate_dna(dna_seq: str, genetic_code: int = 1) -> str:
 
 
 def find_orfs(rna_seq: str, min_length: int = 30) -> List[Tuple[int, int, str]]:
-    """Find open reading frames in RNA sequence.
+    """Find open reading frames in an RNA sequence.
+
+    Scans the three forward frames only. Positions refer to the input RNA:
+    ``start_pos`` is the 0-based index of the ``AUG`` start codon and
+    ``end_pos`` is the exclusive end of the first in-frame stop codon
+    (included in the interval).
 
     Args:
         rna_seq: RNA sequence string
@@ -147,38 +153,27 @@ def find_orfs(rna_seq: str, min_length: int = 30) -> List[Tuple[int, int, str]]:
     Returns:
         List of tuples (start_pos, end_pos, frame)
     """
-    orfs = []
+    orfs: List[Tuple[int, int, str]] = []
+    seq_upper = rna_seq.upper()
+    stop_codons = {"UAA", "UAG", "UGA"}
 
-    # Check all 3 reading frames
     for frame in range(3):
-        frame_seq = rna_seq[frame:]
-
-        # Find start codons
-        start_positions = []
-        for match in re.finditer(r"AUG", frame_seq):
-            start_positions.append(match.start())
-
-        for start_pos in start_positions:
-            # Find next stop codon
-            orf_seq = frame_seq[start_pos:]
-            stop_found = False
-
-            for stop_match in re.finditer(r"(UAA|UAG|UGA)", orf_seq[3:], re.IGNORECASE):
-                stop_pos = start_pos + stop_match.start() + 3  # Include stop codon
-                orf_length_aa = (stop_pos - start_pos) // 3
-
-                if orf_length_aa >= min_length:
-                    frame_label = f"+{frame + 1}"
-                    orfs.append((start_pos + frame, stop_pos + frame, frame_label))
-                stop_found = True
-                break
-
-            # If no stop codon found, check if ORF extends to end
-            if not stop_found:
-                orf_length_aa = len(orf_seq) // 3
-                if orf_length_aa >= min_length:
-                    frame_label = f"+{frame + 1}"
-                    orfs.append((start_pos + frame, len(rna_seq), frame_label))
+        frame_seq = seq_upper[frame:]
+        for start_match in re.finditer(r"AUG", frame_seq):
+            start_pos = start_match.start()
+            # Scan codon-by-codon for the first in-frame stop codon
+            end_pos = -1
+            for codon_start in range(start_pos + 3, len(frame_seq) - 2, 3):
+                if frame_seq[codon_start : codon_start + 3] in stop_codons:
+                    end_pos = codon_start + 3  # Exclusive end; stop codon included
+                    break
+            if end_pos == -1:
+                # ORF extends to the end of the sequence
+                if (len(frame_seq) - start_pos) // 3 >= min_length:
+                    orfs.append((start_pos + frame, len(rna_seq), f"+{frame + 1}"))
+                continue
+            if (end_pos - start_pos) // 3 >= min_length:
+                orfs.append((start_pos + frame, end_pos + frame, f"+{frame + 1}"))
 
     return orfs
 
@@ -245,9 +240,9 @@ def six_frame_translation(dna_seq: str) -> Dict[str, str]:
 def calculate_cai(sequence: str, reference_usage: Dict[str, float] | None = None) -> float:
     """Calculate Codon Adaptation Index (CAI) for a sequence.
 
-    Args:
-        sequence: Amino acid sequence
-        reference_usage: Dictionary of reference codon usage frequencies
+        sequence: Coding sequence (DNA or RNA codons); passing a protein
+            sequence is not meaningful
+        reference_usage: Reference codon usage frequencies keyed by codon
 
     Returns:
         CAI value (0.0 to 1.0)
@@ -401,11 +396,15 @@ def get_genetic_code(code_id: int = 1) -> Dict[str, str]:
 
 
 def back_translate(protein_seq: str, codon_usage: Dict[str, float] | None = None) -> str:
-    """Back-translate amino acid sequence to DNA using optimal codons.
+    """Back-translate an amino acid sequence to DNA with a fixed codon table.
+
+    Uses a hardcoded one-codon-per-amino-acid table; ``codon_usage`` is
+    accepted for API compatibility but is NOT used (no organism-specific
+    codon optimization is performed).
 
     Args:
         protein_seq: Amino acid sequence
-        codon_usage: Dictionary of codon usage preferences
+        codon_usage: Unused; retained for API compatibility
 
     Returns:
         DNA sequence

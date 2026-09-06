@@ -354,10 +354,9 @@ class ENADownloader:
 
         Returns:
             List of HTTP URLs for the FASTQ files. Returns empty list if
-            no FASTQ files are found or the sample doesn't exist.
-
-        Raises:
-            urllib.error.URLError: If the API request fails
+            no FASTQ files are found, the sample doesn't exist, or the
+            API request fails after retries (transport errors are logged,
+            not raised).
 
         Example:
             >>> downloader = ENADownloader()

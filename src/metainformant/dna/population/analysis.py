@@ -46,12 +46,15 @@ def calculate_fst(population1: List[str], population2: List[str]) -> float:
 
     total_sites = 0
     numerator_sum = 0.0
-    denominator_sum = 0.0
 
     for pos in range(seq_len):
-        # Get alleles at this position for both populations
-        alleles_pop1 = [seq[pos] for seq in population1]
-        alleles_pop2 = [seq[pos] for seq in population2]
+        # Keep only unambiguous bases (ATCG, case-insensitive) so gaps and
+        # ambiguous characters are not treated as alleles
+        alleles_pop1 = [seq[pos].upper() for seq in population1 if seq[pos].upper() in "ATCG"]
+        alleles_pop2 = [seq[pos].upper() for seq in population2 if seq[pos].upper() in "ATCG"]
+
+        if not alleles_pop1 or not alleles_pop2:
+            continue  # No usable data at this site
 
         # Count alleles
         allele_counts: Dict[str, int] = {}
@@ -62,7 +65,7 @@ def calculate_fst(population1: List[str], population2: List[str]) -> float:
             continue  # Monomorphic site
 
         # Calculate allele frequencies
-        n1, n2 = len(population1), len(population2)
+        n1, n2 = len(alleles_pop1), len(alleles_pop2)
         total_n = n1 + n2
 
         freq_pop1 = {}
@@ -87,12 +90,10 @@ def calculate_fst(population1: List[str], population2: List[str]) -> float:
             numerator_sum += fst_site
             total_sites += 1
 
-        denominator_sum += ht
-
     if total_sites == 0:
         return 0.0
 
-    # Weighted average F_ST
+    # Mean F_ST across polymorphic sites with usable data
     return numerator_sum / total_sites
 
 
@@ -877,9 +878,9 @@ def interpret_neutrality_results(results: Dict[str, Any]) -> Dict[str, str]:
     tajima_d = results.get("tajima_d")
     if tajima_d is not None:
         if tajima_d > 0:
-            interpretation["tajima_d"] = "balancing_selection_or_population_expansion"
+            interpretation["tajima_d"] = "balancing_selection_or_population_bottleneck"
         elif tajima_d < 0:
-            interpretation["tajima_d"] = "positive_selection_or_population_bottleneck"
+            interpretation["tajima_d"] = "positive_selection_or_population_expansion"
         else:
             interpretation["tajima_d"] = "neutral_evolution"
     else:

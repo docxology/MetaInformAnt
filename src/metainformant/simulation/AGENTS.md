@@ -9,7 +9,7 @@ This module provides functionality organized into the following structure:
 ## Subpackages
 
 - `benchmark/` — exports: `generators`
-- `methylation/`
+- `methylation/` — exports: `simulator`
 - `models/` — exports: `agents`, `popgen`, `rna`, `sequences`
 - `workflow/` — exports: `workflow`
 

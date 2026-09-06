@@ -253,8 +253,6 @@ def infer_grn_correlation(
     else:
         tf_indices = list(range(n_genes))
 
-    set(tf_indices)
-
     # Select correlation function
     if method == "pearson":
         if HAS_SCIPY:
@@ -372,8 +370,6 @@ def infer_grn_mutual_info(
             tf_indices = list(range(n_genes))
     else:
         tf_indices = list(range(n_genes))
-
-    set(tf_indices)
 
     # Compute MI matrix
     mi_matrix: list[list[float]] = [[0.0] * n_genes for _ in range(n_genes)]
@@ -680,8 +676,9 @@ def score_regulators(
     edges = grn["edges"]
     gene_set_lower = {g.lower() for g in gene_set}
 
-    # Build TF -> targets mapping
+    # Build TF -> targets mapping and per-TF weighted scores in one pass
     tf_targets: dict[str, set[str]] = defaultdict(set)
+    tf_scores: dict[str, float] = defaultdict(float)
     all_targets: set[str] = set()
 
     for edge in edges:
@@ -689,6 +686,8 @@ def score_regulators(
         target = edge["target"]
         tf_targets[source].add(target)
         all_targets.add(target)
+        if target.lower() in gene_set_lower:
+            tf_scores[source] += abs(edge.get("weight", 1.0))
 
     total_targets = len(all_targets)
     set_size = len(gene_set)
@@ -703,11 +702,8 @@ def score_regulators(
         # Fisher exact test (hypergeometric) approximation
         enrichment_p = _hypergeometric_pvalue(n_in_set, n_targets, set_size, total_targets)
 
-        # Regulation score: weighted by edge weights
-        regulation_score = 0.0
-        for edge in edges:
-            if edge["source"] == tf and edge["target"].lower() in gene_set_lower:
-                regulation_score += abs(edge.get("weight", 1.0))
+        # Regulation score: weighted by edge weights toward the gene set
+        regulation_score = tf_scores.get(tf, 0.0)
 
         results.append(
             {
@@ -813,18 +809,10 @@ def compute_network_motifs(
     if motif_size == 2:
         # Two-node motifs
         mutual_regulation = 0
-        single_regulation = 0
-
         for a in node_list:
             for b in adj[a]:
-                if a < b:  # Avoid double counting
-                    if a in adj[b]:
-                        mutual_regulation += 1
-                    else:
-                        single_regulation += 1
-                elif a > b and b not in adj.get(a, set()):
-                    # b -> a only, counted when we process b
-                    pass
+                if a < b and a in adj[b]:
+                    mutual_regulation += 1
 
         # Count non-mutual single regulations properly
         total_directed = sum(len(targets) for targets in adj.values())

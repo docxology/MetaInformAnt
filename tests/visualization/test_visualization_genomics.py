@@ -354,3 +354,88 @@ class TestVariantPlot:
         assert ax is not None
         assert output_path.exists()
         plt.close("all")
+
+
+class TestScatterKwargsForwarding:
+    """Regression: style kwargs must not be forwarded twice to scatter (TypeError)."""
+
+    def test_manhattan_plot_accepts_size_and_alpha(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        data = pd.DataFrame({"CHR": [1, 1, 2], "BP": [1000, 2000, 3000], "P": [0.01, 0.001, 0.05]})
+
+        ax = manhattan_plot(data, s=5, alpha=0.5)
+        assert ax is not None
+        plt.close("all")
+
+    def test_manhattan_plot_empty_data_raises(self):
+        data = pd.DataFrame({"CHR": pd.Series(dtype=int), "BP": pd.Series(dtype=int), "P": pd.Series(dtype=float)})
+
+        with pytest.raises(ValueError, match="at least one data row"):
+            manhattan_plot(data)
+
+    def test_volcano_plot_accepts_size_and_alpha(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        data = pd.DataFrame({"log2FoldChange": [1, -2, 0.5], "padj": [0.001, 0.01, 0.05]})
+
+        ax = volcano_plot(data, s=15, alpha=0.4)
+        assert ax is not None
+        plt.close("all")
+
+    def test_regional_plot_accepts_size_and_alpha(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        data = pd.DataFrame({"CHR": ["1"] * 3, "BP": [1000000, 1010000, 1020000], "P": [0.01, 0.001, 0.05]})
+
+        ax = regional_plot(data, chr="1", start=900000, end=1100000, s=10, alpha=0.5)
+        assert ax is not None
+        plt.close("all")
+
+    def test_circular_manhattan_plot_accepts_size_and_alpha(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        data = pd.DataFrame({"CHR": [1, 1, 2], "BP": [1000, 2000, 3000], "P": [0.01, 0.001, 0.05]})
+
+        ax = circular_manhattan_plot(data, s=3, alpha=0.4)
+        assert ax is not None
+        plt.close("all")
+
+    def test_variant_plot_accepts_size_kwarg(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        variants = pd.DataFrame({"POS": [1000, 2000, 3000]})
+
+        ax = variant_plot(variants, s=25)
+        assert ax is not None
+        plt.close("all")
+
+    def test_variant_plot_jitter_is_deterministic(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        variants = pd.DataFrame({"POS": [1000, 2000, 3000, 4000]})
+        offsets = []
+        for _ in range(2):
+            ax = variant_plot(variants)
+            offsets.append(ax.collections[0].get_offsets().copy())
+            plt.close("all")
+
+        assert (offsets[0] == offsets[1]).all()

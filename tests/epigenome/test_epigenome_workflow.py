@@ -1,11 +1,12 @@
 """Tests for epigenome workflow orchestration.
 
-Tests EpigenomeConfig, load_epigenome_config, and
-integrate_epigenome_results using real implementations. REAL IMPLEMENTATION.
+Tests EpigenomeConfig, load_epigenome_config,
+integrate_epigenome_results, and run_methylation_workflow using real
+implementations. REAL IMPLEMENTATION.
 
-Note: run_methylation_workflow, run_chipseq_workflow, and
-run_atacseq_workflow require input directories with actual data files
-so are tested via config validation and integration helpers.
+Note: run_chipseq_workflow and run_atacseq_workflow require input
+directories with actual peak files; run_methylation_workflow is
+exercised end-to-end below against a real BEDgraph file.
 """
 
 from __future__ import annotations
@@ -20,6 +21,7 @@ from metainformant.epigenome.workflow.workflow import (
     _generate_integration_report,
     integrate_epigenome_results,
     load_epigenome_config,
+    run_methylation_workflow,
 )
 
 # ---------------------------------------------------------------------------
@@ -275,3 +277,23 @@ class TestGenerateIntegrationReport:
         out_path = tmp_path / "error_report.txt"
         report = _generate_integration_report(results, out_path)
         assert "Something went wrong" in report
+
+
+class TestRunMethylationWorkflow:
+    """End-to-end methylation workflow against a real BEDgraph file."""
+
+    def test_runs_and_writes_outputs(self, tmp_path: Path) -> None:
+        input_dir = tmp_path / "input"
+        input_dir.mkdir()
+        lines = [f"chr1\t{1000 + i * 10}\t{1000 + i * 10 + 1}\t{0.1 + 0.02 * i:.2f}\n" for i in range(20)]
+        (input_dir / "sampleA.bedgraph").write_text("".join(lines))
+        output_dir = tmp_path / "out"
+
+        result = run_methylation_workflow(input_dir, output_dir, EpigenomeConfig())
+
+        assert result["errors"] == []
+        assert len(result["processed_files"]) == 1
+        assert result["statistics"]["total_samples"] == 1
+        assert result["statistics"]["total_sites"] == 20
+        assert (output_dir / "sampleA_methylation.json").exists()
+        assert (output_dir / "methylation_summary.json").exists()

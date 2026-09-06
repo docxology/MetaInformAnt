@@ -20,7 +20,7 @@ Genome-Wide Association Studies (GWAS) module for METAINFORMANT. Provides end-to
 | `benchmarking` | `benchmark_subset_run()`, `extrapolate_full_genome_time()`, `scaling_model()` |
 | `mixed_model` | `association_test_mixed()`, `run_mixed_model_gwas()` |
 | `quality` | `parse_vcf_full()`, `apply_qc_filters()`, `check_haplodiploidy()` |
-| `correction` | `bonferroni_correction()`, `fdr_correction()`, `genomic_control()` |
+| `correction` | `bonferroni_correction()`, `fdr_correction()`, `genomic_control()`, `lambda_gc_from_p_values()` |
 | `structure` | `compute_pca()`, `compute_kinship_matrix()`, `estimate_population_structure()` |
 | `ld_pruning` | `ld_prune()` |
 | `heritability` | `estimate_heritability()` |
@@ -74,14 +74,14 @@ Genome-Wide Association Studies (GWAS) module for METAINFORMANT. Provides end-to
 
 ## Testing
 
-- **52+ GWAS test files** covering unit, integration, and end-to-end suites
+- **60 GWAS test files** covering unit, integration, and end-to-end suites
 - **11/11 end-to-end tests pass** (`tests/gwas/test_gwas_end_to_end.py`)
 - Real-implementation policy: all tests use real functional methods (zero
   mocks; real CSV/ZIP files, real scipy-verified statistics, real bcftools
   subprocesses where the tool is installed — skipped otherwise)
 - Compute-time benchmarking tests validate scaling model math
 
-### Module test coverage (Round-4 audit, 2026-09-01)
+### Module test coverage (Round-4 audit 2026-09-01; Round-5 additions 2026-09-05)
 
 Zero-mocks suites added for the previously untested modules:
 
@@ -98,3 +98,4 @@ Zero-mocks suites added for the previously untested modules:
 | `data/vcf_utils` | `test_gwas_vcf_utils.py` | real bcftools subprocesses (skip when absent) |
 | `reporting/audit` + `validation/output_validator` | `test_gwas_audit_validator.py` | real hashes, real on-disk output trees |
 | `simulation/synthetic` | `test_gwas_synthetic.py` | analytical power closed-form; deterministic synthetic VCF/phenotype generation |
+| `analysis/quality` + `analysis/correction` | `test_gwas_quality.py`, `test_gwas_correction.py`, `test_gwas_workflow_execution_helpers.py`, `test_gwas_visualization_comparison.py` | Round-5 fixes (2026-09-05): λ_GC computed via χ²-median genomic-control everywhere (was `median(p)/0.456` or `-2·ln(p)/1.386` in workflow/viz helpers); `write_filtered_vcf` sample-major genotype orientation regression-tested; `analyze_genetic_architecture` inverted P-column guard fixed |

@@ -53,18 +53,18 @@ def plot_network_basic(G: Any, *, ax: Axes | None = None, output_path: str | Pat
         fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 8)))
 
     # Use spring layout for basic network visualization
-    pos = nx.spring_layout(G, **kwargs.get("layout_kwargs", {}))
+    pos = nx.spring_layout(G, **kwargs.pop("layout_kwargs", {}))
 
     nx.draw(
         G,
         pos=pos,
         ax=ax,
-        with_labels=kwargs.get("with_labels", True),
-        node_color=kwargs.get("node_color", "lightblue"),
-        node_size=kwargs.get("node_size", 300),
-        edge_color=kwargs.get("edge_color", "gray"),
-        width=kwargs.get("width", 1),
-        alpha=kwargs.get("alpha", 0.8),
+        with_labels=kwargs.pop("with_labels", True),
+        node_color=kwargs.pop("node_color", "lightblue"),
+        node_size=kwargs.pop("node_size", 300),
+        edge_color=kwargs.pop("edge_color", "gray"),
+        width=kwargs.pop("width", 1),
+        alpha=kwargs.pop("alpha", 0.8),
         **kwargs,
     )
 
@@ -72,7 +72,7 @@ def plot_network_basic(G: Any, *, ax: Axes | None = None, output_path: str | Pat
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Basic network plot saved to {output_path}")
 
     return ax
@@ -108,12 +108,12 @@ def plot_network_circular(
         G,
         pos=pos,
         ax=ax,
-        with_labels=kwargs.get("with_labels", True),
-        node_color=kwargs.get("node_color", "lightgreen"),
-        node_size=kwargs.get("node_size", 400),
-        edge_color=kwargs.get("edge_color", "gray"),
-        width=kwargs.get("width", 1.5),
-        alpha=kwargs.get("alpha", 0.8),
+        with_labels=kwargs.pop("with_labels", True),
+        node_color=kwargs.pop("node_color", "lightgreen"),
+        node_size=kwargs.pop("node_size", 400),
+        edge_color=kwargs.pop("edge_color", "gray"),
+        width=kwargs.pop("width", 1.5),
+        alpha=kwargs.pop("alpha", 0.8),
         **kwargs,
     )
 
@@ -121,7 +121,7 @@ def plot_network_circular(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Circular network plot saved to {output_path}")
 
     return ax
@@ -182,13 +182,13 @@ def plot_network_hierarchical(
         G,
         pos=pos,
         ax=ax,
-        with_labels=kwargs.get("with_labels", True),
-        node_color=kwargs.get("node_color", "lightcoral"),
-        node_size=kwargs.get("node_size", 350),
-        edge_color=kwargs.get("edge_color", "darkgray"),
-        width=kwargs.get("width", 1.2),
-        alpha=kwargs.get("alpha", 0.8),
-        arrows=kwargs.get("arrows", True) if nx.is_directed(G) else False,
+        with_labels=kwargs.pop("with_labels", True),
+        node_color=kwargs.pop("node_color", "lightcoral"),
+        node_size=kwargs.pop("node_size", 350),
+        edge_color=kwargs.pop("edge_color", "darkgray"),
+        width=kwargs.pop("width", 1.2),
+        alpha=kwargs.pop("alpha", 0.8),
+        arrows=kwargs.pop("arrows", True) if nx.is_directed(G) else False,
         **kwargs,
     )
 
@@ -196,7 +196,7 @@ def plot_network_hierarchical(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Hierarchical network plot saved to {output_path}")
 
     return ax
@@ -226,18 +226,18 @@ def plot_network_force_directed(
         fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 8)))
 
     # Use Fruchterman-Reingold force-directed algorithm
-    pos = nx.fruchterman_reingold_layout(G, **kwargs.get("layout_kwargs", {}))
+    pos = nx.fruchterman_reingold_layout(G, **kwargs.pop("layout_kwargs", {}))
 
     nx.draw(
         G,
         pos=pos,
         ax=ax,
-        with_labels=kwargs.get("with_labels", False),  # Often too cluttered for force-directed
-        node_color=kwargs.get("node_color", "lightskyblue"),
-        node_size=kwargs.get("node_size", 250),
-        edge_color=kwargs.get("edge_color", "gray"),
-        width=kwargs.get("width", 0.8),
-        alpha=kwargs.get("alpha", 0.8),
+        with_labels=kwargs.pop("with_labels", False),  # Often too cluttered for force-directed
+        node_color=kwargs.pop("node_color", "lightskyblue"),
+        node_size=kwargs.pop("node_size", 250),
+        edge_color=kwargs.pop("edge_color", "gray"),
+        width=kwargs.pop("width", 0.8),
+        alpha=kwargs.pop("alpha", 0.8),
         **kwargs,
     )
 
@@ -245,7 +245,7 @@ def plot_network_force_directed(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Force-directed network plot saved to {output_path}")
 
     return ax
@@ -301,18 +301,18 @@ def plot_community_network(
             node_colors.append(community_colors[community_id])
 
     # Use spring layout for community visualization
-    pos = nx.spring_layout(G, **kwargs.get("layout_kwargs", {}))
+    pos = nx.spring_layout(G, **kwargs.pop("layout_kwargs", {}))
 
     nx.draw(
         G,
         pos=pos,
         ax=ax,
-        with_labels=kwargs.get("with_labels", False),
+        with_labels=kwargs.pop("with_labels", False),
         node_color=node_colors,
-        node_size=kwargs.get("node_size", 300),
-        edge_color=kwargs.get("edge_color", "lightgray"),
-        width=kwargs.get("width", 1),
-        alpha=kwargs.get("alpha", 0.8),
+        node_size=kwargs.pop("node_size", 300),
+        edge_color=kwargs.pop("edge_color", "lightgray"),
+        width=kwargs.pop("width", 1),
+        alpha=kwargs.pop("alpha", 0.8),
         **kwargs,
     )
 
@@ -332,7 +332,7 @@ def plot_community_network(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Community network plot saved to {output_path}")
 
     return ax

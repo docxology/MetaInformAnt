@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - singlecell
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/singlecell`
+- **Path**: `src/metainformant/singlecell`
 - **Purpose**: Single-cell analysis module for METAINFORMANT.
 - **Domain**: metainformant
 

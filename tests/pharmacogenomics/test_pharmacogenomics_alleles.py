@@ -15,6 +15,7 @@ import pytest
 from metainformant.pharmacogenomics.alleles.diplotype import (
     Diplotype,
     calculate_activity_score,
+    calculate_activity_score_from_alleles,
     determine_diplotype,
     phased_diplotype,
     resolve_ambiguous_diplotypes,
@@ -225,6 +226,23 @@ class TestDetermineDiplotype:
     def test_determine_diplotype_cyp2c19_rapid(self) -> None:
         dip = determine_diplotype("*1", "*17", "CYP2C19")
         assert dip.activity_score == 2.5  # *1=1.0 + *17=1.5
+
+    def test_determine_diplotype_dpyd_non_star_alleles(self) -> None:
+        # DPYD uses non-star allele designations ("c.2846A>T", "HapB3"); these
+        # must not be mangled into "*c.2846A>T" and must score from the table.
+        dip = determine_diplotype("c.2846A>T", "*1", "DPYD")
+        assert dip.activity_score == 1.5  # c.2846A>T=0.5 + *1=1.0
+        assert dip.diplotype_string == "*1/c.2846A>T"
+
+    def test_calculate_activity_score_from_alleles_dpyd_hapb3(self) -> None:
+        assert calculate_activity_score_from_alleles("HapB3", "*1", "DPYD") == 1.5
+        assert calculate_activity_score_from_alleles("*2A", "*1", "DPYD") == 1.0
+
+    def test_diplotype_preserves_dpyd_non_star_names(self) -> None:
+        dip = Diplotype(allele1="HapB3", allele2="1", gene="DPYD")
+        assert dip.allele1 == "*1"  # unknown bare names still get the star prefix
+        assert dip.allele2 == "HapB3"
+        assert dip.diplotype_string == "*1/HapB3"
 
 
 class TestCalculateActivityScore:

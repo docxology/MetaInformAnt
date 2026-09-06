@@ -12,6 +12,7 @@ from typing import Any, List, Optional, cast
 import numpy as np
 
 from metainformant.core.utils import logging
+from metainformant.gwas.analysis.correction import lambda_gc_from_p_values
 
 logger = logging.get_logger(__name__)
 
@@ -67,31 +68,21 @@ def lambda_gc_plot(
             lambda_values: list[float] = []
             for chrom, pvals in chrom_pvals.items():
                 if len(pvals) >= 2:
-                    obs = sorted([-math.log10(max(p, 1e-300)) for p in pvals])
-                    n = len(obs)
-                    exp = sorted([-math.log10((i + 1) / (n + 1)) for i in range(n)])
-                    med_obs = float(np.median(obs))
-                    med_exp = float(np.median(exp))
-                    lam = med_obs / med_exp if med_exp != 0 else 1.0
-                    lambda_by_chrom[chrom] = lam
-                    lambda_values.append(lam)
+                    lam = lambda_gc_from_p_values(pvals)
+                    if lam is not None:
+                        lambda_by_chrom[chrom] = lam
+                        lambda_values.append(lam)
 
             if not lambda_values:
                 return {
                     "status": "failed",
                     "error": "Not enough data to compute lambda GC",
                 }
-
             # Also compute overall lambda GC
             all_pvals = []
             for pvals in chrom_pvals.values():
                 all_pvals.extend(pvals)
-            obs_all = sorted([-math.log10(max(p, 1e-300)) for p in all_pvals])
-            n_all = len(obs_all)
-            exp_all = sorted([-math.log10((i + 1) / (n_all + 1)) for i in range(n_all)])
-            overall_lambda = (
-                float(np.median(obs_all)) / float(np.median(exp_all)) if float(np.median(exp_all)) != 0 else 1.0
-            )
+            overall_lambda = lambda_gc_from_p_values(all_pvals) or 1.0
         else:
             lambda_values = list(results)
             lambda_by_chrom = {}
@@ -373,10 +364,10 @@ def qq_plot(
         # Observed p-values
         observed = [-math.log10(p) for p in p_values]
 
-        # Calculate lambda GC (genomic control inflation factor)
+        # Lambda GC from the chi2-median genomic-control definition
+        lambda_gc = lambda_gc_from_p_values(p_values) or 1.0
         median_observed = float(np.median(observed))
         median_expected = float(np.median(expected))
-        lambda_gc = median_observed / median_expected if median_expected != 0 else 1.0
 
         # 95% confidence interval using Beta(i, n+1-i) quantiles
         try:
@@ -549,10 +540,10 @@ def qq_plot_stratified(
             # Observed p-values
             observed = [-math.log10(p) for p in stratum_p_values]
 
-            # Calculate lambda GC
-            median_observed = np.median(observed)
-            median_expected = np.median(expected)
-            lambda_gc = median_observed / median_expected if median_expected != 0 else 1.0
+            # Lambda GC from the chi2-median genomic-control definition
+            lambda_gc = lambda_gc_from_p_values(stratum_p_values) or 1.0
+            median_observed = float(np.median(observed))
+            median_expected = float(np.median(expected))
 
             # Plot
             scatter_kwargs = kwargs.get(

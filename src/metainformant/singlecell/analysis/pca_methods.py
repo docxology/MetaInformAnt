@@ -30,6 +30,15 @@ except ImportError:
 logger = logging.get_logger(__name__)
 
 
+def _add_embedding_to_obs(result: SingleCellData, coords: pd.DataFrame) -> None:
+    """Attach embedding coordinates to ``result.obs``, creating obs if needed."""
+    if result.obs is None:
+        result.obs = coords
+    else:
+        for col in coords.columns:
+            result.obs[col] = coords[col]
+
+
 def pca_reduction(
     data: SingleCellData,
     n_components: int = 50,
@@ -97,11 +106,7 @@ def pca_reduction(
         index=result.obs.index if result.obs is not None else None,
         columns=[f"PC{i+1}" for i in range(n_components)],
     )
-    if result.obs is None:
-        result.obs = pca_coords
-    else:
-        for col in pca_coords.columns:
-            result.obs[col] = pca_coords[col]
+    _add_embedding_to_obs(result, pca_coords)
 
     # Store PCA metadata
     explained_variance = pca.explained_variance_ratio_
@@ -146,6 +151,8 @@ def ica_reduction(
     Raises:
         TypeError: If data is not SingleCellData
     """
+    if not HAS_SKLEARN:
+        raise ImportError("scikit-learn is required for ICA. Install with: uv pip install scikit-learn")
     validation.validate_type(data, SingleCellData, "data")
     validation.validate_range(n_components, min_val=2, max_val=min(data.n_obs, data.n_vars), name="n_components")
 
@@ -175,12 +182,7 @@ def ica_reduction(
         columns=[f"IC{i+1}" for i in range(n_components)],
     )
 
-    # Add to obs
-    if result.obs is None:
-        result.obs = ica_coords
-    else:
-        for col in ica_coords.columns:
-            result.obs[col] = ica_coords[col]
+    _add_embedding_to_obs(result, ica_coords)
 
     # Store ICA metadata and components
     result.uns["ica"] = {
@@ -214,6 +216,8 @@ def factor_analysis_reduction(
     Raises:
         TypeError: If data is not SingleCellData
     """
+    if not HAS_SKLEARN:
+        raise ImportError("scikit-learn is required for Factor Analysis. Install with: uv pip install scikit-learn")
     validation.validate_type(data, SingleCellData, "data")
     validation.validate_range(n_components, min_val=2, max_val=min(data.n_obs, data.n_vars), name="n_components")
 
@@ -243,12 +247,7 @@ def factor_analysis_reduction(
         columns=[f"FA{i+1}" for i in range(n_components)],
     )
 
-    # Add to obs
-    if result.obs is None:
-        result.obs = fa_coords
-    else:
-        for col in fa_coords.columns:
-            result.obs[col] = fa_coords[col]
+    _add_embedding_to_obs(result, fa_coords)
 
     # Store FA metadata and components
     result.uns["factor_analysis"] = {
@@ -466,8 +465,6 @@ def select_hvgs(
         data.var["dispersions"] = dispersions
     else:
         # Create var dataframe if it doesn't exist
-        import pandas as pd
-
         var_df = pd.DataFrame(index=range(n_genes))
         var_df["highly_variable"] = highly_variable
         var_df["means"] = gene_means_all

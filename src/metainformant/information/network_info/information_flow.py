@@ -11,6 +11,7 @@ entropy estimation with optional NumPy acceleration.
 from __future__ import annotations
 
 import math
+import random
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger
@@ -192,11 +193,9 @@ def transfer_entropy(
     # Permutation test
     n_perms = 100
     null_tes = []
-    import random as _random
-
     for _ in range(n_perms):
         perm_source = list(source)
-        _random.shuffle(perm_source)
+        random.shuffle(perm_source)
         px_past = _discretize(perm_source[:n], n_bins)
         p_triple = _triple_counts(y_future, y_past, px_past)
         p_yp_xp = _joint_counts(y_past, px_past)
@@ -390,7 +389,6 @@ def _f_sf(f: float, df1: int, df2: int) -> float:
         return 0.5 * math.erfc(z / math.sqrt(2.0))
 
     # Beta approximation
-    df2 / (df2 + df1 * f)
     # For small df, use rough normal approximation
     mean_f = df2 / max(df2 - 2, 1)
     var_f = 2.0 * df2**2 * (df1 + df2 - 2) / (df1 * max(df2 - 2, 1) ** 2 * max(df2 - 4, 1)) if df2 > 4 else mean_f**2
@@ -461,7 +459,6 @@ def network_entropy(adjacency_matrix: list[list[float]]) -> dict:
     # S = -Tr(rho * log2(rho))
     # Approximate using Taylor expansion: -x*log(x) ~ x*(1-x) + ... for eigenvalue estimation
     # Use trace of rho^k for k=1,2,3
-    sum(rho[i][i] for i in range(n))  # Should be 1
     tr_rho2 = sum(rho[i][j] * rho[j][i] for i in range(n) for j in range(n))
 
     # Renyi-2 entropy approximation: S2 = -log2(tr_rho2)
@@ -640,8 +637,6 @@ def mutual_information_network(
     edges: list[dict] = []
     significant_pairs: list[tuple[str, str]] = []
 
-    import random as _random
-
     for i in range(n_vars):
         disc_i = _discretize(columns[i], n_bins)
         for j in range(i + 1, n_vars):
@@ -652,7 +647,7 @@ def mutual_information_network(
             null_mis = []
             for _ in range(50):
                 perm_j = list(disc_j)
-                _random.shuffle(perm_j)
+                random.shuffle(perm_j)
                 null_mis.append(_mutual_information_discrete(disc_i, perm_j))
 
             p_value = (sum(1 for nm in null_mis if nm >= mi) + 1) / (len(null_mis) + 1)

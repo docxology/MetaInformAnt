@@ -6,8 +6,11 @@ Protein-protein interaction (PPI) networks and gene regulatory network construct
 
 | File | Purpose |
 |------|---------|
-| `ppi.py` | PPI network loading, hub detection, clustering, and interaction prediction |
-| `regulatory.py` | Gene regulatory network inference and analysis |
+| `ppi.py` | Compatibility facade re-exporting the PPI implementation below |
+| `_ppi_impl.py` | PPI network loading/saving, hub detection, comparison, enrichment, interaction prediction, `ProteinNetwork` |
+| `regulatory.py` | Backward-compatible facade re-exporting `regulatory_core` and `regulatory_analysis` |
+| `regulatory_core.py` | `GeneRegulatoryNetwork` class and network-level regulatory operations |
+| `regulatory_analysis.py` | GRN inference from expression, motif/cascade detection, validation |
 
 ## Key Functions
 
@@ -18,7 +21,7 @@ Protein-protein interaction (PPI) networks and gene regulatory network construct
 | `ppi_network_analysis()` | Degree distribution, centrality, and topology metrics |
 | `find_ppi_hubs()` | Identify highly connected hub proteins |
 | `ppi_network_clustering()` | Cluster PPI network into functional modules |
-| `ProteinNetwork` | Class with interaction prediction (similarity, correlation, ML) |
+| `ProteinNetwork` | PPI network class: partners, confidence/evidence filtering, complexes, STRING I/O |
 | `predict_interactions()` | Predict novel protein-protein interactions |
 | `save_ppi_network()` | Export network to TSV or other formats |
 
@@ -29,5 +32,5 @@ from metainformant.networks.interaction.ppi import load_ppi_network, ppi_network
 
 network = load_ppi_network("data/ppi_interactions.tsv")
 stats = ppi_network_analysis(network)
-hubs = find_ppi_hubs(network, top_n=20)
+hubs = find_ppi_hubs(network, percentile=95.0)
 ```

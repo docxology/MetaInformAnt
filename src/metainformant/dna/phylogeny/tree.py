@@ -24,8 +24,7 @@ from .tree_analysis import (
     tree_diameter,
 )
 
-# Re-export construction functions
-# Re-export the Tree type alias
+# Re-export construction functions and the Tree type alias
 from .tree_construction import (
     Tree,
     neighbor_joining_tree,

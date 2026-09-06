@@ -39,10 +39,11 @@ flowchart LR
 ## Current command registry
 
 ```python
-CURRENT_AMALGKIT_STEPS = {
-    "metadata", "select", "getfastq", "integrate", "quant", "merge",
+CURRENT_AMALGKIT_STEPS = (
+    "metadata", "select", "getfastq", "quant", "merge", "busco",
     "wsfilter", "cstmm", "csfilter", "finalize", "sanity",
-}
+    "rerun", "integrate", "dataset",
+)
 ```
 
 The default single-species plan is:

@@ -69,9 +69,9 @@ def differential_expression(
         method: Statistical method. One of "wilcoxon" (Wilcoxon rank-sum
             test), "t_test" (Welch's t-test), or "pseudobulk" (not valid
             here; use pseudobulk_de instead).
-        min_cells: Minimum number of cells per group required to test a
-            gene. Genes where either group has fewer expressing cells are
-            skipped.
+        min_cells: Minimum number of expressing cells required to test a
+            gene. A gene is skipped only when BOTH groups have fewer
+            expressing cells than this.
         min_log2fc: Minimum absolute log2 fold change to include in results.
 
     Returns:
@@ -190,8 +190,9 @@ def pseudobulk_de(
 
     Args:
         expression_matrix: Expression matrix (cells x genes).
-        cell_labels: Cell type labels for each cell. Only cells of the
-            same type are aggregated (pass a single type or filter first).
+        cell_labels: Cell type labels for each cell. Validated for length
+            but not used to filter; pre-filter the matrix to a single cell
+            type before calling.
         sample_labels: Sample identifier for each cell.
         groups: Group assignment for each sample (must be consistent
             within a sample). Exactly two unique values required.
@@ -466,8 +467,8 @@ def gene_set_scoring(
             scores[gs_name] = [0.0] * n_cells
             continue
 
-        # Build background gene set (excluding current gene set)
-        non_gs_indices = [i for i in all_indices if i not in set(gs_indices)]
+        non_gs = set(gs_indices)
+        non_gs_indices = [i for i in all_indices if i not in non_gs]
         n_bg = min(n_background, len(non_gs_indices))
         bg_indices = rng.sample(non_gs_indices, n_bg) if n_bg > 0 else []
 
@@ -624,12 +625,6 @@ def _welch_t_test(a: list[float], b: list[float]) -> float:
         return 1.0
 
     t_stat = (mean_a - mean_b) / se
-
-    # Welch-Satterthwaite degrees of freedom
-    num = (var_a / n_a + var_b / n_b) ** 2
-    denom = (var_a / n_a) ** 2 / (n_a - 1) + (var_b / n_b) ** 2 / (n_b - 1)
-    num / denom if denom > 0 else 1.0
-
     # Approximate p-value using normal distribution for large df
     p_value = 2.0 * _standard_normal_cdf(-abs(t_stat))
     return p_value

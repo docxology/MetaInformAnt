@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-
+import yaml
 # Paths
 SCRIPT_PATH = Path("scripts/rna/normalize_tissue_metadata.py")
 MAPPING_PATH = Path("config/amalgkit/tissue_mapping.yaml")
@@ -94,3 +94,54 @@ class TestTissueNormalizationScript:
 
         df_out = pd.read_csv(output_path, sep="\t")
         assert df_out.loc[0, "tissue_normalized"] == "mushroom_body"
+
+
+class TestTissueNormalizerModule:
+    """Direct module API tests for metainformant.rna.amalgkit.tissue_normalizer."""
+
+    def _write_mapping(self, path: Path, payload: object) -> Path:
+        with open(path, "w", encoding="utf-8") as handle:
+            yaml.dump(payload, handle)
+        return path
+
+    def test_load_tissue_mapping_empty_file_returns_empty_dict(self, tmp_path: Path):
+        """An existing-but-empty mapping file degrades to no mapping."""
+        from metainformant.rna.amalgkit.tissue_normalizer import load_tissue_mapping
+
+        mapping_path = tmp_path / "tissue_mapping.yaml"
+        mapping_path.write_text("", encoding="utf-8")
+        assert load_tissue_mapping(mapping_path) == {}
+
+    def test_load_tissue_missing_file_returns_empty_dict(self, tmp_path: Path):
+        """A missing mapping file returns {} rather than raising."""
+        from metainformant.rna.amalgkit.tissue_normalizer import load_tissue_mapping
+
+        assert load_tissue_mapping(tmp_path / "absent.yaml") == {}
+
+    def test_load_tissue_mapping_ignores_non_list_values(self, tmp_path: Path):
+        """Scalar keys (comments-as-keys) are filtered out of the mapping."""
+        from metainformant.rna.amalgkit.tissue_normalizer import load_tissue_mapping
+
+        mapping_path = self._write_mapping(
+            tmp_path / "tissue_mapping.yaml",
+            {"brain": ["Brain", "brain"], "note": "scalar entry"},
+        )
+        assert load_tissue_mapping(mapping_path) == {"brain": ["Brain", "brain"]}
+
+    def test_normalize_tissue_exact_case_insensitive_and_prefix(self):
+        """Exact match, case-insensitive match, and prefix fallback all resolve."""
+        from metainformant.rna.amalgkit.tissue_normalizer import build_synonym_lookup, normalize_tissue
+
+        lookup = build_synonym_lookup({"fat_body": ["fat body", "FB"], "brain": ["brain"]})
+        assert normalize_tissue("brain", lookup) == "brain"
+        assert normalize_tissue("  BRAIN ", lookup) == "brain"
+        assert normalize_tissue("fat body of 1 queen; kept in a group", lookup) == "fat_body"
+
+    def test_normalize_tissue_unmapped_returns_default(self):
+        """Unmapped values return the caller-requested default (default "" contract)."""
+        from metainformant.rna.amalgkit.tissue_normalizer import build_synonym_lookup, normalize_tissue
+
+        lookup = build_synonym_lookup({"brain": ["brain"]})
+        assert normalize_tissue("wing disc", lookup) == ""
+        assert normalize_tissue("wing disc", lookup, default="unknown") == "unknown"
+        assert normalize_tissue("", lookup) == ""

@@ -61,6 +61,13 @@ def validate_json_schema(schema: Mapping[str, Any]) -> None:
             enum_values = prop["enum"]
             if not isinstance(enum_values, list) or not enum_values:
                 raise SchemaError(f"property {name!r} enum must be a non-empty array")
+            allowed = _JSON_TYPE_MAP[prop_type]
+            for item in enum_values:
+                # bool must not satisfy integer/number enum slots.
+                if isinstance(item, bool) or not isinstance(item, allowed):
+                    raise SchemaError(
+                        f"property {name!r} enum values must match declared type {prop_type!r}"
+                    )
     required = schema.get("required", [])
     if not isinstance(required, list) or not all(isinstance(item, str) for item in required):
         raise SchemaError("schema 'required' must be an array of property names")
@@ -193,6 +200,6 @@ class ToolRegistry:
     def call(self, name: str, arguments: Mapping[str, Any] | None) -> Any:
         """Validate arguments and execute the handler for tool ``name``."""
 
-        tool = self._tools[name]
+        tool = self.get(name)
         tool.validate_call(arguments or {})
         return tool.handler(arguments or {})

@@ -50,14 +50,14 @@ from metainformant.ontology.core.obo import parse_obo
 from metainformant.ontology.core.go import load_go_obo, enrich_genes, semantic_similarity
 
 go = load_go_obo("data/go-basic.obo")
-results = enrich_genes(go, gene_list=target_genes, background=all_genes)
-sim = semantic_similarity(go, "GO:0008150", "GO:0003674", method="resnik")
+results = enrich_genes(genes=target_genes, background=all_genes, annotations=go_annotations)
+sim = semantic_similarity("GO:0008150", "GO:0003674", term_ic=ic_map, hierarchy=hierarchy, method="resnik")
 ```
 
 | Function | Description |
 |----------|-------------|
 | `load_go_obo` | Load and validate GO ontology from OBO file |
-| `enrich_genes` | Hypergeometric test with BH FDR correction |
+| `enrich_genes` | Fisher exact / hypergeometric ORA with Bonferroni correction |
 | `semantic_similarity` | Resnik/Lin/Jiang semantic similarity between terms |
 | `calculate_term_ic` | Information content from annotation frequency |
 
@@ -96,6 +96,8 @@ plot_go_dag(go, terms=["GO:0008150"], output_path="output/dag.png")
 | [`query/`](query/) | Graph traversal (`ancestors`, `descendants`, `shortest_path`), serialization (`save_ontology`, `merge_ontologies`) |
 | [`pathway_enrichment/`](pathway_enrichment/) | Over-representation analysis, GSEA, FDR correction, pathway networks |
 | [`visualization/`](visualization/) | GO DAG plotting, enrichment bar/dot charts, semantic similarity matrices |
+| [`annotation/`](annotation/) | GWAS hit genes to GO annotations bridge (`gwas_hits_to_genes`, `genes_to_go_annotations`, GAF loading) |
+| [`workflow/`](workflow/) | Stage-10 GWAS ontology pipeline (`run_ontology`) |
 
 ## Quick Start
 
@@ -112,7 +114,7 @@ bio_process_ancestors = ancestors(go, "GO:0008150")
 children = descendants(go, "GO:0003674", relation_type="is_a")
 
 # Run enrichment
-results = enrich_genes(go, gene_list=target_genes, background=all_genes)
+results = enrich_genes(genes=target_genes, background=all_genes, annotations=go_annotations)
 
 # Export as JSON
 save_ontology(go, "output/ontology/go_subset.json", format="json")

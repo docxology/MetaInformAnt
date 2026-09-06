@@ -11,11 +11,11 @@ import pytest
 from metainformant.core.utils.watchdog import ProcessWatchdog
 
 
-def test_watchdog_kills_stalled_process():
+def test_watchdog_kills_stalled_process(tmp_path):
     """
     Test that watchdog kills a process that sleeps (low CPU) for too long.
     """
-    # Create a python script that sleeps forever
+    # Create a python script that sleeps forever (inside tmp_path, not the repo)
     script = """
 import time
 import sys
@@ -26,8 +26,9 @@ try:
 except BaseException as e:
     print(f"Caught {type(e).__name__}", flush=True)
 """
-    script_path = Path("temp_sleep_script.py")
+    script_path = tmp_path / "temp_sleep_script.py"
     script_path.write_text(script)
+
 
     try:
         # Start the sleeper

@@ -94,8 +94,9 @@ class TestCalculateSubstitutionMatrix:
     def test_identical_sequences_empty_matrix(self) -> None:
         assert mutations.calculate_substitution_matrix("ATCG", "ATCG") == {}
 
-    def test_length_mismatch_returns_empty(self) -> None:
-        assert mutations.calculate_substitution_matrix("ATCG", "ATCGAA") == {}
+    def test_length_mismatch_raises(self) -> None:
+        with pytest.raises(ValueError):
+            mutations.calculate_substitution_matrix("ATCG", "ATCGAA")
 
 
 class TestDetectSelectionSignatures:

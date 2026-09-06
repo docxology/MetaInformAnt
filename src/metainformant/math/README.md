@@ -112,7 +112,7 @@ from metainformant.math.epidemiology.models import basic_reproduction_number, he
 
 r0 = basic_reproduction_number(transmission_rate=0.3, recovery_rate=0.1)
 threshold = herd_immunity_threshold(R0=r0)
-S, I, R = sir_step(S=990, I=10, R=0, beta=0.3, gamma=0.1, N=1000)
+S, I, R = sir_step(990, 10, 0, beta=0.3, gamma=0.1)
 ```
 
 ## Submodules

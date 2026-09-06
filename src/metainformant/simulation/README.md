@@ -47,7 +47,7 @@ graph TD
 from metainformant.simulation.models.sequences import generate_random_dna, evolve_sequence
 
 ancestor = generate_random_dna(1000, gc_content=0.45)
-evolved = evolve_sequence(ancestor, n_generations=100, mutation_rate=0.001)
+evolved = evolve_sequence(ancestor, generations=100, mutation_rate=0.001)
 ```
 
 | Function | Description |
@@ -64,7 +64,7 @@ evolved = evolve_sequence(ancestor, n_generations=100, mutation_rate=0.001)
 from metainformant.simulation.models.popgen import generate_population_sequences, simulate_bottleneck_population
 
 seqs = generate_population_sequences(n_sequences=50, length=1000, theta=0.01)
-bottleneck = simulate_bottleneck_population(n_sequences=100, length=500, bottleneck_size=10)
+bottleneck = simulate_bottleneck_population(n_sequences=100, sequence_length=500, bottleneck_size=10)
 ```
 
 | Function | Description |

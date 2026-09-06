@@ -48,6 +48,19 @@ except ImportError:
     HAS_SKLEARN = False
 
 
+def _save_plot(ax: Axes, output_path: str | Path, label: str) -> str:
+    """Ensure the output directory exists and save the plotted figure deterministically.
+
+    Consolidates the repeated ensure_directory / save_figure_deterministic / logger
+    triple used by every plot function in this module. Saves ``ax.figure`` so the
+    plotted figure is written even when a different pyplot figure is current.
+    """
+    paths.ensure_directory(Path(output_path).parent)
+    save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+    logger.info(f"{label} saved to {output_path}")
+    return str(output_path)
+
+
 def histogram(
     data: np.ndarray, *, bins: int = 30, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
@@ -76,9 +89,7 @@ def histogram(
     ax.hist(data, bins=bins, **kwargs)
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Histogram saved to {output_path}")
+        _save_plot(ax, output_path, "Histogram")
 
     return ax
 
@@ -115,9 +126,7 @@ def box_plot(
     ax.boxplot(data, **kwargs)
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Box plot saved to {output_path}")
+        _save_plot(ax, output_path, "Box plot")
 
     return ax
 
@@ -165,9 +174,7 @@ def violin_plot(
         ax.boxplot(data, **kwargs)
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Violin plot saved to {output_path}")
+        _save_plot(ax, output_path, "Violin plot")
 
     return ax
 
@@ -229,9 +236,7 @@ def qq_plot(
     ax.set_ylabel("Sample Quantiles")
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Q-Q plot saved to {output_path}")
+        _save_plot(ax, output_path, "Q-Q plot")
 
     return ax
 
@@ -287,9 +292,7 @@ def correlation_heatmap(
                 ax.text(j, i, f"{corr_matrix.iloc[i, j]:.2f}", ha="center", va="center", color="w")
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Correlation heatmap saved to {output_path}")
+        _save_plot(ax, output_path, "Correlation heatmap")
 
     return ax
 
@@ -330,9 +333,7 @@ def density_plot(
         ax.hist(data, density=True, alpha=0.7, **kwargs)
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Density plot saved to {output_path}")
+        _save_plot(ax, output_path, "Density plot")
 
     return ax
 
@@ -367,8 +368,6 @@ def ridge_plot(
         fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 6)))
 
     # Simple ridge plot implementation
-    n_groups = len(data)
-    np.linspace(0, n_groups - 1, n_groups)
 
     for i, arr in enumerate(data):
         if HAS_SEABORN:
@@ -381,9 +380,7 @@ def ridge_plot(
     ax.legend()
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Ridge plot saved to {output_path}")
+        _save_plot(ax, output_path, "Ridge plot")
 
     return ax
 
@@ -434,9 +431,7 @@ def roc_curve(
     ax.legend()
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"ROC curve saved to {output_path}")
+        _save_plot(ax, output_path, "ROC curve")
 
     return ax
 
@@ -486,9 +481,7 @@ def precision_recall_curve(
     ax.legend()
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Precision-recall curve saved to {output_path}")
+        _save_plot(ax, output_path, "Precision-recall curve")
 
     return ax
 
@@ -534,9 +527,7 @@ def residual_plot(
     ax.set_title("Residual Plot")
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Residual plot saved to {output_path}")
+        _save_plot(ax, output_path, "Residual plot")
 
     return ax
 
@@ -595,8 +586,6 @@ def leverage_plot(
     ax.set_title("Leverage Plot")
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Leverage plot saved to {output_path}")
+        _save_plot(ax, output_path, "Leverage plot")
 
     return ax

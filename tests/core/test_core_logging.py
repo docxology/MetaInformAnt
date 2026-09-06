@@ -113,3 +113,21 @@ def test_log_with_metadata_level() -> None:
 
     log_output = log_stream.getvalue()
     assert "Debug message" in log_output
+
+
+def test_setup_logger_closes_previous_handlers(tmp_path) -> None:
+    """Re-running setup_logger must close old handlers, not leak open files."""
+
+    log_file = tmp_path / "logs" / "run.log"
+
+    core_logging.setup_logger("leak_check", log_file=str(log_file))
+    logger = logging.getLogger("leak_check")
+    first_file_handlers = [h for h in logger.handlers if isinstance(h, logging.FileHandler)]
+    assert first_file_handlers, "expected a FileHandler on first setup"
+
+    core_logging.setup_logger("leak_check", log_file=str(log_file))
+
+    # FileHandler.close() closes the stream and drops it (stream becomes None).
+    assert first_file_handlers[0].stream is None
+    active = [h for h in logger.handlers if isinstance(h, logging.FileHandler)]
+    assert len(active) == 1

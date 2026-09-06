@@ -27,9 +27,9 @@ Signal-based peak detection for ChIP-seq and ATAC-seq data, including narrow pea
 ```python
 from metainformant.epigenome.peak_calling import peak_detection
 
-peaks = peak_detection.call_peaks_simple(signal, control, p_threshold=1e-5)
-broad = peak_detection.call_peaks_broad(signal, control)
-merged = peak_detection.merge_peaks(peaks, max_gap=500)
+peaks = peak_detection.call_peaks_simple(signal, control, threshold=5.0)  # -log10 p cutoff
+broad = peak_detection.call_peaks_broad(signal, control, p_threshold=0.1, broad_cutoff=0.1)
+merged = peak_detection.merge_peaks(peaks, distance=500)
 frip = peak_detection.compute_frip(reads_in_peaks=50000, total_reads=1000000)
-diff = peak_detection.differential_peaks(peaks_a, peaks_b)
+diff = peak_detection.differential_peaks(peaks_a, peaks_b, signals_a, signals_b)
 ```

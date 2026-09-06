@@ -9,8 +9,8 @@ analysis across samples or experimental groups.
 Methods:
     - Overlap scoring: Enrichment based on intersection of expressed genes
       with marker sets, normalized by set size and background.
-    - Correlation: Pearson correlation of cell expression profiles against
-      mean reference profiles for each cell type.
+    - Correlation: Pearson correlation of a cell's expression profile with
+      a binary marker-membership profile over all genes.
     - Scoring: Mean expression of marker genes minus mean expression of a
       randomly selected background set.
     - Label transfer: kNN classification in a shared PCA embedding space
@@ -69,7 +69,7 @@ def annotate_by_markers(
             expression matrix. Required if expression_matrix is not annotated.
         method: Scoring method. One of "overlap" (enrichment score based on
             expressed gene overlap), "correlation" (Pearson correlation with
-            mean marker profile), or "scoring" (mean marker expression minus
+            a binary marker-membership profile), or "scoring" (mean marker expression minus
             background).
         threshold: Minimum score required for a confident annotation. Cells
             scoring below this for all types are labeled "unassigned".
@@ -648,8 +648,10 @@ def _correlation_score(
 ) -> float:
     """Compute Pearson correlation between cell expression and marker profile.
 
-    Creates a binary marker profile (1 at marker positions, 0 elsewhere)
-    and correlates it with the cell's expression values at those positions.
+    Builds a binary marker-membership profile over all genes (1 at marker
+    positions, 0 elsewhere) and correlates it with the cell's expression
+    vector. Cells expressing the marker genes above their genome-wide
+    baseline receive positive scores.
 
     Args:
         row: Expression values for a single cell.
@@ -658,29 +660,23 @@ def _correlation_score(
     Returns:
         Pearson correlation coefficient (range -1 to 1).
     """
-    if not marker_indices:
+    n = len(row)
+    if n < 2 or not marker_indices:
         return 0.0
 
-    marker_values = [row[i] for i in marker_indices]
-    n = len(marker_values)
+    marker_set = set(marker_indices)
+    n_markers = len(marker_set)
+    mean_expr = sum(row) / n
+    mean_prof = n_markers / n
 
-    if n < 2:
-        return marker_values[0] if marker_values else 0.0
+    numerator = sum((row[i] - mean_expr) * (1.0 - mean_prof if i in marker_set else -mean_prof) for i in range(n))
+    denom_expr = math.sqrt(sum((v - mean_expr) ** 2 for v in row))
+    denom_prof = math.sqrt(n_markers * (1.0 - mean_prof) ** 2 + (n - n_markers) * mean_prof**2)
 
-    mean_val = sum(marker_values) / n
-    # Use all-ones as the "ideal" marker profile, so correlation is
-    # simply the normalized deviation from the mean
-    mean_ideal = 1.0
-    ideal = [1.0] * n
-
-    numerator = sum((marker_values[i] - mean_val) * (ideal[i] - mean_ideal) for i in range(n))
-    denom_a = math.sqrt(sum((v - mean_val) ** 2 for v in marker_values))
-    denom_b = math.sqrt(sum((v - mean_ideal) ** 2 for v in ideal))
-
-    if denom_a == 0 or denom_b == 0:
+    if denom_expr == 0 or denom_prof == 0:
         return 0.0
 
-    return numerator / (denom_a * denom_b)
+    return numerator / (denom_expr * denom_prof)
 
 
 def _expression_score(

@@ -17,7 +17,7 @@ Documentation for the rna domain in MetaInformAnt.
 
 ## Integration
 - **Source**: `src/metainformant/rna/`
-- **Tests**: `tests/rna/test_rna_*.py`
+- **Tests**: `tests/rna/*.py`
 
 ## Testing Policy
 - **Real Implementation**: All tests must use real implementations. Mocks are strictly prohibited.

@@ -14,20 +14,9 @@ import numpy as np
 
 from metainformant.core.data import validation
 from metainformant.core.utils import logging
+from metainformant.information.metrics.core.syntactic import shannon_entropy
 
 logger = logging.get_logger(__name__)
-
-# Import shannon_entropy from syntactic module
-try:
-    from metainformant.information.metrics.core.syntactic import shannon_entropy
-except ImportError:
-    logger.warning("Could not import shannon_entropy from syntactic module")
-
-    def shannon_entropy(probs: "np.ndarray | Sequence[float]", base: float = 2.0) -> float:
-        """Fallback Shannon entropy implementation."""
-        p = np.array(probs, dtype=float)
-        p = p[p > 0]
-        return float(-np.sum(p * np.log(p) / np.log(base)))
 
 
 def channel_capacity(
@@ -214,10 +203,6 @@ def rate_distortion(
     source_entropy = float(shannon_entropy(p_x.tolist(), base=2.0))
     if max_rate is None:
         max_rate = source_entropy
-
-    # Maximum distortion (rate = 0): D_max = min_j sum_i p(x_i) * d(x_i, j)
-    expected_distortions = np.array([np.sum(p_x * distortion_matrix[:, j]) for j in range(n_x_hat)])
-    float(np.min(expected_distortions))
 
     # Minimum distortion (maximum rate): D_min = 0 if identity reproduction is possible
 

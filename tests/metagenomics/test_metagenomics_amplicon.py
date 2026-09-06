@@ -364,3 +364,72 @@ class TestCalculateConfidence:
 
     def test_empty_assignments_returns_empty(self) -> None:
         assert calculate_confidence([]) == {}
+
+    def test_n_is_int(self) -> None:
+        """The 'n' statistic should be an integer count of assignments."""
+        assignments = [
+            TaxonomyAssignment("s1", [], confidence={"domain": 0.95}),
+            TaxonomyAssignment("s2", [], confidence={"domain": 0.90}),
+        ]
+        stats = calculate_confidence(assignments)
+        assert stats["domain"]["n"] == 2
+        assert isinstance(stats["domain"]["n"], int)
+
+
+# ---------------------------------------------------------------------------
+# Tests: added coverage
+# ---------------------------------------------------------------------------
+
+
+class TestMergePairedReadsSequence:
+    """Sequence-level assertions for paired-end merging."""
+
+    def test_merge_produces_expected_sequence(self) -> None:
+        """Merged read should be forward flank + overlap + reverse tail."""
+        overlap = "ATCGATCGATCG"
+        forward_part = "AAAAAAAAAA"
+        reverse_part = "GGGGGGGGGG"
+        complement = {"A": "T", "T": "A", "C": "G", "G": "C"}
+        # Raw reverse read whose reverse complement starts with the overlap
+        rev_raw = "".join(complement[b] for b in reversed(overlap + reverse_part))
+        fwd = {"r1": forward_part + overlap}
+        rev = {"r1": rev_raw}
+        merged = merge_paired_reads(fwd, rev, min_overlap=5)
+        assert merged == {"r1": forward_part + overlap + reverse_part}
+
+
+class TestDenoiseIdenticalReads:
+    """Denoising of identical reads must collapse to one ASV."""
+
+    def test_identical_reads_single_asv(self) -> None:
+        seq = "ATCGATCGATCGATCG"
+        reads = {f"r{i}": seq for i in range(4)}
+        result = denoise_sequences(reads)
+        assert result.num_asvs == 1
+        assert result.asvs[0].abundance == 4
+        assert result.asvs[0].sequence == seq
+
+
+class TestClassifyTaxonomyThresholds:
+    """Confidence-threshold masking and tree branching behavior."""
+
+    def test_unrelated_query_masked_unclassified(
+        self,
+        reference_taxonomy: tuple[dict[str, str], dict[str, list[tuple[str, str]]]],
+    ) -> None:
+        ref_db, ref_tax = reference_taxonomy
+        # Poly-T query shares no 11-mers with the ACGT reference sequences
+        query = {"q1": "TTTTTTTTTTTTTTTTTTTT"}
+        results = classify_taxonomy(query, ref_db, ref_tax, method="blast")
+        assert all(name == "unclassified" for _, name in results[0].lineage)
+
+    def test_tree_unclassified_branch_stops_traversal(self) -> None:
+        assignments = [
+            TaxonomyAssignment("s1", [("domain", "unclassified"), ("phylum", "Firmicutes")]),
+        ]
+        tree = build_taxonomy_tree(assignments)
+        assert "unclassified_domain" in tree.children
+        unclassified = tree.children["unclassified_domain"]
+        assert unclassified.count == 1
+        # Traversal stops at the unclassified node: no deeper ranks recorded
+        assert unclassified.children == {}

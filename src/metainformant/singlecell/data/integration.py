@@ -30,6 +30,11 @@ except ImportError:
 logger = logging.get_logger(__name__)
 
 
+def _to_dense(x: Any) -> Any:
+    """Return a dense view/copy of ``x`` (sparse matrices are converted)."""
+    return x.toarray() if hasattr(x, "toarray") else x
+
+
 def bbknn_integration(data: SingleCellData, batch_key: str, n_neighbors: int = 15) -> SingleCellData:
     """Perform BBKNN (Batch Balanced K-Nearest Neighbors) integration.
 
@@ -62,72 +67,24 @@ def bbknn_integration(data: SingleCellData, batch_key: str, n_neighbors: int = 1
     result = data.copy()
 
     # Get expression matrix and batch labels
-    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
+    X = _to_dense(data.X)
     batch_labels = data.obs[batch_key].values
     unique_batches = np.unique(batch_labels)
 
     logger.info(f"Found {len(unique_batches)} batches: {unique_batches}")
 
-    # For BBKNN, we need to construct a batch-aware kNN graph
-    # This is a simplified implementation
-
-    # First, compute PCA for dimensionality reduction
+    # Compute a PCA embedding for downstream batch-mixing visualization
     pca = PCA(n_components=min(50, X.shape[1]), random_state=42)
     X_pca = pca.fit_transform(StandardScaler().fit_transform(X))
 
-    # Compute batch-balanced kNN graph
     n_cells = X.shape[0]
-    batch_adjacency = np.zeros((n_cells, n_cells))
 
-    # For each batch pair, compute cross-batch neighbors
-    for i, batch1 in enumerate(unique_batches):
-        for j, batch2 in enumerate(unique_batches):
-            if i <= j:  # Include self-batch and upper triangle
-                batch1_mask = batch_labels == batch1
-                batch2_mask = batch_labels == batch2
-
-                batch1_indices = np.where(batch1_mask)[0]
-                batch2_indices = np.where(batch2_mask)[0]
-
-                if len(batch1_indices) == 0 or len(batch2_indices) == 0:
-                    continue
-
-                # Compute distances between batches
-                X_batch1 = X_pca[batch1_indices]
-                X_batch2 = X_pca[batch2_indices]
-
-                # Use kNN to find mutual nearest neighbors
-                from sklearn.neighbors import NearestNeighbors
-
-                # Find neighbors from batch1 to batch2
-                if len(batch2_indices) >= n_neighbors:
-                    nbrs = NearestNeighbors(n_neighbors=n_neighbors, metric="euclidean")
-                    nbrs.fit(X_batch2)
-                    distances, indices = nbrs.kneighbors(X_batch1)
-
-                    # Convert local indices to global indices
-                    for local_i, global_i in enumerate(batch1_indices):
-                        for k in range(n_neighbors):
-                            global_j = batch2_indices[indices[local_i, k]]
-                            batch_adjacency[global_i, global_j] = 1.0 / (distances[local_i, k] + 1e-6)
-
-                # Find neighbors from batch2 to batch1 (for undirected graph)
-                if i != j and len(batch1_indices) >= n_neighbors:  # Don't duplicate self-batch
-                    nbrs = NearestNeighbors(n_neighbors=n_neighbors, metric="euclidean")
-                    nbrs.fit(X_batch1)
-                    distances, indices = nbrs.kneighbors(X_batch2)
-
-                    for local_i, global_i in enumerate(batch2_indices):
-                        for k in range(n_neighbors):
-                            global_j = batch1_indices[indices[local_i, k]]
-                            batch_adjacency[global_i, global_j] = 1.0 / (distances[local_i, k] + 1e-6)
-
-    # Store the integrated adjacency matrix
+    # Store integration metadata
     result.uns["bbknn"] = {
         "batch_key": batch_key,
         "n_neighbors": n_neighbors,
         "n_batches": len(unique_batches),
-        "batch_adjacency_shape": batch_adjacency.shape,
+        "batch_adjacency_shape": (n_cells, n_cells),
     }
 
     # For visualization, we can compute a 2D embedding from the graph
@@ -177,7 +134,7 @@ def harmony_integration(data: SingleCellData, batch_key: str, n_components: int 
     result = data.copy()
 
     # Get expression matrix and batch labels
-    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
+    X = _to_dense(data.X)
     batch_labels = data.obs[batch_key].values
 
     # Harmony-like batch correction (simplified implementation)
@@ -253,7 +210,7 @@ def scanorama_integration(data_list: List[SingleCellData], batch_key: str) -> Si
     batch_labels = []
 
     for i, data in enumerate(data_list):
-        X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
+        X = _to_dense(data.X)
         all_X.append(X)
 
         obs = data.obs.copy() if data.obs is not None else pd.DataFrame(index=range(data.n_obs))
@@ -347,8 +304,8 @@ def mnn_integration(data_list: List[SingleCellData], batch_key: str) -> SingleCe
         logger.info(f"Integrating dataset {i}")
 
         # Get expression matrices
-        X1 = integrated_data.X.toarray() if hasattr(integrated_data.X, "toarray") else integrated_data.X
-        X2 = data.X.toarray() if hasattr(data.X, "toarray") else data.X
+        X1 = _to_dense(integrated_data.X)
+        X2 = _to_dense(data.X)
 
         # Find mutual nearest neighbors
         mnn_pairs = _find_mutual_nearest_neighbors(X1, X2, k=20)
@@ -420,7 +377,7 @@ def combat_integration(data: SingleCellData, batch_key: str, covariates: Optiona
     result = data.copy()
 
     # Get expression matrix and batch labels
-    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
+    X = _to_dense(data.X)
     batch_labels = data.obs[batch_key].values
 
     # Simplified ComBat-like correction
@@ -562,7 +519,7 @@ def integrate_multiple_batches(
 
         combined_data = scanorama_integration(data_list, batch_key="batch")
         return bbknn_integration(combined_data, batch_key="batch", **kwargs)
-    else:
+    else:  # pragma: no cover - guarded by the valid_methods check above
         raise errors.ValidationError(f"Unsupported integration method: {integration_method}")
 
 
@@ -591,7 +548,7 @@ def evaluate_integration_quality(
     logger.info("Evaluating integration quality")
 
     batch_labels = integrated_data.obs[batch_key].values
-    X = integrated_data.X.toarray() if hasattr(integrated_data.X, "toarray") else integrated_data.X
+    X = _to_dense(integrated_data.X)
 
     unique_batches = np.unique(batch_labels)
     n_batches = len(unique_batches)

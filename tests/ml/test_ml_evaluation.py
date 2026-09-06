@@ -10,11 +10,14 @@ import numpy as np
 from metainformant.ml.evaluation.validation import (
     biological_data_validator,
     bootstrap_validate,
+    compare_validation_strategies,
     cross_validate,
     cross_validation_scores,
     k_fold_split,
     learning_curve,
+    permutation_importance_biological,
     train_test_split_biological,
+    validate_model_stability,
 )
 
 # ---------------------------------------------------------------------------
@@ -221,3 +224,109 @@ class TestLearningCurve:
         assert "train_sizes" in result
         assert len(result["train_scores"]) == 3
         assert len(result["validation_scores"]) == 3
+
+
+# ---------------------------------------------------------------------------
+# permutation_importance_biological
+# ---------------------------------------------------------------------------
+
+
+class TestPermutationImportanceBiological:
+    def test_classification_structure(self):
+        from sklearn.tree import DecisionTreeClassifier
+
+        X, y = _make_classification_data(n=80)
+        model = DecisionTreeClassifier(random_state=42).fit(X, y)
+
+        result = permutation_importance_biological(
+            model, X, y, n_repeats=2, random_state=42
+        )
+
+        assert "baseline_score" in result
+        assert len(result["feature_importances"]) == X.shape[1]
+        ranks = [entry["rank"] for entry in result["feature_importances"]]
+        assert ranks == list(range(1, X.shape[1] + 1))
+
+    def test_regression_target_uses_kfold(self):
+        """Continuous targets must fall back to KFold instead of stratified folds."""
+        from sklearn.tree import DecisionTreeRegressor
+
+        X, y = _make_regression_data(n=80)
+        model = DecisionTreeRegressor(random_state=42).fit(X, y)
+
+        result = permutation_importance_biological(
+            model,
+            X,
+            y,
+            n_repeats=2,
+            scoring="neg_mean_squared_error",
+            random_state=42,
+        )
+
+        assert len(result["feature_importances"]) == X.shape[1]
+        assert result["scoring_metric"] == "neg_mean_squared_error"
+
+
+# ---------------------------------------------------------------------------
+# validate_model_stability
+# ---------------------------------------------------------------------------
+
+
+class TestValidateModelStability:
+    def test_stability_metrics_structure(self):
+        from sklearn.tree import DecisionTreeClassifier
+
+        X, y = _make_classification_data(n=80)
+        result = validate_model_stability(
+            X,
+            y,
+            model_factory=lambda **kwargs: DecisionTreeClassifier(**kwargs),
+            n_bootstraps=4,
+            test_size=0.25,
+            random_state=42,
+        )
+
+        assert result["n_bootstraps"] == 4
+        assert len(result["scores"]["values"]) == 4
+        assert 0.0 <= result["scores"]["mean"] <= 1.0
+        assert "coefficient_of_variation" in result["stability_metrics"]
+        assert "stability_score" in result["stability_metrics"]
+
+
+# ---------------------------------------------------------------------------
+# compare_validation_strategies
+# ---------------------------------------------------------------------------
+
+
+class TestCompareValidationStrategies:
+    def test_compare_strategies(self):
+        from sklearn.tree import DecisionTreeClassifier
+
+        X, y = _make_classification_data(n=80)
+        result = compare_validation_strategies(
+            X,
+            y,
+            model_factory=lambda: DecisionTreeClassifier(random_state=42),
+            strategies=["holdout", "5fold_cv"],
+            random_state=42,
+        )
+
+        assert set(result["strategies_tested"]) == {"holdout", "5fold_cv"}
+        for strategy in result["strategies_tested"]:
+            assert "score" in result["comparison"][strategy]
+        assert result["best_strategy"] in result["strategies_tested"]
+
+    def test_unknown_strategy_recorded_as_error(self):
+        from sklearn.tree import DecisionTreeClassifier
+
+        X, y = _make_classification_data(n=60)
+        result = compare_validation_strategies(
+            X,
+            y,
+            model_factory=lambda: DecisionTreeClassifier(random_state=42),
+            strategies=["bogus_strategy"],
+            random_state=42,
+        )
+
+        assert "error" in result["comparison"]["bogus_strategy"]
+        assert result["best_strategy"] is None

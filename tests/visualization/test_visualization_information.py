@@ -322,3 +322,52 @@ class TestPlotInformationNetwork:
                 plot_information_network(nodes, edges)
         finally:
             information_module.HAS_NETWORKX = original
+
+
+class TestValidationAndBranchGaps:
+    """Tests for accepted input variants and uncovered plot branches."""
+
+    def test_entropy_profile_accepts_numpy_values(self):
+        """Test entropy profile accepts numpy arrays as well as lists."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        entropy_data = {"SeqA": np.array([1.0, 1.4, 1.9]), "SeqB": np.array([0.9, 1.2, 1.6])}
+
+        ax = plot_entropy_profile(entropy_data)
+        assert ax is not None
+        assert len(ax.lines) == 2
+        plt.close("all")
+
+    def test_renyi_spectra_without_shannon_alpha(self):
+        """Test Rényi spectra draws no Shannon marker when alpha=1 is absent."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        alpha_values = [0.5, 1.5, 2.0]
+        renyi_data = {"Dist1": [2.0, 1.6, 1.4], "Dist2": [2.2, 1.8, 1.5]}
+
+        ax = plot_renyi_spectra(renyi_data, alpha_values)
+        assert ax is not None
+        assert len(ax.lines) == 2  # Only the two distributions, no axvline marker
+        plt.close("all")
+
+    def test_information_network_empty_edges(self):
+        """Test information network renders isolated nodes when edges are empty."""
+        if not HAS_NETWORKX:
+            pytest.skip("NetworkX required for information network plotting")
+
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        nodes = ["A", "B", "C"]
+
+        ax = plot_information_network(nodes, [])
+        assert ax is not None
+        plt.close("all")

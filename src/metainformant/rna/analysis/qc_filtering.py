@@ -4,7 +4,7 @@ Provides batch effect detection, GC/length bias detection, and comprehensive
 QC report generation for RNA-seq count data.
 
 This module provides REAL implementations using numpy, scipy, and pandas.
-Real implementationing, no placeholder data.
+Real implementations throughout; no placeholder data.
 """
 
 from __future__ import annotations
@@ -688,7 +688,7 @@ def generate_qc_report(
         logger.info("Testing for batch effects...")
         batch_labels = sample_metadata["batch"]
         # Ensure batch_labels is a Series with sample names as index
-        if not isinstance(batch_labels.index, pd.Index) or not all(s in batch_labels.index for s in counts_df.columns):
+        if not all(s in batch_labels.index for s in counts_df.columns):
             # Try to align
             common_samples = [s for s in counts_df.columns if s in batch_labels.index]
             if len(common_samples) >= 2:

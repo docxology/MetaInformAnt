@@ -97,7 +97,8 @@ def plot_demographic_comparison(
         plt.savefig(output, dpi=300, bbox_inches="tight")
         logger.info(f"Saved demographic comparison plot to {output}")
 
-    return plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_diversity_comparison(
@@ -150,7 +151,9 @@ def plot_diversity_comparison(
         plt.savefig(output, dpi=300, bbox_inches="tight")
         logger.info(f"Saved diversity comparison plot to {output}")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_fst_comparison(
@@ -196,7 +199,9 @@ def plot_fst_comparison(
         plt.savefig(output, dpi=300, bbox_inches="tight")
         logger.info(f"Saved F_ST comparison plot to {output}")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_hardy_weinberg_test(results: List[Dict[str, Any]], output_file: Optional[str] = None) -> Optional[Any]:
@@ -238,7 +243,9 @@ def plot_hardy_weinberg_test(results: List[Dict[str, Any]], output_file: Optiona
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved HWE test plot to {output_file}")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_heterozygosity_distribution(
@@ -281,7 +288,9 @@ def plot_heterozygosity_distribution(
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved heterozygosity distribution plot to {output_file}")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_kinship_matrix(
@@ -339,7 +348,9 @@ def plot_kinship_matrix(
         plt.savefig(output, dpi=300, bbox_inches="tight")
         logger.info(f"Saved kinship matrix plot to {output}")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 # Additional statistical visualization functions
@@ -367,6 +378,7 @@ def plot_linkage_disequilibrium_decay(
     elif ld_data:
         plt.plot(range(len(ld_data)), ld_data, "o-", alpha=0.7)
     else:
+        plt.close(plt.gcf())
         return None
 
     plt.title("Linkage Disequilibrium Decay")
@@ -377,7 +389,9 @@ def plot_linkage_disequilibrium_decay(
     if output:
         plt.savefig(output, dpi=300, bbox_inches="tight")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_neutrality_test_suite(
@@ -413,7 +427,8 @@ def plot_neutrality_test_suite(
     if output:
         plt.savefig(output, dpi=300, bbox_inches="tight")
 
-    return plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_neutrality_test_summary(
@@ -455,7 +470,8 @@ def plot_neutrality_test_summary(
     if output:
         plt.savefig(output, dpi=300, bbox_inches="tight")
 
-    return plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_outlier_detection(
@@ -498,7 +514,9 @@ def plot_outlier_detection(
     if output:
         plt.savefig(output, dpi=300, bbox_inches="tight")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_pca_results(
@@ -508,7 +526,22 @@ def plot_pca_results(
     output_path: Optional[str] = None,
     n_components: Optional[int] = None,
 ) -> Optional[Any]:
-    """Plot PCA results."""
+    """Plot PCA results.
+
+    Args:
+        pca_result: PCA result as an (n_samples, n_components) coordinate
+            array, a (coordinates, explained_variance, labels) tuple, or a
+            result dict with keys such as "pcs"/"coordinates",
+            "explained_variance_ratio" and "labels"/"cluster_labels".
+        sample_names: Optional sample names drawn next to the points
+        output_file: Optional output file path
+        output_path: Alias for output_file
+        n_components: Unused; accepted for API compatibility
+
+    Returns:
+        Plot object if matplotlib is available and usable 2D coordinates are
+        present, None otherwise
+    """
     output = output_file or output_path
 
     if isinstance(pca_result, dict) and pca_result.get("status") == "failed":
@@ -522,18 +555,68 @@ def plot_pca_results(
         logger.warning("matplotlib not available for plotting")
         return None
 
-    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
-    fig.suptitle("Principal Component Analysis")
+    # Extract coordinates and metadata from the supported result shapes
+    coordinates: Optional[np.ndarray] = None
+    explained_variance: Optional[List[float]] = None
+    labels: Optional[List[Any]] = None
 
-    # Placeholder for actual plotting logic or if real data passed
-    axes[0].text(0.5, 0.5, "PC1 vs PC2", ha="center", va="center")
-    axes[1].text(0.5, 0.5, "PC2 vs PC3", ha="center", va="center")
-    axes[2].text(0.5, 0.5, "Explained Variance", ha="center", va="center")
+    if isinstance(pca_result, dict):
+        raw_coords = pca_result.get("pcs", pca_result.get("coordinates"))
+        if raw_coords is not None:
+            coordinates = np.asarray(raw_coords, dtype=float)
+        explained_variance = pca_result.get("explained_variance_ratio", pca_result.get("explained_variance"))
+        labels = pca_result.get("labels", pca_result.get("cluster_labels"))
+    elif isinstance(pca_result, tuple):
+        coordinates = np.asarray(pca_result[0], dtype=float)
+        if len(pca_result) >= 2 and pca_result[1] is not None:
+            explained_variance = [float(v) for v in np.asarray(pca_result[1]).ravel()]
+        if len(pca_result) >= 3:
+            labels = list(pca_result[2])
+
+    if (
+        coordinates is None
+        or coordinates.ndim != 2
+        or coordinates.shape[0] == 0
+        or coordinates.shape[1] < 2
+    ):
+        logger.warning("PCA result does not contain usable 2D coordinates")
+        return None
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+
+    if labels is not None and len(labels) == coordinates.shape[0]:
+        ax.scatter(
+            coordinates[:, 0],
+            coordinates[:, 1],
+            c=labels,
+            cmap="tab10",
+            alpha=0.7,
+            edgecolors="black",
+        )
+    else:
+        ax.scatter(coordinates[:, 0], coordinates[:, 1], alpha=0.7, color="blue", edgecolors="black")
+
+    x_label = "PC1"
+    y_label = "PC2"
+    if explained_variance is not None and len(explained_variance) >= 2:
+        x_label = f"PC1 ({explained_variance[0] * 100:.1f}% variance)"
+        y_label = f"PC2 ({explained_variance[1] * 100:.1f}% variance)"
+
+    if sample_names is not None and len(sample_names) == coordinates.shape[0]:
+        for name, x_coord, y_coord in zip(sample_names, coordinates[:, 0], coordinates[:, 1]):
+            ax.annotate(str(name), (x_coord, y_coord), xytext=(3, 3), textcoords="offset points", fontsize=8)
+
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.set_title("Principal Component Analysis (PC1 vs PC2)")
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
 
     if output:
         plt.savefig(output, dpi=300, bbox_inches="tight")
 
-    return plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_permutation_test(
@@ -577,7 +660,9 @@ def plot_permutation_test(
     if output:
         plt.savefig(output, dpi=300, bbox_inches="tight")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_pi_vs_theta(
@@ -591,6 +676,9 @@ def plot_pi_vs_theta(
         import matplotlib.pyplot as plt
     except ImportError:
         logger.warning("matplotlib not available for plotting")
+        return None
+
+    if not pi_values or not theta_values:
         return None
 
     plt.figure(figsize=(8, 8))
@@ -611,7 +699,9 @@ def plot_pi_vs_theta(
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved pi vs theta plot to {output_file}")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_site_frequency_spectrum(
@@ -645,7 +735,9 @@ def plot_site_frequency_spectrum(
         plt.savefig(output, dpi=300, bbox_inches="tight")
         logger.info(f"Saved SFS plot to {output}")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_statistic_correlation_matrix(
@@ -678,7 +770,9 @@ def plot_statistic_correlation_matrix(
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved correlation matrix plot to {output_file}")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_statistic_distribution(
@@ -722,7 +816,9 @@ def plot_statistic_distribution(
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved {stat_name} distribution plot to {output_file}")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_summary_statistics_grid(
@@ -758,7 +854,8 @@ def plot_summary_statistics_grid(
     if output:
         plt.savefig(output, dpi=300, bbox_inches="tight")
 
-    return plt.gcf()
+    plt.close(fig)
+    return fig
 
 
 def plot_tajimas_d_comparison(
@@ -800,4 +897,6 @@ def plot_tajimas_d_comparison(
         plt.savefig(output, dpi=300, bbox_inches="tight")
         logger.info(f"Saved Tajima's D comparison plot to {output}")
 
-    return plt.gcf()
+    fig = plt.gcf()
+    plt.close(fig)
+    return fig

@@ -203,6 +203,7 @@ def joint_nmf(
     prev_error = float("inf")
     converged = False
     n_iter = 0
+    total_error = float("inf")
 
     for iteration in range(1, max_iter + 1):
         n_iter = iteration
@@ -799,20 +800,21 @@ def _spectral_cluster_from_similarity(similarity: Any, n_clusters: int = 2) -> t
     return labels, silhouette
 
 
-def _simple_kmeans(X: Any, k: int, max_iter: int = 50) -> list[int]:
+def _simple_kmeans(X: Any, k: int, max_iter: int = 50, seed: int = 42) -> list[int]:
     """Simple k-means clustering.
 
     Args:
         X: Data matrix (n x d).
         k: Number of clusters.
         max_iter: Maximum iterations.
+        seed: Random seed for centroid initialisation.
 
     Returns:
         List of cluster labels.
     """
     n = X.shape[0]
-    rng = np.random.RandomState(42)
-    indices = rng.choice(n, size=k, replace=False)
+    rng = np.random.RandomState(seed)
+    indices = rng.choice(n, size=min(k, n), replace=False)
     centroids = X[indices].copy()
 
     labels = np.zeros(n, dtype=int)

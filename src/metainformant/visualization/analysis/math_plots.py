@@ -30,24 +30,23 @@ except ImportError:
     sns = None
 
 try:
-    import plotly.express as px
     import plotly.graph_objects as go
 
     HAS_PLOTLY = True
 except ImportError:
     HAS_PLOTLY = False
     go = None
-    px = None
 
 
-def _save_plot(output_path: str | Path, label: str) -> str:
-    """Ensure the output directory exists and save the current pyplot figure deterministically.
+def _save_plot(ax: Axes, output_path: str | Path, label: str) -> str:
+    """Ensure the output directory exists and save the plotted figure deterministically.
 
     Consolidates the repeated ensure_directory / save_figure_deterministic / logger
-    triple used by every plot function in this module (behavior identical).
+    triple used by every plot function in this module. Saves ``ax.figure`` so the
+    plotted figure is written even when a different pyplot figure is current.
     """
     paths.ensure_directory(Path(output_path).parent)
-    save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+    save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
     logger.info(f"{label} saved to {output_path}")
     return str(output_path)
 
@@ -90,7 +89,7 @@ def plot_allele_frequency_spectrum(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = _save_plot(output_path, "Allele frequency spectrum")
+        output_path = _save_plot(ax, output_path, "Allele frequency spectrum")
 
     return ax
 
@@ -147,7 +146,7 @@ def plot_population_genetics_summary(
     ax.grid(True, alpha=0.3, axis="y")
 
     if output_path:
-        output_path = _save_plot(output_path, "Population genetics summary")
+        output_path = _save_plot(ax, output_path, "Population genetics summary")
 
     return ax
 
@@ -195,11 +194,12 @@ def plot_evolutionary_trajectory(
     ax.set_xlabel("Time/Generation")
     ax.set_ylabel("Trait Value/Frequency")
     ax.set_title("Evolutionary Trajectory")
-    ax.legend()
+    if kwargs.get("show_trend", False):
+        ax.legend()
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = _save_plot(output_path, "Evolutionary trajectory")
+        output_path = _save_plot(ax, output_path, "Evolutionary trajectory")
 
     return ax
 
@@ -242,7 +242,7 @@ def plot_selection_coefficient_distribution(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = _save_plot(output_path, "Selection coefficient distribution")
+        output_path = _save_plot(ax, output_path, "Selection coefficient distribution")
 
     return ax
 
@@ -289,7 +289,7 @@ def plot_fst_distribution(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = _save_plot(output_path, "Fst distribution")
+        output_path = _save_plot(ax, output_path, "Fst distribution")
 
     return ax
 
@@ -342,7 +342,7 @@ def plot_coalescent_tree(
     ax.axis("off")
 
     if output_path:
-        output_path = _save_plot(output_path, "Coalescent tree")
+        output_path = _save_plot(ax, output_path, "Coalescent tree")
 
     return ax
 
@@ -392,7 +392,7 @@ def plot_genetic_drift_simulation(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = _save_plot(output_path, "Genetic drift simulation")
+        output_path = _save_plot(ax, output_path, "Genetic drift simulation")
 
     return ax
 
@@ -439,7 +439,7 @@ def plot_moran_model_evolution(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = _save_plot(output_path, "Moran model evolution")
+        output_path = _save_plot(ax, output_path, "Moran model evolution")
 
     return ax
 
@@ -482,7 +482,7 @@ def plot_price_equation_components(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = _save_plot(output_path, "Price equation components")
+        output_path = _save_plot(ax, output_path, "Price equation components")
 
     return ax
 
@@ -526,7 +526,7 @@ def plot_epidemic_model_simulation(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = _save_plot(output_path, "Epidemic model simulation")
+        output_path = _save_plot(ax, output_path, "Epidemic model simulation")
 
     return ax
 
@@ -583,7 +583,7 @@ def plot_population_structure_pca(
         cbar.set_label("Sample Index")
 
     if output_path:
-        output_path = _save_plot(output_path, "Population structure PCA")
+        output_path = _save_plot(ax, output_path, "Population structure PCA")
 
     return ax
 
@@ -642,7 +642,7 @@ def plot_linkage_disequilibrium_decay(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = _save_plot(output_path, "LD decay plot")
+        output_path = _save_plot(ax, output_path, "LD decay plot")
 
     return ax
 

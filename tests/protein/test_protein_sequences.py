@@ -31,3 +31,23 @@ def test_parse_fasta_and_composition(tmp_path: Path):
     km = kmer_frequencies(records["seq1"], k=2)
     assert sum(km.values()) == len(records["seq1"]) - 1
     assert all(len(k) == 2 for k in km)
+
+
+def test_hydropathy_score_uses_canonical_kyte_doolittle_proline():
+    """Proline must carry its canonical KD value (-1.6), not a drifted positive value."""
+    from metainformant.protein.sequence.sequences import KD_HYDROPHOBICITY, gravy, hydropathy_score
+
+    assert KD_HYDROPHOBICITY["P"] == -1.6
+    scores = hydropathy_score("P" * 25, window_size=19)
+    assert len(scores) == 7
+    assert all(s == -1.6 for s in scores)
+    assert gravy("P" * 10) == -1.6
+
+
+def test_poly_proline_is_not_predicted_transmembrane():
+    """Proline-rich hydrophobic-scale drift must not create false TM helices."""
+    from metainformant.protein.domains.detection import predict_transmembrane
+    from metainformant.protein.structure.secondary import predict_transmembrane_regions
+
+    assert predict_transmembrane_regions("P" * 40) == []
+    assert predict_transmembrane("P" * 40) == []

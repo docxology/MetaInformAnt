@@ -163,8 +163,6 @@ def load_antwiki_json(path: str | Path, validate: bool = True) -> List[Dict[str,
         errors.ValidationError: If validate=True and records fail validation
     """
     path = Path(path)
-    if not path.exists() and "tests/tests" in str(path):
-        path = Path(str(path).replace("tests/tests", "tests", 1))
     if not path.exists():
         raise FileNotFoundError(f"File not found: {path}")
 
@@ -207,35 +205,6 @@ def load_antwiki_json(path: str | Path, validate: bool = True) -> List[Dict[str,
 
     logger.info(f"Successfully loaded {len(validated)} AntWiki records")
     return validated
-
-
-def _validate_antwiki_record(record: AntWikiRecord) -> None:
-    """Validate an AntWikiRecord object.
-
-    Args:
-        record: Record to validate
-
-    Raises:
-        ValueError: If validation fails
-    """
-    # Check required fields
-    if not record.species_name:
-        raise ValueError("Missing species_name")
-
-    if not record.genus:
-        raise ValueError("Missing genus")
-
-    # Check taxonomic consistency
-    if record.genus and not record.genus[0].isupper():
-        raise ValueError(f"Genus should start with capital letter: {record.genus}")
-
-    # Check phenotype data structure
-    if not isinstance(record.phenotypes, dict):
-        raise ValueError("Phenotypes should be a dictionary")
-
-    # Check confidence score range
-    if not (0.0 <= record.confidence_score <= 1.0):
-        raise ValueError(f"Confidence score out of range: {record.confidence_score}")
 
 
 def save_antwiki_json(records: List[AntWikiRecord], path: str | Path) -> None:

@@ -121,6 +121,31 @@ def _get_family_color(
     return family_colors.get(family_map.get(sp, ""), "#95a5a6")
 
 
+def _family_legend(family_colors: Dict[str, str]) -> list[Patch]:
+    """Legend handles for the family color mapping."""
+    return [Patch(facecolor=c, label=f) for f, c in family_colors.items()]
+
+
+def _color_family_tick_labels(
+    ax: Any,
+    family_map: Dict[str, str],
+    family_colors: Dict[str, str],
+    axis: str = "x",
+    *,
+    fontsize: Optional[int] = None,
+    fontweight: Optional[str] = None,
+) -> None:
+    """Recolor tick labels according to each species' taxonomic family."""
+    labels = ax.get_xticklabels() if axis == "x" else ax.get_yticklabels()
+    for label in labels:
+        sp = label.get_text().replace(" ", "_")
+        label.set_color(_get_family_color(sp, family_map, family_colors))
+        if fontsize is not None:
+            label.set_fontsize(fontsize)
+        if fontweight is not None:
+            label.set_fontweight(fontweight)
+
+
 def plot_divergence_heatmap(
     div_matrix: pd.DataFrame,
     output_path: Path,
@@ -186,14 +211,8 @@ def plot_divergence_heatmap(
 
     # Color tick labels by family
     if family_map and family_colors:
-        for label in ax.get_yticklabels():
-            sp = label.get_text().replace(" ", "_")
-            label.set_color(_get_family_color(sp, family_map, family_colors))
-            label.set_fontsize(8)
-        for label in ax.get_xticklabels():
-            sp = label.get_text().replace(" ", "_")
-            label.set_color(_get_family_color(sp, family_map, family_colors))
-            label.set_fontsize(8)
+        _color_family_tick_labels(ax, family_map, family_colors, "y", fontsize=8)
+        _color_family_tick_labels(ax, family_map, family_colors, "x", fontsize=8)
 
     ax.set_title(title, fontsize=14, fontweight="bold", pad=20)
     plt.xticks(rotation=45, ha="right")
@@ -207,7 +226,8 @@ def plot_divergence_heatmap(
         fontsize=9,
         color="#333333",
     )
-    save_figure_deterministic(plt.gcf(), output_path, dpi=250, bbox_inches="tight")
+    save_figure_deterministic(fig, output_path, dpi=250, bbox_inches="tight")
+    plt.close(fig)
     logger.info(f"Saved divergence heatmap to {output_path}")
 
 
@@ -254,13 +274,8 @@ def plot_dendrogram(
     )
 
     if family_map and family_colors:
-        for label in ax.get_xticklabels():
-            sp = label.get_text().replace(" ", "_")
-            label.set_color(_get_family_color(sp, family_map, family_colors))
-            label.set_fontweight("bold")
-
-        legend = [Patch(facecolor=c, label=f) for f, c in family_colors.items()]
-        ax.legend(handles=legend, loc="upper right", fontsize=9, title="Family")
+        _color_family_tick_labels(ax, family_map, family_colors, fontweight="bold")
+        ax.legend(handles=_family_legend(family_colors), loc="upper right", fontsize=9, title="Family")
 
     ax.set_title(title, fontsize=14, fontweight="bold", pad=15)
     ax.set_ylabel("Average-linkage distance (1 − Spearman ρ)", fontsize=11)
@@ -274,7 +289,8 @@ def plot_dendrogram(
         color="#333333",
     )
     plt.tight_layout()
-    save_figure_deterministic(plt.gcf(), output_path, dpi=250, bbox_inches="tight")
+    save_figure_deterministic(fig, output_path, dpi=250, bbox_inches="tight")
+    plt.close(fig)
     logger.info(f"Saved dendrogram to {output_path}")
 
 
@@ -325,11 +341,11 @@ def plot_coverage(
     ax.set_xlim(0, max(1.0, max_coverage * 1.25))
 
     if family_map and family_colors:
-        legend = [Patch(facecolor=c, label=f) for f, c in family_colors.items()]
-        ax.legend(handles=legend, loc="lower right", fontsize=8, title="Family")
+        ax.legend(handles=_family_legend(family_colors), loc="lower right", fontsize=8, title="Family")
 
     plt.tight_layout()
-    save_figure_deterministic(plt.gcf(), output_path, dpi=200, bbox_inches="tight")
+    save_figure_deterministic(fig, output_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
     logger.info(f"Saved coverage barplot to {output_path}")
 
 
@@ -389,7 +405,8 @@ def plot_top_pairs(div_matrix: pd.DataFrame, output_path: Path) -> None:
         y=1.01,
     )
     plt.tight_layout()
-    save_figure_deterministic(plt.gcf(), output_path, dpi=200, bbox_inches="tight")
+    save_figure_deterministic(fig, output_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
     logger.info(f"Saved top pairs plot to {output_path}")
 
 
@@ -458,7 +475,8 @@ def plot_family_violin(
     legend = [Patch(facecolor="#27ae60", label="Within-family"), Patch(facecolor="#e67e22", label="Between-family")]
     ax.legend(handles=legend, fontsize=9)
     plt.tight_layout()
-    save_figure_deterministic(plt.gcf(), output_path, dpi=200, bbox_inches="tight")
+    save_figure_deterministic(fig, output_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
     logger.info(f"Saved family violin plot to {output_path}")
 
 
@@ -550,7 +568,8 @@ def plot_method_comparison(
     ax.grid(True, alpha=0.2)
     ax.set_aspect("equal")
     plt.tight_layout()
-    save_figure_deterministic(plt.gcf(), output_path, dpi=200, bbox_inches="tight")
+    save_figure_deterministic(fig, output_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
     logger.info(f"Saved method comparison plot to {output_path}")
 
 
@@ -588,12 +607,12 @@ def plot_mean_divergence_rank(
     )
 
     if family_map and family_colors:
-        legend = [Patch(facecolor=c, label=f) for f, c in family_colors.items()]
-        ax.legend(handles=legend, loc="lower right", fontsize=8)
+        ax.legend(handles=_family_legend(family_colors), loc="lower right", fontsize=8)
 
     ax.set_xlim(0, means.max() * 1.15)
     plt.tight_layout()
-    save_figure_deterministic(plt.gcf(), output_path, dpi=200, bbox_inches="tight")
+    save_figure_deterministic(fig, output_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
     logger.info(f"Saved mean divergence rank plot to {output_path}")
 
 
@@ -604,10 +623,10 @@ def plot_species_summary(feature_stats: pd.DataFrame, output_path: Path) -> None
     ``expressed_features`` so the figure describes table rows without implying
     cross-species gene or ortholog identity.
     """
-    if {"total_features", "expressed_features"}.issubset(feature_stats.columns):
-        total_column, expressed_column = "total_features", "expressed_features"
-    else:
-        raise ValueError("Feature summary requires total_features/expressed_features columns")
+    required = {"species", "total_features", "expressed_features", "mean_expression"}
+    if not required.issubset(feature_stats.columns):
+        raise ValueError(f"Feature summary requires columns: {sorted(required)}")
+    total_column, expressed_column = "total_features", "expressed_features"
 
     feature_stats_sorted = feature_stats.sort_values(expressed_column, ascending=True)
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, max(8, len(feature_stats_sorted) * 0.4)))
@@ -680,7 +699,8 @@ def plot_species_summary(feature_stats: pd.DataFrame, output_path: Path) -> None
     ax2.set_xlim(0, max(1.0, max_mean_expression * 1.2))
 
     plt.tight_layout()
-    save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+    save_figure_deterministic(fig, output_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
     logger.info(f"Saved species feature summary to {output_path}")
 
 
@@ -711,7 +731,8 @@ def plot_profile_quality(profile_quality: pd.DataFrame, output_path: Path) -> No
     ax.grid(axis="x", color="#D9D9D9", linewidth=0.6)
     ax.set_axisbelow(True)
     plt.tight_layout()
-    save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+    save_figure_deterministic(fig, output_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
     logger.info(f"Saved profile-quality figure to {output_path}")
 
 
@@ -777,7 +798,8 @@ def plot_divergence_stability(
     ax.set_axisbelow(True)
     ax.legend(loc="lower right", frameon=True)
     plt.tight_layout()
-    save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+    save_figure_deterministic(fig, output_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
     logger.info(f"Saved divergence-stability figure to {output_path}")
 
 
@@ -818,11 +840,8 @@ def plot_combined_summary(
         above_threshold_color="#7f8c8d",
     )
     if family_map and family_colors:
-        for label in ax1.get_xticklabels():
-            sp = label.get_text().replace(" ", "_")
-            label.set_color(_get_family_color(sp, family_map, family_colors))
-        legend = [Patch(facecolor=c, label=f) for f, c in family_colors.items()]
-        ax1.legend(handles=legend, loc="upper right", fontsize=8)
+        _color_family_tick_labels(ax1, family_map, family_colors)
+        ax1.legend(handles=_family_legend(family_colors), loc="upper right", fontsize=8)
 
     ax1.set_title(
         f"A. Expression-Profile Clustering ({n} species, Average Linkage; not a species tree)",
@@ -872,5 +891,6 @@ def plot_combined_summary(
     ax3.legend(fontsize=9)
 
     fig.suptitle(f"{title} (descriptive; {_species_note(n)})", fontsize=15, fontweight="bold", y=0.99)
-    save_figure_deterministic(plt.gcf(), output_path, dpi=200, bbox_inches="tight")
+    save_figure_deterministic(fig, output_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
     logger.info(f"Saved combined summary figure to {output_path}")

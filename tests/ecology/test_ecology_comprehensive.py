@@ -306,6 +306,13 @@ class TestCurves:
         for i in range(1, len(richness_values)):
             assert richness_values[i] >= richness_values[i - 1]
 
+    def test_rarefaction_exact_single_draw(self):
+        """Exact hypergeometric expectation: one individual yields one species."""
+        from metainformant.ecology.analysis.community import rarefaction_curve
+
+        curve = rarefaction_curve([2, 2], max_samples=1)
+        assert curve[0] == (1, 1.0)
+
     def test_rarefaction_empty(self):
         from metainformant.ecology.analysis.community import rarefaction_curve
 
@@ -955,28 +962,44 @@ class TestPackageImports:
     """Test that all modules and functions are importable."""
 
     def test_import_ecology(self):
-        pass
+        import metainformant.ecology as ecology
+
+        assert ecology is not None
 
     def test_import_analysis(self):
-        pass
+        from metainformant.ecology import analysis
+
+        assert analysis is not None
 
     def test_import_community(self):
-        pass
+        from metainformant.ecology.analysis import community
+
+        assert callable(community.calculate_diversity)
 
     def test_import_ordination(self):
-        pass
+        from metainformant.ecology.analysis import ordination
+
+        assert callable(ordination.pcoa)
 
     def test_import_indicators(self):
-        pass
+        from metainformant.ecology.analysis import indicators
+
+        assert callable(indicators.indval)
 
     def test_import_functional(self):
-        pass
+        from metainformant.ecology.analysis import functional
+
+        assert callable(functional.functional_richness)
 
     def test_import_macroecology(self):
-        pass
+        from metainformant.ecology.analysis import macroecology
+
+        assert callable(macroecology.fit_logseries)
 
     def test_import_visualization(self):
-        pass
+        from metainformant.ecology import visualization
+
+        assert visualization is not None
 
     def test_top_level_re_exports(self):
         """Test that key functions are available at the ecology package level."""
@@ -986,3 +1009,24 @@ class TestPackageImports:
         assert callable(ecology.species_richness)
         assert callable(ecology.beta_diversity)
         assert ecology.beta_diversity([1, 0], [0, 1]) == 1.0
+
+
+class TestEcologyReportSpeciesCount:
+    """Regression: report counts species present, not column indices."""
+
+    def test_report_total_species_counts_present_species(self, tmp_path):
+        from metainformant.ecology.analysis.community import generate_ecology_report
+
+        # 5 columns, but column 4 is zero everywhere: only 4 species detected
+        community_data = [
+            [10, 5, 0, 3, 0],
+            [4, 0, 7, 1, 0],
+        ]
+        report = generate_ecology_report(community_data, output_path=tmp_path / "r.txt")
+        assert "Total Species Detected: 4" in report
+
+    def test_biodiversity_indices_invalid_name_raises(self):
+        from metainformant.ecology.analysis.community import calculate_biodiversity_indices
+
+        with pytest.raises(ValueError, match="Unsupported diversity method"):
+            calculate_biodiversity_indices([[10, 20, 30]], indices=["shanon"])

@@ -286,3 +286,14 @@ class TestSpatialVariogram:
         result = spatial_variogram(values, coords, n_bins=10)
         assert isinstance(result, VariogramResult)
         assert result.sill >= 0
+
+    def test_kdtree_path_large_dataset(self):
+        # n > 500 exercises the KDTree branch of spatial_variogram
+        rng = np.random.RandomState(0)
+        coords = rng.uniform(0, 100, (510, 2))
+        values = 0.5 * (coords[:, 0] + coords[:, 1]) + rng.normal(0, 0.1, 510)
+        result = spatial_variogram(values, coords, n_bins=5)
+        assert isinstance(result, VariogramResult)
+        assert len(result.bin_centers) == 5
+        assert int(result.n_pairs.sum()) > 0
+        assert result.sill > 0

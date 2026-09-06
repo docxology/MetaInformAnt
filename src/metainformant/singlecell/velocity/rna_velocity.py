@@ -26,26 +26,11 @@ from __future__ import annotations
 import math
 from typing import Any
 
+import numpy as np
+
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
-
-# Optional scientific dependencies
-try:
-    import numpy as np
-
-    HAS_NUMPY = True
-except ImportError:
-    HAS_NUMPY = False
-    np = None
-
-try:
-    from scipy import stats as scipy_stats
-
-    HAS_SCIPY = True
-except ImportError:
-    HAS_SCIPY = False
-    scipy_stats = None
 
 
 def compute_velocity(
@@ -570,10 +555,6 @@ def fit_dynamical_model(
         for iteration in range(max_iter):
             iters_used = iteration + 1
 
-            # E-step: compute expected steady-state values
-            [alpha / beta if beta > 0 else 0.0] * n_cells
-            [beta * (alpha / beta) / gamma if gamma > 0 and beta > 0 else 0.0] * n_cells
-
             # M-step: update parameters to minimize residuals
             # Update gamma from spliced dynamics: ds/dt = beta*u - gamma*s
             numerator_gamma = sum(beta * u_col[i] for i in range(n_cells))
@@ -663,7 +644,7 @@ def _to_list_matrix(data: Any) -> list[list[float]]:
     if isinstance(data, list):
         return data
 
-    if HAS_NUMPY and isinstance(data, np.ndarray):
+    if isinstance(data, np.ndarray):
         converted: list[list[float]] = data.tolist()
         return converted
 

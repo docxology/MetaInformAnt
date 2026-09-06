@@ -7,6 +7,7 @@ information-theoretic measures to characterize biological sequences and data.
 from __future__ import annotations
 
 import math
+from collections import Counter
 from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
@@ -56,11 +57,7 @@ def information_profile(
         kmers = [seq[i : i + k] for seq in sequences]
 
         # Count k-mer frequencies
-        from collections import Counter
-
         kmer_counts = Counter(kmers)
-
-        # Estimate entropy
         entropy_val = estimation.entropy_estimator(kmer_counts, method=method, bias_correction=True)
 
         # Normalize by maximum possible entropy (log2 of alphabet size)
@@ -312,8 +309,6 @@ def analyze_sequence_information(
     for k in k_values:
         if len(sequence) >= k:
             kmers = [sequence[i : i + k] for i in range(len(sequence) - k + 1)]
-            from collections import Counter
-
             kmer_counts = Counter(kmers)
 
             analysis_result["k_mer_analysis"][f"k{k}"] = {
@@ -516,8 +511,6 @@ def _find_low_complexity_regions(sequence: str, window_size: int = 20, threshold
         window = sequence[i : i + window_size]
 
         # Calculate complexity (entropy)
-        from collections import Counter
-
         char_counts = Counter(window)
         entropy = estimation.entropy_estimator(char_counts)
 
@@ -600,8 +593,6 @@ def compare_sequences_information(seq1: str, seq2: str, k: int = 1, method: str 
             window2 = seq2[i : i + k]
 
             # Convert to count distributions
-            from collections import Counter
-
             counts1 = Counter(window1)
             counts2 = Counter(window2)
 

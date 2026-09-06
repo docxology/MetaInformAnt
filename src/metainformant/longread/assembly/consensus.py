@@ -17,6 +17,7 @@ Optional dependencies:
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import Any, Sequence
 
@@ -245,7 +246,6 @@ def _consensus_from_pwm(
         if coverage > 0:
             consensus_fraction = best_count / coverage
             # Convert fraction to Phred: Q = -10 * log10(1 - fraction)
-            import math
 
             if consensus_fraction >= 1.0:
                 quality = 60.0  # Max quality
@@ -655,39 +655,19 @@ def _merge_star_alignments(
     center_idx: int,
     pairwise: list[tuple[str, str]],
 ) -> list[str]:
-    """Merge pairwise alignments to center into a full MSA.
+    """Pad pairwise-aligned sequences to a common length.
 
-    Inserts additional gaps into non-center sequences wherever the center
-    has a gap in a different pairwise alignment.
+    Note: this does NOT produce a column-aligned MSA; sequences are simply
+    padded to the length of the longest pairwise alignment. Conservation
+    columns are therefore approximate.
     """
     n = len(pairwise)
     if n == 0:
         return []
 
-    # Get center alignment positions in each pairwise alignment
-    pairwise[center_idx][0]  # Ungapped center
-
-    # Collect all gap positions in the center across all alignments
-    all_center_insertions: list[list[int]] = []  # gaps in center per alignment
-
-    for i in range(n):
-        if i == center_idx:
-            all_center_insertions.append([])
-            continue
-        ref_aln = pairwise[i][0]
-        insertions = []
-        ref_pos = 0
-        for j, c in enumerate(ref_aln):
-            if c == "-":
-                insertions.append(ref_pos)
-            else:
-                ref_pos += 1
-        all_center_insertions.append(insertions)
-
-    # For simplicity, just return the pairwise-aligned sequences
-    # A full merge would require tracking gap columns across all pairs
-    aligned: list[str] = []
     max_len = max(len(pairwise[i][1]) for i in range(n))
+
+    aligned: list[str] = []
 
     for i in range(n):
         seq = pairwise[i][1]
@@ -788,8 +768,6 @@ def calculate_consensus_quality(
     per_base_quality: list[float] = []
     per_base_coverage: list[int] = []
     per_base_agreement: list[float] = []
-
-    import math
 
     for i, base in enumerate(cons_seq.upper()):
         if i >= len(pwm):

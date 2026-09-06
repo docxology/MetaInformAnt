@@ -1,5 +1,9 @@
 """Tests for quality metrics and statistical analysis."""
 
+import warnings
+
+import pytest
+
 from metainformant.quality.analysis.metrics import (
     calculate_complexity_metrics,
     calculate_coverage_metrics,
@@ -7,6 +11,7 @@ from metainformant.quality.analysis.metrics import (
     calculate_gc_metrics,
     calculate_length_metrics,
     calculate_quality_metrics,
+    detect_outliers,
     generate_quality_report,
 )
 
@@ -73,6 +78,16 @@ class TestGCMetrics:
 
         assert metrics["mean_gc"] == 60.0
         assert metrics["gc_bias"] == 10.0  # Deviation from expected 50%
+
+    def test_distribution_bins_span_percent_scale(self):
+        """Distribution bins operate on the same 0-100 scale as the input."""
+        metrics = calculate_gc_metrics([10.0, 45.0, 52.0, 80.0])
+
+        counts = {name: cfg["count"] for name, cfg in metrics["distribution"].items()}
+        assert counts["0.0-30.0"] == 1
+        assert counts["40.0-50.0"] == 1
+        assert counts["50.0-60.0"] == 1
+        assert counts["70.0-100.0"] == 1
 
 
 class TestLengthMetrics:
@@ -153,9 +168,11 @@ class TestComplexityMetrics:
         assert "mean_complexity" in metrics
         assert "low_complexity_rate" in metrics
 
-        # AAAA should have low complexity (4 unique chars / 4 total = 1.0)
-        # ATCG should have high complexity (4 unique chars / 4 total = 1.0)
-        # ACGTACGT should have high complexity (6 unique chars / 8 total = 0.75)
+        # AAAA: 1 unique char / 4 = 0.25 complexity (low)
+        # ATCG: 4 unique chars / 4 = 1.0 complexity
+        # ACGTACGT: 4 unique chars / 8 = 0.5 complexity
+        assert metrics["mean_complexity"] == pytest.approx((0.25 + 1.0 + 0.5) / 3)
+        assert metrics["low_complexity_rate"] == pytest.approx(100.0 / 3)
 
     def test_calculate_complexity_metrics_empty(self):
         """Test handling of empty sequences."""
@@ -170,6 +187,40 @@ class TestComplexityMetrics:
         metrics = calculate_complexity_metrics(sequences)
 
         assert metrics["mean_complexity"] == 1.0  # All sequences have max complexity
+
+
+class TestDetectOutliers:
+    """Outlier detection across the supported methods."""
+
+    def test_iqr_flags_extreme_value(self):
+        data = [10.0] * 20 + [1000.0]
+
+        result = detect_outliers(data, method="iqr")
+
+        assert result["outliers"] == [1000.0]
+        assert result["outlier_indices"] == [20]
+
+    def test_zscore_constant_data_has_no_outliers(self):
+        """Zero-variance input yields no outliers and no warnings."""
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            result = detect_outliers([5.0, 5.0, 5.0, 5.0], method="zscore")
+
+        assert result["outliers"] == []
+        assert result["outlier_indices"] == []
+
+    def test_modified_zscore_constant_data_has_no_outliers(self):
+        """Zero MAD input yields no outliers and no warnings."""
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            result = detect_outliers([5.0, 5.0, 5.0, 5.0], method="modified_zscore")
+
+        assert result["outliers"] == []
+        assert result["outlier_indices"] == []
+
+    def test_unsupported_method_raises(self):
+        with pytest.raises(ValueError, match="Unsupported outlier detection method"):
+            detect_outliers([1.0, 2.0, 3.0], method="nope")
 
 
 class TestCoverageMetrics:

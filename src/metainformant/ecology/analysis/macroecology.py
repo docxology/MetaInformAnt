@@ -168,7 +168,9 @@ def bootstrap_ci(
             continue
 
     if not stats:
-        return (0.0, 0.0)
+        raise ValueError(
+            "All bootstrap resamples failed; cannot compute a confidence interval"
+        )
 
     stats.sort()
     alpha = 1.0 - confidence
@@ -271,16 +273,9 @@ def fit_logseries(abundances: List[float]) -> Dict[str, Any]:
     from collections import Counter
 
     counts = Counter(int(a) for a in pos)
-    observed: List[float] = []
-    exp_trimmed: List[float] = []
-    for r in range(1, max_abund + 1):
-        observed.append(float(counts.get(r, 0)))
-        if r <= len(expected):
-            exp_trimmed.append(expected[r - 1])
-        else:
-            exp_trimmed.append(0.0)
+    observed: List[float] = [float(counts.get(r, 0)) for r in range(1, max_abund + 1)]
 
-    gof = chi_squared_gof(observed, exp_trimmed)
+    gof = chi_squared_gof(observed, expected)
 
     return {
         "alpha": alpha,
@@ -331,8 +326,10 @@ def fit_lognormal(abundances: List[float]) -> Dict[str, Any]:
     logger.info(f"Fitting lognormal: mu={mu:.3f}, sigma={sigma:.3f}, S={s}")
 
     # Preston octaves: bin species into log2 abundance classes
+    # Octave r covers [2^r, 2^(r+1)), so a species of abundance A lands in
+    # octave int(log2(A)); the highest reachable octave is int(log2(max)).
     max_log2 = int(math.log2(max(pos))) + 1 if max(pos) > 0 else 1
-    n_octaves = max_log2 + 1
+    n_octaves = max_log2
 
     observed_octaves: List[float] = [0.0] * n_octaves
     for a in pos:
@@ -344,7 +341,7 @@ def fit_lognormal(abundances: List[float]) -> Dict[str, Any]:
     # Each octave r spans [2^r, 2^(r+1)) on the abundance axis
     expected_octaves: List[float] = []
     for r in range(n_octaves):
-        lower = math.log(2**r) if r > 0 else math.log(0.5)
+        lower = math.log(2**r)
         upper = math.log(2 ** (r + 1))
         if sigma > 0:
             p_lower = _normal_cdf((lower - mu) / sigma)
@@ -863,8 +860,6 @@ def occupancy_frequency(
     validation.validate_not_empty(presence_absence_matrix, "presence_absence_matrix")
 
     n_sites = len(presence_absence_matrix)
-    if n_sites == 0:
-        raise ValueError("presence_absence_matrix must not be empty")
 
     n_species = len(presence_absence_matrix[0]) if presence_absence_matrix[0] else 0
     if n_species == 0:

@@ -7,7 +7,7 @@ experiments, protein structures, and multi-omics quality assessments.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Iterable, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -27,6 +27,50 @@ try:
 except ImportError:
     HAS_SEABORN = False
     sns = None
+
+
+def _save_figure(ax: Axes, output_path: str | Path | None, message: str) -> None:
+    """Persist the plotted figure (``ax.figure``) to *output_path* when requested."""
+    if output_path:
+        paths.ensure_directory(Path(output_path).parent)
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+        logger.info(message)
+
+
+def _annotate_bars(ax: Axes, bars: Iterable[Any], values: Iterable[Any], fmt: str, offset: float = 0.0) -> None:
+    """Write *fmt*-formatted value labels centered above each bar."""
+    for bar, value in zip(bars, values):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + offset,
+            fmt.format(value),
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
+
+
+def _hist_with_optional_seaborn(
+    ax: Axes, values: np.ndarray, color: str | None, xlabel: str, ylabel: str, title: str
+) -> None:
+    """Plot a histogram on *ax*, using seaborn KDE styling when available.
+
+    ``color`` may be None for the default palette.
+    """
+    if HAS_SEABORN:
+        if color is None:
+            sns.histplot(values, ax=ax, kde=True, alpha=0.7)
+        else:
+            sns.histplot(values, ax=ax, kde=True, alpha=0.7, color=color)
+    else:
+        if color is None:
+            ax.hist(values, bins=50, alpha=0.7)
+        else:
+            ax.hist(values, bins=50, alpha=0.7, color=color)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    ax.grid(True, alpha=0.3)
 
 
 def plot_vcf_quality_metrics(
@@ -107,22 +151,11 @@ def plot_vcf_quality_metrics(
         axes[5].set_ylabel("Value")
         axes[5].set_title("Summary Statistics")
         axes[5].grid(True, alpha=0.3, axis="y")
-        for bar, value in zip(bars, stat_values):
-            axes[5].text(
-                bar.get_x() + bar.get_width() / 2,
-                bar.get_height() + max(stat_values) * 0.01,
-                f"{value:.0f}",
-                ha="center",
-                va="bottom",
-                fontsize=8,
-            )
+        _annotate_bars(axes[5], bars, stat_values, "{:.0f}", offset=max(stat_values) * 0.01)
 
     plt.tight_layout()
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"VCF quality metrics plot saved to {output_path}")
+    _save_figure(axes[0], output_path, f"VCF quality metrics plot saved to {output_path}")
 
     return axes[0]
 
@@ -153,10 +186,9 @@ def plot_singlecell_qc_metrics(
     plot_idx = 0
 
     if "n_counts" in qc_metrics:
-        if HAS_SEABORN:
-            sns.histplot(qc_metrics["n_counts"], ax=axes[plot_idx], kde=True, alpha=0.7)
-        else:
-            axes[plot_idx].hist(qc_metrics["n_counts"], bins=50, alpha=0.7)
+        _hist_with_optional_seaborn(
+            axes[plot_idx], qc_metrics["n_counts"], None, "Library Size", "Number of Cells", "Library Size Distribution"
+        )
         axes[plot_idx].set_xlabel("Library Size")
         axes[plot_idx].set_ylabel("Number of Cells")
         axes[plot_idx].set_title("Library Size Distribution")
@@ -164,10 +196,14 @@ def plot_singlecell_qc_metrics(
         plot_idx += 1
 
     if "n_genes" in qc_metrics:
-        if HAS_SEABORN:
-            sns.histplot(qc_metrics["n_genes"], ax=axes[plot_idx], kde=True, alpha=0.7, color="green")
-        else:
-            axes[plot_idx].hist(qc_metrics["n_genes"], bins=50, alpha=0.7, color="green")
+        _hist_with_optional_seaborn(
+            axes[plot_idx],
+            qc_metrics["n_genes"],
+            "green",
+            "Number of Genes",
+            "Number of Cells",
+            "Genes Detected per Cell",
+        )
         axes[plot_idx].set_xlabel("Number of Genes")
         axes[plot_idx].set_ylabel("Number of Cells")
         axes[plot_idx].set_title("Genes Detected per Cell")
@@ -175,10 +211,14 @@ def plot_singlecell_qc_metrics(
         plot_idx += 1
 
     if "percent_mito" in qc_metrics:
-        if HAS_SEABORN:
-            sns.histplot(qc_metrics["percent_mito"], ax=axes[plot_idx], kde=True, alpha=0.7, color="red")
-        else:
-            axes[plot_idx].hist(qc_metrics["percent_mito"], bins=50, alpha=0.7, color="red")
+        _hist_with_optional_seaborn(
+            axes[plot_idx],
+            qc_metrics["percent_mito"],
+            "red",
+            "Mitochondrial Content (%)",
+            "Number of Cells",
+            "Mitochondrial Content",
+        )
         axes[plot_idx].set_xlabel("Mitochondrial Content (%)")
         axes[plot_idx].set_ylabel("Number of Cells")
         axes[plot_idx].set_title("Mitochondrial Content")
@@ -187,10 +227,9 @@ def plot_singlecell_qc_metrics(
 
     if "n_counts" in qc_metrics and "n_genes" in qc_metrics:
         complexity = qc_metrics["n_genes"] / qc_metrics["n_counts"]
-        if HAS_SEABORN:
-            sns.histplot(complexity, ax=axes[plot_idx], kde=True, alpha=0.7, color="purple")
-        else:
-            axes[plot_idx].hist(complexity, bins=50, alpha=0.7, color="purple")
+        _hist_with_optional_seaborn(
+            axes[plot_idx], complexity, "purple", "Genes per UMI", "Number of Cells", "Library Complexity"
+        )
         axes[plot_idx].set_xlabel("Genes per UMI")
         axes[plot_idx].set_ylabel("Number of Cells")
         axes[plot_idx].set_title("Library Complexity")
@@ -198,10 +237,9 @@ def plot_singlecell_qc_metrics(
         plot_idx += 1
 
     if "doublet_score" in qc_metrics:
-        if HAS_SEABORN:
-            sns.histplot(qc_metrics["doublet_score"], ax=axes[plot_idx], kde=True, alpha=0.7, color="orange")
-        else:
-            axes[plot_idx].hist(qc_metrics["doublet_score"], bins=50, alpha=0.7, color="orange")
+        _hist_with_optional_seaborn(
+            axes[plot_idx], qc_metrics["doublet_score"], "orange", "Doublet Score", "Number of Cells", "Doublet Scores"
+        )
         axes[plot_idx].set_xlabel("Doublet Score")
         axes[plot_idx].set_ylabel("Number of Cells")
         axes[plot_idx].set_title("Doublet Scores")
@@ -236,10 +274,7 @@ def plot_singlecell_qc_metrics(
 
     plt.tight_layout()
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Single-cell QC metrics plot saved to {output_path}")
+    _save_figure(axes[0], output_path, f"Single-cell QC metrics plot saved to {output_path}")
 
     return axes[0]
 
@@ -311,15 +346,7 @@ def plot_protein_structure_quality(
             axes[3].set_ylabel("Score")
             axes[3].set_title("Quality Metrics")
             axes[3].tick_params(axis="x", rotation=45)
-            for bar, value in zip(bars, values):
-                axes[3].text(
-                    bar.get_x() + bar.get_width() / 2,
-                    bar.get_height() + 0.01,
-                    f"{value:.2f}",
-                    ha="center",
-                    va="bottom",
-                    fontsize=8,
-                )
+            _annotate_bars(axes[3], bars, values, "{:.2f}", offset=0.01)
         else:
             axes[3].text(
                 0.5, 0.5, f"Overall Quality: {quality_data:.2f}", ha="center", va="center", transform=axes[3].transAxes
@@ -329,10 +356,7 @@ def plot_protein_structure_quality(
 
     plt.tight_layout()
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Protein structure quality plot saved to {output_path}")
+    _save_figure(axes[0], output_path, f"Protein structure quality plot saved to {output_path}")
 
     return axes[0]
 
@@ -390,9 +414,6 @@ def plot_multiomics_quality_overview(
     for angle, score, omics in zip(angles[:-1], quality_scores[:-1], omics_types):
         ax.text(angle, score + max(quality_scores) * 0.05, f"{score:.2f}", ha="center", va="bottom", fontsize=8)
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Multi-omics quality overview saved to {output_path}")
+    _save_figure(ax, output_path, f"Multi-omics quality overview saved to {output_path}")
 
     return ax

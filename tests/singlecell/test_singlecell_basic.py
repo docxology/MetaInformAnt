@@ -494,3 +494,30 @@ class TestSingleCellEdgeCases:
         except Exception:
             # Some operations might not be meaningful for single cell/gene
             pass
+
+
+class TestIoUtilities:
+    """Test offline paths of the single-cell io module (no network access)."""
+
+    def test_fetch_atlas_datasets_unknown_dataset_skipped(self, tmp_path):
+        """Unknown dataset names should be warned about and skipped."""
+        from metainformant.singlecell import io as singlecell_io
+
+        fetched = singlecell_io.fetch_atlas_datasets(["Not-A-Dataset"], tmp_path)
+        assert fetched == []
+
+    def test_fetch_atlas_datasets_array_express_skipped(self, tmp_path):
+        """ArrayExpress accessions are recognized but not fetched directly."""
+        from metainformant.singlecell import io as singlecell_io
+
+        fetched = singlecell_io.fetch_atlas_datasets(["Li-2022"], tmp_path)
+        assert fetched == [tmp_path / "Li-2022"]
+        assert (tmp_path / "Li-2022").is_dir()
+
+    def test_run_seurat_integration_creates_placeholder(self, tmp_path):
+        """The Seurat integration stub creates its output path."""
+        from metainformant.singlecell import io as singlecell_io
+
+        out = singlecell_io.run_seurat_integration({"s1": tmp_path}, tmp_path / "out")
+        assert out == tmp_path / "out" / "integrated.rds"
+        assert out.exists()

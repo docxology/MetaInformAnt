@@ -8,11 +8,6 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from metainformant.core.utils import logging
-
-logger = logging.get_logger(__name__)
-
-
 # Standard genetic code (NCBI translation table 1)
 GENETIC_CODE = {
     "TTT": "F",
@@ -106,22 +101,14 @@ def codon_usage(seq: str) -> Dict[str, float]:
     if not seq:
         return {}
 
-    # Count codons
-    codon_counts: dict[str, int] = {}
-    total_codons = 0
-
-    for i in range(0, len(seq), 3):
-        codon = seq[i : i + 3].upper()
-        if len(codon) == 3 and codon in GENETIC_CODE:
-            codon_counts[codon] = codon_counts.get(codon, 0) + 1
-            total_codons += 1
+    counts = codon_counts(seq)
 
     # Convert to frequencies
-    codon_frequencies = {}
-    for codon, count in codon_counts.items():
-        codon_frequencies[codon] = count / total_codons if total_codons > 0 else 0.0
+    total_codons = sum(counts.values())
+    if total_codons == 0:
+        return {}
 
-    return codon_frequencies
+    return {codon: count / total_codons for codon, count in counts.items()}
 
 
 def codon_counts(seq: str) -> Dict[str, int]:
@@ -155,18 +142,27 @@ def cai(sequence: str, reference_usage: Optional[Dict[str, float]] = None) -> fl
     Returns:
         CAI value (0.0 to 1.0)
 
+    Raises:
+        ValueError: If sequence length is not divisible by 3
+
     Example:
-        >>> seq = "ATGGCCATTGTAATGGGCC"
+        >>> seq = "ATGGCCATTGTAATGGGCCA"
         >>> cai_value = cai(seq)
         >>> 0.0 <= cai_value <= 1.0
         True
     """
-    if not sequence or len(sequence) % 3 != 0:
+    if len(sequence) % 3 != 0:
+        raise ValueError("Sequence length must be divisible by 3")
+
+    if not sequence:
         return 0.0
 
     # Use default reference usage if not provided
     if reference_usage is None:
         reference_usage = _get_default_reference_usage()
+
+    # Precompute per-codon maximum synonymous reference frequency once
+    max_synonymous = _max_synonymous_frequencies(reference_usage)
 
     # Calculate CAI
     cai_values = []
@@ -178,11 +174,10 @@ def cai(sequence: str, reference_usage: Optional[Dict[str, float]] = None) -> fl
             if GENETIC_CODE[codon] == "*":
                 continue
 
-            # Get reference frequency for this codon
+            # Get reference frequency and the precomputed maximum
+            # frequency among synonymous codons (O(1) per codon)
             ref_freq = reference_usage.get(codon, 0.0)
-
-            # Get maximum frequency for synonymous codons
-            max_freq = _get_max_synonymous_frequency(codon, reference_usage)
+            max_freq = max_synonymous.get(codon, 0.0)
 
             if max_freq > 0:
                 cai_values.append(ref_freq / max_freq)
@@ -256,20 +251,19 @@ def _get_default_reference_usage() -> Dict[str, float]:
     }
 
 
-def _get_max_synonymous_frequency(codon: str, reference_usage: Dict[str, float]) -> float:
-    """Get maximum frequency for codons encoding the same amino acid."""
-    if codon not in GENETIC_CODE:
-        return 0.0
+def _max_synonymous_frequencies(reference_usage: Dict[str, float]) -> Dict[str, float]:
+    """Precompute each codon's maximum reference frequency among its synonyms."""
+    aa_to_codons: Dict[str, List[str]] = {}
+    for codon, aa in GENETIC_CODE.items():
+        aa_to_codons.setdefault(aa, []).append(codon)
 
-    amino_acid = GENETIC_CODE[codon]
+    max_freqs: Dict[str, float] = {}
+    for codons in aa_to_codons.values():
+        max_freq = max((reference_usage.get(c, 0.0) for c in codons), default=0.0)
+        for codon in codons:
+            max_freqs[codon] = max_freq
 
-    # Find all codons for this amino acid
-    synonymous_codons = [c for c, aa in GENETIC_CODE.items() if aa == amino_acid]
-
-    # Get their frequencies
-    frequencies = [reference_usage.get(c, 0.0) for c in synonymous_codons]
-
-    return max(frequencies) if frequencies else 0.0
+    return max_freqs
 
 
 def gc_content_codon_positions(seq: str) -> Dict[str, float]:
@@ -393,27 +387,30 @@ def calculate_enc(sequence: str, reference_usage: Optional[Dict[str, float]] = N
 
     Args:
         sequence: DNA sequence
-        reference_usage: Reference codon usage (optional)
+        reference_usage: Retained for API compatibility only; NOT used.
+            The ENC F values are always computed from the input sequence's
+            own codon frequencies.
 
     Returns:
-        ENC value (20-61, where 20 = extreme bias, 61 = no bias)
+        ENC value computed from the input sequence. Lower values indicate
+        stronger codon bias; 61.0 is returned when no bias can be measured
+        (empty input or no multi-codon amino acid present). The simplified
+        formula does not guarantee the classical 20-61 range.
 
     Example:
-        >>> seq = "ATGGCCATTGTAATGGGCC"
+        >>> seq = "ATGGCCATGGCTATGGCCATGGCT"
         >>> enc = calculate_enc(seq)
-        >>> 20 <= enc <= 61
+        >>> enc > 0
         True
     """
     codon_freq = codon_usage(sequence)
     if not codon_freq:
         return 61.0  # Maximum ENC (no bias)
 
-    # Use reference usage if provided, otherwise use observed
-    usage = reference_usage or codon_freq
-
-    # Group codons by amino acid
+    # Group codons by amino acid (always from the input sequence's own
+    # codon frequencies; reference_usage is accepted but unused)
     aa_groups: dict[str, dict[str, float]] = {}
-    for codon, freq in usage.items():
+    for codon, freq in codon_freq.items():
         if codon in GENETIC_CODE:
             aa = GENETIC_CODE[codon]
             if aa not in aa_groups:

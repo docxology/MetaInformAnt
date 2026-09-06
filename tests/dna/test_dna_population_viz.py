@@ -107,10 +107,10 @@ class TestPlotPCAResults:
     """Test PCA results plotting."""
 
     def test_pca_plot(self, tmp_path: Path):
-        """Test PCA plotting."""
+        """Test PCA plotting renders a real PC1-vs-PC2 scatter."""
         pca_result = {
             "status": "success",
-            "pcs": [[0.1, 0.2, 0.3] for _ in range(50)],
+            "pcs": [[0.1 * i, 0.2, 0.3] for i in range(50)],
             "explained_variance_ratio": [0.3, 0.2, 0.1, 0.05, 0.03],
             "n_components": 5,
         }
@@ -120,7 +120,10 @@ class TestPlotPCAResults:
 
         assert fig is not None
         assert output_path.exists()
-        assert len(fig.axes) == 3  # Three subplots
+        assert len(fig.axes) == 1  # Single scatter axes
+        # The scatter must carry the sample points, not placeholder text.
+        assert any(len(coll.get_offsets()) == 50 for ax in fig.axes for coll in ax.collections)
+        assert "PC1" in fig.axes[0].get_xlabel()
 
     def test_pca_plot_failure(self):
         """Test PCA plot with failed status."""

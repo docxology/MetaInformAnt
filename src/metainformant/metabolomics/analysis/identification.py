@@ -175,14 +175,6 @@ def differential_abundance(
 
     t_stats = (mean_a - mean_b) / pooled_se
 
-    # Welch's degrees of freedom approximation
-    num = (var_a / max(n_a, 1) + var_b / max(n_b, 1)) ** 2
-    denom_a = (var_a / max(n_a, 1)) ** 2 / max(n_a - 1, 1) if n_a > 1 else np.zeros_like(var_a)
-    denom_b = (var_b / max(n_b, 1)) ** 2 / max(n_b - 1, 1) if n_b > 1 else np.zeros_like(var_b)
-    denom = denom_a + denom_b
-    with np.errstate(divide="ignore", invalid="ignore"):
-        np.where(denom > 0, num / denom, 1.0)
-
     # Approximate p-value using normal distribution for large df
     p_values = 2.0 * _normal_sf(np.abs(t_stats))
 
@@ -290,9 +282,9 @@ def identify_with_adducts(
     """
     if adducts is None:
         if ion_mode == "positive":
-            adducts = {k: v for k, v in COMMON_ADDUCTS.items() if "+" in k}
+            adducts = {k: v for k, v in COMMON_ADDUCTS.items() if k.endswith("]+")}
         else:
-            adducts = {k: v for k, v in COMMON_ADDUCTS.items() if "-" in k}
+            adducts = {k: v for k, v in COMMON_ADDUCTS.items() if k.endswith("]-")}
 
     db_names = list(database.keys())
     db_masses = np.array(list(database.values()))

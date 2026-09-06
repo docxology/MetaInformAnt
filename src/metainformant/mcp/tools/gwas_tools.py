@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from metainformant.mcp.tools._spec import dump_json, read_table, validate_output_dir
+from metainformant.mcp.tools._spec import dump_json, json_safe_float, read_table, validate_output_dir
 
 
 def _handle_phenotype_summary(phenotype_table: str, output_dir: str | None = None) -> dict:
@@ -19,15 +19,16 @@ def _handle_phenotype_summary(phenotype_table: str, output_dir: str | None = Non
     if not numeric.empty:
         desc = numeric.describe()
         summary["numeric_summary"] = {
-            col: {stat: float(desc.loc[stat, col]) for stat in ("mean", "std", "min", "max")} for col in desc.columns
+            col: {
+                stat: json_safe_float(desc.loc[stat, col]) for stat in ("mean", "std", "min", "max")
+            }
+            for col in desc.columns
         }
     if output_dir is not None:
         out_dir = validate_output_dir(output_dir)
         out_path = out_dir / "phenotype_summary.json"
-        from metainformant.mcp.tools._spec import dump_json
-
-        dump_json(summary, out_path)
         summary["output"] = str(out_path)
+        dump_json(summary, out_path)
     return summary
 
 
@@ -88,12 +89,12 @@ def _handle_association_summary(
 
     records = frame.to_dict(orient="records")
     summary: dict[str, Any] = compute_comprehensive_summary(records, significance_threshold=significance_threshold)
-    summary = json.loads(json.dumps(summary, default=float))
+    summary = json.loads(json.dumps(summary, default=float), parse_constant=lambda _token: None)
     if output_dir is not None:
         out_dir = validate_output_dir(output_dir)
         out_path = out_dir / "association_summary.json"
-        dump_json(summary, out_path)
         summary["output"] = str(out_path)
+        dump_json(summary, out_path)
     return summary
 
 

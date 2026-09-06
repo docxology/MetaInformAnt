@@ -436,3 +436,43 @@ class TestHierarchicalCommunities:
         assert "optimal_resolution" in optimization
         assert "optimal_modularity" in optimization
         assert optimization["optimal_resolution"] >= 0.5
+
+
+class TestCompareCommunityMethods:
+    """Tests for cross-method comparison and partition comparison metrics."""
+
+    def _two_cliques(self):
+        network = create_network(["A", "B", "C", "D", "E", "F"], directed=False)
+        for u, v in [("A", "B"), ("B", "C"), ("A", "C"), ("D", "E"), ("E", "F"), ("D", "F")]:
+            network.add_edge(u, v)
+        return network
+
+    def test_compare_community_methods_reports_best(self):
+        from metainformant.networks.analysis.community import compare_community_methods
+
+        network = self._two_cliques()
+        results = compare_community_methods(network, methods=["greedy", "label_propagation"])
+        assert set(results["greedy"].keys()) >= {"communities", "evaluation", "n_communities"}
+        assert results["best_method"] in {"greedy", "label_propagation"}
+
+    def test_compare_community_methods_unknown_method_recorded_as_error(self):
+        from metainformant.networks.analysis.community import compare_community_methods
+
+        network = self._two_cliques()
+        results = compare_community_methods(network, methods=["greedy", "does_not_exist"])
+        assert "error" in results["does_not_exist"]
+        assert results["best_method"] == "greedy"
+
+    def test_compare_communities_identical_partitions_score_one(self):
+        from metainformant.networks.analysis.community import compare_communities
+
+        partition = {"A": 0, "B": 0, "C": 1, "D": 1}
+        comparison = compare_communities(partition, dict(partition))
+        assert comparison["normalized_mutual_information"] == pytest.approx(1.0)
+        assert comparison["adjusted_rand_index"] == pytest.approx(1.0)
+
+    def test_compare_communities_disjoint_node_sets_score_zero(self):
+        from metainformant.networks.analysis.community import compare_communities
+
+        comparison = compare_communities({"A": 0}, {"B": 1})
+        assert comparison == {"normalized_mutual_information": 0.0, "adjusted_rand_index": 0.0}

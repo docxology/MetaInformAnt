@@ -12,6 +12,7 @@ import json
 import math
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
@@ -23,7 +24,7 @@ logger = get_logger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def default_qc_thresholds() -> dict:
+def default_qc_thresholds() -> dict[str, Any]:
     """Return default QC thresholds for common sequencing metrics.
 
     Each metric maps to a dict with ``warn`` and ``fail`` values.
@@ -121,9 +122,9 @@ def default_qc_thresholds() -> dict:
 
 
 def check_qc_thresholds(
-    metrics: dict,
-    thresholds: dict | None = None,
-) -> dict:
+    metrics: dict[str, Any],
+    thresholds: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Check QC metrics against configurable thresholds.
 
     Args:
@@ -248,7 +249,7 @@ def _iqr(values: list[float]) -> tuple[float, float]:
     return s[q1_idx], s[min(q3_idx, n - 1)]
 
 
-def aggregate_sample_qc(sample_metrics: list[dict]) -> dict:
+def aggregate_sample_qc(sample_metrics: list[dict[str, Any]]) -> dict[str, Any]:
     """Aggregate QC metrics across multiple samples.
 
     Computes summary statistics (mean, median, std) for each metric across
@@ -361,9 +362,9 @@ def aggregate_sample_qc(sample_metrics: list[dict]) -> dict:
 
 
 def generate_qc_report(
-    metrics: dict,
+    metrics: dict[str, Any],
     output_path: str | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """Generate a comprehensive QC report from collected metrics.
 
     Combines threshold checking, summary statistics, and a narrative
@@ -437,9 +438,9 @@ def generate_qc_report(
 
 
 def qc_trend_analysis(
-    metrics_over_time: list[dict],
+    metrics_over_time: list[dict[str, Any]],
     metric_name: str,
-) -> dict:
+) -> dict[str, Any]:
     """Analyse QC metric trends over time or across batches.
 
     Performs simple linear regression to detect drift and identifies

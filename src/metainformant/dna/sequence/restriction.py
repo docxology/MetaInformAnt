@@ -35,7 +35,6 @@ RESTRICTION_ENZYMES = {
     "ClaI": "ATCGAT",
     "SpeI": "ACTAGT",
     "ApaI": "GGGCCC",
-    "Blunt_example": "CCCGGG",  # SmaI produces blunt ends
     # Additional enzymes
     "AluI": "AGCT",
     "HaeIII": "GGCC",
@@ -44,6 +43,9 @@ RESTRICTION_ENZYMES = {
     "MspI": "CCGG",
     "HpaII": "CCGG",
 }
+
+# Enzymes whose cut produces blunt (flush) ends.
+BLUNT_CUTTERS = {"SmaI", "EcoRV", "PvuII", "AluI", "HaeIII", "RsaI"}
 
 
 def find_restriction_sites(seq: str, enzymes: List[str]) -> Dict[str, List[int]]:
@@ -66,6 +68,7 @@ def find_restriction_sites(seq: str, enzymes: List[str]) -> Dict[str, List[int]]
         return {}
 
     results = {}
+    seq_upper = seq.upper()
 
     for enzyme in enzymes:
         if enzyme not in RESTRICTION_ENZYMES:
@@ -78,7 +81,7 @@ def find_restriction_sites(seq: str, enzymes: List[str]) -> Dict[str, List[int]]
         # Find all occurrences of recognition site
         start = 0
         while True:
-            pos = seq.upper().find(recognition_site, start)
+            pos = seq_upper.find(recognition_site, start)
             if pos == -1:
                 break
             positions.append(pos)
@@ -114,24 +117,21 @@ def virtual_digest(seq: str, enzyme: str) -> List[str]:
     if not seq:
         return [seq]
 
-    recognition_site = RESTRICTION_ENZYMES[enzyme]
-    site_length = len(recognition_site)
-
     fragments = []
     last_cut = 0
 
-    # Find all cut positions
+    # Cut immediately before each recognition site (the site itself stays on
+    # the downstream fragment; no per-enzyme cut offsets are modeled).
     positions = find_restriction_sites(seq, [enzyme])[enzyme]
 
-    # Add sequence end
-    positions.append(len(seq))
-
-    # Extract fragments
     for cut_pos in positions:
         fragment = seq[last_cut:cut_pos]
         if fragment:  # Skip empty fragments
             fragments.append(fragment)
-        last_cut = cut_pos + site_length  # Skip the recognition site
+        last_cut = cut_pos
+
+    if last_cut < len(seq):
+        fragments.append(seq[last_cut:])
 
     return fragments
 
@@ -182,28 +182,17 @@ def double_digest(seq: str, enzyme1: str, enzyme2: str) -> List[str]:
 
     # Combine and sort all cut positions
     all_sites = []
-    enzyme_lengths = {}
-
-    for pos in sites1:
-        all_sites.append((pos, enzyme1))
-        enzyme_lengths[pos] = len(RESTRICTION_ENZYMES[enzyme1])
-
-    for pos in sites2:
-        all_sites.append((pos, enzyme2))
-        enzyme_lengths[pos] = len(RESTRICTION_ENZYMES[enzyme2])
-
-    # Sort by position
-    all_sites.sort(key=lambda x: x[0])
+    all_sites = sorted(set(sites1) | set(sites2))
 
     # Extract fragments
     fragments = []
     last_cut = 0
 
-    for cut_pos, enzyme in all_sites:
+    for cut_pos in all_sites:
         fragment = seq[last_cut:cut_pos]
         if fragment:
             fragments.append(fragment)
-        last_cut = cut_pos + enzyme_lengths[cut_pos]
+        last_cut = cut_pos
 
     # Add remaining fragment
     if last_cut < len(seq):
@@ -301,7 +290,7 @@ def find_restriction_pattern(seq: str, enzyme: str) -> str:
         # Add dashes for uncut region
         pattern += "-" * (site - last_pos)
         pattern += "|"  # Cut marker
-        last_pos = site + len(RESTRICTION_ENZYMES[enzyme])
+        last_pos = site
 
     # Add remaining sequence
     if last_pos < len(seq):
@@ -324,7 +313,9 @@ def is_palindromic_site(recognition_site: str) -> bool:
     Example:
         >>> is_palindromic_site("GAATTC")  # EcoRI site
         True
-        >>> is_palindromic_site("CATATG")  # Not palindromic
+        >>> is_palindromic_site("CATATG")  # NdeI site, palindromic
+        True
+        >>> is_palindromic_site("TGCA")  # Not a palindrome
         False
     """
     if not recognition_site:
@@ -350,7 +341,7 @@ def get_enzyme_properties() -> Dict[str, Dict[str, Any]]:
             "recognition_site": site,
             "site_length": len(site),
             "is_palindromic": is_palindromic_site(site),
-            "cuts_blunt": site == site[::-1],  # Simple check for blunt ends
+            "cuts_blunt": enzyme in BLUNT_CUTTERS,
             "cut_position": len(site) // 2,  # Approximate cut position
         }
 
@@ -408,7 +399,8 @@ def simulate_cloning(
         - vector_fragments: Fragments from vector digestion (if vector provided)
         - compatible_enzymes: Enzymes used
         - ligation_possible: Whether ligation is theoretically possible
-        - enzyme_compatibility: Analysis of enzyme sticky end compatibility
+        - enzyme_compatibility: Name-level compatibility check (isocaudomers
+          producing identical sticky ends are not distinguished)
 
     Example:
         >>> insert = "GAATTCATCGGGATCC"

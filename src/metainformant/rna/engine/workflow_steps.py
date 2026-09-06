@@ -27,6 +27,13 @@ if TYPE_CHECKING:
 logger = logging.get_logger(__name__)
 
 
+def _metadata_row_count(path: Path) -> int:
+    """Count lines in a TSV without leaking the file handle."""
+
+    with open(path, "r", encoding="utf-8") as handle:
+        return sum(1 for _ in handle)
+
+
 def setup_vdb_config(
     config: AmalgkitWorkflowConfig,
     steps_planned: List[Tuple[str, Dict[str, Any]]],
@@ -92,7 +99,7 @@ def setup_vdb_config(
             if remaining == 0:
                 logger.info("All samples already quantified - skipping getfastq step")
                 steps_planned = [(name, params) for name, params in steps_planned if name != "getfastq"]
-            elif remaining < sum(1 for _ in open(source_metadata)) - 1:
+            elif remaining < _metadata_row_count(source_metadata) - 1:
                 source_metadata = unquantified_metadata
                 logger.info(f"Using unquantified metadata ({remaining} samples remaining)")
 
@@ -108,6 +115,10 @@ def setup_vdb_config(
                         steps_planned[i] = (step_name, {**step_params, "metadata": str(extraction_metadata)})
                         logger.info(f"Using extraction metadata ({num_samples} samples) for getfastq step")
 
+    except RuntimeError:
+        # check_disk_space_or_fail is fail-closed by contract (producer safety):
+        # a critically full disk must abort planning, not downgrade to a warning.
+        raise
     except Exception as e:
         logger.warning(f"Could not prepare campaign-local SRA environment: {e}")
 

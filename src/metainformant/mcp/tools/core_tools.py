@@ -16,7 +16,7 @@ def _handle_path_resolve(path: str, parent: str | None = None) -> dict:
         "exists": resolved.exists(),
         "is_file": resolved.is_file(),
         "is_dir": resolved.is_dir(),
-        "safe": is_safe_path(path),
+        "safe": is_safe_path(str(resolved)),
     }
     if parent is not None:
         parent_resolved = Path(parent).expanduser().resolve()

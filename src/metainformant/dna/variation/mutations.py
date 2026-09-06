@@ -176,13 +176,21 @@ def classify_mutations(ancestral: str, derived: str) -> Dict[str, int]:
 def generate_point_mutations(sequence: str, num_mutations: int, mutation_rate: float = 0.001) -> str:
     """Generate point mutations in a DNA sequence.
 
+    Exactly ``num_mutations`` distinct positions are sampled uniformly at random
+    and each sampled position is changed to a different nucleotide. The
+    ``mutation_rate`` parameter is retained for signature compatibility only and
+    does not affect the number of mutations applied.
+
     Args:
         sequence: Original DNA sequence
-        num_mutations: Number of mutations to introduce
-        mutation_rate: Probability of mutation at each site
+        num_mutations: Exact number of distinct positions to mutate
+        mutation_rate: Unused; kept for backward compatibility of the signature
 
     Returns:
         Mutated DNA sequence
+
+    Raises:
+        ValueError: If num_mutations is negative or exceeds the sequence length
 
     Example:
         >>> seq = "ATCGATCG"
@@ -193,22 +201,18 @@ def generate_point_mutations(sequence: str, num_mutations: int, mutation_rate: f
     if not sequence:
         return sequence
 
-    nucleotides = ["A", "C", "G", "T"]
     mutated = list(sequence.upper())
+    if num_mutations < 0:
+        raise ValueError("num_mutations must be non-negative")
+    if num_mutations > len(mutated):
+        raise ValueError("num_mutations cannot exceed the sequence length")
 
-    mutations_applied = 0
-
-    for i in range(len(mutated)):
-        if mutations_applied >= num_mutations:
-            break
-
-        if random.random() < mutation_rate:
-            current = mutated[i]
-            # Choose different nucleotide
-            possible = [n for n in nucleotides if n != current]
-            if possible:
-                mutated[i] = random.choice(possible)
-                mutations_applied += 1
+    nucleotides = ["A", "C", "G", "T"]
+    for pos in random.sample(range(len(mutated)), num_mutations):
+        current = mutated[pos]
+        # Choose different nucleotide
+        possible = [n for n in nucleotides if n != current]
+        mutated[pos] = random.choice(possible)
 
     return "".join(mutated)
 
@@ -296,6 +300,9 @@ def calculate_substitution_matrix(seq1: str, seq2: str) -> Dict[Tuple[str, str],
     Returns:
         Dictionary mapping (from_nuc, to_nuc) pairs to counts
 
+    Raises:
+        ValueError: If sequences have different lengths
+
     Example:
         >>> seq1 = "ATCG"
         >>> seq2 = "AGCT"
@@ -304,7 +311,7 @@ def calculate_substitution_matrix(seq1: str, seq2: str) -> Dict[Tuple[str, str],
         True
     """
     if len(seq1) != len(seq2):
-        return {}
+        raise ValueError("Sequences must have equal length")
 
     substitutions: Dict[Tuple[str, str], int] = {}
 

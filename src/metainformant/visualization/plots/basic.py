@@ -21,6 +21,14 @@ from metainformant.visualization.config.conventions import save_figure_determini
 logger = logging.get_logger(__name__)
 
 
+def _save_fig(ax: Axes, output_path: str | Path | None, label: str) -> None:
+    """Persist the plotted figure (``ax.figure``) when *output_path* is requested."""
+    if output_path:
+        paths.ensure_directory(Path(output_path).parent)
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+        logger.info(f"{label} saved to {output_path}")
+
+
 def lineplot(
     x: np.ndarray,
     y: np.ndarray | None = None,
@@ -58,10 +66,7 @@ def lineplot(
 
     ax.plot(x_data, y_data, **kwargs)
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Line plot saved to {output_path}")
+    _save_fig(ax, output_path, "Line plot")
 
     return ax
 
@@ -95,10 +100,7 @@ def scatter_plot(
 
     ax.scatter(x, y, **kwargs)
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Scatter plot saved to {output_path}")
+    _save_fig(ax, output_path, "Scatter plot")
 
     return ax
 
@@ -137,10 +139,7 @@ def heatmap(
     im = ax.imshow(data, cmap=cmap, **kwargs)
     plt.colorbar(im, ax=ax)
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Heatmap saved to {output_path}")
+    _save_fig(ax, output_path, "Heatmap")
 
     return ax
 
@@ -181,10 +180,7 @@ def bar_plot(
 
     ax.bar(x, height, **kwargs)
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Bar plot saved to {output_path}")
+    _save_fig(ax, output_path, "Bar plot")
 
     return ax
 
@@ -225,10 +221,7 @@ def pie_chart(
     ax.pie(sizes, labels=labels, **kwargs)
     ax.axis("equal")  # Equal aspect ratio ensures that pie is drawn as a circle
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Pie chart saved to {output_path}")
+    _save_fig(ax, output_path, "Pie chart")
 
     return ax
 
@@ -262,10 +255,7 @@ def area_plot(
 
     ax.fill_between(x, y, **kwargs)
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Area plot saved to {output_path}")
+    _save_fig(ax, output_path, "Area plot")
 
     return ax
 
@@ -299,9 +289,6 @@ def step_plot(
 
     ax.step(x, y, **kwargs)
 
-    if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Step plot saved to {output_path}")
+    _save_fig(ax, output_path, "Step plot")
 
     return ax

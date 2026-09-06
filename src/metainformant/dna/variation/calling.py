@@ -616,7 +616,8 @@ def annotate_variant_context(
     the standard 96-channel SBS framework).
 
     Args:
-        variants: List of variant dicts with "pos" (0-based) and "ref"/"alt" fields.
+        variants: List of variant dicts with "pos" (1-based, VCF standard) and
+            "ref"/"alt" fields.
         reference: Reference DNA sequence.
         window: Number of flanking bases on each side for context (default 5).
 
@@ -647,15 +648,17 @@ def annotate_variant_context(
     for variant in variants:
         result = dict(variant)
         pos = variant.get("pos", 0)
+        # VCF/pileup positions are 1-based; index the sequence 0-based at pos-1
+        pos0 = pos - 1
         ref_allele = variant.get("ref", "").upper()
         alt_allele = variant.get("alt", "").upper()
 
-        # Extract context windows
-        upstream_start = max(0, pos - window)
-        downstream_end = min(len(ref_upper), pos + len(ref_allele) + window)
+        # Extract context windows centered on pos0
+        upstream_start = max(0, pos0 - window)
+        downstream_end = min(len(ref_upper), pos0 + len(ref_allele) + window)
 
-        upstream_context = ref_upper[upstream_start:pos]
-        downstream_context = ref_upper[pos + len(ref_allele) : downstream_end]
+        upstream_context = ref_upper[upstream_start:pos0]
+        downstream_context = ref_upper[pos0 + len(ref_allele) : downstream_end]
         full_context = f"{upstream_context}[{ref_allele}/{alt_allele}]{downstream_context}"
 
         result["upstream_context"] = upstream_context
@@ -667,15 +670,15 @@ def annotate_variant_context(
             max(0, pos - 1)
             min(len(ref_upper), pos + 2)
 
-            if pos > 0 and pos < len(ref_upper) - 1:
-                trinuc = ref_upper[pos - 1 : pos + 2]
-                trinuc_mut = f"{trinuc}>{ref_upper[pos - 1]}{alt_allele}{ref_upper[pos + 1]}"
-            elif pos == 0:
-                trinuc = f"N{ref_allele}{ref_upper[pos + 1] if pos + 1 < len(ref_upper) else 'N'}"
-                trinuc_mut = f"{trinuc}>N{alt_allele}{ref_upper[pos + 1] if pos + 1 < len(ref_upper) else 'N'}"
+            if 0 < pos0 < len(ref_upper) - 1:
+                trinuc = ref_upper[pos0 - 1 : pos0 + 2]
+                trinuc_mut = f"{trinuc}>{ref_upper[pos0 - 1]}{alt_allele}{ref_upper[pos0 + 1]}"
+            elif pos0 == 0:
+                trinuc = f"N{ref_allele}{ref_upper[pos0 + 1] if pos0 + 1 < len(ref_upper) else 'N'}"
+                trinuc_mut = f"{trinuc}>N{alt_allele}{ref_upper[pos0 + 1] if pos0 + 1 < len(ref_upper) else 'N'}"
             else:
-                trinuc = f"{ref_upper[pos - 1]}{ref_allele}N"
-                trinuc_mut = f"{trinuc}>{ref_upper[pos - 1]}{alt_allele}N"
+                trinuc = f"{ref_upper[pos0 - 1]}{ref_allele}N"
+                trinuc_mut = f"{trinuc}>{ref_upper[pos0 - 1]}{alt_allele}N"
 
             result["trinucleotide_context"] = trinuc
             result["trinucleotide_mutation"] = trinuc_mut

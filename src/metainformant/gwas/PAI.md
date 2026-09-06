@@ -10,7 +10,7 @@
 
 - **Type**: Source Code
 - **Parent**: `metainformant`
-- **Sub-packages**: `analysis`, `data`, `finemapping`, `heritability`, `visualization`, `workflow`
+- **Sub-packages**: `analysis`, `data`, `finemapping`, `heritability`, `visualization`, `workflow`, `simulation`, `validation`, `reporting`
 
 ## Maintenance Notes
 

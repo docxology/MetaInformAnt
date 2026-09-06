@@ -105,4 +105,8 @@ class IndexComplexityManager:
 
         except Exception as e:
             logger.error(f"Failed to filter FASTA {input_path}: {e}")
+            try:
+                Path(output_path).unlink(missing_ok=True)
+            except OSError:
+                pass
             raise

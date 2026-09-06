@@ -70,13 +70,16 @@ def progressive_alignment(sequences: Dict[str, str], method: str = "muscle") -> 
         >>> all(len(seq) == len(aligned["seq1"]) for seq in aligned.values())
         True
     """
+    supported = ("muscle", "mafft", "clustalo", "clustalw")
+    if method not in supported:
+        raise ValueError(f"Unknown alignment method: {method}")
+
     if not sequences:
         return {}
 
     if len(sequences) == 1:
         return sequences.copy()
 
-    # Check if external tool is available
     if not _is_tool_available(method):
         logger.warning(f"{method} not available, falling back to simple pairwise alignment")
         return _pad_alignment_to_common_length(_simple_progressive_alignment(sequences))
@@ -108,8 +111,9 @@ def _is_tool_available(tool: str) -> bool:
 
 def _run_external_alignment(sequences: Dict[str, str], method: str) -> Dict[str, str]:
     """Run external alignment tool using repository-local temp directory."""
-    # Use repo-local temp directory for FAT filesystem compatibility (per CLAUDE.md)
-    repo_root = Path(__file__).resolve().parent.parent.parent.parent
+    # Use repo-local temp directory for FAT filesystem compatibility (per CLAUDE.md).
+    # parents: [0] alignment/, [1] dna/, [2] metainformant/, [3] src/, [4] repo root.
+    repo_root = Path(__file__).resolve().parents[4]
     temp_base = repo_root / ".tmp" / "python"
     temp_base.mkdir(parents=True, exist_ok=True)
 
@@ -173,45 +177,67 @@ def _run_muscle(input_fasta: Path, output_fasta: Path, tmpdir: Path) -> subproce
 
 
 def _simple_progressive_alignment(sequences: Dict[str, str]) -> Dict[str, str]:
-    """Simple progressive alignment using pairwise alignments."""
+    """Align every sequence to the first sequence, propagating gap columns.
+
+    Each sequence is pairwise-aligned against the (ungapped) first sequence;
+    gap columns opened in the reference are inserted into every previously
+    aligned sequence so all columns stay homologous.
+    """
     if len(sequences) <= 1:
         return sequences.copy()
 
     from ..alignment import pairwise as alignment  # Import here to avoid circular imports
 
     seq_ids = list(sequences.keys())
-    aligned = {seq_ids[0]: sequences[seq_ids[0]]}
+    ref_id = seq_ids[0]
+    ref_ungapped = sequences[ref_id]
 
-    # Progressively add sequences
+    # One column per alignment position; each column holds one char per
+    # sequence added so far. ``col_is_ref[k]`` marks whether column k holds
+    # a character of the (ungapped) reference sequence or an inserted gap.
+    columns: List[List[str]] = [[char] for char in ref_ungapped]
+    col_is_ref: List[bool] = [True] * len(ref_ungapped)
+    aligned_ids = [ref_id]
+
     for seq_id in seq_ids[1:]:
-        # Find best match among existing aligned sequences
-        best_score = float("-inf")
-        best_aligned = None
+        result = alignment.global_align(ref_ungapped, sequences[seq_id])
+        ref_aln, new_aln = result.seq1_aligned, result.seq2_aligned
 
-        for existing_id, existing_seq in aligned.items():
-            result = alignment.global_align(sequences[seq_id], existing_seq)
-            if result.score > best_score:
-                best_score = result.score
-                best_aligned = (existing_id, result)
+        new_columns: List[List[str]] = []
+        new_col_is_ref: List[bool] = []
+        k = 0
+        for ref_char, new_char in zip(ref_aln, new_aln):
+            if ref_char == "-":
+                # Gap opened in the reference: every previously aligned
+                # sequence gets a gap; the new sequence keeps its base.
+                new_columns.append(["-"] * len(aligned_ids) + [new_char])
+                new_col_is_ref.append(False)
+            else:
+                # Previously inserted gap columns anchored before this
+                # reference character are kept; the new sequence has no
+                # counterpart for them, so it receives a gap.
+                while not col_is_ref[k]:
+                    gap_column = columns[k]
+                    gap_column.append("-")
+                    new_columns.append(gap_column)
+                    new_col_is_ref.append(False)
+                    k += 1
+                column = columns[k]
+                column.append(new_char)
+                new_columns.append(column)
+                new_col_is_ref.append(True)
+                k += 1
+        while k < len(columns):
+            gap_column = columns[k]
+            gap_column.append("-")
+            new_columns.append(gap_column)
+            new_col_is_ref.append(False)
+            k += 1
+        columns = new_columns
+        col_is_ref = new_col_is_ref
+        aligned_ids.append(seq_id)
 
-        if best_aligned:
-            existing_id, result = best_aligned
-            # Merge the new sequence into the alignment
-            merged = _merge_alignments(aligned[existing_id], result.seq2_aligned, result.seq1_aligned)
-            aligned[existing_id] = merged[0]
-            aligned[seq_id] = merged[1]
-        else:
-            # No good alignment found, add as-is
-            aligned[seq_id] = sequences[seq_id]
-
-    return aligned
-
-
-def _merge_alignments(seq1_aligned: str, seq2_aligned: str, new_seq_aligned: str) -> tuple[str, str]:
-    """Merge a new sequence into an existing alignment."""
-    # This is a simplified merge - in practice, this would be more complex
-    # For now, just return the aligned sequences as they are
-    return seq1_aligned, new_seq_aligned
+    return {seq_id: "".join(columns[pos][i] for pos in range(len(columns))) for i, seq_id in enumerate(aligned_ids)}
 
 
 def _pad_alignment_to_common_length(sequences: Dict[str, str]) -> Dict[str, str]:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import statistics
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -253,9 +254,7 @@ class AcousticSignal:
 
         # Regularity = 1 - CV of ISIs (higher = more regular)
         if len(isis) > 1 and mean_isi > 0:
-            import statistics as stats
-
-            cv = stats.stdev(isis) / mean_isi
+            cv = statistics.stdev(isis) / mean_isi
             regularity = max(0.0, 1.0 - cv)
         else:
             regularity = 1.0 if isis else 0.0

@@ -16,18 +16,16 @@ from metainformant.core.data import validation
 from metainformant.core.utils import errors, logging
 from metainformant.singlecell.data.preprocessing import SingleCellData
 
+from .pca_methods import _add_embedding_to_obs
+
 # Try to import optional dependencies
 try:
     from sklearn.decomposition import PCA
-    from sklearn.preprocessing import StandardScaler
 
     HAS_SKLEARN = True
-    HAS_TSNE = True
 except ImportError:
     HAS_SKLEARN = False
-    HAS_TSNE = False
     PCA = None
-    StandardScaler = None
 
 try:
     from sklearn.manifold import TSNE
@@ -133,12 +131,7 @@ def tsne_reduction(
         columns=[f"tSNE{i+1}" for i in range(n_components)],
     )
 
-    # Add to obs
-    if result.obs is None:
-        result.obs = tsne_coords
-    else:
-        for col in tsne_coords.columns:
-            result.obs[col] = tsne_coords[col]
+    _add_embedding_to_obs(result, tsne_coords)
 
     # Store in obsm as well (standard location)
     result.obsm = result.obsm if hasattr(result, "obsm") and result.obsm is not None else {}
@@ -236,12 +229,7 @@ def umap_reduction(
         columns=[f"UMAP{i+1}" for i in range(n_components)],
     )
 
-    # Add to obs
-    if result.obs is None:
-        result.obs = umap_coords
-    else:
-        for col in umap_coords.columns:
-            result.obs[col] = umap_coords[col]
+    _add_embedding_to_obs(result, umap_coords)
 
     result.obsm = result.obsm if hasattr(result, "obsm") and result.obsm is not None else {}
     result.obsm["X_umap"] = X_umap
@@ -342,12 +330,7 @@ def diffusion_map_reduction(
         columns=[f"DC{i+1}" for i in range(n_components)],
     )
 
-    # Add to obs
-    if result.obs is None:
-        result.obs = dm_coords
-    else:
-        for col in dm_coords.columns:
-            result.obs[col] = dm_coords[col]
+    _add_embedding_to_obs(result, dm_coords)
 
     # Store diffusion map metadata
     result.uns["diffusion_map"] = {
@@ -366,6 +349,9 @@ def mds_reduction(
     data: SingleCellData, n_components: int = 2, metric: bool = True, random_state: int | None = None
 ) -> SingleCellData:
     """Perform Multidimensional Scaling (MDS) on single-cell data.
+
+    The cell-by-cell Euclidean distance matrix computed from the expression
+    matrix is passed to MDS as precomputed dissimilarities.
 
     Args:
         data: SingleCellData object with expression matrix
@@ -398,7 +384,15 @@ def mds_reduction(
     # Perform MDS
     from sklearn.manifold import MDS
 
-    mds = MDS(n_components=n_components, metric=metric, random_state=random_state, max_iter=300, eps=1e-6)
+    mds = MDS(
+        n_components=n_components,
+        metric_mds=metric,
+        metric="precomputed",
+        init="random",
+        random_state=random_state,
+        max_iter=300,
+        eps=1e-6,
+    )
 
     X_mds = mds.fit_transform(distances)
 
@@ -409,12 +403,7 @@ def mds_reduction(
         columns=[f"MDS{i+1}" for i in range(n_components)],
     )
 
-    # Add to obs
-    if result.obs is None:
-        result.obs = mds_coords
-    else:
-        for col in mds_coords.columns:
-            result.obs[col] = mds_coords[col]
+    _add_embedding_to_obs(result, mds_coords)
 
     # Store MDS metadata
     result.uns["mds"] = {

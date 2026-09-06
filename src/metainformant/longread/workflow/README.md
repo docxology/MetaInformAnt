@@ -36,5 +36,6 @@ from metainformant.longread.workflow import orchestrator, pipelines, reporting
 config = pipelines.get_qc_pipeline_config(min_length=1000, min_quality=7.0)
 orch = orchestrator.LongReadOrchestrator(config=config, output_dir="output/lr")
 result = orch.run_qc_pipeline(reads)
-reporting.export_report(result, "output/lr/qc_report.json", fmt="json")
+report = reporting.generate_qc_report(result)
+reporting.export_report(report, "output/lr/qc_report.json", format="json")
 ```

@@ -105,20 +105,21 @@ from metainformant.pharmacogenomics import predict_metabolizer
 from metainformant.pharmacogenomics.annotations.cpic import get_dosing_recommendation
 from metainformant.pharmacogenomics.clinical.reporting import generate_clinical_report
 
-# Predict metabolizer status from diplotype
+
+# Predict metabolizer status from a diplotype string
 result = predict_metabolizer(
+    {"diplotype": "*1/*4"},
     gene="CYP2D6",
-    diplotype=("*1", "*4"),
 )
-# result = {"phenotype": "Intermediate Metabolizer", "activity_score": 1.0, ...}
+# result = {"phenotype": "intermediate", "activity_score": 1.0, ...}
 
 # Get dosing recommendation
-rec = get_dosing_recommendation(drug="codeine", gene="CYP2D6", phenotype="Poor Metabolizer")
+rec = get_dosing_recommendation(drug="codeine", phenotype="Poor Metabolizer")
 
 # Generate clinical report
 report = generate_clinical_report(
-    patient_data={"id": "P001"},
-    genotypes={"CYP2D6": {"diplotype": ("*1", "*4")}},
+    patient_data={"patient_id": "P001"},
+    genotypes={"CYP2D6": {"diplotype": "*1/*4"}},
     drugs=["codeine", "tramadol"],
 )
 ```

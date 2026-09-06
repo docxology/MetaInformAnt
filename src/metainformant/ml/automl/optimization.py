@@ -15,16 +15,14 @@ from itertools import product
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger
+from metainformant.ml._numeric import HAS_NUMPY, get_shape, to_1d_list, to_2d_list
 
 logger = get_logger(__name__)
 
 # Optional dependencies
 try:
     import numpy as np
-
-    HAS_NUMPY = True
 except ImportError:
-    HAS_NUMPY = False
     np = None
 
 try:
@@ -33,50 +31,6 @@ try:
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
-
-
-def _to_2d_list(X: Any) -> list[list[float]]:
-    """Convert input matrix to list of lists.
-
-    Args:
-        X: Input matrix.
-
-    Returns:
-        Matrix as list of lists.
-    """
-    if HAS_NUMPY and isinstance(X, np.ndarray):
-        return [[float(X[i, j]) for j in range(X.shape[1])] for i in range(X.shape[0])]
-    return [[float(v) for v in row] for row in X]
-
-
-def _to_1d_list(y: Any) -> list[float]:
-    """Convert input vector to list of floats.
-
-    Args:
-        y: Input vector.
-
-    Returns:
-        Vector as list of floats.
-    """
-    if HAS_NUMPY and isinstance(y, np.ndarray):
-        return [float(v) for v in y.ravel()]
-    return [float(v) for v in y]
-
-
-def _get_shape(X: Any) -> tuple[int, int]:
-    """Get shape of 2D matrix.
-
-    Args:
-        X: Input matrix.
-
-    Returns:
-        Tuple of (n_rows, n_cols).
-    """
-    if HAS_NUMPY and isinstance(X, np.ndarray):
-        return int(X.shape[0]), int(X.shape[1])
-    n_rows = len(X)
-    n_cols = len(X[0]) if n_rows > 0 else 0
-    return n_rows, n_cols
 
 
 def _cross_validate(
@@ -100,7 +54,7 @@ def _cross_validate(
     """
     if HAS_SKLEARN and HAS_NUMPY:
         try:
-            scoring = metric if metric != "accuracy" else "accuracy"
+            scoring = metric
             scores = cross_val_score(model, np.array(X_list), np.array(y_list), cv=cv, scoring=scoring)
             return float(scores.mean())
         except Exception:
@@ -235,8 +189,8 @@ def random_search(
     if random_state is not None:
         random.seed(random_state)
 
-    X_list = _to_2d_list(X)
-    y_list = _to_1d_list(y)
+    X_list = to_2d_list(X)
+    y_list = to_1d_list(y)
 
     logger.info(
         "Random search: %d iterations, %d params, cv=%d, metric=%s",
@@ -622,8 +576,8 @@ def grid_search(
     if not param_grid:
         raise ValueError("param_grid must not be empty")
 
-    X_list = _to_2d_list(X)
-    y_list = _to_1d_list(y)
+    X_list = to_2d_list(X)
+    y_list = to_1d_list(y)
 
     param_names = sorted(param_grid.keys())
     param_values = [param_grid[name] for name in param_names]
@@ -699,8 +653,8 @@ def model_selection(
     if task not in ("classification", "regression"):
         raise ValueError(f"task must be 'classification' or 'regression', got '{task}'")
 
-    X_list = _to_2d_list(X)
-    y_list = _to_1d_list(y)
+    X_list = to_2d_list(X)
+    y_list = to_1d_list(y)
     n_samples, n_features = len(X_list), len(X_list[0]) if X_list else 0
 
     metric = "accuracy" if task == "classification" else "r2"
@@ -828,13 +782,13 @@ def auto_preprocess(
     Raises:
         ValueError: If X is empty.
     """
-    n_samples, n_features = _get_shape(X)
+    n_samples, n_features = get_shape(X)
     if n_samples == 0:
         raise ValueError("X must not be empty")
 
     logger.info("Auto-preprocessing: %d samples, %d features", n_samples, n_features)
 
-    X_list = _to_2d_list(X)
+    X_list = to_2d_list(X)
     transformations: list[str] = []
     feature_info: list[dict] = []
 

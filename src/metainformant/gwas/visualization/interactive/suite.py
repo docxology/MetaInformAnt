@@ -611,7 +611,11 @@ def generate_all_plots(
             results["statistics"]["total_variants"] = len(df)
             results["statistics"]["significant_variants"] = int((p_values < significance_threshold).sum())
             if len(p_values) > 0:
-                results["statistics"]["lambda_gc"] = float(np.median(p_values) / 0.456)
+                from ...analysis.correction import lambda_gc_from_p_values
+
+                lambda_gc = lambda_gc_from_p_values(p_values.tolist())
+                if lambda_gc is not None:
+                    results["statistics"]["lambda_gc"] = float(lambda_gc)
                 results["statistics"]["min_p"] = float(np.min(p_values))
         except Exception as e:
             logger.warning(f"Failed to calculate statistics: {e}")

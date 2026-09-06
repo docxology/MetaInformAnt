@@ -6,7 +6,6 @@ setup, argument handling, and error reporting.
 
 from __future__ import annotations
 
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -32,8 +31,7 @@ def validate_script_executable(script_path: Path) -> bool:
         return True  # Python scripts are executed via interpreter
 
     if script_path.suffix == ".sh":
-        # Check if bash is available
-        return os.access(script_path, os.X_OK) or True  # Can always chmod
+        return True  # Executed via bash interpreter; no executable bit required
 
     return False
 

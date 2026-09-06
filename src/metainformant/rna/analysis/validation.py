@@ -121,9 +121,10 @@ def get_sample_pipeline_status(
     if merged_abundance.exists():
         try:
             # Stream file reading for large files - check header first, then sample rows
-            with open(merged_abundance, "r") as f:
+            with open(merged_abundance, "r", encoding="utf-8") as f:
                 header = f.readline()
-                if sample_id in header:
+                header_fields = header.rstrip("\r\n").replace(",", "\t").split("\t")
+                if sample_id in header_fields:
                     status["merge"] = True
                     status["stage"] = "merge"
                 else:

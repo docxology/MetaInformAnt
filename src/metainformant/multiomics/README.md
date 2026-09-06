@@ -83,6 +83,8 @@ result = eqtl_coloc(
 | `from_rna_expression()` | Expression matrix loading, filtering, and normalization |
 | `from_protein_abundance()` | Protein abundance matrix loading, filtering, and normalization |
 | `from_epigenome_data()` | Methylation/ChIP-seq data |
+| `from_metabolomics()` | Metabolomics matrix with log/z-score normalization |
+| `compute_multiomics_similarity()` | Sample-by-sample similarity across concatenated layers |
 
 ## Submodules
 

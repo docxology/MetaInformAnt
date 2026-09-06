@@ -324,6 +324,19 @@ class TestPlotQCMetrics:
         fig = plot_qc_metrics(data, figsize=(14, 12))
         assert fig is not None
 
+    def test_qc_plot_after_calculate_qc_metrics(self) -> None:
+        """calculate_qc_metrics writes total_counts/pct_mt; the plot must render them."""
+        from metainformant.singlecell.data.preprocessing import calculate_qc_metrics
+
+        data = calculate_qc_metrics(_make_singlecell_data())
+        assert "total_counts" in data.obs.columns  # not "n_counts"
+
+        fig = plot_qc_metrics(data)
+        assert fig is not None
+        # Counts histogram and mito histogram should both be populated
+        assert len(fig.axes[0].patches) > 0
+        assert len(fig.axes[3].patches) > 0
+
 
 # ---------------------------------------------------------------------------
 # plot_cluster_comparison

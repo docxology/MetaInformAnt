@@ -7,7 +7,7 @@ including Bonferroni, FDR, and genomic control methods.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, Iterable, List, Optional, Tuple, cast
 
 from metainformant.core.utils import logging
 
@@ -75,6 +75,32 @@ def _erfcinv_approx(y: float) -> float:
         err = math.erfc(x) - z
         x += err / (1.1283791670955126 * math.exp(-(x * x)) - x * err)
     return x if y < 1 else -x
+
+
+def lambda_gc_from_p_values(p_values: Iterable[float]) -> Optional[float]:
+    """Compute the genomic inflation factor λ_GC from association p-values (1 df).
+
+    λ_GC = median(χ²(1) statistics derived from p) / median(χ²(1) under null),
+    where the exact 1-df null median is ``EXPECTED_MEDIAN_CHI2_1DF``. This is the
+    canonical conversion used across the GWAS domain; callers must not divide
+    median p-values (or -log10 p-values) by a chi-square quantile directly.
+
+    Args:
+        p_values: Iterable of association p-values (values outside (0, 1] are ignored).
+
+    Returns:
+        λ_GC as a float, or None when no valid p-values are supplied.
+    """
+    chi2_stats = [_chi2_from_p_value(float(p)) for p in p_values if _valid_p_value(p)]
+    if not chi2_stats:
+        return None
+    chi2_stats.sort()
+    n = len(chi2_stats)
+    median_chi2 = chi2_stats[n // 2] if n % 2 == 1 else (chi2_stats[n // 2 - 1] + chi2_stats[n // 2]) / 2.0
+    lambda_gc = median_chi2 / EXPECTED_MEDIAN_CHI2_1DF
+    if not math.isfinite(lambda_gc) or lambda_gc <= 0:
+        return None
+    return lambda_gc
 
 
 def bonferroni_correction(
@@ -382,8 +408,7 @@ def adjust_p_values(p_values: List[float], method: str = "bonferroni", **kwargs:
         List of adjusted p-values or significance indicators
     """
     if method.lower() == "bonferroni":
-        bonferroni_correction(p_values, kwargs.get("alpha", 0.05), return_dict=False)
-        # Convert to adjusted p-values (approximation)
+        # Bonferroni-adjusted p-value (approximation): p * n, capped at 1.0
         return [min(p * len(p_values), 1.0) for p in p_values]
 
     elif method.lower() == "fdr":

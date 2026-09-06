@@ -113,7 +113,7 @@ def check_memory_gb() -> float:
                     if line.startswith("MemAvailable"):
                         kb = int(line.split()[1])
                         return kb / (1024**2)  # Convert to GB
-        except (FileNotFoundError, ValueError):
+        except (FileNotFoundError, ValueError, IndexError):
             pass
 
     return 0.0  # Unknown

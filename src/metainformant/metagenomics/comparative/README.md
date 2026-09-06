@@ -25,8 +25,8 @@ Comparative metagenomics analysis providing differential abundance testing, indi
 from metainformant.metagenomics.comparative import differential_abundance
 
 results = differential_abundance.differential_abundance(
-    abundance_table, groups, method="aldex2"
+    counts, groups, taxa_names, method="aldex2_like"
 )
-indicators = differential_abundance.indicator_species(abundance_table, groups)
-biomarkers = differential_abundance.biomarker_discovery(abundance_table, groups)
+indicators = differential_abundance.indicator_species(counts, groups, taxa_names, seed=42)
+biomarkers = differential_abundance.biomarker_discovery(counts, groups, taxa_names, seed=42)
 ```

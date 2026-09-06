@@ -217,23 +217,20 @@ def find_repeats(seq: str, min_length: int = 3) -> Dict[str, List[int]]:
     repeats = defaultdict(list)
     seq_upper = seq.upper()
 
-    # Find all occurrences of each possible repeat
+    # Find all occurrences of each possible repeat (overlapping included)
     for i in range(len(seq_upper) - min_length + 1):
         repeat_seq = seq_upper[i : i + min_length]
-        # Count how many times this repeat appears in the entire sequence
-        count = seq_upper.count(repeat_seq)
-        if count > 1:  # Only include repeats that appear more than once
-            # Find all positions of this repeat
-            pos = 0
-            while True:
-                pos = seq_upper.find(repeat_seq, pos)
-                if pos == -1:
-                    break
-                repeats[repeat_seq].append(pos)
-                pos += 1  # Move to next position (allow overlapping)
+        if repeat_seq in repeats:
+            continue  # Positions already collected
+        positions = []
+        pos = seq_upper.find(repeat_seq)
+        while pos != -1:
+            positions.append(pos)
+            pos = seq_upper.find(repeat_seq, pos + 1)  # Allow overlapping
+        if len(positions) > 1:  # Only include repeats that appear more than once
+            repeats[repeat_seq] = positions
 
-    # Only return repeats that appear more than once
-    return {k: v for k, v in repeats.items() if len(v) > 1}
+    return dict(repeats)
 
 
 def calculate_sequence_complexity(seq: str) -> float:
@@ -272,6 +269,12 @@ def calculate_sequence_complexity(seq: str) -> float:
 def find_orfs(seq: str, min_length: int = 30) -> List[Tuple[int, int, str]]:
     """Find open reading frames in a DNA sequence.
 
+    Positions refer to the ORIGINAL (forward-strand) sequence: ``start_pos``
+    and ``end_pos`` bound the ORF interval, ``end_pos`` exclusive, stop codon
+    included. Reverse-strand ORFs (frames ``-1``..``-3``) are mapped back
+    into these coordinates, so the ORF is always ``seq[start_pos:end_pos]``
+    (its reverse complement reads ATG..stop).
+
     Args:
         seq: DNA sequence string
         min_length: Minimum ORF length in amino acids
@@ -279,45 +282,42 @@ def find_orfs(seq: str, min_length: int = 30) -> List[Tuple[int, int, str]]:
     Returns:
         List of tuples (start_pos, end_pos, frame)
     """
-    orfs = []
+    orfs: List[Tuple[int, int, str]] = []
     seq_upper = seq.upper()
+    seq_len = len(seq_upper)
+    stop_codons = {"TAA", "TAG", "TGA"}
 
-    # Check all 6 reading frames
-    for frame in range(6):
-        if frame < 3:
-            # Forward strand
-            search_seq = seq_upper[frame:]
-        else:
-            # Reverse strand - use reverse complement and adjust frame
-            rev_comp = reverse_complement(seq_upper)
-            search_seq = rev_comp[frame - 3 :]
+    def _scan_strand(search_seq: str) -> List[Tuple[int, int]]:
+        """Find ORFs on one strand, in that strand's own coordinates."""
+        found: List[Tuple[int, int]] = []
+        for start_match in re.finditer(r"ATG", search_seq):
+            start_pos = start_match.start()
+            # Scan codon-by-codon for the first in-frame stop codon
+            end_pos = -1
+            for codon_start in range(start_pos + 3, len(search_seq) - 2, 3):
+                if search_seq[codon_start : codon_start + 3] in stop_codons:
+                    end_pos = codon_start + 3  # Exclusive end; stop codon included
+                    break
+            if end_pos == -1:
+                # ORF extends to the end of the strand
+                if (len(search_seq) - start_pos) // 3 >= min_length:
+                    found.append((start_pos, len(search_seq)))
+                continue
+            if (end_pos - start_pos) // 3 >= min_length:
+                found.append((start_pos, end_pos))
+        return found
 
-        # Find start codons
-        start_positions = []
-        for match in re.finditer(r"ATG", search_seq):
-            start_positions.append(match.start())
+    # Forward strand frames +1..+3
+    for frame in range(3):
+        for start_pos, end_pos in _scan_strand(seq_upper[frame:]):
+            orfs.append((start_pos + frame, end_pos + frame, f"+{frame + 1}"))
 
-        for start_pos in start_positions:
-            # Find next stop codon
-            orf_seq = search_seq[start_pos:]
-            stop_found = False
-
-            for stop_match in re.finditer(r"(TAA|TAG|TGA)", orf_seq[3:], re.IGNORECASE):
-                stop_pos = start_pos + stop_match.start() + 3  # Include stop codon
-                orf_length_aa = (stop_pos - start_pos) // 3
-
-                if orf_length_aa >= min_length:
-                    frame_label = f"{'+' if frame < 3 else '-'}{frame % 3 + 1}"
-                    orfs.append((start_pos, stop_pos, frame_label))
-                stop_found = True
-                break
-
-            # If no stop codon found, check if ORF extends to end
-            if not stop_found:
-                orf_length_aa = len(orf_seq) // 3
-                if orf_length_aa >= min_length:
-                    frame_label = f"{'+' if frame < 3 else '-'}{frame % 3 + 1}"
-                    orfs.append((start_pos, len(search_seq), frame_label))
+    # Reverse strand frames -1..-3: scan the reverse complement, then map
+    # positions back to original coordinates (rc position p -> seq_len - p).
+    rev_comp = reverse_complement(seq_upper)
+    for frame in range(3):
+        for start_pos, end_pos in _scan_strand(rev_comp[frame:]):
+            orfs.append((seq_len - (end_pos + frame), seq_len - (start_pos + frame), f"-{frame + 1}"))
 
     return orfs
 

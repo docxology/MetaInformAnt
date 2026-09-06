@@ -174,10 +174,8 @@ def load_count_matrix(filepath: str | Path, format: str = "h5ad", **kwargs: Any)
             from scipy.io import mmread
 
             X = mmread(matrix_file).T  # Transpose to cells x genes, keep sparse
-            # Convert to csr_matrix if not already
-            if HAS_SCIPY_SPARSE and not sp_sparse.issparse(X):
-                X = sp_sparse.csr_matrix(X)
-            elif HAS_SCIPY_SPARSE:
+            # Convert to csr_matrix (mmread may return coo/csc)
+            if HAS_SCIPY_SPARSE:
                 X = sp_sparse.csr_matrix(X)
 
             # Load gene names
@@ -366,6 +364,12 @@ def filter_cells(
         obs=data.obs.iloc[keep_cells].copy() if data.obs is not None else None,
         var=data.var.copy() if data.var is not None else None,
         uns=data.uns.copy(),
+        # Preserve per-cell annotations, row-subsetting where needed
+        obsm={k: v[keep_cells] for k, v in data.obsm.items()} if data.obsm else None,
+        varm={k: v.copy() for k, v in data.varm.items()} if data.varm else None,
+        obsp={k: v[keep_cells][:, keep_cells] for k, v in data.obsp.items()} if data.obsp else None,
+        varp={k: v.copy() for k, v in data.varp.items()} if data.varp else None,
+        layers={k: v[keep_cells] for k, v in data.layers.items()} if data.layers else None,
     )
 
     # Update QC summary
@@ -434,6 +438,17 @@ def filter_genes(
         obs=data.obs.copy() if data.obs is not None else None,
         var=data.var.iloc[keep_genes].copy() if data.var is not None else None,
         uns=data.uns.copy(),
+        # Preserve per-gene annotations, column-subsetting where needed
+        obsm={k: v.copy() for k, v in data.obsm.items()} if data.obsm else None,
+        varm={
+            k: (v[keep_genes] if getattr(v, "ndim", 2) == 1 else v[:, keep_genes])
+            for k, v in data.varm.items()
+        }
+        if data.varm
+        else None,
+        obsp={k: v.copy() for k, v in data.obsp.items()} if data.obsp else None,
+        varp={k: v[:, keep_genes] for k, v in data.varp.items()} if data.varp else None,
+        layers={k: v[:, keep_genes] for k, v in data.layers.items()} if data.layers else None,
     )
 
     # Update QC summary
@@ -532,7 +547,7 @@ def normalize_counts(
     result.uns["normalization"] = {
         "method": method,
         "target_sum": float(target_sum) if target_sum is not None else None,
-        "size_factors": size_factors.tolist() if "size_factors" in locals() else None,
+        "size_factors": size_factors.tolist(),
     }
 
     result.X = X_normalized

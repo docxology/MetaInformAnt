@@ -381,3 +381,77 @@ class TestCalculateRelativeAbundance:
         # Rare should be grouped as "Other"
         assert "Firmicutes" in abundances
         assert abs(sum(abundances.values()) - 1.0) < 0.01
+
+
+class TestTetranucleotideStrandCounting:
+    """TNF must count windows on both strands."""
+
+    def test_unnormalized_counts_both_strands(self) -> None:
+        # 10 bases -> 7 windows per strand -> total 14 raw counts
+        tnf = calculate_tetranucleotide_freq("AAAAAAAAAA", normalize=False)
+        assert sum(tnf) == 14.0
+
+
+class TestRelativeAbundanceRankAggregation:
+    """Rank aggregation of relative abundances."""
+
+    def test_aggregates_by_phylum(self) -> None:
+        taxa = [
+            TaxonProfile(
+                "t1", "Firmicutes", "phylum",
+                lineage=[("domain", "Bacteria"), ("phylum", "Firmicutes")], read_count=60,
+            ),
+            TaxonProfile(
+                "t2", "Bacilli", "class",
+                lineage=[("domain", "Bacteria"), ("phylum", "Firmicutes"), ("class", "Bacilli")], read_count=20,
+            ),
+            TaxonProfile(
+                "t3", "Proteobacteria", "phylum",
+                lineage=[("domain", "Bacteria"), ("phylum", "Proteobacteria")], read_count=20,
+            ),
+        ]
+        profile = CommunityProfile(taxa=taxa, classified_reads=100)
+        abundances = calculate_relative_abundance(profile, rank="phylum")
+        assert abundances["Firmicutes"] == pytest.approx(0.8)
+        assert abundances["Proteobacteria"] == pytest.approx(0.2)
+
+
+class TestScaffoldWithPairedReads:
+    """Paired-end links should join contigs into one scaffold."""
+
+    def test_links_join_linked_contigs(self, simple_contigs: list[Contig]) -> None:
+        c1, c2, c3 = simple_contigs
+        paired_reads = {
+            "pair1": (c1.sequence, c2.sequence),
+            "pair2": (c1.sequence, c2.sequence),
+        }
+        scaffolds = scaffold_contigs(simple_contigs, paired_reads=paired_reads, min_links=1)
+        assert len(scaffolds) == 2  # {c1, c2} joined; c3 alone
+        joined = max(scaffolds, key=lambda s: s.total_length)
+        assert len(joined.contigs) == 2
+        assert joined.total_length == c1.length + c2.length + joined.gaps[0]
+
+
+class TestAssemblyStatsDerived:
+    """Derived statistics computed from known contigs."""
+
+    def test_mean_coverage_and_median_length(self, simple_contigs: list[Contig]) -> None:
+        stats = calculate_assembly_stats(simple_contigs)
+        assert stats.mean_coverage == pytest.approx((10.0 + 20.0 + 5.0) / 3.0)
+        assert stats.median_length == pytest.approx(500.0)
+
+
+class TestProfileCommunityUnclassified:
+    """Reads with no database support stay unclassified."""
+
+    def test_unrelated_read_unclassified(
+        self,
+        reference_for_profiling: tuple[dict[str, str], dict[str, list[tuple[str, str]]]],
+    ) -> None:
+        ref_seqs, ref_tax = reference_for_profiling
+        reads = ["TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"]
+        profile = profile_community(reads, reference_sequences=ref_seqs, reference_taxonomy=ref_tax, k=11)
+        assert profile.classified_reads == 0
+        assert profile.unclassified_reads == 1
+        assert profile.classification_rate == 0.0
+        assert profile.taxa == []

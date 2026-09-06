@@ -303,3 +303,133 @@ def test_species_level_figures_report_data_derived_denominators(
     assert "n=3 species in plotted matrix" in blob
     _assert_no_inferential_language(_figure_texts(captured["fig"]))
     plt.close("all")
+
+
+def _family_map() -> dict[str, str]:
+    return {"sp_a": "Fam1", "sp_b": "Fam1", "sp_c": "Fam2"}
+
+
+def _family_colors() -> dict[str, str]:
+    return {"Fam1": "#0072B2", "Fam2": "#D55E00"}
+
+
+def _stability_table() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "species_a": ["sp_a", "sp_a"],
+            "species_b": ["sp_b", "sp_c"],
+            "point_estimate": [0.4, 1.1],
+            "sensitivity_lower": [0.2, 0.8],
+            "sensitivity_upper": [0.7, 1.4],
+            "sensitivity_iqr": [0.5, 0.6],
+        }
+    )
+
+
+def _species_summary_table() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "species": ["sp_a", "sp_b", "sp_c"],
+            "total_features": [100, 100, 100],
+            "expressed_features": [90, 80, 70],
+            "mean_expression": [1.5, 2.5, 0.5],
+        }
+    )
+
+
+def _profile_quality_table() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "species": ["sp_a", "sp_b", "sp_c"],
+            "positive_features": [90, 80, 70],
+            "zero_features": [10, 20, 30],
+            "nonfinite_features": [0, 0, 0],
+        }
+    )
+
+
+def test_all_cross_species_figures_close_after_saving(tmp_path: Path) -> None:
+    """Every figure-producing helper must close its figure; none may leak."""
+    matrix = _divergence_matrix()
+    coverage = pd.Series([10, 20, 30], index=["sp_a", "sp_b", "sp_c"])
+    calls = [
+        lambda p: cross_species.plot_divergence_heatmap(matrix, p),
+        lambda p: cross_species.plot_dendrogram(matrix, p),
+        lambda p: cross_species.plot_coverage(coverage, total_groups=40, output_path=p),
+        lambda p: cross_species.plot_top_pairs(matrix, p),
+        lambda p: cross_species.plot_family_violin(matrix, p, _family_map()),
+        lambda p: cross_species.plot_method_comparison(matrix, matrix, p),
+        lambda p: cross_species.plot_mean_divergence_rank(matrix, p, _family_map(), _family_colors()),
+        lambda p: cross_species.plot_species_summary(_species_summary_table(), p),
+        lambda p: cross_species.plot_profile_quality(_profile_quality_table(), p),
+        lambda p: cross_species.plot_divergence_stability(_stability_table(), p),
+        lambda p: cross_species.plot_combined_summary(matrix, p),
+    ]
+    for index, plot_call in enumerate(calls):
+        plot_call(tmp_path / f"figure_{index}.png")
+        assert plt.get_fignums() == [], f"figure leaked by call index {index}"
+
+
+def test_species_summary_requires_all_source_columns(tmp_path: Path) -> None:
+    """Missing mean_expression/species must raise a clear ValueError, not KeyError."""
+    incomplete = _species_summary_table().drop(columns=["mean_expression"])
+
+    with pytest.raises(ValueError, match="requires columns"):
+        cross_species.plot_species_summary(incomplete, tmp_path / "summary.png")
+
+
+def test_species_summary_and_mean_rank_render(tmp_path: Path) -> None:
+    """Untested public figure helpers must render their output files."""
+    summary_path = tmp_path / "summary.png"
+    cross_species.plot_species_summary(_species_summary_table(), summary_path)
+    assert summary_path.is_file()
+
+    rank_path = tmp_path / "mean_rank.png"
+    cross_species.plot_mean_divergence_rank(_divergence_matrix(), rank_path, _family_map(), _family_colors())
+    assert rank_path.is_file()
+
+    comparison_path = tmp_path / "method_comparison.png"
+    cross_species.plot_method_comparison(_divergence_matrix(), _divergence_matrix(), comparison_path)
+    assert comparison_path.is_file()
+    plt.close("all")
+
+
+def test_family_violin_renders_and_skips_empty(tmp_path: Path) -> None:
+    """Family violin renders with enough pairs and skips silently without any."""
+    output = tmp_path / "family_violin.png"
+    cross_species.plot_family_violin(_divergence_matrix(), output, _family_map())
+    assert output.is_file()
+
+    empty_output = tmp_path / "family_violin_empty.png"
+    cross_species.plot_family_violin(_divergence_matrix().iloc[:1, :1], empty_output, _family_map())
+    assert not empty_output.exists()
+    plt.close("all")
+
+
+def test_validated_condensed_rejects_invalid_matrices() -> None:
+    """Structural and numerical violations must each be rejected explicitly."""
+    with pytest.raises(ValueError, match="row and column labels must match"):
+        cross_species._validated_condensed(
+            pd.DataFrame([[0.0, 0.5], [0.5, 0.0]], index=["a", "b"], columns=["a", "c"])
+        )
+    with pytest.raises(ValueError, match="symmetric"):
+        cross_species._validated_condensed(
+            pd.DataFrame([[0.0, 0.5], [0.7, 0.0]], index=["a", "b"], columns=["a", "b"])
+        )
+    with pytest.raises(ValueError, match="diagonal must be zero"):
+        cross_species._validated_condensed(
+            pd.DataFrame([[0.1, 0.5], [0.5, 0.0]], index=["a", "b"], columns=["a", "b"])
+        )
+    with pytest.raises(ValueError, match="0--2 range"):
+        cross_species._validated_condensed(
+            pd.DataFrame([[0.0, 2.5], [2.5, 0.0]], index=["a", "b"], columns=["a", "b"])
+        )
+    with pytest.raises(ValueError, match="at least two species"):
+        cross_species._validated_condensed(pd.DataFrame([[0.0]], index=["a"], columns=["a"]))
+
+
+def test_get_family_color_defaults() -> None:
+    """Unmapped species/families fall back to sensible defaults."""
+    assert cross_species._get_family_color("sp_a") == "#34495e"
+    assert cross_species._get_family_color("sp_unknown", _family_map(), _family_colors()) == "#95a5a6"
+    assert cross_species._get_family_color("sp_a", _family_map(), _family_colors()) == "#0072B2"

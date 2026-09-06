@@ -267,8 +267,8 @@ def cleanup_fastqs(config: AmalgkitWorkflowConfig, sample_ids: List[str]) -> Non
             if p.exists() and p.is_dir():
                 try:
                     shutil.rmtree(p, ignore_errors=True)
-                except Exception:
-                    pass  # Best effort cleanup
+                except Exception as e:  # Best effort cleanup
+                    logger.debug("Cleanup skipped %s: %s", p, e)
 
         # Also clean flat ENA-downloaded files (SRR_1.fastq.gz, SRR_2.fastq.gz, SRR.fastq.gz)
         # ENA downloads place files directly in fastq/ dir, not in subdirectories
@@ -282,8 +282,8 @@ def cleanup_fastqs(config: AmalgkitWorkflowConfig, sample_ids: List[str]) -> Non
                         try:
                             f.unlink()
                             logger.debug(f"Cleaned flat ENA file: {f.name}")
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.debug("Could not remove flat ENA file %s: %s", f, e)
 
 
 def get_quantified_samples(config: AmalgkitWorkflowConfig) -> Set[str]:

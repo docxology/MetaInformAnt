@@ -278,7 +278,6 @@ class TestInterpretStates:
         model = learn_chromatin_states(data, n_states=4, max_iter=80)
         interpretations = interpret_states(model["emission_params"], mark_names)
         categories = {i["category"] for i in interpretations}
-        {i["label"] for i in interpretations}
         # At least one recognized category should appear
         known = {"promoter", "enhancer", "repressed", "quiescent", "transcribed", "regulatory", "bivalent", "other"}
         assert len(categories & known) >= 1

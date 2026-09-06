@@ -10,6 +10,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+from scipy.stats import f as f_dist
+
+from metainformant.core.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -79,14 +84,8 @@ def detect_batch_effects(
     ms_within = ss_within / df_within
     f_stats = np.where(ms_within > 0, ms_between / ms_within, 0.0)
 
-    # Approximate p-values using F-distribution
-    try:
-        from scipy.stats import f as f_dist
-
-        p_values = 1.0 - f_dist.cdf(f_stats, df_between, df_within)
-    except ImportError:
-        # Rough threshold: F > 3.0 considered significant
-        p_values = np.where(f_stats > 3.0, 0.01, 0.5)
+    # Exact p-values from the F-distribution
+    p_values = 1.0 - f_dist.cdf(f_stats, df_between, df_within)
 
     n_significant = int((p_values < alpha).sum())
 
@@ -102,6 +101,7 @@ def detect_batch_effects(
         n_pcs = min(10, n_features, n_samples)
         pca_coords = u[:, :n_pcs] * s[:n_pcs]
     except np.linalg.LinAlgError:
+        logger.warning("SVD failed during PCA; falling back to raw first features for silhouette")
         pca_coords = centered[:, : min(10, n_features)]
 
     # Simplified silhouette

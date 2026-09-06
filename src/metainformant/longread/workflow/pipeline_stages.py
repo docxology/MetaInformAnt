@@ -293,7 +293,6 @@ def _build_methylation_steps(orch: LongReadOrchestrator, reads: Any) -> list[Pip
     min_coverage = params.get("min_coverage", 5)
     significance_threshold = params.get("significance_threshold", 0.05)
     min_difference = params.get("min_difference", 0.2)
-    params.get("methylation_threshold", 0.5)
     regions = params.get("regions", [])
 
     steps: list[PipelineStep] = []
@@ -596,7 +595,7 @@ def _build_sv_steps(orch: LongReadOrchestrator, alignments: Any) -> list[Pipelin
             "specialized_inversions": len(inversions),
         }
 
-    summary_deps = ["detect_svs"]
+    summary_deps = ["detect_svs", "phase_variants"]
     if "INS" in sv_types:
         summary_deps.append("detect_insertions")
     if "INV" in sv_types:

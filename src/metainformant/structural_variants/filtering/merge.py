@@ -119,7 +119,6 @@ def merge_callsets(
     for i in range(n):
         v_i = all_variants[i][1]
         chrom_i = v_i.get("chrom", "")
-        v_i.get("start", 0)
         end_i = v_i.get("end", 0)
         type_i = v_i.get("sv_type", "")
         if hasattr(type_i, "value"):
@@ -138,7 +137,6 @@ def merge_callsets(
             if start_j > end_i + 10_000:
                 break
 
-            v_j.get("end", 0)
             type_j = v_j.get("sv_type", "")
             if hasattr(type_j, "value"):
                 type_j = type_j.value
@@ -173,27 +171,9 @@ def merge_callsets(
         callers = list(set(caller for caller, _ in group_variants))
         variant_dicts = [v for _, v in group_variants]
 
-        # Consensus position: median of starts and ends
-        starts = [v.get("start", 0) for v in variant_dicts]
-        ends = [v.get("end", 0) for v in variant_dicts]
-
-        if np is not None:
-            consensus_start = int(np.median(starts))
-            consensus_end = int(np.median(ends))
-        else:
-            starts.sort()
-            ends.sort()
-            consensus_start = starts[len(starts) // 2]
-            consensus_end = ends[len(ends) // 2]
-
-        # Consensus SV type: majority vote
-        type_counts: dict[str, int] = {}
-        for v in variant_dicts:
-            st = v.get("sv_type", "UNKNOWN")
-            if hasattr(st, "value"):
-                st = st.value
-            type_counts[st] = type_counts.get(st, 0) + 1
-        consensus_type = max(type_counts, key=type_counts.get)  # type: ignore[arg-type]
+        consensus_start = _median_position([v.get("start", 0) for v in variant_dicts])
+        consensus_end = _median_position([v.get("end", 0) for v in variant_dicts])
+        consensus_type = _majority_sv_type(variant_dicts)
 
         size = abs(consensus_end - consensus_start)
 
@@ -252,8 +232,8 @@ def calculate_reciprocal_overlap(
     certain fraction of BOTH variants. The minimum of the two fractions
     is returned (i.e., the stricter criterion).
 
-    For inter-chromosomal SVs or SVs without clear coordinates,
-    uses breakpoint distance as a proxy.
+    Variants on different chromosomes (or without coordinates) never
+    overlap and yield 0.0.
 
     Args:
         sv1: First variant dictionary with 'chrom', 'start', 'end' keys.
@@ -423,27 +403,9 @@ def survivor_merge(
 
         variant_dicts = [v for _, v in group_variants]
 
-        # Consensus position
-        starts = [v.get("start", 0) for v in variant_dicts]
-        ends = [v.get("end", 0) for v in variant_dicts]
-
-        if np is not None:
-            consensus_start = int(np.median(starts))
-            consensus_end = int(np.median(ends))
-        else:
-            starts.sort()
-            ends.sort()
-            consensus_start = starts[len(starts) // 2]
-            consensus_end = ends[len(ends) // 2]
-
-        # Consensus type
-        type_counts: dict[str, int] = {}
-        for v in variant_dicts:
-            st = v.get("sv_type", "UNKNOWN")
-            if hasattr(st, "value"):
-                st = st.value
-            type_counts[st] = type_counts.get(st, 0) + 1
-        consensus_type = max(type_counts, key=type_counts.get)  # type: ignore[arg-type]
+        consensus_start = _median_position([v.get("start", 0) for v in variant_dicts])
+        consensus_end = _median_position([v.get("end", 0) for v in variant_dicts])
+        consensus_type = _majority_sv_type(variant_dicts)
 
         size = abs(consensus_end - consensus_start)
         n_callers = len(callers)
@@ -606,6 +568,39 @@ def _find(parent: list[int], i: int) -> int:
         parent[i] = parent[parent[i]]  # Path compression
         i = parent[i]
     return i
+
+
+def _median_position(values: list[int]) -> int:
+    """Median of a list of positions (consensus breakpoint).
+
+    Args:
+        values: Positions from the variants in a merge group.
+
+    Returns:
+        Median position as an int.
+    """
+    if np is not None:
+        return int(np.median(values))
+    ordered = sorted(values)
+    return ordered[len(ordered) // 2]
+
+
+def _majority_sv_type(variant_dicts: list[dict[str, Any]]) -> str:
+    """Consensus SV type by majority vote within a merge group.
+
+    Args:
+        variant_dicts: Variants in the merge group.
+
+    Returns:
+        Most frequent SV type (enum values are unwrapped first).
+    """
+    type_counts: dict[str, int] = {}
+    for v in variant_dicts:
+        st = v.get("sv_type", "UNKNOWN")
+        if hasattr(st, "value"):
+            st = st.value
+        type_counts[st] = type_counts.get(st, 0) + 1
+    return max(type_counts, key=type_counts.get)  # type: ignore[arg-type]
 
 
 def _consensus_genotype(genotypes: list[str]) -> str:

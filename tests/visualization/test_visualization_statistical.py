@@ -565,3 +565,103 @@ class TestLeveragePlot:
                 leverage_plot(X, y)
         finally:
             statistical_module.HAS_SKLEARN = original
+
+
+class TestExistingAxesAndValidationGaps:
+    """Tests for plotting onto caller-provided axes and uncovered error paths."""
+
+    def test_histogram_with_existing_ax(self, tmp_path: Path):
+        """Test histogram drawn onto caller-provided axes and saved from that figure."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        data = np.random.randn(50)
+        fig, ax = plt.subplots()
+        output_path = tmp_path / "hist_existing_ax.png"
+
+        result = histogram(data, ax=ax, output_path=output_path)
+        assert result is ax
+        assert len(ax.patches) > 0
+        assert output_path.exists()
+        plt.close("all")
+
+    def test_qq_plot_with_existing_ax(self):
+        """Test Q-Q plot drawn onto caller-provided axes."""
+        if not HAS_SCIPY:
+            pytest.skip("scipy required for Q-Q plot")
+
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        data = np.random.randn(80)
+        fig, ax = plt.subplots()
+
+        result = qq_plot(data, ax=ax)
+        assert result is ax
+        assert len(ax.collections) > 0
+        plt.close("all")
+
+    def test_violin_plot_empty_array_in_list(self):
+        """Test violin plot with an empty array inside the data list."""
+        data = [np.random.randn(10), np.array([])]
+
+        with pytest.raises(ValueError, match="cannot be empty"):
+            violin_plot(data)
+
+    def test_ridge_plot_empty_array_in_list(self):
+        """Test ridge plot with an empty array inside the data list."""
+        data = [np.random.randn(10), np.array([])]
+
+        with pytest.raises(ValueError, match="cannot be empty"):
+            ridge_plot(data)
+
+    def test_correlation_heatmap_with_existing_ax(self):
+        """Test correlation heatmap drawn onto caller-provided axes."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        data = pd.DataFrame({"A": np.random.randn(20), "B": np.random.randn(20)})
+        fig, ax = plt.subplots()
+
+        result = correlation_heatmap(data, ax=ax)
+        assert result is ax
+        assert ax.images or ax.collections  # seaborn renders a QuadMesh, plain imshow an AxesImage
+        plt.close("all")
+
+
+class TestSaveTargetsCallerFigure:
+    """output_path must save the plotted figure, not whichever pyplot figure is current."""
+
+    def test_histogram_saves_callers_figure_not_current(self, tmp_path):
+        """Regression: a caller ax bound to a non-current figure must be the saved one."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        from io import BytesIO
+
+        from PIL import Image
+
+        data = np.random.RandomState(0).randn(40)
+        fig1, ax1 = plt.subplots()
+        plt.subplots()  # second figure becomes the CURRENT pyplot figure
+
+        output_path = tmp_path / "hist_caller_fig.png"
+        histogram(data, ax=ax1, output_path=output_path)
+
+        assert output_path.exists()
+        saved = np.asarray(Image.open(output_path).convert("RGBA"))
+        buf = BytesIO()
+        fig1.savefig(buf, format="png", dpi=300, bbox_inches="tight")
+        expected = np.asarray(Image.open(buf).convert("RGBA"))
+        assert saved.shape == expected.shape
+        # The saved PNG must be fig1's content: identical pixels to rendering fig1
+        # itself, and provably not a blank/other-figure canvas.
+        assert np.array_equal(saved, expected)
+        plt.close("all")

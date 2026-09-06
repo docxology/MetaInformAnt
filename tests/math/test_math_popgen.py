@@ -5,7 +5,9 @@ from __future__ import annotations
 import pytest
 
 from metainformant.math import population_genetics as popgen
+from metainformant.math import popgen as popgen_shim
 from metainformant.math.population_genetics.core import hardy_weinberg_genotype_freqs
+from metainformant.math.population_genetics.fst import fst_from_allele_freqs
 from metainformant.math.population_genetics.selection import mutation_update, selection_update
 from metainformant.math.population_genetics.statistics import fixation_probability
 
@@ -193,3 +195,31 @@ class TestMathPopgen:
         # Certain boundaries
         assert fixation_probability(0.0, 1000, 0.1) == 0.0
         assert fixation_probability(1.0, 1000, -0.1) == 1.0
+
+
+class TestPopgenCompatibilityShim:
+    """metainformant.math.popgen re-exports must stay stable (compatibility shim)."""
+
+    def test_hardy_weinberg_allele_freqs_known_values(self):
+        AA, Aa, aa = popgen_shim.hardy_weinberg_allele_freqs(0.6)
+        assert AA == pytest.approx(0.36)
+        assert Aa == pytest.approx(0.48)
+        assert aa == pytest.approx(0.16)
+
+    def test_hardy_weinberg_allele_freqs_rejects_unequal_p_plus_q(self):
+        with pytest.raises(ValueError, match="sum to 1"):
+            popgen_shim.hardy_weinberg_allele_freqs(0.6, 0.5)
+
+    def test_hardy_weinberg_allele_freqs_matches_genotype_freqs(self):
+        assert popgen_shim.hardy_weinberg_allele_freqs(0.3) == hardy_weinberg_genotype_freqs(0.3)
+
+    def test_fst_from_freqs_matches_direct_call(self):
+        pop1, pop2 = [0.6, 0.4, 0.8], [0.3, 0.7, 0.2]
+        assert popgen_shim.fst_from_freqs(pop1, pop2) == pytest.approx(fst_from_allele_freqs(pop1, pop2))
+
+    def test_shim_exports_stable(self):
+        assert set(popgen_shim.__all__) == {
+            "hardy_weinberg_genotype_freqs",
+            "hardy_weinberg_allele_freqs",
+            "fst_from_freqs",
+        }

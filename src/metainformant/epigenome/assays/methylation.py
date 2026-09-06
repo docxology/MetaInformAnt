@@ -177,7 +177,7 @@ def load_methylation_cov(path: str | Path, min_coverage: int = 1) -> Dict[str, L
                 try:
                     chromosome = parts[0]
                     position = int(parts[1])
-                    float(parts[3]) / 100.0  # Convert percentage to fraction
+                    float(parts[3])  # Validate percentage column parses as a number
                     methylated_reads = int(parts[4])
                     total_reads = int(parts[5])
 
@@ -286,6 +286,7 @@ def find_differentially_methylated_regions(
     delta_threshold: float = 0.2,
     p_value_threshold: float = 0.05,
     min_sites: int = 3,
+    max_gap: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
     """Find differentially methylated regions between two conditions.
 
@@ -295,6 +296,9 @@ def find_differentially_methylated_regions(
         delta_threshold: Minimum methylation difference
         p_value_threshold: Maximum p-value for significance
         min_sites: Minimum number of consecutive sites for DMR
+        max_gap: Maximum genomic gap (bp) between consecutive DMR sites.
+            ``None`` (default) keeps the historical behaviour of chaining
+            any consecutive significant sites regardless of distance.
 
     Returns:
         List of differentially methylated regions
@@ -351,6 +355,16 @@ def find_differentially_methylated_regions(
                 p_value = 1.0
 
             if delta >= delta_threshold and p_value <= p_value_threshold:
+                gap_ok = (
+                    max_gap is None
+                    or current_dmr is None
+                    or pos - current_dmr["end"] <= max_gap
+                )
+                if current_dmr is not None and not gap_ok:
+                    # Flush the current DMR before starting a new one
+                    if len(current_dmr["sites"]) >= min_sites:
+                        dmr_list.append(current_dmr)
+                    current_dmr = None
                 if current_dmr is None:
                     # Start new DMR
                     current_dmr = {
@@ -412,7 +426,7 @@ def identify_cpg_islands(
             continue
 
         # Sort sites by position
-        sites.sort(key=lambda x: x.position)
+        sites = sorted(sites, key=lambda x: x.position)
 
         # Sliding window analysis
         max_pos = max(site.position for site in sites)
@@ -494,7 +508,7 @@ def calculate_methylation_entropy(
         if len(sites) < 10:
             continue
 
-        sites.sort(key=lambda x: x.position)
+        sites = sorted(sites, key=lambda x: x.position)
 
         # Sliding window entropy calculation
         entropy_values = []
@@ -560,7 +574,7 @@ def export_methylation_bedgraph(methylation_data: Dict[str, List[MethylationSite
 
         for chromosome in sorted(methylation_data.keys()):
             sites = methylation_data[chromosome]
-            sites.sort(key=lambda x: x.position)
+            sites = sorted(sites, key=lambda x: x.position)
 
             for site in sites:
                 # BEDgraph format: chrom start end value

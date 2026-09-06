@@ -75,6 +75,12 @@ class TestSpatialDomains:
         assert result.n_clusters == 3
         assert result.method == "spatial_domains"
 
+    def test_auto_n_domains_estimates_clusters(self) -> None:
+        X, coords = _make_spatial_expression(n_domains=2, per_domain=15)
+        result = spatial_domains(X, coords, n_domains=None, seed=0)
+        assert 2 <= result.n_clusters <= 15
+        assert len(np.asarray(result.labels)) == 30
+
 
 class TestSpatialCluster:
     @pytest.mark.parametrize("method", ["leiden", "louvain", "kmeans"])
@@ -188,6 +194,14 @@ class TestNicheIdentificationDeconv:
         niches = niche_identification(decon["proportions_matrix"], coords, n_niches=2)
         assert {"niche_labels", "niche_compositions", "spatial_coherence"}.issubset(niches.keys())
         assert len(niches["niche_labels"]) == 20
+
+    def test_seeded_niches_reproducible(self) -> None:
+        sc_expr, cell_types, spatial_counts, coords = _make_reference_and_spots()
+        ref = build_reference_profiles(sc_expr, cell_types, n_markers=10)
+        decon = deconvolve_spots(spatial_counts, ref["profiles"])
+        r1 = niche_identification(decon["proportions_matrix"], coords, n_niches=2, seed=123)
+        r2 = niche_identification(decon["proportions_matrix"], coords, n_niches=2, seed=123)
+        assert list(r1["niche_labels"]) == list(r2["niche_labels"])
 
 
 # ---------------------------------------------------------------------------

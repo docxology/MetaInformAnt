@@ -6,6 +6,8 @@ import json
 import os
 from pathlib import Path
 
+import pytest
+
 from metainformant.core.utils import config as core_config
 
 
@@ -241,3 +243,33 @@ class TestApplyEnvOverrides:
             assert result.get("work_dir") == "/custom/work"
         finally:
             os.environ.pop("AMALGKIT_WORK_DIR", None)
+
+
+class TestLoaderRegressions:
+    """Regression tests for config loading error paths."""
+
+    def test_apply_env_overrides_invalid_port_falls_back(self) -> None:
+        """Test invalid PORT env values fall back to 5432 instead of crashing."""
+
+        os.environ["PG_PORT"] = "not-a-port"
+        os.environ["PG_HOST"] = "db.internal"
+        os.environ["PG_DATABASE"] = "db"
+        os.environ["PG_USER"] = "user"
+        os.environ["PG_PASSWORD"] = "secret"
+
+        try:
+            config = core_config.load_postgres_config_from_env(prefix="PG")
+            assert config is not None
+            assert config.port == 5432
+        finally:
+            for key in ("PG_PORT", "PG_HOST", "PG_DATABASE", "PG_USER", "PG_PASSWORD"):
+                os.environ.pop(key, None)
+
+    def test_load_mapping_from_file_rejects_non_mapping_json(self, tmp_path) -> None:
+        """A top-level JSON array is a config error, not a silent mis-parse."""
+
+        json_file = tmp_path / "list.json"
+        json_file.write_text('["a", "b"]', encoding="utf-8")
+
+        with pytest.raises(ValueError, match="Top-level JSON must be a mapping"):
+            core_config.load_mapping_from_file(json_file)

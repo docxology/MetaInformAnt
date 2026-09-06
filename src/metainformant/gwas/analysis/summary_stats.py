@@ -213,14 +213,12 @@ def normal_cdf(x: float) -> float:
 
     Pure-Python — no scipy dependency.
     """
-    import math as _math
-
     sign = 1 if x >= 0 else -1
-    x = abs(x) / _math.sqrt(2)
+    x = abs(x) / math.sqrt(2)
     t = 1.0 / (1.0 + 0.3275911 * x)
     y = 1.0 - (
         (((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592
-    ) * t * _math.exp(-x * x)
+    ) * t * math.exp(-x * x)
     return 0.5 * (1.0 + sign * y)
 
 
@@ -328,7 +326,6 @@ def calculate_ld_decay(
 
     # Calculate minor allele frequencies
     # If G has -1 for missing, we should mask them. For simplicity assume complete here or imputed
-    np.mean(G, axis=1)  # noqa: F821
 
     # Basic LD logic (this scales at O(N^2), so we sample random pairs if there are many)
     n_vars = G.shape[0]
@@ -541,8 +538,6 @@ def sign_test(
         return {"n_positive_beta": 0, "n_negative_beta": 0, "n_total": 0}
 
     p_hat = n_pos / n_total
-    import math
-
     se_hat = math.sqrt(0.25 / n_total)
     z_sign = (p_hat - 0.5) / se_hat
     p_sign = 2.0 * min(normal_cdf(z_sign), 1.0 - normal_cdf(z_sign))

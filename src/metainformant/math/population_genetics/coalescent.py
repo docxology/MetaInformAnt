@@ -69,9 +69,8 @@ def watterson_theta(
         n_sites: Alias for n (number of sequences)
         n_segregating_sites: Alias for S
         n_sequences: Alias for n
-
-    Returns:
-        Watterson's θ estimate
+        num_segregating_sites: Alias for S
+        sample_size: Alias for n
 
     Raises:
         ValueError: If parameters are invalid
@@ -327,6 +326,7 @@ def simulate_coalescent(n_samples: int, effective_size: float = 10000, mutation_
     lineages = list(range(n_samples))
     coalescence_times = []
     current_time = 0.0
+    total_branch_length = 0.0
 
     while len(lineages) > 1:
         # Coalescence rate for k lineages: k(k-1)/(4Ne)
@@ -339,13 +339,19 @@ def simulate_coalescent(n_samples: int, effective_size: float = 10000, mutation_
         # Time to next coalescence (exponential distribution)
         time_increment = -math.log(np.random.random()) / rate
         current_time += time_increment
+        # k lineages persist for the whole interval, contributing k * t to the
+        # genealogy's total branch length
+        total_branch_length += k * time_increment
 
         coalescence_times.append(current_time)
 
         # Randomly merge two lineages
-        i, j = np.random.choice(len(lineages), 2, replace=False)
+        _, j = np.random.choice(len(lineages), 2, replace=False)
         # Remove the second one (keep the first)
-        lineages.pop(j)
+        lineages.pop(int(j))
+
+    # Mutations land on the genealogy: S ~ Poisson(mu * total_branch_length)
+    n_segregating = int(np.random.poisson(mutation_rate * total_branch_length)) if coalescence_times else 0
 
     # Calculate summary statistics
     results = {
@@ -354,7 +360,9 @@ def simulate_coalescent(n_samples: int, effective_size: float = 10000, mutation_
         "mutation_rate": mutation_rate,
         "coalescence_times": coalescence_times,
         "total_time": current_time if coalescence_times else 0.0,
-        "theta_watterson": watterson_theta(1000, len(coalescence_times)) if coalescence_times else 0.0,
+        "total_branch_length": total_branch_length,
+        "n_segregating_sites": n_segregating,
+        "theta_watterson": watterson_theta(n_segregating, n_samples),
     }
 
     return results

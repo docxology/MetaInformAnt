@@ -83,9 +83,6 @@ class WorkflowExecutionResult(list):
 
     def __getitem__(self, index: Any) -> Any:
         if isinstance(index, (int, slice)):
-            # If we want the step result object
-            if isinstance(index, int):
-                return self.steps_executed[index]
             return self.steps_executed[index]
         return super().__getitem__(index)
 
@@ -240,7 +237,7 @@ def apply_config_defaults(config: Dict[str, Any]) -> Dict[str, Any]:
         try:
             result["threads"] = int(env_threads)
         except ValueError:
-            pass
+            logger.debug("Ignoring non-integer AMALGKIT_PIPELINE_THREADS=%r", env_threads)
 
     return result
 

@@ -106,8 +106,8 @@ def task_context(task_name: str, total_steps: int | None = None) -> Iterator[Any
 
         def update(self, n: int = 1) -> None:
             self.current += n
-            if self.total:
-                pct = (self.current / self.total) * 100
+            if self.total is not None:
+                pct = (self.current / self.total) * 100 if self.total else 0.0
                 logger.debug(f"{self.name}: {self.current}/{self.total} ({pct:.1f}%)")
             else:
                 logger.debug(f"{self.name}: {self.current} steps completed")
@@ -135,8 +135,8 @@ def log_progress(current: int, total: int | None, message: str = "") -> None:
     Example:
         log_progress(5, 10, "Processing items")
     """
-    if total:
-        pct = (current / total) * 100
+    if total is not None:
+        pct = (current / total) * 100 if total else 0.0
         logger.info(f"{message}: {current}/{total} ({pct:.1f}%)")
     else:
         logger.info(f"{message}: {current} items")

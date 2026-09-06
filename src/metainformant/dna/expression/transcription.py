@@ -5,10 +5,6 @@ This module provides functions for transcribing DNA to RNA.
 
 from __future__ import annotations
 
-from metainformant.core.utils import logging
-
-logger = logging.get_logger(__name__)
-
 
 def transcribe(dna_seq: str) -> str:
     """Transcribe DNA sequence to RNA.
@@ -59,9 +55,10 @@ def transcribe_reverse_complement(dna_seq: str) -> str:
 def transcribe_with_introns(dna_seq: str, introns: list[tuple[int, int]]) -> str:
     """Transcribe DNA after removing introns.
 
-    Args:
         dna_seq: DNA sequence string
-        introns: List of (start, end) intron positions
+        introns: List of (start, end) intron positions; 0-based, half-open,
+            expected sorted/non-overlapping (contained or unsorted intervals
+            are tolerated: the widest span is removed exactly once)
 
     Returns:
         RNA sequence after intron removal
@@ -72,11 +69,12 @@ def transcribe_with_introns(dna_seq: str, introns: list[tuple[int, int]]) -> str
     # Remove introns from DNA
     exons = []
     prev_end = 0
-
     for start, end in sorted(introns):
+        if start < 0 or end > len(dna_seq) or start > end:
+            raise ValueError(f"Invalid intron coordinates: ({start}, {end})")
         if start > prev_end:
             exons.append(dna_seq[prev_end:start])
-        prev_end = end
+        prev_end = max(prev_end, end)
 
     # Add final exon
     if prev_end < len(dna_seq):
@@ -142,7 +140,7 @@ def calculate_transcription_efficiency(dna_seq: str) -> float:
     # Check for GC content in promoter region
     promoter = seq_upper[:100]
     gc_count = promoter.count("G") + promoter.count("C")
-    gc_content = gc_count / len(promoter) if promoter else 0
+    gc_content = gc_count / len(promoter)
 
     if 0.4 <= gc_content <= 0.6:
         score += 0.3

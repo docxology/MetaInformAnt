@@ -32,10 +32,15 @@ def load_tissue_mapping(mapping_path: str | Path) -> Dict[str, List[str]]:
         logger.warning(f"Tissue mapping file not found: {mapping_path}")
         return {}
 
-    with open(path) as f:
-        mapping = yaml.safe_load(f)
+    with open(path, encoding="utf-8") as f:
+        mapping = yaml.safe_load(f) or {}
 
-    # Filter out non-mapping keys (like comments)
+    # An existing-but-empty (or non-mapping) file must degrade to "no
+    # mapping", not crash the producer on a None.items() lookup.
+    if not isinstance(mapping, dict):
+        logger.warning(f"Tissue mapping file is not a mapping: {mapping_path}")
+        return {}
+
     return {k: v for k, v in mapping.items() if isinstance(v, list)}
 
 
@@ -80,7 +85,7 @@ def build_synonym_lookup(mapping: Dict[str, List[str]]) -> Dict[str, str]:
     return lookup
 
 
-def normalize_tissue(raw_value: str, synonym_lookup: Dict[str, str], default: str = "unknown") -> str:
+def normalize_tissue(raw_value: str, synonym_lookup: Dict[str, str], default: str = "") -> str:
     """Normalize a single tissue value to canonical form.
 
     Uses exact match first, then prefix-based fallback for long-form
@@ -111,7 +116,7 @@ def normalize_tissue(raw_value: str, synonym_lookup: Dict[str, str], default: st
         if cleaned.startswith(synonym) and len(synonym) >= 3:
             return canonical
 
-    return ""
+    return default
 
 
 def apply_tissue_normalization(

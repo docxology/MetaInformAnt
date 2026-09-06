@@ -32,6 +32,37 @@ except ImportError:
     logger.warning("scipy not available, statistical tests disabled")
 
 
+def _benjamini_hochberg(p_values: List[float]) -> List[float]:
+    """Apply Benjamini-Hochberg FDR correction, capped at 1.0 and monotone."""
+    sorted_indices = sorted(range(len(p_values)), key=lambda i: p_values[i])
+    corrected_p_values = [1.0] * len(p_values)
+    for i, idx in enumerate(sorted_indices):
+        rank = i + 1
+        corrected_p = min(p_values[idx] * len(p_values) / rank, 1.0)
+        # Ensure monotonicity
+        if i > 0:
+            corrected_p = min(corrected_p, corrected_p_values[sorted_indices[i - 1]])
+        corrected_p_values[idx] = corrected_p
+    return corrected_p_values
+
+
+def _parse_pathway_mapping(pathway_dict: Dict[str, Any]) -> Dict[str, List[str]]:
+    """Normalize a pathway-id -> genes mapping (dict, list, or scalar genes)."""
+    pathways: Dict[str, List[str]] = {}
+    for pathway_id, pathway_info in pathway_dict.items():
+        if isinstance(pathway_info, dict):
+            genes = pathway_info.get("genes", [])
+            if isinstance(genes, list):
+                pathways[pathway_id] = genes
+            elif isinstance(genes, str):
+                pathways[pathway_id] = [genes]
+            else:
+                pathways[pathway_id] = list(genes)
+        elif isinstance(pathway_info, list):
+            pathways[pathway_id] = pathway_info
+    return pathways
+
+
 def pathway_enrichment_analysis(
     genes: List[str],
     background_genes: List[str],
@@ -125,18 +156,7 @@ def pathway_enrichment_analysis(
     if correction == "bonferroni":
         corrected_p_values = [min(p * len(results), 1.0) for p in p_values]
     elif correction == "fdr":
-        # Benjamini-Hochberg FDR correction
-        sorted_indices = sorted(range(len(p_values)), key=lambda i: p_values[i])
-        corrected_p_values = [1.0] * len(p_values)
-
-        for i, idx in enumerate(sorted_indices):
-            rank = i + 1
-            corrected_p = min(p_values[idx] * len(p_values) / rank, 1.0)
-            corrected_p_values[idx] = corrected_p
-
-            # Ensure monotonicity
-            if i > 0:
-                corrected_p_values[idx] = min(corrected_p_values[idx], corrected_p_values[sorted_indices[i - 1]])
+        corrected_p_values = _benjamini_hochberg(p_values)
     else:
         corrected_p_values = p_values
 
@@ -404,43 +424,20 @@ def pathway_disease_association(
 ) -> Dict[str, Any]:
     """Associate pathways with diseases based on enrichment results.
 
+    .. note::
+        Enrichment results do not carry the pathway gene lists, so the
+        pathway-disease overlap is always 0 and no association is ever
+        emitted; the return value is always an empty dict.
+
     Args:
         pathway_results: Results from pathway enrichment analysis
         disease_genes: Dictionary mapping diseases to gene lists
         **kwargs: Additional parameters
 
     Returns:
-        Dictionary with disease-pathway associations
+        Dictionary with disease-pathway associations (currently always empty)
     """
-    associations = {}
-
-    for disease, genes in disease_genes.items():
-        disease_associations = []
-
-        for pathway_result in pathway_results:
-            pathway_name = pathway_result["pathway"]
-            _ = []  # Would need pathway gene lists
-
-            # Calculate overlap
-            pathway_gene_set: set[str] = set()  # Would need to populate this
-            disease_gene_set = set(genes)
-            overlap = len(pathway_gene_set & disease_gene_set)
-
-            if overlap > 0:
-                disease_associations.append(
-                    {
-                        "pathway": pathway_name,
-                        "overlap": overlap,
-                        "p_value": pathway_result.get("p_value_corrected", 1.0),
-                    }
-                )
-
-        if disease_associations:
-            # Sort by significance
-            disease_associations.sort(key=lambda x: x["p_value"])
-            associations[disease] = disease_associations
-
-    return associations
+    return {}
 
 
 def pathway_visualization_data(pathway_graph: Any, layout_method: str = "spring", **kwargs: Any) -> Dict[str, Any]:
@@ -909,18 +906,7 @@ def pathway_enrichment(
         if correction == "bonferroni":
             corrected_p_values = [min(p * len(results), 1.0) for p in p_values]
         elif correction == "fdr" and HAS_SCIPY:
-            # Benjamini-Hochberg FDR correction
-
-            sorted_indices = sorted(range(len(p_values)), key=lambda i: p_values[i])
-            corrected_p_values = [1.0] * len(p_values)
-
-            for i, idx in enumerate(sorted_indices):
-                rank = i + 1
-                corrected_p = min(p_values[idx] * len(p_values) / rank, 1.0)
-                # Ensure monotonicity
-                if i > 0:
-                    corrected_p = min(corrected_p, corrected_p_values[sorted_indices[i - 1]])
-                corrected_p_values[idx] = corrected_p
+            corrected_p_values = _benjamini_hochberg(p_values)
         else:
             corrected_p_values = p_values
 
@@ -941,36 +927,13 @@ def load_pathway_database(pathway_data: Dict[str, Any], name: str = "loaded_path
     Returns:
         PathwayNetwork instance
     """
-    pathways = {}
-
     # Handle different data formats
     if "pathways" in pathway_data:
         # Format: {"pathways": {"pathway_id": {"name": "...", "genes": [...], ...}}}
-        pathway_dict = pathway_data["pathways"]
-        for pathway_id, pathway_info in pathway_dict.items():
-            if isinstance(pathway_info, dict):
-                genes = pathway_info.get("genes", [])
-                if isinstance(genes, list):
-                    pathways[pathway_id] = genes
-                elif isinstance(genes, str):
-                    pathways[pathway_id] = [genes]
-                else:
-                    pathways[pathway_id] = list(genes)
-            elif isinstance(pathway_info, list):
-                pathways[pathway_id] = pathway_info
+        pathways = _parse_pathway_mapping(pathway_data["pathways"])
     else:
         # Assume direct format: {"pathway_id": {"name": "...", "genes": [...], ...}}
-        for pathway_id, pathway_info in pathway_data.items():
-            if isinstance(pathway_info, dict):
-                genes = pathway_info.get("genes", [])
-                if isinstance(genes, list):
-                    pathways[pathway_id] = genes
-                elif isinstance(genes, str):
-                    pathways[pathway_id] = [genes]
-                else:
-                    pathways[pathway_id] = list(genes)
-            elif isinstance(pathway_info, list):
-                pathways[pathway_id] = pathway_info
+        pathways = _parse_pathway_mapping(pathway_data)
 
     network = PathwayNetwork(name=name, pathways=pathways)
 

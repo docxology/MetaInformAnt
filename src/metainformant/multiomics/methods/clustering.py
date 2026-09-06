@@ -17,6 +17,11 @@ from __future__ import annotations
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger
+from metainformant.multiomics.methods.factorization import (
+    _simple_kmeans,
+    _spectral_cluster_from_similarity,
+    similarity_network_fusion,
+)
 
 logger = get_logger(__name__)
 
@@ -33,44 +38,6 @@ except ImportError:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-def _simple_kmeans(X: Any, k: int, max_iter: int = 50, seed: int = 42) -> list[int]:
-    """Simple k-means clustering on a numpy array.
-
-    Args:
-        X: Data matrix (n x d).
-        k: Number of clusters.
-        max_iter: Maximum iterations.
-        seed: Random seed for centroid initialisation.
-
-    Returns:
-        List of integer cluster labels.
-    """
-    n = X.shape[0]
-    rng = np.random.RandomState(seed)
-    indices = rng.choice(n, size=min(k, n), replace=False)
-    centroids = X[indices].copy()
-
-    labels = np.zeros(n, dtype=int)
-    for _ in range(max_iter):
-        # Assign each point to nearest centroid
-        for i in range(n):
-            dists = [float(np.sum((X[i] - centroids[c]) ** 2)) for c in range(k)]
-            labels[i] = int(np.argmin(dists))
-        # Recompute centroids
-        new_centroids = np.zeros_like(centroids)
-        for c in range(k):
-            members = X[labels == c]
-            if len(members) > 0:
-                new_centroids[c] = members.mean(axis=0)
-            else:
-                new_centroids[c] = centroids[c]
-        if np.allclose(centroids, new_centroids):
-            break
-        centroids = new_centroids
-
-    return [int(x) for x in labels]
 
 
 def _silhouette_from_data(X: Any, labels: list[int]) -> float:
@@ -111,45 +78,6 @@ def _silhouette_from_data(X: Any, labels: list[int]) -> float:
             others = [j for j in range(n) if labels[j] == other]
             if others:
                 b_i = min(b_i, float(np.mean(dists[i, others])))
-        denom = max(a_i, b_i)
-        silhouettes.append((b_i - a_i) / denom if denom > 0 else 0.0)
-
-    return float(np.mean(silhouettes))
-
-
-def _silhouette_from_similarity(similarity: Any, labels: list[int]) -> float:
-    """Compute silhouette score from a similarity matrix and labels.
-
-    Args:
-        similarity: Symmetric similarity matrix (n x n).
-        labels: Cluster labels.
-
-    Returns:
-        Mean silhouette score.
-    """
-    n = len(labels)
-    unique = list(set(labels))
-    if n < 2 or len(unique) < 2:
-        return 0.0
-
-    distance = 1.0 - similarity
-    np.fill_diagonal(distance, 0.0)
-
-    silhouettes: list[float] = []
-    for i in range(n):
-        li = labels[i]
-        same = [j for j in range(n) if labels[j] == li and j != i]
-        if not same:
-            silhouettes.append(0.0)
-            continue
-        a_i = float(np.mean(distance[i, same]))
-        b_i = float("inf")
-        for other in unique:
-            if other == li:
-                continue
-            others = [j for j in range(n) if labels[j] == other]
-            if others:
-                b_i = min(b_i, float(np.mean(distance[i, others])))
         denom = max(a_i, b_i)
         silhouettes.append((b_i - a_i) / denom if denom > 0 else 0.0)
 
@@ -287,8 +215,6 @@ def multi_omic_clustering(
             omic_contributions[name]["feature_fraction"] = views[name].shape[1] / combined.shape[1]
 
     elif method == "snf":
-        from metainformant.multiomics.methods.factorization import similarity_network_fusion
-
         # Build per-omic correlation-based similarity
         networks: list[Any] = []
         for name, arr in views.items():
@@ -303,7 +229,7 @@ def multi_omic_clustering(
         fused = np.asarray(snf_result["fused_network"])
 
         # Spectral clustering on fused network
-        labels, sil = _spectral_cluster_similarity(fused, n_clusters)
+        labels, sil = _spectral_cluster_from_similarity(fused, n_clusters)
 
         for i, name in enumerate(views):
             omic_contributions[name]["snf_contribution"] = float(np.mean(np.abs(np.asarray(networks[i]) - fused)))
@@ -330,7 +256,7 @@ def multi_omic_clustering(
                     if lbl[i] == lbl[j]:
                         co_assoc[i, j] += 1.0
         co_assoc /= len(per_omic_labels)
-        labels, sil = _spectral_cluster_similarity(co_assoc, n_clusters)
+        labels, sil = _spectral_cluster_from_similarity(co_assoc, n_clusters)
 
     logger.info("Multi-omic clustering complete: silhouette=%.4f", sil)
 
@@ -339,38 +265,6 @@ def multi_omic_clustering(
         "silhouette": sil,
         "omic_contributions": omic_contributions,
     }
-
-
-def _spectral_cluster_similarity(similarity: Any, n_clusters: int) -> tuple[list[int], float]:
-    """Spectral clustering from similarity matrix.
-
-    Args:
-        similarity: Symmetric similarity matrix.
-        n_clusters: Number of clusters.
-
-    Returns:
-        Tuple of (labels, silhouette_score).
-    """
-    n = similarity.shape[0]
-    if n < n_clusters:
-        return list(range(n)), 0.0
-
-    D = np.diag(similarity.sum(axis=1))
-    L = D - similarity
-    D_inv_sqrt = np.diag(1.0 / (np.sqrt(np.diag(D)) + 1e-10))
-    L_norm = D_inv_sqrt @ L @ D_inv_sqrt
-
-    eigenvalues, eigenvectors = np.linalg.eigh(L_norm)
-    idx = np.argsort(eigenvalues)[:n_clusters]
-    embedding = eigenvectors[:, idx]
-
-    row_norms = np.linalg.norm(embedding, axis=1, keepdims=True) + 1e-10
-    embedding = embedding / row_norms
-
-    labels = _simple_kmeans(embedding, n_clusters)
-    sil = _silhouette_from_similarity(similarity, labels)
-
-    return labels, sil
 
 
 # ---------------------------------------------------------------------------
@@ -510,7 +404,7 @@ def consensus_clustering(
     C_opt = consensus_matrices[optimal_k]
 
     # Final labels from spectral clustering on consensus matrix
-    labels_final, _ = _spectral_cluster_similarity(C_opt, optimal_k)
+    labels_final, _ = _spectral_cluster_from_similarity(C_opt, optimal_k)
 
     logger.info(
         "Consensus clustering complete: optimal_k=%d, PAC=%.4f",

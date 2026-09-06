@@ -378,6 +378,7 @@ def active_module_detection(
     # Greedy seed-and-grow
     used: set[str] = set()
     modules: list[dict[str, Any]] = []
+    all_nodes = list(scores.keys())
 
     for seed in seeds:
         if seed in used:
@@ -417,7 +418,6 @@ def active_module_detection(
             continue
 
         # Permutation test for module significance
-        all_nodes = list(scores.keys())
         module_size = len(module_nodes)
         perm_count = 0
         rng = random.Random(42)

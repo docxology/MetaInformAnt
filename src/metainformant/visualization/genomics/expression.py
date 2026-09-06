@@ -69,17 +69,17 @@ def plot_expression_heatmap(
         sns.heatmap(
             z_scored,
             ax=ax,
-            cmap=kwargs.get("cmap", "RdYlBu_r"),
-            center=kwargs.get("center", 0),
-            annot=kwargs.get("annot", False),
-            fmt=kwargs.get("fmt", ".2f"),
+            cmap=kwargs.pop("cmap", "RdYlBu_r"),
+            center=kwargs.pop("center", 0),
+            annot=kwargs.pop("annot", False),
+            fmt=kwargs.pop("fmt", ".2f"),
             **kwargs,
         )
         ax.set_title("Gene Expression Heatmap (Z-score normalized)")
     else:
         logger.warning("Seaborn not available, using basic heatmap")
         # Basic matplotlib heatmap
-        im = ax.imshow(numeric_data.values, cmap=kwargs.get("cmap", "viridis"), **kwargs)
+        im = ax.imshow(numeric_data.values, cmap=kwargs.pop("cmap", "viridis"), **kwargs)
         plt.colorbar(im, ax=ax)
         ax.set_title("Gene Expression Heatmap")
 
@@ -93,7 +93,7 @@ def plot_expression_heatmap(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Expression heatmap saved to {output_path}")
 
     return ax
@@ -171,7 +171,7 @@ def plot_enrichment_barplot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Enrichment barplot saved to {output_path}")
 
     return ax
@@ -245,7 +245,9 @@ def plot_differential_expression(
         mean_vals = plot_data[mean_col]
         sizes = 20 + (mean_vals - mean_vals.min()) / (mean_vals.max() - mean_vals.min()) * 80
 
-    ax.scatter(plot_data[logfc_col], plot_data["logP"], c=colors, s=sizes, alpha=kwargs.get("alpha", 0.6), **kwargs)
+    ax.scatter(
+        plot_data[logfc_col], plot_data["logP"], c=colors, s=sizes, alpha=kwargs.pop("alpha", 0.6), **kwargs
+    )
 
     # Add threshold lines
     ax.axhline(y=-np.log10(0.05), color="black", linestyle="--", alpha=0.7)
@@ -269,7 +271,7 @@ def plot_differential_expression(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Differential expression plot saved to {output_path}")
 
     return ax

@@ -8,7 +8,8 @@ construction for phylogenetic analysis.
 from __future__ import annotations
 
 import math
-from typing import Dict, Sequence
+from collections import Counter
+from typing import Callable, Dict, Sequence
 
 import numpy as np
 import pandas as pd
@@ -23,6 +24,37 @@ def _coerce_sequence_mapping(sequences: Dict[str, str] | Sequence[str]) -> Dict[
     if isinstance(sequences, dict):
         return sequences
     return {f"seq{i + 1}": seq for i, seq in enumerate(sequences)}
+
+
+def _pairwise_matrix(
+    sequences: Dict[str, str] | Sequence[str],
+    distance_func: Callable[[str, str], float],
+    *,
+    diagonal: float = 0.0,
+) -> pd.DataFrame:
+    """Build a symmetric pairwise matrix, mapping per-pair errors to NaN."""
+    sequences = _coerce_sequence_mapping(sequences)
+    if not sequences:
+        raise ValueError("Must provide at least one sequence")
+
+    seq_ids = list(sequences.keys())
+    n = len(seq_ids)
+    matrix = np.full((n, n), diagonal, dtype=float)
+
+    for i in range(n):
+        for j in range(i + 1, n):
+            try:
+                value = float(distance_func(sequences[seq_ids[i]], sequences[seq_ids[j]]))
+                # Handle infinite distances
+                if value == float("inf"):
+                    value = np.nan
+            except (ValueError, ZeroDivisionError):
+                value = np.nan
+
+            matrix[i, j] = value
+            matrix[j, i] = value  # Symmetric matrix
+
+    return pd.DataFrame(matrix, index=seq_ids, columns=seq_ids)
 
 
 def jukes_cantor_distance(seq1: str, seq2: str) -> float:
@@ -117,12 +149,9 @@ def kimura_distance(seq1: str, seq2: str) -> float:
     P = transitions / total_sites  # transition frequency
     Q = transversions / total_sites  # transversion frequency
 
-    # Kimura 2-parameter distance
-    if P + Q >= 1.0:  # Maximum possible
-        return float("inf")
-
-    # Avoid division by zero and log of negative values
-    if P >= 0.5 or Q >= 0.5:
+    # Kimura 2-parameter distance; saturation (non-positive log arguments)
+    # corresponds to an infinite distance.
+    if 1 - 2 * P - Q <= 0 or 1 - 2 * Q <= 0:
         return float("inf")
 
     distance = -0.5 * math.log((1 - 2 * P - Q) * math.sqrt(1 - 2 * Q))
@@ -143,7 +172,7 @@ def p_distance(seq1: str, seq2: str) -> float:
         Proportion of differing sites (0.0 to 1.0)
 
     Raises:
-        ValueError: If sequences contain invalid nucleotides
+        ValueError: If sequences have different lengths or contain invalid nucleotides
 
     Example:
         >>> p_distance("ATCG", "ATCG")
@@ -151,12 +180,10 @@ def p_distance(seq1: str, seq2: str) -> float:
         >>> p_distance("ATCG", "GCTA")
         1.0
     """
-    # Handle different lengths by comparing minimum overlapping region
-    min_len = min(len(seq1), len(seq2))
-    seq1 = seq1[:min_len]
-    seq2 = seq2[:min_len]
+    if len(seq1) != len(seq2):
+        raise ValueError("Sequences must have equal length")
 
-    if min_len == 0:
+    if not seq1 or not seq2:
         return 0.0
 
     differences = 0
@@ -211,11 +238,11 @@ def hamming_distance(seq1: str, seq2: str) -> int:
     return distance
 
 
-def distance_matrix(sequences: Dict[str, str], method: str = "jukes_cantor") -> pd.DataFrame:
+def distance_matrix(sequences: Dict[str, str] | Sequence[str], method: str = "jukes_cantor") -> pd.DataFrame:
     """Calculate pairwise distance matrix for a set of sequences.
 
     Args:
-        sequences: Dictionary mapping sequence IDs to DNA sequences
+        sequences: Dictionary (or list) mapping sequence IDs to DNA sequences
         method: Distance method to use ("jukes_cantor", "kimura", "p_distance", "hamming")
 
     Returns:
@@ -230,17 +257,16 @@ def distance_matrix(sequences: Dict[str, str], method: str = "jukes_cantor") -> 
         >>> matrix.shape
         (3, 3)
     """
+    sequences = _coerce_sequence_mapping(sequences)
     if not sequences:
         raise ValueError("Must provide at least one sequence")
 
-    seq_ids = list(sequences.keys())
-
     # Check that all sequences have the same length
-    seq_lengths = {seq_id: len(seq) for seq_id, seq in sequences.items()}
-    if len(set(seq_lengths.values())) > 1:
+    if len({len(seq) for seq in sequences.values()}) > 1:
         raise ValueError("All sequences must have the same length")
 
     # Select distance function
+    distance_func: Callable[[str, str], float]
     if method == "jukes_cantor":
         distance_func = jukes_cantor_distance
     elif method == "kimura":
@@ -252,30 +278,7 @@ def distance_matrix(sequences: Dict[str, str], method: str = "jukes_cantor") -> 
     else:
         raise ValueError(f"Unknown distance method: {method}")
 
-    # Calculate pairwise distances
-    n = len(seq_ids)
-    distance_matrix_array = np.zeros((n, n))
-
-    for i in range(n):
-        for j in range(i + 1, n):
-            seq1 = sequences[seq_ids[i]]
-            seq2 = sequences[seq_ids[j]]
-
-            try:
-                distance = distance_func(seq1, seq2)
-                # Handle infinite distances
-                if distance == float("inf"):
-                    distance = np.nan
-            except (ValueError, ZeroDivisionError):
-                distance = np.nan
-
-            distance_matrix_array[i, j] = distance
-            distance_matrix_array[j, i] = distance  # Symmetric matrix
-
-    # Create pandas DataFrame
-    df = pd.DataFrame(distance_matrix_array, index=seq_ids, columns=seq_ids)
-
-    return df
+    return _pairwise_matrix(sequences, distance_func)
 
 
 def jc69_distance(seq1: str, seq2: str) -> float:
@@ -315,8 +318,6 @@ def kmer_distance(seq1: str, seq2: str, k: int = 3) -> float:
     Returns:
         K-mer distance (cosine distance between k-mer frequency vectors)
     """
-    import math
-    from collections import Counter
 
     def get_kmer_counts(seq: str, k: int) -> Counter:
         """Get k-mer counts for a sequence."""
@@ -391,15 +392,9 @@ def tamura_nei_distance(seq1: str, seq2: str, kappa: float = 2.0) -> float:
 
     transition_pairs = {("A", "G"), ("G", "A"), ("C", "T"), ("T", "C")}
 
-    # Count GC content for transversion rate calculation
-    gc_count = 0
-
     for a, b in zip(seq1.upper(), seq2.upper()):
         if a not in "ATCG" or b not in "ATCG":
             raise ValueError(f"Invalid nucleotide: {a} or {b}")
-
-        if a == "G" or a == "C":
-            gc_count += 1
 
         if a != b:
             if (a, b) in transition_pairs:
@@ -415,9 +410,6 @@ def tamura_nei_distance(seq1: str, seq2: str, kappa: float = 2.0) -> float:
     # Proportions
     P = transitions / total_sites  # transition frequency
     Q = transversions / total_sites  # transversion frequency
-
-    # GC content proportion
-    gc_count / total_sites
 
     # Tamura-Nei distance calculation
     # This is a simplified version; full implementation would require
@@ -444,7 +436,7 @@ def kmer_distance_matrix(sequences: Dict[str, str] | Sequence[str], k: int = 3) 
     """Calculate k-mer distance matrix for a set of sequences.
 
     Args:
-        sequences: Dictionary mapping sequence IDs to DNA sequences
+        sequences: Dictionary (or list) mapping sequence IDs to DNA sequences
         k: k-mer size
 
     Returns:
@@ -456,43 +448,14 @@ def kmer_distance_matrix(sequences: Dict[str, str] | Sequence[str], k: int = 3) 
         >>> matrix.shape
         (3, 3)
     """
-    sequences = _coerce_sequence_mapping(sequences)
-    if not sequences:
-        raise ValueError("Must provide at least one sequence")
-
-    seq_ids = list(sequences.keys())
-
-    # Calculate pairwise k-mer distances
-    n = len(seq_ids)
-    distance_matrix_array = np.zeros((n, n))
-
-    for i in range(n):
-        for j in range(i + 1, n):
-            seq1 = sequences[seq_ids[i]]
-            seq2 = sequences[seq_ids[j]]
-
-            try:
-                distance = kmer_distance(seq1, seq2, k)
-                # Handle infinite distances
-                if distance == float("inf"):
-                    distance = np.nan
-            except (ValueError, ZeroDivisionError):
-                distance = np.nan
-
-            distance_matrix_array[i, j] = distance
-            distance_matrix_array[j, i] = distance  # Symmetric matrix
-
-    # Create pandas DataFrame
-    df = pd.DataFrame(distance_matrix_array, index=seq_ids, columns=seq_ids)
-
-    return df
+    return _pairwise_matrix(sequences, lambda s1, s2: kmer_distance(s1, s2, k))
 
 
 def sequence_identity_matrix(sequences: Dict[str, str] | Sequence[str]) -> pd.DataFrame:
     """Calculate sequence identity matrix (1 - p_distance).
 
     Args:
-        sequences: Dictionary mapping sequence IDs to DNA sequences
+        sequences: Dictionary (or list) mapping sequence IDs to DNA sequences
 
     Returns:
         Identity matrix as pandas DataFrame (values from 0.0 to 1.0)
@@ -503,35 +466,4 @@ def sequence_identity_matrix(sequences: Dict[str, str] | Sequence[str]) -> pd.Da
         >>> matrix.shape
         (3, 3)
     """
-    sequences = _coerce_sequence_mapping(sequences)
-    if not sequences:
-        raise ValueError("Must provide at least one sequence")
-
-    seq_ids = list(sequences.keys())
-
-    # Calculate pairwise identities
-    n = len(seq_ids)
-    identity_matrix_array = np.zeros((n, n))
-
-    for i in range(n):
-        for j in range(i + 1, n):
-            seq1 = sequences[seq_ids[i]]
-            seq2 = sequences[seq_ids[j]]
-
-            try:
-                distance = p_distance(seq1, seq2)
-                identity = 1.0 - distance
-            except (ValueError, ZeroDivisionError):
-                identity = np.nan
-
-            identity_matrix_array[i, j] = identity
-            identity_matrix_array[j, i] = identity  # Symmetric matrix
-
-    # Diagonal should be 1.0 (identity with self)
-    for i in range(n):
-        identity_matrix_array[i, i] = 1.0
-
-    # Create pandas DataFrame
-    df = pd.DataFrame(identity_matrix_array, index=seq_ids, columns=seq_ids)
-
-    return df
+    return _pairwise_matrix(sequences, lambda s1, s2: 1.0 - p_distance(s1, s2), diagonal=1.0)

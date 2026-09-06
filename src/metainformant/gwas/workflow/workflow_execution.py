@@ -9,7 +9,6 @@ This module provides the main workflow execution functions:
 from __future__ import annotations
 
 import json
-import math
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -23,6 +22,7 @@ from metainformant.gwas.analysis.correction import (
     bonferroni_correction,
     fdr_correction,
     genomic_control,
+    lambda_gc_from_p_values,
 )
 from metainformant.gwas.analysis.heritability import (
     estimate_heritability,
@@ -242,7 +242,7 @@ def _run_variant_associations(
 
 
 def _lambda_gc_from_associations(assoc_results: List[Dict[str, Any]]) -> Optional[float]:
-    """Compute the approximate genomic-control lambda from association p-values."""
+    """Compute the genomic-control lambda from association p-values (1 df)."""
     valid_p = [
         r.get("p_value", 1.0)
         for r in assoc_results
@@ -250,12 +250,10 @@ def _lambda_gc_from_associations(assoc_results: List[Dict[str, Any]]) -> Optiona
     ]
     if not valid_p:
         return None
-
-    valid_p_sorted = sorted(valid_p)
-    median_p = valid_p_sorted[len(valid_p_sorted) // 2]
-    if median_p <= 0:
+    lambda_gc = lambda_gc_from_p_values(valid_p)
+    if lambda_gc is None:
         return None
-    return round(-2.0 * math.log(median_p) / 1.386, 4)
+    return round(lambda_gc, 4)
 
 
 def _apply_qvalue_and_bonferroni_annotations(assoc_results: List[Dict[str, Any]]) -> None:

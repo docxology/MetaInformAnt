@@ -14,8 +14,7 @@ def _handle_popgen_summary(allele_freq_p: float) -> dict:
         "freq_AA": aa,
         "freq_Aa": het,
         "freq_aa": qq,
-        "expected_heterozygosity_hw": het,
-        "fst_example_two_loci": fst_from_freqs([allele_freq_p], [1 - allele_freq_p]),
+        "fst_example_p_vs_1_minus_p": fst_from_freqs([allele_freq_p], [1 - allele_freq_p]),
         "note": "descriptive summary only; no inferential tests",
     }
 

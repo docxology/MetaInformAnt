@@ -17,19 +17,11 @@ from scipy.spatial.distance import pdist
 from metainformant.core.data import validation
 from metainformant.core.utils import logging
 
+from metainformant.information.metrics.core.syntactic import kl_divergence
+
 from .fisher_rao import _validate_distribution
 
 logger = logging.get_logger(__name__)
-
-# ---------------------------------------------------------------------------
-# Internal imports from sibling modules (deferred to avoid circular deps)
-# ---------------------------------------------------------------------------
-
-try:
-    from metainformant.information.metrics.core.syntactic import kl_divergence, shannon_entropy
-except ImportError:  # pragma: no cover
-    kl_divergence = None  # type: ignore[assignment]
-    shannon_entropy = None  # type: ignore[assignment]
 
 
 # ---------------------------------------------------------------------------
@@ -301,15 +293,11 @@ def statistical_divergence(
     # Handle special cases where formula has 0/0 indeterminate form
     if abs(alpha - 1.0) < 1e-12:
         # Forward KL: D_KL(p || q)
-        if kl_divergence is not None:
-            return kl_divergence(p_arr, q_arr, base=math.e)
-        raise ValueError("alpha=1 requires KL divergence but syntactic module is unavailable")
+        return kl_divergence(p_arr, q_arr, base=math.e)
 
     if abs(alpha) < 1e-12:
         # Reverse KL: D_KL(q || p)
-        if kl_divergence is not None:
-            return kl_divergence(q_arr, p_arr, base=math.e)
-        raise ValueError("alpha=0 requires KL divergence but syntactic module is unavailable")
+        return kl_divergence(q_arr, p_arr, base=math.e)
 
     if abs(abs(alpha) - 1.0) < 1e-12:
         raise ValueError(f"|alpha| must not equal 1 for the general formula, got alpha={alpha}")

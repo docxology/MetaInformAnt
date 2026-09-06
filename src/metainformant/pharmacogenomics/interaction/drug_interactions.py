@@ -338,15 +338,6 @@ def default_interaction_database() -> dict:
         "Monitor heart rate and blood pressure; consider dose reduction",
     )
     _add(
-        "omeprazole",
-        "clopidogrel",
-        "moderate",
-        "CYP2C19 inhibition",
-        "Omeprazole reduces clopidogrel activation via CYP2C19",
-        "A",
-        "Use pantoprazole instead",
-    )
-    _add(
         "warfarin",
         "amiodarone",
         "moderate",

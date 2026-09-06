@@ -23,7 +23,7 @@ Example:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -105,8 +105,8 @@ _import_existing_functions()
 def expression_heatmap(
     data: pd.DataFrame,
     *,
-    ax: Optional[Axes] = None,
-    output_path: Optional[str | Path] = None,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
     **kwargs: Any,
 ) -> Axes:
     """Plot gene expression heatmap with hierarchical clustering.
@@ -179,7 +179,7 @@ def expression_heatmap(
     if output_path:
         output_path = Path(output_path)
         paths.ensure_directory(output_path.parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Expression heatmap saved to {output_path}")
 
     return ax
@@ -188,9 +188,9 @@ def expression_heatmap(
 def pca_plot(
     data: pd.DataFrame,
     *,
-    hue: Optional[str] = None,
-    ax: Optional[Axes] = None,
-    output_path: Optional[str | Path] = None,
+    hue: str | None = None,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
     **kwargs: Any,
 ) -> Axes:
     """Plot pre-computed PCA scatter with variance information.
@@ -273,8 +273,8 @@ def pca_plot(
     )
 
     # Add variance to labels
-    pc1_var = data["PC1_variance"].iloc[0] if len(data) > 0 else 0
-    pc2_var = data["PC2_variance"].iloc[0] if len(data) > 0 else 0
+    pc1_var = data["PC1_variance"].iloc[0]
+    pc2_var = data["PC2_variance"].iloc[0]
 
     ax.set_xlabel(f"PC1 ({pc1_var:.1f}% variance)")
     ax.set_ylabel(f"PC2 ({pc2_var:.1f}% variance)")
@@ -295,7 +295,7 @@ def pca_plot(
     if output_path:
         output_path = Path(output_path)
         paths.ensure_directory(output_path.parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"PCA plot saved to {output_path}")
 
     return ax
@@ -305,8 +305,8 @@ def pca_plot(
 def correlation_heatmap(
     data: pd.DataFrame,
     *,
-    ax: Optional[Axes] = None,
-    output_path: Optional[str | Path] = None,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
     **kwargs: Any,
 ) -> Axes:
     """Plot correlation matrix as heatmap.
@@ -326,8 +326,8 @@ def correlation_heatmap(
 def qq_plot(
     data: np.ndarray,
     *,
-    ax: Optional[Axes] = None,
-    output_path: Optional[str | Path] = None,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
     **kwargs: Any,
 ) -> Axes:
     """Create Q-Q plot for QC analysis.
@@ -345,8 +345,8 @@ def volcano_plot(
     log2fc_col: str = "log2FoldChange",
     pval_col: str = "padj",
     *,
-    ax: Optional[Axes] = None,
-    output_path: Optional[str | Path] = None,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
     **kwargs: Any,
 ) -> Axes:
     """Plot log2 fold change vs p-value for differential expression.
@@ -367,8 +367,8 @@ def manhattan_plot(
     pos_col: str = "BP",
     pval_col: str = "P",
     *,
-    ax: Optional[Axes] = None,
-    output_path: Optional[str | Path] = None,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
     **kwargs: Any,
 ) -> Axes:
     """Plot genome-wide association results.
@@ -400,8 +400,8 @@ def scatter_plot(
     x: np.ndarray,
     y: np.ndarray,
     *,
-    ax: Optional[Axes] = None,
-    output_path: Optional[str | Path] = None,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
     **kwargs: Any,
 ) -> Axes:
     """Generic scatter plot.

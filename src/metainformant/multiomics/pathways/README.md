@@ -24,10 +24,13 @@ Methods for combining pathway-level signals across multiple omic layers, includi
 from metainformant.multiomics.pathways import enrichment
 
 combined = enrichment.multi_omic_enrichment(
-    pathway_pvalues={"rna": rna_pvals, "protein": prot_pvals},
-    method="fisher"
+    gene_sets={"CELL_CYCLE": ["CDK1", "CDK2", "TP53"]},
+    omic_results={"rna": rna_gene_pvalues, "protein": protein_gene_pvalues},
+    method="fisher_combined",
 )
 modules = enrichment.active_module_detection(network, node_scores)
 topology = enrichment.pathway_topology_analysis(pathway_graph, gene_scores)
-concordance = enrichment.cross_omic_pathway_concordance(rna_results, prot_results)
+concordance = enrichment.cross_omic_pathway_concordance(
+    {"rna": rna_pathway_pvalues, "protein": protein_pathway_pvalues}
+)
 ```

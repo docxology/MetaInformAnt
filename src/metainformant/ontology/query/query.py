@@ -324,14 +324,34 @@ def find_terms_by_name(onto: Ontology, name_pattern: str, case_sensitive: bool =
     validation.validate_type(onto, Ontology, "onto")
     validation.validate_not_empty(name_pattern, "name_pattern")
 
+    return _find_terms_matching_name(onto, name_pattern, case_sensitive, skip_unnamed=True)
+
+
+def _find_terms_matching_name(
+    onto: Ontology, name_pattern: str, case_sensitive: bool, *, skip_unnamed: bool
+) -> List[str]:
+    """Match term IDs whose name contains ``name_pattern`` (shared core).
+
+    Args:
+        onto: Ontology to search.
+        name_pattern: Pattern to match in term names.
+        case_sensitive: Whether matching should be case-sensitive.
+        skip_unnamed: Whether terms without a name are excluded.
+
+    Returns:
+        List of matching term IDs.
+    """
     pattern = name_pattern if case_sensitive else name_pattern.lower()
     matches = []
 
     for term in onto.terms.values():
-        if term.name:
-            term_name = term.name if case_sensitive else term.name.lower()
-            if pattern in term_name:
-                matches.append(term.id)
+        if skip_unnamed and not term.name:
+            continue
+        name = term.name if term.name else ""
+        if not case_sensitive:
+            name = name.lower()
+        if pattern in name:
+            matches.append(term.id)
 
     return matches
 
@@ -662,18 +682,7 @@ def find_term_by_name(onto: Ontology, name_pattern: str, case_sensitive: bool = 
     """
     validation.validate_type(onto, Ontology, "onto")
 
-    matches = []
-    pattern = name_pattern if case_sensitive else name_pattern.lower()
-
-    for term_id, term in onto.terms.items():
-        name = term.name or ""
-        if not case_sensitive:
-            name = name.lower()
-
-        if pattern in name:
-            matches.append(term_id)
-
-    return matches
+    return _find_terms_matching_name(onto, name_pattern, case_sensitive, skip_unnamed=False)
 
 
 def filter_by_namespace(onto: Ontology, namespace: str) -> Ontology:

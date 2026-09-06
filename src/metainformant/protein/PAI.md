@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - protein
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/protein`
+- **Path**: `src/metainformant/protein`
 - **Purpose**: Protein sequence and structure analysis module for METAINFORMANT.
 - **Domain**: metainformant
 

@@ -7,7 +7,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from metainformant.core.utils.errors import ValidationError
 from metainformant.visualization.plots.basic import (
+
     area_plot,
     bar_plot,
     heatmap,
@@ -370,3 +372,32 @@ class TestStepPlot:
 
         with pytest.raises(ValueError, match="same length"):
             step_plot(x, y)
+
+
+class TestInputValidation:
+    """Type validation guards on the basic plot helpers."""
+
+    def test_lineplot_rejects_non_ndarray(self):
+        """Test line plot rejects non-ndarray x data."""
+        with pytest.raises(ValidationError, match="x"):
+            lineplot([1, 2, 3])
+
+    def test_scatter_plot_rejects_non_ndarray(self):
+        """Test scatter plot rejects non-ndarray inputs."""
+        with pytest.raises(ValidationError, match="x"):
+            scatter_plot("not an array", np.array([1, 2, 3]))
+
+    def test_heatmap_rejects_non_ndarray(self):
+        """Test heatmap rejects non-ndarray data."""
+        with pytest.raises(ValidationError, match="data"):
+            heatmap([[1, 2], [3, 4]])
+
+    def test_bar_plot_rejects_scalar_x(self):
+        """Test bar plot rejects a scalar x argument."""
+        with pytest.raises(ValueError, match="x must be array-like"):
+            bar_plot(3.5, np.array([1.0, 2.0]))
+
+    def test_pie_chart_rejects_non_list_labels(self):
+        """Test pie chart rejects labels that are not a list."""
+        with pytest.raises(ValidationError, match="labels"):
+            pie_chart(np.array([1.0, 2.0]), labels="AB")

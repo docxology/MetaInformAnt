@@ -495,8 +495,6 @@ def _aldex2_like(
         p_value = _welch_t_test(vals_g1, vals_g2)
 
         # Effect size (Cohen's d)
-        sum(vals_g1) / len(vals_g1) if vals_g1 else 0.0
-        sum(vals_g2) / len(vals_g2) if vals_g2 else 0.0
         effect = _cohens_d(vals_g1, vals_g2)
 
         results.append(
@@ -723,18 +721,18 @@ def _sklearn_biomarker(
         n_jobs=-1,
     )
 
-    # Cross-validation
+    cv_scores: list[float] = []
     actual_folds = min(cv_folds, len(set(groups)))
     actual_folds = min(actual_folds, min(Counter(groups).values()))
     actual_folds = max(actual_folds, 2)
 
     try:
-        cv_scores = cross_val_score(rf, X, y, cv=actual_folds, scoring="accuracy")
+        cv_scores_list = cross_val_score(rf, X, y, cv=actual_folds, scoring="accuracy")
+        cv_scores = [float(s) for s in cv_scores_list]
         cv_accuracy = float(np.mean(cv_scores))
     except (ValueError, TypeError):
+        cv_scores = []
         cv_accuracy = 0.0
-
-    # Fit on all data for feature importances
     rf.fit(X, y)
     importances_array = rf.feature_importances_
 
@@ -751,7 +749,7 @@ def _sklearn_biomarker(
         "method": "random_forest",
         "n_estimators": n_estimators,
         "cv_folds": actual_folds,
-        "cv_scores": cv_scores.tolist() if cv_accuracy > 0 else [],
+        "cv_scores": cv_scores,
         "n_features": len(taxa_names),
         "n_selected": len(selected),
     }

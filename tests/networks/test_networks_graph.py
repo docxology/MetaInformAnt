@@ -539,3 +539,82 @@ class TestNetworkComparison:
 
         assert network.get_edge_weight("A", "B") == 2.0
         assert network.num_edges() == 1  # Still just one edge
+
+
+class TestGraphCoreUtilities:
+    """Tests for attribute, DataFrame, adjacency, and pruning utilities."""
+
+    def _triangle(self):
+        import networkx as nx
+
+        g = nx.Graph()
+        g.add_edges_from([("A", "B"), ("B", "C"), ("A", "C")])
+        return g
+
+    def test_node_attribute_roundtrip(self):
+        from metainformant.networks.analysis.graph import (
+            add_node_attributes,
+            get_node_attributes_dataframe,
+        )
+
+        g = self._triangle()
+        add_node_attributes(g, {"A": {"type": "kinase"}, "B": {"type": "receptor"}})
+        assert g.nodes["A"]["type"] == "kinase"
+        df = get_node_attributes_dataframe(g)
+        assert df.loc["A", "type"] == "kinase"
+        assert df.index.name == "node"
+
+    def test_edge_attribute_dataframe_roundtrip(self):
+        from metainformant.networks.analysis.graph import (
+            add_edge_attributes,
+            get_edge_attributes_dataframe,
+        )
+
+        g = self._triangle()
+        add_edge_attributes(g, {("A", "B"): {"weight": 2.5}})
+        assert g["A"]["B"]["weight"] == 2.5
+        df = get_edge_attributes_dataframe(g)
+        ab = df[(df["source"] == "A") & (df["target"] == "B")]
+        assert ab["weight"].item() == 2.5
+
+    def test_adjacency_matrix_roundtrip(self):
+        from metainformant.networks.analysis.graph import (
+            convert_from_adjacency_matrix,
+            convert_to_adjacency_matrix,
+        )
+
+        g = self._triangle()
+        matrix = convert_to_adjacency_matrix(g)
+        labels = ["A", "B", "C"]
+        restored = convert_from_adjacency_matrix(matrix, node_labels=labels)
+        assert set(restored.nodes()) == {"A", "B", "C"}
+        assert set(restored.edges()) == {("A", "B"), ("B", "C"), ("A", "C")}
+
+    def test_remove_isolated_nodes(self):
+        from metainformant.networks.analysis.graph import remove_isolated_nodes
+
+        g = self._triangle()
+        g.add_node("loner")
+        remove_isolated_nodes(g)
+        assert set(g.nodes()) == {"A", "B", "C"}
+
+    def test_remove_isolated_nodes_noop_without_isolates(self):
+        from metainformant.networks.analysis.graph import remove_isolated_nodes
+
+        g = self._triangle()
+        remove_isolated_nodes(g)
+        assert g.number_of_nodes() == 3
+
+    def test_create_subgraph_filters_missing_nodes_and_copies(self):
+        import networkx as nx
+
+        from metainformant.networks.analysis.graph import create_subgraph
+
+        g = self._triangle()
+        sub = create_subgraph(g, ["A", "B", "ZZZ"])
+        assert isinstance(sub, nx.Graph)
+        assert set(sub.nodes()) == {"A", "B"}
+        assert set(sub.edges()) == {("A", "B")}
+        # Copy semantics: mutating the subgraph must not touch the original
+        sub.remove_edge("A", "B")
+        assert g.has_edge("A", "B")

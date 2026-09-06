@@ -20,6 +20,7 @@ from sklearn.datasets import make_classification, make_regression
 from metainformant.ml.models.classification import (
     compare_classifiers,
     create_biological_classifier,
+    cross_validate_biological,
     train_ensemble_classifier,
 )
 from metainformant.ml.models.regression import (
@@ -169,12 +170,32 @@ class TestTrainRegressor:
     def test_random_forest(self, reg_data):
         """Train RF regressor and check it is fitted."""
         X, y = reg_data
-        # NOTE: train_regressor has a known bug where kwargs.get() extracts
-        # keys then **kwargs re-passes them. Avoid passing extracted keys.
         reg = train_regressor(X, y, method="rf")
         assert reg.is_fitted
         preds = reg.predict(X)
         assert len(preds) == len(y)
+
+    def test_accepts_n_estimators_and_random_state(self, reg_data):
+        """Extracted keys must not collide with **kwargs (regression test)."""
+        X, y = reg_data
+        reg = train_regressor(X, y, method="rf", n_estimators=5, random_state=7)
+
+        assert reg.is_fitted
+        assert reg.model.n_estimators == 5
+
+    def test_accepts_alpha_and_kernel_overrides(self, reg_data):
+        """Method-specific defaults are overridable without duplicate kwargs."""
+        X, y = reg_data
+
+        ridge = train_regressor(X, y, method="ridge", alpha=0.5)
+        svr = train_regressor(X, y, method="svr", C=2.0, kernel="linear")
+        lasso = train_regressor(X, y, method="lasso", alpha=0.01)
+        enet = train_regressor(X, y, method="elasticnet", alpha=0.1, l1_ratio=0.9)
+
+        assert ridge.is_fitted and ridge.model.alpha == 0.5
+        assert svr.is_fitted and svr.model.C == 2.0 and svr.model.kernel == "linear"
+        assert lasso.is_fitted and lasso.model.alpha == 0.01
+        assert enet.is_fitted and enet.model.l1_ratio == 0.9
 
     def test_linear(self, reg_data):
         """Train linear regressor."""
@@ -375,3 +396,26 @@ class TestAnalyzePredictionUncertainty:
         assert "method" in params
         assert "n_bootstraps" in params
         assert "random_state" in params
+
+
+# ---------------------------------------------------------------------------
+# cross_validate_biological failure robustness
+# ---------------------------------------------------------------------------
+
+
+class TestCrossValidateBiologicalRobustness:
+    """cross_validate_biological must survive per-metric CV failures."""
+
+    def test_metric_failure_does_not_crash(self, clf_data):
+        """When every metric's CV raises (invalid estimator param), results
+        record the failure as None instead of crashing on the final log line
+        (the old code hit AttributeError formatting a None accuracy)."""
+        X, y = clf_data
+
+        result = cross_validate_biological(X, y, method="rf", cv_folds=2, n_estimators=0)
+
+        assert result["method"] == "rf"
+        for metric in ("accuracy", "precision_weighted", "recall_weighted", "f1_weighted"):
+            assert result["cross_validation"][metric] is None
+        assert "accuracy" not in result
+        assert "mean_accuracy" not in result
