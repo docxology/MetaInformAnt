@@ -1,0 +1,41 @@
+# Cursor Rules for the current RNA module
+
+## Scope
+
+- Domain: RNA and Amalgkit 0.16.60
+- Source: `src/metainformant/rna/`
+- Tests: `tests/rna/test_rna_*.py`
+- Documentation: `docs/rna/` and `projects/hymenoptera_amalgkit/doc/`
+- Large data: `$AMALGKIT_DATA_ROOT`
+
+## Current entrypoints
+
+```bash
+uv run python scripts/rna/run_all_species.py \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT" --dry-run
+uv run python scripts/rna/process_species.py \
+  --species apis_mellifera \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT"
+bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
+```
+
+The project launcher is the only full-campaign owner. Do not start a second
+producer against a locked data root.
+
+## Configuration and runtime
+
+Use project YAML files, explicit CLI options, and the `AMALGKIT_` namespace.
+The current producer uses `AMALGKIT_DATA_ROOT` and the project campaign uses
+the `AMALGKIT_PIPELINE_*` resource variables. Do not introduce alternate
+environment namespaces or hidden output roots.
+
+## Testing and safety
+
+- Use real implementations, real YAML, and real filesystem operations.
+- Keep network and external-tool tests explicitly marked.
+- Use `tmp_path` for temporary outputs; never write test data to the campaign root.
+- Read a live SQLite database in read-only mode when inspecting an active run.
+- Preserve partial downloads, receipts, failed samples, and negative evidence.
+- Validate current command options with the pinned Amalgkit registry.

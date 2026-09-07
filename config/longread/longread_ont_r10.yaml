@@ -1,0 +1,69 @@
+# METAINFORMANT Long-Read Config: Oxford Nanopore R10.4.1
+# Optimized for ONT R10.4.1 flow cells (high accuracy basecalling)
+#
+# R10.4.1 characteristics:
+# - Higher raw accuracy (~Q20 with SUP basecalling)
+# - Better homopolymer resolution than R9.4.1
+# - 5mC detection from basecaller tags (MM/ML)
+
+work_dir: output/longread/ont_r10/work
+log_dir: output/longread/ont_r10/logs
+output_dir: output/longread/ont_r10/results
+threads: 8
+
+input:
+  format: bam   # Dorado outputs BAM with mod tags
+  paths: []
+  platform: ont
+  chemistry: r10.4.1
+
+qc:
+  min_length: 1000
+  max_length: null
+  min_quality: 10.0    # Higher threshold — R10 has better accuracy
+  trim_adapters: true
+  split_chimeras: true
+  save_filtered: true
+
+assembly:
+  enabled: true
+  minimizer_k: 19      # Larger k for higher accuracy reads
+  minimizer_w: 10
+  min_overlap: 3000    # Require longer overlaps (reads are more accurate)
+  max_overhang: 300
+  polish_iterations: 1  # Less polishing needed for high-accuracy reads
+
+methylation:
+  enabled: true
+  modifications:
+    - 5mC
+  min_coverage: 5
+  min_probability: 0.5
+  cpg_only: true       # Focus on CpG context for R10
+
+sv_calling:
+  enabled: true
+  sv_types: [DEL, INS, INV, DUP, BND]
+  min_size: 50
+  min_support: 3
+  phase_variants: true
+
+phasing:
+  enabled: true
+  min_variant_quality: 20
+  max_gap: 300000
+
+visualization:
+  enabled: true
+  format: png
+  dpi: 150
+  plots:
+    - read_length_histogram
+    - quality_vs_length
+    - methylation_track
+    - phasing_blocks
+
+reporting:
+  qc_report: true
+  assembly_report: true
+  format: json

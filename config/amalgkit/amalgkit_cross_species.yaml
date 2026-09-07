@@ -1,0 +1,36 @@
+# Current Hymenoptera cross-species analysis configuration
+#
+# This file describes the native expression-fingerprint analysis. It is not a
+# per-species Amalgkit workflow; the executable cohort is defined by the
+# generated species_manifest.tsv after input validation.
+
+work_dir: cross_species/work
+log_dir: cross_species/logs
+threads: 4
+
+cohort:
+  source: config/amalgkit/amalgkit_<species>.yaml
+  minimum_samples: 2
+  required_matrix_suffix: _expression.tsv
+
+analysis:
+  method: expression_fingerprint
+  transform: log1p
+  pooled_percentile_range: [1, 99]
+  fingerprint_bins: 100
+  minimum_finite_positive_genes: 100
+  distance: 1 - spearman_rho
+  clustering: average_linkage
+  inferential_statistics: none
+
+# Optional current ortholog-anchored pathway. Enable only after supplying a
+# validated orthogroup table and per-species count matrices.
+cstmm:
+  enabled: false
+  orthogroup_table: ""
+  dir_count: cross_species/merge_inputs
+
+csfilter:
+  enabled: false
+  input_dir: cross_species/work/cstmm
+  orthogroup_table: ""

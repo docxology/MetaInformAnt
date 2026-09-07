@@ -1,0 +1,38 @@
+# Cursor Rules for core Module (CORE_)
+
+## 🧠 Context & Intent
+- **Domain**: core
+- **Path**: `src/metainformant/core/`
+- **Config Prefix**: `CORE_` (e.g., `CORE_THREADS`)
+
+## 🧱 Directory Structure
+- **Source**: `src/metainformant/core/`
+- **Tests**: `tests/core/test_core_*.py`
+- **Docs**: `docs/core/`
+- **Output**: `output/core/` (Default for all artifacts)
+
+## ⚙️ Configuration
+- Use `metainformant.core.utils.config` to load config.
+- Support env checks with `CORE_` prefix.
+- Example:
+  ```python
+  config = load_domain_config("config/core/default.yaml", prefix="CORE")
+  ```
+
+## 🧪 Testing (REAL IMPLEMENTATION POLICY)
+- **STRICTLY REAL IMPLEMENTATIONS**: Use real implementations only.
+- **External Tools**: Skip if not found (don't mock).
+- **Network**: Use real API calls with `@pytest.mark.network`.
+- **Output**: Write all test artifacts to `output/` via `tmp_path`.
+
+## ⚙️ SQLite Safety
+- **High Load**: When querying SQLite databases during heavy write activity (e.g., active pipelines), ALWAYS use read-only mode (`?mode=ro`) or query a copy of the database to prevent IO deadlocks.
+
+## 📦 Dependencies
+- Manage via `uv`: `uv add`, `uv remove`.
+- Import pattern:
+  ```python
+  from metainformant.core import io
+  from metainformant.core.utils import logging
+  from metainformant.core import utils
+  ```

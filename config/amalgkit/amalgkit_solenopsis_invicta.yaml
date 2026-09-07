@@ -1,0 +1,89 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Solenopsis invicta
+# NCBI Taxonomy ID: 13686
+# Assembly: GCF_016802725.1 (UNIL_Sinv_3.0)
+# Assembly Level: Chromosome
+# Sequencing: PacBio HiFi + Hi-C
+# Annotation: NCBI Solenopsis invicta Annotation Release 104
+# Annotation Release: 104
+# Notes: Red imported fire ant, chromosome-level with Hi-C scaffolding
+# RNA-seq Samples Available: 427
+# Generated: 2026-02-09
+
+# Paths are resolved relative to repository root
+work_dir: output/amalgkit/solenopsis_invicta/work
+log_dir: output/amalgkit/solenopsis_invicta/logs
+threads: 16
+
+auto_install_amalgkit: true
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false
+
+# Species configuration
+species_list:
+  - Solenopsis_invicta
+
+taxon_id: 13686
+
+# Reference genome configuration — shared genome directory
+genome:
+  accession: GCF_016802725.1
+  assembly_name: UNIL_Sinv_3.0
+  annotation_release: 104
+  dest_dir: output/amalgkit/shared/genome/Solenopsis_invicta
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/016/802/725/GCF_016802725.1_UNIL_Sinv_3.0/
+  files:
+    genomic_fasta: GCF_016802725.1_UNIL_Sinv_3.0_genomic.fna.gz
+    transcriptome_fasta: GCF_016802725.1_UNIL_Sinv_3.0_rna_from_genomic.fna.gz
+    cds_fasta: GCF_016802725.1_UNIL_Sinv_3.0_cds_from_genomic.fna.gz
+    protein_fasta: GCF_016802725.1_UNIL_Sinv_3.0_protein.faa.gz
+    annotation_gff: GCF_016802725.1_UNIL_Sinv_3.0_genomic.gff.gz
+
+# Per-step parameters
+steps:
+  metadata:
+    out_dir: output/amalgkit/solenopsis_invicta/work
+    search_string: '"Solenopsis invicta"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
+    redo: no
+  integrate:
+    fastq_dir: output/amalgkit/solenopsis_invicta/fastq/getfastq
+  select:
+    select_rules_tsv: config/amalgkit/select_rules.tsv
+  getfastq:
+    out_dir: output/amalgkit/solenopsis_invicta/fastq
+    threads: 16
+    redo: no
+    aws: yes
+    gcp: no
+    ncbi: no
+    fastp: no
+    max_bp: 50000000
+  quant:
+    out_dir: output/amalgkit/solenopsis_invicta/work
+    threads: 16
+    redo: no
+    build_index: no
+    clean_fastq: no
+    index_dir: output/amalgkit/shared/genome/Solenopsis_invicta/index
+    fasta_dir: output/amalgkit/shared/genome/Solenopsis_invicta
+  merge:
+    out_dir: output/amalgkit/solenopsis_invicta/work
+  wsfilter:
+    out_dir: output/amalgkit/solenopsis_invicta/work
+    input_dir: output/amalgkit/solenopsis_invicta/work/merge
+    norm: log2p1-fpkm
+    mapping_rate: 0.2
+  finalize:
+    out_dir: output/amalgkit/solenopsis_invicta/work
+    input_dir: output/amalgkit/solenopsis_invicta/work/wsfilter
+    norm: log2p1-fpkm
+    batch_effect_alg: no
+  sanity: {}

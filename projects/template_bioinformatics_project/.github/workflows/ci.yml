@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test pipeline (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Generate synthetic data
+        run: uv run scripts/99_create_synthetic_data.py --n-samples 40 --seed 1
+
+      - name: Run Stage 1 (process)
+        run: uv run scripts/01_process_data.py --force
+
+      - name: Run Stage 2 (analyze)
+        run: uv run scripts/02_analyze_results.py --force
+
+      - name: Run Stage 3 (visualize)
+        run: uv run scripts/03_visualize.py --force
+
+      - name: Run test suite
+        run: uv run pytest tests/ -v --tb=short
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-${{ matrix.python-version }}
+          path: |
+            results/
+            logs/
+          retention-days: 7

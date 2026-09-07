@@ -1,0 +1,90 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Linepithema humile
+# NCBI Taxonomy ID: 83485
+# Assembly: GCF_040581485.1 (Lhum_UNIL_v1.0)
+# Assembly Level: Chromosome
+# Sequencing: PacBio HiFi + Hi-C
+# Annotation: GCF_040581485.1-RS_2024_08
+# Annotation Release: RS_2024_08
+# Notes: Argentine ant, invasive supercolonies, chromosome-level
+# RNA-seq Samples Available: 173
+# Generated: 2026-02-09
+
+# Paths are resolved relative to repository root
+work_dir: output/amalgkit/linepithema_humile/work
+log_dir: output/amalgkit/linepithema_humile/logs
+threads: 16
+
+auto_install_amalgkit: true
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false
+
+# Species configuration
+species_list:
+  - Linepithema_humile
+
+taxon_id: 83485
+
+# Reference genome configuration — shared genome directory
+genome:
+  accession: GCF_040581485.1
+  assembly_name: Lhum_UNIL_v1.0
+  annotation_release: RS_2024_08
+  dest_dir: output/amalgkit/shared/genome/Linepithema_humile
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/040/581/485/GCF_040581485.1_Lhum_UNIL_v1.0/
+  files:
+    genomic_fasta: GCF_040581485.1_Lhum_UNIL_v1.0_genomic.fna.gz
+    transcriptome_fasta: GCF_040581485.1_Lhum_UNIL_v1.0_rna_from_genomic.fna.gz
+    cds_fasta: GCF_040581485.1_Lhum_UNIL_v1.0_cds_from_genomic.fna.gz
+    protein_fasta: GCF_040581485.1_Lhum_UNIL_v1.0_protein.faa.gz
+    annotation_gff: GCF_040581485.1_Lhum_UNIL_v1.0_genomic.gff.gz
+
+# Per-step parameters
+steps:
+  metadata:
+    out_dir: output/amalgkit/linepithema_humile/work
+    search_string: '"Linepithema humile"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
+    redo: no
+  integrate:
+    fastq_dir: output/amalgkit/linepithema_humile/fastq/getfastq
+  select:
+    select_rules_tsv: config/amalgkit/select_rules.tsv
+  getfastq:
+    out_dir: output/amalgkit/linepithema_humile/fastq
+    threads: 16
+    redo: no
+    aws: yes
+    gcp: no
+    ncbi: no
+    fastp: no
+    max_bp: 50000000
+  quant:
+    out_dir: output/amalgkit/linepithema_humile/work
+    threads: 16
+    redo: no
+    build_index: no
+    clean_fastq: no
+    index_dir: output/amalgkit/shared/genome/Linepithema_humile/index
+    fasta_dir: output/amalgkit/shared/genome/Linepithema_humile
+  merge:
+    out_dir: output/amalgkit/linepithema_humile/work
+  wsfilter:
+    out_dir: output/amalgkit/linepithema_humile/work
+    input_dir: output/amalgkit/linepithema_humile/work/merge
+    norm: log2p1-fpkm
+    mapping_rate: 0.2
+  finalize:
+    out_dir: output/amalgkit/linepithema_humile/work
+    input_dir: output/amalgkit/linepithema_humile/work/wsfilter
+    norm: log2p1-fpkm
+    batch_effect_alg: no
+    clip_negative: no
+  sanity: {}
