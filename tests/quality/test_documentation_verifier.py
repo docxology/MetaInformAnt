@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.verify_documentation_code import (
+from metainformant.quality.doc_verification import (
     CodeValidator,
     DocumentationParser,
     PythonSymbolIndex,

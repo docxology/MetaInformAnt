@@ -4,8 +4,12 @@ conftest.py — Shared pytest fixtures for the template bioinformatics project.
 All fixtures use real file I/O on temporary directories (Real-Implementation policy).
 """
 
+import sys
 import textwrap
 from pathlib import Path
+
+# Make the project's src/ library importable for direct unit tests
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 import pytest
 import yaml

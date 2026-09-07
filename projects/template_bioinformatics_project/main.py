@@ -3,7 +3,7 @@
 main.py — Top-level CLI entry point for the template bioinformatics project.
 
 Delegates to numbered pipeline scripts in scripts/ based on the --stage flag.
-All heavy computation is performed inside metainformant.* library modules.
+All heavy computation is performed inside the src/template_bioinformatics_project library modules.
 
 Usage:
     uv run main.py --stage all --config config/default.yaml

@@ -28,7 +28,7 @@ METAINFORMANT provides broad bioinformatics analysis modules across genomics, tr
 | Domain | Features |
 |--------|----------|
 | **DNA** | Sequences, alignment, phylogenetics, population genetics, variant analysis |
-| **RNA** | Amalgkit integration, ENA/SRA downloads, Kallisto quantification, and a configured 27-species Hymenoptera cohort; the sample inventory is data-root dependent |
+| **RNA** | Amalgkit integration, ENA/SRA downloads, Kallisto/Oarfish quantification, and a configured 27-species Hymenoptera cohort; the sample inventory is data-root dependent |
 | **GWAS** | Association testing, fine-mapping, visualization, complete GWAS pipelines |
 | **eQTL** | Integration of GWAS variants and Amalgkit RNA-seq expression data |
 | **Multi-omics** | Cross-omic integration, joint PCA, correlation analysis |
@@ -679,7 +679,7 @@ See [Testing Guide](docs/testing.md) for detailed testing documentation and cove
 ## Requirements
 
 - Python 3.11+
-- Optional: SRA Toolkit, kallisto (for RNA workflows)
+- Optional: SRA Toolkit, kallisto or oarfish (for RNA workflows)
 - Optional: samtools, bcftools, bwa (for GWAS)
 
 ## Contributing

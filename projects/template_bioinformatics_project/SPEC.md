@@ -13,7 +13,7 @@ This repository is the **canonical template** for new bioinformatics projects wi
 
 | Constraint | Rationale |
 | :--- | :--- |
-| Scripts are thin orchestrators | Algorithmic logic belongs in `metainformant.*` modules — not duplicated in every project |
+| Scripts are thin orchestrators | Algorithmic logic belongs in `src/` library modules — not duplicated in scripts |
 | All paths from config | Prevents environment-specific breakage; ensures reproducibility |
 | `data/raw/` is immutable | Raw data is the source of truth; never overwrite it |
 | Idempotent stages | Re-running any stage should be safe and fast (skip existing outputs) |

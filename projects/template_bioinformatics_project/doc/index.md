@@ -3,7 +3,7 @@
 Welcome to the documentation for the **MetaInformAnt Template Bioinformatics Project** — the canonical starting point for new standalone bioinformatics projects within the MetaInformAnt ecosystem.
 
 > [!NOTE]
-> This project follows the **Thin Orchestration Pattern**. All heavy computational logic lives in `metainformant.*` library modules. Scripts in `scripts/` are configurable, idempotent wrappers that delegate to these modules.
+> This project follows the **Thin Orchestration Pattern**. All heavy computational logic lives in the project's `src/template_bioinformatics_project/` library package. Scripts in `scripts/` are configurable, idempotent wrappers that delegate to these modules.
 
 ## Documentation Map
 

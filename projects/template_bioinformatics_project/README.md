@@ -14,7 +14,7 @@
 
 A **thin orchestration** bioinformatics project template.
 
-The numbered scripts in `scripts/` are lightweight wrappers that load configuration, call `metainformant.*` library functions, and write structured logs. **No algorithms live in the scripts.** All heavy computation belongs in versioned, testable library modules.
+The numbered scripts in `scripts/` are lightweight wrappers that load configuration, call the project's `src/template_bioinformatics_project/` library functions, and write structured logs. **No algorithms live in the scripts.** All heavy computation belongs in versioned, testable library modules.
 
 **Key properties:**
 
@@ -83,6 +83,8 @@ template_bioinformatics_project/
  03_visualize.py # Stage 3: distribution grid + heatmap
  99_create_synthetic_data.py # Test data generator
 
+ src/
+  template_bioinformatics_project/ # Library modules (all pipeline logic)
  results/
  figures/ # Stage 3 plots (.png / .pdf / .svg)
  tables/ # Stage 2 summary tables and JSON

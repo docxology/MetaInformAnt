@@ -1,12 +1,12 @@
 # AI Agents Documentation — Template Bioinformatics Project
 
-This project follows the **MetaInformAnt Thin Orchestration Pattern**. All heavy computational logic resides in `metainformant.*` library modules. Scripts in `scripts/` are configurable, idempotent wrappers that delegate to these modules.
+This project follows the **MetaInformAnt Thin Orchestration Pattern**. All heavy computational logic resides in the project's `src/template_bioinformatics_project/` library package. Scripts in `scripts/` are configurable, idempotent wrappers that delegate to these modules.
 
 ## Agent Responsibilities
 
 ### Code Assistant Agent
 
-- Enforces the **Thin Orchestration Pattern**: scripts call `metainformant.core`, `metainformant.dna`, `metainformant.rna`, etc. — no reimplementing algorithms inline.
+- Enforces the **Thin Orchestration Pattern**: scripts delegate to `template_bioinformatics_project.processing`, `.analysis`, `.visualization`, `.synthetic`, etc. — no reimplementing algorithms inline.
 - Validates correct API usage: function signatures, parameter names, and return types.
 - Ensures all file outputs route to `data/`, `results/`, or `logs/` — **never** the project root.
 - Maintains **Real-Implementation** compliance: all tests exercise real code against real or synthetic data.
@@ -26,12 +26,12 @@ This project follows the **MetaInformAnt Thin Orchestration Pattern**. All heavy
 
 ## Pipeline Stages
 
-| Stage | Script | Key MetaInformAnt Module |
+| Stage | Script | Key Library Module |
 | :--- | :--- | :--- |
-| 1 | `scripts/01_process_data.py` | `metainformant.core.io`, `metainformant.core.io.paths` |
-| 2 | `scripts/02_analyze_results.py` | `metainformant.core.io`, `metainformant.core.data.validation` |
-| 3 | `scripts/03_visualize.py` | `metainformant.core.io` |
-| 99 | `scripts/99_create_synthetic_data.py` | stdlib + pyyaml |
+| 1 | `scripts/01_process_data.py` | `template_bioinformatics_project.processing` |
+| 2 | `scripts/02_analyze_results.py` | `template_bioinformatics_project.analysis` |
+| 3 | `scripts/03_visualize.py` | `template_bioinformatics_project.visualization` |
+| 99 | `scripts/99_create_synthetic_data.py` | `template_bioinformatics_project.synthetic` |
 
 ## Key Standards
 

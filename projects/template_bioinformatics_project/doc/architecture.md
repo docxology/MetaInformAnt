@@ -9,10 +9,10 @@ In a **thin orchestrator**, each numbered script in `scripts/` does exactly four
 
 1. **Parse** CLI arguments (`--config`, `--force`, etc.)
 2. **Load** configuration from the YAML file
-3. **Delegate** all computation to `metainformant.*` library functions
+3. **Delegate** all computation to the project's `src/template_bioinformatics_project/` library functions
 4. **Record** provenance (timing, input/output file metadata) to `logs/`
 
-Scripts contain **no domain algorithms**. There are no hand-rolled statistical functions, no inline data-wrangling loops that belong in a library, and no hardcoded paths. If business logic is needed, it goes into the appropriate `metainformant.*` module and is imported.
+Scripts contain **no domain algorithms**. There are no hand-rolled statistical functions, no inline data-wrangling loops that belong in a library, and no hardcoded paths. If business logic is needed, it goes into the appropriate `src/template_bioinformatics_project/` module and is imported.
 
 ### Why?
 
@@ -25,7 +25,7 @@ Scripts contain **no domain algorithms**. There are no hand-rolled statistical f
 
 ## MetaInformAnt Module Mapping
 
-| Domain | MetaInformAnt Module | Use in this Template |
+| Domain | MetaInformAnt Module | When Relevant |
 | :--- | :--- | :--- |
 | I/O utilities | `metainformant.core.io` | `load_json`, `dump_json`, `read_csv`, `write_csv` |
 | Path safety | `metainformant.core.paths` | `expand_and_resolve`, `ensure_directory` |
