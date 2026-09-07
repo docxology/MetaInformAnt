@@ -218,20 +218,22 @@ def _de_deseq2_like(
         if not np.isnan(log2fc_nb):
             log2fc = log2fc_nb
 
-        # Wald statistic approximation (heuristic, NOT a calibrated Wald z):
-        # log2 fold change divided by a raw-count-scale standard error. The
-        # p-value comes from the NB test above, never from this statistic.
-        # Standard error from negative binomial model
+        # Wald statistic on the log2 scale via the delta method: the SE of a
+        # log2 fold change is derived from the NB variance (mean + dispersion
+        # * mean^2) propagated through the log transform, so the statistic is
+        # unit-consistent (z-like). The p-value comes from the NB test above,
+        # never from this statistic.
         all_counts = np.concatenate([ref_counts, treat_counts])
-        if all_counts.var() > all_counts.mean():
-            # Overdispersed - use NB variance estimate
-            dispersion = _estimate_dispersion(all_counts)
-            variance = all_counts.mean() + dispersion * all_counts.mean() ** 2
-        else:
-            variance = all_counts.mean()  # Poisson-like
+        dispersion = _estimate_dispersion(all_counts) if all_counts.var() > all_counts.mean() else 0.0
 
-        se = np.sqrt(variance / len(all_counts)) if variance > 0 else 1.0
-        wald_stat = log2fc / se if se > 0 else 0.0
+        def _se_log2_term(counts: "np.ndarray") -> float:
+            mean = counts.mean() + 0.5  # match the log2fc pseudocount
+            variance = mean + dispersion * mean**2
+            n = len(counts)
+            return float(variance / (n * mean * mean))
+
+        se_log2 = float(np.sqrt(_se_log2_term(ref_counts) + _se_log2_term(treat_counts)) / np.log(2))
+        wald_stat = float(log2fc / se_log2) if se_log2 > 0 else 0.0
 
         results.append(
             {

@@ -31,11 +31,11 @@ import matplotlib
 
 matplotlib.use("Agg")
 
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
 
-from metainformant.core.utils import logging
+from metainformant.core.utils import logging  # noqa: E402
 
 logger = logging.get_logger(__name__)
 
@@ -91,14 +91,13 @@ def compute_tau(expression: pd.DataFrame) -> pd.Series:
     retained = means > 0
     if not retained.any():
         raise ValueError("all rows have non-positive mean expression")
+    from metainformant.rna.analysis.tissue_specificity import _tau_from_matrix
+
     x = expression.loc[retained]
-    x_hat = x.div(x.max(axis=1), axis=0)
-    n = x.shape[1]
-    tau = (
-        ((1.0 - x_hat).sum(axis=1)) / (n - 1)
-        if n > 1
-        else pd.Series(0.0, index=x.index)
-    )
+    tau_values = _tau_from_matrix(x.to_numpy(dtype=float))
+    if x.shape[1] <= 1:
+        tau_values = pd.Series(0.0, index=x.index).to_numpy(dtype=float)
+    tau = pd.Series(tau_values, index=x.index)
     tau.name = "tau"
     return tau.astype(float)
 

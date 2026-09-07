@@ -10,6 +10,7 @@ from __future__ import annotations
 import concurrent.futures
 import csv
 import json
+import subprocess
 import time as time_mod
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -799,14 +800,19 @@ def execute_workflow(
             )
 
             if result.returncode != 0 and check:
-                import subprocess
-
                 raise subprocess.CalledProcessError(
                     result.returncode,
                     command_str or step_name,
                     output=getattr(result, "stdout", ""),
                     stderr=getattr(result, "stderr", ""),
                 )
+
+        except subprocess.CalledProcessError:
+            # check=True contract: the failure was already recorded as a
+            # WorkflowStepResult above with its real return code. Re-raise
+            # without the post-hoc output-validation downgrade, which would
+            # append a contradictory success result.
+            raise
 
         except Exception as e:
             error_msg = f"Exception during execution: {e}"

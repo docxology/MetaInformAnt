@@ -1167,3 +1167,53 @@ class TestEndToEndWorkflow:
             result = compute_sample_distances(log_counts, method=method)  # type: ignore[arg-type]
             assert result.shape == (6, 6)
             np.testing.assert_allclose(result.values, result.values.T, atol=1e-10)
+
+
+class TestWaldStatUnits:
+    """The Wald statistic must be unit-consistent with the log2 fold change."""
+
+    def test_wald_stat_matches_delta_method(self):
+        """stat equals log2fc divided by the delta-method SE on the log2 scale."""
+        import numpy as np
+        import pandas as pd
+
+        from metainformant.rna.analysis.expression_analysis import (
+            _de_deseq2_like,
+            _estimate_dispersion,
+        )
+
+        rng = np.random.default_rng(7)
+        counts = pd.DataFrame(
+            np.concatenate([rng.poisson(500, size=(20, 4)), rng.poisson(1500, size=(20, 4))], axis=1).astype(float),
+            columns=["r1", "r2", "r3", "r4", "t1", "t2", "t3", "t4"],
+        )
+        result = _de_deseq2_like(counts, ["r1", "r2", "r3", "r4"], ["t1", "t2", "t3", "t4"])
+
+        # Reconstruct the delta-method SE for a mid-range gene and compare.
+        row = 5
+        ref_counts = counts.iloc[row][["r1", "r2", "r3", "r4"]].to_numpy()
+        treat_counts = counts.iloc[row][["t1", "t2", "t3", "t4"]].to_numpy()
+        mean_r, mean_t = ref_counts.mean() + 0.5, treat_counts.mean() + 0.5
+        all_counts = np.concatenate([ref_counts, treat_counts])
+        dispersion = _estimate_dispersion(all_counts) if all_counts.var() > all_counts.mean() else 0.0
+        se_log2 = np.sqrt(
+            (mean_r + dispersion * mean_r**2) / (len(ref_counts) * mean_r**2)
+            + (mean_t + dispersion * mean_t**2) / (len(treat_counts) * mean_t**2)
+        ) / np.log(2)
+        log2fc = float(result.iloc[row]["log2_fold_change"])
+        expected = log2fc / se_log2 if se_log2 > 0 else 0.0
+        assert float(result.iloc[row]["stat"]) == pytest.approx(expected, rel=1e-9)
+
+    def test_wald_stat_sign_matches_log2fc(self):
+        """A down-regulated gene has a negative statistic."""
+        import numpy as np
+        import pandas as pd
+
+        from metainformant.rna.analysis.expression_analysis import _de_deseq2_like
+
+        ref = pd.DataFrame(np.full((20, 4), 2000.0), columns=["r1", "r2", "r3", "r4"])
+        treat = pd.DataFrame(np.full((20, 4), 200.0), columns=["t1", "t2", "t3", "t4"])
+        combined = pd.concat([ref, treat], axis=1)
+        result = _de_deseq2_like(combined, ref.columns.tolist(), treat.columns.tolist())
+        row = result.iloc[3]
+        assert row["log2_fold_change"] < 0 and row["stat"] < 0

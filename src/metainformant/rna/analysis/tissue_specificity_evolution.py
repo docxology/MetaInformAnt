@@ -99,12 +99,9 @@ def compute_tau(
         retained = matrix.mean(axis=1) >= float(min_mean_expression)
         matrix = matrix[retained]
 
-    row_max = matrix.max(axis=1)
-    zero_max = row_max <= 0
-    safe_max = np.where(zero_max, 1.0, row_max)
-    proportions = matrix / safe_max[:, None]
-    tau_values = (1.0 - proportions).sum(axis=1) / (matrix.shape[1] - 1)
-    tau_values = np.where(zero_max, np.nan, tau_values)
+    from metainformant.rna.analysis.tissue_specificity import _tau_from_matrix
+
+    tau_values = _tau_from_matrix(matrix)
 
     return pd.DataFrame({"tau": tau_values}, index=expression_df.index[retained])
 

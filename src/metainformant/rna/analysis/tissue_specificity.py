@@ -72,6 +72,22 @@ def filter_low_expression(
     return values.loc[keep].copy()
 
 
+def _tau_from_matrix(matrix: "np.ndarray") -> "np.ndarray":
+    """Shared tau math: per-row (1 - x/max) mean over tissues.
+
+    Zero-max rows and matrices with a single tissue yield NaN; NaN inputs
+    propagate. Callers own filtering, transforms, and error conventions.
+    """
+    n = matrix.shape[1]
+    if n <= 1:
+        return np.full(matrix.shape[0], np.nan)
+    row_max = matrix.max(axis=1)
+    safe_max = np.where(row_max > 0, row_max, 1.0)
+    proportions = matrix / safe_max[:, None]
+    tau = (1.0 - proportions).sum(axis=1) / (n - 1)
+    return np.where(row_max > 0, tau, np.nan)
+
+
 def compute_tau(
     expression_df: pd.DataFrame,
     log2: bool = True,
@@ -114,18 +130,8 @@ def compute_tau(
     if log2:
         values = np.log2(values + 1.0)
 
-    row_max = values.max(axis=1)
-    n_tissues = values.shape[1]
-
-    # NaN discipline: NaN rows propagate; do not impute.
-    with np.errstate(divide="ignore", invalid="ignore"):
-        ratios = values.div(row_max.where(row_max > 0), axis=0)
-        per_gene = (1.0 - ratios).sum(axis=1, min_count=n_tissues) / (n_tissues - 1)
-
-    tau = per_gene.where(row_max > 0)
-    if n_tissues <= 1:
-        tau = pd.Series(np.nan, index=values.index, name="tau")
-    return tau
+    tau_values = _tau_from_matrix(values.to_numpy(dtype=float))
+    return pd.Series(tau_values, index=values.index, name="tau")
 
 
 def tau_summary(tau: pd.Series) -> Dict[str, object]:
