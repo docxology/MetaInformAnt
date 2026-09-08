@@ -4,7 +4,7 @@
 Specialized agent context for the `eqtl` component.
 
 ## 🛠️ Tools & Capabilities
-- **Context**: Functionality for eqtl.
+- **Context**: Zero-mocks test suite for the `metainformant.eqtl` pipeline — parameter resolution, synthetic cohorts, variant calling, and variant statistics.
 - **Pattern**: Test Suite Pattern
 
 ## ⚠️ Rules & Constraints

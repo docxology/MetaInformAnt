@@ -1,7 +1,8 @@
 # POPGEN
 
 ## Overview
-Functionality for popgen.
+Zero-mocks tests for `metainformant.popgen.workflow.analysis` and the
+`scripts/popgen` import contract against the `src` module.
 
 ## 📦 Contents
 - `[__init__.py](__init__.py)`

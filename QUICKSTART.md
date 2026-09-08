@@ -89,7 +89,7 @@ uv pip install -e . --python /tmp/metainformant_venv/bin/python3
 # Check Python version
 python --version
 
-# Run tests
+# Run tests (full deterministic suite: 9,861 tests; deselect slow-marked tests with -m "not slow")
 pytest tests/ -v
 
 # Check package installation
@@ -158,14 +158,21 @@ plt.savefig("output/example_plot.png", dpi=300)
 # Check if amalgkit is available
 python -c "from metainformant.rna.amalgkit import check_cli_available; print(check_cli_available())"
 
-# Run end-to-end workflow for a single species (recommended)
+# Run the mandatory start-of-run campaign preflight (data-root write probe + amalgkit CLI
+# resolution; also runs automatically inside StreamingPipelineOrchestrator.run_all())
+uv run python -m metainformant.rna.engine.preflight --data-root "$AMALGKIT_DATA_ROOT"
+
+# Run end-to-end campaign (--dry-run lists the resolved species configs)
 uv run python scripts/rna/run_all_species.py \
   --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
   --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 
-# Check workflow status
+# Check workflow status (includes per-sample failure classes)
 uv run python projects/hymenoptera_amalgkit/scripts/report_campaign_status.py \
   --data-root "$AMALGKIT_DATA_ROOT"
+
+# Cohort stage accounting (fail-closed funnel over the progress DB):
+# metainformant.rna.analysis.cohort_accounting.build_cohort_funnel()
 ```
 
 ### CLI (`metainformant` entry point)
@@ -303,14 +310,17 @@ echo 'export NCBI_EMAIL="your.email@example.com"' >> ~/.bashrc
 ## Common Commands
 
 ```bash
-# Run all tests
+# Run the full deterministic suite (9,861 tests)
+bash scripts/package/test.sh --mode all
+
+# Run fast tests only (default mode)
 bash scripts/package/test.sh --mode fast
 
-# Run fast tests only
-bash scripts/package/test.sh --mode fast --fast
-
-# Check code quality
+# Check code quality (black, isort, flake8, mypy)
 bash scripts/package/uv_quality.sh
+
+# Enforce the mypy error budget (budget 0; CI runs it scoped to rna)
+python scripts/quality/check_mypy_budget.py src/metainformant/rna
 
 # Update documentation
 bash scripts/package/uv_docs.sh

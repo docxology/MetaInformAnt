@@ -2,7 +2,7 @@
 
 ## Scope
 
-Comprehensive pytest test suite for METAINFORMANT. Contains real-implementation tests covering all 25 domain modules with strict adherence to the REAL IMPLEMENTATION policy. Tests validate functionality using actual algorithms, real file I/O, and genuine API calls.
+Comprehensive pytest test suite for METAINFORMANT. Contains real-implementation tests covering all domain modules (see the generated module map in `tests/README.md` for the current per-directory counts) with strict adherence to the REAL IMPLEMENTATION policy. Tests validate functionality using actual algorithms, real file I/O, and genuine API calls.
 
 ## Architecture
 

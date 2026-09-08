@@ -3,13 +3,22 @@
 Implements the analysis-provenance and descriptive/inferential boundary
 required by
 ``projects/hymenoptera_amalgkit/docs/manuscript/statistical_analysis_plan.md``
-(sections 1, 4, 6, 8, and 9):
+(sections 1, 4, 6, 7, 8, and 9):
 
 - :class:`AnalysisProvenance` is the structured record declared before an
   analysis runs: analysis identifier, estimand, biological replicate unit,
   random seed, resampling count, null model, multiple-testing procedure
   (family, method, tested-feature count), analysis role, and software
   versions.
+- :class:`SensitivityAnalysis` registers one predeclared robustness check
+  (plan section 7): the varied parameter, its baseline and varied values,
+  and the direction the primary estimand is expected to move. Registered
+  entries are validated fail-closed and rendered as additive
+  ``analysis_provenance_sensitivity_*`` lines.
+- Records may declare the non-analysis roles ``"stopped"``/``"unavailable"``
+  (plan section 8) to record a halted or impossible analysis explicitly;
+  such a record must not declare multiplicity, cohort-denominator,
+  artifact-path, or sensitivity fields that would imply results exist.
 - Descriptive outputs (the fingerprint divergence matrix and the
   feature-resampling sensitivity table in
   :mod:`metainformant.rna.analysis.cross_species`) carry
@@ -125,6 +134,17 @@ class AnalysisProvenance:
     ``analysis_role="descriptive"``; only contracts declared
     ``analysis_role="inferential"`` with a BH-FDR procedure may be used with
     :func:`declared_inferential_bh_fdr`.
+
+    The optional reporting-contract fields (plan section 9) bind the record
+    to the data-root snapshot id, cohort inclusion/exclusion denominators,
+    exact artifact paths, the metadata-harmonization review state (plan
+    section 3), and the species-tree source and branch-length scale (plan
+    section 4); each is validated fail-closed when declared and rendered
+    only when declared. ``sensitivity_analyses`` registers frozen
+    :class:`SensitivityAnalysis` entries alongside the record. The
+    non-analysis roles ``"stopped"``/``"unavailable"`` (plan section 8)
+    record a halted analysis and must not declare any field that implies
+    results exist.
     """
 
     analysis_id: str
@@ -385,6 +405,12 @@ def render_analysis_provenance_block(record: AnalysisProvenance) -> list[str]:
     ``analysis_summary.txt`` (written by ``run_cross_species_analysis.py``),
     so they can be appended without changing existing keys. Validation runs
     first: a record that would render placeholder provenance fails closed.
+    Descriptive lanes render ``not-applicable`` for the multiplicity
+    fields; optional reporting bindings render only when declared (artifact
+    paths as ``analysis_provenance_artifact_<name>``); each registered
+    :class:`SensitivityAnalysis` renders as
+    ``analysis_provenance_sensitivity_<index>_<field>`` lines, with
+    ``notes`` only when non-empty.
 
     Returns:
         Deterministic list of ``analysis_provenance_*`` lines.
@@ -448,9 +474,10 @@ def result_role(result: Any) -> str:
     """Return the declared role of a result object, failing closed.
 
     Descriptive results produced by ``cross_species.compute_fingerprint_*``
-    carry ``attrs["role"] == "descriptive"``. Any result without an explicit
-    role marker is refused rather than being silently treated as either
-    descriptive or inferential.
+    carry ``attrs["role"] == "descriptive"``. The recognized role set also
+    covers ``"inferential"`` and the non-analysis states ``"stopped"`` and
+    ``"unavailable"``. Any result without an explicit role marker is refused
+    rather than being silently treated as either descriptive or inferential.
     """
     attrs = getattr(result, "attrs", None)
     if not isinstance(attrs, Mapping) or "role" not in attrs:

@@ -23,6 +23,7 @@ import textwrap
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
+from types import ModuleType
 from typing import Dict, List, Optional, Set
 
 # Configure logging
@@ -124,7 +125,7 @@ class Violation:
     details: str
     severity: str = "error"  # 'error', 'warning', 'info'
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.doc_file}:{self.line_number} - {self.issue_type}: {self.details}"
 
 
@@ -156,7 +157,7 @@ class PythonSymbolIndex:
 
         return ".".join(module_parts)
 
-    def build_index(self):
+    def build_index(self) -> PythonSymbolIndex:
         """Scan all Python files and build symbol index."""
         logger.info(f"Building Python symbol index from {self.src_dir}...")
 
@@ -169,7 +170,7 @@ class PythonSymbolIndex:
         logger.info(f"Indexed {len(self.symbols)} symbols across {len(self.modules)} modules")
         return self
 
-    def _parse_file(self, file_path: Path):
+    def _parse_file(self, file_path: Path) -> None:
         """Parse a single Python file and extract symbols."""
         try:
             with open(file_path, "r", encoding="utf-8") as f:
@@ -205,7 +206,9 @@ class PythonSymbolIndex:
         except Exception as e:
             logger.warning(f"Failed to parse {file_path}: {e}")
 
-    def _add_symbol(self, node, kind: str, module_name: str, file_path: Path):
+    def _add_symbol(
+        self, node: ast.ClassDef | ast.AsyncFunctionDef | ast.FunctionDef, kind: str, module_name: str, file_path: Path
+    ) -> None:
         """Add a symbol to the index."""
         name = node.name
         full_name = f"{module_name}.{name}"
@@ -224,7 +227,7 @@ class PythonSymbolIndex:
         )
         self.symbols[full_name] = symbol
 
-    def _get_signature(self, node) -> str:
+    def _get_signature(self, node: ast.AST) -> str:
         """Extract function/method signature."""
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             args = []
@@ -244,7 +247,7 @@ class PythonSymbolIndex:
                 return f"({', '.join(bases)})"
         return ""
 
-    def _extract_imports(self, tree, module_name: str):
+    def _extract_imports(self, tree: ast.Module, module_name: str) -> None:
         """Extract imports from a module."""
         imported = set()
         explicit_all = self._extract_all_exports(tree)
@@ -469,9 +472,9 @@ class CodeValidator:
     def _load_entry_points(self, pyproject: Path) -> Set[str]:
         """Load CLI entry points from pyproject.toml."""
         entry_points = set()
-        try:
+        if sys.version_info >= (3, 11):
             import tomllib
-        except ImportError:
+        else:
             import tomli as tomllib
 
         try:
@@ -498,7 +501,7 @@ class CodeValidator:
 
         return self.violations
 
-    def _validate_python_example(self, example: CodeExample):
+    def _validate_python_example(self, example: CodeExample) -> None:
         """Validate a Python code example."""
         code = example.code
 
@@ -626,7 +629,7 @@ class CodeValidator:
         root_name = module_name.split(".", 1)[0]
         return root_name in KNOWN_OPTIONAL_IMPORT_ROOTS and not self.strict_optional_imports
 
-    def _check_dotted_access(self, code: str, example: CodeExample):
+    def _check_dotted_access(self, code: str, example: CodeExample) -> None:
         """Check dotted attribute access patterns (e.g., metainformant.core.io.read_file)."""
         # Extract all dotted names from code
         # Pattern: word(.word)* where not inside string
@@ -644,7 +647,7 @@ class CodeValidator:
             # Check if the chain is valid
             self._validate_attribute_chain(dotted_name, code, example)
 
-    def _validate_attribute_chain(self, chain: str, full_code: str, example: CodeExample):
+    def _validate_attribute_chain(self, chain: str, full_code: str, example: CodeExample) -> None:
         """Validate an attribute access chain."""
         parts = chain.split(".")
         if len(parts) < 2:
@@ -666,17 +669,18 @@ class CodeValidator:
             return  # Can't resolve, skip further checks
 
         # Walk the chain
-        current = resolved
+        current: str | Symbol | ModuleType = resolved
         for i, part in enumerate(parts[1:]):
             try:
                 if isinstance(current, str):
-                    # Try to import
+                    # Try to import; bind the name first so the failure
+                    # handler can still use it for symbol lookup.
+                    name = current
                     try:
-                        module = importlib.import_module(current)
-                        current = module
+                        current = importlib.import_module(name)
                     except ImportError:
                         # Maybe it's a class/function we know
-                        symbol = self.symbol_index.get_symbol(current)
+                        symbol = self.symbol_index.get_symbol(name)
                         if symbol:
                             current = symbol
                         else:
@@ -724,7 +728,7 @@ class CodeValidator:
                 # Could not resolve - possibly dynamic or external dependency
                 break
 
-    def _resolve_name(self, name: str):
+    def _resolve_name(self, name: str) -> str | Symbol | None:
         """Resolve a simple name to a module or symbol."""
         # Check if it's a project module
         full_name = f"metainformant.{name}"
@@ -738,7 +742,7 @@ class CodeValidator:
             return symbol
         return None
 
-    def _validate_bash_example(self, example: CodeExample):
+    def _validate_bash_example(self, example: CodeExample) -> None:
         """Validate a bash/shell command example."""
         code = example.code.strip()
         lines = code.split("\n")
@@ -793,7 +797,7 @@ class ReportGenerator:
         text = value.replace("\n", " ").replace("|", "\\|")
         return text[:limit] if limit is not None else text
 
-    def generate_report(self, output_path: Path):
+    def generate_report(self, output_path: Path) -> None:
         """Write report to file."""
         # Group by file
         by_file = defaultdict(list)
@@ -812,7 +816,7 @@ class ReportGenerator:
                 return
 
             f.write("## Summary by Issue Type\n\n")
-            by_type = defaultdict(int)
+            by_type: defaultdict[str, int] = defaultdict(int)
             for v in self.violations:
                 by_type[v.issue_type] += 1
 
@@ -833,7 +837,7 @@ class ReportGenerator:
 
         logger.info(f"Report written to {output_path}")
 
-    def print_summary(self):
+    def print_summary(self) -> None:
         """Print a concise summary."""
         print(f"\n{'='*70}")
         print("CROSS-CODE VERIFICATION SUMMARY")
@@ -844,7 +848,7 @@ class ReportGenerator:
             print("✓ All code examples are valid!")
             return
 
-        by_type = defaultdict(int)
+        by_type: defaultdict[str, int] = defaultdict(int)
         for v in self.violations:
             by_type[v.issue_type] += 1
 
@@ -853,7 +857,7 @@ class ReportGenerator:
             print(f"  {issue_type}: {count}")
 
         # Show top 10 files with most issues
-        by_file = defaultdict(int)
+        by_file: defaultdict[str, int] = defaultdict(int)
         for v in self.violations:
             by_file[v.doc_file] += 1
 

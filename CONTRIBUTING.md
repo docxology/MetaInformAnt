@@ -32,7 +32,7 @@ Thank you for your interest in improving METAINFORMANT! This guide covers contri
 - **Python 3.11+ only** (no 3.10 compatibility)
 - **Type hints required** for all public functions (PEP 484)
 - **Docstrings**: Google style — parameters, returns, raises
-- **Line length**: 100 chars (not 79) — [black](https://github.com/psf/black) will format
+- **Line length**: 120 chars — [black](https://github.com/psf/black) and flake8 both enforce 120
 - **Imports**: Standard lib → third-party → local, sorted by isort
 
 ```python
@@ -52,6 +52,7 @@ from metainformant.dna.sequence import core as sequence_core
 - **One assertion per test** (one concern per test)
 - **Fixtures** in `tests/conftest.py` (reusable)
 - **Run**: `scripts/package/test.sh` (CI-parity wrapper)
+- **Markers**: `network` (real API calls), `external_tool` (external CLIs), `slow` (deselect with `-m "not slow"`), `integration`, `xdist_group` — all registered in `pyproject.toml` (`--strict-markers`)
 - **Real implementations** for internal functions — use real code ([REAL_IMPLEMENTATION_POLICY.md](docs/REAL_IMPLEMENTATION_POLICY.md))
 
 ### Commit Messages
@@ -112,7 +113,7 @@ Every feature contribution MUST include documentation update:
 - [ ] No new `TODO` comments (or `TODO(#issue)` with issue number)
 - [ ] Documentation updated (README + docs/)
 - [ ] Docstrings complete (Google style)
-- [ ] Type hints present (mypy clean)
+- [ ] Type hints present (mypy error budget 0 — gate: `scripts/quality/check_mypy_budget.py`)
 - [ ] Pre-commit hooks pass (`pre-commit run --all-files`)
 - [ ] No dead code (`vulture` optional but encouraged)
 - [ ] Branch rebased onto latest `main`

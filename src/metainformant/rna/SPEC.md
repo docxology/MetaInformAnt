@@ -34,6 +34,15 @@ are project checkpoints and require the producer lock to be released.
 - `engine.workflow` — `AmalgkitWorkflowConfig`, `load_workflow_config`,
   `plan_workflow`, and `execute_workflow`
 - `engine.provenance` — current hash-bound receipt writers and validators
+- `engine.preflight` — mandatory start-of-run campaign preflight
+  (`run_campaign_preflight`): data-root write probe and Amalgkit CLI
+  resolution; runnable as `python -m metainformant.rna.engine.preflight`
+- `analysis.cohort_accounting` — fail-closed cohort funnel
+  (`build_cohort_funnel`) over the progress DB with durable failure
+  classes and TSV rendering
+- `analysis.statistics_contract` — `SensitivityAnalysis` registry and
+  `AnalysisProvenance` bindings (validated, rendered as
+  `analysis_provenance_sensitivity_*` lines)
 - `amalgkit` — current Amalgkit version and command registry
 - `analysis` — public expression, QC, and cross-species namespaces
 

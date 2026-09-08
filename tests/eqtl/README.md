@@ -1,7 +1,8 @@
 # EQTL
 
 ## Overview
-Functionality for eqtl.
+Zero-mocks tests for the `metainformant.eqtl` eQTL pipeline: run-parameter
+resolution, synthetic cohort generation, variant calling, and variant statistics.
 
 ## 📦 Contents
 - `[__init__.py](__init__.py)`

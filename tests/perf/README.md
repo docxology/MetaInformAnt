@@ -1,7 +1,8 @@
 # PERF
 
 ## Overview
-Functionality for perf.
+Performance benchmarks and fast pytest wrappers: campaign-scale batch memory
+hygiene, ortholog bridge-table parsing/classification, and tau tissue-specificity.
 
 ## 📦 Contents
 - `[bench_batches_memory.py](bench_batches_memory.py)`

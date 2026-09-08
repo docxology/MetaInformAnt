@@ -4,7 +4,7 @@
 Specialized agent context for the `popgen` component.
 
 ## 🛠️ Tools & Capabilities
-- **Context**: Functionality for popgen.
+- **Context**: Zero-mocks tests for `metainformant.popgen.workflow.analysis` and the `scripts/popgen` import contract.
 - **Pattern**: Test Suite Pattern
 
 ## ⚠️ Rules & Constraints

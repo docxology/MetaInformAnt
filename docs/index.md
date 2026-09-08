@@ -9,10 +9,10 @@
 
 ### Current Status
 
-As of the 2026-05-25 stabilization pass, the checkout collects 7,736 tests and
-the local non-network/non-external test suite passes. Root-level audit and
-validation reports are historical snapshots; generated verification reports
-should be written under `output/`.
+As of the 2026-09-07 verification pass, the deterministic suite collects 9,861
+tests and passes, and the locked mypy 2.3.1 reports 0 errors across 693 source
+files (quality budget gate = 0). Root-level audit and validation reports are
+historical snapshots; generated verification reports should be written under `output/`.
 
 ```mermaid
 graph TD
@@ -79,11 +79,12 @@ graph TD
 |----------|--------|-------------|--------------|
 | **Core** | [core](core/) | Shared utilities and infrastructure | Configuration, I/O, logging, parallel processing, caching |
 | **DNA** | [dna](dna/) | Genomic sequence analysis | Sequences, alignment, phylogeny, population genetics |
-| **RNA** | [rna](rna/) | Transcriptomic analysis | RNA-seq workflows, amalgkit integration |
+| **RNA** | [rna](rna/) | Transcriptomic analysis | RNA-seq workflows, amalgkit integration, campaign preflight, cohort accounting, predeclared statistics contract, orthology bridge |
 | **Protein** | [protein](protein/) | Protein structure and function | Sequences, AlphaFold integration, proteomics |
 | **Epigenome** | [epigenome](epigenome/) | Epigenetic modifications | Methylation, ChIP-seq, chromatin accessibility |
 | **GWAS** | [gwas](gwas/) | Genome-wide association studies | Association testing, quality control, visualization |
 | **Math** | [math](math/) | Mathematical biology | Population genetics theory, coalescent models |
+| **Popgen** | [popgen](../src/metainformant/popgen/README.md) | Population genetics methods | Summary statistics, neutrality tests, Fst, genotype structure, LD |
 | **ML** | [ml](ml/) | Machine learning pipelines | Classification, regression, feature selection |
 | **Information** | [information](information/) | Information theory | Entropy, mutual information, semantic similarity |
 | **Networks** | [networks](networks/) | Biological networks | PPI, pathways, community detection |
@@ -104,7 +105,7 @@ graph TD
 | **Pharmacogenomics** | [pharmacogenomics](pharmacogenomics/) | Clinical genomics | Drug-gene interactions, variant interpretation |
 | **Metabolomics** | [metabolomics](metabolomics/) | Metabolomic analysis | MS data processing, pathway mapping |
 | **eQTL** | [eqtl](eqtl/) | eQTL integration *(cross-cutting)* | RNA×GWAS integration — logic in `gwas` and `multiomics` |
-| **MCP** | [mcp](mcp/) | MCP helper package | Standalone Amalgkit monitor; server not implemented |
+| **MCP** | [mcp](mcp/) | Model Context Protocol server | stdio JSON-RPC 2.0, schema-validated tool registry |
 | **Menu** | [menu](menu/) | Interactive navigation | CLI menu system, workflow discovery |
 
 
@@ -297,7 +298,7 @@ cli
 SPEC
 ORCHESTRATION
 COMPARISON_GUIDES
-real-implementation policy
+REAL_IMPLEMENTATION_POLICY
 ```
 
 ### Module Documentation

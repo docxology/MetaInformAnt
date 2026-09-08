@@ -4,7 +4,7 @@ tests for the spatial module.
 Files (verified 2026-09-05): __init__.py, test_spatial_analysis.py, test_spatial_autocorrelation.py,
 test_spatial_communication.py, test_spatial_deconvolution_advanced.py, test_spatial_domains_deconv_niche.py,
 test_spatial_integration.py, test_spatial_io.py, test_spatial_neighborhood.py, test_spatial_svg.py,
-test_spatial_visualization.py (11 test files).
+test_spatial_visualization.py (10 test files plus `__init__.py`).
 
 
 ## Conventions

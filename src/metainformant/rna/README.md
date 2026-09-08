@@ -37,6 +37,9 @@ validation.
 | `metainformant.rna.engine.progress_db.ProgressDB` | SQLite-backed sample state and resume queries |
 | `metainformant.rna.engine.workflow` | Typed configuration, planning, and step execution |
 | `metainformant.rna.engine.provenance` | Hash-bound metadata, quantification, and downstream receipts |
+| `metainformant.rna.engine.preflight` | Mandatory start-of-run campaign preflight: data-root write probe and Amalgkit CLI resolution (`run_campaign_preflight`; also `python -m metainformant.rna.engine.preflight`) |
+| `metainformant.rna.analysis.cohort_accounting` | Fail-closed cohort funnel over the progress DB (`build_cohort_funnel`): configured → with_progress → quantified/failed/excluded/pending/active with durable failure classes |
+| `metainformant.rna.analysis.statistics_contract` | Inferential contract: Benjamini–Hochberg FDR, validated `AnalysisProvenance`, and the `SensitivityAnalysis` registry rendered as `analysis_provenance_sensitivity_*` lines |
 | `metainformant.rna.amalgkit` | Version-pinned Amalgkit command registry and wrappers |
 | `metainformant.rna.analysis` | Expression, QC, cross-species, and validation analyses |
 

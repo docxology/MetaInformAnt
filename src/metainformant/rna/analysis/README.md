@@ -11,7 +11,8 @@ RNA-seq expression analysis including normalization, differential expression, qu
 | `qc_metrics.py` | Sample/gene QC metrics, outlier detection, library complexity, saturation curves |
 | `qc_filtering.py` | Batch effect detection, GC bias, length bias, and QC report generation |
 | `cross_species.py` | Ortholog mapping, expression conservation, divergence matrices, cross-species PCA |
-| `statistics_contract.py` | Predeclared analysis-provenance records, descriptive/inferential role separation, BH-FDR helper with gated inferential wrapper, and fail-closed orthology/species-tree invariants |
+| `statistics_contract.py` | Predeclared analysis-provenance records, descriptive/inferential role separation, BH-FDR helper with gated inferential wrapper, fail-closed orthology/species-tree invariants, optional reporting bindings (data-root snapshot id, cohort denominators, artifact paths, metadata-harmonization review state, species-tree source/scale), a predeclared `SensitivityAnalysis` registry, and explicit `stopped`/`unavailable` non-analysis roles |
+| `cohort_accounting.py` | Cohort funnel accounting from the campaign progress DB and the per-species amalgkit config directory: frozen `FunnelReport` snapshots, durable failure-class reason codes, `cohort_funnel_<stage>` summary lines, and byte-deterministic TSV output |
 | `atlas_plots.py` | Atlas-style figures: species x tissue tau heatmap, per-orthogroup cross-species profile small multiples, tau-by-orthology-class strip plots (descriptive statistics only) |
 | `protein_integration.py` | Translation efficiency, protein abundance prediction, ribosome profiling |
 | `validation.py` | Pipeline validation: per-sample status checks and end-to-end reports |
@@ -37,9 +38,13 @@ RNA-seq expression analysis including normalization, differential expression, qu
 | `calculate_translation_efficiency()` | Estimate translation efficiency from RNA and protein data using `ratio` or `correlation` |
 | `predict_protein_abundance_from_rna()` | Predict protein abundance from RNA with the implemented `linear` method |
 | `validate_all_samples()` | Check pipeline completion status for every sample |
-| `AnalysisProvenance` | Frozen predeclared record: analysis id, estimand, replicate unit, seed, resampling count, null model, multiplicity family/method, tested-feature count, role, software versions |
-| `validate_analysis_provenance()` | Fail-closed validation of a provenance record; role-conditional fields (family/method/feature count) must be `None`/`'not-applicable'` exactly for descriptive records and declared exactly for inferential ones |
-| `render_analysis_provenance_block()` | Render additive `analysis_provenance_*: value` lines for `analysis_summary.txt`; descriptive lanes render `not-applicable` |
+| `AnalysisProvenance` | Frozen predeclared record: analysis id, estimand, replicate unit, seed, resampling count, null model, multiplicity family/method, tested-feature count, role, software versions, plus optional fail-closed-when-declared reporting bindings (data-root snapshot id, cohort included/excluded counts, artifact paths, metadata-harmonization review state, species-tree source and branch-length scale), a frozen `SensitivityAnalysis` registry, and the non-analysis roles `stopped`/`unavailable` |
+| `validate_analysis_provenance()` | Fail-closed validation of a provenance record; role-conditional fields (family/method/feature count) must be `None`/`'not-applicable'` exactly for descriptive records and declared exactly for inferential ones; `stopped`/`unavailable` records must not declare multiplicity, cohort-denominator, artifact-path, or sensitivity fields |
+| `render_analysis_provenance_block()` | Render additive `analysis_provenance_*: value` lines for `analysis_summary.txt`; descriptive lanes render `not-applicable`; registered sensitivity analyses render as `analysis_provenance_sensitivity_<index>_<field>` lines |
+| `validate_sensitivity_analysis()` | Fail-closed validation of a registered `SensitivityAnalysis`: declared name/varied parameter/baseline, non-empty `varied_values`, and `expected_direction` in {increase, decrease, either, none} |
+| `build_cohort_funnel()` | Build the cohort funnel from the progress DB (read-only) and the per-species amalgkit config directory; raises `CohortFunnelError` on missing inputs, a DB without a `samples` table, or a DB exceeding the optional `max_gb` guard |
+| `FunnelReport` | Frozen funnel snapshot: stage counts in `STAGE_NAMES` order (`configured`, `with_progress`, `quantified_runs`, `failed_runs`, `excluded_runs`, `pending_runs`, `active_runs`), durable failure-class `reason_codes`, and source `db_path`/`config_dir`; `to_tsv()` writes a byte-deterministic two-column TSV |
+| `render_funnel_lines()` | Render additive `cohort_funnel_<stage>: <count>` lines in `STAGE_NAMES` order |
 | `benjamini_hochberg_fdr()` | Benjamini-Hochberg FDR adjustment with fail-closed input validation |
 | `declared_inferential_bh_fdr()` | GATED inferential path: requires `evidence_manifest_frozen=True` and a validated `analysis_role="inferential"` BH-FDR contract whose family size matches; returns raw plus adjusted p-values |
 | `result_role()` | Return a result's declared role; refuses unlabeled output |
@@ -68,7 +73,7 @@ translation_efficiency = calculate_translation_efficiency(rna_expression, protei
 
 ## Validation Notes
 
-- Cross-species fingerprint outputs (divergence matrix, feature-resampling stability) carry `attrs["role"] = "descriptive"` and never contain p-values; the only inferential path is the gated `declared_inferential_bh_fdr()`, which refuses to run without a frozen evidence manifest and a validated inferential contract. Provenance validation and the orthology/tree invariants fail closed on missing or placeholder declarations.
+- Cross-species fingerprint outputs (divergence matrix, feature-resampling stability) carry `attrs["role"] = "descriptive"` and never contain p-values; the only inferential path is the gated `declared_inferential_bh_fdr()`, which refuses to run without a frozen evidence manifest and a validated inferential contract. Provenance validation and the orthology/tree invariants fail closed on missing or placeholder declarations. Sensitivity registrations and optional reporting bindings are validated fail-closed when declared; `stopped`/`unavailable` records document a halted analysis without result-implying fields.
 - Count/QC matrices must be numeric, finite, and non-negative where raw counts are expected.
 - Batch labels must include every expression sample; labels for extra samples are ignored.
 - GC content values for matched genes must be in `[0, 1]`; matched gene lengths must be positive.

@@ -4,7 +4,7 @@
 Specialized agent context for the `perf` component.
 
 ## 🛠️ Tools & Capabilities
-- **Context**: Functionality for perf.
+- **Context**: Performance benchmarks and fast pytest wrappers for batch memory hygiene, ortholog bridge-table classification, and tau tissue-specificity.
 - **Pattern**: Test Suite Pattern
 
 ## ⚠️ Rules & Constraints
