@@ -21,8 +21,8 @@ from metainformant.core.utils.logging import get_logger
 
 from .diplotype import (
     _ACTIVITY_SCORE_TABLES,
-    _normalize_allele_name,
     Diplotype,
+    _normalize_allele_name,
     determine_diplotype,
 )
 

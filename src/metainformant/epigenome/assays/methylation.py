@@ -355,11 +355,7 @@ def find_differentially_methylated_regions(
                 p_value = 1.0
 
             if delta >= delta_threshold and p_value <= p_value_threshold:
-                gap_ok = (
-                    max_gap is None
-                    or current_dmr is None
-                    or pos - current_dmr["end"] <= max_gap
-                )
+                gap_ok = max_gap is None or current_dmr is None or pos - current_dmr["end"] <= max_gap
                 if current_dmr is not None and not gap_ok:
                     # Flush the current DMR before starting a new one
                     if len(current_dmr["sites"]) >= min_sites:

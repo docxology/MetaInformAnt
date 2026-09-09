@@ -109,9 +109,7 @@ class TestTauHeatmap:
         assert result == out
         _assert_png_sane(out)
 
-    def test_deterministic_ordering_independent_of_input_order(
-        self, tmp_path: Path
-    ) -> None:
+    def test_deterministic_ordering_independent_of_input_order(self, tmp_path: Path) -> None:
         frame = _synthetic_tau_frame()
         shuffled = frame.loc[reversed(list(frame.index)), reversed(list(frame.columns))]
         out_a = tmp_path / "a.png"

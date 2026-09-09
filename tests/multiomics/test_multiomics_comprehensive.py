@@ -6,8 +6,9 @@ and integration workflows.
 
 from __future__ import annotations
 
-from pathlib import Path
 import re
+from pathlib import Path
+
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,7 +22,6 @@ from metainformant.multiomics.analysis.integration import (
     joint_nmf,
     joint_pca,
 )
-
 from metainformant.multiomics.visualization.visualization import (
     plot_multiomics_correlation_heatmap,
     plot_omics_layer_comparison,

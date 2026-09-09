@@ -22,9 +22,9 @@ from __future__ import annotations
 
 from typing import List
 
-from metainformant.core.utils.errors import ValidationError
-
 import matplotlib
+
+from metainformant.core.utils.errors import ValidationError
 
 matplotlib.use("Agg")
 

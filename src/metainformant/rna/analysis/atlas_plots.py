@@ -140,9 +140,7 @@ def plot_tau_heatmap(
         clustering, so the same input frame always yields the same layout.
     """
     _validate_tau_frame(tau)
-    ordered = tau.reindex(
-        index=_sorted_labels(tau.index), columns=_sorted_labels(tau.columns)
-    )
+    ordered = tau.reindex(index=_sorted_labels(tau.index), columns=_sorted_labels(tau.columns))
     path = _resolve_output_path(output_path)
 
     fig, ax = plt.subplots(
@@ -219,9 +217,7 @@ def plot_orthogroup_small_multiples(
         raise ValueError(f"expression frame missing columns: {sorted(missing)}")
     if expression.empty:
         raise ValueError("expression frame is empty")
-    if (expression["expression"] < 0).any() or not np.isfinite(
-        expression["expression"].to_numpy(dtype=float)
-    ).all():
+    if (expression["expression"] < 0).any() or not np.isfinite(expression["expression"].to_numpy(dtype=float)).all():
         raise ValueError("expression values must be finite and non-negative")
 
     path = _resolve_output_path(output_path)
@@ -232,21 +228,13 @@ def plot_orthogroup_small_multiples(
         raise ValueError("no orthogroups to render")
 
     species_order = _sorted_labels(expression["species"].unique())
-    color_map = {
-        sp: OKABE_ITO[i % len(OKABE_ITO)] for i, sp in enumerate(species_order)
-    }
-    tissue_order = (
-        list(tissues)
-        if tissues is not None
-        else _sorted_labels(expression["tissue"].unique())
-    )
+    color_map = {sp: OKABE_ITO[i % len(OKABE_ITO)] for i, sp in enumerate(species_order)}
+    tissue_order = list(tissues) if tissues is not None else _sorted_labels(expression["tissue"].unique())
 
     n = len(orthogroups)
     ncols = min(3, n)
     nrows = int(np.ceil(n / ncols))
-    fig, axes = plt.subplots(
-        nrows, ncols, figsize=(4 * ncols, 3 * nrows), squeeze=False, sharex=True
-    )
+    fig, axes = plt.subplots(nrows, ncols, figsize=(4 * ncols, 3 * nrows), squeeze=False, sharex=True)
     x_pos = np.arange(len(tissue_order))
 
     for idx, og in enumerate(orthogroups):
@@ -346,16 +334,12 @@ def plot_tau_orthology_strips(
         y = sub[tau_column].to_numpy(dtype=float)
         color, hatch = ORTHOLOGY_CLASS_STYLE.get(str(cls), _DEFAULT_FALLBACK_STYLE)
         jitter = rng.uniform(-0.12, 0.12, size=len(y))
-        ax.scatter(
-            i + jitter, y, s=10, color=color, alpha=0.5, edgecolors="none", zorder=1
-        )
+        ax.scatter(i + jitter, y, s=10, color=color, alpha=0.5, edgecolors="none", zorder=1)
         q1, median, q3 = (float(np.quantile(y, q)) for q in (0.25, 0.5, 0.75))
         ax.hlines([q1, q3], i - 0.22, i + 0.22, color=color, linewidth=2.0, zorder=3)
         ax.hlines([median], i - 0.3, i + 0.3, color="#111111", linewidth=2.0, zorder=4)
         # Text redundancy: print the median value next to each class strip.
-        ax.text(
-            i + 0.34, median, f"{median:.2f}", va="center", fontsize=7, color="#111111"
-        )
+        ax.text(i + 0.34, median, f"{median:.2f}", va="center", fontsize=7, color="#111111")
 
     # Legend swatches carry both fill and hatch so the class key survives
     # grayscale reproduction.
@@ -378,9 +362,7 @@ def plot_tau_orthology_strips(
     ax.set_ylabel("tau")
     ax.set_ylim(-0.02, 1.02)
     ax.set_yticks(np.linspace(0.0, 1.0, 6))
-    ax.set_title(
-        "Tissue specificity by orthology class\n(descriptive quantiles; no inferential statistics)"
-    )
+    ax.set_title("Tissue specificity by orthology class\n(descriptive quantiles; no inferential statistics)")
     for spine in ("top", "right"):
         ax.spines[spine].set_visible(False)
 

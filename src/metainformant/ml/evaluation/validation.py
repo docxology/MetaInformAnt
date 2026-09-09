@@ -30,9 +30,7 @@ except ImportError:
     logger.warning("scikit-learn not available, ML validation disabled")
 
 
-def _make_cv_splitter(
-    y: np.ndarray, cv: int, random_state: int | None
-) -> "StratifiedKFold | KFold":
+def _make_cv_splitter(y: np.ndarray, cv: int, random_state: int | None) -> "StratifiedKFold | KFold":
     """Choose stratified folds for classification-like targets, KFold otherwise."""
     if len(np.unique(y)) < 20:  # Classification-like
         return StratifiedKFold(n_splits=cv, shuffle=True, random_state=random_state)

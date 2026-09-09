@@ -58,10 +58,7 @@ class TestGenerateConfigYaml:
         assert "GCF_000001405.40" in yaml_content
         assert "genome:" in yaml_content
         # Exact NCBI standard segmentation: prefix/3+3+3 digits/accession
-        assert (
-            "ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.40"
-            in yaml_content
-        )
+        assert "ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.40" in yaml_content
 
     def test_generate_config_yaml_with_repo_root(self):
         """Test generate_config_yaml with repo_root parameter."""

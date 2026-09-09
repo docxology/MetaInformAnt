@@ -19,7 +19,6 @@ from pathlib import Path
 import pytest
 
 from metainformant.core.utils.errors import ValidationError
-
 from metainformant.epigenome.assays.methylation import (
     MethylationSite,
     calculate_methylation_entropy,

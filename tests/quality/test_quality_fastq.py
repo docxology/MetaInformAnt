@@ -520,10 +520,7 @@ class TestReadFastqRecords:
     """Streaming reader handles plain and gzip input, and error paths."""
 
     def _write_fixtures(self, tmp_path):
-        text = (
-            "@r1 desc\nACGTACGTAC\n+\nIIIIIIIIII\n"
-            "@r2 desc\nGGTTAAGGCC\n+\nHHHHHHHHHH\n"
-        )
+        text = "@r1 desc\nACGTACGTAC\n+\nIIIIIIIIII\n" "@r2 desc\nGGTTAAGGCC\n+\nHHHHHHHHHH\n"
         plain = tmp_path / "sample.fastq"
         plain.write_text(text)
         gz = tmp_path / "sample.fastq.gz"

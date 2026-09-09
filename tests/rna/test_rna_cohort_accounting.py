@@ -8,9 +8,9 @@ from pathlib import Path
 import pytest
 
 from metainformant.rna.analysis.cohort_accounting import (
+    STAGE_NAMES,
     CohortFunnelError,
     FunnelReport,
-    STAGE_NAMES,
     build_cohort_funnel,
     iter_failure_trend_rows,
     render_funnel_lines,
@@ -77,9 +77,7 @@ def _write_progress_db(root: Path, *, with_exclusions: bool = True) -> Path:
     connection = sqlite3.connect(db_path)
     try:
         connection.execute(SAMPLES_SCHEMA)
-        connection.executemany(
-            "INSERT INTO samples (species, srr_id, state, error) VALUES (?, ?, ?, ?)", SAMPLE_ROWS
-        )
+        connection.executemany("INSERT INTO samples (species, srr_id, state, error) VALUES (?, ?, ?, ?)", SAMPLE_ROWS)
         if with_exclusions:
             connection.execute(EXCLUSIONS_SCHEMA)
             connection.executemany(
@@ -145,9 +143,7 @@ def test_render_funnel_lines_order_and_format(tmp_path: Path) -> None:
 
     lines = render_funnel_lines(report)
 
-    assert lines == [
-        f"cohort_funnel_{name}: {_expected_stage_counts()[name]}" for name in STAGE_NAMES
-    ]
+    assert lines == [f"cohort_funnel_{name}: {_expected_stage_counts()[name]}" for name in STAGE_NAMES]
     assert lines[0] == "cohort_funnel_configured: 2"
     assert lines[-1] == "cohort_funnel_active_runs: 2"
 

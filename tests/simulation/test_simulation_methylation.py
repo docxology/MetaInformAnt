@@ -73,9 +73,7 @@ class TestSimulateMethylation:
         """Test that DMRs cover whole regions and match dmr_fraction."""
         config = _small_config(dmr_fraction=0.5)
         dataset = simulate_methylation(config)
-        region_sizes = (
-            [50] * config.n_cpg_islands + [20] * config.n_gene_body_regions + [30] * config.n_promoters
-        )
+        region_sizes = [50] * config.n_cpg_islands + [20] * config.n_gene_body_regions + [30] * config.n_promoters
         assert sum(region_sizes) == len(dataset.site_types)
 
         # The mask must be constant within each region

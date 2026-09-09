@@ -339,11 +339,7 @@ class TestAcrossSpeciesOrchestrator:
         # contains genes of both, so the (spX, ref) pair map is empty/missing.
         table = tmp_path / "disjoint_orthologs.tsv"
         table.write_text(
-            "Orthogroup\tref_species\tspX\n"
-            "OG1\tref_g1\t\n"
-            "OG2\tref_g2\t\n"
-            "OG3\t\tspx_g1\n"
-            "OG4\t\tspx_g2\n"
+            "Orthogroup\tref_species\tspX\n" "OG1\tref_g1\t\n" "OG2\tref_g2\t\n" "OG3\t\tspx_g1\n" "OG4\t\tspx_g2\n"
         )
         ref_expr = pd.DataFrame({"s1": [1.0, 2.0]}, index=["ref_g1", "ref_g2"])
         ref_path = tmp_path / "ref.tsv"

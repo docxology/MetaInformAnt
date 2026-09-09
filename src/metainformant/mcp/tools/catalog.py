@@ -54,9 +54,7 @@ def iter_tool_specs() -> Iterator[dict[str, Any]]:
             if spec is not None:
                 specs = [spec]
         if not specs:
-            raise ValueError(
-                f"module {module_name!r} declares no TOOL_SPEC/ALL_SPECS constant"
-            )
+            raise ValueError(f"module {module_name!r} declares no TOOL_SPEC/ALL_SPECS constant")
         yield from specs
 
 

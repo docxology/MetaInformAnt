@@ -10,7 +10,7 @@ import re
 import stat
 import zipfile
 from pathlib import Path
-from typing import Any, BinaryIO, Dict, IO, List
+from typing import IO, Any, BinaryIO, Dict, List
 
 import requests
 
@@ -936,6 +936,7 @@ Study information:
         metadata_file = study_dir / f"{study_accession}_metadata.json"
         with open(metadata_file, "w") as f:
             import json
+
             import pandas as pd
 
             json.dump(

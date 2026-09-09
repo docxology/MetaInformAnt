@@ -10,7 +10,6 @@ reproducibility, and no network.
 
 from __future__ import annotations
 
-
 import pytest
 
 from metainformant.simulation.benchmark.generators import (

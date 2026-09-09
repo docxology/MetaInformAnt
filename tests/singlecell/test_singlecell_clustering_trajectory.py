@@ -16,6 +16,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
+from scipy import sparse
 
 from metainformant.singlecell.analysis.clustering import (
     HAS_IGRAPH,
@@ -32,7 +33,6 @@ from metainformant.singlecell.analysis.clustering import (
     leiden_clustering,
     louvain_clustering,
 )
-from scipy import sparse
 from metainformant.singlecell.analysis.trajectory import (
     compute_diffusion_pseudotime,
     compute_pseudotime_from_dimensionality_reduction,

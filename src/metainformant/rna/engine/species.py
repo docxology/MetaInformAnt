@@ -7,7 +7,6 @@ from drifting apart or silently omitting newly added configurations.
 
 from __future__ import annotations
 
-
 from pathlib import Path
 
 _NON_SPECIES_MARKERS = ("template", "test", "cross_species")

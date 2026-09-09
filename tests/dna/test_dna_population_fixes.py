@@ -12,9 +12,12 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pytest  # noqa: E402
 
-from metainformant.dna.population import analysis, core  # noqa: E402
-from metainformant.dna.population import visualization_core as vizcore  # noqa: E402
-from metainformant.dna.population import visualization_stats as vizstats  # noqa: E402
+from metainformant.dna.population import (  # noqa: E402
+    analysis,
+    core,
+    visualization_core as vizcore,
+    visualization_stats as vizstats,
+)
 
 
 class TestLinkageDisequilibrium:
@@ -47,9 +50,7 @@ class TestLinkageDisequilibrium:
         # haplotype pairing shifted; now only fully valid sequences pair.
         noisy = ["AT", "NT", "AN", "GC"]
         kept_only = ["AT", "GC"]
-        assert core.linkage_disequilibrium(noisy, 0, 1) == pytest.approx(
-            core.linkage_disequilibrium(kept_only, 0, 1)
-        )
+        assert core.linkage_disequilibrium(noisy, 0, 1) == pytest.approx(core.linkage_disequilibrium(kept_only, 0, 1))
 
 
 class TestFayWuH:

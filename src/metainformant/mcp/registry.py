@@ -65,9 +65,7 @@ def validate_json_schema(schema: Mapping[str, Any]) -> None:
             for item in enum_values:
                 # bool must not satisfy integer/number enum slots.
                 if isinstance(item, bool) or not isinstance(item, allowed):
-                    raise SchemaError(
-                        f"property {name!r} enum values must match declared type {prop_type!r}"
-                    )
+                    raise SchemaError(f"property {name!r} enum values must match declared type {prop_type!r}")
     required = schema.get("required", [])
     if not isinstance(required, list) or not all(isinstance(item, str) for item in required):
         raise SchemaError("schema 'required' must be an array of property names")

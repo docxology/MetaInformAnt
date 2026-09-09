@@ -69,10 +69,7 @@ class TestInsertSizeEstimation:
         assert stats.median == 400.0
 
     def test_estimate_from_data(self) -> None:
-        reads = [
-            {"chrom": "chr1", "mate_chrom": "chr1", "insert_size": s}
-            for s in (300, 400, 500)
-        ]
+        reads = [{"chrom": "chr1", "mate_chrom": "chr1", "insert_size": s} for s in (300, 400, 500)]
         stats = _estimate_insert_size(reads)
         assert stats.mean == pytest.approx(400.0)
         assert stats.std == pytest.approx(100.0)

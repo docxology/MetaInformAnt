@@ -7,13 +7,12 @@ from typing import Any, Dict, List
 
 import numpy as np
 
-from tests._support.synth import make_assoc_results
-
 from metainformant.gwas.visualization.interactive.composite import (
     gwas_summary_panel,
     population_structure_panel,
     top_hit_detail_panel,
 )
+from tests._support.synth import make_assoc_results
 
 # ---------------------------------------------------------------------------
 # Helpers for synthetic data generation

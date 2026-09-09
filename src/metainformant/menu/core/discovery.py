@@ -115,9 +115,7 @@ def _extract_python_metadata(script_path: Path) -> tuple[str, list[str], list[st
                         # Try to extract argument info
                         for keyword in node.keywords:
                             if keyword.arg in ("dest", "name"):
-                                if isinstance(keyword.value, ast.Constant) and isinstance(
-                                    keyword.value.value, str
-                                ):
+                                if isinstance(keyword.value, ast.Constant) and isinstance(keyword.value.value, str):
                                     arg_name = keyword.value.value
                                     # Check if required
                                     is_required = True

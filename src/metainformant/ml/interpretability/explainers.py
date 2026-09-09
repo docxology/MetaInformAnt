@@ -11,6 +11,7 @@ from __future__ import annotations
 import math
 import random
 from typing import Any
+
 from metainformant.core.utils.logging import get_logger
 from metainformant.ml._numeric import HAS_NUMPY, get_shape, to_1d_list, to_2d_list
 

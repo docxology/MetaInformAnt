@@ -398,16 +398,25 @@ class TestRelativeAbundanceRankAggregation:
     def test_aggregates_by_phylum(self) -> None:
         taxa = [
             TaxonProfile(
-                "t1", "Firmicutes", "phylum",
-                lineage=[("domain", "Bacteria"), ("phylum", "Firmicutes")], read_count=60,
+                "t1",
+                "Firmicutes",
+                "phylum",
+                lineage=[("domain", "Bacteria"), ("phylum", "Firmicutes")],
+                read_count=60,
             ),
             TaxonProfile(
-                "t2", "Bacilli", "class",
-                lineage=[("domain", "Bacteria"), ("phylum", "Firmicutes"), ("class", "Bacilli")], read_count=20,
+                "t2",
+                "Bacilli",
+                "class",
+                lineage=[("domain", "Bacteria"), ("phylum", "Firmicutes"), ("class", "Bacilli")],
+                read_count=20,
             ),
             TaxonProfile(
-                "t3", "Proteobacteria", "phylum",
-                lineage=[("domain", "Bacteria"), ("phylum", "Proteobacteria")], read_count=20,
+                "t3",
+                "Proteobacteria",
+                "phylum",
+                lineage=[("domain", "Bacteria"), ("phylum", "Proteobacteria")],
+                read_count=20,
             ),
         ]
         profile = CommunityProfile(taxa=taxa, classified_reads=100)

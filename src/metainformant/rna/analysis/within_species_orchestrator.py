@@ -13,7 +13,6 @@ import pandas as pd
 from metainformant.core.utils import logging
 from metainformant.rna.analysis.expression_analysis import differential_expression, pca_analysis, prepare_volcano_data
 
-
 DEFAULT_CONDITION_COLUMNS: tuple[str, ...] = ("tissue", "sex", "caste", "developmental_stage")
 logger = logging.get_logger(__name__)
 

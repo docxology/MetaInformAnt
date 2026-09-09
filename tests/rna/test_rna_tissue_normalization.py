@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 import yaml
+
 # Paths
 SCRIPT_PATH = Path("scripts/rna/normalize_tissue_metadata.py")
 MAPPING_PATH = Path("config/amalgkit/tissue_mapping.yaml")

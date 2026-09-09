@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import gzip
 from pathlib import Path
-from typing import Any, Callable, Dict, IO, Iterator, Tuple
+from typing import IO, Any, Callable, Dict, Iterator, Tuple
 
 from metainformant.core.utils import logging
 

@@ -99,9 +99,7 @@ class TestFindQuantificationFile:
         (quant_dir / "abundance.tsv").write_text("target\tcount\n", encoding="utf-8")
         (quant_dir / "SRR1_abundance.tsv").write_text("later\n", encoding="utf-8")
         (quant_dir / "quant.sf").write_text("later_still\n", encoding="utf-8")
-        assert find_quantification_file(quant_dir, sample_id="SRR1") == (
-            quant_dir / "abundance.tsv"
-        )
+        assert find_quantification_file(quant_dir, sample_id="SRR1") == (quant_dir / "abundance.tsv")
 
     def test_require_nonempty_skips_zero_byte_files(self, tmp_path: Path) -> None:
         """require_nonempty=True skips zero-byte candidates, returns non-empty."""
@@ -109,9 +107,7 @@ class TestFindQuantificationFile:
         quant_dir.mkdir()
         (quant_dir / "abundance.tsv").write_text("", encoding="utf-8")
         (quant_dir / "quant.sf").write_text("gene_id\tTPM\n", encoding="utf-8")
-        assert find_quantification_file(quant_dir, sample_id="SRR1") == (
-            quant_dir / "quant.sf"
-        )
+        assert find_quantification_file(quant_dir, sample_id="SRR1") == (quant_dir / "quant.sf")
 
     def test_require_nonempty_false_returns_zero_byte_file(self, tmp_path: Path) -> None:
         """require_nonempty=False accepts a zero-byte candidate."""
@@ -126,9 +122,7 @@ class TestFindQuantificationFile:
         quant_dir = tmp_path / "SRR1"
         quant_dir.mkdir()
         (quant_dir / "SRR1_abundance.tsv").write_text("target\tcount\n", encoding="utf-8")
-        assert find_quantification_file(quant_dir, sample_id="SRR1") == (
-            quant_dir / "SRR1_abundance.tsv"
-        )
+        assert find_quantification_file(quant_dir, sample_id="SRR1") == (quant_dir / "SRR1_abundance.tsv")
 
     def test_returns_none_on_empty_dir(self, tmp_path: Path) -> None:
         """An empty quantification directory yields None."""

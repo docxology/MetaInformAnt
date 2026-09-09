@@ -2015,9 +2015,7 @@ def test_invalid_run_rows_are_excluded_and_ledgered(tmp_path: Path) -> None:
     assert set(ledger_df["invalid_run_reason"]) == {"missing_or_invalid_run_accession"}
 
 
-def test_build_quant_command_uses_metadata_cleanup_and_index(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_build_quant_command_uses_metadata_cleanup_and_index(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Quant command construction should include cleanup and real index paths.
 
     The default data root (no ``AMALGKIT_DATA_ROOT``) is the resolved

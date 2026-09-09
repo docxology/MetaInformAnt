@@ -409,21 +409,13 @@ def test_family_violin_renders_and_skips_empty(tmp_path: Path) -> None:
 def test_validated_condensed_rejects_invalid_matrices() -> None:
     """Structural and numerical violations must each be rejected explicitly."""
     with pytest.raises(ValueError, match="row and column labels must match"):
-        cross_species._validated_condensed(
-            pd.DataFrame([[0.0, 0.5], [0.5, 0.0]], index=["a", "b"], columns=["a", "c"])
-        )
+        cross_species._validated_condensed(pd.DataFrame([[0.0, 0.5], [0.5, 0.0]], index=["a", "b"], columns=["a", "c"]))
     with pytest.raises(ValueError, match="symmetric"):
-        cross_species._validated_condensed(
-            pd.DataFrame([[0.0, 0.5], [0.7, 0.0]], index=["a", "b"], columns=["a", "b"])
-        )
+        cross_species._validated_condensed(pd.DataFrame([[0.0, 0.5], [0.7, 0.0]], index=["a", "b"], columns=["a", "b"]))
     with pytest.raises(ValueError, match="diagonal must be zero"):
-        cross_species._validated_condensed(
-            pd.DataFrame([[0.1, 0.5], [0.5, 0.0]], index=["a", "b"], columns=["a", "b"])
-        )
+        cross_species._validated_condensed(pd.DataFrame([[0.1, 0.5], [0.5, 0.0]], index=["a", "b"], columns=["a", "b"]))
     with pytest.raises(ValueError, match="0--2 range"):
-        cross_species._validated_condensed(
-            pd.DataFrame([[0.0, 2.5], [2.5, 0.0]], index=["a", "b"], columns=["a", "b"])
-        )
+        cross_species._validated_condensed(pd.DataFrame([[0.0, 2.5], [2.5, 0.0]], index=["a", "b"], columns=["a", "b"]))
     with pytest.raises(ValueError, match="at least two species"):
         cross_species._validated_condensed(pd.DataFrame([[0.0]], index=["a"], columns=["a"]))
 

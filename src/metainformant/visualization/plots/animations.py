@@ -92,9 +92,7 @@ def animate_time_series(
             line.set_data(x_data, y_data)
         return lines
 
-    anim = FuncAnimation(
-        fig, animate, frames=data.shape[1], interval=interval, blit=True, **anim_kwargs
-    )
+    anim = FuncAnimation(fig, animate, frames=data.shape[1], interval=interval, blit=True, **anim_kwargs)
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)

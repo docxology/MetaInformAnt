@@ -362,8 +362,7 @@ def load_bigwig_track(
                         start=start,
                         end=end,
                         value=(
-                            sum(v for v in values if v is not None)
-                            / len([v for v in values if v is not None])
+                            sum(v for v in values if v is not None) / len([v for v in values if v is not None])
                             if any(v is not None for v in values)
                             else 0
                         ),

@@ -17,9 +17,7 @@ import generate_cursor_skills as gcs  # noqa: E402
 
 
 def test_short_path_gets_readable_slug() -> None:
-    assert gcs.skill_slug_for_rel(Path("src/metainformant/rna")) == (
-        "metainformant-src-metainformant-rna"
-    )
+    assert gcs.skill_slug_for_rel(Path("src/metainformant/rna")) == ("metainformant-src-metainformant-rna")
 
 
 def test_root_slug() -> None:
@@ -27,18 +25,14 @@ def test_root_slug() -> None:
 
 
 def test_long_path_compressed_to_readable_slug() -> None:
-    slug = gcs.skill_slug_for_rel(
-        Path("src/metainformant/structural_variants/visualization")
-    )
+    slug = gcs.skill_slug_for_rel(Path("src/metainformant/structural_variants/visualization"))
     assert slug == "metainformant-structural-variants-visualization"
     assert len(slug) <= 64
     assert re.match(r"^[a-z0-9-]+$", slug)
 
 
 def test_prefix_segment_not_doubled() -> None:
-    slug = gcs.skill_slug_for_rel(
-        Path("src/metainformant/visualization/interactive_dashboards")
-    )
+    slug = gcs.skill_slug_for_rel(Path("src/metainformant/visualization/interactive_dashboards"))
     assert "metainformant-metainformant" not in slug
     assert slug == "metainformant-visualization-interactive-dashboards"
 

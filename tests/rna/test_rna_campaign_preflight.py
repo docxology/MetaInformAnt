@@ -12,7 +12,6 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.rna.engine.progress_db import classify_sample_error
 from metainformant.rna.engine.preflight import (
     PROBE_FILE_NAME,
     PreflightError,
@@ -21,6 +20,7 @@ from metainformant.rna.engine.preflight import (
     resolve_amalgkit_cli,
     run_campaign_preflight,
 )
+from metainformant.rna.engine.progress_db import classify_sample_error
 
 
 class TestDataRootProbe:
@@ -126,10 +126,7 @@ class TestSampleErrorClasses:
 
     def test_timeout_classes(self):
         assert classify_sample_error("Quant timeout (>2h)") == "quantification_timeout"
-        assert (
-            classify_sample_error("fasterq-dump timeout for SRR1 (>2h)")
-            == "extraction_timeout"
-        )
+        assert classify_sample_error("fasterq-dump timeout for SRR1 (>2h)") == "extraction_timeout"
 
     def test_environment_missing_tool(self):
         error = "Quant exception batch 2: [Errno 2] No such file or directory: 'amalgkit'"
@@ -150,9 +147,7 @@ class TestSampleErrorClasses:
 class TestOrchestratorPreflightWiring:
     """run_all must run the preflight before any discovery or scheduling work."""
 
-    def test_preflight_failure_aborts_before_discovery(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
+    def test_preflight_failure_aborts_before_discovery(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         from metainformant.rna.engine import streaming_orchestrator
 
         def _fail(data_root: Path, **_kwargs: object) -> dict[str, str]:
@@ -171,9 +166,7 @@ class TestOrchestratorPreflightWiring:
         # Discovery never started: the invalid configuration was never parsed.
         assert orchestrator.db.get_total_counts() == {}
 
-    def test_preflight_runs_with_configured_data_root(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
+    def test_preflight_runs_with_configured_data_root(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         from metainformant.rna.engine import streaming_orchestrator
 
         observed: dict[str, Path] = {}

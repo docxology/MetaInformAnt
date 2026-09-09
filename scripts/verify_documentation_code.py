@@ -9,8 +9,8 @@ Usage:
     python scripts/verify_documentation_code.py [--docs-dir DIR] [--src-dir DIR] [--output REPORT.md]
 """
 
-import sys
 import argparse
+import sys
 from pathlib import Path
 
 # Path bootstrap: make the project's src/ library importable

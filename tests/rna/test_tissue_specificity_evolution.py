@@ -34,11 +34,7 @@ class TestComputeTau:
         assert tau.loc["og_housekeeping", "tau"] == pytest.approx(1.0 / 3.0)
 
     def test_silent_gene_is_nan(self) -> None:
-        tau = tse.compute_tau(
-            pd.DataFrame(
-                {"a": [5.0, 0.0], "b": [0.0, 0.0]}, index=["g1", "silent"]
-            )
-        )
+        tau = tse.compute_tau(pd.DataFrame({"a": [5.0, 0.0], "b": [0.0, 0.0]}, index=["g1", "silent"]))
         assert tau.loc["g1", "tau"] == pytest.approx(1.0)
         assert np.isnan(tau.loc["silent", "tau"])
 
@@ -100,31 +96,23 @@ class TestParsimony:
     NEWICK = "((A:1,B:1):1,(C:1,D:1):1);"
 
     def test_uniform_state_zero_transitions(self) -> None:
-        result = tse.count_parsimony_transitions(
-            self.NEWICK, {"A": 1, "B": 1, "C": 1, "D": 1}
-        )
+        result = tse.count_parsimony_transitions(self.NEWICK, {"A": 1, "B": 1, "C": 1, "D": 1})
         assert result["parsimony_score"] == 0
         assert result["root_state_candidates"] == [1]
 
     def test_single_tip_gain_is_one_transition(self) -> None:
-        result = tse.count_parsimony_transitions(
-            self.NEWICK, {"A": 1, "B": 0, "C": 0, "D": 0}
-        )
+        result = tse.count_parsimony_transitions(self.NEWICK, {"A": 1, "B": 0, "C": 0, "D": 0})
         assert result["parsimony_score"] == 1
         assert result["root_state_candidates"] == [0]
 
     def test_two_independent_gains(self) -> None:
-        result = tse.count_parsimony_transitions(
-            self.NEWICK, {"A": 1, "B": 0, "C": 1, "D": 0}
-        )
+        result = tse.count_parsimony_transitions(self.NEWICK, {"A": 1, "B": 0, "C": 1, "D": 0})
         # Either two gains on terminal branches or a root gain with two
         # losses; Fitch minimal score is 2 either way.
         assert result["parsimony_score"] == 2
 
     def test_clade_gain(self) -> None:
-        result = tse.count_parsimony_transitions(
-            self.NEWICK, {"A": 1, "B": 1, "C": 0, "D": 0}
-        )
+        result = tse.count_parsimony_transitions(self.NEWICK, {"A": 1, "B": 1, "C": 0, "D": 0})
         assert result["parsimony_score"] == 1
         # Fitch root set is the union of alternatives: 0 or 1 both explain
         # the tips with a single change.
@@ -132,9 +120,7 @@ class TestParsimony:
 
     def test_missing_taxon_raises(self) -> None:
         with pytest.raises(ValueError, match="absent from tree"):
-            tse.count_parsimony_transitions(
-                self.NEWICK, {"A": 1, "B": 0, "C": 0, "E": 0}
-            )
+            tse.count_parsimony_transitions(self.NEWICK, {"A": 1, "B": 0, "C": 0, "E": 0})
 
     def test_partial_tip_states_raise(self) -> None:
         with pytest.raises(ValueError, match="missing tip states"):
@@ -142,9 +128,7 @@ class TestParsimony:
 
     def test_five_taxon_asymmetric_tree(self) -> None:
         newick = "(((A:1,B:1):1,C:2):1,(D:1,E:1):2);"
-        result = tse.count_parsimony_transitions(
-            newick, {"A": 1, "B": 0, "C": 0, "D": 1, "E": 1}
-        )
+        result = tse.count_parsimony_transitions(newick, {"A": 1, "B": 0, "C": 0, "D": 1, "E": 1})
         assert result["parsimony_score"] == 2
 
 
@@ -158,9 +142,7 @@ class TestGainsLosses:
         return frame
 
     def test_full_observation_scored(self) -> None:
-        states = self._states_frame(
-            {"apis": 0.9, "bombus": 0.2, "ceratina": 0.2, "megachile": 0.2}
-        )
+        states = self._states_frame({"apis": 0.9, "bombus": 0.2, "ceratina": 0.2, "megachile": 0.2})
         result = tse.count_tissue_specificity_gains_losses(self.NEWICK, states)
         assert result.loc["og1", "parsimony_score"] == 1
         assert result.loc["og1", "n_observed"] == 4
@@ -179,15 +161,9 @@ class TestGainsLosses:
         assert result.loc["og1", "parsimony_score"] is None
 
     def test_cutoff_controls_state(self) -> None:
-        states = self._states_frame(
-            {"apis": 0.9, "bombus": 0.8, "ceratina": 0.2, "megachile": 0.2}
-        )
-        strict = tse.count_tissue_specificity_gains_losses(
-            self.NEWICK, states, tau_cutoff=0.75
-        )
-        loose = tse.count_tissue_specificity_gains_losses(
-            self.NEWICK, states, tau_cutoff=0.95
-        )
+        states = self._states_frame({"apis": 0.9, "bombus": 0.8, "ceratina": 0.2, "megachile": 0.2})
+        strict = tse.count_tissue_specificity_gains_losses(self.NEWICK, states, tau_cutoff=0.75)
+        loose = tse.count_tissue_specificity_gains_losses(self.NEWICK, states, tau_cutoff=0.95)
         assert strict.loc["og1", "n_specific_species"] == 2
         assert loose.loc["og1", "n_specific_species"] == 0
 
@@ -195,8 +171,10 @@ class TestGainsLosses:
 class TestCoupling:
     def test_multicopy_enrichment_is_descriptive(self) -> None:
         rows = []
-        taus = {"og_multi": {"A": 0.9, "B": 0.2, "C": 0.2, "D": 0.2},
-                "og_single": {"A": 0.2, "B": 0.2, "C": 0.2, "D": 0.2}}
+        taus = {
+            "og_multi": {"A": 0.9, "B": 0.2, "C": 0.2, "D": 0.2},
+            "og_single": {"A": 0.2, "B": 0.2, "C": 0.2, "D": 0.2},
+        }
         index = []
         for og, per_species in taus.items():
             for species, tau in per_species.items():
@@ -234,16 +212,12 @@ class TestTreeCoverage:
     NEWICK = "((apis:1,bombus:1):1,(ceratina:1,dummy:1):1);"
 
     def test_coverage_report(self) -> None:
-        report = tse.validate_species_tree_coverage(
-            self.NEWICK, ["apis", "bombus", "ceratina", "polistes"]
-        )
+        report = tse.validate_species_tree_coverage(self.NEWICK, ["apis", "bombus", "ceratina", "polistes"])
         assert report["missing_species"] == ["polistes"]
         assert report["n_covered"] == 3
         assert report["n_requested"] == 4
 
     def test_full_coverage(self) -> None:
-        report = tse.validate_species_tree_coverage(
-            self.NEWICK, ["apis", "bombus", "ceratina", "dummy"]
-        )
+        report = tse.validate_species_tree_coverage(self.NEWICK, ["apis", "bombus", "ceratina", "dummy"])
         assert report["missing_species"] == []
         assert report["n_covered"] == 4

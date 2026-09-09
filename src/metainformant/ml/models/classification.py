@@ -452,9 +452,7 @@ def cross_validate_biological(
     accuracy_info = cv_results.get("accuracy") or {}
     accuracy_mean = accuracy_info.get("mean") if isinstance(accuracy_info, dict) else None
     accuracy_repr = f"{accuracy_mean:.3f}" if isinstance(accuracy_mean, float) else "N/A"
-    logger.info(
-        f"Completed {cv_folds}-fold CV for {method} classifier: " f"accuracy={accuracy_repr}"
-    )
+    logger.info(f"Completed {cv_folds}-fold CV for {method} classifier: " f"accuracy={accuracy_repr}")
 
     return results
 

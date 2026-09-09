@@ -168,9 +168,7 @@ def bootstrap_ci(
             continue
 
     if not stats:
-        raise ValueError(
-            "All bootstrap resamples failed; cannot compute a confidence interval"
-        )
+        raise ValueError("All bootstrap resamples failed; cannot compute a confidence interval")
 
     stats.sort()
     alpha = 1.0 - confidence

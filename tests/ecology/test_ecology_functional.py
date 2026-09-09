@@ -22,7 +22,6 @@ from typing import List
 import pytest
 
 from metainformant.core.utils.errors import ValidationError
-
 from metainformant.ecology.analysis.functional import (
     community_weighted_mean,
     functional_beta_diversity,

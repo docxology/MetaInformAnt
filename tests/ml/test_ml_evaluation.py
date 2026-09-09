@@ -238,9 +238,7 @@ class TestPermutationImportanceBiological:
         X, y = _make_classification_data(n=80)
         model = DecisionTreeClassifier(random_state=42).fit(X, y)
 
-        result = permutation_importance_biological(
-            model, X, y, n_repeats=2, random_state=42
-        )
+        result = permutation_importance_biological(model, X, y, n_repeats=2, random_state=42)
 
         assert "baseline_score" in result
         assert len(result["feature_importances"]) == X.shape[1]

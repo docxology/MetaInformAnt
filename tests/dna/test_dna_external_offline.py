@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from metainformant.dna.external.entrez import _parse_feature_table
 from metainformant.dna.expression import codon
+from metainformant.dna.external.entrez import _parse_feature_table
 
 GENBANK_SNIPPET = """\
 LOCUS       NC_000913            5386 bp    DNA     circular BCT 05-NOV-2020

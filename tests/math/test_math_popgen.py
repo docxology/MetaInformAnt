@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from metainformant.math import population_genetics as popgen
-from metainformant.math import popgen as popgen_shim
+from metainformant.math import popgen as popgen_shim, population_genetics as popgen
 from metainformant.math.population_genetics.core import hardy_weinberg_genotype_freqs
 from metainformant.math.population_genetics.fst import fst_from_allele_freqs
 from metainformant.math.population_genetics.selection import mutation_update, selection_update

@@ -7,8 +7,8 @@ import math
 import pytest
 
 from metainformant.life_events.survival.time_to_event import (
-    cox_ph_model,
     competing_risks,
+    cox_ph_model,
     kaplan_meier_estimator,
     recurrent_events,
     time_varying_covariates,

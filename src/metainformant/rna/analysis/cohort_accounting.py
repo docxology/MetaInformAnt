@@ -147,9 +147,7 @@ def _failed_rows(db_path: Path) -> list[str | None]:
 
     connection = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     try:
-        return [row[0] for row in connection.execute(
-            "SELECT error FROM samples WHERE state='failed'"
-        ).fetchall()]
+        return [row[0] for row in connection.execute("SELECT error FROM samples WHERE state='failed'").fetchall()]
     finally:
         connection.close()
 
@@ -183,19 +181,13 @@ def build_cohort_funnel(
     if max_gb is not None:
         size_gib = db_path.stat().st_size / 1024**3
         if size_gib > max_gb:
-            raise CohortFunnelError(
-                f"progress DB exceeds the {max_gb} GiB limit: {db_path} is {size_gib:.3f} GiB"
-            )
+            raise CohortFunnelError(f"progress DB exceeds the {max_gb} GiB limit: {db_path} is {size_gib:.3f} GiB")
 
     configured = _count_configured_species(Path(config_dir))
 
     connection = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     try:
-        tables = {
-            row[0] for row in connection.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            )
-        }
+        tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         if "samples" not in tables:
             raise CohortFunnelError(f"progress DB has no samples table: {db_path}")
 
@@ -205,22 +197,14 @@ def build_cohort_funnel(
         with_progress = _scalar("SELECT COUNT(DISTINCT species) FROM samples")
         quantified_runs = _scalar("SELECT COUNT(*) FROM samples WHERE state='quantified'")
         failed_runs = _scalar("SELECT COUNT(*) FROM samples WHERE state='failed'")
-        excluded_runs = (
-            _scalar("SELECT COUNT(*) FROM sample_exclusions")
-            if "sample_exclusions" in tables
-            else 0
-        )
+        excluded_runs = _scalar("SELECT COUNT(*) FROM sample_exclusions") if "sample_exclusions" in tables else 0
         pending_runs = _scalar("SELECT COUNT(*) FROM samples WHERE state='pending'")
-        active_runs = _scalar(
-            "SELECT COUNT(*) FROM samples WHERE state IN ('downloading', 'quantifying')"
-        )
+        active_runs = _scalar("SELECT COUNT(*) FROM samples WHERE state IN ('downloading', 'quantifying')")
     finally:
         connection.close()
 
     failures = _failed_rows(db_path)
-    reason_codes: dict[str, int] = dict(
-        sorted(Counter(classify_sample_error(error) for error in failures).items())
-    )
+    reason_codes: dict[str, int] = dict(sorted(Counter(classify_sample_error(error) for error in failures).items()))
 
     return FunnelReport(
         configured=configured,
@@ -242,8 +226,7 @@ def iter_failure_trend_rows(db_path: Path) -> Iterable[tuple[str, str | None]]:
     connection = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     try:
         yield from connection.execute(
-            "SELECT date(updated_at), error FROM samples"
-            " WHERE state='failed' ORDER BY date(updated_at)"
+            "SELECT date(updated_at), error FROM samples" " WHERE state='failed' ORDER BY date(updated_at)"
         ).fetchall()
     finally:
         connection.close()

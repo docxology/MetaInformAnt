@@ -5,6 +5,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
+import matplotlib.pyplot as plt  # noqa: E402  (progress_dashboard sets Agg on import)
 import pytest
 
 from metainformant.rna.engine.progress_dashboard import (
@@ -14,8 +15,6 @@ from metainformant.rna.engine.progress_dashboard import (
     plot_species_bars,
 )
 from metainformant.rna.engine.progress_db import ProgressDB
-
-import matplotlib.pyplot as plt  # noqa: E402  (progress_dashboard sets Agg on import)
 
 
 def _build_progress_db(db_path: Path) -> ProgressDB:

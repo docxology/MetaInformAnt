@@ -5,16 +5,16 @@ REAL IMPLEMENTATION POLICY: All tests use real implementations.
 
 from __future__ import annotations
 
-from tests._support.synth import (
-    make_expression_dict,
-    make_genotype_map,
-    make_phenotype_map,
-)
 from metainformant.phenotype.integration.cross_omic import (
     multi_phenotype_integration,
     phenotype_environment_interaction,
     phenotype_genotype_association,
     trait_expression_correlation,
+)
+from tests._support.synth import (
+    make_expression_dict,
+    make_genotype_map,
+    make_phenotype_map,
 )
 
 # ---------------------------------------------------------------------------

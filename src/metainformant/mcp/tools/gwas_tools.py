@@ -19,9 +19,7 @@ def _handle_phenotype_summary(phenotype_table: str, output_dir: str | None = Non
     if not numeric.empty:
         desc = numeric.describe()
         summary["numeric_summary"] = {
-            col: {
-                stat: json_safe_float(desc.loc[stat, col]) for stat in ("mean", "std", "min", "max")
-            }
+            col: {stat: json_safe_float(desc.loc[stat, col]) for stat in ("mean", "std", "min", "max")}
             for col in desc.columns
         }
     if output_dir is not None:

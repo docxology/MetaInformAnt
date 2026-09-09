@@ -44,9 +44,7 @@ def _validate_sql_identifiers(table: str, columns: Iterable[str]) -> None:
             SQL identifier.
     """
 
-    if not _SQL_IDENTIFIER_RE.fullmatch(table) or not all(
-        _SQL_IDENTIFIER_RE.fullmatch(column) for column in columns
-    ):
+    if not _SQL_IDENTIFIER_RE.fullmatch(table) or not all(_SQL_IDENTIFIER_RE.fullmatch(column) for column in columns):
         raise ValueError("table and column names must be simple SQL identifiers")
 
 
@@ -291,9 +289,7 @@ class PostgresConnection:
             _validate_sql_identifiers(table_name, schema.keys())
             for col_type in schema.values():
                 if not _SQL_TYPE_RE.fullmatch(col_type):
-                    raise ValueError(
-                        f"column type {col_type!r} must be a simple SQL type expression"
-                    )
+                    raise ValueError(f"column type {col_type!r} must be a simple SQL type expression")
             exists_clause = "IF NOT EXISTS" if if_not_exists else ""
 
             columns_def = ", ".join(f"{col} {col_type}" for col, col_type in schema.items())

@@ -245,9 +245,7 @@ def plot_differential_expression(
         mean_vals = plot_data[mean_col]
         sizes = 20 + (mean_vals - mean_vals.min()) / (mean_vals.max() - mean_vals.min()) * 80
 
-    ax.scatter(
-        plot_data[logfc_col], plot_data["logP"], c=colors, s=sizes, alpha=kwargs.pop("alpha", 0.6), **kwargs
-    )
+    ax.scatter(plot_data[logfc_col], plot_data["logP"], c=colors, s=sizes, alpha=kwargs.pop("alpha", 0.6), **kwargs)
 
     # Add threshold lines
     ax.axhline(y=-np.log10(0.05), color="black", linestyle="--", alpha=0.7)

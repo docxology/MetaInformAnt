@@ -16,7 +16,6 @@ from scipy.spatial.distance import pdist
 
 from metainformant.core.data import validation
 from metainformant.core.utils import logging
-
 from metainformant.information.metrics.core.syntactic import kl_divergence
 
 from .fisher_rao import _validate_distribution

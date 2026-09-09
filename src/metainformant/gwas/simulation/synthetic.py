@@ -115,6 +115,7 @@ APIS_GENES = [
 
 # ── Calibration modes ───────────────────────────────────────────────────
 
+
 class CalibrationMode(TypedDict):
     """Per-mode calibration parameters for synthetic phenotype generation."""
 

@@ -10,7 +10,6 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from tests._support.synth import make_de_matrix
 from metainformant.singlecell.differential.expression import (
     compute_log_fold_change,
     differential_expression,
@@ -18,6 +17,7 @@ from metainformant.singlecell.differential.expression import (
     pseudobulk_de,
     volcano_data,
 )
+from tests._support.synth import make_de_matrix
 
 # ---------------------------------------------------------------------------
 # Helpers

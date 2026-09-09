@@ -30,7 +30,6 @@ from typing import List
 import pytest
 
 from metainformant.core.utils.errors import ValidationError
-
 from metainformant.ecology.analysis.indicators import (
     anosim,
     cluster_communities,

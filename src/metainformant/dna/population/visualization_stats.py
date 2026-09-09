@@ -573,12 +573,7 @@ def plot_pca_results(
         if len(pca_result) >= 3:
             labels = list(pca_result[2])
 
-    if (
-        coordinates is None
-        or coordinates.ndim != 2
-        or coordinates.shape[0] == 0
-        or coordinates.shape[1] < 2
-    ):
+    if coordinates is None or coordinates.ndim != 2 or coordinates.shape[0] == 0 or coordinates.shape[1] < 2:
         logger.warning("PCA result does not contain usable 2D coordinates")
         return None
 

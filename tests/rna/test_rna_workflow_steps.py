@@ -7,11 +7,11 @@ using real file system operations (real-implementation policy).
 
 from __future__ import annotations
 
-import pytest
-
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
+
+import pytest
 
 from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, WorkflowStepResult
 from metainformant.rna.engine.workflow_steps import (

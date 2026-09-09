@@ -9,7 +9,6 @@ import pytest
 
 from metainformant.core.utils.errors import ValidationError
 from metainformant.visualization.plots.basic import (
-
     area_plot,
     bar_plot,
     heatmap,

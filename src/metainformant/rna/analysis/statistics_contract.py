@@ -211,8 +211,7 @@ def validate_sensitivity_analysis(analysis: SensitivityAnalysis) -> None:
     _require_declared(analysis.baseline_value, "sensitivity baseline_value")
     if not isinstance(analysis.varied_values, tuple) or not analysis.varied_values:
         raise ProvenanceError(
-            "sensitivity varied_values must be a non-empty tuple of varied values, "
-            f"got {analysis.varied_values!r}"
+            "sensitivity varied_values must be a non-empty tuple of varied values, " f"got {analysis.varied_values!r}"
         )
     for value in analysis.varied_values:
         _require_declared(value, "sensitivity varied_values entry")

@@ -467,9 +467,7 @@ class TestGetfastqRetryContract:
             assert "max_retries" not in kwargs
             assert "retry_delay" not in kwargs
 
-    def test_check_true_propagates_called_process_error(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_check_true_propagates_called_process_error(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """check=True is a hard-failure contract: no rc=1 CompletedProcess downgrade."""
 
         import metainformant.rna.amalgkit._amalgkit_impl as impl

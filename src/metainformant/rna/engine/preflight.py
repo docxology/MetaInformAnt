@@ -131,9 +131,7 @@ def run_campaign_preflight(
         failures.append(str(exc))
 
     if failures:
-        raise PreflightError(
-            "Campaign preflight failed:\n" + "\n".join(f"- {failure}" for failure in failures)
-        )
+        raise PreflightError("Campaign preflight failed:\n" + "\n".join(f"- {failure}" for failure in failures))
     return facts
 
 

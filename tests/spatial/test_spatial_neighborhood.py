@@ -7,8 +7,6 @@ from __future__ import annotations
 
 import numpy as np
 
-from tests._support.synth import make_spatial_cells
-
 from metainformant.spatial.analysis.neighborhood import (
     InteractionResult,
     NeighborhoodEnrichmentResult,
@@ -20,6 +18,7 @@ from metainformant.spatial.analysis.neighborhood import (
     niche_detection,
     ripley_k,
 )
+from tests._support.synth import make_spatial_cells
 
 # ---------------------------------------------------------------------------
 # Helpers

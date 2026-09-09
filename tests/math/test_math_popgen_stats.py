@@ -6,13 +6,13 @@ import numpy as np
 import pytest
 
 from metainformant.math.population_genetics.statistics import (
-    bottleneck_effective_size,
     bootstrap_confidence_interval,
+    bottleneck_effective_size,
     calculate_confidence_intervals,
     compare_population_statistic,
     compare_statistics,
-    deterministic_replicate_seeds,
     detect_outliers,
+    deterministic_replicate_seeds,
     equilibrium_heterozygosity_infinite_alleles,
     expected_pairwise_diversity,
     expected_segregating_sites,

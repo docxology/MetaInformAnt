@@ -440,12 +440,11 @@ def filter_genes(
         uns=data.uns.copy(),
         # Preserve per-gene annotations, column-subsetting where needed
         obsm={k: v.copy() for k, v in data.obsm.items()} if data.obsm else None,
-        varm={
-            k: (v[keep_genes] if getattr(v, "ndim", 2) == 1 else v[:, keep_genes])
-            for k, v in data.varm.items()
-        }
-        if data.varm
-        else None,
+        varm=(
+            {k: (v[keep_genes] if getattr(v, "ndim", 2) == 1 else v[:, keep_genes]) for k, v in data.varm.items()}
+            if data.varm
+            else None
+        ),
         obsp={k: v.copy() for k, v in data.obsp.items()} if data.obsp else None,
         varp={k: v[:, keep_genes] for k, v in data.varp.items()} if data.varp else None,
         layers={k: v[:, keep_genes] for k, v in data.layers.items()} if data.layers else None,

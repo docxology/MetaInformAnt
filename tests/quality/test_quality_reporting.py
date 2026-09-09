@@ -346,6 +346,7 @@ class TestCalculateQualityScore:
         result = calculate_quality_score(data, data_type="bam")
         assert result["overall_score"] < 50
 
+
 # ---------------------------------------------------------------------------
 # detect_outliers
 # ---------------------------------------------------------------------------

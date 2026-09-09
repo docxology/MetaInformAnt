@@ -1,6 +1,5 @@
 """Pharmacogenomics module for METAINFORMANT."""
 
-
 from . import alleles, annotations, clinical, interaction, metabolism, visualization
 from .metabolism.metabolizer_status import predict_metabolizer_status as predict_metabolizer
 

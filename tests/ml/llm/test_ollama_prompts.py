@@ -107,9 +107,7 @@ class TestResponseDataclasses:
         assert response.tokens_per_second == 0.0
 
     def test_chat_response_text_property(self):
-        response = ChatResponse.from_dict(
-            {"message": {"role": "assistant", "content": "answer"}, "model": "stub"}
-        )
+        response = ChatResponse.from_dict({"message": {"role": "assistant", "content": "answer"}, "model": "stub"})
 
         assert response.text == "answer"
         assert response.message.role == "assistant"

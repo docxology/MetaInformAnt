@@ -39,9 +39,9 @@ def test_renamed_symbols_exist() -> None:
         neutrality_test_suite,
     )
     from metainformant.simulation.models.popgen import (
-        generate_site_frequency_spectrum,
         generate_genotype_matrix,
         generate_population_sequences,
+        generate_site_frequency_spectrum,
     )
 
     assert callable(calculate_summary_statistics)

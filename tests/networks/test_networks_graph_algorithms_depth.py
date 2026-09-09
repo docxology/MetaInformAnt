@@ -12,8 +12,8 @@ import networkx as nx
 import pytest
 
 from metainformant.networks.analysis.graph_algorithms import (
-    export_network,
     centrality_measures,
+    export_network,
     filter_network,
     get_connected_components,
     import_network,

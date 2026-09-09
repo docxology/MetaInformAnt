@@ -29,7 +29,6 @@ except BaseException as e:
     script_path = tmp_path / "temp_sleep_script.py"
     script_path.write_text(script)
 
-
     try:
         # Start the sleeper
         proc = subprocess.Popen(

@@ -18,8 +18,8 @@ import pytest
 from metainformant.rna.analysis.ortholog_mapping import (
     COPY_POLICIES,
     DEFAULT_COPY_POLICY,
-    OrthologBridgeError,
     OrthogroupBridgeResult,
+    OrthologBridgeError,
     OrthologySourceMetadata,
     build_orthogroup_bridge,
     build_transcript_orthogroup_table,
@@ -89,9 +89,7 @@ def og_fixture(tmp_path: Path) -> Path:
 def test_default_policy_all_joined_and_wrappers_agree(tmp_path: Path, og_fixture: Path) -> None:
     """The default 'all-joined' policy preserves the historical join behaviour."""
 
-    result = build_orthogroup_bridge(
-        og_fixture, ORTHODB_PROTEINS, PROT_TO_RNA, EXPRESSION_TIDS, TAXON_TO_SPECIES
-    )
+    result = build_orthogroup_bridge(og_fixture, ORTHODB_PROTEINS, PROT_TO_RNA, EXPRESSION_TIDS, TAXON_TO_SPECIES)
     assert isinstance(result, OrthogroupBridgeResult)
     assert result.copy_policy == DEFAULT_COPY_POLICY
 
@@ -212,9 +210,7 @@ def test_transcript_multi_orthogroup_recorded_by_default(tmp_path: Path) -> None
             ("OG_2", "7460_0:000001", ""),
         ],
     )
-    result = build_orthogroup_bridge(
-        og_path, ORTHODB_PROTEINS, PROT_TO_RNA, EXPRESSION_TIDS, TAXON_TO_SPECIES
-    )
+    result = build_orthogroup_bridge(og_path, ORTHODB_PROTEINS, PROT_TO_RNA, EXPRESSION_TIDS, TAXON_TO_SPECIES)
     records = result.duplicated_evidence.to_dict("records")
     assert len(records) == 1
     assert records[0]["kind"] == "transcript_multi_orthogroup"

@@ -215,8 +215,6 @@ class TestComprehensiveSeverity:
         result = detector.comprehensive_contamination_analysis(sequences)
 
         assert result["summary"]["contamination_detected"] is True
-        expected = max(
-            a["contamination_rate"] for a in result["adapter_contamination"]["adapters"]
-        ) * 100
+        expected = max(a["contamination_rate"] for a in result["adapter_contamination"]["adapters"]) * 100
         assert result["summary"]["overall_severity_score"] == pytest.approx(expected)
         assert result["summary"]["severity_level"] == "high"

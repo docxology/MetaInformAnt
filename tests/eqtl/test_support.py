@@ -40,7 +40,5 @@ def build_tiny_vcf(tmp_path: Path) -> Path:
         check=True,
         capture_output=True,
     )
-    subprocess.run(
-        ["bcftools", "index", str(compressed)], check=True, capture_output=True
-    )
+    subprocess.run(["bcftools", "index", str(compressed)], check=True, capture_output=True)
     return compressed

@@ -24,7 +24,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from tests._support.synth import make_ortholog_frame, make_species_tree
 from metainformant.rna.analysis.cross_species import (
     build_ortholog_map,
     compare_expression_across_species,
@@ -39,6 +38,7 @@ from metainformant.rna.analysis.cross_species import (
     map_expression_to_orthologs,
     phylogenetic_expression_profile,
 )
+from tests._support.synth import make_ortholog_frame, make_species_tree
 
 # =============================================================================
 # Fixtures: small synthetic data builders (inline, no external files)

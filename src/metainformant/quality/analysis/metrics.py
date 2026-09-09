@@ -19,7 +19,6 @@ from scipy import stats
 from metainformant.core.utils import logging
 from metainformant.quality.io.fastq import analyze_fastq_quality
 
-
 logger = logging.get_logger(__name__)
 
 

@@ -36,10 +36,7 @@ def main() -> None:
     # (a) species x tissue mean-tau heatmap
     species_profiles = {sp: RNG.uniform(0.1, 0.95, size=len(TISSUES)) for sp in SPECIES}
     tau_frame = pd.DataFrame(
-        {
-            t: [species_profiles[sp][j] + RNG.normal(0, 0.03) for sp in SPECIES]
-            for j, t in enumerate(TISSUES)
-        },
+        {t: [species_profiles[sp][j] + RNG.normal(0, 0.03) for sp in SPECIES] for j, t in enumerate(TISSUES)},
         index=SPECIES,
     ).clip(0, 1)
     plot_tau_heatmap(tau_frame, OUT / "tau_heatmap.png", annot=True)
@@ -77,9 +74,7 @@ def main() -> None:
             )
         )
         frames.append(pd.DataFrame({"tau": tau_vals.values, "orthology_class": cls}))
-    plot_tau_orthology_strips(
-        pd.concat(frames, ignore_index=True), OUT / "tau_by_orthology_class.png"
-    )
+    plot_tau_orthology_strips(pd.concat(frames, ignore_index=True), OUT / "tau_by_orthology_class.png")
 
     for f in sorted(OUT.glob("*.png")):
         print(f, f.stat().st_size)

@@ -165,9 +165,7 @@ class TestCachedIndexTypes:
         pkg = tmp_path / "samplepkg"
         pkg.mkdir()
         (pkg / "mod.py").write_text(
-            "def sampled_function(a, b=1):\n"
-            "    '''Sample docstring.'''\n"
-            "    return a + b\n",
+            "def sampled_function(a, b=1):\n" "    '''Sample docstring.'''\n" "    return a + b\n",
             encoding="utf-8",
         )
 

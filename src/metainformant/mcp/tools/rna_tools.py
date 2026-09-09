@@ -215,9 +215,7 @@ def _handle_normalize_counts(
         lengths = read_table(gene_lengths, index_col=None)
         lengths = lengths.set_index(lengths.columns[0])
         if lengths.shape[1] < 1:
-            raise ValueError(
-                f"gene_lengths file needs a gene label column plus a length column: {gene_lengths}"
-            )
+            raise ValueError(f"gene_lengths file needs a gene label column plus a length column: {gene_lengths}")
         lengths = lengths.iloc[:, 0]
     result = normalize_counts(frame, method=method, gene_lengths=lengths)
     out_dir = validate_output_dir(output_dir)
