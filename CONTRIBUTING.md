@@ -7,7 +7,7 @@ Thank you for your interest in improving METAINFORMANT! This guide covers contri
 1. **Fork** the repository on GitHub
 2. **Clone** your fork locally
 3. **Create branch**: `git checkout -b my-feature`
-4. **Install dev dependencies**: `uv pip install -e ".[dev,test,docs]"`
+4. **Install dev dependencies**: `uv pip install -e ".[dev]"`
 5. **Make changes** following [Project Standards](#coding-standards)
 6. **Run tests**: `scripts/package/test.sh` (must pass)
 7. **Run lint**: `pre-commit run --all-files`
@@ -49,7 +49,7 @@ from metainformant.dna.sequence import core as sequence_core
 ### Tests
 
 - **Location**: `tests/<module>/test_<feature>.py`
-- **One assertion per test** (one concern per test)
+- **Focused assertions per test** (one concern per test; see the canonical examples in [tests/README.md](tests/README.md))
 - **Fixtures** in `tests/conftest.py` (reusable)
 - **Run**: `scripts/package/test.sh` (CI-parity wrapper)
 - **Markers**: `network` (real API calls), `external_tool` (external CLIs), `slow` (deselect with `-m "not slow"`), `integration`, `xdist_group` — all registered in `pyproject.toml` (`--strict-markers`)
@@ -151,4 +151,4 @@ By contributing, you agree your work is licensed under the project's [Apache 2.0
 
 **Questions?** Open a [Discussion](https://github.com/docxology/metainformant/discussions) or ping @maintainers.
 
-**Thanks** to all 200+ contributors! 
+**Thanks** to all contributors!

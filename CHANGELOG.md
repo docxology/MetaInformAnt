@@ -1,7 +1,11 @@
 # Changelog
 
+All notable changes to METAINFORMANT are documented in this file.
 
-## Unreleased
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
 
 ### Added
 - `metainformant.rna.analysis.statistics_contract`: predeclared, fail-closed
@@ -32,7 +36,7 @@
 
 ### Changed
 - Repository-wide typing completion: `mypy --config-file pyproject.toml
-  src/metainformant` reports **0 errors in 690 files** under the locked mypy
+  src/metainformant` reports **0 errors in 693 files** under the locked mypy
   2.3.1 (previously 1,705). Includes: third-party import overrides for
   unstubbed libraries (scipy, seaborn, networkx, yaml, psutil, defusedxml,
   plotly, umap, igraph, and others), removal of 102 stale `# type: ignore`
@@ -47,12 +51,6 @@
   packages; math/simulation plot helpers moved into `visualization/analysis/`.
 - Subprocess test timeouts raised for cold-import headroom on contended
   external-drive checkouts (examples runner, life-events CLI).
-All notable changes to METAINFORMANT are documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
 
 ### Fixed
 
@@ -63,6 +61,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   species' entire prior quantification for redundant re-download and
   re-quantification (observed 2026-08-30: 1,620 apis_mellifera samples
   re-queued by a single restart). Added a byte-idempotency regression test.
+- Scientific-correctness fixes: Miller-Madow entropy bias correction now adds
+  `(k-1)/(2n*ln2)` bits (was subtracting a nats-scale term, overcorrecting
+  sign and scale in `_plugin_entropy_estimator`, `_miller_madow_entropy_estimator`,
+  `bias_correction`, and `effective_sample_size_correction`); Panzeri-Treves
+  uniform fallback produces counts consistently; simulation
+  `generate_genotype_matrix` samples one allele frequency per SNP (not per
+  individual); GWAS logistic regression raises instead of fabricating
+  standard errors when statsmodels is unavailable; popgen
+  `genotype_structure_analysis` transposes to sites-by-individuals before
+  HWE testing; `joint_pca` layer weights now apply after standardization;
+  multiomics similarity imputes per-column means; `joint_nmf` defaults to a
+  fixed random seed.
+- Shared sequence primitives (`reverse_complement`, `validate_dna_sequence`,
+  complement tables) moved to `metainformant.core.sequence` so non-DNA
+  domains use them without violating the cross-domain boundary gate; seven
+  duplicated local implementations consolidated; per-call `str.maketrans`
+  table construction hoisted to module constants.
+- Dead code removed (~2.6k lines): unreferenced `visualization/analysis`
+  plot modules (`math_plots`, `simulation_plots`), unreferenced GWAS
+  plotting/config/SRA helpers, dead private helpers, and duplicated
+  `_parse_function_signature` / `sha256_file` copies.
+- Tests: the conftest auto-`network` marker heuristic matches whole words
+  (22 pure-CPU tests no longer misfiled into `-m network`); unseeded
+  `np.random` visualization tests seeded; wall-clock ratio assertions in
+  core parallel/TUI tests replaced with deterministic correctness checks;
+  tautological InterPro/Entrez `assert True` catch-alls replaced with
+  real response assertions; bare "should not raise" validation tests now
+  assert returned values.
+- CI/infra: pre-commit hook versions aligned with pyproject pins
+  (black 26.5.1, isort 8.0.1, flake8 7.3.0); `pytest-xdist` detection fixed
+  (`import xdist`); uv cache keyed on `uv.lock`; dead tag-push trigger
+  removed from `release.yml` (Release events are the publish path);
+  `uv_quality.sh` aligned with the blocking CI quality gate; Dockerfile
+  pins `amalgkit=0.16.60`, drops standalone kallisto/fastp layers shadowed
+  by the conda env, and installs the full CRAN package set the dependency
+  verifier expects.
+- Docs: CONTRIBUTING install extras fixed (`.[dev]`; `test`/`docs` never
+  existed), duplicate CHANGELOG Unreleased sections merged, stale MCP
+  module description updated to the implemented stdio server, measured
+  README/AGENTS and plotting-module counts, Mermaid nav-graph node ids
+  repaired in `docs/index.md`.
 
 ## [0.4.0] - 2026-08-09
 

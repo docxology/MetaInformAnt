@@ -21,7 +21,7 @@ METAINFORMANT provides broad bioinformatics analysis modules across genomics, tr
 | **Modules** | 30 specialized analysis modules |
 | **Python Files** | 690+ implementation files under `src/metainformant/` |
 | **Plot Types** | 70+ visualization methods |
-| **Documentation** | 450+ project-owned `README.md` and `AGENTS.md` files |
+| **Documentation** | 792 project-owned `README.md` and `AGENTS.md` files |
 
 ### Core Capabilities
 
@@ -292,7 +292,7 @@ graph TD
 - **Statistical & ML Methods**: GWAS, population genetics, machine learning pipelines
 - **Single-Cell Genomics**: Complete scRNA-seq analysis workflows
 - **Network Analysis**: Biological networks, pathways, community detection algorithms
-- **Visualization Suite**: 14 specialized plotting modules with 70+ plot types and publication-quality output
+- **Visualization Suite**: 26 plotting modules across six subpackages (`plots`, `analysis`, `genomics`, `dashboards`, `interactive_dashboards`, `config`) with 70+ plot types and publication-quality output
 - **Modular Architecture**: Individual modules or complete end-to-end workflows
 - **Comprehensive Documentation**: Repo-wide README, AGENTS, SPEC, and task guides with current signposting
 - **Implementation Testing**: Real methods in tests, real implementations with explicit unsupported-feature errors

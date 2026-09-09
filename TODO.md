@@ -46,9 +46,12 @@ complete.
 Use the package-module sweep to refresh status after any evidence is supplied:
 
 ```bash
-cd /Users/mini/Documents/GitHub/MetaInformAntCode/projects/apis_gwas
+cd projects/apis_gwas
 uv run python -m beewas.gwas.review_release build
 ```
+The full `apis_gwas` tree lives in the nested checkout on the producer
+machine; this checkout carries only a README/AGENTS stub, so this command
+runs where that tree exists.
 
 ---
 
@@ -320,6 +323,10 @@ controls, failure evidence, and provenance artifacts remain part of the record.
 ---
 
 ## Minor Updates
+> **Note**: `projects/apis_gwas/...` paths in the items below are references
+> to the full BeeWAS tree in the nested `apis_gwas` checkout on the producer
+> machine (external absolute-path targets). This checkout holds only a
+> README/AGENTS stub; the TODO items themselves remain active.
 
 - [ ] **Finalize BeeWAS manuscript metadata** - Complete
   `projects/apis_gwas/docs/manuscript/renderable/final_metadata_intake.tsv`

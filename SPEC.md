@@ -83,7 +83,7 @@ All program-generated results go to `output/`. Never create documentation or rep
 
 - Python 3.11+ minimum
 - Black formatting (120 char lines)
-- mypy 2.3.1 (locked in `uv.lock`): 0 errors across the 692-file source tree, enforced by the error-budget gate `scripts/quality/check_mypy_budget.py` (budget `config/quality/mypy_error_budget.txt` = 0; CI runs it scoped to `src/metainformant/rna`)
+- mypy 2.3.1 (locked in `uv.lock`): 0 errors across the 693-file source tree, enforced by the error-budget gate `scripts/quality/check_mypy_budget.py` (budget `config/quality/mypy_error_budget.txt` = 0; CI runs it scoped to `src/metainformant/rna`)
 - All functions must have type hints
 
 ### Documentation

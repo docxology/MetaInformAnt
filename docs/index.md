@@ -16,7 +16,7 @@ historical snapshots; generated verification reports should be written under `ou
 
 ```mermaid
 graph TD
-    AmetainformantDocumentation[METAINFORMANT Documentation] --> BgettingStarted[Getting Started]
+    A[METAINFORMANT Documentation] --> BgettingStarted[Getting Started]
     A --> CuserGuides[User Guides]
     A --> DmoduleDocumentation[Module Documentation]
     A --> EdeveloperResources[Developer Resources]
@@ -35,7 +35,7 @@ graph TD
     D --> D2molecularAnalysis[Molecular Analysis]
     D --> D3statisticalMethods[Statistical Methods]
     D --> D4systemsBiology[Systems Biology]
-    D --> D5annotation&Metadata[Annotation & Metadata]
+    D --> D5annotationMetadata[Annotation & Metadata]
     D --> D6[Utilities]
 
     E --> E1[Architecture]

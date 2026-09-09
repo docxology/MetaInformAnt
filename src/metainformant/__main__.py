@@ -347,17 +347,13 @@ def _handle_life_events(args: argparse.Namespace) -> int:
             if probabilities is not None:
                 raw_classes = getattr(predictor, "classes_", None)
                 classes = (
-                    raw_classes.tolist()
-                    if raw_classes is not None and hasattr(raw_classes, "tolist")
-                    else raw_classes
+                    raw_classes.tolist() if raw_classes is not None and hasattr(raw_classes, "tolist") else raw_classes
                 )
                 assert classes is not None
                 prob_row = probabilities[i]
                 if prob_row is None or not hasattr(prob_row, "tolist"):
                     continue
-                entry["probabilities"] = {
-                    str(cls): float(prob) for cls, prob in zip(classes, prob_row.tolist())
-                }
+                entry["probabilities"] = {str(cls): float(prob) for cls, prob in zip(classes, prob_row.tolist())}
             entries.append(entry)
 
         payload = {
@@ -486,7 +482,7 @@ def _list_modules() -> None:
         ("pharmacogenomics", "Clinical pharmacogenomic variant analysis"),
         ("metabolomics", "Metabolite identification and pathway analysis"),
         ("cloud", "Cloud deployment helpers and GCP workflow utilities"),
-        ("mcp", "Standalone MCP helper tools; no server entry point yet"),
+        ("mcp", "MCP stdio JSON-RPC 2.0 server (`python -m metainformant.mcp.server`) and tool registry"),
         ("menu", "Interactive menu and discovery system"),
     ]
 
