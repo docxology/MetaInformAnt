@@ -127,7 +127,7 @@ build_pytest_args() {
     # Parallel execution
     if [[ "$PARALLEL" == "true" ]] || [[ "$TEST_MODE" == "parallel" ]]; then
         # Check if pytest-xdist is available
-        if uv run python -c "import pytest_xdist" >/dev/null 2>&1; then
+        if uv run python -c "import xdist" >/dev/null 2>&1; then
             args+=("-n" "auto")
         else
             print_status "WARN" "pytest-xdist not available, running sequentially"

@@ -8,7 +8,7 @@ This document describes the CI/CD workflows for the MetaInformAnt project.
 |----------|---------|---------|
 | [Build Package](#build-package) | Push, PR, Manual | Build and validate package |
 | [Test Suite](#test-suite) | Push, PR, Manual | Run tests across platforms |
-| [Release](#release) | Tag, Release, Manual | Publish to PyPI |
+| [Release](#release) | Release, Manual | Publish to PyPI |
 
 ---
 
@@ -72,8 +72,7 @@ This document describes the CI/CD workflows for the MetaInformAnt project.
 
 ### Triggers
 
-- GitHub release published
-- Push to `v*.*.*` tags
+- GitHub release published (full validation, production publish for non-prereleases)
 - Manual dispatch (test/production)
 
 ### Jobs

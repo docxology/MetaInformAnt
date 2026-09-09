@@ -3,9 +3,6 @@ name: Release
 on:
   release:
     types: [published]
-  push:
-    tags:
-      - 'v*.*.*'
   workflow_dispatch:
     inputs:
       release_type:
@@ -68,7 +65,9 @@ jobs:
       with:
         version: "latest"
         enable-cache: true
-        cache-dependency-glob: "**/pyproject.toml"
+        cache-dependency-glob: |
+          **/pyproject.toml
+          **/uv.lock
 
     - name: Set up Python 3.12
       run: uv python install 3.12

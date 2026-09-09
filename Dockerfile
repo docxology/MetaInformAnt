@@ -42,19 +42,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     r-base r-base-dev \
     && rm -rf /var/lib/apt/lists/* \
-    && Rscript -e 'install.packages(c("ggplot2"), repos="https://cloud.r-project.org", quiet=TRUE)'
-
-# ── kallisto 0.48.0 ─────────────────────────────────────────────────────
-RUN cd /tmp && \
-    wget -q https://github.com/pachterlab/kallisto/releases/download/v0.48.0/kallisto_linux-v0.48.0.tar.gz && \
-    tar xzf kallisto_linux-v0.48.0.tar.gz && \
-    cp kallisto/kallisto /usr/local/bin/ && \
-    rm -rf /tmp/kallisto*
-
-# ── fastp 0.24.0 ────────────────────────────────────────────────────────
-RUN cd /tmp && \
-    wget -q http://opengene.org/fastp/fastp && \
-    chmod +x fastp && mv fastp /usr/local/bin/
+    && Rscript -e 'install.packages(c("BiocManager", "amap", "RColorBrewer", "colorspace", "dendextend", "NMF", "MASS", "pvclust", "Rtsne", "ggplot2", "patchwork", "optparse", "reshape2", "gridExtra"), repos="https://cloud.r-project.org", quiet=TRUE)'
 
 # ── SRA Toolkit (fasterq-dump) ──────────────────────────────────────────
 # The SRA toolkit uses a launcher pattern: fasterq-dump is a wrapper that
@@ -88,7 +76,7 @@ RUN uv pip install --system -e "." && \
     wget -qO micromamba.tar.bz2 "https://micro.mamba.pm/api/micromamba/linux-64/latest" && \
     tar -xjf micromamba.tar.bz2 bin/micromamba && \
     export MAMBA_ROOT_PREFIX=/opt/conda && \
-    bin/micromamba create -y -p /opt/conda -c conda-forge -c bioconda amalgkit seqkit fastp kallisto && \
+    bin/micromamba create -y -p /opt/conda -c conda-forge -c bioconda amalgkit=0.16.60 seqkit fastp kallisto && \
     rm -f /opt/conda/bin/kallisto_orig && \
     ln -s /opt/conda/bin/amalgkit /usr/local/bin/amalgkit && \
     ln -s /opt/conda/bin/seqkit /usr/local/bin/seqkit && \
