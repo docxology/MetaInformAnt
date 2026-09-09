@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import os
 import random
+import re
 import subprocess
 import sys
 import tempfile
@@ -327,8 +328,14 @@ def pytest_configure(config):
 
 def pytest_collection_modifyitems(config, items):
     """Modify test collection to add automatic markers."""
-    # Add 'network' marker to tests that contain network-related keywords
+    # Add 'network' marker to tests whose name suggests network use. Keywords must
+    # match as whole words: substring matching auto-tagged pure-CPU tests such as
+    # test_cyp2c19_rapid ('rapid' contains 'api') and
+    # test_okabe_ito_returns_requested_count ('requested' contains 'request').
     network_keywords = ["http", "api", "fetch", "download", "request", "uniprot", "ncbi", "entrez"]
+    # Test names are snake_case identifiers, so separators are normalized to spaces
+    # before applying \b boundaries (underscores are word characters for \b).
+    network_patterns = [re.compile(r"\b" + re.sub(r"[\W_]+", r"\\s+", keyword) + r"\b") for keyword in network_keywords]
 
     # Add 'external_tool' marker to tests that require external tools
     external_tool_keywords = ["muscle", "amalgkit", "blast", "ncbi", "seqkit", "sra"]
@@ -337,8 +344,9 @@ def pytest_collection_modifyitems(config, items):
     integration_keywords = ["integration", "workflow", "pipeline", "end_to_end"]
 
     for item in items:
-        # Check if test name contains network-related keywords
-        if any(keyword in item.name.lower() for keyword in network_keywords):
+        # Check if test name contains network-related keywords as whole words
+        name_words = re.sub(r"[\W_]+", " ", item.name.lower())
+        if any(pattern.search(name_words) for pattern in network_patterns):
             item.add_marker(pytest.mark.network)
 
         # Check if test name contains external tool keywords

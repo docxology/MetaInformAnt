@@ -28,6 +28,7 @@ ACTIVE_WRITER = (
 )
 
 
+@pytest.mark.timeout(180)  # subprocess + watchdog design budget is <120s; CI coverage mode defaults to 60s
 def test_stalled_writer_terminates_early(tmp_path: Path) -> None:
     """A writer with frozen output is killed at the stall deadline, not the timeout."""
     out_dir = tmp_path / "quant" / "SRR_X"

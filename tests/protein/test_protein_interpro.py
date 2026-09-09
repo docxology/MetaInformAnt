@@ -44,13 +44,16 @@ def test_fetch_interpro_domains_real_network():
 
 def test_fetch_interpro_domains_empty_accession():
     """Test edge case: empty accession string."""
+    if not _check_online("https://www.ebi.ac.uk/interpro"):
+        pytest.skip("No network access for InterPro API - real implementation requires connectivity")
+
     try:
         results = fetch_interpro_domains("")
         # Real implementation should handle this gracefully
         assert isinstance(results, list)
-    except Exception:
-        # Expected behavior - empty accession is invalid
-        assert True
+    except Exception as e:
+        # API rejection of an empty accession is documented real behavior
+        pytest.skip(f"InterPro API rejected empty accession - real API behavior: {e}")
 
 
 def test_fetch_interpro_domains_none_accession():
@@ -65,14 +68,13 @@ def test_fetch_interpro_domains_invalid_accession():
     if not _check_online("https://www.ebi.ac.uk/interpro"):
         pytest.skip("No network access for InterPro API - real implementation requires connectivity")
 
-    # Test with invalid accession
     try:
         results = fetch_interpro_domains("FAKE_PROTEIN_12345")
         # Real API should return empty list or handle gracefully
         assert isinstance(results, list)
-    except Exception:
-        # Expected when API returns error for invalid accession
-        assert True  # This is acceptable real-world behavior
+    except Exception as e:
+        # API error for an invalid accession is documented real behavior
+        pytest.skip(f"InterPro API rejected invalid accession - real API behavior: {e}")
 
 
 def test_fetch_interpro_domains_multiple_proteins_real():
@@ -95,15 +97,16 @@ def test_fetch_interpro_domains_multiple_proteins_real():
 
 def test_fetch_interpro_domains_offline_behavior():
     """Document real offline behavior for InterPro queries."""
-    # When offline, the function should fail gracefully
+    if not _check_online("https://www.ebi.ac.uk/interpro"):
+        pytest.skip("No network access for InterPro API - real implementation requires connectivity")
+
     try:
         results = fetch_interpro_domains("P69905")
         # If this succeeds, we're online
         assert isinstance(results, list)
-    except Exception:
+    except Exception as e:
         # Expected when offline - this documents real failure modes
-        # Real implementations reveal actual network dependencies
-        assert True  # This is acceptable real-world behavior
+        pytest.skip(f"InterPro API unavailable - real failure mode: {e}")
 
 
 def test_fetch_interpro_domains_case_sensitivity():
@@ -128,14 +131,16 @@ def test_fetch_interpro_domains_case_sensitivity():
 
 def test_fetch_interpro_domains_with_timeout():
     """Test behavior with network timeout scenarios."""
+    if not _check_online("https://www.ebi.ac.uk/interpro"):
+        pytest.skip("No network access for InterPro API - real implementation requires connectivity")
+
     # This tests real timeout behavior without test doubles
     try:
-        # Use a very short timeout to potentially trigger real timeout
         results = fetch_interpro_domains("P69905")
         assert isinstance(results, list)
-    except Exception:
-        # Real timeout or network error - this is expected behavior
-        assert True  # Documents real failure modes
+    except Exception as e:
+        # Real timeout or network error - documented real failure modes
+        pytest.skip(f"InterPro request failed or timed out - real failure mode: {e}")
 
 
 def test_parse_interpro_results_legacy_xml_match():

@@ -29,12 +29,20 @@ def test_eqtl_scripts_import_with_fresh_output_tree(tmp_path: Path, monkeypatch)
 
 
 def test_rna_snp_pipeline_uses_maintained_ena_downloader() -> None:
+    """The script is a thin orchestrator; downloads use the maintained ENADownloader."""
     repo_root = Path(__file__).resolve().parents[2]
     module = _import_script(
         repo_root / "scripts/eqtl/rna_snp_pipeline.py",
         "rna_snp_pipeline_import_test",
     )
 
-    assert module.ENADownloader.__name__ == "ENADownloader"
+    # Thin-orchestrator contract: business logic lives in metainformant.eqtl.
+    assert hasattr(module, "run_pipeline")
     assert not hasattr(module, "DOWNLOAD_SCRIPT")
-    assert "curl" in module.REQUIRED_TOOLS
+
+    # The maintained ENA downloader is the single download path.
+    from metainformant.eqtl.workflow.variant_calling import ENADownloader as eqtl_ena_downloader
+    from metainformant.rna.retrieval.ena_downloader import ENADownloader
+
+    assert ENADownloader.__name__ == "ENADownloader"
+    assert eqtl_ena_downloader is ENADownloader

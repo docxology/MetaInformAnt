@@ -87,10 +87,9 @@ def test_entrez_offline_behavior():
         rec = entrez.get_genome_from_ncbi("NC_001422.1", email=email)
         # If this succeeds, we're online
         assert hasattr(rec, "id")
-    except Exception:
+    except Exception as e:
         # Expected when offline - this documents real failure modes
-        # Real implementations reveal actual network dependencies
-        assert True  # This is acceptable real-world behavior
+        pytest.skip(f"NCBI service unavailable - real failure mode: {e}")
 
 
 @pytest.mark.network

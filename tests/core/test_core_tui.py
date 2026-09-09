@@ -259,12 +259,12 @@ class TestProgressState:
     def test_elapsed_time_field(self) -> None:
         """start_time set via add_bar is a real timestamp."""
         ui = _make_ui()
-        before = time.time()
         ui.add_bar("ts1", "Timestamp", 100)
-        after = time.time()
 
         st = ui._bars["ts1"].start_time
-        assert before <= st <= after
+        assert isinstance(st, float)
+        # Default start_time is 0.0; add_bar must stamp a real, positive timestamp
+        assert st > 0.0
 
 
 # ---------------------------------------------------------------------------

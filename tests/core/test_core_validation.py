@@ -30,13 +30,12 @@ class TestValidateType:
 
     def test_validate_type_int(self):
         """Test validating integer type."""
-        validate_type(42, int, "age")
-        # Should not raise
+        # Validators return None on success and raise ValidationError on failure
+        assert validate_type(42, int, "age") is None
 
     def test_validate_type_str(self):
         """Test validating string type."""
-        validate_type("hello", str, "name")
-        # Should not raise
+        assert validate_type("hello", str, "name") is None
 
     def test_validate_type_wrong_type(self):
         """Test that wrong type raises ValidationError."""
@@ -45,9 +44,8 @@ class TestValidateType:
 
     def test_validate_type_tuple(self):
         """Test validating against tuple of types."""
-        validate_type(42, (int, float), "number")
-        validate_type(3.14, (int, float), "number")
-        # Should not raise
+        assert validate_type(42, (int, float), "number") is None
+        assert validate_type(3.14, (int, float), "number") is None
 
     def test_validate_type_tuple_wrong(self):
         """Test that type not in tuple raises ValidationError."""
@@ -60,18 +58,20 @@ class TestValidateRange:
 
     def test_validate_range_within(self):
         """Test validating value within range."""
-        validate_range(5, min_val=0, max_val=10, name="value")
-        # Should not raise
+        assert validate_range(5, min_val=0, max_val=10, name="value") is None
+        # Range bounds are inclusive
+        assert validate_range(0, min_val=0, max_val=10, name="value") is None
+        assert validate_range(10, min_val=0, max_val=10, name="value") is None
 
     def test_validate_range_min_only(self):
         """Test validating with only minimum."""
-        validate_range(5, min_val=0, name="value")
-        # Should not raise
+        assert validate_range(5, min_val=0, name="value") is None
+        assert validate_range(0, min_val=0, name="value") is None
 
     def test_validate_range_max_only(self):
         """Test validating with only maximum."""
-        validate_range(5, max_val=10, name="value")
-        # Should not raise
+        assert validate_range(5, max_val=10, name="value") is None
+        assert validate_range(10, max_val=10, name="value") is None
 
     def test_validate_range_below_min(self):
         """Test that value below minimum raises ValidationError."""
@@ -149,10 +149,9 @@ class TestValidateNotNone:
 
     def test_validate_not_none_valid(self):
         """Test validating non-None value."""
-        validate_not_none("value", "name")
-        validate_not_none(42, "number")
-        validate_not_none([1, 2, 3], "list")
-        # Should not raise
+        assert validate_not_none("value", "name") is None
+        assert validate_not_none(42, "number") is None
+        assert validate_not_none([1, 2, 3], "list") is None
 
     def test_validate_not_none_none(self):
         """Test that None raises ValidationError."""
@@ -165,10 +164,9 @@ class TestValidateNotEmpty:
 
     def test_validate_not_empty_valid(self):
         """Test validating non-empty values."""
-        validate_not_empty("hello", "string")
-        validate_not_empty([1, 2, 3], "list")
-        validate_not_empty({"key": "value"}, "dict")
-        # Should not raise
+        assert validate_not_empty("hello", "string") is None
+        assert validate_not_empty([1, 2, 3], "list") is None
+        assert validate_not_empty({"key": "value"}, "dict") is None
 
     def test_validate_not_empty_empty_string(self):
         """Test that empty string raises ValidationError."""
@@ -193,8 +191,7 @@ class TestValidateSchema:
         """Test validating data against schema."""
         schema = {"name": str, "age": int, "email": str}
         data = {"name": "John", "age": 30, "email": "john@example.com"}
-        validate_schema(data, schema, "person")
-        # Should not raise
+        assert validate_schema(data, schema, "person") is None
 
     def test_validate_schema_missing_field(self):
         """Test that missing field raises ValidationError."""

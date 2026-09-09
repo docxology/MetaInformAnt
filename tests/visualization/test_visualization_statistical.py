@@ -403,6 +403,7 @@ class TestROCCurve:
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
+        np.random.seed(42)
         y_true = np.random.randint(0, 2, 100)
         y_scores = np.random.rand(100)
 
@@ -421,6 +422,7 @@ class TestROCCurve:
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
+        np.random.seed(42)
         y_true = np.random.randint(0, 2, 100)
         y_scores = np.random.rand(100)
         output_path = tmp_path / "roc.png"
@@ -465,6 +467,7 @@ class TestPrecisionRecallCurve:
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
+        np.random.seed(42)
         y_true = np.random.randint(0, 2, 100)
         y_scores = np.random.rand(100)
 
@@ -643,9 +646,9 @@ class TestSaveTargetsCallerFigure:
         import matplotlib
 
         matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
         from io import BytesIO
 
+        import matplotlib.pyplot as plt
         from PIL import Image
 
         data = np.random.RandomState(0).randn(40)

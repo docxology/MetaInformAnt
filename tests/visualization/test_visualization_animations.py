@@ -315,6 +315,7 @@ class TestAnimationKwargs:
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
+        np.random.seed(42)
         data = np.random.randn(10, 2)
         cluster_labels = [np.random.randint(0, 2, 10) for _ in range(2)]
 
