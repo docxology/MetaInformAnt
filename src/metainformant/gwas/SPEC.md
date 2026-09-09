@@ -38,7 +38,7 @@ Genome-Wide Association Studies (GWAS) module for METAINFORMANT. Provides end-to
 | `genome` | `normalize_chromosome_name()`, `parse_gff3_genes()` |
 | `metadata` | `load_sample_metadata()`, `get_population_labels()` |
 | `config` | `load_gwas_config()`, `validate_config_parameters()`, `estimate_runtime()` |
-| `sra_download` | `batch_download_sra()`, `download_sra_experiment()`, `find_sra_data_by_phenotype()` |
+| `sra_download` | `download_sra_experiment()` |
 
 ### finemapping
 

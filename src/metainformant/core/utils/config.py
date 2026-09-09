@@ -521,9 +521,13 @@ def get_config_schema(config_path: str | Path) -> dict[str, Any]:
         - nested_structure: Nested structure of config
         - types: Inferred types for values
     """
+    parse_errors: tuple[type[BaseException], ...] = (OSError, ValueError)
+    if yaml is not None:
+        parse_errors = (*parse_errors, yaml.YAMLError)
+
     try:
         config_data = load_mapping_from_file(config_path)
-    except Exception:
+    except parse_errors:
         return {}
 
     schema: dict[str, Any] = {
@@ -569,107 +573,3 @@ def get_config_schema(config_path: str | Path) -> dict[str, Any]:
     schema["nested_structure"] = extract_structure(config_data)
 
     return schema
-
-
-def find_configs_for_module(module_name: str, repo_root: str | Path | None = None) -> list[dict[str, Any]]:
-    """Find configs used by a module.
-
-    Args:
-        module_name: Name of module (e.g., 'rna', 'gwas', 'life_events')
-        repo_root: Root directory of repository
-
-    Returns:
-        List of config file information dictionaries
-    """
-    from pathlib import Path
-
-    if repo_root is None:
-        repo_root = Path.cwd()
-    else:
-        repo_root = Path(repo_root)
-
-    # Map module names to config patterns
-    module_config_map = {
-        "rna": "amalgkit",
-        "gwas": "gwas",
-        "life_events": "life_events",
-        "singlecell": "singlecell",
-        "networks": "networks",
-        "multiomics": "multiomics",
-    }
-
-    # Get config pattern for module
-    config_pattern = module_config_map.get(module_name.lower(), module_name.lower())
-
-    # Discover configs for this pattern
-    configs = discover_config_files(repo_root, domain=config_pattern)
-
-    return configs
-
-
-def list_config_templates(repo_root: str | Path | None = None) -> list[dict[str, Any]]:
-    """List available config templates.
-
-    Args:
-        repo_root: Root directory of repository
-
-    Returns:
-        List of template information dictionaries:
-        - path: Path to template file
-        - domain: Domain name
-        - name: Template name
-    """
-    from pathlib import Path
-
-    if repo_root is None:
-        repo_root = Path.cwd()
-    else:
-        repo_root = Path(repo_root)
-
-    config_dir = repo_root / "config"
-    if not config_dir.exists():
-        return []
-
-    templates: list[dict[str, Any]] = []
-
-    # Find all template files
-    for template_file in config_dir.rglob("*template*.yaml"):
-        if not template_file.is_file():
-            continue
-
-        rel_path = template_file.relative_to(config_dir)
-        path_parts = rel_path.parts
-        domain = path_parts[0] if len(path_parts) > 1 else None
-
-        template_name = template_file.stem.replace("_template", "").replace("template", "")
-
-        templates.append(
-            {
-                "path": str(template_file),
-                "domain": domain,
-                "name": template_name,
-                "relative_path": str(rel_path),
-            }
-        )
-
-    # Also check for .yml extension
-    for template_file in config_dir.rglob("*template*.yml"):
-        if not template_file.is_file():
-            continue
-
-        rel_path = template_file.relative_to(config_dir)
-        path_parts = rel_path.parts
-        domain = path_parts[0] if len(path_parts) > 1 else None
-
-        template_name = template_file.stem.replace("_template", "").replace("template", "")
-
-        templates.append(
-            {
-                "path": str(template_file),
-                "domain": domain,
-                "name": template_name,
-                "relative_path": str(rel_path),
-            }
-        )
-
-    return sorted(templates, key=lambda x: x["path"])

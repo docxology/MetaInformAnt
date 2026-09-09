@@ -7,9 +7,8 @@ including Manhattan plots, Q-Q plots, and regional association plots.
 from __future__ import annotations
 
 import math
-import re
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Union, cast
+from typing import Any, Dict, List, Optional, Union, cast
 
 from metainformant.core.utils import logging
 
@@ -31,142 +30,6 @@ try:
 except ImportError:
     HAS_NUMPY = False
     logger.warning("numpy not available, some visualizations may not work")
-
-try:
-    from scipy import stats as _scipy_stats
-
-    HAS_SCIPY = True
-except ImportError:  # pragma: no cover - used only in lean environments
-    _scipy_stats = None
-    HAS_SCIPY = False
-
-EXPECTED_MEDIAN_CHI2_1DF = 0.454936423119572
-
-
-def _coerce_float(value: Any, default: Optional[float] = None) -> Optional[float]:
-    try:
-        result = float(value)
-    except (TypeError, ValueError):
-        return default
-    if not math.isfinite(result):
-        return default
-    return result
-
-
-def _chrom_sort_key(chrom: Any) -> tuple:
-    """Sort chromosome/contig names naturally across numeric and accession IDs."""
-    text = str(chrom).strip()
-    lowered = text.lower()
-    if lowered.startswith("chr"):
-        lowered = lowered[3:]
-
-    if lowered.isdigit():
-        return (0, int(lowered), text)
-
-    special = {"x": 23, "y": 24, "m": 25, "mt": 25}
-    if lowered in special:
-        return (1, special[lowered], text)
-
-    numbers = [int(part) for part in re.findall(r"\d+", lowered)]
-    if numbers:
-        return (2, numbers, lowered, text)
-    return (3, lowered, text)
-
-
-def _neg_log10_p(p_value: Any, cap: float = 300.0) -> float:
-    p = _coerce_float(p_value)
-    if p is None:
-        return 0.0
-    if p <= 0:
-        return cap
-    if p > 1:
-        return 0.0
-    return min(-math.log10(max(p, 10 ** (-cap))), cap)
-
-
-def _normalise_gwas_results(results: Union[List[Dict[str, Any]], Dict[str, Any]]) -> List[Dict[str, Any]]:
-    if isinstance(results, dict):
-        source_rows: Iterable[Any] = [results]
-    else:
-        source_rows = list(results or [])
-
-    rows: List[Dict[str, Any]] = []
-    for original_index, result in enumerate(source_rows):
-        if not isinstance(result, dict):
-            continue
-        chrom = str(result.get("chrom", result.get("chromosome", "1")))
-        pos = _coerce_float(result.get("pos", result.get("position", 0)), 0.0)
-        p_val = result.get("p_value", result.get("pval", result.get("pvalue", 1.0)))
-        rows.append(
-            {
-                "chrom": chrom,
-                "pos": pos if pos is not None else 0.0,
-                "p_value": p_val,
-                "neg_log_p": _neg_log10_p(p_val),
-                "original_index": original_index,
-                "source": result,
-            }
-        )
-    rows.sort(key=lambda row: (_chrom_sort_key(row["chrom"]), row["pos"], row["original_index"]))
-    return rows
-
-
-def _compute_genome_axis(rows: List[Dict[str, Any]]) -> tuple[Dict[str, float], Dict[str, float], float]:
-    """Assign cumulative x positions using observed contig extents."""
-    if not rows:
-        return {}, {}, 0.0
-
-    chrom_order: List[str] = []
-    chrom_bounds: Dict[str, tuple[float, float]] = {}
-    for row in rows:
-        chrom = row["chrom"]
-        pos = float(row["pos"])
-        if chrom not in chrom_bounds:
-            chrom_order.append(chrom)
-            chrom_bounds[chrom] = (pos, pos)
-        else:
-            lo, hi = chrom_bounds[chrom]
-            chrom_bounds[chrom] = (min(lo, pos), max(hi, pos))
-
-    largest_extent = max(max(hi - lo, hi, 1.0) for lo, hi in chrom_bounds.values())
-    gap = max(1_000.0, min(largest_extent * 0.01, 5_000_000.0))
-
-    offsets: Dict[str, float] = {}
-    centers: Dict[str, float] = {}
-    current = 0.0
-    for chrom in chrom_order:
-        lo, hi = chrom_bounds[chrom]
-        offsets[chrom] = current
-        centers[chrom] = current + (lo + hi) / 2.0
-        current += max(hi, lo + 1.0) + gap
-
-    for row in rows:
-        row["global_pos"] = offsets[row["chrom"]] + float(row["pos"])
-
-    return offsets, centers, current
-
-
-def _lambda_gc_from_pvalues(p_values: Sequence[float]) -> Optional[float]:
-    """Compute λ_GC via the canonical genomic-control helper (p → χ²(1) → median)."""
-    from metainformant.gwas.analysis.correction import lambda_gc_from_p_values
-
-    return lambda_gc_from_p_values([float(p) for p in p_values if math.isfinite(float(p)) and 0 < float(p) <= 1])
-
-
-def _qq_confidence_band(n: int, alpha: float = 0.05) -> tuple[Any, Any, Any]:
-    ranks = np.arange(1, n + 1)
-    expected = (ranks - 0.5) / n
-    if HAS_SCIPY and _scipy_stats is not None:
-        lower_p = _scipy_stats.beta.ppf(alpha / 2.0, ranks, n - ranks + 1)
-        upper_p = _scipy_stats.beta.ppf(1.0 - alpha / 2.0, ranks, n - ranks + 1)
-    else:
-        mean = ranks / (n + 1.0)
-        sd = np.sqrt((ranks * (n - ranks + 1.0)) / (((n + 1.0) ** 2) * (n + 2.0)))
-        lower_p = mean - 1.96 * sd
-        upper_p = mean + 1.96 * sd
-    lower_p = np.clip(lower_p, 1e-300, 1.0)
-    upper_p = np.clip(upper_p, 1e-300, 1.0)
-    return -np.log10(expected), -np.log10(upper_p), -np.log10(lower_p)
 
 
 def regional_plot(

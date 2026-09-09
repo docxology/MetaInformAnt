@@ -1217,12 +1217,6 @@ def _raw_input_state_index(fastq_dir: Path, accessions: set[str]) -> dict[str, t
     return states
 
 
-def _raw_input_priority_index(fastq_dir: Path, accessions: set[str]) -> dict[str, int]:
-    """Return only the raw-state tier for compatibility with existing callers."""
-
-    return {accession: state[0] for accession, state in _raw_input_state_index(fastq_dir, accessions).items()}
-
-
 def _task_has_local_sra(task: Dict[str, Any]) -> bool:
     """Return whether a task has an SRA source that uses the fallback lane."""
 
@@ -1962,9 +1956,7 @@ class StreamingPipelineOrchestrator:
         self.sra_validation_timeout_seconds = _duration_setting("AMALGKIT_PIPELINE_SRA_VALIDATE_TIMEOUT_SECONDS", 600)
         self.compression_timeout_seconds = _duration_setting("AMALGKIT_PIPELINE_COMPRESSION_TIMEOUT_SECONDS", 1800)
         self.quant_timeout_seconds = _duration_setting("AMALGKIT_PIPELINE_QUANT_TIMEOUT_SECONDS", 7200)
-        self.quant_stall_timeout_seconds = _duration_setting(
-            "AMALGKIT_PIPELINE_QUANT_STALL_TIMEOUT_SECONDS", 0
-        )
+        self.quant_stall_timeout_seconds = _duration_setting("AMALGKIT_PIPELINE_QUANT_STALL_TIMEOUT_SECONDS", 0)
 
         local_quant_cache = os.environ.get("AMALGKIT_LOCAL_QUANT_SCRATCH_DIR", "").strip()
         self.local_quant_scratch_dir = Path(local_quant_cache).expanduser() if local_quant_cache else None

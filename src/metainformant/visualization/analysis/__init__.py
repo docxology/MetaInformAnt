@@ -8,12 +8,10 @@ from __future__ import annotations
 from . import (
     dimred,
     information,
-    math_plots,
     quality,
     quality_assessment,
     quality_omics,
     quality_sequencing,
-    simulation_plots,
     statistical,
     timeseries,
 )
@@ -30,12 +28,10 @@ from .timeseries import plot_autocorrelation, plot_forecast, plot_time_series
 __all__ = [
     "dimred",
     "information",
-    "math_plots",
     "quality",
     "quality_assessment",
     "quality_omics",
     "quality_sequencing",
-    "simulation_plots",
     "statistical",
     "timeseries",
     "plot_pca",

@@ -44,7 +44,7 @@ End-to-end GWAS pipelines for social insect genomics: VCF parsing, QC, associati
 | `expression.py` | `ExpressionLoader` — loads Amalgkit kallisto quantification |
 | `genome.py` | `normalize_chromosome_name()`, `parse_gff3_genes()` |
 | `metadata.py` | `load_sample_metadata()`, `get_population_labels()` |
-| `sra_download.py` | `batch_download_sra()`, `download_sra_experiment()`, `find_sra_data_by_phenotype()` |
+| `sra_download.py` | `download_sra_experiment()` |
 | `extraction.py` | `parse_fastq_filename()`, `build_sample_file_map()`, `extract_fastq()` |
 | `traits.py` | `load_traits()`, `load_traits_with_ids()` |
 | `vcf_utils.py` | `discover_sample_vcfs()`, `count_variants()`, `bgzip_and_index()`, `merge_vcfs()`, `subsample_vcf()`, `extract_sample_ids()` |

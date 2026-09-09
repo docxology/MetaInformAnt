@@ -120,5 +120,4 @@ ax = volcano_plot(log2fc, pvalues, output_path="output/viz/volcano.png")
 - [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [`metainformant.gwas.visualization`](../gwas/visualization/) -- GWAS-specific plot suites
-- [`metainformant.visualization.analysis.simulation_plots`](./analysis/simulation_plots.py) -- Simulation result plots
 - [`docs/visualization/`](../../../docs/visualization/) -- Visualization documentation
