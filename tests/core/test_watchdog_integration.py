@@ -4,7 +4,6 @@ Integration test for ProcessWatchdog.
 
 import subprocess
 import sys
-from pathlib import Path
 
 import pytest
 

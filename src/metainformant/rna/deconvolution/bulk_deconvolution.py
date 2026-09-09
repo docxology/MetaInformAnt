@@ -49,7 +49,6 @@ except ImportError:
     HAS_NUMPY = False
 
 try:
-    from scipy import stats as scipy_stats
     from scipy.optimize import nnls as scipy_nnls
 
     HAS_SCIPY = True

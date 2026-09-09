@@ -20,13 +20,6 @@ logger = get_logger(__name__)
 
 # Optional dependency handling
 try:
-    import numpy as np
-
-    HAS_NUMPY = True
-except ImportError:
-    HAS_NUMPY = False
-
-try:
     from scipy import stats as scipy_stats
 
     HAS_SCIPY = True

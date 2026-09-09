@@ -16,15 +16,6 @@ from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-# Optional dependency handling
-try:
-    import numpy as np
-
-    HAS_NUMPY = True
-except ImportError:
-    HAS_NUMPY = False
-
-
 # =============================================================================
 # Type Definitions
 # =============================================================================
