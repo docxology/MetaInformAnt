@@ -427,7 +427,8 @@ def joint_pca(
         multiomics_data: MultiOmicsData object or dictionary of omics datasets
         n_components: Number of joint components
         standardize: Whether to standardize the data
-        layer_weights: Optional weights for each layer
+        layer_weights: Optional per-layer weights applied after standardization (layers without an
+            entry default to 1.0), so they modulate each layer's influence on the joint components
         **kwargs: Additional PCA parameters
 
     Returns:
@@ -450,14 +451,8 @@ def joint_pca(
 
     logger.info(f"Performing joint PCA with {n_components} components")
 
-    # Apply layer weights if specified
-    weighted_data = {}
-    for layer_name, df in data_dict.items():
-        weight = layer_weights.get(layer_name, 1.0) if layer_weights else 1.0
-        weighted_data[layer_name] = df * weight
-
     # Concatenate all datasets horizontally (features from different omics)
-    concatenated_data = pd.concat(list(weighted_data.values()), axis=1)
+    concatenated_data = pd.concat(list(data_dict.values()), axis=1)
 
     # Handle missing values
     concatenated_data = concatenated_data.fillna(concatenated_data.mean())
@@ -473,6 +468,15 @@ def joint_pca(
         scaled_data = scaler.fit_transform(numeric_data)
     else:
         scaled_data = numeric_data
+
+    # Apply layer weights AFTER standardization: StandardScaler rescales every column to unit
+    # variance, so weights applied beforehand would be divided back out (a silent no-op under
+    # standardize=True). Multiplying after scaling makes the weights effective in both modes.
+    if layer_weights:
+        column_weights = np.concatenate(
+            [np.full(df.shape[1], float(layer_weights.get(layer_name, 1.0))) for layer_name, df in data_dict.items()]
+        )
+        scaled_data = scaled_data * column_weights
 
     # Perform PCA
     n_comp = min(n_components, scaled_data.shape[1], scaled_data.shape[0])
@@ -500,7 +504,7 @@ def joint_nmf(
     n_components: int = 50,
     max_iter: int = 200,
     regularization: float = 0.0,
-    random_state: Optional[int] = None,
+    random_state: int = 0,
     **kwargs: Any,
 ) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
     """Perform joint NMF across multiple omics datasets.
@@ -510,7 +514,7 @@ def joint_nmf(
         n_components: Number of joint components
         max_iter: Maximum iterations for NMF
         regularization: L2 regularization strength
-        random_state: Random seed for reproducibility
+        random_state: Random seed for reproducibility (defaults to 0 for deterministic results)
         **kwargs: Additional NMF parameters
 
     Returns:
@@ -1029,8 +1033,15 @@ def compute_multiomics_similarity(omics_data: Dict[str, pd.DataFrame], method: s
     # Concatenate all omics data
     concatenated = np.concatenate([data.values for data in omics_data.values()], axis=1)
 
-    # Handle missing values
-    concatenated = np.nan_to_num(concatenated, nan=np.nanmean(concatenated))
+    # Impute missing values with per-column means (matching joint_pca). A single global mean
+    # across heterogeneous layers is statistically meaningless. All-NaN columns fall back to 0.
+    if np.isnan(concatenated).any():
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            column_means = np.nanmean(concatenated, axis=0)
+        column_means = np.nan_to_num(column_means, nan=0.0)
+        nan_rows, nan_cols = np.where(np.isnan(concatenated))
+        concatenated[nan_rows, nan_cols] = column_means[nan_cols]
 
     if method == "correlation":
         # Correlation-based similarity

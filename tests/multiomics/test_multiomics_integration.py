@@ -6,11 +6,11 @@ Real implementationing used - all tests use real computational methods and data 
 
 from __future__ import annotations
 
-from metainformant.core.utils import errors
 import numpy as np
 import pandas as pd
 import pytest
 
+from metainformant.core.utils import errors
 from metainformant.multiomics.analysis.integration import (
     MultiOmicsData,
     canonical_correlation,
@@ -486,6 +486,21 @@ class TestJointPCA:
         assert len(loadings) == 2
         assert len(explained_var) == 5
 
+    def test_joint_pca_weights_effective_under_standardization(self):
+        """Unequal layer weights must change the joint solution under standardize=True."""
+        emb_plain, load_plain, _ = joint_pca(self.omics_data, n_components=5, standardize=True)
+        emb_weighted, load_weighted, _ = joint_pca(
+            self.omics_data,
+            n_components=5,
+            standardize=True,
+            layer_weights={"genomics": 5.0, "transcriptomics": 0.2},
+        )
+
+        assert emb_plain.shape == emb_weighted.shape == (20, 5)
+        assert not np.allclose(emb_plain, emb_weighted)
+        assert not np.allclose(load_plain["genomics"], load_weighted["genomics"])
+        assert not np.allclose(load_plain["transcriptomics"], load_weighted["transcriptomics"])
+
     def test_joint_pca_no_standardization(self):
         """Test joint PCA without standardization."""
         embeddings, loadings, explained_var = joint_pca(self.omics_data, n_components=5, standardize=False)
@@ -552,6 +567,25 @@ class TestJointNMF:
         np.testing.assert_array_almost_equal(factors1, factors2, decimal=5)
         for layer in features1.keys():
             np.testing.assert_array_almost_equal(features1[layer], features2[layer], decimal=5)
+
+    def test_joint_nmf_default_seed_reproducible(self):
+        """Default random_state must give reproducible results even with random NMF init."""
+        # 5 samples x many features with n_components > n_samples forces sklearn's random
+        # init, the regime where random_state=None would make results unreproducible.
+        samples = [f"S{i}" for i in range(5)]
+        data = {
+            "omics": pd.DataFrame(
+                np.random.RandomState(0).exponential(1.0, (5, 40)),
+                index=samples,
+                columns=[f"F{i}" for i in range(40)],
+            )
+        }
+
+        w1, h1 = joint_nmf(data, n_components=10, max_iter=100)
+        w2, h2 = joint_nmf(data, n_components=10, max_iter=100)
+
+        np.testing.assert_array_almost_equal(w1, w2, decimal=5)
+        np.testing.assert_array_almost_equal(h1["omics"], h2["omics"], decimal=5)
 
     def test_joint_nmf_reconstruction(self):
         """Test NMF reconstruction quality."""
@@ -733,6 +767,38 @@ class TestComputeMultiomicsSimilarity:
         """Cosine similarity returns one row/column per sample."""
         sim = compute_multiomics_similarity(self._aligned_omics(), method="cosine")
         assert sim.shape == (12, 12)
+
+    def test_nan_imputation_is_per_column(self):
+        """Missing values are imputed with per-column means, not a global mean."""
+        samples = [f"S{i}" for i in range(4)]
+        rna = pd.DataFrame(
+            {"G0": [1.0, 2.0, np.nan, 4.0], "G1": [10.0, np.nan, 30.0, 50.0]},
+            index=samples,
+        )
+        protein = pd.DataFrame(
+            {"P0": [1000.0, 2000.0, 3000.0, np.nan], "P1": [np.nan, 1.0, 2.0, 3.0]},
+            index=samples,
+        )
+
+        sim = compute_multiomics_similarity({"rna": rna, "protein": protein}, method="correlation")
+
+        column_means = np.array([7.0 / 3.0, 30.0, 2000.0, 2.0])
+        filled = np.array(
+            [
+                [1.0, 10.0, 1000.0, column_means[3]],
+                [2.0, column_means[1], 2000.0, 1.0],
+                [column_means[0], 30.0, 3000.0, 2.0],
+                [4.0, 50.0, column_means[2], 3.0],
+            ]
+        )
+        np.testing.assert_allclose(sim, np.corrcoef(filled), atol=1e-10)
+
+        # The old global-mean imputation (mean of every non-NaN entry = 6103/12) differs.
+        global_mean = 6103.0 / 12.0
+        global_filled = filled.copy()
+        for row, col in [(2, 0), (1, 1), (3, 2), (0, 3)]:
+            global_filled[row, col] = global_mean
+        assert not np.allclose(sim, np.corrcoef(global_filled), atol=1e-6)
 
 
 class TestMetabolomicsAndEpigenomeConverters:
