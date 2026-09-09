@@ -25,7 +25,6 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
 
 try:
     from scipy import stats as scipy_stats
@@ -33,7 +32,6 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    scipy_stats = None
 
 
 # =============================================================================
@@ -682,6 +680,7 @@ def _wilcoxon_test(group1: list[float], group2: list[float]) -> float:
     Returns:
         p-value from the test.
     """
+    p_value: float
     if HAS_SCIPY:
         try:
             _, p_value = scipy_stats.mannwhitneyu(group1, group2, alternative="two-sided")

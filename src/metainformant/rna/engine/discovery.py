@@ -299,7 +299,7 @@ def _parse_sra_xml(xml_data: bytes, query: str) -> list:
 
         # SRA XML structure has EXPERIMENT_PACKAGE elements
         for package in root.findall(".//EXPERIMENT_PACKAGE"):
-            record = {}
+            record: dict[str, Any] = {}
 
             # Extract experiment info
             experiment = package.find(".//EXPERIMENT")

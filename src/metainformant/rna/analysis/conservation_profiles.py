@@ -24,7 +24,7 @@ manifest is not frozen.
 
 from __future__ import annotations
 
-from typing import Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -148,7 +148,7 @@ def compute_profile_conservation(
             vec_a = sub_a.loc[shared_genes].to_numpy(dtype=float)
             vec_b = sub_b.loc[shared_genes].to_numpy(dtype=float)
 
-            corr_func = stats.spearmanr if method == "spearman" else stats.pearsonr
+            corr_func: Any = stats.spearmanr if method == "spearman" else stats.pearsonr
             for row_idx, gene in enumerate(shared_genes):
                 x = vec_a[row_idx]
                 y = vec_b[row_idx]

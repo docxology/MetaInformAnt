@@ -47,7 +47,6 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
 
 try:
     from scipy import stats as scipy_stats
@@ -56,8 +55,6 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    scipy_stats = None
-    scipy_nnls = None
 
 try:
     from sklearn.svm import NuSVR
@@ -121,6 +118,7 @@ def deconvolve_nnls(
     mix_arr, sig_arr, n_genes, n_types = _validate_and_convert(mixture, signature_matrix)
 
     # Solve NNLS
+    proportions_raw: Any
     if HAS_NUMPY and HAS_SCIPY:
         method = "scipy_nnls"
         proportions_raw, residual = scipy_nnls(sig_arr, mix_arr)

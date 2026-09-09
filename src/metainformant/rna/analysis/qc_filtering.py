@@ -111,7 +111,7 @@ def detect_batch_effects(
 
     if method == "kruskal":
         # Kruskal-Wallis test for each gene
-        pvalues = []
+        pvalues: Any = []
         for gene in expression_df.index:
             gene_values = expression_df.loc[gene]
             groups = [gene_values[batch_aligned == batch].values for batch in unique_batches]
@@ -353,6 +353,7 @@ def detect_gc_bias(
     overall_corr = float(np.mean(correlations))
     # Test if overall correlation is significantly different from zero
     # Using one-sample t-test on correlations
+    overall_pval: float
     if len(correlations) >= 2:
         t_stat, overall_pval = stats.ttest_1samp(correlations, 0)
         overall_pval = float(overall_pval)
@@ -471,6 +472,7 @@ def detect_length_bias(
 
     overall_corr = float(np.mean(correlations))
     # Test if overall correlation is significantly different from zero
+    overall_pval: float
     if len(correlations) >= 2:
         t_stat, overall_pval = stats.ttest_1samp(correlations, 0)
         overall_pval = float(overall_pval)
