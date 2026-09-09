@@ -687,8 +687,9 @@ class TestEstimation:
         from metainformant.information.metrics.core.estimation import bias_correction
 
         corrected = bias_correction(entropy=2.0, sample_size=100, alphabet_size=4)
-        # Correction = (4-1)/(2*100) = 0.015 => corrected = 2.0 - 0.015
-        assert abs(corrected - 1.985) < 1e-10
+        # Plugin entropy is biased low; Miller-Madow ADDS (d-1)/(2n * ln 2) bits.
+        expected = 2.0 + (4 - 1) / (2 * 100 * math.log(2))
+        assert corrected == pytest.approx(expected, abs=1e-12)
 
     def test_bias_correction_invalid_params(self) -> None:
         from metainformant.information.metrics.core.estimation import bias_correction
@@ -1015,6 +1016,7 @@ class TestWorkflows:
         assert output_path.exists()
         content = output_path.read_text()
         assert "INFORMATION ANALYSIS REPORT" in content
+
 
 # ============================================================
 # Integration tests

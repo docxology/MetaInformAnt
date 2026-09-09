@@ -73,11 +73,12 @@ def _plugin_entropy_estimator(counts: np.ndarray, total: int, bias_correction: b
     # Plugin entropy: -sum(p * log2(p))
     entropy = -np.sum(probs * np.log2(probs))
 
-    # Bias correction (Miller, 1955): subtract (k-1)/(2n)
+    # Bias correction (Miller, 1955): the plugin estimator is biased LOW by
+    # approximately (k-1)/(2n) nats, i.e. (k-1)/(2n * ln 2) bits; add it.
     if bias_correction and total > 1:
         k = len(probs)  # Number of non-zero categories
-        correction = (k - 1) / (2 * total)
-        entropy -= correction
+        correction = (k - 1) / (2 * total * math.log(2))
+        entropy += correction
 
     return max(0.0, float(entropy))
 
@@ -91,11 +92,13 @@ def _miller_madow_entropy_estimator(counts: np.ndarray, total: int) -> float:
     if len(probs) == 0:
         return 0.0
 
-    # Miller-Madow correction: subtract (k-1)/(2n) where k is number of non-zero categories
+    # Miller-Madow correction: the plugin estimator is biased LOW by
+    # approximately (k-1)/(2n) nats where k is the number of non-zero
+    # categories; in bits the additive correction is (k-1)/(2n * ln 2).
     k = len(probs)
-    correction = (k - 1) / (2 * total) if total > 1 else 0
+    correction = (k - 1) / (2 * total * math.log(2)) if total > 1 else 0
 
-    entropy = -np.sum(probs * np.log2(probs)) - correction
+    entropy = -np.sum(probs * np.log2(probs)) + correction
 
     return max(0.0, float(entropy))
 
@@ -271,9 +274,10 @@ def bias_correction(entropy: float, sample_size: int, alphabet_size: int) -> flo
     if alphabet_size <= 0:
         raise ValueError("Alphabet size must be positive")
 
-    # General bias correction: entropy - (d-1)/(2n)
-    correction = (alphabet_size - 1) / (2 * sample_size)
-    corrected_entropy = entropy - correction
+    # Miller-Madow correction: the plugin estimator is biased LOW by
+    # approximately (d-1)/(2n) nats, i.e. (d-1)/(2n * ln 2) bits; add it.
+    correction = (alphabet_size - 1) / (2 * sample_size * math.log(2))
+    corrected_entropy = entropy + correction
 
     return max(0.0, corrected_entropy)
 
@@ -362,15 +366,16 @@ def entropy_bootstrap_confidence(
 
 
 def effective_sample_size_correction(entropy: float, sample_size: int, alphabet_size: int) -> float:
-    """Apply effective sample size correction for entropy estimation.
+    """Apply an additive Miller-Madow-style correction for entropy estimation.
 
-    This correction accounts for the fact that the effective sample size
-    may be smaller than the nominal sample size due to dependencies.
+    The plugin entropy estimator is biased LOW by approximately
+    (d-1)/(2n) nats, i.e. (d-1)/(2n * ln 2) bits. This helper adds that
+    correction to the supplied raw entropy estimate.
 
     Args:
-        entropy: Raw entropy estimate
-        sample_size: Nominal sample size
-        alphabet_size: Alphabet size
+        entropy: Raw entropy estimate (bits)
+        sample_size: Nominal sample size (n)
+        alphabet_size: Alphabet size (d)
 
     Returns:
         Corrected entropy estimate
@@ -378,11 +383,11 @@ def effective_sample_size_correction(entropy: float, sample_size: int, alphabet_
     if sample_size <= 1:
         return entropy
 
-    # Correction factor based on alphabet size and sample size
-    # This is a heuristic correction
-    correction_factor = 1.0 - (alphabet_size - 1) / (2 * sample_size * math.log(2))
+    # Additive Miller-Madow correction, consistent with the plugin/miller_madow
+    # estimators: (d-1)/(2n) nats converted to bits.
+    correction = (alphabet_size - 1) / (2 * sample_size * math.log(2))
 
-    corrected_entropy = entropy * correction_factor
+    corrected_entropy = entropy + correction
 
     return max(0.0, corrected_entropy)
 
@@ -398,8 +403,7 @@ def panzeri_treves_bias_correction(
     Args:
         entropy: Raw entropy estimate
         sample_size: Sample size (n)
-        alphabet_size: Number of possible responses (d)
-        response_frequencies: Array of response frequencies (optional)
+        response_frequencies: Array of response counts (summing to sample_size; optional)
 
     Returns:
         Bias-corrected entropy
@@ -411,11 +415,12 @@ def panzeri_treves_bias_correction(
         return entropy
 
     if response_frequencies is not None:
-        # Use provided frequencies
+        # Use provided response counts
         freq_array = np.array(response_frequencies)
     else:
-        # Assume uniform distribution as fallback
-        freq_array = np.ones(alphabet_size) / alphabet_size
+        # Uniform response fallback: counts per response summing to the
+        # sample size (the terms below treat frequencies as counts).
+        freq_array = np.full(alphabet_size, sample_size / alphabet_size)
 
     # Panzeri-Treves correction
     # Sum over responses: (f_r - 1/n) / (n * log(2))

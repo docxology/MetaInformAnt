@@ -46,24 +46,29 @@ class TestPluginEntropyExactValues:
         h = entropy_estimator({"A": 75, "B": 25}, method="plugin", bias_correction=False)
         assert h == pytest.approx(0.8112781244591328, abs=1e-12)
 
-    def test_bias_correction_reduces_entropy(self) -> None:
-        counts = {"A": 50, "T": 30, "G": 20}
+    def test_bias_correction_adds_miller_correction_toward_truth(self) -> None:
+        # Uniform k=4 with n=1000 draws: the plugin estimator is biased low,
+        # so the Miller-Madow correction must push it UP toward the true 2 bits.
+        rng = np.random.RandomState(42)
+        samples = rng.choice(4, size=1000)
+        counts = Counter(samples.tolist())
         raw = entropy_estimator(counts, method="plugin", bias_correction=False)
         corrected = entropy_estimator(counts, method="plugin", bias_correction=True)
-        assert corrected < raw
-        # Miller correction: (k-1)/(2n) = 2/(2*100) = 0.01
-        assert raw - corrected == pytest.approx(0.01, abs=1e-12)
+        assert raw < 2.0
+        assert corrected >= raw
+        assert corrected == pytest.approx(2.0, abs=0.02)
 
     def test_miller_madow_matches_plugin_plus_correction(self) -> None:
         counts = {"A": 50, "T": 30, "G": 20}
         raw = entropy_estimator(counts, method="plugin", bias_correction=False)
         mm = entropy_estimator(counts, method="miller_madow")
-        assert raw - mm == pytest.approx((3 - 1) / (2 * 100), abs=1e-12)
+        # Miller-Madow adds (k-1)/(2n) nats = (k-1)/(2n * ln 2) bits on top of plugin.
+        assert mm - raw == pytest.approx((3 - 1) / (2 * 100 * math.log(2)), abs=1e-12)
 
     def test_tiny_sample_substantial_correction(self) -> None:
-        # k=2, n=2: H=1 bit, correction (2-1)/(2*2)=0.25 -> 0.75
+        # k=2, n=2: H=1 bit; correction (2-1)/(2*2*ln 2) bits added on top.
         h = entropy_estimator({"A": 1, "B": 1}, method="plugin", bias_correction=True)
-        assert h == pytest.approx(0.75, abs=1e-12)
+        assert h == pytest.approx(1.0 + 1 / (2 * 2 * math.log(2)), abs=1e-12)
 
     def test_list_and_dict_inputs_agree(self) -> None:
         assert entropy_estimator([50, 30, 20]) == entropy_estimator({"A": 50, "T": 30, "G": 20})
@@ -158,7 +163,16 @@ class TestKLDivergence:
 
 class TestBiasCorrectionHelpers:
     def test_bias_correction_formula(self) -> None:
-        assert bias_correction(2.0, sample_size=100, alphabet_size=4) == pytest.approx(1.985)
+        # Miller-Madow adds (d-1)/(2n) nats = (d-1)/(2n * ln 2) bits.
+        expected = 2.0 + (4 - 1) / (2 * 100 * math.log(2))
+        assert bias_correction(2.0, sample_size=100, alphabet_size=4) == pytest.approx(expected, abs=1e-12)
+
+    def test_effective_sample_size_correction_is_additive(self) -> None:
+        # The correction is additive Miller-Madow: entropy + (d-1)/(2n * ln 2) bits.
+        expected = 2.0 + (4 - 1) / (2 * 100 * math.log(2))
+        assert effective_sample_size_correction(2.0, sample_size=100, alphabet_size=4) == pytest.approx(
+            expected, abs=1e-12
+        )
 
     def test_effective_sample_size_identity_at_one(self) -> None:
         assert effective_sample_size_correction(3.7, sample_size=1, alphabet_size=4) == 3.7
@@ -192,11 +206,19 @@ class TestEntropyRate:
         rate = entropy_rate_estimator(seq, order=1)
         assert rate == pytest.approx(1.0, abs=0.05)
 
-    def test_period_two_block_rate_zero_at_order_two(self) -> None:
-        # Period-4 sequence [0,0,1,1]: fully determined by previous 2 symbols
-        seq = [0, 0, 1, 1] * 20
-        r2 = entropy_rate_estimator(seq, order=2)
-        assert r2 == pytest.approx(0.0, abs=1e-9)
+    def test_period_two_block_rate_vanishes_at_order_two(self) -> None:
+        # Period-4 sequence [0,0,1,1]: fully determined by previous 2 symbols,
+        # so the true entropy rate is 0. The Miller-Madow correction leaves an
+        # O(1/n) residual on deterministic sequences; assert it is small and
+        # shrinks with sample size (consistency to the true value).
+        def rate(reps: int) -> float:
+            return entropy_rate_estimator([0, 0, 1, 1] * reps, order=2)
+
+        r_small = rate(20)
+        r_large = rate(200)
+        assert 0.0 <= r_small < 0.005
+        assert r_large < r_small
+        assert r_large < 0.0005
 
     def test_short_sequence_raises(self) -> None:
         with pytest.raises(ValueError, match="too short"):
