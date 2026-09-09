@@ -8,34 +8,14 @@ the ``09_audit.py`` orchestrator script.
 from __future__ import annotations
 
 import datetime
-import hashlib
 import platform
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
+from metainformant.core.utils.hash import sha256_file
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
-
-
-def sha256_file(path: str | Path, *, chunk_size: int = 1 << 20) -> str:
-    """Compute the SHA-256 hex-digest of a file.
-
-    Args:
-        path: File to hash.
-        chunk_size: Read chunk size in bytes (default 1 MB).
-
-    Returns:
-        Lowercase hex-digest string.
-    """
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        while True:
-            data = f.read(chunk_size)
-            if not data:
-                break
-            h.update(data)
-    return h.hexdigest()
 
 
 def checksum_directory(

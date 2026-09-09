@@ -11,6 +11,7 @@ from __future__ import annotations
 import math
 from collections import Counter
 
+from metainformant.core.sequence import reverse_complement
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -26,19 +27,6 @@ except ImportError:
 
 # Nucleotide constants
 NUCLEOTIDES = ["A", "C", "G", "T"]
-COMPLEMENT = {"A": "T", "T": "A", "C": "G", "G": "C", "N": "N"}
-
-
-def _reverse_complement(seq: str) -> str:
-    """Compute reverse complement of a DNA sequence.
-
-    Args:
-        seq: DNA sequence string.
-
-    Returns:
-        Reverse complement string.
-    """
-    return "".join(COMPLEMENT.get(c, "N") for c in reversed(seq.upper()))
 
 
 def _information_content(pwm: list[dict[str, float]]) -> float:
@@ -344,7 +332,7 @@ def _cluster_kmers(
                     too_similar = True
                     break
             # Also check reverse complement
-            rc = _reverse_complement(kmer)
+            rc = reverse_complement(kmer)
             if len(rc) == len(prev_kmer):
                 hamming_rc = sum(1 for a, b in zip(rc, prev_kmer) if a != b)
                 if hamming_rc <= similarity_threshold:
@@ -354,7 +342,7 @@ def _cluster_kmers(
         if not too_similar:
             selected.append(entry)
             used.add(kmer)
-            used.add(_reverse_complement(kmer))
+            used.add(reverse_complement(kmer))
 
         if len(selected) >= top_n:
             break
@@ -380,7 +368,7 @@ def _collect_motif_instances(
     k = len(kmer)
     instances: list[str] = []
     kmer_upper = kmer.upper()
-    rc_kmer = _reverse_complement(kmer_upper)
+    rc_kmer = reverse_complement(kmer_upper)
 
     for seq in sequences:
         seq_upper = seq.upper()
@@ -461,7 +449,7 @@ def scan_sequence_for_motifs(
     )
 
     seq_upper = sequence.upper()
-    rc_seq = _reverse_complement(seq_upper) if scan_reverse else ""
+    rc_seq = reverse_complement(seq_upper) if scan_reverse else ""
 
     matches: list[dict] = []
 

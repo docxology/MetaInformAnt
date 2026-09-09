@@ -11,6 +11,7 @@ import re
 from typing import Any, Dict
 
 from metainformant.core.utils import logging
+from metainformant.dna.sequence.core import reverse_complement
 
 logger = logging.get_logger(__name__)
 
@@ -190,19 +191,6 @@ def _iupac_to_regex(pattern: str) -> str:
     return "".join(regex_parts)
 
 
-def _reverse_complement(sequence: str) -> str:
-    """Compute the reverse complement of a DNA sequence.
-
-    Args:
-        sequence: DNA sequence string.
-
-    Returns:
-        Reverse complement string.
-    """
-    complement_table = str.maketrans("ACGTacgt", "TGCAtgca")
-    return sequence.translate(complement_table)[::-1]
-
-
 def _translate_sequence(sequence: str, genetic_code: int = 1) -> str:
     """Translate a DNA sequence to a protein sequence.
 
@@ -265,7 +253,7 @@ def predict_orfs(
 
     strands = [
         (seq_upper, [1, 2, 3]),
-        (_reverse_complement(seq_upper), [-1, -2, -3]),
+        (reverse_complement(seq_upper), [-1, -2, -3]),
     ]
 
     for strand_seq, frames in strands:

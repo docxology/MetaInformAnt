@@ -12,9 +12,21 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Union
 
 from metainformant.core import io
+from metainformant.core.sequence import (
+    COMPLEMENT_TABLE_UPPER as _COMPLEMENT_TABLE_UPPER,
+    reverse_complement,
+    validate_dna_sequence,
+)
 from metainformant.core.utils import errors, logging
 
 logger = logging.get_logger(__name__)
+
+__all__ = [
+    "read_fasta",
+    "write_fasta",
+    "reverse_complement",
+    "validate_dna_sequence",
+]
 
 
 def read_fasta(path: Union[str, Path]) -> Dict[str, str]:
@@ -99,32 +111,6 @@ def write_fasta(sequences: Dict[str, str], path: Union[str, Path], line_width: i
     logger.debug(f"Wrote {len(sequences)} sequences to {path}")
 
 
-def reverse_complement(seq: str) -> str:
-    """Generate the reverse complement of a DNA sequence.
-
-    Args:
-        seq: DNA sequence string
-
-    Returns:
-        Reverse complement sequence
-
-    Raises:
-        ValueError: If sequence contains invalid characters
-    """
-    if not seq:
-        return ""
-
-    # Validate sequence
-    if not validate_dna_sequence(seq):
-        raise ValueError(f"Invalid DNA sequence: {seq}")
-
-    # Complement mapping
-    complement = str.maketrans("ATCGatcg", "TAGCtagc")
-
-    # Reverse and complement
-    return seq.translate(complement)[::-1]
-
-
 def gc_content(seq: str) -> float:
     """Calculate GC content of a DNA sequence.
 
@@ -160,23 +146,6 @@ def sequence_length(seq: str) -> int:
         Sequence length (ignoring whitespace)
     """
     return len(seq.replace(" ", "").replace("\t", "").replace("\n", "").replace("\r", ""))
-
-
-def validate_dna_sequence(seq: str) -> bool:
-    """Validate that a sequence contains only valid DNA characters.
-
-    Args:
-        seq: Sequence to validate
-
-    Returns:
-        True if sequence is valid DNA, False otherwise
-    """
-    if not seq:
-        return False
-
-    # Allow IUPAC ambiguity codes
-    valid_chars = set("ATCGNUWSMKRYBDHVatcgnuwsmkrybdhv-")
-    return all(c in valid_chars for c in seq)
 
 
 def find_motifs(seq: str, motif_patterns: List[str]) -> Dict[str, List[int]]:
@@ -561,8 +530,7 @@ def dna_complementarity_score(seq1: str, seq2: str) -> float:
     if len(seq1) != len(seq2):
         raise errors.ValidationError("Sequences must be the same length")
 
-    complement_map = str.maketrans("ATCG", "TAGC")
-    seq2_complement = seq2.upper().translate(complement_map)
+    seq2_complement = seq2.upper().translate(_COMPLEMENT_TABLE_UPPER)
 
     matches = sum(1 for a, b in zip(seq1.upper(), seq2_complement) if a == b)
     return matches / len(seq1) if seq1 else 0.0
@@ -608,5 +576,4 @@ def _is_palindromic(seq: str) -> bool:
     Returns:
         True if sequence is palindromic
     """
-    complement = str.maketrans("ATCG", "TAGC")
-    return seq == seq.translate(complement)[::-1]
+    return seq == seq.translate(_COMPLEMENT_TABLE_UPPER)[::-1]

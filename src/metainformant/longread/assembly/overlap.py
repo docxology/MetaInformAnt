@@ -21,6 +21,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Sequence
 
+from metainformant.core.sequence import reverse_complement
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -147,7 +148,7 @@ def minimizer_sketch(
 
         # Canonical k-mer: min of forward and reverse complement hash
         fwd_hash = _hash_kmer(kmer)
-        rc_kmer = _reverse_complement(kmer)
+        rc_kmer = reverse_complement(kmer)
         rc_hash = _hash_kmer(rc_kmer)
 
         if fwd_hash <= rc_hash:
@@ -490,9 +491,3 @@ def _hash_kmer(kmer: str) -> int:
         h ^= ord(c)
         h = (h * 0x01000193) & 0xFFFFFFFF
     return h
-
-
-def _reverse_complement(seq: str) -> str:
-    """Compute the reverse complement of a DNA sequence."""
-    complement = {"A": "T", "T": "A", "C": "G", "G": "C", "N": "N"}
-    return "".join(complement.get(c, "N") for c in reversed(seq))

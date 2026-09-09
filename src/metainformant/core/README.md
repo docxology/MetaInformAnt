@@ -53,6 +53,7 @@ graph TD
 | [`ui/`](ui/) | `TerminalInterface` for real-time pipeline monitoring |
 | `db.py` | Compatibility re-export of `metainformant.core.data.db` |
 | `ncbi.py` | NCBI contact policy (`resolve_ncbi_contact`, `NCBIContact`) |
+| `sequence.py` | Shared sequence primitives (`reverse_complement`, `validate_dna_sequence`, complement tables) |
 | Runtime output | Discovery caches and generated files belong under repository `output/`, not under `src/metainformant/core/` |
 
 ## Key Capabilities

@@ -5,8 +5,8 @@ and NCBI RNA accessions to construct transcript-level orthogroup tables.
 """
 
 from __future__ import annotations
+
 import gzip
-import hashlib
 import json
 import re
 from dataclasses import dataclass
@@ -16,6 +16,7 @@ from typing import Dict, Iterable, List, Literal, Mapping, Optional, Sequence, S
 import pandas as pd
 
 from metainformant.core.utils import logging
+from metainformant.core.utils.hash import sha256_file
 
 logger = logging.get_logger(__name__)
 
@@ -212,15 +213,6 @@ class OrthologBridgeError(ValueError):
     """Fail-closed error for bridge inputs, policies, manifests, or duplicates."""
 
 
-def sha256_file(path: Path) -> str:
-    """Compute the lowercase sha256 hex digest of a file in bounded chunks."""
-    digest = hashlib.sha256()
-    with open(path, "rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
 @dataclass(frozen=True)
 class OrthologySourceMetadata:
     """Versioned source record for every input the ortholog bridge consumes.
@@ -241,17 +233,11 @@ class OrthologySourceMetadata:
         for field_name in ("orthodb_release", "gene2refseq_url", "retrieved_at"):
             value = getattr(self, field_name)
             if not isinstance(value, str) or not value.strip():
-                raise OrthologBridgeError(
-                    f"orthology source metadata field '{field_name}' must be a non-empty string"
-                )
+                raise OrthologBridgeError(f"orthology source metadata field '{field_name}' must be a non-empty string")
         if not isinstance(self.taxonomic_scope, (list, tuple)) or not self.taxonomic_scope:
-            raise OrthologBridgeError(
-                "orthology source metadata requires a non-empty taxonomic_scope list"
-            )
+            raise OrthologBridgeError("orthology source metadata requires a non-empty taxonomic_scope list")
         if not isinstance(self.input_sha256, Mapping) or not self.input_sha256:
-            raise OrthologBridgeError(
-                "orthology source metadata requires at least one recorded input checksum"
-            )
+            raise OrthologBridgeError("orthology source metadata requires at least one recorded input checksum")
         for name, checksum in self.input_sha256.items():
             if not isinstance(name, str) or not name.strip():
                 raise OrthologBridgeError("input checksum names must be non-empty strings")
@@ -260,9 +246,7 @@ class OrthologySourceMetadata:
                 or len(checksum) != 64
                 or any(character not in "0123456789abcdef" for character in checksum)
             ):
-                raise OrthologBridgeError(
-                    f"recorded checksum for input '{name}' is not a lowercase sha256 hex digest"
-                )
+                raise OrthologBridgeError(f"recorded checksum for input '{name}' is not a lowercase sha256 hex digest")
 
     @classmethod
     def from_inputs(
@@ -279,9 +263,7 @@ class OrthologySourceMetadata:
         for name in sorted(inputs):
             path = Path(inputs[name])
             if not path.is_file():
-                raise OrthologBridgeError(
-                    f"cannot record a checksum for input '{name}': file not found: {path}"
-                )
+                raise OrthologBridgeError(f"cannot record a checksum for input '{name}': file not found: {path}")
             checksums[name] = sha256_file(path)
         return cls(
             orthodb_release=orthodb_release,
@@ -335,9 +317,7 @@ class OrthologySourceMetadata:
         )
         missing = [key for key in required if key not in payload]
         if missing:
-            raise OrthologBridgeError(
-                "source manifest is missing required field(s): " + ", ".join(missing)
-            )
+            raise OrthologBridgeError("source manifest is missing required field(s): " + ", ".join(missing))
         scope = payload["taxonomic_scope"]
         checksums = payload["input_sha256"]
         if not isinstance(scope, (list, tuple)):
@@ -421,9 +401,7 @@ def build_orthogroup_bridge(
             evidence when ``strict_duplicates`` is set.
     """
     if copy_policy not in COPY_POLICIES:
-        raise OrthologBridgeError(
-            f"copy_policy must be one of {list(COPY_POLICIES)}, got {copy_policy!r}"
-        )
+        raise OrthologBridgeError(f"copy_policy must be one of {list(COPY_POLICIES)}, got {copy_policy!r}")
     evidence = list(duplicate_evidence) if duplicate_evidence else []
 
     og_table = pd.read_csv(og_path, sep="\t", index_col=0, dtype=str).fillna("")
@@ -559,9 +537,7 @@ def build_orthogroup_bridge(
                         "orthogroup": ",".join(sorted(orthogroups)),
                         "gene_id": "",
                         "transcript_id": tid,
-                        "detail": (
-                            f"transcript {tid} in {species} is claimed by {len(orthogroups)} orthogroups"
-                        ),
+                        "detail": (f"transcript {tid} in {species} is claimed by {len(orthogroups)} orthogroups"),
                     }
                 )
 
@@ -583,10 +559,7 @@ def build_orthogroup_bridge(
                 "mapped_to_transcript": per_species[species]["mapped_to_transcript"],
                 "one_to_one": per_species[species]["one_to_one"],
                 "one_to_many": per_species[species]["one_to_many"],
-                "unmapped": (
-                    per_species[species]["input_genes"]
-                    - per_species[species]["mapped_to_transcript"]
-                ),
+                "unmapped": (per_species[species]["input_genes"] - per_species[species]["mapped_to_transcript"]),
             }
             for species in species_names
         ],
@@ -610,9 +583,7 @@ def build_orthogroup_bridge(
         table=table,
         retention_audit=retention_audit,
         duplicated_evidence=duplicated_evidence,
-        dropped_orthogroups=pd.DataFrame(
-            dropped_orthogroups, columns=_DROPPED_ORTHOGROUP_COLUMNS
-        ),
+        dropped_orthogroups=pd.DataFrame(dropped_orthogroups, columns=_DROPPED_ORTHOGROUP_COLUMNS),
         copy_policy=copy_policy,
     )
 

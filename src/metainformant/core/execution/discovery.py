@@ -13,6 +13,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from metainformant.core.utils.symbols import _parse_function_signature
+
 
 @dataclass
 class FunctionInfo:
@@ -166,63 +168,6 @@ def _get_cache_dir(repo_root: Path) -> Path:
     from metainformant.core.utils.symbols import _get_cache_dir as _canonical_get_cache_dir
 
     return _canonical_get_cache_dir(repo_root)
-
-
-def _parse_function_signature(node: ast.FunctionDef) -> str:
-    """Parse function signature from AST node."""
-    args = []
-    defaults_start = len(node.args.args) - len(node.args.defaults)
-
-    for i, arg in enumerate(node.args.args):
-        arg_str = arg.arg
-        if arg.annotation:
-            try:
-                arg_str += f": {ast.unparse(arg.annotation)}"
-            except Exception:
-                # Fallback for complex annotations
-                if isinstance(arg.annotation, ast.Name):
-                    arg_str += f": {arg.annotation.id}"
-                else:
-                    arg_str += ": ..."
-        # Add default value if present
-        if i >= defaults_start:
-            default_idx = i - defaults_start
-            try:
-                default_str = ast.unparse(node.args.defaults[default_idx])
-                arg_str += f" = {default_str}"
-            except Exception:
-                arg_str += " = ..."
-        args.append(arg_str)
-
-    # Handle *args and **kwargs
-    if node.args.vararg:
-        vararg_name = node.args.vararg.arg
-        if node.args.vararg.annotation:
-            try:
-                vararg_name += f": {ast.unparse(node.args.vararg.annotation)}"
-            except Exception:
-                pass
-        args.append(f"*{vararg_name}")
-    if node.args.kwarg:
-        kwarg_name = node.args.kwarg.arg
-        if node.args.kwarg.annotation:
-            try:
-                kwarg_name += f": {ast.unparse(node.args.kwarg.annotation)}"
-            except Exception:
-                pass
-        args.append(f"**{kwarg_name}")
-
-    sig = f"({', '.join(args)})"
-    if node.returns:
-        try:
-            sig += f" -> {ast.unparse(node.returns)}"
-        except Exception:
-            # Fallback for complex return types
-            if isinstance(node.returns, ast.Name):
-                sig += f" -> {node.returns.id}"
-            else:
-                sig += " -> ..."
-    return sig
 
 
 def discover_functions(module_path: str | Path, pattern: str | None = None) -> list[FunctionInfo]:

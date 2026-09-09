@@ -13,12 +13,12 @@ from collections import defaultdict
 from typing import Dict, Tuple
 
 from metainformant.core.utils import logging
+from metainformant.dna.sequence.core import reverse_complement
 
 from .gene_finding import (
     GENETIC_CODES,
     REGULATORY_MOTIFS,
     _iupac_to_regex,
-    _reverse_complement,
     predict_orfs,
 )
 
@@ -303,7 +303,7 @@ def find_regulatory_elements(
             )
 
         # Search reverse strand
-        rev_comp = _reverse_complement(seq_upper)
+        rev_comp = reverse_complement(seq_upper)
         for match in regex.finditer(rev_comp):
             # Convert reverse-strand coordinates to forward-strand
             fwd_start = len(seq_upper) - match.end()

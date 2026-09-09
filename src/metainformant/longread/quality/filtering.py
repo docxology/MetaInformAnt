@@ -13,6 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Sequence, TypeVar, cast
 
+from metainformant.core.sequence import reverse_complement
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -216,7 +217,7 @@ def trim_adapters(
         offset = len(seq) - len(search_end)
         for adapter_name, adapter_seq in adapter_sequences.items():
             # Also check reverse complement of adapter at end
-            rc_adapter = _reverse_complement(adapter_seq.upper())
+            rc_adapter = reverse_complement(adapter_seq.upper())
             match = _find_adapter_match(search_end, rc_adapter, min_identity)
             if match is not None:
                 adapter_start = offset + match[0]
@@ -290,7 +291,7 @@ def detect_adapters(
 
     for adapter_name, adapter_seq in known_adapters.items():
         adapter_upper = adapter_seq.upper()
-        rc_adapter = _reverse_complement(adapter_upper)
+        rc_adapter = reverse_complement(adapter_upper)
 
         for search_adapter, suffix in [(adapter_upper, ""), (rc_adapter, "_rc")]:
             # Scan the sequence with a sliding window
@@ -490,12 +491,6 @@ def _mean_phred(quality_string: str) -> float:
         return 0.0
     scores = [ord(c) - 33 for c in quality_string]
     return sum(scores) / len(scores)
-
-
-def _reverse_complement(seq: str) -> str:
-    """Compute the reverse complement of a DNA sequence."""
-    complement = {"A": "T", "T": "A", "C": "G", "G": "C", "N": "N"}
-    return "".join(complement.get(c, "N") for c in reversed(seq))
 
 
 def _sequence_identity(seq1: str, seq2: str) -> float:

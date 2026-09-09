@@ -19,6 +19,7 @@ import math
 from collections import Counter
 from dataclasses import dataclass, field
 
+from metainformant.core.sequence import reverse_complement
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -509,7 +510,7 @@ def merge_paired_reads(
 
     for read_id in common_ids:
         fwd_seq = forward[read_id].upper()
-        rev_seq = _reverse_complement(reverse[read_id].upper())
+        rev_seq = reverse_complement(reverse[read_id].upper())
 
         fwd_qual = quality_forward.get(read_id) if quality_forward else None
         rev_qual = quality_reverse.get(read_id) if quality_reverse else None
@@ -570,19 +571,6 @@ def merge_paired_reads(
 
     logger.info(f"Paired-end merging: {merge_count} merged, {fail_count} failed")
     return merged
-
-
-def _reverse_complement(sequence: str) -> str:
-    """Compute the reverse complement of a DNA sequence.
-
-    Args:
-        sequence: DNA sequence string.
-
-    Returns:
-        Reverse complement sequence.
-    """
-    complement = {"A": "T", "T": "A", "C": "G", "G": "C", "N": "N"}
-    return "".join(complement.get(base, "N") for base in reversed(sequence))
 
 
 __all__ = [

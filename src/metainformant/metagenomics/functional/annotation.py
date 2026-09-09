@@ -16,6 +16,7 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 
+from metainformant.core.sequence import reverse_complement
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -152,12 +153,6 @@ class FunctionalAnnotation:
     confidence: float = 0.0
 
 
-def _reverse_complement(sequence: str) -> str:
-    """Compute reverse complement of a DNA sequence."""
-    complement_map = str.maketrans("ATCGatcgNn", "TAGCtagcNn")
-    return sequence.translate(complement_map)[::-1]
-
-
 def _translate(nucleotide_seq: str, stop_at_stop: bool = False) -> str:
     """Translate nucleotide sequence to protein.
 
@@ -213,7 +208,7 @@ def predict_orfs(
         logger.debug(f"Sequence too short ({seq_len} bp) for ORF prediction with min_length={min_length}")
         return orfs
 
-    for strand, working_seq in [("+", seq_upper), ("-", _reverse_complement(seq_upper))]:
+    for strand, working_seq in [("+", seq_upper), ("-", reverse_complement(seq_upper))]:
         for frame in range(3):
             current_starts: list[int] = []
             # If allowing partial ORFs, treat position 0 as a potential start
