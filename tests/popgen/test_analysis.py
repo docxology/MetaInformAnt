@@ -128,9 +128,24 @@ class TestGenotypeStructureAnalysis:
         assert result["pca"]["status"] == "success"
         assert result["kinship"]["status"] == "success"
         assert result["kinship"]["method"] == "vanraden"
-        # HWE runs per individual (30 rows for 30 individuals x 40 sites)
-        assert len(result["hardy_weinberg_test"]) == 30
+        # HWE runs per site (one row per site, sites x individuals internally)
+        assert len(result["hardy_weinberg_test"]) == 40
         assert all("p_value" in row for row in result["hardy_weinberg_test"])
+        assert [row["locus"] for row in result["hardy_weinberg_test"]] == [f"Site_{i}" for i in range(40)]
+
+    def test_hwe_orientation_flags_deviating_site(self):
+        # 4 individuals x 3 sites; site 1 is all heterozygotes, which deviates
+        # massively from HWE. The fixed per-site orientation must flag that
+        # site, not some individual row.
+        genotypes = [[0, 1, 2], [1, 1, 1], [0, 1, 2], [2, 1, 1]]
+        result = genotype_structure_analysis(genotypes, n_components=2)
+        hwe = result["hardy_weinberg_test"]
+        assert len(hwe) == 3
+        assert [row["locus"] for row in hwe] == ["Site_0", "Site_1", "Site_2"]
+        assert hwe[0]["hwe_deviated"] is False
+        assert hwe[1]["hwe_deviated"] is True
+        assert hwe[1]["p_value"] < 0.05
+        assert hwe[2]["hwe_deviated"] is False
 
 
 class TestLdSummary:

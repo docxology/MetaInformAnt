@@ -260,16 +260,19 @@ def generate_genotype_matrix(
 
     rng = coerce_and_seed(rng)
 
+    # Sample one allele frequency per SNP up front so every individual at a
+    # site shares the same population allele frequency.
+    if allele_frequencies is not None:
+        snp_mafs = list(allele_frequencies)
+    else:
+        snp_mafs = [rng.uniform(maf_min, maf_max) for _ in range(n_snps)]
+
     genotype_matrix = []
 
     for ind_idx in range(n_individuals):
         ind_genotypes = []
         for snp_idx in range(n_snps):
-            # Get allele frequency
-            if allele_frequencies is not None:
-                maf = allele_frequencies[snp_idx]
-            else:
-                maf = rng.uniform(maf_min, maf_max)
+            maf = snp_mafs[snp_idx]
 
             # Generate genotype based on ploidy
             if ploidy == 1:

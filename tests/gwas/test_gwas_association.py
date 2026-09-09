@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from metainformant.core.io.io import write_tsv
 from metainformant.gwas.analysis.association import association_test_linear, association_test_logistic
@@ -88,6 +89,22 @@ def test_association_linear_missing_data() -> None:
 
     assert result["status"] == "success"
     # Should handle missing data by excluding that sample
+
+
+def test_association_logistic_without_statsmodels_errors(monkeypatch: "pytest.MonkeyPatch") -> None:
+    """Without statsmodels the logistic test must error, never fabricate inference."""
+    import sys
+
+    monkeypatch.setitem(sys.modules, "statsmodels.api", None)
+
+    genotypes = [0, 1, 2, 0, 1, 2]
+    phenotypes = [0, 1, 0, 1, 0, 1]
+
+    result = association_test_logistic(genotypes, phenotypes)
+
+    assert result["status"] == "error"
+    assert "statsmodels" in result["error"]
+    assert "converged" in result and result["converged"] is False
 
 
 def test_association_logistic_basic() -> None:

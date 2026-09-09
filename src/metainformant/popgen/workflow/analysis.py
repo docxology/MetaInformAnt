@@ -24,9 +24,9 @@ from metainformant.dna.population.analysis import (
     neutrality_test_suite,
 )
 from metainformant.dna.population.core import (
+    fay_wu_h_from_sequences,
     fu_and_li_d_star_from_sequences,
     fu_and_li_f_star_from_sequences,
-    fay_wu_h_from_sequences,
 )
 from metainformant.dna.sequence.core import read_fasta
 from metainformant.gwas.analysis.quality import test_hwe
@@ -162,11 +162,15 @@ def genotype_structure_analysis(
     """
     pca_result = compute_pca(genotype_matrix, n_components=n_components)
     kinship_result = compute_kinship_matrix(genotype_matrix, method=kinship_method)
-    hwe_p_values = test_hwe(genotype_matrix)
+    import numpy as np
+
+    # test_hwe expects a variants x samples matrix; the input here is
+    # individuals x sites, so transpose before testing (one p-value per site).
+    hwe_p_values = test_hwe(np.asarray(genotype_matrix, dtype=int).T.tolist())
 
     hwe_result = [
         {
-            "locus": f"Variant_{i}",
+            "locus": f"Site_{i}",
             "p_value": p_value,
             "chi_square": None,
             "degrees_of_freedom": 2,

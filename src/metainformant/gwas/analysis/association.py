@@ -251,9 +251,7 @@ def run_logistic_model_gwas(
     results: List[Dict[str, Any]] = []
     for i, genotypes in enumerate(genotype_matrix):
         result = dict(
-            association_test_logistic(
-                list(genotypes), list(phenotypes), covariates=covariates, max_iter=max_iter
-            )
+            association_test_logistic(list(genotypes), list(phenotypes), covariates=covariates, max_iter=max_iter)
         )
         result["variant_index"] = i
         if variant_info and i < len(variant_info):
@@ -409,10 +407,12 @@ def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[flo
 
 
 def _logistic_regression_with_stats(X: Any, y: Any, max_iter: int) -> Tuple[float, float, float, float]:
-    """Perform logistic regression with statistical inference.
+    """Perform logistic regression with statistical inference via statsmodels.
 
-    Uses statsmodels or sklearn if available, otherwise falls back to a pure Python
-    implementation using iteratively reweighted least squares (IRLS).
+    statsmodels is the only supported backend: it supplies model-based standard
+    errors and Wald p-values. When statsmodels is unavailable or the fit fails,
+    this function raises a RuntimeError instead of returning fabricated
+    statistics (e.g. SE = 1/sqrt(n)), which would yield meaningless inference.
 
     Args:
         X: Design matrix as numpy array or list of lists
@@ -421,11 +421,20 @@ def _logistic_regression_with_stats(X: Any, y: Any, max_iter: int) -> Tuple[floa
 
     Returns:
         Tuple of (beta, se, z_stat, p_value) for the genotype coefficient
+
+    Raises:
+        RuntimeError: If statsmodels is unavailable or the logistic fit fails.
     """
-    # Try statsmodels first (best statistical inference)
     try:
         import statsmodels.api as sm
+    except ImportError as exc:
+        raise RuntimeError(
+            "statsmodels is required for logistic regression association tests "
+            "(hard dependency in pyproject.toml); fabricated fallback inference "
+            "(e.g. SE = 1/sqrt(n)) is statistically meaningless and is not returned"
+        ) from exc
 
+    try:
         X_with_intercept = sm.add_constant(X)
         logit_model = sm.Logit(y, X_with_intercept)
         result = logit_model.fit(disp=False, maxiter=max_iter)
@@ -436,151 +445,10 @@ def _logistic_regression_with_stats(X: Any, y: Any, max_iter: int) -> Tuple[floa
         se = float(result.bse[1])
 
         return beta, se, z_stat, p_value
-
-    except ImportError:
-        pass
-    except Exception as e:
-        logger.debug(f"Statsmodels logistic regression failed; falling back: {e}")
-
-    # Try sklearn as fallback
-    try:
-        import scipy.stats as stats
-        from sklearn.linear_model import LogisticRegression
-
-        lr = LogisticRegression(max_iter=max_iter, random_state=42)
-        lr.fit(X, y)
-
-        beta = float(lr.coef_[0][1]) if len(lr.coef_[0]) > 1 else float(lr.coef_[0][0])
-        n = len(y)
-        se = 1.0 / np.sqrt(n)
-        z_stat = beta / se if se != 0 else 0.0
-        p_value = float(2 * (1 - stats.norm.cdf(abs(z_stat))))
-
-        return beta, se, z_stat, p_value
-
-    except ImportError:
-        pass
-    except Exception as e:
-        logger.debug(f"Sklearn logistic regression failed; falling back: {e}")
-
-    # Pure Python fallback using IRLS
-    return _logistic_regression_pure_python(X, y, max_iter)
-
-
-def _logistic_regression_pure_python(X: Any, y: Any, max_iter: int) -> Tuple[float, float, float, float]:
-    """Pure Python logistic regression using iteratively reweighted least squares.
-
-    Args:
-        X: Design matrix (n_samples x n_features)
-        y: Binary response variable (n_samples,)
-        max_iter: Maximum iterations
-
-    Returns:
-        Tuple of (beta, se, z_stat, p_value) for the first non-intercept coefficient
-    """
-    # Convert to lists for pure Python
-    if hasattr(X, "tolist"):
-        X_list = X.tolist()
-    else:
-        X_list = list(X)
-    if hasattr(y, "tolist"):
-        y_list = y.tolist()
-    else:
-        y_list = list(y)
-
-    n = len(y_list)
-    n_features = len(X_list[0]) if X_list else 0
-
-    if n_features == 0 or n == 0:
-        return 0.0, 0.0, 0.0, 1.0
-
-    # Add intercept column if not present (check if first column is all 1s)
-    has_intercept = all(abs(X_list[i][0] - 1.0) < 1e-10 for i in range(n))
-    if not has_intercept:
-        X_list = [[1.0] + row for row in X_list]
-        n_features += 1
-
-    # Initialize coefficients
-    beta = [0.0] * n_features
-
-    # IRLS iterations
-    for _ in range(max_iter):
-        # Compute linear predictor
-        eta = [sum(X_list[i][j] * beta[j] for j in range(n_features)) for i in range(n)]
-
-        # Compute probabilities (sigmoid)
-        prob = []
-        for e in eta:
-            if e > 20:
-                p = 1.0 - 1e-10
-            elif e < -20:
-                p = 1e-10
-            else:
-                p = 1.0 / (1.0 + math.exp(-e))
-            prob.append(p)
-
-        # Compute weights and working response
-        W = [max(p * (1 - p), 1e-10) for p in prob]
-        z = [eta[i] + (y_list[i] - prob[i]) / W[i] for i in range(n)]
-
-        # Weighted least squares solve: (X'WX)^-1 X'Wz
-        # Compute X'WX
-        XtWX = [[0.0] * n_features for _ in range(n_features)]
-        for j in range(n_features):
-            for k in range(n_features):
-                XtWX[j][k] = sum(X_list[i][j] * W[i] * X_list[i][k] for i in range(n))
-
-        # Compute X'Wz
-        XtWz = [sum(X_list[i][j] * W[i] * z[i] for i in range(n)) for j in range(n_features)]
-
-        # Solve using simple Gaussian elimination (for small systems)
-        new_beta = _solve_linear_system(XtWX, XtWz)
-        if new_beta is None:
-            break
-
-        # Check convergence
-        max_change = max(abs(new_beta[j] - beta[j]) for j in range(n_features))
-        beta = new_beta
-
-        if max_change < 1e-6:
-            break
-
-    # Compute standard errors from inverse of Fisher information matrix
-    # Fisher info = X'WX (already computed in last iteration)
-    eta = [sum(X_list[i][j] * beta[j] for j in range(n_features)) for i in range(n)]
-    prob = []
-    for e in eta:
-        if e > 20:
-            p = 1.0 - 1e-10
-        elif e < -20:
-            p = 1e-10
-        else:
-            p = 1.0 / (1.0 + math.exp(-e))
-        prob.append(p)
-    W = [max(p * (1 - p), 1e-10) for p in prob]
-
-    XtWX = [[0.0] * n_features for _ in range(n_features)]
-    for j in range(n_features):
-        for k in range(n_features):
-            XtWX[j][k] = sum(X_list[i][j] * W[i] * X_list[i][k] for i in range(n))
-
-    # Invert to get variance-covariance matrix
-    cov_matrix = _matrix_inverse(XtWX)
-    if cov_matrix is None:
-        se = 1.0 / math.sqrt(n) if n > 0 else 0.0
-    else:
-        # SE for genotype coefficient (index 1 if intercept present)
-        coef_idx = 1 if n_features > 1 else 0
-        se = math.sqrt(max(cov_matrix[coef_idx][coef_idx], 0.0))
-
-    # Get genotype coefficient
-    genotype_beta = beta[1] if n_features > 1 else beta[0]
-
-    # Compute z-statistic and p-value
-    z_stat = genotype_beta / se if se > 0 else 0.0
-    p_value = 2 * (1 - _normal_cdf(abs(z_stat)))
-
-    return genotype_beta, se, z_stat, p_value
+    except Exception as exc:
+        raise RuntimeError(
+            f"statsmodels logistic regression failed ({exc}); refusing to return " "fabricated standard errors/p-values"
+        ) from exc
 
 
 def _solve_linear_system(A: List[List[float]], b: List[float]) -> Optional[List[float]]:

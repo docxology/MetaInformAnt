@@ -12,11 +12,38 @@ from metainformant.simulation.models.popgen import (
     generate_linkage_disequilibrium_data,
     generate_population_sequences,
     generate_site_frequency_spectrum,
+    generate_two_populations,
     simulate_admixture,
     simulate_bottleneck_population,
-    generate_two_populations,
     simulate_population_expansion,
 )
+
+
+class _UniformCountingRandom(random.Random):
+    """Random subclass that counts uniform() draws (per-SNP frequency samples)."""
+
+    def __init__(self, seed: int) -> None:
+        super().__init__(seed)
+        self.uniform_calls = 0
+
+    def uniform(self, a: float, b: float) -> float:
+        self.uniform_calls += 1
+        return super().uniform(a, b)
+
+
+class TestGenotypeMatrixAlleleFrequencyConsistency:
+    """One allele frequency is sampled per SNP, shared by all individuals."""
+
+    def test_samples_one_frequency_per_site_not_per_genotype(self):
+        rng = _UniformCountingRandom(7)
+        generate_genotype_matrix(n_individuals=5, n_sites=3, rng=rng)
+        # Exactly one frequency draw per SNP (3), not per (individual, SNP) pair (15).
+        assert rng.uniform_calls == 3
+
+    def test_seed_reproducibility(self):
+        g1 = generate_genotype_matrix(n_individuals=20, n_sites=5, rng=random.Random(11))
+        g2 = generate_genotype_matrix(n_individuals=20, n_sites=5, rng=random.Random(11))
+        assert g1 == g2
 
 
 class TestGeneratePopulationSequences:
