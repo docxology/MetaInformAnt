@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import csv
+import os
 import sys
 from pathlib import Path
 
@@ -61,6 +64,14 @@ def filter_samples(metadata_path, output_path, n=5):
     print("Done")
 
 
+def _default_metadata_dir() -> Path:
+    """Resolve the metadata directory from METAINFORMANT_RNA_METADATA_DIR or repo-relative output/."""
+    env_dir = os.environ.get("METAINFORMANT_RNA_METADATA_DIR")
+    if env_dir:
+        return Path(env_dir)
+    return Path(__file__).resolve().parents[2] / "output" / "amalgkit" / "metadata"
+
+
 if __name__ == "__main__":
-    base_dir = Path("/Users/mini/Documents/GitHub/metainformant/output/amalgkit/pbarbatus_test5/work/metadata")
+    base_dir = _default_metadata_dir()
     filter_samples(base_dir / "metadata.tsv", base_dir / "metadata_selected.tsv")

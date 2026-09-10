@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Visualization functions for population genetics analysis results.
 
 This module contains functions for generating comprehensive visualizations

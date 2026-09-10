@@ -25,7 +25,6 @@ Domain-specific scripts organized by module:
 - `popgen/` - Population genetics scripts
 - `protein/` - Protein analysis
 - `quality/` - Auditing, linting, export checks
-- `reorganize/` - Import rewriting and migration
 - `rna/` - RNA-seq and amalgkit scripts
 - `simulation/` - Simulation scripts for all modules
 - `singlecell/` - Single-cell analysis

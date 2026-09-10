@@ -20,7 +20,6 @@ import pytest
 # Add project source to path — parents[2] from tests/gwas/test_file.py = repo root
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_REPO_ROOT / "src"))
-sys.path.insert(0, str(_REPO_ROOT / "scripts" / "gwas"))
 
 
 # ---------------------------------------------------------------------------
@@ -39,7 +38,7 @@ def gwas_output(tmp_path):
 @pytest.fixture
 def default_vcf(gwas_output):
     """Generate default VCF with standard params."""
-    from run_amellifera_gwas import generate_real_vcf
+    from metainformant.gwas.workflow.amellifera_pipeline import generate_real_vcf
 
     return generate_real_vcf(gwas_output, n_variants=200, force=True)
 
@@ -47,7 +46,7 @@ def default_vcf(gwas_output):
 @pytest.fixture
 def default_phenotypes(gwas_output, default_vcf):
     """Generate default phenotypes."""
-    from run_amellifera_gwas import generate_phenotypes
+    from metainformant.gwas.workflow.amellifera_pipeline import generate_phenotypes
 
     return generate_phenotypes(gwas_output, default_vcf, force=True)
 
@@ -55,7 +54,7 @@ def default_phenotypes(gwas_output, default_vcf):
 @pytest.fixture
 def default_metadata(gwas_output, default_vcf):
     """Generate default metadata."""
-    from run_amellifera_gwas import generate_metadata
+    from metainformant.gwas.workflow.amellifera_pipeline import generate_metadata
 
     return generate_metadata(gwas_output, default_vcf, force=True)
 
@@ -70,7 +69,7 @@ class TestDefaultGeneration:
 
     def test_default_generation_unchanged(self, gwas_output):
         """Default params should produce 90 samples (80 diploid + 10 drones)."""
-        from run_amellifera_gwas import DEFAULT_SUBSPECIES, generate_real_vcf
+        from metainformant.gwas.workflow.amellifera_pipeline import DEFAULT_SUBSPECIES, generate_real_vcf
 
         vcf_path = generate_real_vcf(gwas_output, n_variants=100, force=True)
         assert vcf_path.exists()
@@ -80,13 +79,13 @@ class TestDefaultGeneration:
         data = parse_vcf_full(vcf_path)
         assert len(data["samples"]) == 90
         # Check subspecies alias still works
-        from run_amellifera_gwas import SUBSPECIES
+        from metainformant.gwas.workflow.amellifera_pipeline import SUBSPECIES
 
         assert SUBSPECIES is DEFAULT_SUBSPECIES
 
     def test_default_subspecies_structure(self):
         """DEFAULT_SUBSPECIES has expected keys and structure."""
-        from run_amellifera_gwas import DEFAULT_SUBSPECIES
+        from metainformant.gwas.workflow.amellifera_pipeline import DEFAULT_SUBSPECIES
 
         assert "A.m.ligustica" in DEFAULT_SUBSPECIES
         assert "A.m.scutellata" in DEFAULT_SUBSPECIES
@@ -104,7 +103,7 @@ class TestScaleFactor:
 
     def test_scale_factor_doubles_samples(self, gwas_output):
         """scale_factor=2 should produce 180 samples (160 diploid + 20 drones)."""
-        from run_amellifera_gwas import generate_real_vcf
+        from metainformant.gwas.workflow.amellifera_pipeline import generate_real_vcf
 
         vcf_path = generate_real_vcf(gwas_output, n_variants=50, scale_factor=2, force=True)
         from metainformant.gwas.analysis.quality import parse_vcf_full
@@ -114,7 +113,7 @@ class TestScaleFactor:
 
     def test_scale_factor_one_is_default(self, gwas_output):
         """scale_factor=1 should match default (90 samples)."""
-        from run_amellifera_gwas import generate_real_vcf
+        from metainformant.gwas.workflow.amellifera_pipeline import generate_real_vcf
 
         vcf_path = generate_real_vcf(gwas_output, n_variants=50, scale_factor=1, force=True)
         from metainformant.gwas.analysis.quality import parse_vcf_full
@@ -327,7 +326,7 @@ class TestManifestCache:
 
     def test_manifest_written(self, gwas_output):
         """VCF generation should write a manifest sidecar."""
-        from run_amellifera_gwas import generate_real_vcf
+        from metainformant.gwas.workflow.amellifera_pipeline import generate_real_vcf
 
         vcf_path = generate_real_vcf(gwas_output, n_variants=50, force=True)
         manifest = vcf_path.with_suffix(".vcf.manifest.json")
@@ -340,7 +339,7 @@ class TestManifestCache:
 
     def test_manifest_cache_invalidation(self, gwas_output):
         """Changing params should trigger regeneration when manifest doesn't match."""
-        from run_amellifera_gwas import _check_manifest, generate_real_vcf
+        from metainformant.gwas.workflow.amellifera_pipeline import _check_manifest, generate_real_vcf
 
         # Generate with seed=42
         vcf_path = generate_real_vcf(gwas_output, n_variants=50, seed=42, force=True)
@@ -369,7 +368,7 @@ class TestManifestCache:
 
     def test_manifest_cache_hit_skips_regen(self, gwas_output):
         """With matching manifest, generate_real_vcf should skip regeneration."""
-        from run_amellifera_gwas import generate_real_vcf
+        from metainformant.gwas.workflow.amellifera_pipeline import generate_real_vcf
 
         # Generate first time
         vcf_path = generate_real_vcf(gwas_output, n_variants=50, force=True)
@@ -394,7 +393,7 @@ class TestConfigLoading:
 
     def test_load_from_none(self):
         """No config should return defaults."""
-        from run_amellifera_gwas import DEFAULT_SUBSPECIES, load_data_generation_config
+        from metainformant.gwas.workflow.amellifera_pipeline import DEFAULT_SUBSPECIES, load_data_generation_config
 
         dg = load_data_generation_config(None)
         assert dg["subspecies"] == DEFAULT_SUBSPECIES
@@ -403,7 +402,7 @@ class TestConfigLoading:
 
     def test_load_from_yaml_config(self):
         """Config dict should override defaults."""
-        from run_amellifera_gwas import load_data_generation_config
+        from metainformant.gwas.workflow.amellifera_pipeline import load_data_generation_config
 
         config = {
             "data_generation": {
@@ -421,7 +420,7 @@ class TestConfigLoading:
 
     def test_cli_args_override_config(self, gwas_output):
         """CLI args should take precedence over YAML config."""
-        from run_amellifera_gwas import load_data_generation_config
+        from metainformant.gwas.workflow.amellifera_pipeline import load_data_generation_config
 
         yaml_config = {"data_generation": {"n_variants": 5000, "scale_factor": 2}}
         dg = load_data_generation_config(yaml_config)

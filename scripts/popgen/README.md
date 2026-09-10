@@ -1,21 +1,17 @@
 # Population Genetics Scripts
 
-Thin orchestrator scripts for the population genetics workflow (generate -> analyze -> report -> visualize). All analysis business logic lives in [`src/metainformant/popgen/`](../../src/metainformant/popgen/); simulation generators in [`src/metainformant/simulation/models/popgen.py`](../../src/metainformant/simulation/models/popgen.py).
+Thin orchestrator script for the population genetics workflow (generate -> analyze -> report -> visualize). All analysis business logic lives in [`src/metainformant/popgen/`](../../src/metainformant/popgen/); simulation generators in [`src/metainformant/simulation/models/popgen.py`](../../src/metainformant/simulation/models/popgen.py).
 
 ## Scripts
 
 | Script | Purpose |
 |--------|---------|
-| `analysis.py` | End-to-end workflow entry point (CLI) |
-| `analyze.py` | Analysis orchestration helper (delegates to `metainformant.popgen`) |
-| `generate_dataset.py` | Multi-scenario synthetic dataset generation |
-| `report.py` | Human-readable markdown report writer |
-| `visualize.py` | Plot generation for analysis results |
+| `analyze.py` | End-to-end workflow entry point (CLI); delegates to `metainformant.popgen.workflow` |
 
 ## Usage
 
 ```bash
-uv run python scripts/popgen/analysis.py --output-dir output/popgen
+uv run python scripts/popgen/analyze.py --output-dir output/popgen
 ```
 
 ## Related

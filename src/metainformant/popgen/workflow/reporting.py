@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Reporting functions for population genetics analysis.
 
 This module contains functions for generating human-readable reports

@@ -76,7 +76,7 @@ def main() -> int:
     start = time.time()
 
     # Compute expected sample count from config
-    from run_amellifera_gwas import load_data_generation_config
+    from metainformant.gwas.workflow.amellifera_pipeline import load_data_generation_config
 
     dg = load_data_generation_config()
     dg["scale_factor"] = args.scale_factor
@@ -105,9 +105,7 @@ def main() -> int:
             f.unlink()
             print(f"  Deleted cached: {f.name}")
 
-    # Import from sibling module
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from run_amellifera_gwas import (
+    from metainformant.gwas.workflow.amellifera_pipeline import (
         download_genome_annotation,
         generate_metadata,
         generate_phenotypes,

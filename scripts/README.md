@@ -41,7 +41,6 @@ scripts/
  popgen/          # Population genetics scripts
  protein/         # Protein analysis scripts
  quality/         # Auditing, linting, export checks
- reorganize/      # Import rewriting and migration
  rna/             # RNA-seq workflow orchestration
  simulation/      # Simulation scripts for all modules
  singlecell/      # Single-cell analysis

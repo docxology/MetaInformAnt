@@ -1,11 +1,21 @@
 #!/usr/bin/env python3
 """
 Count samples in Amalgkit stages for each species.
+
+The data root defaults to ``data/amalgkit`` relative to the repository and can
+be overridden with the ``METAINFORMANT_AMALGKIT_DATA_DIR`` environment variable.
 """
 
+import os
 from pathlib import Path
 
-DATA_DIR = Path("/Volumes/external_drive/Data/amalgkit")
+
+def _data_dir() -> Path:
+    """Resolve the amalgkit data root (env override, then repo-relative default)."""
+    return Path(os.environ.get("METAINFORMANT_AMALGKIT_DATA_DIR", "data/amalgkit"))
+
+
+DATA_DIR = _data_dir()
 
 
 def count_files(directory, pattern="*"):

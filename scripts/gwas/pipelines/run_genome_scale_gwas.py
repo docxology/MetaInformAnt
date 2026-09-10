@@ -19,12 +19,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src"))
 
 from metainformant.core.io import dump_json
-from metainformant.gwas import (
-    check_sra_tools_available,
-    download_sra_run,
-    execute_gwas_workflow,
-    load_gwas_config,
-)
+from metainformant.gwas.data.config import load_gwas_config
+from metainformant.gwas.data.download import download_sra_run
+from metainformant.gwas.data.sra_download import check_sra_tools_available
+from metainformant.gwas.workflow.workflow_execution import execute_gwas_workflow
 
 # Set up logging
 logging.basicConfig(
@@ -60,14 +58,13 @@ def download_sra_data(accessions: list[str], output_dir: Path, threads: int = 8)
     results = []
     for acc in accessions:
         logger.info(f"Downloading {acc}...")
-        result = download_sra_run(
-            sra_accession=acc,
-            dest_dir=str(output_dir),
-            threads=threads,
-        )
-        results.append(result)
+        try:
+            run_dir = download_sra_run(sra_accession=acc, output_dir=str(output_dir), threads=threads)
+            result = {"status": "success", "run_dir": str(run_dir)}
+        except Exception as exc:
+            result = {"status": "failed", "error": str(exc)}
 
-        if result.get("status") == "success":
+        if result["status"] == "success":
             logger.info(f"  ✓ {acc} downloaded successfully")
         else:
             logger.error(f"  ✗ {acc} failed: {result.get('error', 'Unknown error')}")

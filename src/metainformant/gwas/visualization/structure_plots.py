@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Enhanced visualization functions for GWAS population structure analysis.
 
 Creates comprehensive visualizations for:
@@ -6,6 +5,9 @@ Creates comprehensive visualizations for:
 - PCA scatter plots (multiple PC combinations)
 - PCA scree plots (variance explained)
 - Population structure summaries
+
+Originally developed for the P. barbatus demonstration pipelines; the CLI
+wrappers in ``scripts/gwas/`` import these helpers from here.
 """
 
 from pathlib import Path

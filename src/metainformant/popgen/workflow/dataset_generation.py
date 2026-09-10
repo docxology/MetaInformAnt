@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Dataset generation functions for population genetics analysis.
 
 This module contains functions for generating synthetic population genetics datasets

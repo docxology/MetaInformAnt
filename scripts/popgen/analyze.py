@@ -1,32 +1,30 @@
 #!/usr/bin/env python3
-"""Comprehensive population genetics synthetic data generation and analysis.
+"""Thin CLI wrapper for the population genetics dataset workflow.
 
-Thin orchestrator: generates a multi-scenario synthetic dataset and runs the
-full popgen analysis pipeline. All business logic lives in
-``metainformant.popgen`` (workflow analysis) and
-``metainformant.simulation.models.popgen`` (generators).
+Business logic lives in ``metainformant.popgen.workflow`` (dataset generation,
+analysis, reporting, visualization); this script only bootstraps the src tree
+and delegates.
 """
 
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from metainformant.core.io import ensure_directory, load_json
 from metainformant.core.utils.logging import setup_logger
-from metainformant.popgen.workflow.analysis import analyze_dataset
-from scripts.popgen.generate_dataset import generate_comprehensive_dataset
-from scripts.popgen.report import generate_summary_report
-from scripts.popgen.visualize import generate_visualizations
+from metainformant.popgen.workflow import (
+    analyze_dataset,
+    generate_comprehensive_dataset,
+    generate_summary_report,
+    generate_visualizations,
+)
 
 
-def main():
-    """Main execution function."""
-    import argparse
-
+def main() -> int:
     parser = argparse.ArgumentParser(description="Population genetics dataset generation and analysis")
     parser.add_argument(
         "--output-dir",
@@ -34,29 +32,15 @@ def main():
         default="output/popgen",
         help="Output directory (default: output/popgen)",
     )
-    parser.add_argument(
-        "--seed",
-        type=int,
-        default=42,
-        help="Random seed (default: 42)",
-    )
+    parser.add_argument("--seed", type=int, default=42, help="Random seed (default: 42)")
     parser.add_argument(
         "--n-sequences",
         type=int,
         default=50,
         help="Number of sequences per scenario (default: 50)",
     )
-    parser.add_argument(
-        "--sequence-length",
-        type=int,
-        default=5000,
-        help="Sequence length (default: 5000)",
-    )
-    parser.add_argument(
-        "--skip-generation",
-        action="store_true",
-        help="Skip generation, only analyze existing dataset",
-    )
+    parser.add_argument("--sequence-length", type=int, default=5000, help="Sequence length (default: 5000)")
+    parser.add_argument("--skip-generation", action="store_true", help="Skip generation, only analyze existing dataset")
 
     args = parser.parse_args()
 
@@ -92,7 +76,8 @@ def main():
 
     logger.info("Comprehensive analysis complete!")
     logger.info(f"Results saved to: {output_dir}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
