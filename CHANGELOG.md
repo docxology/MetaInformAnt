@@ -33,6 +33,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   failure classes for stored sample errors, separating environmental damage
   (write denial, missing tool) from transfer and quantification failures;
   surfaced as `db_failure_classes` in the hymenoptera campaign status report.
+- `metainformant.rna.analysis.inferential_comparative`: gated predeclared
+  inferential comparative analysis — study-aware OLS contrast fits,
+  DerSimonian-Laird random-effects heterogeneity summaries, bootstrap
+  confidence intervals, and BH-FDR exclusively via the gated
+  `declared_inferential_bh_fdr` wrapper; registered sensitivity runner
+  (`leave_one_study_out`, `exclude_covariate`) with directional agreement
+  checks.
+- `metainformant.rna.analysis.ortholog_mapping` extended additively: a
+  fail-closed per-species retention audit (`audit_species_retention`,
+  `DEFAULT_MIN_RETENTION`) and the versioned `MappingArtifactManifest` v1
+  with fail-closed write/read round-trips. The existing behavior of the
+  retention audit columns is unchanged.
 
 ### Changed
 - Repository-wide typing completion: `mypy --config-file pyproject.toml

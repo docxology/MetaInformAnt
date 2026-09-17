@@ -11,6 +11,9 @@ RNA-seq expression analysis including normalization, differential expression, qu
 | `qc_metrics.py` | Sample/gene QC metrics, outlier detection, library complexity, saturation curves |
 | `qc_filtering.py` | Batch effect detection, GC bias, length bias, and QC report generation |
 | `cross_species.py` | Ortholog mapping, expression conservation, divergence matrices, cross-species PCA |
+| `inferential_comparative.py` | Gated predeclared inferential comparative analysis: study-aware OLS contrast fits, DerSimonian-Laird heterogeneity summaries, bootstrap CIs, and BH-FDR exclusively via the gated `declared_inferential_bh_fdr` wrapper |
+| `ortholog_mapping.py` | Ortholog bridge with a fail-closed per-species retention audit (`audit_species_retention`, `DEFAULT_MIN_RETENTION`) and the versioned `MappingArtifactManifest` v1 (fail-closed write/read) |
+| `phylogenetic_comparative.py` | Phylogenetic comparative methods: contract-validated trees, Brownian tip covariance, Pagel's-lambda PGLS with REML profile likelihood, model diagnostics, seeded tree-uncertainty resampling, and Brownian trait simulation |
 | `statistics_contract.py` | Predeclared analysis-provenance records, descriptive/inferential role separation, BH-FDR helper with gated inferential wrapper, fail-closed orthology/species-tree invariants, optional reporting bindings (data-root snapshot id, cohort denominators, artifact paths, metadata-harmonization review state, species-tree source/scale), a predeclared `SensitivityAnalysis` registry, and explicit `stopped`/`unavailable` non-analysis roles |
 | `cohort_accounting.py` | Cohort funnel accounting from the campaign progress DB and the per-species amalgkit config directory: frozen `FunnelReport` snapshots, durable failure-class reason codes, `cohort_funnel_<stage>` summary lines, and byte-deterministic TSV output |
 | `atlas_plots.py` | Atlas-style figures: species x tissue tau heatmap, per-orthogroup cross-species profile small multiples, tau-by-orthology-class strip plots (descriptive statistics only) |
@@ -47,6 +50,18 @@ RNA-seq expression analysis including normalization, differential expression, qu
 | `render_funnel_lines()` | Render additive `cohort_funnel_<stage>: <count>` lines in `STAGE_NAMES` order |
 | `benjamini_hochberg_fdr()` | Benjamini-Hochberg FDR adjustment with fail-closed input validation |
 | `declared_inferential_bh_fdr()` | GATED inferential path: requires `evidence_manifest_frozen=True` and a validated `analysis_role="inferential"` BH-FDR contract whose family size matches; returns raw plus adjusted p-values |
+| `ComparativeDesign` | Frozen predeclared design of one comparative contrast (response, contrast levels, study column, covariates, feature column, minimum observations per study) |
+| `fit_comparative_effects()` | Study-aware OLS contrast fits across declared studies |
+| `random_effects_summary()` | DerSimonian-Laird random-effects summary with heterogeneity statistics |
+| `bootstrap_effect_ci()` | Bootstrap confidence interval for a comparative effect under the declared seed |
+| `run_inferential_comparative_analysis()` | End-to-end gated runner: contract gate, fits, pooling, CIs, and BH-FDR via `declared_inferential_bh_fdr()` |
+| `run_registered_sensitivity_analyses()` | Execute registered sensitivity analyses (`leave_one_study_out`, `exclude_covariate`) against the primary fit |
+| `directional_agreement()` | Compare primary and sensitivity effect directions against declared expectations |
+| `fit_pgls()` | Phylogenetic generalized least squares with lambda by REML profile likelihood; returns coefficients, SEs, t/p values, diagnostics |
+| `fit_pgls_tree_uncertainty()` | Seeded with-replacement resampling across validated input trees; per-coefficient draws and percentile-CI summary |
+| `simulate_brownian_traits()` | Deterministic Brownian trait simulation from a validated tree's tip covariance |
+| `brownian_vcv()` | Brownian tip covariance matrix (root-to-MRCA distances) from a contract-validated tree |
+| `audit_species_retention()` | Per-species ortholog retention audit with fractions and threshold flags against `DEFAULT_MIN_RETENTION` |
 | `result_role()` | Return a result's declared role; refuses unlabeled output |
 | `validate_orthology_profile_invariants()` | Fail-closed orthology x species presence checks: unique labels, explicit 0/1 states, declared per-orthogroup species coverage |
 | `validate_species_tree_invariants()` | Fail-closed species-tree checks (Newick or nested dict): unique leaves, named taxa, declared rootedness provenance, optional bifurcating-root structural check |

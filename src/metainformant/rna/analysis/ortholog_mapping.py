@@ -10,6 +10,7 @@ import gzip
 import json
 import re
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Iterable, List, Literal, Mapping, Optional, Sequence, Set
 
@@ -208,6 +209,18 @@ _RETENTION_AUDIT_COLUMNS = [
     "unmapped",
 ]
 
+_ORTHOGROUP_COUNT_COLUMNS = ["species", "ogs_with_input", "ogs_retained", "ogs_unmapped"]
+_RETENTION_FRACTION_COLUMNS = [
+    "ogs_with_input",
+    "ogs_retained",
+    "ogs_unmapped",
+    "transcript_retention_fraction",
+    "orthogroup_retention_fraction",
+    "below_threshold",
+]
+DEFAULT_MIN_RETENTION: float = 0.5
+MAPPING_ARTIFACT_SCHEMA_VERSION: int = 1
+
 
 class OrthologBridgeError(ValueError):
     """Fail-closed error for bridge inputs, policies, manifests, or duplicates."""
@@ -352,6 +365,126 @@ def read_source_manifest(path: Path) -> OrthologySourceMetadata:
     return OrthologySourceMetadata.from_dict(payload)
 
 
+def _require_timezone_aware_iso8601(value: object, field_name: str) -> None:
+    """Fail closed unless value is a timezone-aware ISO 8601 timestamp string."""
+    if not isinstance(value, str) or not value.strip():
+        raise OrthologBridgeError(
+            f"mapping artifact manifest field '{field_name}' must be a non-empty ISO 8601 timestamp string"
+        )
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise OrthologBridgeError(
+            f"mapping artifact manifest field '{field_name}' is not a valid ISO 8601 timestamp: {value!r}"
+        ) from exc
+    if parsed.tzinfo is None or parsed.tzinfo.utcoffset(parsed) is None:
+        raise OrthologBridgeError(
+            f"mapping artifact manifest field '{field_name}' must include a timezone offset: {value!r}"
+        )
+
+
+@dataclass(frozen=True)
+class MappingArtifactManifest:
+    """Versioned manifest for one ortholog mapping-artifact build.
+
+    Records the schema version, the copy policy applied, the generation
+    timestamp, and the fully validated :class:`OrthologySourceMetadata`
+    (source versions plus the sha256 checksum of every consumed input), so
+    any later consumer can fail closed on an under-specified or foreign
+    artifact before trusting the mapping outputs.
+    """
+
+    schema_version: int
+    copy_policy: CopyPolicy
+    generated_at: str
+    source: OrthologySourceMetadata
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.schema_version, int) or isinstance(self.schema_version, bool):
+            raise OrthologBridgeError(
+                f"mapping artifact manifest field 'schema_version' must be the integer "
+                f"{MAPPING_ARTIFACT_SCHEMA_VERSION}, got {self.schema_version!r}"
+            )
+        if self.schema_version != MAPPING_ARTIFACT_SCHEMA_VERSION:
+            raise OrthologBridgeError(
+                f"unsupported mapping artifact schema version {self.schema_version!r}; "
+                f"expected {MAPPING_ARTIFACT_SCHEMA_VERSION}"
+            )
+        if not isinstance(self.copy_policy, str) or self.copy_policy not in COPY_POLICIES:
+            raise OrthologBridgeError(
+                f"mapping artifact manifest field 'copy_policy' must be one of {list(COPY_POLICIES)}, "
+                f"got {self.copy_policy!r}"
+            )
+        if not isinstance(self.source, OrthologySourceMetadata):
+            raise OrthologBridgeError(
+                "mapping artifact manifest field 'source' must be an OrthologySourceMetadata instance"
+            )
+        _require_timezone_aware_iso8601(self.generated_at, "generated_at")
+
+    @classmethod
+    def create(
+        cls,
+        *,
+        source: OrthologySourceMetadata,
+        copy_policy: CopyPolicy = DEFAULT_COPY_POLICY,
+        generated_at: str,
+    ) -> "MappingArtifactManifest":
+        """Build a manifest at the current schema version with an explicit copy policy."""
+        return cls(
+            schema_version=MAPPING_ARTIFACT_SCHEMA_VERSION,
+            copy_policy=copy_policy,
+            generated_at=generated_at,
+            source=source,
+        )
+
+    def to_dict(self) -> Dict[str, object]:
+        """Return a JSON-serializable representation."""
+        return {
+            "schema_version": self.schema_version,
+            "copy_policy": self.copy_policy,
+            "generated_at": self.generated_at,
+            "source": self.source.to_dict(),
+        }
+
+    @classmethod
+    def from_dict(cls, payload: Mapping[str, object]) -> "MappingArtifactManifest":
+        """Rebuild a manifest from a mapping-artifact payload, failing closed."""
+        required = ("schema_version", "copy_policy", "generated_at", "source")
+        missing = [key for key in required if key not in payload]
+        if missing:
+            raise OrthologBridgeError(
+                "mapping artifact manifest is missing required field(s): " + ", ".join(missing)
+            )
+        source_payload = payload["source"]
+        if not isinstance(source_payload, Mapping):
+            raise OrthologBridgeError("mapping artifact manifest field 'source' must be a JSON object")
+        return cls(
+            schema_version=payload["schema_version"],  # type: ignore[arg-type]
+            copy_policy=payload["copy_policy"],  # type: ignore[arg-type]
+            generated_at=payload["generated_at"],  # type: ignore[arg-type]
+            source=OrthologySourceMetadata.from_dict(source_payload),  # type: ignore[arg-type]
+        )
+
+
+def write_mapping_artifact_manifest(manifest: MappingArtifactManifest, path: Path) -> None:
+    """Persist a mapping_artifact_manifest.json next to the bridge outputs."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(manifest.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def read_mapping_artifact_manifest(path: Path) -> MappingArtifactManifest:
+    """Load and fail-closed validate a persisted mapping artifact manifest."""
+    if not path.is_file():
+        raise FileNotFoundError(f"Mapping artifact manifest not found at {path}")
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise OrthologBridgeError(f"Mapping artifact manifest at {path} is not valid JSON: {exc}") from exc
+    if not isinstance(payload, Mapping):
+        raise OrthologBridgeError(f"Mapping artifact manifest at {path} must be a JSON object")
+    return MappingArtifactManifest.from_dict(payload)
+
+
 @dataclass(frozen=True)
 class OrthogroupBridgeResult:
     """Artifacts of one bridge build: table plus per-species audits."""
@@ -361,6 +494,7 @@ class OrthogroupBridgeResult:
     duplicated_evidence: pd.DataFrame
     dropped_orthogroups: pd.DataFrame
     copy_policy: CopyPolicy
+    orthogroup_counts: pd.DataFrame
 
 
 def build_orthogroup_bridge(
@@ -419,6 +553,8 @@ def build_orthogroup_bridge(
             "mapped_to_transcript": 0,
             "one_to_one": 0,
             "one_to_many": 0,
+            "ogs_with_input": 0,
+            "ogs_retained": 0,
         }
         for species in species_names
     }
@@ -444,6 +580,8 @@ def build_orthogroup_bridge(
 
             gene_ids = [gene.strip() for gene in str(cell).split(",") if gene.strip()]
             audit = per_species[species]
+            if gene_ids:
+                audit["ogs_with_input"] += 1
             species_gene_tids = gene_transcripts.setdefault(species, {})
             species_tid_ogs = transcript_orthogroups.setdefault(species, {})
             mapped_tids = []
@@ -490,6 +628,7 @@ def build_orthogroup_bridge(
                 audit["one_to_one"] += 1
 
             if mapped_tids:
+                audit["ogs_retained"] += 1
                 if copy_policy == "first-transcript":
                     new_row[species] = mapped_tids[0]
                 else:
@@ -579,13 +718,97 @@ def build_orthogroup_bridge(
     available = [c for c in species_names if c in df.columns]
     table = df[available]
 
+    orthogroup_counts = pd.DataFrame(
+        [
+            {
+                "species": species,
+                "ogs_with_input": per_species[species]["ogs_with_input"],
+                "ogs_retained": per_species[species]["ogs_retained"],
+                "ogs_unmapped": (
+                    per_species[species]["ogs_with_input"] - per_species[species]["ogs_retained"]
+                ),
+            }
+            for species in species_names
+        ],
+        columns=_ORTHOGROUP_COUNT_COLUMNS,
+    )
+
     return OrthogroupBridgeResult(
         table=table,
         retention_audit=retention_audit,
         duplicated_evidence=duplicated_evidence,
         dropped_orthogroups=pd.DataFrame(dropped_orthogroups, columns=_DROPPED_ORTHOGROUP_COLUMNS),
         copy_policy=copy_policy,
+        orthogroup_counts=orthogroup_counts,
     )
+
+
+def audit_species_retention(
+    result: OrthogroupBridgeResult,
+    *,
+    min_retention: float = DEFAULT_MIN_RETENTION,
+) -> pd.DataFrame:
+    """Return the per-species retention audit with fractions and threshold flags.
+
+    Extends :attr:`OrthogroupBridgeResult.retention_audit` with per-species
+    orthogroup accounting: ``ogs_with_input`` counts the orthogroups in which
+    the species contributed at least one input gene, ``ogs_retained`` counts
+    the subset with at least one mapped transcript, and the corresponding
+    fractions are annotated with an explicit ``below_threshold`` flag whenever
+    the orthogroup retention fraction falls strictly under ``min_retention``.
+    A species with no input genes has a retention fraction of 0.0 and is
+    flagged.
+
+    Args:
+        result: A bridge result produced by :func:`build_orthogroup_bridge`.
+        min_retention: Retention fraction below which a species is flagged;
+            must lie within [0.0, 1.0].
+
+    Returns:
+        The enriched per-species audit as a DataFrame.
+
+    Raises:
+        OrthologBridgeError: On an out-of-range ``min_retention`` or when the
+            bridge result lacks a consistent per-species accounting.
+    """
+    if isinstance(min_retention, bool) or not isinstance(min_retention, (int, float)):
+        raise OrthologBridgeError(f"min_retention must be a number in [0.0, 1.0], got {min_retention!r}")
+    min_retention = float(min_retention)
+    if not 0.0 <= min_retention <= 1.0:
+        raise OrthologBridgeError(f"min_retention must be a number in [0.0, 1.0], got {min_retention!r}")
+
+    audit = result.retention_audit
+    counts = result.orthogroup_counts
+    missing_counts = [
+        column for column in ("species", "ogs_with_input", "ogs_retained") if column not in counts.columns
+    ]
+    if missing_counts:
+        raise OrthologBridgeError("orthogroup counts lack required column(s): " + ", ".join(missing_counts))
+    audit_species = set(audit["species"])
+    counts_species = set(counts["species"])
+    if audit_species != counts_species:
+        raise OrthologBridgeError(
+            "retention audit and orthogroup counts cover different species: "
+            f"{sorted(audit_species - counts_species)} only in audit, "
+            f"{sorted(counts_species - audit_species)} only in counts"
+        )
+    merged = audit.merge(counts, on="species", how="inner")
+    rows: List[Dict[str, object]] = []
+    for record in merged.to_dict("records"):
+        input_genes = int(record["input_genes"])
+        ogs_with_input = int(record["ogs_with_input"])
+        ogs_retained = int(record["ogs_retained"])
+        transcript_fraction = record["mapped_to_transcript"] / input_genes if input_genes else 0.0
+        orthogroup_fraction = ogs_retained / ogs_with_input if ogs_with_input else 0.0
+        rows.append(
+            {
+                **record,
+                "transcript_retention_fraction": float(transcript_fraction),
+                "orthogroup_retention_fraction": float(orthogroup_fraction),
+                "below_threshold": bool(orthogroup_fraction < min_retention),
+            }
+        )
+    return pd.DataFrame(rows, columns=_RETENTION_AUDIT_COLUMNS + _RETENTION_FRACTION_COLUMNS)
 
 
 def orthology_presence_table(table: pd.DataFrame) -> pd.DataFrame:
