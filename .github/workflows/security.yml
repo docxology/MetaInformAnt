@@ -1,0 +1,48 @@
+name: Security Checks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  PYTHONUNBUFFERED: 1
+
+jobs:
+  security-checks:
+    # BLOCKING GATE: this job must pass before merge. Failures are resolved
+    # either by a source fix or by a dated, owned entry in
+    # scripts/package/security_baseline.txt documenting the accepted finding.
+    name: Blocking security and dependency checks
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      with:
+        version: "latest"
+        enable-cache: true
+        cache-dependency-glob: |
+          **/pyproject.toml
+          **/uv.lock
+
+    - name: Set up Python 3.12
+      run: uv python install 3.12
+
+    - name: Run blocking security checks
+      run: bash scripts/package/security_checks.sh
+
+    - name: Upload security reports
+      if: always()
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: security-reports-${{ github.run_id }}
+        path: |
+          output/security_bandit.json
+          output/security_pattern_audit.txt
+          output/security_pattern_traversal.txt
+        if-no-files-found: warn

@@ -1,0 +1,16 @@
+# MetaInformAnt security baseline — accepted findings
+#
+# Managed by scripts/package/security_checks.sh (see its header comment for the
+# SEVERITY|OWNER|ID|LOCATION format). Every entry MUST have a dated comment
+# above it explaining why the finding is accepted and who owns the acceptance.
+# Findings listed here do not block the security gate; all other medium+ bandit
+# findings, pip-audit vulnerabilities, and pattern-audit hits block.
+#
+# Last reviewed: 2026-09-17
+# 2026-09-17: B310 (urllib urlretrieve blacklist) at line 193 downloads a
+# hardcoded https:// NCBI FTP constant; no user-controlled URL or scheme
+# reaches urlretrieve, so the scheme-injection risk B310 guards against does
+# not apply. Recorded rather than inlined `# nosec` so the GWAS owner can
+# migrate the call to the hardened core/io/download.py helper. Owner: GWAS
+# pipeline maintainers.
+medium|gwas-maintainers|B310|src/metainformant/gwas/workflow/amellifera_pipeline.py
