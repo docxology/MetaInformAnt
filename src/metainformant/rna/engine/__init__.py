@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from . import (
     discovery,
+    evidence_bundle,
     pipeline,
     progress_db,
     sra_extraction,
@@ -23,6 +24,7 @@ from . import (
 
 __all__ = [
     "discovery",
+    "evidence_bundle",
     "pipeline",
     "progress_db",
     "sra_extraction",
