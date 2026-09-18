@@ -201,6 +201,20 @@ cfg = config.load_typed_env(
 # Converts "True" → True, "8080" → 8080, "30.5" → 30.5
 ```
 
+#### `get_env_or_default(env_var: str, default: str) -> str`
+
+Return the value of a single environment variable, or `default` when it is unset.
+
+**Parameters**:
+- `env_var`: Exact environment variable name (no prefix handling)
+- `default`: Value returned when the variable is not set
+
+**Example**:
+```python
+threads = config.get_env_or_default("AMALGKIT_THREADS", "4")
+# Reads AMALGKIT_THREADS directly; no type coercion is applied
+```
+
 #### `load_postgres_config_from_env(prefix: str = "PG") -> PostgresConfig | None`
 
 Load PostgreSQL database configuration from environment variables.
