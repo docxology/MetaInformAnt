@@ -8,8 +8,8 @@ topic guides contain behavioral guidance, examples, and caveats.
 Compatibility facades are excluded from the inventory and remain
 supported through the import paths described in [index.md](index.md).
 
-**Public symbols:** 244
-**Canonical modules:** 29
+**Public symbols:** 246
+**Canonical modules:** 30
 
 ## Module index
 
@@ -31,6 +31,7 @@ supported through the import paths described in [index.md](index.md).
 | [metainformant.core.io.errors](#metainformant-core-io-errors) | 4 |
 | [metainformant.core.io.io](#metainformant-core-io-io) | 24 |
 | [metainformant.core.ncbi](#metainformant-core-ncbi) | 3 |
+| [metainformant.core.sequence](#metainformant-core-sequence) | 2 |
 | [metainformant.core.ui.tui](#metainformant-core-ui-tui) | 9 |
 | [metainformant.core.utils.batches](#metainformant-core-utils-batches) | 4 |
 | [metainformant.core.utils.errors](#metainformant-core-utils-errors) | 16 |
@@ -125,9 +126,9 @@ supported through the import paths described in [index.md](index.md).
 | `WorkflowStep.execute` | method | `(**kwargs: Any) -> Any` | Execute the step function with config and dependency results. |
 | `WorkflowStep.reset` | method | `() -> None` | Reset step state to allow re-execution. |
 | `create_sample_config` | function | `(output_path: Union[str, Path], sample_type: str = 'basic') -> None` | Create a sample workflow configuration file. |
-| `download_and_process_data` | function | `(config_data: Dict[str, Any], output_dir: Union[str, Path], verbose: bool = False) -> Dict[str, Any]` | Download data and process it based on configuration. |
+| `download_and_process_data` | function | `(config_data: Union[Dict[str, Any], str, Path], output_dir: Union[str, Path], verbose: bool = False) -> Dict[str, Any]` | Download data and process it based on configuration. |
 | `run_config_based_workflow` | function | `(config_path: Union[str, Path], verbose: bool = False) -> Dict[str, Any]` | Run a workflow from configuration file. |
-| `validate_config_file` | function | `(config_path: Union[str, Path], schema_path: Optional[Union[str, Path]] = None) -> Tuple[bool, List[str]]` | Validate configuration file. |
+| `validate_config_file` | function | `(config_path: Union[str, Path, Dict[str, Any]], schema_path: Optional[Union[str, Path]] = None) -> Tuple[bool, List[str]]` | Validate configuration file. |
 
 ## metainformant.core.io.atomic {#metainformant-core-io-atomic}
 
@@ -229,7 +230,7 @@ supported through the import paths described in [index.md](index.md).
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
 | `DownloadManager` | class | `(max_threads: int = 4)` | Manages parallel file downloads with TUI visualization. |
-| `DownloadManager.add_download` | method | `(url: str, dest_path: Path, label: str)` | Queue a download task. |
+| `DownloadManager.add_download` | method | `(url: str, dest_path: Path, label: str) -> None` | Queue a download task. |
 | `DownloadManager.start` | method | `() -> Dict[str, bool]` | Execute all queued downloads and block until complete. |
 
 ## metainformant.core.io.download_robust {#metainformant-core-io-download_robust}
@@ -254,7 +255,7 @@ supported through the import paths described in [index.md](index.md).
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
 | `batch_download` | function | `(urls: list[str], dest_dir: str \| Path, *, timeout: int = 30) -> dict[str, bool]` | Download multiple files in batch. |
-| `download_csv` | function | `(url: str, *, timeout: int = 30, **kwargs) -> Any` | Download and parse CSV from a URL. |
+| `download_csv` | function | `(url: str, *, timeout: int = 30, **kwargs: Any) -> Any` | Download and parse CSV from a URL. |
 | `download_file` | function | `(url: str, dest_path: str \| Path, *, chunk_size: int = 8192, timeout: int = 30) -> bool` | Download a file from a URL to a local path. |
 | `download_json` | function | `(url: str, *, timeout: int = 30) -> Any` | Download and parse JSON from a URL. |
 | `download_text` | function | `(url: str, *, timeout: int = 30) -> str \| None` | Download text content from a URL. |
@@ -267,16 +268,16 @@ supported through the import paths described in [index.md](index.md).
 | `load_toml` | function | `(path: str \| Path) -> Any` | Load TOML data from a file. |
 | `load_yaml` | function | `(path: str \| Path) -> Any` | Load YAML data from a file. |
 | `open_text_auto` | function | `(path: str \| Path, mode: str = 'rt', encoding: str = 'utf-8') -> io.TextIOBase` | Open a text file, handling gzip transparently based on suffix. |
-| `read_csv` | function | `(path: str \| Path, **kwargs) -> Any` | Read CSV file using pandas if available, fallback to native implementation. |
+| `read_csv` | function | `(path: str \| Path, **kwargs: Any) -> Any` | Read CSV file using pandas if available, fallback to native implementation. |
 | `read_delimited` | function | `(path: str \| Path, *, delimiter: str = ',') -> Iterator[dict[str, str]]` | Read delimited text file (CSV/TSV) as dictionaries. |
 | `read_jsonl` | function | `(path: str \| Path) -> Iterator[dict[str, Any]]` | Read JSON Lines format (one JSON object per line). |
-| `read_parquet` | function | `(path: str \| Path, **kwargs) -> Any` | Read Parquet file with pandas. |
+| `read_parquet` | function | `(path: str \| Path, **kwargs: Any) -> Any` | Read Parquet file with pandas. |
 | `read_tsv` | function | `(path: str \| Path) -> list[list[str]]` | Read TSV file. |
-| `write_csv` | function | `(data: Any, path: str \| Path, **kwargs) -> None` | Write CSV file using pandas if available, fallback to native implementation. |
+| `write_csv` | function | `(data: Any, path: str \| Path, **kwargs: Any) -> None` | Write CSV file using pandas if available, fallback to native implementation. |
 | `write_delimited` | function | `(rows: Iterable[Mapping[str, Any]], path: str \| Path, *, delimiter: str = ',', atomic: bool = True) -> None` | Write rows to delimited text file (CSV/TSV). |
 | `write_jsonl` | function | `(rows: Iterable[Mapping[str, Any]], path: str \| Path, *, atomic: bool = True) -> None` | Write rows as JSON Lines format (one JSON object per line). |
-| `write_parquet` | function | `(df: Any, path: str \| Path, **kwargs) -> None` | Write DataFrame to Parquet file. |
-| `write_tsv` | function | `(data, path: str \| Path) -> None` | Write TSV file. |
+| `write_parquet` | function | `(df: Any, path: str \| Path, **kwargs: Any) -> None` | Write DataFrame to Parquet file. |
+| `write_tsv` | function | `(data: Iterable[Sequence[Any]], path: str \| Path) -> None` | Write TSV file. |
 
 ## metainformant.core.ncbi {#metainformant-core-ncbi}
 
@@ -285,6 +286,13 @@ supported through the import paths described in [index.md](index.md).
 | `NCBIContact` | class | `()` | Resolved NCBI contact without storing a fabricated identity. |
 | `NCBIContactError` | class | `()` | Raised when an NCBI operation lacks an explicit contact policy. |
 | `resolve_ncbi_contact` | function | `(email: str \| None = None, *, allow_anonymous: bool = False) -> NCBIContact` | Resolve explicit or opt-in anonymous NCBI contact settings. |
+
+## metainformant.core.sequence {#metainformant-core-sequence}
+
+| Symbol | Kind | Signature | Summary |
+| --- | --- | --- | --- |
+| `reverse_complement` | function | `(seq: str) -> str` | Generate the reverse complement of a DNA sequence. |
+| `validate_dna_sequence` | function | `(seq: str) -> bool` | Validate that a sequence contains only valid DNA characters. |
 
 ## metainformant.core.ui.tui {#metainformant-core-ui-tui}
 
@@ -298,7 +306,7 @@ supported through the import paths described in [index.md](index.md).
 | `TerminalInterface.set_footer` | method | `(text: str) -> None` | Update the footer text. |
 | `TerminalInterface.start` | method | `() -> None` | Start the rendering thread. |
 | `TerminalInterface.stop` | method | `() -> None` | Stop rendering and cleanup. |
-| `TerminalInterface.update` | method | `(task_id: str, current: float = None, total: float = None, status: str = None, speed: str = None, color: str = None, stage: str = None) -> None` | Update a specific bar's state. |
+| `TerminalInterface.update` | method | `(task_id: str, current: float \| None = None, total: float \| None = None, status: str \| None = None, speed: str \| None = None, color: str \| None = None, stage: str \| None = None) -> None` | Update a specific bar's state. |
 
 ## metainformant.core.utils.batches {#metainformant-core-utils-batches}
 
@@ -325,7 +333,7 @@ supported through the import paths described in [index.md](index.md).
 | `TermNotFoundError` | class | `()` | Term not found in ontology errors. |
 | `ValidationError` | class | `()` | Data validation errors. |
 | `error_context` | function | `(context_msg: str, reraise: bool = True) -> Iterator[None]` | Context manager for adding error context. |
-| `retry_with_backoff` | function | `(max_attempts: int = 3, initial_delay: float = 1.0, backoff_factor: float = 2.0, max_delay: float = 60.0, exceptions: tuple[type[Exception], ...] = (Exception,))` | Decorator for retrying functions with exponential backoff. |
+| `retry_with_backoff` | function | `(max_attempts: int = 3, initial_delay: float = 1.0, backoff_factor: float = 2.0, max_delay: float = 60.0, exceptions: tuple[type[Exception], ...] = (Exception,)) -> Callable[[Callable[..., T]], Callable[..., T]]` | Decorator for retrying functions with exponential backoff. |
 | `safe_execute` | function | `(func: Callable[..., T], *args: Any, default: T \| None = None, **kwargs: Any) -> T \| None` | Execute a function safely, returning default on error. |
 | `validate_not_none` | function | `(value: Any, name: str = 'value') -> None` | Validate that a value is not None. |
 | `validate_type` | function | `(value: Any, expected_type: type \| tuple[type, ...], name: str = 'value') -> None` | Validate that a value is of expected type. |
@@ -350,7 +358,7 @@ supported through the import paths described in [index.md](index.md).
 | `configure_logging_from_env` | function | `(default_level: str = 'INFO') -> None` | Configure root logger from environment variables. |
 | `get_logger` | function | `(name: str) -> logging.Logger` | Get or create a logger with default console handler. |
 | `get_logger_with_level` | function | `(name: str, level: str \| int \| None = None) -> logging.Logger` | Get or create a logger with specified log level. |
-| `log_with_metadata` | function | `(logger: logging.Logger, message: str, metadata: dict, *, level: str = 'INFO', structured: bool = False) -> None` | Log message with structured metadata. |
+| `log_with_metadata` | function | `(logger: logging.Logger, message: str, metadata: dict[str, Any], *, level: str = 'INFO', structured: bool = False) -> None` | Log message with structured metadata. |
 | `setup_logger` | function | `(name: str, log_file: str \| None = None, level: str = 'INFO') -> logging.Logger` | Set up a logger with file and/or console output. |
 
 ## metainformant.core.utils.newick {#metainformant-core-utils-newick}
@@ -381,7 +389,7 @@ supported through the import paths described in [index.md](index.md).
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
-| `deterministic_replicate_seeds` | function | `(base_seed: int, n_replicates: int) -> List[int]` | Stable, order-independent replicate seeds derived from one base seed. |
+| `deterministic_replicate_seeds` | function | `(base_seed: int, n_replicates: int) -> list[int]` | Stable, order-independent replicate seeds derived from one base seed. |
 
 ## metainformant.core.utils.symbols {#metainformant-core-utils-symbols}
 
@@ -419,17 +427,17 @@ supported through the import paths described in [index.md](index.md).
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
 | `Timer` | class | `() -> None` | Context manager for timing code blocks. |
-| `Timer.elapsed` | method | `() -> float` | Elapsed time in seconds. |
+| `Timer.elapsed` | method | `() -> float` | Elapsed time in seconds (0.0 before the timer is started). |
 | `Timer.elapsed_ms` | method | `() -> float` | Elapsed time in milliseconds. |
 | `rate_limiter` | function | `(calls_per_second: float) -> Callable[[Callable[P, T]], Callable[P, T]]` | Decorator factory that enforces minimum interval between calls. |
 | `timed` | function | `(func: Callable[P, T] \| None = None, *, level: str = 'debug') -> Callable[P, T] \| Callable[[Callable[P, T]], Callable[P, T]]` | Decorator that logs execution time of a function. |
-| `timeout_after` | function | `(seconds: float, message: str = '')` | Context manager that raises TimeoutError after N seconds. |
+| `timeout_after` | function | `(seconds: float, message: str = '') -> Iterator[threading.Event]` | Context manager that raises TimeoutError after N seconds. |
 
 ## metainformant.core.utils.watchdog {#metainformant-core-utils-watchdog}
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
 | `ProcessWatchdog` | class | `(pid: int, cpu_threshold: float = 1.0, timeout_seconds: int = 3600, check_interval: int = 60, on_stall: Optional[Callable[[int], None]] = None)` | Monitors a process for stalls based on CPU usage. Running in a separate thread. |
-| `ProcessWatchdog.kill_process_tree` | method | `(pid: int)` | Kill a process and its children. |
-| `ProcessWatchdog.start` | method | `()` | Start the monitoring thread. |
-| `ProcessWatchdog.stop` | method | `()` | Stop the monitoring thread. |
+| `ProcessWatchdog.kill_process_tree` | method | `(pid: int) -> None` | Kill a process and its children. |
+| `ProcessWatchdog.start` | method | `() -> None` | Start the monitoring thread. |
+| `ProcessWatchdog.stop` | method | `() -> None` | Stop the monitoring thread. |
