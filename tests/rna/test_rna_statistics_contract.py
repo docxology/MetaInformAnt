@@ -6,6 +6,11 @@ projects/hymenoptera_amalgkit/docs/manuscript/statistical_analysis_plan.md:
 - analysis-provenance records: validation, rendering, placeholder refusal;
 - descriptive-vs-inferential separation: fingerprint results carry
   ``attrs["role"] == "descriptive"``; the inferential BH-FDR path is gated;
+- biological-replicate unit and estimand declarations (plan sections 1 and
+  3): structured caller-declared units validated for non-degeneracy
+  (placeholder labels, technical replicates never counted as independent,
+  no stratum below the declared minimum, inferential roles require at
+  least 2 replicates per unit), with additive rendering;
 - orthology x species presence invariants (duplicate labels, missing
   mappings, low replication, incomplete coverage);
 - species-tree invariants (declared rootedness provenance, optional
@@ -29,8 +34,10 @@ from metainformant.rna.analysis.statistics_contract import (
     DESCRIPTIVE_ROLE,
     INFERENTIAL_ROLE,
     AnalysisProvenance,
+    EstimandDeclaration,
     OrthologyInvariantError,
     ProvenanceError,
+    ReplicateUnitDeclaration,
     SensitivityAnalysis,
     StatisticsContractError,
     TreeInvariantError,
@@ -39,7 +46,9 @@ from metainformant.rna.analysis.statistics_contract import (
     render_analysis_provenance_block,
     result_role,
     validate_analysis_provenance,
+    validate_estimand_declaration,
     validate_orthology_profile_invariants,
+    validate_replicate_unit_declaration,
     validate_sensitivity_analysis,
     validate_species_tree_invariants,
 )
@@ -77,6 +86,29 @@ def _sensitivity(**overrides: Any) -> SensitivityAnalysis:
     )
     fields.update(overrides)
     return SensitivityAnalysis(**fields)
+
+
+def _replicate_unit(**overrides: Any) -> ReplicateUnitDeclaration:
+    """A valid declared replicate unit with optional field overrides."""
+    fields: dict[str, Any] = dict(
+        name="independent biological replicate nested in study",
+        nesting="library nested in study nested in species",
+        counts={"apis": 3, "cerana": 2},
+        min_independent_replicates=2,
+    )
+    fields.update(overrides)
+    return ReplicateUnitDeclaration(**fields)
+
+
+def _estimand(**overrides: Any) -> EstimandDeclaration:
+    """A valid declared estimand with optional field overrides."""
+    fields: dict[str, Any] = dict(
+        name="pairwise descriptive dissimilarity between common-binned expression distributions",
+        contrast="species pairs under the native fingerprint layer",
+        permitted_interpretation="exploratory distribution shape; no gene or evolutionary claim",
+    )
+    fields.update(overrides)
+    return EstimandDeclaration(**fields)
 
 
 def _species_profiles(n_features: int = 60) -> dict[str, pd.Series]:
@@ -260,6 +292,160 @@ class TestSensitivityAnalysisRegistry:
         joined = "\n".join(lines)
         assert "analysis_provenance_sensitivity_1_varied_values: 0.5,0.6,0.9" in joined
         assert "analysis_provenance_sensitivity_1_expected_direction: none" in joined
+
+
+# =============================================================================
+# Biological replicate-unit and estimand declarations (plan sections 1, 3)
+# =============================================================================
+
+
+class TestReplicateUnitDeclaration:
+    def test_declared_unit_passes(self) -> None:
+        validate_replicate_unit_declaration(_replicate_unit())
+
+    def test_descriptive_single_replicate_per_stratum_passes(self) -> None:
+        """Descriptive layers may declare one finalized profile per species."""
+        unit = _replicate_unit(
+            name="species finalized matrix (one profile per species)",
+            counts={"apis": 1, "cerana": 1},
+            min_independent_replicates=1,
+        )
+        validate_replicate_unit_declaration(unit)
+
+    @pytest.mark.parametrize(
+        "overrides",
+        [
+            {"name": ""},
+            {"name": "TBD"},
+            {"nesting": "n/a"},
+            {"technical_replicates_counted": True},
+            {"counts": {}},
+            {"counts": []},
+            {"counts": {"apis": 0, "cerana": 2}},
+            {"counts": {"apis": 3, "cerana": True}},
+            {"counts": {"apis": 3, "TBD": 2}},
+            {"min_independent_replicates": 0},
+            {"min_independent_replicates": True},
+            {"min_independent_replicates": "2"},
+        ],
+    )
+    def test_placeholder_or_degenerate_declarations_fail_closed(self, overrides: dict[str, Any]) -> None:
+        with pytest.raises(ProvenanceError):
+            validate_replicate_unit_declaration(_replicate_unit(**overrides))
+
+    def test_stratum_below_declared_minimum_is_degenerate(self) -> None:
+        """Low replication: a stratum below the declared minimum is refused, naming the stratum."""
+        with pytest.raises(ProvenanceError) as excinfo:
+            validate_replicate_unit_declaration(_replicate_unit(counts={"apis": 3, "cerana": 1}))
+        message = str(excinfo.value)
+        assert "degenerate" in message
+        assert "cerana" in message
+
+    def test_inferential_grade_requires_two_replicates(self) -> None:
+        """An inferential-role estimand cannot rest on a single replicate per unit."""
+        with pytest.raises(ProvenanceError) as excinfo:
+            validate_replicate_unit_declaration(
+                _replicate_unit(min_independent_replicates=1), require_inferential_grade=True
+            )
+        assert "at least 2" in str(excinfo.value)
+
+    def test_ad_hoc_dict_is_refused(self) -> None:
+        with pytest.raises(TypeError):
+            validate_replicate_unit_declaration(_replicate_unit().__dict__)  # type: ignore[arg-type]
+
+
+class TestEstimandDeclaration:
+    def test_declared_estimand_passes(self) -> None:
+        validate_estimand_declaration(_estimand())
+
+    def test_embedded_replicate_unit_is_validated(self) -> None:
+        embedded = _replicate_unit(counts={"apis": 3, "cerana": 1})
+        with pytest.raises(ProvenanceError) as excinfo:
+            validate_estimand_declaration(_estimand(replicate_unit=embedded))
+        assert "cerana" in str(excinfo.value)
+
+    def test_placeholder_fields_fail_closed(self) -> None:
+        for overrides in ({"name": "todo"}, {"contrast": ""}, {"permitted_interpretation": "none"}):
+            with pytest.raises(ProvenanceError):
+                validate_estimand_declaration(_estimand(**overrides))
+
+    def test_ad_hoc_dict_is_refused(self) -> None:
+        with pytest.raises(TypeError):
+            validate_estimand_declaration(_estimand().__dict__)  # type: ignore[arg-type]
+
+
+class TestDeclarationProvenanceIntegration:
+    def test_descriptive_record_with_declarations_passes_and_renders(self) -> None:
+        unit = _replicate_unit()
+        record = _provenance(
+            replicate_unit_declaration=unit,
+            estimand_declaration=_estimand(replicate_unit=unit),
+        )
+        validate_analysis_provenance(record)
+        joined = "\n".join(render_analysis_provenance_block(record))
+        assert "analysis_provenance_replicate_unit_name: independent biological replicate nested in study" in joined
+        assert "analysis_provenance_replicate_unit_nesting: library nested in study nested in species" in joined
+        assert "analysis_provenance_replicate_unit_min_independent_replicates: 2" in joined
+        assert "analysis_provenance_replicate_unit_count_apis: 3" in joined
+        assert "analysis_provenance_replicate_unit_count_cerana: 2" in joined
+        assert (
+            "analysis_provenance_estimand_name: pairwise descriptive dissimilarity between "
+            "common-binned expression distributions" in joined
+        )
+        assert "analysis_provenance_estimand_contrast: species pairs under the native fingerprint layer" in joined
+        assert (
+            "analysis_provenance_estimand_permitted_interpretation: exploratory distribution shape; "
+            "no gene or evolutionary claim" in joined
+        )
+
+    def test_render_without_declarations_omits_declaration_lines(self) -> None:
+        joined = "\n".join(render_analysis_provenance_block(_provenance()))
+        assert "analysis_provenance_replicate_unit_name" not in joined
+        assert "analysis_provenance_estimand_name" not in joined
+
+    def test_inferential_role_requires_inferential_grade_unit(self) -> None:
+        """Role-conditional non-degeneracy: inferential contracts need >=2 replicates."""
+        unit = _replicate_unit(min_independent_replicates=1)
+        with pytest.raises(ProvenanceError) as excinfo:
+            validate_analysis_provenance(
+                _provenance(
+                    analysis_role=INFERENTIAL_ROLE,
+                    multiple_testing_family="ortholog features within species contrasts",
+                    multiple_testing_method="bh-fdr",
+                    tested_feature_count=3,
+                    replicate_unit_declaration=unit,
+                )
+            )
+        assert "at least 2" in str(excinfo.value)
+
+    def test_inferential_role_accepts_grade_two_unit(self) -> None:
+        validate_analysis_provenance(
+            _provenance(
+                analysis_role=INFERENTIAL_ROLE,
+                multiple_testing_family="ortholog features within species contrasts",
+                multiple_testing_method="bh-fdr",
+                tested_feature_count=3,
+                replicate_unit_declaration=_replicate_unit(),
+            )
+        )
+
+    def test_conflicting_embedded_unit_fails_closed(self) -> None:
+        record = _provenance(
+            replicate_unit_declaration=_replicate_unit(),
+            estimand_declaration=_estimand(replicate_unit=_replicate_unit(counts={"apis": 4, "cerana": 2})),
+        )
+        with pytest.raises(ProvenanceError, match="conflicting replicate-unit declarations"):
+            validate_analysis_provenance(record)
+
+    def test_non_analysis_role_must_not_declare_unit_or_estimand(self) -> None:
+        with pytest.raises(ProvenanceError) as excinfo:
+            validate_analysis_provenance(
+                _provenance(analysis_role="stopped", replicate_unit_declaration=_replicate_unit())
+            )
+        assert "replicate_unit_declaration" in str(excinfo.value)
+        with pytest.raises(ProvenanceError) as excinfo:
+            validate_analysis_provenance(_provenance(analysis_role="unavailable", estimand_declaration=_estimand()))
+        assert "estimand_declaration" in str(excinfo.value)
 
 
 # =============================================================================

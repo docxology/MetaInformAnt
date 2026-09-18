@@ -15,6 +15,17 @@ required by
   and the direction the primary estimand is expected to move. Registered
   entries are validated fail-closed and rendered as additive
   ``analysis_provenance_sensitivity_*`` lines.
+- :class:`ReplicateUnitDeclaration` and :class:`EstimandDeclaration` are the
+  structured declaration API for the biological replicate unit and the
+  estimand (plan sections 1 and 3): the caller declares the smallest
+  defensible unit, its nesting, the independent-replicate counts per
+  sampling stratum, and the permitted interpretation boundary; the contract
+  validates non-degeneracy fail-closed (no placeholder labels, technical
+  replicates never counted as independent, no stratum below the declared
+  minimum, inferential roles require at least 2 replicates per unit).
+  Declared entries render as additive
+  ``analysis_provenance_replicate_unit_*`` and
+  ``analysis_provenance_estimand_*`` lines.
 - Records may declare the non-analysis roles ``"stopped"``/``"unavailable"``
   (plan section 8) to record a halted or impossible analysis explicitly;
   such a record must not declare multiplicity, cohort-denominator,
@@ -51,8 +62,10 @@ import pandas as pd
 __all__ = [
     "AnalysisProvenance",
     "DESCRIPTIVE_ROLE",
+    "EstimandDeclaration",
     "INFERENTIAL_ROLE",
     "ProvenanceError",
+    "ReplicateUnitDeclaration",
     "SensitivityAnalysis",
     "StatisticsContractError",
     "TreeInvariantError",
@@ -61,7 +74,9 @@ __all__ = [
     "render_analysis_provenance_block",
     "result_role",
     "validate_analysis_provenance",
+    "validate_estimand_declaration",
     "validate_orthology_profile_invariants",
+    "validate_replicate_unit_declaration",
     "validate_sensitivity_analysis",
     "validate_species_tree_invariants",
 ]
@@ -126,6 +141,46 @@ class SensitivityAnalysis:
 
 
 @dataclass(frozen=True)
+class ReplicateUnitDeclaration:
+    """Declared biological-replicate unit (plan sections 1 and 3).
+
+    The biological replicate is not automatically a downloaded library:
+    public libraries may be pooled individuals, technical replicates,
+    repeated measurements, or different biological states. The caller
+    declares the smallest defensible biological unit, how it nests (for
+    example ``"library nested in study nested in species"``), and the
+    number of *independent biological replicates* each sampling stratum
+    actually contributes. The declaration is frozen: it is part of the
+    predeclared contract, validated for non-degeneracy by
+    :func:`validate_replicate_unit_declaration`.
+    """
+
+    name: str
+    nesting: str
+    counts: Mapping[str, int]
+    min_independent_replicates: int = 1
+    technical_replicates_counted: bool = False
+
+
+@dataclass(frozen=True)
+class EstimandDeclaration:
+    """Declared estimand (plan section 1).
+
+    Declares, before the analysis runs, the quantity being estimated, the
+    biological contrast it applies to, and the permitted interpretation
+    boundary (which claims the analysis may and may not support). It may
+    embed the :class:`ReplicateUnitDeclaration` the estimand is defined
+    over; an embedded unit that conflicts with the provenance record's own
+    unit declaration fails closed.
+    """
+
+    name: str
+    contrast: str
+    permitted_interpretation: str
+    replicate_unit: ReplicateUnitDeclaration | None = None
+
+
+@dataclass(frozen=True)
 class AnalysisProvenance:
     """Predeclared analysis-provenance record (plan sections 1, 4, 6, 9).
 
@@ -179,6 +234,14 @@ class AnalysisProvenance:
     # robustness checks that vary one parameter around a baseline. Empty by
     # default; declared entries are validated fail-closed.
     sensitivity_analyses: tuple[SensitivityAnalysis, ...] = ()
+    # Structured biological-replicate unit and estimand declarations (plan
+    # sections 1 and 3): refinements of the ``replicate_unit`` and
+    # ``estimand`` strings above. Optional; declared values are validated
+    # fail-closed for non-degeneracy (see
+    # :func:`validate_replicate_unit_declaration` and
+    # :func:`validate_estimand_declaration`) and rendered additively.
+    replicate_unit_declaration: ReplicateUnitDeclaration | None = None
+    estimand_declaration: EstimandDeclaration | None = None
 
 
 def _require_declared(value: object, field: str) -> str:
@@ -222,6 +285,104 @@ def validate_sensitivity_analysis(analysis: SensitivityAnalysis) -> None:
         )
 
 
+def validate_replicate_unit_declaration(
+    unit: ReplicateUnitDeclaration,
+    *,
+    require_inferential_grade: bool = False,
+) -> None:
+    """Fail closed on missing, placeholder, or degenerate replicate-unit declarations.
+
+    Non-degeneracy is structural (plan sections 1 and 3):
+
+    - ``name`` and ``nesting`` must be declared strings (never placeholders);
+    - ``technical_replicates_counted`` must be ``False``: pooled
+      individuals, technical replicates, and repeated measurements are not
+      independent biological replicates;
+    - ``counts`` must be a non-empty mapping of declared stratum labels to
+      positive integers, and every stratum must supply at least
+      ``min_independent_replicates`` independent biological replicates — a
+      stratum with fewer has no defensible replicate structure and cannot
+      support the same contrast as replicated strata;
+    - ``min_independent_replicates`` must be a positive integer; with
+      ``require_inferential_grade=True`` (inferential roles) it must be at
+      least 2, because a single replicate cannot define an effect-size
+      estimand with uncertainty.
+
+    Raises:
+        TypeError: If ``unit`` is not a :class:`ReplicateUnitDeclaration`.
+        ProvenanceError: On any violated invariant.
+    """
+    if not isinstance(unit, ReplicateUnitDeclaration):
+        raise TypeError(
+            "validate_replicate_unit_declaration requires a ReplicateUnitDeclaration record; "
+            "ad-hoc dictionaries cannot predeclare the biological replicate unit"
+        )
+    _require_declared(unit.name, "replicate unit name")
+    _require_declared(unit.nesting, "replicate unit nesting")
+    if unit.technical_replicates_counted:
+        raise ProvenanceError(
+            "replicate unit declares technical_replicates_counted=True; pooled individuals, "
+            "technical replicates, and repeated measurements are not independent biological "
+            "replicates (plan section 1)"
+        )
+    if (
+        not isinstance(unit.min_independent_replicates, int)
+        or isinstance(unit.min_independent_replicates, bool)
+        or unit.min_independent_replicates < 1
+    ):
+        raise ProvenanceError(
+            f"min_independent_replicates must be a positive integer, got " f"{unit.min_independent_replicates!r}"
+        )
+    if require_inferential_grade and unit.min_independent_replicates < 2:
+        raise ProvenanceError(
+            "an inferential effect-size estimand requires at least 2 independent "
+            f"biological replicates per declared unit; got min_independent_replicates="
+            f"{unit.min_independent_replicates!r}"
+        )
+    if not isinstance(unit.counts, Mapping) or not unit.counts:
+        raise ProvenanceError(
+            "replicate unit counts must be a non-empty mapping of stratum label to "
+            f"independent biological replicate count, got {unit.counts!r}"
+        )
+    degenerate: list[str] = []
+    for stratum, count in unit.counts.items():
+        _require_declared(stratum, "replicate unit stratum label")
+        if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+            raise ProvenanceError(f"replicate unit counts[{stratum!r}] must be a positive integer, got {count!r}")
+        if count < unit.min_independent_replicates:
+            degenerate.append(f"{stratum} ({count} < {unit.min_independent_replicates})")
+    if degenerate:
+        raise ProvenanceError(
+            "replicate unit is degenerate for the declared estimand; strata below the "
+            f"declared minimum of {unit.min_independent_replicates} independent biological "
+            f"replicates: {', '.join(degenerate)}"
+        )
+
+
+def validate_estimand_declaration(estimand: EstimandDeclaration) -> None:
+    """Fail closed on missing, placeholder, or inconsistent estimand declarations.
+
+    The estimand is declared before the analysis runs (plan section 1): the
+    quantity, the biological contrast it applies to, and the permitted
+    interpretation boundary. If the declaration embeds a
+    :class:`ReplicateUnitDeclaration`, it is validated in full.
+
+    Raises:
+        TypeError: If ``estimand`` is not an :class:`EstimandDeclaration`.
+        ProvenanceError: On any missing or placeholder field.
+    """
+    if not isinstance(estimand, EstimandDeclaration):
+        raise TypeError(
+            "validate_estimand_declaration requires an EstimandDeclaration record; "
+            "ad-hoc dictionaries cannot predeclare the estimand"
+        )
+    _require_declared(estimand.name, "estimand name")
+    _require_declared(estimand.contrast, "estimand contrast")
+    _require_declared(estimand.permitted_interpretation, "estimand permitted_interpretation")
+    if estimand.replicate_unit is not None:
+        validate_replicate_unit_declaration(estimand.replicate_unit)
+
+
 def validate_analysis_provenance(record: AnalysisProvenance) -> None:
     """Fail closed on missing, placeholder, or inconsistent provenance fields.
 
@@ -239,7 +400,14 @@ def validate_analysis_provenance(record: AnalysisProvenance) -> None:
             when the role is ``'inferential'``. Each entry of
             ``sensitivity_analyses`` is validated in full
             (:func:`validate_sensitivity_analysis`), and a record with a
-            non-analysis role must not declare any.
+            non-analysis role must not declare any. When declared, the
+            structured ``replicate_unit_declaration`` and
+            ``estimand_declaration`` are validated in full for
+            non-degeneracy (:func:`validate_replicate_unit_declaration`,
+            :func:`validate_estimand_declaration`); an inferential role
+            additionally requires at least 2 independent biological
+            replicates per declared unit, and conflicting embedded units
+            are refused.
         TypeError: If ``record`` is not an :class:`AnalysisProvenance`.
     """
     if not isinstance(record, AnalysisProvenance):
@@ -270,6 +438,8 @@ def validate_analysis_provenance(record: AnalysisProvenance) -> None:
             ("cohort_included_count", record.cohort_included_count),
             ("cohort_excluded_count", record.cohort_excluded_count),
             ("artifact_paths", record.artifact_paths),
+            ("replicate_unit_declaration", record.replicate_unit_declaration),
+            ("estimand_declaration", record.estimand_declaration),
         ):
             if value is not None:
                 raise ProvenanceError(
@@ -395,6 +565,29 @@ def validate_analysis_provenance(record: AnalysisProvenance) -> None:
         )
     for sensitivity in record.sensitivity_analyses:
         validate_sensitivity_analysis(sensitivity)
+    # Biological-replicate unit and estimand declarations (plan sections 1
+    # and 3): optional structured refinements validated fail-closed for
+    # non-degeneracy. An inferential role additionally demands an
+    # inferential-grade replicate unit (at least 2 independent biological
+    # replicates per declared unit).
+    if record.replicate_unit_declaration is not None:
+        validate_replicate_unit_declaration(
+            record.replicate_unit_declaration,
+            require_inferential_grade=record.analysis_role == INFERENTIAL_ROLE,
+        )
+    if record.estimand_declaration is not None:
+        validate_estimand_declaration(record.estimand_declaration)
+        embedded = record.estimand_declaration.replicate_unit
+        if (
+            record.replicate_unit_declaration is not None
+            and embedded is not None
+            and embedded != record.replicate_unit_declaration
+        ):
+            raise ProvenanceError(
+                "conflicting replicate-unit declarations: the provenance record and the "
+                f"estimand declaration name different units ({record.replicate_unit_declaration!r} "
+                f"vs {embedded!r})"
+            )
 
 
 def render_analysis_provenance_block(record: AnalysisProvenance) -> list[str]:
@@ -409,7 +602,11 @@ def render_analysis_provenance_block(record: AnalysisProvenance) -> list[str]:
     paths as ``analysis_provenance_artifact_<name>``); each registered
     :class:`SensitivityAnalysis` renders as
     ``analysis_provenance_sensitivity_<index>_<field>`` lines, with
-    ``notes`` only when non-empty.
+    ``notes`` only when non-empty. Structured replicate-unit and estimand
+    declarations render only when declared, as
+    ``analysis_provenance_replicate_unit_*`` (name, nesting, declared
+    minimum, and per-stratum counts, strata sorted) and
+    ``analysis_provenance_estimand_*`` lines.
 
     Returns:
         Deterministic list of ``analysis_provenance_*`` lines.
@@ -451,6 +648,29 @@ def render_analysis_provenance_block(record: AnalysisProvenance) -> list[str]:
         lines.extend(
             f"analysis_provenance_artifact_{name}: {record.artifact_paths[name]}"
             for name in sorted(record.artifact_paths)
+        )
+    if record.replicate_unit_declaration is not None:
+        unit = record.replicate_unit_declaration
+        lines.extend(
+            f"analysis_provenance_replicate_unit_{key}: {value}"
+            for key, value in (
+                ("name", unit.name),
+                ("nesting", unit.nesting),
+                ("min_independent_replicates", unit.min_independent_replicates),
+            )
+        )
+        lines.extend(
+            f"analysis_provenance_replicate_unit_count_{stratum}: {unit.counts[stratum]}"
+            for stratum in sorted(unit.counts)
+        )
+    if record.estimand_declaration is not None:
+        lines.extend(
+            f"analysis_provenance_estimand_{key}: {value}"
+            for key, value in (
+                ("name", record.estimand_declaration.name),
+                ("contrast", record.estimand_declaration.contrast),
+                ("permitted_interpretation", record.estimand_declaration.permitted_interpretation),
+            )
         )
     for index, sensitivity in enumerate(record.sensitivity_analyses, start=1):
         lines.extend(
