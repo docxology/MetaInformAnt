@@ -128,13 +128,17 @@ controls, failure evidence, and provenance artifacts remain part of the record.
   mappings, low replication, incomplete orthology, and placeholder
   provenance.
 
-  Upcoming slices: define biological-replicate units and estimands; record
-  seeds, permutation counts, null models, and correction procedures; expose
-  descriptive scores separately from inferential p-values; validate orthology
-  graph/tree uniqueness, rootedness, and coverage; and add negative fixtures
-  for duplicate labels, missing mappings, low replication, and incomplete
-  orthology. Exit evidence is a source-linked contract plus deterministic
-  rerun and fail-closed tests.
+  Upcoming slices completed 2026-09-17: biological-replicate units and
+  estimands are now declared via `ReplicateUnitDeclaration` /
+  `EstimandDeclaration` with role-conditional non-degeneracy validation
+  (technical-replicate pooling refused; inferential grade requires >= 2
+  independent replicates per stratum) and additive
+  `analysis_provenance_replicate_unit_*` / `analysis_provenance_estimand_*`
+  rendering. The remaining slices were verified already present: seed,
+  permutation-count, null-model, and correction provenance fields plus
+  descriptive/inferential separation predate this pass, and orthology
+  graph/tree uniqueness, rootedness, and coverage validators landed in
+  commit `3f48bb2d7`; both are test-bound by the existing suites.
 
 ### P1 — Package quality and release gates
 
@@ -217,7 +221,7 @@ controls, failure evidence, and provenance artifacts remain part of the record.
   not establish scientific correctness; pair them with behavior-level
   contracts.
 
-- [ ] **Run blocking security and dependency checks on the release surface.**
+- [x] **Run blocking security and dependency checks on the release surface.**
   Review Bandit/Safety (or selected maintained equivalents), lockfile
   provenance, subprocess argument boundaries, path traversal, temporary-file
   handling, external-tool logs, and contact-data persistence. Record justified
@@ -230,61 +234,112 @@ controls, failure evidence, and provenance artifacts remain part of the record.
   manifest. Exit evidence is a blocking local/hosted report with no unowned
   exceptions.
 
+  Completed 2026-09-17: `scripts/package/security_checks.sh` gates Bandit
+  (medium+ blocking), pip-audit over the frozen lockfile export, and a
+  blocking shell-exec pattern audit with an informational path-traversal
+  review list; `.github/workflows/security.yml` runs it as a blocking job.
+  Observed findings (365 bandit, 0 pip-audit vulnerabilities, 10 reviewed
+  benign traversal candidates) are recorded in
+  `docs/reviews/security_check_2026-09-17.md`; the single medium B310
+  (hardcoded-https false positive) carries a dated owner entry in
+  `scripts/package/security_baseline.txt`. Hosted receipt follows on the
+  first workflow run after push.
+
 ### P3 — Operations and downstream analysis
 
-- [ ] **Characterize campaign-scale performance without touching the live
-  producer.** Benchmark discovery, bounded acquisition/quantification queues,
+- [x] **Characterize campaign-scale performance without touching the live
+  producer.**
+  Benchmark discovery, bounded acquisition/quantification queues,
   retry/backoff, hash/provenance I/O, storage pressure, and resource limits in
   disposable fixtures. Define budgets and telemetry for long-running
   campaigns; never start a competing producer during validation.
 
-  Upcoming slices: create disposable SQLite/filesystem fixtures; measure
+  Delivered slices (2026-09-17): disposable SQLite/filesystem fixtures; measured
   throughput, queue depth, retries, storage growth, and peak memory under
   bounded profiles; then publish budgets and telemetry definitions without
   reusing live campaign counts as benchmarks. Exit evidence is a reproducible
   benchmark command, fixture inputs, and a dated report.
 
-- [ ] **Make evidence bundles first-class release artifacts.** Include immutable
-  input/config hashes, software/tool versions, lock/heartbeat history, terminal
+  Completed 2026-09-17: `scripts/rna/benchmark_campaign_scale.py` builds
+  disposable seeded ProgressDB/filesystem fixtures (1e3–1e5 rows), measures
+  discovery, queue depth, retry/backoff, hash/provenance I/O, and storage
+  growth with the real engine implementations, and refuses any target at or
+  beneath the live data root. Budgets and telemetry definitions plus a dated
+  local example run are in `docs/rna/campaign_scale_benchmarks.md`; tests in
+  `tests/rna/test_benchmark_campaign_scale.py`.
+
+- [x] **Make evidence bundles first-class release artifacts.**
+  Include immutable input/config hashes, software/tool versions, lock/heartbeat history, terminal
   and unresolved task counts, receipts, manifests, matrices, error taxonomy,
   and command transcripts. State acquisition, recovery, quantification,
   descriptive analysis, and biological inference separately.
 
-  Upcoming slices: define a schema for hashes, versions, lock/heartbeat
+  Delivered slices (2026-09-17): schema for hashes, versions, lock/heartbeat
   history, counts, receipts, manifests, matrices, errors, and transcripts;
   make generation atomic and reject mixed-root evidence; and add a validator
   separating operational, descriptive, and inferential artifacts. Exit evidence
   is a fixture bundle plus negative stale/mixed-root controls.
 
-- [ ] **Specify downstream analytical contracts before promotion.** Document
-  merge/sample/ortholog identifiers, normalization, differential-expression or
+  Completed 2026-09-17: `src/metainformant/rna/engine/evidence_bundle.py`
+  (schema `metainformant.rna.evidence_bundle.v1`) provides bundle identity by
+  canonical-JSON SHA-256, atomic staged-then-rename generation, strict
+  mixed-root rejection at builder and validator, five non-conflatable roles,
+  and a validator CLI separating operational, descriptive, and inferential
+  artifacts. Tests in `tests/rna/test_evidence_bundle.py` cover the fixture
+  bundle plus stale, missing-artifact, mixed-root, role-conflation, and
+  state-conflation negative controls.
+
+- [x] **Specify downstream analytical contracts before promotion.**
+  Document merge/sample/ortholog identifiers, normalization, differential-expression or
   equivalent methods, batch handling, replicate requirements, missing-data
   policy, statistical corrections, and the evidence required to move from
   descriptive analysis to biological inference.
 
-  Upcoming slices: define canonical sample/condition/replicate/species/
+  Delivered slices (2026-09-17): canonical sample/condition/replicate/species/
   orthology/matrix identifiers; document normalization, batch, missing-data,
   filtering, and multiplicity defaults; and add a promotion checklist requiring
   complete metadata, finalized matrices, current provenance, and review. Exit
   evidence is a source-linked contract and tests preventing descriptive
   matrices from acquiring biological-inference labels.
 
+  Completed 2026-09-17: `docs/rna/downstream_contracts.md` defines canonical
+  identifiers, normalization/batch/missing-data/filtering/multiplicity
+  defaults, replicate requirements, and a source-linked 7-item promotion
+  checklist gating descriptive to biological inference.
+  `tests/rna/test_promotion_guards.py` fails closed when a descriptive-stage
+  artifact is offered as an inferential observation.
+
 ### P2 — Core, MCP, skills, and test-suite expansion
 
-- [ ] **Expand core method depth around stable contracts.** Add behavior-level
-  tests and API documentation for atomic I/O, checksums, path containment,
+- [x] **Expand core method depth around stable contracts.**
+  Add behavior-level tests and API documentation for atomic I/O, checksums, path containment,
   optional dependency reporting, resource-aware parallel execution, and
   workflow state transitions. Exit evidence: public-surface imports,
   deterministic edge fixtures, and a generated API cross-check with no
   undocumented stable exports.
 
-- [ ] **Keep MCP availability truthful and adapter-ready.** The checkout
-  provides a standalone Amalgkit monitor, not a transport or server. Extend
+  Completed 2026-09-17: `tests/core/test_core_contracts_deep.py` adds 37
+  behavior-level tests over atomic I/O interruption semantics, checksum
+  round-trips, path containment (including symlink escape), optional-
+  dependency reporting, resource-aware parallel execution limits, and
+  workflow state-transition refusals; the one undocumented stable export
+  found (`core.utils.config.get_env_or_default`) is now documented in
+  `docs/core/config.md`.
+
+- [x] **Keep MCP availability truthful and adapter-ready.**
+  The checkout provides a standalone Amalgkit monitor, not a transport or server. Extend
   only with explicit roots, database/receipt-backed readiness, and evidence
   paths. Do not advertise stdio/SSE tools until protocol implementation,
   dependency policy, security review, and client fixtures exist. Exit evidence:
   monitor contract tests and a negative test proving biological inference is
   withheld.
+
+  Completed 2026-09-17: `tests/mcp/test_monitor_contract.py` (12 tests)
+  binds the standalone Amalgkit monitor to explicit-root, receipt-backed
+  readiness, and corrupt-database degradation contracts, and adds the
+  required negative test proving biological inference stays withheld even
+  when a fully finalized matrix fixture is present. No transport or server
+  code was added.
 
 - [x] **Keep generated skills reproducible.** Regenerate `.cursor/skills/` from
   every in-scope `AGENTS.md`, prune orphans, and run the check in required docs
@@ -295,17 +350,23 @@ controls, failure evidence, and provenance artifacts remain part of the record.
   `metainformant-projects-hymenoptera-amalgkit-doc-manuscript` wrapper left by
   the doc/→docs/ migration, and `generate_cursor_skills.py --check` passes.
 
-- [ ] **Maintain modular, process-isolated test lanes.** Keep the canonical
-  full suite and independent core, DNA, RNA, MCP, domain, and packaging groups
+- [x] **Maintain modular, process-isolated test lanes.**
+  Keep the canonical full suite and independent core, DNA, RNA, MCP, domain, and packaging groups
   for fast diagnosis. Groups must use real implementations, explicit optional
   markers, and complete failure output; group green is not release or
   scientific readiness. Exit evidence: documented matrix command, isolated
   fixtures, and a required full-suite job.
+
+  Completed 2026-09-17: remaining CI wiring landed in
+  `.github/workflows/test.yml` as a `test-lanes` matrix job over the six
+  `scripts/test_matrix.py` lanes (core, dna, rna, mcp, domains, package).
+  Lanes stay diagnostic (`continue-on-error`, not in `summary` needs); the
+  full-suite coverage job remains the only release gate.
   2026-08-31 verification: `scripts/test_matrix.py --list` shows lanes core,
   dna, rna, mcp, domains, package; measured this pass — tests/core
   (16 passed, 107s), tests/rna (846 passed/2 contention flakes that pass in
   isolation/4 skipped, 939s), tests/{infrastructure,quality,other}
-  (365 passed, 815s). Remaining scope is CI wiring, not lane existence.
+  (365 passed, 815s). CI wiring completed 2026-09-17 (see above).
 
 ### Boundary and execution rules
 
