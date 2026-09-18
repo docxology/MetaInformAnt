@@ -59,10 +59,13 @@ class TestTreeValidation:
             pc.brownian_vcv("(apis:1,apis:1);", rooted=True)
 
     def test_non_numeric_branch_length_in_dict_raises(self) -> None:
-        tree = {"name": "root", "children": [
-            {"name": "apis", "distance": "1.0"},
-            {"name": "bombus", "distance": 1.0},
-        ]}
+        tree = {
+            "name": "root",
+            "children": [
+                {"name": "apis", "distance": "1.0"},
+                {"name": "bombus", "distance": 1.0},
+            ],
+        }
         with pytest.raises(TreeInvariantError, match="real number"):
             pc.brownian_vcv(tree, rooted=True)
 

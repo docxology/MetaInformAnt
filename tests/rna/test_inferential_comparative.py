@@ -151,9 +151,7 @@ def test_covariate_removes_confounding_bias() -> None:
             )
     observations = pd.DataFrame(rows)
     contract = _inferential_contract(resampling_count=50)
-    result = run_inferential_comparative_analysis(
-        observations, _design(), contract, evidence_manifest_frozen=True
-    )
+    result = run_inferential_comparative_analysis(observations, _design(), contract, evidence_manifest_frozen=True)
     effect = result["features"].loc["orth_1", "effect"]
     naive = fit_comparative_effects(observations, _design(covariate_cols=()), feature="orth_1")
     assert effect == pytest.approx(1.5, abs=0.25)
@@ -163,9 +161,7 @@ def test_covariate_removes_confounding_bias() -> None:
 def test_multiplicity_matches_declared_bh_fdr() -> None:
     observations = _simulate({"study_a": 2.0, "study_b": 2.0, "study_c": 2.0}, features=("orth_1", "orth_2"))
     contract = _inferential_contract(tested_feature_count=2, resampling_count=20)
-    result = run_inferential_comparative_analysis(
-        observations, _design(), contract, evidence_manifest_frozen=True
-    )
+    result = run_inferential_comparative_analysis(observations, _design(), contract, evidence_manifest_frozen=True)
     features = result["features"]
     assert len(features) == 2
     expected = benjamini_hochberg_fdr(features["p_value"].tolist())
@@ -189,9 +185,7 @@ def test_bootstrap_ci_covers_true_effect() -> None:
             noise_sd=0.5,
             seed=1000 + seed,
         )
-        result = run_inferential_comparative_analysis(
-            observations, design, contract, evidence_manifest_frozen=True
-        )
+        result = run_inferential_comparative_analysis(observations, design, contract, evidence_manifest_frozen=True)
         row = result["features"].loc["orth_1"]
         assert row["bootstrap_n_success"] >= 0.8 * contract.resampling_count
         covered += int(row["ci_low"] <= 1.0 <= row["ci_high"])
@@ -280,13 +274,9 @@ def test_descriptive_contract_never_receives_p_values() -> None:
         analysis_role="descriptive",
     )
     with pytest.raises(StatisticsContractError, match="descriptive"):
-        run_inferential_comparative_analysis(
-            observations, _design(), descriptive, evidence_manifest_frozen=True
-        )
+        run_inferential_comparative_analysis(observations, _design(), descriptive, evidence_manifest_frozen=True)
     with pytest.raises(StatisticsContractError, match="inferential"):
-        run_registered_sensitivity_analyses(
-            observations, _design(), descriptive, evidence_manifest_frozen=True
-        )
+        run_registered_sensitivity_analyses(observations, _design(), descriptive, evidence_manifest_frozen=True)
 
 
 def test_stopped_contract_refuses_inferential_output() -> None:
@@ -373,9 +363,7 @@ def test_leave_one_study_out_reports_directional_agreement() -> None:
             }
         ]
     )
-    results = run_registered_sensitivity_analyses(
-        observations, _design(), contract, evidence_manifest_frozen=True
-    )
+    results = run_registered_sensitivity_analyses(observations, _design(), contract, evidence_manifest_frozen=True)
     assert len(results) == 1
     entry = results[0]
     assert entry["role"] == INFERENTIAL_ROLE
@@ -401,9 +389,7 @@ def test_exclude_covariate_sensitivity_runs_and_labels_roles() -> None:
             }
         ]
     )
-    results = run_registered_sensitivity_analyses(
-        observations, _design(), contract, evidence_manifest_frozen=True
-    )
+    results = run_registered_sensitivity_analyses(observations, _design(), contract, evidence_manifest_frozen=True)
     entry = results[0]
     assert entry["n_comparisons"] == 1
     comparison = entry["comparisons"][0]
@@ -426,9 +412,7 @@ def test_unknown_sensitivity_parameter_refuses() -> None:
         ]
     )
     with pytest.raises(InferentialComparativeError, match="cannot execute"):
-        run_registered_sensitivity_analyses(
-            observations, _design(), contract, evidence_manifest_frozen=True
-        )
+        run_registered_sensitivity_analyses(observations, _design(), contract, evidence_manifest_frozen=True)
 
 
 def test_sensitivity_with_unknown_study_value_refuses() -> None:
@@ -445,9 +429,7 @@ def test_sensitivity_with_unknown_study_value_refuses() -> None:
         ]
     )
     with pytest.raises(InferentialComparativeError, match="not present in the observations"):
-        run_registered_sensitivity_analyses(
-            observations, _design(), contract, evidence_manifest_frozen=True
-        )
+        run_registered_sensitivity_analyses(observations, _design(), contract, evidence_manifest_frozen=True)
 
 
 def test_directional_agreement_semantics() -> None:
