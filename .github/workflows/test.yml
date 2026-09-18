@@ -289,6 +289,71 @@ jobs:
         bash scripts/package/setup.sh --python 3.12 --skip-amalgkit --skip-tests
         bash scripts/package/test.sh --mode fast
 
+  test-lanes:
+    # Diagnostic parallel lanes mirroring `scripts/test_matrix.py --list`
+    # (core, dna, rna, mcp, domains, package). These are NOT release
+    # evidence: the full-suite `test` job (coverage mode with the
+    # COVERAGE_MINIMUM ratchet) remains the only release gate. The lanes
+    # are a diagnostic/accelerator layer, so failures are reported without
+    # failing the workflow.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: [core, dna, rna, mcp, domains, package]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      with:
+        submodules: recursive
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      with:
+        version: "latest"
+        enable-cache: true
+        cache-local-path: .uv-cache
+        cache-dependency-glob: |
+          **/pyproject.toml
+          **/uv.lock
+
+    - name: Set up Python 3.12
+      run: uv python install 3.12
+
+    - name: Install system dependencies (Ubuntu)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          muscle \
+          seqkit \
+          sra-toolkit \
+          build-essential \
+          zlib1g-dev
+
+    - name: Setup test environment
+      run: |
+        echo "Setting up test environment for lane: ${{ matrix.lane }}"
+        bash scripts/package/setup.sh --python 3.12 --skip-tests
+
+    - name: Verify test setup
+      run: bash scripts/package/verify.sh --mode setup
+
+    - name: Run lane ${{ matrix.lane }}
+      run: |
+        env -u VIRTUAL_ENV uv run python scripts/test_matrix.py \
+          --group ${{ matrix.lane }} --workers 1 --slow
+
+    - name: Upload lane artifacts
+      if: failure()
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: test-lane-${{ matrix.lane }}-${{ github.run_id }}
+        path: |
+          output/
+          !output/**/.git/
+        retention-days: 7
+
   summary:
     runs-on: ubuntu-latest
     needs: [test, test-infrastructure, quality-checks, test-examples, fat-filesystem-test]

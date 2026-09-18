@@ -23,8 +23,8 @@ from metainformant.rna.analysis.ortholog_mapping import (
     DEFAULT_MIN_RETENTION,
     MAPPING_ARTIFACT_SCHEMA_VERSION,
     MappingArtifactManifest,
-    OrthologBridgeError,
     OrthogroupBridgeResult,
+    OrthologBridgeError,
     OrthologySourceMetadata,
     audit_species_retention,
     build_orthogroup_bridge,
@@ -247,7 +247,6 @@ def test_audit_rejects_inconsistent_species_accounting(tmp_path: Path) -> None:
         audit_species_retention(broken)
 
 
-
 # =============================================================================
 # Duplicated-evidence policy derived from COPY_POLICIES
 # =============================================================================
@@ -390,7 +389,6 @@ def test_read_manifest_fail_closed(tmp_path: Path) -> None:
         path.write_text(json.dumps(mutated), encoding="utf-8")
         with pytest.raises(OrthologBridgeError, match=pattern):
             read_mapping_artifact_manifest(path)
-
 
     del payload["source"]
     path = tmp_path / "missing_source.json"
