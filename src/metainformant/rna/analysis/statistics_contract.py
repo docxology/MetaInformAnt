@@ -45,6 +45,30 @@ required by
   :func:`validate_species_tree_invariants` fail closed with explicit error
   types on orthology-bridge and species-tree violations (plan sections 4
   and 8).
+- predeclared MJ-01 comparative designs (:class:`PredeclaredDesign`): the
+  study, contrast, and covariate columns (tissue, caste, sex, stage) and
+  their exact strata levels are declared up front;
+  :func:`validate_predeclared_design` enforces structural non-degeneracy
+  and :func:`enforce_predeclared_design` cross-checks the declaration
+  against the observations before any fit — unknown covariate names and
+  undeclared strata fail closed, and empty/singleton strata raise
+  :class:`EmptyStratumError`/:class:`SingletonStratumError` instead of
+  being silently dropped.
+- role-conditional paired effect sizes (:func:`declared_effect_size` with
+  the pure helper :func:`paired_log2fc_effect`): paired log2 fold-change
+  with an analytic standard error and, for inferential contracts, a
+  seeded percentile bootstrap CI gated post-freeze. Descriptive contracts
+  render every inferential field as ``not-applicable``; inferential
+  records carry the effect-size method, the paired replicate count, and
+  the multiplicity family/method provenance.
+- multi-study heterogeneity records (:func:`heterogeneity_record`):
+  Cochran's Q, degrees of freedom, I-squared, and tau-squared for
+  inferential contracts, fail-closed below 2 studies;
+  descriptive-role records are exempt and render ``not-applicable``.
+- a leave-one-study-out sensitivity hook
+  (:func:`leave_one_study_out_deltas`) recomputing the random-effects
+  combined effect per exclusion and returning per-exclusion deltas (pure
+  computation, no I/O).
 
 Every validator fails closed: a record with missing or placeholder fields,
 or an invariant violation, raises before any result can be produced.
@@ -54,7 +78,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import pandas as pd
@@ -62,20 +86,34 @@ import pandas as pd
 __all__ = [
     "AnalysisProvenance",
     "DESCRIPTIVE_ROLE",
+    "DesignDeclarationError",
+    "EmptyStratumError",
     "EstimandDeclaration",
+    "HeterogeneityError",
     "INFERENTIAL_ROLE",
+    "PredeclaredDesign",
     "ProvenanceError",
     "ReplicateUnitDeclaration",
     "SensitivityAnalysis",
+    "SingletonStratumError",
     "StatisticsContractError",
     "TreeInvariantError",
+    "UndeclaredStratumError",
+    "UnknownDesignCovariateError",
     "benjamini_hochberg_fdr",
+    "declared_effect_size",
     "declared_inferential_bh_fdr",
+    "enforce_predeclared_design",
+    "heterogeneity_record",
+    "leave_one_study_out_deltas",
+    "paired_log2fc_effect",
     "render_analysis_provenance_block",
+    "render_effect_size_record",
     "result_role",
     "validate_analysis_provenance",
     "validate_estimand_declaration",
     "validate_orthology_profile_invariants",
+    "validate_predeclared_design",
     "validate_replicate_unit_declaration",
     "validate_sensitivity_analysis",
     "validate_species_tree_invariants",
@@ -119,6 +157,30 @@ class OrthologyInvariantError(StatisticsContractError):
 
 class TreeInvariantError(StatisticsContractError):
     """A species tree is unrooted, malformed, or has conflicting labels."""
+
+
+class DesignDeclarationError(StatisticsContractError):
+    """A predeclared comparative-design declaration is violated."""
+
+
+class UnknownDesignCovariateError(DesignDeclarationError):
+    """A design column is named outside the predeclared covariate declaration."""
+
+
+class UndeclaredStratumError(DesignDeclarationError):
+    """Observations carry a stratum level the predeclared design did not declare."""
+
+
+class EmptyStratumError(DesignDeclarationError):
+    """A declared stratum level contributes no observations."""
+
+
+class SingletonStratumError(DesignDeclarationError):
+    """A declared stratum level is too thin to support the declared contrast."""
+
+
+class HeterogeneityError(StatisticsContractError):
+    """A multi-study heterogeneity invariant is violated (fail-closed)."""
 
 
 @dataclass(frozen=True)
@@ -181,6 +243,25 @@ class EstimandDeclaration:
 
 
 @dataclass(frozen=True)
+class PredeclaredDesign:
+    """Predeclared comparative design for the MJ-01 inferential lane.
+
+    Maps every design column — the study column, the contrast column, and
+    the covariate columns (tissue, caste, sex, stage) — to the exact strata
+    levels the analysis is predeclared to encounter. The declaration is
+    frozen: it is part of the predeclared contract, not a post-hoc
+    description. :func:`validate_predeclared_design` enforces structural
+    non-degeneracy, and :func:`enforce_predeclared_design` cross-checks the
+    declaration against the observations before any fit runs; unknown
+    covariate names and undeclared strata fail closed, and empty/singleton
+    strata raise :class:`EmptyStratumError`/:class:`SingletonStratumError`
+    instead of being silently dropped.
+    """
+
+    covariate_strata: Mapping[str, tuple[str, ...]]
+
+
+@dataclass(frozen=True)
 class AnalysisProvenance:
     """Predeclared analysis-provenance record (plan sections 1, 4, 6, 9).
 
@@ -208,10 +289,19 @@ class AnalysisProvenance:
     random_seed: int
     resampling_count: int
     null_model: str
-    multiple_testing_family: str | None
-    multiple_testing_method: str | None
-    tested_feature_count: int | None
-    software_versions: Mapping[str, str]
+    # Multiplicity provenance defaults to None — the descriptive-role
+    # representation (rendered ``not-applicable``). The fields stay optional
+    # at construction so legacy and descriptive-role callers keep working
+    # unchanged; :func:`validate_analysis_provenance` enforces the
+    # ROLE-conditional requirement instead (an inferential record must
+    # declare a real family, method, and tested-feature count, and a
+    # descriptive record must declare none).
+    multiple_testing_family: str | None = None
+    multiple_testing_method: str | None = None
+    tested_feature_count: int | None = None
+    # A record without software versions is never a declared analysis;
+    # validate_analysis_provenance refuses an empty mapping for every role.
+    software_versions: Mapping[str, str] = field(default_factory=dict)
     analysis_role: str = DESCRIPTIVE_ROLE
     # Reporting-contract fields (plan section 9): bind the analysis to the
     # data-root snapshot it ran against and to the exact cohort denominators
@@ -242,6 +332,13 @@ class AnalysisProvenance:
     # :func:`validate_estimand_declaration`) and rendered additively.
     replicate_unit_declaration: ReplicateUnitDeclaration | None = None
     estimand_declaration: EstimandDeclaration | None = None
+    # Predeclared comparative design (MJ-01): the exact design columns
+    # (study, contrast, covariates) and their strata levels the inferential
+    # comparative lane is predeclared to encounter. Optional; declared
+    # values are validated fail-closed by
+    # :func:`validate_predeclared_design` and rendered additively; a
+    # non-analysis role must not declare one.
+    design_declaration: PredeclaredDesign | None = None
 
 
 def _require_declared(value: object, field: str) -> str:
@@ -383,6 +480,152 @@ def validate_estimand_declaration(estimand: EstimandDeclaration) -> None:
         validate_replicate_unit_declaration(estimand.replicate_unit)
 
 
+def validate_predeclared_design(design: PredeclaredDesign) -> None:
+    """Fail closed on missing, placeholder, or degenerate design declarations.
+
+    Structural non-degeneracy for the predeclared MJ-01 comparative design:
+    every covariate name must be a declared string (never a placeholder),
+    and every strata value must be a non-empty tuple of unique declared
+    level strings.
+
+    Raises:
+        TypeError: If ``design`` is not a :class:`PredeclaredDesign`.
+        ProvenanceError: On any placeholder covariate name, a non-tuple or
+            empty strata value, or a placeholder/repeated stratum level.
+    """
+    if not isinstance(design, PredeclaredDesign):
+        raise TypeError(
+            "validate_predeclared_design requires a PredeclaredDesign record; "
+            "ad-hoc dictionaries cannot predeclare the comparative design"
+        )
+    if not isinstance(design.covariate_strata, Mapping) or not design.covariate_strata:
+        raise ProvenanceError(
+            "covariate_strata must be a non-empty mapping of covariate name to "
+            f"declared strata levels, got {design.covariate_strata!r}"
+        )
+    for covariate, strata in design.covariate_strata.items():
+        _require_declared(covariate, "predeclared design covariate name")
+        if not isinstance(strata, tuple) or not strata:
+            raise ProvenanceError(
+                f"predeclared design strata for covariate {covariate!r} must be a "
+                f"non-empty tuple of declared levels, got {strata!r}"
+            )
+        seen: set[str] = set()
+        for level in strata:
+            _require_declared(level, f"predeclared design stratum level for {covariate!r}")
+            if level in seen:
+                raise ProvenanceError(
+                    f"predeclared design strata for covariate {covariate!r} repeat " f"level {level!r}"
+                )
+            seen.add(level)
+
+
+def enforce_predeclared_design(
+    design: PredeclaredDesign,
+    observations: pd.DataFrame,
+    *,
+    study_col: str,
+    contrast_col: str | None = None,
+    covariate_cols: Sequence[str] = (),
+    min_stratum_observations: int = 2,
+) -> dict[str, dict[str, int]]:
+    """Cross-check a predeclared design against observations, fail closed.
+
+    Every design column — the study column, the contrast column when given,
+    and every covariate column — must exactly match the predeclared
+    declaration, must be a column of ``observations``, and every observed
+    stratum level must be declared with at least
+    ``min_stratum_observations`` observations. Nothing is silently dropped:
+    a level observed but not declared raises
+    :class:`UndeclaredStratumError`; a declared level with no observations
+    raises :class:`EmptyStratumError`; a declared level observed fewer than
+    ``min_stratum_observations`` times raises
+    :class:`SingletonStratumError`.
+
+    Args:
+        design: The predeclared :class:`PredeclaredDesign` declaration.
+        observations: Long-format observations table.
+        study_col: The observations column grouping observations into studies.
+        contrast_col: The observations column holding the contrast levels.
+        covariate_cols: The observations columns retained as covariates.
+        min_stratum_observations: Minimum observation count per stratum
+            level; the default of 2 refuses singleton strata.
+
+    Returns:
+        Deterministic ``{column: {level: observation_count}}`` mapping,
+        columns and levels sorted.
+
+    Raises:
+        TypeError: If ``design`` is not a :class:`PredeclaredDesign` or
+            ``observations`` is not a DataFrame.
+        ProvenanceError: If ``min_stratum_observations`` is not a positive
+            integer, or the declaration itself is degenerate.
+        UnknownDesignCovariateError: If the requested design columns do not
+            match the declaration, or a declared column is absent from the
+            observations.
+        UndeclaredStratumError: On an observed level outside the declaration.
+        EmptyStratumError: On a declared level with zero observations.
+        SingletonStratumError: On a declared level below the minimum count.
+    """
+    validate_predeclared_design(design)
+    if not isinstance(observations, pd.DataFrame):
+        raise TypeError(
+            "enforce_predeclared_design requires an observations DataFrame; " f"got {type(observations).__name__}"
+        )
+    if (
+        not isinstance(min_stratum_observations, int)
+        or isinstance(min_stratum_observations, bool)
+        or min_stratum_observations < 1
+    ):
+        raise ProvenanceError(
+            f"min_stratum_observations must be a positive integer, got " f"{min_stratum_observations!r}"
+        )
+    requested = sorted({str(name) for name in covariate_cols} | {str(study_col)})
+    if contrast_col is not None:
+        requested.append(str(contrast_col))
+        requested = sorted(requested)
+    declared = sorted(str(name) for name in design.covariate_strata)
+    if requested != declared:
+        undeclared = [name for name in requested if name not in declared]
+        missing = [name for name in declared if name not in requested]
+        raise UnknownDesignCovariateError(
+            "the requested design columns do not match the predeclared design: "
+            f"columns outside the declaration: {undeclared}; declared columns "
+            f"absent from the request: {missing}"
+        )
+    counts: dict[str, dict[str, int]] = {}
+    for name in declared:
+        if name not in observations.columns:
+            raise UnknownDesignCovariateError(f"predeclared design column {name!r} is not a column of the observations")
+        observed = observations[name]
+        strata = sorted(str(level) for level in design.covariate_strata[name])
+        undeclared_levels = sorted((str(level) for level in observed.unique() if str(level) not in strata))
+        if undeclared_levels:
+            raise UndeclaredStratumError(
+                f"observations carry strata the predeclared design did not declare "
+                f"for column {name!r}: {undeclared_levels}; refusing to drop them "
+                "silently"
+            )
+        stratum_counts: dict[str, int] = {}
+        for level in strata:
+            count = int((observed == level).sum())
+            if count == 0:
+                raise EmptyStratumError(
+                    f"predeclared design stratum {level!r} of column {name!r} has no "
+                    "observations; the declaration misstates the cohort"
+                )
+            if count < min_stratum_observations:
+                raise SingletonStratumError(
+                    f"predeclared design stratum {level!r} of column {name!r} has "
+                    f"{count} observation(s), below the required minimum of "
+                    f"{min_stratum_observations}; a stratum this thin cannot support "
+                    "the declared contrast and is never silently dropped"
+                )
+            stratum_counts[level] = count
+        counts[name] = stratum_counts
+    return counts
+
+
 def validate_analysis_provenance(record: AnalysisProvenance) -> None:
     """Fail closed on missing, placeholder, or inconsistent provenance fields.
 
@@ -407,7 +650,9 @@ def validate_analysis_provenance(record: AnalysisProvenance) -> None:
             :func:`validate_estimand_declaration`); an inferential role
             additionally requires at least 2 independent biological
             replicates per declared unit, and conflicting embedded units
-            are refused.
+            are refused. When declared, the ``design_declaration`` is
+            validated in full (:func:`validate_predeclared_design`); a
+            non-analysis role must not declare one.
         TypeError: If ``record`` is not an :class:`AnalysisProvenance`.
     """
     if not isinstance(record, AnalysisProvenance):
@@ -415,13 +660,13 @@ def validate_analysis_provenance(record: AnalysisProvenance) -> None:
             "validate_analysis_provenance requires an AnalysisProvenance record; "
             "ad-hoc dictionaries cannot bind an analysis to its predeclared contract"
         )
-    for field in (
+    for provenance_field in (
         "analysis_id",
         "estimand",
         "replicate_unit",
         "null_model",
     ):
-        _require_declared(getattr(record, field), field)
+        _require_declared(getattr(record, provenance_field), provenance_field)
 
     if record.analysis_role not in _ALLOWED_ROLES:
         raise ProvenanceError(f"analysis_role must be one of {sorted(_ALLOWED_ROLES)}, got {record.analysis_role!r}")
@@ -440,6 +685,7 @@ def validate_analysis_provenance(record: AnalysisProvenance) -> None:
             ("artifact_paths", record.artifact_paths),
             ("replicate_unit_declaration", record.replicate_unit_declaration),
             ("estimand_declaration", record.estimand_declaration),
+            ("design_declaration", record.design_declaration),
         ):
             if value is not None:
                 raise ProvenanceError(
@@ -588,6 +834,8 @@ def validate_analysis_provenance(record: AnalysisProvenance) -> None:
                 f"estimand declaration name different units ({record.replicate_unit_declaration!r} "
                 f"vs {embedded!r})"
             )
+    if record.design_declaration is not None:
+        validate_predeclared_design(record.design_declaration)
 
 
 def render_analysis_provenance_block(record: AnalysisProvenance) -> list[str]:
@@ -599,14 +847,16 @@ def render_analysis_provenance_block(record: AnalysisProvenance) -> list[str]:
     first: a record that would render placeholder provenance fails closed.
     Descriptive lanes render ``not-applicable`` for the multiplicity
     fields; optional reporting bindings render only when declared (artifact
-    paths as ``analysis_provenance_artifact_<name>``); each registered
-    :class:`SensitivityAnalysis` renders as
-    ``analysis_provenance_sensitivity_<index>_<field>`` lines, with
-    ``notes`` only when non-empty. Structured replicate-unit and estimand
-    declarations render only when declared, as
+    paths as ``analysis_provenance_artifact_<name>``). Structured
+    replicate-unit and estimand declarations render only when declared, as
     ``analysis_provenance_replicate_unit_*`` (name, nesting, declared
     minimum, and per-stratum counts, strata sorted) and
-    ``analysis_provenance_estimand_*`` lines.
+    ``analysis_provenance_estimand_*`` lines. Each registered
+    :class:`SensitivityAnalysis` renders as
+    ``analysis_provenance_sensitivity_<index>_<field>`` lines, with
+    ``notes`` only when non-empty. A declared ``design_declaration``
+    renders additively as ``analysis_provenance_design_covariate_<name>``
+    lines (covariates sorted, levels in declared order).
 
     Returns:
         Deterministic list of ``analysis_provenance_*`` lines.
@@ -671,6 +921,12 @@ def render_analysis_provenance_block(record: AnalysisProvenance) -> list[str]:
                 ("contrast", record.estimand_declaration.contrast),
                 ("permitted_interpretation", record.estimand_declaration.permitted_interpretation),
             )
+        )
+    if record.design_declaration is not None:
+        lines.extend(
+            f"analysis_provenance_design_covariate_{covariate}: "
+            + ",".join(record.design_declaration.covariate_strata[covariate])
+            for covariate in sorted(record.design_declaration.covariate_strata)
         )
     for index, sensitivity in enumerate(record.sensitivity_analyses, start=1):
         lines.extend(
@@ -806,6 +1062,416 @@ def declared_inferential_bh_fdr(
         "adjusted_p_values": adjusted,
         "gate": "post-freeze",
     }
+
+
+# =============================================================================
+# Paired effect sizes, multi-study heterogeneity, and leave-one-study-out
+# sensitivity (MJ-01 inferential lane)
+# =============================================================================
+
+
+_MASK64 = (1 << 64) - 1
+_SPLITMIX_GAMMA = 0x9E3779B97F4A7C15
+_SPLITMIX_M1 = 0xBF58476DCE4E6B25
+_SPLITMIX_M2 = 0x94D049BB133111EB
+_Z_975 = 1.959963984540054  # two-sided normal quantile for a 95% analytic CI
+
+
+def _splitmix64_picks(seed: int, count: int, size: int) -> list[list[int]]:
+    """Deterministic splitmix64 resample indices (no external RNG dependency)."""
+    state = seed & _MASK64
+    picks: list[list[int]] = []
+    for _ in range(count):
+        replicate: list[int] = []
+        for _ in range(size):
+            state = (state + _SPLITMIX_GAMMA) & _MASK64
+            z = state
+            z = ((z ^ (z >> 30)) * _SPLITMIX_M1) & _MASK64
+            z = ((z ^ (z >> 27)) * _SPLITMIX_M2) & _MASK64
+            replicate.append((z ^ (z >> 31)) % size)
+        picks.append(replicate)
+    return picks
+
+
+def _percentile(sorted_values: Sequence[float], percent: float) -> float:
+    """Linearly interpolated percentile of a pre-sorted sequence (numpy-compatible)."""
+    position = percent / 100.0 * (len(sorted_values) - 1)
+    lower = math.floor(position)
+    upper = math.ceil(position)
+    if lower == upper:
+        return float(sorted_values[lower])
+    fraction = position - lower
+    return float(sorted_values[lower] * (1.0 - fraction) + sorted_values[upper] * fraction)
+
+
+def _paired_log_ratios(reference_values: Sequence[float], treatment_values: Sequence[float]) -> list[float]:
+    """Validate paired observations and return their log2(treatment/reference) ratios.
+
+    Raises:
+        StatisticsContractError: On empty or mismatched pairs, non-numeric
+            or non-finite values, or non-positive abundances (a log2
+            fold-change is undefined at or below zero).
+    """
+    reference_list = list(reference_values)
+    treatment_list = list(treatment_values)
+    if not reference_list or len(reference_list) != len(treatment_list):
+        raise StatisticsContractError(
+            "paired effect sizes require a non-empty, aligned pair of observation "
+            f"sequences; got {len(reference_list)} reference vs "
+            f"{len(treatment_list)} treatment"
+        )
+    ratios: list[float] = []
+    for index, (reference, treatment) in enumerate(zip(reference_list, treatment_list)):
+        for label, value in (("reference", reference), ("treatment", treatment)):
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise StatisticsContractError(
+                    f"paired observations must be numeric; index {index} ({label}) got {value!r}"
+                )
+            if value != value or value in (float("inf"), float("-inf")):
+                raise StatisticsContractError(f"paired observation at index {index} ({label}) is not finite")
+            if value <= 0:
+                raise StatisticsContractError(
+                    f"paired observation at index {index} ({label}) is {value!r}; "
+                    "log2 fold-change requires strictly positive values"
+                )
+        ratios.append(math.log2(treatment_list[index] / reference_list[index]))
+    return ratios
+
+
+def paired_log2fc_effect(
+    reference_values: Sequence[float],
+    treatment_values: Sequence[float],
+    *,
+    bootstrap_replicates: int = 0,
+    random_seed: int = 0,
+) -> dict[str, Any]:
+    """Paired log2 fold-change with an analytic SE and optional bootstrap CI.
+
+    Contract: the point effect is the mean paired
+    ``log2(treatment/reference)`` over aligned pairs; ``se`` is the
+    analytic standard error of that mean (``None`` for a single pair,
+    which carries no uncertainty); with ``bootstrap_replicates >= 1`` the
+    pairs are resampled with replacement through a deterministic
+    splitmix64 stream seeded by ``random_seed`` and the 2.5/97.5
+    percentiles of the replicate means are returned. Pure computation, no
+    I/O, no gating — gating is the caller's contract decision (see
+    :func:`declared_effect_size`).
+
+    Raises:
+        StatisticsContractError: On empty/mismatched pairs, non-numeric,
+            non-finite, or non-positive values, a negative seed, or a
+            negative bootstrap replicate count.
+    """
+    ratios = _paired_log_ratios(reference_values, treatment_values)
+    if not isinstance(bootstrap_replicates, int) or isinstance(bootstrap_replicates, bool) or bootstrap_replicates < 0:
+        raise StatisticsContractError(
+            f"bootstrap_replicates must be a non-negative integer, got {bootstrap_replicates!r}"
+        )
+    if not isinstance(random_seed, int) or isinstance(random_seed, bool) or random_seed < 0:
+        raise StatisticsContractError(f"random_seed must be a non-negative integer, got {random_seed!r}")
+    n_pairs = len(ratios)
+    mean = sum(ratios) / n_pairs
+    se = None
+    if n_pairs > 1:
+        variance = sum((value - mean) ** 2 for value in ratios) / (n_pairs - 1)
+        se = math.sqrt(variance / n_pairs)
+    record: dict[str, Any] = {
+        "effect": mean,
+        "se": se,
+        "n_pairs": n_pairs,
+        "random_seed": random_seed,
+    }
+    if bootstrap_replicates > 0:
+        replicate_means: list[float] = []
+        for picks in _splitmix64_picks(random_seed, bootstrap_replicates, n_pairs):
+            replicate_means.append(sum(ratios[pick] for pick in picks) / n_pairs)
+        replicate_means.sort()
+        record["ci_low"] = _percentile(replicate_means, 2.5)
+        record["ci_high"] = _percentile(replicate_means, 97.5)
+        record["bootstrap_n_success"] = bootstrap_replicates
+        record["bootstrap_replicates"] = bootstrap_replicates
+    return record
+
+
+def declared_effect_size(
+    reference_values: Sequence[float],
+    treatment_values: Sequence[float],
+    contract: AnalysisProvenance,
+    evidence_manifest_frozen: bool = False,
+) -> dict[str, Any]:
+    """Role-conditional paired effect-size record under a predeclared contract.
+
+    Role-conditional gating, mirroring :func:`declared_inferential_bh_fdr`:
+
+    - a validated ``descriptive`` contract produces a point-estimate record
+      with every inferential field (method, CI, multiplicity, gate) rendered
+      as the literal ``"not-applicable"``; no frozen-manifest affirmation is
+      demanded because no inference is performed;
+    - an ``inferential`` contract is GATED: it requires an explicit
+      ``evidence_manifest_frozen=True`` affirmation (default always
+      refuses) and produces a full record carrying the effect-size method,
+      the paired replicate count (plus per-stratum counts when the contract
+      declares a replicate unit), and the declared multiplicity
+      family/method provenance. The bootstrap CI uses the contract's own
+      ``random_seed`` and ``resampling_count``;
+    - a ``stopped``/``unavailable`` contract produces no record at all.
+
+    Raises:
+        ProvenanceError: If the contract fails validation.
+        StatisticsContractError: On invalid pairs, a non-analysis role, or
+            an inferential contract with a single paired replicate.
+        RuntimeError: If an inferential contract is used while the evidence
+            manifest is not affirmed frozen.
+    """
+    validate_analysis_provenance(contract)
+    ratios = _paired_log_ratios(reference_values, treatment_values)
+    if contract.analysis_role in NON_ANALYSIS_ROLES:
+        raise StatisticsContractError(
+            f"analysis_role={contract.analysis_role!r} records a halted or unavailable "
+            "analysis; no effect-size record may be produced"
+        )
+    mean = sum(ratios) / len(ratios)
+    if contract.analysis_role == DESCRIPTIVE_ROLE:
+        analytic_se: Any = "not-applicable"
+        if len(ratios) > 1:
+            variance = sum((value - mean) ** 2 for value in ratios) / (len(ratios) - 1)
+            analytic_se = math.sqrt(variance / len(ratios))
+        return {
+            "role": DESCRIPTIVE_ROLE,
+            "analysis_id": contract.analysis_id,
+            "estimand": contract.estimand,
+            "effect": mean,
+            "se": analytic_se,
+            "effect_size_method": "not-applicable",
+            "ci_low": "not-applicable",
+            "ci_high": "not-applicable",
+            "bootstrap_resampling_count": "not-applicable",
+            "replicate_count": len(ratios),
+            "multiple_testing_family": "not-applicable",
+            "multiple_testing_method": "not-applicable",
+            "gate": "not-applicable",
+        }
+    if not evidence_manifest_frozen:
+        raise RuntimeError(
+            "declared_effect_size is gated for inferential contracts: refusing to "
+            "run while the evidence manifest is unfrozen"
+        )
+    if len(ratios) < 2:
+        raise StatisticsContractError(
+            "an inferential effect-size record requires at least 2 paired " f"replicates; got {len(ratios)}"
+        )
+    bootstrap = paired_log2fc_effect(
+        reference_values,
+        treatment_values,
+        bootstrap_replicates=contract.resampling_count,
+        random_seed=contract.random_seed,
+    )
+    replicate_counts: Any = "not-applicable"
+    if contract.replicate_unit_declaration is not None:
+        replicate_counts = {
+            stratum: contract.replicate_unit_declaration.counts[stratum]
+            for stratum in sorted(contract.replicate_unit_declaration.counts)
+        }
+    return {
+        "role": INFERENTIAL_ROLE,
+        "gate": "post-freeze",
+        "analysis_id": contract.analysis_id,
+        "estimand": contract.estimand,
+        "replicate_unit": contract.replicate_unit,
+        "effect_size_method": "paired-log2fc-mean-bootstrap-percentile",
+        "effect": bootstrap["effect"],
+        "se": bootstrap["se"],
+        "ci_low": bootstrap["ci_low"],
+        "ci_high": bootstrap["ci_high"],
+        "bootstrap_resampling_count": bootstrap["bootstrap_replicates"],
+        "bootstrap_n_success": bootstrap["bootstrap_n_success"],
+        "random_seed": contract.random_seed,
+        "replicate_count": len(ratios),
+        "replicate_unit_counts": replicate_counts,
+        "multiple_testing_family": contract.multiple_testing_family,
+        "multiple_testing_method": contract.multiple_testing_method,
+    }
+
+
+def render_effect_size_record(record: Mapping[str, Any]) -> list[str]:
+    """Render an effect-size record as additive ``effect_size_*`` lines.
+
+    Role-conditional rendering: the record's own fields are echoed
+    verbatim, so a descriptive record renders its inferential fields
+    exactly as ``not-applicable`` while an inferential record carries the
+    method, replicate count, and multiplicity family/method provenance.
+    Rendering is deterministic (keys sorted).
+
+    Raises:
+        StatisticsContractError: If the record is not a mapping, carries no
+            ``role`` key, or declares an unknown role.
+    """
+    if not isinstance(record, Mapping) or "role" not in record:
+        raise StatisticsContractError(
+            "effect-size record carries no declared role; refusing to render " "unlabeled output"
+        )
+    role = record["role"]
+    if role not in _ALLOWED_ROLES:
+        raise StatisticsContractError(f"effect-size record declares unknown role {role!r}")
+    return [f"effect_size_{key}: {record[key]}" for key in sorted(record)]
+
+
+def _heterogeneity_components(effects: Sequence[float], standard_errors: Sequence[float]) -> dict[str, Any]:
+    """Cochran's Q, tau-squared, and I-squared for aligned study effects.
+
+    Raises:
+        HeterogeneityError: On empty/mismatched input, non-finite effects,
+            or non-positive/non-finite standard errors.
+    """
+    effect_values = [float(value) for value in effects]
+    se_values = [float(value) for value in standard_errors]
+    if not effect_values or len(effect_values) != len(se_values):
+        raise HeterogeneityError(
+            f"effects and standard_errors must be non-empty aligned sequences, got "
+            f"{len(effect_values)} effects vs {len(se_values)} standard errors"
+        )
+    for index, (effect, se) in enumerate(zip(effect_values, se_values)):
+        if effect != effect or effect in (float("inf"), float("-inf")):
+            raise HeterogeneityError(f"effect at index {index} is not finite")
+        if se != se or se in (float("inf"), float("-inf")):
+            raise HeterogeneityError(f"standard error at index {index} is not finite")
+        if se <= 0:
+            raise HeterogeneityError(f"standard error at index {index} must be strictly positive, got {se!r}")
+    weights = [1.0 / se**2 for se in se_values]
+    weight_sum = sum(weights)
+    fixed_effect = sum(weight * effect for weight, effect in zip(weights, effect_values)) / weight_sum
+    q_statistic = sum(weight * (effect - fixed_effect) ** 2 for weight, effect in zip(weights, effect_values))
+    df = len(effect_values) - 1
+    c_statistic = weight_sum - sum(weight**2 for weight in weights) / weight_sum
+    tau_squared = max(0.0, (q_statistic - df) / c_statistic)
+    i_squared = max(0.0, (q_statistic - df) / q_statistic) * 100.0 if q_statistic > 0 else 0.0
+    return {
+        "fixed_effect": fixed_effect,
+        "q": q_statistic,
+        "df": df,
+        "tau_squared": tau_squared,
+        "i_squared_percent": i_squared,
+    }
+
+
+def _dl_combine(effects: Sequence[float], standard_errors: Sequence[float]) -> tuple[float, float]:
+    """DerSimonian-Laird random-effects combination (pure math mirror).
+
+    Returns ``(combined_effect, combined_se)``; requires at least 2 studies.
+
+    Raises:
+        HeterogeneityError: On invalid or too-thin input.
+    """
+    effect_values = [float(value) for value in effects]
+    if len(effect_values) < 2:
+        raise HeterogeneityError(f"random-effects combination requires at least 2 studies, got {len(effect_values)}")
+    components = _heterogeneity_components(effect_values, [float(value) for value in standard_errors])
+    random_weights = [1.0 / (float(se) ** 2 + components["tau_squared"]) for se in standard_errors]
+    combined = sum(weight * effect for weight, effect in zip(random_weights, effect_values)) / sum(random_weights)
+    combined_se = math.sqrt(1.0 / sum(random_weights))
+    return combined, combined_se
+
+
+def heterogeneity_record(
+    effects: Sequence[float],
+    standard_errors: Sequence[float],
+    contract: AnalysisProvenance,
+) -> dict[str, Any]:
+    """Cochran-Q / I-squared heterogeneity record for multi-study strata.
+
+    Role-conditional: an ``inferential`` contract requires at least 2
+    studies and fails closed otherwise (a single-study stratum carries no
+    between-study heterogeneity and is refused, never approximated); a
+    ``descriptive`` contract is exempt and returns a record whose
+    heterogeneity fields render as ``not-applicable``; a
+    ``stopped``/``unavailable`` contract produces no record at all.
+
+    Raises:
+        ProvenanceError: If the contract fails validation.
+        StatisticsContractError: On a non-analysis contract.
+        HeterogeneityError: On fewer than 2 studies for an inferential
+            contract, or invalid effects/standard errors.
+    """
+    validate_analysis_provenance(contract)
+    if contract.analysis_role in NON_ANALYSIS_ROLES:
+        raise StatisticsContractError(
+            f"analysis_role={contract.analysis_role!r} records a halted or unavailable "
+            "analysis; no heterogeneity record may be produced"
+        )
+    if contract.analysis_role == DESCRIPTIVE_ROLE:
+        return {
+            "role": DESCRIPTIVE_ROLE,
+            "analysis_id": contract.analysis_id,
+            "heterogeneity_status": "exempt",
+            "cochran_q": "not-applicable",
+            "df": "not-applicable",
+            "i_squared_percent": "not-applicable",
+            "tau_squared": "not-applicable",
+            "n_studies": len(list(effects)),
+        }
+    if len(list(effects)) < 2:
+        raise HeterogeneityError(
+            f"heterogeneity requires at least 2 studies, got {len(list(effects))}; a "
+            "single-study stratum carries no between-study heterogeneity and is "
+            "refused rather than silently treated as homogeneous"
+        )
+    components = _heterogeneity_components(effects, standard_errors)
+    return {
+        "role": INFERENTIAL_ROLE,
+        "analysis_id": contract.analysis_id,
+        "heterogeneity_status": "computed",
+        "cochran_q": components["q"],
+        "df": components["df"],
+        "i_squared_percent": components["i_squared_percent"],
+        "tau_squared": components["tau_squared"],
+        "n_studies": len(list(effects)),
+    }
+
+
+def leave_one_study_out_deltas(studies: Mapping[Any, tuple[float, float]]) -> dict[str, Any]:
+    """Leave-one-study-out recompute: per-exclusion combined-effect deltas.
+
+    Pure computation, no I/O: for each study, the DerSimonian-Laird
+    combined effect is recomputed from the remaining studies and the delta
+    against the full-data combined effect is returned. Requires at least 3
+    studies so every exclusion retains at least 2 — the minimum for a
+    random-effects recombination.
+
+    Args:
+        studies: Mapping of study label to ``(effect, standard_error)``.
+
+    Returns:
+        ``{"full_effect": float, "deltas": {label: float}}`` with labels in
+        sorted (string) order.
+
+    Raises:
+        HeterogeneityError: On fewer than 3 studies, a non-mapping input,
+            or non-finite effects / non-positive standard errors.
+    """
+    if not isinstance(studies, Mapping):
+        raise HeterogeneityError(
+            f"leave_one_study_out_deltas requires a mapping of study label to "
+            f"(effect, standard_error), got {type(studies).__name__}"
+        )
+    if len(studies) < 3:
+        raise HeterogeneityError(
+            f"leave-one-study-out recombination requires at least 3 studies so each "
+            f"exclusion retains at least 2; got {len(studies)}"
+        )
+    ordered = sorted(studies.items(), key=lambda item: str(item[0]))
+    full_effect, _ = _dl_combine(
+        [pair[0] for _, pair in ordered],
+        [pair[1] for _, pair in ordered],
+    )
+    deltas: dict[Any, float] = {}
+    for label, _ in ordered:
+        remaining = [(effect, se) for other, (effect, se) in ordered if other != label]
+        combined, _ = _dl_combine(
+            [effect for effect, _ in remaining],
+            [se for _, se in remaining],
+        )
+        deltas[label] = combined - full_effect
+    return {"full_effect": full_effect, "deltas": deltas}
 
 
 # =============================================================================

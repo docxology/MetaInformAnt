@@ -14,12 +14,21 @@ projects/hymenoptera_amalgkit/docs/manuscript/statistical_analysis_plan.md:
 - orthology x species presence invariants (duplicate labels, missing
   mappings, low replication, incomplete coverage);
 - species-tree invariants (declared rootedness provenance, optional
-  bifurcating-root structure check, duplicate leaves, malformed input).
+  bifurcating-root structure check, duplicate leaves, malformed input);
+- predeclared MJ-01 comparative designs: covariate/strata declaration
+  validation and observation enforcement (unknown covariates, undeclared
+  strata, empty and singleton strata all fail closed with typed errors);
+- role-conditional paired effect-size records (analytic SE, seeded
+  bootstrap CI, gated inferential path, not-applicable rendering for
+  descriptive roles);
+- Cochran-Q / I-squared heterogeneity records (fail-closed below 2
+  studies, descriptive roles exempt) and leave-one-study-out deltas.
 
 All fixtures are small deterministic real pandas/numpy data. No mocks,
 no network, no live data root.
 """
 
+import math
 from typing import Any
 
 import numpy as np
@@ -34,20 +43,33 @@ from metainformant.rna.analysis.statistics_contract import (
     DESCRIPTIVE_ROLE,
     INFERENTIAL_ROLE,
     AnalysisProvenance,
+    EmptyStratumError,
     EstimandDeclaration,
+    HeterogeneityError,
     OrthologyInvariantError,
+    PredeclaredDesign,
     ProvenanceError,
     ReplicateUnitDeclaration,
     SensitivityAnalysis,
+    SingletonStratumError,
     StatisticsContractError,
     TreeInvariantError,
+    UndeclaredStratumError,
+    UnknownDesignCovariateError,
     benjamini_hochberg_fdr,
+    declared_effect_size,
     declared_inferential_bh_fdr,
+    enforce_predeclared_design,
+    heterogeneity_record,
+    leave_one_study_out_deltas,
+    paired_log2fc_effect,
     render_analysis_provenance_block,
+    render_effect_size_record,
     result_role,
     validate_analysis_provenance,
     validate_estimand_declaration,
     validate_orthology_profile_invariants,
+    validate_predeclared_design,
     validate_replicate_unit_declaration,
     validate_sensitivity_analysis,
     validate_species_tree_invariants,
@@ -754,3 +776,455 @@ class TestSpeciesTreeInvariants:
     def test_invalid_input_type_fails_closed(self) -> None:
         with pytest.raises(TreeInvariantError):
             validate_species_tree_invariants(["apis", "cerana"])  # type: ignore[arg-type]
+
+
+# =============================================================================
+# Predeclared comparative design (MJ-01)
+# =============================================================================
+
+
+def _design(**overrides: Any) -> PredeclaredDesign:
+    """A valid predeclared comparative design with optional field overrides."""
+
+    fields: dict[str, Any] = dict(
+        covariate_strata={
+            "study": ("study_a", "study_b"),
+            "sex": ("female", "male"),
+        }
+    )
+    fields.update(overrides)
+    return PredeclaredDesign(**fields)
+
+
+def _lane_observations() -> pd.DataFrame:
+    """Deterministic observations matching ``_design()`` (no thin strata)."""
+
+    rows = []
+    for study in ("study_a", "study_b"):
+        for sex in ("female", "male"):
+            for _ in range(3):
+                rows.append({"study": study, "sex": sex, "response": float(len(rows))})
+    return pd.DataFrame(rows)
+
+
+class TestPredeclaredDesignValidation:
+    def test_declared_design_passes(self) -> None:
+        validate_predeclared_design(_design())
+
+    @pytest.mark.parametrize(
+        "overrides",
+        [
+            {"covariate_strata": {}},
+            {"covariate_strata": []},
+            {"covariate_strata": {"study": ()}},
+            {"covariate_strata": {"study": ("a", "a")}},
+            {"covariate_strata": {"study": ("a", "")}},
+            {"covariate_strata": {"study": ("a", "TBD")}},
+            {"covariate_strata": {"TBD": ("a",)}},
+            {"covariate_strata": {"study": ["a", "b"]}},
+            {"covariate_strata": {"study": "a,b"}},
+        ],
+    )
+    def test_placeholder_or_degenerate_declarations_fail_closed(self, overrides: dict[str, Any]) -> None:
+        with pytest.raises(ProvenanceError):
+            validate_predeclared_design(_design(**overrides))
+
+    def test_ad_hoc_dict_is_refused(self) -> None:
+        with pytest.raises(TypeError):
+            validate_predeclared_design(_design().__dict__)  # type: ignore[arg-type]
+
+
+class TestDesignEnforcement:
+    def test_matching_design_returns_deterministic_counts(self) -> None:
+        counts = enforce_predeclared_design(
+            _design(),
+            _lane_observations(),
+            study_col="study",
+            covariate_cols=("sex",),
+        )
+        assert counts == {
+            "sex": {"female": 6, "male": 6},
+            "study": {"study_a": 6, "study_b": 6},
+        }
+
+    def test_contrast_column_must_be_declared(self) -> None:
+        """A contrast column in the request but not the declaration fails closed."""
+
+        frame = _lane_observations().assign(caste=["worker"] * 12)
+        with pytest.raises(UnknownDesignCovariateError, match="caste"):
+            enforce_predeclared_design(
+                _design(),
+                frame,
+                study_col="study",
+                contrast_col="caste",
+                covariate_cols=("sex",),
+            )
+
+    def test_declared_column_absent_from_observations_refused(self) -> None:
+        design = _design(
+            covariate_strata={
+                "study": ("study_a", "study_b"),
+                "sex": ("female", "male"),
+                "tissue": ("brain", "muscle"),
+            }
+        )
+        with pytest.raises(UnknownDesignCovariateError, match="tissue"):
+            enforce_predeclared_design(
+                design,
+                _lane_observations(),
+                study_col="study",
+                covariate_cols=("sex", "tissue"),
+            )
+
+    def test_undeclared_stratum_refused(self) -> None:
+        frame = _lane_observations()
+        frame.loc[0, "sex"] = "intersex"
+        with pytest.raises(UndeclaredStratumError, match="intersex"):
+            enforce_predeclared_design(
+                _design(),
+                frame,
+                study_col="study",
+                covariate_cols=("sex",),
+            )
+
+    def test_empty_stratum_refused(self) -> None:
+        design = _design(
+            covariate_strata={
+                "study": ("study_a", "study_b"),
+                "sex": ("female", "male", "intersex"),
+            }
+        )
+        with pytest.raises(EmptyStratumError, match="intersex"):
+            enforce_predeclared_design(
+                design,
+                _lane_observations(),
+                study_col="study",
+                covariate_cols=("sex",),
+            )
+
+    def test_singleton_stratum_refused(self) -> None:
+        frame = _lane_observations()
+        frame.loc[0, "sex"] = "intersex"
+        design = _design(
+            covariate_strata={
+                "study": ("study_a", "study_b"),
+                "sex": ("female", "male", "intersex"),
+            }
+        )
+        with pytest.raises(SingletonStratumError, match="intersex"):
+            enforce_predeclared_design(
+                design,
+                frame,
+                study_col="study",
+                covariate_cols=("sex",),
+            )
+
+    def test_declared_minimum_override_tightens_singleton_refusal(self) -> None:
+        """With a declared minimum of 4, a two-observation stratum is refused."""
+
+        frame = _lane_observations().drop(index=[7, 8, 9, 10])  # study_b keeps 2 rows
+        with pytest.raises(SingletonStratumError, match="study_b"):
+            enforce_predeclared_design(
+                _design(
+                    covariate_strata={
+                        "study": ("study_a", "study_b"),
+                        "sex": ("female", "male"),
+                    }
+                ),
+                frame,
+                study_col="study",
+                covariate_cols=("sex",),
+                min_stratum_observations=4,
+            )
+
+    def test_invalid_minimum_refused(self) -> None:
+        with pytest.raises(ProvenanceError):
+            enforce_predeclared_design(
+                _design(),
+                _lane_observations(),
+                study_col="study",
+                covariate_cols=("sex",),
+                min_stratum_observations=0,
+            )
+
+    def test_non_dataframe_observations_refused(self) -> None:
+        with pytest.raises(TypeError):
+            enforce_predeclared_design(
+                _design(),
+                [{"study": "study_a", "sex": "female"}],
+                study_col="study",
+                covariate_cols=("sex",),
+            )
+
+
+# =============================================================================
+# Role-conditional paired effect sizes
+# =============================================================================
+
+
+def _paired_values() -> tuple[list[float], list[float]]:
+    """Paired observations whose log2 ratios are exactly [1, 2, 2, 1]."""
+
+    return ([1.0, 1.0, 2.0, 4.0], [2.0, 4.0, 8.0, 8.0])
+
+
+def _inferential_provenance(**overrides: Any) -> AnalysisProvenance:
+    """A validated inferential provenance record with optional overrides."""
+
+    fields = dict(
+        analysis_id="hymenoptera_effect_size_v1",
+        estimand="queen-versus-worker paired log2 fold-change per ortholog",
+        replicate_unit="independent biological replicate nested in study",
+        random_seed=20260922,
+        resampling_count=200,
+        null_model="caste labels exchangeable within study",
+        multiple_testing_family="ortholog features within species contrasts",
+        multiple_testing_method="bh-fdr",
+        tested_feature_count=4,
+        software_versions={"metainformant": "1.0.0"},
+        analysis_role=INFERENTIAL_ROLE,
+    )
+    fields.update(overrides)
+    return AnalysisProvenance(**fields)
+
+
+class TestPairedLog2FcEffect:
+    def test_point_effect_and_analytic_se(self) -> None:
+        reference, treatment = _paired_values()
+        record = paired_log2fc_effect(reference, treatment)
+        assert record["effect"] == pytest.approx(1.5)
+        assert record["se"] == pytest.approx(1.0 / math.sqrt(12.0))
+        assert record["n_pairs"] == 4
+        assert "ci_low" not in record and "ci_high" not in record
+
+    def test_bootstrap_ci_is_deterministic_and_brackets_effect(self) -> None:
+        reference, treatment = _paired_values()
+        first = paired_log2fc_effect(reference, treatment, bootstrap_replicates=100, random_seed=7)
+        second = paired_log2fc_effect(reference, treatment, bootstrap_replicates=100, random_seed=7)
+        assert first == second
+        assert first["ci_low"] <= first["effect"] <= first["ci_high"]
+        assert first["bootstrap_n_success"] == 100
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"bootstrap_replicates": -1},
+            {"random_seed": -1},
+            {"bootstrap_replicates": True},
+        ],
+    )
+    def test_invalid_resampling_options_fail_closed(self, kwargs: dict[str, Any]) -> None:
+        reference, treatment = _paired_values()
+        with pytest.raises(StatisticsContractError):
+            paired_log2fc_effect(reference, treatment, **kwargs)
+
+    def test_invalid_pairs_fail_closed(self) -> None:
+        reference, treatment = _paired_values()
+        with pytest.raises(StatisticsContractError):
+            paired_log2fc_effect(reference, treatment[:3])
+        with pytest.raises(StatisticsContractError):
+            paired_log2fc_effect([], [])
+        with pytest.raises(StatisticsContractError, match="positive"):
+            paired_log2fc_effect([0.0, 1.0], [2.0, 3.0])
+        with pytest.raises(StatisticsContractError):
+            paired_log2fc_effect([float("nan"), 1.0], [2.0, 3.0])
+
+
+class TestDeclaredEffectSize:
+    def test_descriptive_contract_renders_not_applicable(self) -> None:
+        reference, treatment = _paired_values()
+        record = declared_effect_size(reference, treatment, _provenance())
+        assert record["role"] == DESCRIPTIVE_ROLE
+        assert record["effect"] == pytest.approx(1.5)
+        assert record["replicate_count"] == 4
+        for field in (
+            "effect_size_method",
+            "ci_low",
+            "ci_high",
+            "bootstrap_resampling_count",
+            "multiple_testing_family",
+            "multiple_testing_method",
+            "gate",
+        ):
+            assert record[field] == "not-applicable", field
+
+    def test_descriptive_record_renders_not_applicable_lines(self) -> None:
+        reference, treatment = _paired_values()
+        lines = render_effect_size_record(declared_effect_size(reference, treatment, _provenance()))
+        joined = "\n".join(lines)
+        assert all(line.startswith("effect_size_") for line in lines)
+        assert "effect_size_multiple_testing_family: not-applicable" in joined
+        assert "effect_size_effect: 1.5" in joined
+        assert lines == render_effect_size_record(declared_effect_size(reference, treatment, _provenance()))
+
+    def test_inferential_gate_refuses_unfrozen_manifest(self) -> None:
+        reference, treatment = _paired_values()
+        with pytest.raises(RuntimeError, match="gated"):
+            declared_effect_size(reference, treatment, _inferential_provenance())
+
+    def test_inferential_single_pair_refused(self) -> None:
+        with pytest.raises(StatisticsContractError, match="at least 2 paired"):
+            declared_effect_size(
+                [1.0],
+                [2.0],
+                _inferential_provenance(),
+                evidence_manifest_frozen=True,
+            )
+
+    def test_inferential_frozen_record_carries_provenance(self) -> None:
+        reference, treatment = _paired_values()
+        record = declared_effect_size(
+            reference,
+            treatment,
+            _inferential_provenance(),
+            evidence_manifest_frozen=True,
+        )
+        assert record["role"] == INFERENTIAL_ROLE
+        assert record["gate"] == "post-freeze"
+        assert record["effect_size_method"] == "paired-log2fc-mean-bootstrap-percentile"
+        assert record["multiple_testing_family"] == "ortholog features within species contrasts"
+        assert record["multiple_testing_method"] == "bh-fdr"
+        assert record["replicate_count"] == 4
+        assert record["bootstrap_resampling_count"] == 200
+        assert record["random_seed"] == 20260922
+        assert record["ci_low"] <= record["effect"] <= record["ci_high"]
+        # Deterministic under the contract's own seed.
+        again = declared_effect_size(
+            reference,
+            treatment,
+            _inferential_provenance(),
+            evidence_manifest_frozen=True,
+        )
+        assert (record["ci_low"], record["ci_high"]) == (again["ci_low"], again["ci_high"])
+
+    def test_inferential_record_carries_replicate_unit_counts(self) -> None:
+        reference, treatment = _paired_values()
+        record = declared_effect_size(
+            reference,
+            treatment,
+            _inferential_provenance(replicate_unit_declaration=_replicate_unit()),
+            evidence_manifest_frozen=True,
+        )
+        assert record["replicate_unit_counts"] == {"apis": 3, "cerana": 2}
+
+    def test_stopped_contract_produces_no_record(self) -> None:
+        reference, treatment = _paired_values()
+        with pytest.raises(StatisticsContractError, match="halted or unavailable"):
+            declared_effect_size(
+                reference,
+                treatment,
+                _provenance(analysis_role="stopped"),
+                evidence_manifest_frozen=True,
+            )
+
+    def test_render_refuses_unlabeled_or_unknown_roles(self) -> None:
+        with pytest.raises(StatisticsContractError):
+            render_effect_size_record({"effect": 1.0})
+        with pytest.raises(StatisticsContractError, match="unknown role"):
+            render_effect_size_record({"role": "exploratory", "effect": 1.0})
+
+
+# =============================================================================
+# Multi-study heterogeneity and leave-one-study-out sensitivity
+# =============================================================================
+
+
+def _study_effects() -> tuple[list[float], list[float]]:
+    """Three aligned study effects with standard errors."""
+
+    return ([1.0, 1.0, 1.0], [0.1, 0.2, 0.3])
+
+
+class TestHeterogeneityRecord:
+    def test_inferential_homogeneous_studies_give_zero_heterogeneity(self) -> None:
+        effects, ses = _study_effects()
+        record = heterogeneity_record(effects, ses, _inferential_provenance())
+        assert record["role"] == INFERENTIAL_ROLE
+        assert record["heterogeneity_status"] == "computed"
+        assert record["cochran_q"] == pytest.approx(0.0)
+        assert record["df"] == 2
+        assert record["i_squared_percent"] == pytest.approx(0.0)
+        assert record["tau_squared"] == pytest.approx(0.0)
+        assert record["n_studies"] == 3
+
+    def test_inferential_heterogeneous_studies_give_positive_i_squared(self) -> None:
+        effects, ses = [1.0, 2.0], [0.1, 0.1]
+        record = heterogeneity_record(effects, ses, _inferential_provenance())
+        assert record["cochran_q"] == pytest.approx(50.0)
+        assert record["df"] == 1
+        assert record["i_squared_percent"] == pytest.approx(98.0)
+
+    def test_inferential_single_study_refused(self) -> None:
+        with pytest.raises(HeterogeneityError, match="at least 2 studies"):
+            heterogeneity_record([1.0], [0.1], _inferential_provenance())
+
+    def test_descriptive_role_is_exempt(self) -> None:
+        effects, ses = _study_effects()
+        record = heterogeneity_record(effects, ses, _provenance())
+        assert record["role"] == DESCRIPTIVE_ROLE
+        assert record["heterogeneity_status"] == "exempt"
+        assert record["cochran_q"] == "not-applicable"
+        assert record["n_studies"] == 3
+
+    def test_bad_standard_errors_refused(self) -> None:
+        effects, ses = _study_effects()
+        for bad in ([0.0, 0.2, 0.3], [-0.1, 0.2, 0.3], [float("nan"), 0.2, 0.3]):
+            with pytest.raises(HeterogeneityError):
+                heterogeneity_record(effects, bad, _inferential_provenance())
+
+    def test_stopped_contract_refused(self) -> None:
+        effects, ses = _study_effects()
+        with pytest.raises(StatisticsContractError, match="halted or unavailable"):
+            heterogeneity_record(effects, ses, _provenance(analysis_role="stopped"))
+
+
+class TestLeaveOneStudyOut:
+    def _studies(self) -> dict[str, tuple[float, float]]:
+        return {"a": (1.0, 0.1), "b": (2.0, 0.1), "c": (3.0, 0.1)}
+
+    def test_full_effect_and_per_exclusion_deltas(self) -> None:
+        result = leave_one_study_out_deltas(self._studies())
+        assert result["full_effect"] == pytest.approx(2.0)
+        assert result["deltas"] == {
+            "a": pytest.approx(0.5),
+            "b": pytest.approx(0.0),
+            "c": pytest.approx(-0.5),
+        }
+
+    def test_deterministic(self) -> None:
+        assert leave_one_study_out_deltas(self._studies()) == leave_one_study_out_deltas(self._studies())
+
+    def test_fewer_than_three_studies_refused(self) -> None:
+        with pytest.raises(HeterogeneityError, match="at least 3 studies"):
+            leave_one_study_out_deltas({"a": (1.0, 0.1), "b": (2.0, 0.1)})
+        with pytest.raises(HeterogeneityError):
+            leave_one_study_out_deltas({})
+
+    def test_invalid_inputs_refused(self) -> None:
+        with pytest.raises(HeterogeneityError):
+            leave_one_study_out_deltas({"a": (1.0, 0.0), "b": (2.0, 0.1), "c": (3.0, 0.1)})
+        with pytest.raises(HeterogeneityError):
+            leave_one_study_out_deltas([1.0, 2.0, 3.0])  # type: ignore[arg-type]
+
+
+# =============================================================================
+# Design declaration provenance integration
+# =============================================================================
+
+
+class TestDesignDeclarationProvenanceIntegration:
+    def test_declared_design_renders_additively(self) -> None:
+        record = _provenance(design_declaration=_design())
+        validate_analysis_provenance(record)
+        joined = "\n".join(render_analysis_provenance_block(record))
+        assert "analysis_provenance_design_covariate_sex: female,male" in joined
+        assert "analysis_provenance_design_covariate_study: study_a,study_b" in joined
+
+    def test_render_without_design_omits_design_lines(self) -> None:
+        joined = "\n".join(render_analysis_provenance_block(_provenance()))
+        assert "analysis_provenance_design_covariate_" not in joined
+
+    def test_non_analysis_role_must_not_declare_design(self) -> None:
+        with pytest.raises(ProvenanceError) as excinfo:
+            validate_analysis_provenance(_provenance(analysis_role="stopped", design_declaration=_design()))
+        assert "design_declaration" in str(excinfo.value)
