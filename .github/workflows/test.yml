@@ -45,11 +45,16 @@ jobs:
             python-version: "3.12"
             test-type: all
 
+    # The projects/* submodules are private repos; the default GITHUB_TOKEN of
+    # this public repo cannot clone them. SUBMODULES_TOKEN is a fine-grained
+    # PAT with Contents:read on docxology/hymenoptera_amalgkit and
+    # docxology/apis_gwas only.
     steps:
     - name: Checkout code
       uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       with:
         submodules: recursive
+        token: ${{ secrets.SUBMODULES_TOKEN }}
 
     - name: Install uv
       uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -149,6 +154,7 @@ jobs:
       uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       with:
         submodules: recursive
+        token: ${{ secrets.SUBMODULES_TOKEN }}
 
     - name: Install uv
       uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -171,6 +177,7 @@ jobs:
       uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       with:
         submodules: recursive
+        token: ${{ secrets.SUBMODULES_TOKEN }}
 
     - name: Install uv
       uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -217,6 +224,7 @@ jobs:
       uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       with:
         submodules: recursive
+        token: ${{ secrets.SUBMODULES_TOKEN }}
 
     - name: Install uv
       uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -262,6 +270,7 @@ jobs:
       uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       with:
         submodules: recursive
+        token: ${{ secrets.SUBMODULES_TOKEN }}
 
     - name: Install uv
       uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -307,6 +316,7 @@ jobs:
       uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       with:
         submodules: recursive
+        token: ${{ secrets.SUBMODULES_TOKEN }}
 
     - name: Install uv
       uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
