@@ -4,7 +4,7 @@ This documentation hub provides comprehensive guidance on agent coordination, mu
 
 ## Overview
 
-METAINFORMANT employs a multi-agent architecture where specialized AI agents and software components collaborate to execute complex bioinformatics workflows across 28 domains. This hub documents the coordination patterns, communication protocols, and orchestration mechanisms that enable seamless multi-agent operations.
+METAINFORMANT employs a multi-agent architecture where specialized AI agents and software components collaborate to execute complex bioinformatics workflows across 30 domains. This hub documents the coordination patterns, communication protocols, and orchestration mechanisms that enable seamless multi-agent operations.
 
 ## Key Concepts
 
@@ -36,7 +36,7 @@ flowchart TB
     end
 
     subgraph C[Layer 3: Domain Pipeline Agents]
-        subgraph DomainAgents[28 Domain Modules]
+        subgraph DomainAgents[30 Domain Modules]
             DNA[DNA Analysis<br/>dna/]
             RNA[RNA-seq & amalgkit<br/>rna/]
             GWAS[GWAS Pipeline<br/>gwas/]

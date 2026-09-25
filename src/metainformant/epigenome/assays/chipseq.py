@@ -6,6 +6,7 @@ including peak calling, motif analysis, quality control, and data integration.
 
 from __future__ import annotations
 
+import re
 import statistics
 from collections import defaultdict
 from pathlib import Path
@@ -13,6 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from metainformant.core import io
 from metainformant.core.data import validation
+from metainformant.core.sequence import reverse_complement
 from metainformant.core.utils import errors, logging
 
 logger = logging.get_logger(__name__)
@@ -157,7 +159,9 @@ def load_chip_peaks(path: str | Path, format: str = "narrowpeak") -> List[ChIPPe
 
                 parts = line.split("\t")
                 if len(parts) < 6:
-                    logger.warning(f"Skipping malformed line {line_num}: insufficient columns")
+                    logger.warning(
+                        f"Skipping malformed line {line_num}: insufficient columns"
+                    )
                     continue
 
                 try:
@@ -171,11 +175,25 @@ def load_chip_peaks(path: str | Path, format: str = "narrowpeak") -> List[ChIPPe
                     if format == "narrowpeak" and len(parts) >= 10:
                         # narrowPeak format: chrom, start, end, name, score, strand, signalValue, pValue, qValue, peak
                         signal_value = float(parts[6]) if len(parts) > 6 else 0.0
-                        p_value = float(parts[7]) if len(parts) > 7 and parts[7] != "." else None
-                        q_value = float(parts[8]) if len(parts) > 8 and parts[8] != "." else None
-                        peak_offset = int(parts[9]) if len(parts) > 9 and parts[9] != "." else None
+                        p_value = (
+                            float(parts[7])
+                            if len(parts) > 7 and parts[7] != "."
+                            else None
+                        )
+                        q_value = (
+                            float(parts[8])
+                            if len(parts) > 8 and parts[8] != "."
+                            else None
+                        )
+                        peak_offset = (
+                            int(parts[9])
+                            if len(parts) > 9 and parts[9] != "."
+                            else None
+                        )
 
-                        summit = start + peak_offset if peak_offset is not None else None
+                        summit = (
+                            start + peak_offset if peak_offset is not None else None
+                        )
 
                         peak = ChIPPeak(
                             chromosome=chromosome,
@@ -192,8 +210,16 @@ def load_chip_peaks(path: str | Path, format: str = "narrowpeak") -> List[ChIPPe
                     elif format == "broadpeak" and len(parts) >= 9:
                         # broadPeak format: chrom, start, end, name, score, strand, signalValue, pValue, qValue
                         signal_value = float(parts[6]) if len(parts) > 6 else 0.0
-                        p_value = float(parts[7]) if len(parts) > 7 and parts[7] != "." else None
-                        q_value = float(parts[8]) if len(parts) > 8 and parts[8] != "." else None
+                        p_value = (
+                            float(parts[7])
+                            if len(parts) > 7 and parts[7] != "."
+                            else None
+                        )
+                        q_value = (
+                            float(parts[8])
+                            if len(parts) > 8 and parts[8] != "."
+                            else None
+                        )
 
                         peak = ChIPPeak(
                             chromosome=chromosome,
@@ -208,10 +234,18 @@ def load_chip_peaks(path: str | Path, format: str = "narrowpeak") -> List[ChIPPe
 
                     elif format == "bed":
                         # Basic BED format
-                        peak = ChIPPeak(chromosome=chromosome, start=start, end=end, score=score, strand=strand)
+                        peak = ChIPPeak(
+                            chromosome=chromosome,
+                            start=start,
+                            end=end,
+                            score=score,
+                            strand=strand,
+                        )
 
                     else:
-                        logger.warning(f"Unsupported format or insufficient columns in line {line_num}")
+                        logger.warning(
+                            f"Unsupported format or insufficient columns in line {line_num}"
+                        )
                         continue
 
                     peaks.append(peak)
@@ -228,7 +262,9 @@ def load_chip_peaks(path: str | Path, format: str = "narrowpeak") -> List[ChIPPe
     return peaks
 
 
-def save_chip_peaks(peaks: List[ChIPPeak], path: str | Path, format: str = "narrowpeak") -> None:
+def save_chip_peaks(
+    peaks: List[ChIPPeak], path: str | Path, format: str = "narrowpeak"
+) -> None:
     """Save ChIP-seq peaks to a file.
 
     Args:
@@ -274,7 +310,9 @@ def save_chip_peaks(peaks: List[ChIPPeak], path: str | Path, format: str = "narr
     logger.info(f"Saved {len(peaks)} peaks to {path}")
 
 
-def filter_peaks_by_score(peaks: List[ChIPPeak], min_score: float, max_peaks: Optional[int] = None) -> List[ChIPPeak]:
+def filter_peaks_by_score(
+    peaks: List[ChIPPeak], min_score: float, max_peaks: Optional[int] = None
+) -> List[ChIPPeak]:
     """Filter peaks by score and optionally limit number of peaks.
 
     Args:
@@ -335,7 +373,9 @@ def calculate_peak_statistics(peaks: List[ChIPPeak]) -> Dict[str, Any]:
             {
                 "mean_signal": statistics.mean(signal_values),
                 "median_signal": statistics.median(signal_values),
-                "signal_std": statistics.stdev(signal_values) if len(signal_values) > 1 else 0,
+                "signal_std": statistics.stdev(signal_values)
+                if len(signal_values) > 1
+                else 0,
             }
         )
 
@@ -431,7 +471,9 @@ def find_overlapping_peaks(
     return overlapping_pairs
 
 
-def merge_overlapping_peaks(peaks: List[ChIPPeak], max_distance: int = 0) -> List[ChIPPeak]:
+def merge_overlapping_peaks(
+    peaks: List[ChIPPeak], max_distance: int = 0
+) -> List[ChIPPeak]:
     """Merge overlapping or nearby peaks.
 
     Args:
@@ -472,8 +514,12 @@ def merge_overlapping_peaks(peaks: List[ChIPPeak], max_distance: int = 0) -> Lis
                     score=max(current_peak.score, peak.score),  # Use higher score
                     strand=current_peak.strand,
                     signal_value=max(current_peak.signal_value, peak.signal_value),
-                    p_value=min(current_peak.p_value, peak.p_value) if current_peak.p_value and peak.p_value else None,
-                    q_value=min(current_peak.q_value, peak.q_value) if current_peak.q_value and peak.q_value else None,
+                    p_value=min(current_peak.p_value, peak.p_value)
+                    if current_peak.p_value and peak.p_value
+                    else None,
+                    q_value=min(current_peak.q_value, peak.q_value)
+                    if current_peak.q_value and peak.q_value
+                    else None,
                 )
             else:
                 # No overlap, save current peak and start new one
@@ -540,66 +586,220 @@ def calculate_peak_enrichment(
     return stats
 
 
+# IUPAC nucleotide code table. Kept local because the epigenome domain must
+# not import from the dna domain (scripts/quality/check_module_boundaries.py).
+_IUPAC_BASES: Dict[str, str] = {
+    "A": "A",
+    "C": "C",
+    "G": "G",
+    "T": "T",
+    "R": "AG",
+    "Y": "CT",
+    "S": "GC",
+    "W": "AT",
+    "K": "GT",
+    "M": "AC",
+    "B": "CGT",
+    "D": "AGT",
+    "H": "ACT",
+    "V": "ACG",
+    "N": "ACGT",
+}
+
+_IUPAC_COMPLEMENT: Dict[str, str] = {
+    "A": "T",
+    "C": "G",
+    "G": "C",
+    "T": "A",
+    "R": "Y",
+    "Y": "R",
+    "S": "S",
+    "W": "W",
+    "K": "M",
+    "M": "K",
+    "B": "V",
+    "V": "B",
+    "D": "H",
+    "H": "D",
+    "N": "N",
+}
+
+
+def _iupac_pattern_to_regex(pattern: str) -> "re.Pattern[str]":
+    """Compile an IUPAC nucleotide pattern into a regular expression.
+
+    Args:
+        pattern: Motif pattern using IUPAC nucleotide codes.
+
+    Returns:
+        Compiled case-insensitive regular expression.
+
+    Raises:
+        ValueError: If the pattern contains a non-IUPAC character.
+    """
+    parts: List[str] = []
+    for char in pattern.upper():
+        bases = _IUPAC_BASES.get(char)
+        if bases is None:
+            raise ValueError(
+                f"Invalid IUPAC motif character {char!r} in pattern {pattern!r}"
+            )
+        parts.append(f"[{bases}]" if len(bases) > 1 else bases)
+    return re.compile("".join(parts))
+
+
+def _reverse_complement_iupac(pattern: str) -> str:
+    """Return the reverse complement of an IUPAC motif pattern."""
+    return "".join(_IUPAC_COMPLEMENT[char] for char in reversed(pattern.upper()))
+
+
+def _read_fasta_sequences(path: str | Path) -> Dict[str, str]:
+    """Read a FASTA file into a mapping of sequence ID to sequence.
+
+    The sequence ID is the first whitespace-delimited word of the header,
+    the same convention as the canonical FASTA reader in the dna domain.
+
+    Args:
+        path: Path to the (optionally gzipped) FASTA file.
+
+    Returns:
+        Dict mapping sequence IDs to upper-cased sequence strings.
+    """
+    sequences: Dict[str, str] = {}
+    current_id: Optional[str] = None
+    chunks: List[str] = []
+
+    with io.open_text_auto(Path(path)) as handle:
+        for line in handle:
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith(">"):
+                if current_id is not None:
+                    sequences[current_id] = "".join(chunks)
+                current_id = line[1:].split()[0]
+                chunks = []
+            elif current_id is not None:
+                chunks.append(line.upper())
+
+    if current_id is not None:
+        sequences[current_id] = "".join(chunks)
+
+    return sequences
+
+
 def find_motifs_in_peaks(
-    peaks: List[ChIPPeak], genome_fasta: str | Path, motif_patterns: List[str], window_size: int = 200
+    peaks: List[ChIPPeak],
+    genome_fasta: str | Path,
+    motif_patterns: List[str],
+    window_size: int = 200,
 ) -> Dict[str, Any]:
     """Find motif occurrences in peak regions.
+
+    Loads the genome FASTA once, then for every peak scans the
+    ``window_size`` window centered on the peak summit (clipped to the peak
+    boundaries) for each IUPAC motif pattern on both strands. Peaks whose
+    chromosome is absent from the FASTA and windows without any match
+    contribute no occurrences -- results are never fabricated.
 
     Args:
         peaks: List of ChIPPeak objects
         genome_fasta: Path to genome FASTA file
-        motif_patterns: List of motif patterns to search
-        window_size: Size of window around peak summit to search
+        motif_patterns: IUPAC motif patterns to search (e.g. ``"TTGACAW"``)
+        window_size: Size of the window around the peak summit to search
 
     Returns:
-        Dictionary with motif finding results
-    """
-    logger.info(f"Finding motifs in {len(peaks)} peaks")
+        Dictionary with motif scanning results:
 
-    # This is a simplified implementation
-    # In practice, this would use a proper motif finding tool like MEME or HOMER
+        - ``total_peaks_analyzed``: number of input peaks
+        - ``motif_counts``: per pattern, the number of peaks with >= 1 match
+        - ``match_counts``: per pattern, the total number of matches
+        - ``motif_positions``: per pattern, a list of match dicts containing
+          ``chromosome``, ``position`` (0-based genomic start of the match),
+          ``strand`` ('+' or '-'), ``sequence`` (the matched sequence),
+          ``peak_start``, ``peak_end``, and ``peak_score``
+    """
+    logger.info(f"Scanning {len(peaks)} peaks for {len(motif_patterns)} motif patterns")
+
+    regexes = {pattern: _iupac_pattern_to_regex(pattern) for pattern in motif_patterns}
+    rc_regexes = {
+        pattern: _iupac_pattern_to_regex(_reverse_complement_iupac(pattern))
+        for pattern in motif_patterns
+    }
+
+    genome: Dict[str, str] = _read_fasta_sequences(genome_fasta) if peaks else {}
 
     motif_counts: Dict[str, int] = defaultdict(int)
-    motif_positions = defaultdict(list)
+    match_counts: Dict[str, int] = defaultdict(int)
+    motif_positions: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
 
-    # Simulate motif finding (in practice, would parse genome sequence)
+    half_window = max(window_size, 0) // 2
+
     for peak in peaks:
+        chromosome = genome.get(peak.chromosome)
+        if chromosome is None:
+            continue  # Chromosome missing from the FASTA: no matches, honestly
+
         summit = peak.summit if peak.summit is not None else peak.center
+        window_start = max(peak.start, summit - half_window)
+        window_end = min(peak.end, summit + half_window)
+        if window_end - window_start < 1:
+            continue
 
-        # Simulate finding motifs around summit
-        for motif in motif_patterns:
-            # Random simulation - in practice would search actual sequence
-            found = True  # Simulate finding motif
+        window = chromosome[window_start:window_end].upper()
 
-            if found:
-                motif_counts[motif] += 1
-                motif_positions[motif].append(
+        for pattern in motif_patterns:
+            matches: List[Dict[str, Any]] = []
+
+            for match in regexes[pattern].finditer(window):
+                matches.append(
                     {
                         "chromosome": peak.chromosome,
-                        "position": summit,
+                        "position": window_start + match.start(),
+                        "strand": "+",
+                        "sequence": match.group(0),
+                        "peak_start": peak.start,
+                        "peak_end": peak.end,
                         "peak_score": peak.score,
                     }
                 )
 
-    results = {
+            # Minus-strand occurrences: an interval of the forward window
+            # whose reverse complement matches the motif. Searching the
+            # forward window with the reverse-complemented pattern keeps
+            # positions in forward genomic coordinates.
+            for match in rc_regexes[pattern].finditer(window):
+                matches.append(
+                    {
+                        "chromosome": peak.chromosome,
+                        "position": window_start + match.start(),
+                        "strand": "-",
+                        "sequence": reverse_complement(match.group(0)),
+                        "peak_start": peak.start,
+                        "peak_end": peak.end,
+                        "peak_score": peak.score,
+                    }
+                )
+
+            if matches:
+                motif_counts[pattern] += 1
+                match_counts[pattern] += len(matches)
+                motif_positions[pattern].extend(matches)
+
+    results: Dict[str, Any] = {
         "total_peaks_analyzed": len(peaks),
         "motif_counts": dict(motif_counts),
+        "match_counts": dict(match_counts),
         "motif_positions": dict(motif_positions),
     }
 
-    # Calculate enrichment statistics
-    for motif in motif_patterns:
-        count = motif_counts[motif]
-        expected_count = len(peaks) * 0.1  # Assume 10% expected frequency
-        enrichment = count / expected_count if expected_count > 0 else 0
-
-        results[f"{motif}_enrichment"] = enrichment
-
-    logger.info(f"Found motifs: {dict(motif_counts)}")
+    logger.info(f"Motif scan matches per pattern: {dict(match_counts)}")
     return results
 
 
-def generate_chip_report(peaks: List[ChIPPeak], output_path: Optional[str | Path] = None) -> str:
+def generate_chip_report(
+    peaks: List[ChIPPeak], output_path: Optional[str | Path] = None
+) -> str:
     """Generate a comprehensive ChIP-seq analysis report.
 
     Args:
@@ -650,7 +850,9 @@ def generate_chip_report(peaks: List[ChIPPeak], output_path: Optional[str | Path
         chr_dist = stats.get("chromosome_distribution", {})
         if chr_dist:
             report_lines.append("Chromosome Distribution (Top 10):")
-            sorted_chrs = sorted(chr_dist.items(), key=lambda x: x[1], reverse=True)[:10]
+            sorted_chrs = sorted(chr_dist.items(), key=lambda x: x[1], reverse=True)[
+                :10
+            ]
             for chr_name, count in sorted_chrs:
                 report_lines.append(f"  {chr_name}: {count:,} peaks")
             report_lines.append("")

@@ -62,6 +62,28 @@ def test_configure_logging_from_env() -> None:
         assert logging.root.level == logging.INFO
 
 
+def test_get_logger_inherits_env_level() -> None:
+    """Regression: get_logger loggers follow CORE_LOG_LEVEL via root inheritance.
+
+    get_logger must not pin an explicit level; the effective level has to be
+    inherited from the root logger so configure_logging_from_env takes effect
+    even for loggers created before configuration.
+    """
+    name = "metainformant.test.env_inherit"
+    logger = core_logging.get_logger(name)
+    root_before = logging.root.level
+    try:
+        with _temporary_env("CORE_LOG_LEVEL", "DEBUG"):
+            core_logging.configure_logging_from_env()
+            assert logger.getEffectiveLevel() == logging.DEBUG
+
+        with _temporary_env("CORE_LOG_LEVEL", None):
+            core_logging.configure_logging_from_env(default_level="INFO")
+            assert logger.getEffectiveLevel() == logging.INFO
+    finally:
+        logging.root.setLevel(root_before)
+
+
 def test_log_with_metadata_basic() -> None:
     """Test log_with_metadata with basic usage."""
     import io
@@ -73,7 +95,9 @@ def test_log_with_metadata_basic() -> None:
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)
 
-    core_logging.log_with_metadata(logger, "Test message", {"key1": "value1", "key2": 42})
+    core_logging.log_with_metadata(
+        logger, "Test message", {"key1": "value1", "key2": 42}
+    )
 
     log_output = log_stream.getvalue()
     assert "Test message" in log_output
@@ -91,7 +115,9 @@ def test_log_with_metadata_structured() -> None:
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)
 
-    core_logging.log_with_metadata(logger, "Structured message", {"batch": 1}, structured=True)
+    core_logging.log_with_metadata(
+        logger, "Structured message", {"batch": 1}, structured=True
+    )
 
     log_output = log_stream.getvalue()
     assert "Structured message" in log_output
@@ -109,7 +135,9 @@ def test_log_with_metadata_level() -> None:
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
 
-    core_logging.log_with_metadata(logger, "Debug message", {"data": "test"}, level="DEBUG")
+    core_logging.log_with_metadata(
+        logger, "Debug message", {"data": "test"}, level="DEBUG"
+    )
 
     log_output = log_stream.getvalue()
     assert "Debug message" in log_output
@@ -122,7 +150,9 @@ def test_setup_logger_closes_previous_handlers(tmp_path) -> None:
 
     core_logging.setup_logger("leak_check", log_file=str(log_file))
     logger = logging.getLogger("leak_check")
-    first_file_handlers = [h for h in logger.handlers if isinstance(h, logging.FileHandler)]
+    first_file_handlers = [
+        h for h in logger.handlers if isinstance(h, logging.FileHandler)
+    ]
     assert first_file_handlers, "expected a FileHandler on first setup"
 
     core_logging.setup_logger("leak_check", log_file=str(log_file))

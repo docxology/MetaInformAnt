@@ -6,7 +6,7 @@ This module provides mathematical functions for analyzing linkage disequilibrium
 from __future__ import annotations
 
 import math
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -21,12 +21,20 @@ def ld_coefficients(
     pB: float | None = None,
     pb: float | None = None,
     pAB: float | None = None,
+    phased: bool = True,
 ) -> Dict[str, float] | Tuple[float, float]:
     """Calculate linkage disequilibrium coefficients.
 
     Can be called with either:
     - Allele frequencies: ld_coefficients(pA, pa, pB, pb, pAB) -> (D, D')
-    - Genotypes: ld_coefficients(genotypes) -> dict with D, D', r²
+    - Phased haplotypes: ld_coefficients(genotypes) -> dict with D, D', r²,
+      where each row ``[g1, g2]`` is a single PHASED haplotype (allele g1 at
+      locus 1, allele g2 at locus 2)
+    - Unphased diploid genotypes: ld_coefficients(genotypes, phased=False)
+      -> dict with D, D', r², where each row is ``[[a1, a2], [b1, b2]]``:
+      the unordered allele pair at locus 1 and at locus 2.
+      Maximum-likelihood haplotype frequencies are recovered with a
+      deterministic expectation-maximization (EM) routine.
 
     Args:
         pA_or_genotypes: Either allele frequency for A or 2D list of genotypes
@@ -34,6 +42,9 @@ def ld_coefficients(
         pB: Allele frequency for B (if using frequency mode)
         pb: Allele frequency for b (if using frequency mode)
         pAB: Haplotype frequency for AB (if using frequency mode)
+        phased: Genotype-mode interpretation. ``True`` (default) treats each
+            row as one phased haplotype; ``False`` treats each row as an
+            unphased diploid genotype and runs EM.
 
     Returns:
         If using frequencies: Tuple of (D, D')
@@ -62,37 +73,134 @@ def ld_coefficients(
     if len(genotypes) < 2 or len(genotypes[0]) != 2:
         raise ValueError("Need at least 2 samples with 2 loci each")
 
-    # Extract alleles for each locus
-    locus1 = [row[0] for row in genotypes]
-    locus2 = [row[1] for row in genotypes]
+    n = len(genotypes)
+    if phased:
+        # Each row is one phased haplotype: [allele at locus 1, allele at locus 2].
+        for row in genotypes:
+            if len(row) != 2:
+                raise ValueError("Phased haplotype rows must be [g1, g2]")
+        haplotype_freqs: Dict[str, float] = {}
+        for g1, g2 in genotypes:
+            key = f"{g1}{g2}"
+            haplotype_freqs[key] = haplotype_freqs.get(key, 0) + 1
+        f_11 = haplotype_freqs.get("11", 0) / n
+        p1 = sum(row[0] for row in genotypes) / n
+        p2 = sum(row[1] for row in genotypes) / n
+    else:
+        # Unphased diploid rows: [[a1, a2], [b1, b2]]. Haplotype frequencies
+        # are recovered by EM before computing the coefficients.
+        freqs = _em_haplotype_frequencies(genotypes)
+        f_11 = freqs[(1, 1)]
+        p1 = freqs[(1, 0)] + freqs[(1, 1)]
+        p2 = freqs[(0, 1)] + freqs[(1, 1)]
 
-    # Calculate allele frequencies
-    p1 = sum(locus1) / len(locus1)  # Frequency of allele 1 at locus 1
-    q1 = 1 - p1  # Frequency of allele 0 at locus 1
-    p2 = sum(locus2) / len(locus2)  # Frequency of allele 1 at locus 2
-    q2 = 1 - p2  # Frequency of allele 0 at locus 2
-
-    # Calculate haplotype frequencies (simplified)
-    # Assuming 0/1 coding
-    haplotype_freqs: Dict[str, float] = {}
-    for g1, g2 in zip(locus1, locus2):
-        key = f"{g1}{g2}"
-        haplotype_freqs[key] = haplotype_freqs.get(key, 0) + 1
-
-    for key in haplotype_freqs:
-        haplotype_freqs[key] /= len(genotypes)
+    q1 = 1 - p1
+    q2 = 1 - p2
 
     # D = P(AB) - P(A)P(B)
-    D = haplotype_freqs.get("11", 0) - p1 * p2
+    D = f_11 - p1 * p2
 
-    # D' = D / D_max
-    D_max = min(p1 * q2, q1 * p2) if D < 0 else min(p1 * p2, q1 * q2)
+    # D' = D / D_max. For D > 0 the excess of AB is bounded by the scarcer
+    # of the Ab / aB complements; for D < 0 the AB deficit is bounded by
+    # the scarcer of AB / ab themselves.
+    D_max = min(p1 * q2, q1 * p2) if D > 0 else min(p1 * p2, q1 * q2)
     D_prime = D / D_max if D_max > 0 else 0
 
     # r² = D² / (p1*q1*p2*q2)
     r_squared = (D**2) / (p1 * q1 * p2 * q2) if (p1 * q1 * p2 * q2) > 0 else 0
 
     return {"D": D, "D_prime": D_prime, "r_squared": r_squared}
+
+
+def _em_haplotype_frequencies(
+    genotypes: List[List[Any]],
+    max_iter: int = 500,
+    tol: float = 1e-12,
+) -> Dict[Tuple[int, int], float]:
+    """Maximum-likelihood haplotype frequencies from unphased diploid genotypes.
+
+    Expectation-maximization for two biallelic loci. Each genotype row is
+    ``[[a1, a2], [b1, b2]]``: the unordered allele pair at locus 1 and the
+    unordered allele pair at locus 2. Only double heterozygotes
+    (heterozygous at both loci) are ambiguous; the split between the
+    coupling and repulsion configurations is iterated from a deterministic
+    product-of-marginals initialization until convergence.
+
+    Args:
+        genotypes: Unphased diploid two-locus genotypes with 0/1 alleles.
+        max_iter: EM iteration cap.
+        tol: Convergence threshold on the maximum frequency change.
+
+    Returns:
+        Mapping (allele at locus 1, allele at locus 2) -> frequency, with
+        the four frequencies summing to 1.
+
+    Raises:
+        ValueError: If rows are not diploid two-locus pairs or alleles are
+            not 0/1.
+    """
+    for row in genotypes:
+        if (
+            len(row) != 2
+            or not isinstance(row[0], (list, tuple))
+            or not isinstance(row[1], (list, tuple))
+        ):
+            raise ValueError(
+                "Unphased diploid rows must be [[a1, a2], [b1, b2]]: "
+                "the unordered allele pair at each of the two loci"
+            )
+        if len(row[0]) != 2 or len(row[1]) != 2:
+            raise ValueError(
+                "Unphased diploid rows must hold exactly two alleles per locus"
+            )
+        for allele in (row[0][0], row[0][1], row[1][0], row[1][1]):
+            if allele not in (0, 1):
+                raise ValueError("Unphased diploid mode requires 0/1 allele coding")
+
+    n = len(genotypes)
+    locus1 = [row[0] for row in genotypes]
+    locus2 = [row[1] for row in genotypes]
+    p1 = sum(sum(pair) for pair in locus1) / (2 * n)
+    p2 = sum(sum(pair) for pair in locus2) / (2 * n)
+
+    # Deterministic product-of-marginals initialization.
+    freqs = {
+        (a, b): (p1 if a else 1 - p1) * (p2 if b else 1 - p2)
+        for a in (0, 1)
+        for b in (0, 1)
+    }
+
+    for _ in range(max_iter):
+        expected = dict.fromkeys(freqs, 0.0)
+        for (l1a, l1b), (l2a, l2b) in zip(locus1, locus2):
+            if l1a == l1b:
+                if l2a == l2b:
+                    expected[(l1a, l2a)] += 2.0
+                else:
+                    expected[(l1a, l2a)] += 1.0
+                    expected[(l1a, l2b)] += 1.0
+            elif l2a == l2b:
+                expected[(l1a, l2a)] += 1.0
+                expected[(l1b, l2a)] += 1.0
+            else:
+                # Double heterozygote: split coupling vs repulsion by the
+                # current haplotype frequencies.
+                coupling = freqs[(l1a, l2a)] * freqs[(l1b, l2b)]
+                repulsion = freqs[(l1a, l2b)] * freqs[(l1b, l2a)]
+                total = coupling + repulsion
+                weight = coupling / total if total > 0 else 0.5
+                expected[(l1a, l2a)] += weight
+                expected[(l1b, l2b)] += weight
+                expected[(l1a, l2b)] += 1.0 - weight
+                expected[(l1b, l2a)] += 1.0 - weight
+
+        updated = {key: value / (2 * n) for key, value in expected.items()}
+        delta = max(abs(updated[key] - freqs[key]) for key in freqs)
+        freqs = updated
+        if delta < tol:
+            break
+
+    return freqs
 
 
 def ld_decay_r2(
@@ -115,7 +223,9 @@ def ld_decay_r2(
     """
     if isinstance(distances, (int, float)):
         if recombination_rate is None or generations is None:
-            raise ValueError("recombination_rate and generations are required for scalar LD decay")
+            raise ValueError(
+                "recombination_rate and generations are required for scalar LD decay"
+            )
         return float(distances) * ((1.0 - recombination_rate) ** (2 * generations))
 
     if r_squared_values is None or len(distances) != len(r_squared_values):
@@ -123,7 +233,9 @@ def ld_decay_r2(
 
     # Filter by max distance if specified
     if max_distance is not None:
-        filtered = [(d, r) for d, r in zip(distances, r_squared_values) if d <= max_distance]
+        filtered = [
+            (d, r) for d, r in zip(distances, r_squared_values) if d <= max_distance
+        ]
         distances = [d for d, _ in filtered]
         r_squared_values = [r for _, r in filtered]
 
@@ -156,11 +268,17 @@ def ld_decay_r2(
 
     # Estimate decay rate (rough approximation)
     if len(bin_means) >= 2:
-        decay_rate = (bin_means[0][1] - bin_means[-1][1]) / (bin_means[-1][0] - bin_means[0][0])
+        decay_rate = (bin_means[0][1] - bin_means[-1][1]) / (
+            bin_means[-1][0] - bin_means[0][0]
+        )
     else:
         decay_rate = 0.0
 
-    return {"decay_rate": decay_rate, "half_decay_distance": half_decay_distance, "initial_r2": initial_r2}
+    return {
+        "decay_rate": decay_rate,
+        "half_decay_distance": half_decay_distance,
+        "initial_r2": initial_r2,
+    }
 
 
 def haldane_c_to_d(recombination_fraction: float) -> float:
@@ -219,7 +337,9 @@ def kosambi_c_to_d(recombination_fraction: float) -> float:
     elif recombination_fraction == 0:
         return 0.0
 
-    return 0.25 * math.log((1 + 2 * recombination_fraction) / (1 - 2 * recombination_fraction))
+    return 0.25 * math.log(
+        (1 + 2 * recombination_fraction) / (1 - 2 * recombination_fraction)
+    )
 
 
 def kosambi_d_to_c(genetic_distance: float) -> float:

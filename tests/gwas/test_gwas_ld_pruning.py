@@ -107,3 +107,61 @@ class TestLDPrune:
         # b has more missing, so b should be removed and a kept
         assert 0 in kept
         assert len(kept) == 1
+
+
+class TestLDPrunePhysicalWindow:
+    """Physical-distance mode (variant_positions in bp, window in kb)."""
+
+    def test_one_mb_apart_never_paired(self) -> None:
+        """Two variants 1 Mb apart must not be paired when positions are supplied."""
+        geno = [[0, 2, 0, 2], [0, 2, 0, 2]]  # Perfectly correlated pair
+        kept = ld_prune(
+            geno, variant_positions=[1000, 1_001_000], window_size=50, r2_threshold=0.2
+        )
+        assert kept == [0, 1]
+
+    def test_within_window_paired(self) -> None:
+        """Correlated variants inside the kb window are pruned like PLINK."""
+        geno = [[0, 2, 0, 2], [0, 2, 0, 2]]
+        kept = ld_prune(
+            geno, variant_positions=[1000, 11_000], window_size=50, r2_threshold=0.2
+        )
+        assert len(kept) == 1
+
+    def test_distance_overrides_index_proximity(self) -> None:
+        """Index-adjacent variants beyond the physical window stay unpruned."""
+        geno = [[0, 2, 0, 2], [0, 2, 0, 2]]
+        kept = ld_prune(
+            geno,
+            variant_positions=[1000, 2_000_000],
+            window_size=50,
+            step_size=1,
+            r2_threshold=0.2,
+        )
+        assert kept == [0, 1]
+
+    def test_unsorted_positions_handled(self) -> None:
+        """Positions may be unordered; the scan sorts them internally."""
+        geno = [[0, 2, 0, 2], [0, 2, 0, 2]]
+        kept = ld_prune(
+            geno, variant_positions=[50_000, 1000], window_size=50, r2_threshold=0.2
+        )
+        assert len(kept) == 1
+
+    def test_chroms_block_cross_chromosome_pairs(self) -> None:
+        """Same distance on different chromosomes must never pair."""
+        geno = [[0, 2, 0, 2], [0, 2, 0, 2]]
+        kept = ld_prune(
+            geno,
+            variant_positions=[1000, 11_000],
+            variant_chroms=[1, 2],
+            window_size=50,
+            r2_threshold=0.2,
+        )
+        assert kept == [0, 1]
+
+    def test_default_mode_unchanged_without_positions(self) -> None:
+        """Without positions, the variant-count window behaves as before."""
+        geno = [[0, 2, 0, 2], [0, 2, 0, 2]]
+        kept = ld_prune(geno, window_size=2, step_size=1, r2_threshold=0.2)
+        assert len(kept) == 1

@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
+from typing import Any
 
 from . import __version__
 
@@ -49,15 +50,21 @@ For detailed usage of specific modules, import them directly in Python:
     protein_sub = protein_parser.add_subparsers(dest="protein_command")
 
     # protein taxon-ids
-    taxon_parser = protein_sub.add_parser("taxon-ids", help="Read and validate taxon IDs")
+    taxon_parser = protein_sub.add_parser(
+        "taxon-ids", help="Read and validate taxon IDs"
+    )
     taxon_parser.add_argument("--file", required=True, help="Path to taxon ID file")
 
     # protein comp
-    comp_parser = protein_sub.add_parser("comp", help="Amino acid composition from FASTA")
+    comp_parser = protein_sub.add_parser(
+        "comp", help="Amino acid composition from FASTA"
+    )
     comp_parser.add_argument("--fasta", required=True, help="Path to FASTA file")
 
     # protein rmsd-ca
-    rmsd_parser = protein_sub.add_parser("rmsd-ca", help="RMSD between CA atoms of two PDB files")
+    rmsd_parser = protein_sub.add_parser(
+        "rmsd-ca", help="RMSD between CA atoms of two PDB files"
+    )
     rmsd_parser.add_argument("--pdb-a", required=True, help="Path to first PDB file")
     rmsd_parser.add_argument("--pdb-b", required=True, help="Path to second PDB file")
 
@@ -65,13 +72,51 @@ For detailed usage of specific modules, import them directly in Python:
     quality_parser = subparsers.add_parser("quality", help="Quality control commands")
     quality_sub = quality_parser.add_subparsers(dest="quality_command")
 
-    batch_parser = quality_sub.add_parser("batch-detect", help="Detect batch effects in a dataset")
-    batch_parser.add_argument("--data", required=True, help="Path to CSV data matrix (samples × features)")
-    batch_parser.add_argument("--batches", required=True, help="Path to batch labels file (one per line)")
-    batch_parser.add_argument("--alpha", type=float, default=0.05, help="Significance threshold")
+    batch_parser = quality_sub.add_parser(
+        "batch-detect", help="Detect batch effects in a dataset"
+    )
+    batch_parser.add_argument(
+        "--data", required=True, help="Path to CSV data matrix (samples × features)"
+    )
+    batch_parser.add_argument(
+        "--batches", required=True, help="Path to batch labels file (one per line)"
+    )
+    batch_parser.add_argument(
+        "--alpha", type=float, default=0.05, help="Significance threshold"
+    )
 
-    quality_run = quality_sub.add_parser("run", help="Run quality workflow")
-    quality_run.add_argument("--output", default="output/quality", help="Output directory")
+    quality_run = quality_sub.add_parser(
+        "run",
+        help="Run the quality workflow: cross-code verification of docs against source",
+    )
+    quality_run.add_argument(
+        "--output",
+        type=Path,
+        default=Path("output") / "cross_code_verification_report.md",
+        help="Path for the Markdown verification report",
+    )
+    quality_run.add_argument(
+        "--docs-dir",
+        type=Path,
+        default=Path("docs"),
+        help="Documentation directory to verify",
+    )
+    quality_run.add_argument(
+        "--src-dir", type=Path, default=Path("src"), help="Source directory to index"
+    )
+    quality_run.add_argument(
+        "--include-historical",
+        action="store_true",
+        help="Include historical audit and validation snapshots",
+    )
+    quality_run.add_argument(
+        "--strict-optional-imports",
+        action="store_true",
+        help="Treat optional third-party imports as violations",
+    )
+    quality_run.add_argument(
+        "--verbose", action="store_true", help="Verbose verification logging"
+    )
 
     # RNA subcommands
     rna_parser = subparsers.add_parser("rna", help="RNA-seq analysis commands")
@@ -87,40 +132,135 @@ For detailed usage of specific modules, import them directly in Python:
 
     # gwas run subcommand
     gwas_run_parser = gwas_sub.add_parser("run", help="Run complete GWAS workflow")
-    gwas_run_parser.add_argument("--config", required=True, help="Path to GWAS configuration file (YAML/JSON)")
-    gwas_run_parser.add_argument("--check", action="store_true", help="Validate configuration without executing")
+    gwas_run_parser.add_argument(
+        "--config", required=True, help="Path to GWAS configuration file (YAML/JSON)"
+    )
+    gwas_run_parser.add_argument(
+        "--check", action="store_true", help="Validate configuration without executing"
+    )
     gwas_run_parser.add_argument("--output-dir", help="Override output directory")
 
     # Life events subcommands
-    life_parser = subparsers.add_parser("life-events", help="Life event workflow commands")
+    life_parser = subparsers.add_parser(
+        "life-events", help="Life event workflow commands"
+    )
     life_sub = life_parser.add_subparsers(dest="life_events_command")
 
-    life_predict = life_sub.add_parser("predict", help="Predict outcomes for life event sequences")
-    life_predict.add_argument("--events", required=True, help="Path to event sequences JSON")
-    life_predict.add_argument("--model", required=True, help="Path to trained life-events model")
-    life_predict.add_argument("--output", required=True, help="Output directory for predictions")
+    life_predict = life_sub.add_parser(
+        "predict", help="Predict outcomes for life event sequences"
+    )
+    life_predict.add_argument(
+        "--events", required=True, help="Path to event sequences JSON"
+    )
+    life_predict.add_argument(
+        "--model", required=True, help="Path to trained life-events model"
+    )
+    life_predict.add_argument(
+        "--output", required=True, help="Output directory for predictions"
+    )
 
-    life_interpret = life_sub.add_parser("interpret", help="Create a life-events interpretation report")
-    life_interpret.add_argument("--model", required=True, help="Path to trained life-events model")
-    life_interpret.add_argument("--sequences", required=True, help="Path to event sequences JSON")
-    life_interpret.add_argument("--output", required=True, help="Output directory for report")
+    life_interpret = life_sub.add_parser(
+        "interpret", help="Create a life-events interpretation report"
+    )
+    life_interpret.add_argument(
+        "--model", required=True, help="Path to trained life-events model"
+    )
+    life_interpret.add_argument(
+        "--sequences", required=True, help="Path to event sequences JSON"
+    )
+    life_interpret.add_argument(
+        "--output", required=True, help="Output directory for report"
+    )
 
-    # Math utility subcommands
-    math_parser = subparsers.add_parser("math", help="Mathematical biology commands")
-    math_sub = math_parser.add_subparsers(dest="math_command")
-    selection_parser = math_sub.add_parser("selection", help="Selection analysis commands")
-    selection_sub = selection_parser.add_subparsers(dest="selection_command")
-    replay_parser = selection_sub.add_parser("replay", help="Replay selection example outputs")
-    replay_parser.add_argument("--dest", required=True, help="Destination directory")
+    # Simulation subcommands
+    simulation_parser = subparsers.add_parser(
+        "simulation", help="Synthetic data simulation commands"
+    )
+    simulation_sub = simulation_parser.add_subparsers(dest="simulation_command")
+    simulation_run = simulation_sub.add_parser(
+        "run", help="Run a simulation workflow and save its result JSON"
+    )
+    simulation_run.add_argument(
+        "--model",
+        default="sequence_evolution",
+        help=(
+            "Simulation type: sequence_evolution, population_genetics, rna_expression, "
+            "agent_ecosystem, predator_prey or competition"
+        ),
+    )
+    simulation_run.add_argument(
+        "--n",
+        type=int,
+        default=None,
+        help="Simulation size override (population size, agent count or sample count depending on --model)",
+    )
+    simulation_run.add_argument(
+        "--output",
+        default="output/simulation",
+        help="Output directory for the simulation result JSON",
+    )
 
-    for module_name in ("ontology", "phenotype", "networks", "simulation"):
-        module_parser = subparsers.add_parser(module_name, help=f"{module_name.title()} workflow commands")
-        module_sub = module_parser.add_subparsers(dest=f"{module_name}_command")
-        run_parser = module_sub.add_parser("run", help=f"Run {module_name} workflow")
-        run_parser.add_argument("--input", help="Input file")
-        run_parser.add_argument("--output", default=f"output/{module_name}", help="Output directory")
-        run_parser.add_argument("--model", help="Model or analysis mode")
-        run_parser.add_argument("--n", type=int, help="Number of records to process")
+    # Ontology subcommands
+    ontology_parser = subparsers.add_parser(
+        "ontology", help="Ontology analysis workflow commands"
+    )
+    ontology_sub = ontology_parser.add_subparsers(dest="ontology_command")
+    ontology_run = ontology_sub.add_parser(
+        "run", help="Run the GO/HPO ontology enrichment workflow (stage 10)"
+    )
+    ontology_run.add_argument(
+        "--input", required=True, help="Path to the workflow YAML configuration"
+    )
+    ontology_run.add_argument(
+        "--phenotype",
+        required=True,
+        help="Phenotype label for the results subdirectory",
+    )
+    ontology_run.add_argument(
+        "--model", required=True, help="Model label for the results subdirectory"
+    )
+
+    # Phenotype subcommands
+    phenotype_parser = subparsers.add_parser(
+        "phenotype", help="Phenotype analysis pipeline commands"
+    )
+    phenotype_sub = phenotype_parser.add_subparsers(dest="phenotype_command")
+    phenotype_run = phenotype_sub.add_parser(
+        "run", help="Run a phenotype analysis pipeline over a JSON dataset"
+    )
+    phenotype_run.add_argument(
+        "--input", required=True, help="Path to phenotype data JSON (list of records)"
+    )
+    phenotype_run.add_argument(
+        "--type",
+        default="morphological",
+        choices=("morphological", "behavioral", "chemical", "electronic", "sonic"),
+        help="Phenotype domain to analyze",
+    )
+    phenotype_run.add_argument(
+        "--output",
+        default="output/phenotype",
+        help="Output directory for the pipeline result JSON",
+    )
+
+    # Networks subcommands
+    networks_parser = subparsers.add_parser(
+        "networks", help="Network analysis workflow commands"
+    )
+    networks_sub = networks_parser.add_subparsers(dest="networks_command")
+    networks_run = networks_sub.add_parser(
+        "run", help="Build a network from an edge list and analyze it"
+    )
+    networks_run.add_argument(
+        "--input",
+        required=True,
+        help="Path to an edge list CSV with 'source' and 'target' columns (optional 'weight')",
+    )
+    networks_run.add_argument(
+        "--output",
+        default="output/networks",
+        help="Output directory for the exported network and metrics",
+    )
 
     args = parser.parse_args()
 
@@ -143,18 +283,38 @@ For detailed usage of specific modules, import them directly in Python:
     if args.command == "life-events":
         return _handle_life_events(args)
 
-    if args.command == "math":
-        return _handle_math(args)
+    if args.command == "simulation":
+        return _handle_simulation(args)
 
-    if args.command in {"ontology", "phenotype", "networks", "simulation"}:
-        return _handle_generic_workflow(args)
+    if args.command == "ontology":
+        return _handle_ontology(args)
+
+    if args.command == "phenotype":
+        return _handle_phenotype(args)
+
+    if args.command == "networks":
+        return _handle_networks(args)
 
     # If no arguments provided, show help
     if len(sys.argv) == 1:
         parser.print_help()
         return 0
 
-    return 0
+    # A parsed command was not handled; never exit 0 without output.
+    parser.print_help(sys.stderr)
+    return 1
+
+
+# Mapping from simulation type to the SimulationConfig attribute that --n
+# overrides. Each workflow has one canonical "size" parameter.
+_SIMULATION_SIZE_ATTRS = {
+    "sequence_evolution": "population_size",
+    "population_genetics": "population_size",
+    "rna_expression": "n_samples",
+    "agent_ecosystem": "n_agents",
+    "predator_prey": "n_agents",
+    "competition": "n_agents",
+}
 
 
 def _handle_protein(args: argparse.Namespace) -> int:
@@ -176,7 +336,9 @@ def _handle_protein(args: argparse.Namespace) -> int:
         sequences = read_fasta(Path(args.fasta))
         for name, seq in sequences.items():
             comp = amino_acid_composition(seq)
-            parts = [f"{aa}:{frac:.4f}" for aa, frac in sorted(comp.items()) if frac > 0]
+            parts = [
+                f"{aa}:{frac:.4f}" for aa, frac in sorted(comp.items()) if frac > 0
+            ]
             print(f"{name}\t{','.join(parts)}")
         return 0
 
@@ -190,6 +352,7 @@ def _handle_protein(args: argparse.Namespace) -> int:
         print(f"{rmsd:.6f}")
         return 0
 
+    print("Error: unknown or missing protein subcommand. See --help.", file=sys.stderr)
     return 1
 
 
@@ -213,11 +376,19 @@ def _handle_quality(args: argparse.Namespace) -> int:
         return 0
 
     if cmd == "run":
-        output_dir = Path(args.output)
-        output_dir.mkdir(parents=True, exist_ok=True)
-        print(f"Quality workflow output: {output_dir}")
-        return 0
+        from metainformant.quality.doc_verification import run as run_quality_workflow
 
+        workflow_args = argparse.Namespace(
+            verbose=args.verbose,
+            docs_dir=args.docs_dir,
+            src_dir=args.src_dir,
+            output=args.output,
+            include_historical=args.include_historical,
+            strict_optional_imports=args.strict_optional_imports,
+        )
+        return run_quality_workflow(workflow_args)
+
+    print("Error: unknown or missing quality subcommand. See --help.", file=sys.stderr)
     return 1
 
 
@@ -227,10 +398,13 @@ def _handle_rna(args: argparse.Namespace) -> int:
 
     if cmd == "info":
         print("RNA-seq Analysis Module")
-        print("Sub-packages: amalgkit, analysis, core, deconvolution, engine, retrieval, splicing")
+        print(
+            "Sub-packages: amalgkit, analysis, core, deconvolution, engine, retrieval, splicing"
+        )
         print("Import: from metainformant import rna")
         return 0
 
+    print("Error: unknown or missing rna subcommand. See --help.", file=sys.stderr)
     return 1
 
 
@@ -248,7 +422,9 @@ def _handle_gwas(args: argparse.Namespace) -> int:
     elif cmd == "run":
         # Import here to avoid heavy dependencies unless used
         try:
-            from metainformant.gwas.workflow.workflow_execution import execute_gwas_workflow
+            from metainformant.gwas.workflow.workflow_execution import (
+                execute_gwas_workflow,
+            )
         except ImportError as e:
             print(f"Error: GWAS module dependencies not available: {e}")
             return 1
@@ -303,6 +479,7 @@ def _handle_gwas(args: argparse.Namespace) -> int:
             traceback.print_exc()
             return 1
 
+    print("Error: unknown or missing gwas subcommand. See --help.", file=sys.stderr)
     return 1
 
 
@@ -333,7 +510,11 @@ def _handle_life_events(args: argparse.Namespace) -> int:
         predictor = EventSequencePredictor.load_model(args.model)
         tokens = convert_sequences_to_tokens(sequences)
         predictions = predictor.predict(tokens)
-        prediction_values = predictions.tolist() if hasattr(predictions, "tolist") else list(predictions)
+        prediction_values = (
+            predictions.tolist()
+            if hasattr(predictions, "tolist")
+            else list(predictions)
+        )
         probabilities = None
         if predictor.task_type == "classification":
             try:
@@ -347,13 +528,18 @@ def _handle_life_events(args: argparse.Namespace) -> int:
             if probabilities is not None:
                 raw_classes = getattr(predictor, "classes_", None)
                 classes = (
-                    raw_classes.tolist() if raw_classes is not None and hasattr(raw_classes, "tolist") else raw_classes
+                    raw_classes.tolist()
+                    if raw_classes is not None and hasattr(raw_classes, "tolist")
+                    else raw_classes
                 )
                 assert classes is not None
                 prob_row = probabilities[i]
                 if prob_row is None or not hasattr(prob_row, "tolist"):
                     continue
-                entry["probabilities"] = {str(cls): float(prob) for cls, prob in zip(classes, prob_row.tolist())}
+                entry["probabilities"] = {
+                    str(cls): float(prob)
+                    for cls, prob in zip(classes, prob_row.tolist())
+                }
             entries.append(entry)
 
         payload = {
@@ -390,7 +576,9 @@ def _handle_life_events(args: argparse.Namespace) -> int:
 
         embeddings = predictor.embeddings
         try:
-            importance = event_importance(predictor, tokens, embeddings, method="permutation")
+            importance = event_importance(
+                predictor, tokens, embeddings, method="permutation"
+            )
         except ValueError:
             importance = event_importance(tokens)
         temporal = temporal_patterns(tokens, predictions)
@@ -404,7 +592,9 @@ def _handle_life_events(args: argparse.Namespace) -> int:
             "n_sequences": len(sequences),
             "model_type": predictor.model_type,
             "task_type": predictor.task_type,
-            "predictions": predictions.tolist() if hasattr(predictions, "tolist") else list(predictions),
+            "predictions": predictions.tolist()
+            if hasattr(predictions, "tolist")
+            else list(predictions),
             "interpretations": {
                 "event_importance": importance,
                 "temporal_patterns": temporal,
@@ -414,42 +604,186 @@ def _handle_life_events(args: argparse.Namespace) -> int:
         dump_json(report, output_dir / "interpretation_report.json")
         return 0
 
+    print(
+        "Error: unknown or missing life-events subcommand. See --help.", file=sys.stderr
+    )
     return 1
 
 
-def _handle_math(args: argparse.Namespace) -> int:
-    """Handle math subcommands."""
-    if args.math_command == "selection" and args.selection_command == "replay":
-        outputs_dir = Path(args.dest) / "outputs"
-        outputs_dir.mkdir(parents=True, exist_ok=True)
-        png_header = b"\x89PNG\r\n\x1a\n"
-        for name in [
-            "plot-s-vs-q.png",
-            "plot-sq-vs-w.png",
-            "plot-ns-rebound.png",
-            "plot-ns-inverse.png",
-            "plot-ns.png",
-            "plot-ns-qsl.png",
-        ]:
-            (outputs_dir / name).write_bytes(png_header)
-        return 0
-    return 1
-
-
-def _handle_generic_workflow(args: argparse.Namespace) -> int:
-    """Handle lightweight workflow entry points for broad module CLIs."""
-    command_attr = f"{args.command}_command"
-    if getattr(args, command_attr, None) != "run":
+def _handle_simulation(args: argparse.Namespace) -> int:
+    """Handle simulation subcommands."""
+    if args.simulation_command != "run":
+        print(
+            "Error: unknown or missing simulation subcommand. See --help.",
+            file=sys.stderr,
+        )
         return 1
 
-    output = Path(getattr(args, "output", f"output/{args.command}"))
-    output.mkdir(parents=True, exist_ok=True)
-    if getattr(args, "input", None) and not Path(args.input).exists():
-        print(f"{args.command}: input not found: {args.input}", file=sys.stderr)
+    from metainformant.core.utils.errors import ConfigError, ValidationError
+    from metainformant.simulation.workflow.workflow import (
+        SimulationConfig,
+        run_simulation_workflow,
+    )
+
+    config_kwargs: dict[str, Any] = {
+        "simulation_type": args.model,
+        "output_dir": args.output,
+    }
+    size_attr = _SIMULATION_SIZE_ATTRS.get(args.model)
+    if args.n is not None and size_attr is not None:
+        config_kwargs[size_attr] = args.n
+
+    try:
+        config = SimulationConfig(**config_kwargs)
+    except (ValidationError, ConfigError, ValueError) as exc:
+        print(f"Error: invalid simulation configuration: {exc}", file=sys.stderr)
         return 1
 
-    print(f"Starting {args.command} workflow")
-    print(f"Output: {output}")
+    result = run_simulation_workflow(config)
+    print(f"Simulation type: {config.simulation_type}")
+    output_file = result.get("output_file")
+    if output_file:
+        print(f"Result saved to: {output_file}")
+    return 0
+
+
+def _handle_ontology(args: argparse.Namespace) -> int:
+    """Handle ontology subcommands."""
+    if args.ontology_command != "run":
+        print(
+            "Error: unknown or missing ontology subcommand. See --help.",
+            file=sys.stderr,
+        )
+        return 1
+
+    config_path = Path(args.input)
+    if not config_path.exists():
+        print(f"Error: workflow config not found: {config_path}", file=sys.stderr)
+        return 1
+
+    from metainformant.ontology.workflow.run_ontology import run_ontology_analysis
+
+    try:
+        import yaml
+
+        with open(config_path) as f:
+            config = yaml.safe_load(f) or {}
+    except Exception as exc:
+        print(f"Error: could not load workflow config: {exc}", file=sys.stderr)
+        return 1
+    if not isinstance(config, dict):
+        print("Error: workflow config must be a YAML mapping", file=sys.stderr)
+        return 1
+
+    # run_ontology_analysis exits with its own status code when stage inputs
+    # are missing, so let SystemExit propagate from main().
+    print(f"Ontology workflow: phenotype={args.phenotype} model={args.model}")
+    run_ontology_analysis(config, args.phenotype, args.model, Path.cwd())
+    return 0
+
+
+def _handle_phenotype(args: argparse.Namespace) -> int:
+    """Handle phenotype subcommands."""
+    if args.phenotype_command != "run":
+        print(
+            "Error: unknown or missing phenotype subcommand. See --help.",
+            file=sys.stderr,
+        )
+        return 1
+
+    input_path = Path(args.input)
+    if not input_path.exists():
+        print(f"Error: phenotype data not found: {input_path}", file=sys.stderr)
+        return 1
+
+    from metainformant.phenotype.workflow.pipeline import (
+        PhenotypePipeline,
+        PipelineConfig,
+    )
+
+    output_dir = Path(args.output)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    config = PipelineConfig(phenotype_types=[args.type], input_path=str(input_path))
+    result = PhenotypePipeline(config).run()
+
+    result_path = output_dir / "pipeline_result.json"
+    result.save_json(result_path)
+    print(f"Pipeline: {config.name} (type: {args.type})")
+    for step_name, step_output in result.outputs.items():
+        status = (
+            step_output.get("status", "done")
+            if isinstance(step_output, dict)
+            else "done"
+        )
+        print(f"  {step_name}: {status}")
+    print(f"Result saved to: {result_path}")
+    for error in result.errors:
+        print(f"Error: {error}", file=sys.stderr)
+    return 0 if result.success else 1
+
+
+def _handle_networks(args: argparse.Namespace) -> int:
+    """Handle networks subcommands."""
+    if args.networks_command != "run":
+        print(
+            "Error: unknown or missing networks subcommand. See --help.",
+            file=sys.stderr,
+        )
+        return 1
+
+    import csv
+
+    from metainformant.networks.config.config import NetworkWorkflowConfig
+    from metainformant.networks.workflow.workflow import NetworkWorkflow
+
+    input_path = Path(args.input)
+    if not input_path.exists():
+        print(f"Error: edge list not found: {input_path}", file=sys.stderr)
+        return 1
+
+    edges: list[tuple[str, str] | tuple[str, str, float]] = []
+    with open(input_path, newline="") as f:
+        reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames or []
+        if "source" not in fieldnames or "target" not in fieldnames:
+            print(
+                "Error: edge list CSV must contain 'source' and 'target' columns",
+                file=sys.stderr,
+            )
+            return 1
+        for row in reader:
+            source = (row.get("source") or "").strip()
+            target = (row.get("target") or "").strip()
+            if not source or not target:
+                continue
+            weight_raw = (row.get("weight") or "").strip()
+            if weight_raw:
+                try:
+                    edges.append((source, target, float(weight_raw)))
+                except ValueError:
+                    print(
+                        f"Error: invalid weight for edge {source}->{target}: {weight_raw!r}",
+                        file=sys.stderr,
+                    )
+                    return 1
+            else:
+                edges.append((source, target))
+
+    if not edges:
+        print("Error: no edges found in edge list", file=sys.stderr)
+        return 1
+
+    output_dir = Path(args.output)
+    workflow = NetworkWorkflow(NetworkWorkflowConfig(output_dir=str(output_dir)))
+    workflow.build_network(edges=edges).detect_communities().analyze_metrics()
+    exported = workflow.export_results(str(output_dir))
+    summary = workflow.summary()
+    network_summary = summary.get("network", {})
+    print(
+        f"Network: {network_summary.get('n_nodes', 0)} nodes, {network_summary.get('n_edges', 0)} edges"
+    )
+    print(f"Communities: {(summary.get('communities') or {}).get('n_communities', 0)}")
+    print(f"Results exported to: {output_dir} ({len(exported)} files)")
     return 0
 
 
@@ -482,7 +816,10 @@ def _list_modules() -> None:
         ("pharmacogenomics", "Clinical pharmacogenomic variant analysis"),
         ("metabolomics", "Metabolite identification and pathway analysis"),
         ("cloud", "Cloud deployment helpers and GCP workflow utilities"),
-        ("mcp", "MCP stdio JSON-RPC 2.0 server (`python -m metainformant.mcp.server`) and tool registry"),
+        (
+            "mcp",
+            "MCP stdio JSON-RPC 2.0 server (`python -m metainformant.mcp.server`) and tool registry",
+        ),
         ("menu", "Interactive menu and discovery system"),
     ]
 

@@ -51,20 +51,30 @@ result = eqtl_coloc(
 
 ### Association Testing
 
-| Function | Purpose |
-|----------|---------|
-| `run_gwas()` | Full GWAS pipeline |
-| `logistic_regression()` | Case-control associations |
-| `linear_regression()` | Quantitative trait analysis |
-| `lmm_association()` | Mixed models for population structure |
+| Function | Module | Purpose |
+|----------|--------|---------|
+| `run_gwas()` | `metainformant.gwas.workflow` | Full config-driven GWAS workflow (linear, logistic, or mixed model; LD pruning, summary statistics, SNP-to-gene annotation) |
+| `run_mixed_model_gwas()` | `metainformant.gwas.analysis.mixed_model` | EMMA mixed-model GWAS across variants (eigendecomposes the kinship matrix once) |
+| `association_test_mixed()` | `metainformant.gwas.analysis.mixed_model` | Single-SNP mixed-model association test |
+| `run_linear_model_gwas()` | `metainformant.gwas.analysis.association` | Quantitative-trait GWAS across variants |
+| `run_logistic_model_gwas()` | `metainformant.gwas.analysis.association` | Case-control GWAS across variants |
+| `association_test_linear()` | `metainformant.gwas.analysis.association` | Single-variant linear association test |
+| `association_test_logistic()` | `metainformant.gwas.analysis.association` | Single-variant logistic (case-control) test |
 
 ### Data I/O
 
-| Function | Purpose |
-|----------|---------|
-| `read_vcf()` | Parse VCF variant files |
-| `read_plink()` | Load PLINK bed/bim/fam |
-| `write_sumstats()` | Export summary statistics |
+| Function | Module | Purpose |
+|----------|--------|---------|
+| `parse_vcf_full()` | `metainformant.gwas.analysis.quality` | Parse VCF variant files |
+| `discover_sample_vcfs()` | `metainformant.gwas.data.vcf_utils` | Discover per-sample VCFs under a data root |
+| `count_variants()` | `metainformant.gwas.data.vcf_utils` | Count variants in a VCF |
+| `merge_vcfs()` | `metainformant.gwas.data.vcf_utils` | Merge per-sample VCFs |
+| `subsample_vcf()` | `metainformant.gwas.data.vcf_utils` | Subsample a VCF by fraction or interval |
+| `extract_sample_ids()` | `metainformant.gwas.data.vcf_utils` | Extract sample IDs from a VCF |
+| `bgzip_and_index()` | `metainformant.gwas.data.vcf_utils` | Bgzip-compress and tabix-index a VCF |
+| `write_summary_statistics()` | `metainformant.gwas.analysis.summary_stats` | Export summary statistics |
+
+There is no PLINK bed/bim/fam reader in the current checkout.
 
 ## 📦 Submodules
 

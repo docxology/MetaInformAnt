@@ -24,41 +24,83 @@ logger = logging.get_logger(__name__)
 
 
 def association_test_linear(
-    genotypes: List[int], phenotypes: List[float], covariates: Optional[List[List[float]]] = None, **kwargs: Any
+    genotypes: List[int],
+    phenotypes: List[float],
+    covariates: Optional[List[List[float]]] = None,
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     """Perform linear regression association test.
 
+    Uses complete-case analysis: samples are excluded before fitting when the
+    genotype is missing (negative dosage, e.g. -1 for unknown) or the
+    phenotype is missing (NaN, None, or non-numeric values such as "NA").
+    Missing values are never treated as numeric allele doses.
+
     Args:
-        genotypes: Genotype values (0, 1, 2) for each sample
+        genotypes: Genotype values (0, 1, 2; negative values encode missing)
         phenotypes: Phenotype values for each sample
         covariates: Optional covariate matrix (covariates x samples)
         **kwargs: Additional parameters
 
     Returns:
-        Dictionary with association test results
+        Dictionary with association test results. ``n_samples`` is the number
+        of complete cases analyzed and ``n_missing_dropped`` counts the
+        excluded samples.
     """
     if len(genotypes) != len(phenotypes):
         raise ValueError("Genotypes and phenotypes must have same length")
 
-    logger.debug(f"Running linear association test on {len(genotypes)} samples")
+    n_input = len(genotypes)
+    logger.debug(f"Running linear association test on {n_input} samples")
+
+    # Complete-case filtering: drop pairs with missing genotypes (dose < 0,
+    # e.g. -1 for unknown) or missing/NaN phenotypes.
+    keep_indices: List[int] = []
+    for i in range(n_input):
+        try:
+            gt_value = float(genotypes[i])
+            ph_value = float(phenotypes[i])
+        except (TypeError, ValueError):
+            continue
+        if not math.isfinite(gt_value) or gt_value < 0:
+            continue
+        if not math.isfinite(ph_value):
+            continue
+        keep_indices.append(i)
+
+    n_missing_dropped = n_input - len(keep_indices)
+
+    # Build the reduced design matrix over complete cases only.
+    X = []
+    for i in keep_indices:
+        row = [1.0, float(genotypes[i])]  # Intercept + genotype
+        if covariates:
+            for cov in covariates:
+                row.append(float(cov[i]))
+        X.append(row)
+    y_kept = [float(phenotypes[i]) for i in keep_indices]
+
+    if not X:
+        logger.warning(
+            "Linear regression failed: no complete cases after dropping missing values"
+        )
+        return {
+            "status": "error",
+            "beta": 0.0,
+            "se": 0.0,
+            "t_stat": 0.0,
+            "p_value": 1.0,
+            "r_squared": 0.0,
+            "n_samples": 0,
+            "n_missing_dropped": n_missing_dropped,
+            "test_type": "linear",
+            "converged": False,
+            "error": "No complete cases after excluding missing genotypes/phenotypes",
+        }
 
     # Simple linear regression implementation
-    # In practice, would use statsmodels or similar
-
-    n = len(genotypes)
-
-    # Prepare design matrix
-    X = [[1.0, float(gt)] for gt in genotypes]  # Intercept + genotype
-
-    # Add covariates if provided
-    if covariates:
-        for i in range(len(covariates[0])):  # For each sample
-            for j, cov in enumerate(covariates):
-                X[i].append(cov[i])
-
-    # Simple OLS implementation
     try:
-        beta, se, t_stat, p_value, r_squared = _simple_linear_regression(X, phenotypes)
+        beta, se, t_stat, p_value, r_squared = _simple_linear_regression(X, y_kept)
 
         result = {
             "status": "success",
@@ -67,7 +109,8 @@ def association_test_linear(
             "t_stat": t_stat,
             "p_value": p_value,
             "r_squared": r_squared,
-            "n_samples": n,
+            "n_samples": len(keep_indices),
+            "n_missing_dropped": n_missing_dropped,
             "test_type": "linear",
             "converged": True,
         }
@@ -81,7 +124,8 @@ def association_test_linear(
             "t_stat": 0.0,
             "p_value": 1.0,
             "r_squared": 0.0,
-            "n_samples": n,
+            "n_samples": len(keep_indices),
+            "n_missing_dropped": n_missing_dropped,
             "test_type": "linear",
             "converged": False,
             "error": str(e),
@@ -123,7 +167,9 @@ def association_test_logistic(
     n_cases = sum(1 for p in phenotypes if p == 1)
     n_controls = sum(1 for p in phenotypes if p == 0)
     if n_cases < 2 or n_controls < 2:
-        logger.warning(f"Insufficient cases ({n_cases}) or controls ({n_controls}) for logistic regression")
+        logger.warning(
+            f"Insufficient cases ({n_cases}) or controls ({n_controls}) for logistic regression"
+        )
         return {
             "status": "failed",
             "beta": 0.0,
@@ -154,7 +200,9 @@ def association_test_logistic(
             raise ImportError("numpy is required for logistic regression")
         X_array = np.array(X)
         y_array = np.array(phenotypes)
-        beta, se, z_stat, p_value = _logistic_regression_with_stats(X_array, y_array, max_iter)
+        beta, se, z_stat, p_value = _logistic_regression_with_stats(
+            X_array, y_array, max_iter
+        )
 
         # Calculate odds ratio
         odds_ratio = math.exp(beta) if abs(beta) < 700 else float("inf")
@@ -215,7 +263,11 @@ def run_linear_model_gwas(
     """
     results: List[Dict[str, Any]] = []
     for i, genotypes in enumerate(genotype_matrix):
-        result = dict(association_test_linear(list(genotypes), list(phenotypes), covariates=covariates))
+        result = dict(
+            association_test_linear(
+                list(genotypes), list(phenotypes), covariates=covariates
+            )
+        )
         result["variant_index"] = i
         if variant_info and i < len(variant_info):
             result["variant_id"] = variant_info[i].get("id", f"variant_{i}")
@@ -251,7 +303,12 @@ def run_logistic_model_gwas(
     results: List[Dict[str, Any]] = []
     for i, genotypes in enumerate(genotype_matrix):
         result = dict(
-            association_test_logistic(list(genotypes), list(phenotypes), covariates=covariates, max_iter=max_iter)
+            association_test_logistic(
+                list(genotypes),
+                list(phenotypes),
+                covariates=covariates,
+                max_iter=max_iter,
+            )
         )
         result["variant_index"] = i
         if variant_info and i < len(variant_info):
@@ -263,7 +320,9 @@ def run_logistic_model_gwas(
     return results
 
 
-def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[float, float, float, float, float]:
+def _simple_linear_regression(
+    X: List[List[float]], y: List[float]
+) -> Tuple[float, float, float, float, float]:
     """Simple linear regression implementation.
 
     Args:
@@ -322,7 +381,9 @@ def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[flo
         y_arr = np.array(y, dtype=float)
         # OLS via least squares: beta = (X'X)^-1 X'y
         try:
-            beta_vec, residuals_arr, rank, sv = np.linalg.lstsq(X_arr, y_arr, rcond=None)
+            beta_vec, residuals_arr, rank, sv = np.linalg.lstsq(
+                X_arr, y_arr, rcond=None
+            )
         except np.linalg.LinAlgError:
             return 0.0, 0.0, 0.0, 1.0, 0.0
 
@@ -371,7 +432,9 @@ def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[flo
     # Use Gaussian elimination (reuse existing _solve_linear_system)
     k = len(X[0])
     # Compute X'X
-    XtX = [[sum(X[s][i] * X[s][j] for s in range(n)) for j in range(k)] for i in range(k)]
+    XtX = [
+        [sum(X[s][i] * X[s][j] for s in range(n)) for j in range(k)] for i in range(k)
+    ]
     # Compute X'y
     Xty = [sum(X[s][i] * y[s] for s in range(n)) for i in range(k)]
     beta_vec_pp = _solve_linear_system(XtX, Xty)
@@ -406,7 +469,9 @@ def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[flo
     return beta, se, t_stat, p_value, r_squared
 
 
-def _logistic_regression_with_stats(X: Any, y: Any, max_iter: int) -> Tuple[float, float, float, float]:
+def _logistic_regression_with_stats(
+    X: Any, y: Any, max_iter: int
+) -> Tuple[float, float, float, float]:
     """Perform logistic regression with statistical inference via statsmodels.
 
     statsmodels is the only supported backend: it supplies model-based standard
@@ -447,7 +512,8 @@ def _logistic_regression_with_stats(X: Any, y: Any, max_iter: int) -> Tuple[floa
         return beta, se, z_stat, p_value
     except Exception as exc:
         raise RuntimeError(
-            f"statsmodels logistic regression failed ({exc}); refusing to return " "fabricated standard errors/p-values"
+            f"statsmodels logistic regression failed ({exc}); refusing to return "
+            "fabricated standard errors/p-values"
         ) from exc
 
 

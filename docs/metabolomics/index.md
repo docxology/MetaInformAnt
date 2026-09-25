@@ -2,29 +2,25 @@
 
 ## Overview
 
-Metabolomics analysis module for METAINFORMANT. Provides tools for metabolite identification, mass spectrometry data processing, pathway mapping, and metabolite-gene integration analysis.
+Metabolomics analysis module for METAINFORMANT. Provides metabolite identification, MGF/CSV mass-spectrometry I/O, metabolite set enrichment, and metabolomics plots; cross-module metabolite-gene integration runs through `multiomics`.
 
 ## Sub-packages
 
 | Sub-package | Description |
 |-------------|-------------|
-| `analysis` | Metabolite identification and quantification |
-| `io` | Mass spectrometry data I/O (mzML, mzXML, CSV) |
-| `pathways` | Metabolic pathway mapping and enrichment |
+| `analysis` | Metabolite identification, normalization, fold change, differential abundance |
+| `io` | Mass spectrometry I/O: MGF spectra and CSV tables (no mzML/mzXML readers) |
+| `pathways` | Metabolite set enrichment (hypergeometric + Benjamini-Hochberg) |
 | `visualization` | Metabolomics-specific plots and figures |
 
-## Configuration
+## Output
 
-- **Config Prefix**: `METAB_` (e.g., `METAB_THREADS`, `METAB_WORK_DIR`)
-- **Config Path**: `config/metabolomics/default.yaml`
-- **Output Path**: `output/metabolomics/<analysis_type>/`
+- Generated outputs belong under `output/` (program-generated results are ephemeral; no `config/metabolomics/` templates exist in this checkout).
 
 ## Integration
 
-- **Multi-Omics**: Metabolite-gene integration via `multiomics`
-- **Networks**: Metabolic pathway networks via `networks`
-- **Visualization**: Metabolomics plots via `visualization`
-- **Quality**: QC metrics for mass spectrometry data via `quality`
+- **Multi-Omics**: metabolite layers are accepted by `multiomics.analysis.integration.integrate_omics_data`
+- **Visualization**: metabolomics plots live in `visualization` (`volcano_plot_data`, `pca_metabolomics`, `intensity_heatmap_data`)
 
 ## See Also
 

@@ -66,7 +66,13 @@ class TestCentralityMeasures:
         g.add_edges_from([(0, 1)])
         g.add_edge(2, 3)
         result = centrality_measures(g)
-        assert set(result.keys()) == {"degree", "betweenness", "closeness", "eigenvector", "pagerank"}
+        assert set(result.keys()) == {
+            "degree",
+            "betweenness",
+            "closeness",
+            "eigenvector",
+            "pagerank",
+        }
 
 
 class TestShortestPaths:
@@ -249,20 +255,20 @@ class TestFilterNetwork:
 
 
 class TestBiologicalWrapperBranches:
-    """Behavior that differs for BiologicalNetwork inputs."""
+    """Wrapper (BiologicalNetwork) behavior for graph algorithm calls."""
 
-    def test_all_pairs_on_biological_network_fills_inf(self) -> None:
+    def test_all_pairs_on_biological_network_omits_unreachable(self) -> None:
         net = BiologicalNetwork()
         net.add_edge(0, 1)
         net.add_node(2)  # isolated: unreachable from everything
         distances = shortest_paths(net)
         assert distances[0][1] == 1
         assert distances[1][0] == 1
-        # Unreachable pairs keep the documented infinity sentinel; the
-        # diagonal is the 0-length path to itself.
-        assert distances[0][2] == float("inf")
-        assert distances[2][0] == float("inf")
-        assert distances[2][2] == 0
+        # Aligned sparse contract: unreachable pairs are omitted (not
+        # inf-filled) and the diagonal is the 0-length path to itself.
+        assert 2 not in distances[0]
+        assert 0 not in distances[2]
+        assert distances[2] == {2: 0}
 
     def test_filter_network_preserves_metadata(self) -> None:
         net = BiologicalNetwork(metadata={"source": "stringdb"})

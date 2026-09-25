@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Union
 
 from metainformant.core.utils import logging
+from metainformant.gwas.analysis.correction import lambda_gc_from_p_values
 
 try:
     import numpy as np
@@ -48,13 +49,16 @@ def write_summary_statistics(
     """
     if len(results) != len(variant_info):
         raise ValueError(
-            f"Results ({len(results)}) and variant_info ({len(variant_info)}) " "must have the same length"
+            f"Results ({len(results)}) and variant_info ({len(variant_info)}) "
+            "must have the same length"
         )
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    logger.info(f"Writing summary statistics for {len(results)} variants to {output_path}")
+    logger.info(
+        f"Writing summary statistics for {len(results)} variants to {output_path}"
+    )
 
     header = "CHR\tPOS\tSNP\tREF\tALT\tBETA\tSE\tP\tQ_FDR\tN\tMAF\n"
 
@@ -106,13 +110,17 @@ def write_significant_hits(
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     significant = [
-        (result, vinfo) for result, vinfo in zip(results, variant_info) if result.get("p_value", 1.0) < threshold
+        (result, vinfo)
+        for result, vinfo in zip(results, variant_info)
+        if result.get("p_value", 1.0) < threshold
     ]
 
     # Sort by p-value
     significant.sort(key=lambda x: x[0].get("p_value", 1.0))
 
-    logger.info(f"Writing {len(significant)} significant hits (threshold={threshold:.2e}) to {output_path}")
+    logger.info(
+        f"Writing {len(significant)} significant hits (threshold={threshold:.2e}) to {output_path}"
+    )
 
     with open(output_path, "w") as f:
         f.write("CHR\tPOS\tSNP\tREF\tALT\tBETA\tSE\tP\tQ_FDR\tN\tMAF\n")
@@ -161,8 +169,10 @@ def create_results_summary(
     p_values = [r.get("p_value", 1.0) for r in results]
     n_tests = len(p_values)
 
-    # Compute genomic inflation factor (lambda_gc)
-    lambda_gc = _compute_lambda_gc(p_values)
+    # Compute genomic inflation factor via the canonical chi-square conversion
+    lambda_gc = lambda_gc_from_p_values(p_values)
+    if lambda_gc is None:
+        lambda_gc = 1.0
 
     # Count significant hits
     n_significant = sum(1 for p in p_values if p < threshold)
@@ -200,7 +210,8 @@ def create_results_summary(
         json.dump(summary, f, indent=2)
 
     logger.info(
-        f"Results summary: {n_tests} variants, lambda_gc={lambda_gc:.3f}, " f"{n_significant} genome-wide significant"
+        f"Results summary: {n_tests} variants, lambda_gc={lambda_gc:.3f}, "
+        f"{n_significant} genome-wide significant"
     )
     return summary
 
@@ -217,7 +228,8 @@ def normal_cdf(x: float) -> float:
     x = abs(x) / math.sqrt(2)
     t = 1.0 / (1.0 + 0.3275911 * x)
     y = 1.0 - (
-        (((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592
+        (((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t
+        + 0.254829592
     ) * t * math.exp(-x * x)
     return 0.5 * (1.0 + sign * y)
 
@@ -424,8 +436,10 @@ def compute_comprehensive_summary(
     abs_betas = [abs(b) for b in betas]
     z_scores = [b / s if s > 0 else 0.0 for b, s in zip(betas, ses)]
 
-    # λ_GC
-    lambda_gc = _compute_lambda_gc(p_values)
+    # λ_GC via the canonical chi-square conversion
+    lambda_gc = lambda_gc_from_p_values(p_values)
+    if lambda_gc is None:
+        lambda_gc = 1.0
 
     # Calibration quantiles
     q_levels = [0.01, 0.05, 0.25, 0.50, 0.75]
@@ -610,77 +624,3 @@ def per_chromosome_summary(
         )
 
     return rows
-
-
-def _compute_lambda_gc(p_values: List[float]) -> float:
-    """Compute genomic inflation factor (lambda_gc).
-
-    lambda_gc = median(chi2_observed) / median(chi2_expected)
-    where chi2_expected under null with 1 df has median = 0.4549.
-
-    Args:
-        p_values: List of p-values
-
-    Returns:
-        Genomic inflation factor
-    """
-    if not p_values:
-        return 1.0
-
-    # Convert p-values to chi-squared statistics (1 df)
-    chi2_values = []
-    for p in p_values:
-        if p <= 0 or p >= 1:
-            continue
-        # chi2 = qchisq(1-p, df=1); for p close to 0, use log transform
-        try:
-            # Use inverse chi-squared: for df=1, chi2 = (z_score)^2
-            # z = Phi^-1(1-p/2); chi2 = z^2
-            # Approximate using erfinv
-            z = _inverse_normal_cdf(1 - p / 2)
-            chi2_values.append(z * z)
-        except (ValueError, OverflowError):
-            continue
-
-    if not chi2_values:
-        return 1.0
-
-    chi2_values.sort()
-    n = len(chi2_values)
-    median_observed = chi2_values[n // 2] if n % 2 == 1 else (chi2_values[n // 2 - 1] + chi2_values[n // 2]) / 2
-
-    # Expected median of chi-squared with df=1
-    expected_median = 0.4549364
-
-    return median_observed / expected_median if expected_median > 0 else 1.0
-
-
-def _inverse_normal_cdf(p: float) -> float:
-    """Approximate inverse normal CDF (probit function).
-
-    Uses rational approximation from Abramowitz and Stegun.
-
-    Args:
-        p: Probability in (0, 1)
-
-    Returns:
-        z-score
-    """
-    if p <= 0 or p >= 1:
-        raise ValueError(f"p must be in (0, 1), got {p}")
-
-    if p < 0.5:
-        return -_inverse_normal_cdf(1 - p)
-
-    # Rational approximation for p >= 0.5
-    t = math.sqrt(-2 * math.log(1 - p))
-
-    c0 = 2.515517
-    c1 = 0.802853
-    c2 = 0.010328
-    d1 = 1.432788
-    d2 = 0.189269
-    d3 = 0.001308
-
-    z = t - (c0 + c1 * t + c2 * t * t) / (1 + d1 * t + d2 * t * t + d3 * t * t * t)
-    return z

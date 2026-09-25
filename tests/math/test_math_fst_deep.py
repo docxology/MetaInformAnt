@@ -1,9 +1,6 @@
 """Deep tests for metainformant.math.population_genetics.fst (real computation, no test doubles)."""
 
 import math
-import os
-import subprocess
-import sys
 
 import numpy as np
 import pytest
@@ -79,10 +76,10 @@ class TestPairwiseFstMatrix:
                 assert m[i, j] == pytest.approx(expected)
 
     def test_fully_different_populations(self) -> None:
-        # Variance-based estimator: var_between=(1+1)/2=1, var_within=0... but per-locus
-        # variance term ((1-0.5)^2+(0-0.5)^2)/2 = 0.25 -> Fst = 1/(1+... ) measured 2/3.
+        # Populations fixed for opposite alleles: Hs = 0, Ht = 1 -> Fst = 1.
+        # (Regression: the removed variance-ratio implementation returned 2/3.)
         m = pairwise_fst_matrix([[1.0, 0.0], [0.0, 1.0]])
-        assert m[0, 1] == pytest.approx(2.0 / 3.0)
+        assert m[0, 1] == pytest.approx(1.0)
 
     def test_too_few_populations_raises(self) -> None:
         with pytest.raises(ValueError, match="at least 2"):
@@ -94,28 +91,31 @@ class TestPairwiseFstMatrix:
 
 
 class TestWeirsFst:
-    def test_basic_two_populations(self) -> None:
-        counts = {"AT": 10, "AG": 15, "GT": 8, "GG": 12}
-        labels = ["pop1"] * 22 + ["pop2"] * 23
-        fst = weirs_fst(counts, labels)
-        assert 0.0 <= fst <= 1.0
+    def test_symmetric_two_population_hand_value(self) -> None:
+        counts = {"pop1": {"A": 8, "G": 2}, "pop2": {"A": 2, "G": 8}}
+        # n = (10, 10); allele A: p = (0.8, 0.2), p_bar = 0.5, s2 = 0.18
+        # a = 0.18 - (1/9) * (0.25 - 0.5 * 0.18) = 1.46 / 9
+        # b = (10/9) * (0.25 - 0.5 * 0.18) = 1.6 / 9, c = 0 (haploid counts)
+        # theta = sum_u a_u / sum_u (a_u + b_u + c_u) = 1.46 / 3.06
+        assert weirs_fst(counts) == pytest.approx(1.46 / 3.06)
+
+    def test_fixed_different_populations(self) -> None:
+        assert weirs_fst({"pop1": {"A": 5}, "pop2": {"G": 5}}) == pytest.approx(1.0)
+
+    def test_identical_populations_zero(self) -> None:
+        counts = {"pop1": {"A": 4, "G": 4}, "pop2": {"A": 4, "G": 4}}
+        assert weirs_fst(counts) == 0.0
 
     def test_single_population_returns_zero(self) -> None:
-        assert weirs_fst({"AT": 10}, ["pop1"] * 10) == 0.0
+        assert weirs_fst({"pop1": {"AT": 10}}) == 0.0
 
     def test_empty_inputs_return_zero(self) -> None:
-        assert weirs_fst({}, []) == 0.0
-        assert weirs_fst({"AT": 5}, []) == 0.0
+        assert weirs_fst({}) == 0.0
+        assert weirs_fst({"pop1": {"AT": 0}, "pop2": {"AT": 0}}) == 0.0
 
-    def test_zero_total_counts_return_zero(self) -> None:
-        assert weirs_fst({"AT": 0}, ["pop1", "pop2"]) == 0.0
-
-    def test_fst_is_deterministic_within_process(self) -> None:
-        counts = {"AT": 10, "AG": 15, "GT": 8, "GG": 12}
-        labels = ["pop1"] * 22 + ["pop2"] * 23
-        f1 = weirs_fst(counts, labels)
-        f2 = weirs_fst(dict(counts), list(labels))
-        assert f1 == pytest.approx(f2)
+    def test_negative_counts_raise(self) -> None:
+        with pytest.raises(ValueError, match="non-negative"):
+            weirs_fst({"pop1": {"A": -1}, "pop2": {"A": 3}})
 
 
 class TestFstConfidenceInterval:
@@ -188,22 +188,3 @@ class TestFstConfidenceIntervalEdges:
         lo95, hi95 = fst_confidence_interval(0.2, 50, confidence_level=0.95)
         assert lo90 <= 0.2 <= hi90
         assert (hi90 - lo90) < (hi95 - lo95)
-
-
-class TestWeirsFstDeterminism:
-    def test_label_order_and_population_order_independent(self) -> None:
-        counts = {"AT": 10, "AG": 15, "GT": 8, "GG": 12}
-        labels = ["pop1"] * 22 + ["pop2"] * 23
-        assert weirs_fst(counts, labels) == pytest.approx(weirs_fst(counts, list(reversed(labels))))
-
-    def test_stable_across_interpreter_processes(self) -> None:
-        # Regression: per-process salted string hash made F_ST non-reproducible
-        code = (
-            "from metainformant.math.population_genetics.fst import weirs_fst;"
-            'print(weirs_fst({"AT": 10, "AG": 15, "GT": 8, "GG": 12}, ["pop1"] * 22 + ["pop2"] * 23))'
-        )
-        env = dict(os.environ, PYTHONHASHSEED="1")
-        first = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, env=env, check=True)
-        env2 = dict(os.environ, PYTHONHASHSEED="2")
-        second = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, env=env2, check=True)
-        assert first.stdout.strip() == second.stdout.strip()

@@ -6,9 +6,9 @@ Metabolomics analysis module for METAINFORMANT. Covers mass spectrometry data pr
 
 ## Contents
 
-- **io/** - Mass spectrometry file reading (mzML, mzXML, CSV), format conversion
-- **analysis/** - Metabolite identification, peak quantification, normalization
-- **pathways/** - KEGG/Reactome pathway mapping, metabolite set enrichment
+- **io/** - Mass spectrometry file I/O (MGF spectra, CSV metabolite × sample tables); no mzML/mzXML readers
+- **analysis/** - Metabolite identification, normalization, fold change, differential abundance
+- **pathways/** - Metabolite set enrichment
 - **visualization/** - Volcano plots, PCA ordination, concentration heatmaps
 
 ## Architecture
@@ -16,14 +16,11 @@ Metabolomics analysis module for METAINFORMANT. Covers mass spectrometry data pr
 ```mermaid
 graph TD
     subgraph "Metabolomics Module"
-        IO[io/] --> |formats.py| FMT[mzML / mzXML / CSV I/O]
+        IO[io/] --> |formats.py| FMT[MGF / CSV I/O]
 
-        AN[analysis/] --> |identification.py| ID[Metabolite Identification]
-        AN --> |quantification.py| QT[Peak Quantification]
-        AN --> |normalization.py| NM[Normalization & Scaling]
+        AN[analysis/] --> |identification.py| ID[Identification / Normalization / Differential Abundance]
 
-        PW[pathways/] --> |mapping.py| PM[Pathway Mapping]
-        PW --> |enrichment.py| PE[Metabolite Set Enrichment]
+        PW[pathways/] --> |enrichment.py| PE[Metabolite Set Enrichment]
 
         VZ[visualization/] --> |plots.py| PL[Volcano / PCA / Heatmap]
     end
@@ -37,7 +34,12 @@ graph TD
 
 ```python-snippet
 from metainformant.metabolomics.io import formats
-from metainformant.metabolomics.analysis import identification, quantification, normalization
-from metainformant.metabolomics.pathways import mapping, enrichment
+from metainformant.metabolomics.analysis import identification
+from metainformant.metabolomics.pathways import enrichment
 from metainformant.metabolomics.visualization import plots
+
+# formats: read_csv / write_csv, read_mgf / write_mgf, filter_spectra, extract_chromatogram
+# identification: identify_metabolites, normalize_intensities, fold_change, differential_abundance
+# enrichment: metabolite_set_enrichment, enrichment_with_fdr
+# plots: volcano_plot_data, pca_metabolomics, intensity_heatmap_data
 ```

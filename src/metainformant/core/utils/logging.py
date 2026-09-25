@@ -26,7 +26,11 @@ def _console_handler() -> logging.StreamHandler:
 
 
 def get_logger(name: str) -> logging.Logger:
-    """Get or create a logger with default console handler.
+    """Get or create a logger with a default console handler.
+
+    The logger's own level stays unset so the effective level is inherited
+    from the root logger; set it globally with :func:`configure_logging_from_env`
+    (``CORE_LOG_LEVEL``) or per-logger with :func:`get_logger_with_level`.
 
     Args:
         name: Logger name (typically __name__)
@@ -37,11 +41,12 @@ def get_logger(name: str) -> logging.Logger:
     logger = logging.getLogger(name)
     if not logger.handlers:
         logger.addHandler(_console_handler())
-        logger.setLevel(logging.INFO)
     return logger
 
 
-def setup_logger(name: str, log_file: str | None = None, level: str = "INFO") -> logging.Logger:
+def setup_logger(
+    name: str, log_file: str | None = None, level: str = "INFO"
+) -> logging.Logger:
     """Set up a logger with file and/or console output.
 
     Args:
@@ -131,7 +136,12 @@ def configure_logging_from_env(default_level: str = "INFO") -> None:
 
 
 def log_with_metadata(
-    logger: logging.Logger, message: str, metadata: dict[str, Any], *, level: str = "INFO", structured: bool = False
+    logger: logging.Logger,
+    message: str,
+    metadata: dict[str, Any],
+    *,
+    level: str = "INFO",
+    structured: bool = False,
 ) -> None:
     """Log message with structured metadata.
 

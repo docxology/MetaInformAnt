@@ -1,41 +1,37 @@
 # CLI
 
-Most analysis APIs are used from Python (`import metainformant...`). The **`metainformant` entry point** ([`src/metainformant/__main__.py`](../src/metainformant/__main__.py)) exposes a small set of commands today.
+Most analysis APIs are used from Python (`import metainformant...`). The **`metainformant` entry point** ([`src/metainformant/__main__.py`](../src/metainformant/__main__.py)) exposes the commands documented here.
 
 Entry: `uv run python -m metainformant` or `uv run metainformant`.
 
-## Implemented commands
-
-Global flags:
+## Global flags
 
 - `--version` — print package version
-- `--modules` — list domain module names
-- `--help` — usage (default when no arguments)
+- `--modules` — list domain module names (the printed list does not include `eqtl` or `popgen`)
+- `--help` — usage (also printed when no arguments are given)
 
-Subcommands:
+A bare domain with no subcommand (for example `metainformant rna`) prints help to stderr and exits 1.
 
-```text
-uv run metainformant protein taxon-ids --file tests/data/protein/taxon_id_list.txt
-uv run metainformant protein comp --fasta data/protein/example.faa
-uv run metainformant protein rmsd-ca --pdb-a file1.pdb --pdb-b file2.pdb
-
-uv run metainformant quality batch-detect --data samples.csv --batches batches.txt
-uv run metainformant quality batch-detect --data samples.csv --batches batches.txt --alpha 0.01
-
-uv run metainformant rna info
-uv run metainformant gwas info
-uv run metainformant gwas run --config config/gwas/gwas_pbarbatus.yaml --check
-```
+## Commands
 
 | Command | Purpose |
 |--------|---------|
-| **protein taxon-ids** | Read and print taxon IDs from a file ([Protein Proteomes](./protein/proteomes.md)) |
-| **protein comp** | Amino acid composition per sequence from FASTA |
-| **protein rmsd-ca** | Kabsch RMSD between CA atoms of two PDB files |
-| **quality batch-detect** | Batch-effect report from a numeric matrix (CSV) and per-sample batch labels file |
+| **protein taxon-ids** | Read and print taxon IDs from a file (`--file`) ([Protein Proteomes](./protein/proteomes.md)) |
+| **protein comp** | Amino acid composition per sequence from FASTA (`--fasta`) |
+| **protein rmsd-ca** | Kabsch RMSD between CA atoms of two PDB files (`--pdb-a`, `--pdb-b`) |
+| **quality batch-detect** | Batch-effect report from a numeric matrix (CSV, `--data`) and per-sample batch labels file (`--batches`, optional `--alpha`) |
+| **quality run** | Docs-vs-source cross-code verification: writes a Markdown report (`--output`, default `output/cross_code_verification_report.md`), verifies `--docs-dir` against `--src-dir`; `--include-historical` includes historical snapshots, `--strict-optional-imports` treats optional third-party imports as violations; exits 1 when violations are found |
 | **rna info** | Prints RNA sub-package summary (use Python API for workflows) |
 | **gwas info** | Prints GWAS sub-package summary (use Python API or scripts for full runs) |
-| **gwas run** | Validate or execute a config-driven GWAS workflow |
+| **gwas run** | Validate (`--check`) or execute a config-driven GWAS workflow (`--config`, optional `--output-dir`) |
+| **life-events predict** | Predict outcomes for event sequences (`--events`, `--model`, `--output`); writes `predictions.json` — per-sequence predictions with class probabilities for classification tasks and mean/min/max statistics for regression |
+| **life-events interpret** | Create an interpretation report (`--model`, `--sequences`, `--output`); writes `interpretation_report.json` with event importance, temporal patterns, and feature attribution |
+| **simulation run** | Run a simulation workflow (`--model` from `sequence_evolution`, `population_genetics`, `rna_expression`, `agent_ecosystem`, `predator_prey`, `competition`; optional `--n` size override; `--output` directory, default `output/simulation`); saves the result JSON in the output directory |
+| **ontology run** | Run the GO/HPO ontology enrichment workflow (`--input` workflow YAML, `--phenotype` and `--model` labels for the results subdirectory); the workflow exits nonzero when GWAS stage inputs are missing |
+| **phenotype run** | Run the phenotype pipeline over a JSON dataset (`--input`, list of records; `--type` from `morphological`, `behavioral`, `chemical`, `electronic`, `sonic`, default `morphological`; `--output` directory, default `output/phenotype`); writes `pipeline_result.json` and exits 0/1 by pipeline success |
+| **networks run** | Build and analyze a network from an edge-list CSV (`--input` with `source` and `target` columns, optional `weight`); runs community detection and metrics and exports results to `--output` (default `output/networks`) |
+
+There is no `math` subcommand; selection-replay tooling was removed.
 
 ## RNA-seq and GWAS workflows
 

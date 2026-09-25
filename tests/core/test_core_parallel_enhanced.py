@@ -104,7 +104,9 @@ def test_resource_aware_workers_max_cap() -> None:
 def test_resource_aware_workers_memory_constraint() -> None:
     """Test resource_aware_workers considers memory."""
     # Request very high memory per worker - should limit workers
-    workers = parallel.resource_aware_workers(task_type="io", memory_per_worker_mb=100000)
+    workers = parallel.resource_aware_workers(
+        task_type="io", memory_per_worker_mb=100000
+    )
     assert isinstance(workers, int)
     assert workers >= 1  # Always at least 1
 
@@ -143,7 +145,9 @@ def test_thread_map_on_complete_callback() -> None:
     def callback(idx: int, item: int, result: int) -> None:
         completed.append((idx, item, result))
 
-    results = parallel.thread_map(lambda x: x * 2, items, max_workers=2, on_complete=callback)
+    results = parallel.thread_map(
+        lambda x: x * 2, items, max_workers=2, on_complete=callback
+    )
 
     assert results == [2, 4, 6]
     assert len(completed) == 3
@@ -181,9 +185,65 @@ def test_thread_map_chunk_size() -> None:
     assert results == list(range(1, 11))
 
 
-# Note: timeout test removed - as_completed() waits for futures to complete
-# before yielding them, so future.result(timeout=X) doesn't effectively timeout
-# running tasks. The timeout parameter exists but doesn't work as expected.
+def test_thread_map_timeout_raises_and_is_prompt() -> None:
+    """thread_map enforces the overall wall-clock timeout by raising TimeoutError."""
+
+    def slow_square(x: int) -> int:
+        time.sleep(1.0)
+        return x * x
+
+    start = time.monotonic()
+    with pytest.raises(TimeoutError, match="timed out"):
+        parallel.thread_map(slow_square, [1, 2], max_workers=2, timeout=0.2)
+    elapsed = time.monotonic() - start
+    assert elapsed < 0.9, f"Timeout raised too late: {elapsed:.2f}s"
+
+
+def test_thread_map_unordered_timeout_raises() -> None:
+    """thread_map_unordered enforces the overall wall-clock timeout."""
+
+    def slow_square(x: int) -> int:
+        time.sleep(1.0)
+        return x * x
+
+    with pytest.raises(TimeoutError, match="timed out"):
+        parallel.thread_map_unordered(slow_square, [1, 2], max_workers=2, timeout=0.2)
+
+
+def test_thread_map_completion_order() -> None:
+    """ordered=False returns results in completion order, not input order."""
+
+    def reverse_duration_square(x: int) -> int:
+        # Higher inputs sleep less, so they finish first.
+        time.sleep((4 - x) * 0.05)
+        return x * x
+
+    items = [0, 1, 2, 3]
+    results = parallel.thread_map(
+        reverse_duration_square, items, max_workers=4, ordered=False
+    )
+    assert results == [9, 4, 1, 0]
+
+    # ordered=True (default) still returns input order for the same workload.
+    assert parallel.thread_map(reverse_duration_square, items, max_workers=4) == [
+        0,
+        1,
+        4,
+        9,
+    ]
+
+
+def test_thread_map_unordered_returns_completion_order() -> None:
+    """thread_map_unordered collects results as they complete."""
+
+    def reverse_duration_double(x: int) -> int:
+        time.sleep((4 - x) * 0.05)
+        return x * 2
+
+    results = parallel.thread_map_unordered(
+        reverse_duration_double, [0, 1, 2, 3], max_workers=4
+    )
+    assert results == [6, 4, 2, 0]
 
 
 # ============================================================================
@@ -255,7 +315,9 @@ def test_process_map_auto_workers() -> None:
 def test_parallel_batch_basic() -> None:
     """Test parallel_batch correctly batches and reassembles."""
     items = list(range(1, 11))  # [1, 2, 3, ..., 10]
-    results = parallel.parallel_batch(_batch_processor, items, batch_size=3, max_workers=2)
+    results = parallel.parallel_batch(
+        _batch_processor, items, batch_size=3, max_workers=2
+    )
 
     # Should get [3, 6, 9, ..., 30]
     expected = [x * 3 for x in range(1, 11)]
@@ -265,7 +327,9 @@ def test_parallel_batch_basic() -> None:
 def test_parallel_batch_exact_batches() -> None:
     """Test parallel_batch with items that divide evenly into batches."""
     items = list(range(1, 7))  # [1, 2, 3, 4, 5, 6]
-    results = parallel.parallel_batch(_batch_processor, items, batch_size=2, max_workers=2)
+    results = parallel.parallel_batch(
+        _batch_processor, items, batch_size=2, max_workers=2
+    )
 
     expected = [3, 6, 9, 12, 15, 18]
     assert results == expected
@@ -274,7 +338,9 @@ def test_parallel_batch_exact_batches() -> None:
 def test_parallel_batch_small_input() -> None:
     """Test parallel_batch with input smaller than batch_size."""
     items = [1, 2]
-    results = parallel.parallel_batch(_batch_processor, items, batch_size=10, max_workers=2)
+    results = parallel.parallel_batch(
+        _batch_processor, items, batch_size=10, max_workers=2
+    )
 
     assert results == [3, 6]
 
@@ -348,7 +414,9 @@ def test_gather_results_empty() -> None:
 def test_rate_limited_map_basic() -> None:
     """Test rate_limited_map preserves order and returns correct results."""
     items = [1, 2, 3, 4, 5]
-    results = parallel.rate_limited_map(lambda x: x * 2, items, max_per_second=20.0, max_workers=2)
+    results = parallel.rate_limited_map(
+        lambda x: x * 2, items, max_per_second=20.0, max_workers=2
+    )
     assert results == [2, 4, 6, 8, 10]
 
 
@@ -358,7 +426,9 @@ def test_rate_limited_map_timing() -> None:
     max_per_second = 10.0
 
     start_time = time.monotonic()
-    results = parallel.rate_limited_map(_sleep_and_return, items, max_per_second=max_per_second, max_workers=2)
+    results = parallel.rate_limited_map(
+        _sleep_and_return, items, max_per_second=max_per_second, max_workers=2
+    )
     elapsed = time.monotonic() - start_time
 
     assert results == [1, 2, 3]
@@ -370,20 +440,26 @@ def test_rate_limited_map_timing() -> None:
 def test_rate_limited_map_order_preservation() -> None:
     """Test rate_limited_map preserves order despite rate limiting."""
     items = list(range(1, 6))
-    results = parallel.rate_limited_map(lambda x: x + 10, items, max_per_second=20.0, max_workers=2)
+    results = parallel.rate_limited_map(
+        lambda x: x + 10, items, max_per_second=20.0, max_workers=2
+    )
     assert results == [11, 12, 13, 14, 15]
 
 
 def test_rate_limited_map_empty() -> None:
     """Test rate_limited_map handles empty input."""
-    results = parallel.rate_limited_map(lambda x: x * 2, [], max_per_second=10.0, max_workers=2)
+    results = parallel.rate_limited_map(
+        lambda x: x * 2, [], max_per_second=10.0, max_workers=2
+    )
     assert results == []
 
 
 def test_rate_limited_map_single_worker() -> None:
     """Test rate_limited_map with single worker."""
     items = [1, 2, 3]
-    results = parallel.rate_limited_map(lambda x: x * 5, items, max_per_second=20.0, max_workers=1)
+    results = parallel.rate_limited_map(
+        lambda x: x * 5, items, max_per_second=20.0, max_workers=1
+    )
     assert results == [5, 10, 15]
 
 
@@ -393,7 +469,9 @@ def test_rate_limited_map_slow_rate() -> None:
     max_per_second = 5.0  # 0.2s between calls
 
     start_time = time.monotonic()
-    results = parallel.rate_limited_map(lambda x: x, items, max_per_second=max_per_second, max_workers=2)
+    results = parallel.rate_limited_map(
+        lambda x: x, items, max_per_second=max_per_second, max_workers=2
+    )
     elapsed = time.monotonic() - start_time
 
     assert results == [1, 2]

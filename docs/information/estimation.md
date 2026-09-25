@@ -4,9 +4,9 @@ Bias-corrected entropy estimation methods including plugin, Miller-Madow, Chao-S
 
 ## Key Concepts
 
-**Plugin estimator** (maximum likelihood) computes entropy directly from sample frequencies: H_hat = -sum(f_i/n * log(f_i/n)). This is negatively biased for finite samples, underestimating true entropy by approximately (k-1)/(2n) where k is the number of categories.
+**Plugin estimator** (maximum likelihood) computes entropy directly from sample frequencies: H_hat = -sum(f_i/n * log2(f_i/n)). This is negatively biased for finite samples, underestimating true entropy by approximately (k-1)/(2n) nats — i.e. (k-1)/(2n * ln 2) bits — where k is the number of categories.
 
-**Miller-Madow correction** subtracts the leading bias term: H_mm = H_plugin + (k-1)/(2n). Simple and effective for moderate sample sizes.
+**Miller-Madow correction** adds the leading bias term: H_mm = H_plugin + (k-1)/(2n) nats, i.e. H_plugin + (k-1)/(2n * ln 2) bits. Simple and effective for moderate sample sizes.
 
 **Chao-Shen estimator** addresses sparse data by using a Good-Turing coverage correction. It upweights contributions from rare species/categories, making it particularly suitable for biodiversity and microbiome data where many species are observed only once.
 
@@ -43,7 +43,7 @@ Estimate KL divergence D_KL(P||Q) from sample lists. Converts to empirical proba
 
 ### `bias_correction(entropy, sample_size, alphabet_size) -> float`
 
-Apply general bias correction: H_corrected = H - (d-1)/(2n). Standalone function for custom pipelines.
+Apply general bias correction: H_corrected = H + (d-1)/(2n * ln 2) bits (clamped at 0). Standalone function for custom pipelines.
 
 ### `entropy_bootstrap_confidence(counts, method="plugin", n_bootstraps=1000, confidence_level=0.95, random_state=None) -> Dict`
 
@@ -58,7 +58,7 @@ Calculate bootstrap confidence interval for entropy.
 
 ### `effective_sample_size_correction(entropy, sample_size, alphabet_size) -> float`
 
-Apply heuristic effective sample size correction for dependencies in the data.
+Apply an additive Miller-Madow-style correction to a raw entropy estimate (bits): adds (d-1)/(2n * ln 2) and clamps at 0.
 
 ### `panzeri_treves_bias_correction(entropy, sample_size, alphabet_size, response_frequencies=None) -> float`
 

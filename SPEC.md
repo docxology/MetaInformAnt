@@ -13,7 +13,7 @@ Comprehensive bioinformatics toolkit for multi-omic analysis. Domain-driven, mod
 
 ```
 metainformant/
- src/metainformant/ # Source code (28 domain modules + core + mcp server)
+ src/metainformant/ # Source code (30 packages: 27 domain modules + core + cloud + mcp server)
  core/ # Shared infrastructure (I/O, config, logging)
  dna/ # Genomic analysis, alignment, population genetics
  rna/ # Transcriptomic workflows, Amalgkit integration

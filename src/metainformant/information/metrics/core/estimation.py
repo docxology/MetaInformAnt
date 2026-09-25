@@ -19,7 +19,9 @@ logger = logging.get_logger(__name__)
 
 
 def entropy_estimator(
-    counts: "Union[Dict[Any, int], List[int], np.ndarray]", method: str = "plugin", bias_correction: bool = True
+    counts: "Union[Dict[Any, int], List[int], np.ndarray]",
+    method: str = "plugin",
+    bias_correction: bool = True,
 ) -> float:
     """Estimate Shannon entropy with various methods and bias correction.
 
@@ -61,8 +63,10 @@ def entropy_estimator(
         raise ValueError(f"Unknown entropy estimation method: {method}")
 
 
-def _plugin_entropy_estimator(counts: np.ndarray, total: int, bias_correction: bool) -> float:
-    """Plugin (maximum likelihood) entropy estimator."""
+def _plugin_entropy_estimator(
+    counts: np.ndarray, total: int, bias_correction: bool
+) -> float:
+    """Plugin (maximum-likelihood) entropy estimator, in bits."""
     # Convert to probabilities
     probs = counts / total
     probs = probs[probs > 0]  # Remove zeros
@@ -104,12 +108,26 @@ def _miller_madow_entropy_estimator(counts: np.ndarray, total: int) -> float:
 
 
 def _chao_shen_entropy_estimator(counts: np.ndarray, total: int) -> float:
-    """Chao-Shen (2003) coverage-adjusted entropy estimator for sparse data.
+    """Chao-Shen (2003) coverage-adjusted Horvitz-Thompson entropy estimator (bits).
 
-    Adjusts empirical probabilities by the estimated sample coverage
-    C = 1 - f1 / n (f1 = singleton count) and applies the
-    Horvitz-Thompson form: singletons contribute with the (1 - p_i_adj)
-    weight via the log(p_adj / C) surrogate, non-singletons directly.
+    Implements the published estimator (Chao & Shen 2003; identical to
+    ``entropy.ChaoShen`` in the R `entropy` package):
+
+      1. sample coverage  ``C = 1 - f1 / n`` (f1 = number of singleton counts)
+      2. adjusted probs   ``pa_i = C * p_i`` (p_i = observed frequencies)
+      3. inclusion probs  ``la_i = 1 - (1 - pa_i) ** n`` (Horvitz-Thompson)
+      4. ``H = -sum_i (pa_i / la_i) * log2(pa_i)``
+
+    When every observed category is a singleton the coverage estimate
+    ``C <= 0`` and the estimator is undefined; this implementation then
+    returns 0.0.
+
+    Args:
+        counts: Count per category (zeros ignored)
+        total: Total number of observations n
+
+    Returns:
+        Chao-Shen entropy estimate in bits
     """
     positive = counts[counts > 0]
     if len(positive) == 0 or total <= 0:
@@ -122,21 +140,14 @@ def _chao_shen_entropy_estimator(counts: np.ndarray, total: int) -> float:
 
     probs = positive / total
     adjusted = coverage * probs
+    inclusion = 1.0 - (1.0 - adjusted) ** total
 
-    singletons = positive == 1
-    h = 0.0
-    for p_adj, is_singleton in zip(adjusted, singletons):
-        if is_singleton:
-            # Horvitz-Thompson surrogate for unobserved-mass correction
-            h -= p_adj * math.log2(p_adj / coverage)
-        else:
-            h -= p_adj * math.log2(p_adj)
-
-    return max(0.0, h)
+    h = -np.sum(adjusted * np.log2(adjusted) / inclusion)
+    return max(0.0, float(h))
 
 
 def _jackknife_entropy_estimator(counts: np.ndarray, total: int) -> float:
-    """Jackknife entropy estimator for bias reduction."""
+    """Jackknife (Zahl 1977 category jackknife) entropy estimator, in bits."""
     counts = counts[counts > 0]  # Remove zeros
     k = len(counts)
 
@@ -172,16 +183,33 @@ def _jackknife_entropy_estimator(counts: np.ndarray, total: int) -> float:
 def mutual_information_estimator(
     x: List[Any], y: List[Any], method: str = "plugin", bias_correction: bool = True
 ) -> float:
-    """Estimate mutual information I(X;Y) with bias correction.
+    """Estimate mutual information I(X;Y) with first-order bias correction, in bits.
+
+    The plugin estimate ``I = H(X) + H(Y) - H(X,Y)`` is biased LOW by
+    (Miller 1955; Panzeri & Treves 1996, first order)::
+
+        E[I_plugin] - I = -(|X|*|Y| - |X| - |Y| + 1) / (2n)  nats
+
+    where |X| and |Y| are the numbers of POSSIBLE marginal states, so the
+    possible joint alphabet has ``|X|*|Y|`` states. The correction is
+    therefore computed from ``k_x * k_y`` (the full possible joint alphabet),
+    NOT from the number of jointly occupied states, and added in bits. At
+    small n this first-order correction can over-shoot the true MI for
+    strongly dependent variables; the result is clipped at 0 because
+    MI >= 0 by definition (the clip does not alter the correction itself).
 
     Args:
         x: Samples from first variable
         y: Samples from second variable
-        method: Estimation method ('plugin', 'miller_madow')
-        bias_correction: Whether to apply bias correction
+        method: Estimation method ('plugin', 'miller_madow'); both apply the
+            identical joint-alphabet first-order MI correction. Other methods
+            (e.g. 'chao_shen', 'jackknife') apply their own internal
+            per-entropy corrections.
+        bias_correction: Whether to apply the first-order MI bias correction
+            (plugin method only; 'miller_madow' always corrects)
 
     Returns:
-        Mutual information estimate
+        Mutual information estimate in bits (>= 0)
 
     Raises:
         ValueError: If sequences have different lengths
@@ -192,7 +220,10 @@ def mutual_information_estimator(
     if len(x) != len(y):
         raise ValueError("Sequences must have the same length")
 
-    # Convert to count dictionaries
+    n = len(x)
+    if n == 0:
+        return 0.0
+
     # Joint counts
     joint_counts = Counter(zip(x, y))
 
@@ -200,17 +231,47 @@ def mutual_information_estimator(
     x_counts = Counter(x)
     y_counts = Counter(y)
 
-    # I(X;Y) = H(X) + H(Y) - H(X,Y)
-    h_x = entropy_estimator(x_counts, method=method, bias_correction=bias_correction)
-    h_y = entropy_estimator(y_counts, method=method, bias_correction=bias_correction)
-    h_xy = entropy_estimator(joint_counts, method=method, bias_correction=bias_correction)
+    if method in ("plugin", "miller_madow"):
+        # Raw (uncorrected) plugin entropies in bits...
+        h_x = _plugin_entropy_estimator(
+            np.array(list(x_counts.values()), dtype=int), n, False
+        )
+        h_y = _plugin_entropy_estimator(
+            np.array(list(y_counts.values()), dtype=int), n, False
+        )
+        h_xy = _plugin_entropy_estimator(
+            np.array(list(joint_counts.values()), dtype=int), n, False
+        )
 
-    mi = h_x + h_y - h_xy
-    return max(0.0, mi)  # Ensure non-negative
+        mi = h_x + h_y - h_xy
+
+        # ...plus the exact first-order MI bias over the POSSIBLE joint
+        # alphabet |X|*|Y|: (k_x - 1)(k_y - 1) / (2n) nats, converted to bits.
+        if method == "miller_madow" or bias_correction:
+            k_x = len(x_counts)
+            k_y = len(y_counts)
+            mi += (k_x * k_y - k_x - k_y + 1) / (2 * n * math.log(2))
+    else:
+        # Other estimators (e.g. chao_shen, jackknife) correct each entropy
+        # term internally.
+        h_x = entropy_estimator(
+            x_counts, method=method, bias_correction=bias_correction
+        )
+        h_y = entropy_estimator(
+            y_counts, method=method, bias_correction=bias_correction
+        )
+        h_xy = entropy_estimator(
+            joint_counts, method=method, bias_correction=bias_correction
+        )
+        mi = h_x + h_y - h_xy
+
+    return max(0.0, mi)
 
 
-def kl_divergence_estimator(p: List[Any], q: List[Any], method: str = "plugin", bias_correction: bool = True) -> float:
-    """Estimate KL divergence D_KL(P||Q) with bias correction.
+def kl_divergence_estimator(
+    p: List[Any], q: List[Any], method: str = "plugin", bias_correction: bool = True
+) -> float:
+    """Estimate KL divergence D_KL(P||Q) with bias correction, in bits.
 
     Args:
         p: Samples from distribution P
@@ -219,7 +280,8 @@ def kl_divergence_estimator(p: List[Any], q: List[Any], method: str = "plugin", 
         bias_correction: Whether to apply bias correction
 
     Returns:
-        KL divergence estimate
+        KL divergence estimate in bits (inf if q assigns zero probability
+        to an outcome observed under p)
 
     Raises:
         ValueError: If sample lists have different lengths
@@ -256,15 +318,27 @@ def kl_divergence_estimator(p: List[Any], q: List[Any], method: str = "plugin", 
 
 
 def bias_correction(entropy: float, sample_size: int, alphabet_size: int) -> float:
-    """Apply general bias correction to entropy estimate.
+    """Add the first-order (Miller-Madow) entropy bias correction, in bits.
+
+    The plugin Shannon entropy estimator is biased LOW by approximately
+    ``(alphabet_size - 1) / (2 * sample_size)`` nats (Miller 1955). This
+    helper adds the bit-valued equivalent
+    ``(alphabet_size - 1) / (2 * sample_size * ln 2)`` to the supplied
+    estimate. :func:`effective_sample_size_correction` is a
+    backward-compatible alias of this function.
+
+    The correction is unreliable for sample_size <= 1 (no distribution can
+    be estimated from a single draw); the entropy is returned unchanged
+    there, consistent with the plugin estimator which skips the correction
+    when n <= 1.
 
     Args:
-        entropy: Raw entropy estimate
+        entropy: Raw entropy estimate (bits)
         sample_size: Number of samples (n)
         alphabet_size: Size of alphabet (d)
 
     Returns:
-        Bias-corrected entropy
+        Bias-corrected entropy estimate (bits)
 
     Raises:
         ValueError: If parameters are invalid
@@ -273,13 +347,12 @@ def bias_correction(entropy: float, sample_size: int, alphabet_size: int) -> flo
         raise ValueError("Sample size must be positive")
     if alphabet_size <= 0:
         raise ValueError("Alphabet size must be positive")
+    if sample_size <= 1:
+        return entropy
 
-    # Miller-Madow correction: the plugin estimator is biased LOW by
-    # approximately (d-1)/(2n) nats, i.e. (d-1)/(2n * ln 2) bits; add it.
     correction = (alphabet_size - 1) / (2 * sample_size * math.log(2))
-    corrected_entropy = entropy + correction
 
-    return max(0.0, corrected_entropy)
+    return max(0.0, entropy + correction)
 
 
 def entropy_bootstrap_confidence(
@@ -309,10 +382,8 @@ def entropy_bootstrap_confidence(
 
     if isinstance(counts, dict):
         items = []
-        weights = []
         for item, count in counts.items():
             items.extend([item] * count)
-            weights.append(count)
     else:
         items = []
         for i, count in enumerate(counts):
@@ -338,7 +409,9 @@ def entropy_bootstrap_confidence(
         bootstrap_counts = Counter(bootstrap_sample)
 
         # Estimate entropy
-        entropy_est = entropy_estimator(bootstrap_counts, method=method, bias_correction=True)
+        entropy_est = entropy_estimator(
+            bootstrap_counts, method=method, bias_correction=True
+        )
         bootstrap_entropies.append(entropy_est)
 
     bootstrap_entropies_arr = np.array(bootstrap_entropies)
@@ -365,93 +438,164 @@ def entropy_bootstrap_confidence(
     }
 
 
-def effective_sample_size_correction(entropy: float, sample_size: int, alphabet_size: int) -> float:
-    """Apply an additive Miller-Madow-style correction for entropy estimation.
+def effective_sample_size_correction(
+    entropy: float, sample_size: int, alphabet_size: int
+) -> float:
+    """Backward-compatible alias of :func:`bias_correction`.
 
-    The plugin entropy estimator is biased LOW by approximately
-    (d-1)/(2n) nats, i.e. (d-1)/(2n * ln 2) bits. This helper adds that
-    correction to the supplied raw entropy estimate.
+    Applies the identical additive Miller-Madow first-order correction
+    ``(alphabet_size - 1) / (2 * sample_size * ln 2)`` bits (sample_size <= 1
+    returns the entropy unchanged). The two functions used to carry
+    duplicated implementations; the logic now lives only in
+    :func:`bias_correction`. New code should call that function.
 
     Args:
         entropy: Raw entropy estimate (bits)
-        sample_size: Nominal sample size (n)
+        sample_size: Number of samples (n)
         alphabet_size: Alphabet size (d)
 
     Returns:
-        Corrected entropy estimate
+        Bias-corrected entropy estimate (bits)
     """
-    if sample_size <= 1:
-        return entropy
+    return bias_correction(entropy, sample_size, alphabet_size)
 
-    # Additive Miller-Madow correction, consistent with the plugin/miller_madow
-    # estimators: (d-1)/(2n) nats converted to bits.
-    correction = (alphabet_size - 1) / (2 * sample_size * math.log(2))
 
-    corrected_entropy = entropy + correction
+def _panzeri_treves_support(probabilities: np.ndarray, sample_size: int) -> float:
+    """Panzeri-Treves (1996) Bayesian estimate of the response support R.
 
-    return max(0.0, corrected_entropy)
+    ``probabilities`` is the probability vector over the FULL alphabet
+    (unobserved responses carry probability 0). Starting from the number of
+    occupied responses, the estimate grows the support one extra ("quasi")
+    response at a time: occupied responses receive quasi-Bayes add-one
+    probabilities over ``n + R`` pseudo-counts, the extra responses share the
+    remaining weight ``gamma = x * (1 - (n / (n + R)) ** (1/n))``, and the
+    support is grown as long as the expected number of responses seen at
+    least once in ``n`` draws moves closer to the observed occupied count.
+
+    Faithful to ``pt_bayescount`` in pyentropy (Ince et al. 2009), the
+    reference implementation of the Panzeri-Treves correction.
+    """
+    eps = np.finfo(float).eps
+    non_zero = probabilities[probabilities > eps]
+    r_naive = non_zero.size
+
+    if r_naive >= probabilities.size:
+        return float(r_naive)
+
+    r_expected = r_naive - float(((1.0 - non_zero) ** sample_size).sum())
+    delta_prev = float(probabilities.size)
+    delta = abs(r_naive - r_expected)
+    extra = 0.0
+    while (delta < delta_prev) and (r_naive + extra) < probabilities.size:
+        extra += 1.0
+        # Occupied responses: quasi-Bayes (add-one) probabilities.
+        gamma = extra * (
+            1.0 - (sample_size / (sample_size + r_naive)) ** (1.0 / sample_size)
+        )
+        p_bayes = ((1.0 - gamma) / (sample_size + r_naive)) * (
+            non_zero * sample_size + 1.0
+        )
+        r_expected = float((1.0 - (1.0 - p_bayes) ** sample_size).sum())
+        # The extra, so-far-unobserved quasi-responses.
+        p_bayes = gamma / extra
+        r_expected += extra * (1.0 - (1.0 - p_bayes) ** sample_size)
+        delta_prev = delta
+        delta = abs(r_naive - r_expected)
+
+    r_naive = r_naive + extra - 1.0
+    if delta < delta_prev:
+        r_naive += 1.0
+    return float(r_naive)
 
 
 def panzeri_treves_bias_correction(
-    entropy: float, sample_size: int, alphabet_size: int, response_frequencies: Optional[np.ndarray] = None
+    entropy: float,
+    sample_size: int,
+    alphabet_size: int,
+    response_frequencies: Optional[np.ndarray] = None,
 ) -> float:
-    """Apply Panzeri-Treves bias correction for entropy estimation.
+    """Apply the Panzeri-Treves (1996) sampling-bias correction, in bits.
 
-    This is a more sophisticated bias correction that accounts for
-    response frequencies and provides better small-sample performance.
+    The plugin entropy is biased LOW because responses that exist in the
+    alphabet but go unobserved (and singletons seen only once) contribute
+    entropy that a finite sample misses. PT (1996) estimate this
+    analytically: the effective support ``R`` of the response space
+    (occupied responses plus a Bayesian estimate of the number of unobserved
+    "quasi-sample" responses, see :func:`_panzeri_treves_support`) replaces
+    the occupied count in the first-order bias term, giving::
+
+        H_PT = H_plugin + (R - 1) / (2 * n * ln 2)   bits
+
+    The correction is ADDED (the plugin estimate underestimates the true
+    entropy). When every response of the alphabet is observed
+    (``R = alphabet_size``) this reduces exactly to the Miller-Madow
+    correction of :func:`bias_correction`.
 
     Args:
-        entropy: Raw entropy estimate
-        sample_size: Sample size (n)
-        response_frequencies: Array of response counts (summing to sample_size; optional)
+        entropy: Raw (plugin) entropy estimate (bits)
+        sample_size: Sample size n (number of draws)
+        alphabet_size: Size of the full response alphabet (may exceed the
+            number of observed responses)
+        response_frequencies: Observed response counts (non-negative,
+            summing to sample_size, at most alphabet_size entries). If None,
+            a uniform response distribution over the full alphabet is assumed.
 
     Returns:
-        Bias-corrected entropy
+        Panzeri-Treves bias-corrected entropy estimate (bits)
+
+    Raises:
+        ValueError: If parameters are invalid
 
     References:
-        Panzeri & Treves (1996). Analytical estimates of limited sampling biases in different information measures.
+        Panzeri & Treves (1996). Analytical estimates of limited sampling
+        biases in different information measures. Network 7, 87-107.
     """
     if sample_size <= 1:
         return entropy
+    if sample_size <= 0:
+        raise ValueError("Sample size must be positive")
+    if alphabet_size <= 0:
+        raise ValueError("Alphabet size must be positive")
 
-    if response_frequencies is not None:
-        # Use provided response counts
-        freq_array = np.array(response_frequencies)
+    if response_frequencies is None:
+        # Uniform response fallback: identical counts over the full alphabet.
+        freq_array = np.full(alphabet_size, sample_size / alphabet_size, dtype=float)
     else:
-        # Uniform response fallback: counts per response summing to the
-        # sample size (the terms below treat frequencies as counts).
-        freq_array = np.full(alphabet_size, sample_size / alphabet_size)
+        freq_array = np.asarray(response_frequencies, dtype=float)
+        if freq_array.ndim != 1:
+            raise ValueError("response_frequencies must be a 1D array of counts")
+        if freq_array.size > alphabet_size:
+            raise ValueError("response_frequencies cannot exceed the alphabet size")
+        if np.any(freq_array < 0):
+            raise ValueError("Response counts cannot be negative")
+        if not math.isclose(
+            float(freq_array.sum()), float(sample_size), rel_tol=1e-9, abs_tol=1e-9
+        ):
+            raise ValueError("Response counts must sum to the sample size")
 
-    # Panzeri-Treves correction
-    # Sum over responses: (f_r - 1/n) / (n * log(2))
-    correction_terms = []
-    for freq in freq_array:
-        if freq > 0:
-            prob = freq / sample_size
-            if prob < 1.0:  # Avoid log(0)
-                term = (freq * (1 - prob)) / (sample_size * math.log(2))
-                correction_terms.append(term)
+    probabilities = np.zeros(alphabet_size, dtype=float)
+    probabilities[: freq_array.size] = freq_array / sample_size
 
-    correction = sum(correction_terms) if correction_terms else 0.0
+    support = _panzeri_treves_support(probabilities, sample_size)
+    correction = (support - 1.0) / (2.0 * sample_size * math.log(2))
 
-    corrected_entropy = entropy - correction
-
-    return max(0.0, corrected_entropy)
+    return max(0.0, entropy + correction)
 
 
-def entropy_rate_estimator(sequence: List[Any], order: int = 1, method: str = "plugin") -> float:
+def entropy_rate_estimator(
+    sequence: List[Any], order: int = 1, method: str = "plugin"
+) -> float:
     """Estimate entropy rate of a sequence.
 
     The entropy rate is the limit of n-block entropy divided by n as n→∞.
     For Markov chains, this equals the conditional entropy H(X_{n+1}|X_n).
-
     Args:
         sequence: Input sequence
         order: Markov order (1 for first-order Markov)
         method: Entropy estimation method
 
     Returns:
-        Entropy rate estimate
+        Entropy rate estimate in bits (>= 0)
 
     Raises:
         ValueError: If sequence is too short or order is invalid

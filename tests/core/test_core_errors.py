@@ -60,25 +60,25 @@ class TestErrorHierarchy:
 
         for error_class in utils_errors:
             error = error_class("test")
-            assert isinstance(
-                error, METAINFORMANTError
-            ), f"{error_class.__name__} does not inherit from METAINFORMANTError"
+            assert isinstance(error, METAINFORMANTError), (
+                f"{error_class.__name__} does not inherit from METAINFORMANTError"
+            )
             assert isinstance(error, Exception)
 
     def test_io_errors_inherit_from_base(self) -> None:
         """Test that all io.errors classes inherit from METAINFORMANTError."""
         io_error_classes = [
             io_errors.IOError,
-            io_errors.FileNotFoundError,
+            io_errors.InputFileMissingError,
             io_errors.CacheError,
             io_errors.DownloadError,
         ]
 
         for error_class in io_error_classes:
             error = error_class("test")
-            assert isinstance(
-                error, METAINFORMANTError
-            ), f"io.errors.{error_class.__name__} does not inherit from METAINFORMANTError"
+            assert isinstance(error, METAINFORMANTError), (
+                f"io.errors.{error_class.__name__} does not inherit from METAINFORMANTError"
+            )
             assert isinstance(error, Exception)
 
     def test_download_error_inherits_from_network_error(self) -> None:
@@ -89,21 +89,33 @@ class TestErrorHierarchy:
         assert isinstance(error, Exception)
 
     def test_io_errors_module_hierarchy(self) -> None:
-        """Test io.errors module error hierarchy."""
-        # FileNotFoundError inherits from io.errors.IOError
-        file_error = io_errors.FileNotFoundError("file not found")
+        """io.errors re-exports the canonical utils error hierarchy."""
+        # InputFileMissingError inherits from io.errors.IOError
+        file_error = io_errors.InputFileMissingError("file not found")
         assert isinstance(file_error, io_errors.IOError)
         assert isinstance(file_error, METAINFORMANTError)
 
-        # CacheError inherits from io.errors.IOError
+        # CacheError is the canonical utils class (subclasses METAINFORMANTError)
         cache_error = io_errors.CacheError("cache failed")
-        assert isinstance(cache_error, io_errors.IOError)
         assert isinstance(cache_error, METAINFORMANTError)
 
-        # DownloadError inherits from io.errors.IOError
+        # DownloadError is the canonical utils class (subclasses NetworkError)
         download_error = io_errors.DownloadError("download failed")
-        assert isinstance(download_error, io_errors.IOError)
+        assert isinstance(download_error, NetworkError)
         assert isinstance(download_error, METAINFORMANTError)
+
+    def test_single_exception_hierarchy_from_both_import_paths(self) -> None:
+        """Both import paths must resolve to the same exception objects."""
+        assert io_errors.IOError is IOError
+        assert io_errors.CacheError is CacheError
+        assert io_errors.DownloadError is DownloadError
+        import builtins
+
+        assert io_errors.InputFileMissingError is not builtins.FileNotFoundError
+
+    def test_no_builtin_file_not_found_shadowing(self) -> None:
+        """io.errors must not define FileNotFoundError (builtin shadowing)."""
+        assert not hasattr(io_errors, "FileNotFoundError")
 
     def test_catching_base_error_catches_all(self) -> None:
         """Test that catching METAINFORMANTError catches all custom errors."""
@@ -118,7 +130,7 @@ class TestErrorHierarchy:
             DependencyError("dependency error"),
             ResourceError("resource error"),
             io_errors.IOError("io error from io module"),
-            io_errors.FileNotFoundError("file not found"),
+            io_errors.InputFileMissingError("file not found"),
             io_errors.CacheError("cache error from io module"),
             io_errors.DownloadError("download error from io module"),
         ]
@@ -127,7 +139,9 @@ class TestErrorHierarchy:
             try:
                 raise error
             except METAINFORMANTError as e:
-                assert e is error, f"Failed to catch {type(error).__name__} as METAINFORMANTError"
+                assert e is error, (
+                    f"Failed to catch {type(error).__name__} as METAINFORMANTError"
+                )
             else:
                 pytest.fail(f"Did not catch {type(error).__name__}")
 
@@ -158,7 +172,9 @@ class TestRetryWithBackoff:
         """Test that function retries and succeeds on second attempt."""
         call_count = 0
 
-        @retry_with_backoff(max_attempts=3, initial_delay=0.01, exceptions=(ValueError,))
+        @retry_with_backoff(
+            max_attempts=3, initial_delay=0.01, exceptions=(ValueError,)
+        )
         def succeeds_on_second() -> str:
             nonlocal call_count
             call_count += 1
@@ -174,7 +190,9 @@ class TestRetryWithBackoff:
         """Test that function raises after max attempts."""
         call_count = 0
 
-        @retry_with_backoff(max_attempts=3, initial_delay=0.01, exceptions=(ValueError,))
+        @retry_with_backoff(
+            max_attempts=3, initial_delay=0.01, exceptions=(ValueError,)
+        )
         def always_fails() -> str:
             nonlocal call_count
             call_count += 1
@@ -189,7 +207,9 @@ class TestRetryWithBackoff:
         """Test that retry only happens for specified exception types."""
         call_count = 0
 
-        @retry_with_backoff(max_attempts=3, initial_delay=0.01, exceptions=(NetworkError,))
+        @retry_with_backoff(
+            max_attempts=3, initial_delay=0.01, exceptions=(NetworkError,)
+        )
         def fails_with_wrong_exception() -> str:
             nonlocal call_count
             call_count += 1
@@ -205,7 +225,9 @@ class TestRetryWithBackoff:
         """Test retry with multiple exception types."""
         call_count = 0
 
-        @retry_with_backoff(max_attempts=3, initial_delay=0.01, exceptions=(NetworkError, IOError))
+        @retry_with_backoff(
+            max_attempts=3, initial_delay=0.01, exceptions=(NetworkError, IOError)
+        )
         def fails_with_various_errors() -> str:
             nonlocal call_count
             call_count += 1
@@ -224,7 +246,12 @@ class TestRetryWithBackoff:
         call_count = 0
         start_times: list[float] = []
 
-        @retry_with_backoff(max_attempts=3, initial_delay=0.05, backoff_factor=2.0, exceptions=(ValueError,))
+        @retry_with_backoff(
+            max_attempts=3,
+            initial_delay=0.05,
+            backoff_factor=2.0,
+            exceptions=(ValueError,),
+        )
         def fails_twice() -> str:
             nonlocal call_count
             call_count += 1
@@ -251,7 +278,11 @@ class TestRetryWithBackoff:
         call_count = 0
 
         @retry_with_backoff(
-            max_attempts=5, initial_delay=1.0, backoff_factor=10.0, max_delay=0.1, exceptions=(ValueError,)
+            max_attempts=5,
+            initial_delay=1.0,
+            backoff_factor=10.0,
+            max_delay=0.1,
+            exceptions=(ValueError,),
         )
         def fails_multiple_times() -> str:
             nonlocal call_count
@@ -455,17 +486,23 @@ class TestValidationFunctions:
         with pytest.raises(ValidationError, match="value must be of type int, got str"):
             validate_type("string", int)
 
-        with pytest.raises(ValidationError, match="value must be of type list, got dict"):
+        with pytest.raises(
+            ValidationError, match="value must be of type list, got dict"
+        ):
             validate_type({}, list)
 
     def test_validate_type_failure_multiple_types(self) -> None:
         """Test that validate_type raises with multiple expected types."""
-        with pytest.raises(ValidationError, match="value must be of type int, str, got list"):
+        with pytest.raises(
+            ValidationError, match="value must be of type int, str, got list"
+        ):
             validate_type([1, 2], (int, str))
 
     def test_validate_type_custom_name(self) -> None:
         """Test validate_type with custom name."""
-        with pytest.raises(ValidationError, match="my_param must be of type str, got int"):
+        with pytest.raises(
+            ValidationError, match="my_param must be of type str, got int"
+        ):
             validate_type(42, str, name="my_param")
 
 
@@ -481,7 +518,9 @@ class TestErrorIntegration:
         """Test retry with validation errors."""
         call_count = 0
 
-        @retry_with_backoff(max_attempts=3, initial_delay=0.01, exceptions=(ValidationError,))
+        @retry_with_backoff(
+            max_attempts=3, initial_delay=0.01, exceptions=(ValidationError,)
+        )
         def validate_and_process(value: Any) -> str:
             nonlocal call_count
             call_count += 1
@@ -527,7 +566,7 @@ class TestErrorIntegration:
             NetworkError("from utils"),
             IOError("from utils"),
             io_errors.IOError("from io module"),
-            io_errors.FileNotFoundError("from io module"),
+            io_errors.InputFileMissingError("from io module"),
         ]
 
         caught_count = 0

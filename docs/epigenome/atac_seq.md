@@ -14,94 +14,99 @@ Assay for Transposase-Accessible Chromatin sequencing analysis. Includes peak ma
 
 ### `ATACPeak`
 
-Dataclass representing an ATAC-seq accessible region.
+Class representing an ATAC-seq accessible region.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `chrom` | `str` | Chromosome |
-| `start` | `int` | Start coordinate |
-| `end` | `int` | End coordinate |
-| `name` | `str` | Peak identifier |
-| `score` | `float` | Accessibility score |
-| `fold_enrichment` | `float` | Fold enrichment over background |
-| `q_value` | `float` | FDR-adjusted significance |
-| `summit` | `int` | Position of maximum accessibility |
+| `chromosome` | `str` | Chromosome name |
+| `start` | `int` | Peak start position |
+| `end` | `int` | Peak end position |
+| `score` | `float` | Peak score |
+| `strand` | `str` | DNA strand |
+| `signal_value` | `float` | Signal value |
+| `p_value` | `float \| None` | P-value |
+| `q_value` | `float \| None` | Q-value (FDR) |
+| `summit` | `int \| None` | Peak summit position |
 
 ## Function Reference
 
-### `load_peaks(file_path, format="narrowPeak") -> List[ATACPeak]`
+### `load_atac_peaks(path, format="narrowpeak") -> List[ATACPeak]`
 
-Load ATAC-seq peaks from narrowPeak or BED format.
+Load ATAC-seq peaks from narrowPeak, broadPeak, or BED format.
 
-### `save_peaks(peaks, file_path, format="narrowPeak") -> None`
+### `save_atac_peaks(peaks, path, format="narrowpeak") -> None`
 
 Write peaks to disk in the specified format.
 
-### `peak_statistics(peaks) -> Dict`
+### `calculate_atac_statistics(peaks) -> Dict`
 
-Compute summary statistics for a peak set including total count, coverage, width distribution, and per-chromosome breakdown.
+Compute summary statistics for a peak set: total count, length distribution (mean/median/min/max/std), score distribution, and per-chromosome signal breakdown.
 
-### `calculate_nucleosome_fractions(fragment_sizes) -> Dict`
+### `calculate_atac_specific_metrics(peaks) -> Dict`
 
-Classify fragments into nucleosome-positioning categories:
-- `nfr_fraction`: nucleosome-free (< 147 bp)
-- `mono_nucleosome`: mono-nucleosomal (147--294 bp)
-- `di_nucleosome`: di-nucleosomal (294--441 bp)
-- `tri_nucleosome`: tri-nucleosomal (> 441 bp)
+ATAC-seq-specific QC computed from peak lengths: `nfr_peak_fraction` (50--150 bp), `mononucleosome_peak_fraction` (150--250 bp), `dinucleosome_peak_fraction` (250--350 bp), and periodicity scores around expected nucleosome periods (147/200/300 bp). Takes a peak list, not raw fragment sizes.
 
-### `tss_enrichment(peaks, tss_positions, window=2000) -> Dict`
+### `identify_tss_enrichment(peaks, tss_positions, window_size=2000) -> Dict`
 
-Calculate TSS enrichment score by measuring peak density around annotated transcription start sites within the specified window. Returns enrichment score, total TSS tested, and overlapping count.
+Measure peak density around annotated transcription start sites. `tss_positions` maps chromosome names to lists of TSS positions. Returns `total_tss`, `enriched_tss`, `enrichment_ratio`, `expected_ratio`, `fold_enrichment`, and `window_size`.
 
-### `find_tf_binding_sites(peaks, motif_database, sequences) -> List[Dict]`
+### `find_tf_binding_sites(peaks, tf_motifs, genome_fasta=None) -> Dict`
 
-Scan peak sequences for transcription factor binding motifs. Each result includes the TF name, motif match score, position, and strand.
+Scan accessible regions for transcription factor binding motifs. `tf_motifs` maps TF names to motif sequences; pass `genome_fasta` to analyze real sequence context.
 
-### `compare_conditions(peaks_a, peaks_b, labels=None) -> Dict`
+### `calculate_chromatin_accessibility_index(peaks, genomic_regions) -> Dict`
 
-Compare accessibility between two conditions. Returns shared peaks, condition-specific peaks, differential statistics, and a Jaccard similarity index.
+Accessibility index for specific genomic regions given as `(chromosome, start, end)` tuples.
+
+### `compare_atac_conditions(condition1_peaks, condition2_peaks) -> Dict`
+
+Compare accessibility between two conditions. Returns `condition1_total`, `condition2_total`, `overlapping_peaks`, condition-only counts, and `overlap_percentage`.
 
 ## Usage Examples
 
 ```python-snippet
-from metainformant.epigenome import (
+from metainformant.epigenome.assays.atacseq import (
     ATACPeak,
-    load_peaks as load_atac_peaks,
-    peak_statistics as atac_stats,
-    calculate_nucleosome_fractions,
-    tss_enrichment,
-    compare_conditions,
+    load_atac_peaks,
+    calculate_atac_statistics,
+    calculate_atac_specific_metrics,
+    identify_tss_enrichment,
+    find_tf_binding_sites,
+    compare_atac_conditions,
 )
 
 # Load ATAC-seq peaks
-peaks = load_atac_peaks("atac_peaks.narrowPeak")
-stats = atac_stats(peaks)
+peaks = load_atac_peaks("atac_peaks.narrowpeak")
+stats = calculate_atac_statistics(peaks)
 print(f"Accessible regions: {stats['total_peaks']}")
 
-# Fragment size analysis
-fragments = [120, 80, 200, 350, 160, 95, 180, 250, 400]
-fractions = calculate_nucleosome_fractions(fragments)
-print(f"NFR fraction: {fractions['nfr_fraction']:.2%}")
-print(f"Mono-nucleosomal: {fractions['mono_nucleosome']:.2%}")
+# Nucleosome-positioning QC from peak lengths
+metrics = calculate_atac_specific_metrics(peaks)
+print(f"NFR peak fraction: {metrics['nfr_peak_fraction']:.2%}")
+print(f"Mono-nucleosomal: {metrics['mononucleosome_peak_fraction']:.2%}")
 
-# TSS enrichment QC
-tss_list = [("chr1", 1000, "+"), ("chr1", 50000, "-")]
-tss_score = tss_enrichment(peaks, tss_list, window=2000)
-print(f"TSS enrichment: {tss_score['enrichment_score']:.2f}")
+# TSS enrichment QC (chromosome -> TSS positions)
+tss_positions = {"chr1": [1000, 50000], "chr2": [25000]}
+tss = identify_tss_enrichment(peaks, tss_positions, window_size=2000)
+print(f"Fold enrichment: {tss['fold_enrichment']:.2f}")
+
+# TF binding site scan
+tf_motifs = {"CTCF": "CCGCGNGGNGGCAG", "SOX2": "CATTGTT"}
+binding = find_tf_binding_sites(peaks, tf_motifs)
 
 # Condition comparison
-diff = compare_conditions(treatment_peaks, control_peaks,
-                          labels=["treatment", "control"])
-print(f"Jaccard similarity: {diff['jaccard']:.3f}")
+diff = compare_atac_conditions(treatment_peaks, control_peaks)
+print(f"Overlapping peaks: {diff['overlapping_peaks']}")
+print(f"Overlap percentage: {diff['overlap_percentage']:.1f}%")
 ```
 
 ## Configuration
 
-Environment variable prefix: `EPI_`
+No dedicated configuration file or environment prefix is used by the ATAC-seq module; call the functions above directly from Python.
 
 ## Related Modules
 
-- `metainformant.epigenome.chipseq` -- histone modification peaks
+- `metainformant.epigenome.assays.chipseq` -- histone modification peaks
 - `metainformant.epigenome.peak_calling` -- de novo peak calling
 - `metainformant.epigenome.chromatin_state` -- chromatin state annotation
 - `metainformant.epigenome.workflow` -- integrated analysis pipelines

@@ -1,12 +1,12 @@
-# Methods Matrix: Comprehensive Comparison of All 28 METAINFORMANT Modules
+# Methods Matrix: Comprehensive Comparison of All 30 METAINFORMANT Modules
 
 ## Overview
 
-This matrix provides a side-by-side comparison of all 28 core modules in METAINFORMANT across key dimensions: data types, scale, computational characteristics, outputs, and best-use scenarios. Use this table to quickly identify which module(s) match your analysis needs.
+This matrix provides a side-by-side comparison of all 30 modules in METAINFORMANT across key dimensions: data types, scale, computational characteristics, outputs, and best-use scenarios. Use this table to quickly identify which module(s) match your analysis needs.
 
 ## Quick Navigation
 
-- **[Summary Table](#summary-table)** — 28-module overview at a glance
+- **[Summary Table](#summary-table)** — 30-module overview at a glance
 - **[By Data Type](#by-data-type-quick-reference)** — Find modules by input data
 - **[By Analysis Goal](#by-analysis-goal-decision-map)** — Find modules by research question
 - **[By Computational Scale](#by-computational-scale-resource-planning)** — Find modules by resource needs
@@ -42,11 +42,13 @@ This matrix provides a side-by-side comparison of all 28 core modules in METAINF
 | 21 | **metagenomics** | FASTQ (amplicon/shotgun) | Samples (10–10⁴) | 16S/ITS amplicon (OTU/ASV), taxonomic classification, assembly (metaSPAdes), binning (MetaBAT), functional annotation (ORF, KEGG), pathway reconstruction, community profiling | OTU tables, MAGs, annotated genes, KEGG modules | High | Microbiome analysis, metagenome assembly, functional profiling |
 | 22 | **structural_variants** | BAM, VCF | Samples (10–10⁴) | CNV detection (read depth, segmentation), SV calling (split-read, discordant pair), breakpoint refinement, gene/regulatory overlap, functional impact, multi-caller merging (SURVIVOR) | SV VCF, CNV BED, annotated regions, Circos plots | High | Structural variant detection, fusion genes, TAD disruption, clinical SV |
 | 23 | **pharmacogenomics** | VCF, diplotype data | Patients (10–10⁴) | Star allele calling (CYP enzymes), metabolizer phenotype prediction, CPIC guideline integration, PharmGKB annotations, ACMG pathogenicity scoring, drug-gene interaction checking | Clinical reports, dosing recommendations, evidence tables | Medium | Clinical pharmacogenomics, drug response prediction, variant interpretation |
-| 24 | **metabolomics** | mzML, mzXML, CSV | Samples (10–10³) | Peak detection, metabolite identification (mz matching), quantification, normalization (PQN, log), KEGG/Reactome pathway mapping, metabolite set enrichment (MSEA), metabolite-gene integration | Feature tables, identified metabolites, enriched pathways | Medium–High | Mass spec metabolomics, pathway analysis, metabolite-gene integration |
+| 24 | **metabolomics** | MGF, CSV | Samples (10–10³) | Metabolite identification (mz matching with ppm tolerance), intensity normalization (total-ion-count), fold change, differential abundance, metabolite set enrichment (hypergeometric + Benjamini-Hochberg) | Feature tables, identified metabolites, enrichment results | Medium | Mass spectrometry metabolomics (MGF spectra), differential abundance, metabolite set enrichment |
 | 25 | **menu** | Scripts (any) | Any | Script discovery, interactive CLI menus, breadcrumb navigation, argument prompting | Interactive terminal UI | Minimal | Interactive workflow discovery, script execution helper |
 | 26 | **cloud** | GCP resources | Any | GCP VM lifecycle (create/delete), Docker container build/run, file transfer (gsutil/SCP), cost estimation, preemptible VM management | Cloud resources, logs | Very High | Cloud deployment, large-scale pipeline orchestration, cost-optimized compute |
-| 27 | **eqtl** *(cross-cutting)* | VCF + expression | Samples (100–10⁴) | cis/trans eQTL scanning, colocalization ( coloc ), mediation analysis, transcriptome SNP calling (from RNA BAM) | eQTL summary stats, colocalization PP4, mediation results | High | Expression quantitative trait loci, GWAS→RNA mechanistic link |
+| 27 | **eqtl** | VCF + expression | Samples (100–10⁴) | Input-data construction (synthetic/real), HISAT2+bcftools variant-calling wrappers, bcftools stats parsing, full pipeline orchestration | eQTL pipeline outputs and stats summaries | High | Expression–variant pipelines, GWAS→RNA integration |
 | 28 | **life_events** | Event sequences, time series | Individuals (10–10⁴) | Event sequence embedding, temporal pattern discovery, survival analysis, outcome prediction, life course modeling | Event embeddings, survival curves, predicted outcomes | Medium | Longitudinal life event analysis, survival modeling, temporal pattern mining |
+| 29 | **popgen** | FASTA sequence scenarios, genotype matrices | Populations (10²–10⁵) | Sequence summary statistics, neutrality tests, two-population Fst comparison, genotype-structure analysis (PCA, kinship, HWE), LD summaries, demographic model comparisons | Summary reports, comparison tables, visualizations | Low–Medium | Reusable population genetics statistics and neutrality testing |
+| 30 | **mcp** | JSON-RPC 2.0 messages (stdio) | Any | stdio JSON-RPC 2.0 MCP server (`initialize`, `tools/list`, `tools/call`, `resources/list`, `resources/read`), schema-validated tool registry (core/dna/gwas/math/protein/rna/visualization tools + amalgkit monitor) | JSON-RPC responses, capability resources (`metainformant://capabilities`, `metainformant://methods`) | Minimal | Agent/client integration over the Model Context Protocol |
 
 ---
 
@@ -178,7 +180,7 @@ Below are per-module summaries with capabilities, inputs/outputs, and example us
 | **Output Files** | Logs, manifests, cached artifacts |
 | **Submodules** | `io`, `config`, `parallel`, `validation`, `paths`, `utils` |
 | **Dependencies** | None (base module) |
-| **Used By** | ALL 27 domain modules |
+| **Used By** | All 29 other modules |
 
 **When to use**: Never called directly by end-users except as underlying infrastructure. All domain modules use `core.io` for file operations and `core.execution.parallel` for multithreading.
 
@@ -797,6 +799,42 @@ uv run python -m metainformant menu
 | **Primary Use Cases** | Life history analysis (e.g., ant colony events), longitudinal health records, time-to-event outcomes, sequential pattern mining, event-based risk prediction |
 
 **Example**: Modeling ant colony development from worker event logs; predicting colony fate from early events.
+
+---
+
+### Module 29: popgen
+
+| Attribute | Details |
+|-----------|---------|
+| **Category** | Population genetics |
+| **Data Types** | FASTA sequence scenarios, genotype matrices (0/1/2), dataset descriptors |
+| **Scale** | Populations (10²–10⁵) |
+| **Key Functions** | `summarize_scenario()`, `sequence_scenario_suite()`, `compare_two_population_sequences()`, `genotype_structure_analysis()`, `ld_summary()`, `demographic_model_comparisons()`, `analyze_dataset()`, `generate_comprehensive_dataset()`, `generate_summary_report()`, `generate_visualizations()` |
+| **Input Files** | FASTA sequence files, genotype matrices, dataset descriptors |
+| **Output Files** | Summary reports, comparison tables, visualizations |
+| **Submodules** | `workflow` (`analysis`, `dataset_generation`, `reporting`, `visualization`) |
+| **Dependencies** | `dna.population`, `gwas.analysis`, `math.population_genetics`, `simulation.models.popgen` (re-exported generators) |
+| **Used By** | `scripts/popgen/` thin orchestrators |
+
+**When to use**: Reusable population genetics methods behind the popgen workflow — summary statistics, neutrality tests, Fst comparisons, genotype structure, LD summaries, and demographic model comparisons. All statistics are descriptive; inferential claims are gated behind the evidence-manifest freeze per repo policy.
+
+---
+
+### Module 30: mcp
+
+| Attribute | Details |
+|-----------|---------|
+| **Category** | Protocol / agent integration |
+| **Data Types** | JSON-RPC 2.0 messages over stdio |
+| **Scale** | Any (tool calls) |
+| **Key Functions** | `MCPServer`, `build_default_registry()`, `ToolRegistry.register()` / `register_module_tools()`, `serve_stdio()`, `main()` (`python -m metainformant.mcp.server`) |
+| **Input Files** | JSON-RPC requests on stdin; read-only resources `metainformant://capabilities` and `metainformant://methods` |
+| **Output Files** | JSON-RPC responses on stdout |
+| **Submodules** | `server`, `registry`, `tool_adapters`, `tools` (`amalgkit_monitor`, `catalog` with the 20 `TOOL_SPEC` tools) |
+| **Dependencies** | Standard library only |
+| **Used By** | MCP clients/agents over stdio; wraps other modules' tools |
+
+**When to use**: Expose METAINFORMANT tools to MCP-compatible clients through a schema-validated stdio JSON-RPC 2.0 server. Not an analysis module; it adapts existing tool surfaces.
 
 ---
 

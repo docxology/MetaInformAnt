@@ -160,7 +160,9 @@ def minimizer_sketch(
         # Sequence too short for windowed minimizers, return all
         for h, pos, is_rc, kmer in kmer_hashes:
             if h < 2**64:
-                minimizers.append(Minimizer(hash_value=h, position=pos, is_reverse=is_rc, kmer=kmer))
+                minimizers.append(
+                    Minimizer(hash_value=h, position=pos, is_reverse=is_rc, kmer=kmer)
+                )
         return minimizers
 
     # Slide window and extract minimizers
@@ -291,7 +293,8 @@ def find_overlaps(
         len_a = read_lengths[rid_a]
         len_b = read_lengths[rid_b]
 
-        # Compute overlap coordinates by chaining matches
+        # Compute overlap coordinates by chaining matches (both the
+        # forward and the reverse-complement frame are evaluated).
         overlap = _chain_minimizer_matches(
             rid_a,
             len_a,
@@ -300,13 +303,42 @@ def find_overlaps(
             matches,
             min_overlap,
             max_overhang,
+            k,
         )
 
         if overlap is not None:
             overlaps.append(overlap)
 
-    logger.info("Found %d overlaps from %d candidate pairs", len(overlaps), len(pair_matches))
+    logger.info(
+        "Found %d overlaps from %d candidate pairs", len(overlaps), len(pair_matches)
+    )
     return overlaps
+
+
+def _best_diagonal_chain(
+    matches: list[tuple[int, int]],
+) -> list[tuple[int, int]] | None:
+    """Return the matches on the densest (binned) diagonal, or None.
+
+    Diagonals are binned in 100 bp bands to tolerate indels; a chain needs
+    at least two matches to be usable.
+    """
+    if not matches:
+        return None
+
+    diagonals: dict[int, list[tuple[int, int]]] = defaultdict(list)
+    for qpos, tpos in matches:
+        # Bin diagonals to allow for indels
+        diag_bin = (qpos - tpos) // 100 * 100
+        diagonals[diag_bin].append((qpos, tpos))
+
+    best_diag = max(diagonals.keys(), key=lambda d: len(diagonals[d]))
+    best_matches = sorted(diagonals[best_diag], key=lambda m: m[0])
+
+    if len(best_matches) < 2:
+        return None
+
+    return best_matches
 
 
 def _chain_minimizer_matches(
@@ -317,12 +349,24 @@ def _chain_minimizer_matches(
     matches: list[tuple[int, int]],
     min_overlap: int,
     max_overhang: int,
+    k: int = 15,
 ) -> Overlap | None:
     """Chain shared minimizer positions to compute overlap coordinates.
 
-    Uses the diagonal consistency of minimizer matches to determine
-    overlap extent. Matches on the same diagonal (pos_q - pos_t = constant)
-    indicate colinear overlap.
+    Two chaining frames are tested for every candidate pair:
+
+    - Forward frame: matches on a constant diagonal ``qpos - tpos = const``
+      indicate a colinear same-strand overlap.
+    - Reverse-complement frame: for an antiparallel overlap the shared
+      canonical k-mers satisfy ``qpos + tpos = const``; mapping target
+      positions into the target's reverse-complement frame
+      (``t' = target_length - k - tpos``) restores a constant diagonal, so
+      the same chaining logic applies.
+
+    The frame with the most chained matches wins (ties prefer the forward
+    strand). For a reverse-complement overlap the reported target
+    coordinates are mapped back to the target's original (forward)
+    orientation and ``strand`` is ``'-'``.
 
     Args:
         query_name: Query read name.
@@ -332,6 +376,7 @@ def _chain_minimizer_matches(
         matches: List of (query_pos, target_pos) minimizer matches.
         min_overlap: Minimum overlap length.
         max_overhang: Maximum overhang.
+        k: K-mer size used by the sketch (needed for rc-frame conversion).
 
     Returns:
         Overlap object if valid overlap detected, None otherwise.
@@ -339,25 +384,40 @@ def _chain_minimizer_matches(
     if not matches:
         return None
 
-    # Compute diagonals (query_pos - target_pos)
-    diagonals: dict[int, list[tuple[int, int]]] = defaultdict(list)
-    for qpos, tpos in matches:
-        # Bin diagonals to allow for indels
-        diag_bin = (qpos - tpos) // 100 * 100
-        diagonals[diag_bin].append((qpos, tpos))
+    forward_chain = _best_diagonal_chain(matches)
 
-    # Find the best diagonal (most matches)
-    best_diag = max(diagonals.keys(), key=lambda d: len(diagonals[d]))
-    best_matches = sorted(diagonals[best_diag], key=lambda m: m[0])
+    # Reverse-complement frame: mirror target k-mer start positions into
+    # the target's reverse-complement coordinate frame.
+    rc_matches = [(qpos, target_length - k - tpos) for qpos, tpos in matches]
+    reverse_chain = _best_diagonal_chain(rc_matches)
 
-    if len(best_matches) < 2:
+    if forward_chain is None and reverse_chain is None:
         return None
 
-    # Compute overlap from chained matches on best diagonal
+    if reverse_chain is not None and (
+        forward_chain is None or len(reverse_chain) > len(forward_chain)
+    ):
+        strand = "-"
+        best_matches = reverse_chain  # (qpos, t') with t' in the rc frame
+    else:
+        strand = "+"
+        best_matches = forward_chain
+
+    # Compute overlap from chained matches on the winning diagonal
     q_start = best_matches[0][0]
     q_end = best_matches[-1][0]
-    t_start = best_matches[0][1]
-    t_end = best_matches[-1][1]
+    t_chain_start = best_matches[0][1]
+    t_chain_end = best_matches[-1][1]
+
+    if strand == "-":
+        # Map rc-frame target coordinates back to the target's forward
+        # frame: rc-frame k-mer start t' corresponds to forward k-mer
+        # start target_length - k - t'.
+        t_start = target_length - k - t_chain_end
+        t_end = target_length - k - t_chain_start
+    else:
+        t_start = t_chain_start
+        t_end = t_chain_end
 
     overlap_length = max(q_end - q_start, t_end - t_start)
 
@@ -383,7 +443,9 @@ def _chain_minimizer_matches(
 
     # Check for containment
     is_contained = (
-        q_start <= max_overhang and query_length - q_end <= max_overhang and overlap_length >= query_length * 0.8
+        q_start <= max_overhang
+        and query_length - q_end <= max_overhang
+        and overlap_length >= query_length * 0.8
     )
 
     return Overlap(
@@ -395,7 +457,7 @@ def _chain_minimizer_matches(
         target_length=target_length,
         target_start=t_start,
         target_end=t_end,
-        strand="+",
+        strand=strand,
         num_matches=len(best_matches),
         overlap_length=overlap_length,
         identity=identity,
@@ -437,7 +499,9 @@ def compute_overlap_graph(overlaps: Sequence[Overlap]) -> OverlapGraph:
         num_edges=len(edges),
     )
 
-    logger.info("Built overlap graph: %d nodes, %d edges", graph.num_nodes, graph.num_edges)
+    logger.info(
+        "Built overlap graph: %d nodes, %d edges", graph.num_nodes, graph.num_edges
+    )
     return graph
 
 
@@ -465,7 +529,11 @@ def filter_contained_reads(overlaps: Sequence[Overlap]) -> list[Overlap]:
         logger.info("Identified %d contained reads for removal", len(contained))
 
     # Filter out overlaps involving contained reads
-    filtered = [ovl for ovl in overlaps if ovl.query_name not in contained and ovl.target_name not in contained]
+    filtered = [
+        ovl
+        for ovl in overlaps
+        if ovl.query_name not in contained and ovl.target_name not in contained
+    ]
 
     logger.info(
         "Filtered overlaps: %d -> %d (removed %d involving contained reads)",

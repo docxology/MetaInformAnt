@@ -96,7 +96,11 @@ def lambda_gc_from_p_values(p_values: Iterable[float]) -> Optional[float]:
         return None
     chi2_stats.sort()
     n = len(chi2_stats)
-    median_chi2 = chi2_stats[n // 2] if n % 2 == 1 else (chi2_stats[n // 2 - 1] + chi2_stats[n // 2]) / 2.0
+    median_chi2 = (
+        chi2_stats[n // 2]
+        if n % 2 == 1
+        else (chi2_stats[n // 2 - 1] + chi2_stats[n // 2]) / 2.0
+    )
     lambda_gc = median_chi2 / EXPECTED_MEDIAN_CHI2_1DF
     if not math.isfinite(lambda_gc) or lambda_gc <= 0:
         return None
@@ -133,7 +137,9 @@ def bonferroni_correction(
 
     significant = [p <= corrected_alpha for p in p_values]
 
-    logger.info(f"Bonferroni correction: {sum(significant)}/{n_tests} tests significant at α={alpha}")
+    logger.info(
+        f"Bonferroni correction: {sum(significant)}/{n_tests} tests significant at α={alpha}"
+    )
 
     if return_dict:
         return {
@@ -150,7 +156,10 @@ def bonferroni_correction(
 
 
 def fdr_correction(
-    p_values: List[float], alpha: float = 0.05, method: str = "bh", return_dict: bool = True
+    p_values: List[float],
+    alpha: float = 0.05,
+    method: str = "bh",
+    return_dict: bool = True,
 ) -> Dict[str, Any] | Tuple[List[bool], List[float]]:
     """Apply false discovery rate correction.
 
@@ -176,7 +185,9 @@ def fdr_correction(
         return [], []
 
     if method.lower() not in ["bh", "by"]:
-        raise ValueError("Method must be 'bh' (Benjamini-Hochberg) or 'by' (Benjamini-Yekutieli)")
+        raise ValueError(
+            "Method must be 'bh' (Benjamini-Hochberg) or 'by' (Benjamini-Yekutieli)"
+        )
 
     # Sort p-values and keep track of original indices
     indexed_p = sorted(enumerate(p_values), key=lambda x: x[1])
@@ -190,10 +201,14 @@ def fdr_correction(
         rank = i + 1
 
         if method.lower() == "bh":
-            adjusted_value = min(adjusted_p[i + 1] if i + 1 < n else 1.0, sorted_p[i] * n / rank)
+            adjusted_value = min(
+                adjusted_p[i + 1] if i + 1 < n else 1.0, sorted_p[i] * n / rank
+            )
         else:  # 'by' - Benjamini-Yekutieli
             c_n = sum(1.0 / (k + 1) for k in range(n))
-            adjusted_value = min(adjusted_p[i + 1] if i + 1 < n else 1.0, sorted_p[i] * c_n * n / rank)
+            adjusted_value = min(
+                adjusted_p[i + 1] if i + 1 < n else 1.0, sorted_p[i] * c_n * n / rank
+            )
 
         adjusted_p[i] = adjusted_value
 
@@ -209,7 +224,9 @@ def fdr_correction(
     # Determine significance
     significant = [adj_p <= alpha for adj_p in original_adjusted]
 
-    logger.info(f"FDR correction ({method}): {sum(significant)}/{n} tests significant at FDR={alpha}")
+    logger.info(
+        f"FDR correction ({method}): {sum(significant)}/{n} tests significant at FDR={alpha}"
+    )
 
     if return_dict:
         return {
@@ -242,7 +259,10 @@ def genomic_control(
         pvalues: Alias for p_values (backward compatibility)
 
     Returns:
-        Dictionary with correction results or tuple of (corrected_p_values, inflation_factor)
+        Dictionary with correction results or tuple of (corrected_p_values, inflation_factor).
+        ``corrected_p_values`` is aligned to the input list for both p-value
+        and chi-square inputs (chi-square statistics are converted to 1-df
+        upper-tail p-values, lambda-corrected, and converted back).
     """
     # Handle parameter aliases
     if pvalues is not None and p_values is None:
@@ -264,7 +284,9 @@ def genomic_control(
         # Convert association p-values to 1-df chi-square statistics. GWAS
         # lambda GC is based on the chi-square survival distribution, not the
         # -2 log(p) transform used by Fisher's method.
-        chi_squared_stats = [_chi2_from_p_value(float(p)) for p in p_values if _valid_p_value(p)]
+        chi_squared_stats = [
+            _chi2_from_p_value(float(p)) for p in p_values if _valid_p_value(p)
+        ]
     else:
         # No data provided
         if return_dict:
@@ -301,14 +323,13 @@ def genomic_control(
         median_chi2 = sorted_chi2[n // 2]
     else:
         median_chi2 = (sorted_chi2[n // 2 - 1] + sorted_chi2[n // 2]) / 2
-
     # Genomic inflation factor λ. The exact 1-df null median is
     # scipy.stats.chi2.ppf(0.5, 1) = 0.4549364231...
     lambda_gc = median_chi2 / EXPECTED_MEDIAN_CHI2_1DF
     correction_lambda = lambda_gc if math.isfinite(lambda_gc) and lambda_gc > 0 else 1.0
 
     # Apply correction
-    corrected_p_values = []
+    corrected_p_values: List[float] = []
     if p_values:
         for p in p_values:
             if _valid_p_value(p):
@@ -318,8 +339,24 @@ def genomic_control(
                 corrected_p_values.append(_p_value_from_chi2(chi2_corrected))
             else:
                 corrected_p_values.append(p)
+    elif chi2_stats is not None:
+        # Chi-square input: convert each statistic to a 1-df p-value, apply
+        # the genomic-control lambda, and convert back. Output stays aligned
+        # with the input list; uninterpretable entries become NaN.
+        for stat in chi2_stats:
+            try:
+                chi2 = float(stat)
+            except (TypeError, ValueError):
+                corrected_p_values.append(float("nan"))
+                continue
+            if math.isfinite(chi2) and chi2 >= 0:
+                corrected_p_values.append(_p_value_from_chi2(chi2 / correction_lambda))
+            else:
+                corrected_p_values.append(float("nan"))
 
-    logger.info(f"Genomic control: λ={lambda_gc:.3f}, corrected {len(corrected_p_values)} p-values")
+    logger.info(
+        f"Genomic control: λ={lambda_gc:.3f}, corrected {len(corrected_p_values)} p-values"
+    )
 
     if return_dict:
         return {
@@ -328,7 +365,9 @@ def genomic_control(
             "corrected_pvalues": corrected_p_values,
             "inflation_factor": lambda_gc,
             "method": "genomic_control",
-            "n_tests": len(p_values) if p_values else len(chi_squared_stats),
+            "n_tests": len(chi2_stats)
+            if chi2_stats is not None
+            else len(p_values or []),
             "lambda_gc": lambda_gc,
             "median_chi2": median_chi2,
             "expected_median_chi2": EXPECTED_MEDIAN_CHI2_1DF,
@@ -337,7 +376,9 @@ def genomic_control(
     return corrected_p_values, lambda_gc
 
 
-def qvalue_estimation(p_values: List[float], pi0: Optional[float] = None) -> Tuple[List[float], float]:
+def qvalue_estimation(
+    p_values: List[float], pi0: Optional[float] = None
+) -> Tuple[List[float], float]:
     """Estimate q-values from p-values.
 
     Args:
@@ -363,7 +404,9 @@ def qvalue_estimation(p_values: List[float], pi0: Optional[float] = None) -> Tup
 
     for i in range(n - 1, -1, -1):
         rank = i + 1
-        q_value = min(q_values[i + 1] if i + 1 < n else 1.0, sorted_p[i] * pi0 * n / rank)
+        q_value = min(
+            q_values[i + 1] if i + 1 < n else 1.0, sorted_p[i] * pi0 * n / rank
+        )
         q_values[i] = q_value
 
     # Ensure monotonicity
@@ -382,21 +425,89 @@ def qvalue_estimation(p_values: List[float], pi0: Optional[float] = None) -> Tup
     return original_q, pi0
 
 
+def _linear_fit_at_last_lambda(curve: List[Tuple[float, float]]) -> float:
+    """Evaluate a weighted least-squares linear fit at the largest lambda.
+
+    Fits y = a + b*x through the (lambda, pi0(lambda)) points via the
+    weighted normal equations and evaluates the fit at the largest tuning
+    parameter in the curve (interpolation at the final knot, following the
+    ``qvalue`` smoother convention rather than extrapolating beyond the
+    data). Points are weighted by ``w = (1 - lambda)^2``: raw tail-based
+    pi0(lambda) estimates grow noisier as lambda approaches 1
+    (variance ~ lambda / ((1 - lambda) * n)), so down-weighting them keeps
+    the smoothed estimate stable for both flat-null and signal-mixture
+    histograms. Returns NaN when the system is singular.
+    """
+    s = [0.0] * 3  # weighted sums of lambda^0..lambda^2
+    t = [0.0] * 2  # weighted sums of pi0 * lambda^0..pi0 * lambda^1
+    for x, y in curve:
+        weight = (1.0 - x) ** 2
+        power = 1.0
+        for k in range(3):
+            s[k] += weight * power
+            if k < 2:
+                t[k] += weight * y * power
+            power *= x
+
+    # Solve the 2x2 weighted normal system [[s0, s1], [s1, s2]] y = t by
+    # elimination with partial pivoting.
+    a00, a01, a11, b0, b1 = s[0], s[1], s[2], t[0], t[1]
+    if abs(a01) > abs(a00):
+        a00, a01, a11, b0, b1 = a01, a11, a00, b1, b0
+    if abs(a00) < 1e-12:
+        return float("nan")
+    factor = a01 / a00
+    a11p = a11 - factor * a01
+    b1p = b1 - factor * b0
+    if abs(a11p) < 1e-12:
+        return float("nan")
+    b = b1p / a11p
+    a = (b0 - a01 * b) / a00
+    x_last = curve[-1][0]
+    return a + b * x_last
+
+
 def _estimate_pi0(p_values: List[float]) -> float:
-    """Estimate the proportion of true null hypotheses (π₀).
+    """Estimate the proportion of true null hypotheses (pi0).
+
+    Storey's lambda-tuning estimator over the p-value histogram: for tuning
+    parameters lambda in [0.05, 0.95], pi0(lambda) = #(p > lambda) / ((1 -
+    lambda) * n). A weighted linear least-squares smoother over the
+    pi0(lambda) curve, evaluated at the largest lambda knot, damps the noise of
+    the raw tail estimates. The result is bounded to (0, 1]; a flat null histogram
+    (uniform p-values) yields pi0 ~ 1, under which the q-value procedure is
+    exactly Benjamini-Hochberg.
 
     Args:
         p_values: List of p-values
 
     Returns:
-        Estimated π₀ value
+        Estimated pi0 in (0, 1]
     """
-    # Conservative approach: assume π₀ = 1 (all nulls true)
-    # More sophisticated methods would use lambda tuning
-    return 1.0
+    valid = [float(p) for p in p_values if _valid_p_value(p)]
+    if not valid:
+        return 1.0
+
+    n = len(valid)
+    lambdas = [0.05 * k for k in range(1, 20)]  # 0.05, 0.10, ..., 0.95
+    curve: List[Tuple[float, float]] = []
+    for lam in lambdas:
+        tail = sum(1 for p in valid if p > lam)
+        curve.append((lam, tail / ((1.0 - lam) * n)))
+
+    pi0_fit = _linear_fit_at_last_lambda(curve)
+    curve_min = min(value for _, value in curve)
+    if math.isfinite(pi0_fit):
+        # Keep the smoothed estimate within the observed curve's range and 1.
+        pi0 = min(max(pi0_fit, curve_min), 1.0)
+    else:
+        pi0 = min(curve_min, 1.0)
+    return max(pi0, 1.0 / (n + 1.0))
 
 
-def adjust_p_values(p_values: List[float], method: str = "bonferroni", **kwargs: Any) -> List[float]:
+def adjust_p_values(
+    p_values: List[float], method: str = "bonferroni", **kwargs: Any
+) -> List[float]:
     """General function for p-value adjustment.
 
     Args:
@@ -424,7 +535,9 @@ def adjust_p_values(p_values: List[float], method: str = "bonferroni", **kwargs:
         return adjusted_p
 
     elif method.lower() == "genomic_control":
-        adjusted_p, _ = cast(Tuple[List[float], float], genomic_control(p_values, return_dict=False))
+        adjusted_p, _ = cast(
+            Tuple[List[float], float], genomic_control(p_values, return_dict=False)
+        )
         return adjusted_p
 
     elif method.lower() == "qvalue":

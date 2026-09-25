@@ -14,11 +14,11 @@ Reference: Yang et al. (2011) Nature Genetics 43:519-525 (GCTA-GREML).
 
 from __future__ import annotations
 
-import math
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from metainformant.core.utils import logging
+from metainformant.gwas.heritability.estimation import greml_simple
 
 logger = logging.get_logger(__name__)
 
@@ -38,118 +38,34 @@ def estimate_heritability(
 ) -> Dict[str, Any]:
     """Estimate SNP heritability (h2_SNP) using REML variance component estimation.
 
-    Eigendecomposes the kinship matrix K, rotates phenotypes into the
-    eigenspace, then performs a grid search over h2 in [0, 1] to maximize
-    the restricted log-likelihood.
+    Delegates to the shared REML core in
+    :func:`metainformant.gwas.heritability.estimation.greml_simple`, which
+    eigendecomposes the kinship matrix, rotates the phenotypes into the
+    eigenspace, and maximizes the restricted log-likelihood by grid search
+    followed by golden-section refinement. Keeping a single REML core avoids
+    divergent duplicate implementations.
+
+    The core model:
+        y = mu + g + e
+        where Var(g) = sigma_g^2 * K, Var(e) = sigma_e^2 * I
+        h2 = sigma_g^2 / (sigma_g^2 + sigma_e^2)
+
+    Reference: Yang et al. (2011) Nature Genetics 43:519-525 (GCTA-GREML).
 
     Args:
         kinship_matrix: Kinship/GRM matrix (n x n), numpy array or list of lists.
         phenotypes: Phenotype values for each sample.
-        method: Estimation method. Currently only "reml" is supported.
+        method: Estimation method label. Only REML (GREML) is implemented;
+            the label is reported back in the result dictionary.
 
     Returns:
         Dictionary with status, h2 estimate, standard error, variance components,
         log-likelihood, sample size, and method used.
     """
-    if not HAS_NUMPY:
-        return {
-            "status": "error",
-            "message": "numpy is required for heritability estimation",
-        }
-
-    n = len(phenotypes)
-    if n < 3:
-        return {
-            "status": "error",
-            "message": f"Need at least 3 samples for heritability estimation, got {n}",
-        }
-
-    try:
-        y = np.array(phenotypes, dtype=float)
-        K = np.asarray(kinship_matrix, dtype=float)
-    except (ValueError, TypeError) as e:
-        return {
-            "status": "error",
-            "message": f"Failed to convert inputs to arrays: {e}",
-        }
-
-    if K.shape != (n, n):
-        return {
-            "status": "error",
-            "message": f"Kinship matrix shape {K.shape} does not match {n} samples",
-        }
-
-    # Check for zero-variance phenotypes
-    if np.var(y) < 1e-12:
-        return {
-            "status": "error",
-            "message": "Phenotype has zero or near-zero variance",
-        }
-
-    logger.debug(f"Estimating heritability with {n} samples using method={method}")
-
-    try:
-        # Eigendecompose K
-        eigenvalues, eigenvectors = np.linalg.eigh(K)
-        # Sort descending
-        idx = np.argsort(eigenvalues)[::-1]
-        eigenvalues = eigenvalues[idx]
-        eigenvectors = eigenvectors[:, idx]
-        # Clamp small negative eigenvalues
-        eigenvalues = np.maximum(eigenvalues, 0.0)
-
-        # Rotate phenotypes
-        Ut = eigenvectors.T
-        y_rot = Ut @ y
-
-        # Intercept in rotated space
-        ones_rot = Ut @ np.ones(n)
-
-        # Grid search over h2 in [0, 1]
-        n_grid = 100
-        h2_grid = np.linspace(0.001, 0.999, n_grid)
-        best_ll = -np.inf
-        best_h2 = 0.5
-
-        for h2_candidate in h2_grid:
-            ll = _reml_log_likelihood(y_rot, ones_rot, eigenvalues, h2_candidate, n)
-            if ll > best_ll:
-                best_ll = ll
-                best_h2 = h2_candidate
-
-        # Refine with golden section search around the best grid point
-        step = 1.0 / n_grid
-        lo = max(0.001, best_h2 - step)
-        hi = min(0.999, best_h2 + step)
-        best_h2 = _golden_section_max(
-            lambda h2: _reml_log_likelihood(y_rot, ones_rot, eigenvalues, h2, n),
-            lo,
-            hi,
-        )
-        best_ll = _reml_log_likelihood(y_rot, ones_rot, eigenvalues, best_h2, n)
-
-        # Derive variance components from h2
-        total_var = float(np.var(y))
-        sigma_g = best_h2 * total_var
-        sigma_e = (1.0 - best_h2) * total_var
-
-        # Approximate standard error via second derivative of log-likelihood
-        h2_se = _approximate_h2_se(y_rot, ones_rot, eigenvalues, best_h2, n)
-
-        return {
-            "status": "success",
-            "h2": float(best_h2),
-            "h2_se": float(h2_se),
-            "sigma_g": float(sigma_g),
-            "sigma_e": float(sigma_e),
-            "log_likelihood": float(best_ll),
-            "n_samples": n,
-            "method": method,
-        }
-
-    except Exception as e:
-        logger.warning(f"Heritability estimation failed: {e}")
-        return {"status": "error", "message": str(e)}
+    result = greml_simple(kinship_matrix, phenotypes)
+    if result.get("status") == "success":
+        result["method"] = method
+    return result
 
 
 def partition_heritability_by_chromosome(
@@ -201,7 +117,9 @@ def partition_heritability_by_chromosome(
             per_chromosome[str(chrom)] = {"h2": chr_h2, "h2_se": chr_se}
             total_h2 += chr_h2
         else:
-            logger.warning(f"Chromosome {chrom} estimation failed: {result.get('message', 'unknown')}")
+            logger.warning(
+                f"Chromosome {chrom} estimation failed: {result.get('message', 'unknown')}"
+            )
             per_chromosome[str(chrom)] = {"h2": 0.0, "h2_se": 0.0}
 
     # Cap total h2 at 1.0 (sum of independent estimates can exceed 1)
@@ -319,142 +237,3 @@ def heritability_bar_chart(
     except Exception as e:
         logger.warning(f"Heritability bar chart failed: {e}")
         return {"status": "failed", "output_path": None, "message": str(e)}
-
-
-# ---------------------------------------------------------------------------
-# Internal helpers
-# ---------------------------------------------------------------------------
-
-
-def _reml_log_likelihood(
-    y_rot: Any,
-    ones_rot: Any,
-    eigenvalues: Any,
-    h2: float,
-    n: int,
-) -> float:
-    """Compute the restricted log-likelihood for a given h2.
-
-    In the rotated space with V = h2 * diag(lambda) + (1-h2) * I:
-
-    Args:
-        y_rot: Rotated phenotypes (U' y).
-        ones_rot: Rotated intercept vector (U' 1).
-        eigenvalues: Eigenvalues of K.
-        h2: Candidate heritability value in (0, 1).
-        n: Number of samples.
-
-    Returns:
-        REML log-likelihood value.
-    """
-    # Diagonal of V in eigenspace: h2 * lambda_i + (1 - h2)
-    d = h2 * eigenvalues + (1.0 - h2)
-    d = np.maximum(d, 1e-10)
-    d_inv = 1.0 / d
-
-    # Weighted least squares for intercept: beta = (1'V^-1 1)^-1 1'V^-1 y
-    ot_dinv_o = float(np.sum(d_inv * ones_rot**2))
-    if ot_dinv_o < 1e-30:
-        return -1e30
-    ot_dinv_y = float(np.sum(d_inv * ones_rot * y_rot))
-    beta_hat = ot_dinv_y / ot_dinv_o
-
-    residuals = y_rot - beta_hat * ones_rot
-    p = 1  # one fixed effect (intercept)
-
-    # Profiled sigma2
-    sigma2 = float(np.sum(d_inv * residuals**2)) / (n - p)
-    if sigma2 <= 0:
-        return -1e30
-
-    # REML log-likelihood
-    ll = -0.5 * (n - p) * math.log(2 * math.pi * sigma2)
-    ll -= 0.5 * float(np.sum(np.log(d)))
-    ll -= 0.5 * (n - p)
-    ll -= 0.5 * math.log(ot_dinv_o)
-
-    return float(ll)
-
-
-def _approximate_h2_se(
-    y_rot: Any,
-    ones_rot: Any,
-    eigenvalues: Any,
-    h2: float,
-    n: int,
-    delta: float = 0.005,
-) -> float:
-    """Approximate standard error of h2 using the curvature of the log-likelihood.
-
-    Computes SE = 1 / sqrt(-d2L/dh2^2) using finite differences.
-
-    Args:
-        y_rot: Rotated phenotypes.
-        ones_rot: Rotated intercept.
-        eigenvalues: Eigenvalues of K.
-        h2: Estimated h2.
-        n: Number of samples.
-        delta: Step size for finite difference.
-
-    Returns:
-        Approximate standard error of h2.
-    """
-    h2_lo = max(0.001, h2 - delta)
-    h2_hi = min(0.999, h2 + delta)
-    actual_delta = (h2_hi - h2_lo) / 2.0
-
-    ll_lo = _reml_log_likelihood(y_rot, ones_rot, eigenvalues, h2_lo, n)
-    ll_mid = _reml_log_likelihood(y_rot, ones_rot, eigenvalues, h2, n)
-    ll_hi = _reml_log_likelihood(y_rot, ones_rot, eigenvalues, h2_hi, n)
-
-    # Second derivative via central finite difference
-    d2ll = (ll_hi - 2.0 * ll_lo + ll_lo) / (actual_delta**2)
-    # Correct formula: (ll_hi - 2*ll_mid + ll_lo) / delta^2
-    d2ll = (ll_hi - 2.0 * ll_mid + ll_lo) / (actual_delta**2)
-
-    if d2ll >= 0:
-        # Likelihood surface is not concave here; return a large SE
-        return 0.5
-
-    fisher_info = -d2ll
-    se = 1.0 / math.sqrt(fisher_info)
-
-    # Cap SE to reasonable range
-    return min(se, 0.5)
-
-
-def _golden_section_max(
-    func: Any,
-    a: float,
-    b: float,
-    tol: float = 1e-6,
-    max_iter: int = 100,
-) -> float:
-    """Golden section search for the maximum of a unimodal function on [a, b].
-
-    Args:
-        func: Function to maximize (float -> float).
-        a: Lower bound.
-        b: Upper bound.
-        tol: Convergence tolerance.
-        max_iter: Maximum iterations.
-
-    Returns:
-        x value at maximum.
-    """
-    gr = (math.sqrt(5) + 1) / 2
-
-    c = b - (b - a) / gr
-    d = a + (b - a) / gr
-
-    for _ in range(max_iter):
-        if abs(b - a) < tol:
-            break
-        if func(c) < func(d):
-            a = c
-        else:
-            b = d
-        c = b - (b - a) / gr
-        d = a + (b - a) / gr
-
-    return (a + b) / 2.0

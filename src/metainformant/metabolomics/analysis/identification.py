@@ -10,6 +10,14 @@ from dataclasses import dataclass
 
 import numpy as np
 
+try:
+    from scipy import stats as _scipy_stats
+
+    HAS_SCIPY = True
+except ImportError:  # pragma: no cover - scipy is optional
+    _scipy_stats = None
+    HAS_SCIPY = False
+
 
 @dataclass
 class MetaboliteMatch:
@@ -148,7 +156,11 @@ def differential_abundance(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Compute differential abundance statistics between two groups.
 
-    Performs a two-sample t-test for each metabolite comparing group A vs B.
+    Performs Welch's two-sample t-test for each metabolite comparing group
+    A vs B: unequal-variance standard error with Welch-Satterthwaite
+    degrees of freedom, and two-sided p-values from Student's t
+    distribution (scipy) or the normal approximation when scipy is
+    unavailable.
 
     Args:
         intensities: 2D array (metabolites × samples).
@@ -170,13 +182,32 @@ def differential_abundance(
     var_a = data_a.var(axis=1, ddof=1) if n_a > 1 else np.zeros(intensities.shape[0])
     var_b = data_b.var(axis=1, ddof=1) if n_b > 1 else np.zeros(intensities.shape[0])
 
-    pooled_se = np.sqrt(var_a / max(n_a, 1) + var_b / max(n_b, 1))
-    pooled_se = np.where(pooled_se > 0, pooled_se, 1e-10)
+    va = var_a / n_a
+    vb = var_b / n_b
+    se2 = va + vb
 
-    t_stats = (mean_a - mean_b) / pooled_se
+    diff = mean_a - mean_b
+    zero_var = se2 <= 0
+    se2_safe = np.where(zero_var, 1.0, se2)
+    t_stats = diff / np.sqrt(se2_safe)
+    # Degenerate case: no variance in either group. A difference between two
+    # constant groups is infinitely significant; identical constants are not.
+    t_stats = np.where(zero_var & (diff != 0), np.copysign(np.inf, diff), t_stats)
+    t_stats = np.where(zero_var & (diff == 0), 0.0, t_stats)
 
-    # Approximate p-value using normal distribution for large df
-    p_values = 2.0 * _normal_sf(np.abs(t_stats))
+    if HAS_SCIPY and _scipy_stats is not None:
+        # Welch-Satterthwaite degrees of freedom; zero-variance groups
+        # contribute no degrees of freedom.
+        denom = np.zeros_like(se2)
+        if n_a > 1:
+            denom = denom + va**2 / (n_a - 1)
+        if n_b > 1:
+            denom = denom + vb**2 / (n_b - 1)
+        df = np.where(denom > 0, se2**2 / np.where(denom > 0, denom, 1.0), np.inf)
+        p_values = 2.0 * _scipy_stats.t.sf(np.abs(t_stats), df)
+    else:
+        # Normal approximation fallback when scipy is unavailable
+        p_values = 2.0 * _normal_sf(np.abs(t_stats))
 
     return t_stats, p_values
 
@@ -369,7 +400,9 @@ def missing_value_imputation(
             for col in np.where(missing_mask)[0]:
                 neighbor_vals = data[top_k, col]
                 valid_neighbors = neighbor_vals[~np.isnan(neighbor_vals)]
-                filled[i, col] = valid_neighbors.mean() if len(valid_neighbors) > 0 else 0.0
+                filled[i, col] = (
+                    valid_neighbors.mean() if len(valid_neighbors) > 0 else 0.0
+                )
             data[i] = filled[i]
 
     elif method == "median":

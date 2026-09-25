@@ -1,14 +1,17 @@
-"""Regression tests for the Chao-Shen entropy estimator fix (Round-4 T3).
+"""Regression tests for the Chao-Shen entropy estimator.
 
-The previous implementation was an ad-hoc 'lambda terms' formula that did not
-implement Chao-Shen (2003). These tests pin the real coverage-adjusted
-estimator against hand-computed values and structural invariants.
+The current implementation is the published Chao-Shen (2003) estimator --
+identical to ``entropy.ChaoShen`` in the R `entropy` package (Strimmer):
+coverage C = 1 - f1/n, adjusted probabilities pa = C*p, Horvitz-Thompson
+inclusion probabilities la = 1 - (1-pa)^n, H = -sum pa*log2(pa)/la.
+These tests pin it against hand-computed values and structural invariants.
+(An earlier implementation used an ad-hoc singleton/non-singleton surrogate;
+its pinned values were replaced by the published-estimator values below.)
 real implementations: all values computed from real arithmetic.
 """
 
 from __future__ import annotations
 
-import math
 
 import numpy as np
 
@@ -21,7 +24,7 @@ from metainformant.information.metrics.core.estimation import (
 
 def _reference_chao_shen(counts: list[int]) -> float:
     """Independent hand-rolled reference implementation for cross-checking."""
-    arr = np.array(counts, dtype=int)
+    arr = np.array(counts, dtype=float)
     arr = arr[arr > 0]
     total = int(arr.sum())
     if total == 0:
@@ -30,23 +33,20 @@ def _reference_chao_shen(counts: list[int]) -> float:
     coverage = 1.0 - f1 / total
     if coverage <= 0.0:
         return 0.0
-    h = 0.0
-    for c in arr:
-        p_adj = coverage * c / total
-        if c == 1:
-            h -= p_adj * math.log2(p_adj / coverage)
-        else:
-            h -= p_adj * math.log2(p_adj)
-    return max(0.0, h)
+    adjusted = coverage * arr / total
+    inclusion = 1.0 - (1.0 - adjusted) ** total
+    return max(0.0, float(-np.sum(adjusted * np.log2(adjusted) / inclusion)))
 
 
 class TestChaoShenEstimator:
     """Value-pinned regression tests for the coverage-adjusted estimator."""
 
     def test_matches_hand_computed_value_sparse(self) -> None:
-        # counts {A:50, T:2, G:1, C:1}: n=54, f1=2, C=52/54
+        # counts {A:50, T:2, G:1, C:1}: n=54, f1=2, C=52/54; value of the
+        # published estimator (was 0.5243226408289577 under the removed
+        # ad-hoc surrogate).
         counts = np.array([50, 2, 1, 1])
-        expected = 0.5243226408289577
+        expected = 0.6805093130489859
         got = _chao_shen_entropy_estimator(counts, total=54)
         assert abs(got - expected) < 1e-12
 
@@ -74,7 +74,7 @@ class TestChaoShenEstimator:
         counts = {"A": 50, "T": 2, "G": 1, "C": 1}
         h = entropy_estimator(counts, method="chao_shen")
         assert h >= 0.0
-        assert abs(h - 0.5243226408289577) < 1e-12
+        assert abs(h - 0.6805093130489859) < 1e-12
 
     def test_zero_and_empty_inputs(self) -> None:
         assert _chao_shen_entropy_estimator(np.array([0, 0]), total=0) == 0.0

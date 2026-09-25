@@ -46,7 +46,9 @@ def allele_frequencies(
                 if base in "ATCG":
                     counts[base] = counts.get(base, 0) + 1
             total = sum(counts.values())
-            site_frequencies.append({base: count / total for base, count in counts.items()} if total else {})
+            site_frequencies.append(
+                {base: count / total for base, count in counts.items()} if total else {}
+            )
         return site_frequencies
 
     genotype_counts = cast("Sequence[Sequence[int]]", genotype_matrix)
@@ -239,14 +241,33 @@ def segregating_sites(seqs: Sequence[str]) -> int:
 def hudson_fst(pop1: Sequence[str], pop2: Sequence[str]) -> float:
     """Calculate Hudson's F_ST between two populations.
 
-    F_ST measures the genetic differentiation between populations.
+    Implements Hudson's (1992) moment estimator as popularised by Bhatia et
+    al. (2013). At each site the reference allele is the most common pooled
+    allele (ties broken alphabetically); with ``p1``/``p2`` its frequency in
+    each population and ``n1``/``n2`` the number of valid gene copies
+    sampled per population,
+
+        num = (p1 - p2)^2 - p1*(1 - p1)/(n1 - 1) - p2*(1 - p2)/(n2 - 1)
+        den = p1*(1 - p2) + p2*(1 - p1)
+
+    and ``F_ST = sum(num) / sum(den)`` across usable sites. Sites with
+    fewer than two valid copies in either population are skipped. When no
+    site contributes a positive denominator, the result is 1.0 if the
+    populations showed a frequency difference (fixed for different
+    alleles) and 0.0 otherwise (identically fixed).
+
+    Note: the estimate can be slightly negative when the populations are
+    effectively undifferentiated -- a known property of the unbiased
+    moment estimator. This is not the heterozygosity-based per-site
+    estimator in
+    :func:`metainformant.dna.population.analysis.calculate_fst`.
 
     Args:
         pop1: Sequences from population 1
         pop2: Sequences from population 2
 
     Returns:
-        F_ST value (0.0 to 1.0)
+        F_ST value
 
     Raises:
         ValueError: If populations have different sequence lengths
@@ -261,29 +282,45 @@ def hudson_fst(pop1: Sequence[str], pop2: Sequence[str]) -> float:
         raise ValueError("Populations must have same sequence length")
 
     seq_length = len(pop1[0])
-    total_fst = 0.0
-    valid_sites = 0
+    numerator_sum = 0.0
+    denominator_sum = 0.0
+    saw_valid_pair = False
+    saw_shared_allele = False
 
     for pos in range(seq_length):
-        # Get alleles at this position for both populations
+        # Keep only unambiguous bases (ATCG, case-insensitive)
         alleles_pop1 = [seq[pos].upper() for seq in pop1 if seq[pos].upper() in "ATCG"]
         alleles_pop2 = [seq[pos].upper() for seq in pop2 if seq[pos].upper() in "ATCG"]
 
-        if not alleles_pop1 or not alleles_pop2:
-            continue
+        # Track whether the populations are comparable and ever fixed for
+        # different alleles, for the degenerate no-usable-site fallback.
+        if alleles_pop1 and alleles_pop2:
+            saw_valid_pair = True
+            if set(alleles_pop1) & set(alleles_pop2):
+                saw_shared_allele = True
 
-        # Calculate allele frequencies
-        freq_pop1 = _allele_frequencies_from_list(alleles_pop1)
-        freq_pop2 = _allele_frequencies_from_list(alleles_pop2)
+        n1 = len(alleles_pop1)
+        n2 = len(alleles_pop2)
+        if n1 < 2 or n2 < 2:
+            continue  # Cannot estimate the sampling correction
 
-        # Calculate F_ST for this locus
-        fst_locus = _fst_single_locus(freq_pop1, freq_pop2)
+        reference = _most_common_allele(alleles_pop1 + alleles_pop2)
+        p1 = alleles_pop1.count(reference) / n1
+        p2 = alleles_pop2.count(reference) / n2
 
-        if not math.isnan(fst_locus):
-            total_fst += fst_locus
-            valid_sites += 1
+        numerator_sum += (
+            (p1 - p2) ** 2 - p1 * (1 - p1) / (n1 - 1) - p2 * (1 - p2) / (n2 - 1)
+        )
+        denominator_sum += p1 * (1 - p2) + p2 * (1 - p1)
 
-    return total_fst / valid_sites if valid_sites > 0 else 0.0
+    if denominator_sum > 0:
+        return numerator_sum / denominator_sum
+    if saw_valid_pair and not saw_shared_allele:
+        # No site was usable for the corrected estimator, but every
+        # comparable site is fixed for different alleles: complete
+        # differentiation.
+        return 1.0
+    return 0.0
 
 
 def fu_and_li_d_star_from_sequences(seqs: Sequence[str]) -> float:
@@ -447,7 +484,9 @@ def expected_heterozygosity(genotype_matrix: Sequence[Sequence[int]]) -> float:
     total_he = 0.0
 
     for locus in genotype_matrix:
-        freqs = cast("List[float]", allele_frequencies([locus]))  # Wrap in list for single locus
+        freqs = cast(
+            "List[float]", allele_frequencies([locus])
+        )  # Wrap in list for single locus
         p = freqs[0]  # Allele frequency
         q = 1 - p  # Other allele frequency
 
@@ -508,7 +547,13 @@ def linkage_disequilibrium(seqs: Sequence[str], pos1: int, pos2: int) -> float:
         pos2: Second position
 
     Returns:
-        Linkage disequilibrium coefficient D
+        Linkage disequilibrium coefficient
+        ``D = f_AB - p_A * p_B``, where the reference alleles A and B are
+        the most common allele at each site (ties broken alphabetically) and
+        f_AB counts haplotypes carrying both reference alleles. Positive D
+        means the reference alleles are coupled (in phase); negative D means
+        they are in repulsion (e.g. haplotypes Ab and aB only, which yields
+        D = -0.25 at equal frequencies).
     """
     if len(seqs) < 2:
         return 0.0
@@ -542,33 +587,39 @@ def linkage_disequilibrium(seqs: Sequence[str], pos1: int, pos2: int) -> float:
         hap = (a1, a2)
         haplotypes[hap] = haplotypes.get(hap, 0) + 1
 
-    # Calculate D = p_AB - p_A * p_B
-    # Where A and B are derived alleles (assuming first allele is ancestral)
-    alleles_a = set(alleles1)
-    alleles_b = set(alleles2)
-
-    if len(alleles_a) < 2 or len(alleles_b) < 2:
+    # D is only defined for two segregating sites
+    if len(set(alleles1)) < 2 or len(set(alleles2)) < 2:
         return 0.0  # No variation
 
-    # Use most common allele as ancestral
-    ancestral_a = max(set(alleles1), key=alleles1.count)
-    ancestral_b = max(set(alleles2), key=alleles2.count)
+    # Reference alleles ("A" and "B" below): the most common allele at each
+    # site, with ties broken alphabetically. The choice must be a pure
+    # function of the input -- iterating over a `set` (the previous
+    # implementation) made the sign of D depend on Python's per-process
+    # string hash order.
+    ref_a = _most_common_allele(alleles1)
+    ref_b = _most_common_allele(alleles2)
 
-    # Find derived alleles (non-ancestral)
-    derived_a = next((a for a in alleles_a if a != ancestral_a), None)
-    derived_b = next((b for b in alleles_b if b != ancestral_b), None)
+    # D = f_AB - p_A * p_B, where f_AB is the frequency of haplotypes
+    # carrying the reference allele at BOTH sites (phase taken from the
+    # same sequence). Coupled reference alleles give D > 0, repulsion
+    # (e.g. haplotypes Ab / aB in equal frequency) gives D < 0.
+    p_a = alleles1.count(ref_a) / n
+    p_b = alleles2.count(ref_b) / n
+    p_ab = haplotypes.get((ref_a, ref_b), 0) / n
 
-    if not derived_a or not derived_b:
-        return 0.0
+    return p_ab - p_a * p_b
 
-    # Calculate frequencies
-    p_a = alleles1.count(ancestral_a) / n
-    p_b = alleles2.count(ancestral_b) / n
-    p_ab = haplotypes.get((ancestral_a, ancestral_b), 0) / n
 
-    d = p_ab - p_a * p_b
+def _most_common_allele(alleles: List[str]) -> str:
+    """Return the most common allele, breaking ties alphabetically.
 
-    return d
+    Deterministic on the input order: unlike ``max(set(alleles), key=...)``
+    this never depends on set iteration order.
+    """
+    counts: Dict[str, int] = {}
+    for allele in alleles:
+        counts[allele] = counts.get(allele, 0) + 1
+    return min(counts, key=lambda allele: (-counts[allele], allele))
 
 
 def _check_alignment(seqs: Sequence[str]) -> bool:
@@ -604,49 +655,6 @@ def _count_singletons(seqs: Sequence[str]) -> int:
             singletons += 1
 
     return singletons
-
-
-def _allele_frequencies_from_list(alleles: List[str]) -> dict[str, float]:
-    """Calculate allele frequencies from list of alleles."""
-    if not alleles:
-        return {}
-
-    from collections import Counter
-
-    counts = Counter(alleles)
-    total = len(alleles)
-
-    return {allele: count / total for allele, count in counts.items()}
-
-
-def _fst_single_locus(freq1: dict[str, float], freq2: dict[str, float]) -> float:
-    """Calculate F_ST for a single locus."""
-    # Get all alleles
-    all_alleles = set(freq1.keys()) | set(freq2.keys())
-
-    # Calculate heterozygosity within populations
-    h1 = 1 - sum(freq1.get(allele, 0) ** 2 for allele in all_alleles)
-    h2 = 1 - sum(freq2.get(allele, 0) ** 2 for allele in all_alleles)
-
-    # Average heterozygosity within populations
-    h_s = (h1 + h2) / 2
-
-    if h_s == 0:
-        return 0.0
-
-    # Calculate heterozygosity in total population
-    total_freq = {}
-    for allele in all_alleles:
-        f1 = freq1.get(allele, 0)
-        f2 = freq2.get(allele, 0)
-        total_freq[allele] = (f1 + f2) / 2
-
-    h_t = 1 - sum(freq**2 for freq in total_freq.values())
-
-    # F_ST = (H_T - H_S) / H_T
-    fst = (h_t - h_s) / h_t if h_t > 0 else 0.0
-
-    return fst
 
 
 def _variance_pi_theta(n: int, s: int) -> float:

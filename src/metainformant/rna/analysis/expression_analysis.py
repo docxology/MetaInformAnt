@@ -10,6 +10,8 @@ All implementations are pure Python using numpy, scipy, and pandas.
 
 from __future__ import annotations
 
+import warnings
+
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
@@ -32,7 +34,14 @@ DEMethod = Literal["deseq2_like", "ttest", "wilcoxon"]
 PValueMethod = Literal["bh", "bonferroni", "fdr"]
 DistanceMethod = Literal["euclidean", "correlation", "cosine"]
 
-DE_RESULT_COLUMNS = ["gene", "log2_fold_change", "p_value", "adjusted_p_value", "base_mean", "stat"]
+DE_RESULT_COLUMNS = [
+    "gene",
+    "log2_fold_change",
+    "p_value",
+    "adjusted_p_value",
+    "base_mean",
+    "stat",
+]
 
 
 def _empty_de_results() -> pd.DataFrame:
@@ -40,10 +49,14 @@ def _empty_de_results() -> pd.DataFrame:
     return pd.DataFrame(columns=DE_RESULT_COLUMNS)
 
 
-def _align_conditions_to_counts(counts_df: pd.DataFrame, conditions: Union[List[str], pd.Series]) -> pd.Series:
+def _align_conditions_to_counts(
+    counts_df: pd.DataFrame, conditions: Union[List[str], pd.Series]
+) -> pd.Series:
     """Validate and align condition labels to count-matrix columns."""
     if len(conditions) != len(counts_df.columns):
-        raise ValueError(f"Conditions length ({len(conditions)}) doesn't match samples ({len(counts_df.columns)})")
+        raise ValueError(
+            f"Conditions length ({len(conditions)}) doesn't match samples ({len(counts_df.columns)})"
+        )
 
     if isinstance(conditions, list):
         aligned = pd.Series(conditions, index=counts_df.columns)
@@ -51,10 +64,14 @@ def _align_conditions_to_counts(counts_df: pd.DataFrame, conditions: Union[List[
         aligned = conditions.copy()
         if aligned.index.equals(counts_df.columns):
             aligned = aligned.loc[counts_df.columns]
-        elif isinstance(aligned.index, pd.RangeIndex) and aligned.index.equals(pd.RangeIndex(len(counts_df.columns))):
+        elif isinstance(aligned.index, pd.RangeIndex) and aligned.index.equals(
+            pd.RangeIndex(len(counts_df.columns))
+        ):
             aligned.index = counts_df.columns
         else:
-            raise ValueError("Conditions Series index must match count matrix columns or use a positional RangeIndex")
+            raise ValueError(
+                "Conditions Series index must match count matrix columns or use a positional RangeIndex"
+            )
     else:
         raise TypeError("conditions must be a list or pandas Series")
 
@@ -87,8 +104,9 @@ def differential_expression(
         conditions: Condition labels for each sample, matching column order.
             Must contain exactly two unique conditions.
         method: Statistical method for DE analysis:
-            - "deseq2_like": Negative binomial model with Wald test
-            - "ttest": Student's t-test on normalized counts
+            - "deseq2_like": Negative binomial likelihood ratio test with
+              log(size factor) offsets (a Wald statistic is also reported)
+            - "ttest": Welch's t-test on log2 size-factor-normalized counts
             - "wilcoxon": Wilcoxon rank-sum (Mann-Whitney U) test
         reference: Reference condition for fold change calculation.
             If None, uses the first condition alphabetically.
@@ -99,10 +117,12 @@ def differential_expression(
     Returns:
         DataFrame with columns:
             - gene: Gene identifier
-            - log2_fold_change: Log2 fold change (treatment vs reference)
+            - log2_fold_change: Log2 fold change (treatment vs reference),
+              computed from size-factor-normalized group means
             - p_value: Raw p-value from statistical test
             - adjusted_p_value: Multiple testing-adjusted p-value
-            - base_mean: Mean expression across all samples
+            - base_mean: Size-factor-normalized mean expression across all
+              samples
             - stat: Test statistic (t-stat, Wald stat, or U stat)
 
     Raises:
@@ -126,13 +146,17 @@ def differential_expression(
     # Validate conditions
     unique_conditions = conditions.unique()
     if len(unique_conditions) != 2:
-        raise ValueError(f"Expected exactly 2 conditions, got {len(unique_conditions)}: {unique_conditions}")
+        raise ValueError(
+            f"Expected exactly 2 conditions, got {len(unique_conditions)}: {unique_conditions}"
+        )
 
     # Determine reference and treatment conditions
     if reference is None:
         reference = sorted(unique_conditions)[0]
     elif reference not in unique_conditions:
-        raise ValueError(f"Reference condition '{reference}' is not present in conditions: {list(unique_conditions)}")
+        raise ValueError(
+            f"Reference condition '{reference}' is not present in conditions: {list(unique_conditions)}"
+        )
 
     treatment = [c for c in unique_conditions if c != reference][0]
     logger.info(f"Comparing {treatment} vs {reference} (reference)")
@@ -142,7 +166,9 @@ def differential_expression(
     treat_samples = conditions[conditions == treatment].index.tolist()
 
     if len(ref_samples) < 2 or len(treat_samples) < 2:
-        logger.warning(f"Small sample sizes: {len(ref_samples)} reference, {len(treat_samples)} treatment")
+        logger.warning(
+            f"Small sample sizes: {len(ref_samples)} reference, {len(treat_samples)} treatment"
+        )
 
     # Filter low-expression genes
     min_count = kwargs.get("min_count", 10)
@@ -150,7 +176,9 @@ def differential_expression(
     valid_genes = gene_totals >= min_count
     filtered_counts = counts_df.loc[valid_genes]
 
-    logger.info(f"Analyzing {valid_genes.sum()}/{len(counts_df)} genes (min_count={min_count})")
+    logger.info(
+        f"Analyzing {valid_genes.sum()}/{len(counts_df)} genes (min_count={min_count})"
+    )
 
     if filtered_counts.empty:
         return _empty_de_results()
@@ -163,14 +191,18 @@ def differential_expression(
     elif method == "wilcoxon":
         results = _de_wilcoxon(filtered_counts, ref_samples, treat_samples)
     else:
-        raise ValueError(f"Unknown DE method: {method}. Valid methods: deseq2_like, ttest, wilcoxon")
+        raise ValueError(
+            f"Unknown DE method: {method}. Valid methods: deseq2_like, ttest, wilcoxon"
+        )
 
     if results.empty:
         return _empty_de_results()
 
     # Adjust p-values
     pvalue_method = kwargs.get("pvalue_method", "bh")
-    results["adjusted_p_value"] = adjust_pvalues(results["p_value"].values, method=pvalue_method)
+    results["adjusted_p_value"] = adjust_pvalues(
+        results["p_value"].values, method=pvalue_method
+    )
 
     # Sort by adjusted p-value
     results = results.sort_values("adjusted_p_value")
@@ -185,6 +217,11 @@ def _de_deseq2_like(
 ) -> pd.DataFrame:
     """Perform DESeq2-like analysis using negative binomial model.
 
+    The negative binomial likelihood is fitted on the raw counts with
+    log(size factor) as an offset, so library-depth differences between
+    samples are absorbed before testing. Fold changes, base means, and
+    the Wald statistic are reported on the size-factor-normalized scale.
+
     Args:
         counts: Filtered count matrix.
         ref_samples: Reference condition sample names.
@@ -195,44 +232,59 @@ def _de_deseq2_like(
     """
     results = []
 
-    # Normalize counts for fold change calculation
+    # Size factors drive the NB offset and all normalized-scale summaries
     size_factors = estimate_size_factors(counts)
     normalized = counts.div(size_factors, axis=1)
+    ref_sf = size_factors[ref_samples].to_numpy(dtype=float)
+    treat_sf = size_factors[treat_samples].to_numpy(dtype=float)
 
     for gene in counts.index:
         ref_counts = counts.loc[gene, ref_samples].values.astype(float)
         treat_counts = counts.loc[gene, treat_samples].values.astype(float)
+        ref_norm = normalized.loc[gene, ref_samples].to_numpy(dtype=float)
+        treat_norm = normalized.loc[gene, treat_samples].to_numpy(dtype=float)
 
-        # Calculate base mean
+        # Base mean on the size-factor-normalized scale
         base_mean = normalized.loc[gene].mean()
 
-        # Calculate log2 fold change
-        ref_mean = ref_counts.mean() + 0.5  # Pseudocount
-        treat_mean = treat_counts.mean() + 0.5
-        log2fc = np.log2(treat_mean / ref_mean)
+        # Fallback log2 fold change from normalized group means
+        ref_mean = ref_norm.mean() + 0.5  # Pseudocount
+        treat_mean = treat_norm.mean() + 0.5
+        log2fc = float(np.log2(treat_mean / ref_mean))
 
-        # Negative binomial test
-        log2fc_nb, pvalue, _ = _negative_binomial_test(ref_counts, treat_counts)
+        # Negative binomial test with log(size factor) offsets
+        log2fc_nb, pvalue, _ = _negative_binomial_test(
+            ref_counts, treat_counts, size_factors_a=ref_sf, size_factors_b=treat_sf
+        )
 
         # Use the NB-derived fold change if valid
         if not np.isnan(log2fc_nb):
             log2fc = log2fc_nb
 
         # Wald statistic on the log2 scale via the delta method: the SE of a
-        # log2 fold change is derived from the NB variance (mean + dispersion
-        # * mean^2) propagated through the log transform, so the statistic is
-        # unit-consistent (z-like). The p-value comes from the NB test above,
-        # never from this statistic.
-        all_counts = np.concatenate([ref_counts, treat_counts])
-        dispersion = _estimate_dispersion(all_counts) if all_counts.var() > all_counts.mean() else 0.0
+        # log2 fold change is derived from the offset-adjusted NB variance
+        # (Var(y_j / sf_j) = m / sf_j + dispersion * m^2) propagated through
+        # the log transform, so the statistic is unit-consistent (z-like)
+        # with the normalized log2 fold change. The p-value comes from the
+        # NB test above, never from this statistic.
+        all_norm = np.concatenate([ref_norm, treat_norm])
+        dispersion = (
+            _estimate_dispersion(all_norm) if all_norm.var() > all_norm.mean() else 0.0
+        )
 
-        def _se_log2_term(counts: "np.ndarray") -> float:
-            mean = counts.mean() + 0.5  # match the log2fc pseudocount
-            variance = mean + dispersion * mean**2
-            n = len(counts)
-            return float(variance / (n * mean * mean))
+        def _se_log2_term(sf_values: "np.ndarray", mean_norm: float) -> float:
+            mean = mean_norm + 0.5  # match the log2fc pseudocount
+            total_variance = float(np.sum(mean / sf_values + dispersion * mean**2))
+            n = len(sf_values)
+            return float(total_variance / (n * mean) ** 2)
 
-        se_log2 = float(np.sqrt(_se_log2_term(ref_counts) + _se_log2_term(treat_counts)) / np.log(2))
+        se_log2 = float(
+            np.sqrt(
+                _se_log2_term(ref_sf, ref_norm.mean())
+                + _se_log2_term(treat_sf, treat_norm.mean())
+            )
+            / np.log(2)
+        )
         wald_stat = float(log2fc / se_log2) if se_log2 > 0 else 0.0
 
         results.append(
@@ -255,6 +307,9 @@ def _de_ttest(
 ) -> pd.DataFrame:
     """Perform differential expression using t-tests.
 
+    Welch's t-test on log2 size-factor-normalized counts; fold changes
+    and base means are also reported on the normalized scale.
+
     Args:
         counts: Filtered count matrix.
         ref_samples: Reference condition sample names.
@@ -263,33 +318,57 @@ def _de_ttest(
     Returns:
         DataFrame with DE results.
     """
-    # Log-transform for t-test
-    log_counts = np.log2(counts + 1)
+    # Size-factor normalize, then log-transform for the t-test
+    size_factors = estimate_size_factors(counts)
+    normalized = counts.div(size_factors, axis=1)
+    log_counts = np.log2(normalized + 1)
 
     results = []
     for gene in counts.index:
         ref_vals = log_counts.loc[gene, ref_samples].values
         treat_vals = log_counts.loc[gene, treat_samples].values
 
-        # Calculate fold change from original counts
-        ref_mean = counts.loc[gene, ref_samples].mean() + 0.5
-        treat_mean = counts.loc[gene, treat_samples].mean() + 0.5
+        # Fold change from normalized group means
+        ref_mean = normalized.loc[gene, ref_samples].mean() + 0.5
+        treat_mean = normalized.loc[gene, treat_samples].mean() + 0.5
         log2fc = np.log2(treat_mean / ref_mean)
 
-        # T-test
-        t_stat, pvalue = stats.ttest_ind(treat_vals, ref_vals, equal_var=False)
-
-        # Handle edge cases
-        if np.isnan(pvalue):
-            pvalue = 1.0
+        # T-test. Zero-variance groups (fully tied normalized values, which
+        # depth-shifted designs produce) are handled analytically: scipy's
+        # moment calculation would warn on catastrophic cancellation, and the
+        # deterministic answers are exact anyway.
+        treat_arr = np.asarray(treat_vals, dtype=float)
+        ref_arr = np.asarray(ref_vals, dtype=float)
+        var_treat = float(treat_arr.var(ddof=1)) if treat_arr.size > 1 else 0.0
+        var_ref = float(ref_arr.var(ddof=1)) if ref_arr.size > 1 else 0.0
+        if var_treat == 0.0 and var_ref == 0.0:
             t_stat = 0.0
+            pvalue = 1.0 if float(treat_arr.mean()) == float(ref_arr.mean()) else 0.0
+        elif var_treat == 0.0 or var_ref == 0.0:
+            # Exactly one constant group: the Welch SE collapses to the other
+            # group's variance and df collapses to n_other - 1.
+            se = float(np.sqrt(var_treat / treat_arr.size + var_ref / ref_arr.size))
+            t_stat = (float(treat_arr.mean()) - float(ref_arr.mean())) / se
+            df = (treat_arr.size - 1) if var_treat == 0.0 else (ref_arr.size - 1)
+            pvalue = float(2.0 * stats.t.sf(abs(t_stat), df))
+        else:
+            # scipy warns on near-tied inputs (catastrophic cancellation in
+            # moment calculations); the test result is still the best
+            # available estimate, so keep it and don't let the warning
+            # escalate under strict warning filters.
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", RuntimeWarning)
+                t_stat, pvalue = stats.ttest_ind(treat_arr, ref_arr, equal_var=False)
+            if np.isnan(pvalue):
+                pvalue = 1.0
+                t_stat = 0.0
 
         results.append(
             {
                 "gene": gene,
                 "log2_fold_change": log2fc,
                 "p_value": pvalue,
-                "base_mean": counts.loc[gene].mean(),
+                "base_mean": normalized.loc[gene].mean(),
                 "stat": t_stat,
             }
         )
@@ -304,6 +383,9 @@ def _de_wilcoxon(
 ) -> pd.DataFrame:
     """Perform differential expression using Wilcoxon rank-sum test.
 
+    The rank-sum test runs on the raw counts; fold changes and base means
+    are reported on the size-factor-normalized scale.
+
     Args:
         counts: Filtered count matrix.
         ref_samples: Reference condition sample names.
@@ -312,20 +394,25 @@ def _de_wilcoxon(
     Returns:
         DataFrame with DE results.
     """
+    size_factors = estimate_size_factors(counts)
+    normalized = counts.div(size_factors, axis=1)
+
     results = []
 
     for gene in counts.index:
         ref_vals = counts.loc[gene, ref_samples].values.astype(float)
         treat_vals = counts.loc[gene, treat_samples].values.astype(float)
 
-        # Calculate fold change
-        ref_mean = ref_vals.mean() + 0.5
-        treat_mean = treat_vals.mean() + 0.5
+        # Fold change from normalized group means
+        ref_mean = normalized.loc[gene, ref_samples].mean() + 0.5
+        treat_mean = normalized.loc[gene, treat_samples].mean() + 0.5
         log2fc = np.log2(treat_mean / ref_mean)
 
         # Wilcoxon rank-sum (Mann-Whitney U) test
         try:
-            u_stat, pvalue = stats.mannwhitneyu(treat_vals, ref_vals, alternative="two-sided")
+            u_stat, pvalue = stats.mannwhitneyu(
+                treat_vals, ref_vals, alternative="two-sided"
+            )
         except ValueError:
             # All values identical
             u_stat = 0.0
@@ -339,7 +426,7 @@ def _de_wilcoxon(
                 "gene": gene,
                 "log2_fold_change": log2fc,
                 "p_value": pvalue,
-                "base_mean": counts.loc[gene].mean(),
+                "base_mean": normalized.loc[gene].mean(),
                 "stat": u_stat,
             }
         )
@@ -350,47 +437,77 @@ def _de_wilcoxon(
 def _negative_binomial_test(
     counts_a: np.ndarray,
     counts_b: np.ndarray,
+    size_factors_a: Optional[np.ndarray] = None,
+    size_factors_b: Optional[np.ndarray] = None,
 ) -> Tuple[float, float, float]:
-    """Perform per-gene negative binomial test.
+    """Perform per-gene negative binomial offset likelihood ratio test.
 
-    Uses maximum likelihood estimation to fit negative binomial parameters
-    and computes a likelihood ratio test for differential expression.
+    Fits negative binomial means on the raw counts with log(size factor)
+    as an offset (exposure), so library-depth differences between samples
+    are absorbed before testing. The likelihood ratio test compares a null
+    model with a single shared normalized mean against an alternative with
+    one normalized mean per group; both models share the pooled dispersion
+    estimate, so the alternative adds exactly one mean parameter and the
+    statistic is referred to chi-square with 1 df.
+
+    Fold change and base mean are reported on the size-factor-normalized
+    scale (raw counts divided by their sample size factors).
 
     Args:
         counts_a: Counts from condition A (reference).
         counts_b: Counts from condition B (treatment).
+        size_factors_a: Size factors for condition A samples
+            (defaults to all 1).
+        size_factors_b: Size factors for condition B samples
+            (defaults to all 1).
 
     Returns:
-        Tuple of (log2_fold_change, p_value, base_mean).
+        Tuple of (log2_fold_change, p_value, base_mean) on the
+        size-factor-normalized scale.
     """
     counts_a = np.asarray(counts_a, dtype=float)
     counts_b = np.asarray(counts_b, dtype=float)
+    sf_a = (
+        np.ones(counts_a.size)
+        if size_factors_a is None
+        else np.asarray(size_factors_a, dtype=float)
+    )
+    sf_b = (
+        np.ones(counts_b.size)
+        if size_factors_b is None
+        else np.asarray(size_factors_b, dtype=float)
+    )
 
-    # Calculate means with pseudocount
-    mean_a = counts_a.mean() + 0.5
-    mean_b = counts_b.mean() + 0.5
-    log2fc = np.log2(mean_b / mean_a)
+    # Offset-adjusted (normalized) values drive all fitted means
+    norm_a = counts_a / sf_a
+    norm_b = counts_b / sf_b
+    all_norm = np.concatenate([norm_a, norm_b])
+    base_mean = float(all_norm.mean())
 
-    # Combined data for null model
-    all_counts = np.concatenate([counts_a, counts_b])
-    base_mean = all_counts.mean()
+    # Group means on the normalized scale, with pseudocount so that
+    # all-zero groups stay finite
+    mean_a = float(norm_a.mean()) + 0.5
+    mean_b = float(norm_b.mean()) + 0.5
+    log2fc = float(np.log2(mean_b / mean_a))
 
-    # Estimate dispersions
-    dispersion_pooled = _estimate_dispersion(all_counts)
-    dispersion_a = _estimate_dispersion(counts_a)
-    dispersion_b = _estimate_dispersion(counts_b)
+    # Pooled dispersion from the offset-adjusted values, shared by the
+    # null and alternative models
+    dispersion = _estimate_dispersion(all_norm)
 
-    # Log-likelihood for negative binomial
-    def nb_loglik(counts: np.ndarray, mu: float, dispersion: float) -> float:
-        """Compute negative binomial log-likelihood."""
-        if mu <= 0 or dispersion <= 0:
+    # Log-likelihood for negative binomial with per-observation exposure
+    def nb_loglik(
+        counts: np.ndarray, sf_values: np.ndarray, mean_norm: float, dispersion: float
+    ) -> float:
+        """Compute negative binomial log-likelihood for offset means."""
+        if mean_norm <= 0 or dispersion <= 0:
             return float("-inf")
 
         r = 1.0 / dispersion  # Size parameter
         loglik = 0.0
-        for k in counts:
+        for k, sf in zip(counts, sf_values):
             if k < 0:
                 return float("-inf")
+            mu = sf * mean_norm
             # NB log-likelihood: log(C(k+r-1, k)) + k*log(p) + r*log(1-p)
             # where p = mu/(mu + r)
             p = mu / (mu + r)
@@ -398,17 +515,23 @@ def _negative_binomial_test(
             loglik += k * np.log(p + 1e-10) + r * np.log(1 - p + 1e-10)
         return loglik
 
-    # Null model: same mean for both groups
-    ll_null = nb_loglik(all_counts, base_mean, dispersion_pooled)
+    # Null model: one shared normalized mean for both groups
+    all_counts = np.concatenate([counts_a, counts_b])
+    all_sf = np.concatenate([sf_a, sf_b])
+    mean_null = float(all_norm.mean()) + 0.5
+    ll_null = nb_loglik(all_counts, all_sf, mean_null, dispersion)
 
-    # Alternative model: different means
-    ll_alt = nb_loglik(counts_a, mean_a, dispersion_a) + nb_loglik(counts_b, mean_b, dispersion_b)
+    # Alternative model: different normalized means per group, same
+    # dispersion (single extra parameter => chi-square with 1 df)
+    ll_alt = nb_loglik(counts_a, sf_a, mean_a, dispersion) + nb_loglik(
+        counts_b, sf_b, mean_b, dispersion
+    )
 
-    # Likelihood ratio test (chi-squared with 1 df)
+    # Likelihood ratio test
     lr_stat = 2 * (ll_alt - ll_null)
 
     if lr_stat < 0 or np.isnan(lr_stat):
-        # Model fitting issue, fall back to simple test
+        # Model fitting issue, fall back to no evidence of differential expression
         pvalue = 1.0
     else:
         pvalue = stats.chi2.sf(lr_stat, df=1)
@@ -420,7 +543,10 @@ def _estimate_dispersion(counts: np.ndarray) -> float:
     """Estimate negative binomial dispersion parameter.
 
     Uses method of moments estimation with shrinkage toward a
-    reasonable default for small samples.
+    reasonable prior; the shrinkage weight decays with sample size
+    (half-weight at n=2, near-zero at realistic replicate counts), so
+    small samples lean on the prior while larger samples trust the
+    method-of-moments estimate.
 
     Args:
         counts: Array of count values.
@@ -443,9 +569,11 @@ def _estimate_dispersion(counts: np.ndarray) -> float:
     # alpha = (var - mu) / mu^2
     dispersion = (var_val - mean_val) / (mean_val**2) if mean_val > 0 else 0.1
 
-    # Shrink toward prior and ensure positive
+    # Shrink toward the prior with a weight that decays as the sample
+    # grows: w = 2 / (2 + n) gives half-weight at n=2 and concentrates on
+    # the method-of-moments estimate as replicate counts increase.
     prior_dispersion = 0.1
-    shrinkage = 0.5  # Weight toward prior for small samples
+    shrinkage = 2.0 / (2.0 + len(counts))
     dispersion = shrinkage * prior_dispersion + (1 - shrinkage) * dispersion
 
     return max(dispersion, 1e-6)  # Ensure positive
@@ -507,7 +635,9 @@ def adjust_pvalues(
         result = np.clip(valid_pvals * n, 0, 1)
 
     else:
-        raise ValueError(f"Unknown p-value adjustment method: {method}. Valid: bh, fdr, bonferroni")
+        raise ValueError(
+            f"Unknown p-value adjustment method: {method}. Valid: bh, fdr, bonferroni"
+        )
 
     # Restore NaN positions
     result[nan_mask] = np.nan
@@ -619,7 +749,7 @@ def pca_analysis(
     loadings = Vt.T * S / np.sqrt(n_samples - 1)  # Scaled loadings
 
     # Create DataFrames
-    pc_names = [f"PC{i+1}" for i in range(n_components)]
+    pc_names = [f"PC{i + 1}" for i in range(n_components)]
 
     transformed_df = pd.DataFrame(
         transformed,
@@ -705,7 +835,9 @@ def compute_sample_distances(
                 distances[j, i] = dist
 
     else:
-        raise ValueError(f"Unknown distance method: {method}. Valid: euclidean, correlation, cosine")
+        raise ValueError(
+            f"Unknown distance method: {method}. Valid: euclidean, correlation, cosine"
+        )
 
     return pd.DataFrame(distances, index=samples, columns=samples)
 
