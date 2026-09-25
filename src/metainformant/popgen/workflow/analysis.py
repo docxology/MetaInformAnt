@@ -27,6 +27,7 @@ from metainformant.dna.population.core import (
     fay_wu_h_from_sequences,
     fu_and_li_d_star_from_sequences,
     fu_and_li_f_star_from_sequences,
+    hudson_fst,
 )
 from metainformant.dna.sequence.core import read_fasta
 from metainformant.gwas.analysis.quality import test_hwe
@@ -126,12 +127,10 @@ def compare_two_population_sequences(
         statistic comparison from
         :func:`metainformant.dna.population.analysis.compare_populations`.
     """
-    from metainformant.dna.population.analysis import calculate_fst
-
     pop1 = list(read_fasta(str(pop1_fasta)).values())
     pop2 = list(read_fasta(str(pop2_fasta)).values())
 
-    fst = calculate_fst(pop1, pop2)
+    fst = hudson_fst(pop1, pop2)
     pop1_stats = calculate_summary_statistics(sequences=pop1)
     pop2_stats = calculate_summary_statistics(sequences=pop2)
     comparison = compare_populations(pop1_data=pop1_stats, pop2_data=pop2_stats)
@@ -183,7 +182,9 @@ def genotype_structure_analysis(
         "pca": {
             "status": pca_result.get("status"),
             "n_components": pca_result.get("n_components"),
-            "explained_variance_ratio": pca_result.get("explained_variance_ratio", [])[:5],
+            "explained_variance_ratio": pca_result.get("explained_variance_ratio", [])[
+                :5
+            ],
             "missing_data_stats": pca_result.get("missing_data_stats"),
             "pcs": pca_result.get("pcs", [])[:100],
             "full_result": pca_result,
@@ -336,33 +337,47 @@ def analyze_dataset(dataset_info: dict[str, Any], output_dir: Path) -> dict[str,
     for scenario_name in ("two_populations_low_fst", "two_populations_high_fst"):
         if scenario_name in scenarios:
             logger.info(f"Comparing populations for {scenario_name}")
-            results["scenario_analyses"][scenario_name] = compare_two_population_sequences(
-                scenarios[scenario_name]["file_pop1"],
-                scenarios[scenario_name]["file_pop2"],
+            results["scenario_analyses"][scenario_name] = (
+                compare_two_population_sequences(
+                    scenarios[scenario_name]["file_pop1"],
+                    scenarios[scenario_name]["file_pop2"],
+                )
             )
 
     if "large_genotypes" in scenarios:
         logger.info("Analyzing large genotype matrix")
         large_genotypes = load_json(scenarios["large_genotypes"]["file"])
-        results["scenario_analyses"]["large_genotypes"] = genotype_structure_analysis(large_genotypes)
+        results["scenario_analyses"]["large_genotypes"] = genotype_structure_analysis(
+            large_genotypes
+        )
 
     if "linkage_disequilibrium" in scenarios:
         logger.info("Analyzing linkage disequilibrium")
         ld_genotypes = load_json(scenarios["linkage_disequilibrium"]["file"])
-        results["scenario_analyses"]["linkage_disequilibrium"] = ld_summary(ld_genotypes)
+        results["scenario_analyses"]["linkage_disequilibrium"] = ld_summary(
+            ld_genotypes
+        )
 
     # Comparative analysis
     logger.info("Performing comparative analysis")
     seq_analyses = {
-        name: results["scenario_analyses"][name] for name in _SEQUENCE_SCENARIOS if name in results["scenario_analyses"]
+        name: results["scenario_analyses"][name]
+        for name in _SEQUENCE_SCENARIOS
+        if name in results["scenario_analyses"]
     }
     results["comparative_analysis"] = {
         "diversity_comparison": {
-            name: data["summary_statistics"]["nucleotide_diversity"] for name, data in seq_analyses.items()
+            name: data["summary_statistics"]["nucleotide_diversity"]
+            for name, data in seq_analyses.items()
         },
-        "tajimas_d_comparison": {name: data["neutrality_tests"]["tajima_d"] for name, data in seq_analyses.items()},
+        "tajimas_d_comparison": {
+            name: data["neutrality_tests"]["tajima_d"]
+            for name, data in seq_analyses.items()
+        },
         "fst_comparison": {
-            name.replace("two_populations_", ""): results["scenario_analyses"][name]["fst"]
+            name.replace("two_populations_", ""): results["scenario_analyses"][name][
+                "fst"
+            ]
             for name in ("two_populations_low_fst", "two_populations_high_fst")
             if name in results["scenario_analyses"]
         },

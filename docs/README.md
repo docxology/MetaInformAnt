@@ -4,10 +4,12 @@ METAINFORMANT documentation organized by biological domain.
 
 ## Current Status
 
-As of the 2026-05-25 stabilization pass, the checkout collects 7,736 tests and
-the local non-network/non-external test suite passes. Root-level audit and
-validation reports are historical snapshots; generated verification reports
-should be written under `output/`.
+As of the 2026-09-24 snapshot, the deterministic suite collects 10,114 test
+functions across 484 test files under `tests/`. The latest recorded verification
+pass (2026-09-07) ran 9,861 tests and passed locally with mypy 2.3.1 clean at
+0 errors across 693 source files (quality budget gate = 0). Root-level audit and
+validation reports are retained as historical snapshots; regenerate current
+verification outputs under `output/`.
 
 ## Navigation
 
@@ -35,6 +37,7 @@ should be written under `output/`.
 | Multi-Omics | [multiomics/](multiomics/) | Data integration |
 | ML | [ml/](ml/) | Machine learning |
 | Math | [math/](math/) | Population genetics theory |
+| Popgen | [popgen/](popgen/) | Population genetics statistics |
 | Information | [information/](information/) | Information theory |
 | Life Events | [life_events/](life_events/) | Event sequence analysis |
 | Ontology | [ontology/](ontology/) | GO analysis |
@@ -54,7 +57,7 @@ should be written under `output/`.
 | eQTL | [eqtl/](eqtl/) | Expression QTL integration |
 | Agents | [agents/](agents/) | Per-module agent rules for development |
 | Tasks | [tasks/](tasks/) | Goal-oriented workflow guides |
-| MCP | [mcp/](mcp/) | Standalone monitor notes; MCP server not implemented |
+| MCP | [mcp/](mcp/) | Model Context Protocol server (stdio JSON-RPC 2.0, schema-validated tool registry) |
 
 ## Key Guides
 

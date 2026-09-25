@@ -12,7 +12,7 @@ These guides provide full-module comparisons to help you select the right tool f
 
 | Guide | Focus | When to Read |
 |-------|-------|--------------|
-| **[Methods Matrix](comparisons/methods_matrix.md)** | All 28 modules compared across data types, scale, methods, outputs, best-use | **Start here** if you're unsure which module fits your data |
+| **[Methods Matrix](comparisons/methods_matrix.md)** | All 30 modules compared across data types, scale, methods, outputs, best-use | **Start here** if you're unsure which module fits your data |
 | **[DNA vs RNA vs Transcriptome](comparisons/dna_vs_rna_vs_transcriptome.md)** | dna, rna, singlecell, spatial, multiomics modules for transcriptomics | Choosing between bulk RNA-seq, scRNA-seq, or spatial methods |
 | **[GWAS vs Phenotype vs Multi-omics](comparisons/gwas_vs_phenotype_vs_multiomics.md)** | Study design, power, integration strategies for association studies | Designing genetic association studies or multi-omic integration |
 | **[Visualization Approaches](comparisons/visualization_approaches.md)** | 70+ plot types organized by domain, audience, interactivity | Choosing the right plot type for your data |

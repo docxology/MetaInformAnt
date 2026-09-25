@@ -8,7 +8,10 @@ import numpy as np
 import pytest
 
 from metainformant.core.io.io import write_tsv
-from metainformant.gwas.analysis.association import association_test_linear, association_test_logistic
+from metainformant.gwas.analysis.association import (
+    association_test_linear,
+    association_test_logistic,
+)
 from metainformant.gwas.workflow.workflow_execution import run_gwas
 
 
@@ -47,7 +50,10 @@ def test_association_linear_with_covariates() -> None:
     # Use more samples and non-collinear covariates
     genotypes = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0]
     phenotypes = [10.0, 11.0, 12.0, 10.5, 11.5, 12.5, 9.5, 10.5, 11.5, 10.0]
-    covariates = [[25, 35, 45, 30, 40, 50, 28, 38, 48, 33], [1, 1, 1, 0, 0, 0, 1, 0, 1, 0]]  # age, sex
+    covariates = [
+        [25, 35, 45, 30, 40, 50, 28, 38, 48, 33],
+        [1, 1, 1, 0, 0, 0, 1, 0, 1, 0],
+    ]  # age, sex
 
     result = association_test_linear(genotypes, phenotypes, covariates)
 
@@ -57,7 +63,9 @@ def test_association_linear_with_covariates() -> None:
 
     # CRITICAL: verify result is NOT the old hardcoded (0.1, 0.05, 2.0, 0.05, 0.5)
     assert not (
-        abs(result["beta"] - 0.1) < 1e-10 and abs(result["se"] - 0.05) < 1e-10 and abs(result["p_value"] - 0.05) < 1e-10
+        abs(result["beta"] - 0.1) < 1e-10
+        and abs(result["se"] - 0.05) < 1e-10
+        and abs(result["p_value"] - 0.05) < 1e-10
     ), "Multi-covariate regression still returns hardcoded values!"
 
     # SE should be positive (real computation)
@@ -72,26 +80,56 @@ def test_association_linear_covariates_produce_different_results() -> None:
     result_no_cov = association_test_linear(genotypes, phenotypes)
     # Use a covariate NOT perfectly correlated with genotype
     covariates = [[25, 35, 45, 30, 40, 50, 28, 38, 48, 33]]
-    result_with_cov = association_test_linear(genotypes, phenotypes, covariates=covariates)
+    result_with_cov = association_test_linear(
+        genotypes, phenotypes, covariates=covariates
+    )
 
     assert result_no_cov["status"] == "success"
     assert result_with_cov["status"] == "success"
     # Results should differ when covariates are added
-    assert result_no_cov["se"] != result_with_cov["se"] or result_no_cov["r_squared"] != result_with_cov["r_squared"]
+    assert (
+        result_no_cov["se"] != result_with_cov["se"]
+        or result_no_cov["r_squared"] != result_with_cov["r_squared"]
+    )
 
 
-def test_association_linear_missing_data() -> None:
-    """Test linear regression with missing genotypes."""
-    genotypes = [0, -1, 2, 0, 1, 2]  # One missing
+def test_association_linear_missing_data_matches_complete_case() -> None:
+    """Missing genotypes/phenotypes must be dropped, never treated as doses."""
+    genotypes = [0, -1, 2, 0, 1, 2]  # One missing genotype
     phenotypes = [10.0, 11.0, 12.0, 10.0, 11.0, 12.0]
 
     result = association_test_linear(genotypes, phenotypes)
 
     assert result["status"] == "success"
-    # Should handle missing data by excluding that sample
+    assert result["n_missing_dropped"] == 1
+    assert result["n_samples"] == 5
+
+    # Complete-case regression on the retained samples only.
+    keep_g = [0, 2, 0, 1, 2]
+    keep_y = [10.0, 12.0, 10.0, 11.0, 12.0]
+    design = np.column_stack([np.ones(len(keep_g)), keep_g])
+    beta_complete, *_ = np.linalg.lstsq(design, np.array(keep_y), rcond=None)
+    assert result["beta"] == pytest.approx(float(beta_complete[1]), rel=1e-9)
+
+    # NaN phenotypes are missing too and must not enter the design matrix.
+    result_nan = association_test_linear(
+        [0, 1, 2, 0, 1], [10.0, float("nan"), 12.0, 10.0, 11.0]
+    )
+    assert result_nan["status"] == "success"
+    assert result_nan["n_missing_dropped"] == 1
+    assert result_nan["n_samples"] == 4
+    assert result_nan["beta"] == pytest.approx(1.0, rel=1e-9)
+
+    # All-missing input cannot be fit and must error, not fabricate inference.
+    result_all_missing = association_test_linear([0, -1], [5.0, 6.0])
+    result_all_missing = association_test_linear([-1, -1], [5.0, 6.0])
+    assert result_all_missing["n_missing_dropped"] == 2
+    assert result_all_missing["converged"] is False
 
 
-def test_association_logistic_without_statsmodels_errors(monkeypatch: "pytest.MonkeyPatch") -> None:
+def test_association_logistic_without_statsmodels_errors(
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
     """Without statsmodels the logistic test must error, never fabricate inference."""
     import sys
 

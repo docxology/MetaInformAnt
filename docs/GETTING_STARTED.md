@@ -6,7 +6,7 @@
 
 ## Overview
 
-METAINFORMANT is a comprehensive bioinformatics toolkit covering 28 modules across genomics, transcriptomics, proteomics, and systems biology. This quick start demonstrates a typical workflow: generate synthetic DNA data, analyze composition, and visualize the results.
+METAINFORMANT is a comprehensive bioinformatics toolkit covering 30 modules across genomics, transcriptomics, proteomics, and systems biology. This quick start demonstrates a typical workflow: generate synthetic DNA data, analyze composition, and visualize the results.
 
 ---
 

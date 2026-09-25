@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from metainformant.gwas.analysis.correction import lambda_gc_from_p_values
 from metainformant.gwas.analysis.summary_stats import (
-    _compute_lambda_gc,
     create_results_summary,
     write_significant_hits,
     write_summary_statistics,
@@ -19,10 +19,38 @@ from metainformant.gwas.analysis.summary_stats import (
 def sample_results() -> list:
     """Generate sample association results."""
     return [
-        {"beta": 0.5, "se": 0.1, "p_value": 1e-6, "q_value": 2e-6, "n_samples": 100, "maf": 0.3},
-        {"beta": 0.1, "se": 0.05, "p_value": 0.5, "q_value": 0.6, "n_samples": 100, "maf": 0.2},
-        {"beta": -0.3, "se": 0.08, "p_value": 1e-10, "q_value": 4e-10, "n_samples": 100, "maf": 0.15},
-        {"beta": 0.0, "se": 0.2, "p_value": 0.99, "q_value": 0.99, "n_samples": 100, "maf": 0.4},
+        {
+            "beta": 0.5,
+            "se": 0.1,
+            "p_value": 1e-6,
+            "q_value": 2e-6,
+            "n_samples": 100,
+            "maf": 0.3,
+        },
+        {
+            "beta": 0.1,
+            "se": 0.05,
+            "p_value": 0.5,
+            "q_value": 0.6,
+            "n_samples": 100,
+            "maf": 0.2,
+        },
+        {
+            "beta": -0.3,
+            "se": 0.08,
+            "p_value": 1e-10,
+            "q_value": 4e-10,
+            "n_samples": 100,
+            "maf": 0.15,
+        },
+        {
+            "beta": 0.0,
+            "se": 0.2,
+            "p_value": 0.99,
+            "q_value": 0.99,
+            "n_samples": 100,
+            "maf": 0.4,
+        },
     ]
 
 
@@ -40,10 +68,14 @@ def sample_variant_info() -> list:
 class TestWriteSummaryStatistics:
     """Tests for summary statistics TSV output."""
 
-    def test_write_basic(self, tmp_path: Path, sample_results: list, sample_variant_info: list) -> None:
+    def test_write_basic(
+        self, tmp_path: Path, sample_results: list, sample_variant_info: list
+    ) -> None:
         """Write and verify basic summary statistics."""
         output = tmp_path / "stats.tsv"
-        result_path = write_summary_statistics(sample_results, sample_variant_info, output)
+        result_path = write_summary_statistics(
+            sample_results, sample_variant_info, output
+        )
 
         assert result_path.exists()
         lines = result_path.read_text().strip().split("\n")
@@ -60,7 +92,9 @@ class TestWriteSummaryStatistics:
         q_fdr_index = header.index("Q_FDR")
         assert float(lines[1].split("\t")[q_fdr_index]) == pytest.approx(2e-6)
 
-    def test_write_creates_directories(self, tmp_path: Path, sample_results: list, sample_variant_info: list) -> None:
+    def test_write_creates_directories(
+        self, tmp_path: Path, sample_results: list, sample_variant_info: list
+    ) -> None:
         """Should create parent directories if needed."""
         output = tmp_path / "nested" / "dir" / "stats.tsv"
         write_summary_statistics(sample_results, sample_variant_info, output)
@@ -77,8 +111,12 @@ class TestWriteSummaryStatistics:
 
     def test_alt_as_list(self, tmp_path: Path) -> None:
         """Alt alleles as list should be joined with comma."""
-        results = [{"beta": 0.1, "se": 0.05, "p_value": 0.5, "n_samples": 50, "maf": 0.2}]
-        variants = [{"chrom": "1", "pos": 100, "id": "rs1", "ref": "A", "alt": ["G", "T"]}]
+        results = [
+            {"beta": 0.1, "se": 0.05, "p_value": 0.5, "n_samples": 50, "maf": 0.2}
+        ]
+        variants = [
+            {"chrom": "1", "pos": 100, "id": "rs1", "ref": "A", "alt": ["G", "T"]}
+        ]
         output = tmp_path / "multi_alt.tsv"
         write_summary_statistics(results, variants, output)
 
@@ -87,7 +125,16 @@ class TestWriteSummaryStatistics:
 
     def test_uppercase_n_and_maf_are_supported(self, tmp_path: Path) -> None:
         """Dynamic GWAS dispatch may provide N/MAF keys."""
-        results = [{"beta": 0.1, "se": 0.05, "p_value": 0.5, "q_fdr": 0.75, "N": 50, "MAF": 0.2}]
+        results = [
+            {
+                "beta": 0.1,
+                "se": 0.05,
+                "p_value": 0.5,
+                "q_fdr": 0.75,
+                "N": 50,
+                "MAF": 0.2,
+            }
+        ]
         variants = [{"chrom": "1", "pos": 100, "id": "rs1", "ref": "A", "alt": "G"}]
         output = tmp_path / "uppercase_keys.tsv"
         write_summary_statistics(results, variants, output)
@@ -102,10 +149,14 @@ class TestWriteSummaryStatistics:
 class TestWriteSignificantHits:
     """Tests for significant hits output."""
 
-    def test_filter_significant(self, tmp_path: Path, sample_results: list, sample_variant_info: list) -> None:
+    def test_filter_significant(
+        self, tmp_path: Path, sample_results: list, sample_variant_info: list
+    ) -> None:
         """Only significant hits should be written."""
         output = tmp_path / "sig.tsv"
-        write_significant_hits(sample_results, sample_variant_info, output, threshold=1e-5)
+        write_significant_hits(
+            sample_results, sample_variant_info, output, threshold=1e-5
+        )
 
         lines = output.read_text().strip().split("\n")
         # header + 1 hit (p=1e-10 is below 1e-5, but p=1e-6 is also below)
@@ -113,7 +164,9 @@ class TestWriteSignificantHits:
 
     def test_no_significant(self, tmp_path: Path) -> None:
         """If nothing is significant, only header should be written."""
-        results = [{"beta": 0.1, "se": 0.1, "p_value": 0.5, "n_samples": 50, "maf": 0.2}]
+        results = [
+            {"beta": 0.1, "se": 0.1, "p_value": 0.5, "n_samples": 50, "maf": 0.2}
+        ]
         variants = [{"chrom": "1", "pos": 100, "id": "rs1", "ref": "A", "alt": "G"}]
         output = tmp_path / "no_sig.tsv"
         write_significant_hits(results, variants, output, threshold=5e-8)
@@ -121,10 +174,14 @@ class TestWriteSignificantHits:
         lines = output.read_text().strip().split("\n")
         assert len(lines) == 1  # Just header
 
-    def test_sorted_by_pvalue(self, tmp_path: Path, sample_results: list, sample_variant_info: list) -> None:
+    def test_sorted_by_pvalue(
+        self, tmp_path: Path, sample_results: list, sample_variant_info: list
+    ) -> None:
         """Significant hits should be sorted by p-value ascending."""
         output = tmp_path / "sorted.tsv"
-        write_significant_hits(sample_results, sample_variant_info, output, threshold=0.01)
+        write_significant_hits(
+            sample_results, sample_variant_info, output, threshold=0.01
+        )
 
         lines = output.read_text().strip().split("\n")
         # Skip header, parse p-values
@@ -177,17 +234,23 @@ class TestCreateResultsSummary:
         assert len(summary["top_hits"]) <= 20
 
 
-class TestComputeLambdaGC:
-    """Tests for genomic inflation factor calculation."""
+class TestLambdaGCCanonical:
+    """lambda_gc must come from the canonical correction conversion."""
 
-    def test_empty(self) -> None:
-        """Empty p-values should return 1.0."""
-        assert _compute_lambda_gc([]) == 1.0
+    def test_empty_is_none(self) -> None:
+        """Empty p-values return None from the canonical helper."""
+        assert lambda_gc_from_p_values([]) is None
+
+    def test_summary_defaults_to_one_without_p_values(self, tmp_path: Path) -> None:
+        """Results summary must coerce the None lambda to a neutral 1.0."""
+        summary = create_results_summary([], tmp_path / "summary.json")
+        assert summary["lambda_gc"] == 1.0
 
     def test_all_significant(self) -> None:
         """Very small p-values should give lambda >> 1."""
         p_values = [1e-10] * 100
-        lambda_gc = _compute_lambda_gc(p_values)
+        lambda_gc = lambda_gc_from_p_values(p_values)
+        assert lambda_gc is not None
         assert lambda_gc > 5  # Strong inflation
 
     def test_no_inflation(self) -> None:
@@ -196,5 +259,6 @@ class TestComputeLambdaGC:
 
         np.random.seed(42)
         p_values = list(np.random.uniform(0, 1, 10000))
-        lambda_gc = _compute_lambda_gc(p_values)
+        lambda_gc = lambda_gc_from_p_values(p_values)
+        assert lambda_gc is not None
         assert 0.8 < lambda_gc < 1.2

@@ -32,7 +32,9 @@ def test_rna_analysis_import_smoke() -> None:
     import metainformant.rna.analysis as analysis
     from metainformant.rna.analysis import expression, qc
     from metainformant.rna.analysis.expression import differential_expression as shim_de
-    from metainformant.rna.analysis.expression_core import normalize_counts as core_normalize
+    from metainformant.rna.analysis.expression_core import (
+        normalize_counts as core_normalize,
+    )
     from metainformant.rna.analysis.qc import compute_sample_metrics as qc_shim_metrics
 
     assert hasattr(analysis, "expression_core")
@@ -127,7 +129,9 @@ class TestNormalizeCPM:
         result = normalize_counts(count_matrix, method="cpm")
         column_sums = result.sum(axis=0)
         for col_sum in column_sums:
-            assert abs(col_sum - 1e6) < 1.0, f"CPM column sum {col_sum} not close to 1e6"
+            assert abs(col_sum - 1e6) < 1.0, (
+                f"CPM column sum {col_sum} not close to 1e6"
+            )
 
     def test_cpm_preserves_shape(self, count_matrix: pd.DataFrame) -> None:
         result = normalize_counts(count_matrix, method="cpm")
@@ -152,26 +156,39 @@ class TestNormalizeTPM:
         with pytest.raises(ValueError, match="gene_lengths required"):
             normalize_counts(count_matrix, method="tpm")
 
-    def test_tpm_sums_to_one_million(self, count_matrix: pd.DataFrame, gene_lengths: pd.Series) -> None:
+    def test_tpm_sums_to_one_million(
+        self, count_matrix: pd.DataFrame, gene_lengths: pd.Series
+    ) -> None:
         result = normalize_counts(count_matrix, method="tpm", gene_lengths=gene_lengths)
         column_sums = result.sum(axis=0)
         for col_sum in column_sums:
-            assert abs(col_sum - 1e6) < 1.0, f"TPM column sum {col_sum} not close to 1e6"
+            assert abs(col_sum - 1e6) < 1.0, (
+                f"TPM column sum {col_sum} not close to 1e6"
+            )
 
-    def test_tpm_preserves_shape(self, count_matrix: pd.DataFrame, gene_lengths: pd.Series) -> None:
+    def test_tpm_preserves_shape(
+        self, count_matrix: pd.DataFrame, gene_lengths: pd.Series
+    ) -> None:
         result = normalize_counts(count_matrix, method="tpm", gene_lengths=gene_lengths)
         assert result.shape == count_matrix.shape
 
-    def test_tpm_accounts_for_gene_length(self, small_count_matrix: pd.DataFrame) -> None:
+    def test_tpm_accounts_for_gene_length(
+        self, small_count_matrix: pd.DataFrame
+    ) -> None:
         lengths = pd.Series(
             [1000, 2000, 1000, 1000, 1000],
             index=small_count_matrix.index,
             dtype=float,
         )
-        result = normalize_counts(small_count_matrix, method="tpm", gene_lengths=lengths)
+        result = normalize_counts(
+            small_count_matrix, method="tpm", gene_lengths=lengths
+        )
         # gene_B (length 2000) should have lower TPM relative to its counts
         # compared to gene_A (length 1000) in the same sample
-        ratio_counts = small_count_matrix.loc["gene_B", "ctrl_1"] / small_count_matrix.loc["gene_A", "ctrl_1"]
+        ratio_counts = (
+            small_count_matrix.loc["gene_B", "ctrl_1"]
+            / small_count_matrix.loc["gene_A", "ctrl_1"]
+        )
         ratio_tpm = result.loc["gene_B", "ctrl_1"] / result.loc["gene_A", "ctrl_1"]
         assert ratio_tpm < ratio_counts, "TPM should reduce values for longer genes"
 
@@ -180,11 +197,15 @@ class TestNormalizeTPM:
             [1000.0] * 50,
             index=[f"gene_{i}" for i in range(50)],
         )
-        result = normalize_counts(count_matrix, method="tpm", gene_lengths=partial_lengths)
+        result = normalize_counts(
+            count_matrix, method="tpm", gene_lengths=partial_lengths
+        )
         assert result.shape == count_matrix.shape
         assert not result.isna().any().any()
 
-    def test_tpm_rejects_nonpositive_gene_lengths(self, small_count_matrix: pd.DataFrame) -> None:
+    def test_tpm_rejects_nonpositive_gene_lengths(
+        self, small_count_matrix: pd.DataFrame
+    ) -> None:
         lengths = pd.Series(
             [1000, 2000, 0, 1500, 3000],
             index=small_count_matrix.index,
@@ -199,23 +220,37 @@ class TestNormalizeRPKM:
         with pytest.raises(ValueError, match="gene_lengths required"):
             normalize_counts(count_matrix, method="rpkm")
 
-    def test_rpkm_preserves_shape(self, count_matrix: pd.DataFrame, gene_lengths: pd.Series) -> None:
-        result = normalize_counts(count_matrix, method="rpkm", gene_lengths=gene_lengths)
+    def test_rpkm_preserves_shape(
+        self, count_matrix: pd.DataFrame, gene_lengths: pd.Series
+    ) -> None:
+        result = normalize_counts(
+            count_matrix, method="rpkm", gene_lengths=gene_lengths
+        )
         assert result.shape == count_matrix.shape
 
-    def test_rpkm_values_nonnegative(self, count_matrix: pd.DataFrame, gene_lengths: pd.Series) -> None:
-        result = normalize_counts(count_matrix, method="rpkm", gene_lengths=gene_lengths)
+    def test_rpkm_values_nonnegative(
+        self, count_matrix: pd.DataFrame, gene_lengths: pd.Series
+    ) -> None:
+        result = normalize_counts(
+            count_matrix, method="rpkm", gene_lengths=gene_lengths
+        )
         assert (result.values >= 0).all()
 
-    def test_rpkm_formula_correct(self, small_count_matrix: pd.DataFrame, small_gene_lengths: pd.Series) -> None:
-        result = normalize_counts(small_count_matrix, method="rpkm", gene_lengths=small_gene_lengths)
+    def test_rpkm_formula_correct(
+        self, small_count_matrix: pd.DataFrame, small_gene_lengths: pd.Series
+    ) -> None:
+        result = normalize_counts(
+            small_count_matrix, method="rpkm", gene_lengths=small_gene_lengths
+        )
         # RPKM = (count / (gene_length/1000)) / (library_size) * 1e6
         lib_size = small_count_matrix["ctrl_1"].sum()
         gene_len_kb = small_gene_lengths["gene_A"] / 1000.0
         expected = (100.0 / gene_len_kb) / lib_size * 1e6
         assert abs(result.loc["gene_A", "ctrl_1"] - expected) < 0.01
 
-    def test_rpkm_rejects_negative_gene_lengths(self, small_count_matrix: pd.DataFrame) -> None:
+    def test_rpkm_rejects_negative_gene_lengths(
+        self, small_count_matrix: pd.DataFrame
+    ) -> None:
         lengths = pd.Series(
             [1000, 2000, -500, 1500, 3000],
             index=small_count_matrix.index,
@@ -240,20 +275,26 @@ class TestNormalizeLog2CPM:
         assert log_range < cpm_range
 
     def test_log2cpm_pseudocount_prevents_negative_inf(self) -> None:
-        counts = pd.DataFrame({"s1": [0, 10, 100], "s2": [0, 20, 200]}, index=["g1", "g2", "g3"])
+        counts = pd.DataFrame(
+            {"s1": [0, 10, 100], "s2": [0, 20, 200]}, index=["g1", "g2", "g3"]
+        )
         result = normalize_counts(counts, method="log2cpm")
         assert np.isfinite(result.values).all()
 
 
 class TestNormalizeQuantile:
-    def test_quantile_produces_equal_distributions(self, count_matrix: pd.DataFrame) -> None:
+    def test_quantile_produces_equal_distributions(
+        self, count_matrix: pd.DataFrame
+    ) -> None:
         result = normalize_counts(count_matrix, method="quantile")
         # After quantile normalization, sorted values should be very similar across samples
         sorted_vals = np.sort(result.values, axis=0)
         # Standard deviation across samples at each rank position should be small
         row_stds = sorted_vals.std(axis=1)
         mean_std = row_stds.mean()
-        assert mean_std < 1.0, "Quantile normalization should produce nearly identical distributions"
+        assert mean_std < 1.0, (
+            "Quantile normalization should produce nearly identical distributions"
+        )
 
     def test_quantile_preserves_shape(self, count_matrix: pd.DataFrame) -> None:
         result = normalize_counts(count_matrix, method="quantile")
@@ -274,7 +315,9 @@ class TestNormalizeMedianRatio:
         result = normalize_counts(counts, method="median_ratio")
         # After normalization, values should be similar between samples
         ratio = result["s2"].mean() / result["s1"].mean()
-        assert abs(ratio - 1.0) < 0.2, f"Median ratio normalization should equalize depth, got ratio {ratio}"
+        assert abs(ratio - 1.0) < 0.2, (
+            f"Median ratio normalization should equalize depth, got ratio {ratio}"
+        )
 
 
 class TestNormalizeEdgeCases:
@@ -289,7 +332,9 @@ class TestNormalizeEdgeCases:
             normalize_counts(counts, method="cpm")
 
     def test_all_zero_counts(self) -> None:
-        counts = pd.DataFrame({"s1": [0, 0, 0], "s2": [0, 0, 0]}, index=["g1", "g2", "g3"])
+        counts = pd.DataFrame(
+            {"s1": [0, 0, 0], "s2": [0, 0, 0]}, index=["g1", "g2", "g3"]
+        )
         result = normalize_counts(counts, method="cpm")
         assert result.shape == counts.shape
         # Division by zero handled: library_size = 0 replaced with 1
@@ -331,7 +376,9 @@ class TestEstimateSizeFactors:
         sf = estimate_size_factors(counts)
         assert len(sf) == 3
         for val in sf.values:
-            assert 0.8 < val < 1.2, f"Size factor {val} too far from 1.0 for balanced data"
+            assert 0.8 < val < 1.2, (
+                f"Size factor {val} too far from 1.0 for balanced data"
+            )
 
     def test_size_factors_detect_depth_difference(self) -> None:
         counts = pd.DataFrame(
@@ -375,30 +422,51 @@ class TestDifferentialExpressionDeseq2Like:
     def test_deseq2_like_returns_expected_columns(
         self, small_count_matrix: pd.DataFrame, conditions_6sample: List[str]
     ) -> None:
-        result = differential_expression(small_count_matrix, conditions_6sample, method="deseq2_like")
-        required_cols = {"gene", "log2_fold_change", "p_value", "adjusted_p_value", "base_mean", "stat"}
+        result = differential_expression(
+            small_count_matrix, conditions_6sample, method="deseq2_like"
+        )
+        required_cols = {
+            "gene",
+            "log2_fold_change",
+            "p_value",
+            "adjusted_p_value",
+            "base_mean",
+            "stat",
+        }
         assert required_cols.issubset(set(result.columns))
 
     def test_deseq2_like_detects_upregulation(
         self, small_count_matrix: pd.DataFrame, conditions_6sample: List[str]
     ) -> None:
-        result = differential_expression(small_count_matrix, conditions_6sample, method="deseq2_like")
+        result = differential_expression(
+            small_count_matrix, conditions_6sample, method="deseq2_like"
+        )
         # gene_A: ctrl ~100, treat ~300 => should be upregulated (positive log2FC)
         gene_a = result[result["gene"] == "gene_A"]
         if len(gene_a) > 0:
-            assert gene_a["log2_fold_change"].values[0] > 0, "gene_A should be upregulated in treatment"
+            assert gene_a["log2_fold_change"].values[0] > 0, (
+                "gene_A should be upregulated in treatment"
+            )
 
     def test_deseq2_like_detects_downregulation(
         self, small_count_matrix: pd.DataFrame, conditions_6sample: List[str]
     ) -> None:
-        result = differential_expression(small_count_matrix, conditions_6sample, method="deseq2_like")
+        result = differential_expression(
+            small_count_matrix, conditions_6sample, method="deseq2_like"
+        )
         # gene_B: ctrl ~200, treat ~100 => should be downregulated (negative log2FC)
         gene_b = result[result["gene"] == "gene_B"]
         if len(gene_b) > 0:
-            assert gene_b["log2_fold_change"].values[0] < 0, "gene_B should be downregulated in treatment"
+            assert gene_b["log2_fold_change"].values[0] < 0, (
+                "gene_B should be downregulated in treatment"
+            )
 
-    def test_deseq2_like_pvalues_valid(self, small_count_matrix: pd.DataFrame, conditions_6sample: List[str]) -> None:
-        result = differential_expression(small_count_matrix, conditions_6sample, method="deseq2_like")
+    def test_deseq2_like_pvalues_valid(
+        self, small_count_matrix: pd.DataFrame, conditions_6sample: List[str]
+    ) -> None:
+        result = differential_expression(
+            small_count_matrix, conditions_6sample, method="deseq2_like"
+        )
         assert (result["p_value"] >= 0).all()
         assert (result["p_value"] <= 1).all()
         assert (result["adjusted_p_value"] >= 0).all()
@@ -409,12 +477,25 @@ class TestDifferentialExpressionTtest:
     def test_ttest_returns_expected_columns(
         self, small_count_matrix: pd.DataFrame, conditions_6sample: List[str]
     ) -> None:
-        result = differential_expression(small_count_matrix, conditions_6sample, method="ttest")
-        required_cols = {"gene", "log2_fold_change", "p_value", "adjusted_p_value", "base_mean", "stat"}
+        result = differential_expression(
+            small_count_matrix, conditions_6sample, method="ttest"
+        )
+        required_cols = {
+            "gene",
+            "log2_fold_change",
+            "p_value",
+            "adjusted_p_value",
+            "base_mean",
+            "stat",
+        }
         assert required_cols.issubset(set(result.columns))
 
-    def test_ttest_fold_change_direction(self, small_count_matrix: pd.DataFrame, conditions_6sample: List[str]) -> None:
-        result = differential_expression(small_count_matrix, conditions_6sample, method="ttest")
+    def test_ttest_fold_change_direction(
+        self, small_count_matrix: pd.DataFrame, conditions_6sample: List[str]
+    ) -> None:
+        result = differential_expression(
+            small_count_matrix, conditions_6sample, method="ttest"
+        )
         gene_a = result[result["gene"] == "gene_A"]
         if len(gene_a) > 0:
             assert gene_a["log2_fold_change"].values[0] > 0
@@ -422,7 +503,9 @@ class TestDifferentialExpressionTtest:
     def test_ttest_sorted_by_adjusted_pvalue(
         self, small_count_matrix: pd.DataFrame, conditions_6sample: List[str]
     ) -> None:
-        result = differential_expression(small_count_matrix, conditions_6sample, method="ttest")
+        result = differential_expression(
+            small_count_matrix, conditions_6sample, method="ttest"
+        )
         adj_pvals = result["adjusted_p_value"].values
         # Should be sorted ascending
         assert all(adj_pvals[i] <= adj_pvals[i + 1] for i in range(len(adj_pvals) - 1))
@@ -432,8 +515,17 @@ class TestDifferentialExpressionWilcoxon:
     def test_wilcoxon_returns_expected_columns(
         self, small_count_matrix: pd.DataFrame, conditions_6sample: List[str]
     ) -> None:
-        result = differential_expression(small_count_matrix, conditions_6sample, method="wilcoxon")
-        required_cols = {"gene", "log2_fold_change", "p_value", "adjusted_p_value", "base_mean", "stat"}
+        result = differential_expression(
+            small_count_matrix, conditions_6sample, method="wilcoxon"
+        )
+        required_cols = {
+            "gene",
+            "log2_fold_change",
+            "p_value",
+            "adjusted_p_value",
+            "base_mean",
+            "stat",
+        }
         assert required_cols.issubset(set(result.columns))
 
     def test_wilcoxon_nonparametric_robust(self) -> None:
@@ -449,7 +541,14 @@ class TestDifferentialExpressionWilcoxon:
             },
             index=["gene_A", "gene_B"],
         )
-        conditions = ["control", "control", "control", "treatment", "treatment", "treatment"]
+        conditions = [
+            "control",
+            "control",
+            "control",
+            "treatment",
+            "treatment",
+            "treatment",
+        ]
         result = differential_expression(counts, conditions, method="wilcoxon")
         assert len(result) > 0
         assert (result["p_value"] >= 0).all()
@@ -460,15 +559,26 @@ class TestDifferentialExpressionEdgeCases:
     def test_empty_count_matrix(self) -> None:
         result = differential_expression(pd.DataFrame(), ["a", "b"])
         assert result.empty
-        expected_cols = {"gene", "log2_fold_change", "p_value", "adjusted_p_value", "base_mean", "stat"}
+        expected_cols = {
+            "gene",
+            "log2_fold_change",
+            "p_value",
+            "adjusted_p_value",
+            "base_mean",
+            "stat",
+        }
         assert expected_cols.issubset(set(result.columns))
 
-    def test_wrong_number_of_conditions_raises(self, small_count_matrix: pd.DataFrame) -> None:
+    def test_wrong_number_of_conditions_raises(
+        self, small_count_matrix: pd.DataFrame
+    ) -> None:
         three_conditions = ["a", "a", "b", "b", "c", "c"]
         with pytest.raises(ValueError, match="Expected exactly 2 conditions"):
             differential_expression(small_count_matrix, three_conditions)
 
-    def test_mismatched_conditions_length_raises(self, small_count_matrix: pd.DataFrame) -> None:
+    def test_mismatched_conditions_length_raises(
+        self, small_count_matrix: pd.DataFrame
+    ) -> None:
         wrong_length = ["a", "b"]
         with pytest.raises(ValueError):
             differential_expression(small_count_matrix, wrong_length)
@@ -476,15 +586,26 @@ class TestDifferentialExpressionEdgeCases:
     def test_reference_condition_parameter(
         self, small_count_matrix: pd.DataFrame, conditions_6sample: List[str]
     ) -> None:
-        result_default = differential_expression(small_count_matrix, conditions_6sample, method="ttest")
+        result_default = differential_expression(
+            small_count_matrix, conditions_6sample, method="ttest"
+        )
         result_flipped = differential_expression(
-            small_count_matrix, conditions_6sample, method="ttest", reference="treatment"
+            small_count_matrix,
+            conditions_6sample,
+            method="ttest",
+            reference="treatment",
         )
         # Fold changes should be opposite when reference is flipped
-        gene_a_default = result_default[result_default["gene"] == "gene_A"]["log2_fold_change"].values
-        gene_a_flipped = result_flipped[result_flipped["gene"] == "gene_A"]["log2_fold_change"].values
+        gene_a_default = result_default[result_default["gene"] == "gene_A"][
+            "log2_fold_change"
+        ].values
+        gene_a_flipped = result_flipped[result_flipped["gene"] == "gene_A"][
+            "log2_fold_change"
+        ].values
         if len(gene_a_default) > 0 and len(gene_a_flipped) > 0:
-            assert gene_a_default[0] * gene_a_flipped[0] < 0, "Flipping reference should negate fold change"
+            assert gene_a_default[0] * gene_a_flipped[0] < 0, (
+                "Flipping reference should negate fold change"
+            )
 
     def test_min_count_filtering(self) -> None:
         counts = pd.DataFrame(
@@ -497,13 +618,19 @@ class TestDifferentialExpressionEdgeCases:
             index=["low_gene", "high_gene"],
         )
         conditions = ["control", "control", "treatment", "treatment"]
-        result = differential_expression(counts, conditions, method="ttest", min_count=50)
+        result = differential_expression(
+            counts, conditions, method="ttest", min_count=50
+        )
         # low_gene total = 18, should be filtered out with min_count=50
         assert "low_gene" not in result["gene"].values
 
-    def test_unknown_method_raises(self, small_count_matrix: pd.DataFrame, conditions_6sample: List[str]) -> None:
+    def test_unknown_method_raises(
+        self, small_count_matrix: pd.DataFrame, conditions_6sample: List[str]
+    ) -> None:
         with pytest.raises(ValueError, match="Unknown DE method"):
-            differential_expression(small_count_matrix, conditions_6sample, method="invalid")  # type: ignore[arg-type]
+            differential_expression(
+                small_count_matrix, conditions_6sample, method="invalid"
+            )  # type: ignore[arg-type]
 
     def test_conditions_as_series(self, small_count_matrix: pd.DataFrame) -> None:
         conditions = pd.Series(
@@ -513,12 +640,18 @@ class TestDifferentialExpressionEdgeCases:
         result = differential_expression(small_count_matrix, conditions, method="ttest")
         assert len(result) > 0
 
-    def test_conditions_series_default_index_is_positional(self, small_count_matrix: pd.DataFrame) -> None:
-        conditions = pd.Series(["control", "control", "control", "treatment", "treatment", "treatment"])
+    def test_conditions_series_default_index_is_positional(
+        self, small_count_matrix: pd.DataFrame
+    ) -> None:
+        conditions = pd.Series(
+            ["control", "control", "control", "treatment", "treatment", "treatment"]
+        )
         result = differential_expression(small_count_matrix, conditions, method="ttest")
         assert len(result) > 0
 
-    def test_conditions_series_wrong_index_raises(self, small_count_matrix: pd.DataFrame) -> None:
+    def test_conditions_series_wrong_index_raises(
+        self, small_count_matrix: pd.DataFrame
+    ) -> None:
         conditions = pd.Series(
             ["control", "control", "control", "treatment", "treatment", "treatment"],
             index=["a", "b", "c", "d", "e", "f"],
@@ -530,7 +663,12 @@ class TestDifferentialExpressionEdgeCases:
         self, small_count_matrix: pd.DataFrame, conditions_6sample: List[str]
     ) -> None:
         with pytest.raises(ValueError, match="Reference condition"):
-            differential_expression(small_count_matrix, conditions_6sample, method="ttest", reference="missing")
+            differential_expression(
+                small_count_matrix,
+                conditions_6sample,
+                method="ttest",
+                reference="missing",
+            )
 
     @pytest.mark.parametrize("method", ["deseq2_like", "ttest", "wilcoxon"])
     def test_all_genes_filtered_returns_empty_schema(self, method: str) -> None:
@@ -544,8 +682,17 @@ class TestDifferentialExpressionEdgeCases:
             index=["low_gene"],
         )
         conditions = ["control", "control", "treatment", "treatment"]
-        result = differential_expression(counts, conditions, method=method, min_count=999)  # type: ignore[arg-type]
-        expected_cols = {"gene", "log2_fold_change", "p_value", "adjusted_p_value", "base_mean", "stat"}
+        result = differential_expression(
+            counts, conditions, method=method, min_count=999
+        )  # type: ignore[arg-type]
+        expected_cols = {
+            "gene",
+            "log2_fold_change",
+            "p_value",
+            "adjusted_p_value",
+            "base_mean",
+            "stat",
+        }
 
         assert result.empty
         assert expected_cols.issubset(set(result.columns))
@@ -643,13 +790,17 @@ class TestPCAAnalysis:
         # loadings: genes x components
         assert result["loadings"].shape == (100, 2)
 
-    def test_pca_explained_variance_sums_lte_one(self, count_matrix: pd.DataFrame) -> None:
+    def test_pca_explained_variance_sums_lte_one(
+        self, count_matrix: pd.DataFrame
+    ) -> None:
         log_counts = np.log2(count_matrix + 1)
         result = pca_analysis(log_counts, n_components=2)
         total = result["explained_variance_ratio"].sum()
         assert total <= 1.0 + 1e-6, f"Explained variance {total} should not exceed 1.0"
 
-    def test_pca_explained_variance_nonnegative(self, count_matrix: pd.DataFrame) -> None:
+    def test_pca_explained_variance_nonnegative(
+        self, count_matrix: pd.DataFrame
+    ) -> None:
         log_counts = np.log2(count_matrix + 1)
         result = pca_analysis(log_counts, n_components=2)
         assert (result["explained_variance_ratio"] >= 0).all()
@@ -770,12 +921,16 @@ class TestComputeSampleDistances:
 
 
 class TestFilterLowExpression:
-    def test_removes_low_expression_genes(self, small_count_matrix: pd.DataFrame) -> None:
+    def test_removes_low_expression_genes(
+        self, small_count_matrix: pd.DataFrame
+    ) -> None:
         result = filter_low_expression(small_count_matrix, min_count=10, min_samples=2)
         # gene_zero has all zeros => should be removed
         assert "gene_zero" not in result.index
 
-    def test_keeps_high_expression_genes(self, small_count_matrix: pd.DataFrame) -> None:
+    def test_keeps_high_expression_genes(
+        self, small_count_matrix: pd.DataFrame
+    ) -> None:
         result = filter_low_expression(small_count_matrix, min_count=10, min_samples=2)
         assert "gene_A" in result.index
         assert "gene_B" in result.index
@@ -895,12 +1050,16 @@ class TestGetHighlyVariableGenes:
 
 class TestPrepareVolcanoData:
     def test_adds_regulation_column(self, de_results: pd.DataFrame) -> None:
-        result = prepare_volcano_data(de_results, fc_threshold=1.0, pvalue_threshold=0.05)
+        result = prepare_volcano_data(
+            de_results, fc_threshold=1.0, pvalue_threshold=0.05
+        )
         assert "regulation" in result.columns
         assert "neg_log10_pvalue" in result.columns
 
     def test_regulation_categories(self, de_results: pd.DataFrame) -> None:
-        result = prepare_volcano_data(de_results, fc_threshold=1.0, pvalue_threshold=0.05)
+        result = prepare_volcano_data(
+            de_results, fc_threshold=1.0, pvalue_threshold=0.05
+        )
         valid_labels = {"up", "down", "ns"}
         assert set(result["regulation"].unique()).issubset(valid_labels)
 
@@ -987,10 +1146,14 @@ class TestPrepareVolcanoData:
             }
         )
         # With adjusted: p=0.5 > 0.05 => ns
-        result_adj = prepare_volcano_data(de, fc_threshold=1.0, pvalue_threshold=0.05, use_adjusted=True)
+        result_adj = prepare_volcano_data(
+            de, fc_threshold=1.0, pvalue_threshold=0.05, use_adjusted=True
+        )
         assert result_adj["regulation"].values[0] == "ns"
         # Without adjusted: p=0.01 < 0.05 => up
-        result_raw = prepare_volcano_data(de, fc_threshold=1.0, pvalue_threshold=0.05, use_adjusted=False)
+        result_raw = prepare_volcano_data(
+            de, fc_threshold=1.0, pvalue_threshold=0.05, use_adjusted=False
+        )
         assert result_raw["regulation"].values[0] == "up"
 
     def test_empty_input(self) -> None:
@@ -1017,7 +1180,9 @@ class TestPrepareMAData:
 
     def test_m_equals_log2fc(self, de_results: pd.DataFrame) -> None:
         result = prepare_ma_data(de_results)
-        np.testing.assert_array_equal(result["M"].values, result["log2_fold_change"].values)
+        np.testing.assert_array_equal(
+            result["M"].values, result["log2_fold_change"].values
+        )
 
     def test_a_is_log2_base_mean(self) -> None:
         de = pd.DataFrame(
@@ -1073,7 +1238,9 @@ class TestEndToEndWorkflow:
 
         counts_arr = np.hstack([ctrl_base, treat_base])
         genes = [f"gene_{i}" for i in range(n_genes)]
-        samples = [f"ctrl_{i}" for i in range(n_ctrl)] + [f"treat_{i}" for i in range(n_treat)]
+        samples = [f"ctrl_{i}" for i in range(n_ctrl)] + [
+            f"treat_{i}" for i in range(n_treat)
+        ]
         counts = pd.DataFrame(counts_arr, index=genes, columns=samples)
         conditions = ["control"] * n_ctrl + ["treatment"] * n_treat
 
@@ -1092,7 +1259,9 @@ class TestEndToEndWorkflow:
         assert "adjusted_p_value" in de_results.columns
 
         # Step 4: Volcano data
-        volcano = prepare_volcano_data(de_results, fc_threshold=1.0, pvalue_threshold=0.05)
+        volcano = prepare_volcano_data(
+            de_results, fc_threshold=1.0, pvalue_threshold=0.05
+        )
         assert "regulation" in volcano.columns
         regulation_counts = volcano["regulation"].value_counts()
         # With the engineered 10x differences and 4 replicates, we should see significant genes
@@ -1136,12 +1305,18 @@ class TestEndToEndWorkflow:
         for method in methods_no_lengths:
             result = normalize_counts(count_matrix, method=method)  # type: ignore[arg-type]
             assert result.shape == count_matrix.shape, f"{method} changed shape"
-            assert np.isfinite(result.values).all(), f"{method} produced non-finite values"
+            assert np.isfinite(result.values).all(), (
+                f"{method} produced non-finite values"
+            )
 
         for method in methods_with_lengths:
-            result = normalize_counts(count_matrix, method=method, gene_lengths=gene_lengths)  # type: ignore[arg-type]
+            result = normalize_counts(
+                count_matrix, method=method, gene_lengths=gene_lengths
+            )  # type: ignore[arg-type]
             assert result.shape == count_matrix.shape, f"{method} changed shape"
-            assert np.isfinite(result.values).all(), f"{method} produced non-finite values"
+            assert np.isfinite(result.values).all(), (
+                f"{method} produced non-finite values"
+            )
 
     def test_all_de_methods_produce_valid_output(
         self, small_count_matrix: pd.DataFrame, conditions_6sample: List[str]
@@ -1160,7 +1335,9 @@ class TestEndToEndWorkflow:
             assert (result["p_value"] >= 0).all(), f"{method}: negative p-value"
             assert (result["p_value"] <= 1.0 + 1e-10).all(), f"{method}: p-value > 1"
 
-    def test_all_distance_methods_produce_valid_output(self, count_matrix: pd.DataFrame) -> None:
+    def test_all_distance_methods_produce_valid_output(
+        self, count_matrix: pd.DataFrame
+    ) -> None:
         """Verify every distance method runs without error."""
         log_counts = np.log2(count_matrix + 1)
         for method in ["euclidean", "correlation", "cosine"]:
@@ -1184,21 +1361,34 @@ class TestWaldStatUnits:
 
         rng = np.random.default_rng(7)
         counts = pd.DataFrame(
-            np.concatenate([rng.poisson(500, size=(20, 4)), rng.poisson(1500, size=(20, 4))], axis=1).astype(float),
+            np.concatenate(
+                [rng.poisson(500, size=(20, 4)), rng.poisson(1500, size=(20, 4))],
+                axis=1,
+            ).astype(float),
             columns=["r1", "r2", "r3", "r4", "t1", "t2", "t3", "t4"],
         )
-        result = _de_deseq2_like(counts, ["r1", "r2", "r3", "r4"], ["t1", "t2", "t3", "t4"])
+        result = _de_deseq2_like(
+            counts, ["r1", "r2", "r3", "r4"], ["t1", "t2", "t3", "t4"]
+        )
 
-        # Reconstruct the delta-method SE for a mid-range gene and compare.
+        # Reconstruct the offset-adjusted delta-method SE on the normalized
+        # scale for a mid-range gene and compare.
         row = 5
-        ref_counts = counts.iloc[row][["r1", "r2", "r3", "r4"]].to_numpy()
-        treat_counts = counts.iloc[row][["t1", "t2", "t3", "t4"]].to_numpy()
-        mean_r, mean_t = ref_counts.mean() + 0.5, treat_counts.mean() + 0.5
-        all_counts = np.concatenate([ref_counts, treat_counts])
-        dispersion = _estimate_dispersion(all_counts) if all_counts.var() > all_counts.mean() else 0.0
+        size_factors = estimate_size_factors(counts)
+        ref_sf = size_factors[["r1", "r2", "r3", "r4"]].to_numpy(dtype=float)
+        treat_sf = size_factors[["t1", "t2", "t3", "t4"]].to_numpy(dtype=float)
+        ref_norm = (counts.iloc[row][["r1", "r2", "r3", "r4"]] / ref_sf).to_numpy()
+        treat_norm = (counts.iloc[row][["t1", "t2", "t3", "t4"]] / treat_sf).to_numpy()
+        mean_r, mean_t = ref_norm.mean() + 0.5, treat_norm.mean() + 0.5
+        all_norm = np.concatenate([ref_norm, treat_norm])
+        dispersion = (
+            _estimate_dispersion(all_norm) if all_norm.var() > all_norm.mean() else 0.0
+        )
         se_log2 = np.sqrt(
-            (mean_r + dispersion * mean_r**2) / (len(ref_counts) * mean_r**2)
-            + (mean_t + dispersion * mean_t**2) / (len(treat_counts) * mean_t**2)
+            (mean_r / ref_sf + dispersion * mean_r**2).sum()
+            / (len(ref_norm) * mean_r) ** 2
+            + (mean_t / treat_sf + dispersion * mean_t**2).sum()
+            / (len(treat_norm) * mean_t) ** 2
         ) / np.log(2)
         log2fc = float(result.iloc[row]["log2_fold_change"])
         expected = log2fc / se_log2 if se_log2 > 0 else 0.0
@@ -1211,9 +1401,152 @@ class TestWaldStatUnits:
 
         from metainformant.rna.analysis.expression_analysis import _de_deseq2_like
 
-        ref = pd.DataFrame(np.full((20, 4), 2000.0), columns=["r1", "r2", "r3", "r4"])
-        treat = pd.DataFrame(np.full((20, 4), 200.0), columns=["t1", "t2", "t3", "t4"])
+        # 21 genes at constant depth: 10 genes drop 10x in treatment (a
+        # minority, so size factors stay ~1 and the drop survives
+        # normalization), 11 genes are unchanged (they anchor the depth
+        # estimate). A uniform 10x drop across ALL genes would be absorbed
+        # as a library-depth difference by design.
+        ref = pd.DataFrame(np.full((21, 4), 2000.0), columns=["r1", "r2", "r3", "r4"])
+        treat = pd.DataFrame(
+            np.concatenate([np.full((10, 4), 200.0), np.full((11, 4), 2000.0)], axis=0),
+            columns=["t1", "t2", "t3", "t4"],
+        )
         combined = pd.concat([ref, treat], axis=1)
         result = _de_deseq2_like(combined, ref.columns.tolist(), treat.columns.tolist())
-        row = result.iloc[3]
+        row = result.iloc[3]  # one of the down-regulated genes
         assert row["log2_fold_change"] < 0 and row["stat"] < 0
+
+
+class TestDeseq2LikeSizeFactorOffset:
+    """The NB LRT must absorb library-depth differences via size-factor offsets."""
+
+    @staticmethod
+    def _depth_matrix(extra_first_gene: float = 1.0) -> pd.DataFrame:
+        # Power-of-two multipliers keep every ratio exact in floating point:
+        # c2 = 2x c1, t1 = 4x c1, t2 = 8x c1. Treatment is 4x deeper overall
+        # with an identical per-gene profile.
+        base = [100.0, 50.0, 80.0, 200.0, 40.0, 10.0, 60.0, 30.0]
+        counts = pd.DataFrame(
+            {
+                "c1": base,
+                "c2": [2.0 * v for v in base],
+                "t1": [4.0 * v for v in base],
+                "t2": [8.0 * v for v in base],
+            },
+            index=[f"gene_{i}" for i in range(8)],
+        )
+        if extra_first_gene != 1.0:
+            # The extra change is treatment-specific so it survives the
+            # offset instead of being absorbed as depth.
+            counts.iloc[0, [2, 3]] *= extra_first_gene
+        return counts
+
+    def test_depth_shift_alone_is_not_significant(self) -> None:
+        counts = self._depth_matrix()
+        result = differential_expression(
+            counts,
+            ["control", "control", "treatment", "treatment"],
+            method="deseq2_like",
+        )
+        # Treatment samples are exactly 2x deeper with the same per-gene
+        # profile: the log(size factor) offset must absorb the depth shift.
+        # Fitting on raw counts would flag every gene as highly significant.
+        assert (result["log2_fold_change"].abs() < 0.01).all()
+        assert (result["p_value"] > 0.9).all()
+
+    def test_genuine_change_survives_the_offset(self) -> None:
+        counts = self._depth_matrix(extra_first_gene=3.0)
+        result = differential_expression(
+            counts,
+            ["control", "control", "treatment", "treatment"],
+            method="deseq2_like",
+        )
+        # gene_0 carries a 3x treatment-specific change on top of the shared
+        # 4x depth shift: the offset removes the depth but keeps the 3x.
+        gene0 = result[result["gene"] == "gene_0"].iloc[0]
+        assert gene0["log2_fold_change"] > 0.5
+        assert gene0["p_value"] < 0.05
+        others = result[result["gene"] != "gene_0"]
+        assert (others["p_value"] > 0.9).all()
+
+
+class TestDESummaryNormalization:
+    """All DE methods report base_mean and log2fc on the size-factor-normalized scale."""
+
+    @staticmethod
+    def _depth_counts() -> pd.DataFrame:
+        return pd.DataFrame(
+            {
+                "c1": [100, 200, 50],
+                "c2": [100, 200, 50],
+                "t1": [200, 400, 100],
+                "t2": [200, 400, 100],
+            },
+            index=["g0", "g1", "g2"],
+        )
+
+    @staticmethod
+    def _expected_normalized_mean() -> float:
+        # Median-of-ratios size factor for the control samples is 100/geo
+        # (every gene shares the same ratio), so the normalized count is
+        # 100 / (100/geo) = geo, not the raw mean of 150.
+        return (100 * 100 * 200 * 200) ** 0.25
+
+    @pytest.mark.parametrize("method", ["deseq2_like", "ttest", "wilcoxon"])
+    def test_base_mean_is_size_factor_normalized(self, method: str) -> None:
+        result = differential_expression(
+            self._depth_counts(),
+            ["control", "control", "treatment", "treatment"],
+            method=method,  # type: ignore[arg-type]
+        )
+        row = result[result["gene"] == "g0"].iloc[0]
+        assert row["base_mean"] == pytest.approx(
+            self._expected_normalized_mean(), rel=1e-9
+        )
+        # clearly not the raw per-gene mean of 150 (normalized value is ~141.4)
+        assert abs(row["base_mean"] - 150.0) > 5.0
+
+    @pytest.mark.parametrize("method", ["deseq2_like", "ttest", "wilcoxon"])
+    def test_depth_shift_yields_null_result(self, method: str) -> None:
+        result = differential_expression(
+            self._depth_counts(),
+            ["control", "control", "treatment", "treatment"],
+            method=method,  # type: ignore[arg-type]
+        )
+        row = result[result["gene"] == "g0"].iloc[0]
+        # the normalized profile is identical in both groups; for ttest and
+        # deseq2_like that yields exactly p=1. For wilcoxon the exp/log
+        # pipeline leaves ~1 ulp differences between nominally tied values,
+        # so scipy's tie-corrected asymptotic test returns a small-but-null
+        # p (~0.19) instead of exactly 1 — still decisively non-significant
+        # (a raw-count fit would give a tiny p).
+        assert abs(row["log2_fold_change"]) < 1e-9
+        if method == "wilcoxon":
+            assert row["p_value"] > 0.05
+        else:
+            assert row["p_value"] == pytest.approx(1.0)
+
+
+class TestDispersionShrinkage:
+    """Dispersion shrinkage toward the prior decays with sample size."""
+
+    def test_half_weight_at_two_samples(self) -> None:
+        from metainformant.rna.analysis.expression_analysis import _estimate_dispersion
+
+        # Method-of-moments alpha = (var - mean) / mean^2 = (2 - 1) / 1 = 1
+        # for [0, 2]; weight 2/(2+2) = 0.5 -> 0.5*0.1 + 0.5*1
+        assert _estimate_dispersion(np.array([0.0, 2.0])) == pytest.approx(
+            0.55, rel=1e-12
+        )
+
+    def test_shrinkage_decays_with_sample_size(self) -> None:
+        from metainformant.rna.analysis.expression_analysis import _estimate_dispersion
+
+        small = _estimate_dispersion(np.array([0.0, 2.0]))
+        # n=6: var=1.2, mean=1 -> alpha=0.2; w=2/8 -> 0.25*0.1 + 0.75*0.2
+        mid = _estimate_dispersion(np.array([0.0, 0.0, 0.0, 2.0, 2.0, 2.0]))
+        # n=12: var=12/11 -> alpha=1/11; w=1/7 -> 0.1/7 + (6/7)*(1/11)
+        large = _estimate_dispersion(np.array([0.0] * 6 + [2.0] * 6))
+        assert mid == pytest.approx(0.175, rel=1e-12)
+        assert large == pytest.approx(0.1 / 7 + (6 / 7) * (1 / 11), rel=1e-12)
+        assert small > mid > large

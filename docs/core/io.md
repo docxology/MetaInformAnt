@@ -121,7 +121,7 @@ Load and parse JSON file.
 
 **Raises**:
 - `FileNotFoundError` if file missing
-- `IOError` (aliased from `core.utils.errors.IOError`) on read error or JSON parse failure
+- `metainformant.core.utils.errors.IOError` (the canonical class; `core.io.errors` re-exports the same object) on read error or JSON parse failure
 
 **Example**:
 ```python

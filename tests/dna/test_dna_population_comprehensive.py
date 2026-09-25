@@ -149,11 +149,25 @@ class TestHudsonFst:
         assert fst <= 1.0
 
     def test_identical_populations(self):
-        """Test with identical populations."""
+        """Identical fixed populations give exactly zero differentiation."""
+        pop1 = ["AAAA", "AAAA"]
+        pop2 = ["AAAA", "AAAA"]
+        fst = population.hudson_fst(pop1, pop2)
+        # All sites fixed for the same allele: no usable denominators and
+        # a shared allele, so the degenerate fallback returns 0.0.
+        assert abs(fst - 0.0) < 1e-6
+
+    def test_identical_polymorphic_populations_negative(self):
+        """Identical polymorphic populations give the unbiased negative estimate.
+
+        Hudson's moment estimator subtracts per-population sampling
+        corrections, so a single polymorphic site with n1 = n2 = 2 yields
+        num = (0)^2 - 0.25 - 0.25 = -0.5 and den = 0.5 -> Fst = -1.0.
+        """
         pop1 = ["AAAA", "AAAT"]
         pop2 = ["AAAA", "AAAT"]
         fst = population.hudson_fst(pop1, pop2)
-        assert abs(fst - 0.0) < 1e-6  # Should be very close to 0
+        assert abs(fst - (-1.0)) < 1e-6
 
     def test_empty_population_raises(self):
         """Test with empty population raises ValueError."""

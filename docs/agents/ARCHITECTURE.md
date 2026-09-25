@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-METAINFORMANT employs a layered multi-agent architecture enabling 28 specialized bioinformatics modules to operate independently while coordinating through well-defined protocols. The RNA workflow processes the configured 27-species Hymenoptera cohort; the exact sample inventory is data-root dependent. The system provides robust error handling, parallel execution, and real-time visualization.
+METAINFORMANT employs a layered multi-agent architecture enabling 30 specialized bioinformatics modules to operate independently while coordinating through well-defined protocols. The RNA workflow processes the configured 27-species Hymenoptera cohort; the exact sample inventory is data-root dependent. The system provides robust error handling, parallel execution, and real-time visualization.
 
 ## System Context
 
@@ -42,7 +42,7 @@ flowchart TB
             end
         end
 
-        subgraph DomainAgents[Domain Agents - 28 Modules]
+        subgraph DomainAgents[Domain Agents - 30 Modules]
             DNA[DNA Analysis]
             RNA[RNA-seq & amalgkit]
             GWAS[GWAS Pipelines]

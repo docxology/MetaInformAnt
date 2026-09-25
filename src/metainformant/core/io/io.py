@@ -8,6 +8,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import IO, Any, Iterable, Iterator, Mapping, cast
 
+from metainformant.core.utils.errors import IOError as CoreIOError
+
 
 def ensure_directory(path: str | Path) -> Path:
     """Create a directory (and parents) if missing and return it as Path."""
@@ -16,14 +18,18 @@ def ensure_directory(path: str | Path) -> Path:
     return p
 
 
-def open_text_auto(path: str | Path, mode: str = "rt", encoding: str = "utf-8") -> io.TextIOBase:
+def open_text_auto(
+    path: str | Path, mode: str = "rt", encoding: str = "utf-8"
+) -> io.TextIOBase:
     """Open a text file, handling gzip transparently based on suffix.
 
     Supports text modes only ("rt", "wt", "at").
     """
     p = Path(path)
     if "b" in mode:
-        raise ValueError("open_text_auto supports text modes only; do not include 'b' in mode")
+        raise ValueError(
+            "open_text_auto supports text modes only; do not include 'b' in mode"
+        )
     if p.suffix == ".gz":
         # gzip.open's str-mode overload yields a broad union; narrow to the binary buffer TextIOWrapper needs.
         gz = cast("IO[bytes]", gzip.open(p, mode.replace("t", "")))
@@ -45,8 +51,6 @@ def load_json(path: str | Path) -> Any:
         IOError: If file read fails or JSON parsing fails
         FileNotFoundError: If file does not exist
     """
-    from .errors import IOError as CoreIOError
-
     p = Path(path)
     if not p.exists():
         raise FileNotFoundError(f"JSON file not found: {path}")
@@ -60,7 +64,9 @@ def load_json(path: str | Path) -> Any:
         raise CoreIOError(f"Failed to read JSON file {path}: {e}") from e
 
 
-def dump_json(obj: Any, path: str | Path, *, indent: int | None = None, atomic: bool = True) -> None:
+def dump_json(
+    obj: Any, path: str | Path, *, indent: int | None = None, atomic: bool = True
+) -> None:
     """Write object to JSON file with optional atomic write.
 
     Args:
@@ -72,8 +78,6 @@ def dump_json(obj: Any, path: str | Path, *, indent: int | None = None, atomic: 
     Raises:
         IOError: If file write fails
     """
-    from .errors import IOError as CoreIOError
-
     p = Path(path)
     ensure_directory(p.parent)
 
@@ -157,15 +161,15 @@ def load_yaml(path: str | Path) -> Any:
         ImportError: If PyYAML is not available
         IOError: If file read fails
     """
-    from .errors import IOError as CoreIOError
-
     try:
         import yaml
 
         with open_text_auto(path, mode="rt") as fh:
             return yaml.safe_load(fh)
     except ImportError as e:
-        raise ImportError("PyYAML is required for YAML support. Install with: uv add PyYAML") from e
+        raise ImportError(
+            "PyYAML is required for YAML support. Install with: uv add PyYAML"
+        ) from e
     except Exception as e:
         raise CoreIOError(f"Failed to read YAML file {path}: {e}") from e
 
@@ -182,8 +186,6 @@ def load_toml(path: str | Path) -> Any:
     Raises:
         IOError: If file read fails
     """
-    from .errors import IOError as CoreIOError
-
     try:
         import tomllib
 
@@ -205,8 +207,12 @@ def read_parquet(path: str | Path, **kwargs: Any) -> Any:
         # Preserve original error message if it mentions pyarrow/fastparquet
         error_msg = str(e).lower()
         if "pyarrow" in error_msg or "fastparquet" in error_msg:
-            raise ImportError("Parquet support requires pyarrow or fastparquet. Install with: uv add pyarrow") from e
-        raise ImportError(f"pandas is required for Parquet reading: {e}. Install with: uv add pandas") from e
+            raise ImportError(
+                "Parquet support requires pyarrow or fastparquet. Install with: uv add pyarrow"
+            ) from e
+        raise ImportError(
+            f"pandas is required for Parquet reading: {e}. Install with: uv add pandas"
+        ) from e
 
 
 def write_parquet(df: Any, path: str | Path, **kwargs: Any) -> None:
@@ -218,8 +224,12 @@ def write_parquet(df: Any, path: str | Path, **kwargs: Any) -> None:
         # Preserve original error message if it mentions pyarrow/fastparquet
         error_msg = str(e).lower()
         if "pyarrow" in error_msg or "fastparquet" in error_msg:
-            raise ImportError("Parquet support requires pyarrow or fastparquet. Install with: uv add pyarrow") from e
-        raise ImportError(f"pandas is required for Parquet writing: {e}. Install with: uv add pandas") from e
+            raise ImportError(
+                "Parquet support requires pyarrow or fastparquet. Install with: uv add pyarrow"
+            ) from e
+        raise ImportError(
+            f"pandas is required for Parquet writing: {e}. Install with: uv add pandas"
+        ) from e
 
 
 # JSON Lines utilities
@@ -240,7 +250,9 @@ def read_jsonl(path: str | Path) -> Iterator[dict[str, Any]]:
             yield json.loads(line)
 
 
-def write_jsonl(rows: Iterable[Mapping[str, Any]], path: str | Path, *, atomic: bool = True) -> None:
+def write_jsonl(
+    rows: Iterable[Mapping[str, Any]], path: str | Path, *, atomic: bool = True
+) -> None:
     """Write rows as JSON Lines format (one JSON object per line).
 
     Args:
@@ -251,8 +263,6 @@ def write_jsonl(rows: Iterable[Mapping[str, Any]], path: str | Path, *, atomic: 
     Raises:
         IOError: If file write fails
     """
-    from .errors import IOError as CoreIOError
-
     p = Path(path)
     ensure_directory(p.parent)
 
@@ -296,7 +306,9 @@ def write_jsonl(rows: Iterable[Mapping[str, Any]], path: str | Path, *, atomic: 
 
 
 # Delimited text utilities (CSV/TSV)
-def read_delimited(path: str | Path, *, delimiter: str = ",") -> Iterator[dict[str, str]]:
+def read_delimited(
+    path: str | Path, *, delimiter: str = ","
+) -> Iterator[dict[str, str]]:
     """Read delimited text file (CSV/TSV) as dictionaries.
 
     Args:
@@ -310,8 +322,6 @@ def read_delimited(path: str | Path, *, delimiter: str = ",") -> Iterator[dict[s
         FileNotFoundError: If file does not exist
         IOError: If file read fails
     """
-    from .errors import IOError as CoreIOError
-
     p = Path(path)
     if not p.exists():
         raise FileNotFoundError(f"File not found: {path}")
@@ -326,7 +336,11 @@ def read_delimited(path: str | Path, *, delimiter: str = ",") -> Iterator[dict[s
 
 
 def write_delimited(
-    rows: Iterable[Mapping[str, Any]], path: str | Path, *, delimiter: str = ",", atomic: bool = True
+    rows: Iterable[Mapping[str, Any]],
+    path: str | Path,
+    *,
+    delimiter: str = ",",
+    atomic: bool = True,
 ) -> None:
     """Write rows to delimited text file (CSV/TSV).
 
@@ -339,8 +353,6 @@ def write_delimited(
     Raises:
         IOError: If file write fails
     """
-    from .errors import IOError as CoreIOError
-
     p = Path(path)
     ensure_directory(p.parent)
     temp_path: Path | None = None
@@ -476,7 +488,9 @@ def write_tsv(data: Iterable[Sequence[Any]], path: str | Path) -> None:
             writer.writerow(row)
 
 
-def download_file(url: str, dest_path: str | Path, *, chunk_size: int = 8192, timeout: int = 30) -> bool:
+def download_file(
+    url: str, dest_path: str | Path, *, chunk_size: int = 8192, timeout: int = 30
+) -> bool:
     """Download a file from a URL to a local path.
 
     Args:
@@ -610,7 +624,9 @@ def download_csv(url: str, *, timeout: int = 30, **kwargs: Any) -> Any:
     return None
 
 
-def batch_download(urls: list[str], dest_dir: str | Path, *, timeout: int = 30) -> dict[str, bool]:
+def batch_download(
+    urls: list[str], dest_dir: str | Path, *, timeout: int = 30
+) -> dict[str, bool]:
     """Download multiple files in batch.
 
     Args:

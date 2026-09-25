@@ -7,7 +7,6 @@ of population differentiation from allele frequency data.
 from __future__ import annotations
 
 import math
-import zlib
 from typing import Dict, List, Tuple
 
 import numpy as np
@@ -17,7 +16,9 @@ from metainformant.core.utils import logging
 logger = logging.get_logger(__name__)
 
 
-def fst_from_allele_freqs(pop1_freqs: List[float], pop2_freqs: List[float] | None = None) -> float:
+def fst_from_allele_freqs(
+    pop1_freqs: List[float], pop2_freqs: List[float] | None = None
+) -> float:
     """Calculate F_ST from allele frequencies between two populations.
 
     F_ST measures the genetic differentiation between populations.
@@ -27,6 +28,15 @@ def fst_from_allele_freqs(pop1_freqs: List[float], pop2_freqs: List[float] | Non
     - Single list: fst_from_allele_freqs([p1, p2]) where p1, p2 are allele frequencies
       in populations 1 and 2 for a single locus
     - Two lists: fst_from_allele_freqs(pop1_freqs, pop2_freqs) for multiple loci
+
+    The estimator pools the between-population variance of allele
+    frequencies across loci:
+
+        F_ST = sum_j var_p_j / sum_j (var_p_j + mean_i p_ij (1 - p_ij))
+
+    For two populations this is algebraically identical to the standard
+    heterozygosity form (Ht - Hs) / Ht, so the single-locus and
+    multi-locus code paths agree for one locus.
 
     Args:
         pop1_freqs: Allele frequencies for population 1, or [p1, p2] for single locus
@@ -52,19 +62,14 @@ def fst_from_allele_freqs(pop1_freqs: List[float], pop2_freqs: List[float] | Non
     # Check for single-locus mode: [p1, p2]
     if pop2_freqs is None:
         if len(pop1_freqs) != 2:
-            raise ValueError("Single-list mode requires exactly 2 allele frequencies [p1, p2]")
-        p1, p2 = pop1_freqs
-        # Single locus F_ST calculation
-        # Mean allele frequency across populations
-        p_bar = (p1 + p2) / 2
-        # Mean heterozygosity within subpopulations
-        Hs = (2 * p1 * (1 - p1) + 2 * p2 * (1 - p2)) / 2
-        # Total heterozygosity (using mean frequency)
-        Ht = 2 * p_bar * (1 - p_bar)
-
-        if Ht == 0:
-            return 0.0
-        return max(0.0, min(1.0, (Ht - Hs) / Ht))
+            raise ValueError(
+                "Single-list mode requires exactly 2 allele frequencies [p1, p2]"
+            )
+        for p in pop1_freqs:
+            if not 0 <= p <= 1:
+                raise ValueError(f"Invalid frequency values: {list(pop1_freqs)}")
+        # One locus, two populations: the same estimator as the multi-locus path.
+        return fst_from_allele_freq_matrix([[pop1_freqs[0]], [pop1_freqs[1]]])
 
     # Multi-locus mode
     if len(pop1_freqs) != len(pop2_freqs):
@@ -78,34 +83,73 @@ def fst_from_allele_freqs(pop1_freqs: List[float], pop2_freqs: List[float] | Non
         if not (0 <= f1 <= 1) or not (0 <= f2 <= 1):
             raise ValueError(f"Invalid frequency values at locus {i}: {f1}, {f2}")
 
-    n_loci = len(pop1_freqs)
+    return fst_from_allele_freq_matrix([list(pop1_freqs), list(pop2_freqs)])
 
-    # Calculate mean frequencies across populations
-    mean_freqs = [(f1 + f2) / 2 for f1, f2 in zip(pop1_freqs, pop2_freqs)]
 
-    # Calculate within-population variance
-    var_within = 0.0
-    for f1, f2, mean_f in zip(pop1_freqs, pop2_freqs, mean_freqs):
-        # Variance within populations for this locus
-        var_within += ((f1 - mean_f) ** 2 + (f2 - mean_f) ** 2) / 2
+def fst_from_allele_freq_matrix(pop_freqs: List[List[float]]) -> float:
+    """Calculate the multi-locus moment F_ST across any number of populations.
 
-    var_within /= n_loci
+    Standard moment estimator pooled over loci:
 
-    # Calculate between-population variance
-    var_between = 0.0
-    for f1, f2 in zip(pop1_freqs, pop2_freqs):
-        var_between += (f1 - f2) ** 2 / 2
+        F_ST = sum_j var_p_j / sum_j (var_p_j + mean_i p_ij (1 - p_ij))
 
-    var_between /= n_loci
+    where var_p_j is the variance of allele frequencies across populations
+    at locus j. For more than two populations var_p uses the unbiased
+    k/(k-1) corrected sample variance; for exactly two populations it is
+    the population variance, which reproduces the classic
+    (Ht - Hs) / Ht estimator and keeps the single-locus and multi-locus
+    code paths consistent.
 
-    # F_ST = variance between populations / total variance
-    if var_within + var_between == 0:
+    Args:
+        pop_freqs: One per-locus frequency list per population; all
+            populations must have the same number of loci.
+
+    Returns:
+        F_ST value between 0 and 1; 0.0 when no variance can be estimated.
+
+    Raises:
+        ValueError: If fewer than 2 populations are supplied, the locus
+            lists are empty or mismatched, or frequencies are invalid.
+
+    Examples:
+        >>> pops = [[0.6, 0.4], [0.3, 0.7], [0.9, 0.1]]
+        >>> fst = fst_from_allele_freq_matrix(pops)
+    """
+    n_pops = len(pop_freqs)
+    if n_pops < 2:
+        raise ValueError("Need at least 2 populations")
+
+    n_loci = len(pop_freqs[0])
+    if n_loci == 0:
+        raise ValueError("Frequency arrays cannot be empty")
+
+    for i, pop in enumerate(pop_freqs):
+        if len(pop) != n_loci:
+            raise ValueError(f"Population {i} has {len(pop)} loci, expected {n_loci}")
+        for j, p in enumerate(pop):
+            if not 0 <= p <= 1:
+                raise ValueError(
+                    f"Invalid frequency value at population {i}, locus {j}: {p}"
+                )
+
+    variance_sum = 0.0
+    total_sum = 0.0
+    for j in range(n_loci):
+        locus_freqs = [pop[j] for pop in pop_freqs]
+        p_bar = sum(locus_freqs) / n_pops
+        if n_pops > 2:
+            var_p = sum((p - p_bar) ** 2 for p in locus_freqs) / (n_pops - 1)
+        else:
+            var_p = sum((p - p_bar) ** 2 for p in locus_freqs) / n_pops
+        within = sum(p * (1.0 - p) for p in locus_freqs) / n_pops
+        variance_sum += var_p
+        total_sum += var_p + within
+
+    if total_sum <= 0.0:
         return 0.0
 
-    fst = var_between / (var_within + var_between)
-
     # Ensure F_ST is within valid range
-    return max(0.0, min(1.0, fst))
+    return max(0.0, min(1.0, variance_sum / total_sum))
 
 
 def pairwise_fst_matrix(population_freqs: List[List[float]]) -> np.ndarray:
@@ -147,92 +191,107 @@ def pairwise_fst_matrix(population_freqs: List[List[float]]) -> np.ndarray:
     return fst_matrix
 
 
-def weirs_fst(haplotype_counts: Dict[str, int], population_labels: List[str]) -> float:
-    """Calculate Weir & Cockerham's F_ST from haplotype counts.
+def weirs_fst(population_counts: Dict[str, Dict[str, int]]) -> float:
+    """Calculate Weir & Cockerham's (1984) F_ST from per-population haplotype counts.
 
-    This implements a simplified F_ST estimator based on haplotype frequency differences.
+    Implements the single-locus Weir & Cockerham (1984) variance-component
+    estimator. For every distinct haplotype ``u`` the components are
+
+        a_u: among-population variance component
+        b_u: within-population sampling component
+        c_u: within-individual component
+
+    computed from per-population gene-copy counts with the observed
+    heterozygosity term set to zero: haplotype counts carry no diploid
+    genotype information, so ``c`` is 0 and ``b`` captures the binomial
+    sampling variance of allele frequencies within populations. The pooled
+    estimator is
+
+        theta = sum_u a_u / sum_u (a_u + b_u + c_u)
+
+    clamped to [0, 1] (the unbiased components can be slightly negative
+    for homogeneous samples).
 
     Args:
-        haplotype_counts: Dictionary mapping haplotype strings to counts
-        population_labels: List of population labels for each individual
+        population_counts: Mapping of population label to haplotype-count
+            mapping. Counts are gene copies (haplotypes), not diploid individuals.
 
     Returns:
-        F_ST value between 0 and 1
+        F_ST value between 0 and 1; 0.0 when it cannot be estimated.
+
+    Raises:
+        ValueError: If any haplotype count is negative.
 
     Examples:
-        >>> counts = {"AT": 10, "AG": 15, "GT": 8, "GG": 12}
-        >>> labels = ["pop1"] * 22 + ["pop2"] * 23  # 45 individuals total
-        >>> fst = weirs_fst(counts, labels)
+        >>> counts = {"pop1": {"AT": 10, "AG": 5}, "pop2": {"AT": 4, "AG": 11}}
+        >>> fst = weirs_fst(counts)
     """
-    if not haplotype_counts or not population_labels:
+    if not population_counts:
         return 0.0
 
-    # Get unique populations
-    populations = sorted(set(population_labels))
-    n_pops = len(populations)
+    # Sorted iteration keeps the estimate independent of dict ordering.
+    populations = sorted(population_counts)
+    if any(
+        count < 0 for pop in populations for count in population_counts[pop].values()
+    ):
+        raise ValueError("Haplotype counts must be non-negative")
+    n_i = {pop: sum(population_counts[pop].values()) for pop in populations}
+    # Populations with no sampled gene copies cannot inform the estimator.
+    populations = [pop for pop in populations if n_i[pop] > 0]
+    n_i = {pop: n_i[pop] for pop in populations}
+    r = len(populations)
 
-    if n_pops < 2:
+    if r < 2:
         return 0.0  # Need at least 2 populations
 
-    # Calculate population sizes
-    pop_sizes = {pop: population_labels.count(pop) for pop in populations}
-    total_n = sum(pop_sizes.values())
+    total_n = sum(n_i.values())
+    n_bar = total_n / r
+    if n_bar <= 1.0:
+        return 0.0  # Need at least 2 gene copies per population on average
 
-    if total_n == 0:
+    # Weir & Cockerham (1984) sample-size terms.
+    sum_n_squared = sum(n * n for n in n_i.values())
+    n_c = (total_n - sum_n_squared / total_n) / (r - 1)
+    if n_c <= 0.0:
         return 0.0
 
-    # Calculate haplotype frequencies per population
-    # This assumes counts are already split by population based on labels
-    all_haplotypes = list(haplotype_counts.keys())
-    total_count = sum(haplotype_counts.values())
+    alleles = sorted(
+        {haplotype for pop in populations for haplotype in population_counts[pop]}
+    )
 
-    if total_count == 0:
-        return 0.0
-
-    # Calculate overall frequencies
-    overall_freqs = {h: count / total_count for h, count in haplotype_counts.items()}
-
-    # Estimate population-specific frequencies (proportional to pop sizes)
-    # This is a simplification - real implementation would need per-pop counts
-    pop_freqs = {}
-    for pop in populations:
-        pop_weight = pop_sizes[pop] / total_n
-        pop_freqs[pop] = {
-            # Deterministic per-(population, haplotype) jitter: built-in hash() is
-            # salted per process and would make F_ST non-reproducible across runs.
-            h: freq * (1 + 0.1 * ((zlib.crc32((pop + h).encode("utf-8")) % 10 - 5) / 5) * pop_weight)
-            for h, freq in overall_freqs.items()
+    a_total = 0.0
+    b_total = 0.0
+    c_total = 0.0
+    for allele in alleles:
+        p_hat = {
+            pop: population_counts[pop].get(allele, 0) / n_i[pop] for pop in populations
         }
-        # Normalize
-        total_freq = sum(pop_freqs[pop].values())
-        if total_freq > 0:
-            pop_freqs[pop] = {h: f / total_freq for h, f in pop_freqs[pop].items()}
+        p_bar = sum(n_i[pop] * p_hat[pop] for pop in populations) / total_n
+        s_squared = sum(n_i[pop] * (p_hat[pop] - p_bar) ** 2 for pop in populations) / (
+            (r - 1) * n_bar
+        )
+        het = p_bar * (1.0 - p_bar)
 
-    # Calculate F_ST using variance components
-    # F_ST = Var(p) / (p_bar * (1 - p_bar))
+        a = (n_bar / n_c) * (
+            s_squared - (1.0 / (n_bar - 1.0)) * (het - ((r - 1.0) / r) * s_squared)
+        )
+        b = (n_bar / (n_bar - 1.0)) * (het - ((r - 1.0) / r) * s_squared)
+        c = 0.0
 
-    fst_per_haplotype = []
-    for h in all_haplotypes:
-        p_bar = overall_freqs.get(h, 0)
+        a_total += a
+        b_total += b
+        c_total += c
 
-        if p_bar > 0 and p_bar < 1:
-            # Variance between populations
-            var_p = sum((pop_freqs[pop].get(h, 0) - p_bar) ** 2 for pop in populations) / n_pops
+    denominator = a_total + b_total + c_total
+    if denominator <= 0.0:
+        return 0.0
 
-            # Expected heterozygosity
-            het = p_bar * (1 - p_bar)
-
-            if het > 0:
-                fst_h = var_p / het
-                fst_per_haplotype.append(min(1.0, max(0.0, fst_h)))
-
-    # Return average F_ST across haplotypes
-    if fst_per_haplotype:
-        return float(np.mean(fst_per_haplotype))
-    return 0.0
+    return max(0.0, min(1.0, a_total / denominator))
 
 
-def fst_confidence_interval(fst_value: float, sample_size: int, confidence_level: float = 0.95) -> Tuple[float, float]:
+def fst_confidence_interval(
+    fst_value: float, sample_size: int, confidence_level: float = 0.95
+) -> Tuple[float, float]:
     """Calculate confidence interval for F_ST estimate.
 
     Uses bootstrap resampling to estimate confidence intervals.
@@ -250,7 +309,9 @@ def fst_confidence_interval(fst_value: float, sample_size: int, confidence_level
     # For small samples, add correction factor
 
     if sample_size < 2:
-        raise ValueError("Sample size must be at least 2 for confidence interval calculation")
+        raise ValueError(
+            "Sample size must be at least 2 for confidence interval calculation"
+        )
 
     # Variance approximation for F_ST estimator
     # Based on asymptotic variance formula: Var(F_ST) ≈ 2*F_ST^2*(1-F_ST)^2 / n
@@ -261,7 +322,9 @@ def fst_confidence_interval(fst_value: float, sample_size: int, confidence_level
 
     # Calculate variance using improved approximation
     # This uses the delta method approximation
-    variance = (2 * fst_clamped * fst_clamped * (1 - fst_clamped) * (1 - fst_clamped)) / sample_size
+    variance = (
+        2 * fst_clamped * fst_clamped * (1 - fst_clamped) * (1 - fst_clamped)
+    ) / sample_size
 
     # Add small-sample correction (Hedges correction)
     if sample_size < 30:

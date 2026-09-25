@@ -66,7 +66,10 @@ class TestEstimateHeritability:
 
         result = estimate_heritability(K, phenotypes)
         assert result["status"] == "error"
-        assert "zero" in result["message"].lower() or "variance" in result["message"].lower()
+        assert (
+            "zero" in result["message"].lower()
+            or "variance" in result["message"].lower()
+        )
 
     def test_too_few_samples(self) -> None:
         """Fewer than 3 samples should return an error."""
@@ -106,7 +109,9 @@ class TestEstimateHeritability:
 
         result = estimate_heritability(K, phenotypes)
         assert result["status"] == "error"
-        assert "shape" in result["message"].lower() or "match" in result["message"].lower()
+        assert (
+            "shape" in result["message"].lower() or "match" in result["message"].lower()
+        )
 
     def test_return_dict_structure(self) -> None:
         """Verify complete return dictionary structure on success."""
@@ -117,7 +122,16 @@ class TestEstimateHeritability:
 
         result = estimate_heritability(K, phenotypes)
         assert result["status"] == "success"
-        required_keys = {"status", "h2", "h2_se", "sigma_g", "sigma_e", "log_likelihood", "n_samples", "method"}
+        required_keys = {
+            "status",
+            "h2",
+            "h2_se",
+            "sigma_g",
+            "sigma_e",
+            "log_likelihood",
+            "n_samples",
+            "method",
+        }
         assert required_keys.issubset(result.keys())
 
 
@@ -221,3 +235,49 @@ class TestHeritabilityBarChart:
         result = heritability_bar_chart(h2_data, output_file=output_file)
         assert "status" in result
         assert "output_path" in result
+
+
+class TestEstimateHeritabilityDelegation:
+    """estimate_heritability must reuse the shared REML core (greml_simple)."""
+
+    def test_matches_greml_simple_numerics(self) -> None:
+        """Same inputs must produce identical REML numbers via the single core."""
+        from metainformant.gwas.heritability.estimation import greml_simple
+
+        rng = np.random.default_rng(21)
+        n = 25
+        K = np.eye(n) + 0.15 * rng.standard_normal((n, n))
+        K = K @ K.T / n
+        K = K / np.mean(np.diag(K))
+        phenotypes = list(0.7 * (K @ rng.standard_normal(n)) + rng.standard_normal(n))
+
+        delegated = estimate_heritability(K, phenotypes)
+        direct = greml_simple(K, phenotypes)
+
+        assert delegated["status"] == "success"
+        assert direct["status"] == "success"
+        assert delegated["h2"] == direct["h2"]
+        assert delegated["h2_se"] == direct["h2_se"]
+        assert delegated["sigma_g"] == direct["sigma_g"]
+        assert delegated["sigma_e"] == direct["sigma_e"]
+        assert delegated["log_likelihood"] == direct["log_likelihood"]
+        assert delegated["n_samples"] == direct["n_samples"]
+
+    def test_method_label_preserved(self) -> None:
+        """The requested method label must be reported back unchanged."""
+        rng = np.random.default_rng(22)
+        n = 10
+        K = np.eye(n)
+        result = estimate_heritability(K, list(rng.standard_normal(n)))
+
+        assert result["status"] == "success"
+        assert result["method"] == "reml"
+
+    def test_error_statuses_surface(self) -> None:
+        """Validation errors from the shared core must surface unchanged."""
+        result = estimate_heritability(np.eye(3), [1.0, 2.0, 3.0, 4.0])
+
+        assert result["status"] == "error"
+        assert (
+            "shape" in result["message"].lower() or "match" in result["message"].lower()
+        )

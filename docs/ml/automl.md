@@ -30,51 +30,47 @@ Automatic preprocessing pipeline that handles missing values, scaling, encoding,
 
 ```python-snippet
 def random_search(
-    model: Any,
+    model_fn: Any,
+    param_distributions: dict,
     X: Any,
     y: Any,
-    param_distributions: dict[str, list[Any]],
     n_iter: int = 50,
     cv: int = 5,
-    scoring: str | Callable | None = None,
+    metric: str = "accuracy",
     random_state: int | None = None,
-) -> dict[str, Any]
+) -> dict
 ```
 
-Perform random hyperparameter search. Returns `best_params`, `best_score`, `all_results` (list of param/score pairs), and `elapsed_time`.
+Perform random hyperparameter search. `model_fn` is a callable factory that takes keyword arguments and returns a model with fit/predict methods. Each `param_distributions` value is a list (uniform choice) or a dict with `low`/`high` keys (uniform range), optionally `"log": True` for log-uniform sampling. Returns `best_params`, `best_score`, `all_results` (per-iteration param/score pairs), and `n_evaluations`.
 
 ### bayesian_optimization
 
 ```python-snippet
 def bayesian_optimization(
-    model: Any,
-    X: Any,
-    y: Any,
-    param_space: dict[str, tuple[float, float]],
-    n_iterations: int = 30,
+    objective_fn: Any,
+    param_space: dict,
+    n_iter: int = 30,
     n_initial: int = 5,
-    cv: int = 5,
-    scoring: str | Callable | None = None,
     random_state: int | None = None,
-) -> dict[str, Any]
+) -> dict
 ```
 
-Bayesian optimization with a Gaussian process surrogate. `param_space` maps parameter names to (min, max) bounds for continuous parameters. Returns `best_params`, `best_score`, `convergence_history`, and `surrogate_model`.
+Bayesian optimization with a Gaussian process (RBF kernel) surrogate and Expected Improvement acquisition. It does not take `X`/`y`: wrap your data in `objective_fn`, a callable that takes a params dict and returns the score to maximize. `param_space` maps parameter names to `{"low": float, "high": float, "log": bool}` specs. Returns `best_params`, `best_score`, `history` (per-iteration records), and a `surrogate_model` summary.
 
 ### grid_search
 
 ```python-snippet
 def grid_search(
-    model: Any,
+    model_fn: Any,
+    param_grid: dict,
     X: Any,
     y: Any,
-    param_grid: dict[str, list[Any]],
     cv: int = 5,
-    scoring: str | Callable | None = None,
-) -> dict[str, Any]
+    metric: str = "accuracy",
+) -> dict
 ```
 
-Exhaustive grid search over all parameter combinations. Returns `best_params`, `best_score`, `all_results`, and `n_combinations`.
+Exhaustive grid search over all parameter combinations. `param_grid` maps parameter names to exact value lists. Returns `best_params`, `best_score`, and `all_results` (failed combinations are kept with an `error` entry).
 
 ### model_selection
 
@@ -84,12 +80,10 @@ def model_selection(
     y: Any,
     task: str = "classification",
     cv: int = 5,
-    scoring: str | None = None,
-    random_state: int | None = None,
-) -> dict[str, Any]
+) -> dict
 ```
 
-Evaluate multiple model types and select the best. Task must be `"classification"` or `"regression"`. Returns `best_model`, `best_model_name`, `best_score`, and `model_scores` (all models ranked).
+Evaluate multiple model types (linear, tree-based, ensemble, KNN, SVM) and rank them by cross-validation score — accuracy for `"classification"`, R-squared for `"regression"`. Returns `best_model_type`, `rankings` (sorted `(model_type, score)` tuples), and `cv_results_per_model`.
 
 ### auto_preprocess
 
@@ -97,64 +91,65 @@ Evaluate multiple model types and select the best. Task must be `"classification
 def auto_preprocess(
     X: Any,
     y: Any | None = None,
-    scale: bool = True,
-    handle_missing: bool = True,
-    feature_selection: bool = False,
-    n_features: int | None = None,
-) -> dict[str, Any]
+) -> dict
 ```
 
-Automatic data preprocessing pipeline. Returns `X_processed`, `y_processed` (if label encoding applied), `transformers` (fitted scaler, imputer, etc.), and `feature_mask` (if selection applied).
+Automatic preprocessing pipeline: detects column data types, imputes missing values, scales numeric features, and encodes categorical-like columns. Returns `X_processed`, `transformations_applied`, and `feature_info`.
 
 ## Usage Examples
 
-```python
-from metainformant.ml import (
+```python-snippet
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import cross_val_score
+from metainformant.ml.automl.optimization import (
     random_search, bayesian_optimization, grid_search,
     model_selection, auto_preprocess,
 )
-from sklearn.ensemble import RandomForestClassifier
 
-# Random search for hyperparameter tuning
-rf = RandomForestClassifier(random_state=42)
+def make_model(**params):
+    return RandomForestClassifier(random_state=42, **params)
+
+# Random search: pass a model factory, not an instantiated model
 param_dists = {
     "n_estimators": [50, 100, 200, 500],
     "max_depth": [5, 10, 20, None],
     "min_samples_split": [2, 5, 10],
 }
-result = random_search(rf, X, y, param_dists, n_iter=50, cv=5)
+result = random_search(make_model, param_dists, X, y, n_iter=50, cv=5, metric="accuracy")
 print(f"Best params: {result['best_params']}, Score: {result['best_score']:.3f}")
 
-# Bayesian optimization for continuous parameters
+# Bayesian optimization: wrap the data in an objective function
 param_space = {
-    "max_depth": (2.0, 30.0),
-    "min_samples_split": (2.0, 20.0),
+    "max_depth": {"low": 2.0, "high": 30.0},
+    "min_samples_split": {"low": 2.0, "high": 20.0},
 }
-bayes_result = bayesian_optimization(rf, X, y, param_space, n_iterations=30)
+def objective(params):
+    return cross_val_score(make_model(**params), X, y, cv=5).mean()
+
+bayes_result = bayesian_optimization(objective, param_space, n_iter=30, n_initial=5)
 print(f"Best score: {bayes_result['best_score']:.3f}")
 
 # Grid search (exhaustive)
 param_grid = {"n_estimators": [100, 200], "max_depth": [10, 20]}
-grid_result = grid_search(rf, X, y, param_grid, cv=5)
+grid_result = grid_search(make_model, param_grid, X, y, cv=5)
 
 # Automatic model selection
 selection = model_selection(X, y, task="classification", cv=5)
-print(f"Best model: {selection['best_model_name']} (score: {selection['best_score']:.3f})")
-best_model = selection["best_model"]
+print(f"Best model type: {selection['best_model_type']}")
+print(selection["rankings"])
 
 # Auto preprocessing
-prep = auto_preprocess(X, y, scale=True, handle_missing=True, feature_selection=True)
+prep = auto_preprocess(X, y)
 X_clean = prep["X_processed"]
 ```
 
 ## Configuration
 
-- **Environment prefix**: `ML_`
 - **Required**: numpy
 - **Optional**: scikit-learn (for cross-validation and model training)
 - Bayesian optimization uses a pure Python GP surrogate with no external dependencies
-- Model selection evaluates Random Forest, Gradient Boosting, Logistic Regression, and SVM by default
-- All methods support custom scoring functions
+- Model selection evaluates linear, tree-based, ensemble, KNN, and SVM model types (scikit-learn-backed when available)
+- Scoring is selected with the `metric` argument (`"accuracy"`, `"mse"`, `"r2"`); there is no custom-callable scoring parameter
 
 ## Related Modules
 

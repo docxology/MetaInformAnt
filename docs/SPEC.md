@@ -2,7 +2,7 @@
 
 ## Scope
 
-Technical documentation for METAINFORMANT, organized by domain module. Contains architecture guides, API documentation, tutorials, and reference materials for all 28 bioinformatics modules. Built with Sphinx for HTML generation.
+Technical documentation for METAINFORMANT, organized by domain module. Contains architecture guides, API documentation, tutorials, and reference materials for all 30 bioinformatics modules. Built with Sphinx for HTML generation.
 
 ## Architecture
 
@@ -47,10 +47,11 @@ Each module has a corresponding docs subdirectory:
 
 - core/, dna/, rna/, gwas/, protein/, epigenome/
 - networks/, multiomics/, singlecell/, visualization/
-- quality/, ml/, math/, information/, ontology/
+- quality/, ml/, math/, popgen/, information/, ontology/
 - phenotype/, ecology/, simulation/, life_events/
 - longread/, metagenomics/, structural_variants/
 - spatial/, pharmacogenomics/, metabolomics/, menu/
+- eqtl/, cloud/, mcp/
 
 ## Interface
 

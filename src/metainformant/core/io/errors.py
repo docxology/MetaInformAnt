@@ -1,27 +1,22 @@
-"""Core I/O exceptions."""
+"""Core I/O exceptions.
 
-from metainformant.core.utils.errors import METAINFORMANTError
+The canonical exception hierarchy lives in
+:mod:`metainformant.core.utils.errors`; this module re-exports its I/O classes
+so both import paths resolve to the same objects -- a caller catching
+``metainformant.core.io.errors.IOError`` also catches what
+``metainformant.core.utils.errors.IOError`` (and vice versa).
+"""
 
+from metainformant.core.utils.errors import CacheError, DownloadError, IOError
 
-class IOError(METAINFORMANTError):
-    """Base class for I/O errors in metainformant."""
-
-    pass
-
-
-class FileNotFoundError(IOError):
-    """File not found error."""
-
-    pass
+__all__ = ["CacheError", "DownloadError", "IOError", "InputFileMissingError"]
 
 
-class CacheError(IOError):
-    """Cache operation error."""
+class InputFileMissingError(IOError):
+    """An expected input file does not exist.
 
-    pass
-
-
-class DownloadError(IOError):
-    """Download operation error."""
+    Replaces the historical ``FileNotFoundError`` alias, which shadowed the
+    builtin exception of the same name.
+    """
 
     pass

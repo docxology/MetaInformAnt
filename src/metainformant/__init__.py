@@ -18,6 +18,8 @@ Modules:
 - rna: RNA-seq workflows and amalgkit integration
 - protein: Protein sequence and structure analysis
 - gwas: Genome-wide association studies
+- eqtl: Expression QTL and transcriptome-variant pipelines
+- popgen: Population genetics statistics and neutrality tests
 - math: Mathematical biology and theoretical modeling
 - information: Information theory for biological data
 - life_events: Life course and temporal analysis
@@ -39,7 +41,7 @@ Modules:
 - metagenomics: Microbiome and metagenomic analysis
 - pharmacogenomics: Clinical pharmacogenomic variant analysis
 - cloud: Cloud deployment helpers
-- mcp: Standalone helper tools for future MCP integration
+- mcp: MCP stdio JSON-RPC 2.0 server and schema-validated tool registry
 - menu: Interactive discovery and navigation
 """
 

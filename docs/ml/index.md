@@ -20,7 +20,7 @@ Supervised learning methods for biological prediction tasks:
 Continuous trait prediction and modeling:
 - Linear and non-linear regression
 - Regularization methods (Lasso, Ridge, Elastic Net)
-- Survival analysis and time-series prediction
+- Ensemble and linear model families (linear, random forest, gradient boosting, ridge, lasso, SVR)
 - Feature importance analysis
 - Model comparison and selection
 
@@ -36,7 +36,7 @@ Dimensionality reduction and feature importance analysis:
 Comprehensive model assessment and validation:
 - Cross-validation strategies
 - Bootstrap resampling and confidence intervals
-- Permutation testing
+- Permutation-based feature importance
 - Learning curves and validation curves
 - Model comparison and statistical testing
 
@@ -99,91 +99,74 @@ flowchart TD
 
 ## Quick Start
 
-### Basic Classification
-
 ```python-snippet
-from metainformant.ml import classification
+from metainformant.ml.models.classification import create_biological_classifier, cross_validate_biological
 
-# Prepare biological data
-features = load_expression_data()  # Gene expression matrix
-labels = load_phenotype_labels()   # Binary phenotype labels
+# Train a classifier (methods: 'rf', 'gb', 'lr', 'ensemble')
+model = create_biological_classifier(method="rf", random_state=42)
+model.fit(features, labels)
 
-# Train classifier
-model = classification.train_classifier(
-    features,
-    labels,
-    method="random_forest",
-    test_size=0.2,
-    random_state=42
-)
-
-# Make predictions
-predictions = classification.predict(model, test_features)
-probabilities = classification.predict_proba(model, test_features)
+# Predict on held-out data
+predictions = model.predict(test_features)
+probabilities = model.predict_proba(test_features)
 
 # Evaluate performance
-metrics = classification.evaluate_classification(predictions, test_labels)
+metrics = model.evaluate(test_features, test_labels)
 print(f"Accuracy: {metrics['accuracy']:.3f}")
-print(f"AUC: {metrics['auc']:.3f}")
+print(f"AUC: {metrics['roc_auc']:.3f}")
+
+# Cross-validate a method directly
+cv_results = cross_validate_biological(features, labels, method="rf", cv_folds=5)
 ```
 
 ### Feature Selection
 
-```python
-from metainformant.ml import features
-
-# Select important biological features
-selected_features = features.select_features(
-    features,
-    labels,
-    method="univariate",
-    k=1000,                    # Select top 1000 features
-    scoring="f_classif"        # Statistical test
+```python-snippet
+from metainformant.ml.features.features import (
+    select_features_univariate,
+    select_features_recursive,
+    biological_feature_ranking,
+    select_features_biological,
 )
+from metainformant.ml.interpretability.feature_selection import boruta_selection
 
-# Get feature importance scores
-importance_scores = features.feature_importance(
-    model,
-    selected_features,
-    method="permutation"       # Permutation importance
-)
+# Univariate statistical selection (f_classif or chi2)
+mask, selected = select_features_univariate(features, labels, method="f_classif", k=1000)
 
-# Biological interpretation
-biological_features = features.interpret_features(
-    importance_scores,
-    annotation_database       # Gene annotations
-)
+# Recursive elimination
+mask, selected = select_features_recursive(features, labels, n_features_to_select=100)
+
+# Biological ranking (methods: 'importance', 'univariate', 'stability')
+ranking = biological_feature_ranking(features, labels, feature_names=feature_names)
+
+# Consensus biological selection across methods
+consensus = select_features_biological(features, labels, feature_names=feature_names)
+
+# Boruta-style selection (builds an internal random forest; no model argument)
+boruta = boruta_selection(features, labels, max_iter=100, random_state=42)
 ```
 
 ### Model Validation
 
 ```python-snippet
-from metainformant.ml import validation
-
-# Comprehensive model validation
-validation_results = validation.cross_validate(
-    model,
-    features,
-    labels,
-    cv=5,                      # 5-fold cross-validation
-    scoring=["accuracy", "precision", "recall", "f1", "auc"],
-    return_train_score=True
+from metainformant.ml.evaluation.validation import (
+    cross_validate,
+    cross_validation_scores,
+    bootstrap_validate,
+    learning_curve,
 )
 
-# Bootstrap confidence intervals
-bootstrap_results = validation.bootstrap_validation(
-    model,
-    features,
-    labels,
-    n_bootstrap=1000,
-    confidence_level=0.95
-)
+# Cross-validation with a scoring metric
+cv_results = cross_validate(model, features, labels, cv=5, scoring="accuracy")
 
-# Statistical significance testing
-p_value = validation.permutation_test(
-    validation_results['test_accuracy'],
-    n_permutations=1000
-)
+# Per-metric fold scores
+fold_scores = cross_validation_scores(model, features, labels, cv=5, scoring=["accuracy", "f1"])
+
+# Bootstrap confidence intervals (model_func maps train/test splits to predictions)
+bootstrap_results = bootstrap_validate(features, labels, model_func, n_bootstrap=200)
+
+# Learning curves from a model factory
+curve = learning_curve(features, labels, model_factory)
 ```
 
 ## Integration with Other Modules
@@ -191,63 +174,32 @@ p_value = validation.permutation_test(
 ### With DNA Sequences
 
 ```python-snippet
-from metainformant.dna.sequence import core as sequences
-from metainformant.ml import classification
+import numpy as np
+from metainformant.dna.sequence.core import read_fasta
+from metainformant.dna.sequence.composition import gc_content, melting_temperature
+from metainformant.ml.models.classification import BiologicalClassifier
 
-# Extract features from DNA sequences
-sequences = sequences.read_fasta("sequences.fasta")
-sequence_features = sequences.extract_kmer_features(sequences, k=3)
+sequences = read_fasta("sequences.fasta")
 
-# Classify sequences by function
-functional_labels = sequences.get_functional_labels(sequences)
-model = classification.train_classifier(sequence_features, functional_labels)
+# Simple per-sequence features (GC content, melting temperature)
+X = np.array([[gc_content(seq), melting_temperature(seq)] for seq in sequences.values()])
+labels = np.array(functional_labels)  # one label per sequence
 
-# Predict function for new sequences
-new_features = sequences.extract_kmer_features(new_sequences, k=3)
-predictions = classification.predict(model, new_features)
+model = BiologicalClassifier(algorithm="random_forest", random_state=42)
+model.fit(X, labels)
 ```
 
 ### With Expression Data
 
 ```python-snippet
-from metainformant.rna import workflow
-from metainformant.ml import regression
+from metainformant.ml.models.regression import train_regressor, evaluate_regressor
 
-# Load expression data
-expression_data = workflow.extract_expression_patterns(rna_data)
+# Predict continuous phenotypes from expression (methods: 'linear', 'rf', 'gb',
+# 'ridge', 'lasso', 'svr', 'elasticnet')
+model = train_regressor(expression_data, phenotype_values, method="rf")
 
-# Predict continuous phenotypes
-phenotype_values = load_continuous_phenotypes()
-model = regression.train_regressor(
-    expression_data,
-    phenotype_values,
-    method="xgboost",
-    validation="cross_validation"
-)
-
-# Feature importance analysis
-importance = regression.feature_importance(model, expression_data)
-top_genes = importance.nlargest(50)  # Top 50 predictive genes
-```
-
-### With Network Data
-
-```python-snippet
-from metainformant.networks import ppi
-from metainformant.ml import classification
-
-# Use network features for prediction
-network_features = ppi.extract_network_features(interaction_network)
-
-# Combine with expression features
-combined_features = pd.concat([expression_features, network_features], axis=1)
-
-# Train integrated model
-model = classification.train_classifier(
-    combined_features,
-    labels,
-    feature_selection=True
-)
+# Evaluate on held-out data
+metrics = evaluate_regressor(model, X_test, y_test)
 ```
 
 ## Performance Features
@@ -255,42 +207,41 @@ model = classification.train_classifier(
 - **Scalable Algorithms**: Efficient implementations for large biological datasets
 - **Parallel Processing**: Multi-core support for computationally intensive operations
 - **Memory Optimization**: Streaming processing for large feature matrices
-- **GPU Support**: CUDA acceleration for deep learning methods
 
 ## Model Interpretability
 
 ### Feature Importance Analysis
 
-```python
-from metainformant.ml import features
+```python-snippet
+from metainformant.ml.interpretability.explainers import compute_permutation_importance
 
-# Analyze feature contributions
-importance = features.permutation_importance(model, features, labels)
-
-# Biological interpretation
-gene_importance = features.map_to_genes(importance, gene_mapping)
-pathway_importance = features.map_to_pathways(gene_importance, pathway_database)
-
-# Visualize importance
-features.plot_feature_importance(importance, top_n=20)
+# Permutation importance: returns importances_mean, importances_std,
+# feature_names, and baseline_score
+importance = compute_permutation_importance(
+    model, X_test, y_test, n_repeats=20, metric="accuracy", random_state=42
+)
+ranked = sorted(
+    zip(importance["feature_names"], importance["importances_mean"]),
+    key=lambda pair: pair[1],
+    reverse=True,
+)
+for name, score in ranked[:20]:
+    print(f"{name}: {score:.4f}")
 ```
 
 ### Model Explanation
 
 ```python-snippet
-from metainformant.ml import explain
+from metainformant.ml.interpretability.explainers import compute_shap_values_kernel, compute_lime_explanation
 
-# Explain individual predictions
-explanation = explain.explain_prediction(
-    model,
-    instance,
-    features,
-    method="shap"
-)
+# Kernel SHAP approximation (pass a predict callable, not a fitted estimator)
+shap_result = compute_shap_values_kernel(model.predict, instances, n_samples=100)
+print(f"SHAP values: {shap_result['shap_values']}")
 
-print(f"Prediction: {explanation['prediction']}")
-print(f"Top positive features: {explanation['top_positive']}")
-print(f"Top negative features: {explanation['top_negative']}")
+# LIME for a single instance
+lime_result = compute_lime_explanation(model.predict, instance, feature_names)
+print(f"Local prediction: {lime_result['local_prediction']}")
+print(f"R-squared: {lime_result['r_squared']}")
 ```
 
 ## Advanced Workflows
@@ -298,45 +249,23 @@ print(f"Top negative features: {explanation['top_negative']}")
 ### Multi-omics Prediction
 
 ```python-snippet
-from metainformant.multiomics import integration
-from metainformant.ml import classification
+from metainformant.multiomics.analysis.integration import integrate_omics_data, joint_pca
+from metainformant.ml.models.classification import cross_validate_biological
 
-# Load multi-omics data
-multiomics_data = integration.load_multiomics_data([
-    "genomics.csv",
-    "transcriptomics.csv",
-    "proteomics.csv"
-])
-
-# Feature engineering
-combined_features = integration.extract_multiomic_features(multiomics_data)
-
-# Multi-omics classification
-model = classification.train_classifier(
-    combined_features,
-    labels,
-    method="ensemble",        # Use ensemble of methods
-    feature_selection=True,
-    cross_validation=True
+# Integrate omics layers (DataFrames or file paths, keyed by omics type)
+omics = integrate_omics_data(
+    {
+        "dna": "genomics.csv",
+        "rna": "transcriptomics.csv",
+        "protein": "proteomics.csv",
+    }
 )
-```
 
-### Time Series Analysis
+# Joint dimensionality reduction across layers
+components, loadings, explained_variance = joint_pca(omics, n_components=10)
 
-```python-snippet
-from metainformant.ml import regression
-
-# Time series prediction
-time_series_data = load_time_series_expression()
-time_features = regression.extract_time_features(time_series_data)
-
-# Train time series model
-model = regression.train_regressor(
-    time_features,
-    time_targets,
-    method="lstm",           # LSTM for time series
-    time_window=10           # 10 time points window
-)
+# Cross-validate a classifier on integrated features
+cv_results = cross_validate_biological(X_integrated, labels, method="ensemble", cv_folds=5)
 ```
 
 ## Testing
@@ -345,11 +274,10 @@ Machine learning functionality is tested comprehensively:
 
 ```bash
 # Run all ML tests
-uv run pytest tests/ml/test_ml_*.py -v
+uv run pytest tests/ml -v
 
-# Test specific components
-uv run pytest tests/ml/test_ml_features.py::test_select_features -v
-uv run pytest tests/ml/test_ml_validation.py::test_cross_validate -v
+# Test a specific component
+uv run pytest tests/ml/test_ml_automl.py -v
 ```
 
 ## Related Documentation

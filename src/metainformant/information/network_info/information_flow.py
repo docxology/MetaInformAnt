@@ -69,7 +69,9 @@ def _marginal_counts(values: list[int]) -> dict[int, int]:
     return counts
 
 
-def _triple_counts(a: list[int], b: list[int], c: list[int]) -> dict[tuple[int, int, int], int]:
+def _triple_counts(
+    a: list[int], b: list[int], c: list[int]
+) -> dict[tuple[int, int, int], int]:
     """Count joint occurrences of (a_i, b_i, c_i) triples."""
     counts: dict[tuple[int, int, int], int] = {}
     for ai, bi, ci in zip(a, b, c):
@@ -88,7 +90,9 @@ def _entropy_from_counts(counts: dict, n: int) -> float:
     return h
 
 
-def _conditional_entropy(joint: dict[tuple[int, int], int], marginal_b: dict[int, int], n: int) -> float:
+def _conditional_entropy(
+    joint: dict[tuple[int, int], int], marginal_b: dict[int, int], n: int
+) -> float:
     """Compute H(A|B) from joint and marginal counts."""
     # H(A|B) = H(A,B) - H(B)
     h_joint = _entropy_from_counts(joint, n)
@@ -165,7 +169,9 @@ def transfer_entropy(
         ValueError: If series have different lengths or are too short.
     """
     if len(source) != len(target):
-        raise ValueError(f"source ({len(source)}) and target ({len(target)}) must have same length")
+        raise ValueError(
+            f"source ({len(source)}) and target ({len(target)}) must have same length"
+        )
     if len(source) <= lag:
         raise ValueError(f"Series length ({len(source)}) must exceed lag ({lag})")
 
@@ -236,38 +242,50 @@ def granger_causality(
     """Test Granger causality from source to target.
 
     Compares an autoregressive model of target with and without lagged
-    source values. Uses F-test on residual sum of squares.
+    source values and evaluates the F-test on the residual sum of squares
+    of the two nested OLS fits.
+
+    Candidate lags are scored by the Bayesian information criterion of the
+    unrestricted model,
+
+        n_obs * log(rss_u / n_obs) + (2 * lag + 1) * log(n_obs)
+
+    Raw residual SS decreases as lagged regressors are added, so an
+    unpenalised minimum would always select ``max_lag``; the BIC is the
+    standard residual-SS-based lag selector.
 
     Args:
         source: Source time series.
         target: Target time series.
-        max_lag: Maximum lag to test. The optimal lag is selected by
-            minimum residual SS.
+        max_lag: Maximum lag to test. The optimal lag is selected by the
+            minimum BIC (penalised residual SS) of the unrestricted model.
 
     Returns:
         Dictionary with keys:
             - f_statistic: F-test statistic.
-            - p_value: Approximate p-value.
+            - p_value: p-value (exact F survival function via scipy when
+              available, approximation otherwise).
             - optimal_lag: Selected lag.
             - is_causal: ``True`` if p_value < 0.05.
             - rss_restricted: RSS of restricted (autoregressive-only) model.
             - rss_unrestricted: RSS of unrestricted model.
+
+    Raises:
+        ValueError: If the series differ in length or no candidate lag can
+            be fitted.
     """
     if len(source) != len(target):
         raise ValueError("source and target must have same length")
 
     n = len(source)
-    best_lag = 1
-    best_f = 0.0
-    best_p = 1.0
-    best_rss_r = 0.0
-    best_rss_u = 0.0
-
+    if max_lag < 1:
+        raise ValueError("max_lag must be at least 1")
+    candidates = []
     for lag in range(1, min(max_lag + 1, n // 3)):
         # Build design matrices
         y = target[lag:]
         n_obs = len(y)
-        if n_obs < lag + 2:
+        if n_obs < 2 * lag + 2:
             continue
 
         # Restricted model: Y_t ~ Y_{t-1} + ... + Y_{t-lag}
@@ -295,39 +313,48 @@ def granger_causality(
         f_stat = ((rss_r - rss_u) / df1) / (rss_u / df2)
         f_stat = max(0.0, f_stat)
 
-        # Approximate p-value using F-distribution approximation
-        p_val = _f_sf(f_stat, df1, df2)
+        bic = n_obs * math.log(rss_u / n_obs) + (2 * lag + 1) * math.log(n_obs)
+        candidates.append(
+            {
+                "lag": lag,
+                "f": f_stat,
+                "p": _f_sf(f_stat, df1, df2),
+                "rss_r": rss_r,
+                "rss_u": rss_u,
+                "bic": bic,
+            }
+        )
 
-        if f_stat > best_f:
-            best_f = f_stat
-            best_p = p_val
-            best_lag = lag
-            best_rss_r = rss_r
-            best_rss_u = rss_u
+    if not candidates:
+        raise ValueError("series too short to test any lag up to max_lag")
+
+    best = min(candidates, key=lambda c: c["bic"])
 
     logger.info(
         "Granger causality: F=%.4f, p=%.4f, lag=%d, causal=%s",
-        best_f,
-        best_p,
-        best_lag,
-        best_p < 0.05,
+        best["f"],
+        best["p"],
+        best["lag"],
+        best["p"] < 0.05,
     )
 
     return {
-        "f_statistic": best_f,
-        "p_value": best_p,
-        "optimal_lag": best_lag,
-        "is_causal": best_p < 0.05,
-        "rss_restricted": best_rss_r,
-        "rss_unrestricted": best_rss_u,
+        "f_statistic": best["f"],
+        "p_value": best["p"],
+        "optimal_lag": best["lag"],
+        "is_causal": best["p"] < 0.05,
+        "rss_restricted": best["rss_r"],
+        "rss_unrestricted": best["rss_u"],
     }
 
 
 def _ols_rss(y: list[float], x: list[list[float]]) -> float:
-    """Compute residual sum of squares from OLS.
+    """Compute residual sum of squares from an OLS fit with intercept.
 
-    Pure Python implementation using normal equations via iterative
-    Gauss-Seidel.
+    The model ``y ~ 1 + x`` is solved with ``numpy.linalg.lstsq`` when
+    NumPy is available; otherwise the normal equations are solved exactly
+    by Gaussian elimination with partial pivoting (the previous
+    Gauss-Seidel iteration had no convergence check).
     """
     n = len(y)
     k = len(x[0]) if x else 0
@@ -337,6 +364,13 @@ def _ols_rss(y: list[float], x: list[list[float]]) -> float:
     # Add intercept
     design = [[1.0] + row for row in x]
     p = k + 1
+
+    if HAS_NUMPY:
+        matrix = np.asarray(design, dtype=float)
+        obs = np.asarray(y, dtype=float)
+        beta, _, _, _ = np.linalg.lstsq(matrix, obs, rcond=None)
+        residuals = obs - matrix @ beta
+        return float(residuals @ residuals)
 
     # X'X and X'y
     xtx = [[0.0] * p for _ in range(p)]
@@ -350,17 +384,12 @@ def _ols_rss(y: list[float], x: list[list[float]]) -> float:
                 if j1 != j2:
                     xtx[j2][j1] += val
 
-    # Solve using Gauss-Seidel
-    beta = [0.0] * p
-    for iteration in range(100):
-        for j in range(p):
-            if xtx[j][j] == 0:
-                continue
-            s = xty[j]
-            for j2 in range(p):
-                if j2 != j:
-                    s -= xtx[j][j2] * beta[j2]
-            beta[j] = s / xtx[j][j]
+    beta = _solve_linear_system(xtx, xty)
+    if beta is None:
+        # Rank-deficient normal equations: report the best intercept-only
+        # fit rather than a non-converged iterate.
+        y_mean = sum(y) / n
+        return sum((yi - y_mean) ** 2 for yi in y)
 
     # Compute RSS
     rss = 0.0
@@ -371,27 +400,73 @@ def _ols_rss(y: list[float], x: list[list[float]]) -> float:
     return rss
 
 
-def _f_sf(f: float, df1: int, df2: int) -> float:
-    """Approximate survival function of F-distribution.
+def _solve_linear_system(a: list[list[float]], b: list[float]) -> list[float] | None:
+    """Solve ``a @ beta = b`` by Gaussian elimination with partial pivoting.
 
-    Uses transformation to Beta distribution and normal approximation.
+    Returns ``None`` when the matrix is numerically singular relative to
+    its largest entry.
+    """
+    n = len(b)
+    aug = [row[:] + [b[i]] for i, row in enumerate(a)]
+    scale = max(max(abs(value) for value in row) for row in aug)
+    if scale == 0.0:
+        return None
+    threshold = 1e-12 * scale
+
+    for col in range(n):
+        pivot_row = max(range(col, n), key=lambda r: abs(aug[r][col]))
+        if abs(aug[pivot_row][col]) < threshold:
+            return None
+        if pivot_row != col:
+            aug[col], aug[pivot_row] = aug[pivot_row], aug[col]
+        pivot = aug[col][col]
+        for r in range(col + 1, n):
+            factor = aug[r][col] / pivot
+            if factor == 0.0:
+                continue
+            for c in range(col, n + 1):
+                aug[r][c] -= factor * aug[col][c]
+
+    beta = [0.0] * n
+    for row in range(n - 1, -1, -1):
+        acc = aug[row][n] - sum(aug[row][c] * beta[c] for c in range(row + 1, n))
+        beta[row] = acc / aug[row][row]
+    return beta
+
+
+def _f_sf(f: float, df1: int, df2: int) -> float:
+    """Survival function of the F-distribution.
+
+    Uses the exact ``scipy.stats.f.sf`` when scipy is importable and falls
+    back to a normal/moment approximation otherwise.
     """
     if f <= 0:
         return 1.0
     if df2 <= 0:
         return 1.0
 
+    try:
+        from scipy import stats as scipy_stats
+
+        return float(scipy_stats.f.sf(f, df1, df2))
+    except ImportError:
+        pass
+
     # Normal approximation for large df
     if df1 > 30 and df2 > 30:
-        z = (f ** (1.0 / 3.0) * (1.0 - 2.0 / (9 * df2)) - (1.0 - 2.0 / (9 * df1))) / math.sqrt(
-            2.0 / (9 * df1) + f ** (2.0 / 3.0) * 2.0 / (9 * df2)
-        )
+        z = (
+            f ** (1.0 / 3.0) * (1.0 - 2.0 / (9 * df2)) - (1.0 - 2.0 / (9 * df1))
+        ) / math.sqrt(2.0 / (9 * df1) + f ** (2.0 / 3.0) * 2.0 / (9 * df2))
         return 0.5 * math.erfc(z / math.sqrt(2.0))
 
     # Beta approximation
     # For small df, use rough normal approximation
     mean_f = df2 / max(df2 - 2, 1)
-    var_f = 2.0 * df2**2 * (df1 + df2 - 2) / (df1 * max(df2 - 2, 1) ** 2 * max(df2 - 4, 1)) if df2 > 4 else mean_f**2
+    var_f = (
+        2.0 * df2**2 * (df1 + df2 - 2) / (df1 * max(df2 - 2, 1) ** 2 * max(df2 - 4, 1))
+        if df2 > 4
+        else mean_f**2
+    )
     if var_f <= 0:
         var_f = 1.0
     z = (f - mean_f) / math.sqrt(var_f)
@@ -487,7 +562,9 @@ def network_entropy(adjacency_matrix: list[list[float]]) -> dict:
     normalized = entropy / max_entropy if max_entropy > 0 else 0.0
 
     # Density
-    n_edges = sum(1 for i in range(n) for j in range(i + 1, n) if adjacency_matrix[i][j] != 0)
+    n_edges = sum(
+        1 for i in range(n) for j in range(i + 1, n) if adjacency_matrix[i][j] != 0
+    )
     max_edges = n * (n - 1) / 2
     density = n_edges / max_edges if max_edges > 0 else 0.0
 
@@ -569,7 +646,9 @@ def information_flow_network(
                 )
 
     # Identify hub nodes (highest out-degree)
-    out_degrees = [(names[i], sum(1 for j in range(n) if adj[i][j] > 0)) for i in range(n)]
+    out_degrees = [
+        (names[i], sum(1 for j in range(n) if adj[i][j] > 0)) for i in range(n)
+    ]
     out_degrees.sort(key=lambda x: x[1], reverse=True)
     hub_nodes = [name for name, deg in out_degrees if deg > 0][: max(1, n // 3)]
 

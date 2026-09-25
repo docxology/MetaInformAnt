@@ -64,7 +64,9 @@ def network_metrics(graph: Any) -> Dict[str, Any]:
                 max_edges = n * (n - 1)
             else:
                 max_edges = n * (n - 1) // 2
-            metrics["density"] = metrics["num_edges"] / max_edges if max_edges > 0 else 0
+            metrics["density"] = (
+                metrics["num_edges"] / max_edges if max_edges > 0 else 0
+            )
 
             # Degree statistics
             degrees = [d for n, d in graph.degree()]
@@ -72,7 +74,9 @@ def network_metrics(graph: Any) -> Dict[str, Any]:
             metrics["max_degree"] = max(degrees)
             metrics["min_degree"] = min(degrees)
             try:
-                metrics["degree_assortativity"] = nx.degree_assortativity_coefficient(graph)
+                metrics["degree_assortativity"] = nx.degree_assortativity_coefficient(
+                    graph
+                )
             except Exception:
                 metrics["degree_assortativity"] = None
 
@@ -97,7 +101,9 @@ def network_metrics(graph: Any) -> Dict[str, Any]:
             if components:
                 component_sizes = [len(c) for c in components]
                 metrics["largest_component_size"] = max(component_sizes)
-                metrics["avg_component_size"] = sum(component_sizes) / len(component_sizes)
+                metrics["avg_component_size"] = sum(component_sizes) / len(
+                    component_sizes
+                )
         else:
             metrics.update(
                 {
@@ -242,7 +248,9 @@ def import_network(filepath: str | Path, format: str = "json") -> BiologicalNetw
         with open(filepath, newline="") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                graph.add_edge(row["source"], row["target"], weight=float(row.get("weight", 1.0)))
+                graph.add_edge(
+                    row["source"], row["target"], weight=float(row.get("weight", 1.0))
+                )
 
     else:
         raise ValueError(f"Unsupported import format: {format}")
@@ -255,7 +263,9 @@ def import_network(filepath: str | Path, format: str = "json") -> BiologicalNetw
     return network
 
 
-def network_similarity(graph1: Any, graph2: Any, method: str = "summary") -> Dict[str, float] | float:
+def network_similarity(
+    graph1: Any, graph2: Any, method: str = "summary"
+) -> Dict[str, float] | float:
     """Calculate similarity between two networks.
 
     Args:
@@ -513,7 +523,13 @@ def centrality_measures(graph: Any) -> Dict[str, Dict[str, float]]:
 
     if graph.number_of_nodes() == 0:
         if was_biological:
-            return {"degree": {}, "betweenness": {}, "closeness": {}, "eigenvector": {}, "pagerank": {}}
+            return {
+                "degree": {},
+                "betweenness": {},
+                "closeness": {},
+                "eigenvector": {},
+                "pagerank": {},
+            }
         return {}
 
     results = {}
@@ -550,7 +566,9 @@ def centrality_measures(graph: Any) -> Dict[str, Dict[str, float]]:
     return results
 
 
-def shortest_paths(graph: Any, source: str | None = None, target: str | None = None) -> Dict[str, Dict[str, float]]:
+def shortest_paths(
+    graph: Any, source: str | None = None, target: str | None = None
+) -> Dict[str, Dict[str, float]]:
     """Calculate shortest paths in the network.
 
     Args:
@@ -559,37 +577,45 @@ def shortest_paths(graph: Any, source: str | None = None, target: str | None = N
         target: Target node (if None, compute all pairs)
 
     Returns:
-        Dictionary of shortest path lengths
+        Dictionary of shortest path lengths, ``{source: {target: length}}``.
+        Lengths follow the networkx defaults (unweighted hop counts).
+        Unreachable pairs are omitted from the result (the aligned contract
+        for both NetworkX and BiologicalNetwork inputs); a single-pair query
+        with no path returns ``{}``.
+
+    Raises:
+        ImportError: If networkx is not available.
+        ValueError: If ``source`` or ``target`` is not a node of the graph.
     """
     if not HAS_NETWORKX:
         raise ImportError("networkx required for shortest path calculations")
 
-    was_biological = isinstance(graph, BiologicalNetwork)
-    graph = _as_networkx_graph(graph)
+    nx_graph = _as_networkx_graph(graph)
 
-    if graph.number_of_nodes() == 0:
+    if nx_graph.number_of_nodes() == 0:
         return {}
 
-    try:
-        if source is not None and target is not None:
-            # Single pair shortest path
-            path_length = nx.shortest_path_length(graph, source, target)
-            return {source: {target: path_length}}
-        elif source is not None:
-            # Single source shortest paths
-            return {source: dict(nx.shortest_path_length(graph, source))}
-        else:
-            # All pairs shortest paths (expensive for large graphs)
-            if was_biological:
-                distances = {node: {other: float("inf") for other in graph.nodes()} for node in graph.nodes()}
-                for src, lengths in nx.shortest_path_length(graph):
-                    distances[src].update(lengths)
-                return distances
-            return dict(nx.shortest_path_length(graph))
-    except (nx.NetworkXError, nx.NetworkXNoPath):
-        # NoPath is not a NetworkXError subclass: unreachable pairs must
-        # return the empty-dict contract, not raise.
-        return {}
+    if source is not None and source not in nx_graph:
+        raise ValueError(f"Source node {source!r} not found in graph")
+    if target is not None and target not in nx_graph:
+        raise ValueError(f"Target node {target!r} not found in graph")
+
+    if source is not None and target is not None:
+        try:
+            path_length = nx.shortest_path_length(nx_graph, source, target)
+        except nx.NetworkXNoPath:
+            # Documented contract: an unreachable pair carries no distance.
+            return {}
+        return {source: {target: path_length}}
+
+    if source is not None:
+        # Single-source: only reachable targets appear.
+        return {source: dict(nx.shortest_path_length(nx_graph, source))}
+
+    # All pairs: one aligned sparse contract for wrapper and raw graphs —
+    # unreachable pairs are omitted, never inf-filled and never swallowed
+    # into an empty dict on error.
+    return {src: dict(lengths) for src, lengths in nx.shortest_path_length(nx_graph)}
 
 
 def remove_node(graph: Any, node: str) -> None:

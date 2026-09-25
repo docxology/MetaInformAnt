@@ -1,35 +1,45 @@
 # MCP Notes
 
-METAINFORMANT currently ships a lightweight MCP-adjacent helper module, not a
-full Model Context Protocol server.
+METAINFORMANT ships a Model Context Protocol server: `metainformant.mcp.server`
+implements a stdio JSON-RPC 2.0 server with a declarative, schema-validated
+tool registry (standard library only).
 
-## Current Interface
-
-The implemented command is the standalone Amalgkit monitor:
+## Server
 
 ```bash
-uv run python -m metainformant.mcp.tools.amalgkit_monitor
+uv run python -m metainformant.mcp.server
 ```
 
-It inspects explicitly selected local RNA/Amalgkit workflow state and reports
-process/log diagnostics alongside database- and receipt-backed readiness.
-The helper can be imported from `metainformant.mcp.tools.amalgkit_monitor`.
+Implemented methods: `initialize`, `tools/list`, `tools/call`,
+`resources/list`, and `resources/read`, plus graceful shutdown via EOF or the
+`exit` notification. Read-only resources: `metainformant://capabilities`
+(registered tools and schemas) and `metainformant://methods` (connection
+documentation).
 
-## Not Yet Implemented
+## Registry
 
-The checkout does not provide:
+`metainformant.mcp.registry` provides `Tool`, `ToolRegistry`, and `SchemaError`
+with JSON-schema validation at registration and argument-validation at call
+time. `build_default_registry()` bundles the `amalgkit_monitor` adapter plus
+the 20 `TOOL_SPEC` tools from `metainformant.mcp.tools` (core, dna, gwas,
+math, protein, rna, visualization).
 
-- `metainformant.mcp.server`
-- MCP stdio or SSE transports
-- registered MCP tools named `run_workflow` or `list_outputs`
+## Standalone monitor
 
-Keep examples and integrations on this page limited to the standalone monitor
-until a real server module and tests are added.
+The Amalgkit monitor still runs standalone and feeds the default registry:
+
+```bash
+uv run python -m metainformant.mcp.tools.amalgkit_monitor \
+  --data-root "$AMALGKIT_DATA_ROOT" --no-process-scan
+```
+
+Flags: `--data-root` (default `AMALGKIT_DATA_ROOT` or `output/amalgkit`),
+`--log-file` (explicit log file path), and `--no-process-scan` for a
+lock/receipt/database-only snapshot.
 
 The monitor is not a completion oracle: it separates executable readiness,
 cohort readiness, descriptive analysis, and biological inference, and always
-withholds the last field. Use `--no-process-scan` when a lock/receipt/database
-snapshot is preferred over process inspection.
+withholds the last field.
 
 ## See Also
 

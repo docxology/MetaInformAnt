@@ -83,7 +83,9 @@ def _validated_gwas_io_paths(
     return vcf_path, phenotype_path, prepared_output_dir
 
 
-def _sample_major_to_variant_major(genotypes_by_sample: List[List[Any]]) -> Tuple[List[List[Any]], int, int]:
+def _sample_major_to_variant_major(
+    genotypes_by_sample: List[List[Any]],
+) -> Tuple[List[List[Any]], int, int]:
     """Transpose sample-major genotypes to variant-major form."""
     if not genotypes_by_sample or not genotypes_by_sample[0]:
         return [], 0, 0
@@ -91,7 +93,10 @@ def _sample_major_to_variant_major(genotypes_by_sample: List[List[Any]]) -> Tupl
     n_samples = len(genotypes_by_sample)
     n_variants = len(genotypes_by_sample[0])
     genotypes_by_variant = [
-        [genotypes_by_sample[sample_idx][variant_idx] for sample_idx in range(n_samples)]
+        [
+            genotypes_by_sample[sample_idx][variant_idx]
+            for sample_idx in range(n_samples)
+        ]
         for variant_idx in range(n_variants)
     ]
     return genotypes_by_variant, n_samples, n_variants
@@ -106,7 +111,10 @@ def _variant_major_to_sample_major(
 
     sample_count = n_samples if n_samples is not None else len(genotypes_by_variant[0])
     return [
-        [genotypes_by_variant[variant_idx][sample_idx] for variant_idx in range(len(genotypes_by_variant))]
+        [
+            genotypes_by_variant[variant_idx][sample_idx]
+            for variant_idx in range(len(genotypes_by_variant))
+        ]
         for sample_idx in range(sample_count)
     ]
 
@@ -115,18 +123,26 @@ def _apply_haplodiploidy_config(
     filtered_data: Dict[str, Any], haplodiploidy_config: Any
 ) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
     """Run optional haplodiploidy checks and filter haploid samples when requested."""
-    if not (isinstance(haplodiploidy_config, dict) and haplodiploidy_config.get("enabled", False)):
+    if not (
+        isinstance(haplodiploidy_config, dict)
+        and haplodiploidy_config.get("enabled", False)
+    ):
         return filtered_data, None
 
     het_threshold = haplodiploidy_config.get("het_threshold", 0.05)
     haplo_result = check_haplodiploidy(filtered_data, het_threshold=het_threshold)
 
-    if haplodiploidy_config.get("exclude_haploid", False) and haplo_result["haploid_samples"]:
+    if (
+        haplodiploidy_config.get("exclude_haploid", False)
+        and haplo_result["haploid_samples"]
+    ):
         diploid_indices = haplo_result["diploid_samples"]
         genotypes_by_sample = filtered_data.get("genotypes", [])
         if genotypes_by_sample and diploid_indices:
             filtered_data = dict(filtered_data)
-            filtered_data["genotypes"] = [genotypes_by_sample[i] for i in diploid_indices]
+            filtered_data["genotypes"] = [
+                genotypes_by_sample[i] for i in diploid_indices
+            ]
             old_samples = filtered_data.get("samples", [])
             if old_samples:
                 filtered_data["samples"] = [old_samples[i] for i in diploid_indices]
@@ -140,7 +156,11 @@ def _run_ld_pruning_if_enabled(
     ld_config: Any,
 ) -> Tuple[List[List[Any]], Optional[List[int]]]:
     """Apply optional LD pruning and return the retained genotype matrix."""
-    if not (isinstance(ld_config, dict) and ld_config.get("enabled", False) and genotypes_by_variant):
+    if not (
+        isinstance(ld_config, dict)
+        and ld_config.get("enabled", False)
+        and genotypes_by_variant
+    ):
         return genotypes_by_variant, None
 
     kept_indices = ld_prune(
@@ -175,10 +195,14 @@ def _align_phenotypes_to_samples(
     """Align phenotype values to VCF sample IDs when possible."""
     pheno_by_id = _load_phenotypes_by_id(phenotype_path, trait=trait_name)
     if pheno_by_id and sample_ids:
-        aligned_phenotypes = [pheno_by_id[sid] for sid in sample_ids if sid in pheno_by_id]
+        aligned_phenotypes = [
+            pheno_by_id[sid] for sid in sample_ids if sid in pheno_by_id
+        ]
         if aligned_phenotypes:
             phenotypes = aligned_phenotypes
-            logger.info(f"ID-based phenotype alignment: {len(aligned_phenotypes)}/{len(sample_ids)} samples matched")
+            logger.info(
+                f"ID-based phenotype alignment: {len(aligned_phenotypes)}/{len(sample_ids)} samples matched"
+            )
 
     min_samples = min(len(phenotypes), n_samples) if has_genotypes else 0
     if min_samples > 0 and len(phenotypes) != n_samples:
@@ -226,7 +250,9 @@ def _run_variant_associations(
                 pheno_trimmed = phenotypes[:min_samples]
 
                 if model == "logistic":
-                    result = association_test_logistic(geno_trimmed, [int(p) for p in pheno_trimmed])
+                    result = association_test_logistic(
+                        geno_trimmed, [int(p) for p in pheno_trimmed]
+                    )
                 else:
                     result = association_test_linear(geno_trimmed, pheno_trimmed)
 
@@ -241,7 +267,9 @@ def _run_variant_associations(
     return assoc_results, model
 
 
-def _lambda_gc_from_associations(assoc_results: List[Dict[str, Any]]) -> Optional[float]:
+def _lambda_gc_from_associations(
+    assoc_results: List[Dict[str, Any]],
+) -> Optional[float]:
     """Compute the genomic-control lambda from association p-values (1 df)."""
     valid_p = [
         r.get("p_value", 1.0)
@@ -253,10 +281,13 @@ def _lambda_gc_from_associations(assoc_results: List[Dict[str, Any]]) -> Optiona
     lambda_gc = lambda_gc_from_p_values(valid_p)
     if lambda_gc is None:
         return None
-    return round(lambda_gc, 4)
+    rounded = round(lambda_gc, 4)
+    return rounded if rounded > 0.0 else None
 
 
-def _apply_qvalue_and_bonferroni_annotations(assoc_results: List[Dict[str, Any]]) -> None:
+def _apply_qvalue_and_bonferroni_annotations(
+    assoc_results: List[Dict[str, Any]],
+) -> None:
     """Attach FDR q-values and Bonferroni flags to association rows."""
     if not assoc_results:
         return
@@ -280,42 +311,92 @@ def _apply_qvalue_and_bonferroni_annotations(assoc_results: List[Dict[str, Any]]
                 assoc_results[i]["bonferroni_significant"] = is_sig
 
 
-def _apply_full_correction_outputs(association_results: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """Run full correction stack for execute_gwas_workflow and annotate rows."""
+def _apply_full_correction_outputs(
+    association_results: List[Dict[str, Any]],
+    correction_method: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Run the configured correction stack and annotate association rows.
+
+    ``correction_method`` selects which correction produces outputs and row
+    annotations: "bonferroni", "fdr", or "genomic_control". ``None`` (no
+    ``[correction][method]`` configured) runs the full stack for backward
+    compatibility. Unrecognized values fall back to the full stack with a
+    warning; config validation rejects invalid methods earlier.
+    """
+    method = (correction_method or "").strip().lower()
+    if method and method not in ("bonferroni", "fdr", "genomic_control"):
+        logger.warning(
+            f"Unknown correction method '{correction_method}'; running the full correction stack"
+        )
+        method = ""
+    run_bonferroni = not method or method == "bonferroni"
+    run_fdr = not method or method == "fdr"
+    run_genomic_control = not method or method == "genomic_control"
+
     p_values = [
-        r.get("p_value", r.get("pval", 1.0)) for r in association_results if r.get("p_value", r.get("pval")) is not None
+        r.get("p_value", r.get("pval", 1.0))
+        for r in association_results
+        if r.get("p_value", r.get("pval")) is not None
     ]
     if not p_values:
         return {}
 
-    bonf_result = bonferroni_correction(p_values)
-    n_bonf = bonf_result.get("n_significant", 0) if isinstance(bonf_result, dict) else 0
-    logger.info(f"Bonferroni correction: {n_bonf} variants significant")
+    outputs: Dict[str, Any] = {}
 
-    fdr_result = fdr_correction(p_values)
-    n_fdr = fdr_result.get("n_significant", 0) if isinstance(fdr_result, dict) else 0
-    logger.info(f"FDR correction (BH): {n_fdr} variants significant")
+    if run_bonferroni:
+        bonf_result = bonferroni_correction(p_values)
+        n_bonf = (
+            bonf_result.get("n_significant", 0) if isinstance(bonf_result, dict) else 0
+        )
+        logger.info(f"Bonferroni correction: {n_bonf} variants significant")
+        outputs["bonferroni"] = bonf_result if isinstance(bonf_result, dict) else {}
+        bonf_significant = (
+            bonf_result.get("significant", []) if isinstance(bonf_result, dict) else []
+        )
+        for idx, row in enumerate(association_results):
+            if idx < len(bonf_significant):
+                row["bonferroni_significant"] = bonf_significant[idx]
 
-    gc_result = genomic_control(p_values=p_values)
-    lambda_gc = gc_result.get("lambda_gc", 1.0) if isinstance(gc_result, dict) else 1.0
-    logger.info(f"Genomic control: λ_GC = {lambda_gc:.4f}")
+    if run_fdr:
+        fdr_result = fdr_correction(p_values)
+        n_fdr = (
+            fdr_result.get("n_significant", 0) if isinstance(fdr_result, dict) else 0
+        )
+        logger.info(f"FDR correction (BH): {n_fdr} variants significant")
+        outputs["fdr"] = fdr_result if isinstance(fdr_result, dict) else {}
+        fdr_significant = (
+            fdr_result.get("significant", []) if isinstance(fdr_result, dict) else []
+        )
+        fdr_adjusted = (
+            fdr_result.get("adjusted_p_values", [])
+            if isinstance(fdr_result, dict)
+            else []
+        )
+        for idx, row in enumerate(association_results):
+            if idx < len(fdr_significant):
+                row["fdr_significant"] = fdr_significant[idx]
+            if idx < len(fdr_adjusted):
+                row["fdr_p_value"] = fdr_adjusted[idx]
 
-    bonf_significant = bonf_result.get("significant", []) if isinstance(bonf_result, dict) else []
-    fdr_significant = fdr_result.get("significant", []) if isinstance(fdr_result, dict) else []
-    fdr_adjusted = fdr_result.get("adjusted_p_values", []) if isinstance(fdr_result, dict) else []
-    for idx, row in enumerate(association_results):
-        if idx < len(bonf_significant):
-            row["bonferroni_significant"] = bonf_significant[idx]
-        if idx < len(fdr_significant):
-            row["fdr_significant"] = fdr_significant[idx]
-        if idx < len(fdr_adjusted):
-            row["fdr_p_value"] = fdr_adjusted[idx]
-
-    return {
-        "bonferroni": bonf_result if isinstance(bonf_result, dict) else {},
-        "fdr": fdr_result if isinstance(fdr_result, dict) else {},
-        "genomic_control": {"lambda_gc": lambda_gc},
-    }
+    if run_genomic_control:
+        gc_result = genomic_control(p_values=p_values)
+        lambda_gc = (
+            gc_result.get("lambda_gc", 1.0) if isinstance(gc_result, dict) else 1.0
+        )
+        logger.info(f"Genomic control: λ_GC = {lambda_gc:.4f}")
+        outputs["genomic_control"] = {"lambda_gc": lambda_gc}
+        # Legacy full-stack runs report only lambda_GC; per-variant corrected
+        # p-values appear only when genomic_control is the selected method.
+        if method:
+            gc_corrected = (
+                gc_result.get("corrected_p_values", [])
+                if isinstance(gc_result, dict)
+                else []
+            )
+            for idx, row in enumerate(association_results):
+                if idx < len(gc_corrected):
+                    row["gc_p_value"] = gc_corrected[idx]
+    return outputs
 
 
 def _write_summary_outputs(
@@ -341,7 +422,9 @@ def _write_summary_outputs(
     }
 
 
-def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dict[str, Any]:
+def execute_gwas_workflow(
+    config: Dict[str, Any], *, check: bool = False
+) -> Dict[str, Any]:
     """Execute the complete GWAS workflow.
 
     Args:
@@ -419,8 +502,12 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
                 step_size=step,
             )
             genotype_matrix = [genotype_matrix[i] for i in kept_indices]
-            variants_info = [variants_info[i] for i in kept_indices] if variants_info else []
-            logger.info(f"LD pruning: {len(kept_indices)} variants retained for structure analysis")
+            variants_info = (
+                [variants_info[i] for i in kept_indices] if variants_info else []
+            )
+            logger.info(
+                f"LD pruning: {len(kept_indices)} variants retained for structure analysis"
+            )
         else:
             logger.info("LD pruning: skipped (insufficient variants)")
 
@@ -437,7 +524,9 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
         gm_sample_major = _variant_major_to_sample_major(genotype_matrix)
         n_variants_gm = len(genotype_matrix)
         n_samples_gm = len(gm_sample_major)
-        logger.info(f"Transposed genotype matrix: {n_samples_gm} samples × {n_variants_gm} variants (sample-major)")
+        logger.info(
+            f"Transposed genotype matrix: {n_samples_gm} samples × {n_variants_gm} variants (sample-major)"
+        )
 
         pca_result = compute_pca(gm_sample_major, n_components=n_pcs_config)
         kinship_result = compute_kinship_matrix(gm_sample_major, method=kinship_method)
@@ -453,7 +542,9 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
             kinship_list = []
 
         # Store full kinship metadata for output
-        results["outputs"]["kinship_metadata"] = {k: v for k, v in kinship_result.items() if k != "kinship_matrix"}
+        results["outputs"]["kinship_metadata"] = {
+            k: v for k, v in kinship_result.items() if k != "kinship_matrix"
+        }
 
         results["steps_completed"].append("population_structure")
         results["steps"].append("population_structure")
@@ -461,7 +552,9 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
         # Step 4: Association testing (model-aware dispatch)
         model = config.get("model", "linear")
         logger.info(f"Step 4: Performing association testing (model={model})")
-        trait_name = config.get("trait", config.get("trait_name", config.get("default_trait")))
+        trait_name = config.get(
+            "trait", config.get("trait_name", config.get("default_trait"))
+        )
         traits = _load_phenotypes(config["phenotype_path"], trait=trait_name)
 
         # PCA results is a dict with 'pcs' list
@@ -477,7 +570,10 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
             n_avail_pcs = len(actual_pcs[0]) if actual_pcs and actual_pcs[0] else 0
             n_pcs_to_use = min(n_avail_pcs, 5, max(0, n_samples - 2))
             if n_pcs_to_use > 0:
-                variant_covariates = [[actual_pcs[s][pc] for s in range(len(actual_pcs))] for pc in range(n_pcs_to_use)]
+                variant_covariates = [
+                    [actual_pcs[s][pc] for s in range(len(actual_pcs))]
+                    for pc in range(n_pcs_to_use)
+                ]
             else:
                 variant_covariates = None
 
@@ -515,7 +611,9 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
                     covariates=variant_covariates,
                 )
 
-            logger.info(f"Association testing complete: {len(association_results)} variants tested with {model} model")
+            logger.info(
+                f"Association testing complete: {len(association_results)} variants tested with {model} model"
+            )
 
             for result in association_results:
                 result.setdefault("N", n_samples)
@@ -528,7 +626,12 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
 
         # Step 5: Multiple testing correction & genomic control
         logger.info("Step 5: Multiple testing correction")
-        results["outputs"].update(_apply_full_correction_outputs(association_results))
+        correction_method = (config.get("correction") or {}).get("method")
+        results["outputs"].update(
+            _apply_full_correction_outputs(
+                association_results, correction_method=correction_method
+            )
+        )
 
         results["steps_completed"].append("multiple_testing_correction")
         results["steps"].append("multiple_testing_correction")
@@ -544,7 +647,9 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
                     f"(σ²_g={h2_result['sigma_g']:.4f}, σ²_e={h2_result['sigma_e']:.4f})"
                 )
             else:
-                logger.warning(f"Heritability estimation: {h2_result.get('message', 'failed')}")
+                logger.warning(
+                    f"Heritability estimation: {h2_result.get('message', 'failed')}"
+                )
             results["outputs"]["heritability"] = h2_result
 
         # Step 5.5a: Per-chromosome heritability partitioning
@@ -557,23 +662,31 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
                     chrom = vinfo.get("chrom", "unknown")
                     chrom_indices.setdefault(chrom, []).append(idx)
 
-                n_samples_h2 = len(genotype_matrix[0]) if len(genotype_matrix) > 0 else 0
+                n_samples_h2 = (
+                    len(genotype_matrix[0]) if len(genotype_matrix) > 0 else 0
+                )
                 per_chrom_kinship: dict[int, list[list[float]]] = {}
-                for chrom_id, (chrom_name, indices) in enumerate(sorted(chrom_indices.items())):
+                for chrom_id, (chrom_name, indices) in enumerate(
+                    sorted(chrom_indices.items())
+                ):
                     if len(indices) < 2:
                         continue
                     chrom_geno = [genotype_matrix[i] for i in indices]
                     chrom_sm = _variant_major_to_sample_major(chrom_geno, n_samples_h2)
                     k_result = compute_kinship_matrix(
                         chrom_sm,
-                        method=config.get("structure", {}).get("kinship_method", "vanraden"),
+                        method=config.get("structure", {}).get(
+                            "kinship_method", "vanraden"
+                        ),
                     )
                     if k_result.get("status") == "success":
                         per_chrom_kinship[chrom_id] = k_result["kinship_matrix"]
 
                 if per_chrom_kinship:
                     actual_traits_part = traits[:n_samples_h2]
-                    partition_result = partition_heritability_by_chromosome(per_chrom_kinship, actual_traits_part)
+                    partition_result = partition_heritability_by_chromosome(
+                        per_chrom_kinship, actual_traits_part
+                    )
                     if partition_result.get("status") == "success":
                         logger.info(
                             f"Per-chromosome h²: total={partition_result['total_h2']:.4f} across "
@@ -582,16 +695,22 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
                         results["outputs"]["heritability_partition"] = partition_result
 
                         # Generate heritability bar chart
-                        results_dir_h2 = Path(config.get("results_dir", config.get("output_dir", ".")))
+                        results_dir_h2 = Path(
+                            config.get("results_dir", config.get("output_dir", "."))
+                        )
                         results_dir_h2.mkdir(parents=True, exist_ok=True)
                         bar_result = heritability_bar_chart(
                             partition_result,
                             output_file=results_dir_h2 / "heritability_bar_chart.png",
                         )
                         if bar_result.get("status") == "success":
-                            logger.info(f"Heritability bar chart saved to {bar_result.get('output_path')}")
+                            logger.info(
+                                f"Heritability bar chart saved to {bar_result.get('output_path')}"
+                            )
                     else:
-                        logger.warning(f"Heritability partition: {partition_result.get('message', 'failed')}")
+                        logger.warning(
+                            f"Heritability partition: {partition_result.get('message', 'failed')}"
+                        )
             except Exception as e:
                 logger.warning(f"Heritability partitioning failed: {e}", exc_info=True)
 
@@ -602,13 +721,19 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
         logger.info("Step 5.5b: Writing summary statistics")
         out_dir = Path(config.get("output_dir", config.get("work_dir", ".")))
         out_dir.mkdir(parents=True, exist_ok=True)
-        results_dir = Path(config.get("results_dir", config.get("output_dir", config.get("work_dir", "."))))
+        results_dir = Path(
+            config.get(
+                "results_dir", config.get("output_dir", config.get("work_dir", "."))
+            )
+        )
         results_dir.mkdir(parents=True, exist_ok=True)
 
         if association_results and variants_info:
             try:
                 summary_path = results_dir / "summary_statistics.tsv"
-                write_summary_statistics(association_results, variants_info, summary_path)
+                write_summary_statistics(
+                    association_results, variants_info, summary_path
+                )
                 logger.info(f"Summary statistics written to {summary_path}")
 
                 sig_threshold = config.get("significance_threshold", 5e-8)
@@ -639,7 +764,10 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
             if pcs_list:
                 n_samples_pca = len(pcs_list)
                 n_pcs_pca = len(pcs_list[0])
-                transposed_pcs = [[pcs_list[s][p] for s in range(n_samples_pca)] for p in range(n_pcs_pca)]
+                transposed_pcs = [
+                    [pcs_list[s][p] for s in range(n_samples_pca)]
+                    for p in range(n_pcs_pca)
+                ]
                 pca_plot_data = {
                     "components": transposed_pcs,
                     "variance": explained_var,
@@ -677,7 +805,9 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
                     output_path=results_dir / "effect_size_plot.png",
                 )
                 if fig is not None:
-                    plot_results["effect_size"] = str(results_dir / "effect_size_plot.png")
+                    plot_results["effect_size"] = str(
+                        results_dir / "effect_size_plot.png"
+                    )
                     import matplotlib.pyplot as plt
 
                     plt.close(fig)
@@ -686,12 +816,18 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
 
             # 6c: MAF spectrum plot
             try:
-                maf_values = [r.get("maf", 0.0) for r in association_results if r.get("maf") is not None]
+                maf_values = [
+                    r.get("maf", 0.0)
+                    for r in association_results
+                    if r.get("maf") is not None
+                ]
                 if maf_values and any(m > 0 for m in maf_values):
                     import matplotlib.pyplot as plt
 
                     fig, ax = plt.subplots(figsize=(8, 5))
-                    ax.hist(maf_values, bins=30, edgecolor="black", alpha=0.7, color="teal")
+                    ax.hist(
+                        maf_values, bins=30, edgecolor="black", alpha=0.7, color="teal"
+                    )
                     ax.set_xlabel("Minor Allele Frequency")
                     ax.set_ylabel("Number of Variants")
                     ax.set_title(f"MAF Spectrum (n={len(maf_values)} variants)")
@@ -710,7 +846,9 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
                 from metainformant.gwas.visualization.general import regional_plot
 
                 if association_results:
-                    top_hit = min(association_results, key=lambda r: r.get("p_value", 1.0))
+                    top_hit = min(
+                        association_results, key=lambda r: r.get("p_value", 1.0)
+                    )
                     top_chrom = str(top_hit.get("chrom", "1"))
                     top_pos = top_hit.get("pos", 0)
                     region_start = max(0, top_pos - 500000)
@@ -723,7 +861,9 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
                         output_path=results_dir / "regional_plot.png",
                     )
                     if fig is not None:
-                        plot_results["regional"] = str(results_dir / "regional_plot.png")
+                        plot_results["regional"] = str(
+                            results_dir / "regional_plot.png"
+                        )
                         import matplotlib.pyplot as plt
 
                         plt.close(fig)
@@ -750,7 +890,9 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
                         output_path=strain_dir / "strain_pca_grid.png",
                     )
                     if fig is not None:
-                        plot_results["strain_pca"] = str(strain_dir / "strain_pca_grid.png")
+                        plot_results["strain_pca"] = str(
+                            strain_dir / "strain_pca_grid.png"
+                        )
                         import matplotlib.pyplot as plt
 
                         plt.close(fig)
@@ -763,7 +905,9 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
                             output_path=strain_dir / "dendrogram.png",
                         )
                         if fig is not None:
-                            plot_results["dendrogram"] = str(strain_dir / "dendrogram.png")
+                            plot_results["dendrogram"] = str(
+                                strain_dir / "dendrogram.png"
+                            )
                             import matplotlib.pyplot as plt
 
                             plt.close(fig)
@@ -775,7 +919,9 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
                             output_path=strain_dir / "kinship_clustered.png",
                         )
                         if fig is not None:
-                            plot_results["kinship_clustered"] = str(strain_dir / "kinship_clustered.png")
+                            plot_results["kinship_clustered"] = str(
+                                strain_dir / "kinship_clustered.png"
+                            )
                             import matplotlib.pyplot as plt
 
                             plt.close(fig)
@@ -812,15 +958,21 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
                     results["outputs"]["strain_fst"] = fst_summary
 
                     # Strain-private variants
-                    private = strain_specific_variants(genotype_matrix, sample_ids_strain)
+                    private = strain_specific_variants(
+                        genotype_matrix, sample_ids_strain
+                    )
                     private_serializable = {k: v for k, v in private.items()}
                     private_path = strain_dir / "strain_private_variants.json"
                     with open(private_path, "w") as f:
                         json.dump(private_serializable, f, indent=2)
-                    results["outputs"]["strain_private_variants"] = {k: len(v) for k, v in private.items()}
+                    results["outputs"]["strain_private_variants"] = {
+                        k: len(v) for k, v in private.items()
+                    }
 
                     # Per-variant Fst for Manhattan plot
-                    fst_per_variant = compute_fst_per_variant(genotype_matrix, sample_ids_strain)
+                    fst_per_variant = compute_fst_per_variant(
+                        genotype_matrix, sample_ids_strain
+                    )
                     if fst_per_variant and variants_info:
                         fig = fst_manhattan_plot(
                             fst_per_variant,
@@ -828,13 +980,17 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
                             output_path=strain_dir / "fst_manhattan.png",
                         )
                         if fig is not None:
-                            plot_results["fst_manhattan"] = str(strain_dir / "fst_manhattan.png")
+                            plot_results["fst_manhattan"] = str(
+                                strain_dir / "fst_manhattan.png"
+                            )
                             import matplotlib.pyplot as plt
 
                             plt.close(fig)
 
                     # AF heatmap
-                    af_by_strain = compute_allele_frequencies_by_strain(genotype_matrix, sample_ids_strain)
+                    af_by_strain = compute_allele_frequencies_by_strain(
+                        genotype_matrix, sample_ids_strain
+                    )
                     if af_by_strain and variants_info:
                         fig = allele_frequency_heatmap(
                             af_by_strain,
@@ -843,7 +999,9 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
                             top_n=50,
                         )
                         if fig is not None:
-                            plot_results["af_heatmap"] = str(strain_dir / "af_heatmap.png")
+                            plot_results["af_heatmap"] = str(
+                                strain_dir / "af_heatmap.png"
+                            )
                             import matplotlib.pyplot as plt
 
                             plt.close(fig)
@@ -851,7 +1009,9 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
             except Exception as exc:
                 logger.warning(f"Strain Fst analysis failed: {exc}")
 
-            logger.info(f"Generated {len(plot_results)} plots: {list(plot_results.keys())}")
+            logger.info(
+                f"Generated {len(plot_results)} plots: {list(plot_results.keys())}"
+            )
 
         results["steps_completed"].append("visualization")
         results["steps"].append("visualization")
@@ -900,7 +1060,9 @@ def run_gwas(
     # Normalize nested YAML config to flat format
     config = _normalize_config(config)
 
-    vcf_path, phenotype_path, output_dir = _validated_gwas_io_paths(vcf_path, phenotype_path, output_dir)
+    vcf_path, phenotype_path, output_dir = _validated_gwas_io_paths(
+        vcf_path, phenotype_path, output_dir
+    )
 
     results: Dict[str, Any] = {
         "config": config,
@@ -940,7 +1102,9 @@ def run_gwas(
                 metadata=meta_for_subset,
             )
             results["steps_completed"].append("sample_subsetting")
-            results["results"]["vcf_summary"]["num_samples_after_subset"] = len(vcf_data.get("samples", []))
+            results["results"]["vcf_summary"]["num_samples_after_subset"] = len(
+                vcf_data.get("samples", [])
+            )
             logger.info(f"After subsetting: {len(vcf_data.get('samples', []))} samples")
 
         # Step 2: Apply QC filters
@@ -951,13 +1115,17 @@ def run_gwas(
         results["steps_completed"].append("qc_filters")
         results["results"]["qc_summary"] = {
             "variants_before_qc": qc_result.get("num_variants_before", 0),
-            "variants_after_qc": qc_result.get("num_variants_after", len(filtered_data.get("variants", []))),
+            "variants_after_qc": qc_result.get(
+                "num_variants_after", len(filtered_data.get("variants", []))
+            ),
             "samples_after_qc": len(filtered_data.get("samples", [])),
         }
 
         # Step 2b: Haplodiploidy check (optional, for haplodiploid species)
         haplodiploidy_config = config.get("haplodiploidy", {})
-        filtered_data, haplo_result = _apply_haplodiploidy_config(filtered_data, haplodiploidy_config)
+        filtered_data, haplo_result = _apply_haplodiploidy_config(
+            filtered_data, haplodiploidy_config
+        )
         if haplo_result is not None:
             logger.info("Step 2b: Checking haplodiploidy")
             results["results"]["haplodiploidy"] = haplo_result
@@ -966,11 +1134,15 @@ def run_gwas(
         # Get genotypes (samples x variants format)
         genotypes_by_sample = filtered_data.get("genotypes", [])
 
-        genotypes_by_variant, n_samples, n_variants = _sample_major_to_variant_major(genotypes_by_sample)
+        genotypes_by_variant, n_samples, n_variants = _sample_major_to_variant_major(
+            genotypes_by_sample
+        )
 
         # Step 3: LD pruning (optional, for PCA)
         ld_config = config.get("ld_pruning", {})
-        ld_pruned_genotypes, ld_pruned_indices = _run_ld_pruning_if_enabled(genotypes_by_variant, ld_config)
+        ld_pruned_genotypes, ld_pruned_indices = _run_ld_pruning_if_enabled(
+            genotypes_by_variant, ld_config
+        )
         if ld_pruned_indices is not None:
             logger.info("Step 3: LD pruning before PCA")
             results["steps_completed"].append("ld_pruning")
@@ -985,11 +1157,15 @@ def run_gwas(
         if len(genotypes_by_sample) > 0:
             # PCA on LD-pruned genotypes (transposed back to samples x variants)
             if len(ld_pruned_genotypes) > 0:
-                pca_genotypes_by_sample = _variant_major_to_sample_major(ld_pruned_genotypes, n_samples)
+                pca_genotypes_by_sample = _variant_major_to_sample_major(
+                    ld_pruned_genotypes, n_samples
+                )
             else:
                 pca_genotypes_by_sample = genotypes_by_sample
 
-            pca_result = compute_pca(pca_genotypes_by_sample, n_components=min(10, n_samples))
+            pca_result = compute_pca(
+                pca_genotypes_by_sample, n_components=min(10, n_samples)
+            )
 
             # Kinship on all genotypes (not LD-pruned)
             kinship_result = compute_kinship_matrix(genotypes_by_sample)
@@ -1021,7 +1197,9 @@ def run_gwas(
                     if sample_ids:
                         validation = validate_metadata(metadata, sample_ids)
                         if validation.get("missing_samples"):
-                            logger.warning(f"Metadata missing for {len(validation['missing_samples'])} samples")
+                            logger.warning(
+                                f"Metadata missing for {len(validation['missing_samples'])} samples"
+                            )
                     results["steps_completed"].append("load_metadata")
                     results["results"]["metadata_summary"] = {
                         "n_samples_with_metadata": meta_result.get("n_samples", 0),
@@ -1061,9 +1239,13 @@ def run_gwas(
         if lambda_gc is not None:
             results["results"]["lambda_gc"] = lambda_gc
             if lambda_gc > 1.1:
-                logger.warning(f"Genomic inflation detected: lambda_GC = {lambda_gc:.3f} (>1.1)")
+                logger.warning(
+                    f"Genomic inflation detected: lambda_GC = {lambda_gc:.3f} (>1.1)"
+                )
             elif lambda_gc < 0.9:
-                logger.warning(f"Genomic deflation detected: lambda_GC = {lambda_gc:.3f} (<0.9)")
+                logger.warning(
+                    f"Genomic deflation detected: lambda_GC = {lambda_gc:.3f} (<0.9)"
+                )
             else:
                 logger.info(f"Lambda GC = {lambda_gc:.3f} (within expected range)")
 
@@ -1078,8 +1260,14 @@ def run_gwas(
             logger.info("Step 7b: Estimating SNP heritability")
             try:
                 km = kinship_result["kinship_matrix"]
-                km_size = len(km) if isinstance(km, list) else (km.shape[0] if hasattr(km, "shape") else 0)
-                pheno_for_h2 = phenotypes[:km_size] if len(phenotypes) > km_size else phenotypes
+                km_size = (
+                    len(km)
+                    if isinstance(km, list)
+                    else (km.shape[0] if hasattr(km, "shape") else 0)
+                )
+                pheno_for_h2 = (
+                    phenotypes[:km_size] if len(phenotypes) > km_size else phenotypes
+                )
                 logger.info(
                     f"Heritability inputs: kinship {km_size}x{km_size}, "
                     f"phenotypes {len(pheno_for_h2)} (from {len(phenotypes)} total)"
@@ -1097,7 +1285,9 @@ def run_gwas(
                         f"SNP heritability: h2 = {h2_result.get('h2', 0):.3f} (SE = {h2_result.get('h2_se', 0):.3f})"
                     )
                 else:
-                    logger.warning(f"Heritability estimation returned non-success: {h2_result}")
+                    logger.warning(
+                        f"Heritability estimation returned non-success: {h2_result}"
+                    )
             except Exception as e:
                 logger.warning(f"Heritability estimation failed: {e}", exc_info=True)
 
@@ -1119,13 +1309,17 @@ def run_gwas(
 
         # Step 9: SNP-to-gene annotation (optional)
         annotation_config = config.get("annotation", {})
-        if isinstance(annotation_config, dict) and annotation_config.get("enabled", False):
+        if isinstance(annotation_config, dict) and annotation_config.get(
+            "enabled", False
+        ):
             gff_path = annotation_config.get("gff3_file")
             if gff_path and Path(gff_path).exists():
                 logger.info("Step 9: Annotating variants with genes")
                 try:
                     window_kb = annotation_config.get("window_kb", 50)
-                    annotate_variants_with_genes(assoc_results, gff_path, window_kb=window_kb)
+                    annotate_variants_with_genes(
+                        assoc_results, gff_path, window_kb=window_kb
+                    )
                     results["steps_completed"].append("annotation")
                 except Exception as e:
                     logger.warning(f"Variant annotation failed: {e}")
@@ -1134,11 +1328,17 @@ def run_gwas(
 
         # Step 9b: Fine-mapping credible sets (optional)
         finemapping_config = config.get("finemapping", {})
-        if isinstance(finemapping_config, dict) and finemapping_config.get("enabled", False) and assoc_results:
+        if (
+            isinstance(finemapping_config, dict)
+            and finemapping_config.get("enabled", False)
+            and assoc_results
+        ):
             logger.info("Step 9b: Computing fine-mapping credible sets")
             try:
                 credible_level = finemapping_config.get("credible_level", 0.95)
-                cs_result = compute_credible_set(assoc_results, credible_level=credible_level)
+                cs_result = compute_credible_set(
+                    assoc_results, credible_level=credible_level
+                )
                 if cs_result.get("status") == "success":
                     results["steps_completed"].append("fine_mapping")
                     results["results"]["fine_mapping"] = {
@@ -1158,7 +1358,9 @@ def run_gwas(
         # Step 10: Generate plots
         logger.info("Step 10: Generating visualization plots")
         try:
-            from metainformant.gwas.visualization.interactive.suite import generate_all_plots as gen_plots
+            from metainformant.gwas.visualization.interactive.suite import (
+                generate_all_plots as gen_plots,
+            )
 
             plot_results = gen_plots(
                 association_results=assoc_results,
@@ -1181,7 +1383,9 @@ def run_gwas(
 
             # GWAS summary panel
             pca_data_for_viz = results["results"].get("pca")
-            kinship_for_viz = kinship_result.get("kinship_matrix") if kinship_result else None
+            kinship_for_viz = (
+                kinship_result.get("kinship_matrix") if kinship_result else None
+            )
             logger.info(
                 f"Enhanced viz inputs: assoc_results={len(assoc_results)}, "
                 f"pca={'yes' if pca_data_for_viz else 'no'}, "
@@ -1210,9 +1414,13 @@ def run_gwas(
                         output_file=output_dir / "population_structure_panel.png",
                     )
                     enhanced_panels.append("population_structure_panel")
-                    logger.info(f"Population structure panel: {pop_panel.get('status')}")
+                    logger.info(
+                        f"Population structure panel: {pop_panel.get('status')}"
+                    )
                 except Exception as e:
-                    logger.warning(f"Population structure panel failed: {e}", exc_info=True)
+                    logger.warning(
+                        f"Population structure panel failed: {e}", exc_info=True
+                    )
 
             # Heritability bar chart (if per-chromosome available)
             h2_data = results["results"].get("heritability")
@@ -1222,7 +1430,9 @@ def run_gwas(
                         heritability_bar_chart,
                     )
 
-                    heritability_bar_chart(h2_data, output_file=output_dir / "heritability_bar.png")
+                    heritability_bar_chart(
+                        h2_data, output_file=output_dir / "heritability_bar.png"
+                    )
                     enhanced_panels.append("heritability_bar")
                     logger.info("Heritability bar chart generated")
                 except Exception as e:
@@ -1231,7 +1441,9 @@ def run_gwas(
             if enhanced_panels:
                 results["steps_completed"].append("enhanced_visualization")
                 results["results"]["enhanced_panels"] = enhanced_panels
-                logger.info(f"Enhanced visualization: {len(enhanced_panels)} panels generated")
+                logger.info(
+                    f"Enhanced visualization: {len(enhanced_panels)} panels generated"
+                )
             else:
                 logger.warning("No enhanced visualization panels were generated")
         except ImportError as e:
@@ -1275,7 +1487,9 @@ def run_multi_trait_gwas(
     logger.info(f"Starting multi-trait GWAS: {len(traits)} traits")
 
     config = _normalize_config(config)
-    vcf_path, phenotype_path, output_dir = _validated_gwas_io_paths(vcf_path, phenotype_path, output_dir)
+    vcf_path, phenotype_path, output_dir = _validated_gwas_io_paths(
+        vcf_path, phenotype_path, output_dir
+    )
 
     results: Dict[str, Any] = {
         "status": "running",
@@ -1300,16 +1514,22 @@ def run_multi_trait_gwas(
 
         # Shared step 2b: Haplodiploidy
         haplodiploidy_config = config.get("haplodiploidy", {})
-        filtered_data, haplo_result = _apply_haplodiploidy_config(filtered_data, haplodiploidy_config)
+        filtered_data, haplo_result = _apply_haplodiploidy_config(
+            filtered_data, haplodiploidy_config
+        )
         if haplo_result is not None:
             results["steps_completed"].append("haplodiploidy_check")
 
         genotypes_by_sample = filtered_data.get("genotypes", [])
-        genotypes_by_variant, n_samples, n_variants = _sample_major_to_variant_major(genotypes_by_sample)
+        genotypes_by_variant, n_samples, n_variants = _sample_major_to_variant_major(
+            genotypes_by_sample
+        )
 
         # Shared step 3: LD pruning
         ld_config = config.get("ld_pruning", {})
-        ld_pruned_genotypes, ld_pruned_indices = _run_ld_pruning_if_enabled(genotypes_by_variant, ld_config)
+        ld_pruned_genotypes, ld_pruned_indices = _run_ld_pruning_if_enabled(
+            genotypes_by_variant, ld_config
+        )
         if ld_pruned_indices is not None:
             results["steps_completed"].append("ld_pruning")
 
@@ -1318,7 +1538,9 @@ def run_multi_trait_gwas(
         pca_result = None
         if len(genotypes_by_sample) > 0:
             if len(ld_pruned_genotypes) > 0:
-                pca_geno = _variant_major_to_sample_major(ld_pruned_genotypes, n_samples)
+                pca_geno = _variant_major_to_sample_major(
+                    ld_pruned_genotypes, n_samples
+                )
             else:
                 pca_geno = genotypes_by_sample
             pca_result = compute_pca(pca_geno, n_components=min(10, n_samples))
@@ -1337,7 +1559,9 @@ def run_multi_trait_gwas(
                 # Load phenotypes for this trait
                 pheno_by_id = _load_phenotypes_by_id(phenotype_path, trait=trait_name)
                 sample_ids = filtered_data.get("samples", [])
-                phenotypes = [pheno_by_id[sid] for sid in sample_ids if sid in pheno_by_id]
+                phenotypes = [
+                    pheno_by_id[sid] for sid in sample_ids if sid in pheno_by_id
+                ]
                 min_s = min(len(phenotypes), n_samples) if genotypes_by_variant else 0
                 phenotypes = phenotypes[:min_s]
 
@@ -1363,7 +1587,9 @@ def run_multi_trait_gwas(
                 # Summary stats
                 if assoc_results and filtered_data.get("variants"):
                     stats_path = trait_dir / "summary_statistics.tsv"
-                    write_summary_statistics(assoc_results, filtered_data["variants"], stats_path)
+                    write_summary_statistics(
+                        assoc_results, filtered_data["variants"], stats_path
+                    )
                     trait_result["steps"].append("summary_statistics")
 
                 trait_result["status"] = "success"

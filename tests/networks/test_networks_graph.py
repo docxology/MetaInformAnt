@@ -128,10 +128,14 @@ class TestNetworkCreation:
         network = BiologicalNetwork()
 
         # Create correlation matrix
-        correlation_matrix = np.array([[1.0, 0.8, 0.2], [0.8, 1.0, -0.6], [0.2, -0.6, 1.0]])
+        correlation_matrix = np.array(
+            [[1.0, 0.8, 0.2], [0.8, 1.0, -0.6], [0.2, -0.6, 1.0]]
+        )
         node_names = ["gene1", "gene2", "gene3"]
 
-        add_edges_from_correlation(network, correlation_matrix, node_names, threshold=0.5)
+        add_edges_from_correlation(
+            network, correlation_matrix, node_names, threshold=0.5
+        )
 
         # Should have edges for correlations > 0.5
         # gene1-gene2: 0.8 > 0.5 ✓
@@ -156,7 +160,11 @@ class TestNetworkCreation:
         """Test adding edges from interaction list."""
         network = BiologicalNetwork()
 
-        interactions = [("protein1", "protein2", 0.9), ("protein2", "protein3", 0.7), ("protein1", "protein3", 0.4)]
+        interactions = [
+            ("protein1", "protein2", 0.9),
+            ("protein2", "protein3", 0.7),
+            ("protein1", "protein3", 0.4),
+        ]
 
         add_edges_from_interactions(network, interactions)
 
@@ -299,9 +307,9 @@ class TestShortestPaths:
         assert distances["A"]["B"] == 1.0
         assert distances["C"]["D"] == 1.0
 
-        # Between components (should be infinite)
-        assert distances["A"]["C"] == float("inf")
-        assert distances["B"]["D"] == float("inf")
+        # Aligned sparse contract: unreachable pairs are omitted, not inf-filled.
+        assert "C" not in distances["A"]
+        assert "D" not in distances["B"]
 
     def test_shortest_paths_single_node(self):
         """Test shortest paths with single node."""
@@ -323,12 +331,16 @@ class TestNetworkIntegration:
         # Simulate expression correlation matrix
         np.random.seed(42)
         correlation_matrix = np.random.rand(5, 5)
-        correlation_matrix = (correlation_matrix + correlation_matrix.T) / 2  # Symmetric
+        correlation_matrix = (
+            correlation_matrix + correlation_matrix.T
+        ) / 2  # Symmetric
         np.fill_diagonal(correlation_matrix, 1.0)  # Perfect self-correlation
 
         # Create network
         network = create_network(gene_names)
-        add_edges_from_correlation(network, correlation_matrix, gene_names, threshold=0.6)
+        add_edges_from_correlation(
+            network, correlation_matrix, gene_names, threshold=0.6
+        )
 
         # Analyze network
         metrics = network_metrics(network)
@@ -353,10 +365,9 @@ class TestNetworkIntegration:
                 else:
                     assert centralities[measure][node] >= 0.0
 
-        # Check distances
+        # Check distances: the sparse contract reports only reachable pairs.
         assert len(distances) == 5
         for source in gene_names:
-            assert len(distances[source]) == 5
             assert distances[source][source] == 0.0  # Self-distance is 0
 
 
@@ -498,7 +509,10 @@ class TestNetworkComparison:
 
     def test_network_union_intersection(self):
         """Test network union and intersection."""
-        from metainformant.networks.analysis.graph import network_intersection, network_union
+        from metainformant.networks.analysis.graph import (
+            network_intersection,
+            network_union,
+        )
 
         net1 = create_network(["A", "B", "C"], directed=False)
         net1.add_edge("A", "B", weight=0.5)

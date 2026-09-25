@@ -13,7 +13,12 @@ import numpy as np
 import pytest
 
 # Test visualization functions - these should return real matplotlib Figures
-from metainformant.gwas.visualization.general import kinship_heatmap, manhattan_plot, pca_plot, qq_plot
+from metainformant.gwas.visualization.general import (
+    kinship_heatmap,
+    manhattan_plot,
+    pca_plot,
+    qq_plot,
+)
 
 # Test matplotlib dependency
 try:
@@ -60,8 +65,33 @@ class TestManhattanPlot:
 
         # Check that we have the right number of data points
         ax = fig.axes[0]
-        scatter_plots = [child for child in ax.get_children() if hasattr(child, "get_offsets")]
+        scatter_plots = [
+            child for child in ax.get_children() if hasattr(child, "get_offsets")
+        ]
         assert len(scatter_plots) > 0, "Should have scatter plot data"
+
+    @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
+    def test_manhattan_plot_uses_observed_contig_extents(self):
+        """Chromosome spacing should come from observed positions, not fixed 100 Mb jumps."""
+        results = [
+            {"chrom": "1", "pos": 100, "p_value": 1e-4},
+            {"chrom": "1", "pos": 1000, "p_value": 1e-5},
+            {"chrom": "2", "pos": 50, "p_value": 1e-6},
+        ]
+
+        fig = manhattan_plot(results, suggestive_threshold=None)
+
+        ax = fig.axes[0]
+        x_positions = []
+        for collection in ax.collections:
+            if hasattr(collection, "get_offsets"):
+                offsets = collection.get_offsets()
+                if len(offsets):
+                    x_positions.extend(float(point[0]) for point in offsets)
+        assert x_positions
+        assert max(x_positions) < 1_000_000, (
+            "Small contigs should not be separated by fixed 100 Mb offsets"
+        )
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
     def test_manhattan_plot_significance_line(self, tmp_path: Path):
@@ -109,7 +139,6 @@ class TestQQPlot:
     def test_qq_plot_returns_figure(self):
         """Test that qq_plot returns a real matplotlib Figure."""
         p_values = [0.001, 0.01, 0.05, 0.1, 0.5, 0.9]
-        [{"p_value": p} for p in p_values]
 
         fig = qq_plot(p_values)
 
@@ -130,7 +159,9 @@ class TestQQPlot:
         ax = fig.axes[0]
 
         # Check that we have data points
-        scatter_plots = [child for child in ax.get_children() if hasattr(child, "get_offsets")]
+        scatter_plots = [
+            child for child in ax.get_children() if hasattr(child, "get_offsets")
+        ]
         assert len(scatter_plots) > 0, "Should have Q-Q plot data"
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
@@ -157,6 +188,22 @@ class TestQQPlot:
         assert found_diagonal, "Should have diagonal null hypothesis line"
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
+    def test_qq_plot_confidence_band_and_lambda_annotation(self):
+        """Q-Q plot should include a null envelope and lambda GC annotation."""
+        p_values = np.linspace(0.001, 0.999, 250)
+
+        fig = qq_plot(p_values)
+
+        ax = fig.axes[0]
+        envelope_collections = [
+            child
+            for child in ax.collections
+            if getattr(child, "get_label", lambda: "")() == "95% null envelope"
+        ]
+        assert envelope_collections, "Should draw a Q-Q confidence envelope"
+        assert any("lambda GC" in text.get_text() for text in ax.texts)
+
+    @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
     def test_qq_plot_file_saving(self, tmp_path: Path):
         """Test that Q-Q plot can be saved to file."""
         p_values = [0.001, 0.01, 0.05]
@@ -181,7 +228,9 @@ class TestPCAPlot:
         variance = np.random.rand(3)
         loadings = np.random.randn(3, 20)
 
-        fig = pca_plot((components, variance, loadings), explained_var=variance.tolist())
+        fig = pca_plot(
+            (components, variance, loadings), explained_var=variance.tolist()
+        )
 
         assert hasattr(fig, "savefig"), "Should return matplotlib Figure"
         assert hasattr(fig, "axes"), "Figure should have axes"
@@ -201,8 +250,15 @@ class TestPCAPlot:
         xlabel = ax.get_xlabel().lower()
         ylabel = ax.get_ylabel().lower()
         title = ax.get_title().lower()
-        has_variance = "variance" in xlabel or "variance" in ylabel or "variance" in title or len(ax.texts) > 0
-        assert has_variance, "Should show variance information in labels, title, or annotations"
+        has_variance = (
+            "variance" in xlabel
+            or "variance" in ylabel
+            or "variance" in title
+            or len(ax.texts) > 0
+        )
+        assert has_variance, (
+            "Should show variance information in labels, title, or annotations"
+        )
 
 
 class TestKinshipHeatmap:
@@ -268,7 +324,9 @@ class TestVisualizationDependencies:
     def test_matplotlib_import_flag_is_true(self):
         """Verify that HAS_MATPLOTLIB is set correctly when matplotlib is present."""
         # Since matplotlib IS installed in this environment, verify the flag
-        assert HAS_MATPLOTLIB is True, "HAS_MATPLOTLIB should be True when matplotlib is installed"
+        assert HAS_MATPLOTLIB is True, (
+            "HAS_MATPLOTLIB should be True when matplotlib is installed"
+        )
         fig, ax = plt.subplots()
         ax.set_title("Dependency verification")
         plt.close(fig)

@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from metainformant.gwas.workflow.workflow_execution import (
+    _apply_full_correction_outputs,
     _apply_qvalue_and_bonferroni_annotations,
     _lambda_gc_from_associations,
     _metadata_path_from_config,
@@ -25,7 +26,9 @@ def test_validated_gwas_io_paths_creates_output_dir(tmp_path: Path) -> None:
     phenotype_path.write_text("sample\ttrait\nS1\t1.0\n")
 
     out_dir = tmp_path / "results"
-    resolved_vcf, resolved_pheno, resolved_output = _validated_gwas_io_paths(vcf_path, phenotype_path, out_dir)
+    resolved_vcf, resolved_pheno, resolved_output = _validated_gwas_io_paths(
+        vcf_path, phenotype_path, out_dir
+    )
 
     assert resolved_vcf == vcf_path
     assert resolved_pheno == phenotype_path
@@ -39,7 +42,9 @@ def test_validated_gwas_io_paths_rejects_missing_inputs(tmp_path: Path) -> None:
     phenotype_path.write_text("sample\ttrait\nS1\t1.0\n")
 
     with pytest.raises(FileNotFoundError):
-        _validated_gwas_io_paths(tmp_path / "missing.vcf", phenotype_path, tmp_path / "results")
+        _validated_gwas_io_paths(
+            tmp_path / "missing.vcf", phenotype_path, tmp_path / "results"
+        )
 
 
 def test_genotype_matrix_transposes_round_trip() -> None:
@@ -56,7 +61,10 @@ def test_genotype_matrix_transposes_round_trip() -> None:
 def test_metadata_path_from_config_supports_flat_and_nested() -> None:
     """Flat metadata_file takes precedence, while nested samples metadata remains supported."""
     assert _metadata_path_from_config({"metadata_file": "flat.tsv"}) == "flat.tsv"
-    assert _metadata_path_from_config({"samples": {"metadata_file": "nested.tsv"}}) == "nested.tsv"
+    assert (
+        _metadata_path_from_config({"samples": {"metadata_file": "nested.tsv"}})
+        == "nested.tsv"
+    )
     assert _metadata_path_from_config({"samples": []}) is None
 
 
@@ -77,20 +85,73 @@ def test_correction_helpers_annotate_association_rows() -> None:
 
 def test_lambda_gc_from_associations_uses_genomic_control_math() -> None:
     """Lambda must be the chi2-median genomic-control statistic, not median(p)-based."""
-    assert _lambda_gc_from_associations([{"p_value": 0.5} for _ in range(10)]) == pytest.approx(1.0, abs=1e-3)
-    assert _lambda_gc_from_associations([{"p_value": 1e-10}] * 5 + [{"p_value": 0.5}] * 5) > 5
+    assert _lambda_gc_from_associations(
+        [{"p_value": 0.5} for _ in range(10)]
+    ) == pytest.approx(1.0, abs=1e-3)
+    assert (
+        _lambda_gc_from_associations([{"p_value": 1e-10}] * 5 + [{"p_value": 0.5}] * 5)
+        > 5
+    )
     assert _lambda_gc_from_associations([]) is None
     assert _lambda_gc_from_associations([{"p_value": 1.0}]) is None
 
 
 def test_write_summary_outputs_uses_standard_files(tmp_path: Path) -> None:
     """Summary output helper should write all standard GWAS report artifacts."""
-    assoc_results = [{"beta": 0.5, "se": 0.1, "p_value": 1e-6, "q_value": 2e-6, "n_samples": 10, "maf": 0.3}]
+    assoc_results = [
+        {
+            "beta": 0.5,
+            "se": 0.1,
+            "p_value": 1e-6,
+            "q_value": 2e-6,
+            "n_samples": 10,
+            "maf": 0.3,
+        }
+    ]
     variant_info = [{"chrom": "chr1", "pos": 100, "id": "rs1", "ref": "A", "alt": "G"}]
 
-    outputs = _write_summary_outputs(assoc_results, variant_info, tmp_path, threshold=1e-5)
+    outputs = _write_summary_outputs(
+        assoc_results, variant_info, tmp_path, threshold=1e-5
+    )
 
     assert Path(outputs["summary_stats_path"]).exists()
     assert Path(outputs["significant_hits_path"]).exists()
     assert (tmp_path / "results_summary.json").exists()
     assert outputs["summary"]["n_variants_tested"] == 1
+
+
+def test_apply_full_correction_outputs_honors_method_choice() -> None:
+    """[correction][method] must select which outputs and row annotations appear."""
+    p_rows = [{"p_value": 1e-6}, {"p_value": 0.3}, {"p_value": 0.9}]
+
+    # Default (no [correction][method]): full stack, as before.
+    default_rows = [dict(r) for r in p_rows]
+    default_out = _apply_full_correction_outputs(default_rows)
+    assert set(default_out) == {"bonferroni", "fdr", "genomic_control"}
+    assert all(
+        "bonferroni_significant" in r and "fdr_significant" in r and "fdr_p_value" in r
+        for r in default_rows
+    )
+    assert all("gc_p_value" not in r for r in default_rows)
+
+    bonf_rows = [dict(r) for r in p_rows]
+    bonf_out = _apply_full_correction_outputs(bonf_rows, correction_method="bonferroni")
+    assert set(bonf_out) == {"bonferroni"}
+    assert all("bonferroni_significant" in r for r in bonf_rows)
+    assert all("fdr_p_value" not in r and "gc_p_value" not in r for r in bonf_rows)
+
+    fdr_rows = [dict(r) for r in p_rows]
+    fdr_out = _apply_full_correction_outputs(fdr_rows, correction_method="fdr")
+    assert set(fdr_out) == {"fdr"}
+    assert all("fdr_significant" in r and "fdr_p_value" in r for r in fdr_rows)
+    assert all("bonferroni_significant" not in r for r in fdr_rows)
+
+    gc_rows = [dict(r) for r in p_rows]
+    gc_out = _apply_full_correction_outputs(
+        gc_rows, correction_method="genomic_control"
+    )
+    assert set(gc_out) == {"genomic_control"}
+    assert all(0.0 < r["gc_p_value"] <= 1.0 for r in gc_rows)
+    assert all(
+        "bonferroni_significant" not in r and "fdr_p_value" not in r for r in gc_rows
+    )

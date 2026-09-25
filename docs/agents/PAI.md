@@ -19,7 +19,7 @@ This directory serves as the authoritative hub for agent coordination in METAINF
 
 | Aspect | Detail |
 |--------|--------|
-| **System** | Part of METAINFORMANT Core infrastructure (affects all 28 modules) |
+| **System** | Part of METAINFORMANT Core infrastructure (affects all 30 modules) |
 | **Style** | Strict type hints enforced, real implementations in tests, `uv` package management |
 | **Stability** | Coordinator APIs (BasePipelineManager) stable; workflows evolve |
 | **Scope** | Every module participates in multi-agent workflows to some degree |
@@ -43,7 +43,7 @@ docs/agents/
  core.md
  rna.md
  dna.md
- {28 modules}
+ {26 module rule files}
 ```
 
 ## AI Workflows (Developer)

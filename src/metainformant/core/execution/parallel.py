@@ -75,61 +75,84 @@ def thread_map(
     ordered: bool = True,
     on_complete: Callable[[int, T, U], None] | None = None,
 ) -> list[U]:
-    """Map a function across items using threads, preserving order.
+    """Map a function across items using threads.
 
     Args:
         func: Function to apply to each item
         items: Items to process (will be materialized if not a sequence)
         max_workers: Maximum number of worker threads
         chunk_size: Size of chunks for batch processing (None for auto)
-        timeout: Timeout in seconds for each task (None for no timeout)
-        ordered: Whether to preserve input order in results
-        on_complete: Optional callback(index, input_item, result) called after each task completes
+        timeout: Maximum wall-clock seconds to wait for ALL tasks; when the
+            deadline passes, queued tasks are cancelled and ``TimeoutError`` is
+            raised (None disables the deadline)
+        ordered: ``True`` (default) returns results in input order; ``False``
+            returns results in completion order
+        on_complete: Optional callback(index, input_item, result) called after
+            each successful task completes; index is the input position
+
+    Raises:
+        TimeoutError: If ``timeout`` elapses before every task finishes.
     """
     if not isinstance(items, Sequence):
         items = list(items)
     if not items:
         return []
 
-    # None-padded placeholder slots; every slot is overwritten before return.
-    results: list[U] = cast("list[U]", [None] * len(items))
+    ordered_results: list[U] = cast("list[U]", [None] * len(items))
+    completion_results: list[U] = []
     errors: list[tuple[int, Exception]] = []
+    finished = 0
 
-    with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        # Submit all futures, tracking index -> future mapping
+    pool = ThreadPoolExecutor(max_workers=max_workers)
+    try:
+        # Submit all futures, tracking future -> input index mapping
         future_to_idx: dict[Future[U], int] = {}
         if chunk_size and chunk_size > 1:
             for start in range(0, len(items), chunk_size):
                 end = min(start + chunk_size, len(items))
                 for i in range(start, end):
-                    future = pool.submit(func, items[i])
-                    future_to_idx[future] = i
+                    future_to_idx[pool.submit(func, items[i])] = i
         else:
-            for i, x in enumerate(items):
-                future = pool.submit(func, x)
-                future_to_idx[future] = i
+            for i, item in enumerate(items):
+                future_to_idx[pool.submit(func, item)] = i
 
-        # Collect results using Future.result(timeout=) -- thread-safe, cross-platform
-        for future in as_completed(future_to_idx):
-            idx = future_to_idx[future]
-            try:
-                result = future.result(timeout=timeout)
-                results[idx] = result
-                if on_complete is not None:
-                    on_complete(idx, items[idx], result)
-            except TimeoutError:
-                err = TimeoutError(f"Task {idx} timed out after {timeout}s")
-                errors.append((idx, err))
-                results[idx] = err  # type: ignore[assignment]
-            except Exception as e:
-                errors.append((idx, e))
-                results[idx] = e  # type: ignore[assignment]
+        try:
+            # as_completed yields futures in completion order and enforces the
+            # overall wall-clock deadline (raises TimeoutError when exceeded).
+            for future in as_completed(future_to_idx, timeout=timeout):
+                idx = future_to_idx[future]
+                try:
+                    result = future.result()
+                except Exception as e:
+                    errors.append((idx, e))
+                    ordered_results[idx] = cast("U", e)
+                else:
+                    if ordered:
+                        ordered_results[idx] = result
+                    else:
+                        completion_results.append(result)
+                    if on_complete is not None:
+                        on_complete(idx, items[idx], result)
+                finished += 1
+        except TimeoutError:
+            # Deadline exceeded: drop queued work instead of blocking on it.
+            pool.shutdown(wait=False, cancel_futures=True)
+            raise TimeoutError(
+                f"thread_map timed out after {timeout}s: "
+                f"{finished} of {len(items)} task(s) finished"
+            ) from None
+        pool.shutdown(wait=True)
+    except BaseException:
+        # Loop aborted early (timeout above or callback failure): avoid
+        # blocking on queued work that will never be consumed.
+        pool.shutdown(wait=False, cancel_futures=True)
+        raise
 
     if errors:
         # Raise the first error to preserve existing behavior
         raise errors[0][1]
 
-    return results
+    return ordered_results if ordered else completion_results
 
 
 def thread_map_unordered(
@@ -141,26 +164,37 @@ def thread_map_unordered(
 ) -> list[U]:
     """Map a function across items using threads, without preserving order.
 
-    Uses as_completed for correct result collection (no race conditions).
+    Results are returned in completion order.
 
     Args:
         func: Function to apply to each item
         items: Items to process
         max_workers: Maximum number of worker threads
-        timeout: Timeout in seconds for each task (None for no timeout)
+        timeout: Maximum wall-clock seconds to wait for ALL tasks; when the
+            deadline passes, queued tasks are cancelled and ``TimeoutError`` is
+            raised (None disables the deadline)
+
+    Raises:
+        TimeoutError: If ``timeout`` elapses before every task finishes.
     """
     results: list[U] = []
 
-    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+    pool = ThreadPoolExecutor(max_workers=max_workers)
+    try:
         futures = [pool.submit(func, item) for item in items]
-
-        for future in as_completed(futures):
-            try:
-                result = future.result(timeout=timeout)
-                results.append(result)
-            except Exception as e:
-                results.append(e)  # type: ignore[arg-type]
-                raise
+        try:
+            for future in as_completed(futures, timeout=timeout):
+                results.append(future.result())
+        except TimeoutError:
+            pool.shutdown(wait=False, cancel_futures=True)
+            raise TimeoutError(
+                f"thread_map_unordered timed out after {timeout}s: "
+                f"{len(results)} of {len(futures)} task(s) finished"
+            ) from None
+        pool.shutdown(wait=True)
+    except BaseException:
+        pool.shutdown(wait=False, cancel_futures=True)
+        raise
 
     return results
 

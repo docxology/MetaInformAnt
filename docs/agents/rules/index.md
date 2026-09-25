@@ -2,7 +2,7 @@
 
 ## Role
 
-Module-specific Agent Rules for consistent development patterns across METAINFORMANT. These files serve as the authoritative source for coding conventions, domain-specific patterns, and integration guidelines for each of the 28 bioinformatics modules.
+Module-specific Agent Rules for consistent development patterns across METAINFORMANT. These files serve as the authoritative source for coding conventions, domain-specific patterns, and integration guidelines for each of the 26 modules with rule files (popgen, eqtl, cloud, and mcp have no dedicated rule files).
 
 ## Contents
 
@@ -36,7 +36,7 @@ Each Rule file contains domain-specific guidelines:
 | `metabolomics.md` | Metabolomics (MS, pathway mapping) |
 | `menu.md` | Interactive CLI menu and discovery system |
 
-**Total**: 28 module rule files.
+**Total**: 26 module rule files.
 
 ## Usage
 

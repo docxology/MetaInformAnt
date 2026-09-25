@@ -21,7 +21,7 @@ Data loading, peak analysis, and quality metrics for the three core epigenomic a
 | `load_chip_peaks()` | Parse ChIP-seq narrowPeak file into ChIPPeak list |
 | `filter_peaks_by_score()` | Threshold-based peak filtering with optional top-N |
 | `calculate_peak_enrichment()` | Fold enrichment of peaks in genomic regions |
-| `find_motifs_in_peaks()` | Motif screening within ChIP-seq peaks (simulated; requires sequence data for real scanning) |
+| `find_motifs_in_peaks()` | IUPAC motif scan of peak windows against a genome FASTA (both strands; real sequence matching) |
 | `load_methylation_bedgraph()` | Parse methylation BedGraph with coverage filtering |
 | `find_differentially_methylated_regions()` | Detect DMRs between conditions |
 | `identify_cpg_islands()` | Sliding-window CpG island detection (GC/CpG ratio estimated from methylation level) |

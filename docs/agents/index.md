@@ -23,7 +23,7 @@ rules/index
 
 ## Overview
 
-METAINFORMANT uses a coordinated multi-agent architecture where specialized AI agents and software components collaborate to execute complex bioinformatics workflows across 28 domains. This hub documents the coordination patterns, communication protocols, and orchestration mechanisms that enable seamless multi-agent operations.
+METAINFORMANT uses a coordinated multi-agent architecture where specialized AI agents and software components collaborate to execute complex bioinformatics workflows across 30 domains. This hub documents the coordination patterns, communication protocols, and orchestration mechanisms that enable seamless multi-agent operations.
 
 ## Key Concepts
 

@@ -8,21 +8,24 @@ gene set activity scoring.
 
 Statistical methods:
     - Wilcoxon rank-sum: Non-parametric test comparing expression ranks
-      between two groups. Robust to non-normality and outliers.
+      between two groups. Tie-aware (exact or tie-corrected asymptotic
+      Mann-Whitney U), which matters for massively tied single-cell
+      counts. Robust to non-normality and outliers.
     - t-test: Welch's t-test for unequal variances. Assumes approximate
       normality (reasonable for log-normalized data).
-    - Pseudobulk: Aggregates single cells by sample, then performs
-      sample-level testing. More appropriate for multi-donor designs
-      where cells within a donor are not independent.
+    - Pseudobulk: Aggregates single cells by sample, CPM-normalizes the
+      per-sample sums, then performs sample-level testing. More
+      appropriate for multi-donor designs where cells within a donor are
+      not independent.
 """
 
 from __future__ import annotations
 
 import math
 import random
-from collections import Counter
 from typing import Any
 
+from metainformant.core.utils.errors import ValidationError
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -73,6 +76,10 @@ def differential_expression(
             gene. A gene is skipped only when BOTH groups have fewer
             expressing cells than this.
         min_log2fc: Minimum absolute log2 fold change to include in results.
+            Applied AFTER multiple-testing correction: Benjamini-Hochberg
+            adjusted p-values are computed over the full tested family
+            (every gene passing min_cells), so this effect-size filter
+            never shrinks the BH family or inflates adjusted significance.
 
     Returns:
         Sorted list of dictionaries, each containing:
@@ -98,19 +105,31 @@ def differential_expression(
     n_genes = len(matrix[0]) if n_cells > 0 else 0
 
     if len(groups) != n_cells:
-        raise ValueError(f"groups length ({len(groups)}) must match expression matrix " f"rows ({n_cells})")
+        raise ValueError(
+            f"groups length ({len(groups)}) must match expression matrix "
+            f"rows ({n_cells})"
+        )
     if len(gene_names) != n_genes:
-        raise ValueError(f"gene_names length ({len(gene_names)}) must match expression " f"matrix columns ({n_genes})")
+        raise ValueError(
+            f"gene_names length ({len(gene_names)}) must match expression "
+            f"matrix columns ({n_genes})"
+        )
 
     unique_groups = sorted(set(groups))
     if len(unique_groups) != 2:
-        raise ValueError(f"groups must contain exactly 2 unique values, got {len(unique_groups)}: " f"{unique_groups}")
+        raise ValueError(
+            f"groups must contain exactly 2 unique values, got {len(unique_groups)}: "
+            f"{unique_groups}"
+        )
 
     g1_val, g2_val = unique_groups
     g1_indices = [i for i, g in enumerate(groups) if g == g1_val]
     g2_indices = [i for i, g in enumerate(groups) if g == g2_val]
 
-    logger.info(f"Running DE analysis ({method}): {len(g1_indices)} vs {len(g2_indices)} cells, " f"{n_genes} genes")
+    logger.info(
+        f"Running DE analysis ({method}): {len(g1_indices)} vs {len(g2_indices)} cells, "
+        f"{n_genes} genes"
+    )
 
     results: list[dict] = []
     raw_p_values: list[float] = []
@@ -127,13 +146,9 @@ def differential_expression(
 
         mean_g1 = sum(expr_g1) / len(expr_g1) if expr_g1 else 0.0
         mean_g2 = sum(expr_g2) / len(expr_g2) if expr_g2 else 0.0
-
         log2fc = compute_log_fold_change(mean_g1, mean_g2)
 
-        if abs(log2fc) < min_log2fc:
-            continue
-
-        # Statistical test
+        # Statistical test (every tested gene contributes to the BH family)
         if method == "wilcoxon":
             p_value = _wilcoxon_rank_sum(expr_g1, expr_g2)
         else:  # t_test
@@ -156,16 +171,21 @@ def differential_expression(
         )
         raw_p_values.append(p_value)
 
-    # Benjamini-Hochberg correction
+    # Benjamini-Hochberg correction over the FULL tested family: the
+    # min_log2fc effect-size filter is applied only afterwards, so it can
+    # never shrink the BH family or inflate adjusted significance.
     adjusted = _benjamini_hochberg(raw_p_values)
     for i, res in enumerate(results):
         res["adjusted_p"] = adjusted[i]
+
+    results = [res for res in results if abs(res["log2fc"]) >= min_log2fc]
 
     # Sort by adjusted p-value
     results.sort(key=lambda x: x["adjusted_p"])
 
     logger.info(
-        f"DE analysis complete: {len(results)} genes tested, "
+        f"DE analysis complete: {len(raw_p_values)} genes tested, {len(results)} reported "
+        f"(min_log2fc={min_log2fc}), "
         f"{sum(1 for r in results if r['adjusted_p'] < 0.05)} significant (FDR < 0.05)"
     )
 
@@ -183,10 +203,12 @@ def pseudobulk_de(
     """Pseudobulk differential expression for multi-sample designs.
 
     Aggregates single-cell expression by sample (summing counts per gene
-    within each sample), then performs sample-level statistical testing
-    between groups. This approach accounts for the hierarchical structure
-    of multi-donor/multi-sample experiments where cells within a sample
-    are not independent.
+    within each sample), CPM-normalizes the per-sample sums so that
+    library-size differences between samples do not masquerade as
+    differential expression, then performs sample-level statistical
+    testing between groups. This approach accounts for the hierarchical
+    structure of multi-donor/multi-sample experiments where cells within
+    a sample are not independent.
 
     Args:
         expression_matrix: Expression matrix (cells x genes).
@@ -194,17 +216,17 @@ def pseudobulk_de(
             but not used to filter; pre-filter the matrix to a single cell
             type before calling.
         sample_labels: Sample identifier for each cell.
-        groups: Group assignment for each sample (must be consistent
-            within a sample). Exactly two unique values required.
-        gene_names: Gene names for columns. Auto-generated if None.
         min_cells_per_sample: Minimum cells per sample required for
             inclusion in the pseudobulk analysis.
 
     Returns:
         Sorted list of dictionaries with DE results (same format as
-        differential_expression).
+        differential_expression) plus a "normalization" key recording the
+        sample-level normalization applied ("cpm").
 
     Raises:
+        ValidationError: If a sample's cells are assigned to more than
+            one group (group labels must be consistent within a sample).
         ValueError: If input dimensions are inconsistent or groups
             do not contain exactly two unique values.
     """
@@ -213,16 +235,36 @@ def pseudobulk_de(
     n_genes = len(matrix[0]) if n_cells > 0 else 0
 
     if len(cell_labels) != n_cells:
-        raise ValueError(f"cell_labels length ({len(cell_labels)}) must match rows ({n_cells})")
+        raise ValueError(
+            f"cell_labels length ({len(cell_labels)}) must match rows ({n_cells})"
+        )
     if len(sample_labels) != n_cells:
-        raise ValueError(f"sample_labels length ({len(sample_labels)}) must match rows ({n_cells})")
+        raise ValueError(
+            f"sample_labels length ({len(sample_labels)}) must match rows ({n_cells})"
+        )
     if len(groups) != n_cells:
         raise ValueError(f"groups length ({len(groups)}) must match rows ({n_cells})")
 
     if gene_names is None:
         gene_names = [f"gene_{i}" for i in range(n_genes)]
     elif len(gene_names) != n_genes:
-        raise ValueError(f"gene_names length ({len(gene_names)}) must match columns ({n_genes})")
+        raise ValueError(
+            f"gene_names length ({len(gene_names)}) must match columns ({n_genes})"
+        )
+
+    # Group labels must be consistent within each sample: a sample whose
+    # cells span more than one group has no well-defined pseudobulk
+    # identity, so fail closed instead of silently majority-voting.
+    sample_group_values: dict[str, set[int]] = {}
+    for idx, sample in enumerate(sample_labels):
+        sample_group_values.setdefault(sample, set()).add(groups[idx])
+    for sample in sorted(sample_group_values):
+        values = sorted(sample_group_values[sample])
+        if len(values) > 1:
+            raise ValidationError(
+                f"Sample '{sample}' has cells assigned to multiple groups {values}; "
+                "group assignment must be consistent within a sample"
+            )
 
     logger.info(f"Running pseudobulk DE: {n_cells} cells, {n_genes} genes")
 
@@ -236,7 +278,8 @@ def pseudobulk_de(
         sample_indices = [i for i, s in enumerate(sample_labels) if s == sample]
         if len(sample_indices) < min_cells_per_sample:
             logger.debug(
-                f"Skipping sample '{sample}': only {len(sample_indices)} cells " f"(min={min_cells_per_sample})"
+                f"Skipping sample '{sample}': only {len(sample_indices)} cells "
+                f"(min={min_cells_per_sample})"
             )
             continue
 
@@ -249,42 +292,57 @@ def pseudobulk_de(
         sample_sums[sample] = gene_sums
         sample_counts[sample] = len(sample_indices)
 
-        # Determine group for this sample (majority vote)
-        sample_group_vals = [groups[i] for i in sample_indices]
-        group_counts = Counter(sample_group_vals)
-        sample_groups[sample] = group_counts.most_common(1)[0][0]
+        # Group is validated consistent across this sample's cells above
+        sample_groups[sample] = groups[sample_indices[0]]
 
     # Check we have two groups
     unique_groups = sorted(set(sample_groups.values()))
     if len(unique_groups) != 2:
-        raise ValueError(f"After aggregation, need exactly 2 groups, got {len(unique_groups)}: " f"{unique_groups}")
+        raise ValueError(
+            f"After aggregation, need exactly 2 groups, got {len(unique_groups)}: "
+            f"{unique_groups}"
+        )
 
     g1_val, g2_val = unique_groups
     g1_samples = [s for s, g in sample_groups.items() if g == g1_val]
     g2_samples = [s for s, g in sample_groups.items() if g == g2_val]
 
     logger.info(
-        f"Pseudobulk aggregated: {len(g1_samples)} samples in group 1, " f"{len(g2_samples)} samples in group 2"
+        f"Pseudobulk aggregated: {len(g1_samples)} samples in group 1, "
+        f"{len(g2_samples)} samples in group 2"
     )
+
+    # CPM-normalize the pseudobulk sums per sample so that library-size
+    # (total count) differences between samples do not masquerade as
+    # differential expression. Samples with zero total counts stay at zero.
+    normalized_sums: dict[str, list[float]] = {}
+    for sample, gene_sums in sample_sums.items():
+        total = sum(gene_sums)
+        scale = 1e6 / total if total > 0 else 0.0
+        normalized_sums[sample] = [value * scale for value in gene_sums]
 
     # Run DE on pseudobulk expression
     results: list[dict] = []
     raw_p_values: list[float] = []
 
     for gene_idx in range(n_genes):
-        vals_g1 = [sample_sums[s][gene_idx] for s in g1_samples]
-        vals_g2 = [sample_sums[s][gene_idx] for s in g2_samples]
+        vals_g1 = [normalized_sums[s][gene_idx] for s in g1_samples]
+        vals_g2 = [normalized_sums[s][gene_idx] for s in g2_samples]
 
         mean_g1 = sum(vals_g1) / len(vals_g1) if vals_g1 else 0.0
         mean_g2 = sum(vals_g2) / len(vals_g2) if vals_g2 else 0.0
 
         log2fc = compute_log_fold_change(mean_g1, mean_g2)
 
-        # Welch's t-test on sample-level aggregates
+        # Welch's t-test on CPM-normalized sample-level aggregates
         p_value = _welch_t_test(vals_g1, vals_g2)
 
-        pct_g1 = (sum(1 for v in vals_g1 if v > 0) / len(vals_g1) * 100) if vals_g1 else 0.0
-        pct_g2 = (sum(1 for v in vals_g2 if v > 0) / len(vals_g2) * 100) if vals_g2 else 0.0
+        pct_g1 = (
+            (sum(1 for v in vals_g1 if v > 0) / len(vals_g1) * 100) if vals_g1 else 0.0
+        )
+        pct_g2 = (
+            (sum(1 for v in vals_g2 if v > 0) / len(vals_g2) * 100) if vals_g2 else 0.0
+        )
 
         results.append(
             {
@@ -296,6 +354,7 @@ def pseudobulk_de(
                 "pct_group2": pct_g2,
                 "mean_group1": mean_g1,
                 "mean_group2": mean_g2,
+                "normalization": "cpm",
             }
         )
         raw_p_values.append(p_value)
@@ -393,7 +452,9 @@ def volcano_data(
     n_down = classification.count("down")
     n_ns = classification.count("ns")
 
-    logger.info(f"Volcano data prepared: {n_up} up, {n_down} down, {n_ns} not significant")
+    logger.info(
+        f"Volcano data prepared: {n_up} up, {n_down} down, {n_ns} not significant"
+    )
 
     return {
         "genes": genes,
@@ -447,11 +508,15 @@ def gene_set_scoring(
     n_genes = len(matrix[0]) if n_cells > 0 else 0
 
     if len(gene_names) != n_genes:
-        raise ValueError(f"gene_names length ({len(gene_names)}) must match " f"columns ({n_genes})")
+        raise ValueError(
+            f"gene_names length ({len(gene_names)}) must match columns ({n_genes})"
+        )
 
     gene_to_idx = {g: i for i, g in enumerate(gene_names)}
 
-    logger.info(f"Scoring {len(gene_sets)} gene sets across {n_cells} cells (method={method})")
+    logger.info(
+        f"Scoring {len(gene_sets)} gene sets across {n_cells} cells (method={method})"
+    )
 
     rng = random.Random(seed)
     all_indices = list(range(n_genes))
@@ -478,7 +543,11 @@ def gene_set_scoring(
 
             if method == "mean":
                 gs_mean = sum(row[j] for j in gs_indices) / len(gs_indices)
-                bg_mean = sum(row[j] for j in bg_indices) / len(bg_indices) if bg_indices else 0.0
+                bg_mean = (
+                    sum(row[j] for j in bg_indices) / len(bg_indices)
+                    if bg_indices
+                    else 0.0
+                )
                 cell_scores.append(gs_mean - bg_mean)
             else:  # sum
                 gs_sum = sum(row[j] for j in gs_indices)
@@ -522,19 +591,18 @@ def _to_list_matrix(data: Any) -> list[list[float]]:
         dense: list[list[float]] = data.toarray().tolist()
         return dense
 
-    if hasattr(data, "values"):
-        framed: list[list[float]] = data.values.tolist()
-        return framed
-
     raise TypeError(f"Unsupported expression matrix type: {type(data)}")
 
 
 def _wilcoxon_rank_sum(a: list[float], b: list[float]) -> float:
     """Perform Wilcoxon rank-sum test (Mann-Whitney U test).
 
-    Computes the U statistic and derives a p-value using normal
-    approximation for sample sizes > 20, otherwise returns an
-    approximate p-value.
+    Tie-aware by construction: with scipy, uses
+    ``scipy.stats.mannwhitneyu`` (exact for small samples without ties,
+    tie-corrected asymptotic normal approximation otherwise), which is
+    essential because single-cell counts are massively tied. The pure
+    Python fallback applies the tie correction term
+    ``sum(t**3 - t) / (12 * n * (n - 1))`` to the normal approximation.
 
     Args:
         a: Values from group A.
@@ -545,12 +613,13 @@ def _wilcoxon_rank_sum(a: list[float], b: list[float]) -> float:
     """
     if HAS_SCIPY:
         try:
-            stat, p_val = scipy_stats.ranksums(a, b)
+            _, p_val = scipy_stats.mannwhitneyu(a, b, alternative="two-sided")
             return float(p_val)
         except (ValueError, TypeError):
             return 1.0
 
-    # Pure Python fallback: Mann-Whitney U with normal approximation
+    # Pure Python fallback: Mann-Whitney U with tie-corrected normal
+    # approximation
     n_a = len(a)
     n_b = len(b)
     if n_a == 0 or n_b == 0:
@@ -560,16 +629,20 @@ def _wilcoxon_rank_sum(a: list[float], b: list[float]) -> float:
     combined = [(v, 0) for v in a] + [(v, 1) for v in b]
     combined.sort(key=lambda x: x[0])
 
-    # Assign ranks (handle ties with average rank)
+    # Assign ranks (average ranks for ties) and accumulate the tie term
     ranks: list[float] = [0.0] * len(combined)
+    tie_term = 0.0
     i = 0
     while i < len(combined):
         j = i
         while j < len(combined) and combined[j][0] == combined[i][0]:
             j += 1
+        t = j - i
         avg_rank = (i + j + 1) / 2.0  # 1-indexed average
         for k in range(i, j):
             ranks[k] = avg_rank
+        if t > 1:
+            tie_term += t**3 - t
         i = j
 
     # Sum of ranks for group A
@@ -578,9 +651,11 @@ def _wilcoxon_rank_sum(a: list[float], b: list[float]) -> float:
     # U statistic
     u_a = rank_sum_a - n_a * (n_a + 1) / 2.0
 
-    # Normal approximation
+    # Normal approximation with tie correction
+    n = n_a + n_b
     mu = n_a * n_b / 2.0
-    sigma = math.sqrt(n_a * n_b * (n_a + n_b + 1) / 12.0)
+    sigma_sq = (n_a * n_b / 12.0) * ((n + 1) - tie_term / (n * (n - 1)))
+    sigma = math.sqrt(sigma_sq) if sigma_sq > 0 else 0.0
 
     if sigma == 0:
         return 1.0
@@ -647,8 +722,16 @@ def _standard_normal_cdf(x: float) -> float:
 
     # Rational approximation of erf
     t = 1.0 / (1.0 + 0.3275911 * x)
-    a1, a2, a3, a4, a5 = 0.254829592, -0.284496736, 1.421413741, -1.453152027, 1.061405429
-    erf = 1.0 - (a1 * t + a2 * t**2 + a3 * t**3 + a4 * t**4 + a5 * t**5) * math.exp(-x * x)
+    a1, a2, a3, a4, a5 = (
+        0.254829592,
+        -0.284496736,
+        1.421413741,
+        -1.453152027,
+        1.061405429,
+    )
+    erf = 1.0 - (a1 * t + a2 * t**2 + a3 * t**3 + a4 * t**4 + a5 * t**5) * math.exp(
+        -x * x
+    )
 
     return 0.5 * (1.0 + sign * erf)
 

@@ -1,7 +1,14 @@
 """Dimensionality reduction utilities for METAINFORMANT.
 
-This module provides dimensionality reduction methods specifically designed
-for biological data analysis, including PCA, ICA, UMAP, and t-SNE.
+Canonical fitting API: ``pca_reduction`` / ``ica_reduction`` / ``umap_reduction``
+/ ``tsne_reduction`` return ``(embedding, fitted_model)`` (embedding only for
+UMAP/t-SNE) and own the single standardization path (``scale_data`` →
+``_scale_features``, zero mean / unit variance).
+
+The ``reduce_dimensions_pca`` / ``reduce_dimensions_umap`` /
+``reduce_dimensions_tsne`` functions are thin delegating wrappers for callers
+that prefer the ``(embedding, components, explained_variance)`` repackaging;
+``standardize`` there is only a deprecated alias of ``scale_data``.
 """
 
 from __future__ import annotations
@@ -42,6 +49,17 @@ except ImportError:
     logger.warning("sklearn.manifold not available, t-SNE disabled")
 
 
+def _scale_features(X: np.ndarray) -> np.ndarray:
+    """Standardize features to zero mean and unit variance.
+
+    Single standardization path shared by every ``*_reduction`` method that
+    accepts ``scale_data``; the ``reduce_dimensions_*`` family is a thin
+    delegating wrapper layer and never standardizes on its own.
+    """
+    scaler = StandardScaler()
+    return scaler.fit_transform(X)
+
+
 def pca_reduction(
     X: np.ndarray,
     n_components: int | None = None,
@@ -67,10 +85,8 @@ def pca_reduction(
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for PCA")
 
-    # Scale data if requested
     if scale_data:
-        scaler = StandardScaler()
-        X_scaled = scaler.fit_transform(X)
+        X_scaled = _scale_features(X)
     else:
         X_scaled = X
 
@@ -83,7 +99,8 @@ def pca_reduction(
     cumulative_var = np.cumsum(explained_var)
 
     logger.info(
-        f"PCA reduction: {X.shape[1]} → {X_pca.shape[1]} dimensions, " f"explained variance: {cumulative_var[-1]:.3f}"
+        f"PCA reduction: {X.shape[1]} → {X_pca.shape[1]} dimensions, "
+        f"explained variance: {cumulative_var[-1]:.3f}"
     )
 
     return X_pca, pca
@@ -114,10 +131,8 @@ def ica_reduction(
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for ICA")
 
-    # Scale data if requested
     if scale_data:
-        scaler = StandardScaler()
-        X_scaled = scaler.fit_transform(X)
+        X_scaled = _scale_features(X)
     else:
         X_scaled = X
 
@@ -172,7 +187,8 @@ def umap_reduction(
     X_umap = reducer.fit_transform(X)
 
     logger.info(
-        f"UMAP reduction: {X.shape[1]} → {n_components} dimensions " f"(n_neighbors={n_neighbors}, min_dist={min_dist})"
+        f"UMAP reduction: {X.shape[1]} → {n_components} dimensions "
+        f"(n_neighbors={n_neighbors}, min_dist={min_dist})"
     )
 
     return cast("np.ndarray", X_umap)
@@ -254,23 +270,31 @@ def compare_dimensionality_methods(
     for method in methods:
         try:
             if method == "pca":
-                X_reduced, model = pca_reduction(X, n_components=n_components, random_state=random_state)
+                X_reduced, model = pca_reduction(
+                    X, n_components=n_components, random_state=random_state
+                )
                 explained_var = model.explained_variance_ratio_.sum()
 
             elif method == "ica":
-                X_reduced, model = ica_reduction(X, n_components=n_components, random_state=random_state)
+                X_reduced, model = ica_reduction(
+                    X, n_components=n_components, random_state=random_state
+                )
                 explained_var = None
 
             elif method == "umap":
                 if not HAS_UMAP:
                     raise ImportError("umap-learn required")
-                X_reduced = umap_reduction(X, n_components=n_components, random_state=random_state)
+                X_reduced = umap_reduction(
+                    X, n_components=n_components, random_state=random_state
+                )
                 explained_var = None
 
             elif method == "tsne":
                 if not HAS_TSNE:
                     raise ImportError("sklearn.manifold required")
-                X_reduced = tsne_reduction(X, n_components=n_components, random_state=random_state)
+                X_reduced = tsne_reduction(
+                    X, n_components=n_components, random_state=random_state
+                )
                 explained_var = None
 
             else:
@@ -358,12 +382,16 @@ def optimize_dimensionality_parameters(
             elif method == "umap" and HAS_UMAP:
                 X_reduced = umap_reduction(X, random_state=random_state, **params)
                 # UMAP doesn't have a direct reconstruction, use embedding quality proxy
-                score = -np.mean([np.std(X_reduced[:, i]) for i in range(X_reduced.shape[1])])
+                score = -np.mean(
+                    [np.std(X_reduced[:, i]) for i in range(X_reduced.shape[1])]
+                )
 
             elif method == "tsne" and HAS_TSNE:
                 X_reduced = tsne_reduction(X, random_state=random_state, **params)
                 # t-SNE doesn't have reconstruction, use embedding spread
-                score = np.mean([np.std(X_reduced[:, i]) for i in range(X_reduced.shape[1])])
+                score = np.mean(
+                    [np.std(X_reduced[:, i]) for i in range(X_reduced.shape[1])]
+                )
 
             else:
                 continue
@@ -436,16 +464,22 @@ def biological_dimensionality_analysis(
     for method in methods:
         try:
             if method == "pca":
-                X_reduced, model = pca_reduction(X, n_components=n_components, random_state=random_state)
+                X_reduced, model = pca_reduction(
+                    X, n_components=n_components, random_state=random_state
+                )
                 results["methods"][method] = {
                     "embedding": X_reduced,
                     "explained_variance": model.explained_variance_ratio_.tolist(),
-                    "cumulative_variance": np.cumsum(model.explained_variance_ratio_).tolist(),
+                    "cumulative_variance": np.cumsum(
+                        model.explained_variance_ratio_
+                    ).tolist(),
                     "components": model.components_,
                 }
 
             elif method == "ica":
-                X_reduced, model = ica_reduction(X, n_components=n_components, random_state=random_state)
+                X_reduced, model = ica_reduction(
+                    X, n_components=n_components, random_state=random_state
+                )
                 results["methods"][method] = {
                     "embedding": X_reduced,
                     "mixing_matrix": model.mixing_,
@@ -453,13 +487,17 @@ def biological_dimensionality_analysis(
                 }
 
             elif method == "umap" and HAS_UMAP:
-                X_reduced = umap_reduction(X, n_components=n_components, random_state=random_state)
+                X_reduced = umap_reduction(
+                    X, n_components=n_components, random_state=random_state
+                )
                 results["methods"][method] = {
                     "embedding": X_reduced,
                 }
 
             elif method == "tsne" and HAS_TSNE:
-                X_reduced = tsne_reduction(X, n_components=n_components, random_state=random_state)
+                X_reduced = tsne_reduction(
+                    X, n_components=n_components, random_state=random_state
+                )
                 results["methods"][method] = {
                     "embedding": X_reduced,
                 }
@@ -484,7 +522,8 @@ def biological_dimensionality_analysis(
         results["comparison"] = comparison
 
     logger.info(
-        f"Biological dimensionality analysis completed: " f"{len(results['methods'])} methods tested on {X.shape} data"
+        f"Biological dimensionality analysis completed: "
+        f"{len(results['methods'])} methods tested on {X.shape} data"
     )
 
     return results
@@ -539,7 +578,9 @@ def biological_embedding(
     result: Dict[str, Any] = {"method": method}
 
     if method == "pca":
-        X_reduced, components, explained_var = reduce_dimensions_pca(data, n_components=embedding_dim, **kwargs)
+        X_reduced, components, explained_var = reduce_dimensions_pca(
+            data, n_components=embedding_dim, **kwargs
+        )
         result["embedding"] = X_reduced
         result["explained_variance"] = explained_var
         result["components"] = components
@@ -567,13 +608,18 @@ def reduce_dimensions_pca(
     standardize: bool | None = None,
     **kwargs: Any,
 ) -> tuple:
-    """Reduce dimensions using PCA.
+    """Reduce dimensions using PCA (delegating wrapper for ``pca_reduction``).
+
+    This is the ``reduce_dimensions_*`` convenience API; it delegates all
+    fitting and standardization to ``pca_reduction``, so there is exactly one
+    standardization path for PCA.
 
     Args:
         X: Input data matrix
         n_components: Number of components to keep
-        scale_data: Whether to scale data before PCA
-        standardize: Alias for scale_data
+        scale_data: Whether to standardize data before PCA (owned by
+            ``pca_reduction``)
+        standardize: Deprecated alias for ``scale_data``; prefer ``scale_data``
         **kwargs: Additional arguments for PCA
 
     Returns:
@@ -588,18 +634,16 @@ def reduce_dimensions_pca(
     if n_components is None:
         n_components = min(X.shape[0], X.shape[1], 50)
 
-    X_reduced, pca_obj = pca_reduction(X, n_components=n_components, scale_data=scale_data, **kwargs)
-
-    # Return components and explained variance alongside reduced data
-    components = pca_obj.components_.T if hasattr(pca_obj, "components_") else np.eye(X.shape[1], n_components)
-    explained_var = (
-        pca_obj.explained_variance_ratio_ if hasattr(pca_obj, "explained_variance_ratio_") else np.zeros(n_components)
+    X_reduced, pca_obj = pca_reduction(
+        X, n_components=n_components, scale_data=scale_data, **kwargs
     )
 
-    return X_reduced, components, explained_var
+    return X_reduced, pca_obj.components_.T, pca_obj.explained_variance_ratio_
 
 
-def reduce_dimensions_tsne(X: np.ndarray, n_components: int = 2, perplexity: float = 30.0, **kwargs: Any) -> np.ndarray:
+def reduce_dimensions_tsne(
+    X: np.ndarray, n_components: int = 2, perplexity: float = 30.0, **kwargs: Any
+) -> np.ndarray:
     """Reduce dimensions using t-SNE.
 
     Args:
@@ -617,7 +661,9 @@ def reduce_dimensions_tsne(X: np.ndarray, n_components: int = 2, perplexity: flo
     return tsne_reduction(X, n_components=n_components, perplexity=perplexity, **kwargs)
 
 
-def reduce_dimensions_umap(X: np.ndarray, n_components: int = 2, n_neighbors: int = 15, **kwargs: Any) -> np.ndarray:
+def reduce_dimensions_umap(
+    X: np.ndarray, n_components: int = 2, n_neighbors: int = 15, **kwargs: Any
+) -> np.ndarray:
     """Reduce dimensions using UMAP.
 
     Args:
@@ -632,7 +678,9 @@ def reduce_dimensions_umap(X: np.ndarray, n_components: int = 2, n_neighbors: in
     if not HAS_UMAP:
         raise ImportError("umap-learn required for UMAP")
 
-    X_reduced = umap_reduction(X, n_components=n_components, n_neighbors=n_neighbors, **kwargs)
+    X_reduced = umap_reduction(
+        X, n_components=n_components, n_neighbors=n_neighbors, **kwargs
+    )
     return X_reduced
 
 

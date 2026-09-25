@@ -2,17 +2,19 @@
 
 ```{include} ../README.md
 :start-after: "## Overview"
-:end-before: "## Installation"
+:end-before: "## Quick Start"
 ```
 
 ## Documentation Navigation
 
 ### Current Status
 
-As of the 2026-09-07 verification pass, the deterministic suite collects 9,861
-tests and passes, and the locked mypy 2.3.1 reports 0 errors across 693 source
-files (quality budget gate = 0). Root-level audit and validation reports are
-historical snapshots; generated verification reports should be written under `output/`.
+As of the 2026-09-24 snapshot, the deterministic suite collects 10,114 test
+functions across 484 test files under `tests/`. The latest recorded verification
+pass (2026-09-07) ran 9,861 tests with mypy 2.3.1 clean at 0 errors across 693
+source files (quality budget gate = 0). Root-level audit and validation reports
+are historical snapshots; generated verification reports should be written
+under `output/`.
 
 ```mermaid
 graph TD
@@ -56,20 +58,20 @@ graph TD
 
     subgraph "Module Categories"
         H1[core/] -.-> D1
-        H2dna/,Rna/,Protein/,Epigenome/[dna/, rna/, protein/, epigenome/] -.-> D2
-        H3gwas/,Math/,Ml/,Information/[gwas/, math/, ml/, information/] -.-> D3
-        H4networks/,Multiomics/,Singlecell/,Simulation/[networks/, multiomics/, singlecell/, simulation/] -.-> D4
-        H5ontology/,Phenotype/,Ecology/,LifeEvents/[ontology/, phenotype/, ecology/, life_events/] -.-> D5
-        H6quality/,Visualization/[quality/, visualization/] -.-> D6
-        H7longread/,Metagenomics/,Structural_variants/,Spatial/,Pharmacogenomics/,Metabolomics/,Menu/[longread/, metagenomics/, structural_variants/, spatial/, pharmacogenomics/, metabolomics/, menu/] -.-> D4
-        H8cloud/[cloud/] -.-> D6
+        H2["dna/, rna/, protein/, epigenome/"] -.-> D2
+        H3["gwas/, math/, ml/, information/, popgen/, eqtl/"] -.-> D3
+        H4["networks/, multiomics/, singlecell/, simulation/"] -.-> D4
+        H5["ontology/, phenotype/, ecology/, life_events/"] -.-> D5
+        H6["quality/, visualization/"] -.-> D6
+        H7["longread/, metagenomics/, structural_variants/, spatial/, pharmacogenomics/, metabolomics/, menu/"] -.-> D4
+        H8["cloud/, mcp/"] -.-> D6
     end
 
     subgraph "Key Documents"
         I1[architecture.md] -.-> E1
         I2[testing.md] -.-> E3
         I3[cli.md] -.-> F1
-        I4uvSetup.md[UV_SETUP.md] -.-> B1
+        I4["UV_SETUP.md"] -.-> B1
     end
 ```
 
@@ -103,8 +105,8 @@ graph TD
 | **Structural Variants** | [structural_variants](structural_variants/) | SV/CNV analysis | Detection, breakpoint resolution |
 | **Spatial** | [spatial](spatial/) | Spatial transcriptomics | Tissue mapping, spatial statistics |
 | **Pharmacogenomics** | [pharmacogenomics](pharmacogenomics/) | Clinical genomics | Drug-gene interactions, variant interpretation |
-| **Metabolomics** | [metabolomics](metabolomics/) | Metabolomic analysis | MS data processing, pathway mapping |
-| **eQTL** | [eqtl](eqtl/) | eQTL integration *(cross-cutting)* | RNA×GWAS integration — logic in `gwas` and `multiomics` |
+| **Metabolomics** | [metabolomics](metabolomics/) | Metabolomic analysis | MGF/CSV I/O, metabolite identification, metabolite set enrichment |
+| **eQTL** | [eqtl](eqtl/) | eQTL and transcriptome-variant analysis | Input construction, HISAT2+bcftools wrappers, bcftools stats parsing, pipeline orchestration |
 | **MCP** | [mcp](mcp/) | Model Context Protocol server | stdio JSON-RPC 2.0, schema-validated tool registry |
 | **Menu** | [menu](menu/) | Interactive navigation | CLI menu system, workflow discovery |
 
@@ -256,7 +258,7 @@ The guide provides both minimal and full-featured implementations with performan
 
 ### Command Line Interface
 
-The `metainformant` command exposes `--version`, `--modules`, protein utilities, quality checks, `rna info`, and `gwas run`. RNA workflows use Python APIs, `scripts/rna/run_all_species.py`, and `scripts/rna/process_species.py`. See [cli.md](cli.md).
+The `metainformant` command exposes `--version`, `--modules`, protein utilities, `quality batch-detect` plus the docs-vs-source `quality run` verifier, `rna info`, `gwas run`, `life-events predict/interpret`, `simulation run`, and `ontology`/`phenotype`/`networks` workflow entry points. RNA workflows use Python APIs, `scripts/rna/run_all_species.py`, and `scripts/rna/process_species.py`. See [cli.md](cli.md).
 
 ```bash
 uv run metainformant --help

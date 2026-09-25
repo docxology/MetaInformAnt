@@ -165,7 +165,9 @@ def call_structural_variants(
 
     # Filter low-quality reads
     filtered = [a for a in alignments if a.get("mapq", 0) >= min_mapq]
-    logger.info(f"Processing {len(filtered)} reads (filtered from {len(alignments)} by MAPQ >= {min_mapq})")
+    logger.info(
+        f"Processing {len(filtered)} reads (filtered from {len(alignments)} by MAPQ >= {min_mapq})"
+    )
 
     # Estimate insert size stats if not provided
     if insert_size_stats is None:
@@ -230,7 +232,9 @@ def call_structural_variants(
     for variant in variants:
         variant.genotype = genotype_sv(variant, filtered)
 
-    logger.info(f"Called {len(variants)} structural variants from {len(all_evidence)} evidence items")
+    logger.info(
+        f"Called {len(variants)} structural variants from {len(all_evidence)} evidence items"
+    )
     return variants
 
 
@@ -302,7 +306,9 @@ def detect_split_reads(
                 )
                 evidence_list.append(evidence)
 
-    logger.debug(f"Detected {len(evidence_list)} split-read evidence items from {len(reads)} reads")
+    logger.debug(
+        f"Detected {len(evidence_list)} split-read evidence items from {len(reads)} reads"
+    )
     return evidence_list
 
 
@@ -356,7 +362,9 @@ def detect_discordant_pairs(
         if mate_chrom != chrom:
             is_discordant = True
         # Aberrant insert size
-        elif abs(insert_size) > max_isize or (abs(insert_size) < min_isize and abs(insert_size) > 0):
+        elif abs(insert_size) > max_isize or (
+            abs(insert_size) < min_isize and abs(insert_size) > 0
+        ):
             is_discordant = True
         # Same-strand orientation (expected: FR for Illumina)
         elif is_reverse == mate_is_reverse:
@@ -379,20 +387,40 @@ def detect_discordant_pairs(
             )
             evidence_list.append(evidence)
 
-    logger.debug(f"Detected {len(evidence_list)} discordant pairs from {len(pairs)} reads")
+    logger.debug(
+        f"Detected {len(evidence_list)} discordant pairs from {len(pairs)} reads"
+    )
     return evidence_list
+
+
+_INS_MAX_BREAKPOINT_DISTANCE = 50
+_DEL_MIN_BREAKPOINT_DISTANCE = 50
 
 
 def classify_sv_type(evidence: SVEvidence) -> SVType:
     """Classify the type of structural variant based on evidence patterns.
 
-    Uses breakpoint positions, chromosome assignments, and strand orientations
-    to determine the SV type:
-        - DEL: Same chromosome, same strand, forward-reverse pair, distant breakpoints
-        - DUP: Same chromosome, reverse-forward orientation
-        - INV: Same chromosome, same strand orientation
-        - TRA: Different chromosomes
-        - INS: Same chromosome, close breakpoints with split-read evidence
+    Uses breakpoint positions, chromosome assignments, and strand
+    orientations to determine the SV type. Orientation signatures, stated
+    for the pair normalised to genomic order (upstream read first):
+
+        - TRA: breakpoints on different chromosomes.
+        - INS: split reads whose breakpoints nearly coincide (within
+          ``_INS_MAX_BREAKPOINT_DISTANCE``) -- the two sides of a split
+          read land at the same insertion junction.
+        - INV: both reads on the same strand.
+        - DUP: everted (tail-to-tail) pair -- the upstream read is on '-'
+          and the downstream read on '+', so the reads point away from
+          each other across the duplication junction.
+        - DEL: inward-facing (head-to-head) pair -- upstream read on '+',
+          downstream on '-' -- with split-read support or a span beyond a
+          normal fragment (``_DEL_MIN_BREAKPOINT_DISTANCE``).
+
+    A call is only made when the strand/direction evidence supports it.
+    Weak or unrecognisable evidence (e.g. a normal-looking short-span FR
+    pair without split support, or unknown strand characters) returns
+    ``SVType.UNKNOWN``; the classifier never manufactures a deletion from
+    weak evidence.
 
     Args:
         evidence: SVEvidence object containing breakpoint and orientation info.
@@ -413,34 +441,35 @@ def classify_sv_type(evidence: SVEvidence) -> SVType:
 
     distance = abs(bp2 - bp1)
 
-    # Very close breakpoints with split-read support: insertion
-    if distance < 50 and evidence.split_reads > 0:
+    # Nearly coincident breakpoints with split-read support: insertion
+    if evidence.split_reads > 0 and distance < _INS_MAX_BREAKPOINT_DISTANCE:
         return SVType.INS
 
-    # Same-strand orientation: inversion
-    if strand1 == strand2:
+    # Same-strand orientation with actual strand characters: inversion.
+    # Unknown strand markers (e.g. '.') fall through to UNKNOWN below.
+    if strand1 == strand2 and strand1 in ("+", "-"):
         return SVType.INV
 
-    # Determine orientation relative to position order
+    # Normalise the pair to genomic order: the strand of the read at the
+    # lower coordinate first, the strand at the higher coordinate second.
     if bp1 <= bp2:
-        # Normal ordering
-        if strand1 == "+" and strand2 == "-":
-            # Forward-reverse at distant positions: deletion
-            return SVType.DEL
-        elif strand1 == "-" and strand2 == "+":
-            # Reverse-forward: tandem duplication
-            return SVType.DUP
+        upstream_strand, downstream_strand = strand1, strand2
     else:
-        # Reversed ordering
-        if strand1 == "-" and strand2 == "+":
+        upstream_strand, downstream_strand = strand2, strand1
+
+    if upstream_strand == "-" and downstream_strand == "+":
+        # Reads point away from each other (tail-to-tail): the tandem
+        # duplication signature, independent of breakpoint order.
+        return SVType.DUP
+
+    if upstream_strand == "+" and downstream_strand == "-":
+        # Reads face each other (head-to-head): a deletion signature, but
+        # only with split-read support or a span beyond a normal fragment.
+        if evidence.split_reads > 0 or distance >= _DEL_MIN_BREAKPOINT_DISTANCE:
             return SVType.DEL
-        elif strand1 == "+" and strand2 == "-":
-            return SVType.DUP
+        return SVType.UNKNOWN
 
-    # Default classification based on insert size
-    if distance > 1000:
-        return SVType.DEL
-
+    # Unrecognised orientation (e.g. missing strand characters): no call.
     return SVType.UNKNOWN
 
 
@@ -531,7 +560,9 @@ def _estimate_insert_size(reads: list[dict[str, Any]]) -> InsertSizeStats:
 
     if not insert_sizes:
         # Default to typical Illumina insert size
-        logger.warning("Could not estimate insert size, using defaults (mean=400, std=100)")
+        logger.warning(
+            "Could not estimate insert size, using defaults (mean=400, std=100)"
+        )
         return InsertSizeStats(mean=400.0, std=100.0, median=400.0, mad=50.0)
 
     if np is not None:
@@ -553,7 +584,9 @@ def _estimate_insert_size(reads: list[dict[str, Any]]) -> InsertSizeStats:
     return InsertSizeStats(mean=mean, std=std, median=median, mad=mad)
 
 
-def _parse_cigar_clips(cigar: str | list[tuple[int, int]], pos: int) -> list[tuple[int, int, str]]:
+def _parse_cigar_clips(
+    cigar: str | list[tuple[int, int]], pos: int
+) -> list[tuple[int, int, str]]:
     """Parse CIGAR string to find soft-clipped regions.
 
     Args:
