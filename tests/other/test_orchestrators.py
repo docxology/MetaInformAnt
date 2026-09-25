@@ -233,8 +233,9 @@ class TestOrchestratorCLIIntegration:
             "run",
             f"--output={output_dir}",
         ]
-        # quality run scans the whole repository; measured 128 s wall on the
-        # external-volume checkout (3.7 s CPU), so 30 s only fits fast disks.
+        # quality run scans the whole repository; the subprocess wall time is
+        # page-cache-dependent on the external-volume checkout (warm ~8 s,
+        # cold-cache measured 128 s), so a 30 s budget is flaky there.
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
         assert result.returncode in (0, 1)
 
