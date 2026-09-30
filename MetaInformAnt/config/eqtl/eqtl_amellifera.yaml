@@ -1,0 +1,48 @@
+# eQTL Pipeline Configuration — Apis mellifera
+# Used by: scripts/eqtl/rna_snp_pipeline.py
+
+species: amellifera
+
+# Sample selection
+samples:
+  # Auto-discover from completed Amalgkit quant, or specify explicitly
+  mode: auto           # "auto" or "explicit"
+  max_samples: 5       # Max samples when mode=auto
+  # explicit_ids:      # Uncomment for explicit mode
+  #   - SRR21601882
+  #   - SRR21601883
+  #   - SRR21601887
+
+# Reference genome (auto-detected from amalgkit output if not set)
+# genome_fasta: output/amalgkit/amellifera/genome/GCF_003254395.2_Amel_HAv3.1_genomic.fna.gz
+
+# Alignment
+alignment:
+  tool: hisat2
+  threads: 4
+  extra_args: "--dta"   # For downstream transcript assembly
+
+# Variant calling
+variant_calling:
+  tool: bcftools
+  min_base_qual: 20
+  min_map_qual: 20
+  max_depth: 10000
+  ploidy: 2
+
+# Filtering
+filtering:
+  min_qual: 30
+  min_depth: 10
+
+# Output
+output:
+  base_dir: output/eqtl/amellifera
+  cleanup_fastq: true   # Delete FASTQs after alignment
+
+# eQTL integration (optional: run eQTL scan after variant calling)
+eqtl_scan:
+  enabled: false        # Set to true to auto-run after SNP calling
+  cis_window: 500000
+  maf_threshold: 0.05
+  expression_source: output/amalgkit/amellifera/quant/quant

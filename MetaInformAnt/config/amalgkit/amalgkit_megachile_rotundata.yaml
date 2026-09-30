@@ -1,0 +1,71 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Megachile rotundata (Alfalfa leafcutter bee)
+# NCBI Taxonomy ID: 143995
+# Assembly: GCF_000226025.1
+# Note: Added for Hymenoptera cross-species tissue comparisons (gut, head, ovary)
+
+work_dir: output/amalgkit/megachile_rotundata/work
+log_dir: output/amalgkit/megachile_rotundata/logs
+threads: 16
+
+auto_install_amalgkit: true
+
+filters:
+  require_tissue: false
+
+species_list:
+  - Megachile_rotundata
+
+taxon_id: 143995
+
+genome:
+  accession: GCF_000226025.1
+  dest_dir: output/amalgkit/megachile_rotundata/genome
+
+  include:
+    - genome           
+    - gff3            
+    - rna             
+    - cds             
+    - protein         
+
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/226/025/GCF_000226025.1/
+  files:
+    genomic_fasta: GCF_000226025.1_genomic.fna.gz
+    transcriptome_fasta: GCF_000226025.1_rna_from_genomic.fna.gz
+    cds_fasta: GCF_000226025.1_cds_from_genomic.fna.gz
+    protein_fasta: GCF_000226025.1_protein.faa.gz
+    annotation_gff: GCF_000226025.1_genomic.gff.gz
+
+steps:
+  metadata:
+    out_dir: output/amalgkit/megachile_rotundata/work
+    search_string: '"Megachile rotundata"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
+    redo: no
+  integrate:
+    fastq_dir: output/amalgkit/megachile_rotundata/fastq/getfastq
+  select:
+    select_rules_tsv: config/amalgkit/select_rules.tsv
+  getfastq:
+    out_dir: output/amalgkit/megachile_rotundata/fastq
+    remove_sra: yes
+    threads: 16
+    redo: no
+  quant:
+    out_dir: output/amalgkit/megachile_rotundata/quant
+    threads: 16
+    redo: no
+    clean_fastq: no
+  merge:
+    out_dir: output/amalgkit/megachile_rotundata/work
+  wsfilter:
+    out_dir: output/amalgkit/megachile_rotundata/work
+    input_dir: output/amalgkit/megachile_rotundata/work/merge
+    norm: log2p1-fpkm
+    mapping_rate: 0.2
+  finalize:
+    out_dir: output/amalgkit/megachile_rotundata/work
+    input_dir: output/amalgkit/megachile_rotundata/work/wsfilter
+    norm: log2p1-fpkm
+    batch_effect_alg: no
+  sanity: {}

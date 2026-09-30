@@ -1,0 +1,35 @@
+# Cursor Rules for menu Module (MENU_)
+
+## 🧠 Context & Intent
+- **Domain**: menu
+- **Path**: `src/metainformant/menu/`
+- **Config Prefix**: `MENU_` (e.g., `MENU_THREADS`)
+
+## 🧱 Directory Structure
+- **Source**: `src/metainformant/menu/`
+- **Tests**: `tests/menu/test_menu_*.py`
+- **Docs**: `docs/menu/`
+- **Output**: `output/menu/` (Default for all artifacts)
+
+## ⚙️ Configuration
+- Use `metainformant.core.utils.config` to load config.
+- Support env checks with `MENU_` prefix.
+- Example:
+  ```python
+  config = load_domain_config("config/menu/default.yaml", prefix="MENU")
+  ```
+
+## 🧪 Testing (REAL IMPLEMENTATION POLICY)
+- **STRICTLY REAL IMPLEMENTATIONS**: Use real implementations only.
+- **External Tools**: Skip if not found (don't mock).
+- **Network**: Use real API calls with `@pytest.mark.network`.
+- **Output**: Write all test artifacts to `output/` via `tmp_path`.
+
+## 📦 Dependencies
+- Manage via `uv`: `uv add`, `uv remove`.
+- Import pattern:
+  ```python
+  from metainformant.core import io
+  from metainformant.core.utils import logging
+  from metainformant.menu import utils
+  ```

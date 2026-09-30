@@ -1,0 +1,35 @@
+# Cursor Rules for spatial Module (SPATIAL_)
+
+## 🧠 Context & Intent
+- **Domain**: spatial
+- **Path**: `src/metainformant/spatial/`
+- **Config Prefix**: `SPATIAL_` (e.g., `SPATIAL_THREADS`)
+
+## 🧱 Directory Structure
+- **Source**: `src/metainformant/spatial/`
+- **Tests**: `tests/spatial/test_spatial_*.py`
+- **Docs**: `docs/spatial/`
+- **Output**: `output/spatial/` (Default for all artifacts)
+
+## ⚙️ Configuration
+- Use `metainformant.core.utils.config` to load config.
+- Support env checks with `SPATIAL_` prefix.
+- Example:
+  ```python
+  config = load_domain_config("config/spatial/default.yaml", prefix="SPATIAL")
+  ```
+
+## 🧪 Testing (REAL IMPLEMENTATION POLICY)
+- **STRICTLY REAL IMPLEMENTATIONS**: Use real implementations only.
+- **External Tools**: Skip if not found (don't mock).
+- **Network**: Use real API calls with `@pytest.mark.network`.
+- **Output**: Write all test artifacts to `output/` via `tmp_path`.
+
+## 📦 Dependencies
+- Manage via `uv`: `uv add`, `uv remove`.
+- Import pattern:
+  ```python
+  from metainformant.core import io
+  from metainformant.core.utils import logging
+  from metainformant.spatial import utils
+  ```

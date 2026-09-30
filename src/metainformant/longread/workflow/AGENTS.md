@@ -1,0 +1,19 @@
+# AGENTS.md — `MetaInformAnt/src/metainformant/longread/workflow`
+
+Source module under the METAINFORMANT bioinformatics toolkit (`longread` domain).
+Local-only path under `projects/ongoing/` (never committed).
+
+## Layout
+
+- `orchestrator.py` — Pipeline orchestration engine for long-read analysis workflows.
+- `orchestrator_core.py` — Core orchestration engine for long-read analysis workflows.
+- `pipeline_stages.py` — Pipeline stage definitions for long-read analysis workflows.
+- `pipelines.py` — Pre-defined pipeline configurations for long-read analysis workflows.
+- `reporting.py` — Report generation for long-read analysis pipelines.
+
+## Invariants & gotchas
+
+- Real implementations only (no placeholders); file I/O via `metainformant.core.io`, logging via `metainformant.core.utils.logging`.
+- All outputs go to `output/`, temp files to `.tmp/`; use `uv` only for package operations.
+- Tests: `bash scripts/package/test.sh --pattern "<pattern>"` or `pytest tests/<domain>/ -v` from repo root.
+- `.cursor/skills/metainformant-src-metainformant-longread-workflow` mirrors this folder as a Cursor skill; after moving/renaming AGENTS.md files, regenerate via `uv run python scripts/package/generate_cursor_skills.py`.

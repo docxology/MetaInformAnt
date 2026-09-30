@@ -1,0 +1,89 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Temnothorax nylanderi
+# NCBI Taxonomy ID: 102681
+# Assembly: GCF_030848795.1 (tnyl_v1.0)
+# Assembly Level: Contig
+# Sequencing: N/A
+# Annotation: GCF_030848795.1-RS_2025_02
+# Annotation Release: RS_2025_02
+# Notes: European acorn ant, social immunity research
+# RNA-seq Samples Available: 166
+# Generated: 2026-02-09
+
+# Paths are resolved relative to repository root
+work_dir: output/amalgkit/temnothorax_nylanderi/work
+log_dir: output/amalgkit/temnothorax_nylanderi/logs
+threads: 16
+
+auto_install_amalgkit: true
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false
+
+# Species configuration
+species_list:
+  - Temnothorax_nylanderi
+
+taxon_id: 102681
+
+# Reference genome configuration — shared genome directory
+genome:
+  accession: GCF_030848795.1
+  assembly_name: tnyl_v1.0
+  annotation_release: RS_2025_02
+  dest_dir: output/amalgkit/shared/genome/Temnothorax_nylanderi
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/030/848/795/GCF_030848795.1_tnyl_v1.0/
+  files:
+    genomic_fasta: GCF_030848795.1_tnyl_v1.0_genomic.fna.gz
+    transcriptome_fasta: GCF_030848795.1_tnyl_v1.0_rna_from_genomic.fna.gz
+    cds_fasta: GCF_030848795.1_tnyl_v1.0_cds_from_genomic.fna.gz
+    protein_fasta: GCF_030848795.1_tnyl_v1.0_protein.faa.gz
+    annotation_gff: GCF_030848795.1_tnyl_v1.0_genomic.gff.gz
+
+# Per-step parameters
+steps:
+  metadata:
+    out_dir: output/amalgkit/temnothorax_nylanderi/work
+    search_string: '"Temnothorax nylanderi"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
+    redo: no
+  integrate:
+    fastq_dir: output/amalgkit/temnothorax_nylanderi/fastq/getfastq
+  select:
+    select_rules_tsv: config/amalgkit/select_rules.tsv
+  getfastq:
+    out_dir: output/amalgkit/temnothorax_nylanderi/fastq
+    threads: 16
+    redo: no
+    aws: yes
+    gcp: no
+    ncbi: no
+    fastp: no
+    max_bp: 50000000
+  quant:
+    out_dir: output/amalgkit/temnothorax_nylanderi/work
+    threads: 16
+    redo: no
+    build_index: no
+    clean_fastq: no
+    index_dir: output/amalgkit/shared/genome/Temnothorax_nylanderi/index
+    fasta_dir: output/amalgkit/shared/genome/Temnothorax_nylanderi
+  merge:
+    out_dir: output/amalgkit/temnothorax_nylanderi/work
+  wsfilter:
+    out_dir: output/amalgkit/temnothorax_nylanderi/work
+    input_dir: output/amalgkit/temnothorax_nylanderi/work/merge
+    norm: log2p1-fpkm
+    mapping_rate: 0.2
+  finalize:
+    out_dir: output/amalgkit/temnothorax_nylanderi/work
+    input_dir: output/amalgkit/temnothorax_nylanderi/work/wsfilter
+    norm: log2p1-fpkm
+    batch_effect_alg: no
+  sanity: {}

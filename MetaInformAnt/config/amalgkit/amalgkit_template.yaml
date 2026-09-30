@@ -1,0 +1,389 @@
+# METAINFORMANT Amalgkit Configuration Template
+# Comprehensive RNA-seq data integration and analysis pipeline
+#
+# This template shows all available configuration options.
+# Copy this file and customize it for your specific analysis.
+
+# =============================================================================
+# BASIC CONFIGURATION
+# =============================================================================
+
+# NOTE: All paths are resolved relative to repository root.
+# This allows configs to work across different machines and mount points.
+# Absolute paths are also supported and will be used as-is.
+
+# Working directory for all intermediate files
+work_dir: output/amalgkit/my_species/work
+
+# Logging directory (defaults to work_dir/logs if not specified)
+log_dir: output/amalgkit/my_species/logs
+
+# Number of threads to use for parallel processing
+threads: 6
+
+# Automatically install amalgkit if not found on PATH
+auto_install_amalgkit: true
+
+# =============================================================================
+# SPECIES CONFIGURATION
+# =============================================================================
+
+# List of species to analyze (use underscores for spaces in scientific names)
+species_list:
+  - Homo_sapiens
+  # - Mus_musculus
+  # - Drosophila_melanogaster
+
+# Alternative: use NCBI taxonomy ID
+# taxon_id: 9606  # Human
+
+# =============================================================================
+# GENOME CONFIGURATION
+# =============================================================================
+
+# Reference genome configuration for quantification
+genome:
+  # NCBI assembly accession
+  accession: GCF_000001405.40  # Human GRCh38.p14
+
+  # Local destination directory for genome files
+  dest_dir: output/amalgkit/my_species/genome
+
+  # Files to download from NCBI (see: https://www.ncbi.nlm.nih.gov/datasets/docs/v2/)
+  include:
+    - genome         # Genomic sequences (FASTA)
+    - gff3          # Gene annotations
+    - rna           # RNA sequences (FASTA)
+    - cds           # CDS sequences (FASTA)
+    - protein       # Protein sequences (FASTA)
+    - seq-report    # Sequence report
+
+  # Optional: specify FTP URL for direct download
+  # ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.40_GRCh38.p14_latest_genomic.fna.gz
+
+  # Optional: pre-built transcriptome index for quantification
+  # index_dir: /path/to/salmon/or/kallisto/index
+
+# =============================================================================
+# FILTERING AND SELECTION
+# =============================================================================
+
+# Pre-filtering rules applied during metadata processing
+filters:
+  # Require tissue information in metadata
+  require_tissue: true
+
+  # Filter by experimental strategy (default: RNA-Seq)
+  # strategy: RNA-Seq
+
+  # Filter by sequencing platform (default: Illumina)
+  # platform: Illumina
+
+  # Minimum read length (optional)
+  # min_read_length: 50
+
+  # Maximum read length (optional)
+  # max_read_length: 300
+
+  # Library layout filter (SINGLE, PAIRED, or both)
+  # library_layout: PAIRED
+
+# Sample selection configuration
+selection:
+  # Sample groups to analyze (if not specified, all samples are used)
+  # sample_groups:
+  #   - control
+  #   - treated
+
+  # Maximum samples per group (for large datasets)
+  # max_samples_per_group: 100
+
+  # Minimum samples per group
+  # min_samples_per_group: 3
+
+# =============================================================================
+# STEP-SPECIFIC CONFIGURATION
+# =============================================================================
+
+# Per-step parameters (these override common parameters)
+steps:
+
+  # -------------------------------------------------------------------------
+  # METADATA: NCBI SRA metadata retrieval
+  # -------------------------------------------------------------------------
+  metadata:
+    # Output directory for metadata files
+    out_dir: output/amalgkit/my_species/work
+
+    # NCBI search string (auto-generated if not specified)
+    # Format: '"Species name"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
+    search_string: '"Homo sapiens"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
+
+    # NCBI Entrez email (required for API access)
+    # Uses NCBI_EMAIL environment variable if not specified
+    # entrez_email: your.email@example.com
+
+    # Resolve scientific names from taxids (Amalgkit 0.16.60)
+    # Translates taxids to scientific names, preserves originals in scientific_name_original column
+    resolve_names: yes
+
+    # Force re-download of metadata even if files exist
+    redo: yes
+
+  # -------------------------------------------------------------------------
+  # INTEGRATE: Add local FASTQ files to metadata
+  # -------------------------------------------------------------------------
+  integrate:
+    # Directory containing local FASTQ files (optional)
+    # IMPORTANT: Must point to the getfastq subdirectory created by getfastq step
+    # If getfastq used out_dir: output/amalgkit/my_species/fastq,
+    # then fastq_dir should be: output/amalgkit/my_species/fastq/getfastq
+    fastq_dir: output/amalgkit/my_species/fastq/getfastq
+
+    # Specific sample IDs to integrate (optional)
+    # id: SRR123456
+    # id_list: path/to/id_list.txt
+
+  # -------------------------------------------------------------------------
+  # SELECT: Select samples based on metadata and filters
+  # -------------------------------------------------------------------------
+  select:
+    # Amalgkit 0.16.60 reads selection parameters and rules from this TSV.
+    # Do not place retired selection flags directly in this YAML map.
+    select_rules_tsv: config/amalgkit/select_rules.tsv
+
+  # -------------------------------------------------------------------------
+  # GETFASTQ: Download FASTQ files from SRA
+  # -------------------------------------------------------------------------
+  getfastq:
+    # Output directory for FASTQ files
+    out_dir: output/amalgkit/my_species/fastq
+
+    # Re-download behavior:
+    #   - redo: no (default) - Skip already-downloaded SRA files, only download missing ones
+    #                          Amalgkit automatically detects existing files and skips them.
+    #                          This saves bandwidth and time for normal operations.
+    #   - redo: yes - Force re-download even if files exist. Use only when:
+    #                 * Files are corrupted and need to be re-downloaded
+    #                 * You want to refresh data from SRA (rarely needed)
+    #                 * Testing download functionality
+    #   Note: Even with redo: no, amalgkit will still process existing SRA files
+    #         to FASTQ format if FASTQ files don't exist.
+    redo: no
+
+    # Current SRA extraction options (sra-tools >=3; fasterq-dump is required)
+    fasterq_dump_exe: fasterq-dump
+    fasterq_size_check: yes
+    # Optional limits forwarded to fasterq-dump, e.g. "200G".
+    # fasterq_disk_limit: 200G
+    # fasterq_disk_limit_tmp: 200G
+
+    # Quality filtering with fastp
+    fastp: no                   # Enable fastp filtering
+    # fastp_exe: fastp          # Custom fastp executable
+
+    # Download size limits
+    # max_bp: 1000000000        # Maximum base pairs to download per sample (default: 999999999999999)
+    #                            # Use this to limit download size for testing or disk space constraints
+    #                            # Note: After quantification, only small abundance files remain, so
+    #                            # large downloads are temporary. Quantified samples don't need re-download.
+
+    # Data source preferences (try in this order)
+    aws: no                    # Try AWS Open Data Program first
+    ncbi: yes                   # Try NCBI SRA
+    gcp: no                     # Try Google Cloud (if available)
+
+    # Diagnostic output
+    fastp_print: no             # Print fastp commands
+
+    # Amalgkit 0.16.60 resumable rRNA filtering. Disabled by default because
+    # it requires MMseqs2 and a SILVA database download; enable only when the
+    # run manifest records these inputs and the filtered FASTQs are validated.
+    rrna_filter: no
+    # rrna_filter_sensitivity: 1.0
+    # rrna_filter_max_seqs: 20
+    # rrna_filter_chunk_spots: 5000000
+    # rrna_filter_memory_limit: 32G
+    # rrna_filter_jobs: 1
+    # filter_order: fastp,rrna,contam
+
+    # Progress tracking (METAINFORMANT-specific)
+    show_progress: true         # Enable live progress tracking with file size monitoring
+    progress_update_interval: 2.0  # Update interval in seconds (default: 2.0)
+    progress_style: "bar"       # Progress display style: "bar" (tqdm progress bars) or "text" (simple text updates)
+
+  # -------------------------------------------------------------------------
+  # QUANT: Quantify transcript abundance
+  # -------------------------------------------------------------------------
+  quant:
+    # CRITICAL: out_dir should be work_dir (not separate quant_dir)
+    # This allows quant to find getfastq output in {out_dir}/getfastq/
+    # Quantification results will be in {out_dir}/quant/{sample_id}/abundance.tsv
+    out_dir: output/amalgkit/my_species/work
+
+    # Pre-built transcriptome index (if not using genome above)
+    # Index location: {out_dir}/index/{Scientific_Name}.idx
+    # index_dir: /path/to/salmon/index
+
+    # Force re-quantification even if results exist
+    redo: no
+
+    # Current Amalgkit auto-selects kallisto or oarfish; set quant_backend
+    # explicitly only when the selected backend is installed and recorded.
+    # quant_backend: kallisto
+
+    # Build kallisto index from FASTA if index doesn't exist
+    # build_index: yes
+
+    # Retain FASTQs during quantification; reclaim only after current provenance.
+    # clean_fastq: no
+
+  # -------------------------------------------------------------------------
+  # MERGE: Combine quantification results into expression matrix
+  # -------------------------------------------------------------------------
+  merge:
+    # Current Amalgkit writes merge/metadata.tsv and expression tables below
+    # this workspace directory.
+    out_dir: output/amalgkit/my_species/work
+
+  # -------------------------------------------------------------------------
+  # WSFILTER: Within-species outlier filtering
+  # -------------------------------------------------------------------------
+  wsfilter:
+    out_dir: output/amalgkit/my_species/work
+    input_dir: output/amalgkit/my_species/work/merge
+    norm: log2p1-fpkm
+    mapping_rate: 0.2
+    redo: no
+
+  # -------------------------------------------------------------------------
+  # FINALIZE: Export finalized expression tables
+  # -------------------------------------------------------------------------
+  finalize:
+    out_dir: output/amalgkit/my_species/work
+    input_dir: output/amalgkit/my_species/work/wsfilter
+    norm: log2p1-fpkm
+    batch_effect_alg: no
+    redo: no
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL CROSS-SPECIES NORMALIZATION/FILTERING
+  # -------------------------------------------------------------------------
+  # cstmm and csfilter are enabled only when ortholog inputs are supplied.
+  # Keep them in a dedicated cross-species configuration for production runs.
+  cstmm:
+    out_dir: cross_species/work
+    orthogroup_table: /path/to/orthogroups.tsv
+    dir_count: cross_species/merge_inputs
+  csfilter:
+    out_dir: cross_species/work
+    input_dir: cross_species/work/cstmm
+    orthogroup_table: /path/to/orthogroups.tsv
+
+  # -------------------------------------------------------------------------
+  # SANITY: Verify pipeline integrity and outputs
+  # -------------------------------------------------------------------------
+  sanity:
+    # Check specific index (optional)
+    # index: salmon_index
+
+# =============================================================================
+# ADVANCED CONFIGURATION
+# =============================================================================
+
+# Environment variables to set during execution
+environment:
+  # NCBI_EMAIL: your.email@example.com
+  # TMPDIR: /tmp/amalgkit
+
+# Resource limits and performance tuning
+performance:
+  # Memory limit per process (in GB)
+  # memory_limit: 32
+
+  # Temporary directory for large intermediate files
+  # temp_dir: /tmp/amalgkit
+
+  # Parallel download settings
+  parallel_downloads:
+    # Maximum concurrent downloads
+    max_jobs: 4
+
+    # Threads per download job
+    threads_per_job: 2
+
+    # Connection timeout (seconds)
+    timeout: 300
+
+# Pipeline execution options
+execution:
+  # Continue pipeline after individual step failures
+  continue_on_error: false
+
+  # Skip steps that have already completed successfully
+  skip_completed: true
+
+  # Dry run mode (plan only, don't execute)
+  dry_run: false
+
+  # Steps to run (if not specified, all steps are run)
+  # steps_to_run:
+  #   - metadata
+  #   - select
+  #   - getfastq
+  #   - quant
+  #   - merge
+
+  # Steps to skip
+  # steps_to_skip:
+  #   - wsfilter
+  #   - finalize
+  #   - sanity
+
+# Notification settings (optional)
+notifications:
+  # Email notifications for pipeline completion
+  # email:
+  #   smtp_server: smtp.gmail.com
+  #   smtp_port: 587
+  #   username: your.email@gmail.com
+  #   password: your_app_password
+  #   recipients:
+  #     - recipient@example.com
+
+  # Slack notifications (optional)
+  # slack:
+  #   webhook_url: https://hooks.slack.com/services/...
+  #   channel: "#bioinformatics"
+
+# =============================================================================
+# DEBUGGING AND TROUBLESHOOTING
+# =============================================================================
+
+# Debug settings
+debug:
+  # Enable verbose logging
+  verbose: false
+
+  # Keep intermediate files
+  keep_temp_files: false
+
+  # Log all commands before execution
+  log_commands: true
+
+  # Enable streaming logs to console
+  stream_logs: true
+
+  # Maximum log file size (MB)
+  max_log_size: 100
+
+# Retry settings for network operations
+retry:
+  # Maximum number of retries for failed downloads
+  max_retries: 3
+
+  # Delay between retries (seconds)
+  retry_delay: 10
+
+  # Exponential backoff multiplier
+  backoff_factor: 2.0

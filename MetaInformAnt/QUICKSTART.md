@@ -1,0 +1,356 @@
+# metainformant Quick Start
+
+Get started with metainformant in minutes.
+
+## Prerequisites
+
+- **Python 3.11+**
+- **`uv`** - Fast Python package manager (**REQUIRED**)
+  - Install: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+  - Verify: `uv --version`
+- Git
+
+**Note**: METAINFORMANT uses `uv` for all package management. Never use `pip` directly.
+
+## Installation
+
+### Option 1: Quick Setup with UV (Recommended)
+
+```bash
+# Clone repository
+git clone https://github.com/docxology/metainformant.git
+cd metainformant
+
+# Run automated setup script (installs dev + scientific deps + amalgkit by default)
+bash scripts/package/setup.sh
+
+# Activate virtual environment
+# Standard filesystem:
+source .venv/bin/activate
+# FAT filesystem (auto-detected):
+source /tmp/metainformant_venv/bin/activate
+```
+
+### Option 2: Manual Installation with UV
+
+```bash
+# Clone repository
+git clone https://github.com/docxology/metainformant.git
+cd metainformant
+
+# Install uv if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create virtual environment
+uv venv
+
+# Activate virtual environment
+source .venv/bin/activate
+
+# Install package
+uv pip install -e .
+```
+
+### Option 3: External Drive Setup (exFAT/FAT32 - Automatic)
+
+**Setup scripts automatically handle FAT filesystems** - no manual configuration needed:
+
+```bash
+# Same setup command works on FAT filesystems
+bash scripts/package/setup.sh
+
+# The script automatically:
+# - Detects FAT filesystem (exFAT, FAT32)
+# - Sets UV_CACHE_DIR=/tmp/uv-cache
+# - Creates venv at /tmp/metainformant_venv
+```
+
+**Manual Setup** (if needed):
+
+```bash
+# Navigate to repository
+cd /path/to/metainformant
+
+# Create venv in /tmp where symlinks work
+export UV_CACHE_DIR="/tmp/uv-cache"
+uv venv /tmp/metainformant_venv
+
+# Install dependencies
+uv pip install -e . --python /tmp/metainformant_venv/bin/python3
+```
+
+**Note**: The `/tmp` venv will be deleted on reboot. Recreate it with `bash scripts/package/setup.sh` after reboot.
+
+**Better Solution**: Reformat your external drive to **ext4** (Linux-only) or **NTFS** (cross-platform) to enable native symlink support. See [UV Setup Guide](docs/UV_SETUP.md) and [External Drive Setup](docs/rna/EXTERNAL_DRIVE_SETUP.md) for details.
+
+## Verify Installation
+
+```bash
+# Check Python version
+python --version
+
+# Run tests
+pytest tests/ -v
+
+# Check package installation
+python -c "import metainformant; print(metainformant.__version__)"
+```
+
+## Basic Usage Examples
+
+### DNA Analysis
+
+```python
+from metainformant.dna.sequence.core import read_fasta
+from metainformant.dna.sequence.composition import gc_content
+
+# Read FASTA file
+seqs = read_fasta("data/sequences.fasta")
+
+# Calculate GC content
+for name, seq in seqs.items():
+    gc = gc_content(seq)
+    print(f"{name}: GC content = {gc:.2%}")
+```
+
+### Protein Analysis
+
+```python
+from metainformant.protein.sequence.sequences import read_fasta
+from metainformant.protein.sequence.alignment import global_align
+
+# Read protein sequences
+proteins = read_fasta("data/proteins.fasta")
+
+# Pairwise alignment
+align_result = global_align(proteins["seq1"], proteins["seq2"])
+print(f"Alignment score: {align_result.score}")
+```
+
+### Quality Control
+
+```python
+from metainformant.quality import fastq
+
+# Assess FASTQ quality
+qc_report = fastq.assess_quality("data/reads.fastq")
+print(f"Mean quality: {qc_report['mean_quality']}")
+print(f"Total reads: {qc_report['total_reads']}")
+```
+
+### Visualization
+
+```python
+from metainformant.visualization.plots.basic import lineplot
+import matplotlib.pyplot as plt
+
+# Create a simple line plot
+data = [1, 2, 3, 4, 5]
+ax = lineplot(None, data)
+ax.set_ylabel("Values")
+ax.set_title("Example Plot")
+plt.savefig("output/example_plot.png", dpi=300)
+```
+
+### RNA-seq Workflow
+
+```bash
+# Check if amalgkit is available
+python -c "from metainformant.rna.amalgkit import check_cli_available; print(check_cli_available())"
+
+# Run end-to-end workflow for a single species (recommended)
+uv run python scripts/rna/run_all_species.py \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT" --dry-run
+
+# Check workflow status
+uv run python projects/hymenoptera_amalgkit/scripts/report_campaign_status.py \
+  --data-root "$AMALGKIT_DATA_ROOT"
+```
+
+### CLI (`metainformant` entry point)
+
+The installed CLI is intentionally small. Most domains are used via Python or `scripts/*/run_*.py`. See [`docs/cli.md`](docs/cli.md).
+
+```bash
+uv run metainformant --help
+uv run metainformant --modules
+uv run metainformant protein taxon-ids --file data/taxon_ids.txt
+uv run metainformant protein comp --fasta data/proteins.fasta
+uv run metainformant protein rmsd-ca --pdb-a data/structure1.pdb --pdb-b data/structure2.pdb
+uv run metainformant quality batch-detect --data samples.csv --batches batches.txt
+uv run metainformant rna info
+uv run metainformant gwas info
+
+# Optional amalgkit module entry
+uv run python -m metainformant.rna.amalgkit --help
+```
+
+### Complete Demonstration
+
+```bash
+# Run comprehensive workflow demo
+python scripts/core/run_demo.py
+
+# View results in output/demo/ directory
+ls output/demo/
+```
+
+## Directory Structure
+
+MetaInformAnt follows a clean directory policy:
+
+- **`config/`** - Configuration files (YAML/TOML)
+- **`data/`** - Input datasets and databases (read-only)
+- **`output/`** - All analysis outputs (safe to delete/regenerate)
+- **`src/metainformant/`** - Main package source code
+- **`tests/`** - Test suite
+- **`scripts/`** - Workflow orchestration scripts
+- **`docs/`** - Comprehensive documentation
+
+## Optional External Tools
+
+Some workflows require external tools:
+
+### RNA Analysis
+
+- **amalgkit**: RNA-seq workflow orchestration
+
+  ```bash
+  # Install via UV (automatic with setup.sh --with-amalgkit)
+  uv sync --extra rna  # exact Amalgkit 0.16.60
+  ```
+
+### GWAS Analysis
+
+- **SRA Toolkit**: For downloading sequencing data
+
+  ```bash
+  sudo apt-get install sra-toolkit
+  ```
+
+- **BWA, samtools, bcftools**: For alignment and variant calling
+
+  ```bash
+  sudo apt-get install bwa samtools bcftools
+  ```
+
+### Sequence Alignment
+
+- **MUSCLE or ClustalO**: For multiple sequence alignment
+
+  ```bash
+  sudo apt-get install muscle clustalo
+  ```
+
+## Environment Variables
+
+Set optional environment variables for enhanced functionality:
+
+```bash
+# NCBI E-utilities (for data download)
+export NCBI_EMAIL="your.email@example.com"
+
+# Add to ~/.bashrc for persistence
+echo 'export NCBI_EMAIL="your.email@example.com"' >> ~/.bashrc
+```
+
+## Next Steps
+
+### Documentation
+
+- **[Documentation Guide](docs/DOCUMENTATION_GUIDE.md)** - Complete navigation guide
+- **[Architecture Overview](docs/architecture.md)** - System design
+- **[Testing Guide](docs/testing.md)** - Running tests
+
+### Module-Specific Guides
+
+- **[Core Utilities](docs/core/README.md)** - Shared infrastructure and utilities
+- **[DNA Analysis](docs/dna/index.md)** - Sequence analysis workflows
+- **[RNA-seq](docs/rna/index.md)** - Transcriptomics pipelines
+- **[Protein Analysis](docs/protein/index.md)** - Protein sequences and structures
+- **[Epigenome](docs/epigenome/index.md)** - Epigenetic modification analysis
+- **[Ontology](docs/ontology/index.md)** - Functional annotation and ontologies
+- **[Phenotype](docs/phenotype/index.md)** - Phenotypic trait analysis
+- **[Ecology](docs/ecology/index.md)** - Ecological metadata and community analysis
+- **[Mathematical Biology](docs/math/index.md)** - Mathematical and theoretical biology
+- **[GWAS](docs/gwas/index.md)** - Association studies
+- **[Information Theory](docs/information/index.md)** - Information-theoretic analysis
+- **[Life Events](docs/life_events/index.md)** - Life course event analysis
+- **[Visualization](docs/visualization/index.md)** - Plotting and visualization
+- **[Simulation](docs/simulation/index.md)** - Synthetic data generation
+- **[Single-Cell](docs/singlecell/index.md)** - scRNA-seq analysis
+- **[Quality Control](docs/quality/index.md)** - Data quality assessment
+- **[Network Analysis](docs/networks/index.md)** - Biological network analysis
+- **[Machine Learning](docs/ml/index.md)** - ML methods
+- **[Multi-Omics](docs/multiomics/index.md)** - Multi-omic data integration
+- **[Long-Read](docs/longread/index.md)** - PacBio/Nanopore long-read analysis
+- **[Metagenomics](docs/metagenomics/index.md)** - Metagenomic and microbiome analysis
+- **[Structural Variants](docs/structural_variants/index.md)** - SV/CNV detection
+- **[Spatial](docs/spatial/index.md)** - Spatial transcriptomics
+- **[Pharmacogenomics](docs/pharmacogenomics/index.md)** - Drug-gene interactions
+- **[Metabolomics](docs/metabolomics/index.md)** - MS data processing, pathway mapping
+- **[Menu](docs/menu/index.md)** - Interactive CLI navigation
+- **[Cloud](docs/cloud/index.md)** - GCP deployment, Docker pipelines
+- **[eQTL](docs/eqtl/index.md)** - Expression QTL integration pipeline
+
+### Workflow Scripts
+
+- **[Scripts README](scripts/README.md)** - All available scripts
+- **[RNA Workflows](scripts/rna/README.md)** - RNA-seq pipelines
+- **[GWAS Workflows](scripts/gwas/)** - Genome-wide studies
+
+## Common Commands
+
+```bash
+# Run all tests
+bash scripts/package/test.sh --mode fast
+
+# Run fast tests only
+bash scripts/package/test.sh --mode fast --fast
+
+# Check code quality
+bash scripts/package/uv_quality.sh
+
+# Update documentation
+bash scripts/package/uv_docs.sh
+```
+
+## Troubleshooting
+
+### Virtual Environment Not Activated
+
+```bash
+source .venv/bin/activate
+```
+
+### Missing Dependencies
+
+```bash
+# Reinstall all dependencies with uv
+uv pip install -e . --python .venv/bin/python3
+```
+
+### Import Errors
+
+```bash
+# Ensure package is installed in development mode with uv
+uv pip install -e . --python .venv/bin/python3
+```
+
+### Permission Errors
+
+```bash
+# Make scripts executable
+chmod +x scripts/**/*.sh
+```
+
+## Getting Help
+
+- **Documentation**: See [docs/](docs/) directory for comprehensive guides
+- **Examples**: Check [scripts/](scripts/) for working examples
+- **Issues**: Report issues at <https://github.com/docxology/metainformant/issues>
+
+---
+
+**Ready to start analyzing? Pick a module and dive into the documentation!**
