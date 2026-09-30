@@ -2,12 +2,15 @@
 
 The engine implements the current Amalgkit workflow as a bounded producer,
 SQLite progress store, typed workflow planner, and hash-bound evidence layer.
+The producer refuses to start into a broken environment: `run_all()` executes
+the campaign preflight before any discovery or scheduling work.
 
 ## Components
 
 | Module | Purpose |
 |---|---|
 | `streaming_orchestrator.py` | ENA-first metadata, acquisition, integration, and quantification |
+| `preflight.py` | Mandatory start-of-run environment preflight (data-root write probe, amalgkit CLI resolution) |
 | `progress_db.py` | Concurrent-safe SQLite sample state, exclusions, and resume queries |
 | `exclusions.py` | CLI for recording and inspecting sample exclusions |
 | `workflow.py` | Public re-export hub for configuration, planning, and execution |
@@ -25,13 +28,24 @@ SQLite progress store, typed workflow planner, and hash-bound evidence layer.
 ## Key interfaces
 
 - `StreamingPipelineOrchestrator.run_all()` starts the bounded producer for a
-  declared config set.
+  declared config set. It first runs `run_campaign_preflight()`
+  (data-root write probe plus bare `amalgkit` PATH resolution) and refuses to
+  start on failure; the same check is available standalone via
+  `python -m metainformant.rna.engine.preflight --data-root <root>`.
+  A start-of-run preflight prevents the observed 2026-09-03 failure class in
+  which a producer without external-volume write access failed thousands of
+  tasks before its first successful write.
+- `classify_sample_error()` (in `progress_db.py`) classifies stored sample
+  failure text into durable classes (environment write denial, missing tool,
+  transfer, quantification) so terminal-failure audits can separate
+  environmental damage from genuine per-sample failures.
 - `ProgressDB` stores the states `pending`, `downloading`, `downloaded`,
-  `quantifying`, `quantified`, `quarantined`, and `failed`, plus quantification
-  compatibility audit records and durable `sample_exclusions` rows
-  (`permanent_drop` removes accessions from task eligibility; `re_download`
-  marks a stale transfer for a fresh ENA fetch without blocking eligibility).
-  Record them with `python -m metainformant.rna.engine.exclusions`.
+  `quantifying`, `quantified`, `quarantined`, and `failed`, plus
+  quantification compatibility audit records and durable `sample_exclusions`
+  rows (`permanent_drop` removes accessions from task eligibility;
+  `re_download` marks a stale transfer for a fresh ENA fetch without blocking
+  eligibility). Record them with
+  `python -m metainformant.rna.engine.exclusions`.
 - `plan_workflow()` resolves the fixed per-species chain:
   `metadata → select → getfastq → integrate → quant → merge → wsfilter → finalize → sanity`.
 - `provenance.py` rejects missing, stale, or hash-mismatched receipts.

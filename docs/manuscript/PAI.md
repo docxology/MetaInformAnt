@@ -1,0 +1,19 @@
+# Personal AI Infrastructure (PAI) - manuscript
+
+## 🧠 Context & Intent
+- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/docs/manuscript`
+- **Purpose**: Functionality for manuscript.
+- **Domain**: docs
+
+## 🏗️ Virtual Hierarchy
+- **Type**: Documentation
+- **Parent**: `docs`
+
+## 📝 Maintenance Notes
+- **System**: Part of the METAINFORMANT Domain layer.
+- **Style**: Strict type hinting, real implementations in tests.
+- **Stability**: API boundaries should be respected.
+
+## 🔄 AI Workflows
+- **Modification**: Run functional tests in `tests/` before committing.
+- **Documentation**: Update `SPEC.md` if architectural patterns change.

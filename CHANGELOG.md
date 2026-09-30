@@ -10,6 +10,18 @@
   inferential wrapper, orthology profile invariants, and species-tree
   invariants with caller-declared rootedness provenance. The hymenoptera
   cross-species runner validates provenance before writing any artifact.
+- `metainformant.rna.engine.preflight`: mandatory start-of-run campaign
+  preflight. `StreamingPipelineOrchestrator.run_all()` now probes data-root
+  write access (create/rename/stat/unlink) and bare `amalgkit` PATH resolution
+  before any discovery or scheduling work, refusing to start into a broken
+  environment (observed 2026-09-03: a producer without external-volume write
+  access marked 7,291 tasks failed; another failed every quant batch on a
+  missing `amalgkit` binary). Also available standalone via
+  `python -m metainformant.rna.engine.preflight`.
+- `metainformant.rna.engine.progress_db.classify_sample_error`: durable
+  failure classes for stored sample errors, separating environmental damage
+  (write denial, missing tool) from transfer and quantification failures;
+  surfaced as `db_failure_classes` in the hymenoptera campaign status report.
 
 ### Changed
 - `classify_orthogroups` and `join_expression_with_orthology` vectorized

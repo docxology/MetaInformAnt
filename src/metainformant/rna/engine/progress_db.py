@@ -44,6 +44,37 @@ EXCLUSION_REASON_CODES = frozenset({"permanent_drop", "re_download"})
 
 DEFAULT_DB_PATH = Path("output/amalgkit/pipeline_progress.db")
 
+
+SAMPLE_ERROR_CLASSES: dict[str, str] = {
+    "environment_write_denied": "Operation not permitted",
+    "environment_missing_tool": "No such file or directory: '",
+    "transfer_all_sources_failed": "Download Failed (all sources",
+    "extraction_timeout": "fasterq-dump timeout",
+    "quantification_timeout": "Quant timeout",
+    "quantification_failed": "Quantification Failed",
+    "quantification_exception": "Quant exception",
+}
+"""Order-sensitive substring markers for durable failure classes.
+
+The M-02 terminal-failure audit must distinguish environmental failures
+(a broken producer environment that failed the whole cohort at once and is
+fully retryable) from genuine per-sample transfer or quantification failures.
+Markers are matched against the stored ``samples.error`` text; the first
+matching class wins, so more specific markers precede generic ones.
+"""
+
+
+def classify_sample_error(error: str | None) -> str:
+    """Classify a stored sample failure message into a coarse retry class."""
+
+    if not error:
+        return "unrecorded"
+    for class_name, marker in SAMPLE_ERROR_CLASSES.items():
+        if marker in error:
+            return class_name
+    return "unclassified"
+
+
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS samples (
     species     TEXT    NOT NULL,
