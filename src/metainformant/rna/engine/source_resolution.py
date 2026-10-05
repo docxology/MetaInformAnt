@@ -8,7 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, Sequence
 from urllib.parse import urlparse
-import xml.etree.ElementTree as ET
+from defusedxml import ElementTree as ET
+from defusedxml.common import DefusedXmlException
 
 SCHEMA: Final = "metainformant.rna.source_resolution.v1"
 
@@ -89,7 +90,12 @@ def parse_ncbi_resolution(
     if not expected or len(expected) != len(targets):
         raise SourceResolutionError("inventory", "targets must be nonempty and unique")
     evidence_hash = hashlib.sha256(payload).hexdigest()
-    root = ET.fromstring(payload)
+    try:
+        root = ET.fromstring(
+            payload, forbid_dtd=True, forbid_entities=True, forbid_external=True
+        )
+    except (ET.ParseError, DefusedXmlException) as exc:
+        raise SourceResolutionError("evidence", "unsafe or malformed XML") from exc
     found: dict[str, RunResolution] = {}
     for package in root.findall(".//EXPERIMENT_PACKAGE"):
         taxid = package.findtext("SAMPLE/SAMPLE_NAME/TAXON_ID")

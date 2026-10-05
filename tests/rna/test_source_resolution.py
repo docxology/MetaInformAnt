@@ -155,3 +155,33 @@ def test_job_bundle_overlays_resolved_counts_without_rewriting_frozen_metadata(
             if r["path"].endswith("metadata_selected.tsv")
         )
         assert record["sha256"] == hashlib.sha256(payload).hexdigest()
+
+
+@pytest.mark.parametrize(
+    "doctype",
+    [
+        b"<!DOCTYPE EXPERIMENT_PACKAGE_SET>",
+        b'<!DOCTYPE EXPERIMENT_PACKAGE_SET [<!ENTITY spots "10">]>',
+    ],
+)
+def test_source_xml_rejects_dtd_and_entity_expansion(doctype: bytes) -> None:
+    payload = doctype + evidence()
+    if b"ENTITY" in doctype:
+        payload = payload.replace(b'total_spots="10"', b'total_spots="&spots;"')
+    with pytest.raises(SourceResolutionError, match="unsafe or malformed XML"):
+        parse_ncbi_resolution(payload, [SourceTarget("SRR123", "apis_mellifera", 7460)])
+
+
+def test_source_xml_rejects_external_entity_and_malformed_input(tmp_path: Path) -> None:
+    external = tmp_path / "private.xml"
+    external.write_text("private sentinel")
+    payload = (
+        f'<!DOCTYPE EXPERIMENT_PACKAGE_SET [<!ENTITY source SYSTEM "{external.as_uri()}">]>'.encode()
+        + evidence().replace(b'total_spots="10"', b'total_spots="&source;"')
+    )
+    for invalid in (payload, b"<EXPERIMENT_PACKAGE_SET>"):
+        with pytest.raises(SourceResolutionError, match="unsafe or malformed XML"):
+            parse_ncbi_resolution(
+                invalid, [SourceTarget("SRR123", "apis_mellifera", 7460)]
+            )
+    assert external.read_text() == "private sentinel"

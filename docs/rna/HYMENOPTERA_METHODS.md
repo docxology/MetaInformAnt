@@ -20,7 +20,8 @@ An optional `source_resolutions.json` supplement binds the original inventory
 hash to preserved NCBI experiment XML. It requires matching run identity,
 taxonomy, RNA-Seq strategy, public loaded data, positive spot/base counts, and
 a primary public SRA file. Source-file HEAD checks confirm the declared sizes.
-Resolution cannot add samples or alter a reference/configuration. Worker
+Hardened XML parsing rejects DTDs, entity expansion, external entities, and
+malformed evidence. Resolution cannot add samples or alter a reference/configuration. Worker
 partitions overlay recovered counts into a new metadata file and record its
 hash, the original metadata hash, and the source-evidence hash.
 
