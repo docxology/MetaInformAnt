@@ -1,0 +1,15 @@
+{
+  "observed_at": "2026-10-05T21:31:45.062900+00:00",
+  "inventory_sha256": "be233765099cf0baa662fb899d666988e93e83042b072d36b3735fe5f47e9324",
+  "receipt_keys_sha256": "af396158a4e430fe2e4eb1d299fc16dd04f163b2da51354fc5bb2cb692429355",
+  "eligible": 18200,
+  "receipt_count": 7261,
+  "species": 27,
+  "new_runs": 2492,
+  "permanent_exclusions": 106,
+  "gross_ceiling_usd": 750,
+  "controller_upper_usage_usd": 70.12538315990007,
+  "active_jobs": 1,
+  "complete_cohort_verified": false,
+  "receipt_count_semantics": "listed receipt objects intersected with frozen eligible task IDs; not a full restore certificate"
+}

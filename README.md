@@ -35,6 +35,9 @@ METAINFORMANT provides broad bioinformatics analysis modules across genomics, tr
 | **ML** | Classification, regression, feature selection, LLM integration |
 | **Visualization** | Manhattan plots, heatmaps, networks, animations, publication-ready output |
 
+RNA campaigns support [durable per-sample quantification and bounded AWS completion](docs/rna/DURABLE_QUANT.md),
+including verified restoration, immutable output receipts, and explicit missing-sample ledgers.
+
 ### System Architecture
 
 ```mermaid
