@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 
 from metainformant.core.utils import logging
+from metainformant.rna.analysis.qc_metrics import _validate_numeric_matrix
 
 logger = logging.get_logger(__name__)
 
@@ -74,12 +75,7 @@ def normalize_counts(
         logger.warning("Empty count matrix provided, returning empty DataFrame")
         return counts_df.copy()
 
-    # Validate counts are non-negative
-    if (counts_df.values < 0).any():
-        raise ValueError("Count matrix contains negative values")
-
-    # Convert to float for calculations
-    counts = counts_df.astype(float)
+    counts = _validate_numeric_matrix(counts_df, "Count matrix", require_nonnegative=True)
 
     if method == "cpm":
         return _normalize_cpm(counts)
@@ -125,6 +121,8 @@ def _prepare_gene_lengths(counts: pd.DataFrame, gene_lengths: pd.Series) -> pd.S
     """Align gene lengths to counts and require positive base-pair lengths."""
     lengths = gene_lengths.reindex(counts.index).astype(float)
 
+    if np.isinf(lengths.to_numpy()).any():
+        raise ValueError("gene_lengths cannot contain infinite values")
     nonpositive = lengths.notna() & (lengths <= 0)
     if nonpositive.any():
         bad_genes = ", ".join(map(str, lengths.index[nonpositive][:5]))
@@ -281,22 +279,14 @@ def estimate_size_factors(counts_df: pd.DataFrame) -> pd.Series:
     if counts_df.empty:
         return pd.Series(dtype=float)
 
-    if (counts_df.values < 0).any():
-        raise ValueError("Count matrix contains negative values")
+    counts = _validate_numeric_matrix(counts_df, "Count matrix", require_nonnegative=True)
 
-    counts = counts_df.astype(float)
-
-    # Calculate geometric mean of each gene (excluding zeros)
-    # Use log-transform for numerical stability
+    # The standard ratio estimator uses only genes positive in every library.
+    # Averaging logs over a different subset per gene is a different estimator.
+    valid_genes = (counts > 0).all(axis=1)
     with np.errstate(divide="ignore"):
         log_counts = np.log(counts)
-        log_counts = log_counts.replace(-np.inf, np.nan)
-
-    # Geometric mean per gene (across samples)
-    log_geo_mean = log_counts.mean(axis=1)
-
-    # Filter genes with valid geometric means (non-zero in all samples)
-    valid_genes = ~log_geo_mean.isna()
+    log_geo_mean = log_counts.loc[valid_genes].mean(axis=1)
     if valid_genes.sum() == 0:
         logger.warning("No genes with non-zero counts in all samples, using library size normalization")
         library_sizes = counts.sum(axis=0)

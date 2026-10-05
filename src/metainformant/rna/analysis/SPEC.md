@@ -8,7 +8,7 @@ RNA analysis modules for expression analysis, QC, and validation.
 - **Component Type**: Source Code
 
 ## 💾 Data Structures
-- **Modules**: 20 Python modules
+- **Modules**: Expression, QC, comparative analysis, and statistics contracts
 - **Key Concepts**: Refer to Pydantic models in source. `statistics_contract.py` enforces the
   descriptive/inferential boundary: frozen `AnalysisProvenance` records (role-conditional
   multiplicity family/method and tested-feature count — `None`/`'not-applicable'` exactly for
@@ -56,3 +56,21 @@ RNA analysis modules for expression analysis, QC, and validation.
 - `phylogenetic_comparative.py`
 - `protein_integration.py`
 - `statistics_contract.py`
+
+## Numerical input and output contracts
+
+Normalization requires finite nonnegative counts. Standard median-ratio
+estimation uses features positive in every library. Differential expression
+requires two or more samples per group and unique feature/sample IDs; p-value
+adjustment rejects probabilities outside [0, 1] and infinities, while retaining
+unscoreable NaNs. PCA rejects invalid dimensions, infinities, duplicated axes,
+singleton samples, and absent variation. Missing-value mean imputation is an
+explicit option whose policy/count accompany the result.
+
+Within-species orchestration retains the complete expression-sample cohort,
+requires explicit and unique metadata run IDs, normalizes library depth before
+PCA by default, writes hash-bound method sidecars, and propagates calculation
+failures. Convenience run-level DE remains exploratory until independent
+biological units and a scientific design are established.
+
+See the [Hymenoptera methods contract](../../../../docs/rna/HYMENOPTERA_METHODS.md).

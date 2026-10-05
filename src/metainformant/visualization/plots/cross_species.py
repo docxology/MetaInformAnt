@@ -19,6 +19,7 @@ from typing import Any, Dict, Optional, cast
 
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
 import seaborn as sns
 from matplotlib.patches import Patch
 
@@ -736,6 +737,17 @@ def plot_profile_quality(profile_quality: pd.DataFrame, output_path: Path) -> No
     logger.info(f"Saved profile-quality figure to {output_path}")
 
 
+def _draw_stability_intervals(ax: Axes, frame: pd.DataFrame) -> None:
+    """Draw recorded endpoints independently of the original point estimate."""
+    y = np.arange(len(frame))
+    lower = frame["sensitivity_lower"].to_numpy(dtype=float)
+    upper = frame["sensitivity_upper"].to_numpy(dtype=float)
+    point = frame["point_estimate"].to_numpy(dtype=float)
+    ax.hlines(y, lower, upper, color="#333333", linewidth=1.2, label="Feature-resampling sensitivity interval")
+    ax.vlines(np.concatenate([lower, upper]), np.tile(y, 2) - 0.1, np.tile(y, 2) + 0.1, color="#333333")
+    ax.plot(point, y, "o", color=OKABE_ITO[4], label="Original point estimate")
+
+
 def plot_divergence_stability(
     stability: pd.DataFrame,
     output_path: Path,
@@ -754,6 +766,15 @@ def plot_divergence_stability(
     }
     if not required.issubset(stability.columns):
         raise ValueError(f"Stability table requires columns: {sorted(required)}")
+    if stability.empty:
+        raise ValueError("Stability table cannot be empty")
+    values = stability[["point_estimate", "sensitivity_lower", "sensitivity_upper", "sensitivity_iqr"]].to_numpy(dtype=float)
+    if not np.isfinite(values).all() or (values < 0).any() or (values[:, :3] > 2).any():
+        raise ValueError("Stability values must be finite and within their divergence bounds")
+    if (stability["sensitivity_lower"] > stability["sensitivity_upper"]).any():
+        raise ValueError("Stability lower endpoints cannot exceed upper endpoints")
+    if stability[["species_a", "species_b"]].isna().any().any():
+        raise ValueError("Stability species labels cannot be missing")
     if max_pairs < 1:
         raise ValueError("max_pairs must be positive")
     frame = (
@@ -763,21 +784,9 @@ def plot_divergence_stability(
     )
     n_species = len(set(frame["species_a"]).union(frame["species_b"]))
     y = np.arange(len(frame))
-    point = frame["point_estimate"].to_numpy(dtype=float)
-    lower = np.maximum(0.0, point - frame["sensitivity_lower"].to_numpy(dtype=float))
-    upper = np.maximum(0.0, frame["sensitivity_upper"].to_numpy(dtype=float) - point)
     fig, ax = plt.subplots(figsize=(13, max(7, len(frame) * 0.34)))
-    ax.errorbar(
-        point,
-        y,
-        xerr=np.vstack([lower, upper]),
-        fmt="o",
-        color=OKABE_ITO[4],
-        ecolor="#333333",
-        elinewidth=1.2,
-        capsize=3,
-        label="Point estimate with feature-resampling sensitivity interval",
-    )
+    _draw_stability_intervals(ax, frame)
+    ax.set_ylim(-0.6, len(frame) - 0.4)
     ax.set_yticks(y)
     ax.set_yticklabels([f"{a} vs {b}" for a, b in zip(frame["species_a"], frame["species_b"])])
     ax.set_xlim(_DIVERGENCE_VMIN, _DIVERGENCE_VMAX)

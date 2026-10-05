@@ -21,7 +21,8 @@ from scipy.special import gammaln
 
 from metainformant.core.utils import logging
 
-from .expression_core import estimate_size_factors
+from metainformant.rna.analysis.expression_core import estimate_size_factors
+from metainformant.rna.analysis.qc_metrics import _validate_numeric_matrix
 
 logger = logging.get_logger(__name__)
 
@@ -126,8 +127,9 @@ def differential_expression(
             - stat: Test statistic (t-stat, Wald stat, or U stat)
 
     Raises:
-        ValueError: If conditions has != 2 unique values, or samples don't
-            match count columns.
+        ValueError: If conditions has != 2 unique values, either group has
+            fewer than two samples, samples do not match count columns, IDs
+            repeat, or counts are negative or non-finite.
 
     Example:
         >>> counts = pd.DataFrame({
@@ -141,6 +143,9 @@ def differential_expression(
         logger.warning("Empty count matrix provided")
         return _empty_de_results()
 
+    counts_df = _validate_numeric_matrix(counts_df, "Count matrix", require_nonnegative=True)
+    if counts_df.index.has_duplicates or counts_df.columns.has_duplicates:
+        raise ValueError("Count matrix feature and sample IDs must be unique")
     conditions = _align_conditions_to_counts(counts_df, conditions)
 
     # Validate conditions
@@ -166,9 +171,7 @@ def differential_expression(
     treat_samples = conditions[conditions == treatment].index.tolist()
 
     if len(ref_samples) < 2 or len(treat_samples) < 2:
-        logger.warning(
-            f"Small sample sizes: {len(ref_samples)} reference, {len(treat_samples)} treatment"
-        )
+        raise ValueError("Differential expression requires at least two samples in each group")
 
     # Filter low-expression genes
     min_count = kwargs.get("min_count", 10)
@@ -349,7 +352,7 @@ def _de_ttest(
             # group's variance and df collapses to n_other - 1.
             se = float(np.sqrt(var_treat / treat_arr.size + var_ref / ref_arr.size))
             t_stat = (float(treat_arr.mean()) - float(ref_arr.mean())) / se
-            df = (treat_arr.size - 1) if var_treat == 0.0 else (ref_arr.size - 1)
+            df = (ref_arr.size - 1) if var_treat == 0.0 else (treat_arr.size - 1)
             pvalue = float(2.0 * stats.t.sf(abs(t_stat), df))
         else:
             # scipy warns on near-tied inputs (catastrophic cancellation in
@@ -602,6 +605,11 @@ def adjust_pvalues(
         >>> adj = adjust_pvalues(pvals, method="bh")
     """
     pvalues = np.asarray(pvalues, dtype=float)
+    if pvalues.ndim != 1:
+        raise ValueError("p-values must be a one-dimensional array")
+    finite_values = pvalues[~np.isnan(pvalues)]
+    if not np.isfinite(finite_values).all() or ((finite_values < 0) | (finite_values > 1)).any():
+        raise ValueError("p-values must be within [0, 1], with NaN reserved for unscoreable tests")
     n = len(pvalues)
 
     if n == 0:
@@ -654,6 +662,8 @@ def pca_analysis(
     expression_df: pd.DataFrame,
     n_components: int = 2,
     scale: bool = True,
+    *,
+    missing: Literal["raise", "mean"] = "raise",
 ) -> Dict[str, Any]:
     """Perform PCA on expression data.
 
@@ -666,6 +676,8 @@ def pca_analysis(
             Should be normalized (e.g., log-transformed CPM).
         n_components: Number of principal components to compute.
         scale: Whether to standardize features (zero mean, unit variance).
+        missing: Reject missing values by default. Mean imputation is explicit;
+            its policy and count are returned in ``preprocessing``.
 
     Returns:
         Dictionary with keys:
@@ -675,13 +687,22 @@ def pca_analysis(
             - "components": Principal component vectors (components x genes)
 
     Raises:
-        ValueError: If n_components > min(n_samples, n_genes).
+        ValueError: If components are invalid, samples are fewer than two,
+            input contains infinities or undeclared missingness, IDs repeat,
+            or the input has no between-sample variation. Oversized component
+            requests are capped to min(n_samples, n_genes).
 
     Example:
         >>> normalized = normalize_counts(counts, method="log2cpm")
         >>> pca_result = pca_analysis(normalized, n_components=3)
         >>> pc_coords = pca_result["transformed"]
     """
+    if isinstance(n_components, bool) or not isinstance(n_components, (int, np.integer)) or n_components < 1:
+        raise ValueError("n_components must be a positive integer")
+    if missing not in ("raise", "mean"):
+        raise ValueError("missing must be 'raise' or 'mean'")
+    if expression_df.index.has_duplicates or expression_df.columns.has_duplicates:
+        raise ValueError("PCA feature and sample IDs must be unique")
     if expression_df.empty:
         return {
             "transformed": pd.DataFrame(),
@@ -692,17 +713,25 @@ def pca_analysis(
 
     # Transpose so samples are rows (standard PCA input)
     # Input: genes x samples -> samples x genes
-    X = expression_df.T.values.astype(float)
+    X = expression_df.T.to_numpy(dtype=float, copy=True)
     n_samples, n_features = X.shape
+    if n_samples < 2:
+        raise ValueError("PCA requires at least two samples")
+    if np.isinf(X).any():
+        raise ValueError("PCA input cannot contain infinite values")
+    imputed_values = int(np.isnan(X).sum())
 
     max_components = min(n_samples, n_features)
     if n_components > max_components:
         logger.warning(f"Reducing n_components from {n_components} to {max_components}")
         n_components = max_components
 
-    # Handle missing values
-    if np.isnan(X).any():
-        logger.warning("Missing values detected, imputing with column means")
+    # Imputation must be explicitly requested and recorded with the result.
+    if imputed_values:
+        if missing == "raise":
+            raise ValueError("PCA input contains missing values; declare missing='mean' to impute")
+        if np.isnan(X).all(axis=0).any():
+            raise ValueError("PCA cannot impute an entirely missing feature")
         col_means = np.nanmean(X, axis=0)
         nan_idx = np.where(np.isnan(X))
         X[nan_idx] = np.take(col_means, nan_idx[1])
@@ -719,17 +748,16 @@ def pca_analysis(
     else:
         X_scaled = X_centered
 
-    # Compute SVD
-    try:
-        U, S, Vt = np.linalg.svd(X_scaled, full_matrices=False)
-    except np.linalg.LinAlgError:
-        logger.error("SVD did not converge")
-        return {
-            "transformed": pd.DataFrame(),
-            "explained_variance_ratio": np.array([]),
-            "loadings": pd.DataFrame(),
-            "components": np.array([]),
-        }
+    total_variance = float(np.sum(X_scaled**2))
+    if not np.isfinite(total_variance) or total_variance <= 0:
+        raise ValueError("PCA requires finite, positive between-sample variation")
+    # Numerical failure propagates; an empty result must not imply successful PCA.
+    U, S, Vt = np.linalg.svd(X_scaled, full_matrices=False)
+    # Fix the arbitrary SVD sign for deterministic tables and figures.
+    anchors = np.argmax(np.abs(Vt), axis=1)
+    signs = np.sign(Vt[np.arange(len(Vt)), anchors])
+    U *= signs
+    Vt *= signs[:, None]
 
     # Select components
     U = U[:, :n_components]
@@ -740,9 +768,7 @@ def pca_analysis(
     transformed = U * S
 
     # Explained variance ratio
-    total_variance = (X_scaled**2).sum()
-    explained_variance = S**2 / (n_samples - 1)
-    explained_variance_ratio = explained_variance / (total_variance / (n_samples - 1))
+    explained_variance_ratio = S**2 / total_variance
 
     # Gene loadings (correlation of genes with PCs)
     components = Vt  # Principal directions
@@ -768,6 +794,7 @@ def pca_analysis(
         "explained_variance_ratio": explained_variance_ratio,
         "loadings": loadings_df,
         "components": components,
+        "preprocessing": {"missing": missing, "imputed_values": imputed_values, "scaled": scale},
     }
 
 

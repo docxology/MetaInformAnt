@@ -4,13 +4,17 @@ Provides a unified interface for within-species differential expression
 and principal component analysis, processing amalgkit matrix outputs.
 """
 
+import hashlib
+
 from pathlib import Path
-from typing import Dict, Optional, Sequence
+from typing import Dict, Literal, Optional, Sequence
 
 import numpy as np
 import pandas as pd
 
+from metainformant.core import io
 from metainformant.core.utils import logging
+from metainformant.rna.analysis.expression_core import normalize_counts
 from metainformant.rna.analysis.expression_analysis import differential_expression, pca_analysis, prepare_volcano_data
 
 DEFAULT_CONDITION_COLUMNS: tuple[str, ...] = ("tissue", "sex", "caste", "developmental_stage")
@@ -29,9 +33,19 @@ class WithinSpeciesOrchestrator:
 
         self.counts_df: Optional[pd.DataFrame] = None
         self.metadata_df: Optional[pd.DataFrame] = None
+        self.input_hashes: dict[str, str] = {}
+
+    def _hash_inputs(self) -> dict[str, str]:
+        """Bind reports to the bytes loaded, without allocating another matrix."""
+        hashes: dict[str, str] = {}
+        for name, path in (("abundance", self.abundance_path), ("metadata", self.metadata_path)):
+            with path.open("rb") as source:
+                hashes[name] = hashlib.file_digest(source, "sha256").hexdigest()
+        return hashes
 
     def load_data(self) -> None:
         """Load abundance and metadata matrices."""
+        hashes_before = self._hash_inputs()
         logger.info(f"[{self.species_name}] Loading abundance matrix: {self.abundance_path}")
         self.counts_df = pd.read_csv(self.abundance_path, sep="\t", index_col=0)
 
@@ -39,8 +53,14 @@ class WithinSpeciesOrchestrator:
         self.metadata_df = pd.read_csv(self.metadata_path, sep="\t")
 
         # Ensure sample IDs match (amalgkit might use 'run' or 'sample')
-        sample_col = "run" if "run" in self.metadata_df.columns else self.metadata_df.columns[0]
+        sample_col = next((c for c in ("run", "sample") if c in self.metadata_df.columns), None)
+        if sample_col is None:
+            raise ValueError("Metadata requires an explicit run or sample column")
         self.metadata_df.set_index(sample_col, inplace=True)
+        if self.metadata_df.index.isna().any() or self.metadata_df.index.has_duplicates:
+            raise ValueError("Metadata sample IDs must be present and unique")
+        if self.counts_df.index.has_duplicates or self.counts_df.columns.has_duplicates:
+            raise ValueError("Expression feature and sample IDs must be unique")
 
         # Align columns; preserve the abundance-matrix column order so runs
         # are deterministic (a bare set intersection would scramble order).
@@ -49,22 +69,42 @@ class WithinSpeciesOrchestrator:
         if not common_samples:
             raise ValueError("No common samples between abundance matrix and metadata.")
 
+        missing_samples = [c for c in self.counts_df.columns if c not in metadata_index]
+        if missing_samples:
+            raise ValueError(f"Expression samples missing metadata: {missing_samples}")
         self.counts_df = self.counts_df[common_samples]
         self.metadata_df = self.metadata_df.loc[common_samples]
+        if hashes_before != self._hash_inputs():
+            raise ValueError("Analysis inputs changed while loading")
+        self.input_hashes = hashes_before
         logger.info(f"[{self.species_name}] Aligned {len(common_samples)} samples.")
 
-    def run_pca(self, n_components: int = 2) -> Dict[str, pd.DataFrame]:
+    def run_pca(
+        self, n_components: int = 2, *, normalization: Literal["log2cpm", "log2"] = "log2cpm"
+    ) -> Dict[str, pd.DataFrame]:
         """Run PCA on the expression data."""
         if self.counts_df is None:
             raise ValueError("Data not loaded. Call load_data() first.")
 
         logger.info(f"[{self.species_name}] Running PCA ({n_components} components)...")
-        # Log2 transform counts for basic PCA scaling
-        log_counts = np.log2(self.counts_df + 1)
+        # Normalize library depth before PCA unless the caller declares a pre-normalized input.
+        if normalization == "log2cpm":
+            log_counts = normalize_counts(self.counts_df, method="log2cpm")
+        elif normalization == "log2":
+            log_counts = np.log2(self.counts_df + 1)
+        else:
+            raise ValueError("PCA normalization must be log2cpm or log2")
         pca_res = pca_analysis(log_counts, n_components=n_components)
 
         out_path = self.output_dir / f"{self.species_name}_pca_coordinates.tsv"
         pca_res["transformed"].to_csv(out_path, sep="\t")
+        io.dump_json({
+            "schema": "metainformant.rna.pca.v1", "species": self.species_name,
+            "input_sha256": self.input_hashes, "samples": self.counts_df.columns.tolist(),
+            "normalization": normalization, "preprocessing": pca_res["preprocessing"],
+            "explained_variance_ratio": pca_res["explained_variance_ratio"].tolist(),
+            "result_role": "descriptive",
+        }, self.output_dir / f"{self.species_name}_pca_provenance.json")
         logger.info(f"[{self.species_name}] Saved PCA coordinates to {out_path}")
 
         return pca_res
@@ -101,6 +141,13 @@ class WithinSpeciesOrchestrator:
         volcano_data = prepare_volcano_data(de_res)
         out_path = self.output_dir / f"{self.species_name}_DE_{condition_col}.tsv"
         volcano_data.to_csv(out_path, sep="\t", index=False)
+        io.dump_json({
+            "schema": "metainformant.rna.exploratory_de.v1", "species": self.species_name,
+            "input_sha256": self.input_hashes, "samples": valid_samples,
+            "condition_column": condition_col, "group_sizes": conditions.value_counts().to_dict(),
+            "method": "welch_log2_size_factor_normalized_counts", "adjustment": "bh",
+            "result_role": "exploratory", "biological_independence": "not_established_by_run_ids",
+        }, self.output_dir / f"{self.species_name}_DE_{condition_col}_provenance.json")
         logger.info(f"[{self.species_name}] Saved DE results to {out_path}")
 
         return volcano_data
@@ -113,7 +160,4 @@ class WithinSpeciesOrchestrator:
         self.run_pca()
 
         for col in columns:
-            try:
-                self.run_differential_expression(col)
-            except Exception as e:
-                logger.error(f"[{self.species_name}] DE failed on {col}: {e}")
+            self.run_differential_expression(col)

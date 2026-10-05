@@ -2,6 +2,8 @@
 
 RNA-seq expression analysis including normalization, differential expression, quality control, batch effect detection, cross-species comparison, and protein integration.
 
+See the [Hymenoptera methods contract](../../../../docs/rna/HYMENOPTERA_METHODS.md) for numerical boundaries, normalization choices, and analysis provenance.
+
 ## Contents
 
 | File | Purpose |
