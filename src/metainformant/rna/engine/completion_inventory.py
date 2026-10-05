@@ -252,6 +252,7 @@ def seal_existing_outputs(
                 accession,
                 sample,
                 expected_config_sha256=s["config_sha256"],
+                expected_reference_index_sha256=s["index_sha256"],
             )
             lock_quantification(
                 remote,
@@ -260,6 +261,7 @@ def seal_existing_outputs(
                 accession,
                 sample,
                 expected_config_sha256=s["config_sha256"],
+                expected_reference_index_sha256=s["index_sha256"],
             )
         except (OSError, ValueError, KeyError) as exc:
             return {"task_id": task["task_id"], "status": "unlocked", "error": str(exc)}

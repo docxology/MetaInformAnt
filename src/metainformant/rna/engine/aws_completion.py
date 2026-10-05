@@ -85,13 +85,31 @@ def verify_locked_campaign(
 ) -> dict[str, Any]:
     """Require a non-empty complete cohort and validate every restored sample."""
     tasks = [(s, t) for s in inventory["species"] for t in s["tasks"]]
-    if not tasks or len(tasks) != inventory["task_count"]:
+    if (
+        not tasks
+        or len(tasks) != inventory["task_count"]
+        or len({t["task_id"] for _, t in tasks}) != len(tasks)
+    ):
         raise ValueError("empty or incomplete completion inventory")
     verified = []
     for species, task in tasks:
+        index_hash = species["index_sha256"]
+        if (
+            not isinstance(index_hash, str)
+            or len(index_hash) != 64
+            or any(c not in "0123456789abcdef" for c in index_hash)
+            or task.get("reference_index_sha256") != index_hash
+        ):
+            raise ValueError("task reference differs from frozen species index")
         target = destination / species["species"] / "work" / "quant" / task["accession"]
         receipt = restore_quantification(
-            store, cohort, species["species"], task["accession"], target
+            store,
+            cohort,
+            species["species"],
+            task["accession"],
+            target,
+            expected_config_sha256=species["config_sha256"],
+            expected_reference_index_sha256=species["index_sha256"],
         )
         if receipt["config_sha256"] != species["config_sha256"]:
             raise ValueError(
@@ -414,7 +432,7 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
             state["spent_upper_bound"] = spent
             state["observed_at"] = datetime.now(UTC).isoformat()
             locked: set[str] = set()
-            prefix = f"locked-quant-v1/{args.cohort}/receipts/"
+            prefix = f"locked-quant-v1/{args.cohort}/reference-bound-receipts/"
             for page in store.client.get_paginator("list_objects_v2").paginate(
                 Bucket=args.bucket, Prefix=prefix
             ):

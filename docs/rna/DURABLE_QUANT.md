@@ -122,3 +122,21 @@ inventories and configuration drift. Only then does it write
 That certificate establishes quantification storage and integrity. It does not replace
 metadata harmonization, current downstream `merge → wsfilter → finalize → sanity`,
 the finalized-matrix manifest, or the biological and manuscript release gates.
+
+## Independent frozen-index binding
+
+Production seals, worker reuse and the final certificate require
+`expected_reference_index_sha256` from the frozen inventory. Locking verifies
+that the provenance-bound complete reference manifest selects actual index
+bytes with that digest. The verified manifest is stored as a content-addressed
+blob; the bound receipt records both manifest and index hashes.
+
+Bound receipts use `cohort/reference-bound-receipts/species/accession.json`.
+Earlier `cohort/receipts/` objects remain immutable recovery artifacts and do not
+satisfy the completion gate. Available original output/manifest/index files can
+be resealed into the bound namespace without overwriting those objects. Missing
+legacy reference evidence requires reacquisition/reprocessing or a separately
+reviewed migration; no inferred index identity substitutes for content hashes.
+Archive recovery now requires the frozen index hash explicitly and refuses
+binding when the original manifest/index evidence is unavailable. Restore checks
+independent expected configuration and index hashes before exposing outputs.

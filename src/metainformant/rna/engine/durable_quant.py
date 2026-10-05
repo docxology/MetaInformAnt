@@ -263,6 +263,13 @@ def validate_quantification(
     return provenance, files, len(features)
 
 
+def bound_receipt_key(cohort: str, species: str, accession: str) -> str:
+    """Keep verified index bindings separate from immutable recovery receipts."""
+    return receipt_key(cohort, species, accession).replace(
+        "/receipts/", "/reference-bound-receipts/"
+    )
+
+
 def lock_quantification(
     store: ObjectStore,
     cohort: str,
@@ -272,8 +279,13 @@ def lock_quantification(
     *,
     expected_config_sha256: str | None = None,
     expected_reference_sha256: str | None = None,
+    expected_reference_index_sha256: str | None = None,
 ) -> dict[str, Any]:
-    key = receipt_key(cohort, species, accession)
+    key = (
+        bound_receipt_key
+        if expected_reference_index_sha256 is not None
+        else receipt_key
+    )(cohort, species, accession)
     provenance, paths, rows = validate_quantification(
         sample_dir,
         species,
@@ -281,6 +293,31 @@ def lock_quantification(
         expected_config_sha256=expected_config_sha256,
         expected_reference_sha256=expected_reference_sha256,
     )
+    reference_binding = None
+    if expected_reference_index_sha256 is not None:
+        manifest_path = provenance.get("reference_manifest_path")
+        if not manifest_path:
+            raise ValueError("quantification lacks a reference index binding")
+        manifest_bytes = Path(manifest_path).read_bytes()
+        if _digest(manifest_bytes) != provenance.get("reference_manifest_sha256"):
+            raise ValueError("reference manifest checksum mismatch")
+        manifest = json.loads(manifest_bytes)
+        index_path = manifest.get("kallisto_index")
+        if (
+            not index_path
+            or manifest.get("species") != species
+            or manifest.get("status") != "complete"
+        ):
+            raise ValueError("reference manifest lacks a complete species index")
+        index_hash = _digest(Path(index_path).read_bytes())
+        if index_hash != expected_reference_index_sha256:
+            raise ValueError("reference index differs from frozen inventory")
+        manifest_key = f"blobs/sha256/{_digest(manifest_bytes)}"
+        store.put(manifest_key, manifest_bytes)
+        reference_binding = {
+            "reference_index_sha256": index_hash,
+            "reference_manifest_key": manifest_key,
+        }
     files = []
     for path in paths:
         payload = path.read_bytes()
@@ -303,6 +340,8 @@ def lock_quantification(
         "feature_count": rows,
         "files": files,
     }
+    if reference_binding is not None:
+        receipt.update(reference_binding)
     store.put(key, _encode(receipt))
     if store.get(key) != _encode(receipt):
         raise ValueError("receipt readback mismatch")
@@ -315,15 +354,37 @@ def restore_quantification(
     species: str,
     accession: str,
     destination: Path,
+    *,
+    expected_config_sha256: str | None = None,
+    expected_reference_index_sha256: str | None = None,
 ) -> dict[str, Any]:
     """Restore all blobs to fresh staging; reject corruption before publication."""
-    receipt = json.loads(store.get(receipt_key(cohort, species, accession)))
+    key = (
+        bound_receipt_key
+        if expected_reference_index_sha256 is not None
+        else receipt_key
+    )(cohort, species, accession)
+    receipt = json.loads(store.get(key))
     if receipt.get("schema") != SCHEMA or (
         receipt.get("cohort"),
         receipt.get("species"),
         receipt.get("accession"),
     ) != (cohort, species, accession):
         raise ValueError("stored receipt identity mismatch")
+    if (
+        expected_config_sha256 is not None
+        and receipt.get("config_sha256") != expected_config_sha256
+    ):
+        raise ValueError("stored configuration differs from frozen inventory")
+    if expected_reference_index_sha256 is not None:
+        if receipt.get("reference_index_sha256") != expected_reference_index_sha256:
+            raise ValueError("stored reference index differs from frozen inventory")
+        manifest = store.get(receipt["reference_manifest_key"])
+        if _digest(manifest) != receipt.get("reference_manifest_sha256"):
+            raise ValueError("stored reference manifest checksum mismatch")
+        reference = json.loads(manifest)
+        if reference.get("species") != species or reference.get("status") != "complete":
+            raise ValueError("stored reference manifest identity mismatch")
     destination.parent.mkdir(parents=True, exist_ok=True)
     staging = Path(tempfile.mkdtemp(prefix=".restore-", dir=destination.parent))
     try:

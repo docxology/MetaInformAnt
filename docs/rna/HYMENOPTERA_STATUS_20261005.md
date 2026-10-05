@@ -17,6 +17,9 @@ completed expression atlas or a biological result.
 
 Receipt coverage intersects listed S3 receipt keys with eligible frozen task IDs.
 It does not replace the final all-sample restore and hash-validation certificate.
+The reference-binding repair adds a separate bound-receipt namespace; this
+historical coverage table counts recovery receipt objects. Those objects require
+verified resealing against actual frozen index bytes before completion eligibility.
 The independent cost checkpoint precedes the object-list completion by less than
 one minute; credits do not reduce the gross campaign guard.
 

@@ -138,3 +138,163 @@ def test_corrupt_stored_blob_refuses_restore(tmp_path: Path) -> None:
 def test_path_traversal_refused(tmp_path: Path) -> None:
     with pytest.raises(ValueError):
         DirectoryStore(tmp_path).put("../escape", b"x")
+
+
+def reference_sample(tmp_path: Path) -> tuple[Path, Path, str]:
+    quant, config = sample(tmp_path)
+    index = tmp_path / "Test_species.idx"
+    index.write_bytes(b"real reference fixture bytes")
+    manifest = tmp_path / "reference.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "species": "test_species",
+                "status": "complete",
+                "kallisto_index": str(index),
+            }
+        )
+    )
+    write_quant_provenance(
+        quant,
+        species="test_species",
+        run_accession="SRR123",
+        config_path=config,
+        command=["amalgkit", "quant"],
+        reference_manifest_path=manifest,
+    )
+    return quant, config, hashlib.sha256(index.read_bytes()).hexdigest()
+
+
+def test_missing_reference_cannot_receive_bound_receipt(tmp_path: Path) -> None:
+    quant, _ = sample(tmp_path)
+    store = DirectoryStore(tmp_path / "store")
+    with pytest.raises(ValueError, match="lacks a reference"):
+        lock_quantification(
+            store,
+            "cohort",
+            "test_species",
+            "SRR123",
+            quant,
+            expected_reference_index_sha256="a" * 64,
+        )
+    assert not list((tmp_path / "store").rglob("*.json"))
+
+
+def test_wrong_actual_index_cannot_lock(tmp_path: Path) -> None:
+    quant, _, _ = reference_sample(tmp_path)
+    with pytest.raises(ValueError, match="differs from frozen"):
+        lock_quantification(
+            DirectoryStore(tmp_path / "store"),
+            "cohort",
+            "test_species",
+            "SRR123",
+            quant,
+            expected_reference_index_sha256="a" * 64,
+        )
+
+
+def test_bound_lock_migrates_without_overwriting_recovery_receipt(
+    tmp_path: Path,
+) -> None:
+    from metainformant.rna.engine.durable_quant import bound_receipt_key, receipt_key
+    from metainformant.rna.engine.aws_completion import verify_locked_campaign
+
+    quant, config, index_hash = reference_sample(tmp_path)
+    config_hash = hashlib.sha256(config.read_bytes()).hexdigest()
+    store = DirectoryStore(tmp_path / "store")
+    lock_quantification(store, "cohort", "test_species", "SRR123", quant)
+    original = store.get(receipt_key("cohort", "test_species", "SRR123"))
+    with pytest.raises(FileNotFoundError):
+        restore_quantification(
+            store,
+            "cohort",
+            "test_species",
+            "SRR123",
+            tmp_path / "missing",
+            expected_reference_index_sha256=index_hash,
+        )
+    assert not (tmp_path / "missing").exists()
+    bound = lock_quantification(
+        store,
+        "cohort",
+        "test_species",
+        "SRR123",
+        quant,
+        expected_config_sha256=config_hash,
+        expected_reference_index_sha256=index_hash,
+    )
+    assert bound["reference_index_sha256"] == index_hash
+    assert store.get(receipt_key("cohort", "test_species", "SRR123")) == original
+    assert store.get(bound_receipt_key("cohort", "test_species", "SRR123")) != original
+    assert (
+        restore_quantification(
+            store,
+            "cohort",
+            "test_species",
+            "SRR123",
+            tmp_path / "fresh",
+            expected_config_sha256=config_hash,
+            expected_reference_index_sha256=index_hash,
+        )
+        == bound
+    )
+    for kwargs in (
+        {"expected_reference_index_sha256": "a" * 64},
+        {
+            "expected_config_sha256": "a" * 64,
+            "expected_reference_index_sha256": index_hash,
+        },
+    ):
+        with pytest.raises(ValueError):
+            restore_quantification(
+                store, "cohort", "test_species", "SRR123", tmp_path / "bad", **kwargs
+            )
+        assert not (tmp_path / "bad").exists()
+    inventory = {
+        "task_count": 1,
+        "species": [
+            {
+                "species": "test_species",
+                "config_sha256": config_hash,
+                "index_sha256": index_hash,
+                "tasks": [
+                    {
+                        "accession": "SRR123",
+                        "task_id": "test_species/SRR123",
+                        "reference_index_sha256": index_hash,
+                    }
+                ],
+            }
+        ],
+    }
+    assert verify_locked_campaign(inventory, store, "cohort", tmp_path / "complete")[
+        "all_quant_locked"
+    ]
+
+
+def test_unbound_receipt_never_certifies_frozen_inventory(tmp_path: Path) -> None:
+    from metainformant.rna.engine.aws_completion import verify_locked_campaign
+
+    quant, config = sample(tmp_path)
+    store = DirectoryStore(tmp_path / "store")
+    lock_quantification(store, "cohort", "test_species", "SRR123", quant)
+    inventory = {
+        "task_count": 1,
+        "species": [
+            {
+                "species": "test_species",
+                "config_sha256": hashlib.sha256(config.read_bytes()).hexdigest(),
+                "index_sha256": "a" * 64,
+                "tasks": [
+                    {
+                        "accession": "SRR123",
+                        "task_id": "test_species/SRR123",
+                        "reference_index_sha256": "a" * 64,
+                    }
+                ],
+            }
+        ],
+    }
+    with pytest.raises(FileNotFoundError):
+        verify_locked_campaign(inventory, store, "cohort", tmp_path / "complete")
+    assert not (tmp_path / "complete" / "quant_completion_certificate.json").exists()

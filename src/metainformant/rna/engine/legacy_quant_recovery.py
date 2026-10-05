@@ -27,6 +27,7 @@ def recover_indexed_archives(
     cohort: str,
     profile: str,
     region: str,
+    expected_reference_index_sha256: str,
     workers: int = 6,
 ) -> dict[str, Any]:
     """Use bounded immutable-object reads; failures remain explicit and resumable."""
@@ -84,7 +85,13 @@ def recover_indexed_archives(
             sample = Path(temporary) / accession
             try:
                 receipt = restore_quantification(
-                    local, cohort, "nasonia_vitripennis", accession, sample
+                    local,
+                    cohort,
+                    "nasonia_vitripennis",
+                    accession,
+                    sample,
+                    expected_config_sha256=expected_config,
+                    expected_reference_index_sha256=expected_reference_index_sha256,
                 )
             except FileNotFoundError:
                 pass
@@ -96,6 +103,7 @@ def recover_indexed_archives(
                     accession,
                     sample,
                     expected_config_sha256=expected_config,
+                    expected_reference_index_sha256=expected_reference_index_sha256,
                 )
                 return {
                     "accession": accession,
@@ -135,6 +143,7 @@ def recover_indexed_archives(
                         accession,
                         sample,
                         expected_config_sha256=expected_config,
+                        expected_reference_index_sha256=expected_reference_index_sha256,
                     )
                     lock_quantification(
                         remote,
@@ -143,6 +152,7 @@ def recover_indexed_archives(
                         accession,
                         sample,
                         expected_config_sha256=expected_config,
+                        expected_reference_index_sha256=expected_reference_index_sha256,
                     )
                     return {
                         "accession": accession,
@@ -162,12 +172,21 @@ def recover_indexed_archives(
     results = [
         r
         for accession, r in previous.items()
-        if accession in sources and r["status"] == "locked"
+        if accession in sources
+        and r["status"] == "locked"
+        and (
+            output_dir
+            / "locked"
+            / cohort
+            / "reference-bound-receipts"
+            / "nasonia_vitripennis"
+            / f"{accession}.json"
+        ).is_file()
     ]
     remaining = [
         accession
         for accession in sorted(sources)
-        if previous.get(accession, {}).get("status") != "locked"
+        if accession not in {r["accession"] for r in results}
     ]
     with (
         concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor,
