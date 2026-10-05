@@ -52,7 +52,7 @@ This document describes the CI/CD workflows for the MetaInformAnt project.
 |-----|-------------|
 | `test` | Matrix tests (ubuntu/macos × py3.11/3.12 × fast/network/external/all) |
 | `test-infrastructure` | Validate test infrastructure itself |
-| `quality-checks` | Black, isort, flake8, bandit, safety |
+| `quality-checks` | Black, isort, flake8, bandit, pip-audit |
 | `test-examples` | Run example scripts |
 | `fat-filesystem-test` | Test on FAT-like filesystem |
 | `summary` | Report overall status |

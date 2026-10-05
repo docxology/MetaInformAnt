@@ -199,16 +199,7 @@ jobs:
         python scripts/quality/check_mypy_budget.py src/metainformant/rna
 
     - name: Run security checks
-      run: |
-        source .venv/bin/activate
-        # Medium-and-higher severity findings block CI. Low-severity findings
-        # are retained for a separate baseline review rather than hidden.
-        bandit -r src/ --severity-level medium -f json -o output/security_report.json
-        # NLTK's import guard rejects the repository working directory during
-        # Safety startup in the hosted editable-install environment. Run the
-        # module from a neutral directory with Python's safe-path flag while
-        # retaining the editable project's src path in the environment scan.
-        (cd /tmp && python -P -m safety check --output json) > output/safety_report.json
+      run: bash scripts/package/security_checks.sh
 
   test-examples:
     runs-on: ubuntu-latest

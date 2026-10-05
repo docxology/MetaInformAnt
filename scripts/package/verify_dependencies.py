@@ -83,7 +83,7 @@ PYTHON_IMPORTS = {
     "flake8": "flake8",
     "mypy": "mypy",
     "bandit": "bandit",
-    "safety": "safety",
+    "pip-audit": "pip_audit",
     "pre-commit": "pre_commit",
     "sphinx": "sphinx",
     "sphinx-rtd-theme": "sphinx_rtd_theme",
