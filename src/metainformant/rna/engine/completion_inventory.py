@@ -236,7 +236,7 @@ def seal_existing_outputs(
         (s, t)
         for s in inventory["species"]
         for t in s["tasks"]
-        if (data_root / s["species"] / "work" / "quant" / t["accession"]).is_dir()
+        if t.get("existing_state") == "quantified"
     ]
     results = []
 
