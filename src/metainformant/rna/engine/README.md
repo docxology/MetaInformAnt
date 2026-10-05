@@ -78,6 +78,9 @@ the campaign preflight before any discovery or scheduling work.
 - `plan_workflow()` resolves the fixed per-species chain:
   `metadata → select → getfastq → integrate → quant → merge → wsfilter → finalize → sanity`.
 - `provenance.py` rejects missing, stale, or hash-mismatched receipts.
+- `durable_quant.py` preserves validated per-sample outputs in local and S3 stores;
+  `aws_completion.py` resumes byte-bounded missing-task partitions within a gross budget.
+  See [the durable quantification guide](../../../../docs/rna/DURABLE_QUANT.md).
 
 ## Python example
 

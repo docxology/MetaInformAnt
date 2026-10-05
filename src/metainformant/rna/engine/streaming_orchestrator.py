@@ -249,7 +249,7 @@ def build_pipeline_resource_profile(
             ),
         ),
         max_in_flight=max(
-            workers,
+            1,
             _resource_int(
                 configured_in_flight,
                 workers * 2,
@@ -1732,8 +1732,10 @@ def _build_quant_command(
     # ``.safely_removed`` markers after current quantification is proven.
     cmd.extend(["--clean_fastq", "no"])
 
-    index_dir = _resolve_index_dir(cfg, species_name)
-    index_dir = _cache_index_directory(index_dir, species_name)
+    # The index_dir handed to amalgkit must contain only non-colliding
+    # per-species indexes, so the resolved directory (optionally cached) is
+    # re-staged with just the exact-stem file for this species.
+    index_dir = _staged_exact_index_dir(_cache_index_directory(_resolve_index_dir(cfg, species_name), species_name), species_name)
     if index_dir:
         cmd.extend(["--index_dir", index_dir])
 
@@ -1805,6 +1807,91 @@ def _cache_index_directory(index_dir: str, species_name: str) -> str:
         except OSError as exc:
             logger.warning("Unable to cache reference indexes for %s; using %s: %s", species_name, source, exc)
             return index_dir
+
+
+def _staged_exact_index_dir(index_dir: str, species_name: str) -> str:
+    """Return a directory holding only the non-colliding index for one species.
+
+    A species such as ``bombus_terrestris`` may share a reference volume with
+    its subspecies, so one directory can contain both ``Bombus_terrestris.idx``
+    and ``Bombus_terrestris_audax.idx``.  A file ``X.idx`` prefix-collides with
+    ``stem`` when ``X != stem`` and the two names share an underscore-delimited
+    prefix (``X.startswith(stem + "_")`` or ``stem.startswith(X + "_")``), so
+    either a parent or a subspecies index makes the directory ambiguous.  When
+    the exact ``{stem}.idx`` file exists, it (plus a matching
+    ``{stem}_transcripts.idx``) is staged alone into
+    ``<index_dir>_exact_stem/<stem>/index/`` so Amalgkit and Kallisto can never
+    pick the wrong index by prefix.  Each file is
+    promoted atomically with a temporary name and ``os.replace``.  When no
+    usable index can be isolated, the original directory is returned unchanged
+    and the failure is left to worker triage instead of raising here.
+    """
+
+    if not index_dir:
+        return index_dir
+    stem = _normalized_reference_stem(species_name)
+    if not stem:
+        return index_dir
+    source = Path(index_dir).expanduser()
+    if not source.is_dir():
+        return index_dir
+    try:
+        index_files = sorted(path for path in source.glob("*.idx") if path.is_file() and path.stat().st_size > 0)
+    except OSError as exc:
+        logger.warning("Unable to inspect reference index directory %s: %s", source, exc)
+        return index_dir
+
+    # Species keys arrive lowercase (e.g. ``nasonia_vitripennis``) while staged
+    # index files keep the reference case (``Nasonia_vitripennis.idx``); match
+    # stems case-insensitively or every species silently degrades here.
+    folded_names = {path.stem.casefold(): path for path in index_files}
+    folded_stem = stem.casefold()
+    names = {path.stem: path for path in index_files}
+    exact_file = folded_names.get(folded_stem)
+    colliding = sorted(
+        name
+        for name in folded_names
+        if name != folded_stem and (name.startswith(folded_stem + "_") or folded_stem.startswith(name + "_"))
+    )
+    if exact_file is not None and not colliding:
+        return index_dir
+
+    selected = [exact_file] if exact_file is not None else None
+    if selected is None:
+        forward_matches = sorted(
+            name for name in folded_names if name != folded_stem and name.startswith(folded_stem + "_")
+        )
+        if len(forward_matches) == 1:
+            # No exact-stem file: a single forward-prefix match is unambiguous.
+            selected = [folded_names[forward_matches[0]]]
+        else:
+            logger.warning(
+                "index_unavailable: found %d candidate Kallisto index files for species %s in %s",
+                len(forward_matches),
+                species_name,
+                source,
+            )
+            return index_dir
+
+    transcripts_file = folded_names.get(f"{folded_stem}_transcripts")
+    if transcripts_file is not None:
+        selected.append(transcripts_file)
+
+    target = Path(f"{source}_exact_stem") / stem / "index"
+    try:
+        if all((target / path.name).is_file() and (target / path.name).stat().st_size > 0 for path in selected):
+            return str(target)
+        target.mkdir(parents=True, exist_ok=True)
+        for source_file in selected:
+            destination = target / source_file.name
+            temporary = target / f".{source_file.name}.{os.getpid()}.tmp"
+            shutil.copy2(source_file, temporary)
+            os.replace(temporary, destination)
+    except OSError as exc:
+        logger.warning("Unable to stage exact-stem indexes for %s; using %s: %s", species_name, source, exc)
+        return index_dir
+    logger.info("Staged exact-stem Kallisto index for %s: %s", species_name, target)
+    return str(target)
 
 
 def _build_sample_tasks(
@@ -1992,6 +2079,12 @@ class StreamingPipelineOrchestrator:
         except ValueError:
             logger.warning("Invalid AMALGKIT_LOCAL_QUANT_SCRATCH_RESERVE_GB; using 4 GiB")
             self.local_quant_scratch_reserve_gb = 4.0
+
+        # Staleness window for resumable .part payloads: a live curl refreshes
+        # its .part continuously, so a payload untouched for this many minutes
+        # is owned by no active download and is safe to evict under disk
+        # pressure (its row's retry budget is already exhausted).
+        self._PART_STALENESS_MINUTES = 10
 
         # Lock for filesystem operations (symlink cleanup, directory creation)
         self._fs_lock = threading.Lock()
@@ -2514,6 +2607,7 @@ class StreamingPipelineOrchestrator:
                     system_free_gb = shutil.disk_usage(self.system_root).free / (1024**3)
                 system_low = system_free_gb is not None and system_free_gb < self.min_system_free_gb
                 if external_free_gb < self.min_external_free_gb or system_low:
+                    self._maybe_reclaim_part_files(out_dir)
                     if throttle_attempts % 6 == 0:  # Log every ~5 mins
                         system_text = f"; system {system_free_gb:.1f} GiB free" if system_free_gb is not None else ""
                         logger.warning(
@@ -2538,6 +2632,7 @@ class StreamingPipelineOrchestrator:
             except Exception as e:
                 logger.error(f"Failed to check disk space: {e}")
                 break  # Proceed anyway if check fails
+
 
         downloader = ENADownloader(
             timeout=self.download_timeout_seconds,
@@ -2651,8 +2746,76 @@ class StreamingPipelineOrchestrator:
                     and not _is_accession_fastq_file(f, srr_id)
                 ):
                     f.unlink(missing_ok=True)
+            # Under disk pressure the retention above becomes the lane's
+            # dominant ENOSPC term (the 2026-09-28/29 production tail lanes
+            # drowned in ~250 terminal rows' partial payloads). When free
+            # space is already low, this row's resumable partial is worth
+            # less than the scratch it holds: reclaim the space-pressure
+            # share of the .part debt, this row's own payload included.
+            self._maybe_reclaim_part_files(sample_dir.parent)
 
         return success
+
+    def _evict_stale_part_files(self, out_dir: Path) -> float:
+        """Delete resumable ``.part`` payloads that no active writer owns.
+
+        ``.part`` files exist to resume interrupted multi-gigabyte transfers
+        across invocations that share the disk. On ephemeral cloud scratch
+        (and on any disk under space pressure) a terminal-failed row's
+        partial payload is pure disk debt: its retry budget is exhausted, so
+        a recovery pass restarts the transfer from byte 0 regardless.
+        Accumulated ``.part`` debt is what exhausted the 256 GB scratch on
+        the 2026-09-28/29 production tail lanes (~250 failed rows x 1-3 GB).
+
+        Safety rule: only evict parts whose mtime is older than
+        ``_PART_STALENESS_MINUTES``. A live curl refreshes its ``.part``
+        continuously, so a fresh mtime means an active download owns the
+        payload and it must survive.
+
+        Returns the number of bytes freed.
+        """
+
+        freed = 0
+        now = time.time()
+        cutoff = now - self._PART_STALENESS_MINUTES * 60
+        try:
+            candidates = list(out_dir.rglob("*.part"))
+        except OSError as exc:
+            logger.warning("Unable to scan %s for stale .part payloads: %s", out_dir, exc)
+            return 0.0
+        for part in candidates:
+            try:
+                stat = part.stat()
+                if stat.st_mtime > cutoff:
+                    continue
+                size = stat.st_size
+            except OSError:
+                continue
+            try:
+                part.unlink(missing_ok=True)
+            except OSError:
+                continue
+            freed += size
+        if freed:
+            logger.warning(
+                "[Disk Reclaim] Evicted %.2f GB of stale resumable .part payloads "
+                "under %s (terminal-failed rows re-download from byte 0 on the "
+                "next pass; active downloads are untouched).",
+                freed / (1024**3),
+                out_dir,
+            )
+        return freed
+
+    def _maybe_reclaim_part_files(self, out_dir: Path) -> None:
+        """Evict stale ``.part`` payloads only when free space is low."""
+
+        try:
+            if shutil.disk_usage(out_dir).free / (1024**3) >= self.min_external_free_gb:
+                return
+        except OSError as exc:
+            logger.warning("Unable to check %s capacity for .part reclaim: %s", out_dir, exc)
+            return
+        self._evict_stale_part_files(out_dir)
 
     def _prefetch_sra_accession(self, srr_id: str) -> Path | None:
         """Resume and verify one NCBI accession before FASTQ extraction."""

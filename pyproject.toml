@@ -39,6 +39,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+aws = ["boto3>=1.43.108,<2"]
+
 # Core scientific dependencies
 scientific = [
     "scipy>=1.11.0",

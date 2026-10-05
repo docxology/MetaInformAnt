@@ -34,6 +34,9 @@ are project checkpoints and require the producer lock to be released.
 - `engine.workflow` — `AmalgkitWorkflowConfig`, `load_workflow_config`,
   `plan_workflow`, and `execute_workflow`
 - `engine.provenance` — current hash-bound receipt writers and validators
+- `engine.durable_quant` — immutable local/S3 output receipts and verified restoration
+- `engine.completion_inventory` — frozen configured-taxon inventory and local output sealing
+- `engine.aws_completion` — budget-bound AWS processing and full-cohort quantification verification
 - `engine.preflight` — mandatory start-of-run campaign preflight
   (`run_campaign_preflight`): data-root write probe and Amalgkit CLI
   resolution; runnable as `python -m metainformant.rna.engine.preflight`
