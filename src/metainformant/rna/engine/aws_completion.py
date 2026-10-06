@@ -17,6 +17,7 @@ from metainformant.rna.engine.aws_inputs import (
     _inputs_bundle as _inputs_bundle,
     _render_startup as _render_startup,
 )
+from metainformant.rna.engine.aws_fleet import in_flight_tasks, reserved_future_charge
 from metainformant.rna.engine.aws_resources import (
     WorkerPrices,
     catalog_unit_price,
@@ -137,8 +138,25 @@ def verify_locked_campaign(
     return certificate
 
 
+def _wait_for_fleet(
+    state: dict[str, Any], state_path: Path, args: argparse.Namespace, status: str
+) -> None:
+    """Persist a capacity/task/budget wait without abandoning live workers."""
+    state["status"] = status
+    _write_json(state_path, state)
+    count = sum(job["status"] in {"running", "terminating"} for job in state["jobs"])
+    print(
+        f"locked={state['locked_count']}/{state['eligible_count']} "
+        f"upper-spend=${state['spent_upper_bound']:.2f} workers={count}/{args.max_workers} "
+        f"reserved=${state['reserved_future_upper_bound']:.2f} status={status}",
+        flush=True,
+    )
+    if not args.once:
+        time.sleep(args.poll_seconds)
+
+
 def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[str, Any]:
-    """Reconcile AWS receipts and own exactly one bounded instance at a time."""
+    """Reconcile receipts and own a disjoint, fully reserved worker fleet."""
     import boto3
     from botocore.config import Config
 
@@ -257,6 +275,7 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
     if state["cohort"] != args.cohort or args.budget < state["budget_ceiling"]:
         raise ValueError("controller scope/budget transition is inconsistent")
     state["budget_ceiling"] = args.budget
+    state["max_workers"] = args.max_workers
     try:
         while True:
             now = time.time()
@@ -317,7 +336,12 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
             active = [
                 j for j in state["jobs"] if j["status"] in {"running", "terminating"}
             ]
-            if not all_ids - locked:
+            occupied = in_flight_tasks(state["jobs"])
+            future_charge = reserved_future_charge(
+                state["jobs"], now, state["hourly_upper_bound"]
+            )
+            state["reserved_future_upper_bound"] = future_charge
+            if not all_ids - locked and not active:
                 state["status"] = "verifying_all_outputs"
                 _write_json(state_path, state)
                 verify_locked_campaign(
@@ -326,16 +350,19 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                 state["status"] = "all_quant_locked"
                 _write_json(state_path, state)
                 return state
-            if active:
-                state["status"] = "processing"
-                _write_json(state_path, state)
-                print(
-                    f"locked={len(locked)}/{len(all_ids)} upper-spend=${spent:.2f} instance={active[0]['instance_id']}",
-                    flush=True,
-                )
+            if not all_ids - locked:
+                for job in active:
+                    if job["status"] == "running":
+                        ec2.terminate_instances(InstanceIds=[job["instance_id"]])
+                        job.update(status="terminating", termination_requested_at=now)
+                _wait_for_fleet(state, state_path, args, "draining_completed_workers")
                 if args.once:
                     return state
-                time.sleep(args.poll_seconds)
+                continue
+            if len(active) >= args.max_workers:
+                _wait_for_fleet(state, state_path, args, "processing")
+                if args.once:
+                    return state
                 continue
             attempts: dict[str, int] = {}
             for job in state["jobs"]:
@@ -353,12 +380,21 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                     if attempts.get(t["task_id"], 0) < args.max_attempts
                 ]
                 partition = choose_partition(
-                    eligible, locked, max_tasks=20 if not state["jobs"] else 120
+                    eligible,
+                    locked | occupied,
+                    max_tasks=20 if not state["jobs"] else 120,
                 )
                 if partition:
                     selected_species = species
                     break
             if selected_species is None:
+                if active:
+                    _wait_for_fleet(
+                        state, state_path, args, "waiting_for_reserved_tasks"
+                    )
+                    if args.once:
+                        return state
+                    continue
                 state["status"] = "unresolved_tasks_require_source_or_size_diagnosis"
                 _write_json(state_path, state)
                 return state
@@ -372,7 +408,16 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
             job_rate = worker_prices.hourly_bound(disk_gib)
             limit_seconds = job_timeout(largest, args.job_seconds)
             reserved_seconds = limit_seconds + 900
-            if not budget_allows(spent, args.budget, reserved_seconds, job_rate):
+            if not budget_allows(
+                spent + future_charge, args.budget, reserved_seconds, job_rate
+            ):
+                if active:
+                    _wait_for_fleet(
+                        state, state_path, args, "waiting_for_budget_reservations"
+                    )
+                    if args.once:
+                        return state
+                    continue
                 state["status"] = "budget_exhausted"
                 _write_json(state_path, state)
                 return state
@@ -469,7 +514,8 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
             )
             if args.once:
                 return state
-            time.sleep(args.poll_seconds)
+            if len(active) + 1 >= args.max_workers:
+                time.sleep(args.poll_seconds)
     finally:
         owned_lock.close()
 
@@ -499,10 +545,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--instance-type", default="c7i.2xlarge")
     parser.add_argument("--job-seconds", type=int, default=14400)
     parser.add_argument("--poll-seconds", type=int, default=60)
+    parser.add_argument("--max-workers", type=int, default=1)
     parser.add_argument("--max-attempts", type=int, default=3)
     parser.add_argument("--once", action="store_true")
     args = parser.parse_args(argv)
-    if args.job_seconds <= 0 or args.poll_seconds <= 0 or args.max_attempts <= 0:
-        parser.error("job, polling and attempt bounds must be positive")
+    if (
+        min(args.job_seconds, args.poll_seconds, args.max_attempts, args.max_workers)
+        <= 0
+    ):
+        parser.error("job, polling, attempt and worker bounds must be positive")
     print(json.dumps(run_controller(args), indent=2))
     return 0

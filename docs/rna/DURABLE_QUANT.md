@@ -79,6 +79,8 @@ the canonical data root or manuscript evidence.
 ## Run bounded AWS processing
 
 Launch only after recovery, input checks, and an authorized gross cost envelope.
+Check the regional On-Demand vCPU quota and other running resources before raising
+`--max-workers`; the fleet cap is an explicit operator setting, not a quota request.
 Use an EC2 instance profile with access to the selected bucket. The controller checks
 current regional compute and gp3 storage prices, reserves the complete job duration
 plus a storage allowance, and keeps a durable local ledger. The hourly bound is the
@@ -100,7 +102,14 @@ uv run --extra aws --extra rna python scripts/rna/complete_hymenoptera.py \
 ```
 
 `--once` reconciles state and admits at most one job, then returns. Normal operation
-continues through disjoint missing-task partitions. The local controller should run
+continues through disjoint missing-task partitions. `--max-workers` defaults to
+one and permits a bounded concurrent fleet when explicitly increased. Each active
+worker retains task ownership until observed termination, so delayed receipts
+cannot cause duplicate admissions. Every new admission reserves its full deadline
+plus all outstanding worker deadlines under the same gross ceiling. Terminating
+workers retain a shutdown allowance. If the remaining envelope cannot admit more
+work, existing workers remain supervised until their results are reconciled.
+Once all receipts exist, active workers are drained before final verification. The local controller should run
 inside a persistent terminal session. Its ownership lock rejects a second controller
 for the same root; idempotent launch tokens recover an uncertain API response.
 
