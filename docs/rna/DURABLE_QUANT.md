@@ -181,8 +181,11 @@ contract identity, local path containment and configuration/reference checksums;
 corrupt or mismatched witnesses fail closed. Without an explicit witness it retains
 the original input-path checks. This supports downstream work after an AWS worker
 is terminated or a source checkout moves, without changing the original command
-or pretending quantification was rerun. The controller's final restoration passes
-the checked-out species configurations and rejects configuration drift.
+or pretending quantification was rerun. The updated controller source passes the checked-out species configurations
+and rejects configuration drift during final restoration. An already-running
+controller retains its loaded code; this local validation does not restart it
+or alter immutable worker software. Explicit portable restoration remains
+available when that older controller finishes.
 
 An isolated diagnostic subset must identify its selected run IDs and full frozen
 species denominators. A complete subset is not a complete species. Keep its data

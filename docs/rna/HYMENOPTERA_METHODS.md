@@ -135,3 +135,12 @@ attempt remains. Unknown-size or full-size corrupt transfers are preserved as
 diagnostic witnesses before a fresh retry. Exhausted attempts fail without
 certifying a corrupt FASTQ. This source repair does not replace immutable worker
 software already running in the AWS campaign.
+
+## Concurrent local validation
+
+An isolated local snapshot can exercise downstream methods while AWS acquisition
+continues. Its eligible run IDs, frozen configuration/index hashes and verified
+restoration witnesses must be explicit; completed subsets do not establish species
+completion. The [local validation guide](../../projects/hymenoptera_amalgkit/doc/02_workflow/05_local_downstream_validation.md)
+records the real count/filtered-metadata input contract, checkpoint reuse, preserved
+sanity warnings and remaining orthology/design release gates.
