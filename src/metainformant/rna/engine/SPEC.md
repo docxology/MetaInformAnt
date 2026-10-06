@@ -29,6 +29,15 @@ Current RNA/Amalgkit execution engine.
   default 0/disabled) around each quantification subprocess.
 
 ## 🔌 API Definition
+
+`campaign_status.reconcile()` partitions frozen eligible tasks into cloud stages
+and recorded local SQLite stages with species/column marginals. File coverage
+is a separate presence partition; transfer gaps are cloud-receipt tasks without
+complete canonical local files. Duplicate/malformed observations fail closed.
+`campaign_status_cli.main()` collects a bounded live SSM/S3/EC2 observation and
+writes timestamped Markdown/JSON and sample/transfer TSVs without changing
+producer state. It does not certify receipt contents or biological readiness.
+
 ### Exports
 - `__init__.py`
 - `discovery.py`

@@ -12,6 +12,7 @@ the campaign preflight before any discovery or scheduling work.
 | `streaming_orchestrator.py` | ENA-first metadata, acquisition, integration, and quantification |
 | `preflight.py` | Mandatory start-of-run environment preflight (data-root write probe, amalgkit CLI resolution) |
 | `progress_db.py` | Concurrent-safe SQLite sample state, exclusions, and resume queries |
+| `campaign_status.py`, `campaign_status_io.py`, `campaign_status_cli.py` | Read-only frozen-inventory cloud/local status, complete stage marginals and per-sample transfer candidates; receipt/file presence is distinct from checksum validation |
 | `progress_dashboard.py` | Mosaic PDF/PNG dashboard of per-species sample processing status rendered from the progress DB |
 | `exclusions.py` | CLI for recording and inspecting sample exclusions |
 | `workflow.py` | Public re-export hub for configuration, planning, and execution |
