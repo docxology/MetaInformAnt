@@ -34,6 +34,7 @@ def test_marginals_locked_precedence_and_transfer_gap() -> None:
     assert report.totals.coverage["transfer_gap"] == 1
     assert report.local_outside_inventory == 1
     assert "| TOTAL |" in markdown_tables(report)
+    assert "transfer_gap" not in markdown_tables(report, include_coverage=False)
 
 
 def test_missing_worker_is_unknown_not_pending() -> None:
@@ -98,3 +99,7 @@ def test_actual_amalgkit_accession_prefixed_filenames(tmp_path: Path) -> None:
     complete, partial = file_coverage(inventory(), tmp_path)
     assert complete == frozenset({"ant_a/SRR1"})
     assert not partial
+    (sample / "SRR1_abundance.h5").write_bytes(b"")
+    complete, partial = file_coverage(inventory(), tmp_path)
+    assert not complete
+    assert partial == frozenset({"ant_a/SRR1"})

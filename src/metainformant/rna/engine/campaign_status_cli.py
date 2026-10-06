@@ -24,6 +24,7 @@ def main() -> int:
     parser.add_argument("--region", default="us-east-2")
     parser.add_argument("--output-dir", type=Path, default=Path("output/hymenoptera_status"))
     parser.add_argument("--no-worker-probe", action="store_true", help="Assigned worker stages become unknown; never assumed pending")
+    parser.add_argument("--stages-only", action="store_true", help="Fast DB/worker status only; omit file coverage and transfer claims")
     args = parser.parse_args()
     started = datetime.now(UTC).isoformat()
     inventory_bytes = (args.campaign_root / "inventory.json").read_bytes()
@@ -31,9 +32,11 @@ def main() -> int:
     inventory.task_ids()
     cloud = collect_cloud(args.campaign_root, args.bucket, args.profile, args.region, probe_workers=not args.no_worker_probe)
     local = read_database(args.local_root / "pipeline_progress.db")
-    present, partial = file_coverage(inventory, args.local_root)
+    present, partial = frozenset(), frozenset()
+    if not args.stages_only:
+        present, partial = file_coverage(inventory, args.local_root)
     diagnostic = frozenset()
-    if args.diagnostic_root:
+    if args.diagnostic_root and not args.stages_only:
         diagnostic, _ = file_coverage(inventory, args.diagnostic_root)
     report = reconcile(inventory, cloud.locked, cloud.assigned, cloud.worker, local, present, partial, diagnostic)
     finished = datetime.now(UTC).isoformat()
@@ -46,7 +49,14 @@ def main() -> int:
         "local_root": str(args.local_root.resolve()),
         "diagnostic_root": str(args.diagnostic_root.resolve()) if args.diagnostic_root else None,
         "cloud_observation": asdict(cloud), "report": asdict(report),
+        "file_coverage": "NOT_OBSERVED" if args.stages_only else "NONEMPTY_FILE_PRESENCE_ONLY",
     }
+    if args.stages_only:
+        payload["report"] = {
+            "rows": [{"species": row.species, "eligible": row.eligible, "cloud": row.cloud, "local": row.local} for row in report.rows],
+            "totals": {"eligible": report.totals.eligible, "cloud": report.totals.cloud, "local": report.totals.local},
+            "local_outside_inventory": report.local_outside_inventory,
+        }
     # Sets are protocol representations only; deterministic JSON lists preserve observations.
     (directory / "status.json").write_text(json.dumps(payload, indent=2, default=lambda value: sorted(value)) + "\n")
     notes = (
@@ -65,16 +75,20 @@ def main() -> int:
     )
     if cloud.diagnostics:
         notes += "Telemetry diagnostics:\n\n" + "\n".join(f"- {d}" for d in cloud.diagnostics) + "\n\n"
-    markdown = notes + markdown_tables(report)
+    if args.stages_only:
+        notes += "File coverage and transfer candidates were NOT OBSERVED (--stages-only). No file/transfer counts are emitted.\n\n"
+    markdown = notes + markdown_tables(report, include_coverage=not args.stages_only)
     (directory / "status.md").write_text(markdown)
     with (directory / "samples.tsv").open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(asdict(report.samples[0])), delimiter="\t")
+        fields = ("task_id", "species", "cloud", "local") if args.stages_only else tuple(asdict(report.samples[0]))
+        writer = csv.DictWriter(handle, fieldnames=fields, delimiter="\t", extrasaction="ignore")
         writer.writeheader()
         writer.writerows(asdict(sample) for sample in report.samples)
-    with (directory / "transfer_candidates.tsv").open("w", newline="") as handle:
-        writer = csv.writer(handle, delimiter="\t")
-        writer.writerow(("task_id", "canonical_local_coverage", "diagnostic_present"))
-        writer.writerows((s.task_id, s.coverage, s.diagnostic_present) for s in report.samples if s.transfer_gap)
+    if not args.stages_only:
+        with (directory / "transfer_candidates.tsv").open("w", newline="") as handle:
+            writer = csv.writer(handle, delimiter="\t")
+            writer.writerow(("task_id", "canonical_local_coverage", "diagnostic_present"))
+            writer.writerows((s.task_id, s.coverage, s.diagnostic_present) for s in report.samples if s.transfer_gap)
     print(markdown)
     print(f"Saved snapshot: {directory}")
     return 0

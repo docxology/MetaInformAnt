@@ -166,6 +166,10 @@ def collect_cloud(campaign_root: Path, bucket: str, profile: str, region: str, *
     if len(set(assigned_list)) != len(assigned_list):
         raise StatusError("A task is assigned to multiple live instances")
     diagnostics: list[str] = []
+    age = (datetime.now(UTC) - datetime.fromisoformat(controller.observed_at)).total_seconds()
+    diagnostics.append(f"Controller ledger observed_at={controller.observed_at}; age_seconds={age:.0f}")
+    if age > 180:
+        diagnostics.append("Controller ledger is stale; live instance/worker observations do not prove an active controller")
     probes: dict[str, str] = {}
 
     def inspect(instance: str) -> tuple[str, str]:

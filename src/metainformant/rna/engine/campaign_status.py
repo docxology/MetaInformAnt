@@ -166,10 +166,10 @@ def reconcile(
     return StatusReport(tuple(rows), total, tuple(samples), len(locals_.keys() - ids))
 
 
-def markdown_tables(report: StatusReport) -> str:
+def markdown_tables(report: StatusReport, *, include_coverage: bool = True) -> str:
     """Render two tables with row and column marginals, without overlapping stages."""
     cloud = ["Species", *CLOUD_COLUMNS, "Total"]
-    local = ["Species", *LOCAL_COLUMNS, *COVERAGE_COLUMNS, "Total"]
+    local = ["Species", *LOCAL_COLUMNS, *(COVERAGE_COLUMNS if include_coverage else ()), "Total"]
     tables = []
     for labels, lane in ((cloud, "cloud"), (local, "local")):
         lines = ["| " + " | ".join(labels) + " |", "| " + " | ".join("---" for _ in labels) + " |"]
@@ -177,7 +177,7 @@ def markdown_tables(report: StatusReport) -> str:
             counts = row.cloud if lane == "cloud" else row.local
             columns = CLOUD_COLUMNS if lane == "cloud" else LOCAL_COLUMNS
             values = [row.species, *(str(counts.get(k, 0)) for k in columns)]
-            if lane == "local":
+            if lane == "local" and include_coverage:
                 values.extend(str(row.coverage.get(k, 0)) for k in COVERAGE_COLUMNS)
             lines.append("| " + " | ".join((*values, str(row.eligible))) + " |")
         tables.append("\n".join(lines))
