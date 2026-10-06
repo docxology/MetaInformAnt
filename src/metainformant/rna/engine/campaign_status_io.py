@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 import shlex
 import sqlite3
 import time
@@ -95,13 +96,15 @@ def file_coverage(inventory: Inventory, root: Path) -> tuple[frozenset[str], fro
         if not quant.is_dir():
             continue
         # One directory listing per species avoids 18,200 absent SSD path probes.
-        directories = {p.name: p for p in quant.iterdir() if p.is_dir()}
+        with os.scandir(quant) as entries:
+            directories = {entry.name: Path(entry.path) for entry in entries if entry.is_dir()}
         for task in species.tasks:
             sample = directories.get(task.accession)
             if sample is None:
                 continue
-            sizes = [(sample / name).stat().st_size if (sample / name).is_file() else 0 for name in REQUIRED_FILES]
-            (complete if all(sizes) else partial).add(task.task_id)
+            with os.scandir(sample) as entries:
+                nonempty = {entry.name for entry in entries if entry.name in REQUIRED_FILES and entry.is_file() and entry.stat().st_size > 0}
+            (complete if set(REQUIRED_FILES) <= nonempty else partial).add(task.task_id)
     return frozenset(complete), frozenset(partial)
 
 
