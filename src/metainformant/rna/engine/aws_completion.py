@@ -84,7 +84,12 @@ def _write_json(path: Path, payload: Any) -> None:
 
 
 def verify_locked_campaign(
-    inventory: dict[str, Any], store: Any, cohort: str, destination: Path
+    inventory: dict[str, Any],
+    store: Any,
+    cohort: str,
+    destination: Path,
+    *,
+    config_dir: Path | None = None,
 ) -> dict[str, Any]:
     """Require a non-empty complete cohort and validate every restored sample."""
     tasks = [(s, t) for s in inventory["species"] for t in s["tasks"]]
@@ -104,6 +109,17 @@ def verify_locked_campaign(
             or task.get("reference_index_sha256") != index_hash
         ):
             raise ValueError("task reference differs from frozen species index")
+        verified_config = None
+        if config_dir is not None:
+            name = species.get("config_name")
+            if (
+                not isinstance(name, str)
+                or Path(name).name != name
+                or name in ("", ".", "..")
+                or "\\" in name
+            ):
+                raise ValueError("unsafe frozen configuration filename")
+            verified_config = config_dir / name
         target = destination / species["species"] / "work" / "quant" / task["accession"]
         receipt = restore_quantification(
             store,
@@ -113,6 +129,7 @@ def verify_locked_campaign(
             target,
             expected_config_sha256=species["config_sha256"],
             expected_reference_index_sha256=species["index_sha256"],
+            verified_config_path=verified_config,
         )
         if receipt["config_sha256"] != species["config_sha256"]:
             raise ValueError(
@@ -345,7 +362,15 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                 state["status"] = "verifying_all_outputs"
                 _write_json(state_path, state)
                 verify_locked_campaign(
-                    inventory, store, args.cohort, root / "completed_quant"
+                    inventory,
+                    store,
+                    args.cohort,
+                    root / "completed_quant",
+                    config_dir=args.repo
+                    / "projects"
+                    / "hymenoptera_amalgkit"
+                    / "config"
+                    / "amalgkit",
                 )
                 state["status"] = "all_quant_locked"
                 _write_json(state_path, state)

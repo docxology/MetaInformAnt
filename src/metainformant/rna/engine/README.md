@@ -102,3 +102,10 @@ orchestrator = StreamingPipelineOrchestrator(
 The project shell entrypoint supplies bounded resource budgets and owns the
 producer/downstream lock boundary. See the [running guide](../../../../projects/hymenoptera_amalgkit/doc/00_setup/04_running_the_pipeline.md)
 and [storage contract](../../../../projects/hymenoptera_amalgkit/doc/01_infrastructure/02_storage_contract.md).
+
+### Restored quantification inputs
+
+Portable restoration accepts `verified_config_path` alongside the frozen reference
+index hash. It preserves original provenance and creates checksum-bound local
+configuration/reference witnesses for strict downstream classification. See
+[durable quantification](../../../../docs/rna/DURABLE_QUANT.md).

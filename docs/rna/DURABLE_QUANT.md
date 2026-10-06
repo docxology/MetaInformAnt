@@ -169,3 +169,22 @@ archives and startup rendering; `aws_resources` owns price validation and elapse
 usage accounting. The controller retains the single-writer admission/reconciliation
 state machine so resource reservation and persisted launch identity stay atomic.
 Worker startup installs the RNA and AWS extras from the committed frozen lock.
+
+## Portable downstream restoration
+
+`restore_quantification(..., verified_config_path=path,
+expected_reference_index_sha256=frozen_index_hash)` verifies the supplied frozen
+configuration bytes and stored reference manifest, then installs separate local
+input witnesses below `.metainformant_restored_inputs`. Original quant sidecars
+remain byte-identical. The current-method classifier verifies the witness schema,
+contract identity, local path containment and configuration/reference checksums;
+corrupt or mismatched witnesses fail closed. Without an explicit witness it retains
+the original input-path checks. This supports downstream work after an AWS worker
+is terminated or a source checkout moves, without changing the original command
+or pretending quantification was rerun. The controller's final restoration passes
+the checked-out species configurations and rejects configuration drift.
+
+An isolated diagnostic subset must identify its selected run IDs and full frozen
+species denominators. A complete subset is not a complete species. Keep its data
+root separate from the active acquisition root while validating merge, wsfilter,
+finalize, sanity and comparative methods.

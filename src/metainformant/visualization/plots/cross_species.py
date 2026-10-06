@@ -792,21 +792,20 @@ def plot_divergence_stability(
     ax.set_xlim(_DIVERGENCE_VMIN, _DIVERGENCE_VMAX)
     ax.set_xlabel("Divergence (1 − Spearman rho)")
     ax.set_title("Feature-Resampling Sensitivity of Pairwise Divergence (descriptive)")
-    ax.text(
-        0.99,
-        1.01,
+    fig.text(
+        0.5,
+        0.01,
         "Descriptive sensitivity summary; no p-values or significance stars\n"
         "Intervals are feature-resampling sensitivity diagnostics, not confidence intervals\n"
         f"n={n_species} species in plotted pairs",
-        transform=ax.transAxes,
-        ha="right",
+        ha="center",
         va="bottom",
         fontsize=8,
     )
     ax.grid(axis="x", color="#D9D9D9", linewidth=0.6)
     ax.set_axisbelow(True)
     ax.legend(loc="lower right", frameon=True)
-    plt.tight_layout()
+    plt.tight_layout(rect=(0, 0.11, 1, 1))
     save_figure_deterministic(fig, output_path, dpi=300, bbox_inches="tight")
     plt.close(fig)
     logger.info(f"Saved divergence-stability figure to {output_path}")

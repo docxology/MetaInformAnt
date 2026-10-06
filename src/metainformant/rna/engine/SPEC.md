@@ -48,3 +48,12 @@ Current RNA/Amalgkit execution engine.
 - `workflow_execution.py`
 - `workflow_planning.py`
 - `workflow_steps.py`
+
+### Portable restoration contract
+
+`durable_quant.restore_quantification` optionally accepts `verified_config_path`
+and requires a frozen reference-index binding in that mode. Local copies are
+recorded under a contract-bound restoration witness; `provenance.classify_quantification`
+rejects tampered witnesses, changed input checksums and paths escaping the sample.
+Original quantification sidecar bytes are preserved. `verify_locked_campaign`
+accepts an optional configuration directory for portable full-cohort restoration.

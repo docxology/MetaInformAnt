@@ -24,6 +24,7 @@ from metainformant.rna.engine.quant_storage import (
 from metainformant.rna.engine.quant_validation import (
     validate_quantification as validate_quantification,
 )
+from metainformant.rna.engine.provenance import RESTORED_INPUTS_DIR
 
 SCHEMA = "metainformant.rna.locked_quant.v1"
 
@@ -122,6 +123,7 @@ def restore_quantification(
     *,
     expected_config_sha256: str | None = None,
     expected_reference_index_sha256: str | None = None,
+    verified_config_path: Path | None = None,
 ) -> dict[str, Any]:
     """Restore all blobs to fresh staging; reject corruption before publication."""
     key = (
@@ -141,6 +143,14 @@ def restore_quantification(
         and receipt.get("config_sha256") != expected_config_sha256
     ):
         raise ValueError("stored configuration differs from frozen inventory")
+    config_bytes = None
+    manifest = None
+    if verified_config_path is not None:
+        if expected_reference_index_sha256 is None:
+            raise ValueError("portable restoration requires a frozen reference index")
+        config_bytes = Path(verified_config_path).read_bytes()
+        if _digest(config_bytes) != receipt["config_sha256"]:
+            raise ValueError("restoration configuration checksum mismatch")
     if expected_reference_index_sha256 is not None:
         if receipt.get("reference_index_sha256") != expected_reference_index_sha256:
             raise ValueError("stored reference index differs from frozen inventory")
@@ -174,6 +184,25 @@ def restore_quantification(
             expected_config_sha256=receipt["config_sha256"],
             expected_reference_sha256=receipt.get("reference_manifest_sha256"),
         )
+        restored_inputs = staging / RESTORED_INPUTS_DIR
+        if config_bytes is not None:
+            if manifest is None:
+                raise ValueError("portable restoration lacks reference manifest")
+            restored_inputs.mkdir()
+            (restored_inputs / "config.yaml").write_bytes(config_bytes)
+            (restored_inputs / "reference_manifest.json").write_bytes(manifest)
+            (restored_inputs / "manifest.json").write_bytes(
+                _encode(
+                    {
+                        "schema": "metainformant.rna.restored_inputs.v1",
+                        "contract_id": receipt["contract_id"],
+                        "config_sha256": receipt["config_sha256"],
+                        "reference_manifest_sha256": receipt[
+                            "reference_manifest_sha256"
+                        ],
+                    }
+                )
+            )
         if destination.exists():
             for record in receipt["files"]:
                 if (
@@ -184,6 +213,26 @@ def restore_quantification(
                     raise FileExistsError(
                         "restore would overwrite different sample output"
                     )
+            if config_bytes is not None:
+                target_inputs = destination / RESTORED_INPUTS_DIR
+                if target_inputs.exists():
+                    if not target_inputs.resolve().is_relative_to(
+                        destination.resolve()
+                    ):
+                        raise FileExistsError(
+                            "restored input witness escapes destination"
+                        )
+                    for path in restored_inputs.iterdir():
+                        target = target_inputs / path.name
+                        if (
+                            not target.is_file()
+                            or target.read_bytes() != path.read_bytes()
+                        ):
+                            raise FileExistsError(
+                                "restore would overwrite different input witness"
+                            )
+                else:
+                    os.rename(restored_inputs, target_inputs)
         else:
             os.rename(staging, destination)
     finally:

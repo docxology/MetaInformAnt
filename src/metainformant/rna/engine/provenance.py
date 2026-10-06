@@ -33,6 +33,32 @@ DOWNSTREAM_PROVENANCE_FILENAME = ".metainformant_downstream_provenance.json"
 DOWNSTREAM_PROVENANCE_SCHEMA = "metainformant.rna.downstream.v2"
 DOWNSTREAM_STEPS = ("merge", "wsfilter", "finalize", "sanity")
 DOWNSTREAM_OUTPUT_STAGES = DOWNSTREAM_STEPS
+RESTORED_INPUTS_DIR = ".metainformant_restored_inputs"
+
+
+def quantification_input_paths(sample_path: Path, payload: Mapping[str, Any]) -> tuple[Path, Path | None]:
+    """Resolve original inputs or explicitly restored, contract-bound copies."""
+    restored = sample_path / RESTORED_INPUTS_DIR
+    if not restored.exists() and not restored.is_symlink():
+        reference = payload.get("reference_manifest_path")
+        return Path(payload["config_path"]), Path(reference) if reference else None
+    if not restored.resolve().is_relative_to(sample_path.resolve()):
+        raise ValueError("restored inputs escape sample directory")
+    manifest = json.loads((restored / "manifest.json").read_text())
+    expected = {
+        "schema": "metainformant.rna.restored_inputs.v1",
+        "contract_id": quantification_contract_id(payload),
+        "config_sha256": payload.get("config_sha256"),
+        "reference_manifest_sha256": payload.get("reference_manifest_sha256"),
+    }
+    if manifest != expected:
+        raise ValueError("restored input witness differs from quantification contract")
+    config = restored / "config.yaml"
+    reference = restored / "reference_manifest.json" if payload.get("reference_manifest_sha256") else None
+    for path in (config, reference, restored / "manifest.json"):
+        if path is not None and not path.resolve().is_relative_to(restored.resolve()):
+            raise ValueError("restored input file escapes witness directory")
+    return config, reference
 
 
 def quant_provenance_path(sample_dir: str | Path) -> Path:
@@ -367,7 +393,12 @@ def classify_quantification(
     if not isinstance(config_path, str) or not isinstance(config_hash, str):
         result["reason"] = "configuration provenance is incomplete"
         return result
-    if digest_file(Path(config_path).expanduser().resolve()) != config_hash:
+    try:
+        local_config, local_reference = quantification_input_paths(sample_path, payload)
+    except (OSError, ValueError, TypeError, KeyError) as error:
+        result.update(status=QUANT_STATUS_INVALID, reason=f"invalid restored input witness: {error}")
+        return result
+    if digest_file(local_config.expanduser().resolve()) != config_hash:
         result.update(status=QUANT_STATUS_INVALID, reason="configuration checksum mismatch")
         return result
     reference_path = payload.get("reference_manifest_path")
@@ -375,7 +406,7 @@ def classify_quantification(
     if reference_path and (not isinstance(reference_path, str) or not isinstance(reference_hash, str)):
         result["reason"] = "reference provenance is incomplete"
         return result
-    if reference_path and digest_file(Path(reference_path).expanduser().resolve()) != reference_hash:
+    if reference_hash and (local_reference is None or digest_file(local_reference.expanduser().resolve()) != reference_hash):
         result.update(status=QUANT_STATUS_INVALID, reason="reference manifest checksum mismatch")
         return result
     if expected_config_path is not None and digest_file(Path(expected_config_path)) != config_hash:
@@ -709,8 +740,14 @@ def write_downstream_provenance(
         missing = [step for step in normalised_steps if not output_manifest.get(step)]
         raise OSError("Downstream checkpoint has no readable output for stage(s): " + ", ".join(missing))
     config_file = Path(config_path).expanduser().resolve()
-    if strict and digest_file(config_file) is None:
+    config_hash = digest_file(config_file)
+    if strict and config_hash is None:
         raise OSError(f"Downstream checkpoint config is missing or unreadable: {config_file}")
+    if strict and any(
+        (read_quant_provenance(work_path / "quant" / sample["run_accession"]) or {}).get("config_sha256") != config_hash
+        for sample in quant_inputs
+    ):
+        raise ValueError("Downstream configuration differs from quantified sample inputs")
     destination = downstream_provenance_path(work_path)
     # Content-deterministic payload: no wall-clock fields.  Any restart-varying
     # byte would make the sidecar look rewritten on every resume.  Recency
