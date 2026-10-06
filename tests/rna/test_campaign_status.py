@@ -87,3 +87,14 @@ def test_real_file_presence_and_partial_output(tmp_path: Path) -> None:
     complete, partial = file_coverage(inventory(), tmp_path)
     assert complete == frozenset({"ant_a/SRR1"})
     assert partial == frozenset({"ant_a/SRR2"})
+
+
+def test_actual_amalgkit_accession_prefixed_filenames(tmp_path: Path) -> None:
+    sample = tmp_path / "ant_a/work/quant/SRR1"
+    sample.mkdir(parents=True)
+    for name in REQUIRED_FILES:
+        filename = name if name.startswith(".") else f"SRR1_{name}"
+        (sample / filename).write_text("nonempty presence fixture")
+    complete, partial = file_coverage(inventory(), tmp_path)
+    assert complete == frozenset({"ant_a/SRR1"})
+    assert not partial

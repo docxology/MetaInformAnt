@@ -18,6 +18,7 @@ import boto3
 from botocore.config import Config
 
 from metainformant.rna.engine.campaign_status import Inventory, Observation, StatusError
+from metainformant.rna.core.sample_utils import quantification_file_candidates
 from metainformant.rna.engine.provenance import QUANT_PROVENANCE_FILENAME
 
 REQUIRED_FILES: Final = ("abundance.tsv", "abundance.h5", "run_info.json", QUANT_PROVENANCE_FILENAME)
@@ -96,15 +97,21 @@ def file_coverage(inventory: Inventory, root: Path) -> tuple[frozenset[str], fro
         if not quant.is_dir():
             continue
         # One directory listing per species avoids 18,200 absent SSD path probes.
+        accessions = {task.accession for task in species.tasks}
         with os.scandir(quant) as entries:
-            directories = {entry.name: Path(entry.path) for entry in entries if entry.is_dir()}
+            directories = {entry.name: Path(entry.path) for entry in entries if entry.name in accessions}
         for task in species.tasks:
             sample = directories.get(task.accession)
             if sample is None:
                 continue
+            tables = {p.name for p in quantification_file_candidates(sample, task.accession)}
+            infos = {"run_info.json", f"{task.accession}_run_info.json"}
+            h5s = {"abundance.h5", f"{task.accession}_abundance.h5"}
+            expected = tables | infos | h5s | {QUANT_PROVENANCE_FILENAME}
             with os.scandir(sample) as entries:
-                nonempty = {entry.name for entry in entries if entry.name in REQUIRED_FILES and entry.is_file() and entry.stat().st_size > 0}
-            (complete if set(REQUIRED_FILES) <= nonempty else partial).add(task.task_id)
+                nonempty = {entry.name for entry in entries if entry.name in expected and entry.is_file() and entry.stat().st_size > 0}
+            covered = bool(tables & nonempty and infos & nonempty and h5s & nonempty and QUANT_PROVENANCE_FILENAME in nonempty)
+            (complete if covered else partial).add(task.task_id)
     return frozenset(complete), frozenset(partial)
 
 
