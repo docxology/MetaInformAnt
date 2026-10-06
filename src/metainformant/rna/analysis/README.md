@@ -95,3 +95,21 @@ translation_efficiency = calculate_translation_efficiency(rna_expression, protei
 - Batch labels must include every expression sample; labels for extra samples are ignored.
 - GC content values for matched genes must be in `[0, 1]`; matched gene lengths must be positive.
 - RNA-protein integration filters NaN measurements deterministically and rejects unsupported methods instead of returning silent empty results.
+
+## Shared project-adapter methods
+
+Reusable Hymenoptera calculations are maintained in the package, with project
+scripts retaining manifests, selected-root paths, reporting and evidence gates.
+
+| Module | Public methods | Contract |
+|---|---|---|
+| `expression_io` | `validate_expression_matrix`, `load_expression_profile`, `compute_profile_quality` | Chunked plain/gzip matrix integrity; explicit sample minimum; mean feature profiles and nonfinite accounting |
+| `ortholog_diagnostics` | `classify_orthogroup_cardinality`, `audit_gene_drop_reasons`, `annotate_duplicate_resolutions` | Membership-derived cardinality; reconciled retention/drop classes; versioned duplicate precedence |
+| `ortholog_profiles` | `compute_ortholog_profile_divergence` | Species mean profiles across shared orthogroups; first-recorded transcript selection; unsupported/constant pairs are NaN |
+| `counting_statistics` | `wilson_interval` | Descriptive binomial-model intervals; integer counts and finite positive z; unavailable denominators return None |
+| `statistics_io` | `read_analysis_provenance` | Strict JSON shape and unknown-field handling before statistical contract gates |
+
+The mean-profile distance is distinct from the sample-aligned per-gene estimator
+in `compute_expression_divergence_matrix`. API availability does not establish
+that a full Hymenoptera analysis ran. See [project method ownership](../../../../projects/hymenoptera_amalgkit/doc/02_workflow/04_metainformant_methods.md)
+and the [scientific method contract](../../../../docs/rna/HYMENOPTERA_METHODS.md).

@@ -74,3 +74,21 @@ failures. Convenience run-level DE remains exploratory until independent
 biological units and a scientific design are established.
 
 See the [Hymenoptera methods contract](../../../../docs/rna/HYMENOPTERA_METHODS.md).
+
+## Project-adapter extraction contract
+
+- Finalized matrix validation is reusable under `expression_io`; plain/gzip
+  reads preserve unique axes across chunks and fail on malformed, nonfinite,
+  negative or all-zero sample columns. Native profiles require two samples.
+- `ortholog_diagnostics` owns membership cardinality, reconciled drop reasons
+  and duplicate-evidence annotations, with precedence version retained explicitly.
+- `ortholog_profiles` returns species mean-profile distances and overlap counts.
+  It selects the first recorded transcript per mapping cell; insufficient overlap
+  and constant profiles remain unavailable. This must not be substituted for
+  per-gene correlations over aligned samples. Invalid declared matrix inputs fail.
+- `counting_statistics` provides descriptive Wilson intervals; `statistics_io`
+  parses predeclared provenance. Neither replaces inferential or biological gates.
+- Parent modules must not import nested project scripts. Existing nested helper
+  names may re-export parent methods while paths/manifests/artifact assembly stay
+  project-specific. The project validator checks selected callable method owners
+  and refuses shadowing local implementations or unavailable parent APIs.
