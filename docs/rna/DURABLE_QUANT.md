@@ -14,8 +14,12 @@ The AWS SDK is available through the `aws` dependency extra.
 
 A locked sample requires the current Amalgkit runtime and contract, a matching
 accession and species, the recorded abundance checksum, unique feature identifiers,
-finite non-negative numeric values, positive estimated counts, and a Kallisto run
-with processed and pseudoaligned reads. Production callers additionally bind the
+finite non-negative numeric values, positive finite count and TPM totals, positive
+lengths and effective lengths, and positive integer Kallisto read counters.
+Pseudoaligned reads cannot exceed processed reads; an optional target counter must
+match the unique abundance features. Boolean and fractional read counters fail.
+Fractional estimated counts and zero-expression rows remain valid; neither exact
+estimated-count/read-count equality nor exact TPM normalization is required. Production callers additionally bind the
 expected species configuration checksum.
 
 Output files are stored by SHA-256 under `blobs/sha256/`. A sample receipt identifies
@@ -76,8 +80,14 @@ the canonical data root or manuscript evidence.
 
 Launch only after recovery, input checks, and an authorized gross cost envelope.
 Use an EC2 instance profile with access to the selected bucket. The controller checks
-current regional compute pricing against its conservative hourly ceiling, reserves
-the complete job duration plus a storage allowance, and keeps a durable local ledger.
+current regional compute and gp3 storage prices, reserves the complete job duration
+plus a storage allowance, and keeps a durable local ledger. The hourly bound is the
+maximum of the operator floor and compute plus provisioned gp3 storage divided by
+672 hours (the shortest calendar month), one public IPv4 address at $0.005/hour,
+and a $0.05/hour operating margin. Larger disks therefore increase reservations.
+Each new job preserves its admitted hourly bound; earlier jobs retain the legacy
+ledger rate. Termination requests continue accruing charges until EC2 termination
+is observed. Credits never reduce this gross usage calculation.
 
 ```bash
 uv run --extra aws --extra rna python scripts/rna/complete_hymenoptera.py \
@@ -140,3 +150,13 @@ reviewed migration; no inferred index identity substitutes for content hashes.
 Archive recovery now requires the frozen index hash explicitly and refuses
 binding when the original manifest/index evidence is unavailable. Restore checks
 independent expected configuration and index hashes before exposing outputs.
+
+## Module boundaries
+
+`quant_storage` owns append-only object storage, `quant_validation` owns output
+integrity, and `durable_quant` owns receipt publication and restoration. Existing
+imports from `durable_quant` remain supported. `aws_inputs` owns immutable input
+archives and startup rendering; `aws_resources` owns price validation and elapsed
+usage accounting. The controller retains the single-writer admission/reconciliation
+state machine so resource reservation and persisted launch identity stay atomic.
+Worker startup installs the RNA and AWS extras from the committed frozen lock.

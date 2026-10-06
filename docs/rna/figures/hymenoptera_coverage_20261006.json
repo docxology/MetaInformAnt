@@ -1,0 +1,13 @@
+{
+  "observed_at": "2026-10-06T13:46:22.727311+00:00",
+  "inventory_sha256": "be233765099cf0baa662fb899d666988e93e83042b072d36b3735fe5f47e9324",
+  "receipt_keys_sha256": "91fa8e01630829a6906e9cbe9f656c2c0a942fe2f8f9fb77d9b0874f0a2f3ae1",
+  "semantics": "Eligible frozen tasks intersecting reference-bound receipt object keys; final all-output restore certificate still required",
+  "species_count": 27,
+  "eligible": 18200,
+  "bound_receipts": 7151,
+  "remaining": 11049,
+  "ledger_observed_at": "2026-10-06T13:46:08.913548+00:00",
+  "spent_upper_bound": 79.00189687648849,
+  "budget_ceiling": 750
+}

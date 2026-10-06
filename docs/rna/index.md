@@ -33,3 +33,5 @@ Amalgkit integration.
 The project-specific executable analysis, current data inventory, evidence
 manifest, manuscript methods, and figure provenance are maintained in
 [`projects/hymenoptera_amalgkit`](../../projects/hymenoptera_amalgkit/README.md).
+
+- [2026-10-06 reference-bound campaign checkpoint](HYMENOPTERA_STATUS_20261006.md)
