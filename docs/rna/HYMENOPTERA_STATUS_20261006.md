@@ -56,3 +56,11 @@ All-sample quant completion, downstream merge/wsfilter/finalize/sanity, finalize
 matrix certification, harmonized replicate units and inferential release gates
 remain unfinished. Hosted tests additionally require the scoped private-submodule
 credential; local checks cannot establish hosted authentication readiness.
+
+## Later resource observation
+
+The one-worker table above remains the 13:46 UTC snapshot. A separately
+[recorded later checkpoint](../../projects/hymenoptera_amalgkit/doc/01_infrastructure/completion_checkpoint_20261006.json)
+documents the six-worker trial, shared deadline reservations and unchanged $750
+gross ceiling. Do not substitute those later resource facts into this preserved
+coverage figure or interpret added capacity as a measured linear speedup.

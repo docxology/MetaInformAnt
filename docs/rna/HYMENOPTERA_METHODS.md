@@ -102,3 +102,27 @@ manuscript release remain unavailable.
 See [durable quantification](DURABLE_QUANT.md),
 [analysis APIs](../../src/metainformant/rna/analysis/README.md), and the
 [project](../../projects/hymenoptera_amalgkit/README.md).
+
+## Thin project orchestration
+
+The project delegates finalized-matrix validation and mean profiles to
+`expression_io`, membership/retention/duplicate audits to `ortholog_diagnostics`,
+mean-expression orthogroup distances to `ortholog_profiles`, descriptive Wilson
+intervals to `counting_statistics`, and JSON contract parsing to `statistics_io`.
+The numerical definitions remain in the parent package; cohort YAMLs, selected-root
+paths, manifests, captions, command arguments and project evidence decisions remain
+in the nested repository. Its method-adapter validator resolves actual parent
+callables and rejects shadowing implementations, unavailable symbols and broken
+Markdown fragments.
+
+Mapped mean-profile distances correlate expression across shared orthogroups,
+selecting the first recorded transcript per mapping cell. Unsupported or constant
+pairs remain NaN with their overlap counts; malformed declared matrices fail.
+This is distinct from correlating each gene across aligned samples and from
+comparing native feature fingerprints.
+
+See the [project ownership map](../../projects/hymenoptera_amalgkit/doc/02_workflow/04_metainformant_methods.md)
+and its [dated fleet checkpoint](../../projects/hymenoptera_amalgkit/doc/01_infrastructure/completion_checkpoint_20261006.json).
+The earlier coverage snapshots retain their observation times and counts. Six-worker
+operation and a 64-vCPU quota are capacity facts, not evidence of sustained linear
+throughput or completed inference.

@@ -207,3 +207,13 @@ release/inferential runbook used by the hymenoptera campaign (see
 `docs/rna/` campaign and validation docs). Until then, report status only via
 `scripts/report_campaign_status.py --json` — never prose snapshots of
 counts.
+
+## Hymenoptera method ownership
+
+The maintained [Hymenoptera adapter map](../../projects/hymenoptera_amalgkit/doc/02_workflow/04_metainformant_methods.md)
+identifies reusable package methods and project-specific integrity/orchestration
+code. Both parent source and nested adapters must be compatible. A standalone
+clone uses the parent frozen environment or a current importable installation;
+`METAINFORMANT_SRC` is a source fallback and does not override an existing package.
+Publish parent method dependencies before standalone adoption, then publish the
+nested commit before the final parent gitlink update. Record both revisions.
