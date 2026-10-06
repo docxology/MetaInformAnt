@@ -10,6 +10,8 @@ This subpackage provides tools for analyzing RNA-seq data including:
 
 from __future__ import annotations
 
+from metainformant.rna.analysis import native_artifact_validation
+
 from . import (
     across_species_orchestrator,
     atlas_plots,
@@ -42,6 +44,7 @@ __all__ = [
     "conservation_profiles",
     "cross_species",
     "counting_statistics",
+    "native_artifact_validation",
     "expression_io",
     "ortholog_diagnostics",
     "ortholog_profiles",
@@ -61,3 +64,4 @@ __all__ = [
     "validation",
     "within_species_orchestrator",
 ]
+

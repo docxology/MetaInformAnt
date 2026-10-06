@@ -92,3 +92,11 @@ See the [Hymenoptera methods contract](../../../../docs/rna/HYMENOPTERA_METHODS.
   names may re-export parent methods while paths/manifests/artifact assembly stay
   project-specific. The project validator checks selected callable method owners
   and refuses shadowing local implementations or unavailable parent APIs.
+
+### Native artifact validation
+
+`validate_profile_quality_table(manifest, quality)` and
+`validate_divergence_stability_table(matrix, stability)` raise on malformed, empty,
+duplicated, inconsistent, out-of-bounds or mismatched evidence. Numeric boolean
+values are rejected. Zero denominators retain NaN summaries; resampling intervals
+are sensitivity diagnostics and need not contain the original point estimate.

@@ -113,3 +113,13 @@ The mean-profile distance is distinct from the sample-aligned per-gene estimator
 in `compute_expression_divergence_matrix`. API availability does not establish
 that a full Hymenoptera analysis ran. See [project method ownership](../../../../projects/hymenoptera_amalgkit/doc/02_workflow/04_metainformant_methods.md)
 and the [scientific method contract](../../../../docs/rna/HYMENOPTERA_METHODS.md).
+
+### Native diagnostic artifact contracts
+
+`native_artifact_validation.validate_profile_quality_table` reconciles species,
+feature counts, finite/positive/zero partitions and descriptive summaries with
+the selected manifest, retaining unavailable denominators.
+`validate_divergence_stability_table` requires every unordered species pair exactly
+once, matching matrix point estimates, finite bounded sensitivity summaries and
+a common integer resampling count. These are artifact-integrity checks, not
+biological inference or evidence of full-species completion.
