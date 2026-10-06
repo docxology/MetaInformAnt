@@ -126,3 +126,12 @@ and its [dated fleet checkpoint](../../projects/hymenoptera_amalgkit/doc/01_infr
 The earlier coverage snapshots retain their observation times and counts. Six-worker
 operation and a 64-vCPU quota are capacity facts, not evidence of sustained linear
 throughput or completed inference.
+
+## Acquisition integrity retries
+
+ENA transfers resume a gzip-invalid completed download only when its retained
+bytes are shorter than a known advertised remote size and a bounded resume
+attempt remains. Unknown-size or full-size corrupt transfers are preserved as
+diagnostic witnesses before a fresh retry. Exhausted attempts fail without
+certifying a corrupt FASTQ. This source repair does not replace immutable worker
+software already running in the AWS campaign.

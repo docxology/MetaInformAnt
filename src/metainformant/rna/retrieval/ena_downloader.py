@@ -626,40 +626,29 @@ class ENADownloader:
                     remote_size = _remote_content_length(url)
                     if (
                         local_size > 0
-                        and (remote_size is None or local_size < remote_size)
-                        and gzip_integrity_retries <= self.integrity_retries
+                        and remote_size is not None
+                        and local_size < remote_size
+                        and gzip_integrity_retries < self.integrity_retries
                     ):
                         # Do NOT move the payload aside here: the retained
                         # .part bytes are the resume base for the next attempt.
                         gzip_integrity_retries += 1
-                        if remote_size is not None:
-                            logger.warning(
-                                "ENA transfer for %s is truncated (%d of %d advertised bytes) and "
-                                "failed gzip integrity; resuming from the retained partial "
-                                "(resume attempt %d/%d)",
-                                filename,
-                                local_size,
-                                remote_size,
-                                gzip_integrity_retries,
-                                self.integrity_retries,
-                            )
-                        else:
-                            logger.warning(
-                                "ENA transfer for %s failed gzip integrity with %d bytes received "
-                                "and advertised size unknown; resuming from the retained partial "
-                                "(resume attempt %d/%d)",
-                                filename,
-                                local_size,
-                                gzip_integrity_retries,
-                                self.integrity_retries,
-                            )
+                        logger.warning(
+                            "ENA transfer for %s is truncated (%d of %d advertised bytes) and "
+                            "failed gzip integrity; resuming from the retained partial "
+                            "(resume attempt %d/%d)",
+                            filename,
+                            local_size,
+                            remote_size,
+                            gzip_integrity_retries,
+                            self.integrity_retries,
+                        )
                         consecutive_no_progress = 0
                         continue
-                    if partial_file.exists() and (
-                        remote_size is not None and local_size >= remote_size
-                    ):
-                        # Full-size corrupt gzip: nothing to resume from, so
-                        # record a witness and start a fresh transfer.
+                    if partial_file.exists():
+                        # A full-size/unknown-size corrupt transfer, or an
+                        # exhausted bounded resume, must leave an invalid
+                        # witness before a fresh retry or terminal failure.
                         record_invalid_transfer(
                             partial_file,
                             reason="completed_transfer_invalid_gzip",
