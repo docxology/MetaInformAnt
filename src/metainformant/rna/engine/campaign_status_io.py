@@ -118,12 +118,12 @@ def file_coverage(inventory: Inventory, root: Path) -> tuple[frozenset[str], fro
 def probe_script(task_ids: frozenset[str], root: str = "/mnt/amalgkit") -> str:
     """Build a static read-only worker query; supplied identifiers are encoded data."""
     encoded = base64.b64encode(json.dumps(sorted(task_ids)).encode()).decode()
-    return f'''import base64,json,sqlite3
+    template = '''import base64,json,sqlite3
 from pathlib import Path
 from contextlib import closing
 from datetime import datetime,timezone
-wanted=set(json.loads(base64.b64decode({encoded!r})))
-databases=list(Path({root!r}).glob("**/pipeline_progress.db"))
+wanted=set(json.loads(base64.b64decode(@@TASK_IDS@@)))
+databases=list(Path(@@ROOT@@).glob("**/pipeline_progress.db"))
 rows=[]
 for path in databases:
     with closing(sqlite3.connect(path.resolve().as_uri()+"?mode=ro",uri=True)) as connection:
@@ -133,6 +133,7 @@ for path in databases:
                 rows.append(dict(task_id=key,state=state))
 print(json.dumps(dict(observed_at=datetime.now(timezone.utc).isoformat(),databases=[str(p) for p in databases],rows=rows)))
 '''
+    return template.replace("@@TASK_IDS@@", repr(encoded)).replace("@@ROOT@@", repr(root))
 
 
 def collect_cloud(campaign_root: Path, bucket: str, profile: str, region: str, *, probe_workers: bool = True) -> CloudSnapshot:

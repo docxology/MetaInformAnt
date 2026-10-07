@@ -103,3 +103,24 @@ def test_actual_amalgkit_accession_prefixed_filenames(tmp_path: Path) -> None:
     complete, partial = file_coverage(inventory(), tmp_path)
     assert not complete
     assert partial == frozenset({"ant_a/SRR1"})
+
+
+def test_worker_probe_keeps_hostile_identifiers_as_data(tmp_path: Path) -> None:
+    root = tmp_path / "worker'\";raise RuntimeError('executed');#"
+    root.mkdir()
+    accession = "SRR1');DROP TABLE samples;--"
+    database = root / "pipeline_progress.db"
+    with sqlite3.connect(database) as connection:
+        connection.execute("CREATE TABLE samples(species TEXT,srr_id TEXT,state TEXT)")
+        connection.execute("INSERT INTO samples VALUES(?,?,?)", ("ant_a", accession, "pending"))
+    before = database.read_bytes()
+    result = subprocess.run(
+        [sys.executable, "-c", probe_script(frozenset({f"ant_a/{accession}"}), str(root))],
+        check=True, capture_output=True, text=True,
+    )
+    assert [(row.task_id, row.state) for row in parse_probe(result.stdout).rows] == [
+        (f"ant_a/{accession}", "pending")
+    ]
+    assert database.read_bytes() == before
+    with sqlite3.connect(database) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM samples").fetchone() == (1,)

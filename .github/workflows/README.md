@@ -57,6 +57,12 @@ This document describes the CI/CD workflows for the MetaInformAnt project.
 | `fat-filesystem-test` | Test on FAT-like filesystem |
 | `summary` | Report overall status |
 
+The public Test Suite checks out only the parent repository. Private project
+submodules are not fetched with the repository-scoped `GITHUB_TOKEN`; their
+project-specific tests report explicit skips when unavailable. This workflow
+does not validate the nested Hymenoptera or BeeWAS suites. Run those suites
+separately in an authenticated project checkout before publishing project changes.
+
 ### Test Types
 
 - `fast` - Quick core tests (~15s)

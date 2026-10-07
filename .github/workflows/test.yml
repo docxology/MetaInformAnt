@@ -49,7 +49,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       with:
-        submodules: recursive
+        submodules: false
 
     - name: Install uv
       uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -148,7 +148,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       with:
-        submodules: recursive
+        submodules: false
 
     - name: Install uv
       uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -170,7 +170,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       with:
-        submodules: recursive
+        submodules: false
 
     - name: Install uv
       uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -207,7 +207,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       with:
-        submodules: recursive
+        submodules: false
 
     - name: Install uv
       uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -252,7 +252,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       with:
-        submodules: recursive
+        submodules: false
 
     - name: Install uv
       uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -297,7 +297,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       with:
-        submodules: recursive
+        submodules: false
 
     - name: Install uv
       uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -352,7 +352,7 @@ jobs:
     steps:
     - name: Test Summary
       run: |
-        echo "Test Results Summary:"
+        echo "Test Results Summary (public parent checkout; private project suites excluded):"
         echo "- Test jobs (fast + extended): ${{ needs.test.result }}"
         echo "- Infrastructure tests: ${{ needs.test-infrastructure.result }}"
         echo "- Quality checks: ${{ needs.quality-checks.result }}"
