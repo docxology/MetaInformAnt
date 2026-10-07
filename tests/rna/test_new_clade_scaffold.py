@@ -11,6 +11,12 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCAFFOLD = REPO_ROOT / "scripts" / "rna" / "new_clade_scaffold.py"
+PROJECT_SHIM = REPO_ROOT / "projects/hymenoptera_amalgkit/scripts/metainformant_import.py"
+PROJECT_AVAILABLE = (REPO_ROOT / "projects/hymenoptera_amalgkit/README.md").is_file()
+requires_project_shim = pytest.mark.skipif(
+    not PROJECT_AVAILABLE,
+    reason="Canonical Hymenoptera import shim is unavailable in this parent-only checkout",
+)
 
 SPECIES_LIST = "\n".join(
     [
@@ -44,6 +50,7 @@ def _scaffold(tmp_path: Path, species_file: Path, clade: str = "lepidoptera") ->
     return _run(["--clade", clade, "--species-list", str(species_file), "--output-dir", str(tmp_path)])
 
 
+@requires_project_shim
 def test_scaffold_generates_expected_files(tmp_path: Path, species_file: Path) -> None:
     result = _scaffold(tmp_path, species_file)
     assert result.returncode == 0, result.stderr
@@ -70,6 +77,7 @@ def test_scaffold_generates_expected_files(tmp_path: Path, species_file: Path) -
     assert shim_generated == shim_canonical, "shim must be copied verbatim from the canonical source"
 
 
+@requires_project_shim
 def test_scaffold_output_is_deterministic(tmp_path: Path, species_file: Path) -> None:
     first_dir = tmp_path / "a"
     second_dir = tmp_path / "b"
@@ -82,6 +90,7 @@ def test_scaffold_output_is_deterministic(tmp_path: Path, species_file: Path) ->
     assert snapshot(first_dir / "lepidoptera_amalgkit") == snapshot(second_dir / "lepidoptera_amalgkit")
 
 
+@requires_project_shim
 def test_generated_species_config_matches_contract(tmp_path: Path, species_file: Path) -> None:
     assert _scaffold(tmp_path, species_file).returncode == 0
     config_path = tmp_path / "lepidoptera_amalgkit" / "config" / "amalgkit" / "amalgkit_bombyx_mori.yaml"
@@ -112,6 +121,7 @@ def test_generated_species_config_matches_contract(tmp_path: Path, species_file:
     assert cross["analysis"]["inferential_statistics"] == "none"
 
 
+@requires_project_shim
 def test_missing_accession_produces_todo_entries(tmp_path: Path) -> None:
     species_file = tmp_path / "sparse.txt"
     species_file.write_text("Danaus plexippus\n", encoding="utf-8")
@@ -128,6 +138,7 @@ def test_missing_accession_produces_todo_entries(tmp_path: Path) -> None:
     assert "taxon_id" not in config
 
 
+@requires_project_shim
 def test_generated_tests_pass_in_skeleton(tmp_path: Path, species_file: Path) -> None:
     """The skeleton's own pytest suite passes against the real parent package."""
     result = _scaffold(tmp_path, species_file)
@@ -153,6 +164,7 @@ def test_generated_tests_pass_in_skeleton(tmp_path: Path, species_file: Path) ->
     assert "resolved:" in probe.stdout
 
 
+@requires_project_shim
 def test_scaffold_refuses_existing_target(tmp_path: Path, species_file: Path) -> None:
     assert _scaffold(tmp_path, species_file).returncode == 0
     result = _scaffold(tmp_path, species_file)
@@ -188,3 +200,10 @@ def test_invalid_clade_name_rejected(tmp_path: Path, species_file: Path) -> None
     result = _run(["--clade", "../escape", "--species-list", str(species_file), "--output-dir", str(tmp_path)])
     assert result.returncode == 2
     assert "invalid clade name" in result.stderr
+
+
+@pytest.mark.skipif(PROJECT_AVAILABLE, reason="Requires a parent-only checkout")
+def test_scaffold_refuses_missing_project_shim(tmp_path: Path, species_file: Path) -> None:
+    result = _scaffold(tmp_path, species_file)
+    assert result.returncode != 0
+    assert "canonical import shim not found" in result.stderr

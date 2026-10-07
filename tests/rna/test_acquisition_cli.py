@@ -142,15 +142,12 @@ def test_generic_aws_template_is_complete_shell_safe_and_syntax_valid(
 
 
 @pytest.mark.parametrize("lane", ["local", "aws"])
-def test_generic_and_project_execution_help_is_callable(lane: str) -> None:
-    for entry in (
-        ROOT / "scripts/rna/acquisition.py",
-        ROOT / "projects/hymenoptera_amalgkit/scripts/acquisition.py",
-    ):
-        result = subprocess.run(
-            [sys.executable, str(entry), lane, "--help"],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        assert "--config-dir" in result.stdout
+@pytest.mark.parametrize("entry", ["scripts/rna/acquisition.py", "projects/hymenoptera_amalgkit/scripts/acquisition.py"])
+def test_generic_and_project_execution_help_is_callable(lane: str, entry: str) -> None:
+    if entry.startswith("projects/") and not (ROOT / "projects/hymenoptera_amalgkit/README.md").is_file():
+        pytest.skip("Hymenoptera acquisition adapter is unavailable in this parent-only checkout")
+    result = subprocess.run(
+        [sys.executable, str(ROOT / entry), lane, "--help"],
+        check=True, capture_output=True, text=True,
+    )
+    assert "--config-dir" in result.stdout
