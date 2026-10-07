@@ -136,3 +136,29 @@ def test_real_manifest_quantification_and_second_run_reuses_bytes(
     assert (abundance.read_bytes(), abundance.stat().st_mtime_ns) == before
     assert first["task_results_journal"] != second["task_results_journal"]
     assert Path(first["task_results_journal"]).is_file()
+
+    # Keep immutable source copies intact while tampering only with the files
+    # consumed by the worker. Both must fail before quant reuse or acquisition.
+    snapshot_path = tmp_path / "snapshot.json"
+    frozen = tmp_path / "inputs/test_species/work"
+    for source in (index, metadata):
+        target = frozen / source.relative_to(work)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, target)
+    snapshot = json.loads(snapshot_path.read_text())
+    snapshot["input_files"] = [
+        {"path": str(p.relative_to(tmp_path)), "sha256": sha256_file(p)}
+        for p in (frozen / "index/Test_species.idx", frozen / "metadata/metadata_selected.tsv")
+    ]
+    snapshot_path.write_text(json.dumps(snapshot))
+    metadata_bytes = metadata.read_bytes()
+    metadata.write_bytes(metadata_bytes + b"\n")
+    with pytest.raises(ValueError, match="worker metadata differs"):
+        run_manifest(**kwargs)
+    metadata.write_bytes(metadata_bytes)
+    index_bytes = index.read_bytes()
+    index.write_bytes(index_bytes + b"changed-consumed-index")
+    with pytest.raises(ValueError, match="worker reference differs"):
+        run_manifest(**kwargs)
+    index.write_bytes(index_bytes)
+    assert (abundance.read_bytes(), abundance.stat().st_mtime_ns) == before

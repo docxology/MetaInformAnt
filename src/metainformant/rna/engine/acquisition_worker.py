@@ -71,6 +71,7 @@ def _run_manifest_owned(
         data_root=data_root,
         config_dir=config_dir,
         tasks=tasks,
+        snapshot=snapshot,
     )
     durable_store = None
     durable_cohort = os.environ.get("AMALGKIT_DURABLE_COHORT", "")
