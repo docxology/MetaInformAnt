@@ -73,6 +73,11 @@ This reports wrappers deferred only for registered, empty submodules. Genuine
 orphans, broken parent links, malformed wrappers and populated incomplete projects
 still fail. The default `--check` remains strict and requires the full checkout.
 
+Each pytest invocation inherits a five-minute per-test timeout. Test matrix and
+module-lane jobs have a 45-minute limit; other jobs use shorter limits. New runs
+cancel superseded runs for the same workflow and branch. A timeout fails the job
+and is reported as incomplete verification.
+
 ### Test Types
 
 - `fast` - Quick core tests (~15s)

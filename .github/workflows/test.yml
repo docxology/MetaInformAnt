@@ -18,12 +18,18 @@ on:
           - network
           - external
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
+  PYTEST_ADDOPTS: "--timeout=300"
   PYTHONUNBUFFERED: 1
   UV_CACHE_DIR: .uv-cache
 
 jobs:
   test:
+    timeout-minutes: 45
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -143,6 +149,7 @@ jobs:
         retention-days: 7
 
   test-infrastructure:
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -165,6 +172,7 @@ jobs:
       run: uv run pytest tests/infrastructure/test_test_infrastructure.py -v
 
   quality-checks:
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -202,6 +210,7 @@ jobs:
       run: bash scripts/package/security_checks.sh
 
   test-examples:
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -246,6 +255,7 @@ jobs:
         retention-days: 7
 
   fat-filesystem-test:
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
@@ -281,6 +291,7 @@ jobs:
         bash scripts/package/test.sh --mode fast
 
   test-lanes:
+    timeout-minutes: 45
     # Diagnostic parallel lanes mirroring `scripts/test_matrix.py --list`
     # (core, dna, rna, mcp, domains, package). These are NOT release
     # evidence: the full-suite `test` job (coverage mode with the
@@ -346,6 +357,7 @@ jobs:
         retention-days: 7
 
   summary:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     needs: [test, test-infrastructure, quality-checks, test-examples, fat-filesystem-test]
     if: always()
