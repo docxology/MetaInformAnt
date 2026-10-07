@@ -30,6 +30,12 @@ the campaign preflight before any discovery or scheduling work.
 
 ## Key interfaces
 
+- `acquisition_*` implements generic frozen local/AWS manifest acquisition,
+  disjoint allocations, stage-resource controls, replay journals, live regional
+  price quotation and explicit cost/time scenarios. Use the public facade
+  `metainformant.rna.amalgkit.acquisition` or `scripts/rna/acquisition.py`.
+  [Generic acquisition guide](../../../../docs/rna/GENERIC_ACQUISITION.md).
+
 - `StreamingPipelineOrchestrator.run_all()` starts the bounded producer for a
   declared config set. It first runs `run_campaign_preflight()`
   (data-root write probe plus bare `amalgkit` PATH resolution) and refuses to

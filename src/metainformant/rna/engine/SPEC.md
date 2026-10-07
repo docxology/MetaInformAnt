@@ -39,6 +39,14 @@ writes timestamped Markdown/JSON and sample/transfer TSVs without changing
 producer state. It does not certify receipt contents or biological readiness.
 
 ### Exports
+- `acquisition_manifest`, `acquisition_references`, `acquisition_sample`,
+  `acquisition_worker`, `acquisition_worker_cli`: frozen local/AWS execution;
+  configurations/input hashes and exclusive root ownership checked before work;
+  per-run journals retained and reused/newly quantified counts distinguished.
+- `acquisition_allocation`, `acquisition_snapshot`, `acquisition_estimates`,
+  `acquisition_pricing`, `acquisition_cli`: immutable disjoint lane planning,
+  conflict-refusing staging and explicit gross cost/time scenarios. No estimator
+  grants execution permission or substitutes for runtime cost reservations.
 - `__init__.py`
 - `discovery.py`
 - `exclusions.py`

@@ -31,7 +31,7 @@ ENA_FIELDS = "run_accession,scientific_name,tax_id,library_layout,library_strate
 
 
 def freeze_inventory(
-    data_root: Path, config_dir: Path, output_dir: Path
+    data_root: Path, config_dir: Path, output_dir: Path, *, expected_species_count: int | None = 27
 ) -> dict[str, Any]:
     """Append newly discovered runs to frozen metadata, leaving canonical inputs untouched."""
     if (data_root / ".full_campaign.lock").exists():
@@ -41,7 +41,15 @@ def freeze_inventory(
     output_dir.mkdir(parents=True, exist_ok=True)
     destination = output_dir / "inventory.json"
     if destination.exists():
-        return json.loads(destination.read_text())
+        existing = json.loads(destination.read_text())
+        names = discover_species_config_names(config_dir)
+        frozen_names = {species["config_name"] for species in existing["species"]}
+        if set(names) != frozen_names or (expected_species_count is not None and len(names) != expected_species_count):
+            raise ValueError("existing frozen inventory differs from requested species configuration set")
+        for species in existing["species"]:
+            if hashlib.sha256((config_dir / species["config_name"]).read_bytes()).hexdigest() != species["config_sha256"]:
+                raise ValueError("existing frozen inventory configuration changed")
+        return existing
     with sqlite3.connect(
         f"file:{data_root / 'pipeline_progress.db'}?mode=ro", uri=True
     ) as db:
@@ -56,8 +64,8 @@ def freeze_inventory(
             for s, r, state in db.execute("SELECT species,srr_id,state FROM samples")
         }
     names = discover_species_config_names(config_dir)
-    if len(names) != 27:
-        raise ValueError(f"expected 27 configured species, found {len(names)}")
+    if not names or (expected_species_count is not None and len(names) != expected_species_count):
+        raise ValueError(f"expected {expected_species_count or 'nonempty'} configured species, found {len(names)}")
 
     def species_inventory(name: str) -> dict[str, Any]:
         species = species_name_from_config(name)
@@ -165,7 +173,7 @@ def freeze_inventory(
                 size = int(float(row.get("size") or 0))
             tasks.append(
                 {
-                    "schema": "metainformant.hymenoptera.gcp_task_manifest.v1",
+                    "schema": "metainformant.rna.acquisition_task.v1" if expected_species_count is None else "metainformant.hymenoptera.gcp_task_manifest.v1",
                     "task_id": f"{species}/{accession}",
                     "species": species,
                     "accession": accession,
@@ -202,7 +210,7 @@ def freeze_inventory(
     if len(task_ids) != len(set(task_ids)):
         raise ValueError("accession assigned to more than one configured species")
     inventory = {
-        "schema": "metainformant.hymenoptera.completion_inventory.v1",
+        "schema": "metainformant.rna.acquisition_inventory.v1" if expected_species_count is None else "metainformant.hymenoptera.completion_inventory.v1",
         "frozen_at": datetime.now(UTC).isoformat(),
         "species": species_rows,
         "species_count": len(species_rows),

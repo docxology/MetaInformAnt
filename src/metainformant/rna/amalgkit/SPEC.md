@@ -13,6 +13,9 @@ Amalgkit RNA-seq workflow module exports.
 
 ## 🔌 API Definition
 ### Exports
+- `acquisition.py`: public facade for frozen acquisition manifests, immutable
+  local/AWS allocations, guarded workers and gross cost/time estimates. Runtime
+  methods are implemented in `metainformant.rna.engine.acquisition_*`.
 - `__init__.py`
 - `__main__.py`
 - `_amalgkit_impl.py`

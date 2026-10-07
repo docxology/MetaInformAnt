@@ -18,9 +18,11 @@ from metainformant.rna.engine.aws_inputs import (
     _render_startup as _render_startup,
 )
 from metainformant.rna.engine.aws_fleet import in_flight_tasks, reserved_future_charge
+from metainformant.rna.engine.acquisition_allocation import aws_allocation_ids
+from metainformant.rna.engine.acquisition_aws_policy import WorkerImage, validate_worker_image
+from metainformant.rna.engine.campaign_status import load_inventory
 from metainformant.rna.engine.aws_resources import (
     WorkerPrices,
-    catalog_unit_price,
     campaign_charge,
 )
 from metainformant.rna.engine.durable_quant import S3Store, restore_quantification
@@ -139,7 +141,7 @@ def verify_locked_campaign(
             {"task_id": task["task_id"], "contract_id": receipt["contract_id"]}
         )
     certificate = {
-        "schema": "metainformant.hymenoptera.quant_completion.v1",
+        "schema": "metainformant.rna.quant_completion.v1" if inventory.get("schema") == "metainformant.rna.acquisition_inventory.v1" else "metainformant.hymenoptera.quant_completion.v1",
         "cohort": cohort,
         "verified_at": datetime.now(UTC).isoformat(),
         "inventory_sha256": hashlib.sha256(
@@ -180,6 +182,11 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
     root, repo = args.campaign_root.resolve(), args.repo.resolve()
     root.mkdir(parents=True, exist_ok=True)
     inventory_bytes = (root / "inventory.json").read_bytes()
+    inventory_ids = load_inventory(inventory_bytes).task_ids()
+    allocation_path = getattr(args, "task_allocation", None)
+    aws_ids = aws_allocation_ids(allocation_path, inventory_ids, hashlib.sha256(inventory_bytes).hexdigest()) if allocation_path else inventory_ids
+    config_dir = getattr(args, "config_dir", None) or repo / "projects/hymenoptera_amalgkit/config/amalgkit"
+    generic_worker = getattr(args, "config_dir", None) is not None
     inventory = json.loads(inventory_bytes)
     targets = [
         SourceTarget(t["accession"], sp["species"], int(sp["taxid"]))
@@ -206,11 +213,10 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                 )
     inventory["source_resolutions"] = [r.accession for r in resolutions]
     for species in inventory["species"]:
-        config_path = (
-            repo
-            / "projects/hymenoptera_amalgkit/config/amalgkit"
-            / species["config_name"]
-        )
+        name = species["config_name"]
+        if not isinstance(name, str) or Path(name).name != name or "\\" in name or not name.endswith(".yaml"):
+            raise ValueError("unsafe frozen configuration name")
+        config_path = config_dir / name
         if (
             hashlib.sha256(config_path.read_bytes()).hexdigest()
             != species["config_sha256"]
@@ -220,42 +226,11 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
             )
     state_path = root / "aws_controller.json"
     session = boto3.Session(profile_name=args.profile, region_name=args.region)
-    if args.region != "us-east-2":
-        raise ValueError("the completion pricing guard currently requires us-east-2")
-    pricing = session.client("pricing", region_name="us-east-1")
-    prices = pricing.get_products(
-        ServiceCode="AmazonEC2",
-        Filters=[
-            {"Type": "TERM_MATCH", "Field": key, "Value": value}
-            for key, value in {
-                "instanceType": args.instance_type,
-                "location": "US East (Ohio)",
-                "operatingSystem": "Linux",
-                "tenancy": "Shared",
-                "preInstalledSw": "NA",
-                "capacitystatus": "Used",
-            }.items()
-        ],
-        MaxResults=10,
-    )
-    compute_rate = catalog_unit_price(prices["PriceList"], "Hrs")
-    storage_prices = pricing.get_products(
-        ServiceCode="AmazonEC2",
-        Filters=[
-            {"Type": "TERM_MATCH", "Field": key, "Value": value}
-            for key, value in {
-                "volumeApiName": "gp3",
-                "location": "US East (Ohio)",
-                "productFamily": "Storage",
-            }.items()
-        ],
-        MaxResults=10,
-    )
-    worker_prices = WorkerPrices(
-        compute_rate,
-        catalog_unit_price(storage_prices["PriceList"], "GB-Mo"),
-        args.hourly_upper_bound,
-    )
+    from metainformant.rna.engine.acquisition_pricing import quote_aws_worker
+    quote = quote_aws_worker(region=args.region, instance_type=args.instance_type,
+                             disk_gib=getattr(args, "min_disk_gib", 600), profile=args.profile,
+                             hourly_floor=args.hourly_upper_bound)
+    worker_prices = WorkerPrices(quote.compute_hourly_usd, quote.gp3_gib_month_usd, args.hourly_upper_bound)
     ec2 = session.client(
         "ec2",
         config=Config(
@@ -264,13 +239,20 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
             retries={"mode": "standard", "max_attempts": 5},
         ),
     )
+    if generic_worker:
+        images = ec2.describe_images(ImageIds=[args.ami])["Images"]
+        if len(images) != 1:
+            raise ValueError("generic acquisition requires exactly one available worker image")
+        image = images[0]
+        validate_worker_image(WorkerImage(image.get("State", ""), image.get("Architecture", ""), image.get("PlatformDetails", ""), bool(image.get("ProductCodes"))),
+                              custom_template=getattr(args, "startup_template", None) is not None)
     store = S3Store(
         args.bucket, "locked-quant-v1", profile=args.profile, region=args.region
     )
     objects = S3Store(
         args.bucket, "completion-v1", profile=args.profile, region=args.region
     )
-    template = repo / "projects/hymenoptera_amalgkit/scripts/cloud/aws_startup.sh"
+    template = getattr(args, "startup_template", None) or (repo / "scripts/rna/aws_acquisition_startup.sh" if generic_worker else repo / "projects/hymenoptera_amalgkit/scripts/cloud/aws_startup.sh")
     source = root / "source.tar"
     source_sha = _source_bundle(repo, source)
     source_key = f"{args.cohort}/sources/{source_sha}.tar"
@@ -280,7 +262,7 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
         json.loads(state_path.read_text())
         if state_path.exists()
         else {
-            "schema": "metainformant.hymenoptera.aws_completion.v1",
+            "schema": "metainformant.rna.aws_acquisition.v1" if generic_worker else "metainformant.hymenoptera.aws_completion.v1",
             "cohort": args.cohort,
             "budget_ceiling": args.budget,
             "historical_gross": args.historical_gross,
@@ -292,6 +274,11 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
     if state["cohort"] != args.cohort or args.budget < state["budget_ceiling"]:
         raise ValueError("controller scope/budget transition is inconsistent")
     state["budget_ceiling"] = args.budget
+    allocation_sha = hashlib.sha256(allocation_path.read_bytes()).hexdigest() if allocation_path else None
+    if state.get("allocation_sha256") not in {None, allocation_sha} or (state.get("allocation_sha256") and not allocation_path):
+        raise ValueError("persisted acquisition allocation cannot be changed or omitted on resume")
+    if allocation_path:
+        state["allocation_sha256"] = allocation_sha
     state["max_workers"] = args.max_workers
     try:
         while True:
@@ -354,6 +341,8 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                 j for j in state["jobs"] if j["status"] in {"running", "terminating"}
             ]
             occupied = in_flight_tasks(state["jobs"])
+            if allocation_path and occupied - aws_ids - locked:
+                raise ValueError("new allocation conflicts with existing live AWS ownership")
             future_charge = reserved_future_charge(
                 state["jobs"], now, state["hourly_upper_bound"]
             )
@@ -366,11 +355,7 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                     store,
                     args.cohort,
                     root / "completed_quant",
-                    config_dir=args.repo
-                    / "projects"
-                    / "hymenoptera_amalgkit"
-                    / "config"
-                    / "amalgkit",
+                    config_dir=config_dir,
                 )
                 state["status"] = "all_quant_locked"
                 _write_json(state_path, state)
@@ -389,25 +374,31 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                 if args.once:
                     return state
                 continue
+            if not aws_ids - locked:
+                _wait_for_fleet(state, state_path, args, "waiting_for_local_acquisition")
+                if args.once:
+                    return state
+                continue
             attempts: dict[str, int] = {}
             for job in state["jobs"]:
                 for task_id in job["task_ids"]:
                     attempts[task_id] = attempts.get(task_id, 0) + 1
             species_options = sorted(
                 inventory["species"],
-                key=lambda s: (s["species"] != "nasonia_vitripennis", s["species"]),
+                key=lambda s: (s["species"] != getattr(args, "priority_species", "nasonia_vitripennis"), s["species"]),
             )
             selected_species, partition = None, []
             for species in species_options:
                 eligible = [
                     t
                     for t in species["tasks"]
-                    if attempts.get(t["task_id"], 0) < args.max_attempts
+                    if t["task_id"] in aws_ids and attempts.get(t["task_id"], 0) < args.max_attempts
                 ]
                 partition = choose_partition(
                     eligible,
                     locked | occupied,
-                    max_tasks=20 if not state["jobs"] else 120,
+                    max_bytes=getattr(args, "partition_bytes", 60 * 1024**3),
+                    max_tasks=getattr(args, "partition_tasks", 120) if state["jobs"] else min(20, getattr(args, "partition_tasks", 120)),
                 )
                 if partition:
                     selected_species = species
@@ -424,9 +415,9 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                 _write_json(state_path, state)
                 return state
             largest = max(int(t["fastq_bytes"]) for t in partition)
-            raw_bound = max(60 * 1024**3, largest)
-            disk_gib = max(600, math.ceil(raw_bound * 6 / 1024**3) + 100)
-            if disk_gib > 2000:
+            raw_bound = max(getattr(args, "partition_bytes", 60 * 1024**3), largest)
+            disk_gib = max(getattr(args, "min_disk_gib", 600), math.ceil(raw_bound * getattr(args, "disk_expansion_factor", 6) / 1024**3) + getattr(args, "disk_reserve_gib", 100))
+            if disk_gib > getattr(args, "max_disk_gib", 2000):
                 raise ValueError(
                     "partition requires an independently reviewed disk profile"
                 )
@@ -449,7 +440,8 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
             job_id = f"job-{len(state['jobs']) + 1:05d}"
             directory = root / "jobs" / job_id
             bundle, input_sha = _inputs_bundle(
-                root, selected_species, partition, directory
+                root, selected_species, partition, directory,
+                config_path=config_dir / selected_species["config_name"] if generic_worker else None,
             )
             input_key = f"{args.cohort}/inputs/{input_sha}.tar"
             objects.put(input_key, bundle.read_bytes())
@@ -468,6 +460,11 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                     "JOB_PREFIX": prefix,
                     "LIMIT_SECONDS": limit_seconds,
                     "RAW_BYTES": raw_bound,
+                    **({"WORKERS": args.worker_workers, "THREADS": args.worker_threads,
+                        "QUANT_SLOTS": args.worker_quant_slots, "FASTQ_SLOTS": args.worker_fastq_slots,
+                        "MAX_IN_FLIGHT": args.worker_max_in_flight, "FASTQ_THREADS": args.worker_fastq_threads,
+                        "COMPRESSION_THREADS": args.worker_compression_threads, "VALIDATION_SLOTS": args.worker_validation_slots}
+                       if generic_worker else {}),
                 },
             )
             (directory / "user_data.sh").write_text(script)
@@ -500,7 +497,7 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                     {
                         "ResourceType": "instance",
                         "Tags": [
-                            {"Key": "Name", "Value": f"hym-lock-{job_id}"},
+                            {"Key": "Name", "Value": f"amalgkit-{args.cohort}-{job_id}"},
                             {"Key": "daf-cloud", "Value": "managed"},
                             {"Key": "cohort", "Value": args.cohort},
                             {"Key": "job-id", "Value": job_id},
@@ -508,6 +505,8 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                     }
                 ],
             }
+            if args.instance_type.split(".")[0] in {"t2", "t3", "t3a", "t4g"}:
+                request["CreditSpecification"] = {"CpuCredits": "standard"}
             job = {
                 "job_id": job_id,
                 "task_ids": task_ids,
@@ -572,11 +571,30 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--poll-seconds", type=int, default=60)
     parser.add_argument("--max-workers", type=int, default=1)
     parser.add_argument("--max-attempts", type=int, default=3)
+    parser.add_argument("--config-dir", type=Path, help="Use the generic worker with these frozen species configurations")
+    parser.add_argument("--startup-template", type=Path)
+    parser.add_argument("--task-allocation", type=Path)
+    parser.add_argument("--priority-species", default="nasonia_vitripennis", help="Legacy priority; set an empty value for generic lexical order")
+    parser.add_argument("--partition-bytes", type=int, default=60 * 1024**3)
+    parser.add_argument("--partition-tasks", type=int, default=120)
+    parser.add_argument("--min-disk-gib", type=int, default=600)
+    parser.add_argument("--max-disk-gib", type=int, default=2000)
+    parser.add_argument("--disk-expansion-factor", type=float, default=6)
+    parser.add_argument("--disk-reserve-gib", type=int, default=100)
+    for flag, default in (("workers", 16), ("threads", 8), ("quant-slots", 4), ("fastq-slots", 1),
+                          ("max-in-flight", 12), ("fastq-threads", 2), ("compression-threads", 2), ("validation-slots", 4)):
+        parser.add_argument(f"--worker-{flag}", type=int, default=default)
     parser.add_argument("--once", action="store_true")
     args = parser.parse_args(argv)
+    if (min(args.partition_bytes, args.partition_tasks, args.min_disk_gib, args.max_disk_gib, args.disk_reserve_gib) <= 0
+        or not math.isfinite(args.disk_expansion_factor) or args.disk_expansion_factor < 1
+        or args.min_disk_gib > args.max_disk_gib or args.max_disk_gib > 16384):
+        parser.error("invalid partition/disk bounds; this controller caps configured volumes at 16384 GiB")
     if (
         min(args.job_seconds, args.poll_seconds, args.max_attempts, args.max_workers)
         <= 0
+        or min(args.worker_workers, args.worker_threads, args.worker_quant_slots, args.worker_fastq_slots,
+               args.worker_max_in_flight, args.worker_fastq_threads, args.worker_compression_threads, args.worker_validation_slots) <= 0
     ):
         parser.error("job, polling, attempt and worker bounds must be positive")
     print(json.dumps(run_controller(args), indent=2))

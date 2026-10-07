@@ -2,6 +2,11 @@
 
 Python wrapper for the amalgkit RNA-seq quantification tool.
 
+`metainformant.rna.amalgkit.acquisition` exposes generic idempotent local/AWS
+manifest acquisition, disjoint lane planning, configurable stage parallelism,
+and evidence-based cost/time scenarios. Methods are shared with project adapters.
+See the [generic acquisition guide](../../../../docs/rna/GENERIC_ACQUISITION.md).
+
 ## Components
 
 | File | Purpose |

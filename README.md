@@ -37,6 +37,8 @@ METAINFORMANT provides broad bioinformatics analysis modules across genomics, tr
 
 RNA campaigns support [durable per-sample quantification and bounded AWS completion](docs/rna/DURABLE_QUANT.md),
 including verified restoration, immutable output receipts, and explicit missing-sample ledgers.
+[Generic local/AWS acquisition](docs/rna/GENERIC_ACQUISITION.md) adds configurable
+parallelism, disjoint lane planning, and explicit cost/time scenarios.
 
 ### System Architecture
 
