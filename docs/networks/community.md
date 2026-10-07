@@ -24,7 +24,8 @@ communities = detect_communities(
     network,
     method='leiden',
     resolution=1.0,
-    n_iterations=2
+    n_iterations=2,
+    random_state=42
 )
 
 # Hierarchical clustering
@@ -41,6 +42,9 @@ communities = detect_communities(
 - `'leiden'`: Leiden algorithm (improved Louvain)
 - `'hierarchical'`: Agglomerative hierarchical clustering
 - `'spectral'`: Spectral clustering
+
+Leiden uses RB configuration modularity so `resolution` controls the partition.
+`random_state` seeds the Leiden optimiser directly for reproducible runs.
 
 ### modularity()
 

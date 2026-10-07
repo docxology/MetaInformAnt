@@ -235,6 +235,9 @@ filterwarnings = [
     "ignore::PendingDeprecationWarning",
     "ignore::UserWarning",
     "ignore::ImportWarning:umap.*",  # Ignore umap tensorflow import warning
+    # Leiden 0.10.2 docstring escapes: keep warnings visible until Louvain
+    # supports the igraph version required by the fixed Leiden release.
+    'default:invalid escape sequence:SyntaxWarning:.*leidenalg[\\/](VertexPartition|Optimiser)$',
     # Warn about any mock usage as it violates our policy
     "error::pytest.PytestUnraisableExceptionWarning:.*mock.*",
 ]

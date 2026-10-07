@@ -158,3 +158,14 @@ class TestLeidenCommunities:
             pytest.skip("leidenalg/igraph not available")
         communities = leiden_communities(_two_cluster_graph(), random_state=42)
         _assert_two_cluster_split(communities)
+
+
+@pytest.mark.parametrize("resolution, expected_count", [(0.0, 1), (10.0, 10)])
+def test_leiden_resolution_changes_real_partition(resolution: float, expected_count: int) -> None:
+    if not HAS_LEIDEN:
+        pytest.skip("leidenalg/igraph not available")
+    graph = _two_cluster_graph()
+    communities = leiden_communities(graph, resolution=resolution, random_state=42)
+    assert len(communities) == expected_count
+    assert sorted(node for group in communities for node in group) == list(range(10))
+    assert communities == leiden_communities(graph, resolution=resolution, random_state=42)

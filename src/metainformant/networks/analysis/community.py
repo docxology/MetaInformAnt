@@ -211,17 +211,18 @@ def leiden_communities(
         logger.warning("leidenalg and python-igraph not available, Leiden method disabled")
         raise ImportError("leidenalg and python-igraph required for Leiden method")
 
-    # Set random seed
-    if random_state is not None:
-        random.seed(random_state)
-        np.random.seed(random_state)
-
     # Convert NetworkX to igraph
     ig_graph = _nx_to_igraph(graph)
 
-    # Run Leiden algorithm
+    # RB configuration modularity supports resolution; plain Modularity does not.
+    # Seed Leiden's optimiser directly rather than unrelated global RNGs.
     partition = la.find_partition(
-        ig_graph, la.ModularityVertexPartition, resolution_parameter=resolution, n_iterations=n_iterations, **kwargs
+        ig_graph,
+        la.RBConfigurationVertexPartition,
+        resolution_parameter=resolution,
+        n_iterations=n_iterations,
+        seed=random_state,
+        **kwargs,
     )
 
     # Convert back to community lists, sorted by size
