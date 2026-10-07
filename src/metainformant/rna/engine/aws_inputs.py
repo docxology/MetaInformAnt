@@ -1,18 +1,28 @@
 """Immutable source/input archives and shell-safe worker startup rendering."""
 
 from __future__ import annotations
+
 import csv
 import hashlib
 import json
 import shlex
 import tarfile
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
+
 from metainformant.rna.amalgkit import (
     AMALGKIT_RELEASE_TAG,
     AMALGKIT_SOURCE_REVISION,
     REQUIRED_AMALGKIT_VERSION,
 )
+
+
+class InputRecord(TypedDict):
+    """One hash-bound file admitted into the worker input archive."""
+
+    path: str
+    sha256: str
+    size: int
 
 
 def _source_bundle(repo: Path, destination: Path) -> str:
@@ -36,24 +46,21 @@ def _source_bundle(repo: Path, destination: Path) -> str:
         )
     with tarfile.open(destination, "w") as archive:
         for path in sorted(set(files)):
-            archive.add(
-                path, arcname=path.relative_to(repo).as_posix(), recursive=False
-            )
+            archive.add(path, arcname=path.relative_to(repo).as_posix(), recursive=False)
     with tarfile.open(destination) as archive:
         for member in archive:
-            if (
-                member.islnk()
-                or member.issym()
-                or Path(member.name).is_absolute()
-                or ".." in Path(member.name).parts
-            ):
+            if member.islnk() or member.issym() or Path(member.name).is_absolute() or ".." in Path(member.name).parts:
                 raise ValueError("unsafe source bundle")
     return hashlib.sha256(destination.read_bytes()).hexdigest()
 
 
 def _inputs_bundle(
-    root: Path, species: dict[str, Any], tasks: list[dict[str, Any]], directory: Path,
-    *, config_path: Path | None = None,
+    root: Path,
+    species: dict[str, Any],
+    tasks: list[dict[str, Any]],
+    directory: Path,
+    *,
+    config_path: Path | None = None,
 ) -> tuple[Path, str]:
     directory.mkdir(parents=True, exist_ok=True)
     manifest = directory / "manifest.jsonl"
@@ -98,15 +105,11 @@ def _inputs_bundle(
             writer = csv.DictWriter(handle, fieldnames=fields, delimiter="\t")
             writer.writeheader()
             writer.writerows(rows)
-    records = []
+    records: list[InputRecord] = []
     for path in sorted(source.rglob("*")):
         if not path.is_file():
             continue
-        payload_path = (
-            metadata_override
-            if path == metadata and metadata_override is not None
-            else path
-        )
+        payload_path = metadata_override if path == metadata and metadata_override is not None else path
         records.append(
             {
                 "path": f"data/{species['species']}/work/{path.relative_to(source).as_posix()}",
@@ -120,10 +123,19 @@ def _inputs_bundle(
         config_bytes = config_path.read_bytes()
         if hashlib.sha256(config_bytes).hexdigest() != species["config_sha256"]:
             raise ValueError("worker configuration differs from frozen inventory")
-        records.append({"path": f"config/amalgkit/{config_path.name}",
-                        "sha256": hashlib.sha256(config_bytes).hexdigest(), "size": len(config_bytes)})
+        records.append(
+            {
+                "path": f"config/amalgkit/{config_path.name}",
+                "sha256": hashlib.sha256(config_bytes).hexdigest(),
+                "size": len(config_bytes),
+            }
+        )
     snapshot = {
-        "schema": "metainformant.rna.acquisition_snapshot.v1" if config_path is not None else "metainformant.hymenoptera.gcp_snapshot.v1",
+        "schema": (
+            "metainformant.rna.acquisition_snapshot.v1"
+            if config_path is not None
+            else "metainformant.hymenoptera.gcp_snapshot.v1"
+        ),
         "source_state": "quiescent",
         "cloud_launch_policy": "checkpointed",
         "amalgkit_version": REQUIRED_AMALGKIT_VERSION,
@@ -136,25 +148,22 @@ def _inputs_bundle(
         "raw_reads_included": False,
         "quant_outputs_included": False,
         "source_resolution_tasks": [
-            {"task_id": t["task_id"], "evidence_sha256": t["source_evidence_sha256"]}
-            for t in resolved.values()
+            {"task_id": t["task_id"], "evidence_sha256": t["source_evidence_sha256"]} for t in resolved.values()
         ],
         "frozen_metadata_sha256": species["metadata_sha256"],
     }
-    (directory / "snapshot.json").write_text(
-        json.dumps(snapshot, indent=2, sort_keys=True)
-    )
+    (directory / "snapshot.json").write_text(json.dumps(snapshot, indent=2, sort_keys=True))
     bundle = directory / "inputs.tar"
     with tarfile.open(bundle, "w") as archive:
         archive.add(manifest, arcname="manifest.jsonl")
         archive.add(directory / "snapshot.json", arcname="snapshot.json")
         for record in records:
             if record["path"].startswith("config/"):
+                if config_path is None:
+                    raise ValueError("configuration input record has no configuration file")
                 archive.add(config_path, arcname=record["path"], recursive=False)
                 continue
-            relative = Path(record["path"]).relative_to(
-                f"data/{species['species']}/work"
-            )
+            relative = Path(record["path"]).relative_to(f"data/{species['species']}/work")
             payload_path = source / relative
             if payload_path == metadata and metadata_override is not None:
                 payload_path = metadata_override

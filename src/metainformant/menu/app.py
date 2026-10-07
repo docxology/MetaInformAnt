@@ -59,14 +59,10 @@ class MenuApp:
                 try:
                     index = int(choice)
                 except ValueError:
-                    print(
-                        f"Invalid choice: {choice!r}. Enter a menu number or 0 to go back."
-                    )
+                    print(f"Invalid choice: {choice!r}. Enter a menu number or 0 to go back.")
                     continue
                 if not 1 <= index <= len(menu.items):
-                    print(
-                        f"Invalid choice: {choice}. Enter a number between 1 and {len(menu.items)}."
-                    )
+                    print(f"Invalid choice: {choice}. Enter a number between 1 and {len(menu.items)}.")
                     continue
 
                 item = menu.items[index - 1]
@@ -132,9 +128,7 @@ class MenuApp:
         return None
 
 
-def run_menu_app(
-    menus: dict, root_id: str = "root", *, clear_display: bool = True
-) -> None:
+def run_menu_app(menus: dict, root_id: str = "root", *, clear_display: bool = True) -> None:
     """Build a :class:`MenuSystem` and run the interactive loop.
 
     Args:

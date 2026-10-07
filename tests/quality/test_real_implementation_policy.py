@@ -95,8 +95,7 @@ def test_monkeypatch_setattr_rule_flags_rebinding_but_not_env_config(
 
     rebinding = root / "rebinding.py"
     rebinding.write_text(
-        "def test_rebinds_callable(monkeypatch):\n"
-        "    monkeypatch.setattr(mod, 'fetch_data', lambda: [])\n",
+        "def test_rebinds_callable(monkeypatch):\n" "    monkeypatch.setattr(mod, 'fetch_data', lambda: [])\n",
         encoding="utf-8",
     )
     env_config = root / "env_config.py"
@@ -154,9 +153,7 @@ def test_transient_project_state_reports_are_out_of_scan_scope(tmp_path: Path) -
     root = tmp_path / "repo"
     root.mkdir()
     report = root / "PROJECT_STATE_REPORT_2026-09-01_R4_T5.md"
-    report.write_text(
-        "real-implementation policy reference here\nMock(\n", encoding="utf-8"
-    )
+    report.write_text("real-implementation policy reference here\nMock(\n", encoding="utf-8")
     tracked = root / "src.py"
     tracked.write_text("x = 1\n", encoding="utf-8")
 

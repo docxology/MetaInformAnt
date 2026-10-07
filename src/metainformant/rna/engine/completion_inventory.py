@@ -27,7 +27,11 @@ from metainformant.rna.engine.species import (
     species_name_from_config,
 )
 
-ENA_FIELDS = "run_accession,scientific_name,tax_id,library_layout,library_strategy,library_source,library_selection,fastq_ftp,fastq_bytes,fastq_md5,read_count,base_count,study_accession,sample_accession,experiment_accession,instrument_platform,first_public,last_updated"
+ENA_FIELDS = (
+    "run_accession,scientific_name,tax_id,library_layout,library_strategy,library_source,library_selection,"
+    "fastq_ftp,fastq_bytes,fastq_md5,read_count,base_count,study_accession,sample_accession,experiment_accession,"
+    "instrument_platform,first_public,last_updated"
+)
 
 
 def freeze_inventory(
@@ -35,34 +39,29 @@ def freeze_inventory(
 ) -> dict[str, Any]:
     """Append newly discovered runs to frozen metadata, leaving canonical inputs untouched."""
     if (data_root / ".full_campaign.lock").exists():
-        raise RuntimeError(
-            "cannot freeze inputs while the canonical producer lock exists"
-        )
+        raise RuntimeError("cannot freeze inputs while the canonical producer lock exists")
     output_dir.mkdir(parents=True, exist_ok=True)
     destination = output_dir / "inventory.json"
     if destination.exists():
         existing = json.loads(destination.read_text())
+        if not isinstance(existing, dict):
+            raise ValueError("existing frozen inventory must be a JSON object")
         names = discover_species_config_names(config_dir)
         frozen_names = {species["config_name"] for species in existing["species"]}
         if set(names) != frozen_names or (expected_species_count is not None and len(names) != expected_species_count):
             raise ValueError("existing frozen inventory differs from requested species configuration set")
         for species in existing["species"]:
-            if hashlib.sha256((config_dir / species["config_name"]).read_bytes()).hexdigest() != species["config_sha256"]:
+            if (
+                hashlib.sha256((config_dir / species["config_name"]).read_bytes()).hexdigest()
+                != species["config_sha256"]
+            ):
                 raise ValueError("existing frozen inventory configuration changed")
         return existing
-    with sqlite3.connect(
-        f"file:{data_root / 'pipeline_progress.db'}?mode=ro", uri=True
-    ) as db:
+    with sqlite3.connect(f"file:{data_root / 'pipeline_progress.db'}?mode=ro", uri=True) as db:
         exclusions = {
-            (s, r): reason
-            for s, r, reason in db.execute(
-                "SELECT species,srr_id,reason_code FROM sample_exclusions"
-            )
+            (s, r): reason for s, r, reason in db.execute("SELECT species,srr_id,reason_code FROM sample_exclusions")
         }
-        states = {
-            (s, r): state
-            for s, r, state in db.execute("SELECT species,srr_id,state FROM samples")
-        }
+        states = {(s, r): state for s, r, state in db.execute("SELECT species,srr_id,state FROM samples")}
     names = discover_species_config_names(config_dir)
     if not names or (expected_species_count is not None and len(names) != expected_species_count):
         raise ValueError(f"expected {expected_species_count or 'nonempty'} configured species, found {len(names)}")
@@ -143,17 +142,11 @@ def freeze_inventory(
         index_dir = source_work / "index"
         if not index_dir.is_dir():
             index_dir = data_root / species / "genome" / "index"
-        indexes = sorted(
-            p
-            for p in index_dir.glob("*.idx")
-            if p.is_file() and not p.name.startswith("._")
-        )
+        indexes = sorted(p for p in index_dir.glob("*.idx") if p.is_file() and not p.name.startswith("._"))
         expected_stem = species.casefold()
         exact = [p for p in indexes if p.stem.casefold() == expected_stem]
         if len(exact) != 1:
-            raise ValueError(
-                f"no unique exact species index for {species}: {[p.name for p in indexes]}"
-            )
+            raise ValueError(f"no unique exact species index for {species}: {[p.name for p in indexes]}")
         index = work / "index" / exact[0].name
         index.parent.mkdir(parents=True, exist_ok=True)
         if not index.exists():
@@ -163,9 +156,7 @@ def freeze_inventory(
         for number, row in enumerate(rows, start=1):
             accession = row["run"]
             if (species, accession) in exclusions:
-                excluded.append(
-                    {"accession": accession, "reason": exclusions[(species, accession)]}
-                )
+                excluded.append({"accession": accession, "reason": exclusions[(species, accession)]})
                 continue
             remote = by_accession.get(accession, {})
             size = sum(int(v) for v in remote.get("fastq_bytes", "").split(";") if v)
@@ -173,14 +164,17 @@ def freeze_inventory(
                 size = int(float(row.get("size") or 0))
             tasks.append(
                 {
-                    "schema": "metainformant.rna.acquisition_task.v1" if expected_species_count is None else "metainformant.hymenoptera.gcp_task_manifest.v1",
+                    "schema": (
+                        "metainformant.rna.acquisition_task.v1"
+                        if expected_species_count is None
+                        else "metainformant.hymenoptera.gcp_task_manifest.v1"
+                    ),
                     "task_id": f"{species}/{accession}",
                     "species": species,
                     "accession": accession,
                     "config_name": name,
                     "batch_index": number,
-                    "expected_paired": str(row.get("lib_layout", "")).lower()
-                    == "paired",
+                    "expected_paired": str(row.get("lib_layout", "")).lower() == "paired",
                     "total_bases": float(row.get("total_bases") or 0),
                     "fastq_bytes": size,
                     "existing_state": states.get((species, accession), "new"),
@@ -191,9 +185,7 @@ def freeze_inventory(
             "species": species,
             "config_name": name,
             "taxid": taxid,
-            "config_sha256": hashlib.sha256(
-                (config_dir / name).read_bytes()
-            ).hexdigest(),
+            "config_sha256": hashlib.sha256((config_dir / name).read_bytes()).hexdigest(),
             "metadata_sha256": hashlib.sha256(selected.read_bytes()).hexdigest(),
             "index_name": index.name,
             "index_sha256": index_hash,
@@ -210,7 +202,11 @@ def freeze_inventory(
     if len(task_ids) != len(set(task_ids)):
         raise ValueError("accession assigned to more than one configured species")
     inventory = {
-        "schema": "metainformant.rna.acquisition_inventory.v1" if expected_species_count is None else "metainformant.hymenoptera.completion_inventory.v1",
+        "schema": (
+            "metainformant.rna.acquisition_inventory.v1"
+            if expected_species_count is None
+            else "metainformant.hymenoptera.completion_inventory.v1"
+        ),
         "frozen_at": datetime.now(UTC).isoformat(),
         "species": species_rows,
         "species_count": len(species_rows),
@@ -240,12 +236,7 @@ def seal_existing_outputs(
     output_dir.mkdir(parents=True, exist_ok=True)
     local = DirectoryStore(output_dir / "locked")
     remote = S3Store(bucket, "locked-quant-v1", profile=profile, region=region)
-    candidates = [
-        (s, t)
-        for s in inventory["species"]
-        for t in s["tasks"]
-        if t.get("existing_state") == "quantified"
-    ]
+    candidates = [(s, t) for s in inventory["species"] for t in s["tasks"] if t.get("existing_state") == "quantified"]
     results = []
 
     def seal(item: tuple[dict[str, Any], dict[str, Any]]) -> dict[str, Any]:
@@ -290,7 +281,8 @@ def seal_existing_outputs(
             os.fsync(handle.fileno())
             if len(results) % 100 == 0:
                 print(
-                    f"Sealed {len(results)}/{len(candidates)} local candidates; locked={sum(r['status'] == 'locked' for r in results)}",
+                    f"Sealed {len(results)}/{len(candidates)} local candidates; "
+                    f"locked={sum(r['status'] == 'locked' for r in results)}",
                     flush=True,
                 )
     summary = {

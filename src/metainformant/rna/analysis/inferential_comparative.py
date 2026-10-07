@@ -287,8 +287,7 @@ def _fit_study(sub: pd.DataFrame, design: ComparativeDesign, exclude_covariates:
     n = len(sub)
     if n < design.min_observations_per_study:
         raise InferentialComparativeError(
-            f"study has {n} observations, below the declared minimum of "
-            f"{design.min_observations_per_study}"
+            f"study has {n} observations, below the declared minimum of " f"{design.min_observations_per_study}"
         )
     matrix, response, names = _study_arrays(sub, design, exclude_covariates)
     return _ols_effect(matrix, response, names)
@@ -462,8 +461,7 @@ def bootstrap_effect_ci(
     studies = sorted(frame[design.study_col].unique(), key=str)
     # Precompute per-study arrays once; the resampling loop is pure numpy.
     arrays_by_study = {
-        study: _study_arrays(frame[frame[design.study_col] == study], design, frozenset())
-        for study in studies
+        study: _study_arrays(frame[frame[design.study_col] == study], design, frozenset()) for study in studies
     }
     rng = np.random.default_rng(random_seed)
     values: list[float] = []

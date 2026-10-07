@@ -38,15 +38,13 @@ def test_unknown_size_corruption_retries_fresh_and_preserves_witness(
             return [url]
 
     try:
-        success, message, files = LocalDownloader(
-            timeout=10, retries=0, integrity_retries=1
-        ).download_run("local", tmp_path)
+        success, message, files = LocalDownloader(timeout=10, retries=0, integrity_retries=1).download_run(
+            "local", tmp_path
+        )
         assert success, message
         assert requests == [None, None]
         assert gzip.decompress(files[0].read_bytes()) == gzip.decompress(payload)
-        assert (
-            tmp_path / "reads.fastq.gz.part.invalid"
-        ).read_bytes() == b"invalid gzip"
+        assert (tmp_path / "reads.fastq.gz.part.invalid").read_bytes() == b"invalid gzip"
     finally:
         server.shutdown()
         server.server_close()

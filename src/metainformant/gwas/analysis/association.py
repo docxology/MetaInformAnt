@@ -81,9 +81,7 @@ def association_test_linear(
     y_kept = [float(phenotypes[i]) for i in keep_indices]
 
     if not X:
-        logger.warning(
-            "Linear regression failed: no complete cases after dropping missing values"
-        )
+        logger.warning("Linear regression failed: no complete cases after dropping missing values")
         return {
             "status": "error",
             "beta": 0.0,
@@ -167,9 +165,7 @@ def association_test_logistic(
     n_cases = sum(1 for p in phenotypes if p == 1)
     n_controls = sum(1 for p in phenotypes if p == 0)
     if n_cases < 2 or n_controls < 2:
-        logger.warning(
-            f"Insufficient cases ({n_cases}) or controls ({n_controls}) for logistic regression"
-        )
+        logger.warning(f"Insufficient cases ({n_cases}) or controls ({n_controls}) for logistic regression")
         return {
             "status": "failed",
             "beta": 0.0,
@@ -200,9 +196,7 @@ def association_test_logistic(
             raise ImportError("numpy is required for logistic regression")
         X_array = np.array(X)
         y_array = np.array(phenotypes)
-        beta, se, z_stat, p_value = _logistic_regression_with_stats(
-            X_array, y_array, max_iter
-        )
+        beta, se, z_stat, p_value = _logistic_regression_with_stats(X_array, y_array, max_iter)
 
         # Calculate odds ratio
         odds_ratio = math.exp(beta) if abs(beta) < 700 else float("inf")
@@ -263,11 +257,7 @@ def run_linear_model_gwas(
     """
     results: List[Dict[str, Any]] = []
     for i, genotypes in enumerate(genotype_matrix):
-        result = dict(
-            association_test_linear(
-                list(genotypes), list(phenotypes), covariates=covariates
-            )
-        )
+        result = dict(association_test_linear(list(genotypes), list(phenotypes), covariates=covariates))
         result["variant_index"] = i
         if variant_info and i < len(variant_info):
             result["variant_id"] = variant_info[i].get("id", f"variant_{i}")
@@ -320,9 +310,7 @@ def run_logistic_model_gwas(
     return results
 
 
-def _simple_linear_regression(
-    X: List[List[float]], y: List[float]
-) -> Tuple[float, float, float, float, float]:
+def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[float, float, float, float, float]:
     """Simple linear regression implementation.
 
     Args:
@@ -381,9 +369,7 @@ def _simple_linear_regression(
         y_arr = np.array(y, dtype=float)
         # OLS via least squares: beta = (X'X)^-1 X'y
         try:
-            beta_vec, residuals_arr, rank, sv = np.linalg.lstsq(
-                X_arr, y_arr, rcond=None
-            )
+            beta_vec, residuals_arr, rank, sv = np.linalg.lstsq(X_arr, y_arr, rcond=None)
         except np.linalg.LinAlgError:
             return 0.0, 0.0, 0.0, 1.0, 0.0
 
@@ -432,9 +418,7 @@ def _simple_linear_regression(
     # Use Gaussian elimination (reuse existing _solve_linear_system)
     k = len(X[0])
     # Compute X'X
-    XtX = [
-        [sum(X[s][i] * X[s][j] for s in range(n)) for j in range(k)] for i in range(k)
-    ]
+    XtX = [[sum(X[s][i] * X[s][j] for s in range(n)) for j in range(k)] for i in range(k)]
     # Compute X'y
     Xty = [sum(X[s][i] * y[s] for s in range(n)) for i in range(k)]
     beta_vec_pp = _solve_linear_system(XtX, Xty)
@@ -469,9 +453,7 @@ def _simple_linear_regression(
     return beta, se, t_stat, p_value, r_squared
 
 
-def _logistic_regression_with_stats(
-    X: Any, y: Any, max_iter: int
-) -> Tuple[float, float, float, float]:
+def _logistic_regression_with_stats(X: Any, y: Any, max_iter: int) -> Tuple[float, float, float, float]:
     """Perform logistic regression with statistical inference via statsmodels.
 
     statsmodels is the only supported backend: it supplies model-based standard
@@ -512,8 +494,7 @@ def _logistic_regression_with_stats(
         return beta, se, z_stat, p_value
     except Exception as exc:
         raise RuntimeError(
-            f"statsmodels logistic regression failed ({exc}); refusing to return "
-            "fabricated standard errors/p-values"
+            f"statsmodels logistic regression failed ({exc}); refusing to return " "fabricated standard errors/p-values"
         ) from exc
 
 

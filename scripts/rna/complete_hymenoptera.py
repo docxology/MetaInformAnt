@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Run the budget-bound Hymenoptera quantification controller."""
+
 from __future__ import annotations
 
 import sys

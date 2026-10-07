@@ -21,9 +21,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 CLI_ENV = {**os.environ, "PYTHONPATH": str(REPO_ROOT / "src")}
 
 
-def _run_cli(
-    *args: str, cwd: Path = REPO_ROOT, timeout: int = 300
-) -> subprocess.CompletedProcess[str]:
+def _run_cli(*args: str, cwd: Path = REPO_ROOT, timeout: int = 300) -> subprocess.CompletedProcess[str]:
     """Run ``python -m metainformant`` from the repository root."""
     return subprocess.run(
         [sys.executable, "-m", "metainformant", *args],
@@ -148,9 +146,7 @@ def test_phenotype_run_executes_real_pipeline(tmp_path: Path) -> None:
 
 def test_phenotype_run_missing_input_fails(tmp_path: Path) -> None:
     """A missing dataset fails loudly instead of exiting 0."""
-    result = _run_cli(
-        "phenotype", "run", "--input", str(tmp_path / "missing.json"), cwd=tmp_path
-    )
+    result = _run_cli("phenotype", "run", "--input", str(tmp_path / "missing.json"), cwd=tmp_path)
 
     assert result.returncode == 1
     assert "Error" in result.stdout + result.stderr
@@ -159,9 +155,7 @@ def test_phenotype_run_missing_input_fails(tmp_path: Path) -> None:
 def test_networks_run_builds_and_exports_network(tmp_path: Path) -> None:
     """``networks run`` builds a network from an edge list and exports results."""
     edges = tmp_path / "edges.csv"
-    edges.write_text(
-        "source,target,weight\na,b,0.9\na,c,0.8\nb,c,0.85\nd,e,0.9\nd,f,0.8\ne,f,0.85\n"
-    )
+    edges.write_text("source,target,weight\na,b,0.9\na,c,0.8\nb,c,0.85\nd,e,0.9\nd,f,0.8\ne,f,0.85\n")
     output_dir = tmp_path / "output" / "networks"
 
     result = _run_cli(
@@ -206,9 +200,7 @@ def test_ontology_run_skips_cleanly_without_gene_annotations(tmp_path: Path) -> 
     )
     post_gwas = results_base / "post_gwas"
     post_gwas.mkdir()
-    (post_gwas / "post_gwas_results.json").write_text(
-        json.dumps({"gene_annotations": []})
-    )
+    (post_gwas / "post_gwas_results.json").write_text(json.dumps({"gene_annotations": []}))
     config = tmp_path / "workflow.yaml"
     config.write_text("paths:\n  results_dir: results\nontology:\n  taxon_id: 7222\n")
 
@@ -225,17 +217,13 @@ def test_ontology_run_skips_cleanly_without_gene_annotations(tmp_path: Path) -> 
     )
 
     assert result.returncode == 0, result.stderr + result.stdout
-    summary = json.loads(
-        (results_base / "ontology" / "ontology_summary.json").read_text()
-    )
+    summary = json.loads((results_base / "ontology" / "ontology_summary.json").read_text())
     assert summary["status"] == "skipped"
 
 
 def test_ontology_run_requires_input_config(tmp_path: Path) -> None:
     """--input is required; argparse rejects the invocation."""
-    result = _run_cli(
-        "ontology", "run", "--phenotype", "ant", "--model", "base", cwd=tmp_path
-    )
+    result = _run_cli("ontology", "run", "--phenotype", "ant", "--model", "base", cwd=tmp_path)
 
     assert result.returncode == 2
     assert "--input" in result.stderr

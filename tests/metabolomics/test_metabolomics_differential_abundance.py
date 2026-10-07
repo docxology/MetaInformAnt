@@ -44,9 +44,7 @@ def test_n40_vs_n40_matches_scipy_welch() -> None:
     b = rng.normal(0.5, 1.0, (1, 40))
     data = np.hstack([a, b])
 
-    t_stats, p_values = differential_abundance(
-        data, list(range(40)), list(range(40, 80))
-    )
+    t_stats, p_values = differential_abundance(data, list(range(40)), list(range(40, 80)))
 
     t_ref, p_ref = _welch_reference(a[0], b[0])
     assert t_stats[0] == pytest.approx(t_ref, rel=1e-12, abs=1e-12)

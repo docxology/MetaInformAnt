@@ -406,7 +406,9 @@ def classify_quantification(
     if reference_path and (not isinstance(reference_path, str) or not isinstance(reference_hash, str)):
         result["reason"] = "reference provenance is incomplete"
         return result
-    if reference_hash and (local_reference is None or digest_file(local_reference.expanduser().resolve()) != reference_hash):
+    if reference_hash and (
+        local_reference is None or digest_file(local_reference.expanduser().resolve()) != reference_hash
+    ):
         result.update(status=QUANT_STATUS_INVALID, reason="reference manifest checksum mismatch")
         return result
     if expected_config_path is not None and digest_file(Path(expected_config_path)) != config_hash:

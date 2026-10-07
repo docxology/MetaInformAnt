@@ -400,9 +400,7 @@ def missing_value_imputation(
             for col in np.where(missing_mask)[0]:
                 neighbor_vals = data[top_k, col]
                 valid_neighbors = neighbor_vals[~np.isnan(neighbor_vals)]
-                filled[i, col] = (
-                    valid_neighbors.mean() if len(valid_neighbors) > 0 else 0.0
-                )
+                filled[i, col] = valid_neighbors.mean() if len(valid_neighbors) > 0 else 0.0
             data[i] = filled[i]
 
     elif method == "median":

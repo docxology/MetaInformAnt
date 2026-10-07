@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Report cloud/local sample status and transfer gaps without changing processing."""
+
 from __future__ import annotations
 
 import sys

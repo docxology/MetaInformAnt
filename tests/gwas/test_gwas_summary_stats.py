@@ -68,14 +68,10 @@ def sample_variant_info() -> list:
 class TestWriteSummaryStatistics:
     """Tests for summary statistics TSV output."""
 
-    def test_write_basic(
-        self, tmp_path: Path, sample_results: list, sample_variant_info: list
-    ) -> None:
+    def test_write_basic(self, tmp_path: Path, sample_results: list, sample_variant_info: list) -> None:
         """Write and verify basic summary statistics."""
         output = tmp_path / "stats.tsv"
-        result_path = write_summary_statistics(
-            sample_results, sample_variant_info, output
-        )
+        result_path = write_summary_statistics(sample_results, sample_variant_info, output)
 
         assert result_path.exists()
         lines = result_path.read_text().strip().split("\n")
@@ -92,9 +88,7 @@ class TestWriteSummaryStatistics:
         q_fdr_index = header.index("Q_FDR")
         assert float(lines[1].split("\t")[q_fdr_index]) == pytest.approx(2e-6)
 
-    def test_write_creates_directories(
-        self, tmp_path: Path, sample_results: list, sample_variant_info: list
-    ) -> None:
+    def test_write_creates_directories(self, tmp_path: Path, sample_results: list, sample_variant_info: list) -> None:
         """Should create parent directories if needed."""
         output = tmp_path / "nested" / "dir" / "stats.tsv"
         write_summary_statistics(sample_results, sample_variant_info, output)
@@ -111,12 +105,8 @@ class TestWriteSummaryStatistics:
 
     def test_alt_as_list(self, tmp_path: Path) -> None:
         """Alt alleles as list should be joined with comma."""
-        results = [
-            {"beta": 0.1, "se": 0.05, "p_value": 0.5, "n_samples": 50, "maf": 0.2}
-        ]
-        variants = [
-            {"chrom": "1", "pos": 100, "id": "rs1", "ref": "A", "alt": ["G", "T"]}
-        ]
+        results = [{"beta": 0.1, "se": 0.05, "p_value": 0.5, "n_samples": 50, "maf": 0.2}]
+        variants = [{"chrom": "1", "pos": 100, "id": "rs1", "ref": "A", "alt": ["G", "T"]}]
         output = tmp_path / "multi_alt.tsv"
         write_summary_statistics(results, variants, output)
 
@@ -149,14 +139,10 @@ class TestWriteSummaryStatistics:
 class TestWriteSignificantHits:
     """Tests for significant hits output."""
 
-    def test_filter_significant(
-        self, tmp_path: Path, sample_results: list, sample_variant_info: list
-    ) -> None:
+    def test_filter_significant(self, tmp_path: Path, sample_results: list, sample_variant_info: list) -> None:
         """Only significant hits should be written."""
         output = tmp_path / "sig.tsv"
-        write_significant_hits(
-            sample_results, sample_variant_info, output, threshold=1e-5
-        )
+        write_significant_hits(sample_results, sample_variant_info, output, threshold=1e-5)
 
         lines = output.read_text().strip().split("\n")
         # header + 1 hit (p=1e-10 is below 1e-5, but p=1e-6 is also below)
@@ -164,9 +150,7 @@ class TestWriteSignificantHits:
 
     def test_no_significant(self, tmp_path: Path) -> None:
         """If nothing is significant, only header should be written."""
-        results = [
-            {"beta": 0.1, "se": 0.1, "p_value": 0.5, "n_samples": 50, "maf": 0.2}
-        ]
+        results = [{"beta": 0.1, "se": 0.1, "p_value": 0.5, "n_samples": 50, "maf": 0.2}]
         variants = [{"chrom": "1", "pos": 100, "id": "rs1", "ref": "A", "alt": "G"}]
         output = tmp_path / "no_sig.tsv"
         write_significant_hits(results, variants, output, threshold=5e-8)
@@ -174,14 +158,10 @@ class TestWriteSignificantHits:
         lines = output.read_text().strip().split("\n")
         assert len(lines) == 1  # Just header
 
-    def test_sorted_by_pvalue(
-        self, tmp_path: Path, sample_results: list, sample_variant_info: list
-    ) -> None:
+    def test_sorted_by_pvalue(self, tmp_path: Path, sample_results: list, sample_variant_info: list) -> None:
         """Significant hits should be sorted by p-value ascending."""
         output = tmp_path / "sorted.tsv"
-        write_significant_hits(
-            sample_results, sample_variant_info, output, threshold=0.01
-        )
+        write_significant_hits(sample_results, sample_variant_info, output, threshold=0.01)
 
         lines = output.read_text().strip().split("\n")
         # Skip header, parse p-values

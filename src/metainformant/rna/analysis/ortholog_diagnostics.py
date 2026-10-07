@@ -1,8 +1,10 @@
 """Evidence-derived orthogroup cardinality, retention and duplicate audits."""
 
 from __future__ import annotations
+
 from pathlib import Path
 from typing import Mapping
+
 import pandas as pd
 
 DUPLICATE_PRECEDENCE_VERSION = "1"
@@ -67,9 +69,7 @@ def classify_orthogroup_cardinality(
         row_out.update({species: og_counts[species] for species in species_names})
         row_out["cardinality_class"] = cardinality_class
         rows.append(row_out)
-    return pd.DataFrame(
-        rows, columns=["orthogroup", *species_names, "cardinality_class"]
-    )
+    return pd.DataFrame(rows, columns=["orthogroup", *species_names, "cardinality_class"])
 
 
 def audit_gene_drop_reasons(
@@ -125,9 +125,7 @@ def audit_gene_drop_reasons(
     rows = []
     for species in species_names:
         tally = tallies[species]
-        dropped_total = (
-            tally["no_protein"] + tally["no_rna_map"] + tally["no_transcript"]
-        )
+        dropped_total = tally["no_protein"] + tally["no_rna_map"] + tally["no_transcript"]
         if tally["seen"] != tally["retained"] + dropped_total:
             raise RuntimeError(
                 f"drop-reason audit for {species} does not reconcile: {tally['seen']} "
@@ -200,8 +198,6 @@ def annotate_duplicate_resolutions(
                 )
                 records.append(record)
                 continue
-        record["detail"] = (
-            f"{record['detail']}; resolved by last-recorded@{DUPLICATE_PRECEDENCE_VERSION}"
-        )
+        record["detail"] = f"{record['detail']}; resolved by last-recorded@{DUPLICATE_PRECEDENCE_VERSION}"
         records.append(record)
     return pd.DataFrame(records, columns=list(evidence.columns))

@@ -100,9 +100,7 @@ class TestPredictOrfs:
         # "GG" + ATG AAA AAT TAA + "CC" + ATG AAG TAA + "GG":
         # a 12-nt ORF at [2, 14) in frame 3 and a 9-nt ORF at [16, 25) in
         # frame 2; no ORFs on the reverse strand.
-        orfs = predict_orfs(
-            "GG" + "ATGAAAAAATAA" + "CC" + "ATGAAGTAA" + "GG", min_length=9
-        )
+        orfs = predict_orfs("GG" + "ATGAAAAAATAA" + "CC" + "ATGAAGTAA" + "GG", min_length=9)
         assert [o["length"] for o in orfs] == [12, 9]
         assert (orfs[0]["frame"], orfs[0]["start"], orfs[0]["end"]) == (3, 2, 14)
         assert (orfs[1]["frame"], orfs[1]["start"], orfs[1]["end"]) == (2, 16, 25)

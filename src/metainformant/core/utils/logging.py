@@ -44,9 +44,7 @@ def get_logger(name: str) -> logging.Logger:
     return logger
 
 
-def setup_logger(
-    name: str, log_file: str | None = None, level: str = "INFO"
-) -> logging.Logger:
+def setup_logger(name: str, log_file: str | None = None, level: str = "INFO") -> logging.Logger:
     """Set up a logger with file and/or console output.
 
     Args:

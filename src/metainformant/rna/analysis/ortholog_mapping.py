@@ -452,9 +452,7 @@ class MappingArtifactManifest:
         required = ("schema_version", "copy_policy", "generated_at", "source")
         missing = [key for key in required if key not in payload]
         if missing:
-            raise OrthologBridgeError(
-                "mapping artifact manifest is missing required field(s): " + ", ".join(missing)
-            )
+            raise OrthologBridgeError("mapping artifact manifest is missing required field(s): " + ", ".join(missing))
         source_payload = payload["source"]
         if not isinstance(source_payload, Mapping):
             raise OrthologBridgeError("mapping artifact manifest field 'source' must be a JSON object")
@@ -462,7 +460,7 @@ class MappingArtifactManifest:
             schema_version=payload["schema_version"],  # type: ignore[arg-type]
             copy_policy=payload["copy_policy"],  # type: ignore[arg-type]
             generated_at=payload["generated_at"],  # type: ignore[arg-type]
-            source=OrthologySourceMetadata.from_dict(source_payload),  # type: ignore[arg-type]
+            source=OrthologySourceMetadata.from_dict(source_payload),
         )
 
 
@@ -724,9 +722,7 @@ def build_orthogroup_bridge(
                 "species": species,
                 "ogs_with_input": per_species[species]["ogs_with_input"],
                 "ogs_retained": per_species[species]["ogs_retained"],
-                "ogs_unmapped": (
-                    per_species[species]["ogs_with_input"] - per_species[species]["ogs_retained"]
-                ),
+                "ogs_unmapped": (per_species[species]["ogs_with_input"] - per_species[species]["ogs_retained"]),
             }
             for species in species_names
         ],

@@ -1735,7 +1735,9 @@ def _build_quant_command(
     # The index_dir handed to amalgkit must contain only non-colliding
     # per-species indexes, so the resolved directory (optionally cached) is
     # re-staged with just the exact-stem file for this species.
-    index_dir = _staged_exact_index_dir(_cache_index_directory(_resolve_index_dir(cfg, species_name), species_name), species_name)
+    index_dir = _staged_exact_index_dir(
+        _cache_index_directory(_resolve_index_dir(cfg, species_name), species_name), species_name
+    )
     if index_dir:
         cmd.extend(["--index_dir", index_dir])
 
@@ -1846,7 +1848,6 @@ def _staged_exact_index_dir(index_dir: str, species_name: str) -> str:
     # stems case-insensitively or every species silently degrades here.
     folded_names = {path.stem.casefold(): path for path in index_files}
     folded_stem = stem.casefold()
-    names = {path.stem: path for path in index_files}
     exact_file = folded_names.get(folded_stem)
     colliding = sorted(
         name
@@ -2632,7 +2633,6 @@ class StreamingPipelineOrchestrator:
             except Exception as e:
                 logger.error(f"Failed to check disk space: {e}")
                 break  # Proceed anyway if check fails
-
 
         downloader = ENADownloader(
             timeout=self.download_timeout_seconds,

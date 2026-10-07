@@ -12,7 +12,6 @@ real implementations: all values computed from real arithmetic.
 
 from __future__ import annotations
 
-
 import numpy as np
 
 from metainformant.information.metrics.core.estimation import (

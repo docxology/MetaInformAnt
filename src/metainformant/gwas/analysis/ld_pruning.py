@@ -71,14 +71,9 @@ def ld_prune(
     if n_variants == 0 or n_samples == 0:
         return []
 
-    physical_mode = (
-        variant_positions is not None and len(variant_positions) == n_variants
-    )
+    physical_mode = variant_positions is not None and len(variant_positions) == n_variants
 
-    logger.info(
-        f"LD pruning: {n_variants} variants, window={window_size}, "
-        f"step={step_size}, r2={r2_threshold}"
-    )
+    logger.info(f"LD pruning: {n_variants} variants, window={window_size}, " f"step={step_size}, r2={r2_threshold}")
 
     # Track which variants are removed
     removed = set()
@@ -105,10 +100,7 @@ def ld_prune(
                     continue
                 if abs(positions[j] - positions[i]) > window_span_bp:
                     break  # sorted positions; all further pairs are farther apart
-                if (
-                    variant_chroms is not None
-                    and variant_chroms[i] != variant_chroms[j]
-                ):
+                if variant_chroms is not None and variant_chroms[i] != variant_chroms[j]:
                     continue
                 r2 = _compute_r_squared_pair(genotype_matrix[i], genotype_matrix[j])
                 if r2 >= r2_threshold:
@@ -139,10 +131,7 @@ def ld_prune(
                         continue
 
                     # Skip pairs on different chromosomes if chromosome info provided
-                    if (
-                        variant_chroms is not None
-                        and variant_chroms[i] != variant_chroms[j]
-                    ):
+                    if variant_chroms is not None and variant_chroms[i] != variant_chroms[j]:
                         continue
 
                     r2 = _compute_r_squared_pair(genotype_matrix[i], genotype_matrix[j])

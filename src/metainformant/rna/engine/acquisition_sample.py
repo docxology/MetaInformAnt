@@ -1,15 +1,24 @@
 """Execute one frozen acquisition task using shared local and durable methods."""
+
 from __future__ import annotations
+
 from pathlib import Path
 from typing import Any
+
 from metainformant.rna.engine.acquisition_manifest import sha256_file
-from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator
 from metainformant.rna.engine.durable_quant import ObjectStore, bound_receipt_key
+from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator
 
 
-def execute_manifest_task(task: dict[str, Any], orchestrator: StreamingPipelineOrchestrator,
-                          data_root: Path, config_dir: Path, durable_store: ObjectStore | None,
-                          durable_cohort: str, quant_threads: int) -> dict[str, Any]:
+def execute_manifest_task(
+    task: dict[str, Any],
+    orchestrator: StreamingPipelineOrchestrator,
+    data_root: Path,
+    config_dir: Path,
+    durable_store: ObjectStore | None,
+    durable_cohort: str,
+    quant_threads: int,
+) -> dict[str, Any]:
     species = str(task["species"])
     accession = str(task["accession"])
     config_path = config_dir / str(task["config_name"])
@@ -45,9 +54,7 @@ def execute_manifest_task(task: dict[str, Any], orchestrator: StreamingPipelineO
                 verified_config_path=config_path,
             )
             if restored["config_sha256"] != sha256_file(config_path):
-                raise ValueError(
-                    "durable receipt uses a different species configuration"
-                )
+                raise ValueError("durable receipt uses a different species configuration")
             orchestrator.db.set_state(species, accession, "quantified")
             return {
                 "srr": accession,

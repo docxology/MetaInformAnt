@@ -2,14 +2,16 @@
 
 import json
 import math
+
 import pytest
+
+from metainformant.rna.engine.aws_completion import budget_allows
 from metainformant.rna.engine.aws_resources import (
     WorkerPrices,
     WorkerPricingError,
     catalog_unit_price,
     runtime_charge,
 )
-from metainformant.rna.engine.aws_completion import budget_allows
 
 
 def test_large_disk_reservation_rejects_old_underestimate() -> None:
@@ -26,9 +28,7 @@ def test_current_disk_keeps_the_configured_floor() -> None:
 
 
 def test_each_runtime_keeps_its_original_rate() -> None:
-    assert runtime_charge(0, 3600, 0.55) + runtime_charge(
-        3600, 10800, 0.8
-    ) == pytest.approx(2.15)
+    assert runtime_charge(0, 3600, 0.55) + runtime_charge(3600, 10800, 0.8) == pytest.approx(2.15)
     assert runtime_charge(0, 3660, 0.55) > runtime_charge(0, 3600, 0.55)
 
 

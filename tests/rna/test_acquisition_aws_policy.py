@@ -1,11 +1,14 @@
 """Platform and frozen configuration controls, using real files and values."""
 
 from __future__ import annotations
+
 import hashlib
 import json
 import tarfile
 from pathlib import Path
+
 import pytest
+
 from metainformant.rna.engine.acquisition_aws_policy import (
     WorkerImage,
     validate_worker_image,
@@ -19,9 +22,7 @@ from metainformant.rna.engine.aws_inputs import _inputs_bundle
 
 def test_default_bootstrap_supports_unlicensed_linux_and_custom_arm_template() -> None:
     validate_worker_image(WorkerImage("available", "x86_64", "Linux/UNIX", False))
-    validate_worker_image(
-        WorkerImage("available", "arm64", "Linux/UNIX", False), custom_template=True
-    )
+    validate_worker_image(WorkerImage("available", "arm64", "Linux/UNIX", False), custom_template=True)
 
 
 @pytest.mark.parametrize(
@@ -51,8 +52,10 @@ def test_generic_job_binds_and_stages_worker_configuration(tmp_path: Path) -> No
     configs.mkdir()
     config = configs / "amalgkit_ant_a.yaml"
     config.write_text("species_list: [Ant_a]\n")
+
     def digest(path: Path) -> str:
         return hashlib.sha256(path.read_bytes()).hexdigest()
+
     species = {
         "species": "ant_a",
         "index_name": index.name,
@@ -78,9 +81,7 @@ def test_generic_job_binds_and_stages_worker_configuration(tmp_path: Path) -> No
     assert snapshot["schema"] == "metainformant.rna.acquisition_snapshot.v1"
     verify_input_files(snapshot, unpack)
     verify_worker_configs(snapshot, [task], configs)
-    assert (
-        unpack / "config/amalgkit" / config.name
-    ).read_bytes() == config.read_bytes()
+    assert (unpack / "config/amalgkit" / config.name).read_bytes() == config.read_bytes()
     config.write_text("species_list: [Different]\n")
     with pytest.raises(ValueError, match="configuration"):
         verify_worker_configs(snapshot, [task], configs)

@@ -5,7 +5,6 @@ and principal component analysis, processing amalgkit matrix outputs.
 """
 
 import hashlib
-
 from pathlib import Path
 from typing import Dict, Literal, Optional, Sequence
 
@@ -14,8 +13,8 @@ import pandas as pd
 
 from metainformant.core import io
 from metainformant.core.utils import logging
-from metainformant.rna.analysis.expression_core import normalize_counts
 from metainformant.rna.analysis.expression_analysis import differential_expression, pca_analysis, prepare_volcano_data
+from metainformant.rna.analysis.expression_core import normalize_counts
 
 DEFAULT_CONDITION_COLUMNS: tuple[str, ...] = ("tissue", "sex", "caste", "developmental_stage")
 logger = logging.get_logger(__name__)
@@ -98,13 +97,19 @@ class WithinSpeciesOrchestrator:
 
         out_path = self.output_dir / f"{self.species_name}_pca_coordinates.tsv"
         pca_res["transformed"].to_csv(out_path, sep="\t")
-        io.dump_json({
-            "schema": "metainformant.rna.pca.v1", "species": self.species_name,
-            "input_sha256": self.input_hashes, "samples": self.counts_df.columns.tolist(),
-            "normalization": normalization, "preprocessing": pca_res["preprocessing"],
-            "explained_variance_ratio": pca_res["explained_variance_ratio"].tolist(),
-            "result_role": "descriptive",
-        }, self.output_dir / f"{self.species_name}_pca_provenance.json")
+        io.dump_json(
+            {
+                "schema": "metainformant.rna.pca.v1",
+                "species": self.species_name,
+                "input_sha256": self.input_hashes,
+                "samples": self.counts_df.columns.tolist(),
+                "normalization": normalization,
+                "preprocessing": pca_res["preprocessing"],
+                "explained_variance_ratio": pca_res["explained_variance_ratio"].tolist(),
+                "result_role": "descriptive",
+            },
+            self.output_dir / f"{self.species_name}_pca_provenance.json",
+        )
         logger.info(f"[{self.species_name}] Saved PCA coordinates to {out_path}")
 
         return pca_res
@@ -141,13 +146,21 @@ class WithinSpeciesOrchestrator:
         volcano_data = prepare_volcano_data(de_res)
         out_path = self.output_dir / f"{self.species_name}_DE_{condition_col}.tsv"
         volcano_data.to_csv(out_path, sep="\t", index=False)
-        io.dump_json({
-            "schema": "metainformant.rna.exploratory_de.v1", "species": self.species_name,
-            "input_sha256": self.input_hashes, "samples": valid_samples,
-            "condition_column": condition_col, "group_sizes": conditions.value_counts().to_dict(),
-            "method": "welch_log2_size_factor_normalized_counts", "adjustment": "bh",
-            "result_role": "exploratory", "biological_independence": "not_established_by_run_ids",
-        }, self.output_dir / f"{self.species_name}_DE_{condition_col}_provenance.json")
+        io.dump_json(
+            {
+                "schema": "metainformant.rna.exploratory_de.v1",
+                "species": self.species_name,
+                "input_sha256": self.input_hashes,
+                "samples": valid_samples,
+                "condition_column": condition_col,
+                "group_sizes": conditions.value_counts().to_dict(),
+                "method": "welch_log2_size_factor_normalized_counts",
+                "adjustment": "bh",
+                "result_role": "exploratory",
+                "biological_independence": "not_established_by_run_ids",
+            },
+            self.output_dir / f"{self.species_name}_DE_{condition_col}_provenance.json",
+        )
         logger.info(f"[{self.species_name}] Saved DE results to {out_path}")
 
         return volcano_data

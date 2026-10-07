@@ -27,9 +27,7 @@ def test_interval_geometry_preserves_endpoints_outside_point() -> None:
         # When drawn onto a real matplotlib axis.
         _draw_stability_intervals(ax, frame)
         # Then interval geometry is exactly the recorded endpoints, with a separate point.
-        np.testing.assert_allclose(
-            ax.collections[0].get_segments()[0], [[0.4, 0.0], [0.8, 0.0]]
-        )
+        np.testing.assert_allclose(ax.collections[0].get_segments()[0], [[0.4, 0.0], [0.8, 0.0]])
         np.testing.assert_allclose(ax.lines[0].get_xdata(), [0.1])
     finally:
         plt.close(fig)
@@ -39,9 +37,7 @@ def test_interval_geometry_preserves_endpoints_outside_point() -> None:
     "lower,upper,point",
     [(0.8, 0.4, 0.5), (np.nan, 0.8, 0.5), (0.4, 2.5, 0.5), (0.4, 0.8, -0.1)],
 )
-def test_invalid_stability_is_rejected_before_output(
-    tmp_path: Path, lower: float, upper: float, point: float
-) -> None:
+def test_invalid_stability_is_rejected_before_output(tmp_path: Path, lower: float, upper: float, point: float) -> None:
     # Given invalid stability evidence.
     frame = pd.DataFrame(
         {

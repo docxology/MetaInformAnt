@@ -4,32 +4,24 @@ from __future__ import annotations
 
 import pytest
 
-from metainformant.rna.engine.aws_fleet import in_flight_tasks, reserved_future_charge
 from metainformant.rna.engine.aws_completion import budget_allows, choose_partition
+from metainformant.rna.engine.aws_fleet import in_flight_tasks, reserved_future_charge
 
 
 def test_active_task_is_not_reissued_before_receipt_arrives() -> None:
     jobs = [{"status": "running", "task_ids": ["species/SRR1"]}]
-    tasks = [
-        {"task_id": f"species/SRR{i}", "accession": f"SRR{i}", "fastq_bytes": 10}
-        for i in [1, 2]
-    ]
+    tasks = [{"task_id": f"species/SRR{i}", "accession": f"SRR{i}", "fastq_bytes": 10} for i in [1, 2]]
     partition = choose_partition(tasks, in_flight_tasks(jobs))
     assert [task["task_id"] for task in partition] == ["species/SRR2"]
 
 
 @pytest.mark.parametrize("status", ["admitting", "running", "terminating"])
 def test_every_live_phase_retains_task_ownership(status: str) -> None:
-    assert in_flight_tasks([{"status": status, "task_ids": ["species/SRR1"]}]) == {
-        "species/SRR1"
-    }
+    assert in_flight_tasks([{"status": status, "task_ids": ["species/SRR1"]}]) == {"species/SRR1"}
 
 
 def test_terminal_jobs_release_tasks_for_bounded_retry() -> None:
-    assert (
-        in_flight_tasks([{"status": "terminated", "task_ids": ["species/SRR1"]}])
-        == set()
-    )
+    assert in_flight_tasks([{"status": "terminated", "task_ids": ["species/SRR1"]}]) == set()
 
 
 def test_duplicate_live_task_ownership_is_rejected() -> None:
@@ -67,14 +59,13 @@ def test_invalid_clock_cannot_hide_reservations(now: float) -> None:
 @pytest.mark.parametrize("deadline", [float("nan"), float("inf"), -1, True])
 def test_invalid_deadline_cannot_drop_existing_reservation(deadline: float) -> None:
     with pytest.raises(ValueError):
-        reserved_future_charge(
-            [{"status": "running", "deadline": deadline}], 3600, 0.55
-        )
+        reserved_future_charge([{"status": "running", "deadline": deadline}], 3600, 0.55)
 
 
 def test_once_wait_persists_live_workers_without_sleeping(tmp_path) -> None:
     import argparse
     import json
+
     from metainformant.rna.engine.aws_completion import _wait_for_fleet
 
     state = {

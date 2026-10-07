@@ -19,8 +19,8 @@ from typing import Any, Dict, Optional, cast
 
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
-from matplotlib.axes import Axes
 import seaborn as sns
+from matplotlib.axes import Axes
 from matplotlib.patches import Patch
 
 from metainformant.core.utils import logging
@@ -768,7 +768,9 @@ def plot_divergence_stability(
         raise ValueError(f"Stability table requires columns: {sorted(required)}")
     if stability.empty:
         raise ValueError("Stability table cannot be empty")
-    values = stability[["point_estimate", "sensitivity_lower", "sensitivity_upper", "sensitivity_iqr"]].to_numpy(dtype=float)
+    values = stability[["point_estimate", "sensitivity_lower", "sensitivity_upper", "sensitivity_iqr"]].to_numpy(
+        dtype=float
+    )
     if not np.isfinite(values).all() or (values < 0).any() or (values[:, :3] > 2).any():
         raise ValueError("Stability values must be finite and within their divergence bounds")
     if (stability["sensitivity_lower"] > stability["sensitivity_upper"]).any():

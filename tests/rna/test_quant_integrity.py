@@ -1,9 +1,12 @@
 """Invalid real-file quant facts cannot become durable receipts."""
 
 from __future__ import annotations
+
 import json
 from pathlib import Path
+
 import pytest
+
 from metainformant.rna.engine.durable_quant import DirectoryStore, lock_quantification
 from metainformant.rna.engine.provenance import write_quant_provenance
 
@@ -58,9 +61,7 @@ def test_impossible_run_facts_never_publish(
 
 
 @pytest.mark.parametrize("column", ["length", "eff_length"])
-def test_zero_feature_lengths_never_publish(
-    quant_sample: tuple[Path, Path], tmp_path: Path, column: str
-) -> None:
+def test_zero_feature_lengths_never_publish(quant_sample: tuple[Path, Path], tmp_path: Path, column: str) -> None:
     sample, config = quant_sample
     row = ["transcript1", "100", "70.5", "3.25", "1000000"]
     row[["target_id", "length", "eff_length", "est_counts", "tpm"].index(column)] = "0"
@@ -114,11 +115,7 @@ def test_finite_rows_with_overflowing_totals_never_publish(
         )
 
 
-def test_fractional_estimates_with_matching_targets_are_valid(
-    quant_sample: tuple[Path, Path], tmp_path: Path
-) -> None:
+def test_fractional_estimates_with_matching_targets_are_valid(quant_sample: tuple[Path, Path], tmp_path: Path) -> None:
     sample, _ = quant_sample
-    receipt = lock_quantification(
-        DirectoryStore(tmp_path / "store"), "cohort", "test_species", "SRR123", sample
-    )
+    receipt = lock_quantification(DirectoryStore(tmp_path / "store"), "cohort", "test_species", "SRR123", sample)
     assert receipt["feature_count"] == 1

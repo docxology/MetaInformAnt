@@ -55,14 +55,13 @@ def test_startup_requires_all_bindings_and_shell_quotes(tmp_path: Path) -> None:
     template.write_text("KEY=@@KEY@@\nVALUE=@@VALUE@@\n")
     with pytest.raises(ValueError):
         _render_startup(template, {"KEY": "safe"})
-    assert (
-        _render_startup(template, {"KEY": "a; echo bad", "VALUE": 1})
-        == "KEY='a; echo bad'\nVALUE=1\n"
-    )
+    assert _render_startup(template, {"KEY": "a; echo bad", "VALUE": 1}) == "KEY='a; echo bad'\nVALUE=1\n"
 
 
 def test_completion_certificate_refuses_empty_inventory(tmp_path: Path) -> None:
     from metainformant.rna.engine.durable_quant import DirectoryStore
 
     with pytest.raises(ValueError, match="empty or incomplete"):
-        verify_locked_campaign({"species": [], "task_count": 0}, DirectoryStore(tmp_path / "store"), "cohort", tmp_path / "result")
+        verify_locked_campaign(
+            {"species": [], "task_count": 0}, DirectoryStore(tmp_path / "store"), "cohort", tmp_path / "result"
+        )

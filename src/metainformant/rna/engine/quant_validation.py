@@ -1,11 +1,13 @@
 """Portable quantification input and output validation."""
 
 from __future__ import annotations
+
 import csv
 import json
 import math
 from pathlib import Path
 from typing import Any
+
 from metainformant.rna.amalgkit import (
     AMALGKIT_RELEASE_TAG,
     AMALGKIT_SOURCE_REVISION,
@@ -39,10 +41,7 @@ def validate_quantification(
     receipt_key("validation", species, accession)
     provenance_path = sample_dir / QUANT_PROVENANCE_FILENAME
     provenance = json.loads(provenance_path.read_text())
-    if (
-        provenance.get("species") != species
-        or provenance.get("run_accession") != accession
-    ):
+    if provenance.get("species") != species or provenance.get("run_accession") != accession:
         raise ValueError("sample provenance identity mismatch")
     if any(
         provenance.get(k) != v
@@ -101,17 +100,15 @@ def validate_quantification(
     if not isinstance(info, dict):
         raise QuantValidationError("run_info", "must be a JSON object")
     for counter in ("n_processed", "n_pseudoaligned"):
-        value = info.get(counter)
-        if type(value) is not int or value <= 0:
+        counter_value = info.get(counter)
+        if type(counter_value) is not int or counter_value <= 0:
             raise QuantValidationError(counter, "must be a positive integer")
     if info["n_pseudoaligned"] > info["n_processed"]:
         raise QuantValidationError("n_pseudoaligned", "cannot exceed processed reads")
     if "n_targets" in info:
-        value = info["n_targets"]
-        if type(value) is not int or value != len(features):
-            raise QuantValidationError(
-                "n_targets", "must match the abundance feature count"
-            )
+        target_count = info["n_targets"]
+        if type(target_count) is not int or target_count != len(features):
+            raise QuantValidationError("n_targets", "must match the abundance feature count")
     files = [provenance_path, abundance, info_path]
     files.extend(sorted(p for p in sample_dir.glob("*.h5") if p.is_file()))
     if any(p.is_symlink() for p in files):

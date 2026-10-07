@@ -63,6 +63,16 @@ project-specific tests report explicit skips when unavailable. This workflow
 does not validate the nested Hymenoptera or BeeWAS suites. Run those suites
 separately in an authenticated project checkout before publishing project changes.
 
+For generated guidance in a parent-only checkout, run:
+
+```bash
+uv run python scripts/package/generate_cursor_skills.py --check --allow-uninitialized-submodules
+```
+
+This reports wrappers deferred only for registered, empty submodules. Genuine
+orphans, broken parent links, malformed wrappers and populated incomplete projects
+still fail. The default `--check` remains strict and requires the full checkout.
+
 ### Test Types
 
 - `fast` - Quick core tests (~15s)

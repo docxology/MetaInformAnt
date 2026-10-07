@@ -36,9 +36,7 @@ def test_compressed_matrix_profile_and_chunked_dimensions(tmp_path: Path) -> Non
 
 
 @pytest.mark.parametrize("rows", ["g1\t1\t1\ng1\t2\t2\n", "g1\t1\t0\ng2\t1\t0\n"])
-def test_matrix_rejects_cross_chunk_duplicate_or_empty_sample(
-    tmp_path: Path, rows: str
-) -> None:
+def test_matrix_rejects_cross_chunk_duplicate_or_empty_sample(tmp_path: Path, rows: str) -> None:
     path = tmp_path / "matrix.tsv"
     path.write_text("feature\tA\tB\n" + rows)
     with pytest.raises(ValueError):
@@ -47,9 +45,7 @@ def test_matrix_rejects_cross_chunk_duplicate_or_empty_sample(
 
 def test_quality_preserves_nonfinite_counts_instead_of_imputing_zero() -> None:
     table = compute_profile_quality({"species": pd.Series([1, 0, np.nan, np.inf])})
-    assert table.loc[
-        0, ["finite_features", "zero_features", "nonfinite_features"]
-    ].tolist() == [2, 1, 2]
+    assert table.loc[0, ["finite_features", "zero_features", "nonfinite_features"]].tolist() == [2, 1, 2]
     assert table.loc[0, "positive_fraction_finite"] == 0.5
 
 
@@ -91,9 +87,7 @@ def test_ortholog_mean_profile_distance_and_explicit_first_transcript() -> None:
         "A": pd.Series({"a1": 1.0, "unused": 999.0, "a2": 2.0, "a3": 3.0}),
         "B": pd.Series({"b1": 3.0, "b2": 2.0, "b3": 1.0}),
     }
-    distance, overlap = compute_ortholog_profile_divergence(
-        mapping, profiles, min_shared_orthologs=3
-    )
+    distance, overlap = compute_ortholog_profile_divergence(mapping, profiles, min_shared_orthologs=3)
     assert distance.loc["A", "B"] == pytest.approx(2.0)
     assert overlap.loc["A", "B"] == 3
     assert np.isnan(distance.loc["A", "missing"])
@@ -106,9 +100,7 @@ def test_constant_or_insufficient_ortholog_profiles_are_unavailable() -> None:
         "A": pd.Series({"a": 1.0, "b": 1.0}),
         "B": pd.Series({"a": 2.0, "b": 3.0}),
     }
-    distances, _ = compute_ortholog_profile_divergence(
-        mapping, profiles, min_shared_orthologs=2
-    )
+    distances, _ = compute_ortholog_profile_divergence(mapping, profiles, min_shared_orthologs=2)
     assert np.isnan(distances.loc["A", "B"])
     profiles["A"]["a"] = np.inf
     with pytest.raises(ValueError):
@@ -116,12 +108,8 @@ def test_constant_or_insufficient_ortholog_profiles_are_unavailable() -> None:
 
 
 def test_wilson_interval_matches_independent_implementation() -> None:
-    assert wilson_interval(7, 20) == pytest.approx(
-        proportion_confint(7, 20, method="wilson")
-    )
-    assert wilson_interval(np.int64(7), np.int64(20)) == pytest.approx(
-        proportion_confint(7, 20, method="wilson")
-    )
+    assert wilson_interval(7, 20) == pytest.approx(proportion_confint(7, 20, method="wilson"))
+    assert wilson_interval(np.int64(7), np.int64(20)) == pytest.approx(proportion_confint(7, 20, method="wilson"))
     with pytest.raises(ValueError):
         wilson_interval(True, 20)
     assert wilson_interval(1, 0) is None
@@ -134,9 +122,7 @@ def test_wilson_interval_rejects_invalid_uncertainty_parameter(z: float) -> None
 
 
 @pytest.mark.parametrize("entries", [False, 0, ""])
-def test_contract_reader_rejects_falsey_nonlist_sensitivities(
-    tmp_path: Path, entries: object
-) -> None:
+def test_contract_reader_rejects_falsey_nonlist_sensitivities(tmp_path: Path, entries: object) -> None:
     path = tmp_path / "contract.json"
     path.write_text(
         json.dumps(

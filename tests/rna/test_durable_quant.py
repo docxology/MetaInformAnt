@@ -27,9 +27,7 @@ def sample(tmp_path: Path) -> tuple[Path, Path]:
     (quant / "SRR123_abundance.tsv").write_text(
         "target_id\tlength\teff_length\test_counts\ttpm\ntranscript1\t100\t70\t3\t1000000\n"
     )
-    (quant / "SRR123_run_info.json").write_text(
-        json.dumps({"n_processed": 100, "n_pseudoaligned": 10})
-    )
+    (quant / "SRR123_run_info.json").write_text(json.dumps({"n_processed": 100, "n_pseudoaligned": 10}))
     write_quant_provenance(
         quant,
         species="test_species",
@@ -55,12 +53,8 @@ def test_lock_roundtrip_and_idempotence(tmp_path: Path) -> None:
         quant,
         expected_config_sha256=hashlib.sha256(config.read_bytes()).hexdigest(),
     )
-    assert (
-        lock_quantification(store, "cohort", "test_species", "SRR123", quant) == receipt
-    )
-    restored = restore_quantification(
-        store, "cohort", "test_species", "SRR123", tmp_path / "restored"
-    )
+    assert lock_quantification(store, "cohort", "test_species", "SRR123", quant) == receipt
+    restored = restore_quantification(store, "cohort", "test_species", "SRR123", tmp_path / "restored")
     assert restored == receipt
     assert (tmp_path / "restored" / "SRR123_abundance.tsv").read_bytes() == (
         quant / "SRR123_abundance.tsv"
@@ -106,9 +100,7 @@ def test_existing_receipt_cannot_be_overwritten(tmp_path: Path) -> None:
     quant, config = sample(tmp_path)
     store = DirectoryStore(tmp_path / "store")
     first = lock_quantification(store, "cohort", "test_species", "SRR123", quant)
-    (quant / "SRR123_abundance.tsv").write_text(
-        (quant / "SRR123_abundance.tsv").read_text().replace("\t3\t", "\t4\t")
-    )
+    (quant / "SRR123_abundance.tsv").write_text((quant / "SRR123_abundance.tsv").read_text().replace("\t3\t", "\t4\t"))
     write_quant_provenance(
         quant,
         species="test_species",
@@ -129,9 +121,7 @@ def test_corrupt_stored_blob_refuses_restore(tmp_path: Path) -> None:
     blob.chmod(0o644)
     blob.write_bytes(b"corrupt")
     with pytest.raises(ValueError, match="checksum"):
-        restore_quantification(
-            store, "cohort", "test_species", "SRR123", tmp_path / "restored"
-        )
+        restore_quantification(store, "cohort", "test_species", "SRR123", tmp_path / "restored")
     assert not (tmp_path / "restored").exists()
 
 
@@ -196,8 +186,8 @@ def test_wrong_actual_index_cannot_lock(tmp_path: Path) -> None:
 def test_bound_lock_migrates_without_overwriting_recovery_receipt(
     tmp_path: Path,
 ) -> None:
-    from metainformant.rna.engine.durable_quant import bound_receipt_key, receipt_key
     from metainformant.rna.engine.aws_completion import verify_locked_campaign
+    from metainformant.rna.engine.durable_quant import bound_receipt_key, receipt_key
 
     quant, config, index_hash = reference_sample(tmp_path)
     config_hash = hashlib.sha256(config.read_bytes()).hexdigest()
@@ -246,9 +236,7 @@ def test_bound_lock_migrates_without_overwriting_recovery_receipt(
         },
     ):
         with pytest.raises(ValueError):
-            restore_quantification(
-                store, "cohort", "test_species", "SRR123", tmp_path / "bad", **kwargs
-            )
+            restore_quantification(store, "cohort", "test_species", "SRR123", tmp_path / "bad", **kwargs)
         assert not (tmp_path / "bad").exists()
     inventory = {
         "task_count": 1,
@@ -267,9 +255,7 @@ def test_bound_lock_migrates_without_overwriting_recovery_receipt(
             }
         ],
     }
-    assert verify_locked_campaign(inventory, store, "cohort", tmp_path / "complete")[
-        "all_quant_locked"
-    ]
+    assert verify_locked_campaign(inventory, store, "cohort", tmp_path / "complete")["all_quant_locked"]
 
 
 def test_unbound_receipt_never_certifies_frozen_inventory(tmp_path: Path) -> None:
@@ -304,9 +290,9 @@ def test_portable_restore_keeps_original_sidecar_and_validates_local_inputs(
     tmp_path: Path,
 ) -> None:
     from metainformant.rna.engine.provenance import (
-        classify_quantification,
         QUANT_PROVENANCE_FILENAME,
         RESTORED_INPUTS_DIR,
+        classify_quantification,
     )
 
     quant, config, index_hash = reference_sample(tmp_path)
@@ -330,17 +316,10 @@ def test_portable_restore_keeps_original_sidecar_and_validates_local_inputs(
         "expected_reference_index_sha256": index_hash,
         "verified_config_path": frozen,
     }
-    restore_quantification(
-        store, "cohort", "test_species", "SRR123", destination, **kwargs
-    )
+    restore_quantification(store, "cohort", "test_species", "SRR123", destination, **kwargs)
     assert (destination / QUANT_PROVENANCE_FILENAME).read_bytes() == original
-    assert (
-        classify_quantification(destination, "SRR123", verify_content=True)["status"]
-        == "current"
-    )
-    restore_quantification(
-        store, "cohort", "test_species", "SRR123", destination, **kwargs
-    )
+    assert classify_quantification(destination, "SRR123", verify_content=True)["status"] == "current"
+    restore_quantification(store, "cohort", "test_species", "SRR123", destination, **kwargs)
     from metainformant.rna.engine.aws_completion import verify_locked_campaign
 
     inventory = {
@@ -362,30 +341,21 @@ def test_portable_restore_keeps_original_sidecar_and_validates_local_inputs(
         ],
     }
     certificate_root = tmp_path / "certified"
-    certificate = verify_locked_campaign(
-        inventory, store, "cohort", certificate_root, config_dir=frozen.parent
-    )
+    certificate = verify_locked_campaign(inventory, store, "cohort", certificate_root, config_dir=frozen.parent)
     assert certificate["verified_tasks"] == 1
     certified = certificate_root / "test_species/work/quant/SRR123"
-    assert (
-        classify_quantification(certified, "SRR123", verify_content=True)["status"]
-        == "current"
-    )
+    assert classify_quantification(certified, "SRR123", verify_content=True)["status"] == "current"
     (destination / RESTORED_INPUTS_DIR / "config.yaml").write_text("tampered\n")
     assert classify_quantification(destination, "SRR123")["status"] == "invalid"
     with pytest.raises(FileExistsError, match="witness"):
-        restore_quantification(
-            store, "cohort", "test_species", "SRR123", destination, **kwargs
-        )
+        restore_quantification(store, "cohort", "test_species", "SRR123", destination, **kwargs)
 
 
 @pytest.mark.parametrize("corruption", ["contract", "reference", "escape"])
-def test_portable_restore_witness_rejects_corruption(
-    tmp_path: Path, corruption: str
-) -> None:
+def test_portable_restore_witness_rejects_corruption(tmp_path: Path, corruption: str) -> None:
     from metainformant.rna.engine.provenance import (
-        classify_quantification,
         RESTORED_INPUTS_DIR,
+        classify_quantification,
     )
 
     quant, config, index_hash = reference_sample(tmp_path)
@@ -424,14 +394,10 @@ def test_portable_restore_witness_rejects_corruption(
 
 
 @pytest.mark.parametrize("failure", ["unbound", "wrong_config"])
-def test_portable_restore_rejects_unverified_inputs_before_writing(
-    tmp_path: Path, failure: str
-) -> None:
+def test_portable_restore_rejects_unverified_inputs_before_writing(tmp_path: Path, failure: str) -> None:
     quant, config, index_hash = reference_sample(tmp_path)
     store = DirectoryStore(tmp_path / "store")
-    kwargs = (
-        {} if failure == "unbound" else {"expected_reference_index_sha256": index_hash}
-    )
+    kwargs = {} if failure == "unbound" else {"expected_reference_index_sha256": index_hash}
     lock_quantification(store, "cohort", "test_species", "SRR123", quant, **kwargs)
     if failure == "wrong_config":
         config.write_text("wrong: config\n")
@@ -495,12 +461,8 @@ def test_restored_quant_cannot_checkpoint_under_different_configuration(
     assert not (work / ".metainformant_downstream_provenance.json").exists()
 
 
-@pytest.mark.parametrize(
-    "name", ["../config.yaml", "/tmp/config.yaml", "..", "nested\\config.yaml"]
-)
-def test_campaign_restore_rejects_unsafe_configuration_names(
-    tmp_path: Path, name: str
-) -> None:
+@pytest.mark.parametrize("name", ["../config.yaml", "/tmp/config.yaml", "..", "nested\\config.yaml"])
+def test_campaign_restore_rejects_unsafe_configuration_names(tmp_path: Path, name: str) -> None:
     from metainformant.rna.engine.aws_completion import verify_locked_campaign
 
     quant, config, index_hash = reference_sample(tmp_path)
@@ -533,7 +495,5 @@ def test_campaign_restore_rejects_unsafe_configuration_names(
     }
     destination = tmp_path / "must_not_exist"
     with pytest.raises(ValueError, match="unsafe frozen configuration"):
-        verify_locked_campaign(
-            inventory, store, "cohort", destination, config_dir=tmp_path
-        )
+        verify_locked_campaign(inventory, store, "cohort", destination, config_dir=tmp_path)
     assert not destination.exists()

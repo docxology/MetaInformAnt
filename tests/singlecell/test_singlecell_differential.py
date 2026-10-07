@@ -31,9 +31,7 @@ def _make_de_data(
     seed: int = 42,
 ) -> tuple[list[list[float]], list[int], list[str]]:
     """Expression matrix with known DE genes (shared factory)."""
-    return make_de_matrix(
-        n_cells=n_cells, n_genes=n_genes, n_de_genes=n_de_genes, seed=seed
-    )
+    return make_de_matrix(n_cells=n_cells, n_genes=n_genes, n_de_genes=n_de_genes, seed=seed)
 
 
 # ---------------------------------------------------------------------------
@@ -85,9 +83,7 @@ class TestDifferentialExpression:
         found_genes = {r["gene"] for r in results if abs(r["log2fc"]) > 0.5}
         overlap = de_gene_names & found_genes
         # At least some of the known DE genes should appear
-        assert len(overlap) >= 1, (
-            f"Expected DE genes {de_gene_names} in results; found {found_genes}"
-        )
+        assert len(overlap) >= 1, f"Expected DE genes {de_gene_names} in results; found {found_genes}"
 
     def test_adjusted_p_values_bounded(self) -> None:
         matrix, groups, gene_names = _make_de_data()
@@ -105,9 +101,7 @@ class TestDifferentialExpression:
 
     def test_min_log2fc_filter(self) -> None:
         matrix, groups, gene_names = _make_de_data()
-        results = differential_expression(
-            matrix, groups, gene_names, method="wilcoxon", min_log2fc=2.0
-        )
+        results = differential_expression(matrix, groups, gene_names, method="wilcoxon", min_log2fc=2.0)
         for r in results:
             assert abs(r["log2fc"]) >= 2.0
 
@@ -156,9 +150,7 @@ class TestDifferentialExpression:
         matrix[20, 0] = 5.0  # group 1
         groups = [0] * 20 + [1] * 20
         gene_names = [f"g{i}" for i in range(10)]
-        results = differential_expression(
-            matrix.tolist(), groups, gene_names, min_cells=3
-        )
+        results = differential_expression(matrix.tolist(), groups, gene_names, min_cells=3)
         gene_set = {r["gene"] for r in results}
         # gene_0 has only 1 expressing cell per group (< 3), should be skipped
         assert "g0" not in gene_set
@@ -212,9 +204,7 @@ class TestPseudobulkDE:
             group_labels_list.extend([sample_groups[s_name]] * cells_per_sample)
             # Add group effect to first 5 genes in group 1
             if sample_groups[s_name] == 1:
-                matrix[start:end, :5] += rng.exponential(
-                    3.0, size=(cells_per_sample, 5)
-                )
+                matrix[start:end, :5] += rng.exponential(3.0, size=(cells_per_sample, 5))
 
         return (
             matrix.tolist(),
@@ -225,9 +215,7 @@ class TestPseudobulkDE:
         )
 
     def test_pseudobulk_returns_results(self) -> None:
-        matrix, cell_labels, sample_labels, groups, gene_names = (
-            self._make_pseudobulk_data()
-        )
+        matrix, cell_labels, sample_labels, groups, gene_names = self._make_pseudobulk_data()
         results = pseudobulk_de(
             matrix,
             cell_labels,
@@ -239,9 +227,7 @@ class TestPseudobulkDE:
         assert len(results) > 0
 
     def test_pseudobulk_result_keys(self) -> None:
-        matrix, cell_labels, sample_labels, groups, gene_names = (
-            self._make_pseudobulk_data()
-        )
+        matrix, cell_labels, sample_labels, groups, gene_names = self._make_pseudobulk_data()
         results = pseudobulk_de(
             matrix,
             cell_labels,
@@ -255,9 +241,7 @@ class TestPseudobulkDE:
             assert "adjusted_p" in r
 
     def test_pseudobulk_sorted_by_adjusted_p(self) -> None:
-        matrix, cell_labels, sample_labels, groups, gene_names = (
-            self._make_pseudobulk_data()
-        )
+        matrix, cell_labels, sample_labels, groups, gene_names = self._make_pseudobulk_data()
         results = pseudobulk_de(
             matrix,
             cell_labels,
@@ -339,9 +323,7 @@ class TestVolcanoData:
             assert key in result
 
     def test_classification_counts(self) -> None:
-        result = volcano_data(
-            self._make_de_results(), fc_threshold=1.0, p_threshold=0.05
-        )
+        result = volcano_data(self._make_de_results(), fc_threshold=1.0, p_threshold=0.05)
         assert result["n_up"] == 2  # up1, up2
         assert result["n_down"] == 1  # down1
         assert result["n_ns"] == 2  # ns1, ns2
@@ -357,9 +339,7 @@ class TestVolcanoData:
         assert result["genes"] == [r["gene"] for r in de]
 
     def test_strict_threshold(self) -> None:
-        result = volcano_data(
-            self._make_de_results(), fc_threshold=3.0, p_threshold=0.001
-        )
+        result = volcano_data(self._make_de_results(), fc_threshold=3.0, p_threshold=0.001)
         # Only up1 is a borderline candidate but it has fc=2.0 < 3.0
         assert result["n_up"] == 0
         assert result["n_down"] == 0
@@ -508,12 +488,8 @@ class TestBHFamilyIndependenceOfEffectSizeFilter:
 
     def test_filtered_out_gene_stays_in_bh_family(self) -> None:
         matrix, groups, names = self._four_gene_matrix()
-        all_res = differential_expression(
-            matrix, groups, names, method="wilcoxon", min_log2fc=0.0
-        )
-        filtered = differential_expression(
-            matrix, groups, names, method="wilcoxon", min_log2fc=2.0
-        )
+        all_res = differential_expression(matrix, groups, names, method="wilcoxon", min_log2fc=0.0)
+        filtered = differential_expression(matrix, groups, names, method="wilcoxon", min_log2fc=2.0)
 
         assert {r["gene"] for r in all_res} == set(names)
         assert "g_flat" not in {r["gene"] for r in filtered}
@@ -524,9 +500,7 @@ class TestBHFamilyIndependenceOfEffectSizeFilter:
 
     def test_bh_multiplier_reflects_full_family(self) -> None:
         matrix, groups, names = self._four_gene_matrix()
-        filtered = differential_expression(
-            matrix, groups, names, method="wilcoxon", min_log2fc=2.0
-        )
+        filtered = differential_expression(matrix, groups, names, method="wilcoxon", min_log2fc=2.0)
         p_up = next(r["p_value"] for r in filtered if r["gene"] == "g_up")
         adj_up = next(r["adjusted_p"] for r in filtered if r["gene"] == "g_up")
         # The three DE genes tie on p, so BH's step-up cascade settles all of
@@ -553,18 +527,14 @@ class TestPseudobulkGroupConsistency:
         # S2 carries a stray group-0 cell; both samples pass min_cells_per_sample
         groups = [0] * 6 + [1, 1, 1, 0, 1, 1]
         with pytest.raises(ValidationError, match="multiple groups"):
-            pseudobulk_de(
-                matrix, cell_labels, sample_labels, groups, gene_names=["g0", "g1"]
-            )
+            pseudobulk_de(matrix, cell_labels, sample_labels, groups, gene_names=["g0", "g1"])
 
     def test_consistent_labels_do_not_raise(self) -> None:
         matrix = [[5.0, 3.0]] * 12
         cell_labels = ["T_cell"] * 12
         sample_labels = ["S1"] * 6 + ["S2"] * 6
         groups = [0] * 6 + [1] * 6
-        results = pseudobulk_de(
-            matrix, cell_labels, sample_labels, groups, gene_names=["g0", "g1"]
-        )
+        results = pseudobulk_de(matrix, cell_labels, sample_labels, groups, gene_names=["g0", "g1"])
         assert len(results) == 2
 
 
@@ -572,9 +542,7 @@ class TestPseudobulkCpmNormalization:
     """Pseudobulk sums are CPM-normalized per sample before testing."""
 
     @staticmethod
-    def _depth_design() -> tuple[
-        list[list[float]], list[str], list[str], list[int], list[str]
-    ]:
+    def _depth_design() -> tuple[list[list[float]], list[str], list[str], list[int], list[str]]:
         # 4 samples x 5 cells; group-1 samples are sequenced 2x deeper but
         # carry the same per-gene proportions as their group-0 counterparts.
         # Proportions differ slightly BETWEEN the two samples of a group so
@@ -602,9 +570,7 @@ class TestPseudobulkCpmNormalization:
 
     def test_cpm_removes_library_depth_effect(self) -> None:
         matrix, cell_labels, sample_labels, groups, gene_names = self._depth_design()
-        results = pseudobulk_de(
-            matrix, cell_labels, sample_labels, groups, gene_names=gene_names
-        )
+        results = pseudobulk_de(matrix, cell_labels, sample_labels, groups, gene_names=gene_names)
         assert len(results) == 3
         for r in results:
             assert r["normalization"] == "cpm"
@@ -624,21 +590,15 @@ class TestPseudobulkCpmNormalization:
                 matrix[i] = [150.0, 25.0, 25.0]  # 75% of the cell total, vs 50%
             elif sample == "S4":
                 matrix[i] = [172.8, 33.6, 33.6]  # 72% / 14% / 14%
-        results = pseudobulk_de(
-            matrix, cell_labels, sample_labels, groups, gene_names=gene_names
-        )
+        results = pseudobulk_de(matrix, cell_labels, sample_labels, groups, gene_names=gene_names)
         g0 = next(r for r in results if r["gene"] == "g0")
         # CPM means: group0 (500000+480000)/2 = 490000; group1 (750000+720000)/2
         # = 735000. compute_log_fold_change takes (group0, group1) and adds a
         # pseudocount of 1, so the sign is negative for an up-in-group1 gene.
-        assert g0["log2fc"] == pytest.approx(
-            math.log2((490000 + 1) / (735000 + 1)), rel=1e-12
-        )
+        assert g0["log2fc"] == pytest.approx(math.log2((490000 + 1) / (735000 + 1)), rel=1e-12)
         assert g0["p_value"] < 0.2
         g1 = next(r for r in results if r["gene"] == "g1")
         # CPM means: group0 (250000+260000)/2 = 255000; group1 (125000+140000)/2
         # = 132500.
-        assert g1["log2fc"] == pytest.approx(
-            math.log2((255000 + 1) / (132500 + 1)), rel=1e-12
-        )
+        assert g1["log2fc"] == pytest.approx(math.log2((255000 + 1) / (132500 + 1)), rel=1e-12)
         assert g1["p_value"] < 0.2

@@ -69,9 +69,7 @@ def _marginal_counts(values: list[int]) -> dict[int, int]:
     return counts
 
 
-def _triple_counts(
-    a: list[int], b: list[int], c: list[int]
-) -> dict[tuple[int, int, int], int]:
+def _triple_counts(a: list[int], b: list[int], c: list[int]) -> dict[tuple[int, int, int], int]:
     """Count joint occurrences of (a_i, b_i, c_i) triples."""
     counts: dict[tuple[int, int, int], int] = {}
     for ai, bi, ci in zip(a, b, c):
@@ -90,9 +88,7 @@ def _entropy_from_counts(counts: dict, n: int) -> float:
     return h
 
 
-def _conditional_entropy(
-    joint: dict[tuple[int, int], int], marginal_b: dict[int, int], n: int
-) -> float:
+def _conditional_entropy(joint: dict[tuple[int, int], int], marginal_b: dict[int, int], n: int) -> float:
     """Compute H(A|B) from joint and marginal counts."""
     # H(A|B) = H(A,B) - H(B)
     h_joint = _entropy_from_counts(joint, n)
@@ -169,9 +165,7 @@ def transfer_entropy(
         ValueError: If series have different lengths or are too short.
     """
     if len(source) != len(target):
-        raise ValueError(
-            f"source ({len(source)}) and target ({len(target)}) must have same length"
-        )
+        raise ValueError(f"source ({len(source)}) and target ({len(target)}) must have same length")
     if len(source) <= lag:
         raise ValueError(f"Series length ({len(source)}) must exceed lag ({lag})")
 
@@ -454,19 +448,15 @@ def _f_sf(f: float, df1: int, df2: int) -> float:
 
     # Normal approximation for large df
     if df1 > 30 and df2 > 30:
-        z = (
-            f ** (1.0 / 3.0) * (1.0 - 2.0 / (9 * df2)) - (1.0 - 2.0 / (9 * df1))
-        ) / math.sqrt(2.0 / (9 * df1) + f ** (2.0 / 3.0) * 2.0 / (9 * df2))
+        z = (f ** (1.0 / 3.0) * (1.0 - 2.0 / (9 * df2)) - (1.0 - 2.0 / (9 * df1))) / math.sqrt(
+            2.0 / (9 * df1) + f ** (2.0 / 3.0) * 2.0 / (9 * df2)
+        )
         return 0.5 * math.erfc(z / math.sqrt(2.0))
 
     # Beta approximation
     # For small df, use rough normal approximation
     mean_f = df2 / max(df2 - 2, 1)
-    var_f = (
-        2.0 * df2**2 * (df1 + df2 - 2) / (df1 * max(df2 - 2, 1) ** 2 * max(df2 - 4, 1))
-        if df2 > 4
-        else mean_f**2
-    )
+    var_f = 2.0 * df2**2 * (df1 + df2 - 2) / (df1 * max(df2 - 2, 1) ** 2 * max(df2 - 4, 1)) if df2 > 4 else mean_f**2
     if var_f <= 0:
         var_f = 1.0
     z = (f - mean_f) / math.sqrt(var_f)
@@ -562,9 +552,7 @@ def network_entropy(adjacency_matrix: list[list[float]]) -> dict:
     normalized = entropy / max_entropy if max_entropy > 0 else 0.0
 
     # Density
-    n_edges = sum(
-        1 for i in range(n) for j in range(i + 1, n) if adjacency_matrix[i][j] != 0
-    )
+    n_edges = sum(1 for i in range(n) for j in range(i + 1, n) if adjacency_matrix[i][j] != 0)
     max_edges = n * (n - 1) / 2
     density = n_edges / max_edges if max_edges > 0 else 0.0
 
@@ -646,9 +634,7 @@ def information_flow_network(
                 )
 
     # Identify hub nodes (highest out-degree)
-    out_degrees = [
-        (names[i], sum(1 for j in range(n) if adj[i][j] > 0)) for i in range(n)
-    ]
+    out_degrees = [(names[i], sum(1 for j in range(n) if adj[i][j] > 0)) for i in range(n)]
     out_degrees.sort(key=lambda x: x[1], reverse=True)
     hub_nodes = [name for name, deg in out_degrees if deg > 0][: max(1, n // 3)]
 

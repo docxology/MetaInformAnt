@@ -21,6 +21,9 @@ from typing import Iterable
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SKILLS_ROOT = REPO_ROOT / ".cursor" / "skills"
 
+sys.path.insert(0, str(REPO_ROOT / "src"))
+from metainformant.quality.cursor_scope import deferred_agents_target, uninitialized_submodules
+
 SKIP_DIR_NAMES = frozenset(
     {
         ".git",
@@ -385,7 +388,7 @@ def build_description(rel_folder: str) -> str:
 def render_skill_content(agents_file: Path, repo: Path, slug: str) -> str:
     """Render the deterministic wrapper for one ``AGENTS.md`` file."""
 
-    skill_dir = SKILLS_ROOT / slug
+    skill_dir = repo / ".cursor" / "skills" / slug
     skill_md = skill_dir / "SKILL.md"
     rel_folder = display_folder_label(agents_file.parent, repo)
     description = build_description(rel_folder)
@@ -397,7 +400,7 @@ def render_skill_content(agents_file: Path, repo: Path, slug: str) -> str:
 def write_skill(agents_file: Path, repo: Path, slug: str, dry_run: bool) -> Path:
     """Write one generated wrapper and return its path."""
 
-    skill_dir = SKILLS_ROOT / slug
+    skill_dir = repo / ".cursor" / "skills" / slug
     skill_md = skill_dir / "SKILL.md"
     content = render_skill_content(agents_file, repo, slug)
     if not dry_run:
@@ -421,13 +424,15 @@ def parse_frontmatter(skill_md: Path) -> tuple[str | None, str | None]:
     return name, desc
 
 
-def run_check(repo: Path) -> int:
+def run_check(repo: Path, *, allow_uninitialized_submodules: bool = False) -> int:
+    skills_root = repo / ".cursor" / "skills"
+    missing = uninitialized_submodules(repo) if allow_uninitialized_submodules else ()
     agents_files = iter_agents_files(repo)
     assignments = assign_slugs(agents_files, repo)
     errors: list[str] = []
 
     for agents, slug in assignments.items():
-        skill_md = SKILLS_ROOT / slug / "SKILL.md"
+        skill_md = skills_root / slug / "SKILL.md"
         if not skill_md.is_file():
             errors.append(f"Missing skill for {agents}: expected {skill_md}")
             continue
@@ -461,13 +466,27 @@ def run_check(repo: Path) -> int:
 
     # Orphan skill directories (has SKILL.md but no AGENTS mapping)
     expected_slugs = set(assignments.values())
-    if SKILLS_ROOT.is_dir():
-        for child in SKILLS_ROOT.iterdir():
+    deferred: list[Path] = []
+    if skills_root.is_dir():
+        for child in skills_root.iterdir():
             if child.name == "README.md" or not child.is_dir():
                 continue
             sm = child / "SKILL.md"
             if sm.is_file() and child.name not in expected_slugs:
-                errors.append(f"Orphan skill directory (no matching AGENTS.md): {child}")
+                target = deferred_agents_target(sm, repo, missing)
+                if target is None:
+                    errors.append(f"Orphan skill directory (no matching AGENTS.md): {child}")
+                    continue
+                name, description = parse_frontmatter(sm)
+                relative = target.parent.relative_to(repo.resolve())
+                expected_names = {
+                    skill_slug_for_rel(relative),
+                    "metainformant-" + hashlib.sha256(str(relative).encode()).hexdigest()[:10],
+                }
+                if name != child.name or name not in expected_names or not description or len(description) > 1024:
+                    errors.append(f"invalid deferred submodule wrapper identity: {sm}")
+                else:
+                    deferred.append(target)
 
     if errors:
         print("check failed:", file=sys.stderr)
@@ -475,6 +494,8 @@ def run_check(repo: Path) -> int:
             print(f"  {e}", file=sys.stderr)
         return 1
     print(f"check ok: {len(assignments)} skills match AGENTS.md locations")
+    if missing:
+        print(f"scope: {len(deferred)} wrappers deferred for {len(missing)} uninitialized submodules")
     return 0
 
 
@@ -482,6 +503,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="verify skills only")
     parser.add_argument("--dry-run", action="store_true", help="print actions without writing")
+    parser.add_argument(
+        "--allow-uninitialized-submodules",
+        action="store_true",
+        help="Check available guidance; explicitly defer wrappers for registered empty submodules",
+    )
     args = parser.parse_args()
     repo = REPO_ROOT
 
@@ -489,7 +515,9 @@ def main() -> int:
     assignments = assign_slugs(agents_files, repo)
 
     if args.check:
-        return run_check(repo)
+        return run_check(repo, allow_uninitialized_submodules=args.allow_uninitialized_submodules)
+    if args.allow_uninitialized_submodules:
+        parser.error("--allow-uninitialized-submodules requires --check")
 
     for agents, slug in assignments.items():
         write_skill(agents, repo, slug, args.dry_run)

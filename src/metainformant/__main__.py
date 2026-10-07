@@ -50,21 +50,15 @@ For detailed usage of specific modules, import them directly in Python:
     protein_sub = protein_parser.add_subparsers(dest="protein_command")
 
     # protein taxon-ids
-    taxon_parser = protein_sub.add_parser(
-        "taxon-ids", help="Read and validate taxon IDs"
-    )
+    taxon_parser = protein_sub.add_parser("taxon-ids", help="Read and validate taxon IDs")
     taxon_parser.add_argument("--file", required=True, help="Path to taxon ID file")
 
     # protein comp
-    comp_parser = protein_sub.add_parser(
-        "comp", help="Amino acid composition from FASTA"
-    )
+    comp_parser = protein_sub.add_parser("comp", help="Amino acid composition from FASTA")
     comp_parser.add_argument("--fasta", required=True, help="Path to FASTA file")
 
     # protein rmsd-ca
-    rmsd_parser = protein_sub.add_parser(
-        "rmsd-ca", help="RMSD between CA atoms of two PDB files"
-    )
+    rmsd_parser = protein_sub.add_parser("rmsd-ca", help="RMSD between CA atoms of two PDB files")
     rmsd_parser.add_argument("--pdb-a", required=True, help="Path to first PDB file")
     rmsd_parser.add_argument("--pdb-b", required=True, help="Path to second PDB file")
 
@@ -72,18 +66,10 @@ For detailed usage of specific modules, import them directly in Python:
     quality_parser = subparsers.add_parser("quality", help="Quality control commands")
     quality_sub = quality_parser.add_subparsers(dest="quality_command")
 
-    batch_parser = quality_sub.add_parser(
-        "batch-detect", help="Detect batch effects in a dataset"
-    )
-    batch_parser.add_argument(
-        "--data", required=True, help="Path to CSV data matrix (samples × features)"
-    )
-    batch_parser.add_argument(
-        "--batches", required=True, help="Path to batch labels file (one per line)"
-    )
-    batch_parser.add_argument(
-        "--alpha", type=float, default=0.05, help="Significance threshold"
-    )
+    batch_parser = quality_sub.add_parser("batch-detect", help="Detect batch effects in a dataset")
+    batch_parser.add_argument("--data", required=True, help="Path to CSV data matrix (samples × features)")
+    batch_parser.add_argument("--batches", required=True, help="Path to batch labels file (one per line)")
+    batch_parser.add_argument("--alpha", type=float, default=0.05, help="Significance threshold")
 
     quality_run = quality_sub.add_parser(
         "run",
@@ -101,9 +87,7 @@ For detailed usage of specific modules, import them directly in Python:
         default=Path("docs"),
         help="Documentation directory to verify",
     )
-    quality_run.add_argument(
-        "--src-dir", type=Path, default=Path("src"), help="Source directory to index"
-    )
+    quality_run.add_argument("--src-dir", type=Path, default=Path("src"), help="Source directory to index")
     quality_run.add_argument(
         "--include-historical",
         action="store_true",
@@ -114,9 +98,7 @@ For detailed usage of specific modules, import them directly in Python:
         action="store_true",
         help="Treat optional third-party imports as violations",
     )
-    quality_run.add_argument(
-        "--verbose", action="store_true", help="Verbose verification logging"
-    )
+    quality_run.add_argument("--verbose", action="store_true", help="Verbose verification logging")
 
     # RNA subcommands
     rna_parser = subparsers.add_parser("rna", help="RNA-seq analysis commands")
@@ -132,54 +114,28 @@ For detailed usage of specific modules, import them directly in Python:
 
     # gwas run subcommand
     gwas_run_parser = gwas_sub.add_parser("run", help="Run complete GWAS workflow")
-    gwas_run_parser.add_argument(
-        "--config", required=True, help="Path to GWAS configuration file (YAML/JSON)"
-    )
-    gwas_run_parser.add_argument(
-        "--check", action="store_true", help="Validate configuration without executing"
-    )
+    gwas_run_parser.add_argument("--config", required=True, help="Path to GWAS configuration file (YAML/JSON)")
+    gwas_run_parser.add_argument("--check", action="store_true", help="Validate configuration without executing")
     gwas_run_parser.add_argument("--output-dir", help="Override output directory")
 
     # Life events subcommands
-    life_parser = subparsers.add_parser(
-        "life-events", help="Life event workflow commands"
-    )
+    life_parser = subparsers.add_parser("life-events", help="Life event workflow commands")
     life_sub = life_parser.add_subparsers(dest="life_events_command")
 
-    life_predict = life_sub.add_parser(
-        "predict", help="Predict outcomes for life event sequences"
-    )
-    life_predict.add_argument(
-        "--events", required=True, help="Path to event sequences JSON"
-    )
-    life_predict.add_argument(
-        "--model", required=True, help="Path to trained life-events model"
-    )
-    life_predict.add_argument(
-        "--output", required=True, help="Output directory for predictions"
-    )
+    life_predict = life_sub.add_parser("predict", help="Predict outcomes for life event sequences")
+    life_predict.add_argument("--events", required=True, help="Path to event sequences JSON")
+    life_predict.add_argument("--model", required=True, help="Path to trained life-events model")
+    life_predict.add_argument("--output", required=True, help="Output directory for predictions")
 
-    life_interpret = life_sub.add_parser(
-        "interpret", help="Create a life-events interpretation report"
-    )
-    life_interpret.add_argument(
-        "--model", required=True, help="Path to trained life-events model"
-    )
-    life_interpret.add_argument(
-        "--sequences", required=True, help="Path to event sequences JSON"
-    )
-    life_interpret.add_argument(
-        "--output", required=True, help="Output directory for report"
-    )
+    life_interpret = life_sub.add_parser("interpret", help="Create a life-events interpretation report")
+    life_interpret.add_argument("--model", required=True, help="Path to trained life-events model")
+    life_interpret.add_argument("--sequences", required=True, help="Path to event sequences JSON")
+    life_interpret.add_argument("--output", required=True, help="Output directory for report")
 
     # Simulation subcommands
-    simulation_parser = subparsers.add_parser(
-        "simulation", help="Synthetic data simulation commands"
-    )
+    simulation_parser = subparsers.add_parser("simulation", help="Synthetic data simulation commands")
     simulation_sub = simulation_parser.add_subparsers(dest="simulation_command")
-    simulation_run = simulation_sub.add_parser(
-        "run", help="Run a simulation workflow and save its result JSON"
-    )
+    simulation_run = simulation_sub.add_parser("run", help="Run a simulation workflow and save its result JSON")
     simulation_run.add_argument(
         "--model",
         default="sequence_evolution",
@@ -201,36 +157,22 @@ For detailed usage of specific modules, import them directly in Python:
     )
 
     # Ontology subcommands
-    ontology_parser = subparsers.add_parser(
-        "ontology", help="Ontology analysis workflow commands"
-    )
+    ontology_parser = subparsers.add_parser("ontology", help="Ontology analysis workflow commands")
     ontology_sub = ontology_parser.add_subparsers(dest="ontology_command")
-    ontology_run = ontology_sub.add_parser(
-        "run", help="Run the GO/HPO ontology enrichment workflow (stage 10)"
-    )
-    ontology_run.add_argument(
-        "--input", required=True, help="Path to the workflow YAML configuration"
-    )
+    ontology_run = ontology_sub.add_parser("run", help="Run the GO/HPO ontology enrichment workflow (stage 10)")
+    ontology_run.add_argument("--input", required=True, help="Path to the workflow YAML configuration")
     ontology_run.add_argument(
         "--phenotype",
         required=True,
         help="Phenotype label for the results subdirectory",
     )
-    ontology_run.add_argument(
-        "--model", required=True, help="Model label for the results subdirectory"
-    )
+    ontology_run.add_argument("--model", required=True, help="Model label for the results subdirectory")
 
     # Phenotype subcommands
-    phenotype_parser = subparsers.add_parser(
-        "phenotype", help="Phenotype analysis pipeline commands"
-    )
+    phenotype_parser = subparsers.add_parser("phenotype", help="Phenotype analysis pipeline commands")
     phenotype_sub = phenotype_parser.add_subparsers(dest="phenotype_command")
-    phenotype_run = phenotype_sub.add_parser(
-        "run", help="Run a phenotype analysis pipeline over a JSON dataset"
-    )
-    phenotype_run.add_argument(
-        "--input", required=True, help="Path to phenotype data JSON (list of records)"
-    )
+    phenotype_run = phenotype_sub.add_parser("run", help="Run a phenotype analysis pipeline over a JSON dataset")
+    phenotype_run.add_argument("--input", required=True, help="Path to phenotype data JSON (list of records)")
     phenotype_run.add_argument(
         "--type",
         default="morphological",
@@ -244,13 +186,9 @@ For detailed usage of specific modules, import them directly in Python:
     )
 
     # Networks subcommands
-    networks_parser = subparsers.add_parser(
-        "networks", help="Network analysis workflow commands"
-    )
+    networks_parser = subparsers.add_parser("networks", help="Network analysis workflow commands")
     networks_sub = networks_parser.add_subparsers(dest="networks_command")
-    networks_run = networks_sub.add_parser(
-        "run", help="Build a network from an edge list and analyze it"
-    )
+    networks_run = networks_sub.add_parser("run", help="Build a network from an edge list and analyze it")
     networks_run.add_argument(
         "--input",
         required=True,
@@ -336,9 +274,7 @@ def _handle_protein(args: argparse.Namespace) -> int:
         sequences = read_fasta(Path(args.fasta))
         for name, seq in sequences.items():
             comp = amino_acid_composition(seq)
-            parts = [
-                f"{aa}:{frac:.4f}" for aa, frac in sorted(comp.items()) if frac > 0
-            ]
+            parts = [f"{aa}:{frac:.4f}" for aa, frac in sorted(comp.items()) if frac > 0]
             print(f"{name}\t{','.join(parts)}")
         return 0
 
@@ -398,9 +334,7 @@ def _handle_rna(args: argparse.Namespace) -> int:
 
     if cmd == "info":
         print("RNA-seq Analysis Module")
-        print(
-            "Sub-packages: amalgkit, analysis, core, deconvolution, engine, retrieval, splicing"
-        )
+        print("Sub-packages: amalgkit, analysis, core, deconvolution, engine, retrieval, splicing")
         print("Import: from metainformant import rna")
         return 0
 
@@ -510,11 +444,7 @@ def _handle_life_events(args: argparse.Namespace) -> int:
         predictor = EventSequencePredictor.load_model(args.model)
         tokens = convert_sequences_to_tokens(sequences)
         predictions = predictor.predict(tokens)
-        prediction_values = (
-            predictions.tolist()
-            if hasattr(predictions, "tolist")
-            else list(predictions)
-        )
+        prediction_values = predictions.tolist() if hasattr(predictions, "tolist") else list(predictions)
         probabilities = None
         if predictor.task_type == "classification":
             try:
@@ -528,18 +458,13 @@ def _handle_life_events(args: argparse.Namespace) -> int:
             if probabilities is not None:
                 raw_classes = getattr(predictor, "classes_", None)
                 classes = (
-                    raw_classes.tolist()
-                    if raw_classes is not None and hasattr(raw_classes, "tolist")
-                    else raw_classes
+                    raw_classes.tolist() if raw_classes is not None and hasattr(raw_classes, "tolist") else raw_classes
                 )
                 assert classes is not None
                 prob_row = probabilities[i]
                 if prob_row is None or not hasattr(prob_row, "tolist"):
                     continue
-                entry["probabilities"] = {
-                    str(cls): float(prob)
-                    for cls, prob in zip(classes, prob_row.tolist())
-                }
+                entry["probabilities"] = {str(cls): float(prob) for cls, prob in zip(classes, prob_row.tolist())}
             entries.append(entry)
 
         payload = {
@@ -576,9 +501,7 @@ def _handle_life_events(args: argparse.Namespace) -> int:
 
         embeddings = predictor.embeddings
         try:
-            importance = event_importance(
-                predictor, tokens, embeddings, method="permutation"
-            )
+            importance = event_importance(predictor, tokens, embeddings, method="permutation")
         except ValueError:
             importance = event_importance(tokens)
         temporal = temporal_patterns(tokens, predictions)
@@ -592,9 +515,7 @@ def _handle_life_events(args: argparse.Namespace) -> int:
             "n_sequences": len(sequences),
             "model_type": predictor.model_type,
             "task_type": predictor.task_type,
-            "predictions": predictions.tolist()
-            if hasattr(predictions, "tolist")
-            else list(predictions),
+            "predictions": predictions.tolist() if hasattr(predictions, "tolist") else list(predictions),
             "interpretations": {
                 "event_importance": importance,
                 "temporal_patterns": temporal,
@@ -604,9 +525,7 @@ def _handle_life_events(args: argparse.Namespace) -> int:
         dump_json(report, output_dir / "interpretation_report.json")
         return 0
 
-    print(
-        "Error: unknown or missing life-events subcommand. See --help.", file=sys.stderr
-    )
+    print("Error: unknown or missing life-events subcommand. See --help.", file=sys.stderr)
     return 1
 
 
@@ -710,11 +629,7 @@ def _handle_phenotype(args: argparse.Namespace) -> int:
     result.save_json(result_path)
     print(f"Pipeline: {config.name} (type: {args.type})")
     for step_name, step_output in result.outputs.items():
-        status = (
-            step_output.get("status", "done")
-            if isinstance(step_output, dict)
-            else "done"
-        )
+        status = step_output.get("status", "done") if isinstance(step_output, dict) else "done"
         print(f"  {step_name}: {status}")
     print(f"Result saved to: {result_path}")
     for error in result.errors:
@@ -779,9 +694,7 @@ def _handle_networks(args: argparse.Namespace) -> int:
     exported = workflow.export_results(str(output_dir))
     summary = workflow.summary()
     network_summary = summary.get("network", {})
-    print(
-        f"Network: {network_summary.get('n_nodes', 0)} nodes, {network_summary.get('n_edges', 0)} edges"
-    )
+    print(f"Network: {network_summary.get('n_nodes', 0)} nodes, {network_summary.get('n_edges', 0)} edges")
     print(f"Communities: {(summary.get('communities') or {}).get('n_communities', 0)}")
     print(f"Results exported to: {output_dir} ({len(exported)} files)")
     return 0

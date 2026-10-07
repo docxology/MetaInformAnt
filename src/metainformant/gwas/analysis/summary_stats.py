@@ -49,16 +49,13 @@ def write_summary_statistics(
     """
     if len(results) != len(variant_info):
         raise ValueError(
-            f"Results ({len(results)}) and variant_info ({len(variant_info)}) "
-            "must have the same length"
+            f"Results ({len(results)}) and variant_info ({len(variant_info)}) " "must have the same length"
         )
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    logger.info(
-        f"Writing summary statistics for {len(results)} variants to {output_path}"
-    )
+    logger.info(f"Writing summary statistics for {len(results)} variants to {output_path}")
 
     header = "CHR\tPOS\tSNP\tREF\tALT\tBETA\tSE\tP\tQ_FDR\tN\tMAF\n"
 
@@ -110,17 +107,13 @@ def write_significant_hits(
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     significant = [
-        (result, vinfo)
-        for result, vinfo in zip(results, variant_info)
-        if result.get("p_value", 1.0) < threshold
+        (result, vinfo) for result, vinfo in zip(results, variant_info) if result.get("p_value", 1.0) < threshold
     ]
 
     # Sort by p-value
     significant.sort(key=lambda x: x[0].get("p_value", 1.0))
 
-    logger.info(
-        f"Writing {len(significant)} significant hits (threshold={threshold:.2e}) to {output_path}"
-    )
+    logger.info(f"Writing {len(significant)} significant hits (threshold={threshold:.2e}) to {output_path}")
 
     with open(output_path, "w") as f:
         f.write("CHR\tPOS\tSNP\tREF\tALT\tBETA\tSE\tP\tQ_FDR\tN\tMAF\n")
@@ -210,8 +203,7 @@ def create_results_summary(
         json.dump(summary, f, indent=2)
 
     logger.info(
-        f"Results summary: {n_tests} variants, lambda_gc={lambda_gc:.3f}, "
-        f"{n_significant} genome-wide significant"
+        f"Results summary: {n_tests} variants, lambda_gc={lambda_gc:.3f}, " f"{n_significant} genome-wide significant"
     )
     return summary
 
@@ -228,8 +220,7 @@ def normal_cdf(x: float) -> float:
     x = abs(x) / math.sqrt(2)
     t = 1.0 / (1.0 + 0.3275911 * x)
     y = 1.0 - (
-        (((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t
-        + 0.254829592
+        (((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592
     ) * t * math.exp(-x * x)
     return 0.5 * (1.0 + sign * y)
 

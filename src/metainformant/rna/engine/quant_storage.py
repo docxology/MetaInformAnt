@@ -1,6 +1,7 @@
 """Append-only content-addressed storage for quantification recovery."""
 
 from __future__ import annotations
+
 import base64
 import hashlib
 import json
@@ -20,29 +21,18 @@ def _digest(data: bytes) -> str:
 
 
 def _encode(value: Any) -> bytes:
-    return json.dumps(
-        value, sort_keys=True, separators=(",", ":"), allow_nan=False
-    ).encode()
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
 
 
 def safe_key(key: str) -> str:
     path = PurePosixPath(key)
-    if (
-        not key
-        or path.is_absolute()
-        or "\\" in key
-        or any(p in (".", "..", "") for p in key.split("/"))
-    ):
+    if not key or path.is_absolute() or "\\" in key or any(p in (".", "..", "") for p in key.split("/")):
         raise ValueError(f"unsafe object key: {key!r}")
     return key
 
 
 def receipt_key(cohort: str, species: str, accession: str) -> str:
-    if (
-        not IDENTIFIER.fullmatch(cohort)
-        or not IDENTIFIER.fullmatch(species)
-        or not ACCESSION.fullmatch(accession)
-    ):
+    if not IDENTIFIER.fullmatch(cohort) or not IDENTIFIER.fullmatch(species) or not ACCESSION.fullmatch(accession):
         raise ValueError("invalid cohort, species or run accession")
     return f"{cohort}/receipts/{species}/{accession}.json"
 
@@ -125,9 +115,7 @@ class S3Store:
     def get(self, key: str) -> bytes:
         for attempt in range(6):
             try:
-                response = self.client.get_object(
-                    Bucket=self.bucket, Key=self._key(key)
-                )
+                response = self.client.get_object(Bucket=self.bucket, Key=self._key(key))
             except self.client.exceptions.NoSuchKey as exc:
                 if key not in self._published or attempt == 5:
                     raise FileNotFoundError(key) from exc
@@ -135,7 +123,10 @@ class S3Store:
             else:
                 break
         with response["Body"] as body:
-            return body.read()
+            payload = body.read()
+        if not isinstance(payload, bytes):
+            raise TypeError("S3 object body must contain bytes")
+        return payload
 
     def put(self, key: str, data: bytes) -> None:
         try:

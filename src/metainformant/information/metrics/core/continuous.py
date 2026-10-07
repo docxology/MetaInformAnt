@@ -20,9 +20,7 @@ from metainformant.core.utils import logging
 logger = logging.get_logger(__name__)
 
 
-def differential_entropy(
-    samples: np.ndarray, method: str = "histogram", bins: Optional[int] = None
-) -> float:
+def differential_entropy(samples: np.ndarray, method: str = "histogram", bins: Optional[int] = None) -> float:
     """Calculate differential entropy of continuous data, in nats.
 
     A 1D input is treated as samples of a single continuous variable. A 2D
@@ -62,9 +60,7 @@ def differential_entropy(
     elif arr.ndim == 2:
         joint = arr
     else:
-        raise ValueError(
-            "samples must be a 1D array of samples or a 2D (n_samples, n_features) joint array"
-        )
+        raise ValueError("samples must be a 1D array of samples or a 2D (n_samples, n_features) joint array")
 
     n_samples = joint.shape[0]
     if n_samples < 10:
@@ -80,9 +76,7 @@ def differential_entropy(
         raise ValueError(f"Unknown method: {method}")
 
 
-def _differential_entropy_histogram(
-    samples: np.ndarray, bins: Optional[int] = None
-) -> float:
+def _differential_entropy_histogram(samples: np.ndarray, bins: Optional[int] = None) -> float:
     """Histogram differential entropy estimator for 1D data (nats).
 
     Equipartition histogram estimate ``H = -sum_i p_i * log(p_i / dx)`` where
@@ -229,9 +223,7 @@ def _knn_entropy_nd(joint: np.ndarray, k: int = 3) -> float:
         jittered = joint + rng.uniform(0.0, scale, size=joint.shape)
         distances = cKDTree(jittered).query(jittered, k=k + 1)[0][:, k]
 
-    log_unit_ball_volume = 0.5 * n_dims * math.log(math.pi) - math.lgamma(
-        0.5 * n_dims + 1.0
-    )
+    log_unit_ball_volume = 0.5 * n_dims * math.log(math.pi) - math.lgamma(0.5 * n_dims + 1.0)
     entropy = (
         special.digamma(n_samples)
         - special.digamma(k)
@@ -280,9 +272,7 @@ def mutual_information_continuous(
     h_xy = differential_entropy(xy, method=method, bins=bins)
 
     mi = h_x + h_y - h_xy
-    return max(
-        0.0, mi
-    )  # MI >= 0 by definition; estimation bias can go slightly negative
+    return max(0.0, mi)  # MI >= 0 by definition; estimation bias can go slightly negative
 
 
 def kl_divergence_continuous(
@@ -319,9 +309,7 @@ def kl_divergence_continuous(
         raise ValueError(f"Unknown method: {method}")
 
 
-def _kl_divergence_histogram(
-    p_samples: np.ndarray, q_samples: np.ndarray, bins: Optional[int] = None
-) -> float:
+def _kl_divergence_histogram(p_samples: np.ndarray, q_samples: np.ndarray, bins: Optional[int] = None) -> float:
     """Estimate KL divergence using histogram method."""
     if bins is None:
         # Use combined data range for bins
@@ -334,9 +322,7 @@ def _kl_divergence_histogram(
         max(p_samples.max(), q_samples.max()),
     )
 
-    hist_p, bin_edges = np.histogram(
-        p_samples, bins=bins, range=combined_range, density=True
-    )
+    hist_p, bin_edges = np.histogram(p_samples, bins=bins, range=combined_range, density=True)
     hist_q, _ = np.histogram(q_samples, bins=bins, range=combined_range, density=True)
 
     # Avoid division by zero and log of zero
@@ -391,9 +377,7 @@ def _kl_divergence_kde(p_samples: np.ndarray, q_samples: np.ndarray) -> float:
     return max(0.0, float(kl_div))
 
 
-def entropy_estimation(
-    samples: np.ndarray, method: str = "histogram", bins: Optional[int] = None
-) -> float:
+def entropy_estimation(samples: np.ndarray, method: str = "histogram", bins: Optional[int] = None) -> float:
     """Unified interface for entropy estimation in nats (alias for differential_entropy)."""
     return differential_entropy(samples, method=method, bins=bins)
 
@@ -447,9 +431,7 @@ def copula_entropy(samples: np.ndarray, method: str = "histogram") -> float:
     return copula_ent
 
 
-def transfer_entropy_continuous(
-    x: np.ndarray, y: np.ndarray, lag: int = 1, method: str = "histogram"
-) -> float:
+def transfer_entropy_continuous(x: np.ndarray, y: np.ndarray, lag: int = 1, method: str = "histogram") -> float:
     """Calculate transfer entropy for continuous time series, in nats.
 
     Args:
@@ -485,14 +467,10 @@ def transfer_entropy_continuous(
     x_past = x[:-lag]  # X_t
 
     # H(Y_{t+1} | Y_t)
-    h_y_future_given_y_past = conditional_entropy_continuous(
-        y_future, y_past, method=method
-    )
+    h_y_future_given_y_past = conditional_entropy_continuous(y_future, y_past, method=method)
 
     # H(Y_{t+1} | Y_t, X_t)
-    h_y_future_given_y_past_x_past = conditional_entropy_continuous_3d(
-        y_future, y_past, x_past, method=method
-    )
+    h_y_future_given_y_past_x_past = conditional_entropy_continuous_3d(y_future, y_past, x_past, method=method)
 
     te = h_y_future_given_y_past - h_y_future_given_y_past_x_past
     return max(0.0, te)  # Ensure non-negative
@@ -556,9 +534,7 @@ def conditional_entropy_continuous_3d(
     return max(0.0, h_xyz - h_yz)
 
 
-def information_flow_network(
-    time_series_data: np.ndarray, lag: int = 1, method: str = "histogram"
-) -> np.ndarray:
+def information_flow_network(time_series_data: np.ndarray, lag: int = 1, method: str = "histogram") -> np.ndarray:
     """Calculate information flow network from multivariate time series.
 
     Args:
@@ -583,9 +559,7 @@ def information_flow_network(
     for i in range(n_vars):
         for j in range(n_vars):
             if i != j:  # No self-flow
-                te = transfer_entropy_continuous(
-                    time_series_data[i], time_series_data[j], lag=lag, method=method
-                )
+                te = transfer_entropy_continuous(time_series_data[i], time_series_data[j], lag=lag, method=method)
                 flow_matrix[i, j] = te
 
     return flow_matrix

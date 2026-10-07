@@ -19,9 +19,7 @@ from metainformant.rna.analysis.expression_core import (
 )
 
 
-@pytest.mark.parametrize(
-    "values", [[-0.1, 0.2], [0.1, 1.01], [0.1, np.inf], [[0.1, 0.2]]]
-)
+@pytest.mark.parametrize("values", [[-0.1, 0.2], [0.1, 1.01], [0.1, np.inf], [[0.1, 0.2]]])
 def test_adjustment_rejects_invalid_probabilities(values: list[float]) -> None:
     # Given invalid probabilities; when adjusted; then they cannot become evidence.
     with pytest.raises(ValueError):
@@ -85,13 +83,9 @@ def test_pca_matches_sklearn_variance_and_reconstructs_centered_matrix() -> None
     result = pca_analysis(frame, n_components=5, scale=False)
     oracle = PCA(n_components=5, svd_solver="full").fit(frame.T)
     # Then variance and the reconstructed centered matrix match independently.
-    np.testing.assert_allclose(
-        result["explained_variance_ratio"], oracle.explained_variance_ratio_, atol=1e-12
-    )
+    np.testing.assert_allclose(result["explained_variance_ratio"], oracle.explained_variance_ratio_, atol=1e-12)
     reconstructed = result["transformed"].to_numpy() @ result["components"]
-    np.testing.assert_allclose(
-        reconstructed, frame.T.to_numpy() - frame.T.to_numpy().mean(axis=0), atol=1e-12
-    )
+    np.testing.assert_allclose(reconstructed, frame.T.to_numpy() - frame.T.to_numpy().mean(axis=0), atol=1e-12)
 
 
 def test_pca_mean_imputation_is_explicit_and_recorded() -> None:
@@ -125,16 +119,10 @@ def test_length_normalization_rejects_infinite_lengths(method: str) -> None:
 
 def test_welch_one_constant_group_uses_variable_group_degrees_of_freedom() -> None:
     # Given unequal group sizes and one constant group; stable genes fix size factors at one.
-    counts = pd.DataFrame(
-        np.full((11, 5), 100.0), columns=["r1", "r2", "r3", "t1", "t2"]
-    )
+    counts = pd.DataFrame(np.full((11, 5), 100.0), columns=["r1", "r2", "r3", "t1", "t2"])
     counts.loc[0] = [10.0, 20.0, 40.0, 80.0, 80.0]
     # When Welch's test is computed.
-    result = (
-        differential_expression(counts, ["r", "r", "r", "t", "t"], method="ttest")
-        .set_index("gene")
-        .loc[0]
-    )
+    result = differential_expression(counts, ["r", "r", "r", "t", "t"], method="ttest").set_index("gene").loc[0]
     # Then the variable reference group's n-1 degrees of freedom determine the p-value.
     from scipy.stats import t
 

@@ -46,9 +46,7 @@ def allele_frequencies(
                 if base in "ATCG":
                     counts[base] = counts.get(base, 0) + 1
             total = sum(counts.values())
-            site_frequencies.append(
-                {base: count / total for base, count in counts.items()} if total else {}
-            )
+            site_frequencies.append({base: count / total for base, count in counts.items()} if total else {})
         return site_frequencies
 
     genotype_counts = cast("Sequence[Sequence[int]]", genotype_matrix)
@@ -308,9 +306,7 @@ def hudson_fst(pop1: Sequence[str], pop2: Sequence[str]) -> float:
         p1 = alleles_pop1.count(reference) / n1
         p2 = alleles_pop2.count(reference) / n2
 
-        numerator_sum += (
-            (p1 - p2) ** 2 - p1 * (1 - p1) / (n1 - 1) - p2 * (1 - p2) / (n2 - 1)
-        )
+        numerator_sum += (p1 - p2) ** 2 - p1 * (1 - p1) / (n1 - 1) - p2 * (1 - p2) / (n2 - 1)
         denominator_sum += p1 * (1 - p2) + p2 * (1 - p1)
 
     if denominator_sum > 0:
@@ -484,9 +480,7 @@ def expected_heterozygosity(genotype_matrix: Sequence[Sequence[int]]) -> float:
     total_he = 0.0
 
     for locus in genotype_matrix:
-        freqs = cast(
-            "List[float]", allele_frequencies([locus])
-        )  # Wrap in list for single locus
+        freqs = cast("List[float]", allele_frequencies([locus]))  # Wrap in list for single locus
         p = freqs[0]  # Allele frequency
         q = 1 - p  # Other allele frequency
 

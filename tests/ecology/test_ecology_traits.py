@@ -27,9 +27,7 @@ class TestCommunityWeightedMean:
 
     def test_cwm_zero_sum_abundances_returns_zeros(self) -> None:
         """All-zero abundances yield zero CWM instead of NaN (regression)."""
-        cwm = community_weighted_mean(
-            [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]], [0.0, 0.0, 0.0]
-        )
+        cwm = community_weighted_mean([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]], [0.0, 0.0, 0.0])
 
         assert cwm == [0.0, 0.0]
 

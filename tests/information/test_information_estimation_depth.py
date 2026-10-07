@@ -40,15 +40,11 @@ class TestPluginEntropyExactValues:
         assert h == pytest.approx(2.0, abs=1e-12)
 
     def test_deterministic_distribution_is_zero(self) -> None:
-        assert (
-            entropy_estimator({"A": 100}, method="plugin", bias_correction=False) == 0.0
-        )
+        assert entropy_estimator({"A": 100}, method="plugin", bias_correction=False) == 0.0
 
     def test_known_binary_value(self) -> None:
         # p=(3/4,1/4): H = 0.8112781244591328 bits
-        h = entropy_estimator(
-            {"A": 75, "B": 25}, method="plugin", bias_correction=False
-        )
+        h = entropy_estimator({"A": 75, "B": 25}, method="plugin", bias_correction=False)
         assert h == pytest.approx(0.8112781244591328, abs=1e-12)
 
     def test_bias_correction_adds_miller_correction_toward_truth(self) -> None:
@@ -76,9 +72,7 @@ class TestPluginEntropyExactValues:
         assert h == pytest.approx(1.0 + 1 / (2 * 2 * math.log(2)), abs=1e-12)
 
     def test_list_and_dict_inputs_agree(self) -> None:
-        assert entropy_estimator([50, 30, 20]) == entropy_estimator(
-            {"A": 50, "T": 30, "G": 20}
-        )
+        assert entropy_estimator([50, 30, 20]) == entropy_estimator({"A": 50, "T": 30, "G": 20})
 
 
 class TestEstimatorOrdering:
@@ -146,17 +140,13 @@ class TestMutualInformationIdentities:
     def test_mi_uncorrected_perfectly_dependent_exact(self) -> None:
         x = [0] * 10 + [1] * 10
         y = [1] * 10 + [0] * 10
-        assert mutual_information_estimator(
-            x, y, bias_correction=False
-        ) == pytest.approx(1.0, abs=1e-12)
+        assert mutual_information_estimator(x, y, bias_correction=False) == pytest.approx(1.0, abs=1e-12)
 
     def test_mi_chao_shen_method_unchanged_internal_corrections(self) -> None:
         # Non-plugin methods apply their own internal corrections per entropy
         # term (documented behaviour); the estimator must still be finite and
         # non-negative.
-        mi = mutual_information_estimator(
-            [0, 1, 0, 1, 0, 1, 0, 1], [0, 0, 1, 1, 0, 0, 1, 1], method="jackknife"
-        )
+        mi = mutual_information_estimator([0, 1, 0, 1, 0, 1, 0, 1], [0, 0, 1, 1, 0, 0, 1, 1], method="jackknife")
         assert 0.0 <= mi < 10.0
 
     def test_length_mismatch_raises(self) -> None:
@@ -180,9 +170,7 @@ class TestKLDivergence:
         # KL = 0.75*log2(3) + 0.25*log2(1/3) = 0.5*log2(3) bits
         p = [0] * 75 + [1] * 25
         q = [0] * 25 + [1] * 75
-        assert kl_divergence_estimator(p, q) == pytest.approx(
-            0.5 * math.log2(3), abs=1e-12
-        )
+        assert kl_divergence_estimator(p, q) == pytest.approx(0.5 * math.log2(3), abs=1e-12)
 
     def test_asymmetry(self) -> None:
         p = [0] * 75 + [1] * 25
@@ -204,21 +192,17 @@ class TestBiasCorrectionHelpers:
     def test_bias_correction_formula(self) -> None:
         # Miller-Madow adds (d-1)/(2n) nats = (d-1)/(2n * ln 2) bits.
         expected = 2.0 + (4 - 1) / (2 * 100 * math.log(2))
-        assert bias_correction(2.0, sample_size=100, alphabet_size=4) == pytest.approx(
-            expected, abs=1e-12
-        )
+        assert bias_correction(2.0, sample_size=100, alphabet_size=4) == pytest.approx(expected, abs=1e-12)
 
     def test_effective_sample_size_correction_is_additive(self) -> None:
         # The correction is additive Miller-Madow: entropy + (d-1)/(2n * ln 2) bits.
         expected = 2.0 + (4 - 1) / (2 * 100 * math.log(2))
-        assert effective_sample_size_correction(
-            2.0, sample_size=100, alphabet_size=4
-        ) == pytest.approx(expected, abs=1e-12)
+        assert effective_sample_size_correction(2.0, sample_size=100, alphabet_size=4) == pytest.approx(
+            expected, abs=1e-12
+        )
 
     def test_effective_sample_size_identity_at_one(self) -> None:
-        assert (
-            effective_sample_size_correction(3.7, sample_size=1, alphabet_size=4) == 3.7
-        )
+        assert effective_sample_size_correction(3.7, sample_size=1, alphabet_size=4) == 3.7
 
     def test_panzeri_treves_uniform_fallback_is_miller_madow(self) -> None:
         # With the uniform fallback every alphabet response is observed, so
@@ -254,28 +238,20 @@ class TestBiasCorrectionHelpers:
 
     def test_panzeri_treves_rejects_inconsistent_frequencies(self) -> None:
         with pytest.raises(ValueError, match="sum to the sample size"):
-            panzeri_treves_bias_correction(
-                1.0, 100, 10, response_frequencies=np.array([90.0, 9.0])
-            )
+            panzeri_treves_bias_correction(1.0, 100, 10, response_frequencies=np.array([90.0, 9.0]))
         with pytest.raises(ValueError, match="cannot be negative"):
-            panzeri_treves_bias_correction(
-                1.0, 100, 10, response_frequencies=np.array([50.0, -1.0, 51.0])
-            )
+            panzeri_treves_bias_correction(1.0, 100, 10, response_frequencies=np.array([50.0, -1.0, 51.0]))
 
     def test_effective_sample_size_correction_is_bias_correction_alias(self) -> None:
         # The two public helpers were duplicated implementations of the same
         # Miller-Madow formula; the logic now lives in bias_correction and the
         # second name is a documented alias.
         for n, d in ((100, 4), (37, 9), (2, 2)):
-            assert effective_sample_size_correction(1.7, n, d) == bias_correction(
-                1.7, n, d
-            )
+            assert effective_sample_size_correction(1.7, n, d) == bias_correction(1.7, n, d)
 
     def test_panzeri_treves_identity_at_small_sample(self) -> None:
         # sample_size <= 1 must return the entropy unchanged.
-        assert (
-            panzeri_treves_bias_correction(1.23, sample_size=1, alphabet_size=4) == 1.23
-        )
+        assert panzeri_treves_bias_correction(1.23, sample_size=1, alphabet_size=4) == 1.23
 
 
 class TestEntropyRate:

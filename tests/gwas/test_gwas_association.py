@@ -63,9 +63,7 @@ def test_association_linear_with_covariates() -> None:
 
     # CRITICAL: verify result is NOT the old hardcoded (0.1, 0.05, 2.0, 0.05, 0.5)
     assert not (
-        abs(result["beta"] - 0.1) < 1e-10
-        and abs(result["se"] - 0.05) < 1e-10
-        and abs(result["p_value"] - 0.05) < 1e-10
+        abs(result["beta"] - 0.1) < 1e-10 and abs(result["se"] - 0.05) < 1e-10 and abs(result["p_value"] - 0.05) < 1e-10
     ), "Multi-covariate regression still returns hardcoded values!"
 
     # SE should be positive (real computation)
@@ -80,17 +78,12 @@ def test_association_linear_covariates_produce_different_results() -> None:
     result_no_cov = association_test_linear(genotypes, phenotypes)
     # Use a covariate NOT perfectly correlated with genotype
     covariates = [[25, 35, 45, 30, 40, 50, 28, 38, 48, 33]]
-    result_with_cov = association_test_linear(
-        genotypes, phenotypes, covariates=covariates
-    )
+    result_with_cov = association_test_linear(genotypes, phenotypes, covariates=covariates)
 
     assert result_no_cov["status"] == "success"
     assert result_with_cov["status"] == "success"
     # Results should differ when covariates are added
-    assert (
-        result_no_cov["se"] != result_with_cov["se"]
-        or result_no_cov["r_squared"] != result_with_cov["r_squared"]
-    )
+    assert result_no_cov["se"] != result_with_cov["se"] or result_no_cov["r_squared"] != result_with_cov["r_squared"]
 
 
 def test_association_linear_missing_data_matches_complete_case() -> None:
@@ -112,9 +105,7 @@ def test_association_linear_missing_data_matches_complete_case() -> None:
     assert result["beta"] == pytest.approx(float(beta_complete[1]), rel=1e-9)
 
     # NaN phenotypes are missing too and must not enter the design matrix.
-    result_nan = association_test_linear(
-        [0, 1, 2, 0, 1], [10.0, float("nan"), 12.0, 10.0, 11.0]
-    )
+    result_nan = association_test_linear([0, 1, 2, 0, 1], [10.0, float("nan"), 12.0, 10.0, 11.0])
     assert result_nan["status"] == "success"
     assert result_nan["n_missing_dropped"] == 1
     assert result_nan["n_samples"] == 4

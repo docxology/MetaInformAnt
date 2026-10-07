@@ -8,23 +8,19 @@ import pytest
 
 from metainformant.rna.analysis.expression_io import compute_profile_quality
 from metainformant.rna.analysis.native_artifact_validation import (
-    validate_profile_quality_table,
     validate_divergence_stability_table,
+    validate_profile_quality_table,
 )
 
 
 def quality_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     manifest = pd.DataFrame({"species_title": ["A", "B"], "features": [3, 3]})
-    quality = compute_profile_quality(
-        {"A": pd.Series([1.0, 0.0, np.nan]), "B": pd.Series([2.0, 3.0, 4.0])}
-    )
+    quality = compute_profile_quality({"A": pd.Series([1.0, 0.0, np.nan]), "B": pd.Series([2.0, 3.0, 4.0])})
     return manifest, quality
 
 
 def stability_data() -> tuple[pd.DataFrame, pd.DataFrame]:
-    matrix = pd.DataFrame(
-        [[0.0, 1.0], [1.0, 0.0]], index=["A", "B"], columns=["A", "B"]
-    )
+    matrix = pd.DataFrame([[0.0, 1.0], [1.0, 0.0]], index=["A", "B"], columns=["A", "B"])
     # A point estimate need not fall inside a resampling-sensitivity interval.
     table = pd.DataFrame(
         [
@@ -64,9 +60,7 @@ def test_generated_quality_and_sensitivity_tables_are_valid() -> None:
         ("median_positive_expression", 0),
     ],
 )
-def test_quality_rejects_unreconciled_or_invalid_evidence(
-    field: str, value: object
-) -> None:
+def test_quality_rejects_unreconciled_or_invalid_evidence(field: str, value: object) -> None:
     manifest, quality = quality_data()
     quality[field] = quality[field].astype(object)
     quality.loc[0, field] = value
@@ -110,9 +104,7 @@ def test_quality_requires_the_nonempty_declared_species_partition(kind: str) -> 
         ("replicate_count", 20.5),
     ],
 )
-def test_stability_rejects_invalid_bounds_counts_and_point_values(
-    field: str, value: object
-) -> None:
+def test_stability_rejects_invalid_bounds_counts_and_point_values(field: str, value: object) -> None:
     matrix, table = stability_data()
     table[field] = table[field].astype(object)
     table.loc[0, field] = value
@@ -120,9 +112,7 @@ def test_stability_rejects_invalid_bounds_counts_and_point_values(
         validate_divergence_stability_table(matrix, table)
 
 
-@pytest.mark.parametrize(
-    "kind", ["empty", "duplicate", "unknown", "diagonal", "asymmetric"]
-)
+@pytest.mark.parametrize("kind", ["empty", "duplicate", "unknown", "diagonal", "asymmetric"])
 def test_stability_requires_unique_complete_pairs_and_a_valid_matrix(kind: str) -> None:
     matrix, table = stability_data()
     if kind == "empty":

@@ -57,9 +57,7 @@ from typing import Any, Mapping, Sequence
 
 import numpy as np
 import pandas as pd
-from scipy import linalg as _scipy_linalg
-from scipy import optimize as _scipy_optimize
-from scipy import stats as _scipy_stats
+from scipy import linalg as _scipy_linalg, optimize as _scipy_optimize, stats as _scipy_stats
 
 from metainformant.core.utils import logging
 from metainformant.rna.analysis.statistics_contract import (
@@ -96,14 +94,10 @@ __all__ = [
 def _checked_branch_length(node_name: str, value: Any) -> float:
     """Return ``value`` as a finite non-negative float, failing closed."""
     if isinstance(value, bool) or not isinstance(value, (int, float, np.integer, np.floating)):
-        raise TreeInvariantError(
-            f"branch length for node {node_name!r} must be a real number, got {value!r}"
-        )
+        raise TreeInvariantError(f"branch length for node {node_name!r} must be a real number, got {value!r}")
     distance = float(value)
     if not np.isfinite(distance) or distance < 0.0:
-        raise TreeInvariantError(
-            f"branch length for node {node_name!r} must be finite and non-negative, got {value!r}"
-        )
+        raise TreeInvariantError(f"branch length for node {node_name!r} must be finite and non-negative, got {value!r}")
     return distance
 
 
@@ -154,15 +148,11 @@ def _parse_newick_branches(newick: str) -> Tree:
             try:
                 distance = float(length_text)
             except ValueError:
-                raise TreeInvariantError(
-                    f"invalid branch length {length_text!r} in Newick string"
-                ) from None
+                raise TreeInvariantError(f"invalid branch length {length_text!r} in Newick string") from None
         children: list[Tree] = []
         for child, child_distance in parsed_children:
             if child_distance is None:
-                raise TreeInvariantError(
-                    f"branch to node {child['name']!r} is missing a branch length"
-                )
+                raise TreeInvariantError(f"branch to node {child['name']!r} is missing a branch length")
             child["distance"] = _checked_branch_length(child["name"], child_distance)
             children.append(child)
         if children and name == "":
@@ -251,9 +241,7 @@ def brownian_vcv(
         TreeInvariantError: On invalid tree input or branch lengths.
         ProvenanceError: When rootedness was not explicitly declared.
     """
-    root = prepare_species_tree(
-        tree, rooted=rooted, require_bifurcating_root=require_bifurcating_root
-    )
+    root = prepare_species_tree(tree, rooted=rooted, require_bifurcating_root=require_bifurcating_root)
     leaves: list[str] = []
 
     def collect(node: Mapping[str, Any]) -> None:
@@ -342,8 +330,7 @@ def _gls_fit(v: np.ndarray, x: np.ndarray, y: np.ndarray) -> dict[str, Any]:
     sign, logdet_xt_v_inverse_x = np.linalg.slogdet(xt_v_inverse_x)
     if sign <= 0:
         raise ValueError(
-            "PGLS design is rank deficient: X' V^-1 X is singular; remove "
-            "collinear predictors or add observations"
+            "PGLS design is rank deficient: X' V^-1 X is singular; remove " "collinear predictors or add observations"
         )
     xt_v_inverse_x_inverse = np.linalg.inv(xt_v_inverse_x)
     beta = xt_v_inverse_x_inverse @ (x.T @ v_inverse_y)
@@ -364,16 +351,11 @@ def _reml_loglik(fit: Mapping[str, Any], residual_df: int) -> float:
     sigma2_reml = fit["residual_quadratic"] / residual_df
     if sigma2_reml <= 0.0:
         raise ValueError(
-            "estimated residual variance is not positive; the model has no "
-            "residual variation to estimate"
+            "estimated residual variance is not positive; the model has no " "residual variation to estimate"
         )
     return float(
         -0.5
-        * (
-            residual_df * (np.log(2.0 * np.pi * sigma2_reml) + 1.0)
-            + fit["logdet_v"]
-            + fit["logdet_xt_v_inverse_x"]
-        )
+        * (residual_df * (np.log(2.0 * np.pi * sigma2_reml) + 1.0) + fit["logdet_v"] + fit["logdet_xt_v_inverse_x"])
     )
 
 
@@ -386,9 +368,7 @@ def _profile_reml_objective(
     return -_reml_loglik(fit, residual_df)
 
 
-def _estimate_lambda_reml(
-    vcv_values: np.ndarray, x: np.ndarray, y: np.ndarray, residual_df: int
-) -> float:
+def _estimate_lambda_reml(vcv_values: np.ndarray, x: np.ndarray, y: np.ndarray, residual_df: int) -> float:
     """Maximize the REML profile log-likelihood over lambda in [0, 1]."""
     result = _scipy_optimize.minimize_scalar(
         _profile_reml_objective,
@@ -416,9 +396,7 @@ def _validated_response(response: pd.Series) -> tuple[np.ndarray, list[str]]:
     labels: list[str] = []
     for label in response.index:
         if not isinstance(label, str) or not label.strip():
-            raise ValueError(
-                f"response index must contain non-empty species name strings, got {label!r}"
-            )
+            raise ValueError(f"response index must contain non-empty species name strings, got {label!r}")
         labels.append(label)
     try:
         values = response.to_numpy(dtype=float)
@@ -458,11 +436,7 @@ def _validated_predictors(predictors: pd.Series | pd.DataFrame, labels: Sequence
     except (TypeError, ValueError):
         raise ValueError("predictor values must be numeric") from None
     for column_index, column in enumerate(columns):
-        offenders = [
-            labels[i]
-            for i in range(len(labels))
-            if not np.isfinite(values[i, column_index])
-        ]
+        offenders = [labels[i] for i in range(len(labels)) if not np.isfinite(values[i, column_index])]
         if offenders:
             raise ValueError(f"predictor {column!r} contains missing or non-finite values for: {offenders}")
     return pd.DataFrame(values, index=labels, columns=columns)
@@ -563,9 +537,7 @@ def fit_pgls(
         ValueError: On invalid data, species not in the tree, collinear
             predictors, or a design without residual degrees of freedom.
     """
-    vcv_brownian = brownian_vcv(
-        tree, rooted=rooted, require_bifurcating_root=require_bifurcating_root
-    )
+    vcv_brownian = brownian_vcv(tree, rooted=rooted, require_bifurcating_root=require_bifurcating_root)
     y, labels = _validated_response(response)
     design = _validated_predictors(predictors, labels)
     if add_intercept:
@@ -583,8 +555,7 @@ def fit_pgls(
     residual_df = n - p
     if residual_df < 1:
         raise ValueError(
-            f"PGLS needs at least one residual degree of freedom: got n={n} species "
-            f"and p={p} parameters"
+            f"PGLS needs at least one residual degree of freedom: got n={n} species " f"and p={p} parameters"
         )
     _require_species_covered(vcv_brownian, labels)
     vcv_values = vcv_brownian.loc[labels, labels].to_numpy(dtype=float)
@@ -597,15 +568,12 @@ def fit_pgls(
         if not np.isfinite(lambda_) or not 0.0 <= float(lambda_) <= 1.0:
             raise ValueError(f"lambda must be a finite value in [0, 1], got {lambda_!r}")
         lambda_value = float(lambda_)
-    covariance_values = lambda_value * vcv_values + (1.0 - lambda_value) * np.diag(
-        np.diag(vcv_values)
-    )
+    covariance_values = lambda_value * vcv_values + (1.0 - lambda_value) * np.diag(np.diag(vcv_values))
     fit = _gls_fit(covariance_values, x, y)
     sigma2 = fit["residual_quadratic"] / residual_df
     if sigma2 <= 0.0:
         raise ValueError(
-            "estimated residual variance is not positive; the model has no "
-            "residual variation to estimate"
+            "estimated residual variance is not positive; the model has no " "residual variation to estimate"
         )
     log_likelihood = _reml_loglik(fit, residual_df)
     n_parameters = p + 1 + (1 if lambda_estimated else 0)
@@ -684,9 +652,7 @@ def fit_pgls_tree_uncertainty(
     if not isinstance(n_resamples, int) or isinstance(n_resamples, bool) or n_resamples < 1:
         raise ValueError(f"n_resamples must be a positive integer, got {n_resamples!r}")
     ci_low, ci_high = float(ci[0]), float(ci[1])
-    if not (np.isfinite(ci_low) and np.isfinite(ci_high)) or not (
-        0.0 <= ci_low < ci_high <= 1.0
-    ):
+    if not (np.isfinite(ci_low) and np.isfinite(ci_high)) or not (0.0 <= ci_low < ci_high <= 1.0):
         raise ValueError(f"ci must be (low, high) with 0 <= low < high <= 1, got {ci!r}")
 
     labels = _validated_response(response)[1]
@@ -777,9 +743,7 @@ def simulate_brownian_traits(
     if trait_names is not None:
         names = list(trait_names)
         if len(names) != n_traits:
-            raise ValueError(
-                f"trait_names has {len(names)} entries but n_traits={n_traits}"
-            )
+            raise ValueError(f"trait_names has {len(names)} entries but n_traits={n_traits}")
         if len(set(names)) != len(names):
             raise ValueError("trait_names must be unique")
         for name in names:
@@ -792,7 +756,5 @@ def simulate_brownian_traits(
         draws = np.zeros((n, n_traits), dtype=float)
     else:
         rng = np.random.default_rng(seed)
-        draws = rng.multivariate_normal(
-            np.zeros(n), (sigma**2) * vcv.to_numpy(dtype=float), size=n_traits
-        ).T
+        draws = rng.multivariate_normal(np.zeros(n), (sigma**2) * vcv.to_numpy(dtype=float), size=n_traits).T
     return pd.DataFrame(draws, index=vcv.index, columns=names)

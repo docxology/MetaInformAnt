@@ -1,4 +1,5 @@
 """Real SQLite, filesystem, subprocess and reconciliation controls."""
+
 from __future__ import annotations
 
 import json
@@ -9,22 +10,55 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.rna.engine.campaign_status import Inventory, Observation, StatusError, load_inventory, markdown_tables, reconcile
-from metainformant.rna.engine.campaign_status_io import REQUIRED_FILES, file_coverage, parse_probe, probe_script, read_database
+from metainformant.rna.engine.campaign_status import (
+    Inventory,
+    Observation,
+    StatusError,
+    load_inventory,
+    markdown_tables,
+    reconcile,
+)
+from metainformant.rna.engine.campaign_status_io import (
+    REQUIRED_FILES,
+    file_coverage,
+    parse_probe,
+    probe_script,
+    read_database,
+)
 
 
 def inventory() -> Inventory:
-    return load_inventory(json.dumps({"species_count": 2, "task_count": 4, "species": [
-        {"species": "ant_a", "tasks": [{"task_id": f"ant_a/SRR{i}", "accession": f"SRR{i}"} for i in (1, 2)]},
-        {"species": "ant_b", "tasks": [{"task_id": f"ant_b/SRR{i}", "accession": f"SRR{i}"} for i in (3, 4)]}]}).encode())
+    return load_inventory(
+        json.dumps(
+            {
+                "species_count": 2,
+                "task_count": 4,
+                "species": [
+                    {
+                        "species": "ant_a",
+                        "tasks": [{"task_id": f"ant_a/SRR{i}", "accession": f"SRR{i}"} for i in (1, 2)],
+                    },
+                    {
+                        "species": "ant_b",
+                        "tasks": [{"task_id": f"ant_b/SRR{i}", "accession": f"SRR{i}"} for i in (3, 4)],
+                    },
+                ],
+            }
+        ).encode()
+    )
 
 
 def test_marginals_locked_precedence_and_transfer_gap() -> None:
-    report = reconcile(inventory(), frozenset({"ant_a/SRR1", "ant_b/SRR3"}),
-                       frozenset({"ant_a/SRR1", "ant_a/SRR2", "ant_b/SRR3"}),
-                       (Observation("ant_a/SRR1", "quantifying", "worker"), Observation("ant_a/SRR2", "downloading", "worker")),
-                       (Observation("ant_a/SRR1", "failed", "local"), Observation("outside/SRR5", "pending", "local")),
-                       frozenset({"ant_a/SRR1"}), frozenset({"ant_b/SRR3"}), frozenset({"ant_b/SRR3"}))
+    report = reconcile(
+        inventory(),
+        frozenset({"ant_a/SRR1", "ant_b/SRR3"}),
+        frozenset({"ant_a/SRR1", "ant_a/SRR2", "ant_b/SRR3"}),
+        (Observation("ant_a/SRR1", "quantifying", "worker"), Observation("ant_a/SRR2", "downloading", "worker")),
+        (Observation("ant_a/SRR1", "failed", "local"), Observation("outside/SRR5", "pending", "local")),
+        frozenset({"ant_a/SRR1"}),
+        frozenset({"ant_b/SRR3"}),
+        frozenset({"ant_b/SRR3"}),
+    )
     assert report.totals.eligible == 4
     assert report.totals.cloud["locked"] == 2
     assert report.totals.cloud["downloading"] == 1
@@ -38,7 +72,9 @@ def test_marginals_locked_precedence_and_transfer_gap() -> None:
 
 
 def test_missing_worker_is_unknown_not_pending() -> None:
-    report = reconcile(inventory(), frozenset(), frozenset({"ant_a/SRR1"}), (), (), frozenset(), frozenset(), frozenset())
+    report = reconcile(
+        inventory(), frozenset(), frozenset({"ant_a/SRR1"}), (), (), frozenset(), frozenset(), frozenset()
+    )
     assert report.totals.cloud["worker_unknown"] == 1
     assert report.totals.cloud["pending"] == 0
 
@@ -66,10 +102,17 @@ def test_real_readonly_sqlite_and_worker_probe(tmp_path: Path) -> None:
     db = root / "pipeline_progress.db"
     with sqlite3.connect(db) as connection:
         connection.execute("CREATE TABLE samples(species TEXT,srr_id TEXT,state TEXT)")
-        connection.executemany("INSERT INTO samples VALUES(?,?,?)", [("ant_a", "SRR1", "downloading"), ("ant_a", "SRR2", "pending")])
+        connection.executemany(
+            "INSERT INTO samples VALUES(?,?,?)", [("ant_a", "SRR1", "downloading"), ("ant_a", "SRR2", "pending")]
+        )
     before = db.read_bytes()
     assert len(read_database(db)) == 2
-    result = subprocess.run([sys.executable, "-c", probe_script(frozenset({"ant_a/SRR1"}), str(root))], check=True, capture_output=True, text=True)
+    result = subprocess.run(
+        [sys.executable, "-c", probe_script(frozenset({"ant_a/SRR1"}), str(root))],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
     probe = parse_probe(result.stdout)
     assert [(r.task_id, r.state) for r in probe.rows] == [("ant_a/SRR1", "downloading")]
     assert db.read_bytes() == before
@@ -116,11 +159,11 @@ def test_worker_probe_keeps_hostile_identifiers_as_data(tmp_path: Path) -> None:
     before = database.read_bytes()
     result = subprocess.run(
         [sys.executable, "-c", probe_script(frozenset({f"ant_a/{accession}"}), str(root))],
-        check=True, capture_output=True, text=True,
+        check=True,
+        capture_output=True,
+        text=True,
     )
-    assert [(row.task_id, row.state) for row in parse_probe(result.stdout).rows] == [
-        (f"ant_a/{accession}", "pending")
-    ]
+    assert [(row.task_id, row.state) for row in parse_probe(result.stdout).rows] == [(f"ant_a/{accession}", "pending")]
     assert database.read_bytes() == before
     with sqlite3.connect(database) as connection:
         assert connection.execute("SELECT COUNT(*) FROM samples").fetchone() == (1,)

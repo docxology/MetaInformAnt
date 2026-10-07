@@ -109,33 +109,24 @@ def differential_abundance(
 
     n_taxa = len(counts[0])
     if len(groups) != n_samples:
-        raise ValueError(
-            f"groups length ({len(groups)}) must match samples ({n_samples})"
-        )
+        raise ValueError(f"groups length ({len(groups)}) must match samples ({n_samples})")
     if len(taxa_names) != n_taxa:
-        raise ValueError(
-            f"taxa_names length ({len(taxa_names)}) must match taxa ({n_taxa})"
-        )
+        raise ValueError(f"taxa_names length ({len(taxa_names)}) must match taxa ({n_taxa})")
 
     unique_groups = sorted(set(groups))
     if len(unique_groups) != 2:
-        raise ValueError(
-            f"groups must contain exactly 2 unique values, got {len(unique_groups)}"
-        )
+        raise ValueError(f"groups must contain exactly 2 unique values, got {len(unique_groups)}")
 
     g1_val, g2_val = unique_groups
     g1_indices = [i for i, g in enumerate(groups) if g == g1_val]
     g2_indices = [i for i, g in enumerate(groups) if g == g2_val]
 
     logger.info(
-        f"Running differential abundance ({method}): "
-        f"{len(g1_indices)} vs {len(g2_indices)} samples, {n_taxa} taxa"
+        f"Running differential abundance ({method}): " f"{len(g1_indices)} vs {len(g2_indices)} samples, {n_taxa} taxa"
     )
 
     if method == "aldex2_like":
-        results = _aldex2_like(
-            counts, g1_indices, g2_indices, taxa_names, n_monte_carlo, seed=seed
-        )
+        results = _aldex2_like(counts, g1_indices, g2_indices, taxa_names, n_monte_carlo, seed=seed)
     elif method == "ancom_like":
         results = _ancom_like(counts, g1_indices, g2_indices, taxa_names)
     else:  # simple_deseq
@@ -145,10 +136,7 @@ def differential_abundance(
     results.sort(key=lambda x: x["adjusted_p"])
 
     n_sig = sum(1 for r in results if r["adjusted_p"] < 0.05)
-    logger.info(
-        f"DA analysis complete: {len(results)} taxa tested, "
-        f"{n_sig} significant (FDR < 0.05)"
-    )
+    logger.info(f"DA analysis complete: {len(results)} taxa tested, " f"{n_sig} significant (FDR < 0.05)")
 
     return results
 
@@ -227,13 +215,9 @@ def indicator_species(
     n_taxa = len(counts[0]) if n_samples > 0 else 0
 
     if len(groups) != n_samples:
-        raise ValueError(
-            f"groups length ({len(groups)}) must match samples ({n_samples})"
-        )
+        raise ValueError(f"groups length ({len(groups)}) must match samples ({n_samples})")
     if len(taxa_names) != n_taxa:
-        raise ValueError(
-            f"taxa_names length ({len(taxa_names)}) must match taxa ({n_taxa})"
-        )
+        raise ValueError(f"taxa_names length ({len(taxa_names)}) must match taxa ({n_taxa})")
 
     unique_groups = sorted(set(groups))
 
@@ -264,10 +248,7 @@ def indicator_species(
         for _ in range(n_permutations):
             perm_groups = list(groups)
             rng.shuffle(perm_groups)
-            perm_indval = max(
-                _compute_indval(taxon_counts, perm_groups, grp, unique_groups)
-                for grp in unique_groups
-            )
+            perm_indval = max(_compute_indval(taxon_counts, perm_groups, grp, unique_groups) for grp in unique_groups)
             if perm_indval >= best_indval:
                 n_greater += 1
 
@@ -324,20 +305,13 @@ def effect_size_analysis(
     n_taxa = len(counts[0]) if n_samples > 0 else 0
 
     if len(groups) != n_samples:
-        raise ValueError(
-            f"groups length ({len(groups)}) must match samples ({n_samples})"
-        )
+        raise ValueError(f"groups length ({len(groups)}) must match samples ({n_samples})")
     if len(taxa_names) != n_taxa:
-        raise ValueError(
-            f"taxa_names length ({len(taxa_names)}) must match taxa ({n_taxa})"
-        )
+        raise ValueError(f"taxa_names length ({len(taxa_names)}) must match taxa ({n_taxa})")
 
     unique_groups = sorted(set(groups))
 
-    logger.info(
-        f"Effect size analysis: {n_samples} samples, {n_taxa} taxa, "
-        f"{len(unique_groups)} groups"
-    )
+    logger.info(f"Effect size analysis: {n_samples} samples, {n_taxa} taxa, " f"{len(unique_groups)} groups")
 
     # CLR transform
     clr_data = clr_transform(counts)
@@ -355,18 +329,13 @@ def effect_size_analysis(
             group_values[grp].append(clr_values[i])
 
         if len(unique_groups) == 2:
-            p_value = _kruskal_wallis_two_group(
-                group_values[unique_groups[0]], group_values[unique_groups[1]]
-            )
+            p_value = _kruskal_wallis_two_group(group_values[unique_groups[0]], group_values[unique_groups[1]])
         else:
             p_value = _kruskal_wallis(list(group_values.values()))
 
         # Simplified LDA effect size
         # Effect size = |mean_diff| scaled by within-group standard deviation
-        group_means = {
-            grp: sum(vals) / len(vals) if vals else 0.0
-            for grp, vals in group_values.items()
-        }
+        group_means = {grp: sum(vals) / len(vals) if vals else 0.0 for grp, vals in group_values.items()}
 
         if len(unique_groups) == 2:
             g0, g1 = unique_groups
@@ -398,15 +367,10 @@ def effect_size_analysis(
             direction = f"enriched_in_{unique_groups[0]}"
             for gi in range(len(unique_groups)):
                 for gj in range(gi + 1, len(unique_groups)):
-                    diff = abs(
-                        group_means.get(unique_groups[gi], 0.0)
-                        - group_means.get(unique_groups[gj], 0.0)
-                    )
+                    diff = abs(group_means.get(unique_groups[gi], 0.0) - group_means.get(unique_groups[gj], 0.0))
                     if diff > max_effect:
                         max_effect = diff
-                        if group_means.get(unique_groups[gi], 0.0) > group_means.get(
-                            unique_groups[gj], 0.0
-                        ):
+                        if group_means.get(unique_groups[gi], 0.0) > group_means.get(unique_groups[gj], 0.0):
                             direction = f"enriched_in_{unique_groups[gi]}"
                         else:
                             direction = f"enriched_in_{unique_groups[gj]}"
@@ -425,10 +389,7 @@ def effect_size_analysis(
     # Sort by absolute LDA score descending
     results.sort(key=lambda x: abs(x["lda_score"]), reverse=True)
 
-    logger.info(
-        f"Effect size analysis complete: "
-        f"{sum(1 for r in results if r['p_value'] < 0.05)} significant taxa"
-    )
+    logger.info(f"Effect size analysis complete: " f"{sum(1 for r in results if r['p_value'] < 0.05)} significant taxa")
 
     return results
 
@@ -475,13 +436,9 @@ def biomarker_discovery(
     n_taxa = len(counts[0]) if n_samples > 0 else 0
 
     if len(groups) != n_samples:
-        raise ValueError(
-            f"groups length ({len(groups)}) must match samples ({n_samples})"
-        )
+        raise ValueError(f"groups length ({len(groups)}) must match samples ({n_samples})")
     if len(taxa_names) != n_taxa:
-        raise ValueError(
-            f"taxa_names length ({len(taxa_names)}) must match taxa ({n_taxa})"
-        )
+        raise ValueError(f"taxa_names length ({len(taxa_names)}) must match taxa ({n_taxa})")
 
     logger.info(f"Biomarker discovery ({method}): {n_samples} samples, {n_taxa} taxa")
 
@@ -489,9 +446,7 @@ def biomarker_discovery(
     clr_data = clr_transform(counts)
 
     if HAS_SKLEARN:
-        return _sklearn_biomarker(
-            clr_data, groups, taxa_names, n_estimators, cv_folds, seed
-        )
+        return _sklearn_biomarker(clr_data, groups, taxa_names, n_estimators, cv_folds, seed)
     else:
         return _pure_python_biomarker(clr_data, groups, taxa_names, seed)
 
@@ -629,16 +584,12 @@ def _ancom_like(
             # Compute log-ratio for each sample
             lr_g1 = []
             for s in g1_indices:
-                lr = math.log(counts[s][taxon_i] + pseudocount) - math.log(
-                    counts[s][taxon_j] + pseudocount
-                )
+                lr = math.log(counts[s][taxon_i] + pseudocount) - math.log(counts[s][taxon_j] + pseudocount)
                 lr_g1.append(lr)
 
             lr_g2 = []
             for s in g2_indices:
-                lr = math.log(counts[s][taxon_i] + pseudocount) - math.log(
-                    counts[s][taxon_j] + pseudocount
-                )
+                lr = math.log(counts[s][taxon_i] + pseudocount) - math.log(counts[s][taxon_j] + pseudocount)
                 lr_g2.append(lr)
 
             # Welch's t-test on log-ratios
@@ -724,10 +675,7 @@ def _simple_deseq(
         size_factors.append(max(sf, 0.01))
 
     # Normalize counts
-    norm_counts = [
-        [counts[i][j] / size_factors[i] for j in range(n_taxa)]
-        for i in range(n_samples)
-    ]
+    norm_counts = [[counts[i][j] / size_factors[i] for j in range(n_taxa)] for i in range(n_samples)]
 
     results: list[dict] = []
     raw_p_values: list[float] = []
@@ -816,9 +764,7 @@ def _sklearn_biomarker(
     rf.fit(X, y)
     importances_array = rf.feature_importances_
 
-    importances = {
-        taxa_names[i]: float(importances_array[i]) for i in range(len(taxa_names))
-    }
+    importances = {taxa_names[i]: float(importances_array[i]) for i in range(len(taxa_names))}
 
     # Sort by importance
     sorted_taxa = sorted(importances.keys(), key=lambda t: importances[t], reverse=True)
@@ -836,10 +782,7 @@ def _sklearn_biomarker(
         "n_selected": len(selected),
     }
 
-    logger.info(
-        f"Biomarker discovery complete: {len(selected)} selected, "
-        f"CV accuracy={cv_accuracy:.3f}"
-    )
+    logger.info(f"Biomarker discovery complete: {len(selected)} selected, " f"CV accuracy={cv_accuracy:.3f}")
 
     return {
         "selected_taxa": selected,
@@ -1006,8 +949,7 @@ def _kruskal_wallis_two_group(a: list[float], b: list[float]) -> float:
 
     # H statistic
     h = (12.0 / (n * (n + 1))) * (
-        n_a * (rank_sum_a / n_a - mean_rank) ** 2
-        + n_b * ((sum(ranks) - rank_sum_a) / n_b - mean_rank) ** 2
+        n_a * (rank_sum_a / n_a - mean_rank) ** 2 + n_b * ((sum(ranks) - rank_sum_a) / n_b - mean_rank) ** 2
     )
 
     # Approximate p-value using chi-squared with df=1
@@ -1057,9 +999,7 @@ def _standard_normal_cdf(x: float) -> float:
         -1.453152027,
         1.061405429,
     )
-    erf = 1.0 - (a1 * t + a2 * t**2 + a3 * t**3 + a4 * t**4 + a5 * t**5) * math.exp(
-        -x_abs * x_abs
-    )
+    erf = 1.0 - (a1 * t + a2 * t**2 + a3 * t**3 + a4 * t**4 + a5 * t**5) * math.exp(-x_abs * x_abs)
     return 0.5 * (1.0 + sign * erf)
 
 

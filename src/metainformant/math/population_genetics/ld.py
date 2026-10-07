@@ -140,19 +140,13 @@ def _em_haplotype_frequencies(
             not 0/1.
     """
     for row in genotypes:
-        if (
-            len(row) != 2
-            or not isinstance(row[0], (list, tuple))
-            or not isinstance(row[1], (list, tuple))
-        ):
+        if len(row) != 2 or not isinstance(row[0], (list, tuple)) or not isinstance(row[1], (list, tuple)):
             raise ValueError(
                 "Unphased diploid rows must be [[a1, a2], [b1, b2]]: "
                 "the unordered allele pair at each of the two loci"
             )
         if len(row[0]) != 2 or len(row[1]) != 2:
-            raise ValueError(
-                "Unphased diploid rows must hold exactly two alleles per locus"
-            )
+            raise ValueError("Unphased diploid rows must hold exactly two alleles per locus")
         for allele in (row[0][0], row[0][1], row[1][0], row[1][1]):
             if allele not in (0, 1):
                 raise ValueError("Unphased diploid mode requires 0/1 allele coding")
@@ -164,11 +158,7 @@ def _em_haplotype_frequencies(
     p2 = sum(sum(pair) for pair in locus2) / (2 * n)
 
     # Deterministic product-of-marginals initialization.
-    freqs = {
-        (a, b): (p1 if a else 1 - p1) * (p2 if b else 1 - p2)
-        for a in (0, 1)
-        for b in (0, 1)
-    }
+    freqs = {(a, b): (p1 if a else 1 - p1) * (p2 if b else 1 - p2) for a in (0, 1) for b in (0, 1)}
 
     for _ in range(max_iter):
         expected = dict.fromkeys(freqs, 0.0)
@@ -223,9 +213,7 @@ def ld_decay_r2(
     """
     if isinstance(distances, (int, float)):
         if recombination_rate is None or generations is None:
-            raise ValueError(
-                "recombination_rate and generations are required for scalar LD decay"
-            )
+            raise ValueError("recombination_rate and generations are required for scalar LD decay")
         return float(distances) * ((1.0 - recombination_rate) ** (2 * generations))
 
     if r_squared_values is None or len(distances) != len(r_squared_values):
@@ -233,9 +221,7 @@ def ld_decay_r2(
 
     # Filter by max distance if specified
     if max_distance is not None:
-        filtered = [
-            (d, r) for d, r in zip(distances, r_squared_values) if d <= max_distance
-        ]
+        filtered = [(d, r) for d, r in zip(distances, r_squared_values) if d <= max_distance]
         distances = [d for d, _ in filtered]
         r_squared_values = [r for _, r in filtered]
 
@@ -268,9 +254,7 @@ def ld_decay_r2(
 
     # Estimate decay rate (rough approximation)
     if len(bin_means) >= 2:
-        decay_rate = (bin_means[0][1] - bin_means[-1][1]) / (
-            bin_means[-1][0] - bin_means[0][0]
-        )
+        decay_rate = (bin_means[0][1] - bin_means[-1][1]) / (bin_means[-1][0] - bin_means[0][0])
     else:
         decay_rate = 0.0
 
@@ -337,9 +321,7 @@ def kosambi_c_to_d(recombination_fraction: float) -> float:
     elif recombination_fraction == 0:
         return 0.0
 
-    return 0.25 * math.log(
-        (1 + 2 * recombination_fraction) / (1 - 2 * recombination_fraction)
-    )
+    return 0.25 * math.log((1 + 2 * recombination_fraction) / (1 - 2 * recombination_fraction))
 
 
 def kosambi_d_to_c(genetic_distance: float) -> float:

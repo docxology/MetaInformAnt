@@ -40,9 +40,7 @@ def test_real_manifest_quantification_and_second_run_reuses_bytes(
     rng = random.Random(161)
     sequences = ["".join(rng.choice("ACGT") for _ in range(500)) for _ in range(3)]
     fasta = tmp_path / "transcripts.fa"
-    fasta.write_text(
-        "".join(f">gene{i}\n{sequence}\n" for i, sequence in enumerate(sequences))
-    )
+    fasta.write_text("".join(f">gene{i}\n{sequence}\n" for i, sequence in enumerate(sequences)))
     index = index_dir / "Test_species.idx"
     subprocess.run(
         ["kallisto", "index", "-i", str(index), str(fasta)],
@@ -106,8 +104,7 @@ def test_real_manifest_quantification_and_second_run_reuses_bytes(
                 "task_count": 1,
                 "manifest_sha256": sha256_file(manifest),
                 "input_files": [
-                    {"path": str(p.relative_to(tmp_path)), "sha256": sha256_file(p)}
-                    for p in (index, metadata)
+                    {"path": str(p.relative_to(tmp_path)), "sha256": sha256_file(p)} for p in (index, metadata)
                 ],
             }
         )

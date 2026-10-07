@@ -165,9 +165,7 @@ def call_structural_variants(
 
     # Filter low-quality reads
     filtered = [a for a in alignments if a.get("mapq", 0) >= min_mapq]
-    logger.info(
-        f"Processing {len(filtered)} reads (filtered from {len(alignments)} by MAPQ >= {min_mapq})"
-    )
+    logger.info(f"Processing {len(filtered)} reads (filtered from {len(alignments)} by MAPQ >= {min_mapq})")
 
     # Estimate insert size stats if not provided
     if insert_size_stats is None:
@@ -232,9 +230,7 @@ def call_structural_variants(
     for variant in variants:
         variant.genotype = genotype_sv(variant, filtered)
 
-    logger.info(
-        f"Called {len(variants)} structural variants from {len(all_evidence)} evidence items"
-    )
+    logger.info(f"Called {len(variants)} structural variants from {len(all_evidence)} evidence items")
     return variants
 
 
@@ -306,9 +302,7 @@ def detect_split_reads(
                 )
                 evidence_list.append(evidence)
 
-    logger.debug(
-        f"Detected {len(evidence_list)} split-read evidence items from {len(reads)} reads"
-    )
+    logger.debug(f"Detected {len(evidence_list)} split-read evidence items from {len(reads)} reads")
     return evidence_list
 
 
@@ -362,9 +356,7 @@ def detect_discordant_pairs(
         if mate_chrom != chrom:
             is_discordant = True
         # Aberrant insert size
-        elif abs(insert_size) > max_isize or (
-            abs(insert_size) < min_isize and abs(insert_size) > 0
-        ):
+        elif abs(insert_size) > max_isize or (abs(insert_size) < min_isize and abs(insert_size) > 0):
             is_discordant = True
         # Same-strand orientation (expected: FR for Illumina)
         elif is_reverse == mate_is_reverse:
@@ -387,9 +379,7 @@ def detect_discordant_pairs(
             )
             evidence_list.append(evidence)
 
-    logger.debug(
-        f"Detected {len(evidence_list)} discordant pairs from {len(pairs)} reads"
-    )
+    logger.debug(f"Detected {len(evidence_list)} discordant pairs from {len(pairs)} reads")
     return evidence_list
 
 
@@ -560,9 +550,7 @@ def _estimate_insert_size(reads: list[dict[str, Any]]) -> InsertSizeStats:
 
     if not insert_sizes:
         # Default to typical Illumina insert size
-        logger.warning(
-            "Could not estimate insert size, using defaults (mean=400, std=100)"
-        )
+        logger.warning("Could not estimate insert size, using defaults (mean=400, std=100)")
         return InsertSizeStats(mean=400.0, std=100.0, median=400.0, mad=50.0)
 
     if np is not None:
@@ -584,9 +572,7 @@ def _estimate_insert_size(reads: list[dict[str, Any]]) -> InsertSizeStats:
     return InsertSizeStats(mean=mean, std=std, median=median, mad=mad)
 
 
-def _parse_cigar_clips(
-    cigar: str | list[tuple[int, int]], pos: int
-) -> list[tuple[int, int, str]]:
+def _parse_cigar_clips(cigar: str | list[tuple[int, int]], pos: int) -> list[tuple[int, int, str]]:
     """Parse CIGAR string to find soft-clipped regions.
 
     Args:

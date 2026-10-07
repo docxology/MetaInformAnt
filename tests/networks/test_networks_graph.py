@@ -128,14 +128,10 @@ class TestNetworkCreation:
         network = BiologicalNetwork()
 
         # Create correlation matrix
-        correlation_matrix = np.array(
-            [[1.0, 0.8, 0.2], [0.8, 1.0, -0.6], [0.2, -0.6, 1.0]]
-        )
+        correlation_matrix = np.array([[1.0, 0.8, 0.2], [0.8, 1.0, -0.6], [0.2, -0.6, 1.0]])
         node_names = ["gene1", "gene2", "gene3"]
 
-        add_edges_from_correlation(
-            network, correlation_matrix, node_names, threshold=0.5
-        )
+        add_edges_from_correlation(network, correlation_matrix, node_names, threshold=0.5)
 
         # Should have edges for correlations > 0.5
         # gene1-gene2: 0.8 > 0.5 ✓
@@ -331,16 +327,12 @@ class TestNetworkIntegration:
         # Simulate expression correlation matrix
         np.random.seed(42)
         correlation_matrix = np.random.rand(5, 5)
-        correlation_matrix = (
-            correlation_matrix + correlation_matrix.T
-        ) / 2  # Symmetric
+        correlation_matrix = (correlation_matrix + correlation_matrix.T) / 2  # Symmetric
         np.fill_diagonal(correlation_matrix, 1.0)  # Perfect self-correlation
 
         # Create network
         network = create_network(gene_names)
-        add_edges_from_correlation(
-            network, correlation_matrix, gene_names, threshold=0.6
-        )
+        add_edges_from_correlation(network, correlation_matrix, gene_names, threshold=0.6)
 
         # Analyze network
         metrics = network_metrics(network)

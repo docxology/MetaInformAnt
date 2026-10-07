@@ -42,9 +42,7 @@ class FastqRecord:
         if not quality_header.startswith("+"):
             raise ValueError(f"Invalid FASTQ quality header: {quality_header}")
         if len(sequence) != len(quality):
-            raise ValueError(
-                f"Sequence and quality lengths don't match: {len(sequence)} != {len(quality)}"
-            )
+            raise ValueError(f"Sequence and quality lengths don't match: {len(sequence)} != {len(quality)}")
 
     @property
     def name(self) -> str:
@@ -72,9 +70,7 @@ class FastqRecord:
         return (gc_count / len(self.sequence)) * 100.0
 
 
-def read_fastq_records(
-    path: str | Path, max_records: int | None = None
-) -> Iterator[FastqRecord]:
+def read_fastq_records(path: str | Path, max_records: int | None = None) -> Iterator[FastqRecord]:
     """Read FASTQ records from a file.
 
     Args:
@@ -110,9 +106,7 @@ def read_fastq_records(
                 if len(lines) == 0:
                     break  # End of file
                 elif len(lines) != 4:
-                    raise ValueError(
-                        f"Incomplete FASTQ record: got {len(lines)} lines, expected 4"
-                    )
+                    raise ValueError(f"Incomplete FASTQ record: got {len(lines)} lines, expected 4")
 
                 record = FastqRecord(*lines)
                 yield record
@@ -122,9 +116,7 @@ def read_fastq_records(
         raise errors.IOError(f"Failed to read FASTQ file: {e}") from e
 
 
-def analyze_fastq_quality(
-    fastq_path: str | Path, n_reads: int | None = None
-) -> Dict[str, Any]:
+def analyze_fastq_quality(fastq_path: str | Path, n_reads: int | None = None) -> Dict[str, Any]:
     """Perform comprehensive quality analysis on a FASTQ file.
 
     Args:
@@ -261,9 +253,7 @@ def per_sequence_quality(records: List[FastqRecord]) -> Dict[str, Any]:
         bins = []
 
         for bin_start in range(int(min_qual), int(max_qual) + 2):
-            count = sum(
-                1 for q in mean_qualities if bin_start <= q < bin_start + bin_width
-            )
+            count = sum(1 for q in mean_qualities if bin_start <= q < bin_start + bin_width)
             if count > 0:
                 bins.append(
                     {
@@ -345,9 +335,7 @@ ILLUMINA_ADAPTERS = [
 ]
 
 
-def adapter_content(
-    records: List[FastqRecord], adapters: List[str] | None = None
-) -> Dict[str, Any]:
+def adapter_content(records: List[FastqRecord], adapters: List[str] | None = None) -> Dict[str, Any]:
     """Detect adapter content in sequences.
 
     Args:
@@ -395,9 +383,7 @@ def adapter_content(
     return {"adapters": results}
 
 
-def overrepresented_sequences(
-    records: List[FastqRecord], min_length: int = 20
-) -> Dict[str, Any]:
+def overrepresented_sequences(records: List[FastqRecord], min_length: int = 20) -> Dict[str, Any]:
     """Find overrepresented sequences in the FASTQ file.
 
     Args:
@@ -608,7 +594,5 @@ def filter_reads(
         },
     }
 
-    logger.info(
-        f"Filtered {passed_reads}/{total_reads} reads ({stats['pass_rate']:.1f}%)"
-    )
+    logger.info(f"Filtered {passed_reads}/{total_reads} reads ({stats['pass_rate']:.1f}%)")
     return stats

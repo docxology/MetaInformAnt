@@ -1,4 +1,5 @@
 """Bounded, idempotent acquisition and quantification on local or AWS hosts."""
+
 from __future__ import annotations
 
 import concurrent.futures
@@ -12,12 +13,22 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
-from metainformant.rna.engine.acquisition_manifest import sha256_file,load_snapshot,load_task_selection,verify_input_files
-from metainformant.rna.engine.acquisition_references import prepare_reference_inputs
-from metainformant.rna.engine.acquisition_manifest import verify_worker_configs
+
 from metainformant.rna.engine.acquisition_allocation import verify_local_allocation
+from metainformant.rna.engine.acquisition_manifest import (
+    load_snapshot,
+    load_task_selection,
+    sha256_file,
+    verify_input_files,
+    verify_worker_configs,
+)
+from metainformant.rna.engine.acquisition_references import prepare_reference_inputs
 from metainformant.rna.engine.acquisition_sample import execute_manifest_task
-from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator,build_pipeline_resource_profile
+from metainformant.rna.engine.streaming_orchestrator import (
+    StreamingPipelineOrchestrator,
+    build_pipeline_resource_profile,
+)
+
 
 def _run_manifest_owned(
     *,
@@ -43,9 +54,13 @@ def _run_manifest_owned(
         manifest_tasks,
         snapshot_sha256=sha256_file(manifest_path.with_name("snapshot.json")),
     )
-    verify_local_allocation(task_selection, manifest_path,
-                            frozenset(task["task_id"] for task in manifest_tasks),
-                            frozenset(task["task_id"] for task in tasks), snapshot.get("inventory_sha256"))
+    verify_local_allocation(
+        task_selection,
+        manifest_path,
+        frozenset(task["task_id"] for task in manifest_tasks),
+        frozenset(task["task_id"] for task in tasks),
+        snapshot.get("inventory_sha256"),
+    )
     profile = build_pipeline_resource_profile(
         workers,
         threads,
@@ -77,9 +92,7 @@ def _run_manifest_owned(
     durable_cohort = os.environ.get("AMALGKIT_DURABLE_COHORT", "")
     if os.environ.get("AMALGKIT_DURABLE_BUCKET"):
         if not durable_cohort:
-            raise ValueError(
-                "AMALGKIT_DURABLE_COHORT is required with a durable bucket"
-            )
+            raise ValueError("AMALGKIT_DURABLE_COHORT is required with a durable bucket")
         from metainformant.rna.engine.durable_quant import S3Store
 
         durable_store = S3Store(
@@ -96,16 +109,12 @@ def _run_manifest_owned(
         orchestrator._resource_profile = profile
         orchestrator._quant_semaphore = threading.BoundedSemaphore(profile.quant_slots)
         orchestrator._fasterq_semaphore = threading.BoundedSemaphore(profile.fasterq_slots)
-        orchestrator._raw_validation_semaphore = threading.BoundedSemaphore(
-            profile.validation_slots
-        )
+        orchestrator._raw_validation_semaphore = threading.BoundedSemaphore(profile.validation_slots)
         by_species: dict[str, list[dict[str, Any]]] = {}
         for task in tasks:
             by_species.setdefault(str(task["species"]), []).append(task)
         for species, species_tasks in by_species.items():
-            orchestrator.db.init_species(
-                species, [str(task["accession"]) for task in species_tasks]
-            )
+            orchestrator.db.init_species(species, [str(task["accession"]) for task in species_tasks])
 
         started = time.time()
         monotonic_started = time.monotonic()
@@ -125,7 +134,15 @@ def _run_manifest_owned(
                 os.fsync(handle.fileno())
 
         def execute(task: dict[str, Any]) -> dict[str, Any]:
-            return execute_manifest_task(task, orchestrator, data_root, config_dir, durable_store, durable_cohort, profile.quant_threads_per_worker)
+            return execute_manifest_task(
+                task,
+                orchestrator,
+                data_root,
+                config_dir,
+                durable_store,
+                durable_cohort,
+                profile.quant_threads_per_worker,
+            )
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=profile.workers) as executor:
             pending_tasks = deque(tasks)
@@ -134,10 +151,7 @@ def _run_manifest_owned(
             reserved_bytes = 0
             if raw_bytes_limit:
                 for task in tasks:
-                    if (
-                        int(task.get("fastq_bytes", 0)) <= 0
-                        or int(task["fastq_bytes"]) > raw_bytes_limit
-                    ):
+                    if int(task.get("fastq_bytes", 0)) <= 0 or int(task["fastq_bytes"]) > raw_bytes_limit:
                         raise ValueError("cloud task lacks a bounded raw-byte reservation")
 
             def submit_next() -> bool:
@@ -185,8 +199,10 @@ def _run_manifest_owned(
         results.sort(key=lambda result: str(result.get("task_id", "")))
 
         summary = {
-            "schema": {"metainformant.hymenoptera.gcp_snapshot.v1": "metainformant.hymenoptera.gcp_worker_result.v1",
-                       "metainformant.rna.acquisition_snapshot.v1": "metainformant.rna.acquisition_result.v1"}[snapshot["schema"]],
+            "schema": {
+                "metainformant.hymenoptera.gcp_snapshot.v1": "metainformant.hymenoptera.gcp_worker_result.v1",
+                "metainformant.rna.acquisition_snapshot.v1": "metainformant.rna.acquisition_result.v1",
+            }[snapshot["schema"]],
             "started_at_epoch": started,
             "finished_at_epoch": time.time(),
             "elapsed_seconds": time.monotonic() - monotonic_started,
@@ -212,10 +228,10 @@ def _run_manifest_owned(
             "results": results,
         }
         result_path = data_root / "cloud_worker_result.json"
-        (run_directory / "result.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        result_path.write_text(
+        (run_directory / "result.json").write_text(
             json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
         )
+        result_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         return summary
 
     finally:
@@ -224,16 +240,59 @@ def _run_manifest_owned(
 
 _PROCESS_WORKER_LOCK = threading.Lock()
 
-def run_manifest(*, manifest_path: Path, data_root: Path, config_dir: Path, workers: int, threads: int, fastq_threads: int, compression_threads: int, validation_slots: int, quant_slots: int | None=None, fasterq_slots: int | None=None, max_in_flight: int | None=None, task_selection: Path | None=None) -> dict[str, Any]:
+
+def run_manifest(
+    *,
+    manifest_path: Path,
+    data_root: Path,
+    config_dir: Path,
+    workers: int,
+    threads: int,
+    fastq_threads: int,
+    compression_threads: int,
+    validation_slots: int,
+    quant_slots: int | None = None,
+    fasterq_slots: int | None = None,
+    max_in_flight: int | None = None,
+    task_selection: Path | None = None,
+) -> dict[str, Any]:
     """Own the target root exclusively for one idempotent worker invocation."""
     if not _PROCESS_WORKER_LOCK.acquire(blocking=False):
         raise RuntimeError("manifest workers require separate processes for concurrent data roots")
     try:
-        return _run_with_root_lock(manifest_path=manifest_path, data_root=data_root, config_dir=config_dir, workers=workers, threads=threads, fastq_threads=fastq_threads, compression_threads=compression_threads, validation_slots=validation_slots, quant_slots=quant_slots, fasterq_slots=fasterq_slots, max_in_flight=max_in_flight, task_selection=task_selection)
+        return _run_with_root_lock(
+            manifest_path=manifest_path,
+            data_root=data_root,
+            config_dir=config_dir,
+            workers=workers,
+            threads=threads,
+            fastq_threads=fastq_threads,
+            compression_threads=compression_threads,
+            validation_slots=validation_slots,
+            quant_slots=quant_slots,
+            fasterq_slots=fasterq_slots,
+            max_in_flight=max_in_flight,
+            task_selection=task_selection,
+        )
     finally:
         _PROCESS_WORKER_LOCK.release()
 
-def _run_with_root_lock(*, manifest_path: Path, data_root: Path, config_dir: Path, workers: int, threads: int, fastq_threads: int, compression_threads: int, validation_slots: int, quant_slots: int | None = None, fasterq_slots: int | None = None, max_in_flight: int | None = None, task_selection: Path | None = None) -> dict[str, Any]:
+
+def _run_with_root_lock(
+    *,
+    manifest_path: Path,
+    data_root: Path,
+    config_dir: Path,
+    workers: int,
+    threads: int,
+    fastq_threads: int,
+    compression_threads: int,
+    validation_slots: int,
+    quant_slots: int | None = None,
+    fasterq_slots: int | None = None,
+    max_in_flight: int | None = None,
+    task_selection: Path | None = None,
+) -> dict[str, Any]:
     data_root.mkdir(parents=True, exist_ok=True)
     with (data_root / ".acquisition.lock").open("a") as owned_lock:
         fcntl.flock(owned_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)

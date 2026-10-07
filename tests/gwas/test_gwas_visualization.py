@@ -65,9 +65,7 @@ class TestManhattanPlot:
 
         # Check that we have the right number of data points
         ax = fig.axes[0]
-        scatter_plots = [
-            child for child in ax.get_children() if hasattr(child, "get_offsets")
-        ]
+        scatter_plots = [child for child in ax.get_children() if hasattr(child, "get_offsets")]
         assert len(scatter_plots) > 0, "Should have scatter plot data"
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
@@ -89,9 +87,7 @@ class TestManhattanPlot:
                 if len(offsets):
                     x_positions.extend(float(point[0]) for point in offsets)
         assert x_positions
-        assert max(x_positions) < 1_000_000, (
-            "Small contigs should not be separated by fixed 100 Mb offsets"
-        )
+        assert max(x_positions) < 1_000_000, "Small contigs should not be separated by fixed 100 Mb offsets"
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
     def test_manhattan_plot_significance_line(self, tmp_path: Path):
@@ -159,9 +155,7 @@ class TestQQPlot:
         ax = fig.axes[0]
 
         # Check that we have data points
-        scatter_plots = [
-            child for child in ax.get_children() if hasattr(child, "get_offsets")
-        ]
+        scatter_plots = [child for child in ax.get_children() if hasattr(child, "get_offsets")]
         assert len(scatter_plots) > 0, "Should have Q-Q plot data"
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
@@ -196,9 +190,7 @@ class TestQQPlot:
 
         ax = fig.axes[0]
         envelope_collections = [
-            child
-            for child in ax.collections
-            if getattr(child, "get_label", lambda: "")() == "95% null envelope"
+            child for child in ax.collections if getattr(child, "get_label", lambda: "")() == "95% null envelope"
         ]
         assert envelope_collections, "Should draw a Q-Q confidence envelope"
         assert any("lambda GC" in text.get_text() for text in ax.texts)
@@ -228,9 +220,7 @@ class TestPCAPlot:
         variance = np.random.rand(3)
         loadings = np.random.randn(3, 20)
 
-        fig = pca_plot(
-            (components, variance, loadings), explained_var=variance.tolist()
-        )
+        fig = pca_plot((components, variance, loadings), explained_var=variance.tolist())
 
         assert hasattr(fig, "savefig"), "Should return matplotlib Figure"
         assert hasattr(fig, "axes"), "Figure should have axes"
@@ -250,15 +240,8 @@ class TestPCAPlot:
         xlabel = ax.get_xlabel().lower()
         ylabel = ax.get_ylabel().lower()
         title = ax.get_title().lower()
-        has_variance = (
-            "variance" in xlabel
-            or "variance" in ylabel
-            or "variance" in title
-            or len(ax.texts) > 0
-        )
-        assert has_variance, (
-            "Should show variance information in labels, title, or annotations"
-        )
+        has_variance = "variance" in xlabel or "variance" in ylabel or "variance" in title or len(ax.texts) > 0
+        assert has_variance, "Should show variance information in labels, title, or annotations"
 
 
 class TestKinshipHeatmap:
@@ -324,9 +307,7 @@ class TestVisualizationDependencies:
     def test_matplotlib_import_flag_is_true(self):
         """Verify that HAS_MATPLOTLIB is set correctly when matplotlib is present."""
         # Since matplotlib IS installed in this environment, verify the flag
-        assert HAS_MATPLOTLIB is True, (
-            "HAS_MATPLOTLIB should be True when matplotlib is installed"
-        )
+        assert HAS_MATPLOTLIB is True, "HAS_MATPLOTLIB should be True when matplotlib is installed"
         fig, ax = plt.subplots()
         ax.set_title("Dependency verification")
         plt.close(fig)

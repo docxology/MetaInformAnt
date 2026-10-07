@@ -1,13 +1,12 @@
 """Counting intervals for descriptive campaign reports, not biological inference."""
 
 from __future__ import annotations
+
 import math
 from numbers import Integral
 
 
-def wilson_interval(
-    successes: int, total: int, z: float = 1.959963984540054
-) -> tuple[float, float] | None:
+def wilson_interval(successes: object, total: object, z: float = 1.959963984540054) -> tuple[float, float] | None:
     """Return a Wilson score interval for a proportion from counted evidence.
 
     This quantifies only the counting uncertainty of an observed denominator in
@@ -24,9 +23,9 @@ def wilson_interval(
         raise ValueError("Wilson interval requires integer counts")
     if not math.isfinite(z) or z <= 0:
         raise ValueError("Wilson interval requires a finite positive z score")
+    successes, total = int(successes), int(total)
     if total <= 0 or successes < 0 or successes > total:
         return None
-    successes, total = int(successes), int(total)
     p = successes / total
     z2 = z * z
     denom = 1.0 + z2 / total

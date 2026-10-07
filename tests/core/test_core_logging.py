@@ -95,9 +95,7 @@ def test_log_with_metadata_basic() -> None:
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)
 
-    core_logging.log_with_metadata(
-        logger, "Test message", {"key1": "value1", "key2": 42}
-    )
+    core_logging.log_with_metadata(logger, "Test message", {"key1": "value1", "key2": 42})
 
     log_output = log_stream.getvalue()
     assert "Test message" in log_output
@@ -115,9 +113,7 @@ def test_log_with_metadata_structured() -> None:
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)
 
-    core_logging.log_with_metadata(
-        logger, "Structured message", {"batch": 1}, structured=True
-    )
+    core_logging.log_with_metadata(logger, "Structured message", {"batch": 1}, structured=True)
 
     log_output = log_stream.getvalue()
     assert "Structured message" in log_output
@@ -135,9 +131,7 @@ def test_log_with_metadata_level() -> None:
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
 
-    core_logging.log_with_metadata(
-        logger, "Debug message", {"data": "test"}, level="DEBUG"
-    )
+    core_logging.log_with_metadata(logger, "Debug message", {"data": "test"}, level="DEBUG")
 
     log_output = log_stream.getvalue()
     assert "Debug message" in log_output
@@ -150,9 +144,7 @@ def test_setup_logger_closes_previous_handlers(tmp_path) -> None:
 
     core_logging.setup_logger("leak_check", log_file=str(log_file))
     logger = logging.getLogger("leak_check")
-    first_file_handlers = [
-        h for h in logger.handlers if isinstance(h, logging.FileHandler)
-    ]
+    first_file_handlers = [h for h in logger.handlers if isinstance(h, logging.FileHandler)]
     assert first_file_handlers, "expected a FileHandler on first setup"
 
     core_logging.setup_logger("leak_check", log_file=str(log_file))

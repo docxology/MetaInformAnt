@@ -1,13 +1,16 @@
 """Streaming finalized-matrix validation and descriptive expression profiles."""
 
 from __future__ import annotations
+
 import gzip
 from pathlib import Path
+from typing import TextIO
+
 import numpy as np
 import pandas as pd
 
 
-def _open_text(path: Path):
+def _open_text(path: Path) -> TextIO:
     """Open plain or gzip-compressed tabular text using one interface."""
 
     if path.suffix == ".gz":
@@ -44,11 +47,7 @@ def validate_expression_matrix(
         raise ValueError(f"Expression matrix has no header: {path}")
     header = raw_header.rstrip("\r\n").split("\t")
     if len(header) < min_samples + 1:
-        requirement = (
-            "At least two sample columns"
-            if min_samples == 2
-            else f"At least {min_samples} sample column(s)"
-        )
+        requirement = "At least two sample columns" if min_samples == 2 else f"At least {min_samples} sample column(s)"
         raise ValueError(f"{requirement} are required in expression matrix: {path}")
     if not header[0].strip():
         raise ValueError(f"Expression matrix has an empty feature-ID column: {path}")
@@ -73,31 +72,23 @@ def validate_expression_matrix(
         )
         for chunk in chunks:
             if chunk.shape[1] != len(sample_ids):
-                raise ValueError(
-                    f"Expression matrix row width does not match its header: {path}"
-                )
+                raise ValueError(f"Expression matrix row width does not match its header: {path}")
             feature_ids = [str(value).strip() for value in chunk.index]
             if any(not value for value in feature_ids):
-                raise ValueError(
-                    f"Expression matrix has an empty feature identifier: {path}"
-                )
+                raise ValueError(f"Expression matrix has an empty feature identifier: {path}")
             local_features = set(feature_ids)
             feature_index = pd.Index(feature_ids)
             local_duplicates = set(feature_index[feature_index.duplicated()].tolist())
             duplicates = (local_features & seen_features) | local_duplicates
             if duplicates:
                 detail = sorted(duplicates)[0]
-                raise ValueError(
-                    f"Expression matrix has duplicate feature identifier ({detail}): {path}"
-                )
+                raise ValueError(f"Expression matrix has duplicate feature identifier ({detail}): {path}")
             seen_features.update(local_features)
 
             numeric = chunk.apply(pd.to_numeric, errors="coerce")
             values = numeric.to_numpy(dtype=float)
             if not np.isfinite(values).all():
-                raise ValueError(
-                    f"Expression matrix contains non-numeric, missing, or non-finite values: {path}"
-                )
+                raise ValueError(f"Expression matrix contains non-numeric, missing, or non-finite values: {path}")
             if (values < 0).any():
                 raise ValueError(f"Expression matrix contains negative values: {path}")
             nonzero_samples |= np.any(values > 0, axis=0)
@@ -113,9 +104,7 @@ def validate_expression_matrix(
     if feature_count == 0:
         raise ValueError(f"Expression matrix has no feature rows: {path}")
     if not nonzero_samples.all():
-        empty_samples = [
-            sample_ids[i] for i, present in enumerate(nonzero_samples) if not present
-        ]
+        empty_samples = [sample_ids[i] for i, present in enumerate(nonzero_samples) if not present]
         raise ValueError(
             "Expression matrix has all-zero sample column(s): "
             + ", ".join(empty_samples[:5])
@@ -157,15 +146,9 @@ def compute_profile_quality(species_profiles: dict[str, pd.Series]) -> pd.DataFr
                 "positive_features": int(positive.sum()),
                 "zero_features": int(zero.sum()),
                 "nonfinite_features": int((~finite).sum()),
-                "positive_fraction_finite": float(positive.sum() / finite.sum())
-                if finite.any()
-                else np.nan,
-                "mean_positive_expression": float(values[positive].mean())
-                if positive.any()
-                else np.nan,
-                "median_positive_expression": float(np.median(values[positive]))
-                if positive.any()
-                else np.nan,
+                "positive_fraction_finite": float(positive.sum() / finite.sum()) if finite.any() else np.nan,
+                "mean_positive_expression": float(values[positive].mean()) if positive.any() else np.nan,
+                "median_positive_expression": float(np.median(values[positive])) if positive.any() else np.nan,
             }
         )
     return pd.DataFrame(rows)

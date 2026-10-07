@@ -1,11 +1,14 @@
 """Real subprocess contracts for generic acquisition entry points."""
 
 from __future__ import annotations
+
 import json
 import subprocess
 import sys
 from pathlib import Path
+
 import pytest
+
 from metainformant.rna.engine.acquisition_manifest import sha256_file
 from metainformant.rna.engine.aws_completion import _render_startup
 
@@ -136,18 +139,20 @@ def test_generic_aws_template_is_complete_shell_safe_and_syntax_valid(
     assert "--config-dir /mnt/snapshot/config/amalgkit" in text
     script = tmp_path / "startup.sh"
     script.write_text(text)
-    subprocess.run(
-        ["bash", "-n", str(script)], check=True, capture_output=True, text=True
-    )
+    subprocess.run(["bash", "-n", str(script)], check=True, capture_output=True, text=True)
 
 
 @pytest.mark.parametrize("lane", ["local", "aws"])
-@pytest.mark.parametrize("entry", ["scripts/rna/acquisition.py", "projects/hymenoptera_amalgkit/scripts/acquisition.py"])
+@pytest.mark.parametrize(
+    "entry", ["scripts/rna/acquisition.py", "projects/hymenoptera_amalgkit/scripts/acquisition.py"]
+)
 def test_generic_and_project_execution_help_is_callable(lane: str, entry: str) -> None:
     if entry.startswith("projects/") and not (ROOT / "projects/hymenoptera_amalgkit/README.md").is_file():
         pytest.skip("Hymenoptera acquisition adapter is unavailable in this parent-only checkout")
     result = subprocess.run(
         [sys.executable, str(ROOT / entry), lane, "--help"],
-        check=True, capture_output=True, text=True,
+        check=True,
+        capture_output=True,
+        text=True,
     )
     assert "--config-dir" in result.stdout

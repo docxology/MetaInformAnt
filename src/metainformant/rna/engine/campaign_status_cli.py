@@ -1,4 +1,5 @@
 """CLI for live, read-only cloud/local Hymenoptera status snapshots."""
+
 from __future__ import annotations
 
 import argparse
@@ -23,19 +24,26 @@ def main() -> int:
     parser.add_argument("--profile", default="dev-agent")
     parser.add_argument("--region", default="us-east-2")
     parser.add_argument("--output-dir", type=Path, default=Path("output/hymenoptera_status"))
-    parser.add_argument("--no-worker-probe", action="store_true", help="Assigned worker stages become unknown; never assumed pending")
-    parser.add_argument("--stages-only", action="store_true", help="Fast DB/worker status only; omit file coverage and transfer claims")
+    parser.add_argument(
+        "--no-worker-probe", action="store_true", help="Assigned worker stages become unknown; never assumed pending"
+    )
+    parser.add_argument(
+        "--stages-only", action="store_true", help="Fast DB/worker status only; omit file coverage and transfer claims"
+    )
     args = parser.parse_args()
     started = datetime.now(UTC).isoformat()
     inventory_bytes = (args.campaign_root / "inventory.json").read_bytes()
     inventory = load_inventory(inventory_bytes)
     inventory.task_ids()
-    cloud = collect_cloud(args.campaign_root, args.bucket, args.profile, args.region, probe_workers=not args.no_worker_probe)
+    cloud = collect_cloud(
+        args.campaign_root, args.bucket, args.profile, args.region, probe_workers=not args.no_worker_probe
+    )
     local = read_database(args.local_root / "pipeline_progress.db")
-    present, partial = frozenset(), frozenset()
+    present: frozenset[str] = frozenset()
+    partial: frozenset[str] = frozenset()
     if not args.stages_only:
         present, partial = file_coverage(inventory, args.local_root)
-    diagnostic = frozenset()
+    diagnostic: frozenset[str] = frozenset()
     if args.diagnostic_root and not args.stages_only:
         diagnostic, _ = file_coverage(inventory, args.diagnostic_root)
     report = reconcile(inventory, cloud.locked, cloud.assigned, cloud.worker, local, present, partial, diagnostic)
@@ -44,16 +52,21 @@ def main() -> int:
     directory.mkdir(parents=True, exist_ok=False)
     payload = {
         "schema": "metainformant.rna.campaign_status.v1",
-        "started_at": started, "finished_at": finished,
+        "started_at": started,
+        "finished_at": finished,
         "inventory_sha256": hashlib.sha256(inventory_bytes).hexdigest(),
         "local_root": str(args.local_root.resolve()),
         "diagnostic_root": str(args.diagnostic_root.resolve()) if args.diagnostic_root else None,
-        "cloud_observation": asdict(cloud), "report": asdict(report),
+        "cloud_observation": asdict(cloud),
+        "report": asdict(report),
         "file_coverage": "NOT_OBSERVED" if args.stages_only else "NONEMPTY_FILE_PRESENCE_ONLY",
     }
     if args.stages_only:
         payload["report"] = {
-            "rows": [{"species": row.species, "eligible": row.eligible, "cloud": row.cloud, "local": row.local} for row in report.rows],
+            "rows": [
+                {"species": row.species, "eligible": row.eligible, "cloud": row.cloud, "local": row.local}
+                for row in report.rows
+            ],
             "totals": {"eligible": report.totals.eligible, "cloud": report.totals.cloud, "local": report.totals.local},
             "local_outside_inventory": report.local_outside_inventory,
         }
@@ -70,13 +83,18 @@ def main() -> int:
         "`present_locked` is local file presence intersected with S3 receipts, not checksum-verified transfer. "
         "`transfer_gap` is S3-locked samples lacking complete files at the canonical local root. "
         "Diagnostic copies are an overlapping subset in a separate root. Stage columns sum to Total; "
-        "the four coverage columns also sum to Total; transfer_gap and diagnostic_present are overlapping marginals.\n\n"
-        f"Running cloud instances: {len(cloud.instances)}. Local DB rows outside inventory: {report.local_outside_inventory}.\n\n"
+        "the four coverage columns also sum to Total; transfer_gap and diagnostic_present "
+        "are overlapping marginals.\n\n"
+        f"Running cloud instances: {len(cloud.instances)}. "
+        f"Local DB rows outside inventory: {report.local_outside_inventory}.\n\n"
     )
     if cloud.diagnostics:
         notes += "Telemetry diagnostics:\n\n" + "\n".join(f"- {d}" for d in cloud.diagnostics) + "\n\n"
     if args.stages_only:
-        notes += "File coverage and transfer candidates were NOT OBSERVED (--stages-only). No file/transfer counts are emitted.\n\n"
+        notes += (
+            "File coverage and transfer candidates were NOT OBSERVED (--stages-only). "
+            "No file/transfer counts are emitted.\n\n"
+        )
     markdown = notes + markdown_tables(report, include_coverage=not args.stages_only)
     (directory / "status.md").write_text(markdown)
     with (directory / "samples.tsv").open("w", newline="") as handle:
@@ -86,9 +104,11 @@ def main() -> int:
         writer.writerows(asdict(sample) for sample in report.samples)
     if not args.stages_only:
         with (directory / "transfer_candidates.tsv").open("w", newline="") as handle:
-            writer = csv.writer(handle, delimiter="\t")
-            writer.writerow(("task_id", "canonical_local_coverage", "diagnostic_present"))
-            writer.writerows((s.task_id, s.coverage, s.diagnostic_present) for s in report.samples if s.transfer_gap)
+            transfer_writer = csv.writer(handle, delimiter="\t")
+            transfer_writer.writerow(("task_id", "canonical_local_coverage", "diagnostic_present"))
+            transfer_writer.writerows(
+                (s.task_id, s.coverage, s.diagnostic_present) for s in report.samples if s.transfer_gap
+            )
     print(markdown)
     print(f"Saved snapshot: {directory}")
     return 0

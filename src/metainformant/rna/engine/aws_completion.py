@@ -12,19 +12,21 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from metainformant.rna.engine.aws_inputs import (
-    _source_bundle as _source_bundle,
-    _inputs_bundle as _inputs_bundle,
-    _render_startup as _render_startup,
-)
-from metainformant.rna.engine.aws_fleet import in_flight_tasks, reserved_future_charge
 from metainformant.rna.engine.acquisition_allocation import aws_allocation_ids
 from metainformant.rna.engine.acquisition_aws_policy import WorkerImage, validate_worker_image
-from metainformant.rna.engine.campaign_status import load_inventory
+from metainformant.rna.engine.aws_fleet import in_flight_tasks, reserved_future_charge
+from metainformant.rna.engine.aws_inputs import (
+    _inputs_bundle as _inputs_bundle,
+    _render_startup as _render_startup,
+    _source_bundle as _source_bundle,
+)
 from metainformant.rna.engine.aws_resources import (
+    AccountedJob,
+    CampaignBilling,
     WorkerPrices,
     campaign_charge,
 )
+from metainformant.rna.engine.campaign_status import load_inventory
 from metainformant.rna.engine.durable_quant import S3Store, restore_quantification
 from metainformant.rna.engine.source_resolution import (
     SourceTarget,
@@ -61,7 +63,8 @@ def choose_partition(
     max_tasks: int = 120,
 ) -> list[dict[str, Any]]:
     """Choose one species' byte-bounded missing tasks; never silently admit unknown sizes."""
-    selected, size = [], 0
+    selected: list[dict[str, Any]] = []
+    size = 0
     for task in sorted(tasks, key=lambda t: (int(t["fastq_bytes"]), t["accession"])):
         if task["task_id"] in locked:
             continue
@@ -95,11 +98,7 @@ def verify_locked_campaign(
 ) -> dict[str, Any]:
     """Require a non-empty complete cohort and validate every restored sample."""
     tasks = [(s, t) for s in inventory["species"] for t in s["tasks"]]
-    if (
-        not tasks
-        or len(tasks) != inventory["task_count"]
-        or len({t["task_id"] for _, t in tasks}) != len(tasks)
-    ):
+    if not tasks or len(tasks) != inventory["task_count"] or len({t["task_id"] for _, t in tasks}) != len(tasks):
         raise ValueError("empty or incomplete completion inventory")
     verified = []
     for species, task in tasks:
@@ -114,12 +113,7 @@ def verify_locked_campaign(
         verified_config = None
         if config_dir is not None:
             name = species.get("config_name")
-            if (
-                not isinstance(name, str)
-                or Path(name).name != name
-                or name in ("", ".", "..")
-                or "\\" in name
-            ):
+            if not isinstance(name, str) or Path(name).name != name or name in ("", ".", "..") or "\\" in name:
                 raise ValueError("unsafe frozen configuration filename")
             verified_config = config_dir / name
         target = destination / species["species"] / "work" / "quant" / task["accession"]
@@ -134,19 +128,17 @@ def verify_locked_campaign(
             verified_config_path=verified_config,
         )
         if receipt["config_sha256"] != species["config_sha256"]:
-            raise ValueError(
-                f"completed sample configuration mismatch: {task['task_id']}"
-            )
-        verified.append(
-            {"task_id": task["task_id"], "contract_id": receipt["contract_id"]}
-        )
+            raise ValueError(f"completed sample configuration mismatch: {task['task_id']}")
+        verified.append({"task_id": task["task_id"], "contract_id": receipt["contract_id"]})
     certificate = {
-        "schema": "metainformant.rna.quant_completion.v1" if inventory.get("schema") == "metainformant.rna.acquisition_inventory.v1" else "metainformant.hymenoptera.quant_completion.v1",
+        "schema": (
+            "metainformant.rna.quant_completion.v1"
+            if inventory.get("schema") == "metainformant.rna.acquisition_inventory.v1"
+            else "metainformant.hymenoptera.quant_completion.v1"
+        ),
         "cohort": cohort,
         "verified_at": datetime.now(UTC).isoformat(),
-        "inventory_sha256": hashlib.sha256(
-            json.dumps(inventory, sort_keys=True).encode()
-        ).hexdigest(),
+        "inventory_sha256": hashlib.sha256(json.dumps(inventory, sort_keys=True).encode()).hexdigest(),
         "eligible_tasks": len(tasks),
         "verified_tasks": len(verified),
         "all_quant_locked": True,
@@ -157,9 +149,7 @@ def verify_locked_campaign(
     return certificate
 
 
-def _wait_for_fleet(
-    state: dict[str, Any], state_path: Path, args: argparse.Namespace, status: str
-) -> None:
+def _wait_for_fleet(state: dict[str, Any], state_path: Path, args: argparse.Namespace, status: str) -> None:
     """Persist a capacity/task/budget wait without abandoning live workers."""
     state["status"] = status
     _write_json(state_path, state)
@@ -184,7 +174,11 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
     inventory_bytes = (root / "inventory.json").read_bytes()
     inventory_ids = load_inventory(inventory_bytes).task_ids()
     allocation_path = getattr(args, "task_allocation", None)
-    aws_ids = aws_allocation_ids(allocation_path, inventory_ids, hashlib.sha256(inventory_bytes).hexdigest()) if allocation_path else inventory_ids
+    aws_ids = (
+        aws_allocation_ids(allocation_path, inventory_ids, hashlib.sha256(inventory_bytes).hexdigest())
+        if allocation_path
+        else inventory_ids
+    )
     config_dir = getattr(args, "config_dir", None) or repo / "projects/hymenoptera_amalgkit/config/amalgkit"
     generic_worker = getattr(args, "config_dir", None) is not None
     inventory = json.loads(inventory_bytes)
@@ -217,19 +211,19 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
         if not isinstance(name, str) or Path(name).name != name or "\\" in name or not name.endswith(".yaml"):
             raise ValueError("unsafe frozen configuration name")
         config_path = config_dir / name
-        if (
-            hashlib.sha256(config_path.read_bytes()).hexdigest()
-            != species["config_sha256"]
-        ):
-            raise ValueError(
-                f"frozen species configuration changed: {species['species']}"
-            )
+        if hashlib.sha256(config_path.read_bytes()).hexdigest() != species["config_sha256"]:
+            raise ValueError(f"frozen species configuration changed: {species['species']}")
     state_path = root / "aws_controller.json"
     session = boto3.Session(profile_name=args.profile, region_name=args.region)
     from metainformant.rna.engine.acquisition_pricing import quote_aws_worker
-    quote = quote_aws_worker(region=args.region, instance_type=args.instance_type,
-                             disk_gib=getattr(args, "min_disk_gib", 600), profile=args.profile,
-                             hourly_floor=args.hourly_upper_bound)
+
+    quote = quote_aws_worker(
+        region=args.region,
+        instance_type=args.instance_type,
+        disk_gib=getattr(args, "min_disk_gib", 600),
+        profile=args.profile,
+        hourly_floor=args.hourly_upper_bound,
+    )
     worker_prices = WorkerPrices(quote.compute_hourly_usd, quote.gp3_gib_month_usd, args.hourly_upper_bound)
     ec2 = session.client(
         "ec2",
@@ -244,15 +238,22 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
         if len(images) != 1:
             raise ValueError("generic acquisition requires exactly one available worker image")
         image = images[0]
-        validate_worker_image(WorkerImage(image.get("State", ""), image.get("Architecture", ""), image.get("PlatformDetails", ""), bool(image.get("ProductCodes"))),
-                              custom_template=getattr(args, "startup_template", None) is not None)
-    store = S3Store(
-        args.bucket, "locked-quant-v1", profile=args.profile, region=args.region
+        validate_worker_image(
+            WorkerImage(
+                image.get("State", ""),
+                image.get("Architecture", ""),
+                image.get("PlatformDetails", ""),
+                bool(image.get("ProductCodes")),
+            ),
+            custom_template=getattr(args, "startup_template", None) is not None,
+        )
+    store = S3Store(args.bucket, "locked-quant-v1", profile=args.profile, region=args.region)
+    objects = S3Store(args.bucket, "completion-v1", profile=args.profile, region=args.region)
+    template = getattr(args, "startup_template", None) or (
+        repo / "scripts/rna/aws_acquisition_startup.sh"
+        if generic_worker
+        else repo / "projects/hymenoptera_amalgkit/scripts/cloud/aws_startup.sh"
     )
-    objects = S3Store(
-        args.bucket, "completion-v1", profile=args.profile, region=args.region
-    )
-    template = getattr(args, "startup_template", None) or (repo / "scripts/rna/aws_acquisition_startup.sh" if generic_worker else repo / "projects/hymenoptera_amalgkit/scripts/cloud/aws_startup.sh")
     source = root / "source.tar"
     source_sha = _source_bundle(repo, source)
     source_key = f"{args.cohort}/sources/{source_sha}.tar"
@@ -262,7 +263,11 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
         json.loads(state_path.read_text())
         if state_path.exists()
         else {
-            "schema": "metainformant.rna.aws_acquisition.v1" if generic_worker else "metainformant.hymenoptera.aws_completion.v1",
+            "schema": (
+                "metainformant.rna.aws_acquisition.v1"
+                if generic_worker
+                else "metainformant.hymenoptera.aws_completion.v1"
+            ),
             "cohort": args.cohort,
             "budget_ceiling": args.budget,
             "historical_gross": args.historical_gross,
@@ -275,7 +280,9 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
         raise ValueError("controller scope/budget transition is inconsistent")
     state["budget_ceiling"] = args.budget
     allocation_sha = hashlib.sha256(allocation_path.read_bytes()).hexdigest() if allocation_path else None
-    if state.get("allocation_sha256") not in {None, allocation_sha} or (state.get("allocation_sha256") and not allocation_path):
+    if state.get("allocation_sha256") not in {None, allocation_sha} or (
+        state.get("allocation_sha256") and not allocation_path
+    ):
         raise ValueError("persisted acquisition allocation cannot be changed or omitted on resume")
     if allocation_path:
         state["allocation_sha256"] = allocation_sha
@@ -295,9 +302,7 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                         status="running",
                     )
                     _write_json(state_path, state)
-            active = [
-                j for j in state["jobs"] if j["status"] in {"running", "terminating"}
-            ]
+            active = [j for j in state["jobs"] if j["status"] in {"running", "terminating"}]
             for job in active:
                 try:
                     response = ec2.describe_instances(InstanceIds=[job["instance_id"]])
@@ -305,23 +310,32 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                     if exc.response["Error"]["Code"] != "InvalidInstanceID.NotFound":
                         raise
                     response = {"Reservations": []}
-                instances = [
-                    i for r in response["Reservations"] for i in r["Instances"]
-                ]
+                instances = [i for r in response["Reservations"] for i in r["Instances"]]
                 if not instances or instances[0]["State"]["Name"] == "terminated":
                     job.update(status="terminated", finished_at=now)
                 elif now >= job["deadline"] and job["status"] == "running":
                     ec2.terminate_instances(InstanceIds=[job["instance_id"]])
                     job.update(status="terminating", termination_requested_at=now)
             now = time.time()
-            spent = campaign_charge(state, now)
+            billing_jobs: list[AccountedJob] = [
+                {
+                    "started_at": job["started_at"],
+                    "finished_at": job.get("finished_at", max(now, job["started_at"])),
+                    "hourly_upper_bound": job.get("hourly_upper_bound", state["hourly_upper_bound"]),
+                }
+                for job in state["jobs"]
+            ]
+            billing: CampaignBilling = {
+                "historical_gross": state["historical_gross"],
+                "hourly_upper_bound": state["hourly_upper_bound"],
+                "jobs": billing_jobs,
+            }
+            spent = campaign_charge(billing, now)
             state["spent_upper_bound"] = spent
             state["observed_at"] = datetime.now(UTC).isoformat()
             locked: set[str] = set()
             prefix = f"locked-quant-v1/{args.cohort}/reference-bound-receipts/"
-            for page in store.client.get_paginator("list_objects_v2").paginate(
-                Bucket=args.bucket, Prefix=prefix
-            ):
+            for page in store.client.get_paginator("list_objects_v2").paginate(Bucket=args.bucket, Prefix=prefix):
                 for record in page.get("Contents", []):
                     relative = record["Key"].removeprefix(prefix)
                     pieces = relative.split("/")
@@ -329,23 +343,17 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                         locked.add(f"{pieces[0]}/{pieces[1][:-5]}")
             all_ids = {t["task_id"] for s in inventory["species"] for t in s["tasks"]}
             if not locked.issubset(all_ids):
-                raise ValueError(
-                    "durable receipt inventory contains tasks outside the frozen cohort"
-                )
+                raise ValueError("durable receipt inventory contains tasks outside the frozen cohort")
             state.update(
                 locked_count=len(locked),
                 eligible_count=len(all_ids),
                 missing_count=len(all_ids - locked),
             )
-            active = [
-                j for j in state["jobs"] if j["status"] in {"running", "terminating"}
-            ]
+            active = [j for j in state["jobs"] if j["status"] in {"running", "terminating"}]
             occupied = in_flight_tasks(state["jobs"])
             if allocation_path and occupied - aws_ids - locked:
                 raise ValueError("new allocation conflicts with existing live AWS ownership")
-            future_charge = reserved_future_charge(
-                state["jobs"], now, state["hourly_upper_bound"]
-            )
+            future_charge = reserved_future_charge(state["jobs"], now, state["hourly_upper_bound"])
             state["reserved_future_upper_bound"] = future_charge
             if not all_ids - locked and not active:
                 state["status"] = "verifying_all_outputs"
@@ -398,16 +406,18 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                     eligible,
                     locked | occupied,
                     max_bytes=getattr(args, "partition_bytes", 60 * 1024**3),
-                    max_tasks=getattr(args, "partition_tasks", 120) if state["jobs"] else min(20, getattr(args, "partition_tasks", 120)),
+                    max_tasks=(
+                        getattr(args, "partition_tasks", 120)
+                        if state["jobs"]
+                        else min(20, getattr(args, "partition_tasks", 120))
+                    ),
                 )
                 if partition:
                     selected_species = species
                     break
             if selected_species is None:
                 if active:
-                    _wait_for_fleet(
-                        state, state_path, args, "waiting_for_reserved_tasks"
-                    )
+                    _wait_for_fleet(state, state_path, args, "waiting_for_reserved_tasks")
                     if args.once:
                         return state
                     continue
@@ -416,21 +426,19 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                 return state
             largest = max(int(t["fastq_bytes"]) for t in partition)
             raw_bound = max(getattr(args, "partition_bytes", 60 * 1024**3), largest)
-            disk_gib = max(getattr(args, "min_disk_gib", 600), math.ceil(raw_bound * getattr(args, "disk_expansion_factor", 6) / 1024**3) + getattr(args, "disk_reserve_gib", 100))
+            disk_gib = max(
+                getattr(args, "min_disk_gib", 600),
+                math.ceil(raw_bound * getattr(args, "disk_expansion_factor", 6) / 1024**3)
+                + getattr(args, "disk_reserve_gib", 100),
+            )
             if disk_gib > getattr(args, "max_disk_gib", 2000):
-                raise ValueError(
-                    "partition requires an independently reviewed disk profile"
-                )
+                raise ValueError("partition requires an independently reviewed disk profile")
             job_rate = worker_prices.hourly_bound(disk_gib)
             limit_seconds = job_timeout(largest, args.job_seconds)
             reserved_seconds = limit_seconds + 900
-            if not budget_allows(
-                spent + future_charge, args.budget, reserved_seconds, job_rate
-            ):
+            if not budget_allows(spent + future_charge, args.budget, reserved_seconds, job_rate):
                 if active:
-                    _wait_for_fleet(
-                        state, state_path, args, "waiting_for_budget_reservations"
-                    )
+                    _wait_for_fleet(state, state_path, args, "waiting_for_budget_reservations")
                     if args.once:
                         return state
                     continue
@@ -440,7 +448,10 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
             job_id = f"job-{len(state['jobs']) + 1:05d}"
             directory = root / "jobs" / job_id
             bundle, input_sha = _inputs_bundle(
-                root, selected_species, partition, directory,
+                root,
+                selected_species,
+                partition,
+                directory,
                 config_path=config_dir / selected_species["config_name"] if generic_worker else None,
             )
             input_key = f"{args.cohort}/inputs/{input_sha}.tar"
@@ -460,18 +471,25 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                     "JOB_PREFIX": prefix,
                     "LIMIT_SECONDS": limit_seconds,
                     "RAW_BYTES": raw_bound,
-                    **({"WORKERS": args.worker_workers, "THREADS": args.worker_threads,
-                        "QUANT_SLOTS": args.worker_quant_slots, "FASTQ_SLOTS": args.worker_fastq_slots,
-                        "MAX_IN_FLIGHT": args.worker_max_in_flight, "FASTQ_THREADS": args.worker_fastq_threads,
-                        "COMPRESSION_THREADS": args.worker_compression_threads, "VALIDATION_SLOTS": args.worker_validation_slots}
-                       if generic_worker else {}),
+                    **(
+                        {
+                            "WORKERS": args.worker_workers,
+                            "THREADS": args.worker_threads,
+                            "QUANT_SLOTS": args.worker_quant_slots,
+                            "FASTQ_SLOTS": args.worker_fastq_slots,
+                            "MAX_IN_FLIGHT": args.worker_max_in_flight,
+                            "FASTQ_THREADS": args.worker_fastq_threads,
+                            "COMPRESSION_THREADS": args.worker_compression_threads,
+                            "VALIDATION_SLOTS": args.worker_validation_slots,
+                        }
+                        if generic_worker
+                        else {}
+                    ),
                 },
             )
             (directory / "user_data.sh").write_text(script)
             task_ids = [t["task_id"] for t in partition]
-            token = hashlib.sha256(
-                f"{args.cohort}/{job_id}/{input_sha}/{source_sha}".encode()
-            ).hexdigest()
+            token = hashlib.sha256(f"{args.cohort}/{job_id}/{input_sha}/{source_sha}".encode()).hexdigest()
             request = {
                 "ImageId": args.ami,
                 "InstanceType": args.instance_type,
@@ -571,30 +589,57 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--poll-seconds", type=int, default=60)
     parser.add_argument("--max-workers", type=int, default=1)
     parser.add_argument("--max-attempts", type=int, default=3)
-    parser.add_argument("--config-dir", type=Path, help="Use the generic worker with these frozen species configurations")
+    parser.add_argument(
+        "--config-dir", type=Path, help="Use the generic worker with these frozen species configurations"
+    )
     parser.add_argument("--startup-template", type=Path)
     parser.add_argument("--task-allocation", type=Path)
-    parser.add_argument("--priority-species", default="nasonia_vitripennis", help="Legacy priority; set an empty value for generic lexical order")
+    parser.add_argument(
+        "--priority-species",
+        default="nasonia_vitripennis",
+        help="Legacy priority; set an empty value for generic lexical order",
+    )
     parser.add_argument("--partition-bytes", type=int, default=60 * 1024**3)
     parser.add_argument("--partition-tasks", type=int, default=120)
     parser.add_argument("--min-disk-gib", type=int, default=600)
     parser.add_argument("--max-disk-gib", type=int, default=2000)
     parser.add_argument("--disk-expansion-factor", type=float, default=6)
     parser.add_argument("--disk-reserve-gib", type=int, default=100)
-    for flag, default in (("workers", 16), ("threads", 8), ("quant-slots", 4), ("fastq-slots", 1),
-                          ("max-in-flight", 12), ("fastq-threads", 2), ("compression-threads", 2), ("validation-slots", 4)):
+    for flag, default in (
+        ("workers", 16),
+        ("threads", 8),
+        ("quant-slots", 4),
+        ("fastq-slots", 1),
+        ("max-in-flight", 12),
+        ("fastq-threads", 2),
+        ("compression-threads", 2),
+        ("validation-slots", 4),
+    ):
         parser.add_argument(f"--worker-{flag}", type=int, default=default)
     parser.add_argument("--once", action="store_true")
     args = parser.parse_args(argv)
-    if (min(args.partition_bytes, args.partition_tasks, args.min_disk_gib, args.max_disk_gib, args.disk_reserve_gib) <= 0
-        or not math.isfinite(args.disk_expansion_factor) or args.disk_expansion_factor < 1
-        or args.min_disk_gib > args.max_disk_gib or args.max_disk_gib > 16384):
+    if (
+        min(args.partition_bytes, args.partition_tasks, args.min_disk_gib, args.max_disk_gib, args.disk_reserve_gib)
+        <= 0
+        or not math.isfinite(args.disk_expansion_factor)
+        or args.disk_expansion_factor < 1
+        or args.min_disk_gib > args.max_disk_gib
+        or args.max_disk_gib > 16384
+    ):
         parser.error("invalid partition/disk bounds; this controller caps configured volumes at 16384 GiB")
     if (
-        min(args.job_seconds, args.poll_seconds, args.max_attempts, args.max_workers)
+        min(args.job_seconds, args.poll_seconds, args.max_attempts, args.max_workers) <= 0
+        or min(
+            args.worker_workers,
+            args.worker_threads,
+            args.worker_quant_slots,
+            args.worker_fastq_slots,
+            args.worker_max_in_flight,
+            args.worker_fastq_threads,
+            args.worker_compression_threads,
+            args.worker_validation_slots,
+        )
         <= 0
-        or min(args.worker_workers, args.worker_threads, args.worker_quant_slots, args.worker_fastq_slots,
-               args.worker_max_in_flight, args.worker_fastq_threads, args.worker_compression_threads, args.worker_validation_slots) <= 0
     ):
         parser.error("job, polling, attempt and worker bounds must be positive")
     print(json.dumps(run_controller(args), indent=2))

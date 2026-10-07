@@ -70,9 +70,7 @@ class TestShortestPathsQueries:
         g = nx.Graph()
         g.add_edges_from([("A", "B"), ("B", "C")])
         assert shortest_paths(g, source="A", target="C") == {"A": {"C": 2}}
-        assert shortest_paths(g, source="C", target="A") == {
-            "C": {"A": 2}
-        }  # undirected
+        assert shortest_paths(g, source="C", target="A") == {"C": {"A": 2}}  # undirected
 
     def test_source_equals_target(self) -> None:
         g = nx.Graph()

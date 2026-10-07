@@ -59,12 +59,8 @@ def calculate_fst(population1: List[str], population2: List[str]) -> float:
     for pos in range(seq_len):
         # Keep only unambiguous bases (ATCG, case-insensitive) so gaps and
         # ambiguous characters are not treated as alleles
-        alleles_pop1 = [
-            seq[pos].upper() for seq in population1 if seq[pos].upper() in "ATCG"
-        ]
-        alleles_pop2 = [
-            seq[pos].upper() for seq in population2 if seq[pos].upper() in "ATCG"
-        ]
+        alleles_pop1 = [seq[pos].upper() for seq in population1 if seq[pos].upper() in "ATCG"]
+        alleles_pop2 = [seq[pos].upper() for seq in population2 if seq[pos].upper() in "ATCG"]
 
         if not alleles_pop1 or not alleles_pop2:
             continue  # No usable data at this site
@@ -95,10 +91,7 @@ def calculate_fst(population1: List[str], population2: List[str]) -> float:
 
         # Calculate F_ST contribution for this site
         ht = 1 - sum(f**2 for f in total_freq.values())  # Total heterozygosity
-        hs = (
-            sum(f**2 for f in freq_pop1.values())
-            + sum(f**2 for f in freq_pop2.values())
-        ) / 2
+        hs = (sum(f**2 for f in freq_pop1.values()) + sum(f**2 for f in freq_pop2.values())) / 2
         hs = 1 - hs  # Average within-population heterozygosity
 
         if ht > 0:
@@ -113,9 +106,7 @@ def calculate_fst(population1: List[str], population2: List[str]) -> float:
     return numerator_sum / total_sites
 
 
-def detect_selection(
-    sequences: List[str], method: str = "tajima_d"
-) -> Dict[str, float]:
+def detect_selection(sequences: List[str], method: str = "tajima_d") -> Dict[str, float]:
     """Detect signatures of natural selection in population data.
 
     Args:
@@ -269,9 +260,7 @@ def calculate_fu_li_d(sequences: List[str]) -> Tuple[float, float]:
     # D = (singletons - a1 * segregating_sites) / sqrt(var)
 
     # For now, return a basic implementation
-    segregating_sites = sum(
-        1 for pos in range(seq_length) if len(set(seq[pos] for seq in sequences)) > 1
-    )
+    segregating_sites = sum(1 for pos in range(seq_length) if len(set(seq[pos] for seq in sequences)) > 1)
 
     if segregating_sites == 0:
         return 0.0, 1.0
@@ -307,9 +296,9 @@ def calculate_fu_li_variance(n: int, s: int) -> float:
     a1 = sum(1.0 / i for i in range(1, n))
     a2 = sum(1.0 / (i**2) for i in range(1, n))
 
-    variance = ((n - 2) / (6 * (n - 1))) * s + (
-        18 * n * (n - 1) * a2 - 88 * n * a1**2
-    ) / (9 * (n - 1) ** 2) * s * (s - 1)
+    variance = ((n - 2) / (6 * (n - 1))) * s + (18 * n * (n - 1) * a2 - 88 * n * a1**2) / (9 * (n - 1) ** 2) * s * (
+        s - 1
+    )
 
     return max(0, variance)
 
@@ -333,9 +322,7 @@ def _fisher_exact_two_sided_2x2(a: int, b: int, c: int, d: int) -> float:
         scipy_stats = None
 
     if scipy_stats is not None:
-        return float(
-            scipy_stats.fisher_exact([[a, b], [c, d]], alternative="two-sided")[1]
-        )
+        return float(scipy_stats.fisher_exact([[a, b], [c, d]], alternative="two-sided")[1])
 
     n = a + b + c + d
     row1 = a + b
@@ -468,9 +455,7 @@ def mcdonald_kreitman_test(sequences: List[str]) -> Tuple[float, float]:
     return results["alpha"], results["omega"]
 
 
-def estimate_population_size(
-    sequences: List[str], mutation_rate: float = 1e-8
-) -> Dict[str, float]:
+def estimate_population_size(sequences: List[str], mutation_rate: float = 1e-8) -> Dict[str, float]:
     """Estimate effective population size using various methods.
 
     Args:
@@ -560,9 +545,7 @@ def detect_population_structure(sequences: List[str], k_max: int = 5) -> Dict[st
         assigned = False
         for cid, members in cluster_map.items():
             # Check if this sequence is close to cluster members
-            avg_dist = sum(
-                _p_distance_simple(sequences[i], sequences[j]) for j in members
-            ) / len(members)
+            avg_dist = sum(_p_distance_simple(sequences[i], sequences[j]) for j in members) / len(members)
             if avg_dist < threshold:
                 members.append(i)
                 cluster_assignments[i] = cid
@@ -584,9 +567,7 @@ def detect_population_structure(sequences: List[str], k_max: int = 5) -> Dict[st
     }
 
 
-def calculate_ld_decay(
-    sequences: List[str], max_distance: int = 0
-) -> List[Tuple[int, float]]:
+def calculate_ld_decay(sequences: List[str], max_distance: int = 0) -> List[Tuple[int, float]]:
     """Calculate linkage disequilibrium (r²) decay with physical distance.
 
     Computes pairwise r² between biallelic polymorphic sites and averages by distance.
@@ -614,9 +595,7 @@ def calculate_ld_decay(
     # Find biallelic polymorphic sites
     polymorphic = []
     for pos in range(seq_length):
-        alleles = set(
-            seq[pos].upper() for seq in sequences if seq[pos].upper() in "ACGT"
-        )
+        alleles = set(seq[pos].upper() for seq in sequences if seq[pos].upper() in "ACGT")
         if len(alleles) == 2:
             polymorphic.append(pos)
 
@@ -634,12 +613,8 @@ def calculate_ld_decay(
             if max_distance > 0 and distance > max_distance:
                 continue
 
-            alleles_i = [
-                seq[pos_i].upper() for seq in sequences if seq[pos_i].upper() in "ACGT"
-            ]
-            alleles_j = [
-                seq[pos_j].upper() for seq in sequences if seq[pos_j].upper() in "ACGT"
-            ]
+            alleles_i = [seq[pos_i].upper() for seq in sequences if seq[pos_i].upper() in "ACGT"]
+            alleles_j = [seq[pos_j].upper() for seq in sequences if seq[pos_j].upper() in "ACGT"]
 
             if len(alleles_i) != len(alleles_j) or len(alleles_i) < 2:
                 continue
@@ -751,9 +726,7 @@ def calculate_summary_statistics(
         results["sample_size"] = len(sequences)
 
     if genotype_matrix:
-        logger.info(
-            f"Calculating summary statistics for genotype matrix with {len(genotype_matrix)} individuals"
-        )
+        logger.info(f"Calculating summary statistics for genotype matrix with {len(genotype_matrix)} individuals")
 
         # Convert to numpy for easier computation
         genotypes = np.array(genotype_matrix)
@@ -768,17 +741,12 @@ def calculate_summary_statistics(
 
             het_values = []
             for locus in range(genotypes.shape[1]):
-                locus_genotypes = [
-                    (genotypes[i, locus] // 2, genotypes[i, locus] % 2)
-                    for i in range(len(genotypes))
-                ]
+                locus_genotypes = [(genotypes[i, locus] // 2, genotypes[i, locus] % 2) for i in range(len(genotypes))]
                 het = population.observed_heterozygosity(locus_genotypes)
                 het_values.append(het)
 
             results["mean_heterozygosity"] = np.mean(het_values) if het_values else 0.0
-            results["heterozygosity_variance"] = (
-                np.var(het_values) if het_values else 0.0
-            )
+            results["heterozygosity_variance"] = np.var(het_values) if het_values else 0.0
 
     if populations and sequences:
         # Population differentiation
@@ -800,9 +768,7 @@ def calculate_summary_statistics(
     return results
 
 
-def compare_populations(
-    pop1_data: Dict[str, Any], pop2_data: Dict[str, Any]
-) -> Dict[str, Any]:
+def compare_populations(pop1_data: Dict[str, Any], pop2_data: Dict[str, Any]) -> Dict[str, Any]:
     """Compare two populations based on their summary statistics.
 
     Args:
@@ -825,9 +791,7 @@ def compare_populations(
     if "nucleotide_diversity" in pop1_data and "nucleotide_diversity" in pop2_data:
         pi1 = pop1_data["nucleotide_diversity"]
         pi2 = pop2_data["nucleotide_diversity"]
-        comparison["nucleotide_diversity_ratio"] = (
-            pi2 / pi1 if pi1 > 0 else float("inf")
-        )
+        comparison["nucleotide_diversity_ratio"] = pi2 / pi1 if pi1 > 0 else float("inf")
         comparison["nucleotide_diversity_difference"] = pi2 - pi1
 
     # Compare Tajima's D
@@ -890,9 +854,7 @@ def calculate_fay_wu_h(sequences: List[str]) -> Tuple[float, float]:
     # Variance approximation for Fay and Wu's H
     n = len(sequences)
     seq_length = len(sequences[0])
-    seg_sites = sum(
-        1 for pos in range(seq_length) if len(set(seq[pos] for seq in sequences)) > 1
-    )
+    seg_sites = sum(1 for pos in range(seq_length) if len(set(seq[pos] for seq in sequences)) > 1)
 
     if seg_sites == 0:
         return 0.0, 1.0
@@ -947,9 +909,7 @@ def calculate_fu_li_f(sequences: List[str]) -> Tuple[float, float]:
     # Approximate p-value using normal distribution
     n = len(sequences)
     seq_length = len(sequences[0])
-    seg_sites = sum(
-        1 for pos in range(seq_length) if len(set(seq[pos] for seq in sequences)) > 1
-    )
+    seg_sites = sum(1 for pos in range(seq_length) if len(set(seq[pos] for seq in sequences)) > 1)
 
     if seg_sites == 0:
         return 0.0, 1.0
@@ -1071,9 +1031,7 @@ def interpret_neutrality_results(results: Dict[str, Any]) -> Dict[str, str]:
         if fu_li_d_star > 0:
             interpretation["fu_li_d_star"] = "balancing_selection"
         elif fu_li_d_star < 0:
-            interpretation["fu_li_d_star"] = (
-                "positive_selection_or_population_expansion"
-            )
+            interpretation["fu_li_d_star"] = "positive_selection_or_population_expansion"
         else:
             interpretation["fu_li_d_star"] = "neutral_evolution"
     else:

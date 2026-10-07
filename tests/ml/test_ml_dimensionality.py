@@ -58,28 +58,20 @@ class TestPcaReduction:
         assert np.allclose(X_pca.var(axis=0, ddof=1), model.explained_variance_)
 
         ratios = model.explained_variance_ratio_
-        assert np.all(np.diff(ratios) <= 0), (
-            "explained variance must be sorted descending"
-        )
+        assert np.all(np.diff(ratios) <= 0), "explained variance must be sorted descending"
         assert 0.0 < ratios.sum() <= 1.0 + 1e-9
 
     def test_unscaled_pca_uses_raw_mean_and_variance(self) -> None:
         """scale_data=False must center (never rescale) the raw matrix."""
         X = _correlated_features()
-        X_raw, model_raw = pca_reduction(
-            X, n_components=3, scale_data=False, random_state=0
-        )
+        X_raw, model_raw = pca_reduction(X, n_components=3, scale_data=False, random_state=0)
 
         X_centered = X - X.mean(axis=0)
         assert np.allclose(X_centered @ model_raw.components_.T, X_raw)
         assert np.allclose(X_raw.var(axis=0, ddof=1), model_raw.explained_variance_)
 
-        _, model_scaled = pca_reduction(
-            X, n_components=3, scale_data=True, random_state=0
-        )
-        assert not np.allclose(
-            model_raw.explained_variance_, model_scaled.explained_variance_
-        )
+        _, model_scaled = pca_reduction(X, n_components=3, scale_data=True, random_state=0)
+        assert not np.allclose(model_raw.explained_variance_, model_scaled.explained_variance_)
 
 
 class TestIcaReduction:
@@ -103,9 +95,7 @@ class TestReduceDimensionsWrappers:
     def test_wrapper_delegates_to_pca_reduction(self) -> None:
         """reduce_dimensions_pca repackages pca_reduction, standardization included."""
         X = _correlated_features()
-        X_reduced, components, explained_var = reduce_dimensions_pca(
-            X, n_components=3, random_state=0
-        )
+        X_reduced, components, explained_var = reduce_dimensions_pca(X, n_components=3, random_state=0)
 
         X_pca, model = pca_reduction(X, n_components=3, random_state=0)
 
@@ -115,12 +105,8 @@ class TestReduceDimensionsWrappers:
 
     def test_standardize_alias_matches_scale_data(self) -> None:
         X = _correlated_features()
-        X_scaled, _, _ = reduce_dimensions_pca(
-            X, n_components=3, scale_data=False, random_state=0
-        )
-        X_aliased, _, _ = reduce_dimensions_pca(
-            X, n_components=3, standardize=False, random_state=0
-        )
+        X_scaled, _, _ = reduce_dimensions_pca(X, n_components=3, scale_data=False, random_state=0)
+        X_aliased, _, _ = reduce_dimensions_pca(X, n_components=3, standardize=False, random_state=0)
 
         assert np.allclose(X_scaled, X_aliased)
 
@@ -137,9 +123,7 @@ class TestCompareDimensionalityMethods:
     def test_compare_pca_and_ica(self) -> None:
         X = _correlated_features()
 
-        report = compare_dimensionality_methods(
-            X, methods=["pca", "ica"], n_components=2, random_state=0
-        )
+        report = compare_dimensionality_methods(X, methods=["pca", "ica"], n_components=2, random_state=0)
 
         assert report["input_shape"] == (60, 5)
         assert report["n_components"] == 2

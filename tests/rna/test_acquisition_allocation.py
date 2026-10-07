@@ -1,15 +1,18 @@
 """Real manifest, immutable-plan, staging and controller-binding controls."""
 
 from __future__ import annotations
+
 import hashlib
 import json
 from pathlib import Path
+
 import pytest
+
 from metainformant.rna.engine.acquisition_allocation import (
-    allocate_tasks,
-    write_allocation,
-    aws_allocation_ids,
     AcquisitionAllocationError,
+    allocate_tasks,
+    aws_allocation_ids,
+    write_allocation,
 )
 from metainformant.rna.engine.acquisition_manifest import (
     load_snapshot,
@@ -86,9 +89,9 @@ def test_completed_reserved_and_lane_marginals_are_disjoint(tmp_path: Path) -> N
         snapshot_sha256=sha256_file(manifest.with_name("snapshot.json")),
     )
     assert [t["task_id"] for t in selected] == ["ant_a/SRR4"]
-    assert aws_allocation_ids(
-        path, frozenset(t["task_id"] for t in tasks), "a" * 64
-    ) == frozenset({"ant_a/SRR2", "ant_a/SRR3"})
+    assert aws_allocation_ids(path, frozenset(t["task_id"] for t in tasks), "a" * 64) == frozenset(
+        {"ant_a/SRR2", "ant_a/SRR3"}
+    )
 
 
 def test_changed_assignment_cannot_overwrite_existing_plan(tmp_path: Path) -> None:
@@ -108,9 +111,7 @@ def test_foreign_and_empty_task_universes_refused(tmp_path: Path) -> None:
 
 def test_controller_refuses_cross_inventory_binding_and_overlap(tmp_path: Path) -> None:
     manifest = envelope(tmp_path)
-    path = write_allocation(
-        allocate_tasks(manifest, backend="hybrid"), tmp_path / "plan"
-    )
+    path = write_allocation(allocate_tasks(manifest, backend="hybrid"), tmp_path / "plan")
     ids = frozenset(f"ant_a/SRR{i}" for i in range(1, 5))
     with pytest.raises(AcquisitionAllocationError, match="bound"):
         aws_allocation_ids(path, ids, "b" * 64)
@@ -160,10 +161,7 @@ def test_generic_inventory_conversion_staging_and_conflict(tmp_path: Path) -> No
     manifest = create_campaign_manifest(root)
     snapshot, tasks = load_snapshot(manifest)
     assert tasks[0]["config_sha256"] == config
-    assert (
-        snapshot["inventory_sha256"]
-        == hashlib.sha256((root / "inventory.json").read_bytes()).hexdigest()
-    )
+    assert snapshot["inventory_sha256"] == hashlib.sha256((root / "inventory.json").read_bytes()).hexdigest()
     data = tmp_path / "local"
     stage_worker_inputs(manifest, data, frozenset({"ant_a"}))
     stage_worker_inputs(manifest, data, frozenset({"ant_a"}))
@@ -175,6 +173,7 @@ def test_generic_inventory_conversion_staging_and_conflict(tmp_path: Path) -> No
 
 def test_hybrid_local_requires_ack_and_cannot_substitute_aws_selection(tmp_path: Path) -> None:
     from metainformant.rna.engine.acquisition_allocation import verify_local_allocation
+
     manifest = envelope(tmp_path)
     plan = allocate_tasks(manifest, backend="hybrid")
     allocation = write_allocation(plan, tmp_path / "plan")
@@ -192,6 +191,8 @@ def test_hybrid_local_requires_ack_and_cannot_substitute_aws_selection(tmp_path:
     with pytest.raises(AcquisitionAllocationError, match="coordinated"):
         verify_local_allocation(selection, manifest, ids, frozenset(plan.aws_task_ids), "a" * 64)
     with pytest.raises(AcquisitionAllocationError, match="local allocation"):
-        verify_local_allocation(allocation.parent / "aws_partition.json", manifest, ids, frozenset(plan.aws_task_ids), "a" * 64)
+        verify_local_allocation(
+            allocation.parent / "aws_partition.json", manifest, ids, frozenset(plan.aws_task_ids), "a" * 64
+        )
     with pytest.raises(AcquisitionAllocationError, match="explicit"):
         verify_local_allocation(None, manifest, ids, ids, "a" * 64)

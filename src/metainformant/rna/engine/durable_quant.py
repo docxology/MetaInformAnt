@@ -4,36 +4,51 @@ Storage and numerical validation are separate; legacy imports remain public.
 """
 
 from __future__ import annotations
+
 import json
 import os
 import shutil
 import tempfile
 from pathlib import Path
 from typing import Any
+
+from metainformant.rna.engine.provenance import RESTORED_INPUTS_DIR
 from metainformant.rna.engine.quant_storage import (
     ACCESSION as ACCESSION,
     IDENTIFIER as IDENTIFIER,
     DirectoryStore as DirectoryStore,
-    S3Store as S3Store,
     ObjectStore as ObjectStore,
+    S3Store as S3Store,
     _digest as _digest,
     _encode as _encode,
-    safe_key as safe_key,
     receipt_key as receipt_key,
+    safe_key as safe_key,
 )
 from metainformant.rna.engine.quant_validation import (
     validate_quantification as validate_quantification,
 )
-from metainformant.rna.engine.provenance import RESTORED_INPUTS_DIR
 
 SCHEMA = "metainformant.rna.locked_quant.v1"
+
+__all__ = [
+    "ACCESSION",
+    "IDENTIFIER",
+    "DirectoryStore",
+    "ObjectStore",
+    "S3Store",
+    "SCHEMA",
+    "bound_receipt_key",
+    "lock_quantification",
+    "restore_quantification",
+    "receipt_key",
+    "safe_key",
+    "validate_quantification",
+]
 
 
 def bound_receipt_key(cohort: str, species: str, accession: str) -> str:
     """Keep verified index bindings separate from immutable recovery receipts."""
-    return receipt_key(cohort, species, accession).replace(
-        "/receipts/", "/reference-bound-receipts/"
-    )
+    return receipt_key(cohort, species, accession).replace("/receipts/", "/reference-bound-receipts/")
 
 
 def lock_quantification(
@@ -47,11 +62,9 @@ def lock_quantification(
     expected_reference_sha256: str | None = None,
     expected_reference_index_sha256: str | None = None,
 ) -> dict[str, Any]:
-    key = (
-        bound_receipt_key
-        if expected_reference_index_sha256 is not None
-        else receipt_key
-    )(cohort, species, accession)
+    key = (bound_receipt_key if expected_reference_index_sha256 is not None else receipt_key)(
+        cohort, species, accession
+    )
     provenance, paths, rows = validate_quantification(
         sample_dir,
         species,
@@ -69,11 +82,7 @@ def lock_quantification(
             raise ValueError("reference manifest checksum mismatch")
         manifest = json.loads(manifest_bytes)
         index_path = manifest.get("kallisto_index")
-        if (
-            not index_path
-            or manifest.get("species") != species
-            or manifest.get("status") != "complete"
-        ):
+        if not index_path or manifest.get("species") != species or manifest.get("status") != "complete":
             raise ValueError("reference manifest lacks a complete species index")
         index_hash = _digest(Path(index_path).read_bytes())
         if index_hash != expected_reference_index_sha256:
@@ -92,9 +101,7 @@ def lock_quantification(
         store.put(blob_key, payload)
         if _digest(store.get(blob_key)) != digest:
             raise ValueError("stored blob checksum mismatch")
-        files.append(
-            {"name": path.name, "sha256": digest, "size": len(payload), "key": blob_key}
-        )
+        files.append({"name": path.name, "sha256": digest, "size": len(payload), "key": blob_key})
     receipt = {
         "schema": SCHEMA,
         "cohort": cohort,
@@ -126,22 +133,19 @@ def restore_quantification(
     verified_config_path: Path | None = None,
 ) -> dict[str, Any]:
     """Restore all blobs to fresh staging; reject corruption before publication."""
-    key = (
-        bound_receipt_key
-        if expected_reference_index_sha256 is not None
-        else receipt_key
-    )(cohort, species, accession)
+    key = (bound_receipt_key if expected_reference_index_sha256 is not None else receipt_key)(
+        cohort, species, accession
+    )
     receipt = json.loads(store.get(key))
+    if not isinstance(receipt, dict):
+        raise ValueError("stored receipt must be a JSON object")
     if receipt.get("schema") != SCHEMA or (
         receipt.get("cohort"),
         receipt.get("species"),
         receipt.get("accession"),
     ) != (cohort, species, accession):
         raise ValueError("stored receipt identity mismatch")
-    if (
-        expected_config_sha256 is not None
-        and receipt.get("config_sha256") != expected_config_sha256
-    ):
+    if expected_config_sha256 is not None and receipt.get("config_sha256") != expected_config_sha256:
         raise ValueError("stored configuration differs from frozen inventory")
     config_bytes = None
     manifest = None
@@ -167,11 +171,7 @@ def restore_quantification(
             raise ValueError("receipt has no output files")
         for record in receipt["files"]:
             name = record["name"]
-            if (
-                not isinstance(name, str)
-                or Path(name).name != name
-                or name in ("", ".", "..")
-            ):
+            if not isinstance(name, str) or Path(name).name != name or name in ("", ".", ".."):
                 raise ValueError("unsafe stored filename")
             payload = store.get(record["key"])
             if _digest(payload) != record["sha256"] or len(payload) != record["size"]:
@@ -197,9 +197,7 @@ def restore_quantification(
                         "schema": "metainformant.rna.restored_inputs.v1",
                         "contract_id": receipt["contract_id"],
                         "config_sha256": receipt["config_sha256"],
-                        "reference_manifest_sha256": receipt[
-                            "reference_manifest_sha256"
-                        ],
+                        "reference_manifest_sha256": receipt["reference_manifest_sha256"],
                     }
                 )
             )
@@ -207,30 +205,18 @@ def restore_quantification(
             for record in receipt["files"]:
                 if (
                     not (destination / record["name"]).is_file()
-                    or _digest((destination / record["name"]).read_bytes())
-                    != record["sha256"]
+                    or _digest((destination / record["name"]).read_bytes()) != record["sha256"]
                 ):
-                    raise FileExistsError(
-                        "restore would overwrite different sample output"
-                    )
+                    raise FileExistsError("restore would overwrite different sample output")
             if config_bytes is not None:
                 target_inputs = destination / RESTORED_INPUTS_DIR
                 if target_inputs.exists():
-                    if not target_inputs.resolve().is_relative_to(
-                        destination.resolve()
-                    ):
-                        raise FileExistsError(
-                            "restored input witness escapes destination"
-                        )
+                    if not target_inputs.resolve().is_relative_to(destination.resolve()):
+                        raise FileExistsError("restored input witness escapes destination")
                     for path in restored_inputs.iterdir():
                         target = target_inputs / path.name
-                        if (
-                            not target.is_file()
-                            or target.read_bytes() != path.read_bytes()
-                        ):
-                            raise FileExistsError(
-                                "restore would overwrite different input witness"
-                            )
+                        if not target.is_file() or target.read_bytes() != path.read_bytes():
+                            raise FileExistsError("restore would overwrite different input witness")
                 else:
                     os.rename(restored_inputs, target_inputs)
         else:

@@ -23,137 +23,98 @@ class TestOrchestratorScripts:
     def test_dna_orchestrator_help(self):
         """Test DNA orchestrator shows help."""
         script = SCRIPTS_DIR / "dna" / "run_dna_analysis.py"
-        result = subprocess.run(
-            [sys.executable, str(script), "--help"], capture_output=True, text=True
-        )
+        result = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, text=True)
         assert result.returncode == 0
         assert "DNA analysis" in result.stdout or "usage:" in result.stdout.lower()
 
     def test_protein_orchestrator_help(self):
         """Test protein orchestrator shows help."""
         script = SCRIPTS_DIR / "protein" / "run_protein_analysis.py"
-        result = subprocess.run(
-            [sys.executable, str(script), "--help"], capture_output=True, text=True
-        )
+        result = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, text=True)
         assert result.returncode == 0
         assert "protein" in result.stdout.lower() or "usage:" in result.stdout.lower()
 
     def test_ontology_orchestrator_help(self):
         """Test ontology orchestrator shows help."""
         script = SCRIPTS_DIR / "ontology" / "run_ontology_analysis.py"
-        result = subprocess.run(
-            [sys.executable, str(script), "--help"], capture_output=True, text=True
-        )
+        result = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, text=True)
         assert result.returncode == 0
         assert "ontology" in result.stdout.lower() or "usage:" in result.stdout.lower()
 
     def test_phenotype_orchestrator_help(self):
         """Test phenotype orchestrator shows help."""
         script = SCRIPTS_DIR / "phenotype" / "run_phenotype_analysis.py"
-        result = subprocess.run(
-            [sys.executable, str(script), "--help"], capture_output=True, text=True
-        )
+        result = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, text=True)
         assert result.returncode == 0
         assert "phenotype" in result.stdout.lower() or "usage:" in result.stdout.lower()
 
     def test_networks_orchestrator_help(self):
         """Test networks orchestrator shows help."""
         script = SCRIPTS_DIR / "networks" / "run_network_analysis.py"
-        result = subprocess.run(
-            [sys.executable, str(script), "--help"], capture_output=True, text=True
-        )
+        result = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, text=True)
         assert result.returncode == 0
         assert "network" in result.stdout.lower() or "usage:" in result.stdout.lower()
 
     def test_multiomics_orchestrator_help(self):
         """Test multiomics orchestrator shows help."""
         script = SCRIPTS_DIR / "multiomics" / "run_multiomics_integration.py"
-        result = subprocess.run(
-            [sys.executable, str(script), "--help"], capture_output=True, text=True
-        )
+        result = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, text=True)
         assert result.returncode == 0
-        assert (
-            "multiomics" in result.stdout.lower() or "usage:" in result.stdout.lower()
-        )
+        assert "multiomics" in result.stdout.lower() or "usage:" in result.stdout.lower()
 
     def test_singlecell_orchestrator_help(self):
         """Test single-cell orchestrator shows help."""
         script = SCRIPTS_DIR / "singlecell" / "run_singlecell_analysis.py"
-        result = subprocess.run(
-            [sys.executable, str(script), "--help"], capture_output=True, text=True
-        )
+        result = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, text=True)
         assert result.returncode == 0
         assert "single" in result.stdout.lower() or "usage:" in result.stdout.lower()
 
     def test_quality_orchestrator_help(self):
         """Test quality orchestrator shows help."""
         script = SCRIPTS_DIR / "quality" / "run_quality_control.py"
-        result = subprocess.run(
-            [sys.executable, str(script), "--help"], capture_output=True, text=True
-        )
+        result = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, text=True)
         assert result.returncode == 0
         assert "quality" in result.stdout.lower() or "usage:" in result.stdout.lower()
 
     def test_simulation_orchestrator_help(self):
         """Test simulation orchestrator shows help."""
         script = SCRIPTS_DIR / "simulation" / "run_simulation.py"
-        result = subprocess.run(
-            [sys.executable, str(script), "--help"], capture_output=True, text=True
-        )
+        result = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, text=True)
         assert result.returncode == 0
-        assert (
-            "simulation" in result.stdout.lower() or "usage:" in result.stdout.lower()
-        )
+        assert "simulation" in result.stdout.lower() or "usage:" in result.stdout.lower()
 
     def test_visualization_orchestrator_help(self):
         """Test visualization orchestrator shows help."""
         script = SCRIPTS_DIR / "visualization" / "run_visualization.py"
-        result = subprocess.run(
-            [sys.executable, str(script), "--help"], capture_output=True, text=True
-        )
+        result = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, text=True)
         assert result.returncode == 0
-        assert (
-            "visualization" in result.stdout.lower()
-            or "usage:" in result.stdout.lower()
-        )
+        assert "visualization" in result.stdout.lower() or "usage:" in result.stdout.lower()
 
     def test_epigenome_orchestrator_help(self):
         """Test epigenome orchestrator shows help."""
         script = SCRIPTS_DIR / "epigenome" / "run_epigenome_analysis.py"
-        result = subprocess.run(
-            [sys.executable, str(script), "--help"], capture_output=True, text=True
-        )
+        result = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, text=True)
         assert result.returncode == 0
         assert "epigenome" in result.stdout.lower() or "usage:" in result.stdout.lower()
 
     def test_ecology_orchestrator_help(self):
         """Test ecology orchestrator shows help."""
         script = SCRIPTS_DIR / "ecology" / "run_ecology_analysis.py"
-        result = subprocess.run(
-            [sys.executable, str(script), "--help"], capture_output=True, text=True
-        )
+        result = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, text=True)
         assert result.returncode == 0
         assert "ecology" in result.stdout.lower() or "usage:" in result.stdout.lower()
 
     def test_ml_orchestrator_help(self):
         """Test ML orchestrator shows help."""
         script = SCRIPTS_DIR / "ml" / "run_ml_pipeline.py"
-        result = subprocess.run(
-            [sys.executable, str(script), "--help"], capture_output=True, text=True
-        )
+        result = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, text=True)
         assert result.returncode == 0
-        assert (
-            "machine" in result.stdout.lower()
-            or "ml" in result.stdout.lower()
-            or "usage:" in result.stdout.lower()
-        )
+        assert "machine" in result.stdout.lower() or "ml" in result.stdout.lower() or "usage:" in result.stdout.lower()
 
     def test_math_orchestrator_help(self):
         """Test math orchestrator shows help."""
         script = SCRIPTS_DIR / "math" / "run_math_modeling.py"
-        result = subprocess.run(
-            [sys.executable, str(script), "--help"], capture_output=True, text=True
-        )
+        result = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, text=True)
         assert result.returncode == 0
         assert "math" in result.stdout.lower() or "usage:" in result.stdout.lower()
 
@@ -276,7 +237,5 @@ class TestOrchestratorCLIIntegration:
         ]
         for orchestrator in orchestrators:
             script_path = SCRIPTS_DIR / orchestrator
-            assert script_path.exists(), (
-                f"Orchestrator script not found: {orchestrator}"
-            )
+            assert script_path.exists(), f"Orchestrator script not found: {orchestrator}"
             assert script_path.is_file(), f"Orchestrator is not a file: {orchestrator}"

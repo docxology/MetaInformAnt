@@ -105,31 +105,19 @@ def differential_expression(
     n_genes = len(matrix[0]) if n_cells > 0 else 0
 
     if len(groups) != n_cells:
-        raise ValueError(
-            f"groups length ({len(groups)}) must match expression matrix "
-            f"rows ({n_cells})"
-        )
+        raise ValueError(f"groups length ({len(groups)}) must match expression matrix " f"rows ({n_cells})")
     if len(gene_names) != n_genes:
-        raise ValueError(
-            f"gene_names length ({len(gene_names)}) must match expression "
-            f"matrix columns ({n_genes})"
-        )
+        raise ValueError(f"gene_names length ({len(gene_names)}) must match expression " f"matrix columns ({n_genes})")
 
     unique_groups = sorted(set(groups))
     if len(unique_groups) != 2:
-        raise ValueError(
-            f"groups must contain exactly 2 unique values, got {len(unique_groups)}: "
-            f"{unique_groups}"
-        )
+        raise ValueError(f"groups must contain exactly 2 unique values, got {len(unique_groups)}: " f"{unique_groups}")
 
     g1_val, g2_val = unique_groups
     g1_indices = [i for i, g in enumerate(groups) if g == g1_val]
     g2_indices = [i for i, g in enumerate(groups) if g == g2_val]
 
-    logger.info(
-        f"Running DE analysis ({method}): {len(g1_indices)} vs {len(g2_indices)} cells, "
-        f"{n_genes} genes"
-    )
+    logger.info(f"Running DE analysis ({method}): {len(g1_indices)} vs {len(g2_indices)} cells, " f"{n_genes} genes")
 
     results: list[dict] = []
     raw_p_values: list[float] = []
@@ -235,22 +223,16 @@ def pseudobulk_de(
     n_genes = len(matrix[0]) if n_cells > 0 else 0
 
     if len(cell_labels) != n_cells:
-        raise ValueError(
-            f"cell_labels length ({len(cell_labels)}) must match rows ({n_cells})"
-        )
+        raise ValueError(f"cell_labels length ({len(cell_labels)}) must match rows ({n_cells})")
     if len(sample_labels) != n_cells:
-        raise ValueError(
-            f"sample_labels length ({len(sample_labels)}) must match rows ({n_cells})"
-        )
+        raise ValueError(f"sample_labels length ({len(sample_labels)}) must match rows ({n_cells})")
     if len(groups) != n_cells:
         raise ValueError(f"groups length ({len(groups)}) must match rows ({n_cells})")
 
     if gene_names is None:
         gene_names = [f"gene_{i}" for i in range(n_genes)]
     elif len(gene_names) != n_genes:
-        raise ValueError(
-            f"gene_names length ({len(gene_names)}) must match columns ({n_genes})"
-        )
+        raise ValueError(f"gene_names length ({len(gene_names)}) must match columns ({n_genes})")
 
     # Group labels must be consistent within each sample: a sample whose
     # cells span more than one group has no well-defined pseudobulk
@@ -278,8 +260,7 @@ def pseudobulk_de(
         sample_indices = [i for i, s in enumerate(sample_labels) if s == sample]
         if len(sample_indices) < min_cells_per_sample:
             logger.debug(
-                f"Skipping sample '{sample}': only {len(sample_indices)} cells "
-                f"(min={min_cells_per_sample})"
+                f"Skipping sample '{sample}': only {len(sample_indices)} cells " f"(min={min_cells_per_sample})"
             )
             continue
 
@@ -298,18 +279,14 @@ def pseudobulk_de(
     # Check we have two groups
     unique_groups = sorted(set(sample_groups.values()))
     if len(unique_groups) != 2:
-        raise ValueError(
-            f"After aggregation, need exactly 2 groups, got {len(unique_groups)}: "
-            f"{unique_groups}"
-        )
+        raise ValueError(f"After aggregation, need exactly 2 groups, got {len(unique_groups)}: " f"{unique_groups}")
 
     g1_val, g2_val = unique_groups
     g1_samples = [s for s, g in sample_groups.items() if g == g1_val]
     g2_samples = [s for s, g in sample_groups.items() if g == g2_val]
 
     logger.info(
-        f"Pseudobulk aggregated: {len(g1_samples)} samples in group 1, "
-        f"{len(g2_samples)} samples in group 2"
+        f"Pseudobulk aggregated: {len(g1_samples)} samples in group 1, " f"{len(g2_samples)} samples in group 2"
     )
 
     # CPM-normalize the pseudobulk sums per sample so that library-size
@@ -337,12 +314,8 @@ def pseudobulk_de(
         # Welch's t-test on CPM-normalized sample-level aggregates
         p_value = _welch_t_test(vals_g1, vals_g2)
 
-        pct_g1 = (
-            (sum(1 for v in vals_g1 if v > 0) / len(vals_g1) * 100) if vals_g1 else 0.0
-        )
-        pct_g2 = (
-            (sum(1 for v in vals_g2 if v > 0) / len(vals_g2) * 100) if vals_g2 else 0.0
-        )
+        pct_g1 = (sum(1 for v in vals_g1 if v > 0) / len(vals_g1) * 100) if vals_g1 else 0.0
+        pct_g2 = (sum(1 for v in vals_g2 if v > 0) / len(vals_g2) * 100) if vals_g2 else 0.0
 
         results.append(
             {
@@ -452,9 +425,7 @@ def volcano_data(
     n_down = classification.count("down")
     n_ns = classification.count("ns")
 
-    logger.info(
-        f"Volcano data prepared: {n_up} up, {n_down} down, {n_ns} not significant"
-    )
+    logger.info(f"Volcano data prepared: {n_up} up, {n_down} down, {n_ns} not significant")
 
     return {
         "genes": genes,
@@ -508,15 +479,11 @@ def gene_set_scoring(
     n_genes = len(matrix[0]) if n_cells > 0 else 0
 
     if len(gene_names) != n_genes:
-        raise ValueError(
-            f"gene_names length ({len(gene_names)}) must match columns ({n_genes})"
-        )
+        raise ValueError(f"gene_names length ({len(gene_names)}) must match columns ({n_genes})")
 
     gene_to_idx = {g: i for i, g in enumerate(gene_names)}
 
-    logger.info(
-        f"Scoring {len(gene_sets)} gene sets across {n_cells} cells (method={method})"
-    )
+    logger.info(f"Scoring {len(gene_sets)} gene sets across {n_cells} cells (method={method})")
 
     rng = random.Random(seed)
     all_indices = list(range(n_genes))
@@ -543,11 +510,7 @@ def gene_set_scoring(
 
             if method == "mean":
                 gs_mean = sum(row[j] for j in gs_indices) / len(gs_indices)
-                bg_mean = (
-                    sum(row[j] for j in bg_indices) / len(bg_indices)
-                    if bg_indices
-                    else 0.0
-                )
+                bg_mean = sum(row[j] for j in bg_indices) / len(bg_indices) if bg_indices else 0.0
                 cell_scores.append(gs_mean - bg_mean)
             else:  # sum
                 gs_sum = sum(row[j] for j in gs_indices)
@@ -729,9 +692,7 @@ def _standard_normal_cdf(x: float) -> float:
         -1.453152027,
         1.061405429,
     )
-    erf = 1.0 - (a1 * t + a2 * t**2 + a3 * t**3 + a4 * t**4 + a5 * t**5) * math.exp(
-        -x * x
-    )
+    erf = 1.0 - (a1 * t + a2 * t**2 + a3 * t**3 + a4 * t**4 + a5 * t**5) * math.exp(-x * x)
 
     return 0.5 * (1.0 + sign * erf)
 

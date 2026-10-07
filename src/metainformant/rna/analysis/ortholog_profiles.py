@@ -22,14 +22,8 @@ def compute_ortholog_profile_divergence(
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Return ``1 - Spearman rho`` and overlap counts without inventing distances."""
     species = list(transcript_og.columns)
-    if (
-        len(species) < 2
-        or not transcript_og.columns.is_unique
-        or not transcript_og.index.is_unique
-    ):
-        raise ValueError(
-            "At least two unique mapped species and unique orthogroup IDs are required"
-        )
+    if len(species) < 2 or not transcript_og.columns.is_unique or not transcript_og.index.is_unique:
+        raise ValueError("At least two unique mapped species and unique orthogroup IDs are required")
     if type(min_shared_orthologs) is not int or min_shared_orthologs < 2:
         raise ValueError("min_shared_orthologs must be an integer of at least two")
     profiles: dict[str, pd.Series] = {}
@@ -39,14 +33,8 @@ def compute_ortholog_profile_divergence(
             continue
         expression = species_expression[name]
         values = expression.to_numpy(dtype=float)
-        if (
-            not expression.index.is_unique
-            or not np.isfinite(values).all()
-            or (values < 0).any()
-        ):
-            raise ValueError(
-                f"Expression profile must have unique IDs and finite nonnegative values: {name}"
-            )
+        if not expression.index.is_unique or not np.isfinite(values).all() or (values < 0).any():
+            raise ValueError(f"Expression profile must have unique IDs and finite nonnegative values: {name}")
         mapped = {}
         for group, row in transcript_og.iterrows():
             cell = row[name]

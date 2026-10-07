@@ -64,9 +64,7 @@ def network_metrics(graph: Any) -> Dict[str, Any]:
                 max_edges = n * (n - 1)
             else:
                 max_edges = n * (n - 1) // 2
-            metrics["density"] = (
-                metrics["num_edges"] / max_edges if max_edges > 0 else 0
-            )
+            metrics["density"] = metrics["num_edges"] / max_edges if max_edges > 0 else 0
 
             # Degree statistics
             degrees = [d for n, d in graph.degree()]
@@ -74,9 +72,7 @@ def network_metrics(graph: Any) -> Dict[str, Any]:
             metrics["max_degree"] = max(degrees)
             metrics["min_degree"] = min(degrees)
             try:
-                metrics["degree_assortativity"] = nx.degree_assortativity_coefficient(
-                    graph
-                )
+                metrics["degree_assortativity"] = nx.degree_assortativity_coefficient(graph)
             except Exception:
                 metrics["degree_assortativity"] = None
 
@@ -101,9 +97,7 @@ def network_metrics(graph: Any) -> Dict[str, Any]:
             if components:
                 component_sizes = [len(c) for c in components]
                 metrics["largest_component_size"] = max(component_sizes)
-                metrics["avg_component_size"] = sum(component_sizes) / len(
-                    component_sizes
-                )
+                metrics["avg_component_size"] = sum(component_sizes) / len(component_sizes)
         else:
             metrics.update(
                 {
@@ -248,9 +242,7 @@ def import_network(filepath: str | Path, format: str = "json") -> BiologicalNetw
         with open(filepath, newline="") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                graph.add_edge(
-                    row["source"], row["target"], weight=float(row.get("weight", 1.0))
-                )
+                graph.add_edge(row["source"], row["target"], weight=float(row.get("weight", 1.0)))
 
     else:
         raise ValueError(f"Unsupported import format: {format}")
@@ -263,9 +255,7 @@ def import_network(filepath: str | Path, format: str = "json") -> BiologicalNetw
     return network
 
 
-def network_similarity(
-    graph1: Any, graph2: Any, method: str = "summary"
-) -> Dict[str, float] | float:
+def network_similarity(graph1: Any, graph2: Any, method: str = "summary") -> Dict[str, float] | float:
     """Calculate similarity between two networks.
 
     Args:
@@ -566,9 +556,7 @@ def centrality_measures(graph: Any) -> Dict[str, Dict[str, float]]:
     return results
 
 
-def shortest_paths(
-    graph: Any, source: str | None = None, target: str | None = None
-) -> Dict[str, Dict[str, float]]:
+def shortest_paths(graph: Any, source: str | None = None, target: str | None = None) -> Dict[str, Dict[str, float]]:
     """Calculate shortest paths in the network.
 
     Args:

@@ -1,4 +1,5 @@
 """Immutable, disjoint local/AWS allocations for one frozen acquisition envelope."""
+
 from __future__ import annotations
 
 import hashlib
@@ -36,8 +37,14 @@ class AcquisitionAllocation:
     aws_task_ids: tuple[str, ...]
 
 
-def allocate_tasks(manifest: Path, *, backend: Backend, completed: frozenset[str] = frozenset(),
-                   reserved: frozenset[str] = frozenset(), local_fraction: float = 0.5) -> AcquisitionAllocation:
+def allocate_tasks(
+    manifest: Path,
+    *,
+    backend: Backend,
+    completed: frozenset[str] = frozenset(),
+    reserved: frozenset[str] = frozenset(),
+    local_fraction: float = 0.5,
+) -> AcquisitionAllocation:
     """Exclude receipts and active owners before assigning deterministic task IDs."""
     snapshot, tasks = load_snapshot(manifest)
     ids = frozenset(task["task_id"] for task in tasks)
@@ -53,12 +60,27 @@ def allocate_tasks(manifest: Path, *, backend: Backend, completed: frozenset[str
     # Spread local assignments throughout species/accession order rather than
     # putting every early species on one lane. This is deterministic count
     # balancing, not an assertion that sample sizes or processing times match.
-    local_ids = tuple(task for i, task in enumerate(remaining) if (i + 1) * count // len(remaining) > i * count // len(remaining)) if remaining else ()
+    local_ids = (
+        tuple(
+            task for i, task in enumerate(remaining) if (i + 1) * count // len(remaining) > i * count // len(remaining)
+        )
+        if remaining
+        else ()
+    )
     local_set = frozenset(local_ids)
     aws_ids = tuple(task for task in remaining if task not in local_set)
-    return AcquisitionAllocation("metainformant.rna.acquisition_allocation.v1", snapshot["manifest_sha256"],
-                                 sha256_file(manifest.with_name("snapshot.json")), snapshot.get("inventory_sha256"), backend, len(ids),
-                                 tuple(sorted(completed)), tuple(sorted(reserved - completed)), local_ids, aws_ids)
+    return AcquisitionAllocation(
+        "metainformant.rna.acquisition_allocation.v1",
+        snapshot["manifest_sha256"],
+        sha256_file(manifest.with_name("snapshot.json")),
+        snapshot.get("inventory_sha256"),
+        backend,
+        len(ids),
+        tuple(sorted(completed)),
+        tuple(sorted(reserved - completed)),
+        local_ids,
+        aws_ids,
+    )
 
 
 def write_allocation(allocation: AcquisitionAllocation, directory: Path) -> Path:
@@ -69,10 +91,15 @@ def write_allocation(allocation: AcquisitionAllocation, directory: Path) -> Path
     for lane, ids in (("local", allocation.local_task_ids), ("aws", allocation.aws_task_ids)):
         if not ids:
             continue
-        partition = {"schema": "metainformant.rna.acquisition_partition.v1",
-                     "manifest_sha256": allocation.manifest_sha256, "snapshot_sha256": allocation.snapshot_sha256,
-                     "task_count": len(ids), "task_ids": ids,
-                     "allocation_sha256": hashlib.sha256(payload).hexdigest(), "backend": lane}
+        partition = {
+            "schema": "metainformant.rna.acquisition_partition.v1",
+            "manifest_sha256": allocation.manifest_sha256,
+            "snapshot_sha256": allocation.snapshot_sha256,
+            "task_count": len(ids),
+            "task_ids": ids,
+            "allocation_sha256": hashlib.sha256(payload).hexdigest(),
+            "backend": lane,
+        }
         store.put(f"{lane}_partition.json", json.dumps(partition, sort_keys=True, indent=2).encode() + b"\n")
     return directory / "allocation.json"
 
@@ -102,8 +129,13 @@ def aws_allocation_ids(path: Path, inventory_ids: frozenset[str], inventory_sha2
     return groups[-1] | groups[1]
 
 
-def verify_local_allocation(selection_path: Path | None, manifest: Path, all_ids: frozenset[str],
-                            selected_ids: frozenset[str], inventory_sha256: str | None) -> None:
+def verify_local_allocation(
+    selection_path: Path | None,
+    manifest: Path,
+    all_ids: frozenset[str],
+    selected_ids: frozenset[str],
+    inventory_sha256: str | None,
+) -> None:
     """Require the AWS coordinator's allocation acknowledgment before a hybrid local lane.
 
     An unactivated proposal must not start local work while an old unrestricted

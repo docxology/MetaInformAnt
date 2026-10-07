@@ -66,10 +66,7 @@ class TestEstimateHeritability:
 
         result = estimate_heritability(K, phenotypes)
         assert result["status"] == "error"
-        assert (
-            "zero" in result["message"].lower()
-            or "variance" in result["message"].lower()
-        )
+        assert "zero" in result["message"].lower() or "variance" in result["message"].lower()
 
     def test_too_few_samples(self) -> None:
         """Fewer than 3 samples should return an error."""
@@ -109,9 +106,7 @@ class TestEstimateHeritability:
 
         result = estimate_heritability(K, phenotypes)
         assert result["status"] == "error"
-        assert (
-            "shape" in result["message"].lower() or "match" in result["message"].lower()
-        )
+        assert "shape" in result["message"].lower() or "match" in result["message"].lower()
 
     def test_return_dict_structure(self) -> None:
         """Verify complete return dictionary structure on success."""
@@ -278,6 +273,4 @@ class TestEstimateHeritabilityDelegation:
         result = estimate_heritability(np.eye(3), [1.0, 2.0, 3.0, 4.0])
 
         assert result["status"] == "error"
-        assert (
-            "shape" in result["message"].lower() or "match" in result["message"].lower()
-        )
+        assert "shape" in result["message"].lower() or "match" in result["message"].lower()

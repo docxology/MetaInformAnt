@@ -197,9 +197,7 @@ class TestJointSpaceEstimation:
             coupled[t] = x[t - 1] + 0.5 * rng.normal()
         independent = 0.5 * rng.normal(size=3000)
         te_coupled = transfer_entropy_continuous(x, coupled, lag=1, method="knn")
-        te_independent = transfer_entropy_continuous(
-            x, independent, lag=1, method="knn"
-        )
+        te_independent = transfer_entropy_continuous(x, independent, lag=1, method="knn")
         # True TE for y_{t} = x_{t-1} + N(0, 0.25) is 0.5*ln(5) ~ 0.805 nats;
         # independent series must give ~0 (clipped noise).
         assert te_coupled > 0.3

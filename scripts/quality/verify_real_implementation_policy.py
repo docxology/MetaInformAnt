@@ -104,9 +104,7 @@ def _tracked_files(repo_root: Path) -> set[str] | None:
         )
     except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
         return None
-    return {
-        p.decode("utf-8", errors="replace") for p in result.stdout.split(b"\0") if p
-    }
+    return {p.decode("utf-8", errors="replace") for p in result.stdout.split(b"\0") if p}
 
 
 def iter_policy_files(repo_root: Path = REPO_ROOT) -> Iterable[Path]:
@@ -189,30 +187,20 @@ def scan_repo(repo_root: Path = REPO_ROOT) -> list[PolicyViolation]:
     violations: list[PolicyViolation] = []
     repo_root = repo_root.resolve()
     for path in iter_policy_files(repo_root):
-        violations.extend(
-            _scan_patterns(path, OLD_POLICY_PATTERNS, "old-policy-reference", repo_root)
-        )
+        violations.extend(_scan_patterns(path, OLD_POLICY_PATTERNS, "old-policy-reference", repo_root))
         # AGENTS.md/README.md files legitimately quote the banned test-double
         # API names when documenting the policy itself (e.g. "no
         # `MagicMock`/`unittest.mock`"); only code and test files can violate
         # the API rule. The old-policy-reference rule still applies to them.
         if path.name not in {"AGENTS.md", "README.md"}:
-            violations.extend(
-                _scan_patterns(path, TEST_DOUBLE_PATTERNS, "test-double-api", repo_root)
-            )
-            violations.extend(
-                _scan_patterns(
-                    path, MONKEYPATCH_SETATTR_PATTERNS, "monkeypatch-setattr", repo_root
-                )
-            )
+            violations.extend(_scan_patterns(path, TEST_DOUBLE_PATTERNS, "test-double-api", repo_root))
+            violations.extend(_scan_patterns(path, MONKEYPATCH_SETATTR_PATTERNS, "monkeypatch-setattr", repo_root))
     return violations
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Command-line entry point."""
-    parser = argparse.ArgumentParser(
-        description="Verify real-implementation policy compliance"
-    )
+    parser = argparse.ArgumentParser(description="Verify real-implementation policy compliance")
     parser.add_argument("--repo-root", type=Path, default=REPO_ROOT)
     args = parser.parse_args(argv)
 

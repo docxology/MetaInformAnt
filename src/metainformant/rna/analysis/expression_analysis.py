@@ -11,7 +11,6 @@ All implementations are pure Python using numpy, scipy, and pandas.
 from __future__ import annotations
 
 import warnings
-
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
@@ -20,7 +19,6 @@ from scipy import stats
 from scipy.special import gammaln
 
 from metainformant.core.utils import logging
-
 from metainformant.rna.analysis.expression_core import estimate_size_factors
 from metainformant.rna.analysis.qc_metrics import _validate_numeric_matrix
 
@@ -50,14 +48,10 @@ def _empty_de_results() -> pd.DataFrame:
     return pd.DataFrame(columns=DE_RESULT_COLUMNS)
 
 
-def _align_conditions_to_counts(
-    counts_df: pd.DataFrame, conditions: Union[List[str], pd.Series]
-) -> pd.Series:
+def _align_conditions_to_counts(counts_df: pd.DataFrame, conditions: Union[List[str], pd.Series]) -> pd.Series:
     """Validate and align condition labels to count-matrix columns."""
     if len(conditions) != len(counts_df.columns):
-        raise ValueError(
-            f"Conditions length ({len(conditions)}) doesn't match samples ({len(counts_df.columns)})"
-        )
+        raise ValueError(f"Conditions length ({len(conditions)}) doesn't match samples ({len(counts_df.columns)})")
 
     if isinstance(conditions, list):
         aligned = pd.Series(conditions, index=counts_df.columns)
@@ -65,14 +59,10 @@ def _align_conditions_to_counts(
         aligned = conditions.copy()
         if aligned.index.equals(counts_df.columns):
             aligned = aligned.loc[counts_df.columns]
-        elif isinstance(aligned.index, pd.RangeIndex) and aligned.index.equals(
-            pd.RangeIndex(len(counts_df.columns))
-        ):
+        elif isinstance(aligned.index, pd.RangeIndex) and aligned.index.equals(pd.RangeIndex(len(counts_df.columns))):
             aligned.index = counts_df.columns
         else:
-            raise ValueError(
-                "Conditions Series index must match count matrix columns or use a positional RangeIndex"
-            )
+            raise ValueError("Conditions Series index must match count matrix columns or use a positional RangeIndex")
     else:
         raise TypeError("conditions must be a list or pandas Series")
 
@@ -151,17 +141,13 @@ def differential_expression(
     # Validate conditions
     unique_conditions = conditions.unique()
     if len(unique_conditions) != 2:
-        raise ValueError(
-            f"Expected exactly 2 conditions, got {len(unique_conditions)}: {unique_conditions}"
-        )
+        raise ValueError(f"Expected exactly 2 conditions, got {len(unique_conditions)}: {unique_conditions}")
 
     # Determine reference and treatment conditions
     if reference is None:
         reference = sorted(unique_conditions)[0]
     elif reference not in unique_conditions:
-        raise ValueError(
-            f"Reference condition '{reference}' is not present in conditions: {list(unique_conditions)}"
-        )
+        raise ValueError(f"Reference condition '{reference}' is not present in conditions: {list(unique_conditions)}")
 
     treatment = [c for c in unique_conditions if c != reference][0]
     logger.info(f"Comparing {treatment} vs {reference} (reference)")
@@ -179,9 +165,7 @@ def differential_expression(
     valid_genes = gene_totals >= min_count
     filtered_counts = counts_df.loc[valid_genes]
 
-    logger.info(
-        f"Analyzing {valid_genes.sum()}/{len(counts_df)} genes (min_count={min_count})"
-    )
+    logger.info(f"Analyzing {valid_genes.sum()}/{len(counts_df)} genes (min_count={min_count})")
 
     if filtered_counts.empty:
         return _empty_de_results()
@@ -194,18 +178,14 @@ def differential_expression(
     elif method == "wilcoxon":
         results = _de_wilcoxon(filtered_counts, ref_samples, treat_samples)
     else:
-        raise ValueError(
-            f"Unknown DE method: {method}. Valid methods: deseq2_like, ttest, wilcoxon"
-        )
+        raise ValueError(f"Unknown DE method: {method}. Valid methods: deseq2_like, ttest, wilcoxon")
 
     if results.empty:
         return _empty_de_results()
 
     # Adjust p-values
     pvalue_method = kwargs.get("pvalue_method", "bh")
-    results["adjusted_p_value"] = adjust_pvalues(
-        results["p_value"].values, method=pvalue_method
-    )
+    results["adjusted_p_value"] = adjust_pvalues(results["p_value"].values, method=pvalue_method)
 
     # Sort by adjusted p-value
     results = results.sort_values("adjusted_p_value")
@@ -271,9 +251,7 @@ def _de_deseq2_like(
         # with the normalized log2 fold change. The p-value comes from the
         # NB test above, never from this statistic.
         all_norm = np.concatenate([ref_norm, treat_norm])
-        dispersion = (
-            _estimate_dispersion(all_norm) if all_norm.var() > all_norm.mean() else 0.0
-        )
+        dispersion = _estimate_dispersion(all_norm) if all_norm.var() > all_norm.mean() else 0.0
 
         def _se_log2_term(sf_values: "np.ndarray", mean_norm: float) -> float:
             mean = mean_norm + 0.5  # match the log2fc pseudocount
@@ -282,11 +260,7 @@ def _de_deseq2_like(
             return float(total_variance / (n * mean) ** 2)
 
         se_log2 = float(
-            np.sqrt(
-                _se_log2_term(ref_sf, ref_norm.mean())
-                + _se_log2_term(treat_sf, treat_norm.mean())
-            )
-            / np.log(2)
+            np.sqrt(_se_log2_term(ref_sf, ref_norm.mean()) + _se_log2_term(treat_sf, treat_norm.mean())) / np.log(2)
         )
         wald_stat = float(log2fc / se_log2) if se_log2 > 0 else 0.0
 
@@ -413,9 +387,7 @@ def _de_wilcoxon(
 
         # Wilcoxon rank-sum (Mann-Whitney U) test
         try:
-            u_stat, pvalue = stats.mannwhitneyu(
-                treat_vals, ref_vals, alternative="two-sided"
-            )
+            u_stat, pvalue = stats.mannwhitneyu(treat_vals, ref_vals, alternative="two-sided")
         except ValueError:
             # All values identical
             u_stat = 0.0
@@ -470,16 +442,8 @@ def _negative_binomial_test(
     """
     counts_a = np.asarray(counts_a, dtype=float)
     counts_b = np.asarray(counts_b, dtype=float)
-    sf_a = (
-        np.ones(counts_a.size)
-        if size_factors_a is None
-        else np.asarray(size_factors_a, dtype=float)
-    )
-    sf_b = (
-        np.ones(counts_b.size)
-        if size_factors_b is None
-        else np.asarray(size_factors_b, dtype=float)
-    )
+    sf_a = np.ones(counts_a.size) if size_factors_a is None else np.asarray(size_factors_a, dtype=float)
+    sf_b = np.ones(counts_b.size) if size_factors_b is None else np.asarray(size_factors_b, dtype=float)
 
     # Offset-adjusted (normalized) values drive all fitted means
     norm_a = counts_a / sf_a
@@ -498,9 +462,7 @@ def _negative_binomial_test(
     dispersion = _estimate_dispersion(all_norm)
 
     # Log-likelihood for negative binomial with per-observation exposure
-    def nb_loglik(
-        counts: np.ndarray, sf_values: np.ndarray, mean_norm: float, dispersion: float
-    ) -> float:
+    def nb_loglik(counts: np.ndarray, sf_values: np.ndarray, mean_norm: float, dispersion: float) -> float:
         """Compute negative binomial log-likelihood for offset means."""
         if mean_norm <= 0 or dispersion <= 0:
             return float("-inf")
@@ -526,9 +488,7 @@ def _negative_binomial_test(
 
     # Alternative model: different normalized means per group, same
     # dispersion (single extra parameter => chi-square with 1 df)
-    ll_alt = nb_loglik(counts_a, sf_a, mean_a, dispersion) + nb_loglik(
-        counts_b, sf_b, mean_b, dispersion
-    )
+    ll_alt = nb_loglik(counts_a, sf_a, mean_a, dispersion) + nb_loglik(counts_b, sf_b, mean_b, dispersion)
 
     # Likelihood ratio test
     lr_stat = 2 * (ll_alt - ll_null)
@@ -643,9 +603,7 @@ def adjust_pvalues(
         result = np.clip(valid_pvals * n, 0, 1)
 
     else:
-        raise ValueError(
-            f"Unknown p-value adjustment method: {method}. Valid: bh, fdr, bonferroni"
-        )
+        raise ValueError(f"Unknown p-value adjustment method: {method}. Valid: bh, fdr, bonferroni")
 
     # Restore NaN positions
     result[nan_mask] = np.nan
@@ -862,9 +820,7 @@ def compute_sample_distances(
                 distances[j, i] = dist
 
     else:
-        raise ValueError(
-            f"Unknown distance method: {method}. Valid: euclidean, correlation, cosine"
-        )
+        raise ValueError(f"Unknown distance method: {method}. Valid: euclidean, correlation, cosine")
 
     return pd.DataFrame(distances, index=samples, columns=samples)
 

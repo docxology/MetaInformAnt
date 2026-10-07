@@ -19,6 +19,11 @@ The command family provides `freeze`, `plan`, `estimate`, `quote-aws`, `local`
 `scripts/acquisition.py`; its existing `scripts/cloud/cloud_worker.py` remains
 a compatibility adapter to the shared worker.
 
+AWS collection, pricing, durable S3 access and controller execution require
+the optional `aws` extra. Local SQLite/file status helpers and command discovery
+do not import the AWS SDK. Local quantification additionally requires the `rna`
+extra and working external tools.
+
 ## Freeze and allocate
 
 Use existing Amalgkit-selected metadata, reference indexes and progress DB as
@@ -60,7 +65,7 @@ resume; a plan proposal alone does not reserve tasks against a running controlle
 ## Local execution
 
 ```bash
-uv run python scripts/rna/acquisition.py local \
+uv run --extra aws --extra rna python scripts/rna/acquisition.py local \
   --manifest "$AMALGKIT_CAMPAIGN_ROOT/manifest.jsonl" \
   --task-selection output/acquisition/plan/local_partition.json \
   --data-root "$AMALGKIT_LOCAL_WORK_ROOT" --config-dir "$AMALGKIT_CONFIG_DIR" \
@@ -97,7 +102,7 @@ existing provenance-gated cleanup.
 ## AWS execution and limits
 
 ```bash
-uv run python scripts/rna/acquisition.py aws \
+uv run --extra aws python scripts/rna/acquisition.py aws \
   --campaign-root "$AMALGKIT_CAMPAIGN_ROOT" --repo "$METAINFORMANT_REPO" \
   --config-dir "$AMALGKIT_CONFIG_DIR" \
   --task-allocation output/acquisition/plan/allocation.json \
@@ -139,7 +144,7 @@ produce a completion claim.
 Read current prices without launching workers:
 
 ```bash
-uv run python scripts/rna/acquisition.py quote-aws \
+uv run --extra aws python scripts/rna/acquisition.py quote-aws \
   --profile dev-agent --region us-east-2 --instance-type c7i.2xlarge --disk-gib 600
 ```
 

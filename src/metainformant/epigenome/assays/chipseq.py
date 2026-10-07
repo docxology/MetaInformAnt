@@ -159,9 +159,7 @@ def load_chip_peaks(path: str | Path, format: str = "narrowpeak") -> List[ChIPPe
 
                 parts = line.split("\t")
                 if len(parts) < 6:
-                    logger.warning(
-                        f"Skipping malformed line {line_num}: insufficient columns"
-                    )
+                    logger.warning(f"Skipping malformed line {line_num}: insufficient columns")
                     continue
 
                 try:
@@ -175,25 +173,11 @@ def load_chip_peaks(path: str | Path, format: str = "narrowpeak") -> List[ChIPPe
                     if format == "narrowpeak" and len(parts) >= 10:
                         # narrowPeak format: chrom, start, end, name, score, strand, signalValue, pValue, qValue, peak
                         signal_value = float(parts[6]) if len(parts) > 6 else 0.0
-                        p_value = (
-                            float(parts[7])
-                            if len(parts) > 7 and parts[7] != "."
-                            else None
-                        )
-                        q_value = (
-                            float(parts[8])
-                            if len(parts) > 8 and parts[8] != "."
-                            else None
-                        )
-                        peak_offset = (
-                            int(parts[9])
-                            if len(parts) > 9 and parts[9] != "."
-                            else None
-                        )
+                        p_value = float(parts[7]) if len(parts) > 7 and parts[7] != "." else None
+                        q_value = float(parts[8]) if len(parts) > 8 and parts[8] != "." else None
+                        peak_offset = int(parts[9]) if len(parts) > 9 and parts[9] != "." else None
 
-                        summit = (
-                            start + peak_offset if peak_offset is not None else None
-                        )
+                        summit = start + peak_offset if peak_offset is not None else None
 
                         peak = ChIPPeak(
                             chromosome=chromosome,
@@ -210,16 +194,8 @@ def load_chip_peaks(path: str | Path, format: str = "narrowpeak") -> List[ChIPPe
                     elif format == "broadpeak" and len(parts) >= 9:
                         # broadPeak format: chrom, start, end, name, score, strand, signalValue, pValue, qValue
                         signal_value = float(parts[6]) if len(parts) > 6 else 0.0
-                        p_value = (
-                            float(parts[7])
-                            if len(parts) > 7 and parts[7] != "."
-                            else None
-                        )
-                        q_value = (
-                            float(parts[8])
-                            if len(parts) > 8 and parts[8] != "."
-                            else None
-                        )
+                        p_value = float(parts[7]) if len(parts) > 7 and parts[7] != "." else None
+                        q_value = float(parts[8]) if len(parts) > 8 and parts[8] != "." else None
 
                         peak = ChIPPeak(
                             chromosome=chromosome,
@@ -243,9 +219,7 @@ def load_chip_peaks(path: str | Path, format: str = "narrowpeak") -> List[ChIPPe
                         )
 
                     else:
-                        logger.warning(
-                            f"Unsupported format or insufficient columns in line {line_num}"
-                        )
+                        logger.warning(f"Unsupported format or insufficient columns in line {line_num}")
                         continue
 
                     peaks.append(peak)
@@ -262,9 +236,7 @@ def load_chip_peaks(path: str | Path, format: str = "narrowpeak") -> List[ChIPPe
     return peaks
 
 
-def save_chip_peaks(
-    peaks: List[ChIPPeak], path: str | Path, format: str = "narrowpeak"
-) -> None:
+def save_chip_peaks(peaks: List[ChIPPeak], path: str | Path, format: str = "narrowpeak") -> None:
     """Save ChIP-seq peaks to a file.
 
     Args:
@@ -310,9 +282,7 @@ def save_chip_peaks(
     logger.info(f"Saved {len(peaks)} peaks to {path}")
 
 
-def filter_peaks_by_score(
-    peaks: List[ChIPPeak], min_score: float, max_peaks: Optional[int] = None
-) -> List[ChIPPeak]:
+def filter_peaks_by_score(peaks: List[ChIPPeak], min_score: float, max_peaks: Optional[int] = None) -> List[ChIPPeak]:
     """Filter peaks by score and optionally limit number of peaks.
 
     Args:
@@ -373,9 +343,7 @@ def calculate_peak_statistics(peaks: List[ChIPPeak]) -> Dict[str, Any]:
             {
                 "mean_signal": statistics.mean(signal_values),
                 "median_signal": statistics.median(signal_values),
-                "signal_std": statistics.stdev(signal_values)
-                if len(signal_values) > 1
-                else 0,
+                "signal_std": statistics.stdev(signal_values) if len(signal_values) > 1 else 0,
             }
         )
 
@@ -471,9 +439,7 @@ def find_overlapping_peaks(
     return overlapping_pairs
 
 
-def merge_overlapping_peaks(
-    peaks: List[ChIPPeak], max_distance: int = 0
-) -> List[ChIPPeak]:
+def merge_overlapping_peaks(peaks: List[ChIPPeak], max_distance: int = 0) -> List[ChIPPeak]:
     """Merge overlapping or nearby peaks.
 
     Args:
@@ -514,12 +480,8 @@ def merge_overlapping_peaks(
                     score=max(current_peak.score, peak.score),  # Use higher score
                     strand=current_peak.strand,
                     signal_value=max(current_peak.signal_value, peak.signal_value),
-                    p_value=min(current_peak.p_value, peak.p_value)
-                    if current_peak.p_value and peak.p_value
-                    else None,
-                    q_value=min(current_peak.q_value, peak.q_value)
-                    if current_peak.q_value and peak.q_value
-                    else None,
+                    p_value=min(current_peak.p_value, peak.p_value) if current_peak.p_value and peak.p_value else None,
+                    q_value=min(current_peak.q_value, peak.q_value) if current_peak.q_value and peak.q_value else None,
                 )
             else:
                 # No overlap, save current peak and start new one
@@ -641,9 +603,7 @@ def _iupac_pattern_to_regex(pattern: str) -> "re.Pattern[str]":
     for char in pattern.upper():
         bases = _IUPAC_BASES.get(char)
         if bases is None:
-            raise ValueError(
-                f"Invalid IUPAC motif character {char!r} in pattern {pattern!r}"
-            )
+            raise ValueError(f"Invalid IUPAC motif character {char!r} in pattern {pattern!r}")
         parts.append(f"[{bases}]" if len(bases) > 1 else bases)
     return re.compile("".join(parts))
 
@@ -722,10 +682,7 @@ def find_motifs_in_peaks(
     logger.info(f"Scanning {len(peaks)} peaks for {len(motif_patterns)} motif patterns")
 
     regexes = {pattern: _iupac_pattern_to_regex(pattern) for pattern in motif_patterns}
-    rc_regexes = {
-        pattern: _iupac_pattern_to_regex(_reverse_complement_iupac(pattern))
-        for pattern in motif_patterns
-    }
+    rc_regexes = {pattern: _iupac_pattern_to_regex(_reverse_complement_iupac(pattern)) for pattern in motif_patterns}
 
     genome: Dict[str, str] = _read_fasta_sequences(genome_fasta) if peaks else {}
 
@@ -797,9 +754,7 @@ def find_motifs_in_peaks(
     return results
 
 
-def generate_chip_report(
-    peaks: List[ChIPPeak], output_path: Optional[str | Path] = None
-) -> str:
+def generate_chip_report(peaks: List[ChIPPeak], output_path: Optional[str | Path] = None) -> str:
     """Generate a comprehensive ChIP-seq analysis report.
 
     Args:
@@ -850,9 +805,7 @@ def generate_chip_report(
         chr_dist = stats.get("chromosome_distribution", {})
         if chr_dist:
             report_lines.append("Chromosome Distribution (Top 10):")
-            sorted_chrs = sorted(chr_dist.items(), key=lambda x: x[1], reverse=True)[
-                :10
-            ]
+            sorted_chrs = sorted(chr_dist.items(), key=lambda x: x[1], reverse=True)[:10]
             for chr_name, count in sorted_chrs:
                 report_lines.append(f"  {chr_name}: {count:,} peaks")
             report_lines.append("")

@@ -160,9 +160,7 @@ def minimizer_sketch(
         # Sequence too short for windowed minimizers, return all
         for h, pos, is_rc, kmer in kmer_hashes:
             if h < 2**64:
-                minimizers.append(
-                    Minimizer(hash_value=h, position=pos, is_reverse=is_rc, kmer=kmer)
-                )
+                minimizers.append(Minimizer(hash_value=h, position=pos, is_reverse=is_rc, kmer=kmer))
         return minimizers
 
     # Slide window and extract minimizers
@@ -309,9 +307,7 @@ def find_overlaps(
         if overlap is not None:
             overlaps.append(overlap)
 
-    logger.info(
-        "Found %d overlaps from %d candidate pairs", len(overlaps), len(pair_matches)
-    )
+    logger.info("Found %d overlaps from %d candidate pairs", len(overlaps), len(pair_matches))
     return overlaps
 
 
@@ -394,9 +390,7 @@ def _chain_minimizer_matches(
     if forward_chain is None and reverse_chain is None:
         return None
 
-    if reverse_chain is not None and (
-        forward_chain is None or len(reverse_chain) > len(forward_chain)
-    ):
+    if reverse_chain is not None and (forward_chain is None or len(reverse_chain) > len(forward_chain)):
         strand = "-"
         best_matches = reverse_chain  # (qpos, t') with t' in the rc frame
     else:
@@ -443,9 +437,7 @@ def _chain_minimizer_matches(
 
     # Check for containment
     is_contained = (
-        q_start <= max_overhang
-        and query_length - q_end <= max_overhang
-        and overlap_length >= query_length * 0.8
+        q_start <= max_overhang and query_length - q_end <= max_overhang and overlap_length >= query_length * 0.8
     )
 
     return Overlap(
@@ -499,9 +491,7 @@ def compute_overlap_graph(overlaps: Sequence[Overlap]) -> OverlapGraph:
         num_edges=len(edges),
     )
 
-    logger.info(
-        "Built overlap graph: %d nodes, %d edges", graph.num_nodes, graph.num_edges
-    )
+    logger.info("Built overlap graph: %d nodes, %d edges", graph.num_nodes, graph.num_edges)
     return graph
 
 
@@ -529,11 +519,7 @@ def filter_contained_reads(overlaps: Sequence[Overlap]) -> list[Overlap]:
         logger.info("Identified %d contained reads for removal", len(contained))
 
     # Filter out overlaps involving contained reads
-    filtered = [
-        ovl
-        for ovl in overlaps
-        if ovl.query_name not in contained and ovl.target_name not in contained
-    ]
+    filtered = [ovl for ovl in overlaps if ovl.query_name not in contained and ovl.target_name not in contained]
 
     logger.info(
         "Filtered overlaps: %d -> %d (removed %d involving contained reads)",

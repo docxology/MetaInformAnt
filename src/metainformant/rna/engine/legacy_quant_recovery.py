@@ -53,23 +53,16 @@ def recover_indexed_archives(
         head = client.head_object(Bucket=bucket, Key=key)
         if head["ContentLength"] != archive["size"]:
             raise ValueError(f"archive changed since inspection: {key}")
-        index = json.loads(
-            (review_dir / f"{instance}_archive_members.json").read_text()
-        )
+        index = json.loads((review_dir / f"{instance}_archive_members.json").read_text())
         by_accession: dict[str, list[dict[str, Any]]] = {}
         for member in index:
             if "/quant/" not in member["name"] or member["size"] <= 0:
                 continue
             _, relative = member["name"].split("/quant/", 1)
             pieces = relative.split("/")
-            if (
-                len(pieces) != 2
-                or member["offset_data"] + member["size"] > head["ContentLength"]
-            ):
+            if len(pieces) != 2 or member["offset_data"] + member["size"] > head["ContentLength"]:
                 continue
-            by_accession.setdefault(pieces[0], []).append(
-                {**member, "filename": pieces[1]}
-            )
+            by_accession.setdefault(pieces[0], []).append({**member, "filename": pieces[1]})
         for accession in archive["quant_ids"]:
             sources.setdefault(accession, []).append(
                 {"key": key, "etag": head["ETag"], "members": by_accession[accession]}
@@ -79,9 +72,7 @@ def recover_indexed_archives(
     expected_config = hashlib.sha256(config.read_bytes()).hexdigest()
 
     def recover(accession: str) -> dict[str, Any]:
-        with tempfile.TemporaryDirectory(
-            prefix=f"retry-{accession}-", dir=output_dir
-        ) as temporary:
+        with tempfile.TemporaryDirectory(prefix=f"retry-{accession}-", dir=output_dir) as temporary:
             sample = Path(temporary) / accession
             try:
                 receipt = restore_quantification(
@@ -114,9 +105,7 @@ def recover_indexed_archives(
         errors = []
         for source in sources[accession]:
             try:
-                with tempfile.TemporaryDirectory(
-                    prefix=f"{accession}-", dir=output_dir
-                ) as temporary:
+                with tempfile.TemporaryDirectory(prefix=f"{accession}-", dir=output_dir) as temporary:
                     sample = Path(temporary)
                     for member in source["members"]:
                         if member["size"] > 128 * 1024**2:
@@ -175,26 +164,15 @@ def recover_indexed_archives(
         if accession in sources
         and r["status"] == "locked"
         and (
-            output_dir
-            / "locked"
-            / cohort
-            / "reference-bound-receipts"
-            / "nasonia_vitripennis"
-            / f"{accession}.json"
+            output_dir / "locked" / cohort / "reference-bound-receipts" / "nasonia_vitripennis" / f"{accession}.json"
         ).is_file()
     ]
-    remaining = [
-        accession
-        for accession in sorted(sources)
-        if accession not in {r["accession"] for r in results}
-    ]
+    remaining = [accession for accession in sorted(sources) if accession not in {r["accession"] for r in results}]
     with (
         concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor,
         journal.open("a") as handle,
     ):
-        futures = {
-            executor.submit(recover, accession): accession for accession in remaining
-        }
+        futures = {executor.submit(recover, accession): accession for accession in remaining}
         for future in concurrent.futures.as_completed(futures):
             result = future.result()
             results.append(result)
@@ -203,7 +181,8 @@ def recover_indexed_archives(
             os.fsync(handle.fileno())
             if len(results) % 25 == 0:
                 print(
-                    f"Recovered {len(results)}/{len(sources)} candidates; locked={sum(r['status'] == 'locked' for r in results)}",
+                    f"Recovered {len(results)}/{len(sources)} candidates; "
+                    f"locked={sum(r['status'] == 'locked' for r in results)}",
                     flush=True,
                 )
     summary = {

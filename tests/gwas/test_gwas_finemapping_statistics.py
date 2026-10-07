@@ -21,7 +21,6 @@ from metainformant.gwas.finemapping.credible_sets import (
     susie_regression,
 )
 
-
 # ---------------------------------------------------------------------------
 # Bayes factors and PIP normalization
 # ---------------------------------------------------------------------------
@@ -275,9 +274,7 @@ class TestColocalizationPosteriorAudits:
         """Empty, mismatched, or prior-invalid inputs return error status."""
         assert colocalization([], [1.0])["status"] == "error"
         assert colocalization([1.0, 2.0], [1.0])["status"] == "error"
-        assert (
-            colocalization([1.0, 2.0], [1.0, 2.0], prior_p12=0.0)["status"] == "error"
-        )
+        assert colocalization([1.0, 2.0], [1.0, 2.0], prior_p12=0.0)["status"] == "error"
 
 
 # ---------------------------------------------------------------------------
@@ -300,9 +297,7 @@ class TestAnnotateCredibleSet:
     def test_annotated_enrichment_pinned(self) -> None:
         """With annotations, PIP mass concentrates in the tagged category."""
         cs = compute_credible_set([15.0, 1.0, 1.0, 1.0])
-        result = annotate_credible_set(
-            cs, annotations={"coding": [0], "intronic": [1, 2, 3]}
-        )
+        result = annotate_credible_set(cs, annotations={"coding": [0], "intronic": [1, 2, 3]})
 
         assert result["status"] == "success"
         assert result["n_annotated"] == 1

@@ -1,10 +1,11 @@
 """Conservative worker resource prices and elapsed-runtime accounting."""
 
 from __future__ import annotations
-from dataclasses import dataclass
+
 import json
 import math
-from typing import Final, Sequence, TypedDict, NotRequired
+from dataclasses import dataclass
+from typing import Final, NotRequired, Sequence, TypedDict
 
 MIN_MONTH_HOURS: Final = 28 * 24
 PUBLIC_IPV4_HOURLY: Final = 0.005
@@ -60,10 +61,7 @@ class WorkerPrices:
             raise WorkerPricingError("disk_gib", "must be a positive integer")
         return max(
             self.hourly_floor,
-            self.compute_hourly
-            + self.gp3_gib_month * disk_gib / MIN_MONTH_HOURS
-            + PUBLIC_IPV4_HOURLY
-            + HOURLY_MARGIN,
+            self.compute_hourly + self.gp3_gib_month * disk_gib / MIN_MONTH_HOURS + PUBLIC_IPV4_HOURLY + HOURLY_MARGIN,
         )
 
 

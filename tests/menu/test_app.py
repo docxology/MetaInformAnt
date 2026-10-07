@@ -26,9 +26,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 CHILD_ENV = {**os.environ, "PYTHONPATH": str(REPO_ROOT / "src")}
 
 
-def _menu_system(
-    root_items: list[MenuItem], extra_menus: dict[str, Menu] | None = None
-) -> MenuSystem:
+def _menu_system(root_items: list[MenuItem], extra_menus: dict[str, Menu] | None = None) -> MenuSystem:
     """Build a MenuSystem rooted at 'root'."""
     menus: dict[str, Menu] = {"root": Menu(id="root", title="Root", items=root_items)}
     menus.update(extra_menus or {})
@@ -67,9 +65,7 @@ class TestScriptAction:
     def test_runs_python_script_with_side_effect(self, tmp_path: Path) -> None:
         marker = tmp_path / "marker.txt"
         script = tmp_path / "ok.py"
-        script.write_text(
-            f"from pathlib import Path\nPath({str(marker)!r}).write_text('ran')\n"
-        )
+        script.write_text(f"from pathlib import Path\nPath({str(marker)!r}).write_text('ran')\n")
         item = MenuItem(id="run", label="Run script", action=f"script:{script}")
         system = _menu_system([item])
         app = MenuApp(menu_system=system, clear_display=False)
@@ -86,12 +82,8 @@ class TestScriptAction:
 
         assert app.handle_action(item) == 3
 
-    def test_missing_script_returns_error_code(
-        self, tmp_path: Path, capsys: Callable
-    ) -> None:
-        item = MenuItem(
-            id="run", label="Run", action=f"script:{tmp_path / 'missing.py'}"
-        )
+    def test_missing_script_returns_error_code(self, tmp_path: Path, capsys: Callable) -> None:
+        item = MenuItem(id="run", label="Run", action=f"script:{tmp_path / 'missing.py'}")
         system = _menu_system([item])
         app = MenuApp(menu_system=system, clear_display=False)
 
@@ -102,9 +94,7 @@ class TestScriptAction:
 class TestCallableAction:
     """Callable actions are invoked and keep the loop alive on errors."""
 
-    def test_invokes_callable_and_prints_result(
-        self, tmp_path: Path, capsys: Callable
-    ) -> None:
+    def test_invokes_callable_and_prints_result(self, tmp_path: Path, capsys: Callable) -> None:
         marker = tmp_path / "called.txt"
 
         def action() -> str:
@@ -178,15 +168,11 @@ LOOP_DRIVER = """
 class TestInteractiveLoop:
     """End-to-end loop driven through a real child process with piped stdin."""
 
-    def test_loop_dispatches_all_action_kinds_with_back_and_exit(
-        self, tmp_path: Path
-    ) -> None:
+    def test_loop_dispatches_all_action_kinds_with_back_and_exit(self, tmp_path: Path) -> None:
         script_marker = tmp_path / "script_marker.txt"
         callable_marker = tmp_path / "callable_marker.txt"
         script = tmp_path / "ok.py"
-        script.write_text(
-            f"from pathlib import Path\nPath({str(script_marker)!r}).write_text('ran')\n"
-        )
+        script.write_text(f"from pathlib import Path\nPath({str(script_marker)!r}).write_text('ran')\n")
         driver = _write_driver(tmp_path, LOOP_DRIVER.format(script=str(script)))
 
         result = subprocess.run(

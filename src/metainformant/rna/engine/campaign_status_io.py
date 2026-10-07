@@ -1,4 +1,5 @@
 """Read-only SQLite/filesystem probes and AWS telemetry for campaign status."""
+
 from __future__ import annotations
 
 import base64
@@ -14,11 +15,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final
 
-import boto3
-from botocore.config import Config
-
-from metainformant.rna.engine.campaign_status import Inventory, Observation, StatusError
 from metainformant.rna.core.sample_utils import quantification_file_candidates
+from metainformant.rna.engine.campaign_status import Inventory, Observation, StatusError
 from metainformant.rna.engine.provenance import QUANT_PROVENANCE_FILENAME
 
 REQUIRED_FILES: Final = ("abundance.tsv", "abundance.h5", "run_info.json", QUANT_PROVENANCE_FILENAME)
@@ -62,7 +60,11 @@ def parse_probe(output: str) -> WorkerProbe:
         raise StatusError("Missing worker sample observations")
     rows = []
     for row in value["rows"]:
-        if not isinstance(row, dict) or not isinstance(row.get("task_id"), str) or not isinstance(row.get("state"), str):
+        if (
+            not isinstance(row, dict)
+            or not isinstance(row.get("task_id"), str)
+            or not isinstance(row.get("state"), str)
+        ):
             raise StatusError("Malformed worker sample observation")
         rows.append(WorkerRow(row["task_id"], row["state"]))
     return WorkerProbe(value["observed_at"], tuple(value["databases"]), tuple(rows))
@@ -90,8 +92,8 @@ def file_coverage(inventory: Inventory, root: Path) -> tuple[frozenset[str], fro
     """Observe expected file presence only; do not claim numerical/hash validation."""
     if not root.is_dir():
         raise StatusError(f"Local root is unavailable: {root}")
-    complete = set()
-    partial = set()
+    complete: set[str] = set()
+    partial: set[str] = set()
     for species in inventory.species:
         quant = root / species.species / "work" / "quant"
         if not quant.is_dir():
@@ -109,8 +111,14 @@ def file_coverage(inventory: Inventory, root: Path) -> tuple[frozenset[str], fro
             h5s = {"abundance.h5", f"{task.accession}_abundance.h5"}
             expected = tables | infos | h5s | {QUANT_PROVENANCE_FILENAME}
             with os.scandir(sample) as entries:
-                nonempty = {entry.name for entry in entries if entry.name in expected and entry.is_file() and entry.stat().st_size > 0}
-            covered = bool(tables & nonempty and infos & nonempty and h5s & nonempty and QUANT_PROVENANCE_FILENAME in nonempty)
+                nonempty = {
+                    entry.name
+                    for entry in entries
+                    if entry.name in expected and entry.is_file() and entry.stat().st_size > 0
+                }
+            covered = bool(
+                tables & nonempty and infos & nonempty and h5s & nonempty and QUANT_PROVENANCE_FILENAME in nonempty
+            )
             (complete if covered else partial).add(task.task_id)
     return frozenset(complete), frozenset(partial)
 
@@ -118,7 +126,7 @@ def file_coverage(inventory: Inventory, root: Path) -> tuple[frozenset[str], fro
 def probe_script(task_ids: frozenset[str], root: str = "/mnt/amalgkit") -> str:
     """Build a static read-only worker query; supplied identifiers are encoded data."""
     encoded = base64.b64encode(json.dumps(sorted(task_ids)).encode()).decode()
-    template = '''import base64,json,sqlite3
+    template = """import base64,json,sqlite3
 from pathlib import Path
 from contextlib import closing
 from datetime import datetime,timezone
@@ -131,15 +139,25 @@ for path in databases:
             key=species+"/"+accession
             if key in wanted:
                 rows.append(dict(task_id=key,state=state))
-print(json.dumps(dict(observed_at=datetime.now(timezone.utc).isoformat(),databases=[str(p) for p in databases],rows=rows)))
-'''
+print(json.dumps(dict(observed_at=datetime.now(timezone.utc).isoformat(),
+                      databases=[str(p) for p in databases],rows=rows)))
+"""
     return template.replace("@@TASK_IDS@@", repr(encoded)).replace("@@ROOT@@", repr(root))
 
 
-def collect_cloud(campaign_root: Path, bucket: str, profile: str, region: str, *, probe_workers: bool = True) -> CloudSnapshot:
+def collect_cloud(
+    campaign_root: Path, bucket: str, profile: str, region: str, *, probe_workers: bool = True
+) -> CloudSnapshot:
     """List durable receipts and read current worker DBs with bounded SSM commands."""
+    import boto3
+    from botocore.config import Config
+
     raw = json.loads((campaign_root / "aws_controller.json").read_text())
-    controller = Controller(raw["cohort"], raw["observed_at"], tuple(Job(j["job_id"], j.get("instance_id"), j["status"]) for j in raw["jobs"]))
+    controller = Controller(
+        raw["cohort"],
+        raw["observed_at"],
+        tuple(Job(j["job_id"], j.get("instance_id"), j["status"]) for j in raw["jobs"]),
+    )
     if not controller.cohort or "/" in controller.cohort:
         raise StatusError("Unsafe cohort identifier")
     session = boto3.Session(profile_name=profile, region_name=region)
@@ -147,15 +165,23 @@ def collect_cloud(campaign_root: Path, bucket: str, profile: str, region: str, *
     ec2 = session.client("ec2", config=config)
     s3 = session.client("s3", config=config)
     ssm = session.client("ssm", config=config)
-    instances = tuple(i["InstanceId"] for page in ec2.get_paginator("describe_instances").paginate(
-        Filters=[{"Name": "tag:cohort", "Values": [controller.cohort]}, {"Name": "instance-state-name", "Values": ["running"]}])
-        for reservation in page["Reservations"] for i in reservation["Instances"])
+    instances = tuple(
+        i["InstanceId"]
+        for page in ec2.get_paginator("describe_instances").paginate(
+            Filters=[
+                {"Name": "tag:cohort", "Values": [controller.cohort]},
+                {"Name": "instance-state-name", "Values": ["running"]},
+            ]
+        )
+        for reservation in page["Reservations"]
+        for i in reservation["Instances"]
+    )
     known = {j.instance_id for j in controller.jobs}
     if set(instances) - known:
         raise StatusError("Running cohort instances have no controller job binding")
     assignments: dict[str, frozenset[str]] = {}
     for job in controller.jobs:
-        if job.instance_id in instances:
+        if job.instance_id is not None and job.instance_id in instances:
             manifest = campaign_root / "jobs" / job.job_id / "manifest.jsonl"
             if manifest.parent.parent.resolve() != (campaign_root / "jobs").resolve():
                 raise StatusError("Unsafe job manifest path")
@@ -170,7 +196,9 @@ def collect_cloud(campaign_root: Path, bucket: str, profile: str, region: str, *
     age = (datetime.now(UTC) - datetime.fromisoformat(controller.observed_at)).total_seconds()
     diagnostics.append(f"Controller ledger observed_at={controller.observed_at}; age_seconds={age:.0f}")
     if age > 180:
-        diagnostics.append("Controller ledger is stale; live instance/worker observations do not prove an active controller")
+        diagnostics.append(
+            "Controller ledger is stale; live instance/worker observations do not prove an active controller"
+        )
     probes: dict[str, str] = {}
 
     def inspect(instance: str) -> tuple[str, str]:
@@ -178,14 +206,20 @@ def collect_cloud(campaign_root: Path, bucket: str, profile: str, region: str, *
             return instance, ""
         command = "python3 -c " + shlex.quote(probe_script(assignments[instance]))
         try:
-            response = ssm.send_command(InstanceIds=[instance], DocumentName="AWS-RunShellScript",
-                                        Parameters={"commands": [command], "executionTimeout": ["60"]}, TimeoutSeconds=60)
+            response = ssm.send_command(
+                InstanceIds=[instance],
+                DocumentName="AWS-RunShellScript",
+                Parameters={"commands": [command], "executionTimeout": ["60"]},
+                TimeoutSeconds=60,
+            )
         except ssm.exceptions.InvalidInstanceId as exc:
             return instance, f"ERROR worker unavailable for SSM: {exc}"
         command_id = response["Command"]["CommandId"]
         deadline = time.monotonic() + 100
         while time.monotonic() < deadline:
-            invocations = ssm.list_command_invocations(CommandId=command_id, InstanceId=instance, Details=True)["CommandInvocations"]
+            invocations = ssm.list_command_invocations(CommandId=command_id, InstanceId=instance, Details=True)[
+                "CommandInvocations"
+            ]
             if invocations:
                 invocation = invocations[0]
                 status = invocation["Status"]
@@ -197,7 +231,7 @@ def collect_cloud(campaign_root: Path, bucket: str, profile: str, region: str, *
             time.sleep(1)
         return instance, f"ERROR SSM command {command_id}: observation timed out"
 
-    records = []
+    records: list[Observation] = []
     with ThreadPoolExecutor(max_workers=6) as executor:
         for instance, output in executor.map(inspect, instances):
             probes[instance] = output
@@ -217,4 +251,12 @@ def collect_cloud(campaign_root: Path, bucket: str, profile: str, region: str, *
             if relative.count("/") != 1 or not relative.endswith(".json"):
                 raise StatusError(f"Unexpected receipt key: {relative}")
             locked.add(relative[:-5])
-    return CloudSnapshot(frozenset(locked), frozenset(assigned_list), tuple(records), tuple(diagnostics), probes, instances, datetime.now(UTC).isoformat())
+    return CloudSnapshot(
+        frozenset(locked),
+        frozenset(assigned_list),
+        tuple(records),
+        tuple(diagnostics),
+        probes,
+        instances,
+        datetime.now(UTC).isoformat(),
+    )

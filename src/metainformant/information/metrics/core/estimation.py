@@ -63,9 +63,7 @@ def entropy_estimator(
         raise ValueError(f"Unknown entropy estimation method: {method}")
 
 
-def _plugin_entropy_estimator(
-    counts: np.ndarray, total: int, bias_correction: bool
-) -> float:
+def _plugin_entropy_estimator(counts: np.ndarray, total: int, bias_correction: bool) -> float:
     """Plugin (maximum-likelihood) entropy estimator, in bits."""
     # Convert to probabilities
     probs = counts / total
@@ -233,15 +231,9 @@ def mutual_information_estimator(
 
     if method in ("plugin", "miller_madow"):
         # Raw (uncorrected) plugin entropies in bits...
-        h_x = _plugin_entropy_estimator(
-            np.array(list(x_counts.values()), dtype=int), n, False
-        )
-        h_y = _plugin_entropy_estimator(
-            np.array(list(y_counts.values()), dtype=int), n, False
-        )
-        h_xy = _plugin_entropy_estimator(
-            np.array(list(joint_counts.values()), dtype=int), n, False
-        )
+        h_x = _plugin_entropy_estimator(np.array(list(x_counts.values()), dtype=int), n, False)
+        h_y = _plugin_entropy_estimator(np.array(list(y_counts.values()), dtype=int), n, False)
+        h_xy = _plugin_entropy_estimator(np.array(list(joint_counts.values()), dtype=int), n, False)
 
         mi = h_x + h_y - h_xy
 
@@ -254,23 +246,15 @@ def mutual_information_estimator(
     else:
         # Other estimators (e.g. chao_shen, jackknife) correct each entropy
         # term internally.
-        h_x = entropy_estimator(
-            x_counts, method=method, bias_correction=bias_correction
-        )
-        h_y = entropy_estimator(
-            y_counts, method=method, bias_correction=bias_correction
-        )
-        h_xy = entropy_estimator(
-            joint_counts, method=method, bias_correction=bias_correction
-        )
+        h_x = entropy_estimator(x_counts, method=method, bias_correction=bias_correction)
+        h_y = entropy_estimator(y_counts, method=method, bias_correction=bias_correction)
+        h_xy = entropy_estimator(joint_counts, method=method, bias_correction=bias_correction)
         mi = h_x + h_y - h_xy
 
     return max(0.0, mi)
 
 
-def kl_divergence_estimator(
-    p: List[Any], q: List[Any], method: str = "plugin", bias_correction: bool = True
-) -> float:
+def kl_divergence_estimator(p: List[Any], q: List[Any], method: str = "plugin", bias_correction: bool = True) -> float:
     """Estimate KL divergence D_KL(P||Q) with bias correction, in bits.
 
     Args:
@@ -409,9 +393,7 @@ def entropy_bootstrap_confidence(
         bootstrap_counts = Counter(bootstrap_sample)
 
         # Estimate entropy
-        entropy_est = entropy_estimator(
-            bootstrap_counts, method=method, bias_correction=True
-        )
+        entropy_est = entropy_estimator(bootstrap_counts, method=method, bias_correction=True)
         bootstrap_entropies.append(entropy_est)
 
     bootstrap_entropies_arr = np.array(bootstrap_entropies)
@@ -438,9 +420,7 @@ def entropy_bootstrap_confidence(
     }
 
 
-def effective_sample_size_correction(
-    entropy: float, sample_size: int, alphabet_size: int
-) -> float:
+def effective_sample_size_correction(entropy: float, sample_size: int, alphabet_size: int) -> float:
     """Backward-compatible alias of :func:`bias_correction`.
 
     Applies the identical additive Miller-Madow first-order correction
@@ -489,12 +469,8 @@ def _panzeri_treves_support(probabilities: np.ndarray, sample_size: int) -> floa
     while (delta < delta_prev) and (r_naive + extra) < probabilities.size:
         extra += 1.0
         # Occupied responses: quasi-Bayes (add-one) probabilities.
-        gamma = extra * (
-            1.0 - (sample_size / (sample_size + r_naive)) ** (1.0 / sample_size)
-        )
-        p_bayes = ((1.0 - gamma) / (sample_size + r_naive)) * (
-            non_zero * sample_size + 1.0
-        )
+        gamma = extra * (1.0 - (sample_size / (sample_size + r_naive)) ** (1.0 / sample_size))
+        p_bayes = ((1.0 - gamma) / (sample_size + r_naive)) * (non_zero * sample_size + 1.0)
         r_expected = float((1.0 - (1.0 - p_bayes) ** sample_size).sum())
         # The extra, so-far-unobserved quasi-responses.
         p_bayes = gamma / extra
@@ -568,9 +544,7 @@ def panzeri_treves_bias_correction(
             raise ValueError("response_frequencies cannot exceed the alphabet size")
         if np.any(freq_array < 0):
             raise ValueError("Response counts cannot be negative")
-        if not math.isclose(
-            float(freq_array.sum()), float(sample_size), rel_tol=1e-9, abs_tol=1e-9
-        ):
+        if not math.isclose(float(freq_array.sum()), float(sample_size), rel_tol=1e-9, abs_tol=1e-9):
             raise ValueError("Response counts must sum to the sample size")
 
     probabilities = np.zeros(alphabet_size, dtype=float)
@@ -582,9 +556,7 @@ def panzeri_treves_bias_correction(
     return max(0.0, entropy + correction)
 
 
-def entropy_rate_estimator(
-    sequence: List[Any], order: int = 1, method: str = "plugin"
-) -> float:
+def entropy_rate_estimator(sequence: List[Any], order: int = 1, method: str = "plugin") -> float:
     """Estimate entropy rate of a sequence.
 
     The entropy rate is the limit of n-block entropy divided by n as n→∞.

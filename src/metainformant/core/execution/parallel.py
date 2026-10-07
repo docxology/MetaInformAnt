@@ -138,8 +138,7 @@ def thread_map(
             # Deadline exceeded: drop queued work instead of blocking on it.
             pool.shutdown(wait=False, cancel_futures=True)
             raise TimeoutError(
-                f"thread_map timed out after {timeout}s: "
-                f"{finished} of {len(items)} task(s) finished"
+                f"thread_map timed out after {timeout}s: " f"{finished} of {len(items)} task(s) finished"
             ) from None
         pool.shutdown(wait=True)
     except BaseException:

@@ -51,9 +51,7 @@ class TestReverseComplementOverlaps:
         assert ov.target_end - ov.target_start == ov.query_end - ov.query_start
         assert ov.overlap_length >= 150
         assert 300 <= ov.query_start <= ov.query_end < 500  # inside A's core suffix
-        assert (
-            300 <= ov.target_start <= ov.target_end <= 500
-        )  # inside B's rc(core) suffix
+        assert 300 <= ov.target_start <= ov.target_end <= 500  # inside B's rc(core) suffix
         assert not ov.is_contained
 
     def test_fully_reverse_complemented_read_pair(self):

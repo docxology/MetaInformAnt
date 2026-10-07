@@ -20,33 +20,25 @@ class TestLinkageDisequilibriumSign:
         # Haplotypes (A,C) x2 and (G,T) x2: the reference alleles (majority,
         # ties broken alphabetically -> A and C) co-occur in half the
         # haplotypes. p_A = p_B = 0.5, f_AB = 0.5 -> D = 0.5 - 0.25 = +0.25.
-        assert core.linkage_disequilibrium(
-            ["AC", "AC", "GT", "GT"], 0, 1
-        ) == pytest.approx(0.25)
+        assert core.linkage_disequilibrium(["AC", "AC", "GT", "GT"], 0, 1) == pytest.approx(0.25)
 
     def test_strong_coupling_is_positive(self):
         # Haplotypes (A,T) x3 and (G,C) x1: reference alleles A and T
         # (3/4 each) co-occur in 3/4 of haplotypes.
         # D = 0.75 - 0.75*0.75 = +0.1875.
-        assert core.linkage_disequilibrium(
-            ["AT", "AT", "AT", "GC"], 0, 1
-        ) == pytest.approx(0.1875)
+        assert core.linkage_disequilibrium(["AT", "AT", "AT", "GC"], 0, 1) == pytest.approx(0.1875)
 
     def test_equal_frequency_repulsion_is_negative(self):
         # Haplotypes (A,T) x2 and (G,C) x2: reference alleles A and C never
         # co-occur -> D = 0 - 0.25 = -0.25. The previous implementation
         # picked reference alleles via set iteration order and could return
         # +0.25 for the same input.
-        assert core.linkage_disequilibrium(
-            ["AT", "AT", "GC", "GC"], 0, 1
-        ) == pytest.approx(-0.25)
+        assert core.linkage_disequilibrium(["AT", "AT", "GC", "GC"], 0, 1) == pytest.approx(-0.25)
 
     def test_moderate_repulsion_is_negative(self):
         # Haplotypes (A,C) x1, (A,T) x2, (G,T) x1: reference alleles A (3/4)
         # and T (3/4); f_(A,T) = 2/4 -> D = 0.5 - 0.75*0.75 = -0.0625.
-        assert core.linkage_disequilibrium(
-            ["AC", "AT", "AT", "GT"], 0, 1
-        ) == pytest.approx(-0.0625)
+        assert core.linkage_disequilibrium(["AC", "AT", "AT", "GT"], 0, 1) == pytest.approx(-0.0625)
 
     def test_tie_break_is_independent_of_input_order(self):
         # Equal frequencies at both sites: the alphabetically-first allele

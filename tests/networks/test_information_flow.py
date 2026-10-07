@@ -27,9 +27,7 @@ def _driven_ar1(
     """AR(1) target driven one step behind by the source series."""
     target = [0.0]
     for t in range(1, len(source)):
-        target.append(
-            phi * target[t - 1] + gain * source[t - 1] + rng.gauss(0.0, noise)
-        )
+        target.append(phi * target[t - 1] + gain * source[t - 1] + rng.gauss(0.0, noise))
     return target
 
 
@@ -81,9 +79,7 @@ class TestGrangerCausality:
 
     def test_invalid_max_lag_raises(self) -> None:
         with pytest.raises(ValueError, match="at least 1"):
-            information_flow.granger_causality(
-                [0.0, 0.1, 0.2, 0.3], [0.0, 0.1, 0.2, 0.3], max_lag=0
-            )
+            information_flow.granger_causality([0.0, 0.1, 0.2, 0.3], [0.0, 0.1, 0.2, 0.3], max_lag=0)
 
     def test_length_mismatch_raises(self) -> None:
         with pytest.raises(ValueError, match="same length"):

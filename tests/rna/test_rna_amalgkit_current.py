@@ -263,8 +263,9 @@ def test_version_parser_accepts_installed_output() -> None:
     assert amalgkit.AMALGKIT_SOURCE_REVISION == "c656a52aacdcee6fd3bf7e8031769ca957204ebc"
 
 
+@pytest.mark.external_tool
 def test_project_selection_rules_use_current_parser() -> None:
-    from amalgkit.select import read_select_config
+    read_select_config = pytest.importorskip("amalgkit.select").read_select_config
 
     rules_path = Path(__file__).parents[2] / "config" / "amalgkit" / "select_rules.tsv"
     parsed = read_select_config(str(rules_path))

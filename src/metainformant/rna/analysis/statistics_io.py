@@ -1,8 +1,10 @@
 """Strict JSON deserialization for predeclared RNA analysis contracts."""
 
 from __future__ import annotations
+
 import json
 from pathlib import Path
+
 from metainformant.rna.analysis.statistics_contract import (
     AnalysisProvenance,
     PredeclaredDesign,
@@ -43,13 +45,9 @@ def read_analysis_provenance(path: Path) -> AnalysisProvenance:
     entries: list[SensitivityAnalysis] = []
     for entry in entries_payload:
         if not isinstance(entry, dict):
-            raise ValueError(
-                f"contract file {path} declares a non-object sensitivity entry: {entry!r}"
-            )
+            raise ValueError(f"contract file {path} declares a non-object sensitivity entry: {entry!r}")
         try:
-            entry_record = SensitivityAnalysis(
-                **{**entry, "varied_values": tuple(entry.get("varied_values", ()))}
-            )
+            entry_record = SensitivityAnalysis(**{**entry, "varied_values": tuple(entry.get("varied_values", ()))})
         except TypeError as exc:
             raise ValueError(
                 f"contract file {path} declares a sensitivity entry that does not "
@@ -67,8 +65,7 @@ def read_analysis_provenance(path: Path) -> AnalysisProvenance:
         unknown_design_fields = sorted(set(design_payload) - {"covariate_strata"})
         if unknown_design_fields:
             raise ValueError(
-                f"contract file {path} declares unknown design_declaration fields: "
-                f"{unknown_design_fields}"
+                f"contract file {path} declares unknown design_declaration fields: " f"{unknown_design_fields}"
             )
         strata_payload = design_payload.get("covariate_strata")
         if not isinstance(strata_payload, dict) or not strata_payload:
@@ -89,13 +86,9 @@ def read_analysis_provenance(path: Path) -> AnalysisProvenance:
                     f"covariate {covariate!r}: {levels!r}"
                 )
             covariate_strata[str(covariate)] = tuple(levels)
-        kwargs["design_declaration"] = PredeclaredDesign(
-            covariate_strata=covariate_strata
-        )
+        kwargs["design_declaration"] = PredeclaredDesign(covariate_strata=covariate_strata)
     try:
         contract = AnalysisProvenance(**kwargs)
     except TypeError as exc:
-        raise ValueError(
-            f"contract file {path} does not match the AnalysisProvenance record: {exc}"
-        ) from exc
+        raise ValueError(f"contract file {path} does not match the AnalysisProvenance record: {exc}") from exc
     return contract

@@ -1,4 +1,5 @@
 """Transparent cost and elapsed-time models for configurable acquisition lanes."""
+
 from __future__ import annotations
 
 import math
@@ -94,13 +95,24 @@ def estimate_lane(samples: int, units: int, evidence: ThroughputEvidence, costs:
     hours_high = costs.setup_hours + tasks / low if samples else 0.0
     hourly = units * costs.hourly_usd_per_unit
     fixed = costs.fixed_usd if samples else 0.0
-    return LaneEstimate(samples, units, low, high, hours_low, hours_high,
-                        fixed + hourly * hours_low, fixed + hourly * hours_high,
-                        units != evidence.observed_units, evidence.source,
-                        ("Rates assume a comparable sample-size and source mix.",
-                         "Scaling to a different capacity is extrapolation; benchmark before admission.",
-                         "Setup, retries and a shared rate cap can increase cost when parallelism rises.",
-                         "All configured units are charged for the modeled lane duration; idle shutdown can reduce cost."))
+    return LaneEstimate(
+        samples,
+        units,
+        low,
+        high,
+        hours_low,
+        hours_high,
+        fixed + hourly * hours_low,
+        fixed + hourly * hours_high,
+        units != evidence.observed_units,
+        evidence.source,
+        (
+            "Rates assume a comparable sample-size and source mix.",
+            "Scaling to a different capacity is extrapolation; benchmark before admission.",
+            "Setup, retries and a shared rate cap can increase cost when parallelism rises.",
+            "All configured units are charged for the modeled lane duration; idle shutdown can reduce cost.",
+        ),
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -113,8 +125,9 @@ class CampaignEstimate:
     fits_conservative_ceiling: bool | None
 
 
-def combine_estimates(lanes: tuple[LaneEstimate, ...], *, spent_usd: float = 0,
-                      reserved_usd: float = 0, ceiling_usd: float | None = None) -> CampaignEstimate:
+def combine_estimates(
+    lanes: tuple[LaneEstimate, ...], *, spent_usd: float = 0, reserved_usd: float = 0, ceiling_usd: float | None = None
+) -> CampaignEstimate:
     """Concurrent lanes finish at their slowest lane; gross cost is additive.
 
     reserved_usd is committed work outside the supplied pending-lane estimates.
@@ -128,5 +141,11 @@ def combine_estimates(lanes: tuple[LaneEstimate, ...], *, spent_usd: float = 0,
         _nonnegative("ceiling_usd", ceiling_usd)
     low = spent_usd + reserved_usd + math.fsum(lane.cost_low_usd for lane in lanes)
     high = spent_usd + reserved_usd + math.fsum(lane.cost_high_usd for lane in lanes)
-    return CampaignEstimate(max(lane.hours_low for lane in lanes), max(lane.hours_high for lane in lanes), low, high,
-                            ceiling_usd, high <= ceiling_usd if ceiling_usd is not None else None)
+    return CampaignEstimate(
+        max(lane.hours_low for lane in lanes),
+        max(lane.hours_high for lane in lanes),
+        low,
+        high,
+        ceiling_usd,
+        high <= ceiling_usd if ceiling_usd is not None else None,
+    )

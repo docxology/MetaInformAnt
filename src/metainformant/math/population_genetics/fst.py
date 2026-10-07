@@ -16,9 +16,7 @@ from metainformant.core.utils import logging
 logger = logging.get_logger(__name__)
 
 
-def fst_from_allele_freqs(
-    pop1_freqs: List[float], pop2_freqs: List[float] | None = None
-) -> float:
+def fst_from_allele_freqs(pop1_freqs: List[float], pop2_freqs: List[float] | None = None) -> float:
     """Calculate F_ST from allele frequencies between two populations.
 
     F_ST measures the genetic differentiation between populations.
@@ -62,9 +60,7 @@ def fst_from_allele_freqs(
     # Check for single-locus mode: [p1, p2]
     if pop2_freqs is None:
         if len(pop1_freqs) != 2:
-            raise ValueError(
-                "Single-list mode requires exactly 2 allele frequencies [p1, p2]"
-            )
+            raise ValueError("Single-list mode requires exactly 2 allele frequencies [p1, p2]")
         for p in pop1_freqs:
             if not 0 <= p <= 1:
                 raise ValueError(f"Invalid frequency values: {list(pop1_freqs)}")
@@ -128,9 +124,7 @@ def fst_from_allele_freq_matrix(pop_freqs: List[List[float]]) -> float:
             raise ValueError(f"Population {i} has {len(pop)} loci, expected {n_loci}")
         for j, p in enumerate(pop):
             if not 0 <= p <= 1:
-                raise ValueError(
-                    f"Invalid frequency value at population {i}, locus {j}: {p}"
-                )
+                raise ValueError(f"Invalid frequency value at population {i}, locus {j}: {p}")
 
     variance_sum = 0.0
     total_sum = 0.0
@@ -231,9 +225,7 @@ def weirs_fst(population_counts: Dict[str, Dict[str, int]]) -> float:
 
     # Sorted iteration keeps the estimate independent of dict ordering.
     populations = sorted(population_counts)
-    if any(
-        count < 0 for pop in populations for count in population_counts[pop].values()
-    ):
+    if any(count < 0 for pop in populations for count in population_counts[pop].values()):
         raise ValueError("Haplotype counts must be non-negative")
     n_i = {pop: sum(population_counts[pop].values()) for pop in populations}
     # Populations with no sampled gene copies cannot inform the estimator.
@@ -255,26 +247,18 @@ def weirs_fst(population_counts: Dict[str, Dict[str, int]]) -> float:
     if n_c <= 0.0:
         return 0.0
 
-    alleles = sorted(
-        {haplotype for pop in populations for haplotype in population_counts[pop]}
-    )
+    alleles = sorted({haplotype for pop in populations for haplotype in population_counts[pop]})
 
     a_total = 0.0
     b_total = 0.0
     c_total = 0.0
     for allele in alleles:
-        p_hat = {
-            pop: population_counts[pop].get(allele, 0) / n_i[pop] for pop in populations
-        }
+        p_hat = {pop: population_counts[pop].get(allele, 0) / n_i[pop] for pop in populations}
         p_bar = sum(n_i[pop] * p_hat[pop] for pop in populations) / total_n
-        s_squared = sum(n_i[pop] * (p_hat[pop] - p_bar) ** 2 for pop in populations) / (
-            (r - 1) * n_bar
-        )
+        s_squared = sum(n_i[pop] * (p_hat[pop] - p_bar) ** 2 for pop in populations) / ((r - 1) * n_bar)
         het = p_bar * (1.0 - p_bar)
 
-        a = (n_bar / n_c) * (
-            s_squared - (1.0 / (n_bar - 1.0)) * (het - ((r - 1.0) / r) * s_squared)
-        )
+        a = (n_bar / n_c) * (s_squared - (1.0 / (n_bar - 1.0)) * (het - ((r - 1.0) / r) * s_squared))
         b = (n_bar / (n_bar - 1.0)) * (het - ((r - 1.0) / r) * s_squared)
         c = 0.0
 
@@ -289,9 +273,7 @@ def weirs_fst(population_counts: Dict[str, Dict[str, int]]) -> float:
     return max(0.0, min(1.0, a_total / denominator))
 
 
-def fst_confidence_interval(
-    fst_value: float, sample_size: int, confidence_level: float = 0.95
-) -> Tuple[float, float]:
+def fst_confidence_interval(fst_value: float, sample_size: int, confidence_level: float = 0.95) -> Tuple[float, float]:
     """Calculate confidence interval for F_ST estimate.
 
     Uses bootstrap resampling to estimate confidence intervals.
@@ -309,9 +291,7 @@ def fst_confidence_interval(
     # For small samples, add correction factor
 
     if sample_size < 2:
-        raise ValueError(
-            "Sample size must be at least 2 for confidence interval calculation"
-        )
+        raise ValueError("Sample size must be at least 2 for confidence interval calculation")
 
     # Variance approximation for F_ST estimator
     # Based on asymptotic variance formula: Var(F_ST) ≈ 2*F_ST^2*(1-F_ST)^2 / n
@@ -322,9 +302,7 @@ def fst_confidence_interval(
 
     # Calculate variance using improved approximation
     # This uses the delta method approximation
-    variance = (
-        2 * fst_clamped * fst_clamped * (1 - fst_clamped) * (1 - fst_clamped)
-    ) / sample_size
+    variance = (2 * fst_clamped * fst_clamped * (1 - fst_clamped) * (1 - fst_clamped)) / sample_size
 
     # Add small-sample correction (Hedges correction)
     if sample_size < 30:

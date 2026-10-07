@@ -1,14 +1,17 @@
 """Independent arithmetic controls for acquisition cost and time scenarios."""
 
 from __future__ import annotations
+
 import math
+
 import pytest
+
 from metainformant.rna.engine.acquisition_estimates import (
     AcquisitionEstimateError,
-    ThroughputEvidence,
     LaneCosts,
-    estimate_lane,
+    ThroughputEvidence,
     combine_estimates,
+    estimate_lane,
 )
 
 
@@ -33,9 +36,7 @@ def test_saturation_and_setup_break_the_linear_cost_assumption() -> None:
 
 def test_hybrid_duration_is_max_cost_is_sum_and_credits_never_enter() -> None:
     a = estimate_lane(80, 2, ThroughputEvidence(2, 20, 40, "local"), LaneCosts(0))
-    b = estimate_lane(
-        120, 3, ThroughputEvidence(3, 30, 60, "aws"), LaneCosts(1, fixed_usd=2)
-    )
+    b = estimate_lane(120, 3, ThroughputEvidence(3, 30, 60, "aws"), LaneCosts(1, fixed_usd=2))
     result = combine_estimates((a, b), spent_usd=10, reserved_usd=3, ceiling_usd=26)
     assert result.hours_low == 2
     assert result.hours_high == 4
@@ -45,9 +46,7 @@ def test_hybrid_duration_is_max_cost_is_sum_and_credits_never_enter() -> None:
 
 def test_retry_scenario_and_no_pending_work() -> None:
     evidence = ThroughputEvidence(1, 10, 10, "observed")
-    retried = estimate_lane(
-        10, 1, evidence, LaneCosts(2, fixed_usd=3, retries_per_task=0.5)
-    )
+    retried = estimate_lane(10, 1, evidence, LaneCosts(2, fixed_usd=3, retries_per_task=0.5))
     assert retried.hours_high == 1.5 and retried.cost_high_usd == 6
     empty = estimate_lane(0, 1, evidence, LaneCosts(2, fixed_usd=3, setup_hours=1))
     assert empty.hours_high == empty.cost_high_usd == 0

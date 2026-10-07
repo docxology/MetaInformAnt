@@ -142,6 +142,8 @@ dev = [
     "nbsphinx>=0.9.0",  # Jupyter notebook integration
     "twine>=5.0.0",  # Package publishing
     "build>=1.0.0",  # Package building
+    "boto3-stubs>=1.43.109",
+    "types-jsonschema>=4.26.0.20261006",
 ]
 
 # Database and external data

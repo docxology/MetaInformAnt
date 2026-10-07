@@ -84,10 +84,7 @@ def test_fdr_correction_properties() -> None:
     # FDR-corrected p-values should be monotonic (non-decreasing after sorting)
     sorted_indices = np.argsort(pvalues)
     sorted_corrected = corrected[sorted_indices]
-    assert all(
-        sorted_corrected[i] <= sorted_corrected[i + 1]
-        for i in range(len(sorted_corrected) - 1)
-    )
+    assert all(sorted_corrected[i] <= sorted_corrected[i + 1] for i in range(len(sorted_corrected) - 1))
 
 
 def test_genomic_control_from_pvalues() -> None:
@@ -171,9 +168,7 @@ def test_lambda_gc_from_p_values_invalid_input() -> None:
     """Empty or all-invalid p-values return None; invalid entries are skipped."""
     assert lambda_gc_from_p_values([]) is None
     assert lambda_gc_from_p_values([0.0, -0.5, 1.5, float("nan")]) is None
-    assert lambda_gc_from_p_values([0.5, "not-a-p-value", None]) == pytest.approx(
-        1.0, abs=0.01
-    )
+    assert lambda_gc_from_p_values([0.5, "not-a-p-value", None]) == pytest.approx(1.0, abs=0.01)
 
 
 def test_genomic_control_uses_one_df_chi_square_transform() -> None:
@@ -187,9 +182,7 @@ def test_genomic_control_uses_one_df_chi_square_transform() -> None:
     expected_median = float(np.median(chi2_stats))
     assert result["status"] == "success"
     assert result["median_chi2"] == pytest.approx(expected_median, rel=1e-10)
-    assert result["lambda_gc"] == pytest.approx(
-        expected_median / EXPECTED_MEDIAN_CHI2_1DF, rel=1e-10
-    )
+    assert result["lambda_gc"] == pytest.approx(expected_median / EXPECTED_MEDIAN_CHI2_1DF, rel=1e-10)
     assert all(0 <= p <= 1 for p in result["corrected_p_values"])
 
 
@@ -269,9 +262,7 @@ def test_genomic_control_chi2_returns_corrected_p_values() -> None:
     assert result["n_tests"] == len(chi2_stats)
     lam = result["lambda_gc"]
     for stat, corrected_p in zip(chi2_stats, corrected):
-        assert corrected_p == pytest.approx(
-            float(scipy_stats.chi2.sf(stat / lam, 1)), rel=1e-9
-        )
+        assert corrected_p == pytest.approx(float(scipy_stats.chi2.sf(stat / lam, 1)), rel=1e-9)
     assert all(0.0 < p <= 1.0 for p in corrected)
 
     # Uninterpretable entries stay aligned as NaN instead of shrinking output.

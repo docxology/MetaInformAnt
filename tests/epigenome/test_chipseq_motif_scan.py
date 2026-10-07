@@ -36,10 +36,7 @@ class TestMotifScanning:
         entries = results["motif_positions"]["TTGACA"]
         assert [(e["position"], e["strand"]) for e in entries] == [(0, "+"), (8, "+")]
         assert all(e["sequence"] == "TTGACA" for e in entries)
-        assert all(
-            e["peak_start"] == 0 and e["peak_end"] == 15 and e["peak_score"] == 10.0
-            for e in entries
-        )
+        assert all(e["peak_start"] == 0 and e["peak_end"] == 15 and e["peak_score"] == 10.0 for e in entries)
 
     def test_reverse_strand_only_match(self, tmp_path: Path):
         # chr2 = "AAATGTCAAGGG". The interval 3-8 on the forward strand is

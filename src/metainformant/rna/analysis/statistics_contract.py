@@ -676,7 +676,7 @@ def validate_analysis_provenance(record: AnalysisProvenance) -> None:
     # carry multiplicity declarations, tested features, or analysis binding
     # fields that would imply results exist.
     if record.analysis_role in NON_ANALYSIS_ROLES:
-        for field, value in (
+        for field_name, value in (
             ("multiple_testing_family", record.multiple_testing_family),
             ("multiple_testing_method", record.multiple_testing_method),
             ("tested_feature_count", record.tested_feature_count),
@@ -690,7 +690,7 @@ def validate_analysis_provenance(record: AnalysisProvenance) -> None:
             if value is not None:
                 raise ProvenanceError(
                     f"analysis_role={record.analysis_role!r} records a halted or "
-                    f"unavailable analysis, so {field}={value!r} must not be declared"
+                    f"unavailable analysis, so {field_name}={value!r} must not be declared"
                 )
         if record.sensitivity_analyses:
             raise ProvenanceError(
@@ -785,19 +785,19 @@ def validate_analysis_provenance(record: AnalysisProvenance) -> None:
     # species-tree flags are optional: when declared they must be real
     # values, never placeholders. Denominator consistency is checked
     # structurally (non-negative, integers).
-    for field in (
+    for field_name in (
         "data_root_snapshot_id",
         "metadata_harmonization_review",
         "species_tree_source",
         "species_tree_branch_length_scale",
     ):
-        value = getattr(record, field)
+        value = getattr(record, field_name)
         if value is not None:
-            _require_declared(value, field)
-    for field in ("cohort_included_count", "cohort_excluded_count"):
-        value = getattr(record, field)
+            _require_declared(value, field_name)
+    for field_name in ("cohort_included_count", "cohort_excluded_count"):
+        value = getattr(record, field_name)
         if value is not None and (not isinstance(value, int) or isinstance(value, bool) or value < 0):
-            raise ProvenanceError(f"{field} must be a non-negative integer when declared, got {value!r}")
+            raise ProvenanceError(f"{field_name} must be a non-negative integer when declared, got {value!r}")
     if record.artifact_paths is not None:
         if not isinstance(record.artifact_paths, Mapping) or not record.artifact_paths:
             raise ProvenanceError("artifact_paths must be a non-empty mapping when declared")

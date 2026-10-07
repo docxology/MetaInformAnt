@@ -115,17 +115,13 @@ class TestLDPrunePhysicalWindow:
     def test_one_mb_apart_never_paired(self) -> None:
         """Two variants 1 Mb apart must not be paired when positions are supplied."""
         geno = [[0, 2, 0, 2], [0, 2, 0, 2]]  # Perfectly correlated pair
-        kept = ld_prune(
-            geno, variant_positions=[1000, 1_001_000], window_size=50, r2_threshold=0.2
-        )
+        kept = ld_prune(geno, variant_positions=[1000, 1_001_000], window_size=50, r2_threshold=0.2)
         assert kept == [0, 1]
 
     def test_within_window_paired(self) -> None:
         """Correlated variants inside the kb window are pruned like PLINK."""
         geno = [[0, 2, 0, 2], [0, 2, 0, 2]]
-        kept = ld_prune(
-            geno, variant_positions=[1000, 11_000], window_size=50, r2_threshold=0.2
-        )
+        kept = ld_prune(geno, variant_positions=[1000, 11_000], window_size=50, r2_threshold=0.2)
         assert len(kept) == 1
 
     def test_distance_overrides_index_proximity(self) -> None:
@@ -143,9 +139,7 @@ class TestLDPrunePhysicalWindow:
     def test_unsorted_positions_handled(self) -> None:
         """Positions may be unordered; the scan sorts them internally."""
         geno = [[0, 2, 0, 2], [0, 2, 0, 2]]
-        kept = ld_prune(
-            geno, variant_positions=[50_000, 1000], window_size=50, r2_threshold=0.2
-        )
+        kept = ld_prune(geno, variant_positions=[50_000, 1000], window_size=50, r2_threshold=0.2)
         assert len(kept) == 1
 
     def test_chroms_block_cross_chromosome_pairs(self) -> None:

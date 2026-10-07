@@ -1,16 +1,24 @@
 """Read-only, inventory-bounded cloud/local campaign reconciliation."""
+
 from __future__ import annotations
 
-from collections import Counter
-from dataclasses import dataclass
 import json
 import re
+from collections import Counter
+from dataclasses import dataclass
 from typing import Final, Literal
 
 STATES: Final = ("pending", "downloading", "downloaded", "quantifying", "quantified", "failed", "quarantined")
 CLOUD_COLUMNS: Final = ("locked", *STATES, "worker_unknown", "unassigned")
 LOCAL_COLUMNS: Final = (*STATES, "untracked")
-COVERAGE_COLUMNS: Final = ("present_locked", "present_unlocked", "partial", "absent", "transfer_gap", "diagnostic_present")
+COVERAGE_COLUMNS: Final = (
+    "present_locked",
+    "present_unlocked",
+    "partial",
+    "absent",
+    "transfer_gap",
+    "diagnostic_present",
+)
 
 
 class StatusError(ValueError):
@@ -57,11 +65,19 @@ def load_inventory(data: bytes) -> Inventory:
         raise StatusError("Inventory must contain a species list")
     species = []
     for row in value["species"]:
-        if not isinstance(row, dict) or not isinstance(row.get("species"), str) or not isinstance(row.get("tasks"), list):
+        if (
+            not isinstance(row, dict)
+            or not isinstance(row.get("species"), str)
+            or not isinstance(row.get("tasks"), list)
+        ):
             raise StatusError("Malformed inventory species")
         tasks = []
         for task in row["tasks"]:
-            if not isinstance(task, dict) or not isinstance(task.get("task_id"), str) or not isinstance(task.get("accession"), str):
+            if (
+                not isinstance(task, dict)
+                or not isinstance(task.get("task_id"), str)
+                or not isinstance(task.get("accession"), str)
+            ):
                 raise StatusError("Malformed inventory task")
             tasks.append(Task(task["task_id"], task["accession"]))
         species.append(Species(row["species"], tuple(tasks)))
@@ -144,7 +160,9 @@ def reconcile(
         coverage_counts: Counter[str] = Counter()
         for task in species.tasks:
             key = task.task_id
-            cloud_state = "locked" if key in locked else workers.get(key, "worker_unknown" if key in assigned else "unassigned")
+            cloud_state = (
+                "locked" if key in locked else workers.get(key, "worker_unknown" if key in assigned else "unassigned")
+            )
             local_state = locals_.get(key, "untracked")
             coverage: Literal["present_locked", "present_unlocked", "partial", "absent"] = "absent"
             if key in present:
@@ -157,12 +175,21 @@ def reconcile(
             coverage_counts[coverage] += 1
             coverage_counts["transfer_gap"] += int(gap)
             coverage_counts["diagnostic_present"] += int(key in diagnostic)
-            samples.append(SampleStatus(key, species.species, cloud_state, local_state, coverage, gap, key in diagnostic))
-        rows.append(SpeciesStatus(species.species, len(species.tasks), dict(cloud_counts), dict(local_counts), dict(coverage_counts)))
-    total = SpeciesStatus("TOTAL", inventory.task_count,
-                          {k: sum(r.cloud.get(k, 0) for r in rows) for k in CLOUD_COLUMNS},
-                          {k: sum(r.local.get(k, 0) for r in rows) for k in LOCAL_COLUMNS},
-                          {k: sum(r.coverage.get(k, 0) for r in rows) for k in COVERAGE_COLUMNS})
+            samples.append(
+                SampleStatus(key, species.species, cloud_state, local_state, coverage, gap, key in diagnostic)
+            )
+        rows.append(
+            SpeciesStatus(
+                species.species, len(species.tasks), dict(cloud_counts), dict(local_counts), dict(coverage_counts)
+            )
+        )
+    total = SpeciesStatus(
+        "TOTAL",
+        inventory.task_count,
+        {k: sum(r.cloud.get(k, 0) for r in rows) for k in CLOUD_COLUMNS},
+        {k: sum(r.local.get(k, 0) for r in rows) for k in LOCAL_COLUMNS},
+        {k: sum(r.coverage.get(k, 0) for r in rows) for k in COVERAGE_COLUMNS},
+    )
     return StatusReport(tuple(rows), total, tuple(samples), len(locals_.keys() - ids))
 
 
