@@ -22,6 +22,7 @@ from metainformant.rna.engine.acquisition_manifest import (
     verify_input_files,
     verify_worker_configs,
 )
+from metainformant.rna.engine.acquisition_prerequisites import classify_task_prerequisites, require_worker_prerequisites
 from metainformant.rna.engine.acquisition_references import prepare_reference_inputs
 from metainformant.rna.engine.acquisition_sample import execute_manifest_task
 from metainformant.rna.engine.fastq_compression import compression_level
@@ -84,6 +85,15 @@ def _run_manifest_owned(
     os.environ["AMALGKIT_PIPELINE_VALIDATION_SLOTS"] = str(validation_slots)
 
     data_root.mkdir(parents=True, exist_ok=True)
+    prerequisite_results = []
+    for species in sorted({str(task["species"]) for task in tasks}):
+        prerequisite_results.extend(
+            classify_task_prerequisites(
+                metadata_path=data_root / species / "work/metadata/metadata_selected.tsv",
+                tasks=[task for task in tasks if task["species"] == species],
+            )
+        )
+    require_worker_prerequisites(prerequisite_results)
     reference_preflight = prepare_reference_inputs(
         data_root=data_root,
         config_dir=config_dir,
@@ -156,18 +166,85 @@ def _run_manifest_owned(
                     if int(task.get("fastq_bytes", 0)) <= 0 or int(task["fastq_bytes"]) > raw_bytes_limit:
                         raise ValueError("cloud task lacks a bounded raw-byte reservation")
 
+            deadline_text = os.environ.get("AMALGKIT_WORKER_DEADLINE_EPOCH", "")
+            worker_deadline = float(deadline_text) if deadline_text else None
+
+            from dataclasses import replace
+
+            from metainformant.rna.engine.acquisition_scheduling import PlanningAssumptions
+
+            worker_planning = None
+            if snapshot.get("planning_assumptions") is not None:
+                worker_planning = PlanningAssumptions(**snapshot["planning_assumptions"])
+                worker_planning = replace(
+                    worker_planning,
+                    quant_slots=min(
+                        worker_planning.quant_slots, profile.quant_slots, profile.workers, profile.max_in_flight
+                    ),
+                    extraction_slots=min(
+                        worker_planning.extraction_slots, profile.fasterq_slots, profile.workers, profile.max_in_flight
+                    ),
+                )
+
             def submit_next() -> bool:
+                from metainformant.rna.engine.acquisition_estimates import AcquisitionEstimateError
+                from metainformant.rna.engine.acquisition_scheduling import (
+                    fits_worker_deadline,
+                    task_workload,
+                    workload_seconds,
+                )
+
                 nonlocal reserved_bytes
-                if not pending_tasks:
-                    return False
-                task = pending_tasks[0]
-                needed = int(task.get("fastq_bytes", 0))
-                if raw_bytes_limit and reserved_bytes + needed > raw_bytes_limit:
-                    return False
-                pending_tasks.popleft()
-                reserved_bytes += needed
-                future_to_task[executor.submit(execute, task)] = task
-                return True
+                while pending_tasks:
+                    task = pending_tasks[0]
+                    needed = int(task.get("fastq_bytes", 0))
+                    if raw_bytes_limit and reserved_bytes + needed > raw_bytes_limit:
+                        return False
+                    reason = "cloud worker has no hard deadline" if raw_bytes_limit and worker_deadline is None else ""
+                    if worker_deadline is not None:
+                        try:
+                            duration = task.get("planning_seconds", 0)
+                            reserved_duration = sum(t.get("planning_seconds", 0) for t in future_to_task.values())
+                            drain = task.get("planning_drain_seconds", 300)
+                            if worker_planning is not None:
+                                duration = workload_seconds(
+                                    [task_workload(t) for t in [*future_to_task.values(), task]],
+                                    worker_planning,
+                                    include_setup=False,
+                                )
+                                reserved_duration = 0
+                                drain = worker_planning.drain_seconds
+                            can_finish = fits_worker_deadline(
+                                now=time.time(),
+                                deadline=worker_deadline,
+                                task_seconds=duration,
+                                reserved_seconds=reserved_duration,
+                                drain_seconds=drain,
+                            )
+                            if not can_finish and future_to_task:
+                                return False
+                            if not can_finish:
+                                reason = "insufficient remaining worker deadline including unfinished reservations"
+                        except AcquisitionEstimateError as exc:
+                            reason = str(exc)
+                    pending_tasks.popleft()
+                    if reason:
+                        result = {
+                            "task_id": task["task_id"],
+                            "srr": task["accession"],
+                            "species": task["species"],
+                            "quantified": False,
+                            "status": "unresolved_deadline",
+                            "error": reason,
+                        }
+                        results.append(result)
+                        append_journal(result)
+                        counts["unresolved"] += 1
+                        continue
+                    reserved_bytes += needed
+                    future_to_task[executor.submit(execute, task)] = task
+                    return True
+                return False
 
             for _ in range(min(profile.max_in_flight, len(tasks))):
                 submit_next()

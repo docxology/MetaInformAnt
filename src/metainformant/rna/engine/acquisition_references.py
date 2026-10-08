@@ -4,14 +4,23 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 from metainformant.rna.engine.acquisition_manifest import sha256_file
-from metainformant.rna.engine.streaming_orchestrator import _ensure_reference_alias_indexes, _species_work_dir
+from metainformant.rna.engine.streaming_orchestrator import (
+    _build_quant_command,
+    _ensure_reference_alias_indexes,
+    _species_work_dir,
+)
 
 
 def prepare_reference_inputs(
-    *, data_root: Path, config_dir: Path, tasks: list[dict[str, Any]], snapshot: dict[str, Any] | None = None
+    *,
+    data_root: Path,
+    config_dir: Path,
+    tasks: list[dict[str, Any]],
+    snapshot: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Create and record explicit reference aliases before task execution.
 
@@ -24,6 +33,7 @@ def prepare_reference_inputs(
 
     import pandas as pd
     import yaml
+    from amalgkit.quant import get_index
 
     species_configs = {str(task["species"]): str(task["config_name"]) for task in tasks}
     records: list[dict[str, Any]] = []
@@ -78,6 +88,18 @@ def prepare_reference_inputs(
                         or sha256_file(index) not in expected_indexes
                     ):
                         raise ValueError(f"worker reference differs from frozen acquisition envelope: {index}")
+        for target in target_names:
+            command = _build_quant_command(config, species, 1, 1, str(metadata_path), reference_target=target)
+            native_index_dir = command[command.index("--index_dir") + 1]
+            index = Path(
+                get_index(
+                    SimpleNamespace(index_dir=native_index_dir, build_index=False),
+                    target,
+                    backend="kallisto",
+                )
+            )
+            if expected_indexes and sha256_file(index) not in expected_indexes:
+                raise ValueError(f"native quant reference differs from frozen acquisition envelope: {index}")
         records.append(
             {
                 "species": species,

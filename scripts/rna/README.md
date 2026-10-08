@@ -59,3 +59,8 @@ evidence commands in `projects/hymenoptera_amalgkit`.
 For frozen cloud completion, use [the generic acquisition guide](../../docs/rna/GENERIC_ACQUISITION.md).
 AWS execution requires an explicit frozen configuration directory and preserves
 existing admission identities, prices, deadlines and task ownership.
+
+Before raw acquisition, the generic worker checks native quantifier requirements
+and frozen reference aliases. Long-read work needing oarfish remains unresolved
+until its reference/tool/output contract is explicitly amended; see the
+[method boundary](../../docs/rna/HYMENOPTERA_METHODS.md#quantifier-and-reference-prerequisites).

@@ -97,4 +97,4 @@ def main(argv: list[str] | None = None) -> int:
             sort_keys=True,
         )
     )
-    return 0 if summary["counts"].get("failed", 0) == 0 else 1
+    return 1 if any(summary["counts"].get(key, 0) for key in ("failed", "unresolved")) else 0

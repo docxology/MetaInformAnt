@@ -37,6 +37,18 @@ the campaign preflight before any discovery or scheduling work.
   `metainformant.rna.amalgkit.acquisition` or `scripts/rna/acquisition.py`.
   [Generic acquisition guide](../../../../docs/rna/GENERIC_ACQUISITION.md).
 
+- `acquisition_prerequisites.py` resolves native quantifier requirements from
+  frozen batch metadata before raw acquisition. `acquisition_references.py`
+  binds metadata target aliases to the existing reference checksum. Long-read
+  oarfish tasks require an amended frozen reference/tool/output contract; they
+  remain unresolved under the Kallisto-bound acquisition envelope. See the
+  [method boundary](../../../../docs/rna/HYMENOPTERA_METHODS.md#quantifier-and-reference-prerequisites).
+
+- `acquisition_scheduling.py` models new batches from explicit transfer/extraction/
+  quantification rates and records remaining-deadline refusals. Unknown sizes/rates
+  do not authorize new work. See the
+  [deadline planning contract](../../../../docs/rna/GENERIC_ACQUISITION.md#deadline-planning-for-new-admissions).
+
 - `StreamingPipelineOrchestrator.run_all()` starts the bounded producer for a
   declared config set. It first runs `run_campaign_preflight()`
   (data-root write probe plus bare `amalgkit` PATH resolution) and refuses to

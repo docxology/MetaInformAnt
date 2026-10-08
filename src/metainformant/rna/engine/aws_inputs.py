@@ -7,6 +7,7 @@ import hashlib
 import json
 import shlex
 import tarfile
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any, TypedDict
 
@@ -15,6 +16,7 @@ from metainformant.rna.amalgkit import (
     AMALGKIT_SOURCE_REVISION,
     REQUIRED_AMALGKIT_VERSION,
 )
+from metainformant.rna.engine.acquisition_scheduling import PlanningAssumptions
 
 
 class InputRecord(TypedDict):
@@ -59,6 +61,7 @@ def _inputs_bundle(
     directory: Path,
     *,
     config_path: Path,
+    planning: PlanningAssumptions | None = None,
 ) -> tuple[Path, str]:
     directory.mkdir(parents=True, exist_ok=True)
     manifest = directory / "manifest.jsonl"
@@ -145,6 +148,8 @@ def _inputs_bundle(
         ],
         "frozen_metadata_sha256": species["metadata_sha256"],
     }
+    if planning is not None:
+        snapshot["planning_assumptions"] = asdict(planning)
     (directory / "snapshot.json").write_text(json.dumps(snapshot, indent=2, sort_keys=True))
     bundle = directory / "inputs.tar"
     with tarfile.open(bundle, "w") as archive:

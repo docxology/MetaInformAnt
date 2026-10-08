@@ -22,7 +22,8 @@ a compatibility adapter to the shared worker.
 AWS collection, pricing, durable S3 access and controller execution require
 the optional `aws` extra. Local SQLite/file status helpers and command discovery
 do not import the AWS SDK. Local quantification additionally requires the `rna`
-extra and working external tools.
+extra and working external tools. The controller also needs the `rna` extra to
+classify native quantifier prerequisites before new AWS admissions.
 
 ## Freeze and allocate
 
@@ -83,6 +84,14 @@ raw sizes cannot be admitted under a positive raw-byte bound; resolve source
 metadata first. The shared AWS controller already consumes hash-bound cached
 NCBI source resolutions for such tasks.
 
+Before downloading, the worker resolves the selected metadata batch and native
+quantifier, invokes the required Kallisto dependency check, and verifies frozen
+reference aliases. A metadata target alias uses the same frozen index bytes.
+Long-read/oarfish tasks require a separately amended reference/tool/output contract
+and remain unresolved under the current Kallisto-bound envelope; see the
+[method boundary](HYMENOPTERA_METHODS.md#quantifier-and-reference-prerequisites).
+These prerequisite checks also precede durable-store construction and reuse.
+
 One process owns each data root exclusively; concurrent library invocations in
 one process are refused because existing RNA paths use process-wide environment
 configuration. Use separate worker processes and disjoint selections for
@@ -102,24 +111,31 @@ existing provenance-gated cleanup.
 ## AWS execution and limits
 
 ```bash
-uv run --extra aws python scripts/rna/acquisition.py aws \
+uv run --extra aws --extra rna python scripts/rna/acquisition.py aws \
   --campaign-root "$AMALGKIT_CAMPAIGN_ROOT" --repo "$METAINFORMANT_REPO" \
   --config-dir "$AMALGKIT_CONFIG_DIR" \
   --task-allocation output/acquisition/plan/allocation.json \
   --bucket "$AMALGKIT_DURABLE_BUCKET" --cohort "$AMALGKIT_DURABLE_COHORT" \
   --profile dev-agent --region us-east-2 --ami "$AMALGKIT_WORKER_AMI" \
   --instance-profile "$AMALGKIT_INSTANCE_PROFILE" --instance-type c7i.2xlarge \
-  --budget 750 --historical-gross 0 --max-workers 6 \
+  --budget 750 --historical-gross "$AMALGKIT_OBSERVED_GROSS" --max-workers 8 \
+  --planning-transfer-bytes-per-second "$AMALGKIT_TRANSFER_RATE" \
+  --planning-extract-bases-per-second "$AMALGKIT_EXTRACTION_RATE" \
+  --planning-quant-bases-per-second "$AMALGKIT_QUANT_RATE" \
+  --planning-rate-source "$AMALGKIT_RATE_SOURCE" \
   --worker-workers 16 --worker-threads 8 --worker-quant-slots 4 \
   --worker-fastq-slots 1 --worker-fastq-threads 2 \
   --worker-compression-threads 2 --worker-compression-level 1 --worker-validation-slots 4 \
-  --worker-max-in-flight 12 --priority-species ""
+  --worker-max-in-flight 12 --worker-ena-file-workers 2 \
+  --disk-throughput-mibps 125 --priority-species "" --last-species nasonia_vitripennis
 ```
 
 This is an operator example, not authorization to create another campaign or
 reset historical spend. Use the actual historical gross usage for the selected
 ledger. IAM role, bucket permissions, regional quota, AMI and network access must
-already support the workload. Existing live workers keep their admitted source,
+already support the workload. Eight c7i.2xlarge workers require 64 regional vCPUs
+of available quota; a quota value alone does not establish free capacity or
+throughput. Existing live workers keep their admitted source,
 request, deadline and price; new settings apply to subsequently admitted jobs.
 
 Acquisition workers default to lossless pigz level 1 for temporary FASTQ files.
@@ -146,6 +162,48 @@ Partition bytes/task counts, minimum/maximum disk, expansion factor and disk
 reserve are configurable. Defaults remain 60 GiB raw reservations, 120 tasks
 after initial admission, and 600–2,000 GiB disks. Larger configured disks are
 repriced; the controller imposes its own 16,384 GiB maximum.
+
+### Deadline planning for new admissions
+
+New jobs require explicit positive finite transfer bytes/s per worker and
+quantification bases/s per occupied quant slot. Planned SRA tasks additionally
+require a positive extraction bases/s rate per occupied extraction slot; zero
+(the default) permits ENA work but leaves planned SRA acquisition unresolved. Set `AMALGKIT_TRANSFER_RATE`, `AMALGKIT_EXTRACTION_RATE`,
+`AMALGKIT_QUANT_RATE` and a nonempty `AMALGKIT_RATE_SOURCE` before using the example.
+The source should identify workload-matched evidence or explicitly describe an
+unmeasured scenario; a rationale string alone does not validate a rate. Missing
+transfer/quantification rates leave new admissions unresolved while existing jobs
+remain supervised.
+
+The workload model sums transfer, extraction and quantification stage durations;
+it does not assume that overlapping stages produce measured savings. Extraction
+is charged for planned SRA tasks. An unplanned ENA-to-SRA fallback is outside this
+rate scenario. Compute-stage bounds account for slot capacity without assuming a
+particular task ordering. Transfer
+uses declared ENA `fastq_bytes` or source-resolved SRA object bytes; SRA scratch
+reservations remain separate. Neither declared size proves observed wire throughput.
+The model uses 900 seconds setup, 300 seconds drain, 60 seconds
+per-task overhead and a 1.5 safety factor. These are explicit conservative planning
+assumptions, not empirical performance guarantees.
+
+`--job-seconds` is the normal batch target (default 14,400 seconds).
+`--max-job-seconds` optionally tightens the maximum for isolated oversized jobs;
+otherwise the remaining gross-budget envelope bounds their duration.
+Tasks need known positive raw bytes and bases. An oversized task can run alone
+only if its modeled duration, disk and complete gross reservation fit. Unknown
+workloads, incompatible prerequisites and tasks exceeding the maximum remain in
+`admission_unresolved`; they are not scientific exclusions. The old largest-file
+transfer timeout is not the new batch admission model.
+
+New admission records retain planning assumptions and task durations. Bootstrap
+starts an absolute worker deadline before setup and gives the worker only the
+remaining time. Before submitting a task, the worker includes the modeled durations
+of unfinished tasks and the drain allowance. It waits for active tasks to settle
+before deciding that pending work cannot fit; then it journals that work as
+`unresolved_deadline`. This conservative check can leave work unsubmitted even
+when stages overlap. Original job requests, rates, input hashes and deadlines stay
+unchanged on resume. Every new reservation still includes its full limit plus the
+shutdown allowance and passes the gross budget check.
 
 `--disk-throughput-mibps` sets gp3 throughput for new AWS jobs and price quotes
 (default 125 MiB/s). Values 125–750 retain baseline 3,000 IOPS. The live AWS
@@ -222,14 +280,33 @@ remain available after another mate fails. Duplicate output filenames are refuse
 Streaming callers use `AMALGKIT_PIPELINE_ENA_FILE_WORKERS` with the same bounds.
 Worker results and new AWS admissions record the selected setting.
 
-Measure newly locked samples together with completed compressed bytes and bases
-per hour, species, paired layout, size strata and worker stage. A falling sample
-count can reflect larger samples; falling byte throughput requires additional
-investigation. Source download waits, quantification CPU and extraction I/O can
-be bottlenecks at different times. More CPU does not accelerate a source-limited
-transfer. Compare six/eight-worker trials using comparable workload windows and
-cost per new lock before claiming a scaling benefit. The gross budget, admission
-prices, deadlines, frozen inventory and existing receipt validation remain binding.
+Measure comparable windows within species, declared/effective layout, size stratum,
+source route (ENA or SRA), quantifier, and resource settings. Record the window,
+source/configuration/index hashes, receipt set, worker elapsed time, retries,
+transfer time, extraction time, quantification time and gross cost basis.
+
+| Metric | Numerator and interpretation |
+|---|---|
+| New locks/hour and gross USD/new lock | Newly validated reference-bound receipts; exclude reused/restored outputs from acquisition calibration |
+| Locked bases/hour and bases/gross USD | Sum source-bound bases for those same new locks; report unknown bases separately |
+| Useful compressed bytes/hour | ENA-declared compressed bytes for newly locked runs, explicitly labeled declared bytes; measured transfer bytes require separate transfer observations |
+| Wire bytes/hour | Actual bytes transferred, including retries/resumes; retain failed work in cost and network accounting |
+| Raw-byte reservation | Disk admission estimate; an SRA resolution uses SRA bytes + 3 × bases + 512 × spots, which is not compressed FASTQ or wire bytes |
+
+Use receipt differences across the observation window to count each task once.
+A failed or idle worker still contributes elapsed gross cost. Report conservative
+ledger charges separately from billing observations, and include the stated
+storage/request/network allowances. Current worker results supply run elapsed
+seconds and reused/newly quantified counts; they do not by themselves measure all
+stage durations or wire bytes. Collect missing stage/network observations before
+claiming a measured transfer or stage rate.
+
+A falling sample count can reflect larger samples. Source waits, quantification
+CPU, extraction I/O and validation can each limit throughput. Compare six/eight-worker
+trials with matched workload profiles and cost per new lock before claiming a
+scaling benefit. The two-mate transfer setting permits overlap; a transfer-stage
+benchmark does not establish an equal end-to-end speedup. The gross budget,
+admission prices, deadlines, frozen inventory and receipt validation remain binding.
 
 All new AWS work uses the generic acquisition worker and explicit frozen
 `--config-dir`; the separate project-specific completion launcher has been removed.

@@ -99,7 +99,11 @@ uv run --extra aws --extra rna python scripts/rna/acquisition.py aws \
   --profile "$AWS_PROFILE" --region "$AWS_DEFAULT_REGION" \
   --budget "$AUTHORIZED_TOTAL_GROSS_USD" --historical-gross "$VERIFIED_PRIOR_GROSS_USD" \
   --ami "$VERIFIED_AMI_ID" --instance-profile "$AUTHORIZED_INSTANCE_PROFILE" \
-  --instance-type c7i.2xlarge --hourly-upper-bound 0.55
+  --instance-type c7i.2xlarge --hourly-upper-bound 0.55 \
+  --planning-transfer-bytes-per-second "$AMALGKIT_TRANSFER_RATE" \
+  --planning-extract-bases-per-second "$AMALGKIT_EXTRACTION_RATE" \
+  --planning-quant-bases-per-second "$AMALGKIT_QUANT_RATE" \
+  --planning-rate-source "$AMALGKIT_RATE_SOURCE"
 ```
 
 `--once` reconciles state and admits at most one job, then returns. Normal operation
@@ -114,9 +118,16 @@ Once all receipts exist, active workers are drained before final verification. T
 inside a persistent terminal session. Its ownership lock rejects a second controller
 for the same root; idempotent launch tokens recover an uncertain API response.
 
-Partitions have task and declared-byte limits. Unknown byte sizes are not admitted.
-An individual oversized run is isolated, receives an appropriately sized disk and a
-transfer-sized deadline, and must still fit the gross budget. The worker honors
+Partitions have task, raw-byte and modeled stage-duration limits. New admissions
+require positive finite transfer/quantification planning rates and an explicit
+evidence source or scenario rationale. Planned SRA acquisition additionally needs
+a positive extraction rate; zero permits ENA work and leaves planned SRA unresolved. Unknown byte/base sizes and
+unsupported quantifier/reference prerequisites remain unresolved. An individual
+oversized run is isolated, receives an appropriately sized disk and bounded
+workload deadline, and must still fit the gross budget. See the
+[deadline planning contract](GENERIC_ACQUISITION.md#deadline-planning-for-new-admissions)
+for rate units, defaults, maximum duration and the worker's remaining-time check.
+The worker honors
 explicit `max_in_flight`, reserves declared raw bytes, preserves the caller's free-space
 floor, and bounds acquisition, extraction, and quantification by the job deadline.
 The rendered startup script uses disk-backed temporary files and independent shutdown

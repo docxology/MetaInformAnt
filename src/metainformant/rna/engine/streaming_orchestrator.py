@@ -1609,7 +1609,7 @@ def _ensure_reference_alias_indexes(
         for target in targets:
             target_stem = _normalized_reference_stem(target)
             target_index = _find_reference_index(index_dir, target_stem)
-            if target_index is not None:
+            if target_index is not None and not (target_index.is_symlink() and target.casefold() in aliases_by_target):
                 aliases.append(
                     {
                         "metadata_target": target,
@@ -1705,6 +1705,7 @@ def _build_quant_command(
     batch_index: int,
     threads: int,
     metadata_path: str,
+    reference_target: str | None = None,
 ) -> List[str]:
     """Build the amalgkit quant command for one streaming batch."""
     cmd = [
@@ -1735,9 +1736,9 @@ def _build_quant_command(
 
     # The index_dir handed to amalgkit must contain only non-colliding
     # per-species indexes, so the resolved directory (optionally cached) is
-    # re-staged with just the exact-stem file for this species.
+    # re-staged with the metadata target, including explicit subspecies aliases.
     index_dir = _staged_exact_index_dir(
-        _cache_index_directory(_resolve_index_dir(cfg, species_name), species_name), species_name
+        _cache_index_directory(_resolve_index_dir(cfg, species_name), species_name), reference_target or species_name
     )
     if index_dir:
         cmd.extend(["--index_dir", index_dir])
@@ -2944,7 +2945,15 @@ class StreamingPipelineOrchestrator:
         if _metadata_requires_fastq_input_stats(metadata_file, srr_id):
             _write_fastq_input_stats(sample_fastq_dir, srr_id)
 
-        cmd = _build_quant_command(cfg, species_name, batch_index, threads, meta_path)
+        with metadata_file.open(encoding="utf-8", newline="") as handle:
+            reference_targets = [
+                row["scientific_name"] for row in csv.DictReader(handle, delimiter="\t") if row["run"] == srr_id
+            ]
+        if len(reference_targets) != 1 or not reference_targets[0].strip():
+            return False, f"No unique metadata reference target for {srr_id}"
+        cmd = _build_quant_command(
+            cfg, species_name, batch_index, threads, meta_path, reference_target=reference_targets[0]
+        )
         scratch_context = self._prepare_local_quant_workspace(
             work_dir,
             species_name,

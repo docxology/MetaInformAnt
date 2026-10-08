@@ -3,17 +3,29 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import fcntl
 import hashlib
 import json
 import math
 import time
+from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from metainformant.rna.engine.acquisition_allocation import aws_allocation_ids
-from metainformant.rna.engine.acquisition_aws_policy import WorkerImage, validate_worker_image
+from metainformant.rna.engine.acquisition_aws_policy import (
+    WorkerImage,
+    validate_worker_image,
+)
+from metainformant.rna.engine.acquisition_estimates import AcquisitionEstimateError
+from metainformant.rna.engine.acquisition_scheduling import (
+    PlanningAssumptions,
+    positive_size,
+    task_workload,
+    workload_seconds,
+)
 from metainformant.rna.engine.aws_fleet import in_flight_tasks, reserved_future_charge
 from metainformant.rna.engine.aws_inputs import (
     _inputs_bundle as _inputs_bundle,
@@ -43,15 +55,15 @@ def budget_allows(
 ) -> bool:
     """Admit only when the entire hard-bounded job fits, including a storage reserve."""
     values = (spent, ceiling, hourly_upper_bound, reserve)
-    if any(not math.isfinite(v) or v < 0 for v in values) or reserved_seconds <= 0:
+    if any(not math.isfinite(v) or v < 0 for v in values) or type(reserved_seconds) is not int or reserved_seconds <= 0:
         raise ValueError("invalid budget inputs")
     return spent + reserved_seconds / 3600 * hourly_upper_bound + reserve <= ceiling
 
 
 def job_timeout(largest_raw_bytes: int, minimum_seconds: int) -> int:
     """Allow the largest run a bounded 0.5 MiB/s transfer window plus quant time."""
-    if largest_raw_bytes <= 0 or minimum_seconds <= 0:
-        raise ValueError("task size and minimum deadline must be positive")
+    largest_raw_bytes = positive_size(largest_raw_bytes, "largest_raw_bytes")
+    minimum_seconds = positive_size(minimum_seconds, "minimum_seconds")
     return max(minimum_seconds, math.ceil(largest_raw_bytes / (512 * 1024)) + 3600)
 
 
@@ -65,7 +77,14 @@ def choose_partition(
     """Choose one species' byte-bounded missing tasks; never silently admit unknown sizes."""
     selected: list[dict[str, Any]] = []
     size = 0
-    for task in sorted(tasks, key=lambda t: (int(t["fastq_bytes"]), t["accession"])):
+    bounded = []
+    for task in tasks:
+        try:
+            positive_size(task.get("fastq_bytes"), "fastq_bytes")
+        except AcquisitionEstimateError:
+            continue
+        bounded.append(task)
+    for task in sorted(bounded, key=lambda t: (int(t["fastq_bytes"]), t["accession"])):
         if task["task_id"] in locked:
             continue
         raw = int(task["fastq_bytes"])
@@ -80,6 +99,81 @@ def choose_partition(
         if len(selected) >= max_tasks:
             break
     return selected
+
+
+def choose_deadline_partition(
+    tasks: list[dict[str, Any]],
+    locked: set[str],
+    *,
+    assumptions: PlanningAssumptions,
+    max_bytes: int,
+    max_tasks: int,
+    target_seconds: int,
+    maximum_seconds: int,
+) -> tuple[list[dict[str, Any]], dict[str, str]]:
+    """Bound aggregate work; keep impossible work unresolved and isolate oversized runs."""
+    if min(max_bytes, max_tasks, target_seconds, maximum_seconds) <= 0 or target_seconds > maximum_seconds:
+        raise ValueError("invalid batch bounds")
+    candidates = []
+    unresolved = {}
+    for task in tasks:
+        if task["task_id"] in locked:
+            continue
+        try:
+            work = task_workload(task)
+        except AcquisitionEstimateError as exc:
+            unresolved[task["task_id"]] = str(exc)
+            continue
+        if work.requires_extraction and assumptions.extraction_bases_per_second == 0:
+            unresolved[task["task_id"]] = "SRA admission requires calibrated extraction rate"
+            continue
+        if workload_seconds([work], assumptions) > maximum_seconds:
+            unresolved[task["task_id"]] = "single task exceeds maximum job envelope"
+            continue
+        candidates.append((work, task))
+    selected, workloads = [], []
+    for work, task in sorted(candidates, key=lambda item: (item[0].raw_bytes, item[0].task_id)):
+        proposed = workloads + [work]
+        if selected and (
+            sum(w.raw_bytes for w in proposed) > max_bytes or workload_seconds(proposed, assumptions) > target_seconds
+        ):
+            continue
+        selected.append(
+            {
+                **task,
+                "planning_seconds": workload_seconds([work], assumptions, include_setup=False),
+                "planning_drain_seconds": assumptions.drain_seconds,
+            }
+        )
+        workloads.append(work)
+        if (
+            len(selected) >= max_tasks
+            or work.raw_bytes > max_bytes
+            or workload_seconds(workloads, assumptions) > target_seconds
+        ):
+            break
+    return selected, unresolved
+
+
+def _planning_assumptions(args: argparse.Namespace) -> PlanningAssumptions:
+    return PlanningAssumptions(
+        transfer_bytes_per_second=getattr(args, "planning_transfer_bytes_per_second", 0),
+        extraction_bases_per_second=getattr(args, "planning_extract_bases_per_second", 0),
+        quant_bases_per_second=getattr(args, "planning_quant_bases_per_second", 0),
+        source=getattr(args, "planning_rate_source", ""),
+        extraction_slots=min(args.worker_fastq_slots, args.worker_workers, args.worker_max_in_flight),
+        quant_slots=min(args.worker_quant_slots, args.worker_workers, args.worker_max_in_flight),
+    )
+
+
+def _metadata_bases(path: Path) -> dict[str, str]:
+    with path.open() as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+    result = {}
+    for row in rows:
+        run = row["run"]
+        result[run] = "" if run in result else row.get("total_bases", "")
+    return result
 
 
 def _write_json(path: Path, payload: Any) -> None:
@@ -167,7 +261,14 @@ def _wait_for_fleet(state: dict[str, Any], state_path: Path, args: argparse.Name
 def species_order(species: list[dict[str, Any]], priority: str = "", last: Any = ()) -> list[dict[str, Any]]:
     """Order species for partitioning: the priority species first, `last` species at the end, else lexical."""
     deferred = set(last)
-    return sorted(species, key=lambda s: (s["species"] in deferred, s["species"] != priority, s["species"]))
+    return sorted(
+        species,
+        key=lambda s: (
+            s["species"] in deferred,
+            s["species"] != priority,
+            s["species"],
+        ),
+    )
 
 
 def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[str, Any]:
@@ -399,22 +500,117 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                 last=getattr(args, "last_species", ()),
             )
             selected_species, partition = None, []
+            try:
+                assumptions = _planning_assumptions(args)
+            except AcquisitionEstimateError as exc:
+                state["admission_unresolved"] = {"planning": str(exc)}
+                _wait_for_fleet(state, state_path, args, "unresolved_planning_assumptions")
+                if args.once or not active:
+                    return state
+                continue
+            state["admission_unresolved"] = {
+                task_id: "existing admission attempt limit reached"
+                for task_id, count in attempts.items()
+                if count >= args.max_attempts and task_id not in locked | occupied
+            }
+            minimum_rate = worker_prices.hourly_bound(
+                getattr(args, "min_disk_gib", 600),
+                throughput_mibps=args.disk_throughput_mibps,
+            )
+            budget_seconds = math.floor(max(0, args.budget - spent - future_charge - 10) / minimum_rate * 3600) - 900
+            if budget_seconds < args.job_seconds:
+                _wait_for_fleet(
+                    state,
+                    state_path,
+                    args,
+                    "waiting_for_budget_reservations" if active else "budget_exhausted",
+                )
+                if args.once or not active:
+                    return state
+                continue
+            maximum_seconds = min(budget_seconds, getattr(args, "max_job_seconds", None) or budget_seconds)
             for species in species_options:
                 eligible = [
                     t
                     for t in species["tasks"]
                     if t["task_id"] in aws_ids and attempts.get(t["task_id"], 0) < args.max_attempts
                 ]
-                partition = choose_partition(
-                    eligible,
+                from metainformant.rna.engine.acquisition_prerequisites import (
+                    classify_task_prerequisites,
+                )
+
+                metadata = root / "inputs" / species["species"] / "work/metadata/metadata_selected.tsv"
+                if hashlib.sha256(metadata.read_bytes()).hexdigest() != species["metadata_sha256"]:
+                    raise ValueError("frozen selected metadata changed before admission")
+                bases = _metadata_bases(metadata)
+                eligible = [
+                    {
+                        **t,
+                        "total_bases": t.get("total_bases", bases.get(t["accession"])),
+                    }
+                    for t in eligible
+                    if t["task_id"] not in locked | occupied
+                ]
+                prerequisites = classify_task_prerequisites(metadata_path=metadata, tasks=eligible)
+                ready = {p.task_id for p in prerequisites if p.status == "ready"}
+                state["admission_unresolved"].update(
+                    {p.task_id: p.reason for p in prerequisites if p.status != "ready"}
+                )
+                bounded = []
+                for task in eligible:
+                    if task["task_id"] not in ready:
+                        continue
+                    try:
+                        raw = positive_size(task.get("fastq_bytes"), "fastq_bytes")
+                    except AcquisitionEstimateError as exc:
+                        state["admission_unresolved"][task["task_id"]] = str(exc)
+                        continue
+                    required_disk = max(
+                        getattr(args, "min_disk_gib", 600),
+                        math.ceil(
+                            max(raw, getattr(args, "partition_bytes", 60 * 1024**3))
+                            * getattr(args, "disk_expansion_factor", 6)
+                            / 1024**3
+                        )
+                        + getattr(args, "disk_reserve_gib", 100),
+                    )
+                    if required_disk > getattr(args, "max_disk_gib", 2000):
+                        state["admission_unresolved"][task["task_id"]] = "task exceeds reviewed disk profile"
+                        continue
+                    try:
+                        work = task_workload(task)
+                    except AcquisitionEstimateError as exc:
+                        state["admission_unresolved"][task["task_id"]] = str(exc)
+                        continue
+                    if task.get("source_evidence_sha256") and assumptions.extraction_bases_per_second == 0:
+                        state["admission_unresolved"][
+                            task["task_id"]
+                        ] = "SRA admission requires calibrated extraction rate"
+                        continue
+                    task_rate = worker_prices.hourly_bound(required_disk, throughput_mibps=args.disk_throughput_mibps)
+                    if not budget_allows(
+                        spent + future_charge,
+                        args.budget,
+                        max(args.job_seconds, workload_seconds([work], assumptions)) + 900,
+                        task_rate,
+                    ):
+                        state["admission_unresolved"][task["task_id"]] = "task exceeds remaining gross budget envelope"
+                        continue
+                    bounded.append(task)
+                partition, rejected = choose_deadline_partition(
+                    bounded,
                     locked | occupied,
+                    assumptions=assumptions,
                     max_bytes=getattr(args, "partition_bytes", 60 * 1024**3),
                     max_tasks=(
                         getattr(args, "partition_tasks", 120)
                         if state["jobs"]
                         else min(20, getattr(args, "partition_tasks", 120))
                     ),
+                    target_seconds=args.job_seconds,
+                    maximum_seconds=maximum_seconds,
                 )
+                state["admission_unresolved"].update(rejected)
                 if partition:
                     selected_species = species
                     break
@@ -437,7 +633,8 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
             if disk_gib > getattr(args, "max_disk_gib", 2000):
                 raise ValueError("partition requires an independently reviewed disk profile")
             job_rate = worker_prices.hourly_bound(disk_gib, throughput_mibps=args.disk_throughput_mibps)
-            limit_seconds = job_timeout(largest, args.job_seconds)
+            batch_work = [task_workload(t) for t in partition]
+            limit_seconds = max(args.job_seconds, workload_seconds(batch_work, assumptions))
             reserved_seconds = limit_seconds + 900
             if not budget_allows(spent + future_charge, args.budget, reserved_seconds, job_rate):
                 if active:
@@ -456,6 +653,7 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                 partition,
                 directory,
                 config_path=config_dir / selected_species["config_name"],
+                planning=assumptions,
             )
             input_key = f"{args.cohort}/inputs/{input_sha}.tar"
             objects.put(input_key, bundle.read_bytes())
@@ -516,7 +714,10 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                     {
                         "ResourceType": "instance",
                         "Tags": [
-                            {"Key": "Name", "Value": f"amalgkit-{args.cohort}-{job_id}"},
+                            {
+                                "Key": "Name",
+                                "Value": f"amalgkit-{args.cohort}-{job_id}",
+                            },
                             {"Key": "daf-cloud", "Value": "managed"},
                             {"Key": "cohort", "Value": args.cohort},
                             {"Key": "job-id", "Value": job_id},
@@ -539,6 +740,11 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                 "disk_throughput_mibps": args.disk_throughput_mibps,
                 "request": request,
                 "reserved_seconds": reserved_seconds,
+                "planning_assumptions": asdict(assumptions),
+                "planning_work_seconds": workload_seconds(batch_work, assumptions),
+                "planning_total_bytes": sum(t.raw_bytes for t in batch_work),
+                "planning_total_bases": sum(t.total_bases for t in batch_work),
+                "planning_transfer_bytes": sum(t.transfer_bytes for t in batch_work),
                 "hourly_upper_bound": job_rate,
             }
             state["jobs"].append(job)
@@ -590,11 +796,27 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--instance-profile", required=True)
     parser.add_argument("--instance-type", default="c7i.2xlarge")
     parser.add_argument("--job-seconds", type=int, default=14400)
+    parser.add_argument(
+        "--max-job-seconds",
+        type=int,
+        help="Optional tighter duration cap; gross remaining budget always bounds oversized new jobs",
+    )
+    parser.add_argument("--planning-transfer-bytes-per-second", type=float, default=0)
+    parser.add_argument("--planning-extract-bases-per-second", type=float, default=0)
+    parser.add_argument("--planning-quant-bases-per-second", type=float, default=0)
+    parser.add_argument(
+        "--planning-rate-source",
+        default="",
+        help="Workload-matched evidence or explicit scenario rationale",
+    )
     parser.add_argument("--poll-seconds", type=int, default=60)
     parser.add_argument("--max-workers", type=int, default=1)
     parser.add_argument("--max-attempts", type=int, default=3)
     parser.add_argument(
-        "--config-dir", type=Path, required=True, help="Directory containing the frozen species configurations"
+        "--config-dir",
+        type=Path,
+        required=True,
+        help="Directory containing the frozen species configurations",
     )
     parser.add_argument("--startup-template", type=Path)
     parser.add_argument("--task-allocation", type=Path)
@@ -631,10 +853,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--worker-compression-level", type=int, choices=range(1, 10), default=1)
     parser.add_argument("--worker-ena-file-workers", type=int, choices=(1, 2), default=1)
     args = parser.parse_args(argv)
+    if args.max_job_seconds is not None and args.max_job_seconds < args.job_seconds:
+        parser.error("maximum job envelope must be at least the batch target")
     if not 125 <= args.disk_throughput_mibps <= 750:
         parser.error("disk throughput must be 125–750 MiB/s at baseline 3000 IOPS")
     if (
-        min(args.partition_bytes, args.partition_tasks, args.min_disk_gib, args.max_disk_gib, args.disk_reserve_gib)
+        min(
+            args.partition_bytes,
+            args.partition_tasks,
+            args.min_disk_gib,
+            args.max_disk_gib,
+            args.disk_reserve_gib,
+        )
         <= 0
         or not math.isfinite(args.disk_expansion_factor)
         or args.disk_expansion_factor < 1

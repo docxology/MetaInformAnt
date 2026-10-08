@@ -42,10 +42,18 @@ producer state. It does not certify receipt contents or biological readiness.
 - `fastq_compression`: strict pigz level (1–9, default 6) and thread settings;
   optional level 1 for temporary acquisition scratch. Native FASTQ validation
   still gates promotion; worker results and AWS jobs retain the selected level.
+- `acquisition_prerequisites`: native metadata batch/quantifier classification and
+  executable dependency validation before acquisition or durable-store access.
+  Metadata reference aliases retain the frozen index digest. Unsupported long-read
+  FASTA/MMI/tool bindings remain unresolved; no backend substitution is allowed.
 - `acquisition_manifest`, `acquisition_references`, `acquisition_sample`,
   `acquisition_worker`, `acquisition_worker_cli`: frozen local/AWS execution;
   configurations/input hashes and exclusive root ownership checked before work;
   per-run journals retained and reused/newly quantified counts distinguished.
+- `acquisition_scheduling`: explicit rate assumptions, positive workload counts,
+  aggregate stage-duration planning and remaining-time admission. New AWS batches
+  fit the job target or isolate an oversized task within the maximum duration;
+  unknown/unsupported work remains unresolved. Original admissions are immutable.
 - `acquisition_allocation`, `acquisition_snapshot`, `acquisition_estimates`,
   `acquisition_pricing`, `acquisition_cli`: immutable disjoint lane planning,
   conflict-refusing staging and explicit gross cost/time scenarios. No estimator

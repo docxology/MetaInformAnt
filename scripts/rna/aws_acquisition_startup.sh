@@ -12,6 +12,7 @@ INPUT_SHA=@@INPUT_SHA@@
 JOB_PREFIX=@@JOB_PREFIX@@
 LIMIT_SECONDS=@@LIMIT_SECONDS@@
 RAW_BYTES=@@RAW_BYTES@@
+export AMALGKIT_WORKER_DEADLINE_EPOCH="$(( $(date +%s) + LIMIT_SECONDS ))"
 mkdir -p /mnt/completion /opt/amalgkit /mnt/snapshot
 export TMPDIR=/mnt/completion/tmp
 mkdir -p "$TMPDIR"
@@ -88,7 +89,12 @@ upload_progress() {
 upload_progress &
 cd /opt/amalgkit
 export PYTHONPATH="$PWD/src"
-timeout --signal=TERM --kill-after=120 "$LIMIT_SECONDS" \
+REMAINING_SECONDS="$(( AMALGKIT_WORKER_DEADLINE_EPOCH - $(date +%s) ))"
+if [ "$REMAINING_SECONDS" -le 0 ]; then
+  printf 'Worker deadline expired during setup\n' >&2
+  exit 124
+fi
+timeout --signal=TERM --kill-after=120 "$REMAINING_SECONDS" \
   uv run --frozen --no-dev --extra rna --extra aws --python 3.12 python \
   scripts/rna/acquisition_worker.py \
   --manifest /mnt/snapshot/manifest.jsonl --data-root "$AMALGKIT_DATA_ROOT" \

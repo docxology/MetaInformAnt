@@ -14,6 +14,23 @@ Amalgkit stages are Python implementations; legacy R installation helpers
 are not prerequisites for this pinned workflow. A newer
 upstream development commit is not silently substituted into the campaign.
 
+## Quantifier and reference prerequisites
+
+Backend selection follows the installed Amalgkit metadata rules. Before acquisition,
+the generic worker checks that each frozen batch selects the requested accession
+and classifies its native quantifier. Supported short-read work requires a working
+Kallisto executable and the frozen index. Index staging uses the selected metadata
+`scientific_name`, including an explicitly prepared alias, while retaining the
+original species/index checksum binding.
+
+The current acquisition envelope binds a Kallisto index. A long-read run selected
+for oarfish remains unresolved: it needs an explicitly amended transcript FASTA/MMI
+binding, sequencing-technology provenance, native tool bootstrap and validated
+output/receipt support. Installing oarfish alone does not supply these requirements.
+Do not force a long-read run through Kallisto or replace the frozen reference to
+remove an error. Unresolved prerequisite work remains in the frozen denominator;
+its diagnostic classification is neither completion nor a scientific exclusion.
+
 ## Resolving archive metadata gaps
 
 An optional `source_resolutions.json` supplement binds the original inventory
