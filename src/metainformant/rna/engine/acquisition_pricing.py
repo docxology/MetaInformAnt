@@ -100,7 +100,10 @@ def quote_aws_worker(
         prices.compute_hourly,
         prices.gp3_gib_month,
         prices.hourly_bound(disk_gib, throughput_mibps=disk_throughput_mibps),
-        "AWS GetProducts on-demand Linux and selected gp3 throughput at baseline IOPS; conservative 28-day storage month",
+        (
+            "AWS GetProducts on-demand Linux and selected gp3 throughput at baseline IOPS; "
+            "conservative 28-day storage month"
+        ),
         disk_throughput_mibps,
         throughput_price,
     )
