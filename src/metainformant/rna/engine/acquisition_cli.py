@@ -52,6 +52,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     quote.add_argument("--instance-type", required=True)
     quote.add_argument("--disk-gib", type=int, required=True)
+    quote.add_argument("--disk-throughput-mibps", type=int, default=125)
     quote.add_argument("--region", default="us-east-2")
     quote.add_argument("--profile")
     quote.add_argument("--hourly-floor", type=float, default=0.55)
@@ -92,6 +93,7 @@ def main(argv: list[str] | None = None) -> int:
                         region=args.region,
                         instance_type=args.instance_type,
                         disk_gib=args.disk_gib,
+                        disk_throughput_mibps=args.disk_throughput_mibps,
                         profile=args.profile,
                         hourly_floor=args.hourly_floor,
                     )

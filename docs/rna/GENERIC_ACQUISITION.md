@@ -145,8 +145,17 @@ Credits are not deducted. Completion is not guaranteed within a configured cap.
 Partition bytes/task counts, minimum/maximum disk, expansion factor and disk
 reserve are configurable. Defaults remain 60 GiB raw reservations, 120 tasks
 after initial admission, and 600–2,000 GiB disks. Larger configured disks are
-repriced; the controller imposes its own 16,384 GiB maximum. Full-cohort receipt
-coverage and fleet drainage are required before restoring all outputs and
+repriced; the controller imposes its own 16,384 GiB maximum.
+
+`--disk-throughput-mibps` sets gp3 throughput for new AWS jobs and price quotes
+(default 125 MiB/s). Values 125–750 retain baseline 3,000 IOPS. The live AWS
+catalog's GiB/s-month throughput rate is converted to MiB/s-month; throughput
+above 125 is charged separately and included in the complete job reservation
+before admission. Missing or invalid rates fail closed. Check the selected
+instance's sustained EBS bandwidth before increasing the volume setting.
+Existing admissions keep their original request and price.
+
+Full-cohort receipt coverage and fleet drainage are required before restoring all outputs and
 writing a completion certificate. An exhausted or unresolved lane does not
 produce a completion claim.
 

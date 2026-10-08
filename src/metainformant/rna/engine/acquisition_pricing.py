@@ -18,15 +18,23 @@ class AcquisitionPriceQuote:
     gp3_gib_month_usd: float
     hourly_bound_usd: float
     source: str
+    disk_throughput_mibps: int = 125
+    gp3_mibps_month_usd: float = 0.0
 
 
 def quote_aws_worker(
-    *, region: str, instance_type: str, disk_gib: int, profile: str | None = None, hourly_floor: float = 0.55
+    *,
+    region: str,
+    instance_type: str,
+    disk_gib: int,
+    profile: str | None = None,
+    hourly_floor: float = 0.55,
+    disk_throughput_mibps: int = 125,
 ) -> AcquisitionPriceQuote:
     """Read the catalog; include EBS, one IPv4 address and the existing margin.
 
     This is on-demand Linux pricing without licenses, CPU-surplus credits,
-    nonbaseline gp3 IOPS/throughput, or requests/network/object storage. Those
+    nonbaseline gp3 IOPS, or requests/network/object storage. Those
     costs must be reserved separately. The generic launcher uses standard
     CPU credits on burstable instances and rejects licensed AMIs.
     """
@@ -65,7 +73,25 @@ def quote_aws_worker(
         )
         for product in page["PriceList"]
     ]
-    prices = WorkerPrices(catalog_unit_price(compute, "Hrs"), catalog_unit_price(storage, "GB-Mo"), hourly_floor)
+    throughput_price = 0.0
+    if disk_throughput_mibps > 125:
+        dimensions = {"volumeApiName": "gp3", "regionCode": region, "productFamily": "Provisioned Throughput"}
+        throughput = [
+            product
+            for page in pricing.get_paginator("get_products").paginate(
+                ServiceCode="AmazonEC2",
+                Filters=[{"Type": "TERM_MATCH", "Field": k, "Value": v} for k, v in dimensions.items()],
+                MaxResults=100,
+            )
+            for product in page["PriceList"]
+        ]
+        throughput_price = catalog_unit_price(throughput, "GiBps-mo") / 1024
+    prices = WorkerPrices(
+        catalog_unit_price(compute, "Hrs"),
+        catalog_unit_price(storage, "GB-Mo"),
+        hourly_floor,
+        gp3_mibps_month=throughput_price,
+    )
     return AcquisitionPriceQuote(
         region,
         instance_type,
@@ -73,6 +99,8 @@ def quote_aws_worker(
         datetime.now(UTC).isoformat(),
         prices.compute_hourly,
         prices.gp3_gib_month,
-        prices.hourly_bound(disk_gib),
-        "AWS GetProducts on-demand Linux and baseline gp3; conservative 28-day storage month",
+        prices.hourly_bound(disk_gib, throughput_mibps=disk_throughput_mibps),
+        "AWS GetProducts on-demand Linux and selected gp3 throughput at baseline IOPS; conservative 28-day storage month",
+        disk_throughput_mibps,
+        throughput_price,
     )

@@ -45,6 +45,7 @@ class WorkerPrices:
     compute_hourly: float
     gp3_gib_month: float
     hourly_floor: float
+    gp3_mibps_month: float = 0.0
 
     def __post_init__(self) -> None:
         for name, value in [
@@ -54,14 +55,27 @@ class WorkerPrices:
         ]:
             if isinstance(value, bool) or not math.isfinite(value) or value <= 0:
                 raise WorkerPricingError(name, "must be finite and positive")
+        if (
+            isinstance(self.gp3_mibps_month, bool)
+            or not math.isfinite(self.gp3_mibps_month)
+            or self.gp3_mibps_month < 0
+        ):
+            raise WorkerPricingError("gp3_mibps_month", "must be finite and nonnegative")
 
-    def hourly_bound(self, disk_gib: int) -> float:
-        """Include baseline gp3, one public IPv4 address and an operating margin."""
+    def hourly_bound(self, disk_gib: int, *, throughput_mibps: int = 125) -> float:
+        """Include selected gp3 throughput, one IPv4 address and an operating margin."""
         if type(disk_gib) is not int or disk_gib <= 0:
             raise WorkerPricingError("disk_gib", "must be a positive integer")
+        if type(throughput_mibps) is not int or not 125 <= throughput_mibps <= 750:
+            raise WorkerPricingError("throughput_mibps", "must be an integer from 125 to 750 at baseline 3000 IOPS")
+        if throughput_mibps > 125 and self.gp3_mibps_month == 0:
+            raise WorkerPricingError("gp3_mibps_month", "nonbaseline throughput requires a live positive quote")
         return max(
             self.hourly_floor,
-            self.compute_hourly + self.gp3_gib_month * disk_gib / MIN_MONTH_HOURS + PUBLIC_IPV4_HOURLY + HOURLY_MARGIN,
+            self.compute_hourly
+            + (self.gp3_gib_month * disk_gib + self.gp3_mibps_month * (throughput_mibps - 125)) / MIN_MONTH_HOURS
+            + PUBLIC_IPV4_HOURLY
+            + HOURLY_MARGIN,
         )
 
 

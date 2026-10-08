@@ -27,6 +27,27 @@ def test_current_disk_keeps_the_configured_floor() -> None:
     assert WorkerPrices(0.357, 0.08, 0.55).hourly_bound(600) == 0.55
 
 
+def test_throughput_charge_is_included_before_budget_admission() -> None:
+    prices = WorkerPrices(0.357, 0.08, 0.01, gp3_mibps_month=0.04)
+    expected = 0.357 + (600 * 0.08 + 125 * 0.04) / (28 * 24) + 0.005 + 0.05
+    assert prices.hourly_bound(600, throughput_mibps=250) == pytest.approx(expected)
+    assert WorkerPrices(0.357, 0.08, 0.55, gp3_mibps_month=0.04).hourly_bound(600, throughput_mibps=250) == 0.55
+    with pytest.raises(WorkerPricingError):
+        WorkerPrices(0.357, 0.08, 0.55).hourly_bound(600, throughput_mibps=250)
+
+
+@pytest.mark.parametrize("throughput", [0, 124, 751, True, 250.5])
+def test_invalid_throughput_profiles_fail_closed(throughput: int) -> None:
+    with pytest.raises(WorkerPricingError):
+        WorkerPrices(0.357, 0.08, 0.55).hourly_bound(600, throughput_mibps=throughput)
+
+
+@pytest.mark.parametrize("price", [math.nan, math.inf, -1, True])
+def test_invalid_throughput_prices_fail_closed(price: float) -> None:
+    with pytest.raises(WorkerPricingError):
+        WorkerPrices(0.357, 0.08, 0.55, gp3_mibps_month=price)
+
+
 def test_each_runtime_keeps_its_original_rate() -> None:
     assert runtime_charge(0, 3600, 0.55) + runtime_charge(3600, 10800, 0.8) == pytest.approx(2.15)
     assert runtime_charge(0, 3660, 0.55) > runtime_charge(0, 3600, 0.55)

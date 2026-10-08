@@ -229,8 +229,14 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
         disk_gib=getattr(args, "min_disk_gib", 600),
         profile=args.profile,
         hourly_floor=args.hourly_upper_bound,
+        disk_throughput_mibps=args.disk_throughput_mibps,
     )
-    worker_prices = WorkerPrices(quote.compute_hourly_usd, quote.gp3_gib_month_usd, args.hourly_upper_bound)
+    worker_prices = WorkerPrices(
+        quote.compute_hourly_usd,
+        quote.gp3_gib_month_usd,
+        args.hourly_upper_bound,
+        gp3_mibps_month=quote.gp3_mibps_month_usd,
+    )
     ec2 = session.client(
         "ec2",
         config=Config(
@@ -440,7 +446,7 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
             )
             if disk_gib > getattr(args, "max_disk_gib", 2000):
                 raise ValueError("partition requires an independently reviewed disk profile")
-            job_rate = worker_prices.hourly_bound(disk_gib)
+            job_rate = worker_prices.hourly_bound(disk_gib, throughput_mibps=args.disk_throughput_mibps)
             limit_seconds = job_timeout(largest, args.job_seconds)
             reserved_seconds = limit_seconds + 900
             if not budget_allows(spent + future_charge, args.budget, reserved_seconds, job_rate):
@@ -514,6 +520,8 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                         "Ebs": {
                             "VolumeSize": disk_gib,
                             "VolumeType": "gp3",
+                            "Throughput": args.disk_throughput_mibps,
+                            "Iops": 3000,
                             "Encrypted": True,
                             "DeleteOnTermination": True,
                         },
@@ -542,6 +550,7 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                 "source_sha256": source_sha,
                 "compression_level": args.worker_compression_level,
                 "disk_gib": disk_gib,
+                "disk_throughput_mibps": args.disk_throughput_mibps,
                 "request": request,
                 "reserved_seconds": reserved_seconds,
                 "hourly_upper_bound": job_rate,
@@ -617,6 +626,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--partition-bytes", type=int, default=60 * 1024**3)
     parser.add_argument("--partition-tasks", type=int, default=120)
     parser.add_argument("--min-disk-gib", type=int, default=600)
+    parser.add_argument("--disk-throughput-mibps", type=int, default=125)
     parser.add_argument("--max-disk-gib", type=int, default=2000)
     parser.add_argument("--disk-expansion-factor", type=float, default=6)
     parser.add_argument("--disk-reserve-gib", type=int, default=100)
@@ -634,6 +644,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--once", action="store_true")
     parser.add_argument("--worker-compression-level", type=int, choices=range(1, 10), default=6)
     args = parser.parse_args(argv)
+    if not 125 <= args.disk_throughput_mibps <= 750:
+        parser.error("disk throughput must be 125–750 MiB/s at baseline 3000 IOPS")
     if args.worker_compression_level != 6 and args.config_dir is None:
         parser.error("nondefault compression levels require the generic worker (--config-dir)")
     if (
