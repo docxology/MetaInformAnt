@@ -544,6 +544,11 @@ class ENADownloader:
         if not urls:
             return False, "Not found on ENA", []
 
+        return self._download_files(urls, output_dir)
+
+    def _download_files(self, urls: list[str], output_dir: Path) -> Tuple[bool, str, List[Path]]:
+        """Transfer discovered file URLs with independent ownership and bounded overlap."""
+        output_dir.mkdir(parents=True, exist_ok=True)
         filenames = [url.split("/")[-1] for url in urls]
         if any(not name or name in {".", ".."} for name in filenames) or len(set(filenames)) != len(filenames):
             raise ValueError("ENA URLs require distinct safe output filenames")

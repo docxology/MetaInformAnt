@@ -33,13 +33,9 @@ def test_unknown_size_corruption_retries_fresh_and_preserves_witness(
     thread.start()
     url = f"http://127.0.0.1:{server.server_port}/reads.fastq.gz"
 
-    class LocalDownloader(ENADownloader):
-        def get_fastq_urls(self, sample_id: str) -> list[str]:
-            return [url]
-
     try:
-        success, message, files = LocalDownloader(timeout=10, retries=0, integrity_retries=1).download_run(
-            "local", tmp_path
+        success, message, files = ENADownloader(timeout=10, retries=0, integrity_retries=1)._download_files(
+            [url], tmp_path
         )
         assert success, message
         assert requests == [None, None]
@@ -77,24 +73,22 @@ def test_paired_transfer_overlap_has_a_sequential_negative_control(tmp_path: Pat
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
 
-    class LocalDownloader(ENADownloader):
-        def get_fastq_urls(self, sample_id: str) -> list[str]:
-            return [f"http://127.0.0.1:{server.server_port}/reads_{mate}.fastq.gz" for mate in (1, 2)]
+    urls = [f"http://127.0.0.1:{server.server_port}/reads_{mate}.fastq.gz" for mate in (1, 2)]
 
     try:
-        sequential = LocalDownloader(timeout=3, retries=0, file_workers=1)
-        assert not sequential.download_run("local", tmp_path / "sequential")[0]
+        sequential = ENADownloader(timeout=3, retries=0, file_workers=1)
+        assert not sequential._download_files(urls, tmp_path / "sequential")[0]
         barrier.reset()
         seen.clear()
-        concurrent = LocalDownloader(timeout=3, retries=0, file_workers=2)
-        success, message, files = concurrent.download_run("local", tmp_path / "parallel")
+        concurrent = ENADownloader(timeout=3, retries=0, file_workers=2)
+        success, message, files = concurrent._download_files(urls, tmp_path / "parallel")
         assert success, message
         assert sorted(seen) == ["/reads_1.fastq.gz", "/reads_2.fastq.gz"]
         assert [path.name for path in files] == ["reads_1.fastq.gz", "reads_2.fastq.gz"]
         assert all(gzip.decompress(path.read_bytes()) == gzip.decompress(payload) for path in files)
         before = [(path.read_bytes(), path.stat().st_mtime_ns) for path in files]
         seen.clear()
-        assert concurrent.download_run("local", tmp_path / "parallel")[0]
+        assert concurrent._download_files(urls, tmp_path / "parallel")[0]
         assert not seen
         assert before == [(path.read_bytes(), path.stat().st_mtime_ns) for path in files]
     finally:
@@ -124,20 +118,18 @@ def test_parallel_failure_preserves_successful_mate_and_invalid_witness(tmp_path
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
 
-    class LocalDownloader(ENADownloader):
-        def get_fastq_urls(self, sample_id: str) -> list[str]:
-            return [f"http://127.0.0.1:{server.server_port}/reads_{mate}.fastq.gz" for mate in (1, 2)]
+    urls = [f"http://127.0.0.1:{server.server_port}/reads_{mate}.fastq.gz" for mate in (1, 2)]
 
     try:
-        downloader = LocalDownloader(timeout=3, retries=0, integrity_retries=0, file_workers=2)
-        success, message, files = downloader.download_run("local", tmp_path)
+        downloader = ENADownloader(timeout=3, retries=0, integrity_retries=0, file_workers=2)
+        success, message, files = downloader._download_files(urls, tmp_path)
         assert not success and "gzip integrity" in message
         assert [p.name for p in files] == ["reads_1.fastq.gz"]
         first_mtime = files[0].stat().st_mtime_ns
         assert (tmp_path / "reads_2.fastq.gz.part.invalid").read_bytes() == b"invalid gzip"
         requests.clear()
         corrupt = False
-        success, message, files = downloader.download_run("local", tmp_path)
+        success, message, files = downloader._download_files(urls, tmp_path)
         assert success, message
         assert requests == ["/reads_2.fastq.gz"]
         assert files[0].stat().st_mtime_ns == first_mtime
@@ -154,12 +146,8 @@ def test_file_worker_bounds_and_duplicate_targets_fail_before_transfer(tmp_path:
         with pytest.raises(ValueError, match="file_workers"):
             ENADownloader(file_workers=invalid)
 
-    class DuplicateDownloader(ENADownloader):
-        def get_fastq_urls(self, sample_id: str) -> list[str]:
-            return ["http://127.0.0.1:1/reads.gz"] * 2
-
     with pytest.raises(ValueError, match="distinct safe"):
-        DuplicateDownloader(file_workers=2).download_run("local", tmp_path)
+        ENADownloader(file_workers=2)._download_files(["http://127.0.0.1:1/reads.gz"] * 2, tmp_path)
     assert not list(tmp_path.iterdir())
 
 
@@ -193,13 +181,11 @@ def test_interrupted_native_curl_resumes_from_retained_bytes(tmp_path: Path) -> 
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
 
-    class LocalDownloader(ENADownloader):
-        def get_fastq_urls(self, sample_id: str) -> list[str]:
-            return [f"http://127.0.0.1:{server.server_port}/reads.fastq.gz"]
+    urls = [f"http://127.0.0.1:{server.server_port}/reads.fastq.gz"]
 
     try:
-        success, message, files = LocalDownloader(timeout=10, retries=0, retry_delay_seconds=1).download_run(
-            "local", tmp_path
+        success, message, files = ENADownloader(timeout=10, retries=0, retry_delay_seconds=1)._download_files(
+            urls, tmp_path
         )
         assert success, message
         assert requests == [None, f"bytes={split}-"]
