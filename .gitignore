@@ -140,3 +140,6 @@ output/
 projects/*
 !projects/apis_gwas/
 !projects/template_bioinformatics_project/
+
+# graft's local graph cache is regenerated with graft build.
+/graft/
