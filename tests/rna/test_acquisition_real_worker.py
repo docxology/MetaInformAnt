@@ -32,6 +32,13 @@ def test_real_manifest_quantification_and_second_run_reuses_bytes(
     monkeypatch.setenv("AMALGKIT_MIN_SYSTEM_FREE_GB", "0")
     monkeypatch.setenv("AMALGKIT_RECLAIM_RAW_AFTER_QUANT", "no")
     data = tmp_path / "data"
+    # run_manifest sets these process-wide values; register them for teardown
+    # before exercising native tools so later resource tests keep their defaults.
+    monkeypatch.setenv("AMALGKIT_DATA_ROOT", str(data))
+    monkeypatch.setenv("AMALGKIT_PIPELINE_FASTQ_THREADS", "1")
+    monkeypatch.setenv("AMALGKIT_PIPELINE_COMPRESSION_THREADS", "1")
+    monkeypatch.setenv("AMALGKIT_PIPELINE_VALIDATION_SLOTS", "1")
+    monkeypatch.setenv("AMALGKIT_PIPELINE_COMPRESSION_LEVEL", "1")
     work = data / "test_species/work"
     metadata_dir = work / "metadata"
     index_dir = work / "index"
@@ -125,6 +132,7 @@ def test_real_manifest_quantification_and_second_run_reuses_bytes(
     first = run_manifest(**kwargs)
     assert first["counts"].get("failed", 0) == 0, first["results"]
     assert first["counts"]["newly_quantified"] == 1
+    assert first["resource_profile"]["compression_level"] == 1
     abundance = next((work / "quant/SRR123").glob("*abundance.tsv"))
     before = abundance.read_bytes(), abundance.stat().st_mtime_ns
     second = run_manifest(**kwargs)

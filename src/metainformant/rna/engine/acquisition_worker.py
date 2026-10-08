@@ -24,6 +24,7 @@ from metainformant.rna.engine.acquisition_manifest import (
 )
 from metainformant.rna.engine.acquisition_references import prepare_reference_inputs
 from metainformant.rna.engine.acquisition_sample import execute_manifest_task
+from metainformant.rna.engine.fastq_compression import compression_level
 from metainformant.rna.engine.streaming_orchestrator import (
     StreamingPipelineOrchestrator,
     build_pipeline_resource_profile,
@@ -72,6 +73,7 @@ def _run_manifest_owned(
         max_in_flight=max_in_flight,
     )
     verify_input_files(snapshot, manifest_path.parent)
+    selected_compression_level = compression_level()
     verify_worker_configs(snapshot, tasks, config_dir)
     os.environ["AMALGKIT_DATA_ROOT"] = str(data_root.resolve())
     os.environ.setdefault("AMALGKIT_RECLAIM_RAW_AFTER_QUANT", "no")
@@ -217,6 +219,7 @@ def _run_manifest_owned(
             "quant_threads_per_sample": profile.quant_threads_per_worker,
             "resource_profile": {
                 **asdict(profile),
+                "compression_level": selected_compression_level,
                 "effective_quant_threads": profile.effective_quant_threads,
                 "peak_stage_threads": profile.peak_stage_threads,
             },

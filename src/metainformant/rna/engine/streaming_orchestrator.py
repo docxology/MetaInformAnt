@@ -37,6 +37,7 @@ from metainformant.rna.amalgkit.sra_environment import (
 from metainformant.rna.amalgkit.tissue_normalizer import apply_tissue_normalization
 from metainformant.rna.core.sample_utils import find_quantification_file
 from metainformant.rna.engine.preflight import PreflightError, run_campaign_preflight
+from metainformant.rna.engine.fastq_compression import compression_level, pigz_command
 from metainformant.rna.engine.progress_db import ProgressDB
 from metainformant.rna.engine.provenance import (
     QUANT_STATUS_CURRENT,
@@ -2444,13 +2445,7 @@ class StreamingPipelineOrchestrator:
             compressed_outputs: list[Path] = []
             for fastq in uncompressed:
                 compression = _run_command_in_process_group(
-                    [
-                        "pigz",
-                        "-f",
-                        "-p",
-                        str(self._resource_profile.compression_threads),
-                        str(fastq),
-                    ],
+                    pigz_command(fastq, threads=self._resource_profile.compression_threads, level=compression_level()),
                     timeout=self.compression_timeout_seconds,
                 )
                 gz_path = fastq.with_suffix(".fastq.gz")

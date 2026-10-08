@@ -122,6 +122,17 @@ ledger. IAM role, bucket permissions, regional quota, AMI and network access mus
 already support the workload. Existing live workers keep their admitted source,
 request, deadline and price; new settings apply to subsequently admitted jobs.
 
+Fallback FASTQ compression defaults to pigz level 6. Select level 1 for temporary
+FASTQ files when CPU time matters more than compressed scratch size: pass
+`--compression-level 1` to local/worker execution or
+`--worker-compression-level 1` to the generic AWS controller. Both accept levels
+1–9 and reject invalid values. Direct streaming callers can set
+`AMALGKIT_PIPELINE_COMPRESSION_LEVEL=1`. Compression remains lossless; the existing
+FASTQ validation and provenance checks still apply. Level 1 can require more
+scratch space, so retain raw-byte reservations and disk headroom and measure
+the workload before changing concurrency. Worker results and AWS job records
+retain the selected compression level for cost and throughput comparisons.
+
 The default bootstrap supports Amazon Linux 2023 on x86_64. Other architectures
 need an explicit custom startup template; licensed AMIs are excluded from this
 Linux pricing model. Burstable instance families use standard CPU credits to

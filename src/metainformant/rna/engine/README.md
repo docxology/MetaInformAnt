@@ -27,6 +27,7 @@ the campaign preflight before any discovery or scheduling work.
 | `pipeline.py` | Matrix and downstream table helpers |
 | `discovery.py` | Read-only species and sample discovery utilities |
 | `sra_extraction.py` | SRA fallback extraction helpers |
+| `fastq_compression.py` | Strict lossless pigz level and thread command settings; default level 6, optional level 1 for temporary FASTQ scratch |
 
 ## Key interfaces
 

@@ -487,6 +487,7 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                             "MAX_IN_FLIGHT": args.worker_max_in_flight,
                             "FASTQ_THREADS": args.worker_fastq_threads,
                             "COMPRESSION_THREADS": args.worker_compression_threads,
+                            "COMPRESSION_LEVEL": args.worker_compression_level,
                             "VALIDATION_SLOTS": args.worker_validation_slots,
                         }
                         if generic_worker
@@ -539,6 +540,7 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                 "client_token": token,
                 "input_sha256": input_sha,
                 "source_sha256": source_sha,
+                "compression_level": args.worker_compression_level,
                 "disk_gib": disk_gib,
                 "request": request,
                 "reserved_seconds": reserved_seconds,
@@ -630,7 +632,10 @@ def main(argv: list[str] | None = None) -> int:
     ):
         parser.add_argument(f"--worker-{flag}", type=int, default=default)
     parser.add_argument("--once", action="store_true")
+    parser.add_argument("--worker-compression-level", type=int, choices=range(1, 10), default=6)
     args = parser.parse_args(argv)
+    if args.worker_compression_level != 6 and args.config_dir is None:
+        parser.error("nondefault compression levels require the generic worker (--config-dir)")
     if (
         min(args.partition_bytes, args.partition_tasks, args.min_disk_gib, args.max_disk_gib, args.disk_reserve_gib)
         <= 0

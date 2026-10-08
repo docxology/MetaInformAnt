@@ -39,6 +39,9 @@ writes timestamped Markdown/JSON and sample/transfer TSVs without changing
 producer state. It does not certify receipt contents or biological readiness.
 
 ### Exports
+- `fastq_compression`: strict pigz level (1–9, default 6) and thread settings;
+  optional level 1 for temporary acquisition scratch. Native FASTQ validation
+  still gates promotion; worker results and AWS jobs retain the selected level.
 - `acquisition_manifest`, `acquisition_references`, `acquisition_sample`,
   `acquisition_worker`, `acquisition_worker_cli`: frozen local/AWS execution;
   configurations/input hashes and exclusive root ownership checked before work;

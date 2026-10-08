@@ -132,11 +132,13 @@ def test_generic_aws_template_is_complete_shell_safe_and_syntax_valid(
         "MAX_IN_FLIGHT": 12,
         "FASTQ_THREADS": 2,
         "COMPRESSION_THREADS": 2,
+        "COMPRESSION_LEVEL": 1,
         "VALIDATION_SLOTS": 4,
     }
     text = _render_startup(ROOT / "scripts/rna/aws_acquisition_startup.sh", bindings)
     assert "@@" not in text and "hymenoptera_amalgkit" not in text
     assert "--config-dir /mnt/snapshot/config/amalgkit" in text
+    assert "--compression-level 1" in text
     script = tmp_path / "startup.sh"
     script.write_text(text)
     subprocess.run(["bash", "-n", str(script)], check=True, capture_output=True, text=True)
