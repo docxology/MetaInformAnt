@@ -145,23 +145,16 @@ class TestStreamingOrchestrator:
         assert orchestrator.is_quantified("nonexistent_species", "SRR_FAKE") is False
 
     @pytest.mark.network
+    @pytest.mark.timeout(60)
     def test_query_ena_fastq_urls_format(self, orchestrator: StreamingPipelineOrchestrator) -> None:
-        """Test that query_ena_fastq_urls returns properly formatted URLs.
-
-        Uses a real ENA API call if network is available, otherwise
-        verifies the function handles errors gracefully.
-        """
-        try:
-            # Real API call with a known small sample
-            urls = orchestrator.query_ena_fastq_urls("DRR030161")
-            if urls:
-                for url in urls:
-                    assert isinstance(url, str)
-                    assert url.startswith("https://")
-                    assert ".fastq.gz" in url
-        except Exception:
-            # Network unavailable — just verify no crash
-            pass
+        """Check live ENA URLs with time for the client's 30-second request timeout."""
+        urls = orchestrator.query_ena_fastq_urls("DRR030161")
+        if not urls:
+            pytest.skip("ENA did not return FASTQ URLs for the live test accession")
+        for url in urls:
+            assert isinstance(url, str)
+            assert url.startswith("https://")
+            assert ".fastq.gz" in url
 
 
 def test_streaming_path_helpers_prefer_selected_metadata(tmp_path: Path) -> None:
