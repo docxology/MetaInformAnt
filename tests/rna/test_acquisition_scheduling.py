@@ -225,3 +225,19 @@ def test_archive_binds_planning_profile_without_changing_frozen_inputs(tmp_path)
     assert snapshot["task_count"] == 1
     assert digest == hashlib.sha256(bundle.read_bytes()).hexdigest()
     assert all(hashlib.sha256(p.read_bytes()).hexdigest() == expected for p, expected in hashes.items())
+
+
+def test_workload_parses_read_only_scalar_manifest_mapping() -> None:
+    from types import MappingProxyType
+
+    from metainformant.rna.engine.acquisition_scheduling import task_workload
+
+    manifest = MappingProxyType({"task_id": "s/SRR1", "fastq_bytes": "1000", "total_bases": 1000.0})
+    assert task_workload(manifest) == Workload("s/SRR1", 1000, 1000, transfer_bytes=1000)
+
+
+def test_workload_rejects_nonstring_manifest_identity() -> None:
+    from metainformant.rna.engine.acquisition_scheduling import task_workload
+
+    with pytest.raises(AcquisitionEstimateError, match="task_id"):
+        task_workload({"task_id": 123, "fastq_bytes": 1000, "total_bases": 1000})

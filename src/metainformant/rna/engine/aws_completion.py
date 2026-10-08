@@ -22,6 +22,7 @@ from metainformant.rna.engine.acquisition_aws_policy import (
 from metainformant.rna.engine.acquisition_estimates import AcquisitionEstimateError
 from metainformant.rna.engine.acquisition_scheduling import (
     PlanningAssumptions,
+    Workload,
     positive_size,
     task_workload,
     workload_seconds,
@@ -131,7 +132,8 @@ def choose_deadline_partition(
             unresolved[task["task_id"]] = "single task exceeds maximum job envelope"
             continue
         candidates.append((work, task))
-    selected, workloads = [], []
+    selected: list[dict[str, Any]] = []
+    workloads: list[Workload] = []
     for work, task in sorted(candidates, key=lambda item: (item[0].raw_bytes, item[0].task_id)):
         proposed = workloads + [work]
         if selected and (
@@ -499,7 +501,8 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
                 priority=getattr(args, "priority_species", "nasonia_vitripennis"),
                 last=getattr(args, "last_species", ()),
             )
-            selected_species, partition = None, []
+            selected_species = None
+            partition: list[dict[str, Any]] = []
             try:
                 assumptions = _planning_assumptions(args)
             except AcquisitionEstimateError as exc:

@@ -118,3 +118,24 @@ def test_missing_native_kallisto_is_rejected(tmp_path: Path, monkeypatch: pytest
     monkeypatch.setenv("PATH", str(tmp_path / "no-executables"))
     with pytest.raises(FileNotFoundError, match="kallisto executable not found"):
         require_worker_prerequisites(results)
+
+
+@pytest.mark.parametrize("batch", [None, True, False, "", "not-a-batch", "1.5", 0, -1, 2])
+def test_invalid_batch_input_is_unresolved(tmp_path: Path, batch: str | int | bool | None) -> None:
+    metadata = _metadata(tmp_path / "metadata.tsv", platform="ILLUMINA")
+    results = classify_task_prerequisites(
+        metadata_path=metadata,
+        tasks=[dict(task_id="apis_mellifera/SRR32701718", accession="SRR32701718", batch_index=batch)],
+    )
+    assert results[0].status == "unresolved"
+    assert "batch index" in results[0].reason
+
+
+def test_string_batch_input_keeps_native_selection(tmp_path: Path) -> None:
+    metadata = _metadata(tmp_path / "metadata.tsv", platform="ILLUMINA")
+    results = classify_task_prerequisites(
+        metadata_path=metadata,
+        tasks=[dict(task_id="apis_mellifera/SRR32701718", accession="SRR32701718", batch_index="1")],
+    )
+    assert results[0].status == "ready"
+    assert results[0].backend == "kallisto"

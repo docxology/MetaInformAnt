@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from importlib import import_module
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -33,7 +34,8 @@ def prepare_reference_inputs(
 
     import pandas as pd
     import yaml
-    from amalgkit.quant import get_index
+
+    quant_api = import_module("amalgkit.quant")
 
     species_configs = {str(task["species"]): str(task["config_name"]) for task in tasks}
     records: list[dict[str, Any]] = []
@@ -92,7 +94,7 @@ def prepare_reference_inputs(
             command = _build_quant_command(config, species, 1, 1, str(metadata_path), reference_target=target)
             native_index_dir = command[command.index("--index_dir") + 1]
             index = Path(
-                get_index(
+                quant_api.get_index(
                     SimpleNamespace(index_dir=native_index_dir, build_index=False),
                     target,
                     backend="kallisto",

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from importlib import import_module
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Literal
@@ -42,12 +43,12 @@ def classify_task_prerequisites(
     reads therefore require an explicit envelope amendment, even if oarfish is
     installed. This is an admission classification, never a backend override.
     """
-    from amalgkit.metadata_utils import load_metadata, parse_bool_flags
-    from amalgkit.quant import resolve_oarfish_seq_tech, resolve_quant_backend
+    metadata_api = import_module("amalgkit.metadata_utils")
+    quant_api = import_module("amalgkit.quant")
 
     args = SimpleNamespace(metadata=str(metadata_path), quant_backend="auto", oarfish_seq_tech="auto")
-    metadata = load_metadata(args)
-    sampled = parse_bool_flags(metadata.df["is_sampled"], column_name="is_sampled", default="no")
+    metadata = metadata_api.load_metadata(args)
+    sampled = metadata_api.parse_bool_flags(metadata.df["is_sampled"], column_name="is_sampled", default="no")
     batch_runs = metadata.df.loc[sampled, "run"].tolist()
     results: list[TaskPrerequisite] = []
     for task in tasks:
@@ -56,14 +57,24 @@ def classify_task_prerequisites(
         backend = ""
         technology = ""
         reason = ""
-        batch = int(task["batch_index"])
-        if batch < 1 or batch > len(batch_runs) or batch_runs[batch - 1] != accession:
+        batch_value = task.get("batch_index")
+        batch = None
+        if isinstance(batch_value, (str, int)) and not isinstance(batch_value, bool):
+            try:
+                batch = int(batch_value)
+            except ValueError:
+                batch = None
+        if batch is None or batch < 1 or batch > len(batch_runs) or batch_runs[batch - 1] != accession:
             reason = "frozen batch index does not select the requested accession"
         else:
             try:
-                backend = resolve_quant_backend(args, metadata, accession)
+                backend = quant_api.resolve_quant_backend(args, metadata, accession)
+                if backend not in ("kallisto", "oarfish"):
+                    raise ValueError(f"Unsupported native quant backend: {backend!r}")
                 if backend == "oarfish":
-                    technology = resolve_oarfish_seq_tech(args, metadata, accession)
+                    technology = quant_api.resolve_oarfish_seq_tech(args, metadata, accession)
+                    if technology not in ("ont-cdna", "ont-drna", "pac-bio", "pac-bio-hifi"):
+                        raise ValueError(f"Unsupported native sequencing technology: {technology!r}")
                     reason = (
                         "oarfish requires an amended frozen transcript FASTA/MMI binding, "
                         "sequencing-technology provenance and validated native tool bootstrap; "
@@ -86,10 +97,9 @@ def classify_task_prerequisites(
 
 def require_worker_prerequisites(results: Sequence[TaskPrerequisite]) -> None:
     """Fail before acquisition and invoke the required native dependency probe."""
-    from amalgkit.quant import check_kallisto_dependency
 
     unresolved = [result for result in results if result.status != "ready"]
     if unresolved:
         raise PrerequisiteError(unresolved)
     if results:
-        check_kallisto_dependency()
+        import_module("amalgkit.quant").check_kallisto_dependency()

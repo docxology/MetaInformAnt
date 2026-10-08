@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
-from typing import NotRequired, TypedDict
 
 from metainformant.rna.engine.acquisition_estimates import AcquisitionEstimateError
 
@@ -84,19 +84,14 @@ class Workload:
             positive_size(self.transfer_bytes, "transfer_bytes")
 
 
-class TaskWorkloadInput(TypedDict):
-    task_id: str
-    fastq_bytes: int | float | str | None
-    total_bases: int | float | str | None
-    source_evidence_sha256: NotRequired[str]
-    sra_bytes: NotRequired[int | float | str | None]
-
-
-def task_workload(task: TaskWorkloadInput) -> Workload:
-    """Share the same source-size interpretation between controller and worker."""
+def task_workload(task: Mapping[str, str | int | float | None]) -> Workload:
+    """Parse scalar manifest fields at the shared controller/worker boundary."""
+    task_id = task["task_id"]
+    if not isinstance(task_id, str):
+        raise AcquisitionEstimateError("task_id", "requires a string")
     sra = bool(task.get("source_evidence_sha256"))
     return Workload(
-        task["task_id"],
+        task_id,
         positive_size(task.get("fastq_bytes"), "fastq_bytes"),
         positive_size(task.get("total_bases"), "total_bases"),
         positive_size(task.get("sra_bytes") if sra else task.get("fastq_bytes"), "transfer_bytes"),
