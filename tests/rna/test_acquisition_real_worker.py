@@ -90,7 +90,9 @@ def test_real_manifest_quantification_and_second_run_reuses_bytes(
     config_dir.mkdir()
     config = config_dir / "amalgkit_test_species.yaml"
     config.write_text(
-        "reference_aliases:\n  Test species subspecies: Test_species\nspecies_list: [Test_species]\nsteps:\n  quant:\n    index_dir: output/amalgkit/test_species/work/index\n"
+        "reference_aliases:\n  Test species subspecies: Test_species\n"
+        "species_list: [Test_species]\nsteps:\n  quant:\n"
+        "    index_dir: output/amalgkit/test_species/work/index\n"
     )
     manifest = tmp_path / "manifest.jsonl"
     manifest.write_text(
