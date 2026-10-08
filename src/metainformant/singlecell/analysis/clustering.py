@@ -178,7 +178,7 @@ def leiden_clustering(
     # Perform Leiden clustering
     partition = leidenalg.find_partition(
         ig.Graph.from_networkx(G),
-        leidenalg.ModularityVertexPartition,
+        leidenalg.RBConfigurationVertexPartition,
         resolution_parameter=resolution,
         seed=random_state,
     )

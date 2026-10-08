@@ -9,21 +9,25 @@ The clustering module provides various algorithms for identifying cell populatio
 Leiden algorithm for community detection in cell similarity graphs:
 
 ```python-snippet
-from metainformant.singlecell.clustering import leiden_clustering
+from metainformant.singlecell.analysis.clustering import leiden_clustering
 
 # Standard Leiden clustering
 data = leiden_clustering(
     data,
     resolution=0.5,        # Higher = more clusters
-    use_rep='neighbors',   # Use precomputed neighbor graph
+    n_neighbors=15,       # Build a cell similarity graph
     random_state=42
 )
 
 # Access cluster assignments
-clusters = data.obs['leiden']  # Cluster labels
+clusters = data.obs['leiden_cluster']  # Cluster labels
 n_clusters = len(clusters.unique())
 print(f"Found {n_clusters} clusters")
 ```
+
+For `SingleCellData`, Leiden optimizes RB configuration modularity with the
+requested `resolution` and optimiser seed. It returns a copy with
+`obs["leiden_cluster"]` and parameters in `uns["leiden_clustering"]`.
 
 ### louvain_clustering()
 

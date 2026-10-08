@@ -331,6 +331,17 @@ class TestLeidenClustering:
         assert "leiden_cluster" in data.obs.columns
         assert data.uns["leiden_clustering"]["n_clusters"] >= 1
 
+    @pytest.mark.parametrize("resolution, expected_count", [(0.0, 1), (100.0, 12)])
+    def test_resolution_changes_real_partition(self, resolution: float, expected_count: int) -> None:
+        original = _make_clustered_data(n_per_cluster=6)
+        result = leiden_clustering(original, resolution=resolution, n_neighbors=11, random_state=42)
+        assert result.obs["leiden_cluster"].nunique() == expected_count
+        assert result.obs.index.equals(original.obs.index)
+        assert "leiden_cluster" not in original.obs
+        np.testing.assert_array_equal(result.X, original.X)
+        repeated = leiden_clustering(original, resolution=resolution, n_neighbors=11, random_state=42)
+        np.testing.assert_array_equal(result.obs["leiden_cluster"], repeated.obs["leiden_cluster"])
+
 
 @pytest.mark.skipif(not (HAS_NETWORKX and HAS_LOUVAIN), reason="graph clustering deps not available")
 class TestLouvainClustering:
