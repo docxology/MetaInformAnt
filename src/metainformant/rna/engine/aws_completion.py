@@ -164,6 +164,12 @@ def _wait_for_fleet(state: dict[str, Any], state_path: Path, args: argparse.Name
         time.sleep(args.poll_seconds)
 
 
+def species_order(species: list[dict[str, Any]], priority: str = "", last: Any = ()) -> list[dict[str, Any]]:
+    """Order species for partitioning: the priority species first, `last` species at the end, else lexical."""
+    deferred = set(last)
+    return sorted(species, key=lambda s: (s["species"] in deferred, s["species"] != priority, s["species"]))
+
+
 def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[str, Any]:
     """Reconcile receipts and own a disjoint, fully reserved worker fleet."""
     import boto3
@@ -391,9 +397,10 @@ def _run_controller_locked(args: argparse.Namespace, owned_lock: Any) -> dict[st
             for job in state["jobs"]:
                 for task_id in job["task_ids"]:
                     attempts[task_id] = attempts.get(task_id, 0) + 1
-            species_options = sorted(
+            species_options = species_order(
                 inventory["species"],
-                key=lambda s: (s["species"] != getattr(args, "priority_species", "nasonia_vitripennis"), s["species"]),
+                priority=getattr(args, "priority_species", "nasonia_vitripennis"),
+                last=getattr(args, "last_species", ()),
             )
             selected_species, partition = None, []
             for species in species_options:
@@ -598,6 +605,12 @@ def main(argv: list[str] | None = None) -> int:
         "--priority-species",
         default="nasonia_vitripennis",
         help="Legacy priority; set an empty value for generic lexical order",
+    )
+    parser.add_argument(
+        "--last-species",
+        action="append",
+        default=[],
+        help="Schedule this species after all others (repeatable); overrides --priority-species",
     )
     parser.add_argument("--partition-bytes", type=int, default=60 * 1024**3)
     parser.add_argument("--partition-tasks", type=int, default=120)

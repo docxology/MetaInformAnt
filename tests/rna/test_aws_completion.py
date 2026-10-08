@@ -12,6 +12,7 @@ from metainformant.rna.engine.aws_completion import (
     budget_allows,
     choose_partition,
     job_timeout,
+    species_order,
     verify_locked_campaign,
 )
 
@@ -65,3 +66,20 @@ def test_completion_certificate_refuses_empty_inventory(tmp_path: Path) -> None:
         verify_locked_campaign(
             {"species": [], "task_count": 0}, DirectoryStore(tmp_path / "store"), "cohort", tmp_path / "result"
         )
+
+
+def test_species_order_defers_last_species_over_priority() -> None:
+    species = [{"species": n} for n in ("nasonia_vitripennis", "apis_mellifera", "bombus_terrestris")]
+    assert [s["species"] for s in species_order(species, priority="nasonia_vitripennis")] == [
+        "nasonia_vitripennis",
+        "apis_mellifera",
+        "bombus_terrestris",
+    ]
+    assert [
+        s["species"] for s in species_order(species, priority="nasonia_vitripennis", last=["nasonia_vitripennis"])
+    ] == [
+        "apis_mellifera",
+        "bombus_terrestris",
+        "nasonia_vitripennis",
+    ]
+    assert [s["species"] for s in species_order(species)] == sorted(s["species"] for s in species)
