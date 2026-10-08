@@ -102,7 +102,7 @@ class AccountedJob(TypedDict):
 
 
 class CampaignBilling(TypedDict):
-    """Historical ledger rate remains the fallback for legacy jobs only."""
+    """Historical ledger rate remains the fallback for original jobs without a per-job rate."""
 
     historical_gross: float
     hourly_upper_bound: float

@@ -220,6 +220,7 @@ def _run_manifest_owned(
             "resource_profile": {
                 **asdict(profile),
                 "compression_level": selected_compression_level,
+                "ena_file_workers": orchestrator.ena_file_workers,
                 "effective_quant_threads": profile.effective_quant_threads,
                 "peak_stage_threads": profile.peak_stage_threads,
             },

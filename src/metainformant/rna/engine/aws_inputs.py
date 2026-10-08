@@ -29,8 +29,6 @@ def _source_bundle(repo: Path, destination: Path) -> str:
     roots = [
         repo / "src",
         repo / "scripts/rna",
-        repo / "projects/hymenoptera_amalgkit/scripts",
-        repo / "projects/hymenoptera_amalgkit/config",
         repo / "config/amalgkit",
     ]
     files = [repo / name for name in ("pyproject.toml", "uv.lock", "README.md")]
@@ -60,7 +58,7 @@ def _inputs_bundle(
     tasks: list[dict[str, Any]],
     directory: Path,
     *,
-    config_path: Path | None = None,
+    config_path: Path,
 ) -> tuple[Path, str]:
     directory.mkdir(parents=True, exist_ok=True)
     manifest = directory / "manifest.jsonl"
@@ -117,25 +115,20 @@ def _inputs_bundle(
                 "size": payload_path.stat().st_size,
             }
         )
-    if config_path is not None:
-        if config_path.is_symlink():
-            raise ValueError("worker configuration must be an owned regular file")
-        config_bytes = config_path.read_bytes()
-        if hashlib.sha256(config_bytes).hexdigest() != species["config_sha256"]:
-            raise ValueError("worker configuration differs from frozen inventory")
-        records.append(
-            {
-                "path": f"config/amalgkit/{config_path.name}",
-                "sha256": hashlib.sha256(config_bytes).hexdigest(),
-                "size": len(config_bytes),
-            }
-        )
+    if config_path.is_symlink():
+        raise ValueError("worker configuration must be an owned regular file")
+    config_bytes = config_path.read_bytes()
+    if hashlib.sha256(config_bytes).hexdigest() != species["config_sha256"]:
+        raise ValueError("worker configuration differs from frozen inventory")
+    records.append(
+        {
+            "path": f"config/amalgkit/{config_path.name}",
+            "sha256": hashlib.sha256(config_bytes).hexdigest(),
+            "size": len(config_bytes),
+        }
+    )
     snapshot = {
-        "schema": (
-            "metainformant.rna.acquisition_snapshot.v1"
-            if config_path is not None
-            else "metainformant.hymenoptera.gcp_snapshot.v1"
-        ),
+        "schema": "metainformant.rna.acquisition_snapshot.v1",
         "source_state": "quiescent",
         "cloud_launch_policy": "checkpointed",
         "amalgkit_version": REQUIRED_AMALGKIT_VERSION,
@@ -159,8 +152,6 @@ def _inputs_bundle(
         archive.add(directory / "snapshot.json", arcname="snapshot.json")
         for record in records:
             if record["path"].startswith("config/"):
-                if config_path is None:
-                    raise ValueError("configuration input record has no configuration file")
                 archive.add(config_path, arcname=record["path"], recursive=False)
                 continue
             relative = Path(record["path"]).relative_to(f"data/{species['species']}/work")

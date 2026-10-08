@@ -8,6 +8,8 @@ with the configured NCBI/SRA fallback and records resumable evidence.
 
 | Script | Purpose |
 |---|---|
+| `acquisition.py` | Unified frozen local/worker/AWS acquisition and budget-bound completion |
+| `acquisition_worker.py` | Bounded idempotent manifest worker |
 | `run_all_species.py` | Configuration-derived multi-species launcher |
 | `process_species.py` | Current single-species wrapper using the same orchestrator as the all-species run |
 | `check_pipeline_status.py` | Inspect SQLite state and downstream evidence |
@@ -53,3 +55,7 @@ bash projects/hymenoptera_amalgkit/scripts/verify_setup.sh \
 Use `--dry-run` and inspect the species inventory before starting downloads.
 For the full scientific analysis, continue with the executable workflow and
 evidence commands in `projects/hymenoptera_amalgkit`.
+
+For frozen cloud completion, use [the generic acquisition guide](../../docs/rna/GENERIC_ACQUISITION.md).
+AWS execution requires an explicit frozen configuration directory and preserves
+existing admission identities, prices, deadlines and task ownership.

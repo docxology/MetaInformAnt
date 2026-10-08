@@ -136,8 +136,11 @@ def test_job_bundle_overlays_resolved_counts_without_rewriting_frozen_metadata(
         "sra_bytes": 1234,
         "source_evidence_sha256": "a" * 64,
     }
+    config = tmp_path / "species.yaml"
+    config.write_text("species: apis_mellifera\n")
+    species.update(config_sha256=hashlib.sha256(config.read_bytes()).hexdigest())
     # When a real job archive is generated.
-    bundle, _ = _inputs_bundle(tmp_path, species, [task], tmp_path / "job")
+    bundle, _ = _inputs_bundle(tmp_path, species, [task], tmp_path / "job", config_path=config)
     # Then frozen bytes stay identical and the archive's new metadata is independently hashed.
     assert metadata.read_bytes() == original
     with tarfile.open(bundle) as archive:

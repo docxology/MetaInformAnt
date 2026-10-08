@@ -36,7 +36,9 @@ are project checkpoints and require the producer lock to be released.
 - `engine.provenance` — current hash-bound receipt writers and validators
 - `engine.durable_quant` — immutable local/S3 output receipts and verified restoration
 - `engine.completion_inventory` — frozen configured-taxon inventory and local output sealing
-- `engine.aws_completion` — budget-bound AWS processing and full-cohort quantification verification
+- `engine.acquisition_cli` — unified local/worker/AWS acquisition entry point
+- `engine.aws_completion` — budget-bound generic AWS processing with explicit frozen
+  configurations and full-cohort quantification verification
 - `engine.preflight` — mandatory start-of-run campaign preflight
   (`run_campaign_preflight`): data-root write probe and Amalgkit CLI
   resolution; runnable as `python -m metainformant.rna.engine.preflight`
@@ -60,3 +62,9 @@ are project checkpoints and require the producer lock to be released.
 - Downstream matrices are admitted only after current metadata, selection,
   quantification, and stage receipts validate.
 - Biological claims are made only from regenerated, source-bound evidence.
+
+- Acquisition compression defaults to lossless level 1; temporary byte and disk
+  reservations remain mandatory for cloud work.
+- ENA file overlap is explicitly bounded to one or two transfers per run and
+  does not expand admitted sample ownership or raw-byte reservations.
+- Existing campaign schemas and original billing records remain readable on resume.

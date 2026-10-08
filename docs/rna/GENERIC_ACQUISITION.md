@@ -29,7 +29,7 @@ extra and working external tools.
 Use existing Amalgkit-selected metadata, reference indexes and progress DB as
 the source. `freeze` appends newly discovered ENA runs into an isolated campaign
 snapshot, preserving canonical inputs. The generic command accepts any nonempty
-configured species set. The legacy Hymenoptera freeze API retains its 27-species
+configured species set. The Hymenoptera inventory preparation API retains its 27-species
 default. Reusing a frozen directory with different configuration bytes fails.
 
 ```bash
@@ -112,7 +112,7 @@ uv run --extra aws python scripts/rna/acquisition.py aws \
   --budget 750 --historical-gross 0 --max-workers 6 \
   --worker-workers 16 --worker-threads 8 --worker-quant-slots 4 \
   --worker-fastq-slots 1 --worker-fastq-threads 2 \
-  --worker-compression-threads 2 --worker-validation-slots 4 \
+  --worker-compression-threads 2 --worker-compression-level 1 --worker-validation-slots 4 \
   --worker-max-in-flight 12 --priority-species ""
 ```
 
@@ -122,8 +122,8 @@ ledger. IAM role, bucket permissions, regional quota, AMI and network access mus
 already support the workload. Existing live workers keep their admitted source,
 request, deadline and price; new settings apply to subsequently admitted jobs.
 
-Fallback FASTQ compression defaults to pigz level 6. Select level 1 for temporary
-FASTQ files when CPU time matters more than compressed scratch size: pass
+Acquisition workers default to lossless pigz level 1 for temporary FASTQ files.
+Select an explicit level when needed: pass
 `--compression-level 1` to local/worker execution or
 `--worker-compression-level 1` to the generic AWS controller. Both accept levels
 1–9 and reject invalid values. Direct streaming callers can set
@@ -210,3 +210,28 @@ explicit completion dependency; their reserved cost is counted separately and
 must not also enter the pending-lane estimate. A conservative budget-fit flag is
 a model result, not permission to launch. Benchmark scaling changes before
 adopting them, and keep the runtime admission ceiling authoritative.
+
+## Transfer overlap and throughput comparisons
+
+`--ena-file-workers` on local/worker execution and `--worker-ena-file-workers`
+on the AWS controller accept 1 (default) or 2. Two overlaps a run's distinct
+FASTQ mate transfers; it does not increase the number of admitted samples or
+raw-byte reservations. Every submitted transfer settles before SRA fallback
+can touch the sample directory. Validated completed mates and resumable partials
+remain available after another mate fails. Duplicate output filenames are refused.
+Streaming callers use `AMALGKIT_PIPELINE_ENA_FILE_WORKERS` with the same bounds.
+Worker results and new AWS admissions record the selected setting.
+
+Measure newly locked samples together with completed compressed bytes and bases
+per hour, species, paired layout, size strata and worker stage. A falling sample
+count can reflect larger samples; falling byte throughput requires additional
+investigation. Source download waits, quantification CPU and extraction I/O can
+be bottlenecks at different times. More CPU does not accelerate a source-limited
+transfer. Compare six/eight-worker trials using comparable workload windows and
+cost per new lock before claiming a scaling benefit. The gross budget, admission
+prices, deadlines, frozen inventory and existing receipt validation remain binding.
+
+All new AWS work uses the generic acquisition worker and explicit frozen
+`--config-dir`; the separate project-specific completion launcher has been removed.
+Historical campaign/input schemas are readable for resumption, and original
+admission requests and billing rates remain immutable.

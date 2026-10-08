@@ -52,11 +52,12 @@ def test_environment_level_is_explicit_and_strict(monkeypatch: pytest.MonkeyPatc
             compression_level()
 
 
-def test_legacy_controller_refuses_unapplied_compression_setting(tmp_path: Path) -> None:
+def test_controller_requires_explicit_frozen_configuration(tmp_path: Path) -> None:
     root = Path(__file__).resolve().parents[2]
     command = [
         sys.executable,
-        str(root / "scripts/rna/complete_hymenoptera.py"),
+        str(root / "scripts/rna/acquisition.py"),
+        "aws",
         "--campaign-root",
         str(tmp_path),
         "--repo",
@@ -77,6 +78,6 @@ def test_legacy_controller_refuses_unapplied_compression_setting(tmp_path: Path)
         "1",
     ]
     result = subprocess.run(command, capture_output=True, text=True)
-    assert result.returncode == 2
-    assert "nondefault compression levels require the generic worker" in result.stderr
+    assert result.returncode != 0
+    assert "requires an explicit --config-dir" in result.stderr
     assert list(tmp_path.iterdir()) == []

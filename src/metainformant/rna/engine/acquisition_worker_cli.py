@@ -23,7 +23,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--threads", type=int, default=18)
     parser.add_argument("--fastq-threads", type=int, default=1)
     parser.add_argument("--compression-threads", type=int, default=1)
-    parser.add_argument("--compression-level", type=int, choices=range(1, 10), default=6)
+    parser.add_argument("--compression-level", type=int, choices=range(1, 10), default=1)
+    parser.add_argument("--ena-file-workers", type=int, choices=(1, 2), default=1)
     parser.add_argument("--validation-slots", type=int, default=4)
     parser.add_argument("--quant-slots", type=int)
     parser.add_argument("--fastq-slots", type=int)
@@ -53,6 +54,7 @@ def main(argv: list[str] | None = None) -> int:
     """Run the cloud task worker."""
 
     args = build_parser().parse_args(argv)
+    os.environ["AMALGKIT_PIPELINE_ENA_FILE_WORKERS"] = str(args.ena_file_workers)
     os.environ["AMALGKIT_PIPELINE_COMPRESSION_LEVEL"] = str(args.compression_level)
     if args.max_raw_bytes is not None:
         if args.max_raw_bytes <= 0:

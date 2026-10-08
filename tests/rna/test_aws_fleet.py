@@ -36,7 +36,7 @@ def test_existing_deadlines_cannot_be_spent_again_on_new_worker() -> None:
         {"status": "running", "deadline": 14400, "hourly_upper_bound": 3.0},
         {"status": "terminated", "deadline": 14400, "hourly_upper_bound": 9.0},
     ]
-    reserved = reserved_future_charge(jobs, now=3600, legacy_hourly_bound=0.55)
+    reserved = reserved_future_charge(jobs, now=3600, historical_hourly_bound=0.55)
     assert reserved == pytest.approx(15.0)
     assert budget_allows(720, 750, 14400, 2.0)
     assert not budget_allows(720 + reserved, 750, 14400, 2.0)

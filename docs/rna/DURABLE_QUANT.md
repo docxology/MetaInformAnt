@@ -87,13 +87,14 @@ plus a storage allowance, and keeps a durable local ledger. The hourly bound is 
 maximum of the operator floor and compute plus provisioned gp3 storage divided by
 672 hours (the shortest calendar month), one public IPv4 address at $0.005/hour,
 and a $0.05/hour operating margin. Larger disks therefore increase reservations.
-Each new job preserves its admitted hourly bound; earlier jobs retain the legacy
+Each new job preserves its admitted hourly bound; earlier jobs retain the original
 ledger rate. Termination requests continue accruing charges until EC2 termination
 is observed. Credits never reduce this gross usage calculation.
 
 ```bash
-uv run --extra aws --extra rna python scripts/rna/complete_hymenoptera.py \
+uv run --extra aws --extra rna python scripts/rna/acquisition.py aws \
   --campaign-root "$AMALGKIT_CAMPAIGN_ROOT" --repo "$PWD" \
+  --config-dir "$AMALGKIT_CONFIG_DIR" \
   --bucket "$AMALGKIT_BUCKET" --cohort "$AMALGKIT_DURABLE_COHORT" \
   --profile "$AWS_PROFILE" --region "$AWS_DEFAULT_REGION" \
   --budget "$AUTHORIZED_TOTAL_GROSS_USD" --historical-gross "$VERIFIED_PRIOR_GROSS_USD" \
@@ -182,10 +183,8 @@ corrupt or mismatched witnesses fail closed. Without an explicit witness it reta
 the original input-path checks. This supports downstream work after an AWS worker
 is terminated or a source checkout moves, without changing the original command
 or pretending quantification was rerun. The updated controller source passes the checked-out species configurations
-and rejects configuration drift during final restoration. An already-running
-controller retains its loaded code; this local validation does not restart it
-or alter immutable worker software. Explicit portable restoration remains
-available when that older controller finishes.
+and rejects configuration drift during final restoration. Running AWS workers retain their admitted code and input bindings when the local
+controller is updated; new jobs use the current generic acquisition bootstrap.
 
 An isolated diagnostic subset must identify its selected run IDs and full frozen
 species denominators. A complete subset is not a complete species. Keep its data

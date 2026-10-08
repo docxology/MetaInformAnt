@@ -20,6 +20,7 @@ Example:
     Download downloaded 2 files
 """
 
+import concurrent.futures
 import csv
 import gzip
 import os
@@ -337,6 +338,7 @@ class ENADownloader:
         api_retries: int = 2,
         api_retry_delay_seconds: int = 2,
         api_timeout_seconds: int = 30,
+        file_workers: int = 1,
     ):
         """
         Initialize the downloader.
@@ -367,6 +369,8 @@ class ENADownloader:
                 (default: 2).
             api_retry_delay_seconds: Seconds between ENA API retries
                 (default: 2).
+            file_workers: Maximum overlapping file transfers per run (1 or 2).
+                Default 1; 2 permits paired mates to transfer together.
             api_timeout_seconds: Timeout for each ENA metadata request
                 (default: 30). Keep this shorter than an enclosing test or
                 workflow watchdog when operating in bounded environments.
@@ -391,6 +395,9 @@ class ENADownloader:
             raise ValueError("api_retry_delay_seconds must be positive")
         if api_timeout_seconds <= 0:
             raise ValueError("api_timeout_seconds must be positive")
+        if type(file_workers) is not int or file_workers not in (1, 2):
+            raise ValueError("file_workers must be 1 or 2")
+        self.file_workers = file_workers
         self.timeout = timeout
         self.retries = retries
         self.integrity_retries = integrity_retries
@@ -524,201 +531,217 @@ class ENADownloader:
             ...     print(f"Downloaded: {[f.name for f in files]}")
 
         Note:
-            - Existing non-empty files are skipped (resume support)
+            - Existing files are reused only after gzip validation
             - Uses curl with retry logic for reliability
-            - Cleans up partial downloads on failure
+            - Retains partial files and validated mates on failure
+            - At most file_workers transfers overlap within one run
         """
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
-        downloaded_files = []
 
         # 1. Discover URLs
         urls = self.get_fastq_urls(sample_id)
         if not urls:
             return False, "Not found on ENA", []
 
-        # 2. Download each file
-        for url in urls:
-            filename = url.split("/")[-1]
-            output_file = output_dir / filename
-
-            partial_file = output_file.with_name(f"{output_file.name}.part")
-
-            # Check if already exists and non-empty. Resume support must still
-            # reject corrupt gzip files from interrupted prior downloads.
-            if output_file.exists() and output_file.stat().st_size > 0:
-                if verify_gzip_integrity(output_file):
-                    downloaded_files.append(output_file)
-                    continue
-                logger.warning(
-                    "Existing FASTQ failed gzip integrity check; preserving it and starting a fresh transfer: %s",
-                    output_file,
-                )
-                record_invalid_transfer(
-                    output_file,
-                    reason="existing_invalid_gzip",
-                    max_witness_bytes=self.invalid_witness_max_bytes,
-                )
-
-            # A previous interrupted curl is retained as ``.part``.  ENA
-            # advertises byte ranges, so curl can continue without repeating
-            # the already acquired portion of a multi-gigabyte FASTQ.
-
-            # Run each retry as a separate curl invocation. Curl's
-            # ``--retry-all-errors`` restarts a failed transfer within the
-            # same invocation and can discard bytes received during that
-            # attempt. Separate invocations allow ``--continue-at -`` to
-            # advance from the retained partial after exit 18/52 failures.
-            cmd = [
-                "curl",
-                "-fsSL",
-                "--connect-timeout",
-                "30",
-                "--speed-limit",
-                str(self.speed_limit_bytes),
-                "--speed-time",
-                str(self.speed_time_seconds),
-                "--continue-at",
-                "-",
-                "-o",
-                str(partial_file),
-                "--write-out",
-                "%{http_code}",
-                url,
-            ]
-
-            deadline = time.monotonic() + self.timeout
-            consecutive_no_progress = 0
-            retry_events = 0
-            gzip_integrity_retries = 0
-            while True:
-                remaining_seconds = deadline - time.monotonic()
-                if remaining_seconds <= 0:
-                    return False, f"Download timed out; retained partial {partial_file.name}", []
-
-                size_before = partial_file.stat().st_size if partial_file.exists() else 0
-                try:
-                    result = _run_command_in_process_group(
-                        cmd,
-                        timeout=max(1, int(remaining_seconds)),
-                    )
-                except subprocess.TimeoutExpired:
-                    return False, f"Download timed out; retained partial {partial_file.name}", []
-                except Exception as e:
-                    return False, f"Download error: {str(e)}", []
-
-                if (
-                    result.returncode == 0
-                    and partial_file.exists()
-                    and partial_file.stat().st_size > 0
-                    and verify_gzip_integrity(partial_file)
-                ):
-                    partial_file.replace(output_file)
-                    downloaded_files.append(output_file)
+        filenames = [url.split("/")[-1] for url in urls]
+        if any(not name or name in {".", ".."} for name in filenames) or len(set(filenames)) != len(filenames):
+            raise ValueError("ENA URLs require distinct safe output filenames")
+        if self.file_workers == 1:
+            outcomes = []
+            for url in urls:
+                outcome = self._download_file(url, output_dir)
+                outcomes.append(outcome)
+                if not outcome[0]:
                     break
+        else:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=self.file_workers) as executor:
+                outcomes = list(executor.map(lambda url: self._download_file(url, output_dir), urls))
+        # All submitted mates have settled before fallback may touch this directory.
+        files = [path for success, _, paths in outcomes if success for path in paths]
+        errors = [message for success, message, _ in outcomes if not success]
+        if errors:
+            return False, "; ".join(errors), files
+        return True, f"Downloaded {len(files)} files", files
 
-                if result.returncode == 0:
-                    # Before discarding the payload, check whether it is merely
-                    # truncated: if the transfer is shorter than the advertised
-                    # Content-Length, retain the bytes and resume rather than
-                    # repeating the whole download from byte zero.
-                    local_size = partial_file.stat().st_size if partial_file.exists() else 0
-                    remote_size = _remote_content_length(url)
-                    if (
-                        local_size > 0
-                        and remote_size is not None
-                        and local_size < remote_size
-                        and gzip_integrity_retries < self.integrity_retries
-                    ):
-                        # Do NOT move the payload aside here: the retained
-                        # .part bytes are the resume base for the next attempt.
-                        gzip_integrity_retries += 1
-                        logger.warning(
-                            "ENA transfer for %s is truncated (%d of %d advertised bytes) and "
-                            "failed gzip integrity; resuming from the retained partial "
-                            "(resume attempt %d/%d)",
-                            filename,
-                            local_size,
-                            remote_size,
-                            gzip_integrity_retries,
-                            self.integrity_retries,
-                        )
-                        consecutive_no_progress = 0
-                        continue
-                    if partial_file.exists():
-                        # A full-size/unknown-size corrupt transfer, or an
-                        # exhausted bounded resume, must leave an invalid
-                        # witness before a fresh retry or terminal failure.
-                        record_invalid_transfer(
-                            partial_file,
-                            reason="completed_transfer_invalid_gzip",
-                            max_witness_bytes=self.invalid_witness_max_bytes,
-                        )
-                    if output_file.exists():
-                        record_invalid_transfer(
-                            output_file,
-                            reason="completed_output_invalid_gzip",
-                            max_witness_bytes=self.invalid_witness_max_bytes,
-                        )
+    def _download_file(self, url: str, output_dir: Path) -> Tuple[bool, str, List[Path]]:
+        """Own one distinct mate's resumable transfer and integrity evidence."""
+        filename = url.split("/")[-1]
+        output_file = output_dir / filename
+
+        partial_file = output_file.with_name(f"{output_file.name}.part")
+
+        # Check if already exists and non-empty. Resume support must still
+        # reject corrupt gzip files from interrupted prior downloads.
+        if output_file.exists() and output_file.stat().st_size > 0:
+            if verify_gzip_integrity(output_file):
+                return True, "Reused validated FASTQ", [output_file]
+            logger.warning(
+                "Existing FASTQ failed gzip integrity check; preserving it and starting a fresh transfer: %s",
+                output_file,
+            )
+            record_invalid_transfer(
+                output_file,
+                reason="existing_invalid_gzip",
+                max_witness_bytes=self.invalid_witness_max_bytes,
+            )
+
+        # A previous interrupted curl is retained as ``.part``.  ENA
+        # advertises byte ranges, so curl can continue without repeating
+        # the already acquired portion of a multi-gigabyte FASTQ.
+
+        # Run each retry as a separate curl invocation. Curl's
+        # ``--retry-all-errors`` restarts a failed transfer within the
+        # same invocation and can discard bytes received during that
+        # attempt. Separate invocations allow ``--continue-at -`` to
+        # advance from the retained partial after exit 18/52 failures.
+        cmd = [
+            "curl",
+            "-fsSL",
+            "--connect-timeout",
+            "30",
+            "--speed-limit",
+            str(self.speed_limit_bytes),
+            "--speed-time",
+            str(self.speed_time_seconds),
+            "--continue-at",
+            "-",
+            "-o",
+            str(partial_file),
+            "--write-out",
+            "%{http_code}",
+            url,
+        ]
+
+        deadline = time.monotonic() + self.timeout
+        consecutive_no_progress = 0
+        retry_events = 0
+        gzip_integrity_retries = 0
+        while True:
+            remaining_seconds = deadline - time.monotonic()
+            if remaining_seconds <= 0:
+                return False, f"Download timed out; retained partial {partial_file.name}", []
+
+            size_before = partial_file.stat().st_size if partial_file.exists() else 0
+            try:
+                result = _run_command_in_process_group(
+                    cmd,
+                    timeout=max(1, int(remaining_seconds)),
+                )
+            except subprocess.TimeoutExpired:
+                return False, f"Download timed out; retained partial {partial_file.name}", []
+            except Exception as e:
+                return False, f"Download error: {str(e)}", []
+
+            if (
+                result.returncode == 0
+                and partial_file.exists()
+                and partial_file.stat().st_size > 0
+                and verify_gzip_integrity(partial_file)
+            ):
+                partial_file.replace(output_file)
+                return True, "Downloaded validated FASTQ", [output_file]
+
+            if result.returncode == 0:
+                # Before discarding the payload, check whether it is merely
+                # truncated: if the transfer is shorter than the advertised
+                # Content-Length, retain the bytes and resume rather than
+                # repeating the whole download from byte zero.
+                local_size = partial_file.stat().st_size if partial_file.exists() else 0
+                remote_size = _remote_content_length(url)
+                if (
+                    local_size > 0
+                    and remote_size is not None
+                    and local_size < remote_size
+                    and gzip_integrity_retries < self.integrity_retries
+                ):
+                    # Do NOT move the payload aside here: the retained
+                    # .part bytes are the resume base for the next attempt.
                     gzip_integrity_retries += 1
-                    if gzip_integrity_retries <= self.integrity_retries:
-                        logger.warning(
-                            "ENA transfer for %s failed gzip integrity; starting fresh retry "
-                            "%d/%d while preserving the invalid payload",
-                            filename,
-                            gzip_integrity_retries,
-                            self.integrity_retries,
-                        )
-                        consecutive_no_progress = 0
-                        continue
-                    return False, f"Download failed gzip integrity check for {filename}", []
-
-                if not _is_retryable_transfer_failure(result):
-                    return False, f"Download failed for {filename}: {result.stderr}", []
-
-                retained_bytes = partial_file.stat().st_size if partial_file.exists() else 0
-                gained_bytes = max(0, retained_bytes - size_before)
-                if gained_bytes > 0:
+                    logger.warning(
+                        "ENA transfer for %s is truncated (%d of %d advertised bytes) and "
+                        "failed gzip integrity; resuming from the retained partial "
+                        "(resume attempt %d/%d)",
+                        filename,
+                        local_size,
+                        remote_size,
+                        gzip_integrity_retries,
+                        self.integrity_retries,
+                    )
                     consecutive_no_progress = 0
-                else:
-                    consecutive_no_progress += 1
-                if consecutive_no_progress > self.retries:
-                    return (
-                        False,
-                        f"Download retry budget exhausted after {self.retries} "
-                        f"consecutive no-progress failures; retained partial {partial_file.name}",
-                        [],
+                    continue
+                if partial_file.exists():
+                    # A full-size/unknown-size corrupt transfer, or an
+                    # exhausted bounded resume, must leave an invalid
+                    # witness before a fresh retry or terminal failure.
+                    record_invalid_transfer(
+                        partial_file,
+                        reason="completed_transfer_invalid_gzip",
+                        max_witness_bytes=self.invalid_witness_max_bytes,
                     )
-
-                retry_events += 1
-                delay_seconds = min(
-                    self.retry_delay_seconds * (2 ** min(max(consecutive_no_progress - 1, 0), 4)),
-                    60,
-                )
-                remaining_seconds = deadline - time.monotonic()
-                if remaining_seconds <= delay_seconds:
-                    return (
-                        False,
-                        f"Download retry budget exhausted; retained partial {partial_file.name}",
-                        [],
+                if output_file.exists():
+                    record_invalid_transfer(
+                        output_file,
+                        reason="completed_output_invalid_gzip",
+                        max_witness_bytes=self.invalid_witness_max_bytes,
                     )
-                logger.info(
-                    "Retrying resumable ENA transfer for %s after curl %d / HTTP %s "
-                    "(retry event %d; consecutive no-progress failures %d/%d; "
-                    "retained %.2f MiB, gained %.2f MiB, backoff %ds)",
-                    filename,
-                    result.returncode,
-                    _curl_http_status(result) or "unknown",
-                    retry_events,
-                    consecutive_no_progress,
-                    self.retries,
-                    retained_bytes / 1024 / 1024,
-                    gained_bytes / 1024 / 1024,
-                    delay_seconds,
-                )
-                time.sleep(delay_seconds)
+                gzip_integrity_retries += 1
+                if gzip_integrity_retries <= self.integrity_retries:
+                    logger.warning(
+                        "ENA transfer for %s failed gzip integrity; starting fresh retry "
+                        "%d/%d while preserving the invalid payload",
+                        filename,
+                        gzip_integrity_retries,
+                        self.integrity_retries,
+                    )
+                    consecutive_no_progress = 0
+                    continue
+                return False, f"Download failed gzip integrity check for {filename}", []
 
-        return True, f"Downloaded {len(downloaded_files)} files", downloaded_files
+            if not _is_retryable_transfer_failure(result):
+                return False, f"Download failed for {filename}: {result.stderr}", []
+
+            retained_bytes = partial_file.stat().st_size if partial_file.exists() else 0
+            gained_bytes = max(0, retained_bytes - size_before)
+            if gained_bytes > 0:
+                consecutive_no_progress = 0
+            else:
+                consecutive_no_progress += 1
+            if consecutive_no_progress > self.retries:
+                return (
+                    False,
+                    f"Download retry budget exhausted after {self.retries} "
+                    f"consecutive no-progress failures; retained partial {partial_file.name}",
+                    [],
+                )
+
+            retry_events += 1
+            delay_seconds = min(
+                self.retry_delay_seconds * (2 ** min(max(consecutive_no_progress - 1, 0), 4)),
+                60,
+            )
+            remaining_seconds = deadline - time.monotonic()
+            if remaining_seconds <= delay_seconds:
+                return (
+                    False,
+                    f"Download retry budget exhausted; retained partial {partial_file.name}",
+                    [],
+                )
+            logger.info(
+                "Retrying resumable ENA transfer for %s after curl %d / HTTP %s "
+                "(retry event %d; consecutive no-progress failures %d/%d; "
+                "retained %.2f MiB, gained %.2f MiB, backoff %ds)",
+                filename,
+                result.returncode,
+                _curl_http_status(result) or "unknown",
+                retry_events,
+                consecutive_no_progress,
+                self.retries,
+                retained_bytes / 1024 / 1024,
+                gained_bytes / 1024 / 1024,
+                delay_seconds,
+            )
+            time.sleep(delay_seconds)
 
 
 def download_sra_samples(

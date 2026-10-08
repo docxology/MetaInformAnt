@@ -2021,6 +2021,9 @@ class StreamingPipelineOrchestrator:
                 return default
             return value
 
+        self.ena_file_workers = int(os.environ.get("AMALGKIT_PIPELINE_ENA_FILE_WORKERS", "1"))
+        if self.ena_file_workers not in (1, 2):
+            raise ValueError("AMALGKIT_PIPELINE_ENA_FILE_WORKERS must be 1 or 2")
         self.download_timeout_seconds = _duration_setting("AMALGKIT_PIPELINE_DOWNLOAD_TIMEOUT_SECONDS", 7200)
         self.download_speed_limit_bytes = _positive_int_setting("AMALGKIT_PIPELINE_DOWNLOAD_SPEED_LIMIT_BYTES", 1024)
         self.download_speed_time_seconds = _duration_setting("AMALGKIT_PIPELINE_DOWNLOAD_SPEED_TIME_SECONDS", 600)
@@ -2639,6 +2642,7 @@ class StreamingPipelineOrchestrator:
             speed_time_seconds=self.download_speed_time_seconds,
             api_retries=self.ena_api_retries,
             api_retry_delay_seconds=self.ena_api_retry_delay_seconds,
+            file_workers=self.ena_file_workers,
         )
         success, message, downloaded_files = downloader.download_run(srr_id, sample_dir)
 

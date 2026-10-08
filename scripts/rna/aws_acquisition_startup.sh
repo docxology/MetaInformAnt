@@ -94,4 +94,4 @@ timeout --signal=TERM --kill-after=120 "$LIMIT_SECONDS" \
   --manifest /mnt/snapshot/manifest.jsonl --data-root "$AMALGKIT_DATA_ROOT" \
   --config-dir /mnt/snapshot/config/amalgkit \
   --workers @@WORKERS@@ --threads @@THREADS@@ --quant-slots @@QUANT_SLOTS@@ --fastq-slots @@FASTQ_SLOTS@@ \
-  --max-in-flight @@MAX_IN_FLIGHT@@ --fastq-threads @@FASTQ_THREADS@@ --compression-threads @@COMPRESSION_THREADS@@ --compression-level @@COMPRESSION_LEVEL@@ --validation-slots @@VALIDATION_SLOTS@@
+  --max-in-flight @@MAX_IN_FLIGHT@@ --fastq-threads @@FASTQ_THREADS@@ --compression-threads @@COMPRESSION_THREADS@@ --compression-level @@COMPRESSION_LEVEL@@ --ena-file-workers @@ENA_FILE_WORKERS@@ --validation-slots @@VALIDATION_SLOTS@@
