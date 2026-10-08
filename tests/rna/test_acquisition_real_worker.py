@@ -18,13 +18,22 @@ import pytest
 from metainformant.rna.engine.acquisition_manifest import sha256_file
 from metainformant.rna.engine.acquisition_scheduling import PlanningAssumptions
 from metainformant.rna.engine.acquisition_worker import run_manifest
+from metainformant.rna.engine.streaming_orchestrator import (
+    _promote_validated_fastq_inputs,
+    _validated_local_fastq_inputs,
+)
 
 
 @pytest.mark.external_tool
+@pytest.mark.parametrize("promote_fallback", [False, True])
 @pytest.mark.parametrize("planning_profile", [False, True])
 @pytest.mark.parametrize("reference_target", ["Test species", "Test species subspecies"])
 def test_real_manifest_quantification_and_second_run_reuses_bytes(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, reference_target: str, planning_profile: bool
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    reference_target: str,
+    planning_profile: bool,
+    promote_fallback: bool,
 ) -> None:
     if not shutil.which("kallisto") or not shutil.which("amalgkit"):
         pytest.skip("real Kallisto and Amalgkit required")
@@ -68,11 +77,26 @@ def test_real_manifest_quantification_and_second_run_reuses_bytes(
         for i in range(90):
             sequence = sequences[i % 3][100:175]
             handle.write(f"@SRR123.{i + 1}\n{sequence}\n+\n{'I' * 75}\n")
+    if promote_fallback:
+        fallback_dir = tmp_path / "fallback/SRR123"
+        fallback_dir.mkdir(parents=True)
+        source = fallback_dir / "SRR123.fastq.gz"
+        destination = reads / source.name
+        shutil.copyfile(destination, source)
+        validated_bytes = source.read_bytes()
+        with gzip.open(destination, "wt") as handle:
+            for i in range(2):
+                handle.write(f"@SRR123.{i + 1} {i + 1}/2\nACGT\n+\n!!!!\n")
+        rejected_bytes = destination.read_bytes()
+        inputs = _validated_local_fastq_inputs(fallback_dir, "SRR123", True)
+        assert _promote_validated_fastq_inputs(inputs, reads, "SRR123", True)
+        assert destination.read_bytes() == validated_bytes
+        assert destination.with_name(destination.name + ".invalid").read_bytes() == rejected_bytes
     metadata = metadata_dir / "metadata_selected.tsv"
     row = {
         "run": "SRR123",
         "scientific_name": reference_target,
-        "lib_layout": "single",
+        "lib_layout": "paired" if promote_fallback else "single",
         "total_spots": "90",
         "total_bases": "6750",
         "spot_length": "75",
@@ -106,7 +130,7 @@ def test_real_manifest_quantification_and_second_run_reuses_bytes(
                 "config_name": config.name,
                 "config_sha256": sha256_file(config),
                 "reference_index_sha256": sha256_file(index),
-                "expected_paired": False,
+                "expected_paired": promote_fallback,
                 "fastq_bytes": 15000,
             }
         )

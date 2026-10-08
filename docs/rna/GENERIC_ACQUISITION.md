@@ -301,6 +301,40 @@ seconds and reused/newly quantified counts; they do not by themselves measure al
 stage durations or wire bytes. Collect missing stage/network observations before
 claiming a measured transfer or stage rate.
 
+### Diagnose repeated work before changing capacity
+
+A message such as `ENA download failed ... Downloaded 1 files` can follow a
+successful transfer whose files failed the subsequent layout check. Distinguish
+transport failure, gzip corruption, library-layout rejection and quantification
+failure before attributing lost throughput to the network. An ENA layout rejection
+can enter the NCBI fallback path even when the original transfer completed.
+Repeated fallback for the same accession consumes time without producing a new
+lock; retain that work in elapsed-cost accounting.
+
+Compare EC2 launch time with the first worker metadata/preflight timestamp as a
+startup proxy. It includes boot, tool/input preparation and any preceding waits;
+it is not an isolated installation benchmark. Do not attribute a long failed
+sample to setup when the relevant work occurred after preflight. Likewise, the
+interval from ENA rejection to a successful fallback includes queueing, source
+acquisition, extraction, compression and validation. Dividing a raw-byte reservation
+or total bases by that interval does not calibrate `fasterq-dump` alone.
+
+A raw-validation witness can avoid repeating a completed scan when the expected
+layout and retained files still match its filename, size and modification-time
+records. It is a local reuse witness, not a durable quantification receipt. Missing,
+incompatible or mismatched witnesses require the corresponding validation again. Preserve
+gzip and full-record layout checks when investigating duplicate scans; a readable
+gzip stream alone cannot establish a usable single/paired layout. See the
+[acquisition integrity methods](HYMENOPTERA_METHODS.md#acquisition-integrity-retries).
+
+Measure a suspected scan with per-stage start/end events and the bytes actually
+processed. A short CPU/disk snapshot can identify a candidate bottleneck, but it
+cannot establish fleet-wide saturation or justify a higher planning rate. Until
+completed native extraction intervals and their source sizes are available, keep
+SRA extraction calibration unresolved rather than deriving a floor from mixed
+fallback elapsed time. Changes to worker code apply to future admissions; existing
+workers keep their admitted source and input bindings and their attempt history.
+
 A falling sample count can reflect larger samples. Source waits, quantification
 CPU, extraction I/O and validation can each limit throughput. Compare six/eight-worker
 trials with matched workload profiles and cost per new lock before claiming a

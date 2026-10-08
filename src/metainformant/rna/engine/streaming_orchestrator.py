@@ -786,7 +786,7 @@ def _validated_local_fastq_inputs(
                 sample_dir,
                 expected_paired,
             )
-        except (OSError, ValueError) as exc:
+        except (OSError, ValueError, EOFError) as exc:
             logger.warning(
                 "Rejecting one-file paired input for %s after layout validation: %s",
                 accession,
@@ -846,6 +846,46 @@ def _promote_staged_fastq_file(staged: Path, destination: Path) -> None:
         staged.unlink()
     finally:
         temporary.unlink(missing_ok=True)
+
+
+def _promote_validated_fastq_inputs(
+    staged_inputs: list[Path], sample_dir: Path, accession: str, expected_paired: bool | None
+) -> bool:
+    """Promote layout-validated extraction outputs and validate the actual destination."""
+
+    for staged in staged_inputs:
+        destination = sample_dir / staged.name
+        if destination.exists():
+            if expected_paired is True and destination.name == f"{accession}.fastq.gz":
+                existing_is_valid = bool(_validated_local_fastq_inputs(sample_dir, accession, expected_paired))
+            else:
+                existing_is_valid = _local_fastq_payload_is_valid(destination)
+            if existing_is_valid:
+                logger.info(
+                    "Retaining existing valid FASTQ while promoting complementary " "fallback output for %s: %s",
+                    accession,
+                    destination,
+                )
+                staged.unlink(missing_ok=True)
+                continue
+            invalid = destination.with_name(f"{destination.name}.invalid")
+            counter = 1
+            while invalid.exists():
+                invalid = destination.with_name(f"{destination.name}.invalid.{counter}")
+                counter += 1
+            destination.replace(invalid)
+        _promote_staged_fastq_file(staged, destination)
+
+    # The actual destination may include retained files with different bytes.
+    # Preserve its full layout check; a staging witness cannot authorize them.
+    return bool(
+        _validated_local_fastq_inputs(
+            sample_dir,
+            accession,
+            expected_paired,
+            assume_payload_valid=True,
+        )
+    )
 
 
 def _fastq_pair_key(header: str) -> str | None:
@@ -2466,38 +2506,7 @@ class StreamingPipelineOrchestrator:
                 )
                 return False
 
-            for staged in staged_inputs:
-                destination = sample_dir / staged.name
-                if destination.exists():
-                    if _local_fastq_payload_is_valid(destination):
-                        logger.info(
-                            "Retaining existing valid FASTQ while promoting complementary "
-                            "fallback output for %s: %s",
-                            srr_id,
-                            destination,
-                        )
-                        staged.unlink(missing_ok=True)
-                        continue
-                    invalid = destination.with_name(f"{destination.name}.invalid")
-                    counter = 1
-                    while invalid.exists():
-                        invalid = destination.with_name(f"{destination.name}.invalid.{counter}")
-                        counter += 1
-                    destination.replace(invalid)
-                _promote_staged_fastq_file(staged, destination)
-
-            # The staged gzip payloads were fully validated above and a
-            # cross-filesystem promotion verifies the copied byte count before
-            # its atomic destination-side rename. Persist the destination
-            # layout witness without a second multi-gigabyte gzip scan.
-            return bool(
-                _validated_local_fastq_inputs(
-                    sample_dir,
-                    srr_id,
-                    expected_paired,
-                    assume_payload_valid=True,
-                )
-            )
+            return _promote_validated_fastq_inputs(staged_inputs, sample_dir, srr_id, expected_paired)
         except subprocess.TimeoutExpired:
             logger.error(
                 "fasterq-dump timeout for %s (>%s)",

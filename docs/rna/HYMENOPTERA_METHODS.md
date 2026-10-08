@@ -153,6 +153,23 @@ diagnostic witnesses before a fresh retry. Exhausted attempts fail without
 certifying a corrupt FASTQ. This source repair does not replace immutable worker
 software already running in the AWS campaign.
 
+Fallback promotion also preserves the distinction between gzip integrity and
+library layout. For paired metadata with one unnumbered destination FASTQ, the
+existing file must pass the full layout validator before it can be retained in
+place of validated extraction output. A gzip-readable but layout-invalid file is
+preserved as `.invalid` (with a numbered suffix if necessary), and the validated
+fallback file is promoted. Completed numbered mates can still be retained while
+fallback supplies the missing mate.
+
+The final layout check describes the files actually retained at the destination;
+a staging witness cannot authorize different existing bytes. A matching local
+raw-validation witness can support subsequent reuse. This repair does not accept
+mate-2-only, malformed, truncated or non-adjacent paired streams as a new input
+class. Existing full-record reconciliation, reference/configuration bindings,
+receipt validation and admission-attempt accounting remain in force. Avoid claiming
+that this promotion correction eliminates all repeated scans or establishes an
+end-to-end throughput improvement; those require separate stage measurements.
+
 ## Concurrent local validation
 
 An isolated local snapshot can exercise downstream methods while AWS acquisition

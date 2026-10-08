@@ -135,6 +135,14 @@ deadlines. OS shutdown terminates the instance even if EC2 termination permissio
 unavailable. Only verified quantification files are necessary for durable recovery;
 failed raw reads are never packaged into the scientific result archive.
 
+A successful raw transfer is not a completed sample. A later layout rejection or
+fallback failure remains unresolved until valid quantification and its bound
+receipt exist. Diagnose repeated transport, layout and fallback work separately;
+[the stage-diagnosis guidance](GENERIC_ACQUISITION.md#diagnose-repeated-work-before-changing-capacity)
+explains which measurements can support a rate decision. A local raw-validation
+witness supports reuse but does not replace output validation or justify resetting
+historical admission attempts.
+
 The controller stops on budget exhaustion or when remaining tasks exhaust their
 bounded attempts or lack source-size evidence. These are unresolved outcomes, not
 implicit scientific exclusions. Credits do not increase the authorized gross budget.
