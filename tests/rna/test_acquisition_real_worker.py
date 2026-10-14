@@ -154,11 +154,11 @@ def test_real_manifest_quantification_and_second_run_reuses_bytes(
         data_root=data,
         config_dir=config_dir,
         workers=2,
-        threads=2,
+        threads=4,
         fastq_threads=1,
         compression_threads=1,
         validation_slots=1,
-        quant_slots=1,
+        quant_slots=2,
         fasterq_slots=1,
         max_in_flight=1,
     )
@@ -236,6 +236,8 @@ def test_real_manifest_quantification_and_second_run_reuses_bytes(
     first = run_manifest(**kwargs)
     assert first["counts"].get("failed", 0) == 0, first["results"]
     assert first["counts"]["newly_quantified"] == 1
+    assert first["quant_slots"] == 1
+    assert first["quant_threads_per_sample"] == 4
     assert first["resource_profile"]["compression_level"] == 1
     abundance = next((work / "quant/SRR123").glob("*abundance.tsv"))
     before = abundance.read_bytes(), abundance.stat().st_mtime_ns

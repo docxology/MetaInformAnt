@@ -64,7 +64,7 @@ def _run_manifest_owned(
         snapshot.get("inventory_sha256"),
     )
     profile = build_pipeline_resource_profile(
-        workers,
+        min(workers, max(1, len(tasks))),
         threads,
         quant_slots=quant_slots,
         fasterq_slots=fasterq_slots,
