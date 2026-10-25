@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass, field
 from importlib import import_module
 from pathlib import Path
 from types import SimpleNamespace
@@ -14,6 +15,23 @@ from metainformant.rna.engine.streaming_orchestrator import (
     _ensure_reference_alias_indexes,
     _species_work_dir,
 )
+
+
+@dataclass(slots=True)
+class _IndexDigests:
+    values: dict[tuple[Path, int, int, int, int, int], str] = field(default_factory=dict)
+
+    def digest(self, path: Path) -> str:
+        resolved = path.resolve(strict=True)
+        before = resolved.stat()
+        signature = (resolved, before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns)
+        if signature not in self.values:
+            digest = sha256_file(resolved)
+            after = resolved.stat()
+            if signature != (resolved, after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns):
+                raise ValueError(f"reference index changed while hashing: {resolved}")
+            self.values[signature] = digest
+        return self.values[signature]
 
 
 def prepare_reference_inputs(
@@ -39,6 +57,7 @@ def prepare_reference_inputs(
 
     species_configs = {str(task["species"]): str(task["config_name"]) for task in tasks}
     records: list[dict[str, Any]] = []
+    index_digests = _IndexDigests()
     for species, config_name in sorted(species_configs.items()):
         config_path = config_dir / config_name
         if not config_path.is_file():
@@ -87,7 +106,7 @@ def prepare_reference_inputs(
                     index = Path(value)
                     if (
                         not index.resolve().is_relative_to(data_root.resolve())
-                        or sha256_file(index) not in expected_indexes
+                        or index_digests.digest(index) not in expected_indexes
                     ):
                         raise ValueError(f"worker reference differs from frozen acquisition envelope: {index}")
         for target in target_names:
@@ -100,7 +119,7 @@ def prepare_reference_inputs(
                     backend="kallisto",
                 )
             )
-            if expected_indexes and sha256_file(index) not in expected_indexes:
+            if expected_indexes and index_digests.digest(index) not in expected_indexes:
                 raise ValueError(f"native quant reference differs from frozen acquisition envelope: {index}")
         records.append(
             {

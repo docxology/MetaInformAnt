@@ -111,7 +111,8 @@ def test_missing_staged_source_never_reports_success_or_loses_failed_bytes(tmp_p
     with pytest.raises(FileNotFoundError):
         _promote_validated_fastq_inputs([missing], directory, accession, True)
 
-    assert destination.with_name(destination.name + ".invalid").read_bytes() == rejected
+    assert destination.read_bytes() == rejected
+    assert not destination.with_name(destination.name + ".invalid").exists()
     assert _validated_local_fastq_inputs(directory, accession, True) == []
 
 

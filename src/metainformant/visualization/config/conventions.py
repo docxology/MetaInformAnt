@@ -170,10 +170,12 @@ def save_figure_deterministic(
     ``savefig(..., bbox_inches="tight")`` call sites can route through this
     helper without changing output geometry.
     """
-    metadata = {
+    metadata: dict[str, str | None] = {
         "Software": "",
         "Creator": "",
         "Creation Time": "",
         "Date": "",
     }
+    if Path(path).suffix.lower() == ".pdf":
+        metadata = {"Creator": "", "Producer": "", "CreationDate": None, "ModDate": None}
     fig.savefig(path, dpi=dpi, metadata=metadata, bbox_inches=bbox_inches)

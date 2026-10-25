@@ -67,3 +67,22 @@ def test_watchdog_disabled_by_default(tmp_path: Path) -> None:
     assert result.returncode == 0
     assert "ok" in (result.stdout or "")
     assert out_dir.exists() is False
+
+
+def test_hard_timeout_terminates_process_group_and_retains_partial_input(tmp_path: Path) -> None:
+    command = (
+        "import os,pathlib,subprocess,sys,time\n"
+        "root=pathlib.Path(sys.argv[1])\n"
+        "(root/'reads.fastq.gz.part').write_bytes(b'resumable bytes')\n"
+        "(root/'parent.pid').write_text(str(os.getpid()))\n"
+        "child=subprocess.Popen([sys.executable,'-c','import time; time.sleep(600)'])\n"
+        "(root/'child.pid').write_text(str(child.pid))\n"
+        "time.sleep(600)\n"
+    )
+    with pytest.raises(subprocess.TimeoutExpired):
+        _run_command_in_process_group([sys.executable, "-c", command, str(tmp_path)], timeout=2)
+    assert (tmp_path / "reads.fastq.gz.part").read_bytes() == b"resumable bytes"
+    for name in ("parent.pid", "child.pid"):
+        pid = (tmp_path / name).read_text()
+        state = subprocess.run(["ps", "-o", "stat=", "-p", pid], check=False, capture_output=True, text=True)
+        assert state.returncode != 0 or state.stdout.strip().startswith("Z")

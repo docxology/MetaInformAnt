@@ -11,6 +11,7 @@ General-purpose plotting library covering basic charts, animations, multidimensi
 | `cross_species.py` | Cross-species comparisons: family legends, divergence heatmaps, species summaries, top-pair panels |
 | `general.py` | Convenience wrappers: expression heatmap, PCA, volcano, Manhattan |
 | `multidim.py` | Pairwise relationships, parallel coordinates, radar, 3D scatter |
+| `rna_campaign.py` | Operational acquisition partitions and journal outcomes from a captured observation; canonical colors/hatches and deterministic PNG/PDF exports |
 | `specialized.py` | Venn, Sankey, chord, alluvial, circular bar, UpSet plots |
 
 ## Key Functions

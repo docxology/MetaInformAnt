@@ -4,14 +4,26 @@ The 27-species campaign uses a frozen inventory, configuration, reference index,
 and quantification contract. Keep these bindings stable while processing;
 changing a reference or quantifier creates a new analysis cohort.
 
+The candidate local frontier changes operational admission only: a bounded
+lookahead can supply acquisition independently of quantification. Size bands
+change admission order across species, not the scientific cohort or accepted
+read/quantification contract. Frozen-size reservations supplement actual
+capacity checks; they are not remaining network-byte estimates. Stage journals
+remain operational evidence. Reused outputs are excluded from new-sample rate,
+and neither a larger frontier nor local fixtures establish a campaign speedup.
+
+The [working observation protocol](../../projects/hymenoptera_amalgkit/docs/manuscript/working_operational_update.md)
+describes explicit phase-bound tables, figures and an operational manuscript
+supplement. These report producer startup counts separately from newly
+restore-verified outputs; they do not satisfy the full manuscript release gates.
+
 ## Tool contract
 
 Amalgkit is pinned to **0.16.60**, tag `v0.16.60`, source revision
 `c656a52aacdcee6fd3bf7e8031769ca957204ebc`. This is the latest upstream release
 verified on 2026-10-05 ([release](https://github.com/kfuku52/amalgkit/releases/tag/v0.16.60)).
-The AWS worker also verifies Kallisto 0.52.0 and SRA Toolkit 3.4.1. The current downstream
-Amalgkit stages are Python implementations; legacy R installation helpers
-are not prerequisites for this pinned workflow. A newer
+The worker also verifies Kallisto 0.52.0 and SRA Toolkit 3.4.1. The current downstream
+Amalgkit stages are Python implementations. A newer
 upstream development commit is not silently substituted into the campaign.
 
 ## Quantifier and reference prerequisites
@@ -30,6 +42,12 @@ output/receipt support. Installing oarfish alone does not supply these requireme
 Do not force a long-read run through Kallisto or replace the frozen reference to
 remove an error. Unresolved prerequisite work remains in the frozen denominator;
 its diagnostic classification is neither completion nor a scientific exclusion.
+
+For a host-transcriptome contract, an explicit 16S experiment title combined
+with GENOMIC or METAGENOMIC source and PCR selection is an unresolved metadata conflict.
+All three fields are required; zero pseudoalignment alone does not classify an
+assay. Existing quantifications remain preserved but require method review.
+Neither metadata nor the frozen task manifest is rewritten by this rule.
 
 ## Resolving archive metadata gaps
 
@@ -178,3 +196,44 @@ restoration witnesses must be explicit; completed subsets do not establish speci
 completion. The [local validation guide](../../projects/hymenoptera_amalgkit/doc/02_workflow/05_local_downstream_validation.md)
 records the real count/filtered-metadata input contract, checkpoint reuse, preserved
 sanity warnings and remaining orthology/design release gates.
+## Whole-sample acquisition admission
+
+The prepared local launcher selects four whole-sample acquisitions independently
+of twelve task workers, eight native ENA file connections and four quantifiers.
+The opt-in `AMALGKIT_PIPELINE_ACQUISITION_SLOTS` defaults to zero in the general
+orchestrator. `AMALGKIT_PIPELINE_ACQUISITION_QUEUE_TIMEOUT_SECONDS` bounds queue
+waiting separately (7,200 seconds in the local profile). Queue expiry preserves
+inputs and records deferral; the existing absolute first-pass clock starts after
+admission and is never reset while discovering metadata, waiting for file slots,
+transferring either mate, or validating reads. The acquisition lease releases
+before quantification and on errors. Queue and acquisition allowances add, so
+they must not be described as a single task wall-time limit. Native loopback
+controls can establish deadline behavior; useful live throughput still requires
+new restore-bound completions measured separately from checkpoint reuse.
+
+## Transient metadata recovery
+
+The local profile explicitly selects two ENA metadata retries. Bounded first
+passes retain this configured allowance instead of silently disabling retries.
+Requests and backoff share the existing acquisition deadline, and backoff holds
+no metadata lease. Explicit zero retries and earlier/expired deadlines remain
+effective. HTTP failures are still unavailable inputs unless a later request
+succeeds and all existing metadata, FASTQ and provenance checks pass.
+
+## Small-sample scheduling across species
+
+The local `size_bands` policy prioritizes known frozen size weights across all
+eligible species: up to 100 MiB, 500 MiB, 1/2/5/20 GiB, larger known samples,
+and finally unknown sizes. Species rotate inside each band. Checkpoint reuse
+stays interleaved, and already verified outputs need no new quantification.
+Every pending identity remains scheduled; held prerequisites retain their
+reasons and remain visible in the frozen cohort. This is not a scientific
+exclusion or a size-based biological selection.
+
+The policy can improve early completion counts by avoiding a large sample
+from one species ahead of many small samples elsewhere. It does not increase
+network bandwidth or prove a campaign-wide speedup. Size metadata may include
+fallback estimates; unknowns are never treated as zero-cost work. Retained
+FASTQ files and resumable parts stay intact. Reordering takes effect only in
+a newly bound phase after the normal reviewed preservation-aware cutover.
+

@@ -6,6 +6,12 @@ adapters. The same manifest worker runs locally and on AWS. It stops after
 per-sample quantification: downstream analyses require their own complete-cohort
 and scientific evidence gates.
 
+Read-only operational bundles use `scripts/rna/observe_acquisition.py`. Explicit
+manifest/phase paths bind tables, captions and canonical figures to captured
+inputs; new output counts require restore/provenance/abundance agreement.
+Startup counts remain producer-reported, and these bundles never establish
+scientific release readiness. See the [working observation protocol](../../projects/hymenoptera_amalgkit/docs/manuscript/working_operational_update.md).
+
 ## Commands
 
 ```bash
@@ -107,6 +113,45 @@ journal and result under `acquisition_runs/`; `quantified` is the sum of `reused
 and `newly_quantified`. Calibration must exclude reused samples. Local raw
 reclamation is opt-in (`--reclaim-raw-after-quant`); AWS bootstrap opts into the
 existing provenance-gated cleanup.
+
+Library callers can pass `on_quantified(species, accession)` to `run_manifest()`
+to checkpoint each newly quantified or reused sample after its task journal is
+flushed, before admitting replacement work. This permits continuous acquisition
+with per-sample receipt publication, restore verification and raw reclamation.
+Keep the worker's built-in raw reclamation disabled when the callback owns that
+retention sequence. Callback failures propagate and prevent a successful run
+summary; raw inputs remain the callback owner's responsibility.
+
+Set `AMALGKIT_PIPELINE_DEDICATED_RECOVERY=yes` to isolate local SRA work and
+ENA-miss recovery from the primary sample workers. Recovery concurrency follows
+`--fastq-slots`; primary quantification still follows `--quant-slots`. The entire
+admitted sample ledger, including queued recovery and ready-to-quantify samples,
+counts against `--max-in-flight`, raw-byte reservations and deadline estimates.
+Ownership is released only after the terminal journal and successful-sample
+checkpoint return. Recovery acquisition returns once to primary quantification;
+failed recovery or unavailable recovered inputs produces a terminal failure.
+Results include `acquisition_lanes` peak admissions, raw reservations and recovery
+backlog. Lane classification probes each pending task once per invocation;
+primary acquisition defers an archive discovered after classification as well.
+
+With `AMALGKIT_NCBI_PREFETCH_FIRST=yes`, NCBI recovery runs resumable, verified
+`prefetch` before extraction. New archives live inside the accession's
+`work/getfastq/<accession>/.prefetch/` tree and are rediscovered after interruption,
+including SRA Toolkit's nested accession layout. Prefetch's size limit follows
+remaining bulk capacity above `AMALGKIT_MIN_EXTERNAL_FREE_GB`. Configured local
+fasterq scratch reserves SSD space and stages the authoritative archive there
+for extraction. Historical campaign caches and rejected archives are preserved;
+the existing verified sample cleanup can reclaim new authoritative SRA files
+after the checkpoint's restore proof.
+
+An optional `should_stop()` predicate stops new submissions while already
+submitted tasks finish and checkpoint. The summary reports `stopped_early` and
+`unsubmitted_task_count`; a stopped run is not complete-cohort evidence.
+`AMALGKIT_PIPELINE_QUANT_TIMEOUT_SECONDS` bounds each quantification subprocess
+and terminates its process group on timeout while retaining raw inputs. Operators
+can defer timed-out samples to a later pass with a longer bound. An output-stall
+timeout is separate: CPU-active quantification can legitimately produce no output
+for some time.
 
 ## AWS execution and limits
 
