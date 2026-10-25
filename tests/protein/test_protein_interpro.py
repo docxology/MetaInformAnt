@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+
 import pytest
 
 from metainformant.protein.database.interpro import (
@@ -42,18 +44,16 @@ def test_fetch_interpro_domains_real_network():
         pytest.skip(f"InterPro API unavailable - real API behavior: {e}")
 
 
-def test_fetch_interpro_domains_empty_accession():
-    """Test edge case: empty accession string."""
-    if not _check_online("https://www.ebi.ac.uk/interpro"):
-        pytest.skip("No network access for InterPro API - real implementation requires connectivity")
+@pytest.mark.parametrize("accession", ["", "   ", "\t\n"])
+def test_blank_interpro_accession_returns_no_domains(accession):
+    """A blank accession yields no domains without contacting InterPro.
 
-    try:
-        results = fetch_interpro_domains("")
-        # Real implementation should handle this gracefully
-        assert isinstance(results, list)
-    except Exception as e:
-        # API rejection of an empty accession is documented real behavior
-        pytest.skip(f"InterPro API rejected empty accession - real API behavior: {e}")
+    With no accession the endpoint names InterPro's unbounded listing of every
+    UniProt-annotated entry, which never completed inside the test timeout.
+    """
+    started = time.monotonic()
+    assert fetch_interpro_domains(accession) == []
+    assert time.monotonic() - started < 1.0
 
 
 def test_fetch_interpro_domains_none_accession():

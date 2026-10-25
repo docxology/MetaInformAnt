@@ -7,6 +7,7 @@ functional site annotations from the EMBL-EBI InterPro database.
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
+from urllib.parse import quote
 
 import requests
 from defusedxml import ElementTree as ET
@@ -91,8 +92,15 @@ def fetch_interpro_domains(uniprot_id: str) -> List[Dict[str, Any]]:
     if uniprot_id is None:
         raise AttributeError("uniprot_id cannot be None")
 
-    # InterPro API endpoint
-    url = f"https://www.ebi.ac.uk/interpro/api/entry/interpro/protein/UniProt/{uniprot_id}"
+    accession = uniprot_id.strip()
+    if not accession:
+        # Without an accession this URL names InterPro's unbounded listing of every
+        # UniProt-annotated entry, a request that cannot finish in a bounded timeout.
+        logger.warning("Blank UniProt accession; no InterPro request made")
+        return []
+
+    # InterPro API endpoint; quoting keeps the accession a single path segment.
+    url = f"https://www.ebi.ac.uk/interpro/api/entry/interpro/protein/UniProt/{quote(accession, safe='')}"
 
     try:
         # The shared helper validates a positive, bounded campaign timeout.
@@ -120,11 +128,11 @@ def fetch_interpro_domains(uniprot_id: str) -> List[Dict[str, Any]]:
                         }
                         domains.append(domain)
 
-        logger.info(f"Fetched {len(domains)} InterPro domains for {uniprot_id}")
+        logger.info(f"Fetched {len(domains)} InterPro domains for {accession}")
         return domains
 
     except requests.RequestException as e:
-        logger.error(f"Failed to fetch InterPro domains for {uniprot_id}: {e}")
+        logger.error(f"Failed to fetch InterPro domains for {accession}: {e}")
         return []
 
 
