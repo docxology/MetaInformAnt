@@ -25,7 +25,7 @@ import urllib.request
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import yaml
 
@@ -500,15 +500,21 @@ def _raw_validation_identity(path: Path) -> dict[str, int]:
     identity = path.lstat()
     if not stat.S_ISREG(identity.st_mode):
         raise OSError(f"Refusing non-regular FASTQ validation input: {path}")
-    return {"size": identity.st_size, "mtime_ns": identity.st_mtime_ns,
-            "ctime_ns": identity.st_ctime_ns, "device": identity.st_dev, "inode": identity.st_ino}
+    return {
+        "size": identity.st_size,
+        "mtime_ns": identity.st_mtime_ns,
+        "ctime_ns": identity.st_ctime_ns,
+        "device": identity.st_dev,
+        "inode": identity.st_ino,
+    }
 
 
 def _raw_validation_marker_matches(
     marker: Path,
     candidates: list[Path],
     expected_paired: bool | None,
-    *, require_records: bool = False,
+    *,
+    require_records: bool = False,
 ) -> bool:
     """Return whether a cached full validation still describes the files."""
 
@@ -729,8 +735,12 @@ def _local_sra_path(sample_dir: Path, out_dir: Path, accession: str) -> Path | N
     """
 
     roots = (sample_dir / ".prefetch" / accession, _data_root() / ".sra-cache/prefetch" / accession)
-    candidates = [root / nested / f"{accession}{suffix}"
-                  for root in roots for nested in ("", accession) for suffix in (".sra", ".sra.cache")]
+    candidates = [
+        root / nested / f"{accession}{suffix}"
+        for root in roots
+        for nested in ("", accession)
+        for suffix in (".sra", ".sra.cache")
+    ]
     candidates.extend((sample_dir / f"{accession}.sra", out_dir / f"{accession}.sra"))
     cached_sra = _campaign_cached_sra_path(accession)
     if cached_sra is not None:
@@ -802,10 +812,16 @@ def _validated_local_fastq_inputs(
         return []
 
     if require_records is None:
-        require_records = os.environ.get("AMALGKIT_PIPELINE_VALIDATE_FASTQ_RECORDS", "no").lower() in {"1", "yes", "true"} or bool(os.environ.get("AMALGKIT_LOCAL_ENA_SCRATCH_DIR"))
+        require_records = os.environ.get("AMALGKIT_PIPELINE_VALIDATE_FASTQ_RECORDS", "no").lower() in {
+            "1",
+            "yes",
+            "true",
+        } or bool(os.environ.get("AMALGKIT_LOCAL_ENA_SCRATCH_DIR"))
     record_proof = fresh_record_scan or require_records or (deadline_at is not None and not assume_payload_valid)
     marker = _raw_validation_marker(sample_dir, accession)
-    if not fresh_record_scan and _raw_validation_marker_matches(marker, candidates, expected_paired, require_records=record_proof):
+    if not fresh_record_scan and _raw_validation_marker_matches(
+        marker, candidates, expected_paired, require_records=record_proof
+    ):
         return candidates
     try:
         before_scan = [_raw_validation_identity(path) for path in candidates]
@@ -921,7 +937,9 @@ def _promote_validated_fastq_inputs(
         _plain_path(staged)
         if not _is_accession_fastq_file(staged, accession):
             return False
-        stem = next(staged.name.removesuffix(suffix) for suffix in _FASTQ_INPUT_SUFFIXES if staged.name.endswith(suffix))
+        stem = next(
+            staged.name.removesuffix(suffix) for suffix in _FASTQ_INPUT_SUFFIXES if staged.name.endswith(suffix)
+        )
         destination = sample_dir / staged.name
         _plain_path(destination)
         if destination not in retained_destinations:
@@ -1040,7 +1058,8 @@ def _split_interleaved_fastq(
     source: Path,
     accession: str,
     sample_dir: Path,
-    *, deadline_at: float | None = None,
+    *,
+    deadline_at: float | None = None,
 ) -> list[Path]:
     """Split one interleaved paired FASTQ into numbered mates.
 
@@ -1114,7 +1133,8 @@ def _normalize_interleaved_paired_fastq_layout(
     accession: str,
     sample_dir: Path,
     expected_paired: bool | None,
-    *, deadline_at: float | None = None,
+    *,
+    deadline_at: float | None = None,
 ) -> list[Path]:
     """Normalize a one-file interleaved paired representation."""
 
@@ -2050,13 +2070,19 @@ class StreamingPipelineOrchestrator:
 
     def __init__(self, config_dir: Path = CONFIG_DIR, log_dir: Path = LOG_DIR, db_path: Optional[Path] = None):
         self.acquisition_slots = int(os.environ.get("AMALGKIT_PIPELINE_ACQUISITION_SLOTS", "0"))
-        self.acquisition_queue_timeout_seconds = float(os.environ.get("AMALGKIT_PIPELINE_ACQUISITION_QUEUE_TIMEOUT_SECONDS", "7200"))
+        self.acquisition_queue_timeout_seconds = float(
+            os.environ.get("AMALGKIT_PIPELINE_ACQUISITION_QUEUE_TIMEOUT_SECONDS", "7200")
+        )
         if not 0 <= self.acquisition_slots <= 256:
             raise ValueError("AMALGKIT_PIPELINE_ACQUISITION_SLOTS must be between 0 and 256")
         if not math.isfinite(self.acquisition_queue_timeout_seconds) or self.acquisition_queue_timeout_seconds <= 0:
             raise ValueError("AMALGKIT_PIPELINE_ACQUISITION_QUEUE_TIMEOUT_SECONDS must be finite and positive")
-        self._acquisition_semaphore = threading.BoundedSemaphore(self.acquisition_slots) if self.acquisition_slots else None
-        self.record_validation_required = os.environ.get("AMALGKIT_PIPELINE_VALIDATE_FASTQ_RECORDS", "no").strip().lower() in {"1", "yes", "true"}
+        self._acquisition_semaphore = (
+            threading.BoundedSemaphore(self.acquisition_slots) if self.acquisition_slots else None
+        )
+        self.record_validation_required = os.environ.get(
+            "AMALGKIT_PIPELINE_VALIDATE_FASTQ_RECORDS", "no"
+        ).strip().lower() in {"1", "yes", "true"}
         local_ena_cache = os.environ.get("AMALGKIT_LOCAL_ENA_SCRATCH_DIR", "").strip()
         self.local_ena_scratch_dir = Path(local_ena_cache).expanduser().absolute() if local_ena_cache else None
         self._ena_data_root: Path | None = None
@@ -2068,7 +2094,10 @@ class StreamingPipelineOrchestrator:
             if not root_text:
                 raise ValueError("ENA scratch requires an explicit AMALGKIT_DATA_ROOT")
             self._ena_data_root = Path(root_text).resolve(strict=True)
-            if Path(root_text).absolute() != self._ena_data_root or (self.local_ena_scratch_dir is not None and self.local_ena_scratch_dir != self.local_ena_scratch_dir.resolve()):
+            if Path(root_text).absolute() != self._ena_data_root or (
+                self.local_ena_scratch_dir is not None
+                and self.local_ena_scratch_dir != self.local_ena_scratch_dir.resolve()
+            ):
                 raise StagingError("ENA roots must not contain symlink components")
             data_stat = self._ena_data_root.stat()
             self._ena_data_identity = (data_stat.st_dev, data_stat.st_ino)
@@ -2667,17 +2696,41 @@ class StreamingPipelineOrchestrator:
 
     def _reserve_ena_scratch(self, size: int, accession: str) -> bool:
         self._check_ena_roots()
-        return self._reserve_local_scratch(self.local_ena_scratch_dir, size, purpose=f"ENA staging {accession}")
+        # Only the staged ENA download reserves, and it runs only with a scratch root.
+        scratch_dir = cast(Path, self.local_ena_scratch_dir)
+        return self._reserve_local_scratch(scratch_dir, size, purpose=f"ENA staging {accession}")
 
-    def _validate_acquisition_fastqs(self, directory: Path, accession: str, expected_paired: bool | None, deadline: float | None, *, assume_payload_valid: bool = False, require_records: bool | None = None, fresh_record_scan: bool = False) -> list[Path]:
+    def _validate_acquisition_fastqs(
+        self,
+        directory: Path,
+        accession: str,
+        expected_paired: bool | None,
+        deadline: float | None,
+        *,
+        assume_payload_valid: bool = False,
+        require_records: bool | None = None,
+        fresh_record_scan: bool = False,
+    ) -> list[Path]:
         _check_deadline(deadline)
         semaphore = self._raw_validation_semaphore
-        acquired = semaphore is None or (semaphore.acquire(timeout=max(0, deadline - time.monotonic())) if deadline is not None else semaphore.acquire())
+        acquired = semaphore is None or (
+            semaphore.acquire(timeout=max(0, deadline - time.monotonic()))
+            if deadline is not None
+            else semaphore.acquire()
+        )
         if not acquired:
             raise StagingDeadline("acquisition validation slot time budget exhausted; inputs retained")
         try:
             _check_deadline(deadline)
-            return _validated_local_fastq_inputs(directory, accession, expected_paired, assume_payload_valid=assume_payload_valid, deadline_at=deadline, require_records=require_records, fresh_record_scan=fresh_record_scan)
+            return _validated_local_fastq_inputs(
+                directory,
+                accession,
+                expected_paired,
+                assume_payload_valid=assume_payload_valid,
+                deadline_at=deadline,
+                require_records=require_records,
+                fresh_record_scan=fresh_record_scan,
+            )
         finally:
             if semaphore is not None:
                 semaphore.release()
@@ -2692,13 +2745,22 @@ class StreamingPipelineOrchestrator:
     ) -> bool | None:
         semaphore = self._acquisition_semaphore
         if semaphore is None:
-            return self._download_fastq_admitted(srr_id, out_dir, expected_paired, defer_ncbi_fallback=defer_ncbi_fallback)
+            return self._download_fastq_admitted(
+                srr_id, out_dir, expected_paired, defer_ncbi_fallback=defer_ncbi_fallback
+            )
         queued_at = time.monotonic()
         if not semaphore.acquire(timeout=self.acquisition_queue_timeout_seconds):
             raise StagingDeadline("sample acquisition admission queue exhausted; inputs retained")
         try:
-            logger.info("Acquisition admitted for %s after %.3f queue seconds; slots=%d", srr_id, time.monotonic() - queued_at, self.acquisition_slots)
-            return self._download_fastq_admitted(srr_id, out_dir, expected_paired, defer_ncbi_fallback=defer_ncbi_fallback)
+            logger.info(
+                "Acquisition admitted for %s after %.3f queue seconds; slots=%d",
+                srr_id,
+                time.monotonic() - queued_at,
+                self.acquisition_slots,
+            )
+            return self._download_fastq_admitted(
+                srr_id, out_dir, expected_paired, defer_ncbi_fallback=defer_ncbi_fallback
+            )
         finally:
             semaphore.release()
 
@@ -2729,7 +2791,9 @@ class StreamingPipelineOrchestrator:
         """
         deadline = time.monotonic() + self.download_first_pass_seconds if self.download_first_pass_seconds else None
         sample_dir = out_dir / srr_id
-        guarded_acquisition = self.local_ena_scratch_dir is not None or self.record_validation_required or deadline is not None
+        guarded_acquisition = (
+            self.local_ena_scratch_dir is not None or self.record_validation_required or deadline is not None
+        )
         if guarded_acquisition:
             if self._ena_data_root is not None:
                 self._check_ena_roots()
@@ -2745,14 +2809,21 @@ class StreamingPipelineOrchestrator:
             marker = _raw_validation_marker(sample_dir, srr_id)
             legacy_temporary = marker.with_name(f".{marker.name}.tmp")
             _plain_path(legacy_temporary)
-            if any(path.exists() and (not path.is_file() or path.stat().st_size > 65536) for path in (marker, legacy_temporary)):
+            if any(
+                path.exists() and (not path.is_file() or path.stat().st_size > 65536)
+                for path in (marker, legacy_temporary)
+            ):
                 raise StagingError("Unsafe raw validation witness object; existing inputs preserved")
             if sample_dir.is_dir() and any(path.is_symlink() for path in sample_dir.iterdir()):
                 raise StagingError("ENA sample contains a symlink; existing inputs preserved")
         # Remove broken symlinks in the path chain (amalgkit preprocessing creates
         # symlinks like work/getfastq -> /local/path that are invalid inside Docker).
         # Use a lock because 28+ threads may race on the same parent directory.
-        acquired_fs = self._fs_lock.acquire(timeout=max(0, deadline - time.monotonic())) if deadline is not None else self._fs_lock.acquire()
+        acquired_fs = (
+            self._fs_lock.acquire(timeout=max(0, deadline - time.monotonic()))
+            if deadline is not None
+            else self._fs_lock.acquire()
+        )
         if not acquired_fs:
             raise StagingDeadline("acquisition filesystem slot time budget exhausted; inputs retained")
         try:
@@ -2771,7 +2842,13 @@ class StreamingPipelineOrchestrator:
         # Do this before disk throttling and ENA URL discovery: large active
         # campaigns otherwise spend every worker slot waiting on the ENA API
         # even when the FASTQs are already mounted locally.
-        local_fastqs = self._validate_acquisition_fastqs(sample_dir, srr_id, expected_paired, deadline, require_records=self.record_validation_required or self.local_ena_scratch_dir is not None)
+        local_fastqs = self._validate_acquisition_fastqs(
+            sample_dir,
+            srr_id,
+            expected_paired,
+            deadline,
+            require_records=self.record_validation_required or self.local_ena_scratch_dir is not None,
+        )
         if local_fastqs:
             logger.info(
                 "Reusing %d validated local FASTQ file(s) for %s; skipping ENA acquisition.",
@@ -2865,25 +2942,47 @@ class StreamingPipelineOrchestrator:
         )
         staged_success = False
         if self.local_ena_scratch_dir is None:
-            urls = downloader.get_fastq_urls(srr_id, deadline_at=deadline) if deadline is not None else downloader.get_fastq_urls(srr_id)
+            urls = (
+                downloader.get_fastq_urls(srr_id, deadline_at=deadline)
+                if deadline is not None
+                else downloader.get_fastq_urls(srr_id)
+            )
             if self._ena_data_root is not None:
                 self._check_ena_roots()
-            success, message, downloaded_files = downloader._download_files(urls, sample_dir, deadline_at=deadline, require_existing_output=guarded_acquisition) if urls else (False, downloader.last_metadata_error or "Not found on ENA", [])
+            success, message, downloaded_files = (
+                downloader._download_files(
+                    urls, sample_dir, deadline_at=deadline, require_existing_output=guarded_acquisition
+                )
+                if urls
+                else (False, downloader.last_metadata_error or "Not found on ENA", [])
+            )
         else:
-            urls = downloader.get_fastq_urls(srr_id, deadline_at=deadline) if deadline is not None else downloader.get_fastq_urls(srr_id)
+            urls = (
+                downloader.get_fastq_urls(srr_id, deadline_at=deadline)
+                if deadline is not None
+                else downloader.get_fastq_urls(srr_id)
+            )
             outcome = None
             if urls:
+
                 def validate_staged(directory: Path) -> list[Path]:
                     self._check_ena_roots()
-                    return self._validate_acquisition_fastqs(directory, srr_id, expected_paired, deadline, assume_payload_valid=True)
+                    return self._validate_acquisition_fastqs(
+                        directory, srr_id, expected_paired, deadline, assume_payload_valid=True
+                    )
 
                 try:
                     outcome = download_staged_ena(
-                        downloader, urls, sample_dir, self.local_ena_scratch_dir,
+                        downloader,
+                        urls,
+                        sample_dir,
+                        self.local_ena_scratch_dir,
                         reserve=lambda size: self._reserve_ena_scratch(size, srr_id),
                         release=lambda size: self._release_local_scratch(size, purpose=f"ENA staging {srr_id}"),
-                        promotion_lock=self._ena_promotion_lock, validate=validate_staged,
-                        expected_paired=expected_paired, deadline_at=deadline,
+                        promotion_lock=self._ena_promotion_lock,
+                        validate=validate_staged,
+                        expected_paired=expected_paired,
+                        deadline_at=deadline,
                         minimum_free_bytes=math.ceil(self.min_external_free_gb * 1024**3),
                         validation_lock=self._raw_validation_semaphore,
                     )
@@ -2892,7 +2991,11 @@ class StreamingPipelineOrchestrator:
                 staged_success = outcome is not None and outcome[0]
             if outcome is None:
                 self._check_ena_roots()
-                outcome = downloader._download_files(urls, sample_dir, deadline_at=deadline, require_existing_output=True) if urls else (False, downloader.last_metadata_error or "Not found on ENA", [])
+                outcome = (
+                    downloader._download_files(urls, sample_dir, deadline_at=deadline, require_existing_output=True)
+                    if urls
+                    else (False, downloader.last_metadata_error or "Not found on ENA", [])
+                )
             success, message, downloaded_files = outcome
         if success:
             for fq in downloaded_files:
@@ -2912,7 +3015,19 @@ class StreamingPipelineOrchestrator:
                 # FASTQ layout.  Direct ENA success used to return before this
                 # marker was written, leaving an otherwise valid cloud result
                 # non-promotable after raw-input reclamation.
-                validated_fastqs = self._validate_acquisition_fastqs(sample_dir, srr_id, expected_paired, deadline, assume_payload_valid=True, require_records=not staged_success and (self.local_ena_scratch_dir is not None or self.record_validation_required or deadline is not None))
+                validated_fastqs = self._validate_acquisition_fastqs(
+                    sample_dir,
+                    srr_id,
+                    expected_paired,
+                    deadline,
+                    assume_payload_valid=True,
+                    require_records=not staged_success
+                    and (
+                        self.local_ena_scratch_dir is not None
+                        or self.record_validation_required
+                        or deadline is not None
+                    ),
+                )
                 if not validated_fastqs:
                     logger.error(
                         "Downloaded FASTQ layout for %s does not match the declared library layout",
@@ -3038,7 +3153,11 @@ class StreamingPipelineOrchestrator:
     def _maybe_reclaim_part_files(self, out_dir: Path) -> None:
         """Evict stale ``.part`` payloads only when free space is low."""
 
-        if self.local_ena_scratch_dir is not None or self.download_first_pass_seconds or os.environ.get("AMALGKIT_PRESERVE_RESUMABLE_PARTS", "no").lower() in {"1", "yes", "true"}:
+        if (
+            self.local_ena_scratch_dir is not None
+            or self.download_first_pass_seconds
+            or os.environ.get("AMALGKIT_PRESERVE_RESUMABLE_PARTS", "no").lower() in {"1", "yes", "true"}
+        ):
             return
         try:
             if shutil.disk_usage(out_dir).free / (1024**3) >= self.min_external_free_gb:
@@ -3051,8 +3170,11 @@ class StreamingPipelineOrchestrator:
     def _prefetch_sra_accession(self, srr_id: str, sample_dir: Path | None = None) -> Path | None:
         """Resume and verify one NCBI accession before FASTQ extraction."""
 
-        cached = (_local_sra_path(sample_dir, sample_dir.parent, srr_id) if sample_dir is not None
-                  else _campaign_cached_sra_path(srr_id))
+        cached = (
+            _local_sra_path(sample_dir, sample_dir.parent, srr_id)
+            if sample_dir is not None
+            else _campaign_cached_sra_path(srr_id)
+        )
         if cached is not None and _cached_sra_validation_result(cached) is not False:
             return cached
         prefetch = shutil.which("prefetch")
@@ -3060,8 +3182,11 @@ class StreamingPipelineOrchestrator:
             logger.error("NCBI prefetch is unavailable for %s", srr_id)
             return None
 
-        root = (sample_dir / ".prefetch" / srr_id if sample_dir is not None
-                else _data_root() / ".sra-cache" / "prefetch" / srr_id)
+        root = (
+            sample_dir / ".prefetch" / srr_id
+            if sample_dir is not None
+            else _data_root() / ".sra-cache" / "prefetch" / srr_id
+        )
         root.mkdir(parents=True, exist_ok=True)
         available = shutil.disk_usage(root).free - int(self.min_external_free_gb * 1024**3)
         if available < 1024:
@@ -3099,8 +3224,7 @@ class StreamingPipelineOrchestrator:
             logger.error("NCBI prefetch failed for %s (exit %d): %s", srr_id, result.returncode, detail[:300])
             return None
 
-        candidates = [root / f"{srr_id}.sra", root / f"{srr_id}.sra.cache",
-                      root / srr_id / f"{srr_id}.sra"]
+        candidates = [root / f"{srr_id}.sra", root / f"{srr_id}.sra.cache", root / srr_id / f"{srr_id}.sra"]
         for candidate in candidates:
             if candidate.is_file() and candidate.stat().st_size > 0:
                 logger.info("Prefetch completed for %s: %s", srr_id, candidate)
@@ -3123,17 +3247,29 @@ class StreamingPipelineOrchestrator:
         with self._fs_lock:
             if self._ena_data_root is not None:
                 self._check_ena_roots()
-                prepare_sample_directory(sample_dir, self._ena_data_root, self._ena_data_identity)
+                # _check_ena_roots() has just verified the recorded root identity.
+                data_identity = cast("tuple[int, int]", self._ena_data_identity)
+                prepare_sample_directory(sample_dir, self._ena_data_root, data_identity)
                 _plain_path(_raw_validation_marker(sample_dir, srr_id))
                 if any(path.is_symlink() for path in sample_dir.iterdir()):
                     raise StagingError("Recovery sample contains a symlink; existing inputs preserved")
             else:
                 sample_dir.mkdir(parents=True, exist_ok=True)
         if self._raw_validation_semaphore is None:
-            local_fastqs = _validated_local_fastq_inputs(sample_dir, srr_id, expected_paired, require_records=self.record_validation_required or self.local_ena_scratch_dir is not None)
+            local_fastqs = _validated_local_fastq_inputs(
+                sample_dir,
+                srr_id,
+                expected_paired,
+                require_records=self.record_validation_required or self.local_ena_scratch_dir is not None,
+            )
         else:
             with self._raw_validation_semaphore:
-                local_fastqs = _validated_local_fastq_inputs(sample_dir, srr_id, expected_paired, require_records=self.record_validation_required or self.local_ena_scratch_dir is not None)
+                local_fastqs = _validated_local_fastq_inputs(
+                    sample_dir,
+                    srr_id,
+                    expected_paired,
+                    require_records=self.record_validation_required or self.local_ena_scratch_dir is not None,
+                )
         if local_fastqs:
             logger.info(
                 "Deferred fallback found %d validated FASTQ file(s) for %s; skipping extraction.",
@@ -3785,18 +3921,35 @@ class StreamingPipelineOrchestrator:
         # Download
         if not quantification_only:
             self.db.set_state(species_name, srr_id, "downloading")
+        download_outcome: bool | None  # None: NCBI fallback queued after ENA failure
         try:
             if quantification_only:
                 deadline = time.monotonic() + self.quant_timeout_seconds if self.quant_timeout_seconds else None
-                download_outcome = bool(self._validate_acquisition_fastqs(
-                    fastq_dir / srr_id, srr_id, expected_paired, deadline, require_records=True, fresh_record_scan=True,
-                ))
+                download_outcome = bool(
+                    self._validate_acquisition_fastqs(
+                        fastq_dir / srr_id,
+                        srr_id,
+                        expected_paired,
+                        deadline,
+                        require_records=True,
+                        fresh_record_scan=True,
+                    )
+                )
             else:
                 download_outcome = self.download_fastq(
-                    srr_id, fastq_dir, expected_paired, defer_ncbi_fallback=defer_ncbi_fallback,
+                    srr_id,
+                    fastq_dir,
+                    expected_paired,
+                    defer_ncbi_fallback=defer_ncbi_fallback,
                 )
         except (FirstPassDeferred, StagingDeadline) as exc:
-            result.update(status="deferred_download", download_deferred=True, error=str(exc), acquisition_budget_seconds=self.download_first_pass_seconds, deferred_at_epoch=time.time())
+            result.update(
+                status="deferred_download",
+                download_deferred=True,
+                error=str(exc),
+                acquisition_budget_seconds=self.download_first_pass_seconds,
+                deferred_at_epoch=time.time(),
+            )
             self.db.set_state(species_name, srr_id, "pending", error=str(exc))
             return result
         if download_outcome is None:
@@ -3809,8 +3962,11 @@ class StreamingPipelineOrchestrator:
             result["fallback_deferred"] = True
             return result
         if not download_outcome:
-            error_msg = ("Acquired FASTQs missing or invalid; no network attempted in quantification stage"
-                         if quantification_only else "Download Failed (all sources: ENA FTP/HTTP, NCBI)")
+            error_msg = (
+                "Acquired FASTQs missing or invalid; no network attempted in quantification stage"
+                if quantification_only
+                else "Download Failed (all sources: ENA FTP/HTTP, NCBI)"
+            )
             self.db.set_state(species_name, srr_id, "failed", error=error_msg)
             result["error"] = error_msg
             return result

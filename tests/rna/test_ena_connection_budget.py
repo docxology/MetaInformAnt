@@ -125,7 +125,10 @@ def test_connection_cap_is_shared_across_downloaders_with_unlimited_control(
                 time.sleep(0.3)
                 if self.path.startswith("/api?"):
                     accession = parse_qs(urlsplit(self.path).query)["accession"][0]
-                    body = f"run_accession\tfastq_ftp\n{accession}\thttp://127.0.0.1:{self.server.server_port}/{accession}.fastq.gz\n".encode()
+                    body = (
+                        f"run_accession\tfastq_ftp\n{accession}\t"
+                        f"http://127.0.0.1:{self.server.server_port}/{accession}.fastq.gz\n"
+                    ).encode()
                 else:
                     body = payload
                 self.send_response(200)
@@ -165,9 +168,7 @@ def test_connection_cap_is_shared_across_downloaders_with_unlimited_control(
     assert not thread.is_alive()
 
 
-def test_slot_wait_expires_without_http_or_partial_mutation(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_slot_wait_expires_without_http_or_partial_mutation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("AMALGKIT_ENA_MAX_CONNECTIONS", "1")
     entered, release = threading.Event(), threading.Event()
     requests = []
@@ -201,8 +202,9 @@ def test_slot_wait_expires_without_http_or_partial_mutation(
     base = f"http://127.0.0.1:{server.server_port}"
     try:
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-            first = pool.submit(ENADownloader(timeout=6, retries=0)._download_files,
-                                [f"{base}/active.fastq.gz"], tmp_path / "active")
+            first = pool.submit(
+                ENADownloader(timeout=6, retries=0)._download_files, [f"{base}/active.fastq.gz"], tmp_path / "active"
+            )
             try:
                 assert entered.wait(3)
                 assert _remote_content_length(f"{base}/waiting-head.fastq.gz", timeout=0.1) is None

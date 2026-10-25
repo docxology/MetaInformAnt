@@ -15,8 +15,8 @@ from metainformant.rna.engine.acquisition_allocation import (
     allocate_tasks,
     write_allocation,
 )
-from metainformant.rna.engine.acquisition_order import plan_acquisition_order
 from metainformant.rna.engine.acquisition_manifest import sha256_file
+from metainformant.rna.engine.acquisition_order import plan_acquisition_order
 from metainformant.rna.engine.acquisition_worker import run_manifest
 
 MIB = 1024**2
@@ -42,9 +42,7 @@ def test_global_bands_clear_small_work_across_species_before_large_or_unknown() 
         sample("wasp", "unknown", 0),
     ]
     before = json.dumps(pending, sort_keys=True)
-    result = plan_acquisition_order(
-        iter(pending), iter(["sealed/b", "sealed/a"]), global_size_bands=True
-    )
+    result = plan_acquisition_order(iter(pending), iter(["sealed/b", "sealed/a"]), global_size_bands=True)
     assert result == [
         "sealed/a",
         "ant/small",
@@ -97,9 +95,7 @@ def test_size_boundaries_are_inclusive_and_species_rotate_inside_each_band() -> 
         ([sample("ant", "x", 1), sample("ant", "x", 10 * GIB)], []),
     ],
 )
-def test_global_bands_refuse_duplicate_identities(
-    pending: list[SizeTask], checkpoints: list[str]
-) -> None:
+def test_global_bands_refuse_duplicate_identities(pending: list[SizeTask], checkpoints: list[str]) -> None:
     with pytest.raises(ValueError, match="Duplicate acquisition task"):
         plan_acquisition_order(pending, checkpoints, global_size_bands=True)
 
@@ -111,31 +107,27 @@ def test_empty_lanes_and_checkpoint_tail_preserve_every_identity() -> None:
         "b",
         "c",
     ]
-    assert plan_acquisition_order(
-        [sample("ant", "x", 1)], ["c", "a", "b"], global_size_bands=True
-    ) == ["a", "ant/x", "b", "c"]
+    assert plan_acquisition_order([sample("ant", "x", 1)], ["c", "a", "b"], global_size_bands=True) == [
+        "a",
+        "ant/x",
+        "b",
+        "c",
+    ]
 
 
 def test_full_cohort_sized_plan_is_deterministic_and_preserves_all_tasks() -> None:
-    pending = [
-        sample(f"species_{number % 27:02d}", str(number), (number % 31) * 900 * MIB)
-        for number in range(18200)
-    ]
+    pending = [sample(f"species_{number % 27:02d}", str(number), (number % 31) * 900 * MIB) for number in range(18200)]
     first = plan_acquisition_order(pending, [], global_size_bands=True)
     assert len(first) == len(set(first)) == 18200
     assert set(first) == {task["task_id"] for task in pending}
-    assert first == plan_acquisition_order(
-        reversed(pending), [], global_size_bands=True
-    )
+    assert first == plan_acquisition_order(reversed(pending), [], global_size_bands=True)
     sizes = {task["task_id"]: task["fastq_bytes"] for task in pending}
     unknown = [task_id for task_id in first if sizes[task_id] == 0]
     assert first[-len(unknown) :] == unknown
 
 
 def test_malformed_size_is_refused_instead_of_silently_treated_as_small() -> None:
-    malformed = json.loads(
-        '[{"task_id":"ant/x","species":"ant","fastq_bytes":"broken"}]'
-    )
+    malformed = json.loads('[{"task_id":"ant/x","species":"ant","fastq_bytes":"broken"}]')
     with pytest.raises(ValueError):
         plan_acquisition_order(malformed, [], global_size_bands=True)
 
@@ -145,10 +137,7 @@ def test_continuous_cli_refuses_unknown_order_before_control_writes(
 ) -> None:
     repo = Path(__file__).resolve().parents[2]
     operations = repo / "output/hymenoptera_local_20261019"
-    paths = [
-        operations / name
-        for name in (".run.lock", "active_runtime.json", "active_scope.json")
-    ]
+    paths = [operations / name for name in (".run.lock", "active_runtime.json", "active_scope.json")]
     before = {str(path): path.read_bytes() if path.exists() else None for path in paths}
     completed = subprocess.run(
         [
@@ -164,13 +153,8 @@ def test_continuous_cli_refuses_unknown_order_before_control_writes(
         text=True,
     )
     assert completed.returncode != 0
-    assert (
-        "AMALGKIT_LOCAL_ACQUISITION_ORDER must be species_fair or size_bands"
-        in completed.stderr
-    )
-    assert {
-        str(path): path.read_bytes() if path.exists() else None for path in paths
-    } == before
+    assert "AMALGKIT_LOCAL_ACQUISITION_ORDER must be species_fair or size_bands" in completed.stderr
+    assert {str(path): path.read_bytes() if path.exists() else None for path in paths} == before
 
 
 @pytest.mark.external_tool
@@ -216,9 +200,7 @@ def test_size_ordered_native_partition_executes_in_order_and_replays_without_rew
         "test_species/SRR124",
         "test_species/SRR125",
     ]
-    allocation = write_allocation(
-        allocate_tasks(fixture.manifest, backend="local"), tmp_path / "allocation"
-    )
+    allocation = write_allocation(allocate_tasks(fixture.manifest, backend="local"), tmp_path / "allocation")
     selection = allocation.parent / "small-first.json"
     selection.write_text(
         json.dumps(
@@ -251,17 +233,11 @@ def test_size_ordered_native_partition_executes_in_order_and_replays_without_rew
     first = run_manifest(**kwargs)
     assert all(row["quantified"] and not row.get("skipped") for row in first["results"])
     journal = next((fixture.data / "acquisition_runs").glob("*/task_results.jsonl"))
-    assert [
-        json.loads(line)["task_id"] for line in journal.read_text().splitlines()
-    ] == ordered
+    assert [json.loads(line)["task_id"] for line in journal.read_text().splitlines()] == ordered
     protected = [*raw.values(), *fixture.work.glob("quant/*/*abundance.tsv")]
     assert len(protected) == 6
-    before = {
-        str(path): (sha256_file(path), path.stat().st_mtime_ns) for path in protected
-    }
+    before = {str(path): (sha256_file(path), path.stat().st_mtime_ns) for path in protected}
     replay = run_manifest(**kwargs)
     assert all(row["quantified"] and row["skipped"] for row in replay["results"])
-    assert {
-        str(path): (sha256_file(path), path.stat().st_mtime_ns) for path in protected
-    } == before
+    assert {str(path): (sha256_file(path), path.stat().st_mtime_ns) for path in protected} == before
     assert (fixture.manifest.read_bytes(), selection.read_bytes()) == source_bytes

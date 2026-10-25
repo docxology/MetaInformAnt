@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 import stat
+from pathlib import Path
 from typing import Any
 
+from metainformant.rna.engine.acquisition_lanes import Result, Task
 from metainformant.rna.engine.acquisition_manifest import sha256_file
 from metainformant.rna.engine.durable_quant import ObjectStore, bound_receipt_key
-from metainformant.rna.engine.acquisition_lanes import Result, Task
 from metainformant.rna.engine.provenance import classify_quantification, read_quant_provenance
 from metainformant.rna.engine.streaming_orchestrator import (
     StreamingPipelineOrchestrator,
@@ -18,8 +18,11 @@ from metainformant.rna.engine.streaming_orchestrator import (
 def _regular_owned_file(path: Path, root: Path) -> bool:
     try:
         resolved = path.resolve(strict=True)
-        return (stat.S_ISREG(path.lstat().st_mode) and resolved == path.absolute()
-                and resolved.is_relative_to(root.resolve(strict=True)))
+        return (
+            stat.S_ISREG(path.lstat().st_mode)
+            and resolved == path.absolute()
+            and resolved.is_relative_to(root.resolve(strict=True))
+        )
     except (OSError, RuntimeError):
         return False
 
@@ -47,7 +50,9 @@ def reuse_manifest_quantification(task: Task, data_root: Path, config_dir: Path)
         payloads.extend([restored / "manifest.json", restored / "config.yaml"])
         if provenance.get("reference_manifest_sha256"):
             payloads.append(restored / "reference_manifest.json")
-    elif not isinstance(provenance.get("config_path"), str) or not _regular_owned_file(Path(provenance["config_path"]), config_dir):
+    elif not isinstance(provenance.get("config_path"), str) or not _regular_owned_file(
+        Path(provenance["config_path"]), config_dir
+    ):
         return None
     reference = provenance.get("reference_manifest_path")
     if reference and (not isinstance(reference, str) or not _regular_owned_file(Path(reference), data_root)):
@@ -60,8 +65,14 @@ def reuse_manifest_quantification(task: Task, data_root: Path, config_dir: Path)
     audit = classify_quantification(sample, accession, expected_config_path=config)
     if audit["status"] != "current" or audit["contract_id"] != provenance.get("quant_contract_id"):
         return None
-    return {"srr": accession, "batch": int(task["batch_index"]), "downloaded": False,
-            "quantified": True, "skipped": True, "error": None}
+    return {
+        "srr": accession,
+        "batch": int(task["batch_index"]),
+        "downloaded": False,
+        "quantified": True,
+        "skipped": True,
+        "error": None,
+    }
 
 
 def execute_manifest_task(
@@ -112,9 +123,7 @@ def execute_manifest_task(
                 verified_config_path=config_path,
             )
             if restored["config_sha256"] != sha256_file(config_path):
-                raise ValueError(
-                    "durable receipt uses a different species configuration"
-                )
+                raise ValueError("durable receipt uses a different species configuration")
             orchestrator.db.set_state(species, accession, "quantified")
             return {
                 "srr": accession,

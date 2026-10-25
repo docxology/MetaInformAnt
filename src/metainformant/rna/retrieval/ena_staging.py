@@ -12,9 +12,10 @@ import time
 import zlib
 from collections.abc import Callable, Iterator
 from contextlib import ExitStack
+from io import BufferedIOBase
 from itertools import zip_longest
 from pathlib import Path
-from typing import BinaryIO, Protocol
+from typing import Protocol
 
 from metainformant.rna.retrieval.ena_downloader import (
     ENADownloader,
@@ -50,9 +51,7 @@ def _check_deadline(deadline: float | None) -> None:
         raise StagingDeadline("SSD acquisition time budget exhausted; sources retained")
 
 
-def _fastq_record_keys(
-    reader: BinaryIO, mate: int | None, deadline: float | None
-) -> Iterator[bytes | None]:
+def _fastq_record_keys(reader: BufferedIOBase, mate: int | None, deadline: float | None) -> Iterator[bytes | None]:
     carry = b""
     pending: list[bytes] = []
     limit = 1024 * 1024
@@ -109,15 +108,13 @@ def _fastq_record_keys(
         yield None
 
 
-def validate_fastq_records(
-    paths: list[Path], *, deadline_at: float | None = None
-) -> bool:
+def validate_fastq_records(paths: list[Path], *, deadline_at: float | None = None) -> bool:
     if len(paths) not in (1, 2):
         return False
     count = 0
     try:
         with ExitStack() as stack:
-            readers = []
+            readers: list[BufferedIOBase] = []
             for path in paths:
                 _signature(_plain_path(path))
                 if path.name.endswith(".gz"):
@@ -125,9 +122,7 @@ def validate_fastq_records(
                 else:
                     readers.append(stack.enter_context(path.open("rb")))
             streams = [
-                _fastq_record_keys(
-                    reader, index if len(paths) == 2 else None, deadline_at
-                )
+                _fastq_record_keys(reader, index if len(paths) == 2 else None, deadline_at)
                 for index, reader in enumerate(readers, start=1)
             ]
             for records in zip_longest(*streams):
@@ -155,9 +150,7 @@ def prepare_sample_directory(path: Path, root: Path, identity: tuple[int, int]) 
     try:
         root_stat = os.fstat(descriptor)
         if (root_stat.st_dev, root_stat.st_ino) != identity:
-            raise StagingError(
-                "selected acquisition root changed before directory creation"
-            )
+            raise StagingError("selected acquisition root changed before directory creation")
         for part in parts:
             try:
                 os.mkdir(part, dir_fd=descriptor)
@@ -183,9 +176,7 @@ def _signature(path: Path) -> tuple[int, int, int, int, int]:
     )
 
 
-def _digest(
-    path: Path, *, algorithm: str = "sha256", deadline: float | None = None
-) -> str:
+def _digest(path: Path, *, algorithm: str = "sha256", deadline: float | None = None) -> str:
     digest = hashlib.new(algorithm, usedforsecurity=False)
     with path.open("rb") as handle:
         while chunk := handle.read(1024 * 1024):
@@ -208,19 +199,15 @@ def publish_verified_file(
     if before[2] == 0:
         raise StagingError(f"staged file is empty: {source}")
     if destination.exists():
-        if _signature(destination)[2] != before[2] or _digest(
-            source, deadline=deadline
-        ) != _digest(destination, deadline=deadline):
-            raise StagingError(
-                f"canonical FASTQ conflicts with staged content: {destination}"
-            )
+        if _signature(destination)[2] != before[2] or _digest(source, deadline=deadline) != _digest(
+            destination, deadline=deadline
+        ):
+            raise StagingError(f"canonical FASTQ conflicts with staged content: {destination}")
         if _signature(source) != before:
             raise StagingError(f"staged source changed: {source}")
         return
     if not destination.parent.is_dir():
-        raise StagingError(
-            f"canonical destination directory is unavailable: {destination.parent}"
-        )
+        raise StagingError(f"canonical destination directory is unavailable: {destination.parent}")
     with tempfile.NamedTemporaryFile(
         prefix=f".{destination.name}.", suffix=".copying", dir=destination.parent
     ) as temporary:
@@ -236,9 +223,7 @@ def publish_verified_file(
         if _signature(source) != before or copied.stat().st_size != before[2]:
             raise StagingError(f"staged source changed during copy: {source}")
         if _digest(copied, deadline=deadline) != digest.hexdigest():
-            raise StagingError(
-                f"canonical staging-copy checksum mismatch: {destination}"
-            )
+            raise StagingError(f"canonical staging-copy checksum mismatch: {destination}")
         os.utime(copied, ns=(source.stat().st_atime_ns, before[3]))
         _check_deadline(deadline)
         os.link(copied, destination)
@@ -279,23 +264,11 @@ def download_staged_ena(
         raise StagingError("canonical and staging roots must be isolated")
     names = [url.rsplit("/", 1)[-1] for url in urls]
     allowed = {f"{canonical.name}{suffix}.fastq.gz" for suffix in ("", "_1", "_2")}
-    if (
-        not urls
-        or len(set(names)) != len(names)
-        or any(name not in allowed for name in names)
-    ):
+    if not urls or len(set(names)) != len(names) or any(name not in allowed for name in names):
         raise StagingError("staged ENA files must be distinct accession FASTQ names")
-    if (
-        expected_paired is not False
-        and len(names) == 1
-        and names[0] == f"{canonical.name}.fastq.gz"
-    ):
+    if expected_paired is not False and len(names) == 1 and names[0] == f"{canonical.name}.fastq.gz":
         return None
-    deadline = (
-        time.monotonic() + downloader.run_timeout_seconds
-        if downloader.run_timeout_seconds
-        else None
-    )
+    deadline = time.monotonic() + downloader.run_timeout_seconds if downloader.run_timeout_seconds else None
     if deadline_at is not None:
         deadline = min(deadline or float("inf"), deadline_at)
     sizes: dict[str, int] = {}
@@ -309,9 +282,7 @@ def download_staged_ena(
         if size is None or size <= 0:
             return None
         sizes[name] = size
-    checksums = {
-        name: downloader.file_md5[name] for name in names if name in downloader.file_md5
-    }
+    checksums = {name: downloader.file_md5[name] for name in names if name in downloader.file_md5}
     identity = {
         "destination": str(canonical),
         "urls": urls,
@@ -325,20 +296,13 @@ def download_staged_ena(
     sample = workspace / "getfastq" / canonical.name
     if (
         canonical.is_dir()
-        and any(
-            (canonical / name).exists() or (canonical / f"{name}.part").exists()
-            for name in names
-        )
+        and any((canonical / name).exists() or (canonical / f"{name}.part").exists() for name in names)
         and not workspace.exists()
     ):
         return None
-    if canonical.is_dir() and any(
-        (canonical / f"{name}.part").exists() for name in names
-    ):
+    if canonical.is_dir() and any((canonical / f"{name}.part").exists() for name in names):
         return None
-    reservation = sum(sizes.values()) + len(names) * (
-        2 * downloader.invalid_witness_max_bytes + 1024**2
-    )
+    reservation = sum(sizes.values()) + len(names) * (2 * downloader.invalid_witness_max_bytes + 1024**2)
     if not reserve(reservation):
         return None
     try:
@@ -354,14 +318,11 @@ def download_staged_ena(
             fcntl.flock(owner, fcntl.LOCK_EX | fcntl.LOCK_NB)
             binding = _plain_path(workspace / "identity.json")
             if binding.exists() and (
-                _signature(binding)[2] != len(raw_identity)
-                or binding.read_bytes() != raw_identity
+                _signature(binding)[2] != len(raw_identity) or binding.read_bytes() != raw_identity
             ):
                 raise StagingError("staging identity changed")
             if not binding.exists():
-                with tempfile.NamedTemporaryFile(
-                    prefix=".identity-", dir=workspace
-                ) as temporary:
+                with tempfile.NamedTemporaryFile(prefix=".identity-", dir=workspace) as temporary:
                     temporary.write(raw_identity)
                     temporary.flush()
                     os.fsync(temporary.fileno())
@@ -371,9 +332,7 @@ def download_staged_ena(
                     _plain_path(candidate)
                     if candidate.exists():
                         if _signature(candidate)[2] > sizes[name]:
-                            raise StagingError(
-                                f"retained SSD input exceeds its bound: {candidate}"
-                            )
+                            raise StagingError(f"retained SSD input exceeds its bound: {candidate}")
                         if candidate.stat().st_size and name not in checksums:
                             return None
             success, message, _ = downloader._download_files(
@@ -402,13 +361,9 @@ def download_staged_ena(
                 else validation_lock.acquire()
             )
             if not acquired_validation:
-                raise StagingDeadline(
-                    "SSD record validation slot time budget exhausted; sources retained"
-                )
+                raise StagingDeadline("SSD record validation slot time budget exhausted; sources retained")
             try:
-                if not validate_fastq_records(
-                    [sample / name for name in sorted(names)], deadline_at=deadline
-                ):
+                if not validate_fastq_records([sample / name for name in sorted(names)], deadline_at=deadline):
                     return (
                         False,
                         "SSD FASTQs failed full record or paired-read validation",
@@ -418,18 +373,10 @@ def download_staged_ena(
                 if validation_lock is not None:
                     validation_lock.release()
             inputs = validate(sample)
-            if len(inputs) != len(names) or {path.name for path in inputs} != set(
-                names
-            ):
+            if len(inputs) != len(names) or {path.name for path in inputs} != set(names):
                 return False, "SSD FASTQs failed the declared layout contract", []
-            if any(
-                path.parent != sample
-                or _signature(_plain_path(path))[2] != sizes[path.name]
-                for path in inputs
-            ):
-                raise StagingError(
-                    "validated SSD inputs differ from the bounded transfer set"
-                )
+            if any(path.parent != sample or _signature(_plain_path(path))[2] != sizes[path.name] for path in inputs):
+                raise StagingError("validated SSD inputs differ from the bounded transfer set")
             _check_deadline(deadline)
             acquired = (
                 promotion_lock.acquire(timeout=max(0, deadline - time.monotonic()))
@@ -437,28 +384,17 @@ def download_staged_ena(
                 else promotion_lock.acquire()
             )
             if not acquired:
-                raise StagingDeadline(
-                    "SSD promotion slot time budget exhausted; sources retained"
-                )
+                raise StagingDeadline("SSD promotion slot time budget exhausted; sources retained")
             try:
                 for path in inputs:
                     if (
                         canonical.stat().st_dev,
                         canonical.stat().st_ino,
                     ) != destination_identity:
-                        raise StagingError(
-                            "canonical directory identity changed during acquisition"
-                        )
-                    missing_bytes = sum(
-                        sizes[name] for name in names if not (canonical / name).exists()
-                    )
-                    if (
-                        shutil.disk_usage(canonical).free
-                        < minimum_free_bytes + missing_bytes
-                    ):
-                        raise StagingError(
-                            "bulk capacity floor prevents SSD publication; sources retained"
-                        )
+                        raise StagingError("canonical directory identity changed during acquisition")
+                    missing_bytes = sum(sizes[name] for name in names if not (canonical / name).exists())
+                    if shutil.disk_usage(canonical).free < minimum_free_bytes + missing_bytes:
+                        raise StagingError("bulk capacity floor prevents SSD publication; sources retained")
                     publish_verified_file(
                         path,
                         canonical / path.name,

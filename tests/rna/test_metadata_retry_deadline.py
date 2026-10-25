@@ -43,8 +43,7 @@ def metadata_site(*, failures: int) -> Iterator[tuple[str, list[str]]]:
 @pytest.mark.parametrize("budget", [0, 3])
 def test_configured_metadata_retry_survives_transient_500(budget: int) -> None:
     with metadata_site(failures=1) as (base, calls):
-        owner = ENADownloader(run_timeout_seconds=budget, api_retries=1,
-                              api_retry_delay_seconds=1, api_base_url=base)
+        owner = ENADownloader(run_timeout_seconds=budget, api_retries=1, api_retry_delay_seconds=1, api_base_url=base)
         started = time.monotonic()
         assert owner.get_fastq_urls("SRR123") == ["https://ftp.sra.ebi.ac.uk/reads.fastq.gz"]
         assert len(calls) == 2
@@ -54,8 +53,7 @@ def test_configured_metadata_retry_survives_transient_500(budget: int) -> None:
 @pytest.mark.parametrize("explicit", [False, True])
 def test_metadata_retry_backoff_obeys_both_implicit_and_explicit_deadlines(explicit: bool) -> None:
     with metadata_site(failures=99) as (base, calls):
-        owner = ENADownloader(run_timeout_seconds=1, api_retries=3,
-                              api_retry_delay_seconds=10, api_base_url=base)
+        owner = ENADownloader(run_timeout_seconds=1, api_retries=3, api_retry_delay_seconds=10, api_base_url=base)
         started = time.monotonic()
         kwargs = {"deadline_at": started + 0.2} if explicit else {}
         assert owner.get_fastq_urls("SRR123", **kwargs) == []

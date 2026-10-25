@@ -26,9 +26,7 @@ from metainformant.rna.engine.streaming_orchestrator import (
 @pytest.mark.parametrize("dedicated_recovery", [False, True])
 @pytest.mark.parametrize("promote_fallback", [False, True])
 @pytest.mark.parametrize("planning_profile", [False, True])
-@pytest.mark.parametrize(
-    "reference_target", ["Test species", "Test species subspecies"]
-)
+@pytest.mark.parametrize("reference_target", ["Test species", "Test species subspecies"])
 def test_real_manifest_quantification_and_second_run_reuses_bytes(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -38,12 +36,8 @@ def test_real_manifest_quantification_and_second_run_reuses_bytes(
     dedicated_recovery: bool,
     native_acquisition_factory,
 ) -> None:
-    monkeypatch.setenv(
-        "AMALGKIT_PIPELINE_DEDICATED_RECOVERY", "yes" if dedicated_recovery else "no"
-    )
-    fixture = native_acquisition_factory(
-        reference_target=reference_target, paired_metadata=promote_fallback
-    )
+    monkeypatch.setenv("AMALGKIT_PIPELINE_DEDICATED_RECOVERY", "yes" if dedicated_recovery else "no")
+    fixture = native_acquisition_factory(reference_target=reference_target, paired_metadata=promote_fallback)
     data, work, index = fixture.data, fixture.work, fixture.index
     metadata, config_dir, manifest = (
         fixture.metadata,
@@ -65,10 +59,7 @@ def test_real_manifest_quantification_and_second_run_reuses_bytes(
         inputs = _validated_local_fastq_inputs(fallback_dir, "SRR123", True)
         assert _promote_validated_fastq_inputs(inputs, reads, "SRR123", True)
         assert destination.read_bytes() == validated_bytes
-        assert (
-            destination.with_name(destination.name + ".invalid").read_bytes()
-            == rejected_bytes
-        )
+        assert destination.with_name(destination.name + ".invalid").read_bytes() == rejected_bytes
     kwargs = {
         "manifest_path": manifest,
         "data_root": data,
@@ -126,9 +117,7 @@ def test_real_manifest_quantification_and_second_run_reuses_bytes(
             capture_output=True,
             check=False,
         )
-        (tmp_path / f"{scenario}-cli.txt").write_text(
-            completed.stdout + completed.stderr
-        )
+        (tmp_path / f"{scenario}-cli.txt").write_text(completed.stdout + completed.stderr)
         assert completed.returncode == 1
         deferred = json.loads((data / "cloud_worker_result.json").read_text())
         assert deferred["counts"] == {"unresolved": 1}
@@ -168,9 +157,7 @@ def test_real_manifest_quantification_and_second_run_reuses_bytes(
         assert (sample / f"{accession}_abundance.tsv").is_file()
         assert (sample / ".metainformant_quant_provenance.json").is_file()
         active_runs = [
-            directory
-            for directory in (data / "acquisition_runs").iterdir()
-            if not (directory / "result.json").exists()
+            directory for directory in (data / "acquisition_runs").iterdir() if not (directory / "result.json").exists()
         ]
         assert len(active_runs) == 1
         completed_samples.append((species, accession))

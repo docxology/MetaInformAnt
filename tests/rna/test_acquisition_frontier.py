@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.rna.engine.acquisition_lanes import AdmissionDecision
 from metainformant.rna.engine.acquisition_frontier import run_acquisition_frontier
+from metainformant.rna.engine.acquisition_lanes import AdmissionDecision
 
 
 def test_download_continues_during_quantification_and_retains_reservations(tmp_path: Path) -> None:
@@ -37,11 +37,19 @@ def test_download_continues_during_quantification_and_retains_reservations(tmp_p
         completed.append(identity)
 
     summary = run_acquisition_frontier(
-        tasks, acquisition_slots=1, quant_slots=1, recovery_slots=1,
-        max_in_flight=4, frontier_size=48, raw_bytes_limit=20,
-        acquire=acquire, quantify=quantify, recover=lambda task: True,
+        tasks,
+        acquisition_slots=1,
+        quant_slots=1,
+        recovery_slots=1,
+        max_in_flight=4,
+        frontier_size=48,
+        raw_bytes_limit=20,
+        acquire=acquire,
+        quantify=quantify,
+        recover=lambda task: True,
         uses_local_sra=lambda task: False,
-        admission=lambda task, live: AdmissionDecision(), finished=finish,
+        admission=lambda task, live: AdmissionDecision(),
+        finished=finish,
         transition=lambda task, stage: events.append((task["task_id"], stage)),
     )
     assert sorted(completed) == ["0", "1", "2", "3"]
@@ -61,10 +69,16 @@ def test_stop_leaves_planned_items_unsubmitted_and_drains_acquired_inputs(tmp_pa
 
     summary = run_acquisition_frontier(
         [{"task_id": str(i), "fastq_bytes": 1} for i in range(48)],
-        acquisition_slots=1, quant_slots=1, recovery_slots=1,
-        max_in_flight=48, frontier_size=48, raw_bytes_limit=48,
-        acquire=acquire, quantify=lambda task: {"quantified": True},
-        recover=lambda task: True, uses_local_sra=lambda task: False,
+        acquisition_slots=1,
+        quant_slots=1,
+        recovery_slots=1,
+        max_in_flight=48,
+        frontier_size=48,
+        raw_bytes_limit=48,
+        acquire=acquire,
+        quantify=lambda task: {"quantified": True},
+        recover=lambda task: True,
+        uses_local_sra=lambda task: False,
         admission=lambda task, live: AdmissionDecision(),
         finished=lambda task, result: completed.append(task["task_id"]),
         transition=lambda task, stage: (tmp_path / (task["task_id"] + ".stage")).write_text(stage),
@@ -80,13 +94,19 @@ def test_unknown_or_oversized_reservation_is_explicitly_refused(weight: int) -> 
     results: list[dict] = []
     summary = run_acquisition_frontier(
         [{"task_id": "held", "fastq_bytes": weight}],
-        acquisition_slots=1, quant_slots=1, recovery_slots=1,
-        max_in_flight=1, frontier_size=48, raw_bytes_limit=20,
+        acquisition_slots=1,
+        quant_slots=1,
+        recovery_slots=1,
+        max_in_flight=1,
+        frontier_size=48,
+        raw_bytes_limit=20,
         acquire=lambda task, defer: pytest.fail("Unreserved acquisition ran"),
         quantify=lambda task: pytest.fail("Unreserved quantification ran"),
-        recover=lambda task: False, uses_local_sra=lambda task: False,
+        recover=lambda task: False,
+        uses_local_sra=lambda task: False,
         admission=lambda task, live: AdmissionDecision(),
-        finished=lambda task, result: results.append(result), transition=lambda task, stage: None,
+        finished=lambda task, result: results.append(result),
+        transition=lambda task, stage: None,
     )
     assert summary["peak_admitted"] == 0
     assert results[0]["status"] == "unresolved_deadline"
@@ -108,11 +128,18 @@ def test_failed_checkpoint_prevents_replacement_acquisition(tmp_path: Path) -> N
     with pytest.raises(OSError, match="checkpoint readback"):
         run_acquisition_frontier(
             [{"task_id": str(i), "fastq_bytes": 10} for i in range(3)],
-            acquisition_slots=1, quant_slots=1, recovery_slots=1,
-            max_in_flight=1, frontier_size=48, raw_bytes_limit=10,
-            acquire=acquire, quantify=lambda task: {"quantified": True},
-            recover=lambda task: False, uses_local_sra=lambda task: False,
-            admission=lambda task, live: AdmissionDecision(), finished=finish,
+            acquisition_slots=1,
+            quant_slots=1,
+            recovery_slots=1,
+            max_in_flight=1,
+            frontier_size=48,
+            raw_bytes_limit=10,
+            acquire=acquire,
+            quantify=lambda task: {"quantified": True},
+            recover=lambda task: False,
+            uses_local_sra=lambda task: False,
+            admission=lambda task, live: AdmissionDecision(),
+            finished=finish,
             transition=lambda task, stage: None,
         )
     assert acquired == ["0"]
@@ -130,10 +157,16 @@ def test_recovery_has_one_attempt_and_keeps_other_downloads_independent(recovere
 
     summary = run_acquisition_frontier(
         [{"task_id": str(i), "fastq_bytes": 10} for i in range(2)],
-        acquisition_slots=1, quant_slots=1, recovery_slots=1,
-        max_in_flight=2, frontier_size=48, raw_bytes_limit=20,
-        acquire=acquire, quantify=lambda task: {"quantified": True},
-        recover=lambda task: recovered, uses_local_sra=lambda task: False,
+        acquisition_slots=1,
+        quant_slots=1,
+        recovery_slots=1,
+        max_in_flight=2,
+        frontier_size=48,
+        raw_bytes_limit=20,
+        acquire=acquire,
+        quantify=lambda task: {"quantified": True},
+        recover=lambda task: recovered,
+        uses_local_sra=lambda task: False,
         admission=lambda task, live: AdmissionDecision(),
         finished=lambda task, result: results.append((task["task_id"], result)),
         transition=lambda task, stage: None,
@@ -160,9 +193,15 @@ def test_busy_local_recovery_does_not_block_later_ena_acquisition() -> None:
 
     run_acquisition_frontier(
         [{"task_id": str(i), "fastq_bytes": 10} for i in range(3)],
-        acquisition_slots=1, quant_slots=1, recovery_slots=1,
-        max_in_flight=3, frontier_size=48, raw_bytes_limit=30,
-        acquire=acquire, quantify=lambda task: {"quantified": True}, recover=recover,
+        acquisition_slots=1,
+        quant_slots=1,
+        recovery_slots=1,
+        max_in_flight=3,
+        frontier_size=48,
+        raw_bytes_limit=30,
+        acquire=acquire,
+        quantify=lambda task: {"quantified": True},
+        recover=recover,
         uses_local_sra=lambda task: task["task_id"] != "2",
         admission=lambda task, live: AdmissionDecision(),
         finished=lambda task, result: completed.append(task["task_id"]),
@@ -176,11 +215,18 @@ def test_refused_frontier_refills_to_reach_later_supported_work() -> None:
     tasks = [{"task_id": str(i), "fastq_bytes": 0} for i in range(50)]
     tasks.append({"task_id": "supported", "fastq_bytes": 1})
     summary = run_acquisition_frontier(
-        tasks, acquisition_slots=1, quant_slots=1, recovery_slots=1,
-        max_in_flight=1, frontier_size=48, raw_bytes_limit=20,
+        tasks,
+        acquisition_slots=1,
+        quant_slots=1,
+        recovery_slots=1,
+        max_in_flight=1,
+        frontier_size=48,
+        raw_bytes_limit=20,
         acquire=lambda task, defer: {"ready_for_quant": True},
-        quantify=lambda task: {"quantified": True}, recover=lambda task: False,
-        uses_local_sra=lambda task: False, admission=lambda task, live: AdmissionDecision(),
+        quantify=lambda task: {"quantified": True},
+        recover=lambda task: False,
+        uses_local_sra=lambda task: False,
+        admission=lambda task, live: AdmissionDecision(),
         finished=lambda task, result: results.append((task["task_id"], result)),
         transition=lambda task, stage: None,
     )
@@ -202,8 +248,9 @@ def test_quantification_stage_refuses_changed_mates_without_downloading(
     monkeypatch.setenv("AMALGKIT_PIPELINE_VALIDATE_FASTQ_RECORDS", "yes")
     owner = StreamingPipelineOrchestrator(config_dir=fixture.config_dir, db_path=fixture.data / "progress.db")
     try:
-        result = owner.process_single_sample("SRR123", 1, raw.parent.parent, fixture.config,
-                                             "test_species", 1, True, quantification_only=True)
+        result = owner.process_single_sample(
+            "SRR123", 1, raw.parent.parent, fixture.config, "test_species", 1, True, quantification_only=True
+        )
         assert result["quantified"] is False
         assert not (fixture.work / "quant/SRR123").exists()
         assert raw.is_file()
@@ -213,7 +260,10 @@ def test_quantification_stage_refuses_changed_mates_without_downloading(
 
 @pytest.mark.parametrize("mutation", ["replace-inode", "mutate-in-place", "matching-witness"])
 def test_quantification_refuses_same_size_mtime_mate_mutation(
-    native_acquisition_factory, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, mutation: str,
+    native_acquisition_factory,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    mutation: str,
 ) -> None:
     import gzip
     import os
@@ -221,34 +271,40 @@ def test_quantification_refuses_same_size_mtime_mate_mutation(
     from metainformant.rna.engine.streaming_orchestrator import (
         StreamingPipelineOrchestrator,
         _raw_validation_marker,
-        _write_raw_validation_marker,
         _validated_local_fastq_inputs,
+        _write_raw_validation_marker,
     )
 
     fixture = native_acquisition_factory(paired_metadata=True)
     sample = fixture.work / "getfastq/SRR123"
     (sample / "SRR123.fastq.gz").rename(tmp_path / "original-single.fastq.gz")
-    sequences = [line for line in (tmp_path / "transcripts.fa").read_text().splitlines()
-                 if not line.startswith(">")]
+    sequences = [line for line in (tmp_path / "transcripts.fa").read_text().splitlines() if not line.startswith(">")]
     for mate in (1, 2):
         records = []
         for n in range(90):
             sequence, start = sequences[n % 3], 30 + n
-            read = (sequence[start:start + 75] if mate == 1 else
-                    sequence[start + 125:start + 200].translate(str.maketrans("ACGT", "TGCA"))[::-1])
+            read = (
+                sequence[start : start + 75]
+                if mate == 1
+                else sequence[start + 125 : start + 200].translate(str.maketrans("ACGT", "TGCA"))[::-1]
+            )
             records.append(f"@SRR123.{n:03d}/{mate}\n{read}\n+\n{'I' * 75}\n")
-        (sample / f"SRR123_{mate}.fastq.gz").write_bytes(gzip.compress("".join(records).encode(), compresslevel=0, mtime=0))
+        (sample / f"SRR123_{mate}.fastq.gz").write_bytes(
+            gzip.compress("".join(records).encode(), compresslevel=0, mtime=0)
+        )
     monkeypatch.setenv("AMALGKIT_PIPELINE_VALIDATE_FASTQ_RECORDS", "yes")
     owner = StreamingPipelineOrchestrator(config_dir=fixture.config_dir, db_path=fixture.data / "progress.db")
     try:
         owner.db.init_species("test_species", ["SRR123"])
-        acquired = owner.process_single_sample("SRR123", 1, sample.parent, fixture.config,
-                                               "test_species", 2, True, acquisition_only=True)
+        acquired = owner.process_single_sample(
+            "SRR123", 1, sample.parent, fixture.config, "test_species", 2, True, acquisition_only=True
+        )
         assert acquired["ready_for_quant"]
         mate = sample / "SRR123_2.fastq.gz"
         before = mate.stat()
-        changed = gzip.compress(gzip.decompress(mate.read_bytes()).replace(b"SRR123", b"SRR999"),
-                                compresslevel=0, mtime=0)
+        changed = gzip.compress(
+            gzip.decompress(mate.read_bytes()).replace(b"SRR123", b"SRR999"), compresslevel=0, mtime=0
+        )
         assert len(changed) == before.st_size
         if mutation == "replace-inode":
             temporary = tmp_path / "replacement.fastq.gz"
@@ -260,17 +316,20 @@ def test_quantification_refuses_same_size_mtime_mate_mutation(
         assert mate.stat().st_size == before.st_size and mate.stat().st_mtime_ns == before.st_mtime_ns
         assert (mate.stat().st_ino != before.st_ino) is (mutation == "replace-inode")
         if mutation == "matching-witness":
-            _write_raw_validation_marker(_raw_validation_marker(sample, "SRR123"),
-                                         [sample / "SRR123_1.fastq.gz", mate], True,
-                                         layout_validation="full_fastq_record_scan")
+            _write_raw_validation_marker(
+                _raw_validation_marker(sample, "SRR123"),
+                [sample / "SRR123_1.fastq.gz", mate],
+                True,
+                layout_validation="full_fastq_record_scan",
+            )
             assert len(_validated_local_fastq_inputs(sample, "SRR123", True, require_records=True)) == 2
-        result = owner.process_single_sample("SRR123", 1, sample.parent, fixture.config,
-                                            "test_species", 2, True, quantification_only=True)
+        result = owner.process_single_sample(
+            "SRR123", 1, sample.parent, fixture.config, "test_species", 2, True, quantification_only=True
+        )
         assert result["quantified"] is False
         assert "invalid" in result["error"]
         assert not list((fixture.work / "quant").rglob("*abundance.tsv"))
-        assert _validated_local_fastq_inputs(sample, "SRR123", True, require_records=True,
-                                            fresh_record_scan=True) == []
+        assert _validated_local_fastq_inputs(sample, "SRR123", True, require_records=True, fresh_record_scan=True) == []
         if mutation != "matching-witness":
             assert _validated_local_fastq_inputs(sample, "SRR123", True, require_records=True) == []
         assert mate.read_bytes() == changed
@@ -288,14 +347,26 @@ def test_real_frontier_quantifies_and_replays_without_changing_raw_or_outputs(
 
     fixture = native_acquisition_factory(accessions=("SRR123", "SRR124", "SRR125"), paired_metadata=paired)
     for key, value in {
-        "AMALGKIT_LOCAL_FRONTIER_SIZE": "48", "AMALGKIT_LOCAL_RAW_RESERVATION_BYTES": "45000",
-        "AMALGKIT_PIPELINE_ACQUISITION_SLOTS": "1", "AMALGKIT_PIPELINE_DEDICATED_RECOVERY": "yes",
+        "AMALGKIT_LOCAL_FRONTIER_SIZE": "48",
+        "AMALGKIT_LOCAL_RAW_RESERVATION_BYTES": "45000",
+        "AMALGKIT_PIPELINE_ACQUISITION_SLOTS": "1",
+        "AMALGKIT_PIPELINE_DEDICATED_RECOVERY": "yes",
         "AMALGKIT_PIPELINE_VALIDATE_FASTQ_RECORDS": "yes",
     }.items():
         monkeypatch.setenv(key, value)
-    kwargs = dict(manifest_path=fixture.manifest, data_root=fixture.data, config_dir=fixture.config_dir,
-                  workers=2, threads=2, fastq_threads=1, compression_threads=1,
-                  validation_slots=1, quant_slots=1, fasterq_slots=1, max_in_flight=3)
+    kwargs = dict(
+        manifest_path=fixture.manifest,
+        data_root=fixture.data,
+        config_dir=fixture.config_dir,
+        workers=2,
+        threads=2,
+        fastq_threads=1,
+        compression_threads=1,
+        validation_slots=1,
+        quant_slots=1,
+        fasterq_slots=1,
+        max_in_flight=3,
+    )
     raw = fixture.work / "getfastq/SRR123/SRR123.fastq.gz"
     payload = raw.read_bytes()
     raw.rename(raw.parent / "preserved-source.bin")
@@ -325,14 +396,26 @@ def test_eight_thread_compute_profiles_run_native_quantification_and_reuse(
 
     fixture = native_acquisition_factory(accessions=("SRR123", "SRR124", "SRR125", "SRR126"))
     for key, value in {
-        "AMALGKIT_LOCAL_FRONTIER_SIZE": "48", "AMALGKIT_LOCAL_RAW_RESERVATION_BYTES": "60000",
-        "AMALGKIT_PIPELINE_ACQUISITION_SLOTS": "2", "AMALGKIT_PIPELINE_DEDICATED_RECOVERY": "yes",
+        "AMALGKIT_LOCAL_FRONTIER_SIZE": "48",
+        "AMALGKIT_LOCAL_RAW_RESERVATION_BYTES": "60000",
+        "AMALGKIT_PIPELINE_ACQUISITION_SLOTS": "2",
+        "AMALGKIT_PIPELINE_DEDICATED_RECOVERY": "yes",
         "AMALGKIT_PIPELINE_VALIDATE_FASTQ_RECORDS": "yes",
     }.items():
         monkeypatch.setenv(key, value)
-    kwargs = dict(manifest_path=fixture.manifest, data_root=fixture.data, config_dir=fixture.config_dir,
-                  workers=4, threads=8, fastq_threads=1, compression_threads=1,
-                  validation_slots=1, quant_slots=quant_slots, fasterq_slots=1, max_in_flight=4)
+    kwargs = dict(
+        manifest_path=fixture.manifest,
+        data_root=fixture.data,
+        config_dir=fixture.config_dir,
+        workers=4,
+        threads=8,
+        fastq_threads=1,
+        compression_threads=1,
+        validation_slots=1,
+        quant_slots=quant_slots,
+        fasterq_slots=1,
+        max_in_flight=4,
+    )
     first = run_manifest(**kwargs)
     assert first["counts"]["newly_quantified"] == 4
     assert all(entry["quantified"] for entry in first["results"])

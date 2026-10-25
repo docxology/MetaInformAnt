@@ -27,9 +27,7 @@ from metainformant.rna.retrieval.ena_staging import (
         (b"@r\nACGT\n+\n", False),
     ],
 )
-def test_record_shapes_with_real_gzip_and_plain_files(
-    tmp_path: Path, payload: bytes, expected: bool
-) -> None:
+def test_record_shapes_with_real_gzip_and_plain_files(tmp_path: Path, payload: bytes, expected: bool) -> None:
     compressed, plain = tmp_path / "reads.fastq.gz", tmp_path / "reads.fastq"
     compressed.write_bytes(gzip.compress(payload, mtime=0))
     plain.write_bytes(payload)
@@ -37,18 +35,12 @@ def test_record_shapes_with_real_gzip_and_plain_files(
     assert validate_fastq_records([plain]) is expected
 
 
-@pytest.mark.parametrize(
-    "header_length", [1024 * 1024 - 30, 1024 * 1024 - 2, 1024 * 1024 + 2]
-)
-def test_records_cross_chunk_boundaries_and_enforce_line_bound(
-    tmp_path: Path, header_length: int
-) -> None:
+@pytest.mark.parametrize("header_length", [1024 * 1024 - 30, 1024 * 1024 - 2, 1024 * 1024 + 2])
+def test_records_cross_chunk_boundaries_and_enforce_line_bound(tmp_path: Path, header_length: int) -> None:
     first, second = tmp_path / "one.fastq.gz", tmp_path / "two.fastq.gz"
     stem = b"@" + b"x" * header_length
     for path, mate in ((first, b"1"), (second, b"2")):
-        path.write_bytes(
-            gzip.compress(stem + b"/" + mate + b"\nACGT\n+\n!!!!\n", mtime=0)
-        )
+        path.write_bytes(gzip.compress(stem + b"/" + mate + b"\nACGT\n+\n!!!!\n", mtime=0))
     assert validate_fastq_records([first, second]) is (header_length + 3 <= 1024 * 1024)
 
 

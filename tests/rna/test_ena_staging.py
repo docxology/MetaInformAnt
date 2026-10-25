@@ -57,19 +57,12 @@ def transfer_site(payloads: dict[str, bytes], **settings) -> Iterator[TransferSi
                     site.on_metadata()
                 urls = ";".join(f"{site.base}/{name}" for name in site.payloads)
                 sizes = ";".join(str(len(body)) for body in site.payloads.values())
-                md5 = ";".join(
-                    hashlib.md5(body, usedforsecurity=False).hexdigest()
-                    for body in site.payloads.values()
-                )
+                md5 = ";".join(hashlib.md5(body, usedforsecurity=False).hexdigest() for body in site.payloads.values())
                 body = f"run_accession\tfastq_ftp\tfastq_bytes\tfastq_md5\nSRR123\t{urls}\t{sizes}\t{md5}\n".encode()
                 self.send_response(200)
             else:
                 payload = site.payloads[self.path.lstrip("/")]
-                offset = (
-                    int(byte_range.removeprefix("bytes=").removesuffix("-"))
-                    if byte_range
-                    else 0
-                )
+                offset = int(byte_range.removeprefix("bytes=").removesuffix("-")) if byte_range else 0
                 body = payload[offset:]
                 self.send_response(206 if byte_range else 200)
                 if byte_range:
@@ -120,17 +113,11 @@ def test_first_pass_deadline_is_shared_by_paired_files_and_retains_bytes(
     rng = random.Random(7)
     reads = ["".join(rng.choice("ACGT") for _ in range(100)) for _ in range(2000)]
     payload = gzip.compress(
-        "".join(
-            f"@r{i}\n{read}\n+\n{'I' * 100}\n" for i, read in enumerate(reads)
-        ).encode(),
+        "".join(f"@r{i}\n{read}\n+\n{'I' * 100}\n" for i, read in enumerate(reads)).encode(),
         mtime=0,
     )
-    with transfer_site(
-        {"SRR123_1.fastq.gz": payload, "SRR123_2.fastq.gz": payload}, slow=True
-    ) as site:
-        downloader = ENADownloader(
-            timeout=30, retries=0, run_timeout_seconds=1, file_workers=1
-        )
+    with transfer_site({"SRR123_1.fastq.gz": payload, "SRR123_2.fastq.gz": payload}, slow=True) as site:
+        downloader = ENADownloader(timeout=30, retries=0, run_timeout_seconds=1, file_workers=1)
         start = time.monotonic()
         success, _message, files = downloader._download_files(
             [f"{site.base}/{name}" for name in site.payloads], tmp_path
@@ -156,12 +143,8 @@ def test_transfer_size_bound_stops_oversized_response(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("offset", [0, 32768])
-def test_unknown_length_transfer_bound_includes_retained_prefix(
-    tmp_path: Path, offset: int
-) -> None:
-    payload = gzip.compress(
-        random.Random(82).randbytes(128 * 1024), compresslevel=0, mtime=0
-    )
+def test_unknown_length_transfer_bound_includes_retained_prefix(tmp_path: Path, offset: int) -> None:
+    payload = gzip.compress(random.Random(82).randbytes(128 * 1024), compresslevel=0, mtime=0)
     partial = tmp_path / "SRR123.fastq.gz.part"
     partial.write_bytes(payload[:offset])
     with transfer_site({"SRR123.fastq.gz": payload}, unknown_get_size=True) as site:
@@ -177,12 +160,8 @@ def test_unknown_length_transfer_bound_includes_retained_prefix(
 
 
 @pytest.mark.parametrize("slots", [1, 2])
-def test_publication_serialization_has_a_concurrent_negative_control(
-    tmp_path: Path, slots: int
-) -> None:
-    payload = gzip.compress(
-        b"@r\nACGT\n+\n!!!!\n" * 2_000_000, compresslevel=0, mtime=0
-    )
+def test_publication_serialization_has_a_concurrent_negative_control(tmp_path: Path, slots: int) -> None:
+    payload = gzip.compress(b"@r\nACGT\n+\n!!!!\n" * 2_000_000, compresslevel=0, mtime=0)
     barrier = threading.Barrier(2)
     stopped = threading.Event()
     maximum = [0]
@@ -193,9 +172,7 @@ def test_publication_serialization_has_a_concurrent_negative_control(
 
     def observe() -> None:
         while not stopped.wait(0.001):
-            maximum[0] = max(
-                maximum[0], len(list(tmp_path.glob("*/bulk/**/*.copying")))
-            )
+            maximum[0] = max(maximum[0], len(list(tmp_path.glob("*/bulk/**/*.copying"))))
 
     watcher = threading.Thread(target=observe)
     watcher.start()
@@ -234,9 +211,7 @@ def test_real_cross_volume_publication_preserves_source_and_replay(
 
     bulk = os.environ.get("AMALGKIT_STAGING_TEST_BULK_ROOT")
     if not bulk:
-        pytest.skip(
-            "Set AMALGKIT_STAGING_TEST_BULK_ROOT for an isolated cross-volume pilot"
-        )
+        pytest.skip("Set AMALGKIT_STAGING_TEST_BULK_ROOT for an isolated cross-volume pilot")
     root = Path(bulk)
     assert root.is_dir() and root.stat().st_dev != tmp_path.stat().st_dev
     destination_dir = root / f"ssd-publication-pilot-{uuid4().hex}"
@@ -309,9 +284,7 @@ def stage_download(
 
     canonical = root / "bulk/species/work/getfastq/SRR123"
     canonical.mkdir(parents=True, exist_ok=True)
-    downloader = downloader or ENADownloader(
-        timeout=10, retries=0, api_base_url=f"{site.base}/api"
-    )
+    downloader = downloader or ENADownloader(timeout=10, retries=0, api_base_url=f"{site.base}/api")
     urls = downloader.get_fastq_urls("SRR123")
     return download_staged_ena(
         downloader,
@@ -323,11 +296,7 @@ def stage_download(
         promotion_lock=lock or threading.Lock(),
         expected_paired=False,
         validate=validate
-        or (
-            lambda path: _validated_local_fastq_inputs(
-                path, "SRR123", False, assume_payload_valid=True
-            )
-        ),
+        or (lambda path: _validated_local_fastq_inputs(path, "SRR123", False, assume_payload_valid=True)),
     )
 
 
@@ -337,9 +306,7 @@ def test_interrupted_ssd_transfer_resumes_with_bound_ena_checksum(
     rng = random.Random(17)
     reads = ["".join(rng.choice("ACGT") for _ in range(100)) for _ in range(2000)]
     payload = gzip.compress(
-        "".join(
-            f"@r{i}\n{read}\n+\n{'I' * 100}\n" for i, read in enumerate(reads)
-        ).encode(),
+        "".join(f"@r{i}\n{read}\n+\n{'I' * 100}\n" for i, read in enumerate(reads)).encode(),
         mtime=0,
     )
     with transfer_site({"SRR123.fastq.gz": payload}, slow=True) as site:
@@ -361,21 +328,13 @@ def test_interrupted_ssd_transfer_resumes_with_bound_ena_checksum(
         result = stage_download(site, tmp_path)
         assert result is not None and result[0], result
         assert result[2][0].read_bytes() == payload
-        requests = [
-            row
-            for row in site.requests
-            if row[0] == "GET" and row[1].endswith(".fastq.gz")
-        ]
+        requests = [row for row in site.requests if row[0] == "GET" and row[1].endswith(".fastq.gz")]
         assert [row[2] for row in requests] == [None, f"bytes={len(retained)}-"]
         assert not list((tmp_path / "ssd").rglob("*.part"))
 
 
-@pytest.mark.parametrize(
-    "case", ["unknown", "capacity", "legacy_partial", "legacy_mate"]
-)
-def test_staging_declines_without_touching_bulk_inputs(
-    tmp_path: Path, case: str
-) -> None:
+@pytest.mark.parametrize("case", ["unknown", "capacity", "legacy_partial", "legacy_mate"])
+def test_staging_declines_without_touching_bulk_inputs(tmp_path: Path, case: str) -> None:
     from metainformant.rna.retrieval.ena_staging import download_staged_ena
 
     payload = gzip.compress(b"@r\nACGT\n+\n!!!!\n", mtime=0)
@@ -385,12 +344,8 @@ def test_staging_declines_without_touching_bulk_inputs(
         (canonical / "SRR123.fastq.gz.part").write_bytes(payload[:20])
     elif case == "legacy_mate":
         (canonical / "SRR123.fastq.gz").write_bytes(payload)
-    before = {
-        p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in canonical.iterdir()
-    }
-    with transfer_site(
-        {"SRR123.fastq.gz": payload}, unknown_size=case == "unknown"
-    ) as site:
+    before = {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in canonical.iterdir()}
+    with transfer_site({"SRR123.fastq.gz": payload}, unknown_size=case == "unknown") as site:
         result = download_staged_ena(
             ENADownloader(timeout=10, retries=0),
             [f"{site.base}/SRR123.fastq.gz"],
@@ -404,9 +359,7 @@ def test_staging_declines_without_touching_bulk_inputs(
         )
         assert result is None
         assert not any(row[0] == "GET" for row in site.requests)
-    assert before == {
-        p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in canonical.iterdir()
-    }
+    assert before == {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in canonical.iterdir()}
 
 
 def test_publication_conflict_preserves_both_canonical_and_ssd_sources(
@@ -455,9 +408,7 @@ def test_destination_directory_replacement_is_refused(tmp_path: Path) -> None:
 def test_ssd_md5_mismatch_is_never_promoted(tmp_path: Path) -> None:
     payload = gzip.compress(b"@r\nACGT\n+\n!!!!\n", mtime=0)
     with transfer_site({"SRR123.fastq.gz": payload}) as site:
-        downloader = ENADownloader(
-            timeout=10, retries=0, api_base_url=f"{site.base}/api"
-        )
+        downloader = ENADownloader(timeout=10, retries=0, api_base_url=f"{site.base}/api")
         urls = downloader.get_fastq_urls("SRR123")
         downloader.file_md5["SRR123.fastq.gz"] = "0" * 32
         from metainformant.rna.retrieval.ena_staging import download_staged_ena
@@ -541,9 +492,7 @@ def test_native_first_pass_defers_then_ssd_retry_quantifies_and_reuses(
     source = fixture.work / "getfastq/SRR123/SRR123.fastq.gz"
     payload = source.read_bytes()
     source.rename(tmp_path / "preserved-input.fastq.gz")
-    monkeypatch.setenv(
-        "AMALGKIT_LOCAL_ENA_SCRATCH_DIR", str(tmp_path / "ssd") if staging else ""
-    )
+    monkeypatch.setenv("AMALGKIT_LOCAL_ENA_SCRATCH_DIR", str(tmp_path / "ssd") if staging else "")
     monkeypatch.setenv("AMALGKIT_PIPELINE_VALIDATE_FASTQ_RECORDS", "yes")
     monkeypatch.setenv("AMALGKIT_LOCAL_QUANT_SCRATCH_RESERVE_GB", "0")
     monkeypatch.setenv("AMALGKIT_PIPELINE_DOWNLOAD_FIRST_PASS_SECONDS", "1")
@@ -591,10 +540,7 @@ def test_native_first_pass_defers_then_ssd_retry_quantifies_and_reuses(
             verified_config_path=fixture.config,
         )
         assert (
-            classify_quantification(
-                destination, accession, expected_config_path=fixture.config
-            )["status"]
-            == "current"
+            classify_quantification(destination, accession, expected_config_path=fixture.config)["status"] == "current"
         )
         restored.append(accession)
 
@@ -618,28 +564,18 @@ def test_native_first_pass_defers_then_ssd_retry_quantifies_and_reuses(
         completed = run_manifest(**kwargs)
         assert completed["counts"] == {"quantified": 1, "newly_quantified": 1}
         quant = fixture.work / "quant/SRR123"
-        before = {
-            p.name: (p.read_bytes(), p.stat().st_mtime_ns)
-            for p in quant.iterdir()
-            if p.is_file()
-        }
+        before = {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in quant.iterdir() if p.is_file()}
         requests_before = len(site.requests)
         replay = run_manifest(**kwargs)
         assert replay["counts"] == {"quantified": 1, "reused": 1}
         assert len(site.requests) == requests_before
-        assert before == {
-            p.name: (p.read_bytes(), p.stat().st_mtime_ns)
-            for p in quant.iterdir()
-            if p.is_file()
-        }
+        assert before == {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in quant.iterdir() if p.is_file()}
         assert source.read_bytes() == payload
         assert not list((tmp_path / "ssd").rglob("*.part"))
         assert restored == ["SRR123", "SRR123"]
 
 
-@pytest.mark.parametrize(
-    "case", ["empty", "symlink", "fifo", "missing_destination", "expired"]
-)
+@pytest.mark.parametrize("case", ["empty", "symlink", "fifo", "missing_destination", "expired"])
 def test_verified_publication_refuses_unsafe_sources(tmp_path: Path, case: str) -> None:
     import os
 
@@ -775,17 +711,13 @@ def test_real_scratch_ledger_refuses_stage_after_another_stage_reserves_capacity
 
     monkeypatch.setenv("AMALGKIT_LOCAL_QUANT_SCRATCH_RESERVE_GB", "0")
     monkeypatch.setenv("AMALGKIT_DATA_ROOT", str(tmp_path))
-    owner = StreamingPipelineOrchestrator(
-        log_dir=tmp_path / "logs", db_path=tmp_path / "progress.db"
-    )
+    owner = StreamingPipelineOrchestrator(log_dir=tmp_path / "logs", db_path=tmp_path / "progress.db")
     scratch, canonical = tmp_path / "ssd", tmp_path / "bulk/SRR123"
     scratch.mkdir()
     canonical.mkdir(parents=True)
     free = shutil.disk_usage(scratch).free
     allocated = free // 2
-    assert owner._reserve_local_scratch(
-        scratch, allocated, purpose="quantification test reservation"
-    )
+    assert owner._reserve_local_scratch(scratch, allocated, purpose="quantification test reservation")
     payload = gzip.compress(b"@r\nACGT\n+\n!!!!\n", mtime=0)
     try:
         with transfer_site({"SRR123.fastq.gz": payload}) as site:
@@ -796,12 +728,8 @@ def test_real_scratch_ledger_refuses_stage_after_another_stage_reserves_capacity
                 [f"{site.base}/SRR123.fastq.gz"],
                 canonical,
                 scratch,
-                reserve=lambda size: owner._reserve_local_scratch(
-                    scratch, size, purpose="ENA test reservation"
-                ),
-                release=lambda size: owner._release_local_scratch(
-                    size, purpose="ENA test reservation"
-                ),
+                reserve=lambda size: owner._reserve_local_scratch(scratch, size, purpose="ENA test reservation"),
+                release=lambda size: owner._release_local_scratch(size, purpose="ENA test reservation"),
                 promotion_lock=threading.Lock(),
                 validate=lambda path: [],
                 expected_paired=False,
@@ -809,9 +737,7 @@ def test_real_scratch_ledger_refuses_stage_after_another_stage_reserves_capacity
             assert result is None and not any(row[0] == "GET" for row in site.requests)
             assert owner._local_scratch_reserved_bytes == allocated
     finally:
-        owner._release_local_scratch(
-            allocated, purpose="quantification test reservation"
-        )
+        owner._release_local_scratch(allocated, purpose="quantification test reservation")
         owner.db.close()
     assert owner._local_scratch_reserved_bytes == 0
 
@@ -844,7 +770,8 @@ def test_interrupted_native_worker_releases_lock_retains_ssd_partial_and_resumes
     script.write_text(
         "import sys\nfrom pathlib import Path\nfrom metainformant.rna.engine.acquisition_worker import run_manifest\n"
         "run_manifest(manifest_path=Path(sys.argv[1]),data_root=Path(sys.argv[2]),config_dir=Path(sys.argv[3]),"
-        "workers=1,threads=2,fastq_threads=1,compression_threads=1,validation_slots=1,quant_slots=1,fasterq_slots=1,max_in_flight=1)\n"
+        "workers=1,threads=2,fastq_threads=1,compression_threads=1,validation_slots=1,quant_slots=1,"
+        "fasterq_slots=1,max_in_flight=1)\n"
     )
     with transfer_site({"SRR123.fastq.gz": payload}, slow=True) as site:
         monkeypatch.setenv("AMALGKIT_ENA_API_BASE_URL", f"{site.base}/api")
@@ -880,12 +807,7 @@ def test_interrupted_native_worker_releases_lock_retains_ssd_partial_and_resumes
                         check=True,
                     ).stdout.splitlines()
                 ]
-                curl = [
-                    row
-                    for row in rows
-                    if int(row[1]) == worker.pid
-                    and "curl" in Path(row[3].split()[0]).name
-                ]
+                curl = [row for row in rows if int(row[1]) == worker.pid and "curl" in Path(row[3].split()[0]).name]
                 assert len(curl) == 1 and int(curl[0][0]) == int(curl[0][2])
                 os.kill(worker.pid, signal.SIGINT)
                 os.killpg(int(curl[0][2]), signal.SIGTERM)

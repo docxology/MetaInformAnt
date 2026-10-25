@@ -37,9 +37,7 @@ def validate_connection_budgets() -> None:
 
 
 @contextmanager
-def ena_request_slot(
-    url: str, *, kind: Literal["file", "metadata"], deadline_at: float
-) -> Iterator[None]:
+def ena_request_slot(url: str, *, kind: Literal["file", "metadata"], deadline_at: float) -> Iterator[None]:
     """Share a FIFO request budget across downloader instances in this process.
 
     Waiting consumes the caller's absolute deadline. A lease covers one native

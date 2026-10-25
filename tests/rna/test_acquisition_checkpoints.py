@@ -50,9 +50,7 @@ def test_checkpoint_precedes_next_admission_and_failure_preserves_inputs(
     def stop_after_checkpoint(species: str, accession: str) -> None:
         stop_file.write_text(f"{species}/{accession}")
 
-    stopped = run_manifest(
-        **kwargs, on_quantified=stop_after_checkpoint, should_stop=stop_file.exists
-    )
+    stopped = run_manifest(**kwargs, on_quantified=stop_after_checkpoint, should_stop=stop_file.exists)
     assert stopped["counts"] == {"quantified": 1, "reused": 1}
     assert stopped["unsubmitted_task_count"] == 1
     assert stopped["stopped_early"] is True

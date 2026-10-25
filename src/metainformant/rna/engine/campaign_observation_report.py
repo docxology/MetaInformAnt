@@ -6,6 +6,7 @@ import json
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from metainformant.rna.engine.campaign_observation import CampaignObservation
 from metainformant.visualization.plots.rna_campaign import plot_acquisition_observation
@@ -13,7 +14,7 @@ from metainformant.visualization.plots.rna_campaign import plot_acquisition_obse
 
 def verify_observation_bundle(output_dir: Path) -> dict:
     output = output_dir.resolve(strict=True)
-    manifest = json.loads((output / "bundle_manifest.json").read_text())
+    manifest: dict[str, Any] = json.loads((output / "bundle_manifest.json").read_text())
     if (
         manifest.get("schema") != "metainformant.rna.operational_bundle.v1"
         or manifest.get("scientific_release_ready") is not False
@@ -35,9 +36,7 @@ def verify_observation_bundle(output_dir: Path) -> dict:
         if not path.resolve().is_relative_to(output):
             raise ValueError("unsafe bundle artifact path")
         raw = path.read_bytes()
-        if expected.get("sha256") != hashlib.sha256(raw).hexdigest() or expected.get(
-            "bytes"
-        ) != len(raw):
+        if expected.get("sha256") != hashlib.sha256(raw).hexdigest() or expected.get("bytes") != len(raw):
             raise ValueError(f"bundle artifact checksum mismatch: {name}")
     observation_raw = (output / "observation.json").read_bytes()
     if hashlib.sha256(observation_raw).hexdigest() != manifest["observation_sha256"]:
@@ -48,11 +47,7 @@ def verify_observation_bundle(output_dir: Path) -> dict:
     for name, source in observation["source_files"].items():
         if source["captured"]:
             record = artifacts.get(f"inputs/{name}")
-            if (
-                record is None
-                or record["sha256"] != source["sha256"]
-                or record["bytes"] != source["bytes"]
-            ):
+            if record is None or record["sha256"] != source["sha256"] or record["bytes"] != source["bytes"]:
                 raise ValueError(f"captured source binding mismatch: {name}")
     return manifest
 
@@ -66,17 +61,10 @@ def write_observation_bundle(
 ) -> Path:
     output = output_dir.resolve()
     payload = observation.payload
-    if any(
-        output.is_relative_to(Path(payload[name]).resolve())
-        for name in ("data_root", "operations_root")
-    ):
-        raise ValueError(
-            "observation bundles must be isolated from live data and operations roots"
-        )
+    if any(output.is_relative_to(Path(payload[name]).resolve()) for name in ("data_root", "operations_root")):
+        raise ValueError("observation bundles must be isolated from live data and operations roots")
     if payload.get("scientific_release_ready") is not False:
-        raise ValueError(
-            "working observations must explicitly deny scientific release readiness"
-        )
+        raise ValueError("working observations must explicitly deny scientific release readiness")
     for name, raw in observation.sources.items():
         if Path(name).is_absolute() or ".." in Path(name).parts:
             raise ValueError("unsafe captured source name")
@@ -94,12 +82,8 @@ def write_observation_bundle(
     with (output / "counts.csv").open("w", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["metric", "count", "observation_sha256"])
-        writer.writerows(
-            (key, value, digest) for key, value in {**scope, **counts}.items()
-        )
-    plot_acquisition_observation(
-        payload, output / "acquisition_observation", title=title
-    )
+        writer.writerows((key, value, digest) for key, value in {**scope, **counts}.items())
+    plot_acquisition_observation(payload, output / "acquisition_observation", title=title)
     caption = (
         f"Observation {digest}. Frozen scope: {scope['total']:,} runs. The current lower bound combines "
         "the producer-reported startup audit and restore-bound new successes. Panel B distinguishes reused, "
@@ -129,11 +113,12 @@ def write_observation_bundle(
         "## Methods and reproducibility",
         "",
         (
-            "The parent MetaInformAnt observation API reads explicit frozen manifest, partition and task journal inputs. "
-            "It captures stable control records and newline-complete append-only prefixes without modifying the producer. "
-            "Startup counts are the producer's audited report. Unique new successes increment that baseline only when "
-            "the current restore marker, frozen reference/configuration bindings, provenance contract and abundance "
-            "checksum agree. Reused outputs do not increase the baseline. Missing or inconsistent evidence remains unconfirmed."
+            "The parent MetaInformAnt observation API reads explicit frozen manifest, partition and task journal "
+            "inputs. It captures stable control records and newline-complete append-only prefixes without modifying "
+            "the producer. Startup counts are the producer's audited report. Unique new successes increment that "
+            "baseline only when the current restore marker, frozen reference/configuration bindings, provenance "
+            "contract and abundance checksum agree. Reused outputs do not increase the baseline. Missing or "
+            "inconsistent evidence remains unconfirmed."
         ),
         "",
         (
@@ -169,15 +154,17 @@ def write_observation_bundle(
         (
             "Run accessions are computational records, not independent biological replicates. Current quantification "
             "does not establish finalized matrices, harmonized biological units, validated orthology, study-aware "
-            "contrasts, phylogenetic inference or a completed cohort. No biological effect or significance claim is made. "
-            "Long-read support is a frozen reference/backend/output-contract decision, not a claim that contemporary "
-            "quantifiers lack long-read methods. A new backend requires an explicitly amended, validated contract."
+            "contrasts, phylogenetic inference or a completed cohort. No biological effect or significance claim is "
+            "made. Long-read support is a frozen reference/backend/output-contract decision, not a claim that "
+            "contemporary quantifiers lack long-read methods. A new backend requires an explicitly amended, validated "
+            "contract."
         ),
         "",
         "## Scholarly context",
         "",
         (
-            "SRA and ENA provide the source archive context ([Leinonen et al., 2011](https://doi.org/10.1093/nar/gkq1019); "
+            "SRA and ENA provide the source archive context "
+            "([Leinonen et al., 2011](https://doi.org/10.1093/nar/gkq1019); "
             "[Cummins et al., 2022](https://doi.org/10.1093/nar/gkab1051)). The original Kallisto algorithm "
             "([Bray et al., 2016](https://doi.org/10.1038/nbt.3519)) and the distinct lr-kallisto method "
             "([Loving et al., 2025](https://doi.org/10.1371/journal.pcbi.1013692)) motivate explicit backend/reference "
@@ -192,10 +179,7 @@ def write_observation_bundle(
         "",
         "## Failure evidence",
         "",
-        *[
-            f"- {number} attempt(s): {reason}"
-            for reason, number in payload["failure_reasons"].items()
-        ],
+        *[f"- {number} attempt(s): {reason}" for reason, number in payload["failure_reasons"].items()],
         "",
         "## Verification",
         "",
@@ -247,8 +231,6 @@ def write_observation_bundle(
         "scientific_release_ready": False,
         "artifacts": artifacts,
     }
-    (output / "bundle_manifest.json").write_text(
-        json.dumps(manifest, indent=2, sort_keys=True) + "\n"
-    )
+    (output / "bundle_manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
     verify_observation_bundle(output)
     return output

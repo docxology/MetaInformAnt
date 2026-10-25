@@ -9,7 +9,7 @@ import stat
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from metainformant.rna.engine.acquisition_manifest import (
     load_snapshot,
@@ -39,11 +39,7 @@ def _integer(value: Any, name: str) -> int:
 
 
 def _number(value: Any, name: str) -> float:
-    if (
-        isinstance(value, bool)
-        or not isinstance(value, (int, float))
-        or not math.isfinite(value)
-    ):
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
         raise ObservationError(f"{name} must be finite")
     return float(value)
 
@@ -93,9 +89,7 @@ def _capture_campaign_observation_once(
     capture_started_monotonic = time.monotonic()
     operations = operations_root.resolve(strict=True)
     root = data_root.resolve(strict=True)
-    manifest = (manifest_path or operations / "frozen/manifest.jsonl").resolve(
-        strict=True
-    )
+    manifest = (manifest_path or operations / "frozen/manifest.jsonl").resolve(strict=True)
     now = _number(time.time() if observed_at is None else observed_at, "observed_at")
     max_age = _number(max_rate_age_seconds, "max_rate_age_seconds")
     if max_age < 0:
@@ -122,29 +116,20 @@ def _capture_campaign_observation_once(
     scope = _object(capture("scope.json", scope_path))
     if scope_path.stat().st_mtime < started:
         raise ObservationError("scope predates current runtime")
-    live = _object(
-        capture("checkpoint_counter.json", operations / "live_progress.json")
-    )
+    live = _object(capture("checkpoint_counter.json", operations / "live_progress.json"))
     manifest_raw = capture("manifest.jsonl", manifest)
     snapshot_raw = capture("snapshot.json", manifest.with_name("snapshot.json"))
     snapshot, tasks = load_snapshot(manifest)
     if hashlib.sha256(manifest_raw).hexdigest() != snapshot["manifest_sha256"]:
         raise ObservationError("manifest changed during observation")
-    by_id = {
-        task.get("task_id", f"{task['species']}/{task['accession']}"): task
-        for task in tasks
-    }
+    by_id = {task.get("task_id", f"{task['species']}/{task['accession']}"): task for task in tasks}
     total = _integer(scope["scope_total"], "scope_total")
     eligible = _integer(scope["eligible"], "eligible")
     baseline = _integer(scope["verified_existing"], "verified_existing")
     unsupported = scope["unsupported"]
     if not isinstance(unsupported, dict) or set(unsupported) - by_id.keys():
         raise ObservationError("unsupported tasks do not belong to frozen manifest")
-    if (
-        total != len(tasks)
-        or eligible + len(unsupported) != total
-        or baseline > eligible
-    ):
+    if total != len(tasks) or eligible + len(unsupported) != total or baseline > eligible:
         raise ObservationError("scope counts disagree with frozen manifest")
     selection_path = selection_path.resolve(strict=True)
     journal = journal_path.resolve(strict=True)
@@ -159,10 +144,7 @@ def _capture_campaign_observation_once(
     )
     if selection is None or set(selection["task_ids"]) & unsupported.keys():
         raise ObservationError("partition includes unsupported tasks")
-    selected_ids = {
-        task.get("task_id", f"{task['species']}/{task['accession']}")
-        for task in selected
-    }
+    selected_ids = {task.get("task_id", f"{task['species']}/{task['accession']}") for task in selected}
     if not journal.resolve().is_relative_to(root):
         raise ObservationError("task journal escapes data root")
     rows, incomplete = _records(capture("task_results.jsonl", journal, prefix=True))
@@ -183,7 +165,8 @@ def _capture_campaign_observation_once(
             or type(row.get("download_deferred", False)) is not bool
         ):
             raise ObservationError("journal success/reuse fields must be booleans")
-        identities.add(identity)
+        # The membership check above admits only selected (string) task identities.
+        identities.add(cast(str, identity))
         if row["quantified"]:
             successful.append(row)
         else:
@@ -206,9 +189,7 @@ def _capture_campaign_observation_once(
                 if path.is_symlink() or not path.resolve().is_relative_to(root):
                     raise ObservationError("checkpoint evidence escapes data root")
             proof = _object(capture(f"proofs/{identity}.json", proof_path))
-            provenance = _object(
-                capture(f"provenance/{identity}.json", provenance_path)
-            )
+            provenance = _object(capture(f"provenance/{identity}.json", provenance_path))
             verified = _number(proof["verified_at_epoch"], "restore time")
             contract = proof["contract_id"]
             if (
@@ -251,9 +232,7 @@ def _capture_campaign_observation_once(
             ):
                 raise ObservationError("abundance changed during hashing")
             if digest != provenance["quantification_file_sha256"]:
-                raise ObservationError(
-                    "abundance digest disagrees with checkpoint provenance"
-                )
+                raise ObservationError("abundance digest disagrees with checkpoint provenance")
             external_files[f"abundance/{identity}.tsv"] = {
                 "path": str(abundance),
                 "sha256": digest,
@@ -273,18 +252,10 @@ def _capture_campaign_observation_once(
     observation_path = transfer_observation_path
     if observation_path is not None and observation_path.exists():
         observation = _object(capture("transfer.json", observation_path))
-        measured = _number(
-            observation["observed_at_epoch"], "transfer observation time"
-        )
+        measured = _number(observation["observed_at_epoch"], "transfer observation time")
         seconds = _number(observation["seconds"], "transfer window")
-        growth = _integer(
-            observation["retained_transfer_growth_bytes"], "retained bytes"
-        )
-        if (
-            observation["pid"] != pid
-            or not started <= measured <= now
-            or measured - seconds < started
-        ):
+        growth = _integer(observation["retained_transfer_growth_bytes"], "retained bytes")
+        if observation["pid"] != pid or not started <= measured <= now or measured - seconds < started:
             transfer["reason"] = "transfer observation belongs to another runtime/time"
         elif now - measured > max_age:
             transfer["reason"] = "transfer observation is stale"
@@ -297,29 +268,19 @@ def _capture_campaign_observation_once(
                 "observed_at_epoch": measured,
                 "MiB_s_lower_bound": growth / seconds / 1024**2,
                 "retained_bytes": growth,
-                "tracked_transfers": _integer(
-                    observation["tracked_curl_transfers"], "tracked transfers"
-                ),
+                "tracked_transfers": _integer(observation["tracked_curl_transfers"], "tracked transfers"),
             }
     reclamation, raw_tail = _records(
-        capture(
-            "raw_reclamation.jsonl", operations / "raw_reclamation.jsonl", prefix=True
-        )
+        capture("raw_reclamation.jsonl", operations / "raw_reclamation.jsonl", prefix=True)
     )
-    reclaimed = sum(
-        _integer(row["bytes_freed"], "reclaimed bytes") for row in reclamation
-    )
+    reclaimed = sum(_integer(row["bytes_freed"], "reclaimed bytes") for row in reclamation)
     for name, path in paths.items():
         latest = _read(path)
-        if (
-            not latest.startswith(sources[name])
-            if name in append_only
-            else latest != sources[name]
-        ):
+        if not latest.startswith(sources[name]) if name in append_only else latest != sources[name]:
             raise _ChangedInput(f"source changed during capture: {path}")
-    for path, signature in external_stats.items():
+    for path, captured_signature in external_stats.items():
         latest_stat = path.stat()
-        if signature != (
+        if captured_signature != (
             latest_stat.st_dev,
             latest_stat.st_ino,
             latest_stat.st_size,
@@ -427,6 +388,4 @@ def capture_campaign_observation(
             )
         except _ChangedInput as exc:
             last_error = exc
-    raise ObservationError(
-        f"source changed across {stability_attempts} capture attempts"
-    ) from last_error
+    raise ObservationError(f"source changed across {stability_attempts} capture attempts") from last_error

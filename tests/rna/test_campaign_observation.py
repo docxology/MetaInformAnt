@@ -53,9 +53,7 @@ def observation_files(tmp_path: Path) -> dict[str, Path]:
             "task_count": 4,
         },
     )
-    write_json(
-        operations / "active_runtime.json", {"pid": 123, "started_at_epoch": 100}
-    )
+    write_json(operations / "active_runtime.json", {"pid": 123, "started_at_epoch": 100})
     write_json(
         operations / "active_scope.json",
         {
@@ -97,9 +95,7 @@ def observation_files(tmp_path: Path) -> dict[str, Path]:
     sample = data / "species/work/quant/SRR2"
     sample.mkdir(parents=True)
     abundance = sample / "SRR2_abundance.tsv"
-    abundance.write_text(
-        "target_id\tlength\teff_length\test_counts\ttpm\ngene1\t100\t75\t10\t1000000\n"
-    )
+    abundance.write_text("target_id\tlength\teff_length\test_counts\ttpm\ngene1\t100\t75\t10\t1000000\n")
     proof = sample / ".local_restore_verified.json"
     provenance = sample / ".metainformant_quant_provenance.json"
     provenance_payload = {
@@ -111,9 +107,7 @@ def observation_files(tmp_path: Path) -> dict[str, Path]:
         "quantification_file": abundance.name,
         "quantification_file_sha256": sha256_file(abundance),
     }
-    provenance_payload["quant_contract_id"] = quantification_contract_id(
-        provenance_payload
-    )
+    provenance_payload["quant_contract_id"] = quantification_contract_id(provenance_payload)
     write_json(provenance, provenance_payload)
     write_json(
         proof,
@@ -133,9 +127,7 @@ def observation_files(tmp_path: Path) -> dict[str, Path]:
             "tracked_curl_transfers": 2,
         },
     )
-    (operations / "raw_reclamation.jsonl").write_text(
-        json.dumps({"bytes_freed": 100, "errors": []}) + "\n"
-    )
+    (operations / "raw_reclamation.jsonl").write_text(json.dumps({"bytes_freed": 100, "errors": []}) + "\n")
     return {
         "operations": operations,
         "data": data,
@@ -154,8 +146,7 @@ def capture(files: dict[str, Path], **kwargs):
         files["data"],
         selection_path=files["selection"],
         journal_path=files["journal"],
-        transfer_observation_path=files["operations"]
-        / "profiling-20261019/live-transfer-observation.json",
+        transfer_observation_path=files["operations"] / "profiling-20261019/live-transfer-observation.json",
         observed_at=kwargs.pop("observed_at", 300),
         **kwargs,
     )
@@ -168,21 +159,13 @@ def test_confirmed_lower_bound_separates_new_reused_and_journal_successes(
     counts = observation.payload["counts"]
     assert counts["current_lower_bound"] == 2
     assert counts["journal_successes"] == 2
-    assert (
-        counts["reused"]
-        == counts["new_restore_bound"]
-        == counts["failed_attempts"]
-        == 1
-    )
+    assert counts["reused"] == counts["new_restore_bound"] == counts["failed_attempts"] == 1
     assert observation.payload["transfer"]["MiB_s_lower_bound"] == 1
     assert observation.payload["scientific_release_ready"] is False
     assert counts["deferred_attempts"] == 0
     assert counts["failed_nondeferred_attempts"] == 1
     for name, raw in observation.sources.items():
-        assert (
-            observation.payload["source_files"][name]["sha256"]
-            == hashlib.sha256(raw).hexdigest()
-        )
+        assert observation.payload["source_files"][name]["sha256"] == hashlib.sha256(raw).hexdigest()
 
 
 def test_download_deferrals_remain_unsuccessful_but_are_reported_separately(observation_files) -> None:
@@ -205,12 +188,8 @@ def test_nonboolean_deferral_flag_is_rejected(observation_files) -> None:
         capture(observation_files)
 
 
-@pytest.mark.parametrize(
-    "mutation", ["missing", "contract", "reference", "config", "time", "abundance"]
-)
-def test_unconfirmed_success_never_increments_lower_bound(
-    observation_files, mutation: str
-) -> None:
+@pytest.mark.parametrize("mutation", ["missing", "contract", "reference", "config", "time", "abundance"])
+def test_unconfirmed_success_never_increments_lower_bound(observation_files, mutation: str) -> None:
     files = observation_files
     if mutation == "missing":
         files["proof"].unlink()
@@ -248,12 +227,8 @@ def test_abundance_and_sidecar_mutation_cannot_reuse_old_restore_contract(
     assert payload["counts"]["new_unconfirmed"] == 1
 
 
-@pytest.mark.parametrize(
-    "mutation", ["duplicate", "unknown", "malformed", "identity", "boolean"]
-)
-def test_invalid_complete_journal_fails_closed(
-    observation_files, mutation: str
-) -> None:
+@pytest.mark.parametrize("mutation", ["duplicate", "unknown", "malformed", "identity", "boolean"])
+def test_invalid_complete_journal_fails_closed(observation_files, mutation: str) -> None:
     path = observation_files["journal"]
     rows = path.read_text().splitlines()
     if mutation == "duplicate":
@@ -286,10 +261,7 @@ def test_partial_tail_is_captured_but_never_counted(observation_files) -> None:
 
 @pytest.mark.parametrize("change", ["stale", "pid", "future", "missing"])
 def test_transfer_unavailable_is_not_zero(observation_files, change: str) -> None:
-    path = (
-        observation_files["operations"]
-        / "profiling-20261019/live-transfer-observation.json"
-    )
+    path = observation_files["operations"] / "profiling-20261019/live-transfer-observation.json"
     if change == "missing":
         path.unlink()
     else:
@@ -306,10 +278,7 @@ def test_transfer_unavailable_is_not_zero(observation_files, change: str) -> Non
 
 
 def test_transfer_window_must_fit_current_runtime(observation_files) -> None:
-    path = (
-        observation_files["operations"]
-        / "profiling-20261019/live-transfer-observation.json"
-    )
+    path = observation_files["operations"] / "profiling-20261019/live-transfer-observation.json"
     transfer = json.loads(path.read_text())
     transfer["seconds"] = 200
     write_json(path, transfer)
@@ -327,13 +296,8 @@ def test_capture_interval_and_exact_counted_prefix_are_recorded(
     assert payload["capture_elapsed_seconds"] >= 0
     source = payload["source_files"]["task_results.jsonl"]
     assert source["excluded_tail_bytes"] == len(b'{"partial":')
-    assert (
-        source["complete_prefix_bytes"] + source["excluded_tail_bytes"]
-        == source["bytes"]
-    )
-    assert observation.sources["task_results.jsonl"][
-        : source["complete_prefix_bytes"]
-    ].endswith(b"\n")
+    assert source["complete_prefix_bytes"] + source["excluded_tail_bytes"] == source["bytes"]
+    assert observation.sources["task_results.jsonl"][: source["complete_prefix_bytes"]].endswith(b"\n")
 
 
 def test_scope_and_partition_manifest_mismatches_refuse(observation_files) -> None:
@@ -345,9 +309,7 @@ def test_scope_and_partition_manifest_mismatches_refuse(observation_files) -> No
         capture(observation_files)
 
 
-def test_proof_symlink_escape_remains_unconfirmed(
-    observation_files, tmp_path: Path
-) -> None:
+def test_proof_symlink_escape_remains_unconfirmed(observation_files, tmp_path: Path) -> None:
     path = observation_files["proof"]
     outside = tmp_path / "unowned_proof.json"
     path.rename(outside)
@@ -355,9 +317,7 @@ def test_proof_symlink_escape_remains_unconfirmed(
     assert capture(observation_files).payload["counts"]["current_lower_bound"] == 1
 
 
-def test_bundle_replays_from_captured_bytes_without_rereading_live_sources(
-    observation_files, tmp_path: Path
-) -> None:
+def test_bundle_replays_from_captured_bytes_without_rereading_live_sources(observation_files, tmp_path: Path) -> None:
     from metainformant.rna.engine.campaign_observation_report import (
         write_observation_bundle,
     )
@@ -365,21 +325,11 @@ def test_bundle_replays_from_captured_bytes_without_rereading_live_sources(
     observation = capture(observation_files)
     observation_files["journal"].write_text("changed after capture\n")
     first = write_observation_bundle(observation, tmp_path / "first", render_pdf=False)
-    second = write_observation_bundle(
-        observation, tmp_path / "second", render_pdf=False
-    )
-    assert (first / "observation.json").read_bytes() == (
-        second / "observation.json"
-    ).read_bytes()
-    assert (first / "acquisition_observation.png").read_bytes() == (
-        second / "acquisition_observation.png"
-    ).read_bytes()
-    assert (first / "acquisition_observation.pdf").read_bytes() == (
-        second / "acquisition_observation.pdf"
-    ).read_bytes()
-    assert (first / "inputs/task_results.jsonl").read_bytes() == observation.sources[
-        "task_results.jsonl"
-    ]
+    second = write_observation_bundle(observation, tmp_path / "second", render_pdf=False)
+    assert (first / "observation.json").read_bytes() == (second / "observation.json").read_bytes()
+    assert (first / "acquisition_observation.png").read_bytes() == (second / "acquisition_observation.png").read_bytes()
+    assert (first / "acquisition_observation.pdf").read_bytes() == (second / "acquisition_observation.pdf").read_bytes()
+    assert (first / "inputs/task_results.jsonl").read_bytes() == observation.sources["task_results.jsonl"]
     manifest = json.loads((first / "bundle_manifest.json").read_text())
     assert manifest["scientific_release_ready"] is False
     for name, record in manifest["artifacts"].items():
@@ -434,17 +384,13 @@ def test_writer_refuses_invalid_observation_before_creating_output(
         "observation_hash",
     ],
 )
-def test_bundle_verifier_rejects_tampering(
-    observation_files, tmp_path: Path, change: str
-) -> None:
+def test_bundle_verifier_rejects_tampering(observation_files, tmp_path: Path, change: str) -> None:
     from metainformant.rna.engine.campaign_observation_report import (
         verify_observation_bundle,
         write_observation_bundle,
     )
 
-    output = write_observation_bundle(
-        capture(observation_files), tmp_path / "bundle", render_pdf=False
-    )
+    output = write_observation_bundle(capture(observation_files), tmp_path / "bundle", render_pdf=False)
     assert verify_observation_bundle(output)["scientific_release_ready"] is False
     counts = output / "counts.csv"
     if change == "content":
@@ -515,9 +461,7 @@ def test_nonregular_input_is_refused_without_blocking(observation_files) -> None
         capture(observation_files)
 
 
-def test_pdf_export_does_not_depend_on_build_clock(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_pdf_export_does_not_depend_on_build_clock(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import matplotlib.pyplot as plt
 
     from metainformant.visualization.config.conventions import save_figure_deterministic
@@ -557,9 +501,7 @@ def test_pdf_export_does_not_depend_on_build_clock(
         "invalid_attempts",
     ],
 )
-def test_invalid_observation_controls_fail_closed(
-    observation_files, tmp_path: Path, change: str
-) -> None:
+def test_invalid_observation_controls_fail_closed(observation_files, tmp_path: Path, change: str) -> None:
     files = observation_files
     kwargs = {}
     if change in {"pid_boolean", "pid_zero", "future_start", "nonfinite_start"}:
@@ -583,11 +525,7 @@ def test_invalid_observation_controls_fail_closed(
         scope[key] = value
         write_json(path, scope)
     elif change in {"old_scope", "old_partition"}:
-        path = (
-            files["selection"]
-            if change == "old_partition"
-            else files["operations"] / "active_scope.json"
-        )
+        path = files["selection"] if change == "old_partition" else files["operations"] / "active_scope.json"
         os.utime(path, (50, 50))
     elif change == "unsupported_selection":
         selection = json.loads(files["selection"].read_text())
@@ -615,12 +553,8 @@ def test_invalid_observation_controls_fail_closed(
         capture(files, **kwargs)
 
 
-@pytest.mark.parametrize(
-    "change", ["empty", "escape_name", "abundance_symlink", "missing_schema"]
-)
-def test_invalid_abundance_contract_remains_unconfirmed(
-    observation_files, tmp_path: Path, change: str
-) -> None:
+@pytest.mark.parametrize("change", ["empty", "escape_name", "abundance_symlink", "missing_schema"])
+def test_invalid_abundance_contract_remains_unconfirmed(observation_files, tmp_path: Path, change: str) -> None:
     files = observation_files
     provenance = json.loads(files["provenance"].read_text())
     if change == "empty":
@@ -644,9 +578,7 @@ def test_invalid_abundance_contract_remains_unconfirmed(
 
 
 @pytest.mark.external_tool
-def test_thin_cli_renders_and_verifies_real_pdf(
-    observation_files, tmp_path: Path, capsys
-) -> None:
+def test_thin_cli_renders_and_verifies_real_pdf(observation_files, tmp_path: Path, capsys) -> None:
     from metainformant.rna.engine.campaign_observation_cli import main
     from metainformant.rna.engine.campaign_observation_report import (
         verify_observation_bundle,
@@ -666,10 +598,7 @@ def test_thin_cli_renders_and_verifies_real_pdf(
                 "--journal",
                 str(files["journal"]),
                 "--transfer-observation",
-                str(
-                    files["operations"]
-                    / "profiling-20261019/live-transfer-observation.json"
-                ),
+                str(files["operations"] / "profiling-20261019/live-transfer-observation.json"),
                 "--output-dir",
                 str(output),
             ]
@@ -678,18 +607,11 @@ def test_thin_cli_renders_and_verifies_real_pdf(
     )
     assert json.loads(capsys.readouterr().out)["scientific_release_ready"] is False
     assert (output / "working_supplement.pdf").read_bytes().startswith(b"%PDF")
-    assert (
-        verify_observation_bundle(output)["artifacts"]["working_supplement.pdf"][
-            "bytes"
-        ]
-        > 1000
-    )
+    assert verify_observation_bundle(output)["artifacts"]["working_supplement.pdf"]["bytes"] > 1000
 
 
 @pytest.mark.parametrize("field", ["current_lower_bound", "failed_attempts"])
-def test_plot_refuses_inconsistent_counts(
-    observation_files, tmp_path: Path, field: str
-) -> None:
+def test_plot_refuses_inconsistent_counts(observation_files, tmp_path: Path, field: str) -> None:
     from metainformant.visualization.plots.rna_campaign import (
         plot_acquisition_observation,
     )

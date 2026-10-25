@@ -48,11 +48,7 @@ def plan_acquisition_order(
         seen.add(task_id)
         size = int(task.get("fastq_bytes", 0))
         band = (
-            (
-                bisect_left(SIZE_BAND_UPPER_BYTES, size)
-                if size > 0
-                else len(SIZE_BAND_UPPER_BYTES) + 1
-            )
+            (bisect_left(SIZE_BAND_UPPER_BYTES, size) if size > 0 else len(SIZE_BAND_UPPER_BYTES) + 1)
             if global_size_bands
             else 0
         )

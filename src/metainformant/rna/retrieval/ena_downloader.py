@@ -193,8 +193,17 @@ def _remote_content_length(url: str, *, timeout: float = 30) -> int | None:
             if remaining <= 0:
                 return None
             response = _run_command_in_process_group(
-                ["curl", "-fsSLI", "--max-time", str(remaining), "--output", os.devnull,
-                 "--write-out", "%header{content-length}", url],
+                [
+                    "curl",
+                    "-fsSLI",
+                    "--max-time",
+                    str(remaining),
+                    "--output",
+                    os.devnull,
+                    "--write-out",
+                    "%header{content-length}",
+                    url,
+                ],
                 timeout=remaining,
             )
         header = response.stdout.strip()
@@ -443,7 +452,9 @@ class ENADownloader:
         self.speed_time_seconds = speed_time_seconds
         self.api_retries = api_retries
         self.api_retry_delay_seconds = api_retry_delay_seconds
-        self.api_timeout_seconds = min(api_timeout_seconds, run_timeout_seconds) if run_timeout_seconds else api_timeout_seconds
+        self.api_timeout_seconds = (
+            min(api_timeout_seconds, run_timeout_seconds) if run_timeout_seconds else api_timeout_seconds
+        )
 
     def get_fastq_urls(self, sample_id: str, *, deadline_at: float | None = None) -> List[str]:
         """
@@ -481,13 +492,16 @@ class ENADownloader:
             local_deadline = time.monotonic() + self.run_timeout_seconds
             deadline_at = min(deadline_at, local_deadline) if deadline_at is not None else local_deadline
         api_url = (
-            f"{self.api_base_url}?"
-            f"accession={sample_id}&result=read_run&fields=fastq_ftp,fastq_bytes,fastq_md5"
+            f"{self.api_base_url}?" f"accession={sample_id}&result=read_run&fields=fastq_ftp,fastq_bytes,fastq_md5"
         )
 
         for attempt in range(self.api_retries + 1):
             try:
-                remaining = min(self.api_timeout_seconds, deadline_at - time.monotonic()) if deadline_at is not None else self.api_timeout_seconds
+                remaining = (
+                    min(self.api_timeout_seconds, deadline_at - time.monotonic())
+                    if deadline_at is not None
+                    else self.api_timeout_seconds
+                )
                 if remaining <= 0:
                     return []
                 request_deadline = time.monotonic() + remaining
@@ -496,11 +510,24 @@ class ENADownloader:
                     if remaining <= 0:
                         raise TimeoutError("ENA metadata request deadline exhausted")
                     response = _run_command_in_process_group(
-                        ["curl", "-fsSL", "--max-time", str(remaining), "--max-filesize", "1048576", "--write-out", "\n%{http_code}", api_url],
+                        [
+                            "curl",
+                            "-fsSL",
+                            "--max-time",
+                            str(remaining),
+                            "--max-filesize",
+                            "1048576",
+                            "--write-out",
+                            "\n%{http_code}",
+                            api_url,
+                        ],
                         timeout=remaining,
                     )
                 if response.returncode != 0:
-                    raise OSError(f"ENA metadata transport failed: curl_exit={response.returncode}, http_status={_curl_http_status(response) or 0}")
+                    raise OSError(
+                        f"ENA metadata transport failed: curl_exit={response.returncode}, "
+                        f"http_status={_curl_http_status(response) or 0}"
+                    )
                 content = response.stdout.rsplit("\n", 1)[0]
                 if len(content.encode("utf-8")) > 1048576:
                     raise ValueError("ENA metadata response exceeds one MiB")
@@ -534,7 +561,9 @@ class ENADownloader:
                             # large transfers are not downgraded to a less auditable
                             # clear-text endpoint.
                             parsed = urlsplit(ftp_path)
-                            if parsed.scheme == "https" or (parsed.scheme == "http" and parsed.hostname in {"127.0.0.1", "::1"}):
+                            if parsed.scheme == "https" or (
+                                parsed.scheme == "http" and parsed.hostname in {"127.0.0.1", "::1"}
+                            ):
                                 urls.append(ftp_path)
                             else:
                                 urls.append(f"https://{ftp_path}")
@@ -545,13 +574,23 @@ class ENADownloader:
                     self.file_sizes.clear()
                     self.file_md5.clear()
                     if columns.get("fastq_bytes"):
-                        if len(size_tokens) != len(urls) or any(not token.isdecimal() or int(token) <= 0 for token in size_tokens):
+                        if len(size_tokens) != len(urls) or any(
+                            not token.isdecimal() or int(token) <= 0 for token in size_tokens
+                        ):
                             raise ValueError("ENA FASTQ size cardinality/value mismatch")
-                        self.file_sizes.update((url.rsplit("/", 1)[-1], int(size)) for url, size in zip(urls, size_tokens, strict=True))
+                        self.file_sizes.update(
+                            (url.rsplit("/", 1)[-1], int(size)) for url, size in zip(urls, size_tokens, strict=True)
+                        )
                     if columns.get("fastq_md5"):
-                        if len(md5_tokens) != len(urls) or any(len(token) != 32 or any(char not in "0123456789abcdef" for char in token.lower()) for token in md5_tokens):
+                        if len(md5_tokens) != len(urls) or any(
+                            len(token) != 32 or any(char not in "0123456789abcdef" for char in token.lower())
+                            for token in md5_tokens
+                        ):
                             raise ValueError("ENA FASTQ checksum cardinality/value mismatch")
-                        self.file_md5.update((url.rsplit("/", 1)[-1], digest.lower()) for url, digest in zip(urls, md5_tokens, strict=True))
+                        self.file_md5.update(
+                            (url.rsplit("/", 1)[-1], digest.lower())
+                            for url, digest in zip(urls, md5_tokens, strict=True)
+                        )
                     return urls
             except Exception as exc:
                 self.last_metadata_error = f"ENA metadata {type(exc).__name__}: {str(exc)[:512]}"
@@ -626,14 +665,21 @@ class ENADownloader:
 
         deadline = time.monotonic() + self.run_timeout_seconds if self.run_timeout_seconds else None
         # 1. Discover URLs
-        urls = self.get_fastq_urls(sample_id, deadline_at=deadline) if deadline is not None else self.get_fastq_urls(sample_id)
+        urls = (
+            self.get_fastq_urls(sample_id, deadline_at=deadline)
+            if deadline is not None
+            else self.get_fastq_urls(sample_id)
+        )
         if not urls:
             return False, "Not found on ENA", []
 
         return self._download_files(urls, output_dir, deadline_at=deadline)
 
     def _download_files(
-        self, urls: list[str], output_dir: Path, *,
+        self,
+        urls: list[str],
+        output_dir: Path,
+        *,
         max_file_bytes: Mapping[str, int] | None = None,
         deadline_at: float | None = None,
         require_existing_output: bool = False,
@@ -652,9 +698,12 @@ class ENADownloader:
 
         def transfer(url: str) -> Tuple[bool, str, List[Path]]:
             return self._download_file(
-                url, output_dir, deadline_at=deadline_at,
+                url,
+                output_dir,
+                deadline_at=deadline_at,
                 max_bytes=(max_file_bytes or {}).get(url.split("/")[-1]),
             )
+
         if self.file_workers == 1:
             outcomes = []
             for url in urls:
@@ -673,7 +722,11 @@ class ENADownloader:
         return True, f"Downloaded {len(files)} files", files
 
     def _download_file(
-        self, url: str, output_dir: Path, *, deadline_at: float | None = None,
+        self,
+        url: str,
+        output_dir: Path,
+        *,
+        deadline_at: float | None = None,
         max_bytes: int | None = None,
     ) -> Tuple[bool, str, List[Path]]:
         """Own one distinct mate's resumable transfer and integrity evidence."""

@@ -27,10 +27,7 @@ def plot_acquisition_observation(
         counts["supported_unconfirmed"],
         scope["unsupported"],
     ]
-    if (
-        any(type(value) is not int or value < 0 for value in values)
-        or sum(values) != scope["total"]
-    ):
+    if any(type(value) is not int or value < 0 for value in values) or sum(values) != scope["total"]:
         raise ValueError("cohort chart partitions must equal the frozen total")
     phase_labels = [
         "Reused successes",
@@ -50,9 +47,7 @@ def plot_acquisition_observation(
         raise ValueError("phase counts must be nonnegative integers")
     if sum(phase_values[3:]) != counts["failed_attempts"]:
         raise ValueError("deferred and failed attempts must equal unsuccessful attempts")
-    observed = datetime.fromtimestamp(payload["observed_at_epoch"], UTC).strftime(
-        "%Y-%m-%d %H:%M:%S UTC"
-    )
+    observed = datetime.fromtimestamp(payload["observed_at_epoch"], UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
     with plt.rc_context(
         {
             "font.family": "DejaVu Sans",
@@ -61,9 +56,7 @@ def plot_acquisition_observation(
             "axes.spines.right": False,
         }
     ):
-        figure, axes = plt.subplots(
-            1, 2, figsize=(11.8, 4.8), gridspec_kw={"width_ratios": [1.35, 1]}
-        )
+        figure, axes = plt.subplots(1, 2, figsize=(11.8, 4.8), gridspec_kw={"width_ratios": [1.35, 1]})
         for index, (label, value) in enumerate(zip(categories, values, strict=True)):
             bar = axes[0].barh(
                 index,
@@ -91,17 +84,13 @@ def plot_acquisition_observation(
         )
         for index, bar in enumerate(bars):
             bar.set_hatch(CATEGORY_HATCHES[index])
-        axes[1].bar_label(
-            bars, labels=[f"{value:,}" for value in phase_values], padding=6
-        )
+        axes[1].bar_label(bars, labels=[f"{value:,}" for value in phase_values], padding=6)
         axes[1].set_yticks(range(5), phase_labels)
         axes[1].invert_yaxis()
         axes[1].set_xlim(0, max(phase_values, default=1) * 1.25 + 1)
         axes[1].set_xlabel("Terminal journal attempts")
         axes[1].set_title("B  Explicit phase journal", loc="left", fontweight="bold")
-        figure.suptitle(
-            f"{title} | operational observation", x=0.025, ha="left", fontsize=14
-        )
+        figure.suptitle(f"{title} | operational observation", x=0.025, ha="left", fontsize=14)
         transfer = payload["transfer"]
         rate = (
             f"Retained-growth lower bound: {transfer['MiB_s_lower_bound']:.2f} MiB/s over {transfer['seconds']:.1f} s"
@@ -121,9 +110,7 @@ def plot_acquisition_observation(
             "Operational counts are not biological replicates. This is not a scientific release.",
             fontsize=9,
         )
-        figure.subplots_adjust(
-            left=0.21, right=0.97, top=0.79, bottom=0.28, wspace=0.82
-        )
+        figure.subplots_adjust(left=0.21, right=0.97, top=0.79, bottom=0.28, wspace=0.82)
         outputs = [output_prefix.with_suffix(suffix) for suffix in (".png", ".pdf")]
         try:
             for path in outputs:

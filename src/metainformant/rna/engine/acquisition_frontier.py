@@ -28,10 +28,17 @@ class FrontierSummary(TypedDict):
 
 
 def run_acquisition_frontier(
-    tasks: Sequence[Task], *, acquisition_slots: int, quant_slots: int,
-    recovery_slots: int, max_in_flight: int, frontier_size: int,
-    raw_bytes_limit: int, acquire: Callable[[Task, bool], Result],
-    quantify: Callable[[Task], Result], recover: Callable[[Task], bool],
+    tasks: Sequence[Task],
+    *,
+    acquisition_slots: int,
+    quant_slots: int,
+    recovery_slots: int,
+    max_in_flight: int,
+    frontier_size: int,
+    raw_bytes_limit: int,
+    acquire: Callable[[Task, bool], Result],
+    quantify: Callable[[Task], Result],
+    recover: Callable[[Task], bool],
     uses_local_sra: Callable[[Task], bool],
     admission: Callable[[Task, Sequence[Task]], AdmissionDecision],
     finished: Callable[[Task, Result], None],
@@ -100,9 +107,15 @@ def run_acquisition_frontier(
                 planned_local[str(task["task_id"])] = uses_local_sra(task)
                 peak_frontier = max(peak_frontier, len(planned))
             while planned and len(live) < max_in_flight and not stopped():
-                available = next((index for index, entry in enumerate(planned)
-                                  if (planned_local[str(entry["task_id"])] and recovering < recovery_slots)
-                                  or (not planned_local[str(entry["task_id"])] and acquiring < acquisition_slots)), None)
+                available = next(
+                    (
+                        index
+                        for index, entry in enumerate(planned)
+                        if (planned_local[str(entry["task_id"])] and recovering < recovery_slots)
+                        or (not planned_local[str(entry["task_id"])] and acquiring < acquisition_slots)
+                    ),
+                    None,
+                )
                 if available is None:
                     break
                 task = planned[available]
@@ -110,8 +123,14 @@ def run_acquisition_frontier(
                 if weight <= 0 or weight > raw_bytes_limit:
                     del planned[available]
                     del planned_local[str(task["task_id"])]
-                    finished(task, {"quantified": False, "status": "unresolved_deadline",
-                                    "error": "raw reservation missing or exceeds the bounded frontier"})
+                    finished(
+                        task,
+                        {
+                            "quantified": False,
+                            "status": "unresolved_deadline",
+                            "error": "raw reservation missing or exceeds the bounded frontier",
+                        },
+                    )
                     transition(task, "reservation_refused")
                     continue
                 local = planned_local[str(task["task_id"])]
@@ -145,7 +164,11 @@ def run_acquisition_frontier(
                     weight = int(task.get("fastq_bytes", 0))
                     if stopped() or len(live) >= max_in_flight:
                         break
-                    if identity in reuse_probed or not 0 < weight <= raw_bytes_limit or reserved + weight > raw_bytes_limit:
+                    if (
+                        identity in reuse_probed
+                        or not 0 < weight <= raw_bytes_limit
+                        or reserved + weight > raw_bytes_limit
+                    ):
                         continue
                     decision = admission(task, list(live.values()))
                     if decision.wait or decision.reason:
@@ -181,7 +204,8 @@ def run_acquisition_frontier(
                     raise RuntimeError("unadmitted frontier blocked without active reservations")
                 break
             done, _ = concurrent.futures.wait(
-                tuple(futures), timeout=0 if probe_progress else None,
+                tuple(futures),
+                timeout=0 if probe_progress else None,
                 return_when=concurrent.futures.FIRST_COMPLETED,
             )
             for future in done:
@@ -216,8 +240,12 @@ def run_acquisition_frontier(
                     case unreachable:
                         assert_never(unreachable)
     return {
-        "unsubmitted": len(pending) + len(planned), "peak_admitted": peak_live,
-        "peak_reserved_raw_bytes": peak_raw, "peak_recovery_backlog": peak_recovery,
-        "peak_frontier": peak_frontier, "deferred": deferred, "recovered": recovered,
+        "unsubmitted": len(pending) + len(planned),
+        "peak_admitted": peak_live,
+        "peak_reserved_raw_bytes": peak_raw,
+        "peak_recovery_backlog": peak_recovery,
+        "peak_frontier": peak_frontier,
+        "deferred": deferred,
+        "recovered": recovered,
         "reused_without_acquisition": reused_without_acquisition,
     }

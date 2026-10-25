@@ -44,7 +44,11 @@ def test_low_speed_timeout_resumes_retained_bytes(tmp_path: Path) -> None:
     started = time.monotonic()
     try:
         success, message, files = ENADownloader(
-            timeout=12, retries=0, integrity_retries=0, speed_time_seconds=1, retry_delay_seconds=1,
+            timeout=12,
+            retries=0,
+            integrity_retries=0,
+            speed_time_seconds=1,
+            retry_delay_seconds=1,
         )._download_files([f"http://127.0.0.1:{server.server_port}/reads.fastq.gz"], tmp_path)
         assert success, message
         assert time.monotonic() - started < 10

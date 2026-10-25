@@ -17,9 +17,7 @@ def tasks(count: int) -> list[dict]:
 
 
 @pytest.mark.parametrize("dedicated", [False, True])
-def test_local_recovery_progress_has_serial_negative_control(
-    tmp_path: Path, dedicated: bool
-) -> None:
+def test_local_recovery_progress_has_serial_negative_control(tmp_path: Path, dedicated: bool) -> None:
     entered, release, checkpoint = (
         threading.Event(),
         threading.Event(),
@@ -69,9 +67,7 @@ def test_local_recovery_progress_has_serial_negative_control(
     assert not worker.is_alive()
     assert errors == []
     assert sorted(results) == ["0", "1"]
-    assert all(
-        json.loads((tmp_path / str(i)).read_text())["quantified"] for i in range(2)
-    )
+    assert all(json.loads((tmp_path / str(i)).read_text())["quantified"] for i in range(2))
 
 
 def test_deferrals_preserve_raw_and_deadline_reservations_through_checkpoint() -> None:
@@ -82,11 +78,7 @@ def test_deferrals_preserve_raw_and_deadline_reservations_through_checkpoint() -
     def execute(task: dict, defer: bool) -> dict:
         identity = task["task_id"]
         attempts[identity] = attempts.get(identity, 0) + 1
-        return (
-            {"fallback_deferred": True}
-            if attempts[identity] == 1
-            else {"quantified": True}
-        )
+        return {"fallback_deferred": True} if attempts[identity] == 1 else {"quantified": True}
 
     def admission(task: dict, live: list[dict]) -> AdmissionDecision:
         admitted.append((task["task_id"], tuple(t["task_id"] for t in live)))
@@ -206,9 +198,7 @@ def test_rejected_deadline_and_worker_exception_are_recorded_once() -> None:
         recover=lambda task: True,
         uses_local_sra=lambda task: False,
         admission=lambda task, live: (
-            AdmissionDecision(reason="deadline")
-            if task["task_id"] == "0"
-            else AdmissionDecision()
+            AdmissionDecision(reason="deadline") if task["task_id"] == "0" else AdmissionDecision()
         ),
         finished=lambda task, result: results.append((task["task_id"], result)),
     )
@@ -218,9 +208,7 @@ def test_rejected_deadline_and_worker_exception_are_recorded_once() -> None:
 
 
 @pytest.mark.parametrize("count,limit", [(0, -1), (1, 9)])
-def test_invalid_reservation_contract_rejects_before_execution(
-    count: int, limit: int
-) -> None:
+def test_invalid_reservation_contract_rejects_before_execution(count: int, limit: int) -> None:
     with pytest.raises(ValueError):
         run_acquisition_lanes(
             tasks(count),

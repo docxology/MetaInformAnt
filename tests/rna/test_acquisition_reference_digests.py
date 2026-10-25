@@ -78,12 +78,16 @@ def test_native_reference_aliases_and_frozen_corruption_rejection(
     configs = tmp_path / "configs"
     configs.mkdir()
     config = configs / "test.yaml"
-    config.write_text(yaml.safe_dump({
-        "species_list": ["Test_species"],
-        "genome": {"index_dir": str(index.parent)},
-        "steps": {"quant": {"index_dir": str(index.parent)}},
-        "reference_aliases": {"Test species subspecies": "Test_species"},
-    }))
+    config.write_text(
+        yaml.safe_dump(
+            {
+                "species_list": ["Test_species"],
+                "genome": {"index_dir": str(index.parent)},
+                "steps": {"quant": {"index_dir": str(index.parent)}},
+                "reference_aliases": {"Test species subspecies": "Test_species"},
+            }
+        )
+    )
     monkeypatch.setenv("AMALGKIT_DATA_ROOT", str(data))
     monkeypatch.setenv("AMALGKIT_LOCAL_INDEX_CACHE_DIR", str(tmp_path / "index-cache"))
     tasks = [{"species": "test_species", "config_name": config.name, "reference_index_sha256": sha256_file(index)}]

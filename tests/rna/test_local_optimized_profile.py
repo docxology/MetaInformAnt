@@ -1,24 +1,31 @@
 """Native qualification of the proposed profile; private fixtures only."""
+
 from __future__ import annotations
 
 import csv
 import gzip
 import hashlib
 import json
-import threading
 import shlex
+import threading
 import time
-import pytest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
+
+import pytest
 
 from metainformant.rna.engine.acquisition_manifest import sha256_file
 from metainformant.rna.engine.acquisition_worker import run_manifest
 
 
-@pytest.mark.parametrize('acquisitions,quantifiers,threads_per_sample', [(4,4,2),(8,8,1)])
+@pytest.mark.parametrize("acquisitions,quantifiers,threads_per_sample", [(4, 4, 2), (8, 8, 1)])
 def test_eight_paired_acquisitions_profile_and_native_replay(
-    native_acquisition_factory, monkeypatch, tmp_path, acquisitions, quantifiers, threads_per_sample,
+    native_acquisition_factory,
+    monkeypatch,
+    tmp_path,
+    acquisitions,
+    quantifiers,
+    threads_per_sample,
 ):
     accessions = tuple(f"SRR{50100 + i}" for i in range(8))
     fixture = native_acquisition_factory(accessions=accessions, paired_metadata=True)
@@ -93,7 +100,9 @@ def test_eight_paired_acquisitions_profile_and_native_replay(
                     urls = ";".join(f"http://127.0.0.1:{self.server.server_port}/{name}" for name in names)
                     sizes = ";".join(str(len(payloads[name])) for name in names)
                     md5s = ";".join(hashlib.md5(payloads[name], usedforsecurity=False).hexdigest() for name in names)
-                    body = f"run_accession\tfastq_ftp\tfastq_bytes\tfastq_md5\n{accession}\t{urls}\t{sizes}\t{md5s}\n".encode()
+                    body = (
+                        f"run_accession\tfastq_ftp\tfastq_bytes\tfastq_md5\n{accession}\t{urls}\t{sizes}\t{md5s}\n"
+                    ).encode()
                 else:
                     if not release.wait(30):
                         failures.append("configured simultaneous native transfers were not reached")
@@ -113,9 +122,19 @@ def test_eight_paired_acquisitions_profile_and_native_replay(
     thread = threading.Thread(target=server.serve_forever)
     thread.start()
     monkeypatch.setenv("AMALGKIT_ENA_API_BASE_URL", f"http://127.0.0.1:{server.server_port}/api")
-    kwargs = dict(manifest_path=fixture.manifest, data_root=fixture.data, config_dir=fixture.config_dir,
-                  workers=12, threads=8, fastq_threads=2, compression_threads=1,
-                  validation_slots=2, quant_slots=quantifiers, fasterq_slots=1, max_in_flight=48)
+    kwargs = dict(
+        manifest_path=fixture.manifest,
+        data_root=fixture.data,
+        config_dir=fixture.config_dir,
+        workers=12,
+        threads=8,
+        fastq_threads=2,
+        compression_threads=1,
+        validation_slots=2,
+        quant_slots=quantifiers,
+        fasterq_slots=1,
+        max_in_flight=48,
+    )
     try:
         started = time.monotonic()
         first = run_manifest(**kwargs)
@@ -136,13 +155,26 @@ def test_eight_paired_acquisitions_profile_and_native_replay(
         infos = list(fixture.work.glob("quant/*/*run_info.json"))
         assert len(infos) == 8
         native_calls = [shlex.split(json.loads(path.read_text())["call"]) for path in infos]
-        assert all(int(call[call.index("--threads") + 1]) == threads_per_sample
-                   for call in native_calls), native_calls
+        assert all(int(call[call.index("--threads") + 1]) == threads_per_sample for call in native_calls), native_calls
         second = run_manifest(**kwargs)
         assert second["counts"]["reused"] == 8, second
         assert state["gets"] == 16, state
         assert before == {str(path): (sha256_file(path), path.stat().st_mtime_ns) for path in files}
-        (tmp_path / "profile-proof.json").write_text(json.dumps({"acquisitions": acquisitions, "quantifiers": quantifiers, "threads_per_sample": threads_per_sample, "elapsed_seconds": elapsed, "state": state, "first_counts": first["counts"], "replay_counts": second["counts"], "raw_and_abundance_preserved": before}, indent=2))
+        (tmp_path / "profile-proof.json").write_text(
+            json.dumps(
+                {
+                    "acquisitions": acquisitions,
+                    "quantifiers": quantifiers,
+                    "threads_per_sample": threads_per_sample,
+                    "elapsed_seconds": elapsed,
+                    "state": state,
+                    "first_counts": first["counts"],
+                    "replay_counts": second["counts"],
+                    "raw_and_abundance_preserved": before,
+                },
+                indent=2,
+            )
+        )
     finally:
         release.set()
         server.shutdown()

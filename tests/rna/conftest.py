@@ -64,14 +64,9 @@ def native_acquisition_factory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         index.parent.mkdir(parents=True)
         metadata.parent.mkdir()
         rng = random.Random(161)
-        sequences = [
-            "".join(rng.choice("ACGT") for _ in range(sequence_length))
-            for _ in range(3)
-        ]
+        sequences = ["".join(rng.choice("ACGT") for _ in range(sequence_length)) for _ in range(3)]
         fasta = tmp_path / "transcripts.fa"
-        fasta.write_text(
-            "".join(f">gene{i}\n{sequence}\n" for i, sequence in enumerate(sequences))
-        )
+        fasta.write_text("".join(f">gene{i}\n{sequence}\n" for i, sequence in enumerate(sequences)))
         subprocess.run(
             ["kallisto", "index", "-i", str(index), str(fasta)],
             check=True,
@@ -85,9 +80,7 @@ def native_acquisition_factory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
                 for number in range(90):
                     start = 100 + (number if vary_read_positions else 0)
                     sequence = sequences[number % 3][start : start + 75]
-                    handle.write(
-                        f"@{accession}.{number + 1}\n{sequence}\n+\n{'I' * 75}\n"
-                    )
+                    handle.write(f"@{accession}.{number + 1}\n{sequence}\n+\n{'I' * 75}\n")
             rows.append(
                 {
                     "run": accession,
@@ -149,8 +142,6 @@ def native_acquisition_factory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
                 }
             )
         )
-        return NativeAcquisitionFiles(
-            data, work, index, metadata, config_dir, config, manifest
-        )
+        return NativeAcquisitionFiles(data, work, index, metadata, config_dir, config, manifest)
 
     return build

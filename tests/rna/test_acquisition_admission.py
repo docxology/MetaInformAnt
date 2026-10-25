@@ -12,9 +12,9 @@ from urllib.parse import parse_qs, urlsplit
 
 import pytest
 
-from metainformant.rna.retrieval.ena_staging import FirstPassDeferred, StagingDeadline, StagingError
 from metainformant.rna.engine.streaming_orchestrator import _raw_validation_marker
 from metainformant.rna.retrieval import ena_transport
+from metainformant.rna.retrieval.ena_staging import FirstPassDeferred, StagingDeadline, StagingError
 from metainformant.rna.retrieval.ena_transport import ena_request_slot
 from tests.rna.test_ena_staging import transfer_site
 from tests.rna.test_ena_staging_boundaries import build_owner
@@ -36,8 +36,10 @@ def test_acquisition_admission_prevents_file_queue_consuming_transfer_budget(
         def do_GET(self) -> None:
             if self.path.startswith("/api?"):
                 accession = parse_qs(urlsplit(self.path).query)["accession"][0]
-                body = (f"run_accession\tfastq_ftp\n{accession}\t"
-                        f"http://127.0.0.1:{self.server.server_port}/{accession}.fastq.gz\n").encode()
+                body = (
+                    f"run_accession\tfastq_ftp\n{accession}\t"
+                    f"http://127.0.0.1:{self.server.server_port}/{accession}.fastq.gz\n"
+                ).encode()
             else:
                 requests.append(self.path)
                 first_file_started.set()
@@ -95,7 +97,10 @@ def test_acquisition_admission_prevents_file_queue_consuming_transfer_budget(
 
 @pytest.mark.parametrize("slots", [0, 1])
 def test_one_second_service_budget_excludes_admission_but_not_file_queue(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, slots: int,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    slots: int,
 ) -> None:
     monkeypatch.setenv("AMALGKIT_PIPELINE_ACQUISITION_SLOTS", str(slots))
     monkeypatch.setenv("AMALGKIT_PIPELINE_ACQUISITION_QUEUE_TIMEOUT_SECONDS", "5")
@@ -133,7 +138,9 @@ def test_one_second_service_budget_excludes_admission_but_not_file_queue(
                     assert semaphore.acquire(blocking=False)
                     ownership.callback(semaphore.release)
                 with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                    ownership.enter_context(ena_request_slot(site.base + "/SRR123.fastq.gz", kind="file", deadline_at=time.monotonic() + 8))
+                    ownership.enter_context(
+                        ena_request_slot(site.base + "/SRR123.fastq.gz", kind="file", deadline_at=time.monotonic() + 8)
+                    )
                     try:
                         future = pool.submit(acquire)
                         assert entered.wait(2)
@@ -190,7 +197,8 @@ def test_one_second_service_budget_excludes_admission_but_not_file_queue(
 
 
 def test_retry_after_expiry_gets_the_same_full_service_budget(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("AMALGKIT_PIPELINE_ACQUISITION_SLOTS", "1")
     monkeypatch.setenv("AMALGKIT_ENA_MAX_CONNECTIONS", "1")
@@ -205,7 +213,7 @@ def test_retry_after_expiry_gets_the_same_full_service_budget(
                 owner.download_fastq("SRR123", sample.parent, False)
             assert time.monotonic() - started >= 3
             part = sample / "SRR123.fastq.gz.part"
-            assert part.read_bytes() == payload[:len(part.read_bytes())]
+            assert part.read_bytes() == payload[: len(part.read_bytes())]
             assert not _raw_validation_marker(sample, "SRR123").exists()
             site.release.set()
             # Neither attempt changes the configured allowance. A cached old
@@ -220,7 +228,8 @@ def test_retry_after_expiry_gets_the_same_full_service_budget(
 
 
 def test_one_second_admitted_service_still_expires_and_preserves_partial(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("AMALGKIT_PIPELINE_ACQUISITION_SLOTS", "1")
     monkeypatch.setenv("AMALGKIT_ENA_MAX_CONNECTIONS", "1")
@@ -238,7 +247,7 @@ def test_one_second_admitted_service_still_expires_and_preserves_partial(
                 owner.download_fastq("SRR123", tmp_path / "data/getfastq", False)
             assert time.monotonic() - started < 2.5
             retained = part.read_bytes()
-            assert retained.startswith(payload[:4]) and retained == payload[:len(retained)]
+            assert retained.startswith(payload[:4]) and retained == payload[: len(retained)]
             assert len(retained) < len(payload)
             assert not (sample / "SRR123.fastq.gz").exists()
             assert not _raw_validation_marker(sample, "SRR123").exists()
@@ -248,14 +257,17 @@ def test_one_second_admitted_service_still_expires_and_preserves_partial(
         owner.db.close()
 
 
-@pytest.mark.parametrize("variable,value", [
-    ("AMALGKIT_PIPELINE_ACQUISITION_SLOTS", "-1"),
-    ("AMALGKIT_PIPELINE_ACQUISITION_SLOTS", "257"),
-    ("AMALGKIT_PIPELINE_ACQUISITION_SLOTS", "invalid"),
-    ("AMALGKIT_PIPELINE_ACQUISITION_QUEUE_TIMEOUT_SECONDS", "0"),
-    ("AMALGKIT_PIPELINE_ACQUISITION_QUEUE_TIMEOUT_SECONDS", "nan"),
-    ("AMALGKIT_PIPELINE_ACQUISITION_QUEUE_TIMEOUT_SECONDS", "inf"),
-])
+@pytest.mark.parametrize(
+    "variable,value",
+    [
+        ("AMALGKIT_PIPELINE_ACQUISITION_SLOTS", "-1"),
+        ("AMALGKIT_PIPELINE_ACQUISITION_SLOTS", "257"),
+        ("AMALGKIT_PIPELINE_ACQUISITION_SLOTS", "invalid"),
+        ("AMALGKIT_PIPELINE_ACQUISITION_QUEUE_TIMEOUT_SECONDS", "0"),
+        ("AMALGKIT_PIPELINE_ACQUISITION_QUEUE_TIMEOUT_SECONDS", "nan"),
+        ("AMALGKIT_PIPELINE_ACQUISITION_QUEUE_TIMEOUT_SECONDS", "inf"),
+    ],
+)
 def test_acquisition_admission_rejects_invalid_limits_before_creating_database(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, variable: str, value: str
 ) -> None:

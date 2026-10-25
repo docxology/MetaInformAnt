@@ -51,18 +51,12 @@ def run_acquisition_lanes(
     identities = [str(task["task_id"]) for task in tasks]
     if len(set(identities)) != len(identities):
         raise ValueError("duplicate manifest task identities")
-    if raw_bytes_limit and any(
-        not 0 < int(t.get("fastq_bytes", 0)) <= raw_bytes_limit for t in tasks
-    ):
+    if raw_bytes_limit and any(not 0 < int(t.get("fastq_bytes", 0)) <= raw_bytes_limit for t in tasks):
         raise ValueError("cloud task lacks a bounded raw-byte reservation")
     primary_pending: deque[Task] = deque()
     local_pending: deque[Task] = deque()
     for task in tasks:
-        target = (
-            local_pending
-            if dedicated_recovery and uses_local_sra(task)
-            else primary_pending
-        )
+        target = local_pending if dedicated_recovery and uses_local_sra(task) else primary_pending
         target.append(task)
     live: dict[str, Task] = {}
     ready: deque[Task] = deque()
@@ -80,14 +74,10 @@ def run_acquisition_lanes(
 
     with (
         concurrent.futures.ThreadPoolExecutor(max_workers=workers) as primary_pool,
-        concurrent.futures.ThreadPoolExecutor(
-            max_workers=recovery_slots
-        ) as recovery_pool,
+        concurrent.futures.ThreadPoolExecutor(max_workers=recovery_slots) as recovery_pool,
     ):
         while primary_pending or local_pending or live:
-            primary_count = sum(
-                stage in ("primary", "ready") for _, stage in futures.values()
-            )
+            primary_count = sum(stage in ("primary", "ready") for _, stage in futures.values())
             recovery_count = len(futures) - primary_count
             while ready and primary_count < workers:
                 task = ready.popleft()
@@ -105,9 +95,7 @@ def run_acquisition_lanes(
                 while pending and len(live) < max_in_flight:
                     if should_stop is not None and should_stop():
                         break
-                    if (local_sra and recovery_count >= recovery_slots) or (
-                        not local_sra and primary_count >= workers
-                    ):
+                    if (local_sra and recovery_count >= recovery_slots) or (not local_sra and primary_count >= workers):
                         break
                     task = pending[0]
                     needed = int(task.get("fastq_bytes", 0))
@@ -136,9 +124,7 @@ def run_acquisition_lanes(
                         )
                         recovery_count += 1
                     else:
-                        futures[
-                            primary_pool.submit(execute, task, dedicated_recovery)
-                        ] = (task, "primary")
+                        futures[primary_pool.submit(execute, task, dedicated_recovery)] = (task, "primary")
                         primary_count += 1
                     peak_live = max(peak_live, len(live))
                     peak_raw = max(peak_raw, reserved)
@@ -147,17 +133,13 @@ def run_acquisition_lanes(
                 if live:
                     raise RuntimeError("admitted samples have no executable stage")
                 break
-            done, _ = concurrent.futures.wait(
-                tuple(futures), return_when=concurrent.futures.FIRST_COMPLETED
-            )
+            done, _ = concurrent.futures.wait(tuple(futures), return_when=concurrent.futures.FIRST_COMPLETED)
             for future in done:
                 task, stage = futures.pop(future)
                 try:
                     outcome = future.result()
                 except Exception as exc:  # noqa: BLE001 - external sample execution boundary
-                    terminal(
-                        task, {"quantified": False, "error": f"worker exception: {exc}"}
-                    )
+                    terminal(task, {"quantified": False, "error": f"worker exception: {exc}"})
                     continue
                 if stage == "recover":
                     if outcome:
@@ -187,8 +169,7 @@ def run_acquisition_lanes(
                     terminal(task, outcome)
             peak_recovery = max(
                 peak_recovery,
-                len(recovery)
-                + sum(stage in ("recover", "local") for _, stage in futures.values()),
+                len(recovery) + sum(stage in ("recover", "local") for _, stage in futures.values()),
             )
     return {
         "unsubmitted": len(primary_pending) + len(local_pending),

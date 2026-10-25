@@ -52,9 +52,11 @@ def classify_task_prerequisites(
     sampled = metadata_api.parse_bool_flags(metadata.df["is_sampled"], column_name="is_sampled", default="no")
     sampled_rows = metadata.df.loc[sampled]
     batch_runs = sampled_rows["run"].tolist()
-    library_contracts = list(sampled_rows.reindex(
-        columns=["lib_source", "lib_selection", "exp_title"], fill_value=""
-    ).itertuples(index=False, name=None))
+    library_contracts = list(
+        sampled_rows.reindex(columns=["lib_source", "lib_selection", "exp_title"], fill_value="").itertuples(
+            index=False, name=None
+        )
+    )
     results: list[TaskPrerequisite] = []
     for task in tasks:
         accession = str(task["accession"])
@@ -93,7 +95,8 @@ def classify_task_prerequisites(
                         and re.search(r"\b16s(?:\b|seq\b)", str(title), re.IGNORECASE)
                     ):
                         reason = (
-                            f"metadata contract conflict: submitted {str(source).strip().upper()}/PCR library explicitly titled 16S; "
+                            f"metadata contract conflict: submitted {str(source).strip().upper()}/PCR "
+                            "library explicitly titled 16S; "
                             "host-transcriptome quantification requires method review; "
                             "accession retained in the frozen scope without exclusion"
                         )

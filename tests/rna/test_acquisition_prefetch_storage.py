@@ -11,9 +11,7 @@ from metainformant.rna.engine.streaming_orchestrator import (
 )
 
 
-@pytest.mark.parametrize(
-    "layout", ["sample", "legacy", "native_sample", "native_legacy"]
-)
+@pytest.mark.parametrize("layout", ["sample", "legacy", "native_sample", "native_legacy"])
 @pytest.mark.parametrize("suffix", [".sra", ".sra.cache"])
 def test_exact_prefetched_archive_is_discovered_without_unrelated_files(
     tmp_path: Path,
@@ -24,11 +22,7 @@ def test_exact_prefetched_archive_is_discovered_without_unrelated_files(
     monkeypatch.setenv("AMALGKIT_DATA_ROOT", str(tmp_path))
     out_dir = tmp_path / "species/work/getfastq"
     sample = out_dir / "SRR123"
-    root = (
-        sample / ".prefetch/SRR123"
-        if "sample" in layout
-        else tmp_path / ".sra-cache/prefetch/SRR123"
-    )
+    root = sample / ".prefetch/SRR123" if "sample" in layout else tmp_path / ".sra-cache/prefetch/SRR123"
     if layout.startswith("native"):
         root /= "SRR123"
     root.mkdir(parents=True)

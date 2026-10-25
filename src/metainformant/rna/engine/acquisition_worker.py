@@ -8,7 +8,7 @@ import os
 import threading
 import time
 from collections import Counter
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Any
@@ -110,9 +110,7 @@ def _run_manifest_owned(
     for species in sorted({str(task["species"]) for task in tasks}):
         prerequisite_results.extend(
             classify_task_prerequisites(
-                metadata_path=data_root
-                / species
-                / "work/metadata/metadata_selected.tsv",
+                metadata_path=data_root / species / "work/metadata/metadata_selected.tsv",
                 tasks=[task for task in tasks if task["species"] == species],
             )
         )
@@ -127,9 +125,7 @@ def _run_manifest_owned(
     durable_cohort = os.environ.get("AMALGKIT_DURABLE_COHORT", "")
     if os.environ.get("AMALGKIT_DURABLE_BUCKET"):
         if not durable_cohort:
-            raise ValueError(
-                "AMALGKIT_DURABLE_COHORT is required with a durable bucket"
-            )
+            raise ValueError("AMALGKIT_DURABLE_COHORT is required with a durable bucket")
         from metainformant.rna.engine.durable_quant import S3Store
 
         durable_store = S3Store(
@@ -145,19 +141,13 @@ def _run_manifest_owned(
     try:
         orchestrator._resource_profile = profile
         orchestrator._quant_semaphore = threading.BoundedSemaphore(profile.quant_slots)
-        orchestrator._fasterq_semaphore = threading.BoundedSemaphore(
-            profile.fasterq_slots
-        )
-        orchestrator._raw_validation_semaphore = threading.BoundedSemaphore(
-            profile.validation_slots
-        )
+        orchestrator._fasterq_semaphore = threading.BoundedSemaphore(profile.fasterq_slots)
+        orchestrator._raw_validation_semaphore = threading.BoundedSemaphore(profile.validation_slots)
         by_species: dict[str, list[dict[str, Any]]] = {}
         for task in tasks:
             by_species.setdefault(str(task["species"]), []).append(task)
         for species, species_tasks in by_species.items():
-            orchestrator.db.init_species(
-                species, [str(task["accession"]) for task in species_tasks]
-            )
+            orchestrator.db.init_species(species, [str(task["accession"]) for task in species_tasks])
 
         started = time.time()
         monotonic_started = time.monotonic()
@@ -176,8 +166,9 @@ def _run_manifest_owned(
                 handle.flush()
                 os.fsync(handle.fileno())
 
-        def execute(task: dict[str, Any], defer: bool, *, acquisition_only: bool = False,
-                    quantification_only: bool = False) -> dict[str, Any]:
+        def execute(
+            task: dict[str, Any], defer: bool, *, acquisition_only: bool = False, quantification_only: bool = False
+        ) -> dict[str, Any]:
             return execute_manifest_task(
                 task,
                 orchestrator,
@@ -215,9 +206,7 @@ def _run_manifest_owned(
                 ),
             )
 
-        def admission(
-            task: dict[str, Any], live: Sequence[dict[str, Any]]
-        ) -> AdmissionDecision:
+        def admission(task: dict[str, Any], live: Sequence[dict[str, Any]]) -> AdmissionDecision:
             from metainformant.rna.engine.acquisition_estimates import (
                 AcquisitionEstimateError,
             )
@@ -263,10 +252,7 @@ def _run_manifest_owned(
             out_dir = data_root / str(task["species"]) / "work/getfastq"
             accession = str(task["accession"])
             source = _local_sra_path(out_dir / accession, out_dir, accession)
-            return (
-                source is not None
-                and _cached_sra_validation_result(source) is not False
-            )
+            return source is not None and _cached_sra_validation_result(source) is not False
 
         def recover(task: dict[str, Any]) -> bool:
             return orchestrator._download_fastq_ncbi_only(
@@ -276,13 +262,11 @@ def _run_manifest_owned(
             )
 
         def finished(task: dict[str, Any], result: dict[str, Any]) -> None:
-            result.update(
-                species=task["species"], task_id=task["task_id"], srr=task["accession"]
-            )
-            if (
-                not result.get("quantified")
-                and result.get("status") not in {"unresolved_deadline", "deferred_download"}
-            ):
+            result.update(species=task["species"], task_id=task["task_id"], srr=task["accession"])
+            if not result.get("quantified") and result.get("status") not in {
+                "unresolved_deadline",
+                "deferred_download",
+            }:
                 orchestrator.db.set_state(
                     str(task["species"]),
                     str(task["accession"]),
@@ -298,15 +282,16 @@ def _run_manifest_owned(
             else:
                 counts["quantified" if result.get("quantified") else "failed"] += 1
                 if result.get("quantified"):
-                    counts[
-                        "reused" if result.get("skipped") else "newly_quantified"
-                    ] += 1
+                    counts["reused" if result.get("skipped") else "newly_quantified"] += 1
                     if on_quantified is not None:
                         on_quantified(str(task["species"]), str(task["accession"]))
 
-        dedicated_recovery = os.environ.get(
-            "AMALGKIT_PIPELINE_DEDICATED_RECOVERY", "no"
-        ).lower() in ("yes", "true", "1")
+        dedicated_recovery = os.environ.get("AMALGKIT_PIPELINE_DEDICATED_RECOVERY", "no").lower() in (
+            "yes",
+            "true",
+            "1",
+        )
+        lane_summary: Mapping[str, Any]
         if frontier_size:
             from metainformant.rna.engine.acquisition_frontier import run_acquisition_frontier
 
@@ -319,33 +304,56 @@ def _run_manifest_owned(
 
             def transition(task: dict[str, Any], stage: str) -> None:
                 with (run_directory / "frontier_events.jsonl").open("a", encoding="utf-8") as handle:
-                    handle.write(json.dumps({
-                        "task_id": task["task_id"], "stage": stage, "at_epoch": time.time(),
-                        "manifest_sha256": frontier_manifest_hash,
-                        "selection_sha256": frontier_selection_hash,
-                        "source_manifest_sha256": frontier_source_hash,
-                        "frontier_size": frontier_size, "raw_byte_limit": frontier_raw_bytes,
-                    }, sort_keys=True) + "\n")
+                    handle.write(
+                        json.dumps(
+                            {
+                                "task_id": task["task_id"],
+                                "stage": stage,
+                                "at_epoch": time.time(),
+                                "manifest_sha256": frontier_manifest_hash,
+                                "selection_sha256": frontier_selection_hash,
+                                "source_manifest_sha256": frontier_source_hash,
+                                "frontier_size": frontier_size,
+                                "raw_byte_limit": frontier_raw_bytes,
+                            },
+                            sort_keys=True,
+                        )
+                        + "\n"
+                    )
                     handle.flush()
                     os.fsync(handle.fileno())
 
             lane_summary = run_acquisition_frontier(
-                tasks, acquisition_slots=orchestrator.acquisition_slots,
-                quant_slots=profile.quant_slots, recovery_slots=profile.fasterq_slots,
-                max_in_flight=profile.max_in_flight, frontier_size=frontier_size,
+                tasks,
+                acquisition_slots=orchestrator.acquisition_slots,
+                quant_slots=profile.quant_slots,
+                recovery_slots=profile.fasterq_slots,
+                max_in_flight=profile.max_in_flight,
+                frontier_size=frontier_size,
                 raw_bytes_limit=frontier_raw_bytes,
                 acquire=lambda task, defer: execute(task, defer, acquisition_only=True),
                 quantify=lambda task: execute(task, True, quantification_only=True),
-                recover=recover, uses_local_sra=local_sra, admission=admission,
-                finished=finished, should_stop=should_stop, transition=transition,
+                recover=recover,
+                uses_local_sra=local_sra,
+                admission=admission,
+                finished=finished,
+                should_stop=should_stop,
+                transition=transition,
                 reuse=lambda task: reuse_manifest_quantification(task, data_root, config_dir),
             )
         else:
             lane_summary = run_acquisition_lanes(
-                tasks, workers=profile.workers, max_in_flight=profile.max_in_flight,
-                recovery_slots=profile.fasterq_slots, execute=execute,
-                recover=recover, uses_local_sra=local_sra, admission=admission,
-                finished=finished, should_stop=should_stop, raw_bytes_limit=raw_bytes_limit,
+                tasks,
+                workers=profile.workers,
+                max_in_flight=profile.max_in_flight,
+                recovery_slots=profile.fasterq_slots,
+                execute=execute,
+                recover=recover,
+                uses_local_sra=local_sra,
+                admission=admission,
+                finished=finished,
+                should_stop=should_stop,
+                raw_bytes_limit=raw_bytes_limit,
                 dedicated_recovery=dedicated_recovery,
             )
 
@@ -373,7 +381,9 @@ def _run_manifest_owned(
                 "compression_level": selected_compression_level,
                 "ena_file_workers": orchestrator.ena_file_workers,
                 "download_first_pass_seconds": orchestrator.download_first_pass_seconds,
-                "local_ena_scratch_dir": str(orchestrator.local_ena_scratch_dir) if orchestrator.local_ena_scratch_dir else None,
+                "local_ena_scratch_dir": (
+                    str(orchestrator.local_ena_scratch_dir) if orchestrator.local_ena_scratch_dir else None
+                ),
                 "ena_promotion_slots": 1,
                 "strict_fastq_record_validation": orchestrator.record_validation_required,
                 "effective_quant_threads": profile.effective_quant_threads,
@@ -396,9 +406,7 @@ def _run_manifest_owned(
         (run_directory / "result.json").write_text(
             json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
         )
-        result_path.write_text(
-            json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-        )
+        result_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         return summary
 
     finally:
@@ -427,9 +435,7 @@ def run_manifest(
 ) -> dict[str, Any]:
     """Own the target root exclusively for one idempotent worker invocation."""
     if not _PROCESS_WORKER_LOCK.acquire(blocking=False):
-        raise RuntimeError(
-            "manifest workers require separate processes for concurrent data roots"
-        )
+        raise RuntimeError("manifest workers require separate processes for concurrent data roots")
     try:
         return _run_with_root_lock(
             manifest_path=manifest_path,

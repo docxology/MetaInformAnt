@@ -10,9 +10,7 @@ from metainformant.rna.engine.campaign_observation_report import (
 )
 
 
-def main(
-    argv: list[str] | None = None, *, default_title: str = "RNA-seq acquisition"
-) -> int:
+def main(argv: list[str] | None = None, *, default_title: str = "RNA-seq acquisition") -> int:
     parser = argparse.ArgumentParser(
         description="Capture a read-only operational observation and isolated working supplement."
     )
