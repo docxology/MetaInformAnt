@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Local RNA acquisition frontier (`metainformant.rna.engine.acquisition_frontier`,
+  opt-in via `AMALGKIT_LOCAL_FRONTIER_SIZE`): separate acquisition, recovery and
+  quantification pools bounded by a planned-identity frontier and frozen
+  raw-size reservations, an fsynced transition ledger, STOP-aware draining, and
+  reuse of current-contract quantifications while acquisition slots are busy.
+  Supported by per-sample acquisition admission
+  (`AMALGKIT_PIPELINE_ACQUISITION_SLOTS`), size-band ordering
+  (`acquisition_order`), verified ENA staging and promotion
+  (`rna.retrieval.ena_staging`), shared ENA connection budgets
+  (`rna.retrieval.ena_transport`), strict FASTQ record validation, and bounded
+  ENA metadata retries inside the first-pass deadline.
+- Read-only campaign observation (`rna.engine.campaign_observation`,
+  `campaign_observation_report`, `scripts/rna/observe_acquisition.py`):
+  content-bound capture of a running campaign's manifest and journals,
+  restore-bound new-output counts, and an isolated report bundle with an
+  acquisition figure (`visualization.plots.rna_campaign`).
 - `metainformant.rna.analysis.statistics_contract`: predeclared, fail-closed
   analysis-provenance records (descriptive/inferential role separation,
   role-conditional multiple-testing semantics), BH-FDR helper, gated
@@ -47,6 +63,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   retention audit columns is unchanged.
 
 ### Changed
+- The blocking dependency audit covers every package in `uv.lock` (all extras,
+  dependency groups and environment markers): `security_checks.sh` exports a
+  PEP 751 `pylock.toml` and audits it in place against OSV, which carries both
+  GitHub and PyPA advisories. It previously scanned only the default export
+  through a temporary pip environment and missed dev-extra advisories such as
+  nbconvert's. A locked dependency that cannot be audited blocks unless
+  baselined.
 - Repository-wide typing completion: `mypy --config-file pyproject.toml
   src/metainformant` reports **0 errors in 693 files** under the locked mypy
   2.3.1 (previously 1,705). Includes: third-party import overrides for
@@ -66,6 +89,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `protein.database.interpro.fetch_interpro_domains`: a blank accession
+  requested InterPro's unbounded listing of every UniProt-annotated entry,
+  which outlasted the 30 s read timeout and failed the network test lane on
+  every main push. Blank input now returns `[]` without a request, and
+  accessions are URL-quoted into a single path segment.
+- `core.utils.symbols`: every scan root inside a checkout shared one index
+  cache file, so indexing one subtree could return another root's cached
+  index. Cache files are now keyed by scan root.
+- `security_checks.sh`: a scanner that produced no report (for example
+  pip-audit failing to provision its environment) was treated as skipped and
+  the blocking gate passed, a stale report from an earlier run could stand in
+  for a failed scan, and bandit's own read or parse errors never blocked
+  because bandit still exits 0. Each scanner now clears its report first, and
+  the unit-tested `security_evaluate.py` evaluates only the scanners that ran:
+  a missing, unreadable, empty or partial report, any bandit scan error or
+  zero-line scan, and a pip-audit report that misses a locked package all
+  block. pip-audit baseline locations now match package names exactly.
 - RNA reference alias manifest is content-deterministic: removed the
   `generated_at` wall-clock field from the hashed payload so an unchanged
   reference produces a byte-identical manifest across orchestrator restarts.
@@ -114,6 +154,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   module description updated to the implemented stdio server, measured
   README/AGENTS and plotting-module counts, Mermaid nav-graph node ids
   repaired in `docs/index.md`.
+
+### Security
+- Resolved all 60 open Dependabot advisories in `uv.lock`: pillow 13.0.0,
+  certifi 2026.10.23, filelock 4.2.4, nbconvert 7.17.2, setuptools 84.2.0 and
+  virtualenv 21.14.13 (also clearing GHSA-cx6f-vjhg-g3cc, a prompt-escaping
+  regression introduced in 21.14.9), plus the dev pin black 26.10.1, mirrored
+  in pre-commit. `[tool.uv] constraint-dependencies` holds security floors for
+  these transitive packages so a re-lock cannot regress into an advisory
+  range; the floors bound resolution only and do not change package metadata.
 
 ## [0.4.0] - 2026-08-09
 
