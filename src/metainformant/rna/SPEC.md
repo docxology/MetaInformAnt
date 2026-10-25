@@ -16,6 +16,7 @@ downstream analysis for the current Amalgkit 0.16.60 contract.
 | `retrieval/` | ENA/SRA retrieval helpers |
 | `splicing/` | Alternative-splicing analysis |
 | `deconvolution/` | Cell-type deconvolution from bulk RNA-seq |
+| `integration/` | Cross-domain adapters (campaign observation figures) behind the package boundary |
 
 ## Current stages
 

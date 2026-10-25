@@ -137,6 +137,8 @@ def test_continuous_cli_refuses_unknown_order_before_control_writes(
 ) -> None:
     repo = Path(__file__).resolve().parents[2]
     operations = repo / "output/hymenoptera_local_20261019"
+    if not (operations / "continuous.py").is_file():
+        pytest.skip("operator-local continuous CLI is absent; output/ is not versioned")
     paths = [operations / name for name in (".run.lock", "active_runtime.json", "active_scope.json")]
     before = {str(path): path.read_bytes() if path.exists() else None for path in paths}
     completed = subprocess.run(

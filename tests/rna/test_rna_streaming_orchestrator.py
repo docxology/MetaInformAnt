@@ -10,6 +10,7 @@ import subprocess
 import sys
 import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 import pandas as pd
@@ -50,6 +51,35 @@ from metainformant.rna.engine.streaming_orchestrator import (
     build_pipeline_resource_profile,
 )
 from metainformant.rna.retrieval import ena_downloader as ena_downloader_module
+
+EnaTransfer = Callable[[object, str, Path], tuple[bool, str, list[Path]]]
+
+
+def _route_ena_transfer(monkeypatch: pytest.MonkeyPatch, transfer: EnaTransfer) -> None:
+    """Route the orchestrator's split ENA metadata/file acquisition to ``transfer``.
+
+    ``download_fastq`` resolves URLs with ``get_fastq_urls`` and fetches them with
+    ``_download_files``; ``transfer`` keeps the former ``download_run`` signature.
+    """
+
+    def resolve(_self: object, accession: str, **_kwargs: object) -> list[str]:
+        return [f"ena://{accession}"]
+
+    def fetch(self: object, _urls: list[str], sample_dir: Path, **_kwargs: object) -> tuple[bool, str, list[Path]]:
+        return transfer(self, sample_dir.name, sample_dir)
+
+    monkeypatch.setattr(orchestrator_module.ENADownloader, "get_fastq_urls", resolve)
+    monkeypatch.setattr(orchestrator_module.ENADownloader, "_download_files", fetch)
+
+
+def _forbid_ena(monkeypatch: pytest.MonkeyPatch, reason: str) -> None:
+    """Fail the test if any ENA metadata or file acquisition entry point is reached."""
+
+    def forbidden(*_args: object, **_kwargs: object) -> None:
+        pytest.fail(reason)
+
+    for name in ("get_fastq_urls", "_download_files", "download_run"):
+        monkeypatch.setattr(orchestrator_module.ENADownloader, name, forbidden)
 
 
 class TestStreamingOrchestrator:
@@ -443,7 +473,7 @@ def test_direct_ena_success_writes_raw_validation_witness(tmp_path: Path, monkey
 
     monkeypatch.setenv("AMALGKIT_MIN_EXTERNAL_FREE_GB", "0")
     monkeypatch.setenv("AMALGKIT_MIN_SYSTEM_FREE_GB", "0")
-    monkeypatch.setattr(orchestrator_module.ENADownloader, "download_run", fake_download)
+    _route_ena_transfer(monkeypatch, fake_download)
     orchestrator = StreamingPipelineOrchestrator(
         tmp_path / "config", tmp_path / "logs", db_path=tmp_path / "progress.db"
     )
@@ -474,7 +504,7 @@ def test_interleaved_ena_paired_fastq_is_split_idempotently(tmp_path: Path, monk
 
     monkeypatch.setenv("AMALGKIT_MIN_EXTERNAL_FREE_GB", "0")
     monkeypatch.setenv("AMALGKIT_MIN_SYSTEM_FREE_GB", "0")
-    monkeypatch.setattr(orchestrator_module.ENADownloader, "download_run", fake_download)
+    _route_ena_transfer(monkeypatch, fake_download)
     orchestrator = StreamingPipelineOrchestrator(
         tmp_path / "config", tmp_path / "logs", db_path=tmp_path / "progress.db"
     )
@@ -591,11 +621,7 @@ def test_local_sra_is_extracted_before_network_acquisition(tmp_path: Path, monke
             source.unlink()
         return subprocess.CompletedProcess(command, 0, "", "")
 
-    monkeypatch.setattr(
-        orchestrator_module.ENADownloader,
-        "download_run",
-        lambda *_args, **_kwargs: pytest.fail("local SRA must bypass ENA acquisition"),
-    )
+    _forbid_ena(monkeypatch, "local SRA must bypass ENA acquisition")
     monkeypatch.setattr(orchestrator_module, "_run_command_in_process_group", fake_run)
     orchestrator = StreamingPipelineOrchestrator(
         tmp_path / "config", tmp_path / "logs", db_path=tmp_path / "progress.db"
@@ -959,8 +985,20 @@ def test_remote_fasterq_fallback_can_use_fixed_reserved_host_scratch(
     assert not (local_scratch / "SRR_REMOTE_TMP").exists()
 
 
-def test_fasterq_promotion_reuses_existing_valid_mate(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Fallback extraction supplies a missing mate without replacing completed transfer work."""
+@pytest.mark.parametrize(
+    ("retained_read", "promoted"),
+    [("@read/1", True), ("@existing/1", False)],
+    ids=["same-reads", "different-reads"],
+)
+def test_fasterq_promotion_pairs_existing_mate_only_with_the_same_reads(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, retained_read: str, promoted: bool
+) -> None:
+    """Fallback extraction supplies a missing mate without replacing completed transfer work.
+
+    The retained/extracted union is proven first: a retained mate whose reads differ
+    from the extracted pair is never combined with it; the untouched retained mate
+    stays in place and the whole extraction is kept in a conflict directory.
+    """
 
     data_root = tmp_path / "campaign-data"
     monkeypatch.setenv("AMALGKIT_DATA_ROOT", str(data_root))
@@ -969,15 +1007,15 @@ def test_fasterq_promotion_reuses_existing_valid_mate(tmp_path: Path, monkeypatc
     sample_dir.mkdir(parents=True)
     existing_mate = sample_dir / "SRR_PAIRED_1.fastq.gz"
     with gzip.open(existing_mate, "wb") as handle:
-        handle.write(b"@existing/1\nACGT\n+\n!!!!\n")
+        handle.write(f"{retained_read}\nACGT\n+\n!!!!\n".encode())
     existing_payload = existing_mate.read_bytes()
 
     def fake_run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
         if command[0] == "fasterq-dump":
             output_dir = Path(command[command.index("--outdir") + 1])
             output_dir.mkdir(parents=True, exist_ok=True)
-            (output_dir / "SRR_PAIRED_1.fastq").write_text("@fallback/1\nACGT\n+\n!!!!\n")
-            (output_dir / "SRR_PAIRED_2.fastq").write_text("@fallback/2\nTGCA\n+\n!!!!\n")
+            (output_dir / "SRR_PAIRED_1.fastq").write_text("@read/1\nACGT\n+\n!!!!\n")
+            (output_dir / "SRR_PAIRED_2.fastq").write_text("@read/2\nTGCA\n+\n!!!!\n")
         elif command[0] == "pigz":
             source = Path(command[-1])
             with gzip.open(source.with_suffix(".fastq.gz"), "wb") as handle:
@@ -990,15 +1028,20 @@ def test_fasterq_promotion_reuses_existing_valid_mate(tmp_path: Path, monkeypatc
         tmp_path / "config", tmp_path / "logs", db_path=tmp_path / "progress.db"
     )
 
-    assert orchestrator._extract_sra_to_fastq(
-        "SRR_PAIRED",
-        sample_dir,
-        fastq_root,
-        "SRR_PAIRED",
-        expected_paired=True,
+    assert (
+        orchestrator._extract_sra_to_fastq(
+            "SRR_PAIRED",
+            sample_dir,
+            fastq_root,
+            "SRR_PAIRED",
+            expected_paired=True,
+        )
+        is promoted
     )
     assert existing_mate.read_bytes() == existing_payload
-    assert (sample_dir / "SRR_PAIRED_2.fastq.gz").is_file()
+    assert (sample_dir / "SRR_PAIRED_2.fastq.gz").is_file() is promoted
+    kept = sorted(path.name for path in fastq_root.glob(".fasterq_tmp/SRR_PAIRED-conflict-*/output/*.fastq.gz"))
+    assert kept == ([] if promoted else ["SRR_PAIRED_1.fastq.gz", "SRR_PAIRED_2.fastq.gz"])
 
 
 def test_fasterq_interleaved_paired_output_is_split_and_promoted(
@@ -1152,11 +1195,7 @@ def test_campaign_cached_sra_is_extracted_before_ena(tmp_path: Path, monkeypatch
             source.unlink()
         return subprocess.CompletedProcess(command, 0, "", "")
 
-    monkeypatch.setattr(
-        orchestrator_module.ENADownloader,
-        "download_run",
-        lambda *_args, **_kwargs: pytest.fail("campaign SRA cache must bypass ENA"),
-    )
+    _forbid_ena(monkeypatch, "campaign SRA cache must bypass ENA")
     monkeypatch.setattr(orchestrator_module, "_run_command_in_process_group", fake_run)
     orchestrator = StreamingPipelineOrchestrator(
         tmp_path / "config", tmp_path / "logs", db_path=tmp_path / "progress.db"
@@ -1223,11 +1262,7 @@ def test_invalid_cached_sra_skips_extraction_and_uses_ena(tmp_path: Path, monkey
             handle.write(b"@read\nACGT\n+\n!!!!\n")
         return True, "downloaded", [fastq]
 
-    monkeypatch.setattr(
-        orchestrator_module.ENADownloader,
-        "download_run",
-        download_valid_fastq,
-    )
+    _route_ena_transfer(monkeypatch, download_valid_fastq)
     orchestrator = StreamingPipelineOrchestrator(
         tmp_path / "config", tmp_path / "logs", db_path=tmp_path / "progress.db"
     )
@@ -1266,11 +1301,7 @@ def test_failed_cached_sra_is_not_extracted_twice_in_one_invocation(
     monkeypatch.setenv("AMALGKIT_DATA_ROOT", str(data_root))
     monkeypatch.setenv("AMALGKIT_MIN_EXTERNAL_FREE_GB", "0")
     monkeypatch.setenv("AMALGKIT_MIN_SYSTEM_FREE_GB", "0")
-    monkeypatch.setattr(
-        orchestrator_module.ENADownloader,
-        "download_run",
-        lambda _self, _sample_id, _out_dir: (False, "synthetic ENA failure", []),
-    )
+    _route_ena_transfer(monkeypatch, lambda _self, _sample_id, _out_dir: (False, "synthetic ENA failure", []))
 
     orchestrator = StreamingPipelineOrchestrator(
         tmp_path / "config", tmp_path / "logs", db_path=tmp_path / "progress.db"
@@ -1313,11 +1344,7 @@ def test_failed_ena_can_defer_ncbi_without_occupying_primary_worker(
 
     monkeypatch.setenv("AMALGKIT_MIN_EXTERNAL_FREE_GB", "0")
     monkeypatch.setenv("AMALGKIT_MIN_SYSTEM_FREE_GB", "0")
-    monkeypatch.setattr(
-        orchestrator_module.ENADownloader,
-        "download_run",
-        lambda _self, _sample_id, _out_dir: (False, "synthetic ENA failure", []),
-    )
+    _route_ena_transfer(monkeypatch, lambda _self, _sample_id, _out_dir: (False, "synthetic ENA failure", []))
     orchestrator = StreamingPipelineOrchestrator(
         tmp_path / "config", tmp_path / "logs", db_path=tmp_path / "progress.db"
     )
@@ -1414,11 +1441,7 @@ def test_fasterq_fallback_uses_profiled_child_process_threads(tmp_path: Path, mo
     monkeypatch.setenv("AMALGKIT_PIPELINE_COMPRESSION_THREADS", "2")
     data_root = tmp_path / "campaign-data"
     monkeypatch.setenv("AMALGKIT_DATA_ROOT", str(data_root))
-    monkeypatch.setattr(
-        orchestrator_module.ENADownloader,
-        "download_run",
-        lambda _self, _sample_id, _out_dir: (False, "synthetic ENA failure", []),
-    )
+    _route_ena_transfer(monkeypatch, lambda _self, _sample_id, _out_dir: (False, "synthetic ENA failure", []))
     commands: list[list[str]] = []
     environments: list[dict[str, str]] = []
 
@@ -1820,11 +1843,7 @@ def test_failed_download_preserves_invalid_transfer_artifacts(tmp_path: Path, mo
         handle.write(b"@completed/1\nACGT\n+\n!!!!\n")
     stale.write_bytes(b"stale final payload")
 
-    monkeypatch.setattr(
-        orchestrator_module.ENADownloader,
-        "download_run",
-        lambda _self, _sample_id, _out_dir: (False, "synthetic ENA failure", []),
-    )
+    _route_ena_transfer(monkeypatch, lambda _self, _sample_id, _out_dir: (False, "synthetic ENA failure", []))
 
     def failed_fasterq(cmd: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(cmd, 1, "", "synthetic fasterq failure")

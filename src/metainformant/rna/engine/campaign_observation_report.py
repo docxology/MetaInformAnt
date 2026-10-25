@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from metainformant.rna.engine.campaign_observation import CampaignObservation
-from metainformant.visualization.plots.rna_campaign import plot_acquisition_observation
+from metainformant.rna.integration.campaign_figures import plot_acquisition_observation
 
 
 def verify_observation_bundle(output_dir: Path) -> dict:
