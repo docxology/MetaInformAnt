@@ -121,7 +121,7 @@ dev = [
     "pytest-repeat>=0.9.3",  # For flaky test detection
     "pytest-rerunfailures>=13.0",  # For retrying failed tests
     "pytest-clarity>=1.0.1",  # Better assertion output
-    "black==26.5.1",
+    "black==26.10.1",
     "isort==8.0.1",
     "flake8==7.3.0",
     "mypy>=1.8.0",
@@ -404,6 +404,18 @@ python-preference = "managed"
 # automatically override this to use /tmp/uv-cache via UV_CACHE_DIR environment variable.
 # The filesystem detection utilities in metainformant.core.filesystem handle this automatically.
 cache-dir = ".uv-cache"
+
+# Security floors for transitive dependencies (Dependabot advisories, 2026-10-24).
+# Constraints bound lock resolution only; they add no requirement to the published
+# package metadata. Raise a floor, never remove it, when a new advisory lands.
+constraint-dependencies = [
+    "certifi>=2026.10.19",  # GHSA-6q48-6c7w-9gw2: distrusted emSign roots
+    "filelock>=4.2.1",  # GHSA-v4x8-3wr5-3wq8: ReadWriteLock symlink planting
+    "nbconvert>=7.17.2",  # GHSA-pjvx-prjx-h659: path traversal in output filenames
+    "pillow>=13.0.0",  # GHSA-5x8w-8jj5-q52h and related decoder memory-safety fixes
+    "setuptools>=84.1.0",  # GHSA-xmj3-9gf7-h52w: namespace_packages path escape
+    "virtualenv>=21.14.13",  # GHSA-cx6f-vjhg-g3cc (prompt regression in 21.14.9), GHSA-c978-59m8-c77v
+]
 
 [dependency-groups]
 dev = [

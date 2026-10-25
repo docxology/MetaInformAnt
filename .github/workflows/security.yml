@@ -43,6 +43,7 @@ jobs:
         name: security-reports-${{ github.run_id }}
         path: |
           output/security_bandit.json
+          output/security_pip_audit.json
           output/security_pattern_audit.txt
           output/security_pattern_traversal.txt
         if-no-files-found: warn

@@ -5,25 +5,36 @@
 # developers can reproduce the CI gate locally before pushing. Three gates:
 #
 #   1. bandit static analysis over src/metainformant (tests excluded)
-#   2. pip-audit vulnerability scan over the uv.lock-derived requirements
+#   2. pip-audit over every package pinned in uv.lock: all extras, dependency
+#      groups and environment markers, exported as a PEP 751 pylock.toml and
+#      audited in place against OSV, which carries both GitHub (GHSA) and PyPA
+#      (PYSEC) advisories (no pip, no virtual environment, nothing installed)
 #   3. grep audit for shell-execution and path-traversal patterns in
 #      maintained src/ paths
 #
 # Gate policy: medium-and-higher severity bandit findings, any pip-audit
-# vulnerability, and any grep-audit hit block. Accepted findings must be
-# recorded in scripts/package/security_baseline.txt with an owner column and a
-# dated comment explaining the acceptance. Low-severity bandit findings are
-# reported for review but never block.
+# vulnerability, any locked dependency pip-audit could not audit, and any
+# grep-audit hit block. A scanner that runs but leaves no complete report also
+# blocks: a failed scan is missing evidence, never a clean result. That covers
+# bandit's own read/parse errors and a zero-line scan, and a pip-audit report
+# that does not account for every package in the exported lock. Accepted findings
+# must be recorded in scripts/package/security_baseline.txt with an owner
+# column and a dated comment explaining the acceptance. Low-severity bandit
+# findings are reported for review but never block.
 #
-# All reports land under output/ for local inspection and CI artifacts.
+# All reports land under output/ for local inspection and CI artifacts. Each
+# scanner removes its previous report first, and only the scanners run by this
+# invocation are evaluated, so a stale report can never stand in for a scan.
 #
 # Baseline format (scripts/package/security_baseline.txt):
 #   SEVERITY|OWNER|ID|LOCATION
 #     SEVERITY: low | medium | high | vuln | pattern
 #     OWNER:    responsible engineer or team (never omitted)
 #     ID:       bandit test id (e.g. B108), PYSEC-/GHSA- id (pip-audit),
-#               PATTERN:<name> for grep-audit hits, or `-` (any)
-#     LOCATION: path substring, package name (pip-audit), or `-` (any)
+#               `unaudited` for a locked dependency pip-audit skipped,
+#               PATTERN for grep-audit hits, or `-` (any)
+#     LOCATION: path substring (bandit, pattern), exact package name
+#               (pip-audit), or `-` (any)
 # Lines starting with '#' are comments; every entry MUST carry a dated comment
 # above it explaining why the finding is accepted.
 set -euo pipefail
@@ -45,37 +56,42 @@ PIP_AUDIT_JSON="$OUTPUT_DIR/security_pip_audit.json"
 PATTERN_AUDIT_TXT="$OUTPUT_DIR/security_pattern_audit.txt"
 PATTERN_TRAVERSAL_TXT="$OUTPUT_DIR/security_pattern_traversal.txt"
 TMPDIR_FALLBACK="${TMPDIR:-/tmp}"
-PIP_AUDIT_REQS="$(mktemp "$TMPDIR_FALLBACK/metainformant_requirements.XXXXXX.txt")"
-trap 'rm -f "$PIP_AUDIT_REQS"' EXIT
+PIP_AUDIT_LOCK_DIR="$(mktemp -d "$TMPDIR_FALLBACK/metainformant_pylock.XXXXXX")"
+trap 'rm -rf "$PIP_AUDIT_LOCK_DIR"' EXIT
 
 mkdir -p "$OUTPUT_DIR"
 
 run_bandit() {
     print_status "INFO" "Bandit: scanning $SRC_DIR (tests excluded)..."
+    rm -f "$BANDIT_JSON"
     local rc=0
     uvx bandit -q -r "$SRC_DIR" -f json -o "$BANDIT_JSON" || rc=$?
     if [ "$rc" -eq 0 ]; then
         print_status "OK" "Bandit reported no findings"
     else
-        print_status "INFO" "Bandit exited $rc; findings recorded in $BANDIT_JSON (verdict evaluated below)"
+        print_status "INFO" "Bandit exited $rc; verdict evaluated below from $BANDIT_JSON"
     fi
 }
 
 run_deps() {
-    print_status "INFO" "pip-audit: exporting uv.lock-derived requirements (read-only)..."
-    uv export --frozen --no-emit-project --format requirements-txt --no-hashes -o "$PIP_AUDIT_REQS"
-    print_status "INFO" "pip-audit: scanning exported lockfile requirements..."
+    print_status "INFO" "pip-audit: exporting every uv.lock package to pylock.toml (read-only)..."
+    rm -f "$PIP_AUDIT_JSON"
+    # uv also echoes the exported lock on stdout; the written file is the artifact.
+    uv export --frozen --no-emit-project --all-extras --all-groups --format pylock.toml \
+        -o "$PIP_AUDIT_LOCK_DIR/pylock.toml" > /dev/null
+    print_status "INFO" "pip-audit: auditing the exported lock in place..."
     local rc=0
-    uvx pip-audit -r "$PIP_AUDIT_REQS" -f json -o "$PIP_AUDIT_JSON" || rc=$?
+    uvx --from 'pip-audit>=2.10' pip-audit --locked "$PIP_AUDIT_LOCK_DIR" -s osv -f json -o "$PIP_AUDIT_JSON" || rc=$?
     if [ "$rc" -eq 0 ]; then
         print_status "OK" "pip-audit reported no known vulnerabilities"
     else
-        print_status "INFO" "pip-audit exited $rc; vulnerabilities recorded in $PIP_AUDIT_JSON (verdict evaluated below)"
+        print_status "INFO" "pip-audit exited $rc; verdict evaluated below from $PIP_AUDIT_JSON"
     fi
 }
 
 run_patterns() {
     print_status "INFO" "Pattern audit: shell-execution and path-traversal greps over $SRC_DIR..."
+    rm -f "$PATTERN_AUDIT_TXT" "$PATTERN_TRAVERSAL_TXT"
     local rc=0
     # Blocking shell-execution patterns: any hit means arguments or code reach
     # a shell/evaluator instead of an argv list. Pure comment lines cannot
@@ -94,7 +110,12 @@ run_patterns() {
         print_status "ERROR" "Pattern audit grep failed with exit $rc"
         exit "$rc"
     fi
-    grep -v '^[^:]*:[0-9]*:[[:space:]]*#' "$PATTERN_AUDIT_TXT.raw" > "$PATTERN_AUDIT_TXT" || true
+    local filter_rc=0
+    grep -v '^[^:]*:[0-9]*:[[:space:]]*#' "$PATTERN_AUDIT_TXT.raw" > "$PATTERN_AUDIT_TXT" || filter_rc=$?
+    if [ "$filter_rc" -gt 1 ]; then
+        print_status "ERROR" "Pattern audit comment filter failed with exit $filter_rc"
+        exit "$filter_rc"
+    fi
     rm -f "$PATTERN_AUDIT_TXT.raw"
 
     # Informational path-traversal candidates: quoted string literals that
@@ -115,130 +136,45 @@ run_patterns() {
     fi
 }
 
-# Evaluate all produced reports against the baseline. Exit non-zero when any
-# blocking finding is not covered by a baseline entry.
+# Evaluate the reports of the named scanners (those run by this invocation)
+# against the baseline with security_evaluate.py. Exit non-zero when a named
+# scanner left no complete report or a blocking finding is not baselined.
 evaluate() {
     if [ ! -f "$BASELINE_FILE" ]; then
         print_status "ERROR" "Baseline file missing: $BASELINE_FILE"
         exit 1
     fi
 
-    python3 - "$BANDIT_JSON" "$PIP_AUDIT_JSON" "$PATTERN_AUDIT_TXT" "$PATTERN_TRAVERSAL_TXT" "$BASELINE_FILE" <<'PY'
-import json
-import sys
-
-bandit_path, pip_audit_path, pattern_path, traversal_path, baseline_path = sys.argv[1:6]
-
-blocking = []
-info_counts = {"bandit_low": 0}
-
-baseline = []
-with open(baseline_path, encoding="utf-8") as fh:
-    for line in fh:
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        fields = [f.strip() for f in line.split("|")]
-        if len(fields) != 4:
-            sys.exit(f"Malformed baseline line (need SEVERITY|OWNER|ID|LOCATION): {line!r}")
-        baseline.append(fields)
-
-
-def baselined(severity, finding_id, location):
-    for sev, _owner, bid, bloc in baseline:
-        if sev not in ("*", severity):
-            continue
-        if bid not in ("-", "*", finding_id):
-            continue
-        if bloc not in ("-", "*") and bloc not in location:
-            continue
-        return True
-    return False
-
-
-try:
-    with open(bandit_path, encoding="utf-8") as fh:
-        bandit = json.load(fh)
-    for result in bandit.get("results", []):
-        severity = result["issue_severity"].lower()
-        finding_id = result["test_id"]
-        location = f"{result['filename']}:{result['line_number']}"
-        if severity in ("medium", "high"):
-            if not baselined(severity, finding_id, result["filename"]):
-                blocking.append(
-                    f"bandit {severity.upper()} {finding_id} "
-                    f"{result['test_name']} at {location}"
-                )
-        else:
-            info_counts["bandit_low"] += 1
-except FileNotFoundError:
-    print("INFO: bandit report not produced (skipped)")
-
-try:
-    with open(pip_audit_path, encoding="utf-8") as fh:
-        pip_audit = json.load(fh)
-    for dep in pip_audit.get("dependencies", []):
-        for vuln in dep.get("vulns", []):
-            vuln_id = vuln.get("id", "unknown")
-            if not baselined("vuln", vuln_id, dep["name"]):
-                fixes = ", ".join(vuln.get("fix_versions", []) or ["none"])
-                blocking.append(f"pip-audit vuln {vuln_id} on {dep['name']}=={dep['version']} (fix: {fixes})")
-except FileNotFoundError:
-    print("INFO: pip-audit report not produced (skipped)")
-
-try:
-    with open(pattern_path, encoding="utf-8") as fh:
-        for line in fh:
-            hit = line.rstrip("\n")
-            if not hit:
-                continue
-            path = hit.split(":", 1)[0]
-            if not baselined("pattern", "PATTERN", path):
-                blocking.append(f"pattern audit hit: {hit}")
-except FileNotFoundError:
-    print("INFO: pattern audit report not produced (skipped)")
-
-try:
-    with open(traversal_path, encoding="utf-8") as fh:
-        candidates = [line.rstrip("\n") for line in fh if line.strip()]
-    for hit in candidates:
-        print(f"REVIEW (non-blocking): path-traversal candidate: {hit}")
-except FileNotFoundError:
-    candidates = []
-    print("INFO: path-traversal report not produced (skipped)")
-
-print(
-    f"Baseline entries: {len(baseline)}; "
-    f"bandit low-severity (non-blocking): {info_counts['bandit_low']}; "
-    f"path-traversal review candidates (non-blocking): {len(candidates)}"
-)
-if blocking:
-    print(f"BLOCKING: {len(blocking)} security finding(s) not covered by the baseline:")
-    for finding in blocking:
-        print(f"  - {finding}")
-    sys.exit(1)
-print("No blocking security findings.")
-PY
+    local scanners
+    scanners=$(IFS=,; echo "$*")
+    python3 "$SCRIPT_DIR/security_evaluate.py" \
+        --ran "$scanners" \
+        --baseline "$BASELINE_FILE" \
+        --bandit "$BANDIT_JSON" \
+        --pip-audit "$PIP_AUDIT_JSON" \
+        --pylock "$PIP_AUDIT_LOCK_DIR/pylock.toml" \
+        --patterns "$PATTERN_AUDIT_TXT" \
+        --traversal "$PATTERN_TRAVERSAL_TXT"
 }
 
 case "${1:-all}" in
     "bandit")
         run_bandit
-        evaluate
+        evaluate bandit
         ;;
     "deps")
         run_deps
-        evaluate
+        evaluate deps
         ;;
     "patterns")
         run_patterns
-        evaluate
+        evaluate patterns
         ;;
     "all"|*)
         run_bandit
         run_deps
         run_patterns
-        evaluate
+        evaluate bandit deps patterns
         print_status "OK" "Security checks completed"
         ;;
 esac
