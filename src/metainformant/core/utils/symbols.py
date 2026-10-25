@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import ast
 import difflib
+import hashlib
 import os
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -71,9 +72,14 @@ def _get_cache_dir(repo_root: Path) -> Path:
 
 
 def _get_cache_file(repo_root: Path, index_type: str) -> Path:
-    """Get cache file path for symbol index."""
-    cache_dir = _get_cache_dir(repo_root)
-    return cache_dir / f"symbol_index_{index_type}.json"
+    """Get the cache file for one scan root's symbol index.
+
+    Every scan root inside a checkout shares that checkout's cache directory, so
+    the file name carries the root: indexing one subtree never returns another's.
+    """
+    root = Path(repo_root).resolve()
+    scope = hashlib.sha256(os.fsencode(root)).hexdigest()[:16]
+    return _get_cache_dir(root) / f"symbol_index_{index_type}_{scope}.json"
 
 
 _SKIPPED_INDEX_DIRECTORIES = {

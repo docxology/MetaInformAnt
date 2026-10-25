@@ -178,6 +178,24 @@ class TestCachedIndexTypes:
         for defn in defs:
             assert isinstance(defn.file_path, Path)
 
+    def test_cached_indexes_are_scoped_to_their_scan_root(self, tmp_path):
+        """Subtrees of one checkout share a cache directory but never an index."""
+
+        checkout = tmp_path / "checkout"
+        (checkout / "src" / "metainformant").mkdir(parents=True)
+        (checkout / "pyproject.toml").write_text("[project]\nname = 'fixture'\n", encoding="utf-8")
+        for name in ("alpha", "beta"):
+            package = checkout / "src" / "metainformant" / name
+            package.mkdir()
+            (package / "mod.py").write_text(f"def {name}_only():\n    return 1\n", encoding="utf-8")
+
+        alpha = symbols.index_functions(checkout / "src" / "metainformant" / "alpha", use_cache=True)
+        beta = symbols.index_functions(checkout / "src" / "metainformant" / "beta", use_cache=True)
+
+        assert set(alpha) == {"alpha_only"}
+        assert set(beta) == {"beta_only"}
+        assert len(list((checkout / "output" / ".discovery_cache").glob("symbol_index_functions_*.json"))) == 2
+
     def test_find_symbol_references_skips_vendored_trees(self, tmp_path):
         """Reference scanning must not descend into vendored/generated trees."""
 

@@ -6,6 +6,8 @@ import subprocess as sp
 from functools import lru_cache
 from pathlib import Path
 
+import pytest
+
 from scripts.quality.verify_real_implementation_policy import (
     MONKEYPATCH_SETATTR_PATTERNS,
     iter_policy_files,
@@ -120,8 +122,12 @@ def test_monkeypatch_setattr_rule_flags_rebinding_but_not_env_config(
 
 def test_policy_file_discovery_prunes_submodules_and_symlinked_directories(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Independent or external trees must never enter the parent scan."""
+
+    # Keep git from adopting an enclosing repository (e.g. a repo-local .tmp/).
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path))
 
     root = tmp_path / "repo"
     root.mkdir()
@@ -142,13 +148,16 @@ def test_policy_file_discovery_prunes_submodules_and_symlinked_directories(
     assert discovered == {Path("included.py")}
 
 
-def test_transient_project_state_reports_are_out_of_scan_scope(tmp_path: Path) -> None:
+def test_transient_project_state_reports_are_out_of_scan_scope(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Untracked lane/status reports must never gate the policy scan.
 
     Parallel campaign lanes drop PROJECT_STATE_REPORT_*.md files at the repo
     root that legitimately discuss the policy by name. They are session-local
     artifacts, not tracked source, so the scanner must skip them.
     """
+
+    # Keep git from adopting an enclosing repository (e.g. a repo-local .tmp/).
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path))
 
     root = tmp_path / "repo"
     root.mkdir()
