@@ -9,6 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List
 
+from metainformant.core.io import open_text_auto
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
@@ -18,7 +19,7 @@ def parse_vcf(path: str | Path) -> Dict[str, Any]:
     """Parse VCF (Variant Call Format) file.
 
     Args:
-        path: Path to VCF file
+        path: Path to VCF file, plain text or gzip-compressed (a ``.gz`` suffix, as in ``calls.vcf.gz``)
 
     Returns:
         Dictionary containing VCF data and metadata
@@ -42,7 +43,7 @@ def parse_vcf(path: str | Path) -> Dict[str, Any]:
     metadata = {}
     samples = []
 
-    with open(path, "r") as f:
+    with open_text_auto(path) as f:
         for line in f:
             line = line.strip()
 
@@ -331,12 +332,13 @@ def write_vcf(vcf_data: Dict[str, Any], output_path: str | Path) -> None:
 
     Args:
         vcf_data: VCF data dictionary from parse_vcf()
-        output_path: Output file path
+        output_path: Output file path; gzip-compressed when it ends in ``.gz``, so that
+            :func:`parse_vcf` reads back what was written
     """
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(output_path, "w") as f:
+    with open_text_auto(output_path, "wt") as f:
         # Write metadata
         for key, value in vcf_data["metadata"].items():
             f.write(f"##{key}={value}\n")

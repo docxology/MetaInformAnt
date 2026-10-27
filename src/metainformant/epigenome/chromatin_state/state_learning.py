@@ -27,7 +27,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    np = cast(Any, None)  # optional dependency; callers guard on HAS_NUMPY
 
 # Optional scipy for statistical tests
 try:
@@ -36,7 +36,7 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    scipy_stats = None
+    scipy_stats = cast(Any, None)  # optional dependency; callers guard on HAS_SCIPY
 
 
 # ---------------------------------------------------------------------------

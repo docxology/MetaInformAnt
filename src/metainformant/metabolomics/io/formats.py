@@ -1,7 +1,10 @@
 """Mass spectrometry file format reading and writing.
 
-Supports CSV-based metabolomics tables with metabolite × sample matrices,
-plus limited readers for mzML and mzXML formats.
+Reads and writes two formats: CSV metabolite × sample intensity tables
+(:func:`read_csv`, :func:`write_csv`) and MGF (Mascot Generic Format) spectra
+(:func:`read_mgf`, :func:`write_mgf`). It also filters spectra and extracts ion
+chromatograms from them. mzML and mzXML are not supported; convert such files to
+MGF first.
 """
 
 from __future__ import annotations

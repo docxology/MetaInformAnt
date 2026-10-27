@@ -7,6 +7,7 @@ including quality score assessment, read filtering, and format conversion.
 from __future__ import annotations
 
 import gzip
+import statistics
 from pathlib import Path
 from typing import IO, Any, Callable, Dict, Iterator, Tuple
 
@@ -155,7 +156,7 @@ def assess_quality(fastq_path: str | Path) -> Dict[str, Any]:
 
     # Quality statistics
     mean_quality = sum(all_qualities) / len(all_qualities) if all_qualities else 0.0
-    median_quality = sorted(all_qualities)[len(all_qualities) // 2] if all_qualities else 0.0
+    median_quality = statistics.median(all_qualities) if all_qualities else 0.0
 
     # Quality distribution (bucketed)
     quality_distribution: Dict[int, int] = {}
@@ -436,7 +437,7 @@ def calculate_per_base_quality(fastq_path: str | Path) -> Dict[int, Dict[str, fl
         qualities = stats["qualities"]
         if qualities:
             stats["mean_quality"] = sum(qualities) / len(qualities)
-            stats["median_quality"] = sorted(qualities)[len(qualities) // 2]
+            stats["median_quality"] = statistics.median(qualities)
         else:
             stats["min_quality"] = 0.0
 

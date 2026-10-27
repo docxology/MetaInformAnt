@@ -399,23 +399,96 @@ class TestAnalyzePredictionUncertainty:
 
 
 # ---------------------------------------------------------------------------
-# cross_validate_biological failure robustness
+# cross_validate_biological: failures surface, they never become null/NaN metrics
 # ---------------------------------------------------------------------------
 
 
-class TestCrossValidateBiologicalRobustness:
-    """cross_validate_biological must survive per-metric CV failures."""
+def _too_few_samples_per_class() -> tuple[np.ndarray, np.ndarray]:
+    """Three members per class cannot be split into five stratified folds."""
+    rng = np.random.default_rng(5)
+    return rng.standard_normal((6, 4)), np.array([0, 0, 0, 1, 1, 1])
 
-    def test_metric_failure_does_not_crash(self, clf_data):
-        """When every metric's CV raises (invalid estimator param), results
-        record the failure as None instead of crashing on the final log line
-        (the old code hit AttributeError formatting a None accuracy)."""
+
+class TestCrossValidateBiologicalFailuresSurface:
+    """A metric that cannot be computed is an error, not a ``None`` or NaN entry in the results."""
+
+    def test_invalid_estimator_parameter_raises(self, clf_data):
+        """Regression: every metric used to be recorded as None and the call returned normally."""
         X, y = clf_data
 
-        result = cross_validate_biological(X, y, method="rf", cv_folds=2, n_estimators=0)
+        with pytest.raises(ValueError, match="n_estimators"):
+            cross_validate_biological(X, y, method="rf", cv_folds=2, n_estimators=0, parallel_jobs=1)
 
-        assert result["method"] == "rf"
-        for metric in ("accuracy", "precision_weighted", "recall_weighted", "f1_weighted"):
-            assert result["cross_validation"][metric] is None
-        assert "accuracy" not in result
-        assert "mean_accuracy" not in result
+    def test_too_few_samples_per_class_raises(self):
+        X, y = _too_few_samples_per_class()
+
+        with pytest.raises(ValueError, match="n_splits=5"):
+            cross_validate_biological(X, y, method="rf", cv_folds=5, random_state=0, parallel_jobs=1)
+
+    def test_non_finite_features_raise_instead_of_nan_scores(self):
+        """sklearn's default error_score=nan used to turn failed folds into silent NaN means."""
+        rng = np.random.default_rng(5)
+        X = rng.standard_normal((40, 4))
+        X[3, 1] = np.nan
+        y = np.array([0, 1] * 20)
+
+        with pytest.raises(ValueError, match="NaN"):
+            cross_validate_biological(X, y, method="lr", cv_folds=4, random_state=0, parallel_jobs=1)
+
+    def test_undefined_roc_auc_raises(self):
+        """ROC-AUC is undefined in a fold without positives.
+
+        scikit-learn reports it as NaN with a warning rather than an exception; that used to reach the
+        caller as ``roc_auc: {"mean": nan, ...}`` and must be rejected as a non-finite metric.
+        """
+        rng = np.random.default_rng(9)
+        X = rng.standard_normal((40, 4))
+        y = np.array([0] * 37 + [1] * 3)  # fewer positives (3) than folds (5)
+
+        with pytest.raises(ValueError, match="roc_auc.*not finite"):
+            cross_validate_biological(X, y, method="lr", cv_folds=5, random_state=0, parallel_jobs=1)
+
+    def test_successful_run_matches_an_independent_cross_validation(self, clf_data):
+        """Guard: the success path is unchanged and agrees with a hand-rolled stratified CV loop."""
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.metrics import roc_auc_score
+        from sklearn.model_selection import StratifiedKFold
+
+        X, y = clf_data
+        result = cross_validate_biological(X, y, method="lr", cv_folds=5, random_state=0, parallel_jobs=1)
+
+        accuracy, auc = [], []
+        for train, test in StratifiedKFold(n_splits=5, shuffle=True, random_state=0).split(X, y):
+            model = LogisticRegression(max_iter=1000, random_state=0).fit(X[train], y[train])
+            accuracy.append(float(np.mean(model.predict(X[test]) == y[test])))
+            auc.append(float(roc_auc_score(y[test], model.predict_proba(X[test])[:, 1])))
+
+        cv = result["cross_validation"]
+        assert cv["accuracy"]["scores"] == pytest.approx(accuracy)
+        assert cv["roc_auc"]["scores"] == pytest.approx(auc)
+        assert result["accuracy"] == result["mean_accuracy"] == pytest.approx(np.mean(accuracy))
+        for metric in ("accuracy", "precision_weighted", "recall_weighted", "f1_weighted", "roc_auc"):
+            assert len(cv[metric]["scores"]) == 5
+            assert np.all(np.isfinite(cv[metric]["scores"]))
+
+
+class TestCompareClassifiersFailures:
+    """compare_classifiers must not crown a method that failed."""
+
+    def test_best_method_is_none_when_every_method_fails(self):
+        X, y = _too_few_samples_per_class()
+
+        result = compare_classifiers(X, y, methods=["rf", "lr"], cv_folds=5, random_state=0)
+
+        assert result["best_method"] is None
+        for method in ("rf", "lr"):
+            assert "error" in result["comparison"][method]
+
+    def test_failed_method_is_reported_and_never_selected(self, clf_data):
+        X, y = clf_data
+
+        result = compare_classifiers(X, y, methods=["lr", "no_such_method"], cv_folds=3, random_state=42)
+
+        assert "Unknown classification method" in result["comparison"]["no_such_method"]["error"]
+        assert "error" not in result["comparison"]["lr"]
+        assert result["best_method"] == "lr"

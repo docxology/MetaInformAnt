@@ -204,7 +204,7 @@ jobs:
         # Script entrypoints intentionally bootstrap src before package imports;
         # Black/isort cover their formatting while F/E9 remains blocking.
         flake8 scripts/ --select=F,E9 --max-line-length=120 --extend-ignore=E203,W503
-        python scripts/quality/check_mypy_budget.py src/metainformant/rna
+        python scripts/quality/check_mypy_budget.py src/metainformant
 
     - name: Run security checks
       run: bash scripts/package/security_checks.sh

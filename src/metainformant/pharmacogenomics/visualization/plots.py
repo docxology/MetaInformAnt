@@ -12,7 +12,7 @@ dependencies are not available.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from metainformant.core.utils.logging import get_logger
 
@@ -28,8 +28,8 @@ try:
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
-    plt = None
-    mpatches = None
+    plt = cast(Any, None)  # optional dependency; callers guard on HAS_MATPLOTLIB
+    mpatches = cast(Any, None)
 
 try:
     import numpy as np
@@ -37,7 +37,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    np = cast(Any, None)  # optional dependency; callers guard on HAS_NUMPY
 
 try:
     import seaborn as sns

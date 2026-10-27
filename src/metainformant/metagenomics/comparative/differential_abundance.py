@@ -26,6 +26,7 @@ from __future__ import annotations
 import math
 import random
 from collections import Counter
+from typing import Any, cast
 
 from metainformant.core.utils.logging import get_logger
 
@@ -38,7 +39,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    np = cast(Any, None)  # optional dependency; callers guard on HAS_NUMPY
 
 try:
     from scipy import stats as scipy_stats
@@ -46,7 +47,7 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    scipy_stats = None
+    scipy_stats = cast(Any, None)  # optional dependency; callers guard on HAS_SCIPY
 
 try:
     from sklearn.ensemble import RandomForestClassifier

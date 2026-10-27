@@ -478,10 +478,10 @@ def _panzeri_treves_support(probabilities: np.ndarray, sample_size: int) -> floa
         delta_prev = delta
         delta = abs(r_naive - r_expected)
 
-    r_naive = r_naive + extra - 1.0
+    support = r_naive + extra - 1.0
     if delta < delta_prev:
-        r_naive += 1.0
-    return float(r_naive)
+        support += 1.0
+    return float(support)
 
 
 def panzeri_treves_bias_correction(

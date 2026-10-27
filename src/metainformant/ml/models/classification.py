@@ -331,6 +331,27 @@ def evaluate_classifier(
     return results
 
 
+def _cross_validated_metric(
+    estimator: Any, X: np.ndarray, y: np.ndarray, cv: Any, metric: str, n_jobs: int | None
+) -> Dict[str, Any]:
+    """Cross-validate one scoring metric and summarize its fold scores.
+
+    Failures propagate. ``error_score="raise"`` stops scikit-learn from replacing a
+    failed fold with NaN, and a metric that is undefined without raising (non-finite
+    fold scores) is rejected too, so a returned summary always holds real numbers.
+    """
+    try:
+        scores = cross_val_score(estimator, X, y, cv=cv, scoring=metric, n_jobs=n_jobs, error_score="raise")
+    except Exception as exc:
+        exc.add_note(f"cross_validate_biological: scoring metric {metric!r} failed")
+        raise
+    if not np.all(np.isfinite(scores)):
+        raise ValueError(
+            f"cross_validate_biological: metric {metric!r} is not finite for every fold: {scores.tolist()}"
+        )
+    return {"mean": float(scores.mean()), "std": float(scores.std()), "scores": scores.tolist()}
+
+
 def cross_validate_biological(
     X: np.ndarray,
     y: np.ndarray,
@@ -358,11 +379,18 @@ def cross_validate_biological(
         **kwargs: Additional parameters for classifier
 
     Returns:
-        Dictionary with cross-validation results
+        Dictionary with cross-validation results. Every entry of
+        ``cross_validation`` holds the finite per-fold scores of one metric
+        (``accuracy``, ``precision_weighted``, ``recall_weighted``,
+        ``f1_weighted``, plus ``roc_auc`` for two classes).
 
     Raises:
         ImportError: If scikit-learn not available
-        ValueError: If invalid method specified
+        ValueError: If invalid method specified, or if a metric cannot be
+            computed (for example too few samples per class for ``cv_folds``,
+            non-finite features, or ROC-AUC undefined in a fold). Failures are
+            never converted into null or NaN metrics; the original exception
+            propagates with the failing metric named in a note.
     """
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for cross-validation")
@@ -405,35 +433,16 @@ def cross_validate_biological(
     # Perform stratified cross-validation
     cv = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=random_state)
 
-    # Evaluate multiple metrics
+    # Evaluate multiple metrics; a metric that cannot be computed raises (see _cross_validated_metric)
     scoring = ["accuracy", "precision_weighted", "recall_weighted", "f1_weighted"]
-
-    cv_results: Dict[str, Any] = {}
-    for metric in scoring:
-        try:
-            scores = cross_val_score(classifier, X, y, cv=cv, scoring=metric, n_jobs=parallel_jobs)
-            cv_results[metric] = {
-                "mean": float(scores.mean()),
-                "std": float(scores.std()),
-                "scores": scores.tolist(),
-            }
-        except Exception as e:
-            logger.warning(f"Could not compute {metric}: {e}")
-            cv_results[metric] = None
-
-    # Try ROC-AUC if binary classification
     if len(np.unique(y)) == 2:
-        try:
-            auc_scores = cross_val_score(classifier, X, y, cv=cv, scoring="roc_auc", n_jobs=parallel_jobs)
-            cv_results["roc_auc"] = {
-                "mean": float(auc_scores.mean()),
-                "std": float(auc_scores.std()),
-                "scores": auc_scores.tolist(),
-            }
-        except Exception as e:
-            logger.warning(f"Could not compute ROC-AUC: {e}")
+        scoring.append("roc_auc")  # binary classification only
 
-    results = {
+    cv_results: Dict[str, Any] = {
+        metric: _cross_validated_metric(classifier, X, y, cv, metric, parallel_jobs) for metric in scoring
+    }
+
+    results: Dict[str, Any] = {
         "method": method,
         "cv_folds": cv_folds,
         "n_samples": len(X),
@@ -444,15 +453,11 @@ def cross_validate_biological(
     }
 
     # Add top-level accuracy keys for convenience
-    acc_cv = cv_results.get("accuracy")
-    if acc_cv and isinstance(acc_cv, dict):
-        results["accuracy"] = acc_cv["mean"]
-        results["mean_accuracy"] = acc_cv["mean"]
+    accuracy_mean = cv_results["accuracy"]["mean"]
+    results["accuracy"] = accuracy_mean
+    results["mean_accuracy"] = accuracy_mean
 
-    accuracy_info = cv_results.get("accuracy") or {}
-    accuracy_mean = accuracy_info.get("mean") if isinstance(accuracy_info, dict) else None
-    accuracy_repr = f"{accuracy_mean:.3f}" if isinstance(accuracy_mean, float) else "N/A"
-    logger.info(f"Completed {cv_folds}-fold CV for {method} classifier: " f"accuracy={accuracy_repr}")
+    logger.info(f"Completed {cv_folds}-fold CV for {method} classifier: accuracy={accuracy_mean:.3f}")
 
     return results
 
@@ -503,7 +508,10 @@ def compare_classifiers(
         random_state: Random state for reproducibility
 
     Returns:
-        Dictionary with comparison results
+        Dictionary with ``comparison`` (per-method cross-validation results, or
+        ``{"error": message}`` for a method whose evaluation failed) and
+        ``best_method`` (the successful method with the highest mean accuracy,
+        or None when every method failed)
     """
     if methods is None:
         methods = ["rf", "gb", "lr"]
@@ -518,15 +526,12 @@ def compare_classifiers(
             logger.error(f"Failed to evaluate {method}: {e}")
             results[method] = {"error": str(e)}
 
+    # Only methods that completed cross-validation compete; a failed method is reported under
+    # ``comparison[method]["error"]`` and never wins. ``best_method`` is None when every method failed.
+    scored = [(m, r["cross_validation"]["accuracy"]["mean"]) for m, r in results.items() if "error" not in r]
+    best_method = max(scored, key=lambda item: item[1])[0] if scored else None
+
     return {
         "comparison": results,
-        "best_method": max(
-            [
-                (m, r.get("cross_validation", {}).get("accuracy", {}).get("mean", 0))
-                for m, r in results.items()
-                if isinstance(r, dict)
-            ],
-            key=lambda x: x[1],
-            default=(None, 0),
-        )[0],
+        "best_method": best_method,
     }

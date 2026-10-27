@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import math
 from collections import Counter
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
 
@@ -281,10 +281,12 @@ def analyze_sequence_information(
     Args:
         sequence: Biological sequence (DNA, RNA, or protein)
         k_values: List of k-mer sizes to analyze
-        methods: List of analysis methods
+        methods: List of analysis methods ("entropy", "complexity" and "patterns" by default)
 
     Returns:
-        Dictionary with comprehensive sequence analysis
+        Dictionary with comprehensive sequence analysis. The "patterns" method reports every start of every
+        repeated substring, so for highly repetitive input its "repeats" list is large: a 2 kb tandem repeat
+        gives about 1.5 million records.
 
     Raises:
         ValueError: If sequence is too short
@@ -349,15 +351,21 @@ def analyze_sequence_information(
     return analysis_result
 
 
+# Nucleotide characters
+_NUCLEOTIDE_LETTERS = frozenset("ATCGU")
+# Amino acid characters (simplified)
+_AMINO_ACID_LETTERS = frozenset("ACDEFGHIKLMNPQRSTVWY")
+
+
 def _infer_sequence_type(sequence: str) -> str:
     """Infer biological sequence type."""
-    sequence = sequence.upper()
-    chars = set(sequence)
+    return _infer_charset_type(set(sequence.upper()))
 
-    # Nucleotide characters
-    nucleotides = set("ATCGU")
-    # Amino acid characters (simplified)
-    amino_acids = set("ACDEFGHIKLMNPQRSTVWY")
+
+def _infer_charset_type(chars: Set[str]) -> str:
+    """Infer biological sequence type from the set of distinct upper-case characters of a sequence."""
+    nucleotides = _NUCLEOTIDE_LETTERS
+    amino_acids = _AMINO_ACID_LETTERS
 
     # If ALL characters are valid nucleotides, classify as DNA/RNA
     if chars <= nucleotides:
@@ -442,51 +450,151 @@ def _compression_complexity(sequence: str) -> float:
     return len(compressed_str) / len(sequence)
 
 
+def _count_non_overlapping(starts: List[int], length: int) -> int:
+    """Count the non-overlapping occurrences of a pattern, exactly as ``str.count`` does.
+
+    ``starts`` holds every start of the pattern in ascending order, overlapping ones included. Taking the first
+    start and then the first one at least ``length`` further on reproduces ``str.count``'s left-to-right scan.
+    """
+    count = 0
+    free_from = 0
+    for start in starts:
+        if start >= free_from:
+            count += 1
+            free_from = start + length
+    return count
+
+
 def _find_repeats(sequence: str, min_length: int = 3) -> List[Dict[str, Any]]:
-    """Find repeated subsequences."""
-    repeats: List[Dict[str, Any]] = []
+    """Find repeated subsequences.
+
+    A repeat is a substring of at least ``min_length`` characters that occurs at least twice without overlapping,
+    counted the way ``str.count`` counts (``"aa"`` does not repeat inside ``"aaa"``). Every start of such a substring
+    is reported, ordered by length and then by start, with ``count`` giving its non-overlapping occurrences. Only
+    lengths up to ``len(sequence) // 2`` can repeat without overlapping.
+
+    Substrings are indexed in a hash table one length at a time. A substring that repeats has a prefix that repeats
+    at the same start, so each length only has to index the starts that repeated at the previous length. That set
+    shrinks and the scan stops once it is empty, instead of comparing every substring against the whole sequence.
+
+    Raises:
+        ValueError: If ``min_length`` is less than 1.
+    """
+    if min_length < 1:
+        raise ValueError(f"min_length must be at least 1, got {min_length}")
+
     seq_len = len(sequence)
+    repeats: List[Dict[str, Any]] = []
+    starts = list(range(seq_len - min_length + 1))
 
     for length in range(min_length, seq_len // 2 + 1):
-        for i in range(seq_len - length + 1):
-            pattern = sequence[i : i + length]
+        while starts and starts[-1] + length > seq_len:
+            starts.pop()  # the previous length's last start no longer holds a substring this long
+        starts_by_pattern: Dict[str, List[int]] = {}
+        for start in starts:
+            starts_by_pattern.setdefault(sequence[start : start + length], []).append(start)
 
-            # Count occurrences
-            count = sequence.count(pattern)
-            if count > 1:
-                # Check if this repeat is already recorded
-                already_recorded = any(r["pattern"] == pattern and r["start"] == i for r in repeats)
+        repeating: List[Tuple[int, str, int]] = []
+        for pattern, pattern_starts in starts_by_pattern.items():
+            if len(pattern_starts) > 1:
+                count = _count_non_overlapping(pattern_starts, length)
+                if count > 1:
+                    repeating.extend((start, pattern, count) for start in pattern_starts)
+        if not repeating:
+            break
 
-                if not already_recorded:
-                    repeats.append(
-                        {
-                            "pattern": pattern,
-                            "length": length,
-                            "count": count,
-                            "start": i,
-                        }
-                    )
+        repeating.sort(key=lambda entry: entry[0])
+        repeats.extend(
+            {"pattern": pattern, "length": length, "count": count, "start": start}
+            for start, pattern, count in repeating
+        )
+        starts = [start for start, _, _ in repeating]
 
     return repeats
 
 
+# Complement of each nucleotide letter; any other character is its own complement.
+_NUCLEOTIDE_COMPLEMENT = {"A": "T", "T": "A", "C": "G", "G": "C", "U": "A", "N": "N"}
+
+
+def _palindrome_spans(upper: str, min_length: int) -> List[Tuple[int, int]]:
+    """List the ``(start, length)`` of every substring of ``upper`` that :func:`_is_palindrome` accepts.
+
+    :func:`_is_palindrome` takes a substring as a reverse-complement palindrome if its characters look like
+    nucleotides and as a plain palindrome otherwise. Both kinds stay palindromes when their two end characters are
+    dropped, so expanding outward from each of the ``2n - 1`` centres until the first mismatching pair finds every
+    palindrome of that kind around the centre. Which kind applies to a window depends only on the set of characters
+    in it, which the expansion has already seen, so each window is accepted without being tested again.
+    """
+    n = len(upper)
+    complement = [_NUCLEOTIDE_COMPLEMENT.get(char, char) for char in upper]
+    spans: List[Tuple[int, int]] = []
+    for centre in range(2 * n - 1):
+        first = centre // 2
+        last = first + centre % 2
+
+        # Plain palindromes mirror equal characters; they count unless the window looks like nucleotides.
+        seen: Set[str] = set()
+        nucleotide = False
+        left, right = first, last
+        while left >= 0 and right < n and upper[left] == upper[right]:
+            if upper[left] not in seen:
+                seen.add(upper[left])
+                nucleotide = _infer_charset_type(seen) in ("DNA", "RNA")
+            if not nucleotide and right - left + 1 >= min_length:
+                spans.append((left, right - left + 1))
+            left -= 1
+            right += 1
+
+        # Reverse-complement palindromes mirror complementary characters; they count if the window looks like
+        # nucleotides.
+        seen = set()
+        nucleotide = False
+        left, right = first, last
+        while left >= 0 and right < n and complement[right] == upper[left] and complement[left] == upper[right]:
+            if upper[left] not in seen or upper[right] not in seen:
+                seen.add(upper[left])
+                seen.add(upper[right])
+                nucleotide = _infer_charset_type(seen) in ("DNA", "RNA")
+            if nucleotide and right - left + 1 >= min_length:
+                spans.append((left, right - left + 1))
+            left -= 1
+            right += 1
+
+    spans.sort()
+    return spans
+
+
 def _find_palindromes(sequence: str, min_length: int = 4) -> List[Dict[str, Any]]:
-    """Find palindromic sequences."""
-    palindromes = []
+    """Find palindromic sequences.
+
+    Reports every substring of at least ``min_length`` characters that :func:`_is_palindrome` accepts (a
+    reverse-complement palindrome for nucleotide-like substrings, a plain palindrome otherwise), ordered by start and
+    then by length. The substrings are found by centre expansion (:func:`_palindrome_spans`) instead of by testing
+    every substring.
+
+    Raises:
+        ValueError: If ``min_length`` is less than 1.
+    """
+    if min_length < 1:
+        raise ValueError(f"min_length must be at least 1, got {min_length}")
+
     seq_len = len(sequence)
+    upper = sequence.upper()
+    if len(upper) == seq_len:
+        return [
+            {"sequence": sequence[start : start + length], "start": start, "length": length}
+            for start, length in _palindrome_spans(upper, min_length)
+        ]
 
-    for i in range(seq_len - min_length + 1):
-        for j in range(min_length, seq_len - i + 1):
-            substring = sequence[i : i + j]
+    # str.upper() lengthened the text (for example "ß" -> "SS"), so mirrored characters of the upper-cased text no
+    # longer line up with the original. Test every substring directly.
+    palindromes: List[Dict[str, Any]] = []
+    for start in range(seq_len - min_length + 1):
+        for length in range(min_length, seq_len - start + 1):
+            substring = sequence[start : start + length]
             if _is_palindrome(substring):
-                palindromes.append(
-                    {
-                        "sequence": substring,
-                        "start": i,
-                        "length": j,
-                    }
-                )
-
+                palindromes.append({"sequence": substring, "start": start, "length": length})
     return palindromes
 
 
@@ -494,8 +602,7 @@ def _is_palindrome(sequence: str) -> bool:
     """Check if sequence is a palindrome."""
     # For DNA/RNA, consider complement
     if _is_nucleotide(sequence):
-        complement = {"A": "T", "T": "A", "C": "G", "G": "C", "U": "A", "N": "N"}
-        complement_seq = "".join(complement.get(c, c) for c in sequence[::-1].upper())
+        complement_seq = "".join(_NUCLEOTIDE_COMPLEMENT.get(c, c) for c in sequence[::-1].upper())
         return sequence.upper() == complement_seq
     else:
         # For proteins or other, simple palindrome check

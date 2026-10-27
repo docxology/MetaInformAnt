@@ -7,6 +7,7 @@ testing, pruning, diameter calculation, and basic statistics.
 
 from __future__ import annotations
 
+import copy
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
@@ -60,21 +61,22 @@ def bootstrap_support(tree: Tree, sequences: Dict[str, str], n_replicates: int =
         method: Tree building method ('nj' or 'upgma')
 
     Returns:
-        Tree with bootstrap support values (0-100)
+        A new tree with bootstrap support values (0-100) on its internal nodes. The input
+        ``tree`` is never modified: its internal-node dictionaries are copied, not shared.
     """
     logger.info(f"Calculating bootstrap support with {n_replicates} replicates")
 
     if not sequences:
-        return tree.copy()
+        return copy.deepcopy(tree)
 
     # Get alignment length
     seq_list = list(sequences.values())
     if not seq_list:
-        return tree.copy()
+        return copy.deepcopy(tree)
     alignment_length = len(seq_list[0])
 
     if alignment_length == 0:
-        return tree.copy()
+        return copy.deepcopy(tree)
 
     # Extract clades from original tree
     original_clades = _extract_clades(tree)
@@ -114,8 +116,9 @@ def bootstrap_support(tree: Tree, sequences: Dict[str, str], n_replicates: int =
             logger.debug(f"Bootstrap replicate {rep} failed: {e}")
             continue
 
-    # Add bootstrap values to tree
-    supported_tree = tree.copy()
+    # Add bootstrap values to a deep copy: a shallow dict.copy() would share the internal-node
+    # dictionaries with the caller's tree and write the support values into it.
+    supported_tree = copy.deepcopy(tree)
 
     def _add_bootstrap_values(node: str, current_clade: Any = None) -> None:
         if isinstance(supported_tree.get(node), dict):
@@ -593,6 +596,8 @@ def _calculate_tree_height(tree: Tree, node: str) -> int:
 
     max_child_height = 0
     for child in tree[node].keys():
+        if child == "bootstrap":
+            continue  # a support value stored in the node, not a child node
         child_height = _calculate_tree_height(tree, child)
         max_child_height = max(max_child_height, child_height)
 

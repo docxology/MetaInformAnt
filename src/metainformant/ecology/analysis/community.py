@@ -175,12 +175,11 @@ def calculate_evenness(abundances: List[float], method: str = "pielou") -> float
         return shannon_h / math.log(richness)
 
     elif method == "simpson":
-        # Simpson's evenness: E = 1/D / S = (1/D) * (1/S)
-        simpson_d = calculate_single_diversity(abundances, "simpson")
-        if simpson_d > 0:
-            return (1.0 / simpson_d) / richness
-        else:
-            return 0.0
+        # Simpson's evenness: E = (1 / lambda) / S with lambda = sum(p_i^2), so a perfectly even
+        # community scores 1. calculate_single_diversity's "simpson" is 1 - lambda.
+        total = sum(positive_abundances)
+        concentration = sum((x / total) ** 2 for x in positive_abundances)
+        return (1.0 / concentration) / richness
 
     return 0.0
 

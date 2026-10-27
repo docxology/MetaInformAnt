@@ -235,3 +235,12 @@ def test_fastq_record_from_string_rejects_malformed() -> None:
         fastq.FastqRecord.from_string("@r1\nACGT\n+\n")
     with pytest.raises(ValueError):
         fastq.FastqRecord.from_string("@r1\nACGT\n-\nIIII\n")
+
+
+def test_quality_medians_are_true_medians(tmp_path: Path) -> None:
+    # Four Q40 and four Q10 scores: the median is 25, not the upper middle value 40.
+    p = tmp_path / "reads.fq"
+    p.write_text("@r1\nACGT\n+\nIIII\n@r2\nGGCC\n+\n++++\n")
+    assert fastq.assess_quality(p)["median_quality"] == 25.0
+    per_base = fastq.calculate_per_base_quality(p)
+    assert [per_base[position]["median_quality"] for position in range(4)] == [25.0] * 4

@@ -297,3 +297,20 @@ class TestRunMethylationWorkflow:
         assert result["statistics"]["total_sites"] == 20
         assert (output_dir / "sampleA_methylation.json").exists()
         assert (output_dir / "methylation_summary.json").exists()
+
+    def test_bismark_cov_file_is_summarised(self, tmp_path: Path) -> None:
+        """A native Bismark .cov file (end coordinate in column 3, unmethylated count in column 6) loads end to end."""
+        input_dir = tmp_path / "input"
+        input_dir.mkdir()
+        lines = [f"chr1\t{1000 + i * 10}\t{1000 + i * 10}\t75.0\t15\t5\n" for i in range(12)]
+        lines.append("chr1\t5000\t5000\t100\t2\t0\n")  # 2 reads: below the default minimum coverage of 5
+        (input_dir / "sampleB.cov").write_text("".join(lines))
+        output_dir = tmp_path / "out"
+
+        result = run_methylation_workflow(input_dir, output_dir, EpigenomeConfig())
+
+        assert result["errors"] == []
+        assert result["statistics"]["total_sites"] == 12
+        summary = result["statistics"]["sample_statistics"][0]["statistics"]
+        assert summary["mean_methylation"] == pytest.approx(0.75)
+        assert summary["mean_coverage"] == pytest.approx(20)

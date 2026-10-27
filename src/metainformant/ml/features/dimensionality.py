@@ -57,7 +57,7 @@ def _scale_features(X: np.ndarray) -> np.ndarray:
     delegating wrapper layer and never standardizes on its own.
     """
     scaler = StandardScaler()
-    return scaler.fit_transform(X)
+    return cast("np.ndarray", scaler.fit_transform(X))
 
 
 def pca_reduction(

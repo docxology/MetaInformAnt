@@ -31,7 +31,7 @@ run_lint() {
 
 run_typecheck() {
     print_status "INFO" "Type checking..."
-    uv run python scripts/quality/check_mypy_budget.py src/metainformant/rna
+    uv run python scripts/quality/check_mypy_budget.py src/metainformant
     print_status "OK" "Type checking completed"
 }
 

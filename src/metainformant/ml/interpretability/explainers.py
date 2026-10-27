@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import math
 import random
-from typing import Any
+from typing import Any, cast
 
 from metainformant.core.utils.logging import get_logger
 from metainformant.ml._numeric import HAS_NUMPY, get_shape, to_1d_list, to_2d_list
@@ -21,7 +21,7 @@ logger = get_logger(__name__)
 try:
     import numpy as np
 except ImportError:
-    np = None
+    np = cast("Any", None)
 
 try:
     from scipy import stats as scipy_stats
@@ -29,7 +29,7 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    scipy_stats = None
+    scipy_stats = cast("Any", None)
 
 
 def _predict_helper(model: Any, X: list[list[float]]) -> list[float]:

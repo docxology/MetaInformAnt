@@ -147,11 +147,23 @@ def load_methylation_bedgraph(path: str | Path, min_coverage: int = 1) -> Dict[s
 
 
 def load_methylation_cov(path: str | Path, min_coverage: int = 1) -> Dict[str, List[MethylationSite]]:
-    """Load methylation data from Bismark coverage format.
+    """Load methylation data from a Bismark coverage (``.cov``) file.
+
+    Reads the tab-separated, header-less layout of a Bismark coverage file (``*.bismark.cov``, as written by
+    ``bismark2bedGraph``), gzip-compressed or not::
+
+        chromosome  start  end  methylation_percentage  count_methylated  count_unmethylated
+
+    ``start`` becomes the site position (as written in the file), and the coverage of a site is
+    ``count_methylated + count_unmethylated``: the line ``chr1  100  100  75.0  15  5`` is 15 methylated reads out
+    of 20, a methylation level of 0.75. The methylation level is computed from the counts; the percentage column is
+    only checked to be a number. A coverage file records no strand, so every site keeps the default strand. Blank
+    lines and lines starting with ``#`` are skipped, and so are malformed ones (logged as warnings), for example
+    lines in an older layout that put a strand symbol in the third column.
 
     Args:
         path: Path to .cov file
-        min_coverage: Minimum read coverage to include
+        min_coverage: Minimum read coverage (methylated + unmethylated reads) to include
 
     Returns:
         Dictionary mapping chromosome names to lists of MethylationSite objects
@@ -176,23 +188,32 @@ def load_methylation_cov(path: str | Path, min_coverage: int = 1) -> Dict[str, L
 
                 try:
                     chromosome = parts[0]
-                    position = int(parts[1])
+                    start = int(parts[1])
+                    end = int(parts[2])
                     float(parts[3])  # Validate percentage column parses as a number
                     methylated_reads = int(parts[4])
-                    total_reads = int(parts[5])
+                    unmethylated_reads = int(parts[5])
+
+                    if start < 0 or end < start:
+                        raise ValueError(f"invalid coordinates start={start}, end={end}")
+                    if methylated_reads < 0 or unmethylated_reads < 0:
+                        raise ValueError("read counts must not be negative")
+                    total_reads = methylated_reads + unmethylated_reads
 
                     if total_reads >= min_coverage:
                         site = MethylationSite(
                             chromosome=chromosome,
-                            position=position,
+                            position=start,
                             methylated_reads=methylated_reads,
                             total_reads=total_reads,
-                            strand=parts[2] if len(parts) > 2 else "+",
                         )
                         methylation_data[chromosome].append(site)
 
                 except (ValueError, IndexError) as e:
-                    logger.warning(f"Error parsing line {line_num}: {e}")
+                    logger.warning(
+                        f"Error parsing line {line_num} (expected Bismark .cov columns chromosome, start, end, "
+                        f"percentage, methylated, unmethylated): {e}"
+                    )
                     continue
 
     except Exception as e:

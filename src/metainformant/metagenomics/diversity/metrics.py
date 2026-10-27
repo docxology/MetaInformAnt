@@ -26,6 +26,7 @@ from __future__ import annotations
 import math
 import random
 from collections import Counter
+from typing import Any, cast
 
 from metainformant.core.utils.logging import get_logger
 
@@ -38,7 +39,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    np = cast(Any, None)  # optional dependency; callers guard on HAS_NUMPY
 
 
 def alpha_diversity(

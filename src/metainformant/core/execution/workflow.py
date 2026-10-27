@@ -144,13 +144,22 @@ def download_and_process_data(
 ) -> Dict[str, Any]:
     """Download data and process it based on configuration.
 
+    Each download is attempted with ``io.download_file`` and recorded under ``results["downloads"][name]`` as
+    ``{"status": "success", "path": ...}`` or ``{"status": "failed", "error": ...}``; failures are also listed
+    in ``results["errors"]``.
+
+    Processing entries are **not executed**. The ``type`` values a ``processing`` section names (``"normalize"``,
+    ``"basic_analysis"``, ...) select no implementation in this package, so nothing is run. Each entry is recorded
+    under ``results["processing"][name]`` as ``{"status": "not_executed", "reason": ..., "config": ...}`` and is
+    also listed in ``results["errors"]``, so a workflow that skipped its processing never reports success.
+
     Args:
         config_data: Configuration dictionary, or a path to a configuration file to load.
         output_dir: Directory to save outputs
         verbose: Verbose logging
 
     Returns:
-        Dictionary with processing results
+        Dictionary with the configuration, the download and processing outcomes, ``errors`` and timing.
     """
     # Handle if config_data is a path (though type hint says dict, implementation should be robust)
     if isinstance(config_data, (str, Path)):
@@ -182,17 +191,17 @@ def download_and_process_data(
             if verbose:
                 logger.info(f"Downloading {name} from {url} to {dest_path}")
 
-            # Simple simulation for tests if no internet or httpbin
-            # In real usage, calling io.download_file
+            # io.download_file reports failure by returning False; it can also raise.
             try:
-                io.download_file(url, dest_path)
-                results["downloads"][name] = {"status": "success", "path": str(dest_path)}
+                failure = None if io.download_file(url, dest_path) else "download_file reported failure"
             except Exception as e:
-                # If network fails (common in tests), capture error but maybe mark as skipped/failed
-                # For test_download_and_process_data, handle failure gracefully
-                # or pass through the HTTP error.
-                # The test expects keys in results even on failure
-                results["downloads"][name] = {"status": "failed", "error": str(e)}
+                failure = str(e)
+            if failure is None:
+                results["downloads"][name] = {"status": "success", "path": str(dest_path)}
+            else:
+                # Record the failure per entry and in ``errors`` so the workflow cannot report success.
+                results["downloads"][name] = {"status": "failed", "error": failure}
+                results["errors"].append(f"Download {name} failed: {failure}")
 
         except Exception as e:
             results["errors"].append(f"Download {name} error: {e}")
@@ -200,11 +209,16 @@ def download_and_process_data(
     # 2. Processing
     processing = config_data.get("processing", {})
     for name, proc_config in processing.items():
-        try:
-            # Placeholder processing logic
-            results["processing"][name] = {"status": "completed", "config": proc_config}
-        except Exception as e:
-            results["errors"].append(f"Processing {name} error: {e}")
+        # No processing implementation exists behind a ``type`` (there is no registry to look one up in), so the
+        # entry cannot be run; say so instead of reporting it as completed.
+        proc_type = proc_config.get("type") if isinstance(proc_config, dict) else None
+        if proc_type:
+            reason = f"no processing implementation exists for type {proc_type!r}"
+        else:
+            reason = "the entry names no 'type' that could select a processing implementation"
+        logger.warning(f"Processing {name} not executed: {reason}")
+        results["processing"][name] = {"status": "not_executed", "reason": reason, "config": proc_config}
+        results["errors"].append(f"Processing {name} not executed: {reason}")
 
     results["end_time"] = time.time()
 

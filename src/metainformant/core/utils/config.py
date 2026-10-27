@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 # Lightweight, optional YAML/TOML support without hard deps
+yaml: Any  # None when PyYAML is unavailable, so ``yaml is None`` checks stay reachable to the type checker
 try:  # pragma: no cover - optional dependency
     import yaml
 except Exception:  # pragma: no cover - optional

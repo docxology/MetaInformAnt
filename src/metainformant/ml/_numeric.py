@@ -7,7 +7,7 @@ These helpers centralize that conversion logic.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 try:
     import numpy as np
@@ -15,7 +15,7 @@ try:
     HAS_NUMPY = True
 except ImportError:  # pragma: no cover - exercised only without numpy
     HAS_NUMPY = False
-    np = None
+    np = cast("Any", None)
 
 
 def to_2d_list(X: Any) -> list[list[float]]:

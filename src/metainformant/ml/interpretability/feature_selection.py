@@ -11,7 +11,7 @@ from __future__ import annotations
 import math
 import random
 from collections import defaultdict
-from typing import Any
+from typing import Any, cast
 
 from metainformant.core.utils.logging import get_logger
 from metainformant.ml._numeric import HAS_NUMPY, get_shape, to_1d_list, to_2d_list
@@ -22,7 +22,7 @@ logger = get_logger(__name__)
 try:
     import numpy as np
 except ImportError:
-    np = None
+    np = cast("Any", None)
 
 try:
     from sklearn.ensemble import RandomForestClassifier

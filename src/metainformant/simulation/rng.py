@@ -25,13 +25,23 @@ def coerce_rng(rng: random.Random | None) -> random.Random:
     return rng
 
 
+def _numpy_seed(value: int) -> int:
+    """Map a draw from ``randint(0, 2**32)`` onto numpy's seed range [0, 2**32).
+
+    ``randint`` includes its upper bound, which ``np.random.seed`` rejects. Every
+    other value passes through unchanged.
+    """
+    return value % 2**32
+
+
 def seed_numpy_from_rng(rng: random.Random) -> None:
     """Seed the legacy global numpy RNG deterministically from *rng*.
 
-    Uses ``rng.randint(0, 2**32)`` — identical to the previous inline idiom at
+    Draws ``rng.randint(0, 2**32)`` — identical to the previous inline idiom at
     every call site — so simulated streams are unchanged for a given rng state.
+    The one draw numpy cannot accept, ``2**32``, maps to 0.
     """
-    np.random.seed(rng.randint(0, 2**32))
+    np.random.seed(_numpy_seed(rng.randint(0, 2**32)))
 
 
 def coerce_and_seed(rng: random.Random | None) -> random.Random:

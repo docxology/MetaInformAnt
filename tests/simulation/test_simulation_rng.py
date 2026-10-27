@@ -16,7 +16,7 @@ import random
 
 import numpy as np
 
-from metainformant.simulation.rng import coerce_and_seed, coerce_rng, seed_numpy_from_rng
+from metainformant.simulation.rng import _numpy_seed, coerce_and_seed, coerce_rng, seed_numpy_from_rng
 
 
 def test_coerce_rng_returns_same_object_when_given() -> None:
@@ -65,3 +65,11 @@ def test_coerce_and_seed_combines_both() -> None:
     np.random.seed(rng_b.randint(0, 2**32))
     second = np.random.randint(0, 1_000_000)
     assert isinstance(first, int) and isinstance(second, int)
+
+
+def test_numpy_seed_maps_only_the_inclusive_upper_bound() -> None:
+    """randint(0, 2**32) can return 2**32, which np.random.seed rejects; nothing else changes."""
+    assert _numpy_seed(2**32) == 0
+    np.random.seed(_numpy_seed(2**32))
+    for value in (0, 1, 123_456_789, 2**32 - 1):
+        assert _numpy_seed(value) == value

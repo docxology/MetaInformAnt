@@ -14,6 +14,7 @@ Uses real files in tmp_path and real implementations only
 
 from __future__ import annotations
 
+import gzip
 from pathlib import Path
 
 import pytest
@@ -56,15 +57,15 @@ def bedgraph_file(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def cov_file(tmp_path: Path) -> Path:
-    """Bismark .cov: chrom, start, strand, percent methylated, count methylated, count total."""
+    """Bismark .cov: chrom, start, end, percent methylated, count methylated, count unmethylated."""
     content = (
-        "# Bismark coverage\n"
-        "chr1\t100\t+\t80.0\t8\t10\n"
-        "chr1\t200\t-\t20.0\t2\t10\n"
-        "chr1\t300\t+\t50.0\t5\t10\n"
-        "chr2\t50\t+\t90.0\t9\t10\n"
+        "# a comment line\n"
+        "chr1\t100\t100\t80.0\t8\t2\n"
+        "chr1\t200\t200\t20.0\t2\t8\n"
+        "chr1\t300\t300\t50.0\t5\t5\n"
+        "chr2\t50\t50\t90.0\t9\t1\n"
         "short\tline\n"
-        "chr2\t150\t-\t10.0\t1\t10\n"
+        "chr2\t150\t150\t10.0\t1\t9\n"
     )
     p = tmp_path / "demo.cov"
     p.write_text(content)
@@ -88,14 +89,13 @@ class TestLoaders:
         with pytest.raises(Exception):
             load_methylation_bedgraph(tmp_path / "missing.bedgraph")
 
-    def test_cov_parses_percent_and_strand(self, cov_file: Path) -> None:
+    def test_cov_parses_bismark_columns(self, cov_file: Path) -> None:
         data = load_methylation_cov(cov_file)
         assert set(data.keys()) == {"chr1", "chr2"}
         first = data["chr1"][0]
         assert first.position == 100
-        assert first.strand == "+"
         assert first.methylated_reads == 8
-        assert first.total_reads == 10
+        assert first.total_reads == 10  # 8 methylated + 2 unmethylated
         assert first.methylation_level == pytest.approx(0.8)
         # 'short\tline' skipped; chr2 has 2 valid sites.
         assert len(data["chr2"]) == 2
@@ -103,6 +103,104 @@ class TestLoaders:
     def test_cov_min_coverage_filter(self, cov_file: Path) -> None:
         data = load_methylation_cov(cov_file, min_coverage=20)
         assert data == {}
+
+
+class TestBismarkCovLayout:
+    """``load_methylation_cov`` must read the real Bismark layout, not an invented one.
+
+    A Bismark coverage file is tab-separated with no header and the columns
+    ``chromosome, start, end, methylation percentage, count methylated, count unmethylated``. The loader used to
+    read column 3 as a strand and column 6 as the *total*, so ``chr1 100 100 75.0 15 5`` aborted the whole load
+    ("total_reads must be >= 15, got 5") and a minority-methylated site such as ``chr1 200 200 25.0 5 15`` was
+    silently read as 15 reads instead of 20.
+    """
+
+    @staticmethod
+    def _write(tmp_path: Path, text: str, name: str = "sample.cov") -> Path:
+        path = tmp_path / name
+        path.write_text(text)
+        return path
+
+    def test_total_is_methylated_plus_unmethylated(self, tmp_path: Path) -> None:
+        data = load_methylation_cov(self._write(tmp_path, "chr1\t100\t100\t75.0\t15\t5\n"))
+
+        (site,) = data["chr1"]
+        assert site.position == 100
+        assert site.methylated_reads == 15
+        assert site.total_reads == 20
+        assert site.coverage == 20
+        assert site.methylation_level == pytest.approx(0.75)
+
+    def test_minority_methylated_site_keeps_its_unmethylated_reads(self, tmp_path: Path) -> None:
+        data = load_methylation_cov(self._write(tmp_path, "chr1\t200\t200\t25.0\t5\t15\n"))
+
+        (site,) = data["chr1"]
+        assert (site.methylated_reads, site.total_reads) == (5, 20)
+        assert site.methylation_level == pytest.approx(0.25)
+
+    def test_reads_a_multi_chromosome_file_in_bismark_form(self, tmp_path: Path) -> None:
+        # real-looking records: per-cytosine lines (end == start), a merged CpG (end == start + 1), a fractional percent
+        text = (
+            "chr1\t10470\t10470\t66.666667\t2\t1\n"
+            "chr1\t10468\t10468\t100\t3\t0\n"
+            "chr1\t10471\t10472\t0\t0\t7\n"
+            "chr2\t5\t5\t50\t1\t1\n"
+        )
+        data = load_methylation_cov(self._write(tmp_path, text))
+
+        assert sorted(data) == ["chr1", "chr2"]
+        # sites are sorted by position within a chromosome
+        assert [(s.position, s.methylated_reads, s.total_reads) for s in data["chr1"]] == [
+            (10468, 3, 3),
+            (10470, 2, 3),
+            (10471, 0, 7),
+        ]
+        assert [s.methylation_level for s in data["chr1"]] == pytest.approx([1.0, 2 / 3, 0.0])
+        assert [(s.position, s.methylated_reads, s.total_reads) for s in data["chr2"]] == [(5, 1, 2)]
+
+    def test_gzipped_bismark_file(self, tmp_path: Path) -> None:
+        path = tmp_path / "sample.bismark.cov.gz"
+        with gzip.open(path, "wt") as handle:
+            handle.write("chr1\t100\t100\t75.0\t15\t5\nchr1\t200\t200\t25.0\t5\t15\n")
+
+        data = load_methylation_cov(path)
+
+        assert [(s.position, s.total_reads) for s in data["chr1"]] == [(100, 20), (200, 20)]
+
+    def test_min_coverage_counts_methylated_and_unmethylated_reads(self, tmp_path: Path) -> None:
+        path = self._write(tmp_path, "chr1\t100\t100\t75.0\t15\t5\n")
+
+        assert load_methylation_cov(path, min_coverage=20)["chr1"][0].total_reads == 20
+        assert load_methylation_cov(path, min_coverage=21) == {}
+
+    def test_a_coverage_file_has_no_strand(self, tmp_path: Path) -> None:
+        # the strand used to be read from column 3, which in this format is the end coordinate
+        data = load_methylation_cov(self._write(tmp_path, "chr1\t100\t100\t75.0\t15\t5\n"))
+
+        assert data["chr1"][0].strand == MethylationSite("chr1", 100, 15, 20).strand
+
+    def test_older_strand_layout_is_skipped_rather_than_misread(self, tmp_path: Path) -> None:
+        # chromosome, position, strand, percentage, methylated, total: the third column is not an end coordinate
+        data = load_methylation_cov(self._write(tmp_path, "chr1\t100\t+\t80.0\t8\t10\nchr1\t200\t-\t20.0\t2\t10\n"))
+
+        assert data == {}
+
+    @pytest.mark.parametrize(
+        "bad_line",
+        [
+            "chr1\t100\t100\tabc\t15\t5",  # percentage is not a number
+            "chr1\t100\t100\t75.0\t15.5\t5",  # counts are integers
+            "chr1\t100\t100\t75.0\t-1\t5",  # negative methylated count
+            "chr1\t100\t100\t75.0\t15\t-5",  # negative unmethylated count
+            "chr1\t100\t99\t75.0\t15\t5",  # end before start
+            "chr1\t-4\t-4\t75.0\t15\t5",  # negative position
+            "chr1\t100\t100\t75.0\t15",  # a column short
+        ],
+    )
+    def test_malformed_lines_are_skipped_and_the_rest_still_loads(self, tmp_path: Path, bad_line: str) -> None:
+        data = load_methylation_cov(self._write(tmp_path, f"{bad_line}\nchr1\t300\t300\t50.0\t5\t5\n"))
+
+        assert [(s.position, s.total_reads) for s in data["chr1"]] == [(300, 10)]
 
 
 class TestBedgraphRoundTrip:

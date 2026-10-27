@@ -22,13 +22,18 @@ def is_within(path: str | Path, parent: str | Path) -> bool:
         return False
 
 
-def ensure_directory(path: Path) -> None:
+def ensure_directory(path: str | Path) -> Path:
     """Create directory and any missing parent directories.
 
     Args:
         path: Directory path to create
+
+    Returns:
+        The directory as a ``Path``, like :func:`metainformant.core.io.ensure_directory`
     """
-    path.mkdir(parents=True, exist_ok=True)
+    directory = Path(path)
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory
 
 
 def prepare_file_path(file_path: Path) -> None:

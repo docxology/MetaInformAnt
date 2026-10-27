@@ -9,6 +9,7 @@ and filtering, FRiP quality metrics, and differential peak analysis.
 from __future__ import annotations
 
 import math
+from typing import Any, cast
 
 from metainformant.core.utils import logging
 
@@ -22,7 +23,7 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    scipy_stats = None
+    scipy_stats = cast(Any, None)  # optional dependency; callers guard on HAS_SCIPY
 
 
 # ---------------------------------------------------------------------------
@@ -935,5 +936,5 @@ def _compute_differential_pvalue(
 
     z = abs(mean_a - mean_b) / se
     # Approximate two-sided p-value from z-score
-    pval = 2.0 * (1.0 - 0.5 * (1.0 + math.erf(z / math.sqrt(2.0))))
-    return max(0.0, min(1.0, pval))
+    p_approx = 2.0 * (1.0 - 0.5 * (1.0 + math.erf(z / math.sqrt(2.0))))
+    return max(0.0, min(1.0, p_approx))

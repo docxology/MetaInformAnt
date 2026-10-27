@@ -110,13 +110,13 @@ def expectation(values: List[float], weights: List[float] | None = None) -> floa
 
 
 def variance(values: List[float]) -> float:
-    """Calculate variance.
+    """Calculate the sample variance (denominator n - 1).
 
     Args:
         values: List of values
 
     Returns:
-        Variance
+        Sample variance, or 0.0 for fewer than two values
     """
     if len(values) < 2:
         return 0.0
@@ -125,14 +125,17 @@ def variance(values: List[float]) -> float:
 
 
 def covariance(x: List[float], y: List[float]) -> float:
-    """Calculate covariance between two lists.
+    """Calculate the population covariance (denominator n) between two lists.
+
+    The Price equation's selection term uses this population moment, so unlike
+    :func:`variance` it is not the sample estimate.
 
     Args:
         x: First list of values
         y: Second list of values
 
     Returns:
-        Covariance
+        Population covariance, or 0.0 for fewer than two values
     """
     if len(x) != len(y):
         raise ValueError("Lists must have same length")

@@ -74,6 +74,10 @@ class TestEnsureDirectory:
         assert new_dir.exists()
         assert new_dir.is_dir()
 
+    def test_ensure_directory_returns_the_path(self, tmp_path: Path) -> None:
+        created = core_paths.ensure_directory(str(tmp_path / "x" / "y"))
+        assert created == tmp_path / "x" / "y" and created.is_dir()
+
     def test_ensure_directory_existing(self, tmp_path: Path) -> None:
         """Test with existing directory (should not error)."""
         existing = tmp_path / "existing"

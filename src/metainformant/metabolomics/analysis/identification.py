@@ -7,6 +7,7 @@ normalizing intensity data, and performing differential abundance analysis.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any, cast
 
 import numpy as np
 
@@ -15,7 +16,7 @@ try:
 
     HAS_SCIPY = True
 except ImportError:  # pragma: no cover - scipy is optional
-    _scipy_stats = None
+    _scipy_stats = cast(Any, None)
     HAS_SCIPY = False
 
 
@@ -204,7 +205,7 @@ def differential_abundance(
         if n_b > 1:
             denom = denom + vb**2 / (n_b - 1)
         df = np.where(denom > 0, se2**2 / np.where(denom > 0, denom, 1.0), np.inf)
-        p_values = 2.0 * _scipy_stats.t.sf(np.abs(t_stats), df)
+        p_values = 2.0 * np.asarray(_scipy_stats.t.sf(np.abs(t_stats), df))
     else:
         # Normal approximation fallback when scipy is unavailable
         p_values = 2.0 * _normal_sf(np.abs(t_stats))
