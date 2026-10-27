@@ -35,6 +35,6 @@ from metainformant.dna.annotation import gene_prediction, functional
 
 orfs = gene_prediction.predict_orfs(sequence)
 regions = gene_prediction.annotate_coding_regions(sequence)
-variants = functional.annotate_variants(ref_seq, alt_seq, position)
+variants = functional.annotate_variants([{"pos": 10, "ref": "A", "alt": "G"}], ref_seq)
 impact = functional.predict_variant_impact(ref_aa, alt_aa)
 ```

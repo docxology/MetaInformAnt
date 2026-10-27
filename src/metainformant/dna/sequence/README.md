@@ -25,7 +25,7 @@ Core DNA sequence operations: FASTA I/O, composition analysis, consensus calling
 | `melting_temperature()` | Estimate Tm using nearest-neighbor or Wallace method |
 | `generate_consensus()` | Majority-rule consensus from aligned sequences |
 | `consensus_with_ambiguity()` | Consensus using full IUPAC ambiguity codes |
-| `bootstrap_consensus()` | Consensus with bootstrap confidence values |
+| `bootstrap_consensus()` | Consensus with bootstrap confidence values; keyword-only `random_state` (an int or a `random.Random`) makes the resampling reproducible, `None` uses the global `random` state |
 | `count_kmers()` | Count all k-mers of a given length in a sequence |
 | `find_microsatellites()` | Detect short tandem repeats (microsatellites) |
 | `create_pwm()` | Build a position weight matrix from aligned motif instances |

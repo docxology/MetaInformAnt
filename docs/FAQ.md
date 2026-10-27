@@ -239,7 +239,7 @@ mi = syntactic.mutual_information(feature1, feature2)
 
 # Semantic: Biological meaning
 ic = semantic.information_content(annotations, term)
-similarity = semantic.semantic_similarity(term1, term2, ic_dict)
+similarity = semantic.semantic_similarity(term1, term2, ic_dict, hierarchy)  # hierarchy: term -> set of ancestors
 ```
 
 **Q: Why are my entropy calculations different from other tools?**

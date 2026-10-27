@@ -30,7 +30,7 @@ Terminal-based menu display, navigation, and user interaction for the interactiv
 from metainformant.menu.ui.navigation import MenuSystem, navigate_to_submenu
 from metainformant.menu.ui.display import show_menu, format_breadcrumb
 
-menu_system = MenuSystem(root_menu)
-navigate_to_submenu(menu_system, "rna_workflows")
+menu_system = MenuSystem(menus={root_menu.id: root_menu, rna_menu.id: rna_menu}, current_menu_id=root_menu.id)
+navigate_to_submenu(menu_system, rna_menu.id)
 breadcrumb = format_breadcrumb(["Home", "RNA", "Workflows"])
 ```

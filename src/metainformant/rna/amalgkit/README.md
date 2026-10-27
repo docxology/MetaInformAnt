@@ -57,7 +57,7 @@ from metainformant.rna.amalgkit import (
 cmd = build_amalgkit_command("quant", {"out_dir": "work", "threads": 4})
 
 # Run a step
-result = run_amalgkit("quant", AmalgkitParams(out_dir="work", threads=4))
+result = run_amalgkit("quant", AmalgkitParams(work_dir="work", threads=4))
 ```
 
 ## Related

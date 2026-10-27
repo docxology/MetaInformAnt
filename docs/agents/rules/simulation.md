@@ -50,11 +50,13 @@ mutated = mutate_sequence(seq, n_mut=10, rng=rng)
 **Patterns**:
 ```python
 # Import from actual path
-from metainformant.simulation.models.agents import Agent, GridWorld
+import random
 
-world = GridWorld(width=100, height=100)
-agent = Agent(world, x=50, y=50)
-agent.move(dx=1, dy=0)
+from metainformant.simulation.models.agents import GridWorld
+
+world = GridWorld(width=100, height=100, num_agents=20, rng=random.Random(0))
+agent = world.add_agent(x=50, y=50)
+summary = world.step()
 ```
 
 ### RNA (`rna`)
@@ -67,13 +69,18 @@ agent.move(dx=1, dy=0)
 **Patterns**:
 ```python
 # Import from actual path
+import random
+
+import numpy as np
+
 from metainformant.simulation.models.rna import simulate_counts_negative_binomial
 
 counts = simulate_counts_negative_binomial(
-    n_genes=1000,
     n_samples=10,
-    mean_expression=5.0,
-    dispersion=0.5
+    n_features=1000,
+    means=np.full(1000, 5.0),
+    dispersions=np.full(1000, 0.5),
+    rng=random.Random(0),
 )
 ```
 

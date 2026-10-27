@@ -32,5 +32,5 @@ Protein domain detection, scanning, and family classification. Identifies struct
 from metainformant.protein.domains import detection, classification
 
 domains = detection.scan_domains(sequence, profiles)
-family = classification.classify_protein_family(domain_list)
+family = classification.classify_protein_family(domains, sequence)
 ```

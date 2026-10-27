@@ -23,9 +23,11 @@ Pipeline orchestration engine that manages multi-phase workflows with sample-lev
 ## Usage
 
 ```python
-from metainformant.core.engine.workflow_manager import WorkflowManager, PipelineItem
+from pathlib import Path
 
-manager = WorkflowManager(config=workflow_config, output_dir="output/run1")
-items = [PipelineItem(sample_id=sid, metadata=meta) for sid, meta in samples.items()]
-manager.run(items)
+from metainformant.core.engine.workflow_manager import WorkflowManager
+
+manager = WorkflowManager(config_path=Path("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml"), max_threads=4)
+items = [manager.add_item(sample_id, metadata) for sample_id, metadata in samples.items()]
+results = manager.run()  # {item_id: succeeded}
 ```

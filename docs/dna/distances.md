@@ -21,8 +21,8 @@ p_dist = distances.p_distance("ATCG", "ATGG")  # 0.25
 # Jukes-Cantor 69 model distance  
 jc_dist = distances.jc69_distance("ATCG", "ATGG")
 
-# K-mer based distance
-kmer_dist = distances.kmer_distance("ATCGATCG", "GCTAGCTA", k=3, metric="cosine")
+# K-mer based distance (cosine distance between k-mer frequency vectors)
+kmer_dist = distances.kmer_distance("ATCGATCG", "GCTAGCTA", k=3)
 
 # Distance matrix for multiple sequences
 id_to_seq = {"A": "ATCG", "B": "GCTA", "C": "AAAA"}

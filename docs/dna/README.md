@@ -59,4 +59,4 @@ from metainformant.dna import ...
 DNA modules form the basis of several end-to-end workflows:
 - **[GWAS Pipeline](../gwas/README.md)**: Genome-Wide Association Studies (Sequence variants to Phenotypes).
 - **[eQTL Integration Pipeline](../eqtl/README.md)**: Integrating DNA variants with RNA-seq expression data.
-- **[Simulation Pipelines](../simulation/README.md)**: Forward-time population genetics simulations.
+- **[Simulation Pipelines](../simulation/README.md)**: Coalescent (backward-time) population genetics simulations.
