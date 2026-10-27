@@ -9,6 +9,7 @@ Predefined color palettes and themes for consistent, publication-ready biologica
 | `__init__.py` | Re-exports `palettes` and `themes` modules |
 | `palettes.py` | Color palettes for chromosomes, expression, significance, and categories |
 | `themes.py` | Matplotlib theme definitions (publication, presentation) with context manager |
+| `figures.py` | `root_figure()`: the savable root `Figure` of an axes, including axes drawn inside a `SubFigure` |
 
 ## Key Functions
 

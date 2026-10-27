@@ -31,6 +31,15 @@ STRAIN_PALETTE = {"C": "#2196F3", "I": "#FF9800", "M": "#4CAF50", "R": "#F44336"
 # ── Internal helpers ────────────────────────────────────────────────────
 
 
+def _root_figure(ax: plt.Axes) -> plt.Figure:
+    """Return the root Figure *ax* is drawn on.
+
+    ``ax.figure`` is a SubFigure (which has no ``savefig``) when the caller's axes was created
+    through ``fig.subfigures(...)``; the plot functions promise a ``plt.Figure``.
+    """
+    return ax.figure.figure
+
+
 def _add_stats_textbox(
     ax: plt.Axes,
     text: Optional[str],
@@ -309,7 +318,7 @@ def plot_boxplot_with_swarm(
             title_fontsize=13,
         )
 
-    return ax.figure
+    return _root_figure(ax)
 
 
 def plot_violin(
@@ -400,7 +409,7 @@ def plot_violin(
             title_fontsize=14,
         )
 
-    return ax.figure
+    return _root_figure(ax)
 
 
 def plot_regression_scatter(
@@ -553,7 +562,8 @@ def plot_categorical_proportions(
         fig, ax = plt.subplots(figsize=(12, 6))
 
     bottom = np.zeros(len(proportions))
-    colors = list(plt.get_cmap("tab20").colors)
+    tab20 = plt.get_cmap("tab20")
+    colors = [tab20(i) for i in range(tab20.N)]
     groups = proportions.index.astype(str).tolist()
     cats = proportions.columns.tolist()
     x_pos = np.arange(len(groups))
@@ -593,7 +603,7 @@ def plot_categorical_proportions(
         tick.set_rotation(45)
         tick.set_horizontalalignment("right")
 
-    return ax.figure
+    return _root_figure(ax)
 
 
 def plot_interaction(
@@ -852,4 +862,4 @@ def plot_correlation_heatmap(
                 color="gray",
             )
 
-        return ax.figure
+        return _root_figure(ax)

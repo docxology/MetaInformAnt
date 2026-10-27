@@ -395,7 +395,7 @@ class TestPathwayActivityScore:
         net = self._network()
         assert pathway_activity_score(net, "P", expr, method="max") == 4.0
         assert pathway_activity_score(net, "P", expr, method="sum") == 10.0
-        assert pathway_activity_score(net, "P", expr, method="median") == 3.0
+        assert pathway_activity_score(net, "P", expr, method="median") == 2.5
 
     def test_missing_expression_genes_skipped(self) -> None:
         expr = {"g1": 10.0}

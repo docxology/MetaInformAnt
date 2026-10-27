@@ -2,7 +2,9 @@
 
 Provides interactive HTML-exportable versions of common plot types.
 When Plotly is unavailable the functions fall back to static matplotlib
-figures with a logged warning.
+figures with a logged warning. An HTML ``output_path`` needs Plotly, so
+without it the functions raise ``ImportError`` instead of writing a static
+image under an HTML name; any other ``output_path`` is saved as a static image.
 """
 
 from __future__ import annotations
@@ -13,6 +15,7 @@ from typing import Any, Dict, List
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.axes import Axes
 
 from metainformant.core.io import paths
 from metainformant.core.utils import logging
@@ -29,10 +32,53 @@ except ImportError:
     px = None
     HAS_PLOTLY = False
 
+_HTML_SUFFIXES = (".html", ".htm")
+
+
+def _require_plotly_for_html(output_path: str | Path | None) -> None:
+    """Refuse an HTML export that the static fallback cannot honour.
+
+    matplotlib has no HTML writer, so without Plotly an ``.html`` path used to fail deep inside ``savefig`` with
+    ``ValueError: Format 'html' is not supported``. Call this before any work is done: it raises a clear
+    ``ImportError`` that names Plotly, and leaves no figure, file or directory behind.
+
+    Raises:
+        ImportError: If Plotly is not installed and ``output_path`` is an HTML file.
+    """
+    if HAS_PLOTLY or not output_path or Path(output_path).suffix.lower() not in _HTML_SUFFIXES:
+        return
+    raise ImportError(
+        f"Plotly is required to write the interactive HTML file {str(output_path)!r}; install it with "
+        "'uv pip install plotly', or pass a static image path (for example .png or .svg) to export the "
+        "matplotlib fallback."
+    )
+
 
 # ---------------------------------------------------------------------------
 # Interactive scatter
 # ---------------------------------------------------------------------------
+
+
+def _scatter_by_category(ax: Axes, x: pd.Series, y: pd.Series, categories: pd.Series, *, legend_title: str) -> None:
+    """Scatter *x* against *y* with one coloured series per category and a legend.
+
+    Mirrors the discrete colouring Plotly gives a non-numeric column. Categories
+    keep their order of first appearance, and rows with a missing category are
+    drawn grey as "missing" rather than dropped.
+    """
+    from ..config import palettes
+
+    xs, ys = x.to_numpy(), y.to_numpy()
+    values = categories.astype(object).to_numpy()
+    present = categories.notna().to_numpy()
+    labels = list(dict.fromkeys(values[present]))
+    for label, color in zip(labels, palettes.categorical(len(labels))):
+        mask = present & (values == label)
+        ax.scatter(xs[mask], ys[mask], color=color, alpha=0.7, label=str(label))
+    if not present.all():
+        ax.scatter(xs[~present], ys[~present], color="#9E9E9E", alpha=0.7, label="missing")
+    if ax.get_legend_handles_labels()[0]:  # an empty frame has nothing to label
+        ax.legend(title=legend_title)
 
 
 def interactive_scatter(
@@ -52,15 +98,22 @@ def interactive_scatter(
         data: DataFrame with columns for axes.
         x: Column name for x-axis.
         y: Column name for y-axis.
-        color: Column for color encoding.
+        color: Column for color encoding. Without Plotly, a numeric column is
+            drawn as a continuous colour scale and any other column as one
+            coloured series per category with a legend.
         size: Column for size encoding.
         hover_data: Extra columns shown on hover.
         title: Figure title.
-        output_path: Path to save (HTML if Plotly, PNG otherwise).
+        output_path: Path to save. HTML with Plotly; without Plotly a static image
+            (such as PNG), and an HTML path raises ``ImportError``.
 
     Returns:
         Plotly Figure or matplotlib Axes.
+
+    Raises:
+        ImportError: If ``output_path`` is an HTML file and Plotly is not installed.
     """
+    _require_plotly_for_html(output_path)
     if HAS_PLOTLY:
         fig = px.scatter(
             data,
@@ -85,7 +138,11 @@ def interactive_scatter(
     logger.warning("Plotly not available, falling back to static scatter")
     fig_m, ax = plt.subplots(figsize=(8, 6))
     c = data[color] if color and color in data.columns else None
-    ax.scatter(data[x], data[y], c=c, alpha=0.7)
+    if c is not None and not pd.api.types.is_numeric_dtype(c):
+        # matplotlib would read the strings as colour names; give each category its own colour instead
+        _scatter_by_category(ax, data[x], data[y], c, legend_title=str(color))
+    else:
+        ax.scatter(data[x], data[y], c=c, alpha=0.7)
     ax.set_xlabel(x)
     ax.set_ylabel(y)
     ax.set_title(title)
@@ -117,11 +174,16 @@ def interactive_heatmap(
         y_labels: Row labels.
         colorscale: Plotly colorscale name.
         title: Figure title.
-        output_path: Path to save.
+        output_path: Path to save. Without Plotly an HTML path raises ``ImportError``
+            and any other path is saved as a static image.
 
     Returns:
         Plotly Figure or matplotlib Axes.
+
+    Raises:
+        ImportError: If ``output_path`` is an HTML file and Plotly is not installed.
     """
+    _require_plotly_for_html(output_path)
     if isinstance(data, pd.DataFrame):
         z = data.values
         x_labels = x_labels or list(data.columns)
@@ -182,11 +244,16 @@ def interactive_volcano(
         fc_threshold: Absolute fold-change threshold for significance.
         p_threshold: P-value threshold for significance.
         title: Figure title.
-        output_path: Path to save.
+        output_path: Path to save. Without Plotly an HTML path raises ``ImportError``
+            and any other path is saved as a static image.
 
     Returns:
         Plotly Figure or matplotlib Axes.
+
+    Raises:
+        ImportError: If ``output_path`` is an HTML file and Plotly is not installed.
     """
+    _require_plotly_for_html(output_path)
     df = data.copy()
     df["neg_log10_p"] = -np.log10(np.clip(df[pvalue_col].values, 1e-300, 1))
     df["significance"] = "Not Significant"
@@ -271,11 +338,16 @@ def interactive_manhattan(
         significance_threshold: Genome-wide significance line.
         suggestive_threshold: Suggestive significance line.
         title: Figure title.
-        output_path: Path to save.
+        output_path: Path to save. Without Plotly an HTML path raises ``ImportError``
+            and any other path is saved as a static image.
 
     Returns:
         Plotly Figure or matplotlib Axes.
+
+    Raises:
+        ImportError: If ``output_path`` is an HTML file and Plotly is not installed.
     """
+    _require_plotly_for_html(output_path)
     df = data.copy()
     df["neg_log10_p"] = -np.log10(np.clip(df[pvalue_col].values, 1e-300, 1))
 

@@ -18,6 +18,7 @@ from metainformant.core.data import validation
 from metainformant.core.io import paths
 from metainformant.core.utils import logging
 from metainformant.visualization.config.conventions import save_figure_deterministic
+from metainformant.visualization.config.figures import root_figure
 
 logger = logging.get_logger(__name__)
 
@@ -72,7 +73,7 @@ def plot_network_basic(G: Any, *, ax: Axes | None = None, output_path: str | Pat
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(root_figure(ax), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Basic network plot saved to {output_path}")
 
     return ax
@@ -121,7 +122,7 @@ def plot_network_circular(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(root_figure(ax), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Circular network plot saved to {output_path}")
 
     return ax
@@ -196,7 +197,7 @@ def plot_network_hierarchical(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(root_figure(ax), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Hierarchical network plot saved to {output_path}")
 
     return ax
@@ -245,7 +246,7 @@ def plot_network_force_directed(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(root_figure(ax), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Force-directed network plot saved to {output_path}")
 
     return ax
@@ -332,7 +333,7 @@ def plot_community_network(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(root_figure(ax), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Community network plot saved to {output_path}")
 
     return ax

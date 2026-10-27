@@ -17,6 +17,7 @@ from matplotlib.axes import Axes
 from metainformant.core.io import paths
 from metainformant.core.utils import logging
 from metainformant.visualization.config.conventions import save_figure_deterministic
+from metainformant.visualization.config.figures import root_figure
 
 logger = logging.get_logger(__name__)
 
@@ -82,7 +83,7 @@ def plot_phylo_tree(tree: Any, *, ax: Axes | None = None, output_path: str | Pat
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(root_figure(ax), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Phylogenetic tree plot saved to {output_path}")
 
     return ax
@@ -139,7 +140,7 @@ def circular_tree_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(root_figure(ax), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Circular phylogenetic tree plot saved to {output_path}")
 
     return ax
@@ -195,7 +196,7 @@ def unrooted_tree_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(root_figure(ax), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Unrooted phylogenetic tree plot saved to {output_path}")
 
     return ax
@@ -246,7 +247,7 @@ def tree_comparison_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(axes[0].figure, output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(root_figure(axes[0]), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Tree comparison plot saved to {output_path}")
 
     return cast("Axes", axes[0])  # Return first axes for consistency
@@ -340,7 +341,7 @@ def tree_annotation_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(root_figure(ax), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Annotated phylogenetic tree plot saved to {output_path}")
 
     return ax
@@ -459,38 +460,35 @@ def _hierarchical_tree_layout(G: nx.DiGraph) -> Dict[str, Tuple[float, float]]:
 
 
 def _circular_tree_layout(G: nx.DiGraph) -> Dict[str, Tuple[float, float]]:
-    """Create a circular layout for phylogenetic trees."""
-    pos = {}
+    """Create a circular layout for phylogenetic trees.
 
-    # Get leaves (nodes with no outgoing edges)
+    Leaves (nodes without children) are spaced evenly on the unit circle. Every
+    internal node is placed at 0.7 times the centroid of its children, which
+    pulls it toward the centre. Nodes are visited children-first, so a node is
+    positioned only once all of its children are, whatever order they were added
+    to *G* in. This is a basic layout - real phylogenetic layouts are more complex.
+
+    Raises:
+        networkx.NetworkXUnfeasible: If *G* contains a cycle (it is not a tree).
+    """
+    pos: Dict[str, Tuple[float, float]] = {}
+
+    # Get leaves (nodes with no outgoing edges) and arrange them on the circle
     leaves = [n for n in G.nodes() if G.out_degree(n) == 0]
-
-    # Arrange leaves in a circle
     n_leaves = len(leaves)
-    angles = [2 * 3.14159 * i / n_leaves for i in range(n_leaves)]
+    for i, leaf in enumerate(leaves):
+        angle = 2 * np.pi * i / n_leaves
+        pos[leaf] = (float(np.cos(angle)), float(np.sin(angle)))
 
-    # Position leaves on circle
-    radius = 1.0
-    for leaf, angle in zip(leaves, angles):
-        pos[leaf] = (radius * np.cos(angle), radius * np.sin(angle))
-
-    # Position internal nodes (simplified)
-    # This is a basic implementation - real phylogenetic layouts are more complex
-    internal_nodes = [n for n in G.nodes() if n not in leaves]
-    for node in internal_nodes:
-        # Position at centroid of children
-        children = list(G.successors(node))
-        if children:
-            child_positions = [pos[child] for child in children if child in pos]
-            if child_positions:
-                avg_x = np.mean([p[0] for p in child_positions])
-                avg_y = np.mean([p[1] for p in child_positions])
-                # Move internal nodes inward
-                dist_from_center = np.sqrt(avg_x**2 + avg_y**2)
-                if dist_from_center > 0:
-                    scale = 0.7  # Move closer to center
-                    pos[node] = (avg_x * scale, avg_y * scale)
-                else:
-                    pos[node] = (avg_x, avg_y)
+    # Reverse topological order puts every child before its parent, so each
+    # internal node finds all of its children already positioned.
+    for node in reversed(list(nx.topological_sort(G))):
+        if node in pos:
+            continue
+        child_positions = [pos[child] for child in G.successors(node)]
+        avg_x = float(np.mean([p[0] for p in child_positions]))
+        avg_y = float(np.mean([p[1] for p in child_positions]))
+        # Move internal nodes inward
+        pos[node] = (avg_x * 0.7, avg_y * 0.7)
 
     return pos

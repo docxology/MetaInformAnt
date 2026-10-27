@@ -209,3 +209,9 @@ class TestSaveAndReport:
     def test_report_without_output_path(self, records):
         report = generate_antwiki_report(records)
         assert "Total Records: 3" in report
+
+
+def test_phenotype_distribution_median_is_the_true_median() -> None:
+    lengths = [4.0, 6.0, 9.0, 12.0]
+    records = [_record(f"sp{i}", "Camponotus", morphology={"body_length_mm": v}) for i, v in enumerate(lengths)]
+    assert get_phenotype_distribution(records, "body_length")["median"] == 7.5

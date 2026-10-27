@@ -8,6 +8,7 @@ validation.
 
 from __future__ import annotations
 
+import statistics
 from pathlib import Path
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union, cast
 
@@ -689,14 +690,12 @@ def get_network_summary(graph: Any) -> Dict[str, Any]:
                 "median": float(np.median(degrees)),
             }
         else:
-            sorted_degrees = sorted(degrees)
-            n = len(sorted_degrees)
             summary["degree_stats"] = {
                 "mean": sum(degrees) / len(degrees),
-                "std": 0.0,
+                "std": statistics.pstdev(degrees),  # population SD, as np.std
                 "min": min(degrees),
                 "max": max(degrees),
-                "median": float(sorted_degrees[n // 2]),
+                "median": float(statistics.median(degrees)),
             }
 
         # Connected components

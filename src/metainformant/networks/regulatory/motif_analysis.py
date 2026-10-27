@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import math
 from collections import Counter
+from typing import Any, cast
 
 from metainformant.core.sequence import reverse_complement
 from metainformant.core.utils.logging import get_logger
@@ -23,7 +24,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    np = cast("Any", None)
 
 # Nucleotide constants
 NUCLEOTIDES = ["A", "C", "G", "T"]

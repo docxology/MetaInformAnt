@@ -7,6 +7,7 @@ analysis, and pathway visualization in biological networks.
 from __future__ import annotations
 
 import math
+import statistics
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
@@ -34,16 +35,31 @@ except ImportError:
 
 def _benjamini_hochberg(p_values: List[float]) -> List[float]:
     """Apply Benjamini-Hochberg FDR correction, capped at 1.0 and monotone."""
-    sorted_indices = sorted(range(len(p_values)), key=lambda i: p_values[i])
-    corrected_p_values = [1.0] * len(p_values)
-    for i, idx in enumerate(sorted_indices):
-        rank = i + 1
-        corrected_p = min(p_values[idx] * len(p_values) / rank, 1.0)
-        # Ensure monotonicity
-        if i > 0:
-            corrected_p = min(corrected_p, corrected_p_values[sorted_indices[i - 1]])
-        corrected_p_values[idx] = corrected_p
+    n_tests = len(p_values)
+    sorted_indices = sorted(range(n_tests), key=lambda i: p_values[i])
+    corrected_p_values = [1.0] * n_tests
+    # Walk from the largest p-value down: each adjusted value is the smaller of
+    # p * m / rank and the adjusted value of the next larger rank, so the result
+    # never decreases as the raw p-value grows.
+    running_min = 1.0
+    for rank in range(n_tests, 0, -1):
+        idx = sorted_indices[rank - 1]
+        running_min = min(running_min, p_values[idx] * n_tests / rank)
+        corrected_p_values[idx] = running_min
     return corrected_p_values
+
+
+def _sample_odds_ratio(a: int, b: int, c: int, d: int) -> float:
+    """Sample odds ratio ``(a * d) / (b * c)`` of the 2x2 table ``[[a, b], [c, d]]``.
+
+    Follows ``scipy.stats.fisher_exact``: ``inf`` when ``b * c`` is zero but
+    ``a * d`` is not (for example when every pathway gene is in the query, so
+    ``c`` is zero), and ``nan`` when both are zero.
+    """
+    numerator, denominator = a * d, b * c
+    if denominator == 0:
+        return math.inf if numerator > 0 else math.nan
+    return numerator / denominator
 
 
 def _parse_pathway_mapping(pathway_dict: Dict[str, Any]) -> Dict[str, List[str]]:
@@ -74,10 +90,12 @@ def pathway_enrichment_analysis(
     """Perform pathway enrichment analysis.
 
     Args:
-        genes: List of genes of interest
+        genes: List of genes of interest (genes outside the background are ignored)
         background_genes: List of background genes
-        pathways: Dictionary mapping pathway names to gene lists
-        method: Statistical test method ('fisher', 'hypergeometric')
+        pathways: Dictionary mapping pathway names to gene lists (only genes in
+            the background count toward a pathway)
+        method: Statistical test method: 'fisher' (two-sided Fisher exact test)
+            or 'hypergeometric' (upper tail, i.e. enrichment only)
         correction: Multiple testing correction ('bonferroni', 'fdr')
         **kwargs: Additional parameters
 
@@ -93,18 +111,20 @@ def pathway_enrichment_analysis(
     if not HAS_NETWORKX:
         raise ImportError("networkx required for pathway analysis")
 
-    results = []
+    results: List[Dict[str, Any]] = []
 
     # Convert to sets for faster lookup
     gene_set = set(genes)
     background_set = set(background_genes)
 
-    # Validate inputs
+    # Only background genes can be drawn or counted, so genes outside it are ignored
     if not gene_set.issubset(background_set):
-        logger.warning("Some genes not found in background set")
+        logger.warning("Some genes not found in background set; ignoring them")
+        gene_set &= background_set
 
     for pathway_name, pathway_genes in pathways.items():
-        pathway_set = set(pathway_genes)
+        # A pathway contributes only the genes that are in the background
+        pathway_set = set(pathway_genes) & background_set
 
         # Calculate contingency table
         # [[genes in pathway, genes not in pathway],
@@ -120,20 +140,20 @@ def pathway_enrichment_analysis(
                 [[genes_in_pathway, genes_not_in_pathway], [background_in_pathway, background_not_in_pathway]]
             )
         elif method == "hypergeometric":
-            # Hypergeometric test
+            # Upper-tail hypergeometric test: P(X >= k) when drawing the query from the background
             M = len(background_set)  # Population (all background genes)
-            n = len(pathway_set)  # Successes in population (pathway genes)
+            n = len(pathway_set)  # Successes in population (pathway genes in the background)
             k = genes_in_pathway  # White balls drawn (query genes in pathway)
 
             p_value = stats.hypergeom.sf(k - 1, M, n, len(gene_set))
-            odds_ratio = (genes_in_pathway / max(genes_not_in_pathway, 1)) / (
-                background_in_pathway / max(background_not_in_pathway, 1)
+            odds_ratio = _sample_odds_ratio(
+                genes_in_pathway, genes_not_in_pathway, background_in_pathway, background_not_in_pathway
             )
         else:
             raise ValueError(f"Unknown method: {method}")
 
         # Calculate enrichment metrics
-        expected = (len(pathway_set) / len(background_set)) * len(genes)
+        expected = (len(pathway_set) / len(background_set)) * len(gene_set)
         enrichment_ratio = genes_in_pathway / expected if expected > 0 else 1.0
 
         result = {
@@ -143,7 +163,7 @@ def pathway_enrichment_analysis(
             "enrichment_ratio": enrichment_ratio,
             "genes_in_pathway": genes_in_pathway,
             "pathway_size": len(pathway_set),
-            "genes_tested": len(genes),
+            "genes_tested": len(gene_set),
             "background_size": len(background_set),
             "method": method,
         }
@@ -810,7 +830,9 @@ def pathway_enrichment(
         min_overlap: Minimum overlap size to report
 
     Returns:
-        Dictionary mapping pathway IDs to enrichment results
+        Dictionary mapping pathway IDs to enrichment results. When a
+        ``correction`` is requested every result carries ``corrected_p_value``,
+        including when only one pathway passes ``min_overlap``.
     """
     if not pathway_network.pathways:
         logger.warning("Empty pathway network")
@@ -833,7 +855,7 @@ def pathway_enrichment(
         logger.warning("No query genes found in background set")
         return {}
 
-    results = {}
+    results: Dict[str, Dict[str, Any]] = {}
 
     for pathway_id, pathway_genes in pathway_network.pathways.items():
         pathway_set = set(pathway_genes)
@@ -899,8 +921,8 @@ def pathway_enrichment(
             "expected_overlap": expected_overlap,
         }
 
-    # Apply multiple testing correction
-    if correction and len(results) > 1:
+    # Apply multiple testing correction (to a single pathway it leaves the p-value unchanged)
+    if correction and results:
         p_values = [result["p_value"] for result in results.values()]
 
         if correction == "bonferroni":
@@ -1018,7 +1040,7 @@ def pathway_activity_score(
     elif method == "sum":
         return sum(values)
     elif method == "median":
-        return sorted(values)[len(values) // 2]
+        return float(statistics.median(values))
     else:
         raise ValueError(f"Unknown method: {method}")
 

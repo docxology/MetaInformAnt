@@ -27,7 +27,7 @@ try:
 
     HAS_NUMPY = True
 except ImportError:
-    np = None
+    np = cast("Any", None)
     HAS_NUMPY = False
 
 try:

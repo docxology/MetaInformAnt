@@ -21,6 +21,7 @@ from metainformant.core.data import validation
 from metainformant.core.io import paths
 from metainformant.core.utils import logging
 from metainformant.visualization.config.conventions import save_figure_deterministic
+from metainformant.visualization.config.figures import root_figure
 
 logger = logging.get_logger(__name__)
 
@@ -94,7 +95,7 @@ def plot_venn_diagram(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(root_figure(ax), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Venn diagram saved to {output_path}")
 
     return ax
@@ -246,7 +247,7 @@ def plot_sankey_diagram(
 
         if output_path:
             paths.ensure_directory(Path(output_path).parent)
-            save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+            save_figure_deterministic(fig, output_path, dpi=300, bbox_inches="tight")
             logger.info(f"Flow diagram saved to {output_path}")
 
         return fig
@@ -327,7 +328,7 @@ def plot_chord_diagram(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(root_figure(ax), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Chord diagram saved to {output_path}")
 
     return ax
@@ -373,7 +374,7 @@ def plot_alluvial_diagram(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(root_figure(ax), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Alluvial diagram saved to {output_path}")
 
     return ax
@@ -443,7 +444,7 @@ def plot_circular_barplot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(root_figure(ax), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Circular bar plot saved to {output_path}")
 
     return ax
@@ -496,7 +497,7 @@ def plot_network_circular_layout(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(root_figure(ax), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Circular network plot saved to {output_path}")
 
     return ax

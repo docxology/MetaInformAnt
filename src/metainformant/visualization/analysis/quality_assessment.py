@@ -17,6 +17,7 @@ from metainformant.core.data import validation
 from metainformant.core.io import paths
 from metainformant.core.utils import logging
 from metainformant.visualization.config.conventions import save_figure_deterministic
+from metainformant.visualization.config.figures import root_figure
 
 logger = logging.get_logger(__name__)
 
@@ -25,7 +26,7 @@ def _save_figure(ax: Axes, output_path: str | Path | None, message: str) -> None
     """Persist the plotted figure (``ax.figure``) to *output_path* when requested."""
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(root_figure(ax), output_path, dpi=300, bbox_inches="tight")
         logger.info(message)
 
 

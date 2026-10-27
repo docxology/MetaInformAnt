@@ -8,7 +8,7 @@ ridge plots, ROC curves, precision-recall curves, residual plots, and leverage p
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,6 +19,7 @@ from metainformant.core.data import validation
 from metainformant.core.io import paths
 from metainformant.core.utils import logging
 from metainformant.visualization.config.conventions import save_figure_deterministic
+from metainformant.visualization.config.figures import root_figure
 
 logger = logging.get_logger(__name__)
 
@@ -28,7 +29,7 @@ try:
 
     HAS_SCIPY = True
 except ImportError:
-    stats = None
+    stats = cast("Any", None)
     HAS_SCIPY = False
 
 try:
@@ -56,7 +57,7 @@ def _save_plot(ax: Axes, output_path: str | Path, label: str) -> str:
     plotted figure is written even when a different pyplot figure is current.
     """
     paths.ensure_directory(Path(output_path).parent)
-    save_figure_deterministic(ax.figure, output_path, dpi=300, bbox_inches="tight")
+    save_figure_deterministic(root_figure(ax), output_path, dpi=300, bbox_inches="tight")
     logger.info(f"{label} saved to {output_path}")
     return str(output_path)
 

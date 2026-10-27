@@ -12,7 +12,6 @@ import math
 import pytest
 
 from metainformant.phenotype.gwas_integration.phewas import (
-    _normal_sf,
     _pearson_r,
     _residualise,
     _simple_linear_regression,
@@ -306,16 +305,14 @@ class TestCategorizePhenotypes:
 
 
 class TestInternalHelpers:
-    def test_normal_sf_normal_approximation(self):
-        # erfc-based: P(Z >= 0) = 0.5
-        assert _normal_sf(0.0, df=100) == pytest.approx(0.5)
-        assert _normal_sf(1.96, df=100) == pytest.approx(0.024997895, abs=1e-6)
-        assert 0.0 < _normal_sf(3.0, df=100) < 0.01
+    def test_pearson_p_value_uses_students_t_at_small_n(self):
+        from scipy import stats
 
-    def test_normal_sf_small_df_monotone(self):
-        vals = [_normal_sf(t, df=10) for t in [0.0, 1.0, 2.0, 5.0]]
-        assert all(vals[i] >= vals[i + 1] for i in range(len(vals) - 1))
-        assert vals[0] == pytest.approx(0.5)
+        x, y = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0], [2.1, 3.9, 6.2, 7.8, 9.7, 13.0]
+        r, p = _pearson_r(x, y)
+        oracle = stats.pearsonr(x, y)
+        assert r == pytest.approx(oracle.statistic, rel=1e-12)
+        assert p == pytest.approx(oracle.pvalue, rel=1e-6)
 
     def test_pearson_perfect(self):
         r, p = _pearson_r([1.0, 2.0, 3.0, 4.0], [2.0, 4.0, 6.0, 8.0])

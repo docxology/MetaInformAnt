@@ -8,9 +8,9 @@ downstream consumers (e.g. rna/analysis atlas figures, campaign figures):
   grayscale printing and color-vision deficiency (hatch + text redundancy).
 - Explicit zero marks on logarithmic axes (a log scale silently clamps zero
   to the axis floor; an unmarked floor invites misreading).
-- Deterministic figure export: matplotlib PNG/PDF output embeds timestamps and
-  host metadata by default; deterministic mode strips them so byte-identical
-  inputs produce byte-identical files.
+- Deterministic figure export: matplotlib PNG/PDF/SVG output embeds timestamps,
+  host metadata and (SVG) random element ids by default; deterministic mode
+  strips them so byte-identical inputs produce byte-identical files.
 
 All statistics and labels rendered by consumers are DESCRIPTIVE ONLY; nothing
 here computes inferential results.
@@ -19,11 +19,14 @@ here computes inferential results.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Sequence, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple, cast
 
 import matplotlib as mpl
 
 from metainformant.core.utils import logging
+
+if TYPE_CHECKING:
+    from matplotlib.typing import RcKeyType
 
 logger = logging.get_logger(__name__)
 
@@ -150,8 +153,31 @@ DETERMINISTIC_RCPARAMS: Dict[str, object] = {
 
 def apply_deterministic_rcparams() -> None:
     """Apply rc-params that strip nondeterministic metadata from figure output."""
-    mpl.rcParams.update(cast("Dict[str, Any]", DETERMINISTIC_RCPARAMS))
+    mpl.rcParams.update(cast("Dict[RcKeyType, Any]", DETERMINISTIC_RCPARAMS))
     logger.debug("Applied deterministic figure rc-params")
+
+
+# Metadata that blanks the producer and clock fields of each output format. The
+# matplotlib backends do not share a vocabulary and each validates its own keys,
+# so one mapping cannot serve them all: PNG takes free-form text chunks; PDF takes
+# a fixed info dictionary (``None`` removes a predefined key) and only warns about
+# other keys; SVG takes Dublin Core keys (``None`` drops the predefined ``Creator``
+# and ``Date``) and raises on any other key; PS/EPS read only ``Creator``. Formats
+# without an entry (JPEG, TIFF, WebP, GIF, AVIF, PGF, ...) accept no metadata at
+# all, so none is passed for them.
+_DETERMINISTIC_METADATA: Dict[str, Dict[str, str | None]] = {
+    "png": {"Software": "", "Creator": "", "Creation Time": "", "Date": ""},
+    "pdf": {"Creator": "", "Producer": "", "CreationDate": None, "ModDate": None},
+    "svg": {"Creator": None, "Date": None},
+    "svgz": {"Creator": None, "Date": None},
+    "ps": {"Creator": ""},
+    "eps": {"Creator": ""},
+}
+
+# Value of ``svg.hashsalt`` while an SVG is saved. matplotlib hashes the ids of
+# clip paths, markers, glyphs and images with this salt and draws a fresh uuid4
+# whenever it is ``None``, so the ids would differ on every save.
+_SVG_HASH_SALT = "metainformant-deterministic-svg"
 
 
 def save_figure_deterministic(
@@ -163,19 +189,37 @@ def save_figure_deterministic(
 ) -> None:
     """Save *fig* to *path* with reproducible bytes.
 
-    Passes fixed (empty) metadata for Software/Creator/date fields so that
-    identical figure state yields identical files across runs — required for
-    regression tests on figure output and for reproducible publications.
+    Blanks the producer and clock fields matplotlib otherwise stamps into the
+    file, so identical figure state yields identical files across runs —
+    required for regression tests on figure output and for reproducible
+    publications. Each format receives only the metadata its backend accepts;
+    the format is read from the suffix of *path*, as matplotlib does:
+
+    - PNG: empty ``Software``, ``Creator``, ``Creation Time`` and ``Date``.
+    - PDF: empty ``Creator`` and ``Producer``; no ``CreationDate``/``ModDate``.
+    - SVG: no ``Creator`` and no ``Date``, and ``svg.hashsalt`` pinned for the
+      duration of the save (matplotlib hashes element ids with a fresh uuid4
+      otherwise) unless the caller already set one.
+    - JPEG, TIFF, WebP, GIF and AVIF carry no metadata and are saved as is.
+    - PS/EPS and SVGZ are only partly covered. PS/EPS get an empty ``Creator``,
+      but matplotlib stamps ``%%CreationDate`` from the clock (or from
+      ``SOURCE_DATE_EPOCH``) and no metadata key removes it, so they are
+      reproducible only under a fixed ``SOURCE_DATE_EPOCH``. SVGZ gets the SVG
+      treatment, but its gzip header carries the write time, which matplotlib
+      does not expose.
+
     ``bbox_inches="tight"`` is accepted so pyplot-level
     ``savefig(..., bbox_inches="tight")`` call sites can route through this
     helper without changing output geometry.
     """
-    metadata: dict[str, str | None] = {
-        "Software": "",
-        "Creator": "",
-        "Creation Time": "",
-        "Date": "",
-    }
-    if Path(path).suffix.lower() == ".pdf":
-        metadata = {"Creator": "", "Producer": "", "CreationDate": None, "ModDate": None}
-    fig.savefig(path, dpi=dpi, metadata=metadata, bbox_inches=bbox_inches)
+    fmt = Path(path).suffix.lstrip(".").lower() or fig.canvas.get_default_filetype()
+    save_kwargs: Dict[str, Any] = {"dpi": dpi, "bbox_inches": bbox_inches}
+    metadata = _DETERMINISTIC_METADATA.get(fmt)
+    if metadata is not None:
+        save_kwargs["metadata"] = dict(metadata)
+
+    rc: Dict[RcKeyType, Any] = {}
+    if fmt in ("svg", "svgz") and mpl.rcParams["svg.hashsalt"] is None:
+        rc["svg.hashsalt"] = _SVG_HASH_SALT
+    with mpl.rc_context(rc):
+        fig.savefig(path, **save_kwargs)

@@ -12,7 +12,7 @@ from __future__ import annotations
 import math
 import random
 from collections import defaultdict
-from typing import Any
+from typing import Any, cast
 
 from metainformant.core.utils.logging import get_logger
 
@@ -25,7 +25,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    np = cast("Any", None)
 
 try:
     from scipy import stats as scipy_stats
@@ -33,7 +33,7 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    scipy_stats = None
+    scipy_stats = cast("Any", None)
 
 
 def _pearson_correlation_pure(x: list[float], y: list[float]) -> tuple[float, float]:

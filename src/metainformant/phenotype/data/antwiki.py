@@ -7,6 +7,7 @@ characteristics, and taxonomic information.
 
 from __future__ import annotations
 
+import statistics
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -314,7 +315,7 @@ def get_phenotype_distribution(records: List[AntWikiRecord], phenotype_name: str
                 "mean": sum(numeric_values) / len(numeric_values),
                 "min": min(numeric_values),
                 "max": max(numeric_values),
-                "median": sorted(numeric_values)[len(numeric_values) // 2],
+                "median": statistics.median(numeric_values),
             }
         )
 

@@ -13,7 +13,9 @@ a single phenotype.
 from __future__ import annotations
 
 import math
-from typing import Any
+from typing import Any, cast
+
+from scipy import stats as scipy_stats
 
 from metainformant.core.utils.logging import get_logger
 
@@ -25,7 +27,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    np = cast("Any", None)
 
 
 # ---------------------------------------------------------------------------
@@ -80,51 +82,8 @@ def _pearson_r(x: list[float], y: list[float]) -> tuple[float, float]:
         return r, 0.0
     t_stat = r * math.sqrt((n - 2) / (1.0 - r * r))
     # Approximate two-tailed p from t using normal approximation for large n
-    p_value = 2.0 * _normal_sf(abs(t_stat), df=n - 2)
+    p_value = float(2.0 * scipy_stats.t.sf(abs(t_stat), df=n - 2))
     return r, p_value
-
-
-def _normal_sf(t: float, df: int = 100) -> float:
-    """Approximate survival function for t-distribution.
-
-    Uses the normal approximation for df > 30; otherwise a rough
-    Beta-function based approximation.
-    """
-    if df > 30:
-        # Normal approximation
-        return 0.5 * math.erfc(t / math.sqrt(2.0))
-    # Rough approximation for smaller df
-    x = df / (df + t * t)
-    return 0.5 * _regularized_incomplete_beta(df / 2.0, 0.5, x)
-
-
-def _regularized_incomplete_beta(a: float, b: float, x: float) -> float:
-    """Rough continued-fraction approximation of I_x(a, b)."""
-    if x <= 0.0:
-        return 0.0
-    if x >= 1.0:
-        return 1.0
-    # Use a simple series expansion (first 60 terms)
-    result = 0.0
-    term = 1.0
-    for n in range(60):
-        if n == 0:
-            term = (x**a) * ((1 - x) ** b) / a
-            coeff = 1.0
-        else:
-            coeff *= (n - 1 - b) / n
-            term *= x
-        contrib = coeff * term / (a + n)
-        result += contrib
-        if abs(contrib) < 1e-12:
-            break
-    try:
-        beta_val = math.gamma(a) * math.gamma(b) / math.gamma(a + b)
-    except (OverflowError, ValueError):
-        beta_val = 1.0
-    if beta_val == 0:
-        return 0.5
-    return min(1.0, max(0.0, result / beta_val))
 
 
 def _simple_linear_regression(
@@ -164,7 +123,7 @@ def _simple_linear_regression(
     if se == 0:
         return beta, 1.0, 1.0
     t_stat = beta / se
-    p_value = 2.0 * _normal_sf(abs(t_stat), df=n - 2)
+    p_value = float(2.0 * scipy_stats.t.sf(abs(t_stat), df=n - 2))
     return beta, se, p_value
 
 

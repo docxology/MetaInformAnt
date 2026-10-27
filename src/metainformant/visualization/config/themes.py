@@ -8,12 +8,16 @@ a context manager for scoped styling.
 from __future__ import annotations
 
 import contextlib
-from typing import Any, Dict, Generator
+from typing import TYPE_CHECKING, Any, Dict, Generator, cast
 
 import matplotlib as mpl
+from matplotlib.rcsetup import cycler
 
 from metainformant.core.utils import logging
 from metainformant.visualization.config.conventions import OKABE_ITO as OKABE_ITO_COLORS
+
+if TYPE_CHECKING:
+    from matplotlib.typing import RcKeyType
 
 logger = logging.get_logger(__name__)
 
@@ -123,7 +127,7 @@ _THEMES: Dict[str, Dict[str, Any]] = {
         "figure.figsize": (7, 5),
         "figure.dpi": 150,
         "font.size": 10,
-        "axes.prop_cycle": mpl.cycler(
+        "axes.prop_cycle": cycler(
             # Okabe-Ito order (blue first) — colors sourced from the canonical
             # definition in conventions.py; order is theme-specific, not palette-order.
             color=list(
@@ -175,7 +179,7 @@ def apply_theme(name: str) -> None:
         name: Theme name to apply.
     """
     params = get_theme(name)
-    mpl.rcParams.update(params)
+    mpl.rcParams.update(cast("Dict[RcKeyType, Any]", params))
     logger.info(f"Applied theme '{name}' globally")
 
 
@@ -199,7 +203,7 @@ def theme(name: str) -> Generator[None, None, None]:
     After the block, the previous rc-params are restored.
     """
     params = get_theme(name)
-    with mpl.rc_context(params):
+    with mpl.rc_context(cast("Dict[RcKeyType, Any]", params)):
         logger.debug(f"Entering theme context: {name}")
         yield
     logger.debug(f"Exiting theme context: {name}")
