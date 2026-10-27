@@ -749,6 +749,7 @@ def compute_diffusion_map(
     degrees = np.array(adjacency.sum(axis=1)).flatten()
     degrees[degrees == 0] = 1  # Avoid division by zero
 
+    diffusion_operator: sparse.spmatrix
     if alpha == 0:
         # Unnormalized Laplacian
         diffusion_operator = adjacency
@@ -768,11 +769,14 @@ def compute_diffusion_map(
     n_cells_mat = diffusion_operator.shape[0]
     diffusion_operator = diffusion_operator + sparse.eye(n_cells_mat) * 1e-6
 
+    eigenvalues: np.ndarray
+    eigenvectors: np.ndarray
     try:
         eigenvalues, eigenvectors = eigsh(diffusion_operator, k=min(n_components + 1, n_cells_mat - 1), which="LM")
     except (RuntimeError, ValueError) as exc:
         logger.warning(f"Sparse eigsh failed ({exc}), falling back to dense eigendecomposition")
-        dense = diffusion_operator.toarray() if hasattr(diffusion_operator, "toarray") else diffusion_operator
+        # diffusion_operator is always a scipy sparse matrix here, so it can be densified directly.
+        dense = diffusion_operator.toarray()
         eigenvalues, eigenvectors = np.linalg.eigh(dense)
         # eigh returns ascending order — take the top (n_components+1)
         eigenvalues = eigenvalues[-(n_components + 1) :][::-1]

@@ -7,6 +7,7 @@ in orchestrator_core.py.
 
 from __future__ import annotations
 
+import statistics
 import time
 from collections import defaultdict
 from pathlib import Path
@@ -578,7 +579,7 @@ def _build_sv_steps(orch: LongReadOrchestrator, alignments: Any) -> list[Pipelin
                     "min": sorted_sizes[0],
                     "max": sorted_sizes[-1],
                     "mean": sum(sorted_sizes) / n,
-                    "median": sorted_sizes[n // 2],
+                    "median": statistics.median(sorted_sizes),
                 }
 
         phased_count = sum(

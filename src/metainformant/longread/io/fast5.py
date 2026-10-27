@@ -31,6 +31,7 @@ try:
 except ImportError:
     pod5_lib = None
 
+np: Any  # None when numpy is unavailable (optional dependency)
 try:
     import numpy as np
 

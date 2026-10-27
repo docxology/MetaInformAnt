@@ -18,6 +18,7 @@ from metainformant.singlecell.data.preprocessing import SingleCellData
 logger = logging.get_logger(__name__)
 
 # Try to import matplotlib
+plt: Any  # None when matplotlib is unavailable (optional dependency)
 try:
     import matplotlib.pyplot as plt
 

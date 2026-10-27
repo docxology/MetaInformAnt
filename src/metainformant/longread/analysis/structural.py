@@ -12,6 +12,7 @@ long-read mappers like minimap2, which produce supplementary alignments
 from __future__ import annotations
 
 import re
+import statistics
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Sequence
@@ -546,14 +547,11 @@ def _cluster_sv_calls(
             if actual_support < min_support:
                 continue
 
-            # Use median breakpoints
-            starts = sorted([sv.start for sv in cluster])
-            ends = sorted([sv.end for sv in cluster])
-            sizes = sorted([sv.size for sv in cluster])
-
-            median_start = starts[len(starts) // 2]
-            median_end = ends[len(ends) // 2]
-            median_size = sizes[len(sizes) // 2]
+            # Use median breakpoints. The fields are integer base-pair positions and sizes, so the
+            # half-integer median of an even-sized cluster is truncated to an integer.
+            median_start = int(statistics.median(sv.start for sv in cluster))
+            median_end = int(statistics.median(sv.end for sv in cluster))
+            median_size = int(statistics.median(sv.size for sv in cluster))
 
             max_quality = max(sv.quality for sv in cluster)
 

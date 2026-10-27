@@ -10,7 +10,7 @@ from __future__ import annotations
 import random
 
 from metainformant.core.sequence import reverse_complement
-from metainformant.longread.assembly.overlap import find_overlaps
+from metainformant.longread.assembly.overlap import _chain_minimizer_matches, find_overlaps
 
 
 def _random_seq(rng: random.Random, length: int) -> str:
@@ -93,3 +93,46 @@ class TestReverseComplementOverlaps:
 
         assert overlaps
         assert all(ov.strand == "+" for ov in overlaps)
+
+
+class TestChainMinimizerMatchesFrames:
+    """The forward and reverse-complement chaining frames and their tie/None outcomes."""
+
+    # Reads of 400 bp / 1000 bp, k-mer size 15, minimizer matches as (query_pos, target_pos).
+    _ARGS = {"query_length": 400, "target_length": 1000, "min_overlap": 20, "max_overhang": 150, "k": 15}
+
+    def _chain(self, matches):
+        return _chain_minimizer_matches("query", target_name="target", matches=matches, **self._ARGS)
+
+    def test_no_matches_gives_no_overlap(self):
+        assert self._chain([]) is None
+
+    def test_single_match_cannot_chain_in_either_frame(self):
+        assert self._chain([(100, 500)]) is None
+
+    def test_constant_diagonal_chains_on_forward_strand(self):
+        # qpos - tpos is constant (100); in the rc frame every match falls into its own band.
+        ov = self._chain([(100, 0), (200, 100), (300, 200)])
+
+        assert ov is not None
+        assert ov.strand == "+"
+        assert (ov.query_start, ov.query_end, ov.target_start, ov.target_end) == (100, 300, 0, 200)
+        assert ov.num_matches == 3
+
+    def test_constant_antidiagonal_chains_on_reverse_strand(self):
+        # qpos + tpos is constant (900): the rc frame t' = 1000 - 15 - tpos gives a constant diagonal.
+        ov = self._chain([(100, 800), (200, 700), (300, 600)])
+
+        assert ov is not None
+        assert ov.strand == "-"
+        # Target coordinates are reported in the target's original (forward) orientation.
+        assert (ov.query_start, ov.query_end, ov.target_start, ov.target_end) == (100, 300, 600, 800)
+        assert ov.num_matches == 3
+
+    def test_equal_chains_prefer_the_forward_strand(self):
+        # These matches chain equally well (3 matches) in both frames.
+        ov = self._chain([(100, 500), (110, 505), (120, 510)])
+
+        assert ov is not None
+        assert ov.strand == "+"
+        assert ov.num_matches == 3

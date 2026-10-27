@@ -8,11 +8,13 @@ distance-based merging, and deduplication of variant calls.
 from __future__ import annotations
 
 import math
+import statistics
 from dataclasses import dataclass, field
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
+np: Any  # None when numpy is unavailable (optional dependency)
 try:
     import numpy as np
 except ImportError:
@@ -581,8 +583,7 @@ def _median_position(values: list[int]) -> int:
     """
     if np is not None:
         return int(np.median(values))
-    ordered = sorted(values)
-    return ordered[len(ordered) // 2]
+    return int(statistics.median(values))
 
 
 def _majority_sv_type(variant_dicts: list[dict[str, Any]]) -> str:

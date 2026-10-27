@@ -12,11 +12,13 @@ for further customization.
 from __future__ import annotations
 
 import math
+import statistics
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from metainformant.core.utils.logging import get_logger
 
+np: Any  # None when numpy is unavailable (optional dependency)
 try:
     import numpy as np
 except ImportError:
@@ -33,7 +35,8 @@ try:
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
-    Figure = Any
+    if not TYPE_CHECKING:
+        Figure = Any  # runtime-only stand-in; type checkers keep the real matplotlib class
 
 logger = get_logger(__name__)
 
@@ -231,7 +234,7 @@ def plot_coverage_track(
         median_cov = float(np.median(cov[cov > 0])) if np.any(cov > 0) else 1.0
     else:
         positive = [c for c in cov if c > 0]
-        median_cov = sorted(positive)[len(positive) // 2] if positive else 1.0
+        median_cov = statistics.median(positive) if positive else 1.0
 
     ax_cov.fill_between(positions, cov, alpha=0.6, color="#3498DB")
     ax_cov.plot(positions, cov, linewidth=0.5, color="#2C3E50")

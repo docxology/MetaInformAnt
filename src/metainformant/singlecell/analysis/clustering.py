@@ -8,7 +8,7 @@ marker gene identification.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional, get_args
 
 import numpy as np
 import pandas as pd
@@ -77,6 +77,9 @@ except ImportError:
     HAS_LOUVAIN = False
 
 logger = logging.get_logger(__name__)
+
+_LinkageMethod = Literal["single", "complete", "average", "weighted", "centroid", "median", "ward"]
+_VALID_LINKAGE_METHODS: tuple[_LinkageMethod, ...] = get_args(_LinkageMethod)
 
 
 def _as_dense_matrix(matrix: Any) -> np.ndarray:
@@ -395,8 +398,7 @@ def hierarchical_clustering(
     validation.validate_type(data, SingleCellData, "data")
     validation.validate_range(n_clusters, min_val=2, name="n_clusters")
 
-    valid_linkages = ["single", "complete", "average", "weighted", "centroid", "median", "ward"]
-    if linkage_method not in valid_linkages:
+    if linkage_method not in _VALID_LINKAGE_METHODS:
         raise errors.ValidationError(f"Invalid linkage method: {linkage_method}")
 
     logger.info(f"Performing hierarchical clustering with {n_clusters} clusters using {linkage_method} linkage")
@@ -411,6 +413,9 @@ def hierarchical_clustering(
     if linkage_method == "ward":
         metric = "euclidean"
 
+    # scipy rejects unknown metric names itself (ValueError); its stubs only accept a Literal of the known names.
+    metric_name: Any = metric
+
     linkage_matrix = None
     # Compute distance matrix
     if X.shape[0] > 1000:
@@ -420,7 +425,7 @@ def hierarchical_clustering(
         X_subset = X[subset_indices]
 
         # Compute linkage on subset
-        distances = pdist(X_subset, metric=metric)
+        distances = pdist(X_subset, metric=metric_name)
         linkage_matrix = linkage(distances, method=linkage_method)
 
         # Cut tree to get clusters for subset
@@ -435,7 +440,7 @@ def hierarchical_clustering(
 
     else:
         # Compute full hierarchical clustering
-        distances = pdist(X, metric=metric)
+        distances = pdist(X, metric=metric_name)
         linkage_matrix = linkage(distances, method=linkage_method)
         clusters = fcluster(linkage_matrix, n_clusters, criterion="maxclust")
 

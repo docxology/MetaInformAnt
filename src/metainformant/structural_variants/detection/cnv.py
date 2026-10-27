@@ -13,18 +13,22 @@ from __future__ import annotations
 
 import math
 import os
+import statistics
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from metainformant.core.utils.logging import get_logger
 
+np: Any  # None when numpy is unavailable (optional dependency)
 try:
     import numpy as np
     from numpy.typing import NDArray
 except ImportError:
     np = None
-    NDArray = Any
+    if not TYPE_CHECKING:
+        NDArray = Any  # runtime-only stand-in; type checkers keep the real numpy alias
 
+scipy_stats: Any  # None when scipy is unavailable (optional dependency)
 try:
     from scipy import stats as scipy_stats
 except ImportError:
@@ -636,14 +640,18 @@ def calculate_log2_ratio(
         ValueError: If arrays have different lengths.
     """
     if np is None:
-        # Pure Python fallback
+        # Pure Python fallback: same algorithm as the numpy path below
         if len(tumor_depth) != len(normal_depth):
             raise ValueError(f"Array length mismatch: tumor={len(tumor_depth)}, normal={len(normal_depth)}")
         ratios: list[float] = []
         for t, n in zip(tumor_depth, normal_depth):
             ratio = (t + pseudocount) / (n + pseudocount)
             ratios.append(math.log2(ratio))
-        return ratios
+        if gc_content is not None:
+            if len(gc_content) != len(ratios):
+                raise ValueError(f"GC content length mismatch: gc={len(gc_content)}, tumor={len(ratios)}")
+            ratios = _gc_correct_py(ratios, list(gc_content))
+        return _center_on_median(ratios)
 
     tumor = np.asarray(tumor_depth, dtype=np.float64)
     normal = np.asarray(normal_depth, dtype=np.float64)
@@ -702,3 +710,43 @@ def _gc_correct(
     corrected -= global_median
 
     return corrected
+
+
+def _center_on_median(values: list[float]) -> list[float]:
+    """Subtract the median of the finite values (pure-Python median centering).
+
+    Args:
+        values: Log2 ratio values.
+
+    Returns:
+        Values shifted so that the median of the finite entries is zero.
+    """
+    finite = [v for v in values if math.isfinite(v)]
+    center = statistics.median(finite) if finite else math.nan
+    return [v - center for v in values]
+
+
+def _gc_correct_py(log2_ratios: list[float], gc_content: list[float], n_bins: int = 20) -> list[float]:
+    """Pure-Python twin of :func:`_gc_correct` (binned median normalization).
+
+    Args:
+        log2_ratios: Log2 ratio values.
+        gc_content: GC content fractions (0-1), one per log2 ratio.
+        n_bins: Number of GC bins for correction.
+
+    Returns:
+        GC-corrected, median-centered log2 ratios.
+    """
+    corrected = list(log2_ratios)
+    # Bin edges identical to numpy.linspace(0, 1, n_bins + 1)
+    step = 1.0 / n_bins
+    edges = [i * step for i in range(n_bins)] + [1.0]
+
+    for i in range(n_bins):
+        members = [j for j, gc in enumerate(gc_content) if edges[i] <= gc < edges[i + 1]]
+        if members:
+            bin_median = statistics.median(log2_ratios[j] for j in members)
+            for j in members:
+                corrected[j] -= bin_median
+
+    return _center_on_median(corrected)

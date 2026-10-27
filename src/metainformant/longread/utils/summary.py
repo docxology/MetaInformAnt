@@ -7,6 +7,7 @@ run summaries with statistics, comparisons, and exportable reports.
 from __future__ import annotations
 
 import json
+import statistics
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -227,7 +228,7 @@ def generate_sv_summary(
         size_stats = {
             "min_size": sorted_sizes[0],
             "max_size": sorted_sizes[-1],
-            "median_size": sorted_sizes[len(sorted_sizes) // 2],
+            "median_size": statistics.median(sorted_sizes),
             "mean_size": round(sum(sorted_sizes) / len(sorted_sizes), 1),
         }
 

@@ -39,6 +39,40 @@ def _add_embedding_to_obs(result: SingleCellData, coords: pd.DataFrame) -> None:
             result.obs[col] = coords[col]
 
 
+def _highly_variable_mask(data: SingleCellData) -> np.ndarray:
+    """Return the boolean gene mask stored in ``data.var["highly_variable"]``.
+
+    This is the annotation written by :func:`select_hvgs` and by
+    ``identify_highly_variable_genes``.
+
+    Raises:
+        ValueError: If the annotation is missing, is not boolean (or 0/1) without
+            missing values, or flags no gene.
+    """
+    var = getattr(data, "var", None)
+    if var is None or "highly_variable" not in var.columns:
+        raise ValueError(
+            "use_hvgs=True needs a 'highly_variable' column in data.var: run select_hvgs() "
+            "(or identify_highly_variable_genes()) first, or pass use_hvgs=False"
+        )
+
+    column = var["highly_variable"]
+    values = column.to_numpy()
+    if column.isna().any():
+        raise ValueError("data.var['highly_variable'] must not contain missing values")
+    if values.dtype == object and all(isinstance(value, (bool, np.bool_)) for value in values):
+        values = values.astype(bool)
+    if values.dtype != bool:
+        if not (pd.api.types.is_numeric_dtype(values.dtype) and np.isin(values, (0, 1)).all()):
+            raise ValueError("data.var['highly_variable'] must be a boolean column (True/False or 1/0)")
+        values = values.astype(bool)
+
+    mask = np.asarray(values, dtype=bool)
+    if not mask.any():
+        raise ValueError("use_hvgs=True but no genes are flagged in data.var['highly_variable']")
+    return mask
+
+
 def pca_reduction(
     data: SingleCellData,
     n_components: int = 50,
@@ -51,17 +85,23 @@ def pca_reduction(
 
     Args:
         data: SingleCellData object with expression matrix
-        n_components: Number of principal components to compute
+        n_components: Number of principal components to compute. Clamped to
+            ``min(n_obs - 1, n_genes_used)``.
         random_state: Random seed for reproducibility
         scale_data: Whether to scale data before PCA
-        use_hvgs: Whether using only highly variable genes
+        use_hvgs: Restrict the analysis to the genes flagged in
+            ``data.var["highly_variable"]`` (written by :func:`select_hvgs`).
+            Scaling, the variance ratios and the component clamp then refer to
+            those genes only, and ``varm["PCs"]`` keeps one row per gene with
+            exact zeros for the genes that were left out.
 
     Returns:
         SingleCellData with PCA coordinates added
 
     Raises:
         TypeError: If data is not SingleCellData
-        ValueError: If n_components is invalid
+        ValueError: If n_components is invalid, or ``use_hvgs`` is set but
+            ``data.var["highly_variable"]`` is missing, not boolean, or flags no gene
         ImportError: If scikit-learn not available
     """
     if not HAS_SKLEARN:
@@ -69,21 +109,25 @@ def pca_reduction(
 
     validation.validate_type(data, SingleCellData, "data")
 
+    gene_mask = _highly_variable_mask(data) if use_hvgs else None
+    n_genes_used = int(gene_mask.sum()) if gene_mask is not None else data.n_vars
+
     # Auto-clamp n_components to the maximum possible value
-    max_components = min(data.n_obs - 1, data.n_vars)
+    max_components = min(data.n_obs - 1, n_genes_used)
     if n_components > max_components:
         logger.info(f"Clamping n_components from {n_components} to {max_components} (max possible)")
         n_components = max_components
     if n_components < 1:
         raise ValueError("n_components must be at least 1")
 
-    logger.info(f"Performing PCA with {n_components} components")
+    logger.info(f"Performing PCA with {n_components} components on {n_genes_used} of {data.n_vars} genes")
 
     # Create copy
     result = data.copy()
 
-    # Get expression matrix
-    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
+    # Get expression matrix (restricted to the selected genes before densifying)
+    expression = data.X if gene_mask is None else data.X[:, gene_mask]
+    X = expression.toarray() if hasattr(expression, "toarray") else expression
 
     # Scale data if requested
     if scale_data:
@@ -108,6 +152,16 @@ def pca_reduction(
     )
     _add_embedding_to_obs(result, pca_coords)
 
+    # Gene loadings: one row per gene (the AnnData varm convention). Genes outside the analysis
+    # carry exactly zero loading.
+    if gene_mask is None:
+        loadings = pca.components_.T
+    else:
+        loadings = np.zeros((data.n_vars, n_components), dtype=pca.components_.dtype)
+        loadings[gene_mask] = pca.components_.T
+    result.varm = result.varm if hasattr(result, "varm") and result.varm is not None else {}
+    result.varm["PCs"] = loadings
+
     # Store PCA metadata
     explained_variance = pca.explained_variance_ratio_
     cumulative_variance = np.cumsum(explained_variance)
@@ -120,15 +174,12 @@ def pca_reduction(
         "cumulative_explained_variance": cumulative_variance.tolist(),
         "cumulative_variance": cumulative_variance.tolist(),  # Alias
         "singular_values": pca.singular_values_.tolist(),
-        "components_shape": pca.components_.shape,
+        "components_shape": loadings.T.shape,
         "random_state": random_state,
         "scaled": scale_data,
         "use_hvgs": use_hvgs,
+        "n_genes_used": n_genes_used,
     }
-
-    # Store components for gene loadings
-    result.varm = result.varm if hasattr(result, "varm") and result.varm is not None else {}
-    result.varm["PCs"] = pca.components_.T
 
     logger.info(f"PCA completed: {n_components} components explain {cumulative_variance[-1]:.1%} of variance")
     return result
@@ -327,13 +378,16 @@ def compute_pca(
         n_components: Number of components
         random_state: Random seed
         scale_data: Whether to scale data
-        use_hvgs: Whether to use only highly variable genes
+        use_hvgs: Restrict PCA to the genes flagged in ``data.var["highly_variable"]``
+            (run :func:`select_hvgs` first)
 
     Returns:
         SingleCellData with PCA results
+
+    Raises:
+        ValueError: If ``use_hvgs`` is set but ``data.var`` has no usable
+            ``highly_variable`` annotation
     """
-    # Note: use_hvgs is just a flag - the data should already have HVGs marked
-    # This parameter exists for API compatibility
     return pca_reduction(data, n_components, random_state, scale_data, use_hvgs=use_hvgs)
 
 

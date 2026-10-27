@@ -22,7 +22,6 @@ logger = logging.get_logger(__name__)
 
 # Optional scientific dependencies
 try:
-    from sklearn.cross_decomposition import CCA
     from sklearn.decomposition import NMF, PCA
     from sklearn.preprocessing import StandardScaler
 
@@ -32,7 +31,6 @@ except ImportError:
     StandardScaler = None
     PCA = None
     NMF = None
-    CCA = None
 
 
 class MultiOmicsData:
@@ -574,28 +572,114 @@ def joint_nmf(
     return W, H
 
 
+def _thin_svd(matrix: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Thin SVD keeping only the numerically non-zero singular values (the numerical rank)."""
+    u, s, vt = np.linalg.svd(matrix, full_matrices=False)
+    if s.size == 0 or s[0] == 0.0:
+        return u[:, :0], s[:0], vt[:0]
+    rank = int(np.sum(s > s[0] * max(matrix.shape) * np.finfo(matrix.dtype).eps))
+    return u[:, :rank], s[:rank], vt[:rank]
+
+
+def _ridge_cca(
+    x: np.ndarray, y: np.ndarray, n_components: int, regularization: float
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Ridge-regularized CCA of two centred matrices with unit-sample-variance columns.
+
+    Solves the whitened problem ``M = (Cxx + lI)^(-1/2) Cxy (Cyy + lI)^(-1/2)`` (``C`` are the
+    sample covariance matrices with divisor ``n - 1``, ``l`` is ``regularization``). With the thin
+    SVDs ``x = Ux Sx Vx'`` and ``y = Uy Sy Vy'`` the nonzero singular values of ``M`` are those of
+    the small matrix ``K = diag(gx) Ux'Uy diag(gy)`` with ``g = s / sqrt(s**2 + (n - 1) l)``, so no
+    ``p x p`` or ``q x q`` matrix is ever formed. The canonical directions are
+    ``A = Vx diag(sqrt(n - 1) / sqrt(Sx**2 + (n - 1) l)) P`` where ``K = P R Q'``, which gives
+    ``A'(Cxx + lI)A = I``.
+    """
+    n = x.shape[0]
+    ux, sx, vxt = _thin_svd(x)
+    uy, sy, vyt = _thin_svd(y)
+    if sx.size == 0 or sy.size == 0:
+        raise ValueError("CCA needs layers with at least one non-constant feature")
+
+    ridge = regularization * (n - 1)
+    kernel = (sx / np.sqrt(sx**2 + ridge))[:, None] * (ux.T @ uy) * (sy / np.sqrt(sy**2 + ridge))[None, :]
+    left, rho, right_t = np.linalg.svd(kernel, full_matrices=False)
+
+    if regularization == 0.0 and sx.size + sy.size > n - 1:
+        logger.warning(
+            f"Unregularized CCA is degenerate here: at least {sx.size + sy.size - (n - 1)} canonical "
+            f"correlation(s) equal 1 by construction because the layers have more features than "
+            f"samples can constrain ({n} samples). Use regularization > 0 for a meaningful analysis."
+        )
+
+    n_pairs = min(n_components, rho.size)
+    if n_pairs < n_components:
+        logger.warning(
+            f"Only {n_pairs} canonical pair(s) can be estimated (rank of the layers is {sx.size} and "
+            f"{sy.size}); returning {n_pairs} instead of {n_components}"
+        )
+
+    x_weights = vxt.T @ ((np.sqrt(n - 1) / np.sqrt(sx**2 + ridge))[:, None] * left[:, :n_pairs])
+    y_weights = vyt.T @ ((np.sqrt(n - 1) / np.sqrt(sy**2 + ridge))[:, None] * right_t[:n_pairs].T)
+
+    # Deterministic sign: the largest-magnitude X weight of each pair is positive. Both members of a
+    # pair flip together, so the canonical variates stay positively correlated.
+    for j in range(n_pairs):
+        if x_weights[np.argmax(np.abs(x_weights[:, j])), j] < 0.0:
+            x_weights[:, j] *= -1.0
+            y_weights[:, j] *= -1.0
+
+    correlations = np.clip(rho[:n_pairs], 0.0, 1.0)
+    return x @ x_weights, y @ y_weights, x_weights, y_weights, correlations
+
+
 def canonical_correlation(
     multiomics_data: Union["MultiOmicsData", Dict[str, pd.DataFrame]],
     layers: Optional[Tuple[str, str]] = None,
     layer_pair: Optional[Tuple[str, str]] = None,
     n_components: int = 10,
     regularization: float = 0.0,
-    **kwargs: Any,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Perform canonical correlation analysis between omics datasets.
+    """Perform ridge-regularized canonical correlation analysis between two omics layers.
+
+    Each layer is standardized (columns centred and scaled to unit sample variance), so the
+    within-layer covariance matrices ``Cxx`` and ``Cyy`` are correlation matrices. Canonical
+    directions maximise the correlation of the projected layers under the constraints
+    ``a'(Cxx + lambda I)a = b'(Cyy + lambda I)b = 1``: ``lambda * I`` is added to each within-layer
+    covariance matrix before whitening, and the canonical correlations are the singular values of
+    ``(Cxx + lambda I)^(-1/2) Cxy (Cyy + lambda I)^(-1/2)``. The solution is computed from thin SVDs
+    of the standardized layers, so layers with many more features than samples are supported.
 
     Args:
         multiomics_data: MultiOmicsData object or dictionary of omics datasets
         layers: Tuple of (layer1, layer2) to correlate. Required if more than 2 layers.
-        n_components: Number of canonical components
-        **kwargs: Additional CCA parameters
+        layer_pair: Alias for ``layers``.
+        n_components: Number of canonical components. Fewer are returned when the layers have
+            fewer features, or too low a rank, to support that many pairs.
+        regularization: Ridge parameter ``lambda >= 0``, on the scale of a correlation matrix
+            (``0`` is classical, unregularized CCA). Larger values shrink every canonical
+            correlation; each one is non-increasing in ``lambda``. Without regularization, when the
+            ranks of the two layers add up to more than ``n_samples - 1`` (for example with far
+            more features than samples), at least that excess number of canonical correlations
+            equal exactly 1 (a perfect in-sample fit), so use ``lambda > 0`` for such data.
 
     Returns:
-        Tuple of (X_c, Y_c, X_weights, Y_weights, correlations)
+        Tuple of (X_c, Y_c, X_weights, Y_weights, correlations):
+
+        - ``X_c``, ``Y_c``: canonical variates (samples x components).
+        - ``X_weights``, ``Y_weights``: canonical coefficients on the standardized features
+          (features x components) with ``X_c = standardized_X @ X_weights``; the variates have unit
+          variance when ``regularization == 0``.
+        - ``correlations``: canonical correlations in ``[0, 1]``, descending. For
+          ``regularization == 0`` each equals the sample correlation of the corresponding pair of
+          variates; for ``regularization > 0`` it is the penalised correlation, a lower bound on the
+          sample correlation of the returned variates.
 
     Raises:
         ImportError: If scikit-learn not available
-        ValueError: If layers not specified and not exactly 2 datasets provided
+        ValidationError: If ``regularization`` is negative or not finite, ``n_components < 1``, or
+            layers are not specified and there are not exactly 2 datasets
+        ValueError: If a requested layer is missing, the layers have different numbers of samples,
+            or a layer has no non-constant feature
     """
     if not HAS_SKLEARN:
         raise ImportError(
@@ -623,42 +707,40 @@ def canonical_correlation(
                 raise ValueError(f"Layer {layer} not found in data. Available: {list(data_dict.keys())}")
 
     validation.validate_range(n_components, min_val=1, name="n_components")
+    if not np.isfinite(regularization):
+        raise errors.ValidationError(f"regularization must be finite, got {regularization}")
+    validation.validate_range(regularization, min_val=0.0, name="regularization")
 
-    logger.info(f"Performing CCA between {omics_types[0]} and {omics_types[1]}")
+    logger.info(f"Performing CCA between {omics_types[0]} and {omics_types[1]} (regularization={regularization:g})")
 
     # Get the two datasets
     X = data_dict[omics_types[0]].values
     Y = data_dict[omics_types[1]].values
+    if X.shape[0] != Y.shape[0]:
+        raise ValueError(
+            f"CCA layers must have the same samples: {omics_types[0]} has {X.shape[0]} rows, "
+            f"{omics_types[1]} has {Y.shape[0]}"
+        )
+    n_samples = X.shape[0]
+    if n_samples < 2:
+        raise ValueError("CCA requires at least 2 samples")
 
     # Handle missing values
     X = np.nan_to_num(X, nan=np.nanmean(X))
     Y = np.nan_to_num(Y, nan=np.nanmean(Y))
 
-    # Scale data
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-    Y_scaled = scaler.fit_transform(Y)
+    # Standardize to unit *sample* variance (StandardScaler divides by the population std), so the
+    # within-layer covariances (divisor n - 1) are correlation matrices and ``regularization`` is
+    # added on that scale.
+    to_sample_variance = np.sqrt((n_samples - 1) / n_samples)
+    X_scaled = StandardScaler().fit_transform(X) * to_sample_variance
+    Y_scaled = StandardScaler().fit_transform(Y) * to_sample_variance
 
-    # Perform CCA
     n_comp = min(n_components, X_scaled.shape[1], Y_scaled.shape[1])
-    cca = CCA(n_components=n_comp, **kwargs)
-    X_c, Y_c = cca.fit_transform(X_scaled, Y_scaled)
+    X_c, Y_c, x_weights, y_weights, correlations = _ridge_cca(X_scaled, Y_scaled, n_comp, regularization)
 
-    # Compute canonical correlations for each component
-    correlations: List[float] = []
-    for i in range(X_c.shape[1]):
-        corr = np.corrcoef(X_c[:, i], Y_c[:, i])[0, 1]
-        correlations.append(abs(corr))
-    correlations_arr = np.array(correlations)
-    order = np.argsort(correlations_arr)[::-1]
-    X_c = X_c[:, order]
-    Y_c = Y_c[:, order]
-    x_weights = cca.x_weights_[:, order]
-    y_weights = cca.y_weights_[:, order]
-    correlations_arr = correlations_arr[order]
-
-    logger.info(f"CCA completed: {len(correlations_arr)} components")
-    return X_c, Y_c, x_weights, y_weights, correlations_arr
+    logger.info(f"CCA completed: {len(correlations)} components")
+    return X_c, Y_c, x_weights, y_weights, correlations
 
 
 def _normalize_variant_id(chrom: object, pos: object, variant_id: object, ref: object, alt: object) -> str:

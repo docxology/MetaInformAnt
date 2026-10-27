@@ -410,7 +410,11 @@ def plot_neutrality_test_suite(
 
     test_names = list(results.keys())
     statistics = [
-        float(value.get("statistic", value.get("value", np.nan))) if isinstance(value, dict) else float(value)
+        (
+            float(cast(float, value.get("statistic", value.get("value", np.nan))))
+            if isinstance(value, dict)
+            else float(value)
+        )
         for value in results.values()
     ]
 
@@ -492,7 +496,7 @@ def plot_outlier_detection(
         return None
 
     values = [
-        float(item.get("value", item.get("statistic", np.nan))) if isinstance(item, dict) else float(item)
+        float(cast(float, item.get("value", item.get("statistic", np.nan)))) if isinstance(item, dict) else float(item)
         for item in results
     ]
     indices = list(range(len(values)))

@@ -9,10 +9,7 @@ bootstrap distribution.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
-
-if TYPE_CHECKING:
-    from matplotlib.axes import Axes
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -304,8 +301,9 @@ def plot_population_structure(
     plt.figure(figsize=(10, 8))
 
     if pca_coords.shape[1] >= 3:
-        # 3D plot
-        ax = cast("Axes", plt.axes(projection="3d"))
+        # 3D plot. mpl_toolkits.mplot3d exposes no mypy-visible stubs; the 3D axes are
+        # dynamically typed here so set_zlabel resolves.
+        ax: Any = plt.axes(projection="3d")
 
         if cluster_labels is not None:
             scatter = ax.scatter(

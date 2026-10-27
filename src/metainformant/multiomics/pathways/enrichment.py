@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import math
 import random
+import statistics
 from collections import defaultdict
 from typing import Any
 
@@ -25,6 +26,7 @@ from metainformant.core.utils.logging import get_logger
 logger = get_logger(__name__)
 
 # Optional scientific dependencies
+np: Any  # None when numpy is unavailable (optional dependency)
 try:
     import numpy as np
 
@@ -33,6 +35,7 @@ except ImportError:
     HAS_NUMPY = False
     np = None
 
+sp_stats: Any  # None when scipy is unavailable (optional dependency)
 try:
     from scipy import stats as sp_stats
 
@@ -597,7 +600,8 @@ def cross_omic_pathway_concordance(
     Returns:
         Dictionary with keys:
             concordant_pathways: List of pathway IDs with concordant signals
-                (CV < median CV).
+                (CV <= median CV, the true median: the mean of the two middle
+                values when the number of pathways is even).
             discordant_pathways: List of pathway IDs with discordant signals.
             concordance_score: Global concordance score (1 - mean_CV).
             heatmap_data: Dictionary for building a heatmap:
@@ -650,11 +654,7 @@ def cross_omic_pathway_concordance(
 
     # Classify concordant vs discordant
     cv_values = list(cv_per_pathway.values())
-    if cv_values:
-        cv_values_sorted = sorted(cv_values)
-        median_cv = cv_values_sorted[len(cv_values_sorted) // 2]
-    else:
-        median_cv = 0.0
+    median_cv = statistics.median(cv_values) if cv_values else 0.0
 
     concordant: list[str] = []
     discordant: list[str] = []

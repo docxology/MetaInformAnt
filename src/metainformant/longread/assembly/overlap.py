@@ -26,6 +26,7 @@ from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
+np: Any  # None when numpy is unavailable (optional dependency)
 try:
     import numpy as np
 except ImportError:
@@ -387,15 +388,15 @@ def _chain_minimizer_matches(
     rc_matches = [(qpos, target_length - k - tpos) for qpos, tpos in matches]
     reverse_chain = _best_diagonal_chain(rc_matches)
 
-    if forward_chain is None and reverse_chain is None:
-        return None
-
     if reverse_chain is not None and (forward_chain is None or len(reverse_chain) > len(forward_chain)):
         strand = "-"
         best_matches = reverse_chain  # (qpos, t') with t' in the rc frame
-    else:
+    elif forward_chain is not None:
         strand = "+"
         best_matches = forward_chain
+    else:
+        # Neither frame produced a usable chain.
+        return None
 
     # Compute overlap from chained matches on the winning diagonal
     q_start = best_matches[0][0]

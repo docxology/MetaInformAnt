@@ -16,6 +16,7 @@ Optional dependencies:
 from __future__ import annotations
 
 import math
+import statistics
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -120,8 +121,9 @@ def plot_read_length_histogram(
         # Log-spaced bins
         log_min = math.log10(min(lengths))
         log_max = math.log10(max(lengths))
+        bin_edges: list[float]
         if HAS_NUMPY:
-            bin_edges = np.logspace(log_min, log_max, bins + 1)
+            bin_edges = np.logspace(log_min, log_max, bins + 1).tolist()
         else:
             step = (log_max - log_min) / bins
             bin_edges = [10 ** (log_min + i * step) for i in range(bins + 1)]
@@ -141,10 +143,12 @@ def plot_read_length_histogram(
             n50 = length
             break
 
-    median = sorted(lengths)[len(lengths) // 2]
+    # True median: the mean of the two middle lengths for an even count, so it can be a half bp.
+    median = statistics.median(lengths)
+    median_label = f"{median:,.1f}".removesuffix(".0")
 
     ax.axvline(n50, color="#FF5722", linestyle="--", linewidth=2, label=f"N50 = {n50:,} bp")
-    ax.axvline(median, color="#4CAF50", linestyle="--", linewidth=2, label=f"Median = {median:,} bp")
+    ax.axvline(median, color="#4CAF50", linestyle="--", linewidth=2, label=f"Median = {median_label} bp")
 
     ax.set_xlabel("Read Length (bp)", fontsize=12)
     ax.set_ylabel("Count", fontsize=12)

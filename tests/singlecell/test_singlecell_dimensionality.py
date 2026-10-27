@@ -223,6 +223,130 @@ class TestPCA:
         # If sklearn were missing, this would raise ImportError before reaching here
 
 
+def _svd_pca_oracle(x: np.ndarray, n_components: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """PCA of the column-standardized matrix by a plain SVD (independent of sklearn).
+
+    Returns (scores, loadings, explained_variance_ratio) for the leading components.
+    """
+    scaled = (x - x.mean(axis=0)) / x.std(axis=0)
+    u, s, vt = np.linalg.svd(scaled, full_matrices=False)
+    ratio = s**2 / np.sum(s**2)
+    return u[:, :n_components] * s[:n_components], vt[:n_components].T, ratio[:n_components]
+
+
+def _align_signs(reference: np.ndarray, candidate: np.ndarray) -> np.ndarray:
+    """Flip each candidate column so it points the same way as the reference column."""
+    signs = np.sign(np.sum(reference * candidate, axis=0))
+    signs[signs == 0] = 1.0
+    return candidate * signs
+
+
+@pytest.mark.skipif(not SKLEARN_AVAILABLE, reason="sklearn not available")
+class TestPCAHighlyVariableGenes:
+    """compute_pca(use_hvgs=True) must analyse only the genes flagged highly variable."""
+
+    N_CELLS = 120
+    N_GENES = 60
+    N_HVG = 10
+
+    def setup_method(self):
+        rng = np.random.default_rng(11)
+        n_quiet = self.N_GENES - self.N_HVG
+        x = np.empty((self.N_CELLS, self.N_GENES))
+        # Ten loud genes share one latent factor (variance ~9) ...
+        x[:, : self.N_HVG] = rng.normal(0.0, 3.0, (self.N_CELLS, 1)) * rng.normal(1.0, 0.1, self.N_HVG)
+        x[:, : self.N_HVG] += rng.normal(0.0, 0.3, (self.N_CELLS, self.N_HVG))
+        # ... fifty quiet genes (variance ~0.2) share a different one. After per-gene scaling the quiet
+        # block dominates an all-gene PCA, so HVG restriction changes the leading components.
+        x[:, self.N_HVG :] = rng.normal(0.0, 1.0, (self.N_CELLS, 1)) * rng.normal(0.4, 0.05, n_quiet)
+        x[:, self.N_HVG :] += rng.normal(0.0, 0.2, (self.N_CELLS, n_quiet))
+        self.x = x + 5.0
+
+        var = pd.DataFrame({"gene": [f"g{i}" for i in range(self.N_GENES)]})
+        self.data = select_hvgs(SingleCellData(self.x.copy(), var=var), n_top_genes=self.N_HVG, flavor="variance")
+        self.hvg = self.data.var["highly_variable"].to_numpy()
+
+    def test_fixture_flags_exactly_the_loud_genes(self):
+        assert int(self.hvg.sum()) == self.N_HVG
+        assert self.hvg[: self.N_HVG].all()
+        assert not self.hvg[self.N_HVG :].any()
+
+    def test_loadings_involve_only_hvgs(self):
+        k = 5
+        result = compute_pca(self.data, n_components=k, random_state=0, use_hvgs=True)
+
+        loadings = result.varm["PCs"]
+        assert loadings.shape == (self.N_GENES, k)  # one row per gene, as for an all-gene PCA
+        assert np.all(loadings[~self.hvg] == 0.0)  # genes outside the HVG set carry no loading
+        assert np.all(np.abs(loadings[self.hvg]).sum(axis=1) > 0.0)
+        np.testing.assert_allclose(np.linalg.norm(loadings, axis=0), 1.0, atol=1e-10)
+
+        info = result.uns["pca"]
+        assert info["use_hvgs"] is True
+        assert info["n_genes_used"] == self.N_HVG
+        assert info["components_shape"] == (k, self.N_GENES)
+
+    def test_hvg_pca_matches_independent_svd_of_the_hvg_submatrix(self):
+        k = 5
+        result = compute_pca(self.data, n_components=k, random_state=0, use_hvgs=True)
+
+        scores, loadings, ratio = _svd_pca_oracle(self.x[:, self.hvg], k)
+        np.testing.assert_allclose(_align_signs(scores, result.obsm["X_pca"]), scores, atol=1e-6)
+        np.testing.assert_allclose(_align_signs(loadings, result.varm["PCs"][self.hvg]), loadings, atol=1e-6)
+        # Variance ratios are relative to the HVG-only total variance.
+        np.testing.assert_allclose(result.uns["pca"]["explained_variance_ratio"], ratio, atol=1e-8)
+
+    def test_hvg_restriction_changes_the_embedding(self):
+        with_hvgs = compute_pca(self.data, n_components=3, random_state=0, use_hvgs=True)
+        all_genes = compute_pca(self.data, n_components=3, random_state=0, use_hvgs=False)
+
+        # An annotation present in var must not influence an analysis that did not ask for it.
+        assert all_genes.uns["pca"]["use_hvgs"] is False
+        assert all_genes.uns["pca"]["n_genes_used"] == self.N_GENES
+        assert np.all(np.abs(all_genes.varm["PCs"]).sum(axis=1) > 0.0)
+
+        aligned = _align_signs(all_genes.obsm["X_pca"], with_hvgs.obsm["X_pca"])
+        assert not np.allclose(aligned[:, 0], all_genes.obsm["X_pca"][:, 0], atol=1e-3)
+
+    def test_component_count_is_limited_by_the_number_of_hvgs(self):
+        result = compute_pca(self.data, n_components=50, random_state=0, use_hvgs=True)
+
+        assert result.obsm["X_pca"].shape == (self.N_CELLS, self.N_HVG)
+        assert result.varm["PCs"].shape == (self.N_GENES, self.N_HVG)
+
+    def test_use_hvgs_without_annotation_raises(self):
+        bare = SingleCellData(self.x.copy())
+
+        with pytest.raises(ValueError, match="highly_variable"):
+            compute_pca(bare, n_components=3, use_hvgs=True)
+        # Without the flag the same object analyses every gene as before.
+        assert "X_pca" in compute_pca(bare, n_components=3, use_hvgs=False).obsm
+
+    def test_use_hvgs_with_no_flagged_gene_raises(self):
+        data = self.data.copy()
+        data.var["highly_variable"] = False
+
+        with pytest.raises(ValueError, match="no genes"):
+            compute_pca(data, n_components=3, use_hvgs=True)
+
+    def test_use_hvgs_rejects_a_non_boolean_annotation(self):
+        data = self.data.copy()
+        data.var["highly_variable"] = ["maybe"] * self.N_GENES
+
+        with pytest.raises(ValueError, match="highly_variable"):
+            compute_pca(data, n_components=3, use_hvgs=True)
+
+    def test_sparse_matrix_with_hvgs_matches_dense(self):
+        dense = compute_pca(self.data, n_components=4, random_state=0, use_hvgs=True)
+        sparse_data = SingleCellData(sparse.csr_matrix(self.x), var=self.data.var.copy())
+        from_sparse = compute_pca(sparse_data, n_components=4, random_state=0, use_hvgs=True)
+
+        np.testing.assert_allclose(
+            _align_signs(dense.obsm["X_pca"], from_sparse.obsm["X_pca"]), dense.obsm["X_pca"], atol=1e-8
+        )
+        assert np.all(from_sparse.varm["PCs"][~self.hvg] == 0.0)
+
+
 class TestNeighborGraph:
     """Test neighbor graph computation."""
 

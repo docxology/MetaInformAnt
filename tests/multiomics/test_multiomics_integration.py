@@ -25,6 +25,7 @@ from metainformant.multiomics.analysis.integration import (
     joint_nmf,
     joint_pca,
 )
+from metainformant.multiomics.methods.factorization import canonical_correlation as ridge_cca_oracle
 
 
 class TestMultiOmicsData:
@@ -697,6 +698,207 @@ class TestCanonicalCorrelation:
         assert X_can1.shape == X_can2.shape == (30, 3)
         assert Y_can1.shape == Y_can2.shape == (30, 3)
         assert len(corr1) == len(corr2) == 3
+
+
+def _cca_inputs(n: int = 120, p: int = 8, q: int = 6, seed: int = 7) -> tuple[np.ndarray, np.ndarray]:
+    """Two views driven by three shared latent factors plus independent noise (n >> p, q)."""
+    rng = np.random.default_rng(seed)
+    latent = rng.standard_normal((n, 3))
+    x = latent @ rng.standard_normal((3, p)) + 0.8 * rng.standard_normal((n, p))
+    y = latent @ rng.standard_normal((3, q)) + 0.8 * rng.standard_normal((n, q))
+    return x, y
+
+
+def _cca_layers(x: np.ndarray, y: np.ndarray) -> dict[str, pd.DataFrame]:
+    index = [f"S{i}" for i in range(x.shape[0])]
+    return {"a": pd.DataFrame(x, index=index), "b": pd.DataFrame(y, index=index)}
+
+
+def _standardize_ddof1(a: np.ndarray) -> np.ndarray:
+    """Columns centred and scaled to unit sample variance (the scale of a correlation matrix)."""
+    return (a - a.mean(axis=0)) / a.std(axis=0, ddof=1)
+
+
+def _classical_cca_correlations(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """Unregularised canonical correlations via QR + SVD (Bjorck-Golub principal angles).
+
+    Independent of both whitening-based CCA and sklearn's iterative NIPALS CCA.
+    """
+    qx, _ = np.linalg.qr(x - x.mean(axis=0))
+    qy, _ = np.linalg.qr(y - y.mean(axis=0))
+    return np.linalg.svd(qx.T @ qy, compute_uv=False)
+
+
+_RIDGE_GRID = (0.0, 0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0)
+
+
+class TestCanonicalCorrelationRidge:
+    """canonical_correlation must honour its ``regularization`` (ridge) parameter."""
+
+    def test_regularization_is_applied(self):
+        """Regression: correlations used to be identical for lambda = 0, 0.001, 10 and 1000."""
+        x, y = _cca_inputs()
+        corr = {
+            lam: canonical_correlation(_cca_layers(x, y), layers=("a", "b"), n_components=3, regularization=lam)[4]
+            for lam in (0.0, 0.001, 10.0, 1000.0)
+        }
+
+        assert not np.allclose(corr[0.0], corr[0.001], rtol=0, atol=1e-6)
+        assert not np.allclose(corr[0.001], corr[10.0], rtol=0, atol=1e-3)
+        assert not np.allclose(corr[10.0], corr[1000.0], rtol=0, atol=1e-3)
+        # A very strong ridge drives the whitened cross-covariance (and so every correlation) to zero.
+        assert corr[1000.0][0] < 0.01 < corr[0.0][0]
+
+    def test_lambda_zero_reproduces_the_unregularized_result(self):
+        """lambda = 0 is classical CCA: it matches an independent algorithm and the previous sklearn engine."""
+        from sklearn.cross_decomposition import CCA
+        from sklearn.preprocessing import StandardScaler
+
+        x, y = _cca_inputs()
+        _, _, _, _, corr = canonical_correlation(
+            _cca_layers(x, y), layers=("a", "b"), n_components=3, regularization=0.0
+        )
+
+        classical = _classical_cca_correlations(x, y)[:3]
+        np.testing.assert_allclose(corr, classical, rtol=0, atol=1e-9)
+
+        # The implementation this replaced (sklearn's NIPALS CCA); NIPALS stops at tol=1e-6 so allow 1e-4.
+        x_scores, y_scores = CCA(n_components=3).fit_transform(
+            StandardScaler().fit_transform(x), StandardScaler().fit_transform(y)
+        )
+        sklearn_corr = np.sort([abs(np.corrcoef(x_scores[:, i], y_scores[:, i])[0, 1]) for i in range(3)])[::-1]
+        np.testing.assert_allclose(corr, sklearn_corr, rtol=0, atol=1e-4)
+
+        # The documented default is the unregularized analysis.
+        default = canonical_correlation(_cca_layers(x, y), layers=("a", "b"), n_components=3)[4]
+        np.testing.assert_array_equal(default, corr)
+
+    def test_ridge_matches_factorization_oracle(self):
+        """Same definition as methods.factorization.canonical_correlation: (R + lambda I) whitening."""
+        x, y = _cca_inputs()
+        x_std, y_std = _standardize_ddof1(x), _standardize_ddof1(y)
+        for lam in (0.01, 0.1, 1.0, 10.0):
+            x_c, y_c, _, _, corr = canonical_correlation(
+                _cca_layers(x, y), layers=("a", "b"), n_components=3, regularization=lam
+            )
+            oracle = ridge_cca_oracle(x_std, y_std, n_components=3, regularization=lam)
+
+            np.testing.assert_allclose(corr, oracle["correlations"], rtol=1e-6, err_msg=f"lambda={lam}")
+            for k in range(3):
+                for mine, theirs in ((x_c, oracle["x_scores"]), (y_c, oracle["y_scores"])):
+                    theirs = np.asarray(theirs)[:, k]
+                    sign = np.sign(mine[:, k] @ theirs)
+                    np.testing.assert_allclose(sign * mine[:, k], theirs, atol=1e-6, err_msg=f"lambda={lam}, k={k}")
+
+    def test_identical_layers_match_the_closed_form_ridge_solution(self):
+        """Analytic oracle with no CCA code in it.
+
+        For X = Y the whitened cross-covariance is R (R + lambda I)^-1 (R is the correlation matrix),
+        so the k-th canonical correlation is exactly e_k / (e_k + lambda) for the eigenvalues e_k of R.
+        """
+        x, _ = _cca_inputs()
+        eigenvalues = np.sort(np.linalg.eigvalsh(np.corrcoef(x.T)))[::-1]
+        for lam in (0.0, 0.3, 1.0, 25.0):
+            _, _, _, _, corr = canonical_correlation(
+                _cca_layers(x, x), layers=("a", "b"), n_components=x.shape[1], regularization=lam
+            )
+            np.testing.assert_allclose(
+                corr, eigenvalues / (eigenvalues + lam), rtol=0, atol=1e-12, err_msg=f"lambda={lam}"
+            )
+
+    def test_ridge_matches_oracle_when_features_outnumber_samples(self):
+        """The thin-SVD (dual) solution agrees with the covariance (primal) oracle for p, q > n."""
+        rng = np.random.default_rng(42)
+        latent = rng.standard_normal((30, 3))
+        x = latent @ rng.standard_normal((3, 40)) + 0.5 * rng.standard_normal((30, 40))
+        y = latent @ rng.standard_normal((3, 25)) + 0.3 * rng.standard_normal((30, 25))
+
+        # Without a ridge every canonical correlation is exactly 1 (perfect in-sample overfit).
+        unregularized = canonical_correlation(_cca_layers(x, y), layers=("a", "b"), n_components=5)[4]
+        np.testing.assert_allclose(unregularized, np.ones(5), atol=1e-8)
+
+        x_std, y_std = _standardize_ddof1(x), _standardize_ddof1(y)
+        previous = unregularized
+        for lam in (0.05, 0.5, 5.0):
+            _, _, _, _, corr = canonical_correlation(
+                _cca_layers(x, y), layers=("a", "b"), n_components=5, regularization=lam
+            )
+            oracle = ridge_cca_oracle(x_std, y_std, n_components=5, regularization=lam)
+            np.testing.assert_allclose(corr, oracle["correlations"], rtol=1e-6, err_msg=f"lambda={lam}")
+            assert np.all(corr < previous)  # strictly below the previous (smaller) lambda
+            previous = corr
+
+    def test_larger_lambda_shrinks_correlations_monotonically(self):
+        """Every canonical correlation is non-increasing in lambda.
+
+        Each Rayleigh quotient a'Cxy b / sqrt(a'(Cxx + lI)a b'(Cyy + lI)b) decreases pointwise as lambda grows,
+        so by Courant-Fischer every singular value of the whitened cross-covariance does too.
+        """
+        x, y = _cca_inputs()
+        corr = np.array(
+            [
+                canonical_correlation(_cca_layers(x, y), layers=("a", "b"), n_components=3, regularization=lam)[4]
+                for lam in _RIDGE_GRID
+            ]
+        )  # shape (len(grid), 3)
+
+        assert np.all(np.diff(corr, axis=0) < 0), corr
+        assert np.all(corr >= 0.0) and np.all(corr <= 1.0)
+        assert np.all(np.diff(corr, axis=1) <= 1e-12)  # components stay sorted for every lambda
+
+    def test_variates_are_consistent_with_weights_and_correlations(self):
+        """X_c = standardized X @ weights; lambda = 0 gives uncorrelated variates with the reported correlations."""
+        x, y = _cca_inputs()
+        x_std, y_std = _standardize_ddof1(x), _standardize_ddof1(y)
+
+        for lam in (0.0, 0.5):
+            x_c, y_c, x_w, y_w, corr = canonical_correlation(
+                _cca_layers(x, y), layers=("a", "b"), n_components=3, regularization=lam
+            )
+            assert x_w.shape == (8, 3) and y_w.shape == (6, 3)
+            np.testing.assert_allclose(x_c, x_std @ x_w, atol=1e-9)
+            np.testing.assert_allclose(y_c, y_std @ y_w, atol=1e-9)
+
+            empirical = np.array([np.corrcoef(x_c[:, k], y_c[:, k])[0, 1] for k in range(3)])
+            assert np.all(empirical >= 0)  # the sign convention pairs the variates positively
+            if lam == 0.0:
+                np.testing.assert_allclose(empirical, corr, atol=1e-9)
+                cross = np.corrcoef(x_c.T, y_c.T)[:3, 3:]
+                np.testing.assert_allclose(cross - np.diag(np.diag(cross)), 0.0, atol=1e-9)
+                np.testing.assert_allclose(x_c.std(axis=0, ddof=1), 1.0, atol=1e-9)
+            else:
+                # The penalised correlation is a lower bound on the correlation of the variates it produces.
+                assert np.all(corr <= empirical + 1e-9)
+                assert np.all(corr < empirical)
+
+    def test_rejects_invalid_regularization_and_unsupported_options(self):
+        x, y = _cca_inputs()
+        data = _cca_layers(x, y)
+        for bad in (-0.1, float("nan"), float("inf")):
+            with pytest.raises(errors.ValidationError, match="regularization"):
+                canonical_correlation(data, layers=("a", "b"), n_components=2, regularization=bad)
+        # sklearn-only iteration options no longer exist; rejecting them beats silently ignoring them.
+        with pytest.raises(TypeError):
+            canonical_correlation(data, layers=("a", "b"), n_components=2, max_iter=10)
+
+    def test_regularized_cca_scales_to_many_more_features_than_samples(self):
+        """Cost is O(n^2 (p + q)): a covariance-matrix (p x p) implementation could not run this."""
+        rng = np.random.default_rng(3)
+        n, p, q = 40, 4000, 3000
+        latent = rng.standard_normal((n, 2))
+        x = latent @ rng.standard_normal((2, p)) + rng.standard_normal((n, p))
+        y = latent @ rng.standard_normal((2, q)) + rng.standard_normal((n, q))
+
+        corrs = []
+        for lam in (1.0, 10.0, 100.0):
+            x_c, y_c, x_w, y_w, corr = canonical_correlation(
+                _cca_layers(x, y), layers=("a", "b"), n_components=2, regularization=lam
+            )
+            assert x_w.shape == (p, 2) and y_w.shape == (q, 2)
+            assert x_c.shape == (n, 2) and y_c.shape == (n, 2)
+            corrs.append(corr)
+        assert np.all(np.diff(np.array(corrs), axis=0) < 0)
+        assert np.all(np.array(corrs) > 0) and np.all(np.array(corrs) < 1)
 
 
 class TestIntegrationEdgeCases:

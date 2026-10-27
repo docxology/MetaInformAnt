@@ -16,6 +16,7 @@ Optional dependencies:
 from __future__ import annotations
 
 import math
+import statistics
 from collections import defaultdict
 from typing import Any
 
@@ -24,6 +25,7 @@ from metainformant.core.utils.logging import get_logger
 logger = get_logger(__name__)
 
 # Optional dependencies
+np: Any  # None when numpy is unavailable (optional dependency)
 try:
     import numpy as np
 
@@ -32,6 +34,7 @@ except ImportError:
     HAS_NUMPY = False
     np = None
 
+scipy_stats: Any  # None when scipy is unavailable (optional dependency)
 try:
     from scipy import stats as scipy_stats
 
@@ -809,12 +812,10 @@ def _build_consensus(
     starts = [c.get("start", 0) for c in cluster]
     ends = [c.get("end", 0) for c in cluster]
 
-    starts.sort()
-    ends.sort()
-    n = len(cluster)
-
-    consensus_start = starts[n // 2]
-    consensus_end = ends[n // 2]
+    # True median breakpoints. Positions are integer coordinates, so the half-integer
+    # median of an even-sized cluster is truncated, as in filtering.merge._median_position.
+    consensus_start = int(statistics.median(starts))
+    consensus_end = int(statistics.median(ends))
 
     # Majority SV type
     type_counts: dict[str, int] = defaultdict(int)

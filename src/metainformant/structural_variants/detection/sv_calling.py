@@ -12,17 +12,20 @@ from __future__ import annotations
 
 import math
 import os
+import statistics
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
+np: Any  # None when numpy is unavailable (optional dependency)
 try:
     import numpy as np
 except ImportError:
     np = None
 
+scipy_stats: Any  # None when scipy is unavailable (optional dependency)
 try:
     from scipy import stats as scipy_stats
 except ImportError:
@@ -560,14 +563,11 @@ def _estimate_insert_size(reads: list[dict[str, Any]]) -> InsertSizeStats:
         median = float(np.median(arr))
         mad = float(np.median(np.abs(arr - median)))
     else:
-        insert_sizes.sort()
         n = len(insert_sizes)
         mean = sum(insert_sizes) / n
-        median = insert_sizes[n // 2]
-        variance = sum((x - mean) ** 2 for x in insert_sizes) / max(n - 1, 1)
-        std = math.sqrt(variance)
-        deviations = sorted(abs(x - median) for x in insert_sizes)
-        mad = deviations[n // 2]
+        std = math.sqrt(sum((x - mean) ** 2 for x in insert_sizes) / (n - 1)) if n > 1 else 100.0
+        median = float(statistics.median(insert_sizes))
+        mad = float(statistics.median(abs(x - median) for x in insert_sizes))
 
     return InsertSizeStats(mean=mean, std=std, median=median, mad=mad)
 
@@ -739,10 +739,8 @@ def _merge_evidence(cluster: list[SVEvidence]) -> SVEvidence:
         bp1 = int(np.median(bp1_values))
         bp2 = int(np.median(bp2_values))
     else:
-        bp1_values.sort()
-        bp2_values.sort()
-        bp1 = bp1_values[len(bp1_values) // 2]
-        bp2 = bp2_values[len(bp2_values) // 2]
+        bp1 = int(statistics.median(bp1_values))
+        bp2 = int(statistics.median(bp2_values))
 
     # Use most common strand orientation
     strand1_counts: dict[str, int] = {}

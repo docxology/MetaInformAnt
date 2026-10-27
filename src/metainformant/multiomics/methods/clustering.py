@@ -26,6 +26,7 @@ from metainformant.multiomics.methods.factorization import (
 logger = get_logger(__name__)
 
 # Optional scientific dependencies
+np: Any  # None when numpy is unavailable (optional dependency)
 try:
     import numpy as np
 

@@ -7,6 +7,7 @@ to be compatible with AnnData structures while providing graceful fallbacks.
 
 from __future__ import annotations
 
+import importlib
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
@@ -17,6 +18,7 @@ from metainformant.core.data import validation
 from metainformant.core.utils import errors, logging
 
 # Import scipy.sparse for sparse matrix support
+sp_sparse: Any  # None when scipy.sparse is unavailable (optional dependency)
 try:
     from scipy import sparse as sp_sparse
 
@@ -27,9 +29,11 @@ except ImportError:
 
 logger = logging.get_logger(__name__)
 
-# Try to import anndata, but provide fallback if not available
+# Try to import anndata, but provide fallback if not available. importlib keeps
+# the binding identical for mypy whether or not the optional package is installed.
+ad: Any  # None when anndata is unavailable (optional dependency)
 try:
-    import anndata as ad
+    ad = importlib.import_module("anndata")
 
     HAS_ANNDATA = True
 except ImportError:

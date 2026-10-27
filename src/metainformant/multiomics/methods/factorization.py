@@ -25,6 +25,7 @@ from metainformant.core.utils.logging import get_logger
 logger = get_logger(__name__)
 
 # Optional scientific dependencies
+np: Any  # None when numpy is unavailable (optional dependency)
 try:
     import numpy as np
 
@@ -33,6 +34,7 @@ except ImportError:
     HAS_NUMPY = False
     np = None
 
+sp_linalg: Any  # None when scipy is unavailable (optional dependency)
 try:
     from scipy import linalg as sp_linalg
 
