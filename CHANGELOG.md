@@ -126,8 +126,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   packages; math/simulation plot helpers moved into `visualization/analysis/`.
 - Subprocess test timeouts raised for cold-import headroom on contended
   external-drive checkouts (examples runner, life-events CLI).
-- The full-suite coverage floor rises from 70.00% to 71.80%, about one point
-  under the 72.84% hosted measurement (Test Suite run 40446465878).
+- The full-suite coverage floor rises from 70.00% to 74.90%, about one point
+  under the 75.91% hosted measurement (Test Suite run 40594851520).
 - Interface changes from the defect fixes below (callers may notice):
   - `generate_clinical_report(drugs=None)` analyses every CPIC drug (`drugs=[]`
     requests none); `load_allele_definitions` defaults `source=None` and

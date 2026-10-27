@@ -23,14 +23,14 @@ returns a non-zero status.
 
 The full `coverage` mode measures the complete maintained package, including
 optional domain facades that are not all exercised by a single CI environment.
-Its blocking baseline is currently `71.80%`, about one point under the hosted
-full-suite observation of `72.84%` (Test Suite run 40446465878, 2026-10-26) so
+Its blocking baseline is currently `74.90%`, about one point under the hosted
+full-suite observation of `75.91%` (Test Suite run 40594851520, 2026-10-27) so
 that runner variance cannot fail an unchanged tree. This is a real gate, not an
 ignored check. Raise it through `COVERAGE_MINIMUM` only after adding tests and
 recording the new measured baseline:
 
 ```bash
-COVERAGE_MINIMUM=72.80 bash scripts/package/test.sh --mode coverage
+COVERAGE_MINIMUM=75.90 bash scripts/package/test.sh --mode coverage
 ```
 
 The smaller `coverage-fast` mode intentionally uses `--cov-fail-under=0` for

@@ -19,8 +19,8 @@ snapshots; then owner-reviewed scientific promotion. A green engineering gate
 never establishes cohort completion or biological inference. The live RNA
 campaign remains a moving operational snapshot.
 
-- [ ] Raise `COVERAGE_MINIMUM` (currently 71.80%, about one point under the
-  hosted full-suite measurement of 72.84% in Test Suite run 40446465878) in measured
+- [ ] Raise `COVERAGE_MINIMUM` (currently 74.90%, about one point under the
+  hosted full-suite measurement of 75.91% in Test Suite run 40594851520) in measured
   increments as maintained-domain tests expand; each increase requires a hosted
   full-suite receipt and a corresponding test/documentation change.
 
