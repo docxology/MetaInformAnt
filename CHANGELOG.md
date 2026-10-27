@@ -56,6 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `declared_inferential_bh_fdr` wrapper; registered sensitivity runner
   (`leave_one_study_out`, `exclude_covariate`) with directional agreement
   checks.
+- `dna.population.normalized_fay_wu_h` (Zeng et al. 2006) and an optional
+  `outgroup` for `calculate_fay_wu_h` and `neutrality_test_suite`.
 - `metainformant.rna.analysis.ortholog_mapping` extended additively: a
   fail-closed per-species retention audit (`audit_species_retention`,
   `DEFAULT_MIN_RETENTION`) and the versioned `MappingArtifactManifest` v1
@@ -71,12 +73,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nbconvert's. A locked dependency that cannot be audited blocks unless
   baselined.
 - Repository-wide typing completion: `mypy --config-file pyproject.toml
-  src/metainformant` reports **0 errors in 693 files** under the locked mypy
-  2.3.1 (previously 1,705). Includes: third-party import overrides for
-  unstubbed libraries (scipy, seaborn, networkx, yaml, psutil, defusedxml,
-  plotly, umap, igraph, and others), removal of 102 stale `# type: ignore`
-  comments, and real typing fixes across every domain package. The quality
-  budget gate (`scripts/quality/check_mypy_budget.py`) is now set to 0.
+  src/metainformant` reports 0 errors in 750 files under mypy 2.4.0, both with
+  every extra installed and in CI's dev-only environment (404 errors in 121
+  files before this release's final typing pass). Includes third-party import
+  overrides for unstubbed libraries, removal of stale `# type: ignore`
+  comments, and typing fixes across every domain package. CI and
+  `uv_quality.sh` now run the zero-error budget gate
+  (`scripts/quality/check_mypy_budget.py`) over all of `src/metainformant`
+  instead of only `rna`.
+- The blocking full-suite coverage floor rises from 58% to 70% (hosted CI
+  measures 71.02%).
+- Documentation verification checks every quoted `metainformant` import and
+  every attribute chain on an imported module or class against the installed
+  package (`quality.doc_verification.find_stale_doc_imports`,
+  `find_stale_doc_attributes`, also run by `scripts/verify_documentation_code.py`).
+  Documentation across the domains was rewritten to the real APIs; examples
+  for functions that do not exist were removed rather than kept as
+  aspirational text.
+- `TODO.md` keeps only open work.
+- Scripts configure logging with `configure_logging_from_env()`, so they
+  report progress at INFO by default; `CORE_LOG_LEVEL` overrides it.
+- Interface changes that come with the fixes below:
+  `calculate_fay_wu_h` returns a `None` p-value without an outgroup;
+  `two_epoch_effective_size` now means the coalescent effective size;
+  `generate_two_populations(n_sites=...)` counts polymorphic sites and
+  defaults to Watterson's expectation; `canonical_correlation` no longer
+  accepts scikit-learn keyword arguments; `cross_validate_biological` raises
+  on metric failures; degenerate linear GWAS fits return `status: "error"`;
+  `SurvivalPredictor.predict` returns restricted mean survival time;
+  `EventSequencePredictor` no longer lists `lstm`;
+  `generate_synthetic_life_events` raises `TypeError` for unsupported
+  options; and the AntWiki species index raises `NotImplementedError`.
+- `interpret_neutrality_results` (and so `neutrality_test_suite`'s
+  `neutrality_summary`) labels Tajima's D or Fu and Li's D* as selection or
+  demography only when its p-value is below `alpha` (default 0.05);
+  non-significant statistics read `neutral_evolution`. Results without
+  p-values keep the sign-based labels.
 - `classify_orthogroups` and `join_expression_with_orthology` vectorized
   (~8.9x and ~12.6x on the campaign-scale benchmark, outputs bit-identical).
 - Cross-species figures are provenance-honest: descriptive-only annotations,
@@ -89,7 +121,168 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `protein.database.interpro.fetch_interpro_domains`: a blank accession
+- Neutrality tests (`dna.population`) were wrong. Tajima's D subtracted the
+  whole-locus Watterson's theta from the per-site nucleotide diversity, so a
+  four-sequence example gave -6.24 instead of 0.59, and the variance was
+  floored at 0.01. Fu and Li's D* and F* were unstandardized counts with no
+  variance. The Fay and Wu's H p-value divided a per-site H by a per-locus
+  standard deviation and was always near 1. All are now standardized linear
+  functions of the site frequency spectrum with exact neutral variances from
+  Fu's (1995) covariance (Achaz 2009), which reproduce the published closed
+  forms (Tajima 1989; Fu and Li 1993 for D*; Zeng et al. 2006) and are checked
+  against coalescent simulation for F*. Only columns scored in every sequence
+  are used. The H p-value now comes from Zeng et al.'s normalized H and needs
+  an outgroup (`calculate_fay_wu_h(seqs, outgroup)`,
+  `neutrality_test_suite(seqs, outgroup=...)`, new `normalized_fay_wu_h`);
+  without one it is `None`.
+- `calculate_summary_statistics(genotype_matrix=...)` decoded 0/1/2 dosages as
+  allele pairs `(g // 2, g % 2)`, so homozygous-alternate genotypes counted as
+  heterozygous. Only dosage 1 is heterozygous now; other values are missing.
+- Effective-population-size functions returned placeholders:
+  `exponential_growth_effective_size` returned 0.8 or 0.9 times the initial
+  size, `two_epoch_effective_size` ignored the time since the change, and
+  `demography.bottleneck_effective_size` used invented weights. They now
+  return Wright's harmonic mean over the growth trajectory or bottleneck
+  generations, and the coalescent effective size
+  N_recent + (N_ancient - N_recent) exp(-T / 2N_recent) for two epochs.
+  `statistics.bottleneck_effective_size` omitted the generation count from
+  the harmonic mean.
+- Benjamini-Hochberg q-values in `networks.analysis.pathway` enforced
+  monotonicity from the wrong end, so one enriched pathway made every null
+  pathway significant.
+- Plot functions given axes inside a matplotlib SubFigure crashed when saving,
+  and four phenotype plots returned the SubFigure instead of its figure; they
+  now resolve the root figure (`visualization.config.figures.root_figure`).
+- Pure-Python fallbacks in `structural_variants` used the upper median for
+  merged and called breakpoints and insert-size statistics, returned a zero
+  insert-size spread for a single observation, and skipped the median
+  centering and GC correction of CNV log2 ratios.
+- GWAS: the *P. barbatus* pipelines called the QC filter with a stale
+  signature and mismatched threshold names, then analyzed the unfiltered
+  variants. They read significance from a key the corrections do not return,
+  so no variant was ever flagged, left Bonferroni-adjusted p-values above 1,
+  and matched phenotypes to samples by position. Phenotypes now align by
+  sample ID, and missing, extra or duplicate IDs are refused. `run_gwas` coerces quoted YAML
+  QC thresholds to numbers. LDSR reported the slope's standard error times
+  the LD-score standard deviation as the intercept's standard error; it now
+  uses the OLS intercept standard error. `plot_qq_overlay` crashed on NumPy
+  p-value arrays.
+- Spatial: `gearys_c` raised for COO, DIA and BSR sparse weights, and
+  `correlation_mapping` used Spearman for any method other than Pearson; it
+  now refuses unknown methods. The 3-D protein structure plot passed
+  `projection` to `plt.subplots`, which raises.
+- `scripts/cloud/sync_cloud_down.sh` disabled SSH host-key checking; it now
+  uses `accept-new`, and the gcloud location comes from `GOOGLE_CLOUD_SDK_BIN`
+  instead of a hard-coded home directory.
+- `scripts/menu/run_menu.py` imported removed modules and could not start.
+- Sixty-two scripts under `scripts/` failed at import because the package
+  had moved or stopped re-exporting the names they used; they now run against
+  the current APIs, checked with `--help` and small real runs. Fixing them
+  exposed scripts that never flagged significant association results, swapped
+  the Lotka-Volterra predator parameters, and selected regression features
+  with a classification F-test. `download_honeybee_variants.py` prints its
+  download guide instead of fetching whole SRA projects, and options backed by
+  removed functions fail with an explicit message. A slow test resolves every
+  `metainformant` import under `scripts/`; `discover_species.py` and
+  `setup_genome.py` remain listed as needing functionality the package no
+  longer provides.
+- `simulation.models.popgen.generate_two_populations(fst=...)` produced
+  F_ST near 0.5 whatever the target. It now follows the Balding-Nichols model,
+  whose Hudson F_ST equals the target in expectation, and by default draws
+  Watterson's expected number of polymorphic sites from `theta`.
+- `visualization.config.conventions.save_figure_deterministic` could not
+  write SVG, JPEG, TIFF, WebP or PGF because it passed PNG metadata to every
+  backend; SVG output is now byte-reproducible. `circular_tree_plot` raised
+  for trees with more than one level of internal nodes, and the matplotlib
+  fallback of `interactive_scatter` failed on categorical colour columns.
+- `networks.analysis.pathway.pathway_enrichment_analysis(method="hypergeometric")`
+  divided by zero when the query covered a whole pathway, did not restrict
+  pathways to the background, and left a single result without
+  `corrected_p_value`.
+- Statistics reported as medians took the upper middle value for even counts
+  in structural-variant consensus calls, long-read summaries, multi-omics
+  pathway concordance, network summaries, pathway activity scores, FASTQ
+  quality, AntWiki phenotype distributions, life-event group comparisons and
+  LDSR's genomic-control lambda. Network summaries without NumPy also
+  reported a zero degree standard deviation.
+- GWAS association: the logistic test used missing genotypes (-1) as
+  dosages and always reported `converged: True`; it now fits complete cases,
+  reports `n_missing_dropped`, and reports statsmodels' actual convergence.
+  The linear test computed single-predictor p-values from the normal
+  distribution instead of Student's t, and reported singular designs,
+  constant genotypes and too few samples as successful fits with beta 0 and
+  p 1; these are now errors. QC never applied `min_qual`, and the filtered
+  VCF writer printed `None` for missing fields. `filter_variants_bcftools`
+  passed its keep-conditions to `bcftools filter -e`, which removed the
+  passing sites; it now uses `-i`.
+- GWAS fine-mapping paired a beta-scale prior variance with V = 1 on the
+  Z scale, which flattened every approximate Bayes factor: a z = 7.5 signal
+  among 299 nulls gave a 285-variant 95% credible set, and `eqtl_coloc`
+  returned PP.H4 near 0.003 whether or not the traits shared a causal
+  variant. Wakefield's ABF now uses V = SE^2 (or sample size with MAF and
+  case fraction, as in coloc) with coloc's default priors, in log space so
+  strong signals stay finite; Z-only input uses an explicit `z_scale` model.
+  The credible set behind the interactive fine-mapping plot used ABF = 1/p
+  and now delegates to the same implementation, and Z-to-p conversion no
+  longer returns 0 beyond |z| = 8.3.
+- `write_summary_statistics` wrote `Q_FDR=1` and `MAF=0` when results lacked
+  them; Q_FDR is now Benjamini-Hochberg over the results, MAF comes from
+  optional genotypes, and any other missing value is `NA`.
+  `interactive_manhattan` drew every variant on chromosome 1, and GWAS plots
+  failed when the output directory did not exist.
+- `multiomics.analysis.integration.canonical_correlation` ignored
+  `regularization`; it is now closed-form ridge CCA. Single-cell
+  `compute_pca(use_hvgs=True)` used every gene. `cross_validate_biological`
+  turned metric failures into null scores; failures now raise and
+  `compare_classifiers` never picks a failed method.
+- `life_events` methods were placeholders. `learn_event_embeddings` returned
+  random vectors nudged by event-name keywords and ignored its window, epoch
+  and algorithm settings; it now trains skip-gram or CBOW word2vec with
+  negative sampling. `shapley_values` returned random numbers; it now
+  computes exact Shapley values (seeded permutation sampling above ten
+  events) that sum to the change in prediction. The simple predictor labelled
+  nearly every sequence as class 1 and lost its model on reload, LSTM and GRU
+  models reported themselves fitted without torch, unknown outcome
+  relationships silently became random, and JSON loading dropped sequence
+  metadata and event fields. `MultiTaskPredictor` predicted each task's
+  training mean for every sequence; it now fits ridge and logistic heads on
+  event counts and learned embeddings. `SurvivalPredictor` reported itself
+  fitted without torch and predicted a constant 365 days; it now fits a Cox
+  model by Newton-Raphson on the Breslow partial likelihood (matching
+  statsmodels), an exponential model or Kaplan-Meier, and predicts restricted
+  mean survival time. `generate_synthetic_life_events` silently ignored six
+  options; it applies the rare-event, missing-data and temporal-noise options
+  and rejects the rest. `survival.cox_ph_model` used a diagonal Newton step
+  and sequential ties, giving standard errors about a third of the true ones
+  with correlated covariates; it now shares the Breslow Cox fit with full
+  inverse-information standard errors.
+- The AntWiki scraper never consulted robots.txt despite its `check_robots`
+  setting; it now enforces robots rules and Crawl-delay on every request and
+  redirect. Its species index was a hardcoded list of five species and now
+  raises `NotImplementedError`, and output filenames derived from remote page
+  titles could escape the output directory. OBO `def:` parsing left the
+  closing quote and dbxrefs in definitions; they are parsed and written back
+  correctly, with xrefs kept in `metadata["definition_xrefs"]`.
+- `phenotype.run_phewas` computed p-values for 30 or fewer degrees of
+  freedom from a homemade series that returned 0.0065 where Student's t
+  gives 0.46; it now uses SciPy's t distribution. Simpson's evenness divided
+  by the Gini-Simpson index, so a perfectly even community scored 1/(S-1)
+  instead of 1.
+- Sequence repeat and palindrome scans in
+  `information.analyze_sequence_information` took super-linear time (115 s
+  for a 500 bp tandem repeat); they now return the same results in under a
+  second. `epigenome.load_methylation_cov` misread Bismark coverage columns,
+  `dna.phylogeny.bootstrap_support` mutated its input tree, `parse_vcf` could
+  not read gzipped VCFs, spatially variable gene detection rejected sparse
+  matrices, HTML output without Plotly failed after creating files, and
+  config workflows marked unexecuted processing steps and failed downloads
+  as completed.
+- `core.io.paths.ensure_directory` returned `None` while the same-named
+  `core.io.ensure_directory` returns the directory; both now return it.
+  Simulation seeding passed `randint(0, 2**32)`'s inclusive upper bound to
+  `np.random.seed`, which rejects it; that one draw now maps to 0, leaving
+  every other seeded stream unchanged.
+: a blank accession
   requested InterPro's unbounded listing of every UniProt-annotated entry,
   which outlasted the 30 s read timeout and failed the network test lane on
   every main push. Blank input now returns `[]` without a request, and
