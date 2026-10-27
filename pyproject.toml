@@ -99,7 +99,7 @@ singlecell = [
     "umap-learn>=0.5.4",
     "seaborn>=0.13.0",
     "leidenalg>=0.10.0",  # Leiden clustering
-    "louvain>=0.8.0",  # Louvain clustering
+    "python-louvain>=0.16",  # Louvain clustering (imported as `community`)
 ]
 
 # Visualization enhancements
@@ -410,9 +410,11 @@ cache-dir = ".uv-cache"
 # package metadata. Raise a floor, never remove it, when a new advisory lands.
 constraint-dependencies = [
     "certifi>=2026.10.19",  # GHSA-6q48-6c7w-9gw2: distrusted emSign roots
+    "dnspython>=2.9.0",  # CVE-2026-114605
     "filelock>=4.2.1",  # GHSA-v4x8-3wr5-3wq8: ReadWriteLock symlink planting
     "nbconvert>=7.17.2",  # GHSA-pjvx-prjx-h659: path traversal in output filenames
     "pillow>=13.0.0",  # GHSA-5x8w-8jj5-q52h and related decoder memory-safety fixes
+    "pymongo>=4.18.3",  # CVE-2026-106435
     "setuptools>=84.1.0",  # GHSA-xmj3-9gf7-h52w: namespace_packages path escape
     "virtualenv>=21.14.13",  # GHSA-cx6f-vjhg-g3cc (prompt regression in 21.14.9), GHSA-c978-59m8-c77v
 ]
