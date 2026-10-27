@@ -7,6 +7,7 @@ including demographic inference, selection tests, and population structure analy
 from __future__ import annotations
 
 import math
+import random
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -15,6 +16,11 @@ from metainformant.core.utils import logging
 from metainformant.dna.annotation.gene_finding import GENETIC_CODES
 
 logger = logging.get_logger(__name__)
+
+#: How the p-value of a neutrality test is obtained: the normal approximation or a simulated null.
+_P_VALUE_METHODS = ("normal", "simulation")
+#: Default number of coalescent replicates behind a simulated p-value.
+DEFAULT_NULL_SIMULATIONS = 2000
 
 
 def calculate_fst(population1: List[str], population2: List[str]) -> float:
@@ -153,17 +159,73 @@ def _two_sided_normal_p(statistic: float) -> float:
     return math.erfc(abs(statistic) / math.sqrt(2.0))
 
 
-def calculate_tajima_d(sequences: List[str]) -> Tuple[float, float]:
+def _check_p_value_options(p_value_method: str, n_simulations: int) -> None:
+    """Reject an unknown ``p_value_method`` or a non-positive number of simulations."""
+    if p_value_method not in _P_VALUE_METHODS:
+        raise ValueError(f"p_value_method must be one of {_P_VALUE_METHODS}, got {p_value_method!r}")
+    if isinstance(n_simulations, bool) or not isinstance(n_simulations, (int, np.integer)) or n_simulations < 1:
+        raise ValueError(f"n_simulations must be a positive integer, got {n_simulations!r}")
+
+
+def _neutrality_p_value(
+    sequences: List[str],
+    test: str,
+    statistic: float,
+    p_value_method: str,
+    n_simulations: int,
+    random_state: int | random.Random | np.random.Generator | None,
+) -> float:
+    """Two-sided p-value of one SFS test statistic by the chosen method."""
+    if p_value_method == "simulation":
+        # The coalescent kernel lives in the simulation domain; the integration adapter is the only
+        # dna module that reaches it, and it is imported here so that dna works without simulation loaded.
+        from ..integration.neutrality_null import simulated_neutrality_tests
+
+        simulated = simulated_neutrality_tests(
+            sequences, (test,), n_simulations=n_simulations, random_state=random_state
+        )
+        return simulated[test][1]
+    return _two_sided_normal_p(statistic)
+
+
+def calculate_tajima_d(
+    sequences: List[str],
+    *,
+    p_value_method: str = "normal",
+    n_simulations: int = DEFAULT_NULL_SIMULATIONS,
+    random_state: int | random.Random | np.random.Generator | None = None,
+) -> Tuple[float, float]:
     """Calculate Tajima's D and its two-sided p-value.
 
-    See :func:`metainformant.dna.population.core.tajimas_d`. The p-value uses
-    the normal approximation, which is rough for small samples.
+    See :func:`metainformant.dna.population.core.tajimas_d`. ``p_value_method`` selects the null
+    distribution behind the p-value:
+
+    * ``"normal"`` (default): the normal approximation, which is rough for small samples.
+    * ``"simulation"``: a Monte Carlo p-value against ``n_simulations`` samples drawn from the standard
+      neutral coalescent (constant size, infinite sites, no recombination) with the same number of
+      sequences. Every replicate is conditioned on the number of mutations observed in the sample
+      rather than on an estimate such as ``theta = S / a_n``, with the genealogy drawn unweighted
+      (Hudson's ``ms -s``; equivalently ``theta`` is integrated out with the scale-invariant prior). So
+      no mutation rate is assumed or estimated, no replicate is monomorphic, and the replicate
+      statistics are standardized with the same variance as the observed one. The p-value is twice the
+      smaller one-sided tail, ``(1 + #{null at least as extreme}) / (n_simulations + 1)``, capped at 1,
+      so it is never below ``2 / (n_simulations + 1)``. For neutral samples with about 60 mutations it
+      is uniform to within sampling error; with very few mutations the null is discrete and the
+      p-value conservative. Replicates are vectorized; ``random_state`` seeds them.
 
     Args:
         sequences: List of aligned DNA sequences
+        p_value_method: ``"normal"`` or ``"simulation"``
+        n_simulations: Number of coalescent replicates for ``"simulation"`` (default 2000)
+        random_state: Seed (an integer, a ``random.Random`` or a ``numpy.random.Generator``) of the
+            simulated replicates; ``None`` draws fresh entropy, so pass a seed for reproducible p-values
 
     Returns:
         Tuple of (tajima_d, p_value); ``(0.0, 1.0)`` for fewer than 4 sequences
+
+    Raises:
+        ValueError: If ``p_value_method`` is unknown, ``n_simulations`` is not a positive integer, or
+            the sequences are not aligned
 
     Example:
         >>> seqs = ["AAAA", "AAAA", "AACT", "AAAT"]
@@ -171,26 +233,43 @@ def calculate_tajima_d(sequences: List[str]) -> Tuple[float, float]:
         >>> round(tajima_d, 4)
         0.5916
     """
+    _check_p_value_options(p_value_method, n_simulations)
     if len(sequences) < 4:
         return 0.0, 1.0  # Not enough sequences for meaningful test
 
     from . import core as population
 
     tajima_d = population.tajimas_d(sequences)
-    return tajima_d, _two_sided_normal_p(tajima_d)
+    return tajima_d, _neutrality_p_value(sequences, "tajima_d", tajima_d, p_value_method, n_simulations, random_state)
 
 
-def calculate_fu_li_d(sequences: List[str]) -> Tuple[float, float]:
+def calculate_fu_li_d(
+    sequences: List[str],
+    *,
+    p_value_method: str = "normal",
+    n_simulations: int = DEFAULT_NULL_SIMULATIONS,
+    random_state: int | random.Random | np.random.Generator | None = None,
+) -> Tuple[float, float]:
     """Calculate Fu and Li's D* (no outgroup) and its two-sided p-value.
 
-    See :func:`metainformant.dna.population.core.fu_and_li_d_star_from_sequences`.
-    The p-value uses the normal approximation.
+    See :func:`metainformant.dna.population.core.fu_and_li_d_star_from_sequences`. The p-value is
+    obtained as in :func:`calculate_tajima_d`: by the normal approximation (default) or, with
+    ``p_value_method="simulation"``, against ``n_simulations`` neutral coalescent samples conditioned on
+    the observed number of mutations.
 
     Args:
         sequences: List of aligned DNA sequences
+        p_value_method: ``"normal"`` or ``"simulation"``
+        n_simulations: Number of coalescent replicates for ``"simulation"`` (default 2000)
+        random_state: Seed of the simulated replicates (integer, ``random.Random`` or
+            ``numpy.random.Generator``); ``None`` draws fresh entropy
 
     Returns:
         Tuple of (fu_li_d_star, p_value); ``(0.0, 1.0)`` for fewer than 4 sequences
+
+    Raises:
+        ValueError: If ``p_value_method`` is unknown, ``n_simulations`` is not a positive integer, or
+            the sequences are not aligned
 
     Example:
         >>> seqs = ["ATCG", "ATCG", "GCTA", "GCTT"]
@@ -198,13 +277,14 @@ def calculate_fu_li_d(sequences: List[str]) -> Tuple[float, float]:
         >>> isinstance(fu_li_d, float)
         True
     """
+    _check_p_value_options(p_value_method, n_simulations)
     if len(sequences) < 4:
         return 0.0, 1.0
 
     from . import core as population
 
     d_star = population.fu_and_li_d_star_from_sequences(sequences)
-    return d_star, _two_sided_normal_p(d_star)
+    return d_star, _neutrality_p_value(sequences, "fu_li_d_star", d_star, p_value_method, n_simulations, random_state)
 
 
 def _fisher_exact_two_sided_2x2(a: int, b: int, c: int, d: int) -> float:
@@ -729,22 +809,41 @@ def compare_populations(pop1_data: Dict[str, Any], pop2_data: Dict[str, Any]) ->
     return comparison
 
 
-def calculate_fay_wu_h(sequences: List[str], outgroup: Optional[str] = None) -> Tuple[float, Optional[float]]:
+def calculate_fay_wu_h(
+    sequences: List[str],
+    outgroup: Optional[str] = None,
+    *,
+    p_value_method: str = "normal",
+    n_simulations: int = DEFAULT_NULL_SIMULATIONS,
+    random_state: int | random.Random | np.random.Generator | None = None,
+) -> Tuple[float, Optional[float]]:
     """Calculate Fay and Wu's H and, with an outgroup, its two-sided p-value.
 
     ``h`` is :func:`metainformant.dna.population.core.fay_wu_h_from_sequences`
     (per-site theta_pi - theta_H). Its null distribution needs derived-allele
-    frequencies, so the p-value comes from Zeng et al.'s (2006) normalized H
-    (:func:`metainformant.dna.population.core.normalized_fay_wu_h`) under the
-    normal approximation and is None when no outgroup polarizes the sites of
-    a polymorphic sample. A monomorphic sample has H = 0 and p-value 1.0.
+    frequencies, so the p-value is that of Zeng et al.'s (2006) normalized H
+    (:func:`metainformant.dna.population.core.normalized_fay_wu_h`) and is None when no
+    outgroup polarizes the sites of a polymorphic sample. A monomorphic sample has H = 0
+    and p-value 1.0. With ``p_value_method="normal"`` (default) the p-value uses the normal
+    approximation; with ``"simulation"`` it is the Monte Carlo p-value of
+    :func:`calculate_tajima_d` for the outgroup-polarized (unfolded) spectrum, conditioned on the
+    number of polarized mutations. Like the normal approximation, the simulated null assumes the
+    outgroup polarizes every site correctly.
 
     Args:
         sequences: List of aligned DNA sequences
         outgroup: Optional outgroup sequence aligned to ``sequences``
+        p_value_method: ``"normal"`` or ``"simulation"``
+        n_simulations: Number of coalescent replicates for ``"simulation"`` (default 2000)
+        random_state: Seed of the simulated replicates (integer, ``random.Random`` or
+            ``numpy.random.Generator``); ``None`` draws fresh entropy
 
     Returns:
         Tuple of (fay_wu_h, p_value); ``(0.0, 1.0)`` for fewer than 4 sequences
+
+    Raises:
+        ValueError: If ``p_value_method`` is unknown, ``n_simulations`` is not a positive integer, or
+            the sequences or outgroup are not aligned
 
     Example:
         >>> seqs = ["ATCG", "ATCG", "GCTA", "GCTA"]
@@ -752,6 +851,7 @@ def calculate_fay_wu_h(sequences: List[str], outgroup: Optional[str] = None) -> 
         >>> isinstance(h, float), p is None
         (True, True)
     """
+    _check_p_value_options(p_value_method, n_simulations)
     if len(sequences) < 4:
         return 0.0, 1.0
 
@@ -759,23 +859,47 @@ def calculate_fay_wu_h(sequences: List[str], outgroup: Optional[str] = None) -> 
 
     h = population.fay_wu_h_from_sequences(sequences, outgroup)
     if outgroup is not None:
-        return h, _two_sided_normal_p(population.normalized_fay_wu_h(sequences, outgroup))
+        normalized_h = population.normalized_fay_wu_h(sequences, outgroup)  # also validates the outgroup
+        if p_value_method == "simulation":
+            from ..integration.neutrality_null import simulated_neutrality_tests
+
+            simulated = simulated_neutrality_tests(
+                sequences, ("fay_wu_h",), n_simulations=n_simulations, random_state=random_state, outgroup=outgroup
+            )
+            return h, simulated["fay_wu_h"][1]
+        return h, _two_sided_normal_p(normalized_h)
     if population.segregating_sites(sequences) == 0:
         return h, 1.0
     return h, None
 
 
-def calculate_fu_li_f(sequences: List[str]) -> Tuple[float, float]:
+def calculate_fu_li_f(
+    sequences: List[str],
+    *,
+    p_value_method: str = "normal",
+    n_simulations: int = DEFAULT_NULL_SIMULATIONS,
+    random_state: int | random.Random | np.random.Generator | None = None,
+) -> Tuple[float, float]:
     """Calculate Fu and Li's F* (no outgroup) and its two-sided p-value.
 
-    See :func:`metainformant.dna.population.core.fu_and_li_f_star_from_sequences`.
-    The p-value uses the normal approximation.
+    See :func:`metainformant.dna.population.core.fu_and_li_f_star_from_sequences`. The p-value is
+    obtained as in :func:`calculate_tajima_d`: by the normal approximation (default) or, with
+    ``p_value_method="simulation"``, against ``n_simulations`` neutral coalescent samples conditioned on
+    the observed number of mutations.
 
     Args:
         sequences: List of aligned DNA sequences
+        p_value_method: ``"normal"`` or ``"simulation"``
+        n_simulations: Number of coalescent replicates for ``"simulation"`` (default 2000)
+        random_state: Seed of the simulated replicates (integer, ``random.Random`` or
+            ``numpy.random.Generator``); ``None`` draws fresh entropy
 
     Returns:
         Tuple of (fu_li_f_star, p_value); ``(0.0, 1.0)`` for fewer than 4 sequences
+
+    Raises:
+        ValueError: If ``p_value_method`` is unknown, ``n_simulations`` is not a positive integer, or
+            the sequences are not aligned
 
     Example:
         >>> seqs = ["ATCG", "ATCG", "GCTA", "GCTA"]
@@ -783,24 +907,46 @@ def calculate_fu_li_f(sequences: List[str]) -> Tuple[float, float]:
         >>> isinstance(f_star, float)
         True
     """
+    _check_p_value_options(p_value_method, n_simulations)
     if len(sequences) < 4:
         return 0.0, 1.0
 
     from . import core as population
 
     f_star = population.fu_and_li_f_star_from_sequences(sequences)
-    return f_star, _two_sided_normal_p(f_star)
+    return f_star, _neutrality_p_value(sequences, "fu_li_f_star", f_star, p_value_method, n_simulations, random_state)
 
 
-def neutrality_test_suite(sequences: List[str], outgroup: Optional[str] = None) -> Dict[str, Any]:
+def neutrality_test_suite(
+    sequences: List[str],
+    outgroup: Optional[str] = None,
+    *,
+    p_value_method: str = "normal",
+    n_simulations: int = DEFAULT_NULL_SIMULATIONS,
+    random_state: int | random.Random | np.random.Generator | None = None,
+) -> Dict[str, Any]:
     """Run a comprehensive suite of neutrality tests.
+
+    ``p_value_method`` is passed to every test of the suite, which obtains its p-value by the normal
+    approximation (default) or by a simulated neutral coalescent null, as described in
+    :func:`calculate_tajima_d`. With an integer ``random_state`` every test sees the same simulated
+    replicates (they depend only on the sample size and the number of mutations), so the p-values
+    are reproducible and comparable across tests.
 
     Args:
         sequences: List of DNA sequences from a population
         outgroup: Optional outgroup sequence; without it ``fay_wu_h_p_value`` is None
+        p_value_method: ``"normal"`` or ``"simulation"``
+        n_simulations: Number of coalescent replicates per test for ``"simulation"`` (default 2000)
+        random_state: Seed of the simulated replicates (integer, ``random.Random`` or
+            ``numpy.random.Generator``); ``None`` draws fresh entropy
 
     Returns:
-        Dictionary containing results from multiple neutrality tests
+        Dictionary containing results from multiple neutrality tests. With ``p_value_method`` other
+        than ``"normal"`` it also records ``p_value_method`` and ``n_simulations``.
+
+    Raises:
+        ValueError: If ``p_value_method`` is unknown or ``n_simulations`` is not a positive integer
 
     Example:
         >>> seqs = ["ATCG", "ATCG", "GCTA"]
@@ -808,6 +954,7 @@ def neutrality_test_suite(sequences: List[str], outgroup: Optional[str] = None) 
         >>> isinstance(results, dict)
         True
     """
+    _check_p_value_options(p_value_method, n_simulations)
     results: Dict[str, Any] = {}
 
     if not sequences:
@@ -816,10 +963,19 @@ def neutrality_test_suite(sequences: List[str], outgroup: Optional[str] = None) 
     # Basic statistics
     results["num_sequences"] = len(sequences)
     results["sequence_length"] = len(sequences[0]) if sequences else 0
+    if p_value_method != "normal":
+        results["p_value_method"] = p_value_method
+        results["n_simulations"] = n_simulations
+
+    p_options: Dict[str, Any] = {
+        "p_value_method": p_value_method,
+        "n_simulations": n_simulations,
+        "random_state": random_state,
+    }
 
     # Tajima's D
     try:
-        tajima_d, tajima_p = calculate_tajima_d(sequences)
+        tajima_d, tajima_p = calculate_tajima_d(sequences, **p_options)
         results["tajima_d"] = tajima_d
         results["tajima_d_p_value"] = tajima_p
     except Exception as e:
@@ -829,7 +985,7 @@ def neutrality_test_suite(sequences: List[str], outgroup: Optional[str] = None) 
 
     # Fu and Li's D*
     try:
-        fu_li_d_star, fu_li_d_star_p = calculate_fu_li_d(sequences)
+        fu_li_d_star, fu_li_d_star_p = calculate_fu_li_d(sequences, **p_options)
         results["fu_li_d_star"] = fu_li_d_star
         results["fu_li_d_star_p_value"] = fu_li_d_star_p
     except Exception as e:
@@ -839,7 +995,7 @@ def neutrality_test_suite(sequences: List[str], outgroup: Optional[str] = None) 
 
     # Fu and Li's F*
     try:
-        fu_li_f_star, fu_li_f_star_p = calculate_fu_li_f(sequences)
+        fu_li_f_star, fu_li_f_star_p = calculate_fu_li_f(sequences, **p_options)
         results["fu_li_f_star"] = fu_li_f_star
         results["fu_li_f_star_p_value"] = fu_li_f_star_p
     except Exception as e:
@@ -849,7 +1005,7 @@ def neutrality_test_suite(sequences: List[str], outgroup: Optional[str] = None) 
 
     # Fay and Wu's H
     try:
-        fay_wu_h, fay_wu_h_p = calculate_fay_wu_h(sequences, outgroup)
+        fay_wu_h, fay_wu_h_p = calculate_fay_wu_h(sequences, outgroup, **p_options)
         results["fay_wu_h"] = fay_wu_h
         results["fay_wu_h_p_value"] = fay_wu_h_p
     except Exception as e:

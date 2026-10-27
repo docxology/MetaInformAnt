@@ -71,14 +71,21 @@ import numpy as np
 # Simple count matrix (10 samples x 1000 genes)
 counts = simulate_rnaseq_counts(n_genes=1000, n_samples=10)
 
-# Differential expression between two conditions: the group-1 mean of each of the
-# first len(fold_changes) features is multiplied by its factor (0.5 halves it)
-fold_changes = np.array([2.0, 3.0, 0.5, 0.25])
+# Differential expression between two conditions. Each fold change is a signed ratio
+# applied to the group-1 mean of one of the first len(fold_changes) features:
+# positive values multiply it (2.0 doubles, 0.5 halves) and negative values divide it
+# by their magnitude (-4.0 gives about 0.25x)
+fold_changes = np.array([2.0, 3.0, 0.5, -4.0])
 expression, labels = simulate_differential_expression(
     n_samples=20, n_features=5000, fold_changes=fold_changes,
 )
 # expression has shape (20, 5000); labels holds the 0/1 condition of each sample
 ```
+
+A negative fold change needs a magnitude of at least 1, and `fold_changes` must be an
+`np.ndarray` of finite values with fewer entries than `n_features`; breaking these rules
+raises `metainformant.core.utils.errors.ValidationError`. See
+[RNA Count Simulation](rna_counts.md#differential-expression) for the full list of errors.
 
 ### Population Genetics
 

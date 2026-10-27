@@ -17,7 +17,7 @@ graph TD
 
 This module provides population genetics statistics for DNA sequence data, including:
 - **Diversity metrics**: Nucleotide diversity (π), segregating sites
-- **Neutrality tests**: Tajima's D, Fu and Li's D* and F*, and Fay and Wu's H (raw and normalized)
+- **Neutrality tests**: Tajima's D, Fu and Li's D* and F*, and Fay and Wu's H (raw and normalized), with p-values from the normal approximation or a simulated neutral null (`analysis`)
 - **Population differentiation**: F-statistics (Hudson's Fst)
 - **Allele frequencies**: From genotype matrices
 - **Heterozygosity**: Observed heterozygosity from diploid genotypes
@@ -98,8 +98,10 @@ a_n = Σ_{i=1}^{n−1} 1/i.
 - D < 0: Suggests directional selection or population expansion
 - D ≈ 0: Consistent with neutral equilibrium
 
-Judge a departure by its p-value (`analysis.calculate_tajima_d` returns one from
-the normal approximation) or by coalescent simulation, not by the sign alone.
+Judge a departure by its p-value, not by the sign alone. `analysis.calculate_tajima_d`
+returns a two-sided p-value from the normal approximation by default, or from a
+simulated neutral coalescent null with `p_value_method="simulation"` (see
+[Neutrality p-values](#neutrality-p-values-analysis)).
 
 **Example**:
 ```python
@@ -121,8 +123,9 @@ the input rules of `tajimas_d`.
 outgroup the most frequent allele is taken as ancestral. `normalized_fay_wu_h`
 returns Zeng et al.'s (2006) standardized H = (θ_π − θ_L) / √Var from the
 spectrum polarized by the outgroup, and `analysis.calculate_fay_wu_h(seqs, outgroup)`
-derives its p-value from it. Without an outgroup that p-value is `None`, because
-H's null distribution needs derived-allele frequencies.
+derives its p-value from it (by the normal approximation or, with
+`p_value_method="simulation"`, against a simulated null). Without an outgroup that
+p-value is `None`, because H's null distribution needs derived-allele frequencies.
 
 #### Method notes
 
@@ -132,6 +135,101 @@ the standard neutral model (Achaz 2009), which reproduces the published closed
 forms for D, D* and normalized H and gives the exact variance for F*. Only
 columns where every sequence has A, C, G or T are used; at a column with more
 than two alleles, each allele other than the ancestral one counts as a mutation.
+
+### Neutrality p-values (`analysis`)
+
+`analysis.calculate_tajima_d(seqs)`, `calculate_fu_li_d(seqs)` (Fu and Li's D*),
+`calculate_fu_li_f(seqs)` (F*) and `calculate_fay_wu_h(seqs, outgroup=None)` return
+`(statistic, p_value)` with a two-sided p-value, and `neutrality_test_suite(seqs,
+outgroup=None)` returns all four in one dictionary (`tajima_d`, `tajima_d_p_value`,
+`fu_li_d_star`, `fu_li_d_star_p_value`, `fu_li_f_star`, `fu_li_f_star_p_value`,
+`fay_wu_h`, `fay_wu_h_p_value` and `neutrality_summary`). The four functions return
+`(0.0, 1.0)` for fewer than 4 sequences. All five take three keyword-only options:
+
+| Option | Meaning |
+|--------|---------|
+| `p_value_method` | `"normal"` (default): the normal approximation, `erfc(abs(z) / sqrt(2))` for the standardized statistic *z*, which is rough for small samples. `"simulation"`: a Monte Carlo p-value against a simulated neutral null (below) |
+| `n_simulations` | Number of coalescent replicates behind a simulated p-value (default 2000); a positive integer |
+| `random_state` | Seed of the replicates: an integer, a `random.Random` or a `numpy.random.Generator`. `None` (default) draws fresh entropy, so pass a seed for reproducible p-values |
+
+An unknown `p_value_method`, or an `n_simulations` that is not a positive integer,
+raises `ValueError`.
+
+**The simulated null.** The null is the standard neutral coalescent for the same
+number of sequences: constant size, infinite sites, no recombination
+(`simulation.models.popgen.simulate_coalescent_spectra`). Every replicate has exactly
+as many mutations as the sample has segregating sites *S*, placed on an unweighted
+genealogy in proportion to branch length (the approach of Hudson's `ms -s`).
+Conditioning on *S* means no mutation rate is estimated or assumed: plugging in
+θ̂ = *S* / a_n instead gives monomorphic replicates when *S* is small. The observed
+statistic and the replicate statistics go through one computation, so they are
+standardized with the same variance. Tajima's D, D* and F* score the folded spectrum
+and need no outgroup; Fay and Wu's H uses the spectrum polarized by the outgroup, with
+the number of mutations that spectrum holds.
+
+**The p-value.** It is twice the smaller one-sided tail,
+`(1 + #{replicates at least as extreme}) / (n_simulations + 1)`, capped at 1. The +1
+counts the observed statistic as one more draw from the null, so the p-value is never
+0 and never below `2 / (n_simulations + 1)`: raise `n_simulations` to resolve small
+p-values. A sample without mutations has statistic 0 and p-value 1 by either method.
+
+**Reading a simulated p-value.**
+- The null is a constant-size neutral population, so a small p-value can reflect
+  demography (a bottleneck, an expansion, population structure) as well as selection.
+- The Fay and Wu null, like the normal approximation, assumes the outgroup polarizes
+  every site correctly. Without an outgroup `calculate_fay_wu_h` returns a p-value of
+  `None` by either method (`1.0` for a monomorphic sample).
+- With few mutations (about 10) the conditional null is discrete: the simulated
+  p-values stay valid but can be conservative, rejecting less often than the nominal
+  level.
+
+**Calibration.** Over 2,000 neutral samples of 20 sequences with about 64 mutations,
+the share with p ≤ 0.05 (nominal 0.05, standard error 0.005) is:
+
+| Test | Simulation | Normal approximation |
+|------|-----------|----------------------|
+| Tajima's D | 0.047 | 0.024 |
+| Fu and Li's D* | 0.043 | 0.057 |
+| Fu and Li's F* | 0.050 | 0.050 |
+
+`tests/dna/test_dna_population_simulated_null.py` asserts the uniformity of the
+simulated p-values on neutral samples.
+
+`neutrality_test_suite` passes the options to every test. With an integer
+`random_state` every test sees the same simulated replicates (they depend only on the
+sample size and the number of mutations), so the p-values are reproducible and
+comparable across tests. The result carries `p_value_method` and `n_simulations` keys
+only when `p_value_method` is `"simulation"`. `calculate_summary_statistics` and
+`detect_selection` always use the normal approximation.
+
+**Example**:
+```python
+import random
+
+from metainformant.dna.population import analysis
+from metainformant.simulation.models.popgen import generate_population_sequences
+
+# A neutral sample of 20 sequences with about 64 mutations
+sequences = generate_population_sequences(20, 600, theta=0.03, rng=random.Random(1))
+
+d, p_normal = analysis.calculate_tajima_d(sequences)
+d, p_simulated = analysis.calculate_tajima_d(
+    sequences, p_value_method="simulation", n_simulations=2000, random_state=1
+)
+
+suite = analysis.neutrality_test_suite(
+    sequences, p_value_method="simulation", n_simulations=2000, random_state=1
+)
+print(suite["tajima_d_p_value"], suite["p_value_method"], suite["n_simulations"])
+```
+
+**Where the code lives.** The kernel that draws the replicates belongs to the
+simulation domain. The dna domain reaches it only through the adapter
+`dna/integration/neutrality_null.py` (see the
+[integration README](../../src/metainformant/dna/integration/README.md)), which
+`analysis` imports lazily, when a caller asks for `p_value_method="simulation"`;
+`dna/integration/__init__.py` does not import it. So `import metainformant.dna` does
+not load the simulation package.
 
 ### `hudson_fst(pop1, pop2)`
 
@@ -266,6 +364,15 @@ S = population.segregating_sites(seqs)
 d = tajimas_D(k, S, len(seqs))  # equals population.tajimas_d(seqs)
 ```
 
+### With the Simulation Module
+
+`metainformant.simulation.models.popgen` generates samples from the neutral coalescent
+(`generate_population_sequences`) and under bottleneck and expansion histories
+(`simulate_bottleneck_population`, `simulate_population_expansion`). They are the
+natural input for the statistics above, and the same coalescent draws the simulated
+null of `p_value_method="simulation"`. See
+[Simulation: Population Genetics](../simulation/popgen.md).
+
 ### With GWAS Module
 
 Population genetics statistics complement GWAS analysis:
@@ -286,7 +393,7 @@ pi = population.nucleotide_diversity(sequences)
 
 1. **Sequence Length**: Sequence-based statistics require aligned sequences of equal length and raise `ValueError` otherwise.
 
-2. **Neutrality p-values**: The p-values in `analysis` use the normal approximation, which is rough for small samples; simulate the null distribution when the decision matters.
+2. **Neutrality p-values**: The p-values in `analysis` use the normal approximation by default, which is rough for small samples (it is conservative for Tajima's D; see the calibration above). `p_value_method="simulation"` replaces it with a Monte Carlo p-value against the neutral constant-size coalescent, conditioned on the number of segregating sites. Both nulls are neutral and constant-size, so a small p-value can reflect demography as well as selection.
 
 3. **Genotype Encoding**: Genotype matrices hold diploid 0/1/2 alternate-allele counts.
 
@@ -297,6 +404,8 @@ pi = population.nucleotide_diversity(sequences)
 - Tajima, F. (1989). Statistical method for testing the neutral mutation hypothesis by DNA polymorphism. *Genetics*, 123(3), 585-595.
 - Fu, Y.-X., & Li, W.-H. (1993). Statistical tests of neutrality of mutations. *Genetics*, 133(3), 693-709.
 - Fu, Y.-X. (1995). Statistical properties of segregating sites. *Theoretical Population Biology*, 48(2), 172-197.
+- Kingman, J. F. C. (1982). The coalescent. *Stochastic Processes and their Applications*, 13(3), 235-248.
+- Hudson, R. R. (2002). Generating samples under a Wright-Fisher neutral model of genetic variation. *Bioinformatics*, 18(2), 337-338.
 - Fay, J. C., & Wu, C.-I. (2000). Hitchhiking under positive Darwinian selection. *Genetics*, 155(3), 1405-1413.
 - Zeng, K., Fu, Y.-X., Shi, S., & Wu, C.-I. (2006). Statistical tests for detecting positive selection by utilizing high-frequency variants. *Genetics*, 174(3), 1431-1439.
 - Achaz, G. (2009). Frequency spectrum neutrality tests: one for all and all for one. *Genetics*, 183(1), 249-258.

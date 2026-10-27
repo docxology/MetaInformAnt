@@ -98,13 +98,29 @@ counts = simulate_rnaseq_counts(
 ### `simulate_differential_expression`
 
 Simulate two-group experimental designs with specified fold changes for a subset
-of genes. Samples are split evenly between conditions.
+of genes. Samples are split between the two conditions (an odd total gives group 1
+the extra sample).
+
+Each gene starts from a baseline mean drawn from an exponential distribution with
+mean 10; its dispersion is `1 / (mean + 1)` clipped to the range 0.1 to 10, and both
+conditions use it. Group 0 keeps the baseline mean. A fold change rescales the
+**group-1 mean** of the corresponding gene, and it is a *signed ratio*:
+
+| `fold_changes` value | Group-1 mean                                                                 |
+|----------------------|------------------------------------------------------------------------------|
+| `fc > 0`             | multiplied by `fc` (`2.0` doubles it, `0.5` halves it)                       |
+| `fc < 0`             | divided by `abs(fc)`: a fold *decrease* (`-4.0` gives about 0.25x, `-2.0` halves it) |
+| `fc == 0`            | unchanged                                                                    |
+
+A negative value needs `abs(fc) >= 1` because a decrease cannot be smaller than one
+fold; `-1.0` leaves the mean unchanged. To express a decrease as a ratio, pass a
+positive value below one (`0.25`) instead.
 
 ```python
 import numpy as np
 from metainformant.simulation.models.rna import simulate_differential_expression
 
-fold_changes = np.array([2.0, -1.5, 3.0, 0.5])
+fold_changes = np.array([2.0, -4.0, 3.0, 0.5])
 expression, labels = simulate_differential_expression(
     n_samples=20,
     n_features=5000,
@@ -112,7 +128,8 @@ expression, labels = simulate_differential_expression(
 )
 # expression.shape: (20, 5000)
 # labels: array of 0s and 1s indicating condition
-# First 4 genes are differentially expressed
+# The first 4 genes are differentially expressed in group 1:
+# multiplied by 2, divided by 4 (about 0.25x), multiplied by 3 and halved
 ```
 
 **Parameters:**
@@ -121,10 +138,18 @@ expression, labels = simulate_differential_expression(
 |----------------|--------------|------------------------------------------------------|
 | `n_samples`    | `int`        | Total samples across both conditions (>= 2)          |
 | `n_features`   | `int`        | Total genes                                          |
-| `fold_changes` | `np.ndarray` | Fold change values for DE genes (positive=up, negative=down) |
+| `fold_changes` | `np.ndarray` | Signed fold changes for the first `len(fold_changes)` genes (see the table above); must be an array of finite values with fewer entries than `n_features` |
 | `rng`          | `Random`     | Optional random number generator                     |
 
 **Returns:** Tuple of `(expression_matrix, group_labels)`
+
+**Raises:** `ValidationError` (from `metainformant.core.utils.errors`; it does not derive
+from `ValueError`) when
+
+- `n_samples` is below 2, `n_features` is below 1, or `fold_changes` is not an `np.ndarray`
+- `len(fold_changes)` is `n_features` or more
+- a fold change is NaN or infinite
+- a fold change lies strictly between -1 and 0
 
 ---
 
@@ -138,8 +163,8 @@ Simulate bulk RNA-seq with realistic library sizes and multinomial count generat
 from metainformant.simulation.models.rna import simulate_bulk_rnaseq
 
 counts = simulate_bulk_rnaseq(n_samples=12, n_genes=2000)
-# Library sizes follow log-normal distribution (~1M reads)
-# Gene means follow power-law distribution
+# Library sizes follow a log-normal distribution (median e^15, about 3.3 million reads)
+# Gene means follow a power-function distribution (many low, few high)
 ```
 
 **Parameters:**
@@ -148,8 +173,8 @@ counts = simulate_bulk_rnaseq(n_samples=12, n_genes=2000)
 |-----------------|-------------------|---------|--------------------------------------|
 | `n_samples`     | `int`             | required| Number of samples                    |
 | `n_genes`       | `int`             | required| Number of genes                      |
-| `library_sizes` | `np.ndarray|None` | `None`  | Custom library sizes per sample      |
-| `gene_means`    | `np.ndarray|None` | `None`  | Custom mean expression per gene      |
+| `library_sizes` | `np.ndarray \| None` | `None`  | Custom library sizes per sample   |
+| `gene_means`    | `np.ndarray \| None` | `None`  | Custom mean expression per gene   |
 | `rng`           | `Random`          | `None`  | Random number generator              |
 
 ---
@@ -191,8 +216,13 @@ expression, cell_types = simulate_single_cell_rnaseq(
 
 ### `simulate_time_series_expression`
 
-Generate oscillatory gene expression over time points. Each gene has a random
-frequency, phase, and amplitude. Final counts include Poisson noise.
+Generate sine-based gene expression over time points. Each gene follows one smooth
+profile over the sampling times `t = linspace(0, 4π, n_timepoints)`:
+`mean = max(0, baseline + amplitude · sin(frequency · t + phase))`. The baseline
+(uniform 5 to 20), amplitude (uniform 10 to 100) and phase (uniform 0 to 2π) are drawn
+once per gene and stay fixed over time; the frequency is uniform 0.5 to 2.0 unless
+`oscillation_freq` supplies one per gene. Each observation is an independent Poisson
+draw around the gene's curve, so successive time points differ only by counting noise.
 
 ```python
 from metainformant.simulation.models.rna import simulate_time_series_expression
@@ -242,7 +272,7 @@ noisy_counts = add_technical_noise(
 |----------------------|--------------|---------|----------------------------------------|
 | `expression_matrix`  | `np.ndarray` | required| Input count matrix                     |
 | `amplification_bias` | `float`      | `0.1`   | PCR bias strength (0-1)                |
-| `sequencing_depth`   | `float|None` | `None`  | Target library size (rescales counts)  |
+| `sequencing_depth`   | `float \| None` | `None`  | Target library size (rescales counts)  |
 | `rng`                | `Random`     | `None`  | Random number generator                |
 
 ---

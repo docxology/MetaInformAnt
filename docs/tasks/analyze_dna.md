@@ -192,8 +192,15 @@ fst = population.hudson_fst(pop1_seqs, pop2_seqs)
 print(f"Hudson's Fst between populations: {fst:.3f}")
 
 # Tajima's D for one set of aligned sequences, and with its two-sided p-value
+# (from the normal approximation by default)
 tajima = population.tajimas_d(pop1_seqs)
 d, p_value = analysis.calculate_tajima_d(pop1_seqs)
+
+# Or a Monte Carlo p-value against a simulated neutral coalescent null, conditioned on the
+# number of segregating sites; the seed makes it reproducible
+d, p_simulated = analysis.calculate_tajima_d(
+    pop1_seqs, p_value_method="simulation", n_simulations=2000, random_state=1
+)
 
 # There is no windowed variant: slice the alignment into windows and call tajimas_d per window
 window_size, step = 1000, 500
@@ -206,6 +213,7 @@ Example output for two simulated populations of 12 sequences (3 kb):
 ```
 Hudson's Fst between populations: 0.002
 ```
+`neutrality_test_suite` and the Fu and Li and Fay and Wu functions in `analysis` take the same `p_value_method`, `n_simulations` and `random_state` options (see [Population genetics](../dna/population.md#neutrality-p-values-analysis)). The null is a constant-size neutral population, so a small p-value can reflect demography as well as selection.
 
 ## Expected Output
 

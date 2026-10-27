@@ -225,14 +225,13 @@ def generate_comprehensive_dataset(
         n_individuals=500,
         n_sites=1000,
         r_squared_target=0.5,
-        recombination_rate=0.01,
         rng=rng,
     )
     ld_file = output_dir / "scenario9_ld_genotypes.json"
     dump_json(ld_genotypes, str(ld_file))
     dataset_info["scenarios"]["linkage_disequilibrium"] = {
         "file": str(ld_file),
-        "description": "Genotypes with LD (r²=0.5, c=0.01)",
+        "description": "Genotypes with adjacent-site LD (target r²=0.5)",
         "n_individuals": 500,
         "n_sites": 1000,
     }

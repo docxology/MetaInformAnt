@@ -143,15 +143,21 @@ def simulate_differential_expression(
     Args:
         n_samples: Total number of samples
         n_features: Number of genes/features
-        fold_changes: Fold changes for differential genes (0 = no change;
-            positive/negative = upregulation/downregulation)
+        fold_changes: Signed fold changes for the first ``len(fold_changes)`` genes, applied to
+            the group-1 mean (group 0 keeps the baseline mean). A signed ratio:
+
+            * ``fc > 0``: the mean is multiplied by ``fc`` (2.0 doubles it, 0.5 halves it)
+            * ``fc < 0``: a fold *decrease*; the mean is divided by ``|fc|`` (-4.0 quarters it).
+              ``|fc|`` must be at least 1, because a decrease cannot be smaller than one fold
+            * ``fc == 0``: no change
         rng: Random number generator for reproducibility
 
     Returns:
         Tuple of (expression_matrix, group_labels) where group_labels indicates condition (0 or 1)
 
     Raises:
-        ValueError: If parameters are invalid
+        ValidationError: If parameters are invalid, a fold change is not finite, or a negative
+            fold change has magnitude below 1
     """
     validation.validate_range(n_samples, min_val=2, name="n_samples")
     validation.validate_range(n_features, min_val=1, name="n_features")
@@ -160,6 +166,13 @@ def simulate_differential_expression(
     n_diff = len(fold_changes)
     if n_diff >= n_features:
         raise errors.ValidationError(f"Cannot have {n_diff} differentially expressed genes out of {n_features} total")
+    if not np.all(np.isfinite(fold_changes)):
+        raise errors.ValidationError("fold_changes must all be finite")
+    if np.any((fold_changes < 0) & (fold_changes > -1)):
+        raise errors.ValidationError(
+            "Negative fold changes denote a fold decrease and need |fc| >= 1 (e.g. -2.0 halves the mean); "
+            "use a value in (0, 1) for a decrease expressed as a ratio"
+        )
 
     rng = coerce_and_seed(rng)
 
@@ -179,11 +192,11 @@ def simulate_differential_expression(
     for i, fc in enumerate(fold_changes):
         gene_idx = i  # First n_diff genes are differentially expressed
         if fc > 0:
-            # Upregulation in group 1
+            # Positive: signed ratio, the group-1 mean is multiplied by fc
             modified_means[gene_idx] *= fc
         elif fc < 0:
-            # Downregulation in group 1
-            modified_means[gene_idx] *= abs(fc)
+            # Negative: a |fc|-fold decrease, the group-1 mean is divided by |fc|
+            modified_means[gene_idx] /= abs(fc)
 
     # Generate expression for group 0 (baseline)
     group0_means = baseline_means
@@ -338,6 +351,17 @@ def simulate_time_series_expression(
 ) -> np.ndarray:
     """Simulate time-series gene expression with oscillatory patterns.
 
+    Each gene follows one smooth sinusoidal profile over the sampling times
+    ``t = linspace(0, 4 pi, n_timepoints)`` (two full cycles of a unit-frequency wave)::
+
+        mean_g(t) = max(0, baseline_g + amplitude_g * sin(frequency_g * t + phase_g))
+
+    The gene's baseline (uniform 5 to 20), amplitude (uniform 10 to 100) and phase (uniform 0 to
+    2 pi) are drawn once and stay fixed over time; ``frequency_g`` is uniform 0.5 to 2.0 unless
+    ``oscillation_freq`` supplies it. Every observation is then an independent Poisson draw around
+    that mean, so successive time points of a gene are linked through the shared curve and differ
+    only by counting noise.
+
     Args:
         n_timepoints: Number of time points
         n_genes: Number of genes
@@ -363,22 +387,16 @@ def simulate_time_series_expression(
     elif len(oscillation_freq) != n_genes:
         raise errors.ValidationError(f"oscillation_freq must have length {n_genes}")
 
-    # Generate oscillatory expression
-    expression = np.zeros((n_timepoints, n_genes))
+    # A gene's phase, amplitude and baseline belong to the gene: draw each once, not once per time point
+    phases = np.random.uniform(0, 2 * np.pi, n_genes)
+    amplitudes = np.random.uniform(10, 100, n_genes)
+    baselines = np.random.uniform(5, 20, n_genes)
 
-    for t in range(n_timepoints):
-        for g in range(n_genes):
-            # Sine wave with random phase and amplitude
-            phase = rng.uniform(0, 2 * np.pi)
-            amplitude = rng.uniform(10, 100)
-            baseline = rng.uniform(5, 20)
+    # Mean expression (timepoints x genes): one sinusoid per gene, floored at zero
+    angles = np.outer(time_points, oscillation_freq) + phases
+    expression = np.maximum(0.0, baselines + amplitudes * np.sin(angles))
 
-            expression[t, g] = baseline + amplitude * np.sin(oscillation_freq[g] * time_points[t] + phase)
-
-            # Ensure non-negative
-            expression[t, g] = max(0, expression[t, g])
-
-    # Convert to counts (round and add noise)
+    # Observation noise: one independent Poisson draw per time point and gene
     counts = np.random.poisson(expression)
 
     return counts.astype(int)

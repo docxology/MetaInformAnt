@@ -67,12 +67,21 @@ seqs = generate_population_sequences(n_sequences=50, length=1000, theta=0.01)
 bottleneck = simulate_bottleneck_population(n_sequences=100, sequence_length=500, bottleneck_size=10)
 ```
 
+Sequences are samples of a seeded neutral Kingman coalescent with infinite-sites mutation and no recombination: one genealogy per sample, with bottleneck and expansion samples drawn under a demographic history. See [Population Genetics Simulation](../../../docs/simulation/popgen.md) for every generator.
+
 | Function | Description |
 |----------|-------------|
+| `generate_population_sequences` | Aligned sequences from the neutral coalescent at a per-site θ (or a target π or Watterson's θ) |
 | `generate_genotype_matrix` | SNP genotype matrix with allele frequencies |
-| `simulate_bottleneck_population` | Population size reduction events |
-| `simulate_population_expansion` | Exponential growth scenarios |
-| `generate_site_frequency_spectrum` | SFS under demographic models |
+| `generate_two_populations` | Two populations at a target Fst (Balding-Nichols allele frequencies) |
+| `simulate_bottleneck_population` | Coalescent sample drawn at the end of a bottleneck (sequence form), or a heuristic size trajectory (statistics form) |
+| `simulate_population_expansion` | Coalescent sample after exponential growth (sequence form), or a heuristic size trajectory (statistics form) |
+| `generate_site_frequency_spectrum` | SFS from the neutral 1/i expectation, plus heuristic expansion and bottleneck shapes |
+| `generate_linkage_disequilibrium_data` | 0/1 alleles with a chosen adjacent-site r² (first-order Markov chain) |
+| `PopulationEpoch` | Piecewise-constant or exponential demographic history for the coalescent |
+| `simulate_coalescent_spectra` | Site frequency spectra of many coalescent replicates: Poisson at θ, or conditioned on the number of segregating sites |
+| `simulate_coalescent_haplotypes` | One coalescent sample as a 0/1 haplotype matrix |
+| `haplotypes_to_sequences` | Write a haplotype matrix as DNA with seeded positions and bases |
 | `simulate_admixture` | Two-population admixture with mixing proportions |
 | `simulate_selection` | Directional/balancing selection |
 

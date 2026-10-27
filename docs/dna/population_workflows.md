@@ -40,10 +40,12 @@ print(f"Tajima's D: {stats['tajima_d']:.4f}")
 - `segregating_sites`: Number of polymorphic sites
 - `watterson_theta`: Watterson's theta estimator
 - `tajima_d`: Tajima's D statistic
-- `tajima_d_p_value`: p-value for Tajima's D
-- `fu_li_d`, `fu_li_d_p_value`: Fu and Li's D statistic and its p-value
+- `tajima_d_p_value`: Two-sided p-value for Tajima's D
+- `fu_li_d`, `fu_li_d_p_value`: Fu and Li's D* (no outgroup) and its two-sided p-value
 - `sample_size`: Number of sequences
 - `sequence_length`: Length of sequences
+
+`calculate_summary_statistics` has no `p_value_method` option: both p-values come from the normal approximation. For simulated p-values use `neutrality_test_suite` or the single-test functions (section 3).
 
 **Using genotype matrices:**
 
@@ -112,11 +114,27 @@ print(f"Interpretation: {results['neutrality_summary']['tajima_d']}")
 ```
 
 **Output includes:**
-- `tajima_d`, `fu_li_d_star`, `fu_li_f_star`, `fay_wu_h`: test statistics, each with a matching `<name>_p_value` (a statistic is `None` if it could not be computed)
+- `tajima_d`, `fu_li_d_star`, `fu_li_f_star`, `fay_wu_h`: test statistics, each with a matching `<name>_p_value` (a statistic is `None` if it could not be computed; `fay_wu_h_p_value` is `None` for a polymorphic sample without an `outgroup`)
 - `num_sequences`, `sequence_length`: Number and length of sequences
+- `p_value_method`, `n_simulations`: present only when `p_value_method="simulation"` was requested
 - `neutrality_summary`: Interpretation strings for `tajima_d` and `fu_li_d_star`
 
-**Interpretation values** (based on the sign of the statistic):
+**P-value method.** The p-values are two-sided and come from the normal approximation by default. The keyword-only option `p_value_method="simulation"`, with `n_simulations` (default 2000) and `random_state`, replaces it with Monte Carlo p-values against a simulated neutral coalescent null, conditioned on the number of segregating sites. The options are passed to every test of the suite, and `calculate_tajima_d`, `calculate_fu_li_d`, `calculate_fu_li_f` and `calculate_fay_wu_h` take them as well:
+
+```python-snippet
+results = neutrality_test_suite(
+    sequences,
+    p_value_method="simulation",
+    n_simulations=2000,
+    random_state=1,  # an integer seed makes the p-values reproducible
+)
+print(results["p_value_method"], results["n_simulations"])  # simulation 2000
+print(f"Tajima's D p-value: {results['tajima_d_p_value']:.4f}")
+```
+
+The null is a constant-size neutral population, so a small p-value can reflect demography as well as selection. See [Neutrality p-values](population.md#neutrality-p-values-analysis) for the definition, the calibration and the caveats.
+
+**Interpretation values** (based on the sign of the statistic, and on the p-value of whichever method produced it):
 - `neutrality_summary["tajima_d"]`: `"balancing_selection_or_population_bottleneck"` (D > 0) or `"positive_selection_or_population_expansion"` (D < 0) when the p-value is below `alpha` (default 0.05); otherwise `"neutral_evolution"` (consistent with neutrality); `"calculation_failed"` when D is `None`
 - `neutrality_summary["fu_li_d_star"]`: `"balancing_selection"` (D* > 0) or `"positive_selection_or_population_expansion"` (D* < 0) under the same rule
 

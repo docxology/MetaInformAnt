@@ -7,7 +7,6 @@ metrics used in population genomics.
 
 from __future__ import annotations
 
-import math
 from collections import Counter
 from functools import lru_cache
 from typing import Dict, Iterable, List, Sequence, Tuple, cast
@@ -728,15 +727,24 @@ def _neutrality_variance_coefficients(n: int) -> Dict[str, Tuple[float, float]]:
     return {name: (float(np.sum(w**2 / i_values)), quadratic[name]) for name, w in weights.items()}
 
 
-def _neutrality_statistic(seqs: Sequence[str], test: str, outgroup: str | None = None) -> float:
-    """Standardize one test's numerator by its estimated neutral variance."""
-    n = len(seqs)
-    spectrum = _site_frequency_spectrum(seqs, outgroup)
-    mutations = float(spectrum.sum())
-    if mutations == 0:
-        return 0.0
-    numerator = float(_neutrality_weights(n)[test] @ spectrum[1:])
+def _neutrality_statistics_from_spectra(spectra: np.ndarray, n: int, test: str) -> np.ndarray:
+    """Standardize one test's numerator by its estimated neutral variance, for every row of ``spectra``.
+
+    Row ``r`` holds, in entries ``i - 1`` for ``i = 1..n-1``, the number of mutations carried by ``i`` of
+    the ``n`` sequences. The observed spectrum and the simulated ones of the Monte Carlo null go through
+    this one computation, so equal spectra give identical statistics. A row without mutations scores 0.
+    """
+    counts = np.atleast_2d(np.asarray(spectra, dtype=float))
+    mutations = counts.sum(axis=1)
+    numerator = counts @ _neutrality_weights(n)[test]
     alpha, beta = _neutrality_variance_coefficients(n)[test]
     a_n, b_n = _harmonic_sums(n)
-    variance = alpha * mutations / a_n + beta * mutations * (mutations - 1) / (a_n * a_n + b_n)
-    return numerator / math.sqrt(variance)
+    variance = alpha * mutations / a_n + beta * mutations * (mutations - 1.0) / (a_n * a_n + b_n)
+    statistics: np.ndarray = np.divide(numerator, np.sqrt(variance), out=np.zeros_like(numerator), where=mutations > 0)
+    return statistics
+
+
+def _neutrality_statistic(seqs: Sequence[str], test: str, outgroup: str | None = None) -> float:
+    """Standardize one test's numerator by its estimated neutral variance."""
+    spectrum = _site_frequency_spectrum(seqs, outgroup)
+    return float(_neutrality_statistics_from_spectra(spectrum[1:], len(seqs), test)[0])

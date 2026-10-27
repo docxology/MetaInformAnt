@@ -9,8 +9,19 @@ genetics workflow. Scripts under `scripts/popgen/` are thin orchestrators
 that import from here. Simulation generators live in
 `metainformant.simulation.models.popgen` and are re-exported for convenience.
 
+The sequence scenarios of the synthetic-dataset workflow (neutral, high and low
+diversity, bottleneck, expansion) are neutral coalescent samples from
+`generate_population_sequences`, `simulate_bottleneck_population` and
+`simulate_population_expansion`: infinite sites, no recombination, one genealogy per
+scenario. Each scenario's statistics (pi, Tajima's D) are therefore single draws that
+scatter around the expectations of its model; average over seeds for expectations. See
+[Simulation: Population Genetics](../../../docs/simulation/popgen.md).
+
 All statistics are descriptive; inferential claims are gated behind the
-evidence-manifest freeze per repo policy.
+evidence-manifest freeze per repo policy. `summarize_scenario` reports the default
+(normal-approximation) p-values of `neutrality_test_suite`; the simulated-null option
+`p_value_method="simulation"` belongs to `metainformant.dna.population.analysis` and the
+workflow does not use it.
 
 ## Table of Contents
 
