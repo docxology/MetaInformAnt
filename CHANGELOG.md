@@ -63,6 +63,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `DEFAULT_MIN_RETENTION`) and the versioned `MappingArtifactManifest` v1
   with fail-closed write/read round-trips. The existing behavior of the
   retention audit columns is unchanged.
+- Documentation call and link gates (`quality.doc_verification`):
+  `find_stale_doc_calls` binds every quoted call on an imported
+  `metainformant` name against the callee's current signature, and
+  `find_broken_doc_links` requires relative links and images to resolve with
+  exact case and anchors into Markdown files to match a GitHub heading slug or
+  an explicit id. Both run in `scripts/verify_documentation_code.py`, and the
+  repository is held at zero findings. `generate_core_api_reference.py --check`
+  reports a stale core API reference.
 
 ### Changed
 - The blocking dependency audit covers every package in `uv.lock` (all extras,
@@ -118,8 +126,130 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   packages; math/simulation plot helpers moved into `visualization/analysis/`.
 - Subprocess test timeouts raised for cold-import headroom on contended
   external-drive checkouts (examples runner, life-events CLI).
+- The full-suite coverage floor rises from 70.00% to 71.80%, about one point
+  under the 72.84% hosted measurement (Test Suite run 40446465878).
+- Interface changes from the defect fixes below (callers may notice):
+  - `generate_clinical_report(drugs=None)` analyses every CPIC drug (`drugs=[]`
+    requests none); `load_allele_definitions` defaults `source=None` and
+    rejects contradictory arguments.
+  - Metabolomics `read_csv` keeps missing cells as NaN and raises on other
+    non-numeric text; normalization refuses NaN; `ppm_tolerance` must be
+    positive; unknown `ion_mode` and undersized `background_size` raise.
+    `correct_batch_combat` raises on single-sample batches.
+  - Metagenomics bin quality is `None` without marker annotations,
+    `refine_bins` requires them, numeric `e_value_threshold` raises, Naive
+    Bayes abstains below its confidence threshold, and chao1, ACE and Fisher's
+    alpha reject proportions.
+  - Epigenome peak files store p and q as `-log10` (probabilities in memory);
+    `find_tf_binding_sites` and `identify_cpg_islands` require sequence.
+  - Single-cell `leiden_clustering` raises without leidenalg unless
+    `allow_kmeans_fallback=True`; `select_hvgs`, `compute_neighbors` and
+    `compute_diffusion_map` return copies unless `inplace=True`; the `run_*`
+    external-tool helpers raise `NotImplementedError`. Xenium and MERFISH
+    loaders raise when coordinates are missing, and Visium raises when no
+    barcode matches. `compute_ligand_receptor_interactions` needs gene names,
+    and every `ripley_k` value moves with exact edge correction.
+  - Translocation calls carry `chrom2`/`pos2`; insertions are exempt from size
+    filtering; `survivor_merge` combines genotypes and qualities.
+  - The long-read adapter table drops its two 8 bp entries; custom adapters
+    shorter than the false-positive minimum are matched exactly.
+  - Population sequence generators are coalescent: same-seed outputs differ
+    from before, and requests too dense for infinite sites raise. Negative RNA
+    fold changes divide.
+  - `effective_size_sex_ratio` no longer adjusts by `sex_ratio`;
+    `fisher_exact_test` and `compare_statistics` raise instead of returning
+    p = 1.0; `calculate_confidence_intervals` estimates intervals for a
+    dictionary of observation lists and rejects point values.
+  - `granger` and `grnboost2` are no longer advertised by GRN inference;
+    `enrich_genes` adds a `significant` column; `random_state=None` means fresh
+    entropy throughout networks, ontology, ML and information;
+    `OllamaConfig.max_retries` counts attempts and must be at least 1.
+  - Failed GWAS and eQTL tests carry NaN statistics, are written as `NA` and
+    are excluded from multiple-testing correction; `download_variant_data`
+    supports only `summary_stats`.
+  - AlphaFold helpers that need the remote service raise
+    `NotImplementedError`; `parse_alphafold_confidence` returns one pLDDT per
+    residue. Quality metrics raise for unsupported data types.
+
+### Removed
+- The generated Cursor skill wrappers (`.cursor/`), their generator
+  (`scripts/package/generate_cursor_skills.py`), its parity test and
+  `docs/CURSOR_SKILLS.md`. The `cursorrules/` guidelines remain.
+- Lowercase duplicates of `docs/SETUP.md`, `docs/agents/SPEC.md`,
+  `docs/simulation/AGENTS.md` and `docs/spatial/INTEGRATION.md`. Each was
+  byte-identical to its uppercase twin, and on case-insensitive filesystems
+  the pair collided.
+- `scripts/rna/discover_species.py` and `scripts/rna/setup_genome.py`, which
+  needed functionality the package no longer provides. The genome guides now
+  document `rna.amalgkit.genome_prep` directly.
 
 ### Fixed
+- `find_orfs` (`dna.expression.translation`, `dna.sequence.core`) matched start
+  codons at any offset. Every ORF was reported once per frame of its strand,
+  up to three times, with only one frame label correct. Starts are now
+  codon-aligned within each frame.
+- 41 broken documentation links. All 30 index links in the generated core API
+  reference were dead on GitHub because it used `{#id}` heading attributes.
+  Nine anchors left out GitHub's double hyphen for `&` and `+`, and two links
+  pointed at a missing directory and at untracked campaign output.
+- Pharmacogenomic phenotypes contradicted CPIC: `classify_phenotype` was
+  wrong on 32 of 78 CPIC diplotypes (CYP2D6 `*1/*4` read normal, CYP2C19
+  `*1/*1` rapid) and gaps in the bands read as ultrarapid. Allele values now
+  match CPIC's allele functionality records (CYP2D6 `*9`, `*14`, `*41`; CYP2C9
+  `*5`, `*8`; SLCO1B1 `*5`, `*15`; UGT1A1 `*37`), and the metabolism facade no
+  longer carries a second, conflicting table.
+- Metabolomics: unparseable cells became 0.0; enrichment returned p = 0.0
+  when `background_size` was too small; ComBat depended on batch order and
+  shrank by a constant. ComBat is now parametric empirical Bayes (Johnson et
+  al. 2007).
+- Metagenomics invented results: bins scored complete with no marker search,
+  Naive Bayes classified random sequence at confidence 1.0, and functional
+  annotation invented COG/KEGG/Pfam labels. The ASV Poisson tail lost
+  precision and merged real variants; Fisher's alpha, pathway completeness and
+  the OTU prefilter were wrong.
+- Epigenome peak files did not round-trip, overlap detection lost 28% of
+  nested pairs, enrichment overflowed, and `find_tf_binding_sites`, CpG-island
+  detection and the ChIP/ATAC integration were simulated or placeholders.
+- Single-cell and spatial: diffusion pseudotime was Euclidean distance (now
+  DPT, matching scanpy), size factors were inverted, three steps mutated
+  their input, the radius graph never built, mutual kNN weights doubled,
+  Xenium and MERFISH plots swapped axes, and loaders invented `[0, 0]`
+  coordinates. The `singlecell` extra required the wrong Louvain package.
+  Ligand-receptor scoring hashed gene symbols onto columns, deconvolution
+  "marker correlations" were a variance proxy, `ripley_k` skipped edge
+  correction at 100 points or fewer, `seurat_v3` HVG selection was advertised
+  but rejected, and domain selection called an elbow heuristic a gap statistic.
+- Structural variants: translocations used breakpoints on two chromosomes as
+  one interval, insertions never passed the size filter, breakpoint
+  refinement and gene-overlap queries missed data, `dosage_gain` was
+  unreachable, and CBS took 37 s for 8,000 bins (now 0.22 s, identical
+  segments).
+- Long reads: 8 bp adapters trimmed about 200 bp from adapter-free reads and
+  split random reads as chimeras; haplotagging tagged every read HP=0; the
+  "bayesian" methylation model was capped at 2/3; pysam ML tags crashed.
+- Population genetics: the sequence generators used a star genealogy and
+  founder resampling, so neutral samples had Tajima's D near -2.6 and the
+  bottleneck and expansion signatures were reversed. They are now a seeded
+  Kingman coalescent, and the neutrality tests offer simulated nulls. The LD
+  generator now hits its r² target.
+- Math and core: effective sizes asserted on integers and jumped at a sex
+  ratio of 0.5; the SciPy-free Fisher test, LD-decay rate and DDM timing were
+  rough approximations; `compare_statistics` ran Welch's t-test for any test
+  type; dictionary confidence intervals were an invented ±10% band; the
+  downloader double-counted bytes and failed on complete files.
+- Networks, ontology, ML and information: a fabricated pathway p-value, a GSEA
+  null that permuted weights instead of gene sets, Stirling log-factorials,
+  lost ontology hierarchies, an approximate "Von Neumann" entropy, broken
+  default validation strategies, and global random seeding.
+- Visualization and GWAS plots: keyword collisions, inflated genome-wide
+  positions (34 s for 20,000 variants, now 0.27 s), random Q-Q expected values,
+  inverted sequence logos, and plots that fabricated annotation categories, a
+  heritability and p-values.
+- GWAS analysis, phenotype and protein: failed association tests were
+  reported as beta 0 and p = 1; pipeline outputs lacked MAF; the cis-eQTL
+  window was ignored; cross-omic p-values were approximations and Spearman
+  ignored ties; protein motif, pocket and AlphaFold functions were
+  placeholders; an eQTL script labelled synthetic positions as real.
 
 - Neutrality tests (`dna.population`) were wrong. Tajima's D subtracted the
   whole-locus Watterson's theta from the per-site nucleotide diversity, so a
@@ -349,6 +479,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   repaired in `docs/index.md`.
 
 ### Security
+- dnspython 2.9.0 (CVE-2026-114605) and pymongo 4.19.0 (CVE-2026-106435),
+  with matching security floors in `[tool.uv] constraint-dependencies`.
 - Resolved all 60 open Dependabot advisories in `uv.lock`: pillow 13.0.0,
   certifi 2026.10.23, filelock 4.2.4, nbconvert 7.17.2, setuptools 84.2.0 and
   virtualenv 21.14.13 (also clearing GHSA-cx6f-vjhg-g3cc, a prompt-escaping

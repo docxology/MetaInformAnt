@@ -1,6 +1,6 @@
 # MetaInformAnt TODO
 
-> **Last Updated**: 2026-10-26
+> **Last Updated**: 2026-10-27
 >
 > This TODO contains only active unfinished work. Completed work is recorded in
 > `CHANGELOG.md`, the review and benchmark documents it references, and git
@@ -19,24 +19,13 @@ snapshots; then owner-reviewed scientific promotion. A green engineering gate
 never establishes cohort completion or biological inference. The live RNA
 campaign remains a moving operational snapshot.
 
-- [ ] Raise `COVERAGE_MINIMUM` (currently 70.00%, one point under the hosted
-  full-suite measurement of 71.02% in Test Suite run 40240714837) in measured
+- [ ] Raise `COVERAGE_MINIMUM` (currently 71.80%, about one point under the
+  hosted full-suite measurement of 72.84% in Test Suite run 40446465878) in measured
   increments as maintained-domain tests expand; each increase requires a hosted
   full-suite receipt and a corresponding test/documentation change.
 
 ## Methods
 
-- [ ] Replace the heuristic sequence generators in `simulation.models.popgen`
-  with coalescent simulation. `generate_population_sequences` mutates every
-  sequence independently from one ancestor (a star genealogy), so a "neutral"
-  sample of 20 gives Tajima's D near -2.6. The bottleneck and expansion
-  scenarios resample founders, which leaves the bottleneck's D near zero and
-  pushes expansion's D positive, the opposite of the textbook signature.
-- [ ] Make `generate_two_populations(fst=...)` reach its target: Hudson's
-  F_ST of its output is near 0.5 for targets 0.05, 0.2 and 0.5.
-- [ ] Offer simulated null distributions for the neutrality tests. The
-  current p-values use the normal approximation, which is rough for small
-  samples.
 - [ ] Make `visualization.genomics.trees.plot_phylo_tree` draw the trees that
   `dna.phylogeny.neighbor_joining_tree` returns. That builder represents
   leaves as `None` in its nested dict, and the plot raises `AttributeError`.
@@ -45,108 +34,95 @@ campaign remains a moving operational snapshot.
   Datasets API. A documentation review saw the v2 endpoints they call return
   404, so they come back empty; `download_genome_package` works. Verify with
   network access.
+- [ ] Review the calibration of the `multi_trait_coloc` shared-signal heuristic.
+- [ ] Choose a default for `multiomics.canonical_correlation` regularization:
+  with none, correlations are exactly 1 whenever features outnumber samples.
+- [ ] Add recombination to the coalescent simulator (each sample has a single
+  genealogy), so `generate_linkage_disequilibrium_data` can honour
+  `recombination_rate`; replace the heuristic expansion and bottleneck models
+  of `generate_site_frequency_spectrum` and the statistics-dict forms of the
+  demographic simulators; give `detect_selection` and
+  `calculate_summary_statistics` the simulated null the neutrality tests have.
+- [ ] Use a first-passage-time series (Navarro & Fuss 2009) in
+  `ddm_log_likelihood` and `fit_ddm_parameters`, which approximate the
+  decision-time density by a normal distribution.
 
-- [ ] Pass genotypes to `write_summary_statistics` from the GWAS workflow
-  (`workflow_execution.py`) so pipeline outputs carry MAF instead of `NA`.
-- [ ] Accept the `chrom` key in `gwas/visualization/genomic/genome.py` and
-  `statistical/effects.py`, as `interactive_manhattan` now does, and review
-  the calibration of the `multi_trait_coloc` shared-signal heuristic.
+## Known defects
 
-## Known defects from the documentation review
+Reproduced while fixing the previous defect backlog and not yet fixed.
 
-Found while making the documentation executable; each was reproduced but is
-not yet fixed.
-
-- [ ] `simulation.models.rna` treats negative fold changes as magnitudes,
-  and `generate_linkage_disequilibrium_data` ignores `recombination_rate`
-  (its `r_squared_target` acts as a copy probability).
-- [ ] `math.population_genetics`: `effective_size_from_family_size_variance`
-  asserts on an integer size, and `effective_size_sex_ratio` jumps from 400
-  to 200 at a sex ratio of exactly 0.5.
-- [ ] `core.io.download`: `resume=False` over an existing file double-counts
-  bytes, a missing destination directory is treated as a file name, and a
-  complete file with `resume=True` fails with HTTP 416.
-- [ ] `dna.variation.mutations.generate_point_mutations` uses the global
-  random state and ignores `mutation_rate`.
-- [ ] `networks`: pathway IDs containing underscores are split, an unknown
-  enrichment method runs as hypergeometric, Leiden-only arguments reach the
-  Louvain fallback, `granger`/`grnboost2` are listed but raise, feed-forward
-  loops ignore the direct edge, and the PPI "top 10" centrality is the first
-  ten nodes.
-- [ ] `ml`: `compare_validation_strategies`' default strategy always errors,
-  and `OllamaConfig(max_retries=0)` crashes `generate()`.
-- [ ] `ontology`: `filter_by_namespace` and `subgraph` lose the parent/child
-  maps, `enrich_genes` ignores `alpha`, and Resnik similarity is documented as
-  0-1 but returns bits.
-- [ ] Visualization: duplicate `cmap`/`marker` and unsupported
-  `color`/`alpha` arguments raise in `analysis/information.py`,
-  `analysis/timeseries.py` and `plot_circular_barplot`; Sankey node indices,
-  per-chromosome marker sizes, hierarchical network layout, sequence-logo
-  heights and single-panel `multi_panel` are wrong.
-- [ ] `dna.population` plots ignore `output_path` in
-  `plot_population_diversity`, return `None` from `plot_pca_results` for a
-  bare array, and drop summary and neutrality entries beyond six and four.
-- [ ] GWAS plots: genome-wide x positions are inflated (one scatter per
-  variant), effect-plot positions are a running sum, the interactive suite
-  skips TSV inputs and ignores `vcf_file`, regional plots compare `chrom` by
-  exact type, and QQ "expected" values are random and fail at p = 0.
-- [ ] `pharmacogenomics`: the CYP2D6, CYP2C19 and SLCO1B1 phenotype bands
-  contradict CPIC (`*1/*4` reads Normal, CYP2C19 `*1/*1` Rapid), the
-  metabolizer module uses a second, inconsistent table, and
-  `generate_clinical_report(drugs=None)` returns no recommendations.
-- [ ] `longread`: the default adapter table holds two 8 bp entries that match
-  random sequence (about 190 bp trimmed from adapter-free 3 kb reads),
-  `haplotag_reads` tags every read HP=0 for `phase_reads` blocks, the
-  "bayesian" methylation model is a capped linear map, and merged SV calls
-  lose mate and inserted-sequence fields.
-- [ ] `structural_variants`: translocation calls take start and end from two
-  chromosomes, insertion calls never reach the default minimum size,
-  breakpoint refinement drops `chrom2` and strand, gene-overlap queries miss
-  long genes, and `dosage_gain` is unreachable.
-- [ ] `metagenomics`: bin quality does no marker search (any 3 kb bin scores
-  complete), the OTU k-mer prefilter rejects pairs above the identity
-  threshold, ASV denoising inverts its Poisson test, Fisher's alpha and
-  pathway completeness are wrong, and functional annotation invents labels.
-- [ ] `metabolomics`: `read_csv` turns unparseable cells into 0.0, unknown
-  `ion_mode` selects the negative adducts, enrichment p-values fall to 0.0 on
-  error, and ComBat correction depends on batch order.
-- [ ] `epigenome`: peak files do not survive a save/load round trip,
-  overlapping-peak detection misses pairs, `find_tf_binding_sites` is
-  simulated, and the ChIP/ATAC integration step is a placeholder.
-- [ ] `singlecell`: `leiden_clustering` silently runs k-means on plain
-  arrays, several steps mutate their input, the `run_*` I/O helpers only touch
-  output files, and diffusion pseudotime is effectively Euclidean distance.
-- [ ] `spatial`: the `radius` graph method always raises, mutual kNN weights
-  double, Xenium and MERFISH scatter plots swap axes, and loaders fall back to
-  zero coordinates when the cell file is missing.
-- [ ] Smaller contract bugs: `biological_embedding("temporal")` raises for
-  any `EventSequence`, `event_importance("frequency")` ranks by earliness,
-  `apply_qc_filters` raises `IndexError` when variant and genotype counts
-  differ, `regional_coloc` reports success when every window errors,
-  `cross_validate_biological(method="ensemble", random_state=...)` raises,
-  and `load_ontology(format="json")` fails on OBO-parsed ontologies.
-- [ ] Packaging: the `louvain` extra names the wrong package, and
-  `np.trapezoid` in metabolomics plots needs NumPy 2 while `numpy>=1.24` is
-  allowed. `canonical_correlation` defaults to no regularization, which gives
-  correlations of exactly 1 when features outnumber samples.
+- [ ] `pharmacogenomics`: unknown genes fall back to the CYP2D6 bands (decide
+  whether to raise); unknown alleles score 1.0; an unscored `Diplotype` reads
+  as Poor Metabolizer; the CYP1A2 activity values have no CPIC source.
+- [ ] `metabolomics` and `multiomics`: `read_mgf` drops a final block without
+  `END IONS`; `extract_chromatogram` and `prepare_spectrum_plot` accept any
+  `ppm_tolerance`; `active_module_detection` hard-codes permutation seed 42;
+  `detect_batch_effects` uses `1 - cdf` where `sf` is exact.
+- [ ] `simulation` and `math`: `simulate_sequence_evolution` applies one
+  mutation per generation whatever `mutation_rate` is; the list form of
+  `effective_size_from_family_size_variance` (k/(V-1)) is not a standard
+  estimator.
+- [ ] `metagenomics`: the SciPy-free Welch test is a normal approximation;
+  `biomarker_discovery` reports `cv_accuracy=0.0` when cross-validation cannot
+  run; NMDS has no rank step and reports `1 - stress` as variance explained;
+  `refine_bins` filters split bins on completeness only; PCoA ordination plots
+  use power iteration; annotation confidence is `score/100`; scaffolds do not
+  infer contig orientation.
+- [ ] `structural_variants`: `merge_callsets`, `survivor_merge`,
+  `deduplicate_variants` and `filter_by_frequency` ignore a translocation's
+  `chrom2`/`pos2`, and `predict_tad_disruption` checks only its first
+  breakpoint; population PCA eigenvalues are rescaled when samples are fewer
+  than SVs; `find_nearest_gene` measures from the midpoint and rebuilds its
+  index per call; genotyping ignores the caller's `min_mapq`;
+  `detect_microhomology` is a mirror-match heuristic.
+- [ ] `longread`: `PacBio_barcoded` in the adapter table is the Illumina
+  Nextera read-1 sequence, and full-length LSK110 adapters need verified
+  sequences; nested adapters can claim a shorter adapter's site; MM-tag
+  decoding does not re-orient `-` strand or reverse-aligned reads, misaligns
+  multi-code entries such as `C+mh`, and skips `.` flags; float read lengths
+  are skipped; `variant_haplotypes` keys do not survive JSON.
+- [ ] `epigenome`: CpG-island edges resolve only to the window size; per-CpG
+  site lists and the methylation-versus-peak association do not scale to
+  whole-genome bisulfite data; `differential_peaks` pairs each peak with its
+  first overlap only; `learn_chromatin_states` fixes its seed.
+- [ ] `singlecell` and `spatial`: `compute_diffusion_map` doubles mutual kNN
+  weights and `diffusion_map_reduction` takes `eigh` of a non-symmetric
+  matrix; Leiden ignores `use_weights`; PAGA and Slingshot are approximations;
+  `filter_cells` leaves `uns["neighbors"]` stale for consumers other than DPT;
+  `fetch_atlas_datasets` returns an empty directory for ArrayExpress; the
+  Visium loader keeps expression rows with no coordinates when no barcodes
+  match; spatial Leiden/Louvain fall back to greedy modularity invisibly.
+- [ ] Decide whether `core.utils.errors.ValidationError` should also subclass
+  `ValueError`: `singlecell` raises a bare `ValueError` for some invalid
+  arguments and `ValidationError` for others, so `except ValueError` catches
+  only some (`tests/singlecell/test_singlecell_docstring_exceptions.py` pins the
+  current hierarchy).
+- [ ] `networks` and `information`: `integration.networks._von_neumann_entropy`
+  uses the row-normalised adjacency, which is not a density matrix; the GRN
+  hypergeometric p-value falls back to a normal approximation without SciPy.
+- [ ] `gwas`, `protein` and `eqtl`: the summary-statistics branch of
+  `download_variant_data` needs network verification (numeric p-value
+  formatting, dict-valued variant column, silent non-200 responses, 1000-row
+  truncation); regional plots raise `KeyError` for records with no chromosome
+  key; `genome.manhattan_plot` and `effect_direction_plot` accept every
+  chromosome spelling but only `POS`/`pos` and `p_value`/`P`, unlike the regional
+  plots; `suite.py` names regional files from upcast floats; the protein
+  secondary-structure, SASA, domain and similarity functions remain simplified.
 
 ## Documentation
 
 - [ ] Audit the module cards and runtime figures in
-  `docs/comparisons/methods_matrix.md`, and the source trees in
-  `docs/agents/rules/*.md` (only the GWAS tree has been corrected). Imports
-  and attribute chains in active documentation are checked by
-  `tests/quality/test_doc_imports.py`; call signatures and prose are not.
-- [ ] Bring call signatures and claims up to date in pages the executable
-  sweep did not cover: `docs/cloud/SPEC.md`; `docs/visualization/`
-  animations, dimred, expression, trees, plots, ontology, simulation, SPEC and
-  AGENTS; `docs/ml/features.md` and `VALIDATION_REPORT.md`;
-  `docs/dna/distances.md`, `translation.md` and `sequences.md`;
-  `docs/ontology/query.md`; `docs/ecology/` ordination and visualization;
-  `docs/gwas/` workflow, structure, index and ASSESSMENT; and the
-  capability, performance, troubleshooting and topic pages the omics sweep
-  left untouched in `docs/{metabolomics,metagenomics,singlecell,spatial,
-  pharmacogenomics,structural_variants,longread,epigenome}/`.
+  `docs/comparisons/methods_matrix.md` and `docs/CAPABILITY_MATRIX.md`, and
+  the source trees in `docs/agents/rules/*.md` (only the GWAS tree has been
+  corrected). Imports, attribute chains, call signatures and relative links in
+  active documentation are checked by `tests/quality/test_doc_imports.py` and
+  `tests/quality/test_doc_calls_and_links.py`; prose claims are not.
+- [ ] Review prose claims (described return values, quoted outputs,
+  capability statements) in pages no domain sweep has covered:
+  `docs/cloud/SPEC.md`; `docs/visualization/` animations, dimred, expression,
+  trees and plots; `docs/ml/features.md`; `docs/dna/sequences.md`;
+  `docs/ecology/` ordination and visualization; and `docs/gwas/` structure,
+  index and ASSESSMENT.
 
 ---
 
