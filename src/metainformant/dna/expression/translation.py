@@ -141,39 +141,36 @@ def translate_dna(dna_seq: str, genetic_code: int = 1) -> str:
 def find_orfs(rna_seq: str, min_length: int = 30) -> List[Tuple[int, int, str]]:
     """Find open reading frames in an RNA sequence.
 
-    Scans the three forward frames only. Positions refer to the input RNA:
-    ``start_pos`` is the 0-based index of the ``AUG`` start codon and
-    ``end_pos`` is the exclusive end of the first in-frame stop codon
-    (included in the interval).
+    Scans the three forward frames only. Every in-frame ``AUG`` starts an ORF,
+    so ORFs sharing a stop codon are each reported. Positions refer to the
+    input RNA: ``start_pos`` is the 0-based index of the ``AUG`` start codon and
+    ``end_pos`` is the exclusive end of the first in-frame stop codon (included
+    in the interval), or the sequence length when no in-frame stop follows.
 
     Args:
         rna_seq: RNA sequence string
-        min_length: Minimum ORF length in amino acids
+        min_length: Minimum ORF length in codons
 
     Returns:
-        List of tuples (start_pos, end_pos, frame)
+        List of tuples (start_pos, end_pos, frame), frame ``"+1"``..``"+3"``
+        being the start position modulo 3 plus one.
     """
     orfs: List[Tuple[int, int, str]] = []
     seq_upper = rna_seq.upper()
     stop_codons = {"UAA", "UAG", "UGA"}
 
     for frame in range(3):
-        frame_seq = seq_upper[frame:]
-        for start_match in re.finditer(r"AUG", frame_seq):
-            start_pos = start_match.start()
-            # Scan codon-by-codon for the first in-frame stop codon
-            end_pos = -1
-            for codon_start in range(start_pos + 3, len(frame_seq) - 2, 3):
-                if frame_seq[codon_start : codon_start + 3] in stop_codons:
+        # Only codon-aligned starts belong to this frame.
+        for start_pos in range(frame, len(seq_upper) - 2, 3):
+            if seq_upper[start_pos : start_pos + 3] != "AUG":
+                continue
+            end_pos = len(seq_upper)
+            for codon_start in range(start_pos + 3, len(seq_upper) - 2, 3):
+                if seq_upper[codon_start : codon_start + 3] in stop_codons:
                     end_pos = codon_start + 3  # Exclusive end; stop codon included
                     break
-            if end_pos == -1:
-                # ORF extends to the end of the sequence
-                if (len(frame_seq) - start_pos) // 3 >= min_length:
-                    orfs.append((start_pos + frame, len(rna_seq), f"+{frame + 1}"))
-                continue
             if (end_pos - start_pos) // 3 >= min_length:
-                orfs.append((start_pos + frame, end_pos + frame, f"+{frame + 1}"))
+                orfs.append((start_pos, end_pos, f"+{frame + 1}"))
 
     return orfs
 

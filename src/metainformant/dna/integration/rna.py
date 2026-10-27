@@ -21,7 +21,8 @@ def find_open_reading_frames(dna_sequence: str) -> List[Tuple[int, int, str]]:
         dna_sequence: DNA sequence to analyze
 
     Returns:
-        List of tuples (start_pos, end_pos, amino_acid_sequence)
+        List of tuples (start_pos, end_pos, frame), frames ``+1``..``+3`` and
+        ``-1``..``-3``, as returned by :func:`metainformant.dna.sequence.core.find_orfs`
 
     Example:
         >>> dna = "ATGGCCATTGTAATGGGCC"

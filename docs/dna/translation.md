@@ -1,14 +1,11 @@
 ### DNA: Translation
 
-Functions: `translate_dna`, `find_orfs`
-Classes: `ORF`
+Functions: `translate_dna`, `translate`, `find_orfs`, `six_frame_translation`
 
 ```mermaid
 flowchart TD
   AdnaSequence[DNA Sequence] --> BtranslateDna[translate_dna] --> CproteinSequence[Protein Sequence]
-  A --> DfindOrfs[find_orfs] --> EorfObjects[ORF Objects]
-  E --> ForfClass[ORF Class]
-  F --> Gstart,End,Frame,Strand,Protein[start, end, frame, strand, protein]
+  DrnaSequence[RNA Sequence] --> EfindOrfs[find_orfs] --> ForfTuples["(start, end, frame) tuples"]
 ```
 
 Example
@@ -18,43 +15,35 @@ from metainformant.dna import translation
 
 # Simple DNA translation
 dna = "ATGAAATTTAAATAG"
-protein = translation.translate_dna(dna)  # "MKF*"
+protein = translation.translate_dna(dna)  # "MKFK*"
 
 # Stop at first stop codon
-protein = translation.translate_dna(dna, to_stop=True)  # "MKF"
+protein = translation.translate_dna(dna, to_stop=True)  # "MKFK"
 
-# Find all open reading frames
-seq = "ATGAAATTTTAAATGGGCCCCTAGATGAAATTTAAA"
-orfs = translation.find_orfs(seq, min_aa=3)
-
-# Access ORF properties
-for orf in orfs:
-    print(f"Position: {orf.start}-{orf.end}")
-    print(f"Frame: {orf.frame}, Strand: {orf.strand}")
-    print(f"Protein: {orf.protein}")
-    print(f"Start codon: {orf.start_codon}")
+# Find open reading frames in RNA (forward frames)
+rna = "AUGAAAUUUUAAAUGGGCCCCUAGAUGAAAUUUAAA"
+orfs = translation.find_orfs(rna, min_length=3)
+# [(0, 12, "+1"), (12, 24, "+1"), (24, 36, "+1")]
+for start, end, frame in orfs:
+    print(frame, start, end, translation.translate(rna[start:end]))
 ```
 
-ORF Class attributes:
-- **start**: Start position (0-based)
-- **end**: End position (0-based, exclusive)
-- **frame**: Reading frame (0, 1, or 2)
-- **strand**: DNA strand (+1 forward, -1 reverse)
-- **protein**: Translated amino acid sequence
-- **start_codon**: Start codon sequence (usually ATG)
-- **stop_codon**: Stop codon sequence (TAA/TAG/TGA) or None
+Each ORF is a `(start, end, frame)` tuple:
 
-Features:
-- **Genetic code tables**: Supports different translation tables
-- **Bidirectional search**: Finds ORFs on both strands
-- **Flexible filtering**: Minimum amino acid length threshold
-- **Complete ORFs**: Only returns complete start-to-stop sequences
-- **Multiple frames**: Searches all six reading frames
+- **start**: 0-based index of the `AUG` start codon
+- **end**: exclusive end of the first in-frame stop codon, or the sequence
+  length when no in-frame stop follows (the last ORF above has no stop)
+- **frame**: `"+1"`, `"+2"` or `"+3"`, the start position modulo 3 plus one
+
+Every in-frame `AUG` opens an ORF, so nested starts that share a stop codon
+are each reported, and `min_length` counts codons including the stop. For
+both strands of a DNA sequence use `metainformant.dna.sequence.core.find_orfs`,
+which also reports frames `-1` to `-3` in forward-strand coordinates.
+`six_frame_translation` translates all six frames without calling ORFs.
 
 Applications:
 - **Gene prediction**: Identify potential protein-coding regions
 - **Annotation**: Characterize genomic sequences
 - **Proteomics**: Translate DNA sequences for protein analysis
-- **Comparative analysis**: ORF conservation across species
 
 Related: Works with [transcription](./transcription.md) and [codon](./codon.md) analysis.

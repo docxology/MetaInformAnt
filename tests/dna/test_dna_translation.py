@@ -23,12 +23,18 @@ def test_translate_rna() -> None:
 
 
 def test_find_orfs_simple() -> None:
-    """Test finding ORFs in a sequence."""
-    # RNA sequence with start and stop codons
-    rna_seq = "AUGAAAUUUUGAAUGCCCCUAG"
+    """Each AUG opens an ORF that ends at the first in-frame stop codon."""
+    rna_seq = "AUGAAAUUUUGAAUGCCCCUAG"  # AUG AAA UUU UGA | AUG CCC CUA G
     orfs = translation.find_orfs(rna_seq, min_length=2)
-    # Returns list of tuples (start, end, frame)
-    assert isinstance(orfs, list)
+    assert orfs == [(0, 12, "+1"), (12, 22, "+1")]
+
+
+def test_find_orfs_reports_each_orf_once_in_its_own_frame() -> None:
+    # The only start is at index 1 (frame +2); unaligned matching used to
+    # report it again as frame +1.
+    assert translation.find_orfs("CAUGAAAUAA", min_length=1) == [(1, 10, "+2")]
+    rna = "AUGAAAUUUUAAAUGGGCCCCUAGAUGAAAUUUAAA"
+    assert translation.find_orfs(rna, min_length=3) == [(0, 12, "+1"), (12, 24, "+1"), (24, 36, "+1")]
 
 
 def test_find_start_codons() -> None:

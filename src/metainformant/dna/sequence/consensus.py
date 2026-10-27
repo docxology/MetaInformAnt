@@ -6,7 +6,9 @@ DNA alignments, handling ambiguity codes, and quality-based consensus calling.
 
 from __future__ import annotations
 
+import random
 from collections.abc import Mapping, Sequence
+from types import ModuleType
 from typing import Any, Dict, List, Tuple
 
 from metainformant.core.utils import logging
@@ -423,12 +425,17 @@ def find_consensus_breaks(sequences: List[str], window_size: int = 10) -> List[T
     return breaks
 
 
-def bootstrap_consensus(sequences: List[str], n_bootstraps: int = 100) -> Tuple[str, float]:
+def bootstrap_consensus(
+    sequences: List[str], n_bootstraps: int = 100, *, random_state: int | random.Random | None = None
+) -> Tuple[str, float]:
     """Generate consensus with bootstrap confidence.
 
     Args:
         sequences: List of aligned sequences
         n_bootstraps: Number of bootstrap replicates
+        random_state: Seed or ``random.Random`` for the resampling. An int or a generator
+            gives reproducible replicates without touching the global ``random`` state;
+            ``None`` draws from the global generator (seed it with ``random.seed``).
 
     Returns:
         Tuple of (consensus_sequence, confidence_score)
@@ -442,14 +449,20 @@ def bootstrap_consensus(sequences: List[str], n_bootstraps: int = 100) -> Tuple[
     if not sequences or n_bootstraps <= 0:
         return "", 0.0
 
-    import random
+    rng: random.Random | ModuleType
+    if isinstance(random_state, random.Random):
+        rng = random_state
+    elif random_state is None:
+        rng = random
+    else:
+        rng = random.Random(random_state)
 
     consensus_sequences = []
 
     # Generate bootstrap replicates
     for _ in range(n_bootstraps):
         # Sample with replacement
-        bootstrap_sample = [random.choice(sequences) for _ in range(len(sequences))]
+        bootstrap_sample = [rng.choice(sequences) for _ in range(len(sequences))]
         consensus = majority_consensus(bootstrap_sample)
         consensus_sequences.append(consensus)
 

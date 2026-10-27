@@ -257,10 +257,11 @@ def find_orfs(seq: str, min_length: int = 30) -> List[Tuple[int, int, str]]:
     stop_codons = {"TAA", "TAG", "TGA"}
 
     def _scan_strand(search_seq: str) -> List[Tuple[int, int]]:
-        """Find ORFs on one strand, in that strand's own coordinates."""
+        """Find ORFs in frame 0 of one strand, in that strand's own coordinates."""
         found: List[Tuple[int, int]] = []
-        for start_match in re.finditer(r"ATG", search_seq):
-            start_pos = start_match.start()
+        for start_pos in range(0, len(search_seq) - 2, 3):
+            if search_seq[start_pos : start_pos + 3] != "ATG":
+                continue  # out-of-frame starts belong to another frame's scan
             # Scan codon-by-codon for the first in-frame stop codon
             end_pos = -1
             for codon_start in range(start_pos + 3, len(search_seq) - 2, 3):

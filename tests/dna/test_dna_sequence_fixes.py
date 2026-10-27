@@ -1,9 +1,15 @@
 """Regression tests for dna.sequence fixes (ORFs, repeats, consensus, restriction)."""
 
+import random
+
 import pytest
 
 from metainformant.dna.sequence import restriction
-from metainformant.dna.sequence.consensus import find_consensus_breaks, quality_weighted_consensus
+from metainformant.dna.sequence.consensus import (
+    bootstrap_consensus,
+    find_consensus_breaks,
+    quality_weighted_consensus,
+)
 from metainformant.dna.sequence.core import find_orfs, find_repeats
 
 
@@ -54,6 +60,18 @@ class TestFindOrfs:
     def test_min_length_filters(self):
         seq = "ATGTAATAAGGGCCC"
         assert not any(s == 0 for s, _e, _l in find_orfs(seq, min_length=5))
+
+    def test_each_orf_is_reported_once_in_its_own_frame(self):
+        # ATG at index 1 is frame +2; its reverse complement TTATTTCATG has an
+        # open ATG at index 7 (frame -2). Scanning unaligned starts used to
+        # report each ORF in all three frames of its strand.
+        assert find_orfs("CATGAAATAA", min_length=1) == [(1, 10, "+2"), (0, 3, "-2")]
+
+    def test_frame_label_is_start_position_modulo_three(self):
+        seq = "GATGCCCTAAATGAAATAGGCATGTTTTGA"
+        forward = [(s, label) for s, _e, label in find_orfs(seq, min_length=1) if label.startswith("+")]
+        assert forward == sorted(forward, key=lambda item: (item[1], item[0]))
+        assert forward and all(label == f"+{start % 3 + 1}" for start, label in forward)
 
 
 class TestFindRepeats:
@@ -143,3 +161,19 @@ class TestRestrictionDigest:
         # Boundary cut before site 0, cut before site 6, and the terminal
         # marker.
         assert pattern.count("|") == 4
+
+
+class TestBootstrapConsensus:
+    SEQS = ["ATCGATCG", "ATCGTTCG", "ATGGATCG", "TTCGATCG", "ATCGATCC"]
+
+    def test_seeded_replicates_are_reproducible(self):
+        first = bootstrap_consensus(self.SEQS, n_bootstraps=50, random_state=7)
+        assert first == bootstrap_consensus(self.SEQS, n_bootstraps=50, random_state=7)
+        assert first == bootstrap_consensus(self.SEQS, n_bootstraps=50, random_state=random.Random(7))
+
+    def test_seed_leaves_the_global_generator_alone(self):
+        random.seed(123)
+        expected = random.random()
+        random.seed(123)
+        bootstrap_consensus(self.SEQS, n_bootstraps=20, random_state=3)
+        assert random.random() == expected
