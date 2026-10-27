@@ -83,7 +83,9 @@ def build_spatial_graph(
         radius: Radius for radius-based graph (required if method="radius").
 
     Returns:
-        Sparse adjacency matrix (scipy CSR) of shape (n, n).
+        Sparse adjacency matrix (scipy CSR) of shape (n, n). The "knn" graph is symmetric and weights each
+        edge by ``1 / (1 + distance)`` whether the two spots are mutual neighbors or only one lists the
+        other; "delaunay" and "radius" edges have weight 1.
 
     Raises:
         ImportError: If scipy or sklearn is not installed.
@@ -121,9 +123,10 @@ def build_spatial_graph(
                     vals.append(weight)
 
         adj = sp_sparse.csr_matrix((vals, (rows, cols)), shape=(n, n))
-        # Make symmetric
-        adj = adj + adj.T
-        adj.data[:] = np.minimum(adj.data, 1.0)  # cap at 1
+        # Make symmetric. An edge's weight depends only on the distance between its two endpoints, so the
+        # entrywise maximum keeps one weight per pair; adding the transpose would give mutual neighbors
+        # twice the weight of a pair at the same distance that only one side lists.
+        adj = sp_sparse.csr_matrix(adj.maximum(adj.T))
 
     elif method == "delaunay":
         if Delaunay is None:
@@ -176,6 +179,18 @@ def build_spatial_graph(
     return adj
 
 
+def _leidenalg_iterations(n_iterations: int) -> int:
+    """Translate the public ``n_iterations`` into the value leidenalg expects.
+
+    leidenalg runs until an iteration brings no improvement when given a negative number, which is how
+    the public API documents ``-1``. Zero iterations would hand back the initial all-singletons partition,
+    so it is rejected rather than quietly changed into some other count.
+    """
+    if n_iterations == 0:
+        raise ValueError("n_iterations must be positive, or negative to iterate until convergence")
+    return -1 if n_iterations < 0 else int(n_iterations)
+
+
 def leiden_clustering(
     adjacency_matrix: Any,
     resolution: float = 1.0,
@@ -191,7 +206,9 @@ def leiden_clustering(
     Args:
         adjacency_matrix: Sparse adjacency matrix (n x n).
         resolution: Resolution parameter (higher = more clusters).
-        n_iterations: Number of iterations (-1 for until convergence).
+        n_iterations: Number of leidenalg iterations; any negative value (the default, -1) iterates until
+            an iteration brings no improvement. Zero is rejected. The greedy fallback ignores it: it
+            sweeps the nodes until none moves, at most 50 times.
         seed: Random seed for reproducibility.
 
     Returns:
@@ -200,12 +217,14 @@ def leiden_clustering(
 
     Raises:
         ImportError: If neither leidenalg nor required fallback deps are available.
+        ValueError: If ``n_iterations`` is zero.
     """
     if np is None:
         raise ImportError("NumPy is required: uv pip install numpy")
     if sp_sparse is None:
         raise ImportError("scipy is required: uv pip install scipy")
 
+    iterations = _leidenalg_iterations(n_iterations)
     adj = sp_sparse.csr_matrix(adjacency_matrix)
     n = adj.shape[0]
 
@@ -229,7 +248,7 @@ def leiden_clustering(
             leidenalg.RBConfigurationVertexPartition,
             weights="weight",
             resolution_parameter=resolution,
-            n_iterations=n_iterations if n_iterations > 0 else 2,
+            n_iterations=iterations,
             seed=seed,
         )
 
@@ -444,6 +463,7 @@ def spatial_cluster(
     *,
     n_neighbors: int = 6,
     graph_method: Literal["knn", "delaunay", "radius"] = "knn",
+    radius: float | None = None,
     resolution: float = 1.0,
     spatial_weight: float = 0.5,
     n_pcs: int = 15,
@@ -470,8 +490,10 @@ def spatial_cluster(
         coordinates: Spatial coordinates (n_spots x 2).
         n_clusters: Number of clusters (required for KMeans, optional for graph methods).
         method: Clustering algorithm ("leiden", "louvain", "kmeans").
-        n_neighbors: Number of spatial neighbors.
+        n_neighbors: Number of spatial neighbors (used by the "knn" graph; also the expression-graph size).
         graph_method: How to build the spatial graph.
+        radius: Neighborhood radius, in the units of ``coordinates``, for ``graph_method="radius"``. It is
+            required with that graph method (there is no data-derived default) and ignored otherwise.
         resolution: Resolution parameter for graph methods.
         spatial_weight: Weight for spatial graph in [0, 1]. 0 = expression only, 1 = spatial only.
         n_pcs: Number of PCA components for expression.
@@ -479,11 +501,17 @@ def spatial_cluster(
 
     Returns:
         SpatialClusterResult with labels and metadata.
+
+    Raises:
+        ValueError: If a graph-based method is used with ``graph_method="radius"`` and no ``radius``, or
+            if KMeans is requested without ``n_clusters``.
     """
     if np is None:
         raise ImportError("NumPy is required: uv pip install numpy")
     if sp_sparse is None:
         raise ImportError("scipy is required: uv pip install scipy")
+    if method != "kmeans" and graph_method == "radius" and radius is None:
+        raise ValueError("graph_method='radius' needs the radius argument (a distance in the units of coordinates)")
 
     # Convert expression to dense if sparse
     if sp_sparse.issparse(expression):
@@ -561,7 +589,8 @@ def spatial_cluster(
                     vals_e.append(w)
 
         expr_graph = sp_sparse.csr_matrix((vals_e, (rows_e, cols_e)), shape=(n, n))
-        expr_graph = expr_graph + expr_graph.T
+        # Symmetrize by the entrywise maximum (adding the transpose would double mutual-neighbor edges)
+        expr_graph = sp_sparse.csr_matrix(expr_graph.maximum(expr_graph.T))
         # Normalize
         max_val = expr_graph.max()
         if max_val > 0:
@@ -570,7 +599,7 @@ def spatial_cluster(
         raise ImportError("scikit-learn is required for expression PCA: uv pip install scikit-learn")
 
     # 2. Build spatial graph
-    spatial_graph = build_spatial_graph(coords, method=graph_method, n_neighbors=n_neighbors)
+    spatial_graph = build_spatial_graph(coords, method=graph_method, n_neighbors=n_neighbors, radius=radius)
     # Normalize
     max_val = spatial_graph.max()
     if max_val > 0:
@@ -600,6 +629,7 @@ def spatial_cluster(
             "n_pcs": n_pcs,
             "resolution": resolution,
             "graph_method": graph_method,
+            "radius": radius,
         },
     )
 
@@ -631,7 +661,12 @@ def spatial_domains(
     Args:
         expression: Expression matrix (n x genes), dense or sparse.
         coordinates: Spatial coordinates (n x 2).
-        n_domains: Number of spatial domains. If None, auto-selects via gap statistic heuristic.
+        n_domains: Number of spatial domains. If None, it is chosen with the gap statistic (Tibshirani,
+            Walther and Hastie, 2001) on the same PCA-plus-scaled-coordinates features that seed the
+            clustering: between 2 and 15 domains, the smallest k whose gap is within one standard error
+            of the next one's. The reference datasets are drawn with ``seed``. With only tens of spots per
+            domain the statistic can prefer a few extra domains, so pass the number when it is known. How
+            the number was chosen is recorded in ``metadata["n_domains_selection"]``.
         n_pcs: Number of PCA components.
         n_neighbors: Spatial neighbors for smoothing.
         max_iterations: Maximum refinement iterations.
@@ -663,10 +698,12 @@ def spatial_domains(
     pca = PCA(n_components=n_components, random_state=seed)
     expr_pca = pca.fit_transform(StandardScaler().fit_transform(expr_dense))
 
-    # Auto-select n_domains if not specified using elbow heuristic
+    # Auto-select n_domains if not specified, using the gap statistic
+    n_domains_selection = "user"
     if n_domains is None:
         n_domains = _estimate_n_clusters(expr_pca, coords, max_k=15, seed=seed)
-        logger.info(f"Auto-selected {n_domains} spatial domains")
+        n_domains_selection = "gap_statistic"
+        logger.info(f"Auto-selected {n_domains} spatial domains with the gap statistic")
 
     # Build spatial neighbor adjacency (binary, row-normalized)
     spatial_adj = build_spatial_graph(coords, method="knn", n_neighbors=n_neighbors)
@@ -718,8 +755,40 @@ def spatial_domains(
             "iterations": iterations_run,
             "n_neighbors": n_neighbors,
             "smoothing_factor": smoothing_factor,
+            "n_domains_selection": n_domains_selection,
         },
     )
+
+
+def _log_dispersion(data: Any, k: int, seed: int) -> float:
+    """log W_k: log of the within-cluster sum of squares of a k-means fit with ``k`` clusters."""
+    inertia = float(KMeans(n_clusters=k, random_state=seed, n_init=5).fit(data).inertia_)
+    return float(np.log(max(inertia, float(np.finfo(np.float64).tiny))))
+
+
+def _gap_and_spread(observed: Any, references: list[Any], k: int, seed: int) -> tuple[float, float]:
+    """Gap(k) and s_k of Tibshirani, Walther and Hastie (2001) for a given set of reference datasets.
+
+    ``Gap(k) = mean_b(log W*_kb) - log W_k`` and ``s_k = sd_b(log W*_kb) * sqrt(1 + 1/B)``, where
+    ``W_k`` is the within-cluster sum of squares of ``k`` clusters on the data, ``W*_kb`` the same on the
+    b-th of ``B`` reference datasets, and sd is the (population) standard deviation over the references.
+    """
+    reference_logs = np.array([_log_dispersion(reference, k, seed) for reference in references])
+    gap = float(reference_logs.mean() - _log_dispersion(observed, k, seed))
+    spread = float(reference_logs.std() * np.sqrt(1.0 + 1.0 / len(references)))
+    return gap, spread
+
+
+def _first_k_by_gap_rule(gaps: list[float], spreads: list[float]) -> int | None:
+    """Smallest k with ``Gap(k) >= Gap(k + 1) - s_(k+1)`` (Tibshirani et al., 2001), or None if none yet.
+
+    ``gaps[i]`` and ``spreads[i]`` belong to ``k = i + 1``; only k up to ``len(gaps) - 1`` can be judged,
+    because the rule compares k with k + 1.
+    """
+    for k in range(1, len(gaps)):
+        if gaps[k - 1] >= gaps[k] - spreads[k]:
+            return k
+    return None
 
 
 def _estimate_n_clusters(
@@ -727,20 +796,29 @@ def _estimate_n_clusters(
     coords: Any,
     max_k: int = 15,
     seed: int = 42,
+    n_references: int = 10,
 ) -> int:
-    """Estimate optimal number of clusters using the elbow method with spatial features.
+    """Choose the number of clusters with the gap statistic (Tibshirani, Walther and Hastie, 2001).
 
-    Uses the second derivative of the within-cluster sum of squares (WCSS)
-    curve to find the elbow point.
+    The features are the PCA-transformed expression plus the scaled coordinates (the ones that seed the
+    domain clustering). For k = 1, 2, ... the log within-cluster sum of squares of a k-means fit is
+    compared with its expectation under a null of no cluster structure, estimated on ``n_references``
+    reference datasets drawn uniformly over a box aligned with the principal axes of the features (their
+    rotation leaves k-means unchanged, so the rotated space is clustered directly). The answer is the
+    smallest k with ``Gap(k) >= Gap(k + 1) - s_(k+1)`` (R's ``clusGap`` "firstSEmax"); evaluation stops as
+    soon as that holds. Like the gap statistic in general it can prefer a few extra clusters when there are
+    only tens of spots per domain; pass ``n_domains`` to ``spatial_domains`` when the number is known.
 
     Args:
         expr_pca: PCA-transformed expression (n x pcs).
         coords: Spatial coordinates (n x 2).
         max_k: Maximum number of clusters to try.
-        seed: Random seed.
+        seed: Random seed for the reference datasets and the k-means fits.
+        n_references: Number of reference datasets B.
 
     Returns:
-        Estimated optimal number of clusters (minimum 2).
+        Estimated number of clusters, at least 2 (the rule may find none, k = 1, which is no domain
+        structure; a domain analysis still needs two) and at most ``max_k``.
     """
     coords_scaled = StandardScaler().fit_transform(coords)
     features = np.hstack([expr_pca, coords_scaled * 0.3])
@@ -749,21 +827,21 @@ def _estimate_n_clusters(
     if max_k < 2:
         return 2
 
-    inertias: list[float] = []
-    k_range = range(2, max_k + 1)
-    for k in k_range:
-        km = KMeans(n_clusters=k, random_state=seed, n_init=5)
-        km.fit(features)
-        inertias.append(float(km.inertia_))
+    # Principal-axis frame: rotation and translation do not change k-means inertia
+    centred = features - features.mean(axis=0)
+    _, _, axes = np.linalg.svd(centred, full_matrices=False)
+    rotated = centred @ axes.T
+    low, high = rotated.min(axis=0), rotated.max(axis=0)
+    rng = np.random.RandomState(seed)
+    references = [rng.uniform(low, high, size=rotated.shape) for _ in range(n_references)]
 
-    if len(inertias) < 3:
-        return 2
-
-    # Find elbow using second derivative
-    inertias_arr = np.array(inertias)
-    first_deriv = np.diff(inertias_arr)
-    second_deriv = np.diff(first_deriv)
-
-    # Elbow is where second derivative is maximum (most rapid change in slope)
-    elbow_idx = int(np.argmax(second_deriv)) + 2  # +2 because we started at k=2 and took two diffs
-    return max(2, min(elbow_idx, max_k))
+    gaps: list[float] = []
+    spreads: list[float] = []
+    for k in range(1, max_k + 1):
+        gap, spread = _gap_and_spread(rotated, references, k, seed)
+        gaps.append(gap)
+        spreads.append(spread)
+        chosen = _first_k_by_gap_rule(gaps, spreads)
+        if chosen is not None:
+            return max(2, chosen)
+    return max_k

@@ -174,8 +174,9 @@ def integrate_multimodal_data(rna_data, adt_data, batch_key='batch'):
     rna_processed = log_transform(rna_processed)
     rna_processed = select_hvgs(rna_processed, n_top_genes=2000)
     
-    # ADT processing (different normalization)
-    adt_processed = normalize_counts(adt_data, method='centered_log_ratio')
+    # ADT processing: normalize_counts has no centered-log-ratio method, so apply
+    # the normalization you prefer for protein data before this step
+    adt_processed = adt_data
     
     # 2. Dimensionality reduction per modality
     rna_processed = compute_pca(rna_processed, n_components=50)
@@ -199,6 +200,7 @@ def integrate_multimodal_data(rna_data, adt_data, batch_key='batch'):
 
 ```python
 from metainformant.singlecell.data.integration import integrate_multiple_batches
+from metainformant.singlecell.data.preprocessing import SingleCellData
 
 def integrate_cross_species(human_data, mouse_data):
     """
@@ -220,11 +222,18 @@ def integrate_cross_species(human_data, mouse_data):
     mouse_data.var.index = mouse_genes_mapped
     
     # 3. Find common genes
-    common_genes = list(set(human_data.var.index) & set(mouse_data.var.index))
+    common_genes = sorted(set(human_data.var.index) & set(mouse_data.var.index))
     
-    # 4. Subset to common genes
-    human_subset = human_data[:, common_genes].copy()
-    mouse_subset = mouse_data[:, common_genes].copy()
+    # 4. Subset to common genes, in the same order in both datasets
+    #    (SingleCellData has no slicing: select the columns explicitly)
+    human_cols = human_data.var.index.get_indexer(common_genes)
+    mouse_cols = mouse_data.var.index.get_indexer(common_genes)
+    human_subset = SingleCellData(
+        X=human_data.X[:, human_cols], obs=human_data.obs.copy(), var=human_data.var.iloc[human_cols].copy()
+    )
+    mouse_subset = SingleCellData(
+        X=mouse_data.X[:, mouse_cols], obs=mouse_data.obs.copy(), var=mouse_data.var.iloc[mouse_cols].copy()
+    )
     
     # 5. Add species labels
     human_subset.obs['species'] = 'Human'
@@ -332,7 +341,7 @@ def recommend_integration_method(datasets, batch_info):
     recommendations = []
     
     if n_batches <= 3 and total_cells < 50000:
-        recommendations.append("scaling - Simple and fast")
+        recommendations.append("remove_batch_effects (per-batch centering) - simple and fast")
     
     if n_batches > 3 or total_cells > 50000:
         recommendations.append("harmony - Good for large datasets") 
@@ -417,7 +426,7 @@ def detect_overcorrection(data_before, data_after, cell_type_key='cell_type'):
 
 ### Method Selection
 
-1. **Start simple**: Try scaling-based correction first
+1. **Start simple**: Try per-batch centering (`remove_batch_effects`) first
 2. **Validate results**: Always assess integration quality
 3. **Preserve biology**: Ensure cell types remain separable
 4. **Multiple methods**: Compare different approaches
@@ -434,19 +443,23 @@ def detect_overcorrection(data_before, data_after, cell_type_key='cell_type'):
 ### Large Dataset Integration
 
 ```python
+import numpy as np
+from metainformant.singlecell.data.preprocessing import SingleCellData
+
 # For very large datasets (>500k cells)
-# 1. Subsample for method optimization
-sample_size = 50000
-indices = np.random.choice(total_cells, sample_size, replace=False)
+# 1. Subsample every dataset (SingleCellData has no slicing: build the subsets explicitly)
+rng = np.random.default_rng(0)
 
-# 2. Optimize on subset
-subset_integrated = integrate_datasets(
-    [d[indices[i]:indices[i+1]] for i, d in enumerate(datasets)],
-    batch_labels,
-    method='harmony'
-)
+def subsample(data, n_cells):
+    keep = np.sort(rng.choice(data.n_obs, size=min(n_cells, data.n_obs), replace=False))
+    return SingleCellData(X=data.X[keep], obs=data.obs.iloc[keep].copy(), var=data.var.copy())
 
-# 3. Apply to full dataset with optimized parameters
+subsets = [subsample(d, 10000) for d in datasets]
+
+# 2. Compare methods on the subsets (integrate_datasets is defined above)
+subset_integrated = integrate_datasets(subsets, batch_labels, method='harmony')
+
+# 3. Apply the chosen method to the full datasets
 full_integrated = integrate_datasets(datasets, batch_labels, method='harmony')
 ```
 

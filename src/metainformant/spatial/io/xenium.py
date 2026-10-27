@@ -17,7 +17,7 @@ import csv
 import gzip
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import IO, TYPE_CHECKING, Any, cast
+from typing import IO, TYPE_CHECKING, Any, ClassVar, cast
 
 from metainformant.core.utils.logging import get_logger
 
@@ -96,7 +96,12 @@ class XeniumDataset:
         transcripts: Optional list of individual transcript records.
         cell_boundaries: Optional list of cell boundary polygons.
         metadata: Additional dataset metadata.
+        coordinate_order: Class constant naming the column convention of ``coordinates``: ``"xy"``
+            (column 0 is x, column 1 is y, as in ``x_centroid`` / ``y_centroid``), which the plotting
+            functions use to put the columns on the right axes.
     """
+
+    coordinate_order: ClassVar[str] = "xy"
 
     expression: Any  # np.ndarray or scipy sparse
     coordinates: Any  # np.ndarray (n_cells, 2)
@@ -416,7 +421,9 @@ def load_xenium(
         XeniumDataset with expression matrix, coordinates, and optional extras.
 
     Raises:
-        FileNotFoundError: If required files are missing.
+        FileNotFoundError: If the feature matrix or ``cells.csv(.gz)`` is missing.
+        ValueError: If ``cells.csv(.gz)`` lacks the cell id and centroid columns, or has no row for a
+            cell of the feature matrix. Cells are never given placeholder coordinates.
     """
     if np is None:
         raise ImportError("NumPy is required for Xenium loading: uv pip install numpy")
@@ -446,31 +453,36 @@ def load_xenium(
             cells_file = base_dir / candidate
             break
 
-    coordinates: Any
-    if cells_file is not None:
-        cell_coords: dict[str, tuple[float, float]] = {}
-        with _open_maybe_gzipped(cells_file) as fh:
-            reader = csv.DictReader(fh)
-            headers = set(reader.fieldnames or [])
-            cid_col = _find_col(headers, ["cell_id", "CellID"])
-            x_col = _find_col(headers, ["x_centroid", "x", "X"])
-            y_col = _find_col(headers, ["y_centroid", "y", "Y"])
+    if cells_file is None:
+        raise FileNotFoundError(
+            f"No cells.csv(.gz) found in {base_dir}: the cell centroid coordinates are required, and "
+            "placeholder coordinates would be indistinguishable from real ones."
+        )
 
-            if cid_col and x_col and y_col:
-                for row in reader:
-                    cell_coords[str(row[cid_col])] = (float(row[x_col]), float(row[y_col]))
+    cell_coords: dict[str, tuple[float, float]] = {}
+    with _open_maybe_gzipped(cells_file) as fh:
+        reader = csv.DictReader(fh)
+        headers = set(reader.fieldnames or [])
+        cid_col = _find_col(headers, ["cell_id", "CellID"])
+        x_col = _find_col(headers, ["x_centroid", "x", "X"])
+        y_col = _find_col(headers, ["y_centroid", "y", "Y"])
 
-        # Build coordinates in same order as cell_ids
-        coord_list: list[list[float]] = []
-        for cid in cell_ids:
-            if cid in cell_coords:
-                coord_list.append([cell_coords[cid][0], cell_coords[cid][1]])
-            else:
-                coord_list.append([0.0, 0.0])
-        coordinates = np.array(coord_list, dtype=np.float64)
-    else:
-        logger.warning("No cells.csv found; coordinates will be zeros")
-        coordinates = np.zeros((len(cell_ids), 2), dtype=np.float64)
+        if not (cid_col and x_col and y_col):
+            raise ValueError(
+                f"Required columns (cell_id, x_centroid, y_centroid) not found in {cells_file}. "
+                f"Available: {sorted(headers)}"
+            )
+        for row in reader:
+            cell_coords[str(row[cid_col])] = (float(row[x_col]), float(row[y_col]))
+
+    # Build coordinates in same order as cell_ids; a cell without a position is an error, not [0, 0]
+    missing = [cid for cid in cell_ids if cid not in cell_coords]
+    if missing:
+        raise ValueError(
+            f"{len(missing)} of {len(cell_ids)} cells in the feature matrix have no row in {cells_file.name} "
+            f"(first: {missing[:5]}); refusing to give them placeholder [0, 0] coordinates."
+        )
+    coordinates: Any = np.array([cell_coords[cid] for cid in cell_ids], dtype=np.float64).reshape(-1, 2)
 
     # --- Optionally load transcripts ---
     transcripts: list[XeniumTranscript] | None = None

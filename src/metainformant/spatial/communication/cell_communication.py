@@ -15,11 +15,12 @@ Optional dependencies:
 
 from __future__ import annotations
 
-import zlib
 from collections import defaultdict
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 from metainformant.core.utils.logging import get_logger
+from metainformant.spatial._gene_names import columns_of, expression_and_gene_names, expression_columns, matrix_shape
 
 logger = get_logger(__name__)
 
@@ -51,6 +52,7 @@ def compute_ligand_receptor_interactions(
     cell_types: list[str],
     lr_database: dict[str, list[dict[str, str]]] | None = None,
     *,
+    gene_names: Sequence[str] | None = None,
     seed: int | None = None,
 ) -> dict[str, Any]:
     """Compute ligand-receptor interaction scores between cell types.
@@ -61,20 +63,29 @@ def compute_ligand_receptor_interactions(
     source type and mean receptor expression in the target type, normalized
     by background expression.
 
+    Ligand and receptor symbols are matched to the expression columns by their exact names (case
+    sensitive); a database pair is scored only when both of its genes are among ``gene_names``. No other
+    mapping from a name to a column exists, so a gene that the data do not contain is never scored.
+
     Statistical significance is assessed by permutation testing: cell type
     labels are shuffled to build a null distribution and a p-value is
     computed for each interaction.
 
     Args:
-        expression: Expression matrix (n_cells x n_genes) as a numpy array
-            or list of lists.
+        expression: Expression matrix (n_cells x n_genes) as a numpy array, list of lists or scipy sparse
+            matrix; or a dataset object that carries ``.expression`` and ``.gene_names`` (``SpatialDataset``,
+            ``XeniumDataset``, ``MERFISHDataset``); or a pandas DataFrame whose columns are the genes.
         cell_types: Cell type label for each cell (length n_cells).
         lr_database: Ligand-receptor pair database. Dictionary with key
             ``"pairs"`` mapping to a list of dicts, each with ``"ligand"``
             (gene name) and ``"receptor"`` (gene name). If None, uses the
-            built-in database from ``default_lr_database()``.
+            built-in database from ``default_lr_database()``, whose symbols are human HGNC symbols.
+        gene_names: Names of the expression columns, in column order. Required for a plain matrix;
+            taken from the dataset or DataFrame when ``expression`` is one (explicit names win).
         seed: Optional random seed for the permutation test. When None
-            (default), the global numpy random state is used.
+            (default), every interaction draws its permutations from a fresh generator seeded from
+            operating-system entropy: p-values then differ between calls, and numpy's global random state
+            is neither used nor advanced. Pass an int for reproducible p-values.
 
     Returns:
         Dictionary with keys:
@@ -82,23 +93,47 @@ def compute_ligand_receptor_interactions(
               ``ligand``, ``receptor``, ``source_type``, ``target_type``,
               ``score`` (float), ``p_value`` (float).
             - ``n_significant``: Number of interactions with p < 0.05.
-            - ``summary``: Dictionary with total pairs tested, unique
-              cell types, unique ligands, unique receptors.
+            - ``summary``: Dictionary with ``total_pairs_tested`` (the number of interaction rows, i.e.
+              scored pair x source type x target type), ``unique_cell_types``, ``unique_ligands`` and
+              ``unique_receptors`` (of the scored pairs), and ``n_pairs_in_database``, ``n_pairs_scored``
+              and ``n_pairs_skipped`` (pairs with a gene that is not in ``gene_names``).
 
     Raises:
         ImportError: If numpy is not available.
+        ValueError: If no gene names are available, ``gene_names`` or ``cell_types`` do not match the
+            matrix, a scored gene names more than one column, or none of the database pairs has both of
+            its genes in ``gene_names``.
     """
     if not HAS_NUMPY:
         raise ImportError("numpy is required: uv pip install numpy")
 
-    data = np.asarray(expression, dtype=np.float64)
+    matrix, names = expression_and_gene_names(expression, gene_names)
     labels = np.asarray(cell_types)
-    n_cells, n_genes = data.shape
+    n_cells, n_genes = matrix_shape(matrix)
+    if len(names) != n_genes:
+        raise ValueError(f"gene_names has {len(names)} entries but the expression matrix has {n_genes} columns")
+    if len(labels) != n_cells:
+        raise ValueError(f"cell_types has {len(labels)} entries but the expression matrix has {n_cells} cells")
 
     if lr_database is None:
         lr_database = default_lr_database()
 
     pairs = lr_database.get("pairs", [])
+    available = set(names)
+    scored_pairs = [pair for pair in pairs if pair["ligand"] in available and pair["receptor"] in available]
+    if not scored_pairs:
+        raise ValueError(
+            f"None of the {len(pairs)} ligand-receptor pairs has both of its genes among the {n_genes} gene "
+            f"names (the first are {names[:5]}). Genes are matched by exact name, so use a database written "
+            "in the same gene-name convention as the data"
+        )
+    column_of = columns_of(
+        {gene for pair in scored_pairs for gene in (pair["ligand"], pair["receptor"])}, names, what="ligand/receptor"
+    )
+    columns = sorted(set(column_of.values()))
+    position = {column: i for i, column in enumerate(columns)}
+    data = expression_columns(matrix, columns)  # (n_cells, len(columns)): only the genes that are scored
+
     unique_types = sorted(set(labels.tolist()))
     n_permutations = 100
 
@@ -114,16 +149,13 @@ def compute_ligand_receptor_interactions(
 
     interactions: list[dict[str, Any]] = []
 
-    for pair in pairs:
+    for pair in scored_pairs:
         ligand = pair["ligand"]
         receptor = pair["receptor"]
 
-        # Map gene names to indices (use index as gene ID if numeric)
-        ligand_idx = _gene_name_to_index(ligand, n_genes)
-        receptor_idx = _gene_name_to_index(receptor, n_genes)
-
-        if ligand_idx is None or receptor_idx is None:
-            continue
+        # Column of each gene within ``data`` (found by name; see columns_of)
+        ligand_idx = position[column_of[ligand]]
+        receptor_idx = position[column_of[receptor]]
 
         for source in unique_types:
             for target in unique_types:
@@ -136,8 +168,8 @@ def compute_ligand_receptor_interactions(
 
                 score = (ligand_expr * receptor_expr) / (bg_ligand * bg_receptor)
 
-                # Permutation p-value (optionally seeded for reproducibility)
-                rng = np.random.RandomState(seed) if seed is not None else np.random
+                # Permutation p-value (optionally seeded for reproducibility); always a local generator
+                rng = np.random.RandomState(seed)
                 perm_scores = []
                 for _ in range(n_permutations):
                     perm_labels = rng.permutation(labels)
@@ -168,8 +200,8 @@ def compute_ligand_receptor_interactions(
 
     n_significant = sum(1 for ix in interactions if ix["p_value"] < 0.05)
 
-    unique_ligands = set(p["ligand"] for p in pairs)
-    unique_receptors = set(p["receptor"] for p in pairs)
+    unique_ligands = set(p["ligand"] for p in scored_pairs)
+    unique_receptors = set(p["receptor"] for p in scored_pairs)
 
     result = {
         "interactions": interactions,
@@ -179,12 +211,18 @@ def compute_ligand_receptor_interactions(
             "unique_cell_types": len(unique_types),
             "unique_ligands": len(unique_ligands),
             "unique_receptors": len(unique_receptors),
+            "n_pairs_in_database": len(pairs),
+            "n_pairs_scored": len(scored_pairs),
+            "n_pairs_skipped": len(pairs) - len(scored_pairs),
         },
     }
 
     logger.info(
-        "Computed %d interactions, %d significant (p < 0.05)",
+        "Computed %d interactions for %d of %d database pairs (the others have a gene missing from the data), "
+        "%d significant (p < 0.05)",
         len(interactions),
+        len(scored_pairs),
+        len(pairs),
         n_significant,
     )
     return result
@@ -624,31 +662,6 @@ def communication_pattern_analysis(
 # ---------------------------------------------------------------------------
 # Internal helper functions
 # ---------------------------------------------------------------------------
-
-
-def _gene_name_to_index(gene_name: str, n_genes: int) -> int | None:
-    """Convert gene name to index.
-
-    If the gene name is numeric, uses it directly as an index. Otherwise,
-    hashes the name to a deterministic index within the gene space.
-
-    Args:
-        gene_name: Gene name string or numeric string.
-        n_genes: Total number of genes.
-
-    Returns:
-        Gene index, or None if invalid.
-    """
-    try:
-        idx = int(gene_name)
-        if 0 <= idx < n_genes:
-            return idx
-        return None
-    except ValueError:
-        # Map the gene name to a stable index (independent of the interpreter
-        # hash seed, so results are reproducible across processes/runs)
-        h = zlib.crc32(gene_name.encode("utf-8")) % n_genes
-        return h
 
 
 def _pairwise_euclidean(coords: Any) -> Any:

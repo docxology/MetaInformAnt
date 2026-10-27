@@ -14,9 +14,9 @@ Spatial-scRNA-seq integration providing methods for mapping single-cell RNA-seq 
 | Function | Description |
 |----------|-------------|
 | `scrna_mapping.correlation_mapping()` | Map scRNA-seq cell types to spatial spots via correlation |
-| `scrna_mapping.anchor_based_transfer()` | Transfer labels using mutual nearest neighbor anchors |
+| `scrna_mapping.anchor_based_transfer()` | Transfer labels using mutual nearest neighbor anchors (`anchors` is a required positional argument; pass `None` to compute them) |
 | `scrna_mapping.map_scrna_to_spatial()` | End-to-end scRNA-seq to spatial mapping pipeline |
-| `scrna_mapping.impute_spatial_genes()` | Impute unmeasured genes in spatial data using scRNA-seq |
+| `scrna_mapping.impute_spatial_genes()` | Impute unmeasured genes in spatial data using scRNA-seq (needs `spatial_genes` and `scrna_genes`) |
 
 ## Usage
 
@@ -24,9 +24,10 @@ Spatial-scRNA-seq integration providing methods for mapping single-cell RNA-seq 
 from metainformant.spatial.integration import scrna_mapping
 
 result = scrna_mapping.map_scrna_to_spatial(
-    spatial_expression, scrna_expression, scrna_labels
+    scrna_expression, spatial_expression, scrna_labels=scrna_cell_types
 )
 imputed = scrna_mapping.impute_spatial_genes(
-    spatial_expression, scrna_expression, genes_to_impute
+    spatial_expression, scrna_expression, genes_to_impute,
+    spatial_genes=spatial_gene_names, scrna_genes=scrna_gene_names,
 )
 ```

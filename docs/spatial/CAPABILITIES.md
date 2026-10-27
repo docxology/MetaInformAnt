@@ -13,8 +13,12 @@
 | `spatial_variogram()` | `analysis.autocorrelation` | Compute the empirical spatial variogram (semivariogram). |
 | `spatial_weights_matrix()` | `analysis.autocorrelation` | Build a spatial weights matrix from coordinates. |
 | `_compute_modularity()` | `analysis.clustering` | Compute Newman-Girvan modularity Q for a partition. |
-| `_estimate_n_clusters()` | `analysis.clustering` | Estimate optimal number of clusters using the elbow method with spatial features. |
+| `_estimate_n_clusters()` | `analysis.clustering` | Choose the number of clusters with the gap statistic (Tibshirani, Walther and Hastie, 2001). |
+| `_first_k_by_gap_rule()` | `analysis.clustering` | Smallest k with ``Gap(k) >= Gap(k + 1) - s_(k+1)`` (Tibshirani et al., 2001), or None if none yet. |
+| `_gap_and_spread()` | `analysis.clustering` | Gap(k) and s_k of Tibshirani, Walther and Hastie (2001) for a given set of reference datasets. |
 | `_greedy_modularity_clustering()` | `analysis.clustering` | Greedy modularity maximization as fallback clustering. |
+| `_leidenalg_iterations()` | `analysis.clustering` | Translate the public ``n_iterations`` into the value leidenalg expects. |
+| `_log_dispersion()` | `analysis.clustering` | log W_k: log of the within-cluster sum of squares of a k-means fit with ``k`` clusters. |
 | `build_spatial_graph()` | `analysis.clustering` | Build a spatial neighborhood graph from coordinates. |
 | `leiden_clustering()` | `analysis.clustering` | Leiden community detection on a graph. |
 | `louvain_clustering()` | `analysis.clustering` | Louvain community detection on a graph. |
@@ -26,12 +30,16 @@
 | `enrichment_score()` | `analysis.deconvolution` | Compute cell type enrichment score per spot. |
 | `estimate_cell_fractions()` | `analysis.deconvolution` | Normalize deconvolution weights to cell type fractions (proportions summing to 1). |
 | `nnls_deconvolution()` | `analysis.deconvolution` | Non-negative least squares deconvolution for a single spot or batch. |
+| `_isotropic_edge_weights()` | `analysis.neighborhood` | Ripley's isotropic edge-correction weights for circles about points inside a rectangular window. |
+| `_pairs_within()` | `analysis.neighborhood` | Index arrays ``(i, j)`` of every unordered pair of points with ``i < j`` at distance <= ``max_radius``. |
+| `_ripley_pair_sums()` | `analysis.neighborhood` | For each radius r, the sum over ordered pairs (i, j), i != j, with d_ij <= r of the pair's weight. |
 | `compute_interaction_matrix()` | `analysis.neighborhood` | Compute pairwise cell type interaction scores from a spatial graph. |
 | `ligand_receptor_spatial()` | `analysis.neighborhood` | Spatial ligand-receptor interaction analysis. |
 | `neighborhood_enrichment()` | `analysis.neighborhood` | Compute cell type neighborhood enrichment (co-localization analysis). |
 | `niche_detection()` | `analysis.neighborhood` | Identify cellular niches based on local cell type composition. |
 | `ripley_k()` | `analysis.neighborhood` | Compute Ripley's K function for spatial point pattern analysis. |
-| `_gene_name_to_index()` | `communication.cell_communication` | Convert gene name to index. |
+| `_gene_row()` | `analysis.spatially_variable_genes` | Return gene ``index`` of a genes x spots matrix as a contiguous dense float64 vector. |
+| `detect_spatially_variable_genes()` | `analysis.spatially_variable_genes` | Rank all genes in a spatial expression matrix by Moran's I. |
 | `_pairwise_euclidean()` | `communication.cell_communication` | Compute pairwise Euclidean distance matrix without scipy. |
 | `_simple_nmf()` | `communication.cell_communication` | Simple multiplicative update NMF implementation. |
 | `build_communication_network()` | `communication.cell_communication` | Build cell-cell communication network from interaction results. |
@@ -54,11 +62,12 @@
 | `correlation_mapping()` | `integration.scrna_mapping` | Correlation-based mapping of spatial spots to cell type profiles. |
 | `impute_spatial_genes()` | `integration.scrna_mapping` | Impute unmeasured genes in spatial data using scRNA-seq reference. |
 | `map_scrna_to_spatial()` | `integration.scrna_mapping` | Map scRNA-seq cell type annotations to spatial spots. |
+| `_delimiter_for()` | `io.merfish` | Field delimiter implied by a table file's extension: tab for ``.tsv`` / ``.tab``, comma otherwise. |
 | `_find_column()` | `io.merfish` | Find the first matching column name from a list of candidates. |
 | `aggregate_to_cells()` | `io.merfish` | Aggregate individual transcript spots to cell-level expression counts. |
 | `load_merfish()` | `io.merfish` | Load a complete MERFISH dataset from a directory. |
 | `load_transcript_spots()` | `io.merfish` | Load individual transcript spot coordinates from a MERFISH detected transcripts file. |
-| `parse_cell_metadata()` | `io.merfish` | Parse MERFISH cell metadata CSV file. |
+| `parse_cell_metadata()` | `io.merfish` | Parse MERFISH cell metadata file (comma-separated, or tab-separated for ``.tsv``). |
 | `_read_h5_matrix()` | `io.visium` | Read a 10x HDF5 filtered feature-barcode matrix. |
 | `_read_mex_matrix()` | `io.visium` | Read a Market Exchange (MEX) format matrix directory. |
 | `_read_scale_factors()` | `io.visium` | Read Visium scale factors JSON. |
@@ -79,7 +88,9 @@
 | `_kmeans()` | `niche.identification` | Simple K-Means clustering. |
 | `_spatial_smooth()` | `niche.identification` | Smooth values over spatial neighbors. |
 | `identify_niches()` | `niche.identification` | Identify tissue niches from local cell type composition. |
+| `_dataset_coordinate_order()` | `visualization.plots` | Column convention of a dataset's coordinates: its own ``coordinate_order``, else ``"row_col"``. |
 | `_ensure_plotting_deps()` | `visualization.plots` | Check that matplotlib is available. |
+| `_horizontal_vertical()` | `visualization.plots` | Split an ``(n x 2)`` coordinate array into its horizontal and vertical plot coordinates. |
 | `_save_figure()` | `visualization.plots` | Save a matplotlib figure to disk, creating directories as needed. |
 | `plot_cell_type_map()` | `visualization.plots` | Plot spatial distribution of cell types. |
 | `plot_deconvolution_pie()` | `visualization.plots` | Plot pie charts per spatial spot showing cell type fractions. |
@@ -98,7 +109,7 @@
 
 #### `spatial_weights_matrix()`
 
-**Signature**: `spatial_weights_matrix(coordinates, method, k, bandwidth)`
+**Signature**: `spatial_weights_matrix(coordinates, method, k, bandwidth, *, row_standardize)`
 
 Build a spatial weights matrix from coordinates.
 
@@ -150,14 +161,14 @@ Formula:
 
 Args:
     values: Observed values (length n).
-    weights: Spatial weights matrix (n x n).
+    weights: Spatial weights matrix (n x n), dense or sparse in any scipy format.
 
 Returns:
     GearyCResult with C statistic, z-score, and p-value.
 
 #### `local_morans_i()`
 
-**Signature**: `local_morans_i(values, weights)`
+**Signature**: `local_morans_i(values, weights, *, significance)`
 
 Compute Local Moran's I (LISA) statistics.
 
@@ -184,7 +195,7 @@ Returns:
 
 #### `getis_ord_g()`
 
-**Signature**: `getis_ord_g(values, weights)`
+**Signature**: `getis_ord_g(values, weights, *, significance)`
 
 Compute Getis-Ord G* statistic for hot/cold spot detection.
 
@@ -207,7 +218,7 @@ Returns:
 
 #### `spatial_variogram()`
 
-**Signature**: `spatial_variogram(values, coordinates, n_bins)`
+**Signature**: `spatial_variogram(values, coordinates, n_bins, *, max_distance)`
 
 Compute the empirical spatial variogram (semivariogram).
 
@@ -323,11 +334,23 @@ Args:
     radius: Radius for radius-based graph (required if method="radius").
 
 Returns:
-    Sparse adjacency matrix (scipy CSR) of shape (n, n).
+    Sparse adjacency matrix (scipy CSR) of shape (n, n). The "knn" graph is symmetric and weights each
+    edge by ``1 / (1 + distance)`` whether the two spots are mutual neighbors or only one lists the
+    other; "delaunay" and "radius" edges have weight 1.
 
 Raises:
     ImportError: If scipy or sklearn is not installed.
     ValueError: If method is "radius" but no radius is provided.
+
+#### `_leidenalg_iterations()`
+
+**Signature**: `_leidenalg_iterations(n_iterations)`
+
+Translate the public ``n_iterations`` into the value leidenalg expects.
+
+leidenalg runs until an iteration brings no improvement when given a negative number, which is how
+the public API documents ``-1``. Zero iterations would hand back the initial all-singletons partition,
+so it is rejected rather than quietly changed into some other count.
 
 #### `leiden_clustering()`
 
@@ -342,7 +365,9 @@ is not available.
 Args:
     adjacency_matrix: Sparse adjacency matrix (n x n).
     resolution: Resolution parameter (higher = more clusters).
-    n_iterations: Number of iterations (-1 for until convergence).
+    n_iterations: Number of leidenalg iterations; any negative value (the default, -1) iterates until
+        an iteration brings no improvement. Zero is rejected. The greedy fallback ignores it: it
+        sweeps the nodes until none moves, at most 50 times.
     seed: Random seed for reproducibility.
 
 Returns:
@@ -351,6 +376,7 @@ Returns:
 
 Raises:
     ImportError: If neither leidenalg nor required fallback deps are available.
+    ValueError: If ``n_iterations`` is zero.
 
 #### `louvain_clustering()`
 
@@ -409,7 +435,7 @@ Returns:
 
 #### `spatial_cluster()`
 
-**Signature**: `spatial_cluster(expression, coordinates, n_clusters, method)`
+**Signature**: `spatial_cluster(expression, coordinates, n_clusters, method, *, n_neighbors, graph_method, radius, resolution, spatial_weight, n_pcs, seed)`
 
 Spatially-aware clustering combining expression and spatial proximity.
 
@@ -432,8 +458,10 @@ Args:
     coordinates: Spatial coordinates (n_spots x 2).
     n_clusters: Number of clusters (required for KMeans, optional for graph methods).
     method: Clustering algorithm ("leiden", "louvain", "kmeans").
-    n_neighbors: Number of spatial neighbors.
+    n_neighbors: Number of spatial neighbors (used by the "knn" graph; also the expression-graph size).
     graph_method: How to build the spatial graph.
+    radius: Neighborhood radius, in the units of ``coordinates``, for ``graph_method="radius"``. It is
+        required with that graph method (there is no data-derived default) and ignored otherwise.
     resolution: Resolution parameter for graph methods.
     spatial_weight: Weight for spatial graph in [0, 1]. 0 = expression only, 1 = spatial only.
     n_pcs: Number of PCA components for expression.
@@ -442,9 +470,13 @@ Args:
 Returns:
     SpatialClusterResult with labels and metadata.
 
+Raises:
+    ValueError: If a graph-based method is used with ``graph_method="radius"`` and no ``radius``, or
+        if KMeans is requested without ``n_clusters``.
+
 #### `spatial_domains()`
 
-**Signature**: `spatial_domains(expression, coordinates, n_domains)`
+**Signature**: `spatial_domains(expression, coordinates, n_domains, *, n_pcs, n_neighbors, max_iterations, seed)`
 
 Identify spatial domains using a BayesSpace-inspired iterative approach.
 
@@ -463,7 +495,12 @@ using iterative neighborhood averaging instead of full MCMC.
 Args:
     expression: Expression matrix (n x genes), dense or sparse.
     coordinates: Spatial coordinates (n x 2).
-    n_domains: Number of spatial domains. If None, auto-selects via gap statistic heuristic.
+    n_domains: Number of spatial domains. If None, it is chosen with the gap statistic (Tibshirani,
+        Walther and Hastie, 2001) on the same PCA-plus-scaled-coordinates features that seed the
+        clustering: between 2 and 15 domains, the smallest k whose gap is within one standard error
+        of the next one's. The reference datasets are drawn with ``seed``. With only tens of spots per
+        domain the statistic can prefer a few extra domains, so pass the number when it is known. How
+        the number was chosen is recorded in ``metadata["n_domains_selection"]``.
     n_pcs: Number of PCA components.
     n_neighbors: Spatial neighbors for smoothing.
     max_iterations: Maximum refinement iterations.
@@ -472,23 +509,56 @@ Args:
 Returns:
     SpatialClusterResult with domain labels.
 
+#### `_log_dispersion()`
+
+**Signature**: `_log_dispersion(data, k, seed)`
+
+log W_k: log of the within-cluster sum of squares of a k-means fit with ``k`` clusters.
+
+#### `_gap_and_spread()`
+
+**Signature**: `_gap_and_spread(observed, references, k, seed)`
+
+Gap(k) and s_k of Tibshirani, Walther and Hastie (2001) for a given set of reference datasets.
+
+``Gap(k) = mean_b(log W*_kb) - log W_k`` and ``s_k = sd_b(log W*_kb) * sqrt(1 + 1/B)``, where
+``W_k`` is the within-cluster sum of squares of ``k`` clusters on the data, ``W*_kb`` the same on the
+b-th of ``B`` reference datasets, and sd is the (population) standard deviation over the references.
+
+#### `_first_k_by_gap_rule()`
+
+**Signature**: `_first_k_by_gap_rule(gaps, spreads)`
+
+Smallest k with ``Gap(k) >= Gap(k + 1) - s_(k+1)`` (Tibshirani et al., 2001), or None if none yet.
+
+``gaps[i]`` and ``spreads[i]`` belong to ``k = i + 1``; only k up to ``len(gaps) - 1`` can be judged,
+because the rule compares k with k + 1.
+
 #### `_estimate_n_clusters()`
 
-**Signature**: `_estimate_n_clusters(expr_pca, coords, max_k, seed)`
+**Signature**: `_estimate_n_clusters(expr_pca, coords, max_k, seed, n_references)`
 
-Estimate optimal number of clusters using the elbow method with spatial features.
+Choose the number of clusters with the gap statistic (Tibshirani, Walther and Hastie, 2001).
 
-Uses the second derivative of the within-cluster sum of squares (WCSS)
-curve to find the elbow point.
+The features are the PCA-transformed expression plus the scaled coordinates (the ones that seed the
+domain clustering). For k = 1, 2, ... the log within-cluster sum of squares of a k-means fit is
+compared with its expectation under a null of no cluster structure, estimated on ``n_references``
+reference datasets drawn uniformly over a box aligned with the principal axes of the features (their
+rotation leaves k-means unchanged, so the rotated space is clustered directly). The answer is the
+smallest k with ``Gap(k) >= Gap(k + 1) - s_(k+1)`` (R's ``clusGap`` "firstSEmax"); evaluation stops as
+soon as that holds. Like the gap statistic in general it can prefer a few extra clusters when there are
+only tens of spots per domain; pass ``n_domains`` to ``spatial_domains`` when the number is known.
 
 Args:
     expr_pca: PCA-transformed expression (n x pcs).
     coords: Spatial coordinates (n x 2).
     max_k: Maximum number of clusters to try.
-    seed: Random seed.
+    seed: Random seed for the reference datasets and the k-means fits.
+    n_references: Number of reference datasets B.
 
 Returns:
-    Estimated optimal number of clusters (minimum 2).
+    Estimated number of clusters, at least 2 (the rule may find none, k = 1, which is no domain
+    structure; a domain analysis still needs two) and at most ``max_k``.
 
 ### Classes
 
@@ -510,7 +580,7 @@ Attributes:
 
 #### `create_reference_profiles()`
 
-**Signature**: `create_reference_profiles(scrna_data, cell_type_labels)`
+**Signature**: `create_reference_profiles(scrna_data, cell_type_labels, *, gene_names, method)`
 
 Build cell type reference expression profiles from scRNA-seq data.
 
@@ -584,7 +654,7 @@ Returns:
 
 #### `deconvolve_spots()`
 
-**Signature**: `deconvolve_spots(spatial_expression, reference_profiles, method)`
+**Signature**: `deconvolve_spots(spatial_expression, reference_profiles, method, *, cell_type_names, gene_names, spatial_gene_names, reference_gene_names, alpha)`
 
 Deconvolve spatial spots to estimate cell type composition.
 
@@ -654,7 +724,7 @@ Attributes:
 
 #### `neighborhood_enrichment()`
 
-**Signature**: `neighborhood_enrichment(cell_types, coordinates, radius)`
+**Signature**: `neighborhood_enrichment(cell_types, coordinates, radius, *, n_neighbors, n_permutations, seed)`
 
 Compute cell type neighborhood enrichment (co-localization analysis).
 
@@ -681,7 +751,7 @@ Returns:
 
 #### `compute_interaction_matrix()`
 
-**Signature**: `compute_interaction_matrix(cell_types, spatial_graph)`
+**Signature**: `compute_interaction_matrix(cell_types, spatial_graph, *, normalize_by_type_frequency)`
 
 Compute pairwise cell type interaction scores from a spatial graph.
 
@@ -699,7 +769,7 @@ Returns:
 
 #### `ligand_receptor_spatial()`
 
-**Signature**: `ligand_receptor_spatial(expression, lr_pairs, coordinates)`
+**Signature**: `ligand_receptor_spatial(expression, lr_pairs, coordinates, *, gene_names, radius, n_neighbors)`
 
 Spatial ligand-receptor interaction analysis.
 
@@ -726,7 +796,7 @@ Returns:
 
 #### `niche_detection()`
 
-**Signature**: `niche_detection(cell_types, coordinates, n_niches)`
+**Signature**: `niche_detection(cell_types, coordinates, n_niches, *, n_neighbors, seed)`
 
 Identify cellular niches based on local cell type composition.
 
@@ -745,9 +815,41 @@ Args:
 Returns:
     NicheResult with niche labels and compositions.
 
+#### `_isotropic_edge_weights()`
+
+**Signature**: `_isotropic_edge_weights(x, y, radius, window)`
+
+Ripley's isotropic edge-correction weights for circles about points inside a rectangular window.
+
+The weight of a circle of radius ``radius`` centred at ``(x, y)`` is 1 / (share of its circumference that
+lies inside the window). The share is exact for a rectangle: the circle leaves through a side at
+distance ``d`` when ``radius > d``, over an arc of half-width ``arccos(d / radius)`` centred on that
+side's outward normal, and arcs of opposite sides never meet, so the escaped length is the sum of the
+four arcs minus the overlaps of the four pairs of adjacent sides (corner regions).
+
+Args:
+    x, y: Coordinates of the circle centres (arrays of equal length, inside the window).
+    radius: Circle radii (array of the same length).
+    window: ``(x_min, x_max, y_min, y_max)``.
+
+Returns:
+    Array of weights, 1 where the circle lies entirely inside the window.
+
+#### `_pairs_within()`
+
+**Signature**: `_pairs_within(point_set, max_radius, use_tree)`
+
+Index arrays ``(i, j)`` of every unordered pair of points with ``i < j`` at distance <= ``max_radius``.
+
+#### `_ripley_pair_sums()`
+
+**Signature**: `_ripley_pair_sums(point_set, radii, window, edge_correction, use_tree)`
+
+For each radius r, the sum over ordered pairs (i, j), i != j, with d_ij <= r of the pair's weight.
+
 #### `ripley_k()`
 
-**Signature**: `ripley_k(points, radii, area)`
+**Signature**: `ripley_k(points, radii, area, *, n_simulations, seed, edge_correction)`
 
 Compute Ripley's K function for spatial point pattern analysis.
 
@@ -759,17 +861,31 @@ Also computes Besag's L-function: L(r) = sqrt(K(r)/pi) - r,
 which is centered at 0 under CSR. Positive L(r) indicates clustering,
 negative indicates regularity/inhibition.
 
-Uses Ripley's isotropic edge correction.
+By default Ripley's isotropic edge correction is applied, for every number of points: each ordered pair
+(i, j) at distance d_ij <= r counts with weight 1 / (share of the circle of radius d_ij about point i
+that lies inside the study window), the exact share for a rectangle, so that
+``K(r) = area / (n (n - 1)) * sum of the weights``. The window is the bounding box of ``points``.
+``edge_correction="none"`` counts every pair with weight 1 instead, which is biased low near the
+window boundary. Keep the radii well below half the shorter side of the window (a quarter is a
+common rule): the weights grow quickly beyond that. Memory grows with the number of point pairs
+within the largest radius.
 
 Args:
     points: Point coordinates (n x 2).
     radii: Array of radii at which to evaluate K.
-    area: Total study area (e.g., bounding box area).
-    n_simulations: Number of CSR simulations for confidence envelope.
+    area: Total study area (e.g., bounding box area). It sets the intensity only; the edge-correction
+        window is always the bounding box of ``points``.
+    n_simulations: Number of CSR simulations (uniform in the bounding box, with the same edge
+        correction) for the confidence envelope.
     seed: Random seed.
+    edge_correction: ``"isotropic"`` (default) or ``"none"``.
 
 Returns:
     RipleyKResult with K values, L values, and CSR envelope.
+
+Raises:
+    ValueError: If ``edge_correction`` is unknown, ``radii`` is empty or negative, or the isotropic
+        correction is requested for points with no extent in x or in y (no window to correct for).
 
 ### Classes
 
@@ -817,13 +933,75 @@ Attributes:
     n_points: Number of points analyzed.
     area: Study area.
 
+## analysis.spatially_variable_genes
+
+### Functions
+
+#### `_gene_row()`
+
+**Signature**: `_gene_row(matrix, index, sparse_input)`
+
+Return gene ``index`` of a genes x spots matrix as a contiguous dense float64 vector.
+
+A sparse matrix is densified one gene at a time, so a whole-slide matrix never has to exist in dense form;
+the vector holds the same values the dense matrix would, so every statistic computed from it is identical.
+
+#### `detect_spatially_variable_genes()`
+
+**Signature**: `detect_spatially_variable_genes(expression, coordinates, genes, *, method, k, min_mean_expression, min_variance)`
+
+Rank all genes in a spatial expression matrix by Moran's I.
+
+Args:
+    expression: Gene-by-spot or spot-by-gene matrix (auto-oriented to
+        genes x spots), dense or any SciPy sparse matrix or array, such as the CSR matrix
+        :func:`load_visium` returns. Sparse input gives the same result as the equivalent
+        dense matrix. Genes failing the mean/variance filters are skipped.
+    coordinates: Spot coordinates (n_spots x n_dims).
+    genes: Optional gene names. Defaults to ``Gene0..GeneN-1``.
+    method: Weight scheme passed to :func:`spatial_weights_matrix`
+        ("knn", "distance", or "binary").
+    k: Neighbors for the knn weight scheme.
+    min_mean_expression: Drop genes with mean expression below this
+        (None = no mean filter).
+    min_variance: Drop genes with variance below this.
+
+Returns:
+    SVGResult with one entry per retained gene, sorted by Moran's I descending.
+
+Raises:
+    ImportError: If NumPy is unavailable.
+    ValueError: If expression orientation/shape disagrees with the
+        coordinate count, or the gene-name count is wrong.
+
+### Classes
+
+#### `SVGResult`
+
+Batch spatially variable gene detection result.
+
+Attributes:
+    genes: Gene names, aligned row-wise with the statistic arrays,
+        sorted by Moran's I descending.
+    morans_i: Moran's I per gene.
+    z_scores: Standardized Z-score per gene.
+    p_values: Two-sided normal-approximation p-value per gene.
+    q_values: Benjamini-Hochberg adjusted p-values (None when unavailable).
+    n_spots: Number of spatial spots used.
+
+**Methods**:
+
+| Method | Purpose |
+|--------|---------|
+| `top_genes()` | Return the ``n`` genes with the highest Moran's I, ranked descending. |
+
 ## communication.cell_communication
 
 ### Functions
 
 #### `compute_ligand_receptor_interactions()`
 
-**Signature**: `compute_ligand_receptor_interactions(expression, cell_types, lr_database)`
+**Signature**: `compute_ligand_receptor_interactions(expression, cell_types, lr_database, *, gene_names, seed)`
 
 Compute ligand-receptor interaction scores between cell types.
 
@@ -833,18 +1011,29 @@ type pair. The score is the product of mean ligand expression in the
 source type and mean receptor expression in the target type, normalized
 by background expression.
 
+Ligand and receptor symbols are matched to the expression columns by their exact names (case
+sensitive); a database pair is scored only when both of its genes are among ``gene_names``. No other
+mapping from a name to a column exists, so a gene that the data do not contain is never scored.
+
 Statistical significance is assessed by permutation testing: cell type
 labels are shuffled to build a null distribution and a p-value is
 computed for each interaction.
 
 Args:
-    expression: Expression matrix (n_cells x n_genes) as a numpy array
-        or list of lists.
+    expression: Expression matrix (n_cells x n_genes) as a numpy array, list of lists or scipy sparse
+        matrix; or a dataset object that carries ``.expression`` and ``.gene_names`` (``SpatialDataset``,
+        ``XeniumDataset``, ``MERFISHDataset``); or a pandas DataFrame whose columns are the genes.
     cell_types: Cell type label for each cell (length n_cells).
     lr_database: Ligand-receptor pair database. Dictionary with key
         ``"pairs"`` mapping to a list of dicts, each with ``"ligand"``
         (gene name) and ``"receptor"`` (gene name). If None, uses the
-        built-in database from ``default_lr_database()``.
+        built-in database from ``default_lr_database()``, whose symbols are human HGNC symbols.
+    gene_names: Names of the expression columns, in column order. Required for a plain matrix;
+        taken from the dataset or DataFrame when ``expression`` is one (explicit names win).
+    seed: Optional random seed for the permutation test. When None
+        (default), every interaction draws its permutations from a fresh generator seeded from
+        operating-system entropy: p-values then differ between calls, and numpy's global random state
+        is neither used nor advanced. Pass an int for reproducible p-values.
 
 Returns:
     Dictionary with keys:
@@ -852,11 +1041,16 @@ Returns:
           ``ligand``, ``receptor``, ``source_type``, ``target_type``,
           ``score`` (float), ``p_value`` (float).
         - ``n_significant``: Number of interactions with p < 0.05.
-        - ``summary``: Dictionary with total pairs tested, unique
-          cell types, unique ligands, unique receptors.
+        - ``summary``: Dictionary with ``total_pairs_tested`` (the number of interaction rows, i.e.
+          scored pair x source type x target type), ``unique_cell_types``, ``unique_ligands`` and
+          ``unique_receptors`` (of the scored pairs), and ``n_pairs_in_database``, ``n_pairs_scored``
+          and ``n_pairs_skipped`` (pairs with a gene that is not in ``gene_names``).
 
 Raises:
     ImportError: If numpy is not available.
+    ValueError: If no gene names are available, ``gene_names`` or ``cell_types`` do not match the
+        matrix, a scored gene names more than one column, or none of the database pairs has both of
+        its genes in ``gene_names``.
 
 #### `spatial_interaction_score()`
 
@@ -924,7 +1118,7 @@ Raises:
 
 Return built-in ligand-receptor pair database.
 
-Provides a curated subset of approximately 200 ligand-receptor pairs
+Provides a curated subset of 95 ligand-receptor pairs
 covering major signaling pathways including chemokines, growth factors,
 Wnt, Notch, Hedgehog, TGF-beta, interleukins, and adhesion molecules.
 Gene names follow HGNC nomenclature.
@@ -961,22 +1155,6 @@ Returns:
 
 Raises:
     ImportError: If numpy is not available.
-
-#### `_gene_name_to_index()`
-
-**Signature**: `_gene_name_to_index(gene_name, n_genes)`
-
-Convert gene name to index.
-
-If the gene name is numeric, uses it directly as an index. Otherwise,
-hashes the name to a deterministic index within the gene space.
-
-Args:
-    gene_name: Gene name string or numeric string.
-    n_genes: Total number of genes.
-
-Returns:
-    Gene index, or None if invalid.
 
 #### `_pairwise_euclidean()`
 
@@ -1107,14 +1285,14 @@ Raises:
 
 #### `validate_deconvolution()`
 
-**Signature**: `validate_deconvolution(estimated, spatial_markers)`
+**Signature**: `validate_deconvolution(estimated, spatial_markers, *, expression, gene_names, correlation_method)`
 
 Validate spatial deconvolution using marker gene expression agreement.
 
 Checks consistency of estimated cell type proportions against known marker
 gene expression. For each cell type with known markers, computes the
-correlation between estimated proportion and the mean expression of its
-markers across spots.
+correlation across spots between the estimated proportion of that type and the mean expression
+of its markers (Pearson by default, Spearman on request).
 
 When no marker information is provided, performs internal consistency
 checks: proportion normalization, confidence distribution, and dominant
@@ -1126,7 +1304,15 @@ Args:
         ``cell_types``, and ``confidence_scores``.
     spatial_markers: Optional dictionary mapping cell type names to lists
         of marker gene names. Used for external validation against
-        observed marker expression.
+        observed marker expression, which needs ``expression`` and gene names.
+    expression: The spots x genes expression matrix the proportions were estimated from (numpy array,
+        list of lists or scipy sparse; same spot order as ``proportions_matrix``), or a dataset
+        object with ``.expression`` and ``.gene_names``, or a DataFrame whose columns are the genes.
+        Required when ``spatial_markers`` is given. The values are used as supplied (normalise first
+        if the markers should be compared on a normalised scale).
+    gene_names: Names of the expression columns. Required for a plain matrix; taken from a dataset or
+        DataFrame otherwise (explicit names win). Markers are matched to them by exact name.
+    correlation_method: ``"pearson"`` (default) or ``"spearman"`` (rank correlation, needs scipy).
 
 Returns:
     Dictionary with keys:
@@ -1135,17 +1321,28 @@ Returns:
         - ``confidence_distribution``: Dictionary with ``min``, ``max``,
           ``median``, ``std`` of confidence scores.
         - ``type_diversity``: Number of distinct dominant types observed.
-        - ``marker_correlations``: Dictionary mapping cell type to Pearson
-          correlation with marker expression (only if spatial_markers
-          provided and numpy available).
+        - ``marker_correlations``: Dictionary mapping cell type to the correlation, across spots,
+          between its estimated proportion and the mean expression of its markers that are present
+          in ``gene_names``. Empty when ``spatial_markers`` is not given. A cell type whose
+          correlation cannot be computed is left out and listed in ``marker_correlations_skipped``,
+          never reported as a number.
+        - ``marker_correlation_method``: ``"pearson"`` or ``"spearman"`` when markers were checked,
+          else None.
+        - ``marker_genes_used``: Dictionary mapping cell type to the marker names that were found.
+        - ``marker_correlations_skipped``: Dictionary mapping cell type to the reason it has no
+          correlation (type not in the result, no marker among the gene names, or constant
+          proportion or marker expression across spots).
         - ``overall_validity``: Boolean indicating if basic checks pass.
 
 Raises:
-    ImportError: If numpy is not available.
+    ImportError: If numpy is not available, or scipy is not for ``correlation_method="spearman"``.
+    ValueError: If ``spatial_markers`` is given without ``expression`` or without gene names, if
+        ``correlation_method`` is unknown, if the expression matrix does not have one row per spot
+        or one column per gene name, or if a used marker names more than one column.
 
 #### `niche_identification()`
 
-**Signature**: `niche_identification(proportions, coordinates, n_niches)`
+**Signature**: `niche_identification(proportions, coordinates, n_niches, *, seed)`
 
 Identify tissue niches from cell type composition and spatial proximity.
 
@@ -1158,6 +1355,10 @@ Args:
     proportions: Cell type proportions matrix (n_spots x n_types).
     coordinates: List of (x, y) coordinate tuples for each spot.
     n_niches: Number of niches to identify.
+    seed: Optional random seed for the k-means initialization. When None
+        (default), a fresh generator seeded from operating-system entropy is used: the niches can
+        then differ between calls, and numpy's global random state is neither used nor advanced.
+        Pass an int for reproducible niches.
 
 Returns:
     Dictionary with keys:
@@ -1204,7 +1405,7 @@ Returns:
 
 #### `_kmeans()`
 
-**Signature**: `_kmeans(data, k, max_iter)`
+**Signature**: `_kmeans(data, k, max_iter, seed)`
 
 Simple k-means clustering implementation.
 
@@ -1214,6 +1415,9 @@ Args:
     data: Feature matrix (n_samples x n_features).
     k: Number of clusters.
     max_iter: Maximum number of iterations.
+    seed: Optional random seed for k-means++ initialization. When None
+        (default), a fresh generator seeded from operating-system entropy is used; numpy's global
+        random state is neither used nor advanced.
 
 Returns:
     Array of cluster labels (n_samples,).
@@ -1251,7 +1455,7 @@ Returns:
 
 #### `correlation_mapping()`
 
-**Signature**: `correlation_mapping(spatial_expression, scrna_profiles)`
+**Signature**: `correlation_mapping(spatial_expression, scrna_profiles, *, cell_type_names, correlation_method)`
 
 Correlation-based mapping of spatial spots to cell type profiles.
 
@@ -1269,9 +1473,13 @@ Args:
 Returns:
     MappingResult with predicted labels and probabilities.
 
+Raises:
+    ImportError: If NumPy or SciPy is not installed.
+    ValueError: If ``correlation_method`` is not "pearson" or "spearman".
+
 #### `anchor_based_transfer()`
 
-**Signature**: `anchor_based_transfer(spatial_data, scrna_data, anchors)`
+**Signature**: `anchor_based_transfer(spatial_data, scrna_data, anchors, *, scrna_labels, cell_type_names, spatial_genes, scrna_genes, n_pcs, k_anchor, seed)`
 
 Anchor-based label transfer from scRNA-seq to spatial data.
 
@@ -1303,7 +1511,7 @@ Returns:
 
 #### `map_scrna_to_spatial()`
 
-**Signature**: `map_scrna_to_spatial(scrna_data, spatial_data, method)`
+**Signature**: `map_scrna_to_spatial(scrna_data, spatial_data, method, *, scrna_labels, scrna_genes, spatial_genes, cell_type_names)`
 
 Map scRNA-seq cell type annotations to spatial spots.
 
@@ -1325,7 +1533,7 @@ Returns:
 
 #### `impute_spatial_genes()`
 
-**Signature**: `impute_spatial_genes(spatial_data, scrna_data, genes)`
+**Signature**: `impute_spatial_genes(spatial_data, scrna_data, genes, *, spatial_genes, scrna_genes, n_neighbors, n_pcs, seed)`
 
 Impute unmeasured genes in spatial data using scRNA-seq reference.
 
@@ -1375,18 +1583,25 @@ Attributes:
 
 ### Functions
 
+#### `_delimiter_for()`
+
+**Signature**: `_delimiter_for(path)`
+
+Field delimiter implied by a table file's extension: tab for ``.tsv`` / ``.tab``, comma otherwise.
+
 #### `parse_cell_metadata()`
 
 **Signature**: `parse_cell_metadata(metadata_file)`
 
-Parse MERFISH cell metadata CSV file.
+Parse MERFISH cell metadata file (comma-separated, or tab-separated for ``.tsv``).
 
 Reads cell centroid positions, volumes, FOVs, and any additional columns.
 The file should have columns including: cell_id (or CellID), center_x, center_y
 (or x, y), and optionally center_z, volume, fov.
 
 Args:
-    metadata_file: Path to cell_metadata.csv.
+    metadata_file: Path to cell_metadata.csv or cell_metadata.tsv. The delimiter follows the file
+        extension.
 
 Returns:
     List of CellMetadata records.
@@ -1405,7 +1620,8 @@ The file should have columns: gene, x (or global_x), y (or global_y),
 and optionally z, cell_id, quality.
 
 Args:
-    spots_file: Path to detected_transcripts.csv.
+    spots_file: Path to detected_transcripts.csv (or a ``.tsv`` file; the delimiter follows the
+        file extension).
 
 Returns:
     List of TranscriptSpot records.
@@ -1415,7 +1631,7 @@ Raises:
 
 #### `aggregate_to_cells()`
 
-**Signature**: `aggregate_to_cells(transcript_spots, cell_boundaries)`
+**Signature**: `aggregate_to_cells(transcript_spots, cell_boundaries, *, unassigned_label)`
 
 Aggregate individual transcript spots to cell-level expression counts.
 
@@ -1437,14 +1653,14 @@ Raises:
 
 #### `load_merfish()`
 
-**Signature**: `load_merfish(path)`
+**Signature**: `load_merfish(path, *, load_transcripts)`
 
 Load a complete MERFISH dataset from a directory.
 
 Expects:
     path/
-        cell_by_gene.csv: Cell-level expression matrix (cells as rows, genes as columns).
-        cell_metadata.csv: Cell positions and metadata.
+        cell_by_gene.csv (or .tsv): Cell-level expression matrix (cells as rows, genes as columns).
+        cell_metadata.csv (or .tsv): Cell positions and metadata.
         detected_transcripts.csv (optional): Per-transcript coordinates.
 
 Args:
@@ -1455,7 +1671,9 @@ Returns:
     MERFISHDataset with expression, coordinates, and metadata.
 
 Raises:
-    FileNotFoundError: If required files are missing.
+    FileNotFoundError: If the cell-by-gene matrix or ``cell_metadata.csv`` is missing.
+    ValueError: If ``cell_metadata.csv`` has no row for a cell of the matrix. Cells are never given
+        placeholder coordinates.
     ImportError: If numpy is not installed.
 
 #### `_find_column()`
@@ -1503,6 +1721,9 @@ Attributes:
     cell_metadata: List of CellMetadata records.
     transcript_spots: Optional list of individual TranscriptSpot records.
     metadata: Additional dataset metadata.
+    coordinate_order: Class constant naming the column convention of ``coordinates``: ``"xy"``
+        (column 0 is x, column 1 is y, as in ``center_x`` / ``center_y``), which the plotting
+        functions use to put the columns on the right axes.
 
 **Methods**:
 
@@ -1593,7 +1814,7 @@ Read Visium scale factors JSON.
 
 #### `load_visium()`
 
-**Signature**: `load_visium(path)`
+**Signature**: `load_visium(path, *, in_tissue_only, load_image, image_resolution)`
 
 Load a 10x Visium Spatial Gene Expression dataset.
 
@@ -1613,10 +1834,13 @@ Args:
     image_resolution: Which resolution image to load ("hires" or "lowres").
 
 Returns:
-    SpatialDataset with expression matrix, coordinates, and optionally image.
+    SpatialDataset with expression matrix, coordinates, and optionally image. The expression matrix,
+    barcodes, tissue positions and coordinates are filtered to the same spots, in matrix order.
 
 Raises:
     FileNotFoundError: If required files are missing.
+    ValueError: If no barcode of the expression matrix has a tissue position (after the
+        ``in_tissue_only`` filter), which means the files do not belong together.
 
 #### `create_spatial_dataset()`
 
@@ -1665,6 +1889,9 @@ Attributes:
     scale_factors: Dictionary of Visium scale factors.
     platform: Originating platform (visium, merfish, xenium).
     metadata: Additional metadata dictionary.
+    coordinate_order: Class constant naming the column convention of ``coordinates``:
+        ``"row_col"`` (column 0 is the vertical image axis, column 1 the horizontal one), which the
+        plotting functions use to put the columns on the right axes.
 
 **Methods**:
 
@@ -1716,7 +1943,7 @@ Read Xenium HDF5 feature matrix.
 
 #### `read_transcripts()`
 
-**Signature**: `read_transcripts(transcripts_path)`
+**Signature**: `read_transcripts(transcripts_path, *, min_quality)`
 
 Read per-transcript coordinates from a Xenium transcripts file.
 
@@ -1756,7 +1983,7 @@ Load cell boundaries from a parquet file using pandas.
 
 #### `load_xenium()`
 
-**Signature**: `load_xenium(path)`
+**Signature**: `load_xenium(path, *, load_transcripts, load_boundaries, min_transcript_quality)`
 
 Load a complete 10x Xenium dataset from a directory.
 
@@ -1777,7 +2004,9 @@ Returns:
     XeniumDataset with expression matrix, coordinates, and optional extras.
 
 Raises:
-    FileNotFoundError: If required files are missing.
+    FileNotFoundError: If the feature matrix or ``cells.csv(.gz)`` is missing.
+    ValueError: If ``cells.csv(.gz)`` lacks the cell id and centroid columns, or has no row for a
+        cell of the feature matrix. Cells are never given placeholder coordinates.
 
 #### `_find_col()`
 
@@ -1822,6 +2051,9 @@ Attributes:
     transcripts: Optional list of individual transcript records.
     cell_boundaries: Optional list of cell boundary polygons.
     metadata: Additional dataset metadata.
+    coordinate_order: Class constant naming the column convention of ``coordinates``: ``"xy"``
+        (column 0 is x, column 1 is y, as in ``x_centroid`` / ``y_centroid``), which the plotting
+        functions use to put the columns on the right axes.
 
 **Methods**:
 
@@ -1911,6 +2143,21 @@ Attributes:
 
 Check that matplotlib is available.
 
+#### `_horizontal_vertical()`
+
+**Signature**: `_horizontal_vertical(coords, coordinate_order)`
+
+Split an ``(n x 2)`` coordinate array into its horizontal and vertical plot coordinates.
+
+#### `_dataset_coordinate_order()`
+
+**Signature**: `_dataset_coordinate_order(spatial_data)`
+
+Column convention of a dataset's coordinates: its own ``coordinate_order``, else ``"row_col"``.
+
+``SpatialDataset`` (Visium) declares ``"row_col"``; ``XeniumDataset`` and ``MERFISHDataset`` declare
+``"xy"``. Duck-typed objects and bare arrays have no declaration and keep the legacy ``"row_col"``.
+
 #### `_save_figure()`
 
 **Signature**: `_save_figure(fig, output_path, dpi)`
@@ -1919,7 +2166,7 @@ Save a matplotlib figure to disk, creating directories as needed.
 
 #### `plot_spatial_scatter()`
 
-**Signature**: `plot_spatial_scatter(coordinates, values, output_path)`
+**Signature**: `plot_spatial_scatter(coordinates, values, output_path, *, cmap, title, point_size, alpha, figsize, colorbar_label, vmin, vmax, coordinate_order)`
 
 Create a spatial scatter plot colored by continuous or categorical values.
 
@@ -1935,13 +2182,20 @@ Args:
     colorbar_label: Label for the colorbar.
     vmin: Minimum value for color scale.
     vmax: Maximum value for color scale.
+    coordinate_order: Which column is which: ``"row_col"`` (default; Visium's
+        ``SpatialDataset.coordinates``: column 0 vertical, column 1 horizontal) or ``"xy"`` (Xenium and
+        MERFISH coordinates: column 0 horizontal, column 1 vertical). With the wrong order the tissue
+        appears transposed.
 
 Returns:
     Matplotlib Figure object.
 
+Raises:
+    ValueError: If ``coordinate_order`` is not ``"row_col"`` or ``"xy"``.
+
 #### `plot_tissue_overlay()`
 
-**Signature**: `plot_tissue_overlay(coordinates, values, tissue_image, output_path)`
+**Signature**: `plot_tissue_overlay(coordinates, values, tissue_image, output_path, *, cmap, title, point_size, alpha, figsize, scale_factor, coordinate_order)`
 
 Overlay expression values on a tissue H&E image.
 
@@ -1956,23 +2210,31 @@ Args:
     alpha: Overlay transparency.
     figsize: Figure dimensions.
     scale_factor: Scale factor to convert coordinates to image pixel space.
+    coordinate_order: ``"row_col"`` (default; Visium) or ``"xy"``; see :func:`plot_spatial_scatter`.
 
 Returns:
     Matplotlib Figure object.
 
+Raises:
+    ValueError: If ``coordinate_order`` is not ``"row_col"`` or ``"xy"``.
+
 #### `plot_gene_expression_map()`
 
-**Signature**: `plot_gene_expression_map(spatial_data, gene, output_path)`
+**Signature**: `plot_gene_expression_map(spatial_data, gene, output_path, *, cmap, figsize, coordinate_order)`
 
 Plot spatial expression map for a single gene.
 
 Args:
-    spatial_data: A SpatialDataset (or compatible object with .expression,
-        .coordinates, .gene_names attributes).
+    spatial_data: A SpatialDataset, XeniumDataset or MERFISHDataset (or compatible object with
+        .expression, .coordinates, .gene_names attributes).
     gene: Gene name to plot.
     output_path: Path to save the plot.
     cmap: Colormap for expression.
     figsize: Figure dimensions.
+    coordinate_order: Column convention of ``spatial_data.coordinates`` (see
+        :func:`plot_spatial_scatter`). By default the dataset's own ``coordinate_order`` is used
+        (``"row_col"`` for Visium, ``"xy"`` for Xenium and MERFISH; ``"row_col"`` for objects that
+        declare none).
 
 Returns:
     Matplotlib Figure object.
@@ -1982,23 +2244,27 @@ Raises:
 
 #### `plot_cell_type_map()`
 
-**Signature**: `plot_cell_type_map(spatial_data, cell_types, output_path)`
+**Signature**: `plot_cell_type_map(spatial_data, cell_types, output_path, *, figsize, point_size, coordinate_order)`
 
 Plot spatial distribution of cell types.
 
 Args:
-    spatial_data: A SpatialDataset or compatible object with .coordinates attribute.
+    spatial_data: A SpatialDataset, XeniumDataset or MERFISHDataset (or compatible object with a
+        .coordinates attribute, or a bare coordinate array).
     cell_types: Cell type labels (length n_spots), string or integer.
     output_path: Path to save the plot.
     figsize: Figure dimensions.
     point_size: Scatter point size.
+    coordinate_order: Column convention of the coordinates (see :func:`plot_spatial_scatter`). By
+        default the dataset's own ``coordinate_order`` is used (``"row_col"`` for Visium, ``"xy"``
+        for Xenium and MERFISH; ``"row_col"`` for a bare array or an object that declares none).
 
 Returns:
     Matplotlib Figure object.
 
 #### `plot_neighborhood_graph()`
 
-**Signature**: `plot_neighborhood_graph(coordinates, spatial_graph, output_path)`
+**Signature**: `plot_neighborhood_graph(coordinates, spatial_graph, output_path, *, node_colors, title, figsize, node_size, edge_alpha, edge_width, coordinate_order)`
 
 Plot the spatial neighborhood graph on tissue coordinates.
 
@@ -2014,13 +2280,17 @@ Args:
     node_size: Node marker size.
     edge_alpha: Edge line transparency.
     edge_width: Edge line width.
+    coordinate_order: ``"row_col"`` (default; Visium) or ``"xy"``; see :func:`plot_spatial_scatter`.
 
 Returns:
     Matplotlib Figure object.
 
+Raises:
+    ValueError: If ``coordinate_order`` is not ``"row_col"`` or ``"xy"``.
+
 #### `plot_interaction_heatmap()`
 
-**Signature**: `plot_interaction_heatmap(interaction_matrix, output_path)`
+**Signature**: `plot_interaction_heatmap(interaction_matrix, output_path, *, cell_type_names, title, cmap, figsize, annot)`
 
 Plot a cell type interaction heatmap.
 
@@ -2038,7 +2308,7 @@ Returns:
 
 #### `plot_deconvolution_pie()`
 
-**Signature**: `plot_deconvolution_pie(coordinates, fractions, output_path)`
+**Signature**: `plot_deconvolution_pie(coordinates, fractions, output_path, *, cell_type_names, title, figsize, pie_radius, min_fraction, coordinate_order)`
 
 Plot pie charts per spatial spot showing cell type fractions.
 
@@ -2054,13 +2324,17 @@ Args:
     figsize: Figure dimensions.
     pie_radius: Radius of each pie chart. If None, auto-calculated.
     min_fraction: Minimum fraction to display (smaller merged into "other").
+    coordinate_order: ``"row_col"`` (default; Visium) or ``"xy"``; see :func:`plot_spatial_scatter`.
 
 Returns:
     Matplotlib Figure object.
 
+Raises:
+    ValueError: If ``coordinate_order`` is not ``"row_col"`` or ``"xy"``.
+
 #### `plot_spatial_autocorrelation()`
 
-**Signature**: `plot_spatial_autocorrelation(coordinates, local_scores, output_path)`
+**Signature**: `plot_spatial_autocorrelation(coordinates, local_scores, output_path, *, cluster_labels, title, figsize, point_size, coordinate_order)`
 
 Plot LISA cluster map showing spatial autocorrelation patterns.
 
@@ -2076,14 +2350,26 @@ Args:
     title: Plot title.
     figsize: Figure dimensions.
     point_size: Scatter point size.
+    coordinate_order: ``"row_col"`` (default; Visium) or ``"xy"``; see :func:`plot_spatial_scatter`.
 
 Returns:
     Matplotlib Figure object.
 
+Raises:
+    ValueError: If ``coordinate_order`` is not ``"row_col"`` or ``"xy"``.
+
 ## Data Structures
 
-| Class | Purpose | Key Attributes |
-|-------|---------|----------------|
-| Dataset | Container for input data | `.data`, `.metadata` |
-| Result | Analysis output | `.values`, `.stats` |
-| Config | Settings object | `.params`, `.paths` |
+| Class | Module | Purpose | Key Attributes |
+|-------|--------|---------|----------------|
+| `SpatialDataset` | `io.visium` | Visium dataset | `.expression`, `.coordinates` (`[row, col]`), `.barcodes`, `.gene_names`, `.image`, `.scale_factors`, `.coordinate_order` (`"row_col"`) |
+| `XeniumDataset` | `io.xenium` | Xenium dataset | `.expression`, `.coordinates` (`[x, y]`), `.cell_ids`, `.gene_names`, `.transcripts`, `.cell_boundaries`, `.coordinate_order` (`"xy"`) |
+| `MERFISHDataset` | `io.merfish` | MERFISH dataset | `.expression`, `.coordinates` (`[x, y]`), `.cell_ids`, `.gene_names`, `.cell_metadata`, `.transcript_spots`, `.coordinate_order` (`"xy"`) |
+| `MoransIResult`, `GearyCResult` | `analysis.autocorrelation` | Global autocorrelation statistics | `.I` / `.C`, `.expected_I` / `.expected_C`, `.z_score`, `.p_value`, `.n` |
+| `LocalMoransResult`, `GetisOrdResult`, `VariogramResult` | `analysis.autocorrelation` | Local statistics and variogram | `.local_I` / `.g_star`, `.p_values`, `.cluster_labels` / `.hot_spots`, `.bin_centers`, `.semivariance` |
+| `SpatialClusterResult` | `analysis.clustering` | Clustering output | `.labels`, `.n_clusters`, `.method`, `.modularity`, `.spatial_graph`, `.metadata` |
+| `DeconvolutionResult` | `analysis.deconvolution` | Per-spot cell-type weights | `.weights`, `.fractions`, `.cell_type_names`, `.residuals` |
+| `NeighborhoodEnrichmentResult`, `InteractionResult`, `NicheResult`, `RipleyKResult` | `analysis.neighborhood` | Neighborhood statistics | `.enrichment_matrix`, `.interaction_matrix`, `.niche_labels`, `.k_values` / `.l_values` |
+| `SVGResult` | `analysis.spatially_variable_genes` | Spatially variable gene ranking | `.genes`, `.morans_i`, `.p_values`, `.q_values` |
+| `MappingResult`, `ImputationResult` | `integration.scrna_mapping` | scRNA-seq to spatial mapping | `.predicted_labels`, `.label_probabilities`, `.imputed_expression` |
+| `NicheResult` | `niche.identification` | Niches from cell-type proportions | `.niche_labels`, `.compositions`, `.niche_sizes`, `.niche_diversity` |

@@ -70,8 +70,8 @@ def tsne_reduction(
 
     Raises:
         ImportError: If sklearn is not available
-        TypeError: If data is not SingleCellData
-        ValueError: If parameters are invalid
+        ValidationError: If data is not SingleCellData
+        ValueError: If a parameter is invalid (raised by scikit-learn as ``InvalidParameterError``)
     """
     if not HAS_TSNE:
         raise ImportError("t-SNE requires scikit-learn")
@@ -185,8 +185,7 @@ def umap_reduction(
 
     Raises:
         ImportError: If umap-learn is not available
-        TypeError: If data is not SingleCellData
-        ValueError: If parameters are invalid
+        ValidationError: If data is not SingleCellData or n_components, n_neighbors or min_dist is out of range
     """
     if not HAS_UMAP:
         raise ImportError("UMAP requires umap-learn package")
@@ -202,7 +201,8 @@ def umap_reduction(
     result = data.copy()
 
     if "neighbors" not in result.uns:
-        result = compute_neighbors(result, n_neighbors=n_neighbors, metric=metric)
+        # ``result`` is already this function's private copy
+        result = compute_neighbors(result, n_neighbors=n_neighbors, metric=metric, inplace=True)
 
     # Get expression matrix
     X = result.X.toarray() if hasattr(result.X, "toarray") else result.X
@@ -270,8 +270,8 @@ def diffusion_map_reduction(
         SingleCellData with diffusion map coordinates added
 
     Raises:
-        TypeError: If data is not SingleCellData
-        ValueError: If parameters are invalid
+        ValidationError: If data is not SingleCellData or n_components, n_neighbors or alpha is out of range
+        numpy.linalg.LinAlgError: If the eigendecomposition does not converge
     """
     validation.validate_type(data, SingleCellData, "data")
     validation.validate_range(n_components, min_val=2, max_val=50, name="n_components")
@@ -305,15 +305,9 @@ def diffusion_map_reduction(
     # 4. Add self-loops and renormalize
     transition_matrix = alpha * transition_matrix + (1 - alpha) * np.eye(X.shape[0])
 
-    # 5. Compute eigenvalues and eigenvectors
-    try:
-        eigenvals, eigenvecs = np.linalg.eigh(transition_matrix)
-    except np.linalg.LinAlgError:
-        logger.warning("Eigenvalue computation failed, using randomized approximation")
-        # Fallback: use random projection
-        np.random.seed(42)
-        eigenvecs = np.random.randn(X.shape[0], n_components + 1)
-        eigenvals = np.ones(n_components + 1)
+    # 5. Compute eigenvalues and eigenvectors. A failure propagates: substituting random vectors would
+    # return noise labelled as a diffusion map (and seeding numpy's global RNG would leak into callers).
+    eigenvals, eigenvecs = np.linalg.eigh(transition_matrix)
 
     # Sort eigenvalues and eigenvectors in descending order
     idx = np.argsort(eigenvals)[::-1]
@@ -363,7 +357,7 @@ def mds_reduction(
         SingleCellData with MDS coordinates added
 
     Raises:
-        TypeError: If data is not SingleCellData
+        ValidationError: If data is not SingleCellData or n_components is not 2 or 3
     """
     validation.validate_type(data, SingleCellData, "data")
     validation.validate_range(n_components, min_val=2, max_val=3, name="n_components")
@@ -418,19 +412,23 @@ def mds_reduction(
     return result
 
 
-def compute_dimensionality_metrics(data: SingleCellData, embedding_cols: List[str]) -> Dict[str, Any]:
+def compute_dimensionality_metrics(
+    data: SingleCellData, embedding_cols: List[str], *, random_state: int | None = None
+) -> Dict[str, Any]:
     """Compute quality metrics for dimensionality reduction embeddings.
 
     Args:
         data: SingleCellData object with embeddings
         embedding_cols: Column names of the embedding coordinates
+        random_state: Seed for the cell subsample (at most 1000 cells) behind the distance
+            correlation. It only matters above 1000 cells; ``None`` draws a fresh, non-reproducible
+            subsample. numpy's global random state is never used.
 
     Returns:
         Dictionary with dimensionality reduction quality metrics
 
     Raises:
-        TypeError: If data is not SingleCellData
-        ValueError: If embedding columns not found
+        ValidationError: If data is not SingleCellData, has no obs, or lacks the embedding columns
     """
     validation.validate_type(data, SingleCellData, "data")
 
@@ -457,7 +455,7 @@ def compute_dimensionality_metrics(data: SingleCellData, embedding_cols: List[st
 
     # Compute correlation between distance matrices (Mantel test approximation)
     n_samples = min(1000, X.shape[0])  # Subsample for performance
-    indices = np.random.choice(X.shape[0], size=n_samples, replace=False)
+    indices = np.random.default_rng(random_state).choice(X.shape[0], size=n_samples, replace=False)
 
     orig_dist_flat = original_distances[indices][:, indices].flatten()
     embed_dist_flat = embedding_distances[indices][:, indices].flatten()
@@ -634,8 +632,12 @@ def compute_neighbors(
     *,
     n_pcs: int | None = None,
     method: str = "sklearn",
+    inplace: bool = False,
 ) -> SingleCellData:
     """Compute neighbor graph for single-cell data.
+
+    Like the other functions of this module, this returns a modified copy and leaves ``data``
+    untouched unless ``inplace=True``.
 
     Args:
         data: SingleCellData object
@@ -644,9 +646,11 @@ def compute_neighbors(
         use_rep: Representation to use for neighbor calculation
         n_pcs: Number of principal components to use (optional)
         method: Neighbor-search backend. Currently supports ``"sklearn"``.
+        inplace: Store the graph in ``data.uns["neighbors"]`` and return ``data`` itself instead of a
+            copy (saves the copy of the expression matrix on large datasets).
 
     Returns:
-        SingleCellData with neighbor graph
+        SingleCellData with neighbor graph (a copy of ``data`` unless ``inplace=True``)
     """
     if not SKLEARN_AVAILABLE:
         raise ImportError("scikit-learn required for neighbor computation")
@@ -690,7 +694,8 @@ def compute_neighbors(
     connectivities = (connectivities + connectivities.T) / 2
 
     # Store results
-    data.uns["neighbors"] = {
+    result = data if inplace else data.copy()
+    result.uns["neighbors"] = {
         "indices": indices,
         "distances": distances,
         "connectivities": connectivities,
@@ -698,35 +703,48 @@ def compute_neighbors(
     }
 
     logger.info(f"Computed neighbor graph with {n_neighbors} neighbors for {len(X)} cells")
-    return data
+    return result
 
 
 def compute_diffusion_map(
-    data: SingleCellData, n_components: int = 10, n_neighbors: int = 15, alpha: float = 1.0
+    data: SingleCellData,
+    n_components: int = 10,
+    n_neighbors: int = 15,
+    alpha: float = 1.0,
+    *,
+    inplace: bool = False,
 ) -> SingleCellData:
     """Compute diffusion map for single-cell data.
+
+    Like the other functions of this module, this returns a modified copy and leaves ``data``
+    untouched unless ``inplace=True``.
 
     Args:
         data: SingleCellData object
         n_components: Number of diffusion components
-        n_neighbors: Number of neighbors for graph construction
+        n_neighbors: Number of neighbors for graph construction (only used when ``data`` has no
+            ``uns["neighbors"]`` graph yet)
         alpha: Normalization parameter
+        inplace: Write ``obsm["X_diffmap"]``, ``uns["diffmap"]`` (and the neighbor graph, when it had to
+            be built) into ``data`` and return ``data`` itself instead of a copy.
 
     Returns:
-        SingleCellData with diffusion map coordinates
+        SingleCellData with diffusion map coordinates (a copy of ``data`` unless ``inplace=True``)
     """
     if not SKLEARN_AVAILABLE:
         raise ImportError("scikit-learn required for diffusion maps")
 
-    # First compute neighbors if not already done
-    if "neighbors" not in data.uns:
-        data = compute_neighbors(data, n_neighbors)
+    result = data if inplace else data.copy()
+
+    # First compute neighbors if not already done (``result`` is already this function's own object)
+    if "neighbors" not in result.uns:
+        result = compute_neighbors(result, n_neighbors, inplace=True)
 
     # Get neighbor information
-    indices = data.uns["neighbors"]["indices"]
-    distances = data.uns["neighbors"]["distances"]
+    indices = result.uns["neighbors"]["indices"]
+    distances = result.uns["neighbors"]["distances"]
 
-    n_cells = data.n_obs
+    n_cells = result.n_obs
     # Create adjacency matrix from neighbors
     from scipy import sparse
 
@@ -772,7 +790,14 @@ def compute_diffusion_map(
     eigenvalues: np.ndarray
     eigenvectors: np.ndarray
     try:
-        eigenvalues, eigenvectors = eigsh(diffusion_operator, k=min(n_components + 1, n_cells_mat - 1), which="LM")
+        # A fixed start vector keeps the components reproducible: without one ARPACK draws it from an
+        # internal generator whose state advances on every call, so repeated calls flip eigenvector signs.
+        eigenvalues, eigenvectors = eigsh(
+            diffusion_operator,
+            k=min(n_components + 1, n_cells_mat - 1),
+            which="LM",
+            v0=np.random.default_rng(0).standard_normal(n_cells_mat),
+        )
     except (RuntimeError, ValueError) as exc:
         logger.warning(f"Sparse eigsh failed ({exc}), falling back to dense eigendecomposition")
         # diffusion_operator is always a scipy sparse matrix here, so it can be densified directly.
@@ -788,11 +813,11 @@ def compute_diffusion_map(
     eigenvectors = eigenvectors[:, idx]
 
     # Store results (skip first eigenvector which is constant)
-    data.obsm["X_diffmap"] = eigenvectors[:, 1 : n_components + 1]
-    data.uns["diffmap"] = {
+    result.obsm["X_diffmap"] = eigenvectors[:, 1 : n_components + 1]
+    result.uns["diffmap"] = {
         "eigenvalues": eigenvalues[1 : n_components + 1],
         "params": {"n_components": n_components, "n_neighbors": n_neighbors, "alpha": alpha},
     }
 
     logger.info(f"Computed diffusion map with {n_components} components")
-    return data
+    return result

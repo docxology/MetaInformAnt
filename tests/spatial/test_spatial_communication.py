@@ -5,17 +5,10 @@ All tests use real implementations (real-implementation policy).
 
 from __future__ import annotations
 
-import os
-import subprocess
-import sys
-from pathlib import Path
-
 import numpy as np
 import pytest
 
-from metainformant.spatial.communication import cell_communication as cell_communication_module
 from metainformant.spatial.communication.cell_communication import (
-    _gene_name_to_index,
     build_communication_network,
     communication_pattern_analysis,
     compute_ligand_receptor_interactions,
@@ -36,6 +29,12 @@ def expression_data() -> np.ndarray:
 
 
 @pytest.fixture()
+def gene_names() -> list[str]:
+    """Names of the 10 columns of ``expression_data``: four built-in ligand-receptor pairs plus two other genes."""
+    return ["CXCL12", "CXCR4", "CCL19", "CCR7", "EGF", "EGFR", "HGF", "MET", "ACTB", "GAPDH"]
+
+
+@pytest.fixture()
 def cell_types() -> list[str]:
     return ["A"] * 10 + ["B"] * 10 + ["C"] * 10
 
@@ -49,11 +48,11 @@ def coordinates() -> list[tuple[float, float]]:
 
 @pytest.fixture()
 def simple_lr_database() -> dict[str, list[dict[str, str]]]:
-    """Small LR database using gene indices as names so they map into 10 genes."""
+    """Small LR database whose four genes are columns of ``expression_data`` (see ``gene_names``)."""
     return {
         "pairs": [
-            {"ligand": "0", "receptor": "1"},
-            {"ligand": "2", "receptor": "3"},
+            {"ligand": "CXCL12", "receptor": "CXCR4"},
+            {"ligand": "CCL19", "receptor": "CCR7"},
         ]
     }
 
@@ -77,12 +76,14 @@ class TestComputeLigandReceptorInteractions:
         self,
         expression_data: np.ndarray,
         cell_types: list[str],
+        gene_names: list[str],
         simple_lr_database: dict[str, list[dict[str, str]]],
     ) -> None:
         result = compute_ligand_receptor_interactions(
             expression_data,
             cell_types,
             lr_database=simple_lr_database,
+            gene_names=gene_names,
         )
         assert "interactions" in result
         assert "n_significant" in result
@@ -102,10 +103,20 @@ class TestComputeLigandReceptorInteractions:
         self,
         expression_data: np.ndarray,
         cell_types: list[str],
+        gene_names: list[str],
     ) -> None:
-        result = compute_ligand_receptor_interactions(expression_data, cell_types)
+        result = compute_ligand_receptor_interactions(expression_data, cell_types, gene_names=gene_names)
         assert "interactions" in result
         assert isinstance(result["n_significant"], int)
+        # only the four built-in pairs whose genes are in the data are scored (not all ~90)
+        assert {(ix["ligand"], ix["receptor"]) for ix in result["interactions"]} == {
+            ("CXCL12", "CXCR4"),
+            ("CCL19", "CCR7"),
+            ("EGF", "EGFR"),
+            ("HGF", "MET"),
+        }
+        assert result["summary"]["n_pairs_scored"] == 4
+        assert result["summary"]["n_pairs_skipped"] == len(default_lr_database()["pairs"]) - 4
 
 
 class TestSpatialInteractionScore:
@@ -138,9 +149,12 @@ class TestBuildCommunicationNetwork:
         self,
         expression_data: np.ndarray,
         cell_types: list[str],
+        gene_names: list[str],
         simple_lr_database: dict[str, list[dict[str, str]]],
     ) -> None:
-        lr_result = compute_ligand_receptor_interactions(expression_data, cell_types, lr_database=simple_lr_database)
+        lr_result = compute_ligand_receptor_interactions(
+            expression_data, cell_types, lr_database=simple_lr_database, gene_names=gene_names
+        )
         network = build_communication_network(lr_result["interactions"])
         assert "adjacency_matrix" in network
         assert "cell_types" in network
@@ -162,9 +176,12 @@ class TestCommunicationPatternAnalysis:
         self,
         expression_data: np.ndarray,
         cell_types: list[str],
+        gene_names: list[str],
         simple_lr_database: dict[str, list[dict[str, str]]],
     ) -> None:
-        lr_result = compute_ligand_receptor_interactions(expression_data, cell_types, lr_database=simple_lr_database)
+        lr_result = compute_ligand_receptor_interactions(
+            expression_data, cell_types, lr_database=simple_lr_database, gene_names=gene_names
+        )
         patterns = communication_pattern_analysis(lr_result, n_patterns=2)
         assert "patterns" in patterns
         assert "pattern_loadings" in patterns
@@ -178,52 +195,20 @@ class TestCommunicationPatternAnalysis:
         assert patterns["patterns"] == []
 
 
-class TestGeneNameToIndex:
-    def test_numeric_string_maps_directly(self) -> None:
-        assert _gene_name_to_index("3", 10) == 3
-
-    def test_out_of_range_numeric_returns_none(self) -> None:
-        assert _gene_name_to_index("10", 10) is None
-        assert _gene_name_to_index("-1", 10) is None
-
-    def test_named_gene_maps_to_valid_index(self) -> None:
-        idx = _gene_name_to_index("CXCL12", 97)
-        assert 0 <= idx < 97
-
-    def test_named_gene_stable_across_hash_seeds(self) -> None:
-        # Regression: gene-name indices must not depend on the interpreter
-        # hash seed (str hashing is randomized per process). The module file
-        # is loaded directly to keep the child interpreter lightweight.
-        module_path = Path(cell_communication_module.__file__).resolve()
-        code = (
-            "import importlib.util\n"
-            f"spec = importlib.util.spec_from_file_location('cell_communication_under_test', {str(module_path)!r})\n"
-            "mod = importlib.util.module_from_spec(spec)\n"
-            "spec.loader.exec_module(mod)\n"
-            "print(mod._gene_name_to_index('CXCL12', 97))\n"
-        )
-        outputs = set()
-        for seed in ("0", "12345"):
-            proc = subprocess.run(
-                [sys.executable, "-c", code],
-                capture_output=True,
-                text=True,
-                check=True,
-                env={**os.environ, "PYTHONHASHSEED": seed},
-            )
-            outputs.add(proc.stdout.strip())
-        assert len(outputs) == 1
-
-
 class TestSeededPermutations:
     def test_seeded_permutations_are_reproducible(
         self,
         expression_data: np.ndarray,
         cell_types: list[str],
+        gene_names: list[str],
         simple_lr_database: dict[str, list[dict[str, str]]],
     ) -> None:
-        r1 = compute_ligand_receptor_interactions(expression_data, cell_types, lr_database=simple_lr_database, seed=42)
-        r2 = compute_ligand_receptor_interactions(expression_data, cell_types, lr_database=simple_lr_database, seed=42)
+        r1 = compute_ligand_receptor_interactions(
+            expression_data, cell_types, lr_database=simple_lr_database, gene_names=gene_names, seed=42
+        )
+        r2 = compute_ligand_receptor_interactions(
+            expression_data, cell_types, lr_database=simple_lr_database, gene_names=gene_names, seed=42
+        )
         assert r1["interactions"] == r2["interactions"]
 
 

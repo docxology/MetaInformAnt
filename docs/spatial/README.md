@@ -9,8 +9,11 @@ statistics, niche analysis, and visualization.
 |------|---------|
 | [index.md](index.md) | Detailed topic index |
 | [GETTING_STARTED.md](GETTING_STARTED.md) | First spatial analysis walkthrough |
-| [CONFIGURATION.md](CONFIGURATION.md) | Configuration options |
+| [io.md](io.md) | Loaders for Visium, Xenium and MERFISH, and the coordinate order of each |
+| [CONFIGURATION.md](CONFIGURATION.md) | Keyword arguments, defaults and seeds |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Module boundaries and data flow |
+| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Errors and their fixes |
+| [CAPABILITIES.md](CAPABILITIES.md) | Function and class catalogue by submodule |
 | [SPEC.md](SPEC.md) | Public interface notes |
 
 ## Source Package

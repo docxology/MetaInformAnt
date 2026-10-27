@@ -56,6 +56,14 @@ and `spatial_cluster` makes another dense copy when it z-scores the genes.
   fixed at 100 permutations for every ligand–receptor pair and source/target cell-type
   pair.) Moran's I, Geary's C, local Moran's I and Getis–Ord G* are analytic and have no
   such setting.
+- **Number of domains** — `spatial_domains(n_domains=None)` estimates the number of domains with
+  the gap statistic before it clusters: for k = 1, 2, … it fits k-means (`n_init=5`) to the
+  features and to 10 reference datasets, 11 fits per k, and stops at the first k that satisfies the
+  rule (at most k = 15, so at most 165 fits). Pass `n_domains` to skip the search. The benchmark
+  table above does not cover it.
+- **Ripley's K** — `ripley_k` evaluates every pair of points within the largest radius, with an
+  isotropic edge weight per pair, so time and memory grow with the number of such pairs. Keep the
+  radii well below half the shorter side of the window, and subsample very large point sets.
 - **Deconvolution** — `method='nnls'` is an exact per-spot solver (no epochs or early
   stopping); cost grows linearly with the number of spots, roughly linearly with the
   number of genes and faster than linearly with the number of cell types. Restrict the
@@ -66,7 +74,7 @@ and `spatial_cluster` makes another dense copy when it z-scores the genes.
 
 1. **Loader I/O** — `load_visium` and `load_xenium` read the whole count matrix into
    memory (MEX through `scipy.io.mmread`, or HDF5 through h5py) and keep it as CSR;
-   `load_merfish` parses `cell_by_gene.csv` with Python's `csv` module into a dense
+   `load_merfish` parses the cell-by-gene table (`cell_by_gene.csv`, `.tsv` or `counts.csv`) with Python's `csv` module into a dense
    `float32` array (`n_cells × n_genes × 4` bytes, but the rows are first held as Python
    lists of floats, so the peak is roughly ten times that), so it is the most
    memory-hungry loader. Keep the data on fast local storage.

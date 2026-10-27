@@ -1,169 +1,185 @@
 # Single-Cell Dimensionality Reduction
 
-The dimensionality module provides tools for reducing the complexity of high-dimensional single-cell expression data while preserving biological signal.
+The dimensionality-reduction functions live in two modules: `metainformant.singlecell.analysis.pca_methods` (highly variable genes, PCA, ICA, factor analysis) and `metainformant.singlecell.analysis.nonlinear_methods` (neighbor graph, UMAP, t-SNE, diffusion maps, MDS, embedding metrics). `analysis.dimensionality` re-exports both for older imports.
+
+## Conventions
+
+- **Copies by default.** The functions that add results to a `SingleCellData` return a modified copy and leave their input untouched. `select_hvgs`, `compute_neighbors` and `compute_diffusion_map` also take a keyword-only `inplace` flag: with `inplace=True` they write into the argument and return that same object, which saves a copy of the expression matrix on large datasets.
+- **Coordinates are stored twice.** PCA, UMAP and t-SNE write the coordinates to `data.obsm` (`X_pca`, `X_umap`, `X_tsne`) and as `obs` columns (`PC1`, `UMAP1`, `tSNE1`, ...). The plotting functions read the `obs` columns.
+- **Seeds.** `random_state` is handed to scikit-learn or umap-learn by PCA, ICA, factor analysis, t-SNE, UMAP and MDS, which then seed themselves (pass an integer for reproducible coordinates). The one random draw this module makes itself, the cell subsample of `compute_dimensionality_metrics`, uses a local generator and never touches numpy's global random state. `compute_diffusion_map` starts ARPACK from a fixed vector, so repeated calls on the same data give identical coordinates, signs included.
+- **Dense work.** HVG selection, PCA, UMAP, t-SNE and the neighbor graph convert `data.X` to a dense array internally.
 
 ## Highly Variable Genes (HVGs)
 
 ### select_hvgs()
 
-Identify genes with high biological variability across cells:
+Flag the genes with the highest biological variability:
 
-```python-snippet
+```python
 from metainformant.singlecell.analysis.pca_methods import select_hvgs
 
-# Seurat-style HVG selection (default)
-data = select_hvgs(
-    data,
-    n_top_genes=2000,
-    method='seurat',
-    min_mean=0.01,      # Minimum mean expression
-    max_mean=8.0,       # Maximum mean expression
-    min_disp=0.5        # Minimum dispersion
-)
+# Seurat-style selection (the default flavor)
+data = select_hvgs(data, n_top_genes=2000)
 
-# Variance-based selection
-data = select_hvgs(data, n_top_genes=2000, method='variance')
+# Other flavors; `method` is an alias of `flavor`
+data = select_hvgs(data, n_top_genes=2000, flavor="variance")
+data = select_hvgs(data, n_top_genes=2000, flavor="cell_ranger")
 
-# Cell Ranger-style selection
-data = select_hvgs(data, n_top_genes=2000, method='cellranger')
+# Variance-stabilising selection of Stuart et al. (2019); needs raw counts in data.X
+data = select_hvgs(data, n_top_genes=2000, flavor="seurat_v3")
+
+# Write the annotations into `data` instead of returning a copy
+select_hvgs(data, n_top_genes=2000, inplace=True)
 ```
 
-**Methods:**
-- `'seurat'`: Fits variance-mean relationship, selects genes with high residuals
-- `'variance'`: Selects genes with highest variance
-- `'cellranger'`: Uses standardized variance similar to 10X Cell Ranger
-
 **Parameters:**
-- `n_top_genes`: Number of HVGs to select
-- `method`: HVG selection method
-- `min_mean`, `max_mean`: Mean expression thresholds
-- `min_disp`: Minimum dispersion threshold
+
+- `n_top_genes`: number of genes to flag (default 2000)
+- `flavor` (alias `method`): `"seurat"` (default), `"cell_ranger"`, `"seurat_v3"` or `"variance"`; anything else raises the built-in `ValueError` (this function does not use the package's `ValidationError`)
+- `inplace`: keyword-only, default `False`
+
+**Flavors:**
+
+- `"seurat"`: fits a straight line of log10 variance against log10 mean over the genes with non-zero mean and ranks genes by variance divided by the fitted variance (with fewer than 10 such genes it ranks by variance)
+- `"cell_ranger"`: ranks genes by the squared coefficient of variation (variance / mean²)
+- `"seurat_v3"`: the variance-stabilising selection of Stuart et al. (2019) as scanpy defines it, for **raw counts** in `data.X`. The log10 variance of the genes with non-zero variance is regressed on their log10 mean by a local regression of degree 2 with span 0.3; the fitted value gives the expected standard deviation of a gene of that mean; the counts are clipped at `sd × √(number of cells) + mean`; and the genes are ranked by the variance of the clipped counts in units of the fitted standard deviation (ties keep gene order). That standardised variance is stored in `data.var['variances_norm']`
+- `"variance"`: ranks genes by variance
+
+**`seurat_v3` requirements.** It raises `ValueError` for fewer than two cells, for negative or non-finite values, for fewer than 17 genes with non-zero variance (too few for the local regression), and when `int(0.3 × n)` or more of those `n` genes have exactly the same mean (a neighbourhood of zero width: filter out rarely detected genes first). Non-integer values give a `UserWarning` and are used as they are. The exact local regression takes O(genes²) time. Scanpy gets its smoother from scikit-misc, which interpolates between kd-tree vertices, whereas this one is evaluated exactly at every gene, so genes right at the `n_top_genes` cut-off can rank differently from scanpy; the size of that difference has not been measured (scikit-misc is not installed here).
+
+The function only flags genes; it does not subset the matrix. There are no `min_mean`, `max_mean` or `min_disp` thresholds.
 
 **Adds to data:**
-- `data.var['highly_variable']`: Boolean mask for selected genes
-- `data.var['means']`: Mean expression per gene
-- `data.var['dispersions']`: Dispersion values
-- `data.var['dispersions_norm']`: Normalized dispersions
+
+- `data.var['highly_variable']`: boolean mask of the selected genes
+- `data.var['means']`, `data.var['variances']`: mean and variance per gene
+- `data.var['variances_norm']`: depends on the flavor. For `"seurat_v3"` it is the standardised variance that ranks the genes; for the other flavors it is the z-score of the variance across genes
+- `data.var['dispersions']`: squared coefficient of variation per gene
+- `data.uns['hvg']`: `flavor`, `n_top_genes` and `n_selected`
+
+`metainformant.singlecell.data.preprocessing.identify_highly_variable_genes(data, n_top_genes=2000, flavor="seurat")` is an alternative that also writes `data.var['highly_variable']` (flavors `"seurat"` and `"cell_ranger"`, other `var` columns and `uns['highly_variable_genes']`).
 
 ## Principal Component Analysis (PCA)
 
 ### compute_pca()
 
-Perform PCA on expression data:
-
-```python-snippet
+```python
 from metainformant.singlecell.analysis.pca_methods import compute_pca
 
-# Standard PCA
-data = compute_pca(
-    data,
-    n_components=50,           # Number of components
-    use_highly_variable=True,  # Use only HVGs
-    random_state=42
-)
+# PCA on all genes
+data = compute_pca(data, n_components=50, random_state=42)
 
-# Access results
-print(f"PC loadings shape: {data.varm['PCs'].shape}")
-print(f"Explained variance: {data.uns['pca']['variance_ratio'][:5]}")
+# PCA on the genes flagged by select_hvgs()
+data = compute_pca(data, n_components=50, random_state=42, use_hvgs=True)
+
+print(f"PC loadings shape: {data.varm['PCs'].shape}")           # genes x components
+print(f"Explained variance: {data.uns['pca']['explained_variance_ratio'][:5]}")
 ```
 
 **Parameters:**
-- `n_components`: Number of principal components to compute
-- `use_highly_variable`: Whether to use only highly variable genes
-- `random_state`: Random seed for reproducibility
+
+- `n_components`: number of components (default 50); clamped to `min(n_obs - 1, genes used)`
+- `random_state`: seed for the PCA solver
+- `scale_data`: standardise every gene before the PCA (default `True`)
+- `use_hvgs`: keyword-only; restrict the PCA to the genes flagged in `data.var['highly_variable']`. It raises `ValueError` when that column is missing, not boolean (or 0/1), has missing values or flags no gene. Scaling, the variance ratios and the component clamp then refer to those genes only, and `varm['PCs']` keeps one row per gene with exact zeros for the genes that were left out
+
+`pca_reduction` is the same function, and `run_pca` is an alias that also accepts a raw `expression_matrix=` and then returns a dictionary.
 
 **Adds to data:**
-- `data.obsm['X_pca']`: Cell coordinates in PC space
-- `data.varm['PCs']`: Gene loadings for each PC
-- `data.uns['pca']['variance']`: Explained variance per PC
-- `data.uns['pca']['variance_ratio']`: Explained variance ratio per PC
 
-### Choosing Number of Components
+- `data.obsm['X_pca']` and the `obs` columns `PC1`, `PC2`, ...: cell coordinates
+- `data.varm['PCs']`: gene loadings (genes × components)
+- `data.uns['pca']`: `n_components`, `explained_variance_ratio`, `cumulative_explained_variance`, `singular_values`, `components_shape`, `random_state`, `scaled`, `use_hvgs` and `n_genes_used`. The keys `variance_ratio` and `variance` are aliases of `explained_variance_ratio` (both hold the ratio), and `cumulative_variance` is an alias of `cumulative_explained_variance`
+
+### Choosing the Number of Components
 
 ```python
 import matplotlib.pyplot as plt
+import numpy as np
 
-# Plot explained variance
-variance_ratio = data.uns['pca']['variance_ratio']
-cumsum_var = np.cumsum(variance_ratio)
+variance_ratio = data.uns["pca"]["explained_variance_ratio"]
+cumulative = np.cumsum(variance_ratio)
 
 plt.figure(figsize=(10, 4))
 plt.subplot(1, 2, 1)
-plt.plot(range(1, len(variance_ratio) + 1), variance_ratio, 'bo-')
-plt.xlabel('Principal Component')
-plt.ylabel('Explained Variance Ratio')
-plt.title('Scree Plot')
+plt.plot(range(1, len(variance_ratio) + 1), variance_ratio, "bo-")
+plt.xlabel("Principal Component")
+plt.ylabel("Explained Variance Ratio")
+plt.title("Scree Plot")
 
 plt.subplot(1, 2, 2)
-plt.plot(range(1, len(cumsum_var) + 1), cumsum_var, 'ro-')
-plt.xlabel('Principal Component')
-plt.ylabel('Cumulative Explained Variance')
-plt.title('Cumulative Variance')
-plt.axhline(y=0.8, color='k', linestyle='--', alpha=0.5)
+plt.plot(range(1, len(cumulative) + 1), cumulative, "ro-")
+plt.axhline(y=0.8, color="k", linestyle="--", alpha=0.5)
+plt.xlabel("Principal Component")
+plt.ylabel("Cumulative Explained Variance")
 plt.show()
 ```
+
+### Other linear reductions
+
+| Function | Adds |
+|----------|------|
+| `ica_reduction(data, n_components=10, random_state=None, max_iter=1000)` | `obs` columns `IC1`, ..., `varm['ICs']`, `uns['ica']` |
+| `factor_analysis_reduction(data, n_components=10, random_state=None)` | `obs` columns `FA1`, ..., `varm['FA_loadings']`, `uns['factor_analysis']` |
 
 ## Neighbor Graph Construction
 
 ### compute_neighbors()
 
-Build k-nearest neighbor graph for downstream analysis:
+Build the k-nearest-neighbor graph that diffusion maps and diffusion pseudotime use:
 
-```python-snippet
+```python
 from metainformant.singlecell.analysis.nonlinear_methods import compute_neighbors
 
-# Compute neighbor graph
-data = compute_neighbors(
-    data,
-    n_neighbors=15,        # Number of neighbors
-    n_pcs=40,             # Number of PCs to use
-    method='umap',        # Distance metric
-    random_state=42
-)
+data = compute_neighbors(data, n_neighbors=15, n_pcs=40)   # on obsm['X_pca'] when it exists, else on data.X
+
+# Write the graph into `data` itself instead of a copy
+compute_neighbors(data, n_neighbors=15, inplace=True)
 ```
 
 **Parameters:**
-- `n_neighbors`: Number of nearest neighbors
-- `n_pcs`: Number of principal components to use
-- `method`: Algorithm ('umap' or 'gauss')
-- `metric`: Distance metric ('euclidean', 'cosine', etc.)
+
+- `n_neighbors`: neighbors per cell (default 15; the row of each cell also contains the cell itself, as its first entry)
+- `metric`: distance metric passed to scikit-learn (default `"euclidean"`)
+- `use_rep`: with `"X_pca"` (the default) the graph is built on `data.obsm['X_pca']` when `compute_pca` has been run, and on `data.X` otherwise. Any other value also uses `data.X`; no other `obsm` key is looked up
+- `n_pcs`: keyword-only; use only the first `n_pcs` principal components
+- `method`: keyword-only; only `"sklearn"` is supported, anything else raises `ValueError`
+- `inplace`: keyword-only, default `False`
+
+There is no `random_state` argument: the neighbor search is exact and deterministic.
 
 **Adds to data:**
-- `data.obsp['distances']`: Distance matrix (sparse)
-- `data.obsp['connectivities']`: Connectivity matrix (sparse)
-- `data.uns['neighbors']`: Neighbor graph parameters
+
+`data.uns['neighbors']`, a dictionary with `indices` and `distances` (cells × `n_neighbors` arrays), `connectivities` (a sparse cells × cells matrix of Gaussian-kernel affinities with the median distance as bandwidth, symmetrised by averaging) and `params`. Nothing is written to `data.obsp`.
+
+The graph is indexed by cell. `filter_cells` does not update it, so recompute it after filtering the cells; `compute_diffusion_pseudotime` raises an error on a stored graph with the wrong number of cells.
 
 ## UMAP
 
 ### compute_umap()
 
-Uniform Manifold Approximation and Projection for non-linear dimensionality reduction:
+Uniform Manifold Approximation and Projection:
 
-```python-snippet
+```python
 from metainformant.singlecell.analysis.nonlinear_methods import compute_umap
 
-# Standard UMAP
 data = compute_umap(
     data,
-    n_components=2,        # Usually 2 or 3 for visualization
-    n_neighbors=15,        # Local neighborhood size
-    min_dist=0.5,          # Minimum distance in embedding
-    spread=1.0,            # Scale of embedded points
-    random_state=42
+    n_components=2,        # 1 to 3
+    n_neighbors=15,        # 5 to 100
+    min_dist=0.5,          # 0 to 1
+    random_state=42,
 )
 
-# Access UMAP coordinates
-umap_coords = data.obsm['X_umap']  # Shape: (n_cells, n_components)
+umap_coords = data.obsm["X_umap"]    # also in data.obs as UMAP1, UMAP2
 ```
 
-**Parameters:**
-- `n_components`: Dimensionality of embedding (2 or 3)
-- `n_neighbors`: Size of local neighborhood
-- `min_dist`: Controls how tightly points are packed
-- `spread`: Effective scale of embedded points
-- `metric`: Distance metric ('euclidean', 'cosine', 'correlation')
+**Parameters:** `n_components` (1–3), `n_neighbors` (5–100), `min_dist` (0–1), `random_state`, `metric` (default `"euclidean"`) and the keyword-only `n_epochs`. Values outside the ranges raise `ValidationError`. There is no `spread` parameter.
 
-**Note:** Requires the optional `umap-learn` package:
+UMAP is fitted on the expression matrix `data.X`, not on the PCA coordinates. When `data.uns['neighbors']` is missing the returned copy also gets a neighbor graph, which UMAP itself does not use. `data.uns['umap']` records the parameters. `umap_reduction` is the same function, and `run_umap` is a wrapper of it without the `n_epochs` argument.
+
+**Note:** Requires the optional `umap-learn` package (installed by the `singlecell` extra); without it the call raises `ImportError`:
+
 ```bash
 uv pip install umap-learn
 ```
@@ -174,152 +190,106 @@ uv pip install umap-learn
 
 t-distributed Stochastic Neighbor Embedding:
 
-```python-snippet
+```python
 from metainformant.singlecell.analysis.nonlinear_methods import compute_tsne
 
-# Standard t-SNE
 data = compute_tsne(
     data,
-    n_components=2,        # Usually 2 for visualization
-    perplexity=30,         # Local neighborhood size
-    max_iter=1000,         # Maximum iterations
-    random_state=42
+    n_components=2,
+    perplexity=30,
+    max_iter=1000,
+    random_state=42,
 )
 
-# Access t-SNE coordinates
-tsne_coords = data.obsm['X_tsne']  # Shape: (n_cells, 2)
+tsne_coords = data.obsm["X_tsne"]    # also in data.obs as tSNE1, tSNE2
 ```
 
-**Parameters:**
-- `n_components`: Dimensionality of embedding (2 or 3)
-- `perplexity`: Balance between local and global structure
-- `max_iter`: Maximum number of optimization iterations
-- `learning_rate`: Step size for gradient descent
+**Parameters:** `n_components`, `perplexity`, `random_state`, `learning_rate` (default 200), `max_iter` (default 1000) and the keyword-only `n_iter` (alias of `max_iter`).
+
+t-SNE is fitted on `data.X`; with more than 5000 cells the matrix is first reduced to up to 50 principal components. The perplexity is lowered with a warning when it is not below `(n_cells - 1) / 3`, and `max_iter` is raised to at least 250. `data.uns['tsne']` records the values actually used (`perplexity`, `max_iter`) together with `kl_divergence` and `n_iter`. `tsne_reduction` is the same function without the `n_iter` alias, and `run_tsne` is a wrapper of it.
 
 ## Diffusion Maps
 
 ### compute_diffusion_map()
 
-Diffusion maps for trajectory analysis and pseudotime inference:
+Diffusion map coordinates from the neighbor graph:
 
-```python-snippet
+```python
 from metainformant.singlecell.analysis.nonlinear_methods import compute_diffusion_map
 
-# Compute diffusion components
-data = compute_diffusion_map(
-    data,
-    n_components=15,       # Number of diffusion components
-    alpha=1.0,             # Normalization parameter
-    random_state=42
-)
+data = compute_diffusion_map(data, n_components=15, alpha=1.0)
 
-# Access diffusion coordinates
-dc_coords = data.obsm['X_diffusion']  # Diffusion coordinates
+dc_coords = data.obsm["X_diffmap"]            # cells x n_components
+eigenvalues = data.uns["diffmap"]["eigenvalues"]
 ```
 
 **Parameters:**
-- `n_components`: Number of diffusion components to compute
-- `alpha`: Determines the influence of data density (0=geometric, 1=diffusion)
-- `n_neighbors`: Number of neighbors for graph construction
+
+- `n_components`: number of diffusion components (default 10); the first, constant eigenvector is skipped
+- `n_neighbors`: neighbors for the graph, used only when `data.uns['neighbors']` does not exist yet (the graph that gets built is stored on the result)
+- `alpha`: normalisation of the operator; `0` uses the unnormalised adjacency, `1` the symmetric normalisation, other values the generalised `D^-alpha A D^-alpha` form
+- `inplace`: keyword-only, default `False`; writes `obsm['X_diffmap']`, `uns['diffmap']` (and the graph, when it had to be built) into `data`
+
+The edge weights are `1 / (1 + distance)`. The leading eigenvectors come from ARPACK with a fixed start vector (a dense eigendecomposition is the fallback when ARPACK fails), so repeated calls give identical results.
 
 **Adds to data:**
-- `data.obsm['X_diffusion']`: Diffusion map coordinates
-- `data.uns['diffusion']`: Eigenvalues and other metadata
 
-## Visualization Integration
+- `data.obsm['X_diffmap']`: diffusion coordinates
+- `data.uns['diffmap']`: `eigenvalues` and `params` (`n_components`, `n_neighbors`, `alpha`)
 
-### Plotting Embeddings
+### diffusion_map_reduction()
+
+A separate dense implementation that does not use the neighbor graph: a Gaussian kernel over all pairwise distances with the median distance as bandwidth. `diffusion_map_reduction(data, n_components=10, n_neighbors=15, alpha=1.0)` validates `n_components` (2–50), `n_neighbors` (5–100) and `alpha` (0–1), writes the coordinates to `obs` as `DC1`, `DC2`, ... and the parameters to `uns['diffusion_map']`; `n_neighbors` is recorded but not used by the computation. A failure of the eigendecomposition propagates as `numpy.linalg.LinAlgError`.
+
+## Other Embeddings and Metrics
+
+### mds_reduction()
+
+`mds_reduction(data, n_components=2, metric=True, random_state=None)` runs multidimensional scaling on the cell-by-cell Euclidean distances (`n_components` 2 or 3). It writes `obs` columns `MDS1`, ... and `uns['mds']` (including the stress).
+
+### compute_dimensionality_metrics()
+
+Quality metrics of an embedding stored as `obs` columns:
 
 ```python
-import matplotlib.pyplot as plt
+from metainformant.singlecell.analysis.nonlinear_methods import compute_dimensionality_metrics
 
-# Plot UMAP colored by cell type
-if 'cell_type' in data.obs.columns:
-    plt.figure(figsize=(10, 8))
-    for cell_type in data.obs['cell_type'].unique():
-        mask = data.obs['cell_type'] == cell_type
-        plt.scatter(
-            data.obsm['X_umap'][mask, 0],
-            data.obsm['X_umap'][mask, 1],
-            label=cell_type,
-            alpha=0.7
-        )
-    plt.xlabel('UMAP 1')
-    plt.ylabel('UMAP 2')
-    plt.legend()
-    plt.title('UMAP by Cell Type')
-    plt.show()
-
-# Plot t-SNE colored by total counts
-plt.figure(figsize=(8, 6))
-scatter = plt.scatter(
-    data.obsm['X_tsne'][:, 0],
-    data.obsm['X_tsne'][:, 1],
-    c=data.obs['total_counts'],
-    cmap='viridis',
-    alpha=0.7
-)
-plt.colorbar(scatter, label='Total Counts')
-plt.xlabel('t-SNE 1')
-plt.ylabel('t-SNE 2')
-plt.title('t-SNE by Total Counts')
-plt.show()
+metrics = compute_dimensionality_metrics(data, ["UMAP1", "UMAP2"], random_state=0)
+print(metrics["distance_correlation"])
+# Also: embedding_dimensions, n_samples, n_features and, up to 1000 cells,
+# trustworthiness, continuity and neighborhood_size
 ```
+
+The distance correlation compares the original and embedded pairwise distances of at most 1000 cells. `random_state` seeds that subsample; it only matters above 1000 cells, and `None` (the default) draws a different subsample on each call.
 
 ## Parameter Guidelines
 
 ### HVG Selection
-- **2000-3000 genes**: Good balance for most datasets
-- **More genes (5000+)**: For very heterogeneous datasets
-- **Fewer genes (1000)**: For homogeneous populations
+
+- **2000-3000 genes**: good balance for most datasets
+- **More genes (5000+)**: for very heterogeneous datasets
+- **Fewer genes (1000)**: for homogeneous populations
 
 ### PCA
-- **50 components**: Standard for most analyses
-- **Use scree plot**: To determine optimal number
-- **80% variance**: Common cutoff for cumulative variance
+
+- **50 components**: standard for most analyses
+- **Use the scree plot** to determine the optimal number
+- **80% variance**: common cutoff for cumulative variance
 
 ### UMAP Parameters
-- **n_neighbors**: 
-  - 15-50 for most datasets
-  - Higher for smoother embeddings
-  - Lower for more local structure
-- **min_dist**: 
-  - 0.1-0.5 for tight clusters
-  - 0.5-1.0 for spread-out visualization
+
+- **n_neighbors**: 15-50 for most datasets; higher for smoother embeddings, lower for more local structure
+- **min_dist**: 0.1-0.5 for tight clusters, 0.5-1.0 for a spread-out visualisation
 
 ### t-SNE Parameters
-- **perplexity**: 
-  - 30-50 for most datasets
-  - Scale with dataset size: ~sqrt(n_cells)
-  - Multiple perplexities to check robustness
 
-## Memory and Performance
-
-### Large Dataset Considerations
-
-```python
-# For datasets > 100k cells
-data = select_hvgs(data, n_top_genes=1000)  # Fewer HVGs
-data = compute_pca(data, n_components=30)   # Fewer PCs
-
-# Use incremental PCA for very large datasets
-from sklearn.decomposition import IncrementalPCA
-# (Custom implementation may be needed)
-```
-
-### GPU Acceleration
-
-For datasets > 1M cells, consider:
-- Rapids cuML for GPU-accelerated UMAP
-- scanpy with GPU support
-- Specialized single-cell GPU tools
+- **perplexity**: 30-50 for most datasets; check several values for robustness
 
 ## Common Workflows
 
 ### Standard Dimensionality Reduction Pipeline
 
-```python-snippet
-# Complete dimensionality reduction workflow
+```python
 from metainformant.singlecell.analysis.pca_methods import compute_pca, select_hvgs
 from metainformant.singlecell.analysis.nonlinear_methods import (
     compute_neighbors,
@@ -327,108 +297,91 @@ from metainformant.singlecell.analysis.nonlinear_methods import (
     compute_umap,
 )
 
-# 1. Select highly variable genes
-data = select_hvgs(data, n_top_genes=2000, method='seurat')
+# 1. Flag highly variable genes
+data = select_hvgs(data, n_top_genes=2000, flavor="seurat")
 print(f"Selected {data.var['highly_variable'].sum()} HVGs")
 
-# 2. Principal component analysis
+# 2. PCA on the flagged genes
 data = compute_pca(data, n_components=50, use_hvgs=True)
-print(f"Explained variance (first 10 PCs): "
-      f"{sum(data.uns['pca']['variance_ratio'][:10]):.3f}")
+print(f"Explained variance (first 10 PCs): {sum(data.uns['pca']['explained_variance_ratio'][:10]):.3f}")
 
-# 3. Neighbor graph for clustering
+# 3. Neighbor graph on the first 40 PCs
 data = compute_neighbors(data, n_neighbors=15, n_pcs=40)
 
-# 4. UMAP embedding
+# 4. UMAP and t-SNE embeddings (both are fitted on data.X)
 data = compute_umap(data, n_components=2, min_dist=0.5)
-
-# 5. t-SNE for comparison
 data = compute_tsne(data, n_components=2, perplexity=30)
 
-print("Dimensionality reduction complete!")
 print(f"Available embeddings: {list(data.obsm.keys())}")
 ```
 
 ### Trajectory Analysis Preparation
 
+Diffusion pseudotime reads the neighbor graph in `data.uns['neighbors']` (and builds one from `data.X` when there is none), so the graph is the only preparation it needs; the diffusion map is optional:
+
 ```python
-# For trajectory/pseudotime analysis
+from metainformant.singlecell.analysis.nonlinear_methods import compute_diffusion_map, compute_neighbors
+from metainformant.singlecell.analysis.pca_methods import compute_pca
+from metainformant.singlecell.analysis.trajectory import compute_diffusion_pseudotime
+
 data = compute_pca(data, n_components=50)
-data = compute_diffusion_map(data, n_components=15)
-data = compute_neighbors(data, n_neighbors=30)  # More neighbors for trajectories
+data = compute_neighbors(data, n_neighbors=30, n_pcs=30)     # more neighbors for trajectories
+data = compute_diffusion_map(data, n_components=15)          # optional: coordinates for plotting
+data = compute_diffusion_pseudotime(data, root_cell=0)
 ```
 
 ## Quality Assessment
 
-### Embedding Quality Metrics
+Compare the original and embedded geometry with `compute_dimensionality_metrics` (above). For a quick global check, correlate pairwise distances yourself:
 
 ```python
-# Check for overclustering in UMAP
 import numpy as np
-from scipy.spatial.distance import pdist, squareform
+from scipy.spatial.distance import pdist
 
-# Local neighborhood preservation
-def local_preservation(X_orig, X_embed, k=15):
-    """Measure how well local neighborhoods are preserved."""
-    # Implementation for neighborhood preservation metric
-    pass
-
-# Global structure preservation
-def global_preservation(X_orig, X_embed):
-    """Measure how well global structure is preserved."""
-    dist_orig = pdist(X_orig[:1000])  # Sample for speed
-    dist_embed = pdist(X_embed[:1000])
-    correlation = np.corrcoef(dist_orig, dist_embed)[0, 1]
-    return correlation
+def global_preservation(X_orig, X_embed, n=1000):
+    """Correlation of pairwise distances on the first n cells."""
+    return np.corrcoef(pdist(X_orig[:n]), pdist(X_embed[:n]))[0, 1]
 ```
 
 ## Error Handling
 
-### Common Issues
-
 ```python
+from metainformant.singlecell.analysis.nonlinear_methods import compute_tsne, compute_umap
+
 try:
     data = compute_umap(data)
 except ImportError:
     print("umap-learn not installed. Install with: uv pip install umap-learn")
-    # Fall back to t-SNE
-    data = compute_tsne(data)
-
-# Handle cases with too few genes
-try:
-    data = select_hvgs(data, n_top_genes=2000)
-except ValueError as e:
-    print(f"Warning: {e}")
-    # Reduce number of requested HVGs
-    data = select_hvgs(data, n_top_genes=min(1000, data.n_vars // 2))
+    data = compute_tsne(data)    # fall back to t-SNE
 ```
+
+`compute_pca(..., use_hvgs=True)` raises `ValueError` when `select_hvgs` has not been run, and the range checks of `compute_umap` and `diffusion_map_reduction` raise `ValidationError` (from `metainformant.core.utils.errors`).
 
 ## Integration with Clustering
 
-The dimensionality reduction results are used by clustering algorithms:
+The clustering functions do not read PCA coordinates or the neighbor graph: each builds its own kNN graph from the expression matrix of the object it is given. To cluster on the principal components, pass them as a matrix (the function then returns the labels; see [Clustering](./clustering.md) for the Leiden requirements):
 
-```python-snippet
+```python
 from metainformant.singlecell.analysis.clustering import leiden_clustering
 
-# Use neighbor graph for clustering
-data = leiden_clustering(data, resolution=0.5)
+# Cluster the cells on their first 30 principal components
+data.obs["leiden_pca"] = leiden_clustering(data.obsm["X_pca"][:, :30], resolution=0.5, random_state=0)
 
-# Or use PCA coordinates directly
-data = leiden_clustering(data, use_rep='X_pca', resolution=0.5)
+# Cluster on the expression matrix itself (a SingleCellData in, a SingleCellData out)
+data = leiden_clustering(data, resolution=0.5)
 ```
 
 ## Testing
 
-Dimensionality reduction tests are available in `tests/singlecell/test_singlecell_dimensionality.py`:
+Dimensionality-reduction tests are in `tests/singlecell/test_singlecell_dimensionality.py`; the `inplace` contract is pinned by `tests/singlecell/test_singlecell_input_contracts.py` and the seeding by `tests/singlecell/test_singlecell_randomness.py`:
 
 ```bash
-# Run dimensionality reduction tests
-uv run pytest tests/singlecell/test_singlecell_dimensionality.py -v
+uv run pytest tests/singlecell/test_singlecell_dimensionality.py tests/singlecell/test_singlecell_input_contracts.py -v
 ```
 
 ## Related Documentation
 
 - [Preprocessing](./preprocessing.md): For data preparation before dimensionality reduction
-- [Clustering](./clustering.md): For using dimensionality reduction results in clustering
+- [Clustering](./clustering.md): For clustering the cells
 - [Visualization](./visualization.md): For plotting embeddings
-- [Trajectory](./trajectory.md): For pseudotime analysis using diffusion maps
+- [Trajectory](./trajectory.md): For pseudotime analysis on the neighbor graph

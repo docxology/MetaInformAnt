@@ -82,8 +82,7 @@ def plot_umap(data: SingleCellData, color: Optional[str] = None, **kwargs: Any) 
 
     Raises:
         ImportError: If matplotlib is not available
-        TypeError: If data is not SingleCellData
-        ValueError: If UMAP coordinates not found
+        ValidationError: If data is not SingleCellData or UMAP coordinates are not in data.obs
     """
     if not HAS_MATPLOTLIB:
         raise ImportError("matplotlib required for plotting")
@@ -127,8 +126,7 @@ def plot_tsne(data: SingleCellData, color: Optional[str] = None, **kwargs: Any) 
 
     Raises:
         ImportError: If matplotlib is not available
-        TypeError: If data is not SingleCellData
-        ValueError: If t-SNE coordinates not found
+        ValidationError: If data is not SingleCellData or t-SNE coordinates are not in data.obs
     """
     if not HAS_MATPLOTLIB:
         raise ImportError("matplotlib required for plotting")
@@ -173,8 +171,8 @@ def plot_pca(data: SingleCellData, color: Optional[str] = None, n_components: in
 
     Raises:
         ImportError: If matplotlib is not available
-        TypeError: If data is not SingleCellData
-        ValueError: If PCA coordinates not found or n_components invalid
+        ValidationError: If data is not SingleCellData, n_components is not 2 or 3, or PCA coordinates are not in
+            data.obs
     """
     if not HAS_MATPLOTLIB:
         raise ImportError("matplotlib required for plotting")
@@ -254,8 +252,8 @@ def plot_trajectory(data: SingleCellData, trajectory_key: str, color_by_pseudoti
 
     Raises:
         ImportError: If matplotlib is not available
-        TypeError: If data is not SingleCellData
-        ValueError: If trajectory data not found
+        ValidationError: If data is not SingleCellData, trajectory_key is not in data.uns, or no embedding coordinates
+            are found
     """
     if not HAS_MATPLOTLIB:
         raise ImportError("matplotlib required for plotting")
@@ -342,15 +340,16 @@ def plot_marker_expression(
         data: SingleCellData object
         marker_genes: List of genes to plot
         method: Plot type ('dotplot', 'heatmap', 'violin')
-        **kwargs: Additional arguments for plot
+        **kwargs: Additional arguments for plot. The heatmap shows at most ``max_cells`` (default
+            1000) randomly drawn cells; ``random_state`` seeds that draw (``None``, the default,
+            draws a different subset each call).
 
     Returns:
         matplotlib Figure object
 
     Raises:
         ImportError: If matplotlib is not available
-        TypeError: If data is not SingleCellData
-        ValueError: If marker genes not found
+        ValidationError: If data is not SingleCellData, none of the marker genes is found, or method is unsupported
     """
     if not HAS_MATPLOTLIB:
         raise ImportError("matplotlib required for plotting")
@@ -438,7 +437,7 @@ def _plot_marker_heatmap(
     n_cells = X.shape[0]
 
     if n_cells > max_cells:
-        indices = np.random.choice(n_cells, max_cells, replace=False)
+        indices = np.random.default_rng(kwargs.get("random_state")).choice(n_cells, max_cells, replace=False)
         X_plot = X[indices]
     else:
         X_plot = X
@@ -511,7 +510,7 @@ def plot_qc_metrics(data: SingleCellData, **kwargs: Any) -> Any:
 
     Raises:
         ImportError: If matplotlib is not available
-        TypeError: If data is not SingleCellData
+        ValidationError: If data is not SingleCellData
     """
     if not HAS_MATPLOTLIB:
         raise ImportError("matplotlib required for plotting")
@@ -585,8 +584,8 @@ def plot_cluster_comparison(
 
     Raises:
         ImportError: If matplotlib is not available
-        TypeError: If data is not SingleCellData
-        ValueError: If cluster columns not found
+        ValidationError: If data is not SingleCellData, has no obs, lacks the cluster columns, or has no embedding
+            coordinates
     """
     if not HAS_MATPLOTLIB:
         raise ImportError("matplotlib required for plotting")

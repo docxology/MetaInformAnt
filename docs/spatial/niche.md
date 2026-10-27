@@ -45,7 +45,8 @@ from metainformant.spatial.visualization.plots import plot_spatial_scatter
 plot_spatial_scatter(coordinates, niche.niche_labels.astype(str), 'niches.png', title='Niches')
 ```
 
-Draws the niche labels on the tissue coordinates (one colour per niche). The
+Draws the niche labels on the tissue coordinates (one colour per niche; pass
+`coordinate_order='xy'` for Xenium or MERFISH coordinates, see [Visualization](visualization.md#coordinate-order)). The
 per‑niche composition in `niche.compositions` can be plotted with matplotlib, for
 example as a stacked bar chart of the top contributing cell types.
 
@@ -64,6 +65,16 @@ domains functionally further.
 ## Export
 
 ```python
-# Niche membership + coordinates for downstream analysis
-adata.obs[['x','y','niche']].to_csv('niches.tsv', sep='	')
+# Niche membership + coordinates for downstream analysis (adata is your own AnnData object)
+adata.obs[['x', 'y', 'niche']].to_csv('niches.tsv', sep='\t')
 ```
+
+## Related niche functions
+
+Three functions in the module group spots or cells into niches; pick by input:
+
+| Function | Input | Notes |
+|----------|-------|-------|
+| `niche.identification.identify_niches` | cell-type proportions per spot | spatial smoothing + k-means; `random_state=42` by default (this page) |
+| `analysis.neighborhood.niche_detection` | one cell-type label per cell | clusters the label composition of each cell's neighbourhood; `seed=42` (see [Neighborhood](neighborhood.md#niche-detection)) |
+| `deconvolution.spatial_deconvolution.niche_identification` | cell-type proportions per spot | k-means on proportions plus scaled coordinates, with a `spatial_coherence` score; `seed=None` by default, so pass an integer for reproducible niches (see [Deconvolution](deconvolution.md#advanced-module-spatialdeconvolution)) |

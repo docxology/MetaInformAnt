@@ -17,10 +17,11 @@ uv pip install metainformant
 
 Optional packages the module uses when they are importable:
 
-- `leidenalg` (with `igraph`; the `singlecell` extra) for Leiden clustering and
-  `python-louvain` (the `networks` extra) for Louvain; without them
-  `leiden_clustering` and `louvain_clustering` fall back to a built‑in greedy modularity
-  routine.
+- `leidenalg` (with `igraph`) for Leiden clustering and `python-louvain` (the `community`
+  module) for Louvain; the `singlecell` extra installs both and the `networks` extra
+  installs `python-louvain`. Without them `leiden_clustering` and `louvain_clustering`
+  fall back to a built‑in greedy modularity routine, and the result does not say so (see
+  [Clustering](clustering.md#which-implementation-runs)).
 - `h5py` to read `.h5` count matrices (the `scientific` extra installs it through
   anndata, or `uv pip install h5py`).
 - Pillow, which matplotlib installs, to read the Visium tissue image.
@@ -37,8 +38,12 @@ from metainformant.spatial.visualization.plots import plot_spatial_scatter
 ds = load_xenium('xenium_run/outs/')  # XeniumDataset: .expression (cells × genes), .coordinates (n × 2)
 # Leiden domains at 0.8 resolution on a joint expression + spatial neighbour graph
 result = spatial_cluster(ds.expression, ds.coordinates, resolution=0.8)
-# Plot: writes a PNG and returns the matplotlib Figure (string labels give a categorical legend)
-plot_spatial_scatter(ds.coordinates, result.labels.astype(str), 'output/spatial/domains.png', title='Spatial domains')
+# Plot: writes a PNG and returns the matplotlib Figure (string labels give a categorical legend).
+# Xenium coordinates are [x, y], so tell the plot which column is which (otherwise the tissue is transposed)
+plot_spatial_scatter(
+    ds.coordinates, result.labels.astype(str), 'output/spatial/domains.png',
+    title='Spatial domains', coordinate_order=ds.coordinate_order,
+)
 ```
 
 ## Loader matrix
@@ -46,10 +51,14 @@ plot_spatial_scatter(ds.coordinates, result.labels.astype(str), 'output/spatial/
 | Platform | Function | Files read from `path` |
 |----------|----------|------------------------|
 | 10x Visium | `spatial.io.visium.load_visium(path)` | `filtered_feature_bc_matrix.h5` or `filtered_feature_bc_matrix/` (MEX), `spatial/tissue_positions.csv` (or `tissue_positions_list.csv`); optional `spatial/tissue_hires_image.png`, `spatial/scalefactors_json.json` |
-| Xenium | `spatial.io.xenium.load_xenium(path)` | `cell_feature_matrix.h5` or `cell_feature_matrix/` (MEX), `cells.csv.gz` (or `cells.csv`); optional `transcripts.csv.gz` (read only with `load_transcripts=True`), `cell_boundaries.csv.gz` (only with `load_boundaries=True`) |
-| MERFISH | `spatial.io.merfish.load_merfish(path)` | `cell_by_gene.csv` (or `.tsv`, `counts.csv`), `cell_metadata.csv`; optional `detected_transcripts.csv` (read only with `load_transcripts=True`) |
+| Xenium | `spatial.io.xenium.load_xenium(path)` | `cell_feature_matrix.h5` or `cell_feature_matrix/` (MEX) and `cells.csv.gz` (or `cells.csv`), both required; optional `transcripts.csv.gz` (read only with `load_transcripts=True`), `cell_boundaries.csv.gz` (only with `load_boundaries=True`) |
+| MERFISH | `spatial.io.merfish.load_merfish(path)` | `cell_by_gene.csv` (or `.tsv`, `counts.csv`) and `cell_metadata.csv` (or `.tsv`), both required; optional `detected_transcripts.csv` (read only with `load_transcripts=True`). The delimiter follows the extension: tab for `.tsv`, comma otherwise |
 
-There are no Slide‑seqV2 or CosMx loaders.
+There are no Slide‑seqV2 or CosMx loaders. The Xenium and MERFISH loaders need the cell
+positions: a missing `cells.csv(.gz)` or `cell_metadata.csv`/`.tsv`, missing id or coordinate
+columns, or a cell of the matrix without a row all raise an error (`FileNotFoundError` or
+`ValueError`) instead of giving the cell a placeholder `[0, 0]` position. `load_visium`
+raises `ValueError` when no barcode of the matrix has a tissue position. See [io.md](io.md).
 
 The loaders return dataclasses, not AnnData: `SpatialDataset` (Visium), `XeniumDataset`
 and `MERFISHDataset`. Each has `.expression` (rows = spots or cells, columns = genes:
@@ -59,6 +68,14 @@ Xenium and MERFISH keep cell IDs in `.cell_ids`. Coordinates are taken as stored
 files, with no unit conversion: Visium gives full‑resolution image pixels as
 `[row, col]` (`.scale_factors` holds the scalefactors JSON), Xenium its
 `x_centroid`/`y_centroid`, MERFISH its `center_x`/`center_y`.
+
+The column order differs by platform, and each dataset class declares it in its
+`coordinate_order` constant: `"row_col"` for `SpatialDataset` (column 0 is the vertical
+image axis) and `"xy"` for `XeniumDataset` and `MERFISHDataset` (column 0 is x). The
+plotting functions that take a dataset (`plot_gene_expression_map`, `plot_cell_type_map`)
+read it from the dataset. The ones that take a bare coordinate array default to
+`"row_col"`, so pass `coordinate_order=ds.coordinate_order` (or `"xy"`) for Xenium and
+MERFISH arrays; see [visualization.md](visualization.md#coordinate-order).
 
 ## Minimal analysis pipeline
 

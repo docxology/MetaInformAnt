@@ -1,18 +1,32 @@
 """I/O utilities for single-cell transcriptomics.
 
-This module provides functions for fetching datasets from GEO/SRA and
-handling fastq compression/decompression.
+This module provides functions for fetching datasets from GEO/SRA, handling fastq
+compression/decompression, and running Salmon Alevin.
+
+The ``run_*`` helpers for R and pySCENIC tools (Seurat, Monocle3, clusterProfiler, ShinyCell,
+pySCENIC) are not implemented. They raise ``NotImplementedError`` and create nothing at the
+requested output path, because an empty file or directory there would be mistaken for a real
+result by the next pipeline step.
 """
 
 from __future__ import annotations
 
 import subprocess
 from pathlib import Path
-from typing import List
+from typing import List, NoReturn
 
 from metainformant.core.utils import logging as core_logging
 
 logger = core_logging.get_logger(__name__)
+
+
+def _not_wrapped(function: str, tool: str, guidance: str) -> NoReturn:
+    """Raise ``NotImplementedError`` for a helper whose external tool metainformant does not run.
+
+    Nothing is created at the caller's output path: a placeholder file or directory would look like
+    the tool's real output.
+    """
+    raise NotImplementedError(f"{function}() is not implemented: metainformant does not run {tool}. {guidance}")
 
 
 def download_geo_supplementary(accession: str, output_dir: str | Path) -> Path:
@@ -134,76 +148,126 @@ def run_salmon_alevin(
     subprocess.run(cmd, check=True)
 
 
-def run_seurat_integration(input_dirs: dict[str, Path], output_dir: Path, resolution: float = 0.8) -> Path:
-    """Stub for Seurat integration (usually calls an R script)."""
-    output_dir.mkdir(parents=True, exist_ok=True)
-    logger.info(f"Running Seurat integration (resolution={resolution}) into {output_dir}...")
-    # In a real scenario, this would invoke Rscript
-    rds_path = output_dir / "integrated.rds"
-    # Touch file for now to allow pipeline to "progress" or fail informatively
-    rds_path.touch()
-    return rds_path
+def run_seurat_integration(input_dirs: dict[str, Path], output_dir: Path, resolution: float = 0.8) -> NoReturn:
+    """Not implemented: Seurat integration is an R workflow that metainformant does not run.
+
+    Raises:
+        NotImplementedError: Always. Nothing is written to ``output_dir``.
+    """
+    _not_wrapped(
+        "run_seurat_integration",
+        "Seurat",
+        "Run Seurat's integration (FindIntegrationAnchors / IntegrateData) yourself in R, or integrate in Python "
+        "with metainformant.singlecell.data.integration (harmony_integration, bbknn_integration, "
+        "scanorama_integration, mnn_integration, combat_integration).",
+    )
 
 
-def run_differential_expression(input_rds: Path, output_csv: Path, contrast: str) -> Path:
-    """Stub for differential expression."""
-    output_csv.parent.mkdir(parents=True, exist_ok=True)
-    logger.info(f"Running Differential Expression with contrast {contrast}...")
-    output_csv.touch()
-    return output_csv
+def run_differential_expression(input_rds: Path, output_csv: Path, contrast: str) -> NoReturn:
+    """Not implemented: differential expression on a Seurat RDS object is an R workflow.
+
+    Raises:
+        NotImplementedError: Always. Nothing is written to ``output_csv``.
+    """
+    _not_wrapped(
+        "run_differential_expression",
+        "R differential expression on Seurat objects",
+        "Run it yourself in R (for example Seurat's FindMarkers), or use "
+        "metainformant.singlecell.differential.expression (differential_expression, pseudobulk_de) "
+        "on a SingleCellData.",
+    )
 
 
-def run_scenic_grnboost2(expression_loom: Path, tf_txt: Path, output_adjacencies: Path, threads: int = 1) -> Path:
-    """Stub for pySCENIC GRNBoost2."""
-    output_adjacencies.parent.mkdir(parents=True, exist_ok=True)
-    logger.info("Running pySCENIC GRNBoost2...")
-    output_adjacencies.touch()
-    return output_adjacencies
+def run_scenic_grnboost2(expression_loom: Path, tf_txt: Path, output_adjacencies: Path, threads: int = 1) -> NoReturn:
+    """Not implemented: pySCENIC GRNBoost2 is not wrapped.
+
+    Raises:
+        NotImplementedError: Always. Nothing is written to ``output_adjacencies``.
+    """
+    _not_wrapped(
+        "run_scenic_grnboost2",
+        "pySCENIC",
+        "Run `pyscenic grn` (GRNBoost2) yourself on the expression loom file and the transcription-factor list.",
+    )
 
 
 def run_scenic_cistarget(
     expression_loom: Path, adjacencies: Path, motif_database: Path, motif_annotations: Path, output_regulons: Path
-) -> Path:
-    """Stub for pySCENIC cisTarget."""
-    output_regulons.parent.mkdir(parents=True, exist_ok=True)
-    logger.info("Running pySCENIC cisTarget...")
-    output_regulons.touch()
-    return output_regulons
+) -> NoReturn:
+    """Not implemented: pySCENIC cisTarget is not wrapped.
+
+    Raises:
+        NotImplementedError: Always. Nothing is written to ``output_regulons``.
+    """
+    _not_wrapped(
+        "run_scenic_cistarget",
+        "pySCENIC",
+        "Run `pyscenic ctx` yourself on the adjacencies with your motif ranking database and motif annotations.",
+    )
 
 
-def run_scenic_aucell(expression_loom: Path, regulons: Path, output_loom: Path) -> Path:
-    """Stub for pySCENIC AUCell."""
-    output_loom.parent.mkdir(parents=True, exist_ok=True)
-    logger.info("Running pySCENIC AUCell...")
-    output_loom.touch()
-    return output_loom
+def run_scenic_aucell(expression_loom: Path, regulons: Path, output_loom: Path) -> NoReturn:
+    """Not implemented: pySCENIC AUCell is not wrapped.
+
+    Raises:
+        NotImplementedError: Always. Nothing is written to ``output_loom``.
+    """
+    _not_wrapped(
+        "run_scenic_aucell",
+        "pySCENIC",
+        "Run `pyscenic aucell` yourself on the expression loom file and the regulons.",
+    )
 
 
-def filter_regulons_post_scenic(regulons_csv: Path, filtered_output: Path, raw_expression_csv: Path) -> Path:
-    """Stub for filtering regulons."""
-    filtered_output.parent.mkdir(parents=True, exist_ok=True)
-    logger.info("Filtering regulons...")
-    filtered_output.touch()
-    return filtered_output
+def filter_regulons_post_scenic(regulons_csv: Path, filtered_output: Path, raw_expression_csv: Path) -> NoReturn:
+    """Not implemented: there is no post-SCENIC regulon filter.
+
+    Raises:
+        NotImplementedError: Always. Nothing is written to ``filtered_output``.
+    """
+    _not_wrapped(
+        "filter_regulons_post_scenic",
+        "a post-SCENIC regulon filter",
+        "Filter the pySCENIC regulon table yourself (for example with pandas) using your own criteria.",
+    )
 
 
-def run_pseudotime_trajectory(input_rds: Path, output_rds: Path, root_selector: str) -> Path:
-    """Stub for Monocle3 trajectory."""
-    output_rds.parent.mkdir(parents=True, exist_ok=True)
-    logger.info("Running pseudotime trajectory...")
-    output_rds.touch()
-    return output_rds
+def run_pseudotime_trajectory(input_rds: Path, output_rds: Path, root_selector: str) -> NoReturn:
+    """Not implemented: Monocle3 trajectory inference is an R workflow that metainformant does not run.
+
+    Raises:
+        NotImplementedError: Always. Nothing is written to ``output_rds``.
+    """
+    _not_wrapped(
+        "run_pseudotime_trajectory",
+        "Monocle3",
+        "Run Monocle3 yourself in R, or use metainformant.singlecell.analysis.trajectory "
+        "(compute_diffusion_pseudotime, paga_trajectory, slingshot_trajectory) on a SingleCellData.",
+    )
 
 
-def run_go_enrichment(input_deseq_csv: Path, output_dir: Path, organism: str) -> Path:
-    """Stub for clusterProfiler GO enrichment."""
-    output_dir.mkdir(parents=True, exist_ok=True)
-    logger.info(f"Running GO enrichment for {organism}...")
-    return output_dir
+def run_go_enrichment(input_deseq_csv: Path, output_dir: Path, organism: str) -> NoReturn:
+    """Not implemented: clusterProfiler GO enrichment is an R workflow that metainformant does not run.
+
+    Raises:
+        NotImplementedError: Always. ``output_dir`` is not created.
+    """
+    _not_wrapped(
+        "run_go_enrichment",
+        "clusterProfiler",
+        "Run clusterProfiler yourself in R on the differential-expression table, or use the Python "
+        "enrichment helpers in metainformant.ontology (for example metainformant.ontology.core.go.enrich_genes).",
+    )
 
 
-def run_shinycell_export(input_rds: Path, output_dir: Path) -> Path:
-    """Stub for ShinyCell export."""
-    output_dir.mkdir(parents=True, exist_ok=True)
-    logger.info("Exporting to ShinyCell...")
-    return output_dir
+def run_shinycell_export(input_rds: Path, output_dir: Path) -> NoReturn:
+    """Not implemented: the ShinyCell export is an R workflow that metainformant does not run.
+
+    Raises:
+        NotImplementedError: Always. ``output_dir`` is not created.
+    """
+    _not_wrapped(
+        "run_shinycell_export",
+        "ShinyCell",
+        "Run the ShinyCell R package yourself on the Seurat object.",
+    )

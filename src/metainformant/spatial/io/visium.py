@@ -16,7 +16,7 @@ import csv
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from metainformant.core.utils.logging import get_logger
 
@@ -91,7 +91,12 @@ class SpatialDataset:
         scale_factors: Dictionary of Visium scale factors.
         platform: Originating platform (visium, merfish, xenium).
         metadata: Additional metadata dictionary.
+        coordinate_order: Class constant naming the column convention of ``coordinates``:
+            ``"row_col"`` (column 0 is the vertical image axis, column 1 the horizontal one), which the
+            plotting functions use to put the columns on the right axes.
     """
+
+    coordinate_order: ClassVar[str] = "row_col"
 
     expression: Any  # np.ndarray or scipy sparse
     coordinates: Any  # np.ndarray (n_spots, 2)
@@ -369,10 +374,13 @@ def load_visium(
         image_resolution: Which resolution image to load ("hires" or "lowres").
 
     Returns:
-        SpatialDataset with expression matrix, coordinates, and optionally image.
+        SpatialDataset with expression matrix, coordinates, and optionally image. The expression matrix,
+        barcodes, tissue positions and coordinates are filtered to the same spots, in matrix order.
 
     Raises:
         FileNotFoundError: If required files are missing.
+        ValueError: If no barcode of the expression matrix has a tissue position (after the
+            ``in_tissue_only`` filter), which means the files do not belong together.
     """
     if np is None:
         raise ImportError("NumPy is required for Visium loading: uv pip install numpy")
@@ -424,11 +432,16 @@ def load_visium(
             keep_positions.append(barcode_to_pos[bc])
 
     if not keep_indices:
-        logger.warning("No barcodes match between expression matrix and tissue positions")
-        coordinates = np.empty((0, 2), dtype=np.float64)
-    else:
-        expression = expression[keep_indices, :]
-        coordinates = np.array([[p.pixel_row, p.pixel_col] for p in keep_positions], dtype=np.float64)
+        # Returning the unfiltered matrix next to empty coordinates and barcodes would look like a dataset
+        raise ValueError(
+            f"No barcodes match between the expression matrix ({len(barcodes)} barcodes, e.g. {barcodes[:3]}) "
+            f"and the tissue positions ({len(positions)} spots kept of {len(all_positions)} in "
+            f"{positions_file.name}, e.g. {[p.barcode for p in positions[:3]]}) in {base_dir}. "
+            "Check that the matrix and the positions come from the same run"
+            + ("; with in_tissue_only=True every off-tissue spot is dropped." if in_tissue_only else ".")
+        )
+    expression = expression[keep_indices, :]
+    coordinates = np.array([[p.pixel_row, p.pixel_col] for p in keep_positions], dtype=np.float64)
 
     # --- Load scale factors ---
     scale_factors = _read_scale_factors(spatial_dir)

@@ -8,7 +8,7 @@ for spatial point pattern statistics.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 from metainformant.core.utils.logging import get_logger
 
@@ -471,6 +471,86 @@ def niche_detection(
     )
 
 
+def _isotropic_edge_weights(x: Any, y: Any, radius: Any, window: tuple[float, float, float, float]) -> Any:
+    """Ripley's isotropic edge-correction weights for circles about points inside a rectangular window.
+
+    The weight of a circle of radius ``radius`` centred at ``(x, y)`` is 1 / (share of its circumference that
+    lies inside the window). The share is exact for a rectangle: the circle leaves through a side at
+    distance ``d`` when ``radius > d``, over an arc of half-width ``arccos(d / radius)`` centred on that
+    side's outward normal, and arcs of opposite sides never meet, so the escaped length is the sum of the
+    four arcs minus the overlaps of the four pairs of adjacent sides (corner regions).
+
+    Args:
+        x, y: Coordinates of the circle centres (arrays of equal length, inside the window).
+        radius: Circle radii (array of the same length).
+        window: ``(x_min, x_max, y_min, y_max)``.
+
+    Returns:
+        Array of weights, 1 where the circle lies entirely inside the window.
+    """
+    x_min, x_max, y_min, y_max = window
+    x, y, radius = np.asarray(x, float), np.asarray(y, float), np.asarray(radius, float)
+
+    # Distances to the right, top, left and bottom sides: outward normals at 0, 90, 180 and 270 degrees
+    side_distances = (x_max - x, y_max - y, x - x_min, y - y_min)
+    half_widths = []
+    with np.errstate(divide="ignore", invalid="ignore"):
+        for distance in side_distances:
+            ratio = np.clip(distance / radius, -1.0, 1.0)
+            half_widths.append(np.where(radius > distance, np.arccos(ratio), 0.0))
+
+    escaped = 2.0 * sum(half_widths)
+    for k in range(4):
+        escaped = escaped - np.maximum(0.0, half_widths[k] + half_widths[(k + 1) % 4] - np.pi / 2.0)
+    inside = 1.0 - escaped / (2.0 * np.pi)
+    with np.errstate(divide="ignore"):
+        return np.where(inside > 0.0, 1.0 / inside, np.inf)
+
+
+def _pairs_within(point_set: Any, max_radius: float, use_tree: bool) -> tuple[Any, Any]:
+    """Index arrays ``(i, j)`` of every unordered pair of points with ``i < j`` at distance <= ``max_radius``."""
+    if use_tree:
+        pairs = KDTree(point_set).query_pairs(r=max_radius, output_type="ndarray")
+        return pairs[:, 0], pairs[:, 1]
+
+    first: list[Any] = []
+    second: list[Any] = []
+    for a in range(len(point_set) - 1):
+        distances = np.linalg.norm(point_set[a + 1 :] - point_set[a], axis=1)
+        hits = np.flatnonzero(distances <= max_radius) + a + 1
+        first.append(np.full(len(hits), a))
+        second.append(hits)
+    if not first:
+        return np.empty(0, dtype=int), np.empty(0, dtype=int)
+    return np.concatenate(first), np.concatenate(second)
+
+
+def _ripley_pair_sums(
+    point_set: Any,
+    radii: Any,
+    window: tuple[float, float, float, float],
+    edge_correction: str,
+    use_tree: bool,
+) -> Any:
+    """For each radius r, the sum over ordered pairs (i, j), i != j, with d_ij <= r of the pair's weight."""
+    i, j = _pairs_within(point_set, float(radii.max()), use_tree)
+    if len(i) == 0:
+        return np.zeros(len(radii), dtype=np.float64)
+
+    distance = np.linalg.norm(point_set[i] - point_set[j], axis=1)
+    if edge_correction == "isotropic":
+        # the ordered pair (i, j) is weighted by the circle about i, and (j, i) by the circle about j
+        weights = _isotropic_edge_weights(point_set[i, 0], point_set[i, 1], distance, window)
+        weights = weights + _isotropic_edge_weights(point_set[j, 0], point_set[j, 1], distance, window)
+    else:
+        weights = np.full(len(distance), 2.0)
+
+    order = np.argsort(distance)
+    cumulative = np.cumsum(weights[order])
+    n_within = np.searchsorted(distance[order], radii, side="right")
+    return np.where(n_within > 0, cumulative[np.maximum(n_within - 1, 0)], 0.0)
+
+
 def ripley_k(
     points: Any,
     radii: Any,
@@ -478,6 +558,7 @@ def ripley_k(
     *,
     n_simulations: int = 99,
     seed: int = 42,
+    edge_correction: Literal["isotropic", "none"] = "isotropic",
 ) -> RipleyKResult:
     """Compute Ripley's K function for spatial point pattern analysis.
 
@@ -489,25 +570,44 @@ def ripley_k(
     which is centered at 0 under CSR. Positive L(r) indicates clustering,
     negative indicates regularity/inhibition.
 
-    Uses Ripley's isotropic edge correction.
+    By default Ripley's isotropic edge correction is applied, for every number of points: each ordered pair
+    (i, j) at distance d_ij <= r counts with weight 1 / (share of the circle of radius d_ij about point i
+    that lies inside the study window), the exact share for a rectangle, so that
+    ``K(r) = area / (n (n - 1)) * sum of the weights``. The window is the bounding box of ``points``.
+    ``edge_correction="none"`` counts every pair with weight 1 instead, which is biased low near the
+    window boundary. Keep the radii well below half the shorter side of the window (a quarter is a
+    common rule): the weights grow quickly beyond that. Memory grows with the number of point pairs
+    within the largest radius.
 
     Args:
         points: Point coordinates (n x 2).
         radii: Array of radii at which to evaluate K.
-        area: Total study area (e.g., bounding box area).
-        n_simulations: Number of CSR simulations for confidence envelope.
+        area: Total study area (e.g., bounding box area). It sets the intensity only; the edge-correction
+            window is always the bounding box of ``points``.
+        n_simulations: Number of CSR simulations (uniform in the bounding box, with the same edge
+            correction) for the confidence envelope.
         seed: Random seed.
+        edge_correction: ``"isotropic"`` (default) or ``"none"``.
 
     Returns:
         RipleyKResult with K values, L values, and CSR envelope.
+
+    Raises:
+        ValueError: If ``edge_correction`` is unknown, ``radii`` is empty or negative, or the isotropic
+            correction is requested for points with no extent in x or in y (no window to correct for).
     """
     if np is None:
         raise ImportError("NumPy is required: uv pip install numpy")
+    if edge_correction not in ("isotropic", "none"):
+        raise ValueError(f"Unknown edge_correction {edge_correction!r}: use 'isotropic' or 'none'")
 
     rng = np.random.RandomState(seed)
     pts = np.asarray(points, dtype=np.float64)
     r_arr = np.asarray(radii, dtype=np.float64)
     n = pts.shape[0]
+
+    if r_arr.size == 0 or float(r_arr.min()) < 0.0:
+        raise ValueError("radii must be a non-empty array of non-negative values")
 
     if n < 2:
         return RipleyKResult(
@@ -518,66 +618,20 @@ def ripley_k(
             area=area,
         )
 
-    # Bounding box for edge correction
+    # Bounding box: the window for edge correction and for the CSR simulations
     x_min, y_min = pts.min(axis=0)
     x_max, y_max = pts.max(axis=0)
+    if edge_correction == "isotropic" and not (x_max > x_min and y_max > y_min):
+        raise ValueError(
+            "the points have no extent in x or in y, so there is no study window to correct for; "
+            "use edge_correction='none' for such a pattern"
+        )
+    window = (float(x_min), float(x_max), float(y_min), float(y_max))
+    use_tree = KDTree is not None
 
     def _compute_k(point_set: Any, n_pts: int) -> Any:
-        """Compute K(r) for a set of points with isotropic edge correction."""
-        k_values = np.zeros(len(r_arr), dtype=np.float64)
-
-        # Compute all pairwise distances
-        # For efficiency, use KDTree
-        if KDTree is not None and n_pts > 100:
-            tree = KDTree(point_set)
-            max_r = r_arr.max()
-
-            for i in range(n_pts):
-                # Edge correction weight: proportion of circle at distance d
-                # that falls within the study area (simplified rectangular correction)
-                nbrs = tree.query_ball_point(point_set[i], max_r)
-
-                for j in nbrs:
-                    if i == j:
-                        continue
-                    d = np.linalg.norm(point_set[i] - point_set[j])
-
-                    # Ripley isotropic edge correction for rectangle
-                    # Weight = 1 / (fraction of circle of radius d centered at point_i
-                    #          that lies within the study area)
-                    # Simplified: use inverse of border correction
-                    xi, yi = point_set[i]
-                    dist_to_border = min(
-                        xi - x_min,
-                        x_max - xi,
-                        yi - y_min,
-                        y_max - yi,
-                    )
-                    if d <= dist_to_border:
-                        weight = 1.0
-                    else:
-                        # Approximate edge correction
-                        weight = min(2.0, area / (area - np.pi * (d - dist_to_border) ** 2 / 4.0))
-                        weight = max(weight, 1.0)
-
-                    for ri, r in enumerate(r_arr):
-                        if d <= r:
-                            k_values[ri] += weight
-
-        else:
-            # Brute force for small datasets
-            for i in range(n_pts):
-                for j in range(n_pts):
-                    if i == j:
-                        continue
-                    d = np.linalg.norm(point_set[i] - point_set[j])
-                    for ri, r in enumerate(r_arr):
-                        if d <= r:
-                            k_values[ri] += 1.0
-
-        # Normalize: K(r) = area / (n * (n-1)) * sum of weights
-        k_values = (area / (n_pts * (n_pts - 1))) * k_values
-        return k_values
+        """K(r) = area / (n (n - 1)) * sum of the pair weights."""
+        return (area / (n_pts * (n_pts - 1))) * _ripley_pair_sums(point_set, r_arr, window, edge_correction, use_tree)
 
     # Observed K
     k_observed = _compute_k(pts, n)

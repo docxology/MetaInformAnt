@@ -8,6 +8,7 @@ to be compatible with AnnData structures while providing graceful fallbacks.
 from __future__ import annotations
 
 import importlib
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
@@ -86,7 +87,11 @@ class SingleCellData:
         return (int(self.X.shape[0]), int(self.X.shape[1]))
 
     def copy(self) -> SingleCellData:
-        """Create a copy of the data."""
+        """Create an independent copy of the data.
+
+        ``uns`` is copied recursively: its nested dictionaries (for example ``uns["qc_summary"]``) are
+        not shared with the original, so editing them on the copy never changes the source object.
+        """
         # Handle sparse matrix copy properly
         if hasattr(self.X, "copy"):
             X_copy = self.X.copy()
@@ -96,7 +101,7 @@ class SingleCellData:
             X=X_copy,
             obs=self.obs.copy() if self.obs is not None else None,
             var=self.var.copy() if self.var is not None else None,
-            uns=self.uns.copy(),
+            uns=deepcopy(self.uns),
             obsm={k: v.copy() for k, v in self.obsm.items()} if self.obsm else None,
             varm={k: v.copy() for k, v in self.varm.items()} if self.varm else None,
             obsp={k: v.copy() for k, v in self.obsp.items()} if self.obsp else None,
@@ -123,8 +128,11 @@ def load_count_matrix(filepath: str | Path, format: str = "h5ad", **kwargs: Any)
         SingleCellData object
 
     Raises:
-        FileNotFoundError: If file doesn't exist
-        ValueError: If format is unsupported
+        ValidationError: If the file does not exist or is not a file, or ``format`` is unsupported
+        ConfigError: If ``format="h5ad"`` and anndata is not installed
+        IOError: ``metainformant.core.utils.errors.IOError`` (not the builtin) if the file cannot be read or parsed; it
+            wraps the underlying exception, including the ``ValueError`` of a Matrix Market load without ``genes_file``
+            and ``barcodes_file``
     """
     filepath = Path(filepath)
     validation.validate_path_is_file(filepath, "count matrix file")
@@ -218,6 +226,32 @@ def _annadata_to_singlecelldata(adata: Any) -> SingleCellData:
     )
 
 
+#: ``data.var`` columns written by :func:`calculate_qc_metrics` that describe the cells in the matrix.
+_GENE_QC_COLUMNS = ("n_cells", "total_counts", "mean_expression", "pct_dropout")
+
+
+def _gene_qc_metrics(X: Any) -> Dict[str, np.ndarray]:
+    """Per-gene QC metrics of a cells x genes matrix (dense or sparse), keyed by ``var`` column name."""
+    X_dense = X.toarray() if hasattr(X, "toarray") else X
+    n_obs = X_dense.shape[0]
+
+    n_cells = np.sum(X_dense > 0, axis=0)  # Number of cells expressing each gene
+    total_counts = np.sum(X_dense, axis=0)  # Total counts per gene
+    if n_obs == 0:
+        # No cells left: the ratios are undefined, and an empty mean would emit a RuntimeWarning
+        mean_expression = np.full(X_dense.shape[1], np.nan)
+        pct_dropout = np.full(X_dense.shape[1], np.nan)
+    else:
+        mean_expression = np.mean(X_dense, axis=0)
+        pct_dropout = 100 * (1 - n_cells / n_obs)
+    return {
+        "n_cells": n_cells,
+        "total_counts": total_counts,
+        "mean_expression": mean_expression,
+        "pct_dropout": pct_dropout,
+    }
+
+
 def calculate_qc_metrics(data: SingleCellData) -> SingleCellData:
     """Calculate quality control metrics for single-cell data.
 
@@ -228,7 +262,7 @@ def calculate_qc_metrics(data: SingleCellData) -> SingleCellData:
         SingleCellData with QC metrics added to obs
 
     Raises:
-        TypeError: If data is not SingleCellData
+        ValidationError: If data is not SingleCellData
     """
     validation.validate_type(data, SingleCellData, "data")
 
@@ -266,10 +300,7 @@ def calculate_qc_metrics(data: SingleCellData) -> SingleCellData:
             pct_ribo = np.nan_to_num(pct_ribo, nan=0.0)
 
     # Per-gene metrics
-    n_cells = np.sum(X_dense > 0, axis=0)  # Number of cells expressing each gene
-    gene_total_counts = np.sum(X_dense, axis=0)  # Total counts per gene
-    mean_expression = np.mean(X_dense, axis=0)
-    pct_dropout = 100 * (1 - n_cells / data.n_obs)
+    gene_metrics = _gene_qc_metrics(X_dense)
 
     # Add to obs (cell metrics)
     result.obs = result.obs.copy() if result.obs is not None else pd.DataFrame()
@@ -280,10 +311,8 @@ def calculate_qc_metrics(data: SingleCellData) -> SingleCellData:
 
     # Add to var (gene metrics)
     result.var = result.var.copy() if result.var is not None else pd.DataFrame()
-    result.var["n_cells"] = n_cells
-    result.var["total_counts"] = gene_total_counts
-    result.var["mean_expression"] = mean_expression
-    result.var["pct_dropout"] = pct_dropout
+    for column in _GENE_QC_COLUMNS:
+        result.var[column] = gene_metrics[column]
 
     # Store summary statistics in uns
     result.uns["qc_summary"] = {
@@ -321,10 +350,13 @@ def filter_cells(
         max_mito_percent: Alias for max_pct_mt (deprecated)
 
     Returns:
-        Filtered SingleCellData
+        Filtered SingleCellData. The per-gene QC columns already present in ``var`` (``n_cells``,
+        ``total_counts``, ``mean_expression``, ``pct_dropout``) are recomputed on the retained cells, so
+        a later :func:`filter_genes` reads current values; other annotations are carried over. ``uns``
+        is copied recursively, so the input object is never modified.
 
     Raises:
-        TypeError: If data is not SingleCellData
+        ValidationError: If data is not SingleCellData
     """
     validation.validate_type(data, SingleCellData, "data")
 
@@ -367,7 +399,7 @@ def filter_cells(
         X=X_filtered,
         obs=data.obs.iloc[keep_cells].copy() if data.obs is not None else None,
         var=data.var.copy() if data.var is not None else None,
-        uns=data.uns.copy(),
+        uns=deepcopy(data.uns),
         # Preserve per-cell annotations, row-subsetting where needed
         obsm={k: v[keep_cells] for k, v in data.obsm.items()} if data.obsm else None,
         varm={k: v.copy() for k, v in data.varm.items()} if data.varm else None,
@@ -375,6 +407,13 @@ def filter_cells(
         varp={k: v.copy() for k, v in data.varp.items()} if data.varp else None,
         layers={k: v[keep_cells] for k, v in data.layers.items()} if data.layers else None,
     )
+
+    # The per-gene QC columns were computed over every cell, including the ones just removed
+    stale_gene_columns = [column for column in _GENE_QC_COLUMNS if column in result.var.columns]
+    if stale_gene_columns:
+        refreshed = _gene_qc_metrics(X_filtered)
+        for column in stale_gene_columns:
+            result.var[column] = refreshed[column]
 
     # Update QC summary
     if "qc_summary" in result.uns:
@@ -404,7 +443,7 @@ def filter_genes(
         Filtered SingleCellData
 
     Raises:
-        TypeError: If data is not SingleCellData
+        ValidationError: If data is not SingleCellData
     """
     validation.validate_type(data, SingleCellData, "data")
 
@@ -441,7 +480,7 @@ def filter_genes(
         X=X_filtered,
         obs=data.obs.copy() if data.obs is not None else None,
         var=data.var.iloc[keep_genes].copy() if data.var is not None else None,
-        uns=data.uns.copy(),
+        uns=deepcopy(data.uns),
         # Preserve per-gene annotations, column-subsetting where needed
         obsm={k: v.copy() for k, v in data.obsm.items()} if data.obsm else None,
         varm=(
@@ -477,10 +516,13 @@ def normalize_counts(
         normalize_method: Deprecated alias for method
 
     Returns:
-        Normalized SingleCellData
+        Normalized SingleCellData. ``uns["normalization"]["size_factors"]`` holds one divisor per cell
+        for every method (the library size for "total_count"/"total" and "median", the median-of-ratios
+        size factor for "size_factors"), so ``X_normalized == X / size_factors[:, None] * target_sum``
+        whichever method was used. Cells whose size factor is zero are set to zero.
 
     Raises:
-        TypeError: If data is not SingleCellData
+        ValidationError: If data is not SingleCellData
         ValueError: If method is invalid
     """
     validation.validate_type(data, SingleCellData, "data")
@@ -500,8 +542,9 @@ def normalize_counts(
 
     # Convert to dense if needed
     X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
-    X_normalized = X.astype(float)
 
+    # Every method yields one divisor per cell (size_factors) and a target scale (target_sum);
+    # the normalized matrix is X / size_factors * target_sum.
     if method in ["total_count", "total"]:
         # Library size normalization
         lib_sizes = np.sum(X, axis=1)
@@ -509,22 +552,15 @@ def normalize_counts(
         if target_sum is None:
             target_sum = np.median(lib_sizes[lib_sizes > 0]) if np.any(lib_sizes > 0) else 1.0
 
-        # Normalize to target sum (avoid division by zero)
-        with np.errstate(divide="ignore", invalid="ignore"):
-            size_factors = target_sum / lib_sizes
-            size_factors = np.where(np.isfinite(size_factors), size_factors, 0)
-        X_normalized = X * size_factors[:, np.newaxis]
+        size_factors = lib_sizes.astype(float)
 
     elif method == "median":
         # Median normalization
         lib_sizes = np.sum(X, axis=1)
         median_lib_size = np.median(lib_sizes[lib_sizes > 0]) if np.any(lib_sizes > 0) else 1.0
 
-        with np.errstate(divide="ignore", invalid="ignore"):
-            size_factors = median_lib_size / lib_sizes
-            size_factors = np.where(np.isfinite(size_factors), size_factors, 0)
-        X_normalized = X * size_factors[:, np.newaxis]
         target_sum = median_lib_size
+        size_factors = lib_sizes.astype(float)
 
     elif method == "size_factors":
         # Estimate size factors using geometric mean of gene expression
@@ -541,10 +577,11 @@ def normalize_counts(
         if target_sum is None:
             target_sum = np.median(size_factors[size_factors > 0]) if np.any(size_factors > 0) else 1.0
 
-        with np.errstate(divide="ignore", invalid="ignore"):
-            scale = target_sum / size_factors
-            scale = np.where(np.isfinite(scale), scale, 0)
-        X_normalized = X * scale[:, np.newaxis]
+    # Scale each cell to the target sum (cells with a zero size factor become all zeros)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        scale = target_sum / size_factors
+        scale = np.where(np.isfinite(scale), scale, 0)
+    X_normalized = X * scale[:, np.newaxis]
 
     # Store normalization info
     result.uns["normalization"] = {
@@ -569,8 +606,7 @@ def log_transform(data: SingleCellData, base: float = np.e) -> SingleCellData:
         Log-transformed SingleCellData
 
     Raises:
-        TypeError: If data is not SingleCellData
-        ValueError: If base is invalid
+        ValidationError: If data is not SingleCellData or base is not positive or is 1
     """
     validation.validate_type(data, SingleCellData, "data")
 
@@ -625,7 +661,7 @@ def scale_data(data: SingleCellData, zero_center: bool = True, max_value: float 
         Scaled SingleCellData
 
     Raises:
-        TypeError: If data is not SingleCellData
+        ValidationError: If data is not SingleCellData
     """
     validation.validate_type(data, SingleCellData, "data")
 
@@ -681,8 +717,7 @@ def identify_highly_variable_genes(
         SingleCellData with highly variable genes marked
 
     Raises:
-        TypeError: If data is not SingleCellData
-        ValueError: If flavor is invalid
+        ValidationError: If data is not SingleCellData or flavor is not 'seurat' or 'cell_ranger'
     """
     validation.validate_type(data, SingleCellData, "data")
 
@@ -761,8 +796,7 @@ def remove_batch_effects(data: SingleCellData, batch_key: str, method: str = "re
         Batch-corrected SingleCellData
 
     Raises:
-        TypeError: If data is not SingleCellData
-        ValueError: If batch_key not found or method invalid
+        ValidationError: If data is not SingleCellData, method is unsupported or batch_key is not in data.obs
     """
     validation.validate_type(data, SingleCellData, "data")
 

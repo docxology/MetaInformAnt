@@ -45,6 +45,23 @@ try:
 except ImportError:
     CLUSTERING_AVAILABLE = False
 
+# Helpers in singlecell.io that stand for R / pySCENIC tools metainformant does not run:
+# name -> (builder of the call's positional arguments under a root directory, text the error must contain)
+_UNWRAPPED_TOOL_HELPERS = {
+    "run_seurat_integration": (lambda r: ({"s1": r / "s1"}, r / "out" / "seurat"), "Seurat"),
+    "run_differential_expression": (lambda r: (r / "in.rds", r / "out" / "de.csv", "A_vs_B"), "FindMarkers"),
+    "run_scenic_grnboost2": (lambda r: (r / "x.loom", r / "tf.txt", r / "out" / "adj.csv"), "pyscenic grn"),
+    "run_scenic_cistarget": (
+        lambda r: (r / "x.loom", r / "adj.csv", r / "db.feather", r / "motifs.tbl", r / "out" / "reg.csv"),
+        "pyscenic ctx",
+    ),
+    "run_scenic_aucell": (lambda r: (r / "x.loom", r / "reg.csv", r / "out" / "auc.loom"), "pyscenic aucell"),
+    "filter_regulons_post_scenic": (lambda r: (r / "reg.csv", r / "out" / "kept.csv", r / "raw.csv"), "regulon"),
+    "run_pseudotime_trajectory": (lambda r: (r / "in.rds", r / "out" / "traj.rds", "root"), "Monocle3"),
+    "run_go_enrichment": (lambda r: (r / "de.csv", r / "out" / "go", "human"), "clusterProfiler"),
+    "run_shinycell_export": (lambda r: (r / "in.rds", r / "out" / "shiny"), "ShinyCell"),
+}
+
 
 @pytest.mark.skipif(not PREPROCESSING_AVAILABLE, reason="singlecell.preprocessing not available")
 class TestSingleCellPreprocessing:
@@ -323,25 +340,21 @@ class TestSingleCellClustering:
         self.true_clusters = np.array(self.true_clusters)
 
     def test_leiden_clustering_basic(self):
-        """Test Leiden clustering."""
+        """Leiden clustering of a feature matrix (skipped where the Leiden stack is not installed)."""
         try:
             cluster_labels = leiden_clustering(feature_matrix=self.feature_matrix, resolution=0.5)
-
-            # Should return cluster labels for all cells
-            assert len(cluster_labels) == self.n_cells
-            assert np.all(cluster_labels >= 0)
-
-            # Should identify reasonable number of clusters
-            n_clusters = len(np.unique(cluster_labels))
-            assert 1 <= n_clusters <= self.n_cells
-            assert n_clusters <= 10  # Reasonable upper bound
-
         except ImportError:
-            # Skip if required dependencies not available
+            # Only a missing dependency skips; any other failure (including a failed assertion) is real
             pytest.skip("Leiden clustering dependencies not available")
-        except Exception:
-            # Skip if other issues
-            pytest.skip("Leiden clustering failed")
+
+        # Should return cluster labels for all cells
+        assert len(cluster_labels) == self.n_cells
+        assert np.all(cluster_labels >= 0)
+
+        # Should identify reasonable number of clusters
+        n_clusters = len(np.unique(cluster_labels))
+        assert 1 <= n_clusters <= self.n_cells
+        assert n_clusters <= 10  # Reasonable upper bound
 
     def test_find_markers_basic(self):
         """Test marker gene identification."""
@@ -514,10 +527,23 @@ class TestIoUtilities:
         assert fetched == [tmp_path / "Li-2022"]
         assert (tmp_path / "Li-2022").is_dir()
 
-    def test_run_seurat_integration_creates_placeholder(self, tmp_path):
-        """The Seurat integration stub creates its output path."""
+    @pytest.mark.parametrize("name", sorted(_UNWRAPPED_TOOL_HELPERS))
+    def test_unwrapped_tool_helpers_raise_and_create_nothing(self, tmp_path, name):
+        """Helpers for R and pySCENIC tools fail loudly instead of leaving an empty output that looks real."""
+        import metainformant.singlecell as singlecell
+
+        build_args, tool = _UNWRAPPED_TOOL_HELPERS[name]
+        with pytest.raises(NotImplementedError, match=tool):
+            getattr(singlecell, name)(*build_args(tmp_path))
+
+        assert list(tmp_path.rglob("*")) == []  # no placeholder file or directory anywhere
+
+    def test_unwrapped_tool_helper_message_names_the_function_and_a_way_forward(self, tmp_path):
         from metainformant.singlecell import io as singlecell_io
 
-        out = singlecell_io.run_seurat_integration({"s1": tmp_path}, tmp_path / "out")
-        assert out == tmp_path / "out" / "integrated.rds"
-        assert out.exists()
+        with pytest.raises(NotImplementedError) as excinfo:
+            singlecell_io.run_seurat_integration({"s1": tmp_path}, tmp_path / "out")
+
+        message = str(excinfo.value)
+        assert message.startswith("run_seurat_integration() is not implemented")
+        assert "metainformant.singlecell.data.integration" in message

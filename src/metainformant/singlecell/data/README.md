@@ -13,12 +13,12 @@ Data loading, preprocessing, QC filtering, normalization, and batch integration 
 
 | Symbol | Description |
 |--------|-------------|
-| `SingleCellData` | Core data container for count matrix, metadata, and embeddings |
+| `SingleCellData` | Core data container for count matrix, metadata, and embeddings; `copy()` copies `uns` recursively |
 | `load_count_matrix()` | Load from h5ad, CSV, or MTX format |
 | `calculate_qc_metrics()` | Compute mitochondrial %, gene counts, total UMIs |
-| `filter_cells()` | Remove low-quality cells by QC thresholds |
+| `filter_cells()` | Remove low-quality cells by QC thresholds; recomputes the per-gene QC columns already in `var` on the retained cells and copies `uns` recursively. The cell-indexed `uns["neighbors"]` is not updated, so recompute the neighbor graph afterwards |
 | `filter_genes()` | Remove lowly expressed genes |
-| `normalize_counts()` | Library size normalization (also `median`, `size_factors` methods) |
+| `normalize_counts()` | Library size normalization (also `median`, `size_factors` methods); `uns["normalization"]["size_factors"]` holds one divisor per cell for every method, so `X_norm == X / size_factors * target_sum` |
 | `log_transform()` | Log1p transformation with configurable base |
 | `scale_data()` | Z-score standardization with optional clipping |
 | `identify_highly_variable_genes()` | Select HVGs for downstream analysis |

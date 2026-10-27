@@ -1,8 +1,12 @@
 """Trajectory inference methods for single-cell data.
 
 This module provides functions for inferring developmental trajectories and
-pseudotemporal ordering from single-cell expression data. Methods include
-diffusion pseudotime, DPT, PAGA, and simplified trajectory reconstruction.
+pseudotemporal ordering from single-cell expression data.
+
+Diffusion pseudotime (:func:`compute_diffusion_pseudotime`, :func:`dpt_trajectory`) implements the DPT
+algorithm of Haghverdi et al. (2016). The cluster-level functions (PAGA-style connectivity,
+Slingshot-style paths) and the embedding-based pseudotime are simplified approximations; see their
+docstrings.
 """
 
 from __future__ import annotations
@@ -11,9 +15,13 @@ from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
+from scipy import sparse
+from scipy.sparse.csgraph import connected_components
+from scipy.sparse.linalg import eigsh
 
 from metainformant.core.data import validation
 from metainformant.core.utils import errors, logging
+from metainformant.singlecell.analysis.nonlinear_methods import compute_neighbors
 from metainformant.singlecell.data.preprocessing import SingleCellData
 
 # Optional scientific dependencies
@@ -27,25 +35,111 @@ except ImportError:
 
 logger = logging.get_logger(__name__)
 
+# Eigenproblems up to this many cells use the dense symmetric solver (exact, and fast at this size);
+# larger ones ask ARPACK for just the leading eigenpairs.
+_DENSE_EIGEN_LIMIT = 1000
+
+
+def _default_root_cell(X: np.ndarray) -> int:
+    """Heuristic root: the cell with the largest gene-variance-weighted expression sum.
+
+    This is only a convenience default for callers who give no ``root_cell``. DPT measures distance
+    *from* the root, so the direction of the pseudotime is whatever this guess (or the caller) says.
+    """
+    variances = np.var(X, axis=0)
+    return int(np.argmax(np.sum(X * variances, axis=1)))
+
+
+def _dpt_transition_operator(affinities: sparse.csr_matrix) -> sparse.csr_matrix:
+    """Symmetrised, density-normalised random-walk operator ``Z K Z`` of a connected affinity graph.
+
+    ``K = D^-1 W D^-1`` (Coifman & Lafon, alpha = 1) removes the dependence on how densely the cells were
+    sampled, and ``Z`` holds the inverse square roots of the row sums of ``K``. The operator has the same
+    eigenvalues as the transition matrix ``T`` of the random walk on ``K``; its eigenvectors are
+    orthonormal.
+    """
+    degree = np.asarray(affinities.sum(axis=1)).ravel()
+    inverse_degree = sparse.diags(1.0 / degree)
+    density_normalised = inverse_degree @ affinities @ inverse_degree
+    inverse_root = sparse.diags(1.0 / np.sqrt(np.asarray(density_normalised.sum(axis=1)).ravel()))
+    return sparse.csr_matrix(inverse_root @ density_normalised @ inverse_root)
+
+
+def _leading_eigenpairs(operator: sparse.csr_matrix, k: int) -> tuple[np.ndarray, np.ndarray]:
+    """The ``k`` algebraically largest eigenpairs of a symmetric matrix, largest eigenvalue first."""
+    n = operator.shape[0]
+    if n <= _DENSE_EIGEN_LIMIT or k >= n - 1:
+        values, vectors = np.linalg.eigh(operator.toarray())
+    else:
+        # Fixed start vector: ARPACK's own default is drawn from internal state that changes between calls
+        values, vectors = eigsh(operator, k=k, which="LA", v0=np.random.default_rng(0).standard_normal(n))
+    order = np.argsort(values)[::-1][:k]
+    return values[order], vectors[:, order]
+
+
+def _dpt_distances(operator: sparse.csr_matrix, root: int, n_components: int) -> tuple[np.ndarray, np.ndarray]:
+    """DPT distances from ``root`` to every cell, and the eigenvalues they were built from.
+
+    With eigenvalues ``lambda_i`` and orthonormal eigenvectors ``psi_i`` of the transition operator, the
+    distance between cells x and y is ``sqrt(sum_i (lambda_i / (1 - lambda_i))**2 * (psi_i(x) - psi_i(y))**2)``
+    over the leading non-trivial eigenvectors: the Euclidean distance between the rows of the accumulated
+    transition matrix ``M = sum_{t>=1} (T**t - steady state)`` (Haghverdi et al., 2016). The trivial
+    eigenvector (eigenvalue 1, the steady state) is excluded.
+    """
+    n = operator.shape[0]
+    values, vectors = _leading_eigenpairs(operator, min(n_components + 1, n))
+    values, vectors = values[1:], vectors[:, 1:]
+    # lambda / (1 - lambda); an eigenvalue indistinguishable from 1 would otherwise divide by zero
+    weights = values / (1.0 - np.minimum(values, 1.0 - 1e-12))
+    differences = (vectors - vectors[root]) * weights
+    return np.sqrt(np.sum(differences**2, axis=1)), values
+
 
 def compute_diffusion_pseudotime(
-    data: SingleCellData, root_cell: int | None = None, n_components: int = 10
+    data: SingleCellData,
+    root_cell: int | None = None,
+    n_components: int = 10,
+    *,
+    n_neighbors: int = 15,
 ) -> SingleCellData:
-    """Compute diffusion pseudotime for trajectory inference.
+    """Compute diffusion pseudotime (DPT) for trajectory inference.
+
+    Implements Haghverdi et al. (2016, Nature Methods 13:845). The cells are connected by a
+    k-nearest-neighbour graph with Gaussian affinities: the graph in ``data.uns["neighbors"]`` when there
+    is one (see :func:`~metainformant.singlecell.analysis.nonlinear_methods.compute_neighbors`),
+    otherwise one built from ``data.X`` with ``n_neighbors`` neighbours and stored in the returned
+    object. The affinities are density-normalised into a random-walk transition matrix ``T``. The DPT
+    distance between two cells is the Euclidean distance between their rows of the accumulated transition
+    matrix ``sum_{t>=1} (T**t - steady state)``, evaluated on the leading ``n_components`` non-trivial
+    eigenvectors of ``T``. The pseudotime of a cell is its DPT distance from the root cell, divided by
+    the largest such distance, so it spans [0, 1] with the root at 0.
+
+    Because the distance follows the graph, pseudotime keeps increasing along a curved trajectory, where
+    the straight-line (Euclidean) distance from the root would turn back.
 
     Args:
         data: SingleCellData object with expression matrix
-        root_cell: Index of root cell (starting point of trajectory)
-        n_components: Number of diffusion components to compute
+        root_cell: Index of root cell (starting point of trajectory). When omitted, a heuristic picks one
+            (the cell with the largest gene-variance-weighted expression sum) and the pseudotime
+            direction is only as meaningful as that guess; the chosen cell is recorded in
+            ``uns["dpt"]["root_cell"]``.
+        n_components: Number of non-trivial diffusion components (eigenvectors) in the DPT distance
+        n_neighbors: Neighbours per cell for the graph that is built when ``data.uns["neighbors"]`` is
+            absent
 
     Returns:
-        SingleCellData with pseudotime added to obs
+        SingleCellData with ``obs["dpt_pseudotime"]`` and ``uns["dpt"]``. Cells that the neighbour graph
+        does not connect to the root cell have no finite distance to it and get ``inf``
+        (``uns["dpt"]["n_unreachable"]`` counts them).
 
     Raises:
-        TypeError: If data is not SingleCellData
-        ValueError: If root_cell is invalid
+        ValidationError: If data is not SingleCellData; if root_cell, n_components or n_neighbors is out of range; or if
+            ``uns["neighbors"]`` lacks ``connectivities``, does not match the number of cells (a stale graph: recompute
+            it with ``compute_neighbors``) or holds negative affinities
     """
     validation.validate_type(data, SingleCellData, "data")
+    validation.validate_range(n_components, min_val=1, name="n_components")
+    validation.validate_range(n_neighbors, min_val=1, name="n_neighbors")
 
     if root_cell is not None:
         validation.validate_range(root_cell, min_val=0, max_val=data.n_obs - 1, name="root_cell")
@@ -54,45 +148,98 @@ def compute_diffusion_pseudotime(
 
     # Create copy
     result = data.copy()
+    n_cells = result.n_obs
 
-    # Get expression matrix
-    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
+    # Affinity graph between cells
+    if "neighbors" in result.uns:
+        neighbors_source = "uns"
+        if "connectivities" not in result.uns["neighbors"]:
+            raise errors.ValidationError(
+                "uns['neighbors'] has no 'connectivities' matrix: recompute it with compute_neighbors"
+            )
+        stored_shape = result.uns["neighbors"]["connectivities"].shape
+        if stored_shape != (n_cells, n_cells):
+            raise errors.ValidationError(
+                f"uns['neighbors'] describes {stored_shape[0]} cells but data has {n_cells}: "
+                "recompute it with compute_neighbors"
+            )
+    else:
+        neighbors_source = "X"
+        result = compute_neighbors(result, n_neighbors=min(n_neighbors, n_cells), use_rep="X", inplace=True)
+    # A private copy: eliminate_zeros() edits in place and must not touch the stored graph
+    affinities = sparse.csr_matrix(result.uns["neighbors"]["connectivities"], dtype=float, copy=True)
+    affinities.eliminate_zeros()
+    if affinities.nnz and affinities.data.min() < 0:
+        raise errors.ValidationError("uns['neighbors']['connectivities'] must not contain negative affinities")
 
-    # Compute diffusion map (simplified version)
-    pseudotime = _compute_simple_diffusion_pseudotime(X, root_cell, n_components)
+    # Root cell
+    if root_cell is None:
+        X = result.X.toarray() if hasattr(result.X, "toarray") else result.X
+        root_cell = _default_root_cell(X)
+        root_selection = "heuristic"
+    else:
+        root_selection = "user"
+
+    # Distances are only defined inside the root's connected component
+    _, component_labels = connected_components(affinities, directed=False)
+    component = np.flatnonzero(component_labels == component_labels[root_cell])
+    pseudotime = np.full(n_cells, np.inf)
+    eigenvalues = np.zeros(0)
+    if component.size == 1:
+        pseudotime[root_cell] = 0.0
+    else:
+        operator = _dpt_transition_operator(sparse.csr_matrix(affinities[component][:, component]))
+        distances, eigenvalues = _dpt_distances(operator, int(np.searchsorted(component, root_cell)), n_components)
+        farthest = float(distances.max())
+        pseudotime[component] = distances / farthest if farthest > 0 else 0.0
+
+    n_unreachable = int(n_cells - component.size)
+    if n_unreachable:
+        logger.warning(
+            f"{n_unreachable} cells are not connected to root cell {root_cell} in the neighbor graph; "
+            "their pseudotime is inf"
+        )
 
     # Add to obs
     result.obs = result.obs.copy() if result.obs is not None else pd.DataFrame()
     result.obs["dpt_pseudotime"] = pseudotime
 
     # Store metadata
+    reachable = pseudotime[np.isfinite(pseudotime)]
     result.uns["dpt"] = {
         "method": "diffusion_pseudotime",
         "root_cell": root_cell,
-        "n_components": n_components,
-        "min_pseudotime": float(np.min(pseudotime)),
-        "max_pseudotime": float(np.max(pseudotime)),
+        "root_selection": root_selection,
+        "n_components": int(eigenvalues.size),
+        "eigenvalues": eigenvalues.tolist(),
+        "n_neighbors": result.uns["neighbors"].get("params", {}).get("n_neighbors"),
+        "neighbors_source": neighbors_source,
+        "n_unreachable": n_unreachable,
+        "min_pseudotime": float(np.min(reachable)),
+        "max_pseudotime": float(np.max(reachable)),
     }
 
-    logger.info(f"Diffusion pseudotime computed: range [{np.min(pseudotime):.3f}, {np.max(pseudotime):.3f}]")
+    logger.info(f"Diffusion pseudotime computed: range [{np.min(reachable):.3f}, {np.max(reachable):.3f}]")
     return result
 
 
 def dpt_trajectory(data: SingleCellData, root_cell: int | None = None) -> SingleCellData:
     """Compute Diffusion Pseudotime (DPT) trajectory.
 
+    Runs :func:`compute_diffusion_pseudotime` with its default of 10 diffusion components and 15
+    neighbours; see there for the algorithm, the root-cell default and the ``inf`` convention.
+
     Args:
         data: SingleCellData object with expression matrix
         root_cell: Index of root cell (starting point of trajectory)
 
     Returns:
-        SingleCellData with DPT pseudotime and ordering
+        SingleCellData with ``obs["dpt_pseudotime"]`` and ``uns["dpt"]``
 
     Raises:
-        TypeError: If data is not SingleCellData
+        ValidationError: If data is not SingleCellData, root_cell is out of range, or the stored neighbour graph is
+            unusable (see :func:`compute_diffusion_pseudotime`)
     """
-    # For this implementation, DPT is similar to diffusion pseudotime
-    # In practice, DPT involves more sophisticated eigenvector analysis
     return compute_diffusion_pseudotime(data, root_cell, n_components=10)
 
 
@@ -107,8 +254,7 @@ def paga_trajectory(data: SingleCellData, groups: str) -> SingleCellData:
         SingleCellData with PAGA connectivity information
 
     Raises:
-        TypeError: If data is not SingleCellData
-        ValueError: If groups column not found
+        ValidationError: If data is not SingleCellData or the groups column is not in data.obs
     """
     validation.validate_type(data, SingleCellData, "data")
 
@@ -170,8 +316,8 @@ def slingshot_trajectory(data: SingleCellData, start_cluster: str, end_clusters:
         SingleCellData with trajectory pseudotime
 
     Raises:
-        TypeError: If data is not SingleCellData
-        ValueError: If cluster columns not found or invalid
+        ValidationError: If data is not SingleCellData, no cluster column is found in data.obs, or start_cluster or
+            end_cluster is not among the clusters
     """
     validation.validate_type(data, SingleCellData, "data")
 
@@ -234,17 +380,21 @@ def compute_pseudotime_from_dimensionality_reduction(
 ) -> SingleCellData:
     """Compute pseudotime from dimensionality reduction coordinates.
 
+    The pseudotime is the straight-line (Euclidean) distance from the root cell in the embedding,
+    scaled to [0, 1]. A shortest path over the complete graph of pairwise Euclidean distances is the
+    direct edge (triangle inequality), so this is not a geodesic along the data manifold and it turns
+    back on a curved trajectory; use :func:`compute_diffusion_pseudotime` for a graph-based pseudotime.
+
     Args:
         data: SingleCellData object with dimensionality reduction coordinates
         dim_red_cols: Column names containing the reduced dimensions
-        root_cell: Index of root cell
+        root_cell: Index of root cell (default: the cell closest to the origin of the embedding)
 
     Returns:
         SingleCellData with pseudotime computed from embedding
 
     Raises:
-        TypeError: If data is not SingleCellData
-        ValueError: If dimension columns not found
+        ValidationError: If data is not SingleCellData, has no obs, or lacks the dimension columns
     """
     validation.validate_type(data, SingleCellData, "data")
 
@@ -263,7 +413,7 @@ def compute_pseudotime_from_dimensionality_reduction(
     # Get embedding coordinates
     embedding = data.obs[dim_red_cols].values
 
-    # Compute pseudotime as geodesic distance from root
+    # Compute pseudotime as the Euclidean distance from the root cell
     if root_cell is None:
         # Choose cell with minimum norm as root
         norms = np.sum(embedding**2, axis=1)
@@ -274,7 +424,7 @@ def compute_pseudotime_from_dimensionality_reduction(
 
     distances = squareform(pdist(embedding, metric="euclidean"))
 
-    # Compute shortest path distances from root (simplified Dijkstra)
+    # Shortest paths over the complete distance graph: each is the direct edge, i.e. the Euclidean distance
     pseudotime = _compute_shortest_path_distances(distances, root_cell)
 
     # Normalize pseudotime to [0, 1]
@@ -287,7 +437,7 @@ def compute_pseudotime_from_dimensionality_reduction(
     result.uns["embedding_pseudotime"] = {
         "dim_red_cols": dim_red_cols,
         "root_cell": root_cell,
-        "method": "shortest_path",
+        "method": "euclidean_distance",
         "min_pseudotime": float(np.min(pseudotime)),
         "max_pseudotime": float(np.max(pseudotime)),
     }
@@ -308,8 +458,7 @@ def find_trajectory_branches(data: SingleCellData, pseudotime_col: str, min_bran
         Dictionary with branch information
 
     Raises:
-        TypeError: If data is not SingleCellData
-        ValueError: If pseudotime column not found
+        ValidationError: If data is not SingleCellData or the pseudotime column is not in data.obs
     """
     validation.validate_type(data, SingleCellData, "data")
 
@@ -356,8 +505,8 @@ def compute_trajectory_entropy(data: SingleCellData, pseudotime_col: str, window
         Dictionary with trajectory entropy information
 
     Raises:
-        TypeError: If data is not SingleCellData
-        ValueError: If pseudotime column not found
+        ValidationError: If data is not SingleCellData, the pseudotime column is not in data.obs, or window_size is not
+            between 1 and the number of cells
     """
     validation.validate_type(data, SingleCellData, "data")
 
@@ -414,24 +563,6 @@ def compute_trajectory_entropy(data: SingleCellData, pseudotime_col: str, window
 
     logger.info(f"Trajectory entropy computed: {len(differentiation_points)} differentiation points found")
     return result
-
-
-def _compute_simple_diffusion_pseudotime(X: np.ndarray, root_cell: int | None, n_components: int) -> np.ndarray:
-    """Compute simplified diffusion pseudotime."""
-    if root_cell is None:
-        # Choose cell with highest expression variance as root
-        variances = np.var(X, axis=0)
-        root_cell = int(np.argmax(np.sum(X * variances, axis=1)))
-
-    # Compute pairwise distances
-    from scipy.spatial.distance import pdist, squareform
-
-    distances = squareform(pdist(X, metric="euclidean"))
-
-    # Compute shortest path distances from root
-    pseudotime = _compute_shortest_path_distances(distances, root_cell)
-
-    return pseudotime
 
 
 def _compute_shortest_path_distances(distances: np.ndarray, root: int) -> np.ndarray:

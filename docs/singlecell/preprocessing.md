@@ -49,6 +49,8 @@ data = SingleCellData(X=X, obs=obs, var=var)
 
 `obs` and `var` must have one row per cell and per gene respectively, otherwise the constructor raises `ValueError`.
 
+`data.copy()` returns an independent object: the matrix, `obs`, `var`, `obsm`, `varm`, `obsp`, `varp` and `layers` are copied, and `uns` is copied recursively, so editing a nested entry such as `copy.uns["qc_summary"]` never changes `data`. The preprocessing functions below return new objects in the same way and leave their input untouched.
+
 ## Data Loading
 
 ### load_count_matrix()
@@ -142,6 +144,13 @@ data_filtered = filter_cells(
 
 There is no ribosomal-percentage filter; apply one yourself on the `pct_ribo` column if needed. When `data.obs` has no `total_counts` column (the only column it checks), `filter_cells` runs `calculate_qc_metrics` first and logs a warning.
 
+**What the filtered object holds:**
+
+- The matrix, `obs`, `obsm` and `layers` keep only the retained cells, and `obsp` keeps their rows and columns. `var`, `varm` and `varp` are carried over.
+- The per-gene QC columns already present in `data.var` (`n_cells`, `total_counts`, `mean_expression`, `pct_dropout`) are recomputed on the retained cells, so a later `filter_genes` reads current values (when no cell is left, `mean_expression` and `pct_dropout` are `NaN`). Other `var` annotations are carried over unchanged.
+- `uns` is copied recursively, so the input object is never modified. The cell-indexed `uns["neighbors"]` is not updated: it still describes the cells before filtering. Recompute the graph with `compute_neighbors` afterwards (diffusion pseudotime raises an error on a graph with the wrong number of cells).
+- `uns["qc_summary"]`, when present, gains `cells_after_filtering` and `cells_filtered`.
+
 ### filter_genes()
 
 Filter genes based on detection across cells:
@@ -157,7 +166,9 @@ data_filtered = filter_genes(
 )
 ```
 
-**Parameters:** `min_cells`, `max_cells`, `min_counts` and `max_counts` (all optional). They are compared with the per-gene `n_cells` and `total_counts` columns of `data.var` written by `calculate_qc_metrics`. `filter_cells` does not refresh those columns, so call `calculate_qc_metrics` again after filtering cells if the gene thresholds should refer to the remaining cells only.
+**Parameters:** `min_cells`, `max_cells`, `min_counts` and `max_counts` (all optional). They are compared with the per-gene `n_cells` and `total_counts` columns of `data.var` written by `calculate_qc_metrics`; when `data.var` has no `n_cells` column, `filter_genes` runs `calculate_qc_metrics` first and logs a warning. `filter_cells` recomputes those columns on the retained cells, so after `filter_cells` the gene thresholds refer to the remaining cells without another `calculate_qc_metrics` call.
+
+The result keeps only the retained genes in the matrix, `var`, `varm` and `layers`; `uns` is copied recursively, and `uns["qc_summary"]`, when present, gains `genes_after_filtering` and `genes_filtered`.
 
 ## Normalization
 
@@ -188,6 +199,14 @@ data_norm = normalize_counts(data, method='size_factors')
 - `'size_factors'`: Divide each cell by a simplified median-of-ratios size factor, then multiply by `target_sum` (default: the median of the positive size factors)
 
 An unknown method raises `ValueError`; passing precomputed scaling factors is not supported. The result holds a dense array in `X` even for sparse input, and `data_norm.uns["normalization"]` records `method`, `target_sum` and `size_factors`.
+
+**The size factors are divisors, the same way for every method.** `uns["normalization"]["size_factors"]` holds one value per cell: the library size (the row sum of the counts) for `'total_count'`/`'total'` and `'median'`, and the median-of-ratios size factor for `'size_factors'`. Whichever method was used,
+
+```
+X_normalized == X / size_factors[:, None] * target_sum
+```
+
+with `target_sum` read from `uns["normalization"]["target_sum"]`. Cells whose size factor is zero (for example empty cells) are set to all zeros. The array is stored as a plain list of floats, one per cell; use `numpy.asarray` to divide by it.
 
 ### log_transform()
 
@@ -258,8 +277,7 @@ print("Before filtering:")
 print(f"  Cells: {data.n_obs}")
 print(f"  Genes: {data.n_vars}")
 
-data = filter_cells(data, min_genes=200, max_genes=5000, max_pct_mt=20)
-data = calculate_qc_metrics(data)  # refresh per-gene metrics for the remaining cells
+data = filter_cells(data, min_genes=200, max_genes=5000, max_pct_mt=20)  # also refreshes the per-gene QC columns
 data = filter_genes(data, min_cells=3)
 
 print("After filtering:")

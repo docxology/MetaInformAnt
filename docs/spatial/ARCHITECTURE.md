@@ -1,63 +1,69 @@
 # Architecture: Spatial
 
-High‑level layers (bottom‑up):
+The spatial module is a set of independent sub-packages that exchange plain arrays and small
+dataclasses. It needs no AnnData object, has no configuration layer (see
+[CONFIGURATION.md](CONFIGURATION.md)) and keeps no global state: every setting is a keyword
+argument and every random draw comes from a local generator.
 
-1. **IO sub‑package** (`spatial.io`) — platform‑specific loaders build AnnData objects
-   with consistent schema (X, obs, var, obsm['spatial'], uns['platform']).
-2. **Analysis sub‑packages** — independent algorithms:
-   - `spatial.analysis.autocorrelation`  Moran, LISA, Geary, Getis‑Ord
-   - `spatial.analysis.clustering`      spatially‑constrained Leiden / k‑means
-   - `spatial.analysis.neighborhood`    Ripley's K, interaction index, NES
-   - `spatial.analysis.deconvolution`   Stereoscope, Tangram
-   - `spatial.analysis.communication`   ligand‑receptor scoring
-3. **Visualisation** (`spatial.visualization`) — Matplotlib/Plotly wrappers for
-   spot scatter, expression overlays, domain boundaries.
-4. **Integration** (`spatial.integration`) — batch correction, label transfer,
-   coordinate registration, cross‑platform downsampling.
-5. **Configuration** (`spatial.config`) — YAML‑driven knobs: graph (k, radius),
-   clustering (resolution, min_size), deconvolution (epochs, device).
+## Sub-packages
 
-## Data flow invariants
+1. **I/O** (`spatial.io`) — one module per platform. `visium.load_visium`, `xenium.load_xenium` and
+   `merfish.load_merfish` return `SpatialDataset`, `XeniumDataset` and `MERFISHDataset`
+   (expression matrix, `n × 2` coordinates, gene names, identifiers). See [io.md](io.md).
+2. **Analysis** (`spatial.analysis`) — algorithms on arrays:
+   - `autocorrelation` — Moran's I, Geary's C, local Moran's I (LISA), Getis-Ord G*, variogram,
+     spatial weights
+   - `clustering` — spatial graphs, Leiden / Louvain clustering with a built-in greedy fallback,
+     `spatial_cluster`, `spatial_domains`
+   - `neighborhood` — Ripley's K, interaction matrix, neighborhood enrichment, niche detection,
+     spatial ligand-receptor scores
+   - `deconvolution` — NNLS / NMF deconvolution against reference profiles
+   - `spatially_variable_genes` — per-gene Moran's I ranking
+3. **Communication** (`spatial.communication`) — cell-type level ligand-receptor scoring, networks and
+   patterns.
+4. **Deconvolution** (`spatial.deconvolution`) — dictionary-based reference profiles, cell-type
+   mapping, validation and niche identification.
+5. **Niche** (`spatial.niche`) — `identify_niches` on cell-type proportions.
+6. **Integration** (`spatial.integration`) — `scrna_mapping`: label transfer from scRNA-seq,
+   correlation mapping and gene imputation. See [INTEGRATION.md](INTEGRATION.md).
+7. **Visualization** (`spatial.visualization`) — matplotlib plots that save to `output_path` and
+   return the `Figure`. See [visualization.md](visualization.md).
 
-```
-Loader → AnnData
-  ↓
-(Optional: QC, normalisation)
-  ↓
-neighbors() → spatial graph in adata.obsp['connectivities']
-  ↓
-Any analysis module (reads graph + coordinates)
-  ↓
-Results stored in adata.obs['<method>'] or adata.uns['<result_dict>']
-  ↓
-visualization.* reads adata + result key
-```
+There is no batch correction, section registration, interactive (plotly or bokeh) plotting or YAML
+configuration in the module.
 
-All analysis functions are **pure** (no side‑effects on global state), accept and
-return AnnData (or add `.obs` columns in‑place for convenience), and respect
-`spatial.graph.*` config keys set via `config.set()`.
-
-## Subpackage boundaries
+## Data flow
 
 ```
-spatial/
-  io/                  loaders only
-  analysis/
-    __init__.py        public façade (exposes top‑level functions)
-    autocorrelation.py
-    clustering.py
-    …
-  visualization/
-    __init__.py
-    plots.py           matplotlib helpers
-    interactive.py     plotly / bokeh
-  integration/
-    __init__.py
-    batch.py           batch_integrate()
-    registration.py    register_coordinates()
-    label_transfer.py  transfer_labels()
-  config.py            schema + defaults
+Loader  →  dataset (expression, coordinates)
+              ↓
+   analysis / communication / deconvolution / niche / integration
+   (arrays in, result dataclasses or dictionaries out)
+              ↓
+   visualization (coordinates + values, or a dataset; figure files out)
 ```
 
-No analysis module imports `visualization`; no `integration` depends on `io` except
-for loader type hints. Dependencies flow upward only.
+- Analysis functions are pure with respect to their inputs: they return a result object (for example
+  `MoransIResult`, `SpatialClusterResult`, `DeconvolutionResult`) and modify nothing in place.
+- Spatial graphs (`build_spatial_graph`, `spatial_weights_matrix`) are SciPy sparse matrices that you
+  pass on explicitly (for example to `compute_interaction_matrix`); nothing is cached on the dataset.
+- The coordinate column order is a property of the dataset class (`coordinate_order`: `"row_col"` for
+  Visium, `"xy"` for Xenium and MERFISH); plotting functions read it from a dataset, or take it as an
+  argument for bare arrays.
+
+## Dependencies between sub-packages
+
+The sub-packages hardly import each other. There are three links: `analysis.spatially_variable_genes`
+uses `analysis.autocorrelation`; `integration.scrna_mapping.map_scrna_to_spatial` imports
+`analysis.deconvolution.create_reference_profiles` inside the function when `method='correlation'`; and
+`communication` and `deconvolution` both import the private helper module `spatial/_gene_names.py`.
+That module holds the gene-name matching they share: it splits a matrix, DataFrame or dataset into
+matrix and names, and looks up each ligand, receptor or marker by exact name (see
+[communication.md](communication.md#cell-type-level-scoring)). It imports without NumPy (the two helpers
+that need it load it when called) and is not part of the public API.
+
+No analysis code imports `visualization`, and `visualization` reads datasets only through attributes
+(`expression`, `coordinates`, `gene_names`, `coordinate_order`). The numerical packages are optional at
+import time: a missing NumPy, SciPy, scikit-learn or matplotlib leaves the name unbound and the function
+that needs it raises an `ImportError` with an install hint. `h5py`, Pillow, `leidenalg` and
+`python-louvain` are optional extras.

@@ -47,8 +47,7 @@ def bbknn_integration(data: SingleCellData, batch_key: str, n_neighbors: int = 1
         SingleCellData with integrated coordinates
 
     Raises:
-        TypeError: If data is not SingleCellData
-        ValueError: If batch_key not found
+        ValidationError: If data is not SingleCellData or batch_key is not in data.obs
         ImportError: If scikit-learn not available
     """
     if not HAS_SKLEARN:
@@ -114,8 +113,7 @@ def harmony_integration(data: SingleCellData, batch_key: str, n_components: int 
         SingleCellData with Harmony-corrected coordinates
 
     Raises:
-        TypeError: If data is not SingleCellData
-        ValueError: If batch_key not found
+        ValidationError: If data is not SingleCellData or batch_key is not in data.obs
         ImportError: If scikit-learn not available
     """
     if not HAS_SKLEARN:
@@ -186,8 +184,7 @@ def scanorama_integration(data_list: List[SingleCellData], batch_key: str) -> Si
         Integrated SingleCellData object
 
     Raises:
-        TypeError: If data_list contains non-SingleCellData objects
-        ValueError: If data_list is empty
+        ValidationError: If data_list is empty or contains an object that is not SingleCellData
         ImportError: If scikit-learn not available
     """
     if not HAS_SKLEARN:
@@ -278,8 +275,7 @@ def mnn_integration(data_list: List[SingleCellData], batch_key: str) -> SingleCe
         Integrated SingleCellData object
 
     Raises:
-        TypeError: If data_list contains non-SingleCellData objects
-        ValueError: If data_list has fewer than 2 datasets
+        ValidationError: If data_list has fewer than 2 datasets or contains an object that is not SingleCellData
         ImportError: If scikit-learn not available
     """
     if not HAS_SKLEARN:
@@ -363,8 +359,7 @@ def combat_integration(data: SingleCellData, batch_key: str, covariates: Optiona
         Batch-corrected SingleCellData
 
     Raises:
-        TypeError: If data is not SingleCellData
-        ValueError: If batch_key not found
+        ValidationError: If data is not SingleCellData or batch_key is not in data.obs
     """
     validation.validate_type(data, SingleCellData, "data")
 
@@ -485,14 +480,15 @@ def integrate_multiple_batches(
 
     Args:
         data_list: List of SingleCellData objects to integrate
-        integration_method: Integration method ("scanorama", "mnn", "harmony")
+        integration_method: Integration method ("scanorama", "mnn", "harmony", "bbknn")
         **kwargs: Additional arguments for the integration method
 
     Returns:
         Integrated SingleCellData object
 
     Raises:
-        ValueError: If integration_method is unsupported
+        ValidationError: If integration_method is unsupported, or the method rejects data_list (for example when it is
+            empty)
     """
     valid_methods = ["scanorama", "mnn", "harmony", "bbknn"]
     if integration_method not in valid_methods:
@@ -537,8 +533,7 @@ def evaluate_integration_quality(
         Dictionary with integration quality metrics
 
     Raises:
-        TypeError: If integrated_data is not SingleCellData
-        ValueError: If required columns not found
+        ValidationError: If integrated_data is not SingleCellData or batch_key is not in integrated_data.obs
     """
     validation.validate_type(integrated_data, SingleCellData, "integrated_data")
 

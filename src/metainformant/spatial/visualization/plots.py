@@ -5,12 +5,18 @@ scatter plots, tissue image overlays, cell type maps, neighborhood graphs,
 deconvolution pie charts, and spatial autocorrelation (LISA) maps.
 
 All plot functions save to disk and return the matplotlib Figure object.
+
+Coordinate columns. A coordinate array is ``(n x 2)`` but its column order differs between platforms:
+the Visium loader's ``SpatialDataset.coordinates`` is ``[row, col]`` (``"row_col"``: column 0 is the
+vertical image axis), whereas the Xenium and MERFISH loaders return ``[x, y]`` (``"xy"``). Functions
+that take a bare coordinate array have a ``coordinate_order`` argument defaulting to ``"row_col"``;
+the ones that take a dataset read the order from the dataset's own ``coordinate_order``.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 from metainformant.core.utils.logging import get_logger
 
@@ -51,12 +57,36 @@ except ImportError:
         sp_sparse = None
 
 
+CoordinateOrder = Literal["row_col", "xy"]
+
+
 def _ensure_plotting_deps() -> None:
     """Check that matplotlib is available."""
     if plt is None:
         raise ImportError("matplotlib is required for plotting: uv pip install matplotlib")
     if np is None:
         raise ImportError("NumPy is required: uv pip install numpy")
+
+
+def _horizontal_vertical(coords: Any, coordinate_order: CoordinateOrder) -> tuple[Any, Any]:
+    """Split an ``(n x 2)`` coordinate array into its horizontal and vertical plot coordinates."""
+    if coordinate_order == "row_col":
+        return coords[:, 1], coords[:, 0]
+    if coordinate_order == "xy":
+        return coords[:, 0], coords[:, 1]
+    raise ValueError(f"Unknown coordinate_order {coordinate_order!r}: use 'row_col' or 'xy'")
+
+
+def _dataset_coordinate_order(spatial_data: Any) -> CoordinateOrder:
+    """Column convention of a dataset's coordinates: its own ``coordinate_order``, else ``"row_col"``.
+
+    ``SpatialDataset`` (Visium) declares ``"row_col"``; ``XeniumDataset`` and ``MERFISHDataset`` declare
+    ``"xy"``. Duck-typed objects and bare arrays have no declaration and keep the legacy ``"row_col"``.
+    """
+    order = getattr(spatial_data, "coordinate_order", "row_col")
+    if order not in ("row_col", "xy"):
+        raise ValueError(f"Unknown coordinate_order {order!r} on {type(spatial_data).__name__}")
+    return cast(CoordinateOrder, order)
 
 
 def _save_figure(fig: Any, output_path: str | Path, dpi: int = 150) -> None:
@@ -80,6 +110,7 @@ def plot_spatial_scatter(
     colorbar_label: str = "",
     vmin: float | None = None,
     vmax: float | None = None,
+    coordinate_order: CoordinateOrder = "row_col",
 ) -> Any:
     """Create a spatial scatter plot colored by continuous or categorical values.
 
@@ -95,13 +126,21 @@ def plot_spatial_scatter(
         colorbar_label: Label for the colorbar.
         vmin: Minimum value for color scale.
         vmax: Maximum value for color scale.
+        coordinate_order: Which column is which: ``"row_col"`` (default; Visium's
+            ``SpatialDataset.coordinates``: column 0 vertical, column 1 horizontal) or ``"xy"`` (Xenium and
+            MERFISH coordinates: column 0 horizontal, column 1 vertical). With the wrong order the tissue
+            appears transposed.
 
     Returns:
         Matplotlib Figure object.
+
+    Raises:
+        ValueError: If ``coordinate_order`` is not ``"row_col"`` or ``"xy"``.
     """
     _ensure_plotting_deps()
 
     coords = np.asarray(coordinates, dtype=np.float64)
+    horizontal, vertical = _horizontal_vertical(coords, coordinate_order)
     vals = np.asarray(values)
 
     fig, ax = plt.subplots(1, 1, figsize=figsize)
@@ -119,8 +158,8 @@ def plot_spatial_scatter(
         for v in unique_vals:
             mask = vals == v
             ax.scatter(
-                coords[mask, 1],
-                coords[mask, 0],
+                horizontal[mask],
+                vertical[mask],
                 c=[color_map[v]],
                 s=point_size,
                 alpha=alpha,
@@ -137,8 +176,8 @@ def plot_spatial_scatter(
     else:
         vals_float = vals.astype(np.float64)
         sc = ax.scatter(
-            coords[:, 1],
-            coords[:, 0],
+            horizontal,
+            vertical,
             c=vals_float,
             cmap=cmap,
             s=point_size,
@@ -176,6 +215,7 @@ def plot_tissue_overlay(
     alpha: float = 0.6,
     figsize: tuple[float, float] = (10, 10),
     scale_factor: float = 1.0,
+    coordinate_order: CoordinateOrder = "row_col",
 ) -> Any:
     """Overlay expression values on a tissue H&E image.
 
@@ -190,13 +230,18 @@ def plot_tissue_overlay(
         alpha: Overlay transparency.
         figsize: Figure dimensions.
         scale_factor: Scale factor to convert coordinates to image pixel space.
+        coordinate_order: ``"row_col"`` (default; Visium) or ``"xy"``; see :func:`plot_spatial_scatter`.
 
     Returns:
         Matplotlib Figure object.
+
+    Raises:
+        ValueError: If ``coordinate_order`` is not ``"row_col"`` or ``"xy"``.
     """
     _ensure_plotting_deps()
 
     coords = np.asarray(coordinates, dtype=np.float64) * scale_factor
+    horizontal, vertical = _horizontal_vertical(coords, coordinate_order)
     vals = np.asarray(values)
     img = np.asarray(tissue_image)
 
@@ -215,8 +260,8 @@ def plot_tissue_overlay(
         for v in unique_vals:
             mask = vals == v
             ax.scatter(
-                coords[mask, 1],
-                coords[mask, 0],
+                horizontal[mask],
+                vertical[mask],
                 c=[color_map[v]],
                 s=point_size,
                 alpha=alpha,
@@ -233,8 +278,8 @@ def plot_tissue_overlay(
     else:
         vals_float = vals.astype(np.float64)
         sc = ax.scatter(
-            coords[:, 1],
-            coords[:, 0],
+            horizontal,
+            vertical,
             c=vals_float,
             cmap=cmap,
             s=point_size,
@@ -259,16 +304,21 @@ def plot_gene_expression_map(
     *,
     cmap: str = "Reds",
     figsize: tuple[float, float] = (8, 8),
+    coordinate_order: CoordinateOrder | None = None,
 ) -> Any:
     """Plot spatial expression map for a single gene.
 
     Args:
-        spatial_data: A SpatialDataset (or compatible object with .expression,
-            .coordinates, .gene_names attributes).
+        spatial_data: A SpatialDataset, XeniumDataset or MERFISHDataset (or compatible object with
+            .expression, .coordinates, .gene_names attributes).
         gene: Gene name to plot.
         output_path: Path to save the plot.
         cmap: Colormap for expression.
         figsize: Figure dimensions.
+        coordinate_order: Column convention of ``spatial_data.coordinates`` (see
+            :func:`plot_spatial_scatter`). By default the dataset's own ``coordinate_order`` is used
+            (``"row_col"`` for Visium, ``"xy"`` for Xenium and MERFISH; ``"row_col"`` for objects that
+            declare none).
 
     Returns:
         Matplotlib Figure object.
@@ -298,6 +348,7 @@ def plot_gene_expression_map(
         title=f"Expression: {gene}",
         colorbar_label="Expression",
         figsize=figsize,
+        coordinate_order=coordinate_order if coordinate_order is not None else _dataset_coordinate_order(spatial_data),
     )
 
 
@@ -308,15 +359,20 @@ def plot_cell_type_map(
     *,
     figsize: tuple[float, float] = (10, 10),
     point_size: float = 15.0,
+    coordinate_order: CoordinateOrder | None = None,
 ) -> Any:
     """Plot spatial distribution of cell types.
 
     Args:
-        spatial_data: A SpatialDataset or compatible object with .coordinates attribute.
+        spatial_data: A SpatialDataset, XeniumDataset or MERFISHDataset (or compatible object with a
+            .coordinates attribute, or a bare coordinate array).
         cell_types: Cell type labels (length n_spots), string or integer.
         output_path: Path to save the plot.
         figsize: Figure dimensions.
         point_size: Scatter point size.
+        coordinate_order: Column convention of the coordinates (see :func:`plot_spatial_scatter`). By
+            default the dataset's own ``coordinate_order`` is used (``"row_col"`` for Visium, ``"xy"``
+            for Xenium and MERFISH; ``"row_col"`` for a bare array or an object that declares none).
 
     Returns:
         Matplotlib Figure object.
@@ -333,6 +389,7 @@ def plot_cell_type_map(
         title="Cell Type Distribution",
         point_size=point_size,
         figsize=figsize,
+        coordinate_order=coordinate_order if coordinate_order is not None else _dataset_coordinate_order(spatial_data),
     )
 
 
@@ -347,6 +404,7 @@ def plot_neighborhood_graph(
     node_size: float = 5.0,
     edge_alpha: float = 0.2,
     edge_width: float = 0.3,
+    coordinate_order: CoordinateOrder = "row_col",
 ) -> Any:
     """Plot the spatial neighborhood graph on tissue coordinates.
 
@@ -362,13 +420,18 @@ def plot_neighborhood_graph(
         node_size: Node marker size.
         edge_alpha: Edge line transparency.
         edge_width: Edge line width.
+        coordinate_order: ``"row_col"`` (default; Visium) or ``"xy"``; see :func:`plot_spatial_scatter`.
 
     Returns:
         Matplotlib Figure object.
+
+    Raises:
+        ValueError: If ``coordinate_order`` is not ``"row_col"`` or ``"xy"``.
     """
     _ensure_plotting_deps()
 
     coords = np.asarray(coordinates, dtype=np.float64)
+    horizontal, vertical = _horizontal_vertical(coords, coordinate_order)
 
     if sp_sparse is not None and sp_sparse.issparse(spatial_graph):
         # scipy-stubs narrow issparse() to a method-less SparseABC; every sparse format provides nonzero()
@@ -384,8 +447,8 @@ def plot_neighborhood_graph(
         for s, t in zip(sources, targets):
             if s < t:  # draw each edge once
                 ax.plot(
-                    [coords[s, 1], coords[t, 1]],
-                    [coords[s, 0], coords[t, 0]],
+                    [horizontal[s], horizontal[t]],
+                    [vertical[s], vertical[t]],
                     color="gray",
                     alpha=edge_alpha,
                     linewidth=edge_width,
@@ -403,8 +466,8 @@ def plot_neighborhood_graph(
             for v in unique_vals:
                 mask = nc == v
                 ax.scatter(
-                    coords[mask, 1],
-                    coords[mask, 0],
+                    horizontal[mask],
+                    vertical[mask],
                     c=[color_map[v]],
                     s=node_size,
                     label=str(v),
@@ -415,8 +478,8 @@ def plot_neighborhood_graph(
         else:
             nc_float = nc.astype(np.float64)
             sc = ax.scatter(
-                coords[:, 1],
-                coords[:, 0],
+                horizontal,
+                vertical,
                 c=nc_float,
                 cmap="viridis",
                 s=node_size,
@@ -426,8 +489,8 @@ def plot_neighborhood_graph(
             fig.colorbar(sc, ax=ax, shrink=0.5)
     else:
         ax.scatter(
-            coords[:, 1],
-            coords[:, 0],
+            horizontal,
+            vertical,
             c="steelblue",
             s=node_size,
             edgecolors="none",
@@ -525,6 +588,7 @@ def plot_deconvolution_pie(
     figsize: tuple[float, float] = (10, 10),
     pie_radius: float | None = None,
     min_fraction: float = 0.05,
+    coordinate_order: CoordinateOrder = "row_col",
 ) -> Any:
     """Plot pie charts per spatial spot showing cell type fractions.
 
@@ -540,9 +604,13 @@ def plot_deconvolution_pie(
         figsize: Figure dimensions.
         pie_radius: Radius of each pie chart. If None, auto-calculated.
         min_fraction: Minimum fraction to display (smaller merged into "other").
+        coordinate_order: ``"row_col"`` (default; Visium) or ``"xy"``; see :func:`plot_spatial_scatter`.
 
     Returns:
         Matplotlib Figure object.
+
+    Raises:
+        ValueError: If ``coordinate_order`` is not ``"row_col"`` or ``"xy"``.
     """
     _ensure_plotting_deps()
 
@@ -550,6 +618,7 @@ def plot_deconvolution_pie(
         raise ImportError("matplotlib is required: uv pip install matplotlib")
 
     coords = np.asarray(coordinates, dtype=np.float64)
+    horizontal, vertical = _horizontal_vertical(coords, coordinate_order)
     frac = np.asarray(fractions, dtype=np.float64)
     n_spots = coords.shape[0]
     n_types = frac.shape[1]
@@ -575,7 +644,7 @@ def plot_deconvolution_pie(
     fig, ax = plt.subplots(1, 1, figsize=figsize)
 
     for si in range(n_spots):
-        cx, cy = coords[si, 1], coords[si, 0]  # x=col, y=row
+        cx, cy = horizontal[si], vertical[si]
         spot_frac = frac[si, :]
 
         # Filter small fractions
@@ -616,8 +685,8 @@ def plot_deconvolution_pie(
     )
 
     ax.set_title(title, fontsize=14, fontweight="bold")
-    ax.set_xlim(coords[:, 1].min() - pie_radius * 3, coords[:, 1].max() + pie_radius * 3)
-    ax.set_ylim(coords[:, 0].min() - pie_radius * 3, coords[:, 0].max() + pie_radius * 3)
+    ax.set_xlim(horizontal.min() - pie_radius * 3, horizontal.max() + pie_radius * 3)
+    ax.set_ylim(vertical.min() - pie_radius * 3, vertical.max() + pie_radius * 3)
     ax.invert_yaxis()
     ax.set_aspect("equal")
     ax.set_xlabel("X coordinate", fontsize=10)
@@ -639,6 +708,7 @@ def plot_spatial_autocorrelation(
     title: str = "Local Spatial Autocorrelation (LISA)",
     figsize: tuple[float, float] = (10, 10),
     point_size: float = 15.0,
+    coordinate_order: CoordinateOrder = "row_col",
 ) -> Any:
     """Plot LISA cluster map showing spatial autocorrelation patterns.
 
@@ -654,13 +724,18 @@ def plot_spatial_autocorrelation(
         title: Plot title.
         figsize: Figure dimensions.
         point_size: Scatter point size.
+        coordinate_order: ``"row_col"`` (default; Visium) or ``"xy"``; see :func:`plot_spatial_scatter`.
 
     Returns:
         Matplotlib Figure object.
+
+    Raises:
+        ValueError: If ``coordinate_order`` is not ``"row_col"`` or ``"xy"``.
     """
     _ensure_plotting_deps()
 
     coords = np.asarray(coordinates, dtype=np.float64)
+    horizontal, vertical = _horizontal_vertical(coords, coordinate_order)
 
     if cluster_labels is not None:
         # Categorical LISA map
@@ -683,8 +758,8 @@ def plot_spatial_autocorrelation(
                 continue
             color = lisa_colors.get(label_type, "#e0e0e0")
             ax.scatter(
-                coords[mask, 1],
-                coords[mask, 0],
+                horizontal[mask],
+                vertical[mask],
                 c=color,
                 s=point_size,
                 label=f"{label_type} (n={mask.sum()})",
@@ -724,4 +799,5 @@ def plot_spatial_autocorrelation(
             point_size=point_size,
             colorbar_label="Local Moran's I",
             figsize=figsize,
+            coordinate_order=coordinate_order,
         )

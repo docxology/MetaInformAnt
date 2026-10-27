@@ -14,9 +14,11 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Literal
 
 from metainformant.core.utils.logging import get_logger
+from metainformant.spatial._gene_names import columns_of, expression_and_gene_names, expression_columns, matrix_shape
 
 logger = get_logger(__name__)
 
@@ -34,6 +36,7 @@ except ImportError:
 try:
     from scipy.optimize import nnls as scipy_nnls
     from scipy.spatial.distance import cdist
+    from scipy.stats import spearmanr
 
     HAS_SCIPY = True
 except ImportError:
@@ -41,6 +44,7 @@ except ImportError:
     if not TYPE_CHECKING:
         scipy_nnls = None
         cdist = None
+        spearmanr = None
 
 
 def deconvolve_spots(
@@ -328,13 +332,17 @@ def spatial_cell_type_mapping(
 def validate_deconvolution(
     estimated: dict[str, Any],
     spatial_markers: dict[str, list[str]] | None = None,
+    *,
+    expression: Any | None = None,
+    gene_names: Sequence[str] | None = None,
+    correlation_method: Literal["pearson", "spearman"] = "pearson",
 ) -> dict[str, Any]:
     """Validate spatial deconvolution using marker gene expression agreement.
 
     Checks consistency of estimated cell type proportions against known marker
     gene expression. For each cell type with known markers, computes the
-    correlation between estimated proportion and the mean expression of its
-    markers across spots.
+    correlation across spots between the estimated proportion of that type and the mean expression
+    of its markers (Pearson by default, Spearman on request).
 
     When no marker information is provided, performs internal consistency
     checks: proportion normalization, confidence distribution, and dominant
@@ -346,7 +354,15 @@ def validate_deconvolution(
             ``cell_types``, and ``confidence_scores``.
         spatial_markers: Optional dictionary mapping cell type names to lists
             of marker gene names. Used for external validation against
-            observed marker expression.
+            observed marker expression, which needs ``expression`` and gene names.
+        expression: The spots x genes expression matrix the proportions were estimated from (numpy array,
+            list of lists or scipy sparse; same spot order as ``proportions_matrix``), or a dataset
+            object with ``.expression`` and ``.gene_names``, or a DataFrame whose columns are the genes.
+            Required when ``spatial_markers`` is given. The values are used as supplied (normalise first
+            if the markers should be compared on a normalised scale).
+        gene_names: Names of the expression columns. Required for a plain matrix; taken from a dataset or
+            DataFrame otherwise (explicit names win). Markers are matched to them by exact name.
+        correlation_method: ``"pearson"`` (default) or ``"spearman"`` (rank correlation, needs scipy).
 
     Returns:
         Dictionary with keys:
@@ -355,16 +371,36 @@ def validate_deconvolution(
             - ``confidence_distribution``: Dictionary with ``min``, ``max``,
               ``median``, ``std`` of confidence scores.
             - ``type_diversity``: Number of distinct dominant types observed.
-            - ``marker_correlations``: Dictionary mapping cell type to Pearson
-              correlation with marker expression (only if spatial_markers
-              provided and numpy available).
+            - ``marker_correlations``: Dictionary mapping cell type to the correlation, across spots,
+              between its estimated proportion and the mean expression of its markers that are present
+              in ``gene_names``. Empty when ``spatial_markers`` is not given. A cell type whose
+              correlation cannot be computed is left out and listed in ``marker_correlations_skipped``,
+              never reported as a number.
+            - ``marker_correlation_method``: ``"pearson"`` or ``"spearman"`` when markers were checked,
+              else None.
+            - ``marker_genes_used``: Dictionary mapping cell type to the marker names that were found.
+            - ``marker_correlations_skipped``: Dictionary mapping cell type to the reason it has no
+              correlation (type not in the result, no marker among the gene names, or constant
+              proportion or marker expression across spots).
             - ``overall_validity``: Boolean indicating if basic checks pass.
 
     Raises:
-        ImportError: If numpy is not available.
+        ImportError: If numpy is not available, or scipy is not for ``correlation_method="spearman"``.
+        ValueError: If ``spatial_markers`` is given without ``expression`` or without gene names, if
+            ``correlation_method`` is unknown, if the expression matrix does not have one row per spot
+            or one column per gene name, or if a used marker names more than one column.
     """
     if not HAS_NUMPY:
         raise ImportError("numpy is required: uv pip install numpy")
+    if correlation_method not in ("pearson", "spearman"):
+        raise ValueError(f"Unknown correlation_method {correlation_method!r}: use 'pearson' or 'spearman'")
+    if correlation_method == "spearman" and not HAS_SCIPY:
+        raise ImportError("scipy is required for Spearman correlation: uv pip install scipy")
+    if spatial_markers is not None and expression is None:
+        raise ValueError(
+            "spatial_markers needs the spatial expression matrix to correlate against: pass expression=... "
+            "(spots x genes) and gene_names=..., or a dataset that carries both"
+        )
 
     proportions = np.asarray(estimated["proportions_matrix"], dtype=np.float64)
     cell_types = estimated["cell_types"]
@@ -396,26 +432,53 @@ def validate_deconvolution(
         "confidence_distribution": conf_dist,
         "type_diversity": unique_dominant,
         "marker_correlations": {},
+        "marker_correlation_method": None,
+        "marker_genes_used": {},
+        "marker_correlations_skipped": {},
         "overall_validity": overall_valid,
     }
 
-    # Marker-based validation
+    # Marker-based validation: across spots, correlate the estimated proportion of each cell type with the
+    # mean expression of that type's markers
     if spatial_markers is not None:
+        matrix, names = expression_and_gene_names(expression, gene_names)
+        n_rows, n_columns = matrix_shape(matrix)
+        if n_rows != proportions.shape[0]:
+            raise ValueError(f"expression has {n_rows} rows but the deconvolution has {proportions.shape[0]} spots")
+        if n_columns != len(names):
+            raise ValueError(f"gene_names has {len(names)} entries but the expression matrix has {n_columns} columns")
+
+        available = set(names)
         marker_corrs: dict[str, float] = {}
+        marker_genes_used: dict[str, list[str]] = {}
+        skipped: dict[str, str] = {}
         for ct, markers in spatial_markers.items():
             if ct not in cell_types:
+                skipped[ct] = "cell type is not in the deconvolution result"
                 continue
-            ct_idx = cell_types.index(ct)
-            ct_proportions = proportions[:, ct_idx]
+            found = [gene for gene in dict.fromkeys(markers) if gene in available]
+            if not found:
+                skipped[ct] = "none of its markers is among gene_names"
+                continue
 
-            # For marker validation, we would need expression data
-            # Here we validate the proportion variance -- types with markers
-            # should show non-trivial variation
-            prop_var = float(np.var(ct_proportions))
-            # Use variance as a proxy score (higher = more informative)
-            marker_corrs[ct] = min(1.0, prop_var * 10.0)
+            column_of = columns_of(found, names, what="marker")
+            marker_signal = expression_columns(matrix, [column_of[gene] for gene in found]).mean(axis=1)
+            proportion = proportions[:, list(cell_types).index(ct)]
+            marker_genes_used[ct] = found
+
+            if np.ptp(proportion) == 0:
+                skipped[ct] = "its estimated proportion is constant across spots"
+            elif np.ptp(marker_signal) == 0:
+                skipped[ct] = "its marker expression is constant across spots"
+            elif correlation_method == "pearson":
+                marker_corrs[ct] = float(np.corrcoef(proportion, marker_signal)[0, 1])
+            else:
+                marker_corrs[ct] = float(spearmanr(proportion, marker_signal).statistic)
 
         result["marker_correlations"] = marker_corrs
+        result["marker_correlation_method"] = correlation_method
+        result["marker_genes_used"] = marker_genes_used
+        result["marker_correlations_skipped"] = skipped
 
     logger.info(
         "Deconvolution validation: normalization=%s, mean_confidence=%.3f, " "diversity=%d, valid=%s",
@@ -447,7 +510,9 @@ def niche_identification(
         coordinates: List of (x, y) coordinate tuples for each spot.
         n_niches: Number of niches to identify.
         seed: Optional random seed for the k-means initialization. When None
-            (default), the global numpy random state is used.
+            (default), a fresh generator seeded from operating-system entropy is used: the niches can
+            then differ between calls, and numpy's global random state is neither used nor advanced.
+            Pass an int for reproducible niches.
 
     Returns:
         Dictionary with keys:
@@ -607,16 +672,17 @@ def _kmeans(
         k: Number of clusters.
         max_iter: Maximum number of iterations.
         seed: Optional random seed for k-means++ initialization. When None
-            (default), the global numpy random state is used.
+            (default), a fresh generator seeded from operating-system entropy is used; numpy's global
+            random state is neither used nor advanced.
 
     Returns:
         Array of cluster labels (n_samples,).
     """
     n_samples = data.shape[0]
 
-    # K-means++ initialization
+    # K-means++ initialization (always a local generator)
     centers = np.zeros((k, data.shape[1]), dtype=np.float64)
-    rng = np.random.RandomState(seed) if seed is not None else np.random
+    rng = np.random.RandomState(seed)
     first_idx = rng.randint(0, n_samples)
     centers[0] = data[first_idx]
 

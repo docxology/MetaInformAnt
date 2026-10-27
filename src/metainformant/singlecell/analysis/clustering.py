@@ -8,6 +8,7 @@ marker gene identification.
 
 from __future__ import annotations
 
+import warnings
 from typing import Any, Dict, Literal, Optional, get_args
 
 import numpy as np
@@ -124,51 +125,13 @@ def _cluster_feature_matrix(
     return digitized
 
 
-def leiden_clustering(
-    data: SingleCellData | Any | None = None,
-    resolution: float = 1.0,
-    n_neighbors: int = 15,
-    random_state: int | None = None,
-    use_weights: bool = True,
-    *,
-    feature_matrix: Any | None = None,
-) -> SingleCellData | np.ndarray:
-    """Perform Leiden clustering on single-cell data.
+def _leiden_stack_available() -> bool:
+    """Whether networkx, python-igraph and leidenalg can all be imported."""
+    return bool(HAS_NETWORKX and HAS_IGRAPH and HAS_LEIDEN)
 
-    Args:
-        data: SingleCellData object with preprocessed expression matrix, or a
-            matrix-like object for compatibility callers
-        resolution: Resolution parameter for Leiden algorithm
-        n_neighbors: Number of neighbors for kNN graph construction
-        random_state: Random seed for reproducibility
-        use_weights: Whether to use edge weights in clustering
-        feature_matrix: Matrix-style alias for callers that only need labels
 
-    Returns:
-        SingleCellData with cluster assignments added to obs, or a label array
-        for matrix-style input.
-
-    Raises:
-        ImportError: If required packages are not available
-        TypeError: If data is not SingleCellData
-    """
-    if feature_matrix is not None or not isinstance(data, SingleCellData):
-        matrix = feature_matrix if feature_matrix is not None else data
-        return _cluster_feature_matrix(matrix, resolution=resolution, random_state=random_state)
-
-    validation.validate_type(data, SingleCellData, "data")
-
-    if not HAS_NETWORKX or not HAS_IGRAPH or not HAS_LEIDEN:
-        raise ImportError("Leiden clustering requires networkx, igraph, and leidenalg packages")
-
-    logger.info(f"Performing Leiden clustering with resolution={resolution}, n_neighbors={n_neighbors}")
-
-    # Create copy
-    result = data.copy()
-
-    # Get expression matrix
-    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
-
+def _leiden_labels(X: np.ndarray, *, resolution: float, n_neighbors: int, random_state: int | None) -> np.ndarray:
+    """Leiden communities of the kNN graph over the rows of ``X`` (needs the Leiden stack)."""
     # Construct kNN graph
     distances = _compute_pairwise_distances(X)
 
@@ -187,7 +150,83 @@ def leiden_clustering(
     )
 
     # Get cluster assignments
-    clusters = np.array(partition.membership)
+    return np.array(partition.membership)
+
+
+def leiden_clustering(
+    data: SingleCellData | Any | None = None,
+    resolution: float = 1.0,
+    n_neighbors: int = 15,
+    random_state: int | None = None,
+    use_weights: bool = True,
+    *,
+    feature_matrix: Any | None = None,
+    allow_kmeans_fallback: bool = False,
+) -> SingleCellData | np.ndarray:
+    """Perform Leiden clustering on single-cell data.
+
+    Builds a k-nearest-neighbour graph over the cells (or the rows of a plain matrix) and partitions it
+    with the Leiden algorithm, which needs networkx, python-igraph and leidenalg. Another algorithm is
+    never substituted silently: without those packages the function raises ``ImportError``, unless a
+    matrix input is combined with ``allow_kmeans_fallback=True``.
+
+    Args:
+        data: SingleCellData object with preprocessed expression matrix, or a
+            matrix-like object for compatibility callers
+        resolution: Resolution parameter for Leiden algorithm
+        n_neighbors: Number of neighbors for kNN graph construction
+        random_state: Random seed for reproducibility
+        use_weights: Recorded in ``uns``; the partition is currently computed on the unweighted graph
+            (edge weights are not passed to leidenalg)
+        feature_matrix: Matrix-style alias for callers that only need labels
+        allow_kmeans_fallback: Matrix input only. When the Leiden stack is unavailable, cluster the rows
+            with k-means (the number of clusters follows ``resolution``) instead of raising, and emit a
+            ``UserWarning`` and a log warning that say so. A label array cannot carry the method, so
+            rely on that warning (or on ``HAS_LEIDEN``) to know what ran. For a SingleCellData call
+            :func:`kmeans_clustering` directly.
+
+    Returns:
+        SingleCellData with cluster assignments added to ``obs["leiden_cluster"]`` and the parameters,
+        including ``method`` (always ``"leiden"``), in ``uns["leiden_clustering"]``; or a label array
+        for matrix-style input.
+
+    Raises:
+        ImportError: If the Leiden stack is unavailable (and, for matrix input, the k-means fallback
+            was not requested)
+        ValueError: If a matrix input is not two-dimensional
+    """
+    if feature_matrix is None and isinstance(data, SingleCellData):
+        cells: SingleCellData | None = data
+        X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
+    else:
+        cells = None
+        X = _as_dense_matrix(feature_matrix if feature_matrix is not None else data)
+        if X.ndim != 2:
+            raise ValueError("feature_matrix must be a 2D matrix")
+
+    if _leiden_stack_available():
+        logger.info(f"Performing Leiden clustering with resolution={resolution}, n_neighbors={n_neighbors}")
+        clusters = _leiden_labels(X, resolution=resolution, n_neighbors=n_neighbors, random_state=random_state)
+    elif cells is None and allow_kmeans_fallback:
+        message = (
+            "Leiden clustering is unavailable (it needs networkx, python-igraph and leidenalg): "
+            "clustered the feature matrix with k-means instead"
+        )
+        logger.warning(message)
+        warnings.warn(message, UserWarning, stacklevel=2)
+        return _cluster_feature_matrix(X, resolution=resolution, random_state=random_state)
+    else:
+        if cells is not None:
+            hint = "Install them, or call kmeans_clustering to cluster a SingleCellData with k-means."
+        else:
+            hint = "Install them, or pass allow_kmeans_fallback=True to cluster the matrix with k-means instead."
+        raise ImportError(f"Leiden clustering requires the networkx, python-igraph and leidenalg packages. {hint}")
+
+    if cells is None:
+        return clusters
+
+    # Create copy
+    result = cells.copy()
 
     # Add to obs
     result.obs = result.obs.copy() if result.obs is not None else pd.DataFrame()
@@ -195,6 +234,7 @@ def leiden_clustering(
 
     # Store clustering parameters
     result.uns["leiden_clustering"] = {
+        "method": "leiden",
         "resolution": resolution,
         "n_neighbors": n_neighbors,
         "random_state": random_state,
@@ -227,7 +267,7 @@ def louvain_clustering(
 
     Raises:
         ImportError: If required packages are not available
-        TypeError: If data is not SingleCellData
+        ValidationError: If data is not SingleCellData
     """
     validation.validate_type(data, SingleCellData, "data")
 
@@ -285,7 +325,7 @@ def kmeans_clustering(
         SingleCellData with cluster assignments added to obs
 
     Raises:
-        TypeError: If data is not SingleCellData
+        ValidationError: If data is not SingleCellData or n_clusters is below 2
         ImportError: If scikit-learn not available
     """
     if not HAS_SKLEARN:
@@ -378,22 +418,33 @@ def find_markers(
 
 
 def hierarchical_clustering(
-    data: SingleCellData, n_clusters: int = 10, linkage_method: str = "ward", metric: str = "euclidean"
+    data: SingleCellData,
+    n_clusters: int = 10,
+    linkage_method: str = "ward",
+    metric: str = "euclidean",
+    *,
+    random_state: int | None = None,
 ) -> SingleCellData:
     """Perform hierarchical clustering on single-cell data.
+
+    Above 1000 cells the linkage is built on a random subset of 1000 cells and every other cell takes the
+    cluster of its nearest subset cell.
 
     Args:
         data: SingleCellData object with preprocessed expression matrix
         n_clusters: Number of clusters
         linkage_method: Linkage method for hierarchical clustering
         metric: Distance metric
+        random_state: Seed for the subset drawn above 1000 cells (``None`` draws a fresh,
+            non-reproducible subset). numpy's global random state is never used.
 
     Returns:
         SingleCellData with cluster assignments added to obs
 
     Raises:
-        TypeError: If data is not SingleCellData
-        ValueError: If linkage_method or metric is invalid
+        ValidationError: If data is not SingleCellData, n_clusters is below 2 or linkage_method is invalid
+        ValueError: If metric is not a distance metric that scipy knows (raised by scipy; ward linkage always uses
+            euclidean)
     """
     validation.validate_type(data, SingleCellData, "data")
     validation.validate_range(n_clusters, min_val=2, name="n_clusters")
@@ -421,7 +472,9 @@ def hierarchical_clustering(
     if X.shape[0] > 1000:
         # For large datasets, use random subset for hierarchical clustering
         logger.warning(f"Large dataset ({X.shape[0]} cells), using random subset for hierarchical clustering")
-        subset_indices = np.random.choice(X.shape[0], size=min(1000, X.shape[0]), replace=False)
+        subset_indices = np.random.default_rng(random_state).choice(
+            X.shape[0], size=min(1000, X.shape[0]), replace=False
+        )
         X_subset = X[subset_indices]
 
         # Compute linkage on subset
@@ -454,6 +507,7 @@ def hierarchical_clustering(
         "linkage_method": linkage_method,
         "metric": metric,
         "linkage_matrix_shape": linkage_matrix.shape if linkage_matrix is not None else None,
+        "random_state": random_state,
     }
 
     logger.info(f"Hierarchical clustering completed: found {n_clusters} clusters")
@@ -473,8 +527,7 @@ def find_marker_genes(data: SingleCellData, groupby: str, method: str = "t-test"
         DataFrame with marker gene statistics
 
     Raises:
-        TypeError: If data is not SingleCellData
-        ValueError: If groupby column not found
+        ValidationError: If data is not SingleCellData, the groupby column is not in data.obs or method is unsupported
     """
     validation.validate_type(data, SingleCellData, "data")
 
@@ -603,8 +656,7 @@ def compute_cluster_composition(data: SingleCellData, groupby: str, cluster_col:
         DataFrame with cluster composition statistics
 
     Raises:
-        TypeError: If data is not SingleCellData
-        ValueError: If required columns not found
+        ValidationError: If data is not SingleCellData, has no obs, or lacks the groupby or cluster column
     """
     validation.validate_type(data, SingleCellData, "data")
 
@@ -653,7 +705,12 @@ def compute_cluster_composition(data: SingleCellData, groupby: str, cluster_col:
 
 
 def compute_cluster_silhouette(
-    data: SingleCellData, cluster_col: str = "cluster", metric: str = "euclidean", sample_size: int | None = None
+    data: SingleCellData,
+    cluster_col: str = "cluster",
+    metric: str = "euclidean",
+    sample_size: int | None = None,
+    *,
+    random_state: int | None = None,
 ) -> Dict[str, Any]:
     """Compute silhouette scores for cluster evaluation.
 
@@ -662,13 +719,15 @@ def compute_cluster_silhouette(
         cluster_col: Column containing cluster assignments
         metric: Distance metric for silhouette calculation
         sample_size: Sample size for large datasets (for performance)
+        random_state: Seed for the subsample drawn when ``sample_size`` is smaller than the number of
+            cells (``None`` draws a fresh, non-reproducible subsample). numpy's global random state is
+            never used.
 
     Returns:
         Dictionary with silhouette scores and statistics
 
     Raises:
-        TypeError: If data is not SingleCellData
-        ValueError: If cluster column not found
+        ValidationError: If data is not SingleCellData or the cluster column is not in data.obs
         ImportError: If scikit-learn not available
     """
     if not HAS_SKLEARN:
@@ -689,7 +748,7 @@ def compute_cluster_silhouette(
 
     # Sample data if requested (for performance)
     if sample_size is not None and sample_size < X.shape[0]:
-        indices = np.random.choice(X.shape[0], size=sample_size, replace=False)
+        indices = np.random.default_rng(random_state).choice(X.shape[0], size=sample_size, replace=False)
         X = X[indices]
         clusters = clusters[indices]
 
@@ -817,7 +876,7 @@ def evaluate_clustering_performance(
         Dictionary with clustering performance metrics
 
     Raises:
-        TypeError: If data is not SingleCellData
+        ValidationError: If data is not SingleCellData or the cluster column is not in data.obs
     """
     validation.validate_type(data, SingleCellData, "data")
 

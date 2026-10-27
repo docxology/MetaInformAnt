@@ -6,18 +6,18 @@
 - **Purpose**: User documentation for spatial transcriptomics: coordinate I/O,
   neighborhood analysis, autocorrelation, niche analysis, communication,
   deconvolution, integration, visualization.
-- **Domain**: `docs` for `src/metainformant/spatial/` (AnnData-based;
-  see `ARCHITECTURE.md`).
+- **Domain**: `docs` for `src/metainformant/spatial/` (plain arrays and
+  dataclasses, no AnnData requirement; see `ARCHITECTURE.md`).
 
 ## Virtual Hierarchy
 
 - **Type**: Documentation
 - **Parent**: `docs/` (doc-tree entry point: `docs/index.md`)
-- **Children**: none. Flat directory of 21 markdown files: topic guides
+- **Children**: none. Flat directory of 20 markdown files: topic guides
   (index, GETTING_STARTED, CONFIGURATION, ARCHITECTURE, CAPABILITIES,
   PERFORMANCE, TROUBLESHOOTING), method pages (autocorrelation, clustering,
-  communication, deconvolution, integration, io, neighborhood, niche,
-  visualization, INTEGRATION), and AGENTS/PAI/README/SPEC — all `.md`.
+  communication, deconvolution, io, neighborhood, niche, visualization,
+  INTEGRATION), and AGENTS/PAI/README/SPEC — all `.md`.
 
 ## Maintenance Notes
 
@@ -27,9 +27,14 @@ Quoted from the sibling `AGENTS.md`:
   "Keep examples runnable or clearly marked as pseudocode."; examples use
   `metainformant.core.io` for data I/O; no unexercised platform claims; output under `output/`.
 
-- `ARCHITECTURE.md` invariants: dependencies flow upward only; no analysis
-  module imports `visualization`; loaders build AnnData with
-  `obsm['spatial']`/`uns['platform']`; results land in `adata.obs`/`adata.uns`.
+- `ARCHITECTURE.md` invariants: the sub-packages hardly import each other (three links:
+  `analysis.spatially_variable_genes` uses `analysis.autocorrelation`,
+  `integration.scrna_mapping.map_scrna_to_spatial` imports `analysis.deconvolution`
+  inside the function, and `communication` and `deconvolution` share the private
+  `spatial/_gene_names.py`); no analysis module imports `visualization`; loaders return
+  `SpatialDataset`, `XeniumDataset` or `MERFISHDataset`, each declaring a
+  `coordinate_order`; results are returned as dataclasses or dictionaries, not written
+  onto a shared object.
 
 ## AI Workflows
 

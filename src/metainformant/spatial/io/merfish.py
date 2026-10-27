@@ -15,7 +15,7 @@ from __future__ import annotations
 import csv
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from metainformant.core.utils.logging import get_logger
 
@@ -91,7 +91,12 @@ class MERFISHDataset:
         cell_metadata: List of CellMetadata records.
         transcript_spots: Optional list of individual TranscriptSpot records.
         metadata: Additional dataset metadata.
+        coordinate_order: Class constant naming the column convention of ``coordinates``: ``"xy"``
+            (column 0 is x, column 1 is y, as in ``center_x`` / ``center_y``), which the plotting
+            functions use to put the columns on the right axes.
     """
+
+    coordinate_order: ClassVar[str] = "xy"
 
     expression: Any  # np.ndarray (n_cells, n_genes)
     coordinates: Any  # np.ndarray (n_cells, 2)
@@ -112,15 +117,21 @@ class MERFISHDataset:
         return len(self.gene_names)
 
 
+def _delimiter_for(path: Path) -> str:
+    """Field delimiter implied by a table file's extension: tab for ``.tsv`` / ``.tab``, comma otherwise."""
+    return "\t" if path.suffix.lower() in (".tsv", ".tab") else ","
+
+
 def parse_cell_metadata(metadata_file: str | Path) -> list[CellMetadata]:
-    """Parse MERFISH cell metadata CSV file.
+    """Parse MERFISH cell metadata file (comma-separated, or tab-separated for ``.tsv``).
 
     Reads cell centroid positions, volumes, FOVs, and any additional columns.
     The file should have columns including: cell_id (or CellID), center_x, center_y
     (or x, y), and optionally center_z, volume, fov.
 
     Args:
-        metadata_file: Path to cell_metadata.csv.
+        metadata_file: Path to cell_metadata.csv or cell_metadata.tsv. The delimiter follows the file
+            extension.
 
     Returns:
         List of CellMetadata records.
@@ -136,7 +147,7 @@ def parse_cell_metadata(metadata_file: str | Path) -> list[CellMetadata]:
     cells: list[CellMetadata] = []
 
     with open(metadata_path, "r", newline="") as fh:
-        reader = csv.DictReader(fh)
+        reader = csv.DictReader(fh, delimiter=_delimiter_for(metadata_path))
         headers = set(reader.fieldnames or [])
 
         # Detect column naming conventions
@@ -187,7 +198,8 @@ def load_transcript_spots(spots_file: str | Path) -> list[TranscriptSpot]:
     and optionally z, cell_id, quality.
 
     Args:
-        spots_file: Path to detected_transcripts.csv.
+        spots_file: Path to detected_transcripts.csv (or a ``.tsv`` file; the delimiter follows the
+            file extension).
 
     Returns:
         List of TranscriptSpot records.
@@ -202,7 +214,7 @@ def load_transcript_spots(spots_file: str | Path) -> list[TranscriptSpot]:
     spots: list[TranscriptSpot] = []
 
     with open(spots_path, "r", newline="") as fh:
-        reader = csv.DictReader(fh)
+        reader = csv.DictReader(fh, delimiter=_delimiter_for(spots_path))
         headers = set(reader.fieldnames or [])
 
         gene_col = _find_column(headers, ["gene", "Gene", "gene_name", "target", "feature_name"])
@@ -310,8 +322,8 @@ def load_merfish(
 
     Expects:
         path/
-            cell_by_gene.csv: Cell-level expression matrix (cells as rows, genes as columns).
-            cell_metadata.csv: Cell positions and metadata.
+            cell_by_gene.csv (or .tsv): Cell-level expression matrix (cells as rows, genes as columns).
+            cell_metadata.csv (or .tsv): Cell positions and metadata.
             detected_transcripts.csv (optional): Per-transcript coordinates.
 
     Args:
@@ -322,7 +334,9 @@ def load_merfish(
         MERFISHDataset with expression, coordinates, and metadata.
 
     Raises:
-        FileNotFoundError: If required files are missing.
+        FileNotFoundError: If the cell-by-gene matrix or ``cell_metadata.csv`` is missing.
+        ValueError: If ``cell_metadata.csv`` has no row for a cell of the matrix. Cells are never given
+            placeholder coordinates.
         ImportError: If numpy is not installed.
     """
     if np is None:
@@ -347,10 +361,8 @@ def load_merfish(
     gene_names: list[str] = []
     expression_rows: list[list[float]] = []
 
-    delimiter = "\t" if str(expr_file).endswith(".tsv") else ","
-
     with open(expr_file, "r", newline="") as fh:
-        reader = csv.reader(fh, delimiter=delimiter)
+        reader = csv.reader(fh, delimiter=_delimiter_for(expr_file))
         header = next(reader)
         # First column is cell ID; remaining are gene names
         gene_names = header[1:]
@@ -370,22 +382,24 @@ def load_merfish(
             metadata_file = base_dir / candidate
             break
 
-    cell_metadata: list[CellMetadata] = []
-    if metadata_file is not None:
-        cell_metadata = parse_cell_metadata(metadata_file)
-        # Build coordinate array from metadata
-        meta_id_to_meta = {m.cell_id: m for m in cell_metadata}
-        coords_list: list[list[float]] = []
-        for cid in cell_ids:
-            meta = meta_id_to_meta.get(cid)
-            if meta:
-                coords_list.append([meta.x, meta.y])
-            else:
-                coords_list.append([0.0, 0.0])
-        coordinates = np.array(coords_list, dtype=np.float64)
-    else:
-        logger.warning("No cell_metadata.csv found; coordinates will be zeros")
-        coordinates = np.zeros((len(cell_ids), 2), dtype=np.float64)
+    if metadata_file is None:
+        raise FileNotFoundError(
+            f"No cell_metadata.csv/.tsv found in {base_dir}: the cell coordinates are required, and "
+            "placeholder coordinates would be indistinguishable from real ones."
+        )
+
+    cell_metadata: list[CellMetadata] = parse_cell_metadata(metadata_file)
+    # Build coordinate array from metadata; a cell without a record is an error, not [0, 0]
+    meta_id_to_meta = {m.cell_id: m for m in cell_metadata}
+    missing = [cid for cid in cell_ids if cid not in meta_id_to_meta]
+    if missing:
+        raise ValueError(
+            f"{len(missing)} of {len(cell_ids)} cells in the expression matrix have no row in "
+            f"{metadata_file.name} (first: {missing[:5]}); refusing to give them placeholder [0, 0] coordinates."
+        )
+    coordinates = np.array(
+        [[meta_id_to_meta[cid].x, meta_id_to_meta[cid].y] for cid in cell_ids], dtype=np.float64
+    ).reshape(-1, 2)
 
     # --- Optionally load transcript spots ---
     transcript_spots: list[TranscriptSpot] | None = None

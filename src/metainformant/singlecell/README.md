@@ -49,7 +49,7 @@ graph TD
 | [`doublet/`](doublet/) | Simulation-based doublet detection (Scrublet-style KNN scoring) |
 | [`velocity/`](velocity/) | RNA velocity estimation for dynamic trajectories |
 | [`visualization/`](visualization/) | `plot_umap`, trajectory plots, QC visualizations |
-| [`io.py`](io.py) | GEO/SRA downloads (`download_geo_supplementary`, `download_sra_fastqs`, `fetch_atlas_datasets`), Salmon alevin quantification, external pipeline entry points |
+| [`io.py`](io.py) | GEO/SRA downloads (`download_geo_supplementary`, `download_sra_fastqs`, `fetch_atlas_datasets`) and Salmon alevin quantification (`run_salmon_alevin`). The nine helpers for R and pySCENIC tools (`run_seurat_integration`, `run_differential_expression`, `run_scenic_grnboost2`, `run_scenic_cistarget`, `run_scenic_aucell`, `filter_regulons_post_scenic`, `run_pseudotime_trajectory`, `run_go_enrichment`, `run_shinycell_export`) are not implemented: they raise `NotImplementedError` and create no files |
 
 ## Key Capabilities
 
@@ -88,9 +88,13 @@ data = compute_umap(data, n_neighbors=15)
 from metainformant.singlecell.analysis.clustering import leiden_clustering
 from metainformant.singlecell.analysis.trajectory import compute_diffusion_pseudotime
 
+# Leiden needs networkx, igraph and leidenalg (the `singlecell` extra); it raises ImportError without them
 data = leiden_clustering(data, resolution=1.0, n_neighbors=15)
+# Diffusion pseudotime (Haghverdi et al. 2016): scaled to [0, 1], `inf` for cells not connected to the root
 data = compute_diffusion_pseudotime(data, root_cell=0, n_components=10)
 ```
+
+Analysis functions return a modified copy and leave their input untouched; `select_hvgs`, `compute_neighbors` and `compute_diffusion_map` take a keyword-only `inplace=True` to write into the argument instead. See [docs/singlecell/](../../../docs/singlecell/) for details.
 
 ## Quick Start
 
@@ -105,8 +109,8 @@ import numpy as np
 data = SingleCellData(X=np.random.rand(1000, 3000))
 data = compute_pca(data, n_components=50)
 data = compute_umap(data, n_neighbors=15)
-data = leiden_clustering(data, resolution=0.8)
-fig = plot_umap(data, color="leiden")
+data = leiden_clustering(data, resolution=0.8)   # needs networkx, igraph and leidenalg
+fig = plot_umap(data, color="leiden_cluster")    # the label column written by leiden_clustering
 ```
 
 ## Related

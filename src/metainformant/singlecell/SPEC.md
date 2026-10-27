@@ -19,14 +19,27 @@ cell type annotation, doublet detection, and RNA velocity analysis.
 
 ## API Definition
 
+### Conventions
+
+- Analysis functions return a modified copy and leave their input untouched. `select_hvgs`, `compute_neighbors` and `compute_diffusion_map` take a keyword-only `inplace=False`; with `inplace=True` they write into the argument and return it.
+- `SingleCellData.copy()`, `filter_cells` and `filter_genes` copy `uns` recursively.
+- Argument checks raise `ValidationError` (`metainformant.core.utils.errors`, not a `ValueError` or `TypeError` subclass); a few functions raise the built-in `ValueError` instead (for example `select_hvgs`); missing optional packages raise `ImportError`.
+- Random draws made by the module itself use a local generator seeded from the function's `random_state`; numpy's global random state is never read or advanced.
+
 ### Exports — `analysis/`
 
-- `compute_pca` — PCA with auto-clamping of n_components
+- `compute_pca` — PCA with auto-clamping of n_components; `use_hvgs=True` restricts it to the genes flagged by `select_hvgs`
 - `compute_umap` — UMAP embedding
 - `compute_tsne` — t-SNE with automatic perplexity adjustment
-- `compute_neighbors` — k-NN graph (euclidean, cosine, manhattan)
-- `compute_diffusion_map` — diffusion map for trajectory analysis
-- `select_hvgs` — highly variable gene selection (seurat, variance, cell_ranger)
+- `compute_neighbors` — k-NN graph in `uns["neighbors"]` (any scikit-learn metric; `inplace` supported)
+- `compute_diffusion_map` — diffusion map for trajectory analysis (`obsm["X_diffmap"]`; fixed ARPACK start vector; `inplace` supported)
+- `diffusion_map_reduction` — dense diffusion map; raises `numpy.linalg.LinAlgError` instead of substituting random vectors
+- `select_hvgs` — highly variable gene selection (`seurat`, `cell_ranger`, `seurat_v3`, `variance`; `seurat_v3` expects raw counts and ranks genes by a standardised variance stored in `var["variances_norm"]`); `inplace` supported; raises the built-in `ValueError` for an unknown flavor
+- `leiden_clustering` — Leiden on a kNN graph; needs networkx, igraph and leidenalg and raises `ImportError` without them. Matrix input returns labels and can opt into a warned k-means fallback with `allow_kmeans_fallback=True`; `uns["leiden_clustering"]["method"]` records the method. `use_weights` is recorded only (edge weights are not passed to leidenalg)
+- `louvain_clustering`, `kmeans_clustering`, `hierarchical_clustering` (seeded subset above 1000 cells), `find_marker_genes`, `find_markers`, `compute_cluster_silhouette`, `evaluate_clustering_performance` — clustering and evaluation
+- `compute_diffusion_pseudotime` / `dpt_trajectory` — diffusion pseudotime (Haghverdi et al. 2016) on the neighbor graph: scaled to [0, 1], `inf` for cells not connected to the root, root recorded in `uns["dpt"]`
+- `paga_trajectory`, `slingshot_trajectory` — simplified approximations (connectivity from the row order of the cells; straight lines between cluster centroids)
+- `compute_pseudotime_from_dimensionality_reduction`, `find_trajectory_branches`, `compute_trajectory_entropy` — embedding-distance pseudotime and pseudotime-axis helpers
 
 
 ### Exports — `data/`
@@ -34,8 +47,8 @@ cell type annotation, doublet detection, and RNA velocity analysis.
 - `SingleCellData` — core data container (`obs`, `var`, `uns`, `obsm`, `varm`, `obsp`, `varp`, `layers`)
 - `load_count_matrix` — load h5ad, csv/tsv, or Matrix Market count matrices
 - `calculate_qc_metrics` — per-cell and per-gene QC metrics (counts, genes, mito/ribo %)
-- `filter_cells` / `filter_genes` — QC filtering (preserves `obsm`/`varm`/`layers`)
-- `normalize_counts` — total-count normalization (also `median`, `size_factors`)
+- `filter_cells` / `filter_genes` — QC filtering (preserves `obsm`/`varm`/`layers`); `filter_cells` recomputes the per-gene QC columns in `var` on the retained cells but leaves the cell-indexed `uns["neighbors"]` as it was
+- `normalize_counts` — total-count normalization (also `median`, `size_factors`); `uns["normalization"]["size_factors"]` holds one divisor per cell for every method, so `X_norm == X / size_factors * target_sum`
 - `log_transform` — log1p transformation (configurable base)
 - `scale_data` — z-score standardization with optional clipping
 - `identify_highly_variable_genes` — HVG selection (seurat, cell_ranger flavors)
@@ -65,6 +78,7 @@ cell type annotation, doublet detection, and RNA velocity analysis.
 
 - `download_geo_supplementary`, `download_sra_fastqs`, `fetch_atlas_datasets` — dataset acquisition (wget/fasterq-dump)
 - `run_salmon_alevin` — single-cell quantification via Salmon alevin
+- `run_seurat_integration`, `run_differential_expression`, `run_scenic_grnboost2`, `run_scenic_cistarget`, `run_scenic_aucell`, `filter_regulons_post_scenic`, `run_pseudotime_trajectory`, `run_go_enrichment`, `run_shinycell_export` — not implemented: each raises `NotImplementedError` with guidance and creates no file or directory at its output path
 
 ### Exports — `visualization/`
 
