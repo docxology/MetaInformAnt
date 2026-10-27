@@ -69,27 +69,49 @@ uv pip install -e .
 
 ## Data Loading Errors
 
-### "ValueError: Empty intensity matrix" from `read_csv()`
+### "ValueError: ... cannot read 'abc' as a number" from `read_csv()`
 
 **Symptom**:
 ```python
 dataset = io.formats.read_csv("data.csv")
-# ValueError: Intensity matrix is empty
+# ValueError: data.csv: line 2, metabolite 'Glucose', sample 'S1': cannot read 'abc' as a number;
+#             write a missing value as a blank cell or NA
 ```
 
-**Cause**: CSV file has no data rows or all intensity values are non-numeric.
-
-**Check**:
-```bash
-# Inspect file
-head -10 data.csv
-cat data.csv | wc -l
-```
+**Cause**: a cell is neither a number nor a missing-value token. `read_csv` reports it instead of replacing it with a value. Accepted missing-value tokens (any case) are a blank cell, `NA`, `N/A`, `#N/A`, `NaN`, `null` and `None`; they are returned as `NaN`.
 
 **Fix**:
-- Ensure CSV has header row and at least one data row
-- Check delimiter (use `delimiter="\t"` for TSV)
-- Verify intensity columns contain numbers, not strings
+- Write missing measurements as a blank cell or `NA`
+- A decimal comma (`1,5`) is not understood: the message says so. Convert to a decimal point
+- Check the delimiter (use `delimiter="\t"` for TSV, `delimiter=";"` for semicolon files)
+
+### "ValueError: ... line 2 has 4 cells but the header has 3" from `read_csv()`
+
+**Cause**: a row has a different number of cells than the header. A decimal comma in a comma-delimited file is a common reason, because it splits one number into two cells; so are a comma inside a metabolite name and a missing trailing column. `read_csv` splits each line on the delimiter and does not interpret quotes.
+
+**Fix**: make every row as wide as the header; remove the stray delimiter from the cell, or write the file with a delimiter (such as a tab) that the cells do not contain and pass it as `delimiter=`.
+
+### "ValueError: ... do not fit the 3 header columns", "duplicate annotation column names" or "occurs more than once" from `read_csv()`
+
+**Cause**: `metabolite_col` or `data_start_col` points outside the header, or annotation columns (those before `data_start_col`) are present and two of them have the same name, or a metabolite name occurs twice, so `dataset.metadata` would be ambiguous.
+
+**Fix**: pass indices that match the header, and make the annotation column names and metabolite names unique.
+
+### An empty dataset from `read_csv()`
+
+An empty file (or one with no non-blank line) returns a dataset with no metabolites and no samples; it does not raise. Check `len(dataset.metabolites)` after loading.
+
+### "ValueError: ... PEPMASS has no value" or "malformed peak line" from `read_mgf()`
+
+**Cause**: inside a `BEGIN IONS` block an empty `PEPMASS=`, a `PEPMASS`, `RTINSECONDS` or `SCANS` value that is not a number (`SCANS` must be an integer), or a line that is not a header and does not start with two finite numbers `m/z intensity`. The message names the file and the spectrum (counted from 1).
+
+**Fix**: correct the named spectrum. Comment lines (starting with `#`, `;`, `!` or `/`) and blank lines are skipped, and peak lines such as `.5 99` and `+200.0 20` are read.
+
+### `read_mgf()` returns fewer spectra than the file contains
+
+**Cause**: a `BEGIN IONS` block that is never closed by `END IONS` (for example the last spectrum of a truncated file) is dropped without an error.
+
+**Fix**: check that every block ends with `END IONS`.
 
 **Example correct CSV**:
 ```csv
@@ -126,6 +148,14 @@ dataset = io.formats.read_csv("data.csv")
 ---
 
 ## Identification Errors
+
+### "ValueError: ppm_tolerance must be a positive finite number" or "ion_mode must be 'positive' or 'negative'"
+
+**Cause**: `identify_metabolites` and `identify_with_adducts` reject a `ppm_tolerance` that is zero, negative, `NaN`, infinite or not a number, and `identify_with_adducts` rejects an `ion_mode` other than `"positive"` or `"negative"` (any case), even when you pass your own `adducts`.
+
+**Fix**: pass a tolerance such as 5–50 ppm and `ion_mode="positive"` or `"negative"`.
+
+---
 
 ### "No metabolites identified — all match lists empty"
 
@@ -200,6 +230,27 @@ for i, mz in enumerate(observed_mz[:10]):
 ---
 
 ## Normalization Errors
+
+### "ValueError: normalize_intensities(method='total_ion_count') needs complete data"
+
+**Symptom**:
+```python
+normalize_intensities(dataset.intensities, method="total_ion_count")
+# ValueError: normalize_intensities(method='total_ion_count') needs complete data: a NaN would silently
+#             distort the scale factor of its sample. Impute missing values first with
+#             missing_value_imputation, or use method='log2', which keeps a NaN in place
+```
+
+**Cause**: the matrix contains `NaN`, for example a cell that `read_csv` returned from a blank cell or `NA`. `"total_ion_count"` and `"median"` rescale each sample by a statistic of that sample, so one `NaN` would distort the scale of its sample and, through the shared median, of every other sample.
+
+**Fix**:
+```python
+imputed = missing_value_imputation(dataset.intensities, method="min_half")  # NaN and zeros are filled
+normalized = normalize_intensities(imputed, method="total_ion_count")
+```
+`method="log2"` keeps a `NaN` where it is; `fold_change()` returns `NaN` for a metabolite with a missing value in either group.
+
+---
 
 ### "Zero division warning in normalize_intensities"
 
@@ -328,7 +379,7 @@ RuntimeWarning: invalid value encountered in sqrt
    **Solution**: Filter pathway_db to size 10–200 metabolites.
 
 3. **Background size wrong**: If `background_size` vastly overestimates universe, p-values become too conservative.
-   **Solution**: Let function auto-compute: `background_size=None` (default).
+   **Solution**: Let function auto-compute: `background_size=None` (default). A `background_size` smaller than the query or than a pathway raises `ValueError` (see below).
 
 4. **Query metabolites not in pathway database**: Check overlap.
    ```python
@@ -341,28 +392,24 @@ RuntimeWarning: invalid value encountered in sqrt
 
 ---
 
-### "Hypergeometric calculation raised ValueError"
+### "ValueError: inconsistent hypergeometric parameters"
 
 **Symptom**:
 ```
-ValueError: k must be integer or exact integer
+ValueError: inconsistent hypergeometric parameters: population N=2, successes K=2, draws n=3
+(need 0 <= K <= N and 0 <= n <= N). In metabolite_set_enrichment N is background_size, K the
+pathway size and n the number of distinct query metabolites, so background_size must be at least
+as large as the query and as every pathway
 ```
 
-**Cause**: Input contains non-integer counts (bug in pathway_db where sizes not integers).
+**Cause**: `background_size` is smaller than the number of distinct query metabolites or than a pathway, so it cannot be a universe that contains them.
 
-**Fix**: Ensure pathway_db values are lists of metabolite names (strings), not counts. The function counts overlaps internally.
+**Fix**: pass a `background_size` that covers every metabolite you measured (at least as large as the query and the largest pathway), or leave it at `None` to use the union of the pathway members and the query.
 
-**Correct**:
+**Also check** that `pathway_db` values are lists of metabolite names (strings), not counts; the function counts overlaps itself:
 ```python
 pathway_db = {
-    "Glycolysis": ["Glucose", "Pyruvate", "Lactate"],  # list of names
-}
-```
-
-**Incorrect**:
-```python
-pathway_db = {
-    "Glycolysis": 3,  # WRONG: should be list, not count
+    "Glycolysis": ["Glucose", "Pyruvate", "Lactate"],  # list of names, not a count such as 3
 }
 ```
 
@@ -460,19 +507,20 @@ plt.show()  # Only works in IPython with %matplotlib inline
 
 **Symptom**: Files saved to unexpected location despite setting `METAINFORMANT_OUTPUT`.
 
-**Cause**: Metabolomics I/O functions don't automatically respect `METAINFORMANT_OUTPUT`; this is handled at higher level (scripts/CLI).
+**Cause**: The metabolomics module reads no environment variables, so `METAINFORMANT_OUTPUT` has no effect. `write_csv` and `write_mgf` write exactly to the path you pass and do not create missing directories.
 
-**Fix**: Within your code, construct paths explicitly:
+**Fix**: Within your code, construct the path explicitly:
 ```python
 import os
 from pathlib import Path
 
-output_base = Path(os.getenv("METAINFORMANT_OUTPUT", "output"))
-output_path = output_base / "metabolomics" / "results.csv"
-dataset.to_csv(output_path)
-```
+from metainformant.metabolomics.io.formats import write_csv
 
-Future: Direct support for `META_` prefixed environment variables in module config (planned).
+output_base = Path(os.getenv("METAINFORMANT_OUTPUT", "output"))  # your own convention
+output_path = output_base / "metabolomics" / "results.csv"
+output_path.parent.mkdir(parents=True, exist_ok=True)
+write_csv(dataset, output_path)
+```
 
 ---
 
@@ -515,17 +563,19 @@ Or use `enrichment_with_fdr()` which handles this internally.
 
 **Wrong**:
 ```python
-# If intensity matrix has zeros (missing) and you compute variance:
-var = intensities.var(axis=1)  # zeros reduce variance artificially
+# read_csv returns NaN for blank/NA cells; zeros may also stand for "not detected"
+normalize_intensities(intensities, method="total_ion_count")  # ValueError: needs complete data
+var = intensities.var(axis=1)  # NaN, or zeros reducing the variance artificially
 ```
 
 **Correct**:
 ```python
-imputed = missing_value_imputation(intensities, method="min_half")
+imputed = missing_value_imputation(intensities, method="min_half")  # fills NaN and zeros
+normalized = normalize_intensities(imputed, method="total_ion_count")
 var = imputed.var(axis=1)
 ```
 
-Note: Imputation is only needed for statistics that use variance (PCA, clustering, differential analysis). For presence/absence tests (e.g., detection rate comparison), zeros have meaning.
+Note: Imputation is needed before TIC/median normalization (which refuse `NaN`) and for statistics that use variance (PCA, clustering, differential analysis). For presence/absence tests (e.g., detection rate comparison), zeros have meaning, so count them before imputing.
 
 ---
 

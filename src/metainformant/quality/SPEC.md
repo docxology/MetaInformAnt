@@ -34,7 +34,7 @@ contamination detection, batch effect analysis, and FASTQ parsing.
 - `calculate_data_integrity_score` — FASTQ integrity checks (has reads, quality range, length consistency)
 - `compare_quality_metrics` — Side-by-side comparison of two datasets' scores
 - `generate_quality_report` — Multi-section quality assessment report
-- `batch_quality_analysis` — FASTQ quality analysis across multiple files
+- `batch_quality_analysis` — FASTQ quality analysis across multiple files; only `data_type="fastq"` is analysed: `"vcf"` and `"bam"` raise `NotImplementedError`, any other value raises `ValueError`, before any file is read and even for an empty list
 - `detect_outliers` — IQR, z-score, or modified z-score outlier detection
 - `calculate_coverage_metrics`, `calculate_duplication_metrics`, `calculate_gc_metrics`,
   `calculate_length_metrics`, `calculate_quality_metrics`, `calculate_complexity_metrics` —
@@ -53,7 +53,7 @@ contamination detection, batch effect analysis, and FASTQ parsing.
 
 - `BatchEffectReport` — Dataclass summarizing batch effect detection
 - `detect_batch_effects` — PVCA-style variance decomposition + silhouette score
-- `correct_batch_combat` — Empirical-Bayes (ComBat-like) batch correction
+- `correct_batch_combat` — Parametric empirical-Bayes ComBat batch correction (Johnson, Li & Rabinovic 2007; no covariates; finite input, at least 2 samples per batch)
 
 ### Exports — `reporting/multiqc_integration.py`
 

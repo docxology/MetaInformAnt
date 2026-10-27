@@ -49,6 +49,10 @@ def metabolite_set_enrichment(
 
     Returns:
         List of EnrichmentResult, sorted by p-value ascending.
+
+    Raises:
+        ValueError: If ``background_size`` is smaller than the query or than a pathway, which
+            cannot be a universe containing them.
     """
     query_set = set(query_metabolites)
 
@@ -91,6 +95,12 @@ def metabolite_set_enrichment(
 def _hypergeometric_pvalue(k: int, K: int, n: int, N: int) -> float:
     """Compute one-tailed hypergeometric p-value P(X >= k).
 
+    ``X`` is the number of pathway members among ``n`` metabolites drawn without replacement
+    from a universe of ``N`` that contains ``K`` pathway members. The upper tail is summed
+    exactly with integers and divided once, so the result is correctly rounded and stays
+    accurate for very small tails (it only underflows to 0.0 when the true p-value is below
+    about 5e-324).
+
     Args:
         k: Number of successes in sample.
         K: Total successes in population.
@@ -98,15 +108,25 @@ def _hypergeometric_pvalue(k: int, K: int, n: int, N: int) -> float:
         N: Population size.
 
     Returns:
-        P-value.
+        P-value, in [0, 1].
+
+    Raises:
+        ValueError: If the arguments do not describe a draw from a population (``K`` or ``n``
+            negative or larger than ``N``). Such a call used to return 0.0, the most
+            significant p-value possible, for what is really an invalid ``background_size``.
     """
-    p = 0.0
-    for i in range(k, min(K, n) + 1):
-        try:
-            p += comb(K, i) * comb(N - K, n - i) / comb(N, n)
-        except (ValueError, ZeroDivisionError):
-            continue
-    return min(p, 1.0)
+    if N < 0 or not 0 <= K <= N or not 0 <= n <= N:
+        raise ValueError(
+            f"inconsistent hypergeometric parameters: population N={N}, successes K={K}, draws n={n} "
+            "(need 0 <= K <= N and 0 <= n <= N). In metabolite_set_enrichment N is background_size, "
+            "K the pathway size and n the number of distinct query metabolites, so background_size "
+            "must be at least as large as the query and as every pathway"
+        )
+    # X takes values from max(0, n + K - N) to min(K, n); P(X >= k) sums that support from k up
+    lowest = max(k, 0, n + K - N)
+    highest = min(K, n)
+    tail = sum(comb(K, i) * comb(N - K, n - i) for i in range(lowest, highest + 1))
+    return min(tail / comb(N, n), 1.0)
 
 
 def benjamini_hochberg(p_values: list[float]) -> list[float]:

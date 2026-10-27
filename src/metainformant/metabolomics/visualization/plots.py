@@ -146,6 +146,16 @@ class ChromatogramPeak:
     area: float
 
 
+def _trapezoid_area(y: np.ndarray, x: np.ndarray) -> float:
+    """Area under ``y(x)`` by the trapezoidal rule.
+
+    Spelled out because NumPy renamed ``np.trapz`` to ``np.trapezoid`` in 2.0 and removed the old name
+    in later releases, while this package supports NumPy >= 1.24: neither name exists on every
+    supported version. The arithmetic is exactly NumPy's own.
+    """
+    return float(np.sum(np.diff(x) * (y[1:] + y[:-1]) / 2.0))
+
+
 def detect_chromatographic_peaks(
     retention_times: np.ndarray,
     intensities: np.ndarray,
@@ -192,7 +202,7 @@ def detect_chromatographic_peaks(
             continue
 
         # Trapezoidal integration for area
-        area = float(np.trapezoid(intensities[left : right + 1], retention_times[left : right + 1]))
+        area = _trapezoid_area(intensities[left : right + 1], retention_times[left : right + 1])
 
         peaks.append(
             ChromatogramPeak(

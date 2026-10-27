@@ -37,7 +37,7 @@ print(f"  Metabolites: {len(dataset.metabolites)}, Samples: {len(dataset.samples
 # Output: Metabolites: 500, Samples: 60
 
 # ── Quality control: flag low-signal samples ──────────────────────────
-sample_totals = dataset.intensities.sum(axis=0)
+sample_totals = np.nansum(dataset.intensities, axis=0)  # read_csv returns NaN for blank/NA cells
 low_signal = sample_totals < 1e5
 print(f"  Low-signal samples (< 1e5 total): {low_signal.sum()}")
 # Remove or investigate low-signal samples if needed
@@ -53,6 +53,12 @@ group_a = [i for i, g in enumerate(sample_groups) if g == "diabetic"]
 group_b = [i for i, g in enumerate(sample_groups) if g == "control"]
 print(f"  Group sizes: diabetic={len(group_a)}, control={len(group_b)}")
 # Output (with one low-signal sample in each group): Group sizes: diabetic=29, control=29
+
+# ── Missing values ──────────────────────────────────────────────────────
+# TIC and median normalization raise ValueError on NaN, so impute blank/NA cells first
+dataset.intensities = analysis.identification.missing_value_imputation(
+    dataset.intensities, method="min_half"
+)
 
 # ── Normalization ───────────────────────────────────────────────────────
 print("Normalizing (TIC)...")
@@ -213,7 +219,11 @@ wt_idx = [i for i, s in enumerate(dataset.samples) if s.startswith("WT")]
 mut_idx = [i for i, s in enumerate(dataset.samples) if s.startswith("KRAS")]
 print(f"WT: {len(wt_idx)}, KRAS-mut: {len(mut_idx)}")
 
-# Normalize (row-wise pareto scaling for PCA)
+# Normalize (row-wise pareto scaling for PCA). read_csv returns NaN for blank/NA cells, and one NaN
+# would turn the whole row of its metabolite to NaN, so impute missing cells first
+dataset.intensities = analysis.identification.missing_value_imputation(
+    dataset.intensities, method="median"
+)
 norm_pareto = analysis.identification.normalize_intensities(
     dataset.intensities, method="pareto"
 )
@@ -296,7 +306,7 @@ from scipy.stats import f_oneway
 from metainformant.metabolomics import io
 
 dataset = io.formats.read_csv("timecourse.csv")
-intensities = dataset.intensities
+intensities = dataset.intensities  # blank/NA cells are NaN; impute them (missing_value_imputation) before the ANOVA
 
 # Group indices by timepoint
 timepoints = ["0h", "2h", "6h", "24h"]
@@ -577,7 +587,8 @@ from metainformant.metabolomics import io, analysis, visualization
 from metainformant.quality.batch.detection import correct_batch_combat
 
 dataset = io.formats.read_csv("large_cohort.csv")
-intensities = dataset.intensities  # (1000, 500)
+# read_csv returns NaN for blank/NA cells; TIC normalization and ComBat both refuse NaN, so impute first
+intensities = analysis.identification.missing_value_imputation(dataset.intensities, method="min_half")  # (1000, 500)
 
 # Load batch labels from external file (row order must match dataset.samples)
 metadata = pd.read_csv("sample_metadata.csv")
@@ -641,14 +652,14 @@ batch_effect = batch_var / (total_var + 1e-10)
 print(f"Metabolites with strong batch effect (η² > 0.3): {(batch_effect > 0.3).sum()}")
 
 # ── 5. Batch correction (if needed) ──────────────────────────────────────
-# correct_batch_combat() takes samples × features and returns the same shape. It is a
-# simplified ComBat-style correction: each batch is centered on the grand mean and its
-# standard deviation is rescaled toward the overall one (the ratio is shrunk halfway toward 1,
-# a fixed shrinkage of 0.5). It is not the full parametric empirical-Bayes ComBat and has no
-# covariate argument, so do not use it when batch is confounded with the biological groups
-# you want to compare.
+# correct_batch_combat() takes samples × features and returns the same shape. It is parametric
+# empirical-Bayes ComBat (Johnson, Li & Rabinovic 2007): each batch's location and scale effect
+# is estimated per metabolite, shrunk toward the other metabolites' effects by priors fitted across
+# features, and removed. It needs finite data (hence the imputation above) and at least 2 samples
+# per batch, and it has no covariate argument, so do not use it when batch is confounded with the
+# biological groups you want to compare.
 corrected = correct_batch_combat(log_norm.T, batches).T  # back to metabolites × samples
-print("Batch correction applied (ComBat-style)")
+print("Batch correction applied (ComBat)")
 
 # Re-run PCA on corrected data
 plot_pca_by_batch(corrected, batches, "pca_after_correction.png")
@@ -676,14 +687,14 @@ TIC range: 2.34e+05 – 8.91e+05
 CV across samples: 0.412
 TIC outliers: 12 samples
 Metabolites with strong batch effect (η² > 0.3): 127
-Batch correction applied (ComBat-style)
-Batch effect reduced: 100.0% of metabolites
+Batch correction applied (ComBat)
+Batch effect reduced: 99.7% of metabolites
 ```
 
 **Interpretation**:
 - **High TIC CV (0.41)**: Indicates substantial sample-to-sample variation (likely batch-driven).
 - **127 metabolites with η² > 0.3**: Strong batch confounding; must correct before biological inference.
-- **Post-correction reduction (100% of metabolites)**: `correct_batch_combat()` sets every batch mean to the grand mean, so the between-batch term drops to ~0 by construction; check that PCA now clusters by biology, not batch.
+- **Post-correction reduction (99.7% of metabolites)**: `correct_batch_combat()` removes the estimated batch location and scale effects, but its empirical-Bayes estimates are shrunk toward the common mean, so the between-batch term falls sharply without being forced to zero and the share of metabolites that improve depends on your data; check that PCA now clusters by biology, not batch.
 
 ---
 
@@ -697,8 +708,8 @@ Batch effect reduced: 100.0% of metabolites
 | **Pathway analysis** | `metabolite_set_enrichment()`, `enrichment_with_fdr()`, `pathway_activity_scoring()` |
 | **Quality control** | `filter_spectra()`, manual TIC checks (Examples 1 and 6) |
 | **Spectral matching** | `read_mgf()`, `cosine_spectral_similarity()` |
-| **Missing data** | `missing_value_imputation()` |
-| **Batch correction** | `metainformant.quality.batch.detection.correct_batch_combat()` (simplified ComBat-style) |
+| **Missing data** | `missing_value_imputation()` (run it before TIC/median normalization and before ComBat; `read_csv` returns `NaN` for blank/NA cells) |
+| **Batch correction** | `metainformant.quality.batch.detection.correct_batch_combat()` (parametric empirical-Bayes ComBat, no covariates) |
 | **Visualization (plot-ready data; draw with matplotlib)** | `visualization.plots.volcano_plot_data()`, `pca_metabolomics()`, `intensity_heatmap_data()`, `prepare_spectrum_plot()`, `detect_chromatographic_peaks()`, `retention_time_alignment_data()` |
 
 ---

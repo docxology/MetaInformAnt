@@ -28,9 +28,11 @@ Exhaustive reference of all functions, classes, and algorithms in the metabolomi
 **Parameters**:
 - `observed_mz` (np.ndarray): 1D array of m/z values from mass spectrometer
 - `database` (dict[str, float]): Mapping metabolite name → exact monoisotopic m/z
-- `ppm_tolerance` (float): Maximum allowed mass error in parts per million (default 10.0)
+- `ppm_tolerance` (float): Maximum allowed mass error in parts per million (default 10.0); must be a positive, finite number
 
 **Returns**: `list[list[MetaboliteMatch]]` — outer list per observed m/z; inner list sorted by score descending
+
+**Raises**: `ValueError` if `ppm_tolerance` is zero, negative, `NaN`, infinite or not a number (zero cannot score a match, a negative or `NaN` tolerance matches nothing, an infinite one matches everything)
 
 **Scoring**:
 ```
@@ -70,10 +72,12 @@ matches = identify_metabolites(observed, db, ppm_tolerance=10)
 - `observed_mz` (np.ndarray): 1D array of observed m/z values
 - `database` (dict[str, float]): Metabolite name → neutral monoisotopic mass
 - `adducts` (dict[str, float] | None): Custom adduct definitions; if None, uses built-in COMMON_ADDUCTS filtered by `ion_mode`
-- `ppm_tolerance` (float): Matching tolerance in ppm (default 10.0)
-- `ion_mode` (str): `"positive"` or `"negative"` to select default adducts
+- `ppm_tolerance` (float): Matching tolerance in ppm (default 10.0); must be a positive, finite number
+- `ion_mode` (str): `"positive"` or `"negative"` (any case) to select default adducts; validated even when `adducts` is given
 
 **Returns**: `list[list[AdductMatch]]` — matches per observed m/z, sorted by delta_ppm ascending
+
+**Raises**: `ValueError` if `ppm_tolerance` is not a positive, finite number or `ion_mode` is not `"positive"` or `"negative"`
 
 **Built-in Adducts** (COMMON_ADDUCTS):
 
@@ -129,12 +133,14 @@ print(matches[0][0])
 
 **Returns**: Normalized 2D np.ndarray same shape
 
+**Raises**: `ValueError` for an unknown method, and for `total_ion_count` or `median` when the matrix contains `NaN`. Those methods rescale a whole sample by a statistic of that sample, so one missing value (`read_csv` returns `NaN` for one) would distort the scale of its sample and the shared median factor of all samples; impute first with `missing_value_imputation`.
+
 **Details**:
 
-- **TIC**: Computes total ion current per sample; scales to common median to equate overall signal. Zeros are treated as missing and preserved as zeros.
+- **TIC**: Computes total ion current per sample; scales to common median to equate overall signal. A zero intensity stays zero, and a sample whose total is zero stays all zeros.
 - **Median**: Sample median; robust if <50% of metabolites change.
-- **Log2**: Adds 1 before log to handle zeros; suitable for linear modeling.
-- **Pareto**: Row-wise (per-metabolite) centering and scaling; useful for PCA where you want each feature to contribute equally.
+- **Log2**: Adds 1 before log to handle zeros; suitable for linear modeling. A `NaN` stays `NaN`.
+- **Pareto**: Row-wise (per-metabolite) centering and scaling; useful for PCA where you want each feature to contribute equally. It does not check for `NaN`: a `NaN` makes the whole row of its metabolite `NaN`.
 
 **Example**:
 ```python
@@ -158,7 +164,7 @@ norm_tic = normalize_intensities(raw, method="total_ion_count")
 ```
 log2FC = log2(mean(group_A) / mean(group_B))
 ```
-Small constant (1e-10) added to avoid division by zero.
+A group mean that is zero or negative is floored at 1e-10 so the ratio stays finite. A metabolite with a missing value (`NaN`) in either group has no defined mean and gets a `NaN` fold change; it is not floored, which would report a fabricated fold change of about -40 for what is really unknown.
 
 **Parameters**:
 - `intensities` (np.ndarray): 2D normalized intensities (metabolites × samples)
@@ -261,6 +267,26 @@ sim = cosine_spectral_similarity(spec1, spec2)  # ~0.93
 
 ---
 
+### Batch Correction (in `metainformant.quality`)
+
+#### `correct_batch_combat(data, batch_labels)`
+
+**Purpose**: Remove batch effects from a metabolite matrix with parametric empirical-Bayes ComBat (Johnson, Li & Rabinovic 2007, no covariates). It lives in `metainformant.quality.batch.detection`, not in the metabolomics package.
+
+**Parameters**:
+- `data` (np.ndarray): 2D array, **samples × features** and finite, so transpose a metabolites × samples matrix in and out (`correct_batch_combat(X.T, labels).T`)
+- `batch_labels` (list[str]): one batch label per sample
+
+**Returns**: corrected array of the same shape; `data` itself is not modified.
+
+**Behaviour**: the data are standardized once, each batch's location and scale effects are estimated per feature and shrunk toward each other by empirical-Bayes priors fitted across features, and the posterior means give the adjustment. The result does not depend on the order or the labels of the batches or on the order of the samples. A feature that is constant within some batch is returned unchanged, and a single batch comes back as a copy.
+
+**Raises** `ValueError` for NaN or infinite input (impute or drop first), a batch with a single sample, mismatched `batch_labels`, or exactly one feature that varies within every batch (the priors need at least two).
+
+**Limitation**: there are no covariates, so biological groups that coincide with batches are removed along with them.
+
+---
+
 ## I/O (`io/formats.py`)
 
 ### `MetabolomicsDataset`
@@ -271,7 +297,7 @@ sim = cosine_spectral_similarity(spec1, spec2)  # ~0.93
 - `metabolites` (list[str]): Metabolite identifiers/names
 - `samples` (list[str]): Sample identifiers
 - `intensities` (np.ndarray): 2D array (n_metabolites × n_samples)
-- `metadata` (dict): Optional per-metabolite metadata (m/z, RT, formula, etc.)
+- `metadata` (dict): Optional per-metabolite metadata keyed by metabolite name, `{metabolite: {column_name: value}}` (m/z, RT, formula, etc.); `read_csv` fills it from the annotation columns that precede the intensity columns
 
 **Example**:
 ```python
@@ -316,7 +342,7 @@ spec = MassSpectrum(
 
 #### `read_csv(filepath, delimiter=",", metabolite_col=0, data_start_col=1)`
 
-**Format**: First column = metabolite IDs; subsequent columns = sample intensities. First row = header.
+**Format**: First column = metabolite IDs; subsequent columns = sample intensities. First row = header. Blank lines are ignored.
 
 **Example file**:
 ```csv
@@ -332,7 +358,17 @@ Lactate,500,450
 - `metabolite_col`: Zero-based column index for metabolite names
 - `data_start_col`: First column index containing intensity data
 
-**Note**: Does NOT handle metadata rows (skip with `skiprows` in future enhancement).
+**Missing values**: a blank cell or one of `NA`, `N/A`, `#N/A`, `NaN`, `null` or `None` (any case) is returned as `NaN`, never as `0.0`; a true zero stays `0.0`. `missing_value_imputation` treats `NaN` and zero as missing alike, so the two compose.
+
+**Annotation columns**: columns before `data_start_col` other than `metabolite_col` (for example `mz` and `rt`) fill `MetabolomicsDataset.metadata` as `{metabolite: {column: value}}`; numbers become floats, missing-value tokens become `NaN`, anything else stays text. With the default layout there are none and `metadata` is empty.
+
+**Raises** `ValueError` for:
+- a cell that is neither a number nor a missing-value token (text, or a decimal comma such as `1,5`), naming the line, the metabolite and the sample;
+- a row with a different number of cells than the header, naming the line (a decimal comma in a comma-delimited file splits one number into two cells and lands here);
+- `metabolite_col` or `data_start_col` that do not fit the header;
+- a repeated metabolite name or annotation column name, when annotation columns are present (the metadata would be ambiguous).
+
+An empty file returns an empty dataset. A UTF-8 byte-order mark in the header is ignored.
 
 ---
 
@@ -351,7 +387,7 @@ Lactate,500,450
 **MGF Format**:
 ```
 BEGIN IONS
-PEPMASS=180.0634 100.0   # m/z [intensity]
+PEPMASS=180.0634 100.0
 RTINSECONDS=245.6
 SCANS=1
 CHARGE=2+
@@ -361,11 +397,16 @@ CHARGE=2+
 END IONS
 ```
 
-**Returns**: List of `MassSpectrum` objects (one per BEGIN/END block).
+**Returns**: List of `MassSpectrum` objects (one per BEGIN/END block), all with `ms_level=2`.
+
+**Line rules** inside a block: blank lines and comment lines (starting with `#`, `;`, `!` or `/`) are skipped; a line containing `=` is a header (`PEPMASS` — first number only —, `RTINSECONDS` and `SCANS` are read, every other header such as `TITLE` or `CHARGE` is ignored); every other line is a peak and must start with two finite numbers, `m/z intensity` (further columns are ignored). A peak line is never skipped silently: `.5 99` and `+200.0 20` are read, a malformed one is an error.
+
+**Raises** `ValueError`, naming the file and the spectrum (counted from 1 in file order), if `PEPMASS=` has no value, a `PEPMASS`, `RTINSECONDS` or `SCANS` value is not a number (`SCANS` an integer), or a peak line is malformed or non-finite.
 
 **Known limitations**:
-- Does not parse `CHARGE` field (assumes MS1 if PEPMASS only; MS2 if multiple peaks)
-- Ignores `TITLE`, `SEQ`, and other optional fields
+- Text before the first `BEGIN IONS` is ignored, and so is a `BEGIN IONS` block that is never closed by `END IONS` (for example the last spectrum of a truncated file); the file is not rejected, so compare the number of spectra returned with what you expect
+- `CHARGE`, `TITLE`, `SEQ` and other optional headers are ignored
+- mzML and mzXML are not supported; convert them to MGF
 
 ---
 
@@ -499,6 +540,8 @@ Where:
 
 **Returns**: `list[EnrichmentResult]` sorted by p-value ascending
 
+**Raises**: `ValueError` if `background_size` is smaller than the number of distinct query metabolites or than a pathway, since that cannot be a universe containing them (the error names N, K and n)
+
 **Example**:
 ```python
 pathways = {
@@ -589,14 +632,22 @@ for ps in pathway_scores[:5]:
 
 ## Visualization (`visualization/plots.py`)
 
-**Status**: Stub module. Base plotting functions are provided; detailed implementations are in development.
+**Status**: The module prepares plot-ready data (and does a little computation); it draws nothing. Draw the results with matplotlib or the shared helpers in `metainformant.visualization`.
 
-**Current Exports**:
-- `volcano_plot()` — Basic volcano plot scaffold
-- `pca_plot()` — PCA ordination wrapper
-- `heatmap()` — Expression heatmap template
+**Exports**:
 
-**Recommendation**: For production use, leverage `metainformant.visualization` core plotting utilities which are more comprehensive.
+| Function | Purpose |
+|----------|---------|
+| `volcano_plot_data(metabolite_names, log2_fold_changes, p_values, fc_threshold=1.0, p_threshold=0.05)` | `list[VolcanoPoint]` (`name`, `log2_fc`, `neg_log10_p`, `significant`) |
+| `pca_metabolomics(intensities, n_components=2)` | SVD-based PCA of a metabolites × samples matrix: `(scores, explained_variance_ratio)` |
+| `intensity_heatmap_data(intensities, metabolite_names, sample_names, normalize=True)` | dict with `matrix` (row z-scores when `normalize`), `row_labels`, `col_labels` |
+| `detect_chromatographic_peaks(retention_times, intensities, min_intensity=0.0, min_peak_width=3)` | local-maximum peak picking in an extracted ion chromatogram: `list[ChromatogramPeak]` with `peak_idx`, `retention_time`, `intensity`, `left_idx`, `right_idx`, `area` |
+| `prepare_spectrum_plot(mz_array, intensity_array, top_n=20, annotation_db=None, ppm_tolerance=10.0)` | `MassSpectrumPlotData`: the top `top_n` peaks scaled to 0-100 relative to the base peak, with optional annotations |
+| `retention_time_alignment_data(reference_rts, sample_rts)` | `(deviations, corrected_rts, rmse)` from a polynomial fit |
+
+`detect_chromatographic_peaks` integrates each peak's area with the trapezoidal rule, written out in the module, so it runs on every supported NumPy (>= 1.24).
+
+**Recommendation**: For production figures, pass the prepared data to `metainformant.visualization` plotting utilities.
 
 ---
 
@@ -614,10 +665,10 @@ for ps in pathway_scores[:5]:
 
 | Method | Recommended For | Caveats |
 |--------|----------------|---------|
-| TIC | General purpose | Assumes most metabolites invariant |
-| Median | Data with outliers | Same assumption |
-| Log2 + linear model | Statistics (limma, linear regression) | Cannot back-transform |
-| Pareto | PCA, clustering | Sensitive to row-wise outliers |
+| TIC | General purpose | Assumes most metabolites invariant; raises on `NaN` (impute first) |
+| Median | Data with outliers | Same assumption; raises on `NaN` |
+| Log2 + linear model | Statistics (limma, linear regression) | Cannot back-transform; keeps a `NaN` in place |
+| Pareto | PCA, clustering | Sensitive to row-wise outliers; a `NaN` turns its whole row to `NaN` |
 
 ### Statistical Tests
 
@@ -653,6 +704,12 @@ for ps in pathway_scores[:5]:
 | `pathways` | `enrichment_with_fdr` | BH-FDR correction | query[], db{} | list[EnrichmentResult] |
 | `pathways` | `benjamini_hochberg` | FDR correction | p-values[] | q-values[] |
 | `pathways` | `pathway_activity_scoring` | Score aggregation | scores{}, db{} | list[PathwayActivityScore] |
+| `visualization` | `volcano_plot_data` | Volcano points | names[], log2fc[], p[] | list[VolcanoPoint] |
+| `visualization` | `pca_metabolomics` | PCA scores | 2D array | (scores, explained) |
+| `visualization` | `intensity_heatmap_data` | Heatmap matrix | 2D array, labels | dict |
+| `visualization` | `detect_chromatographic_peaks` | EIC peak picking | rts[], intensities[] | list[ChromatogramPeak] |
+| `visualization` | `prepare_spectrum_plot` | Spectrum plot data | mz[], intensity[] | MassSpectrumPlotData |
+| `visualization` | `retention_time_alignment_data` | RT alignment | rts[], rts[] | (deviations, corrected, rmse) |
 
 ---
 
@@ -687,13 +744,7 @@ for ps in pathway_scores[:5]:
 
 ### Environment Variables
 
-| Variable | Purpose | Default |
-|----------|---------|--------|
-| `METAINFORMANT_OUTPUT` | Base output directory | `output/` |
-| `META_LOG_LEVEL` | Logging level | `INFO` |
-| `META_` prefix (generic) | Module-agnostic config; not used by metabolomics specifically | N/A |
-
-Metabolomics does not currently have module-specific environment variables; all configuration is via function parameters.
+The metabolomics module reads no environment variables and no configuration files; all configuration is via function parameters (see [CONFIGURATION.md](CONFIGURATION.md)).
 
 ---
 
@@ -715,7 +766,6 @@ Metabolomics does not currently have module-specific environment variables; all 
 | MS/MS cosine scoring | Planned | Q3 2026 |
 | Isotope pattern matching | Planned | Q4 2026 |
 | Retention time prediction (ML) | Planned | 2027 |
-| Batch effect correction (ComBat) | Planned | 2027 |
 | LIBSVM integration for ID scoring | Planned | 2027 |
 
 See the project roadmap for details.

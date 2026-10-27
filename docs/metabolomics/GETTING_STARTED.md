@@ -33,6 +33,8 @@ Pyruvate,120,135,95,110,140
 Citrate,85,92,78,88,95
 ```
 
+Write a missing measurement as a blank cell or `NA`: `read_csv` returns it as `NaN` (never as `0.0`), and impute it before normalizing (see below). Any other non-numeric cell, a decimal comma (`1,5`), or a row with a different number of cells than the header raises `ValueError` naming the line instead of being repaired silently.
+
 **Or MGF format** for MS/MS spectra:
 ```
 BEGIN IONS
@@ -167,7 +169,7 @@ With only 2 vs. 3 samples, no metabolite reaches p < 0.05, so the significant-me
 | Component | Version | Purpose |
 |-----------|---------|---------|
 | Python | 3.11+ | Core runtime |
-| NumPy | ≥1.24 (declared); ≥2.0 for `detect_chromatographic_peaks`, which calls `np.trapezoid` | Numerical arrays |
+| NumPy | ≥1.24 (declared); every function runs on any supported version | Numerical arrays |
 | SciPy | ≥1.11 (declared) | Welch t-test p-values from Student's t distribution; without SciPy `differential_abundance` falls back to a normal approximation |
 | matplotlib | ≥3.8 (declared) | Drawing the plots in the examples |
 | uv | latest | Package manager |
@@ -231,13 +233,13 @@ for i, mz_matches in enumerate(matches):
 # m/z 150.0:          <- nothing within 10 ppm
 ```
 
-Each `MetaboliteMatch` has `query_mz`, `matched_name`, `matched_mz`, `delta_ppm` and `score` (`1 - delta_ppm / ppm_tolerance`, so 1.0 is an exact mass match). The database values are compared with the observed m/z directly, so store the exact m/z of the ion you expect to observe (`identify_metabolites` does no adduct handling). `ppm_tolerance` is not validated: a negative value matches nothing, and `0` matches only bit-for-bit identical masses (with score 0.0).
+Each `MetaboliteMatch` has `query_mz`, `matched_name`, `matched_mz`, `delta_ppm` and `score` (`1 - delta_ppm / ppm_tolerance`, so 1.0 is an exact mass match). The database values are compared with the observed m/z directly, so store the exact m/z of the ion you expect to observe (`identify_metabolites` does no adduct handling). `ppm_tolerance` must be a positive, finite number: zero, a negative value, `NaN`, infinity or a non-number raises `ValueError`.
 
 ### Adduct-Aware Identification
 
 **`identify_with_adducts(observed_mz, database, adducts=None, ppm_tolerance=10.0, ion_mode="positive")`**
 
-Accounts for common ionization adducts. For positive mode, tries [M+H]+, [M+Na]+, [M+K]+ and [M+NH4]+ (negative mode: [M-H]-, [M+Cl]-, [M+FA-H]-); subtracts the adduct mass to infer the neutral mass before database lookup, so `database` values are neutral monoisotopic masses.
+Accounts for common ionization adducts. For positive mode, tries [M+H]+, [M+Na]+, [M+K]+ and [M+NH4]+ (negative mode: [M-H]-, [M+Cl]-, [M+FA-H]-); subtracts the adduct mass to infer the neutral mass before database lookup, so `database` values are neutral monoisotopic masses. `ion_mode` is `"positive"` or `"negative"` in any case and anything else raises `ValueError`, as does a `ppm_tolerance` that is not a positive finite number.
 
 **Example**:
 ```python
@@ -263,6 +265,15 @@ matches = analysis.identification.identify_with_adducts(
 | `pareto` | `(x - mean) / sqrt(std)` | Mean-center + scale by sqrt(std) |
 
 **Recommendation**: Start with `"total_ion_count"`; use `"log2"` for downstream statistical modeling (linear models assume normality).
+
+**Missing values**: `"total_ion_count"` and `"median"` raise `ValueError` if the matrix contains `NaN` (for example a cell that `read_csv` returned from `NA`), because one missing value would distort the scale of its whole sample. Impute first:
+
+```python-snippet
+imputed = analysis.identification.missing_value_imputation(dataset.intensities, method="min_half")
+normalized = analysis.identification.normalize_intensities(imputed, method="total_ion_count")
+```
+
+`"log2"` keeps a `NaN` in place, `fold_change()` returns `NaN` (not a floored value) for a metabolite with a missing value in either group, and `"pareto"` turns the whole row of a metabolite that has a `NaN` into `NaN`.
 
 ### Differential Abundance
 
@@ -293,6 +304,8 @@ sig = np.array(qvals) < 0.05
 Over-representation analysis using a one-sided hypergeometric (Fisher's exact) test.
 
 **Returns**: list of `EnrichmentResult` (`pathway_name`, `pathway_size`, `overlap`, `fold_enrichment` = observed / expected overlap, `p_value`, `metabolites_in_pathway`), sorted by p-value.
+
+`background_size` is the size of the universe the query was drawn from. It must be at least as large as the number of distinct query metabolites and as every pathway; a smaller value raises `ValueError`, because it cannot describe a universe that contains them.
 
 **Example**:
 ```python

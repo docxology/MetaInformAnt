@@ -194,16 +194,21 @@ pathway_db = json.load(open("kegg_pathways.json"))
 
 `normalize_intensities` accepts exactly `"total_ion_count"`, `"median"`, `"log2"` and `"pareto"`; any other value (including `"none"`) raises `ValueError`. To leave the data unnormalized, skip the call.
 
+**Missing values.** `read_csv` returns `NaN` for a missing cell. `"total_ion_count"` and `"median"` rescale each sample by a statistic of that sample, so one `NaN` would distort the scale of its sample and, through the shared median, of every other sample; they raise `ValueError` when the matrix contains `NaN`. Impute first with `missing_value_imputation` (it treats `NaN` and zero as missing). `"log2"` keeps a `NaN` where it is. `"pareto"` does not check: a `NaN` makes the whole row of its metabolite `NaN`, so impute before it too.
+
 | Data Type | Recommended | Reason |
 |-----------|-------------|--------|
 | Untargeted LC-MS (positive) | `"total_ion_count"` → `"log2"` | TIC corrects for injection volume; log2 stabilizes variance |
 | Targeted quantification (MRM) | No normalization (skip the call) or `"median"` | Targeted assays are already quantitative |
 | NMR | No normalization (skip the call); PQN is not implemented | NMR inherently quantitative |
-| Large cohort with batches | `"median"` + batch correction (`correct_batch_combat`) | Median less sensitive to batch outliers |
+| Large cohort with batches | `"median"` + batch correction (`correct_batch_combat`, parametric empirical-Bayes ComBat) | Median less sensitive to batch outliers |
 
 **Multi-step normalization** (common pattern):
 ```python-snippet
 from metainformant.quality.batch.detection import correct_batch_combat
+
+# Step 0: Impute missing cells (read_csv returns NaN; TIC/median normalization and ComBat refuse NaN)
+X = missing_value_imputation(X, method="min_half")
 
 # Step 1: Sample-wise normalization (TIC)
 X_norm = normalize_intensities(X, method="total_ion_count")
@@ -211,10 +216,18 @@ X_norm = normalize_intensities(X, method="total_ion_count")
 # Step 2: Element-wise transformation (log2)
 X_log = normalize_intensities(X_norm, method="log2")
 
-# Step 3: Batch correction (simplified ComBat-style, in metainformant.quality;
-# takes samples × features, so transpose in and out). batch_labels: one label per sample.
+# Step 3: Batch correction with parametric empirical-Bayes ComBat (Johnson, Li & Rabinovic 2007,
+# no covariates), in metainformant.quality. It takes samples × features, so transpose in and out.
+# batch_labels: one label per sample.
 X_corrected = correct_batch_combat(X_log.T, batch_labels).T
 ```
+
+`correct_batch_combat` standardizes the data once, estimates each batch's location and scale effect per feature, shrinks those estimates toward each other with empirical-Bayes priors fitted across features, and adjusts the data. The result does not depend on the order or the labels of the batches or on the order of the samples. Requirements and behaviour:
+
+- the data must be finite (no `NaN` or `inf`) and every batch needs at least 2 samples, otherwise `ValueError`;
+- a feature that is constant within some batch cannot have its variance estimated and is returned unchanged; if exactly one feature varies within every batch the priors cannot be fitted and `ValueError` is raised;
+- a single batch comes back as an unchanged copy;
+- there are no covariates, so biological groups that coincide with batches are removed along with them.
 
 ---
 
@@ -222,11 +235,13 @@ X_corrected = correct_batch_combat(X_log.T, batch_labels).T
 
 ### CSV Format Recommendations
 
-**Column delimiter**: Use comma (`,`). For European formats with semicolon, pass `delimiter=";"`; decimal commas are not understood, so a cell such as `1,5` is read as `0.0` (see Missing values below).
+**Column delimiter**: Use comma (`,`). For files with a semicolon delimiter, pass `delimiter=";"`. Decimal commas are not understood and are reported rather than repaired: in a comma-delimited file `1,5` splits one number into two cells, so the row has more cells than the header and `read_csv` raises `ValueError`; in a semicolon-delimited file the cell `1,5` raises `ValueError` ("a decimal comma is not supported; use a decimal point"). Convert the file to decimal points before reading.
 
 **Header row**: First row must contain sample names. First column must contain metabolite identifiers. (`read_csv` takes the sample names from the header cells starting at `data_start_col` and the identifiers from column `metabolite_col`; both default to the layout above.)
 
-**Missing values**: Represent as blank cells or `0`. `read_csv` silently reads a cell that is not a number (blank, `NA`, text) as `0.0`, while cells that Python's `float()` accepts, including `nan` and `inf`, are kept as they are. Zeros and NaNs are treated as missing during imputation; use `missing_value_imputation()` before statistics.
+**Missing values**: Represent them as blank cells or `NA`. A blank cell or one of `NA`, `N/A`, `#N/A`, `NaN`, `null` or `None` (any case) is returned as `NaN`, never as `0.0`; a true zero stays `0.0`. Any other cell that is not a number (text, a decimal comma) raises `ValueError` naming the line, the metabolite and the sample, and a row with a different number of cells than the header raises `ValueError` naming the line. Zeros and `NaN`s are both treated as missing by `missing_value_imputation()`; run it before `normalize_intensities` with `"total_ion_count"` or `"median"`, which refuse `NaN`, and before statistics that use variance.
+
+**Annotation columns**: columns before `data_start_col` other than `metabolite_col` (for example `mz` and `rt` of an XCMS or MZmine table) are per-metabolite annotations. `read_csv` returns them in `dataset.metadata` as `{metabolite: {column: value}}` (numbers as floats, missing-value tokens as `NaN`, anything else as text). A repeated metabolite name or annotation column name raises `ValueError` when annotation columns are present, because the metadata would be ambiguous. `write_csv` writes `NaN` as `nan` (which `read_csv` reads back as `NaN`) and does not write `metadata`.
 
 **Example well-formed CSV**:
 ```csv
@@ -235,9 +250,19 @@ Glucose,1200,1150,980,1050,1100
 Lactate,450,430,380,420,395
 ```
 
+**Example with annotation columns and a missing value** (`read_csv(path, metabolite_col=0, data_start_col=3)`):
+```csv
+name,mz,rt,QC_1,QC_2,Sample_A
+Glucose,180.0634,245.6,1200,1150,980
+Lactate,89.0240,150.2,450,NA,380
+```
+This gives `dataset.samples == ["QC_1", "QC_2", "Sample_A"]`, `dataset.metadata["Glucose"] == {"mz": 180.0634, "rt": 245.6}` and `dataset.intensities[1, 1]` equal to `NaN`.
+
 ### MGF Format Recommendations
 
-**Fields read**: `PEPMASS` (precursor m/z; the first number is used, and the spectrum's `precursor_mz` is `None` if the line is missing), `RTINSECONDS`, `SCANS` and the peak list (one `m/z intensity` pair per line). Every other header line (`CHARGE`, `TITLE`, ...) is ignored, and each block must be closed with `END IONS`. All spectra are returned with `ms_level=2`.
+**Fields read**: `PEPMASS` (precursor m/z; the first number is used, and the spectrum's `precursor_mz` is `None` if the line is missing), `RTINSECONDS`, `SCANS` (an integer) and the peak list. Every other header line (`CHARGE`, `TITLE`, ...) is ignored. All spectra are returned with `ms_level=2`.
+
+**Line rules inside a `BEGIN IONS` / `END IONS` block**: blank lines and comment lines (starting with `#`, `;`, `!` or `/`) are skipped; a line containing `=` is a header; every other line is a peak and must start with two finite numbers, `m/z intensity` (further columns are ignored). A peak line is never skipped silently, so `.5 100` and `+200.0 20` are read and a malformed one is an error. An empty `PEPMASS=`, a `PEPMASS`, `RTINSECONDS` or `SCANS` value that is not a number, and a malformed peak line raise `ValueError` naming the file and the spectrum (counted from 1 in file order). Each block must be closed with `END IONS`: a `BEGIN IONS` block that is never closed (for example the last spectrum of a truncated file) is dropped without an error, so check the number of spectra returned.
 
 **Encoding**: Plain text, read with Python's default text encoding (UTF-8 on most systems).
 
@@ -257,7 +282,7 @@ END IONS
 
 ## Advanced: Custom Adduct Definitions
 
-`identify_with_adducts()` ships with default adduct sets (positive: `[M+H]+`, `[M+Na]+`, `[M+K]+`, `[M+NH4]+`; negative: `[M-H]-`, `[M+Cl]-`, `[M+FA-H]-`, selected by `ion_mode`). To use your own, pass a dict of adduct name → m/z offset:
+`identify_with_adducts()` ships with default adduct sets (positive: `[M+H]+`, `[M+Na]+`, `[M+K]+`, `[M+NH4]+`; negative: `[M-H]-`, `[M+Cl]-`, `[M+FA-H]-`, selected by `ion_mode`, which is `"positive"` or `"negative"` in any case). To use your own, pass a dict of adduct name → m/z offset:
 
 ```python
 CUSTOM_ADDUCTS = {
@@ -273,7 +298,7 @@ matches = identify_with_adducts(
 ```
 
 **Caveats**:
-- A custom `adducts` dict replaces the defaults and is used exactly as given; `ion_mode` only selects the default set when `adducts` is `None`.
+- A custom `adducts` dict replaces the defaults and is used exactly as given; `ion_mode` only selects the default set when `adducts` is `None`, but it is validated either way: any value other than `"positive"` or `"negative"` (in any case) raises `ValueError`, so a typo cannot go unnoticed.
 - Each value is a single-charge m/z offset: the neutral mass is computed as `observed m/z - offset`. Charge states are not modelled, so multiply charged ions such as `[M+2H]2+` (`m/z = (M + 2×1.007276) / 2`) are not supported and would match the wrong masses.
 
 ---
@@ -294,12 +319,14 @@ ls -lh /path/to/database.csv
 
 ### "No matches returned" / invalid ppm tolerance
 
-**Problem**: `ppm_tolerance` is not validated, so a bad value does not raise: a negative tolerance can never match, and `ppm_tolerance=0` only matches bit-for-bit identical masses (with score 0.0 and a NumPy `RuntimeWarning`). A tolerance that is too tight for your mass accuracy behaves the same way and returns empty match lists.
+**Problem**: `ppm_tolerance` must be a positive, finite number of ppm. Zero, a negative value, `NaN`, infinity or a non-number raises `ValueError` in both `identify_metabolites` and `identify_with_adducts`:
 
 ```python-snippet
 identify_metabolites(mz_array, db, ppm_tolerance=-1)
-# -> [[], [], ...]  (one empty list per observed m/z, no exception)
+# ValueError: ppm_tolerance must be a positive finite number, got -1
 ```
+
+A tolerance that is valid but too tight for your mass accuracy returns empty match lists (one empty list per observed m/z, no exception).
 
 **Fix**: Use a reasonable tolerance (5–50 ppm depending on instrument).
 
@@ -342,7 +369,7 @@ if __name__ == "__main__":  # required where processes are spawned (macOS, Windo
 | Component | Version | Python |
 |-----------|---------|--------|
 | metainformant | 0.4.0 (`metainformant.__version__`) | 3.11+ |
-| NumPy | ≥1.24 declared; ≥2.0 for `detect_chromatographic_peaks` (`np.trapezoid`) | — |
+| NumPy | ≥1.24 declared; every function runs on any supported version (`detect_chromatographic_peaks` integrates peaks with its own trapezoidal rule, because neither `np.trapz` nor `np.trapezoid` exists on all supported versions) | — |
 | SciPy | ≥1.11 declared; optional for the metabolomics module itself (normal-approximation p-values without it) | — |
 
 **Check versions**:

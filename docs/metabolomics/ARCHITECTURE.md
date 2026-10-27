@@ -46,10 +46,10 @@ src/metainformant/metabolomics/
 
 Core metabolomics analysis functionality:
 
-- **`identify_metabolites()`** - Match observed m/z values to reference database using mass tolerance (ppm)
-- **`identify_with_adducts()`** - Adduct-aware identification for ESI ionization modes
-- **`normalize_intensities()`** - Sample normalization (TIC, median, log2, pareto scaling)
-- **`fold_change()`** - Log2 fold change between groups
+- **`identify_metabolites()`** - Match observed m/z values to reference database using mass tolerance (ppm; must be a positive finite number)
+- **`identify_with_adducts()`** - Adduct-aware identification for ESI ionization modes (`ion_mode` is `"positive"` or `"negative"`, any case)
+- **`normalize_intensities()`** - Sample normalization (TIC, median, log2, pareto scaling); TIC and median raise on `NaN` (impute first)
+- **`fold_change()`** - Log2 fold change between groups (`NaN` for a metabolite with a missing value)
 - **`differential_abundance()`** - Two-sample t-tests with Welch's approximation
 - **`cosine_spectral_similarity()`** - Spectral library matching
 - **`missing_value_imputation()`** - Handle missing data (min/half, KNN, median)
@@ -63,8 +63,8 @@ Core metabolomics analysis functionality:
 
 Mass spectrometry file I/O:
 
-- **`read_csv()` / `write_csv()`** - Metabolomics intensity matrix I/O
-- **`read_mgf()` / `write_mgf()`** - Mascot Generic Format for MS2 spectra
+- **`read_csv()` / `write_csv()`** - Metabolomics intensity matrix I/O; missing cells become `NaN`, other non-numeric cells and ragged rows raise `ValueError`, annotation columns fill `dataset.metadata`
+- **`read_mgf()` / `write_mgf()`** - Mascot Generic Format for MS2 spectra; comment lines are skipped and a malformed header or peak line raises `ValueError`
 - **`filter_spectra()`** - Quality filtering (min peaks, TIC, MS level, RT range)
 - **`extract_chromatogram()`** - EIC extraction for targeted m/z values
 
@@ -255,7 +255,7 @@ Three imputation strategies are provided, selected by string:
 | `knn` | k-nearest neighbors (k=5) using row correlation | Preserves relationships |
 | `median` | Replace with row median | Robust to outliers |
 
-Implementation uses row-wise (metabolite-wise) imputation since each metabolite is a feature.
+Implementation uses row-wise (metabolite-wise) imputation since each metabolite is a feature. `read_csv` returns `NaN` for a missing cell and keeps a true zero as zero; imputation fills both, and it has to run before TIC or median normalization, which refuse `NaN`.
 
 ## Performance Considerations
 
@@ -278,5 +278,5 @@ Planned enhancements (not yet implemented):
 - **Isotope pattern matching**: Validate identifications via isotope distributions
 - **Retention time prediction**: Machine learning RT predictors for improved scoring
 - **Quantification methods**: XCMS, MZmine peak integration wrappers
-- **Batch effect correction**: ComBat, limma-style normalization
+- **Batch effect correction**: limma-style normalization (parametric empirical-Bayes ComBat without covariates is available as `metainformant.quality.batch.detection.correct_batch_combat`)
 - **Network analysis**: Metabolite correlation networks, module detection

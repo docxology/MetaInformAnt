@@ -6,6 +6,7 @@ normalizing intensity data, and performing differential abundance analysis.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Any, cast
 
@@ -39,6 +40,33 @@ class MetaboliteMatch:
     score: float
 
 
+def _validated_ppm_tolerance(ppm_tolerance: float) -> float:
+    """Return ``ppm_tolerance`` as a float, rejecting values that make matching meaningless.
+
+    A tolerance must be a positive, finite number of ppm: zero cannot score a match (the score
+    divides by the tolerance), a negative or NaN tolerance matches nothing and an infinite one
+    matches everything.
+    """
+    try:
+        tolerance = float(ppm_tolerance)
+    except (TypeError, ValueError):
+        raise ValueError(f"ppm_tolerance must be a positive finite number, got {ppm_tolerance!r}") from None
+    if not math.isfinite(tolerance) or tolerance <= 0:
+        raise ValueError(f"ppm_tolerance must be a positive finite number, got {ppm_tolerance!r}")
+    return tolerance
+
+
+_ION_MODES = ("positive", "negative")
+
+
+def _normalised_ion_mode(ion_mode: str) -> str:
+    """Return ``ion_mode`` lower-cased and stripped, rejecting anything but positive/negative."""
+    mode = str(ion_mode).strip().lower()
+    if mode not in _ION_MODES:
+        raise ValueError(f"ion_mode must be 'positive' or 'negative' (any case), got {ion_mode!r}")
+    return mode
+
+
 def identify_metabolites(
     observed_mz: np.ndarray,
     database: dict[str, float],
@@ -52,12 +80,16 @@ def identify_metabolites(
     Args:
         observed_mz: 1D array of observed m/z values.
         database: Dict mapping metabolite names to their exact m/z values.
-        ppm_tolerance: Maximum mass error in ppm for a match.
+        ppm_tolerance: Maximum mass error in ppm for a match; a positive, finite number.
 
     Returns:
         List of lists; each inner list contains MetaboliteMatch entries
         for the corresponding observed m/z.
+
+    Raises:
+        ValueError: If ``ppm_tolerance`` is not a positive, finite number.
     """
+    ppm_tolerance = _validated_ppm_tolerance(ppm_tolerance)
     results: list[list[MetaboliteMatch]] = []
     db_names = list(database.keys())
     db_mz = np.array(list(database.values()))
@@ -97,9 +129,23 @@ def normalize_intensities(
             - 'pareto': Pareto scaling (divide by sqrt of std dev).
 
     Returns:
-        Normalized intensity matrix.
+        Normalized intensity matrix. 'log2' leaves a NaN where it is.
+
+    Raises:
+        ValueError: If ``method`` is unknown, or if it is 'total_ion_count' or 'median' and the
+            data contain NaN. Those methods rescale a whole sample by a statistic of that sample, so
+            a single missing value (``read_csv`` returns NaN for one) would distort the scale of its
+            sample and the shared median factor of all samples; impute first with
+            :func:`missing_value_imputation`.
     """
     data = intensities.copy().astype(float)
+
+    if method in ("total_ion_count", "median") and np.isnan(data).any():
+        raise ValueError(
+            f"normalize_intensities(method={method!r}) needs complete data: a NaN would silently distort "
+            "the scale factor of its sample. Impute missing values first with missing_value_imputation, "
+            "or use method='log2', which keeps a NaN in place"
+        )
 
     if method == "total_ion_count":
         totals = data.sum(axis=0, keepdims=True)
@@ -139,13 +185,16 @@ def fold_change(
         group_b: Sample indices for group B.
 
     Returns:
-        1D array of log2 fold changes per metabolite.
+        1D array of log2 fold changes per metabolite. A group mean that is zero (or negative) is
+        floored at 1e-10 so the ratio stays finite. A metabolite with a missing value (NaN) in either
+        group has no defined mean and gets a NaN fold change; it is not floored, which would report
+        a fabricated fold change of about -40 for what is really an unknown.
     """
     mean_a = intensities[:, group_a].mean(axis=1)
     mean_b = intensities[:, group_b].mean(axis=1)
 
-    safe_a = np.where(mean_a > 0, mean_a, 1e-10)
-    safe_b = np.where(mean_b > 0, mean_b, 1e-10)
+    safe_a = np.where(np.isnan(mean_a), np.nan, np.where(mean_a > 0, mean_a, 1e-10))
+    safe_b = np.where(np.isnan(mean_b), np.nan, np.where(mean_b > 0, mean_b, 1e-10))
 
     return np.log2(safe_a / safe_b)
 
@@ -306,12 +355,19 @@ def identify_with_adducts(
         database: Dict mapping metabolite names to neutral monoisotopic masses.
         adducts: Dict of adduct name -> mass delta. If None, uses common adducts
             filtered by ion_mode.
-        ppm_tolerance: Maximum mass error in ppm.
-        ion_mode: 'positive' or 'negative' to filter default adducts.
+        ppm_tolerance: Maximum mass error in ppm; a positive, finite number.
+        ion_mode: 'positive' or 'negative' (any case) to filter default adducts. It is
+            validated even when ``adducts`` is given, so a typo cannot go unnoticed.
 
     Returns:
         List of lists of AdductMatch per observed m/z.
+
+    Raises:
+        ValueError: If ``ppm_tolerance`` is not a positive, finite number or ``ion_mode``
+            is not 'positive' or 'negative'.
     """
+    ppm_tolerance = _validated_ppm_tolerance(ppm_tolerance)
+    ion_mode = _normalised_ion_mode(ion_mode)
     if adducts is None:
         if ion_mode == "positive":
             adducts = {k: v for k, v in COMMON_ADDUCTS.items() if k.endswith("]+")}

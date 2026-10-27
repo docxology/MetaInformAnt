@@ -90,14 +90,14 @@ class TestCorrectBatchCombat:
         corrected = correct_batch_combat(data, labels)
         std_before = data.std()
         std_after = corrected.std()
-        # Shrinkage keeps scale near 1: overall spread should stay within 2x
+        # ComBat keeps the pooled within-batch spread and removes the between-batch part: spread stays within 2x
         assert 0.5 * std_before < std_after < 2.0 * std_before
 
     def test_single_batch_noop_centering(self) -> None:
         rng = np.random.default_rng(5)
         data = rng.normal(size=(8, 4))
         corrected = correct_batch_combat(data, ["A"] * 8)
-        # One batch: shift to grand mean is zero; scaling shrunk 50% toward 1
+        # One batch: there is no batch effect to estimate, so the data come back unchanged
         assert np.allclose(corrected, data)
 
     def test_zero_variance_features_handled(self) -> None:
@@ -105,6 +105,8 @@ class TestCorrectBatchCombat:
         labels = ["A"] * 5 + ["B"] * 5
         corrected = correct_batch_combat(data, labels)
         assert np.all(np.isfinite(corrected))
+        # constant features carry no batch effect that can be estimated: they come back as they were
+        assert np.array_equal(corrected, data)
 
 
 class TestComputeSilhouette:

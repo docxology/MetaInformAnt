@@ -1,8 +1,8 @@
 """Batch effect detection and correction for sequencing data.
 
 Implements statistical methods to identify batch effects, assess their
-magnitude, and apply corrections using empirical Bayes (ComBat-like)
-and linear model approaches.
+magnitude, and correct them with parametric empirical Bayes ComBat
+(Johnson, Li & Rabinovic 2007, Biostatistics 8(1):118-127).
 """
 
 from __future__ import annotations
@@ -15,6 +15,10 @@ from scipy.stats import f as f_dist
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+# Convergence threshold and safety cap of the empirical Bayes posterior iteration in ComBat.
+_COMBAT_TOLERANCE = 1e-10
+_COMBAT_MAX_ITERATIONS = 1000
 
 
 @dataclass
@@ -132,48 +136,145 @@ def correct_batch_combat(
     data: np.ndarray,
     batch_labels: list[str],
 ) -> np.ndarray:
-    """Apply ComBat-like empirical Bayes batch correction.
+    """Remove batch effects with parametric empirical Bayes ComBat.
 
-    Centers each batch to the grand mean and shrinks batch-specific
-    variance estimates using an empirical Bayes prior.
+    Implements Johnson, Li & Rabinovic (2007), without covariates. For sample ``j`` of batch ``i`` and
+    feature ``g`` the model is ``Y_ijg = alpha_g + gamma_ig + delta_ig * sigma_g * e_ijg``: a
+    batch-specific location ``gamma_ig`` and scale ``delta_ig`` per feature. The steps are:
+
+    1. Standardise once, with statistics of the whole data set: ``Z_ijg = (Y_ijg - alpha_g) / sigma_g``,
+       where ``alpha_g`` is the grand mean and ``sigma_g**2`` the pooled within-batch variance (divided by
+       the number of samples, as in the paper and in ``sva``).
+    2. Per batch, estimate the batch effects by the mean ``gamma_hat_ig`` and the sample variance
+       ``delta_hat_ig**2`` of ``Z``.
+    3. Per batch, borrow strength across features: the method of moments fits a normal prior
+       ``N(gamma_bar_i, tau_i**2)`` to ``gamma_hat_ig`` and an inverse-gamma prior to ``delta_hat_ig**2``
+       (hyperparameters ``lambda_i`` and ``theta_i``).
+    4. Iterate the two posterior means to convergence:
+       ``gamma*_ig = (n_i tau_i**2 gamma_hat_ig + delta*_ig**2 gamma_bar_i) / (n_i tau_i**2 + delta*_ig**2)``
+       and ``delta*_ig**2 = (theta_i + sum_j (Z_ijg - gamma*_ig)**2 / 2) / (n_i / 2 + lambda_i - 1)``.
+    5. Adjust: ``Y*_ijg = sigma_g / delta*_ig * (Z_ijg - gamma*_ig) + alpha_g``.
+
+    Every batch is estimated independently from the same once-standardised data, so the result does not
+    depend on the order or the labels of the batches, nor on the order of the samples. The amount of
+    shrinkage is not a constant: it follows from the spread of ``gamma_hat`` and ``delta_hat**2`` across
+    features and from the batch size.
+
+    Features that are constant within some batch have no estimable batch variance and are returned
+    unchanged (the behaviour of ``sva``). If there is a single batch there is nothing to correct and a
+    copy of ``data`` is returned.
 
     Args:
-        data: 2D array (samples × features).
+        data: 2D array (samples × features), finite.
         batch_labels: List of batch identifiers, one per sample.
 
     Returns:
-        Corrected data array with batch effects removed.
+        Corrected data array of the same shape; ``data`` itself is not modified.
+
+    Raises:
+        ValueError: If ``data`` is not 2D or contains NaN/inf, ``batch_labels`` does not match the
+            number of samples, a batch has a single sample (its variance cannot be estimated, so drop
+            or merge it), or exactly one feature is estimable (the empirical Bayes priors need at
+            least two features).
     """
-    corrected = data.copy().astype(float)
-    unique_batches = sorted(set(batch_labels))
-    batch_map = {b: i for i, b in enumerate(unique_batches)}
-    batch_idx = np.array([batch_map[b] for b in batch_labels])
+    values = np.asarray(data, dtype=float)
+    if values.ndim != 2:
+        raise ValueError(f"data must be a 2D samples x features array, got {values.ndim}D")
+    n_samples = values.shape[0]
+    if len(batch_labels) != n_samples:
+        raise ValueError(f"batch_labels has {len(batch_labels)} entries for {n_samples} samples")
+    if not np.all(np.isfinite(values)):
+        raise ValueError("data contains NaN or infinite values; impute or remove them before batch correction")
 
-    grand_mean = data.mean(axis=0)
+    members: dict[str, list[int]] = {}
+    for index, label in enumerate(batch_labels):
+        members.setdefault(label, []).append(index)
+    batches = [np.array(indices) for indices in members.values()]
 
-    for b in range(len(unique_batches)):
-        mask = batch_idx == b
-        if mask.sum() == 0:
-            continue
-        batch_mean = corrected[mask].mean(axis=0)
-        batch_std = corrected[mask].std(axis=0)
-        grand_std = corrected.std(axis=0)
+    corrected = values.copy()
+    if len(batches) < 2:
+        return corrected
+    if min(len(batch) for batch in batches) < 2:
+        raise ValueError(
+            "every batch needs at least 2 samples to estimate its variance; drop or merge the batches "
+            f"with one sample ({[label for label, idx in members.items() if len(idx) < 2]})"
+        )
 
-        # Shift to grand mean
-        corrected[mask] -= batch_mean - grand_mean
+    # Without within-batch variation in some batch the scale of a feature cannot be estimated
+    estimable = ~np.any([np.ptp(values[batch], axis=0) == 0 for batch in batches], axis=0)
+    n_estimable = int(estimable.sum())
+    if n_estimable == 0:
+        logger.warning("ComBat: every feature is constant within some batch; returning the data unchanged")
+        return corrected
+    if n_estimable == 1:
+        raise ValueError(
+            "ComBat needs at least 2 features that vary within every batch to fit its empirical Bayes priors"
+        )
 
-        # Scale variance (empirical Bayes shrinkage toward grand variance)
-        safe_batch_std = np.where(batch_std > 0, batch_std, 1.0)
-        safe_grand_std = np.where(grand_std > 0, grand_std, 1.0)
-        scale = safe_grand_std / safe_batch_std
+    # Step 1: standardise once
+    x = values[:, estimable]
+    grand_mean = x.mean(axis=0)
+    batch_mean = np.empty_like(x)
+    for batch in batches:
+        batch_mean[batch] = x[batch].mean(axis=0)
+    pooled_sd = np.sqrt(((x - batch_mean) ** 2).sum(axis=0) / n_samples)
+    z = (x - grand_mean) / pooled_sd
 
-        # Shrink scale toward 1.0 (prior)
-        shrinkage = 0.5
-        scale = shrinkage * scale + (1.0 - shrinkage) * 1.0
+    # Steps 2-5, independently per batch
+    adjusted = np.empty_like(z)
+    for batch in batches:
+        gamma_star, delta_star_sq = _combat_posterior(z[batch])
+        adjusted[batch] = (z[batch] - gamma_star) / np.sqrt(delta_star_sq)
 
-        corrected[mask] = (corrected[mask] - grand_mean) * scale + grand_mean
-
+    corrected[:, estimable] = adjusted * pooled_sd + grand_mean
     return corrected
+
+
+def _combat_posterior(z: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Empirical Bayes posterior means of one batch's location and scale effects (ComBat steps 2-4).
+
+    Args:
+        z: Standardised data of one batch, shape (batch samples, features), at least 2 samples and
+            2 features, no feature constant.
+
+    Returns:
+        ``(gamma_star, delta_star_sq)``: per-feature posterior mean of the batch location effect and of
+        the batch variance effect.
+    """
+    n = z.shape[0]
+    gamma_hat = z.mean(axis=0)
+    delta_hat_sq = z.var(axis=0, ddof=1)
+
+    # Hyperparameters by the method of moments, over features
+    gamma_bar = gamma_hat.mean()
+    tau_sq = gamma_hat.var(ddof=1)
+    delta_mean = delta_hat_sq.mean()
+    delta_var = delta_hat_sq.var(ddof=1)
+    lam = theta = 0.0
+    if delta_var > 0:
+        lam = (2.0 * delta_var + delta_mean**2) / delta_var
+        theta = (delta_mean * delta_var + delta_mean**3) / delta_var
+
+    gamma_star = gamma_hat
+    delta_star_sq = delta_hat_sq
+    for _ in range(_COMBAT_MAX_ITERATIONS):
+        new_gamma = (n * tau_sq * gamma_hat + delta_star_sq * gamma_bar) / (n * tau_sq + delta_star_sq)
+        if delta_var > 0:
+            new_delta = (theta + 0.5 * ((z - new_gamma) ** 2).sum(axis=0)) / (n / 2.0 + lam - 1.0)
+        else:
+            # all features share one variance: the inverse-gamma prior degenerates to a point mass
+            new_delta = np.full_like(delta_star_sq, delta_mean)
+        change = max(
+            float(np.max(np.abs(new_gamma - gamma_star))),
+            float(np.max(np.abs(new_delta - delta_star_sq) / delta_star_sq)),
+        )
+        gamma_star, delta_star_sq = new_gamma, new_delta
+        if change < _COMBAT_TOLERANCE:
+            break
+    else:
+        logger.warning("ComBat: posterior iteration did not converge in %d steps", _COMBAT_MAX_ITERATIONS)
+
+    return gamma_star, delta_star_sq
 
 
 def _compute_silhouette(

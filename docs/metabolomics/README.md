@@ -6,8 +6,8 @@ Metabolomics analysis module for METAINFORMANT. Covers mass spectrometry data pr
 
 ## Contents
 
-- **io/** - Mass spectrometry file I/O (MGF spectra, CSV metabolite × sample tables); no mzML/mzXML readers
-- **analysis/** - Metabolite identification, normalization, fold change, differential abundance
+- **io/** - Mass spectrometry file I/O (MGF spectra, CSV metabolite × sample tables); no mzML/mzXML readers. Missing cells become `NaN`; other non-numeric cells and malformed MGF lines raise `ValueError`
+- **analysis/** - Metabolite identification, normalization (TIC and median refuse `NaN`: impute first), fold change, differential abundance
 - **pathways/** - Metabolite set enrichment
 - **visualization/** - Volcano plots, PCA ordination, concentration heatmaps
 

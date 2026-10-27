@@ -178,7 +178,7 @@ from metainformant.metabolomics import io
 # Load both datasets (assay matrices must be aligned by sample)
 dataset = io.formats.read_csv("metabolites.csv")
 metabolites = dataset.metabolites
-M = dataset.intensities  # (n_metabs, n_samples)
+M = dataset.intensities  # (n_metabs, n_samples); a missing cell is NaN, so impute it first (missing_value_imputation) or the correlations of that metabolite are NaN
 
 # Merged RNA abundance table (for example the amalgkit merge output):
 # tab-separated, genes as rows, samples as columns
@@ -315,12 +315,10 @@ XCMS (R) and MZmine (Java) are popular peak picking and alignment tools. Their o
 **XCMS** feature tables exported to CSV can be arranged with columns: `name`, `mz`, `rt`, `<sample1>`, `<sample2>`, ...
 
 ```python
-import pandas as pd
 from metainformant.metabolomics import io
 
 # XCMS CSV: one row per detected feature (peak)
 # Column layout: name | mz | rt | sample1 | sample2 | ...
-# We need to extract the intensity matrix (skip mz/rt cols)
 
 dataset = io.formats.read_csv(
     "xcms_output.csv",
@@ -328,10 +326,11 @@ dataset = io.formats.read_csv(
     data_start_col=3,       # first sample column (after name, mz, rt)
 )
 
-# read_csv() keeps only names and intensities (dataset.metadata stays empty), so read
-# mz/rt separately if you need them, e.g. for the GNPS export below
-peaks = pd.read_csv("xcms_output.csv")
-metadata = peaks.set_index(peaks.columns[0])[["mz", "rt"]].to_dict("index")  # {name: {"mz": ..., "rt": ...}}
+# The columns between the name and the first sample (mz, rt) are per-feature annotations:
+# read_csv() returns them in dataset.metadata as {name: {"mz": ..., "rt": ...}}.
+# Empty cells in the intensity columns (or NA) come back as NaN, and any other non-numeric
+# cell raises ValueError naming the line, feature and sample.
+mz_of_first_feature = dataset.metadata[dataset.metabolites[0]]["mz"]
 ```
 
 **MZmine** exports CSV similarly. Use `pandas` for more control:
@@ -352,14 +351,14 @@ Export feature table for GNPS networking:
 ```python
 # GNPS feature-based molecular networking reads a CSV/TSV feature table (feature ID, m/z, RT,
 # intensity per sample; see the GNPS documentation for the exact column names) plus an MS/MS MGF.
-# metadata maps feature ID -> {"mz": ..., "rt": ...}; read_csv() does not fill dataset.metadata,
-# so build it from the mz/rt columns of your XCMS/MZmine table (see above)
+# dataset.metadata maps feature ID -> {"mz": ..., "rt": ...} when the table was read with the
+# annotation columns before data_start_col (see the XCMS example above)
 feature_table = []
 for i, name in enumerate(dataset.metabolites):
     feature_table.append({
         "feature_id": name,
-        "mz": metadata[name]["mz"],
-        "rt": metadata[name]["rt"],
+        "mz": dataset.metadata[name]["mz"],
+        "rt": dataset.metadata[name]["rt"],
         **{sample: dataset.intensities[i, j] for j, sample in enumerate(dataset.samples)},
     })
 
@@ -597,7 +596,7 @@ R_z = int_normalize(R, axis=1)  # per-gene
 1. **Limited direct integration**: No built-in `metabolomics.integration` submodule (unlike `spatial.integration`); integration handled via `multiomics`.
 2. **No pathway mapping API**: Must construct `pathway_db` manually or load external JSON.
 3. **No direct export to multi-omics formats** (e.g., MultiAssayExperiment R class).
-4. **Batch correction is simplified**: `metainformant.quality.batch.detection.correct_batch_combat` is a ComBat-style location/scale adjustment with fixed shrinkage and no covariates, not the full parametric empirical-Bayes ComBat. For the full method use an external implementation such as `scanpy.pp.combat`.
+4. **Batch correction has no covariates**: `metainformant.quality.batch.detection.correct_batch_combat` is parametric empirical-Bayes ComBat (Johnson, Li & Rabinovic 2007) without covariates, so biological groups that coincide with batches are removed along with them. For a design that must preserve covariates use an external implementation such as `scanpy.pp.combat`.
 
 ### Not Implemented
 
@@ -607,7 +606,7 @@ None of the following exists in the codebase today:
 |---------|-------------|
 | `metabolomics.integration` submodule | Metabolite-gene correlation network builder |
 | Built-in KEGG/Reactome pathway loader | A `load_kegg_pathways()`-style function returning a `pathway_db` dict |
-| Full ComBat | Empirical-Bayes batch correction with covariates (the codebase only has simplified ComBat-like corrections, such as `correct_batch_combat`) |
+| ComBat with covariates | Empirical-Bayes batch correction that preserves biological covariates (`correct_batch_combat` is ComBat without covariates) |
 | Spatial metabolomics I/O | imzML and Analyze format readers |
 
 ---

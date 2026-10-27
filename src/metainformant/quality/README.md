@@ -90,7 +90,7 @@ score = calculate_quality_score(qc_data, data_type="fastq")
 | `calculate_coverage_metrics` | Depth-of-coverage statistics |
 | `calculate_gc_metrics` | GC content distribution analysis |
 | `detect_outliers` | IQR/Z-score outlier detection |
-| `batch_quality_analysis` | Per-file FASTQ QC analysis across many files |
+| `batch_quality_analysis` | Per-file FASTQ QC analysis across many files; `data_type` must be `"fastq"` (`"vcf"` and `"bam"` raise `NotImplementedError`, any other value `ValueError`, even for an empty list) |
 
 ## Submodules
 
@@ -98,7 +98,7 @@ score = calculate_quality_score(qc_data, data_type="fastq")
 |--------|---------|
 | [`io/`](io/) | FASTQ parsing (`FastqRecord`, `read_fastq_records`), filtering |
 | [`analysis/`](analysis/) | Quality metrics (`calculate_quality_score`) and contamination (`ContaminationDetector`) |
-| [`batch/`](batch/) | Batch effect detection (PVCA, silhouette) and ComBat-like correction |
+| [`batch/`](batch/) | Batch effect detection (PVCA, silhouette) and parametric empirical-Bayes ComBat correction |
 | [`reporting/`](reporting/) | QC report generation, threshold checking, and trend analysis |
 
 ## Quick Start

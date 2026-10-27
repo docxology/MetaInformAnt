@@ -18,7 +18,10 @@ one of three strategies:
 **Active module detection** uses a greedy seed-and-grow algorithm on a gene
 interaction network. Node scores are derived from -log(p) minus a significance
 threshold (-log(alpha)). Seeds are nodes with positive transformed scores;
-modules expand by adding neighbours that improve the aggregate score.
+modules expand by adding neighbours that improve the aggregate score. The
+combined node p-values carry no per-omic information, so the optional
+`omic_scores` argument supplies per-omic p-values from which each module's
+`omic_contributions` are computed.
 
 **Topology-weighted analysis** incorporates graph structure by weighting gene
 perturbation scores by degree centrality, producing an impact factor that
@@ -27,6 +30,13 @@ reflects both statistical significance and network position.
 **Cross-omic concordance** measures whether pathway signals agree across omic
 layers using the coefficient of variation (CV) of -log10(p) values. Low CV
 indicates concordant signals.
+
+**Determinism.** The pathway analyses return the same result for the same
+input in every process. Sets of node and pathway identifiers are visited in
+sorted order (Python randomises string hashes per process, so set order would
+otherwise vary), ties are broken by identifier, and the two permutation tests
+(`active_module_detection`, `pathway_topology_analysis`) draw from
+`random.Random(42)`. Results do not depend on `PYTHONHASHSEED`.
 
 ## Function Reference
 
@@ -59,11 +69,31 @@ def active_module_detection(
     scores: dict[str, float],
     alpha: float = 0.05,
     n_permutations: int = 1000,
+    omic_scores: dict[str, dict[str, float]] | None = None,
 ) -> list[dict[str, Any]]
 ```
 
-Finds active subnetwork modules via seed-and-grow. Returns modules sorted by
-permutation p-value, each with `module_genes`, `module_score`, `p_value`, and
+Finds active subnetwork modules via seed-and-grow. `scores` holds one combined
+p-value per node. The module score is the sum of the node scores
+`-log(p) - threshold` with `threshold = -log(alpha)`; a node missing from
+`scores` counts as `p = 1`. Ties between equally scored neighbours are broken
+by node identifier, and the permutation test uses a fixed seed, so the same
+input always returns the same modules.
+
+Returns modules sorted by permutation p-value, each with:
+
+- `module_genes`: the sorted node identifiers of the module
+- `module_score`: the aggregate score of the module
+- `p_value`: the permutation p-value
+- `omic_contributions`: `{omic: score}`, the module score recomputed from that
+  omic's p-values alone with the same `-log(p) - threshold` transform (a node
+  absent from an omic counts as `p = 1`, as in `scores`). It shows which omic
+  layers support the module: a layer that does not support it scores below
+  zero. It is an empty dict `{}` when `omic_scores` is not given.
+
+`omic_scores` is the per-omic mapping `{omic: {node: p_value}}`, the same shape
+that `multi_omic_enrichment` takes as `omic_results`. It does not change which
+modules are found or how they are scored; it only supplies the data for
 `omic_contributions`.
 
 ### pathway_topology_analysis
@@ -78,9 +108,10 @@ def pathway_topology_analysis(
 Computes a topology-weighted impact factor:
 `IF = sum(score_i * centrality_i) / sum(centrality_i)` where centrality is
 normalised degree centrality and score is -log10(p). Significance is assessed
-via 1000 permutations.
+via 1000 permutations of the gene scores over the nodes in sorted order, drawn
+from a fixed seed, so the p-value is reproducible.
 
-Returns `impact_factor`, `p_value`, `perturbed_genes` (p < 0.05), and
+Returns `impact_factor`, `p_value`, `perturbed_genes` (p < 0.05, sorted), and
 `pathway_perturbation` (per-gene score, centrality, weighted score).
 
 ### cross_omic_pathway_concordance
@@ -92,11 +123,13 @@ def cross_omic_pathway_concordance(
 ```
 
 Assesses signal concordance across >= 2 omic layers. Classifies pathways as
-concordant (CV <= median) or discordant (CV > median).
+concordant (CV <= median CV, the true median: the mean of the two middle values
+when the number of pathways is even) or discordant (CV > median).
 
-Returns `concordant_pathways`, `discordant_pathways`, global
-`concordance_score` (1 - mean CV), and `heatmap_data` for visualisation
-(sorted by concordance).
+Returns `concordant_pathways`, `discordant_pathways` (both sorted),
+global `concordance_score` (1 - mean CV), and `heatmap_data` for
+visualisation, ordered by concordance (low CV first) with ties in pathway
+identifier order.
 
 ## Usage Example
 
@@ -116,10 +149,13 @@ omic_results = {
 }
 enriched = multi_omic_enrichment(gene_sets, omic_results, method="fisher_combined")
 
-# Active modules
+# Active modules; omic_scores adds the per-omic contribution of each module
 network = {"BAX": ["BCL2", "CASP3"], "BCL2": ["BAX"], "CASP3": ["BAX"]}
 scores = {"BAX": 0.001, "BCL2": 0.05, "CASP3": 0.002}
-modules = active_module_detection(network, scores, alpha=0.05)
+modules = active_module_detection(network, scores, alpha=0.05, omic_scores=omic_results)
+print(modules[0]["module_genes"])          # ['BAX', 'CASP3']
+print(modules[0]["omic_contributions"])    # {'rna': 0.916..., 'protein': 4.828...}
+# protein supports the module more than rna, which measured only BAX (CASP3 counts as p = 1 there)
 
 # Topology analysis
 topo = pathway_topology_analysis(network, scores)

@@ -52,14 +52,22 @@ class TestCSVReadWrite:
         assert dataset.metabolites == ["glucose", "fructose"]
         assert dataset.intensities.shape == (2, 2)
 
-    def test_read_handles_invalid_values(self, tmp_path: Path) -> None:
-        """Invalid numeric values should be replaced with 0.0."""
-        filepath = tmp_path / "bad.csv"
-        filepath.write_text("met,S1,S2\nA,100,NA\nB,missing,50\n")
+    def test_read_keeps_missing_values_missing(self, tmp_path: Path) -> None:
+        """A missing marker is NaN, never a measured 0.0 (see test_metabolomics_io_strict_parsing.py)."""
+        filepath = tmp_path / "missing.csv"
+        filepath.write_text("met,S1,S2\nA,100,NA\nB,,50\n")
         dataset = read_csv(filepath)
-        assert dataset.intensities[0, 1] == 0.0
-        assert dataset.intensities[1, 0] == 0.0
+        assert np.isnan(dataset.intensities[0, 1])
+        assert np.isnan(dataset.intensities[1, 0])
+        assert dataset.intensities[0, 0] == 100.0
         assert dataset.intensities[1, 1] == 50.0
+
+    def test_read_rejects_text_that_is_not_a_number(self, tmp_path: Path) -> None:
+        """A cell that is neither a number nor a missing marker is an error, not a silent 0.0."""
+        filepath = tmp_path / "bad.csv"
+        filepath.write_text("met,S1,S2\nA,100,50\nB,missing,50\n")
+        with pytest.raises(ValueError, match=r"line 3, metabolite 'B', sample 'S1'.*'missing'"):
+            read_csv(filepath)
 
     def test_custom_delimiter(self, tmp_path: Path) -> None:
         """Tab-delimited files should work."""

@@ -315,11 +315,37 @@ def multi_omic_enrichment(
 # ---------------------------------------------------------------------------
 
 
+def _active_module_node_score(p_value: float, threshold: float) -> float:
+    """Transformed node score used by :func:`active_module_detection`: ``-log(p) - threshold``."""
+    return -math.log(max(p_value, 1e-300)) - threshold
+
+
+def _module_omic_contributions(
+    module_nodes: set[str],
+    omic_scores: dict[str, dict[str, float]] | None,
+    threshold: float,
+) -> dict[str, float]:
+    """Module score recomputed from each omic layer's p-values alone.
+
+    Uses the same node transform as the module score itself, and treats a node missing from an
+    omic as ``p = 1`` exactly as ``scores`` does, so the values are on the scale of
+    ``module_score`` and a layer that does not support the module scores below zero.
+    """
+    if not omic_scores:
+        return {}
+    members = sorted(module_nodes)
+    return {
+        omic: sum(_active_module_node_score(p_values.get(node, 1.0), threshold) for node in members)
+        for omic, p_values in omic_scores.items()
+    }
+
+
 def active_module_detection(
     network: dict[str, list[str]],
     scores: dict[str, float],
     alpha: float = 0.05,
     n_permutations: int = 1000,
+    omic_scores: dict[str, dict[str, float]] | None = None,
 ) -> list[dict[str, Any]]:
     """Find active subnetwork modules using node scores from multi-omic integration.
 
@@ -332,19 +358,31 @@ def active_module_detection(
     The module score is the sum of transformed node scores:
         score_i = -log(p_i) - threshold, where threshold = -log(alpha).
 
+    The search is deterministic: ties between equally scored neighbours are broken by node
+    identifier and the permutation test uses a fixed seed, so the same input always returns
+    the same modules.
+
     Args:
         network: Adjacency list {node: [neighbour1, neighbour2, ...]}.
         scores: Node scores {node: p_value}.  Lower p-values indicate
             more significant nodes.
         alpha: Significance threshold for seed selection and score transform.
         n_permutations: Number of permutations for module significance.
+        omic_scores: Optional per-omic node p-values ``{omic: {node: p_value}}``, the same
+            mapping that :func:`multi_omic_enrichment` takes as ``omic_results``. It does not
+            change which modules are found or how they are scored; it only supplies the data for
+            ``omic_contributions``, because the combined ``scores`` carry no per-omic information.
 
     Returns:
         List of module dictionaries sorted by p-value, each containing:
             module_genes: List of gene/node identifiers in the module.
             module_score: Aggregate score of the module.
             p_value: Permutation-based p-value.
-            omic_contributions: Placeholder dict for per-omic contributions.
+            omic_contributions: ``{omic: score}``, the module score recomputed from that omic's
+                p-values alone with the same ``-log(p) - threshold`` transform (a node absent from
+                an omic counts as ``p = 1``, as in ``scores``). It shows which omic layers support
+                the module: a layer that does not scores below zero. Empty when ``omic_scores`` is
+                not given.
 
     Raises:
         ValueError: If network or scores are empty.
@@ -364,8 +402,7 @@ def active_module_detection(
     threshold = -math.log(max(alpha, 1e-300))
 
     def node_score(node: str) -> float:
-        p = scores.get(node, 1.0)
-        return -math.log(max(p, 1e-300)) - threshold
+        return _active_module_node_score(scores.get(node, 1.0), threshold)
 
     # Score all nodes
     node_scores = {node: node_score(node) for node in network}
@@ -405,7 +442,9 @@ def active_module_detection(
                     if nb not in module_nodes and nb not in used:
                         candidates.add(nb)
 
-            for candidate in candidates:
+            # sorted: set iteration order varies between processes (string hash randomisation), which
+            # would make ties between equal gains, and the float sum below, differ from run to run
+            for candidate in sorted(candidates):
                 gain = node_scores.get(candidate, -threshold)
                 if gain > best_gain:
                     best_gain = gain
@@ -441,7 +480,7 @@ def active_module_detection(
                 "module_genes": sorted(module_nodes),
                 "module_score": module_score_val,
                 "p_value": p_value,
-                "omic_contributions": {},
+                "omic_contributions": _module_omic_contributions(module_nodes, omic_scores, threshold),
             }
         )
 
@@ -509,9 +548,14 @@ def pathway_topology_analysis(
             degree[nb] += 1
             all_nodes.add(nb)
 
+    # A fixed node order: set iteration order varies between processes (string hash randomisation), and
+    # the permutation test below pairs shuffled scores with nodes by position, so its p-value (and the
+    # order of float sums) would otherwise change from run to run.
+    ordered_nodes = sorted(all_nodes)
+
     max_degree = max(degree.values()) if degree else 1
     centrality: dict[str, float] = {}
-    for node in all_nodes:
+    for node in ordered_nodes:
         centrality[node] = (degree.get(node, 0) + 1) / (max_degree + 1)
 
     # Compute per-gene perturbation
@@ -520,7 +564,7 @@ def pathway_topology_analysis(
     sum_weighted = 0.0
     sum_centrality = 0.0
 
-    for gene in all_nodes:
+    for gene in ordered_nodes:
         p = gene_scores.get(gene, 1.0)
         score = -math.log10(max(p, 1e-300))
         c = centrality[gene]
@@ -548,7 +592,7 @@ def pathway_topology_analysis(
         rng.shuffle(score_list)
         perm_weighted = 0.0
         perm_cent = 0.0
-        for i, gene in enumerate(all_nodes):
+        for i, gene in enumerate(ordered_nodes):
             p = score_list[i % len(score_list)] if score_list else 1.0
             s = -math.log10(max(p, 1e-300))
             c = centrality[gene]
@@ -630,11 +674,13 @@ def cross_omic_pathway_concordance(
     if not all_pathways:
         raise ValueError("No pathways found in any omic layer")
 
-    # Compute -log10(p) per pathway per omic and CV
+    # Compute -log10(p) per pathway per omic and CV. Pathways are visited in identifier order so that
+    # the output order of ties, and the float sum of the CVs, do not depend on set iteration order
+    # (which varies between processes).
     heatmap_data: dict[str, dict[str, float]] = {}
     cv_per_pathway: dict[str, float] = {}
 
-    for pathway in all_pathways:
+    for pathway in sorted(all_pathways):
         neg_log_p: dict[str, float] = {}
         values: list[float] = []
         for omic in omic_names:
@@ -673,7 +719,7 @@ def cross_omic_pathway_concordance(
     concordance_score = max(0.0, 1.0 - mean_cv)
 
     # Sort heatmap data by concordance (low CV first)
-    sorted_pathways = sorted(all_pathways, key=lambda pw: cv_per_pathway.get(pw, 0.0))
+    sorted_pathways = sorted(cv_per_pathway, key=lambda pw: (cv_per_pathway[pw], pw))
     sorted_heatmap: dict[str, dict[str, float]] = {pw: heatmap_data[pw] for pw in sorted_pathways}
 
     logger.info(
