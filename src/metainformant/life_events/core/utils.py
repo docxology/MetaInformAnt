@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import random
+from dataclasses import replace as replace_fields
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -204,6 +205,9 @@ def get_event_statistics(sequences: List[EventSequence]) -> Dict[str, Any]:
 def load_sequences_from_json(json_path: str | Path) -> List[EventSequence]:
     """Load EventSequence objects from a JSON file.
 
+    Sequences keep their ``metadata`` and events keep ``attributes``, ``person_id``, ``description``
+    and ``confidence``, so a file written with ``EventSequence.to_dict`` loads back unchanged.
+
     Args:
         json_path: Path to JSON file containing sequence data
 
@@ -240,15 +244,19 @@ def load_sequences_from_json(json_path: str | Path) -> List[EventSequence]:
 
         events = []
         for event_data in events_data:
+            confidence = event_data.get("confidence")
             event = Event(
                 event_type=event_data["event_type"],
                 timestamp=event_data["timestamp"],
                 domain=event_data.get("domain"),
-                attributes=event_data.get("attributes", {}),
+                attributes=event_data.get("attributes") or {},
+                person_id=event_data.get("person_id"),
+                description=event_data.get("description") or "",
+                confidence=1.0 if confidence is None else float(confidence),
             )
             events.append(event)
 
-        sequence = EventSequence(person_id=person_id, events=events)
+        sequence = EventSequence(person_id=person_id, events=events, metadata=seq_data.get("metadata"))
         sequences.append(sequence)
 
     return sequences
@@ -731,6 +739,75 @@ def generate_event_chain(
     return sequence
 
 
+_OUTCOME_RELATIONSHIPS = ("random", "event_based", "temporal")
+_TEMPORAL_PATTERNS = ("realistic", "random", "clustered")
+_N_CLUSTERED_BURSTS = 3
+_CLUSTER_SPREAD = 0.02  # standard deviation of a burst, as a fraction of the timeline span
+
+# Rare, high-impact events injected by ``rare_event_probability`` (event type -> life domain).
+RARE_EVENT_DOMAINS: Dict[str, str] = {
+    "serious_accident": "health",
+    "bereavement": "family",
+    "natural_disaster": "housing",
+    "windfall": "finance",
+    "business_failure": "career",
+}
+
+
+def _check_unit_interval(name: str, value: float) -> None:
+    """Raise ``ValueError`` unless ``value`` is a probability."""
+    if not 0.0 <= value <= 1.0:
+        raise ValueError(f"{name} must be between 0 and 1, got {value!r}")
+
+
+def _feature_rng(feature: str, random_state: Optional[int]) -> random.Random:
+    """Generator for one optional feature, independent of the main stream and of the other features.
+
+    Seeded from ``random_state`` and the feature name, so enabling a feature never changes the events,
+    domains or outcomes a seed produces without it, and the features do not influence one another.
+    """
+    if random_state is None:
+        return random.Random()
+    return random.Random(f"life_events.{feature}:{random_state}")
+
+
+def _inject_rare_events(events: List[Event], probability: float, rng: random.Random) -> List[Event]:
+    """Replace every event, independently with ``probability``, by a rare event at the same time."""
+    rare_types = list(RARE_EVENT_DOMAINS)
+    replaced = []
+    for event in events:
+        if rng.random() < probability:
+            rare_type = rng.choice(rare_types)
+            event = replace_fields(event, event_type=rare_type, domain=RARE_EVENT_DOMAINS[rare_type])
+        replaced.append(event)
+    return replaced
+
+
+def _retime_events(events: List[Event], pattern: str, rng: random.Random) -> List[Event]:
+    """Re-draw the timestamps of ``events`` inside the time span they already cover.
+
+    ``"random"`` gives every event an independent, uniformly distributed timestamp, which removes the
+    life-stage ordering of the realistic layout. ``"clustered"`` places the events in up to three
+    bursts: every event joins a random burst centre and is jittered around it by a few percent of the
+    span, so a timeline has long quiet gaps between dense episodes. Event types and domains are kept.
+    """
+    if len(events) < 2:
+        return events
+    start = min(event.timestamp for event in events)
+    span = (max(event.timestamp for event in events) - start).total_seconds()
+    if span <= 0:
+        return events
+
+    if pattern == "random":
+        offsets = [rng.uniform(0.0, span) for _ in events]
+    else:
+        centres = [rng.uniform(0.0, span) for _ in range(min(_N_CLUSTERED_BURSTS, len(events)))]
+        offsets = [min(span, max(0.0, rng.gauss(rng.choice(centres), _CLUSTER_SPREAD * span))) for _ in events]
+    return [
+        replace_fields(event, timestamp=start + timedelta(seconds=offset)) for event, offset in zip(events, offsets)
+    ]
+
+
 def generate_synthetic_life_events(
     n_sequences: int = 100,
     min_events_per_sequence: int = 3,
@@ -741,29 +818,86 @@ def generate_synthetic_life_events(
     domains: Optional[List[str]] = None,
     temporal_patterns: str = "realistic",
     random_state: Optional[int] = None,
-    **kwargs: Any,
+    rare_event_probability: float = 0.0,
+    missing_data_probability: float = 0.0,
+    temporal_noise: float = 0.0,
 ) -> Tuple[List[EventSequence], Optional[List[Any]]]:
     """Generate synthetic life event sequences with realistic patterns.
 
+    Rare events are part of the generated life; missing data and temporal noise only change what is observed
+    of it. Each optional feature (and a non-default ``temporal_patterns``) draws from its own random stream,
+    so for a given ``random_state`` switching one on leaves the underlying generated events untouched, and
+    with all defaults the output is exactly what it was before these options existed.
+
     Args:
         n_sequences: Number of sequences to generate
-        min_events_per_sequence: Minimum events per sequence
+        min_events_per_sequence: Minimum events per sequence (before ``missing_data_probability`` removes any)
         max_events_per_sequence: Maximum events per sequence
         generate_outcomes: Whether to generate outcome labels
-        outcome_relationship: How outcomes relate to sequences ("random", "event_based", "temporal")
+        outcome_relationship: How outcomes relate to sequences. ``"random"``: a fair coin flip;
+            ``"event_based"``: 1 if the complete record contains a diagnosis, divorce or financial
+            difficulty, else 0; ``"temporal"``: 1 if the complete record has more than 12 events, else 0.
+            The complete record is the life including any rare events, before ``missing_data_probability``
+            removes events: outcomes describe the person's life, not what was observed of it.
         event_types: List of possible event types
         domains: List of possible domains
-        temporal_patterns: Type of temporal patterns ("realistic", "random", "clustered")
+        temporal_patterns: How event timestamps are laid out within each sequence. ``"realistic"``
+            (default): life-stage chains (education, then career, family and health) with plausible
+            offsets. ``"random"``: the same events, each with an independent uniformly random
+            timestamp inside the realistic timeline's span. ``"clustered"``: the same events,
+            grouped into up to three bursts separated by quiet periods.
         random_state: Random seed for reproducibility
-        **kwargs: Additional parameters
+        rare_event_probability: Probability, independently for every event, that the event is replaced
+            by a rare event (one of ``RARE_EVENT_DOMAINS``: a serious accident, bereavement, natural
+            disaster, windfall or business failure) at the same time. The number of events is unchanged.
+            Rare events are not drawn from ``event_types``.
+        missing_data_probability: Probability, independently for every event, that the event is missing
+            from the observed sequence. Sequences can therefore be shorter than
+            ``min_events_per_sequence`` and, for large probabilities, empty. Outcomes are computed
+            before events go missing (see ``outcome_relationship``).
+        temporal_noise: Standard deviation of Gaussian jitter added to every timestamp, as a fraction of
+            the sequence's time span (``noise_level`` of :func:`add_temporal_noise`); 0 leaves timestamps
+            untouched. Events are re-sorted after jittering.
 
     Returns:
         Tuple of (sequences, outcomes) where outcomes is None if not generated
+
+    Raises:
+        ValueError: If ``outcome_relationship`` or ``temporal_patterns`` is not one of the values above,
+            a probability is outside [0, 1] or ``temporal_noise`` is negative.
+        TypeError: For any keyword argument that is not listed above. Earlier versions accepted and
+            ignored further options (``transition_probabilities``, ``seasonal_patterns``,
+            ``cooccurrence_patterns``); they are not implemented, so passing them is an error.
     """
     import random
 
+    if outcome_relationship not in _OUTCOME_RELATIONSHIPS:
+        allowed = ", ".join(_OUTCOME_RELATIONSHIPS)
+        raise ValueError(f"Unknown outcome_relationship {outcome_relationship!r}; expected one of {allowed}")
+    if temporal_patterns not in _TEMPORAL_PATTERNS:
+        allowed = ", ".join(_TEMPORAL_PATTERNS)
+        raise ValueError(f"Unknown temporal_patterns {temporal_patterns!r}; expected one of {allowed}")
+    _check_unit_interval("rare_event_probability", rare_event_probability)
+    _check_unit_interval("missing_data_probability", missing_data_probability)
+    if not temporal_noise >= 0.0:
+        raise ValueError(f"temporal_noise must not be negative, got {temporal_noise!r}")
+
     if random_state is not None:
         random.seed(random_state)
+
+    rare_rng = _feature_rng("rare_events", random_state) if rare_event_probability > 0 else None
+    missing_rng = _feature_rng("missing_data", random_state) if missing_data_probability > 0 else None
+    noise_rng = _feature_rng("temporal_noise", random_state) if temporal_noise > 0 else None
+
+    # Re-timing draws from its own generator so that, for a given seed, the event types and domains
+    # are identical for every temporal pattern and only the timestamps differ.
+    retime_rng: random.Random | None = None
+    if temporal_patterns != "realistic":
+        retime_rng = (
+            random.Random(f"life_events.temporal_patterns:{temporal_patterns}:{random_state}")
+            if random_state is not None
+            else random.Random()
+        )
 
     # Default event types and domains
     if event_types is None:
@@ -922,11 +1056,15 @@ def generate_synthetic_life_events(
         # Sort events by timestamp
         events.sort(key=lambda x: x.timestamp)
 
-        # Create sequence
-        sequence = EventSequence(person_id=person_id, events=events)
-        sequences.append(sequence)
+        if retime_rng is not None:
+            events = _retime_events(events, temporal_patterns, retime_rng)
+            events.sort(key=lambda x: x.timestamp)
 
-        # Generate outcome if requested
+        if rare_rng is not None:
+            events = _inject_rare_events(events, rare_event_probability, rare_rng)
+
+        # Generate outcome if requested. It is computed from the complete record, before any event goes
+        # missing, so missing data hides information from the sequence rather than relabelling it.
         if generate_outcomes:
             if outcome_relationship == "random":
                 outcome = random.choice([0, 1])
@@ -936,16 +1074,24 @@ def generate_synthetic_life_events(
                     e.event_type in ["diagnosis", "divorce", "financial_difficulty"] for e in events
                 )
                 outcome = 1 if has_negative_events else 0
-            elif outcome_relationship == "temporal":
+            else:  # "temporal", validated above
                 # Outcome based on event density/timing
                 if len(events) > 12:  # Many events might indicate complex life
                     outcome = 1
                 else:
                     outcome = 0
-            else:
-                outcome = random.choice([0, 1])
 
             if outcomes is not None:
                 outcomes.append(outcome)
+
+        # Observation noise: events that went unrecorded, then jitter on the recorded timestamps
+        if missing_rng is not None:
+            events = [event for event in events if missing_rng.random() >= missing_data_probability]
+
+        # Create sequence
+        sequence = EventSequence(person_id=person_id, events=events)
+        if noise_rng is not None:
+            sequence = add_temporal_noise(sequence, noise_level=temporal_noise, rng=noise_rng)
+        sequences.append(sequence)
 
     return sequences, outcomes

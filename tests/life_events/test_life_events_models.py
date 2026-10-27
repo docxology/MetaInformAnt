@@ -112,7 +112,8 @@ def test_event_sequence_predictor_predict_proba_classification_only():
 
 
 def test_lstm_sequence_model():
-    """Test LSTMSequenceModel (may fallback to simple model)."""
+    """Test LSTMSequenceModel training; it needs PyTorch (see test_life_events_sequence_models_torch.py)."""
+    pytest.importorskip("torch", reason="LSTMSequenceModel requires PyTorch")
     sequences = [
         ["health:diagnosis", "occupation:job_change"],
         ["education:degree", "occupation:job_change"],
@@ -370,7 +371,8 @@ def test_save_load_regression_model(tmp_path: Path):
 
 
 def test_gru_sequence_model(tmp_path):
-    """Test GRU sequence model."""
+    """Test GRU sequence model training; it needs PyTorch (see test_life_events_sequence_models_torch.py)."""
+    pytest.importorskip("torch", reason="GRUSequenceModel requires PyTorch")
     sequences = [
         ["health:diagnosis", "occupation:job_change"],
         ["education:degree", "occupation:job_change"],
@@ -408,14 +410,24 @@ def test_ensemble_predictor(tmp_path):
 
 
 def test_survival_predictor(tmp_path):
-    """Test survival predictor."""
+    """Test survival predictor: it learns from the data, so predictions follow the events and the curves are real.
+
+    Without PyTorch this test used to pass on a constant: ``fit`` did nothing and ``predict`` returned 365.0
+    for every sequence, which satisfies "positive and one value per sequence". The data below make a diagnosis
+    shorten survival, so a model that really fitted them must separate the diagnosed from the others.
+    """
     sequences = [
         ["health:diagnosis", "occupation:job_change"],
         ["education:degree", "occupation:job_change"],
         ["health:diagnosis", "income:raise"],
+        ["education:degree", "income:raise"],
+        ["health:diagnosis", "occupation:job_change", "income:raise"],
+        ["education:degree"],
+        ["health:diagnosis"],
+        ["education:degree", "occupation:job_change", "income:raise"],
     ]
-    event_times = np.array([365, 730, 1095])
-    event_occurred = np.array([1, 1, 0])
+    event_times = np.array([200, 900, 365, 1200, 150, 1100, 250, 1300])
+    event_occurred = np.array([1, 1, 1, 1, 1, 0, 1, 1])  # the person censored at 1100 is still alive
 
     model = SurvivalPredictor(method="cox", random_state=42)
     model.fit(sequences, event_times, event_occurred)
@@ -423,15 +435,24 @@ def test_survival_predictor(tmp_path):
     predicted_times = model.predict(sequences)
     assert len(predicted_times) == len(sequences)
     assert all(predicted_times > 0)
+    assert len(set(np.round(predicted_times, 6))) > 1  # not one constant for everybody
+    diagnosed = np.array(["health:diagnosis" in sequence for sequence in sequences])
+    assert predicted_times[diagnosed].max() < predicted_times[~diagnosed].min()
+    assert model.coefficients["health:diagnosis"] > 0  # a diagnosis raises the hazard
 
     # Test survival function
-    times = np.array([365, 730])
+    times = np.array([100, 365, 1000])
     survival_probs = model.predict_survival_function(sequences, times)
     assert survival_probs.shape == (len(sequences), len(times))
+    assert np.all((survival_probs >= 0) & (survival_probs <= 1))
+    assert np.all(survival_probs[:, 0] == 1.0)  # nobody has failed before the first event time
+    assert np.all(np.diff(survival_probs, axis=1) <= 0)  # survival never increases
+    assert survival_probs[diagnosed, 1].max() < survival_probs[~diagnosed, 1].min()
+    assert survival_probs[diagnosed, 2].max() < 0.1  # all diagnosed people were gone by day 1000 in the data
 
 
 def test_multi_task_predictor(tmp_path):
-    """Test multi-task predictor."""
+    """Test multi-task predictor: every task is learned from the sequences, not replaced by its mean."""
     sequences = [
         ["health:diagnosis", "occupation:job_change"],
         ["education:degree", "occupation:job_change"],
@@ -458,3 +479,13 @@ def test_multi_task_predictor(tmp_path):
     # Predict specific task
     health_predictions = model.predict(sequences, task_name="health_outcome")
     assert len(health_predictions) == len(sequences)
+
+    # The predictions differ per sequence (the old model returned each task's mean for everybody) ...
+    income_predictions = np.array(all_predictions["income_level"])
+    assert np.ptp(income_predictions) > 1000
+    assert np.ptp(health_predictions) > 0.5
+    # ... classification gives probabilities, led by the one sequence of the positive class ...
+    assert all(0.0 <= probability <= 1.0 for probability in health_predictions)
+    assert int(np.argmax(health_predictions)) == 1
+    # ... and the regression task reproduces the training incomes it was fitted to.
+    np.testing.assert_allclose(income_predictions, outcomes["income_level"], rtol=0.02)

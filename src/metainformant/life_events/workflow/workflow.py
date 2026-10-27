@@ -6,8 +6,9 @@ training models, and generating predictions.
 
 from __future__ import annotations
 
+import statistics
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from metainformant.core import io
 from metainformant.core.utils import logging
@@ -34,6 +35,9 @@ def analyze_life_course(
     - Sequence statistics and summary
     - Optional embedding learning and model training
     - Optional outcome prediction and evaluation
+    - Summary plots (sequence lengths, domains and, with outcomes, the outcome distribution)
+
+    Every plot is generated independently: a plot that fails does not stop the others or the analysis.
 
     Args:
         sequences: List of EventSequence objects
@@ -43,7 +47,9 @@ def analyze_life_course(
         **kwargs: Additional configuration options
 
     Returns:
-        Dictionary containing analysis results
+        Dictionary containing analysis results. ``visualizations`` lists the plots that were written and
+        ``visualization_errors`` the plots that failed, each as ``{"type", "error_type", "error"}`` (an
+        empty list when every plot succeeded).
     """
     if not sequences:
         raise ValueError("No sequences provided for analysis")
@@ -86,6 +92,14 @@ def analyze_life_course(
     model_type = str(kwargs.get("model_type", model_config.get("model_type", "embedding")))
     task_type = str(kwargs.get("task_type", model_config.get("task_type", "classification")))
 
+    # Optional embedding settings (``embedding:`` section of the config or keyword arguments) are
+    # passed on only when given, so learn_event_embeddings keeps its defaults otherwise.
+    embedding_options: Dict[str, Any] = {}
+    for option in ("method", "learning_rate", "min_count", "negative"):
+        value = kwargs.get(option, embedding_config.get(option))
+        if value is not None:
+            embedding_options[option] = value
+
     token_sequences = convert_sequences_to_tokens(sequences)
     embeddings_result = learn_event_embeddings(
         token_sequences,
@@ -93,6 +107,7 @@ def analyze_life_course(
         window_size=window_size,
         epochs=epochs,
         random_state=random_state,
+        **embedding_options,
     )
 
     embeddings_path = output_dir / "event_embeddings.json"
@@ -116,6 +131,7 @@ def analyze_life_course(
         "task_type": task_type,
         "predictions": [],
         "visualizations": [],
+        "visualization_errors": [],
     }
 
     if outcomes is not None:
@@ -177,40 +193,97 @@ def _compute_sequence_stats(sequences: List[Any]) -> Dict[str, Any]:
     return stats
 
 
+def _plot_sequence_lengths(sequences: List[Any], outcomes: Optional[List[str]]) -> Any:
+    from metainformant.life_events import visualization
+
+    return visualization.plot_sequence_length_distribution(sequences)
+
+
+def _plot_domains(sequences: List[Any], outcomes: Optional[List[str]]) -> Any:
+    from metainformant.life_events import visualization
+
+    return visualization.plot_domain_distribution(sequences)
+
+
+def _plot_outcomes(sequences: List[Any], outcomes: Optional[List[str]]) -> Any:
+    from metainformant.life_events import visualization
+
+    return visualization.plot_outcome_distribution(outcomes)
+
+
+def _save_plot(
+    make_figure: Callable[[List[Any], Optional[List[str]]], Any],
+    sequences: List[Any],
+    outcomes: Optional[List[str]],
+    path: Path,
+) -> Optional[Tuple[str, str]]:
+    """Make one plot and write it to ``path``.
+
+    Returns:
+        ``None`` on success, otherwise ``(error_type, message)``: the exception class name and message when
+        the plot function raised or the file could not be written, or ``"NoFigure"`` when the plot function
+        returned no figure (matplotlib is unavailable, or there is nothing to draw).
+    """
+    figure = None
+    try:
+        figure = make_figure(sequences, outcomes)
+        if figure is None:
+            return "NoFigure", "the plot function returned no figure (matplotlib is missing or there is no data)"
+        figure.savefig(path, dpi=300, bbox_inches="tight")
+        return None
+    except Exception as exc:  # recorded by the caller, which carries on with the remaining plots
+        return type(exc).__name__, str(exc)
+    finally:
+        if figure is not None:
+            try:
+                import matplotlib.pyplot as plt
+            except ImportError:  # a figure cannot exist without matplotlib
+                pass
+            else:
+                plt.close(figure)  # release the figure's memory
+
+
 def _generate_analysis_visualizations(
     sequences: List[Any], outcomes: Optional[List[str]], output_dir: Path, results: Dict[str, Any]
 ) -> List[Dict[str, str]]:
-    """Generate analysis visualizations."""
-    visualizations = []
+    """Generate the analysis plots, each one independently of the others.
 
-    try:
-        from metainformant.life_events import visualization
+    A plot can fail on its own: the plotting function raises, it returns no figure (matplotlib is not
+    installed, or there is nothing to draw), or the file cannot be written. The failing plot is skipped, the
+    remaining plots are still produced, and the failure is recorded in ``results["visualization_errors"]``
+    (always set, an empty list when every plot succeeded) as a dictionary with the plot ``type``, the
+    ``error_type`` (exception class name, or ``"NoFigure"``) and the ``error`` message. It is also logged.
 
-        # Sequence length distribution
-        fig = visualization.plot_sequence_length_distribution(sequences)
-        if fig:
-            length_plot = output_dir / "sequence_lengths.png"
-            fig.savefig(length_plot, dpi=300, bbox_inches="tight")
-            visualizations.append({"type": "sequence_length_distribution", "file": str(length_plot)})
+    Args:
+        sequences: Sequences to plot.
+        outcomes: Outcomes to plot; no outcome plot is attempted when they are missing or empty.
+        output_dir: Directory for the PNG files.
+        results: Results dictionary of the analysis; receives ``visualization_errors``.
 
-        # Domain distribution if domains available
-        if any(hasattr(event, "domain") for seq in sequences for event in seq.events):
-            fig = visualization.plot_domain_distribution(sequences)
-            if fig:
-                domain_plot = output_dir / "domain_distribution.png"
-                fig.savefig(domain_plot, dpi=300, bbox_inches="tight")
-                visualizations.append({"type": "domain_distribution", "file": str(domain_plot)})
+    Returns:
+        One ``{"type": ..., "file": ...}`` entry per plot that was written.
+    """
+    visualizations: List[Dict[str, str]] = []
+    errors: List[Dict[str, str]] = []
+    results["visualization_errors"] = errors
 
-        # Outcome distribution if outcomes available
-        if outcomes:
-            fig = visualization.plot_outcome_distribution(outcomes)
-            if fig:
-                outcome_plot = output_dir / "outcome_distribution.png"
-                fig.savefig(outcome_plot, dpi=300, bbox_inches="tight")
-                visualizations.append({"type": "outcome_distribution", "file": str(outcome_plot)})
+    # (type, file name, plot function), in the order the plots are made. Outcomes may be a NumPy array,
+    # whose truth value is ambiguous (``if outcomes:`` raises), so test for None and length explicitly.
+    plots = [("sequence_length_distribution", "sequence_lengths.png", _plot_sequence_lengths)]
+    if any(hasattr(event, "domain") for seq in sequences for event in seq.events):
+        plots.append(("domain_distribution", "domain_distribution.png", _plot_domains))
+    if outcomes is not None and len(outcomes) > 0:
+        plots.append(("outcome_distribution", "outcome_distribution.png", _plot_outcomes))
 
-    except Exception as e:
-        logger.warning(f"Error generating visualizations: {e}")
+    for plot_type, filename, make_figure in plots:
+        path = output_dir / filename
+        failure = _save_plot(make_figure, sequences, outcomes, path)
+        if failure is None:
+            visualizations.append({"type": plot_type, "file": str(path)})
+            continue
+        error_type, message = failure
+        errors.append({"type": plot_type, "error_type": error_type, "error": message})
+        logger.warning(f"Could not generate the {plot_type} plot ({error_type}): {message}")
 
     return visualizations
 
@@ -298,8 +371,8 @@ def _compare_sequence_groups(
         "length_comparison": {
             "group1_mean": sum(lengths1) / len(lengths1) if lengths1 else 0,
             "group2_mean": sum(lengths2) / len(lengths2) if lengths2 else 0,
-            "group1_median": sorted(lengths1)[len(lengths1) // 2] if lengths1 else 0,
-            "group2_median": sorted(lengths2)[len(lengths2) // 2] if lengths2 else 0,
+            "group1_median": statistics.median(lengths1) if lengths1 else 0,
+            "group2_median": statistics.median(lengths2) if lengths2 else 0,
         }
     }
 

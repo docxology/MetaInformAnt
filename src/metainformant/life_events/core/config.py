@@ -19,7 +19,7 @@ class LifeEventsWorkflowConfig:
     Attributes:
         work_dir: Working directory for outputs
         embedding_dim: Dimensionality for event embeddings
-        model_type: Type of prediction model ('embedding', 'lstm', 'ensemble')
+        model_type: Type of outcome-prediction model ('embedding' or 'simple'; see EventSequencePredictor)
         learning_rate: Learning rate for model training
         batch_size: Batch size for training
         epochs: Number of training epochs

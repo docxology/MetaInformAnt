@@ -4,25 +4,21 @@ Provides Kaplan-Meier survival curve estimation, Cox proportional hazards
 modelling, competing risks analysis (cumulative incidence), recurrent event
 analysis, and time-varying covariate data preparation.
 
-All algorithms are pure Python implementations using standard numerical
-methods (Newton-Raphson for Cox PH, step-function estimation for KM).
+The Kaplan-Meier, competing-risks, recurrent-event and time-varying-covariate routines are pure Python
+step-function estimators. The Cox proportional hazards fit (``cox_ph_model``) runs on NumPy: Newton-Raphson on
+the Breslow partial likelihood with the exact gradient and information matrix.
 """
 
 from __future__ import annotations
 
 import math
+import warnings
+
+import numpy as np
 
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
-
-try:
-    import numpy as np
-
-    HAS_NUMPY = True
-except ImportError:
-    HAS_NUMPY = False
-    np = None
 
 
 # ---------------------------------------------------------------------------
@@ -217,6 +213,10 @@ def _stratified_km(
 # ---------------------------------------------------------------------------
 
 
+_COX_MAX_ITERATIONS = 50
+_COX_TOLERANCE = 1e-9  # relative log-likelihood gain below which a full Newton step ends the fit
+
+
 def cox_ph_model(
     times: list[float],
     events: list[int],
@@ -225,11 +225,19 @@ def cox_ph_model(
 ) -> dict:
     """Fit a Cox proportional hazards model.
 
-    Uses Newton-Raphson optimisation of the partial log-likelihood.
+    Maximises the Breslow partial log-likelihood by Newton-Raphson with the exact gradient and information
+    matrix (negative Hessian) and step halving; this is the fit behind
+    ``SurvivalPredictor(method="cox", penalizer=0)``. Event times that are tied share one risk set (Breslow's
+    approximation) and right-censoring is supported. Standard errors are the square roots of the diagonal of
+    the inverse information matrix, so correlated covariates are accounted for, and the p-values are Wald tests.
+
+    A covariate that is not identified (constant, or a linear combination of other covariates) has an infinite
+    standard error and a p-value of 1. A covariate that perfectly orders the event times makes the likelihood
+    monotone: its coefficient grows until the likelihood stops improving and its standard error is huge.
 
     Args:
         times: Observed survival times.
-        events: Event indicators (1 = event, 0 = censored).
+        events: Event indicators (1 = event, 0 = censored); booleans are accepted.
         covariates: List of covariate vectors per subject, shape
             ``(n_subjects, n_covariates)``.
         covariate_names: Optional names for covariates.
@@ -238,152 +246,125 @@ def cox_ph_model(
         Dictionary with keys:
             - coefficients: List of estimated beta coefficients.
             - hazard_ratios: List of exp(beta) values.
-            - se: List of standard errors.
+            - se: List of standard errors (``inf`` for a covariate that is not identified).
             - p_values: List of Wald test p-values.
-            - concordance: Harrell's C-index.
+            - concordance: Harrell's C-index (pairs with equal risk scores are not counted).
             - covariate_names: Names of covariates.
             - n_subjects: Number of subjects.
             - n_events: Number of events.
+            - log_likelihood: Maximised partial log-likelihood.
+            - converged: Whether Newton-Raphson converged.
+            - n_iterations: Number of Newton-Raphson iterations.
 
     Raises:
-        ValueError: If input dimensions are inconsistent.
+        ValueError: If input dimensions are inconsistent, there is no covariate, values are not finite
+            numbers, or ``events`` holds anything but 0/1.
+
+    Warns:
+        RuntimeWarning: If Newton-Raphson does not converge within 50 iterations.
     """
     n = len(times)
     if len(events) != n or len(covariates) != n:
         raise ValueError("times, events, and covariates must have same length")
 
-    p = len(covariates[0]) if covariates else 0
+    try:
+        p = len(covariates[0]) if n else 0
+    except TypeError as exc:  # a flat list of numbers instead of one covariate vector per subject
+        raise ValueError("covariates must hold one covariate vector per subject") from exc
     if p == 0:
         raise ValueError("At least one covariate is required")
 
     if covariate_names is None:
         covariate_names = [f"X{i}" for i in range(p)]
 
-    # Sort by time (events first at ties)
-    order = sorted(range(n), key=lambda i: (times[i], -events[i]))
-    t_sorted = [times[i] for i in order]
-    e_sorted = [events[i] for i in order]
-    x_sorted = [covariates[i] for i in order]
+    try:
+        time_array = np.asarray(times, dtype=float)
+        covariate_array = np.asarray(covariates, dtype=float)
+        event_array = np.asarray(events)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("times and covariates must be numeric, and every subject needs the same covariates") from exc
+    if covariate_array.shape != (n, p) or time_array.shape != (n,) or event_array.shape != (n,):
+        raise ValueError("times and events must be one value per subject and covariates a subjects x covariates table")
+    if not (np.all(np.isfinite(time_array)) and np.all(np.isfinite(covariate_array))):
+        raise ValueError("times and covariates must be finite")
+    if not np.all(np.isin(event_array, (0, 1))):
+        raise ValueError("events must contain only 0 (censored) and 1 (event), or booleans")
+    occurred = event_array.astype(bool)
 
-    # Newton-Raphson for partial log-likelihood
-    beta = [0.0] * p
-    max_iter = 50
-    tol = 1e-8
+    # The Cox fit is shared with SurvivalPredictor; imported here because models builds on this package's layer.
+    from metainformant.life_events.models.statistical_models import _fit_cox
 
-    for iteration in range(max_iter):
-        # Compute gradient and Hessian
-        gradient = [0.0] * p
-        hessian = [[0.0] * p for _ in range(p)]
+    fit = _fit_cox(covariate_array, time_array, occurred, 0.0, _COX_MAX_ITERATIONS, _COX_TOLERANCE)
+    beta = fit["coefficients"]
+    se = fit["std_errors"]
+    if not fit["converged"]:
+        warnings.warn(
+            f"The Cox model did not converge in {_COX_MAX_ITERATIONS} iterations; the estimates are unreliable",
+            RuntimeWarning,
+            stacklevel=2,
+        )
 
-        # Risk set computation
-        risk_exp = [math.exp(min(700, sum(beta[k] * x_sorted[i][k] for k in range(p)))) for i in range(n)]
+    p_values = [_wald_p_value(float(b), float(s)) for b, s in zip(beta, se)]
+    with np.errstate(over="ignore"):
+        hazard_ratios = np.exp(beta).tolist()  # inf rather than an OverflowError for a huge coefficient
 
-        # Process from last to first
-        sum_exp = 0.0
-        sum_x_exp = [0.0] * p
-        sum_xx_exp = [[0.0] * p for _ in range(p)]
-
-        for i in range(n - 1, -1, -1):
-            sum_exp += risk_exp[i]
-            for k in range(p):
-                sum_x_exp[k] += x_sorted[i][k] * risk_exp[i]
-                for col in range(k, p):
-                    val = x_sorted[i][k] * x_sorted[i][col] * risk_exp[i]
-                    sum_xx_exp[k][col] += val
-                    if k != col:
-                        sum_xx_exp[col][k] += val
-
-            if e_sorted[i] == 1 and sum_exp > 0:
-                for k in range(p):
-                    gradient[k] += x_sorted[i][k] - sum_x_exp[k] / sum_exp
-                    for col in range(p):
-                        expected_kl = sum_xx_exp[k][col] / sum_exp
-                        mean_k = sum_x_exp[k] / sum_exp
-                        mean_l = sum_x_exp[col] / sum_exp
-                        hessian[k][col] -= expected_kl - mean_k * mean_l
-
-        # Newton step: beta += H^{-1} * gradient
-        # Use simple diagonal approximation for stability
-        step = [0.0] * p
-        for k in range(p):
-            if abs(hessian[k][k]) > 1e-15:
-                step[k] = gradient[k] / abs(hessian[k][k])
-            step[k] = max(-1.0, min(1.0, step[k]))
-
-        max_change = max(abs(s) for s in step)
-        for k in range(p):
-            beta[k] += step[k]
-
-        if max_change < tol:
-            logger.debug("Cox PH converged at iteration %d", iteration)
-            break
-
-    # Standard errors from diagonal of -H^{-1}
-    se = []
-    for k in range(p):
-        if abs(hessian[k][k]) > 1e-15:
-            se.append(math.sqrt(abs(1.0 / hessian[k][k])))
-        else:
-            se.append(float("inf"))
-
-    # P-values (Wald test)
-    p_values = []
-    for k in range(p):
-        if se[k] > 0 and se[k] < float("inf"):
-            z = beta[k] / se[k]
-            p_val = 2.0 * 0.5 * math.erfc(abs(z) / math.sqrt(2.0))
-        else:
-            p_val = 1.0
-        p_values.append(p_val)
-
-    hazard_ratios = [math.exp(b) for b in beta]
-
-    # Concordance (C-index)
-    concordance = _compute_concordance(t_sorted, e_sorted, x_sorted, beta)
+    concordance = _compute_concordance(time_array, occurred, covariate_array, beta)
 
     logger.info(
         "Cox PH: %d subjects, %d events, %d covariates, C=%.3f",
         n,
-        sum(e_sorted),
+        int(occurred.sum()),
         p,
         concordance,
     )
 
     return {
-        "coefficients": beta,
+        "coefficients": beta.tolist(),
         "hazard_ratios": hazard_ratios,
-        "se": se,
+        "se": se.tolist(),
         "p_values": p_values,
         "concordance": concordance,
         "covariate_names": covariate_names,
         "n_subjects": n,
-        "n_events": sum(e_sorted),
+        "n_events": int(occurred.sum()),
+        "log_likelihood": float(fit["log_likelihood"]),
+        "converged": bool(fit["converged"]),
+        "n_iterations": int(fit["n_iter"]),
     }
 
 
+def _wald_p_value(coefficient: float, standard_error: float) -> float:
+    """Two-sided Wald test p-value; 1 when the standard error is zero or infinite (nothing can be tested)."""
+    if 0.0 < standard_error < float("inf"):
+        return math.erfc(abs(coefficient / standard_error) / math.sqrt(2.0))
+    return 1.0
+
+
 def _compute_concordance(
-    times: list[float],
-    events: list[int],
-    covariates: list[list[float]],
-    beta: list[float],
+    times: np.ndarray,
+    events: np.ndarray,
+    covariates: np.ndarray,
+    beta: np.ndarray,
 ) -> float:
-    """Compute Harrell's concordance index."""
-    n = len(times)
-    risk_scores = [sum(beta[k] * covariates[i][k] for k in range(len(beta))) for i in range(n)]
+    """Compute Harrell's concordance index.
+
+    A pair is comparable when the subject with the event has the earlier time. It is concordant when that
+    subject also has the higher risk score ``x . beta`` and discordant when the risk score is lower; pairs
+    with equal risk scores are counted in neither group. Event rows are processed in blocks, so the
+    comparisons are vectorised without holding all n^2 pairs in memory.
+    """
+    times = np.asarray(times, dtype=float)
+    risk = np.asarray(covariates, dtype=float) @ np.asarray(beta, dtype=float)
+    event_rows = np.flatnonzero(np.asarray(events) == 1)
 
     concordant = 0
     discordant = 0
-    for i in range(n):
-        if events[i] != 1:
-            continue
-        for j in range(n):
-            if times[j] <= times[i] and i != j:
-                continue
-            if times[j] > times[i]:
-                if risk_scores[i] > risk_scores[j]:
-                    concordant += 1
-                elif risk_scores[i] < risk_scores[j]:
-                    discordant += 1
+    block = max(1, 2_000_000 // max(1, times.size))
+    for start in range(0, event_rows.size, block):
+        rows = event_rows[start : start + block]
+        later = times[None, :] > times[rows][:, None]
+        concordant += int(np.count_nonzero(later & (risk[rows][:, None] > risk[None, :])))
+        discordant += int(np.count_nonzero(later & (risk[rows][:, None] < risk[None, :])))
 
     total = concordant + discordant
     return concordant / total if total > 0 else 0.5

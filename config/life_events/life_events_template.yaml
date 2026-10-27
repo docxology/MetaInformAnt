@@ -1,6 +1,11 @@
 # METAINFORMANT Life Events Configuration Template
 # Life Course and Event Sequence Analysis Pipeline Configuration
 
+# work_dir is required; analyze_life_course writes there when it is given this configuration
+# without an output_dir.
+# The environment variables LE_WORK_DIR, LE_LOG_DIR and LE_THREADS override
+# work_dir, log_dir and threads (no other key has an environment override).
+# log_dir and threads are stored on the configuration object; analyze_life_course does not read them.
 work_dir: output/life_events/work
 log_dir: output/life_events/logs
 threads: 4
@@ -8,7 +13,8 @@ threads: 4
 # =============================================================================
 # EMBEDDING CONFIGURATION
 # =============================================================================
-# Configuration for learning event embeddings using Word2Vec-style methods
+# Configuration for learning event embeddings with word2vec
+# (skip-gram or CBOW with negative sampling, trained in NumPy)
 embedding:
   # Dimension of embedding vectors (typical: 50-200)
   embedding_dim: 100
@@ -22,27 +28,34 @@ embedding:
   # Embedding method: skipgram or cbow
   method: skipgram  # or: cbow
 
-  # Learning rate for gradient descent
+  # Initial learning rate of the word2vec training; it decays linearly during training
+  # (learn_event_embeddings default: 0.025)
   learning_rate: 0.01
 
-  # Random seed for reproducibility (optional)
-  # random_state: 42
+  # Events that occur fewer times are dropped (optional, default 1)
+  # min_count: 1
+
+  # Negative samples per positive example (optional, default 5)
+  # negative: 5
+
+  # The embedding training is seeded by model.random_state (see below).
 
 # =============================================================================
 # MODEL CONFIGURATION
 # =============================================================================
-# Configuration for prediction models
+# Configuration for outcome prediction (used when outcomes are given)
 model:
-  # Model type: embedding, simple, or lstm
-  # - embedding: Uses sequence embeddings with linear classifier/regressor
-  # - simple: Event frequency-based model with random forest
-  # - lstm: LSTM-based sequence model (requires PyTorch, falls back if unavailable)
-  model_type: embedding  # or: simple, lstm
+  # Model type: embedding or simple (the two EventSequencePredictor model types)
+  # - embedding: mean event embedding of a sequence fed to a logistic (classification)
+  #   or linear (regression) model
+  # - simple: mean training outcome of the sequences with the same number of events;
+  #   classification is binary only
+  model_type: embedding  # or: simple
 
   # Task type: classification or regression
   task_type: classification  # or: regression
 
-  # Random seed for model reproducibility (optional)
+  # Random seed for the embedding training and the predictor (default 42)
   random_state: 42
 
 # =============================================================================
@@ -50,8 +63,11 @@ model:
 # =============================================================================
 # Workflow-specific settings
 workflow:
-  # Whether to save trained model after workflow completes
+  # Whether to save the trained model (trained_model.json) when outcomes are given
   save_model: true
+
+  # Reserved keys: stored in config.workflow but not read by analyze_life_course,
+  # which always writes event_embeddings.json and the summary plots
 
   # Whether to save learned embeddings
   save_embeddings: true
@@ -65,6 +81,7 @@ workflow:
 # =============================================================================
 # OUTPUT CONFIGURATION
 # =============================================================================
+# Reserved: stored in config.output; no workflow function reads these keys.
 # Output file and format settings
 output:
   # Output format: json or tsv

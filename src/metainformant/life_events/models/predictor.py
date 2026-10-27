@@ -1,10 +1,13 @@
 """Embedding-based prediction models for life event sequences.
 
-This module provides the core prediction models for life events:
-- EventSequencePredictor: Main predictor using embedding or simple approaches
+This module provides the core outcome-prediction models for life events:
+- EventSequencePredictor: Main predictor using embedding or simple (sequence-length) approaches
 - EnsemblePredictor: Combines multiple predictors via weighted average
-- biological_embedding: Learn Word2Vec-style embeddings for events
-- domain_specific_embeddings: Learn per-domain embeddings
+
+Event embeddings are learned in ``metainformant.life_events.models.embeddings``. Recurrent
+next-event models (LSTM/GRU, which require PyTorch) live in
+``metainformant.life_events.models.sequence_models``; they do not predict outcomes and are not
+available through :class:`EventSequencePredictor`.
 """
 
 from __future__ import annotations
@@ -21,10 +24,31 @@ from metainformant.core.utils import logging
 logger = logging.get_logger(__name__)
 
 
+def _unsupported_model_type(model_type: str) -> ValueError:
+    """Build the error raised for a model type that EventSequencePredictor does not implement."""
+    message = f"Unsupported model type: {model_type}. EventSequencePredictor supports 'embedding' and 'simple'."
+    if model_type in {"lstm", "gru"}:
+        message += (
+            " Recurrent models predict the next event rather than an outcome; use LSTMSequenceModel or "
+            "GRUSequenceModel from metainformant.life_events.models.sequence_models (requires PyTorch)."
+        )
+    return ValueError(message)
+
+
 class EventSequencePredictor:
     """Predictor for life event sequence outcomes using various ML approaches.
 
-    Supports multiple model types: embedding-based, simple statistical, and LSTM models.
+    Supports two model types:
+
+    - ``"embedding"``: averages the embeddings of a sequence's events and fits a logistic
+      (classification, binary outcomes) or linear (regression) model on them.
+    - ``"simple"``: predicts the mean training outcome of sequences with the same number of events
+      (the nearest observed length for unseen lengths). For classification the outcome is the
+      indicator of the positive class (the largest label), so the model is binary and its score is
+      the probability of that class.
+
+    Recurrent (LSTM/GRU) models are not outcome predictors; see
+    ``metainformant.life_events.models.sequence_models``.
     """
 
     def __init__(
@@ -41,7 +65,7 @@ class EventSequencePredictor:
         """Initialize predictor.
 
         Args:
-            model_type: Type of model ('embedding', 'simple', 'lstm')
+            model_type: Type of model ('embedding' or 'simple')
             embedding_dim: Dimensionality for embeddings
             random_seed: Random seed for reproducibility
             task_type: Task type ('classification' or 'regression')
@@ -104,12 +128,17 @@ class EventSequencePredictor:
             task = self.task_type or "classification"
         self.task_type = task
 
+        if self.model_type not in {"embedding", "simple"}:
+            raise _unsupported_model_type(self.model_type)
+        if len(sequences) == 0:
+            raise ValueError("sequences cannot be empty")
+        if len(sequences) != len(outcomes):
+            raise ValueError(f"sequences and outcomes must have the same length ({len(sequences)} != {len(outcomes)})")
+
         if self.model_type == "embedding":
             self._fit_embedding_model(sequences, outcomes, task, event_embeddings=event_embeddings)
-        elif self.model_type == "simple":
-            self._fit_simple_model(sequences, outcomes, task)
         else:
-            raise ValueError(f"Unsupported model type: {self.model_type}")
+            self._fit_simple_model(sequences, outcomes, task)
 
         self.is_fitted = True
         # Store unique classes for classification tasks (sklearn convention)
@@ -131,15 +160,27 @@ class EventSequencePredictor:
         elif self.model_type == "simple":
             raw = self._predict_simple(sequences)
         else:
-            raise ValueError(f"Unsupported model type: {self.model_type}")
+            raise _unsupported_model_type(self.model_type)
 
-        # For classification, convert raw scores to class labels
+        # For classification, convert the raw scores to the probability of the positive class and
+        # threshold it at 0.5 (the largest label is the positive class).
         if self.task_type == "classification" and self.classes_ is not None and self.classifier is not None:
-            probs = 1.0 / (1.0 + np.exp(-np.clip(raw, -500, 500)))
+            probs = self._positive_class_probability(raw)
             predictions = np.where(probs >= 0.5, self.classes_[-1], self.classes_[0])
             return np.asarray(predictions)
 
         return raw
+
+    def _positive_class_probability(self, raw: np.ndarray) -> np.ndarray:
+        """Convert raw model scores to the probability of the positive class.
+
+        The embedding model's scores are logits and pass through the logistic function. The simple
+        model's scores already are probabilities (mean positive-class indicator per sequence length)
+        and must not be squashed again, which would map every non-negative score above 0.5.
+        """
+        if self.model_type == "simple":
+            return np.asarray(np.clip(raw, 0.0, 1.0))
+        return np.asarray(1.0 / (1.0 + np.exp(-np.clip(raw, -500, 500))))
 
     def predict_proba(self, sequences: List[Any]) -> np.ndarray:
         """Predict class probabilities (classification only).
@@ -158,8 +199,11 @@ class EventSequencePredictor:
         if not self.is_fitted or self.classifier is None:
             raise ValueError("Model must be fitted for classification before calling predict_proba")
 
-        raw = self._predict_embedding_raw(sequences)
-        probs = 1.0 / (1.0 + np.exp(-np.clip(raw, -500, 500)))
+        if self.model_type == "simple":
+            raw = self._predict_simple(sequences)
+        else:
+            raw = self._predict_embedding_raw(sequences)
+        probs = self._positive_class_probability(raw)
         return np.column_stack([1.0 - probs, probs])
 
     def save_model(self, path: str | Path) -> None:
@@ -184,6 +228,12 @@ class EventSequencePredictor:
             "event_vocab": self.event_vocab,
             "reverse_vocab": {str(k): v for k, v in self.reverse_vocab.items()},
         }
+
+        if self.sequence_length_model is not None:
+            # JSON object keys are strings; load_model converts them back to integer lengths.
+            model_data["sequence_length_model"] = {
+                str(length): float(value) for length, value in self.sequence_length_model.items()
+            }
 
         if self.classes_ is not None:
             model_data["classes_"] = self.classes_.tolist()
@@ -263,8 +313,34 @@ class EventSequencePredictor:
             else:
                 model.regressor = pickle.loads(bytes.fromhex(reg_data))  # nosec B301
 
+        if model.model_type == "simple":
+            model.sequence_length_model = cls._read_sequence_length_model(model_data)
+            if model.classifier is not None:
+                model.classifier = {"type": "simple", "model": model.sequence_length_model}
+
         logger.info(f"Loaded model from {path}")
         return model
+
+    @staticmethod
+    def _read_sequence_length_model(model_data: Dict[str, Any]) -> Dict[int, float]:
+        """Read the simple model's length -> mean outcome table from a saved model.
+
+        Raises:
+            ValueError: If the file holds no table, so a model that would silently predict a
+                constant is never returned.
+        """
+        table = model_data.get("sequence_length_model")
+        if table is None:
+            # Classification files written before the table was saved separately keep it here.
+            classifier = model_data.get("classifier")
+            if isinstance(classifier, dict) and isinstance(classifier.get("model"), dict):
+                table = classifier["model"]
+        if not isinstance(table, dict) or not table:
+            raise ValueError(
+                "Simple model file contains no sequence-length table (it was written by a version that did "
+                "not save it); re-train the model and save it again"
+            )
+        return {int(length): float(value) for length, value in table.items()}
 
     def _fit_embedding_model(
         self,
@@ -347,7 +423,11 @@ class EventSequencePredictor:
     def _fit_simple_model(
         self, sequences: List[Any], outcomes: Union[List[int], List[float], List[str]], task: str
     ) -> None:
-        """Fit simple statistical model."""
+        """Fit the sequence-length model: the mean outcome of the training sequences of each length.
+
+        For classification the outcome is the indicator of the positive class (the largest label), so
+        the stored value is the probability of that class for sequences of that length.
+        """
         # Build vocab for simple model
         all_events = set()
         for seq in sequences:
@@ -356,16 +436,22 @@ class EventSequencePredictor:
                 all_events.add(event)
         self.event_vocab = {event: i for i, event in enumerate(all_events)}
 
-        self.sequence_length_model = {}
-        for seq, outcome in zip(sequences, outcomes):
-            events = self._extract_events(seq)
-            length = len(events)
-            if length not in self.sequence_length_model:
-                self.sequence_length_model[length] = []
-            self.sequence_length_model[length].append(outcome)
+        outcome_array = np.asarray(outcomes)
+        if task == "classification":
+            classes = np.unique(outcome_array)
+            if classes.size > 2:
+                raise ValueError(
+                    f"The simple model supports binary classification only, got {classes.size} classes; "
+                    "use model_type='embedding' or regression"
+                )
+            targets = (outcome_array == classes[-1]).astype(float)
+        else:
+            targets = outcome_array.astype(float)
 
-        for length in self.sequence_length_model:
-            self.sequence_length_model[length] = np.mean(self.sequence_length_model[length])
+        outcomes_by_length: Dict[int, List[float]] = {}
+        for seq, target in zip(sequences, targets):
+            outcomes_by_length.setdefault(len(self._extract_events(seq)), []).append(float(target))
+        self.sequence_length_model = {length: float(np.mean(values)) for length, values in outcomes_by_length.items()}
 
         # For simple classification, store a basic classifier reference
         if task == "classification":
@@ -394,17 +480,21 @@ class EventSequencePredictor:
             return np.asarray([np.linalg.norm(x) for x in X_arr], dtype=float)
 
     def _predict_simple(self, sequences: List[Any]) -> np.ndarray:
-        """Make predictions using simple model."""
+        """Predict the mean training outcome for each sequence's length.
+
+        Lengths never seen in training use the nearest observed length (the shorter one on a tie).
+        """
+        table = self.sequence_length_model
+        if not table:
+            raise ValueError("Simple model has no sequence-length table; fit the model or load a fitted one")
+        known_lengths = np.array(sorted(table))
         predictions = []
         for seq in sequences:
-            events = self._extract_events(seq)
-            length = len(events)
-            if self.sequence_length_model:
-                prediction = self.sequence_length_model.get(length, 0.0)
-            else:
-                prediction = 0.0
-            predictions.append(prediction)
-        return np.array(predictions)
+            length = len(self._extract_events(seq))
+            if length not in table:
+                length = int(known_lengths[np.argmin(np.abs(known_lengths - length))])
+            predictions.append(table[length])
+        return np.array(predictions, dtype=float)
 
 
 class EnsemblePredictor:

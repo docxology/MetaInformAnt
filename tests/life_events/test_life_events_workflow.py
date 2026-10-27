@@ -336,3 +336,17 @@ def test_analyze_life_course_saves_model(tmp_path):
 
     loaded = EventSequencePredictor.load_model(model_file)
     assert loaded.is_fitted
+
+
+def test_compare_populations_reports_true_median_lengths(tmp_path):
+    def sequence(person_id, n_events):
+        events = [Event(f"event_{i}", datetime(2010 + i, 1, 1), "education") for i in range(n_events)]
+        return EventSequence(person_id=person_id, events=events)
+
+    group1 = [sequence("a", 1), sequence("b", 2), sequence("c", 3), sequence("d", 6)]
+    group2 = [sequence("e", 2), sequence("f", 4)]
+    results = compare_populations(group1, group2, output_dir=tmp_path / "out")
+
+    lengths = results["comparison"]["length_comparison"]
+    assert lengths["group1_median"] == 2.5
+    assert lengths["group2_median"] == 3.0

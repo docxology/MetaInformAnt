@@ -6,6 +6,8 @@ including feature attribution, attention weights, and temporal pattern analysis.
 
 from __future__ import annotations
 
+import math
+from types import SimpleNamespace
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -14,6 +16,9 @@ from metainformant.core.utils import logging
 from metainformant.life_events.core.utils import _sequence_to_tokens
 
 logger = logging.get_logger(__name__)
+
+# Exact enumeration evaluates the predictor on 2**n coalitions; beyond 20 events that is over a million.
+_MAX_EXACT_EVENTS_LIMIT = 20
 
 
 def attention_weights(
@@ -108,7 +113,25 @@ def event_importance(
     normalize: bool = True,
     **kwargs: Any,
 ) -> Dict[str, float]:
-    """Calculate event importance scores from frequencies or fitted predictors."""
+    """Calculate event importance scores from frequencies or fitted predictors.
+
+    With ``method="frequency"`` (or without a predictor) an event's score is how often it occurs.
+    With ``method="permutation"`` it is the total absolute change in the predictor's output when that
+    event is removed from a sequence, so events whose removal never changes a prediction score
+    exactly zero and remain tied.
+
+    Args:
+        predictor_or_sequences: A fitted predictor, or the sequences when no predictor is used
+        sequences: The sequences to score when a predictor is given
+        embeddings: Accepted for backward compatibility; importance depends on the predictor's
+            outputs only, so embedding norms never break ties
+        method: ``"frequency"`` or ``"permutation"``
+        normalize: Scale scores so the largest is 1
+        **kwargs: Ignored
+
+    Returns:
+        Dictionary mapping event tokens to importance scores
+    """
     if sequences is None:
         predictor = None
         sequences = predictor_or_sequences
@@ -138,8 +161,6 @@ def event_importance(
                 else:
                     changed = predictor.predict([reduced])[0]
                     delta = abs(float(baseline[i]) - float(changed))
-                if embeddings and event in embeddings:
-                    delta += float(np.linalg.norm(embeddings[event])) * 1e-6
                 scores[event] = scores.get(event, 0.0) + delta
 
     if normalize and scores:
@@ -358,9 +379,18 @@ def temporal_patterns(sequences: List[Any], predictions: Optional[Any] = None, t
 
 
 def learn_event_embeddings(
-    sequences: List[List[str]], embedding_dim: int = 50, window_size: int = 2, min_count: int = 1, epochs: int = 10
+    sequences: List[List[str]],
+    embedding_dim: int = 50,
+    window_size: int = 2,
+    min_count: int = 1,
+    epochs: int = 10,
+    random_state: Optional[int] = None,
 ) -> Dict[str, np.ndarray]:
-    """Learn event embeddings using word2vec-style approach.
+    """Learn event embeddings using word2vec-style skip-gram training.
+
+    Thin wrapper around :func:`metainformant.life_events.models.embeddings.learn_event_embeddings`
+    (skip-gram with negative sampling) that keeps this module's historical defaults and returns an
+    empty dictionary, instead of raising, when no event reaches ``min_count``.
 
     Args:
         sequences: List of event sequences
@@ -368,104 +398,193 @@ def learn_event_embeddings(
         window_size: Context window size
         min_count: Minimum event frequency
         epochs: Number of training epochs
+        random_state: Optional seed; identical seeds give identical embeddings
 
     Returns:
         Dictionary mapping events to embedding vectors
     """
     from collections import Counter
 
+    from metainformant.life_events.models.embeddings import learn_event_embeddings as train_embeddings
+
     logger.info(f"Learning embeddings for {len(sequences)} sequences")
 
-    # Count event frequencies
     event_counts: Counter[str] = Counter()
     for seq in sequences:
-        event_counts.update(seq)
+        event_counts.update(_sequence_to_tokens(seq))
 
-    # Filter rare events
-    vocab = {event for event, count in event_counts.items() if count >= min_count}
-
-    if not vocab:
+    if not any(count >= min_count for count in event_counts.values()):
         logger.warning("No events meet minimum count threshold")
         return {}
 
-    # Initialize embeddings randomly
-    embeddings = {}
-    for event in vocab:
-        embeddings[event] = np.random.randn(embedding_dim) * 0.1
-
-    # Simple skip-gram training (simplified implementation)
-    learning_rate = 0.01
-
-    for epoch in range(epochs):
-        epoch_loss = 0
-
-        for seq in sequences:
-            seq = [event for event in seq if event in vocab]  # Filter to vocab
-
-            for i, center_event in enumerate(seq):
-                # Get context window
-                start = max(0, i - window_size)
-                end = min(len(seq), i + window_size + 1)
-                context_events = [seq[j] for j in range(start, end) if j != i]
-
-                if not context_events:
-                    continue
-
-                # Update embeddings (simplified gradient descent)
-                center_emb = embeddings[center_event]
-
-                for context_event in context_events:
-                    context_emb = embeddings[context_event]
-
-                    # Simple dot product similarity objective
-                    similarity = np.dot(center_emb, context_emb)
-                    target = 1.0  # Positive context
-
-                    # Gradient
-                    grad = (similarity - target) * context_emb
-
-                    # Update
-                    embeddings[center_event] -= learning_rate * grad
-                    embeddings[context_event] -= learning_rate * grad
-
-                    epoch_loss += (similarity - target) ** 2
-
-        logger.debug(f"Epoch {epoch + 1}/{epochs}, loss: {epoch_loss:.4f}")
-
+    embeddings = train_embeddings(
+        sequences,
+        embedding_dim=embedding_dim,
+        window_size=window_size,
+        min_count=min_count,
+        epochs=epochs,
+        method="skipgram",
+        random_state=random_state,
+    )
     logger.info(f"Learned embeddings for {len(embeddings)} events")
     return embeddings
 
 
+def _prediction_scores(predictor: Any, sequences: List[List[str]]) -> np.ndarray:
+    """Score ``sequences`` with ``predictor``: the first component of each prediction, as a float.
+
+    This is the same score the permutation-based importance functions of this module compare.
+    """
+    predictions = predictor.predict(sequences)
+    if len(predictions) != len(sequences):
+        raise ValueError(f"Predictor returned {len(predictions)} predictions for {len(sequences)} sequences")
+    scores = np.empty(len(sequences), dtype=float)
+    for i, prediction in enumerate(predictions):
+        try:
+            values = np.asarray(prediction, dtype=float).reshape(-1)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("Predictor output must be numeric to compute event contributions") from exc
+        if values.size == 0:
+            raise ValueError("Predictor returned an empty prediction")
+        scores[i] = values[0]
+    return scores
+
+
+def _exact_shapley_values(predictor: Any, tokens: List[str]) -> np.ndarray:
+    """Exact Shapley values of ``tokens`` by enumerating every coalition (2**n evaluations)."""
+    n_events = len(tokens)
+    n_coalitions = 1 << n_events
+    coalitions = [[tokens[j] for j in range(n_events) if (mask >> j) & 1] for mask in range(n_coalitions)]
+    values = _prediction_scores(predictor, coalitions)
+
+    masks = np.arange(n_coalitions)
+    sizes = np.zeros(n_coalitions, dtype=np.int64)
+    for j in range(n_events):
+        sizes += (masks >> j) & 1
+    # Probability that exactly a given coalition of size k precedes a given player in a random order.
+    weights = np.array(
+        [math.factorial(k) * math.factorial(n_events - k - 1) / math.factorial(n_events) for k in range(n_events)]
+    )
+
+    shapley = np.zeros(n_events)
+    for j in range(n_events):
+        without = masks[((masks >> j) & 1) == 0]
+        shapley[j] = np.sum(weights[sizes[without]] * (values[without | (1 << j)] - values[without]))
+    return shapley
+
+
+def _sampled_shapley_values(predictor: Any, tokens: List[str], n_samples: int, rng: np.random.Generator) -> np.ndarray:
+    """Monte Carlo Shapley values from ``n_samples`` random permutations of the events.
+
+    Each permutation adds the events one by one and credits every event with the change in the
+    predictor's output when it joins. The credits of one permutation telescope to
+    ``v(all) - v(empty)``, so the averaged estimate satisfies the efficiency property exactly.
+    """
+    n_events = len(tokens)
+    baseline = float(_prediction_scores(predictor, [[]])[0])
+    full = float(_prediction_scores(predictor, [list(tokens)])[0])
+
+    cache: Dict[bytes, float] = {}
+    shapley = np.zeros(n_events)
+    for _ in range(n_samples):
+        order = rng.permutation(n_events)
+        present = np.zeros(n_events, dtype=bool)
+        keys: List[bytes] = []
+        pending: Dict[bytes, List[str]] = {}
+        for position in order[:-1]:
+            present[position] = True
+            key = present.tobytes()
+            keys.append(key)
+            if key not in cache and key not in pending:
+                pending[key] = [tokens[j] for j in np.flatnonzero(present)]
+        if pending:
+            cache.update(
+                zip(pending, (float(score) for score in _prediction_scores(predictor, list(pending.values()))))
+            )
+
+        previous = baseline
+        for position, key in zip(order[:-1], keys):
+            current = cache[key]
+            shapley[position] += current - previous
+            previous = current
+        shapley[order[-1]] += full - previous
+    return shapley / n_samples
+
+
 def shapley_values(
-    predictor: Any, sequence: Any, background_sequences: List[Any], n_samples: int = 100
+    predictor: Any,
+    sequence: Any,
+    background_sequences: Optional[List[Any]] = None,
+    n_samples: int = 100,
+    *,
+    random_state: Optional[int] = None,
+    max_exact_events: int = 10,
 ) -> Dict[str, float]:
-    """Calculate Shapley values for events in a sequence.
+    """Calculate Shapley values for the events in a sequence.
+
+    Every event occurrence in ``sequence`` is a player. The value of a coalition is the predictor's
+    output (the first component of ``predictor.predict``, the score the other importance functions in
+    this module use) on the sequence restricted to the coalition's events. Removing an event drops it
+    from the sequence; the remaining events keep their order. The empty coalition is therefore valued
+    at the prediction for an empty sequence. The Shapley value of an event is its marginal
+    contribution to that value averaged over all orders in which the events can be added.
+
+    The values satisfy the efficiency property: they sum to ``v(all events) - v(empty sequence)``.
+    A "null" event that never changes the prediction receives exactly zero.
+
+    Up to ``max_exact_events`` events the values are computed exactly by enumerating all ``2**n``
+    coalitions. With more events they are estimated from ``n_samples`` random permutations of the
+    events (seeded by ``random_state``); the estimate still sums exactly to ``v(all) - v(empty)``.
+
+    For classification predictors ``predict`` returns class labels, so the contributions are
+    changes of the predicted label. Use a regression predictor, or one whose ``predict`` returns a
+    score, for graded contributions.
 
     Args:
-        predictor: Trained model/predictor
-        sequence: The sequence to explain
-        background_sequences: Background dataset for marginalization
-        n_samples: Number of MC samples
+        predictor: Fitted model with ``predict(list_of_sequences)``, called on lists of event tokens
+        sequence: The sequence to explain: an EventSequence or a list of event tokens
+        background_sequences: Not used. Absent events are removed rather than replaced by values
+            drawn from a background dataset, so no background distribution enters the value
+            function. Kept for interface compatibility.
+        n_samples: Number of random permutations when the sequence has more than
+            ``max_exact_events`` events
+        random_state: Seed for the permutation sampling
+        max_exact_events: Largest event count handled by exact enumeration (at most 20)
 
     Returns:
-        Dictionary mapping events to Shapley values
+        Dictionary mapping each event token to its Shapley value. Events that occur several times
+        are reported once, with the sum of the values of their occurrences.
+
+    Raises:
+        ValueError: If the predictor is not fitted, an option is out of range or the predictor's
+            output is not numeric.
     """
-    logger.info("Approximating Shapley values")
+    if n_samples < 1:
+        raise ValueError("n_samples must be at least 1")
+    if not 0 <= max_exact_events <= _MAX_EXACT_EVENTS_LIMIT:
+        raise ValueError(f"max_exact_events must be between 0 and {_MAX_EXACT_EVENTS_LIMIT}")
+    if getattr(predictor, "is_fitted", True) is False:
+        raise ValueError("Predictor must be fitted before computing Shapley values")
+    if not callable(getattr(predictor, "predict", None)):
+        raise TypeError("predictor must provide a predict() method")
 
-    events = sequence.events if hasattr(sequence, "events") else sequence
-    n_events = len(events)
-
+    items = list(sequence.events) if hasattr(sequence, "events") else list(sequence)
+    tokens = _sequence_to_tokens(SimpleNamespace(events=items) if items and hasattr(items[0], "event_type") else items)
+    n_events = len(tokens)
     if n_events == 0:
         return {}
 
-    shap_values = {}
+    if background_sequences:
+        logger.debug("shapley_values does not use background_sequences")
 
-    # Placeholder for actual KernelSHAP or similar
-    # Using random approximation for interface compatibility
+    if n_events <= max_exact_events:
+        logger.info(f"Computing exact Shapley values for {n_events} events")
+        contributions = _exact_shapley_values(predictor, tokens)
+    else:
+        logger.info(f"Estimating Shapley values for {n_events} events from {n_samples} permutations")
+        contributions = _sampled_shapley_values(predictor, tokens, n_samples, np.random.default_rng(random_state))
 
-    for event in events:
-        event_str = str(event.event_type) if hasattr(event, "event_type") else str(event)
-        # Random importance centered around 0
-        shap_values[event_str] = np.random.normal(0, 0.1)
-
-    return shap_values
+    shapley: Dict[str, float] = {}
+    for token, value in zip(tokens, contributions):
+        shapley[token] = shapley.get(token, 0.0) + float(value)
+    return shapley

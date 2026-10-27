@@ -6,7 +6,9 @@ life events from sequences:
 - LSTMSequenceModel: LSTM-based sequence prediction
 
 Both models share their implementation via ``_RNNSequenceModel`` and require
-torch as an optional dependency.
+torch as an optional dependency: without it ``fit`` and ``predict`` raise ``ImportError``.
+They learn to predict the next event of a sequence from the sequence itself; they are not
+outcome (classification/regression) predictors.
 """
 
 from __future__ import annotations
@@ -20,6 +22,14 @@ if TYPE_CHECKING:
     from metainformant.life_events.core.events import EventSequence
 
 logger = logging.get_logger(__name__)
+
+
+def _torch_required(model_name: str) -> ImportError:
+    """Build the error raised when a model is used without PyTorch installed."""
+    return ImportError(
+        f"{model_name} requires PyTorch, which is not installed. Install it in this environment "
+        "(for example `uv pip install torch`; see https://pytorch.org/get-started/locally/) and retry."
+    )
 
 
 class _RNNSequenceModel:
@@ -88,21 +98,30 @@ class _RNNSequenceModel:
     def fit(self, sequences: List[EventSequence], targets: Optional[List[Any]] = None) -> Self:
         """Fit the model to life event sequences.
 
+        The model learns to predict the last event of every sequence from the events before it.
+
         Args:
             sequences: List of EventSequence objects
-            targets: Optional target values for supervised learning
+            targets: Not used. These models are trained on the sequences alone, so outcome labels
+                passed here have no effect (a warning is logged).
 
         Returns:
             Self for method chaining
+
+        Raises:
+            ImportError: If PyTorch is not installed.
         """
+        if targets is not None:
+            logger.warning(
+                "%s learns next-event prediction from the sequences; targets are ignored", type(self).__name__
+            )
+
         try:
             import torch
             import torch.nn as nn
             from torch.utils.data import DataLoader
-        except ImportError:
-            logger.warning("PyTorch not available, %s disabled", type(self).__name__)
-            self.is_fitted = True
-            return self
+        except ImportError as exc:
+            raise _torch_required(type(self).__name__) from exc
 
         # Build vocabulary from sequences
         self._build_vocabulary(sequences)
@@ -157,18 +176,18 @@ class _RNNSequenceModel:
 
         Returns:
             List of prediction probabilities for each sequence
+
+        Raises:
+            ValueError: If the model has not been fitted.
+            ImportError: If PyTorch is not installed.
         """
         if self.model is None:
-            logger.warning("Model not trained, returning random predictions")
-            n = self.num_events or 1
-            return [[1.0 / n] * n for _ in sequences]
+            raise ValueError(f"{type(self).__name__} must be fitted before prediction")
 
         try:
             import torch
-        except ImportError:
-            logger.warning("PyTorch not available, returning random predictions")
-            n = self.num_events or 1
-            return [[1.0 / n] * n for _ in sequences]
+        except ImportError as exc:
+            raise _torch_required(type(self).__name__) from exc
 
         predictions = []
 
