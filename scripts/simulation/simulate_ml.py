@@ -21,7 +21,8 @@ import pandas as pd
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, logging, paths
+from metainformant.core import io
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 
@@ -203,6 +204,7 @@ def simulate_features(
 
 def main():
     """Main entry point."""
+    logging.configure_logging_from_env()
     parser = argparse.ArgumentParser(
         description="Machine learning simulation for testing and validation",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -252,7 +254,7 @@ Examples:
 
         logger.setLevel(std_logging.DEBUG)
 
-    output_dir = paths.ensure_directory(args.output)
+    output_dir = io.ensure_directory(args.output)
 
     try:
         if args.type == "classification":

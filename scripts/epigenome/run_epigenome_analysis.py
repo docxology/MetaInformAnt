@@ -19,7 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core.io import dump_json, ensure_directory
-from metainformant.core.utils.logging import get_logger
+from metainformant.core.utils.logging import configure_logging_from_env, get_logger
 
 logger = get_logger(__name__)
 
@@ -109,7 +109,11 @@ def run_workflow(args):
 
         try:
             logger.info(f"Loading methylation data from {args.methylation}")
-            from metainformant.epigenome import compute_beta_values, load_cpg_table, summarize_beta_by_chromosome
+            from metainformant.epigenome.assays.methylation import (
+                compute_beta_values,
+                load_cpg_table,
+                summarize_beta_by_chromosome,
+            )
 
             cpg_df = load_cpg_table(args.methylation)
             logger.info(f"Loaded {len(cpg_df)} CpG sites")
@@ -141,7 +145,8 @@ def run_workflow(args):
                     summary_df = summarize_beta_by_chromosome(cpg_df)
 
                 summary_file = output_dir / "chromosome_summary.tsv"
-                summary_df.to_csv(summary_file, sep="\t", index=False)
+                # The summary is indexed by chromosome, so keep the index as a "chrom" column.
+                summary_df.to_csv(summary_file, sep="\t", index_label="chrom")
                 logger.info(f"Chromosome summary saved to {summary_file}")
 
                 workflow_results["analyses"]["chromosome_summary"] = {
@@ -159,7 +164,7 @@ def run_workflow(args):
 
         try:
             logger.info(f"Loading bedGraph track from {args.bedgraph}")
-            from metainformant.epigenome import read_bedgraph
+            from metainformant.epigenome.analysis.tracks import read_bedgraph
 
             track_df = read_bedgraph(args.bedgraph)
             logger.info(f"Loaded {len(track_df)} track regions")
@@ -167,7 +172,7 @@ def run_workflow(args):
             # Save summary
             track_summary = {
                 "n_regions": len(track_df),
-                "chromosomes": track_df["chromosome"].unique().tolist() if "chromosome" in track_df.columns else [],
+                "chromosomes": track_df["chrom"].unique().tolist() if "chrom" in track_df.columns else [],
                 "mean_value": float(track_df["value"].mean()) if "value" in track_df.columns else None,
             }
 
@@ -189,6 +194,7 @@ def run_workflow(args):
 
 def main():
     """Main entry point."""
+    configure_logging_from_env()
     args = parse_args()
 
     if args.verbose:

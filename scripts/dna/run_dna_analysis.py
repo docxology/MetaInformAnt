@@ -20,7 +20,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core.io import dump_json, ensure_directory
-from metainformant.core.utils.logging import get_logger
+from metainformant.core.utils.logging import configure_logging_from_env, get_logger
 
 logger = get_logger(__name__)
 
@@ -202,27 +202,24 @@ def analyze_phylogeny(sequences: dict[str, str], output_dir: Path) -> dict[str, 
     """
     logger.info("Analyzing phylogeny...")
 
-    from metainformant.dna import distances, phylogeny
-
-    # Convert to list for distance calculations
-    seq_list = list(sequences.values())
-    seq_ids = list(sequences.keys())
+    from metainformant.dna import phylogeny
+    from metainformant.dna.alignment import distances
 
     results = {}
 
-    if len(seq_list) >= 3:
+    if len(sequences) >= 3:
         try:
-            # Calculate distance matrix
-            dist_matrix = distances.distance_matrix(seq_list)
+            # Calculate distance matrix (pandas DataFrame indexed by sequence ID)
+            dist_matrix = distances.distance_matrix(sequences)
             results["distance_matrix"] = {
-                "ids": seq_ids,
-                "distances": dist_matrix.tolist() if hasattr(dist_matrix, "tolist") else dist_matrix,
+                "ids": [str(seq_id) for seq_id in dist_matrix.index],
+                "distances": dist_matrix.to_numpy().tolist(),
             }
-            logger.info(f"Calculated distance matrix for {len(seq_list)} sequences")
+            logger.info(f"Calculated distance matrix for {len(sequences)} sequences")
 
             # Build phylogenetic tree (if possible)
             try:
-                tree = phylogeny.build_tree_neighbor_joining(dist_matrix, seq_ids)
+                tree = phylogeny.to_newick(phylogeny.neighbor_joining_tree(sequences))
                 results["tree_newick"] = tree
                 logger.info("Built neighbor-joining tree")
 
@@ -346,6 +343,7 @@ def run_workflow(args):
 
 def main():
     """Main entry point."""
+    configure_logging_from_env()
     args = parse_args()
 
     # Setup logging level

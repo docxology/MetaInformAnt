@@ -12,7 +12,7 @@ import pandas as pd
 
 from metainformant.core import io as core_io
 from metainformant.core.io import paths as core_paths
-from metainformant.multiomics import MultiOmicsData, joint_nmf, joint_pca
+from metainformant.multiomics.analysis.integration import MultiOmicsData, joint_nmf, joint_pca
 
 # Set output directory
 output_dir = Path("output/multiomics")
@@ -108,7 +108,7 @@ W, H = joint_nmf(
     max_iter=200,
     regularization=0.01,
     random_state=42,
-    tolerance=1e-6,
+    tol=1e-6,
 )
 print(f"   Sample factors (W) shape: {W.shape}")
 print(f"   Transcriptomics feature factors shape: {H['transcriptomics'].shape}")

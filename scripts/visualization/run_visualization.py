@@ -19,7 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core.io import dump_json, ensure_directory, load_json, read_csv
-from metainformant.core.utils.logging import get_logger
+from metainformant.core.utils.logging import configure_logging_from_env, get_logger
 
 logger = get_logger(__name__)
 
@@ -137,7 +137,9 @@ def run_workflow(args):
     try:
         if args.plot_type == "lineplot":
             logger.info("Generating line plot...")
-            from metainformant.visualization import lineplot
+            import numpy as np
+
+            from metainformant.visualization.plots.basic import lineplot
 
             if isinstance(data, dict):
                 # JSON data
@@ -155,7 +157,11 @@ def run_workflow(args):
                 else:
                     x_data = None
 
-            ax = lineplot(x_data, y_data)
+            y_values = np.asarray(y_data)
+            if x_data is None:
+                ax = lineplot(y_values)  # x defaults to the sample index
+            else:
+                ax = lineplot(np.asarray(x_data), y_values)
             ax.set_xlabel(args.x_column or "Index")
             ax.set_ylabel(args.y_column or "Value")
             ax.set_title(f"Line Plot: {args.input.stem}")
@@ -167,7 +173,7 @@ def run_workflow(args):
 
         elif args.plot_type == "heatmap":
             logger.info("Generating heatmap...")
-            from metainformant.visualization import heatmap
+            from metainformant.visualization.plots.basic import heatmap
 
             if isinstance(data, dict):
                 # Try to extract matrix from JSON
@@ -188,14 +194,14 @@ def run_workflow(args):
 
         elif args.plot_type == "animation":
             logger.info("Generating animation...")
-            from metainformant.visualization import animate_time_series
+            from metainformant.visualization.plots.animations import animate_time_series
 
             if isinstance(data, dict):
                 series = data.get("series", list(data.values())[0] if data else [])
             else:
                 series = data.iloc[:, -1].values  # Use last column
 
-            fig, anim = animate_time_series(series, interval_ms=100)
+            fig, anim = animate_time_series(series, interval=100)
 
             output_file = output_dir / f"{args.input.stem}_animation.gif"
             try:
@@ -242,6 +248,7 @@ def run_workflow(args):
 
 def main():
     """Main entry point."""
+    configure_logging_from_env()
     args = parse_args()
 
     if args.verbose:

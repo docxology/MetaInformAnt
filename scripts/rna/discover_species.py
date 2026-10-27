@@ -34,7 +34,7 @@ check_environment_or_exit(auto_setup=True)
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from metainformant.core.utils.logging import get_logger
+from metainformant.core.utils.logging import configure_logging_from_env, get_logger
 from metainformant.rna.discovery import (
     generate_config_yaml,
     get_genome_info,
@@ -46,6 +46,7 @@ logger = get_logger("discover_species")
 
 def main() -> int:
     """Main entry point."""
+    configure_logging_from_env()
     parser = argparse.ArgumentParser(
         description="Discover species with RNA-seq data and generate configurations",
         formatter_class=argparse.RawDescriptionHelpFormatter,

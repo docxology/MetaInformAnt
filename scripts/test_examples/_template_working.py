@@ -10,7 +10,7 @@ from pathlib import Path
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, paths
+from metainformant.core import io
 from metainformant.core.utils.logging import setup_logger
 
 
@@ -21,24 +21,25 @@ def main():
     logger.info("Script starting")
 
     # Ensure output directory
-    output_dir = paths.ensure_output_dir(Path("output/example"))
+    output_dir = io.ensure_directory(Path("output/example"))
     logger.info(f"Output directory: {output_dir}")
 
     # Save configuration
     config = {"input": "data/example/input.txt", "parameters": {"threshold": 0.05}, "timestamp": "2025-11-03"}
     config_path = output_dir / "config.json"
-    io.write_json(config, config_path)
+    io.dump_json(config, config_path)
     logger.info(f"Configuration saved: {config_path}")
 
     # Generate visualization (if visualization module used)
     try:
         import matplotlib.pyplot as plt
+        import numpy as np
 
-        from metainformant.visualization import lineplot
+        from metainformant.visualization.plots.basic import lineplot
 
-        # Example data
-        data = [1, 4, 2, 8, 5, 7]
-        ax = lineplot(None, data)
+        # Example data (lineplot plots a single array against its index)
+        data = np.array([1, 4, 2, 8, 5, 7])
+        ax = lineplot(data)
         ax.set_xlabel("Time")
         ax.set_ylabel("Value")
         ax.set_title("Example Time Series")

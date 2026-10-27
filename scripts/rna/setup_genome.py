@@ -39,7 +39,7 @@ check_environment_or_exit(auto_setup=True)
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from metainformant.core.utils.logging import get_logger
+from metainformant.core.utils.logging import configure_logging_from_env, get_logger
 from metainformant.rna.genome_prep import orchestrate_genome_setup, verify_genome_status
 
 logger = get_logger("setup_genome")
@@ -47,6 +47,7 @@ logger = get_logger("setup_genome")
 
 def main() -> int:
     """Main entry point."""
+    configure_logging_from_env()
     parser = argparse.ArgumentParser(
         description="Orchestrate genome setup for a species",
         formatter_class=argparse.RawDescriptionHelpFormatter,

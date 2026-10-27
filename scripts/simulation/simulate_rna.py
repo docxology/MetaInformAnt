@@ -15,13 +15,16 @@ import random
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, logging, paths, validation
-from metainformant.simulation.rna import simulate_counts_negative_binomial
+from metainformant.core import io
+from metainformant.core.data import validation
+from metainformant.core.utils import logging
+from metainformant.simulation.models.rna import simulate_counts_negative_binomial
 
 logger = logging.get_logger(__name__)
 
@@ -59,13 +62,14 @@ def simulate_counts(
     logger.info(f"Simulating expression counts: {num_genes} genes x {num_samples} samples")
     rng = random.Random(seed)
 
+    # The simulator takes per-gene means/dispersions and returns samples x genes; transpose to genes x samples
     counts = simulate_counts_negative_binomial(
-        num_genes=num_genes,
-        num_samples=num_samples,
-        mean_expression=mean_expression,
-        dispersion=dispersion,
+        num_samples,
+        num_genes,
+        np.full(num_genes, mean_expression, dtype=float),
+        np.full(num_genes, dispersion, dtype=float),
         rng=rng,
-    )
+    ).T
 
     # Save as CSV
     df = pd.DataFrame(counts, columns=[f"sample_{i:03d}" for i in range(num_samples)])
@@ -132,28 +136,17 @@ def simulate_differential(
     n_de_genes = min(n_de_genes, num_genes)  # Ensure we don't exceed available genes
     de_genes = set(rng.sample(range(num_genes), n_de_genes))
 
-    counts = []
     gene_info = []
+    means_group1 = np.full(num_genes, mean_expression, dtype=float)
+    means_group2 = np.full(num_genes, mean_expression, dtype=float)  # different if DE
 
     for gene_idx in range(num_genes):
         is_de = gene_idx in de_genes
         direction = rng.choice([-1, 1]) if is_de else 1
 
-        # Group 1 expression
-        mean1 = mean_expression
-        row1 = [
-            simulate_counts_negative_binomial(1, 1, mean_expression=mean1, dispersion=dispersion, rng=rng)[0][0]
-            for _ in range(n_group1)
-        ]
+        if is_de:
+            means_group2[gene_idx] = mean_expression * (fold_change**direction)
 
-        # Group 2 expression (different if DE)
-        mean2 = mean_expression * (fold_change**direction) if is_de else mean_expression
-        row2 = [
-            simulate_counts_negative_binomial(1, 1, mean_expression=mean2, dispersion=dispersion, rng=rng)[0][0]
-            for _ in range(n_group2)
-        ]
-
-        counts.append(row1 + row2)
         gene_info.append(
             {
                 "gene_id": f"gene_{gene_idx:05d}",
@@ -161,6 +154,12 @@ def simulate_differential(
                 "fold_change": fold_change**direction if is_de else 1.0,
             }
         )
+
+    # One simulator call per group (each returns samples x genes); stack the groups, then genes x samples
+    dispersions = np.full(num_genes, dispersion, dtype=float)
+    group1 = simulate_counts_negative_binomial(n_group1, num_genes, means_group1, dispersions, rng=rng)
+    group2 = simulate_counts_negative_binomial(n_group2, num_genes, means_group2, dispersions, rng=rng)
+    counts = np.vstack([group1, group2]).T
 
     # Save counts
     df = pd.DataFrame(counts, columns=[f"sample_{i:03d}" for i in range(num_samples)])
@@ -241,10 +240,14 @@ def simulate_batch(
         batch_effect = batch_effects[batch_idx]
         sample_mean = mean_expression * (2**batch_effect)
 
-        row = [
-            simulate_counts_negative_binomial(1, 1, mean_expression=sample_mean, dispersion=dispersion, rng=rng)[0][0]
-            for _ in range(num_genes)
-        ]
+        # One draw per gene for this sample (the simulator returns samples x genes)
+        row = simulate_counts_negative_binomial(
+            1,
+            num_genes,
+            np.full(num_genes, sample_mean, dtype=float),
+            np.full(num_genes, dispersion, dtype=float),
+            rng=rng,
+        )[0]
         counts.append(row)
 
         sample_info.append(
@@ -283,6 +286,7 @@ def simulate_batch(
 
 def main():
     """Main entry point."""
+    logging.configure_logging_from_env()
     parser = argparse.ArgumentParser(
         description="RNA expression simulation for testing and validation",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -330,7 +334,7 @@ Examples:
         logger.setLevel(std_logging.DEBUG)
 
     # Validate output directory
-    output_dir = paths.ensure_directory(args.output)
+    output_dir = io.ensure_directory(args.output)
 
     # Validate common parameters
     validation.validate_range(args.num_genes, min_val=1, name="num_genes")

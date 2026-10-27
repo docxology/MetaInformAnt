@@ -24,14 +24,15 @@ check_environment_or_exit(auto_setup=True)
 # Add repo root to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from metainformant.core.utils.logging import get_logger
-from metainformant.rna import validate_environment
+from metainformant.core.utils.logging import configure_logging_from_env, get_logger
+from metainformant.rna.core.environment import validate_environment
 
 logger = get_logger("check_environment")
 
 
 def main() -> int:
     """Run all environment checks and report results."""
+    configure_logging_from_env()
     logger.info("=" * 80)
     logger.info("RNA-SEQ WORKFLOW ENVIRONMENT CHECK")
     logger.info("=" * 80)
@@ -47,6 +48,7 @@ def main() -> int:
         ("amalgkit", deps["amalgkit"]),
         ("SRA Toolkit (fasterq-dump)", deps["sra_toolkit"]),
         ("kallisto", deps["kallisto"]),
+        ("Rscript", deps["rscript"]),
     ]
 
     # Print results

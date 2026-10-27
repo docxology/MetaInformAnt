@@ -19,10 +19,10 @@ from pathlib import Path
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core.errors import IOError as CoreIOError, ValidationError
-from metainformant.core.io import write_json
+from metainformant.core.io import dump_json
 from metainformant.core.io.paths import expand_and_resolve
-from metainformant.phenotype.antwiki import load_antwiki_json
+from metainformant.core.utils.errors import IOError as CoreIOError, ValidationError
+from metainformant.phenotype.data.antwiki import load_antwiki_json
 
 
 def main():
@@ -108,7 +108,7 @@ def main():
                 ],
             }
 
-            write_json(summary, output_path)
+            dump_json(summary, output_path, indent=2)
             print(f"✓ Saved summary to: {output_path}")
 
         return 0
@@ -123,7 +123,8 @@ def main():
         print("  The data structure is invalid. Try --no-validate to skip validation.")
         return 1
 
-    except CoreIOError as e:
+    except (CoreIOError, ValueError) as e:
+        # load_antwiki_json reports malformed JSON as ValueError
         print(f"✗ I/O error: {e}")
         print("  Failed to read or parse the JSON file.")
         return 1

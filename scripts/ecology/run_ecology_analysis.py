@@ -22,7 +22,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core.io import dump_json, ensure_directory, read_csv
-from metainformant.core.utils.logging import get_logger
+from metainformant.core.utils.logging import configure_logging_from_env, get_logger
 
 logger = get_logger(__name__)
 
@@ -382,6 +382,7 @@ def run_workflow(args):
 
 def main():
     """Main entry point."""
+    configure_logging_from_env()
     args = parse_args()
 
     if args.verbose:

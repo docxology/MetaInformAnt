@@ -18,7 +18,8 @@ from pathlib import Path
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, logging, paths
+from metainformant.core import io
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 
@@ -213,10 +214,8 @@ def simulate_io(
             content = "\n".join([f"Line {i}: {rng.randint(1, 100)}" for i in range(10)])
             file_path.write_text(content)
         else:  # jsonl
-            with open(file_path, "w") as f:
-                for i in range(10):
-                    record = {"id": i, "value": rng.randint(1, 100)}
-                    f.write(io.dumps_json(record) + "\n")
+            records = [{"id": i, "value": rng.randint(1, 100)} for i in range(10)]
+            io.write_jsonl(records, file_path)
 
         files_created.append(
             {
@@ -242,6 +241,7 @@ def simulate_io(
 
 def main():
     """Main entry point."""
+    logging.configure_logging_from_env()
     parser = argparse.ArgumentParser(
         description="Core utilities simulation for testing and validation",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -302,7 +302,7 @@ Examples:
 
         logger.setLevel(std_logging.DEBUG)
 
-    output_dir = paths.ensure_directory(args.output)
+    output_dir = io.ensure_directory(args.output)
 
     try:
         if args.type == "config":

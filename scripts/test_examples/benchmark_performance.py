@@ -11,9 +11,9 @@ import time
 
 import numpy as np
 
-from metainformant.information.syntactic import shannon_entropy
-from metainformant.math import coalescent
-from metainformant.math.price import covariance, variance
+from metainformant.information.metrics.core.syntactic import shannon_entropy
+from metainformant.math.population_genetics import coalescent
+from metainformant.math.quantitative_genetics.price import covariance, variance
 
 
 def benchmark_tajima_constants():
@@ -29,8 +29,8 @@ def benchmark_tajima_constants():
         results.append(constants["a1"])
 
     total_time = time.time() - start_time
-    print(".4f")
-    print(".4f")
+    print(f"Total time for {len(sample_sizes)} calculations: {total_time:.4f}s")
+    print(f"Average time per calculation: {total_time / len(sample_sizes):.4f}s")
     print("Note: Second set of calculations should be faster due to caching")
     return total_time
 
@@ -64,7 +64,7 @@ def benchmark_vectorization():
             "covariance_result": cov_result,
         }
 
-        print("2d")
+        print(f"{size:6d} samples: variance {var_time:.4f}s, covariance {cov_time:.4f}s")
 
     return results
 
@@ -87,10 +87,10 @@ def benchmark_entropy_caching():
     for i, probs in enumerate(distributions):
         entropy = shannon_entropy(probs)
         results.append(entropy)
-        print(".4f")
+        print(f"Distribution {i}: entropy {entropy:.4f} bits")
 
     total_time = time.time() - start_time
-    print(".4f")
+    print(f"Total time for {len(distributions)} entropy calculations: {total_time:.4f}s")
     print("Note: Repeated distributions should be faster due to caching")
     return total_time, results
 

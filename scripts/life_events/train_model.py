@@ -16,15 +16,12 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, paths
+from metainformant.core import io
+from metainformant.core.io import paths
 from metainformant.core.utils.logging import setup_logger
-from metainformant.life_events import (
-    EventSequencePredictor,
-    GRUSequenceModel,
-    LSTMSequenceModel,
-    convert_sequences_to_tokens,
-    load_sequences_from_json,
-)
+from metainformant.life_events.core.utils import convert_sequences_to_tokens, load_sequences_from_json
+from metainformant.life_events.models.predictor import EventSequencePredictor
+from metainformant.life_events.models.sequence_models import GRUSequenceModel, LSTMSequenceModel
 
 logger = setup_logger(__name__, level="INFO")
 
@@ -155,10 +152,10 @@ def main():
     paths.ensure_directory(args.output.parent)
     if hasattr(model, "save_model"):
         model.save_model(args.output)
+        logger.info(f"✅ Model trained and saved to {args.output}")
     else:
         logger.warning("Model does not support saving, skipping...")
-
-    logger.info(f"✅ Model trained and saved to {args.output}")
+        logger.info("✅ Model trained (not saved)")
 
     return 0
 

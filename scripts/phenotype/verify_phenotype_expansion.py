@@ -10,7 +10,7 @@ import numpy as np
 
 try:
     print("Verifying behavior module...")
-    from metainformant.phenotype.behavior import BehaviorSequence, Ethogram
+    from metainformant.phenotype.behavior.ethogram import Ethogram
 
     ethogram = Ethogram({"w": "walk", "r": "rest"})
     print("  - Ethogram created")
@@ -18,7 +18,7 @@ try:
     # Mock event class for sequence since we didn't export the event class directly in init
     # checking sequence.py to see if we can use a dict or if it needs the dataclass
     # sequence.py expects BehaviorEvent objects.
-    from metainformant.phenotype.behavior.sequence import BehaviorEvent
+    from metainformant.phenotype.behavior.sequence import BehaviorEvent, BehaviorSequence
 
     events = [
         BehaviorEvent(timestamp=0.0, code="w", duration=1.0),
@@ -29,7 +29,8 @@ try:
     print(f"  - Behavior sequence validated. Budget: {budget}")
 
     print("Verifying chemical module...")
-    from metainformant.phenotype.chemical import ChemicalProfile, Compound
+    from metainformant.phenotype.chemical.compound import Compound
+    from metainformant.phenotype.chemical.profile import ChemicalProfile
 
     c1 = Compound(name="C25", retention_time=20.5)
     prof = ChemicalProfile("s1", {c1: 0.5})
@@ -37,7 +38,7 @@ try:
     print("  - Chemical profile created and normalized")
 
     print("Verifying sonic module...")
-    from metainformant.phenotype.sonic import AcousticSignal
+    from metainformant.phenotype.sonic.signal import AcousticSignal
 
     # Create dummy waveform
     dummy_wave = np.sin(np.linspace(0, 10, 1000))
@@ -54,7 +55,7 @@ try:
     print(f"  - Morphometric profile created. Index: {idx}")
 
     print("Verifying electronic module...")
-    from metainformant.phenotype.electronic import TrackingPoint, Trajectory
+    from metainformant.phenotype.electronic.tracking import TrackingPoint, Trajectory
 
     p1 = TrackingPoint(0, 0, 0)
     p2 = TrackingPoint(1, 1, 1)

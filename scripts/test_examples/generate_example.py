@@ -208,10 +208,10 @@ class ExampleGenerator:
                 "from metainformant.dna import alignment",
                 "from metainformant.dna.sequence import core as sequences",
             ],
-            "rna": ["from metainformant.rna import workflow"],
-            "gwas": ["from metainformant.gwas import association"],
-            "protein": ["from metainformant.protein import sequences"],
-            "ml": ["from metainformant.ml import classification"],
+            "rna": ["from metainformant.rna.engine import workflow"],
+            "gwas": ["from metainformant.gwas.analysis import association"],
+            "protein": ["from metainformant.protein.sequence import sequences"],
+            "ml": ["from metainformant.ml.models import classification"],
             "core": [],
         }
         return imports_map.get(domain, [])

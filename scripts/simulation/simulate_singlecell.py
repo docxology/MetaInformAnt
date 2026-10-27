@@ -21,8 +21,10 @@ import pandas as pd
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, logging, paths, validation
-from metainformant.simulation.rna import simulate_counts_negative_binomial
+from metainformant.core import io
+from metainformant.core.data import validation
+from metainformant.core.utils import logging
+from metainformant.simulation.models.rna import simulate_counts_negative_binomial
 
 logger = logging.get_logger(__name__)
 
@@ -60,14 +62,14 @@ def simulate_counts(
     logger.info(f"Generating scRNA-seq counts: {n_cells} cells x {n_genes} genes")
     rng = random.Random(seed)
 
-    # Transpose: genes x cells (as expected by simulation function)
+    # The simulator takes per-gene means/dispersions and returns cells x genes; transpose to genes x cells
     counts = simulate_counts_negative_binomial(
-        num_genes=n_genes,
-        num_samples=n_cells,
-        mean_expression=mean_expression,
-        dispersion=dispersion,
+        n_cells,
+        n_genes,
+        np.full(n_genes, mean_expression, dtype=float),
+        np.full(n_genes, dispersion, dtype=float),
         rng=rng,
-    )
+    ).T
 
     # Create DataFrame (genes x cells)
     df = pd.DataFrame(counts, columns=[f"cell_{i:05d}" for i in range(n_cells)])
@@ -133,6 +135,13 @@ def simulate_celltypes(
         type_markers[f"type_{type_idx:02d}"] = markers
         marker_genes.update(markers)
 
+    # Per-type mean vector: higher expression for marker genes
+    dispersions = np.full(n_genes, dispersion, dtype=float)
+    type_means = {}
+    for type_name, markers in type_markers.items():
+        type_means[type_name] = np.full(n_genes, mean_expression, dtype=float)
+        type_means[type_name][markers] = mean_expression * 3.0
+
     # Generate counts with cell type-specific expression
     counts = []
     cell_metadata = []
@@ -141,24 +150,12 @@ def simulate_celltypes(
 
     for type_idx in range(n_types):
         type_name = f"type_{type_idx:02d}"
-        markers = type_markers[type_name]
 
         for cell_idx in range(cells_per_type):
             cell_id = f"cell_{type_idx}_{cell_idx:05d}"
 
-            # Generate expression
-            cell_counts = []
-            for gene_idx in range(n_genes):
-                if gene_idx in markers:
-                    # Higher expression for marker genes
-                    mean = mean_expression * 3.0
-                else:
-                    mean = mean_expression
-
-                count = simulate_counts_negative_binomial(1, 1, mean_expression=mean, dispersion=dispersion, rng=rng)[
-                    0
-                ][0]
-                cell_counts.append(count)
+            # Generate expression (one count per gene; the simulator returns samples x genes)
+            cell_counts = simulate_counts_negative_binomial(1, n_genes, type_means[type_name], dispersions, rng=rng)[0]
 
             counts.append(cell_counts)
             cell_metadata.append(
@@ -172,18 +169,9 @@ def simulate_celltypes(
     for cell_idx in range(n_cells - len(counts)):
         type_idx = rng.randint(0, n_types - 1)
         type_name = f"type_{type_idx:02d}"
-        markers = type_markers[type_name]
 
         cell_id = f"cell_{type_idx}_{cell_idx:05d}"
-        cell_counts = []
-        for gene_idx in range(n_genes):
-            if gene_idx in markers:
-                mean = mean_expression * 3.0
-            else:
-                mean = mean_expression
-
-            count = simulate_counts_negative_binomial(1, 1, mean_expression=mean, dispersion=dispersion, rng=rng)[0][0]
-            cell_counts.append(count)
+        cell_counts = simulate_counts_negative_binomial(1, n_genes, type_means[type_name], dispersions, rng=rng)[0]
 
         counts.append(cell_counts)
         cell_metadata.append(
@@ -270,20 +258,17 @@ def simulate_trajectory(
     # Generate counts with trajectory-dependent expression
     counts = []
     cell_metadata = []
+    dispersions = np.full(n_genes, dispersion, dtype=float)
 
     for cell_idx, (pseudotime, state) in enumerate(zip(pseudotimes, state_assignments)):
         cell_id = f"cell_{cell_idx:05d}"
 
-        cell_counts = []
-        for gene_idx in range(n_genes):
-            if gene_idx in trajectory_genes:
-                # Expression changes along trajectory
-                mean = mean_expression * (1 + pseudotime * 2)
-            else:
-                mean = mean_expression
+        # Expression of the trajectory genes changes along the trajectory
+        means = np.full(n_genes, mean_expression, dtype=float)
+        means[trajectory_genes] = mean_expression * (1 + pseudotime * 2)
 
-            count = simulate_counts_negative_binomial(1, 1, mean_expression=mean, dispersion=dispersion, rng=rng)[0][0]
-            cell_counts.append(count)
+        # One count per gene (the simulator returns samples x genes)
+        cell_counts = simulate_counts_negative_binomial(1, n_genes, means, dispersions, rng=rng)[0]
 
         counts.append(cell_counts)
         cell_metadata.append(
@@ -321,6 +306,7 @@ def simulate_trajectory(
 
 def main():
     """Main entry point."""
+    logging.configure_logging_from_env()
     parser = argparse.ArgumentParser(
         description="Single-cell simulation for testing and validation",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -366,7 +352,7 @@ Examples:
         logger.setLevel(std_logging.DEBUG)
 
     # Validate output directory
-    output_dir = paths.ensure_directory(args.output)
+    output_dir = io.ensure_directory(args.output)
 
     # Validate common parameters
     validation.validate_range(args.n_cells, min_val=1, name="n_cells")

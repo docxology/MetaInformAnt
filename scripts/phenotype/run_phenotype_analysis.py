@@ -20,7 +20,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core.io import dump_json, ensure_directory, load_json, read_csv
-from metainformant.core.utils.logging import get_logger
+from metainformant.core.utils.logging import configure_logging_from_env, get_logger
 
 logger = get_logger(__name__)
 
@@ -90,10 +90,11 @@ def load_phenotype_data(input_path: Path) -> dict[str, Any]:
     logger.info(f"Loading phenotype data from {input_path}")
 
     if input_path.suffix == ".json":
+        # Imported outside the try block so a broken import fails loudly instead of triggering the fallback
+        from metainformant.phenotype.data.antwiki import load_antwiki_json
+
         # Try AntWiki format first
         try:
-            from metainformant.phenotype.antwiki import load_antwiki_json
-
             data = load_antwiki_json(input_path)
             return {
                 "format": "antwiki_json",
@@ -337,6 +338,7 @@ def run_workflow(args):
 
 def main():
     """Main entry point."""
+    configure_logging_from_env()
     args = parse_args()
 
     # Setup logging level

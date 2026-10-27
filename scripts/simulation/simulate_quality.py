@@ -21,8 +21,9 @@ import pandas as pd
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, logging, paths
-from metainformant.simulation.sequences import generate_random_dna
+from metainformant.core import io
+from metainformant.core.utils import logging
+from metainformant.simulation.models.sequences import generate_random_dna
 
 logger = logging.get_logger(__name__)
 
@@ -117,8 +118,10 @@ def simulate_contamination(
             source = rng.choice(contamination_sources)
             # Contaminated reads have different characteristics
             if source == "adapter":
-                # Adapter sequence at start/end
-                seq = "AGATCGGAAG" + generate_random_dna(read_length - 10, rng=rng)
+                # Adapter sequence at start/end (generate_random_dna requires length >= 1)
+                seq = "AGATCGGAAG"
+                if read_length > 10:
+                    seq += generate_random_dna(read_length - 10, rng=rng)
             elif source == "vector":
                 # Vector sequence
                 seq = generate_random_dna(read_length, gc_content=0.6, rng=rng)
@@ -208,6 +211,7 @@ def simulate_metrics(
 
 def main():
     """Main entry point."""
+    logging.configure_logging_from_env()
     parser = argparse.ArgumentParser(
         description="Quality control simulation for testing and validation",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -254,7 +258,7 @@ Examples:
 
         logger.setLevel(std_logging.DEBUG)
 
-    output_dir = paths.ensure_directory(args.output)
+    output_dir = io.ensure_directory(args.output)
 
     try:
         if args.type == "fastq":

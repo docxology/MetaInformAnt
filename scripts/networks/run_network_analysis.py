@@ -20,7 +20,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core.io import dump_json, ensure_directory, read_csv
-from metainformant.core.utils.logging import get_logger
+from metainformant.core.utils.logging import configure_logging_from_env, get_logger
 
 logger = get_logger(__name__)
 
@@ -145,7 +145,7 @@ def analyze_metrics(network, output_dir: Path) -> dict[str, Any]:
     """
     logger.info("Calculating network metrics...")
 
-    from metainformant.networks import network_metrics
+    from metainformant.networks.analysis.graph import network_metrics
 
     try:
         metrics = network_metrics(network)
@@ -173,7 +173,7 @@ def analyze_centrality(network, output_dir: Path) -> dict[str, Any]:
     """
     logger.info("Calculating centrality measures...")
 
-    from metainformant.networks import centrality_measures
+    from metainformant.networks.analysis.graph import centrality_measures
 
     try:
         centralities = centrality_measures(network)
@@ -201,7 +201,7 @@ def detect_communities_analysis(network, output_dir: Path) -> dict[str, Any]:
     """
     logger.info("Detecting network communities...")
 
-    from metainformant.networks import community_metrics, detect_communities, modularity
+    from metainformant.networks.analysis.community import community_metrics, detect_communities, modularity
 
     try:
         # Detect communities
@@ -274,9 +274,9 @@ def run_workflow(args):
 
     # Construct network
     logger.info("Constructing network...")
-    from metainformant.networks import add_edges_from_interactions, create_network
+    from metainformant.networks.analysis.graph import add_edges_from_interactions, create_network
 
-    network = create_network(directed=args.directed)
+    network = create_network([], directed=args.directed)
     add_edges_from_interactions(network, interactions)
 
     logger.info(f"Network constructed: {network.num_nodes()} nodes, {network.num_edges()} edges")
@@ -330,6 +330,7 @@ def run_workflow(args):
 
 def main():
     """Main entry point."""
+    configure_logging_from_env()
     args = parse_args()
 
     # Setup logging level

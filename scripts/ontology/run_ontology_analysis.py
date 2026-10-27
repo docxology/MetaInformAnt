@@ -19,7 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core.io import dump_json, ensure_directory
-from metainformant.core.utils.logging import get_logger
+from metainformant.core.utils.logging import configure_logging_from_env, get_logger
 
 logger = get_logger(__name__)
 
@@ -118,12 +118,12 @@ def run_workflow(args):
 
         try:
             logger.info(f"Loading Gene Ontology from {args.go}")
-            from metainformant.ontology import load_go_obo
+            from metainformant.ontology.core.go import load_go_obo
 
             onto = load_go_obo(args.go)
-            logger.info(f"Loaded {onto.num_terms()} GO terms")
+            logger.info(f"Loaded {len(onto)} GO terms")
             workflow_results["go_file"] = str(args.go)
-            workflow_results["n_terms"] = onto.num_terms()
+            workflow_results["n_terms"] = len(onto)
         except Exception as e:
             logger.error(f"Failed to load GO: {e}", exc_info=True)
             workflow_results["analyses"]["load_go"] = {"error": str(e)}
@@ -136,7 +136,7 @@ def run_workflow(args):
     if args.write_summary:
         try:
             logger.info("Writing GO summary...")
-            from metainformant.ontology import write_go_summary
+            from metainformant.ontology.core.go import write_go_summary
 
             summary_file = write_go_summary(onto, dest=output_dir / "go_summary.txt")
             logger.info(f"GO summary written to {summary_file}")
@@ -149,7 +149,7 @@ def run_workflow(args):
     if args.query_term:
         try:
             logger.info(f"Querying term: {args.query_term}")
-            from metainformant.ontology.query import ancestors, descendants
+            from metainformant.ontology.query.query import ancestors, descendants
 
             query_results = {}
 
@@ -193,20 +193,20 @@ def run_workflow(args):
     if args.subgraph:
         try:
             logger.info("Extracting subgraph...")
-            from metainformant.ontology.query import subgraph
+            from metainformant.ontology.query.query import get_subontology
 
             root_terms = [t.strip() for t in args.subgraph.split(",")]
-            sub_onto = subgraph(onto, root_terms)
+            sub_onto = get_subontology(onto, root_terms)
 
             subgraph_results = {
                 "root_terms": root_terms,
-                "n_terms_in_subgraph": sub_onto.num_terms(),
+                "n_terms_in_subgraph": len(sub_onto),
             }
 
             output_file = output_dir / "subgraph_analysis.json"
             dump_json(subgraph_results, output_file)
             workflow_results["analyses"]["subgraph"] = subgraph_results
-            logger.info(f"Subgraph extracted: {sub_onto.num_terms()} terms")
+            logger.info(f"Subgraph extracted: {len(sub_onto)} terms")
         except Exception as e:
             logger.error(f"Subgraph extraction failed: {e}", exc_info=True)
             workflow_results["analyses"]["subgraph"] = {"error": str(e)}
@@ -221,6 +221,7 @@ def run_workflow(args):
 
 def main():
     """Main entry point."""
+    configure_logging_from_env()
     args = parse_args()
 
     if args.verbose:

@@ -248,6 +248,7 @@ def prepare_phenotypes(output_dir: Path, vcf_path: Path) -> Path:
 
 
 def run_main():
+    core_logging.configure_logging_from_env()
     output_base = Path("output/gwas/pbarbatus")
     check_dependencies()
 

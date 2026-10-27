@@ -16,11 +16,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core.io import ensure_directory
 from metainformant.core.utils.logging import setup_logger
-from metainformant.life_events import (
-    load_sequences_from_json,
+from metainformant.life_events.core.utils import load_sequences_from_json
+from metainformant.life_events.visualization.statistical import plot_sequence_length_distribution
+from metainformant.life_events.visualization.timeline import (
     plot_domain_distribution,
     plot_event_timeline,
-    plot_sequence_length_distribution,
     plot_temporal_density,
 )
 

@@ -19,7 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core.io import dump_json, ensure_directory
-from metainformant.core.utils.logging import get_logger
+from metainformant.core.utils.logging import configure_logging_from_env, get_logger
 
 logger = get_logger(__name__)
 
@@ -37,7 +37,7 @@ Examples:
   # Full QC with contamination detection
   %(prog)s --fastq reads.fastq --analyze-fastq --detect-contamination --generate-report
 
-  # Subsampled analysis for large files
+  # Analyze only the first 10000 reads of a large file
   %(prog)s --fastq large_file.fastq --analyze-fastq --subsample 10000
         """,
     )
@@ -70,7 +70,7 @@ Examples:
     parser.add_argument(
         "--subsample",
         type=int,
-        help="Subsample reads for analysis (for large files)",
+        help="Analyze only the first N reads (not a random subsample); useful for large files",
     )
     parser.add_argument(
         "--verbose",
@@ -112,9 +112,10 @@ def run_workflow(args):
 
         try:
             logger.info(f"Analyzing FASTQ quality from {args.fastq}...")
-            from metainformant.quality import analyze_fastq_quality
+            from metainformant.quality.io.fastq import analyze_fastq_quality
 
-            quality_results = analyze_fastq_quality(args.fastq, subsample=args.subsample, seed=42)
+            # n_reads analyzes the first N reads (there is no random subsampling or seed any more)
+            quality_results = analyze_fastq_quality(args.fastq, n_reads=args.subsample)
 
             output_file = output_dir / "fastq_quality_analysis.json"
             dump_json(quality_results, output_file)
@@ -129,8 +130,8 @@ def run_workflow(args):
     if args.detect_contamination and args.fastq:
         try:
             logger.info("Detecting contamination...")
-            from metainformant.dna.fastq import iter_fastq
-            from metainformant.quality import detect_adapter_contamination
+            from metainformant.dna.io.fastq import iter_fastq
+            from metainformant.quality.analysis.contamination import detect_adapter_contamination
 
             # Read sequences
             sequences = []
@@ -154,23 +155,15 @@ def run_workflow(args):
     if args.generate_report:
         try:
             logger.info("Generating quality report...")
-            from metainformant.quality import generate_quality_report
+            from metainformant.quality.analysis.metrics import generate_quality_report
 
-            # Collect quality data
-            quality_data = {}
-            if "fastq_quality" in workflow_results["analyses"]:
-                fastq_data = workflow_results["analyses"]["fastq_quality"]
-                if "quality_metrics" in fastq_data:
-                    quality_data["quality"] = fastq_data["quality_metrics"]
-                if "gc_metrics" in fastq_data:
-                    quality_data["gc"] = fastq_data["gc_metrics"]
-                if "length_metrics" in fastq_data:
-                    quality_data["length"] = fastq_data["length_metrics"]
+            # The report is built from the analyze_fastq_quality result itself
+            quality_data = workflow_results["analyses"].get("fastq_quality", {})
 
-            if quality_data:
-                report_text = generate_quality_report(
-                    quality_data, sample_name=args.fastq.stem if args.fastq else "Unknown"
-                )
+            if "basic_statistics" in quality_data:
+                # The report no longer takes a sample name, so record it as a header line
+                sample_name = args.fastq.stem if args.fastq else "Unknown"
+                report_text = f"Sample: {sample_name}\n" + generate_quality_report(quality_data, data_type="fastq")
 
                 report_file = output_dir / "quality_report.txt"
                 with open(report_file, "w") as f:
@@ -193,6 +186,7 @@ def run_workflow(args):
 
 def main():
     """Main entry point."""
+    configure_logging_from_env()
     args = parse_args()
 
     if args.verbose:

@@ -3,7 +3,8 @@ import sys
 
 import numpy as np
 
-from metainformant.math import coalescent, ddm
+from metainformant.math.decision_theory import ddm
+from metainformant.math.population_genetics import coalescent
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("math_verification")
@@ -49,10 +50,10 @@ def verify_coalescent_optimization():
 
     # Test watterson_theta with small and large n
     # Note: s must be <= L
-    theta_small = coalescent.watterson_theta(10, 5, sequence_length=10)
+    theta_small = coalescent.watterson_theta(n_sequences=10, n_segregating_sites=5, sequence_length=10)
     logger.info(f"Theta (n=10, s=5, L=10): {theta_small}")
 
-    theta_large = coalescent.watterson_theta(1000, 50, sequence_length=100)
+    theta_large = coalescent.watterson_theta(n_sequences=1000, n_segregating_sites=50, sequence_length=100)
     logger.info(f"Theta (n=1000, s=50, L=100): {theta_large}")
 
     if theta_small <= 0 or theta_large <= 0:
@@ -67,7 +68,8 @@ def verify_perception():
     logger.info("Verifying Perception submodule...")
     import math
 
-    from metainformant.math.perception import d_prime, stevens_power_law
+    from metainformant.math.perception.psychophysics import stevens_power_law
+    from metainformant.math.perception.signal_detection import d_prime
 
     # Test d_prime
     # H=0.84 (Z=+1), FA=0.16 (Z=-1) => d' = 1 - (-1) = 2

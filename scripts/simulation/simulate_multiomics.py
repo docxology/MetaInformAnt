@@ -20,9 +20,10 @@ import pandas as pd
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, logging, paths
-from metainformant.simulation.popgen import generate_genotype_matrix
-from metainformant.simulation.rna import simulate_counts_negative_binomial
+from metainformant.core import io
+from metainformant.core.utils import logging
+from metainformant.simulation.models.popgen import generate_genotype_matrix
+from metainformant.simulation.models.rna import simulate_counts_negative_binomial
 
 logger = logging.get_logger(__name__)
 
@@ -52,7 +53,10 @@ def simulate_crossplatform(
 
     # Generate transcriptomics (expression)
     logger.info("Generating transcriptomics data...")
-    expression = simulate_counts_negative_binomial(n_genes, n_samples, mean_expression=100.0, dispersion=0.1, rng=rng)
+    # The simulator takes per-gene means/dispersions and returns samples x genes; transpose to genes x samples
+    expression = simulate_counts_negative_binomial(
+        n_samples, n_genes, np.full(n_genes, 100.0), np.full(n_genes, 0.1), rng=rng
+    ).T
     transcriptomics_df = pd.DataFrame(expression, columns=sample_ids)
     transcriptomics_df.index = [f"gene_{i:05d}" for i in range(n_genes)]
     transcriptomics_file = output_dir / "transcriptomics.csv"
@@ -115,8 +119,12 @@ def simulate_integrated(
             data = generate_genotype_matrix(n_samples, n_features_per_omic, rng=rng)
         elif omic_type == "transcriptomics":
             data = simulate_counts_negative_binomial(
-                n_features_per_omic, n_samples, mean_expression=100.0, dispersion=0.1, rng=rng
-            )
+                n_samples,
+                n_features_per_omic,
+                np.full(n_features_per_omic, 100.0),
+                np.full(n_features_per_omic, 0.1),
+                rng=rng,
+            ).T  # features x samples
         else:
             # Other omics: log-normal distribution
             data = np.random.lognormal(mean=5.0, sigma=1.0, size=(n_features_per_omic, n_samples))
@@ -165,6 +173,7 @@ def simulate_integrated(
 
 def main():
     """Main entry point."""
+    logging.configure_logging_from_env()
     parser = argparse.ArgumentParser(
         description="Multi-omics simulation for testing and validation",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -206,7 +215,7 @@ Examples:
 
         logger.setLevel(std_logging.DEBUG)
 
-    output_dir = paths.ensure_directory(args.output)
+    output_dir = io.ensure_directory(args.output)
 
     try:
         if args.type == "cross-platform":

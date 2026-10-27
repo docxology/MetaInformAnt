@@ -20,13 +20,12 @@ from pathlib import Path
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, logging, paths, validation
+from metainformant.core import io
+from metainformant.core.data import validation
+from metainformant.core.utils import logging
 from metainformant.dna.sequence.core import write_fasta
-from metainformant.simulation import (
-    generate_population_sequences,
-    generate_random_dna,
-    mutate_sequence,
-)
+from metainformant.simulation.models.popgen import generate_population_sequences
+from metainformant.simulation.models.sequences import generate_random_dna, mutate_sequence
 
 logger = logging.get_logger(__name__)
 
@@ -119,11 +118,13 @@ def simulate_population(
     logger.info(f"Generating population: {n_sequences} sequences with diversity {diversity}")
     rng = random.Random(seed)
 
+    # generate_population_sequences has no gc_content parameter: the ancestor carries the GC content instead
+    ancestor = generate_random_dna(sequence_length, gc_content=gc_content, rng=rng)
     sequences_list = generate_population_sequences(
         n_sequences,
         sequence_length,
         nucleotide_diversity=diversity,
-        gc_content=gc_content,
+        reference_sequence=ancestor,
         rng=rng,
     )
 
@@ -242,12 +243,13 @@ def simulate_phylogeny(
     logger.info(f"Generating phylogeny test data: {n_sequences} sequences")
     rng = random.Random(seed)
 
-    # Generate population with diversity
+    # Generate population with diversity (the ancestor carries the GC content)
+    ancestor = generate_random_dna(sequence_length, gc_content=gc_content, rng=rng)
     sequences_list = generate_population_sequences(
         n_sequences,
         sequence_length,
         nucleotide_diversity=diversity,
-        gc_content=gc_content,
+        reference_sequence=ancestor,
         rng=rng,
     )
 
@@ -268,6 +270,7 @@ def simulate_phylogeny(
 
 def main():
     """Main entry point."""
+    logging.configure_logging_from_env()
     parser = argparse.ArgumentParser(
         description="DNA sequence simulation for testing and validation",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -316,7 +319,7 @@ Examples:
         logger.setLevel(std_logging.DEBUG)
 
     # Validate output directory
-    output_dir = paths.ensure_directory(args.output)
+    output_dir = io.ensure_directory(args.output)
 
     # Validate common parameters
     validation.validate_range(args.n, min_val=1, name="n")

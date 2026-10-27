@@ -6,8 +6,13 @@ from all sections of species pages.
 
 Usage:
     python3 scripts/phenotype/scrape_antwiki.py --species Camponotus_pennsylvanicus
-    python3 scripts/phenotype/scrape_antwiki.py --all --limit 10
-    python3 scripts/phenotype/scrape_antwiki.py --all --delay 3.0 --output output/phenotype/antwiki/
+    python3 scripts/phenotype/scrape_antwiki.py --species Formica_rufa --delay 3.0 --output output/phenotype/antwiki/
+
+Notes:
+    robots.txt is honoured by default: pages it disallows are refused, and a Crawl-delay larger than --delay
+    replaces --delay. Pages are fetched with requests (not cloudscraper), so a Cloudflare challenge is not bypassed.
+    --all needs the AntWiki species index, whose retrieval is not implemented, so it exits with an error; scrape
+    named species one at a time with --species.
 """
 
 from __future__ import annotations
@@ -16,7 +21,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from metainformant.phenotype.scraper import AntWikiScraper, load_scraper_config
+from metainformant.core.utils.errors import ValidationError
+from metainformant.phenotype.data.scraper import AntWikiScraper, RobotsDisallowedError, load_scraper_config
 
 
 def main() -> int:
@@ -36,7 +42,8 @@ def main() -> int:
     parser.add_argument(
         "--all",
         action="store_true",
-        help="Scrape all species pages",
+        help="Scrape every species in the AntWiki species index (index retrieval is not implemented: "
+        "this exits with an error; use --species)",
     )
 
     parser.add_argument(
@@ -50,13 +57,13 @@ def main() -> int:
         "--delay",
         type=float,
         default=None,
-        help="Delay between requests in seconds (overrides config)",
+        help="Delay between requests in seconds (overrides config; a larger robots.txt Crawl-delay still wins)",
     )
 
     parser.add_argument(
         "--resume",
         action="store_true",
-        help="Resume from last checkpoint",
+        help="Resume from last checkpoint (not supported by the current scraper; exits with an error)",
     )
 
     parser.add_argument(
@@ -70,14 +77,14 @@ def main() -> int:
         "--check-robots",
         action="store_true",
         default=None,
-        help="Check robots.txt before scraping (default: True)",
+        help="Check robots.txt before scraping (default: True; opt out with check_robots=false in a --config file)",
     )
 
     parser.add_argument(
         "--config",
         type=str,
         default=None,
-        help="Path to config file (default: config/phenotype/antwiki_scraper.yaml)",
+        help="Path to a JSON file of AntWikiScraperConfig settings (default: built-in defaults)",
     )
 
     args = parser.parse_args()
@@ -89,16 +96,22 @@ def main() -> int:
     if args.species and args.all:
         parser.error("Cannot specify both --species and --all")
 
+    if args.resume:
+        parser.error("--resume is not supported: AntWikiScraper.scrape_all_species has no checkpointing")
+
     # Load configuration
     config_path = Path(args.config) if args.config else None
     config = load_scraper_config(config_path)
 
-    # Override config with CLI arguments
+    # Override config with CLI arguments (delay_seconds and delay_between_requests are the same setting)
     if args.delay is not None:
-        config.delay_seconds = args.delay
+        try:
+            config.delay_between_requests = args.delay
+        except ValidationError as e:
+            parser.error(f"--delay: {e}")
 
-    if args.output is not None:
-        config.output_dir = Path(args.output)
+    # Output directory precedence: --output, then the config file, then the documented default
+    config.output_dir = Path(args.output or config.output_dir or "output/phenotype/antwiki")
 
     if args.check_robots is not None:
         config.check_robots = args.check_robots
@@ -111,6 +124,9 @@ def main() -> int:
             # Scrape single species
             print(f"Scraping species: {args.species}")
             data = scraper.scrape_species_page(args.species)
+            if data is None:
+                print(f"Failed to scrape {args.species}: page could not be parsed", file=sys.stderr)
+                return 1
 
             # Save to output directory
             output_dir = config.output_dir
@@ -135,30 +151,41 @@ def main() -> int:
             # Scrape all species
             print(f"Scraping all species (limit: {args.limit or 'none'})")
             print(f"Output directory: {config.output_dir}")
-            print(f"Delay between requests: {config.delay_seconds} seconds")
-            print(f"Check robots.txt: {config.check_robots}")
+            print(f"Delay between requests: {config.delay_between_requests} seconds")
+            if config.check_robots:
+                print("Check robots.txt: True (disallowed pages are refused; a larger Crawl-delay replaces the delay)")
+            else:
+                print("Check robots.txt: False (opted out: robots.txt is not consulted)")
 
-            stats = scraper.scrape_all_species(
-                output_dir=config.output_dir,
-                limit=args.limit,
-                resume=args.resume,
-            )
+            try:
+                stats = scraper.scrape_all_species(
+                    output_dir=config.output_dir,
+                    limit=args.limit,
+                )
+            except NotImplementedError as e:
+                print(f"Error: {e}", file=sys.stderr)
+                print("Scrape named species one at a time with --species.", file=sys.stderr)
+                return 2
 
             print("\nScraping complete!")
             print(f"Total species: {stats['total']}")
             print(f"Completed: {stats['completed']}")
             print(f"Failed: {stats['failed']}")
 
-            if stats["failed"] > 0:
-                print(f"\nFailed species: {', '.join(stats['failed_species'][:10])}")
-                if len(stats["failed_species"]) > 10:
-                    print(f"... and {len(stats['failed_species']) - 10} more")
+            failed_species = stats.get("failed_species", [])
+            if failed_species:
+                print(f"\nFailed species: {', '.join(failed_species[:10])}")
+                if len(failed_species) > 10:
+                    print(f"... and {len(failed_species) - 10} more")
 
             return 0 if stats["failed"] == 0 else 1
 
     except KeyboardInterrupt:
         print("\nScraping interrupted by user")
         return 130
+    except RobotsDisallowedError as e:
+        print(f"Refused: {e}", file=sys.stderr)
+        return 1
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         import traceback

@@ -13,16 +13,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, paths
+from metainformant.core import io
+from metainformant.core.io import paths
 from metainformant.core.utils.logging import setup_logger
-from metainformant.life_events import (
-    EventSequencePredictor,
-    convert_sequences_to_tokens,
-    event_importance,
-    learn_event_embeddings,
-    load_sequences_from_json,
-    plot_prediction_importance,
-)
+from metainformant.life_events.analysis.interpretability import event_importance
+from metainformant.life_events.core.utils import convert_sequences_to_tokens, load_sequences_from_json
+from metainformant.life_events.models.embeddings import learn_event_embeddings
+from metainformant.life_events.models.predictor import EventSequencePredictor
+from metainformant.life_events.visualization.statistical import plot_prediction_importance
 
 logger = setup_logger(__name__, level="INFO")
 
@@ -90,19 +88,23 @@ def main():
     sequences_tokens = convert_sequences_to_tokens(sequences)
 
     # Get embeddings
-    if hasattr(predictor, "event_embeddings") and predictor.event_embeddings:
-        embeddings = predictor.event_embeddings
+    if predictor.embeddings:
+        embeddings = predictor.embeddings
     else:
         logger.info("Learning embeddings for interpretation...")
         embeddings = learn_event_embeddings(sequences_tokens, embedding_dim=100)
 
     logger.info("Computing event importance...")
-    importance = event_importance(
-        predictor,
-        sequences_tokens,
-        embeddings,
-        method=args.method,
-    )
+    try:
+        importance = event_importance(
+            predictor,
+            sequences_tokens,
+            embeddings,
+            method=args.method,
+        )
+    except ValueError as e:
+        logger.error(f"Event importance failed for method '{args.method}': {e}")
+        return 1
 
     paths.ensure_directory(args.output)
 

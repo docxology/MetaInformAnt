@@ -12,7 +12,7 @@ import pandas as pd
 
 from metainformant.core import io as core_io
 from metainformant.core.io import paths as core_paths
-from metainformant.multiomics import MultiOmicsData, canonical_correlation
+from metainformant.multiomics.analysis.integration import MultiOmicsData, canonical_correlation
 
 # Set output directory
 output_dir = Path("output/multiomics")

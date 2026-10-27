@@ -13,7 +13,7 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from metainformant.phenotype.scraper import AntWikiScraper, AntWikiScraperConfig
+from metainformant.phenotype.data.scraper import AntWikiScraper, AntWikiScraperConfig
 
 
 def test_scraper() -> None:
@@ -39,6 +39,8 @@ def test_scraper() -> None:
 
     try:
         data = scraper.scrape_species_page(species_name)
+        if data is None:
+            raise RuntimeError(f"scrape_species_page returned no data for {species_name}")
         print(f"\n✓ Successfully scraped {species_name}!")
         print(f"  - Species: {data.get('species', 'N/A')}")
         print(f"  - Measurements: {len(data.get('measurements', {}))} found")

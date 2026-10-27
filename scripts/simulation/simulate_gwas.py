@@ -22,8 +22,10 @@ import pandas as pd
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, logging, paths, validation
-from metainformant.simulation.popgen import generate_genotype_matrix
+from metainformant.core import io
+from metainformant.core.data import validation
+from metainformant.core.utils import logging
+from metainformant.simulation.models.popgen import generate_genotype_matrix
 
 logger = logging.get_logger(__name__)
 
@@ -81,7 +83,7 @@ def simulate_variants(
         genotypes = []
         for _ in range(n_samples):
             # Random genotype: 0/0, 0/1, or 1/1
-            gt = rng.choice(["0/0", "0/1", "1/1"], p=[0.5, 0.3, 0.2])
+            gt = rng.choices(["0/0", "0/1", "1/1"], weights=[0.5, 0.3, 0.2])[0]
             dp = rng.randint(10, 50)
             genotypes.append(f"{gt}:{dp}")
 
@@ -315,6 +317,7 @@ def simulate_population(
 
 def main():
     """Main entry point."""
+    logging.configure_logging_from_env()
     parser = argparse.ArgumentParser(
         description="GWAS simulation for testing and validation",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -365,7 +368,7 @@ Examples:
         logger.setLevel(std_logging.DEBUG)
 
     # Validate output directory
-    output_dir = paths.ensure_directory(args.output)
+    output_dir = io.ensure_directory(args.output)
 
     # Validate common parameters
     validation.validate_range(args.n_samples, min_val=1, name="n_samples")

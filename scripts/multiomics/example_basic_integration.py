@@ -12,7 +12,7 @@ import pandas as pd
 
 from metainformant.core import io as core_io
 from metainformant.core.io import paths as core_paths
-from metainformant.multiomics import MultiOmicsData, integrate_omics_data, joint_pca
+from metainformant.multiomics.analysis.integration import MultiOmicsData, integrate_omics_data, joint_pca
 
 # Set output directory
 output_dir = Path("output/multiomics")
@@ -64,9 +64,10 @@ genomics_path = output_dir / "genomics.csv"
 transcriptomics_path = output_dir / "transcriptomics.csv"
 proteomics_path = output_dir / "proteomics.csv"
 
-core_io.write_csv(genomics_data, genomics_path)
-core_io.write_csv(transcriptomics_data, transcriptomics_path)
-core_io.write_csv(proteomics_data, proteomics_path)
+# Keep the sample IDs (index): integrate_omics_data reads each layer back with index_col=0
+core_io.write_csv(genomics_data, genomics_path, index=True)
+core_io.write_csv(transcriptomics_data, transcriptomics_path, index=True)
+core_io.write_csv(proteomics_data, proteomics_path, index=True)
 print(f"   Saved data files to {output_dir}")
 
 # Method 1: Create MultiOmicsData from DataFrames

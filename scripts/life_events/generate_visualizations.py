@@ -11,22 +11,21 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, paths
+from metainformant.core import io
+from metainformant.core.io import paths
 from metainformant.core.utils.logging import setup_logger
-from metainformant.life_events import (
-    EventSequencePredictor,
-    convert_sequences_to_tokens,
-    load_sequences_from_json,
-    plot_domain_timeline,
+from metainformant.life_events.core.utils import convert_sequences_to_tokens, load_sequences_from_json
+from metainformant.life_events.models.predictor import EventSequencePredictor
+from metainformant.life_events.visualization.network import plot_transition_network
+from metainformant.life_events.visualization.statistical import (
     plot_embedding_clusters,
     plot_event_cooccurrence,
     plot_event_frequency_heatmap,
     plot_outcome_distribution,
     plot_prediction_accuracy,
     plot_sequence_similarity,
-    plot_temporal_patterns,
-    plot_transition_network,
 )
+from metainformant.life_events.visualization.timeline import plot_domain_timeline, plot_temporal_patterns
 
 logger = setup_logger(__name__, level="INFO")
 
@@ -83,7 +82,7 @@ def main():
     # 3. Sequence similarity
     try:
         logger.info("  Generating sequence similarity matrix...")
-        plot_sequence_similarity(sequences, embeddings=embeddings, output_path=output_dir / "sequence_similarity.png")
+        plot_sequence_similarity(sequences, output_path=output_dir / "sequence_similarity.png")
         logger.info("  ✅ Sequence similarity generated")
     except Exception as e:
         logger.warning(f"  ⚠️  Sequence similarity failed: {e}")
@@ -148,9 +147,7 @@ def main():
     if embeddings is not None:
         try:
             logger.info("  Generating embedding clusters...")
-            plot_embedding_clusters(
-                embeddings, clusters=None, method="umap", output_path=output_dir / "embedding_clusters.png"
-            )
+            plot_embedding_clusters(embeddings, clusters=None, output_path=output_dir / "embedding_clusters.png")
             logger.info("  ✅ Embedding clusters generated")
         except Exception as e:
             logger.warning(f"  ⚠️  Embedding clusters failed: {e}")

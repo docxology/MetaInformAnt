@@ -17,13 +17,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src"))
 
 from metainformant.core.utils import logging
-from metainformant.gwas import apply_qc_filters
+from metainformant.gwas.analysis.quality import apply_qc_filters, write_filtered_vcf
 
 # logging.setup_logging()
 logger = logging.get_logger(__name__)
 
 
 def main():
+    logging.configure_logging_from_env()
     parser = argparse.ArgumentParser(description="Run GWAS Quality Control")
     parser.add_argument("--vcf", required=True, help="Input VCF file")
     parser.add_argument("--output", help="Output filtered VCF file (optional)")
@@ -38,24 +39,31 @@ def main():
     qc_config = {
         "min_maf": args.min_maf,
         "max_missing": args.max_missing,
-        "hwe_pval": args.hwe_pval,
+        "min_hwe_p": args.hwe_pval,
         "min_qual": args.min_qual,
     }
 
     logger.info(f"Running QC on {args.vcf}")
     logger.info(f"Parameters: {qc_config}")
 
-    result = apply_qc_filters(vcf_path=args.vcf, config=qc_config, output_vcf=args.output)
+    try:
+        result = apply_qc_filters(args.vcf, qc_config)
+    except (FileNotFoundError, ValueError) as e:
+        logger.error(f"QC failed: {e}")
+        sys.exit(1)
 
     if result["status"] == "success":
         logger.info("QC completed successfully")
         logger.info(f"Variants passing: {result.get('num_variants_after', 0)}")
         if args.output:
+            write_filtered_vcf(result["filtered_data"], args.output)
             logger.info(f"Filtered VCF saved to: {args.output}")
 
         if args.report:
+            # The filtered genotype matrix is not JSON-serializable, so the report keeps only the QC summary
+            report = {key: value for key, value in result.items() if key != "filtered_data"}
             with open(args.report, "w") as f:
-                json.dump(result, f, indent=2)
+                json.dump(report, f, indent=2)
             logger.info(f"Report saved to: {args.report}")
     else:
         logger.error(f"QC failed: {result.get('error')}")

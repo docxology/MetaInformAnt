@@ -9,17 +9,16 @@ Usage:
 """
 
 import argparse
+import random
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, paths
-from metainformant.core.utils.logging import setup_logger
-from metainformant.life_events import (
-    generate_realistic_life_events,
-    generate_synthetic_life_events,
-)
+from metainformant.core import io  # noqa: E402
+from metainformant.core.io import paths  # noqa: E402
+from metainformant.core.utils.logging import setup_logger  # noqa: E402
+from metainformant.life_events.core.utils import add_temporal_noise, generate_synthetic_life_events  # noqa: E402
 
 logger = setup_logger(__name__, level="INFO")
 
@@ -62,9 +61,13 @@ def parse_args():
     parser.add_argument(
         "--outcome-relationship",
         type=str,
-        default="complex",
-        choices=["random", "health_focused", "education_focused", "complex"],
-        help="Outcome relationship pattern (default: complex)",
+        default="random",
+        choices=["random", "event_based", "temporal"],
+        help=(
+            "How outcomes relate to the sequences: random (coin flip), event_based (1 if the sequence has a "
+            "diagnosis, divorce or financial difficulty), temporal (1 if it has more than 12 events) "
+            "(default: random)"
+        ),
     )
     parser.add_argument(
         "--realistic",
@@ -74,7 +77,10 @@ def parse_args():
     parser.add_argument(
         "--seasonal-patterns",
         action="store_true",
-        help="Apply seasonal patterns (requires --realistic)",
+        help=(
+            "Apply seasonal patterns (requires --realistic; not implemented by metainformant.life_events, "
+            "so it only logs a warning)"
+        ),
     )
     parser.add_argument(
         "--temporal-noise",
@@ -115,28 +121,31 @@ def main():
     # Ensure output directory exists
     paths.ensure_directory(args.output.parent)
 
-    # Generate sequences
+    # Generate sequences (generate_synthetic_life_events already builds domain-aware event chains)
+    sequences, outcomes = generate_synthetic_life_events(
+        n_sequences=args.n_sequences,
+        min_events_per_sequence=args.min_events,
+        max_events_per_sequence=args.max_events,
+        generate_outcomes=args.generate_outcomes,
+        outcome_relationship=args.outcome_relationship,
+        random_state=args.random_state,
+    )
+
     if args.realistic:
-        sequences, outcomes = generate_realistic_life_events(
-            n_sequences=args.n_sequences,
-            min_events_per_sequence=args.min_events,
-            max_events_per_sequence=args.max_events,
-            generate_outcomes=args.generate_outcomes,
-            outcome_relationship=args.outcome_relationship,
-            seasonal_patterns=args.seasonal_patterns,
-            temporal_noise=args.temporal_noise,
-            missing_data_probability=args.missing_data,
-            random_state=args.random_state,
-        )
-    else:
-        sequences, outcomes = generate_synthetic_life_events(
-            n_sequences=args.n_sequences,
-            min_events_per_sequence=args.min_events,
-            max_events_per_sequence=args.max_events,
-            generate_outcomes=args.generate_outcomes,
-            outcome_relationship=args.outcome_relationship,
-            random_state=args.random_state,
-        )
+        # Realistic mode perturbs the generated timelines per sequence with the library's add_temporal_noise.
+        if args.seasonal_patterns:
+            logger.warning("--seasonal-patterns is not implemented by metainformant.life_events; ignoring it")
+        if args.temporal_noise > 0 or args.missing_data > 0:
+            rng = random.Random(args.random_state)
+            sequences = [
+                add_temporal_noise(
+                    seq,
+                    noise_level=args.temporal_noise,
+                    rng=rng,
+                    missing_probability=args.missing_data,
+                )
+                for seq in sequences
+            ]
 
     # Save sequences
     sequences_data = [seq.to_dict() for seq in sequences]

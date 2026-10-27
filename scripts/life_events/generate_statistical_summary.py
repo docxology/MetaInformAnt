@@ -21,7 +21,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core import io
 from metainformant.core.utils.logging import setup_logger
-from metainformant.life_events import EventSequence, load_sequences_from_json
+from metainformant.life_events.core.events import EventSequence
+from metainformant.life_events.core.utils import load_sequences_from_json
 
 logger = setup_logger(__name__, level="INFO")
 

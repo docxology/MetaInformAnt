@@ -19,9 +19,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 try:
-    from metainformant.core.errors import ValidationError
-    from metainformant.life_events import Event, EventSequence
-    from metainformant.phenotype import (
+    from metainformant.core.utils.errors import ValidationError
+    from metainformant.life_events.core.events import Event, EventSequence
+    from metainformant.phenotype.analysis.life_course import (
         aggregate_temporal_phenotypes,
         extract_phenotypes_from_events,
         map_events_to_traits,
@@ -155,8 +155,8 @@ def main():
 
         print("\nTime Windows:")
         for i, window in enumerate(aggregated["time_windows"][:5], 1):  # Show first 5
-            start = datetime.fromtimestamp(window["start_time"]).strftime("%Y-%m-%d")
-            end = datetime.fromtimestamp(window["end_time"]).strftime("%Y-%m-%d")
+            start = window["start_time"].strftime("%Y-%m-%d")
+            end = window["end_time"].strftime("%Y-%m-%d")
             print(f"  Window {i}: {start} to {end}")
             print(f"    Events: {window['n_events']}, People: {window['n_people']}")
             print(f"    Domains: {window['domain_counts']}")

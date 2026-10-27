@@ -18,8 +18,9 @@ from pathlib import Path
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, logging, paths
-from metainformant.simulation.popgen import (
+from metainformant.core import io
+from metainformant.core.utils import logging
+from metainformant.simulation.models.popgen import (
     generate_population_sequences,
     generate_site_frequency_spectrum,
     generate_two_populations,
@@ -47,8 +48,9 @@ def simulate_coalescent(
         rng=rng,
     )
 
-    # Calculate site frequency spectrum
-    sfs = generate_site_frequency_spectrum(sequences, rng=rng)
+    # Site frequency spectrum under the neutral coalescent (generate_site_frequency_spectrum simulates the
+    # spectrum for n_samples chromosomes and n_sites polymorphic sites; it does not read sequences)
+    sfs = generate_site_frequency_spectrum(n_samples, n_loci, rng=rng)
 
     # Save sequences
     from metainformant.dna.sequence.core import write_fasta
@@ -98,11 +100,14 @@ def simulate_selection(
             / ((1 + selection_coefficient) * current_freq + (1 - current_freq))
         )
 
-        # Sample next generation
-        next_freq = rng.betavariate(
-            population_size * fitness_ratio,
-            population_size * (1 - fitness_ratio),
-        )
+        # Sample next generation (Beta needs both shape parameters > 0; at fixation or loss it is a point mass)
+        if 0.0 < fitness_ratio < 1.0:
+            next_freq = rng.betavariate(
+                population_size * fitness_ratio,
+                population_size * (1 - fitness_ratio),
+            )
+        else:
+            next_freq = fitness_ratio
         frequencies.append(next_freq)
 
     # Save trajectory
@@ -138,9 +143,7 @@ def simulate_popgen(
         # Two populations
         n_pop1 = n_sequences // 2
         n_pop2 = n_sequences - n_pop1
-        pop1, pop2 = generate_two_populations(
-            n_pop1, n_pop2, sequence_length, fst=fst, within_pop_diversity=diversity, rng=rng
-        )
+        pop1, pop2 = generate_two_populations(n_pop1, n_pop2, sequence_length, fst=fst, theta=diversity, rng=rng)
 
         from metainformant.dna.sequence.core import write_fasta
 
@@ -176,6 +179,7 @@ def simulate_popgen(
 
 def main():
     """Main entry point."""
+    logging.configure_logging_from_env()
     parser = argparse.ArgumentParser(
         description="Mathematical biology simulation for testing and validation",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -226,7 +230,7 @@ Examples:
 
         logger.setLevel(std_logging.DEBUG)
 
-    output_dir = paths.ensure_directory(args.output)
+    output_dir = io.ensure_directory(args.output)
 
     try:
         if args.type == "coalescent":

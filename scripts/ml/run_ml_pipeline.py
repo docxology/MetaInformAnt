@@ -21,7 +21,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core.io import dump_json, ensure_directory, read_csv
-from metainformant.core.utils.logging import get_logger
+from metainformant.core.utils.logging import configure_logging_from_env, get_logger
 
 logger = get_logger(__name__)
 
@@ -176,12 +176,16 @@ def run_workflow(args):
     if args.feature_selection and y is not None:
         try:
             logger.info(f"Selecting {args.n_features} features...")
-            from metainformant.ml import select_features_univariate
+            from metainformant.ml.features.features import select_features_univariate
 
-            X_selected, selected_indices = select_features_univariate(X, y, k=args.n_features, method="f_score")
+            # The univariate test must match the target: F-test for regression with continuous targets,
+            # ANOVA F-test for class labels (also used when both --classify and --regress are given)
+            fs_method = "f_regression" if args.regress and not args.classify else "f_classif"
+            X_selected, selected_indices = select_features_univariate(X, y, k=args.n_features, method=fs_method)
             logger.info(f"Selected {len(selected_indices)} features")
             X = X_selected
             workflow_results["analyses"]["feature_selection"] = {
+                "method": fs_method,
                 "n_selected": len(selected_indices),
                 "selected_indices": selected_indices[:100],  # Limit output size
             }
@@ -193,7 +197,7 @@ def run_workflow(args):
     if args.classify and y is not None:
         try:
             logger.info("Training classifier...")
-            from metainformant.ml import BiologicalClassifier, evaluate_classifier
+            from metainformant.ml.models.classification import BiologicalClassifier, evaluate_classifier
 
             classifier = BiologicalClassifier(algorithm="random_forest", random_state=42)
             classifier.fit(X, y)
@@ -207,11 +211,18 @@ def run_workflow(args):
             }
 
             if args.cross_validate:
-                from metainformant.ml import cross_validate_biological
+                from metainformant.ml.models.classification import cross_validate_biological
 
-                cv_results = cross_validate_biological(classifier, X, y, cv=args.cv_folds)
+                # cross_validate_biological builds its own estimator, so request the same random forest
+                cv_results = cross_validate_biological(
+                    X, y, algorithm="random_forest", cv_folds=args.cv_folds, random_state=42
+                )
                 workflow_results["analyses"]["classification"]["cv_results"] = cv_results
-                logger.info(f"Cross-validation accuracy: {cv_results.get('mean_score', 0):.3f}")
+                cv_accuracy = cv_results.get("mean_accuracy")
+                if cv_accuracy is None:
+                    logger.warning("Cross-validation accuracy unavailable; see cross_validation in the summary")
+                else:
+                    logger.info(f"Cross-validation accuracy: {cv_accuracy:.3f}")
         except Exception as e:
             logger.error(f"Classification failed: {e}", exc_info=True)
             workflow_results["analyses"]["classification"] = {"error": str(e)}
@@ -220,7 +231,7 @@ def run_workflow(args):
     if args.regress and y is not None:
         try:
             logger.info("Training regressor...")
-            from metainformant.ml import BiologicalRegressor, evaluate_regressor
+            from metainformant.ml.models.regression import BiologicalRegressor, evaluate_regressor
 
             regressor = BiologicalRegressor(algorithm="linear", random_state=42)
             regressor.fit(X, y)
@@ -241,15 +252,16 @@ def run_workflow(args):
         try:
             logger.info(f"Reducing dimensions using {args.method}...")
             if args.method == "pca":
-                from metainformant.ml import reduce_dimensions_pca
+                from metainformant.ml.features.dimensionality import reduce_dimensions_pca
 
-                X_reduced = reduce_dimensions_pca(X, n_components=args.n_components)
+                # PCA returns (embedding, components, explained_variance_ratio); keep the embedding
+                X_reduced, _components, _explained_variance = reduce_dimensions_pca(X, n_components=args.n_components)
             elif args.method == "umap":
-                from metainformant.ml import reduce_dimensions_umap
+                from metainformant.ml.features.dimensionality import reduce_dimensions_umap
 
                 X_reduced = reduce_dimensions_umap(X, n_components=args.n_components)
             elif args.method == "tsne":
-                from metainformant.ml import reduce_dimensions_tsne
+                from metainformant.ml.features.dimensionality import reduce_dimensions_tsne
 
                 X_reduced = reduce_dimensions_tsne(X, n_components=args.n_components)
 
@@ -278,6 +290,7 @@ def run_workflow(args):
 
 def main():
     """Main entry point."""
+    configure_logging_from_env()
     args = parse_args()
 
     if args.verbose:

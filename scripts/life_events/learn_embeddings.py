@@ -14,13 +14,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, paths
+from metainformant.core import io
+from metainformant.core.io import paths
 from metainformant.core.utils.logging import setup_logger
-from metainformant.life_events import (
-    convert_sequences_to_tokens,
-    learn_event_embeddings,
-    load_sequences_from_json,
-)
+from metainformant.life_events.core.utils import convert_sequences_to_tokens, load_sequences_from_json
+from metainformant.life_events.models.embeddings import learn_event_embeddings
 
 logger = setup_logger(__name__, level="INFO")
 

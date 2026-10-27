@@ -14,15 +14,16 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src"))
 
 from metainformant.core.utils import logging
-from metainformant.gwas import parse_vcf_full
-from metainformant.gwas.association import association_test_linear, association_test_logistic
-from metainformant.gwas.correction import bonferroni_correction, fdr_correction
+from metainformant.gwas.analysis.association import association_test_linear, association_test_logistic
+from metainformant.gwas.analysis.correction import bonferroni_correction, fdr_correction
+from metainformant.gwas.analysis.quality import parse_vcf_full
 
 # logging.setup_logging()
 logger = logging.get_logger(__name__)
 
 
 def main():
+    logging.configure_logging_from_env()
     parser = argparse.ArgumentParser(description="Run GWAS Association Tests")
     parser.add_argument("--vcf", required=True, help="Input VCF file")
     parser.add_argument("--phenotypes", required=True, help="Phenotype TSV file")
@@ -59,7 +60,8 @@ def main():
     genotypes = vcf_data.get("genotypes")
     variants = vcf_data.get("variants")
 
-    if not genotypes:
+    # parse_vcf_full returns a numpy array ([sample][variant]), so test its length, not its truthiness
+    if genotypes is None or len(genotypes) == 0:
         logger.error("No genotypes found")
         sys.exit(1)
 
@@ -88,9 +90,9 @@ def main():
             if res["status"] == "success":
                 results.append(
                     {
-                        "variant_id": variant.get("ID", f"var_{idx}"),
-                        "chrom": variant.get("CHROM"),
-                        "pos": variant.get("POS"),
+                        "variant_id": variant.get("id", f"var_{idx}"),
+                        "chrom": variant.get("chrom"),
+                        "pos": variant.get("pos"),
                         "beta": res.get("beta"),
                         "se": res.get("se"),
                         "p_value": res.get("p_value"),
@@ -112,13 +114,10 @@ def main():
     bonf = bonferroni_correction(p_values)
     fdr = fdr_correction(p_values)
 
-    # Annotate results
-    bonf_sig = set(bonf.get("significant_indices", []))
-    fdr_sig = set(fdr.get("significant_indices", []))
-
-    for i, r in enumerate(results):
-        r["bonferroni_sig"] = i in bonf_sig
-        r["fdr_sig"] = i in fdr_sig
+    # Annotate results (the corrections return one significance flag per p-value, in input order)
+    for r, bonf_flag, fdr_flag in zip(results, bonf["significant"], fdr["significant"]):
+        r["bonferroni_sig"] = bool(bonf_flag)
+        r["fdr_sig"] = bool(fdr_flag)
 
     # Save
     out_df = pd.DataFrame(results)

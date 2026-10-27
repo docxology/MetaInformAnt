@@ -15,11 +15,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core.io import ensure_directory
 from metainformant.core.utils.logging import setup_logger
-from metainformant.life_events import (
-    compare_populations,
-    load_sequences_from_json,
-    plot_population_comparison,
-)
+from metainformant.life_events.core.utils import load_sequences_from_json
+from metainformant.life_events.visualization.statistical import plot_population_comparison
+from metainformant.life_events.workflow.workflow import compare_populations
 
 logger = setup_logger(__name__, level="INFO")
 

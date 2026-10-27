@@ -62,6 +62,7 @@ class ValidationResult:
 
 
 def main() -> int:
+    logging.configure_logging_from_env()
     import argparse
 
     parser = argparse.ArgumentParser(description="GWAS method validation")

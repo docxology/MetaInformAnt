@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Download real Apis mellifera variant data from public repositories.
+"""Offline guide to obtaining real Apis mellifera variant data from public repositories.
 
-This script demonstrates how to access and download real honeybee genomic data
-from NCBI SRA and other public repositories.
+This script checks whether the SRA Toolkit is installed locally and prints where to find real honeybee
+genomic data (NCBI SRA and other public repositories), how to download it, and how to turn raw reads into
+variants. It never contacts NCBI or any other server and downloads nothing: the commands it prints are for
+you to run.
 
 Key Data Sources:
     - NCBI BioProject PRJNA292680: Scout/recruit behavioral caste variants
@@ -10,15 +12,15 @@ Key Data Sources:
     - Public VCF repositories: Pre-called variant sets
 
 Usage:
-    python3 scripts/download_honeybee_variants.py
+    python3 scripts/gwas/preparation/download_honeybee_variants.py
 
-Workflow:
-    1. Search for available datasets
+Workflow described by the guide:
+    1. Search for available datasets (SRA Run Selector, in a browser)
     2. Download SRA runs (if SRA Toolkit available)
     3. OR: Download pre-called VCF files (if available)
     4. Align reads and call variants (if starting from FASTQ)
 
-Requirements:
+Requirements for the steps the guide describes:
     - SRA Toolkit (fasterq-dump): https://github.com/ncbi/sra-tools
     - NCBI E-utilities (optional): https://www.ncbi.nlm.nih.gov/books/NBK179288/
     - wget or curl for direct downloads
@@ -32,11 +34,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src"))
 
 from metainformant.core.io import ensure_directory
-from metainformant.gwas.sra_download import (
-    check_sra_tools_available,
-    download_sra_project,
-    search_sra_for_organism,
-)
+from metainformant.gwas.data.sra_download import check_sra_tools_available
 
 logging.basicConfig(
     level=logging.INFO,
@@ -53,9 +51,10 @@ def print_section(title: str) -> None:
 
 
 def main() -> None:
-    """Download real Apis mellifera variant data."""
+    """Print the offline guide to obtaining real Apis mellifera variant data."""
 
-    print_section("REAL APIS MELLIFERA VARIANT DATA DOWNLOAD")
+    print_section("REAL APIS MELLIFERA VARIANT DATA ACQUISITION GUIDE")
+    print("  This guide is offline: it does not query NCBI and downloads nothing.")
 
     # Setup directories
     data_dir = Path("data/variants/amellifera/real")
@@ -89,17 +88,9 @@ def main() -> None:
     # Search for Apis mellifera data
     print_section("SEARCHING FOR APIS MELLIFERA GENOMIC DATA")
 
-    search_result = search_sra_for_organism(
-        organism="Apis mellifera",
-        strategy="WGS",
-        max_results=100,
-    )
-
-    print(f"📊 Search status: {search_result['status']}")
-    if search_result.get("sra_search_url"):
-        print(f"🔗 Manual search: {search_result['sra_search_url']}")
-    if search_result.get("note"):
-        print(f"📝 Note: {search_result['note']}")
+    # Static link only: nothing is queried from here
+    print("🔗 Manual search: https://www.ncbi.nlm.nih.gov/sra/?term=Apis+mellifera+WGS")
+    print("📝 Note: install NCBI E-utilities (esearch/efetch) for programmatic SRA search")
 
     # Key datasets for Apis mellifera
     print_section("KEY APIS MELLIFERA DATASETS")
@@ -139,20 +130,17 @@ def main() -> None:
     print_section("DOWNLOADING FROM BIOPROJECT (INSTRUCTIONS)")
 
     bioproject = "PRJNA292680"
-    project_result = download_sra_project(
-        bioproject=bioproject,
-        dest_dir=data_dir / bioproject,
-        max_runs=5,
-    )
 
     print(f"📦 BioProject: {bioproject}")
-    print(f"Status: {project_result['status']}")
-    print(f"\n{project_result['message']}")
-
-    if "instructions" in project_result:
-        print("\nSteps to download:")
-        for instruction in project_result["instructions"]:
-            print(f"  {instruction}")
+    print("\nUse the NCBI SRA Run Selector to get the run list.")
+    print("\nSteps to download:")
+    for instruction in (
+        f"1. Visit https://www.ncbi.nlm.nih.gov/Traces/study/?acc={bioproject}",
+        "2. Select runs of interest",
+        "3. Download metadata CSV or use Accession List",
+        "4. Download each accession, e.g. with fasterq-dump (see the workflow below)",
+    ):
+        print(f"  {instruction}")
 
     # Public VCF repositories
     print_section("PUBLIC VCF REPOSITORIES")
@@ -181,18 +169,13 @@ def main() -> None:
     print_section("EXAMPLE: DOWNLOAD FROM DIRECT URL")
 
     print("""
-  If you have a direct URL to a VCF file, you can download it:
+  If you have a direct URL to a VCF file, download it yourself with wget or curl:
 
   Example (hypothetical URL):
-    from metainformant.gwas.download import download_variant_data
+    wget -P data/variants/amellifera/real https://example.org/amellifera_variants.vcf.gz
 
-    result = download_variant_data(
-        source="custom",
-        url="https://example.org/amellifera_variants.vcf.gz",
-        dest_dir="data/variants/amellifera/real",
-    )
-
-  This will download the file using wget or curl.
+    curl -L -o data/variants/amellifera/real/amellifera_variants.vcf.gz \\
+      https://example.org/amellifera_variants.vcf.gz
     """)
 
     # Real workflow example
@@ -246,7 +229,8 @@ def main() -> None:
   5. Align reads and call variants (see workflow above)
 
   6. Run GWAS pipeline:
-     python3 -c "from metainformant.gwas import execute_gwas_workflow, load_gwas_config; \\
+     python3 -c "from metainformant.gwas import execute_gwas_workflow; \\
+                 from metainformant.gwas.data.config import load_gwas_config; \\
                  config = load_gwas_config('config/gwas/gwas_amellifera.yaml'); \\
                  execute_gwas_workflow(config)"
 
@@ -257,7 +241,7 @@ def main() -> None:
     """)
 
     print("\n" + "=" * 80)
-    print("  For questions or issues, see docs/gwas/data_acquisition.md")
+    print("  For questions or issues, see docs/gwas/amellifera_data_acquisition.md")
     print("=" * 80 + "\n")
 
 

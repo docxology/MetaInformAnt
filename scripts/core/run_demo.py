@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 # Add project to path
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core import io
 from metainformant.core.io.paths import ensure_directory
@@ -80,7 +80,7 @@ def main():
         import matplotlib.pyplot as plt
         import numpy as np
 
-        from metainformant.visualization import heatmap, lineplot
+        from metainformant.visualization.plots.basic import heatmap, lineplot
 
         # Create visualizations subdirectory
         viz_dir = output_base / "visualizations"
@@ -88,7 +88,7 @@ def main():
 
         # Visualization 1: Line plot of input values
         fig1, ax1 = plt.subplots(figsize=(8, 6))
-        ax1 = lineplot(None, input_data["values"], ax=ax1, style="-o", color="steelblue")
+        ax1 = lineplot(np.array(input_data["values"]), ax=ax1, marker="o", linestyle="-", color="steelblue")
         ax1.set_xlabel("Sample Index")
         ax1.set_ylabel("Value")
         ax1.set_title("Input Sample Values")
@@ -113,7 +113,10 @@ def main():
         # Visualization 3: Heatmap example
         matrix_data = np.array([[1.5, 2.3, 1.8], [2.1, 1.9, 2.5], [1.7, 2.2, 1.6]])
         fig3, ax3 = plt.subplots(figsize=(8, 6))
-        ax3 = heatmap(matrix_data, cmap="viridis", cbar=True, ax=ax3, annot=True)
+        ax3 = heatmap(matrix_data, cmap="viridis", ax=ax3)  # draws its own colorbar
+        midpoint = (matrix_data.min() + matrix_data.max()) / 2
+        for (row, col), value in np.ndenumerate(matrix_data):  # cell annotations
+            ax3.text(col, row, f"{value:.1f}", ha="center", va="center", color="white" if value < midpoint else "black")
         ax3.set_title("Sample Correlation Heatmap")
         ax3.set_xlabel("Sample")
         ax3.set_ylabel("Sample")

@@ -22,7 +22,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core.io import dump_json, ensure_directory
-from metainformant.core.utils.logging import get_logger
+from metainformant.core.utils.logging import configure_logging_from_env, get_logger
 
 logger = get_logger(__name__)
 
@@ -96,7 +96,7 @@ def run_sequence_simulation(args, output_dir: Path) -> dict[str, Any]:
     """Run sequence generation simulation."""
     logger.info(f"Generating {args.n} sequences of length {args.length}...")
     from metainformant.dna.sequence.core import write_fasta
-    from metainformant.simulation import generate_random_dna, mutate_sequence
+    from metainformant.simulation.models.sequences import generate_random_dna, mutate_sequence
 
     rng = random.Random(args.seed)
     sequences = {}
@@ -124,7 +124,7 @@ def run_sequence_simulation(args, output_dir: Path) -> dict[str, Any]:
 def run_agent_simulation(args, output_dir: Path) -> dict[str, Any]:
     """Run agent-based model simulation."""
     logger.info(f"Running agent-based model: {args.width}x{args.height} grid, {args.num_agents} agents...")
-    from metainformant.simulation import GridWorld
+    from metainformant.simulation.models.agents import GridWorld
 
     rng = random.Random(args.seed)
     world = GridWorld(width=args.width, height=args.height, num_agents=args.num_agents, rng=rng)
@@ -155,18 +155,20 @@ def run_agent_simulation(args, output_dir: Path) -> dict[str, Any]:
 def run_expression_simulation(args, output_dir: Path) -> dict[str, Any]:
     """Run expression count simulation."""
     logger.info(f"Simulating expression: {args.num_genes} genes, {args.num_samples} samples...")
+    import numpy as np
     import pandas as pd
 
-    from metainformant.simulation import simulate_counts_negative_binomial
+    from metainformant.simulation.models.rna import simulate_counts_negative_binomial
 
     rng = random.Random(args.seed)
+    # The simulator takes per-gene means/dispersions and returns samples x genes; transpose to genes x samples
     counts = simulate_counts_negative_binomial(
-        num_genes=args.num_genes,
-        num_samples=args.num_samples,
-        mean_expression=args.mean_expression,
-        dispersion=args.dispersion,
+        args.num_samples,
+        args.num_genes,
+        np.full(args.num_genes, args.mean_expression, dtype=float),
+        np.full(args.num_genes, args.dispersion, dtype=float),
         rng=rng,
-    )
+    ).T
 
     # Save as CSV
     df = pd.DataFrame(counts, columns=[f"sample_{i}" for i in range(args.num_samples)])
@@ -231,6 +233,7 @@ def run_workflow(args):
 
 def main():
     """Main entry point."""
+    configure_logging_from_env()
     args = parse_args()
 
     if args.verbose:

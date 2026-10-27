@@ -12,17 +12,14 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-import numpy as np
-
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, paths
+from metainformant.core import io
+from metainformant.core.io import paths
 from metainformant.core.utils.logging import setup_logger
-from metainformant.life_events import (
-    intervention_analysis,
-    load_sequences_from_json,
-    plot_intervention_effects,
-)
+from metainformant.life_events.core.utils import load_sequences_from_json
+from metainformant.life_events.visualization.statistical import plot_intervention_effects
+from metainformant.life_events.workflow.workflow import intervention_analysis
 
 logger = setup_logger(__name__, level="INFO")
 
@@ -101,7 +98,7 @@ def main():
             logger.error(f"Pre-outcomes file not found: {args.pre_outcomes}")
             return 1
         pre_data = io.load_json(args.pre_outcomes)
-        pre_outcomes = np.array(pre_data.get("outcomes", []))
+        pre_outcomes = list(pre_data.get("outcomes", []))
         logger.info(f"✅ Loaded {len(pre_outcomes)} pre-intervention outcomes")
 
     if args.post_outcomes:
@@ -109,7 +106,7 @@ def main():
             logger.error(f"Post-outcomes file not found: {args.post_outcomes}")
             return 1
         post_data = io.load_json(args.post_outcomes)
-        post_outcomes = np.array(post_data.get("outcomes", []))
+        post_outcomes = list(post_data.get("outcomes", []))
         logger.info(f"✅ Loaded {len(post_outcomes)} post-intervention outcomes")
 
     paths.ensure_directory(args.output)
@@ -138,9 +135,11 @@ def main():
 
     logger.info(f"✅ Intervention analysis complete. Results saved to {args.output}")
 
-    if "outcome_change" in results:
-        logger.info(f"   Outcome change mean: {results['outcome_change']['mean']:.3f}")
-        logger.info(f"   Outcome change std: {results['outcome_change']['std']:.3f}")
+    outcome_change = results.get("outcome_change") or {}
+    if outcome_change:
+        logger.info(f"   Outcome change mean: {outcome_change['mean']:.3f}")
+        logger.info(f"   Pre-intervention outcome mean: {outcome_change['pre_mean']:.3f}")
+        logger.info(f"   Post-intervention outcome mean: {outcome_change['post_mean']:.3f}")
 
     return 0
 

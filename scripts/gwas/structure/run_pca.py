@@ -22,6 +22,7 @@ logger = logging.get_logger(__name__)
 
 
 def main():
+    logging.configure_logging_from_env()
     parser = argparse.ArgumentParser(description="Run PCA")
     parser.add_argument("--vcf", required=True, help="Input VCF file")
     parser.add_argument("--n-components", type=int, default=10, help="Number of PC components")

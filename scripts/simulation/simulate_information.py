@@ -17,8 +17,9 @@ from pathlib import Path
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, logging, paths
-from metainformant.simulation.sequences import generate_random_dna
+from metainformant.core import io
+from metainformant.core.utils import logging
+from metainformant.simulation.models.sequences import generate_random_dna
 
 logger = logging.get_logger(__name__)
 
@@ -51,8 +52,10 @@ def simulate_sequences(
             for _ in range(sequence_length // 10):
                 base = rng.choice("ACGT")
                 seq += base * 10
-            # Fill remainder
-            seq += generate_random_dna(sequence_length - len(seq), gc_content=gc_content, rng=rng)
+            # Fill remainder (generate_random_dna requires length >= 1)
+            remainder = sequence_length - len(seq)
+            if remainder > 0:
+                seq += generate_random_dna(remainder, gc_content=gc_content, rng=rng)
 
         sequences.append(
             {
@@ -152,6 +155,7 @@ def simulate_mutual(
 
 def main():
     """Main entry point."""
+    logging.configure_logging_from_env()
     parser = argparse.ArgumentParser(
         description="Information theory simulation for testing and validation",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -199,7 +203,7 @@ Examples:
 
         logger.setLevel(std_logging.DEBUG)
 
-    output_dir = paths.ensure_directory(args.output)
+    output_dir = io.ensure_directory(args.output)
 
     try:
         if args.type == "sequences":

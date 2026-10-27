@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Life events analysis workflow orchestrator.
+r"""Life events analysis workflow orchestrator.
 
 This script provides comprehensive orchestration for life course analysis workflows,
 including synthetic data generation, embedding learning, model training, predictions,
@@ -7,7 +7,8 @@ and comprehensive visualization.
 
 Usage:
     python3 scripts/life_events/run_life_events_analysis.py --synthetic --n-sequences 100
-    python3 scripts/life_events/run_life_events_analysis.py --input data/life_events/sequences.json --config config/life_events/life_events_template.yaml
+    python3 scripts/life_events/run_life_events_analysis.py --input data/life_events/sequences.json \
+        --config config/life_events/life_events_template.yaml
     python3 scripts/life_events/run_life_events_analysis.py --help
 """
 
@@ -20,8 +21,9 @@ from typing import Any, Optional
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, paths
-from metainformant.core.utils.logging import setup_logger
+from metainformant.core import io  # noqa: E402
+from metainformant.core.io import paths  # noqa: E402
+from metainformant.core.utils.logging import setup_logger  # noqa: E402
 
 logger = setup_logger(__name__, level="INFO")
 
@@ -82,9 +84,13 @@ Examples:
     parser.add_argument(
         "--outcome-relationship",
         type=str,
-        default="complex",
-        choices=["random", "health_focused", "education_focused", "complex"],
-        help="How outcomes relate to events (default: complex)",
+        default="random",
+        choices=["random", "event_based", "temporal"],
+        help=(
+            "How outcomes relate to the sequences: random (coin flip), event_based (1 if the sequence has a "
+            "diagnosis, divorce or financial difficulty), temporal (1 if it has more than 12 events) "
+            "(default: random)"
+        ),
     )
     parser.add_argument(
         "--config",
@@ -115,7 +121,7 @@ Examples:
     parser.add_argument(
         "--model-type",
         type=str,
-        choices=["embedding", "simple", "lstm"],
+        choices=["embedding", "simple"],
         help="Model type (overrides config)",
     )
     parser.add_argument(
@@ -165,7 +171,7 @@ def generate_synthetic_data(
     """
     logger.info(f"Generating {n_sequences} synthetic event sequences...")
 
-    from metainformant.life_events import generate_synthetic_life_events
+    from metainformant.life_events.core.utils import generate_synthetic_life_events
 
     sequences, outcomes = generate_synthetic_life_events(
         n_sequences=n_sequences,
@@ -197,7 +203,7 @@ def load_sequences(input_path: Path) -> list:
     if not input_path.exists():
         raise FileNotFoundError(f"Input file not found: {input_path}")
 
-    from metainformant.life_events import load_sequences_from_json
+    from metainformant.life_events.core.utils import load_sequences_from_json
 
     sequences = load_sequences_from_json(input_path)
     logger.info(f"✅ Loaded {len(sequences)} sequences")
@@ -232,9 +238,8 @@ def run_analysis(
     """
     logger.info("Running complete life course analysis workflow...")
 
-    import numpy as np
-
-    from metainformant.life_events import analyze_life_course, load_life_events_config
+    from metainformant.life_events.core.config import load_life_events_config
+    from metainformant.life_events.workflow.workflow import analyze_life_course
 
     # Prepare configuration
     config_obj = None
@@ -269,18 +274,15 @@ def run_analysis(
     if model_type is not None:
         config_dict["model_type"] = model_type
 
-    # Convert outcomes to numpy array if needed
-    outcomes_array = None
+    # analyze_life_course takes outcomes as a plain list
+    outcomes_list = None
     if outcomes is not None:
-        if not isinstance(outcomes, np.ndarray):
-            outcomes_array = np.array(outcomes)
-        else:
-            outcomes_array = outcomes
+        outcomes_list = outcomes.tolist() if hasattr(outcomes, "tolist") else list(outcomes)
 
     # Run workflow
     results = analyze_life_course(
         sequences,
-        outcomes=outcomes_array,
+        outcomes=outcomes_list,
         config_obj=config_dict if config_dict else None,
         output_dir=output_dir,
     )
@@ -315,17 +317,15 @@ def generate_visualizations(
     viz_dir = output_dir / "visualizations"
     paths.ensure_directory(viz_dir)
 
-    try:
-        from metainformant.life_events import (
-            EventSequencePredictor,
-            convert_sequences_to_tokens,
-            event_importance,
-            learn_event_embeddings,
-            plot_event_embeddings,
-            plot_event_timeline,
-            plot_prediction_importance,
-        )
+    # Imported outside the try block so a broken import fails loudly instead of reading as a missing dependency
+    from metainformant.life_events.analysis.interpretability import event_importance
+    from metainformant.life_events.core.utils import convert_sequences_to_tokens
+    from metainformant.life_events.models.embeddings import learn_event_embeddings
+    from metainformant.life_events.models.predictor import EventSequencePredictor
+    from metainformant.life_events.visualization.statistical import plot_event_embeddings, plot_prediction_importance
+    from metainformant.life_events.visualization.timeline import plot_event_timeline
 
+    try:
         # 1. Timeline visualization
         if sequences:
             logger.info("  Generating timeline visualization...")
@@ -375,8 +375,8 @@ def generate_visualizations(
                     sequences_tokens = convert_sequences_to_tokens(sequences)
 
                     # Get embeddings
-                    if hasattr(predictor, "event_embeddings"):
-                        embeddings = predictor.event_embeddings
+                    if predictor.embeddings:
+                        embeddings = predictor.embeddings
                     else:
                         embeddings = learn_event_embeddings(
                             sequences_tokens,

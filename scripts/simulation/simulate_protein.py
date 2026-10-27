@@ -19,9 +19,11 @@ from pathlib import Path
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, logging, paths, validation
-from metainformant.protein.sequences import write_fasta
-from metainformant.simulation.sequences import generate_random_protein, mutate_sequence
+from metainformant.core import io
+from metainformant.core.data import validation
+from metainformant.core.utils import logging
+from metainformant.protein.sequence.sequences import write_fasta
+from metainformant.simulation.models.sequences import generate_random_protein, mutate_sequence
 
 logger = logging.get_logger(__name__)
 
@@ -254,6 +256,7 @@ def simulate_ppi(
 
 def main():
     """Main entry point."""
+    logging.configure_logging_from_env()
     parser = argparse.ArgumentParser(
         description="Protein simulation for testing and validation",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -301,7 +304,7 @@ Examples:
         logger.setLevel(std_logging.DEBUG)
 
     # Validate output directory
-    output_dir = paths.ensure_directory(args.output)
+    output_dir = io.ensure_directory(args.output)
 
     # Validate common parameters
     validation.validate_range(args.n, min_val=1, name="n")

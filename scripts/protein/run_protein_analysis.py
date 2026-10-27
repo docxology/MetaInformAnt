@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """Protein analysis workflow orchestrator.
 
-This script provides comprehensive orchestration for protein analysis workflows,
-including sequence validation, composition analysis, secondary structure prediction,
-and functional annotation.
+This script provides orchestration for protein analysis workflows, including sequence
+validation, amino acid composition analysis, and pairwise alignment.
 
 Usage:
     python3 scripts/protein/run_protein_analysis.py --input sequences.fasta --output output/protein/results
-    python3 scripts/protein/run_protein_analysis.py --input sequences.fasta --analyze-composition --analyze-secondary
+    python3 scripts/protein/run_protein_analysis.py --input sequences.fasta --analyze-composition --analyze-alignment
     python3 scripts/protein/run_protein_analysis.py --help
 """
 
@@ -21,7 +20,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core.io import dump_json, ensure_directory
-from metainformant.core.utils.logging import get_logger
+from metainformant.core.utils.logging import configure_logging_from_env, get_logger
 
 logger = get_logger(__name__)
 
@@ -37,7 +36,7 @@ Examples:
   %(prog)s --input sequences.fasta --output output/protein/basic
 
   # Full analysis with all modules
-  %(prog)s --input sequences.fasta --analyze-composition --analyze-secondary --analyze-alignment
+  %(prog)s --input sequences.fasta --analyze-composition --analyze-alignment
 
   # Composition and validation only
   %(prog)s --input sequences.fasta --analyze-composition --min-length 50
@@ -63,7 +62,7 @@ Examples:
     parser.add_argument(
         "--analyze-secondary",
         action="store_true",
-        help="Analyze secondary structure propensity",
+        help="Removed: exits with an error (see the message)",
     )
     parser.add_argument(
         "--analyze-alignment",
@@ -87,7 +86,13 @@ Examples:
         action="store_true",
         help="Show what would be done without executing",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.analyze_secondary:
+        parser.error(
+            "--analyze-secondary was removed: simple_helix_coil_propensity (a placeholder helix-propensity scale) "
+            "was deleted in commit c09d18a7c (2025-12-26) and has no per-residue replacement in src"
+        )
+    return args
 
 
 def analyze_composition(sequences: dict[str, str], output_dir: Path) -> dict[str, Any]:
@@ -102,7 +107,7 @@ def analyze_composition(sequences: dict[str, str], output_dir: Path) -> dict[str
     """
     logger.info("Analyzing amino acid composition...")
 
-    from metainformant.protein import calculate_aa_composition, is_valid_protein_sequence
+    from metainformant.protein.sequence.sequences import calculate_aa_composition, validate_protein_sequence
 
     results = {
         "aa_composition": {},
@@ -117,7 +122,7 @@ def analyze_composition(sequences: dict[str, str], output_dir: Path) -> dict[str
 
     for seq_id, seq in sequences.items():
         # Validate sequence
-        is_valid = is_valid_protein_sequence(seq)
+        is_valid = validate_protein_sequence(seq)
         results["validation"][seq_id] = is_valid
         if is_valid:
             valid_count += 1
@@ -160,64 +165,6 @@ def analyze_composition(sequences: dict[str, str], output_dir: Path) -> dict[str
     return results
 
 
-def analyze_secondary(sequences: dict[str, str], output_dir: Path) -> dict[str, Any]:
-    """Analyze secondary structure propensity.
-
-    Args:
-        sequences: Dictionary of sequence ID to sequence string
-        output_dir: Output directory for results
-
-    Returns:
-        Dictionary with secondary structure analysis results
-    """
-    logger.info("Analyzing secondary structure propensity...")
-
-    from metainformant.protein import is_valid_protein_sequence, simple_helix_coil_propensity
-
-    results = {
-        "propensity_profiles": {},
-        "mean_propensity": {},
-    }
-
-    all_profiles = []
-    valid_sequences = {}
-
-    for seq_id, seq in sequences.items():
-        if not is_valid_protein_sequence(seq):
-            logger.warning(f"Skipping invalid sequence: {seq_id}")
-            continue
-
-        try:
-            propensity = simple_helix_coil_propensity(seq)
-            results["propensity_profiles"][seq_id] = propensity
-            all_profiles.append(propensity)
-            valid_sequences[seq_id] = seq
-        except Exception as e:
-            logger.warning(f"Could not calculate propensity for {seq_id}: {e}")
-
-    # Calculate mean propensity across all sequences
-    if all_profiles:
-        # Find maximum length
-        max_len = max(len(p) for p in all_profiles)
-
-        # Calculate mean at each position
-        mean_propensity = []
-        for i in range(max_len):
-            values = [p[i] for p in all_profiles if i < len(p)]
-            if values:
-                mean_propensity.append(sum(values) / len(values))
-
-        results["mean_propensity"] = mean_propensity
-        results["num_analyzed"] = len(all_profiles)
-
-    # Save results
-    output_file = output_dir / "secondary_structure_analysis.json"
-    dump_json(results, output_file)
-    logger.info(f"Secondary structure analysis saved to {output_file}")
-
-    return results
-
-
 def analyze_alignment(sequences: dict[str, str], output_dir: Path) -> dict[str, Any]:
     """Perform pairwise alignment analysis.
 
@@ -230,10 +177,11 @@ def analyze_alignment(sequences: dict[str, str], output_dir: Path) -> dict[str, 
     """
     logger.info("Analyzing pairwise alignments...")
 
-    from metainformant.protein import alignment, is_valid_protein_sequence
+    from metainformant.protein.sequence import alignment
+    from metainformant.protein.sequence.sequences import validate_protein_sequence
 
     # Filter to valid sequences
-    valid_seqs = {sid: seq for sid, seq in sequences.items() if is_valid_protein_sequence(seq)}
+    valid_seqs = {sid: seq for sid, seq in sequences.items() if validate_protein_sequence(seq)}
 
     results = {
         "pairwise_identity": {},
@@ -297,8 +245,6 @@ def run_workflow(args):
         logger.info(f"Would write to: {args.output}")
         if args.analyze_composition:
             logger.info("Would perform composition analysis")
-        if args.analyze_secondary:
-            logger.info("Would perform secondary structure analysis")
         if args.analyze_alignment:
             logger.info("Would perform alignment analysis")
         return
@@ -309,10 +255,10 @@ def run_workflow(args):
 
     # Load sequences
     logger.info(f"Loading sequences from {args.input}")
-    from metainformant.protein import parse_fasta
+    from metainformant.protein.sequence.sequences import read_fasta
 
     try:
-        all_sequences = parse_fasta(args.input)
+        all_sequences = read_fasta(args.input)
         logger.info(f"Loaded {len(all_sequences)} sequences")
     except Exception as e:
         logger.error(f"Failed to load sequences: {e}")
@@ -339,22 +285,13 @@ def run_workflow(args):
     }
 
     # Composition analysis (always run if no specific analysis requested, or if explicitly requested)
-    if args.analyze_composition or not any([args.analyze_secondary, args.analyze_alignment]):
+    if args.analyze_composition or not args.analyze_alignment:
         try:
             comp_results = analyze_composition(sequences, output_dir)
             workflow_results["analyses"]["composition"] = comp_results
         except Exception as e:
             logger.error(f"Composition analysis failed: {e}", exc_info=True)
             workflow_results["analyses"]["composition"] = {"error": str(e)}
-
-    # Secondary structure analysis
-    if args.analyze_secondary:
-        try:
-            sec_results = analyze_secondary(sequences, output_dir)
-            workflow_results["analyses"]["secondary"] = sec_results
-        except Exception as e:
-            logger.error(f"Secondary structure analysis failed: {e}", exc_info=True)
-            workflow_results["analyses"]["secondary"] = {"error": str(e)}
 
     # Alignment analysis
     if args.analyze_alignment:
@@ -375,6 +312,7 @@ def run_workflow(args):
 
 def main():
     """Main entry point."""
+    configure_logging_from_env()
     args = parse_args()
 
     # Setup logging level

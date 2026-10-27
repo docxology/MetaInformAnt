@@ -19,7 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core.io import dump_json, ensure_directory
-from metainformant.core.utils.logging import get_logger
+from metainformant.core.utils.logging import configure_logging_from_env, get_logger
 
 logger = get_logger(__name__)
 
@@ -143,7 +143,7 @@ def run_workflow(args):
 
     # Integrate omics data
     logger.info("Integrating omics data...")
-    from metainformant.multiomics import integrate_omics_data
+    from metainformant.multiomics.analysis.integration import integrate_omics_data
 
     try:
         omics_data = integrate_omics_data(data_dict)
@@ -166,7 +166,7 @@ def run_workflow(args):
     if args.joint_pca:
         try:
             logger.info(f"Performing joint PCA with {args.n_components} components...")
-            from metainformant.multiomics import joint_pca
+            from metainformant.multiomics.analysis.integration import joint_pca
 
             embeddings, loadings, variance = joint_pca(omics_data, n_components=args.n_components, standardize=True)
 
@@ -195,7 +195,7 @@ def run_workflow(args):
     if args.joint_nmf:
         try:
             logger.info(f"Performing joint NMF with {args.n_components} components...")
-            from metainformant.multiomics import joint_nmf
+            from metainformant.multiomics.analysis.integration import joint_nmf
 
             W, H = joint_nmf(omics_data, n_components=args.n_components, max_iter=200, random_state=42)
 
@@ -224,7 +224,7 @@ def run_workflow(args):
         if len(omics_data.layer_names) >= 2:
             try:
                 logger.info(f"Performing canonical correlation analysis with {args.n_components} components...")
-                from metainformant.multiomics import canonical_correlation
+                from metainformant.multiomics.analysis.integration import canonical_correlation
 
                 layer1, layer2 = omics_data.layer_names[0], omics_data.layer_names[1]
                 X_c, Y_c, X_w, Y_w, correlations = canonical_correlation(
@@ -262,6 +262,7 @@ def run_workflow(args):
 
 def main():
     """Main entry point."""
+    configure_logging_from_env()
     args = parse_args()
 
     # Setup logging level

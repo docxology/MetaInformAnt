@@ -15,13 +15,18 @@ import logging
 import sys
 from pathlib import Path
 
+import pandas as pd
+
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core.io import dump_json, ensure_directory, read_csv
-from metainformant.core.utils.logging import get_logger
+from metainformant.core.utils.logging import configure_logging_from_env, get_logger
 
 logger = get_logger(__name__)
+
+# obs column written by leiden_clustering and read back by the marker-gene step
+CLUSTER_KEY = "leiden_cluster"
 
 
 def parse_args():
@@ -133,14 +138,14 @@ def run_workflow(args):
 
         # Convert to SingleCellData format
 
-        from metainformant.singlecell import SingleCellData
+        from metainformant.singlecell.data.preprocessing import SingleCellData
 
         # Assuming genes are columns, cells are rows
         counts = df.values
         gene_names = list(df.columns)
         cell_names = list(df.index) if hasattr(df.index, "tolist") else [f"cell_{i}" for i in range(len(df))]
 
-        data = SingleCellData(counts=counts, gene_names=gene_names, cell_names=cell_names)
+        data = SingleCellData(X=counts, obs=pd.DataFrame(index=cell_names), var=pd.DataFrame(index=gene_names))
     except Exception as e:
         logger.error(f"Failed to load data: {e}")
         raise
@@ -148,8 +153,8 @@ def run_workflow(args):
     workflow_results = {
         "input_file": str(args.input),
         "output_dir": str(output_dir),
-        "n_cells": data.n_cells,
-        "n_genes": data.n_genes,
+        "n_cells": data.n_obs,
+        "n_genes": data.n_vars,
         "analyses": {},
     }
 
@@ -157,16 +162,16 @@ def run_workflow(args):
     if args.qc:
         try:
             logger.info("Performing quality control...")
-            from metainformant.singlecell import calculate_qc_metrics, filter_cells
+            from metainformant.singlecell.data.preprocessing import calculate_qc_metrics, filter_cells
 
             data = calculate_qc_metrics(data)
             data = filter_cells(data, min_genes=200, max_pct_mt=20.0)
 
             workflow_results["analyses"]["qc"] = {
-                "n_cells_after_filtering": data.n_cells,
-                "n_genes_after_filtering": data.n_genes,
+                "n_cells_after_filtering": data.n_obs,
+                "n_genes_after_filtering": data.n_vars,
             }
-            logger.info(f"After QC: {data.n_cells} cells, {data.n_genes} genes")
+            logger.info(f"After QC: {data.n_obs} cells, {data.n_vars} genes")
         except Exception as e:
             logger.error(f"QC failed: {e}", exc_info=True)
             workflow_results["analyses"]["qc"] = {"error": str(e)}
@@ -175,7 +180,7 @@ def run_workflow(args):
     if args.normalize:
         try:
             logger.info("Normalizing counts...")
-            from metainformant.singlecell import log_transform, normalize_counts
+            from metainformant.singlecell.data.preprocessing import log_transform, normalize_counts
 
             data = normalize_counts(data)
             data = log_transform(data)
@@ -189,7 +194,7 @@ def run_workflow(args):
     if args.pca:
         try:
             logger.info(f"Computing PCA with {args.n_components} components...")
-            from metainformant.singlecell import compute_pca, select_hvgs
+            from metainformant.singlecell.analysis.pca_methods import compute_pca, select_hvgs
 
             data = select_hvgs(data, n_top_genes=2000)
             data = compute_pca(data, n_components=args.n_components)
@@ -206,9 +211,10 @@ def run_workflow(args):
     if args.umap:
         try:
             logger.info("Computing UMAP...")
-            from metainformant.singlecell import compute_neighbors, compute_umap
+            from metainformant.singlecell.analysis.nonlinear_methods import compute_neighbors, compute_umap
+            from metainformant.singlecell.analysis.pca_methods import compute_pca, select_hvgs
 
-            if not hasattr(data, "pca") or data.pca is None:
+            if "X_pca" not in data.obsm:
                 # Need PCA first
                 data = select_hvgs(data, n_top_genes=2000)
                 data = compute_pca(data, n_components=50)
@@ -225,13 +231,13 @@ def run_workflow(args):
     if args.cluster:
         try:
             logger.info(f"Performing clustering (resolution={args.resolution})...")
-            from metainformant.singlecell import leiden_clustering
+            from metainformant.singlecell.analysis.clustering import leiden_clustering
 
             data = leiden_clustering(data, resolution=args.resolution, random_state=42)
 
             # Count clusters
-            if hasattr(data, "obs") and "cluster" in data.obs:
-                n_clusters = len(data.obs["cluster"].unique())
+            if hasattr(data, "obs") and CLUSTER_KEY in data.obs:
+                n_clusters = len(data.obs[CLUSTER_KEY].unique())
             else:
                 n_clusters = "unknown"
 
@@ -249,12 +255,12 @@ def run_workflow(args):
     if args.find_markers:
         try:
             logger.info("Finding marker genes...")
-            from metainformant.singlecell import find_marker_genes
+            from metainformant.singlecell.analysis.clustering import find_marker_genes
 
-            markers = find_marker_genes(data, cluster_key="cluster")
+            markers = find_marker_genes(data, groupby=CLUSTER_KEY)
 
             workflow_results["analyses"]["markers"] = {
-                "n_markers": len(markers) if isinstance(markers, (list, dict)) else "unknown",
+                "n_markers": len(markers),
                 "status": "completed",
             }
         except Exception as e:
@@ -271,6 +277,7 @@ def run_workflow(args):
 
 def main():
     """Main entry point."""
+    configure_logging_from_env()
     args = parse_args()
 
     if args.verbose:
