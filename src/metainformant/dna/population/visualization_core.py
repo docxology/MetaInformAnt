@@ -180,6 +180,7 @@ def plot_population_diversity(
         >>> diversity = {"pop1": 0.01, "pop2": 0.015, "pop3": 0.008}
         >>> plot = plot_population_diversity(diversity)
     """
+    output = output_file or output_path
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -202,9 +203,9 @@ def plot_population_diversity(
 
     plt.grid(True, alpha=0.3, axis="y")
 
-    if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches="tight")
-        logger.info(f"Saved population diversity plot to {output_file}")
+    if output:
+        plt.savefig(output, dpi=300, bbox_inches="tight")
+        logger.info(f"Saved population diversity plot to {output}")
 
     fig = plt.gcf()
     plt.close(fig)
@@ -394,6 +395,11 @@ def create_population_summary_plot(
 ) -> Optional[Any]:
     """Create comprehensive population summary plot.
 
+    One panel per metric, in alphabetical order of the metric names, with one bar per population in the order
+    the populations were given. A population that does not report a metric (the key is absent, or its value is
+    ``None``, NaN or infinite) gets no bar in that panel and an "n/a" mark instead: a missing value is not
+    drawn as a measured zero.
+
     Args:
         population_data: Dictionary with population statistics
         output_file: Optional output file path
@@ -419,43 +425,51 @@ def create_population_summary_plot(
 
     # Extract metrics
     populations = list(population_data.keys())
-    metrics = {}
 
-    # Get all available metrics
-    all_metrics: set[str] = set()
-    for pop_data in population_data.values():
-        all_metrics.update(pop_data.keys())
+    # Every metric any population reports, sorted so the panel order does not depend on set iteration order
+    metric_names = sorted({metric for pop_data in population_data.values() for metric in pop_data})
 
-    # Prepare data for plotting
-    for metric in all_metrics:
-        metrics[metric] = [population_data[pop].get(metric, 0) for pop in populations]
-
-    n_metrics = len(metrics)
+    n_metrics = len(metric_names)
     if n_metrics == 0:
         return None
 
     # Create subplots
-    fig, axes = plt.subplots(n_metrics, 1, figsize=(10, 4 * n_metrics))
-    if n_metrics == 1:
-        axes = [axes]
+    fig, axes_grid = plt.subplots(n_metrics, 1, figsize=(10, 4 * n_metrics), squeeze=False)
+    positions = np.arange(len(populations))
 
-    for i, (metric, values) in enumerate(metrics.items()):
-        ax = axes[i]
-        bars = ax.bar(populations, values, color="lightcoral", alpha=0.7, edgecolor="black")
+    for ax, metric in zip(axes_grid[:, 0], metric_names):
+        # A missing value stays missing: it is neither plotted nor treated as zero
+        present_x: List[int] = []
+        present_values: List[float] = []
+        missing_x: List[int] = []
+        for i, pop in enumerate(populations):
+            raw = population_data[pop].get(metric)
+            if raw is not None and np.isfinite(raw):
+                present_x.append(i)
+                present_values.append(float(raw))
+            else:
+                missing_x.append(i)
+
+        bars = ax.bar(present_x, present_values, color="lightcoral", alpha=0.7, edgecolor="black")
+        ax.set_xticks(positions)
+        ax.set_xticklabels(populations)
         ax.set_ylabel(metric.replace("_", " ").title())
         ax.set_title(f'{metric.replace("_", " ").title()} by Population')
         ax.grid(True, alpha=0.3, axis="y")
 
-        # Add value labels
-        for bar, value in zip(bars, values):
+        # Add value labels, and an "n/a" mark where a population has no value for this metric
+        offset = max(present_values) * 0.01 if present_values else 0.0
+        for bar, value in zip(bars, present_values):
             ax.text(
                 bar.get_x() + bar.get_width() / 2,
-                bar.get_height() + max(values) * 0.01,
+                bar.get_height() + offset,
                 f"{value:.4f}",
                 ha="center",
                 va="bottom",
                 fontsize=8,
             )
+        for i in missing_x:
+            ax.text(i, 0, "n/a", ha="center", va="bottom", fontsize=8, color="gray")
 
     plt.tight_layout()
 

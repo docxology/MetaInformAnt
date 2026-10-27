@@ -8,7 +8,7 @@ Information theory visualization functions for information-theoretic analysis in
 
 Plot Shannon entropy as a function of k-mer size. `entropy_data` maps a label (for example a
 sequence or sample name) to a list of entropy values, one per k-mer size (k = 1, 2, ...). Extra keyword
-arguments go to `Axes.plot` (`label` and `marker` are set by the function).
+arguments go to `Axes.plot` (`label` is set by the function; `marker` defaults to `'o'` and a keyword argument overrides it).
 
 **Example:**
 ```python
@@ -23,7 +23,7 @@ ax = plot_entropy_profile(entropy_data)
 
 ### `plot_mutual_information_matrix(mi_matrix, labels=None, *, ax=None, output_path=None, **kwargs)`
 
-Plot a mutual information matrix as a heatmap with a colorbar. `mi_matrix` must be a square NumPy array; `labels`, if given, must be a `list` with one label per row and column.
+Plot a mutual information matrix as a heatmap with a colorbar. `mi_matrix` must be a square NumPy array; `labels`, if given, must be a `list` with one label per row and column. Extra keyword arguments go to `Axes.imshow`, where `cmap` defaults to `'viridis'` (for example `cmap='magma'` replaces it); `figsize` sizes a figure the function creates.
 
 **Example:**
 ```python
@@ -40,7 +40,7 @@ ax = plot_mutual_information_matrix(mi_matrix, labels=["gene_a", "gene_b", "gene
 
 ### `plot_renyi_spectra(renyi_data, alpha_values, *, ax=None, output_path=None, **kwargs)`
 
-Plot Rényi entropy as a function of the order α. `renyi_data` maps a label to a list of entropy values, one per entry of `alpha_values`, and `alpha_values` is a `list` of the α values used. When 1.0 is among the α values a dashed vertical line marks Shannon entropy (α = 1). Extra keyword arguments go to `Axes.plot` (`label` and `marker` are set by the function).
+Plot Rényi entropy as a function of the order α. `renyi_data` maps a label to a list of entropy values, one per entry of `alpha_values`, and `alpha_values` is a `list` of the α values used. When 1.0 is among the α values a dashed vertical line marks Shannon entropy (α = 1). Extra keyword arguments go to `Axes.plot` (`label` is set by the function; `marker` defaults to `'o'` and a keyword argument overrides it).
 
 **Example:**
 ```python
@@ -56,7 +56,7 @@ ax = plot_renyi_spectra(renyi_data, alpha_values)
 
 ### `plot_information_landscape(landscape_data, x_coords=None, y_coords=None, *, ax=None, output_path=None, **kwargs)`
 
-Plot a 2-D array of information values as a filled contour map with a colorbar. Rows of `landscape_data` run along y and columns along x; `x_coords` and `y_coords` (NumPy arrays of matching length) default to the array indices.
+Plot a 2-D array of information values as a filled contour map with a colorbar. Rows of `landscape_data` run along y and columns along x; `x_coords` and `y_coords` (NumPy arrays of matching length) default to the array indices. Extra keyword arguments go to `Axes.contourf`, where `cmap` defaults to `'viridis'` and `levels` to 20 (a list of levels replaces the count).
 
 **Example:**
 ```python
@@ -71,7 +71,7 @@ ax = plot_information_landscape(landscape, x_coords=x, y_coords=y)
 
 ### `plot_information_network(nodes, edges, *, ax=None, output_path=None, **kwargs)`
 
-Plot a directed information flow network with NetworkX. `nodes` is a list of node names and `edges` a list of `(source, target, weight)` tuples whose endpoints must all appear in `nodes`. Node size follows the node's degree and edge width follows the weight, so use non-negative weights.
+Plot a directed information flow network with NetworkX. `nodes` is a list of node names and `edges` a list of `(source, target, weight)` tuples whose endpoints must all appear in `nodes`. Node size follows the node's degree and edge width follows the weight, so use non-negative weights. `layout_kwargs={...}` goes to `networkx.spring_layout` (for example `{'seed': 3}` for a reproducible layout); the other keyword arguments go to `networkx.draw` and override its defaults here: `with_labels=True`, `node_color='lightblue'`, `node_size` (300 plus 100 per unit of degree), `edge_color='gray'`, `width` (twice the weight), `alpha=0.8` and `arrows=True`.
 
 **Example:**
 ```python

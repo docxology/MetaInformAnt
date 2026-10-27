@@ -5,14 +5,20 @@ This module provides functions to generate complete sets of GWAS plots.
 
 from __future__ import annotations
 
+import gzip
+import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, TextIO, Union
 
 import numpy as np
 
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
+
+#: Field delimiter of each text table format (``None`` splits on any run of whitespace).
+_TEXT_TABLE_DELIMITERS: Dict[str, Optional[str]] = {".tsv": "\t", ".csv": ",", ".txt": None}
+_SUPPORTED_TABLE_FORMATS = ".npy, .npz, .tsv, .csv, .txt or .json"
 
 
 def _get_p_value_column(df: Any) -> str:
@@ -54,6 +60,192 @@ def _get_pos_column(df: Any) -> str:
     raise KeyError(f"No position column found. Available columns: {list(df.columns)}")
 
 
+def _is_number(cell: str) -> bool:
+    try:
+        float(cell)
+    except ValueError:
+        return False
+    return True
+
+
+def _read_numeric_table(path: Path) -> np.ndarray:
+    """Read a ``.tsv``/``.csv``/``.txt`` table of numbers into a 2-D float array.
+
+    A header row (a first row with any non-numeric cell) and a column of sample labels (a first column that
+    is non-numeric in every data row) are dropped, so both a bare matrix and a pandas-style table with
+    sample names load the same way. Blank lines and ``#`` comment lines are ignored.
+
+    Raises:
+        ValueError: If the file has no data rows, is not rectangular, or has non-numeric cells.
+    """
+    delimiter = _TEXT_TABLE_DELIMITERS[path.suffix.lower()]
+    rows: List[List[str]] = []
+    with open(path, newline="") as handle:
+        for line in handle:
+            text = line.strip()
+            if not text or text.startswith("#"):
+                continue
+            rows.append([cell.strip() for cell in (text.split(delimiter) if delimiter else text.split())])
+
+    if rows and not all(_is_number(cell) for cell in rows[0]):
+        rows = rows[1:]  # header
+    if not rows:
+        raise ValueError(f"{path.name} contains no data rows")
+    if all(not _is_number(row[0]) for row in rows):
+        rows = [row[1:] for row in rows]  # sample labels
+    width = len(rows[0])
+    if width == 0 or any(len(row) != width for row in rows):
+        raise ValueError(f"{path.name} is not a rectangular table of numbers")
+    try:
+        return np.array([[float(cell) for cell in row] for row in rows], dtype=float)
+    except ValueError as exc:
+        raise ValueError(f"{path.name} contains non-numeric cells") from exc
+
+
+def _first_nonempty(payload: Dict[str, Any], keys: List[str]) -> Optional[List[float]]:
+    """First non-empty sequence among ``payload[key]`` for ``keys``, as a list of floats."""
+    for key in keys:
+        values = payload.get(key)
+        if values is not None and len(values) > 0:
+            return [float(v) for v in np.ravel(values)]
+    return None
+
+
+def _load_pca_file(path: Path) -> Dict[str, Any]:
+    """Load principal components from a ``.npy``, ``.npz``, ``.tsv``, ``.csv``, ``.txt`` or ``.json`` file.
+
+    Orientation is always ``(n_samples, n_components)``: arrays and tables are read as they are, an ``.npz``
+    prefers its ``pcs`` array, and the ``components`` list the GWAS workflow writes to JSON (one row per
+    component) is transposed.
+
+    Returns:
+        ``{"pcs": ndarray}``, plus ``"explained_variance_ratio"`` (list of floats) when the file carries it.
+
+    Raises:
+        ValueError: If the format is unsupported or the content is not a 2-D numeric table.
+    """
+    suffix = path.suffix.lower()
+    explained: Optional[List[float]] = None
+    if suffix == ".npy":
+        pcs = np.load(path, allow_pickle=False)
+    elif suffix == ".npz":
+        with np.load(path, allow_pickle=False) as archive:
+            names = list(archive.files)
+            if not names:
+                raise ValueError(f"{path.name} contains no arrays")
+            if "pcs" in names:
+                pcs = archive["pcs"]
+            elif "components" in names:
+                pcs = archive["components"].T
+            else:
+                pcs = archive[names[0]]
+            variance_keys = ["explained_variance_ratio", "explained_variance"]
+            explained = _first_nonempty({k: archive[k] for k in variance_keys if k in names}, variance_keys)
+    elif suffix == ".json":
+        payload = json.loads(path.read_text())
+        if isinstance(payload, dict):
+            if "pcs" in payload:
+                pcs = np.asarray(payload["pcs"], dtype=float)
+            elif "components" in payload:
+                pcs = np.asarray(payload["components"], dtype=float).T
+            else:
+                raise ValueError(f"{path.name} has neither a 'pcs' nor a 'components' entry")
+            explained = _first_nonempty(payload, ["explained_variance_ratio", "explained_variance", "variance"])
+        else:
+            pcs = np.asarray(payload, dtype=float)
+    elif suffix in _TEXT_TABLE_DELIMITERS:
+        pcs = _read_numeric_table(path)
+    else:
+        raise ValueError(f"Unsupported file format {suffix!r} for {path.name}; use {_SUPPORTED_TABLE_FORMATS}")
+
+    pcs = np.asarray(pcs, dtype=float)
+    if pcs.ndim != 2 or pcs.size == 0:
+        raise ValueError(
+            f"PCA data in {path.name} must be a 2-D (n_samples, n_components) table, got shape {pcs.shape}"
+        )
+    loaded: Dict[str, Any] = {"pcs": pcs}
+    if explained is not None:
+        loaded["explained_variance_ratio"] = explained
+    return loaded
+
+
+def _load_kinship_file(path: Path) -> np.ndarray:
+    """Load a square kinship matrix from a ``.npy``, ``.npz``, ``.tsv``, ``.csv``, ``.txt`` or ``.json`` file.
+
+    An ``.npz`` is read from its ``kinship_matrix``/``kinship``/``matrix`` array (else its first array); a
+    JSON file may be the matrix itself or a result dict with ``kinship_matrix`` or ``matrix``.
+
+    Raises:
+        ValueError: If the format is unsupported or the content is not a square numeric matrix.
+    """
+    suffix = path.suffix.lower()
+    if suffix == ".npy":
+        matrix = np.load(path, allow_pickle=False)
+    elif suffix == ".npz":
+        with np.load(path, allow_pickle=False) as archive:
+            names = list(archive.files)
+            if not names:
+                raise ValueError(f"{path.name} contains no arrays")
+            key = next((k for k in ("kinship_matrix", "kinship", "matrix") if k in names), names[0])
+            matrix = archive[key]
+    elif suffix == ".json":
+        payload = json.loads(path.read_text())
+        if isinstance(payload, dict):
+            payload = payload.get("kinship_matrix", payload.get("matrix"))
+            if payload is None:
+                raise ValueError(f"{path.name} has neither a 'kinship_matrix' nor a 'matrix' entry")
+        matrix = np.asarray(payload, dtype=float)
+    elif suffix in _TEXT_TABLE_DELIMITERS:
+        matrix = _read_numeric_table(path)
+    else:
+        raise ValueError(f"Unsupported file format {suffix!r} for {path.name}; use {_SUPPORTED_TABLE_FORMATS}")
+
+    matrix = np.asarray(matrix, dtype=float)
+    if matrix.ndim != 2 or matrix.shape[0] != matrix.shape[1]:
+        raise ValueError(f"Kinship matrix in {path.name} must be square, got shape {matrix.shape}")
+    return matrix
+
+
+def _read_vcf_sites(path: Path) -> List[Dict[str, Any]]:
+    """Read CHROM, POS, REF and ALT of every record of a plain or gzip-compressed VCF.
+
+    ``ALT`` is kept verbatim (comma-separated for a multi-allelic site), so the transition/transversion
+    count, which only classifies single-base REF/ALT pairs, never guesses which allele to use.
+    """
+    handle: TextIO = gzip.open(path, "rt") if path.suffix.lower() == ".gz" else open(path, "rt")
+    sites: List[Dict[str, Any]] = []
+    with handle:
+        for line in handle:
+            if line.startswith("#") or not line.strip():
+                continue
+            fields = line.rstrip("\r\n").split("\t", 5)
+            if len(fields) < 5:
+                continue
+            chrom, pos, _variant_id, ref, alt = fields[:5]
+            try:
+                position = int(pos)
+            except ValueError:
+                continue
+            sites.append({"CHROM": chrom, "POS": position, "REF": ref, "ALT": alt})
+    return sites
+
+
+def _close_figure(figure: Any) -> None:
+    """Close a figure returned by a plotting helper once the helper has saved it.
+
+    The helpers save their figure and hand it back still open; closing it here keeps repeated suite runs from
+    accumulating open pyplot figures (matplotlib warns at 20, and this repository's test configuration turns
+    that warning into an error that silently drops the plots drawn afterwards). Non-figures are ignored.
+    """
+    try:
+        import matplotlib.pyplot as plt
+        from matplotlib.figure import Figure
+    except ImportError:
+        return
+    if isinstance(figure, Figure):
+        plt.close(figure)
+
+
 def generate_all_plots(
     association_results: Union[Path, List[Any]],
     output_dir: Path,
@@ -75,18 +267,23 @@ def generate_all_plots(
     Args:
         association_results: Path to association results file, or a list of results
         output_dir: Output directory for plots
-        pca_file: Optional PCA file for population structure plots
-        kinship_file: Optional kinship matrix file
-        vcf_file: Optional VCF file for variant plots
+        pca_file: Optional principal-component file (``.npy``, ``.npz``, ``.tsv``, ``.csv``, ``.txt`` or
+            ``.json``; one row per sample, one column per component). It gets its own PCA plot and, unless
+            ``pca_data`` is given, feeds every PCA-dependent plot including the summary panel.
+        kinship_file: Optional square kinship matrix file in the same formats. It gets its own heatmap and,
+            unless ``kinship_matrix`` is given, feeds every kinship-dependent plot including the summary panel.
+        vcf_file: Optional VCF file (plain or ``.gz``). Produces a variant-density plot and a
+            transition/transversion plot, and records ``vcf_variants`` and ``ts_tv_ratio`` in the statistics.
         significance_threshold: P-value threshold for significance
         metadata: Optional sample metadata dict {sample_id: {latitude, longitude,
             population, ...}} for geographic and population-aware plots.
         kinship_matrix: Optional kinship matrix (ndarray or list of lists) for
-            dendrogram and clustermap visualizations.
+            dendrogram, clustermap and summary-panel visualizations. Wins over ``kinship_file``.
         genotype_matrix: Optional genotype matrix (variants x samples) for
             LD decay, genotype-phenotype, and top-hits plots.
         pca_data: Optional PCA data dict with 'pcs', 'explained_variance_ratio',
-            and optionally 'sample_ids' for interactive and composite PCA plots.
+            and optionally 'sample_ids' for interactive, composite and summary-panel PCA plots.
+            Wins over ``pca_file``.
         finemapping_results: Optional list of fine-mapping association results
             for credible set and PIP plots.
         h2_data: Optional heritability data dict from partition_heritability_by_chromosome
@@ -99,6 +296,7 @@ def generate_all_plots(
     Returns:
         Dictionary with paths to generated plots, summary statistics,
         'status' ('completed' or 'failed'), and 'num_plots_generated' count.
+        Every figure the call opens is saved and then closed, so it leaves no pyplot figure open.
 
     Example:
         >>> results = generate_all_plots(results_file, output_dir)
@@ -181,6 +379,7 @@ def generate_all_plots(
             if plot:
                 results["plots"]["manhattan"] = str(manhattan_file)
                 results["files_created"].append(str(manhattan_file))
+            _close_figure(plot)
         except Exception as e:
             logger.warning(f"Failed to create Manhattan plot: {e}")
 
@@ -194,6 +393,7 @@ def generate_all_plots(
             if plot:
                 results["plots"]["qq"] = str(qq_file)
                 results["files_created"].append(str(qq_file))
+            _close_figure(plot)
         except Exception as e:
             logger.warning(f"Failed to create Q-Q plot: {e}")
 
@@ -218,6 +418,7 @@ def generate_all_plots(
                 if plot:
                     results["plots"][f"regional_{i + 1}"] = str(regional_file)
                     results["files_created"].append(str(regional_file))
+                _close_figure(plot)
         except Exception as e:
             logger.warning(f"Failed to create regional plots: {e}")
 
@@ -231,38 +432,91 @@ def generate_all_plots(
                 if plot:
                     results["plots"]["effect_size"] = str(effect_file)
                     results["files_created"].append(str(effect_file))
+                _close_figure(plot)
             except Exception as e:
                 logger.warning(f"Failed to create effect size plot: {e}")
 
-        # Generate PCA plot if PCA data available
-        if pca_file and Path(pca_file).exists():
-            try:
-                pca_file_data = np.load(pca_file)
-                pca_plot_file = output_dir / "pca_plot.png"
+        # Generate PCA plot if PCA data available. The file is read in whichever supported format it is in
+        # (see _load_pca_file); a file that cannot be read is reported with the reason, not silently skipped.
+        pca_file_data: Optional[Dict[str, Any]] = None
+        if pca_file:
+            if Path(pca_file).exists():
+                try:
+                    pca_file_data = _load_pca_file(Path(pca_file))
+                    pca_plot_file = output_dir / "pca_plot.png"
 
-                from ..general import pca_plot
+                    from ..general import pca_plot
 
-                plot = pca_plot(pca_file_data, output_path=pca_plot_file)
-                if plot:
-                    results["plots"]["pca"] = str(pca_plot_file)
-                    results["files_created"].append(str(pca_plot_file))
-            except Exception as e:
-                logger.warning(f"Failed to create PCA plot: {e}")
+                    # pca_plot takes (components, variance, loadings) with one row per component
+                    plot = pca_plot(
+                        (pca_file_data["pcs"].T, [], []),
+                        output_path=pca_plot_file,
+                        explained_var=pca_file_data.get("explained_variance_ratio"),
+                    )
+                    if plot:
+                        results["plots"]["pca"] = str(pca_plot_file)
+                        results["files_created"].append(str(pca_plot_file))
+                    _close_figure(plot)
+                except Exception as e:
+                    logger.warning(f"Failed to create PCA plot from {pca_file}: {e}")
+            else:
+                logger.warning(f"PCA file not found: {pca_file}")
 
         # Generate kinship heatmap if kinship data available
-        if kinship_file and Path(kinship_file).exists():
-            try:
-                kinship_data = np.load(kinship_file)
-                kinship_plot_file = output_dir / "kinship_heatmap.png"
+        kinship_file_data: Optional[np.ndarray] = None
+        if kinship_file:
+            if Path(kinship_file).exists():
+                try:
+                    kinship_file_data = _load_kinship_file(Path(kinship_file))
+                    kinship_plot_file = output_dir / "kinship_heatmap.png"
 
-                from ..general import kinship_heatmap
+                    from ..general import kinship_heatmap
 
-                plot = kinship_heatmap(kinship_data, output_path=kinship_plot_file)
-                if plot:
-                    results["plots"]["kinship"] = str(kinship_plot_file)
-                    results["files_created"].append(str(kinship_plot_file))
-            except Exception as e:
-                logger.warning(f"Failed to create kinship heatmap: {e}")
+                    plot = kinship_heatmap(kinship_file_data, output_path=kinship_plot_file)
+                    if plot:
+                        results["plots"]["kinship"] = str(kinship_plot_file)
+                        results["files_created"].append(str(kinship_plot_file))
+                    _close_figure(plot)
+                except Exception as e:
+                    logger.warning(f"Failed to create kinship heatmap from {kinship_file}: {e}")
+            else:
+                logger.warning(f"Kinship file not found: {kinship_file}")
+
+        # Data passed in memory wins; the files fill in whatever was not passed, so the summary panel and
+        # every other PCA/kinship-dependent plot below see the same inputs the standalone plots used
+        if pca_data is None:
+            pca_data = pca_file_data
+        if kinship_matrix is None:
+            kinship_matrix = kinship_file_data
+
+        # Variant plots from the VCF: variant density along the genome and the transition/transversion spectrum
+        if vcf_file:
+            vcf_path = Path(vcf_file)
+            if not vcf_path.exists():
+                logger.warning(f"VCF file not found, no variant plots made: {vcf_path}")
+            else:
+                try:
+                    from ..genomic.variants import transition_transversion_plot, variant_density_plot
+
+                    vcf_sites = _read_vcf_sites(vcf_path)
+                    if not vcf_sites:
+                        logger.warning(f"No variant records in {vcf_path}, no variant plots made")
+                    else:
+                        results["statistics"]["vcf_variants"] = len(vcf_sites)
+
+                        density_file = output_dir / "variant_density.png"
+                        if variant_density_plot(vcf_sites, output_file=density_file).get("status") == "success":
+                            results["plots"]["variant_density"] = str(density_file)
+                            results["files_created"].append(str(density_file))
+
+                        tstv_file = output_dir / "transition_transversion.png"
+                        tstv_result = transition_transversion_plot(vcf_sites, output_file=tstv_file)
+                        if tstv_result.get("status") == "success":
+                            results["plots"]["transition_transversion"] = str(tstv_file)
+                            results["files_created"].append(str(tstv_file))
+                            results["statistics"]["ts_tv_ratio"] = tstv_result["ts_tv_ratio"]
+                except Exception as e:
+                    logger.warning(f"Failed to create VCF variant plots from {vcf_path}: {e}")
 
         # Generate enhanced visualizations from new modules
         # Phenotype distribution (if phenotype data embedded in results)
@@ -287,6 +541,8 @@ def generate_all_plots(
             summary_file = output_dir / "gwas_summary_panel.png"
             result = gwas_summary_panel(
                 records,
+                pca_data=pca_data,
+                kinship_matrix=kinship_matrix,
                 output_file=summary_file,
                 significance_threshold=significance_threshold,
             )

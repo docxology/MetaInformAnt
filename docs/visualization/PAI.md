@@ -22,5 +22,5 @@
 - **Main docs**: [index.md](../visualization/index.md) — Module overview, installation, style guide
 - **API reference**: [plots.md](../visualization/plots.md) — Function signatures by plot category (genomic, analysis, network, phylogeny, dashboard)
 - **Gallery**: [gallery.md](../visualization/gallery.md) — Visual examples with full source code
-- **Export**: export.md — Format/size/DPI guidelines for journals and posters
+- **Styling and export**: [styling.md](styling.md) — themes, palettes and figure settings
 - **Related modules**: [DNA](../dna/index.md) for phylogeny trees; [GWAS](../gwas/index.md) for Manhattan/QQ; [RNA](../rna/index.md) for heatmaps/PCA; [Quality](../quality/index.md) for QC plots

@@ -8,7 +8,7 @@ Genomics-specific visualization including Manhattan plots, volcano plots, expres
 |------|---------|
 | `expression.py` | Expression heatmaps, enrichment barplots, differential expression plots |
 | `genomics.py` | Manhattan plots, volcano plots, regional plots, chromosome ideograms |
-| `networks.py` | Network layouts: basic, circular, hierarchical, force-directed, community |
+| `networks.py` | Network layouts: basic, circular, hierarchical (columns by distance from the nearest root), force-directed, community |
 | `trees.py` | Phylogenetic tree plots: rectangular, circular, unrooted, annotated |
 
 ## Key Functions
@@ -19,7 +19,7 @@ Genomics-specific visualization including Manhattan plots, volcano plots, expres
 | `plot_differential_expression()` | Volcano or MA plot for DE results |
 | `manhattan_plot()` | Genome-wide association Manhattan plot |
 | `volcano_plot()` | -log10(p) vs fold-change scatter |
-| `regional_plot()` | Locus zoom regional association plot |
+| `regional_plot()` | Locus zoom regional association plot, with an optional recombination-rate track from a `recombination_rate` DataFrame (`BP`, `RATE`, optional `CHR`) |
 | `chromosome_ideogram()` | Chromosome banding pattern diagram |
 | `plot_network_basic()` | Spring-layout network visualization |
 | `plot_phylo_tree()` | Rectangular phylogenetic tree |

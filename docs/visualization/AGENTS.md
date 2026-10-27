@@ -42,14 +42,14 @@ End-to-end plotting workflows:
 ## Rule Constraints
 1. **Vector first** — Default output format is PDF (vector) for publications; PNG for web.
 2. **Accessible colors** — Use colorblind-safe palettes (`colorbrewer` Set2, viridis); avoid red-green alone.
-3. **Reproducible style** — Theme via `set_style("meta")` for consistent branding.
-4. **Caption-ready** — Every figure must support `fig.to_caption()` generating LaTeX/GMarkdown caption snippets.
+3. **Reproducible style** — Apply a registered theme with `visualization.config.themes.apply_theme(name)` or the `theme(name)` context manager (`list_themes()` shows the names); see [styling.md](styling.md).
+4. **Captions** — Write figure captions in the manuscript or report; figures do not generate caption text.
 
 ## Related Tasks & Guides
 - **Task reference**: [../../tasks/visualize_results.md](../tasks/visualize_results.md) — Quick examples: manhattan, heatmap, network, tree
 - **API reference**: `docs/visualization/plots.md` — Function signatures for all plot types
 - **Gallery**: `docs/visualization/gallery.md` — Image thumbnails and full sample code
-- **Export**: `docs/visualization/export.md` — DPI, size, format guidelines for journals
+- **Styling and export**: [styling.md](styling.md) — themes, palettes and figure settings
 - **Community**: QA for plot issues in `docs/quality/plots.md` (if any)
 
 ## Maintenance Notes

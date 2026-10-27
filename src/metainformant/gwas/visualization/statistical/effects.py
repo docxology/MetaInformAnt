@@ -7,13 +7,21 @@ and regional effect plots.
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Mapping, Optional
 
 import numpy as np
 
 from metainformant.core.utils import logging
 from metainformant.gwas.analysis.correction import lambda_gc_from_p_values
+from metainformant.gwas.visualization.utils import (
+    chromosome_label,
+    chromosome_sort_key,
+    cumulative_chromosome_offsets,
+    get_chromosome,
+    get_position,
+)
 
 logger = logging.get_logger(__name__)
 
@@ -317,20 +325,12 @@ def effect_size_manhattan(
     df = results.dropna(subset=required_cols).copy()
     df["-logP"] = -np.log10(df["P"].clip(lower=1e-300))
 
-    # Create chromosome positions
-    chromosomes = sorted(df["CHR"].unique())
-    chrom_starts = {}
-    current_pos = 0
-
-    for chrom in chromosomes:
-        chrom_starts[chrom] = current_pos
-        chrom_data = df[df["CHR"] == chrom]
-        current_pos += len(chrom_data) + 1000  # Gap between chromosomes
-
-    df["pos"] = df.apply(
-        lambda row: chrom_starts[row["CHR"]] + df[df["CHR"] == row["CHR"]].index.get_loc(row.name),
-        axis=1,
-    )
+    # Chromosomes in natural order, laid end to end as in the other Manhattan plots: a variant's x is its
+    # chromosome's offset plus its genomic position (not its row number within the chromosome)
+    chrom_label = df["CHR"].map({value: chromosome_label(value) for value in df["CHR"].unique()})
+    chromosomes = sorted(set(chrom_label), key=chromosome_sort_key)
+    chrom_offsets = cumulative_chromosome_offsets(df["BP"].groupby(chrom_label).max().to_dict(), chromosomes)
+    df["pos"] = df["BP"] + chrom_label.map(chrom_offsets)
 
     # Color by effect size
     effect_sizes = df["BETA"].abs()
@@ -357,13 +357,13 @@ def effect_size_manhattan(
         label=f"Significance ({significance_threshold:.0e})",
     )
 
-    # Add chromosome labels
+    # Add chromosome labels at the centre of each chromosome's variants
     for chrom in chromosomes:
-        chrom_center = chrom_starts[chrom] + len(df[df["CHR"] == chrom]) / 2
+        chrom_x = df.loc[chrom_label == chrom, "pos"]
         ax.text(
-            chrom_center,
+            (chrom_x.min() + chrom_x.max()) / 2,
             ax.get_ylim()[0] - 0.5,
-            str(chrom),
+            chrom,
             ha="center",
             va="top",
             fontsize=10,
@@ -533,7 +533,7 @@ def effect_size_forest_plot(
             upper_ci = []
 
             for item in sorted_data:
-                chrom = item.get("CHROM", item.get("chr", "?"))
+                chrom = get_chromosome(item, "?")
                 pos = item.get("POS", item.get("pos", 0))
                 beta = item.get("BETA", item.get("beta", 0.0))
                 se = item.get("SE", item.get("se", abs(beta) * 0.3))
@@ -664,12 +664,12 @@ def effect_direction_plot(
             return {"status": "failed", "error": "No results provided"}
 
         # Extract data
-        chromosomes = []
+        chromosomes: list[str] = []
         positions = []
         betas = []
 
         for result in results:
-            chrom = result.get("CHROM", result.get("chr", 1))
+            chrom = chromosome_label(get_chromosome(result, 1))
             pos = result.get("POS", result.get("pos", 0))
             beta = result.get("BETA", result.get("beta", 0))
 
@@ -680,20 +680,14 @@ def effect_direction_plot(
         if not betas:
             return {"status": "failed", "error": "No beta values found"}
 
-        # Create chromosome mapping
-        unique_chroms = sorted(set(str(chrom) for chrom in chromosomes))
-        chrom_to_num = {chrom: i + 1 for i, chrom in enumerate(unique_chroms)}
-
-        # Convert chromosome names to numbers
-        chrom_nums = [chrom_to_num[str(chrom)] for chrom in chromosomes]
-
-        # Calculate x positions
-        x_positions = []
-        current_pos = 0
-
-        for chrom, pos in zip(chrom_nums, positions):
-            x_positions.append(current_pos + pos)
-            current_pos = max(current_pos, x_positions[-1] + 1)
+        # Chromosomes in natural order (1, 2, ..., 10, ..., X), laid end to end: a variant's x position is
+        # its chromosome's offset plus its position on that chromosome
+        unique_chroms = sorted(set(chromosomes), key=chromosome_sort_key)
+        chrom_extent: dict[str, float] = {}
+        for chrom, pos in zip(chromosomes, positions):
+            chrom_extent[chrom] = max(chrom_extent.get(chrom, pos), pos)
+        chrom_offsets = cumulative_chromosome_offsets(chrom_extent, unique_chroms)
+        x_positions = [chrom_offsets[chrom] + pos for chrom, pos in zip(chromosomes, positions)]
 
         # Create plot
         fig, ax = plt.subplots(figsize=figsize)
@@ -705,10 +699,10 @@ def effect_direction_plot(
         # Add zero line
         ax.axhline(y=0, color="black", linestyle="-", alpha=0.5)
 
-        # Add chromosome labels
+        # Add chromosome labels at the mean position of each chromosome's variants
         chrom_centers = []
         for chrom in unique_chroms:
-            chrom_x = [x for x, c in zip(x_positions, chrom_nums) if c == cast(int, chrom)]
+            chrom_x = [x for x, c in zip(x_positions, chromosomes) if c == chrom]
             if chrom_x:
                 chrom_centers.append((chrom, sum(chrom_x) / len(chrom_x)))
 
@@ -745,28 +739,88 @@ def effect_direction_plot(
         return {"status": "failed", "error": str(e)}
 
 
+#: Variant-identifier keys searched when annotations are given as a mapping (the keys ``allelic_series_plot`` reads).
+_VARIANT_ID_KEYS = ("ID", "rsid", "variant_id")
+
+
+def _clean_category(value: Any) -> Optional[str]:
+    """A supplied functional category as text, or None when it is absent (None, NaN or blank)."""
+    if value is None or (isinstance(value, float) and math.isnan(value)):
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _normalise_annotation_keys(annotations: Mapping[Any, Any]) -> Dict[Any, Any]:
+    """Copy of ``annotations`` whose ``(chromosome, position)`` keys are normalised (``1``, ``1.0``, ``"1"`` agree)."""
+    normalised: Dict[Any, Any] = {}
+    for key, category in annotations.items():
+        if isinstance(key, tuple) and len(key) == 2:
+            normalised[(chromosome_label(key[0]), int(key[1]))] = category
+        else:
+            normalised[key] = category
+    return normalised
+
+
+def _variant_category(variant: Mapping[str, Any], annotation_key: str, annotations: Mapping[Any, Any]) -> Optional[str]:
+    """The functional category the caller supplied for ``variant``, or None. It is never guessed.
+
+    The variant's own ``annotation_key`` field wins; otherwise ``annotations`` (keys already normalised) is
+    searched by the variant's id (``ID``, ``rsid`` or ``variant_id``) and then by ``(chromosome, position)``.
+    """
+    category = _clean_category(variant.get(annotation_key))
+    if category is not None:
+        return category
+    for key in _VARIANT_ID_KEYS:
+        identifier = variant.get(key)
+        if identifier is not None and identifier in annotations:
+            return _clean_category(annotations[identifier])
+    chrom = get_chromosome(variant)
+    position = get_position(variant)
+    if chrom is not None and position is not None:
+        try:
+            location = (chromosome_label(chrom), int(position))
+        except (TypeError, ValueError):  # e.g. a NaN position: the variant simply has no (chromosome, position) key
+            return None
+        return _clean_category(annotations.get(location))
+    return None
+
+
 def functional_enrichment_plot(
     enrichment_results: Any,
     output_path: Optional[str | Path] = None,
     top_n: int = 20,
     figsize: tuple[int, int] = (12, 8),
     significance_threshold: Optional[float] = None,
+    annotations: Optional[Mapping[Any, Any]] = None,
+    annotation_key: str = "annotation",
 ) -> dict[str, Any]:
     """Create a functional enrichment plot for GWAS results.
 
     Args:
         enrichment_results: Either a dictionary mapping functions to enrichment
             statistics, or a list of dicts with GWAS variant results (CHROM,
-            POS, p_value). When a list is provided, variants are categorized
-            by simulated functional annotation.
+            POS, p_value) whose functional categories you supply: as a field on each
+            variant (``annotation_key``) or through ``annotations``. The function never
+            assigns categories itself; the bars count the significant variants in each
+            category you gave.
         output_path: Path to save the plot
         top_n: Number of top enriched functions to show
         figsize: Figure size
         significance_threshold: P-value threshold for significance (default 5e-8).
             Must be between 0 and 1 (exclusive).
+        annotations: Optional mapping from a variant to its category, for variants that carry no
+            ``annotation_key`` field. Keys are a variant id (the record's ``ID``, ``rsid`` or ``variant_id``)
+            or a ``(chromosome, position)`` tuple (``1``, ``1.0`` and ``"1"`` name the same chromosome).
+        annotation_key: Name of the per-variant category field (default ``"annotation"``). A blank, None or
+            NaN value counts as no annotation.
 
     Returns:
-        Dictionary with plot status and metadata
+        Dictionary with plot status and metadata. For a list of variants: ``category_counts``
+        (significant variants per supplied category), ``categories_found``,
+        ``total_significant_variants`` and ``n_unannotated`` (significant variants with no category, which
+        are not plotted). When no significant variant has a category the status is ``"skipped"`` and no
+        figure is drawn.
     """
     # Validate significance_threshold if provided
     if significance_threshold is not None:
@@ -802,28 +856,27 @@ def functional_enrichment_plot(
                     "error": "No significant variants found at threshold {:.1e}".format(threshold),
                 }
 
-            # Simulate functional annotation categories based on position
-            categories = [
-                "intergenic",
-                "intronic",
-                "exonic",
-                "upstream",
-                "downstream",
-                "UTR3",
-                "UTR5",
-                "splicing",
-            ]
+            # Count the categories the caller supplied. Nothing is inferred from the variant's position or
+            # anything else: a variant without an annotation is reported as such, not given a category.
+            lookup = _normalise_annotation_keys(annotations) if annotations is not None else {}
             category_counts: Dict[str, int] = {}
-            for i, variant in enumerate(significant_variants):
-                pos = variant.get("POS", variant.get("pos", 0))
-                # Deterministic category assignment based on position
-                cat_idx = pos % len(categories)
-                cat = categories[cat_idx]
-                category_counts[cat] = category_counts.get(cat, 0) + 1
+            for variant in significant_variants:
+                category = _variant_category(variant, annotation_key, lookup)
+                if category is not None:
+                    category_counts[category] = category_counts.get(category, 0) + 1
+            n_unannotated = len(significant_variants) - sum(category_counts.values())
 
-            # Ensure intergenic is always present (most common category)
-            if "intergenic" not in category_counts:
-                category_counts["intergenic"] = max(1, len(significant_variants) // 3)
+            if not category_counts:
+                return {
+                    "status": "skipped",
+                    "message": (
+                        f"No functional annotations were supplied for the {len(significant_variants)} significant "
+                        f"variants, so no category plot was drawn: give each variant a '{annotation_key}' field "
+                        "or pass annotations={variant id or (chromosome, position): category}"
+                    ),
+                    "total_significant_variants": len(significant_variants),
+                    "n_unannotated": n_unannotated,
+                }
 
             # Create plot
             fig, ax = plt.subplots(figsize=figsize)
@@ -838,6 +891,16 @@ def functional_enrichment_plot(
             ax.set_xlabel("Number of Significant Variants")
             ax.set_title("Functional Annotation of Significant GWAS Variants")
             ax.grid(True, alpha=0.3)
+            if n_unannotated:
+                ax.text(
+                    0.99,
+                    0.02,
+                    f"{n_unannotated} significant variant(s) without an annotation are not shown",
+                    transform=ax.transAxes,
+                    ha="right",
+                    va="bottom",
+                    fontsize=9,
+                )
 
             plt.tight_layout()
 
@@ -849,6 +912,7 @@ def functional_enrichment_plot(
                 "total_significant_variants": len(significant_variants),
                 "categories_found": len(category_counts),
                 "category_counts": category_counts,
+                "n_unannotated": n_unannotated,
                 "output_path": str(output_path) if output_path else None,
             }
 
@@ -977,7 +1041,7 @@ def allelic_series_plot(
         # Extract and filter variants
         variants = []
         for result in results:
-            chrom = result.get("CHROM", result.get("chr", result.get("chromosome")))
+            chrom = get_chromosome(result)
             pos = result.get("POS", result.get("pos", result.get("position")))
             beta = result.get("BETA", result.get("beta", result.get("effect_size")))
             rsid = result.get("ID", result.get("rsid", result.get("variant_id", f"var_{pos}")))

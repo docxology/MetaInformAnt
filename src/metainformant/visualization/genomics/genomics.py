@@ -202,6 +202,7 @@ def regional_plot(
     chr: str,
     start: int,
     end: int,
+    recombination_rate: pd.DataFrame | None = None,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     **kwargs: Any,
@@ -213,6 +214,10 @@ def regional_plot(
         chr: Chromosome name
         start: Start position
         end: End position
+        recombination_rate: Optional recombination map with ``BP`` (position) and ``RATE`` (cM/Mb) columns
+            and, optionally, ``CHR``. The rows on ``chr`` inside the region are drawn as a line on a
+            secondary axis, in the same positions-from-``start`` coordinates as the p-values. Without it no
+            recombination track is drawn: no map is bundled and none is simulated.
         ax: Optional matplotlib axes to plot on. Creates new if None.
         output_path: Optional path to save the figure.
         **kwargs: Additional arguments passed to matplotlib scatter().
@@ -221,12 +226,18 @@ def regional_plot(
         matplotlib Axes object
 
     Raises:
-        ValueError: If region parameters are invalid
+        ValueError: If region parameters are invalid, or ``recombination_rate`` lacks ``BP`` or ``RATE``
     """
     validation.validate_type(data, pd.DataFrame, "data")
 
     if start >= end:
         raise ValueError("Start position must be less than end position")
+
+    if recombination_rate is not None:
+        validation.validate_type(recombination_rate, pd.DataFrame, "recombination_rate")
+        missing_columns = [col for col in ("BP", "RATE") if col not in recombination_rate.columns]
+        if missing_columns:
+            raise ValueError(f"recombination_rate is missing required columns: {missing_columns}")
 
     if ax is None:
         fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 6)))
@@ -257,8 +268,19 @@ def regional_plot(
         **kwargs,
     )
 
-    # Add recombination rate if available (placeholder)
-    # This would require additional data sources
+    # Recombination rate: drawn from the supplied map only (nothing is simulated), on a secondary axis
+    if recombination_rate is not None:
+        rate_rows = recombination_rate
+        if "CHR" in rate_rows.columns:
+            rate_rows = rate_rows[rate_rows["CHR"].astype(str) == str(chr)]
+        rate_rows = rate_rows[(rate_rows["BP"] >= start) & (rate_rows["BP"] <= end)].sort_values("BP")
+        if rate_rows.empty:
+            logger.warning(f"No recombination-rate rows in region {chr}:{start}-{end}; no recombination track drawn")
+        else:
+            rate_ax = ax.twinx()
+            rate_ax.plot(rate_rows["BP"] - start, rate_rows["RATE"], color="tab:blue", alpha=0.7, linewidth=1.5)
+            rate_ax.set_ylabel("Recombination rate (cM/Mb)", color="tab:blue")
+            rate_ax.tick_params(axis="y", labelcolor="tab:blue")
 
     ax.set_xlabel(f"Position on chromosome {chr} (bp from {start:,})")
     ax.set_ylabel("-log₁₀(p-value)")
@@ -300,6 +322,11 @@ def circular_manhattan_plot(
     chromosomes = sorted(plot_data["CHR"].unique())
     chr_angles = np.linspace(0, 2 * np.pi, len(chromosomes) + 1)[:-1]
 
+    # Marker size and opacity are read once: popping them inside the loop gave the caller's values to the
+    # first chromosome only and the defaults to every later one
+    point_size = kwargs.pop("s", 2)
+    point_alpha = kwargs.pop("alpha", 0.7)
+
     # Plot each chromosome
     for i, (chr_num, angle) in enumerate(zip(chromosomes, chr_angles)):
         chr_mask = plot_data["CHR"] == chr_num
@@ -310,17 +337,22 @@ def circular_manhattan_plot(
         chr_end = chr_data["BP"].max()
         chr_range = chr_end - chr_start
 
+        sector_width = 2 * np.pi / len(chromosomes)
         if chr_range > 0:
-            relative_angles = angle + (chr_data["BP"] - chr_start) / chr_range * (2 * np.pi / len(chromosomes))
+            relative_angles = angle + (chr_data["BP"] - chr_start) / chr_range * sector_width
+        else:
+            # Every variant of this chromosome is at one position (a lone variant, say): put them in the
+            # middle of the chromosome's sector rather than dropping the chromosome from the plot
+            relative_angles = np.full(len(chr_data), angle + sector_width / 2)
 
-            ax.scatter(
-                relative_angles,
-                chr_data["logP"],
-                s=kwargs.pop("s", 2),
-                alpha=kwargs.pop("alpha", 0.7),
-                label=f"Chr {chr_num}" if i < 5 else "",  # Label first few chromosomes
-                **kwargs,
-            )
+        ax.scatter(
+            relative_angles,
+            chr_data["logP"],
+            s=point_size,
+            alpha=point_alpha,
+            label=f"Chr {chr_num}" if i < 5 else "",  # Label first few chromosomes
+            **kwargs,
+        )
 
     # Add chromosome labels
     for angle, chr_num in zip(chr_angles, chromosomes):

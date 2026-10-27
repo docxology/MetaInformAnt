@@ -4,7 +4,8 @@ This document showcases the main visualization types in the METAINFORMANT GWAS m
 
 ## Conventions
 
-- **Inputs**: association results are passed as Python objects, not file paths. Most functions take a list of dictionaries with `CHROM`, `POS` and `p_value` keys (plus `BETA`, `SE`, `MAF` and similar where a plot needs them), and some also accept a pandas DataFrame with `CHR`, `BP` and `P` columns. Each entry below lists the keys it reads. Only `generate_all_plots` reads association results from a `.csv` or `.tsv` file.
+- **Inputs**: association results are passed as Python objects, not file paths. Most functions take a list of dictionaries with `CHROM`, `POS` and `p_value` keys (plus `BETA`, `SE`, `MAF` and similar where a plot needs them), and some also accept a pandas DataFrame with `CHR`, `BP` and `P` columns. Each entry below lists the keys it reads. Only the two `generate_all_plots` functions read association results from a file: `interactive.suite.generate_all_plots` takes a `.csv` or `.tsv` file, and `general.generate_all_plots` also takes `.json` and `.txt` (tab-separated); see [Visualization Suite](#visualization-suite).
+- **Key spellings**: `gwas/visualization/utils.py` holds the lookups the plots share. The chromosome is the first of `chromosome`, `chrom`, `chr`, `CHROM` and `CHR` that is present and not `None` (`get_chromosome`, `CHROMOSOME_KEYS`); the position is the first of `position`, `pos`, `POS` and `BP` (`get_position`, `POSITION_KEYS`); the p-value spellings are `p_value`, `pvalue`, `pval` and `P` (`P_VALUE_KEYS`). `standardize_result_columns` applies all three families to a DataFrame and renames what it finds to `CHR`, `BP` and `P`; it never overwrites an existing column of that name and does not modify its input. Each entry lists the spellings its function reads, and plots that read the position or p-value directly accept fewer names than these tuples.
 - **Return value**: the functions documented below return a dictionary with a `status` key (`"success"`, `"failed"` with an `error` message, or `"skipped"`) and counts such as `n_variants`. Problems with the data are usually reported there instead of raised, so check `result["status"]`. The package-level `manhattan_plot` and `qq_plot` (see the notes under those entries) return a matplotlib figure.
 - **Output paths**: the keyword is `output_path` in some functions and `output_file` in others, and the file extension selects the format. Some functions create the missing parent directories of the output file themselves: the entry points of `gwas.visualization.general` (the package-level `manhattan_plot` and `qq_plot` among them), `regional_plot`, `gene_annotation_plot` and `recombination_rate_plot` in `genomic/regional.py`, `kinship_dendrogram` and `kinship_clustermap`, the interactive, composite, fine-mapping and phenotype plots, and `generate_all_plots` (in `general.py` and in `interactive/suite.py`, which create their `output_dir`). Most other functions call `plt.savefig` directly, which does not create missing directories, so create the output directory first: depending on the function, a missing directory either returns `status: "failed"` or raises `FileNotFoundError`.
 
@@ -46,7 +47,7 @@ results = generate_all_plots(
 print(f"Generated {results['num_plots_generated']} plots")
 ```
 
-`association_results` is a `.csv` or `.tsv` file (any other suffix is rejected) or a list of dictionaries. It needs a p-value column (`p_value`, `P`, `pvalue`, ...), a chromosome column (`CHROM`, `CHR`, ...) and a position column (`POS`, `BP`, ...); a `BETA` column adds the effect-size plots. Population-structure plots need the in-memory inputs described under [Visualization Suite](#visualization-suite).
+`association_results` is a `.csv` or `.tsv` file (any other suffix is rejected) or a list of dictionaries. It needs a p-value column (`p_value`, `P`, `pvalue`, ...), a chromosome column (`CHROM`, `CHR`, ...) and a position column (`POS`, `BP`, ...); a `BETA` column adds the effect-size plots. Population-structure plots need PCA and kinship data, passed in memory or as files, as described under [Visualization Suite](#visualization-suite).
 
 ## Visualization Categories
 
@@ -58,10 +59,11 @@ print(f"Generated {results['num_plots_generated']} plots")
 
 Standard genome-wide association plot: -log10(p) against position, one point per variant.
 
-**Input**: `results`, a list of dictionaries with `CHROM`, `POS` and `p_value` keys (`chr`, `pos` and `P` are also read); keywords `output_path`, `significance_threshold` (5e-8), `suggestiveness_threshold` (off by default) and `figsize`.
+**Input**: `results`, a list of dictionaries. The chromosome is read from `chromosome`, `chrom`, `chr`, `CHROM` or `CHR` (a record without one goes on chromosome 1), the position from `POS` or `pos` (0 when absent) and the p-value from `p_value` or `P` (1 when absent); `position`, `BP`, `pvalue` and `pval` are not read here. Keywords `output_path`, `significance_threshold` (5e-8), `suggestiveness_threshold` (off by default) and `figsize`.
 
 **Features**:
-- Alternating chromosome colors
+- Chromosomes in natural order (1, 2, ..., 10, ..., X), laid end to end: a variant's x position is its chromosome's offset plus its position, and each chromosome starts one base after the largest position of the previous one
+- Alternating chromosome colors, drawn with one scatter call per chromosome
 - Genome-wide significance line, plus an optional suggestive line
 - Returns `n_variants`, `n_chromosomes` and the list of chromosomes
 
@@ -70,7 +72,7 @@ Standard genome-wide association plot: -log10(p) against position, one point per
 - Identifying genome-wide significant loci
 - Publication figures
 
-**Note**: this version draws one scatter artist per variant, so it suits small result sets (see [Performance Notes](#performance-notes)). The package-level `manhattan_plot` (`from metainformant.gwas.visualization import manhattan_plot`) is a separate implementation for large studies: it takes dictionaries with lowercase `chrom`, `pos` and `p_value` keys, draws all points in one call, returns a matplotlib figure, and also supports `highlight_regions`, `gene_annotations`, `label_top_n`, `colors` and a `PlotStyle` (`style=`).
+**Note**: this version draws one scatter per chromosome, with cumulative chromosome offsets in natural order, so its cost grows slowly with the number of variants (see [Performance Notes](#performance-notes)). The package-level `manhattan_plot` (`from metainformant.gwas.visualization import manhattan_plot`) is a separate implementation: it takes one result dictionary, a list of dictionaries or a DataFrame with one row per result, and reads the chromosome, position and p-value under all the spellings listed under [Conventions](#conventions) (the pipeline's lowercase `chrom`, `pos` and `p_value` records and PLINK-style `CHR`, `BP` and `P` tables alike). It draws all points in one call and rasterizes them above 100,000 variants. A result without a p-value (`None`, NaN or text such as `"NA"`, as a failed test leaves it) is not drawn and is not counted in the title. It returns a matplotlib figure and also supports `highlight_regions`, `gene_annotations`, `label_top_n`, `colors` and a `PlotStyle` (`style=`).
 
 **Example**:
 ```python-snippet
@@ -104,7 +106,7 @@ print(result["status"], result["n_variants"])  # success 147
 
 Circular genome-wide view with radial p-values: each chromosome gets an equal sector, the radius grows with -log10(p), and rings mark the genome-wide and suggestive thresholds.
 
-**Input**: `results_df`, a DataFrame with `CHR`, `BP` and `P` columns or a list of dictionaries with `CHROM`, `POS` and `p_value` keys; keywords `output_file`, `significance_threshold` (5e-8), `suggestive_threshold` (1e-5, `None` removes the ring), `title` and `label_top_n` (0) to label the top hits.
+**Input**: `results_df`, a DataFrame with `CHR`, `BP` and `P` columns (exactly these names) or a list of dictionaries (the chromosome from `chromosome`, `chrom`, `chr`, `CHROM` or `CHR`, with `"1"` for a record that has none; the position from `POS`, `BP` or `pos`; the p-value from `p_value`, `P` or `pval`); keywords `output_file`, `significance_threshold` (5e-8), `suggestive_threshold` (1e-5, `None` removes the ring), `title` and `label_top_n` (0) to label the top hits.
 
 **Use Cases**:
 - Compact genome-wide overview
@@ -116,7 +118,7 @@ Circular genome-wide view with radial p-values: each chromosome gets an equal se
 
 Chromosome bars scaled by length, with the regions you choose shaded.
 
-**Input**: `chromosome_data`, a `{chromosome: length}` dictionary or a list of result dictionaries (lengths are taken from the largest `POS` per chromosome); `highlighted_regions`, a list of `{"chrom": "1", "start": 1000000, "end": 1500000}` dictionaries (optional `color` and `alpha`) marking the loci to show; `output_file` and `title`. It does not detect significant loci itself.
+**Input**: `chromosome_data`, a `{chromosome: length}` dictionary or a list of result dictionaries (the chromosome from any of the five spellings, with `"1"` for a record that has none; lengths are taken from the largest `POS`, `BP` or `pos` per chromosome); `highlighted_regions`, a list of `{"chrom": "1", "start": 1000000, "end": 1500000}` dictionaries (optional `color` and `alpha`) marking the loci to show; `output_file` and `title`. It does not detect significant loci itself.
 
 **Use Cases**:
 - Visualizing distribution of hits (pass them as highlighted regions)
@@ -133,9 +135,10 @@ Chromosome bars scaled by length, with the regions you choose shaded.
 
 Quantile-quantile plot with 95% CI and genomic inflation factor.
 
-**Input**: `results`, a list of p-values or a list of dictionaries with a `p_value` key (every p-value must be greater than 0; an exact 0 makes the plot fail with `math domain error`); keywords `output_path` and `figsize`.
+**Input**: `results`, a list of p-values or a list of dictionaries with a `p_value` key; keywords `output_path` and `figsize`. Missing values (`None` or NaN) are dropped. A p-value of exactly 0 is clamped at the smallest positive float (`sys.float_info.min`) before the -log10 transform, so it plots as a large finite value; a negative p-value is invalid, and the call returns `status: "failed"` with an error saying that p-values must be non-negative.
 
 **Features**:
+- Expected values at the uniform quantiles (i - 0.5) / n of the n sorted p-values (i = 1, ..., n), so the plot has no random component (`median_expected` in the result follows the same quantiles)
 - 95% confidence band from Beta-distribution quantiles (with SciPy; a rough approximation without it)
 - Lambda GC calculation, shown in the title and returned as `lambda_gc`
 - A warning mark in the title when lambda GC exceeds 1.1
@@ -171,7 +174,7 @@ print(f"lambda GC = {result['lambda_gc']:.2f}")  # close to 1 for uniform p-valu
 
 Q-Q plot separated by MAF bins.
 
-**Input**: `results`, a list of dictionaries with `p_value` and `MAF` keys, together with `maf_bins`, a list of half-open `(min, max)` tuples such as `[(0.0, 0.1), (0.1, 0.3), (0.3, 0.5)]`; or a list of p-values together with `strata`, one label per p-value. Each stratum's lambda GC is returned under `strata_results`.
+**Input**: `results`, a list of dictionaries with `p_value` and `MAF` keys, together with `maf_bins`, a list of half-open `(min, max)` tuples such as `[(0.0, 0.1), (0.1, 0.3), (0.3, 0.5)]`; or a list of p-values together with `strata`, one label per p-value. Each stratum's lambda GC is returned under `strata_results`. Every panel follows the same rules as `qq_plot`: the expected values are the uniform quantiles (i - 0.5) / n, an exact 0 is clamped and a negative p-value makes the call return `status: "failed"`.
 
 **Use Cases**:
 - Checking if inflation varies by frequency
@@ -181,9 +184,9 @@ Q-Q plot separated by MAF bins.
 #### Lambda GC by Chromosome
 **Function**: `lambda_gc_plot()`
 
-Genomic inflation factor per chromosome.
+Genomic inflation factor per chromosome: a histogram of the per-chromosome values next to a Q-Q panel that compares them with a N(1, 0.1) reference.
 
-**Input**: `results`, a list of dictionaries with `p_value` and `CHROM` keys (a chromosome needs at least two p-values), or a list of lambda values you computed yourself; keywords `output_file` and `title`. Returns `overall_lambda_gc` and, for dictionary input, `lambda_gc_by_chrom`.
+**Input**: `results`, a list of dictionaries with `p_value` and `CHROM` keys (exactly these two names; a chromosome needs at least two p-values), or a list of lambda values you computed yourself; keywords `output_file` and `title`. Returns `overall_lambda_gc` and, for dictionary input, `lambda_gc_by_chrom`. The reference values of the Q-Q panel are the deterministic N(1, 0.1) quantiles at (i - 0.5) / n for the n sorted lambda values, not random draws, so the figure is identical on every run.
 
 **Use Cases**:
 - Identifying chromosome-specific issues
@@ -224,7 +227,7 @@ Statistical power of a two-sample t-test as a contour map over sample size and e
 
 Detailed association view for genomic window: -log10(p) for the variants in the window with a SNP-density histogram below.
 
-**Input**: `results`, a list of dictionaries or a DataFrame (`CHROM`/`CHR`, `POS`/`BP`, `p_value`/`P`); keywords `output_file`, `chrom`, `start`, `end` (needed unless you pass `title`), `significance_threshold`, `figsize`, `title` and `recombination_rate` (a DataFrame with `CHR`, `BP` and `RATE` columns, drawn as an overlay). `chrom` must equal the stored values exactly (`"chr1"` does not match `"1"` or the integer 1); with no match the function returns `status: "success"` with `n_variants: 0` and draws nothing.
+**Input**: `results`, a list of dictionaries or a DataFrame whose chromosome, position and p-value fields may use any of the spellings listed under [Conventions](#conventions) (they are renamed to `CHR`, `BP` and `P`); keywords `output_file`, `chrom`, `start`, `end`, `significance_threshold`, `figsize`, `title` and `recombination_rate`. `chrom` is compared as text, so `1`, `1.0` and `"1"` select the same rows, but `"chr1"` does not match `"1"`. An omitted `start` or `end` leaves that side of the window open; without `chrom` nothing is filtered and every variant is plotted. With no matching variant the function returns `status: "success"` with `n_variants: 0` and draws nothing. `recombination_rate` is a DataFrame with `BP` and `RATE` (cM/Mb) columns and, optionally, `CHR`: its rows on `chrom` inside the window are drawn as a line on a secondary axis of the SNP-density panel, and no track is drawn (a warning is logged) when none falls inside the window.
 
 **Use Cases**:
 - Fine-mapping significant loci
@@ -265,7 +268,7 @@ Linkage disequilibrium around a locus: the SNP positions (with the lead SNP mark
 
 Regional association plot with a gene track below it.
 
-**Input**: the same `results`, `chrom`, `start` and `end` as `regional_plot`, plus `gene_data`, a dictionary such as `{"genes": [{"name": "geneA", "start": 1100000, "end": 1300000}]}`, and `output_file`. Without `gene_data` the lower panel reads "Gene annotations not provided".
+**Input**: the same `results`, `chrom`, `start` and `end` as `regional_plot`, plus `gene_data`, a dictionary such as `{"genes": [{"name": "geneA", "start": 1100000, "end": 1300000}]}`, `output_file` and `title`. The gene track is chromosome-aware: a gene may name its chromosome (`chromosome`, `chrom`, `chr`, `CHROM` or `CHR`, compared as text) and is then drawn only on that chromosome, while a gene that names none is assumed to lie on `chrom`. Genes are clipped to the window, and a gene without both `start` and `end` is skipped with a logged warning and never drawn across the whole window. When no gene can be drawn the lower panel says why: "Gene annotations not provided" (no `gene_data`, or an empty gene list), "Gene annotations cannot be placed without chrom, start and end" (`gene_data` given without all three) or "No annotated genes overlap this region" (followed by the number of genes skipped for lacking coordinates, if any).
 
 **Use Cases**:
 - Identifying variants in genes
@@ -275,11 +278,11 @@ Regional association plot with a gene track below it.
 #### Recombination Rate Plot
 **Function**: `recombination_rate_plot()`
 
-Recombination rate profile along each chromosome, with a smoothed line.
+Recombination rate profile along each chromosome, with a Savitzky-Golay smoothed line (drawn when SciPy is installed and the chromosome has more than ten positions; without SciPy, or with ten or fewer positions, only the raw rate line is drawn).
 
-**Input**: keywords `recombination_rates` (`{chromosome: [rate in cM/Mb, ...]}`) and `positions` (`{chromosome: [bp, ...]}`) plus `output_file`. Without them the function returns `status: "skipped"` (recombination map data not available).
+**Input**: keywords `recombination_rates` (`{chromosome: [rate in cM/Mb, ...]}`) and `positions` (`{chromosome: [bp, ...]}`, as many positions as rates), plus `output_file` and `title`. The first positional argument (`results`) is accepted for call compatibility and is not used to derive rates.
 
-**Note**: requires recombination map data. To overlay a rate on an association plot, pass `recombination_rate` to `regional_plot`.
+**Note**: requires recombination map data, which is neither bundled nor simulated. Unless both `recombination_rates` and `positions` are given, the function returns `status: "skipped"` with a `reason` and `output_path: None`, logs a warning and writes no file. To overlay a rate on an association plot, pass `recombination_rate` to `regional_plot`.
 
 ---
 
@@ -337,7 +340,7 @@ print(result["status"], result["n_samples"])  # success 40
 
 Variance explained by each PC, as bars with a cumulative line.
 
-**Input**: `explained_variance`, a list of ratios between 0 and 1 or the path of a text file with one value per line; keywords `output_file` and `title`.
+**Input**: `explained_variance`, a list or 1-D NumPy array of ratios between 0 and 1, or the path of a text file with one value per line; keywords `output_file` and `title`. An empty list or array returns `status: "failed"`.
 
 **Use Cases**:
 - Determining number of PCs to adjust for
@@ -422,7 +425,7 @@ print(result["n_variants"], round(result["mean_maf"], 2))  # 1000 0.08
 
 SNP density across genome, with the chromosomes laid end to end.
 
-**Input**: `variants`, a list of dictionaries with `CHROM` and `POS` keys or a plain list of positions (treated as one chromosome); keywords `output_file`, `title` and `window_size` (1 Mb), which only pads each chromosome's length (it is not the density bin width).
+**Input**: `variants`, a list of dictionaries or a plain list of positions (treated as one chromosome). A dictionary's chromosome is read from `chromosome`, `chrom`, `chr`, `CHROM` or `CHR` (`"1"` when absent; `1`, `1.0` and `"1"` name the same chromosome) and its position from `position`, `pos`, `POS` or `BP` (0 when absent). Keywords `output_file`, `title` and `window_size` (1 Mb), which only pads each chromosome's length (it is not the density bin width).
 
 **Use Cases**:
 - Identifying high/low density regions
@@ -432,7 +435,7 @@ SNP density across genome, with the chromosomes laid end to end.
 #### HWE Deviation Plot
 **Function**: `hwe_deviation_plot()`
 
-Hardy-Weinberg equilibrium p-value distribution: a histogram of -log10(p) with the p = 0.05 line, next to a Q-Q panel (its expected values are random uniform draws, so that panel changes between runs).
+Hardy-Weinberg equilibrium p-value distribution: a histogram of -log10(p) with the p = 0.05 line, next to a Q-Q panel whose expected values are the deterministic null quantiles -log10((i - 0.5) / n), so the figure is the same on every run.
 
 **Input**: `hwe_p_values`, a list of p-values or a list of dictionaries with an `HWE_P` key; keywords `output_file` and `title`.
 
@@ -446,7 +449,7 @@ Hardy-Weinberg equilibrium p-value distribution: a histogram of -log10(p) with t
 
 Missing data patterns: per-sample and per-variant missingness histograms.
 
-**Input**: `vcf_path`, an uncompressed VCF file (missing calls such as `./.` are counted), or a dictionary with `genotypes` (rows are variants, columns are samples, `None` or -1 for missing); `output_file` is required (omitting it raises `ValueError`). The `by_sample` keyword is accepted but not used.
+**Input**: `vcf_path`, an uncompressed VCF file (missing calls such as `./.` are counted), or a dictionary with `genotypes` (a list of lists or a NumPy array; rows are variants, columns are samples, `None` or -1 for missing); `output_file` is required (omitting it raises `ValueError`). The `by_sample` keyword is accepted but not used.
 
 **Note**: a basic VCF reader is built in; gzipped VCF files are not supported.
 
@@ -471,7 +474,7 @@ Ts/Tv ratio visualization and interpretation.
 
 Effect estimates with 95% confidence intervals.
 
-**Input**: `effect_data`, a list of dictionaries with `CHROM`, `POS`, `BETA`, `SE` and `p_value` keys (lowercase `beta` and `se`, and `P`, are also read; the interval is the effect +/- 1.96 SE, and a missing `SE` defaults to 0.3 times the absolute effect), or a dictionary with `variants`, `effects`, `lower_ci` and `upper_ci` lists; keywords `output_file`, `title` and `top_n`.
+**Input**: `effect_data`, a list of dictionaries or a dictionary with `variants`, `effects`, `lower_ci` and `upper_ci` lists; keywords `output_file`, `title` and `top_n`. For a list, each dictionary carries a chromosome (`chromosome`, `chrom`, `chr`, `CHROM` or `CHR`; `?` when absent), `POS` (or `pos`), `BETA` (or `beta`), `SE` (or `se`) and a p-value (`p_value`, `P` or `pval`) that only orders the variants. The interval is the effect +/- 1.96 SE, a missing `SE` defaults to 0.3 times the absolute effect, and each row is labelled `chr<chromosome>:<position>`.
 
 **Features**:
 - Top N most significant variants (list input is sorted by p-value)
@@ -516,7 +519,7 @@ print(result["n_variants"])  # 20
 
 Effect sizes of all variants along the genome, colored by sign (blue positive, red negative).
 
-**Input**: `results`, a list of dictionaries with `CHROM`, `POS` and `BETA` keys (lowercase `chr`, `pos` and `beta` are also read); keywords `output_path` and `figsize`. Returns `positive_effects` and `negative_effects`.
+**Input**: `results`, a list of dictionaries. The chromosome is read from `chromosome`, `chrom`, `chr`, `CHROM` or `CHR` (chromosome 1 when absent), the position from `POS` or `pos` and the effect from `BETA` or `beta`; keywords `output_path` and `figsize`. Chromosomes are laid end to end in natural order with cumulative offsets (a variant's x position is its chromosome's offset plus its position), and each chromosome label sits at the mean x position of its variants. Returns `positive_effects` and `negative_effects`.
 
 **Use Cases**:
 - Checking for directional bias
@@ -530,16 +533,16 @@ Effect sizes of all variants along the genome, colored by sign (blue positive, r
 
 Enrichment of variant categories (functional annotation classes).
 
-**Input**: `enrichment_results`, a dictionary of the form `{"missense": {"enrichment_ratio": 3.1, "p_value": 1e-5}, ...}` computed from your annotation; categories with a ratio of 1 or less are dropped. Keywords `output_path` and `top_n` (20). The plot shows the enrichment ratios and enrichment against -log10(p).
+**Input**: `enrichment_results`, either a dictionary of the form `{"missense": {"enrichment_ratio": 3.1, "p_value": 1e-5}, ...}` computed from your annotation (categories with a ratio of 1 or less are dropped; the plot shows the enrichment ratios and enrichment against -log10(p)), or a list of variant dictionaries whose categories you supply. Keywords `output_path`, `top_n` (20), `significance_threshold` (5e-8; a value outside 0 and 1 raises `ValueError`), `annotations` and `annotation_key` (`"annotation"`).
 
-**Note**: requires variant annotation (ANNOVAR, VEP, SnpEff) summarized into that dictionary. The function does not read annotation files: given a list of result dictionaries instead (where `significance_threshold` applies), it does not annotate anything and sorts the significant variants into eight placeholder categories by `POS % 8`, so use the dictionary form for real data.
+**Note**: requires variant annotation (ANNOVAR, VEP, SnpEff) from your own pipeline. The function does not read annotation files and never assigns a category itself. Given a list of variants, it counts the significant ones (p-value from `p_value`, `P` or `pval` below `significance_threshold`) in each category you supplied: a variant's category is its own `annotation_key` field and, when that is absent or blank (`None`, NaN or whitespace), its entry in the `annotations` mapping (a dictionary or a pandas Series), which is keyed by the variant's `ID`, `rsid` or `variant_id` or by a `(chromosome, position)` tuple in which `1`, `1.0` and `"1"` name the same chromosome. The bars are sorted by count, largest first. The result holds `category_counts`, `categories_found`, `total_significant_variants` and `n_unannotated`, the number of significant variants without a category, which are left out of the bars and noted on the figure. When no significant variant has a category, the result is `status: "skipped"` with a `message` and no figure is drawn; when no variant is significant it is `status: "failed"`.
 
 #### Allelic Series Plot
 **Function**: `allelic_series_plot()`
 
 Effect size and significance of each variant in a locus, ordered by position.
 
-**Input**: `results`, a list of dictionaries with `CHROM`, `POS`, `BETA` and `p_value` keys (optional `ID` for the labels); keywords `output_path` and `gene_region`, a `(chromosome, start, end)` tuple that restricts the variants shown.
+**Input**: `results`, a list of dictionaries with a chromosome (`chromosome`, `chrom`, `chr`, `CHROM` or `CHR`), a position (`POS`, `pos` or `position`), an effect (`BETA`, `beta` or `effect_size`) and a p-value (`P`, `p_value` or `pval`); an `ID` (or `rsid` or `variant_id`) labels the variants. Keywords `output_path` and `gene_region`, a `(chromosome, start, end)` tuple that restricts the variants shown (the chromosome is compared as text).
 
 **Note**: for complex loci with multiple functional alleles.
 
@@ -631,15 +634,22 @@ Discovery vs replication scatter plot of -log10(p) for the variants the two stud
 
 Generate all plots at once with `generate_all_plots`. Which plots appear depends on the inputs you give it:
 
-- `association_results` alone: Manhattan and Q-Q plots, regional plots for the five most significant variants (a 1 Mb window around each), a summary panel (its PCA and kinship quadrants read "No data available", because the suite does not pass `pca_data` or `kinship_matrix` on to it), a credible-set plot and an interactive Manhattan HTML file; with a `BETA` column also an effect-size plot and an interactive volcano HTML file.
-- `kinship_matrix`: kinship dendrogram and clustermap; together with `pca_data`, a population-structure panel.
-- `pca_data`, a dictionary with `pcs` (samples x components), `explained_variance_ratio` and `sample_ids`: an interactive 3D PCA HTML file when there are at least three components (pass `pcs` as a list of lists; a NumPy array fails there).
+- `association_results` alone: Manhattan and Q-Q plots, regional plots for the five most significant variants (a 1 Mb window around each), a summary panel (its PCA and kinship quadrants read "No data available" unless PCA and kinship data are supplied, as described below), a credible-set plot and an interactive Manhattan HTML file; with a `BETA` column also an effect-size plot and an interactive volcano HTML file.
+- `kinship_matrix`: kinship dendrogram and clustermap, and the kinship quadrant of the summary panel; together with `pca_data`, a population-structure panel.
+- `pca_data`, a dictionary with `pcs` (samples x components, as a list of lists or a NumPy array), `explained_variance_ratio` and `sample_ids`: the PCA quadrant of the summary panel and, when there are at least three components, an interactive 3D PCA HTML file.
 - `metadata`, a `{sample_id: {"population": ..., "latitude": ..., "longitude": ...}}` dictionary: sample map and population count map.
 - `genotype_matrix` (variants x samples, in the same order as the association results): LD decay and an LD heatmap of the top-hit region; with `phenotype_values`, genotype-phenotype plots for the top hits.
 - `phenotype_values` with `pca_data`: phenotype-PC correlation plot; `phenotypes_dict` with two or more traits: phenotype correlation matrix.
 - `finemapping_results` and `h2_data` (the dictionary returned by `partition_heritability_by_chromosome`): credible-set plot (otherwise built from the association results) and heritability bar chart.
+- `pca_file`: a principal-component file with one row per sample and one column per component, in `.npy`, `.npz`, `.tsv`, `.csv`, `.txt` or `.json` format. It gets its own PCA plot (`plots["pca"]`) and, unless `pca_data` is given, supplies every plot that needs PCA data, the summary panel included.
+- `kinship_file`: a square kinship matrix in the same formats. It gets its own heatmap (`plots["kinship"]`) and, unless `kinship_matrix` is given, supplies every plot that needs a kinship matrix, the summary panel included.
+- `vcf_file`: a plain or `.gz` VCF. It adds a variant-density plot (`variant_density`) and a transition/transversion plot (`transition_transversion`) and records `vcf_variants` (the number of records) and `ts_tv_ratio` under `results["statistics"]`. Only single-base REF/ALT pairs count towards the ratio; indels and multi-allelic sites do not.
 
-`pca_file` and `kinship_file` are read with `numpy.load`, so a text or TSV file is skipped with a logged warning; pass `pca_data` and `kinship_matrix` instead. `vcf_file` is accepted but not used by this function.
+The file readers work as follows. `.tsv` (tab-separated), `.csv` (comma-separated) and `.txt` (whitespace-separated) tables may carry a header row and a first column of sample labels, which are dropped; blank lines and `#` comment lines are ignored. An `.npz` archive is read from its `pcs` array (else `components`, transposed, else its first array) for PCA and from `kinship_matrix`, `kinship` or `matrix` (else its first array) for kinship, and `explained_variance_ratio` or `explained_variance` in the archive labels the PCA axes. A `.json` PCA file is a dictionary with `pcs`, or with `components` holding one row per component (the layout of the `pca_results.json` the GWAS workflow writes), optionally with `explained_variance_ratio`, `explained_variance` or `variance`, or else a nested list; a `.json` kinship file is a nested list (the layout of the workflow's `kinship_results.json`) or a dictionary with `kinship_matrix` or `matrix`. `pca_data` and `kinship_matrix` passed in memory take precedence over the files. A file that is missing, in another format, not a rectangular numeric table, or (for kinship) not square is reported in the log with the reason, and the other plots are still drawn.
+
+Every figure the suite opens is saved and then closed, so no pyplot figure stays open after the call and repeated calls do not accumulate figures. `results["statistics"]` holds `total_variants`, `significant_variants`, `lambda_gc` and `min_p`, plus `vcf_variants` and `ts_tv_ratio` when a VCF is given.
+
+`gwas.visualization.general.generate_all_plots(association_results, output_dir, pca_file=None, kinship_file=None, vcf_file=None, significance_threshold=5e-8)`, the function `execute_gwas_workflow` calls, is a smaller variant. It draws the Manhattan and Q-Q plots and, from JSON files, the PCA and kinship plots, and returns a `{plot name: path}` mapping with the keys `manhattan`, `qq`, `pca` and `kinship` for the plots it wrote. `association_results` is a list or tuple of records, a pandas DataFrame, or the path of a `.json`, `.tsv`, `.txt` (tab-separated) or `.csv` file, with the chromosome, position and p-value read under the spellings listed under [Conventions](#conventions); a result without a p-value (`None`, NaN or `"NA"`) is left out of the plots and the number left out is logged. Any other type raises `TypeError`, a missing file `FileNotFoundError` and an unsupported extension `ValueError`. `pca_file` is a JSON dictionary with `components` (one row per component), `variance`, `loadings` and `explained_variance`, and `kinship_file` a JSON matrix or a dictionary with `matrix` or `kinship_matrix`. `vcf_file` only supplies the sample IDs (read with `bcftools query -l` when bcftools is installed) that color the PCA by strain and give the Q-Q plot its sample count. Every figure it opens is saved and then closed.
 
 ```python
 import numpy as np
@@ -685,7 +695,7 @@ for plot_name, plot_path in results['plots'].items():
 
 ## Workflow Integration
 
-The GWAS workflow generates its plots itself; there is no configuration key that switches the visualization step on or off (the workflow reads neither `comprehensive_plots` nor `create_plots`; the latter only affects the runtime estimate). `execute_gwas_workflow` writes its plots into the results directory (`output.results_dir`) and returns their paths in `results["outputs"]["plots"]`: Manhattan, Q-Q, PCA, kinship, effect-size and top-hit regional plots, plus strain-aware plots (strain PCA, dendrogram, clustered kinship heatmap, allele-frequency heatmap) when sample IDs allow it. `run_gwas` calls the visualization suite described above instead, forwarding the top-level `significance_threshold` key (default 5e-8), and then draws the summary and population-structure panels from its own PCA and kinship results.
+The GWAS workflow generates its plots itself; there is no configuration key that switches the visualization step on or off (the workflow reads neither `comprehensive_plots` nor `create_plots`; the latter only affects the runtime estimate). `execute_gwas_workflow` writes its plots into the results directory (`output.results_dir`) and returns their paths in `results["outputs"]["plots"]`: Manhattan, Q-Q, PCA, kinship, effect-size, minor-allele-frequency spectrum (`maf_spectrum_plot.png`, drawn from the `maf` the results carry) and top-hit regional plots, plus strain-aware plots (strain PCA, dendrogram, clustered kinship heatmap, allele-frequency heatmap) when sample IDs allow it. `run_gwas` calls the visualization suite described above instead, forwarding the top-level `significance_threshold` key (default 5e-8), and then draws the summary and population-structure panels from its own PCA and kinship results. Both workflows draw their association plots only from the variants whose test produced a p-value, and report the number of failed tests as `n_tests_failed` (under `results["outputs"]` for `execute_gwas_workflow`, under `results["results"]` for `run_gwas`).
 
 ```yaml
 # config/gwas/gwas_amellifera.yaml
@@ -716,7 +726,7 @@ for plot_name, plot_path in results["outputs"].get("plots", {}).items():
 
 None of the functions thin or downsample their input, so the cost grows with the number of variants. Timings below come from one test machine:
 
-1. **Manhattan Plot**: `genomic.genome.manhattan_plot` draws one scatter artist per variant (about 2 s for 5,000 variants, over 20 s for 20,000), so keep it to small result sets. The package-level `manhattan_plot` draws all points in one call and rasterizes them above 100,000 variants (about 1 s for 500,000).
+1. **Manhattan Plot**: `genomic.genome.manhattan_plot` draws one scatter per chromosome, so its cost grows slowly with the number of variants (about 0.1 s to draw 20,000 variants). The package-level `manhattan_plot` draws all points in one call and rasterizes them above 100,000 variants (about 1 s for 500,000).
 2. **Q-Q Plot**: both versions evaluate a Beta quantile for every point to draw the 95% band: `statistical.qq_plot` took about 4 s for 50,000 p-values, and the package-level `qq_plot` about 7 s for 100,000 and about a minute for 1,000,000. For very large studies plot a random subsample of the p-values.
 3. **Circular Manhattan**: draws one scatter per chromosome (about 0.3 s for 500,000 variants), so building the input list is the main cost.
 4. **Kinship Heatmap**: draws every sample (seaborn `clustermap` with Ward linkage, 800 samples in under a second) and labels the axes only when there are 50 samples or fewer; there is no automatic downsampling.
@@ -813,13 +823,16 @@ fig.savefig("plots/figure.svg", dpi=300, bbox_inches="tight")
 - The function does not create its output directory (see [Conventions](#conventions)); create it before plotting
 
 **Issue**: `regional_plot` returns `n_variants: 0` and writes no file
-- `chrom` does not match the values in the chromosome column exactly (`"chr1"` versus `"1"` versus the integer 1), or the window holds no variants
+- `chrom` names a different chromosome label than the data uses (`"chr1"` does not match `"1"`, whereas `1`, `1.0` and `"1"` match each other), or the window holds no variants
 
-**Issue**: `statistical.qq_plot` fails with "math domain error"
-- A p-value of exactly 0 was supplied; replace it with the smallest positive value you can represent (the package-level `qq_plot` ignores p-values outside (0, 1])
+**Issue**: `statistical.qq_plot` or `qq_plot_stratified` returns `status: "failed"` with an error that p-values must be non-negative
+- A negative p-value was supplied; exact zeros are clamped at the smallest positive float, but negative values are rejected, so correct or drop them (the package-level `qq_plot` ignores p-values outside (0, 1])
+
+**Issue**: `functional_enrichment_plot` returns `status: "skipped"` and draws nothing
+- None of the significant variants has a functional category: give each variant an `annotation` field (or the field named by `annotation_key`), or pass `annotations`; the function never assigns categories itself
 
 **Issue**: "Plot generation skipped"
-- Some plots require additional data (PCA, kinship, genotypes, metadata, a VCF, a recombination map); see Visualization Suite and the Input line of each entry
+- Some plots require additional data (PCA, kinship, genotypes, metadata, a VCF, a recombination map, functional annotations); see Visualization Suite and the Input line of each entry
 - Check log messages for specific requirements
 
 **Issue**: "Memory error with large datasets"
@@ -838,11 +851,14 @@ For issues or questions:
 
 These live under `src/metainformant/gwas/visualization/` and are not covered entry by entry above:
 
-- `interactive/interactive.py`: `interactive_manhattan`, `interactive_pca`, `interactive_volcano` (HTML output; Plotly when installed, otherwise a styled HTML table of the top results). `interactive_manhattan` reads each result's chromosome from `chromosome`, `chrom`, `chr`, `CHROM` or `CHR` (the first one present), its position from `position`, `pos` or `POS`, and its p-value from `p_value`, `pvalue` or `P`; a result that lacks a chromosome or a position, or a positive finite p-value, is skipped rather than placed on a default chromosome. It returns `status`, `output_path`, `n_variants`, `n_skipped` and `interactive`
+- `interactive/interactive.py`: `interactive_manhattan`, `interactive_pca`, `interactive_volcano` (HTML output; Plotly when installed, otherwise a styled HTML table of the top results). `interactive_pca` takes `pca_data["pcs"]` (samples x components, at least three components) as a list of lists or a NumPy array. `interactive_manhattan` reads each result's chromosome from `chromosome`, `chrom`, `chr`, `CHROM` or `CHR` (the first one present), its position from `position`, `pos` or `POS`, and its p-value from `p_value`, `pvalue` or `P`; a result that lacks a chromosome or a position, or a positive finite p-value, is skipped rather than placed on a default chromosome. It returns `status`, `output_path`, `n_variants`, `n_skipped` and `interactive`
 - `interactive/composite.py`: `gwas_summary_panel`, `population_structure_panel`, `top_hit_detail_panel`
 - `interactive/finemapping.py`: `credible_set_plot`, `conditional_analysis_plot`, `pip_vs_ld_plot`. `credible_set_plot` and the module's `compute_credible_set(assoc_results, credible_level=0.95)` take their posterior inclusion probabilities from Wakefield approximate Bayes factors: when every result has `beta` and a positive `se`, the Z-score is `beta / se` with `V = se²`; otherwise the Z-score is recovered from the two-sided `p_value` (or `P`) and the Z-score scale is used (see [Fine-Mapping & Colocalization](README.md#fine-mapping--colocalization)). `compute_credible_set` returns `pips`, `credible_set_indices` (highest PIP first), `credible_set_size` and `cumulative_probability`
 - `interactive/phenotype.py`: `phenotype_distribution`, `phenotype_correlation_matrix`, `genotype_phenotype_boxplot`, `top_hits_genotype_phenotype`, `phenotype_pca_correlation`
 - `genomic/ld.py` and `genomic/genome.py`: `ld_decay_plot`, `ld_heatmap_region`, `genome_wide_ld_heatmap`
+- `statistical/effects.py`: `effect_size_plot`, `compare_effect_sizes`, `effect_size_manhattan`, `effect_size_qq`. `effect_size_manhattan(results, significance_threshold=5e-8, output_file=None)` takes a DataFrame (or a dictionary of columns) with `CHR`, `BP`, `P` and `BETA` and colors each point by its absolute effect size. Chromosomes are laid end to end in natural order, so a variant's x position is its chromosome's offset plus `BP`, and each chromosome label sits at the middle of its variants; the function returns `None` when a required column is missing
+- `statistical/comparison.py`: `compare_gwas_studies`, `compare_populations` and `compare_analysis_methods`, which build multi-panel figures from dictionaries of the form `{name: {"results": DataFrame with a P column, ...}}`. The last panel of `compare_populations` shows the fraction of SNPs that are genome-wide significant in each population (`analyze_genetic_architecture` returns it as `polygenicity` next to `lambda_gc`; no heritability is estimated, because p-values alone do not determine one), and its enrichment panel prints `p=n/a` where the chi-square test is undefined (`calculate_population_enrichment` returns NaN there)
+- `calculate_method_power(method_results, significance_threshold=5e-8)` in `statistical/comparison.py` summarizes each method's `results` and labels its `power` value by `basis`. A method entry with a `causal_snps` collection (SNP identifiers matched against the index of `results`) gives `basis: "causal_snps"`: `power` is the fraction of the causal SNPs that were tested and called significant, with the counts in `causal_snps` and `causal_detected`. Without usable ground truth the basis is `"significant_fraction"`: `power` is only the fraction of all tested SNPs below the threshold, a discovery rate rather than statistical power. `compare_analysis_methods` titles its third panel "Method Power Comparison" only when every method has `basis: "causal_snps"` and "Genome-wide Significant Fraction" otherwise
 - `population/geography.py`: `sample_map`, `allele_frequency_map`, `population_count_map`
 - `population/population_pca.py`: `pca_multi_panel`, `pca_3d`
 - `eqtl_visualization.py`: `plot_eqtl_volcano`, `plot_eqtl_boxplot`, `plot_locuszoom_eqtl`, `plot_eqtl_summary`

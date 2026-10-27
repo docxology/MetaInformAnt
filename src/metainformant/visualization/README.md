@@ -11,9 +11,9 @@
 
 - [Architecture](#architecture)
 - [Key Capabilities](#key-capabilities)
-  - [Basic & Statistical Plots](#basic-statistical-plots)
+  - [Basic & Statistical Plots](#basic--statistical-plots)
   - [Genomic Visualizations](#genomic-visualizations)
-  - [Themes, Palettes & Dashboards](#themes-palettes-dashboards)
+  - [Themes, Palettes & Dashboards](#themes-palettes--dashboards)
 - [Submodules](#submodules)
 - [Quick Start](#quick-start)
 - [Related](#related)
@@ -78,7 +78,9 @@ from metainformant.visualization.genomics.expression import plot_expression_heat
 from metainformant.visualization.genomics.genomics import manhattan_plot, volcano_plot
 
 ax = plot_expression_heatmap(expression_df, output_path="output/viz/heatmap.png")
-ax = manhattan_plot(positions, pvalues, chromosomes, output_path="output/viz/manhattan.png")
+
+# gwas_df: a DataFrame with chromosome, position and raw p-value columns (named by the *_col arguments)
+ax = manhattan_plot(gwas_df, chr_col="CHR", pos_col="BP", pval_col="P", output_path="output/viz/manhattan.png")
 ```
 
 ### Themes, Palettes & Dashboards
@@ -87,10 +89,22 @@ ax = manhattan_plot(positions, pvalues, chromosomes, output_path="output/viz/man
 from metainformant.visualization.config.themes import apply_theme
 from metainformant.visualization.config.palettes import categorical, expression_gradient
 from metainformant.visualization.dashboards.composite import multi_panel
+from metainformant.visualization.plots.basic import lineplot, scatter_plot
+import numpy as np
 
 apply_theme("publication")
 colors = categorical(5, palette="wong")  # Colorblind-safe
-fig = multi_panel(plot_functions=[plot_a, plot_b], layout=(1, 2))
+
+# Each panel is a dict: the plotting function, its keyword arguments and an optional title
+x = np.arange(20)
+fig = multi_panel(
+    [
+        {"func": lineplot, "kwargs": {"x": x, "y": x**2}, "title": "Line"},
+        {"func": scatter_plot, "kwargs": {"x": x, "y": x[::-1]}, "title": "Scatter"},
+    ],
+    ncols=2,
+    title="Overview",
+)
 ```
 
 ## Submodules

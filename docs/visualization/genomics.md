@@ -40,9 +40,11 @@ data = pd.DataFrame({
 ax = volcano_plot(data, log2fc_col='log2fc', pval_col='pvalue')
 ```
 
-### `regional_plot(data, *, chr, start, end, ax=None, output_path=None, **kwargs)`
+### `regional_plot(data, *, chr, start, end, recombination_rate=None, ax=None, output_path=None, **kwargs)`
 
 Create a regional association plot for the window `start`-`end` (base pairs) on chromosome `chr`. `chr`, `start` and `end` are keyword-only, and `start` must be smaller than `end`. `data` is a DataFrame with the fixed column names `CHR`, `BP` and `P` (raw p-values, converted with -log10); there are no column-name options. A dashed line marks genome-wide significance (5e-8), and a window with no rows draws a "No data in region" message instead of points. Extra keyword arguments (`s`, `alpha`, ...) are passed to `Axes.scatter`.
+
+`recombination_rate` is an optional DataFrame with `BP` and `RATE` (cM/Mb) columns and, optionally, `CHR`. Its rows on `chr` inside the window are drawn as a line on a secondary y-axis, at the same positions-from-`start` as the p-values. A `ValueError` is raised when `BP` or `RATE` is missing, and a warning is logged (with no track drawn) when no row falls inside the window. Without `recombination_rate` no track is drawn: no recombination map is bundled or simulated.
 
 **Example:**
 ```python
@@ -57,11 +59,19 @@ data = pd.DataFrame({
     'P': rng.uniform(1e-8, 1, 200),
 })
 ax = regional_plot(data, chr='chr1', start=1_000_000, end=1_100_000)
+
+# With a recombination map (CHR is optional; BP and RATE are required)
+recombination = pd.DataFrame({
+    'CHR': ['chr1'] * 5,
+    'BP': [1_000_000, 1_025_000, 1_050_000, 1_075_000, 1_100_000],
+    'RATE': [1.2, 2.5, 4.0, 2.2, 1.1],
+})
+ax = regional_plot(data, chr='chr1', start=1_000_000, end=1_100_000, recombination_rate=recombination)
 ```
 
 ### `circular_manhattan_plot(data, *, ax=None, output_path=None, **kwargs)`
 
-Create a circular Manhattan plot. Chromosomes (sorted by name) share the circle equally, each point is placed by its position within its chromosome and plotted at a radius of -log10(p). `data` needs the fixed column names `CHR`, `BP` and `P` (raw p-values). The function creates polar axes; an `ax` you pass in must be a polar axes. Extra keyword arguments are passed to `Axes.scatter`.
+Create a circular Manhattan plot. Chromosomes (sorted by name) share the circle equally, each point is placed by its position within its chromosome and plotted at a radius of -log10(p). `data` needs the fixed column names `CHR`, `BP` and `P` (raw p-values). A chromosome whose variants all share one position is drawn at the middle of its sector. The function creates polar axes; an `ax` you pass in must be a polar axes. Extra keyword arguments are passed to `Axes.scatter`; `s` (default 2) and `alpha` (default 0.7) apply to every chromosome.
 
 **Example:**
 ```python

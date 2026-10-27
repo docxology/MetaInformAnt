@@ -12,7 +12,7 @@ Comprehensive plotting for protein data: sequence logos, domain architecture dia
 
 | Function | Description |
 |----------|-------------|
-| `plot_sequence_logo()` | Sequence logo from aligned protein sequences |
+| `plot_sequence_logo()` | Sequence logo from aligned protein sequences; bar height is the column's information content in bits, `log2(20) - H`, so a conserved column is tall and a uniform one has height 0 |
 | `plot_domain_architecture()` | Domain layout diagram along protein length |
 | `plot_secondary_structure()` | H/E/C secondary structure bar plot |
 | `plot_contact_map()` | Residue-residue contact map heatmap |

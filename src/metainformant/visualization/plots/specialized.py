@@ -165,6 +165,29 @@ def _plot_venn3(ax: Axes, sets: Dict[str, set], **kwargs: Any) -> None:
     ax.axis("off")
 
 
+def _build_sankey_links(
+    flows: List[Tuple[str, str, float]],
+) -> Tuple[List[str], List[int], List[int], List[float]]:
+    """Index the nodes of ``flows`` for a Sankey diagram.
+
+    Returns ``(labels, sources, targets, values)`` where ``sources[i]`` and ``targets[i]`` are the positions in
+    ``labels`` of the endpoints of flow ``i``. Labels are unique and kept in first-seen order, so an index
+    never changes after it is assigned (Plotly resolves the indices against the finished ``labels`` list).
+    """
+    index: Dict[str, int] = {}
+    sources: List[int] = []
+    targets: List[int] = []
+    values: List[float] = []
+    for source, target, value in flows:
+        for node in (source, target):
+            if node not in index:
+                index[node] = len(index)
+        sources.append(index[source])
+        targets.append(index[target])
+        values.append(value)
+    return list(index), sources, targets, values
+
+
 def plot_sankey_diagram(
     flows: List[Tuple[str, str, float]],
     *,
@@ -187,19 +210,10 @@ def plot_sankey_diagram(
 
     if HAS_PLOTLY:
         # Use Plotly for better Sankey diagrams
-        sources: list[Any] = []
-        targets: list[Any] = []
-        values: list[Any] = []
-        labels = set()
-
-        for source, target, value in flows:
-            labels.add(source)
-            labels.add(target)
-            sources.append(list(labels).index(source))
-            targets.append(list(labels).index(target))
-            values.append(value)
-
-        label_list = list(labels)
+        sources: list[Any]
+        targets: list[Any]
+        values: list[Any]
+        label_list, sources, targets, values = _build_sankey_links(flows)
 
         fig = go.Figure(
             data=[
@@ -223,9 +237,10 @@ def plot_sankey_diagram(
         # Fallback matplotlib implementation
         fig, ax = plt.subplots(figsize=figsize)
 
-        # Simple flow visualization
-        sources = list(set(s for s, t, v in flows))
-        targets = list(set(t for s, t, v in flows))
+        # Simple flow visualization; rows keep the order in which the nodes first appear in ``flows`` (a
+        # ``set`` would order them by hash, so the figure would change from run to run)
+        sources = list(dict.fromkeys(s for s, t, v in flows))
+        targets = list(dict.fromkeys(t for s, t, v in flows))
 
         source_positions = {src: i for i, src in enumerate(sources)}
         target_positions = {tgt: i for i, tgt in enumerate(targets)}
@@ -428,8 +443,9 @@ def plot_circular_barplot(
     n_bars = len(values)
     angles = np.linspace(0, 2 * np.pi, n_bars, endpoint=False)
 
-    # Plot bars
-    ax.bar(angles, values, width=0.4, bottom=0.0, alpha=0.7, **kwargs)
+    # Plot bars (caller keyword arguments override the defaults)
+    bar_kwargs: dict[str, Any] = {"width": 0.4, "bottom": 0.0, "alpha": 0.7, **kwargs}
+    ax.bar(angles, values, **bar_kwargs)
 
     # Add labels
     if labels:

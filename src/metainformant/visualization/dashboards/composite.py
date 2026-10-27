@@ -57,11 +57,10 @@ def multi_panel(
     if figsize is None:
         figsize = (6 * ncols, 5 * nrows)
 
-    fig, axes = plt.subplots(nrows, ncols, figsize=figsize)
-    if n == 1:
-        axes = [axes]
-    else:
-        axes = axes.flatten() if hasattr(axes, "flatten") else [axes]
+    # squeeze=False always yields a 2-D array of axes; the default collapses a single row/column (or a single
+    # panel) to a 1-D array or a lone Axes, which a one-panel figure with ncols > 1 mistook for one axes
+    fig, axes_grid = plt.subplots(nrows, ncols, figsize=figsize, squeeze=False)
+    axes = axes_grid.flatten()
 
     for i, panel in enumerate(panels):
         ax = axes[i]

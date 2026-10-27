@@ -14,7 +14,7 @@ from metainformant.dna.population.visualization import plot_diversity_comparison
 
 ### Common behavior
 
-- **Saving**: pass `output_file` to save the figure at 300 DPI with a tight bounding box. Thirteen functions in `visualization_stats` also accept `output_path` as an alias; `plot_population_diversity` accepts it but ignores it, so `output_file` is the argument that works everywhere. The output directory is not created for you.
+- **Saving**: pass `output_file` to save the figure at 300 DPI with a tight bounding box. Fourteen functions also accept `output_path` as an alias for `output_file`: `plot_population_diversity` and thirteen in `visualization_stats` (their signatures below show it). `output_file` is the argument that works everywhere and wins when both are given. The output directory is not created for you.
 - **Returns**: the `matplotlib.figure.Figure`, already closed in pyplot so it is not displayed (save it, or adjust it through `fig.axes`), or `None` when matplotlib (or seaborn / SciPy where noted) is not installed. Most functions also return `None` for empty input.
 - **Fixed titles and sizes**: none of the functions accept `title` or `figsize`; titles, labels and sizes are set inside each plot.
 - **Optional packages**: `plot_fst_matrix`, `plot_kinship_matrix` and `plot_statistic_correlation_matrix` need seaborn; `plot_bootstrap_distribution` needs SciPy, and `plot_ld_decay` adds its exponential fit only when SciPy is installed.
@@ -121,12 +121,12 @@ fig = plot_fst_comparison(fst_values, output_file="output/fst.png")
 Plot the first two principal components.
 
 **Parameters**:
-- `pca_result`: Result dictionary from `compute_pca` (coordinates under `pcs` or `coordinates`, explained variance as fractions of the total under `explained_variance_ratio` or `explained_variance`; a `labels` or `cluster_labels` entry colors the points), or a `(coordinates, explained_variance, labels)` tuple. A bare coordinate array is not accepted: it returns `None` with a logged warning
+- `pca_result`: Result dictionary from `compute_pca` (coordinates under `pcs` or `coordinates`, explained variance as fractions of the total under `explained_variance_ratio` or `explained_variance`; a `labels` or `cluster_labels` entry colors the points), a `(coordinates, explained_variance, labels)` tuple, or a bare `(n_samples, n_components)` coordinate array or nested list, which is drawn without variance percentages on the axes and without colors
 - `sample_names`: Optional names drawn next to the points
 - `output_file`: Optional path to save the figure (alias `output_path`)
 - `n_components`: Accepted for compatibility but unused
 
-**Returns**: matplotlib Figure object, or `None` when no coordinates are found or they are not two-dimensional with at least two columns. A result dictionary whose `status` is `"failed"` raises `ValidationError`.
+**Returns**: matplotlib Figure object, or `None` (with a logged warning) when no coordinates are found or they are not two-dimensional with at least two columns, which includes a ragged or non-numeric array. A result dictionary whose `status` is `"failed"` raises `ValidationError`.
 
 **Plot**: a single PC1 versus PC2 scatter plot. When the explained variance is available, the axis labels show the percentage of variance of each component.
 
@@ -217,10 +217,10 @@ fig = plot_site_frequency_spectrum(
 
 ### `plot_neutrality_test_summary(summary, output_file=None, output_path=None)`
 
-A 2x2 grid with one single-bar panel per neutrality test statistic.
+One single-bar panel per neutrality test statistic, in two columns: a 2x2 grid for up to four tests, with one more row (of the same height) for every two further tests. An unused panel is left blank.
 
 **Parameters**:
-- `summary`: Dictionary mapping test names to a number, or to a dictionary with `statistic` (or `value`) and an optional `p_value`, which is added to the panel title. Only the first four entries are drawn.
+- `summary`: Dictionary mapping test names to a number, or to a dictionary with `statistic` (or `value`) and an optional `p_value`, which is added to the panel title. Every entry gets a panel.
 - `output_file`: Optional path to save the figure (alias `output_path`)
 
 **Returns**: matplotlib Figure object
@@ -292,7 +292,7 @@ fig = plot_demographic_comparison(
 
 ### `plot_summary_statistics_grid(stats_dict, output_file=None, output_path=None)`
 
-A 3x2 grid with one bar-chart panel per summary statistic, one bar per scenario.
+One bar-chart panel per summary statistic, one bar per scenario, in two columns: a 3x2 grid for up to six metrics, with one more row (of the same height) for every two further metrics. An unused panel is left blank.
 
 **Parameters**:
 - `stats_dict`: Dictionary mapping scenario names to `{metric: value}` dictionaries; the values must be numbers
@@ -300,7 +300,7 @@ A 3x2 grid with one bar-chart panel per summary statistic, one bar per scenario.
 
 **Returns**: matplotlib Figure object
 
-Metrics are sorted alphabetically and only the first six get a panel. A full `calculate_summary_statistics` result has nine metrics, so select the ones to plot, as below.
+Metrics are sorted alphabetically, and every metric that any scenario reports gets a panel; a scenario that lacks a metric has no bar in that panel. A full `calculate_summary_statistics` result has nine metrics, so the grid grows to five rows; select the metrics to plot if you want a smaller grid, as below.
 
 **Example**:
 ```python-snippet
@@ -543,17 +543,17 @@ fig.savefig("output/combined.png", dpi=300)
 
 #### `plot_population_diversity(diversity_data, output_file=None, output_path=None)`
 
-Bar chart of π per population with the value (four decimals) above each bar. It draws the same kind of chart as `plot_diversity_comparison`. `output_path` is accepted but ignored; use `output_file`.
+Bar chart of π per population with the value (four decimals) above each bar. It draws the same kind of chart as `plot_diversity_comparison`. `output_path` is an alias for `output_file`; `output_file` wins when both are given.
 
 **Parameters**:
 - `diversity_data`: Dictionary mapping population names to π values
 
 #### `create_population_summary_plot(population_data, output_file=None)`
 
-One bar-chart panel per metric, stacked vertically, one bar per population.
+One bar-chart panel per metric, stacked vertically in alphabetical order of the metric names, with one bar per population in the order the populations are given.
 
 **Parameters**:
-- `population_data`: Dictionary mapping population names to `{metric: value}` dictionaries; a metric missing for a population is plotted as 0
+- `population_data`: Dictionary mapping population names to `{metric: value}` dictionaries. A population that does not report a metric (the key is absent, or its value is `None`, NaN or infinite) gets no bar in that panel and a gray "n/a" mark instead; a missing value is never drawn as 0.
 
 ```python-snippet
 from pathlib import Path
@@ -687,7 +687,8 @@ windows = [[seq[start:start + 100] for seq in sequences] for start in range(0, 1
 pi = [nucleotide_diversity(window) for window in windows]
 theta = [wattersons_theta(window) / 100 for window in windows]  # per site, like pi
 
-# theta_W sits well above pi here: the simulated genealogy is star-like (negative Tajima's D)
+# pi and theta_W both estimate the per-site theta of 0.01. The windows share one genealogy
+# (the sample is one coalescent draw without recombination), so their values are correlated, not independent replicates
 fig = plot_pi_vs_theta(pi, theta)
 
 fig = plot_statistic_correlation_matrix(

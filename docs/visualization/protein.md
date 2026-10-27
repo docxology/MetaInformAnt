@@ -16,6 +16,8 @@ All plotting functions live in `metainformant.protein.visualization.general`; th
 
 `plot_sequence_logo(sequences, *, ax=None, output_path=None, figsize=(10, 4), **kwargs)` draws one stacked bar per alignment position, with one segment per amino acid colored by residue (see the legend), rather than stacked letters. `sequences` is a list or tuple of aligned strings that must all have the same length.
 
+The height of each bar is the information content of that alignment column in bits, `log2(20) - H`, where `H` is the Shannon entropy of the column's residue frequencies, and the y-axis is labelled "Bits". A fully conserved column is `log2(20)`, about 4.32 bits, tall; a column in which all 20 amino acids are equally frequent has height 0, so conserved columns are tall and variable ones short. The segments split each bar in proportion to the residue frequencies, stacked from the bottom in the alphabetical order of the one-letter codes. Only the 20 standard amino acids are counted: a gap or any other character is not counted but still counts towards the number of sequences, which lowers the bar of that column.
+
 ```python
 from metainformant.protein.visualization import general as prot_viz
 

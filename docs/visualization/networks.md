@@ -36,15 +36,20 @@ ax = plot_network_circular(G, with_labels=False)
 
 ### `plot_network_hierarchical(G, *, ax=None, output_path=None, **kwargs)`
 
-Draw the graph in a hierarchical style. An undirected graph (or a directed graph with no root, meaning no node without incoming edges) is drawn with a shell layout, and arrows are drawn only for directed graphs. For a directed graph with a root the function tries to place nodes in columns by their distance from the first root, and falls back to a spring layout with a logged warning when that layout cannot be built; at present that layered layout cannot be built for any directed graph with a root, so those graphs are drawn with the spring layout.
+Draw the graph in a hierarchical style. An undirected graph (or a directed graph with no root, meaning no node without incoming edges) is drawn with a shell layout, and arrows are drawn only for directed graphs. For a directed graph with at least one root, every node is placed in a column by its distance from the nearest root: every root is in the first column, so a graph with several roots is laid out from all of them. Nodes that no root reaches, such as a cycle with no root of its own, go in a final column. If the layered layout cannot be built, the function logs a warning and falls back to a spring layout.
 
 **Example:**
 ```python
 import networkx as nx
 from metainformant.visualization.genomics.networks import plot_network_hierarchical
 
+# Undirected graph: shell layout
 G = nx.Graph([('root', 'a'), ('root', 'b'), ('a', 'c'), ('a', 'd'), ('b', 'e')])
 ax = plot_network_hierarchical(G)
+
+# Directed graph with two roots (r1 and r2): columns by distance from the nearest root
+D = nx.DiGraph([('r1', 'a'), ('r2', 'b'), ('a', 'c'), ('b', 'c'), ('c', 'd')])
+ax = plot_network_hierarchical(D)
 ```
 
 ### `plot_network_force_directed(G, *, ax=None, output_path=None, **kwargs)`

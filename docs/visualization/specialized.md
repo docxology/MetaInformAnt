@@ -53,8 +53,8 @@ fig = spec_viz.plot_upset_plot(data, figsize=(10, 6))
 
 `plot_sankey_diagram(flows, *, output_path=None, figsize=(10, 8), **kwargs)` takes a list of `(source, target, value)` tuples and returns a figure. There is no `ax` argument and no `interactive` switch; which kind of figure you get depends on whether Plotly can be imported:
 
-- **With Plotly**: an interactive Plotly Sankey figure. Extra keyword arguments go to `fig.update_layout`, and `output_path` writes an HTML file (its suffix is replaced by `.html`).
-- **Without Plotly**: a simple matplotlib flow diagram (sources on the left, targets on the right, line width and marker size from the value) returned as a matplotlib `Figure`. Extra keyword arguments are ignored and `output_path` saves an image, so use an image extension.
+- **With Plotly**: an interactive Plotly Sankey figure. Extra keyword arguments go to `fig.update_layout`, and `output_path` writes an HTML file (its suffix is replaced by `.html`). The node indices of the links come from the helper `_build_sankey_links`: each distinct name in `flows` is one node (a name that is both a source and a target is a single node), numbered in the order it first appears, so an index is never reassigned once it exists.
+- **Without Plotly**: a simple matplotlib flow diagram (sources on the left, targets on the right, line width and marker size from the value) returned as a matplotlib `Figure`. Sources and targets keep the order in which they first appear in `flows`, so the same input always gives the same row order. Extra keyword arguments are ignored and `output_path` saves an image, so use an image extension.
 
 ```python
 from metainformant.visualization.plots import specialized as spec_viz
@@ -149,7 +149,7 @@ ax = plot_radar_chart(data, figsize=(8, 8))
 
 #### Circular Bar Plots
 
-`plot_circular_barplot(values, labels=None, *, ax=None, output_path=None, figsize=(8, 8), **kwargs)` draws one bar per value at evenly spaced angles; `values` must be a NumPy array and `labels` an optional list written around the circle. Extra keyword arguments go to `Axes.bar`, where `width`, `bottom` and `alpha` are fixed by the function.
+`plot_circular_barplot(values, labels=None, *, ax=None, output_path=None, figsize=(8, 8), **kwargs)` draws one bar per value at evenly spaced angles; `values` must be a NumPy array and `labels` an optional list written around the circle. Extra keyword arguments go to `Axes.bar`; `width` (0.4), `bottom` (0.0) and `alpha` (0.7) are defaults that your keyword arguments override.
 
 ```python
 import numpy as np

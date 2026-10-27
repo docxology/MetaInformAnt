@@ -12,6 +12,12 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 import numpy as np
 
 from metainformant.core.utils import logging
+from metainformant.gwas.visualization.utils import (
+    chromosome_label,
+    chromosome_sort_key,
+    cumulative_chromosome_offsets,
+    get_chromosome,
+)
 
 if TYPE_CHECKING:
     from matplotlib.projections.polar import PolarAxes
@@ -61,7 +67,7 @@ def circular_manhattan_plot(
         positions_list = []
         pvalues_list = []
         for entry in results_df:
-            chroms_list.append(entry.get("CHROM", entry.get("CHR", entry.get("chr", "1"))))
+            chroms_list.append(get_chromosome(entry, "1"))
             positions_list.append(entry.get("POS", entry.get("BP", entry.get("pos", 0))))
             pvalues_list.append(entry.get("p_value", entry.get("P", entry.get("pval", 1.0))))
     elif hasattr(results_df, "columns"):
@@ -268,7 +274,7 @@ def chromosome_ideogram(
             return {"status": "failed", "error": "No chromosome data provided"}
         chromosome_lengths: Dict[str, int] = {}
         for entry in chromosome_data:
-            chrom = str(entry.get("CHROM", entry.get("CHR", entry.get("chr", "1"))))
+            chrom = str(get_chromosome(entry, "1"))
             pos = int(entry.get("POS", entry.get("BP", entry.get("pos", 0))))
             if chrom not in chromosome_lengths or pos > chromosome_lengths[chrom]:
                 chromosome_lengths[chrom] = pos
@@ -545,32 +551,23 @@ def manhattan_plot(
 
     try:
         # Convert to DataFrame-like structure
-        chromosomes = []
-        positions = []
-        p_values = []
+        chromosomes: List[str] = []
+        positions: List[float] = []
+        p_values: List[float] = []
 
         for result in results:
-            chromosomes.append(result.get("CHROM", result.get("chr", 1)))
+            chromosomes.append(chromosome_label(get_chromosome(result, 1)))
             positions.append(result.get("POS", result.get("pos", 0)))
             p_values.append(result.get("p_value", result.get("P", 1.0)))
 
-        # Create chromosome mapping
-        unique_chroms = sorted(set(str(chrom) for chrom in chromosomes))
-        chrom_to_num = {chrom: i + 1 for i, chrom in enumerate(unique_chroms)}
-
-        # Convert chromosome names to numbers
-        chrom_nums = [chrom_to_num[str(chrom)] for chrom in chromosomes]
-
-        # Calculate x positions
-        x_positions = []
-        chrom_max_pos = {}
-        current_pos = 0
-
-        for i, (cnum, pos) in enumerate(zip(chrom_nums, positions)):
-            if cnum not in chrom_max_pos:
-                chrom_max_pos[cnum] = current_pos
-            x_positions.append(current_pos + pos)
-            current_pos = max(current_pos, chrom_max_pos[cnum] + pos + 1)
+        # Chromosomes in natural order (1, 2, ..., 10, ..., X), laid end to end: a variant's x position is
+        # its chromosome's offset plus its position on that chromosome
+        unique_chroms = sorted(set(chromosomes), key=chromosome_sort_key)
+        chrom_extent: Dict[str, float] = {}
+        for chrom, pos in zip(chromosomes, positions):
+            chrom_extent[chrom] = max(chrom_extent.get(chrom, pos), pos)
+        chrom_offsets = cumulative_chromosome_offsets(chrom_extent, unique_chroms)
+        x_positions = [chrom_offsets[chrom] + pos for chrom, pos in zip(chromosomes, positions)]
 
         # Convert p-values to -log10
         neg_log_p = [-math.log10(max(p, 1e-300)) for p in p_values]
@@ -578,19 +575,18 @@ def manhattan_plot(
         # Create plot
         fig, ax = plt.subplots(figsize=figsize)
 
-        # Color by chromosome
-        colors = ["#1f77b4", "#ff7f0e"] * len(unique_chroms)
-        num_to_chrom = {v: k for k, v in chrom_to_num.items()}
-        chrom_colors = {}
-        for i, chrom in enumerate(unique_chroms):
-            chrom_colors[chrom] = colors[i % len(colors)]
+        # One scatter call per chromosome (not per variant), alternating two colours
+        colors = ["#1f77b4", "#ff7f0e"]
+        chrom_members: Dict[str, List[int]] = {chrom: [] for chrom in unique_chroms}
+        for index, chrom in enumerate(chromosomes):
+            chrom_members[chrom].append(index)
 
-        for i in range(len(x_positions)):
-            chrom_name = num_to_chrom[chrom_nums[i]]
+        for i, chrom in enumerate(unique_chroms):
+            members = chrom_members[chrom]
             ax.scatter(
-                x_positions[i],
-                neg_log_p[i],
-                color=chrom_colors[chrom_name],
+                [x_positions[index] for index in members],
+                [neg_log_p[index] for index in members],
+                color=colors[i % len(colors)],
                 alpha=0.8,
                 s=20,
             )
@@ -619,8 +615,7 @@ def manhattan_plot(
         # Add chromosome labels at centers
         chrom_centers = []
         for chrom in unique_chroms:
-            chrom_num = chrom_to_num[chrom]
-            chrom_x = [x for x, c in zip(x_positions, chrom_nums) if c == chrom_num]
+            chrom_x = [x_positions[index] for index in chrom_members[chrom]]
             if chrom_x:
                 chrom_centers.append((chrom, sum(chrom_x) / len(chrom_x)))
 

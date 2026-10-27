@@ -6,7 +6,9 @@ This module provides plots for statistical analysis and quality control.
 from __future__ import annotations
 
 import math
+import sys
 from pathlib import Path
+from statistics import NormalDist
 from typing import Any, List, Optional, cast
 
 import numpy as np
@@ -15,6 +17,24 @@ from metainformant.core.utils import logging
 from metainformant.gwas.analysis.correction import lambda_gc_from_p_values
 
 logger = logging.get_logger(__name__)
+
+#: Smallest positive normal float. A p-value that underflowed to exactly 0 is clamped here before -log10.
+_SMALLEST_POSITIVE_P: float = sys.float_info.min
+
+
+def _neg_log10_p(p: float) -> float:
+    """Return ``-log10(p)``, clamping an exactly-zero p-value at the smallest positive float.
+
+    Negative p-values are invalid, so they raise instead of being silently clamped to "extremely significant".
+    """
+    if p < 0:
+        raise ValueError(f"p-values must be non-negative, got {p}")
+    return -math.log10(max(p, _SMALLEST_POSITIVE_P))
+
+
+def _uniform_quantiles(n: int) -> List[float]:
+    """Theoretical plotting positions ``(i - 0.5) / n`` for ``i = 1..n`` of ``n`` sorted uniform draws."""
+    return [(i - 0.5) / n for i in range(1, n + 1)]
 
 
 def lambda_gc_plot(
@@ -121,9 +141,10 @@ def lambda_gc_plot(
         ax1.legend()
         ax1.grid(True, alpha=0.3)
 
-        # Plot 2: Q-Q plot against expected distribution
-        expected_lambdas = np.random.normal(1.0, 0.1, len(lambda_values))
-        expected_lambdas = np.sort(expected_lambdas)
+        # Plot 2: Q-Q plot against the expected N(1.0, 0.1) distribution: its theoretical quantile at each
+        # plotting position (i - 0.5) / n, so the figure does not change from run to run
+        reference = NormalDist(1.0, 0.1)
+        expected_lambdas = np.array([reference.inv_cdf(q) for q in _uniform_quantiles(len(lambda_values))])
         observed_lambdas = np.sort(lambda_values)
 
         ax2.scatter(
@@ -358,11 +379,11 @@ def qq_plot(
         p_values = sorted(p_values)
         n = len(p_values)
 
-        # Expected p-values under null hypothesis
-        expected = [-math.log10((i + 1) / (n + 1)) for i in range(n)]
+        # Expected p-values under the null hypothesis: theoretical uniform quantiles (i - 0.5) / n
+        expected = [-math.log10(q) for q in _uniform_quantiles(n)]
 
-        # Observed p-values
-        observed = [-math.log10(p) for p in p_values]
+        # Observed p-values (an exact zero is clamped at the smallest positive float)
+        observed = [_neg_log10_p(p) for p in p_values]
 
         # Lambda GC from the chi2-median genomic-control definition
         lambda_gc = lambda_gc_from_p_values(p_values) or 1.0
@@ -534,11 +555,11 @@ def qq_plot_stratified(
             stratum_p_values = sorted(stratum_p_values)
             n = len(stratum_p_values)
 
-            # Expected p-values under null hypothesis
-            expected = [-math.log10((j + 1) / (n + 1)) for j in range(n)]
+            # Expected p-values under the null hypothesis: theoretical uniform quantiles (j - 0.5) / n
+            expected = [-math.log10(q) for q in _uniform_quantiles(n)]
 
-            # Observed p-values
-            observed = [-math.log10(p) for p in stratum_p_values]
+            # Observed p-values (an exact zero is clamped at the smallest positive float)
+            observed = [_neg_log10_p(p) for p in stratum_p_values]
 
             # Lambda GC from the chi2-median genomic-control definition
             lambda_gc = lambda_gc_from_p_values(stratum_p_values) or 1.0

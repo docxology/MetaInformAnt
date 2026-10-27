@@ -158,17 +158,19 @@ def plot_network_hierarchical(
             # Find root nodes (nodes with no incoming edges)
             roots = [n for n in G.nodes() if G.in_degree(n) == 0]
             if roots:
-                # Use multipartite layout for hierarchical visualization
-                # Assign levels based on distance from root
-                root = roots[0]
-                levels = {}
-                for node in G.nodes():
-                    try:
-                        levels[node] = nx.shortest_path_length(G, root, node)
-                    except nx.NetworkXNoPath:
-                        levels[node] = len(G.nodes())  # Put unreachable nodes at the end
+                # Use multipartite layout for hierarchical visualization. A node's level is its distance from
+                # the nearest root (every root starts level 0), so a graph with several roots is laid out
+                # from all of them, not just the first
+                layers: dict[int, list[Any]] = dict(enumerate(nx.bfs_layers(G, roots)))
+                reached = {node for layer in layers.values() for node in layer}
+                unreachable = [node for node in G.nodes() if node not in reached]
+                if unreachable:
+                    # Nodes no root reaches (e.g. a cycle with no root of its own) go in a final column
+                    layers[len(layers)] = unreachable
 
-                pos = nx.multipartite_layout(G, subset_key=levels)
+                # multipartite_layout wants {level: nodes in that level}; handing it {node: level} made it
+                # raise, and the blanket except below then always fell back to the spring layout
+                pos = nx.multipartite_layout(G, subset_key=layers)
             else:
                 pos = nx.shell_layout(G)
         else:

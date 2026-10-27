@@ -32,6 +32,15 @@ The returned dict holds `status` (`"success"`, or `"skipped"` when no result is 
 
 `metainformant.gwas.compute_credible_set` is this wrapper. The Z-score function with `standard_errors=` and `sample_size=` arguments is `metainformant.gwas.finemapping.credible_sets.compute_credible_set`.
 
+## Full Plot Suite
+
+`generate_all_plots(association_results, output_dir, pca_file=None, kinship_file=None, vcf_file=None, significance_threshold=5e-8, metadata=None, kinship_matrix=None, genotype_matrix=None, pca_data=None, finemapping_results=None, h2_data=None, phenotypes_dict=None, phenotype_values=None)` in `suite.py` writes every plot the supplied inputs allow into `output_dir`. `association_results` is a `.csv` or `.tsv` file or a list of result dictionaries. The returned dictionary holds `status` (`"completed"` or `"failed"`), `num_plots_generated`, `plots` (plot name to path), `files_created` and `statistics`. The [GWAS Visualization Gallery](../../../../../docs/gwas/visualization_gallery.md#visualization-suite) lists which input produces which plot.
+
+- `pca_file` and `kinship_file` accept `.npy`, `.npz`, `.tsv`, `.csv`, `.txt` and `.json` files (one row per sample for PCA, a square matrix for kinship), including the JSON that the GWAS workflow writes. Each file gets its own plot and, unless `pca_data` or `kinship_matrix` is passed in memory (which takes precedence), also feeds every plot that needs PCA or kinship data, the summary panel included. A file that is missing or cannot be read is logged with the reason and the other plots are still drawn.
+- `vcf_file` is a plain or `.gz` VCF. It adds a variant-density plot and a transition/transversion plot and records `vcf_variants` and `ts_tv_ratio` in `statistics`.
+- `pca_data["pcs"]` may be a list of lists or a NumPy array.
+- Every figure is saved and then closed, so no pyplot figure stays open after the call.
+
 ## Usage
 
 ```python

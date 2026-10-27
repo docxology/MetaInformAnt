@@ -182,8 +182,9 @@ def test_analyze_genetic_architecture_uses_p_column() -> None:
     assert "PopA" in architecture
     assert "PopB" not in architecture
     assert architecture["PopA"]["lambda_gc"] == pytest.approx(1.0, abs=0.01)
-    assert architecture["PopA"]["heritability"] == pytest.approx(0.5, abs=0.01)
     assert architecture["PopA"]["polygenicity"] == pytest.approx(1 / 101)
+    # p-values alone cannot give a heritability; the old lambda / (lambda + 1) "estimate" was removed
+    assert "heritability" not in architecture["PopA"]
 
 
 def test_analyze_genetic_architecture_skips_missing_p_column() -> None:

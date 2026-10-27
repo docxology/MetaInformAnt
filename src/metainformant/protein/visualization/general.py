@@ -96,14 +96,16 @@ def plot_sequence_logo(
 
     frequencies = frequencies / len(sequences)
 
-    # Calculate information content
-    info_content = np.zeros(seq_length)
+    # Information content of each column in bits: log2(20) - H, where H = -sum(f * log2(f)) is the Shannon
+    # entropy of the column. A conserved column is tall and a variable one short (the sign of H was
+    # inverted, which drew the most variable columns tallest).
+    neg_entropy = np.zeros(seq_length)
     for i in range(seq_length):
         for j in range(len(amino_acids)):
             if frequencies[i, j] > 0:
-                info_content[i] += frequencies[i, j] * np.log2(frequencies[i, j])
+                neg_entropy[i] += frequencies[i, j] * np.log2(frequencies[i, j])
 
-    info_content = -info_content + np.log2(len(amino_acids))
+    info_content = np.log2(len(amino_acids)) + neg_entropy
 
     # Plot sequence logo
     colors = plt.cm.tab20(np.linspace(0, 1, len(amino_acids)))

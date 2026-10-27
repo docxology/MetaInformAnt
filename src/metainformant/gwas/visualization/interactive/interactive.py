@@ -448,7 +448,8 @@ def interactive_pca(
     explained = pca_data.get("explained_variance_ratio", [])
     sample_ids = pca_data.get("sample_ids", [])
 
-    if not pcs_raw or (hasattr(pcs_raw, "__len__") and len(pcs_raw) == 0):
+    # Not ``not pcs_raw``: the truth value of a NumPy array with more than one element is ambiguous
+    if pcs_raw is None or (hasattr(pcs_raw, "__len__") and len(pcs_raw) == 0):
         logger.warning("No PCA data provided")
         return {
             "status": "skipped",

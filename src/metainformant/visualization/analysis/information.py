@@ -74,13 +74,14 @@ def plot_entropy_profile(
     if ax is None:
         fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 6)))
 
-    # Plot entropy profiles for each dataset/sequence
+    # Plot entropy profiles for each dataset/sequence (caller keyword arguments override the defaults)
+    line_kwargs: dict[str, Any] = {"marker": "o", **kwargs}
     for label, entropy_values in entropy_data.items():
         if not isinstance(entropy_values, (list, np.ndarray)):
             raise ValueError(f"Entropy values for {label} must be a list or array")
 
         k_values = list(range(1, len(entropy_values) + 1))
-        ax.plot(k_values, entropy_values, label=label, marker="o", **kwargs)
+        ax.plot(k_values, entropy_values, label=label, **line_kwargs)
 
     ax.set_xlabel("k-mer size")
     ax.set_ylabel("Shannon Entropy (bits)")
@@ -130,8 +131,9 @@ def plot_mutual_information_matrix(
     if ax is None:
         fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 8)))
 
-    # Create heatmap
-    im = ax.imshow(mi_matrix, cmap=kwargs.get("cmap", "viridis"), **kwargs)
+    # Create heatmap (caller keyword arguments override the defaults)
+    imshow_kwargs: dict[str, Any] = {"cmap": "viridis", **kwargs}
+    im = ax.imshow(mi_matrix, **imshow_kwargs)
     plt.colorbar(im, ax=ax)
 
     # Add labels if provided
@@ -182,12 +184,13 @@ def plot_renyi_spectra(
     if ax is None:
         fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 6)))
 
-    # Plot Rényi spectra for each dataset
+    # Plot Rényi spectra for each dataset (caller keyword arguments override the defaults)
+    line_kwargs: dict[str, Any] = {"marker": "o", **kwargs}
     for label, renyi_values in renyi_data.items():
         if len(renyi_values) != len(alpha_values):
             raise ValueError(f"Rényi values for {label} must match alpha values length")
 
-        ax.plot(alpha_values, renyi_values, label=label, marker="o", **kwargs)
+        ax.plot(alpha_values, renyi_values, label=label, **line_kwargs)
 
     ax.set_xlabel("α (Rényi parameter)")
     ax.set_ylabel("Rényi Entropy")
@@ -247,10 +250,9 @@ def plot_information_landscape(
 
     X, Y = np.meshgrid(x_coords, y_coords)
 
-    # Create contour plot
-    cs = ax.contourf(
-        X, Y, landscape_data, cmap=kwargs.get("cmap", "viridis"), levels=kwargs.get("levels", 20), **kwargs
-    )
+    # Create contour plot (caller keyword arguments override the defaults)
+    contour_kwargs: dict[str, Any] = {"cmap": "viridis", "levels": 20, **kwargs}
+    cs = ax.contourf(X, Y, landscape_data, **contour_kwargs)
     plt.colorbar(cs, ax=ax)
 
     ax.set_xlabel("X coordinate")
@@ -309,26 +311,24 @@ def plot_information_network(
             raise ValueError(f"Edge connects unknown nodes: {source} -> {target}")
         G.add_edge(source, target, weight=weight)
 
-    # Calculate node positions
-    pos = nx.spring_layout(G, **kwargs.get("layout_kwargs", {}))
+    # Calculate node positions (layout_kwargs belong to the layout, not to networkx.draw)
+    pos = nx.spring_layout(G, **kwargs.pop("layout_kwargs", {}))
 
-    # Draw network
+    # Draw network (caller keyword arguments override these defaults instead of colliding with them)
     node_sizes = [G.degree(node) * 100 + 300 for node in G.nodes()]  # Size by degree
     edge_weights = [G[u][v]["weight"] * 2 for u, v in G.edges()]  # Width by weight
 
-    nx.draw(
-        G,
-        pos=pos,
-        ax=ax,
-        with_labels=kwargs.get("with_labels", True),
-        node_color=kwargs.get("node_color", "lightblue"),
-        node_size=node_sizes,
-        edge_color=kwargs.get("edge_color", "gray"),
-        width=edge_weights,
-        alpha=kwargs.get("alpha", 0.8),
-        arrows=kwargs.get("arrows", True),
+    draw_kwargs: dict[str, Any] = {
+        "with_labels": True,
+        "node_color": "lightblue",
+        "node_size": node_sizes,
+        "edge_color": "gray",
+        "width": edge_weights,
+        "alpha": 0.8,
+        "arrows": True,
         **kwargs,
-    )
+    }
+    nx.draw(G, pos=pos, ax=ax, **draw_kwargs)
 
     ax.set_title("Information Flow Network")
 

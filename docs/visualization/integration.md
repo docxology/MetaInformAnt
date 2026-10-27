@@ -58,7 +58,7 @@ from metainformant.life_events.visualization.statistical import (
 
 ### `multi_panel(panels, *, ncols=2, figsize=None, title=None, output_path=None)`
 
-Arrange several plots in one figure grid (`metainformant.visualization.dashboards.composite`). Each entry of `panels` is a dict with `func` (a plotting function that accepts `ax=`, such as any plot function in this package), `kwargs` (its keyword arguments) and an optional `title`. Unused grid cells are hidden, `figsize` defaults to 6 x `ncols` by 5 x rows inches, and the matplotlib `Figure` is returned. A single panel needs `ncols=1`.
+Arrange several plots in one figure grid (`metainformant.visualization.dashboards.composite`). Each entry of `panels` is a dict with `func` (a plotting function that accepts `ax=`, such as any plot function in this package), `kwargs` (its keyword arguments) and an optional `title`. Unused grid cells are hidden, `figsize` defaults to 6 x `ncols` by 5 x rows inches, and the matplotlib `Figure` is returned. A single panel works with any `ncols`; the other cells of its row stay hidden (`ncols=1` gives a figure sized for one panel).
 
 **Example:**
 ```python

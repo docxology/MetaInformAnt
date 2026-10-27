@@ -6,11 +6,18 @@ including Manhattan plots, Q-Q plots, and regional association plots.
 
 from __future__ import annotations
 
+import csv
+import json
 import math
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from metainformant.core.utils import logging
+from metainformant.gwas.visualization.utils import P_VALUE_KEYS, chromosome_label, get_chromosome, get_position
+
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    import pandas as pd
 
 logger = logging.get_logger(__name__)
 
@@ -110,19 +117,72 @@ def _save_owned_figure(
         logger.info(f"Saved {plot_name} to {saved_path}")
 
 
-def _normalize_result_records(results: Union[List[Dict[str, Any]], Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Normalize GWAS result input to a list of dictionary records."""
-    if isinstance(results, dict):
-        return [results]
-    return [result for result in results if isinstance(result, dict)]
+def _as_finite_float(value: Any) -> float:
+    """``value`` as a float, or NaN when it is missing (None), not a number (such as "NA") or not finite."""
+    if value is None or isinstance(value, bool):
+        return float("nan")
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return float("nan")
+    return number if math.isfinite(number) else float("nan")
+
+
+def _record_p_value(record: Mapping[str, Any]) -> float:
+    """The p-value of a record under any of the shared p-value spellings, NaN when it has none.
+
+    The first spelling that holds a value decides (as for the chromosome and position helpers of
+    :mod:`metainformant.gwas.visualization.utils`), so a failed test whose ``p_value`` is NaN stays missing.
+    """
+    for key in P_VALUE_KEYS:
+        value = record.get(key)
+        if value is not None:
+            return _as_finite_float(value)
+    return float("nan")
+
+
+def _normalize_result_records(
+    results: Union[List[Dict[str, Any]], Dict[str, Any], "pd.DataFrame"],
+) -> List[Dict[str, Any]]:
+    """Normalize GWAS result input to a list of record copies with canonical keys.
+
+    Accepts one record, a sequence of records or a pandas DataFrame (one record per row). In each copy the
+    chromosome, position and p-value are stored under ``chrom``, ``pos`` and ``p_value`` whatever spelling
+    they came in (``CHR``, ``BP``, ``P``, ``pvalue`` ... as in :mod:`metainformant.gwas.visualization.utils`),
+    and the other fields are kept. ``p_value`` is a float, or NaN when the record has none or it is not a
+    number (a failed test carries NaN, and "NA" once it has been read back from a table). Entries that are
+    not records are skipped.
+    """
+    if callable(getattr(results, "to_dict", None)) and hasattr(results, "columns"):
+        records: List[Any] = list(results.to_dict("records"))  # type: ignore[union-attr]
+    elif isinstance(results, Mapping):
+        records = [results]
+    else:
+        records = [result for result in results if isinstance(result, Mapping)]
+
+    normalized: List[Dict[str, Any]] = []
+    for record in records:
+        item = dict(record)
+        chromosome = get_chromosome(record)
+        if chromosome is not None:
+            item["chrom"] = chromosome_label(chromosome)
+        position = get_position(record)
+        if position is not None:
+            item["pos"] = position
+        item["p_value"] = _record_p_value(record)
+        normalized.append(item)
+    return normalized
 
 
 def _neg_log10_p_value(p_value: Any, cap: float = 50.0) -> float:
-    """Convert a p-value to -log10 space with a cap for invalid or zero values."""
-    try:
-        numeric = float(p_value)
-    except (TypeError, ValueError):
-        return cap
+    """Convert a p-value to -log10 space, capping a zero or negative value.
+
+    A missing p-value (None, NaN, not a number) gives NaN: there is nothing to draw, and it must not be drawn
+    as the most significant result.
+    """
+    numeric = _as_finite_float(p_value)
+    if math.isnan(numeric):
+        return numeric
     return -math.log10(numeric) if numeric > 0 else cap
 
 
@@ -134,7 +194,7 @@ def _sorted_valid_p_values(p_values: Union[List[float], List[int]]) -> Any:
 
 
 def manhattan_plot(
-    results: Union[List[Dict[str, Any]], Dict[str, Any]],
+    results: Union[List[Dict[str, Any]], Dict[str, Any], "pd.DataFrame"],
     output_path: Optional[Union[str, Path]] = None,
     significance_threshold: float = 5e-8,
     gene_annotations: Optional[List[Dict[str, Any]]] = None,
@@ -147,8 +207,12 @@ def manhattan_plot(
 ) -> Any:
     """Create a Manhattan plot from GWAS results.
 
+    A result without a p-value (a failed test carries NaN, or "NA" in a table) is not drawn, and does not
+    count among the variants or the genome-wide significant ones in the title. Chromosome, position and
+    p-value are read under the spellings of :mod:`metainformant.gwas.visualization.utils`.
+
     Args:
-        results: GWAS results dictionary or list of result dictionaries
+        results: GWAS results dictionary, list of result dictionaries or a DataFrame with one row per result
         output_path: Path to save the plot (optional)
         significance_threshold: P-value threshold for significance line
         gene_annotations: Optional list of dicts with keys: variant_index or
@@ -234,13 +298,22 @@ def manhattan_plot(
         p_values.append(neg_log_p)
         colors.append(chrom_colors[color_idx])
 
+    # A result without a p-value has nothing to draw (indices below still refer to the results as given)
+    drawn = [i for i, value in enumerate(p_values) if not math.isnan(value)]
+    finite_p = [p_values[i] for i in drawn]
+    if len(drawn) < len(p_values):
+        logger.warning(
+            f"{len(p_values) - len(drawn)} of {len(p_values)} results have no p-value "
+            "(failed or missing tests) and are not drawn in the Manhattan plot"
+        )
+
     # Plot points with kwargs (auto-rasterize for very dense arrays to prevent 100MB+ PDFs)
     scatter_kwargs = kwargs.get("scatter_kwargs", {"s": style.point_size, "alpha": style.alpha})
-    if len(positions) > 100000:
+    if len(drawn) > 100000:
         scatter_kwargs.setdefault("rasterized", True)
-        logger.info(f"Auto-rasterizing Manhattan plot due to high variant density (n={len(positions):,})")
+        logger.info(f"Auto-rasterizing Manhattan plot due to high variant density (n={len(drawn):,})")
 
-    ax.scatter(positions, p_values, c=colors, **scatter_kwargs)
+    ax.scatter([positions[i] for i in drawn], finite_p, c=[colors[i] for i in drawn], **scatter_kwargs)
 
     # Add significance threshold line
     if significance_threshold > 0:
@@ -300,14 +373,16 @@ def manhattan_plot(
                     # Find the closest point
                     best_dist = float("inf")
                     for j, (px, py) in enumerate(zip(positions, p_values)):
+                        if math.isnan(py):
+                            continue
                         dist = abs(px - target_x)
                         if dist < best_dist:
                             best_dist = dist
                             ann_x = px
                             ann_y = py
 
-            if ann_x is not None and ann_y is not None:
-                offset = max(p_values) * 0.08 if p_values else 1.0
+            if ann_x is not None and ann_y is not None and not math.isnan(ann_y):
+                offset = max(finite_p) * 0.08 if finite_p else 1.0
                 ax.annotate(
                     gene_name,
                     xy=(ann_x, ann_y),
@@ -318,11 +393,11 @@ def manhattan_plot(
                 )
 
     # Label top N hits
-    if label_top_n > 0 and positions:
+    if label_top_n > 0 and finite_p:
         # Build index of (neg_log_p, position_idx) and sort by neg_log_p descending
-        indexed = sorted(enumerate(p_values), key=lambda x: x[1], reverse=True)
+        indexed = sorted(((i, p_values[i]) for i in drawn), key=lambda x: x[1], reverse=True)
         top_indices = [idx for idx, _ in indexed[:label_top_n]]
-        offset = max(p_values) * 0.06 if p_values else 1.0
+        offset = max(finite_p) * 0.06
 
         for rank, idx in enumerate(top_indices):
             px = positions[idx]
@@ -357,7 +432,7 @@ def manhattan_plot(
     # Labels and title
     ax.set_xlabel("Chromosome", fontsize=14)
     ax.set_ylabel("-log\u2081\u2080(p-value)", fontsize=14)
-    n_tested = len(positions)
+    n_tested = len(finite_p)
     sig_threshold_log = -math.log10(significance_threshold) if significance_threshold > 0 else 50
     n_sig = sum(1 for pv in p_values if pv >= sig_threshold_log)
     ax.set_title(
@@ -626,6 +701,8 @@ def regional_plot(
 ) -> Any:
     """Create a regional association plot.
 
+    Results without a p-value (failed tests) are not drawn.
+
     Args:
         results: GWAS results for the region
         chrom: Chromosome
@@ -653,6 +730,12 @@ def regional_plot(
     if not region_results:
         logger.warning(f"No results found in region {chrom}:{start}-{end}")
         return None
+
+    with_p_value = [result for result in region_results if not math.isnan(result["p_value"])]
+    if not with_p_value:
+        logger.warning(f"No results with a p-value in region {chrom}:{start}-{end} (failed or missing tests)")
+        return None
+    region_results = with_p_value
 
     # Extract positions and p-values
     positions = []
@@ -1217,8 +1300,42 @@ def effect_size_plot(results: List[Dict[str, Any]], output_path: Optional[Union[
     return fig
 
 
+#: Field delimiter of each text table format :func:`generate_all_plots` reads.
+_TABLE_DELIMITERS: Dict[str, str] = {".tsv": "\t", ".txt": "\t", ".csv": ","}
+
+
+def _number_or_text(cell: Any) -> Any:
+    """A table cell as a float when it is a number, otherwise unchanged ("NA" stays text and reads as missing)."""
+    try:
+        return float(cell)
+    except (TypeError, ValueError):
+        return cell
+
+
+def _read_association_file(path: Path) -> List[Dict[str, Any]]:
+    """Read association results from a ``.json``, ``.tsv``, ``.txt`` or ``.csv`` file as a list of records.
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+        ValueError: If its extension is not one of the supported formats.
+    """
+    if not path.exists():
+        raise FileNotFoundError(f"Association results file not found: {path}")
+    suffix = path.suffix.lower()
+    if suffix == ".json":
+        with open(path) as fh:
+            loaded = json.load(fh)
+        records = loaded if isinstance(loaded, list) else loaded.get("results", [])
+        return list(records)
+    if suffix in _TABLE_DELIMITERS:
+        with open(path, newline="") as fh:
+            reader = csv.DictReader(fh, delimiter=_TABLE_DELIMITERS[suffix])
+            return [{key: _number_or_text(value) for key, value in row.items()} for row in reader]
+    raise ValueError(f"Unsupported association results format {suffix!r}; use .json, .tsv, .txt or .csv")
+
+
 def generate_all_plots(
-    association_results: Union[str, Path, List[Dict[str, Any]]],
+    association_results: Union[str, Path, List[Dict[str, Any]], "pd.DataFrame"],
     output_dir: Union[str, Path],
     pca_file: Optional[Union[str, Path]] = None,
     kinship_file: Optional[Union[str, Path]] = None,
@@ -1227,8 +1344,18 @@ def generate_all_plots(
 ) -> Dict[str, Any]:
     """Generate all GWAS visualization plots.
 
+    The association results may be given in memory, as a list of records or a pandas DataFrame with one row
+    per result, or as the path of a ``.json``, ``.tsv``, ``.txt`` or ``.csv`` file. Chromosome, position and
+    p-value are read under the spellings of :mod:`metainformant.gwas.visualization.utils` (``chrom``,
+    ``CHR``, ``chromosome`` ...; ``pos``, ``BP``, ``POS`` ...; ``p_value``, ``P``, ``pvalue`` ...), so the
+    pipeline's own records and PLINK-style tables are read alike. A result without a p-value (a failed test:
+    NaN, or "NA" in a table) is left out of the plots, and the number left out is logged.
+
+    Every figure the call opens is saved and then closed. When there is nothing to draw (no results, or none
+    with a p-value) a warning says so, and the Manhattan and Q-Q plots are missing from the returned mapping.
+
     Args:
-        association_results: Path to association results or results data
+        association_results: Association results (records, DataFrame or file path)
         output_dir: Output directory for plots
         pca_file: Path to PCA results file
         kinship_file: Path to kinship matrix file
@@ -1236,7 +1363,12 @@ def generate_all_plots(
         significance_threshold: Significance threshold
 
     Returns:
-        Dictionary with plot file paths and metadata
+        Dictionary mapping each plot that was written (``manhattan``, ``qq``, ``pca``, ``kinship``) to its path
+
+    Raises:
+        TypeError: If ``association_results`` is none of a path, a list or tuple of records, or a DataFrame.
+        FileNotFoundError: If ``association_results`` is a path that does not exist.
+        ValueError: If ``association_results`` is a path with an unsupported extension.
     """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -1245,45 +1377,34 @@ def generate_all_plots(
 
     plots_generated: Dict[str, Any] = {}
 
-    # Load association results from file or use directly
-    results_data: List[Dict[str, Any]] = []
+    # Load association results from a file or use them directly
+    raw_results: Any
+    if isinstance(association_results, (str, Path)):
+        raw_results = _read_association_file(Path(association_results))
+    elif isinstance(association_results, (list, tuple)) or (
+        callable(getattr(association_results, "to_dict", None)) and hasattr(association_results, "columns")
+    ):
+        raw_results = association_results
+    else:
+        raise TypeError(
+            "association_results must be a path, a list of records or a pandas DataFrame, "
+            f"not {type(association_results).__name__}"
+        )
 
-    if isinstance(association_results, list):
-        results_data = association_results
-
-    association_path = Path(association_results) if isinstance(association_results, (str, Path)) else None
-
-    if association_path and association_path.exists():
-        import csv
-        import json
-
-        suffix = association_path.suffix.lower()
-        if suffix == ".json":
-            with open(association_path) as fh:
-                loaded = json.load(fh)
-                results_data = loaded if isinstance(loaded, list) else loaded.get("results", [])
-        elif suffix in (".tsv", ".txt"):
-            with open(association_path, newline="") as fh:
-                reader = csv.DictReader(fh, delimiter="\t")
-                for row in reader:
-                    entry: Dict[str, Any] = {}
-                    for k, v in row.items():
-                        try:
-                            entry[k] = float(v)
-                        except (ValueError, TypeError):
-                            entry[k] = v
-                    results_data.append(entry)
-        elif suffix == ".csv":
-            with open(association_path, newline="") as fh:
-                reader = csv.DictReader(fh)
-                for row in reader:
-                    entry = {}
-                    for k, v in row.items():
-                        try:
-                            entry[k] = float(v)
-                        except (ValueError, TypeError):
-                            entry[k] = v
-                    results_data.append(entry)
+    records = _normalize_result_records(raw_results)
+    p_vals = [record["p_value"] for record in records if not math.isnan(record["p_value"])]
+    if not records:
+        logger.warning("No association results were given: the Manhattan and Q-Q plots are skipped")
+    elif not p_vals:
+        logger.warning(
+            f"None of the {len(records)} association results has a p-value (failed or missing tests): "
+            "the Manhattan and Q-Q plots are skipped"
+        )
+    elif len(p_vals) < len(records):
+        logger.warning(
+            f"{len(records) - len(p_vals)} of {len(records)} association results have no p-value "
+            "(failed or missing tests) and are left out of the Manhattan and Q-Q plots"
+        )
 
     # Extract sample IDs from VCF for strain coloring and sample count
     _vcf_sample_ids: List[str] = []
@@ -1303,52 +1424,49 @@ def generate_all_plots(
         except Exception:
             pass  # bcftools not available
 
-    if results_data:
+    if p_vals:
         # Manhattan plot
+        fig = None
         try:
-            p_vals_manhattan = [
-                r.get("p_value", r.get("pval", r.get("pvalue")))
-                for r in results_data
-                if r.get("p_value", r.get("pval", r.get("pvalue"))) is not None
-            ]
-            if p_vals_manhattan:
-                manhattan_path = output_dir / "manhattan_plot.png"
-                fig = manhattan_plot(
-                    results_data,
-                    output_path=manhattan_path,
-                    significance_threshold=significance_threshold,
-                )
-                if fig is not None:
-                    plots_generated["manhattan"] = str(manhattan_path)
-                    plt.close(fig)
+            manhattan_path = output_dir / "manhattan_plot.png"
+            fig = manhattan_plot(
+                records,
+                output_path=manhattan_path,
+                significance_threshold=significance_threshold,
+            )
+            if fig is not None:
+                plots_generated["manhattan"] = str(manhattan_path)
         except Exception as e:
             logger.warning(f"Manhattan plot failed: {e}")
+        finally:
+            if fig is not None:
+                plt.close(fig)
 
         # Q-Q plot — with N-aware diagnostics
+        fig = None
         try:
-            p_vals = [p for r in results_data if (p := r.get("p_value", r.get("pval", r.get("pvalue")))) is not None]
-            if p_vals:
-                qq_path = output_dir / "qq_plot.png"
-                fig = qq_plot(
-                    p_vals,
-                    output_path=qq_path,
-                    n_samples=len(_vcf_sample_ids) if _vcf_sample_ids else None,
-                )
-                if fig is not None:
-                    plots_generated["qq"] = str(qq_path)
-                    plt.close(fig)
+            qq_path = output_dir / "qq_plot.png"
+            fig = qq_plot(
+                p_vals,
+                output_path=qq_path,
+                n_samples=len(_vcf_sample_ids) if _vcf_sample_ids else None,
+            )
+            if fig is not None:
+                plots_generated["qq"] = str(qq_path)
         except Exception as e:
             logger.warning(f"Q-Q plot failed: {e}")
+        finally:
+            if fig is not None:
+                plt.close(fig)
 
     # PCA plot — uses _vcf_sample_ids extracted above for strain coloring
     if pca_file:
+        fig = None
         try:
-            import json as _json
-
             pca_path_obj = Path(pca_file)
             if pca_path_obj.exists():
                 with open(pca_path_obj) as fh:
-                    pca_data = _json.load(fh)
+                    pca_data = json.load(fh)
                 components = pca_data.get("components", [])
                 variance = pca_data.get("variance", [])
                 loadings = pca_data.get("loadings", [])
@@ -1362,19 +1480,20 @@ def generate_all_plots(
                 )
                 if fig is not None:
                     plots_generated["pca"] = str(pca_output)
-                    plt.close(fig)
         except Exception as e:
             logger.warning(f"PCA plot failed: {e}")
+        finally:
+            if fig is not None:
+                plt.close(fig)
 
     # Kinship heatmap
     if kinship_file:
+        fig = None
         try:
-            import json as _json
-
             kinship_path_obj = Path(kinship_file)
             if kinship_path_obj.exists():
                 with open(kinship_path_obj) as fh:
-                    kinship_data = _json.load(fh)
+                    kinship_data = json.load(fh)
 
                 matrix: Any
                 if isinstance(kinship_data, list):
@@ -1387,9 +1506,11 @@ def generate_all_plots(
                 fig = kinship_heatmap(matrix, output_path=kinship_output)
                 if fig is not None:
                     plots_generated["kinship"] = str(kinship_output)
-                    plt.close(fig)
         except Exception as e:
             logger.warning(f"Kinship heatmap failed: {e}")
+        finally:
+            if fig is not None:
+                plt.close(fig)
 
     logger.info(f"Generated {len(plots_generated)} plots: {list(plots_generated.keys())}")
     return plots_generated

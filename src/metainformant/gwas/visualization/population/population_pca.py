@@ -222,7 +222,7 @@ def pca_scree_plot(
             lines = eigenval_path.read_text().strip().split("\n")
             explained_variance = [float(line.strip()) for line in lines if line.strip()]
 
-        if not explained_variance:
+        if explained_variance is None or len(explained_variance) == 0:
             logger.error("No explained variance data provided")
             return {"status": "failed", "error": "No explained variance data provided"}
 

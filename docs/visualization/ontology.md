@@ -13,20 +13,24 @@ Ontology visualization includes specialized plots for gene ontology (GO) analysi
 #### GO DAG Visualization
 ```python
 from metainformant.ontology.core import go
+from metainformant.ontology.query.serialize import ontology_to_graph
 from metainformant.ontology.visualization import visualization as ont_viz
 import networkx as nx
 
-# Load GO ontology
-go_graph = go.load_go_obo("go.obo")
+# Load the GO ontology; the DAG and network plots take a networkx DiGraph
+# (every edge points from a term to its parent)
+ontology = go.load_go_obo("go.obo")
+go_graph = ontology_to_graph(ontology)
 
-# Plot GO directed acyclic graph
-ax = ont_viz.plot_go_dag(go_graph, terms=['GO:0008150', 'GO:0003674', 'GO:0005575'])
+# Plot GO directed acyclic graph (layout_seed makes the layout reproducible)
+ax = ont_viz.plot_go_dag(go_graph, terms=['GO:0008150', 'GO:0003674', 'GO:0005575'], layout_seed=0)
 ```
 
 #### GO Term Hierarchy
 ```python
-# Visualize hierarchy from root term
-ax = ont_viz.plot_go_term_hierarchy(go_graph, root_term='GO:0008150', max_depth=3)
+# Visualize the hierarchy below a root term. The plot follows each node's successors, and
+# ontology_to_graph points every edge from a term to its parent, so reverse the graph first
+ax = ont_viz.plot_go_term_hierarchy(go_graph.reverse(), root_term='GO:0008150', max_depth=3)
 ```
 
 ### Semantic Similarity
@@ -53,13 +57,15 @@ g = ont_viz.plot_semantic_similarity_clustermap(similarity_matrix, term_labels)
 ```python
 # Visualize GO enrichment results
 enrichment_results = [
-    {'term': 'GO:0008150', 'pvalue': 1e-15, 'fold_change': 3.2},
-    {'term': 'GO:0003674', 'pvalue': 1e-12, 'fold_change': 2.8},
-    {'term': 'GO:0005575', 'pvalue': 1e-8, 'fold_change': 2.1}
+    {'term': 'GO:0008150', 'pvalue': 1e-15, 'gene_count': 24},
+    {'term': 'GO:0003674', 'pvalue': 1e-12, 'gene_count': 18},
+    {'term': 'GO:0005575', 'pvalue': 1e-8, 'gene_count': 9}
 ]
 
 ax = ont_viz.plot_go_enrichment_barplot(enrichment_results)
 ```
+
+The plot functions take a list of dictionaries with a `term` and a `pvalue` entry (the dot plot also reads `gene_count`, default 1).
 
 #### Enrichment Dot Plots
 ```python
@@ -81,7 +87,7 @@ ax = ont_viz.plot_information_content_profile(term_ic)
 #### Relationship Networks
 ```python
 # Visualize ontology relationship network
-ax = ont_viz.plot_ontology_network(go_graph, figsize=(12, 8))
+ax = ont_viz.plot_ontology_network(go_graph, figsize=(12, 8), layout_seed=0)
 ```
 
 #### Functional Annotation Heatmaps
@@ -99,7 +105,26 @@ ax = ont_viz.plot_functional_annotation_heatmap(annotation_matrix, term_labels, 
 #### Interactive GO Networks
 ```python
 # Create 3D interactive GO network
-fig = ont_viz.create_interactive_go_network(go_graph, output_path="go_network.html")
+fig = ont_viz.create_interactive_go_network(go_graph, output_path="go_network.html", layout_seed=0)
+```
+
+#### Reproducible Layouts
+The graph layouts start from random positions, so an unseeded layout draws the same graph differently on every call.
+`plot_go_dag`, `plot_ontology_network` and `create_interactive_go_network` take `layout_seed`:
+
+- The default is `None`, which leaves the layout unseeded: it then draws from NumPy's global generator, as networkx
+  does.
+- With an integer seed the same graph gives the same node positions (`plot_go_dag` also seeds its fallback layout),
+  and the global random state is neither seeded nor consumed.
+- The pathway similarity network plot, `pathway_network_plot` in `metainformant.ontology.visualization`, takes
+  `layout_seed` as well, but its default is `42`, so that plot is reproducible without an argument. The defaults differ
+  by design: `visualization.py` stays unseeded unless a seed is given, `plots.py` is seeded unless another seed is given.
+
+```python
+from metainformant.ontology.visualization import pathway_network_plot
+
+# network: the dictionary returned by metainformant.ontology.pathway_enrichment.enrichment.pathway_network
+fig = pathway_network_plot(network, "pathway_network.png", layout_seed=7)  # layout_seed defaults to 42
 ```
 
 ## Integration with Ontology Module
@@ -111,32 +136,43 @@ from metainformant.ontology.visualization import visualization as ont_viz
 
 # Perform GO enrichment
 gene_list = ['gene1', 'gene2', 'gene3']  # Your genes of interest
-background = ['gene1', 'gene2', ..., 'gene1000']  # Background gene set
-annotations = {'gene1': {'GO:0008150'}, 'gene2': {'GO:0003674'}}  # Gene annotations
+background = [f'gene{i}' for i in range(1, 1001)]  # Background gene set
+annotations = {  # GO term -> genes annotated with it
+    'GO:0008150': {'gene1', 'gene2', 'gene10', 'gene11'},
+    'GO:0003674': {'gene3', 'gene20', 'gene21'},
+}
 
-results = go.enrich_genes(gene_list, background, annotations)
+results = go.enrich_genes(gene_list, background, annotations)  # a DataFrame, one row per tested term
+
+# The plot functions take a list of dictionaries with 'term', 'pvalue' and (for the dot plot) 'gene_count'
+enrichment_results = [
+    {'term': row.go_term, 'pvalue': row.p_value, 'gene_count': int(row.observed)}
+    for row in results.itertuples()
+]
 
 # Visualize enrichment
-ax = ont_viz.plot_go_enrichment_barplot(results)
+ax = ont_viz.plot_go_enrichment_barplot(enrichment_results)
 ```
 
 ### With Semantic Similarity
 ```python
+import numpy as np
 from metainformant.ontology.core import go
-from metainformant.ontology.query import query
 from metainformant.ontology.visualization import visualization as ont_viz
 
-# Load ontology and compute IC
-go_graph = go.load_go_obo("go.obo")
-ic_map = query.calculate_ic_map(go_graph)
+# Load the ontology and compute information content (bits) from annotation counts
+ontology = go.load_go_obo("go.obo")
+term_counts = {'GO:0008150': 40, 'GO:0003674': 25, 'GO:0005575': 10}  # annotations per GO term
+term_ic = go.calculate_term_ic(ontology, term_counts, total_annotations=sum(term_counts.values()))
+hierarchy = go.build_hierarchy_dict(ontology)  # term -> set of ancestors
 
-# Compute similarities
+# Pairwise Lin similarity (between 0 and 1; Resnik scores are in bits and not bounded by 1)
 terms = ['GO:0008150', 'GO:0003674', 'GO:0005575']
 similarity_matrix = np.zeros((len(terms), len(terms)))
 
 for i, term1 in enumerate(terms):
     for j, term2 in enumerate(terms):
-        similarity_matrix[i, j] = go.semantic_similarity(term1, term2, ic_map, go_graph)
+        similarity_matrix[i, j] = go.semantic_similarity(term1, term2, term_ic, hierarchy, method="lin")
 
 # Visualize
 ax = ont_viz.plot_semantic_similarity_matrix(similarity_matrix, terms)
@@ -210,43 +246,54 @@ ic_cmap = 'viridis'  # Blue to yellow colormap
 
 ### Complete Ontology Analysis Workflow
 ```python
-from metainformant.ontology.core import go
-from metainformant.ontology.query import query
-from metainformant.ontology.visualization import visualization as ont_viz
+import matplotlib.pyplot as plt
 import numpy as np
+from metainformant.ontology.core import go
+from metainformant.ontology.query.serialize import ontology_to_graph
+from metainformant.ontology.visualization import visualization as ont_viz
 
-# Load ontology
-go_graph = go.load_go_obo("go.obo")
-ic_map = query.calculate_ic_map(go_graph)
+# Load the ontology: the DAG plot needs a networkx DiGraph, the similarity functions the ontology itself
+ontology = go.load_go_obo("go.obo")
+go_graph = ontology_to_graph(ontology)
+hierarchy = go.build_hierarchy_dict(ontology)
 
-# Perform enrichment analysis
-gene_list = ['gene1', 'gene2', 'gene3']
+# Perform enrichment analysis (annotations: GO term -> genes annotated with it)
+gene_list = ['gene1', 'gene2', 'gene3', 'gene350']
 background = [f'gene{i}' for i in range(1000)]
-annotations = {f'gene{i}': {'GO:0008150', 'GO:0003674'} for i in range(1000)}
+annotations = {'GO:0008150': set(background[:400]), 'GO:0003674': set(background[300:700])}
 
-enrichment_results = go.enrich_genes(gene_list, background, annotations)
+results = go.enrich_genes(gene_list, background, annotations)
+enrichment_results = [
+    {'term': row.go_term, 'pvalue': row.p_value, 'gene_count': int(row.observed)}
+    for row in results.itertuples()
+]
+
+# Information content (bits) from the annotation counts
+term_counts = {term: len(genes) for term, genes in annotations.items()}
+term_ic = go.calculate_term_ic(ontology, term_counts, total_annotations=sum(term_counts.values()))
 
 # Create comprehensive visualization
 fig, axes = plt.subplots(2, 2, figsize=(15, 12))
 
 # GO DAG
-ont_viz.plot_go_dag(go_graph, terms=['GO:0008150'], ax=axes[0,0])
+ont_viz.plot_go_dag(go_graph, terms=['GO:0008150'], ax=axes[0,0], layout_seed=0)
 
 # Enrichment results
 ont_viz.plot_go_enrichment_barplot(enrichment_results, ax=axes[0,1])
 
-# Semantic similarity (if multiple enriched terms)
-if len(enrichment_results) > 1:
-    terms = [r['term'] for r in enrichment_results]
-    sim_matrix = np.random.rand(len(terms), len(terms))  # Placeholder
-    ont_viz.plot_semantic_similarity_matrix(sim_matrix, terms, ax=axes[1,0])
+# Semantic similarity of the enriched terms (Lin: values between 0 and 1)
+terms = [r['term'] for r in enrichment_results]
+sim_matrix = np.array([
+    [go.semantic_similarity(t1, t2, term_ic, hierarchy, method="lin") for t2 in terms]
+    for t1 in terms
+])
+ont_viz.plot_semantic_similarity_matrix(sim_matrix, terms, ax=axes[1,0])
 
 # Information content profile
-term_ic = {r['term']: ic_map.get(r['term'], 5.0) for r in enrichment_results}
-ont_viz.plot_information_content_profile(term_ic, ax=axes[1,1])
+ont_viz.plot_information_content_profile({t: term_ic[t] for t in terms}, ax=axes[1,1])
 
 plt.tight_layout()
-plt.savefig("ontology_analysis.png", dpi=300, bbox_inches='tight')
+plt.savefig("output/ontology_analysis.png", dpi=300, bbox_inches='tight')
 ```
 
 ## Troubleshooting
@@ -261,8 +308,9 @@ plt.savefig("ontology_analysis.png", dpi=300, bbox_inches='tight')
 ### Data Requirements
 
 - **GO Terms**: Valid GO identifiers (GO:####### format)
-- **P-values**: -log10 transformed for bar plot scaling
-- **Similarity Matrices**: Square matrices with values 0-1
+- **P-values**: raw p-values in the `pvalue` entry (the bar and dot plots apply -log10 themselves)
+- **Similarity Matrices**: Square matrices. Lin and Jiang-Conrath scores lie between 0 and 1; Resnik scores are
+  information contents in bits and are not bounded by 1
 - **IC Values**: Information content in bits (typically 0-15)
 
 ## Related Documentation

@@ -49,13 +49,13 @@ def test_effect_direction_plot(tmp_path: Path) -> None:
 
 
 def test_functional_enrichment_plot(tmp_path: Path) -> None:
-    """Test functional enrichment plot with significant variants."""
-    # Create sample GWAS results with significant variants
+    """Functional enrichment counts the categories the caller supplied for the significant variants."""
+    # Sample GWAS results with significant variants, each carrying its (supplied) functional annotation
     results = [
-        {"CHROM": "1", "POS": 1000, "p_value": 1e-10},
-        {"CHROM": "1", "POS": 2000, "p_value": 1e-12},
-        {"CHROM": "2", "POS": 5000, "p_value": 1e-8},
-        {"CHROM": "2", "POS": 6000, "p_value": 0.01},  # Not significant
+        {"CHROM": "1", "POS": 1000, "p_value": 1e-10, "annotation": "intergenic"},
+        {"CHROM": "1", "POS": 2000, "p_value": 1e-12, "annotation": "intergenic"},
+        {"CHROM": "2", "POS": 5000, "p_value": 1e-8, "annotation": "exonic"},
+        {"CHROM": "2", "POS": 6000, "p_value": 0.01, "annotation": "intronic"},  # Not significant
     ]
 
     output_path = tmp_path / "functional_enrichment.png"
@@ -64,8 +64,23 @@ def test_functional_enrichment_plot(tmp_path: Path) -> None:
     assert result["status"] == "success"
     assert output_path.exists()
     assert result["total_significant_variants"] == 3  # 3 significant variants
-    assert result["categories_found"] > 0
-    assert "intergenic" in result["category_counts"]  # Default category
+    assert result["category_counts"] == {"intergenic": 2, "exonic": 1}  # exactly what was supplied
+    assert result["n_unannotated"] == 0
+
+
+def test_functional_enrichment_plot_without_annotations_is_unavailable(tmp_path: Path) -> None:
+    """Without supplied annotations no category is invented: the result says the plot is unavailable."""
+    results = [
+        {"CHROM": "1", "POS": 1000, "p_value": 1e-10},
+        {"CHROM": "2", "POS": 5000, "p_value": 1e-8},
+    ]
+
+    output_path = tmp_path / "functional_enrichment.png"
+    result = functional_enrichment_plot(results, output_path)
+
+    assert result["status"] == "skipped"
+    assert "annotation" in result["message"]
+    assert not output_path.exists()
 
 
 def test_functional_enrichment_plot_no_significant(tmp_path: Path) -> None:

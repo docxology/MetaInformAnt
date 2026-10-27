@@ -14,7 +14,7 @@ Composite multi-panel figures and interactive Plotly-based plots. Provides a gen
 
 | Function | Description |
 |----------|-------------|
-| `composite.multi_panel()` | Arrange multiple plots into a single gridded figure |
+| `composite.multi_panel()` | Arrange multiple plots into a single gridded figure (one panel works too; unused grid cells are hidden) |
 | `composite.genomic_overview()` | Create genomic overview dashboard with multiple panels |
 | `composite.qc_summary()` | Generate QC summary dashboard for sample metrics |
 | `interactive.interactive_scatter()` | Interactive scatter plot via Plotly; without Plotly, a numeric `color` column becomes a continuous colour scale and any other column one coloured series per category, with a legend |

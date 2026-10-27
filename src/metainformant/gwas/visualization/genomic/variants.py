@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, cast
 import numpy as np
 
 from metainformant.core.utils import logging
+from metainformant.gwas.visualization.utils import chromosome_label, get_chromosome, get_position
 
 logger = logging.get_logger(__name__)
 
@@ -169,8 +170,9 @@ def variant_density_plot(
     """Create a plot showing variant density across chromosomes.
 
     Args:
-        variants: List of variant dicts with "CHROM" and "POS" keys,
-                  or list of positions, or (positions, chromosome_lengths) tuple
+        variants: List of variant dicts with a chromosome ("CHROM", "chrom", "chromosome", "chr" or "CHR") and a
+                  position ("POS", "pos", "position" or "BP") key, or list of positions, or
+                  (positions, chromosome_lengths) tuple
         output_file: Optional output file path
         title: Plot title
         window_size: Window size for density binning (default 1Mb)
@@ -185,13 +187,13 @@ def variant_density_plot(
         logger.warning("matplotlib not available for variant density plot")
         return {"status": "failed", "error": "matplotlib not available"}
 
-    # Parse input: accept list-of-dicts with CHROM/POS keys
+    # Parse input: accept list-of-dicts with any of the usual chromosome / position key spellings
     if isinstance(variants, (list, tuple)) and len(variants) > 0 and isinstance(variants[0], dict):
         # Extract chromosome and position from list of dicts
         chrom_positions: Dict[str, List[int]] = {}
         for v in variants:
-            chrom = str(v.get("CHROM", "1"))
-            pos = int(v.get("POS", 0))
+            chrom = chromosome_label(get_chromosome(v, "1"))
+            pos = int(get_position(v, 0))
             if chrom not in chrom_positions:
                 chrom_positions[chrom] = []
             chrom_positions[chrom].append(pos)
@@ -293,6 +295,11 @@ def variant_density_plot(
     }
 
 
+def _null_neg_log10_quantiles(n: int) -> np.ndarray:
+    """Expected -log10(p) of ``n`` sorted p-values under the null, ascending: -log10((i - 0.5) / n)."""
+    return np.sort(-np.log10((np.arange(1, n + 1) - 0.5) / n))
+
+
 def hwe_deviation_plot(
     hwe_p_values: Any,
     output_file: Optional[str | Path] = None,
@@ -336,10 +343,10 @@ def hwe_deviation_plot(
     ax1.legend()
     ax1.grid(True, alpha=0.3)
 
-    # Plot 2: Q-Q plot (expected vs observed)
+    # Plot 2: Q-Q plot (expected vs observed). The expected values are the theoretical null quantiles, not random
+    # draws, so the panel is the same on every run.
     n = len(log_p_values)
-    expected = -np.log10(np.random.uniform(0, 1, n))
-    expected.sort()
+    expected = _null_neg_log10_quantiles(n)
     observed = sorted(log_p_values)
 
     ax2.scatter(expected, observed, alpha=0.6, color="green")
@@ -429,12 +436,12 @@ def missingness_plot(
         return {"status": "failed", "error": "No genotype data in VCF"}
 
     genotypes = vcf_data["genotypes"]
-    if not genotypes:
+    if genotypes is None or len(genotypes) == 0:
         logger.error("Empty genotype data")
         return {"status": "failed", "error": "Empty genotype data"}
 
     # Calculate missingness per sample and per variant
-    n_samples = len(genotypes[0]) if genotypes else 0
+    n_samples = len(genotypes[0])
     n_variants = len(genotypes)
 
     sample_missingness = []

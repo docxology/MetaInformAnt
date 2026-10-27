@@ -11,15 +11,36 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 
 from metainformant.core.utils import logging
+from metainformant.gwas.visualization.utils import chromosome_label, get_chromosome, standardize_result_columns
 
 logger = logging.get_logger(__name__)
+
+
+def _on_chromosome(chrom_column: Any, chrom: Any) -> Any:
+    """Boolean mask of the rows of ``chrom_column`` that lie on ``chrom``.
+
+    Chromosomes are compared as text (:func:`chromosome_label`), so an integer ``1``, a float ``1.0`` and
+    the string ``"1"`` all select the same rows instead of silently selecting none.
+    """
+    labels = {value: chromosome_label(value) for value in chrom_column.unique()}
+    return chrom_column.map(labels) == chromosome_label(chrom)
+
+
+def _region_label(chrom: Any, start: Optional[int], end: Optional[int]) -> str:
+    """Human-readable region such as ``1:500-2,500``; an open end is left blank instead of formatted."""
+    label = str(chrom) if chrom is not None else "unknown"
+    if start is None and end is None:
+        return label
+    low = f"{start:,}" if start is not None else ""
+    high = f"{end:,}" if end is not None else ""
+    return f"{label}:{low}-{high}"
 
 
 def gene_annotation_plot(
     results: Any,
     output_file: Optional[str | Path] = None,
     *,
-    chrom: Optional[str] = None,
+    chrom: Optional[str | int] = None,
     start: Optional[int] = None,
     end: Optional[int] = None,
     gene_data: Optional[Dict[str, Any]] = None,
@@ -56,21 +77,17 @@ def gene_annotation_plot(
     if isinstance(results, list):
         import pandas as pd
 
-        results_df = pd.DataFrame(results)
-        # Normalize column names
-        col_map = {"CHROM": "CHR", "POS": "BP", "p_value": "P"}
-        results_df = results_df.rename(columns={k: v for k, v in col_map.items() if k in results_df.columns})
+        # Normalize column names: chrom / CHROM / ... become CHR, pos / POS / ... become BP, p_value / ... become P
+        results_df = standardize_result_columns(pd.DataFrame(results))
     elif hasattr(results, "columns"):
-        results_df = results.copy()
-        col_map = {"CHROM": "CHR", "POS": "BP", "p_value": "P"}
-        results_df = results_df.rename(columns={k: v for k, v in col_map.items() if k in results_df.columns})
+        results_df = standardize_result_columns(results)
     else:
         logger.error("Input data must be a list of dicts or DataFrame")
         return {"status": "failed", "reason": "Invalid input data format"}
 
     # Filter data for region if specified
     if chrom is not None:
-        mask = results_df["CHR"] == chrom
+        mask = _on_chromosome(results_df["CHR"], chrom)
         if start is not None:
             mask = mask & (results_df["BP"] >= start)
         if end is not None:
@@ -102,14 +119,19 @@ def gene_annotation_plot(
     ax1.grid(True, alpha=0.3)
 
     # Plot 2: Gene annotation track
-    if gene_data and chrom and start is not None and end is not None:
+    if gene_data and chrom is not None and start is not None and end is not None:
         plot_gene_track(ax2, chrom, start, end, gene_data)
     else:
-        # Default gene track (simplified)
+        # No track can be drawn; say why instead of leaving the panel blank
+        track_note = (
+            "Gene annotations not provided"
+            if not gene_data
+            else "Gene annotations cannot be placed without chrom, start and end"
+        )
         ax2.text(
             0.5,
             0.5,
-            "Gene annotations not provided",
+            track_note,
             ha="center",
             va="center",
             transform=ax2.transAxes,
@@ -150,42 +172,74 @@ def gene_annotation_plot(
     }
 
 
-def plot_gene_track(ax: Any, chrom: str, start: int, end: int, gene_data: Dict[str, Any]) -> None:
-    """Plot gene annotation track."""
+def plot_gene_track(ax: Any, chrom: str | int, start: int, end: int, gene_data: Dict[str, Any]) -> None:
+    """Draw the genes of ``gene_data["genes"]`` that overlap ``[start, end]`` on ``ax``.
+
+    Each gene is a dict with integer ``start`` and ``end``, an optional ``name`` and an optional chromosome
+    (``chrom``, ``chromosome``, ``chr``, ``CHROM`` or ``CHR``); genes are clipped to the region. A gene that
+    names a chromosome is drawn only on that chromosome (compared as text, so ``1`` and ``"1"`` agree); one
+    that names none is assumed to lie on ``chrom``. ``gene_data`` is the only annotation source (none is
+    bundled), so the track never invents genes: a gene without both coordinates is not drawn (it used to be
+    stretched across the whole region), and when no gene can be drawn the track says why instead of staying
+    blank.
+    """
     from matplotlib.patches import Rectangle
 
-    # Simplified gene plotting - in practice would use genomic annotation data
-    if "genes" in gene_data:
-        genes = gene_data["genes"]
-        y_pos = 0.5
+    genes = gene_data.get("genes") or []
+    track_chromosome = chromosome_label(chrom)
+    y_pos = 0.5
+    n_drawn = 0
+    n_without_coordinates = 0
 
-        for gene in genes:
-            gene_start = max(start, gene.get("start", start))
-            gene_end = min(end, gene.get("end", end))
+    for gene in genes:
+        gene_chromosome = get_chromosome(gene)
+        if gene_chromosome is not None and chromosome_label(gene_chromosome) != track_chromosome:
+            continue  # a gene on another chromosome is not on this track
+        gene_start = gene.get("start")
+        gene_end = gene.get("end")
+        if gene_start is None or gene_end is None:
+            n_without_coordinates += 1
+            continue
+        gene_start = max(start, gene_start)
+        gene_end = min(end, gene_end)
 
-            if gene_start < gene_end:
-                # Draw gene rectangle
-                width = gene_end - gene_start
-                rect = Rectangle(
-                    (gene_start, y_pos - 0.1),
-                    width,
-                    0.2,
-                    facecolor="lightblue",
-                    alpha=0.7,
-                )  # noqa: F821
-                ax.add_patch(rect)
+        if gene_start < gene_end:
+            n_drawn += 1
+            # Draw gene rectangle
+            width = gene_end - gene_start
+            rect = Rectangle(
+                (gene_start, y_pos - 0.1),
+                width,
+                0.2,
+                facecolor="lightblue",
+                alpha=0.7,
+            )
+            ax.add_patch(rect)
 
-                # Add gene name if space allows
-                if width > (end - start) * 0.05:  # If gene covers >5% of region
-                    ax.text(
-                        (gene_start + gene_end) / 2,
-                        y_pos,
-                        gene.get("name", ""),
-                        ha="center",
-                        va="center",
-                        fontsize=8,
-                        rotation=45,
-                    )
+            # Add gene name if space allows
+            if width > (end - start) * 0.05:  # If gene covers >5% of region
+                ax.text(
+                    (gene_start + gene_end) / 2,
+                    y_pos,
+                    gene.get("name", ""),
+                    ha="center",
+                    va="center",
+                    fontsize=8,
+                    rotation=45,
+                )
+
+    if n_without_coordinates:
+        logger.warning(f"{n_without_coordinates} gene annotation(s) without start/end coordinates were not drawn")
+
+    if n_drawn == 0:
+        if not genes:
+            message = "Gene annotations not provided"
+        else:
+            message = "No annotated genes overlap this region"
+            if n_without_coordinates:
+                noun = "gene" if n_without_coordinates == 1 else "genes"
+                message += f" ({n_without_coordinates} {noun} without coordinates not drawn)"
+        ax.text(0.5, 0.5, message, ha="center", va="center", transform=ax.transAxes)
 
     ax.set_xlim(start, end)
     ax.set_ylim(0, 1)
@@ -205,17 +259,20 @@ def recombination_rate_plot(
 ) -> Dict[str, Any]:
     """Create a plot showing recombination rates across genomic regions.
 
-    Can be called with GWAS results (list of dicts or DataFrame) and region parameters,
-    or with explicit recombination_rates and positions dicts.
+    GWAS results carry no recombination rates and no recombination map is bundled or simulated, so
+    the rates must be supplied: pass **both** ``recombination_rates`` and ``positions``. Without them
+    nothing is plotted and no file is written; the result has status ``"skipped"`` and
+    ``"output_path": None`` rather than a placeholder figure.
 
     Args:
-        results: GWAS results as list of dicts or DataFrame, or recombination rate dict
+        results: GWAS results as list of dicts or DataFrame (not used to derive rates; kept for
+            call-compatibility)
         output_file: Optional output file path
-        chrom: Chromosome to plot
-        start: Start position (bp)
-        end: End position (bp)
-        recombination_rates: Optional dictionary mapping chromosomes to recombination rate lists
-        positions: Optional dictionary mapping chromosomes to position lists
+        chrom: Chromosome to plot (unused without a recombination map)
+        start: Start position (bp) (unused without a recombination map)
+        end: End position (bp) (unused without a recombination map)
+        recombination_rates: Dictionary mapping chromosomes to recombination rate lists (cM/Mb)
+        positions: Dictionary mapping chromosomes to position lists (same lengths as the rates)
         title: Plot title
 
     Returns:
@@ -234,10 +291,40 @@ def recombination_rate_plot(
     if recombination_rates is not None and positions is not None:
         return _recombination_rate_plot_legacy(recombination_rates, positions, output_file, title)
 
-    # Otherwise, this requires external recombination map data which we don't have
-    # Create a placeholder plot noting that recombination data is needed
-    logger.info("Recombination rate plot requires external recombination map data")
-    return {"status": "skipped", "reason": "Recombination map data not available"}
+    # Without an explicit recombination map there is nothing true to draw: report that, write no file
+    logger.warning(
+        "Recombination rate plot skipped: pass both recombination_rates and positions (a recombination map); "
+        "no file was written"
+    )
+    return {
+        "status": "skipped",
+        "reason": "Recombination map data not available: both recombination_rates and positions are required",
+        "output_path": None,
+    }
+
+
+#: Polynomial order of the Savitzky-Golay line drawn over each recombination-rate series.
+_SMOOTHING_POLYORDER = 3
+#: Smallest odd window longer than that order (``savgol_filter`` needs ``window_length > polyorder``).
+_SMOOTHING_MIN_WINDOW = 5
+
+
+def _smoothed_rates(rates: List[float]) -> Optional[np.ndarray]:
+    """Savitzky-Golay smoothing of one recombination-rate series, or None when no line should be drawn.
+
+    A series of 10 or fewer points is not smoothed, and neither is any series when SciPy is not installed. The
+    (odd) window grows with the series, ``len(rates) // 10 * 2 + 1`` capped at 21, but never drops below
+    ``_SMOOTHING_MIN_WINDOW``: the plain formula gives 3 for 11 to 19 points, which is not longer than the cubic
+    polynomial order, and ``savgol_filter`` raised ``ValueError`` for those chromosomes.
+    """
+    if len(rates) <= 10:
+        return None
+    try:
+        from scipy import signal
+    except ImportError:
+        return None
+    window_size = max(_SMOOTHING_MIN_WINDOW, min(21, len(rates) // 10 * 2 + 1))
+    return np.asarray(signal.savgol_filter(rates, window_size, _SMOOTHING_POLYORDER))
 
 
 def _recombination_rate_plot_legacy(
@@ -291,17 +378,9 @@ def _recombination_rate_plot_legacy(
         ax.plot(pos, rates, color=colors[i % len(colors)], linewidth=1.5, alpha=0.8)
 
         # Add smoothing line
-        if len(rates) > 10:
-            try:
-                from scipy import signal
-
-                window_size = min(21, len(rates) // 10 * 2 + 1)
-                if window_size % 2 == 0:
-                    window_size += 1
-                smoothed = signal.savgol_filter(rates, window_size, 3)
-                ax.plot(pos, smoothed, color="red", linewidth=2, alpha=0.6, label="Smoothed")
-            except ImportError:
-                pass
+        smoothed = _smoothed_rates(rates)
+        if smoothed is not None:
+            ax.plot(pos, smoothed, color="red", linewidth=2, alpha=0.6, label="Smoothed")
 
         ax.set_title(f"Chromosome {chrom}", fontsize=12)
         ax.set_xlabel("Position (bp)", fontsize=10)
@@ -434,7 +513,7 @@ def regional_plot(
     results: Any,
     output_file: Optional[str | Path] = None,
     *,
-    chrom: Optional[str] = None,
+    chrom: Optional[str | int] = None,
     start: Optional[int] = None,
     end: Optional[int] = None,
     figsize: tuple[int, int] = (12, 6),
@@ -447,13 +526,15 @@ def regional_plot(
     Args:
         results: GWAS results as list of dicts or DataFrame (columns: CHROM/CHR, POS/BP, p_value/P)
         output_file: Optional output file path
-        chrom: Chromosome to plot
-        start: Start position (bp)
-        end: End position (bp)
+        chrom: Chromosome to plot; compared as text, so ``1``, ``1.0`` and ``"1"`` all select the same rows
+        start: Start position (bp); omit for an open lower end
+        end: End position (bp); omit for an open upper end
         figsize: Figure size (width, height)
         title: Plot title (auto-generated if None)
         significance_threshold: P-value threshold for significance line
-        recombination_rate: Optional recombination rate data
+        recombination_rate: Optional recombination rate DataFrame with ``BP`` and ``RATE`` (cM/Mb) columns
+            and, optionally, ``CHR``; only rows on ``chrom`` and inside the region are drawn. No track is
+            drawn (and none is invented) when it is not supplied or has no rows in the region.
 
     Returns:
         Dictionary with status and metadata
@@ -471,20 +552,16 @@ def regional_plot(
     if isinstance(results, list):
         import pandas as pd
 
-        results_df = pd.DataFrame(results)
-        # Normalize column names
-        col_map = {"CHROM": "CHR", "POS": "BP", "p_value": "P"}
-        results_df = results_df.rename(columns={k: v for k, v in col_map.items() if k in results_df.columns})
+        # Normalize column names: chrom / CHROM / ... become CHR, pos / POS / ... become BP, p_value / ... become P
+        results_df = standardize_result_columns(pd.DataFrame(results))
     elif hasattr(results, "columns"):
-        results_df = results.copy()
-        col_map = {"CHROM": "CHR", "POS": "BP", "p_value": "P"}
-        results_df = results_df.rename(columns={k: v for k, v in col_map.items() if k in results_df.columns})
+        results_df = standardize_result_columns(results)
     else:
         return {"status": "failed", "reason": "Invalid input data format"}
 
     # Filter data for the specified region
     if chrom is not None:
-        mask = results_df["CHR"] == chrom
+        mask = _on_chromosome(results_df["CHR"], chrom)
         if start is not None:
             mask = mask & (results_df["BP"] >= start)
         if end is not None:
@@ -522,15 +599,19 @@ def regional_plot(
         label=f"p = {significance_threshold}",
     )
 
-    # Add recombination rate if provided
+    # Add recombination rate if provided (an open end of the region leaves that side unbounded)
     if recombination_rate is not None and hasattr(recombination_rate, "columns"):
-        ax2_twin = ax2.twinx()
-        recomb_data = recombination_rate[
-            (recombination_rate["CHR"] == chrom)
-            & (recombination_rate["BP"] >= start)
-            & (recombination_rate["BP"] <= end)
-        ]
-        if not recomb_data.empty:
+        recomb_data = recombination_rate
+        if chrom is not None and "CHR" in recomb_data.columns:
+            recomb_data = recomb_data[_on_chromosome(recomb_data["CHR"], chrom)]
+        if start is not None:
+            recomb_data = recomb_data[recomb_data["BP"] >= start]
+        if end is not None:
+            recomb_data = recomb_data[recomb_data["BP"] <= end]
+        if recomb_data.empty:
+            logger.warning("No recombination-rate rows fall inside the plotted region; no recombination track drawn")
+        else:
+            ax2_twin = ax2.twinx()
             ax2_twin.plot(
                 recomb_data["BP"],
                 recomb_data["RATE"],
@@ -545,8 +626,7 @@ def regional_plot(
     if start is not None and end is not None:
         ax1.set_xlim(start, end)
     ax1.set_ylabel("-log10(p)")
-    chrom_label = chrom or "unknown"
-    ax1.set_title(title or f"GWAS Regional Plot - Chr {chrom_label}:{start:,}-{end:,}")
+    ax1.set_title(title or f"GWAS Regional Plot - Chr {_region_label(chrom, start, end)}")
     ax1.legend()
     ax1.grid(True, alpha=0.3)
 

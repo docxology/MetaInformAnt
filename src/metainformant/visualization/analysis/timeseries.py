@@ -242,11 +242,15 @@ def plot_forecast(
     if ax is None:
         fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (12, 6)))
 
+    # Caller keyword arguments override these per-line defaults instead of colliding with them
+    history_kwargs: dict[str, Any] = {"color": "blue", **kwargs}
+    forecast_kwargs: dict[str, Any] = {"color": "red", "linestyle": "--", **kwargs}
+
     # Plot historical data
-    ax.plot(data.index, data.values, label="Historical", color="blue", **kwargs)
+    ax.plot(data.index, data.values, label="Historical", **history_kwargs)
 
     # Plot forecast
-    ax.plot(forecast.index, forecast.values, label="Forecast", color="red", linestyle="--", **kwargs)
+    ax.plot(forecast.index, forecast.values, label="Forecast", **forecast_kwargs)
 
     # Plot confidence intervals if provided
     if confidence_intervals is not None:
@@ -300,8 +304,9 @@ def plot_trend_analysis(
     if ax is None:
         fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (12, 6)))
 
-    # Plot original data
-    ax.plot(data.index, data.values, label="Original", alpha=0.7, **kwargs)
+    # Plot original data (caller keyword arguments override the default alpha)
+    original_kwargs: dict[str, Any] = {"alpha": 0.7, **kwargs}
+    ax.plot(data.index, data.values, label="Original", **original_kwargs)
 
     # Fit linear trend
     x_numeric = np.arange(len(data))

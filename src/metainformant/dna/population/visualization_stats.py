@@ -449,7 +449,10 @@ def plot_neutrality_test_summary(
     if not summary:
         return None
 
-    fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+    # Two columns; at least the 2x2 layout, with one more row (of the same height) per two extra tests
+    # so that no test is dropped
+    n_rows = max(2, -(-len(summary) // 2))
+    fig, axes = plt.subplots(n_rows, 2, figsize=(10, 4 * n_rows))
     fig.suptitle("Neutrality Test Summary")
     flat_axes = axes.ravel()
     for ax, (test_name, result) in zip(flat_axes, summary.items()):
@@ -524,7 +527,7 @@ def plot_outlier_detection(
 
 
 def plot_pca_results(
-    pca_result: Tuple[np.ndarray, np.ndarray, np.ndarray] | Dict[str, Any],
+    pca_result: Tuple[np.ndarray, np.ndarray, np.ndarray] | Dict[str, Any] | np.ndarray | List[List[float]],
     sample_names: Optional[List[str]] = None,
     output_file: Optional[str] = None,
     output_path: Optional[str] = None,
@@ -576,6 +579,12 @@ def plot_pca_results(
             explained_variance = [float(v) for v in np.asarray(pca_result[1]).ravel()]
         if len(pca_result) >= 3:
             labels = list(pca_result[2])
+    else:
+        # A bare (n_samples, n_components) coordinate array, or the same as nested lists
+        try:
+            coordinates = np.asarray(pca_result, dtype=float)
+        except (TypeError, ValueError):
+            coordinates = None  # ragged or non-numeric: reported below as unusable
 
     if coordinates is None or coordinates.ndim != 2 or coordinates.shape[0] == 0 or coordinates.shape[1] < 2:
         logger.warning("PCA result does not contain usable 2D coordinates")
@@ -834,10 +843,14 @@ def plot_summary_statistics_grid(
     if not stats_dict:
         return None
 
-    fig, axes = plt.subplots(3, 2, figsize=(15, 12))
-    fig.suptitle("Population Summary Statistics")
     metrics = sorted({metric for stats in stats_dict.values() for metric in stats})
     populations = list(stats_dict.keys())
+
+    # Two columns; at least the 3x2 layout, with one more row (of the same height) per two extra metrics
+    # so that no metric is dropped
+    n_rows = max(3, -(-len(metrics) // 2))
+    fig, axes = plt.subplots(n_rows, 2, figsize=(15, 4 * n_rows))
+    fig.suptitle("Population Summary Statistics")
     flat_axes = axes.ravel()
     for ax, metric in zip(flat_axes, metrics):
         values = [stats_dict[population].get(metric, np.nan) for population in populations]

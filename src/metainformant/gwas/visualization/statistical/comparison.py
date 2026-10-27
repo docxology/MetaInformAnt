@@ -6,6 +6,7 @@ studies, populations, or analysis methods.
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
 
@@ -15,6 +16,34 @@ from metainformant.core.utils import logging
 from metainformant.gwas.analysis.correction import lambda_gc_from_p_values
 
 logger = logging.get_logger(__name__)
+
+
+def _chi_square_p_value_2x2(table: Sequence[Sequence[float]]) -> float:
+    """P-value of the chi-square test of independence for a 2x2 table, with Yates' continuity correction.
+
+    Equal to ``scipy.stats.chi2_contingency(table)[1]`` (1 degree of freedom, ``correction=True``) but needs
+    no SciPy: with 1 degree of freedom the chi-square survival function is ``erfc(sqrt(x / 2))``.
+
+    Returns:
+        The p-value, or NaN when the test is undefined (a zero row or column total leaves a zero expected
+        count). It is never replaced by a made-up value.
+    """
+    (a, b), (c, d) = table
+    row_totals = (a + b, c + d)
+    col_totals = (a + c, b + d)
+    grand_total = a + b + c + d
+    if 0 in row_totals or 0 in col_totals:
+        return float("nan")
+
+    chi2 = 0.0
+    for i, observed_row in enumerate(((a, b), (c, d))):
+        for j, observed in enumerate(observed_row):
+            expected = row_totals[i] * col_totals[j] / grand_total
+            difference = expected - observed
+            # Yates: move each observed count 0.5 towards its expected count (never past it)
+            corrected = observed + math.copysign(min(0.5, abs(difference)), difference) if difference else observed
+            chi2 += (corrected - expected) ** 2 / expected
+    return math.erfc(math.sqrt(chi2 / 2.0))
 
 
 def compare_gwas_studies(
@@ -325,37 +354,29 @@ def compare_populations(
         ax3.set_ylabel("Enrichment Score")
         ax3.set_yscale("log")
 
-        # Add p-value annotations
+        # Add p-value annotations (a test that is undefined for a population is marked, not given a value)
         for bar, p_val in zip(bars, p_values):
             height = bar.get_height()
             ax3.text(
                 bar.get_x() + bar.get_width() / 2,
                 height,
-                f"p={p_val:.2e}",
+                f"p={p_val:.2e}" if math.isfinite(p_val) else "p=n/a",
                 ha="center",
                 va="bottom",
                 fontsize=8,
             )
 
-    # 4. Genetic architecture comparison
+    # 4. Genome-wide significant fraction per population (the one architecture summary the p-values support)
     ax4 = axes[1, 1]
     arch_data = analyze_genetic_architecture(pop_data)
 
     if arch_data:
         pops = list(arch_data.keys())
-        h2_estimates = [arch_data[pop].get("heritability", 0) for pop in pops]
-        polygenicity = [arch_data[pop].get("polygenicity", 0) for pop in pops]
+        significant_fraction = [arch_data[pop]["polygenicity"] for pop in pops]
 
-        x = np.arange(len(pops))
-        width = 0.35
-
-        ax4.bar(x - width / 2, h2_estimates, width, label="Heritability", alpha=0.7)
-        ax4.bar(x + width / 2, polygenicity, width, label="Polygenicity", alpha=0.7)
-
-        ax4.set_title("Genetic Architecture")
-        ax4.set_xticks(x)
-        ax4.set_xticklabels(pops)
-        ax4.legend()
+        ax4.bar(pops, significant_fraction, alpha=0.7)
+        ax4.set_title("Genome-wide Significant Fraction")
+        ax4.set_ylabel("Fraction of SNPs genome-wide significant")
         ax4.grid(True, alpha=0.3)
 
     plt.tight_layout()
@@ -372,13 +393,22 @@ def calculate_population_enrichment(
 ) -> Dict[str, Dict[str, float]]:
     """Calculate population-specific enrichment scores.
 
+    For each population whose ``results`` has a ``P`` column, ``observed_sig`` is its number of genome-wide
+    significant SNPs (P < 5e-8) among ``len(results)`` SNPs. ``enrichment`` is the significant fraction divided
+    by ``expected_prop``, the share of the *other* populations (0.5 for two populations); ``expected_sig`` is
+    ``int(expected_prop * len(results))``. ``p_value`` is the chi-square test (1 degree of freedom, Yates'
+    continuity correction; no SciPy needed) of the observed significant / non-significant counts against the
+    counts expected at that share. The expected share is a modelling assumption of this summary, not data.
+
+    ``p_value`` is NaN where the test is undefined (for example a single population, whose expected share is
+    0, with no significant SNP). It is never replaced by a made-up value.
+
     Args:
         pop_data: Population GWAS data
 
     Returns:
         Enrichment analysis results
     """
-    # Simplified enrichment calculation
     enrichment_results = {}
 
     # Get all unique SNPs across populations
@@ -400,7 +430,7 @@ def calculate_population_enrichment(
         # Expected proportion
         expected_prop = len([p for p in pop_data.keys() if p != pop_name]) / len(pop_data)
 
-        # Enrichment calculation (simplified)
+        # Enrichment: significant fraction relative to the expected share
         observed_prop = sig_snps / total_snps if total_snps > 0 else 0
 
         if expected_prop > 0:
@@ -408,21 +438,16 @@ def calculate_population_enrichment(
         else:
             enrichment = 1.0
 
-        # Chi-square test (simplified p-value calculation)
-        from scipy import stats
-
-        p_value: float
-        try:
-            contingency = [
+        # Chi-square test of the observed counts against the counts expected at that share
+        p_value = _chi_square_p_value_2x2(
+            [
                 [sig_snps, total_snps - sig_snps],
                 [
                     int(expected_prop * total_snps),
                     int((1 - expected_prop) * total_snps),
                 ],
             ]
-            chi2, p_value = stats.chi2_contingency(contingency)[:2]
-        except ImportError:
-            p_value = 0.5  # Conservative estimate
+        )
 
         enrichment_results[pop_name] = {
             "enrichment": enrichment,
@@ -437,15 +462,24 @@ def calculate_population_enrichment(
 def analyze_genetic_architecture(
     pop_data: Dict[str, Any],
 ) -> Dict[str, Dict[str, float]]:
-    """Analyze genetic architecture differences across populations.
+    """Summarise the association signal of each population from its p-values.
+
+    For every population whose ``results`` has a ``P`` column the result holds:
+
+    * ``lambda_gc``: the genomic-control inflation factor of its p-values (1.0 when it cannot be computed);
+    * ``polygenicity``: the fraction of tested SNPs reaching genome-wide significance (P < 5e-8). Despite the
+      key name this measures *detected* signal, which grows with sample size, not the number of causal variants.
+
+    There is deliberately no heritability. SNP heritability cannot be estimated from p-values alone (it needs
+    effect sizes and sample sizes, or LD scores). An earlier version reported lambda / (lambda + 1) under that
+    name; that is a fixed function of the inflation factor and carries no genetic information.
 
     Args:
         pop_data: Population GWAS data
 
     Returns:
-        Genetic architecture analysis
+        Per-population ``{"polygenicity": ..., "lambda_gc": ...}``
     """
-    # Simplified genetic architecture analysis
     architecture = {}
 
     for pop_name, pop_info in pop_data.items():
@@ -453,17 +487,14 @@ def analyze_genetic_architecture(
         if not hasattr(results, "columns") or "P" not in results.columns:
             continue
 
-        # Estimate heritability (simplified)
         p_values = results["P"].dropna().values
         lambda_gc = lambda_gc_from_p_values(p_values.tolist()) or 1.0
-        h2_estimate = min(lambda_gc / (lambda_gc + 1), 1.0)  # Simplified
 
-        # Estimate polygenicity (simplified)
+        # Fraction of tested SNPs that reach genome-wide significance
         sig_snps = (p_values < 5e-8).sum()
         polygenicity = sig_snps / len(p_values)
 
         architecture[pop_name] = {
-            "heritability": h2_estimate,
             "polygenicity": polygenicity,
             "lambda_gc": lambda_gc,
         }
@@ -535,10 +566,12 @@ def compare_analysis_methods(method_results: Dict[str, Any], output_file: Option
     if power_data:
         methods = list(power_data.keys())
         powers = [power_data[method]["power"] for method in methods]
+        # Only a comparison against known causal SNPs is power; otherwise the bars say what they are
+        is_power = all(power_data[method]["basis"] == "causal_snps" for method in methods)
 
         bars = ax3.bar(methods, powers, alpha=0.7)
-        ax3.set_title("Method Power Comparison")
-        ax3.set_ylabel("Statistical Power")
+        ax3.set_title("Method Power Comparison" if is_power else "Genome-wide Significant Fraction")
+        ax3.set_ylabel("Statistical Power" if is_power else "Fraction of SNPs significant")
         ax3.set_ylim(0, 1)
 
         # Add value labels
@@ -546,7 +579,7 @@ def compare_analysis_methods(method_results: Dict[str, Any], output_file: Option
             ax3.text(
                 bar.get_x() + bar.get_width() / 2,
                 bar.get_height() + 0.01,
-                ".3f",
+                f"{power:.3f}",
                 ha="center",
                 va="bottom",
             )
@@ -570,7 +603,7 @@ def compare_analysis_methods(method_results: Dict[str, Any], output_file: Option
                 ax4.text(
                     bar.get_x() + bar.get_width() / 2,
                     bar.get_height() + 0.01,
-                    ".1f",
+                    f"{time_val:.1f}",
                     ha="center",
                     va="bottom",
                 )
@@ -586,36 +619,75 @@ def compare_analysis_methods(method_results: Dict[str, Any], output_file: Option
 
 def calculate_method_power(
     method_results: Dict[str, Any],
-) -> Dict[str, Dict[str, float]]:
-    """Calculate statistical power for different methods.
+    significance_threshold: float = 5e-8,
+) -> Dict[str, Dict[str, Any]]:
+    """Summarise what each method calls significant, and the power that implies when truth is known.
+
+    Power is the probability of calling a SNP significant *given that it is truly associated*, so it can only
+    be measured against known truth. Each method therefore gets one of two honestly-labelled values under
+    the ``"power"`` key, told apart by ``"basis"``:
+
+    * ``"causal_snps"`` -- the method's entry carries ``"causal_snps"``, the identifiers of the truly
+      associated SNPs (matched against ``results.index``, as in a simulation study). ``power`` is the
+      fraction of those that were tested and called significant; ``"causal_snps"`` and
+      ``"causal_detected"`` in the output give the counts. Causal SNPs that were not tested are not counted.
+    * ``"significant_fraction"`` -- no usable ground truth. ``power`` is only the fraction of *all* tested
+      SNPs reaching the threshold, a discovery rate that stays small whenever most SNPs are null. It is
+      reported under ``"power"`` so existing callers keep working, but it is not statistical power.
+
+    Methods whose ``"results"`` is not a table with a ``P`` column, or that have no valid p-value, are omitted.
 
     Args:
-        method_results: Method comparison data
+        method_results: Mapping of method name to ``{"results": DataFrame with a P column,
+            "causal_snps": optional collection of truly associated SNP identifiers, ...}``
+        significance_threshold: P-value below which a SNP counts as called (default genome-wide 5e-8)
 
     Returns:
-        Power analysis results
+        Per method: ``power``, ``basis``, ``significant_snps`` and ``total_snps`` (counts over all tested
+        SNPs), plus ``causal_snps`` / ``causal_detected`` when ground truth was used.
     """
-    power_results = {}
+    power_results: Dict[str, Dict[str, Any]] = {}
 
     for method_name, method_data in method_results.items():
         results = method_data.get("results")
-        if not hasattr(results, "columns") or "P" in results.columns:
+        if not hasattr(results, "columns") or "P" not in results.columns:
             continue
 
-        # Assume some SNPs are truly associated (simplified)
-        # In practice, would need ground truth data
-        p_values = results["P"].dropna().values
+        p_values = results["P"].dropna()
+        total_snps = len(p_values)
+        if total_snps == 0:
+            continue
 
-        # Estimate power as proportion of significant findings
-        # (This is a very simplified calculation)
-        sig_snps = (p_values < 5e-8).sum()
-        estimated_power = min(sig_snps / len(p_values), 1.0)
-
-        power_results[method_name] = {
-            "power": estimated_power,
+        sig_snps = int((p_values < significance_threshold).sum())
+        entry: Dict[str, Any] = {
+            "power": sig_snps / total_snps,
+            "basis": "significant_fraction",
             "significant_snps": sig_snps,
-            "total_snps": len(p_values),
+            "total_snps": total_snps,
         }
+
+        causal = method_data.get("causal_snps")
+        if causal is not None:
+            causal_ids = [causal] if isinstance(causal, str) else list(causal)
+            tested_causal = results.index.isin(causal_ids)
+            n_causal = int(tested_causal.sum())
+            if n_causal:
+                detected = int((results.loc[tested_causal, "P"] < significance_threshold).sum())
+                entry.update(
+                    {
+                        "power": detected / n_causal,
+                        "basis": "causal_snps",
+                        "causal_snps": n_causal,
+                        "causal_detected": detected,
+                    }
+                )
+            else:
+                logger.warning(
+                    f"None of the {len(causal_ids)} causal SNPs given for method {method_name!r} were tested; "
+                    "reporting the significant fraction instead of power"
+                )
+
+        power_results[method_name] = entry
 
     return power_results
 
