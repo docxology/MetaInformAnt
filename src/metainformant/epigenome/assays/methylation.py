@@ -9,9 +9,10 @@ from __future__ import annotations
 
 import math
 import statistics
+from bisect import bisect_left
 from collections import defaultdict
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple
 
 from metainformant.core import io
 from metainformant.core.data import validation
@@ -73,27 +74,44 @@ class MethylationSite:
         }
 
 
-def load_methylation_bedgraph(path: str | Path, min_coverage: int = 1) -> Dict[str, List[MethylationSite]]:
+_BEDGRAPH_LEVEL_SCALES = ("auto", "fraction", "percent")
+
+
+def load_methylation_bedgraph(
+    path: str | Path, min_coverage: int = 1, level_scale: str = "auto"
+) -> Dict[str, List[MethylationSite]]:
     """Load methylation data from BEDgraph format.
+
+    Column 4 is the methylation level. BEDgraph carries levels, not read counts, and tools write them either as a
+    fraction (0-1) or as a percentage (0-100); ``level_scale`` says which. The default ``"auto"`` reads the file as
+    percentages when any level in it is above 1 (a warning is logged) and as fractions otherwise. A line whose
+    level is outside the range of the scale (negative, above 1 for fractions, above 100 for percentages, or not a
+    number) is skipped with a warning that names the line; it no longer aborts the whole load.
 
     Args:
         path: Path to BEDgraph file
         min_coverage: Minimum read coverage to include
+        level_scale: How to read column 4: ``"fraction"`` (0-1), ``"percent"`` (0-100) or ``"auto"``. Force
+            ``"fraction"`` for a fraction file that may hold a stray value above 1.
 
     Returns:
         Dictionary mapping chromosome names to lists of MethylationSite objects
 
     Raises:
-        FileNotFoundError: If file doesn't exist
-        ValueError: If file format is invalid
+        ValidationError: If the file doesn't exist
+        ValueError: If level_scale is not one of the values above
     """
+    if level_scale not in _BEDGRAPH_LEVEL_SCALES:
+        raise ValueError(f"level_scale must be one of {', '.join(_BEDGRAPH_LEVEL_SCALES)}, got {level_scale!r}")
+
     path = validation.validate_path_exists(Path(path))
 
     logger.info(f"Loading methylation BEDgraph from {path}")
 
-    methylation_data = defaultdict(list)
+    methylation_data: Dict[str, List[MethylationSite]] = defaultdict(list)
 
     try:
+        records: List[Tuple[int, str, int, float]] = []
         with io.open_text_auto(path, "rt") as f:
             for line_num, line in enumerate(f, 1):
                 line = line.strip()
@@ -110,27 +128,50 @@ def load_methylation_bedgraph(path: str | Path, min_coverage: int = 1) -> Dict[s
                     start_pos = int(parts[1])
                     int(parts[2])
                     methylation_level = float(parts[3])
-
-                    # BEDgraph format typically uses the start position
-                    # BEDgraph carries a level (0-1), not read counts. Estimate
-                    # counts at a fixed 100-read precision so the level survives
-                    # the count round trip (int truncation at total_reads=1
-                    # previously collapsed any level > 0.5 to 0.0).
-                    total_reads = max(min_coverage, 100)
-                    methylated_reads = int(round(methylation_level * total_reads))
-
-                    if total_reads >= min_coverage:
-                        site = MethylationSite(
-                            chromosome=chromosome,
-                            position=start_pos,
-                            methylated_reads=methylated_reads,
-                            total_reads=total_reads,
-                        )
-                        methylation_data[chromosome].append(site)
-
                 except (ValueError, IndexError) as e:
                     logger.warning(f"Error parsing line {line_num}: {e}")
                     continue
+
+                records.append((line_num, chromosome, start_pos, methylation_level))
+
+        # The scale is a property of the file, so it is settled once all the levels have been read
+        percent = level_scale == "percent"
+        if level_scale == "auto":
+            highest = max((level for _, _, _, level in records if not math.isnan(level)), default=0.0)
+            percent = highest > 1.0
+            if percent:
+                logger.warning(
+                    f"Methylation levels in {path} reach {highest:g}, above 1: reading column 4 as percentages "
+                    "(0-100); pass level_scale='fraction' to read it as a fraction"
+                )
+        upper_bound = 100.0 if percent else 1.0
+
+        for line_num, chromosome, start_pos, methylation_level in records:
+            if not 0.0 <= methylation_level <= upper_bound:
+                logger.warning(
+                    f"Skipping line {line_num}: methylation level {methylation_level:g} is outside "
+                    f"0-{upper_bound:g} ({'percent' if percent else 'fraction'} scale)"
+                )
+                continue
+
+            fraction = methylation_level / 100.0 if percent else methylation_level
+
+            # BEDgraph format typically uses the start position
+            # BEDgraph carries a level, not read counts. Estimate
+            # counts at a fixed 100-read precision so the level survives
+            # the count round trip (int truncation at total_reads=1
+            # previously collapsed any level > 0.5 to 0.0).
+            total_reads = max(min_coverage, 100)
+            methylated_reads = int(round(fraction * total_reads))
+
+            methylation_data[chromosome].append(
+                MethylationSite(
+                    chromosome=chromosome,
+                    position=start_pos,
+                    methylated_reads=methylated_reads,
+                    total_reads=total_reads,
+                )
+            )
 
     except Exception as e:
         logger.error(f"Error loading BEDgraph file {path}: {e}")
@@ -311,6 +352,14 @@ def find_differentially_methylated_regions(
 ) -> List[Dict[str, Any]]:
     """Find differentially methylated regions between two conditions.
 
+    A position is significant when its methylation difference is at least ``delta_threshold`` and the two-sided
+    p-value of the test that both conditions have the same methylation proportion (from their methylated and
+    total read counts) is at most ``p_value_threshold``. The test is a pooled two-proportion z-test with continuity
+    correction when every expected count of the methylated/unmethylated by condition table is at least 10, and
+    Fisher's exact test otherwise (low coverage, or levels at 0% or 100%), so sites that are fully methylated in one
+    condition and unmethylated in the other are tested rather than discarded. Runs of consecutive significant
+    positions with at least ``min_sites`` positions become regions.
+
     Args:
         site_data1: Methylation data for condition 1
         site_data2: Methylation data for condition 2
@@ -322,14 +371,16 @@ def find_differentially_methylated_regions(
             any consecutive significant sites regardless of distance.
 
     Returns:
-        List of differentially methylated regions
+        List of differentially methylated regions, ordered by chromosome name and position. Each is a dict with
+        ``chromosome``, ``start``, ``end``, ``sites`` (positions), ``mean_delta``, ``mean_p_value`` (the mean of the
+        per-site p-values), ``min_p_value`` (the smallest of them) and ``direction``.
     """
     logger.info("Finding differentially methylated regions")
 
     dmr_list = []
 
-    # Get all chromosomes present in both datasets
-    chromosomes = set(site_data1.keys()) & set(site_data2.keys())
+    # Get all chromosomes present in both datasets, in a fixed order (set order varies from run to run)
+    chromosomes = sorted(set(site_data1.keys()) & set(site_data2.keys()))
 
     for chromosome in chromosomes:
         sites1 = site_data1[chromosome]
@@ -357,30 +408,21 @@ def find_differentially_methylated_regions(
 
             delta = abs(site1.methylation_level - site2.methylation_level)
 
-            # Simple proportion test for significance (could be improved with proper statistical test)
-            if site1.coverage > 0 and site2.coverage > 0:
-                # Use Fisher's exact test approximation for difference significance
-                try:
-                    # Calculate expected difference significance
-                    p_diff = abs(site1.methylated_reads / site1.coverage - site2.methylated_reads / site2.coverage)
-                    # Simplified p-value calculation (in practice, use proper statistical test)
-                    se_diff = math.sqrt(
-                        (site1.methylation_level * (1 - site1.methylation_level) / site1.coverage)
-                        + (site2.methylation_level * (1 - site2.methylation_level) / site2.coverage)
-                    )
-                    z_score = p_diff / se_diff if se_diff > 0 else 0
-                    p_value = 2 * (1 - statistics.NormalDist().cdf(abs(z_score)))  # Two-tailed
-                except (ValueError, ZeroDivisionError, statistics.StatisticsError):
-                    p_value = 1.0
-            else:
-                p_value = 1.0
+            # The test is only needed where the difference is large enough to matter
+            p_value = 1.0
+            significant = delta >= delta_threshold
+            if significant:
+                p_value = _two_proportion_p_value(
+                    site1.methylated_reads, site1.coverage, site2.methylated_reads, site2.coverage
+                )
+                significant = p_value <= p_value_threshold
 
-            if delta >= delta_threshold and p_value <= p_value_threshold:
+            if significant:
                 gap_ok = max_gap is None or current_dmr is None or pos - current_dmr["end"] <= max_gap
                 if current_dmr is not None and not gap_ok:
                     # Flush the current DMR before starting a new one
                     if len(current_dmr["sites"]) >= min_sites:
-                        dmr_list.append(current_dmr)
+                        dmr_list.append(_finish_dmr(current_dmr))
                     current_dmr = None
                 if current_dmr is None:
                     # Start new DMR
@@ -391,7 +433,9 @@ def find_differentially_methylated_regions(
                         "sites": [pos],
                         "mean_delta": delta,
                         "mean_p_value": p_value,
+                        "min_p_value": p_value,
                         "direction": "hyper" if site1.methylation_level > site2.methylation_level else "hypo",
+                        "_p_values": [p_value],
                     }
                 else:
                     # Extend current DMR
@@ -400,19 +444,203 @@ def find_differentially_methylated_regions(
                     current_dmr["mean_delta"] = (
                         current_dmr["mean_delta"] * (len(current_dmr["sites"]) - 1) + delta
                     ) / len(current_dmr["sites"])
-                    current_dmr["mean_p_value"] = min(current_dmr["mean_p_value"], p_value)
+                    current_dmr["_p_values"].append(p_value)
             else:
                 # End current DMR if it meets minimum size
                 if current_dmr and len(current_dmr["sites"]) >= min_sites:
-                    dmr_list.append(current_dmr)
+                    dmr_list.append(_finish_dmr(current_dmr))
                 current_dmr = None
 
         # Don't forget the last DMR
         if current_dmr and len(current_dmr["sites"]) >= min_sites:
-            dmr_list.append(current_dmr)
+            dmr_list.append(_finish_dmr(current_dmr))
 
     logger.info(f"Found {len(dmr_list)} differentially methylated regions")
     return dmr_list
+
+
+# Smallest expected cell count of the 2x2 table above which the normal approximation is used instead of the exact test
+_NORMAL_APPROXIMATION_MIN_EXPECTED = 10.0
+
+
+def _finish_dmr(dmr: Dict[str, Any]) -> Dict[str, Any]:
+    """Replace a DMR's running list of per-site p-values by their mean and minimum."""
+    p_values = dmr.pop("_p_values")
+    dmr["mean_p_value"] = sum(p_values) / len(p_values)
+    dmr["min_p_value"] = min(p_values)
+    return dmr
+
+
+def _log_choose(n: int, k: int) -> float:
+    """Natural logarithm of the binomial coefficient ``n`` choose ``k``."""
+    return math.lgamma(n + 1) - math.lgamma(k + 1) - math.lgamma(n - k + 1)
+
+
+def _fisher_exact_two_sided(methylated1: int, total1: int, methylated2: int, total2: int) -> float:
+    """Two-sided Fisher exact p-value that two samples share one methylation proportion.
+
+    The 2x2 table is methylated and unmethylated read counts by sample. The p-value is the total probability, under
+    the hypergeometric distribution with the margins fixed, of the tables that are no more likely than the observed
+    one (with a relative tolerance of 1e-7 for ties, as R's ``fisher.test``).
+
+    Args:
+        methylated1: Methylated reads in sample 1.
+        total1: Total reads in sample 1.
+        methylated2: Methylated reads in sample 2.
+        total2: Total reads in sample 2.
+
+    Returns:
+        The p-value, in [0, 1].
+    """
+    methylated = methylated1 + methylated2
+    log_total_ways = _log_choose(total1 + total2, methylated)
+
+    def log_probability(methylated_in_1: int) -> float:
+        return _log_choose(total1, methylated_in_1) + _log_choose(total2, methylated - methylated_in_1) - log_total_ways
+
+    cutoff = log_probability(methylated1) + 1e-7
+    p_value = 0.0
+    for methylated_in_1 in range(max(0, methylated - total2), min(total1, methylated) + 1):
+        log_p = log_probability(methylated_in_1)
+        if log_p <= cutoff:
+            p_value += math.exp(log_p)
+    return min(1.0, p_value)
+
+
+def _two_proportion_p_value(methylated1: int, total1: int, methylated2: int, total2: int) -> float:
+    """Two-sided p-value that two samples share one methylation proportion, from read counts.
+
+    Uses a continuity-corrected z-test with the pooled proportion when every expected cell count of the
+    methylated/unmethylated by sample table is at least 10, and Fisher's exact test otherwise. The pooled standard
+    error is the one under the null
+    hypothesis, so it is zero only when every read in both samples agrees (no methylated reads at all, or no
+    unmethylated ones), where the samples cannot differ and the p-value is 1. The standard error built from each
+    sample's own proportion is zero as soon as both proportions are 0 or 1, however different they are, which is
+    why it must not be used for the test.
+
+    Args:
+        methylated1: Methylated reads in sample 1.
+        total1: Total reads in sample 1.
+        methylated2: Methylated reads in sample 2.
+        total2: Total reads in sample 2.
+
+    Returns:
+        The p-value, in [0, 1]; 1.0 when either sample has no reads.
+    """
+    if total1 <= 0 or total2 <= 0:
+        return 1.0
+
+    methylated = methylated1 + methylated2
+    total = total1 + total2
+    unmethylated = total - methylated
+    if methylated == 0 or unmethylated == 0:
+        return 1.0
+
+    # Smallest cell expectation of the 2x2 table: smallest row total x smallest column total / table total
+    if min(total1, total2) * min(methylated, unmethylated) / total >= _NORMAL_APPROXIMATION_MIN_EXPECTED:
+        pooled = methylated / total
+        standard_error = math.sqrt(pooled * (1.0 - pooled) * (1.0 / total1 + 1.0 / total2))
+        # Yates' continuity correction: read counts are discrete, and without it the z-test is liberal next to
+        # the exact test it hands over to at the smallest expected counts
+        difference = abs(methylated1 / total1 - methylated2 / total2) - 0.5 * (1.0 / total1 + 1.0 / total2)
+        z_score = max(0.0, difference) / standard_error
+        return math.erfc(z_score / math.sqrt(2.0))
+
+    return _fisher_exact_two_sided(methylated1, total1, methylated2, total2)
+
+
+def _cpg_statistics(sequence: str) -> Tuple[float, float, int]:
+    """GC fraction, observed/expected CpG ratio and CpG count of an upper-case DNA sequence.
+
+    Observed/expected CpG is ``CpG count * length / (C count * G count)`` (Gardiner-Garden & Frommer, 1987),
+    taken as 0.0 when the sequence has no C or no G.
+    """
+    length = len(sequence)
+    c_count = sequence.count("C")
+    g_count = sequence.count("G")
+    cpg_count = sequence.count("CG")
+    gc_content = (c_count + g_count) / length if length else 0.0
+    cpg_ratio = cpg_count * length / (c_count * g_count) if c_count and g_count else 0.0
+    return gc_content, cpg_ratio, cpg_count
+
+
+def find_cpg_islands(
+    sequences: Mapping[str, str],
+    window_size: int = 200,
+    step_size: int = 50,
+    min_gc: float = 0.5,
+    min_cpg_ratio: float = 0.6,
+    min_length: int = 200,
+) -> List[Dict[str, Any]]:
+    """Find CpG islands in DNA sequence with the Gardiner-Garden & Frommer criteria.
+
+    A CpG island is a stretch of at least ``min_length`` bp (200) whose GC fraction is at least ``min_gc`` (0.5)
+    and whose observed/expected CpG ratio, ``CpG count * length / (C count * G count)``, is at least
+    ``min_cpg_ratio`` (0.6). Each chromosome is scanned with windows of ``window_size`` bp every ``step_size`` bp
+    (the last window is aligned to the end of the sequence); windows that meet the GC and CpG criteria are merged
+    when they overlap or touch, and a merged stretch is reported when it is at least ``min_length`` long and still
+    meets both criteria as a whole. Island boundaries are therefore resolved to about ``window_size`` bp (a window
+    that is partly island still qualifies), finer with a smaller ``window_size`` and ``step_size``. Sequence is
+    upper-cased, and bases other than C and G (including N) count as neither.
+
+    Args:
+        sequences: Mapping of chromosome name to its DNA sequence.
+        window_size: Scanning window size in bp.
+        step_size: Distance between window starts in bp.
+        min_gc: Minimum GC fraction.
+        min_cpg_ratio: Minimum observed/expected CpG ratio.
+        min_length: Minimum island length in bp.
+
+    Returns:
+        Islands in the order of ``sequences`` and then by start. Each is a dict with ``chromosome``, ``start`` and
+        ``end`` (0-based, end exclusive), ``length``, ``gc_content``, ``cpg_ratio`` and ``cpg_count``.
+
+    Raises:
+        ValueError: If ``window_size`` or ``step_size`` is below 1.
+    """
+    if window_size < 1 or step_size < 1:
+        raise ValueError(f"window_size and step_size must be at least 1, got {window_size} and {step_size}")
+
+    islands: List[Dict[str, Any]] = []
+
+    for chromosome, raw_sequence in sequences.items():
+        sequence = raw_sequence.upper()
+        if len(sequence) < window_size:
+            continue
+
+        starts = list(range(0, len(sequence) - window_size + 1, step_size))
+        if starts[-1] != len(sequence) - window_size:
+            starts.append(len(sequence) - window_size)
+
+        # Merge qualifying windows that overlap or touch into candidate stretches
+        stretches: List[List[int]] = []
+        for start in starts:
+            gc_content, cpg_ratio, _ = _cpg_statistics(sequence[start : start + window_size])
+            if gc_content < min_gc or cpg_ratio < min_cpg_ratio:
+                continue
+            if stretches and start <= stretches[-1][1]:
+                stretches[-1][1] = start + window_size
+            else:
+                stretches.append([start, start + window_size])
+
+        for start, end in stretches:
+            if end - start < min_length:
+                continue
+            gc_content, cpg_ratio, cpg_count = _cpg_statistics(sequence[start:end])
+            if gc_content >= min_gc and cpg_ratio >= min_cpg_ratio:
+                islands.append(
+                    {
+                        "chromosome": chromosome,
+                        "start": start,
+                        "end": end,
+                        "length": end - start,
+                        "gc_content": gc_content,
+                        "cpg_ratio": cpg_ratio,
+                        "cpg_count": cpg_count,
+                    }
+                )
+
+    return islands
 
 
 def identify_cpg_islands(
@@ -421,88 +649,69 @@ def identify_cpg_islands(
     step_size: int = 50,
     min_gc: float = 0.5,
     min_cpg_ratio: float = 0.6,
+    *,
+    sequences: Optional[Mapping[str, str]] = None,
+    min_length: int = 200,
 ) -> List[Dict[str, Any]]:
-    """Identify CpG islands based on methylation patterns.
+    """Identify CpG islands in DNA sequence and summarize the methylation sites inside them.
+
+    Islands are called from the sequence with :func:`find_cpg_islands` (Gardiner-Garden & Frommer: at least
+    ``min_length`` bp, GC fraction at least ``min_gc``, observed/expected CpG at least ``min_cpg_ratio``). Methylation
+    levels cannot stand in for sequence: GC content and CpG depletion are properties of the DNA, so the sequence is
+    required. The methylation sites are only summarized per island.
 
     Args:
-        methylation_data: Dictionary of methylation sites by chromosome
+        methylation_data: Dictionary of methylation sites by chromosome (may be empty or lack chromosomes: the
+            islands are then reported with no sites)
         window_size: Size of sliding window in base pairs
         step_size: Step size for sliding window
         min_gc: Minimum GC content for CpG island
         min_cpg_ratio: Minimum CpG ratio (observed/expected)
+        sequences: Mapping of chromosome name to DNA sequence (required, keyword-only). Site positions are
+            compared with the 0-based sequence coordinates, so shift 1-based positions (such as Bismark's) first
+            if the difference matters.
+        min_length: Minimum island length in base pairs
 
     Returns:
-        List of identified CpG islands
+        List of identified CpG islands: the dicts of :func:`find_cpg_islands` plus ``sites`` (number of methylation
+        sites with ``start <= position < end``) and ``avg_methylation`` (their mean level, ``None`` without sites)
+
+    Raises:
+        ValueError: If ``sequences`` is not given, or ``window_size`` or ``step_size`` is below 1.
     """
+    if sequences is None:
+        raise ValueError(
+            "identify_cpg_islands needs the DNA sequence: pass sequences={chromosome: sequence}. CpG islands are "
+            "defined by the GC content and CpG depletion of the sequence, which methylation levels cannot supply."
+        )
+
     logger.info("Identifying CpG islands")
 
-    cpg_islands: List[Dict[str, Any]] = []
+    islands = find_cpg_islands(
+        sequences,
+        window_size=window_size,
+        step_size=step_size,
+        min_gc=min_gc,
+        min_cpg_ratio=min_cpg_ratio,
+        min_length=min_length,
+    )
 
-    for chromosome, sites in methylation_data.items():
-        if len(sites) < 10:  # Need minimum sites for analysis
-            continue
+    sites_by_chromosome: Dict[str, Tuple[List[int], List[float]]] = {}
+    for island in islands:
+        chromosome = island["chromosome"]
+        if chromosome not in sites_by_chromosome:
+            ordered = sorted(methylation_data.get(chromosome, []), key=lambda site: site.position)
+            sites_by_chromosome[chromosome] = (
+                [site.position for site in ordered],
+                [site.methylation_level for site in ordered],
+            )
+        positions, levels = sites_by_chromosome[chromosome]
+        inside = levels[bisect_left(positions, island["start"]) : bisect_left(positions, island["end"])]
+        island["sites"] = len(inside)
+        island["avg_methylation"] = sum(inside) / len(inside) if inside else None
 
-        # Sort sites by position
-        sites = sorted(sites, key=lambda x: x.position)
-
-        # Sliding window analysis
-        max_pos = max(site.position for site in sites)
-        min_pos = min(site.position for site in sites)
-
-        for start_pos in range(min_pos, max_pos - window_size + 1, step_size):
-            end_pos = start_pos + window_size
-
-            # Get sites in window
-            window_sites = [s for s in sites if start_pos <= s.position < end_pos]
-
-            if len(window_sites) < 5:  # Need minimum sites in window
-                continue
-
-            # Calculate GC content and CpG ratio
-
-            # Simplified calculation based on methylation levels
-            # In practice, this would use actual sequence data
-            avg_methylation = sum(s.methylation_level for s in window_sites) / len(window_sites)
-
-            # Estimate GC content from methylation patterns
-            # (highly methylated regions often have higher GC content)
-            gc_content = min(1.0, 0.3 + avg_methylation * 0.4)  # Simplified estimation
-
-            # Estimate CpG ratio
-            cpg_ratio = avg_methylation * 1.2  # Simplified estimation
-
-            if gc_content >= min_gc and cpg_ratio >= min_cpg_ratio:
-                cpg_islands.append(
-                    {
-                        "chromosome": chromosome,
-                        "start": start_pos,
-                        "end": end_pos,
-                        "sites": len(window_sites),
-                        "avg_methylation": avg_methylation,
-                        "gc_content": gc_content,
-                        "cpg_ratio": cpg_ratio,
-                    }
-                )
-
-    # Remove overlapping islands (keep the one with highest CpG ratio)
-    cpg_islands.sort(key=lambda x: x["cpg_ratio"], reverse=True)
-
-    filtered_islands: List[Dict[str, Any]] = []
-    for island in cpg_islands:
-        # Check for overlap with already selected islands
-        overlaps = False
-        for selected in filtered_islands:
-            if island["chromosome"] == selected["chromosome"] and not (
-                island["end"] <= selected["start"] or island["start"] >= selected["end"]
-            ):
-                overlaps = True
-                break
-
-        if not overlaps:
-            filtered_islands.append(island)
-
-    logger.info(f"Identified {len(filtered_islands)} CpG islands")
-    return filtered_islands
+    logger.info(f"Identified {len(islands)} CpG islands")
+    return islands
 
 
 def calculate_methylation_entropy(
@@ -549,7 +758,9 @@ def calculate_methylation_entropy(
 
             for level in methylation_levels:
                 for i in range(len(bins) - 1):
-                    if bins[i] <= level < bins[i + 1]:
+                    # The last bin is closed on the right, so a fully methylated site (1.0) is counted
+                    in_last_bin = i == len(bins) - 2 and level == bins[i + 1]
+                    if bins[i] <= level < bins[i + 1] or in_last_bin:
                         hist[i] += 1
                         break
 

@@ -8,22 +8,22 @@ Epigenetic modification analysis including DNA methylation patterns, histone mod
 Implemented in `metainformant.epigenome.assays.methylation`.
 - **Methylation data loading**: Read per-site methylation calls from BEDgraph and coverage files or count tables (`load_methylation_bedgraph`, `load_methylation_cov`, `load_cpg_table`). Calling methylation from reads or alignments is not implemented in this module
 - **Differential methylation**: Compare methylation patterns between conditions (`find_differentially_methylated_regions`)
-- **CpG island screening**: Window scan that estimates CpG-island-like regions from methylation levels (`identify_cpg_islands`); it does not read sequence
+- **CpG island calling**: Gardiner-Garden & Frommer criteria (length, GC content, observed/expected CpG) applied to DNA sequence (`find_cpg_islands`); `identify_cpg_islands` calls the islands from sequence too and summarizes the methylation sites inside each, and it requires the sequence
 
 ### Chromatin Accessibility
 - **ATAC-seq analysis**: Load, summarize and compare accessible-region peaks (`metainformant.epigenome.assays.atacseq`)
 - **Peak calling**: Statistical detection of enriched regions from signal tracks with a Poisson model (`metainformant.epigenome.peak_calling.peak_detection`)
-- **Motif scanning**: Search peak windows for IUPAC motif patterns in a genome FASTA (`assays.chipseq.find_motifs_in_peaks`)
+- **Motif scanning**: Search peak windows for IUPAC motif patterns in a genome FASTA (`assays.chipseq.find_motifs_in_peaks`), and scan accessible regions for transcription factor consensus motifs on both strands (`assays.atacseq.find_tf_binding_sites`, which needs the peak sequence)
 - **Differential accessibility**: Compare peak sets between conditions (`atacseq.compare_atac_conditions`, `peak_detection.differential_peaks`)
 
 ### Histone Modifications
-- **ChIP-seq peak analysis**: Load, filter, summarize, overlap and merge peaks (`metainformant.epigenome.assays.chipseq`)
+- **ChIP-seq peak analysis**: Load, save, filter, summarize, overlap and merge peaks in narrowPeak, broadPeak and BED layouts (`metainformant.epigenome.assays.chipseq`)
 - **Chromatin state learning**: Discover and label chromatin states from histone mark signal (`metainformant.epigenome.chromatin_state`)
 
 ## Integration with Genomics
 
 Epigenetic data integrates with genomic annotation in two ways within this module:
-- **Multi-assay integration**: `workflow.workflow.integrate_epigenome_results` relates methylation sites to ChIP-seq and ATAC-seq peaks
+- **Multi-assay integration**: `workflow.workflow.integrate_epigenome_results` relates methylation sites to ChIP-seq and ATAC-seq peaks, and measures how much the ChIP-seq and ATAC-seq peak sets overlap (peak overlap in both directions and the base-pair Jaccard index)
 - **Functional annotation**: `chromatin_state.state_learning.interpret_states` labels chromatin states from histone mark patterns, and `compute_state_enrichment` tests the states against annotated bins
 
 Not implemented here: connecting methylation or accessibility to gene expression (the `metainformant.multiomics` module accepts an epigenome table through `analysis.integration.integrate_omics_data(..., epigenome_data=...)`), linking to 3D genome organization, and cross-species comparison.

@@ -168,6 +168,7 @@ def call_peaks_simple(
     threshold: float = 5.0,
     min_length: int = 100,
     merge_distance: int = 50,
+    chrom: str = "chr_unknown",
 ) -> list[dict]:
     """Call narrow peaks from a signal track using Poisson enrichment.
 
@@ -187,17 +188,26 @@ def call_peaks_simple(
             enriched positions) to retain.
         merge_distance: Maximum gap between enriched runs to merge
             into a single peak.
+        chrom: Chromosome the signal belongs to; it is written to the
+            ``chrom`` key of every peak.  Peak coordinates are 0-based
+            indices into *signal*, so they are genomic positions when the
+            track starts at position 0 of *chrom*.  The default
+            ``"chr_unknown"`` is only a placeholder for signals with no
+            chromosome.
 
     Returns:
         List of peak dictionaries with keys: ``chrom``, ``start``,
         ``end``, ``summit``, ``score``, ``p_value``, ``fold_enrichment``,
-        ``signal_value``.
+        ``signal_value``, ``q_value``.
 
     Raises:
-        ValueError: If signal is empty or control length mismatches.
+        ValueError: If signal is empty, control length mismatches or
+            *chrom* is empty.
     """
     if not signal:
         raise ValueError("Signal list must not be empty")
+    if not chrom:
+        raise ValueError("chrom must not be empty")
     if control is not None and len(control) != len(signal):
         raise ValueError(f"Control length ({len(control)}) must match signal length " f"({len(signal)})")
 
@@ -287,7 +297,7 @@ def call_peaks_simple(
         score = -math.log10(best_pval) if best_pval > 0 else 300.0
 
         peak = {
-            "chrom": "chr_unknown",
+            "chrom": chrom,
             "start": cand["start"],
             "end": cand["end"],
             "summit": summit,
@@ -315,6 +325,7 @@ def call_peaks_broad(
     p_threshold: float = 0.1,
     broad_cutoff: float = 0.1,
     min_length: int = 200,
+    chrom: str = "chr_unknown",
 ) -> list[dict]:
     """Call broad peaks / domains for diffuse histone marks.
 
@@ -330,17 +341,26 @@ def call_peaks_broad(
         broad_cutoff: Secondary p-value cutoff for broad region
             boundary determination.
         min_length: Minimum broad peak length to retain.
+        chrom: Chromosome the signal belongs to; it is written to the
+            ``chrom`` key of every peak.  Peak coordinates are 0-based
+            indices into *signal*, so they are genomic positions when the
+            track starts at position 0 of *chrom*.  The default
+            ``"chr_unknown"`` is only a placeholder for signals with no
+            chromosome.
 
     Returns:
         List of broad peak dictionaries with keys: ``chrom``, ``start``,
         ``end``, ``summit``, ``score``, ``p_value``, ``fold_enrichment``,
-        ``signal_value``, ``peak_type``.
+        ``signal_value``, ``peak_type``, ``q_value``.
 
     Raises:
-        ValueError: If signal is empty or control length mismatches.
+        ValueError: If signal is empty, control length mismatches or
+            *chrom* is empty.
     """
     if not signal:
         raise ValueError("Signal list must not be empty")
+    if not chrom:
+        raise ValueError("chrom must not be empty")
     if control is not None and len(control) != len(signal):
         raise ValueError(f"Control length ({len(control)}) must match signal length " f"({len(signal)})")
 
@@ -427,7 +447,7 @@ def call_peaks_broad(
         score = -math.log10(best_pval) if best_pval > 0 else 300.0
 
         peak = {
-            "chrom": "chr_unknown",
+            "chrom": chrom,
             "start": ext_start,
             "end": ext_end,
             "summit": summit,
@@ -536,11 +556,18 @@ def merge_peaks(
     peaks: list[dict],
     distance: int = 0,
 ) -> list[dict]:
-    """Merge overlapping or nearby peaks, keeping the best summit.
+    """Merge overlapping or nearby peaks on the same chromosome, keeping the best summit.
 
-    Peaks are sorted by start position, then consecutive peaks whose
-    gap is at most *distance* are merged.  The merged peak retains the
-    summit with the highest signal value and the best (lowest) p-value.
+    Peaks are grouped by their ``chrom`` key (``"chr_unknown"`` for a peak
+    without one, as in the rest of this module) and sorted by start position
+    within each chromosome; consecutive peaks whose gap is at most *distance*
+    are then merged.  Peaks on different chromosomes are never merged.  The
+    merged peak retains the summit with the highest signal value, the best
+    (lowest) ``p_value`` and ``q_value`` of its members, and the highest
+    ``score`` and ``fold_enrichment``; every other key comes from the first
+    peak.  The q-value is the lowest of the members' q-values, so it stays
+    consistent with the retained p-value; it is not re-estimated for the
+    merged set.
 
     Args:
         peaks: List of peak dictionaries.
@@ -548,42 +575,58 @@ def merge_peaks(
             only).
 
     Returns:
-        List of merged peak dictionaries sorted by start position.
+        List of merged peak dictionaries: chromosomes in order of first
+        appearance, each sorted by start position.
     """
     if not peaks:
         return []
 
     logger.debug("Merging %d peaks with distance=%d", len(peaks), distance)
 
-    # Sort by start position
-    sorted_peaks = sorted(peaks, key=lambda p: p["start"])
+    # Group by chromosome; a merge never crosses chromosomes
+    by_chrom: dict[str, list[dict]] = {}
+    for peak in peaks:
+        by_chrom.setdefault(peak.get("chrom", "chr_unknown"), []).append(peak)
 
-    merged: list[dict] = [dict(sorted_peaks[0])]
+    merged: list[dict] = []
 
-    for peak in sorted_peaks[1:]:
-        prev = merged[-1]
-        if peak["start"] <= prev["end"] + distance:
-            # Merge: extend end
-            prev["end"] = max(prev["end"], peak["end"])
+    for chrom_peaks in by_chrom.values():
+        # Sort by start position
+        sorted_peaks = sorted(chrom_peaks, key=lambda p: p["start"])
 
-            # Keep summit with highest signal
-            if peak.get("signal_value", 0) > prev.get("signal_value", 0):
-                prev["summit"] = peak.get("summit", prev.get("summit"))
-                prev["signal_value"] = peak.get("signal_value", prev.get("signal_value", 0))
+        merged.append(dict(sorted_peaks[0]))
 
-            # Keep best (lowest) p-value
-            prev_pval = prev.get("p_value", 1.0)
-            peak_pval = peak.get("p_value", 1.0)
-            if peak_pval < prev_pval:
-                prev["p_value"] = peak_pval
+        for peak in sorted_peaks[1:]:
+            prev = merged[-1]
+            if peak["start"] <= prev["end"] + distance:
+                # Merge: extend end
+                prev["end"] = max(prev["end"], peak["end"])
 
-            # Keep best score (highest)
-            prev["score"] = max(prev.get("score", 0), peak.get("score", 0))
+                # Keep summit with highest signal
+                if peak.get("signal_value", 0) > prev.get("signal_value", 0):
+                    prev["summit"] = peak.get("summit", prev.get("summit"))
+                    prev["signal_value"] = peak.get("signal_value", prev.get("signal_value", 0))
 
-            # Keep best fold enrichment (highest)
-            prev["fold_enrichment"] = max(prev.get("fold_enrichment", 0), peak.get("fold_enrichment", 0))
-        else:
-            merged.append(dict(peak))
+                # Keep best (lowest) p-value
+                prev_pval = prev.get("p_value", 1.0)
+                peak_pval = peak.get("p_value", 1.0)
+                if peak_pval < prev_pval:
+                    prev["p_value"] = peak_pval
+
+                # Keep best (lowest) q-value, so it stays in step with the retained p-value
+                peak_qval = peak.get("q_value")
+                if peak_qval is not None:
+                    prev_qval = prev.get("q_value")
+                    if prev_qval is None or peak_qval < prev_qval:
+                        prev["q_value"] = peak_qval
+
+                # Keep best score (highest)
+                prev["score"] = max(prev.get("score", 0), peak.get("score", 0))
+
+                # Keep best fold enrichment (highest)
+                prev["fold_enrichment"] = max(prev.get("fold_enrichment", 0), peak.get("fold_enrichment", 0))
+            else:
+                merged.append(dict(peak))
 
     logger.debug("Merged %d peaks into %d", len(peaks), len(merged))
     return merged

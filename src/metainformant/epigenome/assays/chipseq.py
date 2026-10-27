@@ -6,22 +6,36 @@ including peak calling, motif analysis, quality control, and data integration.
 
 from __future__ import annotations
 
+import math
 import re
 import statistics
+from bisect import bisect_left, bisect_right
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from metainformant.core import io
 from metainformant.core.data import validation
 from metainformant.core.sequence import reverse_complement
 from metainformant.core.utils import errors, logging
+from metainformant.epigenome.assays._peak_format import (
+    MIN_COLUMNS,
+    format_peak_line,
+    is_skipped_line,
+    normalise_peak_format,
+    parse_peak_fields,
+)
 
 logger = logging.get_logger(__name__)
 
 
 class ChIPPeak:
-    """Represents a ChIP-seq peak."""
+    """Represents a ChIP-seq peak.
+
+    ``p_value`` and ``q_value`` are probabilities (between 0 and 1, or ``None``). Peak files store them as
+    ``-log10`` values, as the ENCODE specification and MACS2 do; :func:`load_chip_peaks` and
+    :func:`save_chip_peaks` convert at the file boundary, so a q-value of 0.01 is the column value 2.
+    """
 
     def __init__(
         self,
@@ -45,8 +59,8 @@ class ChIPPeak:
             score: Peak score
             strand: DNA strand
             signal_value: Signal value
-            p_value: P-value
-            q_value: Q-value (FDR)
+            p_value: P-value, as a probability between 0 and 1
+            q_value: Q-value (FDR), as a probability between 0 and 1
         """
         self.chromosome = chromosome
         self.start = start
@@ -75,25 +89,38 @@ class ChIPPeak:
         """Get peak center position."""
         return (self.start + self.end) // 2
 
-    def to_bed_format(self) -> str:
-        """Convert to BED format string."""
-        summit_str = str(self.summit) if self.summit is not None else "."
-        p_val_str = f"{self.p_value:.2e}" if self.p_value is not None else "."
-        q_val_str = f"{self.q_value:.2e}" if self.q_value is not None else "."
+    def to_bed_format(self, format: str = "narrowpeak") -> str:
+        """Convert to one line of a standard peak file.
 
-        return "\t".join(
-            [
-                self.chromosome,
-                str(self.start),
-                str(self.end),
-                f"peak_{self.start}_{self.end}",
-                f"{self.score:.1f}",
-                self.strand,
-                summit_str,
-                f"{self.signal_value:.2f}",
-                p_val_str,
-                q_val_str,
-            ]
+        The columns follow the ENCODE layouts that :func:`load_chip_peaks` reads: ``narrowpeak`` (default,
+        ten columns ending in the summit as an offset from ``start``), ``broadpeak`` (nine columns) or
+        ``bed`` (six columns). The p-value and q-value are probabilities and are written as ``-log10`` values,
+        as the specification requires (``1e-05`` is written ``5``); a probability of exactly 0 is written as the
+        ``-log10`` of the smallest positive float (about 323.3). A missing p-value, q-value or summit is written
+        as ``-1``.
+
+        Args:
+            format: Peak layout to write.
+
+        Returns:
+            The tab-separated line, without a trailing newline.
+
+        Raises:
+            ValueError: If the layout is not supported, or the p-value or q-value is not between 0 and 1
+                (only the ``narrowpeak`` and ``broadpeak`` layouts write them).
+        """
+        return format_peak_line(
+            name=f"peak_{self.start}_{self.end}",
+            chromosome=self.chromosome,
+            start=self.start,
+            end=self.end,
+            score=self.score,
+            strand=self.strand,
+            signal_value=self.signal_value,
+            p_value=self.p_value,
+            q_value=self.q_value,
+            summit=self.summit,
+            format=format,
         )
 
     def overlaps_with(self, other: ChIPPeak, min_overlap: int = 1) -> bool:
@@ -133,100 +160,72 @@ class ChIPPeak:
 def load_chip_peaks(path: str | Path, format: str = "narrowpeak") -> List[ChIPPeak]:
     """Load ChIP-seq peaks from a file.
 
+    The columns are read in the ENCODE layouts that :func:`save_chip_peaks` writes: ``narrowpeak`` has ten
+    columns (``chrom, start, end, name, score, strand, signalValue, pValue, qValue, peak``, with ``peak`` the
+    summit as an offset from ``start``), ``broadpeak`` the first nine and ``bed`` the first six (only the first
+    three are required). ``-1`` or ``.`` in the p-value, q-value or summit column means "not available" and
+    gives ``None``.
+
+    The pValue and qValue columns hold ``-log10`` values, as the ENCODE specification and MACS2 write them, and
+    the peaks carry probabilities: a column value ``v`` becomes ``p_value`` or ``q_value`` ``10 ** -v``, so a
+    column of 2 is a q-value of 0.01 and a MACS2 value of 9.1 is about 7.9e-10. A column above about 323.6
+    underflows to a probability of 0.0. Any negative column value other than ``-1`` (or ``nan``) is not a
+    ``-log10`` probability, and the line is skipped with a warning.
+
+    Blank, ``#``, ``track`` and ``browser`` lines are ignored. A line with too few columns for the layout, or
+    with a value that does not parse, is skipped with a warning.
+
     Args:
-        path: Path to peak file
-        format: Peak file format ("narrowpeak", "broadpeak", "bed")
+        path: Path to peak file (optionally gzip-compressed)
+        format: Peak file layout ("narrowpeak", "broadpeak", "bed"), in any letter case
 
     Returns:
         List of ChIPPeak objects
 
     Raises:
-        FileNotFoundError: If file doesn't exist
-        ValueError: If file format is invalid
+        ValidationError: If the file doesn't exist
+        ValueError: If the format is not supported
     """
+    fmt = normalise_peak_format(format)
     path = validation.validate_path_exists(Path(path))
 
-    logger.info(f"Loading ChIP-seq peaks from {path} (format: {format})")
+    logger.info(f"Loading ChIP-seq peaks from {path} (format: {fmt})")
 
     peaks = []
+    min_columns = MIN_COLUMNS[fmt]
 
     try:
         with io.open_text_auto(path, "rt") as f:
             for line_num, line in enumerate(f, 1):
                 line = line.strip()
-                if not line or line.startswith("#") or line.startswith("track"):
+                if is_skipped_line(line):
                     continue
 
                 parts = line.split("\t")
-                if len(parts) < 6:
-                    logger.warning(f"Skipping malformed line {line_num}: insufficient columns")
+                if len(parts) < min_columns:
+                    logger.warning(
+                        f"Skipping line {line_num}: {fmt} needs at least {min_columns} columns, found {len(parts)}"
+                    )
                     continue
 
                 try:
-                    chromosome = parts[0]
-                    start = int(parts[1])
-                    end = int(parts[2])
-                    score = float(parts[4]) if len(parts) > 4 else 0.0
-                    strand = parts[5] if len(parts) > 5 else "."
-
-                    # Parse format-specific fields
-                    if format == "narrowpeak" and len(parts) >= 10:
-                        # narrowPeak format: chrom, start, end, name, score, strand, signalValue, pValue, qValue, peak
-                        signal_value = float(parts[6]) if len(parts) > 6 else 0.0
-                        p_value = float(parts[7]) if len(parts) > 7 and parts[7] != "." else None
-                        q_value = float(parts[8]) if len(parts) > 8 and parts[8] != "." else None
-                        peak_offset = int(parts[9]) if len(parts) > 9 and parts[9] != "." else None
-
-                        summit = start + peak_offset if peak_offset is not None else None
-
-                        peak = ChIPPeak(
-                            chromosome=chromosome,
-                            start=start,
-                            end=end,
-                            summit=summit,
-                            score=score,
-                            strand=strand,
-                            signal_value=signal_value,
-                            p_value=p_value,
-                            q_value=q_value,
-                        )
-
-                    elif format == "broadpeak" and len(parts) >= 9:
-                        # broadPeak format: chrom, start, end, name, score, strand, signalValue, pValue, qValue
-                        signal_value = float(parts[6]) if len(parts) > 6 else 0.0
-                        p_value = float(parts[7]) if len(parts) > 7 and parts[7] != "." else None
-                        q_value = float(parts[8]) if len(parts) > 8 and parts[8] != "." else None
-
-                        peak = ChIPPeak(
-                            chromosome=chromosome,
-                            start=start,
-                            end=end,
-                            score=score,
-                            strand=strand,
-                            signal_value=signal_value,
-                            p_value=p_value,
-                            q_value=q_value,
-                        )
-
-                    elif format == "bed":
-                        # Basic BED format
-                        peak = ChIPPeak(
-                            chromosome=chromosome,
-                            start=start,
-                            end=end,
-                            score=score,
-                            strand=strand,
-                        )
-
-                    else:
-                        logger.warning(f"Unsupported format or insufficient columns in line {line_num}")
-                        continue
-
-                    peaks.append(peak)
-
+                    fields = parse_peak_fields(parts, fmt)
+                    peak = ChIPPeak(
+                        chromosome=fields.chromosome,
+                        start=fields.start,
+                        end=fields.end,
+                        summit=fields.summit,
+                        score=fields.score,
+                        strand=fields.strand,
+                        signal_value=fields.signal_value or 0.0,
+                        p_value=fields.p_value,
+                        q_value=fields.q_value,
+                    )
                 except (ValueError, IndexError) as e:
                     logger.warning(f"Error parsing line {line_num}: {e}")
                     continue
+
+                peaks.append(peak)
 
     except Exception as e:
         logger.error(f"Error loading ChIP-seq peaks from {path}: {e}")
@@ -237,47 +236,46 @@ def load_chip_peaks(path: str | Path, format: str = "narrowpeak") -> List[ChIPPe
 
 
 def save_chip_peaks(peaks: List[ChIPPeak], path: str | Path, format: str = "narrowpeak") -> None:
-    """Save ChIP-seq peaks to a file.
+    """Save ChIP-seq peaks to a file that :func:`load_chip_peaks` reads back.
+
+    The columns follow the ENCODE layouts (see :meth:`ChIPPeak.to_bed_format`): ten columns for ``narrowpeak``,
+    nine for ``broadpeak`` and six for ``bed``. ``narrowpeak`` and ``broadpeak`` files start with a ``#``
+    comment line, which the loaders skip. The name column (``peak_<start>_<end>``) is regenerated on every
+    write; peaks carry no name. A ``broadpeak`` or ``bed`` file does not hold the summit, and a ``bed`` file
+    holds neither the signal value nor the p- and q-values.
+
+    The peaks' p-values and q-values are probabilities and are written as ``-log10`` values, as the ENCODE
+    specification requires (a q-value of 0.01 is written ``2``); a probability of exactly 0 is written as the
+    ``-log10`` of the smallest positive float (about 323.3), so it reads back as that float rather than 0.0.
+    Probabilities lose a few units in the last place in the round trip, and values below about 1e-308 lose
+    precision as the float underflows.
+
+    Every peak is formatted before the file is opened, so a failure leaves no partial file and an existing file
+    is not overwritten.
 
     Args:
         peaks: List of ChIPPeak objects
         path: Output file path
-        format: Output format ("narrowpeak", "broadpeak", "bed")
+        format: Output layout ("narrowpeak", "broadpeak", "bed"), in any letter case
+
+    Raises:
+        ValueError: If the format is not supported, or a peak's p-value or q-value is not between 0 and 1
+            (nothing is written)
     """
+    fmt = normalise_peak_format(format)
     path = Path(path)
 
-    logger.info(f"Saving {len(peaks)} ChIP-seq peaks to {path} (format: {format})")
+    # Format every peak first: an invalid p- or q-value raises ValueError here, before the file is touched
+    lines = [peak.to_bed_format(fmt) for peak in peaks]
+
+    logger.info(f"Saving {len(peaks)} ChIP-seq peaks to {path} (format: {fmt})")
 
     with open(path, "w") as f:
-        # Write header for BED formats
-        if format != "bed":
+        if fmt != "bed":
             f.write("# Generated by MetaInformant ChIP-seq analysis\n")
 
-        for peak in peaks:
-            if format == "narrowpeak":
-                f.write(peak.to_bed_format() + "\n")
-            elif format == "broadpeak":
-                # Convert narrowPeak to broadPeak (remove summit column)
-                bed_parts = peak.to_bed_format().split("\t")
-                if len(bed_parts) >= 10:
-                    # Remove the last column (peak offset)
-                    broadpeak_line = "\t".join(bed_parts[:9])
-                    f.write(broadpeak_line + "\n")
-            elif format == "bed":
-                # Basic BED format
-                f.write(
-                    "\t".join(
-                        [
-                            peak.chromosome,
-                            str(peak.start),
-                            str(peak.end),
-                            f"peak_{peak.start}_{peak.end}",
-                            f"{peak.score:.1f}",
-                            peak.strand,
-                        ]
-                    )
-                    + "\n"
-                )
+        for line in lines:
+            f.write(line + "\n")
 
     logger.info(f"Saved {len(peaks)} peaks to {path}")
 
@@ -388,12 +386,18 @@ def calculate_peak_statistics(peaks: List[ChIPPeak]) -> Dict[str, Any]:
 def find_overlapping_peaks(
     peaks1: List[ChIPPeak], peaks2: List[ChIPPeak], min_overlap: int = 1
 ) -> List[Tuple[ChIPPeak, ChIPPeak]]:
-    """Find overlapping peaks between two peak sets.
+    """Find every pair of overlapping peaks between two peak sets.
+
+    A pair ``(peak1, peak2)`` is returned when both peaks are on the same chromosome and
+    ``peak1.overlaps_with(peak2, min_overlap)`` holds. Peaks within one set may overlap each other (or be
+    nested), and a peak that overlaps several peaks of the other set appears in several pairs. The result is
+    ordered by chromosome (in order of first appearance in ``peaks1``), then by ``peak1`` start, then by
+    ``peak2`` start, so it does not depend on hash seeds.
 
     Args:
         peaks1: First set of peaks
         peaks2: Second set of peaks
-        min_overlap: Minimum overlap required
+        min_overlap: Minimum overlap required, in bases
 
     Returns:
         List of (peak1, peak2) tuples for overlapping peaks
@@ -401,8 +405,8 @@ def find_overlapping_peaks(
     logger.info("Finding overlapping peaks")
 
     # Group peaks by chromosome for efficiency
-    chr_peaks1 = defaultdict(list)
-    chr_peaks2 = defaultdict(list)
+    chr_peaks1: Dict[str, List[ChIPPeak]] = defaultdict(list)
+    chr_peaks2: Dict[str, List[ChIPPeak]] = defaultdict(list)
 
     for peak in peaks1:
         chr_peaks1[peak.chromosome].append(peak)
@@ -410,37 +414,49 @@ def find_overlapping_peaks(
     for peak in peaks2:
         chr_peaks2[peak.chromosome].append(peak)
 
-    overlapping_pairs = []
+    overlapping_pairs: List[Tuple[ChIPPeak, ChIPPeak]] = []
 
-    for chromosome in set(chr_peaks1.keys()) & set(chr_peaks2.keys()):
-        peaks1_chr = chr_peaks1[chromosome]
-        peaks2_chr = chr_peaks2[chromosome]
+    for chromosome, peaks1_chr in chr_peaks1.items():
+        peaks2_chr = chr_peaks2.get(chromosome)
+        if not peaks2_chr:
+            continue
 
-        # Sort peaks by start position
-        peaks1_chr.sort(key=lambda p: p.start)
-        peaks2_chr.sort(key=lambda p: p.start)
+        # Sort peaks2 by start and keep the running maximum of the ends. A peak2 can overlap a given peak1 only if
+        # it starts at or before peak1.end - min_overlap and some peak2 up to it ends at or after
+        # peak1.start + min_overlap, so two bisections bound the candidates; each is then checked exactly.
+        peaks2_chr.sort(key=lambda p: (p.start, p.end))
+        starts = [p.start for p in peaks2_chr]
+        running_end: List[int] = []
+        highest_end = peaks2_chr[0].end
+        for peak in peaks2_chr:
+            highest_end = max(highest_end, peak.end)
+            running_end.append(highest_end)
 
-        # Find overlaps using sweep line algorithm
-        i, j = 0, 0
-        while i < len(peaks1_chr) and j < len(peaks2_chr):
-            peak1 = peaks1_chr[i]
-            peak2 = peaks2_chr[j]
-
-            if peak1.overlaps_with(peak2, min_overlap):
-                overlapping_pairs.append((peak1, peak2))
-
-            # Move the peak that ends first
-            if peak1.end < peak2.end:
-                i += 1
-            else:
-                j += 1
+        peaks1_chr.sort(key=lambda p: (p.start, p.end))
+        for peak1 in peaks1_chr:
+            first = bisect_left(running_end, peak1.start + min_overlap)
+            last = bisect_right(starts, peak1.end - min_overlap)
+            for peak2 in peaks2_chr[first:last]:
+                if peak1.overlaps_with(peak2, min_overlap):
+                    overlapping_pairs.append((peak1, peak2))
 
     logger.info(f"Found {len(overlapping_pairs)} overlapping peak pairs")
     return overlapping_pairs
 
 
+def _lowest_probability(first: Optional[float], second: Optional[float]) -> Optional[float]:
+    """The lower of two probabilities, or ``None`` when either is missing.
+
+    A probability of 0.0 is a value, not a gap: peak files hold ``-log10`` values, so the strongest peaks (a column
+    above about 323) are read as exactly 0.0, and a truth test on them would discard the best significance.
+    """
+    return min(first, second) if first is not None and second is not None else None
+
+
 def merge_overlapping_peaks(peaks: List[ChIPPeak], max_distance: int = 0) -> List[ChIPPeak]:
     """Merge overlapping or nearby peaks.
+
+    A merged peak takes the lower p-value and q-value of the two peaks it joins (``None`` when either has none).
 
     Args:
         peaks: List of ChIPPeak objects
@@ -480,8 +496,8 @@ def merge_overlapping_peaks(peaks: List[ChIPPeak], max_distance: int = 0) -> Lis
                     score=max(current_peak.score, peak.score),  # Use higher score
                     strand=current_peak.strand,
                     signal_value=max(current_peak.signal_value, peak.signal_value),
-                    p_value=min(current_peak.p_value, peak.p_value) if current_peak.p_value and peak.p_value else None,
-                    q_value=min(current_peak.q_value, peak.q_value) if current_peak.q_value and peak.q_value else None,
+                    p_value=_lowest_probability(current_peak.p_value, peak.p_value),
+                    q_value=_lowest_probability(current_peak.q_value, peak.q_value),
                 )
             else:
                 # No overlap, save current peak and start new one
@@ -496,10 +512,66 @@ def merge_overlapping_peaks(peaks: List[ChIPPeak], max_distance: int = 0) -> Lis
     return merged_peaks
 
 
+def _poisson_upper_tail(observed: int, expected: float) -> Tuple[float, float]:
+    """Return ``P(X >= observed)`` for ``X ~ Poisson(expected)`` as ``(p, log10(p))``.
+
+    The sum is carried out on the probability mass function evaluated in log space, so it cannot overflow for
+    large counts and does not lose a tiny tail to the cancellation in ``1 - P(X < observed)``. Above the mean the
+    tail is summed directly from the mass at ``observed`` (the terms fall off geometrically); at or below the mean
+    the tail is at least about one half and is taken as ``1 - P(X < observed)``, where nothing cancels. ``p``
+    loses precision below about 1e-308 and underflows to 0.0 below about 5e-324, while ``log10(p)`` stays finite.
+
+    Args:
+        observed: Observed count.
+        expected: Poisson mean (the expected count).
+
+    Returns:
+        The upper-tail probability and its base-10 logarithm.
+    """
+    if observed <= 0 or not math.isfinite(expected):
+        return 1.0, 0.0
+    if expected <= 0:
+        return 0.0, -math.inf
+
+    log_expected = math.log(expected)
+
+    def log_pmf(count: int) -> float:
+        return count * log_expected - expected - math.lgamma(count + 1)
+
+    if observed > expected:
+        # pmf(k + 1) = pmf(k) * expected / (k + 1), a ratio below one from the mean upward
+        term = 1.0
+        series = 1.0
+        count = observed
+        while term >= series * 1e-17:
+            count += 1
+            term *= expected / count
+            series += term
+        log_p = log_pmf(observed) + math.log(series)
+        return math.exp(log_p), log_p / math.log(10.0)
+
+    # observed <= expected: add the lower tail P(X <= observed - 1) from its largest term downwards,
+    # pmf(k - 1) = pmf(k) * k / expected, a ratio below one under the mean
+    term = math.exp(log_pmf(observed - 1))
+    lower = term
+    count = observed - 1
+    while count > 0 and term > lower * 1e-17:
+        term *= count / expected
+        lower += term
+        count -= 1
+    p_value = min(1.0, max(0.0, 1.0 - lower))
+    return p_value, (math.log10(p_value) if p_value > 0.0 else -math.inf)
+
+
 def calculate_peak_enrichment(
-    peaks: List[ChIPPeak], genome_size: int, expected_peaks: Optional[int] = None
+    peaks: List[ChIPPeak], genome_size: int, expected_peaks: Optional[float] = None
 ) -> Dict[str, Any]:
     """Calculate peak enrichment statistics.
+
+    When ``expected_peaks`` is positive the result also holds the observed/expected ratio and the Poisson
+    probability of seeing at least the observed number of peaks (``enrichment_p_value``), together with its
+    base-10 logarithm (``enrichment_log10_p_value``), which stays finite where the probability itself underflows
+    to 0.0. The probability is computed in log space, so any number of peaks is handled.
 
     Args:
         peaks: List of ChIPPeak objects
@@ -535,15 +607,11 @@ def calculate_peak_enrichment(
             }
         )
 
-        # Statistical significance (simplified)
+        # Poisson probability of at least the observed number of peaks, computed in log space
         if expected_peaks > 0:
-            # Use Poisson approximation for significance
-            import math
-
-            p_value = 1.0 - math.exp(-expected_peaks) * sum(
-                expected_peaks**k / math.factorial(k) for k in range(observed_peaks)
-            )
+            p_value, log10_p_value = _poisson_upper_tail(observed_peaks, float(expected_peaks))
             stats["enrichment_p_value"] = p_value
+            stats["enrichment_log10_p_value"] = log10_p_value
 
     return stats
 
@@ -597,8 +665,11 @@ def _iupac_pattern_to_regex(pattern: str) -> "re.Pattern[str]":
         Compiled case-insensitive regular expression.
 
     Raises:
-        ValueError: If the pattern contains a non-IUPAC character.
+        ValueError: If the pattern is empty or contains a non-IUPAC character.
     """
+    if not pattern:
+        # An empty regular expression matches at every position, which would report a site everywhere
+        raise ValueError("Motif pattern must not be empty")
     parts: List[str] = []
     for char in pattern.upper():
         bases = _IUPAC_BASES.get(char)
@@ -611,6 +682,22 @@ def _iupac_pattern_to_regex(pattern: str) -> "re.Pattern[str]":
 def _reverse_complement_iupac(pattern: str) -> str:
     """Return the reverse complement of an IUPAC motif pattern."""
     return "".join(_IUPAC_COMPLEMENT[char] for char in reversed(pattern.upper()))
+
+
+def _iter_matches(regex: "re.Pattern[str]", text: str) -> Iterator[Tuple[int, str]]:
+    """Yield ``(offset, matched text)`` for every match of ``regex`` in ``text``, overlapping ones included.
+
+    ``re.finditer`` resumes after the end of a match, so it skips an occurrence that starts inside the previous
+    one (``ATAT`` in ``ATATAT`` is found at 0 and 2, not only at 0). Resuming one base after the start of each
+    match reports them all. ``regex`` must not be able to match the empty string.
+    """
+    position = 0
+    while True:
+        match = regex.search(text, position)
+        if match is None:
+            return
+        yield match.start(), match.group(0)
+        position = match.start() + 1
 
 
 def _read_fasta_sequences(path: str | Path) -> Dict[str, str]:
@@ -658,9 +745,11 @@ def find_motifs_in_peaks(
 
     Loads the genome FASTA once, then for every peak scans the
     ``window_size`` window centered on the peak summit (clipped to the peak
-    boundaries) for each IUPAC motif pattern on both strands. Peaks whose
-    chromosome is absent from the FASTA and windows without any match
-    contribute no occurrences -- results are never fabricated.
+    boundaries) for each IUPAC motif pattern on both strands. Every occurrence
+    is reported, including ones that overlap an earlier occurrence of the same
+    pattern. Peaks whose chromosome is absent from the FASTA and windows
+    without any match contribute no occurrences -- results are never
+    fabricated.
 
     Args:
         peaks: List of ChIPPeak objects
@@ -708,13 +797,13 @@ def find_motifs_in_peaks(
         for pattern in motif_patterns:
             matches: List[Dict[str, Any]] = []
 
-            for match in regexes[pattern].finditer(window):
+            for offset, matched in _iter_matches(regexes[pattern], window):
                 matches.append(
                     {
                         "chromosome": peak.chromosome,
-                        "position": window_start + match.start(),
+                        "position": window_start + offset,
                         "strand": "+",
-                        "sequence": match.group(0),
+                        "sequence": matched,
                         "peak_start": peak.start,
                         "peak_end": peak.end,
                         "peak_score": peak.score,
@@ -725,13 +814,13 @@ def find_motifs_in_peaks(
             # whose reverse complement matches the motif. Searching the
             # forward window with the reverse-complemented pattern keeps
             # positions in forward genomic coordinates.
-            for match in rc_regexes[pattern].finditer(window):
+            for offset, matched in _iter_matches(rc_regexes[pattern], window):
                 matches.append(
                     {
                         "chromosome": peak.chromosome,
-                        "position": window_start + match.start(),
+                        "position": window_start + offset,
                         "strand": "-",
-                        "sequence": reverse_complement(match.group(0)),
+                        "sequence": reverse_complement(matched),
                         "peak_start": peak.start,
                         "peak_end": peak.end,
                         "peak_score": peak.score,

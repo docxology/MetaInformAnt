@@ -265,35 +265,91 @@ class TestFindDMRs:
         assert find_differentially_methylated_regions(control, treatment, min_sites=5) == []
 
 
+def _genome_with_island() -> dict[str, str]:
+    """chr1 = 500 bp of AT, a 400 bp CpG island (CG x 200), 500 bp of AT; chr3 is AT only.
+
+    The island occupies [500, 900). In it G + C = 100%, the CpG count is 200 and C = G = 200, so the observed/expected
+    CpG ratio is 200 * 400 / (200 * 200) = 2.0.
+    """
+    at_flank = "AT" * 250
+    return {"chr1": at_flank + "CG" * 200 + at_flank, "chr3": "ATATATAT" * 100}
+
+
 class TestCpGIslands:
-    def test_high_methylation_windows_flagged(self) -> None:
-        # 20 dense sites at 0.9 methylation spanning 400 bp -> windows qualify.
+    """CpG islands are defined by the sequence (Gardiner-Garden & Frommer), not by methylation levels."""
+
+    def test_island_is_called_from_the_sequence(self) -> None:
+        islands = identify_cpg_islands({}, step_size=1, sequences=_genome_with_island())
+
+        assert [island["chromosome"] for island in islands] == ["chr1"]  # the AT-only chr3 has none
+        (island,) = islands
+        # The stretch of qualifying windows contains the planted island and reaches less than a window beyond it
+        assert island["start"] <= 500 and island["end"] >= 900
+        assert island["start"] >= 500 - 200 and island["end"] <= 900 + 200
+        assert island["length"] == island["end"] - island["start"] >= 200
+        assert island["gc_content"] >= 0.5
+        assert island["cpg_ratio"] >= 0.6
+        assert island["cpg_count"] == 200
+
+    def test_methylation_levels_cannot_create_islands(self) -> None:
+        # Dense, highly methylated sites over a sequence with no CpG at all used to be reported as an island
         sites = {"chr1": [_site("chr1", 1000 + i * 20, 9, 10) for i in range(20)]}
-        islands = identify_cpg_islands(sites, window_size=200, step_size=50)
-        assert len(islands) >= 1
-        first = islands[0]
-        assert first["chromosome"] == "chr1"
-        assert 0.0 <= first["avg_methylation"] <= 1.0
-        assert first["cpg_ratio"] >= 0.6
+        sequences = {"chr1": "AT" * 1000}
 
-    def test_low_methylation_windows_excluded(self) -> None:
-        sites = {"chr1": [_site("chr1", 1000 + i * 20, 0, 10) for i in range(20)]}
-        islands = identify_cpg_islands(sites, window_size=200, step_size=50)
-        assert islands == []
+        assert identify_cpg_islands(sites, window_size=200, step_size=50, sequences=sequences) == []
 
-    def test_too_few_sites_skips_chromosome(self) -> None:
-        sites = {"chr1": [_site("chr1", 1000 + i * 20, 9, 10) for i in range(5)]}
-        assert identify_cpg_islands(sites) == []
+    def test_sequence_is_required(self) -> None:
+        sites = {"chr1": [_site("chr1", 1000 + i * 20, 9, 10) for i in range(20)]}
+        with pytest.raises(ValueError, match="sequence"):
+            identify_cpg_islands(sites, window_size=200, step_size=50)
 
-    def test_overlapping_windows_deduplicated(self) -> None:
-        # One long dense block: overlapping qualifying windows must collapse.
-        sites = {"chr1": [_site("chr1", 1000 + i * 10, 9, 10) for i in range(40)]}
-        islands = identify_cpg_islands(sites, window_size=100, step_size=25)
-        # No two reported islands on the same chromosome may overlap.
-        for i in range(len(islands)):
-            for j in range(i + 1, len(islands)):
-                a, b = islands[i], islands[j]
-                assert a["end"] <= b["start"] or b["end"] <= a["start"]
+    def test_gc_rich_but_cpg_depleted_sequence_is_not_an_island(self) -> None:
+        # G + C is 89% but no C is ever followed by G: observed/expected CpG is 0
+        assert identify_cpg_islands({}, sequences={"chr1": "GGGGCCCCA" * 150}) == []
+
+    def test_cpg_dense_but_gc_poor_sequence_is_not_an_island(self) -> None:
+        # Every CpG is there, but G + C is only 20%
+        assert identify_cpg_islands({}, sequences={"chr1": "CGAAAAAAAA" * 100}) == []
+
+    def test_min_length_is_enforced(self) -> None:
+        # The planted island is called as a 600 bp stretch (see above); 700 bp is not reached
+        assert identify_cpg_islands({}, step_size=1, min_length=700, sequences=_genome_with_island()) == []
+
+    def test_sites_inside_the_island_are_summarised(self) -> None:
+        sites = {
+            "chr1": [
+                _site("chr1", 600, 9, 10),
+                _site("chr1", 650, 1, 10),
+                _site("chr1", 5, 5, 10),  # outside the island
+                _site("chr1", 1900, 5, 10),  # outside the island
+            ]
+        }
+
+        (island,) = identify_cpg_islands(sites, step_size=1, sequences=_genome_with_island())
+
+        assert island["sites"] == 2
+        assert island["avg_methylation"] == pytest.approx(0.5)
+
+    def test_island_without_sites_has_no_average(self) -> None:
+        (island,) = identify_cpg_islands(
+            {"chr2": [_site("chr2", 600, 9, 10)]}, step_size=1, sequences=_genome_with_island()
+        )
+
+        assert island["sites"] == 0
+        assert island["avg_methylation"] is None
+
+    def test_overlapping_windows_collapse_into_one_island(self) -> None:
+        # One long CpG-dense block: the many overlapping qualifying windows are reported as a single island
+        islands = identify_cpg_islands({}, window_size=100, step_size=25, sequences={"chr1": "CG" * 400})
+
+        assert len(islands) == 1
+        assert (islands[0]["start"], islands[0]["end"]) == (0, 800)
+
+    def test_bad_window_parameters_are_rejected(self) -> None:
+        with pytest.raises(ValueError):
+            identify_cpg_islands({}, window_size=0, sequences={"chr1": "CG" * 400})
+        with pytest.raises(ValueError):
+            identify_cpg_islands({}, step_size=0, sequences={"chr1": "CG" * 400})
 
 
 class TestMethylationEntropy:

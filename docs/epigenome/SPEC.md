@@ -17,7 +17,7 @@ Documentation for the epigenome domain in MetaInformAnt.
 
 ## Integration
 - **Source**: `src/metainformant/epigenome/`
-- **Tests**: `tests/epigenome/test_epigenome_*.py`
+- **Tests**: `tests/epigenome/`
 
 ## Testing Policy
 - **Real Implementation**: All tests must use real implementations. Mocks are strictly prohibited.

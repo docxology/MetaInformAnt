@@ -7,10 +7,11 @@ custom track files for epigenomic data visualization and analysis.
 
 from __future__ import annotations
 
+import heapq
 import statistics
 from collections import defaultdict
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from metainformant.core import io
 from metainformant.core.data import validation
@@ -447,8 +448,78 @@ def save_bedgraph_track(track: GenomicTrack, path: str | Path) -> None:
     logger.info(f"Saved {track.get_total_features()} features to {path}")
 
 
+def _coverage_profile(features: List[Dict[str, Any]]) -> List[Tuple[int, int, float]]:
+    """Piecewise-constant coverage of a set of features.
+
+    Args:
+        features: Features of one track on one chromosome (dicts with ``start``, ``end`` and ``value``).
+            Features with no extent (``end <= start``) are ignored.
+
+    Returns:
+        Sorted, non-overlapping ``(start, end, value)`` segments that tile the union of the features. A segment's
+        value is the highest value among the features that cover it, and touching segments with the same value
+        are joined.
+    """
+    spans = sorted((f["start"], f["end"], f["value"]) for f in features if f["end"] > f["start"])
+    boundaries = sorted({point for start, end, _ in spans for point in (start, end)})
+
+    segments: List[Tuple[int, int, float]] = []
+    active: List[Tuple[float, int]] = []  # heap of (-value, end): the covering feature with the highest value first
+    index = 0
+    for left, right in zip(boundaries, boundaries[1:]):
+        while index < len(spans) and spans[index][0] <= left:
+            heapq.heappush(active, (-spans[index][2], spans[index][1]))
+            index += 1
+        while active and active[0][1] <= left:
+            heapq.heappop(active)
+        if not active:
+            continue  # a gap between features
+
+        # Every feature endpoint is a boundary, so a feature covers all of [left, right) or none of it
+        value = -active[0][0]
+        if segments and segments[-1][1] == left and segments[-1][2] == value:
+            segments[-1] = (segments[-1][0], right, value)
+        else:
+            segments.append((left, right, value))
+
+    return segments
+
+
+def _intersect_profiles(
+    first: List[Tuple[int, int, float]], second: List[Tuple[int, int, float]]
+) -> List[Tuple[int, int, float]]:
+    """Intersect two coverage profiles; each shared segment takes the lower of the two values."""
+    result: List[Tuple[int, int, float]] = []
+    i = j = 0
+    while i < len(first) and j < len(second):
+        start = max(first[i][0], second[j][0])
+        end = min(first[i][1], second[j][1])
+        if start < end:
+            value = min(first[i][2], second[j][2])
+            if result and result[-1][1] == start and result[-1][2] == value:
+                result[-1] = (result[-1][0], end, value)
+            else:
+                result.append((start, end, value))
+        if first[i][1] < second[j][1]:
+            i += 1
+        else:
+            j += 1
+    return result
+
+
 def merge_tracks(tracks: List[GenomicTrack], operation: str = "union") -> GenomicTrack:
     """Merge multiple genomic tracks.
+
+    The input tracks are not modified. Chromosomes are processed in sorted order.
+
+    - ``"union"``: overlapping features of any track are merged into one feature spanning them, with the highest
+      value.
+    - ``"mean"`` / ``"max"``: features that overlap, directly or through a chain of overlapping features, form a
+      group that becomes one feature spanning the group, with the mean or the highest value of its features.
+    - ``"intersection"``: only the regions covered by every track are kept, so a chromosome missing from any track
+      has none. Within a track, the value over a region is the highest value among its features covering it; the
+      value of an intersection region is the lowest of those values across the tracks. Touching regions with the
+      same value are joined. Features keep only ``start``, ``end`` and ``value``.
 
     Args:
         tracks: List of GenomicTrack objects
@@ -456,24 +527,30 @@ def merge_tracks(tracks: List[GenomicTrack], operation: str = "union") -> Genomi
 
     Returns:
         Merged GenomicTrack
+
+    Raises:
+        ValueError: If the operation is not one of the four above.
     """
     if not tracks:
         return GenomicTrack()
+
+    if operation not in ("union", "intersection", "mean", "max"):
+        raise ValueError(f"Unsupported merge operation {operation!r}; use 'union', 'intersection', 'mean' or 'max'")
 
     logger.info(f"Merging {len(tracks)} tracks using {operation} operation")
 
     merged_track = GenomicTrack(name=f"Merged_{operation}", description=f"Merged track using {operation} operation")
 
-    # Get all chromosomes
+    # Get all chromosomes, in a fixed order (set order varies from run to run)
     all_chromosomes = set()
     for track in tracks:
         all_chromosomes.update(track.get_chromosomes())
 
-    for chromosome in all_chromosomes:
-        # Collect all features for this chromosome
-        all_features = []
+    for chromosome in sorted(all_chromosomes):
+        # Collect all features for this chromosome, as copies: merging must not alter the input tracks
+        all_features: List[Dict[str, Any]] = []
         for track in tracks:
-            all_features.extend(track.get_features(chromosome))
+            all_features.extend(dict(feature) for feature in track.get_features(chromosome))
 
         if not all_features:
             continue
@@ -488,30 +565,37 @@ def merge_tracks(tracks: List[GenomicTrack], operation: str = "union") -> Genomi
 
         elif operation in ["mean", "max"]:
             # Group overlapping features and aggregate values
-            if all_features:
-                current_group = [all_features[0]]
-                merged_features = []
+            current_group = [all_features[0]]
+            group_end = all_features[0]["end"]
+            merged_features = []
 
-                for feature in all_features[1:]:
-                    if feature["start"] <= current_group[-1]["end"]:
-                        current_group.append(feature)
-                    else:
-                        # Process current group
-                        merged_feature = merge_feature_group(current_group, operation)
-                        merged_features.append(merged_feature)
-                        current_group = [feature]
-
-                # Process last group
-                if current_group:
+            for feature in all_features[1:]:
+                # A feature joins the group when it starts before the group, not just its last feature, has ended
+                if feature["start"] <= group_end:
+                    current_group.append(feature)
+                    group_end = max(group_end, feature["end"])
+                else:
+                    # Process current group
                     merged_feature = merge_feature_group(current_group, operation)
                     merged_features.append(merged_feature)
+                    current_group = [feature]
+                    group_end = feature["end"]
 
-                merged_track.data[chromosome] = merged_features
+            # Process last group
+            merged_features.append(merge_feature_group(current_group, operation))
+
+            merged_track.data[chromosome] = merged_features
 
         elif operation == "intersection":
-            # Only keep regions present in all tracks
-            # This is a simplified implementation
-            merged_track.data[chromosome] = all_features[:10]  # Placeholder
+            # Only keep regions covered by every track
+            profiles = [_coverage_profile(track.get_features(chromosome)) for track in tracks]
+            shared = profiles[0]
+            for profile in profiles[1:]:
+                shared = _intersect_profiles(shared, profile)
+            if shared:
+                merged_track.data[chromosome] = [
+                    {"start": start, "end": end, "value": value} for start, end, value in shared
+                ]
 
     logger.info(f"Merged tracks into {merged_track.get_total_features()} features")
     return merged_track

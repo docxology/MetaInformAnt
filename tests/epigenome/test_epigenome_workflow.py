@@ -114,7 +114,12 @@ class TestDetectPeakFormat:
         assert _detect_peak_format(Path("sample.broadPeak")) == "broadpeak"
 
     def test_default_format(self) -> None:
-        assert _detect_peak_format(Path("sample.bed")) == "narrowpeak"
+        # A name that says nothing about the layout is read as narrowPeak
+        assert _detect_peak_format(Path("sample.txt")) == "narrowpeak"
+
+    def test_bed_extension_is_bed(self) -> None:
+        # Reading a plain BED file as narrowPeak (which needs ten columns) used to give no peaks at all
+        assert _detect_peak_format(Path("sample.bed")) == "bed"
 
     def test_case_insensitive(self) -> None:
         assert _detect_peak_format(Path("Sample_NARROWPEAK_peaks.bed")) == "narrowpeak"

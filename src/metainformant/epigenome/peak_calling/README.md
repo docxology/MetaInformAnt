@@ -13,11 +13,11 @@ Signal-based peak detection for ChIP-seq and ATAC-seq data, including narrow pea
 
 | Function | Description |
 |----------|-------------|
-| `call_peaks_simple()` | Narrow peak calling using Poisson significance testing |
-| `call_peaks_broad()` | Broad domain detection for diffuse histone marks |
-| `peak_summit_refinement()` | Refine peak summits to single-base resolution |
-| `merge_peaks()` | Merge overlapping or nearby peaks |
-| `filter_peaks()` | Filter peaks by significance, fold-change, or size |
+| `call_peaks_simple()` | Narrow peak calling using Poisson significance testing; `chrom=` labels the peaks with their chromosome |
+| `call_peaks_broad()` | Broad domain detection for diffuse histone marks; `chrom=` as above |
+| `peak_summit_refinement()` | Refine peak summits by parabolic interpolation (sub-bin resolution) |
+| `merge_peaks()` | Merge overlapping or nearby peaks per chromosome (never across chromosomes), keeping the best summit, p-value and q-value |
+| `filter_peaks()` | Filter peaks by fold enrichment, q-value (or p-value) and blacklist regions |
 | `compute_frip()` | Calculate Fraction of Reads in Peaks quality metric |
 | `compute_local_lambda()` | Estimate local background signal level |
 | `differential_peaks()` | Identify differential peaks between conditions |
@@ -27,8 +27,8 @@ Signal-based peak detection for ChIP-seq and ATAC-seq data, including narrow pea
 ```python
 from metainformant.epigenome.peak_calling import peak_detection
 
-peaks = peak_detection.call_peaks_simple(signal, control, threshold=5.0)  # -log10 p cutoff
-broad = peak_detection.call_peaks_broad(signal, control, p_threshold=0.1, broad_cutoff=0.1)
+peaks = peak_detection.call_peaks_simple(signal, control, threshold=5.0, chrom="chr1")  # -log10 p cutoff
+broad = peak_detection.call_peaks_broad(signal, control, p_threshold=0.1, broad_cutoff=0.1, chrom="chr1")
 merged = peak_detection.merge_peaks(peaks, distance=500)
 frip = peak_detection.compute_frip(reads_in_peaks=50000, total_reads=1000000)
 diff = peak_detection.differential_peaks(peaks_a, peaks_b, signals_a, signals_b)

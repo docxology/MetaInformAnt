@@ -8,7 +8,7 @@ Directory-driven workflows for methylation, ChIP-seq, and ATAC-seq data, impleme
 
 **EpigenomeConfig** collects the thresholds and options for a session. Only some of its fields are read by the workflow functions (see the field table below).
 
-**Multi-assay integration** relates the three assays pairwise: where methylation sites fall relative to ChIP-seq and ATAC-seq peaks, and how methylation differs between accessible and closed chromatin.
+**Multi-assay integration** relates the three assays pairwise: where methylation sites fall relative to ChIP-seq and ATAC-seq peaks, how methylation differs between accessible and closed chromatin, and how much the ChIP-seq and ATAC-seq peak sets overlap.
 
 ## Configuration
 
@@ -22,8 +22,8 @@ Dataclass for workflow configuration. Every field is an optional keyword argumen
 | `output_dir` | `str \| Path` | `"output/epigenome"` | Not read by the workflow functions (they take `output_dir` as an argument) |
 | `temp_dir` | `str \| Path` | `"temp/epigenome"` | Not used |
 | `methylation_threshold` | `float` | `0.8` | Validated to lie in 0--1; not otherwise used |
-| `chipseq_qvalue_threshold` | `float` | `0.05` | ChIP-seq workflow: peaks with a q-value above it are dropped (peaks without a q-value are kept), and the same number is passed to `filter_peaks_by_score` as the minimum peak score. Validated to lie in 0--1 |
-| `atacseq_qvalue_threshold` | `float` | `0.05` | ATAC-seq workflow: peaks with a q-value above it are dropped; a peak without a q-value is kept only if its accessibility score (`signal_value`) is at least this value. Validated to lie in 0--1 |
+| `chipseq_qvalue_threshold` | `float` | `0.05` | ChIP-seq workflow: peaks with a q-value above it are dropped, and peaks without a q-value are kept. It is an ordinary FDR limit on the q-value as a probability (a q column of 2 in the file is 0.01); the peak score plays no part. Validated to lie in 0--1 |
+| `atacseq_qvalue_threshold` | `float` | `0.05` | ATAC-seq workflow: the same q-value filter for the ATAC-seq peaks; the accessibility score (`signal_value`) plays no part. Validated to lie in 0--1 |
 | `min_peak_length` | `int` | `50` | Minimum peak length in bp (ChIP-seq and ATAC-seq workflows) |
 | `max_peak_length` | `int` | `10000` | Maximum peak length in bp (ChIP-seq and ATAC-seq workflows) |
 | `min_methylation_coverage` | `int` | `5` | Minimum read coverage for a site to be loaded by the methylation workflow (BEDgraph files carry no read counts, so it removes none of their sites) |
@@ -49,42 +49,42 @@ Build an `EpigenomeConfig` from a YAML, TOML or JSON file whose top-level keys a
 
 Summarize every methylation file found under `input_dir` (searched recursively for `*.bedgraph`, `*.bedGraph`, `*.BEDGRAPH`, `*.bg` and `*.cov`). `config` defaults to `EpigenomeConfig()`; `output_dir` is created if needed. `input_dir` must exist, and `PipelineError` is raised if it holds no matching file.
 
-1. Load each file with `load_methylation_bedgraph` (`.bedgraph`, `.bg`) or `load_methylation_cov` (`.cov`), keeping sites with at least `min_methylation_coverage` reads. `.cov` files must have the layout `load_methylation_cov` reads (see the methylation page).
+1. Load each file with `load_methylation_bedgraph` (`.bedgraph`, `.bg`) or `load_methylation_cov` (`.cov`), keeping sites with at least `min_methylation_coverage` reads. BEDgraph files are read with `level_scale="auto"`, so a file with a level above 1 is read as percentages (with a warning). `.cov` files must have the layout `load_methylation_cov` reads (see the methylation page).
 2. Compute `calculate_methylation_statistics` for each sample. A file that fails to load is recorded in `errors` and the remaining files are still processed.
 3. Write `<sample>_methylation.json` for each sample and `methylation_summary.json`.
 4. If `generate_reports` is true, write `methylation_report.txt` for the sites of all samples combined.
 
 Beta values, DMRs, CpG islands and entropy are not computed here; call the functions of `metainformant.epigenome.assays.methylation` on the loaded sites.
 
-**Returns** dict with `workflow_type` (`"methylation"`), `input_dir`, `output_dir`, `config` (the configuration as a dict), `processed_files`, `statistics` (`total_samples`, `total_sites` and `sample_statistics`, one entry with `sample`, `file` and `statistics` per sample), `errors`, and `report_path` when a report was written.
+**Returns** dict with `workflow_type` (`"methylation"`), `input_dir`, `output_dir`, `config` (the configuration as a dict), `processed_files`, `statistics` (`total_samples`, `total_sites` and `sample_statistics`, one entry with `sample`, `file` and `statistics` per sample), `sites` (one dict per loaded site of every processed sample, with `sample`, `chrom`, `position`, `methylation_level` and `coverage`), `errors`, and `report_path` when a report was written. `integrate_epigenome_results` reads `sites`.
 
 ### `run_chipseq_workflow(input_dir, output_dir, config=None) -> Dict`
 
-Summarize every ChIP-seq peak file found under `input_dir` (searched recursively for `*.narrowPeak`, `*.broadPeak`, `*.bed` and the lower-case `.narrowpeak` / `.broadpeak` spellings). The peak format is chosen from the file name: a name containing "narrow" is read as narrowPeak, one containing "broad" as broadPeak, anything else (including plain `.bed` files, which therefore yield no peaks unless they have ten columns) as narrowPeak. `PipelineError` is raised if no file is found.
+Summarize every ChIP-seq peak file found under `input_dir` (searched recursively for `*.narrowPeak`, `*.broadPeak`, `*.bed` and the lower-case `.narrowpeak` / `.broadpeak` spellings). The peak layout of each file is detected from its name and its first data line: a name containing "narrow" means narrowPeak, one containing "broad" broadPeak, a `.bed` extension BED, and any other name narrowPeak. The layout is never richer than the first data line supports (a narrowPeak-named file whose first data line has nine columns is read as broadPeak, one with fewer as BED, and a broadPeak-named file with fewer than nine columns as BED), so a mislabelled file is read for what it holds instead of silently yielding no peaks. `PipelineError` is raised if no file is found.
 
 1. Load each file with `load_chip_peaks`.
-2. Filter: `filter_peaks_by_score` with `min_score=chipseq_qvalue_threshold`, then drop peaks whose q-value exceeds `chipseq_qvalue_threshold`, then keep peaks between `min_peak_length` and `max_peak_length` bp.
+2. Filter: drop peaks whose q-value is above `chipseq_qvalue_threshold`, then keep peaks between `min_peak_length` and `max_peak_length` bp. The q-value filter is an ordinary FDR threshold on the q-value as a probability (a q column of 2 in the file is 0.01 and passes a threshold of 0.01). A peak exactly on the threshold is kept: the comparison allows a relative 1e-9 for the round-off of the `-log10` column. A peak without a q-value (a BED file, or `-1` in the column) cannot be judged and is kept, and a warning counts such peaks. A q-value above 1 is not a probability and draws a warning, but peaks read from files never have one. Peaks are never dropped for their score, and file order is preserved.
 3. Compute `calculate_peak_statistics` for each sample. A file that fails is recorded in `errors`.
-4. Write `<sample>_chipseq.json`, the filtered peaks as `<sample>_peaks.narrowPeak` (written by `save_chip_peaks`, so the columns after the strand are not in standard narrowPeak order), and `chipseq_summary.json`.
+4. Write `<sample>_chipseq.json`, the filtered peaks as `<sample>_peaks.narrowPeak` (written by `save_chip_peaks` in the narrowPeak layout, with `-1` for a missing p-value, q-value or summit), and `chipseq_summary.json`.
 5. If `generate_reports` is true, write `chipseq_report.txt` for the filtered peaks of all samples.
 
 Overlap, enrichment and motif analyses are not run here; call the functions of `metainformant.epigenome.assays.chipseq`.
 
-**Returns** dict with `workflow_type` (`"chipseq"`), `input_dir`, `output_dir`, `config`, `processed_files`, `statistics` (`total_samples`, `total_peaks` and `sample_statistics`, one entry with `sample`, `file`, `statistics` and `peaks_count` per sample), `errors`, and `report_path` when a report was written.
+**Returns** dict with `workflow_type` (`"chipseq"`), `input_dir`, `output_dir`, `config`, `processed_files`, `statistics` (`total_samples`, `total_peaks` and `sample_statistics`, one entry with `sample`, `file`, `statistics` and `peaks_count` per sample), `peaks` (one dict per kept peak of every processed sample, with `sample`, `chrom`, `start`, `end`, `score`, `signal_value` and `q_value`), `errors`, and `report_path` when a report was written. `integrate_epigenome_results` reads `peaks`.
 
 ### `run_atacseq_workflow(input_dir, output_dir, config=None) -> Dict`
 
 Summarize every ATAC-seq peak file under `input_dir`. File discovery and format detection are the same as for `run_chipseq_workflow`, so keep ChIP-seq and ATAC-seq files in separate directories. `PipelineError` is raised if no file is found.
 
 1. Load each file with `load_atac_peaks`.
-2. Filter: keep peaks whose q-value is at most `atacseq_qvalue_threshold` (a peak without a q-value needs an accessibility score of at least that value), then peaks between `min_peak_length` and `max_peak_length` bp.
+2. Filter: drop peaks whose q-value is above `atacseq_qvalue_threshold`, then keep peaks between `min_peak_length` and `max_peak_length` bp. The q-value filter works as in `run_chipseq_workflow`: an ordinary FDR threshold on the q-value as a probability, with a relative 1e-9 tolerance for the `-log10` round-off. Peaks without a q-value are kept with a warning, the accessibility score plays no part, and file order is preserved.
 3. Compute `calculate_atac_statistics` for each sample, which includes the peak-length-based nucleosome fractions (`nfr_peak_fraction` and similar), not fragment sizes. A file that fails is recorded in `errors`.
-4. Write `<sample>_atacseq.json`, the filtered peaks as `<sample>_peaks.narrowPeak` (written by `save_atac_peaks`, with the same column layout), and `atacseq_summary.json`.
+4. Write `<sample>_atacseq.json`, the filtered peaks as `<sample>_peaks.narrowPeak` (written by `save_atac_peaks`, with the same layout), and `atacseq_summary.json`.
 5. If `generate_reports` is true, write `atacseq_report.txt`.
 
 TSS enrichment and condition comparison are not run here; call `identify_tss_enrichment` and `compare_atac_conditions` from `metainformant.epigenome.assays.atacseq`.
 
-**Returns** dict with `workflow_type` (`"atacseq"`), `input_dir`, `output_dir`, `config`, `processed_files`, `statistics` (`total_samples`, `total_peaks` and `sample_statistics`), `errors`, and `report_path` when a report was written.
+**Returns** dict with `workflow_type` (`"atacseq"`), `input_dir`, `output_dir`, `config`, `processed_files`, `statistics` (`total_samples`, `total_peaks` and `sample_statistics`), `peaks` (one dict per kept peak of every processed sample, with the same keys as the ChIP-seq `peaks`), `errors`, and `report_path` when a report was written. `integrate_epigenome_results` reads `peaks`.
 
 ### `integrate_epigenome_results(methylation_results, chipseq_results, atacseq_results, output_dir, config=None) -> Dict`
 
@@ -92,11 +92,11 @@ Combine the result dicts of the three workflows with pairwise association analys
 
 - `methylation_chipseq`: classifies each methylation site as overlapping a ChIP-seq peak, proximal (within `max_distance_for_integration` bp) or distal; a site whose chromosome has no peak is counted in none of the three classes.
 - `methylation_atacseq`: counts methylation sites inside, near and outside accessible regions and compares their mean methylation (`mean_methylation_accessible`, `mean_methylation_near_accessible`, `mean_methylation_closed`).
-- `chipseq_atacseq`: a placeholder that returns a single finding of type `"placeholder"`.
+- `chipseq_atacseq`: how much the ChIP-seq peaks and the ATAC-seq accessible regions coincide, with the peaks of all samples of an assay pooled. Its `statistics` are `total_chip_peaks` and `total_atac_peaks`; `chip_peaks_overlapping_atac` and `atac_peaks_overlapping_chip` (peaks sharing at least one base with the other assay) and their rates `chip_overlap_rate` and `atac_overlap_rate`; and the base-pair overlap of the two peak sets: `chip_bases` and `atac_bases` (each assay's peaks merged first, so no base counts twice), `shared_bases`, `union_bases` and `jaccard_index` (`shared_bases / union_bases`). A single finding of type `"overlap"` summarizes them. Entries without a chromosome, `start` or `end`, or with `end <= start`, are ignored.
 
-The first two read optional lists from the input dicts: `sites` in the methylation results (dicts with `chrom` or `chromosome`, `position` or `pos`, and optionally `methylation_level` or `beta`), and `peaks` in the ChIP-seq and ATAC-seq results (dicts with `chrom` or `chromosome`, `start` and `end`; `accessible_regions` is accepted as an alternative key for ATAC-seq). The `run_*_workflow` functions do not return these lists, so with their output as-is both analyses return only a warning finding; add the lists yourself to get statistics.
+The analyses read lists from the input dicts, which the `run_*_workflow` functions return: `sites` in the methylation results (dicts with `chrom` or `chromosome`, `position` or `pos`, and optionally `methylation_level` or `beta`), and `peaks` in the ChIP-seq and ATAC-seq results (dicts with `chrom` or `chromosome`, `start` and `end`; `accessible_regions` is accepted as an alternative key for ATAC-seq). Pass the workflow output as it is, or supply lists of that shape. A missing or empty list gives only a warning finding for the analyses that need it.
 
-**Returns** dict with `integration_type`, `output_dir`, `config`, `methylation_summary`, `chipseq_summary` and `atacseq_summary` (the `statistics` of each input), `integrated_analyses` (analysis name mapped to a dict with `analysis_type`, `max_distance`, `correlation_threshold`, `findings` and, for the first two analyses, `statistics`), `errors`, and `report_path` when `generate_reports` is true. It writes `integrated_epigenome_results.json` and, with reports enabled, `epigenome_integration_report.txt` into `output_dir`. There are no concordant/discordant region calls or regulatory element catalog.
+**Returns** dict with `integration_type`, `output_dir`, `config`, `methylation_summary`, `chipseq_summary` and `atacseq_summary` (the `statistics` of each input), `integrated_analyses` (analysis name mapped to a dict with `analysis_type`, `max_distance`, `correlation_threshold`, `findings` and `statistics`, which is empty when the analysis only reports a warning), `errors`, and `report_path` when `generate_reports` is true. It writes `integrated_epigenome_results.json` and, with reports enabled, `epigenome_integration_report.txt` into `output_dir`. There are no concordant/discordant region calls or regulatory element catalog.
 
 ## Usage Examples
 
@@ -126,12 +126,7 @@ print(f"Methylation sites: {meth_results['statistics']['total_sites']}")
 print(f"ChIP-seq peaks kept: {chip_results['statistics']['total_peaks']}")
 print(f"ATAC-seq peaks kept: {atac_results['statistics']['total_peaks']}")
 
-# The workflow results carry no per-site or per-peak lists; add them to get association statistics
-meth_results["sites"] = [{"chrom": "chr1", "position": 1100, "methylation_level": 0.1}]
-chip_results["peaks"] = [{"chrom": "chr1", "start": 1000, "end": 1400}]
-atac_results["peaks"] = [{"chrom": "chr1", "start": 1050, "end": 1250}]
-
-# Integrate across assays
+# Integrate across assays: the workflow results carry the `sites` and `peaks` lists the integration reads
 integrated = integrate_epigenome_results(
     meth_results, chip_results, atac_results, f"{out}/integrated", config
 )

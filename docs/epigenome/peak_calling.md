@@ -14,7 +14,7 @@ De novo peak detection from epigenomic signal data, implemented in `metainforman
 
 ## Function Reference
 
-### `call_peaks_simple(signal, control=None, threshold=5.0, min_length=100, merge_distance=50) -> List[Dict]`
+### `call_peaks_simple(signal, control=None, threshold=5.0, min_length=100, merge_distance=50, chrom="chr_unknown") -> List[Dict]`
 
 Call narrow peaks using local Poisson enrichment testing. Each bin is tested against the larger of the global mean and the local mean (the maximum over windows of +/-500, +/-2500 and +/-5000 bins) of the control track, or of `signal` itself when no control is given.
 
@@ -24,18 +24,19 @@ Call narrow peaks using local Poisson enrichment testing. Each bin is tested aga
 - `threshold`: Minimum -log10(p-value) for a bin to count as enriched (default 5.0, i.e. p <= 1e-5).
 - `min_length`: Minimum peak width in bins (default 100, so short signals return no peaks).
 - `merge_distance`: Merge enriched runs separated by at most this many bins (default 50).
+- `chrom`: Chromosome the signal belongs to; it is written to the `chrom` key of every peak (`ValueError` if empty). The default `"chr_unknown"` is only a placeholder for a signal with no chromosome. Peak coordinates stay bin indices into `signal`; they equal genomic positions when each value covers one base and the track starts at position 0 of `chrom`. Set `chrom` when peaks from several chromosomes are merged, filtered against a blacklist or compared with `differential_peaks`, which all match peaks by their `chrom` key.
 
-**Returns** a list of dicts with `chrom`, `start`, `end` (bin indices, `end` exclusive), `summit`, `score` (-log10 of the best p-value in the peak, 300 when that p-value is 0), `p_value`, `fold_enrichment`, `signal_value` (maximum signal in the peak) and `q_value` (Benjamini-Hochberg across the returned peaks). `chrom` is always the placeholder `"chr_unknown"`; set it yourself if you need to match peaks by chromosome.
+**Returns** a list of dicts with `chrom` (the `chrom` argument), `start`, `end` (bin indices, `end` exclusive), `summit`, `score` (-log10 of the best p-value in the peak, 300 when that p-value is 0), `p_value`, `fold_enrichment`, `signal_value` (maximum signal in the peak) and `q_value` (Benjamini-Hochberg across the returned peaks).
 
-### `call_peaks_broad(signal, control=None, p_threshold=0.1, broad_cutoff=0.1, min_length=200) -> List[Dict]`
+### `call_peaks_broad(signal, control=None, p_threshold=0.1, broad_cutoff=0.1, min_length=200, chrom="chr_unknown") -> List[Dict]`
 
-Call broad peaks using a two-pass seed-and-extend strategy. Seeds are runs of bins with Poisson p <= `p_threshold / 10`; each seed is extended left and right while the p-value stays <= `broad_cutoff`. Regions shorter than `min_length` bins are dropped and overlapping domains are merged.
+Call broad peaks using a two-pass seed-and-extend strategy. Seeds are runs of bins with Poisson p <= `p_threshold / 10`; each seed is extended left and right while the p-value stays <= `broad_cutoff`. Regions shorter than `min_length` bins are dropped and overlapping domains are merged. `chrom` works as in `call_peaks_simple`.
 
 Returns the same keys as `call_peaks_simple`, plus `peak_type` (`"broad"`).
 
 ### `merge_peaks(peaks, distance=0) -> List[Dict]`
 
-Merge peaks sorted by `start` whose gap is at most `distance` bins. A merged peak keeps the summit and `signal_value` of the strongest constituent, the lowest `p_value`, and the highest `score` and `fold_enrichment`; every other key (including `chrom` and `q_value`, which is not recomputed) comes from the first peak. Peaks are compared on `start` and `end` only (`chrom` is ignored), so merge one chromosome at a time.
+Merge peaks whose gap is at most `distance` bins, one chromosome at a time. Peaks are grouped by their `chrom` key (`"chr_unknown"` for a peak without one) and sorted by `start` within each chromosome; peaks on different chromosomes are never merged. The result lists the chromosomes in order of first appearance. A merged peak keeps the summit and `signal_value` of the strongest constituent, the lowest `p_value` and `q_value` of its members (the q-value is not re-estimated for the merged set), and the highest `score` and `fold_enrichment`; every other key, including `chrom`, comes from the first peak.
 
 ### `filter_peaks(peaks, min_fold=2.0, max_qvalue=0.05, blacklist_regions=None) -> List[Dict]`
 
@@ -73,11 +74,13 @@ from metainformant.epigenome.peak_calling.peak_detection import (
 # Narrow peak calling: one signal value per bin, with a matching control track
 signal = [1.0] * 400 + [30.0] * 60 + [1.0] * 400
 control = [1.0] * len(signal)
-peaks = call_peaks_simple(signal, control, threshold=5.0, min_length=20, merge_distance=5)
+peaks = call_peaks_simple(signal, control, threshold=5.0, min_length=20, merge_distance=5, chrom="chr1")
 
 # Broad peak calling for histone marks
 broad_signal = [1.0] * 600 + [12.0] * 200 + [1.0] * 600
-broad_peaks = call_peaks_broad(broad_signal, p_threshold=0.05, broad_cutoff=0.1, min_length=100)
+broad_peaks = call_peaks_broad(
+    broad_signal, p_threshold=0.05, broad_cutoff=0.1, min_length=100, chrom="chr1"
+)
 
 # Quality filtering
 filtered = filter_called_peaks(peaks, min_fold=2.0, max_qvalue=0.05)
@@ -90,7 +93,7 @@ print(f"FRiP: {frip['frip']:.3f}, quality: {frip['quality_assessment']}")
 treated_signal = signal
 untreated_signal = [1.0] * 400 + [10.0] * 60 + [1.0] * 400
 untreated_peaks = call_peaks_simple(
-    untreated_signal, control, threshold=5.0, min_length=20, merge_distance=5
+    untreated_signal, control, threshold=5.0, min_length=20, merge_distance=5, chrom="chr1"
 )
 diff = differential_peaks(peaks, untreated_peaks, treated_signal, untreated_signal)
 for region in diff:
