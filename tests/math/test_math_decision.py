@@ -36,9 +36,11 @@ class TestDDMMeanDecisionTime:
         t_large = ddm_mean_decision_time(drift_rate=1.0, boundary=4.0)
         assert t_large > t_small
 
-    def test_zero_drift_returns_default(self):
+    def test_zero_drift_is_the_diffusion_limit(self):
+        # No drift: the mean exit time of Brownian motion from (-a/2, a/2) is a^2 / (4 s^2),
+        # not an arbitrary default. For a = 2 and s = 1 that is exactly 1.0.
         t = ddm_mean_decision_time(drift_rate=0.0, boundary=2.0)
-        assert t == 1.0
+        assert t == pytest.approx(2.0**2 / 4.0)
 
     def test_negative_boundary_raises(self):
         with pytest.raises(ValueError):

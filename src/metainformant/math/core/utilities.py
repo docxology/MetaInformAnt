@@ -154,7 +154,14 @@ def fisher_exact_test(a: int, b: int, c: int, d: int) -> tuple[float, float]:
         d: Count in cell (2,2)
 
     Returns:
-        Tuple of (odds_ratio, p_value)
+        Tuple of (odds_ratio, p_value). The odds ratio is the sample odds ratio ``a*d / (b*c)``
+        (infinite when ``b*c`` is 0) and the p-value is the exact two-sided conditional
+        (hypergeometric) probability from ``scipy.stats.fisher_exact``. A table with an empty
+        row or column gives ``(nan, 1.0)``.
+
+    Raises:
+        ImportError: If scipy, a required dependency, is not installed. There is deliberately no
+            approximate fallback: a p-value is either the exact one or not returned at all.
 
     Examples:
         >>> # Test association between treatment and outcome
@@ -163,54 +170,14 @@ def fisher_exact_test(a: int, b: int, c: int, d: int) -> tuple[float, float]:
     """
     try:
         from scipy.stats import fisher_exact
+    except ImportError as exc:
+        raise ImportError(
+            "scipy is required for fisher_exact_test() and is a core metainformant dependency; "
+            "install it with: uv pip install scipy"
+        ) from exc
 
-        odds_ratio, p_value = fisher_exact([[a, b], [c, d]], alternative="two-sided")
-        return float(odds_ratio), float(p_value)
-    except ImportError:
-        pass
-
-    # Calculate odds ratio
-    if b * c == 0:
-        odds_ratio = float("inf") if a * d != 0 else 0.0
-    else:
-        odds_ratio = (a * d) / (b * c)
-
-    # Calculate p-value using hypergeometric distribution
-    # For simplicity, use a normal approximation for large samples
-    # Full implementation would use exact hypergeometric calculation
-
-    total = a + b + c + d
-    row1_total = a + b
-    col1_total = a + c
-
-    # Expected values under null hypothesis
-    expected_a = row1_total * col1_total / total
-
-    # Chi-square test statistic (continuity corrected)
-    if expected_a == 0:
-        chi_square = 0.0
-    else:
-        observed = np.array([[a, b], [c, d]])
-        expected = np.array(
-            [
-                [row1_total * col1_total / total, row1_total * (total - col1_total) / total],
-                [(total - row1_total) * col1_total / total, (total - row1_total) * (total - col1_total) / total],
-            ]
-        )
-
-        # Continuity correction
-        chi_square = np.sum((np.abs(observed - expected) - 0.5) ** 2 / expected)
-
-    # Convert to p-value (chi-square with 1 df)
-    try:
-        from scipy import stats
-
-        p_value = 1 - stats.chi2.cdf(chi_square, 1)
-    except ImportError:
-        # Fallback approximation
-        p_value = min(1.0, chi_square / 3.84)  # Rough approximation
-
-    return odds_ratio, p_value
+    odds_ratio, p_value = fisher_exact([[a, b], [c, d]], alternative="two-sided")
+    return float(odds_ratio), float(p_value)
 
 
 def covariance(x: List[float], y: List[float]) -> float:

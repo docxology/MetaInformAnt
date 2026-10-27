@@ -304,13 +304,24 @@ def tajimas_D(pi: float, s: int, n: int, constants: Dict[str, float] | None = No
     return diff / math.sqrt(var)
 
 
-def simulate_coalescent(n_samples: int, effective_size: float = 10000, mutation_rate: float = 1e-8) -> Dict[str, Any]:
+def simulate_coalescent(
+    n_samples: int,
+    effective_size: float = 10000,
+    mutation_rate: float = 1e-8,
+    *,
+    random_state: int | np.random.Generator | np.random.RandomState | None = None,
+) -> Dict[str, Any]:
     """Simulate coalescent process.
 
     Args:
         n_samples: Number of sampled lineages
         effective_size: Effective population size
         mutation_rate: Per-site mutation rate
+        random_state: Seed (an ``int``), ``numpy.random.Generator`` or ``numpy.random.RandomState``
+            for the waiting times, the lineages that merge and the mutation count. The same seed
+            always gives the same genealogy, independent of numpy's global generator. ``None``
+            (default) draws from numpy's global generator instead, which ``np.random.seed``
+            controls.
 
     Returns:
         Dictionary with coalescent simulation results
@@ -324,6 +335,15 @@ def simulate_coalescent(n_samples: int, effective_size: float = 10000, mutation_
         raise ValueError("Effective size must be positive")
     if mutation_rate < 0:
         raise ValueError("Mutation rate cannot be negative")
+
+    # ``np.random`` itself exposes the same draw methods as a Generator, so None uses the global state.
+    rand: Any
+    if random_state is None:
+        rand = np.random
+    elif isinstance(random_state, (np.random.Generator, np.random.RandomState)):
+        rand = random_state
+    else:
+        rand = np.random.default_rng(random_state)
 
     # Simple coalescent simulation
     lineages = list(range(n_samples))
@@ -340,7 +360,7 @@ def simulate_coalescent(n_samples: int, effective_size: float = 10000, mutation_
             break
 
         # Time to next coalescence (exponential distribution)
-        time_increment = -math.log(np.random.random()) / rate
+        time_increment = -math.log(rand.random()) / rate
         current_time += time_increment
         # k lineages persist for the whole interval, contributing k * t to the
         # genealogy's total branch length
@@ -349,12 +369,12 @@ def simulate_coalescent(n_samples: int, effective_size: float = 10000, mutation_
         coalescence_times.append(current_time)
 
         # Randomly merge two lineages
-        _, j = np.random.choice(len(lineages), 2, replace=False)
+        _, j = rand.choice(len(lineages), 2, replace=False)
         # Remove the second one (keep the first)
         lineages.pop(int(j))
 
     # Mutations land on the genealogy: S ~ Poisson(mu * total_branch_length)
-    n_segregating = int(np.random.poisson(mutation_rate * total_branch_length)) if coalescence_times else 0
+    n_segregating = int(rand.poisson(mutation_rate * total_branch_length)) if coalescence_times else 0
 
     # Calculate summary statistics
     results = {

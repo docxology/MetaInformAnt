@@ -193,6 +193,46 @@ def _em_haplotype_frequencies(
     return freqs
 
 
+def _fit_exponential_decay(distances: np.ndarray, r_squared: np.ndarray) -> Tuple[float, float]:
+    """Least-squares fit of r² = a * exp(-k * d) with a >= 0 and k >= 0.
+
+    Every (distance, r²) pair enters the fit with equal weight; nothing is binned.
+
+    Args:
+        distances: Distances between SNP pairs (non-negative, at least three distinct values)
+        r_squared: Corresponding r² values
+
+    Returns:
+        (a, k): the fitted r² at distance 0 and the decay rate per unit of distance
+
+    Raises:
+        RuntimeError: If the optimiser does not converge
+    """
+    from scipy.optimize import least_squares
+
+    # Work in units of the longest distance so the optimiser is well scaled whatever the unit.
+    scale = float(distances.max())
+    x = distances / scale
+
+    # Start from the mean r² of the closest third of the pairs and the slope of a straight line
+    # through log(r²); the bounded fit below refines both.
+    closest = np.argsort(x)[: max(1, len(x) // 3)]
+    a0 = max(float(np.mean(r_squared[closest])), 1e-6)
+    positive = r_squared > 0
+    if np.count_nonzero(positive) >= 2 and np.ptp(x[positive]) > 0:
+        k0 = max(-float(np.polyfit(x[positive], np.log(r_squared[positive]), 1)[0]), 1e-3)
+    else:
+        k0 = 1.0
+
+    def residuals(params: np.ndarray) -> np.ndarray:
+        return np.asarray(params[0] * np.exp(-params[1] * x) - r_squared, dtype=float)
+
+    result = least_squares(residuals, x0=[a0, k0], bounds=([0.0, 0.0], [np.inf, np.inf]))
+    if not result.success:
+        raise RuntimeError(f"Exponential LD decay fit did not converge: {result.message}")
+    return float(result.x[0]), float(result.x[1]) / scale
+
+
 def ld_decay_r2(
     distances: List[float] | float,
     r_squared_values: List[float] | None = None,
@@ -203,13 +243,38 @@ def ld_decay_r2(
 ) -> Dict[str, float] | float:
     """Analyze LD decay with distance.
 
+    Fits the exponential model r² = r²₀ * exp(-k * d) to the (distance, r²) pairs by bounded
+    nonlinear least squares (r²₀ >= 0, k >= 0), using every pair with equal weight. It is a
+    descriptive decay constant: the model has no finite-sample floor (a sample of n haplotypes
+    has E[r²] near 1/n at long range) and it is not the Hill and Weir (1988) expectation, so k
+    does not estimate 4Nₑc.
+
+    With a scalar ``distances`` it instead returns the expected r² after ``generations`` of
+    recombination at rate ``recombination_rate``: ``distances * (1 - c) ** (2 * generations)``.
+
     Args:
-        distances: Physical distances between SNP pairs
+        distances: Distances between SNP pairs (any unit; the rate comes back per that unit), or
+            a scalar starting r² for the closed-form decay
         r_squared_values: Corresponding r² values
         max_distance: Maximum distance to consider
+        recombination_rate: Recombination fraction per generation (scalar form only)
+        generations: Number of generations (scalar form only)
 
     Returns:
-        Dictionary with LD decay statistics
+        A dictionary for the fit, or a float for the scalar form. The fit gives
+
+        - ``decay_rate``: k, the exponential rate constant per unit of distance
+        - ``half_decay_distance``: ln(2) / k, the distance at which the fitted r² is half its
+          value at distance 0 (infinite when there is no decay)
+        - ``initial_r2``: r²₀, the fitted r² at distance 0
+
+        When no pair is left or fewer than three distinct distances remain, there is nothing to
+        fit and the dictionary holds ``decay_rate`` 0.0 and an infinite ``half_decay_distance``
+        only.
+
+    Raises:
+        ValueError: If the inputs differ in length, hold a non-finite value, or a distance is negative
+        RuntimeError: If the optimiser does not converge
     """
     if isinstance(distances, (int, float)):
         if recombination_rate is None or generations is None:
@@ -219,48 +284,36 @@ def ld_decay_r2(
     if r_squared_values is None or len(distances) != len(r_squared_values):
         raise ValueError("Distances and r² values must have same length")
 
+    d = np.asarray(distances, dtype=float)
+    r2 = np.asarray(r_squared_values, dtype=float)
+    if not (np.all(np.isfinite(d)) and np.all(np.isfinite(r2))):
+        raise ValueError("Distances and r² values must be finite")
+    if np.any(d < 0):
+        raise ValueError("Distances must be non-negative")
+
     # Filter by max distance if specified
     if max_distance is not None:
-        filtered = [(d, r) for d, r in zip(distances, r_squared_values) if d <= max_distance]
-        distances = [d for d, _ in filtered]
-        r_squared_values = [r for _, r in filtered]
+        keep = d <= max_distance
+        d, r2 = d[keep], r2[keep]
 
-    if not distances:
+    # Two parameters need at least three distinct distances to be fitted with any redundancy.
+    if np.unique(d).size < 3:
         return {"decay_rate": 0.0, "half_decay_distance": float("inf")}
 
-    # Fit exponential decay: r² = r²₀ * exp(-d/d₀)
-    # Use simple binning approach
-    bins = np.logspace(0, np.log10(max(distances)), 20)
-    bin_means = []
+    if not np.any(r2 > 0):
+        return {"decay_rate": 0.0, "half_decay_distance": float("inf"), "initial_r2": 0.0}
 
-    for i in range(len(bins) - 1):
-        mask = (np.array(distances) >= bins[i]) & (np.array(distances) < bins[i + 1])
-        if np.any(mask):
-            mean_r2 = np.mean(np.array(r_squared_values)[mask])
-            bin_means.append((bins[i], mean_r2))
-
-    if len(bin_means) < 3:
-        return {"decay_rate": 0.0, "half_decay_distance": float("inf")}
-
-    # Estimate half-decay distance (where r² drops to 0.5 of initial)
-    initial_r2 = bin_means[0][1]
-    half_decay_value = initial_r2 * 0.5
-
-    half_decay_distance = float("inf")
-    for dist, r2 in bin_means:
-        if r2 <= half_decay_value:
-            half_decay_distance = dist
-            break
-
-    # Estimate decay rate (rough approximation)
-    if len(bin_means) >= 2:
-        decay_rate = (bin_means[0][1] - bin_means[-1][1]) / (bin_means[-1][0] - bin_means[0][0])
-    else:
-        decay_rate = 0.0
+    initial_r2, decay_rate = _fit_exponential_decay(d, r2)
+    # The model contains the constant curve (k = 0), so it never fits worse than the mean. When it
+    # fits no better, the data show no decay (flat or rising): report none, not a vanishing rate.
+    flat_sse = float(np.sum((r2 - r2.mean()) ** 2))
+    fit_sse = float(np.sum((initial_r2 * np.exp(-decay_rate * d) - r2) ** 2))
+    if fit_sse >= flat_sse * (1.0 - 1e-9):
+        decay_rate, initial_r2 = 0.0, float(r2.mean())
 
     return {
         "decay_rate": decay_rate,
-        "half_decay_distance": half_decay_distance,
+        "half_decay_distance": math.log(2.0) / decay_rate if decay_rate > 0 else float("inf"),
         "initial_r2": initial_r2,
     }
 

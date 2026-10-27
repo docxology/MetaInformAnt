@@ -12,61 +12,77 @@ from typing import Any
 
 import numpy as np
 import scipy.stats as stats
+from scipy.special import expit
 
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 
 
+def _validate_ddm_parameters(drift_rate: float, boundary: float, noise_sd: float) -> None:
+    """Reject parameters outside the domain of the closed-form DDM expressions."""
+    if not (math.isfinite(boundary) and boundary > 0):
+        raise ValueError("Boundary must be positive and finite")
+    if not (math.isfinite(noise_sd) and noise_sd > 0):
+        raise ValueError("Noise standard deviation must be positive and finite")
+    if not math.isfinite(drift_rate):
+        raise ValueError("Drift rate must be finite")
+
+
 def ddm_mean_decision_time(drift_rate: float, boundary: float, noise_sd: float = 1.0) -> float:
-    """Calculate mean decision time for drift-diffusion model.
+    """Calculate the mean decision time of a drift-diffusion model.
+
+    The evidence follows dx = v dt + s dW between absorbing boundaries a apart and starts midway
+    between them (an unbiased start). The standard closed form (Palmer, Huk and Shadlen 2005;
+    Bogacz et al. 2006, with thresholds at a/2 on either side of the start) is
+
+        E[T] = (a / (2 v)) * tanh(v a / (2 s^2)),
+
+    which tends to a^2 / (4 s^2) as v tends to 0. It is even in v, and with an unbiased start
+    correct and error responses share this mean. Non-decision time is not included.
 
     Args:
-        drift_rate: Drift rate (v)
-        boundary: Boundary separation (a)
-        noise_sd: Noise standard deviation
+        drift_rate: Drift rate (v); only its magnitude matters
+        boundary: Boundary separation (a), positive
+        noise_sd: Standard deviation of the diffusion noise (s), positive
 
     Returns:
         Mean decision time
+
+    Raises:
+        ValueError: If boundary or noise_sd is not positive, or drift_rate is not finite
     """
-    if boundary <= 0:
-        raise ValueError("Boundary must be positive")
+    _validate_ddm_parameters(drift_rate, boundary, noise_sd)
 
-    if drift_rate <= 0:
-        # With no drift, use a default time around 1.0
-        return 1.0
-
-    # Simplified approximation for mean decision time
-    # This is a rough approximation - actual DDM has more complex timing
-    mean_time = boundary / drift_rate
-
-    return mean_time
+    # E[T] = a^2 / (4 s^2) * tanh(x) / x with x = |v| a / (2 s^2); tanh(x) / x tends to 1 as x -> 0.
+    x = abs(drift_rate) * boundary / (2.0 * noise_sd**2)
+    shape = math.tanh(x) / x if x > 0 else 1.0
+    return boundary**2 / (4.0 * noise_sd**2) * shape
 
 
 def ddm_analytic_accuracy(drift_rate: float, boundary: float, noise_sd: float = 1.0) -> float:
-    """Calculate analytic accuracy for drift-diffusion model.
+    """Calculate the analytic accuracy of a drift-diffusion model.
+
+    For the diffusion of :func:`ddm_mean_decision_time` started midway between the boundaries,
+    the probability of absorption at the upper boundary (the correct response when the drift is
+    positive) is the standard closed form (Palmer, Huk and Shadlen 2005; Bogacz et al. 2006)
+
+        P(correct) = 1 / (1 + exp(-v a / s^2)).
 
     Args:
         drift_rate: Drift rate (v)
-        boundary: Boundary separation (a)
-        noise_sd: Noise standard deviation (not used in simplified model)
+        boundary: Boundary separation (a), positive
+        noise_sd: Standard deviation of the diffusion noise (s), positive
 
     Returns:
-        Probability of correct decision
+        Probability of a correct (upper-boundary) decision
+
+    Raises:
+        ValueError: If boundary or noise_sd is not positive, or drift_rate is not finite
     """
-    if boundary <= 0:
-        raise ValueError("Boundary must be positive")
+    _validate_ddm_parameters(drift_rate, boundary, noise_sd)
 
-    # For symmetric boundaries with starting point at 0.5, accuracy is:
-    # P(correct) = 1 / (1 + exp(-drift_rate * boundary))
-    # This is a simplified approximation
-
-    if drift_rate == 0:
-        return 0.5  # 50% accuracy with no drift
-
-    accuracy = 1.0 / (1.0 + math.exp(-drift_rate * boundary))
-
-    return accuracy
+    return float(expit(drift_rate * boundary / noise_sd**2))
 
 
 def ddm_log_likelihood(

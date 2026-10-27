@@ -19,7 +19,7 @@ and alignment conservation analysis.
 | `consensus_from_alignment`    | Comprehensive analysis returning consensus + statistics     |
 | `consensus_statistics`        | Conservation metrics for an alignment                       |
 | `find_consensus_breaks`       | Sliding window detection of low-conservation regions        |
-| `bootstrap_consensus`         | Bootstrap resampling with confidence score                  |
+| `bootstrap_consensus`         | Bootstrap resampling with confidence score (`random_state` seeds it) |
 
 ---
 
@@ -184,9 +184,26 @@ Estimate consensus confidence through bootstrap resampling of the input sequence
 from metainformant.dna.sequence.consensus import bootstrap_consensus
 
 seqs = ["ATCG", "ATCG", "ATCG", "AGCG"]
-consensus, confidence = bootstrap_consensus(seqs, n_bootstraps=100)
+consensus, confidence = bootstrap_consensus(seqs, n_bootstraps=100, random_state=7)
 # confidence is the fraction of bootstrap replicates producing the same consensus
+# the same random_state always gives the same (consensus, confidence)
 ```
+
+**Parameters:**
+
+| Parameter      | Type                           | Default  | Description                                                    |
+|----------------|--------------------------------|----------|----------------------------------------------------------------|
+| `sequences`    | `List[str]`                    | required | Aligned sequences to resample (with replacement)               |
+| `n_bootstraps` | `int`                          | `100`    | Number of bootstrap replicates                                 |
+| `random_state` | `int \| random.Random \| None` | `None`   | Keyword-only seed for the resampling (see below)               |
+
+`random_state` controls the resampling. An `int` seeds a private generator and a
+`random.Random` instance is used as given (it advances as replicates are drawn); in both
+cases the replicates are reproducible and Python's global `random` state is left
+untouched. With the default `None` the replicates come from the global generator, so
+`random.seed(...)` before the call makes the result reproducible.
+
+An empty `sequences` list or `n_bootstraps <= 0` returns `("", 0.0)` instead of raising.
 
 ---
 
@@ -194,7 +211,10 @@ consensus, confidence = bootstrap_consensus(seqs, n_bootstraps=100)
 
 - All input sequences must be pre-aligned (equal length).
 - Gap characters (`-`) are ignored when counting bases for consensus voting.
-- Empty sequence lists raise `ValueError`.
+- An empty sequence list raises `ValueError` in `generate_consensus`, `consensus_with_ambiguity`,
+  `majority_consensus` and `strict_consensus`. `quality_weighted_consensus` returns `""`,
+  `consensus_statistics` returns all-zero counts, `consensus_from_alignment` returns
+  `("", {})`, `find_consensus_breaks` returns `[]` and `bootstrap_consensus` returns `("", 0.0)`.
 
 ---
 

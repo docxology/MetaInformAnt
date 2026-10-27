@@ -7,7 +7,7 @@ VCF parsing and variant analysis including variant calling from pileups, mutatio
 | File | Purpose |
 |------|---------|
 | `calling.py` | Variant calling from pileup data, genotyping, and filtering |
-| `mutations.py` | Mutation rate calculation, substitution matrices, and hotspot detection |
+| `mutations.py` | Point-mutation generation, mutation rate calculation, substitution matrices, and hotspot detection |
 | `variants.py` | VCF parsing/writing, allele frequency, Ti/Tv ratio, and effect prediction |
 
 ## Key Functions
@@ -26,7 +26,8 @@ VCF parsing and variant analysis including variant calling from pileups, mutatio
 | `genotype_variants()` | Assign genotypes to called variant sites |
 | `calculate_mutation_rate()` | Substitution rate between ancestral and derived sequences |
 | `classify_mutations()` | Count transitions, transversions, and mutation types |
-| `simulate_sequence_evolution()` | Generate evolved sequences over multiple generations |
+| `generate_point_mutations()` | Mutate a sequence: exactly `num_mutations` distinct positions when it is given, otherwise each position independently with probability `mutation_rate`; keyword-only `rng` (a `random.Random`) makes it reproducible |
+| `simulate_sequence_evolution()` | Generate evolved sequences over multiple generations, one point mutation per generation |
 | `analyze_mutation_spectrum()` | Summarize mutation types between a sequence and reference |
 
 ## Usage

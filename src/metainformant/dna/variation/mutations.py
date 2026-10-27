@@ -173,24 +173,35 @@ def classify_mutations(ancestral: str, derived: str) -> Dict[str, int]:
     return mutation_types
 
 
-def generate_point_mutations(sequence: str, num_mutations: int, mutation_rate: float = 0.001) -> str:
+def generate_point_mutations(
+    sequence: str,
+    num_mutations: int | None = None,
+    mutation_rate: float = 0.001,
+    *,
+    rng: random.Random | None = None,
+) -> str:
     """Generate point mutations in a DNA sequence.
 
-    Exactly ``num_mutations`` distinct positions are sampled uniformly at random
-    and each sampled position is changed to a different nucleotide. The
-    ``mutation_rate`` parameter is retained for signature compatibility only and
-    does not affect the number of mutations applied.
+    ``num_mutations`` selects between two modes. With ``num_mutations`` given, exactly that many
+    distinct positions are sampled uniformly at random and ``mutation_rate`` is not used. Without
+    it, each position mutates independently with probability ``mutation_rate``, so the number of
+    mutations is binomial. Every mutated position changes to a different nucleotide.
 
     Args:
         sequence: Original DNA sequence
-        num_mutations: Exact number of distinct positions to mutate
-        mutation_rate: Unused; kept for backward compatibility of the signature
+        num_mutations: Exact number of distinct positions to mutate, or None to draw the
+            mutations from ``mutation_rate``
+        mutation_rate: Probability that each position mutates, within [0, 1]; applies only when
+            ``num_mutations`` is None
+        rng: Random generator for reproducibility. The default draws from Python's global
+            ``random`` state, which ``random.seed`` controls
 
     Returns:
-        Mutated DNA sequence
+        Mutated DNA sequence (upper case)
 
     Raises:
-        ValueError: If num_mutations is negative or exceeds the sequence length
+        ValueError: If num_mutations is negative or exceeds the sequence length, or, when
+            num_mutations is None, mutation_rate is outside [0, 1]
 
     Example:
         >>> seq = "ATCGATCG"
@@ -202,17 +213,25 @@ def generate_point_mutations(sequence: str, num_mutations: int, mutation_rate: f
         return sequence
 
     mutated = list(sequence.upper())
-    if num_mutations < 0:
-        raise ValueError("num_mutations must be non-negative")
-    if num_mutations > len(mutated):
-        raise ValueError("num_mutations cannot exceed the sequence length")
+    source: Any = random if rng is None else rng
+
+    if num_mutations is None:
+        if not 0.0 <= mutation_rate <= 1.0:
+            raise ValueError("mutation_rate must be within [0, 1]")
+        positions = [pos for pos in range(len(mutated)) if source.random() < mutation_rate]
+    else:
+        if num_mutations < 0:
+            raise ValueError("num_mutations must be non-negative")
+        if num_mutations > len(mutated):
+            raise ValueError("num_mutations cannot exceed the sequence length")
+        positions = source.sample(range(len(mutated)), num_mutations)
 
     nucleotides = ["A", "C", "G", "T"]
-    for pos in random.sample(range(len(mutated)), num_mutations):
+    for pos in positions:
         current = mutated[pos]
         # Choose different nucleotide
         possible = [n for n in nucleotides if n != current]
-        mutated[pos] = random.choice(possible)
+        mutated[pos] = source.choice(possible)
 
     return "".join(mutated)
 

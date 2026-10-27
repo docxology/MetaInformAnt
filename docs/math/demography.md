@@ -214,7 +214,7 @@ from metainformant.math.population_genetics.coalescent import expected_segregati
 ne = exponential_growth_effective_size(10000, 0.1, 100)
 theta = 4 * ne * 0.0001  # Assuming mutation rate μ = 0.0001
 S_expected = expected_segregating_sites(
-    sample_size=10,
+    n_samples=10,
     theta=theta,
     sequence_length=1000
 )

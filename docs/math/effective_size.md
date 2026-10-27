@@ -42,16 +42,18 @@ ne = harmonic_mean_effective_size(sizes)
 
 ### `effective_size_sex_ratio(male_size, female_size, sex_ratio=0.5)`
 
-Calculate effective population size with unequal sex ratio.
+Calculate effective population size for unequal numbers of breeding males and females.
 
 **Parameters**:
-- `male_size`: Number of breeding males (Nm)
-- `female_size`: Number of breeding females (Nf)
-- `sex_ratio`: Proportion of the population that is male (default 0.5; must be strictly between 0 and 1)
+- `male_size`: Number of breeding males (Nm; must be positive)
+- `female_size`: Number of breeding females (Nf; must be positive)
+- `sex_ratio`: Proportion of the population that is male (default 0.5; must be strictly between 0 and 1). It is validated but does not enter the formula: the breeding sex ratio is already given by `male_size` and `female_size`, so every `sex_ratio` returns the same Ne
 
 **Returns**: Effective population size (float)
 
-**Formula**: Ne = 4 × Nm × Nf / (Nm + Nf) at the default `sex_ratio=0.5`. Any other `sex_ratio` r switches to a simplified adjustment, 2·Nm·Nf / (Nm + Nf) / (r(1 − r)), which is not continuous with the default formula, so leave `sex_ratio` at its default unless that approximation is what you want.
+**Raises**: `ValueError` if either size is not positive or `sex_ratio` is not strictly between 0 and 1
+
+**Formula**: Ne = 4 × Nm × Nf / (Nm + Nf) (Wright 1931), whatever the `sex_ratio` argument. It equals the census size Nm + Nf when Nm = Nf, falls below it as the sexes diverge, never exceeds it, and is symmetric in the two sexes.
 
 **Example**:
 ```python
@@ -64,6 +66,10 @@ ne_equal = effective_size_sex_ratio(100, 100)
 # Unequal sex ratio (more females)
 ne_unequal = effective_size_sex_ratio(10, 90)
 # Returns: 36.0 (much smaller than census size of 100)
+
+# sex_ratio is checked but ignored by the formula
+ne_same = effective_size_sex_ratio(100, 100, sex_ratio=0.3)
+# Returns: 200.0
 ```
 
 ### `effective_population_size_from_heterozygosity(heterozygosity, mutation_rate=1e-8)`
@@ -90,14 +96,18 @@ ne = effective_population_size_from_heterozygosity(0.5, mutation_rate=1e-8)
 
 Calculate effective population size from variance in family size. The function has two forms:
 
-- With `Vk`, `family_sizes` is the census size N and must be a **float** (an `int` fails an internal assertion). It uses the Crow and Denniston approximation.
-- Without `Vk`, `family_sizes` is a list of offspring counts, one per parent.
+- With `Vk`, `family_sizes` is the census size N, given as an `int` or a `float`. It uses the Crow and Denniston approximation.
+- Without `Vk`, `family_sizes` is a list (or tuple, or NumPy array) of offspring counts, one per parent.
 
 **Parameters**:
-- `family_sizes`: Census population size as a float (when `Vk` is given), or a list of offspring counts per parent
-- `Vk`: Variance in family size (Vk)
+- `family_sizes`: Census population size N (when `Vk` is given), or the offspring counts per parent
+- `Vk`: Variance in family size (Vk); must be non-negative and finite
 
 **Returns**: Effective population size (float)
+
+**Raises**:
+- `TypeError` if `Vk` is given and `family_sizes` is not a number (booleans are rejected too), or if `Vk` is omitted and `family_sizes` is not a list, tuple or array
+- `ValueError` if N is not positive and finite, or `Vk` is negative or not finite
 
 **Formula**: With `Vk`, Ne = (4N - 2) / (Vk + 2). With a list, Ne = k / (V - 1), where k is the mean family size and V the population variance (denominator n) of the list; the result is `inf` when V is at most 1 and 0.0 for an empty list.
 
@@ -106,7 +116,7 @@ Calculate effective population size from variance in family size. The function h
 from metainformant.math.population_genetics.statistics import effective_size_from_family_size_variance
 
 # Population with high variance in family size
-ne = effective_size_from_family_size_variance(1000.0, Vk=5)
+ne = effective_size_from_family_size_variance(1000, Vk=5)
 # Returns: ~571.1; higher variance reduces effective size
 ```
 
@@ -129,9 +139,9 @@ print(f"Effective size: {ne:.1f}")
 from metainformant.math.population_genetics.effective_size import effective_size_sex_ratio
 
 # Compare different sex ratios
-ne1 = effective_size_sex_ratio(50, 50)   # Equal
-ne2 = effective_size_sex_ratio(10, 90)   # Skewed
-ne3 = effective_size_sex_ratio(90, 10)   # Reversed
+ne1 = effective_size_sex_ratio(50, 50)   # Equal: 100.0
+ne2 = effective_size_sex_ratio(10, 90)   # Skewed: 36.0
+ne3 = effective_size_sex_ratio(90, 10)   # Reversed: 36.0, the formula is symmetric in the sexes
 
 print(f"Equal: {ne1}, Skewed: {ne2}, Reversed: {ne3}")
 ```
@@ -142,10 +152,10 @@ print(f"Equal: {ne1}, Skewed: {ne2}, Reversed: {ne3}")
 from metainformant.math.population_genetics.statistics import effective_size_from_family_size_variance
 
 # Low variance (more equal reproduction)
-ne_low = effective_size_from_family_size_variance(1000.0, Vk=2)
+ne_low = effective_size_from_family_size_variance(1000, Vk=2)    # 999.5
 
 # High variance (unequal reproduction)
-ne_high = effective_size_from_family_size_variance(1000.0, Vk=10)
+ne_high = effective_size_from_family_size_variance(1000, Vk=10)  # about 333.2
 
 print(f"Low variance Ne: {ne_low}, High variance Ne: {ne_high}")
 ```
@@ -176,8 +186,8 @@ ne_het = effective_population_size_from_heterozygosity(
    simultaneously. The harmonic mean method accounts for population size
    fluctuations over time.
 
-2. **Sex Ratio**: Unequal sex ratios significantly reduce Ne, even if
-   census size is large.
+2. **Sex Ratio**: Unequal numbers of breeding males and females significantly
+   reduce Ne, even if census size is large (Ne = Nm + Nf only when Nm = Nf).
 
 3. **Family Size Variance**: Higher variance in reproductive success
    (some individuals have many offspring, others none) reduces Ne.

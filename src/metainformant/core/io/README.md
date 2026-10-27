@@ -34,6 +34,7 @@ Unified file I/O (JSON, YAML, TOML, CSV, Parquet, JSONL), path management with s
 | `get_disk_usage()` | Total, used, and free space for a given path |
 | `ensure_disk_space()` | Abort early if insufficient disk space |
 | `cleanup_old_files()` | Remove files older than a specified age |
+| `download_with_progress()` | HTTP(S)/FTP/file download with heartbeat file, retries and HTTP Range resume; a destination that already has the full size counts as downloaded, and a string ending in `/` names a directory (see [Downloads](../../../../docs/core/download.md)) |
 
 ## Usage
 

@@ -94,12 +94,29 @@ def _effective_sample_size(samples: list[float]) -> float:
 # ---------------------------------------------------------------------------
 
 
+def _resolve_rng(random_state: int | random.Random | None) -> Any:
+    """Random source for the samplers in this module.
+
+    ``None`` keeps the long-standing behaviour of drawing from (and advancing) Python's global
+    generator, so ``random.seed`` still makes a run reproducible. An ``int`` seeds a private
+    ``random.Random`` and a ``random.Random`` is used as given; in both cases the global generator
+    is neither read nor advanced, so the run is reproducible whatever the rest of the program does.
+    """
+    if random_state is None:
+        return random
+    if isinstance(random_state, random.Random):
+        return random_state
+    return random.Random(random_state)
+
+
 def metropolis_hastings(
     log_posterior: Any,
     initial: list[float],
     n_samples: int = 10000,
     proposal_scale: float = 0.1,
     burn_in: int = 1000,
+    *,
+    random_state: int | random.Random | None = None,
 ) -> dict:
     """MCMC sampling using the Metropolis-Hastings algorithm.
 
@@ -115,6 +132,10 @@ def metropolis_hastings(
         proposal_scale: Standard deviation of the Gaussian proposal
             distribution for each parameter.
         burn_in: Number of initial samples to discard as burn-in.
+        random_state: Seed (an ``int``) or a ``random.Random`` for the proposal
+            and accept/reject draws. The same seed always gives the same chain,
+            independent of Python's global generator. ``None`` (default) draws
+            from the global generator instead, which ``random.seed`` controls.
 
     Returns:
         Dictionary with keys:
@@ -131,6 +152,8 @@ def metropolis_hastings(
     if burn_in >= n_samples:
         raise ValueError(f"burn_in ({burn_in}) must be less than n_samples ({n_samples})")
 
+    rng = _resolve_rng(random_state)
+
     n_params = len(initial)
     current = list(initial)
     current_lp = float(log_posterior(current))
@@ -141,13 +164,13 @@ def metropolis_hastings(
 
     for step in range(n_samples):
         # Propose new state
-        proposal = [current[i] + random.gauss(0, proposal_scale) for i in range(n_params)]
+        proposal = [current[i] + rng.gauss(0, proposal_scale) for i in range(n_params)]
 
         proposal_lp = float(log_posterior(proposal))
 
         # Accept/reject
         log_alpha = proposal_lp - current_lp
-        if log_alpha >= 0 or random.random() < math.exp(min(0.0, log_alpha)):
+        if log_alpha >= 0 or rng.random() < math.exp(min(0.0, log_alpha)):
             current = proposal
             current_lp = proposal_lp
             n_accepted += 1
@@ -202,6 +225,11 @@ def abc_rejection(
     Samples parameters from the prior, simulates data, computes summary
     statistics, and accepts parameters whose summaries are within
     ``tolerance`` of the observed summaries.
+
+    This function draws no random numbers itself: ``prior_sampler`` and
+    ``simulator`` own all of the randomness, so seed those (for example with
+    a private ``random.Random`` or ``numpy`` ``Generator``) to make a run
+    reproducible.
 
     Args:
         simulator: Callable that takes a parameter vector and returns a list

@@ -103,15 +103,22 @@ def test_test_population_difference():
 
 
 def test_calculate_confidence_intervals():
-    """Test confidence interval calculation."""
-    statistics = {"pi": 0.01, "theta": 0.01}
+    """A dictionary maps each statistic to its observations and gets one estimated interval per name."""
+    observations = {"pi": [0.009, 0.011, 0.010, 0.012, 0.008], "theta": [0.02, 0.024, 0.018, 0.022, 0.021]}
 
-    result = calculate_confidence_intervals(statistics, method="normal")
+    result = calculate_confidence_intervals(observations, method="normal")
 
     assert "pi" in result
     assert "theta" in result
     assert "ci_lower" in result["pi"]
     assert "ci_upper" in result["pi"]
+    assert result["pi"]["ci_lower"] < np.mean(observations["pi"]) < result["pi"]["ci_upper"]
+
+
+def test_calculate_confidence_intervals_rejects_point_values():
+    """A dictionary of single point values carries no sampling information, so no interval is invented."""
+    with pytest.raises(ValueError, match="no sampling information"):
+        calculate_confidence_intervals({"pi": 0.01, "theta": 0.01}, method="normal")
 
 
 def test_bootstrap_with_empty_data():

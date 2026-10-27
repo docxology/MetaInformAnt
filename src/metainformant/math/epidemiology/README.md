@@ -30,5 +30,7 @@ from metainformant.math.epidemiology.models import (
 
 r0 = basic_reproduction_number(transmission_rate=0.3, recovery_rate=0.1)
 threshold = herd_immunity_threshold(r0)
-s, i, r = sir_step(S=990, I=10, R=0, beta=0.3, gamma=0.1, dt=0.1)
+s, i, r = sir_step(susceptible=990, infected=10, recovered=0, transmission_rate=0.3, recovery_rate=0.1, dt=0.1)
 ```
+
+`sir_step` also accepts the keyword-only aliases `beta` and `gamma` for `transmission_rate` and `recovery_rate`; the compartment arguments are `susceptible`, `infected` and `recovered`, in that order.

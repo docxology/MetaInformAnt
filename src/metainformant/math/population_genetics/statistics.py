@@ -7,7 +7,7 @@ coalescent theory, and evolutionary computations.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Sequence
 
 import numpy as np
 
@@ -210,25 +210,51 @@ def bottleneck_effective_size(
 def effective_size_from_family_size_variance(family_sizes: List[int] | float, Vk: float | None = None) -> float:
     """Estimate effective population size from variance in family sizes.
 
+    Two forms:
+
+    - With ``Vk``, ``family_sizes`` is the census size N (an int or a float) and the
+      Crow-Denniston approximation Ne = (4N - 2) / (Vk + 2) is returned.
+    - Without ``Vk``, ``family_sizes`` is a list (or tuple or array) of offspring counts, one
+      per parent.
+
     Args:
-        family_sizes: List of offspring counts per parent
+        family_sizes: Census population size N when ``Vk`` is given, otherwise the offspring
+            counts per parent
+        Vk: Variance in family size, given together with the census size N
 
     Returns:
         Estimated effective population size
+
+    Raises:
+        TypeError: If ``Vk`` is given but ``family_sizes`` is not a number, or ``Vk`` is omitted
+            but ``family_sizes`` is not a list, tuple or array
+        ValueError: If N is not positive and finite, or Vk is negative or not finite
     """
     if Vk is not None:
-        assert isinstance(family_sizes, float)
+        if isinstance(family_sizes, bool) or not isinstance(family_sizes, (int, float, np.integer, np.floating)):
+            raise TypeError(
+                f"family_sizes must be the census size N (an int or a float) when Vk is given, "
+                f"got {type(family_sizes).__name__}"
+            )
         N = float(family_sizes)
+        if not math.isfinite(N) or N <= 0:
+            raise ValueError(f"The census size N must be positive and finite, got {family_sizes}")
+        if not math.isfinite(Vk) or Vk < 0:
+            raise ValueError(f"Vk must be non-negative and finite, got {Vk}")
         return (4.0 * N - 2.0) / (Vk + 2.0)
 
-    assert isinstance(family_sizes, list)
+    if not isinstance(family_sizes, (list, tuple, np.ndarray)):
+        raise TypeError(
+            f"family_sizes must be a list of offspring counts when Vk is not given, got {type(family_sizes).__name__}"
+        )
+    sizes = list(family_sizes)
 
-    if not family_sizes:
+    if not sizes:
         return 0.0
 
-    n = len(family_sizes)
-    mean_family_size = sum(family_sizes) / n
-    variance = sum((x - mean_family_size) ** 2 for x in family_sizes) / n
+    n = len(sizes)
+    mean_family_size = sum(sizes) / n
+    variance = sum((x - mean_family_size) ** 2 for x in sizes) / n
 
     # Ne = k / (V_k - 1) where k is mean family size, V_k is variance
     if variance > 1:
@@ -293,17 +319,25 @@ def bootstrap_confidence_interval(
 
 
 def calculate_confidence_intervals(
-    values: List[float] | Dict[str, float], confidence_level: float = 0.95, method: str = "bootstrap"
+    values: Sequence[float] | np.ndarray | Dict[str, Any], confidence_level: float = 0.95, method: str = "bootstrap"
 ) -> tuple[float, float] | Dict[str, Dict[str, float]]:
     """Calculate confidence intervals for population genetic statistics.
 
     Args:
-        values: List of observed values
+        values: Observed values (a list or array), giving one interval; or a dictionary that maps
+            each statistic name to its own observations (a list or array), giving one interval
+            per name. An interval is estimated from the observations: a dictionary of single point
+            values has nothing to estimate it from and raises ``ValueError``
         confidence_level: Confidence level (default 0.95)
         method: Method for CI calculation ("bootstrap", "normal", "percentile")
 
     Returns:
-        Tuple of (lower_bound, upper_bound)
+        Tuple of (lower_bound, upper_bound) for a list or array, or
+        ``{name: {"ci_lower": ..., "ci_upper": ...}}`` for a dictionary of observations
+
+    Raises:
+        ValueError: If there are no values, ``confidence_level`` is outside (0, 1), ``method`` is
+            unknown, or a dictionary entry is a single number rather than observations
 
     Examples:
         >>> values = [0.1, 0.15, 0.12, 0.18, 0.09]
@@ -311,19 +345,34 @@ def calculate_confidence_intervals(
         >>> print(f"95% CI: [{lower:.3f}, {upper:.3f}]")
     """
     if isinstance(values, dict):
-        result = {}
-        for key, value in values.items():
-            spread = abs(value) * 0.1 if value != 0 else 1.96
-            result[key] = {"ci_lower": value - spread, "ci_upper": value + spread}
-        return result
+        if not values:
+            raise ValueError("Values dictionary cannot be empty")
+        intervals: Dict[str, Dict[str, float]] = {}
+        for name, observations in values.items():
+            if np.ndim(observations) == 0:
+                raise ValueError(
+                    f"Cannot build a confidence interval for '{name}' from the single value {observations!r}: "
+                    "a point estimate carries no sampling information. Pass the observations behind it "
+                    "(a list or array per statistic) instead."
+                )
+            lower, upper = _confidence_interval_of_sample(observations, confidence_level, method)
+            intervals[name] = {"ci_lower": lower, "ci_upper": upper}
+        return intervals
 
-    if not values:
+    return _confidence_interval_of_sample(values, confidence_level, method)
+
+
+def _confidence_interval_of_sample(values: Any, confidence_level: float, method: str) -> tuple[float, float]:
+    """Interval for one sample of observations; see :func:`calculate_confidence_intervals`."""
+    values_arr = np.asarray(values, dtype=float)
+    if values_arr.ndim != 1:
+        raise ValueError("Values must be a one-dimensional list or array")
+    if values_arr.size == 0:
         raise ValueError("Values list cannot be empty")
 
     if not (0 < confidence_level < 1):
         raise ValueError("Confidence level must be between 0 and 1")
 
-    values_arr = np.array(values)
     n = len(values_arr)
 
     if method == "bootstrap":
@@ -331,9 +380,11 @@ def calculate_confidence_intervals(
         n_bootstrap = min(1000, n * 10)  # Reasonable bootstrap sample size
         bootstrap_means = []
 
-        np.random.seed(42)  # For reproducibility
+        # Fixed seed for reproducibility. A private RandomState draws the same stream as seeding
+        # the global generator with 42 did, without resetting the caller's global numpy state.
+        bootstrap_rng = np.random.RandomState(42)
         for _ in range(n_bootstrap):
-            sample = np.random.choice(values_arr, size=n, replace=True)
+            sample = bootstrap_rng.choice(values_arr, size=n, replace=True)
             bootstrap_means.append(np.mean(sample))
 
         lower_percentile = (1 - confidence_level) / 2 * 100
@@ -420,34 +471,52 @@ def compare_population_statistic(
     }
 
 
+COMPARISON_TESTS = ("ttest", "mannwhitney", "kruskal")
+
+
 def compare_statistics(stats1: Any, stats2: Any, test_type: str = "ttest") -> Dict[str, Any]:
-    """Compare multiple population statistics between two populations.
+    """Compare two groups of observations, or two dictionaries of named statistics.
+
+    With two sequences of observations the requested test is run on them:
+
+    - ``"ttest"`` (default): Welch's two-sample t-test for unequal variances
+      (``scipy.stats.ttest_ind(equal_var=False)``)
+    - ``"mannwhitney"``: two-sided Mann-Whitney U test (``scipy.stats.mannwhitneyu``)
+    - ``"kruskal"``: Kruskal-Wallis H test of the two groups (``scipy.stats.kruskal``)
 
     Args:
-        stats1: Statistics dictionary for population 1
-        stats2: Statistics dictionary for population 2
+        stats1: Observations for population 1, or a dictionary of statistics for it
+        stats2: Observations for population 2, or a dictionary of statistics for it
+        test_type: ``"ttest"``, ``"mannwhitney"`` or ``"kruskal"``
 
     Returns:
-        Dictionary with comparison results for each statistic
+        For sequences, a dictionary with ``test_statistic``, ``p_value`` and the ``test_type``
+        that was run. For two dictionaries, a dictionary with the comparison results for each
+        statistic they share (see :func:`compare_population_statistic`); that comparison is an
+        approximate normal-theory one for point values, so only ``test_type="ttest"`` applies
+        to it.
 
-    INFERENTIAL (post-evidence-freeze use): t-test/Mann-Whitney p-values are not
+    Raises:
+        ValueError: If ``test_type`` is not one of the three above; if dictionaries are given with
+            a rank test, which needs the observations themselves; or if the observations cannot
+            be tested: not one-dimensional, not finite, too few (two per group for the t-test,
+            one for the rank tests), or all identical so that the test is undefined
+
+    INFERENTIAL (post-evidence-freeze use): t-test/Mann-Whitney/Kruskal-Wallis p-values are not
     for cross-species release outputs while the evidence manifest is unfrozen
     (descriptive-only boundary, SHARED_CONTEXT Round 3+).
     """
-    if not isinstance(stats1, dict) or not isinstance(stats2, dict):
-        a = np.asarray(stats1, dtype=float)
-        b = np.asarray(stats2, dtype=float)
-        statistic = float(np.mean(a) - np.mean(b)) if len(a) and len(b) else 0.0
-        try:
-            from scipy import stats as scipy_stats
+    if test_type not in COMPARISON_TESTS:
+        raise ValueError(f"Unknown test_type {test_type!r}. Use one of: {', '.join(repr(t) for t in COMPARISON_TESTS)}")
 
-            if test_type == "mannwhitney":
-                test_stat, p_value = scipy_stats.mannwhitneyu(a, b, alternative="two-sided")
-            else:
-                test_stat, p_value = scipy_stats.ttest_ind(a, b, equal_var=False)
-        except Exception:
-            test_stat, p_value = np.float64(statistic), np.float64(1.0)
-        return {"test_statistic": float(test_stat), "p_value": float(p_value), "test_type": test_type}
+    if not isinstance(stats1, dict) or not isinstance(stats2, dict):
+        return _compare_observations(stats1, stats2, test_type)
+
+    if test_type != "ttest":
+        raise ValueError(
+            f"test_type {test_type!r} ranks observations, but dictionaries hold only summary statistics; "
+            "pass the observations as two sequences, or use test_type='ttest' for the approximate comparison"
+        )
 
     results = {}
     common_stats = set(stats1.keys()) & set(stats2.keys())
@@ -458,6 +527,45 @@ def compare_statistics(stats1: Any, stats2: Any, test_type: str = "ttest") -> Di
         )
 
     return results
+
+
+def _compare_observations(stats1: Any, stats2: Any, test_type: str) -> Dict[str, Any]:
+    """Run the ``test_type`` test on two samples; see :func:`compare_statistics`.
+
+    A degenerate sample raises instead of yielding a made-up p-value.
+    """
+    from scipy import stats as scipy_stats
+
+    a = np.asarray(stats1, dtype=float)
+    b = np.asarray(stats2, dtype=float)
+    if a.ndim != 1 or b.ndim != 1:
+        raise ValueError("The two groups must be one-dimensional sequences of observations")
+    if not (np.all(np.isfinite(a)) and np.all(np.isfinite(b))):
+        raise ValueError("The two groups must hold only finite observations")
+    minimum = 2 if test_type == "ttest" else 1
+    if a.size < minimum or b.size < minimum:
+        raise ValueError(
+            f"The {test_type!r} comparison needs at least {minimum} observation(s) in each group, "
+            f"got {a.size} and {b.size}"
+        )
+
+    result: Any  # a scipy result object (ttest_ind, mannwhitneyu or kruskal) with .statistic and .pvalue
+    if test_type == "ttest":
+        if np.ptp(a) == 0 and np.ptp(b) == 0:
+            raise ValueError("Welch's t-test is undefined when every observation in both groups is constant")
+        result = scipy_stats.ttest_ind(a, b, equal_var=False)
+    else:
+        if np.ptp(np.concatenate([a, b])) == 0:
+            raise ValueError(f"The {test_type!r} comparison is undefined when all observations are identical")
+        if test_type == "mannwhitney":
+            result = scipy_stats.mannwhitneyu(a, b, alternative="two-sided")
+        else:
+            result = scipy_stats.kruskal(a, b)
+
+    statistic, p_value = float(result.statistic), float(result.pvalue)
+    if math.isnan(statistic) or math.isnan(p_value):
+        raise ValueError(f"The {test_type!r} comparison is undefined for these observations")
+    return {"test_statistic": statistic, "p_value": p_value, "test_type": test_type}
 
 
 def detect_outliers(values: List[float], method: str = "iqr", threshold: float = 1.5) -> Dict[str, Any]:

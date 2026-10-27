@@ -287,9 +287,9 @@ class TestDecisionTheory:
         time = ddm_mean_decision_time(drift_rate=0.5, boundary=1.0, noise_sd=1.0)
 
         assert time > 0.0
-        # Zero drift case
+        # Zero drift: Brownian exit time from (-a/2, a/2) is a^2 / (4 s^2) = 0.25 for a = 1, s = 1
         time_zero = ddm_mean_decision_time(drift_rate=0.0, boundary=1.0, noise_sd=1.0)
-        assert abs(time_zero - 1.0) < 0.1
+        assert abs(time_zero - 0.25) < 1e-12
 
 
 class TestSelection:

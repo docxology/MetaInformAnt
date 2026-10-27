@@ -4,15 +4,17 @@ Functions in `metainformant.dna.variation.mutations`: `generate_point_mutations`
 
 ```mermaid
 flowchart TD
-  AoriginalSequence[Original Sequence] --> BgeneratePointMutations[generate_point_mutations]
-  JnumberOfMutations[Number of Mutations] --> B
-  B --> DmutatedSequence[Mutated Sequence]
+  seq[Original Sequence] --> gpm[generate_point_mutations]
+  count[Number of Mutations] --> gpm
+  rate[Per-site mutation rate, used when no number is given] --> gpm
+  rng[rng, optional] --> gpm
+  gpm --> mutated[Mutated Sequence]
 
-  HoriginalSequence[Original Sequence] --> IgenerateMutantLibrary[generate_mutant_library]
-  CpositionsAndBases[Positions & Bases] --> I
-  I --> KmutantLibrary[One Mutant per Position]
+  seq2[Original Sequence] --> gml[generate_mutant_library]
+  pos[Positions & Bases] --> gml
+  gml --> library[One Mutant per Position]
 
-  Esequence1[Sequence 1] & Fsequence2[Sequence 2] --> GhammingDistance[distances.hamming_distance]
+  s1[Sequence 1] & s2[Sequence 2] --> ham[distances.hamming_distance]
 ```
 
 Example
@@ -23,10 +25,15 @@ import random
 from metainformant.dna.alignment import distances
 from metainformant.dna.variation import mutations
 
-# Generate random point mutations: exactly 3 distinct positions change
-random.seed(42)  # the module draws from Python's global random generator
 seq = "ATCGATCGATCG"
-random_mutated = mutations.generate_point_mutations(seq, num_mutations=3)
+
+# Exact count: 3 distinct positions change. A private generator makes the result
+# reproducible without touching Python's global random state
+random_mutated = mutations.generate_point_mutations(seq, num_mutations=3, rng=random.Random(42))
+
+# Per-site rate: without num_mutations, each position mutates independently with
+# probability mutation_rate, so the number of changes varies from call to call
+rate_mutated = mutations.generate_point_mutations(seq, mutation_rate=0.1, rng=random.Random(42))
 
 # Apply specific changes: one mutant per (position, new base) pair
 mutants = mutations.generate_mutant_library("ATCGATCG", positions=[0, 3], mutations=["G", "A"])
@@ -40,10 +47,12 @@ rate = mutations.calculate_mutation_rate("ATCG", "ATGG")  # 0.25
 ```
 
 Features:
-- **Exact count**: `generate_point_mutations` changes exactly `num_mutations` distinct positions (`ValueError` if the number is negative or exceeds the sequence length) and replaces each base with a different one
+- **Exact count**: with `num_mutations` given, `generate_point_mutations` changes exactly that many distinct positions, sampled uniformly (`ValueError` if the number is negative or exceeds the sequence length). `mutation_rate` is not used in this mode, and it is not validated either
+- **Per-site rate**: without `num_mutations` (the default `None`), every position mutates independently with probability `mutation_rate` (default 0.001), so the number of mutations is binomial; `ValueError` if the rate is outside [0, 1] or NaN
+- **Substitution**: in both modes a mutated base is replaced by a nucleotide chosen uniformly among the A/C/G/T bases that differ from it
 - **Uppercase output**: `generate_point_mutations` converts its input to uppercase
-- **Unused parameter**: `mutation_rate` in `generate_point_mutations` is accepted for backward compatibility and has no effect
-- **Reproducible**: there is no `seed` argument; call `random.seed(...)` before generating
+- **Reproducible**: `generate_point_mutations` takes a keyword-only `rng` (a `random.Random`) that supplies every random draw and leaves Python's global `random` state untouched. Without `rng` it draws from the global generator, so `random.seed(...)` before the call makes the result reproducible
+- **Sequence evolution**: `simulate_sequence_evolution(sequence, generations, mutation_rate=0.001)` has no `rng` and applies exactly one point mutation per generation (its `mutation_rate` does not change that), so use `random.seed(...)` to make a lineage reproducible
 - **Mutant library**: `generate_mutant_library` gives one single-substitution mutant per position/base pair, silently skips positions outside the sequence, and raises `ValueError` when the two lists differ in length
 - **Distance calculation**: Hamming distance between sequences (`distances.hamming_distance`, equal lengths and A/C/G/T only)
 

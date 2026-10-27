@@ -17,6 +17,7 @@ Mathematical biology and theoretical modeling for population genetics, epidemiol
   - [Epidemiology](#epidemiology)
 - [Submodules](#submodules)
 - [Quick Start](#quick-start)
+- [Reproducibility](#reproducibility)
 - [Integration](#integration)
 - [Related](#related)
 
@@ -143,6 +144,20 @@ theta = watterson_theta(S=50, n=20)
 # Evolutionary game theory: hawk-dove dynamics
 derivs = replicator_derivative(fitnesses=[1.5, 1.0], frequencies=[0.6, 0.4])
 ```
+
+## Reproducibility
+
+Every other function in the package is deterministic. The stochastic ones take a seed, so a run does not depend on (or disturb) a global random state:
+
+| Function | Seed argument | Default `None` / behavior |
+|----------|---------------|---------------------------|
+| `bayesian.inference.metropolis_hastings` | keyword-only `random_state`: an `int` or a `random.Random` | draws from Python's global `random`, which `random.seed` controls |
+| `bayesian.inference.abc_rejection` | none: seed the `prior_sampler` and `simulator` you pass in | it draws no random numbers itself |
+| `population_genetics.coalescent.simulate_coalescent` | keyword-only `random_state`: an `int`, a numpy `Generator` or a `RandomState` | draws from numpy's global generator, which `np.random.seed` controls |
+| `population_genetics.statistics.bootstrap_confidence_interval`, `permutation_test` | `random_state`: an `int` | fresh entropy, so results vary between calls |
+| `population_genetics.statistics.calculate_confidence_intervals` | none | the bootstrap method uses a private generator with the fixed seed 42, so its interval never changes and numpy's global state is untouched |
+
+An `int` or a generator given as the seed never reads or advances the global state.
 
 ## Integration
 

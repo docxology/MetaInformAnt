@@ -153,8 +153,17 @@ def _terminate_monitored_process(process: "Any") -> None:
 
 
 def _infer_dest_path(url: str, dest_path: str | Path) -> Path:
+    """Resolve the file a download is written to.
+
+    A destination that is an existing directory, or a string ending in a path separator, names the
+    directory to download into (the separator marks a directory that may not exist yet; it is
+    created on download), and the file name is taken from the URL. Any other destination is the
+    file path itself. A ``Path`` cannot carry a trailing separator, so a directory that does not
+    exist yet has to be given as a string such as ``"out/"``.
+    """
     dest = Path(dest_path)
-    if dest.is_dir():
+    names_directory = dest.is_dir() or (isinstance(dest_path, str) and dest_path.endswith(("/", os.sep)))
+    if names_directory:
         name = Path(urlparse(url).path).name or "downloaded_file"
         return dest / name
     return dest
@@ -202,6 +211,14 @@ def _http_head_size(url: str, *, timeout: int) -> int | None:
         return None
 
 
+def _content_range_total(header: str | None) -> int | None:
+    """Total resource size from a ``Content-Range`` header (``bytes 0-9/100`` or ``bytes */100``)."""
+    if not header or "/" not in header:
+        return None
+    size = header.rsplit("/", 1)[1].strip()
+    return int(size) if size.isdigit() else None
+
+
 def _download_http(
     url: str,
     dest: Path,
@@ -211,6 +228,15 @@ def _download_http(
     resume: bool,
     progress_cb: ProgressCallback | None,
 ) -> DownloadResult:
+    """Download over HTTP(S), resuming a partial file with a Range request when ``resume`` is set.
+
+    With ``resume`` the bytes already on disk are kept and counted in ``bytes_downloaded`` (the
+    result is the size of the finished file); without it the file is rewritten and only the new
+    bytes are counted. A file whose size already equals the resource size (from the HEAD
+    ``Content-Length``, or the ``Content-Range`` of an HTTP 416 answer) is reported as a
+    successful, resumed download without fetching anything. A file that is longer than the
+    resource, or whose size cannot be checked after a 416, is replaced by a full download.
+    """
     import requests
 
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -220,32 +246,67 @@ def _download_http(
     bytes_written = 0
     resumed = False
 
+    def already_complete(size: int) -> DownloadResult:
+        # Nothing is fetched: the file on disk is the whole resource.
+        if progress_cb:
+            progress_cb(bytes_written=size, total_bytes=size)
+        return DownloadResult(
+            url=url,
+            dest_path=dest,
+            success=True,
+            bytes_downloaded=size,
+            total_bytes=size,
+            elapsed_seconds=time.time() - start,
+            resumed=True,
+        )
+
     headers: dict[str, str] = {}
     mode = "wb"
-    existing = dest.stat().st_size if dest.exists() else 0
-    if resume and existing > 0:
+    # Bytes already on disk count towards the result only when a resume keeps them; without
+    # resume the file is rewritten from its first byte and counting starts from zero.
+    existing = dest.stat().st_size if resume and dest.exists() else 0
+    if existing > 0:
+        if total is not None and existing == total:
+            # A complete file: a Range request starting at its end would only get HTTP 416.
+            return already_complete(existing)
         headers["Range"] = f"bytes={existing}-"
         mode = "ab"
         resumed = True
 
     with requests.get(url, stream=True, timeout=timeout, headers=headers, allow_redirects=True) as resp:
-        # If Range not supported, server may return 200 and ignore range; restart.
-        if resumed and resp.status_code == 200:
-            mode = "wb"
-            resumed = False
-            existing = 0
-        resp.raise_for_status()
+        if resumed and resp.status_code == 416:
+            # Range not satisfiable: the partial file reaches or passes the end of the resource.
+            # It is complete only if its size is the resource size (from Content-Range, else HEAD).
+            remote_size = _content_range_total(resp.headers.get("Content-Range"))
+            if remote_size is None:
+                remote_size = total
+            if remote_size == existing:
+                return already_complete(existing)
+            restart = True
+        else:
+            restart = False
+            # If Range not supported, server may return 200 and ignore range; restart.
+            if resumed and resp.status_code == 200:
+                mode = "wb"
+                resumed = False
+                existing = 0
+            resp.raise_for_status()
 
-        # If we resumed and server returned 206, total refers to full file size; ok.
-        with open(dest, mode) as fh:
-            bytes_written = existing
-            for chunk in resp.iter_content(chunk_size=chunk_size):
-                if not chunk:
-                    continue
-                fh.write(chunk)
-                bytes_written += len(chunk)
-                if progress_cb:
-                    progress_cb(bytes_written=bytes_written, total_bytes=total)
+            # If we resumed and server returned 206, total refers to full file size; ok.
+            with open(dest, mode) as fh:
+                bytes_written = existing
+                for chunk in resp.iter_content(chunk_size=chunk_size):
+                    if not chunk:
+                        continue
+                    fh.write(chunk)
+                    bytes_written += len(chunk)
+                    if progress_cb:
+                        progress_cb(bytes_written=bytes_written, total_bytes=total)
+
+    if restart:
+        # The local file is not a prefix of the remote resource (it is longer, or the size cannot
+        # be checked): discard it and download the whole resource.
+        return _download_http(url, dest, chunk_size=chunk_size, timeout=timeout, resume=False, progress_cb=progress_cb)
 
     return DownloadResult(
         url=url,

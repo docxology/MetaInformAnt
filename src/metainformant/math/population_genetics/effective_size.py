@@ -14,35 +14,33 @@ logger = logging.get_logger(__name__)
 
 
 def effective_size_sex_ratio(male_size: float, female_size: float, sex_ratio: float = 0.5) -> float:
-    """Calculate effective population size accounting for unequal sex ratios.
+    """Calculate effective population size for unequal numbers of breeding males and females.
+
+    Wright's (1931) formula Ne = 4 * Nm * Nf / (Nm + Nf). The sex ratio of the breeders is already
+    fixed by the two counts (Nm / (Nm + Nf)), so this one expression covers every sex ratio: it
+    equals the census size Nm + Nf when Nm == Nf and falls below it as the sexes diverge, and it is
+    never larger than Nm + Nf.
 
     Args:
-        male_size: Number of males
-        female_size: Number of females
-        sex_ratio: Proportion of population that is male (default 0.5)
+        male_size: Number of breeding males (Nm)
+        female_size: Number of breeding females (Nf)
+        sex_ratio: Proportion of the population that is male, strictly between 0 and 1 (default
+            0.5). Accepted and validated for compatibility, but it does not enter the formula:
+            the breeding sex ratio is already given by ``male_size`` and ``female_size``, so every
+            value returns the same Ne
 
     Returns:
         Effective population size
+
+    Raises:
+        ValueError: If a population size is not positive or ``sex_ratio`` is not strictly between 0 and 1
     """
     if male_size <= 0 or female_size <= 0:
         raise ValueError("Population sizes must be positive")
     if not (0 < sex_ratio < 1):
         raise ValueError("Sex ratio must be between 0 and 1")
 
-    # Wright's formula for unequal sex ratios
-    # Ne = 4 * Nm * Nf / (Nm + Nf)
-    # Adjusted for sex ratio
-
-    # If sex ratio is 0.5, this reduces to standard formula
-    if abs(sex_ratio - 0.5) < 1e-10:
-        return 4 * male_size * female_size / (male_size + female_size)
-
-    # General case with unequal sex contribution
-    # This is a simplified approximation
-    harmonic_mean = 2 * male_size * female_size / (male_size + female_size)
-    sex_ratio_adjustment = 1 / (sex_ratio * (1 - sex_ratio))
-
-    return harmonic_mean * sex_ratio_adjustment
+    return 4 * male_size * female_size / (male_size + female_size)
 
 
 def harmonic_mean_effective_size(population_sizes: List[float]) -> float:

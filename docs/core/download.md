@@ -37,7 +37,11 @@ If `tqdm` is installed (used through `metainformant.core.utils.progress`), a pro
 Any failed attempt triggers an automatic retry (default 3 attempts in total) after `retry_delay * 2 ** (attempt - 1)` seconds: 5s after the first failure, 10s after the second, 20s after a third, and so on. Nothing waits after the last attempt. Errors are accumulated in the heartbeat file for post-mortem analysis.
 
 ### 4. **Best-Effort Resume**
-HTTP(S) downloads support resume via `Range` headers. If the destination file already exists and `resume=True` (default), the download continues from the existing size; if the server ignores the `Range` header (HTTP 200 instead of 206) the file is rewritten from the start. A destination that is already complete is requested from its own size onward, which servers answer with HTTP 416, so the call ends with `success=False` after its retries: delete the file or pass `resume=False` to fetch it again. Non-resumable protocols (FTP, file) restart from beginning.
+HTTP(S) downloads support resume via `Range` headers. If the destination file already exists and `resume=True` (default), the download continues from the existing size and the bytes already on disk count towards `bytes_downloaded`; if the server ignores the `Range` header (HTTP 200 instead of 206) the file is rewritten from the start. With `resume=False` the file is always rewritten from its first byte and `bytes_downloaded` counts only the bytes written.
+
+A destination that is already complete is not fetched again. When its size equals the resource size, verified through the `Content-Length` of the HEAD request or, if HEAD reports no length, through the `Content-Range` of the HTTP 416 answer to the Range request, the call succeeds with `resumed=True` and downloads nothing. A local file that is longer than the resource, or whose size cannot be verified (no HEAD length and no `Content-Range` on the 416), is not a usable prefix and is replaced by a full download. Only the size is compared, never the content: pass `resume=False`, or verify a checksum, when a file of the same size may differ.
+
+Non-resumable protocols (FTP, file) restart from beginning.
 
 ### 5. **Protocol Abstraction**
 `DownloadHandler` Protocol defines a common interface. Built-in handlers:
@@ -117,10 +121,10 @@ Immutable result of a download attempt.
 - `url: str` — Source URL
 - `dest_path: Path` — Final destination path
 - `success: bool` — Whether download succeeded
-- `bytes_downloaded: int = 0` — Total bytes written to disk
+- `bytes_downloaded: int = 0` — Size in bytes of the finished file. A resumed download includes the bytes that were already on disk; with `resume=False` the file is rewritten and only the bytes written are counted. On failure, the size of the partial file left on disk
 - `total_bytes: int | None = None` — Expected total from Content-Length (if known)
 - `elapsed_seconds: float = 0.0` — Time taken by the successful attempt (on failure, the total time across all attempts)
-- `resumed: bool = False` — Whether download resumed partial file
+- `resumed: bool = False` — Whether the download kept bytes already on disk: it continued a partial file, or found the destination already complete
 - `error: str | None = None` — Error message on failure
 - `attempts: int = 1` — Number of attempts made
 
@@ -187,11 +191,11 @@ def download_with_progress(
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `url` | `str` | required | Source URL (http, https, ftp, file) |
-| `dest_path` | `str \| Path` | required | Destination file path, or an existing directory (the file name is taken from the URL). A path that does not exist yet is used as the file path itself, even with a trailing slash |
+| `dest_path` | `str \| Path` | required | Destination file path, or a directory to download into (the file name is taken from the URL). A directory is an existing one (`str` or `Path`) or a `str` ending in a path separator such as `"out/"`, which names a directory that need not exist yet and is created. Any other path is the file itself |
 | `protocol` | `str` | `"auto"` | Force protocol: `"http"`, `"https"`, `"ftp"`, `"file"` |
 | `heartbeat_interval` | `int` | `5` | Seconds between heartbeat writes while downloading (0 disables the periodic writes; the start, completed and failed heartbeats are still written) |
 | `show_progress` | `bool` | `True` | Show tqdm progress bar if available |
-| `resume` | `bool` | `True` | Attempt HTTP Range resume if partial file exists |
+| `resume` | `bool` | `True` | HTTP only: continue a partial file with a Range request, and accept a destination that already has the full size as downloaded. `False` rewrites the file from its first byte |
 | `max_retries` | `int` | `3` | Number of retry attempts on failure |
 | `retry_delay` | `float` | `5.0` | Base delay for exponential backoff (seconds) |
 | `chunk_size` | `int` | `1048576` (1 MiB) | Read/write chunk size in bytes |
@@ -202,7 +206,8 @@ def download_with_progress(
 **Raises**: Nothing for download problems. Network errors, HTTP errors, an unsupported protocol and a missing `file://` source all come back as `DownloadResult(success=False, error=...)`; only filesystem errors while preparing the heartbeat directory propagate.
 
 **Behavior notes**:
-- If `dest_path` is an existing directory, the filename is inferred from the URL path; create the directory first, because a missing directory is treated as the file path
+- If `dest_path` is a directory, the filename is inferred from the URL path (`downloaded_file` when the path has none) and `DownloadResult.dest_path` holds the resulting file path. A directory is an existing one, or a string ending in a path separator (`"out/"`), which names a directory that does not exist yet and is created during the download. A `Path` cannot carry a trailing separator, so pass such a directory as a string: a `Path` to a missing location is taken as the file path itself
+- With `resume=True` (HTTP), a destination whose size already equals the resource size succeeds immediately with `resumed=True` and nothing is fetched (see [Best-Effort Resume](#4-best-effort-resume))
 - Heartbeat file automatically created in `dest.parent/.downloads/` (the directory is created even when `heartbeat_interval=0`)
 - Progress bar uses `tqdm` if installed; without it nothing is drawn
 - Every failure, including an unsupported protocol, is retried until `max_retries` attempts have been made, waiting `retry_delay * 2 ** (attempt - 1)` seconds between attempts (5s, 10s, 20s, ...). A missing `file://` source is the exception: it fails on the first attempt
@@ -832,7 +837,7 @@ def safe_download(url, dest, reserve_gb=10):
 
 **Symptom**: Download "completes" but file is corrupted (checksum mismatch).
 
-**Fix**: `download_with_progress()` does not verify checksums, so check the file afterwards with `metainformant.core.io.checksums.verify_checksum`:
+**Fix**: `download_with_progress()` does not verify checksums, and with `resume=True` it accepts any existing file whose size equals the resource size as complete without reading its content. Check the file afterwards with `metainformant.core.io.checksums.verify_checksum`, and delete a file that fails the check (or download with `resume=False`) so that the next call fetches it again:
 ```python
 from pathlib import Path
 from metainformant.core.io.checksums import verify_checksum
@@ -966,6 +971,8 @@ Resuming is most efficient when:
 - Server supports HTTP `Range` header (most do)
 - Partial file is contiguous (no fragmentation)
 - Chunk size aligns with server's preferred range granularity
+
+A file that is already complete is settled by the HEAD `Content-Length` alone, so no body is fetched.
 
 Check for resume support:
 ```python
