@@ -20,7 +20,7 @@ DISABLE_WARNINGS=${DISABLE_WARNINGS:-false}
 # facades that are not all exercised by one CI environment. Keep the aggregate
 # gate blocking, but make its measured baseline explicit and ratchet it upward
 # as maintained-domain coverage grows.
-COVERAGE_MINIMUM=${COVERAGE_MINIMUM:-70.00}
+COVERAGE_MINIMUM=${COVERAGE_MINIMUM:-71.80}
 
 # Test mode (will be set by command line args)
 TEST_MODE=""
@@ -73,7 +73,7 @@ Environment Variables:
     VERBOSE=true         Verbose output
     OUTPUT_DIR=path      Set output directory
     TEST_PATTERN=pattern Set test pattern
-    COVERAGE_MINIMUM=pct Blocking full-suite coverage floor (default: 70.00)
+    COVERAGE_MINIMUM=pct Blocking full-suite coverage floor (default: 71.80)
 
 EOF
 }

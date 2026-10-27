@@ -16,7 +16,9 @@ import argparse
 import ast
 import importlib
 import importlib.util
+import inspect
 import logging
+import os
 import re
 import sys
 import textwrap
@@ -24,7 +26,8 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
-from typing import Dict, List, Optional, Set
+from typing import Dict, Iterator, List, Optional, Set
+from urllib.parse import unquote
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -897,16 +900,12 @@ def _is_historical_snapshot(lines: List[str]) -> bool:
     return any("Historical snapshot" in line for line in lines[:12])
 
 
-def collect_doc_import_statements(paths: List[Path], include_historical: bool = False) -> Dict[str, List[str]]:
-    """Map each complete ``metainformant`` import quoted in Markdown to its locations.
+def _active_markdown(paths: List[Path], include_historical: bool = False) -> Iterator[tuple[Path, List[str]]]:
+    """Yield ``(path, lines)`` for active Markdown under ``paths`` (directories or files).
 
-    ``paths`` may mix directories (scanned recursively) and individual files.
-    Single-line imports are read from any line; parenthesized multi-line imports
-    are read from Python-fenced blocks that parse. Placeholders such as
-    ``from metainformant.dna import ...`` are skipped, and so are archived and
-    historical-snapshot documents.
+    Archived and generated trees (``IMPORT_SCAN_SKIP_PARTS``) are skipped, and so
+    are historical-snapshot documents unless ``include_historical`` is set.
     """
-    statements: Dict[str, List[str]] = defaultdict(list)
     for root in paths:
         files = [root] if root.is_file() else sorted(root.rglob("*.md"))
         for md in files:
@@ -919,25 +918,39 @@ def collect_doc_import_statements(paths: List[Path], include_historical: bool = 
                 continue
             if not include_historical and _is_historical_snapshot(lines):
                 continue
-            for first_line, code in _python_fenced_blocks(lines):
-                try:
-                    tree = ast.parse(code)
-                except SyntaxError:
-                    continue
-                for node in ast.walk(tree):
-                    if isinstance(node, (ast.Import, ast.ImportFrom)) and node.end_lineno != node.lineno:
-                        names = [alias.name for alias in node.names]
-                        module = node.module if isinstance(node, ast.ImportFrom) else names[0]
-                        if module and module.split(".")[0] == "metainformant":
-                            statements[ast.unparse(node)].append(f"{md}:{first_line + node.lineno - 1}")
-            for number, line in enumerate(lines, 1):
-                match = IMPORT_STATEMENT.match(line)
-                if not match:
-                    continue
-                statement = match.group(1).strip()
-                if statement.endswith(("(", "\\", ",", "import ...")):
-                    continue
-                statements[statement].append(f"{md}:{number}")
+            yield md, lines
+
+
+def collect_doc_import_statements(paths: List[Path], include_historical: bool = False) -> Dict[str, List[str]]:
+    """Map each complete ``metainformant`` import quoted in Markdown to its locations.
+
+    ``paths`` may mix directories (scanned recursively) and individual files.
+    Single-line imports are read from any line; parenthesized multi-line imports
+    are read from Python-fenced blocks that parse. Placeholders such as
+    ``from metainformant.dna import ...`` are skipped, and so are archived and
+    historical-snapshot documents.
+    """
+    statements: Dict[str, List[str]] = defaultdict(list)
+    for md, lines in _active_markdown(paths, include_historical):
+        for first_line, code in _python_fenced_blocks(lines):
+            try:
+                tree = ast.parse(code)
+            except SyntaxError:
+                continue
+            for node in ast.walk(tree):
+                if isinstance(node, (ast.Import, ast.ImportFrom)) and node.end_lineno != node.lineno:
+                    names = [alias.name for alias in node.names]
+                    module = node.module if isinstance(node, ast.ImportFrom) else names[0]
+                    if module and module.split(".")[0] == "metainformant":
+                        statements[ast.unparse(node)].append(f"{md}:{first_line + node.lineno - 1}")
+        for number, line in enumerate(lines, 1):
+            match = IMPORT_STATEMENT.match(line)
+            if not match:
+                continue
+            statement = match.group(1).strip()
+            if statement.endswith(("(", "\\", ",", "import ...")):
+                continue
+            statements[statement].append(f"{md}:{number}")
     return dict(statements)
 
 
@@ -1101,43 +1114,254 @@ def find_stale_doc_attributes(paths: List[Path], include_historical: bool = Fals
     block's own ``metainformant`` imports and never reassigned in that block.
     """
     violations: List[Violation] = []
-    for root in paths:
-        files = [root] if root.is_file() else sorted(root.rglob("*.md"))
-        for md in files:
-            parts = md.relative_to(root).parts if md != root else (md.name,)
-            if any(part in IMPORT_SCAN_SKIP_PARTS for part in parts):
+    for md, lines in _active_markdown(paths, include_historical):
+        for first_line, code in _python_fenced_blocks(lines):
+            try:
+                tree = ast.parse(code)
+            except SyntaxError:
+                continue
+            bound = _bound_import_targets(tree)
+            if not bound:
+                continue
+            rebound = _rebound_names(tree)
+            reported: Set[str] = set()
+            for node in ast.walk(tree):
+                chain = _attribute_chain(node) if isinstance(node, ast.Attribute) else None
+                if not chain or chain[0] not in bound or chain[0] in rebound:
+                    continue
+                name, attrs = chain
+                missing = _missing_attribute(bound[name], attrs)
+                if missing is None:
+                    continue
+                index, reason = missing
+                failing = ".".join([name, *attrs[: index + 1]])
+                if failing in reported:  # report each missing step once per block
+                    continue
+                reported.add(failing)
+                line = first_line + getattr(node, "lineno", 1) - 1
+                violations.append(Violation(str(md), line, failing, "StaleAttribute", reason))
+    return violations
+
+
+# --- Call signatures -------------------------------------------------------
+#
+# A quoted call is a claim about the callee's parameters. Calls on names a block
+# imports from ``metainformant``, directly or through module and class attribute
+# chains, are bound against ``inspect.signature`` with placeholder arguments, so a
+# renamed keyword or a removed parameter is reported without running the example.
+
+
+def _resolve_attribute_chain(target: object, attrs: List[str]) -> Optional[object]:
+    """Follow ``attrs`` through modules and classes; None when a step is missing or dynamic."""
+    current = target
+    for attr in attrs:
+        if isinstance(current, ModuleType):
+            if hasattr(current, attr):
+                current = getattr(current, attr)
                 continue
             try:
-                lines = md.read_text(encoding="utf-8").splitlines()
+                current = importlib.import_module(f"{current.__name__}.{attr}")
+            except Exception:
+                return None
+        elif isinstance(current, type) and hasattr(current, attr):
+            current = getattr(current, attr)
+        else:
+            return None
+    return current
+
+
+def call_signature_mismatch(callee: object, call: ast.Call) -> Optional[str]:
+    """Return why ``call``'s arguments cannot bind to ``callee``'s signature, or None.
+
+    Calls that unpack ``*args`` or ``**kwargs``, and callables without an
+    introspectable signature (some builtins and extension types), are not judged.
+    """
+    if any(isinstance(arg, ast.Starred) for arg in call.args) or any(kw.arg is None for kw in call.keywords):
+        return None
+    if not callable(callee):
+        return f"{type(callee).__name__!r} object is not callable"
+    try:
+        signature = inspect.signature(callee)
+    except (TypeError, ValueError):
+        return None
+    placeholder = object()
+    keywords = {kw.arg: placeholder for kw in call.keywords if kw.arg is not None}
+    try:
+        signature.bind(*[placeholder] * len(call.args), **keywords)
+    except TypeError as exc:
+        return str(exc)
+    return None
+
+
+def find_stale_doc_calls(paths: List[Path], include_historical: bool = False) -> List[Violation]:
+    """Report quoted calls whose arguments no longer fit the imported callee's signature."""
+    violations: List[Violation] = []
+    for md, lines in _active_markdown(paths, include_historical):
+        for first_line, code in _python_fenced_blocks(lines):
+            try:
+                tree = ast.parse(code)
+            except SyntaxError:
+                continue
+            bound = _bound_import_targets(tree)
+            if not bound:
+                continue
+            rebound = _rebound_names(tree)
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                chain: Optional[tuple[str, List[str]]] = None
+                if isinstance(node.func, ast.Name):
+                    chain = (node.func.id, [])
+                elif isinstance(node.func, ast.Attribute):
+                    chain = _attribute_chain(node.func)
+                if not chain or chain[0] not in bound or chain[0] in rebound:
+                    continue
+                name, attrs = chain
+                callee = _resolve_attribute_chain(bound[name], attrs)
+                if callee is None:
+                    continue
+                reason = call_signature_mismatch(callee, node)
+                if reason is None:
+                    continue
+                example = ".".join([name, *attrs]) + "(...)"
+                violations.append(Violation(str(md), first_line + node.lineno - 1, example, "StaleCall", reason))
+    return violations
+
+
+# --- Relative links --------------------------------------------------------
+#
+# A relative link or image is a claim that its target exists in the checkout.
+# Paths are matched one component at a time with exact case, so a link that only
+# resolves on a case-insensitive filesystem is still reported, and an anchor into
+# a Markdown file must name one of its headings or an explicit HTML id.
+
+INLINE_LINK = re.compile(r"\[(?:[^\[\]]|\[[^\[\]]*\])*\]\(\s*(<[^<>\n]*>|[^\s()<>]+(?:\([^\s()]*\)[^\s()<>]*)*)")
+REFERENCE_DEFINITION = re.compile(r"^\s{0,3}\[(?!\^)[^\]]+\]:\s*(<[^<>\n]*>|\S+)")
+HTML_LINK = re.compile(r"""<(?:a|img)\b[^>]*?\b(?:href|src)\s*=\s*["']([^"']+)["']""", re.IGNORECASE)
+INLINE_CODE = re.compile(r"(`+)(?:(?!\1).)+?\1")
+URL_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+ATX_HEADING = re.compile(r"^\s{0,3}#{1,6}\s+(.*?)\s*#*\s*$")
+EXPLICIT_ANCHOR = re.compile(r"""\b(?:name|id)\s*=\s*["']([^"']+)["']""", re.IGNORECASE)
+FENCE_OPEN = re.compile(r"^\s{0,3}(`{3,}|~{3,})")
+
+
+def _lines_outside_fences(lines: List[str]) -> Iterator[tuple[int, str]]:
+    """Yield ``(line_number, line)`` for lines outside fenced code blocks."""
+    fence: Optional[str] = None
+    for number, line in enumerate(lines, 1):
+        if fence is None:
+            match = FENCE_OPEN.match(line)
+            if match:
+                fence = match.group(1)
+            else:
+                yield number, line
+        elif re.fullmatch(rf"\s{{0,3}}{re.escape(fence[0])}{{{len(fence)},}}\s*", line):
+            fence = None
+
+
+def _heading_slug(text: str) -> str:
+    """GitHub's anchor for a heading: rendered text, lowercased, punctuation dropped, spaces to hyphens."""
+    text = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", text)
+    text = re.sub(r"<[^>]+>", "", text).replace("`", "").strip().lower()
+    return re.sub(r"[^\w\- ]", "", text).replace(" ", "-")
+
+
+def markdown_anchors(lines: List[str]) -> Set[str]:
+    """Return the anchors a Markdown document defines (heading slugs and explicit ids)."""
+    anchors: Set[str] = set()
+    seen: Dict[str, int] = defaultdict(int)
+    for _, line in _lines_outside_fences(lines):
+        heading = ATX_HEADING.match(line)
+        if heading:
+            slug = _heading_slug(heading.group(1))
+            anchors.add(f"{slug}-{seen[slug]}" if seen[slug] else slug)
+            seen[slug] += 1
+            # Underscores used as emphasis markers vanish from the rendered heading.
+            anchors.add(_heading_slug(re.sub(r"(?<!\w)_+|_+(?!\w)", "", heading.group(1))))
+        anchors.update(match.group(1).lower() for match in EXPLICIT_ANCHOR.finditer(line))
+    return anchors
+
+
+def _submodule_paths(repo_root: Path) -> List[Path]:
+    try:
+        text = (repo_root / ".gitmodules").read_text(encoding="utf-8")
+    except OSError:
+        return []
+    return [repo_root / m.group(1).strip() for m in re.finditer(r"^\s*path\s*=\s*(.+)$", text, re.MULTILINE)]
+
+
+def find_broken_doc_links(
+    paths: List[Path], include_historical: bool = False, repo_root: Path = REPO_ROOT
+) -> List[Violation]:
+    """Report relative links and images whose file, directory or Markdown anchor is missing.
+
+    External URLs and templated targets are not checked. Targets inside a
+    registered submodule that is not checked out cannot be verified and are skipped.
+    """
+    repo_root = repo_root.resolve()
+    submodules = _submodule_paths(repo_root)
+    entries: Dict[Path, Set[str]] = {}
+    anchors: Dict[Path, Set[str]] = {}
+
+    def listing(directory: Path) -> Set[str]:
+        if directory not in entries:
+            try:
+                entries[directory] = set(os.listdir(directory))
+            except OSError:
+                entries[directory] = set()
+        return entries[directory]
+
+    def anchors_of(document: Path) -> Set[str]:
+        if document not in anchors:
+            try:
+                anchors[document] = markdown_anchors(document.read_text(encoding="utf-8").splitlines())
             except (OSError, UnicodeDecodeError):
-                continue
-            if not include_historical and _is_historical_snapshot(lines):
-                continue
-            for first_line, code in _python_fenced_blocks(lines):
-                try:
-                    tree = ast.parse(code)
-                except SyntaxError:
-                    continue
-                bound = _bound_import_targets(tree)
-                if not bound:
-                    continue
-                rebound = _rebound_names(tree)
-                reported: Set[str] = set()
-                for node in ast.walk(tree):
-                    chain = _attribute_chain(node) if isinstance(node, ast.Attribute) else None
-                    if not chain or chain[0] not in bound or chain[0] in rebound:
-                        continue
-                    name, attrs = chain
-                    missing = _missing_attribute(bound[name], attrs)
-                    if missing is None:
-                        continue
-                    index, reason = missing
-                    failing = ".".join([name, *attrs[: index + 1]])
-                    if failing in reported:  # report each missing step once per block
-                        continue
-                    reported.add(failing)
-                    line = first_line + getattr(node, "lineno", 1) - 1
-                    violations.append(Violation(str(md), line, failing, "StaleAttribute", reason))
+                anchors[document] = set()
+        return anchors[document]
+
+    def problem(md: Path, raw: str) -> Optional[str]:
+        target = raw[1:-1].strip() if raw.startswith("<") and raw.endswith(">") else raw.strip()
+        if not target or target.startswith("//") or URL_SCHEME.match(target) or any(c in target for c in "{}$"):
+            return None
+        path_part, _, anchor = target.partition("#")
+        path_part = unquote(path_part.split("?", 1)[0])
+        destination = md
+        if path_part:
+            base = repo_root if path_part.startswith("/") else md.parent
+            destination = Path(os.path.normpath(base / path_part.lstrip("/")))
+            try:
+                parts = destination.relative_to(repo_root).parts
+            except ValueError:
+                return "link target is outside the repository"
+            for submodule in submodules:
+                if (destination == submodule or submodule in destination.parents) and not listing(submodule):
+                    return None
+            current = repo_root
+            for part in parts:
+                if part not in listing(current):
+                    near = [name for name in listing(current) if name.lower() == part.lower()]
+                    hint = f" (on disk: {near[0]!r})" if near else ""
+                    return f"{current / part} does not exist{hint}"
+                current = current / part
+        if anchor and destination.suffix.lower() == ".md" and destination.is_file():
+            if unquote(anchor).lower() not in anchors_of(destination):
+                return f"no heading or id {anchor!r} in {destination.name}"
+        return None
+
+    violations: List[Violation] = []
+    for md, lines in _active_markdown(paths, include_historical):
+        md = Path(os.path.normpath(md.absolute()))
+        for number, line in _lines_outside_fences(lines):
+            prose = INLINE_CODE.sub(lambda m: " " * len(m.group(0)), line)
+            targets = [
+                m.group(1)
+                for pattern in (INLINE_LINK, REFERENCE_DEFINITION, HTML_LINK)
+                for m in pattern.finditer(prose)
+            ]
+            for raw in targets:
+                reason = problem(md, raw)
+                if reason:
+                    violations.append(Violation(str(md), number, raw, "BrokenLink", reason))
     return violations
 
 
@@ -1182,6 +1406,10 @@ def run(args: argparse.Namespace) -> int:
     violations = validator.validate_examples(all_examples)
     violations.extend(find_stale_doc_imports([docs_dir], include_historical=args.include_historical))
     violations.extend(find_stale_doc_attributes([docs_dir], include_historical=args.include_historical))
+    violations.extend(find_stale_doc_calls([docs_dir], include_historical=args.include_historical))
+    violations.extend(
+        find_broken_doc_links([docs_dir], include_historical=args.include_historical, repo_root=repo_root)
+    )
 
     # Step 4: Generate report
     report_gen = ReportGenerator(violations, repo_root)

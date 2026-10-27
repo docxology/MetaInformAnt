@@ -13,13 +13,13 @@ This guide documents concrete examples of multi-agent workflows in METAINFORMANT
 | Workflow | Agents Involved | Pattern | Complexity |
 |----------|-----------------|---------|------------|
 | [1. RNA-seq Amalgkit Pipeline](#1-rna-seq-amalgkit-pipeline) | `rna.amalgkit`, `core.io`, `core.io.paths` | Parallel fan-out + sequential | High |
-| [2. GWAS Association + Fine-Mapping](#2-gwas-association-fine-mapping) | `gwas.assoc`, `gwas.finemap`, `gwas.coloc` | Sequential with branching | Medium |
+| [2. GWAS Association + Fine-Mapping](#2-gwas-association--fine-mapping) | `gwas.assoc`, `gwas.finemap`, `gwas.coloc` | Sequential with branching | Medium |
 | [3. Multi-Omic Integration](#3-multi-omic-integration) | `multiomics`, `dna`, `rna`, `gwas` | Fan-in aggregation | High |
 | [4. Single-Cell Analysis Pipeline](#4-single-cell-analysis-pipeline) | `singlecell.preprocess`, `singlecell.cluster`, `singlecell.trajectory` | Sequential with quality gates | High |
 | [5. Batch Download + QC](#5-batch-download--qc) | `core.workflow`, `core.io.download` | Sequential downloads, QC in the caller | Low |
 | [6. Cloud VM Orchestration](#6-cloud-vm-orchestration) | `cloud.gcp`, `cloud.docker`, `core.workflow` | Conditional parallel | Medium |
 | [7. Metagenomics Taxonomic Profiling](#7-metagenomics-taxonomic-profiling) | `metagenomics.kraken2`, `metagenomics.bracken`, `metagenomics.report` | Sequential + parallel samples | Medium |
-| [8. Protein Structure + Function](#8-protein-structure-function-integration) | `protein.alphafold`, `protein.uniprot`, `protein.interpro` | Parallel then merge | High |
+| [8. Protein Structure + Function](#8-protein-structure--function-integration) | `protein.alphafold`, `protein.uniprot`, `protein.interpro` | Parallel then merge | High |
 
 ---
 

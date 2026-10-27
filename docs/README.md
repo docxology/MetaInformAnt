@@ -37,7 +37,7 @@ verification outputs under `output/`.
 | Multi-Omics | [multiomics/](multiomics/) | Data integration |
 | ML | [ml/](ml/) | Machine learning |
 | Math | [math/](math/) | Population genetics theory |
-| Popgen | [popgen/](popgen/) | Population genetics statistics |
+| Popgen | [popgen package](../src/metainformant/popgen/README.md) | Population genetics workflows |
 | Information | [information/](information/) | Information theory |
 | Life Events | [life_events/](life_events/) | Event sequence analysis |
 | Ontology | [ontology/](ontology/) | GO analysis |

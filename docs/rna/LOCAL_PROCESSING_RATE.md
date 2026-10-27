@@ -22,8 +22,9 @@ The aggregate remainder does not enumerate filesystem absence. A primary task
 selection can contain both acquisition work and existing outputs needing
 checkpoint verification; it is not the unconfirmed set.
 
-The [2026-10-23 inventory reconciliation](../../output/hymenoptera_presence_audit_20261023/20261023T160213Z/reconciliation.md)
-records 18,200 identities across 27 species. At that capture, 7,150 supported
+The 2026-10-23 inventory reconciliation (local campaign output
+`output/hymenoptera_presence_audit_20261023/20261023T160213Z/reconciliation.md`,
+not tracked in git) records 18,200 identities across 27 species. At that capture, 7,150 supported
 identities had quant files matching the checked contract metadata. Only 61
 supported runs received the bounded full portable quant validation; 7,089
 remained incomplete or unvalidated in that unit. Another 71 had raw/partial

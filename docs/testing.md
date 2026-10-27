@@ -23,18 +23,36 @@ returns a non-zero status.
 
 The full `coverage` mode measures the complete maintained package, including
 optional domain facades that are not all exercised by a single CI environment.
-Its blocking baseline is currently `70.00%`, one point under the hosted full
-suite observation of `71.02%` (Test Suite run 40240714837, 2026-10-25) so that
-runner variance cannot fail an unchanged tree. This is a real gate, not an
+Its blocking baseline is currently `71.80%`, about one point under the hosted
+full-suite observation of `72.84%` (Test Suite run 40446465878, 2026-10-26) so
+that runner variance cannot fail an unchanged tree. This is a real gate, not an
 ignored check. Raise it through `COVERAGE_MINIMUM` only after adding tests and
 recording the new measured baseline:
 
 ```bash
-COVERAGE_MINIMUM=71.00 bash scripts/package/test.sh --mode coverage
+COVERAGE_MINIMUM=72.80 bash scripts/package/test.sh --mode coverage
 ```
 
 The smaller `coverage-fast` mode intentionally uses `--cov-fail-under=0` for
 focused development feedback; it must not be used as release evidence.
+
+### Documentation gates
+
+Active Markdown is checked against the installed package without executing
+document text (`metainformant.quality.doc_verification`):
+
+- every quoted `metainformant` import must resolve as Python would resolve it;
+- attribute chains on imported modules and classes must exist;
+- calls on imported names must bind to the callee's current signature, so a
+  renamed keyword or a removed parameter fails;
+- relative links and images must name existing paths with exact case, and
+  anchors into Markdown files must match a heading or an explicit id.
+
+`tests/quality/test_doc_imports.py` and `tests/quality/test_doc_calls_and_links.py`
+keep the repository at zero findings; the link check runs in the default lane
+and the import-heavy checks are marked slow. `python scripts/verify_documentation_code.py`
+runs all of them over `docs/`. Archived and historical-snapshot documents are
+exempt.
 
 ## Quality Assurance Framework
 

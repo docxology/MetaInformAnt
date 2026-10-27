@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -183,6 +184,11 @@ def collect_symbols(src_root: Path) -> list[Symbol]:
     return sorted(symbols, key=lambda item: (item.module, item.qualified_name))
 
 
+def github_anchor(heading: str) -> str:
+    """Return GitHub's anchor for a heading: lowercased, punctuation dropped, spaces to hyphens."""
+    return re.sub(r"[^\w\- ]", "", heading.strip().lower()).replace(" ", "-")
+
+
 def _cell(value: str) -> str:
     """Escape a value for a Markdown table cell."""
 
@@ -216,15 +222,13 @@ def render(symbols: list[Symbol], *, src_root: Path) -> str:
         "| --- | ---: |",
     ]
     for module, module_symbols in modules.items():
-        anchor = module.replace(".", "-")
-        lines.append(f"| [{module}](#{anchor}) | {len(module_symbols)} |")
+        lines.append(f"| [{module}](#{github_anchor(module)}) | {len(module_symbols)} |")
 
     for module, module_symbols in modules.items():
-        anchor = module.replace(".", "-")
         lines.extend(
             [
                 "",
-                f"## {module} {{#{anchor}}}",
+                f"## {module}",
                 "",
                 "| Symbol | Kind | Signature | Summary |",
                 "| --- | --- | --- | --- |",
@@ -250,12 +254,21 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--src-root", type=Path, default=SRC_ROOT)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--check", action="store_true", help="exit 1 if the output is not current; write nothing")
     args = parser.parse_args(argv)
     src_root = args.src_root.expanduser().resolve()
     output = args.output.expanduser().resolve()
     symbols = collect_symbols(src_root)
+    rendered = render(symbols, src_root=src_root)
+    if args.check:
+        current = output.read_text(encoding="utf-8") if output.exists() else ""
+        if current != rendered:
+            print(f"{output} is out of date; regenerate with {Path(__file__).name}")
+            return 1
+        print(f"{output} is current")
+        return 0
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(render(symbols, src_root=src_root), encoding="utf-8")
+    output.write_text(rendered, encoding="utf-8")
     print(f"Generated {len(symbols)} public core symbols across {len({s.module for s in symbols})} modules")
     print(f"Wrote {output}")
     return 0

@@ -15,38 +15,38 @@ supported through the import paths described in [index.md](index.md).
 
 | Module | Public symbols |
 | --- | ---: |
-| [metainformant.core.data.validation](#metainformant-core-data-validation) | 11 |
-| [metainformant.core.engine.workflow_manager](#metainformant-core-engine-workflow_manager) | 15 |
-| [metainformant.core.execution.discovery](#metainformant-core-execution-discovery) | 13 |
-| [metainformant.core.execution.parallel](#metainformant-core-execution-parallel) | 8 |
-| [metainformant.core.execution.workflow](#metainformant-core-execution-workflow) | 12 |
-| [metainformant.core.io.atomic](#metainformant-core-io-atomic) | 5 |
-| [metainformant.core.io.cache](#metainformant-core-io-cache) | 17 |
-| [metainformant.core.io.checksums](#metainformant-core-io-checksums) | 6 |
-| [metainformant.core.io.data_root](#metainformant-core-io-data_root) | 2 |
-| [metainformant.core.io.disk](#metainformant-core-io-disk) | 14 |
-| [metainformant.core.io.download](#metainformant-core-io-download) | 21 |
-| [metainformant.core.io.download_manager](#metainformant-core-io-download_manager) | 3 |
-| [metainformant.core.io.download_robust](#metainformant-core-io-download_robust) | 3 |
-| [metainformant.core.io.errors](#metainformant-core-io-errors) | 1 |
-| [metainformant.core.io.io](#metainformant-core-io-io) | 24 |
-| [metainformant.core.ncbi](#metainformant-core-ncbi) | 3 |
-| [metainformant.core.sequence](#metainformant-core-sequence) | 2 |
-| [metainformant.core.ui.tui](#metainformant-core-ui-tui) | 9 |
-| [metainformant.core.utils.batches](#metainformant-core-utils-batches) | 4 |
-| [metainformant.core.utils.errors](#metainformant-core-utils-errors) | 16 |
-| [metainformant.core.utils.hash](#metainformant-core-utils-hash) | 8 |
-| [metainformant.core.utils.logging](#metainformant-core-utils-logging) | 5 |
-| [metainformant.core.utils.newick](#metainformant-core-utils-newick) | 1 |
-| [metainformant.core.utils.optional_deps](#metainformant-core-utils-optional_deps) | 5 |
-| [metainformant.core.utils.progress](#metainformant-core-utils-progress) | 3 |
-| [metainformant.core.utils.seeds](#metainformant-core-utils-seeds) | 1 |
-| [metainformant.core.utils.symbols](#metainformant-core-utils-symbols) | 9 |
-| [metainformant.core.utils.text](#metainformant-core-utils-text) | 12 |
-| [metainformant.core.utils.timing](#metainformant-core-utils-timing) | 6 |
-| [metainformant.core.utils.watchdog](#metainformant-core-utils-watchdog) | 4 |
+| [metainformant.core.data.validation](#metainformantcoredatavalidation) | 11 |
+| [metainformant.core.engine.workflow_manager](#metainformantcoreengineworkflow_manager) | 15 |
+| [metainformant.core.execution.discovery](#metainformantcoreexecutiondiscovery) | 13 |
+| [metainformant.core.execution.parallel](#metainformantcoreexecutionparallel) | 8 |
+| [metainformant.core.execution.workflow](#metainformantcoreexecutionworkflow) | 12 |
+| [metainformant.core.io.atomic](#metainformantcoreioatomic) | 5 |
+| [metainformant.core.io.cache](#metainformantcoreiocache) | 17 |
+| [metainformant.core.io.checksums](#metainformantcoreiochecksums) | 6 |
+| [metainformant.core.io.data_root](#metainformantcoreiodata_root) | 2 |
+| [metainformant.core.io.disk](#metainformantcoreiodisk) | 14 |
+| [metainformant.core.io.download](#metainformantcoreiodownload) | 21 |
+| [metainformant.core.io.download_manager](#metainformantcoreiodownload_manager) | 3 |
+| [metainformant.core.io.download_robust](#metainformantcoreiodownload_robust) | 3 |
+| [metainformant.core.io.errors](#metainformantcoreioerrors) | 1 |
+| [metainformant.core.io.io](#metainformantcoreioio) | 24 |
+| [metainformant.core.ncbi](#metainformantcorencbi) | 3 |
+| [metainformant.core.sequence](#metainformantcoresequence) | 2 |
+| [metainformant.core.ui.tui](#metainformantcoreuitui) | 9 |
+| [metainformant.core.utils.batches](#metainformantcoreutilsbatches) | 4 |
+| [metainformant.core.utils.errors](#metainformantcoreutilserrors) | 16 |
+| [metainformant.core.utils.hash](#metainformantcoreutilshash) | 8 |
+| [metainformant.core.utils.logging](#metainformantcoreutilslogging) | 5 |
+| [metainformant.core.utils.newick](#metainformantcoreutilsnewick) | 1 |
+| [metainformant.core.utils.optional_deps](#metainformantcoreutilsoptional_deps) | 5 |
+| [metainformant.core.utils.progress](#metainformantcoreutilsprogress) | 3 |
+| [metainformant.core.utils.seeds](#metainformantcoreutilsseeds) | 1 |
+| [metainformant.core.utils.symbols](#metainformantcoreutilssymbols) | 9 |
+| [metainformant.core.utils.text](#metainformantcoreutilstext) | 12 |
+| [metainformant.core.utils.timing](#metainformantcoreutilstiming) | 6 |
+| [metainformant.core.utils.watchdog](#metainformantcoreutilswatchdog) | 4 |
 
-## metainformant.core.data.validation {#metainformant-core-data-validation}
+## metainformant.core.data.validation
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -62,7 +62,7 @@ supported through the import paths described in [index.md](index.md).
 | `validate_type` | function | `(value: Any, expected_type: type \| tuple[type, ...], name: str = 'value') -> None` | Validate that a value is of expected type. |
 | `validator` | function | `(func: Callable[[Any], bool]) -> Callable[[Any], None]` | Decorator to create a validator function from a predicate. |
 
-## metainformant.core.engine.workflow_manager {#metainformant-core-engine-workflow_manager}
+## metainformant.core.engine.workflow_manager
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -82,7 +82,7 @@ supported through the import paths described in [index.md](index.md).
 | `WorkflowManager.run` | method | `() -> Dict[str, bool]` | Execute the full RNA-seq workflow. |
 | `WorkflowManager.run_amalgkit` | method | `(step: str, params: Dict[str, Any]) -> Any` | Run an injected amalgkit step. |
 
-## metainformant.core.execution.discovery {#metainformant-core-execution-discovery}
+## metainformant.core.execution.discovery
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -100,7 +100,7 @@ supported through the import paths described in [index.md](index.md).
 | `get_module_dependencies` | function | `(module_path: str \| Path) -> ModuleDependency` | Extract import dependencies from a module. |
 | `invalidate_discovery_cache` | function | `(path: Path \| str \| None = None) -> None` | Public helper to invalidate the discovery AST cache. |
 
-## metainformant.core.execution.parallel {#metainformant-core-execution-parallel}
+## metainformant.core.execution.parallel
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -113,7 +113,7 @@ supported through the import paths described in [index.md](index.md).
 | `thread_map` | function | `(func: Callable[[T], U], items: Sequence[T] \| Iterable[T], *, max_workers: int = 8, chunk_size: int \| None = None, timeout: float \| None = None, ordered: bool = True, on_complete: Callable[[int, T, U], None] \| None = None) -> list[U]` | Map a function across items using threads. |
 | `thread_map_unordered` | function | `(func: Callable[[T], U], items: Iterable[T], *, max_workers: int = 8, timeout: float \| None = None) -> list[U]` | Map a function across items using threads, without preserving order. |
 
-## metainformant.core.execution.workflow {#metainformant-core-execution-workflow}
+## metainformant.core.execution.workflow
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -130,7 +130,7 @@ supported through the import paths described in [index.md](index.md).
 | `run_config_based_workflow` | function | `(config_path: Union[str, Path], verbose: bool = False) -> Dict[str, Any]` | Run a workflow from configuration file. |
 | `validate_config_file` | function | `(config_path: Union[str, Path, Dict[str, Any]], schema_path: Optional[Union[str, Path]] = None) -> Tuple[bool, List[str]]` | Validate configuration file. |
 
-## metainformant.core.io.atomic {#metainformant-core-io-atomic}
+## metainformant.core.io.atomic
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -140,7 +140,7 @@ supported through the import paths described in [index.md](index.md).
 | `safe_write_text` | function | `(path: Path \| str, content: str, encoding: str = 'utf-8') -> None` | Write text content to a file atomically. |
 | `temp_directory` | function | `(prefix: str = 'metainformant_', cleanup: bool = True) -> Generator[Path, None, None]` | Context manager yielding a temporary directory. |
 
-## metainformant.core.io.cache {#metainformant-core-io-cache}
+## metainformant.core.io.cache
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -162,7 +162,7 @@ supported through the import paths described in [index.md](index.md).
 | `get_cache_info` | function | `(cache_dir: Union[str, Path]) -> Dict[str, Any]` | Get information about a cache directory. |
 | `load_cached_json` | function | `(cache_dir: Union[str, Path], key: str, default: Any = None, ttl_seconds: Optional[int] = None) -> Any` | Load data from JSON cache if valid. |
 
-## metainformant.core.io.checksums {#metainformant-core-io-checksums}
+## metainformant.core.io.checksums
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -173,14 +173,14 @@ supported through the import paths described in [index.md](index.md).
 | `verify_checksum_file` | function | `(path: Path) -> bool` | Verify a file against its sidecar checksum file. |
 | `write_checksum_file` | function | `(path: Path, algorithm: str = 'sha256') -> Path` | Write a checksum sidecar file next to the target file. |
 
-## metainformant.core.io.data_root {#metainformant-core-io-data_root}
+## metainformant.core.io.data_root
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
 | `remap_amalgkit_prefix` | function | `(path: str, data_root: str \| Path \| None = None, *, environ: dict[str, str] \| None = None) -> str` | Remap the repository-relative ''output/amalgkit'' prefix to the data root. |
 | `resolve_data_root` | function | `(data_root: str \| Path \| None = None, *, default: str \| Path = AMALGKIT_PREFIX, environ: dict[str, str] \| None = None) -> Path` | Resolve the campaign data root to an absolute path. |
 
-## metainformant.core.io.disk {#metainformant-core-io-disk}
+## metainformant.core.io.disk
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -199,7 +199,7 @@ supported through the import paths described in [index.md](index.md).
 | `monitor_disk_space` | function | `(path: str \| Path, warning_threshold: float = 0.8, critical_threshold: float = 0.95) -> Dict[str, Any]` | Monitor disk space and return status. |
 | `safe_remove_directory` | function | `(directory: str \| Path, confirm_size_mb: Optional[int] = None) -> bool` | Safely remove directory with confirmation. |
 
-## metainformant.core.io.download {#metainformant-core-io-download}
+## metainformant.core.io.download
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -225,7 +225,7 @@ supported through the import paths described in [index.md](index.md).
 | `monitor_subprocess_file_count` | function | `(*, process: 'Any', watch_dir: str \| Path, heartbeat_path: str \| Path, expected_files: Iterable[str], heartbeat_interval: int = 5, show_progress: bool = True, desc: str \| None = None, errors: list[str] \| None = None, timeout_seconds: float \| None = None) -> int` | Monitor a subprocess by counting expected files under a directory. |
 | `monitor_subprocess_sample_progress` | function | `(*, process: 'Any', watch_dir: str \| Path, heartbeat_path: str \| Path, completion_glob: str, total_samples: int \| None = None, heartbeat_interval: int = 5, show_progress: bool = True, desc: str \| None = None, errors: list[str] \| None = None, timeout_seconds: float \| None = None) -> int` | Monitor a subprocess by counting completed samples (files matching a glob). |
 
-## metainformant.core.io.download_manager {#metainformant-core-io-download_manager}
+## metainformant.core.io.download_manager
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -233,7 +233,7 @@ supported through the import paths described in [index.md](index.md).
 | `DownloadManager.add_download` | method | `(url: str, dest_path: Path, label: str) -> None` | Queue a download task. |
 | `DownloadManager.start` | method | `() -> Dict[str, bool]` | Execute all queued downloads and block until complete. |
 
-## metainformant.core.io.download_robust {#metainformant-core-io-download_robust}
+## metainformant.core.io.download_robust
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -241,13 +241,13 @@ supported through the import paths described in [index.md](index.md).
 | `get_remote_file_size` | function | `(url: str) -> int` | Get the size of a remote file in bytes using curl/wget. |
 | `robust_download_url` | function | `(url: str, dest_path: Path, max_retries: int = 5, retry_delay: int = 10, timeout: int = 300) -> bool` | Download a file from a URL robustly using curl or wget. |
 
-## metainformant.core.io.errors {#metainformant-core-io-errors}
+## metainformant.core.io.errors
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
 | `InputFileMissingError` | class | `()` | An expected input file does not exist. |
 
-## metainformant.core.io.io {#metainformant-core-io-io}
+## metainformant.core.io.io
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -276,7 +276,7 @@ supported through the import paths described in [index.md](index.md).
 | `write_parquet` | function | `(df: Any, path: str \| Path, **kwargs: Any) -> None` | Write DataFrame to Parquet file. |
 | `write_tsv` | function | `(data: Iterable[Sequence[Any]], path: str \| Path) -> None` | Write TSV file. |
 
-## metainformant.core.ncbi {#metainformant-core-ncbi}
+## metainformant.core.ncbi
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -284,14 +284,14 @@ supported through the import paths described in [index.md](index.md).
 | `NCBIContactError` | class | `()` | Raised when an NCBI operation lacks an explicit contact policy. |
 | `resolve_ncbi_contact` | function | `(email: str \| None = None, *, allow_anonymous: bool = False) -> NCBIContact` | Resolve explicit or opt-in anonymous NCBI contact settings. |
 
-## metainformant.core.sequence {#metainformant-core-sequence}
+## metainformant.core.sequence
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
 | `reverse_complement` | function | `(seq: str) -> str` | Generate the reverse complement of a DNA sequence. |
 | `validate_dna_sequence` | function | `(seq: str) -> bool` | Validate that a sequence contains only valid DNA characters. |
 
-## metainformant.core.ui.tui {#metainformant-core-ui-tui}
+## metainformant.core.ui.tui
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -305,7 +305,7 @@ supported through the import paths described in [index.md](index.md).
 | `TerminalInterface.stop` | method | `() -> None` | Stop rendering and cleanup. |
 | `TerminalInterface.update` | method | `(task_id: str, current: float \| None = None, total: float \| None = None, status: str \| None = None, speed: str \| None = None, color: str \| None = None, stage: str \| None = None) -> None` | Update a specific bar's state. |
 
-## metainformant.core.utils.batches {#metainformant-core-utils-batches}
+## metainformant.core.utils.batches
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -314,7 +314,7 @@ supported through the import paths described in [index.md](index.md).
 | `frame_memory_report` | function | `(frame: pd.DataFrame) -> dict[str, Any]` | Build a descriptive memory report for a frame. |
 | `iter_frame_chunks` | function | `(frame: pd.DataFrame, rows_per_chunk: int = DEFAULT_CHUNK_ROWS) -> Iterator[pd.DataFrame]` | Lazily yield row-block views of ''frame'' without copying it. |
 
-## metainformant.core.utils.errors {#metainformant-core-utils-errors}
+## metainformant.core.utils.errors
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -335,7 +335,7 @@ supported through the import paths described in [index.md](index.md).
 | `validate_not_none` | function | `(value: Any, name: str = 'value') -> None` | Validate that a value is not None. |
 | `validate_type` | function | `(value: Any, expected_type: type \| tuple[type, ...], name: str = 'value') -> None` | Validate that a value is of expected type. |
 
-## metainformant.core.utils.hash {#metainformant-core-utils-hash}
+## metainformant.core.utils.hash
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -348,7 +348,7 @@ supported through the import paths described in [index.md](index.md).
 | `sha256_string` | function | `(s: str) -> str` | Compute SHA256 hash of string content. |
 | `verify_file_integrity` | function | `(file_path: str \| Path, expected_hash: str) -> bool` | Verify file integrity against expected hash. |
 
-## metainformant.core.utils.logging {#metainformant-core-utils-logging}
+## metainformant.core.utils.logging
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -358,13 +358,13 @@ supported through the import paths described in [index.md](index.md).
 | `log_with_metadata` | function | `(logger: logging.Logger, message: str, metadata: dict[str, Any], *, level: str = 'INFO', structured: bool = False) -> None` | Log message with structured metadata. |
 | `setup_logger` | function | `(name: str, log_file: str \| None = None, level: str = 'INFO') -> logging.Logger` | Set up a logger with file and/or console output. |
 
-## metainformant.core.utils.newick {#metainformant-core-utils-newick}
+## metainformant.core.utils.newick
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
 | `from_newick` | function | `(newick_str: str) -> Tree` | Parse a Newick format string into the Tree dictionary structure. |
 
-## metainformant.core.utils.optional_deps {#metainformant-core-utils-optional_deps}
+## metainformant.core.utils.optional_deps
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -374,7 +374,7 @@ supported through the import paths described in [index.md](index.md).
 | `suppress_optional_warnings` | function | `() -> None` | Suppress optional dependency warnings (e.g., before venv activation). |
 | `warn_optional_dependency` | function | `(module_name: str, functionality: str, fallback: str = 'functionality disabled') -> None` | Warn about missing optional dependency (only once, and only if enabled). |
 
-## metainformant.core.utils.progress {#metainformant-core-utils-progress}
+## metainformant.core.utils.progress
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -382,13 +382,13 @@ supported through the import paths described in [index.md](index.md).
 | `progress_bar` | function | `(iterable: Iterator[Any] \| None = None, total: int \| None = None, desc: str \| None = None, **kwargs: Any) -> tqdm` | Create a progress bar for iterating over items. |
 | `task_context` | function | `(task_name: str, total_steps: int \| None = None) -> Iterator[Any]` | Context manager for tracking multi-step tasks. |
 
-## metainformant.core.utils.seeds {#metainformant-core-utils-seeds}
+## metainformant.core.utils.seeds
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
 | `deterministic_replicate_seeds` | function | `(base_seed: int, n_replicates: int) -> list[int]` | Stable, order-independent replicate seeds derived from one base seed. |
 
-## metainformant.core.utils.symbols {#metainformant-core-utils-symbols}
+## metainformant.core.utils.symbols
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -402,7 +402,7 @@ supported through the import paths described in [index.md](index.md).
 | `index_classes` | function | `(repo_root: str \| Path, use_cache: bool = True) -> dict[str, list[SymbolDefinition]]` | Build class index across repository. |
 | `index_functions` | function | `(repo_root: str \| Path, use_cache: bool = True) -> dict[str, list[SymbolDefinition]]` | Build function signature index across repository. |
 
-## metainformant.core.utils.text {#metainformant-core-utils-text}
+## metainformant.core.utils.text
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -419,7 +419,7 @@ supported through the import paths described in [index.md](index.md).
 | `standardize_gene_name` | function | `(gene_name: str) -> str` | Standardize gene name format. |
 | `truncate_text` | function | `(text: str, max_length: int, suffix: str = '...') -> str` | Truncate text to maximum length with optional suffix. |
 
-## metainformant.core.utils.timing {#metainformant-core-utils-timing}
+## metainformant.core.utils.timing
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
@@ -430,7 +430,7 @@ supported through the import paths described in [index.md](index.md).
 | `timed` | function | `(func: Callable[P, T] \| None = None, *, level: str = 'debug') -> Callable[P, T] \| Callable[[Callable[P, T]], Callable[P, T]]` | Decorator that logs execution time of a function. |
 | `timeout_after` | function | `(seconds: float, message: str = '') -> Iterator[threading.Event]` | Context manager that raises TimeoutError after N seconds. |
 
-## metainformant.core.utils.watchdog {#metainformant-core-utils-watchdog}
+## metainformant.core.utils.watchdog
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
