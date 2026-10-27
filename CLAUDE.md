@@ -12,7 +12,6 @@ METAINFORMANT is a bioinformatics toolkit for multi-omic analysis (genomics, tra
 - **UV Only**: Use `uv` for all package operations (never `pip`)
 - **Output to `output/`**: All execution outputs go to `output/` directory
 - **Temp files in `.tmp/`**: Use repository-local `.tmp/` (not system `/tmp`)
-- **Cursor project skills**: Generated thin wrappers live under `.cursor/skills/` (one per folder that has `AGENTS.md`). After adding or moving `AGENTS.md`, run `uv run python scripts/package/generate_cursor_skills.py` followed by the required `uv run python scripts/package/generate_cursor_skills.py --check` parity gate.
 
 ## Commands
 
@@ -120,7 +119,7 @@ io.dump_json(result, "output/module/result.json")
 
 # Path handling with security validation
 resolved = paths.expand_and_resolve("~/data/input.txt")
-if not paths.is_within(resolved, base_path="/safe/dir"):
+if not paths.is_within(resolved, parent="/safe/dir"):
     raise ValueError("Path outside safe directory")
 
 # Config with env overrides
@@ -133,11 +132,13 @@ logger = get_logger(__name__)
 
 ### Config Environment Prefixes
 
-- Core: `CORE_`, DNA: `DNA_`, RNA/Amalgkit: `AMALGKIT_`, GWAS: `GWAS_`
-- Protein: `PROT_`, Epigenome: `EPI_`, Ontology: `ONT_`
-- Metagenomics: `META_`, Structural Variants: `SV_`, Long Read: `LR_`
-- Spatial: `SPATIAL_`, Pharmacogenomics: `PHARMA_`
-- Others: `{MODULE}_` pattern (e.g., `NET_`, `ML_`, `VIZ_`)
+- Config files loaded through `config.apply_env_overrides` take overrides from
+  `AMALGKIT_` (RNA/Amalgkit), `LR_` (long-read workflows) and `LE_` (life events).
+- Single variables: `CORE_LOG_LEVEL` (logging), `PROT_TIMEOUT` (protein API
+  timeout), `META_OTU_THRESHOLD` (default OTU clustering threshold) and
+  `NCBI_EMAIL` (NCBI access).
+- Other modules read no environment variables; configure them through arguments
+  or config files.
 
 ## Testing Requirements
 

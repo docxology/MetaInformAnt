@@ -163,24 +163,23 @@ mkdir -p output/amalgkit/work/fasta
 --build_index yes --fasta_dir output/amalgkit/work/fasta
 ```
 
-**Option 3: Automated Genome Setup (Recommended)**
+**Option 3: Package genome setup**
 
-METAINFORMANT provides one current wrapper to download genomes, prepare
-transcriptomes, and build kallisto indexes:
+`metainformant.rna.amalgkit.genome_prep.orchestrate_genome_setup` downloads
+the RNA FASTA named by the configuration's `genome` block over FTP and builds
+the Kallisto index at `work_dir/index/<species>.idx`:
 
-```bash
-# Verify and execute setup for one species configuration
-uv run python scripts/rna/setup_genome.py \
-  --config config/amalgkit/amalgkit_<species>.yaml --verify-only
-uv run python scripts/rna/setup_genome.py \
-  --config config/amalgkit/amalgkit_<species>.yaml
+```python
+from pathlib import Path
+
+from metainformant.core import io
+from metainformant.rna.amalgkit.genome_prep import orchestrate_genome_setup, verify_genome_status
+
+config = io.load_yaml("config/amalgkit/amalgkit_camponotus_floridanus.yaml")
+work_dir = Path(config["work_dir"])
+print(verify_genome_status(work_dir, "camponotus_floridanus"))  # read-only
+result = orchestrate_genome_setup(config, "camponotus_floridanus", work_dir)
 ```
-
-These scripts automatically:
-- Download genome packages from NCBI (best-effort: CLI → API → FTP)
-- Extract RNA FASTA files from downloaded genomes
-- Prepare transcriptome FASTA files in the correct location
-- Build kallisto indexes with proper naming
 
 **See Also:**
 - **[genome_preparation.md](../genome_preparation.md)**: Technical documentation for automatic index building

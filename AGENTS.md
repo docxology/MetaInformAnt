@@ -43,15 +43,6 @@ modules below; callers of removed paths should follow
 - Keep examples runnable or label them clearly as pseudocode.
 - Cross-link to existing local files only; verify relative paths after moving docs.
 - Keep README files concise and directory-specific. Use `docs/index.md` for broad navigation.
-- Regenerate Cursor skills after adding, moving, or deleting `AGENTS.md` files:
-
-  ```bash
-  uv run python scripts/package/generate_cursor_skills.py
-  uv run python scripts/package/generate_cursor_skills.py --check
-  ```
-
-  The check is the required parity gate: it verifies generated wrapper content,
-  canonical link targets, front matter, and orphan absence.
 
 ## AI Assistance Disclosure
 

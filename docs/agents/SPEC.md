@@ -15,7 +15,7 @@ Module-specific Cursor AI rules for consistent development patterns across METAI
 ```text
 docs/agents/
  README.md # Agents system documentation
- spec.md # Specification
+ SPEC.md # Specification
  rules/ # Module-specific rules
  core.md # Core patterns
  dna.md # DNA patterns

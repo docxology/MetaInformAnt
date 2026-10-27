@@ -8,36 +8,47 @@ not be copied into a runbook.
 
 ## Current entry point
 
-`scripts/rna/setup_genome.py` is the supported wrapper around
-`metainformant.rna.genome_prep`. It performs initial verification, genome
-download, transcriptome preparation, Kallisto index construction, and final
-verification for one species configuration.
+The supported path is the package API in
+`metainformant.rna.amalgkit.genome_prep`; there is no command-line wrapper.
+`orchestrate_genome_setup(config, species_name, work_dir)` downloads the RNA
+FASTA named by the configuration's `genome` block (`ftp_url`, `accession`,
+`files.transcriptome_fasta`) into `genome.dest_dir`, or into a `genome/`
+directory beside `work_dir` when no destination is set. It then builds the
+Kallisto index at `work_dir/index/<species>.idx` with k = 31.
+`skip_build=True` stops after the download. It has no dry-run mode.
 
-```bash
-CONFIG=config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+```python
+from pathlib import Path
 
-# Preview the planned operations
-uv run python scripts/rna/setup_genome.py --config "$CONFIG" --dry-run
+from metainformant.core import io
+from metainformant.rna.amalgkit.genome_prep import (
+    build_kallisto_index,
+    get_expected_index_path,
+    orchestrate_genome_setup,
+    verify_genome_status,
+)
 
-# Verify an existing genome/transcriptome/index installation
-uv run python scripts/rna/setup_genome.py --config "$CONFIG" --verify-only
+config = io.load_yaml("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
+work_dir = Path(config["work_dir"])
+species = "pogonomyrmex_barbatus"
 
-# Execute the complete setup
-uv run python scripts/rna/setup_genome.py --config "$CONFIG"
+status = verify_genome_status(work_dir, species)  # read-only
+result = orchestrate_genome_setup(config, species, work_dir)
+
+# A different k-mer size needs an explicit, recorded rebuild:
+# build_kallisto_index(transcriptome_fasta, get_expected_index_path(work_dir, species), kmer_size=25)
 ```
 
-The wrapper supports `--skip-download`, `--skip-prepare`, `--skip-build`,
-`--skip-verify-initial`, and `--skip-verify-final`. Use `--kmer-size` only
-when the read length and the quantification plan justify a different Kallisto
-k-mer size.
+Use a different k-mer size only when the read length and the quantification
+plan justify it, and record it with the index.
 
 ## Batch preparation
 
 For a configuration-driven batch of genome downloads and index builds, the
 repository also contains `scripts/rna/batch_genome_index.py`. It is a batch
 manual-download utility with fixed local path assumptions; inspect its config
-and destination paths before use, and prefer running `setup_genome.py`
-explicitly when reproducibility or a mounted data root matters.
+and destination paths before use, and prefer the per-species API above
+when reproducibility or a mounted data root matters.
 
 ```bash
 uv run python scripts/rna/batch_genome_index.py
@@ -49,11 +60,15 @@ species configurations.
 
 ## Verification evidence
 
-`--verify-only` reports three independent conditions:
+`verify_genome_status(work_dir, species)` reports two conditions:
 
-- the configured genome asset is present;
-- the RNA/transcriptome FASTA is present; and
-- at least one usable Kallisto index is present.
+- `transcriptome_exists`: an RNA/transcriptome FASTA is present in the
+  `genome/` directory beside `work_dir`; and
+- `index_exists` (also reported as `prepared`): `work_dir/index/<species>.idx`
+  is present.
+
+It looks beside `work_dir` and does not read `genome.dest_dir`, so a FASTA
+downloaded to a shared destination is not seen. Check that path directly.
 
 A successful verification does not prove that RNA-seq samples were selected,
 downloaded, quantified, merged, or finalized. Those claims require the
@@ -65,8 +80,9 @@ project.
 1. Confirm the YAML path and its `genome` block.
 2. Confirm that the configured destination is writable and has sufficient
    space for compressed and temporary files.
-3. Run `--verify-only` to identify the missing stage.
-4. Re-run only the required stage with the corresponding `--skip-*` options.
+3. Run `verify_genome_status` to identify the missing asset.
+4. Re-run only the required step: `orchestrate_genome_setup(..., skip_build=True)`
+   for the download, or `build_kallisto_index` for the index.
 5. Inspect the command log and retain the software versions and config hash
    with the resulting analysis bundle.
 

@@ -16,17 +16,6 @@ from metainformant.quality.doc_verification import resolve_import_statement
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-# Scripts whose functionality no longer exists in the package. Each entry must
-# still fail to import; once a script resolves again, remove it from this set.
-OBSOLETE_SCRIPTS: frozenset[str] = frozenset(
-    {
-        # rna.engine.discovery returns per-study records; no species-level aggregator exists.
-        "scripts/rna/discover_species.py",
-        # orchestrate_genome_setup no longer honours dry_run, the skip flags or kmer_size.
-        "scripts/rna/setup_genome.py",
-    }
-)
-
 
 def _script_import_failures() -> dict[str, list[str]]:
     failures: dict[str, list[str]] = {}
@@ -49,9 +38,6 @@ def _script_import_failures() -> dict[str, list[str]]:
 def test_script_imports_resolve() -> None:
     failures = _script_import_failures()
 
-    unexpected = {script: reasons for script, reasons in failures.items() if script not in OBSOLETE_SCRIPTS}
-    assert unexpected == {}, "scripts with unresolvable metainformant imports:\n" + "\n".join(
-        f"  {script}: {'; '.join(reasons)}" for script, reasons in sorted(unexpected.items())
+    assert failures == {}, "scripts with unresolvable metainformant imports:\n" + "\n".join(
+        f"  {script}: {'; '.join(reasons)}" for script, reasons in sorted(failures.items())
     )
-    revived = sorted(OBSOLETE_SCRIPTS - failures.keys())
-    assert revived == [], f"these scripts import cleanly again; remove them from OBSOLETE_SCRIPTS: {revived}"

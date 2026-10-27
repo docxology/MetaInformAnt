@@ -11,8 +11,6 @@ RNA-seq analysis and amalgkit workflow scripts.
 - `check_environment.py` - Verify environment setup
 - `check_pipeline_status.py` - Run-state and downstream evidence checker
 - `verify_rna.py` - Validate RNA module functionality
-- `setup_genome.py` - Genome preparation for quantification
-- `discover_species.py` - Discover available species
 - `filter_valid_samples.py` - Filter samples for processing
 - `validate_all_species_workflow.py` - Cross-species validation
 - `validate_configs.py` - Config YAML validation

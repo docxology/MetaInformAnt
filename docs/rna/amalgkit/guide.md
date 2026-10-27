@@ -118,10 +118,9 @@ uv sync --extra rna  # installs the exact Amalgkit 0.16.60 project contract
 
 ### "No genome index"
 
-Set up genome first:
-```bash
-python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_<species>.yaml
-```
+Set up the genome first with `orchestrate_genome_setup` from
+`metainformant.rna.amalgkit.genome_prep`; see
+[genome_preparation.md](genome_preparation.md).
 
 ### "Disk space full"
 

@@ -1,45 +1,54 @@
 # Genome Setup Quick Guide
 
-Use the single executable wrapper described in
-[genome_preparation.md](genome_preparation.md). The current checkout does
-not contain the older split commands `download_missing_genomes.py`,
-`prepare_transcriptomes.py`, `build_kallisto_indexes.py`,
-`verify_genomes_and_indexes.py`, or `orchestrate_genome_setup.py`.
+This checkout has no command-line wrapper for genome preparation. The former
+`scripts/rna/setup_genome.py` was retired because the package function it
+wrapped no longer honours its dry-run, skip and k-mer options. Call
+`metainformant.rna.amalgkit.genome_prep` directly; see
+[genome_preparation.md](genome_preparation.md) for the full contract.
 
 ## One species
 
-```bash
-CONFIG=config/amalgkit/amalgkit_camponotus_floridanus.yaml
+```python
+from pathlib import Path
 
-# Inspect without changing files
-uv run python scripts/rna/setup_genome.py --config "$CONFIG" --dry-run
+from metainformant.core import io
+from metainformant.rna.amalgkit.genome_prep import orchestrate_genome_setup, verify_genome_status
 
-# Check existing assets
-uv run python scripts/rna/setup_genome.py --config "$CONFIG" --verify-only
+config = io.load_yaml("config/amalgkit/amalgkit_camponotus_floridanus.yaml")
+work_dir = Path(config["work_dir"])
+species = "camponotus_floridanus"
 
-# Build missing assets
-uv run python scripts/rna/setup_genome.py --config "$CONFIG"
+# Inspect existing assets without changing files
+print(verify_genome_status(work_dir, species))
+
+# Download the configured RNA FASTA and build the Kallisto index
+result = orchestrate_genome_setup(config, species, work_dir)
+print(result["success"], result["messages"])
 ```
 
 ## All configured species
 
-There is no current all-species genome wrapper with a safe external-volume
-contract. Iterate explicitly so that each configuration, destination, and
-failure is visible:
+There is no all-species genome wrapper with a safe external-volume contract.
+Iterate explicitly so that each configuration, destination and result is
+visible, and verify before building anything:
 
-```bash
-for config in config/amalgkit/amalgkit_*.yaml; do
-  case "$config" in
-    *template*|*test*|*cross_species*) continue ;;
-  esac
-  uv run python scripts/rna/setup_genome.py --config "$config" --verify-only \
-    || echo "verification failed: $config" >&2
-done
+```python
+from pathlib import Path
+
+from metainformant.core import io
+from metainformant.rna.amalgkit.genome_prep import verify_genome_status
+
+for path in sorted(Path("config/amalgkit").glob("amalgkit_*.yaml")):
+    if any(tag in path.stem for tag in ("template", "test", "cross_species")):
+        continue
+    config = io.load_yaml(path)
+    species = path.stem.removeprefix("amalgkit_")
+    print(path.name, verify_genome_status(Path(config["work_dir"]), species))
 ```
 
-Execute only after reviewing the verification output and resource budget for
-the selected data root. The verification lane is diagnostic; it does not
-establish downstream quantification or cross-species completion.
+Build only after reviewing the verification output and the resource budget
+for the selected data root. Verification is diagnostic; it does not establish
+downstream quantification or cross-species completion.
 
 ## Kallisto index policy
 

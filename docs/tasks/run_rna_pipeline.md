@@ -14,16 +14,22 @@ uv run python scripts/rna/run_all_species.py \
   --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 ```
 
-Reference setup is configuration-driven:
+Reference setup is configuration-driven and has no dry-run mode, so check the
+existing assets before building anything:
 
-```bash
-uv run python scripts/rna/setup_genome.py \
-  --config projects/hymenoptera_amalgkit/config/amalgkit/amalgkit_apis_mellifera.yaml \
-  --verify-only
+```python
+from pathlib import Path
+
+from metainformant.core import io
+from metainformant.rna.amalgkit.genome_prep import verify_genome_status
+
+config = io.load_yaml("projects/hymenoptera_amalgkit/config/amalgkit/amalgkit_apis_mellifera.yaml")
+print(verify_genome_status(Path(config["work_dir"]), "apis_mellifera"))
 ```
 
-Use `--dry-run` first for a real setup. Reference and index outputs belong in
-the selected data root or another documented `output/` location.
+[genome_preparation.md](../rna/amalgkit/genome_preparation.md) describes the
+build step. Reference and index outputs belong in the selected data root or
+another documented `output/` location.
 
 ## Run the producer
 

@@ -63,16 +63,6 @@ project-specific tests report explicit skips when unavailable. This workflow
 does not validate the nested Hymenoptera or BeeWAS suites. Run those suites
 separately in an authenticated project checkout before publishing project changes.
 
-For generated guidance in a parent-only checkout, run:
-
-```bash
-uv run python scripts/package/generate_cursor_skills.py --check --allow-uninitialized-submodules
-```
-
-This reports wrappers deferred only for registered, empty submodules. Genuine
-orphans, broken parent links, malformed wrappers and populated incomplete projects
-still fail. The default `--check` remains strict and requires the full checkout.
-
 Each pytest invocation inherits a five-minute per-test timeout. Test matrix and
 module-lane jobs have a 45-minute limit; other jobs use shorter limits. New runs
 cancel superseded runs for the same workflow and branch. A timeout fails the job

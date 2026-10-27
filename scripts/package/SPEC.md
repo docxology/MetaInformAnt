@@ -14,8 +14,8 @@ Functionality for package.
 ## 🔌 API Definition
 ### Exports
 - `generate_core_api_reference.py`
-- `generate_cursor_skills.py`
 - `generate_custom_summary.py`
+- `security_evaluate.py`
 - `summarize_status.py`
 - `verify_amalgkit_runtime.py`
 - `verify_dependencies.py`

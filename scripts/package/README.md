@@ -8,7 +8,6 @@ Command-line helpers for Package workflows. Scripts should remain thin wrappers 
 - [build.sh](build.sh)
 - [build_utils.sh](build_utils.sh)
 - [fix_tmp_space.sh](fix_tmp_space.sh)
-- [generate_cursor_skills.py](generate_cursor_skills.py)
 - [generate_custom_summary.py](generate_custom_summary.py)
 - [install_linux_deps.sh](install_linux_deps.sh)
 - [verify_amalgkit_runtime.py](verify_amalgkit_runtime.py)
@@ -27,12 +26,7 @@ Command-line helpers for Package workflows. Scripts should remain thin wrappers 
 
 ## Usage
 ```bash
-uv run python scripts/package/generate_cursor_skills.py --help
-uv run python scripts/package/generate_cursor_skills.py
-uv run python scripts/package/generate_cursor_skills.py --check
+bash scripts/package/test.sh                 # fast test lane
+bash scripts/package/test.sh --mode coverage # full suite with the coverage floor
+bash scripts/package/uv_quality.sh           # format, lint and type checks
 ```
-
-The generator creates one thin `.cursor/skills/<name>/SKILL.md` wrapper for
-each repository `AGENTS.md`. The required check verifies wrapper content
-parity, front matter, canonical `AGENTS.md`/README/global-policy targets, and
-absence of orphan skill directories.

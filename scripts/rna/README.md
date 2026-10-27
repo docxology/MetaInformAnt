@@ -30,7 +30,6 @@ with the configured NCBI/SRA fallback and records resumable evidence.
 
 | Script | Purpose |
 |---|---|
-| `setup_genome.py` | Download and prepare transcriptome/index assets |
 | `batch_genome_index.py` | Prepare indexes for a declared configuration set |
 | `normalize_tissue_metadata.py` | Apply declared tissue mappings |
 | `generate_orthologs.py` | Build an ortholog mapping with provenance |

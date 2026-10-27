@@ -50,12 +50,8 @@ Documentation is organized by module domain:
 - `ERROR_HANDLING.md` - Error handling patterns
 - `REAL_IMPLEMENTATION_POLICY.md` - Testing policy (real implementations allowed)
 - `UV_SETUP.md` - UV package manager setup guide
-- `SETUP.md` - Environment setup instructions (`setup.md` is a lowercase mirror)
+- `SETUP.md` - Environment setup instructions
 - `DISK_SPACE_MANAGEMENT.md` - Disk space management for large datasets
-
-## Cursor project skills
-
-Project-local Cursor skills under `.cursor/skills/` are generated wrappers that point at each folder’s `AGENTS.md` (including `docs/`). Regenerate from repo root with `uv run python scripts/package/generate_cursor_skills.py` after adding or moving an `AGENTS.md`; use `--check` to verify skills match `AGENTS.md` locations. See `.cursor/skills/README.md`.
 
 ## Rules and Constraints
 

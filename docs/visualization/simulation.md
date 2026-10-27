@@ -354,7 +354,7 @@ fitness_colors = ['blue', 'red']  # Mean, maximum fitness
 - **[Simulation Analysis](../simulation/)**: Core simulation functions
 - **[Sequence Simulation](../simulation/sequences.md)**: DNA/protein sequence generation
 - **[Population Genetics](../simulation/popgen.md)**: Population simulation models
-- **[Agent-Based Models](../simulation/agents.md)**: Ecosystem simulations
+- **[Agent-Based Models](../simulation/index.md#agent-based-ecosystem-modeling)**: Ecosystem simulations
 - **[Visualization Integration](integration.md)**: Cross-module visualization patterns
 
 These examples combine METAINFORMANT's synthetic data generation and modeling workflows with the general visualization functions.
