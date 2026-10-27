@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 # Path bootstrap: make the project's src/ library importable
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from metainformant.quality.doc_verification import run  # noqa: E402
 

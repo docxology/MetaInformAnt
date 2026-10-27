@@ -866,6 +866,281 @@ class ReportGenerator:
             print(f"  {file}: {count}")
 
 
+# --- Runtime import truth -------------------------------------------------
+#
+# The example validator above reasons from a static symbol index and treats many
+# fences as illustrative snippets. Every quoted import is still a claim about the
+# API, so this pass resolves each complete ``metainformant`` import line exactly as
+# Python would (attribute first, then submodule) without executing document text.
+
+IMPORT_STATEMENT = re.compile(
+    r"^\s*((?:from\s+metainformant(?:\.\w+)*\s+import\s+[^#\n]+?)"
+    r"|(?:import\s+metainformant(?:\.\w+)*(?:\s+as\s+\w+)?))\s*(?:#.*)?$"
+)
+IMPORT_SCAN_SKIP_PARTS = frozenset(
+    {
+        ".cursor",
+        ".git",
+        ".tmp",
+        ".venv",
+        "__pycache__",
+        "archive",
+        "historical_reports",
+        "node_modules",
+        "output",
+        "projects",
+    }
+)
+
+
+def _is_historical_snapshot(lines: List[str]) -> bool:
+    return any("Historical snapshot" in line for line in lines[:12])
+
+
+def collect_doc_import_statements(paths: List[Path], include_historical: bool = False) -> Dict[str, List[str]]:
+    """Map each complete ``metainformant`` import quoted in Markdown to its locations.
+
+    ``paths`` may mix directories (scanned recursively) and individual files.
+    Single-line imports are read from any line; parenthesized multi-line imports
+    are read from Python-fenced blocks that parse. Placeholders such as
+    ``from metainformant.dna import ...`` are skipped, and so are archived and
+    historical-snapshot documents.
+    """
+    statements: Dict[str, List[str]] = defaultdict(list)
+    for root in paths:
+        files = [root] if root.is_file() else sorted(root.rglob("*.md"))
+        for md in files:
+            parts = md.relative_to(root).parts if md != root else (md.name,)
+            if any(part in IMPORT_SCAN_SKIP_PARTS for part in parts):
+                continue
+            try:
+                lines = md.read_text(encoding="utf-8").splitlines()
+            except (OSError, UnicodeDecodeError):
+                continue
+            if not include_historical and _is_historical_snapshot(lines):
+                continue
+            for first_line, code in _python_fenced_blocks(lines):
+                try:
+                    tree = ast.parse(code)
+                except SyntaxError:
+                    continue
+                for node in ast.walk(tree):
+                    if isinstance(node, (ast.Import, ast.ImportFrom)) and node.end_lineno != node.lineno:
+                        names = [alias.name for alias in node.names]
+                        module = node.module if isinstance(node, ast.ImportFrom) else names[0]
+                        if module and module.split(".")[0] == "metainformant":
+                            statements[ast.unparse(node)].append(f"{md}:{first_line + node.lineno - 1}")
+            for number, line in enumerate(lines, 1):
+                match = IMPORT_STATEMENT.match(line)
+                if not match:
+                    continue
+                statement = match.group(1).strip()
+                if statement.endswith(("(", "\\", ",", "import ...")):
+                    continue
+                statements[statement].append(f"{md}:{number}")
+    return dict(statements)
+
+
+def resolve_import_statement(statement: str) -> Optional[str]:
+    """Return why ``statement`` cannot be satisfied by the installed package, or None.
+
+    Only a single ``import``/``from ... import`` of a ``metainformant`` module is
+    accepted. A missing third-party optional dependency is not a documentation
+    error and resolves to None.
+    """
+    try:
+        tree = ast.parse(statement)
+    except SyntaxError as exc:
+        return f"SyntaxError: {exc.msg}"
+    node = tree.body[0] if len(tree.body) == 1 else None
+    try:
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                importlib.import_module(alias.name)
+            return None
+        if not isinstance(node, ast.ImportFrom) or not node.module or node.level:
+            return "not a single absolute import statement"
+        module_name = node.module
+        module = importlib.import_module(module_name)
+        for alias in node.names:
+            if alias.name == "*" or hasattr(module, alias.name):
+                continue
+            try:
+                importlib.import_module(f"{module_name}.{alias.name}")
+            except ModuleNotFoundError as exc:
+                if exc.name == f"{module_name}.{alias.name}":
+                    return f"ImportError: cannot import name {alias.name!r} from {module_name!r}"
+                raise
+    except ModuleNotFoundError as exc:
+        if exc.name and exc.name.split(".")[0] != "metainformant":
+            return None
+        return f"ModuleNotFoundError: {exc}"
+    except Exception as exc:  # an import-time failure inside a real module is still a broken example
+        return f"{type(exc).__name__}: {exc}"
+    return None
+
+
+def find_stale_doc_imports(paths: List[Path], include_historical: bool = False) -> List[Violation]:
+    """Return a violation for every quoted import the current code cannot satisfy."""
+    violations = []
+    for statement, locations in sorted(collect_doc_import_statements(paths, include_historical).items()):
+        reason = resolve_import_statement(statement)
+        if reason is None:
+            continue
+        for location in locations:
+            doc_file, _, line = location.rpartition(":")
+            violations.append(Violation(doc_file, int(line), statement, "StaleImport", reason))
+    return violations
+
+
+PYTHON_FENCES = frozenset({"python", "python-snippet", "py", "python3"})
+FENCE_LINE = re.compile(r"^\s*```\s*([\w+-]*)\s*$")
+
+
+def _python_fenced_blocks(lines: List[str]) -> List[tuple[int, str]]:
+    """Return ``(first_line_number, dedented_code)`` for Python-fenced blocks."""
+    blocks: List[tuple[int, str]] = []
+    start: Optional[int] = None
+    body: List[str] = []
+    for number, line in enumerate(lines, 1):
+        match = FENCE_LINE.match(line)
+        if start is None:
+            if match and match.group(1).lower() in PYTHON_FENCES:
+                start, body = number + 1, []
+        elif match and not match.group(1):
+            blocks.append((start, textwrap.dedent("\n".join(body))))
+            start = None
+        else:
+            body.append(line)
+    return blocks
+
+
+def _bound_import_targets(tree: ast.Module) -> Dict[str, object]:
+    """Map names bound by a block's resolvable ``metainformant`` imports to the imported objects."""
+    bound: Dict[str, object] = {}
+    for node in tree.body:
+        if isinstance(node, ast.ImportFrom) and node.module and not node.level:
+            if node.module.split(".")[0] != "metainformant":
+                continue
+            try:
+                module = importlib.import_module(node.module)
+            except Exception:
+                continue
+            for alias in node.names:
+                if alias.name == "*":
+                    continue
+                target = getattr(module, alias.name, None)
+                if target is None:
+                    try:
+                        target = importlib.import_module(f"{node.module}.{alias.name}")
+                    except Exception:
+                        continue
+                bound[alias.asname or alias.name] = target
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name.split(".")[0] != "metainformant" or not alias.asname:
+                    continue
+                try:
+                    bound[alias.asname] = importlib.import_module(alias.name)
+                except Exception:
+                    continue
+    return bound
+
+
+def _rebound_names(tree: ast.Module) -> Set[str]:
+    """Names a block assigns, deletes, or binds as parameters/loop targets after importing them."""
+    names: Set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)):
+            names.add(node.id)
+        elif isinstance(node, ast.arg):
+            names.add(node.arg)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            names.add(node.name)
+    return names
+
+
+def _attribute_chain(node: ast.Attribute) -> Optional[tuple[str, List[str]]]:
+    attrs: List[str] = []
+    current: ast.AST = node
+    while isinstance(current, ast.Attribute):
+        attrs.append(current.attr)
+        current = current.value
+    return (current.id, attrs[::-1]) if isinstance(current, ast.Name) else None
+
+
+def _missing_attribute(target: object, attrs: List[str]) -> Optional[tuple[int, str]]:
+    """Walk ``attrs`` through modules and classes; return ``(index, reason)`` for the first missing step."""
+    current = target
+    for index, attr in enumerate(attrs):
+        if isinstance(current, ModuleType):
+            if hasattr(current, attr):
+                current = getattr(current, attr)
+                continue
+            submodule = f"{current.__name__}.{attr}"
+            try:
+                if importlib.util.find_spec(submodule) is not None:
+                    current = importlib.import_module(submodule)
+                    continue
+            except Exception:
+                pass
+            return index, f"module {current.__name__!r} has no attribute {attr!r}"
+        if isinstance(current, type):
+            if not hasattr(current, attr):
+                return index, f"class {current.__qualname__!r} has no attribute {attr!r}"
+            current = getattr(current, attr)
+            continue
+        return None  # instances, functions and values may carry dynamic attributes
+    return None
+
+
+def find_stale_doc_attributes(paths: List[Path], include_historical: bool = False) -> List[Violation]:
+    """Report attribute chains on imported modules/classes that the current code lacks.
+
+    Only Python-fenced blocks that parse are checked, and only names bound by the
+    block's own ``metainformant`` imports and never reassigned in that block.
+    """
+    violations: List[Violation] = []
+    for root in paths:
+        files = [root] if root.is_file() else sorted(root.rglob("*.md"))
+        for md in files:
+            parts = md.relative_to(root).parts if md != root else (md.name,)
+            if any(part in IMPORT_SCAN_SKIP_PARTS for part in parts):
+                continue
+            try:
+                lines = md.read_text(encoding="utf-8").splitlines()
+            except (OSError, UnicodeDecodeError):
+                continue
+            if not include_historical and _is_historical_snapshot(lines):
+                continue
+            for first_line, code in _python_fenced_blocks(lines):
+                try:
+                    tree = ast.parse(code)
+                except SyntaxError:
+                    continue
+                bound = _bound_import_targets(tree)
+                if not bound:
+                    continue
+                rebound = _rebound_names(tree)
+                reported: Set[str] = set()
+                for node in ast.walk(tree):
+                    chain = _attribute_chain(node) if isinstance(node, ast.Attribute) else None
+                    if not chain or chain[0] not in bound or chain[0] in rebound:
+                        continue
+                    name, attrs = chain
+                    missing = _missing_attribute(bound[name], attrs)
+                    if missing is None:
+                        continue
+                    index, reason = missing
+                    failing = ".".join([name, *attrs[: index + 1]])
+                    if failing in reported:  # report each missing step once per block
+                        continue
+                    reported.add(failing)
+                    line = first_line + getattr(node, "lineno", 1) - 1
+                    violations.append(Violation(str(md), line, failing, "StaleAttribute", reason))
+    return violations
+
+
 def run(args: argparse.Namespace) -> int:
     """Execute the verification pipeline and return the process exit code."""
 
@@ -905,6 +1180,8 @@ def run(args: argparse.Namespace) -> int:
     # Step 3: Validate all examples
     validator = CodeValidator(index, pyproject, strict_optional_imports=args.strict_optional_imports)
     violations = validator.validate_examples(all_examples)
+    violations.extend(find_stale_doc_imports([docs_dir], include_historical=args.include_historical))
+    violations.extend(find_stale_doc_attributes([docs_dir], include_historical=args.include_historical))
 
     # Step 4: Generate report
     report_gen = ReportGenerator(violations, repo_root)
