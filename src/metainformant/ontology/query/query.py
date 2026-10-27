@@ -45,20 +45,31 @@ def _get_cache_key(onto: Ontology, func_name: str, *args: Any, **kwargs: Any) ->
 def ancestors(onto: Ontology, term_id: str, relation_type: str = "is_a") -> Set[str]:
     """Find all ancestors of a term via a specific relationship type.
 
+    The term itself is not included: a term is not its own ancestor (this matches ``Ontology.get_ancestors``). The one
+    exception is a cyclic ontology, where a term on the cycle is reachable from itself. Use
+    ``ancestors(onto, term_id) | {term_id}`` when the term itself is wanted too.
+
     Args:
         onto: Ontology to query.
         term_id: ID of the term to find ancestors for.
         relation_type: Type of relationship to traverse (default: "is_a").
 
     Returns:
-        Set of ancestor term IDs, including the term itself.
+        Set of ancestor term IDs, excluding the term itself (empty for a root term).
 
     Raises:
         errors.TermNotFoundError: If term_id is not in the ontology.
 
     Examples:
-        >>> ancestors(go_ontology, "GO:0008150")
-        {'GO:0008150', 'GO:0003674', 'GO:0005575'}
+        >>> from metainformant.ontology.core.types import Term
+        >>> onto = Ontology()
+        >>> onto.add_term(Term("A", "root"))
+        >>> onto.add_term(Term("B", "child", is_a_parents=["A"]))
+        >>> onto.add_term(Term("C", "grandchild", is_a_parents=["B"]))
+        >>> sorted(ancestors(onto, "C"))
+        ['A', 'B']
+        >>> ancestors(onto, "A")
+        set()
     """
     validation.validate_type(onto, Ontology, "onto")
     validation.validate_not_empty(term_id, "term_id")
@@ -80,20 +91,32 @@ def ancestors(onto: Ontology, term_id: str, relation_type: str = "is_a") -> Set[
 def descendants(onto: Ontology, term_id: str, relation_type: str = "is_a") -> Set[str]:
     """Find all descendants of a term via a specific relationship type.
 
+    The term itself is not included: a term is not its own descendant (this matches ``Ontology.get_descendants``, and
+    ``get_subontology`` adds its roots separately for the same reason). The one exception is a cyclic ontology, where a
+    term on the cycle is reachable from itself. Use ``descendants(onto, term_id) | {term_id}`` when the term itself is
+    wanted too.
+
     Args:
         onto: Ontology to query.
         term_id: ID of the term to find descendants for.
         relation_type: Type of relationship to traverse (default: "is_a").
 
     Returns:
-        Set of descendant term IDs, including the term itself.
+        Set of descendant term IDs, excluding the term itself (empty for a leaf term).
 
     Raises:
         errors.TermNotFoundError: If term_id is not in the ontology.
 
     Examples:
-        >>> descendants(go_ontology, "GO:0003674")
-        {'GO:0003674', 'GO:0008150', 'GO:0016740', ...}
+        >>> from metainformant.ontology.core.types import Term
+        >>> onto = Ontology()
+        >>> onto.add_term(Term("A", "root"))
+        >>> onto.add_term(Term("B", "child", is_a_parents=["A"]))
+        >>> onto.add_term(Term("C", "grandchild", is_a_parents=["B"]))
+        >>> sorted(descendants(onto, "A"))
+        ['B', 'C']
+        >>> descendants(onto, "C")
+        set()
     """
     validation.validate_type(onto, Ontology, "onto")
     validation.validate_not_empty(term_id, "term_id")
@@ -115,6 +138,9 @@ def descendants(onto: Ontology, term_id: str, relation_type: str = "is_a") -> Se
 def common_ancestors(onto: Ontology, term1: str, term2: str, relation_type: str = "is_a") -> Set[str]:
     """Find common ancestors of two terms.
 
+    This is the intersection of :func:`ancestors` of both terms. Because a term is not its own ancestor, a term that
+    is itself an ancestor of the other is not reported as a common ancestor of the pair.
+
     Args:
         onto: Ontology to query.
         term1: ID of first term.
@@ -122,11 +148,18 @@ def common_ancestors(onto: Ontology, term1: str, term2: str, relation_type: str 
         relation_type: Type of relationship to traverse.
 
     Returns:
-        Set of common ancestor term IDs.
+        Set of common ancestor term IDs (``term1`` and ``term2`` themselves are not included).
 
     Examples:
-        >>> common_ancestors(go_ontology, "GO:0003674", "GO:0008150")
-        {'GO:0003674', 'GO:0005575'}
+        >>> from metainformant.ontology.core.types import Term
+        >>> onto = Ontology()
+        >>> onto.add_term(Term("A", "root"))
+        >>> onto.add_term(Term("B", "left", is_a_parents=["A"]))
+        >>> onto.add_term(Term("C", "right", is_a_parents=["A"]))
+        >>> sorted(common_ancestors(onto, "B", "C"))
+        ['A']
+        >>> common_ancestors(onto, "B", "A")
+        set()
     """
     ancestors1 = ancestors(onto, term1, relation_type)
     ancestors2 = ancestors(onto, term2, relation_type)

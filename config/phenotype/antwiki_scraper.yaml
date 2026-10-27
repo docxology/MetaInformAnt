@@ -4,11 +4,13 @@
 # Base URL for AntWiki
 base_url: "https://www.antwiki.org/wiki/"
 
-# Rate limiting delay between requests (seconds)
-# Can be overridden via PHEN_SCRAPE_DELAY environment variable
+# Minimum delay between requests (seconds, at least 0.1). A larger robots.txt Crawl-delay replaces it.
+# No environment variable overrides it; scripts/phenotype/scrape_antwiki.py --delay sets it from the command line.
 delay_seconds: 2.0
 
-# User agent string for HTTP requests (browser-like to avoid blocking)
+# User agent string for HTTP requests (browser-like to avoid blocking).
+# robots.txt groups are matched against the text before the first "/" of this string ("Mozilla" here), so a
+# "User-agent: MetaInformant" group does not apply to it; "User-agent: *" groups do.
 user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 METAINFORMANT/0.4.0"
 
 # Request timeout in seconds
@@ -20,5 +22,5 @@ max_retries: 3
 # Check robots.txt before scraping
 check_robots: true
 
-# Default output directory (relative to repo root)
+# Default output directory (relative to the working directory)
 output_dir: "output/phenotype/antwiki/"

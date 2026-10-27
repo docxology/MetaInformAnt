@@ -72,4 +72,5 @@ def test_parse_obo_typedef_stored_in_metadata(tmp_path) -> None:
     onto = parse_obo(path)
     assert onto.has_term("GO:0000001")
     assert onto.metadata["typedef:part_of"]["name"] == "part of"
-    assert onto.metadata["typedef:part_of"]["definition"] == 'X is part of Y" []'  # parser keeps trailing qualifier
+    # `def: "X is part of Y" []` is the quoted text plus an empty dbxref list; only the text is the definition
+    assert onto.metadata["typedef:part_of"]["definition"] == "X is part of Y"

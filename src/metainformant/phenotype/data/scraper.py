@@ -3,27 +3,157 @@
 This module provides functionality to scrape phenotype data from AntWiki.org,
 including species pages, morphological traits, behavioral characteristics,
 and ecological information.
+
+HTTP client: every request goes through one ``requests.Session`` per scraper. The optional ``cloudscraper``
+package that appears in the project's dependency extras is **not** used here, and nothing in this module solves
+Cloudflare or other bot-protection challenges: a challenged request (for example HTTP 403) surfaces as an error.
+
+robots.txt: when ``AntWikiScraperConfig.check_robots`` is true (the default) the scraper consults the site's
+robots.txt through :mod:`urllib.robotparser`. It is downloaded once per origin per scraper (session) - or supplied
+up front with :meth:`AntWikiScraper.load_robots_txt` - and then:
+
+* a URL it disallows for the configured user agent raises :class:`RobotsDisallowedError`, before any request for
+  that URL is sent; redirects are followed one hop at a time so a redirect cannot reach a disallowed URL either;
+* the wait between requests is the larger of the configured delay and the site's ``Crawl-delay``;
+* a robots.txt that cannot be retrieved (5xx, 408, 429, network error) makes the scraper refuse to proceed, a 401/403
+  disallows everything, and any other 4xx is read as "no robots.txt".
+
+``check_robots=False`` is an explicit opt-out: robots.txt is never requested or applied.
+
+Known limits of :mod:`urllib.robotparser`, which apply here: ``*`` and ``$`` wildcards inside a path are not
+understood, ``Allow``/``Disallow`` rules are matched first-to-last rather than by longest match (RFC 9309), and
+robots.txt groups are matched against the user agent's leading product token (the text before the first ``/``).
+Fractional ``Crawl-delay`` values, which the standard library ignores, are rounded up to whole seconds.
 """
 
 from __future__ import annotations
 
+import math
 import re
 import time
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Set
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Union
+from urllib import robotparser
+from urllib.parse import urljoin, urlsplit
 
 import requests
 from bs4 import BeautifulSoup
 
 from metainformant.core import io
 from metainformant.core.data import validation
+from metainformant.core.io.paths import sanitize_filename
 from metainformant.core.utils import errors, logging
 
 logger = logging.get_logger(__name__)
 
+_MAX_REDIRECTS = 10
+_REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
+# urllib.robotparser only reads integer Crawl-delay values and silently drops e.g. "Crawl-delay: 2.5".
+_FRACTIONAL_CRAWL_DELAY = re.compile(r"^(\s*crawl-delay\s*:\s*)(\d*\.\d+)(\s*(?:#.*)?)$", re.IGNORECASE)
+
+
+class RobotsDisallowedError(errors.NetworkError):
+    """Raised when robots.txt forbids fetching a URL, or cannot be retrieved so access is refused."""
+
+
+def _origin(url: str) -> str:
+    """Return the ``scheme://host[:port]`` origin that robots.txt rules are scoped to."""
+    parts = urlsplit(url)
+    scheme = parts.scheme.lower()
+    host = parts.hostname
+    if not scheme or not host:
+        raise errors.ValidationError(f"Cannot apply robots.txt to a non-absolute URL: {url!r}")
+    host = host.lower()
+    if ":" in host:  # IPv6 literal
+        host = f"[{host}]"
+    port = parts.port
+    if port is not None and port != {"http": 80, "https": 443}.get(scheme):
+        host = f"{host}:{port}"
+    return f"{scheme}://{host}"
+
+
+def _normalize_robots_lines(lines: Iterable[str]) -> List[str]:
+    """Round fractional ``Crawl-delay`` values up so ``urllib.robotparser`` does not drop them."""
+    normalized = []
+    for line in lines:
+        match = _FRACTIONAL_CRAWL_DELAY.match(line)
+        if match:
+            line = f"{match.group(1)}{math.ceil(float(match.group(2)))}{match.group(3)}"
+        normalized.append(line)
+    return normalized
+
+
+def build_robots_parser(
+    robots: Union[str, bytes, Iterable[str], robotparser.RobotFileParser],
+    robots_url: str = "",
+) -> robotparser.RobotFileParser:
+    """Build a :class:`urllib.robotparser.RobotFileParser` from robots.txt content.
+
+    Args:
+        robots: The file's text, an iterable of its lines, or an already-parsed ``RobotFileParser`` (returned as is).
+        robots_url: URL the rules came from (informational).
+
+    Returns:
+        A parser ready for ``can_fetch`` / ``crawl_delay`` queries.
+    """
+    if isinstance(robots, robotparser.RobotFileParser):
+        return robots
+    if isinstance(robots, (bytes, bytearray)):
+        robots = bytes(robots).decode("utf-8", errors="replace")
+    lines = robots.splitlines() if isinstance(robots, str) else list(robots)
+    parser = robotparser.RobotFileParser()
+    if robots_url:
+        parser.set_url(robots_url)
+    parser.parse(_normalize_robots_lines(lines))
+    return parser
+
+
+def robots_policy_from_response(
+    status_code: int, body: str, robots_url: str = ""
+) -> Optional[robotparser.RobotFileParser]:
+    """Translate the HTTP response for ``/robots.txt`` into a parser, following ``urllib.robotparser.read()``.
+
+    2xx: parse ``body``. 401/403: the site is refusing us, so disallow everything. Other 4xx: there is no robots.txt,
+    so allow everything. Timeouts and rate limiting (408/429), 5xx and any unexpected status mean the rules are
+    temporarily unknown: ``None``, which callers retry and then refuse.
+    """
+    if 200 <= status_code < 300:
+        return build_robots_parser(body, robots_url)
+    if status_code in (401, 403):
+        return build_robots_parser(["User-agent: *", "Disallow: /"], robots_url)
+    if 400 <= status_code < 500 and status_code not in (408, 429):
+        return build_robots_parser([], robots_url)
+    return None
+
+
+def _redirect_target(current_url: str, status_code: int, location: Optional[str]) -> Optional[str]:
+    """Absolute URL a response redirects to, or ``None`` when it is not a followable redirect."""
+    if status_code not in _REDIRECT_STATUSES or not location:
+        return None
+    try:  # http.client decodes headers as latin-1, but servers send UTF-8 (same repair requests applies)
+        location = location.encode("latin1").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        pass
+    return urljoin(current_url, location)
+
+
+def _species_output_path(species_dir: Path, data: Dict[str, Any]) -> Path:
+    """Return the JSON file for a scraped species inside ``species_dir``.
+
+    The name comes from the page title, which is remote input, so it is sanitised: a title such as ``../../x`` can
+    never place the file outside ``species_dir``.
+    """
+    raw_name = str(data.get("species_name") or data.get("species") or "unknown")
+    return species_dir / f"{sanitize_filename(raw_name.replace(' ', '_'))}.json"
+
 
 class AntWikiScraperConfig:
-    """Configuration for AntWiki scraper."""
+    """Configuration for AntWiki scraper.
+
+    ``delay_between_requests`` / ``delay_seconds`` and ``timeout`` / ``timeout_seconds`` are two spellings of the
+    same two settings: reading or assigning either spelling reads or assigns one shared value, and every assignment is
+    validated.
+    """
 
     def __init__(
         self,
@@ -41,58 +171,93 @@ class AntWikiScraperConfig:
 
         Args:
             base_url: Base URL for AntWiki
-            delay_between_requests: Seconds to wait between requests
+            delay_between_requests: Minimum seconds to wait between requests (raised to the site's robots.txt
+                ``Crawl-delay`` when that is larger and ``check_robots`` is true)
             timeout: Request timeout in seconds
             max_retries: Maximum number of retries for failed requests
-            user_agent: User agent string for requests
-            delay_seconds: Alias for delay_between_requests
-            timeout_seconds: Alias for timeout
-            check_robots: Whether to check robots.txt
+            user_agent: User agent string for requests. robots.txt groups are matched against its leading product
+                token (the text before the first ``/``), so keep the token that identifies this scraper first.
+            delay_seconds: Alias for delay_between_requests (wins if both are given)
+            timeout_seconds: Alias for timeout (wins if both are given)
+            check_robots: Consult robots.txt (default True): it is downloaded once per origin per scraper, URLs it
+                disallows raise ``RobotsDisallowedError`` and its ``Crawl-delay`` raises the delay between requests.
+                ``False`` is an explicit opt-out: robots.txt is neither requested nor applied.
             output_dir: Default output directory
         """
         self.base_url = base_url
 
-        # Handle parameter aliases
+        # Handle parameter aliases (the *_seconds spelling wins when both are given)
         if delay_seconds is not None:
-            self._delay = float(delay_seconds)
+            delay = float(delay_seconds)
         elif delay_between_requests is not None:
-            self._delay = float(delay_between_requests)
+            delay = float(delay_between_requests)
         else:
-            self._delay = 2.0
+            delay = 2.0
 
         if timeout_seconds is not None:
-            self._timeout = int(timeout_seconds)
+            timeout_value = int(timeout_seconds)
         elif timeout is not None:
-            self._timeout = int(timeout)
+            timeout_value = int(timeout)
         else:
-            self._timeout = 30
+            timeout_value = 30
 
-        self.delay_between_requests = self._delay
-        self.timeout = self._timeout
+        self.delay_between_requests = delay  # validated by the property setter
+        self.timeout = timeout_value  # validated by the property setter
         self.max_retries = max_retries
         self.user_agent = user_agent
         self.check_robots = check_robots
         self.output_dir = output_dir
 
-        # Validate configuration
-        validation.validate_type(self._delay, (int, float), "delay_between_requests")
-        validation.validate_range(self._delay, min_val=0.1, name="delay_between_requests")
-        validation.validate_range(self._timeout, min_val=1, name="timeout")
         validation.validate_range(max_retries, min_val=0, name="max_retries")
 
     @property
-    def delay_seconds(self) -> float:
-        """Alias for delay_between_requests."""
+    def delay_between_requests(self) -> float:
+        """Minimum seconds between requests (``delay_seconds`` is the same setting)."""
         return self._delay
+
+    @delay_between_requests.setter
+    def delay_between_requests(self, value: float) -> None:
+        validation.validate_type(value, (int, float), "delay_between_requests")
+        validation.validate_range(value, min_val=0.1, name="delay_between_requests")
+        self._delay = float(value)
+
+    @property
+    def delay_seconds(self) -> float:
+        """Alias for delay_between_requests (readable and assignable)."""
+        return self.delay_between_requests
+
+    @delay_seconds.setter
+    def delay_seconds(self, value: float) -> None:
+        self.delay_between_requests = value
+
+    @property
+    def timeout(self) -> int:
+        """Request timeout in seconds (``timeout_seconds`` is the same setting)."""
+        return self._timeout
+
+    @timeout.setter
+    def timeout(self, value: int) -> None:
+        validation.validate_type(value, (int, float), "timeout")
+        validation.validate_range(value, min_val=1, name="timeout")
+        self._timeout = int(value)
 
     @property
     def timeout_seconds(self) -> int:
-        """Alias for timeout."""
-        return self._timeout
+        """Alias for timeout (readable and assignable)."""
+        return self.timeout
+
+    @timeout_seconds.setter
+    def timeout_seconds(self, value: int) -> None:
+        self.timeout = value
 
 
 class AntWikiScraper:
-    """Web scraper for AntWiki phenotype data."""
+    """Web scraper for AntWiki phenotype data.
+
+    Pages are fetched with ``requests`` (not ``cloudscraper``; see the module docstring). With
+    ``config.check_robots`` true, robots.txt is downloaded once per origin per scraper, disallowed URLs raise
+    :class:`RobotsDisallowedError`, and the wait between requests is at least the site's ``Crawl-delay``.
+    """
 
     def __init__(self, config: Optional[AntWikiScraperConfig] = None):
         """Initialize the scraper.
@@ -116,7 +281,139 @@ class AntWikiScraper:
         # Track scraped URLs to avoid duplicates
         self.scraped_urls: Set[str] = set()
 
+        # Parsed robots.txt per origin (scheme://host[:port]); filled once per origin per session
+        self._robots: Dict[str, robotparser.RobotFileParser] = {}
+
         logger.info(f"Initialized AntWiki scraper for {self.config.base_url}")
+
+    # ------------------------------------------------------------------
+    # robots.txt compliance
+    # ------------------------------------------------------------------
+
+    def load_robots_txt(
+        self,
+        robots: Union[str, bytes, Iterable[str], robotparser.RobotFileParser],
+        site_url: Optional[str] = None,
+    ) -> robotparser.RobotFileParser:
+        """Install robots.txt rules for the origin of ``site_url`` (default: ``config.base_url``).
+
+        This is the same code path the scraper uses after downloading robots.txt itself, so rules can be supplied up
+        front (from a saved copy, or in offline tests) and are then never downloaded for that origin.
+
+        Args:
+            robots: The file's text, an iterable of its lines, or an already-parsed
+                :class:`urllib.robotparser.RobotFileParser`.
+            site_url: Any URL on the site the rules belong to; defaults to ``config.base_url``.
+
+        Returns:
+            The parser now in force for that origin. It is ignored while ``check_robots`` is false.
+        """
+        origin = _origin(site_url or self.config.base_url)
+        parser = build_robots_parser(robots, f"{origin}/robots.txt")
+        self._robots[origin] = parser
+        return parser
+
+    def _robots_for(self, url: str) -> robotparser.RobotFileParser:
+        """Return the parsed robots.txt for ``url``'s origin, downloading it on first use."""
+        origin = _origin(url)
+        parser = self._robots.get(origin)
+        if parser is None:
+            parser = self._download_robots(origin)
+            self._robots[origin] = parser
+        return parser
+
+    def _download_robots(self, origin: str) -> robotparser.RobotFileParser:
+        """Download and parse ``origin``/robots.txt, retrying transient failures.
+
+        Raises:
+            RobotsDisallowedError: If robots.txt stays unretrievable; scraping without it is refused.
+        """
+        robots_url = f"{origin}/robots.txt"
+        problem = "no response"
+        for attempt in range(self.config.max_retries + 1):
+            try:
+                logger.debug(f"Requesting {robots_url} (attempt {attempt + 1})")
+                response = self.session.get(robots_url, timeout=self.config.timeout)
+            except requests.RequestException as e:
+                problem = str(e)
+            else:
+                parser = robots_policy_from_response(
+                    response.status_code, response.content.decode("utf-8", errors="replace"), robots_url
+                )
+                if parser is not None:
+                    logger.info(f"Loaded {robots_url} (HTTP {response.status_code})")
+                    return parser
+                problem = f"HTTP {response.status_code}"
+            if attempt < self.config.max_retries:
+                time.sleep(2**attempt)
+        raise RobotsDisallowedError(
+            f"{robots_url} could not be retrieved ({problem}); refusing to scrape without it "
+            "(set check_robots=False to opt out)"
+        )
+
+    def _require_allowed(self, url: str) -> None:
+        """Raise :class:`RobotsDisallowedError` unless robots.txt permits ``url`` (no-op without ``check_robots``)."""
+        if not self.config.check_robots:
+            return
+        parser = self._robots_for(url)
+        if not parser.can_fetch(self.config.user_agent, url):
+            raise RobotsDisallowedError(
+                f"robots.txt of {_origin(url)} disallows {url} for user agent {self.config.user_agent!r}"
+            )
+
+    def can_fetch(self, url: str) -> bool:
+        """Whether robots.txt permits fetching ``url`` (always True when ``check_robots`` is false).
+
+        Downloads the site's robots.txt on first use. A robots.txt that cannot be retrieved counts as "not permitted".
+        """
+        try:
+            self._require_allowed(url)
+        except RobotsDisallowedError:
+            return False
+        return True
+
+    def crawl_delay(self, url: str) -> Optional[float]:
+        """Seconds robots.txt asks to wait between requests, or ``None`` (also when ``check_robots`` is false).
+
+        Downloads the site's robots.txt on first use.
+        """
+        if not self.config.check_robots:
+            return None
+        delay = self._robots_for(url).crawl_delay(self.config.user_agent)
+        return None if delay is None else float(delay)
+
+    def effective_delay(self, url: str) -> float:
+        """Seconds to wait between requests to ``url``'s site: the larger of configured delay and ``Crawl-delay``.
+
+        Downloads the site's robots.txt on first use (unless ``check_robots`` is false).
+        """
+        return max(self.config.delay_between_requests, self.crawl_delay(url) or 0.0)
+
+    def _get(self, url: str) -> requests.Response:
+        """GET ``url`` with robots.txt enforced on it and on every redirect hop.
+
+        Redirects are followed here rather than by ``requests`` so that a permitted URL cannot forward the scraper to a
+        disallowed one, on this host or another.
+
+        Raises:
+            RobotsDisallowedError: If robots.txt forbids ``url`` or a URL it redirects to.
+            NetworkError: If the redirect chain is longer than ``_MAX_REDIRECTS``.
+        """
+        current = url
+        for _ in range(_MAX_REDIRECTS + 1):
+            first_contact = self.config.check_robots and _origin(current) not in self._robots
+            self._require_allowed(current)
+            if first_contact:
+                # robots.txt was just downloaded from this host: that was a request too
+                self._respectful_delay(current)
+            response = self.session.get(current, timeout=self.config.timeout, allow_redirects=False)
+            target = _redirect_target(current, response.status_code, response.headers.get("Location"))
+            if target is None:
+                return response
+            logger.debug(f"Following redirect {current} -> {target}")
+            self._respectful_delay(current)
+            current = target
+        raise errors.NetworkError(f"Too many redirects fetching {url}")
 
     def _make_request(self, url: str) -> Optional[BeautifulSoup]:
         """Make an HTTP request with retry logic.
@@ -126,11 +423,14 @@ class AntWikiScraper:
 
         Returns:
             BeautifulSoup object if successful, None if failed
+
+        Raises:
+            RobotsDisallowedError: If robots.txt forbids the URL (never retried).
         """
         for attempt in range(self.config.max_retries + 1):
             try:
                 logger.debug(f"Requesting {url} (attempt {attempt + 1})")
-                response = self.session.get(url, timeout=self.config.timeout)
+                response = self._get(url)
 
                 if response.status_code == 200:
                     soup = BeautifulSoup(response.content, "html.parser")
@@ -144,7 +444,7 @@ class AntWikiScraper:
                 elif response.status_code >= 500:
                     logger.warning(f"Server error {response.status_code} for {url}")
                     if attempt < self.config.max_retries:
-                        time.sleep(2**attempt)  # Exponential backoff
+                        self._backoff(attempt, url)  # Exponential backoff
                         continue
                 else:
                     logger.warning(f"HTTP {response.status_code} for {url}")
@@ -155,14 +455,37 @@ class AntWikiScraper:
             except requests.RequestException as e:
                 logger.warning(f"Request failed for {url}: {e}")
                 if attempt < self.config.max_retries:
-                    time.sleep(2**attempt)
+                    self._backoff(attempt, url)
                     continue
 
         return None
 
-    def _respectful_delay(self) -> None:
-        """Add delay between requests to be respectful to the server."""
-        time.sleep(self.config.delay_between_requests)
+    def _backoff_seconds(self, attempt: int, url: str) -> float:
+        """Seconds to wait before retry ``attempt + 1``: exponential backoff, never below the site's ``Crawl-delay``."""
+        return max(float(2**attempt), self.crawl_delay(url) or 0.0)
+
+    def _backoff(self, attempt: int, url: str) -> None:
+        """Sleep before retrying ``url``."""
+        time.sleep(self._backoff_seconds(attempt, url))
+
+    def _respectful_delay(self, url: Optional[str] = None) -> None:
+        """Wait between requests: the configured delay, raised to the site's ``Crawl-delay`` when ``url`` is given."""
+        time.sleep(self.config.delay_between_requests if url is None else self.effective_delay(url))
+
+    def _species_url(self, species_name_or_url: str) -> str:
+        """Absolute page URL for a species name (e.g. ``Formica_rufa``) or a full URL."""
+        if species_name_or_url.startswith("http"):
+            return species_name_or_url
+        if self.config.base_url.endswith("/"):
+            return f"{self.config.base_url}{species_name_or_url}"
+        return f"{self.config.base_url}/{species_name_or_url}"
+
+    def _species_label(self, url: str) -> str:
+        """Short identifier for a species URL that can be passed back as ``species=``: its page name, else the URL."""
+        base = self.config.base_url if self.config.base_url.endswith("/") else f"{self.config.base_url}/"
+        if url.startswith(base) and len(url) > len(base):
+            return url[len(base) :]
+        return url
 
     def scrape_species_page(self, species_name_or_url: str) -> Optional[Dict[str, Any]]:
         """Scrape a single species page from AntWiki.
@@ -172,14 +495,12 @@ class AntWikiScraper:
 
         Returns:
             Dictionary with scraped data, or None if scraping failed
+
+        Raises:
+            RobotsDisallowedError: If ``check_robots`` is true and robots.txt forbids the page.
+            NetworkError: If the page could not be fetched.
         """
-        # Build full URL if only species name given
-        if species_name_or_url.startswith("http"):
-            species_url = species_name_or_url
-        elif self.config.base_url.endswith("/"):
-            species_url = f"{self.config.base_url}{species_name_or_url}"
-        else:
-            species_url = f"{self.config.base_url}/{species_name_or_url}"
+        species_url = self._species_url(species_name_or_url)
 
         if species_url in self.scraped_urls:
             logger.debug(f"Already scraped: {species_url}")
@@ -190,7 +511,7 @@ class AntWikiScraper:
             raise errors.NetworkError(f"Failed to fetch species page: {species_url}")
 
         self.scraped_urls.add(species_url)
-        self._respectful_delay()
+        self._respectful_delay(species_url)
 
         try:
             # Derive species name from input or title
@@ -475,41 +796,30 @@ class AntWikiScraper:
         return sum(score_components)
 
     def scrape_species_list(self, limit: Optional[int] = None) -> Iterator[str]:
-        """Scrape list of species URLs from AntWiki.
+        """Yield species page URLs from the AntWiki species index.
+
+        Species-index retrieval is **not implemented**. How AntWiki exposes its species directory (category pages,
+        ``Special:AllPages``, a sitemap) has not been verified against the live site, and this method no longer
+        substitutes a fixed five-species sample for it: that stand-in made "all species" silently mean five species.
 
         Args:
-            limit: Maximum number of species URLs to return
+            limit: Accepted for API compatibility; unused.
 
-        Yields:
-            Species page URLs
+        Raises:
+            NotImplementedError: Always. Name the species instead: ``scrape_all_species(species=[...])``,
+                ``bulk_scrape_species(urls, output_dir)`` or ``scrape_species_page(name)``.
         """
-        # This is a simplified implementation - real AntWiki scraping would need
-        # to handle their actual page structure and pagination
-
-        logger.info("Scraping species list from AntWiki (simplified implementation)")
-
-        # For demonstration, we'll use a hardcoded list of common species
-        # In a real implementation, this would scrape directory pages
-        common_species = [
-            "Camponotus_pennsylvanicus",
-            "Formica_rufa",
-            "Lasius_niger",
-            "Myrmica_rubra",
-            "Pheidole_pallidula",
-        ]
-
-        for index, species in enumerate(common_species):
-            if limit is not None and index >= limit:
-                break
-
-            if self.config.base_url.endswith("/"):
-                url = f"{self.config.base_url}{species}"
-            else:
-                url = f"{self.config.base_url}/{species}"
-            yield url
+        raise NotImplementedError(
+            "AntWiki species-index retrieval is not implemented, so there is no list of all species to scrape. "
+            "Pass the species explicitly: scrape_all_species(species=['Formica_rufa', ...]), "
+            "bulk_scrape_species(urls, output_dir), or scrape_species_page(name) for a single species."
+        )
 
     def bulk_scrape_species(self, species_urls: List[str], output_dir: str | Path) -> List[Dict[str, Any]]:
         """Scrape multiple species pages and save results.
+
+        Pages that fail (including those robots.txt forbids) are logged and skipped; use
+        :meth:`scrape_all_species` when the failures need to be reported.
 
         Args:
             species_urls: List of species URLs to scrape
@@ -529,9 +839,7 @@ class AntWikiScraper:
                 data = self.scrape_species_page(url)
                 if data:
                     # Save individual file
-                    species_name = data.get("species_name", "unknown").replace(" ", "_")
-                    output_file = output_dir / f"{species_name}.json"
-                    io.dump_json(data, output_file, indent=2)
+                    io.dump_json(data, _species_output_path(output_dir, data), indent=2)
 
                     results.append(data)
                     successful += 1
@@ -557,20 +865,21 @@ class AntWikiScraper:
             HTML string
 
         Raises:
+            RobotsDisallowedError: If ``check_robots`` is true and robots.txt forbids the URL
             NetworkError: If request fails
         """
         for attempt in range(self.config.max_retries + 1):
             try:
                 logger.debug(f"Fetching {url} (attempt {attempt + 1})")
-                response = self.session.get(url, timeout=self.config.timeout)
+                response = self._get(url)
                 response.raise_for_status()
-                self._respectful_delay()
+                self._respectful_delay(url)
                 return str(response.text)
             except requests.HTTPError as e:
                 raise errors.NetworkError(f"HTTP error fetching {url}: {e}") from e
             except requests.RequestException as e:
                 if attempt < self.config.max_retries:
-                    time.sleep(2**attempt)
+                    self._backoff(attempt, url)
                     continue
                 raise errors.NetworkError(f"Failed to fetch {url}: {e}") from e
         raise errors.NetworkError(f"Failed to fetch {url} after {self.config.max_retries + 1} attempts")
@@ -614,25 +923,58 @@ class AntWikiScraper:
         return self._extract_taxonomy(soup)
 
     def get_species_list(self, limit: Optional[int] = None) -> List[str]:
-        """Get list of species names from AntWiki.
+        """Get the species page URLs listed in the AntWiki species index.
+
+        Returns page URLs, not bare species names. Species-index retrieval is not implemented, so this raises
+        ``NotImplementedError`` (see :meth:`scrape_species_list`).
 
         Args:
-            limit: Maximum number of species to return
+            limit: Accepted for API compatibility; unused.
 
         Returns:
-            List of species name strings
+            List of species page URLs (never returned today: the call raises).
         """
         return list(self.scrape_species_list(limit=limit))
 
-    def scrape_all_species(self, output_dir: str | Path | None = None, limit: Optional[int] = None) -> Dict[str, Any]:
-        """Scrape all species and save to output directory.
+    def _species_urls_to_scrape(self, species: Optional[Iterable[str]], limit: Optional[int]) -> List[str]:
+        """Resolve the species to scrape into distinct absolute URLs, in order, capped at ``limit``."""
+        if species is None:
+            return list(self.scrape_species_list(limit=limit))  # raises NotImplementedError
+        if isinstance(species, str):
+            species = [species]  # a bare name is one species, not a sequence of characters
+        if limit is not None:
+            validation.validate_range(limit, min_val=0, name="limit")
+        urls = list(dict.fromkeys(self._species_url(name) for name in species))
+        return urls if limit is None else urls[:limit]
+
+    def scrape_all_species(
+        self,
+        output_dir: str | Path | None = None,
+        limit: Optional[int] = None,
+        species: Optional[Iterable[str]] = None,
+    ) -> Dict[str, Any]:
+        """Scrape the given species and save them to the output directory.
+
+        Each species is written to ``<output_dir>/species/<name>.json`` and all results are combined in
+        ``<output_dir>/all_species.json`` (rewritten on every run with that run's results). There is no checkpoint or
+        resume: a re-run fetches every species again. Failures are reported in the result instead of aborting the
+        run, so ``failed_species`` can be passed back as ``species=`` to retry only those.
 
         Args:
-            output_dir: Directory to save results
+            output_dir: Directory to save results (default: ``config.output_dir``)
             limit: Maximum number of species to scrape
+            species: Species to scrape, as page names (``"Formica_rufa"``) or full URLs; duplicates are scraped once.
+                When omitted the AntWiki species index would be used, but index retrieval is not implemented
+                (see :meth:`scrape_species_list`), so omitting it raises ``NotImplementedError``.
 
         Returns:
-            Statistics dictionary with total, completed, failed counts
+            Statistics dictionary: ``total`` species attempted, ``completed`` and ``failed`` counts, and
+            ``failed_species``, the page name (or URL, for pages outside ``base_url``) of every species that failed,
+            for example because robots.txt forbids it, the fetch failed, or the page could not be parsed.
+
+        Raises:
+            ValueError: If no output directory is given or configured.
+            NotImplementedError: If ``species`` is omitted.
         """
         if output_dir is None:
             output_dir = self.config.output_dir
@@ -640,38 +982,44 @@ class AntWikiScraper:
             raise ValueError("No output directory specified")
 
         output_dir = Path(output_dir)
+        species_urls = self._species_urls_to_scrape(species, limit)
+
         species_dir = output_dir / "species"
         species_dir.mkdir(parents=True, exist_ok=True)
 
-        species_urls = list(self.scrape_species_list(limit=limit))
-        results = []
-        failed = 0
+        results: List[Dict[str, Any]] = []
+        failed_species: List[str] = []
 
         for url in species_urls:
+            # A batch run always fetches afresh. scrape_species_page() skips URLs this scraper already scraped, which
+            # would turn a re-run (or a retry of failed_species) into silent "failures" and an emptied all_species.json.
+            self.scraped_urls.discard(url)
             try:
                 data = self.scrape_species_page(url)
                 if data:
-                    species_name = data.get("species_name", data.get("species", "unknown")).replace(" ", "_")
-                    output_file = species_dir / f"{species_name}.json"
-                    io.dump_json(data, output_file, indent=2)
+                    io.dump_json(data, _species_output_path(species_dir, data), indent=2)
                     results.append(data)
                 else:
-                    failed += 1
+                    logger.error(f"No data scraped for {url}: the page could not be parsed")
+                    failed_species.append(self._species_label(url))
             except Exception as e:
                 logger.error(f"Failed to scrape {url}: {e}")
-                failed += 1
+                failed_species.append(self._species_label(url))
 
         # Save combined file
         all_species_file = output_dir / "all_species.json"
         io.dump_json(results, all_species_file, indent=2)
 
-        stats = {
+        stats: Dict[str, Any] = {
             "total": len(species_urls),
             "completed": len(results),
-            "failed": failed,
+            "failed": len(failed_species),
+            "failed_species": failed_species,
         }
 
         logger.info(f"Scraped {stats['completed']}/{stats['total']} species")
+        if failed_species:
+            logger.warning(f"{len(failed_species)} species failed: {', '.join(failed_species[:10])}")
         return stats
 
     def close(self) -> None:
@@ -681,10 +1029,13 @@ class AntWikiScraper:
 
 
 def load_scraper_config(config_path: str | Path | None = None) -> AntWikiScraperConfig:
-    """Load scraper configuration from file, or return defaults.
+    """Load scraper configuration from a JSON file, or return defaults.
+
+    The file holds ``AntWikiScraperConfig`` keyword arguments (for example ``{"delay_seconds": 3, "check_robots":
+    false}``). Only JSON is read: the YAML file under ``config/phenotype/`` cannot be loaded by this function.
 
     Args:
-        config_path: Path to configuration file (optional; returns defaults if None)
+        config_path: Path to a JSON configuration file (optional; returns defaults if None)
 
     Returns:
         AntWikiScraperConfig object
@@ -715,6 +1066,7 @@ def create_default_scraper_config(output_path: str | Path) -> None:
         "timeout": config.timeout,
         "max_retries": config.max_retries,
         "user_agent": config.user_agent,
+        "check_robots": config.check_robots,
     }
 
     io.dump_json(config_dict, Path(output_path), indent=2)

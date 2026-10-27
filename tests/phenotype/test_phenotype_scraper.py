@@ -205,23 +205,16 @@ def test_confidence_score_includes_taxonomy(antwiki_scraper_config: AntWikiScrap
 
 @pytest.mark.network
 @pytest.mark.slow
-def test_get_species_list(antwiki_scraper_config: AntWikiScraperConfig) -> None:
-    """Test deterministic species-list discovery."""
-    scraper = AntWikiScraper(antwiki_scraper_config)
-    species_list = scraper.get_species_list()
-    assert len(species_list) == len(_SPECIES)
-    assert all(species.startswith(antwiki_scraper_config.base_url) for species in species_list)
-    scraper.close()
-
-
-@pytest.mark.network
-@pytest.mark.slow
 def test_scrape_all_species_with_limit(antwiki_scraper_config: AntWikiScraperConfig) -> None:
-    """Test bounded multi-species scraping and output generation."""
-    scraper = AntWikiScraper(antwiki_scraper_config)
-    stats = scraper.scrape_all_species(output_dir=antwiki_scraper_config.output_dir, limit=3)
+    """Test bounded multi-species scraping and output generation.
 
-    assert stats == {"total": 3, "completed": 3, "failed": 0}
+    The species are named explicitly: the scraper has no species index to draw them from (see
+    ``tests/phenotype/test_antwiki_scraper_robots.py::TestSpeciesSelection``).
+    """
+    scraper = AntWikiScraper(antwiki_scraper_config)
+    stats = scraper.scrape_all_species(output_dir=antwiki_scraper_config.output_dir, species=_SPECIES, limit=3)
+
+    assert stats == {"total": 3, "completed": 3, "failed": 0, "failed_species": []}
     species_dir = antwiki_scraper_config.output_dir / "species"
     assert sorted(path.stem for path in species_dir.glob("*.json")) == [
         "Camponotus_pennsylvanicus",
@@ -229,4 +222,17 @@ def test_scrape_all_species_with_limit(antwiki_scraper_config: AntWikiScraperCon
         "Lasius_niger",
     ]
     assert (antwiki_scraper_config.output_dir / "all_species.json").exists()
+    scraper.close()
+
+
+@pytest.mark.network
+@pytest.mark.slow
+def test_scrape_all_species_reports_failed_species(antwiki_scraper_config: AntWikiScraperConfig) -> None:
+    """A species whose page does not exist is reported in ``failed_species`` and does not stop the run."""
+    scraper = AntWikiScraper(antwiki_scraper_config)
+    stats = scraper.scrape_all_species(
+        output_dir=antwiki_scraper_config.output_dir, species=["Formica_rufa", "Nonexistent_Species_12345"]
+    )
+
+    assert stats == {"total": 2, "completed": 1, "failed": 1, "failed_species": ["Nonexistent_Species_12345"]}
     scraper.close()

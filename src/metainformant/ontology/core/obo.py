@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from metainformant.core.data import validation
 from metainformant.core.utils import logging
@@ -16,6 +16,151 @@ from metainformant.core.utils import logging
 from .types import Ontology, Relationship, Term, create_ontology, create_relationship, create_term
 
 logger = logging.get_logger(__name__)
+
+# OBO flat file format 1.4, "Escape characters": a backslash followed by one of these stands for the character itself,
+# and \n, \t and \W stand for a newline, a tab and a space. Any other backslash sequence is left exactly as written.
+_OBO_ESCAPED_PUNCTUATION = frozenset(':,"\\()[]{}')
+_OBO_ESCAPED_WHITESPACE = {"n": "\n", "t": "\t", "W": " "}
+
+
+def _unescape_obo(text: str) -> str:
+    """Decode OBO backslash escapes (``\\"``, ``\\\\``, ``\\,``, ``\\n``, ``\\t``, ``\\W`` ...)."""
+    if "\\" not in text:
+        return text
+    decoded: List[str] = []
+    i = 0
+    while i < len(text):
+        char = text[i]
+        if char == "\\" and i + 1 < len(text):
+            following = text[i + 1]
+            if following in _OBO_ESCAPED_WHITESPACE:
+                decoded.append(_OBO_ESCAPED_WHITESPACE[following])
+                i += 2
+                continue
+            if following in _OBO_ESCAPED_PUNCTUATION:
+                decoded.append(following)
+                i += 2
+                continue
+        decoded.append(char)
+        i += 1
+    return "".join(decoded)
+
+
+def quote_obo_string(text: str) -> str:
+    """Render ``text`` as an OBO quoted string, surrounding quotes included.
+
+    Backslashes and double quotes are escaped, and line breaks and tabs are written as ``\\n`` and ``\\t`` so the
+    value stays on one line; :func:`parse_obo_definition` reads the result back to the original text.
+    """
+    escaped = text.replace("\r\n", "\n").replace("\r", "\n")
+    escaped = escaped.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\t", "\\t")
+    return f'"{escaped}"'
+
+
+def format_obo_xref_list(xrefs: Iterable[str]) -> str:
+    """Render dbxrefs as the bracketed list that follows a definition, e.g. ``[GOC:mah, PMID:123]``.
+
+    Characters that would end an item or the list (backslash, comma, closing bracket, double quote) are escaped, so
+    :func:`parse_obo_definition` reads back exactly the items given here.
+    """
+    items = [
+        xref.replace("\\", "\\\\").replace(",", "\\,").replace("]", "\\]").replace('"', '\\"').replace("\n", "\\n")
+        for xref in xrefs
+    ]
+    return "[" + ", ".join(items) + "]"
+
+
+def _closing_quote_index(value: str) -> int:
+    """Index of the quote that closes the quoted string opening at ``value[0]``, or -1 if there is none.
+
+    An unescaped quote only closes the string when what follows it is the end of the value, the ``[`` of the dbxref
+    list, the ``{`` of trailing modifiers or a ``!`` comment. Any other unescaped quote is kept as literal text, so
+    definitions written without escaping (as older versions of this package did) still read back whole.
+    """
+    start = 1
+    while True:
+        index = value.find('"', start)
+        if index < 0:
+            return -1
+        # A quote is escaped when an odd number of backslashes immediately precede it
+        backslashes = 0
+        while index - 1 - backslashes > 0 and value[index - 1 - backslashes] == "\\":
+            backslashes += 1
+        if backslashes % 2 == 0:
+            tail = value[index + 1 :].lstrip()
+            if not tail or tail[0] in "[{!":
+                return index
+        start = index + 1
+
+
+def _parse_obo_xref_list(rest: str) -> List[str]:
+    """Parse the dbxref list at the start of ``rest`` (which begins with ``[``) into its items.
+
+    Items are separated by commas outside quotes and brackets; an item may carry a quoted description.
+    """
+    end = rest.find("]")
+    plain = rest[1:] if end < 0 else rest[1:end]
+    if '"' not in plain and "\\" not in plain:  # common case: no quotes or escapes, so the first "]" ends the list
+        return [item.strip() for item in plain.split(",") if item.strip()]
+
+    items: List[str] = []
+    current: List[str] = []
+    in_quote = False
+    i = 1
+    while i < len(rest):
+        char = rest[i]
+        if char == "\\" and i + 1 < len(rest):
+            current.append(rest[i : i + 2])  # keep an escape pair together; decoded below
+            i += 2
+            continue
+        if char == '"':
+            in_quote = not in_quote
+        elif not in_quote and char == "]":
+            break
+        elif not in_quote and char == ",":
+            items.append("".join(current))
+            current = []
+            i += 1
+            continue
+        current.append(char)
+        i += 1
+    items.append("".join(current))
+    return [_unescape_obo(item.strip()) for item in items if item.strip()]
+
+
+def parse_obo_definition(value: str) -> Tuple[str, List[str]]:
+    """Parse the value of an OBO ``def:`` tag into ``(definition_text, dbxrefs)``.
+
+    The value is a quoted string, then a bracketed dbxref list, then optional ``{...}`` trailing modifiers and a
+    ``! comment``, for example ``"A process that \\"x\\" does." [GOC:mah, PMID:123]``. The text is returned without
+    its quotes, with escape sequences decoded; the dbxrefs are returned as a list, so neither leaks into the
+    definition. A ``!`` inside the quoted text is part of the text, not the start of a comment.
+
+    Malformed values are read leniently rather than rejected: a value that is not quoted is returned as written
+    (minus a trailing ``! comment``), and a quoted string that is never closed runs to the end of the value.
+
+    Args:
+        value: Everything after ``def:`` on the line.
+
+    Returns:
+        Tuple of the definition text and the list of dbxrefs (empty when none are given).
+
+    Examples:
+        >>> parse_obo_definition('"A process that \\\\"x\\\\" does." [GOC:mah, PMID:123]')
+        ('A process that "x" does.', ['GOC:mah', 'PMID:123'])
+    """
+    value = value.strip()
+    if not value.startswith('"'):
+        return value.split(" ! ", 1)[0].strip(), []
+
+    close = _closing_quote_index(value)
+    if close < 0:
+        return _unescape_obo(value[1:].rstrip().rstrip('"')), []
+
+    text = _unescape_obo(value[1:close])
+    rest = value[close + 1 :].lstrip()
+    xrefs = _parse_obo_xref_list(rest) if rest.startswith("[") else []
+    return text, xrefs
 
 
 def parse_obo(path: str | Path) -> Ontology:
@@ -148,13 +293,20 @@ def _parse_term_stanza(stanza_lines: List[str]) -> Optional[Term]:
 
         key, value = line.split(":", 1)
         key = key.strip()
+        raw_value = value.strip()
         # Remove trailing comments
         if " ! " in value:
             value = value.split(" ! ", 1)[0]
         value = value.strip()
 
         # Handle multi-line values and qualifiers
-        if key in ["name", "namespace", "def", "comment"]:
+        if key == "def":
+            # The definition is a quoted string followed by a dbxref list; parse it from the raw value because a
+            # " ! " inside the quotes is text, not a trailing comment.
+            term_data["def"], definition_xrefs = parse_obo_definition(raw_value)
+            if definition_xrefs:
+                term_data["def_xrefs"] = definition_xrefs
+        elif key in ["name", "namespace", "comment"]:
             # Remove quotes if present
             value = value.strip('"')
             term_data[key] = value
@@ -209,6 +361,10 @@ def _parse_term_stanza(stanza_lines: List[str]) -> Optional[Term]:
     if "alt_ids" in term_data:
         term.alt_ids = term_data["alt_ids"]
 
+    # Evidence cited by the definition (the dbxref list that follows it), kept apart from the definition text
+    if "def_xrefs" in term_data:
+        term.metadata["definition_xrefs"] = term_data["def_xrefs"]
+
     # Store relationships for later processing
     term.metadata["relationships"] = term_data.get("relationships", [])
 
@@ -217,7 +373,7 @@ def _parse_term_stanza(stanza_lines: List[str]) -> Optional[Term]:
 
 def _parse_typedef_stanza(stanza_lines: List[str]) -> Optional[Dict[str, Any]]:
     """Parse a [Typedef] stanza."""
-    typedef_data = {}
+    typedef_data: Dict[str, Any] = {}
 
     for line in stanza_lines[1:]:
         line = line.strip()
@@ -236,7 +392,9 @@ def _parse_typedef_stanza(stanza_lines: List[str]) -> Optional[Dict[str, Any]]:
         elif key == "name":
             typedef_data["name"] = value
         elif key == "def":
-            typedef_data["definition"] = value.strip('"')
+            typedef_data["definition"], definition_xrefs = parse_obo_definition(value)
+            if definition_xrefs:
+                typedef_data["definition_xrefs"] = definition_xrefs
 
     return typedef_data if "id" in typedef_data else None
 

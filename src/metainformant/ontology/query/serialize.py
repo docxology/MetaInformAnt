@@ -12,6 +12,7 @@ from typing import Any, Dict, List
 from metainformant.core.data import validation
 from metainformant.core.io import dump_json, load_json
 from metainformant.core.utils import logging
+from metainformant.ontology.core.obo import format_obo_xref_list, quote_obo_string
 from metainformant.ontology.core.types import Ontology, Relationship, Term
 
 logger = logging.get_logger(__name__)
@@ -224,7 +225,9 @@ def _save_obo_format(onto: Ontology, path: Path) -> None:
             lines.append(f"namespace: {term.namespace}")
 
         if term.definition:
-            lines.append(f'def: "{term.definition}"')
+            # Quoted, escaped text plus the dbxref list (possibly empty) that the OBO format requires after it
+            definition_xrefs = term.metadata.get("definition_xrefs") or []
+            lines.append(f"def: {quote_obo_string(term.definition)} {format_obo_xref_list(definition_xrefs)}")
 
         if term.alt_ids:
             for alt_id in term.alt_ids:
