@@ -423,6 +423,12 @@ def _emma_test_snp(
     X_full = np.column_stack([X_rot, snp_rot.reshape(-1, 1)])
     p = X_full.shape[1]
 
+    # The rotation is orthogonal, so the rank of the rotated design is the rank of the original one. Testing it
+    # catches a monomorphic or collinear SNP even when rounding leaves the system only nearly singular, which some
+    # BLAS builds then solve without raising.
+    if np.linalg.matrix_rank(X_full) < p:
+        return _failed_snp_test("Design matrix is singular (monomorphic or collinear SNP)")
+
     # Weighted least squares
     XtDinvX = X_full.T @ np.diag(d_inv) @ X_full
     XtDinvy = X_full.T @ (d_inv * y_rot)

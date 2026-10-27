@@ -249,7 +249,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reported as beta 0 and p = 1; pipeline outputs lacked MAF; the cis-eQTL
   window was ignored; cross-omic p-values were approximations and Spearman
   ignored ties; protein motif, pocket and AlphaFold functions were
-  placeholders; an eQTL script labelled synthetic positions as real.
+  placeholders; an eQTL script labelled synthetic positions as real. The
+  mixed model caught a monomorphic SNP only when the BLAS rejected the
+  nearly singular system, so on Linux it reported such a SNP as tested
+  (p near 1); a rank check now rejects it on every platform.
 
 - Neutrality tests (`dna.population`) were wrong. Tajima's D subtracted the
   whole-locus Watterson's theta from the per-site nucleotide diversity, so a

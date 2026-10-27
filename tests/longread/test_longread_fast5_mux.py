@@ -11,11 +11,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import h5py
 import numpy as np
 import pytest
 
 from metainformant.longread.io.fast5 import get_read_metadata, read_fast5
+
+h5py = pytest.importorskip("h5py")  # FAST5 files are HDF5; not every CI lane installs it
 
 READS = [
     {"read_id": "0f3c1a2e-0000-4000-8000-000000000001", "mux": 1, "channel": 17, "start": 1000, "duration": 5},
