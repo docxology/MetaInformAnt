@@ -14,7 +14,9 @@ import subprocess
 import sys
 import textwrap
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable, cast
+
+import pytest
 
 from metainformant.menu.app import MenuApp
 from metainformant.menu.ui.navigation import Menu, MenuItem, MenuSystem
@@ -127,6 +129,17 @@ class TestCallableAction:
 
         assert app.handle_action(item) is None
         assert "No action defined for: Idle entry" in capsys.readouterr().out
+
+    @pytest.mark.parametrize("bad_action", [None, 42, ["submenu:root"]])
+    def test_non_string_non_callable_action_reports_no_action(self, bad_action: object, capsys: Callable) -> None:
+        """MenuItem does not validate ``action``; a value that is neither str nor callable is reported."""
+        item = MenuItem(id="broken", label="Broken entry", action=cast(Any, bad_action))
+        system = _menu_system([item])
+        app = MenuApp(menu_system=system, clear_display=False)
+
+        assert app.handle_action(item) is None
+        assert "No action defined for: Broken entry" in capsys.readouterr().out
+        assert system.current_menu_id == "root"
 
 
 def _write_driver(tmp_path: Path, body: str) -> Path:

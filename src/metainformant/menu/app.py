@@ -92,7 +92,9 @@ class MenuApp:
         Returns:
             The script exit code for ``script:`` actions, otherwise ``None``.
         """
-        action = item.action
+        # MenuItem is an unvalidated dataclass, so the action may be a value outside its
+        # declared ``str | Callable`` type (for example ``None``); handle that below.
+        action: object = item.action
         if isinstance(action, str):
             if not action.strip():
                 print(f"No action defined for: {item.label}")

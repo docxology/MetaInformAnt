@@ -12,6 +12,7 @@ Usage:
 
 from __future__ import annotations
 
+import importlib.util
 import subprocess
 import sys
 from pathlib import Path
@@ -20,11 +21,11 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
-from metainformant.core.utils.logging import get_logger
-from metainformant.menu import discover_scripts, generate_menu_from_scripts
-from metainformant.menu.display import clear_screen, format_breadcrumb, get_choice, show_menu
-from metainformant.menu.executor import execute_script
-from metainformant.menu.navigation import MenuSystem
+from metainformant.core.utils.logging import configure_logging_from_env, get_logger
+from metainformant.menu.core.discovery import discover_scripts, generate_menu_from_scripts
+from metainformant.menu.core.executor import execute_script
+from metainformant.menu.ui.display import clear_screen, format_breadcrumb, get_choice, show_menu
+from metainformant.menu.ui.navigation import MenuSystem
 
 logger = get_logger(__name__)
 
@@ -55,35 +56,18 @@ def check_uv_available() -> bool:
 
 
 def check_optional_dependencies() -> dict[str, bool]:
-    """Check which optional dependency groups are available.
+    """Check which optional dependency groups are importable in this interpreter.
+
+    ``find_spec`` asks the running interpreter directly: no subprocess, no
+    timeout, and no environment sync as a side effect of checking.
 
     Returns:
         Dictionary mapping group name to availability status
     """
-    availability = {}
-
-    for group_name, packages in OPTIONAL_DEPENDENCY_GROUPS.items():
-        group_available = True
-        for package in packages:
-            try:
-                # Use uv run to check if package is importable
-                result = subprocess.run(
-                    ["uv", "run", "python", "-c", f"import {package}"],
-                    capture_output=True,
-                    text=True,
-                    timeout=10,
-                    cwd=REPO_ROOT,
-                )
-                if result.returncode != 0:
-                    group_available = False
-                    break
-            except (subprocess.TimeoutExpired, FileNotFoundError):
-                group_available = False
-                break
-
-        availability[group_name] = group_available
-
-    return availability
+    return {
+        group_name: all(importlib.util.find_spec(package) is not None for package in packages)
+        for group_name, packages in OPTIONAL_DEPENDENCY_GROUPS.items()
+    }
 
 
 def install_optional_dependencies(missing_groups: list[str]) -> bool:
@@ -324,6 +308,7 @@ def handle_menu_action(item, menu_system: MenuSystem) -> str | None:
 
 def main() -> int:
     """Main entry point."""
+    configure_logging_from_env()
     print("🔬 METAINFORMANT Interactive Script Menu")
     print("🧬 Access bioinformatics workflows and tools")
     print("=" * 60)
@@ -368,7 +353,7 @@ def main() -> int:
 
         return 0
 
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print("\n\n👋 Goodbye!")
         return 0
     except Exception as e:
