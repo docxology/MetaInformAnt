@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - eqtl
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/scripts/eqtl`
+- **Path**: `scripts/eqtl`
 - **Purpose**: Functionality for eqtl.
 - **Domain**: scripts
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - menu
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/scripts/menu`
+- **Path**: `scripts/menu`
 - **Purpose**: Functionality for menu.
 - **Domain**: scripts
 

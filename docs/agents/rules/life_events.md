@@ -5,7 +5,7 @@ Life course event analysis and prediction: event extraction, embedding generatio
 
 ## Dependencies
 - **Required**: `core`
-- **Optional**: `ml` (sequence models)
+- **Optional**: PyTorch (the recurrent models in `sequence_models`)
 
 ## Source Structure
 ```
@@ -15,9 +15,11 @@ src/metainformant/life_events/
  core/
  config.py, events.py, utils.py
  models/
- embeddings.py, models.py
+ embeddings.py, predictor.py, sequence_models.py, statistical_models.py
+ survival/
+ time_to_event.py
  visualization/
- visualization.py
+ network.py, statistical.py, timeline.py
  workflow/
  workflow.py
 ```
@@ -35,9 +37,11 @@ src/metainformant/life_events/
 - Temporal patterns
 
 ### Embeddings (`embeddings`)
-- Event embedding generation
-- Configurable embedding methods
-- Window-based embeddings
+- Event embedding generation (`learn_event_embeddings`): word2vec with negative sampling, trained in NumPy, so events that occur close together in a sequence get similar vectors
+- `method` is `"skipgram"` or `"cbow"` (defaults from `sg`); `window_size` is the context window; `embedding_dim`, `window_size`, and `epochs` must be positive
+- Options: `min_count` (rarer events are dropped and not returned), `negative` (negative samples per positive example, default 5), `learning_rate` (initial rate, default 0.025, decaying linearly), `random_state` (identical seeds give identical embeddings)
+- `combine="sum"` (default) returns each event's input plus output vector; `combine="input"` returns the input vectors only
+- Biologically-informed variants: `biological_embedding`, `domain_specific_embeddings`
 - **Actual path**: `metainformant.life_events.models.embeddings`
 
 **Patterns**:
@@ -45,23 +49,29 @@ src/metainformant/life_events/
 # Import from actual path
 from metainformant.life_events.models import embeddings
 
-embeddings_dict = embeddings.generate_embeddings(
-    events=event_sequence,
+# event_sequences: a list of EventSequence objects (or lists of event-type tokens)
+embeddings_dict = embeddings.learn_event_embeddings(
+    sequences=event_sequences,
     embedding_dim=100,
     window_size=5,
-    method="skipgram"
+    method="skipgram",
 )
+# Returns: {event_token: numpy vector of length embedding_dim}
 ```
 
 ### Models (`models`)
-- Sequence models for event prediction
-- Classification and regression
-- Temporal dependencies
+- `EventSequencePredictor` (`predictor`): outcome prediction, classification or regression, with `model_type` `"embedding"` or `"simple"`; any other `model_type`, including `"lstm"`, makes `fit` raise `ValueError`
+- `MultiTaskPredictor` and `SurvivalPredictor` (`statistical_models`): NumPy models (ridge and logistic task heads; Cox, exponential, or Kaplan-Meier survival)
+- `LSTMSequenceModel` and `GRUSequenceModel` (`sequence_models`): next-event models that require PyTorch and do not predict outcomes
+
+### Survival (`survival`)
+- `kaplan_meier_estimator`, `cox_ph_model`, `competing_risks`, `recurrent_events`, `time_varying_covariates`
+- `cox_ph_model` is a NumPy Newton-Raphson fit of the Breslow partial likelihood; its list-valued results have `inf` standard errors for unidentified covariates, and invalid input raises `ValueError`
 
 ### Interpretability (`interpretability`)
 - Model interpretation utilities
 - Feature importance
-- Event contribution analysis
+- Event contribution analysis: `shapley_values` is exact up to `max_exact_events` events (default 10) and seeded permutation sampling above; the values sum to `v(all events) - v(empty sequence)`
 
 ### Visualization (`visualization`)
 - Event timeline visualization
@@ -118,8 +128,9 @@ work_dir = paths.expand_and_resolve(config.work_dir)
 
 ### Configuration
 - Use `LifeEventsWorkflowConfig` for configuration
-- Config files in `config/life_events_template.yaml`
-- Environment prefix: `LE_` (e.g., `LE_THREADS`, `LE_EMBEDDING_DIM`)
+- Config files: `config/life_events/life_events_template.yaml`
+- Environment prefix: `LE_`; only `LE_THREADS`, `LE_WORK_DIR`, and `LE_LOG_DIR` are applied (`threads`, `work_dir`, `log_dir`)
+- With a `LifeEventsWorkflowConfig`, `analyze_life_course` reads only the nested `embedding`, `model`, and `workflow` sections; top-level scalar keys such as `embedding_dim` do not affect it
 - Use `metainformant.core.utils.config.load_mapping_from_file()` and `apply_env_overrides()`
 
 **Config Structure**:
@@ -134,13 +145,14 @@ embedding:
   method: "skipgram"
   learning_rate: 0.01
 model:
-  model_type: "embedding"
+  model_type: "embedding"        # "embedding" or "simple"
   task_type: "classification"
+  random_state: 42
 ```
 
 ### Embeddings
 - Embeddings should be configurable (dimension, window size, method)
-- Support multiple embedding methods (skipgram, CBOW, etc.)
+- Support the two embedding methods (skipgram, CBOW)
 - Return embedding dictionaries
 
 ### Output Paths

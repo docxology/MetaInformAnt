@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - qc
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/scripts/gwas/qc`
+- **Path**: `scripts/gwas/qc`
 - **Purpose**: Functionality for qc.
 - **Domain**: gwas
 

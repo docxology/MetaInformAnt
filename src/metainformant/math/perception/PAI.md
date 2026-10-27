@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - perception
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/math/perception`
+- **Path**: `src/metainformant/math/perception`
 - **Purpose**: Perception and Psychophysics submodule.
 - **Domain**: math
 

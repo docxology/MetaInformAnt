@@ -36,22 +36,24 @@ flowchart TB
 The main workflow orchestrates all GWAS steps from data acquisition to results:
 
 ```python
-from metainformant.gwas.workflow import execute_gwas_workflow, GWASWorkflowConfig
+from pathlib import Path
+
+from metainformant.gwas.workflow.workflow_execution import execute_gwas_workflow
+from metainformant.gwas.workflow.workflow_config import GWASWorkflowConfig
 
 # Configure workflow
 config = GWASWorkflowConfig(
     work_dir=Path("output/gwas/study"),
-    variants={"vcf_files": ["data/variants/cohort.vcf.gz"]},
-    phenotypes={"file": "data/phenotypes/traits.tsv"},
+    vcf_path="data/variants/cohort.vcf.gz",
+    phenotype_path="data/phenotypes/traits.tsv",
     threads=8
 )
 
-# Execute complete workflow
-results = execute_gwas_workflow(config)
+# Execute complete workflow (the workflow takes a configuration dictionary)
+results = execute_gwas_workflow(config.to_dict())
 
 if results["status"] == "completed":
-    print(f"GWAS completed in {results['duration_seconds']:.1f}s")
-    print(f"Analyzed {len(results['steps'])} steps")
+    print(f"GWAS completed {len(results['steps_completed'])} steps")
 else:
     print(f"GWAS failed: {results['errors']}")
 ```
@@ -61,14 +63,14 @@ else:
 Simple function-based workflows for common operations:
 
 ```python-snippet
-from metainformant.gwas.workflow import run_gwas_analysis
+from metainformant.gwas import run_gwas
 
 # Simple GWAS analysis
-results = run_gwas_analysis(
+results = run_gwas(
     vcf_path="data/variants/cohort.vcf.gz",
     phenotype_path="data/phenotypes/traits.tsv",
-    output_dir="output/gwas/simple",
-    threads=4
+    config={"model": "linear", "trait": "height"},
+    output_dir="output/gwas/simple"
 )
 ```
 
@@ -105,12 +107,12 @@ class GWASWorkflowConfig:
 
 ### Config Loading
 
-Load configuration from YAML files with environment variable overrides:
+Load configuration from YAML, TOML or JSON files (defaults are merged in and the parameters are validated):
 
 ```python-snippet
-from metainformant.gwas.config import load_gwas_config
+from metainformant.gwas.data.config import load_gwas_config
 
-# Load from YAML with GWAS_ environment overrides
+# Load from YAML; nested sections are also available as attributes (config.variants)
 config = load_gwas_config("config/gwas/gwas_study.yaml")
 ```
 
@@ -123,7 +125,7 @@ The complete GWAS workflow consists of 10 orchestrated steps:
 | **config_validation** | Validate configuration | Check all required parameters |
 | **genome_prep** | `download_reference_genome` | Download/setup reference genome |
 | **variant_acquisition** | `download_variant_data` | Acquire variant data (VCF/download/calling) |
-| **quality_control** | `apply_qc_filters` | Apply QC filters (MAF, missingness, HWE) |
+| **quality_control** | `apply_qc_filters` | Apply QC filters (QUAL, MAF, missingness, HWE) |
 | **population_structure** | `estimate_population_structure` | Compute PCA and kinship matrix |
 | **phenotype_loading** | Load phenotype data | Parse and validate phenotype files |
 | **association_testing** | `run_gwas` | Execute association tests |
@@ -237,7 +239,8 @@ python -m metainformant gwas run --config config/my_gwas_config.yaml
 #### Python API
 
 ```python
-from metainformant.gwas import load_gwas_config, execute_gwas_workflow
+from metainformant.gwas.data.config import load_gwas_config
+from metainformant.gwas import execute_gwas_workflow
 
 config = load_gwas_config("config/my_gwas_config.yaml")
 results = execute_gwas_workflow(config)
@@ -267,12 +270,13 @@ Three options available:
 
 ### Quality Control
 
-Applied filters:
-- **MAF**: Remove variants with minor allele frequency < threshold
-- **Missing Data**: Remove variants with > max_missing missing genotypes
-- **Hardy-Weinberg**: Remove variants deviating from HWE (p < threshold)
-- **Quality**: Remove variants with quality score < min_qual
-- **Indels**: Optionally exclude insertion/deletion variants
+Filters, applied in this order (a variant must pass every enabled filter):
+- **Quality**: Remove variants with QUAL < `min_qual`. The filter is optional, and a variant without a QUAL value (`.` in the VCF) is removed whenever `min_qual` is set
+- **MAF**: Remove variants with minor allele frequency < `min_maf`
+- **Missing Data**: Remove variants with > `max_missing` missing genotypes
+- **Hardy-Weinberg**: Remove variants deviating from HWE (p < `hwe_pval`)
+
+The thresholds and the `qual_filter` summary are described in the [configuration reference](config.md#quality-control-configuration).
 
 ### Population Structure
 
@@ -290,6 +294,11 @@ Per-variant association tests:
 Model: `phenotype ~ genotype + covariates`
 
 Outputs: beta (effect size), standard error, p-value, R² (for linear models), odds ratio (for logistic models)
+
+Both tests analyse complete cases: samples with a missing genotype (a negative dose such as -1, NaN or a non-numeric value) or a missing or non-finite covariate value are left out, and the linear test also leaves out samples with a missing phenotype. Each result reports `n_samples` (the samples analysed) and `n_missing_dropped` (the samples left out).
+
+- **Linear**: the two-sided p-value comes from Student's t. A degenerate design (fewer than 3 complete cases, a constant genotype, collinear covariates) returns `status: "error"`, `p_value` 1.0 and `converged` False.
+- **Logistic**: phenotypes must be 0 or 1, and fewer than 2 cases or 2 controls among the complete cases gives `status: "failed"`. `converged` is the fit's own convergence flag; the estimate and p-value of a fit that did not converge (for example under separation) are unreliable.
 
 ### Multiple Testing Correction
 
@@ -337,7 +346,7 @@ for variant_idx in range(len(vcf_data["variants"])):
 ### Population Structure Analysis
 
 ```python
-from metainformant.gwas import estimate_population_structure
+from metainformant.gwas.analysis.structure import estimate_population_structure
 
 structure = estimate_population_structure(
     vcf_path="variants.vcf",
@@ -349,7 +358,8 @@ structure = estimate_population_structure(
 ### Visualization
 
 ```python
-from metainformant.gwas import manhattan_plot, qq_plot
+from metainformant.gwas.visualization.genomic.genome import manhattan_plot
+from metainformant.gwas.visualization.statistical.statistical import qq_plot
 
 manhattan_plot(
     results="results/association_results.tsv",

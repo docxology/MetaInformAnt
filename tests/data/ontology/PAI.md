@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - ontology
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/tests/data/ontology`
+- **Path**: `tests/data/ontology`
 - **Purpose**: Functionality for ontology.
 - **Domain**: data
 

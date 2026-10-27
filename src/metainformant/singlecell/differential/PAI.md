@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - differential
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/singlecell/differential`
+- **Path**: `src/metainformant/singlecell/differential`
 - **Purpose**: Differential expression analysis for single-cell data.
 - **Domain**: singlecell
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - epidemiology
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/math/epidemiology`
+- **Path**: `src/metainformant/math/epidemiology`
 - **Purpose**: Functionality for epidemiology.
 - **Domain**: math
 

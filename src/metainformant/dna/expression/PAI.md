@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - expression
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/dna/expression`
+- **Path**: `src/metainformant/dna/expression`
 - **Purpose**: Functionality for expression.
 - **Domain**: dna
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - data
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/gwas/data`
+- **Path**: `src/metainformant/gwas/data`
 - **Purpose**: GWAS data retrieval and download utilities.
 - **Domain**: gwas
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - visualization
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/metagenomics/visualization`
+- **Path**: `src/metainformant/metagenomics/visualization`
 - **Purpose**: Metagenomics visualization.
 - **Domain**: metagenomics
 

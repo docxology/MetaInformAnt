@@ -20,17 +20,20 @@ Use `run_gwas` for genome-wide association studies on SNP genotype data—not fo
 ---
 
 ```python-snippet
-from metainformant.gwas import run_association
+from metainformant.gwas import run_gwas
 
-# One-line association
-results = run_association(
-    vcf="data/genotypes.vcf.gz",
-    phenotypes="data/traits.tsv",
-    covariates="data/covariates.tsv"
+# One-call workflow: QC, PCA/kinship, association, multiple-testing correction, plots
+results = run_gwas(
+    vcf_path="data/genotypes.vcf.gz",
+    phenotype_path="data/traits.tsv",
+    config={"model": "linear", "trait": "height"},  # model: linear | logistic | mixed
+    output_dir="output/gwas",
 )
 
 # View top hits
-results.top_hits(n=10).to_csv("gwas_hits.tsv", sep='	')
+top_hits = sorted(results["results"]["association_results"], key=lambda r: r["p_value"])[:10]
+for hit in top_hits:
+    print(hit["variant_id"], hit["chrom"], hit["pos"], hit["beta"], hit["p_value"])
 ```
 
 ## End-to-End Pipeline
@@ -112,82 +115,83 @@ output/gwas/
 
 ## Advanced Examples
 
-### REGENIE (efficient mixed-model for large cohorts)
+### Credible set from summary statistics (Wakefield approximate Bayes factors)
 ```python-snippet
-from metainformant.gwas import regenie
+import numpy as np
 
-# Step 1: Build genetic relationship matrix (GRM)
-grm = regenie.build_grm(
-    vcf="cohort.vcf.gz",
-    sample_sheet="samples.tsv",
-    chunk_size=10000
-)
+from metainformant.gwas.finemapping.credible_sets import compute_credible_set
 
-# Step 2: Association testing with covariates
-results = regenie.associate(
-    grm=grm,
-    phenotype="phenotypes.tsv",
-    covariates="covariates.tsv",
-    model="linear"
+# Z-scores and standard errors for the variants of one locus, in the same order. In practice they come from
+# the association results (z = beta / se); here a synthetic locus of 100 variants has one causal variant (index 40)
+rng = np.random.default_rng(0)
+z = rng.normal(size=100)
+z[40] = 8.0
+se = np.full(100, 0.05)
+
+# standard_errors fixes the scale of the Bayes factors (V = se**2); the prior variance defaults to 0.15**2
+credible = compute_credible_set(z.tolist(), coverage=0.95, standard_errors=se.tolist())
+print(
+    f"{credible['n_snps']} variant(s) in the 95% credible set: {credible['snps_in_set']} "
+    f"({credible['variance_model']}, prior variance {credible['prior_variance']:.4f})"
 )
-results.to_csv("regenie_association.tsv", sep='\t')
 ```
 Expected output:
 ```
-[regenie] Step 1: Building GRM from 18374 variants... done (12m34s)
-[regenie] Step 2: Testing 5 traits on 10 PCs + age + sex...
-[regenie]   Trait 1/5: 12,456,789 tests, 23 hits (p < 5e-8)
-[regenie]   Trait 2/5: 12,456,789 tests, 0 hits
+1 variant(s) in the 95% credible set: [40] (standard_errors, prior variance 0.0225)
 ```
+Without `standard_errors` (or a `sample_size`, with `maf` and, for a case-control trait, `case_fraction`), the Bayes factors fall back to the Z-score scale and `variance_model` reads `z_scale`.
 
-### Fine-mapping with SuSiE (Summarized Individual Effect)
+### Fine-mapping with SuSiE (Sum of Single Effects)
 ```python-snippet
-from metainformant.gwas.finemapping import susie
+from metainformant.gwas.finemapping.credible_sets import susie_regression
 
-# Load summary statistics and LD matrix
-sumstats = susie.load_sumstats("gwas_results.tsv")
-ld_matrix = susie.compute_ld("filtered.vcf.gz", sample_size=10000)
+# X: genotype matrix for the locus (n_samples x n_variants); y: phenotype vector
+# Fit up to 10 causal effects
+fit = susie_regression(X, y, L=10)
 
-# Run SuSiE with 10 causal configurations
-credible_sets = susie.fine_map(
-    sumstats=sumstats,
-    ld=ld_matrix,
-    n_causal=10
-)
-credible_sets.to_csv("susie_credible_sets.tsv", sep='\t')
-print(f"Found {len(credible_sets)} credible sets, 95% CS coverage")
+print(f"Fitted {len(fit['credible_sets'])} single-effect components (converged: {fit['converged']})")
+for i, cs in enumerate(fit["credible_sets"], start=1):
+    print(f"CS{i}: {cs['size']} variants ({cs['coverage_achieved']:.0%} coverage)")
 ```
 Expected output:
 ```
-Found 18 credible sets, 95% CS coverage
-Lead SNP chr6:28538123 (HLA region) → CS size = 12 variants
+Fitted 10 single-effect components (converged: True)
+CS1: 1 variants (100% coverage)
+CS2: 9 variants (95% coverage)
+...
 ```
 
 ### Colocalization with eQTL (COLOC)
 ```python-snippet
-from metainformant.gwas.coloc import coloc
+import numpy as np
 
-# GWAS summary statistics per gene
-gwas_per_gene = coloc.summarize_by_gene(
-    gwas="gwas_results.tsv",
-    gtf="annotation.gtf",
-    window_kb=500
+from metainformant.gwas.finemapping.colocalization import eqtl_coloc
+
+# Z-scores and standard errors for the same variants (same order) at one locus. In practice gwas_z and gwas_se
+# come from the GWAS summary statistics and eqtl_z and eqtl_se from the GTEx eQTL for the gene; here a synthetic
+# locus of 100 variants shares one causal variant (index 40)
+rng = np.random.default_rng(0)
+gwas_z, eqtl_z = rng.normal(size=100), rng.normal(size=100)
+gwas_z[40], eqtl_z[40] = 8.0, 7.0
+gwas_se, eqtl_se = np.full(100, 0.05), np.full(100, 0.10)
+
+result = eqtl_coloc(
+    gwas_z=gwas_z.tolist(),
+    eqtl_z=eqtl_z.tolist(),
+    gene_id="AMEL_004123",
+    gwas_standard_errors=gwas_se.tolist(),  # the standard errors fix the scale of each Bayes factor
+    eqtl_standard_errors=eqtl_se.tolist(),
 )
-
-# Colocalize with eQTL from GTEx
- coloc_results = coloc.run(
-    gwas_signal=gwas_per_gene,
-    eqtl_file="gtex_liver_eqtl.tsv",
-    sample_overlap=0.3
- )
- coloc_results.to_csv("coloc_hits.tsv", sep='\t')
+print(
+    f"{result['gene_id']}: PP4 (shared causal) = {result['pp_h4']:.2f}, colocalized: {result['is_colocalized']}, "
+    f"shared variant: {result['shared_variant']}"
+)
 ```
 Expected output:
 ```
-Testing 1,234 genes near GWAS hits...
-PP4 (shared causal) > 0.8 for 23 genes
-Top hit: AMEL_004123 (PP4=0.96, log10BF=12.4)
+AMEL_004123: PP4 (shared causal) = 1.00, colocalized: True, shared variant: 40
 ```
+`result["coloc_result"]` holds `PP_H0` to `PP_H4`, `snp_pp_h4` (the per-variant probability of being the shared causal variant given H4) and `bayes_factor_model`, which names the variance model and prior variance used for each trait.
 
 ## Expected Output
 
@@ -206,27 +210,6 @@ Top hit: AMEL_004123 (PP4=0.96, log10BF=12.4)
 [2026-04-26 11:35:01] Writing results: gwas_results.tsv
 [2026-04-26 11:36:12] Generating Manhattan plot...
 [2026-04-26 11:38:45] Done: manhattan.png, qq.png
-```
-
-### Summary statistics (top 10 hits)
-```
-> head gwas_hits.tsv
-SNP            CHR   POS        REF   ALT   BETA   SE    P      P_BOLT_LMM
-rs123456789    1     1456673   A     G     0.234  0.032 1.2e-08 8.7e-09
-rs987654321    6     28538123  C     T    -0.187  0.028 3.4e-08 2.1e-08
-...
-Genomic inflation λ: 1.02
-LD Score intercept: 1.01 (s.e. 0.03)
-```
-
-### Fine-mapping credible set output
-```
-> head susie_credible_sets.tsv
-credible_set  variant         rs_id      chromosome  position  posterior  in_CS
-CS1           chr1:1456673    rs123456   1           1456673   0.87       True
-CS1           chr1:1456721    rs123457   1           1456721   0.08       True
-CS2           chr6:28538123   rs987654   6           28538123  0.94       True
-...
 ```
 
 ## Common Pitfalls

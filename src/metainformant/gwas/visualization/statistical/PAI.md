@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - statistical
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/gwas/visualization/statistical`
+- **Path**: `src/metainformant/gwas/visualization/statistical`
 - **Purpose**: Statistical visualization subpackage.
 - **Domain**: visualization
 

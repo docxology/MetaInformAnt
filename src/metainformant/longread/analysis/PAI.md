@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - analysis
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/longread/analysis`
+- **Path**: `src/metainformant/longread/analysis`
 - **Purpose**: Long-read analysis module for modified bases, structural variants, and phasing.
 - **Domain**: longread
 

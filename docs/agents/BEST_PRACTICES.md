@@ -73,7 +73,7 @@ logging:
 ```bash
 export METAINFORMANT_CONFIG_PATH="./config/custom.yaml"
 export RNA_MAX_WORKERS=16           # Override worker count
-export METAINFORMANT_LOG_LEVEL=DEBUG  # Verbose logging
+export CORE_LOG_LEVEL=DEBUG  # Verbose logging
 ```
 
 Convention: `{MODULE}_{KEY}` for module-specific overrides, `METAINFORMANT_*` for global.
@@ -159,7 +159,7 @@ apt-get install plink bwa
 
 ```bash
 # Run specific workflow
-python -m metainformant.rna.workflow --config config/rna_pipeline.yaml
+python -m metainformant.rna.amalgkit --config config/rna_pipeline.yaml
 
 # Or use entry point script
 rna-pipeline --samples samples.tsv --output output/
@@ -169,14 +169,19 @@ rna-pipeline --samples samples.tsv --output output/
 
 ```python-snippet
 from pathlib import Path
-from metainformant.core.engine.workflow_manager import BasePipelineManager, PipelinePhase
-from metainformant.rna.engine.workflow import RNAWorkflowManager
+from metainformant.core.engine.workflow_manager import BasePipelineManager, PipelinePhase, WorkflowManager
+from metainformant.rna.amalgkit import run_amalgkit
 
-# Programmatic construction
-workflow = RNAWorkflowManager(
-    work_dir=Path("output/rna_run1"),
-    config={"samples": "samples.tsv"},
+# Programmatic construction (the YAML config supplies work_dir and species)
+workflow = WorkflowManager(
+    config_path=Path("config/rna_pipeline.yaml"),
     max_threads=8,
+    run_amalgkit=run_amalgkit,
+)
+workflow.add_sample(
+    "SRR14740514",
+    sra_url="https://sra.example.com/SRR14740514",
+    dest_path=Path("output/rna_run1/SRR14740514.sra"),
 )
 results = workflow.run()
 
@@ -187,15 +192,14 @@ failed = [sid for sid, ok in results.items() if not ok]
 
 ### Strategy 3: Interactive Menu
 
-```bash
-# Launch interactive workflow selector
-python -m metainformant.menu
+```python-snippet
+from pathlib import Path
+from metainformant.menu.app import run_menu_app
+from metainformant.menu.core.discovery import discover_scripts, generate_menu_from_scripts
 
-# Or programmatically
-from metainformant.menu import WorkflowMenu
-menu = WorkflowMenu()
-choice = menu.select_workflow()
-menu.run_workflow(choice)
+# Discover the repository's scripts and launch the interactive menu
+menus = generate_menu_from_scripts(discover_scripts(Path(".")))
+run_menu_app(menus)
 ```
 
 ---
@@ -329,14 +333,16 @@ workers = resource_aware_workers(
 ### Logging Configuration
 
 ```python-snippet
-from metainformant.core.utils.logging import setup_logging
+from metainformant.core.utils.logging import setup_logger
 
-setup_logging(
-    level="INFO",  # or "DEBUG" for verbose
-    format="json",  # structured JSON logs for ingestion
+logger = setup_logger(
+    "metainformant",
     log_file="output/logs/pipeline.log",
+    level="INFO",  # or "DEBUG" for verbose
 )
 ```
+
+`setup_logger()` writes plain-text records (`timestamp | level | logger | message`). To attach structured metadata, call `log_with_metadata(logger, message, metadata, structured=True)`, which logs the metadata as a separate JSON entry.
 
 **Log levels**:
 - `DEBUG`: Detailed per-item state transitions (verbose)
@@ -347,34 +353,15 @@ setup_logging(
 
 ### TUI (Terminal User Interface)
 
-**Default**: `BasePipelineManager` auto-starts TUI.
+**Default**: `BasePipelineManager` auto-starts the terminal interface, which
+renders only when stdout is a TTY.
 
-**Disable** (for logging-only runs):
-
-```python
-manager = BasePipelineManager(phases, use_tui=False)
-```
-
-**Non-interactive** (CI/CD):
+**Logging-only and CI runs**: redirect or pipe stdout; the interface then draws
+nothing and only log output remains.
 
 ```bash
-METAINFORMANT_NO_TUI=1 python -m metainformant.rna.workflow ...
+python -m metainformant.rna.amalgkit ... > run.log 2>&1
 ```
-
-### Metrics Collection (Optional)
-
-If `prometheus_client` installed:
-
-```python-snippet
-from metainformant.monitoring import start_metrics_server
-start_metrics_server(port=8000)  # exposes /metrics
-```
-
-Metrics include:
-- `pipeline_items_total`
-- `phase_duration_seconds`
-- `phase_failures_total`
-- `bytes_downloaded_total`
 
 ---
 
@@ -400,7 +387,7 @@ uv sync
 
 ### Log Rotation
 
-Configure `logging.handlers.RotatingFileHandler` in `setup_logging()`:
+Attach a `logging.handlers.RotatingFileHandler` to your logger (`setup_logger()` installs a plain `FileHandler`):
 
 ```python
 from logging.handlers import RotatingFileHandler
@@ -457,13 +444,13 @@ Schedule monthly if production deployment.
 | **Slow downloads** | 1 MB/s vs expected 100 MB/s | Network saturating, too few workers | Increase `max_threads` for I/O phase |
 | **Checksum mismatch** | `ValueError: Checksum mismatch` | Corrupted download or mirror issue | Delete partial file, re-download, check source |
 | **Module import error** | `ModuleNotFoundError` | Dependencies not installed | `uv sync --all-extras` or install specific group |
-| **TUI garbled output** | Weird characters, layout broken | stdout not a TTY (piped) | Disable TUI: `use_tui=False` or `METAINFORMANT_NO_TUI=1` |
+| **TUI garbled output** | Weird characters, layout broken | A terminal that does not interpret ANSI escape sequences | Redirect stdout to a file or pipe; the terminal interface renders only when stdout is a TTY |
 
 ### Debugging Checklist
 
 - [ ] Check `output/core/logs/*.log` for ERROR/CRITICAL lines
 - [ ] Verify `output/` directory structure exists and is writable
-- [ ] Run with `METAINFORMANT_LOG_LEVEL=DEBUG` for verbose trace
+- [ ] Run with `CORE_LOG_LEVEL=DEBUG` for verbose trace
 - [ ] Inspect `checkpoint.json` (if exists) for partial state
 - [ ] Test handler in isolation with single item
 - [ ] Confirm external tools installed (kallisto, plink): `which kallisto`
@@ -499,8 +486,8 @@ After=network.target
 Type=simple
 User=bioinformatics
 WorkingDirectory=/home/bioinformatics/projects/analysis
-Environment="METAINFORMANT_LOG_LEVEL=INFO"
-ExecStart=/home/bioinformatics/.venv/bin/python -m metainformant.rna.workflow --config /home/bioinformatics/configs/rna.yaml
+Environment="CORE_LOG_LEVEL=INFO"
+ExecStart=/home/bioinformatics/.venv/bin/python -m metainformant.rna.amalgkit --config /home/bioinformatics/configs/rna.yaml
 Restart=on-failure
 RestartSec=300
 
@@ -528,7 +515,7 @@ WORKDIR /app
 COPY . .
 RUN uv sync --all-extras
 
-ENTRYPOINT ["uv", "run", "python", "-m", "metainformant.rna.workflow"]
+ENTRYPOINT ["uv", "run", "python", "-m", "metainformant.rna.amalgkit"]
 CMD ["--config", "/config/pipeline.yaml"]
 ```
 
@@ -553,7 +540,7 @@ docker run -v /data:/data -v /config:/config metainformant/rna --config /config/
 module load python/3.11
 source /path/to/venv/bin/activate
 
-python -m metainformant.rna.workflow --config $1
+python -m metainformant.rna.amalgkit --config $1
 ```
 
 Submit:

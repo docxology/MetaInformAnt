@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - singlecell
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/examples/singlecell`
+- **Path**: `examples/singlecell`
 - **Purpose**: Functionality for singlecell.
 - **Domain**: examples
 

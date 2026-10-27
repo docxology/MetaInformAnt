@@ -1,250 +1,217 @@
 # Configuration: structural_variants
 
-Complete reference for structural variant analysis configuration through environment variables, YAML files, and the Python API. All settings use the `SV_` prefix for clarity.
+Reference for configuring structural variant analysis: function arguments, the five `SV_` environment variables the code reads, and how to drive the functions from your own settings file.
 
 ## Configuration Hierarchy
 
 Settings are resolved in this order (later overrides earlier):
 
-1. **Code defaults** — Built-in constants in each function signature
-2. **YAML config file** — `config.yaml` or `~/.hermes/config.yaml`
-3. **Environment variables** — `SV_*` variables in shell
-4. **Runtime Python API** — `config.set()` during execution
+1. **Code defaults** — the default values in each function signature
+2. **Function arguments** — what you pass to the call
+3. **Environment variables** — five `SV_*` variables replace the matching argument when the function runs (see below)
+
+There is no `config.yaml`, no `config.get()`/`config.set()` registry and no `structural_variants.*` key namespace: nothing in this module reads a configuration file. To keep settings in a file, load it yourself and pass the values as arguments ([Driving Settings From a File](#driving-settings-from-a-file)).
 
 Example:
 ```bash
 # .env or shell
-export SV_MIN_SUPPORT=5          # Overrides default 3
+export SV_MIN_SUPPORT=5          # Replaces min_support (default 3), even when passed explicitly
 export SV_CNV_SIGNIFICANCE=0.001 # More stringent CBS
 ```
 
 ```python
-# Python code (highest priority)
-from metainformant.core.utils import config
-config.set("structural_variants.min_support", 10)
+# Python code: the environment variable above still wins over this argument
+from metainformant.structural_variants.detection.sv_calling import call_structural_variants
+
+variants = call_structural_variants(alignments, min_support=10)
 ```
 
 ---
 
 ## Environment Variables
 
-All structural variant settings use the `SV_` prefix to avoid collisions.
+Exactly five variables are read. Each is read when the function is called (not at import), parsed as the type shown, and replaces the matching argument. A value that does not parse as that type (for example `5.5` for an int) raises `ValueError`.
 
-### Detection Settings
+| Variable | Type | Read by | Replaces argument | Default |
+|----------|------|---------|-------------------|---------|
+| `SV_MIN_SUPPORT` | int | `sv_calling.call_structural_variants()`, `quality_filter.filter_by_quality()` | `min_support` | `3` |
+| `SV_MIN_QUAL` | float | `quality_filter.filter_by_quality()` | `min_qual` | `20.0` |
+| `SV_CNV_SIGNIFICANCE` | float | `cnv.detect_cnv_from_depth()` | `significance` | `0.01` |
+| `SV_CNV_DEL_THRESHOLD` | float | `cnv.call_cnv_states()` | `del_threshold` | `-0.3` |
+| `SV_CNV_DUP_THRESHOLD` | float | `cnv.call_cnv_states()` | `dup_threshold` | `0.3` |
 
-| Variable | Default | Description | Used By |
-|----------|---------|-------------|---------|
-| `SV_MIN_SUPPORT` | `3` | Minimum supporting reads for an SV call | `sv_calling.call_structural_variants()` |
-| `SV_MIN_MAPQ` | `20` | Minimum mapping quality to consider a read | `sv_calling` |
-| `SV_MIN_SV_SIZE` | `50` | Minimum SV size in base pairs | `sv_calling`, `quality_filter.filter_by_size()` |
-| `SV_CNV_SIGNIFICANCE` | `0.01` | CBS p-value threshold for change-point detection | `cnv.segment_coverage()` |
-| `SV_CNV_WINDOW_SIZE` | `1000` | CNV bin size in bp | `cnv.detect_cnv_from_depth()` |
-| `SV_CNV_DEL_THRESHOLD` | `-0.3` | Log2 ratio threshold for deletion | `cnv.call_cnv_states()` |
-| `SV_CNV_DUP_THRESHOLD` | `0.3` | Log2 ratio threshold for duplication | `cnv.call_cnv_states()` |
-| `SV_CNV_AMP_THRESHOLD` | `1.0` | Log2 ratio for amplification | `cnv.call_cnv_states()` |
-| `SV_CNV_HOMODEL_THRESHOLD` | `-1.5` | Log2 ratio for homozygous deletion | `cnv.call_cnv_states()` |
-| `SV_CNV_MIN_SEGMENT_BINS` | `3` | Minimum bins for a valid CNV segment | `cnv.detect_cnv_from_depth()` |
-| `SV_CNV_MERGE_DISTANCE` | `1000` | Max gap to merge same-state segments | `cnv.merge_adjacent_segments()` |
-| `SV_MIN_CLIP` | `20` | Minimum soft-clip length for split-read evidence | `sv_calling.detect_split_reads()` |
-| `SV_DISCORDANT_N_STD` | `4.0` | σ threshold for insert size discordance | `sv_calling.detect_discordant_pairs()` |
-| `SV_EVIDENCE_CLUSTER_DISTANCE` | `500` | Max bp between evidence items to cluster | `sv_calling._cluster_evidence()` |
-
-### Annotation Settings
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SV_MAX_GENE_DISTANCE` | `100_000` | Max distance to assign nearest gene (not overlapping) |
-| `SV_TAD_WINDOW` | `10_000` | Window around TAD boundary midpoint for disruption | |
-| `SV_IMPACT_HI_THRESHOLD` | `0.5` | HI score threshold for haploinsufficiency |
-| `SV_IMPACT_PLI_THRESHOLD` | `0.9` | pLI threshold for haploinsufficiency |
-| `SV_IMPACT_LOEUF_THRESHOLD` | `0.35` | LOEUF upper fraction threshold (lower = more constrained) |
-
-### Filtering Settings
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SV_FILTER_MIN_QUAL` | `20.0` | Minimum variant quality (Phred) |
-| `SV_FILTER_MIN_SUPPORT` | `3` | Minimum supporting reads (overrides detector) |
-| `SV_FILTER_MIN_MAPQ` | `0.0` | Minimum mean mapping quality |
-| `SV_FILTER_MIN_SIZE` | `50` | Minimum variant size |
-| `SV_FILTER_MAX_SIZE` | *(none)* | Maximum variant size |
-| `SV_FILTER_MAX_AF` | `0.01` | Maximum allele frequency to keep (remove common) |
-| `SV_FILTER_MATCH_WINDOW` | `200` | Position matching window for frequency DB lookup |
-| `SV_FILTER_MIN_RECIPROCAL_OVERLAP` | `0.5` | Overlap fraction for frequency matching |
-
-### Multi-Caller Merge Settings
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SV_MERGE_MIN_OVERLAP` | `0.5` | Reciprocal overlap threshold for merging |
-| `SV_MERGE_TYPE_MATCH` | `true` | Require matching SV types |
-| `SV_MERGE_MAX_BP_DISTANCE` | `1000` | Breakpoint distance for SURVIVOR merge |
-
-### Population Analysis Settings
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SV_PCA_COMPONENTS` | `10` | Number of principal components |
-| `SV_ASSOCIATION_METHOD` | `"linear"` | Default regression method |
-| `SV_LD_WINDOW` | `1_000_000` | Max distance for LD calculation (bp) |
-
-### Visualization Settings
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SV_VIS_FIGSIZE` | `(12, 12)` | Default figure size inches |
-| `SV_VIS_DPI` | `150` | Figure DPI |
-| `SV_VIS_COLOR_SCHEME` | `default` | Color palette name |
-
-### General & Logging
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SV_LOG_LEVEL` | *(inherits `CORE_LOG_LEVEL`)* | Module-specific logging |
-| `SV_OUTPUT_DIR` | `./output` | Default output directory |
-| `SV_CACHE_TTL` | `3600` | Result cache TTL in seconds |
+- The quality threshold is `SV_MIN_QUAL`. An earlier spelling in these docs, `SV_FILTER_MIN_QUAL`, is not read and has no effect.
+- `SV_CNV_DEL_THRESHOLD` and `SV_CNV_DUP_THRESHOLD` affect `call_cnv_states()` only. `detect_cnv_from_depth()` assigns states with its built-in thresholds (deletion `-0.3`, duplication `0.3`, amplification `1.0`, homozygous deletion `-1.5`) and ignores both variables.
+- `SV_MIN_SUPPORT` acts on both stages, so one export changes the detector and the quality filter together.
+- Any other `SV_` variable is ignored.
 
 ---
 
-## YAML Configuration
+## Function Arguments
 
-Create a project-local `config.yaml` in the repository root:
+Everything else is an ordinary keyword argument. The defaults below are the ones in the signatures. Modules are under `metainformant.structural_variants`.
+
+### Detection
+
+| Argument | Default | Function | Description |
+|----------|---------|----------|-------------|
+| `min_support` | `3` | `detection.sv_calling.call_structural_variants` | Minimum supporting reads (split reads plus discordant pairs); replaced by `SV_MIN_SUPPORT` |
+| `min_mapq` | `20` | `call_structural_variants`, `genotype_sv` | Minimum mapping quality of a read |
+| `min_sv_size` | `50` | `call_structural_variants` | Minimum SV size in bp (translocations are exempt) |
+| `insert_size_stats` | `None` | `call_structural_variants` | `InsertSizeStats`; estimated from the reads when omitted (mean 400, std 100 if it cannot be estimated) |
+| `min_clip` | `20` | `detect_split_reads` | Minimum soft-clip length for split-read evidence. `call_structural_variants` always uses 20 |
+| `n_std` | `4.0` | `detect_discordant_pairs` | Standard deviations from the mean insert size that count as discordant. `call_structural_variants` always uses 4.0 |
+| `window_size` | `1000` | `detection.cnv.detect_cnv_from_depth` | Bin size in bp; it only scales segment coordinates, the depth arrays must already be binned |
+| `method` | `"segmentation"` | `detect_cnv_from_depth` | The only supported method |
+| `significance` | `0.01` | `detect_cnv_from_depth`, `segment_coverage` | CBS p-value threshold; replaced by `SV_CNV_SIGNIFICANCE` in `detect_cnv_from_depth` |
+| `ploidy` | `2` | `detect_cnv_from_depth`, `call_cnv_states` | Expected ploidy |
+| `min_segment_bins` | `3` | `detect_cnv_from_depth` | Minimum bins in a segment |
+| `merge_distance` | `1000` | `detect_cnv_from_depth` | Maximum gap (bp) when merging same-state segments |
+| `max_gap` | `1000` | `cnv.merge_adjacent_segments` | Same, when called directly |
+| `max_iterations`, `min_width` | `100`, `2` | `cnv.segment_coverage` | Recursion depth limit and minimum width (bins) of the pieces tested for a change point; `detect_cnv_from_depth` then drops segments narrower than `min_segment_bins` |
+| `del_threshold`, `dup_threshold` | `-0.3`, `0.3` | `cnv.call_cnv_states` | Log2 ratio thresholds; replaced by `SV_CNV_DEL_THRESHOLD` / `SV_CNV_DUP_THRESHOLD` |
+| `amp_threshold`, `homodel_threshold` | `1.0`, `-1.5` | `call_cnv_states` | Log2 ratio for amplification and homozygous deletion (arguments only) |
+| `pseudocount`, `gc_content` | `1.0`, `None` | `cnv.calculate_log2_ratio` | Pseudocount; per-bin GC fractions switch on GC correction |
+| `window`, `min_clip` | `200`, `5` | `detection.breakpoints.refine_breakpoints` | Search window around each breakpoint and minimum soft-clip length |
+| `max_distance` | `100` | `breakpoints.cluster_breakpoints` | Maximum distance (bp) between clustered breakpoints |
+| `max_homology` | `50` | `breakpoints.detect_microhomology` | Longest microhomology reported |
+
+The evidence clustering distance inside `call_structural_variants` (500 bp) is fixed.
+
+### Annotation
+
+| Argument | Default | Function | Description |
+|----------|---------|----------|-------------|
+| `max_distance` | `100000` | `annotation.overlap.find_nearest_gene` | Maximum distance (bp) to assign a non-overlapping gene |
+| `max_distance` | `1000000` | `annotation.overlap.IntervalIndex.query_nearest` | Maximum search distance (bp) |
+| `boundary_window` | `10000` | `annotation.functional_impact.predict_tad_disruption` | Window (bp) around a TAD boundary midpoint. `predict_functional_impact` has no such argument and always uses 10 kb |
+
+The dosage-sensitivity cut-offs inside `assess_dosage_sensitivity` are fixed in the code: a gene is haploinsufficient when its HI score is at least 0.5, its pLI at least 0.9, or its LOEUF below 0.35, and triplosensitive when its TS score is at least 0.5.
+
+### Filtering and Merging
+
+| Argument | Default | Function | Description |
+|----------|---------|----------|-------------|
+| `min_qual` | `20.0` | `filtering.quality_filter.filter_by_quality` | Minimum quality (Phred); replaced by `SV_MIN_QUAL` |
+| `min_support` | `3` | `filter_by_quality` | Minimum supporting reads; replaced by `SV_MIN_SUPPORT` |
+| `min_mapq`, `min_gq` | `0.0`, `0.0` | `filter_by_quality` | Minimum mean mapping quality and genotype quality (0 disables) |
+| `min_size`, `max_size` | `50`, `None` | `quality_filter.filter_by_size` | Size window in bp |
+| `max_af` | `0.01` | `quality_filter.filter_by_frequency` | Remove variants whose population frequency is above this |
+| `match_window` | `200` | `filter_by_frequency` | Position window (bp) used as a pre-filter on database entries; the reciprocal-overlap test below decides matches, so the window only matters when `min_reciprocal_overlap` is 0 |
+| `min_reciprocal_overlap` | `0.5` | `filter_by_frequency` | Reciprocal overlap needed to match a database entry |
+| `min_overlap_fraction` | `0.0` | `quality_filter.apply_blacklist` | A variant is removed when its overlap with a single blacklist region is greater than this fraction of the variant (0.0 removes on any overlap) |
+| `min_overlap`, `type_match` | `0.5`, `True` | `filtering.merge.merge_callsets` | Reciprocal overlap threshold; require matching SV types |
+| `max_distance`, `min_callers`, `type_match`, `strand_match` | `1000`, `2`, `True`, `False` | `merge.survivor_merge` | Breakpoint distance (bp), minimum callers, type and strand matching |
+| `max_distance`, `min_reciprocal_overlap`, `type_match` | `100`, `0.8`, `True` | `merge.deduplicate_variants` | Duplicate collapsing within one callset |
+
+### Population
+
+| Argument | Default | Function | Description |
+|----------|---------|----------|-------------|
+| `method` | `"depth"` | `population.sv_population.genotype_sv_population` | `"depth"` or `"split"` |
+| `n_components` | `10` | `sv_population.sv_population_structure` | Number of principal components |
+| `covariates` | `None` | `sv_population.sv_association_test` | Covariate matrix (samples x covariates) |
+| `min_overlap`, `max_breakpoint_distance` | `0.5`, `500` | `sv_population.merge_sv_callsets` | Reciprocal overlap and breakpoint distance for cross-sample merging |
+
+`sv_ld_analysis` has no window argument: it computes r² against every SNP you pass.
+
+### Visualization
+
+| Argument | Default | Function |
+|----------|---------|----------|
+| `figsize` | `(12, 12)` | `visualization.plots.plot_circos` |
+| `figsize`, `bin_size` | `(14, 5)`, `1000` | `plots.plot_coverage_track` |
+| `figsize`, `log_scale` | `(10, 6)`, `True` | `plots.plot_sv_size_distribution` |
+| `figsize` | `(12, 5)` | `plots.plot_sv_type_summary` |
+| `figsize`, `flanking` | `(14, 8)`, `500` | `plots.plot_breakpoint_detail` |
+| `figsize`, `ploidy` | `(16, 5)`, `2` | `plots.plot_cnv_profile` |
+
+Figures are saved at 150 dpi (fixed). Colours come from the module constants `SV_COLORS` and `CNV_COLORS` in `visualization.plots`; they are not arguments.
+
+### Not Implemented
+
+These settings appeared in earlier versions of this page. Nothing in `src/` reads them, so setting them has no effect:
+
+- Environment variables: `SV_MIN_MAPQ`, `SV_MIN_SV_SIZE`, `SV_CNV_WINDOW_SIZE`, `SV_CNV_AMP_THRESHOLD`, `SV_CNV_HOMODEL_THRESHOLD`, `SV_CNV_MIN_SEGMENT_BINS`, `SV_CNV_MERGE_DISTANCE`, `SV_MIN_CLIP`, `SV_DISCORDANT_N_STD`, `SV_EVIDENCE_CLUSTER_DISTANCE`, `SV_MAX_GENE_DISTANCE`, `SV_TAD_WINDOW`, `SV_IMPACT_*`, `SV_FILTER_*`, `SV_MERGE_*`, `SV_PCA_COMPONENTS`, `SV_ASSOCIATION_METHOD`, `SV_LD_WINDOW`, `SV_VIS_*`, `SV_LOG_LEVEL`, `SV_OUTPUT_DIR`, `SV_CACHE_TTL`
+- A `structural_variants:` YAML tree, `config.yaml` / `~/.hermes/config.yaml` lookup, `config.get()`, `config.set()`, `config.validate_schema()`
+- `METAINFORMANT_DATA` data-directory resolution and `structural_variants.features.*` flags (`experimental_merge`, `gc_correction`, `microhomology_detection`)
+
+For logging, use the core helpers (`configure_logging_from_env()` reads `CORE_LOG_LEVEL`); there is no module-specific log level.
+
+---
+
+## Driving Settings From a File
+
+The module does not read configuration files, but a settings file of your own is easy to feed in with the core loader. `load_mapping_from_file` reads YAML, TOML or JSON into a dict:
 
 ```yaml
-# Structural Variants Configuration
-structural_variants:
-  # Detection
-  detection:
-    min_support: 3
-    min_mapq: 20
-    min_sv_size: 50
-    cnv:
-      significance: 0.01
-      window_size: 1000
-      del_threshold: -0.3
-      dup_threshold: 0.3
-
-  # Annotation
-  annotation:
-    max_gene_distance: 100000
-    tad_window: 10000
-    impact:
-      hi_threshold: 0.5
-      pli_threshold: 0.9
-      loeuf_threshold: 0.35
-
-  # Filtering
-  filtering:
-    quality:
-      min_qual: 20.0
-      min_support: 3
-      min_mapq: 30.0
-    size:
-      min_size: 50
-      max_size: 50000000  # 50 Mb
-    frequency:
-      max_af: 0.01
-      match_window: 200
-      min_reciprocal_overlap: 0.5
-    blacklist:
-      enabled: true
-
-  # Multi-caller merging
-  merging:
-    min_overlap: 0.5
-    type_match: true
-    max_breakpoint_distance: 1000
-
-  # Population
-  population:
-    pca_components: 10
-    association_method: linear
-    ld_window: 1000000
-
-  # Visualization
-  visualization:
-    figsize: [12, 12]
-    dpi: 150
-    color_scheme: default
-
-  # I/O
-  output_dir: ./output
-  cache_ttl: 3600
+# sv_settings.yaml (your own file and schema; nothing in structural_variants reads it)
+detection:
+  min_support: 3
+  min_mapq: 20
+  min_sv_size: 50
+quality:
+  min_qual: 20.0
+  min_support: 3
 ```
 
-Alternatively, place at `~/.hermes/config.yaml` for user-wide defaults.
+```python
+from metainformant.core.utils.config import load_mapping_from_file
+from metainformant.structural_variants.detection.sv_calling import call_structural_variants
+from metainformant.structural_variants.filtering.quality_filter import filter_by_quality
+
+cfg = load_mapping_from_file("sv_settings.yaml")
+variants = call_structural_variants(alignments, **cfg["detection"])
+filtered, stats = filter_by_quality(sv_dicts, **cfg["quality"])
+```
+
+The five environment variables above still override these values when they are set.
 
 ---
 
 ## Python API
 
-### Accessing Configuration
+### Reading the Defaults
 
 ```python
-from metainformant.core.utils import config
+import inspect
+from metainformant.structural_variants.detection.cnv import detect_cnv_from_depth
 
-# Get entire module config as dict
-sv_config = config.get("structural_variants")
-print(sv_config)
-# {'detection': {'min_support': 3, ...}, 'filtering': {...}, ...}
-
-# Get specific nested key
-min_support = config.get("structural_variants.detection.min_support")
-print(min_support)  # 3 (or env-overridden value)
-
-# Get with default fallback
-chunk_size = config.get("structural_variants.chunk_size", default=5000)
+sig = inspect.signature(detect_cnv_from_depth)
+for name, param in sig.parameters.items():
+    if param.default is not inspect.Parameter.empty:
+        print(f"{name} = {param.default!r}")
 ```
 
-### Setting Configuration
+### Setting the Environment Variables From Python
 
 ```python
-# Set top-level key
-config.set("structural_variants.min_support", 5)
+import os
 
-# Set nested keys
-config.set("structural_variants.detection.cnv.significance", 0.001)
-config.set("structural_variants.filtering.quality.min_qual", 30.0)
+# Takes effect for every later call: each function reads the variable when it runs
+os.environ["SV_MIN_SUPPORT"] = "5"
+os.environ["SV_CNV_SIGNIFICANCE"] = "0.001"
 
-# Override entire sub-dictionary
-new_detection = {"min_support": 10, "min_mapq": 50}
-config.set("structural_variants.detection", new_detection)
-
-# Current values accessible anywhere
-current_min_support = config.get("structural_variants.min_support")
+# Remove the override again
+os.environ.pop("SV_MIN_SUPPORT", None)
 ```
 
-### Validation
+### Seeing Which Values a Call Used
+
+Results record the values that were applied after any environment override:
 
 ```python
-from metainformant.core.utils import config
+import numpy as np
+from metainformant.structural_variants.detection.cnv import detect_cnv_from_depth
+from metainformant.structural_variants.filtering.quality_filter import filter_by_quality
 
-# Validate schema (raises if invalid)
-errors = config.validate_schema("structural_variants")
-if errors:
-    for err in errors:
-        print(f"  - {err.path}: {err.message}")
-    raise ValueError("Invalid configuration")
-else:
-    print("Configuration valid ✓")
+depth = {"chr1": np.concatenate([np.full(40, 30.0), np.full(20, 15.0), np.full(40, 30.0)])}
+results = detect_cnv_from_depth(depth)
+print(results["chr1"].parameters)    # {'significance': 0.01, 'ploidy': 2, 'min_segment_bins': 3, 'merge_distance': 1000}
+
+kept, stats = filter_by_quality([{"quality": 45.0, "support": 6}])
+print(stats.parameters)              # {'min_qual': 20.0, 'min_support': 3, 'min_mapq': 0.0, 'min_gq': 0.0}
 ```
-
-### Module-Specific Configuration Function (Optional)
-
-Some modules expose `configure()` function:
-
-```python-snippet
-from metainformant.structural_variants import configure
-
-# High-level configuration
-configure(
-    detection=dict(method="fast", min_support=3),
-    filtering=dict(min_quality=25, min_size=100),
-    output_dir="results/",
-)
-```
-
-(Implementation-dependent; check `__init__.py` for availability.)
 
 ---
 
@@ -254,99 +221,95 @@ configure(
 
 ```bash
 # Maximize recall, sacrifice some precision
-export SV_MIN_SUPPORT=2
+export SV_MIN_SUPPORT=2           # detector and quality filter
 export SV_CNV_SIGNIFICANCE=0.05   # Less stringent CBS
-export SV_MIN_CLIP=15             # Shorter clips acceptable
-export SV_FILTER_MIN_QUAL=10      # Low quality threshold
+export SV_MIN_QUAL=10             # Low quality threshold in filter_by_quality
 ```
 
-Expect: More candidates → more manual review; higher false positive rate.
+Expect: More candidates → more manual review; higher false positive rate. The soft-clip threshold is fixed at 20 bp inside `call_structural_variants`.
 
 ### Use Case 2: Somatic CNV Calling (Tumor vs Normal)
 
 ```bash
 # Paired tumor-normal with matched normal depth
 # More stringent because somatic expected to be clear
-export SV_CNV_SIGNIFICANCE=0.001  # Bonferroni for multiple testing
-export SV_CNV_DEL_THRESHOLD=-0.4  # More conservative DEL threshold
+export SV_CNV_SIGNIFICANCE=0.001  # Stricter CBS change-point test
+export SV_CNV_DEL_THRESHOLD=-0.4  # call_cnv_states only
 export SV_CNV_DUP_THRESHOLD=0.4
+```
+
+`detect_cnv_from_depth` keeps its built-in state thresholds. To classify with the stricter thresholds, pass the segments to `call_cnv_states` (it does not recompute `confidence`, which comes back as 0.0):
+
+```python
+from metainformant.structural_variants.detection.cnv import call_cnv_states
+
+# results: the dict returned by detect_cnv_from_depth()
+segments = [seg for result in results.values() for seg in result.segments]
+recalled = call_cnv_states(segments, del_threshold=-0.4, dup_threshold=0.4)
 ```
 
 ### Use Case 3: Clinical Diagnostic Pipeline
 
 ```python
-# Certified clinical settings: maximum specificity
-config.set("structural_variants.min_support", 10)
-config.set("structural_variants.min_quality", 50.0)
-config.set("structural_variants.min_sv_size", 100)
-config.set("structural_variants.filtering.frequency.max_af", 0.001)  # Rare variants only
-config.set("structural_variants.merging.min_overlap", 0.8)  # Stricter merging
+from metainformant.structural_variants.detection.sv_calling import call_structural_variants
+from metainformant.structural_variants.filtering.merge import merge_callsets
+from metainformant.structural_variants.filtering.quality_filter import filter_by_frequency, filter_by_quality
+
+# Settings that favour specificity
+variants = call_structural_variants(alignments, min_support=10, min_sv_size=100)
+filtered, _ = filter_by_quality(sv_dicts, min_qual=50.0, min_support=10)
+rare, _ = filter_by_frequency(filtered, population_db=gnomad_sv, max_af=0.001)  # Rare variants only
+merged, _ = merge_callsets(callsets, min_overlap=0.8)  # Stricter merging
 ```
 
 ### Use Case 4: Large Cohort (10,000+ samples)
 
 ```python
-# Focus on runtime efficiency
-config.set("structural_variants.detection.min_mapq", 30)  # Fewer reads to process
-config.set("structural_variants.filtering.quality.min_qual", 30)  # Reduce candidates
-config.set("structural_variants.merging.min_overlap", 0.7)  # Faster graph (fewer edges)
-config.set("structural_variants.population.pca_components", 5)  # Less PCA overhead
+from metainformant.structural_variants.detection.sv_calling import call_structural_variants
+from metainformant.structural_variants.filtering.merge import merge_callsets
+from metainformant.structural_variants.filtering.quality_filter import filter_by_quality
+from metainformant.structural_variants.population.sv_population import sv_population_structure
+
+# Fewer low-quality reads and candidates, fewer components kept
+variants = call_structural_variants(alignments, min_mapq=30)
+filtered, _ = filter_by_quality(sv_dicts, min_qual=30)
+merged, _ = merge_callsets(callsets, min_overlap=0.7)
+pca = sv_population_structure(genotype_matrix, n_components=5)
 ```
 
 ---
 
-## Database & Reference File Paths
+## Database & Reference Data
 
-Many annotation steps require external reference files. Paths can be absolute or relative to `METAINFORMANT_DATA` environment variable.
-
-```bash
-export METAINFORMANT_DATA=/path/to/metainformant_data
-
-# Directory layout expected:
-# $METAINFORMANT_DATA/
-#   annotations/
-#     genes.bed           # BED6: chrom,start,end,name,score,strand
-#     enhancers.bed       # Regulatory elements
-#   dosage/
-#     clingen_hi.json     # {gene: HI_score}
-#     gnomad_pli.json     # {gene: pLI}
-#   tad/
-#     hg38_tad_boundaries.json  # [{"chrom":..., "start":..., "end":...}, ...]
-#   population/
-#     gnomad_sv.json      # {chr: [{pos, sv_type, af}]}
-```
-
-References loaded via:
+The annotation and filtering functions take their reference data as in-memory Python objects. Nothing in the module locates or loads reference files for you (the only file reading is the VCF input of `survivor_merge`), and no data-directory environment variable is read. Load the files yourself, for example with `core.io.load_json`:
 
 ```python
-from metainformant.core.io import paths
+from metainformant.core import io
 
-# Resolve with environment override
-gene_path = paths.resolve_data_path("annotations/genes.bed")
-hi_db = paths.resolve_data_path("dosage/clingen_hi.json")
+gene_db = io.load_json("genes.json")              # [{"chrom": "chr1", "start": 1000, "end": 5000, "name": "GENE1"}, ...]
+hi_db = io.load_json("clingen_hi.json")           # {gene: haploinsufficiency score (0-1)}
+tad_bounds = io.load_json("tad_boundaries.json")  # [{"chrom": "chr1", "start": 990000, "end": 1010000}, ...]
+pop_db = io.load_json("gnomad_sv.json")           # [{"chrom": "chr1", "start": 1000, "end": 5000, "sv_type": "DEL", "af": 0.003}, ...]
 ```
 
-**Register custom data location:**
-
-```python-snippet
-config.set("core.data_dir", "/my/data")
-# or
-export METAINFORMANT_DATA="/my/data"
-```
+| Argument | Accepted layouts |
+|----------|------------------|
+| `gene_db` (`annotate_gene_overlap`, `find_nearest_gene`), `regulatory_db` | List of dicts with `chrom`, `start`, `end`, `name`, or a list of `GenomicInterval` (any `is_coding` key is ignored) |
+| `gene_annotations` (`predict_functional_impact`) | List of dicts with `chrom`, `start`, `end`, `name` and optionally `is_coding` (default coding); dicts only, not `GenomicInterval` |
+| `haploinsufficiency_db` | `{gene: score}` |
+| `tad_boundaries` | List of dicts with `chrom`, `start`, `end` (and optionally `genes`) |
+| `population_db` | List of dicts with `chrom`, `start`, `end`, `af` (and optionally `sv_type`), or `{"chrom:start-end": af}` |
+| `blacklist_regions` | List of dicts with `chrom`, `start`, `end`, or a list of `(chrom, start, end)` tuples |
 
 ---
 
-## Advanced: Feature Flags
+## Optional Behaviour
 
-Some module behavior controlled by less-documented flags:
+There are no feature flags. The behaviours the old flag table described are plain function-level choices:
 
-| Setting | Values | Purpose |
-|---------|--------|---------|
-| `structural_variants.features.experimental_merge` | `true`/`false` | Enable experimental edge-weight merging (future) |
-| `structural_variants.features.gc_correction` | `true`/`false` | Enable GC-bias correction in CNV |
-| `structural_variants.features.microhomology_detection` | `true`/`false` | Enable microhomology scan (extra cost) |
-
-These may change between releases; use caution.
+- **GC-bias correction** — pass per-bin GC fractions as `gc_content=` to `cnv.calculate_log2_ratio()`.
+- **Microhomology scan** — `breakpoints.detect_microhomology()` can be called on its own; `refine_breakpoints()` runs it once, on the first read that carries a `seq` on the variant's chromosome, and reports the result on the first breakpoint only.
+- **Experimental merging** — no such option exists; use `merge_callsets()` or `survivor_merge()`.
 
 ---
 
@@ -354,44 +317,23 @@ These may change between releases; use caution.
 
 ### Problem: SV_ env var not taking effect
 
-1. Confirm variable is exported: `echo $SV_MIN_SUPPORT`
-2. Verify process inherits env (check `ps eww <pid>`)
-3. Environmental read happens at module import. Restart Python after setting vars.
+1. Confirm the name is one of the five in [Environment Variables](#environment-variables); any other `SV_` variable is ignored.
+2. Confirm variable is exported: `echo $SV_MIN_SUPPORT`
+3. Verify the process inherits the environment (check `ps eww <pid>`).
+4. The variable is read each time the function runs, so no restart is needed after setting it from Python. A value that does not parse as the expected type raises `ValueError` instead of falling back to the default.
 
-### Problem: YAML file not loading
+### Problem: an argument seems to be ignored
+
+The environment variable wins over the argument. List what is set and unset it if it should not apply:
 
 ```bash
-# Check file location
-ls -la config.yaml           # Repository root
-ls -la ~/.hermes/config.yaml # User home
-
-# Validate YAML syntax
-python3 -c "import yaml; yaml.safe_load(open('config.yaml'))"
+env | grep '^SV_'
+unset SV_MIN_SUPPORT
 ```
 
-### Problem: Config value not being used
+### Problem: a settings file is not being used
 
-Some functions read environment variables only once at import. To force reread:
-
-```python
-import importlib
-import metainformant.structural_variants.detection.cnv as cnv_module
-importlib.reload(cnv_module)  # Re-reads env vars on next call
-```
-
-Better: Use Python API `config.set()` for dynamic overrides.
-
-### Problem: Nested key not found
-
-Use dot-notation for nested:
-
-```python
-# Correct
-config.get("structural_variants.detection.min_support")
-
-# Wrong (no nested lookup)
-config.get("structural_variants")["detection"]["min_support"]  # works but fragile
-```
+The module reads no settings file. Load it yourself and pass the values as arguments ([Driving Settings From a File](#driving-settings-from-a-file)).
 
 ---
 
@@ -399,86 +341,47 @@ config.get("structural_variants")["detection"]["min_support"]  # works but fragi
 
 ```python-snippet
 #!/usr/bin/env python3
-"""Run SV pipeline with full configuration control."""
+"""Run an SV workflow with environment-driven configuration."""
 
 import os
-from pathlib import Path
-from metainformant.core.utils import config, logging as ml_logging
-from metainformant.structural_variants import pipeline
+from dataclasses import asdict
+from metainformant.core import io
+from metainformant.core.utils import logging as ml_logging
+from metainformant.structural_variants.annotation.overlap import annotate_gene_overlap
+from metainformant.structural_variants.detection.cnv import detect_cnv_from_depth
+from metainformant.structural_variants.detection.sv_calling import call_structural_variants
 
-# ── Configure via environment (highest priority after code defaults) ────────
+# ── Configure via environment (read when each function is called; the value
+#    overrides the corresponding function argument) ──────────────────────────
 os.environ["SV_MIN_SUPPORT"] = "5"
 os.environ["SV_CNV_SIGNIFICANCE"] = "0.001"
-os.environ["SV_FILTER_MAX_AF"] = "0.005"
-
-# Or via Python API (overrides env)
-config.set("structural_variants.filtering.quality.min_qual", 30.0)
-config.set("structural_variants.output_dir", "results/")
 
 # Setup logging
-ml_logging.setup_logging(level="INFO")
+ml_logging.setup_logger("metainformant.structural_variants", log_file="results/sv.log", level="INFO")
 
-# Run
-results = pipeline.run(
-    bam="sample.bam",
-    gene_annotations="genes.bed",
-    dosage_db="dosage_scores.json",
-    tad_boundaries="tads.json",
-)
+# Run (alignments: read-record dicts and depth_data: {chrom: per-bin depth}, see GETTING_STARTED.md)
+variants = call_structural_variants(alignments)                                   # SV_MIN_SUPPORT applies
+cnvs = detect_cnv_from_depth(depth_data)                                          # SV_CNV_SIGNIFICANCE applies
+annotated = annotate_gene_overlap([asdict(v) for v in variants], io.load_json("genes.json"))
 
-print(f"Completed: {len(results['filtered_svs'])} variants")
-```
-
----
-
-## Default Values Reference
-
-Resolved effective configuration can be printed:
-
-```python-snippet
-from metainformant.core.utils import config
-from metainformant.structural_variants import get_default_config
-
-defaults = get_default_config()  # Module-provided helper
-print("\n".join(f"{k}: {v}" for k, v in defaults.items()))
-```
-
-Or inspect module source:
-
-```python
-import inspect
-from metainformant.structural_variants.detection.cnv import detect_cnv_from_depth
-sig = inspect.signature(detect_cnv_from_depth)
-for name, param in sig.parameters.items():
-    if param.default is not inspect.Parameter.empty:
-        print(f"{name} = {param.default!r}")
+print(f"Completed: {len(annotated)} SVs, {sum(len(r.segments) for r in cnvs.values())} CNV segments")
 ```
 
 ---
 
 ## Validation & Debug
 
-Check configuration validity at startup:
-
-```python
-from metainformant.core.utils import config
-
-cfg = config.get("structural_variants")
-print(f"Detection min_support: {cfg['detection']['min_support']}")
-print(f"CNV significance: {cfg['detection']['cnv']['significance']}")
-```
-
-To debug what's being used inside a function:
+Check which of the five overrides are active:
 
 ```python
 import os
-from metainformant.structural_variants.detection.cnv import _ENV_PREFIX
 
-# Show all SV_ env vars that would be read
-for key, val in os.environ.items():
-    if key.startswith("SV_"):
-        print(f"{key} = {val}")
+for key in ("SV_MIN_SUPPORT", "SV_MIN_QUAL", "SV_CNV_SIGNIFICANCE", "SV_CNV_DEL_THRESHOLD", "SV_CNV_DUP_THRESHOLD"):
+    if key in os.environ:
+        print(f"{key} = {os.environ[key]}")
 ```
+
+To see what a call actually used, read the `parameters` recorded on its result (`CNVResult.parameters`, `FilterStats.parameters`; see [Seeing Which Values a Call Used](#seeing-which-values-a-call-used)). `call_structural_variants` returns a plain list of `StructuralVariant` objects and records nothing.
 
 ---
 

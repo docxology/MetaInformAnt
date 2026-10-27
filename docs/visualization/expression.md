@@ -10,7 +10,7 @@ Create an expression heatmap with clustering.
 
 **Example:**
 ```python
-from metainformant.visualization import expression_heatmap
+from metainformant.visualization.plots.general import expression_heatmap
 import pandas as pd
 import numpy as np
 

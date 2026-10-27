@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - methods
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/multiomics/methods`
+- **Path**: `src/metainformant/multiomics/methods`
 - **Purpose**: Core multi-omic integration algorithms.
 - **Domain**: multiomics
 

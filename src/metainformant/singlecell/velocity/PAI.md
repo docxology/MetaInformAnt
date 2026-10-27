@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - velocity
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/singlecell/velocity`
+- **Path**: `src/metainformant/singlecell/velocity`
 - **Purpose**: RNA velocity analysis for single-cell data.
 - **Domain**: singlecell
 

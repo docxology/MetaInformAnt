@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - external
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/dna/external`
+- **Path**: `src/metainformant/dna/external`
 - **Purpose**: Functionality for external.
 - **Domain**: dna
 

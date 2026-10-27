@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - visualization
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/ecology/visualization`
+- **Path**: `src/metainformant/ecology/visualization`
 - **Purpose**: Functionality for visualization.
 - **Domain**: ecology
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - communication
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/spatial/communication`
+- **Path**: `src/metainformant/spatial/communication`
 - **Purpose**: Cell-cell communication analysis for spatial transcriptomics.
 - **Domain**: spatial
 

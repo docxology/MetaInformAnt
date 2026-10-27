@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - deep_learning
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/ml/deep_learning`
+- **Path**: `src/metainformant/ml/deep_learning`
 - **Purpose**: Deep learning sub-package for biological sequence and image analysis.
 - **Domain**: ml
 

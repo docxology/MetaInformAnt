@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - io
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/quality/io`
+- **Path**: `src/metainformant/quality/io`
 - **Purpose**: Functionality for io.
 - **Domain**: quality
 

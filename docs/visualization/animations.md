@@ -10,7 +10,7 @@ Animate a time series as a growing line.
 
 **Example:**
 ```python
-from metainformant.visualization import animate_time_series
+from metainformant.visualization.plots.animations import animate_time_series
 
 fig, anim = animate_time_series([0, 1, 3, 2, 5], interval_ms=150)
 # anim.save("series.mp4")  # optional - requires matplotlib writer

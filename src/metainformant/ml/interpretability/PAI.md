@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - interpretability
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/ml/interpretability`
+- **Path**: `src/metainformant/ml/interpretability`
 - **Purpose**: Model interpretability and explainability subpackage.
 - **Domain**: ml
 

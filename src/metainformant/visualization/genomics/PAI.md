@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - genomics
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/visualization/genomics`
+- **Path**: `src/metainformant/visualization/genomics`
 - **Purpose**: Functionality for genomics.
 - **Domain**: visualization
 

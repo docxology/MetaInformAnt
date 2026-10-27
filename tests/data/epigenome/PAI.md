@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - epigenome
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/tests/data/epigenome`
+- **Path**: `tests/data/epigenome`
 - **Purpose**: Functionality for epigenome.
 - **Domain**: data
 

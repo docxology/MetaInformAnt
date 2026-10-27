@@ -107,19 +107,23 @@ response = client.generate(prompt)
 ### Chain Workflows
 
 ```python
-from metainformant.ml.llm.ollama.chains import SequentialChain, PromptChain
+from metainformant.ml.llm.ollama.chains import SequentialChain, PromptChain, TransformChain
 from metainformant.ml.llm.ollama.prompts import PromptTemplate
 
-# Multi-step analysis pipeline
+# Multi-step analysis pipeline. A PromptChain takes a dict of template variables and
+# returns text, so a TransformChain wraps each text result back into {"item": ...}
 extract = PromptChain(PromptTemplate("Extract key points from: {item}"))
 analyze = PromptChain(PromptTemplate("Analyze these points: {item}"))
 summarize = PromptChain(PromptTemplate("Summarize: {item}"))
+wrap = TransformChain(lambda text: {"item": text})
 
-pipeline = SequentialChain([extract, analyze, summarize])
+# The SequentialChain's client (the default client unless one is passed) is shared by all steps
+pipeline = SequentialChain([extract, wrap, analyze, wrap, summarize], client=client)
 result = pipeline.run({"item": document_text})
 
 if result.success:
     print(result.value)
+    print(result.metadata)  # tokens, duration, chain_count
 else:
     print(f"Error: {result.error}")
 ```
@@ -127,7 +131,7 @@ else:
 ### Bioinformatics Helpers
 
 ```python
-from metainformant.ml.llm.ollama import (
+from metainformant.ml.llm.ollama.prompts import (
     build_bioinformatics_prompt,
     GENE_ANALYSIS_TEMPLATE,
     SystemPrompt,
@@ -136,6 +140,13 @@ from metainformant.ml.llm.ollama import (
 # Pre-built gene analysis template
 prompt = GENE_ANALYSIS_TEMPLATE.format(
     gene_name="TP53",
+    organism="Homo sapiens",
+)
+
+# Task prompt builder (returns a prompt string)
+prompt = build_bioinformatics_prompt(
+    task="identify functional domains",
+    data="MTEYKLVVVG",
     organism="Homo sapiens",
 )
 
@@ -181,6 +192,6 @@ except RuntimeError as e:
 
 1. **Use smallest model that works** - `smollm2` for simple tasks
 2. **Enable streaming** for long responses to get early output
-3. **Reuse client instances** - they maintain connection state
+3. **Reuse client instances** - they hold the configuration and, for `conversation()`, the chat history
 4. **Set appropriate timeouts** - larger models need more time
 5. **Use low temperature** (0.1-0.3) for deterministic outputs

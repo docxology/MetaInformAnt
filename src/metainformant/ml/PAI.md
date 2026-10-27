@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - ml
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/ml`
+- **Path**: `src/metainformant/ml`
 - **Purpose**: Machine learning module for METAINFORMANT.
 - **Domain**: metainformant
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - morphological
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/phenotype/morphological`
+- **Path**: `src/metainformant/phenotype/morphological`
 - **Purpose**: Morphological phenotype analysis module.
 - **Domain**: phenotype
 

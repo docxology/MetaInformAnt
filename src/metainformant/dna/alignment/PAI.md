@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - alignment
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/dna/alignment`
+- **Path**: `src/metainformant/dna/alignment`
 - **Purpose**: Functionality for alignment.
 - **Domain**: dna
 

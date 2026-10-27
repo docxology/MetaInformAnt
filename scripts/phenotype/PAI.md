@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - phenotype
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/scripts/phenotype`
+- **Path**: `scripts/phenotype`
 - **Purpose**: Functionality for phenotype.
 - **Domain**: scripts
 

@@ -431,39 +431,34 @@ Or use setup script:
 bash scripts/package/setup.sh
 ```
 
-## Filesystem Detection API
+## Filesystem Detection Helpers
 
-METAINFORMANT provides Python utilities for filesystem detection:
+Filesystem detection is implemented as shell functions in `scripts/package/_common.sh`, which the setup, test and verification scripts source. The package does not ship an importable Python module for it. Detection runs `df -T` on the repository root and treats `exfat`, `fat32`, `fat`, `vfat` and `msdos` as filesystems without symlink support. If `df -T` cannot report a type, the type is `unknown` and symlinks are assumed to work.
 
-```python-snippet
-from metainformant.core.filesystem import (
-    detect_filesystem_type,
-    supports_symlinks,
-    get_uv_cache_dir,
-    get_venv_location,
-    is_fat_filesystem,
-)
+```bash
+source scripts/package/_common.sh
 
-# Detect filesystem type
-fs_type = detect_filesystem_type(".")
-print(f"Filesystem: {fs_type}")
+# Detect filesystem type (sets FS_TYPE and HAS_SYMLINKS; returns 1 on FAT, 0 otherwise)
+if detect_filesystem; then
+    echo "Standard filesystem: ${FS_TYPE}, symlinks: ${HAS_SYMLINKS}"
+else
+    echo "FAT filesystem: ${FS_TYPE}, symlinks: ${HAS_SYMLINKS}"
+fi
 
-# Check symlink support
-has_symlinks = supports_symlinks(".")
-print(f"Symlinks supported: {has_symlinks}")
+# Configure UV_CACHE_DIR: keeps an existing value or .uv-cache on standard filesystems,
+# /tmp/uv-cache on FAT
+configure_uv_cache
+echo "UV cache: ${UV_CACHE_DIR}"
 
-# Get appropriate UV cache directory
-cache_dir = get_uv_cache_dir(".")
-print(f"UV cache: {cache_dir}")
+# Get the venv directory (.venv on standard filesystems, /tmp/metainformant_venv on FAT)
+venv_dir=$(get_venv_dir)
+echo "Venv location: ${venv_dir}"
 
-# Get appropriate venv location
-venv_dir = get_venv_location(".")
-print(f"Venv location: {venv_dir}")
-
-# Check if FAT filesystem
-is_fat = is_fat_filesystem(".")
-print(f"Is FAT: {is_fat}")
+# Get the pytest command for that venv (falls back to `uv run pytest`)
+echo "pytest: $(get_pytest_cmd)"
 ```
+
+`tests/conftest.py` applies the same rule for test runs: its session fixture `configure_uv_environment` calls `_detect_filesystem_type` and sets `UV_CACHE_DIR`, `UV_PROJECT_ENVIRONMENT` and `METAINFORMANT_VENV` when they are not already set.
 
 ## Best Practices
 

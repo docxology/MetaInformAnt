@@ -11,7 +11,7 @@ flowchart LR
 Example
 
 ```python-snippet
-from metainformant.dna import restriction
+from metainformant.dna.sequence import restriction
 
 # Define restriction enzymes and their recognition motifs
 enzymes = {

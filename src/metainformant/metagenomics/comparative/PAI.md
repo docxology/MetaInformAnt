@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - comparative
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/metagenomics/comparative`
+- **Path**: `src/metainformant/metagenomics/comparative`
 - **Purpose**: Comparative metagenomics analysis.
 - **Domain**: metagenomics
 

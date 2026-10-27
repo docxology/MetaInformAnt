@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - integration
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/spatial/integration`
+- **Path**: `src/metainformant/spatial/integration`
 - **Purpose**: Spatial-scRNA-seq integration module for METAINFORMANT.
 - **Domain**: spatial
 

@@ -38,17 +38,19 @@ src/metainformant/ml/
 ### Regression (`regression`)
 - Regression models
 - Linear regression
-- Ridge/Lasso regression
+- Ridge/Lasso/ElasticNet regression
 - Used by GWAS module
 
 **Patterns**:
 ```python
 from metainformant.ml.models import regression
 
-model = regression.fit_linear_model(
+# method: 'rf' (default), 'gb', 'linear', 'ridge', 'lasso', 'elasticnet', 'svr'
+# Covariates go in as extra columns of the feature matrix
+model = regression.train_regressor(
     X=features,
     y=phenotypes,
-    covariates=covariates
+    method="ridge",
 )
 predictions = model.predict(X_test)
 ```
@@ -62,11 +64,11 @@ predictions = model.predict(X_test)
 ```python
 from metainformant.ml.features import dimensionality
 
-pca_result = dimensionality.pca(
-    data=expression_matrix,
-    n_components=50
+transformed, pca_model = dimensionality.pca_reduction(
+    X=expression_matrix,
+    n_components=50,
 )
-# Returns: transformed data and explained variance
+# Returns: (transformed data, fitted PCA model); pca_model.explained_variance_ratio_ holds the explained variance
 ```
 
 ### Features (`features`)
@@ -83,12 +85,14 @@ pca_result = dimensionality.pca(
 ```python
 from metainformant.ml.evaluation import validation
 
+# model is a scikit-learn estimator (or a factory function returning one)
 scores = validation.cross_validate(
     model=model,
     X=data,
     y=labels,
-    cv=5
+    cv=5,
 )
+# Returns: dict with mean_score, std_score, scores, scoring and cv_folds
 ```
 
 ## Patterns

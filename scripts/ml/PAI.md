@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - ml
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/scripts/ml`
+- **Path**: `scripts/ml`
 - **Purpose**: Functionality for ml.
 - **Domain**: scripts
 

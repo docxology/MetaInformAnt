@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - ui
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/menu/ui`
+- **Path**: `src/metainformant/menu/ui`
 - **Purpose**: Functionality for ui.
 - **Domain**: menu
 

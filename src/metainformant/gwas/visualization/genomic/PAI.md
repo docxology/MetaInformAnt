@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - genomic
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/gwas/visualization/genomic`
+- **Path**: `src/metainformant/gwas/visualization/genomic`
 - **Purpose**: Genomic visualization subpackage.
 - **Domain**: visualization
 

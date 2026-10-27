@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - pathway_enrichment
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/ontology/pathway_enrichment`
+- **Path**: `src/metainformant/ontology/pathway_enrichment`
 - **Purpose**: Pathway enrichment analysis subpackage.
 - **Domain**: ontology
 

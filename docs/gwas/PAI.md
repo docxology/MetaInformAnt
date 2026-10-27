@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - gwas
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/docs/gwas`
+- **Path**: `docs/gwas`
 - **Purpose**: Functionality for gwas.
 - **Domain**: docs
 

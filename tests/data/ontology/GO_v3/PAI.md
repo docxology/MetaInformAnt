@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - GO_v3
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/tests/data/ontology/GO_v3`
+- **Path**: `tests/data/ontology/GO_v3`
 - **Purpose**: Functionality for GO_v3.
 - **Domain**: ontology
 

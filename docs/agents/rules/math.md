@@ -81,8 +81,9 @@ src/metainformant/math/
 ```python
 from metainformant.math.population_genetics import coalescent
 
-d = coalescent.tajimas_D(segregating_sites, Ne=1000)
-t_mrca = coalescent.expected_time_to_mrca(n=10, Ne=1000)
+# pi: mean pairwise differences per sequence, s: segregating sites, n: sample size
+d = coalescent.tajimas_D(pi, s, n)
+t_mrca = coalescent.expected_time_to_mrca(n_samples=10, effective_size=1000)
 ```
 
 ### Demography (`demography`)
@@ -106,7 +107,8 @@ t_mrca = coalescent.expected_time_to_mrca(n=10, Ne=1000)
 ```python
 from metainformant.math.population_genetics import fst
 
-fst_val = fst.fst_from_allele_freqs(subpop_freqs)
+# Per-locus allele frequencies in two populations (a single locus can pass [p1, p2])
+fst_val = fst.fst_from_allele_freqs(pop1_freqs, pop2_freqs)
 fst_val = fst.fst_from_heterozygosity(Hs=0.4, Ht=0.5)
 ```
 
@@ -120,8 +122,12 @@ fst_val = fst.fst_from_heterozygosity(Hs=0.4, Ht=0.5)
 ```python
 from metainformant.math.population_genetics import ld
 
+# Allele and haplotype frequencies -> (D, D')
 D, D_prime = ld.ld_coefficients(pA, pa, pB, pb, haplotype_pAB)
-r2 = ld.r_squared(pA, pa, pB, pb, haplotype_pAB)
+
+# Phased haplotypes ([allele at locus 1, allele at locus 2] per haplotype) -> dict with D, D_prime, r_squared
+coeffs = ld.ld_coefficients(haplotypes)
+r2 = coeffs["r_squared"]
 ```
 
 ### Quantitative Genetics (`quantgen`)
@@ -132,10 +138,11 @@ r2 = ld.r_squared(pA, pa, pB, pb, haplotype_pAB)
 
 **Patterns**:
 ```python
+from metainformant.math.population_genetics import selection
 from metainformant.math.quantitative_genetics import core as quantgen
 
 h2 = quantgen.narrow_sense_heritability(genetic_variance, phenotypic_variance)
-response = quantgen.breeders_equation_response(heritability, selection_differential)
+response = selection.breeders_equation_response(h2, selection_differential)
 ```
 
 ### Dynamics (`dynamics`)
@@ -145,7 +152,7 @@ response = quantgen.breeders_equation_response(heritability, selection_different
 
 **Patterns**:
 ```python
-from metainformant.math import logistic_map, lotka_volterra_step
+from metainformant.math.evolutionary_dynamics.core import logistic_map, lotka_volterra_step
 
 growth_curve = logistic_map(r=3.5, x0=0.5, steps=100)
 prey_next, predator_next = lotka_volterra_step(
@@ -159,23 +166,6 @@ prey_next, predator_next = lotka_volterra_step(
 - Permutation tests
 - Outlier detection
 - Tajima's D outlier detection
-
-### Selection Experiments (`selection_experiments`)
-- Natural selection simulation framework
-- Signal processing constraints
-- Structural vs. quality trait evolution
-- Multi-generation evolutionary experiments
-
-**Patterns**:
-```python-snippet
-from metainformant.math.selection_experiments import simulate_generations
-
-results = simulate_generations(
-    generations=50,
-    n=10000,
-    s_hat=0.6
-)
-```
 
 ## Patterns
 

@@ -1,181 +1,168 @@
 # Configuration: Pharmacogenomics
 
-## Environment variables (top precedence)
+The pharmacogenomics module has no environment variables, no `pharmacogenomics.*`
+configuration keys and no YAML section: nothing under `src/metainformant/pharmacogenomics`
+reads the environment or `metainformant.core.utils.config`. Behaviour is configured with
+function arguments, listed in the [scope table](#scope-table--whats-configurable) at the
+end of this page. (The `PG_*` variables that
+`core.utils.config.load_postgres_config_from_env()` reads — `PG_HOST`, `PG_PORT`,
+`PG_DATABASE`, `PG_USER`, `PG_PASSWORD` — configure PostgreSQL and are unrelated to this
+module.)
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PG_ALGORITHM` | `auto` | Algorithm: `fast` | `balanced` | `accurate` | `auto` |
-| `PG_CHUNK_SIZE` | `5000` | Batch size for streaming (>20k records recommended 20k) |
-| `PG_PARALLEL` | `false` | Enable multiprocessing — `true` or `false` |
-| `PG_ALLELE_DEFINITIONS_DIR` | built-in | Path to directory with per-gene `*.json` custom tables |
-| `PG_CPIC_GUIDELINES_URL` | built-in | Override URL to CPIC JSON (rare) |
-| `PG_PHARMGKB_API_TOKEN` | none | Optional token for authenticated PharmGKB REST queries |
-| `PG_LOGGING` | `INFO` | Module log-level — `DEBUG` shows allele-matching trace |
+To drive those arguments from a file, load the file yourself (for example with
+`metainformant.core.utils.config.load_mapping_from_file`) and pass the values explicitly.
 
-## Python API
+## Not implemented
 
-```python
-from metainformant.core.utils import config
-config.set('pharmacogenomics.algorithm', 'fast')
-config.set('pharmacogenomics.chunk_size', 20000)
-config.set('pharmacogenomics.parallel', True)
-config.set('pharmacogenomics.allele_definitions_dir', '/data/alleles/')
-```
+None of the following exists; nothing in the module reads or provides it:
 
-## YAML (~/.hermes/config.yaml)
-
-```yaml
-pharmacogenomics:
-  algorithm: balanced
-  chunk_size: 5000
-  parallel: false
-  allele_definitions_dir: null
-  cpic_guidelines_url: null
-```
+- Environment variables `PG_ALGORITHM`, `PG_CHUNK_SIZE`, `PG_PARALLEL`,
+  `PG_ALLELE_DEFINITIONS_DIR`, `PG_CPIC_GUIDELINES_URL`, `PG_PHARMGKB_API_TOKEN`,
+  `PG_PHARMGKB_TSV_PATH` and `PG_LOGGING`.
+- `pharmacogenomics.*` config keys, a `pharmacogenomics:` YAML section, and the
+  `config.set()`, `config.validate_schema()` and `config.reset()` calls
+  (`metainformant.core.utils.config` has none of them) — so there is also no precedence
+  hierarchy between layers; a function argument is the only way to configure a call.
+- Matching algorithms (`fast`, `balanced`, `accurate`, `auto`); `call_star_alleles` has
+  the single algorithm described below.
+- Chunk-size, memory and process-parallelism settings.
+- Downloads and caches: the module has no network code, so no CPIC or PharmGKB data is
+  fetched and there is nothing to refresh.
 
 ## Algorithm detail
 
-| value | behavior | per-sample runtime (typical) |
-|-------|----------|-----------------------------|
-| `fast` | Greedy first subset match; no fragmentation check | 5–8 ms |
-| `balanced` | Greedy + optimal count when 2–3 candidate alleles tie | 9–12 ms |
-| `accurate` | Exhaustive enumeration of all minimal allele subsets (≤6 options) | 25–40 ms |
-| `auto` | Heuristic: ≤2 alleles → fast; ≥3 → balanced | — |
+`call_star_alleles(variants, gene, allele_definitions=None)` has one greedy algorithm:
 
-## Chunk size & parallel streaming
+1. Sort the allele definitions by number of defining variants, most specific first. The
+   definition named `*1` is the reference and is never matched on its own variants.
+2. Keep every definition whose defining variants are all observed and not already
+   consumed by an earlier match, so overlapping definitions resolve to the most specific
+   one (observing `rs4149056` and `rs2306283` in SLCO1B1 gives `*15`, not `*5` plus `*1B`).
+3. Return the matches sorted by name. If nothing matched, return `[*1]` — or `[]` when
+   the definitions contain no `*1`.
 
-When processing large DataFrames, use `parallel.thread_map` or
-`parallel.parallel_batch`.
+An empty or unrecognised variant set therefore reads as the reference allele, not as an
+error. The only debug output is one line per matched allele, or one line when nothing
+matched (see Global logging).
 
-| cohort N | recommended `chunk_size` | live memory impact |
-|----------|----------------------|-------------------|
-| < 5 000  | 1 000                | negligible        |
-| 5 K–100 K | 5 000               | ~60 MB            |
-| 100 K–1 M | 20 000              | ~120 MB           |
-| > 1 M    | 50 000              | ~200 MB           |
+## Batch processing
 
-Example workflow:
+There is no chunk-size setting. Map a per-sample function over a cohort with
+`metainformant.core.execution.parallel`:
+
+- `parallel.thread_map(func, items, max_workers=8)` — thread pool, one call per item,
+  results in input order.
+- `parallel.process_map(func, items, max_workers=None)` — process pool for CPU-bound
+  work; `func` must be a top-level (picklable) function.
+- `parallel.parallel_batch(func, items, batch_size=10, max_workers=4)` — splits `items`
+  into batches; `func` takes a list and returns a list.
 
 ```python-snippet
 from metainformant.core.execution import parallel
-from metainformant import pharmacogenomics
-def allele_predict(row):
-    return pharmacogenomics.predict_metabolizer(set(row['rsids'].split(';')), gene='CYP2D6')
+from metainformant.pharmacogenomics.alleles.star_allele import call_star_alleles
 
-results = parallel.thread_map(allele_predict, df.to_dict('records'), max_workers=8)
+def called_alleles(row):
+    return [a.name for a in call_star_alleles(set(row['rsids'].split(';')), 'CYP2D6')]
+
+results = parallel.thread_map(called_alleles, df.to_dict('records'), max_workers=8)
 ```
-
-Workers inherit config; ensure `PG_PARALLEL=true` for best throughput.
 
 ## Custom star allele tables
 
-JSON schema per gene file:
+JSON file per gene (allele name → definition; the table may also be nested under the gene symbol):
 
 ```json
 {
-  "gene": "CYP2E1",
-  "star_alleles": [
-    {
-      "name": "*1",
-      "variants": ["rs2031920"],
-      "function": "normal",
-      "activity": 1.0
-    },
-    {
-      "name": "*5B",
-      "variants": ["rs3813867"],
-      "function": "decreased",
-      "activity": 0.5
-    }
-  ]
+  "*1": {
+    "defining_variants": [],
+    "function": "Normal function",
+    "activity_value": 1.0
+  },
+  "*5B": {
+    "defining_variants": ["rs3813867"],
+    "function": "Decreased function",
+    "activity_value": 0.5
+  }
 }
 ```
 
-Required allele keys: `name` (star allele designation), `variants` (list of dbSNP rsIDs used for matching), `function` (free-text), `activity` (float; usually 0.0 .5 .5 1.0 1.5+).
+Allele keys: `defining_variants` (list of dbSNP rsIDs or `chr:pos:ref:alt` identifiers used for matching), `function` (free-text), `activity_value` (float; usually 0.0, 0.5, 1.0, 1.5+; a missing value defaults to 1.0, i.e. normal function). `clinical_significance` and `evidence_level` are optional. A TSV with the columns `allele`, `defining_variants` (semicolon-separated), `function` and `activity_value` is also accepted.
 
-Load from a directory that holds one or more json files:
+Load one gene's table from a file and pass it to the allele caller:
 
 ```python-snippet
-from metainformant.pharmacogenomics.alleles.star_allele import load_all_allele_definitions
-load_all_allele_definitions('/my/custom/path/')
+from metainformant.pharmacogenomics.alleles.star_allele import call_star_alleles, load_allele_definitions
+from metainformant.pharmacogenomics.alleles.diplotype import determine_diplotype
+
+definitions = load_allele_definitions('CYP2E1', source='file', filepath='/my/custom/path/CYP2E1.json')
+alleles = call_star_alleles({'rs3813867'}, 'CYP2E1', allele_definitions=definitions)
+
+# determine_diplotype scores from its own built-in tables and treats unknown alleles as 1.0,
+# so give it the custom activity values explicitly
+scores = {a.name: a.activity_value for a in definitions}
+diplotype = determine_diplotype(alleles[0], '*1', 'CYP2E1', scoring_table=scores)
 ```
 
-Files are indexed by top-level `"gene"` key; you may store many genes in one directory. After load, every subsequent call uses those definitions.
+Definitions are loaded per gene and are used only when passed as `allele_definitions`; without it, `call_star_alleles` uses the built-in tables. `classify_phenotype` applies CYP2D6-like default thresholds (with a logged warning) to a gene that has no built-in thresholds.
 
 ## CPIC guidelines override
 
-The built-in snapshot is CPIC v3.0 (2024-01). To replace or upgrade:
+The built-in guidelines are 9 level-A entries. `load_cpic_guidelines` returns the list parsed from your file; it does not replace the built-in data, so pass the list to the functions that take `guidelines`:
 
-```python
-from metainformant.pharmacogenomics.annotations.cpic import load_cpic_guidelines
-load_cpic_guidelines(path='/data/cpic_guidelines_2025.json')
+```python-snippet
+from metainformant.pharmacogenomics.annotations.cpic import get_dosing_recommendation, load_cpic_guidelines
+
+guidelines = load_cpic_guidelines(filepath='cpic_guidelines_2025.json')
+rec = get_dosing_recommendation('codeine', 'Poor Metabolizer', guidelines=guidelines)
 ```
 
-The JSON file must be a list of guideline dictionaries with these required keys:
+The JSON file must be a list of guideline dictionaries (an object with a `guidelines` list, or a single guideline object, is also accepted) with these keys:
 
 - `drug` (str)
 - `gene` (str)
-- `cpic_level` (`'A'`|`'B'`|`'C'`|`'D'`)
-- `phenotypes` — map phenotype string → `{recommendation, classification, evidence}`
+- `cpic_level` (`'A'`|`'A/B'`|`'B'`|`'C'`|`'D'`) — `lookup_drug_gene` and `get_dosing_recommendation` raise `KeyError` when a matching entry lacks it (`list_actionable_genes` skips such an entry)
+- `recommendations` — map phenotype string → `{recommendation, classification, implications}`
 - `guideline_url` (optional)
 
-Alternatively, set `PG_CPIC_GUIDELINES_URL` to a downloadable URL; the module will fetch and cache it once.
+A TSV with the columns `drug`, `gene`, `cpic_level` (or `level`) and `guideline_url` (or `url`) also loads, but its entries have empty `recommendations`, so it only serves `lookup_drug_gene` and `list_actionable_genes`.
 
-## PharmGKB cache management
+`generate_clinical_report` and `analyze_drug_gene_interactions` always use the built-in guidelines; they take no `guidelines` argument.
 
-First network call downloads the latest PharmGKB annotation TSV (~9 MB) into `~/.cache/metainformant/pharmgkb/annotations.tsv`. Future calls are offline.
+## PharmGKB annotations
 
-To force re-download (e.g., monthly update):
+The package ships a curated set of PharmGKB clinical annotations; it does not download or cache anything, so there is nothing to refresh. `query_pharmgkb_annotations(gene=..., drug=..., variant=...)` searches the built-in annotations.
+
+To use your own, more recent export, parse a local PharmGKB clinical-annotations TSV:
 
 ```python-snippet
-from metainformant.pharmacogenomics.annotations.pharmgkb import refresh_pharmgkb_cache
-refresh_pharmgkb_cache(force=True)
+from metainformant.pharmacogenomics.annotations.pharmgkb import parse_clinical_annotations
+annotations = parse_clinical_annotations('/data/pharmgkb/clinical_annotations.tsv')
 ```
 
-For air-gapped systems, pre-populate the cache directory or set `PG_PHARMGKB_TSV_PATH` to a local file. The file must be a TSV with the official PharmGKB columns.
-
-## Validation & sanity
-
-```python
-from metainformant.core.utils import config
-errors = config.validate_schema(module='pharmacogenomics')
-if errors:
-    for e in errors:
-        print(f"{e.path}: {e.message}")
-```
-
-Common validation errors: unknown algorithm name; chunk_size non-integer; `parallel` non-boolean; `allele_definitions_dir` not a readable directory.
-
-To revert all keys to built-in defaults:
-
-```python
-config.reset(module='pharmacogenomics')
-```
+The parser reads these official PharmGKB TSV columns: `Clinical Annotation ID`, `Gene`, `Level of Evidence`, `Drug(s)`, `Phenotype Category` and `Annotation Text`. A column it does not find gives empty strings, not an error. The parsed list is returned to you; `query_pharmgkb_annotations` keeps searching only the built-in annotations.
 
 ## Global logging
 
-Set `PG_LOGGING=DEBUG` to see detailed allele-matching traces: every candidate allele evaluated, scores, and tie-breaking decisions. This is invaluable when troubleshooting a new rare variant.
+The module logs through the standard `logging` logger `metainformant.pharmacogenomics` (child loggers per module), whose level is inherited from the root logger (WARNING by default). Raise it to see what the allele matcher does: at `DEBUG` it logs one line per matched allele, or a line saying that no variant allele matched and `*1` was returned. This helps when a variant set unexpectedly calls `*1`.
 
-```bash
-export PG_LOGGING=DEBUG
-python predict.py
+```python
+import logging
+logging.getLogger('metainformant.pharmacogenomics').setLevel(logging.DEBUG)
 ```
 
-## Precedence hierarchy
-
-1. Function-call kwargs (win everything)
-2. Per-process `config.set()`
-3. `config.yaml` file
-4. Environment variables
-5. Built-in module defaults
+Alternatively set `CORE_LOG_LEVEL=DEBUG` in the environment and call `metainformant.core.utils.logging.configure_logging_from_env()` once at start-up; that sets the root logger level for every module, not only this one.
 
 ## Scope table — what's configurable
 
-| config key | env var | purpose |
-|------------|---------|---------|
-| `pharmacogenomics.algorithm` | `PG_ALGORITHM` | matching strategy |
-| `pharmacogenomics.chunk_size` | `PG_CHUNK_SIZE` | batch size for streaming |
-| `pharmacogenomics.parallel` | `PG_PARALLEL` | enable multiprocessing |
-| `pharmacogenomics.allele_definitions_dir` | `PG_ALLELE_DEFINITIONS_DIR` | custom JSON directory |
-| `pharmacogenomics.cpic_guidelines_url` | `PG_CPIC_GUIDELINES_URL` | CPIC JSON source |
-| `pharmacogenomics.pharmgkb.tsv_path` | `PG_PHARMGKB_TSV_PATH` | local PharmGKB TSV |
+| What | Function and argument | Default |
+|------|-----------------------|---------|
+| Star-allele definitions | `call_star_alleles(variants, gene, allele_definitions=...)`; `load_allele_definitions(gene, source='cpic', filepath=None)` | built-in tables |
+| Allele activity scores | `determine_diplotype(allele1, allele2, gene, scoring_table=...)`; `calculate_activity_score(diplotype, gene, scoring_table=...)` | built-in scoring tables; unknown alleles score 1.0 |
+| Allele function table for `predict_metabolizer` | `predict_metabolizer(genotype, gene, activity_scores=...)`, one gene's `{allele: value}` dict | that gene's entry of `default_allele_function_table()` |
+| CPIC guidelines | `lookup_drug_gene`, `get_dosing_recommendation`, `list_actionable_genes(guidelines=..., min_level='B')` | built-in guidelines; `min_level='B'` |
+| Dose guidelines | `dose_adjustment(metabolizer_status, drug, dose_guidelines=...)` | built-in dose table |
+| Drug–drug interactions | `predict_drug_interaction(drug_a, drug_b, interaction_db=...)`; `polypharmacy_risk(medications, interaction_db=...)` | `default_interaction_database()` |
+| CYP inhibitor/inducer profiles | `cyp_inhibition_prediction(drug, cyp_profiles=...)` | built-in tables |
+| Alternative drugs | `suggest_alternatives(drug, phenotype, alternatives_db=...)` | built-in table |
+| Report format and disclaimer | `export_report(report, format='text', output_path=None)`; `add_disclaimer(report, custom_disclaimer=None)` | text; standard disclaimer |
+| Plot output | every `plot_*` function: `output_path`, `title`, `figsize` | per function |

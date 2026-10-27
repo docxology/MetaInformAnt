@@ -4,29 +4,39 @@
 Genome-wide association studies: variant quality control, association testing, population structure, and visualization.
 
 ## Dependencies
-- **Required**: `core`, `dna.variants`, `dna.population`, `math.popgen`, `ml.regression`
+- **Required**: `core` (the module imports no other domain package, apart from `rna` in `workflow/rna_quantification.py`)
 - **Optional**: External tools (bcftools, GATK) for variant calling
 
 ## Source Structure
 ```
 src/metainformant/gwas/
  analysis/
- annotation.py, association.py, calling.py, correction.py
- heritability.py, ld_pruning.py, mixed_model.py
- quality.py, structure.py, summary_stats.py, utils.py
+ alignment.py, annotation.py, association.py, benchmarking.py, calling.py, correction.py
+ enrichment.py, eqtl.py, gene_annotation_api.py, heritability.py, hwe.py
+ ld_decay.py, ld_pruning.py, ldsr.py, mixed_model.py, power.py, prs.py
+ quality.py, strain_analysis.py, structure.py, summary_stats.py, utils.py
  data/
- config.py, download.py, genome.py, metadata.py, sra_download.py
+ config.py, download.py, expression.py, extraction.py, genome.py
+ metadata.py, sra_download.py, traits.py, vcf_utils.py
+ finemapping/
+ colocalization.py, credible_sets.py, eqtl.py
+ heritability/
+ estimation.py
+ reporting/
+ audit.py, html_report.py
+ simulation/
+ synthetic.py
+ validation/
+ output_validator.py
  visualization/
- config.py, general.py, utils.py
- visualization_comparison.py, visualization_composite.py
- visualization_effects.py, visualization_finemapping.py
- visualization_genome.py, visualization_geography.py
- visualization_interactive.py, visualization_ld.py
- visualization_phenotype.py, visualization_population.py
- visualization_regional.py, visualization_statistical.py
- visualization_suite.py, visualization_variants.py
+ config.py, general.py, _general_impl.py, utils.py
+ eqtl_visualization.py, strain_plots.py, structure_plots.py
+ genomic/ (genome.py, ld.py, regional.py, variants.py)
+ interactive/ (composite.py, finemapping.py, interactive.py, phenotype.py, suite.py)
+ population/ (geography.py, population.py, population_admixture.py, population_pca.py)
+ statistical/ (comparison.py, effects.py, statistical.py)
  workflow/
- workflow.py
+ workflow.py, workflow_config.py, workflow_execution.py, rna_quantification.py
 ```
 
 ## Package Management
@@ -46,12 +56,18 @@ src/metainformant/gwas/
 ```python
 from metainformant.gwas.analysis import association
 
-results = association.test_association(
-    genotypes=genotypes,
+# genotype_matrix is variants x samples (0/1/2 alternate-allele counts);
+# covariates (optional) is covariates x samples
+results = association.run_linear_model_gwas(
+    genotype_matrix=genotype_matrix,
     phenotypes=phenotypes,
-    covariates=covariates
+    variant_info=variant_info,  # optional: [{"id": ..., "chrom": ..., "pos": ...}, ...]
+    covariates=covariates,
 )
-# Returns: DataFrame with p-values, effect sizes, etc.
+# Returns: list of dicts, one per variant, with beta, se, t_stat, p_value, r_squared, ...
+
+# Single variant: association.association_test_linear(genotypes, phenotypes, covariates=None)
+# Binary traits: association.run_logistic_model_gwas / association.association_test_logistic
 ```
 
 ### Correction (`correction`)
@@ -64,8 +80,14 @@ results = association.test_association(
 ```python
 from metainformant.gwas.analysis import correction
 
-corrected = correction.apply_bonferroni(p_values)
-corrected = correction.apply_fdr(p_values, method="bh")
+bonferroni = correction.bonferroni_correction(p_values, alpha=0.05)
+# dict: corrected_alpha, significant (one bool per test), n_significant, ...
+
+fdr = correction.fdr_correction(p_values, alpha=0.05, method="bh")
+# dict: adjusted_p_values, significant (one bool per test), n_significant, ...
+
+adjusted = correction.adjust_p_values(p_values, method="bonferroni")
+# list of adjusted p-values; method is one of "bonferroni", "fdr", "genomic_control", "qvalue"
 ```
 
 ### Quality (`quality`)
@@ -76,9 +98,9 @@ corrected = correction.apply_fdr(p_values, method="bh")
 
 ### Structure (`structure`)
 - Population structure analysis
-- Principal Component Analysis (PCA)
-- Population stratification correction
-- Admixture estimation
+- Principal Component Analysis (`compute_pca`) and kinship matrices (`compute_kinship_matrix`)
+- Population stratification correction (PCs as covariates, or a kinship matrix with `run_mixed_model_gwas`)
+- Admixture proportions are only plotted (`admixture_plot` reads ADMIXTURE-format output); estimation is not implemented
 
 ### Visualization (`visualization`)
 - Manhattan plots
@@ -88,25 +110,25 @@ corrected = correction.apply_fdr(p_values, method="bh")
 - Comprehensive visualization suite
 
 **Visualization Submodules**:
-- `visualization.py`: Core visualization functions
-- `visualization_enhanced.py`: Enhanced plotting capabilities
-- `visualization_statistical.py`: Statistical plots (Q-Q, Manhattan)
-- `visualization_regional.py`: Regional association plots
-- `visualization_genome.py`: Genome-wide visualizations
-- `visualization_population.py`: Population structure plots
-- `visualization_variants.py`: Variant-specific plots
-- `visualization_effects.py`: Effect size visualizations
-- `visualization_comparison.py`: Comparative visualizations
-- `visualization_suite.py`: Comprehensive visualization suite
+- `general.py`: Public entry points (`manhattan_plot`, `qq_plot`, `regional_plot`, `pca_plot`, `kinship_heatmap`, `generate_all_plots`); implemented in `_general_impl.py`
+- `config.py`: `PlotStyle`, themes and `style_from_config`
+- `statistical/`: Statistical, effect-size and comparison plots
+- `genomic/`: Genome-wide, regional, LD and variant-specific plots
+- `population/`: Population structure, PCA, admixture and geography plots
+- `interactive/`: Interactive Manhattan plots, composite panels, fine-mapping, phenotype plots and the suite runner
+- `eqtl_visualization.py`, `strain_plots.py`, `structure_plots.py`: eQTL, strain and structure plots
 
 **Patterns**:
 ```python
 from metainformant.gwas.visualization import general as visualization
 
-visualization.plot_manhattan(
+# association_results: the list of per-variant dicts from run_linear_model_gwas;
+# the entry points of general.py create output/gwas/ when it is missing, but plots such as
+# genomic/genome.py's manhattan_plot call plt.savefig directly and need the directory to exist
+visualization.manhattan_plot(
     results=association_results,
     output_path="output/gwas/manhattan.png",
-    significance_threshold=5e-8
+    significance_threshold=5e-8,
 )
 ```
 
@@ -200,7 +222,7 @@ correction:
 - Downloads: `output/gwas/<analysis>/downloads/`
 
 ### Statistical Models
-- Use `ml.regression` for regression models
+- Linear, logistic and mixed-model tests live in `analysis/association.py` and `analysis/mixed_model.py`
 - Support both linear and logistic regression
 - Handle missing data appropriately
 - Report effect sizes and confidence intervals
@@ -225,7 +247,7 @@ correction:
 
 ## Integration
 
-- **Uses**: `dna.variants`, `dna.population`, `math.popgen`, `ml.regression`
+- **Uses**: `core` (and `rna` for RNA quantification in `workflow/rna_quantification.py`)
 - **Used by**: `multiomics` (genomics integration)
 - **Integrates with**: `visualization` (plotting), external tools (bcftools, GATK)
 

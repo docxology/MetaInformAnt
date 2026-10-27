@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - config_base
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/config/config_base`
+- **Path**: `config/config_base`
 - **Purpose**: Functionality for config_base.
 - **Domain**: config
 

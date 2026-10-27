@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - sonic
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/phenotype/sonic`
+- **Path**: `src/metainformant/phenotype/sonic`
 - **Purpose**: Sonic phenotype analysis module.
 - **Domain**: phenotype
 

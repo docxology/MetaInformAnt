@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - deconvolution
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/spatial/deconvolution`
+- **Path**: `src/metainformant/spatial/deconvolution`
 - **Purpose**: Spatial deconvolution submodule for advanced cell type deconvolution.
 - **Domain**: spatial
 

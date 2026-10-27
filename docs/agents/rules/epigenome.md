@@ -27,7 +27,7 @@ src/metainformant/epigenome/
 ## Key Submodules
 
 ### Methylation (`methylation`)
-- DNA methylation analysis
+- DNA methylation analysis from per-site methylation calls (it does not call methylation from BAM files)
 - CpG site identification
 - Methylation level quantification
 
@@ -35,10 +35,13 @@ src/metainformant/epigenome/
 ```python
 from metainformant.epigenome.assays import methylation
 
-methylation_data = methylation.analyze_methylation(
-    bam_file="data/methylation.bam",
-    genome="data/genome.fa",
-    output_dir="output/epigenome/methylation/"
+# Tab-separated calls: chromosome, position, strand, percent methylated,
+# methylated reads, total reads -> {chromosome: [MethylationSite, ...]}
+sites = methylation.load_methylation_cov("data/sample.cov", min_coverage=5)
+
+stats = methylation.calculate_methylation_statistics(sites)  # dict: total_sites, mean_methylation, ...
+report = methylation.generate_methylation_report(
+    sites, "output/epigenome/methylation/report.txt"
 )
 ```
 

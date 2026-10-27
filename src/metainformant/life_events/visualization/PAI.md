@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - visualization
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/life_events/visualization`
+- **Path**: `src/metainformant/life_events/visualization`
 - **Purpose**: Functionality for visualization.
 - **Domain**: life_events
 

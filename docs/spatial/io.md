@@ -12,7 +12,7 @@ All functions return an **AnnData** object with these guaranteed slots:
 | `.obs` | DataFrame per-observation metadata including `x`, `y` (µm) |
 | `.obsm['spatial']` | N×2 float array of µm coordinates |
 | `.var` | DataFrame per-gene metadata (gene symbols, Ensembl IDs) |
-| `.uns['platform']` | String: `'visium'`, `'xenium'`, `'merfish'`, `'slideseq'`, `'cosmx'` |
+| `.uns['platform']` | String: `'visium'`, `'xenium'` or `'merfish'` |
 | `.uns['scale']` | µm per pixel (Visium only; others 1.0) |
 | `.uns['sample_id']` | Derived from folder name (configurable) |
 
@@ -96,37 +96,6 @@ adata = load_merfish(
 Loader parses `detected_transcripts.csv` (columns: `barcode`, `x`, `y`, `target`).
 Aggregates transcripts → spots (typically cell segmentation already applied).
 
-
-## Slide-seqV2 (`load_slide_seq`)
-
-```python-snippet
-from metainformant.spatial.io.slideseq import load_slide_seq
-adata = load_slide_seq(
-    folder='data/slideseq_v2/',
-    bead_locations='bead_locations.csv',
-    counts='raw_feature_bc_matrix.h5',
-)
-```
-
-Coordinates stored directly in µm. Spots are beads; each bead contains 1–10 cells,
-so downstream deconvolution is usually unnecessary.
-
-
-## CosMx / Nanostring (`load_cosmx`)
-
-```python-snippet
-from metainformant.spatial.io.cosmx import load_cosmx
-adata = load_cosmx(
-    folder='data/cosmx_lung/',
-    expr_matrix='exprMat.csv',
-    metadata='metadata.csv',
-    fov='FOV1',
-)
-```
-
-`exprMat.csv` is a dense table: rows = molecules, columns = gene, cell, FOV, x, y.
-Loader aggregates to cell-level counts within a single FOV. Multi-FOV data should
-be concatenated after loading all FOVs.
 
 ## Registry
 

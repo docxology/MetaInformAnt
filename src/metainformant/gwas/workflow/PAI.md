@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - workflow
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/gwas/workflow`
+- **Path**: `src/metainformant/gwas/workflow`
 - **Purpose**: Functionality for workflow.
 - **Domain**: gwas
 

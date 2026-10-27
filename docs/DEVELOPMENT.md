@@ -174,7 +174,7 @@ See [docs/REAL_IMPLEMENTATION_POLICY.md](REAL_IMPLEMENTATION_POLICY.md) for rati
 Example test:
 ```python-snippet
 def test_gc_content_basic() -> None:
-    from metainformant.dna.composition import gc_content
+    from metainformant.dna.sequence.composition import gc_content
     assert gc_content("ATCG") == 0.5
     assert gc_content("AAAA") == 0.0
     assert gc_content("") == 0.0
@@ -282,13 +282,13 @@ uv run pytest --trace  # Start trace on first test
 
 Set logging level to DEBUG at program start:
 ```python-snippet
-from metainformant.core.utils.logging import setup_logging
-setup_logging(level="DEBUG", file_path="output/debug.log")
+from metainformant.core.utils.logging import setup_logger
+setup_logger("metainformant", log_file="output/debug.log", level="DEBUG")
 ```
 
-Or via environment variable (if supported):
+Or via environment variable (read by `configure_logging_from_env()` and `get_logger_with_level()`):
 ```bash
-export METAINFORMANT_LOG_LEVEL=DEBUG
+export CORE_LOG_LEVEL=DEBUG
 uv run python script.py
 ```
 

@@ -16,7 +16,7 @@ This guide documents concrete examples of multi-agent workflows in METAINFORMANT
 | [2. GWAS Association + Fine-Mapping](#2-gwas-association-fine-mapping) | `gwas.assoc`, `gwas.finemap`, `gwas.coloc` | Sequential with branching | Medium |
 | [3. Multi-Omic Integration](#3-multi-omic-integration) | `multiomics`, `dna`, `rna`, `gwas` | Fan-in aggregation | High |
 | [4. Single-Cell Analysis Pipeline](#4-single-cell-analysis-pipeline) | `singlecell.preprocess`, `singlecell.cluster`, `singlecell.trajectory` | Sequential with quality gates | High |
-| [5. Batch Download + QC](#5-batch-download-qc) | `core.workflow`, `core.io.download` | Parallel fan-out | Low |
+| [5. Batch Download + QC](#5-batch-download--qc) | `core.workflow`, `core.io.download` | Sequential downloads, QC in the caller | Low |
 | [6. Cloud VM Orchestration](#6-cloud-vm-orchestration) | `cloud.gcp`, `cloud.docker`, `core.workflow` | Conditional parallel | Medium |
 | [7. Metagenomics Taxonomic Profiling](#7-metagenomics-taxonomic-profiling) | `metagenomics.kraken2`, `metagenomics.bracken`, `metagenomics.report` | Sequential + parallel samples | Medium |
 | [8. Protein Structure + Function](#8-protein-structure-function-integration) | `protein.alphafold`, `protein.uniprot`, `protein.interpro` | Parallel then merge | High |
@@ -340,7 +340,7 @@ class SingleCellWorkflow(BasePipelineManager):
 
 ## 5. Batch Download + QC
 
-**Pattern**: Minimal parallel fan-out, no inter-agent dependencies
+**Pattern**: Sequential downloads with QC in the caller, no inter-agent dependencies
 
 ### Minimal Config-Driven Workflow
 
@@ -350,29 +350,30 @@ downloads:
   ncbi_sra:
     url: "https://sra-pub-run-odp.s3.amazonaws.com/sra/ERR123/ERR123456/ERR123456.sra"
     filename: "ERR123456.sra"
-
-processing:
-  verify:
-    type: "checksum"
-    algorithm: "md5"
 ```
 
 ```python
 from metainformant.core.execution.workflow import download_and_process_data
+from metainformant.core.io import checksums
 
 results = download_and_process_data("batch_download.yaml", output_dir="output/batch1")
-# Downloads sequentially (config-driven uses ThreadPoolExecutor internally for parallel downloads if multiple items)
+# Downloads run one at a time, in the order of the `downloads` mapping
+
+expected_md5 = {"ncbi_sra": "<published MD5 digest>"}  # supplied by the caller
 
 for name, result in results["downloads"].items():
-    if result["status"] == "success":
-        print(f"{name} → {result['path']}")
+    if result["status"] != "success":
+        print(f"{name} failed: {result['error']}")
+        continue
+    intact = checksums.verify_checksum(result["path"], expected_md5[name], algorithm="md5")
+    print(f"{name} → {result['path']} (md5 {'matches' if intact else 'differs'})")
 ```
 
 **Key coordination points**:
-- Config-driven approach: no Python code needed, just YAML
-- Parallel downloads if multiple entries in `downloads` dict
-- Processing step runs after all downloads complete
-- Atomic result dictionary captures per-task status
+- Config-driven approach: the downloads need no Python code, just YAML; the QC runs in the caller once `download_and_process_data` returns
+- Downloads run sequentially, in the order of the `downloads` mapping; there is no parallel fan-out (use `BasePipelineManager` with `manager.executor` for that)
+- A `processing` section would not run: its entries are recorded as `not_executed` and listed in `errors`
+- The result dictionary records each download as `{"status": "success", "path": ...}` or `{"status": "failed", "error": ...}`; failures are also listed in `errors`
 
 ---
 

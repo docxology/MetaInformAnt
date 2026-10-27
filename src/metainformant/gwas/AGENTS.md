@@ -14,7 +14,7 @@ End-to-end GWAS pipelines for social insect genomics: VCF parsing, QC, associati
 |------|---------------|
 | `association.py` | `association_test_linear()`, `association_test_logistic()` |
 | `benchmarking.py` | `benchmark_subset_run()`, `extrapolate_full_genome_time()`, `scaling_model()` |
-| `calling.py` | `call_variants_bcftools()`, `call_variants_gatk()`, `merge_vcf_files()` |
+| `calling.py` | `call_variants_bcftools()`, `call_variants_gatk()`, `filter_variants_bcftools()`, `merge_vcf_files()` |
 | `correction.py` | `bonferroni_correction()`, `fdr_correction()`, `genomic_control()`, `lambda_gc_from_p_values()` |
 | `eqtl.py` | `run_eqtl_analysis()` |
 | `heritability.py` | `estimate_heritability()` |
@@ -53,7 +53,7 @@ End-to-end GWAS pipelines for social insect genomics: VCF parsing, QC, associati
 
 | File | Key Functions |
 |------|---------------|
-| `credible_sets.py` | `compute_credible_set()`, `susie_regression()`, `colocalization()`, `conditional_analysis()` |
+| `credible_sets.py` | `compute_credible_set()`, `compute_log_bayes_factors()`, `compute_bayes_factors()`, `log_sum_exp()`, `susie_regression()`, `colocalization()`, `colocalization_from_log_bayes_factors()`, `conditional_analysis()`, `annotate_credible_set()` |
 | `colocalization.py` | `eqtl_coloc()`, `multi_trait_coloc()`, `compute_clpp()`, `regional_coloc()` |
 | `eqtl.py` | `cis_eqtl_scan()`, `trans_eqtl_scan()`, `conditional_eqtl()`, `eqtl_effect_sizes()` |
 
@@ -70,7 +70,7 @@ End-to-end GWAS pipelines for social insect genomics: VCF parsing, QC, associati
 | `genomic/` | Genome-wide views, LD heatmaps, regional association |
 | `population/` | PCA scatter, admixture, geographic distribution |
 | `statistical/` | Effect size forest plots, method comparison |
-| `interactive/` | Plotly dashboards, composite panels |
+| `interactive/` | Plotly dashboards (`interactive_manhattan()`, `interactive_pca()`, `interactive_volcano()`), fine-mapping plots, composite panels |
 | `general.py` | `manhattan_plot()`, `qq_plot()`, `regional_plot()`, `generate_all_plots()` |
 
 ### workflow/ (4 files)
@@ -109,6 +109,12 @@ End-to-end GWAS pipelines for social insect genomics: VCF parsing, QC, associati
 - Use `uv` for dependency management
 - Pure Python fallbacks for all numpy/scipy operations (graceful degradation)
 - All computational complexity models documented (O(n·m), O(n²·m), etc.)
+- Association tests analyse complete cases: a negative or non-finite genotype dose is missing, never an allele count. Report the samples analysed as `n_samples` and the samples dropped as `n_missing_dropped`. The linear test returns `status: "error"` for a degenerate design, and the logistic test reports whether the fit converged in `converged`.
+- Output tables never invent values: `write_summary_statistics()` and `write_significant_hits()` write `NA` for a missing numeric value and `.` for missing text. `Q_FDR` is the result's own q-value, or else Benjamini-Hochberg over the full set of results; `MAF` is the result's own value, or else computed from the optional `genotypes=` matrix.
+- The QC filter `min_qual` is inclusive and removes variants whose QUAL is missing; `apply_qc_filters()` reports the counts in `qual_filter`. `filter_variants_bcftools()` keeps sites that meet every threshold (`bcftools filter -i`).
+- Fine-mapping Bayes factors are Wakefield ABFs that need `standard_errors` or `sample_size`, accumulated in log space; see [finemapping/AGENTS.md](finemapping/AGENTS.md).
+- `interactive_manhattan()` reads the chromosome from `chromosome`, `chrom`, `chr`, `CHROM` or `CHR`. A result without a chromosome, a position and a positive p-value is skipped and counted in `n_skipped`, never plotted on a default chromosome.
+- Static plot functions in `visualization/general.py` create the missing directories of their output location: the parents of `output_path`, or `output_dir` itself for `generate_all_plots()`.
 
 ## Related Documentation
 

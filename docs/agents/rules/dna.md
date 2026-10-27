@@ -45,10 +45,10 @@ src/metainformant/dna/
 
 **Patterns**:
 ```python
-from metainformant.dna.sequence import core as sequences
+from metainformant.dna.sequence import core as sequence_core
 
-seqs = sequences.read_fasta("data/sequences.fasta")
-for seq_id, sequence in seqs:
+seqs = sequence_core.read_fasta("data/sequences.fasta")  # {sequence_id: sequence}
+for seq_id, sequence in seqs.items():
     # Process sequence
     pass
 ```
@@ -74,21 +74,26 @@ for seq_id, sequence in seqs:
 ```python
 from metainformant.dna.phylogeny import tree
 
-tree_result = tree.neighbor_joining_tree(sequences)
-# Returns Newick format string or tree object
+tree_result = tree.neighbor_joining_tree(seqs)  # seqs: {sequence_id: aligned sequence}
+# Returns a tree dictionary; tree.to_newick(tree_result) gives the Newick string
 ```
 
 ### Population (`population`)
 - Population genetics statistics
 - π (pi), Tajima's D, Fst
-- Returns dictionaries with named statistics
+- `core` functions take aligned sequences and return plain numbers; `analysis.calculate_summary_statistics` returns a dictionary of named statistics
 
 **Patterns**:
 ```python
-from metainformant.dna.population import core as population
+from metainformant.dna.population import analysis, core as population
 
-stats = population.calculate_pi(sequences)
-# Returns: {"pi": 0.001, "segregating_sites": 42, ...}
+aligned_seqs = list(seqs.values())  # equal-length aligned sequences
+
+pi = population.nucleotide_diversity(aligned_seqs)
+# Returns a float, e.g. 0.001
+
+stats = analysis.calculate_summary_statistics(sequences=aligned_seqs)
+# Returns: {"nucleotide_diversity": 0.001, "segregating_sites": 42, "tajima_d": ..., ...}
 ```
 
 ### Population Analysis (`population_analysis`)
@@ -111,23 +116,27 @@ stats = population.calculate_pi(sequences)
 - Genome accession validation
 - Genome metadata handling
 
-### NCBI (`ncbi`)
-- NCBI Datasets API integration
-- Genome download utilities
+### NCBI (`ncbi`, `genomes`)
+- `ncbi`: E-utilities client (`NCBIClient`) for nucleotide/protein search, sequence fetch and taxonomy lookups; needs a contact email (`email=` or `NCBI_EMAIL`)
+- `genomes`: accession validation and genome download through the NCBI Datasets API
 - API integration with error handling
 
 **Patterns**:
 ```python
 from metainformant.dna.external import ncbi, genomes
 
-# Validate accession
-accession = genomes.validate_accession("GCF_000001405.40")
+# Validate accession (returns a bool)
+if genomes.validate_accession("GCF_000001405.40"):
+    # Download the genome package; returns the directory it was extracted to
+    package_dir = genomes.download_genome_package(
+        "GCF_000001405.40",
+        output_dir="output/dna/genomes/",
+    )
 
-# Download genome
-genome_data = ncbi.download_genome(
-    species="Homo sapiens",
-    output_dir="output/dna/genomes/"
-)
+# Search nucleotide records through the E-utilities client
+client = ncbi.NCBIClient(email="you@example.org")
+records = client.search_nucleotide("Apis mellifera mitochondrion", max_results=5)
+# Returns: list of dicts with id, accession, title, organism, length, moltype, created, updated
 ```
 
 ### Entrez (`entrez`)
@@ -281,7 +290,7 @@ if paths.is_within(user_path, base_dir):
 ## Integration
 
 - **Used by**: `gwas` (variants, population genetics), `rna` (genomic coordinates), `information` (sequence analysis)
-- **Integrates with**: `visualization` (phylogenetic trees), `math.popgen` (theoretical models)
+- **Integrates with**: `visualization` (phylogenetic trees), `math.population_genetics` (theoretical models)
 
 ## Reference
 

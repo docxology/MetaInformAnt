@@ -2,6 +2,8 @@
 
 The I/O module handles reading and conversion of long-read sequencing file formats from Oxford Nanopore Technologies (ONT) and Pacific Biosciences (PacBio) platforms. It supports FAST5/POD5 signal files, BAM alignment files, and format conversions.
 
+The package exposes three submodules: `fast5` (signal files), `bam` (alignments) and `formats` (conversion). Import the submodule you need (`from metainformant.longread.io import bam`); the functions are not re-exported on `metainformant.longread.io` itself.
+
 ## Key Concepts
 
 ### FAST5 Format
@@ -28,11 +30,11 @@ Pairwise Alignment Format, a lightweight tab-separated format for read overlaps 
 @dataclass
 class Fast5Read:
     read_id: str                # Unique read identifier
-    signal: Any                 # Raw electrical signal (pA or ADC)
-    sequence: str               # Basecalled sequence
-    quality_string: str         # Per-base quality string
+    signal: Any                 # Raw ADC signal (numpy float32 array when numpy is installed)
+    sequence: str | None        # Basecalled sequence (None when the file has no basecalls)
+    quality_string: str | None  # Per-base quality string (None when the file has no basecalls)
     channel_id: int             # Sequencing channel number
-    mux: int                    # Pore selection number
+    mux: int                    # Pore selection number (always 0 for multi-read FAST5 files)
     start_time: int             # Start time in samples
     duration: int               # Duration in samples
     sampling_rate: float        # ADC sampling rate (Hz)
@@ -67,29 +69,54 @@ class LongReadAlignment:
     aligned_pairs: list         # (query_pos, ref_pos) pairs
 ```
 
+### AlignmentStats
+
+```python
+@dataclass
+class AlignmentStats:
+    total_reads: int            # Alignments passed in
+    mapped_reads: int           # Alignments that are not unmapped
+    unmapped_reads: int
+    supplementary_count: int    # Mapped alignments flagged supplementary
+    secondary_count: int        # Mapped alignments flagged secondary
+    mean_mapping_quality: float # Mean MAPQ over mapped alignments
+    mean_read_length: float     # Mean query length
+    mean_aligned_length: float  # Mean reference-consuming length
+    mean_identity: float        # Mean identity from the NM tag or the CIGAR
+    total_bases: int
+    total_aligned_bases: int
+    coverage_depth: float       # Aligned bases / reference_length (0.0 when not given)
+```
+
 ## Function Reference
 
 ### FAST5/POD5
 
 ```python-snippet
 def read_fast5(filepath: str | Path) -> list[Fast5Read]
-def extract_signal(filepath: str | Path, read_id: str | None = None) -> Any
-def extract_basecalls(filepath: str | Path) -> list[dict[str, Any]]
-def get_read_metadata(filepath: str | Path) -> list[dict[str, Any]]
+def extract_signal(fast5_data: Fast5Read) -> Any
+def extract_basecalls(fast5_data: Fast5Read) -> tuple[str | None, str | None]
+def get_read_metadata(fast5_data: Fast5Read) -> dict[str, Any]
 ```
 
-`read_fast5` parses a FAST5/POD5 file and returns a list of `Fast5Read` objects. `extract_signal` returns raw signal arrays. `extract_basecalls` returns basecalled sequences. `get_read_metadata` returns per-read metadata dictionaries.
+`read_fast5` parses a `.fast5` (needs h5py) or `.pod5` (needs pod5) file, chosen by file extension, and returns a list of `Fast5Read` objects; it raises `FileNotFoundError` for a missing file and `ValueError` for any other extension. The other three functions take one parsed `Fast5Read`, not a file path. `extract_signal` converts the raw ADC trace to picoamperes, `(raw + offset) * range / digitisation`, and returns a float32 numpy array (a plain list when numpy is not installed, `None` when the read has no signal). `extract_basecalls` returns the `(sequence, quality_string)` pair, either of which may be `None`. `get_read_metadata` returns a dictionary with `read_id`, `channel_id`, `mux`, `start_time_samples`, `duration_samples`, `duration_seconds`, `sampling_rate`, `run_id`, `has_signal`, `signal_length`, `has_basecalls`, `sequence_length` and a `calibration` dict (`digitisation`, `offset`, `range`), plus whatever the read carries in its `metadata`.
 
 ### BAM
 
 ```python-snippet
-def read_long_read_bam(filepath: str | Path, region: str | None = None) -> list[LongReadAlignment]
+def read_long_read_bam(
+    filepath: str | Path, region: str | None = None,
+    include_supplementary: bool = True, include_secondary: bool = False,
+    min_mapping_quality: int = 0,
+) -> list[LongReadAlignment]
 def extract_methylation_tags(alignment: LongReadAlignment) -> dict[str, Any]
-def get_supplementary_alignments(filepath: str | Path, read_name: str) -> list[LongReadAlignment]
-def calculate_alignment_stats(alignments: list[LongReadAlignment]) -> dict[str, Any]
+def get_supplementary_alignments(alignment: LongReadAlignment) -> list[dict[str, Any]]
+def calculate_alignment_stats(
+    alignments: Sequence[LongReadAlignment], reference_length: int | None = None,
+) -> AlignmentStats
 ```
 
-`read_long_read_bam` parses a BAM file and returns alignments. `extract_methylation_tags` parses MM/ML tags for modified base data. `get_supplementary_alignments` retrieves split alignments for a read (useful for SV detection). `calculate_alignment_stats` computes summary statistics.
+`read_long_read_bam` parses a BAM file with pysam and returns alignments; a `region` query needs a `.bai` index, and secondary alignments are skipped unless `include_secondary` is set. `extract_methylation_tags` decodes the MM/ML tags of one alignment into a dictionary keyed by modification (for example `"C+m"`); each value holds `read_positions`, `genomic_positions` (a list of `(position, probability)` tuples that uses the reference coordinate when the base is aligned and the read coordinate otherwise) and `probabilities` on a 0-1 scale. `get_supplementary_alignments` parses the `SA` tag of one alignment (useful for SV detection) and returns one dictionary per split segment with `reference_name`, `reference_start` (0-based), `strand`, `cigar`, `mapping_quality`, `edit_distance`, `aligned_length` and `is_reverse`. `calculate_alignment_stats` returns an `AlignmentStats`; `total_reads` counts every alignment passed in, while the mean fields, `total_bases` and `total_aligned_bases` cover mapped alignments only.
 
 ### Format Conversion
 
@@ -97,46 +124,48 @@ def calculate_alignment_stats(alignments: list[LongReadAlignment]) -> dict[str, 
 def fast5_to_fastq(fast5_path: str | Path, output_path: str | Path,
                    min_quality: float = 0.0, gzip_output: bool = False) -> int
 def convert_pod5_to_fast5(pod5_path: str | Path, output_path: str | Path) -> int
-def write_paf(overlaps: list[dict], output_path: str | Path) -> int
+def write_paf(alignments: Sequence[dict[str, Any]], output_path: str | Path) -> int
 ```
 
-`fast5_to_fastq` extracts basecalls to FASTQ format with optional quality filtering. `convert_pod5_to_fast5` converts POD5 to FAST5 format. `write_paf` writes overlap records in PAF format.
+`fast5_to_fastq` extracts basecalls to FASTQ format with optional quality filtering (reads without basecalls are skipped, and `min_quality` is a minimum mean Phred score). `convert_pod5_to_fast5` converts POD5 to FAST5 format (needs pod5 and h5py). `write_paf` writes alignment dictionaries in PAF format; each needs `query_name`, `query_length`, `query_start`, `query_end`, `target_name`, `target_length`, `target_start`, `target_end`, and may carry `strand`, `matches`, `block_length`, `mapping_quality` and a `tags` dict. All three return the number of records written.
 
 ## Usage Examples
 
 ```python
-from metainformant.longread import io
+from metainformant.longread.io import bam, fast5, formats
 
 # Read FAST5 file
-reads = io.read_fast5("path/to/reads.fast5")
+reads = fast5.read_fast5("path/to/reads.fast5")
 for read in reads:
-    print(f"{read.read_id}: {len(read.sequence)} bp, channel {read.channel_id}")
+    print(f"{read.read_id}: {len(read.sequence or '')} bp, channel {read.channel_id}")
 
-# Extract raw signal for a specific read
-signal = io.extract_signal("path/to/reads.fast5", read_id="read_001")
+# Convert the raw signal of one read to picoamperes
+signal_pa = fast5.extract_signal(reads[0])
+meta = fast5.get_read_metadata(reads[0])
+print(f"{meta['signal_length']} samples over {meta['duration_seconds']:.1f} s")
 
-# Read long-read BAM file
-alignments = io.read_long_read_bam("path/to/aligned.bam", region="chr1:1000000-2000000")
-stats = io.calculate_alignment_stats(alignments)
-print(f"Mean MAPQ: {stats['mean_mapq']:.1f}, Mapped: {stats['mapped_fraction']:.2%}")
+# Read long-read BAM file (needs pysam and an index for region queries)
+alignments = bam.read_long_read_bam("path/to/aligned.bam", region="chr1:1000000-2000000")
+stats = bam.calculate_alignment_stats(alignments)
+print(f"Mean MAPQ: {stats.mean_mapping_quality:.1f}, Mapped: {stats.mapped_reads / stats.total_reads:.2%}")
 
 # Extract methylation data from BAM tags
 for aln in alignments:
-    meth = io.extract_methylation_tags(aln)
-    if meth:
-        print(f"Methylation sites: {len(meth.get('positions', []))}")
+    meth = bam.extract_methylation_tags(aln)
+    for modification, calls in meth.items():
+        print(f"{aln.read_name} {modification}: {len(calls['genomic_positions'])} sites")
 
 # Convert FAST5 to FASTQ
-n_reads = io.fast5_to_fastq("reads.fast5", "output/reads.fastq.gz", gzip_output=True)
+n_reads = formats.fast5_to_fastq("reads.fast5", "output/reads.fastq.gz", gzip_output=True)
 print(f"Converted {n_reads} reads")
 ```
 
 ## Configuration
 
-- **Environment prefix**: `LR_`
+- **Environment prefix**: `LR_` is honoured only by `workflow.pipelines.load_pipeline_config` and `utils.batch.process_batch` (`LR_BATCH_WORKERS`); the functions on this page read no environment variables
 - **Optional dependencies**: h5py (FAST5), pod5 (POD5), pysam (BAM), numpy
 - FAST5 reading supports both single-read and multi-read FAST5 formats
-- BAM reading supports indexed BAM files with region queries
+- BAM reading supports indexed BAM files with region queries; without a region the file is read in order and needs no index
 
 ## Related Modules
 

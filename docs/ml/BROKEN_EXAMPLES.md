@@ -1,5 +1,9 @@
 # Broken Examples — Specific Corrections for index.md
 
+> Historical snapshot: these corrections have been applied to
+> `docs/ml/index.md`, which now carries none of the broken examples below.
+> This record is retained for provenance.
+
 This file provides line-by-line fixes for the broken examples in `docs/ml/index.md`.
 
 ## 1. Deep Learning Example (Lines 197-208)
@@ -7,7 +11,7 @@ This file provides line-by-line fixes for the broken examples in `docs/ml/index.
 ### Current (Broken):
 ```python-snippet
 from metainformant.dna.sequence import core as sequences
-from metainformant.ml import classification
+from metainformant.ml.models import classification
 
 # Extract features from DNA sequences
 sequences = sequences.read_fasta("sequences.fasta")
@@ -62,8 +66,8 @@ raise NotImplementedError("k-mer extraction not yet implemented")
 
 ### Current (Broken):
 ```python-snippet
-from metainformant.rna import workflow
-from metainformant.ml import regression
+from metainformant.rna.engine import workflow
+from metainformant.ml.models import regression
 
 # Load expression data
 expression_data = workflow.extract_expression_patterns(rna_data)
@@ -112,8 +116,8 @@ importances = model.get_feature_importance()
 
 ### Current (Broken):
 ```python-snippet
-from metainformant.networks import ppi
-from metainformant.ml import classification
+from metainformant.networks.interaction import ppi
+from metainformant.ml.models import classification
 
 # Use network features for prediction
 network_features = ppi.extract_network_features(interaction_network)
@@ -261,7 +265,7 @@ lime_result = compute_lime_explanation(
 ### Current (Seems OK but verify module exists):
 ```python-snippet
 from metainformant.multiomics import integration  # ✗ Does multiomics module exist?
-from metainformant.ml import classification
+from metainformant.ml.models import classification
 
 multiomics_data = integration.load_multiomics_data([...])
 combined_features = integration.extract_multiomic_features(multiomics_data)
@@ -281,7 +285,7 @@ model = classification.train_classifier(
 
 ### Current (Broken):
 ```python-snippet
-from metainformant.ml import regression
+from metainformant.ml.models import regression
 
 time_series_data = load_time_series_expression()
 time_features = regression.extract_time_features(time_series_data)  # ✗ NOT FOUND

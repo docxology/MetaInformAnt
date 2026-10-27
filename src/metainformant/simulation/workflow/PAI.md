@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - workflow
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/simulation/workflow`
+- **Path**: `src/metainformant/simulation/workflow`
 - **Purpose**: Functionality for workflow.
 - **Domain**: simulation
 

@@ -297,7 +297,7 @@ perm_imp = compute_permutation_importance(model, X_test, y_test, n_repeats=20)
 **Example Code Validation:**
 ```python
 # Example from docs (lines 15-27):
-from metainformant.ml.llm import OllamaClient
+from metainformant.ml.llm.ollama.client import OllamaClient
 client = OllamaClient(model="llama2")
 response = client.query(
     "What genes are upregulated in the cancer sample?",

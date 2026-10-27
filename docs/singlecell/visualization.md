@@ -9,7 +9,7 @@ The visualization module provides specialized plotting functions for single-cell
 Visualize quality control metrics:
 
 ```python
-from metainformant.singlecell.visualization import plot_qc_metrics
+from metainformant.singlecell.visualization.visualization import plot_qc_metrics
 
 # Plot QC metrics overview
 fig = plot_qc_metrics(
@@ -20,47 +20,32 @@ fig = plot_qc_metrics(
 plt.show()
 ```
 
-### plot_qc_scatter()
-
-Scatter plots of QC relationships:
-
-```python-snippet
-from metainformant.singlecell.visualization import plot_qc_scatter
-
-# Relationship between total counts and genes detected
-fig = plot_qc_scatter(
-    data,
-    x='total_counts',
-    y='n_genes', 
-    color='pct_mt',
-    size=20
-)
-plt.show()
-```
+The figure contains histograms of total counts, genes detected and mitochondrial percentage, plus a scatter plot of total counts against genes detected.
 
 ## Dimensionality Reduction Plots
 
-### plot_embedding()
+### plot_umap() / plot_tsne()
 
-Plot cells in reduced dimensional space:
+Plot cells in reduced dimensional space (coordinates are read from the `obs` columns written by `compute_umap()` / `compute_tsne()`):
 
 ```python-snippet
-from metainformant.singlecell.visualization import plot_embedding
+from metainformant.singlecell.visualization.visualization import plot_tsne, plot_umap
 
 # UMAP colored by clusters
-fig = plot_embedding(
+fig = plot_umap(
     data,
-    basis='umap',          # 'umap', 'tsne', 'pca'
-    color='leiden',        # Color by cluster
-    legend_loc='right',
-    size=30
+    color='leiden_cluster',    # Color by cluster
+    s=30                       # Point size
 )
 
-# UMAP colored by gene expression
-fig = plot_embedding(
+# t-SNE colored by clusters
+fig = plot_tsne(data, color='leiden_cluster')
+
+# UMAP colored by gene expression (add the gene as an obs column first)
+data.obs['CD3E'] = data.to_df()['CD3E'].values
+fig = plot_umap(
     data,
-    basis='umap',
-    color='CD3E',          # Gene name
+    color='CD3E',
     cmap='viridis'
 )
 plt.show()
@@ -71,7 +56,7 @@ plt.show()
 Specialized PCA visualization:
 
 ```python
-from metainformant.singlecell.visualization import plot_pca
+from metainformant.singlecell.visualization.visualization import plot_pca
 
 # PCA with loadings
 fig = plot_pca(
@@ -86,88 +71,59 @@ plt.show()
 
 ## Gene Expression Visualization
 
-### plot_gene_expression()
+### plot_marker_expression()
 
-Visualize individual gene expression:
+Visualize the expression of individual genes as violin plots, dot plots or heatmaps:
 
 ```python-snippet
-from metainformant.singlecell.visualization import plot_gene_expression
+from metainformant.singlecell.visualization.visualization import plot_marker_expression
 
-# Violin plots by cluster
-fig = plot_gene_expression(
+# Violin plots of expression among expressing cells
+fig = plot_marker_expression(
     data,
-    genes=['CD3E', 'CD19', 'CD14'],
-    groupby='leiden',
-    plot_type='violin'
+    marker_genes=['CD3E', 'CD19', 'CD14'],
+    method='violin'
 )
 
 # Dot plot showing expression and detection
-fig = plot_gene_expression(
+fig = plot_marker_expression(
     data,
-    genes=['CD3E', 'CD19', 'CD14', 'LYZ'],
-    groupby='leiden', 
-    plot_type='dot'
+    marker_genes=['CD3E', 'CD19', 'CD14', 'LYZ'],
+    method='dotplot'
 )
-plt.show()
-```
 
-### plot_heatmap()
-
-Expression heatmaps:
-
-```python-snippet
-from metainformant.singlecell.visualization import plot_heatmap
-
-# Heatmap of marker genes by cluster
-fig = plot_heatmap(
+# Heatmap of marker genes across (a subsample of) cells
+fig = plot_marker_expression(
     data,
-    genes=['CD3E', 'CD19', 'CD14', 'GNLY'],  # Marker genes
-    groupby='leiden',
-    standard_scale='var',   # Scale by gene
+    marker_genes=['CD3E', 'CD19', 'CD14', 'GNLY'],
+    method='heatmap',
     cmap='RdBu_r'
 )
 plt.show()
 ```
 
+Expression is pooled over all cells; the plots are not split by cluster.
+
 ## Clustering Visualization
 
-### plot_clusters()
+### plot_cluster_comparison()
 
-Comprehensive cluster visualization:
-
-```python-snippet
-from metainformant.singlecell.visualization import plot_clusters
-
-# Multiple cluster views
-fig = plot_clusters(
-    data,
-    cluster_column='leiden',
-    embedding='umap',
-    show_cluster_labels=True,
-    show_statistics=True
-)
-plt.show()
-```
-
-### plot_cluster_composition()
-
-Cluster composition analysis:
+Cluster views on the embedding, one panel per clustering:
 
 ```python-snippet
-from metainformant.singlecell.visualization import plot_cluster_composition
+from metainformant.singlecell.visualization.visualization import plot_cluster_comparison
 
-# Bar plot of cluster sizes
-fig = plot_cluster_composition(
+# Cluster view on the UMAP embedding
+fig = plot_cluster_comparison(
     data,
-    groupby='leiden',
-    plot_type='bar'
+    cluster_cols=['leiden_cluster'],
+    embedding_cols=['UMAP1', 'UMAP2']
 )
 
-# Pie chart of cluster proportions  
-fig = plot_cluster_composition(
+# Compare clusterings at different resolutions
+fig = plot_cluster_comparison(
     data,
-    groupby='leiden',
-    plot_type='pie'
+    cluster_cols=['leiden_0.2', 'leiden_0.5', 'leiden_1.0']
 )
 plt.show()
 ```
@@ -179,7 +135,7 @@ plt.show()
 Visualize developmental trajectories:
 
 ```python
-from metainformant.singlecell.visualization import plot_trajectory
+from metainformant.singlecell.visualization.visualization import plot_trajectory
 
 # Pseudotime on embedding
 fig = plot_trajectory(
@@ -189,88 +145,6 @@ fig = plot_trajectory(
     trajectory_graph=None,   # Optional trajectory overlay
     arrow_style='->',
     cmap='viridis'
-)
-plt.show()
-```
-
-### plot_gene_trends()
-
-Gene expression along trajectories:
-
-```python-snippet
-from metainformant.singlecell.visualization import plot_gene_trends
-
-# Expression trends along pseudotime
-fig = plot_gene_trends(
-    data,
-    genes=['GENE1', 'GENE2', 'GENE3'],
-    pseudotime_col='pseudotime',
-    smooth=True,
-    show_confidence=True
-)
-plt.show()
-```
-
-## Comparative Visualization
-
-### plot_comparison()
-
-Compare different analyses:
-
-```python-snippet
-from metainformant.singlecell.visualization import plot_comparison
-
-# Compare clusterings at different resolutions
-fig = plot_comparison(
-    data,
-    groupby=['leiden_0.2', 'leiden_0.5', 'leiden_1.0'],
-    basis='umap',
-    ncols=3
-)
-plt.show()
-```
-
-### plot_split()
-
-Split visualization by categories:
-
-```python-snippet
-from metainformant.singlecell.visualization import plot_split
-
-# Split by sample or condition
-fig = plot_split(
-    data,
-    split_by='sample',      # Column to split by
-    color='leiden',         # Color by cluster
-    basis='umap',
-    ncols=2
-)
-plt.show()
-```
-
-## Statistical Plots
-
-### plot_marker_genes()
-
-Visualize marker gene results:
-
-```python-snippet
-from metainformant.singlecell.visualization import plot_marker_genes
-
-# Volcano plot of marker genes
-fig = plot_marker_genes(
-    markers_df,             # From find_markers()
-    cluster='0',
-    plot_type='volcano',
-    top_n=10               # Label top 10 genes
-)
-
-# Rank plot
-fig = plot_marker_genes(
-    markers_df,
-    cluster='0',
-    plot_type='rank',
-    n_genes=20
 )
 plt.show()
 ```
@@ -295,7 +169,7 @@ custom_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
 
 ```python
 # Save high-quality figures
-fig = plot_embedding(data, basis='umap', color='leiden')
+fig = plot_umap(data, color='leiden_cluster')
 fig.savefig(
     'output/umap_clusters.pdf', 
     dpi=300, 
@@ -342,55 +216,16 @@ except ImportError:
     print("Plotly not available for interactive plots")
 ```
 
-## Multi-Panel Figures
-
-### Complex Layouts
-
-```python
-import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
-
-# Create complex multi-panel figure
-fig = plt.figure(figsize=(20, 12))
-gs = GridSpec(3, 4, figure=fig)
-
-# Panel A: QC metrics
-ax1 = fig.add_subplot(gs[0, :2])
-plot_qc_metrics(data, ax=ax1)
-ax1.set_title('A. Quality Control Metrics')
-
-# Panel B: UMAP by clusters  
-ax2 = fig.add_subplot(gs[0, 2:])
-plot_embedding(data, basis='umap', color='leiden', ax=ax2)
-ax2.set_title('B. UMAP by Clusters')
-
-# Panel C: Gene expression
-ax3 = fig.add_subplot(gs[1, :])
-plot_gene_expression(data, genes=['CD3E', 'CD19', 'CD14'], 
-                    groupby='leiden', ax=ax3)
-ax3.set_title('C. Marker Gene Expression')
-
-# Panel D: Heatmap
-ax4 = fig.add_subplot(gs[2, :])
-plot_heatmap(data, genes=['CD3E', 'CD19', 'CD14'], 
-            groupby='leiden', ax=ax4)
-ax4.set_title('D. Expression Heatmap')
-
-plt.tight_layout()
-plt.savefig('output/comprehensive_analysis.pdf', dpi=300)
-plt.show()
-```
-
 ## Integration with Core Visualization
 
 The single-cell visualization module builds upon METAINFORMANT's core visualization utilities:
 
 ```python-snippet
-from metainformant.visualization.plots import setup_matplotlib_style
+from metainformant.visualization.config.themes import apply_theme
 from metainformant.core.io import ensure_directory
 
 # Set up consistent styling
-setup_matplotlib_style()
+apply_theme("publication")
 
 # Ensure output directory exists  
 output_dir = ensure_directory("output/singlecell_plots")
@@ -412,13 +247,13 @@ def generate_analysis_plots(data, output_dir="output/plots"):
     plt.close()
     
     # 2. UMAP clusters
-    fig = plot_embedding(data, basis='umap', color='leiden')  
+    fig = plot_umap(data, color='leiden_cluster')  
     fig.savefig(f"{output_dir}/umap_clusters.pdf", dpi=300)
     plt.close()
     
     # 3. t-SNE clusters
     if 'X_tsne' in data.obsm:
-        fig = plot_embedding(data, basis='tsne', color='leiden')
+        fig = plot_tsne(data, color='leiden_cluster')
         fig.savefig(f"{output_dir}/tsne_clusters.pdf", dpi=300)
         plt.close()
     
@@ -445,10 +280,7 @@ sample_idx = np.random.choice(data.n_obs, n_sample, replace=False)
 data_subset = data[sample_idx, :].copy()
 
 # 2. Plot subset
-fig = plot_embedding(data_subset, basis='umap', color='leiden')
-
-# 3. Use density plots for very large datasets
-fig = plot_embedding(data, basis='umap', plot_type='density')
+fig = plot_umap(data_subset, color='leiden_cluster')
 ```
 
 ### Memory Management

@@ -45,7 +45,7 @@ Returns `transformed_coords`, `m2` (Procrustes statistic), and `correlation`.
 ## Usage Examples
 
 ```python
-from metainformant.ecology import distance_matrix, pcoa, nmds, cca, procrustes
+from metainformant.ecology.analysis.ordination import distance_matrix, pcoa, nmds, cca, procrustes
 
 # Compute Bray-Curtis distance matrix
 communities = [[10, 0, 5], [0, 8, 2], [3, 3, 3], [1, 9, 0]]

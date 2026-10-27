@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - models
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/life_events/models`
+- **Path**: `src/metainformant/life_events/models`
 - **Purpose**: Functionality for models.
 - **Domain**: life_events
 

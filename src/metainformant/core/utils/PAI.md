@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - utils
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/core/utils`
+- **Path**: `src/metainformant/core/utils`
 - **Purpose**: Core utilities for METAINFORMANT bioinformatics toolkit.
 - **Domain**: core
 

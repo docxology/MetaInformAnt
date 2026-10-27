@@ -102,14 +102,16 @@ for chunk in pd.read_csv("large_file.csv", chunksize=10000):
 **A:** Several optimization strategies:
 
 ```python-snippet
-# Enable parallel processing
+# Enable parallel processing (thread_map for I/O-bound work, process_map for CPU-bound work)
 from metainformant.core.execution import parallel
-results = parallel.run_parallel(analyze_function, data_items, max_workers=8)
+results = parallel.thread_map(analyze_function, data_items, max_workers=8)
 
 # Use caching for expensive operations
-from metainformant.math import coalescent
-# Tajima constants are automatically cached
-constants = coalescent.tajima_constants(100)
+from functools import lru_cache
+from metainformant.math.population_genetics import coalescent
+# tajima_constants is not cached internally; memoize it when the same sample sizes repeat
+cached_constants = lru_cache(maxsize=None)(coalescent.tajima_constants)
+constants = cached_constants(100)
 
 # Vectorize operations
 import numpy as np
@@ -128,27 +130,27 @@ result = np.mean(data_array)  # Fast vectorized operation
 
 ```python-snippet
 # Use local alignment for similarity search
-from metainformant.dna import alignment
-result = alignment.local_align(query_seq, target_seq)
+from metainformant.dna.alignment import pairwise
+result = pairwise.local_align(query_seq, target_seq)
 
-# Or use k-mer based methods for approximate matching
-from metainformant.information.analysis import analyze_sequence_information
-info = analyze_sequence_information(sequence, k_values=[5, 10])
+# Or use an alignment-free k-mer distance for approximate comparison
+from metainformant.dna.alignment import distances
+distance = distances.kmer_distance(query_seq, target_seq, k=5)
 ```
 
 **Q: How do I handle different genetic codes?**
 
-**A:** METAINFORMANT supports multiple genetic codes:
+**A:** METAINFORMANT supports several genetic codes, selected by NCBI translation table number (1 standard, 2 vertebrate mitochondrial, 3 yeast mitochondrial, 5 invertebrate mitochondrial, 11 bacterial/archaeal/plastid):
 
 ```python-snippet
-from metainformant.dna import codon
+from metainformant.dna.expression import translation
 
-# Standard genetic code (default)
-amino_acids = codon.translate_sequence(dna_sequence)
+# Standard genetic code (default, table 1)
+amino_acids = translation.translate_dna(dna_sequence)
 
-# Mitochondrial genetic code
-mito_code = codon.get_genetic_code("mitochondrial")
-amino_acids = codon.translate_sequence(dna_sequence, genetic_code=mito_code)
+# Vertebrate mitochondrial genetic code (table 2)
+mito_code = translation.get_genetic_code(2)  # codon -> amino acid dictionary
+amino_acids = translation.translate_dna(dna_sequence, genetic_code=2)
 ```
 
 ### RNA Analysis
@@ -193,7 +195,7 @@ config = AmalgkitWorkflowConfig(
 **A:** This is likely population stratification. Control for it:
 
 ```python-snippet
-from metainformant.gwas import structure, association
+from metainformant.gwas.analysis import structure, association
 
 # Compute PCA for population structure
 pca_result = structure.compute_pca(genotypes)
@@ -208,27 +210,17 @@ result = association.association_test_linear(
 
 **Q: How do I handle different GWAS file formats?**
 
-**A:** METAINFORMANT handles multiple formats:
+**A:** METAINFORMANT downloads public variant data and parses VCF files; it has no PLINK bed/bim/fam reader, so convert PLINK data to VCF first:
 
 ```python-snippet
-from metainformant.gwas import download, parsing
+from metainformant.gwas.analysis import quality
+from metainformant.gwas.data import download
 
-# Download from public databases
-result = download.download_variant_data(
-    source="dbsnp",
-    accession="GCF_000001405.40",
-    dest_dir="data/variants"
-)
+# Download from public databases ("dbsnp" or "1000genomes")
+db_path = download.download_variant_database("dbsnp", "data/variants")
 
 # Parse VCF files
-vcf_data = parsing.parse_vcf_full("data/variants/data.vcf.gz")
-
-# Handle PLINK format
-plink_data = parsing.parse_plink_files(
-    bed_file="data/gwas/data.bed",
-    bim_file="data/gwas/data.bim",
-    fam_file="data/gwas/data.fam"
-)
+vcf_data = quality.parse_vcf_full("data/variants/data.vcf.gz")
 ```
 
 ### Information Theory
@@ -238,7 +230,8 @@ plink_data = parsing.parse_plink_files(
 **A:** Syntactic information measures statistical patterns, semantic information measures biological meaning:
 
 ```python-snippet
-from metainformant.information import syntactic, semantic
+from metainformant.information.metrics.core import syntactic
+from metainformant.information.metrics.advanced import semantic
 
 # Syntactic: Statistical patterns
 entropy = syntactic.shannon_entropy(probabilities)
@@ -271,20 +264,24 @@ entropy_dits = syntactic.shannon_entropy(probs, base=10)
 **A:** Try multiple and compare:
 
 ```python
-from metainformant import ml
-from sklearn.model_selection import cross_val_score
+from metainformant.ml.models import classification
 
-methods = ["rf", "svm", "lr", "nb"]
-results = {}
+# Random forest ("rf"), gradient boosting ("gb") and logistic regression ("lr"),
+# each scored with stratified 5-fold cross-validation
+comparison = classification.compare_classifiers(
+    X_train, y_train, methods=["rf", "gb", "lr"], cv_folds=5, random_state=42
+)
 
-for method in methods:
-    clf = ml.classification.train_classifier(X_train, y_train, method=method)
-    scores = ml.classification.cross_validate_classifier(clf, X_train, y_train)
-    results[method] = scores["accuracy"]
-
-best_method = max(results, key=results.get)
-print(f"Best method: {best_method} (accuracy: {results[best_method]:.3f})")
+# A method that fails is reported as {"error": message} and is never selected
+results = {m: r["accuracy"] for m, r in comparison["comparison"].items() if "error" not in r}
+best_method = comparison["best_method"]  # None when every method failed
+if best_method is None:
+    print("Every method failed:", {m: r["error"] for m, r in comparison["comparison"].items()})
+else:
+    print(f"Best method: {best_method} (accuracy: {results[best_method]:.3f})")
 ```
+
+For a support vector machine, use `classification.BiologicalClassifier(algorithm="svm")`: call `.fit(X_train, y_train)`, then `.evaluate(X_test, y_test)` for accuracy, precision, recall, F1 and ROC-AUC.
 
 **Q: How do I handle class imbalance in biological datasets?**
 
@@ -292,14 +289,15 @@ print(f"Best method: {best_method} (accuracy: {results[best_method]:.3f})")
 
 ```python-snippet
 from imblearn.over_sampling import SMOTE
-from metainformant import ml
+from metainformant.ml.models import classification
 
 # Oversample minority class
 smote = SMOTE(random_state=42)
 X_resampled, y_resampled = smote.fit_resample(X_train, y_train)
 
 # Train on balanced data
-clf = ml.classification.train_classifier(X_resampled, y_resampled, method="rf")
+clf = classification.create_biological_classifier("rf", random_state=42)
+clf.fit(X_resampled, y_resampled)
 ```
 
 ## Performance and Troubleshooting
@@ -462,7 +460,7 @@ CMD ["python"]
 **A:** Use the workflow orchestration system:
 
 ```python-snippet
-from metainformant.core.workflow import run_config_based_workflow
+from metainformant.core.execution.workflow import run_config_based_workflow
 
 workflow = {
     "name": "custom_analysis",

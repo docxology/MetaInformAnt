@@ -63,7 +63,8 @@ uv pip install -e ".[dev,scientific,ml,networks]"
 from metainformant.core import io, utils
 from metainformant.core.utils import logging, config
 from metainformant.dna import sequence, alignment
-from metainformant.rna import workflow, analysis
+from metainformant.rna import analysis
+from metainformant.rna.engine import workflow
 
 # CLI access
 python -m metainformant --help

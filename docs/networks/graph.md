@@ -9,7 +9,7 @@ The graph analysis module provides fundamental graph operations, metrics, and ut
 Create biological networks from various data sources:
 
 ```python
-from metainformant.networks import create_network, add_edges_from_interactions, add_edges_from_correlation
+from metainformant.networks.analysis.graph_core import create_network, add_edges_from_interactions, add_edges_from_correlation
 
 # Create from edge list
 nodes = ["gene1", "gene2", "gene3"]
@@ -42,7 +42,7 @@ add_edges_from_correlation(
 Add edges based on correlation between node features:
 
 ```python
-from metainformant.networks import add_edges_from_correlation
+from metainformant.networks.analysis.graph_core import add_edges_from_correlation
 
 # Add correlation-based edges
 add_edges_from_correlation(
@@ -59,7 +59,7 @@ add_edges_from_correlation(
 Add edges from known biological interactions:
 
 ```python
-from metainformant.networks import add_edges_from_interactions
+from metainformant.networks.analysis.graph_core import add_edges_from_interactions
 
 # Add known interactions
 interactions = [
@@ -77,7 +77,7 @@ add_edges_from_interactions(network, interactions, confidence_threshold=0.5)
 Calculate comprehensive network statistics:
 
 ```python
-from metainformant.networks import network_metrics
+from metainformant.networks.analysis.graph_algorithms import network_metrics
 
 # Get basic network metrics
 metrics = network_metrics(network)
@@ -103,7 +103,7 @@ print(f"Clustering coefficient: {metrics['clustering_coeff']:.3f}")
 Calculate node centrality measures:
 
 ```python
-from metainformant.networks import centrality_measures
+from metainformant.networks.analysis.graph_algorithms import centrality_measures
 
 # Calculate all centrality measures
 centrality = centrality_measures(network)
@@ -131,7 +131,7 @@ for node, score in sorted(centrality['betweenness'].items(), key=lambda x: x[1],
 Find shortest paths between nodes:
 
 ```python
-from metainformant.networks import shortest_paths
+from metainformant.networks.analysis.graph_algorithms import shortest_paths
 
 # Find shortest path between two nodes
 path = shortest_paths(network, source="gene1", target="gene5")
@@ -186,7 +186,8 @@ print(f"Largest component size: {len(largest_component)} nodes")
 ### With Expression Data
 
 ```python
-from metainformant.networks import create_network, network_metrics
+from metainformant.networks.analysis.graph_core import create_network
+from metainformant.networks.analysis.graph_algorithms import network_metrics
 import pandas as pd
 
 # Create correlation network from expression data
@@ -211,7 +212,8 @@ print(f"Correlated genes form {metrics['n_components']} modules")
 ### With Genomic Data
 
 ```python
-from metainformant.networks import create_network, centrality_measures
+from metainformant.networks.analysis.graph_core import create_network
+from metainformant.networks.analysis.graph_algorithms import centrality_measures
 
 # Create interaction network from genomic coordinates
 genomic_interactions = [

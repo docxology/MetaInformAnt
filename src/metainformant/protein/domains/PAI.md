@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - domains
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/protein/domains`
+- **Path**: `src/metainformant/protein/domains`
 - **Purpose**: Protein domain detection and classification subpackage.
 - **Domain**: protein
 

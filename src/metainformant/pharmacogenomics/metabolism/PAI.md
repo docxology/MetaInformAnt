@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - metabolism
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/pharmacogenomics/metabolism`
+- **Path**: `src/metainformant/pharmacogenomics/metabolism`
 - **Purpose**: Metabolizer status prediction subpackage for pharmacogenomics.
 - **Domain**: pharmacogenomics
 

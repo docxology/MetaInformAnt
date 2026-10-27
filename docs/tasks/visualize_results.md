@@ -8,6 +8,7 @@ Use `visualize_results` for publication-ready figures and exploratory data analy
 
 ## Table of Contents
 
+- [Manhattan Plot](#manhattan-plot)
 - [Expected Manhattan Plot Output](#manhattan-plot-file)
 - [PCA Plot (Multi-omics)](#pca-plot-multi-omics)
 - [Heatmap (DEGs)](#heatmap-degs)
@@ -19,150 +20,137 @@ Use `visualize_results` for publication-ready figures and exploratory data analy
 
 ---
 
-```python
-from metainformant.visualization import plots
-import pandas as pd
+## Manhattan Plot
 
-gwas = pd.read_csv("gwas_results.tsv", sep='	')
-fig = plots.manhattan(
-    gwas,
-    genome="amellifera",  # or provide chr_lengths dict
-    highlight_genes=["Amel_004123", "Amel_007890"],
-    suggestiveline=-np.log10(1e-5),
-    genomewideline=-np.log10(5e-8)
+```python
+import pandas as pd
+from metainformant.gwas.visualization import manhattan_plot
+
+# TSV with one row per variant and chrom, pos and p_value columns
+gwas = pd.read_csv("gwas_results.tsv", sep="\t")
+fig = manhattan_plot(
+    gwas.to_dict("records"),  # the plot functions take a list of per-variant dictionaries
+    output_path="manhattan.png",  # the output directory must already exist
+    significance_threshold=5e-8,  # genome-wide line
+    suggestive_threshold=1e-5,
+    gene_annotations=[  # an arrow and label at the nearest variant
+        {"chrom": "6", "pos": 28_500_000, "gene_name": "Amel_004123"},
+        {"chrom": "11", "pos": 12_100_000, "gene_name": "Amel_007890"},
+    ],
 )
-fig.savefig("manhattan.png", dpi=300, bbox_inches='tight')
 ```
 
 ## PCA Plot (Multi-omics)
 
 ```python-snippet
-from metainformant.visualization import pca_plots
+import pandas as pd
+from sklearn.decomposition import PCA
+from metainformant.visualization.plots.general import pca_plot
 
-# From expression matrix
-expr = pd.read_csv("counts.tsv", sep='	', index_col=0)
-fig = pca_plots.samples(expr, color_by="tissue", shape_by="individual")
-fig.savefig("pca_by_tissue.png")
+# From expression matrix (samples x genes) and sample metadata
+expr = pd.read_csv("counts.tsv", sep='\t', index_col=0)
+sample_meta = pd.read_csv("sample_info.tsv", sep='\t', index_col=0)
+
+pca = PCA(n_components=2).fit(expr)
+scores = pd.DataFrame(pca.transform(expr), index=expr.index, columns=["PC1", "PC2"])
+scores["PC1_variance"], scores["PC2_variance"] = pca.explained_variance_ratio_ * 100
+scores["tissue"] = sample_meta["tissue"]
+
+ax = pca_plot(scores, hue="tissue", output_path="pca_by_tissue.png")
 ```
 
 ## Heatmap (DEGs)
 
 ```python-snippet
-from metainformant.visualization import heatmaps
+import pandas as pd
+from metainformant.visualization.plots.general import expression_heatmap
 
-deseq = pd.read_csv("deseq2_results.tsv", sep='	')
+deseq = pd.read_csv("deseq2_results.tsv", sep='\t')
 top100 = deseq.nsmallest(100, "padj")
 
-counts = pd.read_csv("normalized_counts.tsv", sep='	', index_col=0)
+counts = pd.read_csv("normalized_counts.tsv", sep='\t', index_col=0)
 counts_top100 = counts.loc[top100["gene_id"]]
 
-fig = heatmaps.expression(
-    counts_top100,
-    z_score="row",
-    cluster_rows=True,
-    cluster_cols=True,
-    annotation=pd.DataFrame({"tissue": sample_meta["tissue"]})
-)
-fig.savefig("heatmap_top100_degs.png")
+# Row z-score (mean=0, sd=1 per gene)
+z = counts_top100.sub(counts_top100.mean(axis=1), axis=0).div(counts_top100.std(axis=1), axis=0)
+
+ax = expression_heatmap(z, vmin=-3, vmax=3, cbar_label="Z-score", output_path="heatmap_top100_degs.png")
 ```
 
 ## Phylogenetic Tree
 
 ```python
-from metainformant.dna import phylogeny
+from Bio import Phylo
+from metainformant.visualization.genomics.trees import plot_phylo_tree
 
-tree = phylogeny.read_newick("tree.nwk")
-fig = phylogeny.plot(
-    tree,
-    show_branch_support=True,
-    label_leaves=True,
-    tip_labels_replace={"_": " "}
-)
-fig.savefig("phylogeny.pdf")
+# Read a Newick file with Bio.Phylo. A tree built with metainformant.dna.phylogeny converts the same way:
+# Phylo.read(StringIO(phylogeny.to_newick(tree)), "newick")
+tree = Phylo.read("tree.nwk", "newick")
+ax = plot_phylo_tree(tree, with_labels=True, output_path="phylogeny.pdf")
+# Other layouts: circular_tree_plot, unrooted_tree_plot, tree_annotation_plot, tree_comparison_plot
 ```
 
 ## Network Graph
 
 ```python-snippet
-from metainformant.networks import graph, visualize
+from metainformant.networks.analysis.community import detect_communities
+from metainformant.networks.analysis.graph import load_network
+from metainformant.visualization.genomics.networks import plot_community_network
 
-ppi = graph.read_edgelist("string_ppi.tsv")
-fig = visualize.spring_layout(
-    ppi,
-    node_size="degree",
-    node_color="community",
-    highlight_nodes=["TP53", "BRCA1"]
-)
-fig.savefig("ppi_network.png")
+ppi = load_network("string_ppi.tsv", format="edgelist")
+communities = detect_communities(ppi)  # node -> community id (Louvain by default)
+ax = plot_community_network(ppi, communities, output_path="ppi_network.png")
 ```
 
 ## Advanced Examples
 
-### Circos plot for multi-omics integration
-```python-snippet
-from metainformant.visualization import circos
-
-fig = circos.genome_view(
-    genome="amellifera",
-    tracks={
-        "GWAS": {"file": "gwas_hits.tsv", "type": "manhattan"},
-        "RNA": {"file": "deseq2_results.tsv", "type": "volcano"},
-        "Methylation": {"file": "meth_delta.tsv", "type": "heatmap"}
-    },
-    highlight_genes=["Amel_004123", "Amel_007890"]
-)
-fig.savefig("multiomics_circos.pdf", dpi=300)
-```
-
-### Interactive Plotly dashboard (standalone HTML)
+### Interactive Plotly plots (standalone HTML)
 ```python
+import pandas as pd
 from metainformant.visualization.dashboards import interactive
 
-dashboard = interactive.create_dashboard(
-    data={
-        "expression": "counts.tsv",
-        "gwas": "gwas_results.tsv",
-        "metadata": "sample_info.tsv"
-    },
-    layout="grid",
-    widgets=["manhattan", "pca", "heatmap"]
+# With Plotly, each call returns a Plotly figure and writes a standalone HTML file (a suffix other than .html is replaced).
+# Without Plotly an .html output_path raises ImportError; an image path such as .png returns a static matplotlib Axes.
+gwas = pd.read_csv("gwas_results.tsv", sep="\t")  # chrom, pos and p_value columns
+interactive.interactive_manhattan(
+    gwas, chrom_col="chrom", pos_col="pos", pvalue_col="p_value", output_path="manhattan.html"
 )
-dashboard.save("explorer.html")
-# Opens in browser: file:///path/to/explorer.html
+
+deseq = pd.read_csv("deseq2_results.tsv", sep="\t")  # gene, log2FoldChange and pvalue columns
+interactive.interactive_volcano(deseq, output_path="volcano.html")
+
+counts = pd.read_csv("normalized_counts.tsv", sep="\t", index_col=0)
+interactive.interactive_heatmap(counts.iloc[:100], output_path="heatmap.html")
+# Opens in browser: file:///path/to/manhattan.html
 ```
 
 ### Animated trajectory plot (single-cell pseudotime)
 ```python-snippet
-from metainformant.visualization import animation
+import pandas as pd
+from metainformant.visualization.plots.animations import animate_trajectory
 
 # Requires monotonic ordering of cells (e.g., from Slingshot/palantir)
-cells = pd.read_csv("pseudotime.tsv")
+cells = pd.read_csv("pseudotime.tsv", sep='\t').sort_values("pseudotime")
 
-fig = animation.trajectory(
-    embedding=cells[["UMAP1", "UMAP2"]].values,
-    pseudotime=cells["pseudotime"],
-    color_by=cells["cluster"],
-    fps=30,
-    duration_secs=10
+# One trajectory = the cells' UMAP coordinates ordered along pseudotime
+fig, anim = animate_trajectory(
+    [cells[["UMAP1", "UMAP2"]].values],
+    interval=100,             # ms per frame
+    output_path="trajectory.gif",
 )
-fig.save("trajectory.mp4")
 ```
 
-### 3D protein structure with PyMOL rendering
+### 3D protein structure (interactive Plotly viewer)
 ```python-snippet
-from metainformant.protein import visualize as prot_viz
+from pathlib import Path
+from metainformant.protein.structure.pdb import load_pdb_file
+from metainformant.protein.visualization.general import create_interactive_structure_viewer
 
 # Load AlphaFold structure
-structure = prot_viz.load_pdb("AF-P12345-F1-model_v4.pdb")
+structure = load_pdb_file(Path("AF-P12345-F1-model_v4.pdb"))
 
-# Highlight domains and mutations
-fig = prot_viz.render(
-    structure,
-    highlight_residues=[45, 128, 256],
-    show_surface=True,
-    color_by="B-factor"  # Flexibility
-)
-fig.save("protein_structure.png", width=1920, height=1080)
+# Interactive 3D atom plot saved as HTML (requires plotly)
+fig = create_interactive_structure_viewer(structure, output_path="protein_structure.html")
 ```
 
 ## Expected Output
@@ -170,12 +158,10 @@ fig.save("protein_structure.png", width=1920, height=1080)
 ### Manhattan plot (file)
 ```
 File: manhattan.png
-Size: 2.4 MB
-Dimensions: 2400×1200 px (300 DPI)
-Genome: Apis mellifera (chr1-chr16, chrX)
-Significant hits (p < 5e-8): 23 loci
-Suggestive hits (p < 1e-5): 142 SNPs
-Annotated genes: AMEL_004123 (chr6:28.5 Mb), AMEL_007890 (chr11:12.1 Mb)
+Dimensions: about 2900×1700 px (300 DPI; the default 12×6 inch figure, cropped to its contents)
+Title: Manhattan Plot (n=600 variants, 1 GW-significant)
+Lines: genome-wide significance at p = 5e-8, suggestive at p = 1e-5
+Annotated genes: Amel_004123 (chr6:28.5 Mb), Amel_007890 (chr11:12.1 Mb)
 ```
 
 ### PCA plot caption-ready data preview
@@ -190,14 +176,12 @@ Variance explained: PC1=18.2%, PC2=8.7%, PC3=4.1%
 Color scheme: tissue (brain=blue, ovary=red, leg=green)
 ```
 
-### Heatmap with dendrogram (PDF output)
+### Heatmap (PNG output)
 ```
-File: heatmap_top100_degs.pdf
+File: heatmap_top100_degs.png
 Genes: 100 (top by padj)
-Samples: 48 (ordered by tissue cluster)
+Samples: 48
 Z-score: row-scaling (mean=0, sd=1)
-Clustering: Ward's method, Euclidean distance
-Dendrogram leaves: brain samples cluster tightly (bootstrap >95%)
 ```
 
 ### Network graph statistics
@@ -215,12 +199,14 @@ Community structure: 7 modules (Louvain, resolution=1.0)
 
 | Problem | Likely Cause | Fix |
 |---------|-------------|-----|
-| `MemoryError` during heatmap with 50k genes | Distance matrix O(n²) for clustering | Subset genes first (`deseq.top_n(200)`), or use `cluster_rows=False` |
-| Manhattan plot x-axis labels overlap | Many small chromosomes or custom genome | Use `rotate_xlabels=45` or `chrom_label_step=5` (label every 5th) |
-| Network graph layout takes forever | >10k nodes without fast layout algorithm | Switch to `kamada_kawai` (O(n³) but better for small) → actually use `sfdp` or `sparse` from graph-tool; or sample subgraph |
-| `ValueError: color mapping size mismatch` | `color_by` column has more unique values than palette | Set `palette="tab20"` for >10 categories, or provide `palette={...}` dict |
+| `MemoryError` during heatmap with 50k genes | Distance matrix O(n²) for clustering | Subset genes first (`deseq.nsmallest(200, "padj")`) |
+| Manhattan plot x-axis labels overlap | Many small chromosomes or contigs | Pass `figsize=(16, 6)`, or draw on your own axes (`manhattan_plot(results, ax=ax)`) and rotate the labels with `ax.tick_params(axis="x", labelrotation=45)` |
+| Network graph layout takes forever | More than ~10k nodes | Plot a subgraph instead (`metainformant.networks.analysis.graph.create_subgraph(graph, nodes)`), for example the largest communities |
+| `ValueError: Missing required columns for PCA plot` | The score table lacks `PC1`, `PC2`, `PC1_variance` or `PC2_variance` | Add the columns as in the PCA example (variance as percentages) |
+| `FileNotFoundError` when saving a GWAS figure | `manhattan_plot`, `qq_plot` and `regional_plot` do not create missing directories | Create the output directory first (`metainformant.core.io.ensure_directory(...)`) |
+| `ImportError: Plotly is required to write the interactive HTML file ...` from an `interactive_*` function in `metainformant.visualization.dashboards.interactive` | Plotly is not installed and `output_path` ends in `.html` or `.htm`; matplotlib cannot write HTML | Install Plotly (`uv sync --extra visualization`), or pass an image path such as `.png` to get the static fallback |
 | Plot saves blank/empty file | Matplotlib backend not set for non-interactive | Add `import matplotlib; matplotlib.use('Agg')` at top of script |
-| Font missing warnings (CJK/Russian) | System lacks Unicode fonts | Install `fonts-noto` (Linux) or set `fontfamily="DejaVu Sans"` |
+| Font missing warnings (CJK/Russian) | System lacks Unicode fonts | Install `fonts-noto` (Linux) or set `plt.rcParams["font.family"] = "DejaVu Sans"` |
 
 ---
 

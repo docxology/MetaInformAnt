@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - visualization
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/protein/visualization`
+- **Path**: `src/metainformant/protein/visualization`
 - **Purpose**: Functionality for visualization.
 - **Domain**: protein
 

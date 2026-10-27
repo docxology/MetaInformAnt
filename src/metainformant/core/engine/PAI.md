@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - engine
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/core/engine`
+- **Path**: `src/metainformant/core/engine`
 - **Purpose**: Core engine module for workflow orchestration.
 - **Domain**: core
 

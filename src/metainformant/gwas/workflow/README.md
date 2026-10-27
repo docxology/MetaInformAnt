@@ -24,7 +24,7 @@ End-to-end GWAS workflow orchestration: configuration management, VCF loading, Q
 ## Workflow Steps
 
 1. Load config via `load_gwas_config()`
-2. Parse VCF and apply QC filters (MAF, missingness, HWE)
+2. Parse VCF and apply QC filters (QUAL when `min_qual` is set, MAF, missingness, HWE)
 3. Compute population structure (PCA, kinship)
 4. Run association test (linear, logistic, or mixed model)
 5. Apply multiple testing correction

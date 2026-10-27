@@ -100,12 +100,14 @@ Identifies covalent S-S bonds between cysteine SG atoms.
 def classify_contact_types(
     atoms: List[Dict[str, Any]],
     coords: np.ndarray,
-) -> Dict[str, List[Dict[str, Any]]]
+) -> Dict[str, Any]
 ```
 
-Runs all contact analysis functions and returns a unified dictionary with
-keys: `residue_contacts`, `hydrogen_bonds`, `salt_bridges`,
-`hydrophobic_contacts`, `disulfide_bonds`, and a `summary` with total counts.
+Runs all contact analysis functions and returns a unified dictionary:
+`residue_contacts` is the residue contact map (an `np.ndarray`);
+`hydrogen_bonds`, `salt_bridges`, `hydrophobic_contacts` and `disulfide_bonds`
+are lists of contact dictionaries; and `summary` maps each contact type to its
+count.
 
 ### analyze_contact_network
 

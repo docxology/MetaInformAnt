@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - interaction
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/pharmacogenomics/interaction`
+- **Path**: `src/metainformant/pharmacogenomics/interaction`
 - **Purpose**: Drug-drug interaction analysis subpackage for pharmacogenomics.
 - **Domain**: pharmacogenomics
 

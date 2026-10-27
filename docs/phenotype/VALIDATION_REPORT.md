@@ -234,7 +234,7 @@ from metainformant.phenotype.gwas_integration.phewas import run_phewas, genetic_
 ```
 instead of the cleaner:
 ```python
-from metainformant.phenotype.gwas_integration import run_phewas
+from metainformant.phenotype.gwas_integration.phewas import run_phewas
 ```
 as docs suggest.
 
@@ -321,7 +321,11 @@ as docs suggest.
 2. **Missing direct class imports:**
    The index.md shows direct imports like:
    ```python
-   from metainformant.phenotype import Measurement, Ethogram, Compound, TrackingPoint, AcousticSignal
+   from metainformant.phenotype.morphological.measurement import Measurement
+   from metainformant.phenotype.behavior.ethogram import Ethogram
+   from metainformant.phenotype.chemical.compound import Compound
+   from metainformant.phenotype.electronic.tracking import TrackingPoint
+   from metainformant.phenotype.sonic.signal import AcousticSignal
    ```
    But these are NOT valid due to nested module structure. Users must import from submodules:
    ```python
@@ -529,7 +533,9 @@ The `integration/cross_omic.py` implements basic phenotype-genotype and trait-ex
 ### 1. Index.md Import Examples Incorrect
 The quick start examples show:
 ```python
-from metainformant.phenotype import Measurement, Ethogram, Compound
+from metainformant.phenotype.morphological.measurement import Measurement
+from metainformant.phenotype.behavior.ethogram import Ethogram
+from metainformant.phenotype.chemical.compound import Compound
 ```
 These imports **will fail** because those classes are nested in submodules.
 

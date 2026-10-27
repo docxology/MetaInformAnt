@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - annotations
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/pharmacogenomics/annotations`
+- **Path**: `src/metainformant/pharmacogenomics/annotations`
 - **Purpose**: Pharmacogenomics annotation subpackage.
 - **Domain**: pharmacogenomics
 

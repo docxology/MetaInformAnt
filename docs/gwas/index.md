@@ -16,7 +16,8 @@ The GWAS module provides end-to-end functionality for genome-wide association st
 ## Quick Start
 
 ```python
-from metainformant.gwas import load_gwas_config, execute_gwas_workflow
+from metainformant.gwas.data.config import load_gwas_config
+from metainformant.gwas import execute_gwas_workflow
 
 # Load configuration
 config = load_gwas_config("config/gwas/gwas_template.yaml")
@@ -197,11 +198,9 @@ Core functions:
 
 2. **Functional Annotation**: Variant functional annotation (synonymous/nonsynonymous, consequences) is not yet implemented.
 
-3. **Advanced Association Methods**: Mixed linear models (MLM) and conditional analysis are not yet implemented. Basic linear/logistic regression with covariates is available.
+3. **Discovery Methods**: Gene-based tests and pathway analysis are not yet implemented. Fine-mapping (credible sets, SuSiE, conditional analysis and colocalization) is available in `gwas.finemapping`; see the [fine-mapping overview](./README.md#fine-mapping--colocalization).
 
-4. **Discovery Methods**: Gene-based tests, pathway analysis, and fine-mapping are not yet implemented.
-
-5. **Reporting**: Basic TSV/JSON outputs and plots are available. Comprehensive HTML reports are planned for future releases.
+4. **Reporting**: Basic TSV/JSON outputs and plots are available. Comprehensive HTML reports are planned for future releases.
 
 ### Recommended Workarounds
 
@@ -220,8 +219,9 @@ Core functions:
 
 ### With DNA Module
 ```python-snippet
-from metainformant.dna import variants
-from metainformant.gwas import parse_vcf_full, apply_qc_filters
+from metainformant.dna.variation import variants
+from metainformant.gwas import parse_vcf_full
+from metainformant.gwas.analysis.quality import apply_qc_filters
 
 # Parse VCF (simple parsing from dna module)
 vcf_info = variants.parse_vcf("data/variants.vcf")
@@ -230,12 +230,12 @@ vcf_info = variants.parse_vcf("data/variants.vcf")
 vcf_data = parse_vcf_full("data/variants.vcf")
 
 # Apply GWAS-specific QC
-filtered = apply_qc_filters("data/variants.vcf", config={"min_maf": 0.01})
+filtered = apply_qc_filters("data/variants.vcf", qc_config={"min_maf": 0.01})
 ```
 
 ### With Math Module
 ```python
-from metainformant.math import hardy_weinberg_genotype_freqs
+from metainformant.math.population_genetics.core import hardy_weinberg_genotype_freqs
 from metainformant.gwas import run_gwas
 
 # Calculate expected Hardy-Weinberg genotype frequencies
@@ -248,7 +248,8 @@ gwas_results = run_gwas(vcf_path, phenotype_path, config)
 
 ### With Visualization
 ```python
-from metainformant.gwas import run_gwas, manhattan_plot
+from metainformant.gwas import run_gwas
+from metainformant.gwas.visualization.genomic.genome import manhattan_plot
 
 # Run GWAS
 results = run_gwas(vcf_path, phenotype_path, config)

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - cloud
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/cloud`
+- **Path**: `src/metainformant/cloud`
 - **Purpose**: Cloud deployment infrastructure for MetaInformAnt pipelines.
 - **Domain**: metainformant
 

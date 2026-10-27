@@ -8,7 +8,7 @@ topic guides contain behavioral guidance, examples, and caveats.
 Compatibility facades are excluded from the inventory and remain
 supported through the import paths described in [index.md](index.md).
 
-**Public symbols:** 246
+**Public symbols:** 243
 **Canonical modules:** 30
 
 ## Module index
@@ -28,7 +28,7 @@ supported through the import paths described in [index.md](index.md).
 | [metainformant.core.io.download](#metainformant-core-io-download) | 21 |
 | [metainformant.core.io.download_manager](#metainformant-core-io-download_manager) | 3 |
 | [metainformant.core.io.download_robust](#metainformant-core-io-download_robust) | 3 |
-| [metainformant.core.io.errors](#metainformant-core-io-errors) | 4 |
+| [metainformant.core.io.errors](#metainformant-core-io-errors) | 1 |
 | [metainformant.core.io.io](#metainformant-core-io-io) | 24 |
 | [metainformant.core.ncbi](#metainformant-core-ncbi) | 3 |
 | [metainformant.core.sequence](#metainformant-core-sequence) | 2 |
@@ -110,7 +110,7 @@ supported through the import paths described in [index.md](index.md).
 | `process_map` | function | `(func: Callable[[T], U], items: Sequence[T] \| Iterable[T], *, max_workers: int \| None = None, timeout: float \| None = None, ordered: bool = True) -> list[U]` | Map a function across items using processes for CPU-bound work. |
 | `rate_limited_map` | function | `(func: Callable[[T], U], items: Sequence[T] \| Iterable[T], *, max_per_second: float = 10.0, max_workers: int = 4, timeout: float \| None = None) -> list[U]` | Map with rate limiting -- max N calls per second. Useful for API rate limits. |
 | `resource_aware_workers` | function | `(*, task_type: str = 'io', max_cap: int \| None = None, memory_per_worker_mb: int = 256) -> int` | Return recommended worker count based on CPU cores and available memory. |
-| `thread_map` | function | `(func: Callable[[T], U], items: Sequence[T] \| Iterable[T], *, max_workers: int = 8, chunk_size: int \| None = None, timeout: float \| None = None, ordered: bool = True, on_complete: Callable[[int, T, U], None] \| None = None) -> list[U]` | Map a function across items using threads, preserving order. |
+| `thread_map` | function | `(func: Callable[[T], U], items: Sequence[T] \| Iterable[T], *, max_workers: int = 8, chunk_size: int \| None = None, timeout: float \| None = None, ordered: bool = True, on_complete: Callable[[int, T, U], None] \| None = None) -> list[U]` | Map a function across items using threads. |
 | `thread_map_unordered` | function | `(func: Callable[[T], U], items: Iterable[T], *, max_workers: int = 8, timeout: float \| None = None) -> list[U]` | Map a function across items using threads, without preserving order. |
 
 ## metainformant.core.execution.workflow {#metainformant-core-execution-workflow}
@@ -245,10 +245,7 @@ supported through the import paths described in [index.md](index.md).
 
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
-| `CacheError` | class | `()` | Cache operation error. |
-| `DownloadError` | class | `()` | Download operation error. |
-| `FileNotFoundError` | class | `()` | File not found error. |
-| `IOError` | class | `()` | Base class for I/O errors in metainformant. |
+| `InputFileMissingError` | class | `()` | An expected input file does not exist. |
 
 ## metainformant.core.io.io {#metainformant-core-io-io}
 
@@ -356,7 +353,7 @@ supported through the import paths described in [index.md](index.md).
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
 | `configure_logging_from_env` | function | `(default_level: str = 'INFO') -> None` | Configure root logger from environment variables. |
-| `get_logger` | function | `(name: str) -> logging.Logger` | Get or create a logger with default console handler. |
+| `get_logger` | function | `(name: str) -> logging.Logger` | Get or create a logger with a default console handler. |
 | `get_logger_with_level` | function | `(name: str, level: str \| int \| None = None) -> logging.Logger` | Get or create a logger with specified log level. |
 | `log_with_metadata` | function | `(logger: logging.Logger, message: str, metadata: dict[str, Any], *, level: str = 'INFO', structured: bool = False) -> None` | Log message with structured metadata. |
 | `setup_logger` | function | `(name: str, log_file: str \| None = None, level: str = 'INFO') -> logging.Logger` | Set up a logger with file and/or console output. |

@@ -181,7 +181,8 @@ Once you have variant data and phenotype data:
 ### Python API
 
 ```python
-from metainformant.gwas import load_gwas_config, execute_gwas_workflow
+from metainformant.gwas.data.config import load_gwas_config
+from metainformant.gwas import execute_gwas_workflow
 
 # Load configuration
 config = load_gwas_config("config/gwas/gwas_amellifera.yaml")

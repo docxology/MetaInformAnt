@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - data
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/tests/data`
+- **Path**: `tests/data`
 - **Purpose**: Functionality for data.
 - **Domain**: tests
 

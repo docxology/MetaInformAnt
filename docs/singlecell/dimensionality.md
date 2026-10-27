@@ -9,7 +9,7 @@ The dimensionality module provides tools for reducing the complexity of high-dim
 Identify genes with high biological variability across cells:
 
 ```python-snippet
-from metainformant.singlecell.dimensionality import select_hvgs
+from metainformant.singlecell.analysis.pca_methods import select_hvgs
 
 # Seurat-style HVG selection (default)
 data = select_hvgs(
@@ -52,7 +52,7 @@ data = select_hvgs(data, n_top_genes=2000, method='cellranger')
 Perform PCA on expression data:
 
 ```python-snippet
-from metainformant.singlecell.dimensionality import compute_pca
+from metainformant.singlecell.analysis.pca_methods import compute_pca
 
 # Standard PCA
 data = compute_pca(
@@ -110,7 +110,7 @@ plt.show()
 Build k-nearest neighbor graph for downstream analysis:
 
 ```python-snippet
-from metainformant.singlecell.dimensionality import compute_neighbors
+from metainformant.singlecell.analysis.nonlinear_methods import compute_neighbors
 
 # Compute neighbor graph
 data = compute_neighbors(
@@ -140,7 +140,7 @@ data = compute_neighbors(
 Uniform Manifold Approximation and Projection for non-linear dimensionality reduction:
 
 ```python-snippet
-from metainformant.singlecell.dimensionality import compute_umap
+from metainformant.singlecell.analysis.nonlinear_methods import compute_umap
 
 # Standard UMAP
 data = compute_umap(
@@ -175,7 +175,7 @@ uv pip install umap-learn
 t-distributed Stochastic Neighbor Embedding:
 
 ```python-snippet
-from metainformant.singlecell.dimensionality import compute_tsne
+from metainformant.singlecell.analysis.nonlinear_methods import compute_tsne
 
 # Standard t-SNE
 data = compute_tsne(
@@ -203,7 +203,7 @@ tsne_coords = data.obsm['X_tsne']  # Shape: (n_cells, 2)
 Diffusion maps for trajectory analysis and pseudotime inference:
 
 ```python-snippet
-from metainformant.singlecell.dimensionality import compute_diffusion_map
+from metainformant.singlecell.analysis.nonlinear_methods import compute_diffusion_map
 
 # Compute diffusion components
 data = compute_diffusion_map(
@@ -320,16 +320,21 @@ For datasets > 1M cells, consider:
 
 ```python-snippet
 # Complete dimensionality reduction workflow
-from metainformant.singlecell.dimensionality import *
+from metainformant.singlecell.analysis.pca_methods import compute_pca, select_hvgs
+from metainformant.singlecell.analysis.nonlinear_methods import (
+    compute_neighbors,
+    compute_tsne,
+    compute_umap,
+)
 
 # 1. Select highly variable genes
 data = select_hvgs(data, n_top_genes=2000, method='seurat')
 print(f"Selected {data.var['highly_variable'].sum()} HVGs")
 
 # 2. Principal component analysis
-data = compute_pca(data, n_components=50, use_highly_variable=True)
+data = compute_pca(data, n_components=50, use_hvgs=True)
 print(f"Explained variance (first 10 PCs): "
-      f"{data.uns['pca']['variance_ratio'][:10].sum():.3f}")
+      f"{sum(data.uns['pca']['variance_ratio'][:10]):.3f}")
 
 # 3. Neighbor graph for clustering
 data = compute_neighbors(data, n_neighbors=15, n_pcs=40)
@@ -403,7 +408,7 @@ except ValueError as e:
 The dimensionality reduction results are used by clustering algorithms:
 
 ```python-snippet
-from metainformant.singlecell.clustering import leiden_clustering
+from metainformant.singlecell.analysis.clustering import leiden_clustering
 
 # Use neighbor graph for clustering
 data = leiden_clustering(data, resolution=0.5)

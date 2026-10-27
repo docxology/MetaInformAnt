@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - utils
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/longread/utils`
+- **Path**: `src/metainformant/longread/utils`
 - **Purpose**: Long-read sequencing utility functions.
 - **Domain**: longread
 

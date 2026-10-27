@@ -235,15 +235,24 @@ io.dump_json(checkpoint, "checkpoint.json")  # atomic
 
 ### Database Transactions (if using PostgreSQL)
 
-When `metainformant.core.data.db` is used, wrap mutations in transactions:
+When `metainformant.core.data.db` is used (requires `psycopg2` and a reachable PostgreSQL server), send related mutations through one `execute_transaction` call:
 
 ```python
 from metainformant.core.data import db
 
-with db.transaction():
-    db.insert_results(results)
-    db.log_phase_completion(phase_name, item_count)
-# Commit on success; rollback on exception
+with db.get_connection(database="metainformant") as client:
+    conn = client.connect()
+    try:
+        client.execute_transaction(
+            conn,
+            [
+                ("INSERT INTO results (item_id, value) VALUES (%s, %s)", (item_id, value)),
+                ("INSERT INTO phase_log (phase, item_count) VALUES (%s, %s)", (phase_name, item_count)),
+            ],
+        )
+    finally:
+        client.release_connection(conn)
+# Commits all queries together on success; on any error it rolls back and raises RuntimeError
 ```
 
 ---
@@ -646,7 +655,7 @@ grep "ERROR" output/core/logs/*.log | head
 cat output/checkpoint.json | jq '.items | map(select(.stage == "FAILED"))'
 
 # 3. Run with debug logging
-METAINFORMANT_LOG_LEVEL=DEBUG python -m metainformant.rna.workflow ...
+CORE_LOG_LEVEL=DEBUG python -m metainformant.rna.amalgkit ...
 
 # 4. Validate output files
 find output/ -type f -size 0  # empty files?

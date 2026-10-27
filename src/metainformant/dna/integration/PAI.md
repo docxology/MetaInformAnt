@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - integration
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/dna/integration`
+- **Path**: `src/metainformant/dna/integration`
 - **Purpose**: Functionality for integration.
 - **Domain**: dna
 

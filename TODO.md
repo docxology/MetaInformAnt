@@ -1,34 +1,152 @@
 # MetaInformAnt TODO
 
-> **Last Updated**: 2026-08-13
+> **Last Updated**: 2026-10-26
 >
-> This TODO contains only active unfinished work. Prior BeeWAS GWAS,
-> manuscript, dashboard, validation, and release-bundle work is recorded in
-> status notes and generated release artifacts, not in this active list.
+> This TODO contains only active unfinished work. Completed work is recorded in
+> `CHANGELOG.md`, the review and benchmark documents it references, and git
+> history, not in this list.
 
 The Hymenoptera Amalgkit project has a separate, data-root-scoped backlog at
 [`projects/hymenoptera_amalgkit/TODO.md`](projects/hymenoptera_amalgkit/TODO.md).
 Keep that work there rather than mixing a live external-volume transcriptome
-campaign with the BeeWAS release backlog below. Completed MetaInformAnt RNA
-and Hymenoptera implementation work is intentionally absent from both active
-lists; its evidence is maintained in the project status and readiness records.
+campaign with the BeeWAS release backlog below.
 
-## Release engineering status
+## Release engineering
 
-Completed checkboxes below are closed by repository evidence, not by the
-absence of a code diff. Remaining work is gated in order: engineering checks;
-nested publication and reachable gitlinks; operational manifests, receipts,
-locks, and campaign snapshots; then owner-reviewed scientific promotion. A
-green engineering gate never establishes cohort completion or biological
-inference. The live RNA campaign remains a moving operational snapshot.
+Remaining work is gated in order: engineering checks; nested publication and
+reachable gitlinks; operational manifests, receipts, locks, and campaign
+snapshots; then owner-reviewed scientific promotion. A green engineering gate
+never establishes cohort completion or biological inference. The live RNA
+campaign remains a moving operational snapshot.
 
-### Coverage ratchet baseline
+- [ ] Raise `COVERAGE_MINIMUM` (currently 70.00%, one point under the hosted
+  full-suite measurement of 71.02% in Test Suite run 40240714837) in measured
+  increments as maintained-domain tests expand; each increase requires a hosted
+  full-suite receipt and a corresponding test/documentation change.
 
-- [x] Restore a truthful blocking aggregate coverage gate at 58.00% after the
-  hosted full-suite measured 58.01% with all tests passing.
-- [ ] Raise `COVERAGE_MINIMUM` in measured increments as maintained-domain
-  tests expand; each increase requires a hosted full-suite receipt and a
-  corresponding test/documentation change.
+## Methods
+
+- [ ] Replace the heuristic sequence generators in `simulation.models.popgen`
+  with coalescent simulation. `generate_population_sequences` mutates every
+  sequence independently from one ancestor (a star genealogy), so a "neutral"
+  sample of 20 gives Tajima's D near -2.6. The bottleneck and expansion
+  scenarios resample founders, which leaves the bottleneck's D near zero and
+  pushes expansion's D positive, the opposite of the textbook signature.
+- [ ] Make `generate_two_populations(fst=...)` reach its target: Hudson's
+  F_ST of its output is near 0.5 for targets 0.05, 0.2 and 0.5.
+- [ ] Offer simulated null distributions for the neutrality tests. The
+  current p-values use the normal approximation, which is rough for small
+  samples.
+- [ ] Make `visualization.genomics.trees.plot_phylo_tree` draw the trees that
+  `dna.phylogeny.neighbor_joining_tree` returns. That builder represents
+  leaves as `None` in its nested dict, and the plot raises `AttributeError`.
+- [ ] Port `dna.external.genomes.list_genome_assemblies`,
+  `get_genome_metadata` and `download_reference_genome` to the current NCBI
+  Datasets API. A documentation review saw the v2 endpoints they call return
+  404, so they come back empty; `download_genome_package` works. Verify with
+  network access.
+
+- [ ] Pass genotypes to `write_summary_statistics` from the GWAS workflow
+  (`workflow_execution.py`) so pipeline outputs carry MAF instead of `NA`.
+- [ ] Accept the `chrom` key in `gwas/visualization/genomic/genome.py` and
+  `statistical/effects.py`, as `interactive_manhattan` now does, and review
+  the calibration of the `multi_trait_coloc` shared-signal heuristic.
+
+## Known defects from the documentation review
+
+Found while making the documentation executable; each was reproduced but is
+not yet fixed.
+
+- [ ] `simulation.models.rna` treats negative fold changes as magnitudes,
+  and `generate_linkage_disequilibrium_data` ignores `recombination_rate`
+  (its `r_squared_target` acts as a copy probability).
+- [ ] `math.population_genetics`: `effective_size_from_family_size_variance`
+  asserts on an integer size, and `effective_size_sex_ratio` jumps from 400
+  to 200 at a sex ratio of exactly 0.5.
+- [ ] `core.io.download`: `resume=False` over an existing file double-counts
+  bytes, a missing destination directory is treated as a file name, and a
+  complete file with `resume=True` fails with HTTP 416.
+- [ ] `dna.variation.mutations.generate_point_mutations` uses the global
+  random state and ignores `mutation_rate`.
+- [ ] `networks`: pathway IDs containing underscores are split, an unknown
+  enrichment method runs as hypergeometric, Leiden-only arguments reach the
+  Louvain fallback, `granger`/`grnboost2` are listed but raise, feed-forward
+  loops ignore the direct edge, and the PPI "top 10" centrality is the first
+  ten nodes.
+- [ ] `ml`: `compare_validation_strategies`' default strategy always errors,
+  and `OllamaConfig(max_retries=0)` crashes `generate()`.
+- [ ] `ontology`: `filter_by_namespace` and `subgraph` lose the parent/child
+  maps, `enrich_genes` ignores `alpha`, and Resnik similarity is documented as
+  0-1 but returns bits.
+- [ ] Visualization: duplicate `cmap`/`marker` and unsupported
+  `color`/`alpha` arguments raise in `analysis/information.py`,
+  `analysis/timeseries.py` and `plot_circular_barplot`; Sankey node indices,
+  per-chromosome marker sizes, hierarchical network layout, sequence-logo
+  heights and single-panel `multi_panel` are wrong.
+- [ ] `dna.population` plots ignore `output_path` in
+  `plot_population_diversity`, return `None` from `plot_pca_results` for a
+  bare array, and drop summary and neutrality entries beyond six and four.
+- [ ] GWAS plots: genome-wide x positions are inflated (one scatter per
+  variant), effect-plot positions are a running sum, the interactive suite
+  skips TSV inputs and ignores `vcf_file`, regional plots compare `chrom` by
+  exact type, and QQ "expected" values are random and fail at p = 0.
+- [ ] `pharmacogenomics`: the CYP2D6, CYP2C19 and SLCO1B1 phenotype bands
+  contradict CPIC (`*1/*4` reads Normal, CYP2C19 `*1/*1` Rapid), the
+  metabolizer module uses a second, inconsistent table, and
+  `generate_clinical_report(drugs=None)` returns no recommendations.
+- [ ] `longread`: the default adapter table holds two 8 bp entries that match
+  random sequence (about 190 bp trimmed from adapter-free 3 kb reads),
+  `haplotag_reads` tags every read HP=0 for `phase_reads` blocks, the
+  "bayesian" methylation model is a capped linear map, and merged SV calls
+  lose mate and inserted-sequence fields.
+- [ ] `structural_variants`: translocation calls take start and end from two
+  chromosomes, insertion calls never reach the default minimum size,
+  breakpoint refinement drops `chrom2` and strand, gene-overlap queries miss
+  long genes, and `dosage_gain` is unreachable.
+- [ ] `metagenomics`: bin quality does no marker search (any 3 kb bin scores
+  complete), the OTU k-mer prefilter rejects pairs above the identity
+  threshold, ASV denoising inverts its Poisson test, Fisher's alpha and
+  pathway completeness are wrong, and functional annotation invents labels.
+- [ ] `metabolomics`: `read_csv` turns unparseable cells into 0.0, unknown
+  `ion_mode` selects the negative adducts, enrichment p-values fall to 0.0 on
+  error, and ComBat correction depends on batch order.
+- [ ] `epigenome`: peak files do not survive a save/load round trip,
+  overlapping-peak detection misses pairs, `find_tf_binding_sites` is
+  simulated, and the ChIP/ATAC integration step is a placeholder.
+- [ ] `singlecell`: `leiden_clustering` silently runs k-means on plain
+  arrays, several steps mutate their input, the `run_*` I/O helpers only touch
+  output files, and diffusion pseudotime is effectively Euclidean distance.
+- [ ] `spatial`: the `radius` graph method always raises, mutual kNN weights
+  double, Xenium and MERFISH scatter plots swap axes, and loaders fall back to
+  zero coordinates when the cell file is missing.
+- [ ] Smaller contract bugs: `biological_embedding("temporal")` raises for
+  any `EventSequence`, `event_importance("frequency")` ranks by earliness,
+  `apply_qc_filters` raises `IndexError` when variant and genotype counts
+  differ, `regional_coloc` reports success when every window errors,
+  `cross_validate_biological(method="ensemble", random_state=...)` raises,
+  and `load_ontology(format="json")` fails on OBO-parsed ontologies.
+- [ ] Packaging: the `louvain` extra names the wrong package, and
+  `np.trapezoid` in metabolomics plots needs NumPy 2 while `numpy>=1.24` is
+  allowed. `canonical_correlation` defaults to no regularization, which gives
+  correlations of exactly 1 when features outnumber samples.
+
+## Documentation
+
+- [ ] Audit the module cards and runtime figures in
+  `docs/comparisons/methods_matrix.md`, and the source trees in
+  `docs/agents/rules/*.md` (only the GWAS tree has been corrected). Imports
+  and attribute chains in active documentation are checked by
+  `tests/quality/test_doc_imports.py`; call signatures and prose are not.
+- [ ] Bring call signatures and claims up to date in pages the executable
+  sweep did not cover: `docs/cloud/SPEC.md`; `docs/visualization/`
+  animations, dimred, expression, trees, plots, ontology, simulation, SPEC and
+  AGENTS; `docs/ml/features.md` and `VALIDATION_REPORT.md`;
+  `docs/dna/distances.md`, `translation.md` and `sequences.md`;
+  `docs/ontology/query.md`; `docs/ecology/` ordination and visualization;
+  `docs/gwas/` workflow, structure, index and ASSESSMENT; and the
+  capability, performance, troubleshooting and topic pages the omics sweep
+  left untouched in `docs/{metabolomics,metagenomics,singlecell,spatial,
+  pharmacogenomics,structural_variants,longread,epigenome}/`.
 
 ---
 
@@ -52,334 +170,6 @@ uv run python -m beewas.gwas.review_release build
 The full `apis_gwas` tree lives in the nested checkout on the producer
 machine; this checkout carries only a README/AGENTS stub, so this command
 runs where that tree exists.
-
----
-
-## Package-wide review backlog (2026-08-09)
-
-This section records the package-level improvement scope from the stewardship
-review. It is a review backlog, not a claim that these items are fixed.
-Preserve existing uncommitted parent work, nested repository boundaries, and
-the live RNA campaign while addressing it. Historical audit reports, negative
-controls, failure evidence, and provenance artifacts remain part of the record.
-
-### P1 — Correctness, data safety, and scientific readiness
-
-- [x] **Make the NCBI contact contract explicit.** Explicit contact values take
-  precedence over `NCBI_EMAIL`; otherwise callers must opt into anonymous
-  access. Anonymous mode warns, leaves `Entrez.email` unset, and does not
-  persist invented identity data. Offline tests cover each mode.
-  Scope: `src/metainformant/rna/engine/discovery.py`,
-  `src/metainformant/gwas/data/sra_download.py`,
-  `src/metainformant/dna/external/genomes.py`, and shared configuration/tests.
-
-- [x] **Make SRA configuration campaign-local and non-destructive.** Remove
-  production dependence on `vdb-config -s` against user-global NCBI
-  configuration and stop cleanup routines from implicitly scanning or moving
-  files under `Path.home()/ncbi` or `/tmp/ncbi`. Native Amalgkit, direct
-  `fasterq-dump`, validation subprocesses, and cleanup must inherit one
-  explicit campaign-local environment and path contract.
-  Scope: `src/metainformant/rna/amalgkit/sra_environment.py`,
-  `src/metainformant/rna/engine/workflow_steps.py`,
-  `src/metainformant/rna/engine/workflow_cleanup.py`, and subprocess tests.
-
-- [x] **Make readiness reports provenance- and manifest-driven.** Replace file
-  existence and `pgrep` completion heuristics in
-  `scripts/rna/check_pipeline_status.py` with lock ownership, durable
-  receipts, current manifests, and producer heartbeats. Report executable
-  readiness, cohort readiness, descriptive analysis, and biological inference
-  as separate states; never promote a partial cohort or descriptive matrix to
-  a biological result.
-  Exit evidence: fixture reports for empty, active, partial, stale, current,
-  and finalized states, each independently auditable.
-
-- [x] **Separate quantification reuse from cleanup authorization.** A
-  version-drift or otherwise compatible output may be reusable for inspection,
-  but raw deletion must require exact current quantification provenance plus a
-  current manifest and receipt. Preserve failed, partial, stale, legacy, and
-  version-drift states as visible/resumable records.
-  Scope: `src/metainformant/rna/engine/provenance.py`,
-  `src/metainformant/rna/engine/progress_db.py`,
-  `scripts/rna/reclaim_quantified_raw.py`, and orchestrator reset/retry policy.
-
-- [x] **Make provenance identity independent of the caller's working
-  directory.** Canonicalize configuration and output paths at receipt
-  creation/classification boundaries and test classification from a different
-  process CWD. Keep hash-bound output reuse strict and observable.
-
-- [x] **Require explicit cross-species sample/condition alignment.** Remove or
-  quarantine positional column fallback for conservation/divergence comparisons
-  unless the caller supplies a validated alignment map and metadata evidence.
-  Define duplicate-label, missingness, replicate, and condition semantics
-  before any comparison is called conserved or divergent.
-  Scope: `src/metainformant/rna/analysis/cross_species.py`, visualization
-  consumers, RNA docs, and synthetic/fixture tests.
-
-- [x] **Make cross-species statistics honest and reproducible.** Completed
-  2026-09-03: `metainformant.rna.analysis.statistics_contract` provides
-  fail-closed provenance records with explicit descriptive/inferential role
-  separation and role-conditional multiple-testing semantics (descriptive
-  records render family/method/count as not-applicable), a BH-FDR helper, a
-  gated inferential wrapper, orthology profile invariants, and species-tree
-  invariants with caller-declared rootedness provenance. The hymenoptera
-  cross-species runner validates provenance before writing any artifact and
-  renders an additive `analysis_provenance_*` block into
-  `analysis_summary.txt`; negative fixtures cover duplicate labels, missing
-  mappings, low replication, incomplete orthology, and placeholder
-  provenance.
-
-  Upcoming slices completed 2026-09-17: biological-replicate units and
-  estimands are now declared via `ReplicateUnitDeclaration` /
-  `EstimandDeclaration` with role-conditional non-degeneracy validation
-  (technical-replicate pooling refused; inferential grade requires >= 2
-  independent replicates per stratum) and additive
-  `analysis_provenance_replicate_unit_*` / `analysis_provenance_estimand_*`
-  rendering. The remaining slices were verified already present: seed,
-  permutation-count, null-model, and correction provenance fields plus
-  descriptive/inferential separation predate this pass, and orthology
-  graph/tree uniqueness, rootedness, and coverage validators landed in
-  commit `3f48bb2d7`; both are test-bound by the existing suites.
-
-### P1 — Package quality and release gates
-
-- [x] **Repair and then enforce formatting/lint quality across maintained
-  code.** The current changed-tree review found Black issues in six changed
-  files, isort issues in three, and flake8 issues including E402/E501, an
-  unused import, and a nested-definition spacing error. Include maintained
-  `scripts/` in the blocking gate while keeping compatibility/generated
-  exceptions narrow and documented.
-  Exit evidence: check-only Black/isort/flake8 passes for `src/`, `tests/`, and
-  maintained scripts; CI fails on new findings rather than masking them.
-
-- [x] **Make typing claims and gates truthful.** `SPEC.md` and contributor
-  guidance imply strict typing, while the current RNA mypy review reports 173
-  errors across 42 files and the configured gate is not strict. Choose a
-  phased baseline: type core/RNA contracts first, add required third-party
-  stubs or narrow facades, and enforce only the documented scope at each phase.
-  Exit evidence: a checked-in typing policy, a ratcheting error baseline or
-  clean scoped gate, and tests for the canonical core, DNA, RNA, and NCBI
-  contracts. Removed compatibility paths are documented only in
-  `docs/MIGRATION_0.4.md`.
-
-- [x] **Remove non-blocking quality semantics where release correctness
-  depends on them.** Reassess `continue-on-error` for extended/network/all/FAT/
-  example jobs, optional documentation builds, masked report generation, and
-  package validation that only warns when required tooling is absent. Keep
-  genuinely optional jobs explicitly labeled informational.
-  Scope: `.github/workflows/test.yml`, `.github/workflows/release.yml`,
-  `scripts/package/test.sh`, `scripts/package/uv_quality.sh`, and
-  `scripts/package/build.sh`.
-
-- [x] **Add disposable installation smoke tests to release validation.** Build
-  the wheel, install it into clean Python 3.11 and 3.12 environments, test
-  public and legacy imports, verify the CLI/API surface, and run documented
-  lightweight checks. Do not recreate or mutate the live producer environment.
-
-### P2 — Documentation, generated surfaces, and capability truth
-
-- [x] **Repair command/documentation drift.** Replace references to the
-  retired test entry point with the maintained package test entry point, then
-  audit active README, contributor, CI, scripts, and RNA docs for
-  retired commands and paths. Keep historical reports explicitly historical.
-  Scope: `CONTRIBUTING.md`, `docs/CONTRIBUTING.md`, `tests/README_tests.md`,
-  active README/docs, and release instructions.
-
-- [x] **Publish a capability matrix for the package.** Classify each public
-  module/API as stable, experimental, scaffold/placeholder, deprecated
-  compatibility facade, or retired. Reconcile active README claims with
-  validation reports documenting placeholders or missing implementations,
-  especially tasks, life-events, networks, ML, math, and variant-download
-  surfaces.
-  Exit evidence: a source-linked matrix, promotion criteria, and tests/docs
-  that do not imply scientific or operational completeness for scaffolds.
-
-- [x] **Keep generated API documentation and Cursor skills reproducible.** Make
-  generation/check commands part of the required documentation gate, verify
-  internal links, and ensure generated outputs record source/version
-  provenance without overwriting historical evidence. Current review evidence:
-  core cross-check, Cursor skill check, RNA docs validation, and internal link
-  validation pass.
-
-- [x] **Define package version and release authority once.** Reconcile the
-  package version in `pyproject.toml`, `src/metainformant/__init__.py`,
-  generated metadata, changelog/release notes, and hosted release workflow.
-  Document which generated artifacts must be refreshed and which approvals are
-  required before publication.
-
-### P2 — Tests, contracts, and security
-
-- [x] **Expand contract tests around the current RNA boundary.** The current
-  targeted baseline covers
-  fixtures for lock mutual exclusion, interrupted recovery, hash-bound reuse,
-  provenance migration, raw-cleanup refusal, subprocess environments, alias
-  resolution, partial cohorts, and downstream finalization.
-
-- [x] **Add package-wide public-surface and optional-dependency tests.** Exercise
-  maintained module imports, legacy aliases, a clean wheel install, no-network
-  defaults, real-implementation policy, and documented optional dependency
-  behavior. Structural completeness and export audits are useful guards but do
-  not establish scientific correctness; pair them with behavior-level
-  contracts.
-
-- [x] **Run blocking security and dependency checks on the release surface.**
-  Review Bandit/Safety (or selected maintained equivalents), lockfile
-  provenance, subprocess argument boundaries, path traversal, temporary-file
-  handling, external-tool logs, and contact-data persistence. Record justified
-  compatibility exceptions rather than masking findings.
-
-  Upcoming slices: make medium/high Bandit and dependency-audit checks
-  required; retain a dated low-severity baseline with owners; test argument
-  lists, path containment, temporary-file permissions, and contact redaction;
-  and record lockfile source/revision and audit commands in the evidence
-  manifest. Exit evidence is a blocking local/hosted report with no unowned
-  exceptions.
-
-  Completed 2026-09-17: `scripts/package/security_checks.sh` gates Bandit
-  (medium+ blocking), pip-audit over the frozen lockfile export, and a
-  blocking shell-exec pattern audit with an informational path-traversal
-  review list; `.github/workflows/security.yml` runs it as a blocking job.
-  Observed findings (365 bandit, 0 pip-audit vulnerabilities, 10 reviewed
-  benign traversal candidates) are recorded in
-  `docs/reviews/security_check_2026-09-17.md`; the single medium B310
-  (hardcoded-https false positive) carries a dated owner entry in
-  `scripts/package/security_baseline.txt`. Hosted receipt follows on the
-  first workflow run after push.
-
-### P3 — Operations and downstream analysis
-
-- [x] **Characterize campaign-scale performance without touching the live
-  producer.**
-  Benchmark discovery, bounded acquisition/quantification queues,
-  retry/backoff, hash/provenance I/O, storage pressure, and resource limits in
-  disposable fixtures. Define budgets and telemetry for long-running
-  campaigns; never start a competing producer during validation.
-
-  Delivered slices (2026-09-17): disposable SQLite/filesystem fixtures; measured
-  throughput, queue depth, retries, storage growth, and peak memory under
-  bounded profiles; then publish budgets and telemetry definitions without
-  reusing live campaign counts as benchmarks. Exit evidence is a reproducible
-  benchmark command, fixture inputs, and a dated report.
-
-  Completed 2026-09-17: `scripts/rna/benchmark_campaign_scale.py` builds
-  disposable seeded ProgressDB/filesystem fixtures (1e3–1e5 rows), measures
-  discovery, queue depth, retry/backoff, hash/provenance I/O, and storage
-  growth with the real engine implementations, and refuses any target at or
-  beneath the live data root. Budgets and telemetry definitions plus a dated
-  local example run are in `docs/rna/campaign_scale_benchmarks.md`; tests in
-  `tests/rna/test_benchmark_campaign_scale.py`.
-
-- [x] **Make evidence bundles first-class release artifacts.**
-  Include immutable input/config hashes, software/tool versions, lock/heartbeat history, terminal
-  and unresolved task counts, receipts, manifests, matrices, error taxonomy,
-  and command transcripts. State acquisition, recovery, quantification,
-  descriptive analysis, and biological inference separately.
-
-  Delivered slices (2026-09-17): schema for hashes, versions, lock/heartbeat
-  history, counts, receipts, manifests, matrices, errors, and transcripts;
-  make generation atomic and reject mixed-root evidence; and add a validator
-  separating operational, descriptive, and inferential artifacts. Exit evidence
-  is a fixture bundle plus negative stale/mixed-root controls.
-
-  Completed 2026-09-17: `src/metainformant/rna/engine/evidence_bundle.py`
-  (schema `metainformant.rna.evidence_bundle.v1`) provides bundle identity by
-  canonical-JSON SHA-256, atomic staged-then-rename generation, strict
-  mixed-root rejection at builder and validator, five non-conflatable roles,
-  and a validator CLI separating operational, descriptive, and inferential
-  artifacts. Tests in `tests/rna/test_evidence_bundle.py` cover the fixture
-  bundle plus stale, missing-artifact, mixed-root, role-conflation, and
-  state-conflation negative controls.
-
-- [x] **Specify downstream analytical contracts before promotion.**
-  Document merge/sample/ortholog identifiers, normalization, differential-expression or
-  equivalent methods, batch handling, replicate requirements, missing-data
-  policy, statistical corrections, and the evidence required to move from
-  descriptive analysis to biological inference.
-
-  Delivered slices (2026-09-17): canonical sample/condition/replicate/species/
-  orthology/matrix identifiers; document normalization, batch, missing-data,
-  filtering, and multiplicity defaults; and add a promotion checklist requiring
-  complete metadata, finalized matrices, current provenance, and review. Exit
-  evidence is a source-linked contract and tests preventing descriptive
-  matrices from acquiring biological-inference labels.
-
-  Completed 2026-09-17: `docs/rna/downstream_contracts.md` defines canonical
-  identifiers, normalization/batch/missing-data/filtering/multiplicity
-  defaults, replicate requirements, and a source-linked 7-item promotion
-  checklist gating descriptive to biological inference.
-  `tests/rna/test_promotion_guards.py` fails closed when a descriptive-stage
-  artifact is offered as an inferential observation.
-
-### P2 — Core, MCP, skills, and test-suite expansion
-
-- [x] **Expand core method depth around stable contracts.**
-  Add behavior-level tests and API documentation for atomic I/O, checksums, path containment,
-  optional dependency reporting, resource-aware parallel execution, and
-  workflow state transitions. Exit evidence: public-surface imports,
-  deterministic edge fixtures, and a generated API cross-check with no
-  undocumented stable exports.
-
-  Completed 2026-09-17: `tests/core/test_core_contracts_deep.py` adds 37
-  behavior-level tests over atomic I/O interruption semantics, checksum
-  round-trips, path containment (including symlink escape), optional-
-  dependency reporting, resource-aware parallel execution limits, and
-  workflow state-transition refusals; the one undocumented stable export
-  found (`core.utils.config.get_env_or_default`) is now documented in
-  `docs/core/config.md`.
-
-- [x] **Keep MCP availability truthful and adapter-ready.**
-  The checkout provides a standalone Amalgkit monitor, not a transport or server. Extend
-  only with explicit roots, database/receipt-backed readiness, and evidence
-  paths. Do not advertise stdio/SSE tools until protocol implementation,
-  dependency policy, security review, and client fixtures exist. Exit evidence:
-  monitor contract tests and a negative test proving biological inference is
-  withheld.
-
-  Completed 2026-09-17: `tests/mcp/test_monitor_contract.py` (12 tests)
-  binds the standalone Amalgkit monitor to explicit-root, receipt-backed
-  readiness, and corrupt-database degradation contracts, and adds the
-  required negative test proving biological inference stays withheld even
-  when a fully finalized matrix fixture is present. No transport or server
-  code was added.
-
-- [x] **Keep generated skills reproducible.** Regenerate `.cursor/skills/` from
-  every in-scope `AGENTS.md`, prune orphans, and run the check in required docs
-  CI. Add a source-linked availability report without treating wrappers as
-  executable package APIs. Exit evidence: deterministic generation with zero
-  missing, orphaned, or broken canonical links.
-  Completed 2026-08-31: regenerated 417 skills, removed the orphaned
-  `metainformant-projects-hymenoptera-amalgkit-doc-manuscript` wrapper left by
-  the doc/→docs/ migration, and `generate_cursor_skills.py --check` passes.
-
-- [x] **Maintain modular, process-isolated test lanes.**
-  Keep the canonical full suite and independent core, DNA, RNA, MCP, domain, and packaging groups
-  for fast diagnosis. Groups must use real implementations, explicit optional
-  markers, and complete failure output; group green is not release or
-  scientific readiness. Exit evidence: documented matrix command, isolated
-  fixtures, and a required full-suite job.
-
-  Completed 2026-09-17: remaining CI wiring landed in
-  `.github/workflows/test.yml` as a `test-lanes` matrix job over the six
-  `scripts/test_matrix.py` lanes (core, dna, rna, mcp, domains, package).
-  Lanes stay diagnostic (`continue-on-error`, not in `summary` needs); the
-  full-suite coverage job remains the only release gate.
-  2026-08-31 verification: `scripts/test_matrix.py --list` shows lanes core,
-  dna, rna, mcp, domains, package; measured this pass — tests/core
-  (16 passed, 107s), tests/rna (846 passed/2 contention flakes that pass in
-  isolation/4 skipped, 939s), tests/{infrastructure,quality,other}
-  (365 passed, 815s). CI wiring completed 2026-09-17 (see above).
-
-### Boundary and execution rules
-
-- Do not edit nested repository contents from the parent. Reconcile nested
-  gitlinks only after their own branches/PRs contain validated, remotely
-  reachable commits.
-- Do not touch `/Volumes/external_drive/Data/amalgkit` (AMALGKIT_DATA_ROOT) except for explicitly read-only
-  monitoring.
-- Do not reset, discard, recreate the active environment, or claim
-  campaign/scientific completion from a moving operational snapshot.
-- Before each release claim, recapture parent/nested commits, reachability,
-  dirty paths, PR state, campaign status, current manifest, provenance, and
-  reproducible evidence-bundle status.
 
 ---
 
@@ -416,6 +206,8 @@ controls, failure evidence, and provenance artifacts remain part of the record.
 
 ---
 
+---
+
 ## Operating Rules
 
 - Use package-module commands for BeeWAS work, for example
@@ -430,3 +222,13 @@ controls, failure evidence, and provenance artifacts remain part of the record.
   decision artifact.
 - Keep this TODO forward-looking; move resolved evidence and dated snapshots to
   the appropriate status or release document.
+- Do not edit nested repository contents from the parent. Reconcile nested
+  gitlinks only after their own branches/PRs contain validated, remotely
+  reachable commits.
+- Do not touch `/Volumes/external_drive/Data/amalgkit` (AMALGKIT_DATA_ROOT) except for explicitly read-only
+  monitoring.
+- Do not reset, discard, recreate the active environment, or claim
+  campaign/scientific completion from a moving operational snapshot.
+- Before each release claim, recapture parent/nested commits, reachability,
+  dirty paths, PR state, campaign status, current manifest, provenance, and
+  reproducible evidence-bundle status.

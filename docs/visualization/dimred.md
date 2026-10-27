@@ -10,7 +10,7 @@ Create a PCA scatter plot.
 
 **Example:**
 ```python
-from metainformant.visualization import pca_plot
+from metainformant.visualization.plots.general import pca_plot
 import pandas as pd
 import numpy as np
 

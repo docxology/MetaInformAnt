@@ -211,16 +211,13 @@ def phase_b(manager, items):
 
 **Symptom**: Terminal shows weird characters, progress bars misaligned.
 
-**Cause**: stdout is not a TTY (output piped to file or CI environment).
+**Cause**: stdout is a terminal that does not interpret ANSI escape sequences;
+the terminal interface renders only when stdout is a TTY, so piped and CI output is never decorated.
 
-**Fix**:
+**Fix**: redirect or pipe stdout so the interface draws nothing:
 
 ```bash
-# Disable TUI
-export METAINFORMANT_NO_TUI=1
-
-# Or programmatically
-manager = BasePipelineManager(phases, use_tui=False)
+python -m metainformant.rna.amalgkit ... > run.log 2>&1
 ```
 
 ---
@@ -333,8 +330,8 @@ ok, errs = validate_config_file('config.yaml')
 print('OK' if ok else '\\n'.join(errs))
 "
 
-# 7. Dry-run (if supported by phase)
-python -m metainformant.rna.workflow --dry-run --config config.yaml
+# 7. Dry-run the RNA producer: resolve its inputs without executing anything
+python -m metainformant.rna.amalgkit --config config.yaml --dry-run
 ```
 
 ---
@@ -369,7 +366,7 @@ python -m metainformant.rna.workflow --dry-run --config config.yaml
 
 ## Checklist for Debug Sessions
 
-- [ ] Enable DEBUG log level: `export METAINFORMANT_LOG_LEVEL=DEBUG`
+- [ ] Enable DEBUG log level: `export CORE_LOG_LEVEL=DEBUG`
 - [ ] Inspect `output/checkpoint.json` for partial state
 - [ ] Tail logs: `tail -f output/core/logs/pipeline.log`
 - [ ] Validate config schema
@@ -378,7 +375,7 @@ python -m metainformant.rna.workflow --dry-run --config config.yaml
 - [ ] Check memory: `free -h`
 - [ ] Run workflow with single item to reproduce in isolation
 - [ ] Search logs for first ERROR line (root cause often there)
-- [ ] Re-run with `METAINFORMANT_NO_TUI=1` to eliminate TUI as suspect
+- [ ] Re-run with stdout redirected to a file to rule out the terminal interface (the terminal interface renders only when stdout is a TTY)
 
 ---
 

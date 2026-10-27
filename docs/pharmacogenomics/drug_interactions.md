@@ -6,30 +6,38 @@ PGx phenotype, returning actionable alerts.
 ## Core API
 
 ```python-snippet
+from metainformant.pharmacogenomics.clinical.drug_interaction import analyze_drug_gene_interactions
 from metainformant.pharmacogenomics.interaction.drug_interactions import (
-    analyze_drug_gene_interactions,
     polypharmacy_risk,
     cyp_inhibition_prediction,
+    predict_drug_interaction,
 )
 
+# Drug–gene interactions for a CYP2C9 poor metabolizer
 interactions = analyze_drug_gene_interactions(
-    gene='CYP2C9',
-    phenotype='Poor Metabolizer',
     drugs=['warfarin','amiodarone','simvastatin','fluconazole'],
+    genotype_data={'CYP2C9': {'phenotype': 'Poor Metabolizer'}},
 )
 for ix in interactions:
-    if ix['severity'] in ('contraindicated','major'):
-        print(f"ALERT {ix['drug']}: {ix['recommendation']}")
+    if ix.severity.value in ('Major', 'Moderate'):
+        print(f"ALERT {ix.drug}: {ix.recommendation}")
+
+# Drug–drug interaction for a pair of medications
+pair = predict_drug_interaction('warfarin', 'amiodarone')
+print(pair['severity'], pair['recommendation'])
 ```
 
 ## Severity levels
 
 | Severity | Definition | Example |
 |----------|------------|---------|
-| contraindicated | Absolutely avoid combination | PM CYP2C9 + fluconazole + warfarin |
-| major | Strong recommendation to adjust/substitute | IM CYP2D6 + codeine |
-| moderate | Consider monitoring or dose reduction | NM + simvastatin |
-| minor | Low clinical impact | Any + caffeine |
+| major | Avoid the combination or adjust/substitute | fluconazole + warfarin; PM CYP2D6 + codeine |
+| moderate | Consider monitoring or dose reduction | amiodarone + warfarin |
+| minor | Low clinical impact | caffeine + cimetidine |
+| none | No documented interaction | — |
+
+Drug–drug severities are lowercase strings (`'major'`, `'moderate'`, `'minor'`, `'none'`); drug–gene
+severities are `InteractionSeverity` values (`'Major'`, `'Moderate'`, `'Minor'`, `'None'`).
 
 ## CYP inhibition taxonomy
 
@@ -41,70 +49,73 @@ for ix in interactions:
 | Strong inducer | <0.2× | rifampin, carbamazepine, phenytoin |
 | Moderate inducer | 0.2–0.5× | efavirenz, modafinil |
 
-Each CYP enzyme (2C9, 2C19, 2D6, 3A4) has its own inhibition table loaded from
-YAML in `interaction/data/`.
+Inhibitor and inducer tables for CYP1A2, 2C9, 2C19, 2D6 and 3A4 are built into
+`interaction/drug_interactions.py`; entries are labelled `strong`, `moderate` or `weak`.
 
-## Net CYP inhibition score
+## CYP inhibition profile
 
 ```python
-score = cyp_inhibition_prediction(['ketoconazole','rifampin'], enzyme='CYP3A4')
-print(score['category'])   # 'neutral' — strong inhibitor balances strong inducer
-print(score['mechanism'])  # 'mixed_inhibition_induction'
+profile = cyp_inhibition_prediction('ketoconazole')
+print(profile['summary'])   # 'ketoconazole is a strong inhibitor of CYP3A4'
+for effect in profile['affected_enzymes']:
+    print(effect['enzyme'], effect['effect_type'], effect['inhibition_type'])  # CYP3A4 inhibitor strong
 ```
 
-The algorithm sums log₂ fold‑change from each drug (inhibitor +1, inducer −1) then
-bins the net score.
+Each call looks one drug up in the built-in inhibitor and inducer tables and also lists the
+CYP enzymes it is a substrate of (`profile['substrate_of']`).
 
 ## Polypharmacy composite risk
 
 ```python
-risk = polypharmacy_risk(
-    drugs=patient_meds,
-    patient_phenotype='Normal Metabolizer',
-    gene='CYP2C9',
-)
+risk = polypharmacy_risk(patient_meds)
 print(f"Risk score = {risk['risk_score']:.2f}")
-print(f"High‑severity count = {risk['high_severity_count']}")
+print(f"Major interactions = {risk['severity_counts']['major']}")
 ```
 
-Scoring: `minor=1, moderate=2, major=3, contraindicated=4`; weighted sum over
-drugs/pairs.
+Scoring: pairwise severities are weighted `minor=0.15, moderate=0.5, major=1.0`, 0.1 is added for each
+extra drug competing for the same CYP enzyme, and the sum is divided by the number of drug pairs
+(maximum 1.0). At least two medications are required.
 
 ## Report inclusion
 
-`generate_clinical_report()` automatically runs `analyze_drug_gene_interactions()`
-for each gene and adds a **DDI Warnings** section showing only `contraindicated`
-and `major` findings (configurable via `ddi_severity_threshold`).
+`generate_clinical_report()` runs `analyze_drug_gene_interactions()` for the requested drugs and
+adds an `interaction_summary` (counts per severity and an overall risk level) and prioritized
+`clinical_actions` for the major and moderate findings.
 
 ## Extending the knowledge base
 
-Drug definitions live in `src/metainformant/pharmacogenomics/interaction/data/` as
-YAML. To add a new drug:
-
-```yaml
-# my_drug.yaml
-name: my_drug
-inhibits: [CYP2C19, CYP3A4]
-inducer: []
-therapeutic_index: narrow   # 'narrow' or 'wide'
-pgx_class: anticoagulant
-```
-
-Then register in `_DRUG_REGISTRY` inside `drug_interactions.py`:
+The built-in interaction database is a plain dictionary keyed by the sorted, lowercased drug
+pair. To add an interaction, extend a copy and pass it as `interaction_db`:
 
 ```python-snippet
-from metainformant.pharmacogenomics.interaction.data.my_drug import MY_DRUG
-_DRUG_REGISTRY['my_drug'] = MY_DRUG
+from metainformant.pharmacogenomics.interaction.drug_interactions import (
+    default_interaction_database,
+    polypharmacy_risk,
+)
+
+db = default_interaction_database()
+db[('my_drug', 'warfarin')] = {
+    'severity': 'major',
+    'mechanism': 'CYP2C9 inhibition',
+    'description': 'my_drug inhibits CYP2C9 and raises warfarin exposure',
+    'evidence_level': 'B',
+    'recommendation': 'Reduce the warfarin dose and monitor INR',
+}
+risk = polypharmacy_risk(['my_drug', 'warfarin'], interaction_db=db)
 ```
 
-Run tests (`pytest tests/pharmacogenomics/interaction/`) to validate.
+`predict_drug_interaction` and `polypharmacy_risk` accept `interaction_db`, and
+`cyp_inhibition_prediction` accepts a custom `cyp_profiles` dictionary
+(`{'inhibitors': {cyp: [{'drug', 'type', 'potency'}]}, 'inducers': {...}}`).
+
+Run tests (`pytest tests/pharmacogenomics/test_drug_interactions_depth.py`) to validate.
 
 ## Pitfalls
 
-- **Double counting** — If drug A inhibits and drug B induces the same CYP, the net
-  score may be neutral, but individual pairwise severities still apply; both alerts
-  show.
+- **Double counting** — If drug A inhibits and drug B induces the same CYP, their effects
+  on that enzyme may offset each other, but individual pairwise severities still apply;
+  both alerts show.
 - **Phenotype mismatches** — `phenotype` must match one of `{'Poor','PM',…}`; use
   `MetabolizerPhenotype.POOR.value` for safety.
 - **Missing CYP entry** — If a drug is not in the internal tables, it is silently
-  ignored (contributes no severity). Add it via YAML as above.
+  ignored (contributes no severity). Add it with a custom `interaction_db` as above.

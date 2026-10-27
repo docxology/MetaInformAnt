@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - simulation
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/simulation`
+- **Path**: `src/metainformant/simulation`
 - **Purpose**: Evolutionary and Population Genetics Simulation module for METAINFORMANT.
 - **Domain**: metainformant
 

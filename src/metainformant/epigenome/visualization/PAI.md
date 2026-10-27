@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - visualization
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/epigenome/visualization`
+- **Path**: `src/metainformant/epigenome/visualization`
 - **Purpose**: Functionality for visualization.
 - **Domain**: epigenome
 

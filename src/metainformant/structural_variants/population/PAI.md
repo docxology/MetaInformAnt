@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - population
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/structural_variants/population`
+- **Path**: `src/metainformant/structural_variants/population`
 - **Purpose**: Population-scale structural variant analysis submodule.
 - **Domain**: structural_variants
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - tests
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/tests`
+- **Path**: `tests`
 - **Purpose**: Test package for METAINFORMANT.
 - **Domain**: 
 

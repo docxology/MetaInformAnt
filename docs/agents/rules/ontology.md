@@ -53,7 +53,7 @@ src/metainformant/ontology/
 
 **Patterns**:
 ```python-snippet
-from metainformant.ontology.types import Term, Ontology
+from metainformant.ontology.core.types import Term, Ontology
 
 # Create a term
 term = Term(
@@ -128,20 +128,17 @@ cache_dir = paths.expand_and_resolve("output/ontology/cache/")
 
 **Patterns**:
 ```python-snippet
-from metainformant.ontology import set_cache_enabled, set_cache_ttl, clear_cache
+from metainformant.ontology.query.query import ancestors, clear_cache, set_cache_enabled
 
-# Enable/disable caching
+# Enable/disable caching of ancestors/descendants queries (applies to all calls)
 set_cache_enabled(True)
-
-# Set cache TTL (default: 3600 seconds)
-set_cache_ttl(7200)  # 2 hours
 
 # Clear cache
 clear_cache()
 
-# Disable caching for individual calls
-from metainformant.ontology.query import ancestors
-ancestors_set = ancestors(onto, "GO:0008150", use_cache=False)
+# Run a query with caching disabled
+set_cache_enabled(False)
+ancestors_set = ancestors(onto, "GO:0008150")
 ```
 
 ### Output Paths

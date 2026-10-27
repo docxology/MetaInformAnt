@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - llm
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/tests/ml/llm`
+- **Path**: `tests/ml/llm`
 - **Purpose**: Tests for LLM module.
 - **Domain**: ml
 

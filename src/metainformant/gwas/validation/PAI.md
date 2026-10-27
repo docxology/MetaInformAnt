@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - validation
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/gwas/validation`
+- **Path**: `src/metainformant/gwas/validation`
 - **Purpose**: GWAS output validation package: pipeline integrity checks.
 - **Domain**: gwas
 

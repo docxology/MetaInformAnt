@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - advanced
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/information/metrics/advanced`
+- **Path**: `src/metainformant/information/metrics/advanced`
 - **Purpose**: Advanced information theory metrics.
 - **Domain**: metrics
 

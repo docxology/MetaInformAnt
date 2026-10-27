@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - alleles
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/pharmacogenomics/alleles`
+- **Path**: `src/metainformant/pharmacogenomics/alleles`
 - **Purpose**: Pharmacogenomics allele calling subpackage.
 - **Domain**: pharmacogenomics
 

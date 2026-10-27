@@ -2,7 +2,7 @@
 
 ## Context & Intent
 
-- **Path**: `docs/spatial/` (relative to repo root)
+- **Path**: `docs/spatial` (relative to repo root)
 - **Purpose**: User documentation for spatial transcriptomics: coordinate I/O,
   neighborhood analysis, autocorrelation, niche analysis, communication,
   deconvolution, integration, visualization.

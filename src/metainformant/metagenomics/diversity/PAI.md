@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - diversity
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/metagenomics/diversity`
+- **Path**: `src/metainformant/metagenomics/diversity`
 - **Purpose**: Community diversity metrics for metagenomic data.
 - **Domain**: metagenomics
 

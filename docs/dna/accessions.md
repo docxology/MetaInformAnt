@@ -34,7 +34,7 @@ Validates strictly against the NCBI assembly accession pattern (`GCF_` or `GCA_`
 prefix followed by at least 9 digits, with an optional version suffix).
 
 ```python-snippet
-from metainformant.dna.genomes import is_valid_assembly_accession
+from metainformant.dna.external.genomes import is_valid_assembly_accession
 
 # Valid assembly accessions
 is_valid_assembly_accession("GCF_000001405.39")  # True  (human GRCh38, RefSeq)

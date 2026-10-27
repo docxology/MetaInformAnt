@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - multiomics
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/scripts/multiomics`
+- **Path**: `scripts/multiomics`
 - **Purpose**: Functionality for multiomics.
 - **Domain**: scripts
 

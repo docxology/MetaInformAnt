@@ -1,6 +1,6 @@
 # Single-Cell Preprocessing
 
-The preprocessing module provides the foundational tools for loading, cleaning, and preparing single-cell RNA-seq data for analysis.
+The preprocessing module (`metainformant.singlecell.data.preprocessing`) provides the foundational tools for loading, cleaning, and preparing single-cell RNA-seq data for analysis.
 
 ## SingleCellData Class
 
@@ -10,23 +10,32 @@ The `SingleCellData` class is the central data structure for single-cell analysi
 class SingleCellData:
     """
     Container for single-cell expression data and metadata.
-    
+
+    Constructor: SingleCellData(X, obs=None, var=None, uns=None, obsm=None,
+                                varm=None, obsp=None, varp=None, layers=None)
+
     Attributes:
         X: Expression matrix (cells × genes), can be sparse or dense
-        obs: Cell metadata (DataFrame with cell_id as index)
-        var: Gene metadata (DataFrame with gene_id as index)
+        obs: Cell metadata (DataFrame, one row per cell; empty frame by default)
+        var: Gene metadata (DataFrame, one row per gene; empty frame by default)
+        uns: Unstructured annotations (dict)
         obsm: Multi-dimensional cell annotations (dict of arrays)
         varm: Multi-dimensional gene annotations (dict of arrays)
-        uns: Unstructured annotations (dict)
+        obsp: Pairwise cell annotations (dict)
+        varp: Pairwise gene annotations (dict)
+        layers: Alternative matrix representations (dict)
         n_obs: Number of cells
         n_vars: Number of genes
+        shape: (n_obs, n_vars)
+
+    Methods: copy(), to_df()
     """
 ```
 
 ### Initialization
 
 ```python-snippet
-from metainformant.singlecell.preprocessing import SingleCellData
+from metainformant.singlecell.data.preprocessing import SingleCellData
 import numpy as np
 import pandas as pd
 
@@ -38,6 +47,8 @@ var = pd.DataFrame({'gene_name': [f'Gene_{i}' for i in range(1000)]})
 data = SingleCellData(X=X, obs=obs, var=var)
 ```
 
+`obs` and `var` must have one row per cell and per gene respectively, otherwise the constructor raises `ValueError`.
+
 ## Data Loading
 
 ### load_count_matrix()
@@ -45,29 +56,33 @@ data = SingleCellData(X=X, obs=obs, var=var)
 Load count matrices from various file formats:
 
 ```python-snippet
-from metainformant.singlecell.preprocessing import load_count_matrix
+from metainformant.singlecell.data.preprocessing import load_count_matrix
 
-# From CSV (genes as rows, cells as columns)
+# From CSV with cells as rows and genes as columns (first column = cell names)
 data = load_count_matrix("counts.csv", format="csv")
 
-# From TSV with transposition (cells as rows, genes as columns)
+# From TSV with genes as rows and cells as columns (transposed on load)
 data = load_count_matrix("counts.tsv", format="tsv", transpose=True)
 
-# From Matrix Market format
-data = load_count_matrix("matrix.mtx", format="mtx")
+# From Matrix Market format (genes × cells), with gene and barcode name files
+data = load_count_matrix(
+    "matrix.mtx", format="mtx", genes_file="genes.txt", barcodes_file="barcodes.txt"
+)
 
-# From HDF5 (requires h5py)
-data = load_count_matrix("counts.h5", format="h5", h5_key="matrix")
+# From AnnData H5AD (the default format; requires anndata)
+data = load_count_matrix("counts.h5ad")
 ```
 
 **Parameters:**
-- `file_path`: Path to the count matrix file
-- `format`: File format ("csv", "tsv", "mtx", "h5")
-- `transpose`: Whether to transpose the matrix (default: False)
-- `h5_key`: HDF5 dataset key (for H5 format)
-- `sep`: Delimiter for CSV/TSV files
+- `filepath`: Path to the count matrix file
+- `format`: File format ("h5ad", "csv", "tsv", "mtx"); the default is "h5ad", so pass `format="csv"` for text files
+- `transpose`: For CSV/TSV only. Set to `True` when the file has genes as rows and cells as columns, so that the result has cells as rows (default: False)
+- `genes_file`, `barcodes_file`: For Matrix Market only, both required. Text files with one gene name and one cell barcode per line (the first comma-separated column is read)
+- Any other keyword arguments are passed to the reader (`pandas.read_csv` for CSV/TSV, `anndata.read_h5ad` for H5AD) and are ignored for Matrix Market. The CSV/TSV delimiter is fixed by `format`, so there is no `sep` argument
 
-**Returns:** `SingleCellData` object with loaded expression matrix
+**Returns:** `SingleCellData` object with loaded expression matrix (cells × genes). For CSV, TSV and Matrix Market input `X` is a scipy CSR sparse matrix when scipy is installed.
+
+**Errors:** A missing file or an unsupported format raises `ValidationError`, a parse failure raises `IOError`, and H5AD without `anndata` installed raises `ConfigError`. These are the exception classes of `metainformant.core.utils.errors` (subclasses of `METAINFORMANTError`), not the Python built-ins.
 
 ## Quality Control
 
@@ -76,7 +91,7 @@ data = load_count_matrix("counts.h5", format="h5", h5_key="matrix")
 Calculate standard quality control metrics for cells:
 
 ```python-snippet
-from metainformant.singlecell.preprocessing import calculate_qc_metrics
+from metainformant.singlecell.data.preprocessing import calculate_qc_metrics
 
 # Calculate QC metrics
 data = calculate_qc_metrics(data)
@@ -85,14 +100,18 @@ data = calculate_qc_metrics(data)
 print(data.obs.columns)  # ['total_counts', 'n_genes', 'pct_mt', 'pct_ribo']
 ```
 
-**Calculated metrics:**
+The function returns a copy of the data; the input is not modified.
+
+**Calculated metrics (columns of `data.obs`):**
 - `total_counts`: Total UMI/read counts per cell
 - `n_genes`: Number of detected genes per cell
 - `pct_mt`: Percentage of mitochondrial gene expression
 - `pct_ribo`: Percentage of ribosomal gene expression
 
-**Mitochondrial genes:** Identified by gene names starting with "MT-", "mt-", or "Mt-"
-**Ribosomal genes:** Identified by gene names starting with "RPS", "RPL", "rps", or "rpl"
+It also adds per-gene columns to `data.var` (`n_cells`, `total_counts`, `mean_expression`, `pct_dropout`) and a summary dictionary in `data.uns["qc_summary"]`.
+
+**Mitochondrial genes:** Identified by gene names (the `data.var` index) starting with "MT-", "MT." or "MT_", case-insensitively (so "mt-" and "Mt-" also match)
+**Ribosomal genes:** Identified by gene names starting with "RPS", "RPL", "MRPS" or "MRPL", case-insensitively
 
 ## Filtering
 
@@ -101,7 +120,7 @@ print(data.obs.columns)  # ['total_counts', 'n_genes', 'pct_mt', 'pct_ribo']
 Filter cells based on QC metrics:
 
 ```python-snippet
-from metainformant.singlecell.preprocessing import filter_cells
+from metainformant.singlecell.data.preprocessing import filter_cells
 
 # Filter cells with basic thresholds
 data_filtered = filter_cells(
@@ -111,7 +130,6 @@ data_filtered = filter_cells(
     min_counts=1000,    # Minimum total counts
     max_counts=50000,   # Maximum total counts
     max_pct_mt=20,      # Maximum mitochondrial percentage
-    max_pct_ribo=None   # Maximum ribosomal percentage (optional)
 )
 ```
 
@@ -120,15 +138,16 @@ data_filtered = filter_cells(
 - `max_genes`: Maximum number of genes per cell
 - `min_counts`: Minimum total counts per cell
 - `max_counts`: Maximum total counts per cell
-- `max_pct_mt`: Maximum mitochondrial gene percentage
-- `max_pct_ribo`: Maximum ribosomal gene percentage
+- `max_pct_mt`: Maximum mitochondrial gene percentage (`max_mito_percent` is an alias)
+
+There is no ribosomal-percentage filter; apply one yourself on the `pct_ribo` column if needed. When `data.obs` has no `total_counts` column (the only column it checks), `filter_cells` runs `calculate_qc_metrics` first and logs a warning.
 
 ### filter_genes()
 
 Filter genes based on detection across cells:
 
 ```python-snippet
-from metainformant.singlecell.preprocessing import filter_genes
+from metainformant.singlecell.data.preprocessing import filter_genes
 
 # Filter rarely expressed genes
 data_filtered = filter_genes(
@@ -138,6 +157,8 @@ data_filtered = filter_genes(
 )
 ```
 
+**Parameters:** `min_cells`, `max_cells`, `min_counts` and `max_counts` (all optional). They are compared with the per-gene `n_cells` and `total_counts` columns of `data.var` written by `calculate_qc_metrics`. `filter_cells` does not refresh those columns, so call `calculate_qc_metrics` again after filtering cells if the gene thresholds should refer to the remaining cells only.
+
 ## Normalization
 
 ### normalize_counts()
@@ -145,7 +166,7 @@ data_filtered = filter_genes(
 Normalize count data to account for differences in sequencing depth:
 
 ```python-snippet
-from metainformant.singlecell.preprocessing import normalize_counts
+from metainformant.singlecell.data.preprocessing import normalize_counts
 
 # Total count normalization (most common)
 data_norm = normalize_counts(
@@ -157,36 +178,38 @@ data_norm = normalize_counts(
 # Median normalization
 data_norm = normalize_counts(data, method='median')
 
-# Custom scaling factors
-scaling_factors = data.obs['total_counts'].median() / data.obs['total_counts']
-data_norm = normalize_counts(data, scaling_factors=scaling_factors)
+# Median-of-ratios size factors
+data_norm = normalize_counts(data, method='size_factors')
 ```
 
 **Methods:**
-- `'total_count'`: Scale each cell to `target_sum` total counts
-- `'median'`: Scale each cell to the median total count across all cells
-- Custom: Provide scaling factors directly
+- `'total_count'` (alias `'total'`): Scale each cell to `target_sum` total counts. If `target_sum` is omitted it defaults to the median library size of the cells with non-zero counts
+- `'median'`: Scale each cell to the median total count of the cells with non-zero counts (`target_sum` is ignored)
+- `'size_factors'`: Divide each cell by a simplified median-of-ratios size factor, then multiply by `target_sum` (default: the median of the positive size factors)
+
+An unknown method raises `ValueError`; passing precomputed scaling factors is not supported. The result holds a dense array in `X` even for sparse input, and `data_norm.uns["normalization"]` records `method`, `target_sum` and `size_factors`.
 
 ### log_transform()
 
 Apply log transformation to normalized counts:
 
 ```python-snippet
-from metainformant.singlecell.preprocessing import log_transform
+from metainformant.singlecell.data.preprocessing import log_transform
 
-# Log2 transformation with pseudocount
-data_log = log_transform(data, base=2, pseudocount=1)
+# Log2 transformation: log2(x + 1)
+data_log = log_transform(data, base=2)
 
-# Natural log transformation
-data_log = log_transform(data, base='e')
+# Natural log transformation (the default base)
+data_log = log_transform(data)
 
 # Log10 transformation
 data_log = log_transform(data, base=10)
 ```
 
 **Parameters:**
-- `base`: Logarithm base (2, 10, 'e')
-- `pseudocount`: Value added before log transformation
+- `base`: Logarithm base, a positive number other than 1 (default: `numpy.e`). The string `'e'` is not accepted
+
+The transformation is always `log(x + 1)`: the pseudocount of 1 is fixed and cannot be changed. The result holds a dense array, and `data_log.uns["transformation"]` records the `type`, `base` and `pseudocount`.
 
 ## Scaling
 
@@ -195,37 +218,36 @@ data_log = log_transform(data, base=10)
 Z-score standardization of expression data:
 
 ```python-snippet
-from metainformant.singlecell.preprocessing import scale_data
+from metainformant.singlecell.data.preprocessing import scale_data
 
 # Standard z-score scaling (mean=0, std=1)
-data_scaled = scale_data(data, center=True, scale=True)
+data_scaled = scale_data(data)
 
-# Center only (mean=0)
-data_centered = scale_data(data, center=True, scale=False)
+# Divide by the standard deviation without subtracting the mean
+data_uncentered = scale_data(data, zero_center=False)
 
-# Scale to specific genes only (e.g., highly variable genes)
-hvg_indices = data.var['highly_variable'].values
-data_scaled = scale_data(data, gene_subset=hvg_indices)
+# Z-score scaling, clipping values to [-10, 10]
+data_clipped = scale_data(data, max_value=10)
 ```
 
 **Parameters:**
-- `center`: Whether to center data (subtract mean)
-- `scale`: Whether to scale data (divide by standard deviation)
-- `gene_subset`: Boolean array to select specific genes
-- `max_value`: Clip scaled values to this maximum (default: 10)
+- `zero_center`: Whether to center each gene (subtract its mean; default: True)
+- `max_value`: Clip scaled values to `[-max_value, max_value]` (default: `None`, no clipping)
+
+Every gene is always divided by its standard deviation (genes with zero variance are left unscaled); there is no option to skip scaling and no gene-subset argument, so all genes are scaled. The result holds a dense array, and `data_scaled.uns["scaling"]` records `zero_centered`, `max_value`, `gene_means` and `gene_stds`.
 
 ## Complete Preprocessing Pipeline
 
 Here's a typical preprocessing workflow:
 
 ```python-snippet
-from metainformant.singlecell.preprocessing import (
-    load_count_matrix, calculate_qc_metrics, filter_cells, 
+from metainformant.singlecell.data.preprocessing import (
+    load_count_matrix, calculate_qc_metrics, filter_cells,
     filter_genes, normalize_counts, log_transform, scale_data
 )
 
-# 1. Load data
-data = load_count_matrix("raw_counts.csv", transpose=True)
+# 1. Load data (a CSV with genes as rows and cells as columns, hence transpose=True)
+data = load_count_matrix("raw_counts.csv", format="csv", transpose=True)
 print(f"Loaded: {data.n_obs} cells × {data.n_vars} genes")
 
 # 2. Calculate QC metrics
@@ -237,6 +259,7 @@ print(f"  Cells: {data.n_obs}")
 print(f"  Genes: {data.n_vars}")
 
 data = filter_cells(data, min_genes=200, max_genes=5000, max_pct_mt=20)
+data = calculate_qc_metrics(data)  # refresh per-gene metrics for the remaining cells
 data = filter_genes(data, min_cells=3)
 
 print("After filtering:")
@@ -247,7 +270,7 @@ print(f"  Genes: {data.n_vars}")
 data = normalize_counts(data, target_sum=1e4, method='total_count')
 data = log_transform(data, base=2)
 
-# 5. Scale data (typically done after HVG selection)
+# 5. Scale data (optional: compute_pca standardizes the data itself by default)
 data = scale_data(data)
 
 print("Preprocessing complete!")
@@ -256,21 +279,21 @@ print("Preprocessing complete!")
 ## Data Format Compatibility
 
 ### Input Formats
-- **CSV/TSV files**: Standard text files with headers
-- **Matrix Market**: `.mtx` files (sparse format)
-- **HDF5**: Binary format for large datasets
-- **Gzip compressed**: Automatic detection and decompression
+- **CSV/TSV files**: Standard text files with a header row and row names in the first column
+- **Matrix Market**: `.mtx` files (sparse format), with the gene and barcode names in separate text files
+- **H5AD**: AnnData HDF5 files (requires `anndata`)
+- **Gzip compressed**: CSV/TSV and Matrix Market files with a `.gz` extension are decompressed by pandas and scipy
 
 ### Expected Structure
-- **Genes as rows, cells as columns** (default)
-- **Cells as rows, genes as columns** (use `transpose=True`)
-- **Gene names**: Should be in first column or as row indices
-- **Cell names**: Should be in first row or as column headers
+- **Cells as rows, genes as columns** (default for CSV/TSV)
+- **Genes as rows, cells as columns** (CSV/TSV with `transpose=True`; Matrix Market files are always read as genes × cells)
+- **Row names**: The first column becomes the index (cell names, or gene names with `transpose=True`)
+- **Column names**: Taken from the header row (gene names, or cell names with `transpose=True`)
 
 ## Memory Management
 
 ### Sparse Matrix Support
-The module automatically handles sparse matrices to reduce memory usage:
+The module accepts sparse matrices, and CSV/TSV/Matrix Market input is loaded as a CSR matrix when scipy is installed:
 
 ```python
 import scipy.sparse as sparse
@@ -284,9 +307,9 @@ print(f"Matrix is sparse: {sparse.issparse(data.X)}")
 ```
 
 ### Memory-Efficient Operations
-- Filtering operations preserve sparsity
-- Normalization can work in-place to save memory
-- Large datasets automatically use sparse representations
+- `filter_cells` and `filter_genes` preserve sparsity
+- `calculate_qc_metrics`, `normalize_counts`, `log_transform`, `scale_data` and the downstream HVG and PCA functions convert to a dense array internally, so plan for a dense cells × genes matrix; `normalize_counts`, `log_transform` and `scale_data` return dense results and never modify the input in place
+- CSV, TSV and Matrix Market files are loaded as CSR matrices; H5AD keeps whatever matrix type is stored in the file
 
 ## Error Handling
 
@@ -294,12 +317,15 @@ Common issues and solutions:
 
 ### File Loading Issues
 ```python
+from metainformant.core.utils.errors import METAINFORMANTError
+from metainformant.singlecell.data.preprocessing import load_count_matrix
+
 try:
-    data = load_count_matrix("counts.csv")
-except FileNotFoundError:
-    print("Count matrix file not found")
-except ValueError as e:
-    print(f"Invalid file format: {e}")
+    data = load_count_matrix("counts.csv", format="csv")
+except METAINFORMANTError as e:
+    # ValidationError (missing file, unsupported format), IOError (parse failure)
+    # or ConfigError (H5AD without anndata)
+    print(f"Could not load count matrix: {e}")
 ```
 
 ### Filtering Edge Cases
@@ -323,7 +349,7 @@ output_dir = ensure_directory("output/singlecell_analysis")
 
 ## Performance Tips
 
-1. **Use sparse matrices** for large, sparse datasets
+1. **Use sparse matrices** for large, sparse datasets (they help while loading and filtering; later steps densify)
 2. **Filter early** to reduce computational burden
 3. **Batch processing** for very large datasets
 4. **Memory monitoring** for datasets > 50k cells

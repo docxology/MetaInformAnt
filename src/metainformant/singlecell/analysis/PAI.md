@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - analysis
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/singlecell/analysis`
+- **Path**: `src/metainformant/singlecell/analysis`
 - **Purpose**: Functionality for analysis.
 - **Domain**: singlecell
 

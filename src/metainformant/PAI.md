@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - metainformant
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant`
+- **Path**: `src/metainformant`
 - **Purpose**: METAINFORMANT: Comprehensive Bioinformatics Toolkit for Multi-Omic Analysis.
 - **Domain**: src
 

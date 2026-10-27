@@ -2,7 +2,10 @@
 
 > Historical snapshot: this report is retained for provenance and may not
 > describe the current checkout. Regenerate validation outputs under `output/`
-> when current evidence is needed.
+> when current evidence is needed. The findings about placeholder
+> implementations (random event embeddings, simplified survival models, the
+> diagonal-Hessian Cox fit) show their status in the current checkout; every
+> other finding is as observed on the report date.
 
 **Date:** 2026-04-29  
 **Validator:** Hermes Agent  
@@ -59,13 +62,13 @@
 | `GRUSequenceModel` | ✅ MATCH | Class in `sequence_models.py` — correctly documented |
 | `MultiTaskPredictor` | ✅ MATCH | Class in `statistical_models.py` — correctly documented |
 | `EnsemblePredictor` | ✅ MATCH | Class in `predictor.py` line 408 — correctly documented |
-| `SurvivalPredictor` | ⚠️ PARTIAL | Class in `statistical_models.py` line 276 — documented method `predict_survival_function()` exists, but implementation uses simplified exponential model, not full Cox-based survival curves |
+| `SurvivalPredictor` | ✅ MATCH | Class in `statistical_models.py` — Cox (Breslow partial likelihood, Newton-Raphson), exponential and Kaplan-Meier methods; `predict_survival_function()` uses Breslow's baseline hazard for Cox |
 
-### Embedding Functions — CRITICAL DISCREPANCIES
+### Embedding Functions
 
 | Function | Status | Documentation | Implementation | Issue |
 |----------|--------|---------------|----------------|-------|
-| `learn_event_embeddings` | ✅ MATCH | Correctly documented | `models/embeddings.py:28` | Implementation uses random embeddings with bias (placeholder), docs note Word2Vec-style — **needs production Word2Vec** |
+| `learn_event_embeddings` | ✅ MATCH | Correctly documented | `models/embeddings.py` | ✅ Trained word2vec (skip-gram or CBOW, negative sampling) in NumPy; no placeholder remains |
 | `biological_embedding` | ✅ MATCH | Correctly documented | `models/embeddings.py:104` | ✅ |
 | `domain_specific_embeddings` | ✅ MATCH | Correctly documented | `models/embeddings.py:235` | ✅ |
 
@@ -268,11 +271,10 @@ predictions = models.predict_outcomes(
 
 **Gradient:** ∂l/∂β_k = Σ_{i: event} [x_{ik} - Σ_{j∈R(t_i)} x_{jk} * exp(β'x_j) / Σ_{j∈R(t_i)} exp(β'x_j)]
 
-**Implementation check** (time_to_event.py lines 275-304): ✅ Correct
-- Risk set computation by backward accumulation (lines 287-295)
-- Gradient accumulation (line 299)
-- Hessian approximation (lines 301-304) — uses diagonal approximation for stability
-- Newton-Raphson update with step clipping (lines 308-316)
+**Implementation check** (`survival/time_to_event.py`, `models/statistical_models.py`): ✅ Correct
+- Risk sets by reverse cumulative sums over the time-sorted subjects; tied event times share one risk set (Breslow)
+- Exact gradient and full information matrix (negative Hessian)
+- Newton-Raphson update with step halving
 
 **C-index (Concordance)** (line 365-390): ✅ Correct Harrell's C definition — proportion of concordant pairs among comparable pairs.
 
@@ -306,7 +308,7 @@ predictions = models.predict_outcomes(
 | `sg` (skip-gram) | Default 1 (skip-gram) | Default 1 | ✅ |
 | `epochs` | Default 5 | Default 5 | ✅ |
 
-⚠️ **Note on `learn_event_embeddings`**: The documentation describes Word2Vec-style training, but implementation (line 77) logs "Using random embeddings - full Word2Vec implementation needed for production". **This is a placeholder, not production code.** Documentation should acknowledge this or implementation should be completed.
+✅ **Note on `learn_event_embeddings`**: The documentation describes word2vec training and the implementation trains word2vec (skip-gram or CBOW with negative sampling) in NumPy; there is no placeholder.
 
 ### Model Training Parameters
 
@@ -338,10 +340,10 @@ predictions = models.predict_outcomes(
 
 ### Medium Priority (Partial Implementation)
 
-9. **`SurvivalPredictor.predict_survival_function()`** — Uses simplified exponential survival, not proper Cox-based baseline survival estimation
+9. ✅ **`SurvivalPredictor.predict_survival_function()`** — Cox survival curves use Breslow's baseline hazard; the exponential model and the Kaplan-Meier baseline are separate methods
 10. **`biological_embedding()`** — Functions `_create_event_type_embeddings`, `_create_domain_embeddings`, `_create_temporal_embeddings` use simplistic hashing/cluster-based methods; not truly "biologically-informed"
-11. **`domain_specific_embeddings()`** — Calls `learn_event_embeddings()` per domain but reuses placeholder random embeddings
-12. **Event embedding quality** — `learn_event_embeddings()` returns random vectors with small domain-based biases, not trained Word2Vec embeddings
+11. ✅ **`domain_specific_embeddings()`** — Calls `learn_event_embeddings()` per domain, which trains word2vec on that domain's events
+12. ✅ **Event embedding quality** — `learn_event_embeddings()` returns trained word2vec embeddings
 
 ### Low Priority (Documentation Cleanup)
 
@@ -370,13 +372,13 @@ predictions = models.predict_outcomes(
 | 6 | `plot_prediction_accuracy()` missing | Implement confusion matrix/scatter plot (y_true vs y_pred) |
 | 7 | `plot_event_cooccurrence()` missing | Implement co-occurrence matrix heatmap |
 | 8 | `plot_sequence_similarity()` missing | Implement pairwise similarity heatmap (e.g., using sequence embeddings) |
-| 9 | `learn_event_embeddings()` placeholder | Implement actual Word2Vec (skip-gram with negative sampling) or use gensim |
+| 9 | `learn_event_embeddings()` placeholder | ✅ Implemented: word2vec (skip-gram or CBOW, negative sampling) in NumPy |
 
 ### 🟢 P2 (Medium — Accuracy & Completeness)
 
 | # | Issue | Fix Required |
 |---|-------|--------------|
-| 10 | `SurvivalPredictor.predict_survival_function()` oversimplified | Replace exponential baseline with Breslow estimator for Cox model baseline survival |
+| 10 | `SurvivalPredictor.predict_survival_function()` oversimplified | ✅ Implemented: Breslow baseline hazard for the Cox model |
 | 11 | `biological_embedding()` not biologically informed | Either rename to `heuristic_embeddings()` or implement domain biology-based features |
 | 12 | Cox model `se` return type mismatch (List vs Dict) | Change return to `Dict[str, float]` keyed by covariate names |
 | 13 | Documentation table omissions | Add `generate_synthetic_life_events`, `generate_realistic_life_events` to utility table in events.md |
@@ -420,11 +422,11 @@ predictions = models.predict_outcomes(
 | Kaplan-Meier | S(t) = Π(1 - d_i/n_i) | ✅ Correct | 100% |
 | Greenwood SE | √[S(t)² * Σ(d_i/(n_i(n_i-d_i)))] | ✅ Correct | 100% |
 | Cox PH Gradient | Σ(x_i - E[x|R]) | ✅ Correct | 100% |
-| Cox PH Hessian | -Σ[Variance(x|R)] | ✅ Diagonal approx | Correct |
+| Cox PH Hessian | -Σ[Variance(x|R)] | ✅ Full information matrix | Correct |
 | CIF (Competing Risks) | Σ S(t-)*h_k(t) | ✅ Correct | 100% |
 | MCF (Recurrent) | Σ d_i / n_i | ✅ Correct | 100% |
-| Exponential Survival | S(t) = exp(-λ*t) | ⚠️ Simplified | Used as fallback |
-| Baseline Survival (Cox) | S₀(t) = exp(-∫ H₀(t)) | ❌ Not implemented | Missing Breslow estimator |
+| Exponential Survival | S(t) = exp(-λ*t) | ✅ Maximum-likelihood model (`method="exponential"`) | Correct |
+| Baseline Survival (Cox) | S₀(t) = exp(-∫ H₀(t)) | ✅ Breslow estimator | Correct |
 
 ---
 
@@ -452,12 +454,12 @@ predictor.fit(sequences[:400], outcomes[:400], task="classification")  # 'task' 
 1. **Fix workflow module** — Either implement `train_event_predictor`, `predict_outcomes`, `save_model` wrappers OR refactor `workflow.py` to use classes directly.
 2. **Remove duplicate `compare_populations()`** — Consolidate to single function.
 3. **Add missing visualization functions** — At minimum, initial implementations for `plot_embedding_clusters`, `plot_prediction_accuracy`, `plot_event_cooccurrence`, `plot_sequence_similarity`.
-4. **Complete Word2Vec embedding** — Replace placeholder in `learn_event_embeddings()` with real training, or prominently mark as experimental/prototype in docs.
+4. ✅ **Complete Word2Vec embedding** — `learn_event_embeddings()` trains word2vec; no placeholder remains.
 
 ### Short-term Improvements
 
 5. Fix Cox model return type to use `Dict[str, float]` with covariate names as keys for `se`.
-6. Implement Breslow estimator for baseline survival in `SurvivalPredictor`.
+6. ✅ Breslow estimator for baseline survival in `SurvivalPredictor` (Cox method).
 7. Rename or clarify `biological_embedding()` as heuristic-based, not biologically-grounded.
 8. Update documentation tables to include all utility functions.
 9. Clarify module scope: "life course event sequence analysis" vs "demographic modeling".
@@ -477,7 +479,7 @@ predictor.fit(sequences[:400], outcomes[:400], task="classification")  # 'task' 
 |----------|------------|------------|
 | README.md | ✅ 90% | Minor: some submodules not detailed |
 | events.md | ✅ 95% | Table omissions only |
-| models.md | ⚠️ 70% | Missing train/predict/save wrappers; placeholder embeddings |
+| models.md | ⚠️ 70% | Missing train/predict/save wrappers |
 | survival.md | ✅ 100% | All functions implemented correctly |
 | visualization.md | ⚠️ 75% | 4 functions missing; location ambiguities |
 | workflow.md | ❌ 40% | Core workflow broken by missing functions; duplicate function |

@@ -34,7 +34,7 @@ requested `resolution` and optimiser seed. It returns a copy with
 Louvain algorithm (predecessor to Leiden):
 
 ```python-snippet
-from metainformant.singlecell.clustering import louvain_clustering
+from metainformant.singlecell.analysis.clustering import louvain_clustering
 
 data = louvain_clustering(
     data,
@@ -56,7 +56,7 @@ data = louvain_clustering(
 K-means clustering for predetermined number of clusters:
 
 ```python-snippet
-from metainformant.singlecell.clustering import kmeans_clustering
+from metainformant.singlecell.analysis.clustering import kmeans_clustering
 
 # K-means with known number of clusters
 data = kmeans_clustering(
@@ -81,7 +81,7 @@ data = kmeans_clustering(
 Agglomerative clustering with various linkage methods:
 
 ```python-snippet
-from metainformant.singlecell.clustering import hierarchical_clustering
+from metainformant.singlecell.analysis.clustering import hierarchical_clustering
 
 # Hierarchical clustering
 data = hierarchical_clustering(
@@ -105,7 +105,7 @@ data = hierarchical_clustering(
 Identify genes that characterize each cluster:
 
 ```python-snippet
-from metainformant.singlecell.clustering import find_markers
+from metainformant.singlecell.analysis.clustering import find_markers
 
 # Find marker genes for each cluster
 markers = find_markers(
@@ -126,36 +126,38 @@ print(markers.head())
 - `'ttest'`: Student's t-test
 - `'logistic'`: Logistic regression
 
-### cluster_composition()
+### compute_cluster_composition()
 
-Analyze cluster composition and relationships:
+Analyze how each cluster is composed of a categorical variable in `obs` (for example sample or batch):
 
 ```python-snippet
-from metainformant.singlecell.clustering import cluster_composition
+from metainformant.singlecell.analysis.clustering import compute_cluster_composition
 
-# Get cluster statistics
-composition = cluster_composition(data, groupby='leiden')
+# Get cluster composition by sample
+composition = compute_cluster_composition(data, groupby='sample', cluster_col='leiden_cluster')
 print(composition)
-# Columns: cluster, n_cells, pct_total, top_markers
+# Columns: cluster, category, count, proportion, percentage
 ```
 
 ## Clustering Validation
 
-### silhouette_scores()
+### compute_cluster_silhouette()
 
 Calculate silhouette scores to assess clustering quality:
 
 ```python-snippet
-from metainformant.singlecell.clustering import silhouette_scores
+from metainformant.singlecell.analysis.clustering import compute_cluster_silhouette
 
 # Calculate silhouette scores
-scores = silhouette_scores(
+scores = compute_cluster_silhouette(
     data,
-    cluster_column='leiden',
-    use_rep='X_pca'
+    cluster_col='leiden_cluster',
+    metric='euclidean'
 )
 
-print(f"Average silhouette score: {scores.mean():.3f}")
+print(f"Average silhouette score: {scores['overall_silhouette_score']:.3f}")
+# Also available: scores['per_cluster_scores'], scores['calinski_harabasz_score'],
+# scores['davies_bouldin_score']
 ```
 
 ## Resolution Optimization
@@ -164,6 +166,7 @@ print(f"Average silhouette score: {scores.mean():.3f}")
 
 ```python
 import matplotlib.pyplot as plt
+from metainformant.singlecell.analysis.clustering import compute_cluster_silhouette, leiden_clustering
 
 # Test multiple resolutions
 resolutions = [0.1, 0.2, 0.3, 0.5, 0.8, 1.0, 1.5, 2.0]
@@ -175,11 +178,11 @@ for res in resolutions:
     data_temp = leiden_clustering(data.copy(), resolution=res)
     
     # Count clusters
-    n_clust = len(data_temp.obs['leiden'].unique())
+    n_clust = len(data_temp.obs['leiden_cluster'].unique())
     n_clusters.append(n_clust)
     
     # Calculate silhouette score
-    sil_score = silhouette_scores(data_temp, 'leiden', 'X_pca').mean()
+    sil_score = compute_cluster_silhouette(data_temp, cluster_col='leiden_cluster')['overall_silhouette_score']
     silhouette_avg.append(sil_score)
 
 # Plot results
@@ -228,7 +231,7 @@ mask = data.obs['leiden'] == cluster_of_interest
 subdata = data[mask, :].copy()
 
 # 2. Recompute neighbors and cluster
-from metainformant.singlecell.dimensionality import compute_neighbors
+from metainformant.singlecell.analysis.nonlinear_methods import compute_neighbors
 subdata = compute_neighbors(subdata, n_neighbors=10)
 subdata = leiden_clustering(subdata, resolution=0.8)
 
@@ -258,12 +261,12 @@ for rep in representations:
         )
 
 # Compare results
-from metainformant.singlecell.clustering import cluster_composition
+from metainformant.singlecell.analysis.clustering import compute_cluster_composition
 for rep in representations:
     key = f'leiden_{rep}'
     if key in data.obs.columns:
-        comp = cluster_composition(data, groupby=key)
-        print(f"\n{rep}: {len(comp)} clusters")
+        comp = compute_cluster_composition(data, groupby='sample', cluster_col=key)
+        print(f"\n{rep}: {comp['cluster'].nunique()} clusters")
 ```
 
 ## Cluster Annotation

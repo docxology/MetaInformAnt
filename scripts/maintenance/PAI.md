@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - maintenance
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/scripts/maintenance`
+- **Path**: `scripts/maintenance`
 - **Purpose**: Functionality for maintenance.
 - **Domain**: scripts
 

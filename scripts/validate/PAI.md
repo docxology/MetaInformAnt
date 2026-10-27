@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - validate
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/scripts/validate`
+- **Path**: `scripts/validate`
 - **Purpose**: Functionality for validate.
 - **Domain**: scripts
 

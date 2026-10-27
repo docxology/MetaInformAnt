@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - engine
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/rna/engine`
+- **Path**: `src/metainformant/rna/engine`
 - **Purpose**: Functionality for engine.
 - **Domain**: rna
 

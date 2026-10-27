@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - analysis
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/quality/analysis`
+- **Path**: `src/metainformant/quality/analysis`
 - **Purpose**: Functionality for analysis.
 - **Domain**: quality
 

@@ -18,7 +18,7 @@ This module implements fundamental information theory concepts for biological da
 ## Quick Start
 
 ```python
-from metainformant.information import shannon_entropy, mutual_information
+from metainformant.information.metrics.core.syntactic import shannon_entropy, mutual_information
 
 # Calculate entropy of a probability distribution
 probs = [0.5, 0.3, 0.2]

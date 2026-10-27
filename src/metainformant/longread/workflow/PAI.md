@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - workflow
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/longread/workflow`
+- **Path**: `src/metainformant/longread/workflow`
 - **Purpose**: Long-read workflow orchestration module.
 - **Domain**: longread
 

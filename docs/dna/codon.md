@@ -11,7 +11,7 @@ flowchart LR
 Example
 
 ```python-snippet
-from metainformant.dna import codon
+from metainformant.dna.expression import codon
 
 # Count codons in sequence
 seq = "ATGAAATTTCCCGGGTAG"

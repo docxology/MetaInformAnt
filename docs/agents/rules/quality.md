@@ -4,7 +4,7 @@
 Data quality assessment and control: FASTQ quality metrics, general quality metrics, and contamination detection.
 
 ## Dependencies
-- **Required**: `core`, `dna.fastq`
+- **Required**: `core`
 
 ## Source Structure
 ```
@@ -31,11 +31,10 @@ src/metainformant/quality/
 ```python
 from metainformant.quality.io import fastq
 
-metrics = fastq.assess_fastq_quality(
-    fastq_file="data/reads.fastq",
-    output_dir="output/quality/fastq/"
-)
-# Returns: dict with quality metrics
+# n_reads=None analyzes every read; the call returns the metrics and writes no files
+metrics = fastq.analyze_fastq_quality("data/reads.fastq", n_reads=None)
+# Returns: dict of sections (basic_statistics, per_base_quality, per_sequence_quality,
+# gc_content_distribution, adapter_content, duplication_levels, ...)
 ```
 
 ### Metrics (`metrics`)

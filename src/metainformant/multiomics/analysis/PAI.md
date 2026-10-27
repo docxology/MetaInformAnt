@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - analysis
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/multiomics/analysis`
+- **Path**: `src/metainformant/multiomics/analysis`
 - **Purpose**: Functionality for analysis.
 - **Domain**: multiomics
 

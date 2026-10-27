@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - population
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/gwas/visualization/population`
+- **Path**: `src/metainformant/gwas/visualization/population`
 - **Purpose**: Population and geography visualization subpackage.
 - **Domain**: visualization
 

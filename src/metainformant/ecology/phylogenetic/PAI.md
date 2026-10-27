@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - phylogenetic
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/ecology/phylogenetic`
+- **Path**: `src/metainformant/ecology/phylogenetic`
 - **Purpose**: Phylogenetic ecology subpackage.
 - **Domain**: ecology
 

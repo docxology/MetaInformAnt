@@ -595,8 +595,8 @@ def handler(manager, items):
 Set log level to DEBUG:
 
 ```bash
-export METAINFORMANT_LOG_LEVEL=DEBUG
-python -m metainformant.rna.pipeline ...
+export CORE_LOG_LEVEL=DEBUG
+python -m metainformant.rna.amalgkit ...
 ```
 
 ---

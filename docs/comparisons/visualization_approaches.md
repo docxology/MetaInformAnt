@@ -8,31 +8,33 @@ The `visualization` module in METAINFORMANT is a comprehensive plotting system w
 
 ```
 visualization/
-├── plots/           # Core plotting functions (basic, general, specialized)
-├── genomics/        # Genomics-specific visualizations
-├── analysis/        # Statistical, dimensionality reduction, quality plots
-├── dashboards/      # Composite multi-panel figures
-├── config/          # Color palettes, themes, styling
-├── animations/      # Animated time-series, evolutionary, network plots
-└── integration/     # Domain-specific integration (GWAS, single-cell, etc.)
+├── plots/                  # Core plotting functions (basic, general, specialized, multidim, animations)
+├── genomics/               # Genomics-specific visualizations (genomics, expression, networks, trees)
+├── analysis/               # Statistical, dimensionality reduction, time-series, information, quality plots
+├── dashboards/             # Composite multi-panel figures and Plotly interactive figures
+├── interactive_dashboards/ # JSON-serializable interactive plot data and HTML export
+└── config/                 # Color palettes, themes, styling conventions
 ```
+
+The sections below group related plots under short names (`basic/`, `statistical/`, `dimred/`, `trees/`, ...);
+each example shows the real import path.
 
 ## Quick Decision Matrix
 
 | Data Domain | Primary Plot Types | Key Submodule | Example Functions |
 |-------------|-------------------|---------------|-------------------|
-| **Genomics & Variants** | Manhattan, QQ, Volcano, Ideogram | `genomics/` | `manhattan_plot()`, `volcano_plot()`, `ideogram()` |
-| **Gene Expression** | Heatmaps, Volcano, MA plots | `expression/` | `expression_heatmap()`, `ma_plot()` |
-| **Phylogenetics** | Trees (various layouts) | `trees/` | `plot_phylo_tree()`, `plot_tree_circular()` |
-| **Networks & Pathways** | Network graphs, pathway diagrams | `networks/` | `plot_network()`, `plot_pathway()` |
-| **Statistical Analysis** | Histograms, Boxplots, Violin, ROC | `statistical/` | `histogram()`, `boxplot()`, `violin_plot()`, `roc_curve()` |
-| **Dimensionality Reduction** | PCA, UMAP, t-SNE plots | `dimred/` | `pca_plot()`, `umap_plot()`, `tsne_plot()` |
-| **Time Series** | Line plots, Forecasts, Autocorrelation | `timeseries/` | `lineplot()`, `timeseries_forecast()`, `autocorrelation()` |
-| **Multi-Dimensional** | Pair plots, Parallel coords, Radar | `multidim/` | `pairplot()`, `parallel_coordinates()`, `radar_chart()` |
-| **Quality Control** | Quality scores, Adapter content, Length dist | `quality/` | `quality_scores()`, `adapter_content()` |
-| **Information Theory** | Entropy, Mutual info profiles | `information/` | `entropy_plot()`, `mutual_information_heatmap()` |
+| **Genomics & Variants** | Manhattan, QQ, Volcano, Ideogram | `genomics/` | `manhattan_plot()`, `volcano_plot()`, `chromosome_ideogram()` |
+| **Gene Expression** | Heatmaps, Volcano, DE plots | `expression/` | `plot_expression_heatmap()`, `plot_differential_expression()` |
+| **Phylogenetics** | Trees (various layouts) | `trees/` | `plot_phylo_tree()`, `circular_tree_plot()` |
+| **Networks & Pathways** | Network graphs, hierarchical layouts | `networks/` | `plot_network_basic()`, `plot_network_hierarchical()` |
+| **Statistical Analysis** | Histograms, Boxplots, Violin, ROC | `statistical/` | `histogram()`, `box_plot()`, `violin_plot()`, `roc_curve()` |
+| **Dimensionality Reduction** | PCA, UMAP, t-SNE plots | `dimred/` | `pca_plot()`, `plot_umap()`, `plot_tsne()` |
+| **Time Series** | Line plots, Forecasts, Autocorrelation | `timeseries/` | `plot_time_series()`, `plot_forecast()`, `plot_autocorrelation()` |
+| **Multi-Dimensional** | Pair plots, Parallel coords, Radar | `multidim/` | `plot_pairwise_relationships()`, `plot_parallel_coordinates()`, `plot_radar_chart()` |
+| **Quality Control** | Quality scores, Adapter content, Length dist | `quality/` | `plot_per_base_quality_boxplot()`, `plot_adapter_content()` |
+| **Information Theory** | Entropy, Mutual info profiles | `information/` | `plot_entropy_profile()`, `plot_mutual_information_matrix()` |
 | **Simulations** | Animation of evolutionary/genetic processes | `animations/` | `animate_evolution()`, `animate_trajectory()` |
-| **General Purpose** | Line, Scatter, Bar, Pie, Heatmap | `basic/` | `lineplot()`, `scatter_plot()`, `barplot()`, `heatmap()` |
+| **General Purpose** | Line, Scatter, Bar, Pie, Heatmap | `basic/` | `lineplot()`, `scatter_plot()`, `bar_plot()`, `heatmap()` |
 
 ## 1. Data Type → Plot Type Decision Tree
 
@@ -64,43 +66,42 @@ flowchart TD
     
     C -->|Identify peaks| G1[manhattan_plot]
     C -->|Compare effect vs sig| G2[volcano_plot]
-    C -->|Show chromosomal dist| G3[ideogram]
+    C -->|Show chromosomal dist| G3[chromosome_ideogram]
     
     D -->|Differential expression| E1[volcano_plot]
     D -->|Sample similarity| E2[expression_heatmap]
-    D -->|Treat effect size| E3[ma_plot]
+    D -->|Treat effect size| E3[plot_differential_expression]
     
     E -->|Small tree (<100 taxa)| T1[plot_phylo_tree]
-    E -->|Large tree with collapse| T2[plot_tree_circular]
-    E -->|Cladogram only| T3[plot_tree_rectangular]
+    E -->|Large tree with collapse| T2[circular_tree_plot]
+    E -->|Cladogram only| T3[plot_phylo_tree]
     
-    F -->|Small network (<50 nodes)| N1[plot_network spring]
-    F -->|Pathway/diagram| N2[plot_network hierarchical]
+    F -->|Small network (<50 nodes)| N1[plot_network_basic]
+    F -->|Pathway/diagram| N2[plot_network_hierarchical]
     F -->|Large network (>1000)| N3[plot_network_circular]
     
     G -->|Linear structure| D1[pca_plot]
-    G -->|Nonlinear manifold| D2[umap_plot / tsne_plot]
-    G -->|Show variance| D3[scree_plot]
+    G -->|Nonlinear manifold| D2[plot_umap / plot_tsne]
+    G -->|Show variance| D3[pca_scree_plot]
     
-    H -->|Trend over time| TS1[lineplot with CI]
-    H -->|Seasonal/decompose| TS2[seasonal_decompose]
-    H -->|Autocorrelation| TS3[autocorrelation_plot]
+    H -->|Trend over time| TS1[plot_time_series]
+    H -->|Seasonal/decompose| TS2[plot_seasonal_decomposition]
+    H -->|Autocorrelation| TS3[plot_autocorrelation]
     
-    I -->|Pairwise relationships| M1[pairplot]
-    I -->|Multi-var trajectories| M2[parallel_coordinates]
-    I -->|Radar/skill profile| M3[radar_chart]
+    I -->|Pairwise relationships| M1[plot_pairwise_relationships]
+    I -->|Multi-var trajectories| M2[plot_parallel_coordinates]
+    I -->|Radar/skill profile| M3[plot_radar_chart]
     
-    J -->|Per-base quality| QC1[quality_scores]
-    J -->|Adapter contamination| QC2[adapter_content]
-    J -->|Read length dist| QC3[length_distribution]
+    J -->|Per-base quality| QC1[plot_per_base_quality_boxplot]
+    J -->|Adapter contamination| QC2[plot_adapter_content]
+    J -->|Read length dist| QC3[plot_length_distribution]
     
-    K -->|Entropy per position| I1[entropy_plot]
-    K -->|Feature dependence| I2[mutual_information_heatmap]
-    K -->|Info profile| I3[information_content_profile]
+    K -->|Entropy by k-mer size| I1[plot_entropy_profile]
+    K -->|Feature dependence| I2[plot_mutual_information_matrix]
     
     L -->|Trend over x| B1[lineplot]
     L -->|Correlation| B2[scatter_plot]
-    L -->|Comparison| B3[barplot / grouped_bar]
+    L -->|Comparison| B3[bar_plot]
     L -->|Proportion| B4[pie_chart]
     L -->|2D density| B5[heatmap]
 ```
@@ -160,9 +161,9 @@ flowchart TD
 | Need | Recommended Approach | Implementation |
 |------|---------------------|----------------|
 | **Publication figure** | Static (PNG, TIFF, PDF, SVG) | `savefig("fig.pdf")` |
-| **Exploratory analysis** | Interactive (Plotly) | `interactive=True` parameter |
-| **Dashboard / report** | Composite layout | `create_dashboard([plot1, plot2])` |
-| **Animation for talks** | MP4/GIF animation | `animate_trajectory(..., save_as="mp4")` |
+| **Exploratory analysis** | Interactive (Plotly) | `interactive_scatter()`, `interactive_heatmap()` |
+| **Dashboard / report** | Composite layout | `multi_panel([panel1, panel2])` |
+| **Animation for talks** | GIF animation | `animate_trajectory(..., output_path="trajectory.gif")` |
 | **Web app / Shiny** | Interactive Plotly | Export to JSON, embed in Streamlit |
 
 ### Output Format Matrix
@@ -173,7 +174,7 @@ flowchart TD
 | Heatmap (large) | TIFF (600 DPI) | None (too heavy) | 50–100 MB | N/A |
 | Network (small) | SVG (vector) | Cytoscape JSON | <1 MB | Small |
 | Tree | Newick (tree only), PDF | N/A | <5 MB | N/A |
-| Animation | MP4 (1080p) | HTML5 Canvas | 50–200 MB | Medium |
+| Animation | GIF | HTML5 Canvas | 50–200 MB | Medium |
 | Dashboard | Multi-page PDF | Bokeh/Streamlit app | N/A | Large |
 
 ## 4. Module-Specific Visualization Submodules
@@ -183,66 +184,60 @@ flowchart TD
 Genomics-specific plots for variant and expression analysis.
 
 ```python-snippet
-from metainformant.visualization.genomics import (
+from metainformant.visualization.genomics.genomics import (
     manhattan_plot,
     volcano_plot,
     regional_plot,
-    ideogram,
-    circos_plot
+    chromosome_ideogram,
+    circular_manhattan_plot
 )
 
 # Manhattan plot: GWAS results
 manhattan_plot(
-    data=gwas_df,
-    position_col='pos',
-    pval_col='p_value',
-    chromosome_col='chrom',
-    highlight_peaks=True,
-    genome_build='GRCh38'
+    gwas_df,
+    chr_col='chrom',
+    pos_col='pos',
+    pval_col='p_value'
 )
 
-# Regional plot: Zoom into locus
+# Regional plot: Zoom into locus (expects CHR, BP and P columns)
 regional_plot(
-    summary_stats=gwas_df,
-    locus='chr1:10500000-10600000',
-    annotation='genes.gtf'
+    gwas_df,
+    chr='1',
+    start=10500000,
+    end=10600000
 )
 ```
 
 **When to use**:
 - GWAS results → Manhattan, QQ
-- Differential expression → Volcano, MA
-- Genomic context → Ideogram, Circos
+- Differential expression → Volcano
+- Genomic context → Ideogram, circular Manhattan
 
 ### expression/ Submodule
 
 Gene expression visualization across samples/conditions.
 
 ```python-snippet
-from metainformant.visualization.expression import (
-    expression_heatmap,
-    ma_plot,
-    enrichment_plot
+from metainformant.visualization.genomics.expression import (
+    plot_expression_heatmap,
+    plot_differential_expression,
+    plot_enrichment_barplot
 )
 
-# Heatmap of top DE genes
-expression_heatmap(
-    expression_matrix=expr_df,
-    gene_list=top_de_genes,
-    sample_annotation=metadata_df
-)
+# Heatmap of top DE genes (z-score normalized)
+plot_expression_heatmap(expr_df.loc[top_de_genes])
 
-# MA plot: log-FC vs mean expression
-ma_plot(
-    de_results=de_df,
-    mean_col='base_mean',
-    logfc_col='log2FoldChange',
-    sig_col='padj'
-)
+# Differential expression plot: log-FC vs -log10 adjusted p-value,
+# point size scaled by mean expression (log2FoldChange, padj and baseMean columns)
+plot_differential_expression(de_df)
+
+# Pathway enrichment results (Term, p.adjust and Count columns)
+plot_enrichment_barplot(enrichment_df)
 ```
 
 **When to use**:
-- Bulk RNA-seq DE results → Volcano, MA, Heatmap
+- Bulk RNA-seq DE results → Volcano, DE plot, Heatmap
 - Expression patterns → Clustered heatmaps
 - Sample relationships → PCA, correlation matrix
 
@@ -251,24 +246,23 @@ ma_plot(
 Phylogenetic tree visualization in multiple layouts.
 
 ```python-snippet
-from metainformant.visualization.trees import (
+from metainformant.visualization.genomics.trees import (
     plot_phylo_tree,
-    plot_tree_rectangular,
-    plot_tree_circular,
-    plot_tree_radial
+    circular_tree_plot,
+    unrooted_tree_plot
 )
 from Bio import Phylo
 
 tree = Phylo.read("tree.nwk", "newick")
 
-# Standard rectangular tree
-plot_phylo_tree(tree, branch_labels=True)
+# Standard hierarchical tree
+plot_phylo_tree(tree, with_labels=True)
 
 # Circular layout for large trees
-plot_tree_circular(tree, label_angle=45)
+circular_tree_plot(tree)
 
-# Radial cladogram
-plot_tree_radial(tree, show_confidence=True)
+# Unrooted (spring-layout) view
+unrooted_tree_plot(tree)
 ```
 
 **When to use**:
@@ -281,68 +275,62 @@ plot_tree_radial(tree, show_confidence=True)
 Biological network visualization (PPI, regulatory, pathways).
 
 ```python-snippet
-from metainformant.visualization.networks import (
-    plot_network,
+from metainformant.visualization.genomics.networks import (
+    plot_network_basic,
     plot_network_circular,
     plot_network_hierarchical,
-    plot_pathway
+    plot_community_network
 )
 
-# Network graph with spring layout
-plot_network(
-    G=networkx_graph,
-    node_colors=node_attributes,
-    edge_weights=edge_list,
-    layout='spring'
+# Network graph with spring layout (NetworkX graph)
+plot_network_basic(
+    networkx_graph,
+    node_color='steelblue'
 )
 
-# Pathway diagram with expression overlay
-plot_pathway(
-    pathway_graph=graphml_file,
-    node_values=expression_zscores,
-    highlight_nodes=significant_genes
+# Hierarchical layout for pathway-like graphs
+plot_network_hierarchical(pathway_graph)
+
+# Color nodes by community membership ({node: community_id})
+plot_community_network(
+    networkx_graph,
+    communities
 )
 ```
 
 **When to use**:
 - Small-medium PPI/network → Spring layout
 - Pathway diagrams → Hierarchical layout
-- Large networks (>1000 nodes) → Circular/fa layout
+- Large networks (>1000 nodes) → Circular layout
 
 ### statistical/ Submodule
 
 Statistical diagnostic and summary plots.
 
 ```python-snippet
-from metainformant.visualization.statistical import (
+from metainformant.visualization.analysis.statistical import (
     histogram,
-    boxplot,
+    box_plot,
     violin_plot,
     qq_plot,
     roc_curve,
     density_plot
 )
 
-# Q-Q plot for GWAS or model residuals
+# Q-Q plot for GWAS p-values (uniform) or model residuals ('norm')
 qq_plot(
-    observed_pvalues=gwas_df['p_value'],
-    theoretical=stats.uniform(0,1)
+    gwas_df['p_value'].to_numpy(),
+    distribution='uniform'
 )
 
-# ROC curve for classifier
+# ROC curve for classifier (the AUC is shown in the legend)
 roc_curve(
-    y_true=true_labels,
-    y_score=predictions,
-    auc=True
+    true_labels,
+    predictions
 )
 
-# Violin plot for expression by group
-violin_plot(
-    data=expr_long_df,
-    x='group',
-    y='expression',
-    hue='treatment'
-)
+# Violin plot for expression by group (one array per group)
+violin_plot([expr_control, expr_treated])
 ```
 
 **When to use**:
@@ -356,31 +344,27 @@ violin_plot(
 Dimensionality reduction visualizations.
 
 ```python-snippet
-from metainformant.visualization.dimred import (
-    pca_plot,
-    umap_plot,
-    tsne_plot,
-    scree_plot
-)
+from metainformant.visualization.plots.general import pca_plot
+from metainformant.visualization.analysis.dimred import plot_umap, plot_tsne
+from metainformant.gwas.visualization.population import pca_scree_plot
 
-# PCA scores plot
+# PCA scores plot (DataFrame with PC1, PC2, PC1_variance, PC2_variance and a 'batch' column)
 pca_plot(
-    pca_result=pca_scores,
-    variance_explained=pca.explained_variance_ratio_,
-    color_by=metadata['batch']
+    pca_df,
+    hue='batch'
 )
 
-# UMAP for non-linear embedding
-umap_plot(
-    embedding=umap_coords,
-    labels=cell_types,
-    point_size=5
+# UMAP for non-linear embedding of a feature matrix (requires umap-learn)
+plot_umap(
+    feature_matrix,
+    c=cluster_codes,
+    s=5
 )
 
-# Scree plot: variance per PC
-scree_plot(
-    variance_ratio=pca.explained_variance_ratio_,
-    cumulative=True
+# Scree plot: variance per PC (cumulative curve included)
+pca_scree_plot(
+    pca.explained_variance_ratio_,
+    output_file='scree.png'
 )
 ```
 
@@ -395,30 +379,21 @@ scree_plot(
 Quality control visualizations for sequencing data.
 
 ```python-snippet
-from metainformant.visualization.quality import (
-    quality_scores,
-    adapter_content,
-    length_distribution,
-    gc_content
+from metainformant.visualization.analysis.quality import (
+    plot_per_base_quality_boxplot,
+    plot_adapter_content,
+    plot_length_distribution,
+    plot_gc_distribution
 )
 
-# Per-base quality scores (FastQC-style)
-quality_scores(
-    quality_matrix=fastq_quality_array,
-    per_base=True
-)
+# Per-base quality scores (FastQC-style): position range -> list of quality scores
+plot_per_base_quality_boxplot(per_base_qualities)
 
-# Adapter contamination across read length
-adapter_content(
-    adapter_counts=adapter_df,
-    read_lengths=lengths
-)
+# Adapter contamination: adapter name -> content (%) at each position
+plot_adapter_content(adapter_content_by_name)
 
-# GC content distribution
-gc_content(
-    gc_percent=gc_array,
-    theoretical=expected_gc
-)
+# GC content distribution (list of per-read GC percentages)
+plot_gc_distribution(gc_percent)
 ```
 
 **When to use**:
@@ -431,70 +406,57 @@ gc_content(
 Information theory visualizations.
 
 ```python-snippet
-from metainformant.visualization.information import (
-    entropy_plot,
-    mutual_information_heatmap,
-    information_content_profile
+from metainformant.visualization.analysis.information import (
+    plot_entropy_profile,
+    plot_mutual_information_matrix
 )
 
-# Shannon entropy along sequence alignment
-entropy_plot(
-    alignment_matrix=msa_array,  # sequences × positions
-    alphabet='DNA'
+# Shannon entropy of each sequence at several k-mer sizes
+plot_entropy_profile(
+    entropy_by_sequence  # {sequence name: [H(k=1), H(k=2), ...]}
 )
 
 # Mutual information between positions (compares correlated sites)
-mutual_information_heatmap(
-    mi_matrix=mi_scores,
-    annotation=structure_contacts
-)
-
-# Information content profile (sequence logo alternative)
-information_content_profile(
-    pfm=position_frequency_matrix,
-    background=bg_freq
+plot_mutual_information_matrix(
+    mi_scores,
+    labels=position_labels
 )
 ```
 
 **When to use**:
-- Sequence conservation → Entropy plot
-- Co-evolving residues → MI heatmap
-- Motif strength → Information content profile
+- Sequence complexity → Entropy profile
+- Co-evolving residues → MI matrix
 
 ### animations/ Submodule
 
 Animated visualizations for dynamic processes.
 
 ```python-snippet
-from metainformant.visualization.animations import (
+from metainformant.visualization.plots.animations import (
     animate_time_series,
     animate_evolution,
     animate_clustering,
     animate_network
 )
 
-# Animate time-series with confidence bands
+# Animate time-series (array with one row per series; saved as GIF)
 fig, anim = animate_time_series(
-    timepoints=t,
-    values=y,
-    confidence=ci,
+    y,
     interval=50,
-    save_as="time_series.mp4"
+    output_path="time_series.gif"
 )
 
-# Evolutionary simulation animation
+# Sequence evolution animation (one sequence per generation)
 animate_evolution(
-    population=pop_history,
-    fitness_landscape=fitness_func,
-    generations=100,
-    save_as="evolution.mp4"
+    sequence_history,
+    output_path="evolution.gif"
 )
 
-# Clustering progression (e.g., cell trajectory)
+# Clustering progression: 2D points plus the cluster labels at each step
 animate_clustering(
-    embeddings=umap_per_timepoint,
-    labels=cell_labels,
-    save_as="trajectory.mp4"
+    points_2d,
+    cluster_labels_over_time,
+    output_path="trajectory.gif"
 )
 ```
 
@@ -508,15 +470,15 @@ animate_clustering(
 
 ### ForPublications (High-Quality Static)
 
-**Recommended**: `plots/` + `styling/` with publication theme
+**Recommended**: `plots/` + `config/` with publication theme
 
 ```python-snippet
-from metainformant.visualization import set_publication_style
-set_publication_style()  # Font: Helvetica, 8pt; DPI: 300
+from metainformant.visualization.config.themes import apply_theme
+apply_theme("publication")  # Sans-serif 10pt; DPI: 300
 
 # Create figure
 from metainformant.visualization.plots import manhattan_plot
-ax = manhattan_plot(gwas_df, save="manhattan.pdf")
+ax = manhattan_plot(gwas_df, output_path="manhattan.pdf")
 ```
 
 **Key modules**: `basic/`, `genomics/`, `statistical/`, `trees/`
@@ -528,9 +490,10 @@ ax = manhattan_plot(gwas_df, save="manhattan.pdf")
 **Recommended**: Default `basic/` functions, low-code
 
 ```python
-from metainformant.visualization import scatter_plot, histogram
-scatter_plot(x=df['PC1'], y=df['PC2'], hue=df['batch'])
-histogram(df['expression'], bins=50)
+from metainformant.visualization.plots.basic import scatter_plot
+from metainformant.visualization.analysis.statistical import histogram
+scatter_plot(df['PC1'].to_numpy(), df['PC2'].to_numpy(), c=df['batch'].astype('category').cat.codes)
+histogram(df['expression'].to_numpy(), bins=50)
 ```
 
 **Key modules**: `basic/`, `dimred/`, `statistical/`
@@ -539,17 +502,16 @@ histogram(df['expression'], bins=50)
 
 ### For Interactive Exploration (Web-based)
 
-**Recommended**: Enable Plotly backend
+**Recommended**: Plotly figures from `dashboards.interactive`
 
 ```python-snippet
-from metainformant.visualization import enable_interactive
-enable_interactive()  # Switches to Plotly
+from metainformant.visualization.dashboards.interactive import interactive_scatter
 
-fig = pca_plot(embedding, labels=metadata, interactive=True)
-fig.show()  # Opens in browser
+fig = interactive_scatter(embedding_df, x="PC1", y="PC2", color="batch")
+fig.show()  # Opens in browser (requires plotly)
 ```
 
-**Key modules**: `basic/`, `dimred/`, `multidim/` (interactive=True)
+**Key modules**: `dashboards/` (`interactive_scatter`, `interactive_heatmap`, `interactive_volcano`, `interactive_manhattan`)
 
 ---
 
@@ -558,32 +520,35 @@ fig.show()  # Opens in browser
 **Recommended**: `dashboards/` module
 
 ```python-snippet
-from metainformant.visualization.dashboards import (
-    create_dashboard,
-    multi_panel_figure
-)
+from metainformant.visualization.dashboards.composite import multi_panel
+from metainformant.visualization.plots.general import manhattan_plot, qq_plot, volcano_plot
 
-fig = create_dashboard([
-    (manhattan_plot, {"data": gwas_df}),
-    (qq_plot, {"pvalues": gwas_df['p']}),
-    (volcano_plot, {"de_results": de_df})
-], layout="2x2")
-fig.save("gwas_dashboard.pdf")
+fig = multi_panel(
+    [
+        {"func": manhattan_plot, "kwargs": {"data": gwas_df}, "title": "Manhattan"},
+        {"func": qq_plot, "kwargs": {"data": gwas_df['P'].to_numpy(), "distribution": "uniform"}, "title": "Q-Q"},
+        {"func": volcano_plot, "kwargs": {"data": de_df}, "title": "Volcano"},
+    ],
+    ncols=2,
+    output_path="gwas_dashboard.pdf",
+)
 ```
 
-**Key modules**: `dashboards/`, `integration/`
+**Key modules**: `dashboards/`, `interactive_dashboards/`
 
 ---
 
 ### For Presentations (Animated / Large Print)
 
-**Recommended**: `animations/` + high-contrast styling
+**Recommended**: `animations/` + the presentation theme
 
 ```python-snippet
-from metainformant.visualization import set_presentation_style
-set_presentation_style()  # Larger fonts, bold colors
+from metainformant.visualization.config.themes import apply_theme
+from metainformant.visualization.plots.animations import animate_time_series
 
-animate_time_series(data, save_as="trend.mp4")
+apply_theme("presentation")  # Larger fonts, thicker lines
+
+animate_time_series(data, output_path="trend.gif")
 ```
 
 **Key modules**: `animations/`, `basic/`, `genomics/`
@@ -594,7 +559,7 @@ animate_time_series(data, save_as="trend.mp4")
 |-----------|----------------|-------------------|-----------------------|-------|
 | Manhattan | O(n_snps) | O(n_snps) | 10⁷ SNPs (genome-wide) | Fast, uses binning |
 | Heatmap | O(n×m) | O(n×m) | 10⁴ × 10⁴ (100M cells) | Large: use sparse or downsampling |
-| Network (spring) | O(V³) worst-case | O(V²) | 1,000 nodes | Large: use `fa` or `circular` |
+| Network (spring) | O(V³) worst-case | O(V²) | 1,000 nodes | Large: use `plot_network_circular` |
 | PCA/UMAP | O(n × p × n_components) | O(n × p) | 100K samples × 10K features | Use incremental PCA for larger |
 | Tree | O(n_taxa) | O(n_taxa²) | 1,000 taxa (uncluttered) | Large: use circular with collapse |
 | Animation | O(n_frames × n_points) | O(n_points) | Depends on frames real-time | Pre-render for large |
@@ -603,8 +568,8 @@ animate_time_series(data, save_as="trend.mp4")
 **Optimization tips**:
 - Downsample before plotting if n > 10,000 points (scatter)
 - Use hexbin or 2D histogram for dense scatter plots
-- For large heatmaps, use `sparse=True` or clip values
-- Network: use `layout='fa'` (forceatlas2) for large graphs
+- For large heatmaps, downsample or clip values
+- Network: use `plot_network_circular` for large graphs
 - Animation: pre-render frames, don't real-time compute
 
 ## 7. Styling & Customization
@@ -613,20 +578,21 @@ animate_time_series(data, save_as="trend.mp4")
 
 | Theme | Use Case | Colors | Font |
 |-------|----------|--------|------|
-| `publication` | Journal figures | Colorblind-safe (Set2) | Helvetica 8pt |
-| `presentation` | Slides/poster | High-contrast (tab10) | Arial 14pt bold |
-| `default` | General use | Matplotlib default | DejaVu Sans |
-| `dark` | Dark background talks | Neon/bright | Sans-serif white |
+| `publication` | Journal figures | Matplotlib default cycle, light grid, no top/right spines | Sans-serif 10pt, 300 DPI |
+| `presentation` | Slides | Matplotlib default cycle, thicker lines | Sans-serif 14pt |
+| `poster` | Posters | Matplotlib default cycle, thickest lines | Sans-serif 18pt |
+| `dark` | Dark background talks | Dark grey background, light text | Matplotlib default, light grey |
+| `minimal` | Clean figures without grid | Matplotlib default cycle | Sans-serif 10pt |
+| `colorblind` | Universal accessibility | Okabe-Ito color cycle | Matplotlib default, 10pt |
+
+`reset_theme()` restores the matplotlib defaults.
 
 ```python-snippet
-from metainformant.visualization.styling import (
-    set_theme,
-    set_color_palette,
-    get_palette
-)
+from metainformant.visualization.config.themes import apply_theme
+from metainformant.visualization.config.palettes import categorical
 
-set_theme('publication')
-set_color_palette('colorblind')  # Okabe-Ito scale
+apply_theme('publication')
+colors = categorical(8, palette='wong')  # Okabe-Ito scale
 ```
 
 ### Color Palette Guide
@@ -642,25 +608,22 @@ set_color_palette('colorblind')  # Okabe-Ito scale
 ## 8. Example: Multi-Panel Figure Assembly
 
 ```python-snippet
-from metainformant.visualization.dashboards import create_figure_grid
-from metainformant.visualization.genomics import manhattan_plot, qq_plot
-from metainformant.visualization.statistical import histogram
+from metainformant.visualization.dashboards.composite import multi_panel
+from metainformant.visualization.genomics.genomics import manhattan_plot, volcano_plot
+from metainformant.visualization.analysis.statistical import histogram, qq_plot
 
-# Create 2×2 figure grid
-fig = create_figure_grid(
-    plots=[
-        (manhattan_plot, {"data": gwas_df}, (0, 0)),      # top-left
-        (qq_plot, {"pvalues": gwas_df['p']}, (0, 1)),    # top-right
-        (histogram, {"data": gwas_df['beta']}, (1, 0)),  # bottom-left
-        (volcano_plot, {"de": de_df}, (1, 1)),           # bottom-right
+# Create 2×2 figure grid (panels fill the grid row by row)
+fig = multi_panel(
+    [
+        {"func": manhattan_plot, "kwargs": {"data": gwas_df}},                                        # top-left
+        {"func": qq_plot, "kwargs": {"data": gwas_df['P'].to_numpy(), "distribution": "uniform"}},  # top-right
+        {"func": histogram, "kwargs": {"data": gwas_df['beta'].to_numpy()}},                        # bottom-left
+        {"func": volcano_plot, "kwargs": {"data": de_df}},                                            # bottom-right
     ],
-    shared_legend=False,
+    ncols=2,
     figsize=(12, 10),
-    hspace=0.3,
-    wspace=0.2
+    output_path="gwas_manuscript_figure.pdf",
 )
-
-fig.save("gwas_manuscript_figure.pdf", dpi=300)
 ```
 
 ## 9. Cross-Module Visualization Usage Examples
@@ -669,65 +632,61 @@ fig.save("gwas_manuscript_figure.pdf", dpi=300)
 
 ```python-snippet
 # Option 1: Direct from gwas module (has built-in viz)
-from metainformant.gwas.visualization import plot_manhattan, plot_qq
-plot_manhattan(gwas_results)
-plot_qq(gwas_results['p_value'])
+# gwas_results: list of dicts with chrom, pos and p_value keys
+from metainformant.gwas.visualization import manhattan_plot, qq_plot
+manhattan_plot(gwas_results)
+qq_plot([r['p_value'] for r in gwas_results])
 
-# Option 2: Using unified visualization module
-from metainformant.visualization.genomics import manhattan_plot, qq_plot
+# Option 2: Using unified visualization module (DataFrame input)
+from metainformant.visualization.genomics.genomics import manhattan_plot
 manhattan_plot(
-    data=gwas_results,
-    position_col='pos',
-    pval_col='p_value',
-    chromosome_col='chrom'
+    gwas_df,
+    chr_col='chrom',
+    pos_col='pos',
+    pval_col='p_value'
 )
 ```
 
 ### Equivalence: Expression Visualization
 
 ```python-snippet
-# From rna module
-from metainformant.rna import analysis as rna_analysis
-rna_analysis.plot_expression_heatmap(expression_matrix)
+# z-score normalized heatmap (genomics submodule)
+from metainformant.visualization.genomics.expression import plot_expression_heatmap
+plot_expression_heatmap(expression_matrix)
 
-# From visualization module (more general)
-from metainformant.visualization.expression import expression_heatmap
-expression_heatmap(
-    expression_matrix,
-    annotation=metadata,
-    cluster_rows=True,
-    cluster_cols=True
-)
+# General-purpose heatmap of the values as given (plots submodule)
+from metainformant.visualization.plots.general import expression_heatmap
+expression_heatmap(expression_matrix, cmap="RdBu_r")
 ```
 
 ## 10. Advanced: Custom Plot Development
 
-If existing plots don't fit your needs, extend via `visualization.plots`:
+If existing plots don't fit your needs, write a plain function that follows the conventions of `visualization.plots`
+(optional `ax` and `output_path` arguments, returns the `Axes`), so it also works as a `multi_panel` panel:
 
 ```python-snippet
-from metainformant.visualization.plots.base import BasePlotter
 import matplotlib.pyplot as plt
+import numpy as np
+from metainformant.visualization.config.conventions import save_figure_deterministic
 
-class CustomManhattanPlotter(BasePlotter):
-    def __init__(self, highlight_genes=None):
-        super().__init__()
-        self.highlight_genes = highlight_genes or []
-    
-    def plot(self, data, ax=None):
-        ax = ax or plt.gca()
-        # Custom logic
-        for chrom in data['chrom'].unique():
-            chrom_data = data[data['chrom'] == chrom]
-            ax.scatter(chrom_data['pos'], -np.log10(chrom_data['p']))
-        # Highlight specific genes
-        for gene in self.highlight_genes:
-            gene_pos = data[data['gene'] == gene]['pos'].iloc[0]
-            ax.axvline(gene_pos, color='red', linestyle='--')
-        return ax
+def custom_manhattan_plot(data, highlight_genes=None, *, ax=None, output_path=None):
+    highlight_genes = highlight_genes or []
+    if ax is None:
+        _, ax = plt.subplots(figsize=(12, 6))
+    # Custom logic
+    for chrom in data['chrom'].unique():
+        chrom_data = data[data['chrom'] == chrom]
+        ax.scatter(chrom_data['pos'], -np.log10(chrom_data['p']))
+    # Highlight specific genes
+    for gene in highlight_genes:
+        gene_pos = data[data['gene'] == gene]['pos'].iloc[0]
+        ax.axvline(gene_pos, color='red', linestyle='--')
+    if output_path:
+        save_figure_deterministic(ax.figure, output_path)
+    return ax
 
 # Use it
-plotter = CustomManhattanPlotter(highlight_genes=['APOE', 'CLU'])
-plotter.plot(gwas_df)
+ax = custom_manhattan_plot(gwas_df, highlight_genes=['APOE', 'CLU'])
 ```
 
 ## 11. Summary Table: All Visualization Submodules
@@ -736,18 +695,18 @@ plotter.plot(gwas_df)
 |-----------|------------|-----------------|---------------|----------|
 | `basic/` | 12 | General | line, scatter, bar, pie, area, step, heatmap | Quick exploratory plots |
 | `statistical/` | 10 | Stats | histogram, boxplot, violin, qq, roc, density | Statistical diagnostics |
-| `genomics/` | 8 | GWAS, genomics | manhattan, volcano, regional, ideogram, circos | Variant/expression studies |
-| `expression/` | 6 | RNA-seq, proteomics | expression_heatmap, ma_plot, enrichment | Gene/protein expression |
+| `genomics/` | 8 | GWAS, genomics | manhattan, volcano, regional, ideogram, circular Manhattan | Variant/expression studies |
+| `expression/` | 6 | RNA-seq, proteomics | plot_expression_heatmap, plot_differential_expression, plot_enrichment_barplot | Gene/protein expression |
 | `dimred/` | 6 | ML, scRNA | pca, umap, tsne, scree | Dimensionality reduction viz |
-| `networks/` | 5 | PPI, pathways | plot_network, plot_pathway | Biological networks |
-| `trees/` | 4 | Phylogeny | plot_phylo_tree, plot_tree_circular | Evolutionary trees |
+| `networks/` | 5 | PPI, pathways | plot_network_basic, plot_community_network | Biological networks |
+| `trees/` | 4 | Phylogeny | plot_phylo_tree, circular_tree_plot | Evolutionary trees |
 | `timeseries/` | 5 | Temporal | line, forecast, autocorrelation, seasonal | Time-series data |
 | `multidim/` | 4 | High-dim | pairplot, parallel_coords, radar | Multi-variable relationships |
-| `quality/` | 4 | QC | quality_scores, adapter_content, length_dist | Sequencing QC |
-| `information/` | 3 | Info theory | entropy_plot, mutual_information | Info theoretic analysis |
+| `quality/` | 4 | QC | plot_per_base_quality_boxplot, plot_adapter_content, plot_length_distribution | Sequencing QC |
+| `information/` | 3 | Info theory | plot_entropy_profile, plot_mutual_information_matrix | Info theoretic analysis |
 | `animations/` | 6 | Dynamic | animate_time_series, animate_evolution | Animated figures |
-| `dashboards/` | N/A | Composite | create_dashboard, multi_panel | Multi-plot figures |
-| `styling/` | N/A | Theming | set_theme, set_palette | Figure aesthetics |
+| `dashboards/` | N/A | Composite | multi_panel, genomic_overview, qc_summary | Multi-plot figures |
+| `config/` | N/A | Theming | apply_theme, categorical | Figure aesthetics |
 
 **Total**: 70+ individual plot functions across all submodules.
 

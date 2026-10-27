@@ -1,11 +1,11 @@
 ### Math: Population Dynamics
 
-Functions: `logistic_growth`, `lotka_volterra_competition`.
+Functions: `logistic_growth_model`, `lotka_volterra_step`.
 
 ```mermaid
 flowchart LR
   ApopulationDynamicsModels[population dynamics models] --> BlogisticGrowth[logistic growth]
-  A --> Clotka-volterraCompetition[Lotka-Volterra competition]
+  A --> Clotka-volterraCompetition[Lotka-Volterra predator-prey]
 ```
 
 Mathematical models of population dynamics and ecological interactions.
@@ -23,36 +23,37 @@ Where:
 - r: intrinsic growth rate
 - K: carrying capacity
 
-#### Lotka-Volterra Competition Model
+`logistic_growth_model` iterates the discrete form N(t+1) = N(t) + rN(t)(1 - N(t)/K).
 
-Models competition between two species for shared resources:
+#### Lotka-Volterra Predator-Prey Model
+
+Models the interaction of a prey and a predator population:
 
 ```
-dN1/dt = r1N1(1 - N1/α - βN2)
-dN2/dt = r2N2(1 - N2/γ - δN1)
+dx/dt = αx - βxy
+dy/dt = δxy - γy
 ```
 
-Where α, β, γ, δ are competition coefficients.
+Where x is the prey population, y the predator population, α the prey reproduction rate, β the predation rate, γ the predator death rate and δ the predator reproduction efficiency. `lotka_volterra_step` advances the system by one Euler step of size `dt`.
 
 Example
 
 ```python-snippet
-from metainformant.math import dynamics
+from metainformant.math.population_genetics.demography import logistic_growth_model
+from metainformant.math.evolutionary_dynamics.core import lotka_volterra_step
 
 # Logistic growth simulation
-growth = dynamics.logistic_growth(
-    initial_population=100,
+growth = logistic_growth_model(
+    initial_size=100,
     carrying_capacity=1000,
     growth_rate=0.1,
-    time_steps=100
+    generations=100
 )
 
-# Lotka-Volterra competition
-competition = dynamics.lotka_volterra_competition(
-    species1_initial=100,
-    species2_initial=80,
-    alpha=1.2,  # Competition coefficient
-    beta=0.8,
-    time_steps=200
-)
+# Lotka-Volterra predator-prey dynamics
+prey, predator = 40.0, 9.0
+trajectory = [(prey, predator)]
+for _ in range(2000):
+    prey, predator = lotka_volterra_step(prey, predator, alpha=1.0, beta=0.1, gamma=1.5, delta=0.075, dt=0.01)
+    trajectory.append((prey, predator))
 ```

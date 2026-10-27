@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - workflow
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/ontology/workflow`
+- **Path**: `src/metainformant/ontology/workflow`
 - **Purpose**: Ontology workflow entry points.
 - **Domain**: ontology
 

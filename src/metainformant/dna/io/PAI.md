@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - io
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/dna/io`
+- **Path**: `src/metainformant/dna/io`
 - **Purpose**: Functionality for io.
 - **Domain**: dna
 

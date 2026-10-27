@@ -6,7 +6,7 @@ Alpha diversity (within-sample), beta diversity (between-sample), rarefaction an
 
 **Alpha diversity** measures species richness and evenness within a single community. Eight metrics are supported: Shannon entropy, Simpson index, inverse Simpson, Chao1 richness estimator, ACE (Abundance-based Coverage Estimator), observed species count, Fisher's alpha, and Pielou evenness.
 
-**Beta diversity** quantifies compositional differences between communities using distance metrics. Supports Bray-Curtis (abundance-weighted), Jaccard (presence/absence), and Aitchison (CLR-transformed Euclidean) distances.
+**Beta diversity** quantifies compositional differences between communities using distance metrics. Supports Bray-Curtis (abundance-weighted), Jaccard (presence/absence), and Aitchison (CLR-transformed Euclidean, pseudocount 0.5) distances.
 
 **Rarefaction** subsamples communities to standardized depths to assess whether sequencing effort is sufficient to capture full diversity. Saturation is detected when the curve plateaus.
 
@@ -16,9 +16,11 @@ Alpha diversity (within-sample), beta diversity (between-sample), rarefaction an
 
 ## Function Reference
 
+All functions live in `metainformant.metagenomics.diversity.metrics`; the `metainformant.metagenomics` package itself exposes only submodules. Abundance vectors and distance matrices are plain Python lists.
+
 ### `alpha_diversity(abundances, metric="shannon") -> Dict`
 
-Compute within-sample diversity.
+Compute within-sample diversity of one sample. Zero entries are ignored. `abundances` must be a Python list, not a numpy array (pass `array.tolist()`); an empty list or an unknown `metric` raises `ValueError`.
 
 **Metrics:**
 | Metric | Description |
@@ -26,40 +28,42 @@ Compute within-sample diversity.
 | `shannon` | H' = -sum(p_i * ln(p_i)) |
 | `simpson` | D = sum(p_i^2) (dominance) |
 | `invsimpson` | 1/D (effective species) |
-| `chao1` | S_obs + f1^2/(2*f2) |
-| `ace` | Abundance-based Coverage Estimator |
+| `chao1` | S_obs + f1^2/(2*f2); S_obs + f1*(f1-1)/2 when f2 = 0 |
+| `ace` | Abundance-based Coverage Estimator (rare taxa: abundance <= 10) |
 | `observed` | Count of non-zero taxa |
 | `fisher_alpha` | Fisher's log-series alpha |
-| `pielou_evenness` | H'/ln(S) |
+| `pielou_evenness` | H'/ln(S) (1.0 when S <= 1) |
 
-**Returns** dict with `value`, `metric`, `n_species`, `total_count`.
+`shannon`, `simpson`, `invsimpson`, `pielou_evenness` and `observed` accept counts or proportions. `chao1`, `ace` and `fisher_alpha` round every value to an integer first, so they need raw counts.
+
+**Returns** dict with `value`, `metric`, `n_species` (non-zero taxa), `total_count` (sum of the abundances).
 
 ### `beta_diversity(samples, metric="bray_curtis") -> Dict`
 
-Compute pairwise distance matrix between samples.
+Compute pairwise distance matrix between samples. `samples` is a list of equal-length abundance vectors (at least two); otherwise `ValueError`.
 
 **Metrics:**
 | Metric | Description |
 |--------|-------------|
-| `bray_curtis` | sum|a-b| / sum(a+b) |
-| `jaccard` | 1 - |A and B| / |A or B| |
+| `bray_curtis` | sum(abs(a - b)) / sum(a + b) |
+| `jaccard` | 1 - (taxa present in both) / (taxa present in either) |
 | `aitchison` | Euclidean on CLR-transformed data |
 
-**Returns** dict with `distance_matrix`, `metric`, `n_samples`.
+**Returns** dict with `distance_matrix` (list of lists), `metric`, `n_samples`.
 
 ### `rarefaction_curve(abundances, depths=None, n_iterations=10, seed=None) -> Dict`
 
-Generate a rarefaction curve by subsampling at increasing depths.
+Generate a rarefaction curve by subsampling (`n_iterations` random draws per depth). If `depths` is None, 20 evenly spaced depths up to the total count are used (fewer when the total is below 20, because duplicate depths are merged); depths above the total are dropped. Raises `ValueError` for an empty vector, negative counts, or a zero total.
 
 **Returns** dict with `depths`, `mean_species`, `std_species`, and `is_saturated` (True if last three points are within 5% of each other).
 
 ### `rarefy(abundances, depth, seed=None) -> List[int]`
 
-Subsample a community to a specific depth without replacement. Returns rarefied count vector summing to `depth`.
+Subsample a community to a specific depth without replacement. Returns a rarefied count vector of the same length as the input, summing to `depth`. Raises `ValueError` if `depth` is negative or exceeds the total count.
 
 ### `permanova(distance_matrix, groups, n_permutations=999, seed=None) -> Dict`
 
-Permutational MANOVA for testing group differences in community composition.
+Permutational MANOVA for testing group differences in community composition. `groups` holds one label per sample (at least two distinct labels). `p_value` is (1 + number of permutations whose pseudo-F is at least the observed value) / (`n_permutations` + 1).
 
 **Returns** dict with `pseudo_f`, `p_value`, `r_squared`, `n_permutations`.
 
@@ -68,15 +72,15 @@ Permutational MANOVA for testing group differences in community composition.
 Dimensionality reduction for visualization.
 
 **Methods:**
-- `pcoa`: Principal Coordinates Analysis via double-centering eigendecomposition.
-- `nmds`: Non-metric MDS via gradient-based stress minimization.
+- `pcoa`: Principal Coordinates Analysis via double-centering eigendecomposition. At most `n_samples - 1` components are returned.
+- `nmds`: gradient-descent stress minimization against the raw distances, starting from random (unseeded) coordinates. It has no rank-order (isotonic) step, so it behaves like metric MDS rather than classical non-metric MDS.
 
-**Returns** dict with `coordinates` (n_samples x n_components), `eigenvalues`, `variance_explained`.
+**Returns** dict with `coordinates` (n_samples lists of n_components floats), `eigenvalues`, `variance_explained`. For `pcoa`, `variance_explained` is normalized over the returned components only (it sums to 1 unless no returned eigenvalue is positive), not over all positive eigenvalues, so it overstates each axis's share of the total variance. For `nmds`, `eigenvalues` holds the last stress values of the optimisation and `variance_explained` is `1 - final stress` repeated for each component.
 
 ## Usage Examples
 
 ```python
-from metainformant.metagenomics import (
+from metainformant.metagenomics.diversity.metrics import (
     alpha_diversity, beta_diversity,
     rarefaction_curve, rarefy,
     permanova, ordination,
@@ -119,13 +123,13 @@ var_exp = ord_result["variance_explained"]
 
 ## Configuration
 
-Environment variable prefix: `META_`
+This module reads no environment variables; the `META_` prefix used elsewhere in the package does not apply here.
 
-Requires `numpy` when available for PCoA eigendecomposition; pure Python power iteration fallback otherwise.
+PCoA uses `numpy.linalg.eigh` when numpy is importable and falls back to pure-Python power iteration otherwise.
 
 ## Related Modules
 
 - `metainformant.metagenomics.amplicon` -- OTU/ASV data input
 - `metainformant.metagenomics.shotgun` -- profiled community input
 - `metainformant.metagenomics.comparative` -- differential abundance testing
-- `metainformant.ecology.community` -- equivalent metrics for macroecological data
+- `metainformant.ecology.analysis.community` -- equivalent metrics for macroecological data

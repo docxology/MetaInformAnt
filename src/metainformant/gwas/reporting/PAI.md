@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - reporting
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/gwas/reporting`
+- **Path**: `src/metainformant/gwas/reporting`
 - **Purpose**: GWAS reporting package: HTML reports and audit logs.
 - **Domain**: gwas
 

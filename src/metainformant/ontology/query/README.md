@@ -6,7 +6,7 @@ Querying, traversal, and serialization of ontology data structures. Provides anc
 
 | File | Purpose |
 |------|---------|
-| `__init__.py` | Re-exports `query` and `serialize` modules |
+| `__init__.py` | Re-exports the `query` and `serialize` modules and every public function of both, so `from metainformant.ontology.query import ancestors` works |
 | `query.py` | Ontology graph traversal, search, statistics, and validation |
 | `serialize.py` | Save/load ontologies in OBO, JSON, and NetworkX graph formats |
 
@@ -14,8 +14,8 @@ Querying, traversal, and serialization of ontology data structures. Provides anc
 
 | Function | Description |
 |----------|-------------|
-| `query.ancestors()` | Find all ancestors of a term via a relationship type |
-| `query.descendants()` | Find all descendants of a term |
+| `query.ancestors()` | Find all ancestors of a term via a relationship type (the term itself is excluded) |
+| `query.descendants()` | Find all descendants of a term (the term itself is excluded) |
 | `query.common_ancestors()` | Compute shared ancestors between two terms |
 | `query.shortest_path()` | Find shortest path between two terms |
 | `query.get_roots()` | Identify root terms with no parents |
@@ -23,7 +23,7 @@ Querying, traversal, and serialization of ontology data structures. Provides anc
 | `query.information_content()` | Compute information content of a term |
 | `query.find_terms_by_name()` | Search terms by name pattern |
 | `query.validate_ontology_integrity()` | Check ontology for structural issues |
-| `serialize.save_ontology()` | Save ontology to OBO or JSON file |
+| `serialize.save_ontology()` | Save ontology to OBO or JSON file (OBO definitions are written escaped, followed by their dbxref list) |
 | `serialize.load_ontology()` | Load ontology from OBO or JSON file |
 | `serialize.ontology_to_graph()` | Convert ontology to NetworkX graph |
 | `serialize.merge_ontologies()` | Merge multiple ontologies with conflict resolution |
@@ -35,4 +35,12 @@ from metainformant.ontology.query import query, serialize
 
 anc = query.ancestors(ontology, "GO:0008150")
 serialize.save_ontology(ontology, "output/go.json", format="json")
+```
+
+Every public function is also importable from the package itself:
+
+```python
+from metainformant.ontology.query import ancestors, descendants, load_ontology, save_ontology
+
+anc = ancestors(ontology, "GO:0008150")
 ```

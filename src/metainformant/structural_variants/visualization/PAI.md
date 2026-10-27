@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - visualization
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/structural_variants/visualization`
+- **Path**: `src/metainformant/structural_variants/visualization`
 - **Purpose**: Structural variant visualization subpackage.
 - **Domain**: structural_variants
 

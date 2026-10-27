@@ -5,8 +5,10 @@ Functions: `ld_coefficients`, `r_squared`, `ld_decay_r2`, `haldane_d_to_c`, `hal
 Example
 
 ```python
-from metainformant.math import ld_coefficients, r_squared
-from metainformant.math import haldane_d_to_c, kosambi_c_to_d, expected_r2_from_Ne_c
+from metainformant.math.population_genetics.ld import ld_coefficients
+from metainformant.math.core.utilities import r_squared
+from metainformant.math.population_genetics.ld import haldane_d_to_c, kosambi_c_to_d
+from metainformant.math.population_genetics.statistics import expected_r2_from_Ne_c
 
 D, Dp = ld_coefficients(0.6, 0.4, 0.7, 0.3, 0.5)
 r2 = r_squared(0.6, 0.4, 0.7, 0.3, 0.5)

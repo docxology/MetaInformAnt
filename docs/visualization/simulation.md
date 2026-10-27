@@ -4,7 +4,7 @@ This document provides comprehensive documentation for simulation data visualiza
 
 ## Overview
 
-Simulation visualization includes specialized plots for analyzing results from various simulation types, including sequence evolution, population genetics models, agent-based ecosystems, and RNA-seq data generation. These tools create publication-quality figures for simulation-based research.
+The simulation package (`metainformant.simulation`) generates data and has no plotting module of its own. Results from the various simulation types, including sequence evolution, population genetics models, agent-based ecosystems, and RNA-seq data generation, are visualized with the general plotting functions of `metainformant.visualization` (basic and analysis plots, animations, composite and interactive figures). These tools create publication-quality figures for simulation-based research.
 
 ## Module Functions
 
@@ -12,29 +12,38 @@ Simulation visualization includes specialized plots for analyzing results from v
 
 #### Evolution Trajectories
 ```python
-from metainformant.simulation import visualization as sim_viz
+import numpy as np
+from metainformant.simulation.models import sequences
+from metainformant.visualization.plots.basic import lineplot
 
-# Plot sequence evolution over generations
-sequence_history = [
-    "ATCGATCGATCG",  # Generation 0
-    "ATCGATCGATCA",  # Generation 1
-    "ATCGATCGATCT",  # Generation 2
-    # ... more generations
-]
+# Evolve a sequence one generation at a time
+ancestor = sequences.generate_random_dna(100)
+sequence_history = [ancestor]
+for _ in range(20):
+    sequence_history.append(sequences.evolve_sequence(sequence_history[-1], 1, mutation_rate=0.01))
 
-ax = sim_viz.plot_sequence_evolution(sequence_history, figsize=(12, 8))
+# Plot similarity to the ancestor over generations
+similarity = np.array([sequences.calculate_sequence_similarity(ancestor, s) for s in sequence_history])
+ax = lineplot(similarity, label="Similarity to ancestor")
+ax.set_xlabel("Generation")
+ax.set_ylabel("Similarity")
 ```
 
 #### Evolution Animation
 ```python
-# Create animated sequence evolution
-fig, anim = sim_viz.animate_sequence_evolution(sequence_history, interval=500)
+from metainformant.visualization.plots.animations import animate_evolution
+
+# Create animated sequence evolution (sequence_history from above)
+fig, anim = animate_evolution(sequence_history, interval=500)
 ```
 
 ### Population Dynamics
 
 #### Population Trajectories
 ```python
+import pandas as pd
+from metainformant.visualization.analysis.timeseries import plot_time_series
+
 # Plot population size changes over time
 population_history = [
     [100, 50, 30],  # Generation 0: [pop1, pop2, pop3]
@@ -43,125 +52,133 @@ population_history = [
     # ... more generations
 ]
 
-ax = sim_viz.plot_population_dynamics_simulation(population_history)
+data = pd.DataFrame(population_history, columns=["pop1", "pop2", "pop3"])
+ax = plot_time_series(data)
 ```
 
 #### Population Animation
 ```python
-# Animate population dynamics
-fig, anim = sim_viz.animate_population_dynamics(population_history)
+import numpy as np
+from metainformant.visualization.plots.animations import animate_time_series
+
+# Animate population dynamics (one row per population, one column per generation)
+fig, anim = animate_time_series(np.array(population_history).T)
 ```
 
 ### RNA-seq Simulation
 
 #### Expression Analysis
 ```python
-# Plot RNA-seq simulation results
-rnaseq_data = {
-    'expression_values': np.random.lognormal(0, 1, 1000),
-    'library_sizes': np.random.normal(1000000, 100000, 10),
-    'mean_variance': {
-        'means': np.random.lognormal(0, 1, 100),
-        'variances': np.random.lognormal(0, 1, 100)
-    }
-}
+from metainformant.simulation.models import rna
+from metainformant.visualization.plots.basic import scatter_plot
 
-ax = sim_viz.plot_rnaseq_simulation_results(rnaseq_data)
+# Simulate RNA-seq counts (samples x genes) and plot the mean-variance relationship
+counts = rna.simulate_rnaseq_counts(n_genes=1000, n_samples=10)
+ax = scatter_plot(counts.mean(axis=0), counts.var(axis=0), s=5, alpha=0.5)
+ax.set_xlabel("Mean count")
+ax.set_ylabel("Variance")
 ```
 
 ### Agent-Based Models
 
 #### Agent Trajectories
 ```python
-# Plot agent-based simulation results
-agent_data = {
-    'agent_states': [
-        [0, 1, 0, 1, 2],  # Time 0
-        [1, 1, 1, 0, 2],  # Time 1
-        [1, 0, 1, 1, 1],  # Time 2
-    ],
-    'agent_positions': [
-        [(0, 0), (1, 1), (2, 2)],  # Final positions
-    ]
-}
+import pandas as pd
+from metainformant.visualization.analysis.timeseries import plot_time_series
 
-ax = sim_viz.plot_agent_based_model_results(agent_data)
+# Plot agent-based simulation results: agents of each type at every time step
+agent_counts = pd.DataFrame({
+    'predator': [10, 12, 15, 11, 9],
+    'prey': [40, 35, 28, 33, 38],
+})
+
+ax = plot_time_series(agent_counts)
 ```
 
 ### Evolutionary Simulations
 
 #### Fitness Evolution
 ```python
-# Plot comprehensive evolutionary simulation
-evolution_data = {
-    'fitness_history': {
-        'generations': list(range(100)),
-        'mean_fitness': np.random.normal(0.5, 0.1, 100) + np.linspace(0, 1, 100),
-        'max_fitness': np.random.normal(0.7, 0.05, 100) + np.linspace(0, 1.5, 100)
-    },
-    'diversity_history': {
-        'generations': list(range(100)),
-        'diversity': np.random.normal(0.8, 0.1, 100) - np.linspace(0, 0.3, 100)
-    },
-    'allele_frequencies': {
-        'generations': list(range(100)),
-        'allele_A': np.random.beta(2, 5, 100),
-        'allele_B': 1 - np.random.beta(2, 5, 100)
-    }
-}
+import numpy as np
+import pandas as pd
+from metainformant.visualization.analysis.timeseries import plot_time_series
+from metainformant.visualization.dashboards.composite import multi_panel
 
-ax = sim_viz.plot_evolutionary_simulation_summary(evolution_data)
+# Plot an evolutionary simulation: fitness and diversity over generations
+generations = list(range(100))
+fitness_history = pd.DataFrame({
+    'mean_fitness': np.random.normal(0.5, 0.1, 100) + np.linspace(0, 1, 100),
+    'max_fitness': np.random.normal(0.7, 0.05, 100) + np.linspace(0, 1.5, 100)
+}, index=generations)
+diversity_history = pd.DataFrame({
+    'diversity': np.random.normal(0.8, 0.1, 100) - np.linspace(0, 0.3, 100)
+}, index=generations)
+
+fig = multi_panel([
+    {"func": plot_time_series, "kwargs": {"data": fitness_history}, "title": "Fitness"},
+    {"func": plot_time_series, "kwargs": {"data": diversity_history}, "title": "Diversity"},
+])
 ```
 
 ### Parameter Sensitivity
 
 #### Sensitivity Analysis
 ```python
-# Plot parameter sensitivity results
-sensitivity_data = {
-    'parameter_values': np.linspace(0.1, 1.0, 20),
-    'output_values': np.linspace(0.1, 1.0, 20) + np.random.normal(0, 0.1, 20)
-}
+import numpy as np
+from metainformant.visualization.plots.basic import scatter_plot
 
-ax = sim_viz.plot_simulation_parameter_sensitivity(sensitivity_data)
+# Plot parameter sensitivity results
+parameter_values = np.linspace(0.1, 1.0, 20)
+output_values = np.linspace(0.1, 1.0, 20) + np.random.normal(0, 0.1, 20)
+
+ax = scatter_plot(parameter_values, output_values)
+ax.set_xlabel("Parameter value")
+ax.set_ylabel("Simulation output")
 ```
 
 ### Validation Analysis
 
 #### Simulation vs Observed
 ```python
+import numpy as np
+from metainformant.visualization.analysis.statistical import histogram
+
 # Compare simulated vs observed data
 observed_data = np.random.normal(0.5, 0.2, 100)
 simulated_data = [
     np.random.normal(0.5, 0.2, 100) for _ in range(5)  # 5 replicates
 ]
 
-ax = sim_viz.plot_simulation_validation_comparison(observed_data, simulated_data)
+ax = histogram(observed_data, bins=20, alpha=0.6, label="Observed")
+for replicate in simulated_data:
+    histogram(replicate, bins=20, ax=ax, histtype="step", color="gray")
+ax.legend()
 ```
 
 ### Advanced Features
 
 #### Interactive Dashboard
 ```python
-# Create interactive simulation results dashboard
-simulation_results = {
-    'time_series': {
-        'time': list(range(100)),
-        'values': np.random.normal(0, 1, 100)
-    },
-    'distributions': np.random.normal(0, 1, 1000),
-    'correlations': np.random.rand(10, 10),
-    'statistics': {'mean': 0.0, 'std': 1.0, 'min': -3.0, 'max': 3.0}
-}
+import numpy as np
+from metainformant.visualization.interactive_dashboards.dashboards import (
+    create_interactive_scatter,
+    export_to_html,
+)
 
-fig = sim_viz.create_interactive_simulation_dashboard(simulation_results)
+# Create an interactive plot of simulation results (JSON-serializable data, standalone HTML export)
+time = list(range(100))
+values = np.random.normal(0, 1, 100).tolist()
+
+plot_data = create_interactive_scatter(time, values, title="Simulated time series")
+export_to_html(plot_data, "dashboard.html", title="Simulation results")
 ```
 
 ## Integration with Simulation Module
 
 ### With Sequence Simulations
 ```python-snippet
-from metainformant.simulation import sequences, visualization as sim_viz
+from metainformant.simulation.models import sequences
+from metainformant.visualization.plots.animations import animate_evolution
 
 # Generate and evolve sequences
 ancestor = sequences.generate_random_dna(100)
@@ -169,33 +186,39 @@ evolved = sequences.evolve_sequence(ancestor, generations=50)
 
 # Visualize evolution
 sequence_history = [ancestor] + [sequences.mutate_sequence(ancestor, i) for i in range(50)]
-ax = sim_viz.plot_sequence_evolution(sequence_history)
+fig, anim = animate_evolution(sequence_history)
 ```
 
 ### With Population Genetics
 ```python-snippet
-from metainformant.simulation import popgen, visualization as sim_viz
+import pandas as pd
+from metainformant.simulation.models import popgen
+from metainformant.visualization.analysis.timeseries import plot_time_series
 
 # Simulate population evolution
 simulation_results = popgen.simulate_bottleneck_population(1000, 100, 1000, 50)
 
 # Extract population history for visualization
 population_sizes = simulation_results.get('population_sizes', [])
-ax = sim_viz.plot_population_dynamics_simulation(population_sizes)
+ax = plot_time_series(pd.DataFrame({'population_size': population_sizes}))
 ```
 
 ### With Agent-Based Models
 ```python-snippet
-from metainformant.simulation import agents, visualization as sim_viz
+import pandas as pd
+from metainformant.simulation.models import agents
+from metainformant.visualization.analysis.timeseries import plot_time_series
 
 # Run agent-based simulation
 ecosystem = agents.create_ecosystem(50, ['predator', 'prey'], (20, 20))
 simulation_data = agents.run_simulation(ecosystem, 100)
 
-# Visualize results
-agent_states = [data['agent_states'] for data in simulation_data]
-agent_data = {'agent_states': agent_states}
-ax = sim_viz.plot_agent_based_model_results(agent_data)
+# Visualize results: agents of each type at every recorded step
+agent_counts = pd.DataFrame(
+    [data['agent_counts'] for data in simulation_data],
+    index=[data['step'] for data in simulation_data],
+).fillna(0)
+ax = plot_time_series(agent_counts)
 ```
 
 ## Output Options
@@ -203,22 +226,22 @@ ax = sim_viz.plot_agent_based_model_results(agent_data)
 All visualization functions support:
 ```python
 # Save static plots
-ax = sim_viz.plot_population_dynamics_simulation(data, output_path="dynamics.png")
+ax = plot_time_series(data, output_path="dynamics.png")
 
 # Save animations
-fig, anim = sim_viz.animate_sequence_evolution(history, output_path="evolution.gif")
+fig, anim = animate_evolution(history, output_path="evolution.gif")
 
-# Interactive dashboards
-fig = sim_viz.create_interactive_simulation_dashboard(results, output_path="dashboard.html")
+# Interactive plots (standalone HTML)
+export_to_html(plot_data, "dashboard.html")
 ```
 
 ## Data Format Requirements
 
-- **Sequence History**: List of strings, all same length
-- **Population History**: List of arrays/lists with population sizes per generation
-- **Agent Data**: Dictionary with 'agent_states', 'agent_positions', etc.
-- **Evolution Data**: Dictionary with 'fitness_history', 'diversity_history', etc.
-- **Time Series**: Dictionary with 'time' and 'values' arrays
+- **Sequence History**: List of strings, all same length (`animate_evolution`)
+- **Population History**: DataFrame with one column per population, indexed by generation (`plot_time_series`); 2D array with one row per population (`animate_time_series`)
+- **Agent Data**: Snapshots from `agents.run_simulation` (`step`, `n_agents`, `agent_counts`, `total_energy`, `agent_positions`)
+- **Evolution Data**: DataFrame of per-generation fitness, diversity, etc., indexed by generation
+- **Time Series**: DataFrame indexed by time, one column per series
 
 ## Performance Considerations
 
@@ -231,14 +254,18 @@ fig = sim_viz.create_interactive_simulation_dashboard(results, output_path="dash
 
 - **Required**: matplotlib, numpy
 - **Optional**: seaborn (enhanced styling), plotly (interactive plots)
-- **Animation**: matplotlib.animation (built-in) or imageio for GIF export
+- **Animation**: matplotlib.animation (built-in); GIF export uses Pillow
 
 ## Examples
 
 ### Complete Simulation Analysis Workflow
 ```python-snippet
-from metainformant.simulation import sequences, popgen, visualization as sim_viz
+from metainformant.simulation.models import sequences
+from metainformant.visualization.analysis.timeseries import plot_time_series
+from metainformant.visualization.plots.basic import lineplot, scatter_plot
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 # Run multiple types of simulations
 fig, axes = plt.subplots(2, 2, figsize=(15, 12))
@@ -250,7 +277,8 @@ for gen in range(20):
     mutated = sequences.mutate_sequence(sequence_history[-1], 1)
     sequence_history.append(mutated)
 
-sim_viz.plot_sequence_evolution(sequence_history, ax=axes[0,0])
+similarity = np.array([sequences.calculate_sequence_similarity(ancestor, s) for s in sequence_history])
+lineplot(similarity, ax=axes[0,0])
 
 # Population dynamics
 initial_pop = [100, 50, 30]
@@ -260,31 +288,24 @@ for gen in range(30):
     new_pop = [max(0, p + np.random.normal(0, 5)) for p in population_history[-1]]
     population_history.append(new_pop)
 
-sim_viz.plot_population_dynamics_simulation(population_history, ax=axes[0,1])
+plot_time_series(pd.DataFrame(population_history, columns=["pop1", "pop2", "pop3"]), ax=axes[0,1])
 
 # Evolutionary fitness
 generations = list(range(50))
 mean_fitness = 0.5 + np.cumsum(np.random.normal(0, 0.01, 50))
 max_fitness = mean_fitness + np.random.normal(0.2, 0.05, 50)
 
-evolution_data = {
-    'fitness_history': {
-        'generations': generations,
-        'mean_fitness': mean_fitness,
-        'max_fitness': max_fitness
-    }
-}
-sim_viz.plot_evolutionary_simulation_summary(evolution_data, ax=axes[1,0])
+fitness_history = pd.DataFrame({
+    'mean_fitness': mean_fitness,
+    'max_fitness': max_fitness
+}, index=generations)
+plot_time_series(fitness_history, ax=axes[1,0])
 
 # Parameter sensitivity
 param_values = np.linspace(0.1, 2.0, 20)
 output_values = param_values * 2 + np.random.normal(0, 0.2, 20)
 
-sensitivity_data = {
-    'parameter_values': param_values,
-    'output_values': output_values
-}
-sim_viz.plot_simulation_parameter_sensitivity(sensitivity_data, ax=axes[1,1])
+scatter_plot(param_values, output_values, ax=axes[1,1])
 
 plt.tight_layout()
 plt.savefig("simulation_analysis.png", dpi=300, bbox_inches='tight')
@@ -336,5 +357,5 @@ fitness_colors = ['blue', 'red']  # Mean, maximum fitness
 - **[Agent-Based Models](../simulation/agents.md)**: Ecosystem simulations
 - **[Visualization Integration](integration.md)**: Cross-module visualization patterns
 
-This module provides comprehensive simulation visualization capabilities integrated with METAINFORMANT's synthetic data generation and modeling workflows.
+These examples combine METAINFORMANT's synthetic data generation and modeling workflows with the general visualization functions.
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - popgen
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/popgen`
+- **Path**: `src/metainformant/popgen`
 - **Purpose**: Population genetics analysis module for METAINFORMANT.
 - **Domain**: metainformant
 

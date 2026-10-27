@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - workflow
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/life_events/workflow`
+- **Path**: `src/metainformant/life_events/workflow`
 - **Purpose**: Functionality for workflow.
 - **Domain**: life_events
 

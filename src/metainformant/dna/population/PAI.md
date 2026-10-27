@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - population
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/dna/population`
+- **Path**: `src/metainformant/dna/population`
 - **Purpose**: Functionality for population.
 - **Domain**: dna
 

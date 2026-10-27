@@ -5,69 +5,65 @@ Discover and annotate micro‑environments composed of co‑occurring cell types
 ## Concept & input
 
 A niche is a spatially local neighbourhood that differs from the global
-composition. Input: `adata.obsm['deconvolution']` (cell‑type proportions per
-spot). Output: niche label per spot + niche‑specific cell type signatures.
+composition. Input: cell‑type proportions per spot (for example `deconv.fractions`
+from `deconvolve_spots()`) and the spot coordinates. Output: niche label per spot +
+niche‑specific cell type signatures.
 
 ## Algorithm
 
-1. Extract neighbourhood vectors: for each spot i, average deconvolution
-   proportions of neighbours within R µm.
-2. Dimensionality reduction (PCA → UMAP) of neighbourhood vectors.
-3. Cluster in UMAP space (HDBSCAN or Leiden). Result: niche IDs.
-4. Compute niche signature: mean deconvolution profile per niche (across spots).
+1. Smooth the cell‑type proportions of each spot over its `n_neighbors` nearest
+   spatial neighbours (`spatial_weight` sets the blend: 0 = no smoothing, 1 = full).
+2. Cluster the smoothed proportion vectors with K‑means into `n_niches` groups.
+   Result: niche IDs.
+3. Compute niche signature: mean cell‑type proportions per niche (across spots),
+   plus niche size and Shannon diversity.
 
 ## Usage
 
 ```python-snippet
-from metainformant.spatial.analysis.niche import discover_niches
+from metainformant.spatial.niche.identification import identify_niches
 
-niches = discover_niches(
-    adata,
-    radius=150.0,
-    min_cluster_size=20,
-    method='hdbscan',          # or 'leiden' after neighbour graph
+niche = identify_niches(
+    proportions,               # spots × cell types, rows sum to 1
+    coordinates,               # spots × 2
+    cell_type_names=cell_type_names,
+    n_niches=5,
+    n_neighbors=15,
+    spatial_weight=0.3,
+    random_state=42,
 )
-adata.obs['niche'] = niches
+adata.obs['niche'] = niche.niche_labels
 ```
+
+`niche.compositions` (niches × cell types), `niche.niche_sizes` and
+`niche.niche_diversity` describe each niche.
 
 ## Visualisation
 
 ```python-snippet
-from metainformant.spatial.visualization import plot_niche_summary
-plot_niche_summary(adata, top_n_celltypes=5)
+from metainformant.spatial.visualization.plots import plot_spatial_scatter
+plot_spatial_scatter(coordinates, niche.niche_labels.astype(str), 'niches.png', title='Niches')
 ```
 
-Creates a stacked bar chart: each niche → top contributing cell types.
-
-## Niche annotation
-
-```python-snippet
-from metainformant.spatial.analysis.niche import annotate_niche
-annotations = annotate_niche(adata, niche_column='niche')
-# Returns dict {niche_id: 'T cell rich', 'Fibroblast core', …}
-adata.obs['niche_label'] = adata.obs['niche'].map(annotations)
-```
-
-Annotation rules:
-- If T_cell proportion > 0.4 and < 0.6 for B cells → 'Lymphoid aggregate'
-- If Fibroblast > 0.6 and Epithelial < 0.2 → 'Stromal core'
-- … (extensible dictionary in `niche.py`)
+Draws the niche labels on the tissue coordinates (one colour per niche). The
+per‑niche composition in `niche.compositions` can be plotted with matplotlib, for
+example as a stacked bar chart of the top contributing cell types.
 
 ## Integration with marker analysis
 
 Compute marker genes *within* each niche:
 
 ```python-snippet
-from metainformant.spatial.analysis.clustering import find_markers
-markers = find_markers(adata, groupby='niche')
+from metainformant.singlecell.analysis.clustering import find_markers
+markers = find_markers(expression, niche.niche_labels, n_markers=10, gene_names=gene_names)
 ```
 
-Compare to domain markers from `spatial_leiden()` to see if niches split
+Compare to domain markers from `spatial_cluster()` to see if niches split
 domains functionally further.
 
 ## Export
 
 ```python
 # Niche membership + coordinates for downstream analysis
-adata.obs[['x','y','niche','niche_label']].to_csv('niches.tsv', sep='	')
+adata.obs[['x','y','niche']].to_csv('niches.tsv', sep='	')
 ```

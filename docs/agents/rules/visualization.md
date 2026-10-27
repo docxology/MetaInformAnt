@@ -47,10 +47,12 @@ src/metainformant/visualization/
 ```python
 from metainformant.visualization.genomics import trees
 
-trees.visualize_tree(
+# tree: a Bio.Phylo tree, a networkx.DiGraph, or a nested {parent: {child: ...}} dict
+ax = trees.plot_phylo_tree(
     tree=phylogenetic_tree,
-    output_path="output/visualization/tree.png"
+    output_path="output/visualization/tree.png",
 )
+# Other layouts: circular_tree_plot, unrooted_tree_plot, tree_annotation_plot, tree_comparison_plot
 ```
 
 ### Networks (`networks`)
@@ -166,9 +168,9 @@ output_path = paths.expand_and_resolve("output/visualization/plots/")
 ```python
 from metainformant.visualization.genomics import trees
 
-trees.visualize_tree(
+trees.plot_phylo_tree(
     tree=phylogenetic_tree,
-    output_path="output/visualization/tree.png"
+    output_path="output/visualization/tree.png",
 )
 ```
 

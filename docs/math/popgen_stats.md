@@ -27,7 +27,7 @@ Dictionary with statistic value, CI bounds, confidence level, and number of boot
 
 **Example:**
 ```python-snippet
-from metainformant.math.popgen_stats import bootstrap_confidence_interval
+from metainformant.math.population_genetics.statistics import bootstrap_confidence_interval
 import numpy as np
 
 data = [0.01, 0.02, 0.03, 0.04, 0.05]
@@ -55,7 +55,7 @@ Dictionary with test statistic, p-value, number of permutations, and alternative
 
 **Example:**
 ```python-snippet
-from metainformant.math.popgen_stats import permutation_test
+from metainformant.math.population_genetics.statistics import permutation_test
 
 pop1_diversity = [0.01, 0.02, 0.03]
 pop2_diversity = [0.04, 0.05, 0.06]
@@ -80,7 +80,7 @@ Dictionary with outlier indices, outlier values, z-scores, and p-values.
 
 **Example:**
 ```python-snippet
-from metainformant.math.popgen_stats import detect_outliers
+from metainformant.math.population_genetics.statistics import detect_outliers
 
 tajimas_d_values = [-0.5, -0.3, 0.1, 5.0, 0.2]
 result = detect_outliers(tajimas_d_values, threshold=2.0)

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - batch
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/quality/batch`
+- **Path**: `src/metainformant/quality/batch`
 - **Purpose**: Batch effect detection and correction sub-package.
 - **Domain**: quality
 

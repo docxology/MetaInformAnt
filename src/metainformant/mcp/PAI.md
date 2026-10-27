@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - mcp
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/mcp`
+- **Path**: `src/metainformant/mcp`
 - **Purpose**: MCP (Model Context Protocol) package for METAINFORMANT.
 - **Domain**: metainformant
 

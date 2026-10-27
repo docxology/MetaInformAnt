@@ -29,7 +29,7 @@ graph TD
         CE --> |EventDatabase| DB[Event Storage]
         CC[core/config.py] --> CF[Configuration]
 
-        ME[models/embeddings.py] --> |learn_event_embeddings| EM[Word2Vec-style Embeddings]
+        ME[models/embeddings.py] --> |learn_event_embeddings| EM[word2vec Embeddings]
         ME --> |biological_embedding| BE[Domain Embeddings]
 
         AI[analysis/interpretability.py] --> |attention_weights| AW[Model Interpretation]
@@ -64,9 +64,18 @@ seq = EventSequence("patient_001", [event])
 
 | Function | Module | Description |
 |----------|--------|-------------|
-| `learn_event_embeddings` | `models.embeddings` | Word2Vec-style event vector representations |
+| `learn_event_embeddings` | `models.embeddings` | word2vec event vectors (skip-gram or CBOW, negative sampling) |
 | `biological_embedding` | `models.embeddings` | Domain-specific embeddings (event_type, domain, temporal) |
 | `domain_specific_embeddings` | `models.embeddings` | Embeddings per life domain |
+
+### Prediction Models
+
+| Class | Module | Description |
+|-------|--------|-------------|
+| `EventSequencePredictor` | `models.predictor` | Outcome prediction; `model_type` is `"embedding"` or `"simple"` |
+| `MultiTaskPredictor` | `models.statistical_models` | Several outcomes at once: ridge and logistic task heads on a shared sequence representation |
+| `SurvivalPredictor` | `models.statistical_models` | Cox, exponential, or Kaplan-Meier survival prediction on event-count covariates |
+| `LSTMSequenceModel`, `GRUSequenceModel` | `models.sequence_models` | Next-event models (require PyTorch) |
 
 ### Survival Analysis
 
@@ -92,7 +101,7 @@ seq = EventSequence("patient_001", [event])
 | Module | Purpose |
 |--------|---------|
 | [`core/`](core/) | Event, EventSequence, EventDatabase data structures and configuration |
-| [`models/`](models/) | Event embeddings and representation learning |
+| [`models/`](models/) | Event embeddings, outcome and survival predictors, next-event models |
 | [`analysis/`](analysis/) | Model interpretability, attention weights, feature attribution |
 | [`survival/`](survival/) | Kaplan-Meier, Cox PH, competing risks, recurrent events |
 | [`visualization/`](visualization/) | Event timeline, statistical, and transition-network plots |

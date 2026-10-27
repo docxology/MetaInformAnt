@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - reporting
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/quality/reporting`
+- **Path**: `src/metainformant/quality/reporting`
 - **Purpose**: QC reporting subpackage.
 - **Domain**: quality
 

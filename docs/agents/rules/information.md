@@ -27,16 +27,25 @@ src/metainformant/information/
 ## Key Submodules
 
 ### Syntactic (`syntactic`)
-- Syntactic entropy and complexity
-- Sequence entropy
-- Compression-based complexity
+- Syntactic entropy and divergence measures (Shannon, Rényi, Tsallis, mutual information, KL divergence)
+- Entropy from probabilities or symbol counts
+- Sequence-level entropy and complexity, including compression-based complexity, come from `analysis.analyze_sequence_information` (`methods` selects "entropy", "complexity" and "patterns")
 
 **Patterns**:
 ```python-snippet
-from metainformant.information.metrics import syntactic
+from collections import Counter
 
-entropy = syntactic.sequence_entropy(sequence)
-complexity = syntactic.complexity_score(sequence)
+from metainformant.information.metrics.analysis import analysis
+from metainformant.information.metrics.core import syntactic
+
+# Shannon entropy in bits from symbol counts
+entropy = syntactic.shannon_entropy_from_counts(Counter(sequence))
+
+# Entropy and complexity of a sequence in one pass; the default methods also include "patterns"
+# (repeats and palindromes), which is very slow on long sequences, so select the methods you need
+report = analysis.analyze_sequence_information(sequence, methods=["entropy", "complexity"])
+entropy = report["methods"]["entropy"]["shannon_entropy"]  # bias-corrected estimate, in bits
+complexity = report["methods"]["complexity"]["linguistic_complexity"]
 ```
 
 ### Semantic (`semantic`)

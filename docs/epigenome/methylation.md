@@ -1,106 +1,123 @@
 # DNA Methylation Analysis
 
-Analysis of DNA methylation patterns including CpG site modeling, beta value computation, differential methylation region (DMR) detection, CpG island identification, and methylation entropy.
+Analysis of DNA methylation patterns, implemented in `metainformant.epigenome.assays.methylation`: CpG site modeling, beta value computation, differentially methylated region (DMR) detection, methylation-based CpG island screening, and methylation entropy.
 
 ## Key Concepts
 
-**Beta values** represent the methylation level at each CpG site as the ratio of methylated signal to total signal: beta = M / (M + U + offset). Values range from 0.0 (unmethylated) to 1.0 (fully methylated).
+**Beta values** represent the methylation level at each CpG site as the ratio of methylated reads to total reads: beta = M / (M + U), where M and U are the methylated and unmethylated read counts. Values range from 0.0 (unmethylated) to 1.0 (fully methylated); sites with no reads get 0.0. `MethylationSite.methylation_level` is the same ratio for site objects.
 
-**Differentially Methylated Regions (DMRs)** are contiguous genomic intervals where methylation differs significantly between conditions, identified by sliding-window analysis with statistical testing.
+**Differentially Methylated Regions (DMRs)** are contiguous runs of CpG sites whose methylation differs between conditions. Sites present in both conditions are compared one by one (a minimum methylation difference plus a two-proportion z-test on the read counts), and consecutive significant sites are chained into regions of at least `min_sites` sites. There is no sliding window.
 
-**CpG islands** are regions of high CG dinucleotide density, typically defined by observed/expected CpG ratio >= 0.6, GC content >= 50%, and length >= 200 bp.
+**CpG islands** are regions of high CG dinucleotide density, typically defined by observed/expected CpG ratio >= 0.6, GC content >= 50%, and length >= 200 bp. `identify_cpg_islands` does not read DNA sequence: it estimates GC content and CpG ratio from the methylation levels of the sites in each window, so treat its output as a coarse methylation-density screen rather than a sequence-based island call.
 
-**Methylation entropy** quantifies the heterogeneity of methylation patterns across reads at a locus, distinguishing uniform from stochastic methylation states.
+**Methylation entropy** quantifies how heterogeneous methylation is across the CpG sites of a genomic window: the Shannon entropy (in bits) of the distribution of site methylation levels over five equal-width bins. Windows whose sites share one level score near 0; windows that mix low, intermediate and high levels score higher.
 
 ## Data Model
 
 ### `MethylationSite`
 
-Dataclass representing a single CpG site measurement.
+Class representing a single CpG site measurement (a plain class, not a dataclass). The constructor requires a non-empty `chromosome`, `position >= 0`, `methylated_reads >= 0` and `total_reads >= methylated_reads`.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `chrom` | `str` | Chromosome name |
+| `chromosome` | `str` | Chromosome name |
 | `position` | `int` | Genomic coordinate |
-| `methylated_count` | `int` | Number of methylated reads |
-| `unmethylated_count` | `int` | Number of unmethylated reads |
-| `beta_value` | `float` | Methylation level (0.0--1.0) |
-| `context` | `str` | Sequence context (CG, CHG, CHH) |
+| `methylated_reads` | `int` | Number of methylated reads |
+| `total_reads` | `int` | Total reads covering the site (not the unmethylated count) |
+| `strand` | `str` | Strand (default `"+"`) |
+
+Read-only properties: `methylation_level` (`methylated_reads / total_reads`, 0.0 when there are no reads) and `coverage` (the same as `total_reads`). `to_dict()` returns all of these. There are no unmethylated-count, beta-value or sequence-context fields.
 
 ## Function Reference
 
-### `load_cpg_table(file_path, format="bismark") -> List[MethylationSite]`
+### `load_cpg_table(path) -> pandas.DataFrame`
 
-Load CpG methylation data from tab-delimited files. Supports Bismark coverage format (chrom, start, end, percent, count_M, count_U) and custom formats.
+Read a tab-delimited table with the columns `chrom`, `pos`, `methylated` and `unmethylated` (read counts) into a DataFrame; raises `ValueError` if one of them is missing.
 
-### `compute_beta_values(sites, offset=100) -> List[MethylationSite]`
+The functions below that take `methylation_data` work on a `Dict[str, List[MethylationSite]]` keyed by chromosome. Load one with `load_methylation_bedgraph(path, min_coverage=1)` (BEDgraph with a 0--1 level in column 4; it carries no read counts, so every site is given `max(min_coverage, 100)` estimated reads with the methylated count set from the level, and `min_coverage` never removes a site) or `load_methylation_cov(path, min_coverage=1)`, which reads a header-less Bismark `.cov` file (read as gzip when the name ends in `.gz`) with six tab-separated columns: chromosome, start, end, methylation percentage, methylated count and unmethylated count. The site position is `start`, its coverage is methylated plus unmethylated reads (`min_coverage` applies to that total) and its level is computed from the counts; the percentage column only has to parse as a number. A coverage file records no strand, so every site keeps the default `+`. Blank lines, `#` lines and malformed lines (for example an older layout with a strand symbol in column 3) are skipped, the malformed ones with a logged warning.
 
-Calculate beta values for each site: `beta = M / (M + U + offset)`. The offset (default 100) regularizes estimates from low-coverage sites.
+### `compute_beta_values(df) -> pandas.DataFrame`
 
-### `summarize_beta_by_chromosome(sites) -> Dict[str, Dict]`
+Return a copy of `df` (which needs `methylated` and `unmethylated` columns) with a `beta` column: `beta = methylated / (methylated + unmethylated)`, set to 0.0 where both counts are zero. No offset or other regularization is applied.
 
-Per-chromosome summary statistics: mean beta, median beta, standard deviation, and number of sites.
+### `summarize_beta_by_chromosome(df) -> pandas.DataFrame`
 
-### `find_dmrs(group1_sites, group2_sites, window_size=1000, step_size=500, min_diff=0.2, min_sites=3, p_threshold=0.05) -> List[Dict]`
+Per-chromosome summary of the `beta` column (`df` needs `chrom` and `beta`): a DataFrame indexed by chromosome with the columns `mean`, `std`, `min`, `max` and `count`.
 
-Identify differentially methylated regions between two groups using a sliding-window approach with Welch's t-test (scipy) or Mann-Whitney U fallback.
+### `find_differentially_methylated_regions(site_data1, site_data2, delta_threshold=0.2, p_value_threshold=0.05, min_sites=3, max_gap=None) -> List[Dict]`
 
-Returns dicts with `chrom`, `start`, `end`, `mean_diff`, `p_value`, `n_sites`.
+Find DMRs between two conditions, each a `Dict[str, List[MethylationSite]]`. Only positions present in both conditions on a shared chromosome are compared. A position is significant when its absolute methylation difference is at least `delta_threshold` and its two-sided two-proportion z-test p-value (normal approximation from the read counts) is at most `p_value_threshold`. The standard error is built from each condition's own proportion, so when both levels are exactly 0 or 1 (for example 0% against 100% methylated) it is zero, the code returns p = 1 and the position is never significant. Runs of consecutive significant positions with at least `min_sites` positions become regions; `max_gap` (bp) optionally ends a run when neighboring significant positions are further apart (default `None`: no gap limit).
 
-### `find_cpg_islands(sequence, chrom="chr1", min_length=200, min_gc=0.5, min_obs_exp=0.6) -> List[Dict]`
+Returns dicts with `chromosome`, `start`, `end`, `sites` (the list of positions), `mean_delta`, `mean_p_value` (the smallest per-site p-value in the region) and `direction` (`"hyper"` or `"hypo"`: condition 1 relative to condition 2 at the region's first site).
 
-Scan a DNA sequence for CpG islands using the Gardiner-Garden and Frommer (1987) criteria: minimum length, GC fraction, and observed/expected CpG ratio.
+### `identify_cpg_islands(methylation_data, window_size=200, step_size=50, min_gc=0.5, min_cpg_ratio=0.6) -> List[Dict]`
 
-### `calculate_methylation_entropy(sites, window_size=4) -> List[Dict]`
+Slide a window along each chromosome that has at least 10 sites and keep windows with at least 5 sites whose estimated GC content and CpG ratio reach `min_gc` and `min_cpg_ratio`. Both values are derived from the window's mean methylation level (`gc_content = min(1, 0.3 + 0.4 * mean)` and `cpg_ratio = 1.2 * mean`); no sequence is read, so with the default thresholds a window qualifies when its mean methylation is at least 0.5. Overlapping windows are resolved by keeping the one with the highest CpG ratio.
 
-Compute Shannon entropy of methylation patterns within sliding windows. High entropy indicates heterogeneous (stochastic) methylation; low entropy indicates uniform patterns.
+Returns dicts with `chromosome`, `start`, `end`, `sites`, `avg_methylation`, `gc_content` and `cpg_ratio`.
+
+### `calculate_methylation_entropy(methylation_data, window_size=1000) -> Dict[str, List[Tuple[int, float]]]`
+
+Shannon entropy (bits) of the site methylation levels in sliding windows of `window_size` bp (step `window_size // 2`), per chromosome; chromosomes with fewer than 10 sites and windows with fewer than 5 sites are skipped. Returns `{chromosome: [(window_center, entropy), ...]}`. The value is 0 when every site falls in the same 0.2-wide level bin and reaches log2(5), about 2.32, when sites are spread evenly over the five bins. A site at exactly 1.0 falls in none of the bins (the last bin is [0.8, 1.0)) but still counts toward the window's site total, so such sites distort the value (a window of only 1.0 sites scores 0).
 
 ## Usage Examples
 
 ```python-snippet
-from metainformant.epigenome import (
+from metainformant.epigenome.assays.methylation import (
     MethylationSite,
-    compute_beta_values,
-    find_dmrs,
-    find_cpg_islands,
     calculate_methylation_entropy,
+    compute_beta_values,
+    find_differentially_methylated_regions,
+    identify_cpg_islands,
+    load_cpg_table,
 )
 
-# Create methylation sites
-sites = [
-    MethylationSite("chr1", 1000, 80, 20),
-    MethylationSite("chr1", 1050, 10, 90),
-    MethylationSite("chr1", 1100, 45, 55),
-]
+# Beta values from a count table (columns: chrom, pos, methylated, unmethylated)
+table = load_cpg_table("cpg_counts.tsv")
+beta = compute_beta_values(table)
+for row in beta.head(3).itertuples():
+    print(f"{row.chrom}:{row.pos} beta={row.beta:.3f}")
 
-# Compute beta values with regularization
-sites = compute_beta_values(sites, offset=100)
-for s in sites:
-    print(f"{s.chrom}:{s.position} beta={s.beta_value:.3f}")
+
+def make_sites(levels, step=10):
+    """One chromosome of sites with 100 reads each: (methylated reads, total reads)."""
+    return {
+        "chr1": [
+            MethylationSite("chr1", 1000 + step * i, round(level * 100), 100)
+            for i, level in enumerate(levels)
+        ]
+    }
+
+
+control_sites = make_sites([0.1] * 30 + [0.8] * 30)
+treated_sites = make_sites([0.7] * 30 + [0.8] * 30)
 
 # Find DMRs between conditions
-dmrs = find_dmrs(control_sites, treated_sites, min_diff=0.2)
+dmrs = find_differentially_methylated_regions(control_sites, treated_sites, delta_threshold=0.2)
 for dmr in dmrs:
-    print(f"{dmr['chrom']}:{dmr['start']}-{dmr['end']} diff={dmr['mean_diff']:.3f}")
+    print(
+        f"{dmr['chromosome']}:{dmr['start']}-{dmr['end']} "
+        f"mean_delta={dmr['mean_delta']:.3f} ({dmr['direction']})"
+    )
 
-# Identify CpG islands in a sequence
-islands = find_cpg_islands("ACGTCGCGCGATCGCGCGATCG" * 50)
+# Methylation-based CpG island screen (estimated from methylation levels, not sequence)
+islands = identify_cpg_islands(treated_sites)
 
-# Methylation entropy
-entropy = calculate_methylation_entropy(sites, window_size=4)
+# Methylation entropy in 200 bp windows: {chromosome: [(window_center, entropy), ...]}
+entropy = calculate_methylation_entropy(control_sites, window_size=200)
 ```
 
 ## Configuration
 
-Environment variable prefix: `EPI_`
+No dedicated configuration file or environment prefix is used by the methylation module; call the functions above directly from Python.
 
 ## Optional Dependencies
 
-- `scipy` -- statistical tests for DMR detection (Welch's t-test, Mann-Whitney U)
-- Pure Python fallbacks are used when scipy is unavailable
+- `pandas` -- used by `load_cpg_table`, `compute_beta_values` and `summarize_beta_by_chromosome`
+- `scipy` is not used: the DMR test is a z-test implemented with the standard library
 
 ## Related Modules
 
-- `metainformant.epigenome.chipseq` -- histone mark analysis
-- `metainformant.epigenome.atacseq` -- chromatin accessibility
+- `metainformant.epigenome.assays.chipseq` -- histone mark analysis
+- `metainformant.epigenome.assays.atacseq` -- chromatin accessibility
 - `metainformant.epigenome.workflow` -- integrated epigenome pipelines

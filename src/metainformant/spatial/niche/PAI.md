@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - niche
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/spatial/niche`
+- **Path**: `src/metainformant/spatial/niche`
 - **Purpose**: Spatial niche analysis sub-package.
 - **Domain**: spatial
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - evolutionary_dynamics
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/math/evolutionary_dynamics`
+- **Path**: `src/metainformant/math/evolutionary_dynamics`
 - **Purpose**: Functionality for evolutionary_dynamics.
 - **Domain**: math
 

@@ -15,7 +15,7 @@
 ## Step‑by‑step sanity check
 
 ```python
-from metainformant.spatial import load_visium
+from metainformant.spatial.io.visium import load_visium
 adata = load_visium('sample/')
 print(adata)                     # check shape: n_obs × n_vars
 print(adata.obsm['spatial'][:5]) # first 5 coordinates
@@ -56,15 +56,6 @@ logging.getLogger('metainformant.spatial.analysis.deconvolution').setLevel('DEBU
 ```
 
 Console will print per‑epoch ELBO, gradient norms, and convergence flags.
-
-## Benchmarking your hardware
-
-```python-snippet
-from metainformant.spatial.performance import benchmark
-benchmark.run(platform='visium', n_spots=5000, n_genes=20000, n_jobs=1)
-```
-
-Outputs a markdown table similar to this page.
 
 ## Getting help
 

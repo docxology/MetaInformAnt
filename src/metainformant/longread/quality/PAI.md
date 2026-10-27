@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - quality
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/longread/quality`
+- **Path**: `src/metainformant/longread/quality`
 - **Purpose**: Long-read quality assessment and filtering.
 - **Domain**: longread
 

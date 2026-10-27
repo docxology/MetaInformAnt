@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - splicing
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/rna/splicing`
+- **Path**: `src/metainformant/rna/splicing`
 - **Purpose**: Alternative splicing analysis submodule for RNA-seq data.
 - **Domain**: rna
 

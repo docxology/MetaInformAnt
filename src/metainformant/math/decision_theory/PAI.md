@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - decision_theory
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/math/decision_theory`
+- **Path**: `src/metainformant/math/decision_theory`
 - **Purpose**: Functionality for decision_theory.
 - **Domain**: math
 

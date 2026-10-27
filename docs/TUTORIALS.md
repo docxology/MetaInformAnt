@@ -42,7 +42,7 @@ for name, seq in sequences.items():
 
 ```python-snippet
 # Calculate pairwise distances
-from metainformant.dna import distances
+from metainformant.dna.alignment import distances
 
 seq_list = list(sequences.values())
 distance_matrix = []
@@ -81,21 +81,24 @@ sequences = [
 #### Coalescent Analysis
 
 ```python-snippet
-from metainformant.math import coalescent
+from metainformant.math.population_genetics import coalescent
 
 # Calculate coalescent parameters
-summary = coalescent.CoalescentSummary(
-    sample_size=len(sequences),
-    effective_population_size=10000,
-    mutation_rate=0.0001
-)
+n_samples = len(sequences)
+effective_size = 10000
+mutation_rate = 0.0001
 
-print(f"Population mutation rate (θ): {summary.theta():.2f}")
-print(f"Expected total branch length: {summary.total_branch_length():.2f}")
-print(f"Expected time to MRCA: {summary.time_to_mrca():.2f}")
+theta = coalescent.expected_pairwise_diversity(effective_size, mutation_rate)  # 4·Ne·μ
+total_length = coalescent.expected_total_branch_length(n_samples, effective_size)
+time_to_mrca = coalescent.expected_time_to_mrca(n_samples, effective_size)
 
-# Calculate Tajima's D (would use real sequence data)
-# tajima_d = summary.tajimas_D(num_segregating_sites)
+print(f"Population mutation rate (θ): {theta:.2f}")
+print(f"Expected total branch length: {total_length:.2f}")
+print(f"Expected time to MRCA: {time_to_mrca:.2f}")
+
+# Calculate Tajima's D (would use real sequence data):
+# mean pairwise differences (pi), segregating sites (S) and sample size (n)
+# tajima_d = coalescent.tajimas_D(pi, S, n_samples)
 ```
 
 #### Neutrality Tests
@@ -144,7 +147,7 @@ phenotype = genotypes[:, 0] * 0.5 + np.random.normal(0, 0.1, n_samples)  # SNP 0
 #### GWAS Analysis
 
 ```python-snippet
-from metainformant.gwas import association
+from metainformant.gwas.analysis import association
 
 # Perform association tests
 results = []
@@ -177,23 +180,25 @@ for i, result in enumerate(results[:5]):
 #### Visualization
 
 ```python
+from metainformant.core import io
 from metainformant.gwas import visualization
 
-# Prepare data for Manhattan plot
+# Prepare data for Manhattan plot (records use chrom/pos/p_value keys)
 manhattan_data = [
     {
-        "CHROM": "1",
-        "POS": i * 1000,  # Position in kb
+        "chrom": "1",
+        "pos": i * 1000,  # Position in bp
         "p_value": result["p_value"],
-        "ID": result["snp"]
+        "variant_id": result["snp"]
     }
     for i, result in enumerate(results)
 ]
 
-# Create Manhattan plot
+# Create Manhattan plot (the output directory must exist; the function returns a matplotlib Figure)
+io.ensure_directory("output/gwas")
 output_path = "output/gwas/manhattan.png"
-plot_result = visualization.manhattan_plot(manhattan_data, output_path)
-print(f"Manhattan plot saved: {plot_result['status']}")
+fig = visualization.manhattan_plot(manhattan_data, output_path)
+print(f"Manhattan plot saved: {output_path}")
 ```
 
 ### 4. RNA-seq Analysis Tutorial
@@ -222,40 +227,42 @@ print(f"Threads: {config.threads}")
 #### Quality Control
 
 ```python
-from metainformant import quality
+from pathlib import Path
+
+from metainformant.quality.io import fastq
 
 # Analyze FASTQ quality (assuming you have FASTQ files)
 fastq_files = ["data/rna/sample1_R1.fastq.gz", "data/rna/sample1_R2.fastq.gz"]
 
 for fastq_file in fastq_files:
-    try:
-        quality_report = quality.fastq.assess_quality(fastq_file)
-        print(f"FASTQ Quality for {fastq_file}:")
-        print(f"  Total reads: {quality_report['total_reads']}")
-        print(f"  Mean quality: {quality_report['mean_quality']:.2f}")
-        print(f"  GC content: {quality_report['gc_content']:.2f}%")
-    except FileNotFoundError:
+    if not Path(fastq_file).exists():
         print(f"FASTQ file not found: {fastq_file}")
+        continue
+
+    quality_report = fastq.analyze_fastq_quality(fastq_file)
+    stats = quality_report["basic_statistics"]
+    print(f"FASTQ Quality for {fastq_file}:")
+    print(f"  Total reads: {stats['total_reads']}")
+    print(f"  Mean quality: {stats['mean_quality']:.2f}")
+    print(f"  GC content: {stats['mean_gc']:.2f}%")
 ```
 
 #### Expression Quantification
 
 ```python-snippet
-from metainformant.rna.engine.workflow_steps import quant
+from metainformant.rna.amalgkit import quant
 
-# Quantify gene expression (would use real BAM files)
-# This is a demonstration of the API
-
-quant_config = {
-    "bam_files": ["data/rna/aligned/sample1.bam"],
-    "gtf_file": "data/rna/annotation.gtf",
-    "output_dir": "output/rna_analysis/quant",
-    "threads": 4
+# Quantify expression with the amalgkit quant step (kallisto on the downloaded reads).
+# Needs the amalgkit CLI and prior metadata/getfastq steps, so this is a demonstration of the API.
+# Further options include index_dir, metadata and quant_backend.
+quant_params = {
+    "out_dir": "output/rna_analysis/amalgkit",
+    "threads": 4,
 }
 
-# quant.run_quantification(quant_config)
+# result = quant(quant_params)  # returns a subprocess.CompletedProcess
 print("Gene expression quantification would run here")
-print("Output: gene expression matrix, quality metrics")
+print("Output: per-sample quantification files under out_dir")
 ```
 
 ### 5. Information Theory Analysis Tutorial
@@ -265,7 +272,7 @@ Apply information-theoretic methods to analyze sequence complexity and patterns.
 #### Sequence Complexity Analysis
 
 ```python-snippet
-from metainformant.information import analysis
+from metainformant.information.metrics.analysis import analysis
 
 # Analyze sequence information content
 test_sequences = [
@@ -280,16 +287,16 @@ for i, seq in enumerate(test_sequences):
 
     print(f"\nSequence {i+1}: {seq[:20]}...")
     for k in [1, 2, 3]:
-        if k in info_result["kmer_analyses"]:
-            analysis_k = info_result["kmer_analyses"][k]
+        if f"k{k}" in info_result["k_mer_analysis"]:
+            analysis_k = info_result["k_mer_analysis"][f"k{k}"]
             print(f"  k={k}: entropy={analysis_k['entropy']:.3f}, "
-                  f"unique_kmers={analysis_k['unique_kmers']}")
+                  f"unique_kmers={analysis_k['n_unique']}")
 ```
 
 #### Batch Processing
 
 ```python-snippet
-from metainformant.information import workflows
+from metainformant.information.workflow import workflows
 
 # Batch entropy analysis
 sequences = [
@@ -299,19 +306,21 @@ sequences = [
     "CGCGCGCGCGCG"
 ]
 
+# Methods default to ["plugin", "miller_madow"]
 batch_results = workflows.batch_entropy_analysis(sequences, k=2)
 
 print("\nBatch Entropy Analysis Results:")
-print(f"Total sequences analyzed: {batch_results['summary']['total_sequences']}")
-print(f"Mean entropy: {batch_results['summary']['mean_entropy']:.3f}")
-print(f"Entropy range: {batch_results['summary']['min_entropy']:.3f} - "
-      f"{batch_results['summary']['max_entropy']:.3f}")
+print(f"Total sequences analyzed: {batch_results['batch_info']['n_sequences']}")
+plugin_stats = batch_results["summary"]["entropy_statistics"]["plugin"]
+print(f"Mean entropy: {plugin_stats['mean']:.3f}")
+print(f"Entropy range: {plugin_stats['min']:.3f} - {plugin_stats['max']:.3f}")
 
 # Detailed results per sequence
-for seq_result in batch_results["sequences"]:
-    print(f"Sequence {seq_result['index']}: "
-          f"entropy={seq_result['entropy']:.3f}, "
-          f"length={seq_result['length']}")
+for seq_result in batch_results["sequence_results"]:
+    plugin = seq_result["methods"]["plugin"]
+    print(f"Sequence {seq_result['sequence_index']}: "
+          f"entropy={plugin['entropy']:.3f}, "
+          f"length={seq_result['sequence_length']}")
 ```
 
 ### 6. Multi-Omics Integration Tutorial
@@ -351,25 +360,25 @@ protein_data = {
 #### Integration Analysis
 
 ```python-snippet
-# Combine multi-omics data
-integrated_data = {
-    "expression": expression_data,
-    "methylation": methylation_data,
-    "proteomics": protein_data
+import pandas as pd
+from metainformant.multiomics.analysis import integration
+
+# Each layer is a samples x features DataFrame
+layers = {
+    "expression": pd.DataFrame.from_dict(expression_data, orient="index"),
+    "methylation": pd.DataFrame.from_dict(methylation_data, orient="index"),
+    "proteomics": pd.DataFrame.from_dict(protein_data, orient="index"),
 }
 
-# Perform joint PCA
-from metainformant.multiomics import integration
+# Combine multi-omics data (only samples present in every layer are kept)
+integrated_data = integration.integrate_omics_data(data=layers)
 
-try:
-    joint_pca_result = integration.joint_pca(integrated_data, n_components=3)
+# Perform joint PCA: returns (sample embeddings, per-layer loadings, explained variance ratio)
+embeddings, loadings, explained_variance = integration.joint_pca(integrated_data, n_components=3)
 
-    print("Multi-omics Integration Results:")
-    print(f"Integrated PCA components shape: {joint_pca_result['expression'].shape}")
-    print("Available data types:", list(joint_pca_result.keys()))
-
-except Exception as e:
-    print(f"Integration would require real multi-omics data: {e}")
+print("Multi-omics Integration Results:")
+print(f"Joint embedding shape: {embeddings.shape}")
+print("Available data types:", list(loadings.keys()))
 ```
 
 ### 7. Machine Learning Tutorial
@@ -379,7 +388,8 @@ Apply machine learning methods to biological classification and prediction tasks
 #### Classification Example
 
 ```python
-from metainformant import ml
+from metainformant.ml.features import features
+from metainformant.ml.models import classification
 import numpy as np
 
 # Create sample biological features and labels
@@ -407,37 +417,41 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.3, random_state=42, stratify=y
 )
 
-# Train classifier
-classifier = ml.classification.train_classifier(X_train, y_train, method="rf")
+# Train classifier (method: "rf", "gb" or "lr")
+classifier = classification.create_biological_classifier("rf", random_state=42)
+classifier.fit(X_train, y_train)
 
-# Cross-validation
-cv_results = ml.classification.cross_validate_classifier(
-    classifier, X_train, y_train, cv=5
+# Cross-validation (stratified k-fold; one entry per metric, each with finite per-fold scores)
+cv_results = classification.cross_validate_biological(
+    X_train, y_train, method="rf", cv_folds=5, random_state=42
 )
 
 print("Cross-validation Results:")
-for metric, value in cv_results.items():
-    print(f"  {metric}: {value:.3f}")
+for metric, scores in cv_results["cross_validation"].items():
+    print(f"  {metric}: {scores['mean']:.3f} (+/- {scores['std']:.3f})")
 
 # Test predictions
-predictions, probabilities = ml.classification.predict_with_confidence(
-    classifier, X_test
-)
+predictions = classifier.predict(X_test)
+probabilities = classifier.predict_proba(X_test)
 
 accuracy = np.mean(predictions == y_test)
 print(f"Test accuracy: {accuracy:.3f}")
 ```
 
+`cross_validate_biological` reports `accuracy`, `precision_weighted`, `recall_weighted` and `f1_weighted`, plus `roc_auc` when there are two classes; each entry holds `mean`, `std` and the per-fold `scores`. A metric that cannot be computed (for example `cv_folds` larger than the sample count of every class) raises instead of producing a `None` or NaN entry, so the loop above never meets a missing metric.
+
+To compare several methods, `classification.compare_classifiers(X_train, y_train, methods=["rf", "gb", "lr"], cv_folds=5)` returns the per-method results under `comparison` and the winner under `best_method`. A method that fails is reported as `{"error": message}` and is never selected; `best_method` is `None` when every method failed.
+
 #### Feature Selection
 
 ```python
-# Select important features
-selected_features, feature_mask = ml.features.select_features(
-    X_train, y_train, method="mutual_info", k=20
+# Select important features (returns the reduced matrix and the selected column indices)
+X_selected, selected_indices = features.select_features_univariate(
+    X_train, y_train, method="mutual_info_classif", k=20
 )
 
-print(f"Selected {len(selected_features[1])} features out of {n_features}")
-print(f"Feature selection method: mutual information")
+print(f"Selected {len(selected_indices)} features out of {n_features}")
+print("Feature selection method: mutual information")
 ```
 
 ### 8. Network Analysis Tutorial
@@ -447,7 +461,7 @@ Analyze biological networks including protein-protein interactions and pathways.
 #### Network Construction
 
 ```python
-from metainformant import networks
+from metainformant.networks.analysis import community, graph
 
 # Create sample protein interaction network
 edges = [
@@ -460,20 +474,21 @@ edges = [
 ]
 
 # Build network
-G = networks.graph.create_network(edges, directed=False)
+G = graph.create_network(edges, directed=False)
 
 print("Protein Interaction Network:")
 print(f"Nodes: {G.number_of_nodes()}")
 print(f"Edges: {G.number_of_edges()}")
-print(f"Connected components: {networks.graph.connected_components_count(G)}")
+print(f"Connected components: {len(graph.get_connected_components(G))}")
 ```
 
 #### Network Analysis
 
 ```python
-# Calculate centrality measures
-degree_cent = networks.centrality.degree_centrality(G)
-betweenness_cent = networks.centrality.betweenness_centrality(G)
+# Calculate centrality measures (a dict of {measure: {node: value}})
+centralities = graph.centrality_measures(G)
+degree_cent = centralities["degree"]
+betweenness_cent = centralities["betweenness"]
 
 print("\nTop nodes by degree centrality:")
 for node, centrality in sorted(degree_cent.items(), key=lambda x: x[1], reverse=True)[:3]:
@@ -487,12 +502,17 @@ for node, centrality in sorted(betweenness_cent.items(), key=lambda x: x[1], rev
 #### Community Detection
 
 ```python
-# Detect communities
-communities = networks.community.louvain_communities(G)
+# Detect communities: returns {node: community_id}
+# (Louvain needs the optional python-louvain package; without it detection falls back to greedy modularity)
+node_communities = community.detect_communities(G, method="louvain")
+
+communities = {}
+for node, community_id in node_communities.items():
+    communities.setdefault(community_id, []).append(node)
 
 print(f"\nDetected {len(communities)} communities:")
-for i, community in enumerate(communities):
-    print(f"  Community {i+1}: {sorted(community)}")
+for community_id, members in sorted(communities.items()):
+    print(f"  Community {community_id + 1}: {sorted(members)}")
 ```
 
 ## Advanced Tutorials
@@ -503,51 +523,66 @@ Learn to build custom analysis pipelines using METAINFORMANT components.
 
 #### Workflow Orchestration
 
-```python-snippet
-from pathlib import Path
-from metainformant.core.workflow import run_config_based_workflow
+Workflow steps are plain functions referenced as `module:function`. A step receives its `params` as keyword arguments, plus the result of every step it `depends_on` as a keyword argument named after that upstream step. Put the step functions in a module that Python can import (for example `my_pipeline.py` next to the script you run, or anywhere on `PYTHONPATH`):
 
-# Define custom workflow configuration
+```python-snippet
+# File: my_pipeline.py
+from metainformant.core import io
+from metainformant.dna.sequence import core
+from metainformant.information.workflow import workflows
+
+
+def load_sequences(path: str) -> dict[str, str]:
+    """Step 1: read a FASTA file."""
+    return core.read_fasta(path)
+
+
+def entropy_report(load_sequences: dict[str, str], k: int = 2) -> dict:
+    """Step 2: receives the result of the ``load_sequences`` step as ``load_sequences``."""
+    return workflows.batch_entropy_analysis(list(load_sequences.values()), k=k)
+
+
+def save_report(entropy_report: dict, path: str) -> str:
+    """Step 3: write the report to JSON."""
+    io.dump_json(entropy_report, path)
+    return path
+```
+
+Then describe the steps in a configuration and run it. `run_config_based_workflow` takes the path of a configuration file:
+
+```python-snippet
+from metainformant.core import io
+from metainformant.core.execution.workflow import run_config_based_workflow
+
+# Define custom workflow configuration: "steps" maps step names to a function reference,
+# its parameters and the steps it depends on
 workflow_config = {
-    "name": "custom_biology_analysis",
-    "steps": [
-        {
-            "name": "data_ingestion",
-            "function": "metainformant.core.io.load_json",
-            "params": {"path": "data/input.json"},
-            "output_key": "input_data"
-        },
-        {
-            "name": "sequence_analysis",
-            "function": "metainformant.dna.sequence.core.read_fasta",
+    "steps": {
+        "load_sequences": {
+            "function": "my_pipeline:load_sequences",
             "params": {"path": "data/sequences.fasta"},
-            "output_key": "sequences"
         },
-        {
-            "name": "information_analysis",
-            "function": "metainformant.information.analysis.batch_entropy_analysis",
-            "params": {
-                "sequences": "{sequences}",  # Reference previous step output
-                "k": 2
-            },
-            "output_key": "entropy_results"
+        "entropy_report": {
+            "function": "my_pipeline:entropy_report",
+            "params": {"k": 2},
+            "depends_on": ["load_sequences"],
         },
-        {
-            "name": "results_save",
-            "function": "metainformant.core.io.dump_json",
-            "params": {
-                "obj": "{entropy_results}",
-                "path": "output/analysis_results.json"
-            }
-        }
-    ],
-    "output_dir": "output/custom_workflow"
+        "save_report": {
+            "function": "my_pipeline:save_report",
+            "params": {"path": "output/custom_workflow/entropy_report.json"},
+            "depends_on": ["entropy_report"],
+        },
+    }
 }
 
 # Execute workflow
-results = run_config_based_workflow(workflow_config)
-print(f"Workflow completed: {results['status']}")
+io.dump_json(workflow_config, "config/custom_workflow.json")
+results = run_config_based_workflow("config/custom_workflow.json")
+print(f"Workflow completed: {results['success']}")
+print(f"Execution order: {results['execution_order']}")
 ```
+
+The result dictionary also holds each step's output under `results["results"]`, any failures under `results["errors"]`, and `total_duration`. When a step fails, the steps that depend on it are skipped.
 
 ### 10. Performance Optimization Tutorial
 
@@ -562,34 +597,46 @@ import time
 # Example: Parallel entropy calculation
 def calculate_entropy(seq):
     """Calculate entropy for a single sequence."""
-    from metainformant.information.analysis import analyze_sequence_information
-    return analyze_sequence_information(seq, k_values=[1, 2])["kmer_analyses"][1]["entropy"]
+    from metainformant.information.metrics.analysis.analysis import analyze_sequence_information
+    # Restrict the methods to entropy: the default "patterns" method scans repeats and palindromes
+    # and is very slow on long sequences
+    report = analyze_sequence_information(seq, k_values=[1, 2], methods=["entropy"])
+    return report["k_mer_analysis"]["k1"]["entropy"]
 
-# Large dataset simulation
-sequences = [f"ATCG{i}" * 100 for i in range(1000)]  # 1000 sequences
+def main():
+    # Large dataset simulation
+    sequences = [f"ATCG{i}" * 100 for i in range(1000)]  # 1000 sequences
 
-# Sequential processing
-start_time = time.time()
-sequential_results = [calculate_entropy(seq) for seq in sequences]
-sequential_time = time.time() - start_time
+    # Sequential processing
+    start_time = time.time()
+    sequential_results = [calculate_entropy(seq) for seq in sequences]
+    sequential_time = time.time() - start_time
 
-# Parallel processing
-start_time = time.time()
-parallel_results = parallel.run_parallel(calculate_entropy, sequences, max_workers=4)
-parallel_time = time.time() - start_time
+    # Parallel processing: process_map for CPU-bound work (the function must be defined at module
+    # level); use parallel.thread_map for I/O-bound work such as downloads
+    start_time = time.time()
+    parallel_results = parallel.process_map(calculate_entropy, sequences, max_workers=4)
+    parallel_time = time.time() - start_time
 
-print("Performance Results:")
-print(f"Sequential time: {sequential_time:.2f}s")
-print(f"Parallel time: {parallel_time:.2f}s")
-print(f"Speedup: {sequential_time/parallel_time:.1f}x")
-print(f"Results identical: {sequential_results == parallel_results}")
+    print("Performance Results:")
+    print(f"Sequential time: {sequential_time:.2f}s")
+    print(f"Parallel time: {parallel_time:.2f}s")
+    print(f"Speedup: {sequential_time/parallel_time:.1f}x")
+    print(f"Results identical: {sequential_results == parallel_results}")
+
+if __name__ == "__main__":  # required where worker processes are spawned (macOS, Windows)
+    main()
 ```
 
 #### Caching for Repeated Computations
 
 ```python-snippet
-from metainformant.math import coalescent
+from functools import lru_cache
+from metainformant.math.population_genetics import coalescent
 import time
+
+# tajima_constants is not cached internally; memoize it when sample sizes repeat
+cached_tajima_constants = lru_cache(maxsize=None)(coalescent.tajima_constants)
 
 # Demonstrate caching benefits
 sample_sizes = [10, 50, 100, 10, 50, 100]  # Repeated calculations
@@ -598,12 +645,12 @@ print("Tajima constants calculation (with caching):")
 start_time = time.time()
 
 for n in sample_sizes:
-    constants = coalescent.tajima_constants(n)
+    constants = cached_tajima_constants(n)
     print(f"n={n}: a1={constants['a1']:.2f}")
 
 total_time = time.time() - start_time
 print(f"Total time: {total_time:.3f}s")
-print("(Note: First calculations of each n are cached for reuse)")
+print(f"(Note: {cached_tajima_constants.cache_info().hits} of {len(sample_sizes)} calls were served from the cache)")
 ```
 
 ## Best Practices

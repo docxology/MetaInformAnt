@@ -27,7 +27,7 @@ All plot functions return a `matplotlib.axes.Axes` object and accept an optional
 
 ```python
 import numpy as np
-from metainformant.visualization import lineplot
+from metainformant.visualization.plots.basic import lineplot
 
 x = np.linspace(0, 10, 100)
 y = np.sin(x)
@@ -44,7 +44,7 @@ ax = lineplot(x, y, label="sine wave", color="blue")
 ### `scatter_plot`
 
 ```python
-from metainformant.visualization import scatter_plot
+from metainformant.visualization.plots.basic import scatter_plot
 
 ax = scatter_plot(np.random.randn(100), np.random.randn(100), alpha=0.6)
 ```
@@ -52,7 +52,7 @@ ax = scatter_plot(np.random.randn(100), np.random.randn(100), alpha=0.6)
 ### `heatmap`
 
 ```python
-from metainformant.visualization import heatmap
+from metainformant.visualization.plots.basic import heatmap
 
 data = np.random.rand(10, 10)
 ax = heatmap(data, cmap="viridis")
@@ -63,7 +63,7 @@ Requires a 2D numpy array. Includes an automatic colorbar.
 ### `bar_plot`
 
 ```python
-from metainformant.visualization import bar_plot
+from metainformant.visualization.plots.basic import bar_plot
 
 categories = np.array(["A", "B", "C", "D"])
 values = np.array([10, 25, 15, 30])
@@ -73,7 +73,7 @@ ax = bar_plot(categories, values, color="teal")
 ### `pie_chart`
 
 ```python
-from metainformant.visualization import pie_chart
+from metainformant.visualization.plots.basic import pie_chart
 
 sizes = np.array([35, 25, 20, 20])
 ax = pie_chart(sizes, labels=["A", "B", "C", "D"], autopct="%1.1f%%")
@@ -84,7 +84,7 @@ ax = pie_chart(sizes, labels=["A", "B", "C", "D"], autopct="%1.1f%%")
 Filled area chart using `matplotlib.fill_between`.
 
 ```python
-from metainformant.visualization import area_plot
+from metainformant.visualization.plots.basic import area_plot
 
 ax = area_plot(np.arange(50), np.random.rand(50).cumsum(), alpha=0.4)
 ```
@@ -94,7 +94,7 @@ ax = area_plot(np.arange(50), np.random.rand(50).cumsum(), alpha=0.4)
 Step function plot.
 
 ```python
-from metainformant.visualization import step_plot
+from metainformant.visualization.plots.basic import step_plot
 
 ax = step_plot(np.arange(20), np.random.randint(0, 10, 20))
 ```
@@ -109,7 +109,7 @@ Visualize differential expression results as log2 fold change vs. -log10 p-value
 
 ```python
 import pandas as pd
-from metainformant.visualization import volcano_plot
+from metainformant.visualization.plots.general import volcano_plot
 
 de_results = pd.DataFrame({
     "log2FoldChange": np.random.randn(1000),
@@ -123,7 +123,7 @@ ax = volcano_plot(de_results, log2fc_col="log2FoldChange", pval_col="padj")
 Genome-wide association study results plotted by chromosomal position.
 
 ```python
-from metainformant.visualization import manhattan_plot
+from metainformant.visualization.plots.general import manhattan_plot
 
 gwas_data = pd.DataFrame({
     "CHR": np.repeat(range(1, 23), 50),
@@ -139,7 +139,7 @@ Quantile-quantile plot for assessing distributional assumptions and identifying
 genomic inflation.
 
 ```python
-from metainformant.visualization import qq_plot
+from metainformant.visualization.plots.general import qq_plot
 
 pvalues = np.random.uniform(0, 1, 500)
 ax = qq_plot(pvalues)
@@ -151,7 +151,7 @@ Clustered heatmap of gene expression data. Uses seaborn if available, falls back
 to matplotlib.
 
 ```python
-from metainformant.visualization import expression_heatmap
+from metainformant.visualization.plots.general import expression_heatmap
 
 expr_data = pd.DataFrame(
     np.random.randn(20, 6),
@@ -166,7 +166,7 @@ ax = expression_heatmap(expr_data, cmap="RdBu_r")
 Scatter plot of pre-computed principal components with variance annotations.
 
 ```python
-from metainformant.visualization import pca_plot
+from metainformant.visualization.plots.general import pca_plot
 
 pca_data = pd.DataFrame({
     "PC1": np.random.randn(50),
@@ -183,7 +183,7 @@ ax = pca_plot(pca_data, hue="group")
 Correlation matrix as annotated heatmap.
 
 ```python
-from metainformant.visualization import correlation_heatmap
+from metainformant.visualization.plots.general import correlation_heatmap
 
 df = pd.DataFrame(np.random.randn(100, 5), columns=["A", "B", "C", "D", "E"])
 ax = correlation_heatmap(df, annot=True)
@@ -204,7 +204,7 @@ ax = correlation_heatmap(df, annot=True)
 | `plot_upset_plot`              | UpSet plot for multi-set intersection analysis  |
 
 ```python
-from metainformant.visualization import plot_venn_diagram
+from metainformant.visualization.plots.specialized import plot_venn_diagram
 
 sets = {
     "Gene Set A": {"BRCA1", "TP53", "EGFR", "MYC"},
@@ -225,7 +225,7 @@ ax = plot_venn_diagram(sets)
 | `plot_3d_scatter`              | 3D scatter plot using mpl_toolkits                  |
 
 ```python
-from metainformant.visualization import plot_pairwise_relationships
+from metainformant.visualization.plots.multidim import plot_pairwise_relationships
 
 df = pd.DataFrame(np.random.randn(100, 4), columns=["W", "X", "Y", "Z"])
 ax = plot_pairwise_relationships(df)
@@ -247,7 +247,7 @@ to GIF via the `output_path` parameter.
 | `animate_trajectory`   | Point movement path animation                     |
 
 ```python
-from metainformant.visualization import animate_time_series
+from metainformant.visualization.plots.animations import animate_time_series
 
 data = np.random.randn(100, 3).cumsum(axis=0)
 fig, anim = animate_time_series(data, interval=100, output_path="output/ts.gif")

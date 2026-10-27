@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - analysis
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/life_events/analysis`
+- **Path**: `src/metainformant/life_events/analysis`
 - **Purpose**: Functionality for analysis.
 - **Domain**: life_events
 

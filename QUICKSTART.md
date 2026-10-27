@@ -122,20 +122,21 @@ from metainformant.protein.sequence.alignment import global_align
 # Read protein sequences
 proteins = read_fasta("data/proteins.fasta")
 
-# Pairwise alignment
+# Pairwise alignment (returns a dict: aligned_seq1, aligned_seq2, score, identity, ...)
 align_result = global_align(proteins["seq1"], proteins["seq2"])
-print(f"Alignment score: {align_result.score}")
+print(f"Alignment score: {align_result['score']}")
 ```
 
 ### Quality Control
 
 ```python
-from metainformant.quality import fastq
+from metainformant.quality.io import fastq
 
-# Assess FASTQ quality
-qc_report = fastq.assess_quality("data/reads.fastq")
-print(f"Mean quality: {qc_report['mean_quality']}")
-print(f"Total reads: {qc_report['total_reads']}")
+# Assess FASTQ quality (returns one section per metric; summary numbers are in "basic_statistics")
+qc_report = fastq.analyze_fastq_quality("data/reads.fastq")
+stats = qc_report["basic_statistics"]
+print(f"Mean quality: {stats['mean_quality']:.1f}")
+print(f"Total reads: {stats['total_reads']}")
 ```
 
 ### Visualization
@@ -143,10 +144,11 @@ print(f"Total reads: {qc_report['total_reads']}")
 ```python
 from metainformant.visualization.plots.basic import lineplot
 import matplotlib.pyplot as plt
+import numpy as np
 
-# Create a simple line plot
-data = [1, 2, 3, 4, 5]
-ax = lineplot(None, data)
+# Create a simple line plot (with y omitted, x is plotted against its indices)
+data = np.array([1, 2, 3, 4, 5])
+ax = lineplot(data)
 ax.set_ylabel("Values")
 ax.set_title("Example Plot")
 plt.savefig("output/example_plot.png", dpi=300)

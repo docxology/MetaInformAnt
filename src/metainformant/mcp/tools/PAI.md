@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - tools
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/mcp/tools`
+- **Path**: `src/metainformant/mcp/tools`
 - **Purpose**: Standalone MCP-adjacent command modules.
 - **Domain**: mcp
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - visualization
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/spatial/visualization`
+- **Path**: `src/metainformant/spatial/visualization`
 - **Purpose**: Spatial visualization module for METAINFORMANT.
 - **Domain**: spatial
 

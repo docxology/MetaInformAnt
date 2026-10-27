@@ -8,14 +8,23 @@ from metainformant.pharmacogenomics.alleles.diplotype import determine_diplotype
 from metainformant.pharmacogenomics.alleles.phenotype import classify_phenotype
 from metainformant.pharmacogenomics.annotations.cpic import get_dosing_recommendation
 
-variants = {'rs1065852', 'rs3892097', 'rs5030655'}
-alleles = call_star_alleles(variants, gene='CYP2D6')
-dip = determine_diplotype(alleles[0].name, alleles[1].name, gene='CYP2D6')
+variants = {'rs3892097', 'rs1065852'}  # CYP2D6 *4 and *10
+alleles = call_star_alleles(variants, gene='CYP2D6')  # [*10, *4]: every match, sorted by name
+dip = determine_diplotype(alleles[0], alleles[1], gene='CYP2D6')
+print(dip.diplotype_string)  # *10/*4 (alleles are ordered as strings)
 phenotype = classify_phenotype(dip, gene='CYP2D6')
 print(phenotype['phenotype'].value)  # Intermediate Metabolizer
 
-rec = get_dosing_recommendation('codeine', phenotype['phenotype'].value, gene='CYP2D6')
-print(rec['recommendation'])
+rec = get_dosing_recommendation('codeine', phenotype['phenotype'].value)
+print(rec['recommendation'])  # Use codeine per standard of care. Monitor for reduced efficacy.
+```
+
+`call_star_alleles` returns every allele it matched, so a variant set can give one allele (or just `*1`), or more than two; `get_dosing_recommendation(drug, phenotype)` takes no gene and returns `None` when no guideline matches. Examples 2, 11–13, 18, 20 and 22 reuse this one-call helper, which pads with `*1` and uses the first two alleles:
+
+```python
+def phenotype_from_variants(variants, gene):
+    names = [a.name for a in call_star_alleles(variants, gene)] + ['*1', '*1']
+    return classify_phenotype(determine_diplotype(names[0], names[1], gene), gene)
 ```
 
 ### 2. Batch processing of a large cohort
@@ -23,66 +32,59 @@ print(rec['recommendation'])
 ```python-snippet
 import pandas as pd
 from metainformant.core.execution import parallel
-from metainformant import pharmacogenomics
 
 df = pd.read_csv('cohort.csv')  # column 'rsids' = ';'-separated rsIDs per patient
 
-def predict_metabolizer(row):
-    observed = set(str(row['rsids']).split(';')) if pd.notna(row['rsids']) else set()
-    return pharmacogenomics.predict_metabolizer(observed, gene='CYP2D6',
-                                                algorithm='balanced')
+def cyp2d6_phenotype(rsids):
+    if pd.isna(rsids):
+        return None  # missing genotype data is not "no variants" (that would read as *1/*1)
+    return phenotype_from_variants(set(str(rsids).split(';')), 'CYP2D6')['phenotype'].value
 
-results = parallel.thread_map(predict_metabolizer,
-                        df.to_dict('records'),
-                        max_workers=8,
-                        desc='CYP2D6 metabolizer')
-df['cyp2d6_phenotype'] = [r['phenotype'] for r in results]
+df['cyp2d6_phenotype'] = parallel.thread_map(cyp2d6_phenotype, df['rsids'], max_workers=8)
 df.to_csv('cohort_with_phenotypes.tsv', sep='\t', index=False)
 ```
 
-> **Notes** — `chunk_size` dictates memory; `workers` should match CPU cores; consider `parallel.set_backend('loky')` for reliability.
+> **Notes** — `thread_map(func, items, max_workers=8)` runs a thread pool and has no `desc` argument; the matching is plain Python, so for CPU-bound cohorts use `parallel.process_map(func, items, max_workers=...)` with a top-level function.
 
 ### 3. Cross-gene CPIC actionable lookup
 
 ```python
-from metainformant.pharmacogenomics.annotations.cpic import lookup_drug_gene, get_dosing_recommendation
+from metainformant.pharmacogenomics.annotations.cpic import list_actionable_genes, lookup_drug_gene
 
-actionable = lookup_drug_gene(level='A')  # Level A = 'strong' – action required
+actionable = list_actionable_genes(min_level='A')  # [{'gene', 'drug', 'cpic_level'}, ...]
 print(f"CPIC actionable drug–gene pairs: {len(actionable)}")
 
 for entry in actionable:
-    drug, gene = entry['drug'], entry['gene']
-    phenotypes = entry['phenotypes']
-    # show a sample recommendation
-    example = list(phenotypes.values())[0]
-    print(f"  {drug} ({gene}): {example['recommendation'][:60]}…")
+    guideline = lookup_drug_gene(entry['drug'], entry['gene'])
+    # show a sample recommendation (the first listed phenotype)
+    example = next(iter(guideline['recommendations'].values()))
+    print(f"  {entry['drug']} ({entry['gene']}): {example['recommendation'][:60]}…")
 ```
 
 ### 4. Drug–drug and drug–gene interaction analysis
 
 ```python-snippet
+from metainformant.pharmacogenomics.clinical.drug_interaction import analyze_drug_gene_interactions
 from metainformant.pharmacogenomics.interaction.drug_interactions import (
-    analyze_drug_gene_interactions,
     polypharmacy_risk,
     cyp_inhibition_prediction,
 )
 
 meds = ['warfarin', 'amiodarone', 'simvastatin', 'fluconazole']
-# PM on CYP2C9 — high bleeding risk
+# PM on CYP2C9 — high bleeding risk; only drug–gene pairs with a built-in CPIC
+# guideline (here warfarin/CYP2C9) produce an entry
 interactions = analyze_drug_gene_interactions(
-    gene='CYP2C9', phenotype='Poor Metabolizer', drugs=meds)
+    meds, {'CYP2C9': {'phenotype': 'Poor Metabolizer'}})
 for ix in interactions:
-    print(f"{ix['drug']}: {ix['recommendation']} (severity {ix['severity']})")
+    print(f"{ix.drug}: {ix.recommendation} (severity {ix.severity.value})")
 
 # Composite polypharmacy score
-risk = polypharmacy_risk(meds,
-                         patient_phenotype='Normal Metabolizer',
-                         gene='CYP2C9')
-print(f"Aggregate risk = {risk['risk_score']:.2f} ({risk['high_severity_count']} major)")
+risk = polypharmacy_risk(meds)
+print(f"Aggregate risk = {risk['risk_score']:.2f} ({risk['severity_counts']['major']} major)")
 
-# CYP inhibition net score
-score = cyp_inhibition_prediction(['ketoconazole', 'rifampin'], enzyme='CYP3A4')
-print(f"Net CYP3A4 inhibition category: {score['category']}")
+# CYP inhibition/induction profile of a single drug
+profile = cyp_inhibition_prediction('ketoconazole')
+print(profile['summary'])
 ```
 
 ### 5. ACMG classification of a pharmacogene variant
@@ -92,37 +94,33 @@ from metainformant.pharmacogenomics.clinical.pathogenicity import (
     classify_variant_acmg,
     apply_acmg_criteria,
     ACMGClassification,
-    ACMGCriteria,
 )
 
+# Illustrative evidence, not a real gnomAD/ClinVar record
 variant = {
-    'rsid': 'rs4244285',
+    'rsid': 'rs0000000',
     'gene': 'CYP2C19',
-    'gnomad_af': 0.0002,
-    'clinvar_sig': 'Pathogenic',
-    'sift': 0.0,
-    'polyphen': 1.0,
-    # optional extra evidence
-    'cadd_score': 25.0,
-    'provean_score': -5.0,
+    'consequence': 'frameshift',
+    'allele_frequency': 0.00002,  # a float, or {population: frequency}
+    'computational_predictions': {'sift': 'deleterious', 'polyphen': 'probably_damaging', 'cadd': 'damaging'},
 }
 
-result = classify_variant_acmg(
-    variant,
-    gene='CYP2C19',
-    criteria_applied=[ACMGCriteria.PVS1, ACMGCriteria.PM2, ACMGCriteria.PP3],
-)
-print(f"Classification: {result['classification'].value}")
-print('Evidence:', result['evidence_summary'])
+criteria = apply_acmg_criteria(variant)  # {criterion: bool} for every criterion; here PVS1, PM2, PP3 are True
+result = classify_variant_acmg(variant)  # evaluates the criteria from the variant data
+print(f"Classification: {result['classification'].value}")  # Pathogenic
+print('Criteria met:', result['criteria_met'])  # ['PM2', 'PP3', 'PVS1']
+
+# Or supply pre-evaluated criteria ({criterion: bool}) instead of auto-evaluating
+result = classify_variant_acmg(variant, evidence={'PVS1': True, 'PM2': True})
+print(result['classification'] is ACMGClassification.LIKELY_PATHOGENIC)  # True
 ```
 
-### 6. Full clinical report generation (CLIA-ready structure)
+### 6. Full clinical report generation
 
 ```python-snippet
 from metainformant.pharmacogenomics.clinical.reporting import (
     generate_clinical_report,
     export_report,
-    ClinicalReportBuilder,
 )
 
 patient = {
@@ -130,121 +128,112 @@ patient = {
     'name': 'Sample Patient',
     'dob': '1970-01-01',
     'sex': 'F',
-    'medications': ['codeine', 'clopidogrel', 'atorvastatin'],
-    'genotype': {
-        'CYP2D6': {'diplotype': '*1/*4', 'phenotype': 'Intermediate Metabolizer'},
-        'CYP2C19': {'diplotype': '*1/*1', 'phenotype': 'Normal Metabolizer'},
-        'CYP2C9':  {'diplotype': '*1/*3', 'phenotype': 'Intermediate Metabolizer'},
-        'SLCO1B1': {'diplotype': '*1/*1', 'phenotype': 'Normal Function'},
-    }
 }
+genotypes = {
+    'CYP2D6': {'diplotype': '*4/*10', 'phenotype': 'Intermediate Metabolizer'},
+    'CYP2C19': {'diplotype': '*2/*2', 'phenotype': 'Poor Metabolizer'},
+    'CYP2C9':  {'diplotype': '*1/*3', 'phenotype': 'Intermediate Metabolizer'},
+    'SLCO1B1': {'diplotype': '*1/*1', 'phenotype': 'Normal Metabolizer'},
+}
+medications = ['codeine', 'clopidogrel', 'simvastatin']
 
-report = generate_clinical_report(patient)
+report = generate_clinical_report(patient, genotypes, drugs=medications)
 print(export_report(report, format='text'))
 ```
 
-Report sections: header → genotype summary per gene → drug recommendations by CPIC → DDI warnings → disclaimer & UUID.
+The report is a dict with the keys `header`, `patient_info`, `genotype_results`, `drug_recommendations`, `interaction_summary`, `clinical_actions` and `disclaimer`; the text export prints them as header → patient information → genotype results per gene → drug recommendations (CPIC level) → clinical actions → interaction summary → disclaimer. `patient_info` keeps only `patient_id`, `sex`, `ethnicity` and `ordering_provider`, so `name` and `dob` do not appear. Only drug–gene pairs with a built-in CPIC guideline produce a recommendation (here codeine/CYP2D6, clopidogrel/CYP2C19 and simvastatin/SLCO1B1). Drug recommendations use the `phenotype` you supply in `genotypes`, while the genotype table recomputes the phenotype from `diplotype`, so keep the two consistent (for example by filling `phenotype` from `classify_phenotype`).
 
 ### 7. Custom allele table loading for a non-coverage gene
 
 ```python
 import json
-from metainformant.pharmacogenomics.alleles.star_allele import load_allele_definitions
+from pathlib import Path
+from metainformant.pharmacogenomics.alleles.star_allele import call_star_alleles, load_allele_definitions
 
 cyp2e1 = {
-    'gene': 'CYP2E1',
-    'star_alleles': [
-        {
-            'name': '*1',
-            'variants': ['rs2031920'],
-            'function': 'normal',
-            'activity': 1.0,
-        },
-        {
-            'name': '*5B',
-            'variants': ['rs3813867'],
-            'function': 'decreased',
-            'activity': 0.5,
-        },
-    ]
+    '*1': {
+        'defining_variants': [],
+        'function': 'Normal function',
+        'activity_value': 1.0,
+    },
+    '*5B': {
+        'defining_variants': ['rs3813867'],
+        'function': 'Decreased function',
+        'activity_value': 0.5,
+    },
 }
-with open('/tmp/cyp2e1.json', 'w') as fh:
-    json.dump(cyp2e1, fh, indent=2)
+path = Path('output/pharmacogenomics/cyp2e1.json')
+path.parent.mkdir(parents=True, exist_ok=True)
+path.write_text(json.dumps(cyp2e1, indent=2))
 
-load_allele_definitions(gene='CYP2E1', filepath='/tmp/cyp2e1.json')
-variants = {'rs2031920'}
-alleles = call_star_alleles(variants, gene='CYP2E1')
-print([a.name for a in alleles])
+definitions = load_allele_definitions('CYP2E1', source='file', filepath=path)
+variants = {'rs3813867'}
+alleles = call_star_alleles(variants, 'CYP2E1', allele_definitions=definitions)
+print([a.name for a in alleles])  # ['*5B']
 ```
 
 ### 8. Population phenotype frequency tabulation
 
 ```python
 from metainformant.pharmacogenomics.alleles.phenotype import population_phenotype_frequencies
-import pandas as pd
 
-df = pd.read_csv('large_pharmacogenomic_cohort.csv')
+# allele name -> population frequency (illustrative values; they should sum to about 1)
+allele_freqs = {'*1': 0.35, '*2': 0.30, '*4': 0.20, '*10': 0.08, '*41': 0.07}
 
-def parse_variants(row):
-    raw = row.get('CYP2D6_rsids', '')
-    return set(str(raw).split(';')) if pd.notna(raw) else set()
-
-freqs = population_phenotype_frequencies(
-    genotype_matrix=df,
-    parse_variants=parse_variants,
-    gene='CYP2D6',
-    sample_weight_col=None,  # optional column for survey weights
-)
-print(freqs)  # {'PM':0.07, 'IM':0.34, 'NM':0.50, 'RM':0.07, 'UM':0.02}
+freqs = population_phenotype_frequencies(allele_freqs, gene='CYP2D6')
+print(freqs)  # phenotype abbreviation -> expected frequency under Hardy–Weinberg (empty categories omitted)
 ```
+
+For observed frequencies in a cohort, classify each sample (example 2) and count: `df['cyp2d6_phenotype'].value_counts(normalize=True)`.
 
 ### 9. Matplotlib bar-chart visualization of metabolizer distribution
 
 ```python
 from metainformant.pharmacogenomics.visualization.plots import plot_metabolizer_status
-counts = {'PM':70, 'IM':320, 'NM':500, 'RM':30, 'UM':10}
-plot_metabolizer_status(
+
+counts = {'PM': 70, 'IM': 320, 'NM': 500, 'RM': 30, 'UM': 10}
+path = plot_metabolizer_status(
     counts,
-    gene='CYP2D6',
-    title='CYP2D6 phenotype distribution — N=1030',
-    save='cyp2d6_distribution.png',
-    show=False,
-    style='darkgrid',
+    'output/pharmacogenomics/cyp2d6_distribution.png',
+    title=f'CYP2D6 phenotype distribution — N={sum(counts.values())}',
+    figsize=(10, 6),
 )
+print(path)  # the saved file (a pathlib.Path); the figure is written to disk, never shown
 ```
 
 ### 10. PharmGKB annotation enrichment
 
 ```python-snippet
+from metainformant.pharmacogenomics.annotations.cpic import lookup_drug_gene
 from metainformant.pharmacogenomics.annotations.pharmgkb import (
     query_pharmgkb_annotations,
     get_evidence_level,
-    get_drug_phenotypes,
 )
 
 ann = query_pharmgkb_annotations(gene='CYP2D6', drug='codeine')
 for a in ann:
     lvl = get_evidence_level(a)
-    print(f"{a['variant']} – {a['drug']} (Level {lvl['level']}): {a['annotation_text'][:80]}")
+    print(f"{a['gene']} – {a['drug']} (Level {lvl['level']}): {a['annotation_text'][:80]}")
 
-pheno_guides = get_drug_phenotypes('codeine', gene='CYP2D6')
+pheno_guides = lookup_drug_gene('codeine', 'CYP2D6')['recommendations']
 print(pheno_guides)
 ```
 
 ### 11. Error-handling wrapper for production inference service
 
 ```python
-def safe_predict(variants, gene, fallback='NM'):
-    try:
-        return pharmacogenomics.predict_metabolizer(variants, gene=gene)
-    except ValueError as e:
-        # Known failure modes: unknown gene, empty variant set, allele mismatch
-        return {'phenotype': fallback, 'error': str(e), 'gene': gene}
-    except KeyError as e:
-        # allele activity missing
-        return {'phenotype': fallback, 'error': f'activity table: {e}', 'gene': gene}
+import logging
 
-result = safe_predict({'rsxxxx'}, 'CYP2E1')
+log = logging.getLogger(__name__)
+
+def safe_phenotype(variants, gene, fallback='Indeterminate'):
+    try:
+        return phenotype_from_variants(variants, gene)
+    except ValueError as e:
+        # unknown gene: there is no built-in allele table for it
+        return {'phenotype': fallback, 'error': str(e), 'gene': gene}  # never fall back to a normal phenotype
+
+result = safe_phenotype({'rs3892097'}, 'CYP2E1')
 if result.get('error'):
     log.error('PGx failed for gene %s: %s', result['gene'], result['error'])
 ```
@@ -253,36 +242,48 @@ if result.get('error'):
 
 ```python
 import pandas as pd
+from metainformant.pharmacogenomics.annotations.cpic import get_dosing_recommendation, lookup_drug_gene
 
-genes  = ['CYP2D6','CYP2C19','CYP2C9','SLCO1B1','UGT1A1']
-drugs  = ['codeine','tamoxifen','warfarin','atorvastatin','irinotecan']
+genes = ['CYP2D6', 'CYP2C19', 'CYP2C9', 'SLCO1B1', 'TPMT']
+drugs = ['codeine', 'clopidogrel', 'warfarin', 'simvastatin', 'azathioprine']
+patient_variants = {  # observed variants per gene
+    'CYP2D6': {'rs3892097', 'rs1065852'}, 'CYP2C19': {'rs4244285', 'rs4986893'},
+    'CYP2C9': {'rs1057910'}, 'SLCO1B1': set(), 'TPMT': set(),
+}
 
 matrix = {}
 for drug in drugs:
     matrix[drug] = {}
     for gene in genes:
-        ph = predict_metabolizer(patient_variants[gene], gene=gene)['phenotype']
-        rec = get_dosing_recommendation(drug, ph, gene=gene)
-        matrix[drug][gene] = rec['recommendation']
+        guideline = lookup_drug_gene(drug, gene)
+        if guideline is None:
+            continue  # no built-in CPIC guideline for this drug–gene pair
+        phenotype = phenotype_from_variants(patient_variants[gene], gene)['phenotype'].value
+        rec = get_dosing_recommendation(drug, phenotype, guidelines=[guideline])
+        matrix[drug][gene] = rec['recommendation'] if rec else f'no guidance for {phenotype}'
 
-df = pd.DataFrame(matrix).T  # drugs × genes
+df = pd.DataFrame(matrix).T  # drugs × genes; NaN where there is no guideline
 df.to_csv('drug_gene_matrix.csv')
 ```
 
 ### 13. Parallel MapReduce via Dask for >1M records
 
 ```python-snippet
+import pandas as pd
 import dask.dataframe as dd
 from dask.distributed import Client
+
 client = Client(n_workers=8, threads_per_worker=1)
 
 ddf = dd.read_csv('massive_cohort_*.csv')
+
 def predict_partition(df):
-    out = []
-    for _, row in df.iterrows():
-        out.append(pharmacogenomics.predict_metabolizer(
-            set(str(row['rsids']).split(';')), gene='CYP2D6'))
-    return pd.Series([o['phenotype'] for o in out], index=df.index)
+    return pd.Series(
+        [None if pd.isna(rsids)  # missing genotype data, not "no variants"
+         else phenotype_from_variants(set(rsids.split(';')), 'CYP2D6')['phenotype'].value
+         for rsids in df['rsids']],
+        index=df.index,
+    )
 
 ddf['phenotype'] = ddf.map_partitions(predict_partition, meta=('phenotype', 'object'))
 ddf.to_csv('output/phenotypes-*.csv', index=False)
@@ -292,52 +293,59 @@ ddf.to_csv('output/phenotypes-*.csv', index=False)
 
 ```python
 import argparse
+import json
+
+from metainformant.pharmacogenomics.annotations.cpic import get_dosing_recommendation, lookup_drug_gene
 
 parser = argparse.ArgumentParser(description='Drug–gene dosing lookup')
 parser.add_argument('--drug', required=True)
 parser.add_argument('--gene', required=True)
-parser.add_argument('--phenotype', required=True)
-parser.add_argument('--format', default='text', choices=['text','json'])
+parser.add_argument('--phenotype', required=True)  # e.g. "Poor Metabolizer" or PM
+parser.add_argument('--format', default='text', choices=['text', 'json'])
 args = parser.parse_args()
 
-rec = get_dosing_recommendation(args.drug, args.phenotype, args.gene)
+guideline = lookup_drug_gene(args.drug, args.gene)  # get_dosing_recommendation has no gene filter
+rec = get_dosing_recommendation(args.drug, args.phenotype, guidelines=[guideline]) if guideline else None
+if rec is None:
+    raise SystemExit(f'No built-in CPIC recommendation for {args.drug}/{args.gene} ({args.phenotype})')
 if args.format == 'json':
-    import json; print(json.dumps(rec, indent=2))
+    print(json.dumps(rec, indent=2))
 else:
     print(f"{args.drug} ({args.gene}, {args.phenotype}): {rec['recommendation']}")
 ```
 
-### 15. PharmGKB annotation caching across runs
+### 15. PharmGKB annotations from a local export
 
 ```python-snippet
-from metainformant.pharmacogenomics.annotations.pharmgkb import get_cached_pharmgkb_path
-import os
+from metainformant.pharmacogenomics.annotations.pharmgkb import parse_clinical_annotations
 
-cache_dir = get_cached_pharmgkb_path()  # ~/.cache/metainformant/pharmgkb/
-print(f"PharmGKB cache lives at {cache_dir}")
-# For offline machines, pre-populate it before deployment:
-#   download latest annotations.tsv manually into that folder
+# The package does not download or cache PharmGKB data; parse an export you downloaded yourself
+annotations = parse_clinical_annotations('clinical_annotations.tsv')
+print(f"Parsed {len(annotations)} clinical annotations")
 ```
 
 ### 16. Debug logging for allele mismatch investigation
 
 ```python
-import os
-os.environ['PG_LOGGING'] = 'DEBUG'   # must be set before importing module
+import logging
+logging.getLogger('metainformant.pharmacogenomics').setLevel(logging.DEBUG)  # any time before the call
 from metainformant.pharmacogenomics.alleles.star_allele import call_star_alleles
 
-variants = {'rs1065852', 'rs5030655', 'rs3892097'}
+variants = {'rs3892097', 'rs1065852'}
 alleles = call_star_alleles(variants, gene='CYP2D6')
-# console shows: attempted matches, score, why winner chosen
+# console shows one DEBUG line per matched allele ("Matched allele *4 for CYP2D6 ...")
+
+call_star_alleles({'rs0000000'}, gene='CYP2D6')
+# console shows "No variant alleles matched for CYP2D6, returning reference *1"
 ```
 
 ### 17. Activity score table export for regulatory submission
 
 ```python-snippet
-from metainformant.pharmacogenomics.alleles.activity import _ACTIVITY_SCORE_TABLES
+from metainformant.pharmacogenomics.alleles.star_allele import load_allele_definitions
 import json
 gene = 'CYP2D6'
-table = _ACTIVITY_SCORE_TABLES[gene]
+table = {a.name: a.activity_value for a in load_allele_definitions(gene)}
 with open(f'{gene}_activity_scores.json', 'w') as fh:
     json.dump(table, fh, indent=2)
 print(f"Exported {len(table)} allele entries")
@@ -348,24 +356,27 @@ print(f"Exported {len(table)} allele entries")
 ```python
 from concurrent.futures import ThreadPoolExecutor
 
+import pandas as pd
+
 def pheno(row):
-    alleles = call_star_alleles(set(row['rsids'].split(';')), gene='CYP2D6', algorithm='balanced')
-    dip = determine_diplotype(alleles[0].name, alleles[1].name, gene='CYP2D6')
-    return classify_phenotype(dip, gene='CYP2D6')['phenotype'].value
+    if pd.isna(row['rsids']):
+        return None  # missing genotype data, not "no variants"
+    return phenotype_from_variants(set(row['rsids'].split(';')), 'CYP2D6')['phenotype'].value
 
 with ThreadPoolExecutor(max_workers=4) as pool:
-    results = list(pool.map(pheno, df.to_dict('records')))
+    results = list(pool.map(pheno, df.to_dict('records')))  # df as in example 2
 df['phenotype'] = results
 ```
 
-### 19. HTML clinical report generation (patient-friendly)
+### 19. HTML clinical report generation
 
 ```python
-report = generate_clinical_report(patient)
-html = export_report(report, format='html')
-with open('report.html', 'w') as fh:
-    fh.write(html)
-# Open in browser or embed in patient portal
+from metainformant.pharmacogenomics.clinical.reporting import generate_clinical_report, export_report
+
+# patient, genotypes and medications as in example 6
+report = generate_clinical_report(patient, genotypes, drugs=medications)
+html = export_report(report, format='html', output_path='output/pharmacogenomics/report.html')
+# the HTML string is returned and also written to output_path; open it in a browser or embed it in a portal
 ```
 
 ### 20. Integration into FastAPI micro-service
@@ -383,11 +394,8 @@ class GenotypeInput(BaseModel):
 @app.post('/predict/{gene}')
 async def predict_endpoint(gene: str, payload: GenotypeInput):
     try:
-        alleles = call_star_alleles(set(payload.rsids), gene=gene)
-        dip = determine_diplotype(alleles[0].name, alleles[1].name, gene=gene)
-        pheno = classify_phenotype(dip, gene=gene)
-        return pheno
-    except KeyError:
+        return phenotype_from_variants(set(payload.rsids), gene)
+    except ValueError:  # unknown gene: no built-in allele table
         raise HTTPException(404, f'Gene {gene} not supported')
 
 if __name__ == '__main__':
@@ -397,40 +405,32 @@ if __name__ == '__main__':
 ### 21. Prescription-safety check list
 
 ```python
-def check_patient_meds(patient_genotype: dict, meds: list[str]) -> list[dict]:
-    findings = []
-    for med in meds:
-        for gene, geno in patient_genotype.items():
-            ph = geno['phenotype']
-            rec = get_dosing_recommendation(med, ph, gene=gene)
-            if rec.get('action') != 'no_action':
-                findings.append({
-                    'drug': med,
-                    'gene': gene,
-                    'phenotype': ph,
-                    'recommendation': rec['recommendation'],
-                    'level': rec.get('cpic_level'),
-                })
-    return findings
+from metainformant.pharmacogenomics.clinical.drug_interaction import analyze_drug_gene_interactions
 
-findings = check_patient_meds(patient['genotype'], patient['medications'])
+def check_patient_meds(genotypes: dict, meds: list[str]) -> list:
+    """Drug–gene findings of Major or Moderate severity, i.e. those that call for action."""
+    return [ix for ix in analyze_drug_gene_interactions(meds, genotypes) if ix.severity.requires_action]
+
+findings = check_patient_meds(genotypes, medications)  # as in example 6
 for f in findings:
-    print(f"[ALERT] {f['drug']} — {f['gene']} ({f['phenotype']}): {f['recommendation']}")
+    print(f"[ALERT] {f.drug} — {f.gene} ({f.phenotype}): {f.recommendation}")
 ```
 
 ### 22. Export phenotype to VCF INFO field (for downstream genomics pipelines)
 
 ```python-snippet
-import vcfpy  # pip install vcfpy
+import vcfpy  # uv pip install vcfpy (not a metainformant dependency)
 
-reader = vcf.Reader(open('cohort.vcf.gz'))
-writer = vcf.Writer(open('phenotypes.vcf.gz','wb'), reader.header)
+reader = vcfpy.Reader.from_path('cohort.vcf.gz')
+reader.header.add_info_line({'ID': 'PGX_PHENO', 'Number': '1', 'Type': 'String',
+                             'Description': 'Metabolizer phenotype from metainformant'})
+writer = vcfpy.Writer.from_path('phenotypes.vcf.gz', reader.header)
 
 for record in reader:
     gene = record.INFO.get('gene', ['NA'])[0]
-    if gene in ['CYP2D6','CYP2C19']:
-        rsids = {sid.split('rs')[1] for sid in record.ID if sid.startswith('rs')}
-        ph = pharmacogenomics.predict_metabolizer(rsids, gene=gene)['phenotype'].value
-        record.INFO['PGX_PHENO'] = ph
+    if gene in ['CYP2D6', 'CYP2C19']:
+        rsids = {sid for sid in record.ID if sid.startswith('rs')}
+        record.INFO['PGX_PHENO'] = phenotype_from_variants(rsids, gene)['phenotype'].value
     writer.write_record(record)
+writer.close()
 ```

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - analysis
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/spatial/analysis`
+- **Path**: `src/metainformant/spatial/analysis`
 - **Purpose**: Spatial analysis module for METAINFORMANT.
 - **Domain**: spatial
 

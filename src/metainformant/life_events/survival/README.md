@@ -14,7 +14,7 @@ Time-to-event analysis methods including Kaplan-Meier estimation, Cox proportion
 | Function | Description |
 |----------|-------------|
 | `kaplan_meier_estimator()` | Kaplan-Meier survival curve estimation with Greenwood variance |
-| `cox_ph_model()` | Cox proportional hazards model via Newton-Raphson optimization |
+| `cox_ph_model()` | Cox proportional hazards model: NumPy Newton-Raphson on the Breslow partial likelihood (tied times share a risk set), standard errors from the full inverse information matrix (`inf` for unidentified covariates), Wald p-values, C-index |
 | `competing_risks()` | Cumulative incidence estimation for competing risk events |
 | `recurrent_events()` | Analyze recurrent event processes |
 | `time_varying_covariates()` | Prepare time-varying covariate data for survival models |

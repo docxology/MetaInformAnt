@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - analysis
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/metabolomics/analysis`
+- **Path**: `src/metainformant/metabolomics/analysis`
 - **Purpose**: Metabolomics analysis sub-package.
 - **Domain**: metabolomics
 

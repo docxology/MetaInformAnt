@@ -16,7 +16,7 @@ Integration methods for combining genomics, transcriptomics, proteomics, and epi
 | `integrate_omics_data()` | Combine multiple omics DataFrames into unified representation |
 | `joint_pca()` | Joint PCA across concatenated omics layers |
 | `joint_nmf()` | Non-negative matrix factorization across omics layers |
-| `canonical_correlation()` | Canonical correlation analysis between two omics types |
+| `canonical_correlation()` | Ridge-regularized canonical correlation analysis between two omics layers: closed form via thin SVDs of the standardized layers, `regularization` defaults to 0.0 (classical CCA), and the returned weights apply to the standardized features and reproduce the canonical variates |
 | `from_dna_variants()` | Convert VCF data to integration-ready format |
 | `from_rna_expression()` | Convert expression matrix to integration-ready format |
 | `from_protein_abundance()` | Convert protein quantification to integration-ready format |

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - networks
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/scripts/networks`
+- **Path**: `scripts/networks`
 - **Purpose**: Functionality for networks.
 - **Domain**: scripts
 

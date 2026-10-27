@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - dna
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/dna`
+- **Path**: `src/metainformant/dna`
 - **Purpose**: DNA sequence analysis and genomics module for METAINFORMANT.
 - **Domain**: metainformant
 

@@ -2,7 +2,7 @@
 
 ## Context & Intent
 
-- **Path**: `docs/reviews/` (relative to repo root)
+- **Path**: `docs/reviews` (relative to repo root)
 - **Purpose**: Documentation-only directory holding dated review ledgers.
   Current sole artifact: `RESEARCH_SOFTWARE_REVIEW_2026-08-13.md`, whose
   verified outcome is "INCOMPLETE — engineering hardening advanced; release

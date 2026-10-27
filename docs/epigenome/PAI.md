@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - epigenome
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/docs/epigenome`
+- **Path**: `docs/epigenome`
 - **Purpose**: Functionality for epigenome.
 - **Domain**: docs
 

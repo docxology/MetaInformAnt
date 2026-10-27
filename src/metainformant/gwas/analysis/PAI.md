@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - analysis
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/gwas/analysis`
+- **Path**: `src/metainformant/gwas/analysis`
 - **Purpose**: Functionality for analysis.
 - **Domain**: gwas
 

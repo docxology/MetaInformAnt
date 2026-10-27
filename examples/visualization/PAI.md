@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - visualization
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/examples/visualization`
+- **Path**: `examples/visualization`
 - **Purpose**: Functionality for visualization.
 - **Domain**: examples
 

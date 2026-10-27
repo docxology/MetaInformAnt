@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - phenotype
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/examples/phenotype`
+- **Path**: `examples/phenotype`
 - **Purpose**: Functionality for phenotype.
 - **Domain**: examples
 

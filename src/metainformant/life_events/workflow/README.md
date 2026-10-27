@@ -12,10 +12,10 @@ End-to-end life course analysis workflows: sequence loading, statistical analysi
 
 | Function | Description |
 |----------|-------------|
-| `analyze_life_course()` | Full analysis of event sequences: statistics, patterns, visualizations |
+| `analyze_life_course()` | Full analysis of event sequences: summary statistics, word2vec embeddings, optional outcome prediction, summary plots; returns `visualizations` (plots written) and `visualization_errors` (plots that failed) |
 | `compare_populations()` | Statistical comparison of event patterns between two population groups |
 | `intervention_analysis()` | Model the effect of interventions on event sequence outcomes |
-| `event_importance()` | Rank event types by their impact on target outcomes |
+| `event_importance()` | Rank event types by how early they occur (`"frequency"`) or by transition connectivity (`"transition"`) |
 
 ## Workflow Steps
 
@@ -28,11 +28,13 @@ End-to-end life course analysis workflows: sequence loading, statistical analysi
 ## Usage
 
 ```python
+from datetime import datetime
+
 from metainformant.life_events.workflow.workflow import (
     analyze_life_course, compare_populations, intervention_analysis
 )
 
 results = analyze_life_course(sequences, output_dir="output/life_events/")
 comparison = compare_populations(group_a, group_b)
-intervention = intervention_analysis(sequences, intervention_type="early_treatment")
+intervention = intervention_analysis(sequences, intervention_time=datetime(2023, 6, 1))
 ```

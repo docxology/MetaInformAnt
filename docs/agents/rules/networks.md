@@ -35,10 +35,12 @@ src/metainformant/networks/
 ```python
 from metainformant.networks.analysis import graph
 
-# Create graph from edge list
-G = graph.create_from_edges(edges, directed=False)
-# Calculate metrics
-metrics = graph.calculate_centrality(G)
+# Create a network from an edge list of (source, target) pairs
+G = graph.create_network(edges, directed=False)
+# Calculate centralities: {"degree": {...}, "betweenness": {...}, "closeness": {...}, ...}
+centralities = graph.centrality_measures(G)
+# Calculate summary metrics (density, average degree, clustering, ...)
+metrics = graph.network_metrics(G)
 ```
 
 ### PPI (`ppi`)
@@ -65,9 +67,11 @@ metrics = graph.calculate_centrality(G)
 ```python
 from metainformant.networks.analysis import community
 
+# method: "louvain" (default), "leiden", "greedy", "girvan_newman", "label_propagation", "asyn_lpa", "fluid"
+# "leiden" needs leidenalg and python-igraph; without them detection falls back to another method
 communities = community.detect_communities(
     graph=G,
-    algorithm="leiden"
+    method="leiden",
 )
 # Returns: dict mapping node -> community_id
 ```

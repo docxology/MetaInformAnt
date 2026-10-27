@@ -66,7 +66,7 @@ Optimized parameters for honeybee genomes:
 - Min call rate: 0.95
 - HWE p-value: 1e-6 (accounts for population structure)
 - Exclude indels: true
-- Min quality: 30.0
+- Min quality: 30.0 (`min_qual`, QUAL at least 30; a variant without a QUAL value is removed, so drop `min_qual` for a VCF that carries none)
 
 ### 4. Population Structure
 
@@ -139,7 +139,8 @@ python -m metainformant gwas run --config config/gwas/gwas_amellifera.yaml
 ### Python API
 
 ```python
-from metainformant.gwas import load_gwas_config, execute_gwas_workflow
+from metainformant.gwas.data.config import load_gwas_config
+from metainformant.gwas import execute_gwas_workflow
 
 # Load configuration
 cfg = load_gwas_config("config/gwas/gwas_amellifera.yaml")

@@ -4,7 +4,7 @@
 Single-cell transcriptomic analysis: quality control, normalization, dimensionality reduction, clustering, and trajectory analysis.
 
 ## Dependencies
-- **Required**: `core`, `rna` (expression data), `ml.dimensionality`
+- **Required**: `core` (expression matrices are passed in; `singlecell` does not import `rna` or `ml`)
 - **Optional**: `scanpy`, `anndata`
 
 ## Source Structure
@@ -41,8 +41,13 @@ src/metainformant/singlecell/
 from metainformant.singlecell.analysis import dimensionality
 from metainformant.ml.features import dimensionality as ml_dimensionality
 
-# Use shared dimensionality reduction
-pca_result = ml_dimensionality.pca(expression_matrix, n_components=50)
+# Single-cell PCA on a SingleCellData object: returns the data with obsm["X_pca"] and PC columns in obs
+data = dimensionality.pca_reduction(data, n_components=50)
+
+# Shared dimensionality reduction on a plain cells x genes matrix: (transformed data, fitted PCA model)
+transformed, pca_model = ml_dimensionality.pca_reduction(expression_matrix, n_components=50)
+
+# Nonlinear embeddings: dimensionality.umap_reduction(data), dimensionality.tsne_reduction(data)
 ```
 
 ### Clustering
@@ -59,8 +64,12 @@ pca_result = ml_dimensionality.pca(expression_matrix, n_components=50)
 ```python
 from metainformant.singlecell.analysis import trajectory
 
-data = trajectory.compute_pseudotime(data, root_cells=0, method="diffusion")
-traj_result = trajectory.trajectory_analysis(data)
+# Needs an embedding (run PCA first); root_cell is the index of the starting cell
+data = trajectory.compute_diffusion_pseudotime(data, root_cell=0)
+# Adds obs["dpt_pseudotime"] and uns["dpt"]
+
+branches = trajectory.find_trajectory_branches(data, pseudotime_col="dpt_pseudotime")
+# Returns: dict with n_branches, branch_sizes, branch_labels, branches
 ```
 
 ### Integration (`integration`)
@@ -74,14 +83,18 @@ traj_result = trajectory.trajectory_analysis(data)
 ```python
 from metainformant.singlecell.data import integration
 
-# Integrate multiple samples
-integrated = integration.integrate_datasets([sample1_data, sample2_data, sample3_data])
+# Integrate multiple samples (adds a "batch" column to obs);
+# integration_method is "scanorama" (default), "mnn", "harmony" or "bbknn"
+integrated = integration.integrate_multiple_batches(
+    [sample1_data, sample2_data, sample3_data],
+    integration_method="scanorama",
+)
 
 # Harmony batch correction
 corrected = integration.harmony_integration(integrated, batch_key="batch")
 
-# Alternative: Combat batch correction
-corrected = integration.batch_correction(integrated, batch_key="batch", method="combat")
+# Alternative: ComBat batch correction
+corrected = integration.combat_integration(integrated, batch_key="batch")
 ```
 
 ### Visualization (`visualization`)
@@ -93,18 +106,22 @@ corrected = integration.batch_correction(integrated, batch_key="batch", method="
 
 **Patterns**:
 ```python-snippet
-from metainformant.singlecell import (
+from metainformant.singlecell.visualization.visualization import (
     plot_qc_metrics,
-    plot_dimensionality_reduction,
-    plot_gene_expression,
-    plot_clusters
+    plot_umap,
+    plot_tsne,
+    plot_pca,
+    plot_marker_expression,
+    plot_cluster_comparison,
+    plot_trajectory,
 )
 
-# Create visualizations
+# Create visualizations (each returns a matplotlib Figure)
 fig = plot_qc_metrics(data)
-fig = plot_dimensionality_reduction(data, method="umap", color_by="cluster")
-fig = plot_gene_expression(data, gene="GENE1")
-fig = plot_clusters(data, cluster_key="cluster")
+fig = plot_umap(data, color="leiden_cluster")  # needs umap_reduction first; color is an obs column
+fig = plot_marker_expression(data, marker_genes=["GENE1"], method="dotplot")
+fig = plot_cluster_comparison(data, cluster_cols=["leiden_cluster", "batch"])
+fig = plot_trajectory(data, trajectory_key="dpt")  # key in data.uns, e.g. after compute_diffusion_pseudotime
 ```
 
 ## Patterns
@@ -174,7 +191,7 @@ def normalize_data(data):
 - Visualizations: `output/singlecell/<analysis>/plots/`
 
 ### Dimensionality Reduction
-- Use `ml.dimensionality` for shared implementations
+- `singlecell.analysis.dimensionality` provides PCA, t-SNE and UMAP for `SingleCellData`; `ml.features.dimensionality` offers the same methods for plain matrices
 - Support both scanpy and scikit-learn APIs
 - Return consistent data structures
 
@@ -186,7 +203,7 @@ def normalize_data(data):
 
 ## Integration
 
-- **Uses**: `rna` (expression data), `ml.dimensionality`
+- **Uses**: `core`
 - **Used by**: `multiomics` (single-cell omics integration), `information` (single-cell information analysis)
 - **External**: `scanpy`, `anndata` when available
 

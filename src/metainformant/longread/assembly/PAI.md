@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - assembly
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/longread/assembly`
+- **Path**: `src/metainformant/longread/assembly`
 - **Purpose**: Long-read assembly module for overlap computation, consensus, and hybrid assembly.
 - **Domain**: longread
 

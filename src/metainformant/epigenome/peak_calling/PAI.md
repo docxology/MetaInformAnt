@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - peak_calling
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/epigenome/peak_calling`
+- **Path**: `src/metainformant/epigenome/peak_calling`
 - **Purpose**: Peak calling submodule for epigenome analysis.
 - **Domain**: epigenome
 

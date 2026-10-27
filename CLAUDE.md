@@ -109,7 +109,9 @@ data/ (inputs) → Module Processing → output/ (results)
 ### Core Utilities
 
 ```python
-from metainformant.core import io, paths, config
+from metainformant.core import io
+from metainformant.core.io import paths
+from metainformant.core.utils import config
 from metainformant.core.utils.logging import get_logger
 
 # File I/O (auto-creates dirs, gzip-aware)

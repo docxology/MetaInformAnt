@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - survival
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/life_events/survival`
+- **Path**: `src/metainformant/life_events/survival`
 - **Purpose**: Survival and time-to-event analysis subpackage.
 - **Domain**: life_events
 

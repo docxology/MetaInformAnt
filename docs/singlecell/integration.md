@@ -4,118 +4,70 @@ The integration module provides tools for combining multiple single-cell dataset
 
 ## Dataset Integration
 
-### concatenate_datasets()
+### integrate_multiple_batches()
 
-Combine multiple datasets along the cell axis:
+Combine multiple datasets along the cell axis and correct for batch effects in one call. The expression matrices are stacked directly, so the datasets must contain the same genes in the same order (there are no gene intersection or union helpers; align the genes first). Cells are labelled `batch_0`, `batch_1`, ... in `obs['batch']` according to the position of their dataset in the list:
 
 ```python-snippet
-from metainformant.singlecell.integration import concatenate_datasets
+from metainformant.singlecell.data.integration import integrate_multiple_batches
 
 # Combine datasets from different samples/experiments
 datasets = [data1, data2, data3]
-batch_labels = ['Sample_1', 'Sample_2', 'Sample_3']
 
-integrated_data = concatenate_datasets(
+integrated_data = integrate_multiple_batches(
     datasets,
-    batch_key='batch',      # Column name for batch labels
-    batch_categories=batch_labels,
-    join='outer'            # 'inner' for intersection, 'outer' for union
+    integration_method='scanorama'   # 'scanorama', 'mnn', 'harmony' or 'bbknn'
 )
 
-print(f"Integrated: {integrated_data.n_obs} cells × {integrated_data.n_vars} genes")
+print(f"Integrated: {integrated_data.n_obs} cells × {integrated_data.n_vars} features")
 ```
 
-### intersect_datasets()
-
-Keep only genes present in all datasets:
-
-```python-snippet
-from metainformant.singlecell.integration import intersect_datasets
-
-# Find common genes across datasets
-common_genes = intersect_datasets(datasets, return_indices=False)
-print(f"Common genes: {len(common_genes)}")
-
-# Apply intersection
-integrated_data = concatenate_datasets(
-    datasets, 
-    batch_categories=batch_labels,
-    join='inner'  # Equivalent to intersection
-)
-```
-
-### union_datasets()
-
-Keep all genes, filling missing values with zeros:
-
-```python-snippet
-from metainformant.singlecell.integration import union_datasets
-
-# Union of all genes
-all_genes = union_datasets(datasets, return_indices=False)
-print(f"Total genes: {len(all_genes)}")
-
-integrated_data = concatenate_datasets(
-    datasets,
-    batch_categories=batch_labels, 
-    join='outer'  # Equivalent to union
-)
-```
+The integrated object stores principal-component coordinates in `X` (at most 50 columns), so `n_vars` counts components rather than genes.
 
 ## Batch Correction
 
-### batch_correction_scaling()
+### remove_batch_effects()
 
-Simple scaling-based batch correction:
+Simple per-batch correction of the expression matrix:
 
 ```python-snippet
-from metainformant.singlecell.integration import batch_correction_scaling
+from metainformant.singlecell.data.preprocessing import remove_batch_effects
 
-# Scale-based batch correction
-corrected_data = batch_correction_scaling(
+# Per-batch centering or standardization
+corrected_data = remove_batch_effects(
     data,
     batch_key='batch',      # Batch column in obs
-    method='standardize'    # 'standardize', 'center', 'scale'
+    method='regress_out'    # 'regress_out' (subtract batch means) or 'combat' (standardize within batch)
 )
 ```
 
-### batch_correction_combat()
+### combat_integration()
 
-ComBat batch correction (requires additional dependencies):
+ComBat-style batch correction (a simplified per-gene adjustment of each batch to a reference batch; no additional dependencies are required):
 
 ```python-snippet
-from metainformant.singlecell.integration import batch_correction_combat
+from metainformant.singlecell.data.integration import combat_integration
 
-try:
-    # ComBat batch correction
-    corrected_data = batch_correction_combat(
-        data,
-        batch_key='batch',
-        covariates=None,       # Optional covariates to preserve
-        parametric=True        # Parametric vs non-parametric
-    )
-except ImportError:
-    print("ComBat not available. Install with: uv pip install combat")
+corrected_data = combat_integration(
+    data,
+    batch_key='batch',
+    covariates=None        # Optional covariate names (recorded in data.uns['combat'])
+)
 ```
 
-### batch_correction_harmony()
+### harmony_integration()
 
-Harmony integration (requires harmony-pytorch):
+Harmony-style integration (a simplified implementation that centers each batch in PCA space; requires scikit-learn):
 
 ```python-snippet
-from metainformant.singlecell.integration import batch_correction_harmony
+from metainformant.singlecell.data.integration import harmony_integration
 
-try:
-    # Harmony batch correction
-    corrected_data = batch_correction_harmony(
-        data,
-        batch_key='batch',
-        n_components=50,       # Number of PCs to use
-        theta=2.0,             # Diversity clustering penalty
-        sigma=0.1              # Ridge regression penalty
-    )
-except ImportError:
-    print("Harmony not available. Install with: uv pip install harmony-pytorch")
+corrected_data = harmony_integration(
+    data,
+    batch_key='batch',
+    n_components=50        # Number of components to compute
+)
+# Corrected coordinates are stored in corrected_data.obs as harmony_1 ... harmony_10
 ```
 
 ## Integration Workflows
@@ -123,50 +75,45 @@ except ImportError:
 ### Standard Integration Pipeline
 
 ```python-snippet
-from metainformant.singlecell.preprocessing import *
-from metainformant.singlecell.dimensionality import *
-from metainformant.singlecell.integration import *
+from metainformant.singlecell.data.preprocessing import (
+    calculate_qc_metrics,
+    filter_cells,
+    log_transform,
+    normalize_counts,
+)
+from metainformant.singlecell.data.integration import integrate_multiple_batches
+from metainformant.singlecell.analysis.nonlinear_methods import compute_neighbors, compute_umap
 
-def integrate_datasets(datasets, batch_labels, method='scaling'):
+def integrate_datasets(datasets, batch_labels, method='scanorama'):
     """
     Standard integration workflow.
     
     Args:
-        datasets: List of SingleCellData objects
+        datasets: List of SingleCellData objects (same genes in the same order)
         batch_labels: List of batch identifiers  
-        method: Batch correction method
+        method: Integration method ('scanorama', 'mnn', 'harmony' or 'bbknn')
     """
     
-    # 1. Concatenate datasets
-    print("Concatenating datasets...")
-    integrated = concatenate_datasets(
-        datasets,
-        batch_key='batch',
-        batch_categories=batch_labels
-    )
+    # 1. Standard preprocessing of each dataset
+    #    (gene filtering must keep the same genes in every dataset)
+    print("Preprocessing datasets...")
+    processed = []
+    for data in datasets:
+        data = calculate_qc_metrics(data)
+        data = filter_cells(data, min_genes=200, max_pct_mt=20)
+        data = normalize_counts(data, method='total_count')
+        data = log_transform(data)
+        processed.append(data)
     
-    # 2. Standard preprocessing
-    print("Preprocessing integrated dataset...")
-    integrated = calculate_qc_metrics(integrated)
-    integrated = filter_cells(integrated, min_genes=200, max_pct_mt=20)
-    integrated = filter_genes(integrated, min_cells=3)
-    integrated = normalize_counts(integrated, method='total_count')
-    integrated = log_transform(integrated)
+    # 2. Concatenate datasets and correct batch effects
+    print(f"Applying {method} integration...")
+    integrated = integrate_multiple_batches(processed, integration_method=method)
     
-    # 3. Feature selection (on full dataset)
-    integrated = select_hvgs(integrated, n_top_genes=2000)
+    # Replace the automatic batch_0, batch_1, ... labels
+    label_map = {f"batch_{i}": label for i, label in enumerate(batch_labels)}
+    integrated.obs['batch'] = integrated.obs['batch'].map(label_map)
     
-    # 4. Batch correction
-    print(f"Applying {method} batch correction...")
-    if method == 'scaling':
-        integrated = batch_correction_scaling(integrated, batch_key='batch')
-    elif method == 'combat':
-        integrated = batch_correction_combat(integrated, batch_key='batch')
-    elif method == 'harmony':
-        integrated = batch_correction_harmony(integrated, batch_key='batch')
-    
-    # 5. Dimensionality reduction
-    integrated = compute_pca(integrated, n_components=50)
+    # 3. Neighbors and embedding (X now holds principal components)
     integrated = compute_neighbors(integrated)
     integrated = compute_umap(integrated)
     
@@ -177,47 +124,29 @@ def integrate_datasets(datasets, batch_labels, method='scaling'):
 datasets = [sample1_data, sample2_data, sample3_data]
 batch_labels = ['Ctrl', 'Treated_1', 'Treated_2']
 
-integrated_data = integrate_datasets(datasets, batch_labels, method='scaling')
+integrated_data = integrate_datasets(datasets, batch_labels, method='scanorama')
 ```
 
 ## Quality Assessment
 
-### integration_metrics()
+### evaluate_integration_quality()
 
 Assess integration quality:
 
 ```python-snippet
-from metainformant.singlecell.integration import integration_metrics
+from metainformant.singlecell.data.integration import evaluate_integration_quality
 
 # Calculate integration metrics
-metrics = integration_metrics(
+metrics = evaluate_integration_quality(
     integrated_data,
     batch_key='batch',
-    label_key='cell_type',   # Cell type labels (if available)
-    embedding='X_umap'       # Embedding to evaluate
+    cluster_key='cluster'    # Optional cluster labels column
 )
 
 print("Integration Quality Metrics:")
-print(f"  Batch mixing entropy: {metrics['mixing_entropy']:.3f}")
-print(f"  Silhouette score: {metrics['silhouette_score']:.3f}")
-print(f"  ARI (batch vs clusters): {metrics['batch_ari']:.3f}")
-```
-
-### plot_integration_assessment()
-
-Visualize integration quality:
-
-```python-snippet
-from metainformant.singlecell.integration import plot_integration_assessment
-
-# Before and after batch correction comparison
-fig = plot_integration_assessment(
-    data_before=uncorrected_data,
-    data_after=corrected_data,
-    batch_key='batch',
-    embedding='umap'
-)
-plt.show()
+print(f"  Mean batch mixing score: {metrics['mean_batch_mixing_score']:.3f}")  # share of neighbors from other batches
+print(f"  Between/within batch distance ratio: {metrics['batch_distance_ratio']:.3f}")
+print(f"  Clusters independent of batch: {metrics['cluster_batch_independence']}")  # needs cluster_key
 ```
 
 ## Advanced Integration Methods
@@ -225,6 +154,10 @@ plt.show()
 ### Multi-Modal Integration
 
 ```python
+import numpy as np
+from metainformant.singlecell.data.preprocessing import log_transform, normalize_counts
+from metainformant.singlecell.analysis.pca_methods import compute_pca, select_hvgs
+
 def integrate_multimodal_data(rna_data, adt_data, batch_key='batch'):
     """
     Integrate RNA and protein (ADT) data.
@@ -265,6 +198,8 @@ def integrate_multimodal_data(rna_data, adt_data, batch_key='batch'):
 ### Cross-Species Integration
 
 ```python
+from metainformant.singlecell.data.integration import integrate_multiple_batches
+
 def integrate_cross_species(human_data, mouse_data):
     """
     Integrate data across species using orthologous genes.
@@ -295,11 +230,10 @@ def integrate_cross_species(human_data, mouse_data):
     human_subset.obs['species'] = 'Human'
     mouse_subset.obs['species'] = 'Mouse'
     
-    # 6. Integrate
-    integrated = concatenate_datasets(
+    # 6. Integrate (obs['species'] is kept; obs['batch'] holds batch_0 = human, batch_1 = mouse)
+    integrated = integrate_multiple_batches(
         [human_subset, mouse_subset],
-        batch_key='species',
-        batch_categories=['Human', 'Mouse']
+        integration_method='scanorama'
     )
     
     return integrated

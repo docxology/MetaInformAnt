@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - visualization
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/longread/visualization`
+- **Path**: `src/metainformant/longread/visualization`
 - **Purpose**: Long-read visualization module for read length, quality, and alignment plots.
 - **Domain**: longread
 

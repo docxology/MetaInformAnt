@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - electronic
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/phenotype/electronic`
+- **Path**: `src/metainformant/phenotype/electronic`
 - **Purpose**: Electronic phenotype analysis module.
 - **Domain**: phenotype
 

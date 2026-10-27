@@ -152,7 +152,8 @@ bcftools call -mv -Oz -o data/variants/amellifera/real/cohort.vcf.gz
 #### 6. Run GWAS with Real Data
 
 ```python
-from metainformant.gwas import load_gwas_config, execute_gwas_workflow
+from metainformant.gwas.data.config import load_gwas_config
+from metainformant.gwas import execute_gwas_workflow
 
 # Update config to point to real VCF
 config = load_gwas_config("config/gwas/gwas_amellifera.yaml")
@@ -206,20 +207,19 @@ tabix -p vcf data/variants/amellifera/real/published_variants.vcf.gz
 ### Python API
 
 ```python-snippet
-from metainformant.gwas.download import download_variant_data
-from metainformant.gwas.sra_download import download_sra_run
+from metainformant.core.io.download import download_with_progress
+from metainformant.gwas.data.sra_download import download_sra_run
 
 # Download from custom URL
-result = download_variant_data(
-    source="custom",
-    url="https://example.org/amellifera_variants.vcf.gz",
-    dest_dir="data/variants/amellifera/real",
+result = download_with_progress(
+    "https://example.org/amellifera_variants.vcf.gz",
+    "data/variants/amellifera/real/amellifera_variants.vcf.gz",
 )
 
-# Download SRA run
-result = download_sra_run(
+# Download SRA run (requires the SRA Toolkit)
+run_dir = download_sra_run(
     sra_accession="SRR2096937",
-    dest_dir="data/raw/sra",
+    output_dir="data/raw/sra",
     threads=8,
 )
 ```
@@ -311,7 +311,8 @@ EOF
 #### 5. Run GWAS
 
 ```python
-from metainformant.gwas import load_gwas_config, execute_gwas_workflow
+from metainformant.gwas.data.config import load_gwas_config
+from metainformant.gwas import execute_gwas_workflow
 
 # Load and update config
 config = load_gwas_config("config/gwas/gwas_amellifera.yaml")

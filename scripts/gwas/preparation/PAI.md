@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - preparation
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/scripts/gwas/preparation`
+- **Path**: `scripts/gwas/preparation`
 - **Purpose**: Functionality for preparation.
 - **Domain**: gwas
 

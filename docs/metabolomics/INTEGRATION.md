@@ -16,7 +16,7 @@ How the metabolomics module integrates with other METAINFORMANT modules and exte
 
 ### With `core` Module
 
-The metabolomics module relies on core infrastructure for I/O, logging, and configuration:
+The metabolomics module is self-contained: it imports only NumPy (and SciPy when available) and does not call `metainformant.core`. It does no logging, reads no environment variables or config files, and parses CSV/MGF itself in `io.formats`. You can still use the core helpers in the scripts around it:
 
 ```python
 from metainformant.core import io as core_io
@@ -28,37 +28,58 @@ logger = get_logger(__name__)
 config = core_io.load_json("config.json")
 ```
 
-**Key touchpoints**:
-- **`core.io`** — Reading/writing JSON, YAML config files; MS data uses own `io.formats`
-- **`core.utils.config`** — Environment variable handling (`METAINFORMANT_OUTPUT`, etc.)
-- **`core.utils.logging`** — Structured logging across all functions
+**Key touchpoints** (all on the caller's side; none is used inside `metabolomics`):
+- **`core.io`** — Reading/writing JSON, YAML, CSV and Parquet files; MS data uses the module's own `io.formats`
+- **`core.utils.config`** — `load_mapping_from_file`, `load_typed_env`, `apply_env_overrides` for your own pipeline settings (metabolomics functions never read `METAINFORMANT_OUTPUT` or any other variable; see [CONFIGURATION.md](CONFIGURATION.md))
+- **`core.utils.logging`** — `get_logger` for your own scripts (call `configure_logging_from_env()` to apply `CORE_LOG_LEVEL`; `get_logger` alone does not read it); metabolomics functions emit no log records
 
 ---
 
 ### With `visualization` Module
 
-The `metainformant.visualization` module provides advanced plotting utilities that complement metabolomics-specific plots.
+`metabolomics.visualization.plots` only **prepares plot-ready data** (volcano points, PCA scores, heatmap matrices, spectrum and chromatogram data); it draws nothing. Draw the prepared data with matplotlib, or pass it to the shared helpers in `metainformant.visualization.plots` (`pca_plot`, `volcano_plot`, `expression_heatmap`, `correlation_heatmap`), which take pandas DataFrames, return matplotlib `Axes` and save a figure when you give `output_path`.
 
 **Integration pattern**:
 
 ```python
+import pandas as pd
 from metainformant.metabolomics import io, analysis
-from metainformant.visualization import plots as viz  # shared plotting module
+from metainformant.metabolomics.pathways.enrichment import benjamini_hochberg
+from metainformant.metabolomics.visualization import plots as metab_viz
+from metainformant.visualization import plots as viz  # shared matplotlib plotting helpers
 
 # Load data
 dataset = io.formats.read_csv("data.csv")
 norm = analysis.identification.normalize_intensities(dataset.intensities, method="log2")
 
-# Use shared visualization
-pca_fig = viz.pca(norm.T, sample_labels=dataset.samples)
-heatmap_fig = viz.heatmap(norm, row_labels=dataset.metabolites)
+# PCA: the metabolomics helper computes the scores (metabolites x samples in),
+# the shared helper draws them (PC1/PC2 columns plus the variance of each in percent)
+scores, explained = metab_viz.pca_metabolomics(norm, n_components=2)
+pca_df = pd.DataFrame({
+    "PC1": scores[:, 0], "PC2": scores[:, 1],
+    "PC1_variance": explained[0] * 100, "PC2_variance": explained[1] * 100,
+})
+viz.pca_plot(pca_df, output_path="pca.png")
 
-# Metabolomics-specific plot (volcano) from its own visualization submodule
-from metainformant.metabolomics.visualization import plots as metab_viz
-volcano = metab_viz.volcano_plot(t_stats, pvals, labels=dataset.metabolites)
+# Heatmap: z-scored matrix from the metabolomics helper, drawn by the shared heatmap
+hm = metab_viz.intensity_heatmap_data(norm, dataset.metabolites, dataset.samples)
+viz.expression_heatmap(
+    pd.DataFrame(hm["matrix"], index=hm["row_labels"], columns=hm["col_labels"]),
+    output_path="heatmap.png",
+)
+
+# Volcano plot: the shared helper wants a log2 fold change and an adjusted p-value per metabolite
+group_a, group_b = [0, 1, 2], [3, 4, 5]  # sample indices of the two groups
+log2fc = analysis.identification.fold_change(dataset.intensities, group_a, group_b)  # linear-scale input
+_, pvals = analysis.identification.differential_abundance(norm, group_a, group_b)
+volcano_df = pd.DataFrame(
+    {"log2FoldChange": log2fc, "padj": benjamini_hochberg(list(pvals))},
+    index=dataset.metabolites,
+)
+viz.volcano_plot(volcano_df, output_path="volcano.png")
 ```
 
-**Recommended**: Use `metainformant.visualization` for PCA, heatmaps, clustering dendrograms; use `metabolomics.visualization` for domain-specific plots (volcano, enrichment bar charts).
+**Recommended**: Use `metabolomics.visualization.plots` for the metabolomics-specific data preparation (`volcano_plot_data`, `prepare_spectrum_plot`, `detect_chromatographic_peaks`, `retention_time_alignment_data`) and `metainformant.visualization` (or matplotlib directly) for drawing.
 
 ---
 
@@ -67,21 +88,26 @@ volcano = metab_viz.volcano_plot(t_stats, pvals, labels=dataset.metabolites)
 **Primary integration point**: Metabolite-gene correlation and integrated network analysis.
 
 ```python-snippet
-from metainformant.metabolomics import analysis as meta
-from metainformant.multiomics import integration as multi
+import numpy as np
+from metainformant.multiomics.analysis.integration import MultiOmicsData, canonical_correlation
 
-# Metabolite matrix (metabolites × samples)
-M = meta.normalize_intensities(intensities, method="log2")
+# Metabolite matrix (samples × metabolites) and gene expression matrix (samples × genes),
+# as DataFrames that share sample IDs
+omics = MultiOmicsData(metabolomics=metabolite_df, transcriptomics=expression_df)
 
-# Gene expression matrix (genes × samples)
-E = rna.merged_abundance  # from RNA module
+# Canonical correlation between the two layers. When the layers together have more features
+# than samples (typical with RNA-seq), the default regularization=0 returns some canonical
+# correlations of exactly 1 (a perfect in-sample fit); pass regularization > 0 there.
+X_c, Y_c, x_weights, y_weights, correlations = canonical_correlation(
+    omics, layers=("metabolomics", "transcriptomics"), n_components=5
+)
 
-# Correlate across samples
-correlations = multi.correlate_layers(M, E, method="spearman")
-
-# Identify metabolite-gene pairs with |ρ| > 0.7
-strong_pairs = [(m, g, r) for (m, g), r in correlations.items() if abs(r) > 0.7]
+# Metabolites and genes contributing most to the first canonical component
+top_metabolites = np.argsort(-np.abs(x_weights[:, 0]))[:10]
+top_genes = np.argsort(-np.abs(y_weights[:, 0]))[:10]
 ```
+
+For all-pairs metabolite-gene correlation, see the numpy implementation in Scenario A below.
 
 **See also**: [multiomics documentation](../multiomics/README.md) for canonical correlation analysis (CCA), MOFA-style factor analysis.
 
@@ -89,38 +115,50 @@ strong_pairs = [(m, g, r) for (m, g), r in correlations.items() if abs(r) > 0.7]
 
 ### With `protein` Module
 
-Similar to RNA integration but with proteomics data:
+Similar to RNA integration but with proteomics data. `metainformant.protein` has no abundance-quantification code, so the proteomics layer goes through the same `multiomics` helpers:
 
 ```python-snippet
-from metainformant.protein import quant as prot
-from metainformant.metabolomics import analysis as metab
+from metainformant.multiomics.analysis.integration import (
+    MultiOmicsData,
+    canonical_correlation,
+    from_protein_abundance,
+)
 
-# Protein abundances (samples × proteins, transposed to metabolites×samples for consistency)
-P = prot.normalize intensities).T  # shape: proteins × samples
+# Protein abundances (proteins × samples file -> z-scored samples × proteins DataFrame)
+P = from_protein_abundance("protein_abundance.csv", transpose=True)
 
-# Correlation
-from metainformant.multiomics import correlate_layers
-corr = correlate_layers(metab_matrix, P)
+# Association between the metabolite and protein layers
+# (metabolite_df: samples × metabolites DataFrame with the same sample IDs)
+omics = MultiOmicsData(metabolomics=metabolite_df, proteomics=P)
+X_c, Y_c, x_weights, y_weights, corr = canonical_correlation(
+    omics, layers=("metabolomics", "proteomics"), n_components=5
+)
 ```
 
-**Use case**: Identify metabolites correlated with enzyme abundance (e.g., substrate-product relationships).
+**Use case**: Identify metabolite and protein features that vary together (e.g., substrate-product relationships); the canonical weights show which features drive each component.
 
 ---
 
 ### With `quality` Module
 
-QC metrics from MS runs (e.g., total ion current, number of features, retention time drift) can be analyzed using `metainformant.quality`:
+QC metrics from MS runs (e.g., total ion current, number of peaks) can be screened with the general-purpose outlier detection in `metainformant.quality`:
 
 ```python-snippet
-from metainformant.quality import qc_metrics
+from metainformant.quality.analysis.metrics import detect_outliers
 from metainformant.metabolomics import io
 
-samples = io.formats.read_mgf("batch_run.mgf")
-qc_report = qc_metrics.assess_ms_qc(samples)
-# Checks: TIC consistency, peak count, mass accuracy drift
+spectra = io.formats.read_mgf("batch_run.mgf")
+
+# TIC consistency: flag spectra whose total ion current is an outlier within the run.
+# detect_outliers returns a dict ("outliers", "outlier_indices", "outlier_percentage", ...).
+tic = detect_outliers([s.total_ion_current for s in spectra], method="iqr")
+flagged = [spectra[i] for i in tic["outlier_indices"]]
+
+# Peak count: drop spectra with fewer than min_peaks peaks (raise min_tic above 0 to also drop low-signal spectra)
+usable = io.formats.filter_spectra(spectra, min_peaks=5, min_tic=0.0)
 ```
 
-**Future**: Dedicated metabolomics QC module planned (2027).
+`metainformant.quality` has no MS-specific QC routine (for example mass accuracy drift), and there is no dedicated metabolomics QC module.
 
 ---
 
@@ -134,17 +172,23 @@ qc_report = qc_metrics.assess_ms_qc(samples)
 
 ```python
 import numpy as np
-from scipy.stats import spearmanr
-from metainformant.metabolomics import analysis as meta
-from metainformant.rna import amalgkit
+import pandas as pd
+from metainformant.metabolomics import io
 
 # Load both datasets (assay matrices must be aligned by sample)
-M = meta.io.formats.read_csv("metabolites.csv").intensities  # (n_metabs, n_samples)
-R = amalgkit.load_merged_matrix("rna_merged.tsv").T  # (n_genes, n_samples)
+dataset = io.formats.read_csv("metabolites.csv")
+metabolites = dataset.metabolites
+M = dataset.intensities  # (n_metabs, n_samples)
 
-# Ensure same sample order
-# (load metadata to match, or use sample barcodes)
-assert M.shape[1] == R.shape[1], "Sample count mismatch"
+# Merged RNA abundance table (for example the amalgkit merge output):
+# tab-separated, genes as rows, samples as columns
+rna = pd.read_csv("rna_merged.tsv", sep="\t", index_col=0)
+
+# Ensure same sample order: select the RNA columns in the metabolomics sample order
+# (raises KeyError if a sample is missing; use sample barcodes/metadata if the IDs differ)
+rna = rna[dataset.samples]
+genes = rna.index.tolist()
+R = rna.to_numpy(dtype=float)  # (n_genes, n_samples)
 
 # Correlation for each metabolite-gene pair
 # Vectorized approach: compute correlation matrix
@@ -175,23 +219,27 @@ for m_i, g_i in zip(metab_idx, gene_idx):
 Use `multiomics` module's latent factor models to find joint signals:
 
 ```python-snippet
-from metainformant.multiomics import factor_analysis
-from metainformant.metabolomics import analysis as meta
-from metainformant.rna import amalgkit as rna
-from metainformant.protein import quant as prot
+import numpy as np
+from metainformant.multiomics.methods.factorization import mofa_simple
+from metainformant.multiomics.analysis.integration import (
+    from_metabolomics,
+    from_protein_abundance,
+    from_rna_expression,
+)
 
-# Load all omics (standardize to features × samples)
-M = meta.normalize_intensities(...)
-R = rna.normalize_tpm(...)
-P = prot.normalize_intensity(...)
+# Load all omics (z-scored samples × features DataFrames with the same sample order)
+M = from_metabolomics(metabolite_df)
+R = from_rna_expression("expression.tsv", transpose=True)
+P = from_protein_abundance("protein_abundance.csv", transpose=True)
 
-# Joint factor analysis (e.g., MOFA+ style)
-factors = factor_analysis.joint_nmf([M, R, P], n_factors=5)
+# Joint factor analysis (MOFA+ style)
+result = mofa_simple({"metabolomics": M, "transcriptomics": R, "proteomics": P}, k=5)
+factors = np.asarray(result["factors"])  # shared sample factors (n_samples × 5), returned as nested lists
 
 # Factor 1 might represent "cell proliferation" affecting all omics layers
 ```
 
-**See**: `docs/multiomics/METHODS.md` for mathematical details.
+**See**: `docs/multiomics/methods.md` for mathematical details.
 
 ---
 
@@ -200,18 +248,26 @@ factors = factor_analysis.joint_nmf([M, R, P], n_factors=5)
 Combine metabolite enrichment with gene set enrichment for pathway-level cross-omics:
 
 ```python
-# Metabolite pathway enrichment (KEGG)
-meta_enriched = metabolite_set_enrichment(meta_sig, kegg_metab_pathways)
+from metainformant.metabolomics.pathways.enrichment import enrichment_with_fdr
+from metainformant.ontology.pathway_enrichment.enrichment import over_representation_analysis
 
-# Gene set enrichment (GO BP, KEGG)
-gene_enriched = gse(genes_sig, gene_pathways)
+# Metabolite pathway enrichment (KEGG): keeps the pathways with a BH q-value <= 0.05
+# (meta_sig: significant metabolite names; kegg_metab_pathways: pathway -> metabolite names)
+meta_enriched = enrichment_with_fdr(meta_sig, kegg_metab_pathways, fdr_threshold=0.05)
+
+# Gene-set over-representation (GO BP, KEGG): one result dict per gene set
+# (genes_sig: significant gene symbols; gene_pathways: pathway -> gene symbols)
+gene_enriched = over_representation_analysis(genes_sig, gene_pathways, correction="fdr_bh")
 
 # Concordance analysis: are the same pathways hit in both omics?
-shared_pathways = set(meta_enriched.pathway) & set(gene_enriched.pathway)
+# (both pathway databases must use the same pathway names/IDs for this comparison to mean anything)
+meta_hits = {r.pathway_name for r in meta_enriched}
+gene_hits = {r["term_id"] for r in gene_enriched if r["adjusted_p"] < 0.05}
+shared_pathways = meta_hits & gene_hits
 print(f"Concordant pathways: {shared_pathways}")
 ```
 
-**Interpretation**: Concordance strengthens biological conclusion (e.g., "Glycolysis pathway upregulated at both transcript and metabolite levels").
+**Interpretation**: Concordance strengthens biological conclusion (e.g., "Glycolysis pathway enriched among both the significant genes and the significant metabolites"; over-representation does not show the direction of change).
 
 ---
 
@@ -222,16 +278,22 @@ print(f"Concordant pathways: {shared_pathways}")
 MetaboAnalyst is a widely-used web-based platform for metabolomics. Export METAINFORMANT results for upload:
 
 ```python
+import pandas as pd
 from metainformant.metabolomics import analysis, io
+from metainformant.metabolomics.pathways.enrichment import benjamini_hochberg
+
+dataset = io.formats.read_csv("intensities.csv")
+group_a, group_b = [0, 1, 2], [3, 4, 5]  # sample indices of the two groups
 
 # After normalization and differential analysis:
-norm = analysis.identification.normalize_intensities(raw, method="log2")
+norm = analysis.identification.normalize_intensities(dataset.intensities, method="log2")
 t, p = analysis.identification.differential_abundance(norm, group_a, group_b)
 
 # Create MetaboAnalyst-format CSV
 df = pd.DataFrame({
     "metabolite": dataset.metabolites,
-    "log2FC": analysis.identification.fold_change(norm, group_a, group_b),
+    # fold_change() is the log2 ratio of group means: give it linear-scale intensities, not `norm`
+    "log2FC": analysis.identification.fold_change(dataset.intensities, group_a, group_b),
     "p-value": p,
     "q-value": benjamini_hochberg(list(p)),
 })
@@ -250,10 +312,13 @@ pd.DataFrame(norm, index=dataset.metabolites, columns=dataset.samples)\
 
 XCMS (R) and MZmine (Java) are popular peak picking and alignment tools. Their outputs can be read by METAINFORMANT:
 
-**XCMS** outputs `**xcmsexport**` CSV with columns: `name`, `rt`, `mz`, `<sample1>`, `<sample2>`, ...
+**XCMS** feature tables exported to CSV can be arranged with columns: `name`, `mz`, `rt`, `<sample1>`, `<sample2>`, ...
 
 ```python
-# XCMS CSV: first non-metadata rows contain metabolite peaks
+import pandas as pd
+from metainformant.metabolomics import io
+
+# XCMS CSV: one row per detected feature (peak)
 # Column layout: name | mz | rt | sample1 | sample2 | ...
 # We need to extract the intensity matrix (skip mz/rt cols)
 
@@ -262,7 +327,11 @@ dataset = io.formats.read_csv(
     metabolite_col=0,       # name column
     data_start_col=3,       # first sample column (after name, mz, rt)
 )
-# After loading, you may want to filter by mz if needed
+
+# read_csv() keeps only names and intensities (dataset.metadata stays empty), so read
+# mz/rt separately if you need them, e.g. for the GNPS export below
+peaks = pd.read_csv("xcms_output.csv")
+metadata = peaks.set_index(peaks.columns[0])[["mz", "rt"]].to_dict("index")  # {name: {"mz": ..., "rt": ...}}
 ```
 
 **MZmine** exports CSV similarly. Use `pandas` for more control:
@@ -281,11 +350,12 @@ metabolite_names = df["feature_id"].tolist()
 Export feature table for GNPS networking:
 
 ```python
-# GNPS requires: feature ID, m/z, RT, intensity per sample
+# GNPS feature-based molecular networking reads a CSV/TSV feature table (feature ID, m/z, RT,
+# intensity per sample; see the GNPS documentation for the exact column names) plus an MS/MS MGF.
+# metadata maps feature ID -> {"mz": ..., "rt": ...}; read_csv() does not fill dataset.metadata,
+# so build it from the mz/rt columns of your XCMS/MZmine table (see above)
 feature_table = []
 for i, name in enumerate(dataset.metabolites):
-    # Parse name to extract mz and rt if encoded in feature ID
-    # Or have separate metadata dict from loading
     feature_table.append({
         "feature_id": name,
         "mz": metadata[name]["mz"],
@@ -293,9 +363,8 @@ for i, name in enumerate(dataset.metabolites):
         **{sample: dataset.intensities[i, j] for j, sample in enumerate(dataset.samples)},
     })
 
-import json
-with open("gnps_feature_table.json", "w") as f:
-    json.dump(feature_table, f, indent=2)
+import pandas as pd
+pd.DataFrame(feature_table).to_csv("gnps_feature_table.csv", index=False)
 print("Upload to GNPS: https://gnps.ucsd.edu")
 ```
 
@@ -303,7 +372,7 @@ print("Upload to GNPS: https://gnps.ucsd.edu")
 
 ### Spectral Library Search (MS2)
 
-For MS/MS data, export to MGF for external search:
+For MS/MS data, load MGF spectra with `read_mgf()` (`write_mgf()` writes them back out for external search tools):
 
 ```python
 from metainformant.metabolomics.io import formats
@@ -326,14 +395,9 @@ spectra = formats.read_mgf("query.mgf")
 
 **mzTab-M** is a community standard for metabolomics data exchange (HUPO-PSI).
 
-**Status**: Not yet implemented in METAINFORMANT. Future: `io.formats.read_mztab()`.
+**Status**: Not implemented in METAINFORMANT. `metabolomics.io.formats` reads and writes only intensity-matrix CSV and MGF; there is no mzTab-M reader or writer.
 
-**Workaround**: Convert CSV to mzTab using `pymztab` (external):
-
-```bash
-pip install pymztab
-python -m pymztab.convert metabolites.csv output.mzTab
-```
+**Workaround**: Export the intensity matrix with `io.formats.write_csv()` and convert it with an external mzTab-M tool; METAINFORMANT provides no converter.
 
 ---
 
@@ -343,9 +407,9 @@ For complete metadata + data packages (multi-omics), use ISA-Tab structure.
 
 **Structure**:
 ```
-investigation.txt
-study.txt
-assay.txt    # metabolomics assay
+i_investigation.txt
+s_study.txt
+a_assay.txt    # metabolomics assay
 .../metabolites.txt  # data file
 ```
 
@@ -363,18 +427,17 @@ Real-world study: same samples underwent both metabolomics and RNA-seq. Want int
 #!/usr/bin/env python3
 """Integrated metabolomics + RNA pipeline."""
 
-import subprocess
-from pathlib import Path
+import pandas as pd
 from metainformant.metabolomics import io as meta_io, analysis as meta_ana
-from metainformant.rna import amalgkit as rna
 
-# Step 1: Run RNA pipeline (assuming samples already downloaded/quantified)
+# Step 1: RNA pipeline output (assuming samples were already downloaded/quantified and merged,
+# for example with metainformant.rna.amalgkit.merge): genes as rows, samples as columns
 print("=== RNA Analysis ===")
-rna_matrix = rna.load_merged("output/rna/merged_abundance.tsv")
+rna_matrix = pd.read_csv("output/rna/merged_abundance.tsv", sep="\t", index_col=0)
 
 # Step 2: Load metabolomics
 print("=== Metabolomics Analysis ===")
-meta_dataset = meta_io.read_csv("metabolomics/intensities.csv")
+meta_dataset = meta_io.formats.read_csv("metabolomics/intensities.csv")
 meta_norm = meta_ana.identification.normalize_intensities(
     meta_dataset.intensities, method="log2"
 )
@@ -391,12 +454,18 @@ rna_idx = [rna_matrix.columns.get_loc(s) for s in common]
 M_common = meta_norm[:, meta_idx]
 R_common = rna_matrix.iloc[:, rna_idx].values
 
-# Step 4: Integrated analysis
-from metainformant.multiomics import integrate
-corr = integrate.sample_wise_correlation(M_common, R_common)
+# Step 4: Integrated analysis (sample-by-sample correlation over both omics layers)
+from metainformant.multiomics.analysis.integration import compute_multiomics_similarity
+corr = compute_multiomics_similarity(
+    {
+        "metabolomics": pd.DataFrame(M_common.T, index=common),
+        "transcriptomics": pd.DataFrame(R_common.T, index=common),
+    },
+    method="correlation",
+)
 
 # Step 5: Save
-pd.DataFrame(corr).to_csv("integrated_correlation_matrix.csv")
+pd.DataFrame(corr, index=common, columns=common).to_csv("integrated_correlation_matrix.csv")
 ```
 
 **Benefits**: Joint analysis reveals biology missed by single-omics (e.g., post-transcriptional regulation, allosteric control).
@@ -414,7 +483,7 @@ rule metabolomics_analysis:
         csv="data/metabolites.csv"
     output:
         results="results/differential.csv",
-        volcano="figures/volcano.html"
+        volcano="figures/volcano.png"
     params:
         group_a=[0,1,2],
         group_b=[3,4,5]
@@ -422,7 +491,7 @@ rule metabolomics_analysis:
         "scripts/analyze_metabolomics.py"  # Your script using METAINFORMANT
 ```
 
-Your `analyze_metabolomics.py` reads `input.csv`, writes `output.results`, `output.volcano`.
+Your `analyze_metabolomics.py` reads `snakemake.input.csv` and `snakemake.params.group_a` / `group_b`, and writes `snakemake.output.results` and `snakemake.output.volcano` (Snakemake injects the `snakemake` object into scripts run through `script:`).
 
 **Nextflow** similar: call Python script.
 
@@ -435,20 +504,19 @@ Your `analyze_metabolomics.py` reads `input.csv`, writes `output.results`, `outp
 **Potential**: Spatial transcriptomics + spatial metabolomics (imaging MS) integration via `spatial` module.
 
 ```python
-from metainformant.spatial import io as spatial_io
-from metainformant.metabolomics import io as meta_io
+from metainformant.spatial.io.visium import load_visium
 
-# Load spatial transcriptomics (Visium)
-st = spatial_io.visium.load("visium_folder/")
+# Load spatial transcriptomics (Visium): a SpatialDataset with expression, coordinates,
+# barcodes, gene_names, ...
+st = load_visium("visium_folder/")
 
-# Load spatial metabolomics (MALDI imaging MS)
-msi = meta_io.formats.read_imzml("sample.imzML")  # future extension
-
-# Align by spatial coordinates; correlate gene expression with metabolite intensity at each spot
-results = integrate.spatial_correlation(st, msi)
+# Spatial metabolomics (MALDI imaging MS) has no counterpart yet: there is no imzML reader
+# in metabolomics.io.formats, and nothing in `spatial` correlates gene expression with an
+# imaging-MS intensity at each spot (spatial.integration only maps scRNA-seq data onto spatial
+# data: label transfer, correlation mapping and gene imputation).
 ```
 
-**Not yet implemented**; placeholder for future spatial metabolomics submodule.
+**Not implemented**: only spatial transcriptomics loading exists (Visium above; `spatial.io` also has MERFISH and Xenium loaders). Imaging-MS (imzML) readers and spot-level gene-metabolite correlation are not in the codebase.
 
 ---
 
@@ -469,7 +537,9 @@ S003,treatment,B,metabolomics
 
 Programmatically align:
 ```python
-meta = pd.read_csv("metadata.csv")
+import pandas as pd
+
+meta = pd.read_csv("sample_metadata.csv")
 meta_omics = meta[meta["omics"].str.contains("metabolomics")]
 rna_omics = meta[meta["omics"].str.contains("rna")]
 
@@ -509,11 +579,11 @@ Different omics have different scale/distributions:
 # Rank-based inverse normal transform (common in QTL)
 from scipy.stats import rankdata, norm
 
-def int_normalize(x):
-    ranks = rankdata(x)
-    return norm.ppf((ranks - 0.5) / len(ranks))
+def int_normalize(x, axis=1):
+    ranks = rankdata(x, axis=axis)
+    return norm.ppf((ranks - 0.5) / x.shape[axis])
 
-M_z = int_normalize(M, axis=1)  # per-metabolite
+M_z = int_normalize(M, axis=1)  # per-metabolite (rows = metabolites, columns = samples)
 R_z = int_normalize(R, axis=1)  # per-gene
 # Now M_z and R_z are approximately N(0,1) per feature
 ```
@@ -527,17 +597,18 @@ R_z = int_normalize(R, axis=1)  # per-gene
 1. **Limited direct integration**: No built-in `metabolomics.integration` submodule (unlike `spatial.integration`); integration handled via `multiomics`.
 2. **No pathway mapping API**: Must construct `pathway_db` manually or load external JSON.
 3. **No direct export to multi-omics formats** (e.g., MultiAssayExperiment R class).
-4. **Batch correction not built-in**: External library (`pycombat`, `scanpy`) required.
+4. **Batch correction is simplified**: `metainformant.quality.batch.detection.correct_batch_combat` is a ComBat-style location/scale adjustment with fixed shrinkage and no covariates, not the full parametric empirical-Bayes ComBat. For the full method use an external implementation such as `scanpy.pp.combat`.
 
-### Planned Enhancements
+### Not Implemented
 
-| Feature | Description | ETA |
-|---------|-------------|-----|
-| `metabolomics.integration` submodule | Metabolite-gene correlation network builder | Q4 2026 |
-| Built-in KEGG/Reactome pathway loader | `load_kegg_pathways()` function | Q3 2026 |
-| COM-BAT batch correction wrapper | Native integration | 2027 |
-| Multi-omics factor analysis (MOFA) | Joint decomposition of metabolomics+omics | 2027 |
-| Spatial metabolomics I/O | imzML, Analyze format readers | 2028 |
+None of the following exists in the codebase today:
+
+| Feature | Description |
+|---------|-------------|
+| `metabolomics.integration` submodule | Metabolite-gene correlation network builder |
+| Built-in KEGG/Reactome pathway loader | A `load_kegg_pathways()`-style function returning a `pathway_db` dict |
+| Full ComBat | Empirical-Bayes batch correction with covariates (the codebase only has simplified ComBat-like corrections, such as `correct_batch_combat`) |
+| Spatial metabolomics I/O | imzML and Analyze format readers |
 
 ---
 
@@ -561,6 +632,7 @@ Use `differential_abundance()` for group comparisons (case/control).
 
 A: Not directly. Export METAINFORMANT-normalized matrices to CSV and import into R:
 ```R
+# mixOmics expects samples in rows; the module's matrices are metabolites x samples, so transpose
 M <- read.csv("normalized_metabolites.csv")
 R <- read.csv("normalized_rna.csv")
 library(mixOmics)
@@ -575,7 +647,7 @@ A: Yes. Lipidomics is a metabolomics subfield. Load your lipid intensity matrix 
 
 **Q: Does METAINFORMANT support metabolomics from NMR?**
 
-A: NMR uses different preprocessing (peak alignment, bucketization). Load binned NMR spectra as an intensity matrix, then use downstream stats (normalization, differential, enrichment). Identification via accurate mass is less relevant for NMR (uses chemical shift). Future: NMR-specific utilities planned.
+A: NMR uses different preprocessing (peak alignment, bucketization). Load binned NMR spectra as an intensity matrix, then use downstream stats (normalization, differential, enrichment). Identification via accurate mass is less relevant for NMR (uses chemical shift). There are no NMR-specific utilities.
 
 ---
 
@@ -583,5 +655,5 @@ A: NMR uses different preprocessing (peak alignment, bucketization). Load binned
 
 - **Module docs**: See `CAPABILITIES.md` for function-by-function reference.
 - **Examples**: See `EXAMPLES.md` for end-to-end workflows.
-- **Source code**: `src/metainformant/metabolomics/` — functions are heavily commented.
+- **Source code**: `src/metainformant/metabolomics/` — every public function has a docstring.
 - **Issues**: File integration bugs on GitHub with minimal reproducible example and data shapes.

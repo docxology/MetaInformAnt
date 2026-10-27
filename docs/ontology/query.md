@@ -7,13 +7,18 @@ caching.
 
 ## Key Concepts
 
-**Graph traversal** uses breadth-first search over `Relationship` edges.
-All traversal functions accept a `relation_type` parameter (default `"is_a"`)
-to restrict which edge types are followed.
+**Graph traversal.** `ancestors` and `descendants` collect the transitive
+closure of the parent or child links, while `path_to_root`, `shortest_path`
+and `distance` use breadth-first search. The traversal functions accept a
+`relation_type` parameter (default `"is_a"`) to restrict which edge types are
+followed. `get_roots` and `get_leaves` accept it too but always use the
+`is_a` parent and child links.
 
 **Information content** (IC) measures term specificity. Computed as
-`-log(|descendants(t)| / |all_terms|)`. Higher IC indicates a more specific
-(less frequently annotated) term.
+`-log(|descendants(t)| / |all_terms|)`, where `descendants(t)` excludes `t`
+itself and `corpus_size` replaces `|all_terms|` when given. Among terms that
+have descendants, fewer descendants give a higher IC; a term with no
+descendants (a leaf) has IC `0.0`.
 
 **Caching** is enabled by default. Query results for `ancestors` and
 `descendants` are stored in a module-level dictionary. Use `clear_cache()` and
@@ -29,8 +34,11 @@ def ancestors(
 ) -> Set[str]
 ```
 
-Returns all ancestors of a term (including the term itself) reachable via the
-specified relationship type. Raises `TermNotFoundError` if term_id is absent.
+Returns all ancestors of a term reachable via the specified relationship type.
+The term itself is not included: a term is not its own ancestor, so a root
+term has no ancestors (in a cyclic ontology, a term on the cycle is reachable
+from itself). Use `ancestors(onto, term_id) | {term_id}` when the term itself
+is wanted. Raises `TermNotFoundError` if term_id is absent.
 
 ### descendants
 
@@ -40,7 +48,10 @@ def descendants(
 ) -> Set[str]
 ```
 
-Returns all descendants of a term (including the term itself).
+Returns all descendants of a term reachable via the specified relationship
+type. The term itself is not included, so a leaf term has no descendants; use
+`descendants(onto, term_id) | {term_id}` when the term itself is wanted. Raises
+`TermNotFoundError` if term_id is absent.
 
 ### common_ancestors
 
@@ -50,7 +61,9 @@ def common_ancestors(
 ) -> Set[str]
 ```
 
-Intersection of ancestor sets for two terms.
+Intersection of the ancestor sets of two terms. Because a term is not its own
+ancestor, neither term appears in the result: for a term and its parent, the
+result holds only the parent's ancestors.
 
 ### most_informative_common_ancestor
 
@@ -62,7 +75,9 @@ def most_informative_common_ancestor(
 ```
 
 Returns the common ancestor with the highest information content. Raises
-`ValueError` when no common ancestors exist.
+`ValueError` when no common ancestors exist, for example when one of the terms
+is a root (a root has no ancestors, and neither term counts as its own
+ancestor).
 
 ### path_to_root
 
@@ -72,8 +87,10 @@ def path_to_root(
 ) -> List[str]
 ```
 
-Returns one path from a term to a root (term with no parents). Follows the
-first parent at each step.
+Returns a shortest path (fewest edges) from a term to a root (a term with no
+parents), found by breadth-first search, with the term first and the root last.
+A root returns `[term_id]`. When several roots are equally close, which path is
+returned is not specified. Returns an empty list when no root is reachable.
 
 ### shortest_path
 
@@ -104,8 +121,9 @@ def get_subontology(
 ) -> Ontology
 ```
 
-Extracts a sub-ontology containing all descendants of the specified root
-terms and the relationships between them.
+Extracts a sub-ontology containing the specified root terms, all of their
+descendants, and the relationships of type `relation_type` between them. Raises
+`TermNotFoundError` if a root term is absent.
 
 ### subgraph
 
@@ -115,8 +133,12 @@ def subgraph(
 ) -> Ontology
 ```
 
-Creates a new ontology containing only the specified terms and the
-relationships that connect them.
+Creates a new ontology containing only the specified terms (IDs missing from
+`onto` are skipped) and the `relation_type` relationships that connect them.
+The result's parent and child indexes are empty, so queries that rely on them
+(`ancestors`, `descendants`, `path_to_root`, `get_roots`, `get_leaves`) find no
+`is_a` links on it; `shortest_path` and `distance` read the relationship list
+and still work. Run hierarchy queries on the source ontology.
 
 ### find_terms_by_name / find_terms_by_namespace / filter_by_namespace
 
@@ -128,7 +150,9 @@ def filter_by_namespace(onto: Ontology, namespace: str) -> Ontology
 
 `find_terms_by_name` does substring search against term names.
 `find_terms_by_namespace` returns term IDs in a namespace.
-`filter_by_namespace` returns a new `Ontology` with only that namespace.
+`filter_by_namespace` returns a new `Ontology` with only that namespace's terms
+and the relationships among them; like `subgraph`, its parent and child
+indexes are empty.
 
 ### get_roots / get_leaves
 
@@ -137,7 +161,8 @@ def get_roots(onto: Ontology, relation_type: str = "is_a") -> Set[str]
 def get_leaves(onto: Ontology, relation_type: str = "is_a") -> Set[str]
 ```
 
-Root terms have no parents; leaf terms have no children.
+Root terms have no parents; leaf terms have no children. `relation_type` is
+accepted, but the `is_a` parent and child indexes are always used.
 
 ### information_content / calculate_ic_map
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - core
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/math/core`
+- **Path**: `src/metainformant/math/core`
 - **Purpose**: Functionality for core.
 - **Domain**: math
 

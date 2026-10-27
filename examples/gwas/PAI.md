@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - gwas
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/examples/gwas`
+- **Path**: `examples/gwas`
 - **Purpose**: Functionality for gwas.
 - **Domain**: examples
 

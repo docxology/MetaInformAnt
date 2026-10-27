@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - retrieval
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/rna/retrieval`
+- **Path**: `src/metainformant/rna/retrieval`
 - **Purpose**: Functionality for retrieval.
 - **Domain**: rna
 

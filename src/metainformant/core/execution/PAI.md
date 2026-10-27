@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - execution
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/core/execution`
+- **Path**: `src/metainformant/core/execution`
 - **Purpose**: Core execution utilities for METAINFORMANT.
 - **Domain**: core
 

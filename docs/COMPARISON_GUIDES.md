@@ -42,44 +42,40 @@ Choose the right alignment algorithm based on your sequence data and analysis go
 |--------|----------|------------|-------------|-------------|
 | **Global Alignment (Needleman-Wunsch)** | Similar sequences, full-length alignment | Finds optimal alignment of entire sequences | Poor with dissimilar sequences | O(n×m) time |
 | **Local Alignment (Smith-Waterman)** | Subsequence similarity, database searching | Finds best matching subsequences | May miss global similarity | O(n×m) time |
-| **Semi-global** | Sequences with different lengths, one complete | Handles terminal gaps appropriately | Limited use cases | O(n×m) time |
 
 #### Decision Tree
 
 ```mermaid
 graph TD
-    AsequenceAlignmentNeeded[Sequence Alignment Needed] --> B{Sequence Lengths?}
-    B -->|Similar| C{Full vs Partial Match?}
-    B -->|Different| Dsemi-globalAlignment[Semi-global Alignment]
+    AsequenceAlignmentNeeded[Sequence Alignment Needed] --> C{Full vs Partial Match?}
 
     C -->|Full sequence| EglobalAlignmentNeedleman-wunsch[Global Alignment Needleman-Wunsch]
     C -->|Local regions| FlocalAlignmentSmith-waterman[Local Alignment Smith-Waterman]
 
-    E --> Gmetainformant.dna.alignment.globalAlign[metainformant.dna.alignment.global_align]
-    F --> Hmetainformant.dna.alignment.localAlign[metainformant.dna.alignment.local_align]
-    D --> Imetainformant.dna.alignment.semiGlobalAlign[metainformant.dna.alignment.semi_global_align]
+    E --> Gmetainformant.dna.alignment.pairwise.globalAlign[metainformant.dna.alignment.pairwise.global_align]
+    F --> Hmetainformant.dna.alignment.pairwise.localAlign[metainformant.dna.alignment.pairwise.local_align]
 ```
 
 #### Example Usage
 
 ```python
-from metainformant.dna import alignment
+from metainformant.dna.alignment import pairwise
 
 # Short, similar sequences → Global alignment
 seq1 = "ATCGATCGATCG"
 seq2 = "ATCGATCGATCG"
-global_result = alignment.global_align(seq1, seq2)
+global_result = pairwise.global_align(seq1, seq2)
 
 # Database search → Local alignment
 query = "ATCGATCG"
 database_seq = "TTTTATCGATCGTTTT"
-local_result = alignment.local_align(query, database_seq)
+local_result = pairwise.local_align(query, database_seq)
 
-# Different length sequences → Semi-global
-short_seq = "ATCG"
-long_seq = "TTTTATCGTTTT"
-semi_result = alignment.semi_global_align(short_seq, long_seq)
+# Both return an AlignmentResult with .score, .seq1_aligned and .seq2_aligned
+print(global_result.score, local_result.score)
 ```
+
+Semi-global (end-gap-free) alignment is not implemented in `metainformant.dna.alignment`.
 
 **Related**: For full module capabilities, see [dna/index.md](dna/index.md) and [Methods Matrix](comparisons/methods_matrix.md) (dna row).
 
@@ -102,24 +98,24 @@ Compare different measures of genetic diversity and selection.
 | Test | Detects | Method | Assumptions | Power |
 |------|---------|--------|-------------|-------|
 | **Tajima's D** | Deviation from neutrality | π vs θ comparison | Neutral evolution | High for sweeps |
-| **Fu & Li's D** | Recent selective sweeps | External mutations | No recombination | High for recent events |
+| **Fu & Li's D*** | Recent selective sweeps | Singletons vs. all mutations (no outgroup) | No recombination | High for recent events |
 | **Fay & Wu's H** | Old selective sweeps | High-frequency variants | No recombination | High for old events |
 
 #### Decision Guide
 
 ```python-snippet
 from metainformant.dna import population
-from metainformant.math import coalescent
+from metainformant.math.population_genetics import coalescent
 
 # Calculate comprehensive population statistics
 sequences = ["ATCG...", "GCTA...", ...]  # Your sequences
 
-# Basic diversity
+# Basic diversity (π is per site; θ_W is for the whole alignment, S / a_n)
 pi = population.nucleotide_diversity(sequences)
 theta_w = population.wattersons_theta(sequences)
 
-print(f"Observed diversity (π): {pi:.4f}")
-print(f"Expected diversity (θ_W): {theta_w:.4f}")
+print(f"Observed diversity (π, per site): {pi:.4f}")
+print(f"Watterson's θ (whole alignment): {theta_w:.4f}")
 
 # Selection tests
 tajima_d = population.tajimas_d(sequences)
@@ -147,10 +143,10 @@ Choose appropriate distance metrics for different data types.
 
 | Method | Data Type | Properties | Use Case | Implementation |
 |--------|-----------|------------|----------|----------------|
-| **Hamming** | Equal length sequences | Counts differences | SNP analysis | `dna.distances.hamming_distance` |
-| **Jukes-Cantor** | DNA sequences | Corrects multiple hits | Evolutionary distance | `dna.distances.jukes_cantor_distance` |
-| **Kimura 2-parameter** | DNA/RNA | Transition/transversion | Nucleotide evolution | `dna.distances.kimura_2p_distance` |
-| **Levenshtein** | Any strings | Insertions/deletions | Sequence editing | `text.levenshtein_distance` |
+| **Hamming** | Equal length sequences | Counts differences | SNP analysis | `dna.alignment.distances.hamming_distance` |
+| **Jukes-Cantor** | DNA sequences | Corrects multiple hits | Evolutionary distance | `dna.alignment.distances.jukes_cantor_distance` |
+| **Kimura 2-parameter** | DNA/RNA | Transition/transversion | Nucleotide evolution | `dna.alignment.distances.kimura_2p_distance` |
+| **Tamura-Nei** | DNA sequences | Transition/transversion ratio `kappa` (simplified implementation) | Complex substitution models | `dna.alignment.distances.tamura_nei_distance` |
 
 #### Decision Factors
 
@@ -159,16 +155,15 @@ graph TD
     AchooseDistanceMethod[Choose Distance Method] --> B{Data Type?}
     B -->|DNA/RNA sequences| C{Evolutionary model?}
     B -->|Equal length| DhammingDistance[Hamming Distance]
-    B -->|Any strings| ElevenshteinDistance[Levenshtein Distance]
 
     C -->|Simple| F[Jukes-Cantor]
     C -->|Transitions ≠ Transversions| Gkimura2-parameter[Kimura 2-parameter]
     C -->|Complex model| H[Tamura-Nei]
 
-    D --> Imetainformant.dna.distances.hammingDistance[metainformant.dna.distances.hamming_distance]
-    E --> Jmetainformant.text.levenshteinDistance[metainformant.text.levenshtein_distance]
-    F --> Kmetainformant.dna.distances.jukesCantorDistance[metainformant.dna.distances.jukes_cantor_distance]
-    G --> Lmetainformant.dna.distances.kimura2pDistance[metainformant.dna.distances.kimura_2p_distance]
+    D --> Imetainformant.dna.alignment.distances.hammingDistance[metainformant.dna.alignment.distances.hamming_distance]
+    F --> Kmetainformant.dna.alignment.distances.jukesCantorDistance[metainformant.dna.alignment.distances.jukes_cantor_distance]
+    G --> Lmetainformant.dna.alignment.distances.kimura2pDistance[metainformant.dna.alignment.distances.kimura_2p_distance]
+    H --> Mmetainformant.dna.alignment.distances.tamuraNeiDistance[metainformant.dna.alignment.distances.tamura_nei_distance]
 ```
 
 **Related**: See [Methods Matrix](comparisons/methods_matrix.md) for comparison across all distance-capable modules.
@@ -183,51 +178,47 @@ Compare classification and regression approaches for biological data.
 
 | Method | Strengths | Weaknesses | Best For | Implementation |
 |--------|-----------|------------|----------|----------------|
-| **Random Forest** | Handles mixed data, feature selection | Can overfit, less interpretable | Complex biological data | `ml.classification.train_classifier(method="rf")` |
-| **SVM** | Effective in high dimensions | Slow training, kernel choice | Gene expression classification | `ml.classification.train_classifier(method="svm")` |
-| **Logistic Regression** | Interpretable, fast | Assumes linear relationships | Simple feature sets | `ml.classification.train_classifier(method="lr")` |
-| **Naive Bayes** | Fast, works with small data | Independence assumption | Text/protein classification | `ml.classification.train_classifier(method="nb")` |
+| **Random Forest** | Handles mixed data, feature selection | Can overfit, less interpretable | Complex biological data | `ml.models.classification.create_biological_classifier("rf")` |
+| **Gradient Boosting** | Strong accuracy on tabular data | Slower to train, can overfit | Structured biological features | `ml.models.classification.create_biological_classifier("gb")` |
+| **SVM** | Effective in high dimensions | Slow training, kernel choice | Gene expression classification | `ml.models.classification.BiologicalClassifier(algorithm="svm")` |
+| **Logistic Regression** | Interpretable, fast | Assumes linear relationships | Simple feature sets | `ml.models.classification.create_biological_classifier("lr")` |
 
 #### Feature Selection Methods
 
 | Method | Type | Best For | Speed | Implementation |
 |--------|------|----------|-------|----------------|
-| **Mutual Information** | Filter | Non-linear relationships | Fast | `ml.features.select_features(method="mutual_info")` |
-| **Recursive Elimination** | Wrapper | Any classifier | Slow | `ml.features.select_features(method="rfe")` |
-| **LASSO** | Embedded | Linear relationships | Medium | `ml.features.select_features(method="lasso")` |
-| **Variance Threshold** | Filter | High variance features | Fast | `ml.features.select_features(method="variance")` |
+| **Mutual Information** | Filter | Non-linear relationships | Fast | `ml.features.features.select_features_univariate(method="mutual_info_classif")` |
+| **Recursive Elimination** | Wrapper | Any classifier | Slow | `ml.features.features.select_features_recursive` |
+| **LASSO** | Embedded | Linear relationships | Medium | `ml.features.features.select_features_stability(method="lasso")` (stability selection with L1-penalized logistic regression) |
 
 #### Usage Example
 
 ```python
-from metainformant import ml
+from metainformant.ml.features import features
+from metainformant.ml.models import classification
 import numpy as np
 
 # Prepare data
 X = np.random.randn(1000, 100)  # Features
 y = np.random.randint(0, 2, 1000)  # Binary labels
 
-# Compare methods
-methods = ["rf", "svm", "lr"]
-results = {}
-
-for method in methods:
-    # Train classifier
-    clf = ml.classification.train_classifier(X, y, method=method)
-
-    # Cross-validate
-    cv_scores = ml.classification.cross_validate_classifier(clf, X, y, cv=5)
-    results[method] = cv_scores
+# Compare methods: stratified 5-fold cross-validation for each
+comparison = classification.compare_classifiers(X, y, methods=["rf", "gb", "lr"], cv_folds=5)
 
 # Compare results
 print("Classification Method Comparison:")
-for method, scores in results.items():
-    print(f"{method}: Mean accuracy = {scores['accuracy']:.3f} (+/- {scores['accuracy_std']:.3f})")
+for method, result in comparison["comparison"].items():
+    if "error" in result:  # a failed method is reported as {"error": message} and is never selected
+        print(f"{method}: failed ({result['error']})")
+        continue
+    accuracy = result["cross_validation"]["accuracy"]
+    print(f"{method}: Mean accuracy = {accuracy['mean']:.3f} (+/- {accuracy['std']:.3f})")
+print(f"Best method: {comparison['best_method']}")  # None when every method failed
 
 # Feature selection comparison
-feature_methods = ["mutual_info", "variance"]
+feature_methods = ["mutual_info_classif", "f_classif"]
 for method in feature_methods:
-    selected_X, mask = ml.features.select_features(X, y, method=method, k=20)
+    selected_X, selected_indices = features.select_features_univariate(X, y, method=method, k=20)
     print(f"{method}: Selected {selected_X.shape[1]} features")
 ```
 
@@ -252,17 +243,17 @@ Compare different approaches to genome-wide association studies.
 
 | Method | Approach | Best For | Implementation |
 |--------|----------|----------|----------------|
-| **PCA** | Dimensionality reduction | Simple structure | `gwas.structure.compute_pca` |
-| **Kinship Matrix** | Relatedness estimation | Complex pedigrees | `gwas.structure.compute_kinship_matrix` |
-| **Admixture** | Ancestry proportions | Admixed populations | `gwas.structure.admixture_analysis` |
+| **PCA** | Dimensionality reduction | Simple structure | `gwas.analysis.structure.compute_pca` |
+| **Kinship Matrix** | Relatedness estimation | Complex pedigrees | `gwas.analysis.structure.compute_kinship_matrix` |
+| **Admixture** | Ancestry proportions | Admixed populations | Plotting only: `gwas.visualization.population.admixture_plot` draws proportions from an external ADMIXTURE-format file (no estimation is implemented) |
 
 #### Multiple Testing Correction
 
 | Method | Type | Conservative? | Power | Implementation |
 |--------|------|---------------|-------|----------------|
-| **Bonferroni** | Family-wise | Very conservative | Low power | `gwas.correction.bonferroni_correction` |
-| **FDR (BH)** | False discovery | Balanced | Good power | `gwas.correction.fdr_correction` |
-| **Genomic Control** | Inflation correction | Adaptive | Medium power | `gwas.correction.genomic_control` |
+| **Bonferroni** | Family-wise | Very conservative | Low power | `gwas.analysis.correction.bonferroni_correction` |
+| **FDR (BH)** | False discovery | Balanced | Good power | `gwas.analysis.correction.fdr_correction` |
+| **Genomic Control** | Inflation correction | Adaptive | Medium power | `gwas.analysis.correction.genomic_control` |
 
 #### GWAS Workflow Decision Tree
 
@@ -310,14 +301,14 @@ Compare different information-theoretic approaches to biological data analysis.
 
 | Measure | Properties | Use Case | Implementation |
 |---------|------------|----------|----------------|
-| **MI** | Symmetric, non-negative | Feature selection | `information.syntactic.mutual_information` |
-| **CMI** | Conditional independence | Causal inference | `information.syntactic.conditional_mutual_information` |
-| **Normalized MI** | Bounded [0,1] | Similarity comparison | `information.syntactic.normalized_mutual_information` |
+| **MI** | Symmetric, non-negative | Feature selection | `information.metrics.core.syntactic.mutual_information` |
+| **CMI** | Conditional independence | Causal inference | `information.metrics.core.syntactic.conditional_mutual_information` |
+| **Normalized MI** | Bounded [0,1] | Similarity comparison | `information.metrics.core.syntactic.normalized_mutual_information` |
 
 #### Usage Comparison
 
 ```python-snippet
-from metainformant.information import syntactic
+from metainformant.information.metrics.core import syntactic
 
 # Compare entropy measures
 sequence = "ATCGATCGATCGATCG"
@@ -357,9 +348,9 @@ Compare graph algorithms for biological network analysis.
 
 | Algorithm | Method | Strengths | Weaknesses | Implementation |
 |-----------|--------|-----------|------------|----------------|
-| **Louvain** | Modularity optimization | Fast, hierarchical | Resolution limit | `networks.community.louvain_communities` |
-| **Leiden** | Louvain improvement | Faster, more accurate | Less established | `networks.community.leiden_communities` |
-| **Girvan-Newman** | Edge betweenness | Intuitive | Slow, no hierarchy | `networks.community.girvan_newman` |
+| **Louvain** | Modularity optimization | Fast, hierarchical | Resolution limit | `networks.analysis.community.louvain_communities` (needs `python-louvain`) |
+| **Leiden** | Louvain improvement | Faster, more accurate | Less established | `networks.analysis.community.leiden_communities` (needs `leidenalg` and `python-igraph`) |
+| **Girvan-Newman** | Edge betweenness | Intuitive | Slow, no hierarchy | `networks.analysis.community.girvan_newman_communities` |
 
 #### Centrality Measures
 
@@ -391,18 +382,17 @@ Compare approaches for combining multiple biological data types.
 
 | Strategy | Method | Advantages | Disadvantages | Implementation |
 |----------|--------|------------|---------------|----------------|
-| **Early Integration** | Concatenation | Simple, preserves features | High dimensionality | `multiomics.integration.concatenate` |
-| **Intermediate** | Joint dimensionality reduction | Balances complexity | Information loss | `multiomics.integration.joint_pca` |
-| **Late Integration** | Separate models + ensemble | Preserves data types | Complex optimization | `multiomics.integration.ensemble_integration` |
+| **Early Integration** | Concatenation | Simple, preserves features | High dimensionality | `multiomics.analysis.integration.joint_pca` (concatenates the layers, then PCA) |
+| **Intermediate** | Joint dimensionality reduction | Balances complexity | Information loss | `multiomics.analysis.integration.joint_nmf`, `multiomics.analysis.integration.canonical_correlation` |
+| **Late Integration** | Separate models + ensemble | Preserves data types | Complex optimization | No dedicated function; fit one model per layer and combine the results |
 
 #### Dimensionality Reduction
 
 | Method | Properties | Best For | Implementation |
 |--------|------------|----------|----------------|
-| **PCA** | Linear, unsupervised | Global structure | `multiomics.integration.pca_integration` |
-| **CCA** | Linear, supervised | Cross-modal correlation | `multiomics.integration.cca_integration` |
-| **NMF** | Parts-based | Non-negative data | `multiomics.integration.nmf_integration` |
-| **Autoencoders** | Non-linear | Complex relationships | `multiomics.integration.ae_integration` |
+| **PCA** | Linear, unsupervised | Global structure | `multiomics.analysis.integration.joint_pca` |
+| **CCA** | Linear, supervised | Cross-modal correlation | `multiomics.analysis.integration.canonical_correlation` |
+| **NMF** | Parts-based | Non-negative data | `multiomics.analysis.integration.joint_nmf` |
 
 **Related**: Full multi-omics guide [multiomics/index.md](multiomics/index.md); eQTL integration [eqtl/](eqtl/index.md); [GWAS vs Phenotype vs Multi-omics](comparisons/gwas_vs_phenotype_vs_multiomics.md) for integration strategies; [Methods Matrix](comparisons/methods_matrix.md) multiomics row.
 
@@ -520,24 +510,17 @@ graph TD
 ## Quick-Starts by Data Type (One-Liners)
 
 ```bash
-# DNA sequences → alignment, phylogeny
-uv run python -m metainformant dna align --method global seq1.fasta seq2.fasta
+# DNA sequences → alignment (Python API; the CLI has no dna subcommand)
+uv run python -c "from metainformant.dna.alignment import pairwise; print(pairwise.global_align('ACGTACGT', 'ACGAACGT').score)"
 
-# RNA-seq FASTQ → quantification (bulk)
-uv run python -m metainformant rna workflow --config rna_config.yaml
+# RNA-seq FASTQ → quantification (bulk): config-driven campaign script (dry run lists the species configs)
+uv run python scripts/rna/run_all_species.py --config-dir projects/hymenoptera_amalgkit/config/amalgkit --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 
-# Genotype VCF + phenotype → GWAS
-uv run python -m metainformant gwas run --config gwas_config.yaml
-
-# Single-cell h5ad → clustering + trajectory
-uv run python -m metainformant singlecell analyze --input cells.h5ad
-
-# Multi-omic datasets → joint PCA
-uv run python -m metainformant multiomics integrate --dna variants.tsv --rna expr.tsv
-
-# Any plot → visualization
-uv run python -m metainformant viz manhattan --gwas results.tsv --out fig.pdf
+# Genotype VCF + phenotype → GWAS (--check validates the config without running)
+uv run python -m metainformant gwas run --config gwas_config.yaml --check
 ```
+
+Single-cell, multi-omic and plotting workflows have no CLI subcommand; use the Python APIs (for example `metainformant.singlecell.analysis`, `metainformant.multiomics.analysis.integration` and `metainformant.visualization`). See [cli.md](cli.md) for the commands the `metainformant` entry point provides.
 
 ---
 

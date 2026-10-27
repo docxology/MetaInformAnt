@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - eqtl
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/eqtl`
+- **Path**: `src/metainformant/eqtl`
 - **Purpose**: eQTL and transcriptome-variant analysis module for METAINFORMANT.
 - **Domain**: metainformant
 

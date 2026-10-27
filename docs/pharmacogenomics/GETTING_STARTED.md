@@ -1,54 +1,63 @@
 # Getting Started: Pharmacogenomics
 
 Pharmacogenomics (PGx) predicts drug response from genetic variation using star allele
-conventions and CPIC clinical guidelines. This module handles CYP450 genes (CYP2D6,
-CYP2C19, CYP2C9, etc.), TPMT, NUDT15, SLCO1B1, and many more.
+conventions and CPIC clinical guidelines. The built-in allele tables cover CYP2D6,
+CYP2C19, CYP2C9, CYP3A5, DPYD, TPMT, NUDT15 and SLCO1B1; other genes load from your own
+definition files.
 
 ## Quick example
 
 ```python
-from metainformant.pharmacogenomics import call_star_alleles, determine_diplotype, classify_phenotype
+from metainformant.pharmacogenomics.alleles.star_allele import call_star_alleles
+from metainformant.pharmacogenomics.alleles.diplotype import determine_diplotype
+from metainformant.pharmacogenomics.alleles.phenotype import classify_phenotype
 from metainformant.pharmacogenomics.annotations.cpic import get_dosing_recommendation
 
-variants = {'rs1065852', 'rs3892097', 'rs5030655'}  # CYP2D6 variants
+variants = {'rs3892097', 'rs1065852'}  # CYP2D6 *4 and *10
 alleles = call_star_alleles(variants, gene='CYP2D6')
-# → [StarAllele(name='*1', ...), StarAllele(name='*4', ...)]
+# → [StarAllele(name='*10', ...), StarAllele(name='*4', ...)]  (every match, sorted by name)
 
-diplotype = determine_diplotype(alleles[0].name, alleles[1].name, gene='CYP2D6')
-# → '*1/*4'  (string)
+diplotype = determine_diplotype(alleles[0], alleles[1], gene='CYP2D6')
+# → Diplotype(allele1='*10', allele2='*4', gene='CYP2D6', activity_score=0.25, ...)
+#   diplotype.diplotype_string == '*10/*4'  (alleles are ordered as strings)
 
 phenotype = classify_phenotype(diplotype, gene='CYP2D6')
-# → {'phenotype': MetabolizerPhenotype.INTERMEDIATE, 'activity_score': 1.0}
+# → {'gene': 'CYP2D6', 'diplotype': '*10/*4', 'activity_score': 0.25,
+#    'phenotype': MetabolizerPhenotype.INTERMEDIATE, 'phenotype_abbreviation': 'IM',
+#    'clinical_significance': '...'}
 
-rec = get_dosing_recommendation('codeine', phenotype['phenotype'].value, gene='CYP2D6')
+rec = get_dosing_recommendation('codeine', phenotype['phenotype'].value)
 print(rec['recommendation'])
-# → "Use alternative to codeine" for IM/PM
+# → "Use codeine per standard of care. Monitor for reduced efficacy."
 ```
+
+`get_dosing_recommendation(drug, phenotype)` takes no gene argument; it returns `None` when
+no guideline matches the drug and phenotype.
 
 ## Installation
 
 The pharmacogenomics module ships with built-in allele definitions and CPIC guidelines.
-For full functionality (reports, plots), install optional extras:
+Reports and plots work with the core dependencies, so no optional extra is needed (there
+are no `pharmacogenomics` or `deconvolution` extras):
 
 ```bash
-uv pip install metainformant[pharmacogenomics,visualization]
+uv pip install metainformant
 ```
-
-Optional extra `deconvolution` enables spatial cell-type deconvolution (not needed for PGx).
 
 ## Data sources
 
-| Resource | What it provides | Built-in version | Update method |
+| Resource | What it provides | Built-in content | Update method |
 |----------|------------------|------------------|---------------|
-| CPIC guidelines | Drug–gene dosing recommendations per phenotype | v3.0 (2024-01) | `load_cpic_guidelines(path=...)` or `PG_CPIC_URL` env |
-| PharmGKB annotations | Evidence-backed variant annotations | Monthly cache (~9 MB) | Auto-refresh or `refresh_pharmgkb_cache()` |
-| Star allele tables | Gene→star-allele definitions with activity scores | 28 genes | Custom JSON via `load_allele_definitions()` |
+| CPIC guidelines | Drug–gene dosing recommendations per phenotype | 9 guidelines, all level A | `load_cpic_guidelines(filepath=...)`, passed as `guidelines=` |
+| PharmGKB annotations | Evidence-backed variant annotations | 9 clinical annotations, 10 variant annotations, 7 drug pathways | `parse_clinical_annotations(filepath)` on your own TSV export |
+| Star allele tables | Gene→star-allele definitions with activity scores | 8 genes | `load_allele_definitions(gene, source='file', filepath=...)`, passed as `allele_definitions=` |
 
 ## Core concepts
 
 **Star alleles** – Standardized haplotype labels (e.g., `*1`, `*4`, `*2A`) that represent
-specific variant combinations. The matcher maps observed rsIDs to the set of alleles
-that could explain them.
+specific variant combinations. The matcher returns the alleles whose defining variants
+are all present among the observed identifiers, trying the most specific alleles first
+and using each observed variant for at most one allele.
 
 **Diplotype** – The unordered pair of star alleles present on the two chromosomes
 (e.g., `*1/*4`). Activity score is the sum of each allele's numeric activity.
@@ -56,38 +65,47 @@ that could explain them.
 **Phenotype** – Clinical interpretation: Poor (PM), Intermediate (IM), Normal (NM),
 Rapid (RM), or Ultrarapid (UM) metabolizer. Thresholds are gene-specific.
 
-**CPIC level** – Evidence strength: A (strong), B (moderate), C/D (optional/negative).
+**CPIC level** – Evidence strength: A (strong), B (moderate), C (optional), D (weak
+evidence or limited data); the built-in guidelines are all level A.
 
 ## Batch processing
 
 ```python-snippet
 import pandas as pd
 from metainformant.core.execution import parallel
-from metainformant import pharmacogenomics
+from metainformant.pharmacogenomics.alleles.star_allele import call_star_alleles
+from metainformant.pharmacogenomics.alleles.diplotype import determine_diplotype
+from metainformant.pharmacogenomics.alleles.phenotype import classify_phenotype
 
 df = pd.read_csv('cohort.csv')  # requires 'rsids' column (semicolon-separated)
-def predict(row):
-    return pharmacogenomics.predict_metabolizer(
-        set(str(row['rsids']).split(';')), gene='CYP2D6'
-    )
 
-results = parallel.thread_map(predict, df.to_dict('records'), max_workers=8)
-df['CYP2D6_phenotype'] = [r['phenotype'] for r in results]
+def predict(rsids):
+    if pd.isna(rsids):
+        return None  # missing data is not "no variants" (an empty set reads as *1/*1)
+    called = [a.name for a in call_star_alleles(set(str(rsids).split(';')), 'CYP2D6')]
+    called += ['*1', '*1']  # pad: a single matched allele is paired with *1
+    dip = determine_diplotype(called[0], called[1], 'CYP2D6')
+    return classify_phenotype(dip, 'CYP2D6')['phenotype'].value
+
+df['CYP2D6_phenotype'] = parallel.thread_map(predict, df['rsids'], max_workers=8)
 ```
 
-For >100k samples increase `chunk_size` to reduce overhead; for massive cohorts switch
-to Dask:
+`thread_map` uses a thread pool (`max_workers`); the matching code is plain Python, so for
+CPU-bound cohorts use `parallel.process_map` with a top-level function. For massive
+cohorts switch to Dask, reusing `predict` on each partition (Dask is not a core
+dependency):
 
 ```python-snippet
+import pandas as pd
 import dask.dataframe as dd
 from dask.distributed import Client
+
+def predict_partition(part):
+    return pd.Series([predict(vs) for vs in part['rsids']], index=part.index)
+
 client = Client(n_workers=8)
 ddf = dd.read_csv('cohort_*.csv')
-ddf['phenotype'] = ddf.map_partitions(
-    lambda part: [pharmacogenomics.predict_metabolizer(set(vs), gene='CYP2D6')['phenotype']
-                  for vs in part['rsids']],
-    meta=('phenotype','object')
-)
+ddf['phenotype'] = ddf.map_partitions(predict_partition, meta=('phenotype', 'object'))
 ```
 
 ## Clinical reporting
@@ -95,87 +113,63 @@ ddf['phenotype'] = ddf.map_partitions(
 ```python
 from metainformant.pharmacogenomics.clinical.reporting import generate_clinical_report, export_report
 
-patient = {
-    'patient_id': 'PT001',
-    'name': 'Sample',
-    'dob': '1970-01-01',
-    'medications': ['codeine', 'clopidogrel'],
-    'genotype': {
-        'CYP2D6': {'diplotype': '*1/*4', 'phenotype': 'Intermediate Metabolizer'},
-        'CYP2C19': {'diplotype': '*1/*1', 'phenotype': 'Normal Metabolizer'},
-    },
+patient = {'patient_id': 'PT001', 'sex': 'F'}
+genotypes = {
+    'CYP2D6': {'diplotype': '*4/*10', 'phenotype': 'Intermediate Metabolizer'},
+    'CYP2C19': {'diplotype': '*2/*2', 'phenotype': 'Poor Metabolizer'},
 }
-report = generate_clinical_report(patient)
+report = generate_clinical_report(patient, genotypes, drugs=['codeine', 'clopidogrel'])
 print(export_report(report, format='text'))   # also 'json' and 'html'
 ```
 
-Output includes header, genotype table per gene, drug recommendations with CPIC
-levels, DDI warnings, and disclaimer.
+The text export prints a header with the generation time, patient information, genotype
+results per gene, drug recommendations with CPIC levels, prioritized clinical action
+items, an interaction summary and the disclaimer.
+
+The report is a dict with the keys `header`, `patient_info`, `genotype_results`,
+`drug_recommendations`, `interaction_summary`, `clinical_actions` and `disclaimer`.
+`patient_info` keeps only `patient_id`, `sex`, `ethnicity` and `ordering_provider` (names
+and dates of birth are not copied). Drug recommendations are generated only for the
+`drugs` you pass, using the `phenotype` given in `genotypes`; the genotype table
+recomputes the phenotype from `diplotype`.
 
 ## Configuration
 
-Key settings are under `pharmacogenomics.*` and environment variables starting with
-`PG_`:
-
-| Key | Env var | Default | Purpose |
-|-----|---------|---------|---------|
-| `algorithm` | `PG_ALGORITHM` | `auto` | Matching: `fast` \| `balanced` \| `accurate` |
-| `chunk_size` | `PG_CHUNK_SIZE` | `5000` | Caller-side batch size for `parallel.parallel_batch` |
-| `parallel` | `PG_PARALLEL` | `false` | Enable process-based parallelism |
-| `allele_definitions_dir` | `PG_ALLELE_DEFINITIONS_DIR` | built-in | Directory with custom JSON allele tables |
-| `cpic_guidelines_url` | `PG_CPIC_GUIDELINES_URL` | built-in | Override CPIC JSON source URL |
-| `pharmgkb.tsv_path` | `PG_PHARMGKB_TSV_PATH` | cache dir | Local PharmGKB TSV for offline use |
-| `logging` | `PG_LOGGING` | `INFO` | Module log level (`DEBUG` verbose) |
-
-Set via Python:
+The module has no configuration layer: no `pharmacogenomics.*` keys, no `PG_*`
+environment variables and no YAML section. Behaviour is set through function arguments
+(custom allele definitions, guidelines, scoring tables, report format); see
+[CONFIGURATION.md](CONFIGURATION.md) for the list. To watch the allele matcher work,
+raise the level of the standard `logging` logger:
 
 ```python
-from metainformant.core.utils import config
-config.set('pharmacogenomics.algorithm', 'balanced')
-config.set('pharmacogenomics.chunk_size', 20000)
+import logging
+logging.getLogger('metainformant.pharmacogenomics').setLevel(logging.DEBUG)
 ```
-
-Or YAML (`~/.hermes/config.yaml`):
-
-```yaml
-pharmacogenomics:
-  algorithm: balanced
-  chunk_size: 5000
-  parallel: false
-```
-
-See [CONFIGURATION.md](CONFIGURATION.md) for the full reference.
 
 ## What genes are supported?
 
-The built-in allele definitions cover ~30 pharmacogenes:
+The built-in allele definitions cover 8 pharmacogenes, 45 alleles in total (counting `*1`):
 
-- CYP2D6 (140 alleles), CYP2C19 (30), CYP2C9 (19), CYP3A5 (9)
-- TPMT (13), NUDT15 (9), UGT1A1 (10)
-- SLCO1B1 (12), VKORC1 (8), DPYD (22)
-- ... and more
+- CYP2D6 (12 alleles), CYP2C19 (5), CYP2C9 (7), CYP3A5 (4)
+- TPMT (5), NUDT15 (3)
+- SLCO1B1 (4), DPYD (5)
 
-List available genes:
+Other genes need a definition file (see [CONFIGURATION.md](CONFIGURATION.md)). To list the
+built-in genes, ask for an unknown one; the error names every gene it has:
 
 ```python
-from metainformant.pharmacogenomics.alleles.star_allele import _BUILTIN_ALLELE_DEFINITIONS
-print(sorted(_BUILTIN_ALLELE_DEFINITIONS.keys()))
+from metainformant.pharmacogenomics.alleles.star_allele import load_allele_definitions
+
+try:
+    load_allele_definitions('NOT_A_GENE')
+except ValueError as exc:
+    print(exc)  # "... Available genes: CYP2C19, CYP2C9, CYP2D6, CYP3A5, DPYD, NUDT15, SLCO1B1, TPMT. ..."
 ```
-
-## Interactive pipeline (Hermes CLI)
-
-If you run `hermes` in interactive mode, you can:
-
-1. `/tool pharmacogenomics call_star_alleles --gene CYP2D6 --variants rs1065852,rs3892097`
-2. `/tool pharmacogenomics classify_phenotype --diplotype *1/*4 --gene CYP2D6`
-3. `/tool pharmacogenomics cpic get_dosing --drug codeine --phenotype "Intermediate Metabolizer"`
-
-Type `/help` inside Hermes to explore tool invocations.
 
 ## Next steps
 
 - **[CAPABILITIES.md](CAPABILITIES.md)** — Full class and function catalogue
-- **[EXAMPLES.md](EXAMPLES.md)** — 20 detailed usage patterns
+- **[EXAMPLES.md](EXAMPLES.md)** — 22 detailed usage patterns
 - **[PERFORMANCE.md](PERFORMANCE.md)** — Benchmarks and scaling tips
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** — Known failure modes and fixes
-- **[CONFIGURATION.md](CONFIGURATION.md)** — All config keys and environment variables
+- **[CONFIGURATION.md](CONFIGURATION.md)** — Function arguments that customise tables, guidelines and reports; logging

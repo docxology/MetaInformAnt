@@ -137,22 +137,6 @@ python scripts/cloud/deploy_gcp.py deploy \
   --machine-type n2-highmem-64
 ```
 
-### Spot VM interruption handling with checkpointing
-```python-snippet
-# In your pipeline script, register checkpoint handlers
-from metainformant.cloud.interrupt import register_preempt_handler
-
-def checkpoint_callback(state):
-    """Save intermediate results when VM is about to die"""
-    save_checkpoint(state)
-    upload_to_gcs(f"gs://my-bucket/checkpoints/{state.job_id}.pkl")
-
-register_preempt_handler(checkpoint_callback)
-
-# Later, resume from checkpoint
-python scripts/rna/run_amalgkit_single.py --config config.yaml --resume-from gs://...
-```
-
 ### Multi-region redundant deployment
 ```bash
 # Deploy same pipeline in two regions simultaneously

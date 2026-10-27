@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - information
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/examples/information`
+- **Path**: `examples/information`
 - **Purpose**: Functionality for information.
 - **Domain**: examples
 

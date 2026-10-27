@@ -45,15 +45,18 @@ src/metainformant/protein/
 - Secondary structure prediction
 
 ### Structure I/O (`structure_io`)
-- PDB/mmCIF file reading and writing
-- Structure format conversion
+- PDB file reading and writing, mmCIF reading
+- PDB to mmCIF conversion
 
 **Patterns**:
 ```python
 from metainformant.protein.structure import io as structure_io
 
-structure = structure_io.read_pdb("data/structure.pdb")
-structure_io.write_pdb(structure, "output/protein/structure.pdb")
+# Parse into a dict with atoms, coordinates, residues, n_atoms, n_residues
+structure = structure_io.parse_pdb_file("data/structure.pdb")
+structure_io.write_pdb_file(structure, "output/protein/structure.pdb")
+
+# mmCIF: structure_io.parse_mmcif_file(...); structure_io.convert_pdb_to_mmcif(pdb_file, cif_file)
 ```
 
 ### UniProt (`uniprot`)

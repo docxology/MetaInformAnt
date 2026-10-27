@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - bayesian
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/math/bayesian`
+- **Path**: `src/metainformant/math/bayesian`
 - **Purpose**: Bayesian inference subpackage for mathematical biology.
 - **Domain**: math
 

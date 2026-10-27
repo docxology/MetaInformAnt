@@ -6,87 +6,88 @@ receptor‑expressing spots / cells.
 ## Core functions
 
 ```python-snippet
-from metainformant.spatial.analysis.communication import (
-    ligand_receptor_score,           # one pair
-    spatial_ligand_receptor_pairs,   # many pairs, multiple testing
-    permutation_significance,        # Monte Carlo p‑value
-)
+from metainformant.spatial.analysis.neighborhood import ligand_receptor_spatial
+from metainformant.spatial.communication.cell_communication import default_lr_database
 ```
+
+- `ligand_receptor_spatial()` scores ligand–receptor pairs from a spots × genes
+  matrix, the spot coordinates and a list of `(ligand, receptor)` gene tuples.
+- `default_lr_database()` returns the built‑in list of ligand–receptor pairs.
 
 ## Single pair scoring
 
-Given a spatial AnnData (spots / cells) and a ligand and receptor gene:
+Given a spots × genes expression matrix, spot coordinates and a ligand and receptor gene:
 
 ```python
-score = ligand_receptor_score(
-    adata,
-    ligand='EGF',
-    receptor='EGFR',
-    radius=200.0,          # µm, interaction neighbourhood
-    method='exp_mean',     # mean expression of receptor among ligand‑expressing
+res = ligand_receptor_spatial(
+    expression,
+    [('EGF', 'EGFR')],        # (ligand, receptor) pairs
+    coordinates,
+    gene_names=gene_names,
+    radius=200.0,             # µm, interaction neighbourhood (k nearest neighbours if omitted)
 )
-print(f'Score = {score.value:.3f} (p = {score.pvalue:.3g})')
+score = res['scores'][('EGF', 'EGFR')]
+print(f'Score = {score:.3f}')
 ```
 
-Methods:
-
-| name | meaning |
-|------|---------|
-| `exp_mean` | average receptor expression conditional on ligand > 0 |
-| `exp_fraction` | what fraction of ligand (+) neighbours express receptor |
-| `coexpression` | Pearson correlation between ligand and receptor across spots |
+The score of a pair is the mean over spots of the ligand expression in the spot
+times the mean receptor expression of its neighbours; `res['per_spot_scores']`
+holds the per‑spot values. No p‑value is computed.
 
 ## Database‑driven pair scan
 
-Built‑in LR database (CellChat / CellPhoneDB v2) accessed via `load_lr_database()`:
+The built‑in LR database is a curated subset of 95 ligand–receptor pairs (chemokine,
+growth factor, Wnt, Notch, Hedgehog, TGF‑β, interleukin, adhesion and other
+signalling), returned by `default_lr_database()`:
 
 ```python-snippet
-from metainformant.spatial.analysis.communication import load_lr_database, spatial_ligand_receptor_pairs
-lr_db = load_lr_database('human')   # ~2 300 pairs
+from metainformant.spatial.analysis.neighborhood import ligand_receptor_spatial
+from metainformant.spatial.communication.cell_communication import default_lr_database
 
-results = spatial_ligand_receptor_pairs(
-    adata,
-    lr_db=lr_db,
+lr_db = default_lr_database()   # {"pairs": [{"ligand": ..., "receptor": ...}, ...]}
+lr_pairs = [(p['ligand'], p['receptor']) for p in lr_db['pairs']]
+
+results = ligand_receptor_spatial(
+    expression,
+    lr_pairs,
+    coordinates,
+    gene_names=gene_names,
     radius=150.0,
-    n_permutations=999,
-    n_jobs=4,
 )
-# DataFrame: ligand, receptor, score, pvalue, qvalue, cell_type_pair
-sig = results[results['qvalue'] < 0.05]
-print(f'Significant pairs: {len(sig)} / {len(results)}')
+# results['scores']: {(ligand, receptor): score}; pairs with a gene missing from gene_names are skipped
+ranked = sorted(results['scores'].items(), key=lambda kv: kv[1], reverse=True)
+print(f"Pairs scored: {results['n_pairs_tested']} / {len(lr_pairs)}")
 ```
-
-Multiple‑testing correction uses Benjamini–Hochberg within each ligand or within
-each cell‑type pair; `qvalue` column is FDR.
 
 ## Visualisation
 
-```python-snippet
-from metainformant.spatial.visualization import lr_network_graph
-lr_network_graph(adata, results, min_score=0.3, edge_weight_scale=2.0)
-```
+Per‑spot scores can be mapped back onto the tissue:
 
-Creates a bipartite graph (ligands left, receptors right) with edge thickness ∝
-score, colour by significance.
+```python-snippet
+from metainformant.spatial.visualization.plots import plot_spatial_scatter
+
+top_pair = ranked[0][0]
+plot_spatial_scatter(
+    coordinates,
+    results['per_spot_scores'][top_pair],
+    'lr_scores.png',
+    title=' → '.join(top_pair),
+    colorbar_label='LR score',
+)
+```
 
 ## Custom LR pair
 
+`ligand_receptor_spatial()` takes plain `(ligand, receptor)` tuples, so a custom pair
+is simply appended to the list:
+
 ```python-snippet
-from metainformant.spatial.analysis.communication import register_custom_lr
-register_custom_lr(
-    ligand='MYOKINE',
-    receptor='MUSCLE_RECEPTOR',
-    pathway='muscle_growth',
-)
-# now appears in future scans
+lr_pairs.append(('MYOKINE', 'MUSCLE_RECEPTOR'))
+results = ligand_receptor_spatial(expression, lr_pairs, coordinates, gene_names=gene_names, radius=150.0)
 ```
 
 ## Pitfalls
 
-- **Radius too small** — misses true interactions; try 100–300 µm for Visium.
-- **Expression threshold** — by default ligand presence requires >0 counts; use
-  `ligand_threshold=1` to require at least 1 UMI.
+- **Radius too small** — misses true interactions; try 100–300 µm for Visium.
 - **Batch effects** — integrate batches first; otherwise false positives from
   technical variation.
-- **Cell‑type proportion bias** — abundant cell types dominate; normalise by cell‑type
-  frequency using `normalize_by_celltype_freq=True`.

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - assays
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/epigenome/assays`
+- **Path**: `src/metainformant/epigenome/assays`
 - **Purpose**: Functionality for assays.
 - **Domain**: epigenome
 

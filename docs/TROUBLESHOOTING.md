@@ -22,7 +22,7 @@ for record in read_jsonl("large_file.jsonl"):
 
 2. **Use streaming for VCF**:
 ```python-snippet
-from metainformant.gwas.quality import parse_vcf_full
+from metainformant.gwas.analysis.quality import parse_vcf_full
 
 # Parse VCF - processes in memory
 # For very large files, consider using external tools:
@@ -174,7 +174,7 @@ bcftools --version | head -1
 
 3. **Validate input files**:
 ```python-snippet
-from metainformant.gwas.quality import validate_vcf
+from metainformant.gwas.analysis.calling import validate_vcf
 
 errors = validate_vcf("input.vcf.gz")
 if errors:
@@ -232,13 +232,13 @@ curl -s https://eutils.ncbi.nlm.nih.gov/entrez/eutils/ | head
 
 3. **Use fasterq-dump explicitly**:
 ```python-snippet
-from metainformant.rna.sra_extraction import download_sra_run
+from metainformant.gwas.data.sra_download import download_sra_run
 
-# Direct SRA download
+# Direct SRA Toolkit download (runs fasterq-dump, falls back to fastq-dump)
 download_sra_run(
-    accession="SRR14740514",
+    sra_accession="SRR14740514",
     output_dir="output/fastq",
-    tool="fasterq-dump"
+    threads=4
 )
 ```
 
@@ -277,7 +277,7 @@ cache = JsonCache("output/ncbi_cache", ttl_seconds=86400)  # 24h
 
 1. **Validate VCF format**:
 ```python-snippet
-from metainformant.gwas.quality import validate_vcf
+from metainformant.gwas.analysis.calling import validate_vcf
 
 errors = validate_vcf(vcf_path)
 ```
@@ -300,13 +300,7 @@ tabix -p vcf input.vcf.gz
 
 **Solutions**:
 
-1. **Detect quality encoding**:
-```python-snippet
-from metainformant.quality.fastq import detect_quality_encoding
-
-encoding = detect_quality_encoding(fastq_path)
-print(f"Detected quality encoding: {encoding}")
-```
+1. **Check the quality encoding**: METAINFORMANT's FASTQ readers decode quality strings as Phred+33 (Sanger / Illumina 1.8+) and have no encoding auto-detection, so confirm which encoding your files use before converting.
 
 2. **Convert encoding**:
 ```bash
@@ -353,9 +347,9 @@ python -c "import yaml; yaml.safe_load(open('config.yaml'))"
 
 2. **Use schema validation**:
 ```python-snippet
-from metainformant.core.validation import validate_config_schema
+from metainformant.gwas.workflow.workflow_config import validate_gwas_config
 
-errors = validate_config_schema(config, "gwas_schema")
+errors = validate_gwas_config(config)  # list of error messages; empty when valid
 ```
 
 3. **Check required fields**:

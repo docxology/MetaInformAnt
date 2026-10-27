@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - visualization
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/singlecell/visualization`
+- **Path**: `src/metainformant/singlecell/visualization`
 - **Purpose**: Functionality for visualization.
 - **Domain**: singlecell
 

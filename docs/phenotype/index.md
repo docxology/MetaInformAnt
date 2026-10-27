@@ -9,19 +9,19 @@ analysis pipelines.
 
 ## Subpackages
 
-| Subpackage       | Description                                                        | Key Exports                                      |
+| Subpackage       | Description                                                        | Key Classes and Functions (module)               |
 |------------------|--------------------------------------------------------------------|--------------------------------------------------|
-| `morphological`  | Morphometric measurements, allometric regression, shape indices    | `Measurement`, `MorphometricProfile`             |
-| `behavior`       | Ethograms, behavioral sequences, time budgets, transition matrices | `Ethogram`, `BehaviorSequence`                   |
-| `chemical`       | Chemical profiles (GC-MS, CHC), distance matrices, marker detection| `Compound`, `ChemicalProfile`                    |
-| `electronic`     | RFID, video, and GPS tracking with movement ecology                | `TrackingPoint`, `Trajectory`                    |
-| `sonic`          | Acoustic signals, FFT spectral analysis, syllable detection        | `AcousticSignal`                                 |
-| `workflow`       | Pipeline orchestration for multi-step phenotype analysis           | `PhenotypePipeline`, `PipelineConfig`            |
-| `visualization`  | Phenotype-specific plotting utilities                              | (domain-specific plot functions)                 |
-| `integration`    | Cross-omic integration (phenotype-genotype, trait-expression)      | (integration functions)                          |
-| `gwas_integration` | PheWAS, heritability screening, genetic risk scores              | `run_phewas`, `genetic_risk_score`               |
-| `analysis`       | Life course and temporal trajectory analysis                       | (temporal analysis functions)                    |
-| `data`           | Data loading utilities                                             | (loader functions)                               |
+| `morphological`  | Morphometric measurements, allometric regression, shape indices    | `Measurement`, `MorphometricProfile`; `allometric_regression`, `compare_profiles`, `summary_statistics` (`profile`) |
+| `behavior`       | Ethograms, behavioral sequences, time budgets, transition matrices | `Ethogram` (`ethogram`), `BehaviorSequence` (`sequence`) |
+| `chemical`       | Chemical profiles (GC-MS, CHC), distance matrices, marker detection| `Compound` (`compound`); `ChemicalProfile`, `distance_matrix`, `identify_marker_compounds` (`profile`) |
+| `electronic`     | RFID, video, and GPS tracking with movement ecology                | `TrackingPoint`, `Trajectory`, `detect_interactions` (`tracking`) |
+| `sonic`          | Acoustic signals, FFT spectral analysis, syllable detection        | `AcousticSignal` (`signal`)                      |
+| `workflow`       | Pipeline orchestration for multi-step phenotype analysis           | `PhenotypePipeline`, `PipelineConfig`, `PipelineResult` (`pipeline`); `permanova`, `pcoa` (`ecology_stats`, also exported by the package) |
+| `visualization`  | Phenotype-specific plotting utilities                              | `plot_trait_distribution`, `plot_phenotype_pca`, ... (`visualization`); `plot_violin`, `plot_boxplot_with_swarm`, ... (`plots`) |
+| `integration`    | Cross-omic integration (phenotype-genotype, trait-expression)      | `phenotype_genotype_association`, `trait_expression_correlation`, `multi_phenotype_integration`, `phenotype_environment_interaction` (`cross_omic`) |
+| `gwas_integration` | PheWAS, heritability screening, genetic risk scores              | `run_phewas`, `phenotype_correlation_matrix`, `genetic_risk_score`, `phenotype_heritability_screen`, `categorize_phenotypes` (`phewas`) |
+| `analysis`       | Life course, multivariate, and statistical analysis of phenotypes  | Modules `life_course`, `multivariate`, and `statistical` (`statistical` needs `statsmodels`) |
+| `data`           | Data loading utilities                                             | Modules `antwiki` (AntWiki records) and `scraper` (AntWiki scraper) |
 
 ---
 
@@ -30,7 +30,8 @@ analysis pipelines.
 ### Morphological Analysis
 
 ```python
-from metainformant.phenotype import Measurement, MorphometricProfile
+from metainformant.phenotype.morphological.measurement import Measurement
+from metainformant.phenotype.morphological.profile import MorphometricProfile
 
 # Create measurements
 head_length = Measurement(name="head_length", value=1.85, unit="mm")
@@ -54,7 +55,8 @@ gm_size = profile.geometric_mean_size()
 ### Behavioral Analysis
 
 ```python
-from metainformant.phenotype import Ethogram, BehaviorSequence
+from metainformant.phenotype.behavior.ethogram import Ethogram
+from metainformant.phenotype.behavior.sequence import BehaviorSequence
 
 # Define an ethogram (controlled vocabulary of behaviors)
 ethogram = Ethogram({
@@ -75,8 +77,9 @@ defn = ethogram.get("G")
 ### Chemical Profile Analysis
 
 ```python
-from metainformant.phenotype import Compound, ChemicalProfile
-from metainformant.phenotype.chemical import distance_matrix, identify_marker_compounds
+from metainformant.phenotype.chemical.compound import Compound
+from metainformant.phenotype.chemical.profile import ChemicalProfile
+from metainformant.phenotype.chemical.profile import distance_matrix, identify_marker_compounds
 
 # Define compounds
 compound_a = Compound(name="C25", formula="C25H52", retention_time=12.3)
@@ -86,7 +89,7 @@ compound_b = Compound(name="C27", formula="C27H56", retention_time=14.1)
 ### Electronic Tracking
 
 ```python
-from metainformant.phenotype import TrackingPoint, Trajectory
+from metainformant.phenotype.electronic.tracking import TrackingPoint, Trajectory
 
 # Build a trajectory from tracking points (RFID, video, GPS)
 points = [
@@ -107,7 +110,7 @@ duration = traj.duration                 # Total time span in seconds
 ### Acoustic Signal Analysis
 
 ```python
-from metainformant.phenotype import AcousticSignal
+from metainformant.phenotype.sonic.signal import AcousticSignal
 import numpy as np
 
 # Create from waveform data
@@ -125,7 +128,7 @@ signal.n_samples   # 44100
 ### Pipeline Orchestration
 
 ```python
-from metainformant.phenotype import PhenotypePipeline, PipelineConfig
+from metainformant.phenotype.workflow.pipeline import PhenotypePipeline, PipelineConfig
 
 # Configure a pipeline
 config = PipelineConfig(
@@ -143,14 +146,48 @@ config = PipelineConfig(
 ### GWAS Integration
 
 ```python
-from metainformant.phenotype import (
+import random
+from metainformant.phenotype.gwas_integration.phewas import (
     run_phewas,
     phenotype_correlation_matrix,
     genetic_risk_score,
     phenotype_heritability_screen,
     categorize_phenotypes,
 )
+from metainformant.simulation.models.popgen import generate_genotype_matrix
+from metainformant.gwas.analysis.structure import compute_kinship_matrix
+
+rng = random.Random(0)
+n = 40  # use 33 or more samples: p-values are only roughly approximated below 30 degrees of freedom
+genotype = [rng.choice([0, 1, 2]) for _ in range(n)]  # additive dosage of one variant, one value per sample
+phenotypes = {
+    "body_length": [5.0 + 0.8 * g + rng.gauss(0, 0.5) for g in genotype],
+    "type_2_diabetes": [rng.choice([0, 1]) for _ in range(n)],
+}
+
+# PheWAS: one variant against every phenotype, sorted by p_value
+hits = run_phewas(genotype, phenotypes)
+print(hits[0]["phenotype"], hits[0]["beta"], hits[0]["p_value"])  # body_length comes first
+
+# Pairwise Pearson correlations between phenotypes
+corr = phenotype_correlation_matrix(phenotypes)
+print(corr["phenotype_names"], corr["correlation_matrix"])
+
+# Genetic risk score: samples x variants dosages plus one effect size per variant
+scores = genetic_risk_score([[0, 1, 2], [1, 1, 0], [2, 0, 1]], effect_sizes=[0.2, -0.1, 0.4])
+print(scores["risk_scores"])  # one score per sample
+
+# Heritability screen (Haseman-Elston) against a samples x samples kinship matrix
+genotypes = generate_genotype_matrix(n_individuals=n, n_sites=200, rng=rng)
+kinship = compute_kinship_matrix(genotypes)["kinship_matrix"]
+h2 = phenotype_heritability_screen(phenotypes, kinship)  # dicts with phenotype, h2, se, p_value
+
+# Group phenotype names into categories by keyword
+categories = categorize_phenotypes(phenotypes)
+print(categories["categories"])  # {'endocrine': ['type_2_diabetes']}
 ```
+
+Each `run_phewas` result holds `phenotype`, `beta`, `se`, `p_value`, `n_samples` and `phenotype_category`; the last is always `"uncategorized"`, so use `categorize_phenotypes` to group the names. The p-values use a normal approximation of the t distribution above 30 degrees of freedom and a rough approximation below that.
 
 ---
 
@@ -160,8 +197,10 @@ The `Measurement` class supports automatic unit conversion for metric length uni
 (um, mm, cm, m):
 
 ```python
+from metainformant.phenotype.morphological.measurement import Measurement
+
 m = Measurement(name="leg_length", value=3.5, unit="mm")
-m_cm = m.convert("cm")   # Measurement(name="leg_length", value=0.35, unit="cm")
+m_cm = m.convert("cm")   # Measurement(name='leg_length', value=0.35, unit='cm', ...)
 ```
 
 ---

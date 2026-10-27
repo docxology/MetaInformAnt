@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - association
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/scripts/gwas/association`
+- **Path**: `scripts/gwas/association`
 - **Purpose**: Functionality for association.
 - **Domain**: gwas
 

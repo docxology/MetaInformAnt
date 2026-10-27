@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - io
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/longread/io`
+- **Path**: `src/metainformant/longread/io`
 - **Purpose**: Long-read I/O module for FAST5, POD5, BAM, and format conversion.
 - **Domain**: longread
 

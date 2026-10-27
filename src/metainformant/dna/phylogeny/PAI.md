@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - phylogeny
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/dna/phylogeny`
+- **Path**: `src/metainformant/dna/phylogeny`
 - **Purpose**: Functionality for phylogeny.
 - **Domain**: dna
 

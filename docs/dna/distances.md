@@ -13,7 +13,7 @@ flowchart LR
 Example
 
 ```python-snippet
-from metainformant.dna import distances
+from metainformant.dna.alignment import distances
 
 # Simple proportion distance
 p_dist = distances.p_distance("ATCG", "ATGG")  # 0.25

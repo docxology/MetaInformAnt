@@ -4,12 +4,12 @@ Real-world analysis scenarios demonstrating complete metabolomics workflows with
 
 ## Table of Contents
 
-1. [Example 1: Urine Metabolomics — Diabetic vs. Control](#example-1-urine-metabolomics-diabetic-vs-control)
+1. [Example 1: Urine Metabolomics — Diabetic vs. Control](#example-1-urine-metabolomics--diabetic-vs-control)
 2. [Example 2: Cancer Cell Line Metabolite Profiling](#example-2-cancer-cell-line-metabolite-profiling)
 3. [Example 3: Time-Course Drug Response](#example-3-time-course-drug-response)
 4. [Example 4: MS/MS Spectral Library Matching](#example-4-msms-spectral-library-matching)
-5. [Example 5: Multi-Omics Integration — Metabolite-Gene Correlation](#example-5-multi-omics-integration-metabolite-gene-correlation)
-6. [Example 6: Large Cohort — Quality Control and Batch Assessment](#example-6-large-cohort-quality-control-and-batch-assessment)
+5. [Example 5: Multi-Omics Integration — Metabolite-Gene Correlation](#example-5-multi-omics-integration--metabolite-gene-correlation)
+6. [Example 6: Large Cohort — Quality Control and Batch Assessment](#example-6-large-cohort--quality-control-and-batch-assessment)
 
 ---
 
@@ -24,6 +24,7 @@ Real-world analysis scenarios demonstrating complete metabolomics workflows with
 ```python
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from pathlib import Path
 from metainformant.metabolomics import (
     io, analysis, pathways, visualization,
@@ -35,14 +36,6 @@ dataset = io.formats.read_csv("urine_metabolites.csv")
 print(f"  Metabolites: {len(dataset.metabolites)}, Samples: {len(dataset.samples)}")
 # Output: Metabolites: 500, Samples: 60
 
-# Check sample grouping from metadata (assumes SampleID encodes group)
-# E.g., "D003" = Diabetic patient 3, "C015" = Control 15
-sample_groups = ["diabetic" if s.startswith("D") else "control" for s in dataset.samples]
-group_a = [i for i, g in enumerate(sample_groups) if g == "diabetic"]
-group_b = [i for i, g in enumerate(sample_groups) if g == "control"]
-print(f"  Group sizes: diabetic={len(group_a)}, control={len(group_b)}")
-# Output: Group sizes: diabetic=30, control=30
-
 # ── Quality control: flag low-signal samples ──────────────────────────
 sample_totals = dataset.intensities.sum(axis=0)
 low_signal = sample_totals < 1e5
@@ -51,6 +44,15 @@ print(f"  Low-signal samples (< 1e5 total): {low_signal.sum()}")
 keep = ~low_signal
 dataset.intensities = dataset.intensities[:, keep]
 dataset.samples = [s for i, s in enumerate(dataset.samples) if keep[i]]
+
+# Sample grouping from metadata (assumes SampleID encodes group), computed after
+# the QC filter so that the indices match the remaining columns
+# E.g., "D003" = Diabetic patient 3, "C015" = Control 15
+sample_groups = ["diabetic" if s.startswith("D") else "control" for s in dataset.samples]
+group_a = [i for i, g in enumerate(sample_groups) if g == "diabetic"]
+group_b = [i for i, g in enumerate(sample_groups) if g == "control"]
+print(f"  Group sizes: diabetic={len(group_a)}, control={len(group_b)}")
+# Output (with one low-signal sample in each group): Group sizes: diabetic=29, control=29
 
 # ── Normalization ───────────────────────────────────────────────────────
 print("Normalizing (TIC)...")
@@ -74,16 +76,25 @@ from metainformant.metabolomics.pathways.enrichment import benjamini_hochberg
 qvals = benjamini_hochberg(list(pvals))
 qvals = np.array(qvals)
 
-# Volcano plot
-fig = visualization.plots.volcano_plot(
-    t_stats=t_stats,
-    p_values=pvals,
-    labels=dataset.metabolites,
-    threshold=0.05,
-    plot_threshold=True,
+# Volcano plot: volcano_plot_data() prepares the points (it draws nothing); plot with matplotlib.
+# fold_change() is the log2 ratio of group means, so give it the linear-scale TIC-normalized
+# matrix, not the log2-transformed one.
+log2fc = analysis.identification.fold_change(norm_tic, group_a, group_b)
+points = visualization.plots.volcano_plot_data(
+    dataset.metabolites, log2fc, qvals, fc_threshold=1.0, p_threshold=0.05
 )
-fig.write_html("urine_volcano.html")
-print("  Volcano plot saved to urine_volcano.html")
+fig, ax = plt.subplots(figsize=(6, 5))
+ax.scatter(
+    [p.log2_fc for p in points],
+    [p.neg_log10_p for p in points],
+    c=["tab:red" if p.significant else "tab:gray" for p in points],
+    s=12,
+)
+ax.axhline(-np.log10(0.05), linestyle="--", color="black", linewidth=0.8)
+ax.set_xlabel("log2 fold change (diabetic / control)")
+ax.set_ylabel("-log10 q-value")
+fig.savefig("urine_volcano.png", dpi=150, bbox_inches="tight")
+print("  Volcano plot saved to urine_volcano.png")
 
 # ── Identify significant metabolites ────────────────────────────────────
 sig_idx = np.where(qvals < 0.05)[0]
@@ -115,15 +126,19 @@ pathway_db = {
     "Purine Metabolism": ["Hypoxanthine", "Xanthine", "Uric acid"],
     "Lipid Metabolism": ["Acyl-carnitine", "Arachidonic acid"],
 }
-# Expand query to include metabolites at q < 0.1 for broader enrichment
+# Query set: the metabolites significant at q < 0.05 (use a looser cutoff for broader enrichment).
+# background_size is the universe the query was drawn from, here all measured metabolites; by
+# default the universe is only the pathway members plus the query, which understates enrichment
+# when the measured panel is much larger.
 query_metabolites = [dataset.metabolites[i] for i in sig_idx]
 enriched = pathways.enrichment.enrichment_with_fdr(
-    query_metabolites, pathway_db, fdr_threshold=0.2
+    query_metabolites, pathway_db, background_size=len(dataset.metabolites), fdr_threshold=0.2
 )
-print(f"  Enriched pathways (FDR < 0.2): {len(enriched)}")
+print(f"  Enriched pathways (FDR <= 0.2): {len(enriched)}")
 for r in enriched:
+    # fold_enrichment = observed / expected overlap; p_value is the raw (unadjusted) p-value
     print(f"  {r.pathway_name}: {r.overlap}/{r.pathway_size} metabolites, "
-          f"odds={r.fold_enrichment:.2f}, q={r.p_value:.4g}")
+          f"fold={r.fold_enrichment:.2f}, p={r.p_value:.4g}")
 
 # ── Save results ────────────────────────────────────────────────────────
 results_df = pd.DataFrame({
@@ -139,32 +154,36 @@ print("Results saved to urine_differential_results.csv")
 
 ### Expected Output
 
+Illustrative values for the study design above (no dataset ships with the repository, so your numbers will differ; the script prints up to five hits per direction, shortened here):
+
 ```
-Loading urine metabolabolomics data...
+Loading urine metabolomics data...
   Metabolites: 500, Samples: 60
-  Group sizes: diabetic=30, control=30
   Low-signal samples (< 1e5 total): 2
+  Group sizes: diabetic=29, control=29
 Normalizing (TIC)...
 Log2 transforming for normality...
 Computing differential abundance...
+  Volcano plot saved to urine_volcano.png
   Significant metabolites (FDR < 0.05): 23
     Upregulated in diabetes: 14
     Downregulated in diabetes: 9
-  Volcano plot saved to urine_volcano.html
 
 Top upregulated metabolites:
   Citrate: t=5.43, q=0.0003
   2-Hydroxybutyrate: t=4.87, q=0.0012
   BCAA: t=4.21, q=0.0031
+  ...
 
 Top downregulated metabolites:
   Hippurate: t=-3.98, q=0.0045
   Creatinine: t=-3.45, q=0.0089
+  ...
 
 Pathway enrichment...
-  Enriched pathways (FDR < 0.2): 2
-  Glycolysis / Gluconeogenesis: 3/4 metabolites, odds=3.2, q=0.042
-  Amino Acid Metabolism: 2/3 metabolites, odds=2.8, q=0.087
+  Enriched pathways (FDR <= 0.2): 2
+  Glycolysis / Gluconeogenesis: 3/4 metabolites, fold=16.30, p=0.0003318
+  Amino Acid Metabolism: 2/3 metabolites, fold=14.49, p=0.005913
 ```
 
 **Interpretation**:
@@ -183,6 +202,8 @@ Pathway enrichment...
 ### Script
 
 ```python
+import numpy as np
+import matplotlib.pyplot as plt
 from metainformant.metabolomics import io, analysis, pathways, visualization
 
 # Load data: CSV with columns "metabolite", then one per cell line
@@ -197,21 +218,27 @@ norm_pareto = analysis.identification.normalize_intensities(
     dataset.intensities, method="pareto"
 )
 
-# PCA to visualize separation
-pca_result = visualization.plots.pca_plot(
-    norm_pareto.T,  # samples × features
-    group_labels=["WT"] * len(wt_idx) + ["KRAS"] * len(mut_idx),
-)
-pca_result.write_html("pca.html")
+# PCA to visualize separation (pca_metabolomics takes metabolites × samples and returns
+# sample scores plus the explained-variance ratios; plotting is up to you)
+scores, explained = visualization.plots.pca_metabolomics(norm_pareto, n_components=2)
+fig, ax = plt.subplots(figsize=(5, 4))
+for label, idx in (("WT", wt_idx), ("KRAS-mut", mut_idx)):
+    ax.scatter(scores[idx, 0], scores[idx, 1], label=label)
+ax.set_xlabel(f"PC1 ({explained[0]:.1%})")
+ax.set_ylabel(f"PC2 ({explained[1]:.1%})")
+ax.legend()
+fig.savefig("pca.png", dpi=150, bbox_inches="tight")
 print("PCA plot saved")
 
-# Differential abundance (small n → effect size focus)
+# Differential abundance (small n → effect size focus).
+# Group A = KRAS-mut, group B = WT, so positive t / log2FC mean higher in KRAS-mut.
 t, p = analysis.identification.differential_abundance(
-    norm_pareto, group_a=wt_idx, group_b=mut_idx
+    norm_pareto, group_a=mut_idx, group_b=wt_idx
 )
 
 # Since n=5 per group, low power → use effect size threshold
-log2fc = analysis.identification.fold_change(dataset.intabolites, wt_idx, mut_idx)
+# (fold_change() is the log2 ratio of group means: pass linear-scale intensities)
+log2fc = analysis.identification.fold_change(dataset.intensities, mut_idx, wt_idx)
 large_effect = (np.abs(log2fc) > 1.0) & (p < 0.1)  # exploratory
 candidates = np.where(large_effect)[0]
 print(f"Candidate oncometabolites (|log2FC|>1, p<0.1): {len(candidates)}")
@@ -219,6 +246,7 @@ for i in candidates:
     print(f"  {dataset.metabolites[i]}: log2FC={log2fc[i]:.2f}, p={p[i]:.3f}")
 
 # Pathway activity scoring (uses continuous scores, not just sig/not-sig)
+# KEGG_PATHWAYS: dict mapping pathway name -> list of metabolite names (see CONFIGURATION.md)
 met_scores = dict(zip(dataset.metabolites, t))  # use t-statistic as score
 pathway_scores = pathways.enrichment.pathway_activity_scoring(
     metabolite_scores=met_scores,
@@ -232,21 +260,24 @@ for ps in pathway_scores[:5]:
 
 ### Expected Output
 
+Illustrative values (shortened; your numbers depend on your data):
+
 ```
 WT: 5, KRAS-mut: 5
 PCA plot saved
 Candidate oncometabolites (|log2FC|>1, p<0.1): 8
-  2-Hydroxyglutarate: log2FC=2.45, p=0.08
-  Succinate: log2FC=1.87, p=0.12
-  Lactate: log2FC=1.34, p=0.09
+  2-Hydroxyglutarate: log2FC=2.45, p=0.080
+  Succinate: log2FC=1.87, p=0.070
+  Lactate: log2FC=1.34, p=0.090
+  ...
 
-Top pathway activities:
+Top pathway activities (mean t-statistic):
   Glutathione metabolism: 1.87 (n=4/8)
   TCA Cycle: 1.23 (n=5/8)
   Glycolysis: 0.87 (n=6/10)
 ```
 
-**Interpretation**: Elevated 2-hydroxyglutarate (2-HG) is a known oncometabolite from IDH mutations; if KRAS-mut lines also have elevated 2-HG, may indicate epigenetic dysregulation. TCA cycle upregulation suggests Warburg effect.
+**Interpretation**: Elevated 2-hydroxyglutarate (2-HG) is a known oncometabolite from IDH mutations; if KRAS-mut lines also have elevated 2-HG, may indicate epigenetic dysregulation. Elevated lactate and glycolysis activity suggest the Warburg effect (aerobic glycolysis).
 
 ---
 
@@ -260,8 +291,9 @@ Top pathway activities:
 
 ```python
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.stats import f_oneway
-from metainformant.metabolomics import io, analysis, pathways, visualization
+from metainformant.metabolomics import io
 
 dataset = io.formats.read_csv("timecourse.csv")
 intensities = dataset.intensities
@@ -286,35 +318,44 @@ for i in range(len(dataset.metabolites)):
 
 # Multiple testing correction
 from metainformant.metabolomics.pathways.enrichment import benjamini_hochberg
-qvals = benjamini_hochberg(list(pvals))
-sig = np.where(np.array(qvals) < 0.05)[0]
+qvals = np.array(benjamini_hochberg(list(pvals)))
+sig = np.where(qvals < 0.05)[0]
 print(f"Metabolites with significant time effect: {len(sig)}")
 
-# Visualize time course for top hits
-for i in sig[:3]:
+# Top hits by q-value
+top = sig[np.argsort(qvals[sig])[:3]]
+print("Top time-varying metabolites:")
+for rank, i in enumerate(top, 1):
+    print(f"  {rank}. {dataset.metabolites[i]}: F={f_stats[i]:.1f}, q={qvals[i]:.2g}")
+
+# Visualize time course for the top hits
+for i in top:
     metabolite = dataset.metabolites[i]
     means = [intensities[i, g].mean() for g in groups]
     stds = [intensities[i, g].std() for g in groups]
-    fig = visualization.plots.time_series_plot(
-        timepoints=timepoints,
-        means=means,
-        stds=stds,
-        label=metabolite,
-    )
-    fig.write_html(f"timecourse_{metabolite.replace(' ', '_')}.html")
+    fig, ax = plt.subplots(figsize=(5, 3.5))
+    ax.errorbar(range(len(timepoints)), means, yerr=stds, marker="o", capsize=3)
+    ax.set_xticks(range(len(timepoints)), timepoints)
+    ax.set_xlabel("Time after drug X")
+    ax.set_ylabel("Intensity")
+    ax.set_title(metabolite)
+    fig.savefig(f"timecourse_{metabolite.replace(' ', '_')}.png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
 ```
 
 ### Expected Output
 
+Illustrative values (your numbers depend on your data):
+
 ```
 Metabolites with significant time effect: 42
 Top time-varying metabolites:
-  1. Lactate: F=24.5, q=1.2e-05  (increases over time)
-  2. ATP: F=18.9, q=3.4e-04  (decreases)
-  3. Glutathione: F=12.1, q=0.0012  (biphasic response)
+  1. Lactate: F=233.2, q=1.2e-05
+  2. ATP: F=83.1, q=0.00034
+  3. Glutathione: F=53.8, q=0.0012
 ```
 
-**Note**: `time_series_plot()` is a suggested addition to `visualization/plots.py` (not yet implemented).
+**Note**: `metabolomics.visualization.plots` has no time-series helper, so the loop above draws each time course with matplotlib directly.
 
 ---
 
@@ -329,6 +370,10 @@ Top time-varying metabolites:
 ### Script
 
 ```python
+import json
+from dataclasses import replace
+
+import numpy as np
 from metainformant.metabolomics import io, analysis
 
 # Load query and reference spectra
@@ -339,27 +384,25 @@ print(f"  Query: {len(query_spectra)} spectra")
 ref_spectra = io.formats.read_mgf("nist_library.mgf")
 print(f"  Reference: {len(ref_spectra)} spectra")
 
-# Preprocess: normalize intensities to max = 1.0 (cosine similarity invariant to scale)
+# Preprocess: scale each spectrum to unit total ion current
+# (cosine similarity ignores overall scale, so this only keeps intensities comparable).
+# MassSpectrum is a dataclass: use dataclasses.replace() to copy it with new intensities.
 def normalize_spectrum(spec):
     if spec.total_ion_current > 0:
-        factor = 1.0 / spec.total_ion_current
-        norm_intens = spec.intensity_array * factor
+        norm_intens = spec.intensity_array / spec.total_ion_current
     else:
         norm_intens = spec.intensity_array.copy()
-    return spec._replace(intensity_array=norm_intens)
+    return replace(spec, intensity_array=norm_intens)
 
 query_spectra = [normalize_spectrum(s) for s in query_spectra]
 ref_spectra = [normalize_spectrum(s) for s in ref_spectra]
 
-# Align spectra to common m/z grid (binning)
-def bin_spectrum(spec, min_mz=50, max_mz=1000, bin_width=0.1):
-    """Bin m/z values to fixed grid."""
-    bins = np.arange(min_mz, max_mz + bin_width, bin_width)
-    binned = np.zeros_like(bins)
-    for mz, intens in zip(spec.mz_array, spec.intensity_array):
-        bin_idx = int((mz - min_mz) / bin_width)
-        if 0 <= bin_idx < len(binned):
-            binned[bin_idx] += intens
+# Align spectra to a common m/z grid (binning): cosine_spectral_similarity()
+# compares two intensity vectors defined on the same grid
+def bin_spectrum(spec, min_mz=50.0, max_mz=1000.0, bin_width=0.1):
+    """Sum peak intensities into fixed m/z bins."""
+    edges = np.arange(min_mz, max_mz + bin_width, bin_width)
+    binned, _ = np.histogram(spec.mz_array, bins=edges, weights=spec.intensity_array)
     return binned
 
 # Build reference binned matrix
@@ -369,15 +412,13 @@ ref_binned = np.stack([bin_spectrum(s) for s in ref_spectra])
 print("Matching spectra...")
 matches = []
 top_k = 5
-for q_i, query in enumerate(query_spectra):
-    q_vec = bin_spectrum(query).reshape(1, -1)
+for query in query_spectra:
+    q_vec = bin_spectrum(query)
 
-    # Cosine similarity with all refs (vectorized)
-    # cos_sim = (q @ ref.T) / (||q|| * ||ref||) but vectors are already normalized
-    dot = q_vec @ ref_binned.T  # shape (1, n_ref)
-    norms = np.linalg.norm(ref_binned, axis=1)  # shape (n_ref,)
-    # q_vec norm ~ 1.0 after normalization
-    sims = dot.flatten() / np.maximum(norms, 1e-10)
+    # Cosine similarity with every reference spectrum
+    sims = np.array(
+        [analysis.identification.cosine_spectral_similarity(q_vec, ref_vec) for ref_vec in ref_binned]
+    )
 
     top_indices = np.argsort(-sims)[:top_k]
     query_matches = []
@@ -399,7 +440,6 @@ for q_i, query in enumerate(query_spectra):
 print(f"Matched {sum(1 for m in matches if m['top_matches'])} / {len(matches)} query spectra")
 
 # Save results
-import json
 with open("spectral_matches.json", "w") as f:
     json.dump(matches, f, indent=2)
 print("Saved to spectral_matches.json")
@@ -430,7 +470,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
 from metainformant.metabolomics import analysis
-from metainformant.visualization import plots  # assume better plots exist
+from metainformant.visualization import plots as viz  # shared matplotlib plotting helpers
 
 # Load metabolomics data
 from metainformant.metabolomics.io import formats as meta_io
@@ -455,7 +495,7 @@ print("RNA samples:", rna_dataset.samples[:5])
 # common = sorted(set(meta_dataset.samples) & set(rna_dataset.samples))
 # meta_idx = [meta_dataset.samples.index(s) for s in common]
 # rna_idx = [rna_dataset.samples.index(s) for s in common]
-# meta_norm = meta_nrom[:, meta_idx]
+# meta_norm = meta_norm[:, meta_idx]
 # rna_matrix = rna_matrix[:, rna_idx]
 
 # Correlation: for each metabolite, correlate with each gene
@@ -490,18 +530,17 @@ sub_corr = correlations[top_met_idx, :][:, top_gene_idx]
 sub_genes = [rna_genes[i] for i in top_gene_idx]
 sub_mets = [meta_dataset.metabolites[i] for i in top_met_idx]
 
-fig = visualization.plots.heatmap(
-    data=sub_corr,
-    row_labels=sub_mets,
-    col_labels=sub_genes,
-    colorscale="RdBu",
-    zmid=0,
-)
-fig.write_html("metabolite_gene_correlation.html")
+# (shared heatmap helper from metainformant.visualization.plots; it returns a matplotlib Axes)
+sub_df = pd.DataFrame(sub_corr, index=sub_mets, columns=sub_genes)
+ax = viz.expression_heatmap(sub_df, cmap="RdBu_r", vmin=-1, vmax=1, cbar_label="Spearman rho")
+ax.set_title("Metabolite-gene correlation")
+ax.figure.savefig("metabolite_gene_correlation.png", dpi=150, bbox_inches="tight")
 print("Saved correlation heatmap")
 ```
 
 ### Expected Output
+
+Illustrative values (the script prints the top 3 genes for each of the first 5 metabolites; the list is shortened here):
 
 ```
 Metabolite samples: ['S1', 'S2', 'S3', 'S4', 'S5']
@@ -510,10 +549,12 @@ Computing correlations: 200 metabolites × 1000 genes...
 Computed 200000 correlations
 
 Top metabolite-gene associations:
-  Citrate ↔ IDH2: ρ=0.82, p=2.1e-08
-  Citrate ↔ FH: ρ=0.78, p=1.2e-06
-  2-Hydroxyglutarate ↔ IDH1: ρ=0.91, p=3.4e-12
-  Lactate ↔ LDHA: ρ=0.88, p=1.5e-10
+  Citrate ↔ IDH2: ρ=0.820, p=3.23e-13
+  Citrate ↔ FH: ρ=0.780, p=2.45e-11
+  2-Hydroxyglutarate ↔ IDH1: ρ=0.910, p=5.56e-20
+  Lactate ↔ LDHA: ρ=0.880, p=3.91e-17
+  ...
+Saved correlation heatmap
 ```
 
 **Interpretation**: Strong positive correlation between citrate and IDH2/FH (TCA cycle genes) confirms known biology. 2-HG and IDH1 correlation suggests IDH1 mutation driving oncometabolite production.
@@ -530,13 +571,15 @@ Top metabolite-gene associations:
 
 ```python-snippet
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 from metainformant.metabolomics import io, analysis, visualization
+from metainformant.quality.batch.detection import correct_batch_combat
 
 dataset = io.formats.read_csv("large_cohort.csv")
 intensities = dataset.intensities  # (1000, 500)
 
-# Load batch labels from external file
-import pandas as pd
+# Load batch labels from external file (row order must match dataset.samples)
 metadata = pd.read_csv("sample_metadata.csv")
 batches = metadata["batch"].tolist()  # e.g., ["A", "B", "C", ...]
 
@@ -546,7 +589,6 @@ print(f"TIC range: {tics.min():.2e} – {tics.max():.2e}")
 print(f"CV across samples: {tics.std() / tics.mean():.3f}")
 
 # Flag outliers (outside 3 MAD from median)
-from metainformant.core import utils  # or implement MAD manually
 mad = np.median(np.abs(tics - np.median(tics)))
 outliers = np.abs(tics - np.median(tics)) > 3 * mad
 print(f"TIC outliers: {outliers.sum()} samples")
@@ -556,26 +598,38 @@ norm = analysis.identification.normalize_intensities(intensities, method="total_
 log_norm = np.log2(norm + 1)
 
 # ── 3. Batch effect visualization ───────────────────────────────────────
-# PCA colored by batch
-pca = visualization.plots.pca_plot(
-    log_norm.T,
-    group_labels=batches,
-    color_map={"A": "blue", "B": "red", "C": "green"},
-)
-pca.write_html("pca_by_batch.html")
+# PCA colored by batch. pca_metabolomics() takes metabolites × samples and returns
+# sample scores and explained-variance ratios; the scatter is drawn with matplotlib.
+def plot_pca_by_batch(data, labels, path):
+    scores, explained = visualization.plots.pca_metabolomics(data, n_components=2)
+    fig, ax = plt.subplots(figsize=(5, 4))
+    for label in sorted(set(labels)):
+        pick = [i for i, b in enumerate(labels) if b == label]
+        ax.scatter(scores[pick, 0], scores[pick, 1], s=12, label=f"Batch {label}")
+    ax.set_xlabel(f"PC1 ({explained[0]:.1%})")
+    ax.set_ylabel(f"PC2 ({explained[1]:.1%})")
+    ax.legend()
+    fig.savefig(path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
+plot_pca_by_batch(log_norm, batches, "pca_by_batch.png")
 
 # Boxplots of top 10 most variable metabolites by batch
 var = log_norm.var(axis=1)
 top10_idx = np.argsort(-var)[:10]
-fig = visualization.plots.boxplot_by_group(
-    data=log_norm[top10_idx, :],
-    group_labels=batches,
-    feature_labels=[dataset.metabolites[i] for i in top10_idx],
-)
-fig.write_html("batch_boxplots.html")
+batch_names = ["A", "B", "C"]
+fig, axes = plt.subplots(2, 5, figsize=(15, 6))
+for ax, m_i in zip(axes.ravel(), top10_idx):
+    per_batch = [log_norm[m_i, [i for i, b in enumerate(batches) if b == name]] for name in batch_names]
+    ax.boxplot(per_batch)
+    ax.set_xticks(range(1, len(batch_names) + 1), batch_names)
+    ax.set_title(dataset.metabolites[m_i], fontsize=8)
+fig.savefig("batch_boxplots.png", dpi=150, bbox_inches="tight")
+plt.close(fig)
 
 # ── 4. Batch effect quantification ──────────────────────────────────────
-# Compute batch vs. total variance for each metabolite
+# Compute batch vs. total variance for each metabolite (this ratio equals η² when the
+# batches have the same number of samples)
 batch_var = np.zeros(len(dataset.metabolites))
 for m_i in range(len(dataset.metabolites)):
     batch_means = [log_norm[m_i, [i for i, b in enumerate(batches) if b == batch]].mean()
@@ -586,20 +640,18 @@ total_var = log_norm.var(axis=1)
 batch_effect = batch_var / (total_var + 1e-10)
 print(f"Metabolites with strong batch effect (η² > 0.3): {(batch_effect > 0.3).sum()}")
 
-# ── 5. Combat batch correction (if needed) ───────────────────────────────
-# Note: ComBat not yet implemented in METAINFORMANT; use external:
-try:
-    from pycombat import Combat
-    combat = Combat()
-    corrected = combat.fit_transform(log_norm.T, batches).T  # samples × features
-    print("Batch correction applied (ComBat)")
-except ImportError:
-    print("pycombat not installed; skipping correction")
-    corrected = log_norm
+# ── 5. Batch correction (if needed) ──────────────────────────────────────
+# correct_batch_combat() takes samples × features and returns the same shape. It is a
+# simplified ComBat-style correction: each batch is centered on the grand mean and its
+# standard deviation is rescaled toward the overall one (the ratio is shrunk halfway toward 1,
+# a fixed shrinkage of 0.5). It is not the full parametric empirical-Bayes ComBat and has no
+# covariate argument, so do not use it when batch is confounded with the biological groups
+# you want to compare.
+corrected = correct_batch_combat(log_norm.T, batches).T  # back to metabolites × samples
+print("Batch correction applied (ComBat-style)")
 
 # Re-run PCA on corrected data
-pca_corr = visualization.plots.pca_plot(corrected.T, group_labels=batches)
-pca_corr.write_html("pca_after_correction.html")
+plot_pca_by_batch(corrected, batches, "pca_after_correction.png")
 
 # ── 6. Post-correction QC ────────────────────────────────────────────────
 # Check batch effect reduced
@@ -617,19 +669,21 @@ print(f"Batch effect reduced: {(batch_effect_corr < batch_effect).mean():.1%} of
 
 ### Expected Output
 
+Illustrative values for the study design above (the first four lines depend on your data):
+
 ```
 TIC range: 2.34e+05 – 8.91e+05
 CV across samples: 0.412
 TIC outliers: 12 samples
 Metabolites with strong batch effect (η² > 0.3): 127
-Batch correction applied (ComBat)
-Batch effect reduced: 87.4% of metabolites
+Batch correction applied (ComBat-style)
+Batch effect reduced: 100.0% of metabolites
 ```
 
 **Interpretation**:
 - **High TIC CV (0.41)**: Indicates substantial sample-to-sample variation (likely batch-driven).
 - **127 metabolites with η² > 0.3**: Strong batch confounding; must correct before biological inference.
-- **Post-ComBat reduction (87% improved)**: Batch effect successfully mitigated; PCA should now cluster by biology, not batch.
+- **Post-correction reduction (100% of metabolites)**: `correct_batch_combat()` sets every batch mean to the grand mean, so the between-batch term drops to ~0 by construction; check that PCA now clusters by biology, not batch.
 
 ---
 
@@ -641,19 +695,20 @@ Batch effect reduced: 87.4% of metabolites
 | **Normalize data** | `normalize_intensities()` (TIC/median/log2/pareto) |
 | **Differential analysis** | `differential_abundance()`, `fold_change()` |
 | **Pathway analysis** | `metabolite_set_enrichment()`, `enrichment_with_fdr()`, `pathway_activity_scoring()` |
-| **Quality control** | `filter_spectra()`, manual TIC/RCS checks |
+| **Quality control** | `filter_spectra()`, manual TIC checks (Examples 1 and 6) |
 | **Spectral matching** | `read_mgf()`, `cosine_spectral_similarity()` |
 | **Missing data** | `missing_value_imputation()` |
-| **Visualization** | `visualization.plots.volcano_plot()`, `pca_plot()`, `heatmap()` |
+| **Batch correction** | `metainformant.quality.batch.detection.correct_batch_combat()` (simplified ComBat-style) |
+| **Visualization (plot-ready data; draw with matplotlib)** | `visualization.plots.volcano_plot_data()`, `pca_metabolomics()`, `intensity_heatmap_data()`, `prepare_spectrum_plot()`, `detect_chromatographic_peaks()`, `retention_time_alignment_data()` |
 
 ---
 
 ## Tips for Your Own Analysis
 
 1. **Always visualize first**: PCA, sample clustering, TIC boxplots to spot outliers and batches.
-2. **Normalize before stats**: Never use raw intensities.
+2. **Normalize before stats**: Raw intensities are rarely suitable input for statistical tests.
 3. **Log-transform**: For statistical modeling, log2(x+1) is nearly universal.
-4. **Control false discoveries**: Use BH-FDR; expect 5–10% of “significant” hits to be false positives at q < 0.05.
+4. **Control false discoveries**: Use BH-FDR; at q < 0.05, expect at most about 5% of the “significant” hits to be false positives.
 5. **Biological validation**: Confirm top hits with orthogonal data (e.g., targeted MS, enzyme assays).
 6. **Document everything**: Save normalized matrices, intermediate statistics, and all plots.
 
@@ -666,4 +721,4 @@ Batch effect reduced: 87.4% of metabolites
 - **MZmine 3**: Open-source GUI for MS data analysis (plus back-end APIs).
 - **HMDB**: Human Metabolome Database — reference m/z, pathways, disease associations.
 
-Need more examples? See the `examples/` directory at the repository root for complete Jupyter notebooks.
+The repository ships no Jupyter notebooks and no metabolomics-specific example scripts; the walkthroughs above are the metabolomics examples. For the cross-module pieces see [INTEGRATION.md](INTEGRATION.md).

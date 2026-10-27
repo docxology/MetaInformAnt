@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - pipelines
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/scripts/gwas/pipelines`
+- **Path**: `scripts/gwas/pipelines`
 - **Purpose**: Functionality for pipelines.
 - **Domain**: gwas
 

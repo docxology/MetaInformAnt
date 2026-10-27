@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - analysis
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/rna/analysis`
+- **Path**: `src/metainformant/rna/analysis`
 - **Purpose**: Functionality for analysis.
 - **Domain**: rna
 

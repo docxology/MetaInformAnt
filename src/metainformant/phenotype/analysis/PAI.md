@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - analysis
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/phenotype/analysis`
+- **Path**: `src/metainformant/phenotype/analysis`
 - **Purpose**: Functionality for analysis.
 - **Domain**: phenotype
 

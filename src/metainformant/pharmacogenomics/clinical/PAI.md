@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - clinical
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/pharmacogenomics/clinical`
+- **Path**: `src/metainformant/pharmacogenomics/clinical`
 - **Purpose**: Pharmacogenomics clinical subpackage.
 - **Domain**: pharmacogenomics
 

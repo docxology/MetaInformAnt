@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - automl
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/ml/automl`
+- **Path**: `src/metainformant/ml/automl`
 - **Purpose**: Automated machine learning (AutoML) subpackage.
 - **Domain**: ml
 

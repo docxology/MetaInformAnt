@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - pathways
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/multiomics/pathways`
+- **Path**: `src/metainformant/multiomics/pathways`
 - **Purpose**: Multi-omic pathway analysis.
 - **Domain**: multiomics
 

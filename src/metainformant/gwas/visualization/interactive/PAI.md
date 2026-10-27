@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - interactive
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/gwas/visualization/interactive`
+- **Path**: `src/metainformant/gwas/visualization/interactive`
 - **Purpose**: Interactive and composite visualization subpackage.
 - **Domain**: visualization
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - plots
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/visualization/plots`
+- **Path**: `src/metainformant/visualization/plots`
 - **Purpose**: Functionality for plots.
 - **Domain**: visualization
 

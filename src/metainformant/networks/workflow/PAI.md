@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - workflow
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/networks/workflow`
+- **Path**: `src/metainformant/networks/workflow`
 - **Purpose**: Network analysis workflow orchestration.
 - **Domain**: networks
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - analysis
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/networks/analysis`
+- **Path**: `src/metainformant/networks/analysis`
 - **Purpose**: Functionality for analysis.
 - **Domain**: networks
 

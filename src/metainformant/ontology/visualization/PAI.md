@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - visualization
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/ontology/visualization`
+- **Path**: `src/metainformant/ontology/visualization`
 - **Purpose**: Ontology enrichment and network visualizations.
 - **Domain**: ontology
 

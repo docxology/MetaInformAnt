@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - dna
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/tests/data/dna`
+- **Path**: `tests/data/dna`
 - **Purpose**: Functionality for dna.
 - **Domain**: data
 

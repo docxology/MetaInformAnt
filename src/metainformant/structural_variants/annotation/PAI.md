@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - annotation
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/structural_variants/annotation`
+- **Path**: `src/metainformant/structural_variants/annotation`
 - **Purpose**: Structural variant annotation subpackage.
 - **Domain**: structural_variants
 

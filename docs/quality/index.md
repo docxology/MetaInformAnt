@@ -79,28 +79,32 @@ flowchart TB
 - **Core Utilities**: Uses METAINFORMANT's I/O and path handling
 - **Batch Processing**: Analyze multiple files efficiently
 - **Visualization**: Generate publication-ready plots
-- **Output Flexibility**: JSON, CSV, and HTML report formats
+- **Output Flexibility**: JSON results and CSV exports of each section; an HTML report is planned
 
 ## Quick Start
 
 ```python-snippet
-from metainformant.quality.fastq import analyze_fastq_quality
+from metainformant.quality.io.fastq import analyze_fastq_quality
 
 # Analyze single FASTQ file
 results = analyze_fastq_quality("sample.fastq.gz")
 
 # Print basic statistics
 print("Basic Statistics:")
-print(f"  Total sequences: {results['basic_stats']['total_sequences']:,}")
-print(f"  Sequence length: {results['basic_stats']['sequence_length']}")
-print(f"  GC content: {results['basic_stats']['gc_content']:.1f}%")
-print(f"  Mean quality: {results['basic_stats']['mean_quality']:.1f}")
+print(f"  Total sequences: {results['basic_statistics']['total_reads']:,}")
+print(f"  Mean sequence length: {results['basic_statistics']['mean_length']:.1f}")
+print(f"  GC content: {results['basic_statistics']['mean_gc']:.1f}%")
+print(f"  Mean quality: {results['basic_statistics']['mean_quality']:.1f}")
 
 # Check for issues
-if results['adapter_content']['max_adapter_content'] > 20:
+max_adapter = max(
+    (p['percentage'] for a in results['adapter_content']['adapters'].values() for p in a['positions']),
+    default=0.0,
+)
+if max_adapter > 20:
     print("Warning: High adapter content detected")
 
-if results['basic_stats']['mean_quality'] < 28:
+if results['basic_statistics']['mean_quality'] < 28:
     print("Warning: Low mean quality score")
 ```
 
@@ -164,24 +168,26 @@ Future quality control modules will include:
 ### Preprocessing Integration
 
 ```python-snippet
-from metainformant.quality.fastq import analyze_fastq_quality
-from metainformant.dna.fastq import process_fastq_file
+from metainformant.quality.io.fastq import analyze_fastq_quality, filter_reads
 
 # 1. Quality assessment
 qc_results = analyze_fastq_quality("raw_reads.fastq.gz")
 
-# 2. Apply quality filters based on QC results
-if qc_results['basic_stats']['mean_quality'] >= 30:
+# 2. Apply quality filters based on QC results (writes the filtered FASTQ and
+#    returns filtering statistics)
+if qc_results['basic_statistics']['mean_quality'] >= 30:
     # High quality - minimal filtering
-    filtered_reads = process_fastq_file(
+    filter_stats = filter_reads(
         "raw_reads.fastq.gz",
+        "filtered_reads.fastq.gz",
         min_quality=20,
         min_length=50
     )
 else:
     # Lower quality - more stringent filtering
-    filtered_reads = process_fastq_file(
-        "raw_reads.fastq.gz", 
+    filter_stats = filter_reads(
+        "raw_reads.fastq.gz",
+        "filtered_reads.fastq.gz",
         min_quality=25,
         min_length=75
     )
@@ -210,11 +216,17 @@ def quality_gate_check(qc_results, thresholds=None):
             'min_total_sequences': 1000000
         }
     
+    max_adapter = max(
+        (p['percentage'] for a in qc_results['adapter_content']['adapters'].values() for p in a['positions']),
+        default=0.0,
+    )
+    max_n = max((p['n_percentage'] for p in qc_results['n_content_per_position']['positions']), default=0.0)
+    
     checks = {
-        'mean_quality': qc_results['basic_stats']['mean_quality'] >= thresholds['min_mean_quality'],
-        'adapter_content': qc_results['adapter_content']['max_adapter_content'] <= thresholds['max_adapter_content'],
-        'n_content': qc_results['n_content_per_position']['max_n_content'] <= thresholds['max_n_content'],
-        'sequence_count': qc_results['basic_stats']['total_sequences'] >= thresholds['min_total_sequences']
+        'mean_quality': qc_results['basic_statistics']['mean_quality'] >= thresholds['min_mean_quality'],
+        'adapter_content': max_adapter <= thresholds['max_adapter_content'],
+        'n_content': max_n <= thresholds['max_n_content'],
+        'sequence_count': qc_results['basic_statistics']['total_reads'] >= thresholds['min_total_sequences']
     }
     
     all_passed = all(checks.values())
@@ -239,7 +251,7 @@ else:
 ### JSON Output
 ```python
 # Structured data for programmatic access
-results = analyze_fastq_quality("sample.fastq.gz", output_format="json")
+results = analyze_fastq_quality("sample.fastq.gz")
 
 # Save results
 import json
@@ -250,13 +262,19 @@ with open("qc_results.json", "w") as f:
 ### CSV Output
 ```python
 # Tabular format for spreadsheet analysis
-results = analyze_fastq_quality("sample.fastq.gz", output_format="csv")
+import pandas as pd
 
-# Results saved as CSV files:
-# - basic_stats.csv
-# - per_base_quality.csv  
-# - sequence_length_distribution.csv
-# - etc.
+results = analyze_fastq_quality("sample.fastq.gz")
+
+# basic_statistics is a flat mapping of scalars
+pd.Series(results["basic_statistics"], name="value").to_csv("basic_statistics.csv", index_label="metric")
+
+# List-valued sections convert directly to tables
+pd.DataFrame(results["per_base_quality"]["positions"]).to_csv("per_base_quality.csv", index=False)
+pd.DataFrame(results["sequence_length_distribution"]["distribution"]).to_csv(
+    "sequence_length_distribution.csv", index=False
+)
+# The same works for n_content_per_position["positions"], quality_score_distribution["distribution"], etc.
 ```
 
 ### HTML Report (Planned)

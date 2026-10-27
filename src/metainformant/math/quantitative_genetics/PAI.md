@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - quantitative_genetics
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/math/quantitative_genetics`
+- **Path**: `src/metainformant/math/quantitative_genetics`
 - **Purpose**: Functionality for quantitative_genetics.
 - **Domain**: math
 

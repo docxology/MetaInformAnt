@@ -98,7 +98,7 @@ Estimate population structure from VCF file.
 
 **Example**:
 ```python
-from metainformant.gwas import estimate_population_structure
+from metainformant.gwas.analysis.structure import estimate_population_structure
 
 config = {
     "compute_pca": True,
@@ -155,7 +155,7 @@ print(f"Kinship between samples 0 and 1: {kinship[0][1]:.4f}")
 ### Full Workflow from VCF
 
 ```python
-from metainformant.gwas import estimate_population_structure
+from metainformant.gwas.analysis.structure import estimate_population_structure
 
 config = {
     "compute_pca": True,
@@ -179,7 +179,8 @@ result = estimate_population_structure(
 ## Integration with GWAS Workflow
 
 ```python
-from metainformant.gwas import execute_gwas_workflow, load_gwas_config
+from metainformant.gwas import execute_gwas_workflow
+from metainformant.gwas.data.config import load_gwas_config
 
 # Load GWAS configuration
 config = load_gwas_config("config/gwas/analysis.yaml")

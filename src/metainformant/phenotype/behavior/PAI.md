@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - behavior
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/phenotype/behavior`
+- **Path**: `src/metainformant/phenotype/behavior`
 - **Purpose**: Behavioral phenotype analysis module.
 - **Domain**: phenotype
 

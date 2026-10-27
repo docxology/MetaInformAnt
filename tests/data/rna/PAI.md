@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - rna
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/tests/data/rna`
+- **Path**: `tests/data/rna`
 - **Purpose**: Functionality for rna.
 - **Domain**: data
 

@@ -21,7 +21,7 @@ From `AGENTS.md` (binding rules):
 
 ## AI Workflows
 
-- **New config**: start from `life_events_template.yaml`; its sections are `embedding` (skipgram/cbow, `embedding_dim` 100, window 5), `model` (`model_type`: embedding/simple/lstm; task classification/regression), `workflow`, `output`, plus top-level `work_dir`, `log_dir`, `threads`.
+- **New config**: start from `life_events_template.yaml`; its sections are `embedding` (skipgram/cbow, `embedding_dim` 100, window 5), `model` (`model_type`: embedding/simple; task classification/regression), `workflow`, `output`, plus top-level `work_dir`, `log_dir`, `threads`.
 - **Run**: `python3 scripts/life_events/run_life_events_analysis.py --input data/life_events/sequences.json --config config/life_events/life_events_template.yaml` (exact command from `README.md`).
-- **Caveats to preserve**: `lstm` requires PyTorch and falls back if unavailable; keep `random_state` set for reproducibility.
+- **Caveats to preserve**: `model_type` accepts `embedding` or `simple` only (any other value, including `lstm`, makes the predictor's `fit` raise `ValueError`); keep `model.random_state` set for reproducibility, since it seeds both the embedding training and the predictor.
 - **Scope discipline**: edit YAML here only; never touch `scripts/life_events/` or `src/metainformant/life_events/` from config tasks.

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - function
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/protein/function`
+- **Path**: `src/metainformant/protein/function`
 - **Purpose**: Protein function prediction subpackage.
 - **Domain**: protein
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - filtering
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/structural_variants/filtering`
+- **Path**: `src/metainformant/structural_variants/filtering`
 - **Purpose**: Structural variant filtering subpackage.
 - **Domain**: structural_variants
 

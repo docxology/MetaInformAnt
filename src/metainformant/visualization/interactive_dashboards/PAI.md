@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - interactive_dashboards
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/visualization/interactive_dashboards`
+- **Path**: `src/metainformant/visualization/interactive_dashboards`
 - **Purpose**: Interactive dashboard subpackage for visualization.
 - **Domain**: visualization
 

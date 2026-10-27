@@ -4,43 +4,34 @@ Performance characteristics, optimization strategies, and scaling guidelines for
 
 ## Benchmark Summary
 
-**Test environment (unless noted):**
+This module ships no benchmark suite, and the earlier whole-genome timing, memory and cohort-scaling tables (a 30× WGS BAM on a 48-thread server) had no source in the repository, so they were removed. The functions work on in-memory Python lists and NumPy arrays, which sets what drives the cost:
 
-| Component | Specification |
-|-----------|---------------|
-| CPU | Intel Xeon Gold 6248R (2× 24 cores, 48 threads) @ 3.0 GHz |
-| RAM | 256 GB DDR4 ECC |
-| Storage | NVMe SSD (2 GB/s sequential) |
-| OS | Ubuntu 22.04 LTS |
-| Python | 3.11.8 |
-| NumPy | 1.26.4 |
-| pysam | 0.22.0 |
+| Stage | What drives the cost |
+|-------|----------------------|
+| **CNV segmentation** (`segment_coverage`, called by `detect_cnv_from_depth`) | Pure-Python scans over candidate split points and arcs, repeated at each recursion level: grows at least quadratically with the number of bins per chromosome |
+| **SV calling** (`call_structural_variants`) | One pass over the reads for split/discordant evidence, then genotyping examines **every read for every called SV**: cost grows with reads × called SVs |
+| **Gene overlap annotation** (`annotate_gene_overlap`) | Converts a gene list of dicts to `GenomicInterval` objects and builds an `IntervalIndex` on every call; each query binary-searches the end bound but then scans every interval on that chromosome that starts before the query end, so a query near the end of a chromosome costs time linear in the number of genes |
+| **Multi-caller merge** (`merge_callsets`, `survivor_merge`) | Sort, then a pairwise sweep within each chromosome that only compares variants whose starts fall inside the current variant's span plus 10 kb (`merge_callsets`) or `max_distance` (`survivor_merge`) |
+| **Population functions** | NumPy on dense matrices; PCA is an eigendecomposition of the smaller of the sample × sample and SV × SV covariance matrices |
 
-**Workload:** Human whole-genome sequencing (WGS), 30× mean depth, BAM size ~100 GB (≈700M reads).
+**Indicative timings** (synthetic data, single thread, Python 3.12.15 on an arm64 Mac; one wall-clock run each, so read the scaling rather than the absolute values):
 
-| Stage | Input Size | Wall Time (1 thread) | Wall Time (8 threads) | Peak RAM | Notes |
-|-------|------------|---------------------|-----------------------|----------|-------|
-| **CNV detection** | Whole-genome depth | 8–12 min | 3–5 min | 4–6 GB | CBS segmentation is O(n) on number of bins (~250K for 1000 bp windows) |
-| **SV calling** | 700M alignment records | 45–60 min | 12–18 min | 12–18 GB | Split + discordant evidence detection; single-pass streaming |
-| **Breakpoint refinement** | 5K SV candidates | 3–5 min | 1–2 min | 3–4 GB | Refetches reads locally; memory scales with SV count |
-| **Gene overlap annotation** | Up to 20K SVs vs 200K genes | 5–8 s | 2–4 s | 500 MB | `IntervalIndex` binary search; fast |
-| **Functional impact** | 5K SVs | 1–2 min | 1 min | 1–2 GB | TAD lookup (linear search in TAD boundaries) |
-| **Quality filtering** | 20K SVs | <1 s | <1 s | <100 MB | Simple thresholds |
-| **Multi-caller merge** | 3 callers × 15K SVs = 45K | 30–90 s | 20–60 s | 2–4 GB | O(n²) worst-case but early termination on sorted chroms |
-| **Whole pipeline (single sample)** | 100 GB BAM | 60–80 min | 16–25 min | 20–30 GB | End-to-end detection → filtering |
+| Operation | Input | Time |
+|-----------|-------|------|
+| `segment_coverage` | 1,000 / 2,000 / 4,000 / 8,000 bins | 0.7 s / 2.2 s / 14 s / 86 s |
+| `detect_cnv_from_depth` | one chromosome, 2,490 bins with no copy-number change (chr1 at 100 kb windows) | about 4 s |
+| `call_structural_variants` | 50k reads, 50 SVs | 1.4 s |
+| | 100k reads, 50 SVs | 2.3 s |
+| | 100k reads, 100 SVs | 3.4 s |
+| | 200k reads, 100 SVs | 5.5 s |
+| `IntervalIndex.query_overlap` | one query near the end of a chromosome, 20k / 80k genes | 0.5 ms / 3.9 ms |
 
-**Cohort scaling (N samples):**
-
-| N samples | Single-threaded wall time | 8-thread (per-sample parallel) | Memory / sample |
-|-----------|-------------------------|-------------------------------|-----------------|
-| 10 | ~13 h | ~2 h (plus overhead) | ~25 GB max |
-| 100 | ~5.5 days | ~20 h | ~25 GB (one at a time) |
-| 1000 | ~55 days | ~8 days (batch-8) | — |
+Each doubling of the bins multiplied the CBS time by roughly 3 to 6 in these wall-clock runs. Measured as CPU time (0.18 / 0.77 / 3.1 / 12.2 s for 1,000 to 8,000 bins on a synthetic three-segment profile) it was a steady factor of 4, and the CPU times sit up to 7 times below the wall-clock values above, which include time spent waiting for a busy CPU. A human chromosome at 1 kb windows (about 50k–250k bins) is far outside this range: pick `window_size` so that each chromosome has at most a few thousand bins. Memory is dominated by the alignment records you hold: an alignment dict with 11 keys and no sequence took about 0.6 KB when its string values were shared objects and about 0.7 KB when each record owned its strings (measured with `tracemalloc`), so 100M reads are about 60-70 GB before any sequence strings.
 
 **Notes:**
-- Per-sample steps are **embarrassingly parallel**. Use `parallel.process_map()` across samples.
-- Memory is dominated by BAM loading (~100 GB for 700M reads in Python dicts). Consider streaming reads in chunks or downsampling for quick checks.
-- Disk space: 100 GB BAM → SV JSON ~50–200 MB per sample (uncompressed); gzip saves ~60%.
+- Per-sample steps are **embarrassingly parallel**. Use `parallel.process_map()` across samples; the cost of a cohort is then the per-sample cost times N divided by the number of workers.
+- Work per chromosome or region rather than loading a whole genome: the detection and annotation functions have no streaming mode.
+- JSON results shrink with gzip when written to a `.json.gz` path (see Compressed I/O below).
 
 ---
 
@@ -48,14 +39,7 @@ Performance characteristics, optimization strategies, and scaling guidelines for
 
 ### 1. Parallel Processing (Biggest Win)
 
-```python
-from metainformant.core.utils import config
-
-config.set("structural_variants.parallel", True)
-config.set("structural_variants.max_workers", 8)  # ≤ physical core count
-```
-
-**Speedup:** 2.5–4× on 8 cores for SV calling (I/O-bound phases saturate earlier than CBS). CNV detection gains less (<2×) due to NumPy GIL release.
+The functions themselves are single-threaded and have no thread or worker settings (there is no `config.set("structural_variants.parallel", ...)`); the practical form of parallelism is one worker per sample.
 
 **Per-sample parallelism:**
 
@@ -63,64 +47,68 @@ config.set("structural_variants.max_workers", 8)  # ≤ physical core count
 from metainformant.core.execution import parallel
 
 def process_sample(bam_path):
-    # Full pipeline for one sample
+    # Full pipeline for one sample (a top-level function, so the process pool can pickle it)
     return results
 
 results = parallel.process_map(
     process_sample,
     list_of_bams,
-    max_workers=12,      # Max CPU cores
-    chunk_size=10,       # Batch N tasks per worker
+    max_workers=12,      # worker processes; None = cpu_count() - 1
 )
 ```
 
-**Caveat:** Each worker loads its own BAM → RAM = N_workers × BAM_size. Limit workers to fit memory or use `workers=1` + `chunk_size` streaming.
+`process_map` runs a process pool, submits one task per item and has no chunk-size option. On macOS and Windows, where workers are spawned, call it under `if __name__ == "__main__":`.
 
-### 2. Chunk Size Tuning (SV Calling)
+**Caveat:** each worker builds its own in-memory alignment list, so peak RAM is roughly the number of workers times the memory of one sample's records. Limit `max_workers` to fit memory, or process each sample by chromosome (next section).
 
-SV calling processes reads in memory. Increase `chunk_size` to reduce Python loop overhead:
+### 2. Processing in Slices (SV Calling)
 
-```python
-config.set("structural_variants.chunk_size", 20000)  # default 10000
-```
+`call_structural_variants` works on the list of alignment dicts you pass it and has no chunking parameter. To bound memory, build the list and call it per chromosome or region (for example one `bam.fetch(chrom)` at a time), then concatenate the results. Two things change with slicing: the insert-size distribution is estimated from each slice unless you pass the same `insert_size_stats` to every call, and an inter-chromosomal event is reported once per slice (chr1→chr8 and chr8→chr1), so drop or merge the mirrored calls afterwards.
 
-**Trade-off:** Larger chunks = faster but more RAM per worker. Benchmark 1% sample to find sweet spot.
+**Trade-off:** smaller slices cost less memory and make genotyping cheaper (it scans every read in the slice for every call in the slice), at the price of the two caveats above. Try a 1% region first to see how time and memory behave.
 
 ### 3. Threshold Tuning for Speed vs. Sensitivity
 
-| Setting | Fast | Balanced | Accurate |
-|---------|------|----------|----------|
-| `SV_MIN_MAPQ` | 30 | 20 | 10 |
-| `SV_MIN_SUPPORT` | 5 | 3 | 2 |
-| `SV_CNV_SIGNIFICANCE` | 0.05 | 0.01 | 0.001 |
+| Setting | Quick exploration | Balanced | Maximum sensitivity |
+|---------|-------------------|----------|---------------------|
+| `min_mapq` (argument of `call_structural_variants`) | 30 | 20 | 10 |
+| `min_support` argument or `SV_MIN_SUPPORT` | 5 | 3 | 2 |
+| `significance` argument or `SV_CNV_SIGNIFICANCE` | 0.001 | 0.01 | 0.05 |
 
-Lower thresholds increase runtime (more candidates) but improve recall.
+Lower `min_mapq` and `min_support` admit more reads and more candidate calls (more work, more false positives, better recall in repeats and at low coverage). `significance` works the other way round: it is the p-value threshold for accepting a CBS change point, so a larger value accepts more change points and a smaller value gives fewer, more confident segments. It hardly changes the run time (CPU time 0.74 s at 0.001, 0.77 s at 0.01 and 0.81 s at 0.05 on a 2,000-bin profile with three segments), because the scans at the top levels of the recursion dominate the cost. There is no environment variable for `min_mapq`.
 
 ### 4. Compressed I/O
 
 ```python
 from metainformant.core import io
 
-# Result files
-io.dump_json(results, "results.json.gz")   # gzip compression (default if .gz extension)
-# or
-io.dump_json(results, "results.json", compress="gzip")
+# Result files: a ".gz" extension makes dump_json write gzip-compressed JSON
+io.dump_json(results, "results.json.gz")
+results = io.load_json("results.json.gz")   # load_json reads .gz transparently
 ```
 
-**Impact:** ~70% size reduction; adds ~10–15% CPU overhead but cuts disk I/O (esp. network FS).
+`dump_json` has no `compress=` argument; the extension alone selects gzip. Compression trades CPU time for smaller files, which helps most on network filesystems. The data must already be plain JSON types (convert dataclasses with `dataclasses.asdict`).
 
 ### 5. Caching Intermediate Results
 
+Nothing in the module is cached automatically (`core.io.cache` has no `enable()` or `disk_path`). To avoid recomputing an expensive intermediate such as the per-bin depth arrays, store it yourself with `JsonCache`:
+
 ```python
-from metainformant.core.io import cache
+import numpy as np
+from metainformant.core.io.cache import JsonCache
 
-cache.enable(ttl=3600)  # Cache for 1 hour
-cache.disk_path = "/ssd/cache"  # Fast SSD
+cache = JsonCache("/ssd/cache", ttl_seconds=3600)   # cache directory on a fast SSD, 1 hour default lifetime
 
-# Subsequent runs with same BAM + config skip CNV recompute
+key = f"depth:{bam_path}:1000"                       # include everything the result depends on
+cached = cache.get(key)
+if cached is None:
+    depth_data = compute_depth(bam_path, window_size=1000)   # your BAM-reading helper
+    cache.set(key, {chrom: depth.tolist() for chrom, depth in depth_data.items()})
+else:
+    depth_data = {chrom: np.asarray(values) for chrom, values in cached.items()}
 ```
 
-**Best use:** Intermediate depth arrays (expensive to recompute from BAM). Not for final SV lists (already small).
+**Best use:** Intermediate depth arrays (expensive to recompute from BAM). Not for final SV lists (already small). `JsonCache` stores JSON, which is bulky for large arrays; for those, `np.save` / `np.load` on a path derived from the key is the better fit. `JsonCache` names the file after the letters, digits and `._-` of the key only, so keys that differ in other characters alone (for example `depth:/data/a/b.bam:1000` and `depth:/data/ab.bam:1000`) share one entry; make the key unique in those characters, for example by including a hash of the full path.
 
 ### 6. I/O Optimization
 
@@ -146,16 +134,17 @@ depth = np.memmap("depth.dat", dtype=np.float64, mode="w+", shape=(n_bins,))
 
 ### 7. Algorithm Selection
 
-- **CNV CBS**: Only algorithm currently; O(n). Accepts GC correction (adds O(n) passes).
-- **SV genotyping (cohort)**: Use `"depth"` method for speed; `"split"` for accuracy (requires read-level evidence).
-- **Multi-caller merging**: `merge_callsets()` (reciprocal overlap) more accurate; `survivor_merge()` faster for many variants.
+- **CNV CBS**: `method="segmentation"` is the only method, and its cost grows at least quadratically with the bins per chromosome (see above), so control cost with `window_size`. GC correction is a separate step (`calculate_log2_ratio(..., gc_content=...)`) and is linear in the number of bins.
+- **SV genotyping (cohort)**: `genotype_sv_population` turns precomputed per-sample evidence into genotypes with a constant-time rule per cell, so `"depth"` (uses `depth_ratio`) and `"split"` (uses `split_reads`, `discordant_pairs`, `total_reads`) cost the same; choose by which evidence you have. The expensive part is computing that evidence from the BAMs.
+- **Multi-caller merging**: `merge_callsets()` matches by reciprocal overlap and `survivor_merge()` by breakpoint distance; both sort and sweep each chromosome in the same way, so choose between them by matching criterion, not by speed.
 
 ### 8. Memory Reduction Strategies
 
 - **Release large objects:** `del depth_data; import gc; gc.collect()`
-- **Use float32 instead of float64:** Set `dtype=np.float32` in internal arrays if precision acceptable (controlled by config flag `SV_FLOAT_PRECISION`).
+- **Keep the genotype matrix compact:** store it as `np.uint8` (values 0/1/2). The matrix-based population functions convert it internally (`sv_population_structure` to `float64`, making several copies) and do not accept `scipy.sparse` matrices.
 - **Process chromosomes sequentially:** Do not accumulate `all_variants` across chroms; write per-chrom intermediate files then combine.
-- **Filter early:** Apply size/quality filters during SV calling to reduce candidate list before refinement/annotation.
+- **Keep records small:** drop keys the functions do not read (for example the read sequence `seq`, which `call_structural_variants` ignores) before holding millions of alignment dicts.
+- **Filter early:** `call_structural_variants` already applies `min_mapq` before clustering and `min_support` / `min_sv_size` afterwards; run `filter_by_quality` / `filter_by_size` / `apply_blacklist` before annotation so the slower per-query annotation steps see fewer variants.
 
 ---
 
@@ -166,12 +155,12 @@ depth = np.memmap("depth.dat", dtype=np.float64, mode="w+", shape=(n_bins,))
 ```python-snippet
 import cProfile
 import pstats
-from metainformant.structural_variants import pipeline
+from metainformant.structural_variants.detection.sv_calling import call_structural_variants
 
 profiler = cProfile.Profile()
 profiler.enable()
 
-results = pipeline.run("sample.bam", ...)
+variants = call_structural_variants(alignments, min_support=3)
 
 profiler.disable()
 stats = pstats.Stats(profiler)
@@ -179,37 +168,42 @@ stats.sort_stats("cumtime")  # or "tottime"
 stats.print_stats(20)  # Top 20 functions
 ```
 
-**Typical hotspots:**
+**Where the time goes in `call_structural_variants`** (example profile on synthetic data: 100k reads, 100 SVs; shares of the call's cumulative time):
 
-| Function | % Time | Optimization |
-|----------|--------|--------------|
-| `call_structural_variants()` | 40–60% | Reduce `min_support`; increase `min_mapq` |
-| `detect_split_reads()` | 20–30% | CIGAR parsing is CPU-bound; consider Cython (future) |
-| `detect_discordant_pairs()` | 10–15% | Fewer paired reads → faster |
-| `segment_coverage()` (CBS) | 5–10% | Already O(n); not a bottleneck |
-| Annotation (`IntervalIndex`) | <5% | Already optimized |
+| Function | Share | Notes |
+|----------|-------|-------|
+| `genotype_sv()` | ≈ 94% | Called once per SV and scans every read each time (reads × SVs); this is what grows when you add reads or lower `min_support` |
+| `detect_split_reads()` | ≈ 3% | CIGAR parsing in pure Python |
+| `detect_discordant_pairs()` | ≈ 2% | One pass over reads with mate information |
+| `_estimate_insert_size()` | ≈ 1% | Skipped when you pass `insert_size_stats` |
 
-### Enable Debug Timing
+For CNV detection the cost is almost entirely `segment_coverage()` at fine bin sizes. For annotation the split depends on the sizes: with a large gene list and few variants most of the call goes into converting the gene dicts and building the index, and the interval scan in `IntervalIndex.query_overlap` takes over as the number of variants grows (for 60,000 genes on 20 chromosomes the scan was 2%, 29% and 59% of the call at 100, 2,000 and 20,000 variants; see the complexity table below). Profile your own data before optimizing; the split changes with the number of SVs, reads and bins.
 
-```bash
-export CORE_LOG_LEVEL=DEBUG
+### Timing the Stages
+
+The modules log stage summaries but no timings. With logging configured (`configure_logging_from_env()`, see [GETTING_STARTED.md](GETTING_STARTED.md)), INFO shows lines such as
+
+```
+CNV detection complete: 3 segments across 1 chromosomes
+Called 3 structural variants from 28 evidence items
+Annotated 3 variants: 2 overlap with genes
 ```
 
-Logs include:
-```
-[DEBUG] Loading BAM: 45.2 s
-[DEBUG] Computing depth: 124.6 s
-[DEBUG] CBS segmentation: 8.3 s
-[DEBUG] SV calling: 2145.1 s  ← biggest cost
-[DEBUG] Annotation: 14.2 s
-[DEBUG] Filtering: 1.2 s
-[DEBUG] Total: 2329.6 s
+and `CORE_LOG_LEVEL=DEBUG` adds details such as `Detected N split-read evidence items from M reads`. To time stages, wrap them yourself:
+
+```python
+import time
+from metainformant.structural_variants.detection.sv_calling import call_structural_variants
+
+t0 = time.perf_counter()
+variants = call_structural_variants(alignments)
+print(f"SV calling: {time.perf_counter() - t0:.1f} s")
 ```
 
 ### Memory Profiling
 
 ```bash
-pip install memory-profiler
+uv pip install memory-profiler
 ```
 
 ```python-snippet
@@ -222,7 +216,7 @@ def run_pipeline():
 run_pipeline()
 ```
 
-**Expected peak:** ~25 GB for one 30× WGS sample full pipeline. Exceeds 32 GB limit → swap → crash. Solution: reduce workers to 1–2, or sample down depth for testing.
+**Rule of thumb:** peak memory is dominated by the alignment records you hold, about 0.6-0.7 KB per dict without a sequence (plus the sequence length if you keep `seq`). If a run swaps or hits `MemoryError`, process by chromosome, drop unused keys, or reduce the number of `process_map` workers.
 
 ---
 
@@ -230,13 +224,12 @@ run_pipeline()
 
 ### Distributed Computing (Cluster)
 
-Use `metainformant.cloud` or custom Dask:
+The structural variant functions are plain Python functions over in-memory data, so any scheduler that can run one function per sample works, for example Dask:
 
 ```python-snippet
 from dask.distributed import Client
-from metainformant.core.execution import parallel
 
-client = Client(n_workers=20)  # SLURM cluster
+client = Client(n_workers=20)  # a local cluster; use dask_jobqueue.SLURMCluster for SLURM
 
 # Each sample is a task
 futures = []
@@ -247,13 +240,14 @@ for bam in bam_list:
 results = client.gather(futures)
 ```
 
-### Cloud (GCP/AWS)
+`metainformant.cloud` (`CloudConfig`, `GCPDeployer`) is GCP deployment infrastructure for pipelines; it has no structural-variant job runner.
 
-See `docs/cloud/` for preemptible VM instructions.
+### Cloud (GCP)
 
-- **Storage:** Use regional SSD persistent disks (PD-SSD) for BAMs
-- **Compute:** Use `n1-standard-16` or `n2-highmem-32` depending on dataset size
-- **Parallelize:** One sample per VM; merge results in Cloud Storage
+See `docs/cloud/` for the GCP deployment and preemptible VM notes.
+
+- **Parallelize:** One sample per VM; collect the per-sample result files in object storage and merge them afterwards
+- **Size VMs by memory:** use the per-record estimate above and measure one region before choosing a machine type
 
 ---
 
@@ -272,9 +266,9 @@ See `docs/cloud/` for preemptible VM instructions.
    - **Stage 3:** Multi-caller merge (if needed) → requires all callers for all samples; batch-process.
    - **Stage 4:** Population analysis (single process; memory-bound by genotype matrix).
 
-4. **Genotype matrix sparsity:**
-   - Genotype matrix (100K SVs × 10K samples) is sparse (<5% alt allele). Store as `scipy.sparse.csr_matrix` or `uint8` dense if dense enough.
-   - PCA can use randomized SVD on sparse matrices.
+4. **Genotype matrix size:**
+   - Store the genotype matrix (e.g. 100K SVs × 10K samples) as dense `np.uint8`. `sv_allele_frequency`, `sv_population_structure` and the other population functions call `np.asarray` on it, so `scipy.sparse` matrices are rejected, and there is no randomized-SVD option.
+   - `sv_population_structure` converts to `float64` (8 bytes per genotype, so about 8 GB per copy at this size) and makes several copies; subset the SVs (common, LD-pruned) before PCA.
 
 5. **Intermediate storage format:**
    - Use Parquet (columnar) for per-sample variant tables: `pd.DataFrame.to_parquet()`.
@@ -289,27 +283,25 @@ See `docs/cloud/` for preemptible VM instructions.
 
 | Component | Time Complexity | Space Complexity | Scaling |
 |-----------|----------------|------------------|---------|
-| CBS (`segment_coverage`) | O(n) per chromosome | O(n) | Linear in bin count |
-| SV calling | O(m log m) from sorting | O(m) for alignments | Linear in read count |
-| Evidence clustering | O(e log e) from sort | O(e) | e = evidence items; ≤ m |
-| Gene overlap (`IntervalIndex`) | O(log g + k) per query | O(g) | g = # genes |
-| Multi-caller merge | O(v²) worst-case; ~O(v log v) with early break | O(v) | v = variants per chrom |
-| SV population PCA | O(n × m²) full SVD; O(n × m × k) randomized | O(n × m) | n=samples, m=SVs |
+| CBS (`segment_coverage`) | at least O(n²) per chromosome (pure-Python scans over split points and arcs, repeated per recursion level) | O(n) | n = bins per chromosome; each doubling cost 3–6× in the measurements above |
+| Evidence detection (`detect_split_reads`, `detect_discordant_pairs`) | O(m) | O(e) | m = reads, e = evidence items |
+| Evidence clustering | O(e log e) sort, plus a comparison of each item against the existing clusters, newest first, until one matches (worst case quadratic in the number of clusters) | O(e) | e = evidence items, roughly one per split or discordant read |
+| SV genotyping (`genotype_sv`, run for every called SV) | O(m × v) | O(1) extra | v = called SVs; about 94% of the example profile |
+| Gene overlap (`IntervalIndex`) | O(g) per query (scan of the intervals that start before the query end) plus, on every `annotate_*` / `find_nearest_gene` call, a conversion of every gene dict and an O(G log G) sort to build the index | O(G) | g = genes on the chromosome, G = genes in the list |
+| Multi-caller merge | O(v log v) sort plus pairwise comparisons inside each variant's span (+10 kb or `max_distance`); O(v²) worst case | O(v) | v = variants |
+| SV population PCA | eigendecomposition of an s × s (s < v) or v × v covariance matrix: O(min(s, v)² · max(s, v) + min(s, v)³) | O(s × v) | s = samples, v = SVs; dense `float64`, no randomized solver |
 
-**Linear or near-linear in input data size. Biggest cost is SV calling (read-level inference); consider downsampling or distributed processing for large cohorts.**
+**Time grows faster than linearly in three places: CBS (bins per chromosome), genotyping (reads × called SVs) and the gene-interval scan (genes per query). Keep bins per chromosome small, call per chromosome or region, and annotate with a reduced variant list.**
 
 ---
 
 ## Hardware Recommendations
 
-| Scenario | RAM | CPU Cores | Storage |
-|----------|-----|-----------|---------|
-| Development / testing (few samples) | 32 GB | 4–8 | Local SSD |
-| Production single-sample (30× WGS) | 64–128 GB | 16–32 | NVMe SSD |
-| Cohort processing (100 samples) | 256 GB | 32–64 | RAID 0 NVMe or parallel network FS |
-| Population-scale (1000+ samples) | 512 GB – 1 TB | 64+ | Lustre/GPFS parallel FS |
+There are no tested hardware tiers for this module, so size the machine from the data you actually hold in memory:
 
-**Note:** Peak memory = loading full BAM + intermediate arrays. Estimate ~2× BAM file size for full pipeline.
+- **RAM per worker** ≈ (alignment records held at once) × ≈0.6-0.7 KB, plus the sequence length per record if you keep `seq`, plus the depth arrays (8 bytes per bin) and the genotype matrix (1 byte per cell as `uint8`, 8 bytes in `float64` during PCA).
+- **CPU:** the functions are single-threaded; extra cores only help through per-sample parallelism (`process_map`), so cores beyond (RAM ÷ RAM per worker) are wasted.
+- **Storage:** fast local storage for the BAMs and the cache/intermediate files (`TMPDIR` on a local SSD) matters more than capacity.
 
 ---
 
@@ -317,66 +309,72 @@ See `docs/cloud/` for preemptible VM instructions.
 
 | Symptom | Likely Cause | Fix |
 |---------|--------------|-----|
-| Runtime too slow (single sample > 4 h) | Low `min_mapq` → too many low-quality reads | Raise `SV_MIN_MAPQ` to 30 |
-| MemoryError: cannot allocate array | Workers × BAM memory | Reduce `max_workers` to 1–2, or stream by chromosome |
-| Disk fills with intermediate JSON | Compressed output not enabled | Use `.json.gz` extension or set `CORE_COMPRESS=true` |
-| Very few SVs detected | Over-filtering (thresholds too strict) | Lower `min_support`, `min_qual`; inspect intermediate counts |
+| SV calling takes hours | Many calls × many reads in one list (genotyping scans every read per call), often from a low `min_support` or low coverage noise | Call per chromosome or region; raise `min_support` or `min_mapq` (argument) to reduce the number of calls |
+| CNV detection takes minutes to hours per chromosome | Fine `window_size`: CBS grows at least quadratically with the bins per chromosome | Use a coarser `window_size` so a chromosome has a few thousand bins |
+| MemoryError: cannot allocate array | Alignment dicts × `process_map` workers | Reduce `max_workers`, process by chromosome, drop unused keys such as `seq` |
+| Disk fills with intermediate JSON | Uncompressed output | Write to a `.json.gz` path (`io.dump_json` gzips on that extension) |
+| Very few SVs detected | Over-filtering (thresholds too strict), or `SV_MIN_SUPPORT` / `SV_MIN_QUAL` set in the environment (they override the arguments) | Lower `min_support`, `min_qual`; check `env \| grep SV_`; inspect intermediate counts |
 | Too many SVs (noisy) | Under-filtering or low coverage | Raise thresholds; check data quality |
-| Merge step hangs | Graph building O(v²) too large | Filter more before merge; reduce variant count per chromosome with `pre_merge_filter` |
-| PCA crashes | Genotype matrix too large for memory | Use randomized SVD (`svd_solver='randomized'`), or subset SVs |
+| Merge step slow | Large variants: each is compared with every variant that starts inside its span (+10 kb or `max_distance`) | Filter (size, quality, blacklist) before merging; merge per chromosome |
+| PCA runs out of memory | Several `float64` copies of the genotype matrix | Subset the SVs (common, LD-pruned) before `sv_population_structure`; there is no randomized or sparse option |
 
 ---
 
 ## Configuration for Speed
 
+Only `SV_MIN_SUPPORT`, `SV_MIN_QUAL` (read by `filter_by_quality`), `SV_CNV_SIGNIFICANCE`, `SV_CNV_DEL_THRESHOLD` and `SV_CNV_DUP_THRESHOLD` exist; each overrides the matching function argument. `min_mapq` has no environment variable (pass it to `call_structural_variants`). Of the settings below, `SV_MIN_SUPPORT` and `min_mapq` change how much work SV calling does; `SV_CNV_SIGNIFICANCE` and `SV_MIN_QUAL` change which segments and calls are kept, not the run time.
+
 **For quick exploration (speed priority):**
 
 ```bash
-export SV_MIN_MAPQ=30
 export SV_MIN_SUPPORT=5
-export SV_CNV_SIGNIFICANCE=0.05
-export SV_FILTER_MIN_QUAL=30
+export SV_CNV_SIGNIFICANCE=0.001
+export SV_MIN_QUAL=30
 ```
+and `call_structural_variants(..., min_mapq=30)`.
 
-**For publication-quality results (accuracy priority):**
+**For maximum sensitivity (slower, more false positives):**
 
 ```bash
-export SV_MIN_MAPQ=10
 export SV_MIN_SUPPORT=2
-export SV_CNV_SIGNIFICANCE=0.001
-export SV_FILTER_MIN_QUAL=10
+export SV_CNV_SIGNIFICANCE=0.05
+export SV_MIN_QUAL=10
 ```
+and `call_structural_variants(..., min_mapq=10)`. Lower thresholds raise recall; they do not by themselves make results publication-quality, so inspect the extra calls.
 
 ---
 
 ## Monitoring Progress
 
-Use structured logging to a file:
+Send the module's log records to a file:
 
 ```python-snippet
-import logging
-from metainformant.core.utils.logging import setup_logging
+from metainformant.core.utils.logging import setup_logger
 
-setup_logging(
-    level="INFO",
+setup_logger(
+    "metainformant.structural_variants",
     log_file="pipeline.log",
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    level="INFO",
 )
 ```
 
-Log file shows per-stage timings on every `logger.info()` call containing timing.
+The file receives each stage summary once (for example `CNV detection complete: 3 segments across 1 chromosomes`); the console shows every line twice, because each module logger has its own console handler and the package logger adds another. The lines carry timestamps but no stage timings, so measure those yourself (see "Timing the Stages").
 
-For real-time monitoring, `tail -f pipeline.log | grep "TIMING"`.
+For real-time monitoring, `tail -f pipeline.log`.
 
 ---
 
 ## Future Optimizations (Roadmap)
 
-- **Cython rewrite** of CIGAR parsing + evidence clustering (2–3× speedup)
-- **GPU-accelerated CBS** for CNV detection (experimental)
-- **K-d tree indexing** for gene overlap (faster for massive annotation databases)
+These are ideas, not implemented features:
+
+- **Cython rewrite** of CIGAR parsing and evidence clustering
+- **GPU-accelerated CBS** for CNV detection
+- **Interval-tree or k-d tree indexing** for gene overlap (queries currently scan linearly)
 - **Batch PCA** for incremental cohort addition
-- **Compressed sparse genotype matrix** as default for N > 100
+- **Sparse genotype matrices** in the population functions (they are currently rejected)
+
+The measurements above point to two larger wins: avoiding the per-call scan over all reads in genotyping, and a faster CBS so that fine bin sizes become practical.
 
 ---
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - interaction
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/networks/interaction`
+- **Path**: `src/metainformant/networks/interaction`
 - **Purpose**: Functionality for interaction.
 - **Domain**: networks
 

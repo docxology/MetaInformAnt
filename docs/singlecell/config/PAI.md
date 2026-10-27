@@ -2,7 +2,7 @@
 
 ## Context & Intent
 
-- **Path**: `docs/singlecell/config/` (relative to repo root)
+- **Path**: `docs/singlecell/config` (relative to repo root)
 - **Purpose**: Documentation directory reserved for single-cell RNA-seq
   configuration guidance (filtering, normalization, clustering resolution,
   dimensionality reduction, integration), per the sibling `AGENTS.md`.

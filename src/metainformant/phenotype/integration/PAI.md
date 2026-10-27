@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - integration
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/phenotype/integration`
+- **Path**: `src/metainformant/phenotype/integration`
 - **Purpose**: Phenotype integration with other -omics modules.
 - **Domain**: phenotype
 

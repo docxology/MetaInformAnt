@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - simulation
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/scripts/simulation`
+- **Path**: `scripts/simulation`
 - **Purpose**: Functionality for simulation.
 - **Domain**: scripts
 

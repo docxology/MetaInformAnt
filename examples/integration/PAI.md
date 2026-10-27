@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - integration
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/examples/integration`
+- **Path**: `examples/integration`
 - **Purpose**: Functionality for integration.
 - **Domain**: examples
 

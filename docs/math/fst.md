@@ -26,7 +26,7 @@ Calculate Wright's Fst from heterozygosity values.
 
 **Example**:
 ```python
-from metainformant.math import fst_from_heterozygosity
+from metainformant.math.population_genetics.fst import fst_from_heterozygosity
 
 # Within-population heterozygosity
 Hs = 0.3
@@ -54,7 +54,7 @@ Compute Fst for a biallelic locus from subpopulation allele frequencies.
 
 **Example**:
 ```python
-from metainformant.math import fst_from_allele_freqs
+from metainformant.math.population_genetics.fst import fst_from_allele_freqs
 
 # Allele frequencies in 4 subpopulations
 subpop_freqs = [0.2, 0.3, 0.25, 0.28]
@@ -75,7 +75,7 @@ fst = fst_from_allele_freqs(subpop_freqs)
 ### Basic Fst Calculation
 
 ```python
-from metainformant.math import fst_from_heterozygosity, fst_from_allele_freqs
+from metainformant.math.population_genetics.fst import fst_from_heterozygosity, fst_from_allele_freqs
 
 # Method 1: From heterozygosity values
 fst1 = fst_from_heterozygosity(Hs=0.3, Ht=0.4)
@@ -89,7 +89,7 @@ fst2 = fst_from_allele_freqs(subpop_freqs)
 
 ```python
 from metainformant.dna import population
-from metainformant.math import fst_from_heterozygosity
+from metainformant.math.population_genetics.fst import fst_from_heterozygosity
 
 # Calculate heterozygosity within populations
 pop1 = ["AAAA", "AAAT", "AAAA"]

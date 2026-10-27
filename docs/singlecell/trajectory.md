@@ -4,111 +4,71 @@ The trajectory module provides tools for inferring developmental trajectories an
 
 ## Pseudotime Inference
 
-### compute_pseudotime()
+### compute_diffusion_pseudotime()
 
 Infer pseudotime using diffusion maps:
 
 ```python-snippet
-from metainformant.singlecell.trajectory import compute_pseudotime
+from metainformant.singlecell.analysis.trajectory import compute_diffusion_pseudotime
 
-# Compute pseudotime from diffusion components
-data = compute_pseudotime(
+# Compute diffusion pseudotime
+data = compute_diffusion_pseudotime(
     data,
-    root_cells=None,           # Auto-detect or specify root cells
-    n_dcs=10,                  # Number of diffusion components
-    use_rep='X_diffusion'      # Use diffusion map coordinates
+    root_cell=None,            # Index of the root cell (auto-detected if None)
+    n_components=10            # Number of diffusion components
 )
 
 # Access pseudotime values
-pseudotime = data.obs['pseudotime']
+pseudotime = data.obs['dpt_pseudotime']
 print(f"Pseudotime range: {pseudotime.min():.3f} - {pseudotime.max():.3f}")
 ```
 
 **Parameters:**
-- `root_cells`: Indices of root cells (if None, auto-detected)
-- `n_dcs`: Number of diffusion components to use
-- `use_rep`: Representation to use for trajectory inference
+- `root_cell`: Index of the root cell (if None, auto-detected)
+- `n_components`: Number of diffusion components to use
 
 ## Trajectory Analysis
 
-### trajectory_analysis()
+### slingshot_trajectory()
 
-Perform comprehensive trajectory analysis:
+Cluster-based trajectory inference from a root cluster to one or more terminal clusters:
 
 ```python-snippet
-from metainformant.singlecell.trajectory import trajectory_analysis
+from metainformant.singlecell.analysis.trajectory import slingshot_trajectory
 
-# Run full trajectory analysis
-trajectory_results = trajectory_analysis(
+# Run cluster-based trajectory analysis
+data = slingshot_trajectory(
     data,
-    groupby='leiden',          # Cluster column for trajectory
-    method='mst',              # Minimum spanning tree
-    root_cluster='0'           # Starting cluster
+    start_cluster=0,           # Root cluster (same type as the labels in obs)
+    end_clusters=[2, 4]        # Terminal clusters, one branch per end cluster
 )
 
 # Results include:
-# - Trajectory graph
-# - Branch assignments
-# - Milestone connections
+# - data.obs['slingshot_pseudotime']: pseudotime per cell
+# - data.uns['slingshot']: start/end clusters, branches, cluster pseudotime and centroids
 ```
 
-## Gene Expression Trends
-
-### compute_gene_trends()
-
-Identify genes with significant expression changes along trajectories:
-
-```python-snippet
-from metainformant.singlecell.trajectory import compute_gene_trends
-
-# Find genes that change along pseudotime
-trends = compute_gene_trends(
-    data,
-    pseudotime_col='pseudotime',
-    n_genes=500,               # Top variable genes
-    method='gam'               # Generalized additive models
-)
-
-# Access trending genes
-print(f"Found {len(trends)} genes with significant trends")
-```
+The cluster column is detected automatically (the first `obs` column whose name contains `cluster`, `leiden` or `louvain`). For cluster-to-cluster connectivity, see `paga_trajectory(data, groups='leiden_cluster')` in the same module.
 
 ## Lineage Analysis
 
-### identify_lineages()
+### find_trajectory_branches()
 
-Identify distinct developmental lineages:
-
-```python-snippet
-from metainformant.singlecell.trajectory import identify_lineages
-
-# Find developmental lineages
-lineages = identify_lineages(
-    data,
-    trajectory_graph,          # From trajectory_analysis
-    n_lineages=3              # Expected number of lineages
-)
-
-# Add lineage assignments to data
-data.obs['lineage'] = lineages
-```
-
-## Branch Point Analysis
-
-### find_branch_genes()
-
-Identify genes associated with trajectory branch points:
+Identify branches along a computed pseudotime axis:
 
 ```python-snippet
-from metainformant.singlecell.trajectory import find_branch_genes
+from metainformant.singlecell.analysis.trajectory import find_trajectory_branches
 
-# Find branch-associated genes
-branch_genes = find_branch_genes(
+# Find branches in pseudotime
+branches = find_trajectory_branches(
     data,
-    branch_point_cells,        # Cells at branch points
-    lineage_assignments,       # Cell lineage assignments
-    min_fold_change=2.0
+    pseudotime_col='dpt_pseudotime',
+    min_branch_size=10         # Minimum number of cells per branch
 )
+
+# Add branch assignments to data (-1 = cell not assigned to a branch)
+data.obs['branch'] = branches['branch_labels']
+print(f"Found {branches['n_branches']} branches, sizes: {branches['branch_sizes']}")
 ```
 
 ## Visualization
@@ -125,7 +85,7 @@ plt.subplot(1, 2, 1)
 scatter = plt.scatter(
     data.obsm['X_umap'][:, 0],
     data.obsm['X_umap'][:, 1],
-    c=data.obs['pseudotime'],
+    c=data.obs['dpt_pseudotime'],
     cmap='viridis',
     alpha=0.7
 )
@@ -139,7 +99,7 @@ plt.subplot(1, 2, 2)
 gene_of_interest = 'GENE1'  # Replace with actual gene
 if gene_of_interest in data.var.index:
     gene_expr = data.X[:, data.var.index == gene_of_interest].flatten()
-    plt.scatter(data.obs['pseudotime'], gene_expr, alpha=0.5)
+    plt.scatter(data.obs['dpt_pseudotime'], gene_expr, alpha=0.5)
     plt.xlabel('Pseudotime')
     plt.ylabel(f'{gene_of_interest} Expression')
     plt.title('Gene Expression vs Pseudotime')
@@ -154,8 +114,15 @@ plt.show()
 
 ```python-snippet
 # Recommended preprocessing for trajectory analysis
-from metainformant.singlecell.preprocessing import *
-from metainformant.singlecell.dimensionality import *
+from metainformant.singlecell.data.preprocessing import (
+    calculate_qc_metrics,
+    filter_cells,
+    log_transform,
+    normalize_counts,
+)
+from metainformant.singlecell.analysis.pca_methods import compute_pca, select_hvgs
+from metainformant.singlecell.analysis.nonlinear_methods import compute_diffusion_map, compute_neighbors
+from metainformant.singlecell.analysis.trajectory import compute_diffusion_pseudotime
 
 # 1. Standard preprocessing
 data = calculate_qc_metrics(data)
@@ -172,7 +139,7 @@ data = compute_diffusion_map(data, n_components=15)
 data = compute_neighbors(data, n_neighbors=30)  # More neighbors for trajectories
 
 # 4. Trajectory inference
-data = compute_pseudotime(data)
+data = compute_diffusion_pseudotime(data)
 ```
 
 ## Advanced Trajectory Methods
@@ -182,16 +149,20 @@ data = compute_pseudotime(data)
 The module supports multiple trajectory inference methods:
 
 ```python
-# Different trajectory methods
-methods = ['diffusion', 'mst', 'force_directed']
+from metainformant.singlecell.analysis.trajectory import (
+    compute_diffusion_pseudotime,
+    compute_pseudotime_from_dimensionality_reduction,
+    paga_trajectory,
+    slingshot_trajectory,
+)
 
-for method in methods:
-    if method == 'diffusion':
-        data = compute_pseudotime(data, method='diffusion')
-    elif method == 'mst':
-        results = trajectory_analysis(data, method='mst')
-    elif method == 'force_directed':
-        results = trajectory_analysis(data, method='force_directed')
+# Different trajectory methods (each adds its own pseudotime column to data.obs)
+data = compute_diffusion_pseudotime(data, root_cell=0)                   # dpt_pseudotime
+data = paga_trajectory(data, groups='leiden_cluster')                    # paga_pseudotime
+data = slingshot_trajectory(data, start_cluster=0, end_clusters=[2])     # slingshot_pseudotime
+data = compute_pseudotime_from_dimensionality_reduction(
+    data, dim_red_cols=['UMAP1', 'UMAP2'], root_cell=0                   # embedding_pseudotime
+)
 ```
 
 ## Common Trajectory Patterns
@@ -200,15 +171,15 @@ for method in methods:
 
 ```python
 # For simple linear differentiation
-data = compute_pseudotime(data, n_dcs=3)  # Fewer components for linear
+data = compute_diffusion_pseudotime(data, n_components=3)  # Fewer components for linear
 ```
 
 ### Branching Trajectories
 
 ```python
 # For complex branching processes
-data = compute_pseudotime(data, n_dcs=15)  # More components for complexity
-lineages = identify_lineages(data, n_lineages=3)
+data = compute_diffusion_pseudotime(data, n_components=15)  # More components for complexity
+branches = find_trajectory_branches(data, pseudotime_col='dpt_pseudotime')
 ```
 
 ### Cyclic Trajectories
@@ -230,7 +201,7 @@ def assess_trajectory_quality(data):
     plt.figure(figsize=(15, 4))
     
     plt.subplot(1, 3, 1)
-    plt.hist(data.obs['pseudotime'], bins=50, alpha=0.7)
+    plt.hist(data.obs['dpt_pseudotime'], bins=50, alpha=0.7)
     plt.xlabel('Pseudotime')
     plt.ylabel('Number of Cells')
     plt.title('Pseudotime Distribution')
@@ -239,7 +210,7 @@ def assess_trajectory_quality(data):
     plt.subplot(1, 3, 2)
     for cluster in data.obs['leiden'].unique():
         mask = data.obs['leiden'] == cluster
-        plt.hist(data.obs[mask]['pseudotime'], alpha=0.5, label=f'Cluster {cluster}')
+        plt.hist(data.obs[mask]['dpt_pseudotime'], alpha=0.5, label=f'Cluster {cluster}')
     plt.xlabel('Pseudotime')
     plt.ylabel('Density')
     plt.legend()
@@ -275,14 +246,25 @@ assess_trajectory_quality(data)
 ### Method Comparison
 
 ```python
+from metainformant.singlecell.analysis.trajectory import (
+    compute_diffusion_pseudotime,
+    compute_pseudotime_from_dimensionality_reduction,
+)
+
 # Compare different pseudotime methods
-methods = ['diffusion', 'force_directed']
+methods = ['diffusion', 'embedding']
 correlations = {}
 
 for method in methods:
     # Compute pseudotime with different methods
-    data_temp = compute_pseudotime(data.copy(), method=method)
-    correlations[method] = data_temp.obs['pseudotime']
+    if method == 'diffusion':
+        data_temp = compute_diffusion_pseudotime(data.copy(), root_cell=0)
+        correlations[method] = data_temp.obs['dpt_pseudotime']
+    else:
+        data_temp = compute_pseudotime_from_dimensionality_reduction(
+            data.copy(), dim_red_cols=['UMAP1', 'UMAP2'], root_cell=0
+        )
+        correlations[method] = data_temp.obs['embedding_pseudotime']
 
 # Calculate correlation between methods
 import numpy as np

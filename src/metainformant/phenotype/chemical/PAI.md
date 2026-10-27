@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - chemical
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/phenotype/chemical`
+- **Path**: `src/metainformant/phenotype/chemical`
 - **Purpose**: Chemical phenotype analysis module.
 - **Domain**: phenotype
 

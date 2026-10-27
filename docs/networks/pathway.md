@@ -6,13 +6,13 @@ The pathway analysis module provides tools for biological pathway enrichment ana
 
 ### PathwayNetwork Class
 
-Container for biological pathways with gene sets and interactions:
+Container for biological pathways with gene sets and optional per-pathway metadata:
 
 ```python
-from metainformant.networks import PathwayNetwork
+from metainformant.networks.analysis.pathway import PathwayNetwork
 
 # Create pathway network
-pathway_network = PathwayNetwork()
+pathway_network = PathwayNetwork(name="demo_pathways")
 
 # Add pathways from database
 pathways = {
@@ -28,46 +28,42 @@ pathways = {
     }
 }
 
-pathway_network.add_pathways(pathways)
-print(f"Network contains {pathway_network.n_pathways} pathways")
+for pathway_id, info in pathways.items():
+    pathway_network.add_pathway(
+        pathway_id,
+        info["genes"],
+        metadata={"name": info["name"], "description": info["description"]},
+    )
+
+print(f"Network contains {len(pathway_network)} pathways")
+print(pathway_network.get_statistics())  # num_pathways, num_genes, avg/max/min_pathway_size
 ```
+
+`network.pathways` maps each pathway ID to its gene list, and `network.pathway_metadata` holds the metadata passed to `add_pathway`. Other helpers include `get_pathway_genes(pathway_id)`, `get_gene_pathways(gene)`, `find_pathways_containing_gene(gene)`, `pathway_similarity(pathway1, pathway2)` (Jaccard), `find_overlapping_pathways(pathway_id)`, `filter_pathways_by_size(min_size=5, max_size=None)` and `pathway_overlap_matrix()`.
 
 ### load_pathway_database()
 
-Load pathways from standard biological databases:
+Build a `PathwayNetwork` from structured pathway data that you have already parsed from a database export (KEGG, Reactome, GO, WikiPathways, ...). The function does not query any database itself:
 
 ```python
-from metainformant.networks import load_pathway_database
+from metainformant.networks.analysis.pathway import load_pathway_database
 
-# Load KEGG pathways
-kegg_pathways = load_pathway_database(
-    database="kegg",
-    organism="hsa",           # Human
-    pathway_ids=None,         # All pathways, or specify list
-    min_genes=5,             # Minimum genes per pathway
-    max_genes=200            # Maximum genes per pathway
-)
+# Structured data: {"pathways": {pathway_id: {"name": ..., "genes": [...]}}, ...}
+pathway_data = {
+    "pathways": pathways,    # the dictionary defined above
+    "source": "KEGG",        # stored in network.metadata["source"]
+}
+kegg_network = load_pathway_database(pathway_data, name="kegg_subset")
 
-# Load Reactome pathways
-reactome_pathways = load_pathway_database(
-    database="reactome",
-    organism="Homo sapiens",
-    pathway_types=["metabolic", "signaling"]
-)
+# A pathway entry may also be a plain gene list
+simple_network = load_pathway_database({"pathway_a": ["G1", "G2", "G3"], "pathway_b": ["G3", "G4"]})
 
-# Load GO biological processes
-go_pathways = load_pathway_database(
-    database="go",
-    go_domain="biological_process",
-    min_genes=10
-)
+# Keep pathways with 5 to 200 genes
+kegg_network = kegg_network.filter_pathways_by_size(min_size=5, max_size=200)
+print(len(kegg_network), kegg_network.metadata)
 ```
 
-**Available databases:**
-- `'kegg'`: KEGG pathway database
-- `'reactome'`: Reactome pathway database
-- `'go'`: Gene Ontology (biological_process, molecular_function, cellular_component)
-- `'wikipathways'`: WikiPathways database
+Per-pathway keys other than `genes` (such as `name`) end up in `network.pathway_metadata`. `PathwayNetwork.load_from_database(path, format="json")` reads a file instead: JSON with a top-level `"pathways"` mapping of pathway ID to gene list, or `format="gmt"` for GMT gene-set files.
 
 ## Enrichment Analysis
 
@@ -76,7 +72,7 @@ go_pathways = load_pathway_database(
 Perform pathway enrichment analysis:
 
 ```python
-from metainformant.networks import pathway_enrichment
+from metainformant.networks.analysis.pathway import pathway_enrichment
 
 # Gene list of interest (e.g., differentially expressed genes)
 gene_list = ["HK1", "PFKL", "FBA", "PGK1", "CS", "ACO1"]
@@ -85,103 +81,91 @@ gene_list = ["HK1", "PFKL", "FBA", "PGK1", "CS", "ACO1"]
 enriched_pathways = pathway_enrichment(
     gene_list,
     pathway_network,
-    background_genes=None,    # All genes in network, or specify background
+    background_genes=None,    # All genes in the network, or specify background
     method="hypergeometric",  # Statistical method
     correction="bonferroni",  # Multiple testing correction
-    min_overlap=3            # Minimum genes in common
+    min_overlap=2             # Minimum genes in common
 )
 
-# Display results
-for pathway in enriched_pathways[:10]:  # Top 10 enriched pathways
-    print(f"{pathway['id']}: {pathway['name']}")
-    print(f"  p-value: {pathway['p_value']:.2e}")
-    print(f"  Genes: {pathway['overlap_genes']}")
-    print(f"  Enrichment: {pathway['enrichment_ratio']:.2f}")
+# Display results: a dict keyed by pathway ID, best p-values first
+ranked = sorted(enriched_pathways.items(), key=lambda item: item[1]["p_value"])
+for pathway_id, result in ranked[:10]:  # Top 10 enriched pathways
+    name = pathway_network.pathway_metadata.get(pathway_id, {}).get("name", pathway_id)
+    print(f"{pathway_id}: {name}")
+    print(f"  p-value: {result['p_value']:.2e}")
+    print(f"  Genes: {result['overlap_genes']}")
+    print(f"  Enrichment: {result['enrichment_ratio']:.2f}")
 ```
 
+Each result holds `overlap_size`, `pathway_size`, `query_size`, `background_size`, `p_value`, `enrichment_ratio`, `expected_overlap` and the overlapping genes (`overlap_genes`, also available as `overlapping_genes`). When a `correction` is requested, every result also carries the adjusted value as `corrected_p_value`.
+
 **Available methods:**
-- `'hypergeometric'`: Hypergeometric test (default)
-- `'fisher'`: Fisher's exact test
-- `'binomial'`: Binomial test
-- `'chi_square'`: Chi-square test
+- `'fisher'`: One-sided Fisher's exact test (default)
+- `'hypergeometric'`: Hypergeometric test
+
+Any other method name is silently treated as `'hypergeometric'`. `correction` is `'bonferroni'` (default), `'fdr'` (Benjamini-Hochberg) or `None`; an unrecognised value copies the raw p-values into `corrected_p_value` unchanged.
 
 ### network_enrichment_analysis()
 
-Network-based enrichment analysis:
+Network-based enrichment analysis. The function takes the same arguments as `pathway_enrichment` and simply forwards to it, so the network neighbourhood is whatever gene list you pass in. To enrich a 1-hop neighbourhood, expand the list from an interaction network first:
 
 ```python
-from metainformant.networks import network_enrichment_analysis
+from metainformant.networks.analysis.pathway import network_enrichment_analysis
+from metainformant.networks.interaction.ppi import ProteinNetwork
 
-# Analyze enrichment in network neighborhoods
-gene_list = ["TP53", "MDM2", "CDKN1A"]
-network = load_ppi_network()  # Protein interaction network
+# Protein interaction network
+ppi_network = ProteinNetwork(name="demo_ppi")
+ppi_network.add_interaction("HK1", "PFKL", 0.9)
+ppi_network.add_interaction("PFKL", "FBA", 0.8)
+ppi_network.add_interaction("TP53", "MDM2", 0.95)
+
+# Expand the genes of interest by their direct partners (1-hop neighborhood)
+gene_list = ["HK1", "TP53"]
+neighborhood = set(gene_list)
+for gene in gene_list:
+    neighborhood.update(ppi_network.get_protein_partners(gene))
 
 # Network-based enrichment
 network_enriched = network_enrichment_analysis(
-    gene_list,
-    network,
+    sorted(neighborhood),
     pathway_network,
-    neighborhood_size=1,     # 1-hop neighborhood
-    method="subgraph"        # Enrichment method
+    method="fisher",
+    correction="fdr",
 )
 
-for pathway in network_enriched[:5]:
-    print(f"{pathway['id']}: p={pathway['p_value']:.2e}")
-    print(f"  Network genes: {pathway['network_genes']}")
+ranked = sorted(network_enriched.items(), key=lambda item: item[1]["p_value"])
+for pathway_id, result in ranked[:5]:
+    print(f"{pathway_id}: p={result['p_value']:.2e}")
+    print(f"  Overlapping genes: {result['overlap_genes']}")
 ```
 
 ## Pathway Integration
 
-### multi_omics_pathway_analysis()
+### pathway_activity_score()
 
-Integrate pathway analysis across multiple omics layers:
-
-```python-snippet
-from metainformant.multiomics import integration
-from metainformant.networks import multi_omics_pathway_analysis
-
-# Load multi-omics data
-multiomics_data = integration.load_multiomics_data([
-    "genomics_data.csv",
-    "transcriptomics_data.csv",
-    "proteomics_data.csv"
-])
-
-# Pathway analysis across omics
-pathway_results = multi_omics_pathway_analysis(
-    multiomics_data,
-    pathway_network,
-    analysis_type="integrated",  # Analysis type
-    min_consensus=2             # Minimum omics layers showing enrichment
-)
-
-# Results show pathways enriched in multiple omics layers
-for result in pathway_results:
-    print(f"Pathway: {result['pathway_name']}")
-    print(f"  Enriched in: {result['omics_layers']}")
-    print(f"  Combined p-value: {result['combined_p_value']:.2e}")
-```
-
-### pathway_activity_inference()
-
-Infer pathway activity from expression data:
+Summarize pathway activity from expression data (aggregated expression of the pathway's genes):
 
 ```python-snippet
-from metainformant.networks import pathway_activity_inference
+import pandas as pd
+from metainformant.networks.analysis.pathway import pathway_activity_score
 
-# Infer pathway activities
+# Expression of one sample as a gene -> value mapping
 expression_data = pd.read_csv("expression_matrix.csv", index_col=0)
+sample_expression = expression_data["sample1"].to_dict()
 
-pathway_activities = pathway_activity_inference(
-    expression_data,
-    pathway_network,
-    method="gsva",           # Gene Set Variation Analysis
-    min_genes=5,            # Minimum genes per pathway
-    max_genes=500           # Maximum genes per pathway
-)
+# Activity of every pathway in the network
+pathway_activities = {
+    pathway_id: pathway_activity_score(
+        pathway_network,
+        pathway_id,
+        sample_expression,
+        method="mean"           # 'mean', 'max', 'sum' or 'median'
+    )
+    for pathway_id in pathway_network.pathways
+}
 
 # Pathway activities as new features
-activity_df = pd.DataFrame(pathway_activities)
+activity_df = pd.DataFrame.from_dict(pathway_activities, orient="index", columns=["activity"])
 activity_df.to_csv("pathway_activities.csv")
 ```
 
@@ -196,19 +180,22 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Create enrichment heatmap
+top_pathways = sorted(enriched_pathways.items(), key=lambda item: item[1]["p_value"])[:20]  # Top 20 pathways
+all_genes = sorted({gene for genes in pathway_network.pathways.values() for gene in genes})[:100]  # First 100 genes
+
 pathway_matrix = []
-for pathway in enriched_pathways[:20]:  # Top 20 pathways
+for pathway_id, result in top_pathways:
     # Create binary vector for pathway genes
-    pathway_vector = [1 if gene in pathway['overlap_genes'] else 0
-                     for gene in all_genes[:100]]  # First 100 genes
+    pathway_vector = [1 if gene in result['overlap_genes'] else 0
+                     for gene in all_genes]
     pathway_matrix.append(pathway_vector)
 
 # Plot heatmap
 plt.figure(figsize=(12, 8))
 sns.heatmap(
     pathway_matrix,
-    xticklabels=[f"Gene_{i}" for i in range(100)],
-    yticklabels=[p['name'][:30] for p in enriched_pathways[:20]],
+    xticklabels=all_genes,
+    yticklabels=[pathway_id[:30] for pathway_id, _ in top_pathways],
     cmap='RdBu_r',
     center=0
 )
@@ -222,19 +209,22 @@ plt.show()
 ### Pathway Network Visualization
 
 ```python
+import matplotlib.pyplot as plt
+import networkx as nx
+
 # Visualize pathway relationships
 fig, ax = plt.subplots(figsize=(14, 10))
 
-# Create pathway similarity network
-pathway_similarities = calculate_pathway_similarities(enriched_pathways)
+# Pathway similarity: Jaccard similarity between the gene sets of every pathway pair
+pathway_similarities = pathway_network.pathway_overlap_matrix()
 
 # Draw pathway network
 G = nx.Graph()
-for i, pathway1 in enumerate(enriched_pathways[:15]):
-    for j, pathway2 in enumerate(enriched_pathways[:15]):
-        if i != j and pathway_similarities[i,j] > 0.3:
-            G.add_edge(pathway1['name'][:20], pathway2['name'][:20],
-                      weight=pathway_similarities[i,j])
+G.add_nodes_from(pathway_network.pathways)
+for pathway1, similarities in pathway_similarities.items():
+    for pathway2, similarity in similarities.items():
+        if pathway1 < pathway2 and similarity > 0.2:
+            G.add_edge(pathway1, pathway2, weight=similarity)
 
 pos = nx.spring_layout(G, k=3, iterations=100)
 nx.draw(
@@ -258,36 +248,37 @@ plt.show()
 ### With Expression Data
 
 ```python-snippet
-from metainformant.rna import workflow
-from metainformant.networks import pathway_enrichment
+import pandas as pd
+from metainformant.rna.analysis import expression
+from metainformant.networks.analysis.pathway import pathway_enrichment
 
-# Load expression data
-expression_data = workflow.extract_expression_patterns(rna_data)
+# counts: raw count matrix with genes as rows and samples as columns
+counts = pd.read_csv("counts.csv", index_col=0)
+conditions = ["control", "control", "control", "treated", "treated", "treated"]
 
 # Find differentially expressed genes
-diff_genes = expression_data[
-    expression_data['p_value'] < 0.05
-].index.tolist()
+de_results = expression.differential_expression(counts, conditions)
+diff_genes = de_results.loc[de_results["adjusted_p_value"] < 0.05, "gene"].tolist()
 
 # Pathway enrichment
 enriched = pathway_enrichment(
     diff_genes,
     pathway_network,
-    background_genes=expression_data.index.tolist(),
+    background_genes=counts.index.tolist(),
     correction="fdr"
 )
 
 # Export results
 enrichment_df = pd.DataFrame([
     {
-        'pathway_id': p['id'],
-        'pathway_name': p['name'],
-        'p_value': p['p_value'],
-        'q_value': p['q_value'],
-        'n_overlap': len(p['overlap_genes']),
-        'overlap_genes': ','.join(p['overlap_genes'])
+        'pathway_id': pathway_id,
+        'pathway_name': pathway_network.pathway_metadata.get(pathway_id, {}).get('name', pathway_id),
+        'p_value': result['p_value'],
+        'corrected_p_value': result.get('corrected_p_value', result['p_value']),
+        'n_overlap': result['overlap_size'],
+        'overlap_genes': ','.join(result['overlap_genes'])
     }
-    for p in enriched
+    for pathway_id, result in enriched.items()
 ])
 
 enrichment_df.to_csv("pathway_enrichment_results.csv", index=False)
@@ -296,11 +287,11 @@ enrichment_df.to_csv("pathway_enrichment_results.csv", index=False)
 ### With Protein Data
 
 ```python-snippet
-from metainformant.protein import proteomes
-from metainformant.networks import pathway_enrichment
+import pandas as pd
+from metainformant.networks.analysis.pathway import pathway_enrichment
 
-# Load protein data
-protein_abundances = proteomes.load_protein_data("proteomics_data.csv")
+# Protein abundance table (indexed by gene symbol, with a p_value column)
+protein_abundances = pd.read_csv("proteomics_data.csv", index_col=0)
 
 # Find differentially abundant proteins
 diff_proteins = protein_abundances[
@@ -315,8 +306,9 @@ protein_enriched = pathway_enrichment(
     correction="bonferroni"
 )
 
-# Compare with transcriptomic enrichment
+# Compare with transcriptomic enrichment (diff_genes comes from the expression example)
 transcriptomic_enriched = pathway_enrichment(diff_genes, pathway_network)
+shared_pathways = set(protein_enriched) & set(transcriptomic_enriched)
 ```
 
 ## Testing
@@ -327,9 +319,9 @@ Pathway analysis functionality is tested in `tests/networks/test_networks_pathwa
 # Run pathway analysis tests
 uv run pytest tests/networks/test_networks_pathway.py -v
 
-# Test specific functions
-uv run pytest tests/networks/test_networks_pathway.py::test_pathway_enrichment -v
-uv run pytest tests/networks/test_networks_pathway.py::test_load_pathway_database -v
+# Test specific classes and functions
+uv run pytest tests/networks/test_networks_pathway.py::TestPathwayEnrichment::test_pathway_enrichment_basic -v
+uv run pytest tests/networks/test_networks_pathway.py::TestLoadPathwayDatabase::test_load_from_dict -v
 ```
 
 ## Related Documentation

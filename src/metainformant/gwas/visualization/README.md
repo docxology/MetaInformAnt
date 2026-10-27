@@ -35,3 +35,5 @@ from metainformant.gwas.visualization.general import manhattan_plot, qq_plot
 manhattan_plot(results, output_path="output/gwas/manhattan.png")
 qq_plot(p_values, output_path="output/gwas/qq.png")
 ```
+
+The plot functions in `general.py` create the missing parent directories of `output_path`, and `generate_all_plots()` creates its `output_dir`.

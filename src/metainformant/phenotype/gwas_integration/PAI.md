@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - gwas_integration
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/phenotype/gwas_integration`
+- **Path**: `src/metainformant/phenotype/gwas_integration`
 - **Purpose**: GWAS integration subpackage for phenotype analysis.
 - **Domain**: phenotype
 

@@ -4,8 +4,8 @@ Quantify spatial relationships between cell types or gene expression patterns.
 
 ## Cell‑type colocalisation (if deconvolution done)
 
-After running `stereoscope` or `tangram`, `adata.obsm['deconvolution']` holds
-spot × cell‑type proportions.
+After running `deconvolve_spots()`, `deconv.fractions` holds spot × cell‑type
+proportions (see [Deconvolution](deconvolution.md)).
 
 ### Ripley's K (spread of a single type)
 
@@ -27,70 +27,87 @@ L(r) = sqrt(K/π) − r; L(r)=0 under complete spatial randomness (CSR).
 ### Interaction index (pairwise)
 
 ```python-snippet
-from metainformant.spatial.analysis.neighborhood import interaction_index
-II = interaction_index(
-    adata,
-    type_a='Epithelial',
-    type_b='Fibroblast',
-    radii=[0, 50, 100, 150],
+from metainformant.spatial.analysis.clustering import build_spatial_graph
+from metainformant.spatial.analysis.neighborhood import compute_interaction_matrix
+
+graph = build_spatial_graph(coordinates, method='radius', radius=100.0)   # µm
+II = compute_interaction_matrix(
+    cell_types,                      # one label per spot / cell
+    graph,
+    normalize_by_type_frequency=True,
 )
-# II > 1 → attraction; < 1 → avoidance
+# II.interaction_matrix[i, j] > 1 → attraction; < 1 → avoidance
+# II.cell_type_names gives the row / column order
 ```
 
-Cross‑product observed / expected under independence. Confidence interval by
-Monte‑Carlo randomisation (999 iterations, `n_permutations=`).
+Edge counts between two cell types, observed / expected under independence (from the
+cell‑type frequencies). Significance by Monte‑Carlo randomisation of the labels is
+provided by `neighborhood_enrichment()` below (`n_permutations=`).
 
 ## Ligand–receptor communication scoring
 
-Ligand from cell type A, receptor on type B within a radius.
+Ligand expression in a spot, receptor expression in its neighbours within a radius.
 
 ```python-snippet
-from metainformant.spatial.analysis.communication import ligand_receptor_score
-lr = ligand_receptor_score(
-    adata,
-    ligand_gene='EGF',
-    receptor_gene='EGFR',
+from metainformant.spatial.analysis.neighborhood import ligand_receptor_spatial
+lr = ligand_receptor_spatial(
+    expression,
+    [('EGF', 'EGFR')],
+    coordinates,
+    gene_names=gene_names,
     radius=200.0,
-    cell_type_col='cell_type_pred',
-    method='exp_mean',   # 'exp_mean' or 'nonzero_fraction'
 )
-print(lr)  # DataFrame: spot, ligand_expr, receptor_expr, distance
+print(lr['scores'])  # {('EGF', 'EGFR'): mean spatial interaction score}
 ```
 
-Permutation test evaluates significance: randomly shuffle cell‑type labels, recompute
-score distribution.
+`lr['per_spot_scores']` holds the per‑spot values. The score is not restricted to
+particular cell types and has no permutation test; for a label‑permutation test of
+cell‑type neighbourhoods use `neighborhood_enrichment()` below.
 
 ## Nearest‑neighbour enrichment
 
 ```python-snippet
-from metainformant.spatial.analysis.neighborhood import nearest_neighbor_enrichment
-nne = nearest_neighbor_enrichment(
-    adata,
-    cell_type_column='cell_type',
-    n_nearest=5,
+import pandas as pd
+from metainformant.spatial.analysis.neighborhood import neighborhood_enrichment
+nne = neighborhood_enrichment(
+    cell_types,
+    coordinates,
+    n_neighbors=5,
+    n_permutations=1000,
 )
-print(nne)  # DataFrame: type_a, type_b, observed, expected, odds_ratio, pvalue
+# (n_types × n_types) matrices ordered like nne.cell_type_names:
+# enrichment_matrix (z-scores), count_matrix, expected_matrix, p_values
+print(pd.DataFrame(nne.enrichment_matrix, index=nne.cell_type_names, columns=nne.cell_type_names))
 ```
 
-Odds ratio > 1 means type‑A spots tend to have type‑B neighbours more often than
-expected by frequency.
+A positive z‑score means type‑A spots have type‑B neighbours more often than expected
+when the cell‑type labels are permuted.
 
 ## Workflow end‑to‑end
 
 ```python-snippet
+import numpy as np
+
 # 1. Deconvolution
-from metainformant.spatial.analysis.deconvolution import stereoscope
-adata = stereoscope(adata, max_epochs=400)
+from metainformant.spatial.analysis.deconvolution import deconvolve_spots
+deconv = deconvolve_spots(expression, profiles, method='nnls', cell_type_names=cell_type_names)
+cell_types = np.array(deconv.cell_type_names)[deconv.fractions.argmax(axis=1)]  # dominant type per spot
 
 # 2. Colocalisation
-from metainformant.spatial.analysis.neighborhood import interaction_matrix
-im = interaction_matrix(adata, radii=[100], cell_type_column='deconv_prop')
-im.plot_heatmap()
+from metainformant.spatial.analysis.clustering import build_spatial_graph
+from metainformant.spatial.analysis.neighborhood import compute_interaction_matrix
+from metainformant.spatial.visualization.plots import plot_interaction_heatmap
+graph = build_spatial_graph(coordinates, method='radius', radius=100.0)
+im = compute_interaction_matrix(cell_types, graph)
+plot_interaction_heatmap(im.interaction_matrix, 'interaction_heatmap.png', cell_type_names=im.cell_type_names)
 
 # 3. LR communication (top pairs)
-from metainformant.spatial.analysis.communication import spatial_ligand_receptor_pairs
-lr_pairs = spatial_ligand_receptor_pairs(adata, radius=150, pvalue_threshold=0.05)
-print(lr_pairs.head())
+from metainformant.spatial.analysis.neighborhood import ligand_receptor_spatial
+from metainformant.spatial.communication.cell_communication import default_lr_database
+lr_pairs = [(p['ligand'], p['receptor']) for p in default_lr_database()['pairs']]
+lr = ligand_receptor_spatial(expression, lr_pairs, coordinates, gene_names=gene_names, radius=150.0)
+top_pairs = sorted(lr['scores'].items(), key=lambda kv: kv[1], reverse=True)[:10]
+print(top_pairs)
 ```
 
 ## Performance

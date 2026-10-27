@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - protein
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/docs/protein`
+- **Path**: `docs/protein`
 - **Purpose**: Functionality for protein.
 - **Domain**: docs
 

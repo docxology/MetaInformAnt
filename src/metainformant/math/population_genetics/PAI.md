@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - population_genetics
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/math/population_genetics`
+- **Path**: `src/metainformant/math/population_genetics`
 - **Purpose**: Functionality for population_genetics.
 - **Domain**: math
 

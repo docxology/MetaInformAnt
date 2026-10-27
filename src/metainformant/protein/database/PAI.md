@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - database
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/protein/database`
+- **Path**: `src/metainformant/protein/database`
 - **Purpose**: Functionality for database.
 - **Domain**: protein
 

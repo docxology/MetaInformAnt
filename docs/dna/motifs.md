@@ -11,7 +11,7 @@ flowchart LR
 Example
 
 ```python-snippet
-from metainformant.dna import motifs
+from metainformant.dna.sequence import motifs
 
 # Find positions of a simple motif
 seq = "ATCGATCGATCG"

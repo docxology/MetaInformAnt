@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - benchmark
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/simulation/benchmark`
+- **Path**: `src/metainformant/simulation/benchmark`
 - **Purpose**: Benchmark dataset generation subpackage for simulation.
 - **Domain**: simulation
 

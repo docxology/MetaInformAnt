@@ -46,7 +46,7 @@ uv run python scripts/rna/reclaim_quantified_raw.py \
 The `cleanup_unquantified_samples()` function processes all downloaded but unquantified samples:
 
 ```python-snippet
-from metainformant.rna.engine.workflow_cleanup import cleanup_unquantified_samples
+from metainformant.rna.core.cleanup import cleanup_unquantified_samples
 from pathlib import Path
 
 config_path = Path("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")

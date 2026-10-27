@@ -33,7 +33,7 @@ mean and dispersion arrays.
 
 ```python
 import numpy as np
-from metainformant.simulation import simulate_counts_negative_binomial
+from metainformant.simulation.models.rna import simulate_counts_negative_binomial
 
 means = np.array([100.0, 50.0, 200.0, 10.0, 500.0])
 dispersions = np.array([0.1, 0.2, 0.05, 0.5, 0.1])
@@ -67,7 +67,7 @@ A user-friendly wrapper that auto-generates realistic mean and dispersion arrays
 from simple parameters. Gene means follow a log-normal distribution.
 
 ```python
-from metainformant.simulation import simulate_rnaseq_counts
+from metainformant.simulation.models.rna import simulate_rnaseq_counts
 
 counts = simulate_rnaseq_counts(n_genes=1000, n_samples=10)
 # Shape: (10, 1000)
@@ -102,7 +102,7 @@ of genes. Samples are split evenly between conditions.
 
 ```python
 import numpy as np
-from metainformant.simulation import simulate_differential_expression
+from metainformant.simulation.models.rna import simulate_differential_expression
 
 fold_changes = np.array([2.0, -1.5, 3.0, 0.5])
 expression, labels = simulate_differential_expression(
@@ -135,7 +135,7 @@ expression, labels = simulate_differential_expression(
 Simulate bulk RNA-seq with realistic library sizes and multinomial count generation.
 
 ```python
-from metainformant.simulation import simulate_bulk_rnaseq
+from metainformant.simulation.models.rna import simulate_bulk_rnaseq
 
 counts = simulate_bulk_rnaseq(n_samples=12, n_genes=2000)
 # Library sizes follow log-normal distribution (~1M reads)
@@ -163,7 +163,7 @@ Each cell type has marker genes with elevated expression. Dropout is modeled as 
 Bernoulli process applied after count generation.
 
 ```python
-from metainformant.simulation import simulate_single_cell_rnaseq
+from metainformant.simulation.models.rna import simulate_single_cell_rnaseq
 
 expression, cell_types = simulate_single_cell_rnaseq(
     n_cells=500,
@@ -195,7 +195,7 @@ Generate oscillatory gene expression over time points. Each gene has a random
 frequency, phase, and amplitude. Final counts include Poisson noise.
 
 ```python
-from metainformant.simulation import simulate_time_series_expression
+from metainformant.simulation.models.rna import simulate_time_series_expression
 
 counts = simulate_time_series_expression(n_timepoints=24, n_genes=100)
 # Shape: (24, 100) -- 24 time points x 100 genes
@@ -206,7 +206,7 @@ counts = simulate_time_series_expression(n_timepoints=24, n_genes=100)
 Simulate spatially resolved expression data with configurable spatial patterns.
 
 ```python
-from metainformant.simulation import simulate_spatial_expression
+from metainformant.simulation.models.rna import simulate_spatial_expression
 
 expression, coordinates = simulate_spatial_expression(
     n_spots=200, n_genes=500, spatial_patterns="gradient",
@@ -226,7 +226,7 @@ Supported `spatial_patterns`: `"random"`, `"gradient"`, `"clusters"`.
 Layer PCR amplification bias and shot noise on top of an existing count matrix.
 
 ```python
-from metainformant.simulation import simulate_rnaseq_counts, add_technical_noise
+from metainformant.simulation.models.rna import simulate_rnaseq_counts, add_technical_noise
 
 clean_counts = simulate_rnaseq_counts(n_genes=1000, n_samples=10)
 noisy_counts = add_technical_noise(

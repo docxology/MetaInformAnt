@@ -22,7 +22,7 @@ The `download` module centralizes this logic to ensure consistent behavior acros
 ## Design Principles
 
 ### 1. **Heartbeat Files**
-Every download writes a machine-readable JSON heartbeat file every `heartbeat_interval` seconds (default 5) to `dest.parent/.downloads/<filename>.heartbeat.json`. The heartbeat contains:
+Every download writes a machine-readable JSON heartbeat file to `dest.parent/.downloads/<filename>.heartbeat.json`: when each attempt starts, at most every `heartbeat_interval` seconds (default 5) while HTTP(S) or FTP bytes are arriving, and when the download completes or fails. The heartbeat contains:
 - Current progress (bytes downloaded, percent complete)
 - Transfer speed (MB/s) and ETA
 - Current status (`starting`, `downloading`, `completed`, `failed`)
@@ -31,13 +31,13 @@ Every download writes a machine-readable JSON heartbeat file every `heartbeat_in
 Orchestrators (workflow engines, TUI) poll heartbeat files to update UI without needing to wrap download calls.
 
 ### 2. **Progress Bars Integrated**
-If `tqdm` is available via `metainformant.core.progress`, a progress bar is shown by default. Downloads can disable progress for background/cron runs with `show_progress=False`.
+If `tqdm` is installed (used through `metainformant.core.utils.progress`), a progress bar is shown by default; without `tqdm` a minimal fallback draws nothing. Downloads can disable progress for background/cron runs with `show_progress=False`.
 
 ### 3. **Retry with Exponential Backoff**
-Transient network errors trigger automatic retry (default 3 attempts) with delays of 5s, 10s, 20s. Errors are accumulated in the heartbeat file for post-mortem analysis.
+Any failed attempt triggers an automatic retry (default 3 attempts in total) after `retry_delay * 2 ** (attempt - 1)` seconds: 5s after the first failure, 10s after the second, 20s after a third, and so on. Nothing waits after the last attempt. Errors are accumulated in the heartbeat file for post-mortem analysis.
 
 ### 4. **Best-Effort Resume**
-HTTP(S) downloads support resume via `Range` headers. If the destination file already exists and `resume=True` (default), the download continues from the existing size. Non-resumable protocols (FTP, file) restart from beginning.
+HTTP(S) downloads support resume via `Range` headers. If the destination file already exists and `resume=True` (default), the download continues from the existing size; if the server ignores the `Range` header (HTTP 200 instead of 206) the file is rewritten from the start. A destination that is already complete is requested from its own size onward, which servers answer with HTTP 416, so the call ends with `success=False` after its retries: delete the file or pass `resume=False` to fetch it again. Non-resumable protocols (FTP, file) restart from beginning.
 
 ### 5. **Protocol Abstraction**
 `DownloadHandler` Protocol defines a common interface. Built-in handlers:
@@ -54,7 +54,7 @@ External tools (e.g., SRA Toolkit's `prefetch`) that manage their own downloads 
 These monitor functions write heartbeat files just like direct downloads, unifying the monitoring interface.
 
 ### 7. **Atomic Comms**
-Heartbeat files are written atomically via tmp-rename to avoid partial reads by consumers. Directory size calculations are cached (TTL 1s) to avoid excessive `stat()` calls during fast-growing downloads.
+Heartbeat files are written atomically via tmp-rename to avoid partial reads by consumers. Directory size calculations are cached (TTL 1s) so a directory is not walked more than once per second.
 
 ### 8. **No Global State**
 All functions accept explicit parameters; no module-level configuration.
@@ -94,17 +94,16 @@ Heartbeat files are JSON with this schema:
   "progress_percent": 48.82,
   "speed_mbps": 12.5,
   "eta_seconds": 42.3,
-  "status": "downloading",  // or: starting, completed, failed
-  "step": null,
-  "progress": null,
+  "status": "downloading",
   "errors": []
 }
 ```
 
 Fields:
-- `status` transitions: `starting` → `downloading` → (`completed` | `failed`)
+- `status` transitions: `starting` → `downloading` → `completed`. A failed attempt writes `failed`, and the next attempt, if any, writes `starting` again; after the last attempt the file stays at `failed`
+- `progress_percent`, `speed_mbps` and `eta_seconds` are `null` until they can be computed (for example before the first chunk arrives, or when the server reports no size)
 - `errors` array accumulates all retry failures
-- `progress` field (optional) includes structured progress for subprocess monitors (type: `directory_size`, `file_count`, `sample_count`)
+- `step` and `progress` appear only in heartbeats written by the subprocess monitors; `progress` holds structured progress (type: `directory_size`, `file_count`, `sample_count`), and the monitors report `running` while the child process is alive and `timeout` when `timeout_seconds` expires
 
 ## API Reference
 
@@ -120,7 +119,7 @@ Immutable result of a download attempt.
 - `success: bool` — Whether download succeeded
 - `bytes_downloaded: int = 0` — Total bytes written to disk
 - `total_bytes: int | None = None` — Expected total from Content-Length (if known)
-- `elapsed_seconds: float = 0.0` — Time taken for final attempt
+- `elapsed_seconds: float = 0.0` — Time taken by the successful attempt (on failure, the total time across all attempts)
 - `resumed: bool = False` — Whether download resumed partial file
 - `error: str | None = None` — Error message on failure
 - `attempts: int = 1` — Number of attempts made
@@ -152,7 +151,7 @@ Mutable state written to heartbeat file.
 - `progress_percent: float | None`
 - `speed_mbps: float | None`
 - `eta_seconds: float | None`
-- `status: str` — One of: `starting`, `downloading`, `completed`, `failed`, `timeout`
+- `status: str` — One of: `starting`, `downloading`, `running` (subprocess monitors), `completed`, `failed`, `timeout`
 - `step: str | None` — Optional step description (for subprocess monitoring)
 - `progress: dict[str, Any] | None` — Structured progress object
 - `errors: list[str]` — Accumulated error messages
@@ -188,9 +187,9 @@ def download_with_progress(
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `url` | `str` | required | Source URL (http, https, ftp, file) |
-| `dest_path` | `str \| Path` | required | Destination file path or directory |
+| `dest_path` | `str \| Path` | required | Destination file path, or an existing directory (the file name is taken from the URL). A path that does not exist yet is used as the file path itself, even with a trailing slash |
 | `protocol` | `str` | `"auto"` | Force protocol: `"http"`, `"https"`, `"ftp"`, `"file"` |
-| `heartbeat_interval` | `int` | `5` | Seconds between heartbeat writes (0 disables) |
+| `heartbeat_interval` | `int` | `5` | Seconds between heartbeat writes while downloading (0 disables the periodic writes; the start, completed and failed heartbeats are still written) |
 | `show_progress` | `bool` | `True` | Show tqdm progress bar if available |
 | `resume` | `bool` | `True` | Attempt HTTP Range resume if partial file exists |
 | `max_retries` | `int` | `3` | Number of retry attempts on failure |
@@ -200,22 +199,20 @@ def download_with_progress(
 
 **Returns**: `DownloadResult` dataclass
 
-**Raises**:
-- `ValueError` — Unsupported protocol
-- `ImportError` — If `requests` unavailable for HTTP (should be present)
+**Raises**: Nothing for download problems. Network errors, HTTP errors, an unsupported protocol and a missing `file://` source all come back as `DownloadResult(success=False, error=...)`; only filesystem errors while preparing the heartbeat directory propagate.
 
 **Behavior notes**:
-- If `dest_path` is a directory, filename is inferred from URL
-- Heartbeat file automatically created in `dest.parent/.downloads/`
-- Progress bar uses `tqdm` if available; otherwise silent unless `show_progress=False` explicitly
-- Retries use exponential backoff: delays = `retry_delay * (2 ^ attempt)` (5s, 10s, 20s, ...)
-- After final failure, heartbeat file remains with `"status": "failed"` and error details
+- If `dest_path` is an existing directory, the filename is inferred from the URL path; create the directory first, because a missing directory is treated as the file path
+- Heartbeat file automatically created in `dest.parent/.downloads/` (the directory is created even when `heartbeat_interval=0`)
+- Progress bar uses `tqdm` if installed; without it nothing is drawn
+- Every failure, including an unsupported protocol, is retried until `max_retries` attempts have been made, waiting `retry_delay * 2 ** (attempt - 1)` seconds between attempts (5s, 10s, 20s, ...). A missing `file://` source is the exception: it fails on the first attempt
+- After final failure, heartbeat file remains with `"status": "failed"` and error details; `DownloadResult.error` holds the last error message and `attempts` the number of attempts made
 
 **Example**:
 ```python
 result = download_with_progress(
     "https://ftp.ncbi.nlm.nih.gov/sra/sra-instant/read/ByRun/sra/SRR/SRR001/SRR001000/SRR001000_1.fastq.gz",
-    "output/sra/",
+    "output/sra/SRR001000_1.fastq.gz",
     heartbeat_interval=10,
     show_progress=True,
     max_retries=5,
@@ -271,8 +268,8 @@ from metainformant.core.io.download import monitor_subprocess_directory_growth
 
 proc = subprocess.Popen(
     ["prefetch", "--max-size", "100G", "SRR001000"],
-    stdout=subprocess.PIPE,  # OK if you consume it
-    stderr=subprocess.PIPE,
+    stdout=subprocess.DEVNULL,  # never PIPE without a reader: the child blocks on a full pipe
+    stderr=subprocess.DEVNULL,
     cwd="/data/sra"
 )
 
@@ -388,6 +385,8 @@ download(url: str, dest_path: str | Path, **kwargs) -> DownloadResult
 
 **Example**:
 ```python
+from metainformant.core.io.download import HTTPDownloadHandler
+
 handler = HTTPDownloadHandler()
 size = handler.get_file_size("https://example.com/file.bin", timeout=30)
 result = handler.download(
@@ -400,10 +399,12 @@ result = handler.download(
 
 #### `FTPDownloadHandler`
 
-Handler for FTP URLs (no resume support).
+Handler for FTP URLs (no resume support: it always passes `resume=False`, so a `resume=` keyword raises `TypeError`).
 
 **Example**:
 ```python
+from metainformant.core.io.download import FTPDownloadHandler
+
 handler = FTPDownloadHandler()
 result = handler.download(
     "ftp://ftp.ensembl.org/pub/release-110/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna_sm.toplevel.fa.gz",
@@ -414,10 +415,12 @@ result = handler.download(
 
 #### `FileDownloadHandler`
 
-Handler for local `file://` URLs (fast copy).
+Handler for local `file://` URLs (fast copy; like the FTP handler it fixes `resume=False`).
 
 **Example**:
 ```python
+from metainformant.core.io.download import FileDownloadHandler
+
 handler = FileDownloadHandler()
 result = handler.download(
     "file:///data/local/sample.fastq",
@@ -433,9 +436,12 @@ Factory returning appropriate handler for URL scheme.
 
 **Example**:
 ```python
-handler = get_download_handler("https://example.com/data.tar.gz")
-size = handler.get_file_size()
-result = handler.download(...)
+from metainformant.core.io.download import get_download_handler
+
+url = "https://example.com/data.tar.gz"
+handler = get_download_handler(url)
+size = handler.get_file_size(url)  # bytes, or None when unknown
+result = handler.download(url, "data/data.tar.gz")
 ```
 
 ## Usage Examples
@@ -447,7 +453,7 @@ from metainformant.core.io.download import download_with_progress
 
 result = download_with_progress(
     "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE1nnn/GSE1000/suppl/GSE1000_RAW.tar",
-    "data/raw/",
+    "data/raw/GSE1000_RAW.tar",
     show_progress=True,
     max_retries=3,
 )
@@ -461,30 +467,39 @@ else:
 
 ```python
 import json
+import threading
 import time
 from pathlib import Path
 from metainformant.core.io.download import download_with_progress
 
+url = "https://example.com/large_dataset.bam"
 dest = Path("output/large_dataset.bam")
 heartbeat_path = dest.parent / ".downloads" / f"{dest.name}.heartbeat.json"
 
-# Start download in background thread or separate process
-# Meanwhile, poll heartbeat:
-def monitor_heartbeat(heartbeat_path: Path, timeout: int = 3600):
-    start = time.time()
-    while time.time() - start < timeout:
-        if heartbeat_path.exists():
-            with open(heartbeat_path) as fh:
-                hb = json.load(fh)
-            print(f"Status: {hb['status']}, "
-                  f"Progress: {hb['progress_percent']:.1f}%, "
-                  f"Speed: {hb['speed_mbps']:.2f} MB/s, "
-                  f"ETA: {hb['eta_seconds'] / 60:.1f} min")
-            if hb['status'] in ('completed', 'failed'):
-                break
-        time.sleep(5)
+# Run the download in a background thread and poll its heartbeat meanwhile
+results = []
+worker = threading.Thread(
+    target=lambda: results.append(download_with_progress(url, dest, show_progress=False))
+)
+worker.start()
 
-# In real usage, this monitoring runs in separate thread/process
+def fmt(value, spec, unit=""):
+    """Format a heartbeat field; progress, speed and ETA are None until they can be computed."""
+    return "n/a" if value is None else f"{value:{spec}}{unit}"
+
+while worker.is_alive():
+    if heartbeat_path.exists():
+        hb = json.loads(heartbeat_path.read_text())
+        eta_min = None if hb["eta_seconds"] is None else hb["eta_seconds"] / 60
+        print(f"Status: {hb['status']}, "
+              f"Progress: {fmt(hb['progress_percent'], '.1f', '%')}, "
+              f"Speed: {fmt(hb['speed_mbps'], '.2f', ' MB/s')}, "
+              f"ETA: {fmt(eta_min, '.1f', ' min')}")
+    time.sleep(5)
+worker.join()
+# A "failed" heartbeat can be followed by "starting" when retries remain,
+# so use the returned DownloadResult for the final verdict
+print(results[0].success)
 ```
 
 ### Batch Download with Parallelism
@@ -499,7 +514,7 @@ def download_one(url_dest_pair):
         url,
         dest,
         show_progress=False,  # Don't clutter output with many bars
-        heartbeat_interval=0,  # Disable heartbeat for batch mode
+        heartbeat_interval=0,  # No periodic heartbeat updates (start and end are still written)
         max_retries=2,
     )
 
@@ -515,7 +530,7 @@ results = parallel.thread_map(
     download_one,
     downloads,
     max_workers=8,
-    timeout=600,
+    timeout=600,  # a deadline for the whole batch (TimeoutError when exceeded), not per file
 )
 
 # Check results
@@ -536,7 +551,7 @@ result = download_with_progress(
     "https://unreliable.server.edu/dataset.tar.gz",
     "output/dataset.tar.gz",
     max_retries=5,
-    retry_delay=30.0,  # Wait 30s, 60s, 120s, 240s, 480s
+    retry_delay=30.0,  # Waits 30s, 60s, 120s, 240s between the five attempts
     chunk_size=512 * 1024,  # 512 KiB chunks
     timeout=60,  # 60-second request timeout
 )
@@ -585,8 +600,8 @@ from metainformant.core.io.download import monitor_subprocess_directory_growth
 proc = subprocess.Popen(
     ["fastq-dump", "--split-3", "--gzip", "SRR001000"],
     cwd="/data/sra",
-    stdout=subprocess.PIPE,  # Capture to avoid blocking
-    stderr=subprocess.PIPE,
+    stdout=subprocess.DEVNULL,  # Don't pipe: an unread pipe fills up and blocks the child
+    stderr=subprocess.DEVNULL,
 )
 
 # Monitor size of output directory
@@ -633,8 +648,10 @@ rc = monitor_subprocess_file_count(
 ### Custom Download Handler
 
 ```python-snippet
+import time
+from pathlib import Path
+
 from metainformant.core.io.download import DownloadHandler, DownloadResult
-import requests
 
 class S3DownloadHandler:
     """Custom handler for S3 URLs (s3://bucket/key)."""
@@ -687,12 +704,10 @@ class S3DownloadHandler:
                 error=str(e),
             )
 
-# Register custom handler by wrapping download_with_progress
-def download_s3(url, dest, **kwargs):
-    handler = S3DownloadHandler()
-    return handler.download(url, dest, **kwargs)
-
-result = download_s3("s3://my-bucket/genome.fa.gz", "reference/genome.fa.gz")
+# get_download_handler() only knows http(s), ftp and file URLs, so call a custom
+# handler directly; it satisfies the DownloadHandler Protocol structurally
+handler: DownloadHandler = S3DownloadHandler()
+result = handler.download("s3://my-bucket/genome.fa.gz", "reference/genome.fa.gz")
 ```
 
 ### Reading Heartbeat Files
@@ -718,9 +733,11 @@ def monitor_multiple_downloads(heartbeat_dir: Path):
         hb_files = list(heartbeat_dir.glob("*.heartbeat.json"))
         for hb_path in hb_files:
             hb = read_heartbeat(hb_path)
-            if hb and hb["status"] == "downloading":
+            # progress_percent and speed_mbps are None until they can be computed
+            if hb and hb["status"] == "downloading" and hb["progress_percent"] is not None:
+                speed = hb["speed_mbps"] or 0.0
                 print(f"{hb['destination']}: {hb['progress_percent']:.1f}% "
-                      f"at {hb['speed_mbps']:.2f} MB/s")
+                      f"at {speed:.2f} MB/s")
         time.sleep(10)
 
 # Usage
@@ -786,17 +803,20 @@ elif not result.success:
 
 ### Disk Space Exhaustion
 
-**Symptom**: `OSError: [Errno 28] No space left on device` during download.
+**Symptom**: `DownloadResult.success=False` with an error such as `[Errno 28] No space left on device` (the `OSError` is caught per attempt and retried, not raised).
 
 **Pre-check**:
 ```python
 import shutil
-from metainformant.core.io.download import _http_head_size
+from pathlib import Path
+from metainformant.core.io.download import HTTPDownloadHandler, download_with_progress
 
 def safe_download(url, dest, reserve_gb=10):
     """Download only if enough disk space available."""
-    total_size = _http_head_size(url, timeout=30) or 0
-    free_gb = shutil.disk_usage(Path(dest.parent)).free / (1024**3)
+    dest = Path(dest)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    total_size = HTTPDownloadHandler().get_file_size(url, timeout=30) or 0
+    free_gb = shutil.disk_usage(dest.parent).free / (1024**3)
     needed_gb = total_size / (1024**3) + reserve_gb
 
     if free_gb < needed_gb:
@@ -812,27 +832,21 @@ def safe_download(url, dest, reserve_gb=10):
 
 **Symptom**: Download "completes" but file is corrupted (checksum mismatch).
 
-**Fix**: Enable checksum validation:
+**Fix**: `download_with_progress()` does not verify checksums, so check the file afterwards with `metainformant.core.io.checksums.verify_checksum`:
 ```python
-import hashlib
+from pathlib import Path
+from metainformant.core.io.checksums import verify_checksum
+from metainformant.core.io.download import download_with_progress
 
 def download_and_verify(url, dest, expected_md5):
     result = download_with_progress(url, dest, resume=True)
     if not result.success:
         raise RuntimeError(result.error)
 
-    # Verify checksum
-    md5 = hashlib.md5()
-    with open(dest, "rb") as fh:
-        while chunk := fh.read(1024 * 1024):
-            md5.update(chunk)
-
-    if md5.hexdigest() != expected_md5:
-        dest.unlink(missing_ok=True)  # Delete corrupted file
-        raise ValueError(
-            f"Checksum mismatch: got {md5.hexdigest()}, "
-            f"expected {expected_md5}"
-        )
+    # Verify checksum (algorithm defaults to sha256; md5, sha1 and sha512 also work)
+    if not verify_checksum(Path(dest), expected_md5, algorithm="md5"):
+        Path(dest).unlink(missing_ok=True)  # Delete corrupted file
+        raise ValueError(f"Checksum mismatch for {dest}; the file was deleted")
     return result
 ```
 
@@ -858,7 +872,7 @@ if time.time() - last_update > 300:  # 5 minutes
 
 ### Handle Unsupported Protocols
 
-**Symptom**: `ValueError: Unsupported protocol/scheme: s3`.
+**Symptom**: `DownloadResult.success=False` with `error="Unsupported protocol/scheme: s3 (url=...)"`. The `ValueError` is caught inside the retry loop, so every attempt fails the same way; pass `max_retries=1` to fail fast.
 
 **Fix**: Implement custom `DownloadHandler` (see Custom Handler example above) or use specialized library (boto3 for S3, gsutil for GCS).
 
@@ -927,7 +941,7 @@ Too many parallel downloads can:
 
 ### HTTP Keep-Alive
 
-Requests session reuse is handled internally by `requests` library. For many small files to same host, connection pooling reduces handshake overhead. Custom handlers can maintain session:
+`download_with_progress()` calls `requests.get()` and `requests.head()` directly, so each download opens its own connection and nothing is reused between files. For many small files to the same host, a custom handler can keep a shared session so connection pooling reduces handshake overhead:
 
 ```python
 import requests
@@ -955,6 +969,8 @@ Resuming is most efficient when:
 
 Check for resume support:
 ```python
+import requests
+
 resp = requests.head(url)
 accepts_ranges = resp.headers.get("Accept-Ranges", "none")
 supports_resume = "bytes" in accepts_ranges.lower()
@@ -966,12 +982,7 @@ Heartbeat writes are small (<2KB) and infrequent (default every 5s). The atomic 
 
 ### Directory Monitoring Performance
 
-`monitor_subprocess_directory_growth()` uses a cached directory size calculator (TTL 1s) to avoid repeatedly walking the entire tree. For directories with millions of files, this caching is critical:
-
-```python
-# Without caching, 1-second sleep + rglob over 1M files = expensive
-# With 1s TTL cache, same result returned from memory until TTL expires
-```
+The monitors use a cached directory size calculator (TTL 1s), so a tree is not walked twice within a second. `monitor_subprocess_directory_growth()` polls once per second, which means it still walks the whole tree on every poll; for directories with millions of files prefer `monitor_subprocess_file_count()`, which checks only the expected files each poll and walks the tree only when it writes a heartbeat.
 
 ## Security Notes
 
@@ -1005,22 +1016,21 @@ if not paths.is_safe_path(dest):
 result = download_with_progress(url, dest)
 ```
 
-### Temporary File Security
+### Output File Permissions
 
-Download creates temp files with default umask (usually 0o022) → readable by all users on shared system. For sensitive data:
+`download_with_progress()` writes straight to the destination path and creates no temporary download file. A new destination gets the process umask (usually 0o022, so it is readable by all users on a shared system), while an existing destination keeps its current permissions. For sensitive data, create the destination with restricted permissions first:
 ```python
 import os
-import tempfile
+from pathlib import Path
+from metainformant.core.io.download import download_with_progress
 
-# Create temp file with restricted permissions
-temp_fd, temp_path = tempfile.mkstemp(
-    dir=dest.parent,
-    prefix=".dl_",
-    suffix=".part"
-)
-os.close(temp_fd)
-os.chmod(temp_path, 0o600)  # Owner read/write only
+dest = Path("output/private.bin")
+dest.parent.mkdir(parents=True, exist_ok=True)
+os.close(os.open(dest, os.O_CREAT | os.O_WRONLY, 0o600))  # Owner read/write only
+result = download_with_progress(url, dest)
 ```
+
+The heartbeat files in `.downloads/` are created with the default umask and contain the URL and destination path.
 
 ### Content-Type Validation
 
@@ -1060,7 +1070,7 @@ results = parallel.thread_map(
     download_task,
     urls,
     max_workers=8,
-    timeout=900,
+    timeout=900,  # a deadline for the whole batch, not per file
 )
 
 successful = [r for r in results if r.success]
@@ -1069,33 +1079,33 @@ print(f"Downloaded {len(successful)} / {len(urls)} files")
 
 ### With I/O Module
 
-`download_with_progress()` is itself part of `metainformant.core.io` package. Use with other I/O utilities:
+`download_with_progress()` is itself part of `metainformant.core.io` package. Use with other I/O utilities, for example `JsonCache` to remember completed downloads:
 
 ```python
-from metainformant.core.io import download, io, cache
+import hashlib
+from pathlib import Path
+from metainformant.core.io import cache, download
 
-def download_and_cache(url, cache_dir):
-    # Check cache first
-    cache_key = cache.key_from_url(url)
-    cached = cache.get(cache_key, cache_dir)
-    if cached:
-        return cached
+def download_once(url, dest, cache_dir):
+    store = cache.JsonCache(cache_dir, ttl_seconds=7 * 24 * 3600)
+    # JsonCache strips punctuation from keys, so hash the URL to keep keys unique
+    key = hashlib.sha256(url.encode()).hexdigest()[:16]
 
-    # Download to temp then move to cache atomically
-    dest = Path(cache_dir) / cache_key
-    result = download.download_with_progress(
-        url,
-        dest,
-        show_progress=True,
-    )
+    # Skip the download if an earlier run finished it and the file is still there
+    record = store.get(key)
+    if record and Path(record["path"]).exists():
+        return Path(record["path"])
+
+    result = download.download_with_progress(url, dest, show_progress=True)
     if result.success:
-        cache.set(cache_key, dest, cache_dir)
-    return dest
+        store.set(key, {"path": str(result.dest_path), "bytes": result.bytes_downloaded})
+    return result.dest_path
 ```
 
 ### With Paths Module
 
 ```python
+from pathlib import Path
 from metainformant.core.io import download
 from metainformant.core.io import paths
 
@@ -1182,6 +1192,10 @@ def test_download_to_temp(tmp_path: Path):
 ### Test Heartbeat Creation
 
 ```python
+import json
+from pathlib import Path
+from metainformant.core.io.download import download_with_progress
+
 def test_heartbeat_created(tmp_path: Path):
     dest = tmp_path / "file.dat"
     hb_dir = tmp_path / ".downloads"
@@ -1212,6 +1226,7 @@ download stack real while avoiding external network dependence.
 ```python
 import http.server
 import threading
+from metainformant.core.io.download import download_with_progress
 
 def test_download_from_local_server(tmp_path):
     # Start local HTTP server
@@ -1250,13 +1265,11 @@ def test_monitor_directory_growth_subprocess(tmp_path):
     out_dir.mkdir()
     hb = tmp_path / "hb.json"
 
-    # Child process writes 1MB every 0.5s for 3 iterations
+    # Child process writes a new 1MB file every 0.5s for 3 iterations
     code = f"""
 import time, pathlib
-p = pathlib.Path(r'{out_dir}') / 'data.bin'
-for _ in range(3):
-    p.write_bytes(b'x' * 1024*1024)
-    pathlib.Path(p).touch()
+for i in range(3):
+    pathlib.Path(r'{out_dir}', f'data_{{i}}.bin').write_bytes(b'x' * 1024*1024)
     time.sleep(0.5)
 """
     proc = subprocess.Popen([sys.executable, "-c", code])
@@ -1280,9 +1293,10 @@ for _ in range(3):
 
 ```python
 import pytest
+from metainformant.core.io.download import download_with_progress
 
 @pytest.mark.network
-def test_download_real_sra_file():
+def test_download_real_sra_file(tmp_path):
     """Integration test requiring network and ~100MB download."""
     result = download_with_progress(
         "https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR001/001/SRR001000/SRR001000_1.fastq.gz",
@@ -1301,7 +1315,7 @@ def test_download_real_sra_file():
 - Standard library: `json`, `os`, `time`, `pathlib`, `urllib.parse`, `dataclasses`, `typing`
 
 ### Optional
-- `tqdm` — Progress bars (imported via `metainformant.core.progress`)
+- `tqdm` — Progress bars (used through `metainformant.core.utils.progress`; without it a no-op fallback is used)
 
 ### External Tools
 None—pure Python implementation.

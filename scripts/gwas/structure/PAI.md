@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - structure
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/scripts/gwas/structure`
+- **Path**: `scripts/gwas/structure`
 - **Purpose**: Functionality for structure.
 - **Domain**: gwas
 

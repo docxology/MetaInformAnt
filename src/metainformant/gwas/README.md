@@ -12,6 +12,7 @@ Genome-Wide Association Studies analysis, fine-mapping, variant-expression integ
 - [Architecture](#architecture)
 - [Key Capabilities](#key-capabilities)
   - [Association Testing](#association-testing)
+  - [Quality Control and Summary Statistics](#quality-control-and-summary-statistics)
   - [Fine-Mapping & Colocalization](#fine-mapping-colocalization)
   - [Compute-Time Benchmarking](#compute-time-benchmarking)
   - [Data I/O](#data-io)
@@ -56,10 +57,25 @@ graph TD
 | Function | Purpose |
 |----------|---------|
 | `run_gwas()` | Full GWAS pipeline (via `workflow.workflow`) |
-| `association_test_linear()` | Linear regression for quantitative traits |
-| `association_test_logistic()` | Logistic regression for case-control |
+| `association_test_linear()` | Linear regression for quantitative traits (Student's t p-values) |
+| `association_test_logistic()` | Logistic regression for case-control (Wald p-values, `converged` flag) |
 | `association_test_mixed()` | EMMA mixed model with kinship correction |
 | `run_multi_trait_gwas()` | Multi-trait GWAS sharing VCF/QC/PCA/kinship |
+
+The linear and logistic tests analyse complete cases. A sample is dropped when its genotype is missing (a negative or non-finite dosage) or a covariate value is missing or non-finite; the linear test also drops samples with a missing phenotype, and the logistic test raises `ValueError` for a phenotype that is not 0 or 1. `n_samples` counts the samples analysed and `n_missing_dropped` the samples dropped. The linear test takes p-values from Student's t distribution (a normal approximation when SciPy is unavailable) and returns `status: "error"` for a degenerate design: fewer than 3 complete cases, a constant genotype or a singular design matrix. The logistic test reports `converged`; a fit that did not converge (for example under perfect separation) keeps `status: "success"` but its estimate and p-value are unreliable, and fewer than 2 cases or 2 controls among the complete cases returns `status: "failed"`.
+
+### Quality Control and Summary Statistics
+
+| Function | Purpose |
+|----------|---------|
+| `apply_qc_filters()` | QUAL, MAF, missingness and HWE filters on parsed VCF data or a VCF path |
+| `filter_variants_bcftools()` | `bcftools filter` that keeps sites meeting `min_qual`, `max_missing` and `min_depth` |
+| `write_summary_statistics()` | Summary statistics TSV with columns `CHR POS SNP REF ALT BETA SE P Q_FDR N MAF` |
+| `write_significant_hits()` | The same columns for variants below a p-value threshold, sorted by p-value |
+
+`apply_qc_filters(vcf_data, qc_config)` reads `min_maf` (default 0.01), `max_missing` (0.1), `min_hwe_p` (1e-6) and an optional `min_qual`. A variant passes `min_qual` when its QUAL is at least the threshold. A variant with a missing QUAL (`.` in the VCF) is removed whenever `min_qual` is set, and the result's `qual_filter` entry counts how many variants were removed and how many of those had a missing QUAL; leave `min_qual` unset for a VCF without QUAL values. `filter_variants_bcftools()` joins its thresholds into one `&&` expression and passes it to `bcftools filter -i`.
+
+`write_summary_statistics()` writes `NA` for a missing or non-finite numeric value and `.` for missing text. `Q_FDR` is the result's own `q_value`, `q_fdr` or `Q_FDR` when present, and otherwise the Benjamini-Hochberg q-value over the p-values of `results`, so pass every test rather than a subset. `MAF` is the result's own `maf` or `MAF` when present, and otherwise computed from the optional `genotypes=` matrix (variants x samples, 0/1/2 alternate-allele dosages); without either it is `NA`.
 
 ### Fine-Mapping & Colocalization
 
@@ -73,12 +89,16 @@ from metainformant.gwas.finemapping.colocalization import (
 
 # Test if GWAS signal colocalizes with expression QTL
 result = eqtl_coloc(
-    gwas_z=[1.2, 2.5, 3.1],  # GWAS Z-scores per variant
-    eqtl_z=[1.1, 2.3, 2.9],  # eQTL Z-scores
-    gene_id="LOC12345"
+    gwas_z=[1.2, 2.5, 6.1, 0.4],  # GWAS Z-scores per variant
+    eqtl_z=[1.1, 2.3, 5.8, 0.2],  # eQTL Z-scores
+    gene_id="LOC12345",
+    gwas_standard_errors=0.05,    # scale of each study's effect estimates
+    eqtl_standard_errors=0.08,
 )
-# Returns: PP_H4 (shared causal), interpretation, credible sets
+# Returns: pp_h4 (shared causal), is_colocalized, shared_variant, interpretation, coloc_result
 ```
+
+Credible sets and colocalization use Wakefield approximate Bayes factors, which need the scale of each effect estimate: pass `standard_errors`, or `sample_size` with `maf` and `case_fraction`. With neither, the Bayes factors are computed on the z-score scale and the result reports `variance_model == "z_scale"` (under `bayes_factor_model` for colocalization). The default prior variances are coloc's (`0.15**2` quantitative, `0.2**2` case-control). See [finemapping/README.md](finemapping/README.md) for the model, `compute_log_bayes_factors()`, `colocalization_from_log_bayes_factors()` and `log_sum_exp()`.
 
 ### Compute-Time Benchmarking
 

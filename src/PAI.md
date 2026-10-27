@@ -2,7 +2,7 @@
 
 ## Context & Intent
 
-- **Path**: `src/` (relative to repo root)
+- **Path**: `src` (relative to repo root)
 - **Purpose**: Functionality for src.
 - **Domain**:
 

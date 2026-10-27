@@ -23,9 +23,9 @@
 The orchestration layer provides two primary APIs:
 
 1. **Object-Oriented Pipeline** (`BasePipelineManager`) — for programmatic multi-phase workflows
-2. **Declarative Configuration** (`download_and_process_data`) — for YAML/JSON-defined pipelines
+2. **Declarative Configuration** (`metainformant.core.execution.workflow`) — for YAML/JSON-defined pipelines
 
-Both converge on `metainformant.core.execution.parallel` for execution.
+`BasePipelineManager` owns a `ThreadPoolExecutor` (`manager.executor`) that phase handlers can submit work to. The config-driven API is sequential: `download_and_process_data` fetches the files in its `downloads` section one at a time, and `run_config_based_workflow` runs a `steps` workflow one step at a time in dependency order. The entries of a `processing` section are recorded but not executed (see [Configuration-Driven Workflows](#configuration-driven-workflows)).
 
 ### When to Use Which?
 
@@ -34,7 +34,8 @@ Both converge on `metainformant.core.execution.parallel` for execution.
 | Fixed sequence of phases | `BasePipelineManager` | Explicit, type-safe, programmable logic |
 | User-configurable pipeline | Config-driven (`workflow.py`) | End-users edit YAML; no code changes |
 | Dynamically determined phases | `BasePipelineManager` (modify `self.phases` at runtime) | Conditional branching requires code |
-| Simple download + process | Config-driven | Concise, declarative |
+| Fetch files only | Config-driven `downloads` section | Concise, declarative; per-file status in the result |
+| Fetch files, then compute | `BasePipelineManager`, or a config-driven `steps` workflow | `processing` entries are recorded, not executed |
 | Complex domain logic spanning 5+ phases | `BasePipelineManager` | Readable, testable handlers |
 
 ## BasePipelineManager
@@ -455,7 +456,10 @@ Typically called at start of each phase handler.
 
 ## Configuration-Driven Workflows
 
-For declarative pipelines, use `metainformant.core.execution.workflow`.
+For declarative pipelines, use `metainformant.core.execution.workflow`. A config takes one of two shapes:
+
+- **`downloads` and `processing` sections**, handled by `download_and_process_data`: the downloads are fetched, and the `processing` entries are recorded but never executed.
+- **A `steps` section**, handled by `run_config_based_workflow` through `BaseWorkflowOrchestrator`: each step names a function as `"module.path:function_name"` and may set `params` and `depends_on`. Steps run one at a time in dependency order, and a step whose dependency failed is skipped. See [Core workflow](../core/workflow.md) for a worked example.
 
 ### Validate a Config
 
@@ -490,29 +494,34 @@ results = download_and_process_data(
     verbose=True
 )
 
-print(f"Downloads: {results['downloads']}")
-print(f"Processing: {results['processing']}")
-print(f"Errors: {results['errors']}")
+print(f"Downloads: {results['downloads']}")    # {name: {"status": "success", "path": ...} or {"status": "failed", "error": ...}}
+print(f"Processing: {results['processing']}")  # {name: {"status": "not_executed", "reason": ..., "config": ...}}
+print(f"Errors: {results['errors']}")          # failed downloads and every processing entry
 ```
+
+- Downloads run sequentially: one at a time, in the order of the `downloads` mapping, each through `io.download_file`.
+- A failed download is recorded as `{"status": "failed", "error": ...}` and also added to `errors`. A download entry without a `url` is added to `errors` and gets no entry under `downloads`.
+- Processing entries are not executed: a `type` such as `"bwa_mem"` selects no implementation. Each entry is recorded as `{"status": "not_executed", "reason": ..., "config": ...}` and added to `errors`, so `errors` is never empty when the `processing` section has entries.
+- The returned dictionary holds `config`, `downloads`, `processing`, `errors`, `start_time` and `end_time`, and is also saved as `processing_results.json` in `output_dir`. It has no `success` key.
+- `run_config_based_workflow(config_path)` runs the same function with `output/<config file name without suffix>/` as the output directory and adds `success` and `config_path` to the result. `success` is `True` only when `errors` is empty, so a config with processing entries or a failed download reports `success: False`.
 
 ### Config Schema
 
 ```yaml
 # pipeline.yaml
 name: "My Bioinformatics Pipeline"
-description: "Download and analyze expression data"
+description: "Download expression data"
 
 downloads:
   reference_genome:
     url: "https://example.com/genome.fa.gz"
     filename: "genome.fa.gz"
-    checksum: "sha256:abcd1234..."  # optional integrity check
 
   expression_data:
     url: "https://example.com/expr.tsv"
     filename: "expression.tsv"
 
-processing:
+processing:  # recorded as not_executed and listed in the result's errors
   align:
     type: "bwa_mem"
     reference: "output/download/genome.fa.gz"
@@ -524,8 +533,8 @@ processing:
 ```
 
 **Supported sections**:
-- `downloads: dict[str, dict]` — Each has `url`, `filename` (optional), `checksum` (optional)
-- `processing: dict[str, dict]` — Each has `type` (string) and parameters
+- `downloads: dict[str, dict]` — each entry needs a `url` (`validate_config_file` reports a missing one) and may set `filename` (default `<name>.dat`). Other keys, such as a `checksum`, are not read; verify integrity afterwards with `metainformant.core.io.checksums`.
+- `processing: dict[str, dict]` — each entry is recorded under `results["processing"]` as `not_executed`, whatever its `type` and parameters. Use a `steps` workflow, or a `BasePipelineManager` phase handler, for work that has to run.
 
 ### Config Inheritance (Advanced)
 
@@ -748,7 +757,7 @@ def test_simple_pipeline(tmp_path):
     assert (tmp_path / "out.txt").exists()
 ```
 
-**Test-specific TUI disable**: `TerminalInterface` can run in headless mode; set env var `METAINFORMANT_NO_TUI=1` or pass `use_tui=False` to manager (if implemented).
+**Headless tests**: `TerminalInterface` renders only when stdout is a TTY, so runs with captured or redirected stdout (pytest, CI) are headless automatically.
 
 ### Integration Test with Real External Commands
 
@@ -770,13 +779,14 @@ def test_download_real_sra(tmp_path):
 | User friendliness | Developer-facing | End-user-facing |
 | Conditional logic | Yes (in handler) | No (static) |
 | Phase order | Fixed at construction | Fixed by schema (downloads then processing) |
-| Parallelism | Explicit via `executor.submit()` | Implicit in `download_and_process_data` (thread pool internally) |
-| Phase count | Arbitrary | Implicitly 2 (download, processing) |
+| Parallelism | Explicit via `executor.submit()` | None: downloads run one at a time, and `steps` run one at a time in dependency order |
+| Phase count | Arbitrary | Implicitly 2 (downloads run; processing entries are recorded only) |
 | Extensibility | Custom phases, filters, TUI | Need code modifications |
 
 **Guideline**:
 - For new domain modules with >2 steps → Use `BasePipelineManager`
-- For simple 2-step (fetch then compute) → Config-driven is quicker
+- For fetching files with per-file status → Config-driven `downloads` is quicker
+- For fetch then compute → `BasePipelineManager` or a `steps` workflow; `processing` entries are not executed
 
 ## Future Directions
 

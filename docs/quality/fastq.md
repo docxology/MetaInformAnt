@@ -9,199 +9,223 @@ The FASTQ quality analysis module provides quality assessment for high-throughpu
 Perform comprehensive quality analysis on FASTQ files:
 
 ```python-snippet
-from metainformant.quality.fastq import analyze_fastq_quality
+from metainformant.quality.io.fastq import analyze_fastq_quality
 
 # Basic analysis
 results = analyze_fastq_quality("sample.fastq.gz")
 
-# With custom parameters
-results = analyze_fastq_quality(
-    "sample.fastq.gz",
-    subsample_size=100000,      # Subsample for large files
-    quality_encoding='phred33', # Quality score encoding  
-    adapter_sequences=None,     # Custom adapter sequences
-    output_dir="output/qc"      # Output directory
-)
+# Analyze only the first 100000 reads of a large file
+results = analyze_fastq_quality("sample.fastq.gz", n_reads=100000)
 
 # Print summary
-print(f"Analysis complete for {results['filename']}")
-print(f"Total sequences: {results['basic_stats']['total_sequences']:,}")
-print(f"Mean quality: {results['basic_stats']['mean_quality']:.2f}")
+print("Analysis complete for sample.fastq.gz")
+print(f"Total sequences: {results['basic_statistics']['total_reads']:,}")
+print(f"Mean quality: {results['basic_statistics']['mean_quality']:.2f}")
 ```
 
 **Parameters:**
 - `fastq_path`: Path to FASTQ file (supports .gz compression)
-- `subsample_size`: Number of sequences to analyze (None = all)
-- `quality_encoding`: Quality score encoding ('phred33' or 'phred64')
-- `adapter_sequences`: List of custom adapter sequences to detect
-- `output_dir`: Directory for output files
+- `n_reads`: Number of reads to analyze from the start of the file (None = all)
 
-**Returns:** Dictionary with comprehensive quality metrics
+**Returns:** Dictionary with one entry per analysis module: `basic_statistics`, `per_base_quality`, `per_sequence_quality`, `sequence_length_distribution`, `gc_content_distribution`, `adapter_content`, `overrepresented_sequences`, `duplication_levels`, `n_content_per_position`, `quality_score_distribution`
 
 ## Analysis Modules
+
+Each analysis is also available as a standalone function. These take a list of `FastqRecord` objects (from `read_fastq_records`) rather than a file path, and return the same dictionary that `analyze_fastq_quality()` stores under the matching top-level key.
 
 ### Basic Statistics
 
 ```python-snippet
-from metainformant.quality.fastq import basic_statistics
+from metainformant.quality.io.fastq import basic_statistics, read_fastq_records
 
 # Get basic statistics
-stats = basic_statistics("sample.fastq.gz")
+records = list(read_fastq_records("sample.fastq.gz"))
+stats = basic_statistics(records)
 print(stats)
 ```
 
 **Output:**
 ```python
 {
-    'filename': 'sample.fastq.gz',
-    'file_type': 'Conventional base calls',
-    'encoding': 'Sanger / Illumina 1.9',
-    'total_sequences': 1500000,
-    'filtered_sequences': 0,
-    'sequence_length': '151',  # or range like "35-151"
-    'gc_content': 42.5,
-    'n_content': 0.1,
-    'mean_quality': 35.2
+    'total_reads': 1500000,
+    'total_bases': 226500000,
+    'min_length': 151,
+    'max_length': 151,
+    'mean_length': 151,
+    'median_length': 151,
+    'length_std': 0.0,
+    'min_quality': 14.2,
+    'max_quality': 38.9,
+    'mean_quality': 35.2,
+    'median_quality': 35.9,
+    'quality_std': 2.8,
+    'min_gc': 12.6,
+    'max_gc': 78.1,
+    'mean_gc': 42.5,
+    'median_gc': 42.3,
+    'gc_std': 3.9
 }
 ```
 
 ### Per-Base Quality Scores
 
 ```python-snippet
-from metainformant.quality.fastq import per_base_quality
+from metainformant.quality.io.fastq import per_base_quality, read_fastq_records
 
 # Analyze quality scores by position
-quality_data = per_base_quality("sample.fastq.gz")
-print(f"Quality data shape: {quality_data.shape}")  # (sequence_length, 6)
+records = list(read_fastq_records("sample.fastq.gz"))
+positions = per_base_quality(records)["positions"]
+print(f"Positions analyzed: {len(positions)}")  # one entry per read position
 
-# Columns: position, mean, median, q1, q3, max, min
+# Each entry: position, mean, median, min, max, count, lower_quartile, upper_quartile
 ```
 
 ### Per-Sequence Quality Scores
 
 ```python-snippet
-from metainformant.quality.fastq import per_sequence_quality
+from metainformant.quality.io.fastq import per_sequence_quality, read_fastq_records
 
 # Quality score distribution across sequences
-seq_quality = per_sequence_quality("sample.fastq.gz")
-print(f"Quality bins: {len(seq_quality)}")
+records = list(read_fastq_records("sample.fastq.gz"))
+bins = per_sequence_quality(records)["bins"]
+print(f"Quality bins: {len(bins)}")
 
-# Returns dictionary: {quality_score: count}
+# Bins of mean read quality; each has bin_start, bin_end, count, percentage
 ```
 
 ### Sequence Length Distribution
 
 ```python-snippet
-from metainformant.quality.fastq import sequence_length_distribution
+from metainformant.quality.io.fastq import read_fastq_records, sequence_length_distribution
 
 # Distribution of sequence lengths
-length_dist = sequence_length_distribution("sample.fastq.gz")
-print(f"Length range: {min(length_dist.keys())} - {max(length_dist.keys())}")
+records = list(read_fastq_records("sample.fastq.gz"))
+length_dist = sequence_length_distribution(records)["distribution"]
+lengths = [entry["length"] for entry in length_dist]
+print(f"Length range: {min(lengths)} - {max(lengths)}")
 
-# Returns dictionary: {length: count}
+# Each entry: length, count, percentage
 ```
 
 ### GC Content Distribution
 
 ```python-snippet
-from metainformant.quality.fastq import gc_content_distribution
+from metainformant.quality.io.fastq import gc_content_distribution, read_fastq_records
 
 # GC content distribution across sequences
-gc_dist = gc_content_distribution("sample.fastq.gz")
+records = list(read_fastq_records("sample.fastq.gz"))
+gc_dist = gc_content_distribution(records)
 print(f"GC content range: 0-100%")
 
-# Returns dictionary: {gc_percentage: count}
+# Returns {"bins": [...]}: 5% GC bins, each with bin_start, bin_end, count, percentage
 ```
 
 ### Adapter Content Analysis
 
 ```python-snippet
-from metainformant.quality.fastq import adapter_content
+from metainformant.quality.io.fastq import adapter_content, read_fastq_records
 
 # Detect adapter contamination
+records = list(read_fastq_records("sample.fastq.gz"))
 adapter_data = adapter_content(
-    "sample.fastq.gz",
-    adapter_sequences=['AGATCGGAAGAG']  # Illumina adapter
+    records,
+    adapters=['AGATCGGAAGAG']  # Illumina adapter
 )
 
-print(f"Max adapter content: {adapter_data['max_adapter_content']:.2f}%")
-print(f"Adapter positions: {len(adapter_data['position_data'])}")
+# Highest adapter percentage at any sampled position
+max_adapter = max(
+    (p["percentage"] for a in adapter_data["adapters"].values() for p in a["positions"]),
+    default=0.0,
+)
+print(f"Max adapter content: {max_adapter:.2f}%")
+print(f"Adapters checked: {len(adapter_data['adapters'])}")
 
-# Position-wise adapter content
-for position, adapters in adapter_data['position_data'].items():
-    print(f"Position {position}: {adapters}")
+# Position-wise adapter content ("position" is a percentage of read length)
+for name, adapter in adapter_data['adapters'].items():
+    print(f"{name} ({adapter['adapter_sequence']}):")
+    for p in adapter['positions']:
+        print(f"  {p['position']}% of read length: {p['percentage']:.2f}%")
 ```
 
-**Built-in Adapters:**
-- Illumina Universal Adapter: `AGATCGGAAGAG`
-- Illumina Small RNA Adapter: `TGGAATTCTCGG`
-- Nextera Transposase Sequence: `CTGTCTCTTATA`
+**Built-in Adapters** (`quality.io.fastq.ILLUMINA_ADAPTERS`, used when `adapters` is omitted):
+- TruSeq Universal Adapter: `AGATCGGAAGAG`
+- TruSeq Adapter, Read 1: `GATCGGAAGAG`
+- TruSeq Adapter, Read 2: `AGATCGGAAGAGCGGTTCAGCAGGAATGCCGAG`
+- Nextera Transposase Sequence: `CTGTCTCTTAT`
+
+Other adapters, such as the small RNA 3' adapter `TGGAATTCTCGG`, must be passed explicitly.
 
 ### Overrepresented Sequences
 
 ```python-snippet
-from metainformant.quality.fastq import overrepresented_sequences
+from metainformant.quality.io.fastq import overrepresented_sequences, read_fastq_records
 
 # Find highly abundant sequences
+records = list(read_fastq_records("sample.fastq.gz"))
 overrep = overrepresented_sequences(
-    "sample.fastq.gz",
-    threshold=0.1,      # Sequences appearing in >0.1% of reads
-    max_sequences=20    # Report top 20 sequences
+    records,
+    min_length=20       # Only consider reads at least 20 bp long
 )
 
-for seq_info in overrep:
+# Reports up to 10 sequences that each make up more than 1% of reads
+for seq_info in overrep["overrepresented"]:
     print(f"Sequence: {seq_info['sequence'][:30]}...")
     print(f"Count: {seq_info['count']}")
     print(f"Percentage: {seq_info['percentage']:.3f}%")
-    print(f"Possible source: {seq_info['possible_source']}")
     print()
 ```
 
 ### Duplication Levels
 
 ```python-snippet
-from metainformant.quality.fastq import duplication_levels
+from metainformant.quality.io.fastq import duplication_levels, read_fastq_records
 
 # Assess sequence duplication
-dup_data = duplication_levels("sample.fastq.gz")
+records = list(read_fastq_records("sample.fastq.gz"))
+dup_data = duplication_levels(records)
 
+duplicate_reads = dup_data['total_sequences'] - dup_data['unique_sequences']
 print(f"Unique sequences: {dup_data['unique_sequences']}")
-print(f"Duplicate sequences: {dup_data['duplicate_sequences']}")
-print(f"Duplication percentage: {dup_data['duplication_percentage']:.2f}%")
+print(f"Duplicate sequences: {duplicate_reads}")
+print(f"Duplication rate: {dup_data['duplication_rate']:.2f}%")
 
-# Duplication level distribution
-for level, percentage in dup_data['duplication_levels'].items():
-    print(f"{level}: {percentage:.2f}%")
+# Duplication level distribution: how many distinct sequences occur once, twice, ...
+for level, n_sequences in dup_data['duplication_bins'].items():
+    print(f"Occurs {level} time(s): {n_sequences:,} distinct sequences")
 ```
 
 ### N Content per Position
 
 ```python-snippet
-from metainformant.quality.fastq import n_content_per_position
+from metainformant.quality.io.fastq import n_content_per_position, read_fastq_records
 
 # Analyze N content across sequence positions
-n_content = n_content_per_position("sample.fastq.gz")
+records = list(read_fastq_records("sample.fastq.gz"))
+n_content = n_content_per_position(records)
+n_positions = n_content["positions"]
 
-print(f"Positions analyzed: {len(n_content)}")
-print(f"Max N content: {max(n_content.values()):.2f}%")
+max_n = max((p["n_percentage"] for p in n_positions), default=0.0)
+print(f"Positions analyzed: {len(n_positions)}")
+print(f"Max N content: {max_n:.2f}%")
 
 # Position-wise N content
-for position, n_pct in n_content.items():
-    if n_pct > 5:  # Report positions with >5% N
-        print(f"Position {position}: {n_pct:.2f}% N")
+for p in n_positions:
+    if p["n_percentage"] > 5:  # Report positions with >5% N
+        print(f"Position {p['position']}: {p['n_percentage']:.2f}% N")
 ```
 
 ### Quality Score Distribution
 
 ```python-snippet
-from metainformant.quality.fastq import quality_score_distribution
+from metainformant.quality.io.fastq import quality_score_distribution, read_fastq_records
 
 # Overall quality score distribution
-qual_dist = quality_score_distribution("sample.fastq.gz")
+records = list(read_fastq_records("sample.fastq.gz"))
+qual_dist = quality_score_distribution(records)["distribution"]
 
 print("Quality Score Distribution:")
-for score, count in sorted(qual_dist.items()):
-    print(f"Q{score}: {count:,} ({count/sum(qual_dist.values())*100:.1f}%)")
+for entry in qual_dist:
+    print(f"Q{entry['quality_score']}: {entry['count']:,} ({entry['percentage']:.1f}%)")
 ```
 
 ## Batch Processing
@@ -211,7 +235,7 @@ for score, count in sorted(qual_dist.items()):
 ```python
 from pathlib import Path
 
-def analyze_multiple_fastq(input_dir, pattern="*.fastq.gz", output_dir="output/qc"):
+def analyze_multiple_fastq(input_dir, pattern="*.fastq.gz"):
     """Analyze multiple FASTQ files."""
     
     fastq_files = list(Path(input_dir).glob(pattern))
@@ -221,10 +245,7 @@ def analyze_multiple_fastq(input_dir, pattern="*.fastq.gz", output_dir="output/q
         print(f"Analyzing {fastq_file.name}...")
         
         # Analyze each file
-        result = analyze_fastq_quality(
-            str(fastq_file),
-            output_dir=f"{output_dir}/{fastq_file.stem}"
-        )
+        result = analyze_fastq_quality(str(fastq_file))
         
         results[fastq_file.name] = result
     
@@ -237,19 +258,19 @@ batch_results = analyze_multiple_fastq("data/raw_reads/")
 ### Paired-End Analysis
 
 ```python
-def analyze_paired_end(r1_file, r2_file, output_dir="output/paired_qc"):
+def analyze_paired_end(r1_file, r2_file):
     """Analyze paired-end FASTQ files."""
     
     # Analyze R1 and R2 separately
-    r1_results = analyze_fastq_quality(r1_file, output_dir=f"{output_dir}/R1")
-    r2_results = analyze_fastq_quality(r2_file, output_dir=f"{output_dir}/R2")
+    r1_results = analyze_fastq_quality(r1_file)
+    r2_results = analyze_fastq_quality(r2_file)
     
     # Compare basic statistics
     print("Paired-End Comparison:")
-    print(f"R1 sequences: {r1_results['basic_stats']['total_sequences']:,}")
-    print(f"R2 sequences: {r2_results['basic_stats']['total_sequences']:,}")
-    print(f"R1 mean quality: {r1_results['basic_stats']['mean_quality']:.2f}")
-    print(f"R2 mean quality: {r2_results['basic_stats']['mean_quality']:.2f}")
+    print(f"R1 sequences: {r1_results['basic_statistics']['total_reads']:,}")
+    print(f"R2 sequences: {r2_results['basic_statistics']['total_reads']:,}")
+    print(f"R1 mean quality: {r1_results['basic_statistics']['mean_quality']:.2f}")
+    print(f"R2 mean quality: {r2_results['basic_statistics']['mean_quality']:.2f}")
     
     return {'R1': r1_results, 'R2': r2_results}
 
@@ -268,7 +289,7 @@ paired_results = analyze_paired_end(
 def interpret_quality_scores(results):
     """Provide interpretation of quality metrics."""
     
-    mean_quality = results['basic_stats']['mean_quality']
+    mean_quality = results['basic_statistics']['mean_quality']
     
     if mean_quality >= 35:
         quality_status = "Excellent"
@@ -284,18 +305,24 @@ def interpret_quality_scores(results):
     # Check for specific issues
     issues = []
     
-    if results['adapter_content']['max_adapter_content'] > 20:
+    max_adapter = max(
+        (p['percentage'] for a in results['adapter_content']['adapters'].values() for p in a['positions']),
+        default=0.0,
+    )
+    if max_adapter > 20:
         issues.append("High adapter content detected")
     
-    if results['basic_stats']['n_content'] > 5:
+    n_positions = results['n_content_per_position']['positions']
+    max_n = max((p['n_percentage'] for p in n_positions), default=0.0)
+    if max_n > 5:
         issues.append("High N content")
     
-    if results['duplication_levels']['duplication_percentage'] > 50:
+    if results['duplication_levels']['duplication_rate'] > 50:
         issues.append("High sequence duplication")
     
     # Check per-base quality
-    per_base = results.get('per_base_quality', {})
-    if per_base and any(pos['mean'] < 25 for pos in per_base.values()):
+    per_base = results.get('per_base_quality', {}).get('positions', [])
+    if per_base and any(pos['mean'] < 25 for pos in per_base):
         issues.append("Low quality at some positions")
     
     if issues:
@@ -315,7 +342,7 @@ interpret_quality_scores(results)
 def assess_gc_content(results, expected_gc=None):
     """Assess GC content against expected values."""
     
-    observed_gc = results['basic_stats']['gc_content']
+    observed_gc = results['basic_statistics']['mean_gc']
     
     if expected_gc is None:
         # Common organism GC contents
@@ -330,7 +357,7 @@ def assess_gc_content(results, expected_gc=None):
         print(f"Observed GC content: {observed_gc:.1f}%")
         print("Expected ranges for common organisms:")
         for org, (low, high) in organisms.items():
- status = "" if low <= observed_gc <= high else ""
+            status = "match" if low <= observed_gc <= high else "     "
             print(f"  {status} {org}: {low}-{high}%")
     else:
         deviation = abs(observed_gc - expected_gc)
@@ -354,7 +381,7 @@ import numpy as np
 def plot_per_base_quality(results):
     """Plot per-base quality scores."""
     
-    per_base = results.get('per_base_quality', {})
+    per_base = results.get('per_base_quality', {}).get('positions', [])
     if not per_base:
         print("No per-base quality data available")
         return
@@ -364,11 +391,11 @@ def plot_per_base_quality(results):
     q1s = []
     q3s = []
     
-    for pos, data in sorted(per_base.items(), key=lambda x: int(x[0])):
-        positions.append(int(pos))
+    for data in per_base:
+        positions.append(data['position'])
         means.append(data['mean'])
-        q1s.append(data['q1'])
-        q3s.append(data['q3'])
+        q1s.append(data['lower_quartile'])
+        q3s.append(data['upper_quartile'])
     
     plt.figure(figsize=(12, 6))
     
@@ -394,19 +421,19 @@ def plot_per_base_quality(results):
 def plot_gc_content(results):
     """Plot GC content distribution."""
     
-    gc_dist = results.get('gc_content_distribution', {})
-    if not gc_dist:
+    gc_bins = results.get('gc_content_distribution', {}).get('bins', [])
+    if not gc_bins:
         print("No GC content distribution data available")
         return
     
-    gc_values = list(gc_dist.keys())
-    counts = list(gc_dist.values())
+    gc_values = [(b['bin_start'] + b['bin_end']) / 2 for b in gc_bins]  # bin centers
+    counts = [b['count'] for b in gc_bins]
     
     plt.figure(figsize=(10, 6))
-    plt.hist(gc_values, bins=50, weights=counts, alpha=0.7, color='skyblue', edgecolor='black')
+    plt.hist(gc_values, bins=20, range=(0, 100), weights=counts, alpha=0.7, color='skyblue', edgecolor='black')
     
     # Mark mean GC content
-    mean_gc = results['basic_stats']['gc_content']
+    mean_gc = results['basic_statistics']['mean_gc']
     plt.axvline(mean_gc, color='red', linestyle='--', linewidth=2, 
                 label=f'Mean GC: {mean_gc:.1f}%')
     
@@ -438,7 +465,8 @@ def detect_custom_adapters(fastq_path, adapter_file):
                 custom_adapters.append(line.strip())
     
     # Run adapter analysis
-    results = adapter_content(fastq_path, adapter_sequences=custom_adapters)
+    records = list(read_fastq_records(fastq_path))
+    results = adapter_content(records, adapters=custom_adapters)
     return results
 
 # Example adapter file format:
@@ -457,15 +485,17 @@ def subsample_analysis(large_fastq, sample_sizes=[10000, 50000, 100000]):
     
     for size in sample_sizes:
         print(f"Analyzing {size:,} sequences...")
-        result = analyze_fastq_quality(large_fastq, subsample_size=size)
+        result = analyze_fastq_quality(large_fastq, n_reads=size)
         results[size] = result
     
     # Compare basic statistics
     print("\nSample Size Comparison:")
-    print("Size\t\tMean Quality\tGC Content\tN Content")
+    print("Size\t\tMean Quality\tGC Content\tMax N Content")
     for size, result in results.items():
-        stats = result['basic_stats']
-        print(f"{size:,}\t\t{stats['mean_quality']:.2f}\t\t{stats['gc_content']:.1f}%\t\t{stats['n_content']:.1f}%")
+        stats = result['basic_statistics']
+        n_positions = result['n_content_per_position']['positions']
+        max_n = max((p['n_percentage'] for p in n_positions), default=0.0)
+        print(f"{size:,}\t\t{stats['mean_quality']:.2f}\t\t{stats['mean_gc']:.1f}%\t\t{max_n:.1f}%")
     
     return results
 
@@ -484,43 +514,47 @@ def generate_quality_report(results, output_file="quality_report.txt"):
         f.write("=" * 40 + "\n\n")
         
         # Basic statistics
-        stats = results['basic_stats']
+        stats = results['basic_statistics']
         f.write("Basic Statistics:\n")
-        f.write(f"  Filename: {stats['filename']}\n")
-        f.write(f"  Total sequences: {stats['total_sequences']:,}\n")
-        f.write(f"  Sequence length: {stats['sequence_length']}\n")
-        f.write(f"  GC content: {stats['gc_content']:.1f}%\n")
+        f.write(f"  Total sequences: {stats['total_reads']:,}\n")
+        f.write(f"  Mean sequence length: {stats['mean_length']:.1f}\n")
+        f.write(f"  GC content: {stats['mean_gc']:.1f}%\n")
         f.write(f"  Mean quality: {stats['mean_quality']:.2f}\n\n")
         
         # Quality assessment
         f.write("Quality Assessment:\n")
         
         # Adapter content
-        adapter = results['adapter_content']
-        f.write(f"  Max adapter content: {adapter['max_adapter_content']:.2f}%\n")
+        max_adapter = max(
+            (p['percentage'] for a in results['adapter_content']['adapters'].values() for p in a['positions']),
+            default=0.0,
+        )
+        f.write(f"  Max adapter content: {max_adapter:.2f}%\n")
         
         # Duplication
         dup = results['duplication_levels']
-        f.write(f"  Sequence duplication: {dup['duplication_percentage']:.2f}%\n")
+        f.write(f"  Sequence duplication: {dup['duplication_rate']:.2f}%\n")
         
         # N content
-        f.write(f"  N content: {stats['n_content']:.2f}%\n\n")
+        n_positions = results['n_content_per_position']['positions']
+        max_n = max((p['n_percentage'] for p in n_positions), default=0.0)
+        f.write(f"  Max N content: {max_n:.2f}%\n\n")
         
         # Recommendations
         f.write("Recommendations:\n")
         if stats['mean_quality'] < 28:
             f.write("  - Consider quality filtering (low mean quality)\n")
-        if adapter['max_adapter_content'] > 5:
+        if max_adapter > 5:
             f.write("  - Adapter trimming recommended\n")
-        if dup['duplication_percentage'] > 20:
+        if dup['duplication_rate'] > 20:
             f.write("  - High duplication detected - check for PCR artifacts\n")
-        if stats['n_content'] > 5:
+        if max_n > 5:
             f.write("  - High N content - investigate sequencing issues\n")
         
         if (stats['mean_quality'] >= 28 and 
-            adapter['max_adapter_content'] <= 5 and
-            dup['duplication_percentage'] <= 20 and
-            stats['n_content'] <= 5):
+            max_adapter <= 5 and
+            dup['duplication_rate'] <= 20 and
+            max_n <= 5):
             f.write("  - Data quality appears good for downstream analysis\n")
 
 # Generate report
@@ -587,8 +621,7 @@ def qc_guided_preprocessing(fastq_file, output_dir="output/processed"):
     qc_results = analyze_fastq_quality(fastq_file)
     
     # 2. Set parameters based on QC
-    mean_qual = qc_results['basic_stats']['mean_quality']
-    adapter_content = qc_results['adapter_content']['max_adapter_content']
+    mean_qual = qc_results['basic_statistics']['mean_quality']
     
     # Quality filtering threshold
     if mean_qual >= 35:
@@ -598,26 +631,17 @@ def qc_guided_preprocessing(fastq_file, output_dir="output/processed"):
     else:
         min_quality = 15
     
-    # Adapter trimming
-    trim_adapters = adapter_content > 1
-    
     print(f"QC-guided parameters:")
     print(f"  Minimum quality: Q{min_quality}")
-    print(f"  Adapter trimming: {'Yes' if trim_adapters else 'No'}")
     
     # 3. Apply preprocessing with optimized parameters
-    from metainformant.dna.fastq import filter_fastq_quality
+    from metainformant.quality.io.fastq import filter_reads
     
     output_file = f"{output_dir}/filtered_{Path(fastq_file).name}"
     
-    filtered = filter_fastq_quality(
-        fastq_file,
-        output_file,
-        min_quality=min_quality,
-        trim_adapters=trim_adapters
-    )
+    filter_reads(fastq_file, output_file, min_quality=min_quality)
     
-    return filtered
+    return output_file
 
 # Example usage
 processed_file = qc_guided_preprocessing("raw_sample.fastq.gz")
@@ -632,8 +656,8 @@ Comprehensive tests are available in `tests/quality/test_quality_fastq.py`:
 uv run pytest tests/quality/test_quality_fastq.py -v
 
 # Test specific functions
-uv run pytest tests/quality/test_quality_fastq.py::test_basic_statistics -v
-uv run pytest tests/quality/test_quality_fastq.py::test_per_base_quality -v
+uv run pytest tests/quality/test_quality_fastq.py::TestBasicStatistics::test_basic_statistics_calculation -v
+uv run pytest tests/quality/test_quality_fastq.py::TestPerBaseQuality::test_per_base_quality_calculation -v
 ```
 
 ## Related Documentation

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - detection
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/structural_variants/detection`
+- **Path**: `src/metainformant/structural_variants/detection`
 - **Purpose**: Structural variant detection subpackage.
 - **Domain**: structural_variants
 

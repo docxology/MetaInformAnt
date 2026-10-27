@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - ontology
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/ontology`
+- **Path**: `src/metainformant/ontology`
 - **Purpose**: Gene ontology and functional annotation module for METAINFORMANT.
 - **Domain**: metainformant
 

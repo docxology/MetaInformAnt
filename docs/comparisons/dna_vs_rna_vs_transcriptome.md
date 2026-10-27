@@ -35,8 +35,8 @@ This guide helps users choose between DNA, RNA, and transcriptome analysis appro
 | **Phylogenetics** | ✓ Trees (NJ/UPGMA) | ✗ | ✗ | ✗ | ✗ |
 | **Population genetics** | ✓ Fst, π, Tajima's D | ✗ | ✗ | ✗ | Limited |
 | **Quantification** | ✗ | ✓ Gene counts/TPM | ✓ Expression matrix | ✓ Spot expression | ✓ Harmonized counts |
-| **Normalization** | Basic | TMM, CSTMM | Library size, SCTransform | Spatial smoothing | Multi-omic scaling |
-| **Differential expression** | ✗ | Basic (via downstream) | ✓ DESeq2/edgeR wrapper | ✓ Spatial DE | Joint models |
+| **Normalization** | Basic | TMM, CSTMM | Library size, median, size factors | Spatial smoothing | Multi-omic scaling |
+| **Differential expression** | ✗ | Basic (via downstream) | ✓ Wilcoxon / Welch t-test, pseudobulk | ✓ Spatially variable genes | Joint models |
 | **Clustering** | ✗ | ✗ | ✓ Leiden/ Louvain | ✓ Spatial domains | Cross-modal clusters |
 | **Trajectory** | ✗ | ✗ | ✓ PAGA, RNA velocity | ✗ | ✗ |
 | **Cell typing** | ✗ | ✗ | ✓ Marker-based | ✗ | ✗ |
@@ -107,34 +107,45 @@ flowchart TD
 
 ```python-snippet
 # === DNA: Variant calling and annotation ===
-from metainformant.dna import calling, annotation
-variants = calling.call_variants("sample.bam", "ref.fa")
-effects = annotation.annotate_variants(variants, "genes.gff")
+from metainformant.dna.variation import calling
+from metainformant.dna.annotation import functional
+
+# pileup_data: one dict per position, e.g. {"chrom": "gene1", "pos": 5, "ref": "C", "depth": 40, "bases": {"C": 20, "A": 20}}
+variants = calling.call_variants_pileup(pileup_data, min_depth=10, min_alt_freq=0.2)
+# annotate_variants takes 0-based positions on a coding reference sequence (call_variants_pileup is 1-based)
+effects = functional.annotate_variants([{**v, "pos": v["pos"] - 1} for v in variants], coding_sequence)
 
 # === RNA: Gene expression quantification ===
-from metainformant.rna import workflow
-wf = workflow.plan_workflow(config="rna_config.yaml")
-results = workflow.execute_workflow(wf)
-# Output: TPM/counts matrix in output/rna/
+from metainformant.rna.engine import workflow
+config = workflow.load_workflow_config("rna_config.yaml")
+steps = workflow.plan_workflow(config)  # [(step_name, params), ...]
+results = workflow.execute_workflow(config)  # runs the planned amalgkit steps (needs the amalgkit CLI and network access)
+# Output: TPM/counts matrix under the configured work_dir (for example output/rna/)
 
 # === Single-Cell: Cell clustering ===
-from metainformant.singlecell import analysis
-adata = analysis.load_h5ad("cells.h5ad")
-clusters = analysis.run_leiden(adata, resolution=0.5)
-markers = analysis.find_marker_genes(adata, clusters)
+from metainformant.singlecell.data import preprocessing
+from metainformant.singlecell.analysis import clustering, dimensionality
+adata = preprocessing.load_count_matrix("cells.h5ad", format="h5ad")
+adata = dimensionality.pca_reduction(adata, n_components=30)
+adata = clustering.leiden_clustering(adata, resolution=0.5)  # needs leidenalg and igraph; adds obs["leiden_cluster"]
+markers = clustering.find_marker_genes(adata, groupby="leiden_cluster")
 
 # === Spatial: Domain detection ===
-from metainformant.spatial import analysis
-spatial_data = analysis.load_visium("tissue.h5")
-domains = analysis.spatial_clustering(spatial_data)
-de_genes = analysis.spatial_de(spatial_data, domains)
+from metainformant.spatial.io import visium
+from metainformant.spatial.analysis import clustering as spatial_clustering
+from metainformant.spatial.analysis import spatially_variable_genes
+spatial_data = visium.load_visium("tissue_dir/")  # Space Ranger output directory
+expression = spatial_data.expression.toarray()  # load_visium returns a SciPy sparse matrix (spots x genes)
+domains = spatial_clustering.spatial_domains(expression, spatial_data.coordinates, n_domains=7)
+svg = spatially_variable_genes.detect_spatially_variable_genes(
+    expression, spatial_data.coordinates, genes=spatial_data.gene_names
+)
 
 # === Multi-Omics: Joint analysis ===
-from metainformant.multiomics import integration
-multi = integration.MultiOmicsData()
-multi.add_omics("genome", variants_df)
-multi.add_omics("transcriptome", expression_df)
-joint = integration.joint_pca(multi)
+from metainformant.multiomics.analysis import integration
+# Each layer is a samples x features DataFrame; samples are matched across layers
+multi = integration.MultiOmicsData(data={"genome": variants_df, "transcriptome": expression_df})
+embeddings, loadings, explained_variance = integration.joint_pca(multi, n_components=5)
 ```
 
 ### 7. When to Use Each Module
@@ -178,7 +189,7 @@ joint = integration.joint_pca(multi)
 
 | Dependency | Uses | Notes |
 |------------|------|-------|
-| **rna → dna** | Transcription, codon translation | `dna.transcription.dna_to_rna()` |
+| **rna → dna** | Transcription, codon translation | `dna.transcription.transcribe_dna_to_rna()`; the `rna` package does not import `dna`, so combine them in your own code |
 | **multiomics → dna/rna** | Data container integration | Uses `from_dna_variants()`, `from_rna_expression()` |
 | **eqtl → gwas + rna** | Expression QTL mapping | Logic in `gwas.finemapping.eqtl` |
 | **spatial → singlecell** | Cell-type mapping | Anchors-based integration |

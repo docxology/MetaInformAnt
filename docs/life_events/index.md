@@ -9,12 +9,12 @@ This module treats life courses as sequences of events (similar to how NLP treat
 ## Key Features
 
 - **Event Sequence Representation**: Structured data types for temporal event sequences with domain categorization
-- **Event Embeddings**: Learn dense vector representations of events using Word2Vec-style methods
+- **Event Embeddings**: Learn dense vector representations of events with word2vec (skip-gram or CBOW, negative sampling)
 - **Sequence Embeddings**: Aggregate event sequences into fixed-size vectors for ML models
 - **Domain-Specific Embeddings**: Separate embedding spaces for different life domains
 - **Prediction Models**: Classification and regression models for predicting life outcomes
 - **Visualization**: Timeline plots, embedding visualizations, attention heatmaps
-- **Model Interpretation**: Event importance, temporal patterns, feature attribution
+- **Model Interpretation**: Event importance, temporal patterns, feature attribution, Shapley values
 - **Workflow Integration**: End-to-end pipelines for complete analysis
 
 ## Documentation
@@ -25,7 +25,8 @@ This module treats life courses as sequences of events (similar to how NLP treat
 ## Quick Start
 
 ```python
-from metainformant.life_events import Event, EventSequence, analyze_life_course
+from metainformant.life_events.core.events import Event, EventSequence
+from metainformant.life_events.workflow.workflow import analyze_life_course
 from datetime import datetime
 
 # Create event sequences
@@ -47,15 +48,15 @@ results = analyze_life_course([sequence], outcomes=None)
 - `EventDatabase`: Collection of multiple event sequences
 
 ### Event Embeddings
-- Word2Vec-style embedding learning (Skip-gram, CBOW)
+- word2vec embedding learning (skip-gram, CBOW) with negative sampling
 - Domain-specific embedding spaces
 - Sequence embedding aggregation methods
 
 ### Prediction Models
-- Classification and regression models
-- LSTM and GRU sequence models
+- Classification and regression models (`embedding` and `simple` model types)
+- LSTM and GRU next-event models (require PyTorch)
 - Ensemble and multi-task predictors
-- Survival analysis models
+- Survival analysis models (Cox, exponential, Kaplan-Meier)
 
 ### Visualization
 - Timeline plots

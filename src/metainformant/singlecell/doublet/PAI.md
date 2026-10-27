@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - doublet
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/singlecell/doublet`
+- **Path**: `src/metainformant/singlecell/doublet`
 - **Purpose**: Doublet detection sub-package for single-cell analysis.
 - **Domain**: singlecell
 

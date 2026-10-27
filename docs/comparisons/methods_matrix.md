@@ -27,15 +27,15 @@ This matrix provides a side-by-side comparison of all 30 modules in METAINFORMAN
 | 6 | **epigenome** | BAM, BedGraph, narrowPeak | Samples → cohorts | Methylation (bismark), ChIP-seq peak calling, ATAC-seq accessibility, chromatin states | BigWig, peak BED, methylation calls | Medium–High | Epigenetic modifications, chromatin accessibility |
 | 7 | **singlecell** | h5ad, count matrices | Cells (10³–10⁶) | Preprocessing (filtering, normalization), clustering (Leiden), DE, trajectory (PAGA), RNA velocity, cell typing | AnnData, clusters, embeddings, marker lists | High | Single-cell transcriptomics, cell-type discovery, developmental trajectories |
 | 8 | **spatial** | Visium/Xenium H5, images | Tissues (10–1000 spots) | Spatial clustering, domain detection, cell deconvolution (NNLS/NMF), spatial autocorrelation (Moran's I), ligand-receptor signaling | Spatial coordinates, tissue maps, DE genes per domain | Very High | Spatial transcriptomics, tissue architecture, niche analysis |
-| 9 | **multiomics** | Mixed (DNA+RNA+Protein) | Coordinated samples (10–1000) | Multi-omics container (MultiOmicsData), integration (concatenation, joint PCA/CCA/NMF, autoencoders), cross-omic correlation | Joint components, integrated loadings, biomarkers | High | Multi-omic integration, cross-modal biomarkers, systems biology |
+| 9 | **multiomics** | Mixed (DNA+RNA+Protein) | Coordinated samples (10–1000) | Multi-omics container (MultiOmicsData), integration (joint PCA, joint NMF, canonical correlation, MOFA-style factorization, similarity network fusion), cross-omic correlation | Joint components, integrated loadings, biomarkers | High | Multi-omic integration, cross-modal biomarkers, systems biology |
 | 10 | **networks** | Edgelist, adjacency | Networks (10²–10⁵ nodes) | Community detection (Louvain, Leiden), centrality (degree, betweenness, eigenvector), PPI/regulatory network construction, pathway enrichment | Graph data, community assignments, centrality scores | Medium–High | Biological networks, pathway analysis, network-based prioritization |
-| 11 | **ml** | Feature matrices | Samples (10²–10⁶) | Classification (RF, SVM, LR, NB), regression, feature selection (MI, RFE, LASSO, variance), AutoML, LLM integration (Ollama) | Trained models, predictions, feature rankings | Medium–High | Machine learning classification/regression, feature discovery |
+| 11 | **ml** | Feature matrices | Samples (10²–10⁶) | Classification (RF, gradient boosting, SVM, LR), regression, feature selection (univariate tests incl. MI, RFE, stability selection), AutoML (grid/random/Bayesian search), interpretability (permutation importance, Kernel SHAP, LIME), LLM integration (Ollama) | Trained models, predictions, feature rankings | Medium–High | Machine learning classification/regression, feature discovery |
 | 12 | **math** | Equations, parameters | Theoretical | Population genetics theory (HWE, drift, Fst, coalescent), epidemiology (SIR/SEIR), evolutionary dynamics (game theory), Bayesian inference | Analytical solutions, simulated datasets | Low–Medium | Mathematical modeling, theory development, simulation parameters |
 | 13 | **information** | Discrete/continuous variables | Features (10²–10⁴) | Shannon/Rényi/Tsallis entropy, mutual information, KL divergence, Jensen-Shannon, transfer entropy, semantic similarity | Entropy values, MI matrices, information profiles | Low–Medium | Feature dependence, redundancy, semantic similarity, info-theoretic selection |
 | 14 | **ontology** | Gene lists, OBO files | Genes/pathways (10–10⁴) | GO graph parsing, semantic similarity (Resnik, Lin, Jiang-Conrath), functional enrichment, pathway annotation | Enrichment results, similarity scores, annotated gene lists | Low–Medium | Functional enrichment, gene set analysis, semantic similarity |
 | 15 | **phenotype** | Measurements, images | Specimens (10–10⁴) | Morphometrics (allometry, shape indices), behavioral sequences (ethograms), chemical profiles (GC-MS), electronic tracking (GPS/RFID), acoustic analysis (FFT) | Phenotypic profiles, indices, trajectories | Medium | Phenotypic characterization, trait analysis, life-history strategies |
 | 16 | **ecology** | Species tables, environmental | Communities | Diversity indices (Shannon, Simpson), species richness, phylogenetic diversity (PD), environmental correlation (CCA/RDA) | Diversity tables, ordination plots | Medium | Community ecology, biodiversity assessment, species-environment relationships |
-| 17 | **simulation** | Parameters, seeds | Synthetic datasets | Sequence evolution (substitution models), population genetics sims (coalescent), agent-based models, benchmark generation | Simulated FASTQ/VCF/Counts, synthetic networks | Medium–High | Benchmarking, method validation, null models, synthetic data |
+| 17 | **simulation** | Parameters, seeds | Synthetic datasets | Sequence evolution (per-site mutation model), population genetics data generation (genotype matrices, SFS, admixture, selection), agent-based models, benchmark generation | Simulated FASTQ/VCF/Counts, synthetic networks | Medium–High | Benchmarking, method validation, null models, synthetic data |
 | 18 | **quality** | FASTQ, BAM, assemblies | Reads/contigs (10⁴–10⁸) | FASTQ quality metrics (Phred, GC, adapters), contamination detection, assembly validation (BUSCO, N50), batch effect diagnostics | QC reports (JSON/HTML), quality plots | Low–Medium | Data quality assessment, preprocessing validation, contamination screening |
 | 19 | **visualization** | Any (plot-ready) | Any | 70+ plot types: basic (line, scatter, bar, pie), statistical (histogram, box, violin, QQ), genomics (Manhattan, volcano), trees, networks, dimred (PCA/UMAP), timeseries, animations | PNG/PDF/SVG/HTML, interactive Plotly | Low–High (depends on plot) | Publication-quality figures, interactive dashboards, animated sequences |
 | 20 | **longread** | FAST5, POD5, BAM | Reads (10³–10⁶) | Basecalling (ont-guppy/dorado integration), quality metrics (N50, accuracy), modified base detection (5mC, 6mA), SV calling, haplotype phasing, assembly (overlap-layout-consensus) | Basecall FASTQ, methylation calls, SV VCF, assemblies | High | Long-read sequencing analysis (PacBio/ONT), structural variants, methylation |
@@ -58,7 +58,7 @@ This matrix provides a side-by-side comparison of all 30 modules in METAINFORMAN
 **Primary module**: `dna` (direct)
 - Use `dna.sequence.core` for parsing, translation, and ORF finding
 - Phylogeny: `dna.phylogeny` for trees
-- Distance: `dna.distances` for evolutionary distances
+- Distance: `dna.alignment.distances` for evolutionary distances
 
 ### VCF / Variant Data
 **Primary modules**: `dna`, `gwas`, `structural_variants`, `pharmacogenomics`
@@ -90,7 +90,7 @@ This matrix provides a side-by-side comparison of all 30 modules in METAINFORMAN
 ### Multi-Omic Data (DNA+RNA+Protein+Metabolites)
 **Primary module**: `multiomics`
 - Container: `MultiOmicsData` for harmonization
-- Integration: joint PCA, CCA, NMF, autoencoders
+- Integration: joint PCA, joint NMF, canonical correlation
 
 ---
 
@@ -99,8 +99,8 @@ This matrix provides a side-by-side comparison of all 30 modules in METAINFORMAN
 | Research Question | Recommended Module(s) | Workflow |
 |-------------------|----------------------|----------|
 | **"Which genetic variants affect my trait?"** | `gwas` | QC → PCA → Association → Correction → Viz |
-| **"What is the population structure?"** | `dna` or `gwas` (PCA) | `dna.population` or `gwas.structure.compute_pca` |
-| **"How diverse is my sample?"** | `dna` (nucleotide diversity), `ecology` (species diversity) | `dna.population.nucleotide_diversity()` or `ecology.analysis.shannon_index()` |
+| **"What is the population structure?"** | `dna` or `gwas` (PCA) | `dna.population` or `gwas.analysis.structure.compute_pca` |
+| **"How diverse is my sample?"** | `dna` (nucleotide diversity), `ecology` (species diversity) | `dna.population.nucleotide_diversity()` or `ecology.analysis.community.shannon_diversity()` |
 | **"How are these sequences related?"** | `dna` (phylogeny) | MSA → distance → tree (NJ/UPGMA) |
 | **"What genes are differentially expressed?"** | `rna`, `singlecell`, or direct DE tools | Use `rna` outputs → DESeq2/edgeR |
 | **"Which cell types are in my tissue?"** | `singlecell` (with optional `spatial` mapping) | QC → Normalize → Cluster → Annotate |
@@ -110,13 +110,13 @@ This matrix provides a side-by-side comparison of all 30 modules in METAINFORMAN
 | **"Which genes are in this network module?"** | `networks` | Build network → Community detection → Module genes |
 | **"Can I predict phenotype from genotype?"** | `ml` (or `gwas` PRS) | Feature selection → Classifier/regressor → CV |
 | **"Is my sample contaminated?"** | `quality` | FastQC metrics → adapter/contamination detection |
-| **"How does this protein fold?"** | `protein` (AlphaFold) | `fetch_alphafold_model(uniprot_id)` |
+| **"How does this protein fold?"** | `protein` (AlphaFold) | `protein.structure.alphafold.fetch_alphafold_model(uniprot_acc, out_dir)` |
 | **"Which microbes are present?"** | `metagenomics` | QC → Taxonomic classification → Phylogeny |
 | **"What structural variants exist?"** | `structural_variants` (from long-read/BAM) | SV calling → Filter → Annotate |
 | **"What drug interacts with this variant?"** | `pharmacogenomics` | Diplotype → Metabolizer phenotype → CPIC guideline |
 | **"What is the entropy of this DNA segment?"** | `information` | Shannon entropy, MI between positions |
-| **"How to visualize my GWAS results?"** | `visualization.genomics` | `manhattan_plot()`, `qq_plot()` |
-| **"How to create animated evolution demo?"** | `visualization.animations` | `animate_evolution()` |
+| **"How to visualize my GWAS results?"** | `gwas.visualization` | `manhattan_plot()`, `qq_plot()` |
+| **"How to create animated evolution demo?"** | `visualization.plots.animations` | `animate_evolution()` |
 
 ---
 
@@ -364,27 +364,29 @@ Below are per-module summaries with capabilities, inputs/outputs, and example us
 | **Category** | Multi-Omic Integration |
 | **Data Types** | Any combination: VCF (DNA), counts (RNA), protein abundances, metabolite intensities |
 | **Scale** | Samples: 10 → 1,000+ (coordinated); Features: 10⁴–10⁶ per omic |
-| **Key Methods** | Multi-omics data container (`MultiOmicsData`) with automatic sample matching, integration strategies: early (concatenation), intermediate (joint dimensionality reduction), late (ensemble), joint analysis: PCA, CCA, NMF, autoencoders (AE/VAE), multi-view clustering, cross-omics biomarker discovery, pathway-level integration |
+| **Key Methods** | Multi-omics data container (`MultiOmicsData`) with automatic sample matching, joint analysis: PCA (on the concatenated layers), NMF, canonical correlation, MOFA-style factorization, similarity network fusion, multi-omic clustering, survival models, pathway-level integration |
 | **Input** | Multiple omic tables (samples × features) with sample IDs; optional metadata |
 | **Output** | Joint embeddings (samples × components), cross-omic loadings (features × components), ranked biomarker pairs, cluster assignments per omic |
-| **Submodules** | `integration` (core algorithms), `analysis` (statistical tests), `pathways` (pathway integration), `visualization` (multi-omic plots) |
-| **External Deps** | None (pure Python); uses numpy, scipy, sklearn, torch (optional for AEs) |
-| **Typical Runtime** | 50 samples × 3 omics: 5–30 min (PCA/CCA); Autoencoder: 1–4 h |
+| **Submodules** | `analysis` (`integration` container and joint methods, descriptive summaries), `methods` (factorization, clustering), `pathways` (pathway integration), `survival` (survival models), `visualization` (multi-omic plots) |
+| **External Deps** | None (pure Python); uses numpy, pandas, scikit-learn |
+| **Typical Runtime** | Tens of samples × 3 omics: seconds (PCA/CCA/NMF); grows with the total feature count |
 | **Primary Use Cases** | Multi-omic biomarker discovery, cross-modal association, systems biology, data harmonization across platforms |
 
 **Integration strategies**:
-- **Early**: concatenate all features → single matrix; simple but high-dimensional
-- **Intermediate**: joint factorization (PCA/CCA/NMF/AE) → shared latent space
-- **Late**: train separate models per omic → ensemble predictions
+- **Early**: concatenate all features → single matrix; simple but high-dimensional (`joint_pca` does this internally)
+- **Intermediate**: joint factorization (PCA/CCA/NMF) → shared latent space
+- **Late**: train separate models per omic → ensemble predictions (no dedicated function)
 
 **Example**:
 ```python
-multi = MultiOmicsData()
-multi.add_omics("genome", variants_df)
-multi.add_omics("transcriptome", expr_df)
-multi.add_omics("proteome", prot_df)
-# Automatic sample alignment
-joint = joint_pca(multi, n_components=20)
+from metainformant.multiomics.analysis.integration import MultiOmicsData, joint_pca
+
+# Each layer is a samples × features DataFrame indexed by sample ID
+multi = MultiOmicsData(
+    data={"genome": variants_df, "transcriptome": expr_df, "proteome": prot_df},
+)
+# Automatic sample alignment: only samples present in every layer are kept
+embeddings, loadings, explained_variance = joint_pca(multi, n_components=20)
 ```
 
 ---
@@ -415,26 +417,31 @@ joint = joint_pca(multi, n_components=20)
 | **Category** | Machine Learning |
 | **Data Types** | Feature matrix X (n × p), labels y (classification/regression) |
 | **Scale** | Samples: 10² → 10⁶; Features: 10² → 10⁵ |
-| **Key Methods** | Classification (random forest, SVM, logistic regression, naive Bayes), regression (linear, ridge, lasso, random forest), feature selection (mutual information, recursive elimination RFE, lasso, variance threshold), model evaluation (cross-validation, ROC/AUC, confusion matrix), interpretability (SHAP, feature importance), AutoML (hyperparameter optimization), LLM integration (Ollama for text/sequence tasks) |
+| **Key Methods** | Classification (random forest, gradient boosting, SVM, logistic regression), regression (linear, ridge, lasso, elastic net, random forest, gradient boosting, SVR), feature selection (univariate tests including mutual information, recursive elimination RFE, stability selection with random forest or L1 models), model evaluation (cross-validation, ROC/AUC, confusion matrix), interpretability (permutation importance, Kernel SHAP, LIME, partial dependence), AutoML (grid, random and Bayesian hyperparameter search), LLM integration (Ollama for text/sequence tasks) |
 | **Input** | X (NumPy/Pandas DataFrame/CSV), y (labels), optional feature names |
 | **Output** | Trained model object, predictions, feature importance/coefficients, CV scores, classification/regression metrics |
-| **Submodules** | `models` (classifiers/regressors), `features` (feature extraction/selection), `evaluation` (metrics, CV), `interpret` (SHAP, LIME), `automl` (Optuna-based), `llm` (Ollama integration) |
-| **External Deps** | scikit-learn, xgboost, lightgbm, optuna, shap, ollama |
+| **Submodules** | `models` (classifiers/regressors), `features` (dimensionality reduction, feature selection), `evaluation` (validation, CV), `interpretability` (SHAP, LIME, feature selection), `automl` (hyperparameter search), `deep_learning` (sequence CNN), `llm` (Ollama integration) |
+| **External Deps** | scikit-learn (models, feature selection), numpy; optional: umap-learn (UMAP), a running Ollama server (LLM client) |
 | **Typical Runtime** | RF on 10K × 1K: 1–10 min; Deep learning: hours; AutoML: days |
 | **Primary Use Cases** | Predict phenotypes from genotypes/omics, feature discovery, biomarker identification, classification of disease states |
 
 **Example**:
 ```python-snippet
-from metainformant.ml import classification, features
+from metainformant.ml.features import features
+from metainformant.ml.models import classification
 
-# Feature selection
-X_selected, mask = features.select_features(X, y, method="mutual_info", k=100)
+# Feature selection: returns the reduced matrix and the selected column indices
+X_selected, selected_indices = features.select_features_univariate(
+    X, y, method="mutual_info_classif", k=100
+)
 
-# Train classifier
-clf = classification.train_classifier(X_selected, y, method="rf")
+# Train classifier ("rf", "gb" or "lr")
+clf = classification.create_biological_classifier("rf", random_state=42)
+clf.fit(X_selected, y)
 
-# Cross-validate
-cv_results = classification.cross_validate_classifier(clf, X_selected, y, cv=5)
+# Cross-validate (stratified k-fold; raises if a metric cannot be computed)
+cv_results = classification.cross_validate_biological(X_selected, y, method="rf", cv_folds=5, random_state=42)
+print(cv_results["cross_validation"]["accuracy"]["mean"])
 ```
 
 ---
@@ -474,8 +481,8 @@ cv_results = classification.cross_validate_classifier(clf, X_selected, y, cv=5)
 | **Primary Use Cases** | Feature selection (non-linear dependence), sequence complexity, functional site detection, redundancy analysis, semantic similarity between GO terms |
 
 **Applications**:
-- `information.syntactic`: MI for feature selection in `ml.features`
-- `information.genomic`: Sequence entropy for conserved regions
+- `information.metrics.core.syntactic`: MI for feature selection in `ml.features`
+- `information.metrics.analysis.analysis.analyze_sequence_information`: Sequence entropy and complexity for conserved regions
 - `information.integration`: Cross-omics redundancy (which omic is most informative?)
 
 ---
@@ -496,7 +503,7 @@ cv_results = classification.cross_validate_classifier(clf, X_selected, y, cv=5)
 | **Primary Use Cases** | GO enrichment after GWAS/eQTL/clustering, semantic similarity for gene clustering, pathway-level interpretation of omics results |
 
 **Common pipelines**:
-1. `gwas` lead genes → `ontology.enrichment` → significant GO terms
+1. `gwas` lead genes → `ontology.pathway_enrichment.enrichment.over_representation_analysis` → significant GO terms
 2. Cluster markers (singlecell) → enrichment → functional interpretation
 3. Gene pairs (co-expression) → semantic similarity → functional linkage
 
@@ -538,10 +545,12 @@ cv_results = classification.cross_validate_classifier(clf, X_selected, y, cv=5)
 
 **Example**:
 ```python-snippet
-from metainformant.ecology.analysis import shannon_index, bray_curtis, nmds
-alpha = shannon_index(abundance_matrix)
-beta_dm = bray_curtis(abundance_matrix)
-nmds_coords = nmds(beta_dm, n_components=2)
+from metainformant.ecology.analysis.community import calculate_diversity, beta_diversity
+from metainformant.ecology.analysis.ordination import nmds
+# abundance_matrix: one list of species abundances per sample
+alpha = calculate_diversity(abundance_matrix, method="shannon")
+beta_dm = [[beta_diversity(a, b, method="bray_curtis") for b in abundance_matrix] for a in abundance_matrix]
+nmds_coords = nmds(beta_dm, n_components=2)["coordinates"]
 ```
 
 ---
@@ -553,20 +562,19 @@ nmds_coords = nmds(beta_dm, n_components=2)
 | **Category** | Synthetic Data Generation |
 | **Data Types** | Parameters (pop size, mutation rate, selection coefficient); output: sequences, genotypes, expression |
 | **Scale** | Configurable (small validation → large benchmark) |
-| **Key Methods** | Sequence evolution (substitution models: Jukes-Cantor, Kimura, GTR), coalescent simulations (ms, msprime wrapper), population genetics sims (selection, drift, migration), agent-based models (ecosystem/phenotype agents), benchmark dataset generation (ground truth), null model generation |
+| **Key Methods** | Sequence evolution (per-site mutation model, sequence families, gene duplication), population genetics data generation (genotype matrices, site frequency spectra, two-population Fst, admixture, bottleneck and expansion, selection), agent-based models (ecosystem and grid-world agents), RNA expression and methylation simulators, benchmark dataset generation (ground truth); coalescent simulation is `math.population_genetics.coalescent.simulate_coalescent` |
 | **Input** | Simulation parameters (model, length, N, μ, etc.), random seed, model specifications |
 | **Output** | Simulated FASTA, VCF, count matrices, agent trajectories, metadata |
-| **Submodules** | `models` (evolutionary, population, agent-based), `workflow` (pipeline runners), `benchmark` (synthetic benchmarks for testing) |
-| **External Deps** | msprime (coalescent), optional: SLiM (forward-time) |
-| **Typical Runtime** | Coalescent (10K sequences, 10K bp): 1–10 min; Agent-based (10K agents, 1000 steps): minutes–hours |
+| **Submodules** | `models` (sequences, popgen, rna, agents), `workflow` (pipeline runners), `benchmark` (synthetic benchmarks for testing), `methylation` (methylation simulator) |
+| **External Deps** | numpy; no external simulators are wrapped (msprime and SLiM are not used) |
+| **Typical Runtime** | Coalescent (10K samples): seconds; random genotype matrix (1,000 individuals × 5,000 SNPs): roughly ten seconds; scales with matrix and population size |
 | **Primary Use Cases** | Method validation (truth-known), power analysis, null hypothesis generation, benchmark dataset creation, educational demos |
 
-**Example**: Simulate neutral dataset to test Tajima's D → should be ~0:
+**Example**: Simulate a neutral coalescent genealogy and read its summary statistics:
 ```python-snippet
-from metainformant.simulation.models.coalescent import simulate_sequences
-seqs = simulate_sequences(n=100, length=1000, theta=10)
-from metainformant.dna.population import tajimas_d
-td = tajimas_d(seqs)  # Expect ~0 if neutral
+from metainformant.math.population_genetics.coalescent import simulate_coalescent
+sim = simulate_coalescent(n_samples=100, effective_size=10000, mutation_rate=1e-4)
+theta_w = sim["theta_watterson"]  # Watterson's theta from the simulated segregating sites
 ```
 
 ---
@@ -688,10 +696,18 @@ td = tajimas_d(seqs)  # Expect ~0 if neutral
 
 **Example**:
 ```python
-from metainformant.pharmacogenomics import alleles, annotations
-diplotype = alleles.determine_diplotype(vcf, gene="CYP2D6")
-phenotype = alleles.predict_metabolizer(diplotype)
-guidelines = annotations.get_cpic_guidelines(drug="codeine", phenotype=phenotype)
+from metainformant.pharmacogenomics.alleles import diplotype, phenotype, star_allele
+from metainformant.pharmacogenomics.annotations import cpic
+
+# Star alleles matching the variants observed in one patient (set of rsIDs)
+alleles = star_allele.call_star_alleles(observed_variants, gene="CYP2D6")
+
+# Diplotype from two star alleles (carries an activity score), then metabolizer phenotype
+dip = diplotype.determine_diplotype("*1", "*4", gene="CYP2D6")
+result = phenotype.classify_phenotype(dip, gene="CYP2D6")  # dict: diplotype, activity_score, phenotype, ...
+
+# CPIC dosing recommendation for the phenotype
+guideline = cpic.get_dosing_recommendation("codeine", result["phenotype"].value)
 ```
 
 ---
@@ -701,19 +717,19 @@ guidelines = annotations.get_cpic_guidelines(drug="codeine", phenotype=phenotype
 | Attribute | Details |
 |-----------|---------|
 | **Category** | Metabolomics |
-| **Data Types** | mzML, mzXML, CSV (peak tables), metabolites (HMDB/KEGG IDs) |
+| **Data Types** | CSV (metabolite × sample intensity tables), MGF (mass spectra). There are no mzML or mzXML readers: convert such files to MGF first |
 | **Scale** | Samples: 10 → 1,000; Metabolites: 50 → 10,000 |
-| **Key Methods** | MS data parsing (mzML/mzXML), peak detection (centroiding), metabolite identification (mz matching to HMDB/KEGG/MassBank), quantification (peak area/height), data normalization (PQN, log, probabilistic quotient), missing value imputation (kNN, half-min), batch effect correction (ComBat), batch effect detection (PCA), KEGG/Reactome pathway mapping, metabolite set enrichment analysis (MSEA, hypergeometric), metabolite-gene integration (via `multiomics`), visualization (volcano, PCA, heatmap) |
-| **Input** | mzML files (raw MS), sample metadata, reference metabolite database (HMDB/KEGG IDs + m/z), optional quantification table (CSV) |
-| **Output** | Peak table (samples × metabolites), identified metabolites (with HMDB/KEGG IDs), normalized abundance matrix, enriched pathways (KEGG modules), integrated scores (metabolite–gene association if multi-omics) |
-| **Submodules** | `io` (mzML parser), `analysis` (peak detection, ID, quantification, normalization), `pathways` (KEGG/Reactome mapping, MSEA), `visualization` (metabolomics-specific plots), `integration` (with multiomics) |
-| **External Deps** | msconvert (ProteoWizard), matchpy (mz matching), optional: MZmine/XCMS (external) |
+| **Key Methods** | CSV and MGF reading and writing, spectrum filtering (peak count, total ion current, MS level, retention-time window), extracted ion chromatograms, chromatographic peak detection (local maxima, with peak area), retention-time alignment assessment (polynomial fit), metabolite identification by m/z matching with a ppm tolerance (plain and adduct-aware) against a user-supplied dictionary of metabolite names and masses, cosine spectral similarity, intensity normalization (total ion count, median, log2, Pareto), missing-value imputation (half-minimum, kNN, median), log2 fold change and Welch t-test differential abundance, metabolite set enrichment (hypergeometric over-representation, Benjamini-Hochberg FDR), pathway activity scoring, data preparation for volcano, PCA, heatmap and spectrum plots |
+| **Input** | A CSV intensity table (first column metabolite IDs, one column per sample) and/or an MGF spectra file; a dictionary of metabolite names and m/z values (or neutral masses for adduct-aware matching) for identification; a dictionary mapping pathway names to metabolite names for enrichment |
+| **Output** | `MetabolomicsDataset` (metabolite names, sample names, intensity matrix), `MassSpectrum` lists, `MetaboliteMatch` / `AdductMatch` identifications, normalized or imputed intensity matrices, t statistics and p-values, `EnrichmentResult` records (pathway, overlap, fold enrichment, p-value), pathway activity scores |
+| **Submodules** | `io` (CSV and MGF reading and writing, spectrum filtering, ion chromatograms), `analysis` (identification, normalization, imputation, fold change, differential abundance), `pathways` (enrichment, FDR, pathway activity), `visualization` (volcano, PCA and heatmap data, chromatographic peaks, spectrum and retention-time alignment data) |
+| **External Deps** | None beyond NumPy; SciPy is optional (Student's t p-values in `differential_abundance`, a normal approximation without it) |
 | **Typical Runtime** | 100 samples × 5K metabolites: 30 min–2 h |
-| **Primary Use Cases** | Mass spectrometry-based metabolomics profiling, biomarker discovery, metabolic pathway analysis, metabolite-gene integration |
+| **Primary Use Cases** | Mass spectrometry metabolomics from MGF spectra or intensity tables, differential abundance, metabolite set enrichment |
 
-**Normalization methods**: total ion count (TIC), probabilistic quotient (PQN), batch correction (ComBat).
+**Normalization methods** (`normalize_intensities`): total ion count (TIC), median, log2, Pareto scaling. Missing values are handled separately by `missing_value_imputation`.
 
-**Pathway mapping**: map metabolite → KEGG compound → pathway (hsa00010 for glycolysis, etc.).
+**Pathway sets**: the module has no built-in pathway database; pass a dictionary that maps each pathway name to its metabolite names to `metabolite_set_enrichment`.
 
 ---
 
@@ -842,14 +858,14 @@ uv run python -m metainformant menu
 
 | From → To | Dependency Type | Example Use |
 |-----------|----------------|-------------|
-| `rna` → `dna` | Translation (DNA→RNA), ortholog mapping | `dna.transcription.dna_to_rna()` |
-| `eqtl` → `gwas` | Uses GWAS summary stats for coloc | `gwas.finemapping.coloc.coloc()` |
+| `rna` → `dna` | Translation (DNA→RNA), ortholog mapping | `dna.transcription.transcribe_dna_to_rna()` |
+| `eqtl` → `gwas` | Uses GWAS summary stats for coloc | `gwas.finemapping.colocalization.eqtl_coloc()` |
 | `eqtl` → `multiomics` | Shared integration logic | `multiomics.analysis.integration` |
-| `multiomics` → `gwas` | Variant data as DNA layer | `multiomics.add_omics("genome", gwas_variants)` |
-| `multiomics` → `rna` | RNA expression as transcriptome layer | `multiomics.add_omics("transcriptome", tpm_df)` |
-| `spatial` → `singlecell` | scRNA reference for deconvolution | `spatial.integration.map_sc_to_spatial()` |
-| `visualization` → all | All domains use for plotting | `visualization.genomics.manhattan_plot()` |
-| `quality` → all pre-processing | QC first | `quality.analysis.fastqc()` |
+| `multiomics` → `gwas` | Variant data as DNA layer | `multiomics.analysis.integration.from_dna_variants(gwas_variants)` |
+| `multiomics` → `rna` | RNA expression as transcriptome layer | `multiomics.analysis.integration.from_rna_expression(tpm_df)` |
+| `spatial` → `singlecell` | scRNA reference for deconvolution | `spatial.integration.scrna_mapping.map_scrna_to_spatial()` |
+| `visualization` → all | All domains use for plotting | `gwas.visualization.manhattan_plot()` |
+| `quality` → all pre-processing | QC first | `quality.io.fastq.analyze_fastq_quality()` |
 
 **Rules**:
 - Domain modules (`dna`, `rna`, `gwas`, etc.) **do not import each other directly**; cross-domain coordination happens via `multiomics`, `eqtl`, or shared configs.

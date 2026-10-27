@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - visualization
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/multiomics/visualization`
+- **Path**: `src/metainformant/multiomics/visualization`
 - **Purpose**: Functionality for visualization.
 - **Domain**: multiomics
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - quality
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/quality`
+- **Path**: `src/metainformant/quality`
 - **Purpose**: Quality control analysis module for METAINFORMANT.
 - **Domain**: metainformant
 

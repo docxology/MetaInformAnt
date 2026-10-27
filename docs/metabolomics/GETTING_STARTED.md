@@ -54,6 +54,7 @@ Create a simple Python script `analyze_metabolites.py`:
 """Quick metabolomics analysis demo."""
 
 from pathlib import Path
+import matplotlib.pyplot as plt
 import numpy as np
 
 from metainformant.metabolomics import (
@@ -108,14 +109,26 @@ for result in enriched:
 
 # ── 5. Visualize ────────────────────────────────────────────────────
 print("Generating volcano plot...")
-fig = visualization.plots.volcano_plot(
-    t_stats=t_stats,
-    p_values=pvals,
-    labels=dataset.metabolites,
-    threshold=0.05,
+# fold_change() is the log2 ratio of group means, so pass linear-scale intensities
+log2_fc = analysis.identification.fold_change(normalized, group_a, group_b)
+
+# volcano_plot_data() only prepares the points (it draws nothing); plot them with matplotlib
+points = visualization.plots.volcano_plot_data(
+    dataset.metabolites, log2_fc, pvals, fc_threshold=1.0, p_threshold=0.05
 )
-fig.write_html("volcano.html")
-print("  Saved volcano plot to volcano.html")
+fig, ax = plt.subplots(figsize=(5, 4))
+ax.scatter(
+    [p.log2_fc for p in points],
+    [p.neg_log10_p for p in points],
+    c=["tab:red" if p.significant else "tab:gray" for p in points],
+)
+for p in points:
+    ax.annotate(p.name, (p.log2_fc, p.neg_log10_p), fontsize=8)
+ax.axhline(-np.log10(0.05), linestyle="--", color="black", linewidth=0.8)
+ax.set_xlabel("log2 fold change (group A / group B)")
+ax.set_ylabel("-log10 p-value")
+fig.savefig("volcano.png", dpi=150, bbox_inches="tight")
+print("  Saved volcano plot to volcano.png")
 
 print("\nDone!")
 ```
@@ -126,26 +139,27 @@ Run it:
 python3 analyze_metabolites.py
 ```
 
-Expected output:
+Expected output (for the five-sample example table above):
 ```
 Loading metabolomics data...
   Loaded 4 metabolites across 5 samples
 Normalizing intensities (total ion count)...
   Normalized matrix shape: (4, 5)
 Computing differential abundance...
-  Found 2 significant metabolites (p < 0.05)
-    Pyruvate: t=3.421, p=0.0321
-    Citrate: t=-2.987, p=0.0485
+  Found 0 significant metabolites (p < 0.05)
 Running pathway enrichment...
   Enriched pathways (p < 0.05):
-    Glycolysis: 2/3 metabolites, fold=2.45, p=0.021
 Generating volcano plot...
-  Saved volcano plot to volcano.html
+  Saved volcano plot to volcano.png
+
+Done!
 ```
+
+With only 2 vs. 3 samples, no metabolite reaches p < 0.05, so the significant-metabolite and enrichment lists stay empty; with a real cohort the loops print one line per hit.
 
 ### 4. Explore the Output
 
-- **Volcano plot** (`volcano.html`): Interactive plot showing significance vs. fold change
+- **Volcano plot** (`volcano.png`): Static matplotlib scatter of log2 fold change vs. -log10 p-value, with metabolites that pass both thresholds highlighted
 - **Console output**: List of significant metabolites and enriched pathways
 
 ## System Requirements
@@ -153,11 +167,12 @@ Generating volcano plot...
 | Component | Version | Purpose |
 |-----------|---------|---------|
 | Python | 3.11+ | Core runtime |
-| NumPy | ≥1.24 | Numerical arrays |
-| SciPy | ≥1.10 | Statistical tests |
+| NumPy | ≥1.24 (declared); ≥2.0 for `detect_chromatographic_peaks`, which calls `np.trapezoid` | Numerical arrays |
+| SciPy | ≥1.11 (declared) | Welch t-test p-values from Student's t distribution; without SciPy `differential_abundance` falls back to a normal approximation |
+| matplotlib | ≥3.8 (declared) | Drawing the plots in the examples |
 | uv | latest | Package manager |
 
-Optional: `plotly` for interactive visualizations, `pandas` for DataFrame support (future).
+The metabolomics package itself imports only NumPy (and SciPy when available). It has no plotting backend: `visualization.plots` prepares plot-ready data, and the examples draw it with matplotlib. SciPy, matplotlib and pandas (used for result tables in the examples) are installed with METAINFORMANT.
 
 ## Detailed Setup
 
@@ -165,19 +180,11 @@ Optional: `plotly` for interactive visualizations, `pandas` for DataFrame suppor
 
 #### Required Environment Variables
 
-None required for basic use.
+None.
 
 #### Optional Configuration
 
-Metabolomics module respects the generic METAINFORMANT configuration system:
-
-```bash
-# Set output directory for all generated files
-export METAINFORMANT_OUTPUT="/path/to/output"
-
-# Enable debug logging
-export META_LOG_LEVEL=DEBUG
-```
+None. The metabolomics module reads no environment variables and no configuration files: input and output paths, tolerances and methods are all function arguments (see [CONFIGURATION.md](CONFIGURATION.md)).
 
 ### Installation from Source
 
@@ -211,30 +218,39 @@ Matches observed m/z values to a reference database within a specified mass tole
 **Example**:
 ```python
 db = {"Glucose": 180.0634, "Lactate": 89.0240, "Pyruvate": 87.0083}
-observed = np.array([180.062, 89.025, 150.000])
+observed = np.array([180.062, 89.0245, 150.000])
 matches = analysis.identification.identify_metabolites(observed, db, ppm_tolerance=10)
 for i, mz_matches in enumerate(matches):
     print(f"m/z {observed[i]}:")
     for m in mz_matches[:3]:  # top 3
         print(f"  {m.matched_name} (Δ{m.delta_ppm:.2f} ppm, score={m.score:.2f})")
+# m/z 180.062:
+#   Glucose (Δ7.78 ppm, score=0.22)
+# m/z 89.0245:
+#   Lactate (Δ5.62 ppm, score=0.44)
+# m/z 150.0:          <- nothing within 10 ppm
 ```
+
+Each `MetaboliteMatch` has `query_mz`, `matched_name`, `matched_mz`, `delta_ppm` and `score` (`1 - delta_ppm / ppm_tolerance`, so 1.0 is an exact mass match). The database values are compared with the observed m/z directly, so store the exact m/z of the ion you expect to observe (`identify_metabolites` does no adduct handling). `ppm_tolerance` is not validated: a negative value matches nothing, and `0` matches only bit-for-bit identical masses (with score 0.0).
 
 ### Adduct-Aware Identification
 
 **`identify_with_adducts(observed_mz, database, adducts=None, ppm_tolerance=10.0, ion_mode="positive")`**
 
-Accounts for common ionization adducts. For positive mode, tries [M+H]+, [M+Na]+, etc.; subtracts adduct mass to infer neutral mass before database lookup.
+Accounts for common ionization adducts. For positive mode, tries [M+H]+, [M+Na]+, [M+K]+ and [M+NH4]+ (negative mode: [M-H]-, [M+Cl]-, [M+FA-H]-); subtracts the adduct mass to infer the neutral mass before database lookup, so `database` values are neutral monoisotopic masses.
 
 **Example**:
 ```python
-# Observed m/z 203.052 could be glutamate [M+H]+ (203.052 - 1.007 = 202.045)
+# Observed m/z 148.0604 could be glutamate [M+H]+ (148.0604 - 1.0073 = 147.0531)
 matches = analysis.identification.identify_with_adducts(
-    observed_mz=np.array([203.052]),
-    database={"Glutamate": 202.045},
+    observed_mz=np.array([148.0604]),
+    database={"Glutamate": 147.0532},
     ion_mode="positive",
     ppm_tolerance=10,
 )
-# Returns: AdductMatch(neutral_mass=202.045, adduct_type="[M+H]+", ...)
+# Returns list[list[AdductMatch]] (one inner list per observed m/z), here:
+# [[AdductMatch(query_mz=148.0604, neutral_mass=147.053124, adduct_type='[M+H]+',
+#                matched_name='Glutamate', delta_ppm=0.5168...)]]
 ```
 
 ### Normalization Methods
@@ -254,7 +270,7 @@ matches = analysis.identification.identify_with_adducts(
 
 Performs a two-sample t-test (Welch's method, unequal variance) per metabolite.
 
-**Returns**: `(t_statistics, p_values)` — both 1D arrays length n_metabolites
+**Returns**: `(t_statistics, p_values)` — both 1D arrays length n_metabolites; a positive t means a higher mean in `group_a`. There is no built-in multiple-testing step: pass the p-values to `benjamini_hochberg` as below.
 
 **Example**:
 ```python
@@ -274,30 +290,38 @@ sig = np.array(qvals) < 0.05
 
 **`metabolite_set_enrichment(query_metabolites, pathway_db, background_size=None)`**
 
-Over-representation analysis using Fisher's exact test.
+Over-representation analysis using a one-sided hypergeometric (Fisher's exact) test.
+
+**Returns**: list of `EnrichmentResult` (`pathway_name`, `pathway_size`, `overlap`, `fold_enrichment` = observed / expected overlap, `p_value`, `metabolites_in_pathway`), sorted by p-value.
 
 **Example**:
 ```python
-pathways = {
+from metainformant.metabolomics import pathways
+
+pathway_db = {
     "Glycolysis": ["Glucose", "Fructose-6-P", "Pyruvate", "Lactate"],
     "TCA": ["Citrate", "Isocitrate", "Alpha-KG", "Succinate"],
 }
+query = ["Glucose", "Pyruvate", "Citrate"]
 results = pathways.enrichment.metabolite_set_enrichment(
-    query_metabolites=["Glucose", "Pyruvate", "Citrate"],
-    pathway_db=pathways,
+    query_metabolites=query,
+    pathway_db=pathway_db,
     background_size=100,  # total metabolites in reference universe
 )
 for r in results:
     if r.p_value < 0.05:
-        print(f"{r.pathway_name}: odds={r.fold_enrichment:.2f}, p={r.p_value:.4g}")
+        print(f"{r.pathway_name}: fold={r.fold_enrichment:.2f}, p={r.p_value:.4g}")
+# Glycolysis: fold=16.67, p=0.003587
 ```
 
 **With FDR correction**:
 ```python
 significant = pathways.enrichment.enrichment_with_fdr(
-    query_metabolites, pathway_db, fdr_threshold=0.05
+    query, pathway_db, background_size=100, fdr_threshold=0.05
 )
-# Returns only pathways with q < 0.05, sorted by q-value
+# Returns the EnrichmentResult entries whose Benjamini-Hochberg q-value is <= 0.05,
+# sorted by p-value. The q-values themselves are not returned; compute them with
+# pathways.enrichment.benjamini_hochberg() if you need them.
 ```
 
 ## Common Workflows
@@ -314,37 +338,52 @@ significant = pathways.enrichment.enrichment_with_fdr(
 
 ### Workflow 2: Time Series or Multiple Groups
 
-For >2 groups, use one-way ANOVA per metabolite (not yet implemented; use external `scipy.stats.f_oneway` or `statsmodels`):
+For >2 groups, use one-way ANOVA per metabolite (not implemented in the metabolomics module; use external `scipy.stats.f_oneway` or `statsmodels`):
 
 ```python
 from scipy.stats import f_oneway
 
-# Split intensities by group
+# groups: one list of sample indices per group, e.g. [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
+# Split intensities by group (metabolites x samples-in-group)
 group_data = [normalized[:, group_indices] for group_indices in groups]
-f_stats, pvals = f_oneway(*group_data)
+
+# axis=1 runs one ANOVA per metabolite (the default axis=0 would run it across metabolites)
+f_stats, pvals = f_oneway(*group_data, axis=1)
 ```
 
 ### Workflow 3: Spectral Library Matching
 
+`cosine_spectral_similarity()` compares two intensity vectors on the same m/z grid, so bin the spectra onto a common grid first (raw peak lists differ in length and m/z positions):
+
 ```python
+import numpy as np
+from metainformant.metabolomics import io, analysis
+
+def bin_spectrum(spec, min_mz=50.0, max_mz=1000.0, bin_width=0.1):
+    """Sum peak intensities into fixed m/z bins."""
+    edges = np.arange(min_mz, max_mz + bin_width, bin_width)
+    binned, _ = np.histogram(spec.mz_array, bins=edges, weights=spec.intensity_array)
+    return binned
+
 # Load query spectra (MGF)
 query_spectra = io.formats.read_mgf("sample.mgf")
 
-# Load reference library
+# Load reference library and bin it once
 library = io.formats.read_mgf("reference_library.mgf")
+library_bins = [bin_spectrum(ref) for ref in library]
 
 # For each query spectrum, find best library match
 for query in query_spectra:
+    query_bins = bin_spectrum(query)
     best_score = 0.0
     best_match = None
-    for ref in library:
-        score = analysis.identification.cosine_spectral_similarity(
-            query.intensity_array, ref.intensity_array
-        )
+    for ref, ref_bins in zip(library, library_bins):
+        score = analysis.identification.cosine_spectral_similarity(query_bins, ref_bins)
         if score > best_score:
             best_score = score
             best_match = ref
-    print(f"{query.scan_number} -> {best_match.scan_number} (cosine={best_score:.3f})")
+    if best_match is not None:
+        print(f"{query.scan_number} -> {best_match.scan_number} (cosine={best_score:.3f})")
 ```
 
 ## Next Steps

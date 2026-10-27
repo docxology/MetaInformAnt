@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - visualization
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/metabolomics/visualization`
+- **Path**: `src/metainformant/metabolomics/visualization`
 - **Purpose**: Metabolomics visualization sub-package.
 - **Domain**: metabolomics
 

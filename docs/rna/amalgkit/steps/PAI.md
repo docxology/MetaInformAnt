@@ -2,7 +2,7 @@
 
 ## Context & Intent
 
-- **Path**: `docs/rna/amalgkit/steps/` (relative to repo root)
+- **Path**: `docs/rna/amalgkit/steps` (relative to repo root)
 - **Purpose**: Per-command reference pages for the Amalgkit 0.16.60 workflow:
   inputs, outputs, options, and common issues per numbered stage.
 - **Domain**: `rna/amalgkit`. CLI source: pinned Amalgkit 0.16.60; Python

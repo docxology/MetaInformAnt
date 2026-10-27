@@ -17,7 +17,7 @@ def random_search(
     cv: int = 5,
     scoring: str | Callable | None = None,
     random_state: int | None = None,
-) -> dict[str, Any]
+) -> dict[str, Any]: ...
 ```
 
 **Actual Source:**
@@ -31,7 +31,7 @@ def random_search(
     cv: int = 5,
     metric: str = "accuracy",                   # Named 'metric' not 'scoring'
     random_state: int | None = None,
-) -> dict
+) -> dict: ...
 ```
 
 **Fix Options:**
@@ -52,7 +52,7 @@ def bayesian_optimization(
     cv: int = 5,
     scoring: str | Callable | None = None,
     random_state: int | None = None,
-) -> dict[str, Any]
+) -> dict[str, Any]: ...
 ```
 
 **Actual Source:**
@@ -62,13 +62,11 @@ def bayesian_optimization(
     param_space: dict,                          # dict[name] = {'low': float, 'high': float, 'log': bool}
     n_iter: int = 30,                           # Not 'n_iterations'
     n_initial: int = 5,
-    cv: int = 5,
-    metric: str = "accuracy",                   # Named 'metric'
     random_state: int | None = None,
-) -> dict
+) -> dict: ...
 ```
 
-**Note:** Source version does NOT take X, y directly — you must wrap your data in an objective function.
+**Note:** Source version does NOT take X, y directly — you must wrap your data in an objective function (any cross-validation or metric choice lives inside that function; there is no `cv` or `metric` parameter).
 
 **Fix:** Docs must be rewritten to show objective function pattern.
 
@@ -83,7 +81,7 @@ def grid_search(
     param_grid: dict[str, list[Any]],
     cv: int = 5,
     scoring: str | Callable | None = None,
-) -> dict[str, Any]
+) -> dict[str, Any]: ...
 ```
 
 **Actual Source:**
@@ -95,7 +93,7 @@ def grid_search(
     y: Any,
     cv: int = 5,
     metric: str = "accuracy",
-) -> dict
+) -> dict: ...
 ```
 
 ### auto_preprocess
@@ -109,19 +107,19 @@ def auto_preprocess(
     handle_missing: bool = True,
     feature_selection: bool = False,
     n_features: int | None = None,
-) -> dict[str, Any]
+) -> dict[str, Any]: ...
 ```
 
-**Actual Source (as of line 201):**
+**Actual Source:**
 ```python-snippet
 def auto_preprocess(
     X: Any,
     y: Any | None = None,
-) -> dict:
-    # Implementation truncated in read — check actual file
+) -> dict: ...
+# Returns: X_processed, transformations_applied, feature_info
 ```
 
-**Likely under-implemented relative to docs.**
+None of the documented options (`scale`, `handle_missing`, `feature_selection`, `n_features`) exist. The function always applies mean imputation to columns with NaN and standard scaling to columns that are neither binary nor categorical-like, and it reports what it did per feature.
 
 ---
 
@@ -139,7 +137,7 @@ def cross_validate_biological(
     scoring: str | list[str] | None = None,
     stratified: bool = True,
     random_state: int | None = None,
-) -> dict[str, Any]
+) -> dict[str, Any]: ...
 ```
 
 **Actual Source:**
@@ -154,7 +152,7 @@ def cross_validation_scores(
     scoring: str | List[str] = "accuracy",
     stratified: bool = True,
     random_state: int | None = None,
-) -> Dict[str, np.ndarray]:
+) -> Dict[str, np.ndarray]: ...
 ```
 **Returns:** Dict mapping metric name → array of fold scores (NOT named `mean_accuracy` etc.)
 
@@ -162,16 +160,18 @@ def cross_validation_scores(
 ```python-snippet
 def cross_validate(
     model: Any = None,
-    X: np.ndarray = None,
-    y: np.ndarray = None,
+    X: np.ndarray | None = None,
+    y: np.ndarray | None = None,
     cv: int = 5,
     scoring: str = "accuracy",
     classifier_func: Any = None,
     cv_folds: int | None = None,
     random_state: int | None = None,
-) -> Dict[str, Any]:
+) -> Dict[str, Any]: ...
 ```
 This is a more general wrapper.
+
+A function named `cross_validate_biological` does exist, but in `models/classification.py`, with a different purpose and signature: `cross_validate_biological(X, y, method="rf", cv_folds=5, random_state=None, algorithm=None, parallel_jobs=-1, **kwargs)` cross-validates a classifier chosen by name and returns a dict (`cross_validation` per-metric `mean`/`std`/`scores`, plus top-level `accuracy` and `mean_accuracy`). A metric that cannot be computed raises instead of becoming a `None` or NaN entry: the original exception propagates with the failing metric named in an exception note, and non-finite fold scores raise a `ValueError`. `compare_classifiers(X, y, methods=None, cv_folds=5, random_state=None)` in the same module runs it per method and returns `{"comparison": ..., "best_method": ...}`; a failed method is reported as `{"error": message}` under `comparison`, is never selected, and `best_method` is `None` when every method failed.
 
 **Recommendation:** Either rename source to match docs or update docs to show actual function names.
 
@@ -180,16 +180,16 @@ This is a more general wrapper.
 **Documented:** Does not exist in source.
 
 **Closest alternatives:**
-- `bootstrap_validate(model_factory, X, y, n_bootstraps, test_size, random_state, **kwargs)`
-- `validate_model_stability(model_factory, X, y, n_bootstraps, test_size, random_state, **kwargs)`
+- `bootstrap_validate(X, y, model_func, n_bootstrap=100, test_size=0.2, random_state=42)`
+- `validate_model_stability(X, y, model_factory, n_bootstraps=50, test_size=0.2, random_state=None, **kwargs)`
 
-Both take `model_factory` (callable) not a fitted model.
+Neither takes a fitted model: `bootstrap_validate` takes `model_func(X_train, y_train, X_test, y_test)` (returning predictions or a dict) and reports `mean_mse`/`std_mse`; `validate_model_stability` takes a `model_factory` that returns a new estimator and reports accuracy (or R-squared) statistics. Neither computes confidence intervals.
 
 ### learning_curve_analysis
 
 **Documented:** Does not exist.
 
-**Source has:** `learning_curve(model, X, y, train_sizes=None, cv=5, scoring="accuracy")`
+**Source has:** `learning_curve(X, y, model_factory=None, train_sizes=None, cv=5, random_state=42, classifier_func=None, cv_folds=None)` returning `train_sizes`, `train_scores`, `validation_scores` and `cv_folds` (default `train_sizes` is `np.linspace(0.1, 1.0, 10)`).
 
 ### permutation_test
 
@@ -212,7 +212,7 @@ def compute_permutation_importance(
     n_repeats: int = 10,
     scoring: Callable | None = None,      # Named 'scoring'
     random_state: int | None = None,
-) -> dict[str, Any]
+) -> dict[str, Any]: ...
 # Returns: importances, importances_std, ranking, scores_per_feature
 ```
 
@@ -225,7 +225,7 @@ def compute_permutation_importance(
     n_repeats: int = 10,
     metric: str = "accuracy",            # Named 'metric' not 'scoring'
     random_state: int | None = None,
-) -> dict
+) -> dict: ...
 # Returns: importances_mean, importances_std, feature_names, baseline_score
 # NO 'ranking' key, NO 'scores_per_feature' — different return structure
 ```
@@ -240,11 +240,23 @@ def compute_lime_explanation(
     instance_index: int,
     n_features: int = 10,
     n_samples: int = 1000,
-) -> dict[str, Any]
+) -> dict[str, Any]: ...
 # Returns: feature_weights, intercept, local_prediction, actual_prediction, r_squared
 ```
 
-**Actual Source (inferred from reading):** Signature and return format differ; LIME implementation uses custom pure-Python approach. Exact signature not fully captured in initial read — verify in source file line 600+.
+**Actual Source:**
+```python-snippet
+def compute_lime_explanation(
+    predict_fn: Any,                      # Callable on a 2D array, not 'model'
+    instance: list[float],                # The instance itself, not 'instance_index'
+    feature_names: list[str],             # Required
+    n_samples: int = 1000,
+    n_features: int = 10,
+    kernel_width: float | None = None,
+) -> dict: ...
+# Returns: coefficients, intercept, local_prediction, r_squared, feature_contributions
+# NO 'feature_weights', NO 'actual_prediction'
+```
 
 ### feature_interaction
 
@@ -254,10 +266,21 @@ def feature_interaction(
     model: Any,
     X: Any,
     feature_pairs: list[tuple[int, int]] | None = None,
-) -> dict[str, Any]
+) -> dict[str, Any]: ...
 ```
 
-**Source has additional parameters** (per grep). Check source for exact signature.
+**Actual Source:**
+```python-snippet
+def feature_interaction(
+    model: Any,
+    X: Any,
+    feature_i: int,                       # One pair per call, not 'feature_pairs'
+    feature_j: int,
+    n_grid: int = 20,
+) -> dict: ...
+# Returns: grid_i, grid_j, pdp_values, interaction_strength
+# NO 'interaction_scores', NO 'top_interactions'
+```
 
 ### compute_shap_values_kernel
 
@@ -268,7 +291,7 @@ def compute_shap_values_kernel(
     X: Any,
     n_samples: int = 100,
     background: Any | None = None,
-) -> dict
+) -> dict: ...
 ```
 
 Docs show `model` as first param but source expects `predict_fn` (model.predict or model.predict_proba).
@@ -281,7 +304,7 @@ Docs show `model` as first param but source expects `predict_fn` (model.predict 
 
 **Documented:**
 ```python-snippet
-def boruta_selection(model, X, y, max_iter=100, random_state=None) -> dict
+def boruta_selection(model, X, y, max_iter=100, random_state=None) -> dict: ...
 ```
 
 **Actual Source:**
@@ -292,7 +315,7 @@ def boruta_selection(
     max_iter: int = 100,
     alpha: float = 0.05,                  # Extra parameter not in docs
     random_state: int | None = None,
-) -> dict:
+) -> dict: ...
 ```
 **Does NOT take `model` parameter** — builds internal random forest. Docs incorrectly show `model` as first arg.
 
@@ -300,7 +323,7 @@ def boruta_selection(
 
 **Documented generically:**
 ```python-snippet
-def recursive_elimination(model, X, y, n_features=None, cv=5) -> dict
+def recursive_elimination(model, X, y, n_features=None, cv=5) -> dict: ...
 ```
 
 **Actual Source:**
@@ -312,14 +335,14 @@ def recursive_elimination(
     n_features: int = 10,
     step: int = 1,                         # Missing in docs
     cv: int = 5,
-) -> dict
+) -> dict: ...
 ```
 Additional `step` parameter controls elimination step size.
 
 ### mutual_information_selection
 
-**Documented:** Simple signature
-**Source:** Has more complex implementation with internal `_mi_continuous`, `_mi_discrete_continuous` helpers. Return format is dictionary.
+**Documented:** `mutual_information_selection(X, y, k=20) -> dict`
+**Source:** `mutual_information_selection(X, y, n_features=20, discrete_target=True, n_bins=10) -> dict` (parameter `n_features`, not `k`), returning `selected_features`, `mi_scores` and `ranking`.
 
 ---
 
@@ -338,7 +361,7 @@ Additional `step` parameter controls elimination step size.
 **Actual:** No such function exists in `classification.py`.
 
 **Alternatives:**
-- `train_ensemble_classifier(X, y, n_estimators, ...)` — returns BiologicalClassifier
+- `train_ensemble_classifier(X_train, y_train, n_estimators=10, ...)` — returns BiologicalClassifier
 - `create_biological_classifier(method, **kwargs)` — factory, still need to `.fit()`
 - Direct instantiation: `BiologicalClassifier(algorithm=method).fit(X, y)`
 
@@ -379,21 +402,20 @@ All domain-specific methods are missing:
 
 | Function | Docs Promise | Source Returns | Impact |
 |---|---|---|---|
-| `cross_validate_biological` | Named keys `mean_accuracy`, `std_accuracy` | Raw score arrays per metric | Need to compute mean/std from arrays |
+| `cross_validate_biological` (`models/classification.py`) | Named keys `mean_accuracy`, `std_accuracy` | Top-level `accuracy` and `mean_accuracy`, plus `cross_validation[metric]` with `mean`, `std` and `scores`; there is no top-level `std_accuracy` | Read the spread from `cross_validation["accuracy"]["std"]`; a metric that cannot be computed raises, so no entry is `None` or NaN |
+| `cross_validation_scores` (`evaluation/validation.py`, the function the documented signature matches) | Named keys `mean_accuracy`, `std_accuracy` | Raw per-fold score arrays per metric (an empty array for a metric that could not be computed) | Need to compute mean/std from arrays |
 | `permutation_importance` | `importances`, `ranking`, `scores_per_feature` | `importances_mean`, `importances_std`, `feature_names` | Key names differ; no ranking computed |
-| `model_selection` | `best_model` (fitted model), `model_scores` (ranked) | Returns dict, check exact structure | Verify `best_model` is actually fitted model object |
+| `model_selection` | `best_model` (fitted model), `model_scores` (ranked) | `best_model_type` (name), `rankings` (sorted `(model_type, score)` tuples), `cv_results_per_model` | No fitted model is returned |
 
 ---
 
 ## Import Path Issues
 
-Docs sometimes use:
-
-```python-snippet
-from metainformant.ml import classification
-```
+Docs sometimes import submodule contents straight from `metainformant.ml`, for example the submodule `classification` or the function `compute_permutation_importance`.
 
 But `ml/__init__.py` only exports submodules (`automl`, `deep_learning`, `evaluation`, `features`, `interpretability`, `llm`, `models`). It does NOT import functions from submodules into top-level.
+
+So both imports fail with `ImportError` (`classification` lives in `ml.models`, and the explainer functions live in `ml.interpretability.explainers`).
 
 To use classification:
 ```python
@@ -401,10 +423,7 @@ from metainformant.ml.models import classification
 from metainformant.ml.models.classification import BiologicalClassifier
 ```
 
-Not:
-```python-snippet
-from metainformant.ml import classification  # ✗ This fails unless added to __init__
-```
+The evaluation, interpretability and AutoML functions are imported the same way, from their own modules (`metainformant.ml.evaluation.validation`, `metainformant.ml.interpretability.explainers`, `metainformant.ml.interpretability.feature_selection`, `metainformant.ml.automl.optimization`).
 
 **Fix**: Either update `ml/__init__.py` to re-export commonly-used functions or correct all import examples.
 

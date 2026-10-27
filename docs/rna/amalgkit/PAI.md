@@ -2,7 +2,7 @@
 
 ## Context & Intent
 
-- **Path**: `docs/rna/amalgkit/` (relative to repo root)
+- **Path**: `docs/rna/amalgkit` (relative to repo root)
 - **Purpose**: Documentation for the Amalgkit 0.16.60 cross-species RNA-seq
   integration: command chain, genome prep, ortholog generation, monitoring.
 - **Domain**: `rna` — implementation in `src/metainformant/rna/` + `projects/hymenoptera_amalgkit/`.

@@ -20,7 +20,7 @@ graph TD
         CE --> |EventDatabase| DB[Event Storage]
         CC[core/config.py] --> CF[Configuration]
 
-        ME[models/embeddings.py] --> |learn_event_embeddings| EM[Word2Vec-style Embeddings]
+        ME[models/embeddings.py] --> |learn_event_embeddings| EM[word2vec Embeddings]
         ME --> |biological_embedding| BE[Domain Embeddings]
 
         AI[analysis/interpretability.py] --> |attention_weights| AW[Model Interpretation]

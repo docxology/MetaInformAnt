@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - workflow
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/protein/workflow`
+- **Path**: `src/metainformant/protein/workflow`
 - **Purpose**: Protein analysis workflow orchestration.
 - **Domain**: protein
 

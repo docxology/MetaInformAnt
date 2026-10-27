@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - io
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/spatial/io`
+- **Path**: `src/metainformant/spatial/io`
 - **Purpose**: Spatial data I/O module for METAINFORMANT.
 - **Domain**: spatial
 

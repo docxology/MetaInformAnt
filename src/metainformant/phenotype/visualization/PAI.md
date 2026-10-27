@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - visualization
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/phenotype/visualization`
+- **Path**: `src/metainformant/phenotype/visualization`
 - **Purpose**: Functionality for visualization.
 - **Domain**: phenotype
 

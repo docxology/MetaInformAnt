@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - visualization
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/scripts/visualization`
+- **Path**: `scripts/visualization`
 - **Purpose**: Functionality for visualization.
 - **Domain**: scripts
 

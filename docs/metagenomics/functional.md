@@ -1,70 +1,74 @@
 # Functional Annotation and Pathway Reconstruction
 
-Gene prediction, functional annotation via profile HMM search, gene family classification, metabolic pathway reconstruction, and cross-sample pathway comparison.
+Gene prediction, functional annotation by scoring against position-specific profiles (a simplified stand-in for profile HMM search), gene family classification, metabolic pathway reconstruction, and cross-sample pathway comparison.
 
 ## Key Concepts
 
-**ORF prediction** scans all six reading frames for open reading frames defined by start and stop codons. Supports partial ORFs at contig edges, which are common in metagenomic assemblies. Uses bacterial genetic code (NCBI Table 11) by default.
+**ORF prediction** scans all six reading frames for open reading frames defined by start (ATG, GTG, TTG) and stop codons. Supports partial ORFs at contig edges, which are common in metagenomic assemblies. Translation always uses the standard codon table (the same amino-acid assignments as NCBI Table 11); the `translation_table` argument is accepted but not used. Every in-frame start codon upstream of a stop produces its own ORF if that ORF reaches `min_length`, so ORFs that share a stop codon are nested and overlap. With `allow_partial=True`, position 0 of frame 0 also counts as an implicit start, so an ORF that really starts there can be reported twice.
 
-**HMM-based annotation** scores predicted protein sequences against position-specific scoring matrices (PSSMs) representing gene families from COG, KEGG, and Pfam databases. In production, HMMER profiles would replace the simplified scoring.
+**HMM-based annotation** scores predicted protein sequences against position-specific scoring matrices (PSSMs) representing gene families from COG, KEGG, and Pfam databases. No profile database is bundled: pass your own as `hmm_db` (see `annotate_genes`). In production, HMMER profiles would replace the simplified ungapped scoring.
 
-**Pathway reconstruction** maps annotated KO/EC identifiers to known metabolic pathways (KEGG) and scores pathway completeness as the fraction of required reactions present. Built-in definitions cover glycolysis, TCA cycle, pentose phosphate, oxidative phosphorylation, nitrogen metabolism, methane metabolism, and others.
+**Pathway reconstruction** maps annotated KO/EC identifiers to known metabolic pathways (KEGG) and scores pathway completeness as the fraction of required KOs/ECs present. A definition may also list `reaction_steps` (alternatives per step), but only `calculate_pathway_completeness` scores steps; `reconstruct_pathways` still matches `required_kos`/`required_ecs` and merely uses the number of steps as the denominator. Built-in definitions (glycolysis, TCA cycle, pentose phosphate, oxidative phosphorylation, nitrogen metabolism, methane metabolism, and others) have no reaction steps.
 
 ## Data Models
 
 ### Annotation
 
-- `ORF`: `sequence_id`, `start`, `end`, `strand`, `nucleotide_seq`, `protein_seq`, `frame`, `partial`.
-- `HMMHit`: `query_id`, `target_id`, `target_name`, `score`, `e_value`, `bias`, `domain_score`, `domain_e_value`.
-- `FunctionalAnnotation`: `orf_id`, `gene_families`, `kegg_orthologs`, `cog_categories`, `pfam_domains`, `ec_numbers`, `best_hit`, `confidence`.
+- `ORF`: `sequence_id`, `start`, `end`, `strand`, `nucleotide_seq`, `protein_seq`, `frame`, `partial`, plus the properties `length_nt` and `length_aa`.
+- `HMMHit`: `query_id`, `target_id`, `target_name`, `score`, `e_value`, `bias`, `domain_score`, `domain_e_value`, `query_start`, `query_end`, `target_start`, `target_end`, `description`.
+- `FunctionalAnnotation`: `orf_id`, `gene_families`, `kegg_orthologs`, `cog_categories`, `pfam_domains`, `ec_numbers`, `best_hit`, `description`, `confidence`.
 
 ### Pathways
 
-- `PathwayDefinition`: `pathway_id`, `name`, `database`, `required_kos`, `required_ecs`, `optional_kos`, `reaction_steps`, `category`, `subcategory`.
-- `PathwayResult`: `pathway_id`, `pathway_name`, `completeness`, `matched_kos`, `missing_kos`, `redundancy`, `confidence`.
+- `PathwayDefinition`: `pathway_id`, `name`, `description`, `database`, `required_kos`, `required_ecs`, `optional_kos`, `reaction_steps`, `category`, `subcategory`, plus the property `total_required`.
+- `PathwayResult`: `pathway_id`, `pathway_name`, `completeness`, `matched_kos`, `matched_ecs`, `missing_kos`, `missing_ecs`, `total_required`, `total_matched`, `redundancy`, `confidence`.
 
 ## Function Reference
+
+The `metainformant.metagenomics` package exposes only submodules. The functions live in `metainformant.metagenomics.functional.annotation` (`predict_orfs`, `annotate_genes`, `classify_gene_families`) and `metainformant.metagenomics.functional.pathways` (`reconstruct_pathways`, `calculate_pathway_completeness`, `compare_pathway_profiles`, `find_differential_pathways`).
 
 ### Gene Prediction
 
 #### `predict_orfs(sequence, sequence_id="seq", min_length=100, allow_partial=True, translation_table=11) -> List[ORF]`
 
-Predict open reading frames in all six reading frames. Returns ORFs sorted by position with nucleotide and translated protein sequences.
+Predict open reading frames in all six reading frames. `min_length` is in nucleotides. Returns ORFs sorted by position with nucleotide and translated protein sequences; reverse-strand ORFs report forward-strand coordinates. All ORFs from one call share `sequence_id`, so build unique keys (for example from the index or the coordinates) before using them as gene IDs. `translation_table` is not used.
 
 ### Annotation
 
 #### `annotate_genes(sequences, hmm_db=None, e_value_threshold=1e-5, min_score=25.0) -> List[FunctionalAnnotation]`
 
-Annotate protein sequences against an HMM database. Profile IDs prefixed with `KO:` map to KEGG, `COG:` to COG categories, and `PF` to Pfam domains. EC numbers are extracted from annotation strings.
+Annotate protein sequences (`dict` of gene ID -> protein sequence) against an HMM database, given as `{profile_id: {position: {amino_acid: score}}}`. A profile hits when its best ungapped alignment score, averaged over the matched positions, reaches `min_score`. Profile IDs prefixed with `KO:` map to KEGG (`kegg_orthologs`, prefix removed), `COG:` to COG categories (`cog_categories`, prefix removed), and `PF` to Pfam domains (`pfam_domains`); any other ID goes to `gene_families`. EC numbers are extracted from `gene_families` entries that contain `EC:<a.b.c.d>`. Without `hmm_db` every annotation is empty. `e_value_threshold` is accepted but not used (hit E-values are 0.0), and `confidence` is `min(1, best_score / 100)`.
 
 #### `classify_gene_families(genes, database="COG", reference_profiles=None, min_score=20.0) -> Dict[str, List[str]]`
 
-Classify genes into functional families. When no HMM profiles are available, falls back to amino acid composition heuristics.
+Classify genes (`dict` of gene ID -> protein sequence) into functional families, where `database` is `"COG"`, `"KEGG"` or `"Pfam"`. With `reference_profiles` (same format as `hmm_db`; only profiles whose ID starts with the database prefix are used) it returns the IDs of all profiles scoring at least `min_score` (an empty or non-matching profile set gives empty lists). Only when `reference_profiles` is None does it fall back to amino acid composition heuristics with hard-coded thresholds, which are crude placeholders rather than real family assignments.
 
 ### Pathway Reconstruction
 
 #### `reconstruct_pathways(annotations, database="KEGG", pathway_definitions=None, min_completeness=0.0) -> List[PathwayResult]`
 
-Map functional annotations to metabolic pathways and score completeness. Uses built-in KEGG pathway definitions when no custom set is provided. Confidence score combines completeness with gene copy redundancy.
+Map functional annotations to metabolic pathways and score completeness. `annotations` is a dict of gene ID -> list of KO (`K` plus five digits) and EC identifiers, not a list of `FunctionalAnnotation` objects. Uses built-in KEGG pathway definitions (`database` only filters these; no MetaCyc pathways are built in) when no custom set is provided. Returns the pathways sorted by completeness, descending. `completeness` is (matched required KOs and ECs) / `total_required`; for a custom definition that lists `reaction_steps`, `total_required` is the number of steps, so the value can exceed 1.0. `redundancy` is the mean number of gene copies per matched KO, and `confidence` is `completeness * min(1, redundancy)`.
 
 #### `calculate_pathway_completeness(pathway, annotations) -> float`
 
-Score a single pathway's completeness given a set of observed KO/EC annotations.
+Score a single pathway's completeness. `pathway` is a `PathwayDefinition` object and `annotations` is a set of observed KO/EC identifiers. If the definition has `reaction_steps`, a step counts as complete when any of its alternatives is present; otherwise the fraction of `required_kos` and `required_ecs` present is returned.
 
-#### `compare_pathway_profiles(samples, pathway_definitions=None) -> Dict[str, Dict[str, float]]`
+#### `compare_pathway_profiles(samples, pathway_definitions=None, database="KEGG") -> Dict[str, Dict[str, float]]`
 
-Compare pathway completeness across multiple samples. Returns a matrix of pathway_id -> {sample_id: completeness}.
+Compare pathway completeness across multiple samples (`samples` is a dict of sample ID -> the `annotations` dict taken by `reconstruct_pathways`). Returns a matrix of pathway_id -> {sample_id: completeness}.
 
-#### `find_differential_pathways(group1_samples, group2_samples, min_diff=0.2) -> List[Dict]`
+#### `find_differential_pathways(group1_samples, group2_samples, pathway_definitions=None, min_diff=0.2) -> List[Dict]`
 
-Identify pathways differentially present between two groups based on mean completeness difference. Returns pathway_id, group means, difference, and direction.
+Identify pathways differentially present between two groups based on mean completeness difference (no statistical test). Each group is a dict of sample ID -> annotations dict. Returns dicts with `pathway_id`, `pathway_name`, `group1_mean`, `group2_mean`, `difference`, `abs_difference`, and `direction` (`"group1_enriched"` or `"group2_enriched"`), sorted by `abs_difference`.
 
 ## Usage Examples
 
 ```python
-from metainformant.metagenomics import (
-    predict_orfs, annotate_genes, classify_gene_families,
-    reconstruct_pathways, compare_pathway_profiles,
+from metainformant.metagenomics.functional.annotation import (
+    annotate_genes, classify_gene_families, predict_orfs,
+)
+from metainformant.metagenomics.functional.pathways import (
+    compare_pathway_profiles, reconstruct_pathways,
 )
 
 # Predict ORFs from a contig
@@ -72,11 +76,11 @@ contig = "ATGAAAGCGTTTCGATCGATCGATCG" * 20 + "TAA"
 orfs = predict_orfs(contig, sequence_id="contig_001", min_length=50)
 print(f"Predicted {len(orfs)} ORFs")
 
-# Annotate predicted proteins
-proteins = {orf.sequence_id: orf.protein_seq for orf in orfs}
-annotations = annotate_genes(proteins)
+# Annotate predicted proteins (ORFs from one contig share sequence_id, so key by index)
+proteins = {f"{orf.sequence_id}_orf{i}": orf.protein_seq for i, orf in enumerate(orfs)}
+annotations = annotate_genes(proteins)  # no hmm_db given: every annotation is empty
 
-# Classify into COG families
+# Classify into COG families (composition heuristics without reference_profiles)
 families = classify_gene_families(proteins, database="COG")
 
 # Reconstruct metabolic pathways
@@ -95,7 +99,7 @@ profiles = compare_pathway_profiles(samples)
 | ID | Name | Required KOs |
 |----|------|-------------|
 | map00010 | Glycolysis / Gluconeogenesis | 11 |
-| map00020 | TCA cycle | 12 |
+| map00020 | Citrate cycle (TCA cycle) | 12 |
 | map00030 | Pentose phosphate pathway | 7 |
 | map00190 | Oxidative phosphorylation | 14 |
 | map00220 | Arginine biosynthesis | 8 |
@@ -105,7 +109,7 @@ profiles = compare_pathway_profiles(samples)
 
 ## Configuration
 
-Environment variable prefix: `META_`
+This module reads no environment variables (`annotation.py` and `pathways.py` define `_ENV_PREFIX = "META_"`, but no function uses it).
 
 ## Related Modules
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - ollama
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/ml/llm/ollama`
+- **Path**: `src/metainformant/ml/llm/ollama`
 - **Purpose**: Ollama backend for local LLM inference.
 - **Domain**: llm
 

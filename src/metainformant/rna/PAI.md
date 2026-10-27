@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - rna
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/rna`
+- **Path**: `src/metainformant/rna`
 - **Purpose**: RNA transcriptomic analysis and workflow orchestration module for METAINFORMANT.
 - **Domain**: metainformant
 

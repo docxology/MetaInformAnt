@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - amalgkit
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/rna/amalgkit`
+- **Path**: `src/metainformant/rna/amalgkit`
 - **Purpose**: Amalgkit RNA-seq workflow module exports.
 - **Domain**: rna
 

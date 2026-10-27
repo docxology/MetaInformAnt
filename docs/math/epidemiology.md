@@ -5,8 +5,8 @@ Functions: `sir_step`, `seir_step`, `sis_step`, `basic_reproduction_number`, `ef
 Example
 
 ```python
-from metainformant.math import sir_step, seir_step, sis_step
-from metainformant.math import basic_reproduction_number, effective_reproduction_number, herd_immunity_threshold
+from metainformant.math.epidemiology.models import sir_step, seir_step, sis_step
+from metainformant.math.epidemiology.models import basic_reproduction_number, effective_reproduction_number, herd_immunity_threshold
 
 Sn, In, Rn = sir_step(0.99, 0.01, 0.0, beta=0.5, gamma=0.25, dt=0.1)
 Sn, En, In, Rn = seir_step(0.99, 0.0, 0.01, 0.0, beta=0.5, sigma=0.2, gamma=0.25, dt=0.1)

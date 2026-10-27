@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - celltyping
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/singlecell/celltyping`
+- **Path**: `src/metainformant/singlecell/celltyping`
 - **Purpose**: Cell type annotation and classification for single-cell data.
 - **Domain**: singlecell
 

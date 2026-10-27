@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - chromatin_state
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/epigenome/chromatin_state`
+- **Path**: `src/metainformant/epigenome/chromatin_state`
 - **Purpose**: Chromatin state learning submodule for epigenome analysis.
 - **Domain**: epigenome
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - analysis
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/ecology/analysis`
+- **Path**: `src/metainformant/ecology/analysis`
 - **Purpose**: Functionality for analysis.
 - **Domain**: ecology
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - core
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/information/metrics/core`
+- **Path**: `src/metainformant/information/metrics/core`
 - **Purpose**: Core information theory metrics.
 - **Domain**: metrics
 

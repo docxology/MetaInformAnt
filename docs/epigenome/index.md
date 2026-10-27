@@ -1,79 +1,81 @@
 ### Epigenome: Overview
 
-Epigenetic modification analysis including DNA methylation patterns and chromatin accessibility.
+Epigenetic modification analysis including DNA methylation patterns, histone modification (ChIP-seq) peaks, chromatin accessibility and chromatin states.
 
 ## Key Components
 
 ### DNA Methylation Analysis
-- **Methylation calling**: Identify methylated cytosines from sequencing data
-- **Differential methylation**: Compare methylation patterns between conditions
-- **Promoter analysis**: Assess methylation status of regulatory regions
-- **CpG island analysis**: Study methylation in CpG-rich regions
+Implemented in `metainformant.epigenome.assays.methylation`.
+- **Methylation data loading**: Read per-site methylation calls from BEDgraph and coverage files or count tables (`load_methylation_bedgraph`, `load_methylation_cov`, `load_cpg_table`). Calling methylation from reads or alignments is not implemented in this module
+- **Differential methylation**: Compare methylation patterns between conditions (`find_differentially_methylated_regions`)
+- **CpG island screening**: Window scan that estimates CpG-island-like regions from methylation levels (`identify_cpg_islands`); it does not read sequence
 
 ### Chromatin Accessibility
-- **ATAC-seq analysis**: Open chromatin region identification
-- **Peak calling**: Statistical detection of accessible regions
-- **Motif analysis**: Transcription factor binding site discovery
-- **Differential accessibility**: Compare chromatin states between samples
+- **ATAC-seq analysis**: Load, summarize and compare accessible-region peaks (`metainformant.epigenome.assays.atacseq`)
+- **Peak calling**: Statistical detection of enriched regions from signal tracks with a Poisson model (`metainformant.epigenome.peak_calling.peak_detection`)
+- **Motif scanning**: Search peak windows for IUPAC motif patterns in a genome FASTA (`assays.chipseq.find_motifs_in_peaks`)
+- **Differential accessibility**: Compare peak sets between conditions (`atacseq.compare_atac_conditions`, `peak_detection.differential_peaks`)
+
+### Histone Modifications
+- **ChIP-seq peak analysis**: Load, filter, summarize, overlap and merge peaks (`metainformant.epigenome.assays.chipseq`)
+- **Chromatin state learning**: Discover and label chromatin states from histone mark signal (`metainformant.epigenome.chromatin_state`)
 
 ## Integration with Genomics
 
-Epigenetic data integrates closely with genomic analysis:
-- **Gene regulation**: Connect methylation/accessibility to gene expression
-- **Chromatin structure**: Link to 3D genome organization
-- **Functional annotation**: Associate epigenetic marks with biological function
-- **Comparative epigenetics**: Study epigenetic evolution across species
+Epigenetic data integrates with genomic annotation in two ways within this module:
+- **Multi-assay integration**: `workflow.workflow.integrate_epigenome_results` relates methylation sites to ChIP-seq and ATAC-seq peaks
+- **Functional annotation**: `chromatin_state.state_learning.interpret_states` labels chromatin states from histone mark patterns, and `compute_state_enrichment` tests the states against annotated bins
+
+Not implemented here: connecting methylation or accessibility to gene expression (the `metainformant.multiomics` module accepts an epigenome table through `analysis.integration.integrate_omics_data(..., epigenome_data=...)`), linking to 3D genome organization, and cross-species comparison.
 
 ## Analysis Workflows
 
 ### Methylation Analysis Pipeline
 ```python-snippet
-from metainformant.epigenome import methylation
+from metainformant.epigenome.assays import methylation
 
-# Load methylation data (Bismark output)
-methylation_data = methylation.load_bismark_output("methylation_calls.txt")
+# Load methylation data (Bismark coverage files: chromosome, start, end,
+# percentage, methylated reads, unmethylated reads)
+treatment_data = methylation.load_methylation_cov("treatment.cov")
+control_data = methylation.load_methylation_cov("control.cov")
 
-# Calculate methylation levels
-methylation_levels = methylation.calculate_methylation_levels(methylation_data)
+# Summarize methylation levels and coverage
+stats = methylation.calculate_methylation_statistics(treatment_data)
+print(stats["total_sites"], stats["mean_methylation"])
 
 # Find differentially methylated regions
-differential = methylation.find_differential_methylation(
+differential = methylation.find_differentially_methylated_regions(
     treatment_data,
     control_data,
-    p_value_threshold=0.05
-)
-
-# Analyze promoter methylation
-promoter_methylation = methylation.analyze_promoter_methylation(
-    methylation_data,
-    promoter_regions
+    delta_threshold=0.2,
+    p_value_threshold=0.05,
 )
 ```
 
 ### Chromatin Accessibility Pipeline
 ```python-snippet
-from metainformant.epigenome import tracks
+from metainformant.epigenome.assays import atacseq
 
-# Load ATAC-seq peaks
-atac_peaks = tracks.load_atac_peaks("peaks.bed")
+# Load ATAC-seq peaks (narrowPeak format)
+control_peaks = atacseq.load_atac_peaks("control_peaks.narrowpeak")
+treated_peaks = atacseq.load_atac_peaks("treated_peaks.narrowpeak")
 
-# Calculate accessibility metrics
-accessibility_scores = tracks.calculate_accessibility(atac_peaks, genome_annotation)
+# Summary statistics, including nucleosome fractions derived from peak lengths
+stats = atacseq.calculate_atac_statistics(treated_peaks)
+print(stats["total_peaks"], stats["nfr_peak_fraction"])
 
-# Identify transcription factor motifs
-motifs = tracks.find_motifs_in_peaks(atac_peaks, motif_database="JASPAR")
+# Accessibility index for regions of interest, given as (chromosome, start, end)
+regions = [("chr1", 1000, 5000), ("chr2", 200, 4000)]
+accessibility = atacseq.calculate_chromatin_accessibility_index(treated_peaks, regions)
 
 # Compare accessibility between conditions
-differential_accessibility = tracks.compare_accessibility(
-    condition1_peaks,
-    condition2_peaks
-)
+comparison = atacseq.compare_atac_conditions(control_peaks, treated_peaks)
+print(comparison["overlapping_peaks"], comparison["overlap_percentage"])
 ```
 
 ## Planned Extensions
 
 Future epigenetic analysis modules will include:
-- **Histone modifications**: ChIP-seq analysis for histone marks
 - **DNA hydroxymethylation**: 5hmC analysis and mapping
 - **RNA modifications**: epitranscriptomics analysis
 - **3D genome structure**: Hi-C and chromatin conformation analysis

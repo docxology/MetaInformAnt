@@ -92,13 +92,22 @@ graph TD
 ## Quick Start
 
 ```python
+import random
+
 from metainformant.longread.workflow.orchestrator import LongReadOrchestrator
 from metainformant.longread.workflow.pipelines import get_qc_pipeline_config
 
-# Run the QC pipeline over a directory of reads
+# Run the QC pipeline over a list of read dictionaries. A Path to a single
+# FAST5, POD5, BAM or CRAM file also works; a directory does not.
+rng = random.Random(0)
+reads = [
+    {"read_id": f"read{i}", "sequence": "".join(rng.choice("ACGT") for _ in range(1500)), "quality_string": "5" * 1500}
+    for i in range(20)
+]
 config = get_qc_pipeline_config()
 orchestrator = LongReadOrchestrator(config, "output/longread/")
-result = orchestrator.run_qc_pipeline("data/nanopore_run/")
+result = orchestrator.run_qc_pipeline(reads)
+print(result.success, [step.name for step in result.steps])  # PipelineResult: success, steps, summary, ...
 
 # Or work with individual submodules
 from metainformant.longread.io import fast5, bam
@@ -117,9 +126,29 @@ Long-read data integrates with other METAINFORMANT modules for multi-omic analys
 from metainformant.longread.analysis import structural
 from metainformant.structural_variants import population
 
-# SV calls from long reads feed into population-level SV analysis
+# Alignments may be LongReadAlignment objects or plain dicts; here, three reads carry the same 300 bp deletion
+alignments = [
+    {"read_name": f"read{i}", "reference_name": "chr1", "reference_start": 10_000 + i,
+     "cigar_string": "2000M300D2000M", "mapping_quality": 60}
+    for i in range(3)
+]
+
+# SV calls from long reads: a list of StructuralVariant objects
 sv_calls = structural.detect_sv_from_long_reads(alignments)
-pop_result = population.analyze(sv_calls, sample_metadata)
+
+# Population-level SV analysis takes call dictionaries with per-sample evidence
+calls = [
+    {
+        "chrom": sv.chromosome, "start": sv.start, "end": sv.end, "sv_type": sv.sv_type,
+        "samples": {
+            "sample1": {"split_reads": sv.supporting_reads, "total_reads": 10},
+            "sample2": {"split_reads": 0, "total_reads": 10},
+        },
+    }
+    for sv in sv_calls
+]
+pop_result = population.genotype_sv_population(calls, ["sample1", "sample2"], method="split")
+print(pop_result["genotype_matrix"])  # [[1, 0]]: heterozygous in sample1, absent in sample2
 ```
 
 ## Related

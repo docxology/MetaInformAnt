@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - phasing
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/longread/phasing`
+- **Path**: `src/metainformant/longread/phasing`
 - **Purpose**: Haplotype phasing submodule for long-read sequencing.
 - **Domain**: longread
 

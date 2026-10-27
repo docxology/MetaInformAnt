@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - visualization
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/pharmacogenomics/visualization`
+- **Path**: `src/metainformant/pharmacogenomics/visualization`
 - **Purpose**: Pharmacogenomics visualization subpackage.
 - **Domain**: pharmacogenomics
 

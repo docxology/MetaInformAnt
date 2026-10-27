@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - visualization
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/scripts/gwas/visualization`
+- **Path**: `scripts/gwas/visualization`
 - **Purpose**: Functionality for visualization.
 - **Domain**: gwas
 

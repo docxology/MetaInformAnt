@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - singlecell
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/scripts/singlecell`
+- **Path**: `scripts/singlecell`
 - **Purpose**: Functionality for singlecell.
 - **Domain**: scripts
 

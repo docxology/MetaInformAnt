@@ -208,34 +208,46 @@ def joint_nmf(
 
 ### canonical_correlation
 
-Perform Canonical Correlation Analysis between two omics layers.
+Perform ridge-regularized canonical correlation analysis (CCA) between two omics layers.
 
 ```python-snippet
 def canonical_correlation(
-    omics_data: MultiOmicsData,
-    layer_pair: Tuple[str, str],
+    multiomics_data: Union[MultiOmicsData, Dict[str, pd.DataFrame]],
+    layers: Optional[Tuple[str, str]] = None,
+    layer_pair: Optional[Tuple[str, str]] = None,
     n_components: int = 10,
-    regularization: float = 0.01,
+    regularization: float = 0.0,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
 ```
 
+Each layer is standardized first (columns centred and scaled to unit sample variance), so the within-layer covariance matrices `Cxx` and `Cyy` are correlation matrices. The canonical directions `a` and `b` maximise the correlation of the projected layers under the constraints `a'(Cxx + λI)a = b'(Cyy + λI)b = 1`, where `λ` is `regularization`. The canonical correlations are the singular values of `(Cxx + λI)^(-1/2) Cxy (Cyy + λI)^(-1/2)`. The solution is closed form: it comes from thin SVDs of the standardized layers, with no iteration and no feature-by-feature matrices, so layers with many more features than samples are supported.
+
 **Parameters:**
 
-- `omics_data` (MultiOmicsData): Multi-omics data object with aligned samples
-- `layer_pair` (Tuple[str, str]): Tuple of (layer1_name, layer2_name) to analyze. Both layers must exist in omics_data.layer_names
-- `n_components` (int): Number of canonical variate pairs to extract. Must be positive and less than min(n_samples, n_features_X, n_features_Y). Default: 10
-- `regularization` (float): Ridge regularization parameter for covariance matrices (prevents singular matrix issues). Should be positive and typically small (0.001-0.1). Larger values provide more stability but may bias results. Default: 0.01
+- `multiomics_data` (MultiOmicsData or Dict[str, pd.DataFrame]): Multi-omics data object, or a dictionary that maps layer names to samples × features DataFrames. A `MultiOmicsData` object is already sample-aligned. The rows of a plain dictionary are matched by position, so list the samples in the same order in both layers.
+- `layers` (Optional[Tuple[str, str]]): Names of the two layers to correlate; both must exist in the data. If omitted, the data must hold exactly two layers, which are used in their stored order.
+- `layer_pair` (Optional[Tuple[str, str]]): Alias for `layers`.
+- `n_components` (int): Number of canonical pairs to extract; must be at least 1. Default: 10. The number of pairs is capped at the smaller of the two layers' feature counts. Fewer pairs are also returned when the numerical rank of the layers supports fewer (the rank is at most `n_samples - 1`); that case logs a warning.
+- `regularization` (float): Ridge parameter `λ >= 0` on the scale of a correlation matrix, added to the diagonal of each within-layer covariance matrix. It must be finite. Default: 0.0, which is classical, unregularized CCA. Larger values shrink every canonical correlation, and each correlation is non-increasing in `λ`. Without regularization, when the ranks of the two layers add up to more than `n_samples - 1` (for example with far more features than samples), at least that excess number of canonical correlations equal exactly 1, a perfect in-sample fit, and a warning is logged. Use `λ > 0` for such data.
+
+The function takes no other keyword arguments.
 
 **Returns:**
-- Tuple containing:
-  - `X_canonical`: Canonical variates for first layer (n_samples, n_components)
-  - `Y_canonical`: Canonical variates for second layer (n_samples, n_components)
-  - `X_weights`: Feature weights for first layer (n_features_X, n_components)
-  - `Y_weights`: Feature weights for second layer (n_features_Y, n_components)
-  - `correlations`: Canonical correlations for each component pair
+- Tuple `(X_c, Y_c, X_weights, Y_weights, correlations)`:
+  - `X_c`, `Y_c`: Canonical variates for the first and second layer, shape (n_samples, n_pairs)
+  - `X_weights`, `Y_weights`: Canonical coefficients on the standardized features, shape (n_features, n_pairs). They reproduce the variates: `X_c = standardized_X @ X_weights`, where `standardized_X` is the layer with each column centred and divided by its sample standard deviation (`ddof=1`); likewise for `Y_c`. With `regularization == 0` the variates have unit variance. With `regularization > 0` the weights satisfy the penalised constraint above, so the variates have variance at most 1.
+  - `correlations`: Canonical correlations, shape (n_pairs,), in [0, 1], in descending order. With `regularization == 0` each equals the sample correlation of the matching pair of variates. With `regularization > 0` each is the penalised correlation, which is a lower bound on the sample correlation of the returned variates.
+- The sign of each pair is fixed so that the largest-magnitude X weight is positive, and both members of a pair flip together.
+
+**Note:**
+- Missing values (NaN) in a layer are replaced by the mean of all non-missing entries of that layer before standardization; this is the layer-wide mean, not a per-feature mean.
+- Constant columns become all zeros after standardization and receive zero weight, so the result equals the one computed without them.
 
 **Raises:**
-- `ValueError`: If layer names not found in omics_data or invalid parameters
+- `ImportError`: If scikit-learn is not installed
+- `ValidationError` (`metainformant.core.utils.errors`, not a `ValueError` subclass): If `regularization` is negative or not finite, if `n_components < 1`, or if `layers` is omitted and the data does not hold exactly two layers
+- `ValueError`: If a requested layer is not in the data, if the two layers have different numbers of samples, if there are fewer than 2 samples, or if a layer has no non-constant feature
+- `TypeError`: If an unknown keyword argument is passed
 
 ### from_dna_variants
 

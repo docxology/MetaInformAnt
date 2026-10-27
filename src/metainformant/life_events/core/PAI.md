@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - core
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/life_events/core`
+- **Path**: `src/metainformant/life_events/core`
 - **Purpose**: Functionality for core.
 - **Domain**: life_events
 

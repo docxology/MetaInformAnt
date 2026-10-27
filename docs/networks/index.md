@@ -11,22 +11,21 @@ This module handles various types of biological networks and provides algorithms
 ### [Graph Analysis](./graph.md)
 Fundamental graph operations, metrics, and utilities:
 - Network creation from various data sources
-- Centrality measures (degree, betweenness, closeness)
+- Centrality measures (degree, betweenness, closeness, eigenvector, PageRank)
 - Shortest path analysis
 - Network filtering and manipulation
-- Performance optimization for large networks
 
 ### [Community Detection](./community.md)
 Algorithms for identifying functional modules and communities:
-- Louvain and Leiden clustering algorithms
-- Modularity optimization
+- Louvain, Leiden, greedy modularity, Girvan-Newman and label propagation algorithms
+- Modularity and community quality metrics
 - Community functional analysis
 - Hierarchical community detection
 - Community stability assessment
 
 ### [Protein-Protein Interaction Networks](./ppi.md)
 Analysis of protein interaction networks:
-- STRING database integration
+- STRING-format table import
 - Interaction prediction methods
 - Network topology analysis
 - Functional enrichment of modules
@@ -37,16 +36,15 @@ Regulatory network inference and analysis:
 - Network inference from expression data
 - Transcription factor metadata
 - Regulatory motif detection
-- Regulation strength analysis
-- Feed-forward and feedback loop identification
+- Regulatory influence propagation
+- Cascade, feed-forward and feedback loop identification
 
 ### [Pathway Analysis](./pathway.md)
 Biological pathway enrichment and analysis:
-- KEGG, Reactome, and GO pathway integration
-- Enrichment analysis algorithms
-- Pathway activity inference
-- Multi-omics pathway analysis
-- Pathway network construction
+- Pathway gene sets from dictionaries, JSON or GMT files
+- Enrichment analysis (Fisher's exact and hypergeometric tests)
+- Pathway activity scores from expression data
+- Pathway similarity analysis
 
 ## Architecture
 
@@ -68,39 +66,45 @@ flowchart TD
 
 ### Comprehensive Network Types
 - **Protein-Protein Interactions**: Physical and functional protein associations
-- **Regulatory Networks**: Transcriptional regulation and signaling
-- **Pathway Networks**: Metabolic and signaling pathways
+- **Regulatory Networks**: Transcriptional regulation between regulators and targets
+- **Pathway Networks**: Gene sets grouped into pathways, with pathway similarity networks
 - **Correlation Networks**: Gene co-expression and correlation patterns
 - **Community Networks**: Functional modules and complexes
 
 ### Multiple Analysis Methods
-- **Community Detection**: Louvain, Leiden, hierarchical, spectral clustering
-- **Centrality Analysis**: Degree, betweenness, closeness, eigenvector centrality
-- **Enrichment Analysis**: Hypergeometric, Fisher's exact, binomial tests
-- **Network Inference**: Correlation, regression, mutual information, Granger causality
+- **Community Detection**: Louvain, Leiden, greedy modularity, Girvan-Newman, label propagation, asynchronous label propagation, fluid communities, plus multi-level `hierarchical_communities`
+- **Centrality Analysis**: Degree, betweenness, closeness, eigenvector centrality and PageRank
+- **Enrichment Analysis**: Hypergeometric and Fisher's exact tests
+- **Network Inference**: Correlation, mutual information and regression (lasso, ridge)
 
 ### Integration Capabilities
-- **Multi-omics Integration**: Combine networks across different data types
-- **Functional Annotation**: Gene Ontology and pathway enrichment
-- **Expression Correlation**: Link networks to expression patterns
-- **Database Integration**: STRING, KEGG, Reactome, GO databases
+- **Network Combination**: Union and intersection of networks (`network_union`, `network_intersection`)
+- **Functional Annotation**: Gene Ontology term enrichment (`metainformant.ontology.core.go.enrich_genes`) and pathway enrichment
+- **Expression Correlation**: Build networks from correlation matrices and regulatory networks from expression matrices
+- **Data Import**: STRING-format interaction tables and pathway gene sets (dictionaries, JSON, GMT)
 
 ## Quick Start
 
 ### Basic Network Analysis
 
 ```python
-from metainformant.networks import create_network, add_edges_from_interactions, network_metrics, centrality_measures
+import numpy as np
+from metainformant.networks.analysis.graph_core import create_network, add_edges_from_interactions
+from metainformant.networks.analysis.graph_algorithms import network_metrics, centrality_measures
 
-# Create network from interactions
-nodes = ["gene1", "gene2", "gene3"]
+# Create network from interactions: two triangles joined by one edge
+nodes = ["gene1", "gene2", "gene3", "gene4", "gene5", "gene6"]
 network = create_network(nodes, directed=False)
 
 # Add edges from interaction list
 interactions = [
     ("gene1", "gene2", 0.8),
     ("gene2", "gene3", 0.6),
-    ("gene3", "gene1", 0.9)
+    ("gene3", "gene1", 0.9),
+    ("gene4", "gene5", 0.7),
+    ("gene5", "gene6", 0.8),
+    ("gene6", "gene4", 0.9),
+    ("gene3", "gene4", 0.5)
 ]
 
 add_edges_from_interactions(network, interactions)
@@ -109,18 +113,20 @@ add_edges_from_interactions(network, interactions)
 metrics = network_metrics(network)
 print(f"Network has {metrics['num_nodes']} nodes and {metrics['num_edges']} edges")
 
-# Calculate centrality measures
+# Calculate centrality measures (a dict of {node: score} per measure)
 centrality = centrality_measures(network)
-hub_genes = [node for node, score in centrality['degree'].items()
-             if score > centrality['degree'].mean() + centrality['degree'].std()]
+degree_scores = centrality['degree']
+cutoff = np.mean(list(degree_scores.values())) + np.std(list(degree_scores.values()))
+hub_genes = [node for node, score in degree_scores.items() if score > cutoff]
+print(f"Hub genes: {hub_genes}")
 ```
 
 ### Community Detection
 
 ```python
-from metainformant.networks import detect_communities, modularity
+from metainformant.networks.analysis.community import detect_communities, modularity
 
-# Detect communities
+# Detect communities (a {node: community_id} dictionary)
 communities = detect_communities(network, method='leiden', resolution=1.0)
 
 # Evaluate community quality
@@ -133,15 +139,26 @@ for community_id in set(communities.values()):
     print(f"Community {community_id}: {len(community_nodes)} nodes")
 ```
 
+`'leiden'` needs the optional `leidenalg` and `python-igraph` packages and `'louvain'` needs `python-louvain`; without them `detect_communities` falls back to greedy modularity (see [Community Detection](./community.md)).
+
 ### Pathway Enrichment
 
 ```python
-from metainformant.networks import pathway_enrichment
+from metainformant.networks.analysis.pathway import PathwayNetwork, pathway_enrichment
+
+# Pathway gene sets
+pathway_network = PathwayNetwork(
+    name="central_metabolism",
+    pathways={
+        "glycolysis": ["HK1", "PFKL", "FBA", "PGK1", "PGAM1"],
+        "tca_cycle": ["CS", "ACO1", "IDH1", "OGDH", "SUCLG1"],
+    },
+)
 
 # Gene list of interest
 gene_list = ["HK1", "PFKL", "FBA", "PGK1", "CS", "ACO1"]
 
-# Pathway enrichment analysis
+# Pathway enrichment analysis (a dict keyed by pathway ID)
 enriched_pathways = pathway_enrichment(
     gene_list,
     pathway_network,
@@ -150,9 +167,10 @@ enriched_pathways = pathway_enrichment(
 )
 
 # Display top enriched pathways
-for pathway in enriched_pathways[:5]:
-    print(f"{pathway['name']}: p={pathway['p_value']:.2e}")
-    print(f"  Overlap: {pathway['overlap_genes']}")
+ranked = sorted(enriched_pathways.items(), key=lambda item: item[1]["p_value"])
+for pathway_id, result in ranked[:5]:
+    print(f"{pathway_id}: p={result['p_value']:.2e}")
+    print(f"  Overlap: {result['overlap_genes']}")
 ```
 
 ## Integration with Other Modules
@@ -160,47 +178,57 @@ for pathway in enriched_pathways[:5]:
 ### With Expression Data
 
 ```python-snippet
-from metainformant.rna import workflow
-from metainformant.networks import infer_grn
+import pandas as pd
+from metainformant.rna.analysis import expression
+from metainformant.networks.analysis.community import detect_communities
+from metainformant.networks.interaction.regulatory_analysis import infer_grn
 
-# Load expression data
-expression_data = workflow.extract_expression_patterns(rna_data)
+# Normalize a raw count matrix (genes as rows, samples as columns)
+counts = pd.read_csv("counts.csv", index_col=0)
+normalized = expression.normalize_counts(counts, method="log2cpm")
+expression_data = normalized.T  # infer_grn expects samples as rows, genes as columns
 
 # Infer regulatory network
 regulatory_network = infer_grn(
     expression_data,
+    list(expression_data.columns),
     method="correlation",
     threshold=0.7
 )
 
-# Analyze network modules
+# Analyze network modules (a {gene: module_id} dictionary)
 modules = detect_communities(regulatory_network)
 ```
 
 ### With Protein Data
 
 ```python-snippet
-from metainformant.networks import ppi, community
+import pandas as pd
+from metainformant.networks.interaction.ppi import load_string_interactions
+from metainformant.networks.analysis.community import detect_communities
 from metainformant.ontology.core import go
 
-# Load PPI network
-protein_network = ppi.load_string_network()
+# Load PPI network from a STRING-style table (columns protein1, protein2, combined_score)
+string_table = pd.read_csv("string_links.tsv", sep="\t")
+protein_network = load_string_interactions(string_table, confidence_threshold=700)
 
-# Find functional modules
-modules = community.detect_communities(protein_network, method='leiden')
+# Find functional modules (protein -> module id), then group proteins per module
+membership = detect_communities(protein_network, method='leiden')
+modules = {}
+for protein, module_id in membership.items():
+    modules.setdefault(module_id, []).append(protein)
 
-# Functional enrichment
+# Functional enrichment against GO term annotations (GO term -> set of proteins)
+go_annotations = {"GO:0016301": {"P1", "P2", "P3"}, "GO:0005215": {"P4", "P5", "P6"}}
 for module_id, proteins in modules.items():
-    enriched_terms = go.enrich_proteins(proteins)
-    print(f"Module {module_id}: {enriched_terms[:3]}")
+    enriched_terms = go.enrich_genes(proteins, protein_network.get_proteins(), go_annotations)
+    print(f"Module {module_id}: {enriched_terms['go_term'].head(3).tolist()}")
 ```
 
-## Performance Features
+## Scaling Notes
 
-- **Scalable Algorithms**: Efficient implementations for large networks
-- **Parallel Processing**: Multi-core support for computationally intensive operations
-- **Memory Optimization**: Streaming processing for very large networks
-- **Sparse Representations**: Memory-efficient storage for sparse networks
+- The module works on in-memory NetworkX graphs; it has no parallel, streaming or sparse-storage options.
+- `ppi_network_analysis` skips centrality measures when the network has more than `max_nodes_for_centrality` nodes (default 1000).
 
 ## Testing
 
@@ -211,8 +239,8 @@ Comprehensive tests cover all network functionality:
 uv run pytest tests/networks/test_networks_*.py -v
 
 # Test specific components
-uv run pytest tests/networks/test_networks_graph.py::test_centrality_measures -v
-uv run pytest tests/networks/test_networks_community.py::test_detect_communities_louvain -v
+uv run pytest tests/networks/test_networks_graph.py::TestCentralityMeasures::test_degree_centrality -v
+uv run pytest tests/networks/test_networks_community.py::TestCommunityDetection::test_detect_communities_basic -v
 ```
 
 ## Related Documentation

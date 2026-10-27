@@ -29,10 +29,13 @@ Fast (≈5 ms) but inaccurate for N < 200 or extremely skewed distributions.
 Spot‑level contribution to global Moran: reveals hot/cold spots.
 
 ```python-snippet
-from metainformant.spatial.analysis.autocorrelation import local_moran
-lisa = local_moran(adata, 'MKI67', n_permutations=99)
-adata.obs['lisa_quad'] = lisa.quadrant  # 0=LL, 1=LH, 2=HL, 3=HH
-adata.obs['lisa_sig'] = lisa.is_sig      # FDR‑adjusted
+from metainformant.spatial.analysis.autocorrelation import local_morans_i, spatial_weights_matrix
+
+# coords: (n_spots, 2) array; mki67: 1-D expression of one gene per spot
+weights = spatial_weights_matrix(coords, method='knn', k=6)
+lisa = local_morans_i(mki67, weights, significance=0.05)
+adata.obs['lisa_quad'] = lisa.cluster_labels  # 'HH', 'LL', 'HL', 'LH' or 'NS'
+adata.obs['lisa_p'] = lisa.p_values           # per-spot p-values
 ```
 
 Quadrants:
@@ -40,13 +43,16 @@ Quadrants:
 - LL = low expression surrounded by low  (coldspot core)
 - HL = high surrounded by low  (potential outlier)
 - LH = low surrounded by high  (edge of hotspot)
+- NS = not significant at the chosen `significance`
 
 Visualise:
 
 ```python-snippet
-from metainformant.spatial.visualization import plot_spatial_categorical
-plot_spatial_categorical(adata, 'lisa_quad', palette='RdBu')
+from metainformant.spatial.visualization.plots import plot_spatial_autocorrelation
+plot_spatial_autocorrelation(coords, lisa.local_I, 'lisa_map.png', cluster_labels=lisa.cluster_labels)
 ```
+
+The figure is saved to the given path and the matplotlib `Figure` is returned.
 
 ## Geary's C
 
@@ -65,9 +71,9 @@ No permutation by default; set `n_permutations=999` for p‑value.
 Hot‑spot detection; more sensitive than LISA HH quadrant.
 
 ```python-snippet
-from metainformant.spatial.analysis.autocorrelation import getis_ord
-gi = getis_ord(adata, 'CXCL12')
-hotspots = (gi.z_scores > 1.96) & (gi.pvalues < 0.05)
+from metainformant.spatial.analysis.autocorrelation import getis_ord_g
+gi = getis_ord_g(cxcl12, weights, significance=0.05)
+hotspots = gi.hot_spots   # boolean mask of significant hot spots (gi.cold_spots for cold spots)
 print(f"Hot spots: {hotspots.sum()} / {len(hotspots)}")
 ```
 

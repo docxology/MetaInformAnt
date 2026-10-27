@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - annotation
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/dna/annotation`
+- **Path**: `src/metainformant/dna/annotation`
 - **Purpose**: DNA annotation submodule for gene prediction and functional annotation.
 - **Domain**: dna
 

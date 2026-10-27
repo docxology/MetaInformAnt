@@ -76,7 +76,7 @@ from metainformant.core import io
 # Reading
 data = io.load_json("data/file.json")
 records = list(io.read_jsonl("data/records.jsonl"))
-df = io.load_csv("data/table.csv")
+df = io.read_csv("data/table.csv")
 
 # Writing (creates parent dirs automatically)
 io.dump_json(data, "output/result.json")
@@ -230,7 +230,7 @@ def function():
 
 ### Error Handling
 
-- Use `metainformant.core.errors` types
+- Use `metainformant.core.utils.errors` types
 - Provide clear, actionable error messages
 - Include biological context when relevant
 

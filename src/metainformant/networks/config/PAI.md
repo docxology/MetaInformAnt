@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - config
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/networks/config`
+- **Path**: `src/metainformant/networks/config`
 - **Purpose**: Configuration classes for network analysis.
 - **Domain**: networks
 

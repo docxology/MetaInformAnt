@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - config
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/visualization/config`
+- **Path**: `src/metainformant/visualization/config`
 - **Purpose**: Configuration subpackage for visualization themes and palettes.
 - **Domain**: visualization
 

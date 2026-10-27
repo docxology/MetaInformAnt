@@ -100,6 +100,16 @@ def canonical_correlation(
 SVD-based regularised CCA for two omic matrices. Returns `x_scores`,
 `y_scores`, `correlations`, `x_loadings`, `y_loadings`. Requires numpy.
 
+The matrices are centred but not standardized, and `regularization` is added
+to the diagonal of the raw within-matrix covariance matrices, so with
+`regularization > 0` the result depends on the scale of the columns.
+`n_components` is capped at the smaller of the sample count and the two
+feature counts. This function is separate from
+`metainformant.multiomics.analysis.integration.canonical_correlation`
+([reference](integration.md#canonical_correlation)), which takes a
+`MultiOmicsData` object or DataFrames, standardizes each layer, defaults to
+`regularization=0.0`, and returns a tuple of arrays.
+
 ## Clustering Functions
 
 ### multi_omic_clustering
@@ -175,6 +185,10 @@ print(f"Converged: {result['converged']}, Error: {result['reconstruction_error']
 # Multi-omic clustering
 clust = multi_omic_clustering(data, n_clusters=3, method="concatenation")
 print(f"Silhouette: {clust['silhouette']:.4f}")
+
+# Regularised CCA between two matrices (returns a dictionary)
+cca = canonical_correlation(data["rna"], data["protein"], n_components=3, regularization=0.1)
+print(f"Canonical correlations: {cca['correlations']}")
 
 # Consensus clustering
 cc = consensus_clustering(np.random.randn(30, 10), k_range=range(2, 6))

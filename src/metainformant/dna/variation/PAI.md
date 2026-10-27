@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - variation
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/dna/variation`
+- **Path**: `src/metainformant/dna/variation`
 - **Purpose**: Functionality for variation.
 - **Domain**: dna
 

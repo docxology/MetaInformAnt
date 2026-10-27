@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - survival
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/multiomics/survival`
+- **Path**: `src/metainformant/multiomics/survival`
 - **Purpose**: Multi-omic survival analysis.
 - **Domain**: multiomics
 

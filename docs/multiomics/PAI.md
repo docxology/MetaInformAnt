@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - multiomics
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/docs/multiomics`
+- **Path**: `docs/multiomics`
 - **Purpose**: Functionality for multiomics.
 - **Domain**: docs
 

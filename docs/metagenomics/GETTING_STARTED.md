@@ -13,11 +13,9 @@ cd /path/to/MetaInformAnt
 uv venv
 source .venv/bin/activate
 
-# Install METAINFORMANT
+# Install METAINFORMANT (numpy, scipy, scikit-learn and matplotlib are core
+# dependencies and come with it)
 uv pip install -e .
-
-# Install optional bioinformatics tools (recommended)
-uv pip install numpy scipy scikit-learn  # for numerical operations
 ```
 
 ### 2. Amplicon Analysis: 16S Example
@@ -39,65 +37,46 @@ amplicon_data/
 #!/usr/bin/env python3
 """Amplicon metagenomics analysis demo."""
 
-import gzip
-from pathlib import Path
 from collections import Counter
 
+from metainformant.dna.io.fastq import read_fastq
 from metainformant.metagenomics import (
     amplicon,
     diversity,
     visualization,
 )
 
-# ── 1. Load and merge paired reads ──────────────────────────────────────
-print("Loading paired-end reads...")
-# For simplicity, assume reads are already merged; otherwise use merge_paired_reads()
-# Here we just read single-end for demo
-def read_fastq_simple(path):
-    """Very simple FASTQ reader (assumes 4-line records)."""
-    reads = {}
-    with gzip.open(path, "rt") as f:
-        while True:
-            header = f.readline().strip()
-            if not header:
-                break
-            seq = f.readline().strip()
-            _ = f.readline()  # plus line
-            qual = f.readline().strip()
-            reads[header[1:]] = seq
-    return reads
-
-reads = read_fastq_simple("amplicon_data/sample1_R1.fastq.gz")
+# ── 1. Load reads ───────────────────────────────────────────────────────
+print("Loading reads...")
+# For simplicity, assume reads are already merged; otherwise merge the pairs first
+# with amplicon.asv_denoising.merge_paired_reads() (see Workflow 1 below).
+# Here we just read single-end for demo. read_fastq() also handles .gz and
+# returns {read_id: (sequence, quality_string)}.
+fastq = read_fastq("amplicon_data/sample1_R1.fastq.gz")
+reads = {read_id: seq for read_id, (seq, _qual) in fastq.items()}
 print(f"  Loaded {len(reads)} reads")
 
 # ── 2. Dereplicate ───────────────────────────────────────────────────────
 print("Dereplicating sequences...")
 counts = Counter(reads.values())
-unique_seqs = {f"seq_{i}": seq for i, (seq, cnt) in enumerate(counts.items())}
-abundances = {f"seq_{i}": cnt for i, (seq, cnt) in enumerate(counts.items())}
+unique_seqs = {f"seq_{i}": seq for i, seq in enumerate(counts)}
+abundances = {f"seq_{i}": cnt for i, cnt in enumerate(counts.values())}
 print(f"  {len(unique_seqs)} unique sequences")
 
 # ── 3. Denoise (ASV) ─────────────────────────────────────────────────────
 print("Denoising to ASVs (DADA2-style)...")
-# For demo, we skip full error modeling; just use unique seqs as "ASVs"
-asv_result = amplicon.asv_denoising.DenoisingResult(
-    asvs=list(unique_seqs.values()),
-    abundances=list(abundances.values()),
-    error_model=None,
-    num_asvs=len(unique_seqs),
-    reads_removed=0,
-)
+# Pass the dereplicated sequences with their counts. Without an error model or
+# quality scores, denoise_sequences() uses a default Phred-30 error model.
+asv_result = amplicon.asv_denoising.denoise_sequences(unique_seqs, abundance=abundances)
+asv_seqs = {f"asv_{i}": asv.sequence for i, asv in enumerate(asv_result.asvs)}
+asv_counts = {f"asv_{i}": asv.abundance for i, asv in enumerate(asv_result.asvs)}
 print(f"  {asv_result.num_asvs} ASVs")
-
-# In real analysis:
-# from metainformant.metagenomics.amplicon import asv_denoising
-# asv_result = asv_denoising.denoise_sequences(reads_dict)
 
 # ── 4. Chimera check ─────────────────────────────────────────────────────
 print("Filtering chimeras...")
-chimeras = amplicon.otu_clustering.filter_chimeras(unique_seqs)
-non_chimeric = {sid: seq for sid, seq in unique_seqs.items() if not chimeras.get(sid, False)}
-print(f"  Removed {len(unique_seqs) - len(non_chimeric)} chimeras")
+chimeras = amplicon.otu_clustering.filter_chimeras(asv_seqs, abundance=asv_counts)
+non_chimeric = {sid: seq for sid, seq in asv_seqs.items() if not chimeras.get(sid, False)}
+print(f"  Removed {len(asv_seqs) - len(non_chimeric)} chimeras")
 
 # ── 5. Taxonomic classification ──────────────────────────────────────────
 print("Classifying taxonomy...")
@@ -113,14 +92,17 @@ ref_tax = {
 classifications = amplicon.taxonomy.classify_taxonomy(
     non_chimeric, ref_db, ref_tax, method="naive_bayes", confidence_threshold=0.7
 )
-print(f"  Classified {sum(1 for c in classifications if c.confidence > 0.7)} ASVs")
+# Each assignment has .lineage [(rank, name), ...] and .confidence {rank: score};
+# ranks below confidence_threshold are labelled "unclassified". With this toy
+# reference DB the counts are not meaningful: naive Bayes always picks the
+# best-scoring reference, even for sequences unrelated to it.
+n_classified = sum(1 for c in classifications if dict(c.lineage)["phylum"] != "unclassified")
+print(f"  Classified {n_classified} ASVs to phylum level")
 
 # ── 6. Build ASV table ───────────────────────────────────────────────────
 # In practice: build samples × ASV count matrix
 # Here we only have one sample "sample1"
-asv_table = {}  # asv_id → count
-for asv_seq, count in zip(non_chimeric.values(), [abundances[sid] for sid in non_chimeric]):
-    asv_table[asv_seq] = count
+asv_table = {asv_id: asv_counts[asv_id] for asv_id in non_chimeric}  # asv_id → count
 
 # ── 7. Alpha diversity ───────────────────────────────────────────────────
 print("Computing alpha diversity...")
@@ -129,42 +111,46 @@ alpha = diversity.metrics.alpha_diversity(counts_array, metric="shannon")
 print(f"  Shannon diversity: {alpha['value']:.3f}")
 
 # ── 8. Beta diversity (if multiple samples) ──────────────────────────────
-# dummy second sample for illustration
-counts2 = [10, 5, 2]
+# dummy second sample for illustration: the same ASVs with reversed abundances
+# (every sample must have the same number of ASVs)
+counts2 = counts_array[::-1]
 beta = diversity.metrics.beta_diversity([counts_array, counts2], metric="bray_curtis")
 print(f"  Bray-Curtis dissimilarity between samples: {beta['distance_matrix'][0][1]:.3f}")
 
 # ── 9. Visualization ─────────────────────────────────────────────────────
 print("Generating plots...")
-# Bar plot of top 10 ASVs
-fig = visualization.plots.stacked_bar(
-    abundances=asv_table,
+# Bar plot of top 10 ASVs. plot_stacked_bar takes {sample_id: {taxon: abundance}}
+# and, when output_path is given, saves a PNG and returns its path.
+png = visualization.plots.plot_stacked_bar(
+    {"sample1": asv_table},
+    level="ASV",
     top_n=10,
+    output_path="output/metagenomics/amplicon_abundance.png",
 )
-fig.write_html("amplicon_abundance.html")
-print("  Saved amplicon_abundance.html")
+print(f"  Saved {png}")
 
 print("\nDone!")
 ```
 
-**Expected output**:
+**Example output** (from a small simulated sample of 250 bp reads with 0.2% sequencing errors; your numbers depend on your data):
 ```
-Loading paired-end reads...
-  Loaded 15000 reads
+Loading reads...
+  Loaded 572 reads
 Dereplicating sequences...
-  8000 unique sequences
+  162 unique sequences
 Denoising to ASVs (DADA2-style)...
-  7850 ASVs
+  5 ASVs
 Filtering chimeras...
-  Removed 120 chimeras
+  Removed 1 chimeras
 Classifying taxonomy...
-  Classified 6500 ASVs
+  Classified 4 ASVs to phylum level
 Computing alpha diversity...
-  Shannon diversity: 4.21
-Beta diversity (if multiple samples)...
-  Bray-Curtis dissimilarity between samples: 0.34
+  Shannon diversity: 1.122
+  Bray-Curtis dissimilarity between samples: 0.607
 Generating plots...
-  Saved amplicon_abundance.html
+  Saved output/metagenomics/amplicon_abundance.png
+
+Done!
 ```
 
 ---
@@ -177,13 +163,26 @@ Generating plots...
 #!/usr/bin/env python3
 """Shotgun metagenomics analysis demo (assembly + profiling)."""
 
-from metainformant.metagenomics import assembly, binning, profiling, functional
+import random
+
+from metainformant.metagenomics.shotgun import assembly, binning, profiling
+from metainformant.metagenomics import functional
 
 # ── 1. Load reads (placeholder) ─────────────────────────────────────────
-# In practice, use external tool (seqtk, bioawk) to load FASTQ into dict
+# In practice, load FASTQ into an {id: sequence} dict, e.g.
+# {rid: seq for rid, (seq, _qual) in read_fastq(path).items()} with
+# metainformant.dna.io.fastq.read_fastq (its values are (sequence, quality) tuples),
+# or use an external tool (seqtk, bioawk). Here we simulate error-free 100 bp reads
+# (one every 25 bp) from two random 5 kb "genomes": ~4x coverage each.
+rng = random.Random(1)
+ref_genomes = {
+    "genome1": "".join(rng.choices("ACGT", weights=[0.3, 0.2, 0.2, 0.3], k=5000)),
+    "genome2": "".join(rng.choices("ACGT", weights=[0.2, 0.3, 0.3, 0.2], k=5000)),
+}
 reads = {
-    f"read_{i}": "ACGTACGTACGTACGTACGTACGTACGTACGTACGT" * 10
-    for i in range(10000)  # tiny demo; real data: millions
+    f"{name}_read_{i}": genome[i:i + 100]
+    for name, genome in ref_genomes.items()
+    for i in range(0, len(genome) - 99, 25)
 }
 print(f"Loaded {len(reads)} reads")
 
@@ -191,51 +190,54 @@ print(f"Loaded {len(reads)} reads")
 print("Assembling contigs...")
 contigs = assembly.assemble_contigs(
     reads,
-    k_range=[21],  # single k for demo; use [21,33,55] in production
+    k_range=[21],  # single k for demo; the default depends on read length ([21, 33, 55] from 200 bp)
     min_contig_length=200,
 )
 stats = assembly.calculate_assembly_stats(contigs)
 print(f"  Contigs: {stats.total_contigs}, Total bp: {stats.total_length:,}")
-print(f"  N50: {stats.n50:,}, GC%: {stats.gc_content:.1f}%")
+print(f"  N50: {stats.n50:,}, GC: {stats.gc_content:.1%}")
 
 # ── 3. Binning ──────────────────────────────────────────────────────────
 print("Binning contigs into MAGs...")
 # Convert contigs to dict format
 contig_dict = {c.contig_id: c.sequence for c in contigs}
-# Mock coverage (in real data, compute from read mapping)
-coverage = {cid: 50.0 for cid in contig_dict}
+# k-mer coverage estimated by the assembler (for multi-sample binning, pass
+# per-sample coverage lists computed from read mapping instead)
+coverage = {c.contig_id: c.coverage for c in contigs}
 binning_result = binning.bin_contigs(
     contig_dict,
     coverage=coverage,
     method="combined",
-    n_bins=5,  # or auto-detected
+    n_bins=2,  # or None to estimate from the assembly size
 )
 print(f"  Binned {binning_result.binned_contigs} / {binning_result.total_contigs} contigs")
-print(f"  High-quality bins (completeness>0.9, cont<0.05): "
-      f"{sum(1 for b in binning_result.bins if b.quality_score > 0.9)}")
+# bin_contigs() leaves completeness/contamination at 0.0. assess_bin_quality() fills in
+# heuristic estimates (no marker genes are actually searched), so treat them as rough.
+assessed = binning.assess_bin_quality(binning_result.bins, contig_dict)
+high_quality = sum(1 for b in assessed if b.completeness >= 0.9 and b.contamination <= 0.05)
+print(f"  Bins passing the heuristic high-quality filter (completeness>=0.9, contamination<=0.05): {high_quality}")
 
 # ── 4. Functional annotation ─────────────────────────────────────────────
-print("Annotating genes in contigs...")
-# Predict ORFs
-# genes = functional.annotation.predict_genes(contigs)  # not implemented yet
-print("  (Gene prediction not enabled in this minimal example)")
+print("Predicting ORFs in contigs...")
+orfs = [
+    orf
+    for c in contigs
+    for orf in functional.annotation.predict_orfs(c.sequence, sequence_id=c.contig_id, min_length=150)
+]
+print(f"  {len(orfs)} ORFs of at least 150 nt (ORFs that share a stop codon count separately)")
 
 # ── 5. Taxonomic profiling (k-mer LCA) ──────────────────────────────────
 print("Building k-mer index from reference genomes...")
-# Tiny reference set
-ref_genomes = {
-    "genome1": "ACGT" * 1000,
-    "genome2": "TTAA" * 1000,
-}
+# Tiny reference set: here, the genomes the reads were simulated from
 taxonomy = {
     "genome1": [("domain", "Bacteria"), ("phylum", "Firmicutes")],
     "genome2": [("domain", "Bacteria"), ("phylum", "Bacteroidetes")],
 }
 kmer_index = profiling.build_kmer_index(ref_genomes, taxonomy, k=21)
-print(f"  Indexed {len(kmer_index.kmer_to_taxon)} unique k-mers")
+print(f"  Indexed {len(kmer_index.kmer_to_taxon):,} unique k-mers")
 
 # Profile a subset of reads
-sample_reads = list(reads.values())[:1000]
+sample_reads = list(reads.values())[::2]
 profile = profiling.profile_community(
     sample_reads,
     database=kmer_index,
@@ -250,23 +252,25 @@ for tax in profile.taxa[:5]:
           f"{tax.relative_abundance:.2%}")
 ```
 
-**Expected output**:
+**Expected output** (the reads are simulated with a fixed seed, so the numbers are reproducible; with real data they will differ):
 ```
-Loaded 10000 reads
+Loaded 394 reads
 Assembling contigs...
-  Contigs: 124, Total bp: 158,240
-  N50: 1,856, GC%: 52.3
+  Contigs: 2, Total bp: 9,900
+  N50: 4,950, GC: 49.6%
 Binning contigs into MAGs...
-  Binned 98/124 contigs
-  High-quality bins: 2
-Annotating genes in contigs...
-  (Gene prediction not enabled in this minimal example)
+  Binned 2 / 2 contigs
+  Bins passing the heuristic high-quality filter (completeness>=0.9, contamination<=0.05): 2
+Predicting ORFs in contigs...
+  86 ORFs of at least 150 nt (ORFs that share a stop codon count separately)
 Building k-mer index from reference genomes...
-  Indexed 7984 unique k-mers
-  Classified 342/1000 reads (34.2%)
-    Lactobacillus (species): 142 reads, 41.5%
-    Bacteroides (species): 98 reads, 28.7%
+  Indexed 9,960 unique k-mers
+  Classified 197/197 reads (100.0%)
+    Firmicutes (phylum): 99 reads, 50.25%
+    Bacteroidetes (phylum): 98 reads, 49.75%
 ```
+
+The two 5 kb bins "passing" the quality filter show that `assess_bin_quality` is a heuristic stand-in for CheckM, not a marker-gene measurement (see [shotgun.md](shotgun.md)); use CheckM for quality values you will report.
 
 ---
 
@@ -275,9 +279,12 @@ Building k-mer index from reference genomes...
 | Component | Version | Purpose |
 |-----------|---------|---------|
 | Python | 3.11+ | Core |
-| NumPy | ≥1.24 | Numerical arrays, k-mer counting |
-| SciPy | ≥1.10 (optional) | Distance metrics, stats |
-| scikit-learn | ≥1.3 (optional) | k-means clustering for binning |
+| NumPy | ≥1.24 | PCoA eigendecomposition, Dirichlet Monte Carlo in `aldex2_like` (pure-Python fallbacks exist) |
+| SciPy | ≥1.11 | Welch's t-test, Kruskal-Wallis (pure-Python approximations otherwise) |
+| scikit-learn | ≥1.3 | Random forest in `biomarker_discovery` (not used for binning, which has its own k-means) |
+| matplotlib | ≥3.8 | `metagenomics.visualization.plots` |
+
+All of these are installed with METAINFORMANT.
 
 **External tools** (recommended but not required):
 - **fastp** or **Trimmomatic**: adapter/quality trimming (preprocessing)
@@ -285,7 +292,7 @@ Building k-mer index from reference genomes...
 - **Kraken2** / **Centrifuge**: taxonomic profiling (production)
 - **CheckM**: bin quality assessment
 
-All external tools can be called via Python's `subprocess`; their outputs can be imported into METAINFORMANT data structures.
+METAINFORMANT does not wrap these tools: run them yourself (for example with Python's `subprocess`) and load their outputs into the plain dicts and lists the functions take.
 
 ---
 
@@ -298,16 +305,23 @@ This assumes you have per-sample FASTQ files from an Illumina MiSeq run (already
 **Step 1: Merging paired reads** (if applicable)
 
 ```python
+from metainformant.dna.io.fastq import read_fastq
 from metainformant.metagenomics.amplicon import asv_denoising
 
-forward = read_fastq("sample_R1.fastq.gz")
-reverse = read_fastq("sample_R2.fastq.gz")
+
+def load_reads(path):
+    """FASTQ (optionally gzipped) -> {read_id: sequence}; quality strings are dropped."""
+    return {read_id: seq for read_id, (seq, _qual) in read_fastq(path).items()}
+
+
+forward = load_reads("sample_R1.fastq.gz")
+reverse = load_reads("sample_R2.fastq.gz")
 merged = asv_denoising.merge_paired_reads(
     forward, reverse,
     min_overlap=20,
     max_mismatch_ratio=0.2,
 )
-# merged: dict[id → merged_sequence]
+# merged: dict[id → merged_sequence]; only pairs that overlap are kept
 ```
 
 **Step 2: Denoising all samples**
@@ -315,12 +329,12 @@ merged = asv_denoising.merge_paired_reads(
 ```python
 all_reads = {}
 for sample_id in sample_ids:
-    fwd = read_fastq(f"{sample_id}_R1.fastq.gz")
-    rev = read_fastq(f"{sample_id}_R2.fastq.gz")
-    merged = merge_paired_reads(fwd, rev)
+    fwd = load_reads(f"{sample_id}_R1.fastq.gz")
+    rev = load_reads(f"{sample_id}_R2.fastq.gz")
+    merged = asv_denoising.merge_paired_reads(fwd, rev)
     all_reads[sample_id] = merged
 
-# Pool across samples for denoising (DADA2 learns error model from entire dataset)
+# Pool across samples for denoising (abundances are counted over the whole dataset)
 pooled_reads = {}
 for sid, seqs in all_reads.items():
     for read_id, seq in seqs.items():
@@ -328,10 +342,10 @@ for sid, seqs in all_reads.items():
 
 asv_result = asv_denoising.denoise_sequences(
     pooled_reads,
-    # quality_scores=...,  # optional: improve error model
+    # quality_scores=...,  # optional: {pooled_read_id: [Phred scores]}; when given, an error model is estimated from the reads
 )
-# asv_result.asvs: list of unique ASV sequences
-# asv_result.abundances: total count per ASV across all samples
+# asv_result.asvs: list of ASV objects (.sequence, .abundance) pooled over all samples
+# asv_result.num_asvs, asv_result.reads_removed: number of ASVs, reads merged into other ASVs
 ```
 
 **Step 3: Build sample × ASV table**
@@ -339,7 +353,7 @@ asv_result = asv_denoising.denoise_sequences(
 ```python
 import numpy as np
 
-asv_sequences = asv_result.asvs  # list of strings
+asv_sequences = [asv.sequence for asv in asv_result.asvs]  # list of strings
 n_asvs = len(asv_sequences)
 n_samples = len(sample_ids)
 
@@ -354,7 +368,7 @@ for sample_id, reads in all_reads.items():
     for seq in reads.values():
         if seq in asv_index:
             count_matrix[s_idx, asv_index[seq]] += 1
-        # else: sequence was merged/chimera-filtered, ignore
+        # else: the read's sequence was merged into another ASV (or dropped), so it is not counted here
 
 print(f"ASV table: {count_matrix.shape[0]} samples × {count_matrix.shape[1]} ASVs")
 ```
@@ -362,16 +376,23 @@ print(f"ASV table: {count_matrix.shape[0]} samples × {count_matrix.shape[1]} AS
 **Step 4: Taxonomic classification**
 
 ```python
-# Load reference database (SILVA, Greengenes)
+from metainformant.metagenomics.amplicon import taxonomy
+
+# Load reference database (SILVA, Greengenes) with your own loader (load_silva is not
+# part of METAINFORMANT): ref_db is {reference_id: sequence} and ref_tax is
+# {reference_id: [(rank, name), ...]}
 ref_db, ref_tax = load_silva("silva_138.fasta", "silva_taxonomy.tsv")
 
-classifications = amplicon.taxonomy.classify_taxonomy(
-    sequences=asv_sequences,
+# classify_taxonomy takes {sequence_id: sequence}, not a list
+asv_ids = [f"ASV_{i}" for i in range(n_asvs)]
+classifications = taxonomy.classify_taxonomy(
+    sequences=dict(zip(asv_ids, asv_sequences)),
     reference_db=ref_db,
     reference_taxonomy=ref_tax,
     method="naive_bayes",
     confidence_threshold=0.7,
 )
+# One TaxonomyAssignment per ASV, in the order of asv_ids (.lineage, .confidence)
 ```
 
 **Step 5: Alpha & beta diversity**
@@ -379,14 +400,17 @@ classifications = amplicon.taxonomy.classify_taxonomy(
 ```python
 from metainformant.metagenomics.diversity import metrics
 
-# Alpha per sample
+# Alpha per sample (Shannon, and Simpson dominance for the output example below)
 alpha_vals = []
+simpson_vals = []
 for sample_counts in count_matrix:
     result = metrics.alpha_diversity(
         abundances=sample_counts.tolist(),
         metric="shannon",
     )
     alpha_vals.append(result["value"])
+    simpson = metrics.alpha_diversity(abundances=sample_counts.tolist(), metric="simpson")
+    simpson_vals.append(simpson["value"])
 
 # Beta (Bray-Curtis) distance matrix
 beta = metrics.beta_diversity(
@@ -397,43 +421,63 @@ dist_mat = beta["distance_matrix"]
 
 # Ordination (PCoA)
 pcoa = metrics.ordination(dist_mat, method="pcoa", n_components=2)
-coords = pcoa["coordinates"]  # list of (x, y) per sample
+coords = pcoa["coordinates"]  # list of [x, y] per sample
 ```
 
 **Step 6: Differential abundance** (e.g., disease vs. control)
 
 ```python
-from metainformant.metagenomics.comparative import differential_abundance
+from metainformant.metagenomics.comparative.differential_abundance import differential_abundance
 
-# group_a indices: control; group_b: disease
+# One group label per sample, in the order of sample_ids (exactly two distinct labels)
+n_control, n_disease = 3, 3  # control samples first, then disease samples
+groups = [0] * n_control + [1] * n_disease  # 0: control, 1: disease
 diff = differential_abundance(
-    feature_table=count_matrix.T,  # features × samples (transpose)
-    group_a=control_idx,
-    group_b=disease_idx,
-    method="ancom",  # robust to compositionality
+    counts=count_matrix.tolist(),  # samples × features
+    groups=groups,
+    taxa_names=asv_ids,
+    method="ancom_like",  # pairwise log-ratios, compositional
 )
-# diff: dict{asv_index: {"log_fc": ..., "p_value": ..., "q_value": ...}}
+# diff: list of dicts sorted by adjusted_p, each with
+# "taxon", "log2fc", "p_value", "adjusted_p", "effect_size", "mean_group1", "mean_group2"
 ```
 
 **Step 7: Visualization**
 
 ```python
+import pandas as pd
+
 from metainformant.metagenomics.visualization import plots
+from metainformant.visualization.plots import volcano_plot
 
 # Stacked bar (taxonomic composition at phylum level)
-# Aggregate ASVs to phylum using classifications
-phylum_abund = aggregate_to_phylum(count_matrix, classifications)
-plots.stacked_bar(phylum_abund, group_by="phylum")
+# Aggregate ASV counts to phylum using the classifications
+phylum_abund = {sid: {} for sid in sample_ids}  # {sample_id: {phylum: count}}
+for asv_idx, assignment in enumerate(classifications):
+    phylum = dict(assignment.lineage)["phylum"]
+    for s_idx, sid in enumerate(sample_ids):
+        phylum_abund[sid][phylum] = phylum_abund[sid].get(phylum, 0) + int(count_matrix[s_idx, asv_idx])
+plots.plot_stacked_bar(
+    phylum_abund, level="phylum", output_path="output/metagenomics/phylum_composition.png"
+)
 
-# Ordination plot with ellipses
-plots.ordination_plot(coords, group_labels=["Control"]*n_control + ["Disease"]*n_disease)
+# Ordination plot: takes a nested-dict distance matrix and computes its own 2-D PCoA
+dist_by_sample = {
+    sid_a: {sid_b: dist_mat[i][j] for j, sid_b in enumerate(sample_ids)}
+    for i, sid_a in enumerate(sample_ids)
+}
+group_by_sample = {sid: ("Control" if i < n_control else "Disease") for i, sid in enumerate(sample_ids)}
+plots.plot_ordination(
+    dist_by_sample, groups=group_by_sample, output_path="output/metagenomics/pcoa.png"
+)
 
-# Volcano for differential
-sig_asvs = [i for i, r in diff.items() if r["q_value"] < 0.05]
-plots.volcano(
-    x=[diff[i]["log_fc"] for i in sig_asvs],
-    y=[-np.log10(diff[i]["p_value"]) for i in sig_asvs],
-    labels=[asv_sequences[i] for i in sig_asvs],
+# Volcano plot for the differential abundance results (shared plotting helper;
+# metagenomics.visualization has no volcano plot)
+volcano_plot(
+    pd.DataFrame(diff),
+    log2fc_col="log2fc",
+    pval_col="adjusted_p",
+    output_path="output/metagenomics/volcano.png",
 )
 ```
 
@@ -446,22 +490,28 @@ This workflow demonstrates assembly and binning on a small synthetic dataset.
 **Note**: Full shotgun assembly requires hundreds of millions of reads and GB of RAM. The demo below uses a tiny dataset; scale k-mer sizes (`k_range`) and memory for production.
 
 ```python
+import random
+
 from metainformant.metagenomics.shotgun import assembly, binning
 
 # Load reads (external tool required for real dataset)
-# Example using `sequencing` library or bioawk:
 # reads = load_fastq("sample.fastq.gz")  # returns dict[id → sequence]
+# (metainformant.dna.io.fastq.read_fastq returns {id: (sequence, quality)})
 
-# For demo, generate minimal example reads
-import random
-def generate_mock_reads(n_reads=10000, read_len=150, genome="ACGT"*10000):
+# For demo, simulate error-free reads from two random 20 kb genomes. The assembler
+# needs non-repetitive sequence: reads from a periodic genome such as "ACGT" * 10000
+# collapse into a tiny cyclic graph and produce no contigs.
+def generate_mock_reads(n_reads=2500, read_len=150, genome_len=20000, gc=0.5, seed=1):
+    rng = random.Random(seed)
+    weights = [(1 - gc) / 2, gc / 2, gc / 2, (1 - gc) / 2]  # A, C, G, T
+    genome = "".join(rng.choices("ACGT", weights=weights, k=genome_len))
     reads = {}
     for i in range(n_reads):
-        start = random.randint(0, len(genome) - read_len)
-        reads[f"read_{i}"] = genome[start:start+read_len]
+        start = rng.randint(0, genome_len - read_len)
+        reads[f"g{seed}_read_{i}"] = genome[start:start + read_len]
     return reads
 
-reads = generate_mock_reads(n_reads=5000)
+reads = {**generate_mock_reads(gc=0.35, seed=1), **generate_mock_reads(gc=0.65, seed=2)}
 
 # Assemble
 contigs = assembly.assemble_contigs(
@@ -474,11 +524,11 @@ print(f"Assembly stats:\n"
       f"  N50 = {stats.n50:,} bp\n"
       f"  # contigs = {stats.total_contigs:,}\n"
       f"  Total length = {stats.total_length:,} bp\n"
-      f"  GC% = {stats.gc_content:.1f}%")
+      f"  GC = {stats.gc_content:.1%}")
 
 # Bin
 contig_dict = {c.contig_id: c.sequence for c in contigs}
-coverage = {cid: c.coverage for c in contigs}
+coverage = {c.contig_id: c.coverage for c in contigs}
 
 bins = binning.bin_contigs(
     contig_dict,
@@ -488,29 +538,30 @@ bins = binning.bin_contigs(
     min_contig_length=1000,
 )
 
-# Refine
+# Refine: assesses quality (heuristic estimates, see shotgun.md) and drops bins below the thresholds
 from metainformant.metagenomics.shotgun.binning import refine_bins
 refined = refine_bins(bins.bins, contig_dict)
 
 print(f"Binning: {len(bins.bins)} bins, {bins.binned_contigs} binned contigs")
-for i, bin in enumerate(refined[:3]):
-    print(f"  Bin {i}: {bin.total_length:,} bp, "
-          f"completeness={bin.completeness:.2%}, "
-          f"contamination={bin.contamination:.2%}")
+for i, genome_bin in enumerate(refined[:3]):
+    print(f"  Bin {i}: {genome_bin.total_length:,} bp, "
+          f"completeness={genome_bin.completeness:.2%}, "
+          f"contamination={genome_bin.contamination:.2%}")
 ```
 
-**Expected output**:
+**Expected output** (the genomes are simulated with fixed seeds, so the numbers are reproducible; with real data they will differ):
 ```
 Assembly stats:
-  N50 = 2,456 bp
-  # contigs = 342
-  Total length = 458,920 bp
-  GC% = 51.2%
-Binning: 5 bins, 298 binned contigs
-  Bin 0: 1,245,678 bp, completeness=92.1%, contamination=2.3%
-  Bin 1: 987,234 bp, completeness=85.4%, contamination=4.1%
-  Bin 2: 456,789 bp, completeness=78.2%, contamination=6.7%
+  N50 = 19,996 bp
+  # contigs = 2
+  Total length = 39,963 bp
+  GC = 50.3%
+Binning: 2 bins, 2 binned contigs
+  Bin 0: 19,996 bp, completeness=100.00%, contamination=0.00%
+  Bin 1: 19,967 bp, completeness=100.00%, contamination=0.00%
 ```
+
+The completeness and contamination come from the heuristic `assess_bin_quality`, which scores almost any non-degenerate sequence as complete; they are not marker-gene measurements.
 
 ---
 
@@ -518,30 +569,32 @@ Binning: 5 bins, 298 binned contigs
 
 ### Input Formats
 
-| Format | Module | Description |
-|--------|--------|-------------|
-| FASTQ (single/paired) | amplicon, shotgun | Raw sequencing reads (gzipped or plain) |
-| FASTA (merged reads) | amplicon | Already merged paired-end reads |
-| BAM/SAM (mapped) | shotgun | Optional: reads already aligned to reference |
+The metagenomics functions take in-memory Python dicts and lists (`{id: sequence}`, count matrices), not files. These are the formats you will typically load from:
 
-**FASTQ format** (expected):
+| Format | Module | How to load |
+|--------|--------|-------------|
+| FASTQ (single/paired) | amplicon, shotgun | `metainformant.dna.io.fastq.read_fastq` (gzipped or plain): `{read_id: (sequence, quality_string)}` |
+| FASTA (merged reads, references) | amplicon, shotgun, functional | `metainformant.dna.sequence.core.read_fasta`: `{id: sequence}` |
+| BAM/SAM (mapped) | shotgun | Not read by this module: compute per-contig coverage externally and pass it as `coverage={contig_id: value or [per-sample values]}` |
+
+**FASTQ format** (expected; the quality string must be as long as the sequence):
 ```
-@SRR123456.1  (header line starting with @)
+@SRR123456.1
 ACGTACGTACGTACGTACGTACGTACGTACGT
 +
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 ```
 
-**Note**: METAINFORMANT does not include FASTQ parsing utilities; use `bioawk`, `seqtk`, or Python's `gzip` + string slicing as shown in examples. Future: dedicated `io/` submodule for FASTQ.
+**Note**: `read_fastq` keeps the first word of each header as the read ID. It raises `ValueError` for a header without `@`, a sequence/quality length mismatch, or a truncated record; it stops silently at the first blank line, and it detects gzip only by the `.gz` file suffix. You can also use `bioawk`, `seqtk`, or your own reader.
 
 ---
 
 ### Output Formats
 
-All diversity/comparative results are Python dictionaries or dataclasses; convert to:
+Diversity and comparative results are plain Python dicts or lists (of dicts, or of numbers for `rarefy` and `clr_transform`), as are the helper functions `filter_chimeras`, `merge_paired_reads`, `calculate_confidence`, `calculate_relative_abundance`, `classify_gene_families`, `compare_pathway_profiles` and `find_differential_pathways`; the main amplicon, shotgun and functional results (`ClusteringResult`, `DenoisingResult`, `TaxonomyAssignment`, `Contig`, `GenomeBin`, `CommunityProfile`, `PathwayResult`, ...) are dataclasses. Convert to:
 
-- **TSV/CSV**: `pandas.DataFrame.to_csv()` for statistical software (R, Prism)
-- **JSON**: `json.dump(result.__dict__)` for web apps
+- **TSV/CSV**: `pandas.DataFrame.to_csv()` for statistical software (R, Prism); a list of dicts such as `diff` converts directly with `pd.DataFrame(diff)`
+- **JSON**: `json.dump(result, fh)` for the dict results; `json.dump(dataclasses.asdict(result), fh)` for dataclass results (use `TaxonomyNode.to_dict()` for taxonomy trees). `json.dump(result.__dict__)` fails for results that hold nested dataclasses.
 - **BIOM**: HDF5-based format for QIIME compatibility (future export)
 
 Example:
@@ -558,23 +611,26 @@ alpha_df.to_csv("alpha_diversity.tsv", sep="\t", index=False)
 
 ## Common Pitfalls and Tips
 
-### Pitfall 1: Using raw counts for alpha diversity
+### Pitfall 1: Passing proportions to count-based alpha diversity estimators
 
-Alpha diversity metrics assume **counts** (integers), not relative abundances. Passing relative abundances (proportions that don't sum to integer count) will give incorrect results.
+`chao1`, `ace` and `fisher_alpha` round every abundance to an integer before estimating richness, so proportions collapse to 0 or 1 and the results are meaningless: `chao1` and `ace` lose the singleton/doubleton information and just return the observed richness, and `fisher_alpha` returns 0.0 for `[0.5, 0.25, 0.125]` but a huge value (about 8.6e8) for `[0.7, 0.2, 0.1]`. They need **raw counts**. `shannon`, `simpson`, `invsimpson`, `pielou_evenness` and `observed` normalize internally and work with counts or proportions. `alpha_diversity` also expects a Python list, not a numpy array (use `.tolist()`).
 
 **Correct**:
 ```python
+from metainformant.metagenomics.diversity.metrics import alpha_diversity
+
 counts = [100, 50, 25]  # raw read counts
-alpha = alpha_diversity(counts, metric="shannon")
+alpha = alpha_diversity(counts, metric="fisher_alpha")
+print(alpha["value"])
 ```
 
 **Wrong**:
 ```python
 props = [0.5, 0.25, 0.125]  # proportions
-alpha = alpha_diversity(props, metric="shannon")  # misleading
+alpha = alpha_diversity(props, metric="fisher_alpha")  # value 0.0: every proportion rounds to 0 (meaningless)
 ```
 
-**Exception**: Some metrics (Shannon) work with proportions; others (Chao1, ACE) require integer counts to estimate unseen species.
+**Fine**: `alpha_diversity(props, metric="shannon")` returns the same value as counts in the same proportions (here 4:2:1).
 
 ---
 
@@ -587,15 +643,18 @@ Bray-Curtis and other abundance-based beta diversity metrics are **sensitive to 
 ```python
 from metainformant.metagenomics.diversity import metrics
 
+# rarefy() raises ValueError if depth exceeds a sample's total count, so let the
+# shallowest sample set the depth
+depth = int(count_matrix.sum(axis=1).min())
 rarefied_counts = []
 for sample_counts in count_matrix:
-    rarefied = metrics.rarefy(sample_counts, depth=10000, seed=42)
+    rarefied = metrics.rarefy(sample_counts.tolist(), depth=depth, seed=42)
     rarefied_counts.append(rarefied)
 
 beta = metrics.beta_diversity(rarefied_counts, metric="bray_curtis")
 ```
 
-**Alternative**: Use presence/absence metrics (Jaccard) which are depth-independent.
+**Alternative**: Jaccard uses presence/absence only, so it ignores abundance differences, but it still depends on depth because rare taxa are only detected in deeper samples; rarefy first in either case.
 
 ---
 
@@ -610,7 +669,7 @@ OTU clusters at 97% identity lump distinct sequences; ASVs are exact sequences. 
 - Read [ARCHITECTURE.md](ARCHITECTURE.md) for system design details
 - See [TUTORIALS.md](../TUTORIALS.md) for real-world study workflows
 - Review [CAPABILITIES.md](CAPABILITIES.md) for complete function reference
-- Check [CONFIGURATION.md](SPEC.md) for module settings
+- See the Configuration section of [ARCHITECTURE.md](ARCHITECTURE.md#configuration) for module settings (`META_OTU_THRESHOLD` and function parameters)
 - Consult [TROUBLESHOOTING.md](../TROUBLESHOOTING.md) for common issues
 
 ---
@@ -620,7 +679,7 @@ OTU clusters at 97% identity lump distinct sequences; ASVs are exact sequences. 
 - **QIIME 2**: https://qiime2.org — Industry standard; consider for GUI/preprocessing
 - **mothur**: https://mothur.org — Classic 16S pipeline (similar to OTU clustering here)
 - **DADA2**: https://benjjneb.github.io/dada2/ — ASV denoising origin (R)
-- ** SILVA**: https://www.arb-silva.de — 16S/18S reference database
+- **SILVA**: https://www.arb-silva.de — 16S/18S reference database
 - **Greengenes**: http://greengenes.secondgenome.com — 16S database (legacy)
 - **GTDB**: https://gtdb.ecogenomic.org — Genome taxonomy (for MAGs)
 
@@ -633,4 +692,4 @@ Metagenomics analysis with METAINFORMANT can proceed via two main paths:
 - **Amplicon**: Load reads → merge → denoise (ASV) or cluster (OTU) → classify → diversity
 - **Shotgun**: Load reads → assemble → bin → annotate → profile → downstream stats
 
-Start with the **amplicon workflow** if you have 16S/ITS data; use **shotgun** for whole metagenomes. Both produce feature tables that feed into `diversity`, `comparative`, and `visualization` modules consistently.
+Start with the **amplicon workflow** if you have 16S/ITS data; use **shotgun** for whole metagenomes. Both can produce feature tables (samples × features count matrices that you assemble from the results) that feed into the `diversity`, `comparative`, and `visualization` modules.

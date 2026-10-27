@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - math
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/math`
+- **Path**: `src/metainformant/math`
 - **Purpose**: Mathematical biology and theoretical modeling module for METAINFORMANT.
 - **Domain**: metainformant
 

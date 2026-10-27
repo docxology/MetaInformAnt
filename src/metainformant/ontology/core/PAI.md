@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - core
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/ontology/core`
+- **Path**: `src/metainformant/ontology/core`
 - **Purpose**: Core ontology functionality: GO analysis, OBO parsing, and type definitions.
 - **Domain**: ontology
 

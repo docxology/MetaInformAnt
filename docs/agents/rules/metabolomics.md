@@ -12,7 +12,6 @@ Guidelines for developing and maintaining the `metabolomics` module within METAI
 
 ### Optional
 
-- `pyopenms` - Mass spectrometry data processing
 - `pandas` - Tabular data manipulation
 - `scipy` - Statistical analysis
 
@@ -21,7 +20,7 @@ Guidelines for developing and maintaining the `metabolomics` module within METAI
 | Submodule | Purpose |
 |-----------|---------|
 | `analysis` | Metabolite identification and quantification |
-| `io` | Mass spectrometry data I/O (mzML, mzXML, CSV) |
+| `io` | Mass spectrometry data I/O (MGF, CSV) |
 | `pathways` | Metabolic pathway mapping and enrichment |
 | `visualization` | Metabolomics-specific plots and figures |
 
@@ -30,11 +29,13 @@ Guidelines for developing and maintaining the `metabolomics` module within METAI
 ### Data Loading
 
 ```python
-from metainformant.core import io
-from metainformant.metabolomics import io as metab_io
+from metainformant.metabolomics.io import formats
 
-# Load mass spec data
-data = metab_io.load_mzml("data/metabolomics/sample.mzML")
+# Load an intensity table (metabolites x samples) from CSV
+dataset = formats.read_csv("data/metabolomics/intensities.csv")
+
+# Load MS/MS spectra from an MGF file
+spectra = formats.read_mgf("data/metabolomics/sample.mgf")
 ```
 
 ### Configuration

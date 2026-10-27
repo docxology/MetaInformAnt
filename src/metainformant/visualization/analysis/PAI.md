@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - analysis
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/visualization/analysis`
+- **Path**: `src/metainformant/visualization/analysis`
 - **Purpose**: Functionality for analysis.
 - **Domain**: visualization
 

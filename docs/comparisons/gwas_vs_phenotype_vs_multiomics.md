@@ -98,7 +98,7 @@ This guide compares three complementary approaches for connecting genetic variat
 | From → To | Connection Method | Example |
 |-----------|------------------|---------|
 | phenotype → gwas | Phenotype file input to `gwas.workflow` | `phenotypes.tsv` → trait column |
-| gwas → multiomics | Variant file → `multiomics.from_dna_variants()` | VCF → DNA layer |
+| gwas → multiomics | Variant table → `multiomics.analysis.integration.from_dna_variants()` | VCF → DNA layer |
 | multiomics → gwas | Summary stats → fine-mapping | LD matrix from multi-omics |
 | gwas → eqtl | Summary statistics → colocalization | coloc, eCAVIAR |
 | phenotype → multiomics | Trait as multi-omic outcome | Multi-view regression |
@@ -249,7 +249,7 @@ Because multi-omics reduces feature space via joint factorization:
 | Model | Required samples | Notes |
 |-------|-----------------|-------|
 | Joint PCA | ≥ 5 × max(num_features) | Rule of thumb: 50–100 minimum |
-| CCA | ≥ max(n_dna, n_rna) | Balanced sample sizes critical |
+| CCA | `regularization=0`: samples − 1 ≥ rank(DNA layer) + rank(RNA layer); `regularization > 0`: ≥ 2 | Both layers must hold the same samples. Below the threshold an unregularized fit is degenerate (the leading canonical correlations equal 1) |
 | NMF | ≥ 2 × (comp1 + comp2) | Less stringent but <100 risky |
 | Multi-view clustering | ≥ 30 per view | Each omic layer needs samples |
 
@@ -322,26 +322,29 @@ sp002        head_length       1.92   mm    caliper  1          healthy
 ### multiomics: Container Format
 
 ```python-snippet
-from metainformant.multiomics import integration
+import pandas as pd
+from metainformant.multiomics.analysis import integration
 
-# Create container
-multi = integration.MultiOmicsData()
+# Each omics layer is a samples × features DataFrame indexed by sample ID
+dna_df = pd.read_csv("genotypes.tsv", sep="\t", index_col=0)      # samples × SNPs
+rna_df = pd.read_csv("expression.tsv", sep="\t", index_col=0)    # samples × genes
+prot_df = pd.read_csv("proteomics.tsv", sep="\t", index_col=0)   # samples × proteins
 
-# Add omics layers
-dna_df = pd.read_csv("genotypes.tsv")      # samples × SNPs
-rna_df = pd.read_csv("expression.tsv")    # samples × genes
-prot_df = pd.read_csv("proteomics.tsv")   # samples × proteins
+# Create the container from the layers (at least one layer is required)
+multi = integration.MultiOmicsData(
+    data={"genome": dna_df, "transcriptome": rna_df, "proteome": prot_df},
+)
 
-multi.add_omics("genome", dna_df, feature_type="snps")
-multi.add_omics("transcriptome", rna_df, feature_type="genes")
-multi.add_omics("proteome", prot_df, feature_type="proteins")
-
-# Alignment happens automatically
-assert multi.samples_aligned == True
+# Alignment happens automatically: only samples present in every layer are kept
+print(multi.layer_names, multi.n_samples)
 
 # Run joint analysis
-joint_pca = integration.joint_pca(multi, n_components=10)
-cca_result = integration.cca_integration(multi, view1="genome", view2="transcriptome")
+embeddings, loadings, explained_variance = integration.joint_pca(multi, n_components=10)
+# Ridge CCA; regularization > 0 is needed when a layer has more features than the samples
+# can constrain (typical for SNP and expression layers), because regularization=0 is classical CCA
+x_scores, y_scores, x_weights, y_weights, correlations = integration.canonical_correlation(
+    multi, layers=("genome", "transcriptome"), n_components=5, regularization=0.1
+)
 ```
 
 ## 8. Output Interpretation
@@ -440,68 +443,77 @@ Output: `output/multiomics/integration_results.h5`
 uv run python -m metainformant gwas run --config config/gwas/gwas_template.yaml
 
 # Python API
-from metainformant.gwas.workflow import run_gwas_workflow
-results = run_gwas_workflow(config="config/gwas/gwas_template.yaml")
+from metainformant.gwas import execute_gwas_workflow
+from metainformant.gwas.data.config import load_gwas_config
+results = execute_gwas_workflow(load_gwas_config("config/gwas/gwas_template.yaml"))
 ```
 
 #### Phenotype: Trait analysis
 
 ```bash
-uv run python -m metainformant phenotype analyze --measurements data/pheno.tsv
+# CLI: runs the phenotype pipeline over a JSON list of records
+uv run python -m metainformant phenotype run --input data/pheno.json --type morphological --output output/phenotype
 ```
 
 ```python
-from metainformant.phenotype import MorphometricProfile
-profile = MorphometricProfile.from_tsv("measurements.tsv")
-ci = profile.calculate_index("cephalic_index", "head_width", "head_length")
+import pandas as pd
+from metainformant.phenotype.morphological.measurement import Measurement
+from metainformant.phenotype.morphological.profile import MorphometricProfile, summary_statistics
+
+# One row per measurement; build one MorphometricProfile per specimen
+table = pd.read_csv("measurements.tsv", sep="\t")
+profiles = [
+    MorphometricProfile(
+        specimen_id,
+        [Measurement(row.measurement_type, row.value, row.unit) for row in rows.itertuples()],
+    )
+    for specimen_id, rows in table.groupby("specimen_id")
+]
+ci = profiles[0].calculate_index("cephalic_index", "head_width", "head_length")  # ratio × 100
+stats = summary_statistics(profiles)  # per-measurement mean, sd, min, max, cv
 ```
 
 #### Multi-Omics: Joint integration
 
-```bash
-uv run python -m metainformant multiomics integrate \
-  --dna data/genotypes.tsv \
-  --rna data/expression.tsv \
-  --method joint_pca
-```
+The `metainformant` CLI has no multiomics subcommand; use the Python API:
 
 ```python-snippet
-from metainformant.multiomics import integration
-multi = integration.MultiOmicsData()
-multi.add_omics("dna", dna_df)
-multi.add_omics("rna", rna_df)
-result = integration.joint_pca(multi, n_components=20)
+from metainformant.multiomics.analysis import integration
+multi = integration.MultiOmicsData(data={"dna": dna_df, "rna": rna_df})
+embeddings, loadings, explained_variance = integration.joint_pca(multi, n_components=20)
 ```
 
 ### Cross-Module Pipeline Example: GWAS → eQTL → Multi-omics
 
 ```python-snippet
 # Step 1: Run GWAS
-from metainformant.gwas.workflow import run_gwas_workflow
-gwas_results = run_gwas_workflow(config="config/gwas/gwas.yaml")
+from metainformant.gwas import execute_gwas_workflow
+from metainformant.gwas.data.config import load_gwas_config
+gwas_results = execute_gwas_workflow(load_gwas_config("config/gwas/gwas.yaml"))
 
-# Step 2: Extract lead SNPs for eQTL
+# Step 2: Extract lead SNPs for eQTL (95% credible set from the Z-scores and standard errors of a locus;
+# the standard errors fix the scale of the Wakefield Bayes factors, V = se**2)
 from metainformant.gwas.finemapping import credible_sets
-credible = credible_sets.extract_credible_set(gwas_results, prob=0.95)
+credible = credible_sets.compute_credible_set(z_scores, coverage=0.95, standard_errors=standard_errors)
+snp_ids = [variant_ids[i] for i in credible["snps_in_set"]]
 
-# Step 3: Run eQTL on those SNPs
-from metainformant.gwas.finemapping.eqtl import run_eqtl
-eqtl_results = run_eqtl(
-    genotypes="cohort.vcf.gz",
-    expression="expression.tsv",
-    snps_to_test=credible.snp_ids
+# Step 3: Run eQTL on those SNPs (samples x variants dosages, samples x transcripts expression)
+from metainformant.gwas.analysis.eqtl import run_eqtl_analysis
+eqtl_results = run_eqtl_analysis(genotype_df[snp_ids], expression_df)
+
+# Step 4: Integrate with expression and proteomics (multiomics): samples × features layers
+from metainformant.multiomics.analysis import integration
+multi = integration.MultiOmicsData(
+    data={
+        "genotype": genotype_df[snp_ids],
+        "transcriptome": expression_df,
+        "proteome": protein_df,
+    }
 )
 
-# Step 4: Integrate with proteomics (multiomics)
-from metainformant.multiomics import integration
-multi = integration.MultiOmicsData()
-multi.add_omics("gwas", gwas_results[credible.snp_ids])
-multi.add_omics("eqtl", eqtl_results)
-multi.add_omics("proteome", protein_df)
-
 # Joint factor analysis to find multi-omic axis
-joint = integration.joint_pca(multi)
-print(f"Top component explains {joint.variance[0]:.1%} integrated variance")
+embeddings, loadings, explained_variance = integration.joint_pca(multi, n_components=5)
+print(f"Top component explains {explained_variance[0]:.1%} of the integrated variance")
 ```
 
 ## 11. Common Pitfalls & Gotchas
@@ -511,7 +523,7 @@ print(f"Top component explains {joint.variance[0]:.1%} integrated variance")
 | **Small n, large p** | Yes — need n >> p for stable | Less critical | Severe — must regularize |
 | **Batch effects** | Genotyping batch (fix with PC) | Measurement batch (critical) | Omics platform batch (critical) |
 | **Population structure** | Major confounder (use PCA/kinship) | Minor (unless across pops) | Same as GWAS component |
-| **Missing data** | Imputation possible | Often problematic | Hard — require complete cases or impute per-layer |
+| **Missing data** | Linear and logistic tests analyse complete cases per variant (`n_missing_dropped`); impute genotypes beforehand if needed | Often problematic | Hard — require complete cases or impute per-layer |
 | **Multiple testing** | Genome-wide correction essential | FDR per-trait OK | Bonferroni or FDR across all features |
 | **Reproducibility** | Summary statistics shareable | Raw measurements needed | Data volume often prohibitive to share |
 

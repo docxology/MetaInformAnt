@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - functional
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/metagenomics/functional`
+- **Path**: `src/metainformant/metagenomics/functional`
 - **Purpose**: Functional metagenomics analysis.
 - **Domain**: metagenomics
 

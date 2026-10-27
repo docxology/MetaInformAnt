@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - quality
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/docs/quality`
+- **Path**: `docs/quality`
 - **Purpose**: Functionality for quality.
 - **Domain**: docs
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - reorganize
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/scripts/reorganize`
+- **Path**: `archive/scripts_reorganize`
 - **Purpose**: Functionality for reorganize.
 - **Domain**: scripts
 

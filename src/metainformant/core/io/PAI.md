@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - io
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/core/io`
+- **Path**: `src/metainformant/core/io`
 - **Purpose**: Core Input/Output utilities for METAINFORMANT.
 - **Domain**: core
 

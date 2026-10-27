@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - metrics
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/information/metrics`
+- **Path**: `src/metainformant/information/metrics`
 - **Purpose**: Functionality for metrics.
 - **Domain**: information
 

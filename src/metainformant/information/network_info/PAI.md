@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - network_info
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/information/network_info`
+- **Path**: `src/metainformant/information/network_info`
 - **Purpose**: Network information flow subpackage.
 - **Domain**: information
 

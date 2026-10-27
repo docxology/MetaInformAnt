@@ -101,8 +101,14 @@ qc:
   min_call_rate: 0.95         # Minimum call rate per variant
   hwe_pval: 1e-6             # Hardy-Weinberg equilibrium p-value threshold
   exclude_indels: true        # Exclude insertion/deletion variants
-  min_qual: 30.0             # Minimum variant quality score
+  min_qual: 30.0             # Minimum variant quality (QUAL), inclusive; optional
 ```
+
+`apply_qc_filters` applies the filters in this order: QUAL (`min_qual`), minor allele frequency (`min_maf`, default 0.01), missing data (`max_missing`, default 0.1) and Hardy-Weinberg equilibrium (`hwe_pval`, passed on as `min_hwe_p`, default 1e-6). A variant has to pass every filter that is enabled. `apply_qc_filters` does not read `min_call_rate` or `exclude_indels`.
+
+`min_qual` is optional: leave it out (or set it to `null`) to switch the QUAL filter off. A variant passes when its QUAL is at least `min_qual`. A variant whose QUAL is missing (`.` in the VCF) cannot be shown to meet the threshold and is removed whatever the threshold value, so omit `min_qual` for a VCF that carries no QUAL values. The result of `apply_qc_filters` then holds a `qual_filter` entry with `min_qual`, `n_removed` and `n_missing_qual` (how many of the removed variants had no QUAL).
+
+Numeric thresholds are read as numbers: `hwe_pval: 1e-6`, which PyYAML loads as a string, is converted to a float, and a value that is not a number raises `ValueError` (`quality_control.<key> must be numeric`) when the workflow normalises the configuration.
 
 ## Samples Configuration
 

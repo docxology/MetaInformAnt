@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - scripts
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/scripts`
+- **Path**: `scripts`
 - **Purpose**: Functionality for scripts.
 - **Domain**: 
 

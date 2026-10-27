@@ -93,7 +93,8 @@ See [steps/README.md](steps/README.md) for detailed step documentation.
 ## Python API
 
 ```python-snippet
-from metainformant.rna import workflow, amalgkit
+from metainformant.rna.engine import workflow
+from metainformant.rna import amalgkit
 
 # Check CLI availability
 ok, help_text = amalgkit.check_cli_available()

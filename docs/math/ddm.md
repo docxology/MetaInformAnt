@@ -11,7 +11,7 @@ flowchart LR
 Example
 
 ```python-snippet
-from metainformant.math import ddm
+from metainformant.math.decision_theory import ddm
 
 acc = ddm.ddm_analytic_accuracy(0.2, 1.0)
 edt = ddm.ddm_mean_decision_time(0.2, 1.0)

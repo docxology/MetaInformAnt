@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - traits
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/ecology/traits`
+- **Path**: `src/metainformant/ecology/traits`
 - **Purpose**: Trait-based ecology sub-package.
 - **Domain**: ecology
 

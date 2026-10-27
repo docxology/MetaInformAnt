@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - evaluation
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/ml/evaluation`
+- **Path**: `src/metainformant/ml/evaluation`
 - **Purpose**: Functionality for evaluation.
 - **Domain**: ml
 

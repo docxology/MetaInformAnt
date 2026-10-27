@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - epigenome
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/epigenome`
+- **Path**: `src/metainformant/epigenome`
 - **Purpose**: Epigenome analysis module for METAINFORMANT.
 - **Domain**: metainformant
 

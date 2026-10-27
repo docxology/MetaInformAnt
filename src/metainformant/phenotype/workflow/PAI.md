@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - workflow
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/phenotype/workflow`
+- **Path**: `src/metainformant/phenotype/workflow`
 - **Purpose**: Phenotype workflow adapters for cross-domain statistical routines.
 - **Domain**: phenotype
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - ontology
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/scripts/ontology`
+- **Path**: `scripts/ontology`
 - **Purpose**: Functionality for ontology.
 - **Domain**: scripts
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - math
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/scripts/math`
+- **Path**: `scripts/math`
 - **Purpose**: Functionality for math.
 - **Domain**: scripts
 

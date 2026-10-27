@@ -114,7 +114,7 @@ results = manager.run()  # dict[sample_id, success_bool]
 
 ### 2. Config-Driven Workflow
 
-Declarative YAML/JSON pipelines:
+Declarative YAML/JSON pipelines. A `downloads` section fetches files one at a time; `processing` entries are recorded but not executed:
 
 ```yaml
 downloads:
@@ -127,7 +127,12 @@ processing:
 ```python
 from metainformant.core.execution.workflow import download_and_process_data
 results = download_and_process_data("config.yaml", output_dir="output/")
+# results["downloads"]["data"]    -> {"status": "success", "path": ...} or {"status": "failed", "error": ...}
+# results["processing"]["step1"]  -> {"status": "not_executed", "reason": ..., "config": ...}
+# results["errors"]               -> failed downloads and every processing entry
 ```
+
+For work that has to run, use a `steps` section with `run_config_based_workflow`, or a `BasePipelineManager`.
 
 **Learn more**: [Orchestration — Configuration-Driven](ORCHESTRATION.md#configuration-driven-workflows)
 

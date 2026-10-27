@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - amplicon
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/metagenomics/amplicon`
+- **Path**: `src/metainformant/metagenomics/amplicon`
 - **Purpose**: Amplicon-based metagenomics analysis (16S/ITS).
 - **Domain**: metagenomics
 

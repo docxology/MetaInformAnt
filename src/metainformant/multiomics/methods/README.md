@@ -14,7 +14,7 @@ Matrix factorization and fusion algorithms (numpy or pure-Python fallback):
 | `mofa_simple()` | Simplified MOFA+ Bayesian factor model with ARD priors |
 | `tensor_decomposition()` | CP (CANDECOMP/PARAFAC) tensor decomposition via ALS |
 | `similarity_network_fusion()` | Similarity Network Fusion of patient similarity networks |
-| `canonical_correlation()` | Regularized (ridge) CCA for two omic matrices via SVD |
+| `canonical_correlation()` | Regularized (ridge) CCA for two omic matrices via SVD; takes arrays, centres but does not standardize them, and returns a dict (the DataFrame-based variant that standardizes and returns a tuple is `analysis.integration.canonical_correlation`) |
 
 ### clustering.py
 

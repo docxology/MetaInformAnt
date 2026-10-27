@@ -9,8 +9,13 @@ Comprehensive architectural overview of the METAINFORMANT metagenomics module, c
 3. [Shotgun Workflow](#shotgun-workflow)
 4. [Component Responsibilities](#component-responsibilities)
 5. [Data Flow](#data-flow)
-6. [Integration with Diversity & Functional Analysis](#integration-with-diversity-functional-analysis)
+6. [Integration with Diversity & Functional Analysis](#integration-with-diversity--functional-analysis)
 7. [Design Patterns](#design-patterns)
+8. [Integration Points](#integration-points)
+9. [Configuration](#configuration)
+10. [Performance Considerations](#performance-considerations)
+11. [Future Architecture Directions](#future-architecture-directions)
+12. [Summary](#summary)
 
 ---
 
@@ -20,7 +25,7 @@ Comprehensive architectural overview of the METAINFORMANT metagenomics module, c
 
 ```
 src/metainformant/metagenomics/
-├── __init__.py              # Public API exports
+├── __init__.py              # Exposes the six subpackages (functions live in their modules)
 ├── README.md                # Module overview
 ├── SPEC.md                  # Technical specification
 ├── AGENTS.md                # Agent directives
@@ -30,8 +35,8 @@ src/metainformant/metagenomics/
 │   ├── __init__.py
 │   ├── README.md
 │   ├── otu_clustering.py   # Greedy centroid OTU clustering
-│   ├── asv_denoising.py    # DADA2-style error modeling
-│   └── taxonomy.py         # Naive Bayes / BLAST classification
+│   ├── asv_denoising.py    # DADA2-style denoising, error model, paired-read merging
+│   └── taxonomy.py         # Naive Bayes / k-mer ("blast") classification
 │
 ├── shotgun/                # Whole-metagenome analysis
 │   ├── __init__.py
@@ -54,13 +59,15 @@ src/metainformant/metagenomics/
 ├── comparative/            # Differential abundance
 │   ├── __init__.py
 │   ├── README.md
-│   └── differential_abundance.py  # ALDEx2-like, ANCOM-like tests
+│   └── differential_abundance.py  # ALDEx2-like / ANCOM-like tests, indicator species, biomarkers
 │
 └── visualization/          # Metagenomics plots
     ├── __init__.py
     ├── README.md
-    └── plots.py            # Krona, stacked bar, rarefaction, ordination
+    └── plots.py            # Krona-style sunburst, stacked bar, rarefaction, ordination, alpha diversity, heatmap
 ```
+
+Each subpackage directory also holds `AGENTS.md`, `PAI.md` and `SPEC.md` (omitted from the tree). The `metainformant.metagenomics` package and its subpackages expose only their submodules, so import functions from the module that defines them (for example `metainformant.metagenomics.amplicon.otu_clustering.cluster_otus`).
 
 ---
 
@@ -71,22 +78,24 @@ src/metainformant/metagenomics/
 ```
 Raw FASTQ (Illumina)
         ↓
-[Quality filtering] — trim adapters, filter low quality
+[Quality filtering] — trim adapters, filter low quality (external, e.g. fastp, cutadapt)
         ↓
-[Dereplication] — duplicate sequences merged with counts
+[Paired-read merging] — merge_paired_reads() (paired-end data only)
         ↓
-[ASV denoising] — error modeling (DADA2), OR
-[OTU clustering] — 97% identity centroid clustering
+[Dereplication] — duplicate sequences merged with counts (inside denoise_sequences(), or by the caller)
         ↓
-[Chimera removal] — UCHIME de novo or reference-based
+[ASV denoising] — error modeling (DADA2-style): denoise_sequences(), OR
+[OTU clustering] — 97% identity centroid clustering: cluster_otus()
         ↓
-[Taxonomic classification] — naive Bayes k-mer classifier (RDP) or BLAST
+[Chimera removal] — filter_chimeras(): simplified UCHIME-style, de novo or reference-based
         ↓
-[OTU/ASV table] — samples × taxa abundance matrix
+[Taxonomic classification] — classify_taxonomy(): naive Bayes k-mer classifier (RDP-style) or k-mer "blast"
+        ↓
+[OTU/ASV table] — samples × taxa abundance matrix (assembled by the caller)
         ↓
 [Diversity analysis] → α diversity (Shannon, Simpson), β diversity (Bray-Curtis)
         ↓
-[Statistical testing] → PERMANOVA, ANOSIM, differential abundance
+[Statistical testing] → PERMANOVA, differential abundance
 ```
 
 ### Processing Modes
@@ -95,24 +104,24 @@ The module supports two parallel amplicon analysis strategies:
 
 | Mode | Method | Resolution | Speed | Recommended For |
 |------|--------|------------|-------|-----------------|
-| **OTU clustering** | Greedy centroid (VSEARCH-style) | 97% identity clusters | Fast | Traditional 16S analysis, large datasets (>1M reads) |
-| **ASV denoising** | Error-model (DADA2-style) | Exact sequence variants (100%) | Moderate | High-resolution analysis, smaller datasets |
+| **OTU clustering** | Greedy centroid (VSEARCH-style) | 97% identity clusters | Slow: pure-Python alignment, roughly 0.02–0.1 s per 250 bp pair (varies with hardware and load) | Traditional 16S analysis, up to a few thousand sequences (use VSEARCH for >1M reads) |
+| **ASV denoising** | Error-model (DADA2-style) | Exact sequence variants (100%) | Much faster here: no alignments (300 simulated 250 bp reads on one machine: under 0.1 s vs about 14 s for OTU clustering; times vary with hardware, load and data); cost grows with unique sequences × ASVs | High-resolution analysis |
 
 **OTU clustering** (`cluster_otus()`):
-- Sorts sequences by abundance or length
+- Sorts sequences by length (default) or, with `sort_by="abundance"` and an `abundance` dict, by abundance
 - Iteratively assigns each to best-matching centroid if identity ≥ threshold
 - First sequence becomes centroid #1
-- Complexity: O(n²) worst-case, but with k-mer pre-filter is near-linear
-- Output: OTU table (centroid → sample counts)
+- Complexity: one O(L₁×L₂) alignment per sequence–centroid pair; the k-mer pre-filter skips most alignments between dissimilar sequences, but it is a heuristic and can also skip pairs whose identity is above the threshold
+- Output: a `ClusteringResult` whose `otu_table` maps each centroid ID to its number of member sequences (no per-sample counts)
 
 **ASV denoising** (`denoise_sequences()`):
 - Dereplicates identical sequences with counts
-- Estimates error rates from quality scores (Phred)
+- Uses a supplied `ErrorModel`, one estimated from the reads when `quality_scores` are given (from per-position consensus differences; the Phred values themselves are not used), or a default Phred-30 model
 - Uses Poisson model to merge error variants into true ASVs
 - More sensitive to true biological variants (single-nucleotide differences)
-- Output: ASV table (unique sequence → sample counts)
+- Output: a `DenoisingResult` whose `asvs` are `ASV(sequence, abundance)` objects pooled over all input reads (no per-sample counts)
 
-**Recommendation**: Use **ASV** for most studies (higher resolution); use **OTU** for legacy compatibility or when computational resources limited.
+**Recommendation**: Use **ASV** for most studies (higher resolution, and much cheaper than `cluster_otus()` in this pure-Python implementation); use **OTU** for legacy compatibility with 97% OTU tables.
 
 ---
 
@@ -123,58 +132,61 @@ The module supports two parallel amplicon analysis strategies:
 ```
 Raw reads (Illumina, PacBio, ONT)
         ↓
-[Quality control] — Trimmomatic, fastp (adapter/quality trimming)
+[Quality control] — external (Trimmomatic, fastp: adapter/quality trimming)
         ↓
-[Host removal] — Map to host genome, filter (optional)
+[Host removal] — external (map to host genome, filter; optional)
         ↓
-[Assembly] — De Bruijn graph (MetaSPAdes, MEGAHIT)
+[Assembly] — assemble_contigs(): simplified de Bruijn graph
+             (MetaSPAdes, MEGAHIT run externally for production data)
         ↓
-[Assembly stats] — N50, # contigs, total bp, GC%
+[Assembly stats] — calculate_assembly_stats(): N50, # contigs, total bp, GC fraction
         ↓
-[Binning] — Tetranucleotide frequency (TNF) + coverage-based clustering
+[Binning] — bin_contigs(): tetranucleotide frequency (TNF) + coverage-based k-means
         ↓
-[Bin refinement] — CheckM-style marker gene QC
+[Bin quality] — assess_bin_quality() / refine_bins(): heuristic stand-in for CheckM-style marker gene QC
         ↓
-[MAGs] — Metagenome-assembiled genomes (FASTA per bin)
+[MAGs] — GenomeBin objects listing contig IDs per bin (no FASTA writer)
         ↓
-[Profiling] — k-mer LCA classification (Kraken-style) OR
-              gene-based profiling (HUMAnN-style)
+[Profiling] — build_kmer_index() + profile_community(): k-mer LCA classification (Kraken-style)
         ↓
-[Functional annotation] — Prodigal ORF, eggNOG/KEGG assignment
+[Functional annotation] — predict_orfs(): six-frame ORF scan; annotate_genes(): scoring against
+                          a user-supplied profile set
         ↓
-[Pathway reconstruction] — MetaCyc, reaction inference
+[Pathway reconstruction] — reconstruct_pathways(): completeness for 8 built-in KEGG pathways
+                           (or custom PathwayDefinition objects)
 ```
 
 ### Assembly Details
 
 **`assemble_contigs()`** in `shotgun/assembly.py`:
 
-- **Algorithm**: De Bruijn graph (not full production assembler; currently a limited graph implementation)
-- **k-mer sizes**: Multiple k values (21, 33, 55 by default) to balance contiguity and repeat resolution
+- **Algorithm**: simplified de Bruijn graph (not a production assembler): k-mers are counted per read, non-branching paths are collapsed into contigs
+- **k-mer sizes**: Multiple k values; the default depends on mean read length (`[21]` below 100 bp, `[21, 33]` below 200 bp, `[21, 33, 55]` otherwise) to balance contiguity and repeat resolution
 - **Node**: (k-1)-mer, **Edge**: k-mer
-- **Tip removal**: Low-coverage tips (likely errors) are trimmed
-- **Bubble popping**: Sequencing errors create alternative paths with similar coverage; collapsed
+- **Error filtering**: k-mers seen fewer than `min_kmer_coverage` times (default 2) are dropped; there is no tip removal or bubble popping
+- **Multiple k**: contigs are processed longest first, and any contig identical to, or a substring of, one already kept (from any k) is dropped
 
-**Output data model**:
+**Output data model** (abbreviated):
 ```python
 @dataclass
 class Contig:
     contig_id: str
     sequence: str
     length: int
-    coverage: float   # average read depth
-    gc_content: float
+    coverage: float   # mean k-mer count along the contig
+    gc_content: float # fraction, 0-1
 
 @dataclass
 class AssemblyStats:
     total_contigs: int
     total_length: int
-    n50: int          # shortest contig length where ≥50% genome covered
-    l50: int          # fewest contigs that cover ≥50% genome
-    gc_content: float
+    n50: int          # shortest contig length where ≥50% of the assembly is covered
+    l50: int          # fewest contigs that cover ≥50% of the assembly
+    gc_content: float # fraction, 0-1
+    # also: largest_contig, smallest_contig, n90, l90, mean_coverage, mean_length, median_length
 ```
 
-**Note**: Full de Bruijn assembly is computationally intensive. For large datasets (>1 Gb), use external assemblers (MEGAHIT, metaSPAdes) via system calls; METAINFORMANT provides wrappers (future).
+**Note**: Full de Bruijn assembly is computationally intensive. For large datasets (>1 Gb), use external assemblers (MEGAHIT, metaSPAdes) via system calls; METAINFORMANT does not currently provide wrappers.
 
 ---
 
@@ -182,31 +194,35 @@ class AssemblyStats:
 
 **`bin_contigs()`** in `shotgun/binning.py`:
 
-- **Input**: Contigs dictionary `{id: sequence}`, optional per-contig coverage
-- **Methods**:
-  1. **Composition-only**: TNF (tetranucleotide frequency) via k-mer counting (k=4) → 256-dimensional vector → PCA → k-means clustering
-  2. **Coverage-only**: If multiple samples have coverage profiles, cluster by coverage patterns across samples
-  3. **Combined**: Concatenate normalized TNF + normalized coverage vectors (recommended)
+- **Input**: Contigs dictionary `{id: sequence}`, optional per-contig coverage (one value, or a list of per-sample values); contigs shorter than `min_contig_length` (default 1000 bp) are left unbinned
+- **Methods** (`method=`, default `"composition"`; coverage only enters the clustering features under `"coverage"` and `"combined"`):
+  1. **Composition-only**: TNF (tetranucleotide frequency, both strands) via 4-mer counting → 256-dimensional vector → k-means clustering
+  2. **Coverage-only**: log-transformed coverage (a vector across samples when per-sample coverage is given) → k-means clustering
+  3. **Combined**: Concatenate the TNF vector + log-transformed coverage (recommended)
 
-- **Algorithm**: k-means with k-means++ initialization. Number of bins estimated from total assembly size / typical genome size (e.g., 3 Mbp for bacteria).
+- **Algorithm**: pure-Python k-means with k-means++ initialization (`seed`). If `n_bins` is not given, it is the smaller of one bin per 3 Mbp of binned sequence and half the number of binnable contigs, raised to at least 2 and capped at the number of binnable contigs.
 
-**Output**:
+**Output** (abbreviated):
 ```python
 @dataclass
 class GenomeBin:
     bin_id: str
     contig_ids: list[str]
     total_length: int
+    num_contigs: int
     gc_content: float
-    completeness: float      # from single-copy marker genes (CheckM)
-    contamination: float     # fraction of markers found in multiple copies
+    mean_coverage: float
+    completeness: float      # 0.0 until assess_bin_quality()/refine_bins() runs
+    contamination: float     # 0.0 until assess_bin_quality()/refine_bins() runs
     quality_score: float     # completeness - 5 × contamination
+    marker_counts: dict[str, int]
 ```
 
-**Quality assessment** (CheckM-style):
-- **Completeness**: Fraction of universal single-copy marker genes present (e.g., 43 bacterial markers)
-- **Contamination**: Fraction of universal markers found in ≥2 copies (suggests multiple strains)
-- **High-quality MAG**: completeness ≥90%, contamination ≤5%
+**Quality assessment** (heuristic stand-in for CheckM; `assess_bin_quality()`):
+- **Completeness**: Fraction of 36 bacterial single-copy marker names counted as present
+- **Contamination**: Fraction of those markers counted in ≥2 copies
+- **Caveat**: no marker gene is searched for. With contigs, presence is inferred from the 4-mer diversity and GC of sequence windows, which almost any non-degenerate sequence passes (a 3 kb bin gets completeness 1.0); without contigs, completeness comes from bin size alone. Use CheckM or BUSCO for reportable values.
+- **High-quality MAG** (the usual criterion): completeness ≥90%, contamination ≤5%; `BinningResult.high_quality_bins` is not filled in by the code, so count them yourself
 
 ---
 
@@ -214,20 +230,21 @@ class GenomeBin:
 
 **`build_kmer_index()`** and `profile_community()` in `shotgun/profiling.py`:
 
-- **k-mer indexing**: Build k-mer → taxon lookup from reference genomes. For shared k-mers, store LCA (lowest common ancestor) taxon for that k-mer.
-- **Classification**: For each read, extract k-mers; vote among matching taxa; LCA of all votes yields assignment.
-- **Confidence**: Fraction of k-mers agreeing with LCA.
+- **k-mer indexing**: Build k-mer → taxon lookup from reference genomes (forward-strand k-mers). For shared k-mers, store LCA (lowest common ancestor) taxon for that k-mer.
+- **Classification**: For each read, extract k-mers and look them up; reads with fewer than `min_kmer_hits` hits stay unclassified. The taxon with the most hits is assigned if it holds at least `confidence_threshold` of them; otherwise the LCA of all hit taxa is assigned.
+- **Confidence**: Fraction of a read's k-mer hits that support the top taxon.
 
-**Data model**:
+**Data model** (abbreviated):
 ```python
 @dataclass
 class TaxonProfile:
-    taxon_id: str      # e.g., "k__Bacteria|p__Firmicutes"
+    taxon_id: str      # reference ID, or an LCA ID such as "Bacteria;Firmicutes"
     name: str          # e.g., "Lactobacillus"
     rank: str          # species/genus/phylum
     lineage: list[tuple[str, str]]
     read_count: int
-    relative_abundance: float
+    relative_abundance: float   # fraction of classified reads
+    kmer_count: int             # not filled in (stays 0)
 
 @dataclass
 class CommunityProfile:
@@ -235,6 +252,8 @@ class CommunityProfile:
     total_reads: int
     classified_reads: int
     unclassified_reads: int
+    classification_rate: float
+    rank_summaries: dict[str, dict[str, float]]   # rank -> {taxon name: abundance}
 ```
 
 ---
@@ -246,12 +265,12 @@ class CommunityProfile:
 | File | Functions | Purpose |
 |------|-----------|---------|
 | `otu_clustering.py` | `cluster_otus()`, `calculate_identity()`, `filter_chimeras()` | OTU-based community profiling |
-| `asv_denoising.py` | `denoise_sequences()`, `estimate_error_rates()` | High-resolution ASV inference |
-| `taxonomy.py` | `classify_taxonomy()`, `build_taxonomy_tree()` | Taxonomic assignment |
+| `asv_denoising.py` | `denoise_sequences()`, `estimate_error_rates()`, `merge_paired_reads()` | High-resolution ASV inference, paired-read merging |
+| `taxonomy.py` | `classify_taxonomy()`, `build_taxonomy_tree()`, `calculate_confidence()` | Taxonomic assignment |
 
 **Key algorithms**:
-- **`calculate_identity()`**: Needleman-Wunsch global alignment with affine gap penalties to compute percent identity. O(L₁×L₂) per pair; uses banded alignment for speed.
-- **`filter_chimeras()`**: UCHIME de novo — finds two best-matching parent sequences among more abundant ones, builds chimeric model by concatenating left/right segments, computes divergence; flags if score > threshold.
+- **`calculate_identity()`**: Needleman-Wunsch global alignment with affine gap penalties; returns identity as a fraction from 0 to 1 (matches divided by alignment columns, gap columns included). O(L₁×L₂) per pair, in pure Python with full dynamic-programming matrices (no banding).
+- **`filter_chimeras()`**: UCHIME-style de novo detection — finds the two most similar parent sequences among those already accepted (processed by abundance, or by length when no abundance is given), builds chimeric models by concatenating left/right segments at 10% breakpoints, computes divergence; flags if score ≥ `min_score`.
 
 ---
 
@@ -260,8 +279,8 @@ class CommunityProfile:
 | File | Functions | Purpose |
 |------|-----------|---------|
 | `assembly.py` | `assemble_contigs()`, `scaffold_contigs()`, `calculate_assembly_stats()` | De Bruijn graph assembly |
-| `binning.py` | `bin_contigs()`, `calculate_tetranucleotide_freq()`, `refine_bins()` | Metagenome binning |
-| `profiling.py` | `build_kmer_index()`, `profile_community()` | Taxonomic profiling |
+| `binning.py` | `bin_contigs()`, `calculate_tetranucleotide_freq()`, `assess_bin_quality()`, `refine_bins()` | Metagenome binning |
+| `profiling.py` | `build_kmer_index()`, `profile_community()`, `calculate_relative_abundance()` | Taxonomic profiling |
 
 **Key structures**:
 - `Contig`, `Scaffold`, `AssemblyStats`
@@ -278,10 +297,10 @@ class CommunityProfile:
 |----------|---------|
 | Alpha diversity | Shannon, Simpson, InvSimpson, Chao1, ACE, Observed, Fisher alpha, Pielou evenness |
 | Beta diversity | Bray-Curtis, Jaccard, Aitchison (CLR-Euclidean) |
-| Ordination | PCoA (PCoA on distance matrix), NMDS (non-metric MDS) |
+| Ordination | PCoA (eigendecomposition of the double-centered distance matrix), NMDS (gradient stress minimization) |
 | Testing | PERMANOVA (pseudo-F permutation test), rarefaction analysis |
 
-**All alpha metrics** accept a single abundance vector (counts or relative abundances); **beta metrics** accept list of sample vectors.
+**All alpha metrics** accept a single abundance vector as a Python list (`chao1`, `ace` and `fisher_alpha` need raw counts; the others also accept relative abundances); **beta metrics** accept a list of equal-length sample vectors.
 
 ---
 
@@ -289,22 +308,22 @@ class CommunityProfile:
 
 | File | Functions | Purpose |
 |------|-----------|---------|
-| `annotation.py` | `predict_genes()`, `annotate_genes()` | ORF prediction (Glimmer-style), gene family assignment (eggNOG/KEGG) |
-| `pathways.py` | `reconstruct_pathways()`, `calculate_completeness()` | Metabolic pathway reconstruction, module completion percentage |
+| `annotation.py` | `predict_orfs()`, `annotate_genes()`, `classify_gene_families()` | Six-frame start/stop codon ORF scan (not Glimmer or Prodigal); `annotate_genes()` scores against a user-supplied profile set (no hits without one), with COG/KEGG/Pfam assignment by profile ID prefix; `classify_gene_families()` scores against `reference_profiles` or, when that is None, falls back to amino-acid composition heuristics |
+| `pathways.py` | `reconstruct_pathways()`, `calculate_pathway_completeness()`, `compare_pathway_profiles()`, `find_differential_pathways()` | Metabolic pathway reconstruction and completeness scoring |
 
-**Pathway completeness**: Computes fraction of pathway reactions or enzymes present in metagenome relative to reference.
+**Pathway completeness**: `reconstruct_pathways()` computes the fraction of a pathway's required KOs/ECs present in the annotations, relative to the pathway definition (8 KEGG pathways are built in). Only `calculate_pathway_completeness()` scores `reaction_steps` (a step is complete if any alternative is present); `reconstruct_pathways()` merely divides by the number of steps when a definition has them.
 
 ---
 
 ### `comparative/` Subpackage
 
-`differential_abundance.py` implements compositional differential analysis methods:
+`differential_abundance.py` implements the `differential_abundance()` methods (two groups only; BH-adjusted p-values) plus `clr_transform()`, `indicator_species()`, `effect_size_analysis()` and `biomarker_discovery()`:
 
-- **ALDEx2-style**: CLR-transformed ANOVA on Monte Carlo Dirichlet samples
-- **ANCOM-like**: ANCOM test for compositional data (accounts for bias in relative abundances)
-- **Standard**: Unpaired t-test with multiple testing (for absolute abundances from spike-in)
+- **`aldex2_like`**: Welch's t-test and Cohen's d on CLR values averaged over Dirichlet Monte Carlo draws
+- **`ancom_like`**: pairwise log-ratio Welch tests per taxon; the W fraction of rejected comparisons is the effect size and `1 - W` the pseudo p-value
+- **`simple_deseq`**: median-of-ratios size-factor normalization, then Welch's t-test and Cohen's d on the normalized counts
 
-**Note**: Exact implementation details are in the ALR (additive log-ratio) framework to handle compositional nature of 16S counts.
+**Note**: `aldex2_like` handles compositionality with the centered log-ratio (CLR) transform and `ancom_like` with pairwise log-ratios, whereas `simple_deseq` only applies median-of-ratios size-factor normalization; the additive log-ratio (ALR) is not used.
 
 ---
 
@@ -329,7 +348,7 @@ flowchart TD
     subgraph E [Shotgun]
         E1[Host Filter] --> E2[Assembly<br/>de Bruijn graph]
         E2 --> E3[Binning<br/>TNF + Coverage]
-        E3 --> E4[QC Bins<br/>Marker genes]
+        E3 --> E4[QC Bins<br/>heuristic marker estimate]
         E4 --> E5[MAGs]
         E5 --> E6[Profiling<br/>k-mer LCA]
         E6 --> E7[Functional<br/>annotation]
@@ -349,21 +368,25 @@ flowchart TD
 ```
 FASTQ (paired-end)
         ↓
+Merge pairs: merge_paired_reads(forward, reverse) → merged sequences
+        ↓
 DADA2-style pipeline:
-1. LearnErrorModel(quality_scores) → error rates per position
-2. Denoise(forward + reverse merged, error_model) → ASVs
+1. estimate_error_rates(quality_scores) → ErrorModel (optional; built from the mean Phred
+   score unless sequences= is also passed. denoise_sequences() passes the reads itself when
+   given quality_scores, else uses a default Phred-30 model)
+2. denoise_sequences(merged, error_rates=error_model) → ASVs
    - Alternative: cluster_otus() → OTUs
         ↓
-Filter chimeras (UCHIME)
+Filter chimeras: filter_chimeras() (simplified UCHIME-style)
         ↓
-Taxonomic classification (naive Bayes, k=8 mers)
+Taxonomic classification: classify_taxonomy() (naive Bayes, k=8 mers)
         ↓
-BIOM / TSV feature table:
+Feature table (built by the caller; export to TSV/BIOM yourself):
    samples × ASVs/OTUs (counts)
         ↓
 → diversity.metrics (alpha/beta)
 → comparative.differential_abundance
-→ visualization.plots (Krona, stacked bar)
+→ visualization.plots (plot_krona_chart, plot_stacked_bar)
 ```
 
 ### Detailed Shotgun Flow
@@ -377,16 +400,16 @@ Assembly:
   assemble_contigs(reads, k_range=[21,33,55]) → contigs
   scaffold_contigs(contigs, paired_reads) → scaffolds (optional)
         ↓
-Binning:
-  bin_contigs(contigs, coverage, method="combined") → bins
-  refine_bins(bins) → high-quality MAGs
+Binning (contigs as {id: sequence}):
+  bin_contigs(contig_dict, coverage, method="combined") → BinningResult (.bins: list of GenomeBin)
+  refine_bins(result.bins, contig_dict) → bins that pass the (heuristic) quality filter
         ↓
 Profiling (two approaches):
-  A) k-mer LCA: build_kmer_index(ref_genomes) → profile_community(reads) → taxonomic abundances
-  B) gene-centric: functional.annotation → pathway abundances
+  A) k-mer LCA: build_kmer_index(ref_genomes) → profile_community(reads, database=index) → taxonomic abundances
+  B) gene-centric: functional.annotation.predict_orfs → annotate_genes → functional.pathways.reconstruct_pathways → pathway completeness
         ↓
-→ comparative.differential_abundance (at any level: taxon, gene, pathway)
-→ visualization (abundance barplots, heatmaps)
+→ comparative.differential_abundance (any samples × features count matrix: taxon, gene, pathway)
+→ visualization (plot_stacked_bar, plot_heatmap, ...)
 ```
 
 ---
@@ -398,15 +421,22 @@ Profiling (two approaches):
 The `diversity` module consumes OTU/ASV tables and computes ecologically relevant statistics:
 
 ```python
+import numpy as np
+
 from metainformant.metagenomics.diversity import metrics
 
-# OTU table: samples × taxa (counts)
-otu_table = ...  # shape (n_samples, n_otus)
+# OTU table: samples × taxa (counts), shape (n_samples, n_otus)
+otu_table = np.array([
+    [120, 30, 10, 0, 5],
+    [100, 40, 0, 12, 8],
+    [10, 60, 70, 30, 0],
+])
+n_samples = otu_table.shape[0]
 
-# Alpha diversity (within-sample)
+# Alpha diversity (within-sample); abundances must be a Python list, not an array
 for sample_idx in range(n_samples):
     alpha = metrics.alpha_diversity(
-        abundances=otu_table[sample_idx],
+        abundances=otu_table[sample_idx].tolist(),
         metric="shannon",
     )
     print(f"Sample {sample_idx}: Shannon diversity = {alpha['value']:.3f}")
@@ -423,7 +453,7 @@ pcoa = metrics.ordination(dist_matrix, method="pcoa", n_components=2)
 coords = pcoa["coordinates"]  # 2D embedding of samples
 ```
 
-**Integration point**: OTU/ASV tables from `amplicon` module feed directly into `diversity.metrics`. The module is agnostic to data source; any feature table works.
+**Integration point**: counts derived from `amplicon` results (assembled into a samples × features matrix by the caller) feed into `diversity.metrics`. The module is agnostic to data source; any feature table given as plain lists works.
 
 ---
 
@@ -431,19 +461,35 @@ coords = pcoa["coordinates"]  # 2D embedding of samples
 
 The `functional` module operates on either:
 - **Shotgun assemblies** (contigs → ORF prediction → annotation)
-- **Gene catalogs** from pangenome analysis
+- **Gene catalogs** (any `{gene_id: protein_sequence}` dict)
 
 ```python
 from metainformant.metagenomics.functional import annotation, pathways
+from metainformant.metagenomics.shotgun import assembly
 
-# From shotgun assembly
+# reads: {id: sequence} or a list of sequences
+# hmm_db: user-supplied profiles {profile_id: {position: {amino_acid: score}}},
+#         with IDs such as "KO:K00844" or "COG:C" (no profile database is bundled)
+
+# From shotgun assembly: contigs -> ORFs -> annotation
 contigs = assembly.assemble_contigs(reads)
-genes = annotation.predict_genes(contigs)  # ORF finding
-annotated = annotation.annotate_genes(genes, database="eggNOG")  # assign COG/KEGG
+orfs = [
+    orf
+    for contig in contigs
+    for orf in annotation.predict_orfs(contig.sequence, sequence_id=contig.contig_id)
+]
+proteins = {f"{orf.sequence_id}_orf{i}": orf.protein_seq for i, orf in enumerate(orfs)}
+annotated = annotation.annotate_genes(proteins, hmm_db=hmm_db)  # assign COG/KEGG/Pfam by profile ID
 
-# Pathway reconstruction
-pathway_abund = pathways.reconstruct_pathways(annotated, method="minimal")
-completeness = pathways.calculate_completeness(pathway_abund, reference="KEGG")
+# Pathway reconstruction takes {gene_id: [KO/EC ids]}, not FunctionalAnnotation objects
+gene_annotations = {a.orf_id: a.kegg_orthologs + a.ec_numbers for a in annotated}
+pathway_results = pathways.reconstruct_pathways(gene_annotations)  # list of PathwayResult
+completeness = {r.pathway_id: r.completeness for r in pathway_results}
+
+# Completeness of a single (custom) pathway definition against the observed KOs/ECs
+observed = {ko for kos in gene_annotations.values() for ko in kos}
+custom = pathways.PathwayDefinition(pathway_id="custom1", name="Custom", required_kos=["K00844", "K00845"])
+print(pathways.calculate_pathway_completeness(custom, observed))
 ```
 
 ---
@@ -453,32 +499,41 @@ completeness = pathways.calculate_completeness(pathway_abund, reference="KEGG")
 The `comparative` module provides differential abundance testing across all feature types (taxa, genes, pathways):
 
 ```python
-from metainformant.metagenomics.comparative import differential_abundance
+# The function shares its name with the module that defines it
+from metainformant.metagenomics.comparative.differential_abundance import differential_abundance
+
+# Every input is a samples × features count matrix (a list of lists: aldex2_like and
+# ancom_like reject numpy arrays, so use .tolist()) with one integer group label per
+# sample and one name per feature (column). Here otu_table needs 6 rows, one per entry of
+# groups (the 3-sample table in the diversity example above is too small)
+groups = [0, 0, 0, 1, 1, 1]  # e.g. control vs treatment
 
 # OTU table differential
 otu_diff = differential_abundance(
-    feature_table=otu_table,
-    group_a=control_samples,
-    group_b=treatment_samples,
-    method="aldex2",  # CLR-based
+    counts=otu_table.tolist(),
+    groups=groups,
+    taxa_names=otu_names,
+    method="aldex2_like",  # CLR-based
 )
 
 # Taxonomic profile differential
 tax_diff = differential_abundance(
-    feature_table=taxonomic_abundances,
-    group_a=..., group_b=...,
-    method="ancom",
+    counts=taxonomic_abundances,
+    groups=groups,
+    taxa_names=taxon_names,
+    method="ancom_like",
 )
 
 # Gene family differential
 gene_diff = differential_abundance(
-    feature_table=gene_counts,
-    group_a=..., group_b=...,
-    method="wilcoxon",
+    counts=gene_counts,
+    groups=groups,
+    taxa_names=gene_names,
+    method="simple_deseq",
 )
 ```
 
-All return similar result structures (per-feature statistics, p-values, q-values) enabling consistent downstream handling.
+The only methods are `aldex2_like`, `ancom_like` and `simple_deseq`. All return a list of dicts with the same keys (`taxon`, `log2fc`, `p_value`, `adjusted_p`, `effect_size`, `mean_group1`, `mean_group2`), sorted by adjusted p-value, enabling consistent downstream handling.
 
 ---
 
@@ -486,7 +541,7 @@ All return similar result structures (per-feature statistics, p-values, q-values
 
 ### Pipeline Pattern: Sequence → Table → Analysis
 
-Amplicon and shotgun modules both implement a **feature table** abstraction:
+Amplicon and shotgun workflows both follow a **feature table** convention (there is no feature-table class; downstream functions take plain `list[list[int]]` count matrices):
 
 ```
 Input (FASTQ/reads)
@@ -495,7 +550,7 @@ Feature detection (ASV/OTU/Contig/Gene)
     ↓
 Abundance quantification (counts per sample)
     ↓
-Feature table (features × samples)
+Feature table (samples × features: one row per sample)
     ↓
 Diversity / Comparative / Functional analysis
 ```
@@ -509,11 +564,13 @@ This separation allows any feature table (even from external tools like QIIME2) 
 Many functions accept a `method` string parameter:
 
 ```python
-cluster_otus(..., method="vsearch")  # or "usearch", "swarm"
-bin_contigs(..., method="combined")  # "composition", "coverage", "combined"
-differential_abundance(..., method="aldex2")  # "ancom", "wilcoxon", "t_test"
-alpha_diversity(..., metric="shannon")  # "simpson", "chao1", etc.
+classify_taxonomy(..., method="naive_bayes")  # or "blast"
+bin_contigs(..., method="combined")  # "composition" (the default), "coverage", "combined"
+differential_abundance(..., method="aldex2_like")  # "ancom_like", "simple_deseq"
+alpha_diversity(..., metric="shannon")  # "simpson", "chao1", etc. (`metric`, not `method`)
 ```
+
+(`cluster_otus()` has no `method` parameter; it takes `sort_by` and `prefilter`.)
 
 **Implementation**: Simple `if-elif` dispatch or dict-of-functions. Easy to extend: add new method by defining function and adding to dispatch table.
 
@@ -523,18 +580,18 @@ alpha_diversity(..., metric="shannon")  # "simpson", "chao1", etc.
 
 ### Result Dataclasses
 
-All major functions return dataclasses for structured output:
+The main amplicon, shotgun and functional functions return dataclasses for structured output; helper functions such as `filter_chimeras()`, `merge_paired_reads()`, `calculate_confidence()`, `calculate_relative_abundance()`, `classify_gene_families()`, `compare_pathway_profiles()` and `find_differential_pathways()`, and the diversity and comparative functions, return plain dicts or lists of dicts (`rarefy()` and `clr_transform()` return plain lists):
 
-| Return type | Fields | Use |
-|-------------|--------|-----|
-| `ClusteringResult` | `otus`, `threshold`, `num_otus`, `otu_table` | OTU results |
-| `DenoisingResult` | `asvs`, `error_model`, `num_asvs`, `reads_removed` | ASV results |
-| `BinningResult` | `bins`, `unbinned_contigs`, `total_contigs` | Binning output |
+| Return type | Fields (selection) | Use |
+|-------------|--------------------|-----|
+| `ClusteringResult` | `otus`, `threshold`, `total_sequences`, `num_otus`, `otu_table` | OTU results |
+| `DenoisingResult` | `asvs`, `error_model`, `total_reads`, `num_asvs`, `reads_removed` | ASV results |
+| `BinningResult` | `bins`, `unbinned_contigs`, `total_contigs`, `binned_contigs` | Binning output |
 | `AssemblyStats` | `n50`, `l50`, `total_length`, `gc_content` | Assembly quality |
 | `TaxonomyAssignment` | `lineage`, `confidence`, `method` | Classification |
-| `EnrichmentResult` | `pathway_name`, `p_value`, `fold_enrichment` | Enrichment |
+| `PathwayResult` | `pathway_name`, `completeness`, `matched_kos`, `missing_kos` | Pathway reconstruction |
 
-Benefits: self-documenting, IDE autocomplete, type checking, easy serialization to dict/JSON.
+Benefits: self-documenting, IDE autocomplete, type checking. Serialize with `dataclasses.asdict()` (use `TaxonomyNode.to_dict()` for taxonomy trees, whose `parent` links are circular); `json.dumps(obj.__dict__)` fails for results that hold nested dataclasses, such as `ClusteringResult`.
 
 ---
 
@@ -549,15 +606,18 @@ def some_function(threshold=0.97):
     # Check environment override
     env_threshold = os.environ.get(f"{_ENV_PREFIX}OTU_THRESHOLD")
     if env_threshold is not None:
-        threshold = float(env_threshold)
-        logger.info(f"Using threshold from environment: {threshold}")
+        try:
+            threshold = float(env_threshold)
+            logger.info(f"Using threshold from environment: {threshold}")
+        except ValueError:
+            logger.warning("Invalid value, using the argument")
     ...
 ```
 
 Used in:
-- `cluster_otus()`: `META_OTU_THRESHOLD`
-- `detect_cnv()` (structural_variants): `SV_CNV_SIGNIFICANCE`
-- (More planned)
+- `cluster_otus()`: `META_OTU_THRESHOLD` (the only variable the metagenomics package reads)
+
+The environment value replaces the function argument even when the caller passes one explicitly. Other modules define `_ENV_PREFIX = "META_"` but do not read any variable.
 
 **Rationale**: Allows batch-wide configuration without editing code or config files; useful for HPC where jobs are submitted via script.
 
@@ -567,45 +627,83 @@ Used in:
 
 ### With `core` Infrastructure
 
-- **I/O**: `metainformant.core.io` used for reading/writing configs, JSON (but MS data uses own `io/formats.py`)
 - **Logging**: All submodules use `metainformant.core.utils.logging.get_logger()`
-- **Config**: Future: `metainformant.core.utils.config` for module-specific YAML/JSON config loading
+- **Sequence utilities**: `metainformant.core.sequence.reverse_complement` is used by `amplicon.asv_denoising` (paired-read merging) and `functional.annotation` (reverse-strand ORFs)
+- **I/O and config**: not used. The functions take plain dicts and lists and do not import `metainformant.core.io` or `metainformant.core.utils.config`; load FASTQ/FASTA with `metainformant.dna.io.fastq.read_fastq` (returns `{id: (sequence, quality_string)}`: keep the sequence for the `{id: sequence}` inputs used here, and note that `quality_scores` expects integer lists, not quality strings) and `metainformant.dna.sequence.core.read_fasta` (returns `{id: sequence}`), or your own reader
 
 ---
 
 ### With `visualization` Module
 
-Metagenomics has its own `visualization/plots.py`, but also uses shared utilities:
+Metagenomics has its own `visualization/plots.py`, but the shared plotting helpers can be combined with it:
 
 ```python
-from metainformant.visualization import plots as shared_viz
+import pandas as pd
+
+from metainformant.metagenomics.diversity.metrics import ordination
 from metainformant.metagenomics.visualization import plots as meta_viz
+from metainformant.visualization.plots import pca_plot
 
-# Shared: ordination plots, heatmaps
-pcoa_fig = shared_viz.ordination(coords, labels=sample_groups)
+# PCoA of a distance matrix (for example the "distance_matrix" from beta_diversity)
+dist_matrix = [
+    [0.0, 0.2, 0.7, 0.8],
+    [0.2, 0.0, 0.6, 0.7],
+    [0.7, 0.6, 0.0, 0.3],
+    [0.8, 0.7, 0.3, 0.0],
+]
+pcoa = ordination(dist_matrix, method="pcoa", n_components=2)
+sample_groups = ["control", "control", "treated", "treated"]
 
-# Metagenomics-specific: Krona charts, stacked bar taxa plots
-krona = meta_viz.krona_chart(taxonomic_abundances)
+# Shared: pca_plot draws pre-computed PC1/PC2 coordinates, coloured by `hue`, with the
+# variance in the axis labels (its variance columns are percentages, while
+# ordination() returns fractions). Also shared: volcano_plot for differential
+# abundance results in a DataFrame (its default columns are log2FoldChange and padj, so
+# pass log2fc_col="log2fc", pval_col="adjusted_p" for differential_abundance() output),
+# correlation_heatmap, expression_heatmap.
+pcoa_df = pd.DataFrame({
+    "PC1": [row[0] for row in pcoa["coordinates"]],
+    "PC2": [row[1] for row in pcoa["coordinates"]],
+    "PC1_variance": 100 * pcoa["variance_explained"][0],
+    "PC2_variance": 100 * pcoa["variance_explained"][1],
+    "group": sample_groups,
+})
+pca_plot(pcoa_df, hue="group", output_path="output/metagenomics/pcoa_shared.png")
+
+# Metagenomics-specific: Krona-style sunburst of lineage ("A;B;C") -> abundance;
+# also plot_stacked_bar, plot_ordination, plot_rarefaction_curves, plot_alpha_diversity, plot_heatmap
+taxonomic_abundances = {
+    "Bacteria;Firmicutes;Bacilli": 40.0,
+    "Bacteria;Proteobacteria;Gammaproteobacteria": 25.0,
+}
+krona_path = meta_viz.plot_krona_chart(taxonomic_abundances, output_path="output/metagenomics/krona.png")
 ```
+
+`plot_ordination` in the metagenomics plots is the alternative that starts from a distance matrix instead: it takes a nested-dict matrix and computes its own 2-D PCoA (the `method` argument only changes the title). The metagenomics plot functions return the saved path when `output_path` is given and a matplotlib `Figure` otherwise.
 
 ---
 
 ### With `ecology` Module
 
-**Synergy**: `metagenomics.diversity` and `ecology` both implement diversity indices; `ecology` focuses on theoretical derivations and rare-event statistics.
+**Synergy**: `metagenomics.diversity` and `ecology.analysis` both implement diversity indices and rarefaction; `ecology.analysis` also covers ordination, community tests and macroecology (`community`, `ordination`, `indicators`, `macroecology`, `functional`).
 
 ```python-snippet
-# ecology module provides more mathematically detailed implementations
-from metainformant.ecology import metrics as eco_metrics
+# ecology.analysis.community computes expected richness exactly
+from metainformant.ecology.analysis import community as eco_metrics
+from metainformant.metagenomics.diversity import metrics as diversity
+
+abundances = [100, 50, 30, 20, 10, 5, 3, 1, 1]
 
 # Use ecology's rarefaction with exact hypergeometric formula
-rarefaction = eco_metrics.rarefaction(abundances, depths)
+# (returns [(sample_size, expected_richness), ...] for every sample size up to
+# min(max_samples, total individuals))
+rarefaction = eco_metrics.rarefaction_curve(abundances, max_samples=1000)
 
-# Metagenomics uses simpler sampling approximation
+# Metagenomics uses seedable Monte Carlo subsampling and returns a dict
+# (depths, mean_species, std_species, is_saturated)
 rarefaction_approx = diversity.rarefaction_curve(abundances)
 ```
 
-**Integration**: For publication, use `ecology` versions for rigor; for exploration, use `metagenomics` versions for speed.
+**Integration**: For exact expected richness use the `ecology` version; `metagenomics.diversity.metrics.rarefaction_curve` additionally reports a standard deviation per depth and a saturation flag.
 
 ---
 
@@ -614,16 +712,18 @@ rarefaction_approx = diversity.rarefaction_curve(abundances)
 Post-binning: Build co-occurrence networks between MAGs or taxa.
 
 ```python-snippet
-from metainformant.networks import construction as net
+from metainformant.networks.analysis import graph_core as net
 
 # Correlation-based network from normalized abundances
-abundances = otu_table  # samples × taxa
-network = net.build_correlation_network(
+abundances = otu_table  # samples × taxa DataFrame
+network = net.create_network(list(abundances.columns))  # nodes = taxa
+net.add_edges_from_correlation(
+    network,
     abundances.T,  # features × samples
     method="spearman",
     threshold=0.7,
 )
-# Network: nodes = taxa, edges = strong correlations
+# Network: nodes = taxa, edges = strong correlations (edge weight = |correlation|)
 ```
 
 ---
@@ -636,54 +736,57 @@ Unlike RNA module, metagenomics does not have a dedicated configuration file sys
 
 | Variable | Purpose | Scope |
 |----------|---------|-------|
-| `META_OTU_THRESHOLD` | Override default OTU clustering identity threshold | `cluster_otus()` |
-| `META_` prefix (generic) | Future module-specific settings via `core.utils.config` | — |
+| `META_OTU_THRESHOLD` | Replaces the `threshold` argument (any value that parses as a float, even when the caller passes a threshold; not range-checked) | `cluster_otus()` |
 
-No other module-specific env vars yet.
+No other environment variables are read. Several modules define `_ENV_PREFIX = "META_"`, but no other function uses it, and the package does not use `metainformant.core.utils.config` (no `apply_env_overrides` or `load_typed_env` call).
 
 ### Function Parameters as Configuration
 
-All behavior controlled by function arguments. For reproducible pipelines, create a config dict or YAML file and pass parameters programmatically.
+All behavior controlled by function arguments. For reproducible pipelines, create a config dict or YAML file and pass parameters programmatically. Nothing in METAINFORMANT reads such a file: it is your own convention. In the `amplicon`, `shotgun` and `diversity.rarefaction` blocks the keys are parameter names, so each block can be passed as keyword arguments, for example `cluster_otus(sequences, **cfg["amplicon"]["clustering"])` after `cfg = metainformant.core.io.load_yaml("config/metagenomics.yaml")`; `alpha_metrics` and `beta_metric` are values you loop over and pass as `metric=`.
 
 Example `config/metagenomics.yaml`:
 ```yaml
 amplicon:
-  clustering:
+  clustering:                # cluster_otus(sequences, **...)
     threshold: 0.97
-    method: greedy
+    sort_by: length
     prefilter: true
-  taxonomy:
+  taxonomy:                  # classify_taxonomy(sequences, reference_db, reference_taxonomy, **...)
     method: naive_bayes
     confidence_threshold: 0.8
-    bootstraps: 100
+    bootstrap_n: 100
 shotgun:
-  assembly:
+  assembly:                  # assemble_contigs(reads, **...)
     k_range: [21, 33, 55]
     min_contig_length: 500
-  binning:
+  binning:                   # bin_contigs(contigs, coverage, **...)
     method: combined
-    min_completeness: 0.5
-    max_contamination: 0.1
+  refinement:                # refine_bins(bins, contigs, **...)
+    completeness_threshold: 0.5
+    contamination_threshold: 0.1
 diversity:
-  metrics: [shannon, simpson, bray_curtis]
-  rarefaction:
-    iterations: 10
+  alpha_metrics: [shannon, simpson]   # alpha_diversity(abundances, metric=...)
+  beta_metric: bray_curtis            # beta_diversity(samples, metric=...)
+  rarefaction:               # rarefaction_curve(abundances, **...)
+    n_iterations: 10
 ```
 
 ---
 
 ## Performance Considerations
 
+Timings quoted in this document (here and in the Processing Modes table) are measurements from one machine under varying load. The algorithms are pure Python, so absolute times scale with CPU speed and load; treat them as orders of magnitude.
+
 ### OTU Clustering Complexity
 
 - **Naïve O(n²)**: For n sequences, all-vs-all identity calculation would be quadratic.
-- **With k-mer pre-filter**: Only compute alignment if k-mer similarity > threshold - 0.10. For n=100k sequences:
-  - Without pre-filter: ~10¹⁰ pairwise alignments (infeasible)
-  - With pre-filter: ~10⁶–10⁷ alignments (feasible in minutes)
+- **Greedy centroids**: each sequence is compared only with the existing centroids, so the work is about n × (number of OTUs) comparisons.
+- **With k-mer pre-filter**: Only compute alignment if the shared 8-mer fraction is at least threshold - 0.10.
+- **Cost per alignment**: `calculate_identity()` is pure Python with full O(L₁×L₂) matrices, roughly 0.02–0.1 s for two 250 bp sequences. In tests with 200 simulated sequences from five clusters, clustering took roughly 20 s with the pre-filter and from about half a minute to 6 minutes without it, depending on how many centroids each sequence had to be compared with. Clustering is therefore practical for hundreds to a few thousand sequences, not 100k or more; use an external tool such as VSEARCH for large datasets.
 
-**Scaling**: ~O(n × c) where c = average candidates per centroid check. c << n after pre-filter.
+**Scaling**: ~O(n × c) alignments where c = number of centroids that pass the pre-filter for each sequence.
 
-**Optimization**: The `_quick_identity()` pre-filter using 8-mer Jaccard is extremely effective: rejects >90% of sequence pairs quickly before alignment.
+**Optimization**: The `_quick_identity()` pre-filter uses the shared fraction of 8-mers (shared / the larger k-mer set, not a Jaccard index). Dissimilar pairs are rejected in well under a millisecond (a random pair shares about 0.4% of its 8-mers) instead of an alignment. It is a heuristic and not an upper bound on identity: two 250 bp sequences with five evenly spaced substitutions (98% identity) share only about 83% of their 8-mers, below the 0.87 cutoff for `threshold=0.97`, so they end up in separate OTUs unless `prefilter=False` is used.
 
 ---
 
@@ -691,17 +794,18 @@ diversity:
 
 De Bruijn graphs require storing all (k-1)-mers as nodes. For k=31, node space is 4³⁰ ≈ 10¹⁸ theoretically but in practice only observed k-mers are stored.
 
-**Memory estimate**: n unique (k-1)-mers × (k-1 bytes for sequence + overhead). For 1 Gb read set with 30× coverage, unique k-mers ≈ 100 million → several GB RAM. Use disk-based or streaming assemblers for very large datasets.
+**Memory**: `assemble_contigs()` counts every k-mer of every read in an in-memory Python `Counter` (one string key per distinct k-mer) before filtering with `min_kmer_coverage`, so memory grows with the number of distinct k-mers, and sequencing errors add many singletons. Each entry costs on the order of 100 bytes or more in Python, so this assembler suits small datasets. Use disk-based or streaming assemblers (MEGAHIT, metaSPAdes) for large ones.
 
 ---
 
 ### Binning Speed
 
-k-means clustering on TNF vectors (256 dimensions) is fast, limited by:
-- Number of contigs (often 10k–100k)
-- Number of iterations until convergence (typically <100)
+k-means clustering on TNF vectors (256 dimensions) runs in pure Python (at most 100 iterations; 400 simulated 2 kb contigs into 10 bins took roughly 2–9 s). It is limited by:
+- Number of contigs
+- Number of bins
+- Number of iterations until convergence
 
-**Time**: O(iterations × n_contigs × k_bins × dimensions) ≈ few seconds to minutes.
+**Time**: O(iterations × n_contigs × k_bins × dimensions).
 
 ---
 
@@ -730,4 +834,4 @@ Key strengths:
 - **Comprehensive**: covers both amplicon and shotgun in one package
 - **Extensible**: method dispatch patterns allow adding new algorithms easily
 
-**Cross-cutting concerns** (logging, config, I/O) handled by `core` module; advanced stats could leverage `ml` or `math` modules in future.
+**Cross-cutting concerns**: logging and the reverse-complement helper come from the `core` module; the package uses no `core` config or I/O helpers (inputs are plain dicts and lists). Advanced stats could leverage `ml` or `math` modules in future.

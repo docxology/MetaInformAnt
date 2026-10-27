@@ -26,21 +26,22 @@ Comprehensive documentation for the visualization domain producing 70+ plot type
 ### Source Code Structure
 ```
 src/metainformant/visualization/
-├── plots/            # Core plotting functions (manhattan, pca, heatmap, volcano...)
-│   ├── genomic/      # Manhattan, QQ, regional, ideogram
-│   ├── analysis/     # ROC, MA, correlation, enrichment
-│   ├── network/      # Spring layout, circular, hive plots
-│   ├── phylogeny/    # Tree plotting with bootstrap, rectangular/circular
-│   └── composite/    # Multi-panel figure assembly
-├── dashboards/       # Interactive Plotly/Streamlit apps
-├── animation/        # Trajectory/evolution animations
-├── export/           # Format conversion (PDF/PNG/SVG), figure assembly
-├── themes.py         # Color palette definitions, style setters
-└── __init__.py       # Public API exports
+├── plots/                  # Core plotting functions
+│   ├── basic.py            # lineplot, scatter_plot, heatmap, bar_plot, pie_chart, area_plot, step_plot
+│   ├── general.py          # volcano_plot, manhattan_plot, qq_plot, pca_plot, expression/correlation heatmaps
+│   ├── specialized.py      # Venn, Sankey, chord, alluvial, circular bar, UpSet
+│   ├── multidim.py         # Pairwise, parallel coordinates, radar, 3D scatter
+│   └── animations.py       # Time-series, evolution, clustering, network, trajectory animations
+├── genomics/               # genomics.py (Manhattan, volcano, regional, ideogram), expression.py, networks.py, trees.py
+├── analysis/               # dimred, statistical, timeseries, information and quality-control plots
+├── dashboards/             # composite.py (multi-panel figures), interactive.py (Plotly figures)
+├── interactive_dashboards/ # dashboards.py (JSON-serializable interactive plot data, HTML export)
+├── config/                 # themes.py, palettes.py, conventions.py (Okabe-Ito colors, deterministic export)
+└── __init__.py             # Exposes the subpackages plus the WONG and OKABE_ITO palettes
 ```
 
 ## Integration
-- **Source**: `src/metainformant/visualization/{plots,dashboards,animation,export}/`
+- **Source**: `src/metainformant/visualization/{plots,genomics,analysis,dashboards,interactive_dashboards,config}/`
 - **Tests**: `tests/visualization/test_visualization_plots.py`, `tests/visualization/test_visualization_dashboards.py`, `tests/visualization/test_visualization_animation.py`
 - **Visual regression**: `tests/visualization/baseline/` (PNG references compared via `pytest-mpl`)
 - **Dependencies**:
@@ -55,44 +56,42 @@ src/metainformant/visualization/
 ### Genomic Plots
 | Function | Module | Purpose | Returns |
 |----------|--------|---------|---------|
-| `manhattan()` | plots.genomic | GWAS Manhattan plot with significance threshold | `matplotlib.figure.Figure` |
-| `qq()` | plots.genomic | QQ plot with genomic inflation λ annotation | `Figure` |
-| `regional()` | plots.genomic | Regional association with LD heatmap and gene tracks | `Figure` |
-| `ideogram()` | plots.genomic | Chromosome ideogram with cytobands | `Figure` |
+| `manhattan_plot()` | genomics.genomics | GWAS Manhattan plot with genome-wide significance line | `matplotlib.axes.Axes` |
+| `qq_plot()` | analysis.statistical | Q-Q plot against a normal or uniform distribution | `Axes` |
+| `regional_plot()` | genomics.genomics | Regional association plot for a chromosome interval | `Axes` |
+| `chromosome_ideogram()` | genomics.genomics | Chromosome length ideogram | `Axes` |
 
 ### Expression Analysis
 | Function | Module | Purpose |
 |----------|--------|---------|
-| `pca()` | plots.analysis | PCA scatter colored by metadata (tissue, condition) |
-| `heatmap()` | plots.analysis | Clustered heatmap with dendrogram (Seaborn clustermap) |
-| `volcano()` | plots.analysis | Volcano plot (logFC vs -log10 p) with DE gene labeling |
-| `ma()` | plots.analysis | MA plot (mean expression vs log fold-change) |
+| `pca_plot()` | plots.general | Scatter of pre-computed principal components colored by metadata (tissue, condition) |
+| `expression_heatmap()` | plots.general | Gene expression heatmap (Seaborn, matplotlib fallback) |
+| `volcano_plot()` | genomics.genomics | Volcano plot (logFC vs -log10 p) with significance coloring |
 
 ### Network
 | Function | Module | Purpose |
 |----------|--------|---------|
-| `spring_layout()` | plots.network | Force-directed Fruchterman-Reingold layout |
-| `circular()` | plots.network | Circular layout for small networks |
-| `hive()` | plots.network | Hive plot for bipartite networks |
+| `plot_network_force_directed()` | genomics.networks | Force-directed Fruchterman-Reingold layout |
+| `plot_network_circular()` | genomics.networks | Circular layout for small networks |
 
 ### Phylogeny
 | Function | Module | Purpose |
 |----------|--------|---------|
-| `plot_tree()` | plots.phylogeny | Newick tree with branch support, rectangular layout |
-| `plot_circular()` | plots.phylogeny | Circular phylogram (Radial) |
-| `draw_tanglegram()` | plots.phylogeny | Compare two trees with tanglegram |
+| `plot_phylo_tree()` | genomics.trees | Tree (NetworkX DiGraph, dict-based or Bio.Phylo) in a hierarchical layout |
+| `circular_tree_plot()` | genomics.trees | Circular phylogram |
+| `tree_comparison_plot()` | genomics.trees | Side-by-side comparison of two trees |
 
 ### Animation
 | Function | Module | Purpose |
 |----------|--------|---------|
-| `trajectory()` | animation | Pseudotime flow in UMAP/t-SNE embedding |
-| `evolution()` | animation | Tree evolution over time (BEAST-style) |
+| `animate_trajectory()` | plots.animations | Animated point trajectories with trails |
+| `animate_evolution()` | plots.animations | Sequence evolution across generations |
 
 ### Dashboards
-| Class | Module | Purpose |
-|-------|--------|---------|
-| `Dashboard` | dashboards | Grid of linked Plotly widgets with callbacks |
-| `Explorer` | dashboards | Single-page app with dropdowns/sliders |
+| Function | Module | Purpose |
+|----------|--------|---------|
+| `multi_panel()` | dashboards.composite | Arrange several plots into one matplotlib figure |
+| `interactive_scatter()` | dashboards.interactive | Interactive Plotly scatter plot with hover data |
 
 ## Testing Policy
 - **Real Implementation**: All tests use real data; small synthetic figures allowed for edge/error cases only.
@@ -101,46 +100,53 @@ src/metainformant/visualization/
 
 ## Public API
 ```python-snippet
-# Top-level imports
-from metainformant.visualization import (
+# Top-level imports: subpackages and the WONG / OKABE_ITO palettes
+from metainformant.visualization import analysis, config, dashboards, genomics, interactive_dashboards, plots
+
+# Plot functions live in their defining submodules
+from metainformant.visualization.genomics.genomics import (
     # Genomic plots
-    manhattan, qq, regional, ideogram,
-    # Analysis plots
-    pca, heatmap, volcano, ma,
-    # Networks
-    spring_layout, circular, hive,
-    # Phylogeny
-    plot_tree, plot_circular, tanglegram,
-    # Animation
-    trajectory, evolution,
-    # Dashboards
-    Dashboard, Explorer,
-    # Utils
-    set_style, set_palette, save_figure, to_caption
+    manhattan_plot, regional_plot, chromosome_ideogram, volcano_plot,
 )
+from metainformant.visualization.analysis.statistical import qq_plot
+from metainformant.visualization.plots.general import pca_plot, expression_heatmap
+from metainformant.visualization.genomics.networks import (
+    # Networks
+    plot_network_force_directed, plot_network_circular,
+)
+from metainformant.visualization.genomics.trees import (
+    # Phylogeny
+    plot_phylo_tree, circular_tree_plot, tree_comparison_plot,
+)
+from metainformant.visualization.plots.animations import (
+    # Animation
+    animate_trajectory, animate_evolution,
+)
+from metainformant.visualization.dashboards.composite import multi_panel
+from metainformant.visualization.config.themes import apply_theme
+from metainformant.visualization.config.palettes import categorical
+from metainformant.visualization.config.conventions import save_figure_deterministic
 ```
 
 ## Examples
 ```python-snippet
-from metainformant.visualization import manhattan, pca, heatmap
+from metainformant.visualization.genomics.genomics import manhattan_plot
+from metainformant.visualization.plots.general import pca_plot, expression_heatmap
 import pandas as pd
 
-# 1. Manhattan
+# 1. Manhattan (columns CHR, BP, P by default; saved at 300 DPI)
 gwas = pd.read_csv("gwas_results.tsv", sep='\t')
-fig = manhattan(gwas, genome="amellifera", highlight_genes=["Amel_004123"])
-fig.save("manhattan.pdf", dpi=300)
+ax = manhattan_plot(gwas, output_path="manhattan.pdf")
 
-# 2. PCA
-expr = pd.read_csv("counts.tsv", sep='\t', index_col=0)
-fig = pca(expr, color_by="tissue", shape_by="individual")
-fig.save("pca.png", dpi=150)
+# 2. PCA (pre-computed components with their variance explained, in percent)
+pcs = pd.read_csv("pca_scores.tsv", sep='\t')  # PC1, PC2, PC1_variance, PC2_variance, tissue
+ax = pca_plot(pcs, hue="tissue", output_path="pca.png")
 
 # 3. Heatmap
 deseq = pd.read_csv("deseq2_results.tsv", sep='\t')
 top100 = deseq.nsmallest(100, "padj")["gene_id"]
 counts = pd.read_csv("norm_counts.tsv", sep='\t', index_col=0).loc[top100]
-fig = heatmap(counts, z_score="row", cluster=True)
-fig.save("heatmap.pdf")
+ax = expression_heatmap(counts, output_path="heatmap.pdf")
 ```
 
 ## Related Specifications

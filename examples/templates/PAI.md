@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - templates
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/examples/templates`
+- **Path**: `examples/templates`
 - **Purpose**: Functionality for templates.
 - **Domain**: examples
 

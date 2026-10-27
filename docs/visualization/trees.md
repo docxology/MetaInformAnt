@@ -13,7 +13,7 @@ Plot a Biopython Phylo tree to matplotlib Axes.
 from pathlib import Path
 from metainformant.dna import phylogeny
 from metainformant.dna.sequence.core import read_fasta
-from metainformant.visualization import plot_phylo_tree
+from metainformant.visualization.genomics.trees import plot_phylo_tree
 
 seqs = read_fasta(str(Path("tests/data/dna/toy.fasta")))
 tree = phylogeny.neighbor_joining_tree(seqs)

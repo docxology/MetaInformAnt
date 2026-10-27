@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - ecology
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/examples/ecology`
+- **Path**: `examples/ecology`
 - **Purpose**: Functionality for ecology.
 - **Domain**: examples
 

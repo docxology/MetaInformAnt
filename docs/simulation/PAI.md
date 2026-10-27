@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - simulation
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/docs/simulation`
+- **Path**: `docs/simulation`
 - **Purpose**: Functionality for simulation.
 - **Domain**: docs
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - shotgun
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/metagenomics/shotgun`
+- **Path**: `src/metainformant/metagenomics/shotgun`
 - **Purpose**: Shotgun metagenomics analysis.
 - **Domain**: metagenomics
 

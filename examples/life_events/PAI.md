@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - life_events
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/examples/life_events`
+- **Path**: `examples/life_events`
 - **Purpose**: Functionality for life_events.
 - **Domain**: examples
 

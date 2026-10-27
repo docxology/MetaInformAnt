@@ -2,7 +2,7 @@
 
 ## Context & Intent
 
-- **Path**: `docs/manuscript/` (relative to repo root)
+- **Path**: `docs/manuscript` (relative to repo root)
 - **Purpose**: Docs-only directory recording that the parent package has
   **no publication-track manuscript** and what would trigger creating one;
   the single substantive artifact is `MANUSCRIPT_STATUS.md` (2026-09-05).

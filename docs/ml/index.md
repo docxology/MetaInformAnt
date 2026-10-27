@@ -100,9 +100,13 @@ flowchart TD
 ## Quick Start
 
 ```python-snippet
-from metainformant.ml.models.classification import create_biological_classifier, cross_validate_biological
+from metainformant.ml.models.classification import (
+    compare_classifiers,
+    create_biological_classifier,
+    cross_validate_biological,
+)
 
-# Train a classifier (methods: 'rf', 'gb', 'lr', 'ensemble')
+# Train a classifier (methods: 'rf', 'gb', 'lr')
 model = create_biological_classifier(method="rf", random_state=42)
 model.fit(features, labels)
 
@@ -115,9 +119,26 @@ metrics = model.evaluate(test_features, test_labels)
 print(f"Accuracy: {metrics['accuracy']:.3f}")
 print(f"AUC: {metrics['roc_auc']:.3f}")
 
-# Cross-validate a method directly
+# Cross-validate a method directly (stratified k-fold; methods: 'rf', 'gb', 'lr', 'ensemble').
+# Each entry of cv_results["cross_validation"] ('accuracy', 'precision_weighted',
+# 'recall_weighted', 'f1_weighted', plus 'roc_auc' for two classes) holds the per-fold
+# "scores" with their "mean" and "std"; cv_results["accuracy"] is the mean accuracy.
 cv_results = cross_validate_biological(features, labels, method="rf", cv_folds=5)
+print(cv_results["cross_validation"]["f1_weighted"]["mean"])
+
+# Compare several methods ('rf', 'gb' and 'lr' by default)
+comparison = compare_classifiers(features, labels, methods=["rf", "lr"], cv_folds=5, random_state=42)
+for method, result in comparison["comparison"].items():
+    if "error" in result:
+        print(f"{method} failed: {result['error']}")
+    else:
+        print(f"{method}: accuracy {result['accuracy']:.3f}")
+print(comparison["best_method"])  # None when every method failed
 ```
+
+`cross_validate_biological` raises instead of returning partial results. When a metric cannot be computed (for example `cv_folds` larger than the sample count of every class, non-finite features for a method that rejects them, or a ROC-AUC that is undefined in a fold), the original exception propagates with the failing metric named in an exception note, or a `ValueError` is raised for non-finite fold scores. No entry of `cross_validation` is ever `None` or NaN.
+
+`compare_classifiers` runs `cross_validate_biological` for each method and catches failures per method. A failed method appears as `{"error": message}` under `comparison[method]` and never wins. `best_method` is the successful method with the highest mean accuracy, or `None` when every method failed.
 
 ### Feature Selection
 

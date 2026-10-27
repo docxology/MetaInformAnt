@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - query
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/ontology/query`
+- **Path**: `src/metainformant/ontology/query`
 - **Purpose**: Ontology querying, traversal, and serialization.
 - **Domain**: ontology
 

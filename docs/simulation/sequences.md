@@ -27,7 +27,7 @@ reproducible results.
 Generate a random DNA sequence with controllable GC content.
 
 ```python
-from metainformant.simulation import generate_random_dna
+from metainformant.simulation.models.sequences import generate_random_dna
 
 seq = generate_random_dna(100)                          # Default 50% GC
 seq = generate_random_dna(100, gc_content=0.65)         # AT-rich suppressed
@@ -48,7 +48,7 @@ Generate a random protein sequence from the 20 standard amino acids with uniform
 frequency.
 
 ```python
-from metainformant.simulation import generate_random_protein
+from metainformant.simulation.models.sequences import generate_random_protein
 
 protein = generate_random_protein(50)
 ```
@@ -59,7 +59,7 @@ Generate a random coding DNA sequence and its protein translation simultaneously
 The length must be divisible by 3.
 
 ```python
-from metainformant.simulation import generate_coding_sequence
+from metainformant.simulation.models.sequences import generate_coding_sequence
 
 dna_seq, protein_seq = generate_coding_sequence(300, gc_content=0.5)
 # dna_seq is 300 bases, protein_seq is the translated amino acid string
@@ -75,7 +75,7 @@ Introduce a specified number of point mutations at random positions. Works for b
 DNA and protein sequences (auto-detected from character set).
 
 ```python
-from metainformant.simulation import mutate_sequence
+from metainformant.simulation.models.sequences import mutate_sequence
 
 original = "ATCGATCGATCG"
 mutated = mutate_sequence(original, n_mut=3)
@@ -96,7 +96,7 @@ Simulate sequence evolution over multiple generations. The number of mutations p
 generation is drawn from a Poisson distribution with mean = `len(seq) * mutation_rate`.
 
 ```python
-from metainformant.simulation import evolve_sequence
+from metainformant.simulation.models.sequences import evolve_sequence
 
 ancestor = generate_random_dna(500)
 descendant = evolve_sequence(ancestor, generations=1000, mutation_rate=0.001)
@@ -121,7 +121,7 @@ Translate a DNA sequence to a protein string using the standard genetic code. St
 at the first stop codon encountered.
 
 ```python
-from metainformant.simulation import translate_dna_to_protein
+from metainformant.simulation.models.sequences import translate_dna_to_protein
 
 protein = translate_dna_to_protein("ATGAAAGCGTGA")
 # "MKA*" -- M(Met), K(Lys), A(Ala), *(Stop)
@@ -134,7 +134,7 @@ The `frame` parameter selects the reading frame (0, 1, or 2).
 Reverse translate a protein to one possible DNA sequence (random codon usage).
 
 ```python
-from metainformant.simulation import reverse_transcribe_protein_to_dna
+from metainformant.simulation.models.sequences import reverse_transcribe_protein_to_dna
 
 dna = reverse_transcribe_protein_to_dna("MKA")
 # One of many possible codon combinations encoding Met-Lys-Ala
@@ -150,7 +150,7 @@ Generate a family of related sequences from a common ancestor, simulating indepe
 evolutionary lineages.
 
 ```python
-from metainformant.simulation import generate_sequence_family
+from metainformant.simulation.models.sequences import generate_sequence_family
 
 ancestor = generate_random_dna(200)
 family = generate_sequence_family(
@@ -164,7 +164,7 @@ family = generate_sequence_family(
 Compute pairwise divergence statistics for a set of equal-length sequences.
 
 ```python
-from metainformant.simulation import analyze_sequence_divergence
+from metainformant.simulation.models.sequences import analyze_sequence_divergence
 
 stats = analyze_sequence_divergence(family)
 # {
@@ -184,7 +184,7 @@ stats = analyze_sequence_divergence(family)
 Simulate gene duplication followed by independent divergence of each copy.
 
 ```python
-from metainformant.simulation import simulate_gene_duplication
+from metainformant.simulation.models.sequences import simulate_gene_duplication
 
 copies = simulate_gene_duplication(
     original_gene=generate_random_dna(600),
@@ -200,7 +200,7 @@ copies = simulate_gene_duplication(
 Calculate the fraction of identical positions between two equal-length sequences.
 
 ```python
-from metainformant.simulation import calculate_sequence_similarity
+from metainformant.simulation.models.sequences import calculate_sequence_similarity
 
 sim = calculate_sequence_similarity("ATCGATCG", "ATCAATCG")
 # 0.875 (7 of 8 positions identical)

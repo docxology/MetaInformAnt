@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - popgen
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/scripts/popgen`
+- **Path**: `scripts/popgen`
 - **Purpose**: Population genetics analysis scripts package.
 - **Domain**: scripts
 

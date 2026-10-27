@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - models
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/ml/models`
+- **Path**: `src/metainformant/ml/models`
 - **Purpose**: Functionality for models.
 - **Domain**: ml
 

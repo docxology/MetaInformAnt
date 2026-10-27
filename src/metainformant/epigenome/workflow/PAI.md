@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - workflow
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/epigenome/workflow`
+- **Path**: `src/metainformant/epigenome/workflow`
 - **Purpose**: Functionality for workflow.
 - **Domain**: epigenome
 

@@ -82,11 +82,18 @@ Look for accumulated time in `alleles/star_allele.py:call_star_alleles` (matchin
 Repeated calls on identical variant sets can be memoized:
 
 ```python-snippet
-from metainformant.core.io.cache import disk_cache
+from metainformant.core.io.cache import JsonCache
+from metainformant.pharmacogenomics.alleles.star_allele import call_star_alleles
 
-@disk_cache(ttl=86400)
-def batch_predict(variants_list):
-    return [pharmacogenomics.predict_metabolizer(vs) for vs in variants_list]
+cache = JsonCache('output/cache/pgx', ttl_seconds=86400)
+
+def cached_allele_calls(variants, gene='CYP2D6'):
+    key = f"{gene}_" + "_".join(sorted(variants))
+    names = cache.get(key)
+    if names is None:
+        names = [a.name for a in call_star_alleles(set(variants), gene)]
+        cache.set(key, names)
+    return names
 ```
 
 Cache hit rate depends on data duplication; for a 100 k cohort with ~5 % duplicate rsID sets, you'll cut runtime by ~5 %.
@@ -115,7 +122,7 @@ For national-scale biobank processing:
 
 - [ ] Are you processing >500 k samples? → increase `chunk_size` to 20k)
 - [ ] Are you CPU-bound? → `parallel.set_n_jobs(cores)` or `workers=CPU_COUNT`
-- [ ] Seeing repeated allele-table parsing? → pre-warm each worker with `load_all_allele_definitions(dir)` before mapping
+- [ ] Seeing repeated allele-table parsing? → load each gene's table once with `load_allele_definitions(gene)` and pass it to `call_star_alleles(..., allele_definitions=definitions)`
 - [ ] Memory spiking? → verify no accidental `X.copy()` in processing function
 
 ## Per-gene runtime benchmark (single sample, mean n=100)
@@ -196,7 +203,7 @@ The matching code is written in pure Python, but uses spaCy's `HashTable` under 
 ## Tips for HPC clusters
 
 - Use `parallel.set_backend('loky')` and `n_jobs=SLURM_CPUS_PER_TASK`.
-- Call `load_all_allele_definitions()` once in the master before mapping to ensure child processes do not re-parse JSON.
+- Call `load_allele_definitions(gene)` once per gene in the master and pass the result to `call_star_alleles(..., allele_definitions=definitions)` so child processes do not re-parse the tables.
 - If using MPI (`mpi4py`), wrap the map in `if rank == 0:` to avoid duplicated work.
 
 — end of PERFORMANCE.md —

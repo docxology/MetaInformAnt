@@ -4,7 +4,7 @@
 Multi-omic data integration: cross-platform data harmonization, joint statistical analysis, and systems biology integration.
 
 ## Dependencies
-- **Required**: `core`, `dna`, `rna`, `protein`, `singlecell`, `ml.dimensionality`
+- **Required**: `core` (layers from other modules are passed in as DataFrames; `multiomics` does not import them)
 
 ## Source Structure
 ```
@@ -31,13 +31,23 @@ src/metainformant/multiomics/
 ```python
 from metainformant.multiomics.analysis import integration
 
-# Integrate multiple omics types
-integrated = integration.integrate_omics(
+# Integrate multiple omics types: each layer is a samples x features DataFrame;
+# only samples present in every layer are kept
+integrated = integration.integrate_omics_data(
     dna_data=dna_data,
     rna_data=rna_data,
     protein_data=protein_data,
-    method="cca"  # or "pca", "nmf"
+)  # Returns a MultiOmicsData (layers: "dna", "rna", "protein")
+
+# Joint analyses take the integrated object
+embeddings, loadings, explained_variance = integration.joint_pca(integrated, n_components=10)
+W, H = integration.joint_nmf(integrated, n_components=10)
+# Ridge CCA: regularization is the ridge parameter on a correlation-matrix scale
+# (0.0, the default, is classical CCA; use > 0 when features outnumber samples)
+X_c, Y_c, x_weights, y_weights, correlations = integration.canonical_correlation(
+    integrated, layers=("rna", "protein"), n_components=5, regularization=0.1
 )
+# x_weights/y_weights apply to the standardized features: X_c = standardized_X @ x_weights
 ```
 
 ## Patterns
@@ -78,8 +88,9 @@ output_path = paths.expand_and_resolve("output/multiomics/integration/")
 - Normalize across platforms
 
 ### Joint Analysis
-- Use `ml.dimensionality` for joint dimensionality reduction
+- Joint dimensionality reduction is implemented in `analysis/integration.py` (`joint_pca`, `joint_nmf`, `canonical_correlation`)
 - Support multiple integration methods (CCA, PCA, NMF)
+- `canonical_correlation` is closed-form ridge CCA with no `**kwargs`: pass only `layers` (or `layer_pair`), `n_components` and `regularization`; use `regularization > 0` whenever the layers have more features than samples can constrain, because an unregularized fit is then degenerate (the leading canonical correlations equal exactly 1)
 - Return integrated data structures
 
 ### Output Paths

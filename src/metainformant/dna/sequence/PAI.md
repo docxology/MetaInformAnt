@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - sequence
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/dna/sequence`
+- **Path**: `src/metainformant/dna/sequence`
 - **Purpose**: Functionality for sequence.
 - **Domain**: dna
 

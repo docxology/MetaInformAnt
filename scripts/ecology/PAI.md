@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - ecology
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/scripts/ecology`
+- **Path**: `scripts/ecology`
 - **Purpose**: Functionality for ecology.
 - **Domain**: scripts
 

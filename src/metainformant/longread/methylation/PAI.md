@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - methylation
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/longread/methylation`
+- **Path**: `src/metainformant/longread/methylation`
 - **Purpose**: Long-read methylation calling and analysis submodule.
 - **Domain**: longread
 

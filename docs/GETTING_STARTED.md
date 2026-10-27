@@ -41,8 +41,8 @@ import numpy as np
 
 # Create synthetic DNA sequences of varying lengths
 sequences = {
-    "gene_alpha": "ATCGATCGATCGATCGATCGATCG",  # 27 bp
-    "gene_beta":  "GCTAGCTAGCTAGCTAGCTA",        # 19 bp
+    "gene_alpha": "ATCGATCGATCGATCGATCGATCG",  # 24 bp
+    "gene_beta":  "GCTAGCTAGCTAGCTAGCTA",        # 20 bp
     "gene_gamma": "ATATATATATATATATATATATAT",    # 24 bp
     "gene_delta": "CGCGCGCGCGCGCGCGCGCG",        # 20 bp
 }
@@ -70,54 +70,33 @@ uv run python get_started_example.py
 Now analyze the DNA sequences: compute GC content, sequence lengths, and motif frequencies.
 
 ```python
-from metainformant import dna
+from metainformant.dna.sequence import composition, core, motifs
 from pathlib import Path
 
-# Read the FASTA file we just created (reuse core.io)
+# Read the FASTA file we just created (returns {sequence_id: sequence})
 fasta_path = Path("output/getting_started/sample_sequences.fasta")
-
-# Simple FASTA parsing (without using dna.io for this example)
-def read_fasta(path: Path) -> dict[str, str]:
-    seqs = {}
-    current_name = None
-    current_seq = []
-    with open(path) as f:
-        for line in f:
-            line = line.strip()
-            if line.startswith(">"):
-                if current_name:
-                    seqs[current_name] = "".join(current_seq)
-                current_name = line[1:]
-                current_seq = []
-            else:
-                current_seq.append(line)
-        if current_name:
-            seqs[current_name] = "".join(current_seq)
-    return seqs
-
-sequences = read_fasta(fasta_path)
+sequences = core.read_fasta(fasta_path)
 
 # Compute basic statistics
 print("Sequence Analysis Results:")
 print("-" * 40)
 for name, seq in sequences.items():
-    length = dna.sequence.length(seq)
-    gc = dna.composition.gc_content(seq)
-    at_ratio = dna.composition.at_ratio(seq) if hasattr(dna.composition, 'at_ratio') else (1 - gc)
+    length = len(seq)
+    gc = composition.gc_content(seq)
     print(f"{name}:")
     print(f"  Length: {length} bp")
     print(f"  GC content: {gc:.2%}")
-    print(f"  AT ratio: {at_ratio:.2%}")
+    print(f"  AT content: {1 - gc:.2%}")  # sequences contain only A, C, G, T
 
 # Find a specific motif across all sequences
 motif = "ATCG"
 print(f"\nMotif search ('{motif}'):")
 for name, seq in sequences.items():
-    positions = dna.sequence.find_motif(seq, motif)  # hypothetical API
+    positions = motifs.find_motif_positions(seq, motif)
     print(f"  {name}: found at positions {positions}")
 ```
 
-**Note:** The `dna` module API may evolve; consult the [DNA module documentation](dna/sequences.md) for the exact function names. The example uses conceptual functions; adapt to available API.
+**Note:** The example uses `metainformant.dna.sequence.core`, `composition` and `motifs`; consult the [DNA module documentation](dna/sequences.md) for the other sequence functions.
 
 ---
 
@@ -132,16 +111,16 @@ import numpy as np
 
 # Prepare data
 names = list(sequences.keys())
-gc_contents = [dna.composition.gc_content(seq) for seq in sequences.values()]
+gc_contents = [composition.gc_content(seq) for seq in sequences.values()]
 
 # Create a bar plot
 fig, ax = plt.subplots(figsize=(10, 6))
-basic.barplot(
-    x=np.arange(len(names)),
-    y=np.array(gc_contents),
+basic.bar_plot(
+    np.arange(len(names)),
+    np.array(gc_contents),
     ax=ax,
     color="steelblue",
-    edgecolor="black"
+    edgecolor="black",
 )
 ax.set_xlabel("Gene")
 ax.set_ylabel("GC Content")
@@ -174,8 +153,8 @@ my_cache = cache.JsonCache(cache_dir, ttl_seconds=3600)  # 1-hour TTL
 # Example expensive computation: computing a distance matrix
 def compute_distance_matrix(seq1: str, seq2: str) -> float:
     """Simulate expensive pairwise alignment distance."""
-    # In reality, this could call dna.alignment.pairwise_distance()
-    return 1.0 - dna.composition.gc_content(seq1) * dna.composition.gc_content(seq2)
+    # In reality, this could call dna.alignment.distances.jukes_cantor_distance()
+    return 1.0 - composition.gc_content(seq1) * composition.gc_content(seq2)
 
 # Cache results automatically
 seq_list = list(sequences.values())
@@ -204,12 +183,10 @@ The cache persists between runs, avoiding recomputation.
 METAINFORMANT provides structured logging via `metainformant.core.utils.logging`. Use it in scripts.
 
 ```python-snippet
-from metainformant.core.utils.logging import get_logger, setup_logging
+from metainformant.core.utils.logging import setup_logger
 
 # Setup: can be done once at program start
-setup_logging(level="INFO")  # Options: DEBUG, INFO, WARNING, ERROR
-
-logger = get_logger(__name__)
+logger = setup_logger(__name__, level="INFO")  # Options: DEBUG, INFO, WARNING, ERROR
 
 logger.info("Starting GETTING_STARTED workflow")
 logger.debug(f"Loaded {len(sequences)} sequences")
@@ -217,9 +194,9 @@ logger.warning("This is just a demo; real analyses require more data")
 logger.error("Errors are logged with full context")
 ```
 
-By default, logs go to stderr with color and metadata. To log to file:
+By default, logs go to stderr as `timestamp | level | logger name | message`. To log to file:
 ```python
-setup_logging(level="DEBUG", file_path="output/getting_started/workflow.log")
+logger = setup_logger(__name__, log_file="output/getting_started/workflow.log", level="DEBUG")
 ```
 
 ---
@@ -242,15 +219,15 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from metainformant.core import io, cache
-from metainformant.core.utils.logging import get_logger, setup_logging
-from metainformant import dna
+from metainformant.core import io
+from metainformant.core.io import cache
+from metainformant.core.utils.logging import setup_logger
+from metainformant.dna.sequence import composition
 from metainformant.visualization.plots import basic
 
 def main() -> None:
     # Configure logging
-    setup_logging(level="INFO")
-    logger = get_logger(__name__)
+    logger = setup_logger(__name__, level="INFO")
     logger.info("=== METAINFORMANT Getting Started ===")
 
     # ── Step 1: Prepare output directories ──────────────────────────────────
@@ -275,8 +252,8 @@ def main() -> None:
 
     # ── Step 3: Analysis ───────────────────────────────────────────────────
     names = list(sequences.keys())
-    gc_contents = [dna.composition.gc_content(seq) for seq in sequences.values()]
-    lengths     = [dna.sequence.length(seq) for seq in sequences.values()]
+    gc_contents = [composition.gc_content(seq) for seq in sequences.values()]
+    lengths     = [len(seq) for seq in sequences.values()]
 
     for name, gc, length in zip(names, gc_contents, lengths):
         logger.info(f"{name}: gc={gc:.2%}, len={length}")
@@ -299,9 +276,9 @@ def main() -> None:
 
     # ── Step 5: Plot GC content ────────────────────────────────────────────
     fig, ax = plt.subplots(figsize=(9, 5))
-    basic.barplot(
-        x=np.arange(len(names)),
-        y=np.array(gc_contents),
+    basic.bar_plot(
+        np.arange(len(names)),
+        np.array(gc_contents),
         ax=ax,
         color="teal",
         edgecolor="black",
@@ -362,7 +339,7 @@ A: See the [Module Selection Decision Tree](../docs/index.md#module-selection-de
 A: Use the `data/` directory for input datasets (gitignored). Outputs go to `output/`. See [SETUP.md](SETUP.md) for directory policies.
 
 **Q: How do I enable debug logging?**
-A: Call `setup_logging(level="DEBUG")` at the start of your script, or pass `--log-level DEBUG` to the CLI if available.
+A: Call `logger = setup_logger(__name__, level="DEBUG")` at the start of your script, or pass `--log-level DEBUG` to the CLI if available.
 
 **Q: My script is slow—how can I speed it up?**
 A: Use `metainformant.core.execution.parallel` for parallel processing, enable caching with `metainformant.core.io.cache`, and profile with `pytest-benchmark`. See [docs/tasks/performance_tuning.md](../docs/tasks/performance_tuning.md).

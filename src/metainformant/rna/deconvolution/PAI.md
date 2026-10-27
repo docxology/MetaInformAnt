@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - deconvolution
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/rna/deconvolution`
+- **Path**: `src/metainformant/rna/deconvolution`
 - **Purpose**: Cell type deconvolution submodule for bulk RNA-seq data.
 - **Domain**: rna
 

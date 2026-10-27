@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - test
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/scripts/test`
+- **Path**: `scripts/test`
 - **Purpose**: Functionality for test.
 - **Domain**: scripts
 

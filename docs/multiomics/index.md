@@ -21,7 +21,7 @@ Framework for combining heterogeneous biological datasets:
 Statistical and computational methods for multi-omic analysis:
 - **Joint PCA**: Principal component analysis across concatenated omics layers
 - **Joint NMF**: Non-negative matrix factorization with shared sample factors
-- **Canonical Correlation Analysis (CCA)**: Find maximally correlated patterns between omics layers
+- **Canonical Correlation Analysis (CCA)**: Ridge-regularized CCA that finds maximally correlated patterns between two omics layers
 - Automatic sample alignment and validation
 - Comprehensive error handling and logging
 
@@ -81,7 +81,7 @@ flowchart TD
 ### Integration Methods
 - **Joint PCA**: Principal component analysis across concatenated omics layers with layer weighting
 - **Joint NMF**: Non-negative matrix factorization with shared sample factors and convergence detection
-- **Canonical Correlation**: Find maximally correlated patterns between two omics layers
+- **Canonical Correlation**: Ridge-regularized CCA (`regularization`, default 0.0 for classical CCA) that finds maximally correlated patterns between two omics layers
 - Automatic data validation and error handling
 - Comprehensive logging for debugging and monitoring
 
@@ -95,7 +95,7 @@ flowchart TD
 ### Basic Multi-Omics Integration
 
 ```python
-from metainformant.multiomics import MultiOmicsData, integrate_omics_data
+from metainformant.multiomics.analysis.integration import MultiOmicsData, integrate_omics_data
 import pandas as pd
 
 # Method 1: Create from DataFrames
@@ -123,7 +123,7 @@ multiomics_data = integrate_omics_data(data_dict)
 ### Joint Dimensionality Reduction
 
 ```python
-from metainformant.multiomics import joint_pca, joint_nmf
+from metainformant.multiomics.analysis.integration import joint_pca, joint_nmf
 
 # Joint PCA across omics layers
 embeddings, loadings, explained_variance = joint_pca(
@@ -145,7 +145,7 @@ W, H = joint_nmf(
     max_iter=200,
     regularization=0.01,
     random_state=42,
-    tolerance=1e-6  # Convergence tolerance
+    tol=1e-6  # Convergence tolerance (forwarded to scikit-learn's NMF)
 )
 
 # W: shared sample factors (n_samples x n_components)
@@ -157,29 +157,33 @@ print(f"Genomics feature factors: {H['genomics'].shape}")
 ### Canonical Correlation Analysis
 
 ```python
-from metainformant.multiomics import canonical_correlation
+from metainformant.multiomics.analysis.integration import canonical_correlation
 
-# CCA between transcriptomics and proteomics
+# Ridge CCA between transcriptomics and proteomics. `regularization` is the ridge
+# parameter on the scale of a correlation matrix: 0.0 (the default) is classical CCA,
+# and a value above 0 is needed when a layer has more features than the samples can constrain.
 X_c, Y_c, X_w, Y_w, correlations = canonical_correlation(
     multiomics_data,
-    layer_pair=("transcriptomics", "proteomics"),
+    layers=("transcriptomics", "proteomics"),
     n_components=10,
     regularization=0.01
 )
 
-# Interpret correlations
+# Interpret correlations (descending; penalised correlations when regularization > 0)
 print(f"Canonical correlations: {correlations}")
-print(f"First canonical variate correlation: {correlations[0]:.3f}")
+print(f"First canonical correlation: {correlations[0]:.3f}")
 print(f"Transcriptomics weights shape: {X_w.shape}")
 print(f"Proteomics weights shape: {Y_w.shape}")
 ```
+
+The weights apply to the standardized features (columns centred and scaled to unit sample variance) and reproduce the canonical variates: `X_c = standardized_X @ X_w`. With `regularization=0.0`, when the ranks of the two layers add up to more than `n_samples - 1` (for example genome-scale layers with a few dozen samples), at least that excess number of canonical correlations equal exactly 1 and a warning is logged. With `regularization > 0` each correlation is penalised, shrinks as the value grows, and is a lower bound on the sample correlation of the returned variates. See [canonical_correlation](./integration.md#canonical_correlation) for the full contract.
 
 ## Integration with Other Modules
 
 ### With RNA Expression Data
 
 ```python
-from metainformant.multiomics import MultiOmicsData, from_rna_expression, joint_pca
+from metainformant.multiomics.analysis.integration import MultiOmicsData, from_rna_expression, joint_pca
 
 # Load RNA expression data using helper function
 expression_data = from_rna_expression("expression.tsv")
@@ -201,7 +205,7 @@ embeddings, loadings, variance = joint_pca(multiomics_data, n_components=50)
 ### With DNA Variants
 
 ```python
-from metainformant.multiomics import MultiOmicsData, from_dna_variants, from_rna_expression
+from metainformant.multiomics.analysis.integration import MultiOmicsData, from_dna_variants, from_rna_expression
 
 # Load genomics data from VCF
 genomics_data = from_dna_variants("variants.vcf")
@@ -219,7 +223,7 @@ multiomics_data = MultiOmicsData(
 ### With Protein Data
 
 ```python
-from metainformant.multiomics import MultiOmicsData, from_protein_abundance, from_rna_expression
+from metainformant.multiomics.analysis.integration import MultiOmicsData, from_protein_abundance, from_rna_expression
 
 # Load protein abundance data
 proteomics_data = from_protein_abundance("proteins.csv")
@@ -239,7 +243,7 @@ multiomics_data = MultiOmicsData(
 ### Saving and Loading Multi-Omics Data
 
 ```python
-from metainformant.multiomics import MultiOmicsData
+from metainformant.multiomics.analysis.integration import MultiOmicsData
 
 # Save multi-omics data to directory
 multiomics_data.save("output/multiomics_data")
@@ -286,11 +290,11 @@ subset_features = multiomics_data.subset_features({
 ## Limitations and Considerations
 
 - **Memory Requirements**: Large datasets may require significant memory. Consider subsetting data before analysis.
-- **Sample Size**: Joint analysis methods require at least 2-3 samples. CCA requires at least 3 samples.
-- **Feature Count**: n_components is automatically capped to min(n_samples, n_features) - 1.
+- **Sample Size**: Joint analysis methods require at least 2-3 samples. CCA requires at least 2 samples; with `regularization=0` the combined rank of the two layers must also stay below the sample count, otherwise use `regularization > 0`.
+- **Component Count**: `n_components` is capped automatically: joint PCA at the smaller of the sample count and the combined feature count, joint NMF at the combined feature count, and CCA at the smaller layer's feature count and at the numerical rank of the layers (at most `n_samples - 1`).
 - **Data Types**: All data must be numeric. Non-numeric columns will trigger warnings.
 - **File Formats**: Supports CSV, TSV, and Excel files. Gzip compression is automatically handled.
-- **Missing Data**: Currently requires complete data across all layers. Missing value imputation should be performed before integration.
+- **Missing Data**: Joint PCA and joint NMF replace missing values with the feature (column) mean, and CCA replaces them with the mean of the whole layer. Impute beforehand when another strategy is needed.
 
 ## Testing
 

@@ -158,12 +158,13 @@ flowchart TD
 **Integration Pattern**:
 
 ```python-snippet
-from metainformant.metabolomics import analysis, pathways
-from metainformant.multiomics import integration  # metabolite-gene correlation
+import pandas as pd
+from metainformant.metabolomics import analysis, io, pathways
+from metainformant.multiomics.analysis import integration  # metabolite-gene integration
 from metainformant.visualization import plots
 
 # Load metabolomics data
-dataset = analysis.io.formats.read_csv("metabolites.csv")
+dataset = io.formats.read_csv("metabolites.csv")
 
 # Normalize
 normalized = analysis.identification.normalize_intensities(
@@ -181,12 +182,12 @@ enriched = pathways.enrichment.metabolite_set_enrichment(
     pathway_db=KEGG_PATHWAYS,
 )
 
-# Multi-omics integration (correlate with gene expression)
-from metainformant.multiomics import correlate_omics_layers
-correlations = correlate_omics_layers(
-    metabolite_matrix=normalized,
-    gene_expression=rna.merged_matrix,
-    method="pearson",
+# Multi-omics integration (canonical correlation with gene expression)
+# Both layers as samples × features DataFrames with matching sample IDs
+metabolite_df = pd.DataFrame(normalized.T, index=dataset.samples, columns=dataset.metabolites)
+X_c, Y_c, x_weights, y_weights, correlations = integration.canonical_correlation(
+    {"metabolomics": metabolite_df, "transcriptomics": gene_expression_df},
+    n_components=5,
 )
 ```
 

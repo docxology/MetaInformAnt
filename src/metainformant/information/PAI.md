@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - information
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/information`
+- **Path**: `src/metainformant/information`
 - **Purpose**: Information theory analysis module for METAINFORMANT.
 - **Domain**: metainformant
 

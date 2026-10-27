@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - heritability
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/gwas/heritability`
+- **Path**: `src/metainformant/gwas/heritability`
 - **Purpose**: GWAS heritability estimation submodule.
 - **Domain**: gwas
 

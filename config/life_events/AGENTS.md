@@ -13,10 +13,16 @@ Life events temporal analysis configuration for life course modeling.
 ## Configuration Structure
 
 ```yaml
-# Life events configuration
-embedding_dim: 100
-event_domains: [education, occupation, health]
-prediction_target: mortality
+# Life events configuration (see life_events_template.yaml)
+work_dir: output/life_events/work
+embedding:
+  embedding_dim: 100
+  window_size: 5
+  method: skipgram
+model:
+  model_type: embedding      # "embedding" or "simple"
+  task_type: classification
+  random_state: 42
 ```
 
 ## Rules

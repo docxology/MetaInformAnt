@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - core
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/docs/core`
+- **Path**: `docs/core`
 - **Purpose**: Functionality for core.
 - **Domain**: docs
 

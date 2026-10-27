@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - features
 
 ## Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/ml/features`
+- **Path**: `src/metainformant/ml/features`
 - **Purpose**: Feature selection and engineering module.
 - **Domain**: ml
 

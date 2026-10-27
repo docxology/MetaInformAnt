@@ -28,15 +28,13 @@ def quant(
     **kwargs: Any
 ) -> subprocess.CompletedProcess[str]
 
-# Step runner (low-level)
-from metainformant.rna.engine.workflow_steps import run_quant
+# Step runner (low-level): quant(params, **kwargs) is run_amalgkit("quant", params, **kwargs)
+from metainformant.rna.amalgkit import run_amalgkit
 
-def run_quant(
-    params: Mapping[str, Any] | None = None,
-    *,
-    work_dir: str | Path | None = None,
-    log_dir: str | Path | None = None,
-    check: bool = False,
+def run_amalgkit(
+    subcommand: str,
+    params: AmalgkitParams | Dict[str, Any] | None = None,
+    **kwargs: Any,  # work_dir, log_dir, monitor options; the rest (check, timeout, ...) goes to subprocess.run
 ) -> subprocess.CompletedProcess[str]
 ```
 

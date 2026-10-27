@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - docs
 
 ## Context & Intent
-- **Path**: `docs/`
+- **Path**: `docs`
 - **Purpose**: Technical documentation for all METAINFORMANT modules.
 - **Domain**: Documentation
 

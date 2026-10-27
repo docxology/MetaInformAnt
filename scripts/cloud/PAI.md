@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - cloud
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/scripts/cloud`
+- **Path**: `scripts/cloud`
 - **Purpose**: Functionality for cloud.
 - **Domain**: scripts
 

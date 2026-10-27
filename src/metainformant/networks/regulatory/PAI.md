@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - regulatory
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/networks/regulatory`
+- **Path**: `src/metainformant/networks/regulatory`
 - **Purpose**: Regulatory network inference and motif analysis subpackage.
 - **Domain**: networks
 

@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - simulation
 
 ## 🧠 Context & Intent
-- **Path**: `/Volumes/external_drive/Git/projects/ongoing/Bioinformatics/MetaInformAnt/src/metainformant/gwas/simulation`
+- **Path**: `src/metainformant/gwas/simulation`
 - **Purpose**: GWAS simulation package: synthetic data generation.
 - **Domain**: gwas
 
