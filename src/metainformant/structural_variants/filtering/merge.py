@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 import statistics
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Sequence
 
 from metainformant.core.utils.logging import get_logger
 
@@ -34,10 +34,12 @@ class MergedVariant:
         sv_type: Consensus SV type.
         size: Consensus size.
         n_callers: Number of callers that detected this variant.
-        caller_names: Names of callers that detected this variant.
+        caller_names: Names of callers that detected this variant (sorted).
         support_variants: Original variant calls that were merged.
-        consensus_quality: Quality based on multi-caller agreement.
-        genotype: Consensus genotype.
+        consensus_quality: Quality based on multi-caller agreement (the rule
+            differs per merge function; see :func:`merge_callsets` and
+            :func:`survivor_merge`).
+        genotype: Consensus genotype ('./.' when no merged call has one).
     """
 
     chrom: str
@@ -82,7 +84,10 @@ def merge_callsets(
 
     Uses reciprocal overlap to identify the same SV detected by different
     tools. For each group of matching variants across callers, produces a
-    single consensus call with aggregated support.
+    single consensus call with aggregated support: median breakpoints, the
+    majority SV type, the majority genotype (see :func:`_consensus_genotype`)
+    and ``consensus_quality`` = the mean ``quality`` (or ``qual``) of the merged
+    calls plus ``100 * log10(n_callers + 1)``.
 
     Args:
         callsets: Dictionary mapping caller names to lists of variant
@@ -170,7 +175,7 @@ def merge_callsets(
 
     for indices in groups.values():
         group_variants = [all_variants[i] for i in indices]
-        callers = list(set(caller for caller, _ in group_variants))
+        callers = sorted({caller for caller, _ in group_variants})
         variant_dicts = [v for _, v in group_variants]
 
         consensus_start = _median_position([v.get("start", 0) for v in variant_dicts])
@@ -288,6 +293,17 @@ def survivor_merge(
     pysam or a VCF parser. If vcf_files contains dictionaries, they are
     used directly.
 
+    Each merged variant combines the calls of its group as follows:
+
+    * ``genotype``: majority vote among the calls' non-missing genotypes
+      (allele order ignored, so '1/0' is '0/1'). A tie goes to the genotype
+      whose calls have the larger summed quality, then to the one that sorts
+      first. ``'./.'`` when no call has a genotype. Genotypes are read from
+      each dict's ``genotype`` and from the first sample of VCF files.
+    * ``consensus_quality``: the mean ``quality`` (or ``qual``; 0 when absent)
+      of the merged calls, plus an agreement bonus of
+      ``10 * n_callers * log10(n_callers + 1)``.
+
     Args:
         vcf_files: Either file paths to VCF files or lists of variant
             dictionaries. If file paths, each file is treated as one caller.
@@ -398,7 +414,7 @@ def survivor_merge(
 
     for indices in groups.values():
         group_variants = [all_variants[i] for i in indices]
-        callers = list(set(caller for caller, _ in group_variants))
+        callers = sorted({caller for caller, _ in group_variants})
 
         if len(callers) < min_callers:
             continue
@@ -412,7 +428,10 @@ def survivor_merge(
         size = abs(consensus_end - consensus_start)
         n_callers = len(callers)
 
-        quality = 10.0 * n_callers * math.log10(n_callers + 1)
+        # Callers' evidence: the mean call quality, plus a bonus for how many callers agree.
+        call_qualities = [_call_quality(v) for v in variant_dicts]
+        quality = sum(call_qualities) / len(call_qualities) + 10.0 * n_callers * math.log10(n_callers + 1)
+        genotype = _consensus_genotype([v.get("genotype", "./.") for v in variant_dicts], call_qualities)
 
         merged = MergedVariant(
             chrom=variant_dicts[0].get("chrom", ""),
@@ -424,6 +443,7 @@ def survivor_merge(
             caller_names=callers,
             support_variants=variant_dicts,
             consensus_quality=quality,
+            genotype=genotype,
         )
         merged_list.append(merged)
 
@@ -604,28 +624,68 @@ def _majority_sv_type(variant_dicts: list[dict[str, Any]]) -> str:
     return max(type_counts, key=type_counts.get)  # type: ignore[arg-type]
 
 
-def _consensus_genotype(genotypes: list[str]) -> str:
+def _call_quality(variant: dict[str, Any]) -> float:
+    """Quality of one call (``quality``, else ``qual``); 0 when absent or None."""
+    quality = variant.get("quality", variant.get("qual", 0.0))
+    return 0.0 if quality is None else float(quality)
+
+
+def _consensus_genotype(genotypes: list[str], qualities: Sequence[float] | None = None) -> str:
     """Determine consensus genotype from multiple calls.
 
-    Uses majority voting among non-missing genotypes.
+    Uses majority voting among non-missing genotypes, ignoring allele order.
 
     Args:
         genotypes: List of genotype strings.
+        qualities: Optional quality of each call, parallel to ``genotypes``. When
+            given, a tie in the vote goes to the genotype with the larger summed
+            quality, then to the one that sorts first. Without it a tie goes to the
+            genotype seen first.
 
     Returns:
         Consensus genotype string.
     """
-    valid = [g for g in genotypes if g not in ("./.", ".")]
-    if not valid:
-        return "./."
-
+    weights = qualities if qualities is not None else [0.0] * len(genotypes)
     counts: dict[str, int] = {}
-    for g in valid:
+    total_quality: dict[str, float] = {}
+    for g, quality in zip(genotypes, weights):
+        if not isinstance(g, str) or g in ("./.", "."):
+            continue
         # Normalize genotype ordering
         normalized = "/".join(sorted(g.split("/")))
         counts[normalized] = counts.get(normalized, 0) + 1
+        total_quality[normalized] = total_quality.get(normalized, 0.0) + quality
 
-    return max(counts, key=counts.get)  # type: ignore[arg-type]
+    if not counts:
+        return "./."
+    if qualities is None:
+        return max(counts, key=counts.get)  # type: ignore[arg-type]
+    return min(counts, key=lambda g: (-counts[g], -total_quality[g], g))
+
+
+def _format_genotype(alleles: Sequence[int | None] | None) -> str | None:
+    """Format a called allele tuple (as pysam reports ``GT``) as ``'0/1'``; None when absent."""
+    if not alleles:
+        return None
+    return "/".join("." if allele is None else str(allele) for allele in alleles)
+
+
+def _vcf_sample_genotype(fields: list[str]) -> str | None:
+    """Genotype of the first sample of a VCF record line (``'0/1'``), or None when there is none.
+
+    Phased genotypes (``0|1``) are written with ``/``; a missing call is ``'./.'``.
+    """
+    if len(fields) < 10:
+        return None
+    keys = fields[8].split(":")
+    if "GT" not in keys:
+        return None
+    values = fields[9].split(":")
+    index = keys.index("GT")
+    if index >= len(values):
+        return None
+    genotype = values[index].replace("|", "/")
+    return "./." if genotype in ("", ".") else genotype
 
 
 def _load_vcf_variants(vcf_path: str) -> list[dict[str, Any]]:
@@ -648,21 +708,31 @@ def _load_vcf_variants(vcf_path: str) -> list[dict[str, Any]]:
             for record in vcf:
                 sv_type = record.info.get("SVTYPE", "UNKNOWN")
                 end = record.info.get("END", record.stop)
-                variants.append(
-                    {
-                        "chrom": record.chrom,
-                        "start": record.start,
-                        "end": end,
-                        "sv_type": sv_type,
-                        "quality": record.qual or 0.0,
-                        "filter": list(record.filter),
-                    }
-                )
+                variant = {
+                    "chrom": record.chrom,
+                    "start": record.start,
+                    "end": end,
+                    "sv_type": sv_type,
+                    "quality": record.qual or 0.0,
+                    "filter": list(record.filter),
+                }
+                genotype = _pysam_first_genotype(record)
+                if genotype is not None:
+                    variant["genotype"] = genotype
+                variants.append(variant)
         return variants
 
     except ImportError:
         logger.warning("pysam not available; falling back to basic VCF parsing")
         return _parse_vcf_basic(vcf_path)
+
+
+def _pysam_first_genotype(record: Any) -> str | None:
+    """Genotype of the first sample of a pysam record, or None when it has no ``GT``."""
+    try:
+        return _format_genotype(record.samples[0]["GT"])
+    except (IndexError, KeyError, TypeError, ValueError):
+        return None
 
 
 def _parse_vcf_basic(vcf_path: str) -> list[dict[str, Any]]:
@@ -672,7 +742,8 @@ def _parse_vcf_basic(vcf_path: str) -> list[dict[str, Any]]:
         vcf_path: Path to VCF file.
 
     Returns:
-        List of variant dictionaries.
+        List of variant dictionaries. A record with a sample column also carries
+        the ``genotype`` of its first sample.
     """
     variants: list[dict[str, Any]] = []
 
@@ -702,14 +773,16 @@ def _parse_vcf_basic(vcf_path: str) -> list[dict[str, Any]]:
             sv_type = info_dict.get("SVTYPE", "UNKNOWN")
             end = int(info_dict.get("END", str(pos + 1)))
 
-            variants.append(
-                {
-                    "chrom": chrom,
-                    "start": pos,
-                    "end": end,
-                    "sv_type": sv_type,
-                    "quality": qual,
-                }
-            )
+            variant: dict[str, Any] = {
+                "chrom": chrom,
+                "start": pos,
+                "end": end,
+                "sv_type": sv_type,
+                "quality": qual,
+            }
+            genotype = _vcf_sample_genotype(fields)
+            if genotype is not None:
+                variant["genotype"] = genotype
+            variants.append(variant)
 
     return variants

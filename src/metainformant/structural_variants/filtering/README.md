@@ -15,12 +15,12 @@ Structural variant filtering and multi-caller consensus merging, providing quali
 | Function | Description |
 |----------|-------------|
 | `quality_filter.filter_by_quality()` | Filter SVs by quality score and read support |
-| `quality_filter.filter_by_size()` | Filter SVs by minimum/maximum size |
-| `quality_filter.filter_by_frequency()` | Filter SVs by population allele frequency |
+| `quality_filter.filter_by_size()` | Filter SVs by minimum/maximum size; TRA/BND and unmeasured (size 0) INS calls are kept |
+| `quality_filter.filter_by_frequency()` | Filter SVs by population allele frequency; raises `ValueError` when no database entry is readable |
 | `quality_filter.apply_blacklist()` | Remove SVs overlapping blacklist regions |
-| `merge.merge_callsets()` | Merge SV calls from multiple callers |
+| `merge.merge_callsets()` | Merge SV calls from multiple callers by reciprocal overlap |
 | `merge.calculate_reciprocal_overlap()` | Compute reciprocal overlap between two SVs |
-| `merge.survivor_merge()` | SURVIVOR-style distance-based merging |
+| `merge.survivor_merge()` | SURVIVOR-style distance-based merging; majority-vote genotype and agreement-weighted quality |
 | `merge.deduplicate_variants()` | Remove duplicate SV calls |
 
 ## Usage
@@ -28,8 +28,8 @@ Structural variant filtering and multi-caller consensus merging, providing quali
 ```python
 from metainformant.structural_variants.filtering import quality_filter, merge
 
-filtered = quality_filter.filter_by_quality(variants, min_qual=20, min_support=3)
-filtered = quality_filter.filter_by_size(filtered, min_size=50, max_size=10_000_000)
-merged = merge.merge_callsets([caller1_svs, caller2_svs], max_distance=500)
-deduped = merge.deduplicate_variants(merged)
+filtered, _ = quality_filter.filter_by_quality(variants, min_qual=20, min_support=3)
+filtered, _ = quality_filter.filter_by_size(filtered, min_size=50, max_size=10_000_000)
+merged, merge_stats = merge.merge_callsets({"caller1": caller1_svs, "caller2": caller2_svs}, min_overlap=0.5)
+deduped, n_removed = merge.deduplicate_variants(filtered)
 ```

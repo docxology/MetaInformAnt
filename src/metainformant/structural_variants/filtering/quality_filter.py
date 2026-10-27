@@ -6,9 +6,12 @@ constraints, population allele frequency, and blacklist genomic regions.
 
 from __future__ import annotations
 
+import math
+import numbers
 import os
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, NamedTuple
 
 from metainformant.core.utils.logging import get_logger
 
@@ -141,8 +144,12 @@ def filter_by_size(
         variants: List of variant dictionaries. Expected keys:
             - 'size': Variant size in base pairs (int)
             - Or 'start' and 'end' to compute size
-            - 'sv_type': Optional; translocations (TRA) are always kept
-              since they don't have a meaningful "size"
+            - 'sv_type': Optional; translocations (TRA, BND) are always kept
+              since they don't have a meaningful "size", and so are insertions
+              (INS) without a positive 'size': the inserted length of a call from
+              split reads is not measured (``size`` 0), and the start-to-end span
+              of such a call is its junction, not that length. An insertion with a
+              positive 'size' is filtered on it like any other variant.
         min_size: Minimum size in base pairs (default 50, the standard
             SV size threshold).
         max_size: Maximum size in base pairs (default None, no upper limit).
@@ -164,6 +171,12 @@ def filter_by_size(
             continue
 
         size = v.get("size", 0)
+
+        # An insertion whose length was not measured has no size to filter on
+        if sv_type == "INS" and not size:
+            passed.append(v)
+            continue
+
         if size == 0:
             start = v.get("start", 0)
             end = v.get("end", 0)
@@ -219,6 +232,12 @@ def filter_by_frequency(
 
     Returns:
         Tuple of (filtered_variants, filter_statistics).
+
+    Raises:
+        ValueError: If ``population_db`` is given but none of its entries is in a
+            supported layout (so the filter would silently do nothing). Entries
+            of a mostly usable database that cannot be read are skipped with a
+            logged warning that counts them.
     """
     input_count = len(variants)
 
@@ -237,7 +256,20 @@ def filter_by_frequency(
         return list(variants), stats
 
     # Normalize population database to a lookup structure
-    pop_lookup = _build_population_lookup(population_db) if population_db is not None else {}
+    pop_lookup: dict[str, list[tuple[int, int, float, str]]] = {}
+    if population_db is not None:
+        parsed = _parse_population_db(population_db)
+        if parsed.n_records and not parsed.lookup:
+            raise ValueError(
+                f"population_db layout is not supported: none of its {parsed.n_records} entries could be used "
+                f"(for example {parsed.examples[0]}). {_POPULATION_DB_LAYOUTS}"
+            )
+        if parsed.n_skipped:
+            logger.warning(
+                f"Frequency filter: skipped {parsed.n_skipped} of {parsed.n_records} population_db entries "
+                f"in an unsupported layout (for example {parsed.examples[0]}). {_POPULATION_DB_LAYOUTS}"
+            )
+        pop_lookup = parsed.lookup
 
     passed: list[dict[str, Any]] = []
 
@@ -296,6 +328,10 @@ def apply_blacklist(
             'end' keys, or as (chrom, start, end) tuples.
         min_overlap_fraction: Minimum fraction of variant overlapping a blacklist
             region to trigger removal (default 0.0, any overlap removes the variant).
+            A zero-length variant (``start == end``, such as an insertion point)
+            has no bases to overlap: it counts as fully overlapping (fraction 1.0)
+            when it lies strictly inside a region, and not at all on a region's
+            edge, the same as a variant that only abuts a region.
 
     Returns:
         Tuple of (filtered_variants, filter_statistics).
@@ -350,6 +386,12 @@ def apply_blacklist(
             if bl_end <= start:
                 continue
 
+            if end == start:
+                # Zero-length variant strictly inside the region (the two checks above
+                # ruled out a region that begins at or after it, or ends at or before it).
+                max_overlap_frac = 1.0
+                break
+
             overlap_start = max(start, bl_start)
             overlap_end = min(end, bl_end)
             overlap_bp = max(0, overlap_end - overlap_start)
@@ -379,10 +421,129 @@ def apply_blacklist(
     return passed, stats
 
 
+_POPULATION_DB_LAYOUTS = (
+    "Supported layouts: a dict mapping 'chrom:start-end' (or 'chrom:start-end-svtype') to an allele "
+    "frequency, or a list of dicts with 'chrom', 'start', 'end' and 'af' (or 'allele_frequency') "
+    "and optionally 'sv_type'."
+)
+
+
+class _PopulationParse(NamedTuple):
+    """Outcome of reading a population database (internal).
+
+    Attributes:
+        lookup: Chromosome -> sorted ``(start, end, af, sv_type)`` entries that could be read.
+        n_records: Number of entries in the database.
+        n_skipped: Entries that could not be read.
+        examples: Descriptions of the first few skipped entries.
+    """
+
+    lookup: dict[str, list[tuple[int, int, float, str]]]
+    n_records: int
+    n_skipped: int
+    examples: list[str]
+
+
+def _as_position(value: Any) -> int | None:
+    """Return ``value`` as an int coordinate, or None when it is not an integral number."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, numbers.Integral):
+        return int(value)
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    return None
+
+
+def _as_frequency(value: Any) -> float | None:
+    """Return ``value`` as an allele frequency in [0, 1], or None when it is not one."""
+    if isinstance(value, bool) or not isinstance(value, numbers.Real):
+        return None
+    frequency = float(value)
+    if not math.isfinite(frequency) or not 0.0 <= frequency <= 1.0:
+        return None
+    return frequency
+
+
+def _parse_population_db(population_db: Any) -> _PopulationParse:
+    """Read a population database, counting the entries that are not in a supported layout.
+
+    Args:
+        population_db: A dict ``{'chrom:start-end[-svtype]': af}`` or an iterable of dicts
+            with ``chrom``, ``start``, ``end``, ``af`` (or ``allele_frequency``) and
+            optionally ``sv_type``.
+
+    Returns:
+        The usable entries by chromosome, plus how many entries were skipped and why.
+
+    Raises:
+        ValueError: If ``population_db`` is neither a dict nor an iterable.
+    """
+    lookup: dict[str, list[tuple[int, int, float, str]]] = {}
+    n_records = 0
+    n_skipped = 0
+    examples: list[str] = []
+
+    def skip(description: str) -> None:
+        nonlocal n_skipped
+        n_skipped += 1
+        if len(examples) < 3:
+            examples.append(description)
+
+    if isinstance(population_db, Mapping):
+        for key, af in population_db.items():
+            n_records += 1
+            parts = key.replace(":", "-").split("-") if isinstance(key, str) else []
+            start = end = None
+            if len(parts) >= 3 and parts[0]:
+                try:
+                    start, end = int(parts[1]), int(parts[2])
+                except ValueError:
+                    pass
+            frequency = _as_frequency(af)
+            if start is None or end is None or frequency is None:
+                skip(f"key {key!r}: {af!r}")
+                continue
+            lookup.setdefault(parts[0], []).append((start, end, frequency, parts[3] if len(parts) > 3 else ""))
+    else:
+        try:
+            entries = list(population_db)
+        except TypeError:
+            raise ValueError(
+                f"population_db must be a dict or a list of dicts, not {type(population_db).__name__}. "
+                f"{_POPULATION_DB_LAYOUTS}"
+            ) from None
+        for index, entry in enumerate(entries):
+            n_records += 1
+            if not isinstance(entry, Mapping):
+                skip(f"entry {index}: {type(entry).__name__}, not a dict")
+                continue
+            chrom = entry.get("chrom")
+            start = _as_position(entry.get("start"))
+            end = _as_position(entry.get("end"))
+            frequency = _as_frequency(entry.get("af", entry.get("allele_frequency")))
+            if not isinstance(chrom, str) or not chrom or start is None or end is None or frequency is None:
+                skip(f"entry {index}: {sorted(str(k) for k in entry)}")
+                continue
+            sv_type = entry.get("sv_type", "")
+            if hasattr(sv_type, "value"):
+                sv_type = sv_type.value
+            lookup.setdefault(chrom, []).append((start, end, frequency, sv_type))
+
+    # Sort each chromosome
+    for chrom in lookup:
+        lookup[chrom].sort()
+
+    return _PopulationParse(lookup, n_records, n_skipped, examples)
+
+
 def _build_population_lookup(
     population_db: dict[str, float] | list[dict[str, Any]],
 ) -> dict[str, list[tuple[int, int, float, str]]]:
     """Build a chromosome-keyed lookup from population database.
+
+    Entries that are not in a supported layout are left out (use
+    :func:`_parse_population_db` to count them).
 
     Args:
         population_db: Population database in either dict or list format.
@@ -390,40 +551,7 @@ def _build_population_lookup(
     Returns:
         Dictionary mapping chromosome to sorted list of (start, end, af, sv_type) tuples.
     """
-    lookup: dict[str, list[tuple[int, int, float, str]]] = {}
-
-    if isinstance(population_db, dict):
-        for key, af in population_db.items():
-            parts = key.replace(":", "-").split("-")
-            if len(parts) >= 3:
-                chrom = parts[0]
-                try:
-                    start = int(parts[1])
-                    end = int(parts[2])
-                except ValueError:
-                    continue
-                sv_type = parts[3] if len(parts) > 3 else ""
-                if chrom not in lookup:
-                    lookup[chrom] = []
-                lookup[chrom].append((start, end, af, sv_type))
-    else:
-        for entry in population_db:
-            chrom = entry.get("chrom", "")
-            start = entry.get("start", 0)
-            end = entry.get("end", 0)
-            af = entry.get("af", entry.get("allele_frequency", 0.0))
-            sv_type = entry.get("sv_type", "")
-            if hasattr(sv_type, "value"):
-                sv_type = sv_type.value
-            if chrom not in lookup:
-                lookup[chrom] = []
-            lookup[chrom].append((start, end, af, sv_type))
-
-    # Sort each chromosome
-    for chrom in lookup:
-        lookup[chrom].sort()
-
-    return lookup
+    return _parse_population_db(population_db).lookup
 
 
 def _lookup_population_frequency(

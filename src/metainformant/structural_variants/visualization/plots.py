@@ -84,13 +84,22 @@ def plot_circos(
     colored chords connecting breakpoint pairs. Intra-chromosomal SVs
     are drawn as arcs within the chromosome. Colors indicate SV type.
 
+    A chord runs from ``chrom:start`` to the second breakpoint, which is
+    ``chrom2:pos2`` for inter-chromosomal calls (as produced by
+    ``call_structural_variants``, e.g. via ``dataclasses.asdict``) and
+    ``chrom:end`` for intra-chromosomal calls. A hand-built inter-chromosomal
+    dictionary without ``pos2`` (``chrom2`` set to another chromosome) is read
+    the way VCF-style callers write it: ``end`` is the position on ``chrom2``.
+
     Args:
         variants: List of variant dictionaries with:
             - 'chrom': Chromosome
-            - 'start': Start position
-            - 'end': End position
+            - 'start': Start position (first breakpoint)
+            - 'end': End position (second breakpoint of an intra-chromosomal SV)
             - 'sv_type': SV type string
-            - 'chrom2': Second chromosome (for translocations, optional)
+            - 'chrom2': Chromosome of the second breakpoint (translocations, optional)
+            - 'pos2': Position of the second breakpoint on 'chrom2'
+              (translocations, optional; None or absent for intra-chromosomal SVs)
         chromosomes: Dictionary mapping chromosome names to sizes (in bp).
         output_path: Path to save the plot image.
         title: Plot title.
@@ -133,10 +142,11 @@ def plot_circos(
     for v in variants:
         chrom1 = v.get("chrom", "")
         start1 = v.get("start", 0)
-        chrom2 = v.get("chrom2", chrom1)
-        if not chrom2:
-            chrom2 = chrom1
-        end2 = v.get("end", 0)
+        chrom2 = v.get("chrom2") or chrom1
+        # Second breakpoint: explicit pos2 (translocations), otherwise the interval end.
+        pos2 = v.get("pos2")
+        if pos2 is None:
+            pos2 = v.get("end", 0)
         sv_type = v.get("sv_type", "UNKNOWN")
         if hasattr(sv_type, "value"):
             sv_type = sv_type.value
@@ -148,7 +158,7 @@ def plot_circos(
 
         # Convert genomic positions to angles
         angle1 = _pos_to_angle(chrom1, start1, chrom_angles, chromosomes)
-        angle2 = _pos_to_angle(chrom2, end2, chrom_angles, chromosomes)
+        angle2 = _pos_to_angle(chrom2, pos2, chrom_angles, chromosomes)
 
         if angle1 is None or angle2 is None:
             continue

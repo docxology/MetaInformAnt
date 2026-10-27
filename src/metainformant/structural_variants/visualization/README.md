@@ -13,7 +13,7 @@ Publication-quality plots for structural variant analysis, including Circos-styl
 
 | Function | Description |
 |----------|-------------|
-| `plots.plot_circos()` | Circos-style genome-wide SV visualization |
+| `plots.plot_circos()` | Circos-style genome-wide SV visualization; a chord ends at `pos2` on `chrom2` for translocations |
 | `plots.plot_coverage_track()` | Coverage track with SV overlay annotations |
 | `plots.plot_sv_size_distribution()` | Histogram of SV sizes by type |
 | `plots.plot_sv_type_summary()` | Bar chart summary of SV types and counts |
@@ -26,8 +26,8 @@ Publication-quality plots for structural variant analysis, including Circos-styl
 from metainformant.structural_variants.visualization import plots
 
 plots.plot_circos(variants, chrom_sizes, output_path="output/circos.png")
-plots.plot_coverage_track(coverage, variants, region="chr1:1000-50000",
+plots.plot_coverage_track(coverage, variants, region=("chr1", 1000, 50000),
                           output_path="output/coverage.png")
 plots.plot_sv_size_distribution(variants, output_path="output/sv_sizes.png")
-plots.plot_cnv_profile(segments, output_path="output/cnv_profile.png")
+plots.plot_cnv_profile(segments, chrom_sizes, output_path="output/cnv_profile.png")
 ```

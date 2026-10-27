@@ -10,12 +10,13 @@ read representations for flexibility and testability.
 
 from __future__ import annotations
 
+import bisect
 import math
 import os
 import statistics
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, Iterable
 
 from metainformant.core.utils.logging import get_logger
 
@@ -98,18 +99,28 @@ class SVEvidence:
 class StructuralVariant:
     """A called structural variant.
 
+    Intra-chromosomal calls (DEL, DUP, INV, INS, UNKNOWN) occupy the interval
+    ``chrom:start-end``. A translocation (TRA) joins two loci on different
+    chromosomes, so it has no interval: ``chrom``/``start`` give the first
+    breakpoint, ``chrom2``/``pos2`` the second, and ``end`` repeats ``start``
+    (a zero-length junction, like an insertion point).
+
     Attributes:
-        chrom: Primary chromosome.
-        start: Start position (0-based).
-        end: End position (0-based).
+        chrom: Primary chromosome (the chromosome of the first breakpoint).
+        start: Start position (0-based). For a TRA, the first breakpoint on ``chrom``.
+        end: End position (0-based). For a TRA, equal to ``start``.
         sv_type: Type of structural variant.
-        size: Size of the variant in base pairs.
+        size: Size of the variant in base pairs. 0 means "not measured": it is
+            always 0 for TRA (no length) and for INS (split-read evidence does
+            not measure the inserted length; the breakpoint distance is not it).
         quality: Quality score.
         evidence: Supporting evidence.
         genotype: Genotype string (e.g., '0/1', '1/1').
         filter_status: Filter status ('PASS' or reason).
-        chrom2: Secondary chromosome (for translocations).
+        chrom2: Chromosome of the second breakpoint (translocations; '' otherwise).
         info: Additional info fields.
+        pos2: Position (0-based) of the second breakpoint on ``chrom2``
+            (translocations; None otherwise).
     """
 
     chrom: str
@@ -123,6 +134,7 @@ class StructuralVariant:
     filter_status: str = "PASS"
     chrom2: str = ""
     info: dict[str, Any] = field(default_factory=dict)
+    pos2: int | None = None
 
 
 def call_structural_variants(
@@ -157,10 +169,18 @@ def call_structural_variants(
         insert_size_stats: Pre-computed insert size distribution statistics.
             If None, will be estimated from the data.
         min_mapq: Minimum mapping quality for reads to be considered.
-        min_sv_size: Minimum structural variant size in base pairs.
+        min_sv_size: Minimum structural variant size in base pairs. It applies
+            to calls that have a measurable length (DEL, DUP, INV and
+            UNKNOWN, measured as the breakpoint distance). Translocations have
+            no length, and the inserted length of an insertion is not measured
+            by split-read evidence, so TRA and INS calls are exempt (their
+            ``size`` is 0).
 
     Returns:
         List of StructuralVariant objects, sorted by chromosome and position.
+        A translocation (TRA) carries its second breakpoint in ``chrom2`` and
+        ``pos2``; its ``start``/``end`` describe the first breakpoint on
+        ``chrom`` only (see :class:`StructuralVariant`).
     """
     env_min_support = os.environ.get(f"{_ENV_PREFIX}MIN_SUPPORT")
     if env_min_support is not None:
@@ -202,36 +222,52 @@ def call_structural_variants(
         # Classify SV type
         sv_type = classify_sv_type(merged)
 
-        # Calculate size
-        if merged.chrom1 == merged.chrom2 or not merged.chrom2:
-            size = abs(merged.breakpoint2 - merged.breakpoint1)
-        else:
-            size = 0  # Inter-chromosomal
-
-        if size < min_sv_size and sv_type != SVType.TRA:
-            continue
-
         # Calculate quality
         quality = _calculate_sv_quality(merged, total_support)
 
-        variant = StructuralVariant(
-            chrom=merged.chrom1,
-            start=min(merged.breakpoint1, merged.breakpoint2),
-            end=max(merged.breakpoint1, merged.breakpoint2),
-            sv_type=sv_type,
-            size=size,
-            quality=quality,
-            evidence=merged,
-            chrom2=merged.chrom2 if merged.chrom2 != merged.chrom1 else "",
-        )
+        if sv_type == SVType.TRA:
+            # The two breakpoints lie on different chromosomes, so their coordinates are not
+            # comparable: keep each on its own chromosome instead of ordering them as an interval.
+            variant = StructuralVariant(
+                chrom=merged.chrom1,
+                start=merged.breakpoint1,
+                end=merged.breakpoint1,
+                sv_type=sv_type,
+                size=0,
+                quality=quality,
+                evidence=merged,
+                chrom2=merged.chrom2,
+                pos2=merged.breakpoint2,
+            )
+        else:
+            if sv_type == SVType.INS:
+                # Split reads at one insertion junction place both breakpoints at (nearly) the same
+                # coordinate: their distance is not the inserted length, and nothing in the evidence
+                # measures it. Report it as not measured (0) and do not filter on it.
+                size = 0
+            else:
+                size = abs(merged.breakpoint2 - merged.breakpoint1)
+                if size < min_sv_size:
+                    continue
+
+            variant = StructuralVariant(
+                chrom=merged.chrom1,
+                start=min(merged.breakpoint1, merged.breakpoint2),
+                end=max(merged.breakpoint1, merged.breakpoint2),
+                sv_type=sv_type,
+                size=size,
+                quality=quality,
+                evidence=merged,
+            )
         variants.append(variant)
 
     # Sort by position
     variants.sort(key=lambda v: (v.chrom, v.start))
 
-    # Genotype all variants
+    # Genotype all variants against one shared position index of the reads
+    read_index = ReadIndex(filtered)
     for variant in variants:
-        variant.genotype = genotype_sv(variant, filtered)
+        variant.genotype = genotype_sv(variant, read_index)
 
     logger.info(f"Called {len(variants)} structural variants from {len(all_evidence)} evidence items")
     return variants
@@ -466,9 +502,87 @@ def classify_sv_type(evidence: SVEvidence) -> SVType:
     return SVType.UNKNOWN
 
 
+# Half-width (bp) of the window around the first breakpoint that a reference read must span.
+_GENOTYPE_SPAN_FLANK = 100
+
+
+class ReadIndex:
+    """Per-chromosome index of aligned reads by start position.
+
+    Genotyping a call only needs the reads that span the 200 bp window around its
+    first breakpoint. Scanning every read for every call costs
+    ``O(calls x reads)`` (about 90% of :func:`call_structural_variants` at 100k
+    reads and 100 calls); with this index a call costs ``O(log reads)`` plus the
+    reads that start within one read length of the window.
+
+    Build it once from the reads and pass it to :func:`genotype_sv` in place of the
+    read list. Results are identical to scanning the list.
+
+    Args:
+        reads: Read alignment dictionaries (see :func:`call_structural_variants`).
+            ``chrom``, ``pos``, ``mapq``, ``name`` and ``read_length`` are used,
+            with the same defaults as :func:`genotype_sv` (``read_length`` 150).
+    """
+
+    def __init__(self, reads: Iterable[dict[str, Any]]) -> None:
+        rows_by_chrom: dict[str, list[tuple[int, int, int, str]]] = {}
+        for read in reads:
+            pos = read.get("pos", 0)
+            rows_by_chrom.setdefault(read.get("chrom", ""), []).append(
+                (pos, pos + read.get("read_length", 150), read.get("mapq", 0), read.get("name", ""))
+            )
+
+        self._rows: dict[str, list[tuple[int, int, int, str]]] = {}
+        self._starts: dict[str, list[int]] = {}
+        self._max_length: dict[str, int] = {}
+        for chrom, rows in rows_by_chrom.items():
+            rows.sort(key=lambda row: row[0])
+            self._rows[chrom] = rows
+            self._starts[chrom] = [row[0] for row in rows]
+            self._max_length[chrom] = max(end - start for start, end, _, _ in rows)
+
+    def __len__(self) -> int:
+        return sum(len(rows) for rows in self._rows.values())
+
+    def count_spanning(
+        self,
+        chrom: str,
+        window_start: int,
+        window_end: int,
+        min_mapq: int = 0,
+        exclude: frozenset[str] = frozenset(),
+    ) -> int:
+        """Count reads that start before ``window_start`` and end after ``window_end``.
+
+        Args:
+            chrom: Chromosome of the window.
+            window_start: Reads must start strictly before this position.
+            window_end: Reads must end (start + read_length) strictly after this position.
+            min_mapq: Minimum mapping quality of counted reads.
+            exclude: Read names that are not counted.
+
+        Returns:
+            Number of spanning reads.
+        """
+        starts = self._starts.get(chrom)
+        if not starts:
+            return 0
+        rows = self._rows[chrom]
+        # A read ends after window_end only if it starts after window_end - (longest read).
+        first = bisect.bisect_right(starts, window_end - self._max_length[chrom])
+        last = bisect.bisect_left(starts, window_start)
+
+        count = 0
+        for i in range(first, last):
+            _, read_end, mapq, name = rows[i]
+            if read_end > window_end and mapq >= min_mapq and name not in exclude:
+                count += 1
+        return count
+
+
 def genotype_sv(
     variant: StructuralVariant,
-    reads: list[dict[str, Any]],
+    reads: list[dict[str, Any]] | ReadIndex,
     min_mapq: int = 20,
 ) -> str:
     """Genotype a structural variant based on supporting and reference reads.
@@ -481,36 +595,47 @@ def genotype_sv(
         - 0.15 <= AF < 0.85: heterozygous (0/1)
         - AF >= 0.85: homozygous alternate (1/1)
 
+    The reference reads are those spanning ``start - 100 .. start + 100`` (the
+    first breakpoint) on ``variant.chrom``.
+
     Args:
         variant: StructuralVariant to genotype.
-        reads: List of read alignment dictionaries.
+        reads: List of read alignment dictionaries, or a :class:`ReadIndex`
+            built from them. Pass an index when genotyping many variants
+            against the same reads: it gives the same answer without scanning
+            every read for every variant.
         min_mapq: Minimum mapping quality for counting reads.
 
     Returns:
-        Genotype string: '0/0', '0/1', or '1/1'.
+        Genotype string: '0/0', '0/1', or '1/1' ('./.' when no read supports
+        either allele).
     """
     # Count reads supporting the SV
     sv_support = variant.evidence.split_reads + variant.evidence.discordant_pairs
 
     # Count reads spanning the breakpoint region that support reference
-    ref_support = 0
-    bp_start = variant.start - 100
-    bp_end = variant.start + 100
+    bp_start = variant.start - _GENOTYPE_SPAN_FLANK
+    bp_end = variant.start + _GENOTYPE_SPAN_FLANK
+    support_names = frozenset(variant.evidence.evidence_reads)
 
-    for read in reads:
-        if read.get("mapq", 0) < min_mapq:
-            continue
-        if read.get("chrom", "") != variant.chrom:
-            continue
+    if isinstance(reads, ReadIndex):
+        ref_support = reads.count_spanning(variant.chrom, bp_start, bp_end, min_mapq, support_names)
+    else:
+        ref_support = 0
+        for read in reads:
+            if read.get("mapq", 0) < min_mapq:
+                continue
+            if read.get("chrom", "") != variant.chrom:
+                continue
 
-        read_pos = read.get("pos", 0)
-        read_end = read_pos + read.get("read_length", 150)
+            read_pos = read.get("pos", 0)
+            read_end = read_pos + read.get("read_length", 150)
 
-        # Read spans the breakpoint without being split
-        if read_pos < bp_start and read_end > bp_end:
-            name = read.get("name", "")
-            if name not in variant.evidence.evidence_reads:
-                ref_support += 1
+            # Read spans the breakpoint without being split
+            if read_pos < bp_start and read_end > bp_end:
+                name = read.get("name", "")
+                if name not in support_names:
+                    ref_support += 1
 
     total = sv_support + ref_support
     if total == 0:
@@ -755,7 +880,7 @@ def _merge_evidence(cluster: list[SVEvidence]) -> SVEvidence:
     return SVEvidence(
         split_reads=total_sr,
         discordant_pairs=total_dp,
-        evidence_reads=list(set(all_reads)),
+        evidence_reads=sorted(set(all_reads)),
         breakpoint1=bp1,
         breakpoint2=bp2,
         chrom1=cluster[0].chrom1,

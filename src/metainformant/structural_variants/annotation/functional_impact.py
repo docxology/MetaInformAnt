@@ -96,6 +96,9 @@ def predict_functional_impact(
     gene_annotations: list[dict[str, Any]],
     haploinsufficiency_db: dict[str, float] | None = None,
     tad_boundaries: list[dict[str, Any]] | None = None,
+    triplosensitivity_db: dict[str, float] | None = None,
+    pli_db: dict[str, float] | None = None,
+    loeuf_db: dict[str, float] | None = None,
 ) -> FunctionalImpact:
     """Predict the functional impact of a structural variant.
 
@@ -123,9 +126,19 @@ def predict_functional_impact(
             - 'name': Gene name
             - 'is_coding': Whether gene is protein-coding (optional)
         haploinsufficiency_db: Optional dictionary mapping gene names to
-            haploinsufficiency scores (0-1).
+            haploinsufficiency scores (0-1). Genes it marks haploinsufficient
+            count as dosage-sensitive for deletions.
         tad_boundaries: Optional list of TAD boundary dictionaries with
             'chrom', 'start', 'end' keys.
+        triplosensitivity_db: Optional dictionary mapping gene names to
+            triplosensitivity scores (0-1). Genes it marks triplosensitive
+            count as dosage-sensitive for duplications (impact type
+            ``dosage_gain``); without it a duplication can never reach that
+            class.
+        pli_db: Optional dictionary mapping gene names to pLI scores (0-1);
+            a gene with pLI >= 0.9 is haploinsufficient.
+        loeuf_db: Optional dictionary mapping gene names to LOEUF values;
+            a gene with LOEUF < 0.35 is haploinsufficient.
 
     Returns:
         FunctionalImpact object with comprehensive impact assessment.
@@ -145,11 +158,17 @@ def predict_functional_impact(
     if not overlapping_genes:
         overlapping_genes = _find_overlapping_genes(chrom, start, end, gene_annotations)
 
-    # Assess dosage sensitivity
+    # Assess dosage sensitivity with every database that was given
     dosage_genes: list[str] = []
-    if haploinsufficiency_db:
+    if haploinsufficiency_db or triplosensitivity_db or pli_db or loeuf_db:
         for gene_name in overlapping_genes:
-            sensitivity = assess_dosage_sensitivity(gene_name, haploinsufficiency_db)
+            sensitivity = assess_dosage_sensitivity(
+                gene_name,
+                haploinsufficiency_db,
+                triplosensitivity_db,
+                pli_db,
+                loeuf_db,
+            )
             if sensitivity.is_haploinsufficient and sv_type in ("DEL", "HOMODEL"):
                 dosage_genes.append(gene_name)
             elif sensitivity.is_triplosensitive and sv_type == "DUP":
@@ -361,7 +380,7 @@ def predict_tad_disruption(
         variant_end=end,
         disrupted_boundaries=disrupted,
         n_boundaries_disrupted=n_disrupted,
-        genes_in_affected_tads=list(set(affected_genes)),
+        genes_in_affected_tads=sorted(set(affected_genes)),
         disruption_score=disruption_score,
     )
 

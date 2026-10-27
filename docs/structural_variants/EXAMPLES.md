@@ -97,7 +97,7 @@ Detected 6 CNV segments
   chr1:200,000-230,000  DUP  CN=3  log2=0.592
 ```
 
-`detect_cnv_from_depth` returns a `dict[str, CNVResult]` keyed by chromosome. The CBS step grows at least quadratically with the number of bins per chromosome (see [PERFORMANCE.md](PERFORMANCE.md)), so for whole human chromosomes use a coarser `window_size` (tens to hundreds of kb) rather than 1 kb.
+`detect_cnv_from_depth` returns a `dict[str, CNVResult]` keyed by chromosome. Its input must be depths, finite and non-negative (zero is a bin with no coverage); a negative or non-finite value raises `ValueError` naming the chromosome. The CBS step is vectorised but still grows with the square of the number of bins per chromosome (see [PERFORMANCE.md](PERFORMANCE.md)): a chromosome of 64,000 bins takes a few seconds and one of 250,000 bins about a minute, so for whole human chromosomes use a coarser `window_size` (tens to hundreds of kb) rather than 1 kb.
 
 ---
 
@@ -180,14 +180,14 @@ write_vcf(svs_to_vcf_data(variants), "sv_calls.vcf")
 logger.info("Saved VCF: sv_calls.vcf")
 
 # ── Refine breakpoints (optional but recommended) ───────────────────────────
-# sv.evidence holds both breakpoints with their own chromosome (sv.chrom2 is "" for
-# intra-chromosomal calls), so use it to re-fetch reads around each breakpoint.
+# A call's first breakpoint is (chrom, start); its second is (chrom2, pos2) for a translocation
+# and (chrom, end) for every other call. Re-fetch the reads around each one.
 bam = pysam.AlignmentFile("sample.bam", "rb")
 window = 300
 local_reads = []
 for sv in variants:
-    ev = sv.evidence
-    for chrom, pos in ((ev.chrom1, ev.breakpoint1), (ev.chrom2 or ev.chrom1, ev.breakpoint2)):
+    second = (sv.chrom2, sv.pos2) if sv.pos2 is not None else (sv.chrom, sv.end)
+    for chrom, pos in ((sv.chrom, sv.start), second):
         for read in bam.fetch(chrom, max(0, pos - window), pos + window):
             if read.is_unmapped or read.is_secondary or read.is_supplementary:
                 continue
@@ -198,15 +198,16 @@ for sv in variants:
                 "seq": read.query_sequence or "",
                 "name": read.query_name,
                 "is_reverse": read.is_reverse,
+                "sa_tag": read.get_tag("SA") if read.has_tag("SA") else "",
             })
 bam.close()
 
-# refine_breakpoints() takes variant dicts (chrom1/breakpoint1, chrom2/breakpoint2, sv_type)
+# refine_breakpoints() takes variant dicts: the first breakpoint is (chrom, start), the second is
+# breakpoint2, else pos2, else end, on chrom2 ("" or None means chrom)
 refined = refine_breakpoints(
     variants=[
-        {"chrom1": v.evidence.chrom1, "breakpoint1": v.evidence.breakpoint1,
-         "chrom2": v.evidence.chrom2 or v.evidence.chrom1, "breakpoint2": v.evidence.breakpoint2,
-         "sv_type": v.sv_type.value}
+        {"chrom": v.chrom, "start": v.start, "end": v.end,
+         "chrom2": v.chrom2, "pos2": v.pos2, "sv_type": v.sv_type.value}
         for v in variants
     ],
     reads=local_reads,
@@ -219,12 +220,18 @@ io.dump_json([{
     "sv_type": bp.sv_type,
     "chrom1": bp.bp1.chrom, "pos1": bp.bp1.position,
     "chrom2": bp.bp2.chrom, "pos2": bp.bp2.position,
+    "strand1": bp.bp1.strand, "strand2": bp.bp2.strand,
     "confidence": bp.confidence,
-    "microhomology": bp.bp1.microhomology or bp.bp2.microhomology,
+    "microhomology": [bp.bp1.microhomology, bp.bp2.microhomology],
+    "inserted_sequence": bp.bp1.inserted_sequence or bp.bp2.inserted_sequence,
 } for bp in refined], "refined_breakpoints.json")
 ```
 
-`refine_breakpoints` snaps each breakpoint to the most frequent soft-clip position within `window` bp. Its `microhomology` value (set on `bp1` only) is computed from the first read that carries a `seq` on that chromosome, with the breakpoint assumed to sit at the middle of that sequence, so it is only meaningful when the supplied reads are trimmed to breakpoint-centred flanking sequence.
+`refine_breakpoints` snaps each breakpoint to the most frequent soft-clip position within `window` bp, locating each read by the reference coordinate of its soft clip. The reads that clip at the chosen position are the breakpoint's supporting reads, and every field below is computed for both breakpoints from their own supporting reads:
+
+- `strand` is the majority `is_reverse` (`'+'` when no read reports it, or on a tie).
+- `microhomology` is the longest `detect_microhomology` result over the window of each read's `seq` centred on that read's clip junction. It is a mirror-match heuristic on the read sequence, not true microhomology, which would need the reference sequence.
+- `inserted_sequence` is the read bases between the primary alignment and a single supplementary alignment. It is filled only when a supporting read has `seq`, `is_reverse`, `cigar` and an `sa_tag` with one entry located at the other breakpoint; otherwise it is empty.
 
 ---
 
@@ -297,9 +304,9 @@ for chrom in common_chroms:
     log2_ratios[chrom] = lr
 
 # ── Call CNVs ────────────────────────────────────────────────────────────────
-# detect_cnv_from_depth() expects depth-like positive values and takes log2(value / median)
+# detect_cnv_from_depth() expects depth-like values (finite and >= 0) and takes log2(value / median)
 # itself, so hand it the linear tumor/normal ratio (2**log2), not the log2 ratio
-# (negative values would produce NaN and crash).
+# (a negative value raises ValueError naming the chromosome).
 ratios = {chrom: np.exp2(lr) for chrom, lr in log2_ratios.items()}
 
 cnv_results = detect_cnv_from_depth(
@@ -411,7 +418,7 @@ merged, stats = survivor_merge(
 print(f"Survivor merge: {len(merged)} consensus calls from {stats.n_input_variants} input calls")
 ```
 
-Like `merge_callsets`, `survivor_merge` returns `(list[MergedVariant], MergeStats)`. File paths are parsed with pysam when it is installed (otherwise with a basic text parser) and the callers are named `caller_0`, `caller_1`, ... in file order; it also accepts a flat list of variant dicts, each tagged with a `_caller` key. Unlike `merge_callsets`, it does not carry genotypes (`MergedVariant.genotype` stays `"./."`), and its `consensus_quality` depends only on the number of callers, not on the input qualities.
+Like `merge_callsets`, `survivor_merge` returns `(list[MergedVariant], MergeStats)`. File paths are parsed with pysam when it is installed (otherwise with a basic text parser) and the callers are named `caller_0`, `caller_1`, ... in file order; it also accepts a flat list of variant dicts, each tagged with a `_caller` key. The merged `genotype` is the majority vote among the calls' non-missing genotypes, read from each dict's `genotype` key or from the first sample of a VCF (a phased `0|1` becomes `0/1`); a tie goes to the genotype with the larger summed call quality, then to the one that sorts first, and `"./."` means that no call has a genotype. The `consensus_quality` is the mean call quality plus `10 * n_callers * log10(n_callers + 1)`: two callers with calls of quality 80 (genotype `0/1`) and 40 (genotype `1/1`) give `0/1` and 69.54. `merge_callsets` uses `100 * log10(n_callers + 1)` as its bonus and breaks a genotype tie in favour of the genotype seen first.
 
 ---
 
@@ -450,13 +457,16 @@ print(f"Annotated {len(annotated)} SVs; "
 # ── Step 2: Functional impact ───────────────────────────────────────────────
 priority_svs = []
 for variant in annotated:
-    # Only the haploinsufficiency scores feed the dosage flag (HI >= 0.5 on deletions);
-    # predict_functional_impact() takes no triplosensitivity or pLI database.
+    # Every database you pass feeds the dosage flag: a deletion over a haploinsufficient gene
+    # (HI >= 0.5, pLI >= 0.9 or LOEUF < 0.35) is HIGH / dosage_loss, and a duplication over a
+    # triplosensitive gene (TS >= 0.5) is HIGH / dosage_gain.
     impact = predict_functional_impact(
         variant=variant,
         gene_annotations=gene_db,
         haploinsufficiency_db=hi_db,
         tad_boundaries=tad_bounds,
+        triplosensitivity_db=ts_db,
+        pli_db=pli_db,
     )
 
     # Clinical prioritization criteria
@@ -477,7 +487,7 @@ for variant in annotated:
         print(f"  Pathogenicity: {impact.pathogenicity_score:.3f}")
         print(f"  Genes: {', '.join(impact.affected_genes)}")
         for gene in impact.dosage_sensitive_genes:
-            # Look up all three dosage metrics for the flagged genes (HI and pLI are printed)
+            # Look the flagged gene up again to print its scores (HI and pLI are printed)
             ds = assess_dosage_sensitivity(
                 gene,
                 haploinsufficiency_db=hi_db,
@@ -566,7 +576,7 @@ io.dump_json(filtered, "rare_svs.json")
   {"chrom": "chr1", "start": 987654, "end": 988123, "sv_type": "DUP", "af": 0.012}
 ]
 ```
-or a dict mapping `"chrom:start-end"` (optionally `"chrom:start-end-SVTYPE"`) to the allele frequency, e.g. `{"chr1:123456-123789-DEL": 0.003}`. A call matches an entry when the SV types agree (if the entry gives one) and both reciprocal-overlap fractions reach `min_reciprocal_overlap`; the highest matching AF is used. Calls without a match are kept, and a call that already has an `af` (or `allele_frequency`) key is compared directly without a lookup. A dict in another layout, such as one keyed by chromosome, is silently skipped, so no call is matched against it.
+or a dict mapping `"chrom:start-end"` (optionally `"chrom:start-end-SVTYPE"`) to the allele frequency, e.g. `{"chr1:123456-123789-DEL": 0.003}`. A call matches an entry when the SV types agree (if the entry gives one) and both reciprocal-overlap fractions reach `min_reciprocal_overlap`; the highest matching AF is used. Calls without a match are kept, and a call that already has an `af` (or `allele_frequency`) key is compared directly without a lookup. Every frequency must lie in [0, 1]. A database in a layout that is not supported, such as a dict keyed by chromosome, raises `ValueError` naming the supported layouts when none of its entries can be read; when only some entries are unreadable they are skipped and counted in a logged warning, and the rest of the database is used.
 
 **Per-population frequency filtering:**
 
@@ -647,7 +657,7 @@ fig = plot_sv_size_distribution(
 )
 ```
 
-**Result:** `circos.png` — circular genome with colored chords connecting breakpoints; `coverage_chr5.png` — read-depth track with SV rectangles overlay. For a genome-wide view of CNV segments use `plot_cnv_profile(segments, chromosomes, output_path=...)`, where each segment is a dict with `chrom`, `start`, `end`, `mean_log2ratio` and `state`.
+**Result:** `circos.png` — circular genome with colored chords connecting breakpoints; `coverage_chr5.png` — read-depth track with SV rectangles overlay. A chord runs from `chrom:start` to the second breakpoint: `chrom2:pos2` for a translocation (the call dicts from `call_structural_variants` carry both), and `chrom:end` for every other call. A hand-built dict with `chrom2` set to another chromosome and no `pos2` is read the way VCF writes it: `end` is the position on `chrom2`. For a genome-wide view of CNV segments use `plot_cnv_profile(segments, chromosomes, output_path=...)`, where each segment is a dict with `chrom`, `start`, `end`, `mean_log2ratio` and `state`.
 
 ---
 
@@ -709,7 +719,10 @@ for pop in set(populations):
 # ── Population structure (PCA) ───────────────────────────────────────────────
 # Adjust for ancestry in association tests
 pca = sv_population_structure(gt_matrix, n_components=10)
-# variance_explained is relative to the returned components only: its n_components values sum to 1
+# variance_explained is each component's share of the total variance (the sum of all eigenvalues of
+# the covariance matrix), so the 10 returned values sum to less than 1 here (100 SVs give 100
+# components); they sum to 1 only when every component is returned
+# (n_components >= min(number of SVs, number of samples))
 print(f"\nPCA — PC1 variance explained: {pca['variance_explained'][0]:.2%}")
 print(f"         PC2 variance explained: {pca['variance_explained'][1]:.2%}")
 
@@ -756,7 +769,7 @@ io.dump_json(results, "association_results.json")
 
 **Goal:** Use long-read alignments to tighten the breakpoints of SVs that were called from short reads.
 
-`refine_breakpoints` snaps each breakpoint to the most frequent soft-clip position among the reads it is given, so long reads that clip at the breakpoint give a base-pair-level estimate. It works on plain dict records, so the `LongReadAlignment` objects returned by the long-read BAM reader have to be converted first.
+`refine_breakpoints` snaps each breakpoint to the most frequent soft-clip position among the reads it is given, so long reads that clip at the breakpoint give a base-pair-level estimate. It locates a read by the reference coordinate of its soft clip, so a long read that starts far upstream of the breakpoint still counts. It works on plain dict records, so the `LongReadAlignment` objects returned by the long-read BAM reader have to be converted first.
 
 ```python
 from metainformant.core import io
@@ -766,23 +779,23 @@ from metainformant.structural_variants.detection.breakpoints import refine_break
 # Load long-read alignments (BAM from minimap2 / pbmm2) as LongReadAlignment objects
 alignments = read_long_read_bam("longreads.bam", include_supplementary=True, min_mapping_quality=20)
 
-# Convert to the record format refine_breakpoints() reads (name, chrom, pos, cigar).
-# "seq" is left out on purpose: it is only used for a microhomology check that assumes the
-# breakpoint sits in the middle of the sequence, which is not true for whole long reads.
+# Convert to the record format refine_breakpoints() reads: name, chrom, pos and cigar, plus
+# is_reverse (breakpoint strand), seq (microhomology and inserted sequence) and sa_tag (inserted sequence).
 longreads = [
-    {"name": a.read_name, "chrom": a.reference_name, "pos": a.reference_start, "cigar": a.cigar_string}
+    {"name": a.read_name, "chrom": a.reference_name, "pos": a.reference_start, "cigar": a.cigar_string,
+     "is_reverse": a.is_reverse, "seq": a.query_sequence, "sa_tag": a.tags.get("SA", "")}
     for a in alignments
     if not a.is_unmapped
 ]
 
-# SV calls from short reads: dicts with chrom, start, end, sv_type
+# SV calls from short reads: dicts with chrom, start, end, sv_type (plus chrom2 and pos2 for translocations)
 sv_calls = io.load_json("shortread_svs.json")
 
 # Refine using long reads
 refined = refine_breakpoints(
     variants=sv_calls,
     reads=longreads,
-    window=1000,        # keep reads starting within window + 500 bp; clips within window bp
+    window=1000,        # soft clips within 1000 bp of a breakpoint count, wherever their read starts
     min_clip=10,
 )
 
@@ -806,8 +819,9 @@ io.dump_json([{
 
 Limits to keep in mind with long reads:
 
-- Only soft clips (`S` in the CIGAR) are evidence. Hard-clipped supplementary alignments contribute nothing, and `Breakpoint.inserted_sequence` is never filled in, so inserted sequence is not recovered. For long-read insertion calls use `metainformant.longread.analysis.structural.detect_sv_from_long_reads`.
-- A read is only considered if its **alignment start** lies within `window + 500` bp of the approximate breakpoint. A long read that starts tens of kb upstream and clips at a right-hand breakpoint is therefore ignored unless `window` is raised to cover it, and a very wide `window` lets a neighbouring clip cluster win the "most frequent position" vote. Check `bp.support` (0 means the breakpoint was left at its input position).
+- Only soft clips (`S` in the CIGAR) are evidence. Hard-clipped supplementary alignments contribute no breakpoint, and no `inserted_sequence` can be derived from a record whose hard clips make its CIGAR longer than its stored `seq`; a soft-clipped record with its full `seq` and a one-entry `sa_tag` at the other breakpoint does give one. For long-read insertion calls use `metainformant.longread.analysis.structural.detect_sv_from_long_reads`.
+- A read is considered when one of its soft clips lies within `window` bp of the approximate breakpoint, wherever its alignment starts, so a long read that starts tens of kb upstream and clips at a right-hand breakpoint counts. A very wide `window` lets a neighbouring clip cluster win the "most frequent position" vote. Check `bp.support` (0 means the breakpoint was left at its input position).
+- `microhomology` is a mirror-match heuristic on the read bases around each supporting read's clip junction, not true microhomology, which would need the reference sequence.
 
 ---
 
@@ -1105,7 +1119,7 @@ def svs_to_vcf_data(svs):
     """Build the VCF dict expected by write_vcf from StructuralVariant or MergedVariant objects.
 
     Inter-chromosomal calls (TRA/BND) are skipped: they need BND records with mate
-    coordinates, which this minimal helper does not write.
+    coordinates (chrom2 and pos2 of a TRA call), which this minimal helper does not write.
     """
     records = []
     for sv in svs:
@@ -1120,8 +1134,9 @@ def svs_to_vcf_data(svs):
             "alt": [f"<{sv_type}>"],
             "qual": getattr(sv, "quality", getattr(sv, "consensus_quality", 0.0)),
             "filter": ["PASS"],
+            # size 0 means "not measured" (insertions called from split reads): leave SVLEN out
             "info": {"SVTYPE": sv_type, "END": sv.end,
-                     "SVLEN": -sv.size if sv_type == "DEL" else sv.size},
+                     **({"SVLEN": -sv.size if sv_type == "DEL" else sv.size} if sv.size else {})},
         })
     return {"metadata": {"fileformat": "VCFv4.2"}, "samples": [], "variants": records}
 
@@ -1153,8 +1168,10 @@ for sv in variants:
         "chrom": sv.chrom,
         "start": sv.start,
         "end": sv.end,
+        "chrom2": sv.chrom2,   # second breakpoint of a translocation ("" otherwise)
+        "pos2": sv.pos2,       # None otherwise
         "type": sv.sv_type,
-        "size": sv.size,
+        "size": sv.size,       # 0 = not measured (translocations and insertions)
         "qual": sv.quality,
         "gt": sv.genotype,
     })
@@ -1168,7 +1185,7 @@ df.to_csv("sv_table.csv", index=False)
 
 **Goal:** Flag candidate Alu/L1/SVA insertions among the insertion calls, using split-read counts and a poly-A tail check.
 
-`classify_sv_type` has no MEI class, so the MEI logic is a separate heuristic applied to the `INS` calls. An `INS` call is a split-read cluster whose two breakpoints nearly coincide (< 50 bp apart), and its `size` is that breakpoint distance, not the length of the inserted sequence. The default `min_sv_size=50` therefore discards every `INS` call; lower it to `0` to keep them (this also keeps small events of the other types, so filter those by size yourself).
+`classify_sv_type` has no MEI class, so the MEI logic is a separate heuristic applied to the `INS` calls. An `INS` call is a split-read cluster whose two breakpoints nearly coincide (< 50 bp apart). Its `size` is 0, meaning "not measured": split-read evidence does not measure the inserted length, and the distance between the breakpoints is not that length. `INS` calls are exempt from `min_sv_size`, so the default `min_sv_size=50` keeps them and no special setting is needed.
 
 ```python
 from metainformant.structural_variants.detection.sv_calling import (
@@ -1186,7 +1203,7 @@ def classify_mei(evidence: SVEvidence, flanking_sequence=None):
     return None
 
 # Keep insertion calls (alignments: read records as in Example 2)
-variants = call_structural_variants(alignments, min_support=5, min_sv_size=0)
+variants = call_structural_variants(alignments, min_support=5)
 insertions = [sv for sv in variants if sv.sv_type == SVType.INS]
 
 # Apply the heuristic; clipped_sequences is {breakpoint position: soft-clipped read sequence},

@@ -109,7 +109,7 @@ There is no shared result class. Each stage returns its own container:
 | `filtering.merge.merge_callsets`, `survivor_merge` | `(list[MergedVariant], MergeStats)` |
 | `population.sv_population.*` | `dict` with function-specific keys (for example `genotype_matrix`, `variance_explained`); `merge_sv_callsets` returns a `list[dict]` of merged calls |
 
-The annotation, filtering, merging and plotting functions consume plain variant dicts (`chrom`, `start`, `end`, `sv_type`, ...), so convert `StructuralVariant` objects with `dataclasses.asdict` (and `sv.sv_type.value` for a plain-string type) before passing them on, and convert back to dicts or DataFrames yourself for downstream modules (`pd.DataFrame(list_of_dicts)`).
+The annotation, filtering, merging and plotting functions consume plain variant dicts (`chrom`, `start`, `end`, `sv_type`, ...), so convert `StructuralVariant` objects with `dataclasses.asdict` (and `sv.sv_type.value` for a plain-string type) before passing them on, and convert back to dicts or DataFrames yourself for downstream modules (`pd.DataFrame(list_of_dicts)`). A translocation (`TRA`) call has `end == start` and carries its second breakpoint in `chrom2` and `pos2`, which `asdict` keeps; only `refine_breakpoints` and `plot_circos` read them, and the annotation, filtering and merging functions work from `chrom`, `start` and `end` alone.
 
 ## Multi-Module Orchestration
 See [docs/agents/](../agents/MULTI_AGENT_WORKFLOWS.md) for agent-driven multi-module pipelines.

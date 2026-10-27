@@ -100,8 +100,10 @@ def detect_cnv_from_depth(
 
     Args:
         depth_data: Dictionary mapping chromosome names to arrays of read depth
-            values. Each value represents the mean depth in a genomic window.
-            Can be numpy arrays or plain lists of floats.
+            values. Each value represents the mean depth in a genomic window and
+            must be finite and non-negative (zero is a bin with no coverage).
+            Can be numpy arrays or plain lists of floats. Log2 ratios are not
+            depths: pass them to :func:`segment_coverage` instead.
         window_size: Size of each depth bin in base pairs.
         method: Detection method. Currently supports 'segmentation' (CBS).
         significance: P-value threshold for CBS change-point detection.
@@ -114,7 +116,8 @@ def detect_cnv_from_depth(
         detected segments with copy number states.
 
     Raises:
-        ValueError: If depth_data is empty or method is unsupported.
+        ValueError: If depth_data is empty, method is unsupported, or a chromosome
+            that would be analysed holds negative or non-finite depth values.
     """
     if np is None:
         raise ImportError("numpy is required for CNV detection. Install with: uv pip install numpy")
@@ -132,6 +135,8 @@ def detect_cnv_from_depth(
 
     results: dict[str, CNVResult] = {}
 
+    # Check every chromosome that will be analysed before analysing any of them.
+    depth_arrays: dict[str, Any] = {}
     for chrom, depths in depth_data.items():
         depth_array = np.asarray(depths, dtype=np.float64)
 
@@ -139,6 +144,10 @@ def detect_cnv_from_depth(
             logger.warning(f"Chromosome {chrom}: too few bins ({len(depth_array)}), skipping")
             continue
 
+        _check_depths(chrom, depth_array)
+        depth_arrays[chrom] = depth_array
+
+    for chrom, depth_array in depth_arrays.items():
         # Compute log2 ratio relative to median (self-normalization)
         median_depth = np.median(depth_array[depth_array > 0]) if np.any(depth_array > 0) else 1.0
         if median_depth <= 0:
@@ -195,6 +204,28 @@ def detect_cnv_from_depth(
     return results
 
 
+def _check_depths(chrom: str, depth_array: Any) -> None:
+    """Raise a ValueError naming the problem if the values cannot be read-depth counts.
+
+    Args:
+        chrom: Chromosome name (for the message).
+        depth_array: Depth values as a float array.
+
+    Raises:
+        ValueError: If any value is negative or not finite.
+    """
+    n_negative = int(np.count_nonzero(depth_array < 0))
+    n_nonfinite = int(np.count_nonzero(~np.isfinite(depth_array)))
+    if n_negative == 0 and n_nonfinite == 0:
+        return
+    raise ValueError(
+        f"depth_data[{chrom!r}] has {n_negative} negative and {n_nonfinite} non-finite depth value(s) "
+        f"out of {len(depth_array)}: read depths must be finite and >= 0 (0 is an uncovered bin). "
+        "Negative values usually mean log2 ratios were passed instead of depths; give "
+        "detect_cnv_from_depth the depths, or run segment_coverage() and call_cnv_states() on the log2 ratios."
+    )
+
+
 def segment_coverage(
     coverage_array: Any,
     significance: float = 0.01,
@@ -207,20 +238,30 @@ def segment_coverage(
     differences in means across circular permutations of the data, splitting
     at the most significant change-point, and recursing on each half.
 
+    Every arc of at most half the data is scored, so the work grows with the
+    square of the segment length; the scan is vectorised over all arcs of one
+    length, which makes it about two orders of magnitude faster than scoring
+    the arcs one at a time (and gives exactly the same segmentation).
+
     Args:
         coverage_array: Array of log2 ratio values to segment. Can be a numpy
             array or list of floats.
         significance: P-value threshold for accepting a change-point. Lower
             values produce fewer, more confident segments.
         max_iterations: Maximum recursion depth to prevent infinite loops.
-        min_width: Minimum segment width in bins.
+        min_width: Minimum segment width in bins (at least 1).
 
     Returns:
         List of (start, end, mean) tuples representing segments, where start
         is inclusive, end is exclusive, and mean is the segment mean.
+
+    Raises:
+        ValueError: If min_width is less than 1.
     """
     if np is None:
         raise ImportError("numpy is required for CBS segmentation. Install with: uv pip install numpy")
+    if min_width < 1:
+        raise ValueError(f"min_width must be at least 1, got {min_width}")
 
     data = np.asarray(coverage_array, dtype=np.float64)
     n = len(data)
@@ -234,6 +275,55 @@ def segment_coverage(
     # Sort by start position
     segments.sort(key=lambda x: x[0])
     return segments
+
+
+def _cbs_best_arc(segment_data: Any, std_dev: float, min_width: int) -> tuple[float, int, int]:
+    """Find the arc whose mean differs most from the rest of the segment.
+
+    Scores every arc ``[i, j)`` with ``min_width <= j - i <= n // 2`` (and at least
+    ``min_width`` bins outside it) by the standardised difference between the mean
+    inside and outside the arc,
+    ``|mean_in - mean_out| * sqrt(len_in * len_out / n) / std_dev``. A change point
+    is the arc that touches an end of the segment, so the single-split scan of plain
+    binary segmentation is the special case of this one.
+
+    The arcs of one length are scored together with array arithmetic that performs
+    the same floating-point operations in the same order as scoring them one at a
+    time, so the statistics are bit-for-bit the same. The first arc in
+    ``(i, j)`` order wins a tie.
+
+    Args:
+        segment_data: The segment's values (at least ``2 * min_width`` of them).
+        std_dev: Sample standard deviation of the segment (positive).
+        min_width: Minimum arc length, and minimum length outside the arc.
+
+    Returns:
+        ``(statistic, i, j)`` of the best arc, or ``(0.0, -1, -1)`` if no arc scores above zero.
+    """
+    n = len(segment_data)
+    cumsum = np.cumsum(segment_data - np.mean(segment_data))
+    cumsum = np.insert(cumsum, 0, 0.0)  # prepend 0
+    total = cumsum[n]
+
+    best_stat = 0.0
+    best_i = -1
+    best_j = -1
+    for arc_length in range(min_width, n // 2 + 1):
+        rest_length = n - arc_length
+
+        # Arc (i, i + arc_length) for every i: its sum, and the standardised mean difference.
+        arc_sum = cumsum[arc_length:] - cumsum[: n + 1 - arc_length]
+        arc_mean_diff = arc_sum / arc_length - (total - arc_sum) / rest_length
+        stats = np.abs(arc_mean_diff) * math.sqrt(arc_length * rest_length / n) / std_dev
+
+        i = int(np.argmax(stats))  # first arc of this length with the largest statistic
+        stat = float(stats[i])
+        if stat > best_stat or (stat == best_stat and 0 <= best_i and i < best_i):
+            best_stat = stat
+            best_i = i
+            best_j = i + arc_length
+
+    return best_stat, best_i, best_j
 
 
 def _cbs_recursive(
@@ -267,81 +357,20 @@ def _cbs_recursive(
         segments.append((start, end, float(np.mean(data[start:end]))))
         return
 
-    # Compute the CBS test statistic
     segment_data = data[start:end]
-    best_t_stat = 0.0
-    best_i = -1
-    best_j = -1
-
-    cumsum = np.cumsum(segment_data - np.mean(segment_data))
-    cumsum = np.insert(cumsum, 0, 0.0)  # prepend 0
 
     # Variance of the segment
     variance = np.var(segment_data, ddof=1) if n > 1 else 1.0
-    if variance < 1e-12:
-        # Constant segment, no change-point
+    if not math.isfinite(variance) or variance < 1e-12:
+        # Constant (or non-finite) segment, no change-point
         segments.append((start, end, float(np.mean(segment_data))))
         return
 
     std_dev = math.sqrt(variance)
 
-    # Test all possible arc (i, j) pairs for circular binary segmentation
-    # Optimization: use vectorized approach for the single change-point scan first
-    # For efficiency, test single change-point model (equivalent to standard BS)
-    # then extend to circular model
-
-    # Standard binary segmentation: find single best split point
-    best_single_stat = 0.0
-    best_split = -1
-
-    for k in range(min_width, n - min_width + 1):
-        # T-statistic for splitting at position k
-        left_mean = np.mean(segment_data[:k])
-        right_mean = np.mean(segment_data[k:])
-        n_left = k
-        n_right = n - k
-
-        # Weighted difference of means
-        t_stat = abs(left_mean - right_mean) * math.sqrt(n_left * n_right / n) / std_dev
-
-        if t_stat > best_single_stat:
-            best_single_stat = t_stat
-            best_split = k
-
-    # Circular scan: test arc segments (i, j) where the arc mean differs from rest
-    best_arc_stat = 0.0
-    best_arc_i = -1
-    best_arc_j = -1
-
-    # Efficient circular scan using cumulative sums
-    for i in range(0, n - min_width + 1):
-        for j in range(i + min_width, min(i + n // 2 + 1, n + 1)):
-            arc_length = j - i
-            rest_length = n - arc_length
-            if rest_length < min_width:
-                continue
-
-            arc_sum = cumsum[j] - cumsum[i]
-            arc_mean_diff = arc_sum / arc_length - (cumsum[n] - arc_sum) / rest_length if rest_length > 0 else 0.0
-
-            t_stat = abs(arc_mean_diff) * math.sqrt(arc_length * rest_length / n) / std_dev
-
-            if t_stat > best_arc_stat:
-                best_arc_stat = t_stat
-                best_arc_i = i
-                best_arc_j = j
-
-    # Use the better of single split vs arc
-    use_arc = best_arc_stat > best_single_stat
-
-    if use_arc:
-        best_t_stat = best_arc_stat
-        best_i = best_arc_i
-        best_j = best_arc_j
-    else:
-        best_t_stat = best_single_stat
-        best_i = 0
-        best_j = best_split
+    # Circular scan: the arc (i, j) whose mean differs most from the rest. Splitting at a
+    # single change-point is the case where the arc touches an end of the segment.
+    best_t_stat, best_i, best_j = _cbs_best_arc(segment_data, std_dev, min_width)
 
     # Assess significance via permutation-derived critical values
     # Approximation using the asymptotic distribution of the CBS statistic
@@ -353,21 +382,15 @@ def _cbs_recursive(
         segments.append((start, end, float(np.mean(segment_data))))
         return
 
-    if use_arc:
-        # Split into three parts: [start, start+i), [start+i, start+j), [start+j, end)
-        abs_i = start + best_i
-        abs_j = start + best_j
+    # Split into up to three parts: [start, start+i), [start+i, start+j), [start+j, end)
+    abs_i = start + best_i
+    abs_j = start + best_j
 
-        if best_i > 0:
-            _cbs_recursive(data, start, abs_i, segments, significance, max_iterations, min_width, depth + 1)
-        _cbs_recursive(data, abs_i, abs_j, segments, significance, max_iterations, min_width, depth + 1)
-        if abs_j < end:
-            _cbs_recursive(data, abs_j, end, segments, significance, max_iterations, min_width, depth + 1)
-    else:
-        # Standard split
-        abs_split = start + best_j
-        _cbs_recursive(data, start, abs_split, segments, significance, max_iterations, min_width, depth + 1)
-        _cbs_recursive(data, abs_split, end, segments, significance, max_iterations, min_width, depth + 1)
+    if best_i > 0:
+        _cbs_recursive(data, start, abs_i, segments, significance, max_iterations, min_width, depth + 1)
+    _cbs_recursive(data, abs_i, abs_j, segments, significance, max_iterations, min_width, depth + 1)
+    if abs_j < end:
+        _cbs_recursive(data, abs_j, end, segments, significance, max_iterations, min_width, depth + 1)
 
 
 def _cbs_pvalue(statistic: float, n: int) -> float:

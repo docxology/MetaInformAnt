@@ -4,29 +4,32 @@ Performance characteristics, optimization strategies, and scaling guidelines for
 
 ## Benchmark Summary
 
-This module ships no benchmark suite, and the earlier whole-genome timing, memory and cohort-scaling tables (a 30× WGS BAM on a 48-thread server) had no source in the repository, so they were removed. The functions work on in-memory Python lists and NumPy arrays, which sets what drives the cost:
+This module ships no benchmark suite, and the repository holds no whole-genome timing, memory or cohort-scaling measurements. The functions work on in-memory Python lists and NumPy arrays, which sets what drives the cost:
 
 | Stage | What drives the cost |
 |-------|----------------------|
-| **CNV segmentation** (`segment_coverage`, called by `detect_cnv_from_depth`) | Pure-Python scans over candidate split points and arcs, repeated at each recursion level: grows at least quadratically with the number of bins per chromosome |
-| **SV calling** (`call_structural_variants`) | One pass over the reads for split/discordant evidence, then genotyping examines **every read for every called SV**: cost grows with reads × called SVs |
-| **Gene overlap annotation** (`annotate_gene_overlap`) | Converts a gene list of dicts to `GenomicInterval` objects and builds an `IntervalIndex` on every call; each query binary-searches the end bound but then scans every interval on that chromosome that starts before the query end, so a query near the end of a chromosome costs time linear in the number of genes |
+| **CNV segmentation** (`segment_coverage`, called by `detect_cnv_from_depth`) | Every arc of at most half the segment is scored, vectorised over the arcs of one length with NumPy and repeated at each recursion level: still grows with the square of the number of bins per chromosome |
+| **SV calling** (`call_structural_variants`) | Linear in the reads: one pass for split/discordant evidence, one pass and a sort to build the `ReadIndex`, then genotyping asks the index for the few reads near each call, so the cost per called SV is small and does not depend on the number of reads |
+| **Gene overlap annotation** (`annotate_gene_overlap`) | Converts a gene list of dicts to `GenomicInterval` objects and builds an `IntervalIndex` on every call (a sort plus a linear pass); each query then costs time proportional to the number of genes it returns, wherever on the chromosome it falls |
 | **Multi-caller merge** (`merge_callsets`, `survivor_merge`) | Sort, then a pairwise sweep within each chromosome that only compares variants whose starts fall inside the current variant's span plus 10 kb (`merge_callsets`) or `max_distance` (`survivor_merge`) |
 | **Population functions** | NumPy on dense matrices; PCA is an eigendecomposition of the smaller of the sample × sample and SV × SV covariance matrices |
 
-**Indicative timings** (synthetic data, single thread, Python 3.12.15 on an arm64 Mac; one wall-clock run each, so read the scaling rather than the absolute values):
+**Indicative timings** (synthetic data, single thread, Python 3.12.15 on an arm64 Mac; CPU time, best of three runs unless noted, so read the scaling rather than the absolute values):
 
 | Operation | Input | Time |
 |-----------|-------|------|
-| `segment_coverage` | 1,000 / 2,000 / 4,000 / 8,000 bins | 0.7 s / 2.2 s / 14 s / 86 s |
-| `detect_cnv_from_depth` | one chromosome, 2,490 bins with no copy-number change (chr1 at 100 kb windows) | about 4 s |
-| `call_structural_variants` | 50k reads, 50 SVs | 1.4 s |
-| | 100k reads, 50 SVs | 2.3 s |
-| | 100k reads, 100 SVs | 3.4 s |
-| | 200k reads, 100 SVs | 5.5 s |
-| `IntervalIndex.query_overlap` | one query near the end of a chromosome, 20k / 80k genes | 0.5 ms / 3.9 ms |
+| `segment_coverage` | 1,000 / 2,000 / 4,000 / 8,000 / 16,000 bins; from a flat noise profile to sixteen segments | 0.003–0.011 s / 0.006–0.020 s / 0.02–0.06 s / 0.07–0.23 s / 0.27–0.64 s |
+| `segment_coverage` | 32,000 / 64,000 / 128,000 / 256,000 bins; three-segment profile, one run each | 1.2 s / 4.5 s / 19 s / 68 s |
+| `detect_cnv_from_depth` | one chromosome, 2,490 bins with no copy-number change (chr1 at 100 kb windows) | 0.01 s |
+| `call_structural_variants` | 50k reads, 50 SVs | 0.14 s |
+| | 100k reads, 50 SVs | 0.30 s |
+| | 100k reads, 100 SVs | 0.33 s |
+| | 200k reads, 100 SVs | 0.62 s |
+| `IntervalIndex` build | 20k / 80k genes on one chromosome | 16 ms / 154 ms |
+| `IntervalIndex.query_overlap` | a 10 kb window near the end of the chromosome, 20k / 80k genes | 2 µs / 7 µs |
+| `annotate_gene_overlap` | 60,000 genes on 20 chromosomes; 100 / 2,000 / 20,000 variants | 0.10 s / 0.12 s / 0.30 s |
 
-Each doubling of the bins multiplied the CBS time by roughly 3 to 6 in these wall-clock runs. Measured as CPU time (0.18 / 0.77 / 3.1 / 12.2 s for 1,000 to 8,000 bins on a synthetic three-segment profile) it was a steady factor of 4, and the CPU times sit up to 7 times below the wall-clock values above, which include time spent waiting for a busy CPU. A human chromosome at 1 kb windows (about 50k–250k bins) is far outside this range: pick `window_size` so that each chromosome has at most a few thousand bins. Memory is dominated by the alignment records you hold: an alignment dict with 11 keys and no sequence took about 0.6 KB when its string values were shared objects and about 0.7 KB when each record owned its strings (measured with `tracemalloc`), so 100M reads are about 60-70 GB before any sequence strings.
+The synthetic inputs were: CBS profiles of Gaussian noise (standard deviation 0.15) with a +0.8 step over the middle third (three segments) or +0.7 steps over every second sixteenth (sixteen segments); reads of 150 bp at random positions on a 50 Mb chromosome, properly paired with a 300 bp insert (`insert_size_stats` passed), plus six split reads with an SA tag for each planted deletion; genes of 1–60 kb at random positions on chromosomes of 100–150 Mb (one chromosome for the index timings, twenty for `annotate_gene_overlap`). Each doubling of the bins multiplies the CBS time by about 3 to 4 (the first row gives the range over the three profile shapes: a flat noise profile at the low end, sixteen segments at the high end). A human chromosome at 1 kb windows (about 50k–250k bins) therefore takes seconds to a minute or more per chromosome: pick `window_size` so that each chromosome has at most a few tens of thousands of bins. `call_structural_variants` grows linearly with the reads (about 3 µs of CPU per read here) and the number of called SVs adds little. Memory is dominated by the alignment records you hold: an alignment dict with 11 keys and no sequence took about 0.6 KB when its string values were shared objects and about 0.7 KB when each record owned its strings (measured with `tracemalloc`), so 100M reads are about 60-70 GB before any sequence strings.
 
 **Notes:**
 - Per-sample steps are **embarrassingly parallel**. Use `parallel.process_map()` across samples; the cost of a cohort is then the per-sample cost times N divided by the number of workers.
@@ -65,7 +68,7 @@ results = parallel.process_map(
 
 `call_structural_variants` works on the list of alignment dicts you pass it and has no chunking parameter. To bound memory, build the list and call it per chromosome or region (for example one `bam.fetch(chrom)` at a time), then concatenate the results. Two things change with slicing: the insert-size distribution is estimated from each slice unless you pass the same `insert_size_stats` to every call, and an inter-chromosomal event is reported once per slice (chr1→chr8 and chr8→chr1), so drop or merge the mirrored calls afterwards.
 
-**Trade-off:** smaller slices cost less memory and make genotyping cheaper (it scans every read in the slice for every call in the slice), at the price of the two caveats above. Try a 1% region first to see how time and memory behave.
+**Trade-off:** smaller slices cost less memory (the run time is linear in the reads either way, because genotyping uses a `ReadIndex`), at the price of the two caveats above. Try a 1% region first to see how time and memory behave.
 
 ### 3. Threshold Tuning for Speed vs. Sensitivity
 
@@ -75,7 +78,7 @@ results = parallel.process_map(
 | `min_support` argument or `SV_MIN_SUPPORT` | 5 | 3 | 2 |
 | `significance` argument or `SV_CNV_SIGNIFICANCE` | 0.001 | 0.01 | 0.05 |
 
-Lower `min_mapq` and `min_support` admit more reads and more candidate calls (more work, more false positives, better recall in repeats and at low coverage). `significance` works the other way round: it is the p-value threshold for accepting a CBS change point, so a larger value accepts more change points and a smaller value gives fewer, more confident segments. It hardly changes the run time (CPU time 0.74 s at 0.001, 0.77 s at 0.01 and 0.81 s at 0.05 on a 2,000-bin profile with three segments), because the scans at the top levels of the recursion dominate the cost. There is no environment variable for `min_mapq`.
+Lower `min_mapq` and `min_support` admit more reads and more candidate calls (more work, more false positives, better recall in repeats and at low coverage). `significance` works the other way round: it is the p-value threshold for accepting a CBS change point, so a larger value accepts more change points and a smaller value gives fewer, more confident segments. It hardly changes the run time (CPU time 0.012 s at 0.001, 0.011 s at 0.01 and 0.012 s at 0.05 on a 2,000-bin profile with three segments), because the scans at the top levels of the recursion dominate the cost. There is no environment variable for `min_mapq`.
 
 ### 4. Compressed I/O
 
@@ -134,7 +137,8 @@ depth = np.memmap("depth.dat", dtype=np.float64, mode="w+", shape=(n_bins,))
 
 ### 7. Algorithm Selection
 
-- **CNV CBS**: `method="segmentation"` is the only method, and its cost grows at least quadratically with the bins per chromosome (see above), so control cost with `window_size`. GC correction is a separate step (`calculate_log2_ratio(..., gc_content=...)`) and is linear in the number of bins.
+- **CNV CBS**: `method="segmentation"` is the only method, and its cost grows with the square of the bins per chromosome (see above), so control cost with `window_size`. The input is read depth, not log2 ratios: negative or non-finite values raise `ValueError`. GC correction is a separate step (`calculate_log2_ratio(..., gc_content=...)`) and is linear in the number of bins.
+- **SV genotyping (one sample)**: `call_structural_variants` builds one `ReadIndex` and passes it to `genotype_sv`. When you call `genotype_sv` yourself for many variants against the same reads, build the index once (`ReadIndex(reads)`) and pass it in place of the list; the genotype is the same and each call stops being a pass over every read.
 - **SV genotyping (cohort)**: `genotype_sv_population` turns precomputed per-sample evidence into genotypes with a constant-time rule per cell, so `"depth"` (uses `depth_ratio`) and `"split"` (uses `split_reads`, `discordant_pairs`, `total_reads`) cost the same; choose by which evidence you have. The expensive part is computing that evidence from the BAMs.
 - **Multi-caller merging**: `merge_callsets()` matches by reciprocal overlap and `survivor_merge()` by breakpoint distance; both sort and sweep each chromosome in the same way, so choose between them by matching criterion, not by speed.
 
@@ -168,16 +172,17 @@ stats.sort_stats("cumtime")  # or "tottime"
 stats.print_stats(20)  # Top 20 functions
 ```
 
-**Where the time goes in `call_structural_variants`** (example profile on synthetic data: 100k reads, 100 SVs; shares of the call's cumulative time):
+**Where the time goes in `call_structural_variants`** (example profile on synthetic data: 100k reads, 100 SVs; shares of the call's cumulative time under `cProfile`, as the range over three profiled runs):
 
 | Function | Share | Notes |
 |----------|-------|-------|
-| `genotype_sv()` | ≈ 94% | Called once per SV and scans every read each time (reads × SVs); this is what grows when you add reads or lower `min_support` |
-| `detect_split_reads()` | ≈ 3% | CIGAR parsing in pure Python |
-| `detect_discordant_pairs()` | ≈ 2% | One pass over reads with mate information |
-| `_estimate_insert_size()` | ≈ 1% | Skipped when you pass `insert_size_stats` |
+| `detect_split_reads()` | ≈ 23–34% | CIGAR parsing in pure Python |
+| `ReadIndex(...)` construction | ≈ 26–28% | One pass over the reads plus a sort by start position; built once per call |
+| `detect_discordant_pairs()` | ≈ 22–26% | One pass over reads with mate information |
+| `_estimate_insert_size()` | ≈ 12–17% | Skipped when you pass `insert_size_stats` |
+| `genotype_sv()` | < 1% | Called once per SV; a binary search plus the few reads near the breakpoint |
 
-For CNV detection the cost is almost entirely `segment_coverage()` at fine bin sizes. For annotation the split depends on the sizes: with a large gene list and few variants most of the call goes into converting the gene dicts and building the index, and the interval scan in `IntervalIndex.query_overlap` takes over as the number of variants grows (for 60,000 genes on 20 chromosomes the scan was 2%, 29% and 59% of the call at 100, 2,000 and 20,000 variants; see the complexity table below). Profile your own data before optimizing; the split changes with the number of SVs, reads and bins.
+For CNV detection the cost is almost entirely `segment_coverage()` at fine bin sizes. For annotation the split depends on the sizes: with a large gene list and few variants most of the call goes into converting the gene dicts and building the index (60,000 genes on 20 chromosomes: 0.10 s for 100 variants, 0.12 s for 2,000), and the queries take a growing share as the number of variants grows (0.30 s for 20,000). Profile your own data before optimizing; the split changes with the number of SVs, reads and bins.
 
 ### Timing the Stages
 
@@ -283,15 +288,15 @@ See `docs/cloud/` for the GCP deployment and preemptible VM notes.
 
 | Component | Time Complexity | Space Complexity | Scaling |
 |-----------|----------------|------------------|---------|
-| CBS (`segment_coverage`) | at least O(n²) per chromosome (pure-Python scans over split points and arcs, repeated per recursion level) | O(n) | n = bins per chromosome; each doubling cost 3–6× in the measurements above |
+| CBS (`segment_coverage`) | O(n²) per chromosome (every arc of at most half the segment is scored, vectorised over the arcs of one length, repeated per recursion level) | O(n) | n = bins per chromosome; each doubling cost 3–4× in the measurements above |
 | Evidence detection (`detect_split_reads`, `detect_discordant_pairs`) | O(m) | O(e) | m = reads, e = evidence items |
 | Evidence clustering | O(e log e) sort, plus a comparison of each item against the existing clusters, newest first, until one matches (worst case quadratic in the number of clusters) | O(e) | e = evidence items, roughly one per split or discordant read |
-| SV genotyping (`genotype_sv`, run for every called SV) | O(m × v) | O(1) extra | v = called SVs; about 94% of the example profile |
-| Gene overlap (`IntervalIndex`) | O(g) per query (scan of the intervals that start before the query end) plus, on every `annotate_*` / `find_nearest_gene` call, a conversion of every gene dict and an O(G log G) sort to build the index | O(G) | g = genes on the chromosome, G = genes in the list |
+| SV genotyping (`genotype_sv` with a `ReadIndex`, as `call_structural_variants` calls it) | O(m log m) to build the index once, then O(log m + r) per called SV | O(m) for the index | r = reads that start within one longest-read length before the genotyping window; under 1% of the example profile. With a plain read list each call costs O(m) |
+| Gene overlap (`IntervalIndex`) | O(g log g) build, O(k log g) per query, where k is the number of intervals returned; every `annotate_*` / `find_nearest_gene` call additionally converts every gene dict and builds the index | O(G) | g = genes on the chromosome, G = genes in the list |
 | Multi-caller merge | O(v log v) sort plus pairwise comparisons inside each variant's span (+10 kb or `max_distance`); O(v²) worst case | O(v) | v = variants |
 | SV population PCA | eigendecomposition of an s × s (s < v) or v × v covariance matrix: O(min(s, v)² · max(s, v) + min(s, v)³) | O(s × v) | s = samples, v = SVs; dense `float64`, no randomized solver |
 
-**Time grows faster than linearly in three places: CBS (bins per chromosome), genotyping (reads × called SVs) and the gene-interval scan (genes per query). Keep bins per chromosome small, call per chromosome or region, and annotate with a reduced variant list.**
+**Time grows faster than linearly in CBS (bins per chromosome), in the worst case of evidence clustering and in multi-caller merging (variants within each other's span); everything else on the SV-calling and annotation path is linear in its input or logarithmic per query. Keep bins per chromosome in the tens of thousands at most, call per chromosome or region to bound memory, and filter before merging.**
 
 ---
 
@@ -309,8 +314,9 @@ There are no tested hardware tiers for this module, so size the machine from the
 
 | Symptom | Likely Cause | Fix |
 |---------|--------------|-----|
-| SV calling takes hours | Many calls × many reads in one list (genotyping scans every read per call), often from a low `min_support` or low coverage noise | Call per chromosome or region; raise `min_support` or `min_mapq` (argument) to reduce the number of calls |
-| CNV detection takes minutes to hours per chromosome | Fine `window_size`: CBS grows at least quadratically with the bins per chromosome | Use a coarser `window_size` so a chromosome has a few thousand bins |
+| SV calling is slow or runs out of memory | One list holding a whole genome of alignment dicts: the time is linear in the reads (about 3 µs each in the timings above) and the memory is 0.6–0.7 KB per read | Call per chromosome or region; raise `min_mapq` (argument) to drop reads before clustering and `min_support` to reduce the number of calls |
+| CNV detection takes minutes per chromosome | Fine `window_size`: CBS grows with the square of the bins per chromosome (about a minute at 256,000 bins) | Use a coarser `window_size` so a chromosome has at most a few tens of thousands of bins |
+| `ValueError: depth_data['chr1'] has ... negative ... depth value(s)` | log2 ratios (or other negative values) were passed to `detect_cnv_from_depth`, which takes read depths | Pass depths, or `2**ratio` for a tumor/normal ratio; segment log2 ratios with `segment_coverage` and `call_cnv_states` |
 | MemoryError: cannot allocate array | Alignment dicts × `process_map` workers | Reduce `max_workers`, process by chromosome, drop unused keys such as `seq` |
 | Disk fills with intermediate JSON | Uncompressed output | Write to a `.json.gz` path (`io.dump_json` gzips on that extension) |
 | Very few SVs detected | Over-filtering (thresholds too strict), or `SV_MIN_SUPPORT` / `SV_MIN_QUAL` set in the environment (they override the arguments) | Lower `min_support`, `min_qual`; check `env \| grep SV_`; inspect intermediate counts |
@@ -370,11 +376,12 @@ These are ideas, not implemented features:
 
 - **Cython rewrite** of CIGAR parsing and evidence clustering
 - **GPU-accelerated CBS** for CNV detection
-- **Interval-tree or k-d tree indexing** for gene overlap (queries currently scan linearly)
+- **A sub-quadratic CBS scan** (the vectorised scan still scores every arc), so that 1 kb windows become cheap
+- **Reusing the gene index across calls** (every `annotate_*` call currently converts the gene list and builds the index again)
 - **Batch PCA** for incremental cohort addition
 - **Sparse genotype matrices** in the population functions (they are currently rejected)
 
-The measurements above point to two larger wins: avoiding the per-call scan over all reads in genotyping, and a faster CBS so that fine bin sizes become practical.
+The measurements above point to the remaining larger costs: the quadratic CBS scan at fine bin sizes, and in `call_structural_variants` the per-read CIGAR parsing and the index build.
 
 ---
 

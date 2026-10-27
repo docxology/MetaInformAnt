@@ -64,11 +64,22 @@ class OverlapResult:
     relationship: str = "overlap"
 
 
-class IntervalIndex:
-    """Efficient interval index for overlap queries.
+# Sentinel below every coordinate: the maximum of an empty range of interval ends.
+_NO_END = -(1 << 62)
 
-    Uses a sorted-start approach with binary search for fast overlap queries.
-    Suitable for moderate-size feature databases (up to millions of intervals).
+
+class IntervalIndex:
+    """Interval index for overlap and nearest-interval queries.
+
+    Intervals are grouped by chromosome and sorted by ``(start, end)``. Two
+    structures sit on that order, so a query never scans the whole chromosome:
+
+    * a segment tree of the maximum ``end`` over ranges of the sorted intervals
+      reports the ``k`` intervals that overlap a region in ``O(k log n)``,
+      however long the intervals are (a gene spanning most of a chromosome is
+      found, and does not slow down the queries after it);
+    * the running maximum of the ends, together with the interval that reaches
+      it, gives the nearest interval to the left of a position in ``O(1)``.
     """
 
     def __init__(self, intervals: list[GenomicInterval]) -> None:
@@ -84,14 +95,41 @@ class IntervalIndex:
                 self._by_chrom[iv.chrom] = []
             self._by_chrom[iv.chrom].append(iv)
 
-        # Sort each chromosome's intervals by start position
-        for chrom in self._by_chrom:
-            self._by_chrom[chrom].sort(key=lambda x: (x.start, x.end))
-
-        # Build start-position arrays for binary search
         self._starts: dict[str, list[int]] = {}
+        self._max_end_tree: dict[str, list[int]] = {}
+        self._tree_size: dict[str, int] = {}
+        self._running_max_end: dict[str, list[int]] = {}
+        self._running_max_arg: dict[str, list[int]] = {}
+
         for chrom, ivs in self._by_chrom.items():
+            # Sort each chromosome's intervals by start position
+            ivs.sort(key=lambda x: (x.start, x.end))
             self._starts[chrom] = [iv.start for iv in ivs]
+            ends = [iv.end for iv in ivs]
+
+            # Segment tree over the ends: node i has children 2i and 2i+1, the leaves start at ``size``.
+            size = 1 << (len(ends) - 1).bit_length()
+            tree = [_NO_END] * (2 * size)
+            tree[size : size + len(ends)] = ends
+            for node in range(size - 1, 0, -1):
+                left, right = tree[2 * node], tree[2 * node + 1]
+                tree[node] = left if left >= right else right
+            self._max_end_tree[chrom] = tree
+            self._tree_size[chrom] = size
+
+            # Running maximum of the ends and the (last) interval that reaches it.
+            running_end = _NO_END
+            running_arg = -1
+            max_ends: list[int] = []
+            max_args: list[int] = []
+            for i, end in enumerate(ends):
+                if end >= running_end:
+                    running_end = end
+                    running_arg = i
+                max_ends.append(running_end)
+                max_args.append(running_arg)
+            self._running_max_end[chrom] = max_ends
+            self._running_max_arg[chrom] = max_args
 
         self._total = sum(len(v) for v in self._by_chrom.values())
         logger.debug(f"Built interval index with {self._total} intervals across {len(self._by_chrom)} chromosomes")
@@ -107,24 +145,31 @@ class IntervalIndex:
             end: Query end position (exclusive).
 
         Returns:
-            List of overlapping GenomicInterval objects.
+            List of overlapping GenomicInterval objects, sorted by (start, end).
         """
         if chrom not in self._by_chrom:
             return []
 
         intervals = self._by_chrom[chrom]
-        starts = self._starts[chrom]
+        tree = self._max_end_tree[chrom]
 
-        # Find the leftmost interval that could overlap
-        # An interval overlaps if interval.start < end AND interval.end > start
-        # Use binary search to find intervals with start < end
-        right_bound = bisect.bisect_left(starts, end)
+        # Only intervals that start before the query end can overlap: a prefix of the sorted list.
+        limit = bisect.bisect_left(self._starts[chrom], end)
 
+        # Descend into every tree node that covers part of that prefix and holds an end beyond
+        # the query start. Left children are visited first, so hits come out in sorted order.
         results: list[GenomicInterval] = []
-        for i in range(right_bound):
-            iv = intervals[i]
-            if iv.end > start:
-                results.append(iv)
+        stack = [(1, 0, self._tree_size[chrom])]
+        while stack:
+            node, low, high = stack.pop()
+            if low >= limit or tree[node] <= start:
+                continue
+            if high - low == 1:
+                results.append(intervals[low])
+                continue
+            middle = (low + high) >> 1
+            stack.append((2 * node + 1, middle, high))
+            stack.append((2 * node, low, middle))
 
         return results
 
@@ -132,6 +177,11 @@ class IntervalIndex:
         self, chrom: str, position: int, max_distance: int = 1_000_000
     ) -> tuple[GenomicInterval | None, int]:
         """Find the nearest interval to a position.
+
+        Every interval on the chromosome is considered, however far its start lies
+        from the position: an interval that spans the position is always found, and a
+        long interval ending just before it is not hidden by the shorter ones that start
+        after it.
 
         Args:
             chrom: Query chromosome.
@@ -141,39 +191,37 @@ class IntervalIndex:
         Returns:
             Tuple of (nearest_interval, distance). Distance is 0 if the
             position falls within the interval. Returns (None, -1) if
-            no interval is within max_distance.
+            no interval is within max_distance. On a tie the interval that starts
+            at or after the position wins.
         """
         if chrom not in self._by_chrom:
             return None, -1
 
         intervals = self._by_chrom[chrom]
-        starts = self._starts[chrom]
 
-        # Binary search for position
-        idx = bisect.bisect_left(starts, position)
+        # The position falls within an interval: the one starting last wins.
+        containing = self.query_overlap(chrom, position, position + 1)
+        if containing:
+            return containing[-1], 0
+
+        # No interval spans the position. Intervals before it all end at or before it, so the
+        # closest of them is the one with the largest end; after it, the one with the smallest start.
+        split = bisect.bisect_left(self._starts[chrom], position)
 
         best_iv: GenomicInterval | None = None
         best_dist = max_distance + 1
 
-        # Check the interval at idx and idx-1
-        candidates = []
-        if idx < len(intervals):
-            candidates.append(idx)
-        if idx > 0:
-            candidates.append(idx - 1)
-        if idx + 1 < len(intervals):
-            candidates.append(idx + 1)
+        if split < len(intervals):
+            best_iv = intervals[split]
+            best_dist = best_iv.start - position
+        if split > 0:
+            left = intervals[self._running_max_arg[chrom][split - 1]]
+            left_dist = position - left.end
+            if left_dist < best_dist:
+                best_iv = left
+                best_dist = left_dist
 
-        for i in candidates:
-            iv = intervals[i]
-            if iv.start <= position < iv.end:
-                return iv, 0
-            dist = min(abs(position - iv.start), abs(position - iv.end))
-            if dist < best_dist:
-                best_dist = dist
-                best_iv = iv
-
-        if best_dist <= max_distance:
+        if best_iv is not None and best_dist <= max_distance:
             return best_iv, best_dist
         return None, -1
 

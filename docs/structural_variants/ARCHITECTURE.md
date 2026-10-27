@@ -46,22 +46,23 @@ src/metainformant/structural_variants/
 │
 ├── detection/                       # SV detection algorithms
 │   ├── __init__.py                  # Exports: cnv, sv_calling, breakpoints
-│   ├── cnv.py                       # ~750 lines: CBS, CNV state assignment, log2 ratio
+│   ├── cnv.py                       # ~775 lines: CBS, CNV state assignment, log2 ratio
 │   │   ├── CNVSegment (dataclass)
 │   │   ├── CNVResult (dataclass)
 │   │   ├── detect_cnv_from_depth()              # Main entry
 │   │   ├── segment_coverage()                   # CBS core algorithm
-│   │   ├── _cbs_recursive(), _cbs_pvalue()      # Recursive segmentation, Gumbel p-value
+│   │   ├── _cbs_best_arc(), _cbs_recursive(), _cbs_pvalue()   # Vectorised arc scan, recursion, Gumbel p-value
 │   │   ├── call_cnv_states()                    # State classification
 │   │   ├── calculate_log2_ratio()               # Tumor/normal ratio, optional GC correction
 │   │   ├── merge_adjacent_segments()
-│   │   └── _assign_cnv_state(), _calculate_segment_confidence(), _gc_correct(), _gc_correct_py(), _center_on_median()
+│   │   └── _check_depths(), _assign_cnv_state(), _calculate_segment_confidence(), _gc_correct(), _gc_correct_py(), _center_on_median()
 │   │
-│   ├── sv_calling.py                # ~800 lines: split/discordant evidence
+│   ├── sv_calling.py                # ~920 lines: split/discordant evidence
 │   │   ├── SVType (enum: DEL, DUP, INV, TRA, INS, BND, UNKNOWN)
 │   │   ├── StructuralVariant (dataclass)
 │   │   ├── SVEvidence (dataclass)
 │   │   ├── InsertSizeStats (dataclass)
+│   │   ├── ReadIndex (class: reads by start position, for genotyping)
 │   │   ├── call_structural_variants()           # Main entry
 │   │   ├── detect_split_reads()                 # Soft-clip evidence
 │   │   ├── detect_discordant_pairs()            # Insert size/orientation
@@ -71,28 +72,32 @@ src/metainformant/structural_variants/
 │   │   ├── _parse_cigar_clips(), _parse_cigar_string(), _parse_sa_tag()
 │   │   └── _cluster_evidence(), _merge_evidence(), _calculate_sv_quality()
 │   │
-│   └── breakpoints.py               # ~510 lines: refinement, microhomology
+│   └── breakpoints.py               # ~750 lines: refinement, microhomology, strand, inserted sequence
 │       ├── Breakpoint (dataclass)
 │       ├── BreakpointPair (dataclass)
-│       ├── refine_breakpoints()                # Consensus position
+│       ├── refine_breakpoints()                # Consensus position, strand, microhomology, inserted sequence
 │       ├── detect_microhomology()               # Junction sequence homology
 │       ├── cluster_breakpoints()
 │       ├── calculate_breakpoint_confidence()
-│       └── _collect_clip_positions(), _parse_clips_from_cigar(), _consensus_position(), _position_std()
+│       ├── _ClipIndex (class: soft-clip junctions by reference position), _ClipHit (dataclass)
+│       ├── _refine_breakpoint(), _majority_strand(), _junction_microhomology()
+│       ├── _split_read_insertion(), _inserted_between_alignments()
+│       ├── _cigar_ops(), _query_extent(), _parse_sa_alignments(), _parse_clips_from_cigar()
+│       └── _first_present(), _consensus_position(), _position_std()
 │
 ├── annotation/                      # Variant effect prediction
 │   ├── __init__.py
-│   ├── overlap.py                   # ~520 lines: interval overlap
+│   ├── overlap.py                   # ~570 lines: interval overlap
 │   │   ├── GenomicInterval (dataclass)
 │   │   ├── OverlapResult (dataclass)
-│   │   ├── IntervalIndex (class: sorted-start binary search)
+│   │   ├── IntervalIndex (class: max-end segment tree over sorted intervals)
 │   │   ├── annotate_gene_overlap()             # Main gene overlap
 │   │   ├── annotate_regulatory_overlap()       # Enhancers/promoters
 │   │   ├── find_nearest_gene()
 │   │   ├── calculate_overlap_fraction()
 │   │   └── _normalize_intervals(), _compute_overlap_bp(), _classify_relationship()
 │   │
-│   └── functional_impact.py         # ~570 lines: impact prediction
+│   └── functional_impact.py         # ~590 lines: impact prediction
 │       ├── FunctionalImpact (dataclass)
 │       ├── DosageSensitivity (dataclass)
 │       ├── TADPrediction (dataclass)
@@ -106,15 +111,15 @@ src/metainformant/structural_variants/
 │
 ├── filtering/                       # Quality control & merging
 │   ├── __init__.py                  # Exports: quality_filter, merge
-│   ├── quality_filter.py            # ~480 lines: filters
+│   ├── quality_filter.py            # ~610 lines: filters
 │   │   ├── FilterStats (dataclass)
 │   │   ├── filter_by_quality()                # Qual/support/MAPQ/GQ
 │   │   ├── filter_by_size()                   # Size range
 │   │   ├── filter_by_frequency()              # Population AF
 │   │   ├── apply_blacklist()                  # Known bad regions
-│   │   └── _build_population_lookup(), _lookup_population_frequency()
+│   │   └── _parse_population_db(), _build_population_lookup(), _lookup_population_frequency(), _as_position(), _as_frequency()
 │   │
-│   └── merge.py                     # ~715 lines: multi-caller consensus
+│   └── merge.py                     # ~790 lines: multi-caller consensus
 │       ├── MergedVariant (dataclass)
 │       ├── MergeStats (dataclass)
 │       ├── merge_callsets()                   # Reciprocal overlap
@@ -122,12 +127,12 @@ src/metainformant/structural_variants/
 │       ├── calculate_reciprocal_overlap()
 │       ├── deduplicate_variants()
 │       ├── _union(), _find() (union-find)
-│       ├── _median_position(), _majority_sv_type(), _consensus_genotype()
-│       └── _load_vcf_variants(), _parse_vcf_basic()   # VCF input for survivor_merge
+│       ├── _median_position(), _majority_sv_type(), _call_quality(), _consensus_genotype()
+│       └── _load_vcf_variants(), _parse_vcf_basic(), _pysam_first_genotype(), _vcf_sample_genotype(), _format_genotype()   # VCF input for survivor_merge
 │
 ├── population/                      # Cohort-scale analysis
 │   ├── __init__.py
-│   └── sv_population.py             # ~840 lines: genotyping, stats, PCA
+│   └── sv_population.py             # ~860 lines: genotyping, stats, PCA
 │       ├── genotype_sv_population()           # Genotype matrix
 │       ├── sv_allele_frequency()              # AF, MAF, SFS, per-pop
 │       ├── sv_association_test()              # Linear/logistic regression
@@ -136,11 +141,11 @@ src/metainformant/structural_variants/
 │       ├── merge_sv_callsets()                # Cross-sample merging
 │       ├── _genotype_by_depth(), _genotype_by_split()
 │       ├── _linear_regression(), _logistic_regression()
-│       └── _should_merge(), _build_consensus(), _normal_cdf_np()
+│       └── _should_merge(), _build_consensus(), _normal_cdf_np(), _total_variance()
 │
 └── visualization/                   # Plotting
     ├── __init__.py
-    └── plots.py                     # ~920 lines: Circos, coverage, histograms
+    └── plots.py                     # ~930 lines: Circos, coverage, histograms
         ├── plot_circos()                      # Genome-wide chord diagram
         ├── plot_coverage_track()              # Read-depth track with SV overlay
         ├── plot_sv_size_distribution()
@@ -152,7 +157,7 @@ src/metainformant/structural_variants/
         └── Color schemes: SV_COLORS, CNV_COLORS
 ```
 
-**Total (~6,200 lines, ~200 KB):** 15 Python files implementing 42 public functions, 15 dataclasses, 1 enum (`SVType`) and the `IntervalIndex` class.
+**Total (~6,900 lines, ~235 KB):** 15 Python files implementing 42 public functions, 15 public dataclasses, 1 enum (`SVType`) and the `IntervalIndex` and `ReadIndex` classes.
 
 ---
 
@@ -166,8 +171,8 @@ src/metainformant/structural_variants/
 
 | Function | Purpose | Input | Output |
 |----------|---------|-------|--------|
-| `detect_cnv_from_depth()` | Entry point for CNV detection | `dict[chrom, depth_array]` (per-bin depths, zeros allowed; each chromosome is divided by the median of its positive bins) | `dict[chrom, CNVResult]` |
-| `segment_coverage()` | CBS algorithm | 1D array (log2 ratios) | `list[(start, end, mean)]` |
+| `detect_cnv_from_depth()` | Entry point for CNV detection | `dict[chrom, depth_array]` (per-bin depths, finite and non-negative, zeros allowed; each chromosome is divided by the median of its positive bins; a negative or non-finite value raises `ValueError`) | `dict[chrom, CNVResult]` |
+| `segment_coverage()` | CBS algorithm | 1D array (log2 ratios); `min_width >= 1` | `list[(start, end, mean)]` |
 | `call_cnv_states()` | Assign HOMODEL/DEL/NEUTRAL/DUP/AMP | segments or CNVSegments | `list[CNVSegment]` with `state`, `cn` |
 | `calculate_log2_ratio()` | Normalize tumor vs normal depth | tumor_depth, normal_depth, GC | log2 ratio array |
 | `merge_adjacent_segments()` | Fuse same-state neighbors | list of CNVSegment | merged list |
@@ -185,7 +190,7 @@ src/metainformant/structural_variants/
 | `detect_split_reads()` | Soft-clip breakpoint evidence | `reads`, `min_clip=20` | `list[SVEvidence]` |
 | `detect_discordant_pairs()` | Insert size/orientation anomalies | `pairs`, `insert_size_stats`, `n_std=4.0` | `list[SVEvidence]` |
 | `classify_sv_type()` | Evidence → DEL/DUP/INV/TRA/INS, or UNKNOWN | `SVEvidence` | `SVType` enum |
-| `genotype_sv()` | 0/0, 0/1, 1/1 | `StructuralVariant`, `reads` | genotype string |
+| `genotype_sv()` | 0/0, 0/1, 1/1 | `StructuralVariant`, `reads` (a read list or a `ReadIndex`) | genotype string |
 
 **Evidence gathering:**
 - **Split-read**: CIGAR soft clips (`S` operation) + SA tag (supplementary alignments) → breakpoint pairs. A clipped read without an SA tag yields a single-position breakpoint.
@@ -193,16 +198,26 @@ src/metainformant/structural_variants/
 
 **Clustering:** `_cluster_evidence()` sorts the evidence and puts each item into the first existing cluster (newest first) whose first item has the same chromosome pair and both breakpoints within 500 bp; otherwise it starts a new cluster. `_merge_evidence()` computes consensus breakpoints (median), the most common strands, and totals support.
 
-**Genotyping:** Compares supporting reads (split reads + discordant pairs) to reads that span a ±100 bp window around the variant start (`mapq` at least `min_mapq`, not among the evidence reads; a read spans `pos` to `pos + read_length`, with `read_length` defaulting to 150). Allele-fraction thresholds: <0.15 → `0/0`, 0.15–0.85 → `0/1`, ≥0.85 → `1/1`; `./.` when no read counts at all. Every call rescans all reads.
+**Calls:** A translocation (`TRA`) has no interval. Its `chrom`/`start` are the first breakpoint, its `chrom2`/`pos2` the second, `end` repeats `start` and `size` is 0. An insertion (`INS`) has `size` 0 ("not measured": split-read evidence does not measure the inserted length) and is exempt from `min_sv_size`, which filters DEL, DUP, INV and UNKNOWN calls on their breakpoint distance.
+
+**Genotyping:** Compares supporting reads (split reads + discordant pairs) to reads that span a ±100 bp window around the variant start (`mapq` at least `min_mapq`, not among the evidence reads; a read spans `pos` to `pos + read_length`, with `read_length` defaulting to 150). Allele-fraction thresholds: <0.15 → `0/0`, 0.15–0.85 → `0/1`, ≥0.85 → `1/1`; `./.` when no read counts at all. `call_structural_variants()` builds one `ReadIndex` from the filtered reads: per chromosome, the reads sorted by start position plus the length of the longest read. A call then needs two binary searches and a pass over only the reads that start within one longest-read length before the window, instead of a pass over every read, and `genotype_sv()` returns the same genotype for an index as for the plain read list. It is called with its default `min_mapq=20`, whatever `min_mapq` the caller passed.
 
 #### `breakpoints.py`
 
 | Function | Purpose |
 |----------|---------|
-| `refine_breakpoints()` | Mode of the soft-clip positions within `window` of each approximate breakpoint, from the reads you pass in (a read is considered only if its alignment start is within `window + 500` bp of the breakpoint) |
-| `detect_microhomology()` | Identify microhomology (NHEJ/MMEJ signature) |
+| `refine_breakpoints()` | Mode of the soft-clip positions within `window` of each approximate breakpoint, from the reads you pass in (a read is located by the reference coordinate of its soft clip, wherever its alignment starts, so a long alignment or a long deletion in its CIGAR does not hide it). The reads that clip at the mode are the supporting reads; per breakpoint they give `strand`, `microhomology` and `inserted_sequence` (see below) |
+| `detect_microhomology()` | Mirror-match run of identical bases on both sides of the midpoint of a sequence (the NHEJ/MMEJ signature, estimated from read bases alone) |
 | `cluster_breakpoints()` | Single-linkage nearby breakpoint grouping |
 | `calculate_breakpoint_confidence()` | Support count + positional consistency + clip fraction + mean MAPQ |
+
+**Breakpoint inputs:** the first breakpoint of a variant dict is `breakpoint1`, else `start`, on `chrom1` or `chrom`; the second is `breakpoint2`, else `pos2`, else `end`, on `chrom2` (absent, `None` or `""` means the first chromosome). `dataclasses.asdict()` of a `StructuralVariant` therefore works as is, translocations included. Read CIGARs may be strings or lists of `(op_code, length)` tuples.
+
+**Supporting reads:** the reads that clip at a breakpoint's consensus position are its supporting reads, and each of the two breakpoints is analysed from its own set:
+
+- `strand`: the majority `is_reverse` (`'-'` when more reads are reverse-complemented than not; `'+'` when no read reports it, or on a tie).
+- `microhomology`: the longest `detect_microhomology()` result over the window of each read's `seq` (up to 50 bases each side) centred on that read's clip junction. It compares bases outwards from the junction, so it is a mirror-match heuristic on the read, not true microhomology, which needs the reference sequence.
+- `inserted_sequence`: the bases of `seq` between the primary alignment and the read's single supplementary alignment (`sa_tag`), in the orientation of the stored `seq`. It is derived only when a supporting read has `seq`, `is_reverse`, `cigar` and a one-entry `sa_tag` whose alignment lies at the other breakpoint, and both CIGARs account for the whole `seq`; otherwise it is empty.
 
 ---
 
@@ -215,9 +230,9 @@ src/metainformant/structural_variants/
 | `annotate_gene_overlap()` | Overlap SVs with gene annotations (dicts with `chrom`, `start`, `end`, `name`, or `GenomicInterval` objects) |
 | `annotate_regulatory_overlap()` | Overlap with enhancers/promoters/CTCF |
 | `find_nearest_gene()` | Nearest gene within `max_distance` |
-| `IntervalIndex` | Sorted-start interval lookup (`query_overlap`, `query_nearest`) |
+| `IntervalIndex` | Max-end segment tree over sorted intervals (`query_overlap`, `query_nearest`) |
 
-**`IntervalIndex` design:** Build once from a `GenomicInterval` list. Groups by chromosome, sorts by start, builds start-position arrays for binary search. `query_overlap(chrom, start, end)` uses `bisect_left(starts, end)` to find the intervals with `start < end`, then scans all of them and keeps those with `interval.end > start`. The scan is linear in the number of intervals that begin before the query end, so cost grows with the query's position on the chromosome. `annotate_gene_overlap()` builds a new index on every call.
+**`IntervalIndex` design:** Build once from a `GenomicInterval` list. It groups the intervals by chromosome, sorts each group by `(start, end)` and builds, on that order, a segment tree of the maximum interval end over ranges of intervals, plus the running maximum of the ends with the interval that reaches it. `query_overlap(chrom, start, end)` takes the prefix of intervals with `start < end` by binary search, then descends only into tree nodes that cover part of that prefix and hold an end beyond the query start. It returns every interval with `interval.start < end and interval.end > start`, sorted by `(start, end)`, in `O(k log n)` time for `k` hits, however long the intervals are and wherever on the chromosome the query falls. `query_nearest(chrom, position, max_distance)` returns an interval that spans the position at distance 0 (the one that starts last when several do); otherwise it compares the interval with the smallest start at or after the position with the interval whose end is largest before it (the running maximum), and the former wins a tie. `annotate_gene_overlap()` builds a new index on every call.
 
 #### `functional_impact.py`
 
@@ -234,7 +249,7 @@ src/metainformant/structural_variants/
 3. **LOW**: Large (>100 kb) intergenic, or intergenic >10 kb.
 4. **MODIFIER**: Small benign-appearing variants.
 
-`predict_functional_impact()` hands only the haploinsufficiency database to `assess_dosage_sensitivity()`, so it never evaluates triplosensitivity (the TS-driven `dosage_gain` type is not produced through it).
+`predict_functional_impact()` hands all four databases (`haploinsufficiency_db`, `triplosensitivity_db`, `pli_db`, `loeuf_db`, each optional) to `assess_dosage_sensitivity()`. An overlapped gene is dosage-sensitive when it is haploinsufficient and the variant is a DEL or HOMODEL, or triplosensitive and the variant is a DUP, so a duplication over a triplosensitive gene is `HIGH` / `dosage_gain`. Without a database no gene is marked, and a duplication over genes is `MODERATE` / `gene_duplication`.
 
 **Pathogenicity scoring weights:**
 - Coding genes (0.15 each, capped at 1) plus dosage-sensitive genes (0.3 each): 30%
@@ -253,20 +268,24 @@ src/metainformant/structural_variants/
 | Function | Filters | Key Parameters |
 |----------|---------|---------------|
 | `filter_by_quality()` | Quality score, support count, MAPQ, GQ | `min_qual`, `min_support`, `min_mapq`, `min_gq` |
-| `filter_by_size()` | Size min/max (TRA/BND always kept) | `min_size`, `max_size` |
+| `filter_by_size()` | Size min/max (TRA/BND always kept, and so are INS with no positive `size`) | `min_size`, `max_size` |
 | `filter_by_frequency()` | Population AF (gnomAD, 1000G) | `max_af`, `match_window`, `min_reciprocal_overlap` |
 | `apply_blacklist()` | Remove variants overlapping blacklisted regions | `blacklist_regions`, `min_overlap_fraction` |
 
 All return `(filtered_variants, FilterStats)`. The databases (population frequencies, blacklist regions) are passed in as Python objects; the module reads no reference files.
 
-**Frequency matching:** A database entry matches when it lies within `match_window` (±200 bp by default) of the variant and the reciprocal overlap reaches `min_reciprocal_overlap` in both directions. The window is a pre-filter: with the default 0.5, the overlap test decides, and the window only matters when `min_reciprocal_overlap` is 0.
+**Frequency matching:** A database entry matches when it lies within `match_window` (±200 bp by default) of the variant and the reciprocal overlap reaches `min_reciprocal_overlap` in both directions. The window is a pre-filter: with the default 0.5, the overlap test decides, and the window only matters when `min_reciprocal_overlap` is 0. The database is read as a dict `{"chrom:start-end[-svtype]": af}` or a list of dicts with `chrom`, `start`, `end`, `af` (or `allele_frequency`) and optionally `sv_type`, with `af` in [0, 1]. A non-empty database none of whose entries can be read raises `ValueError` naming the supported layouts, because the filter would otherwise pass every variant without comparing it to anything; unreadable entries of a database that is otherwise usable are skipped and counted in a logged warning. A zero-length call (`start == end`, such as a translocation) has a reciprocal overlap of 0 with every entry, so it matches none unless `min_reciprocal_overlap` is 0.
+
+**Blacklist overlap:** A variant is removed when its overlap with a region exceeds `min_overlap_fraction` of the variant. A zero-length variant (`start == end`, such as an insertion point) has no bases to overlap: strictly inside a region it counts as fully overlapping (fraction 1.0), and on a region's edge or outside it does not overlap, like an interval that only abuts the region.
 
 #### `merge.py`
 
 | Function | Method | Description |
 |----------|--------|-------------|
-| `merge_callsets()` | Reciprocal overlap | Union-find over variant pairs from different callers whose `reciprocal_overlap ≥ min_overlap` (same type when `type_match`). Clusters → consensus position (median), consensus type (majority vote). |
-| `survivor_merge()` | Distance-based | SURVIVOR approach: merge if both breakpoints are within `max_distance`; keeps clusters seen by at least `min_callers` callers. Accepts VCF paths or lists of variant dicts. |
+| `merge_callsets()` | Reciprocal overlap | Union-find over variant pairs from different callers whose `reciprocal_overlap ≥ min_overlap` (same type when `type_match`). Clusters → consensus position (median), consensus type (majority vote), genotype (majority vote; a tie goes to the genotype seen first), `consensus_quality` = mean call quality + `100 · log10(n_callers + 1)`. |
+| `survivor_merge()` | Distance-based | SURVIVOR approach: merge if both breakpoints are within `max_distance`; keeps clusters seen by at least `min_callers` callers. Accepts VCF paths or lists of variant dicts. Genotype: majority vote among the non-missing genotypes (allele order ignored), a tie going to the larger summed call quality and then to the genotype that sorts first. `consensus_quality` = mean call quality + `10 · n_callers · log10(n_callers + 1)`; calls of quality 80 and 40 from two callers give 69.54. |
+
+`MergedVariant.caller_names` is sorted. The merge functions read `chrom`, `start` and `end` only and ignore `chrom2` and `pos2`: `survivor_merge()` joins translocations whose first breakpoints are close whatever their partner, and `merge_callsets()` and `deduplicate_variants()` give a zero-length call a reciprocal overlap of 0, so with a threshold above 0 they never join or collapse translocations.
 
 **Reciprocal overlap:** `min(overlap_len/variant1_len, overlap_len/variant2_len)` over the variants' `[start, end)` intervals; variants on different chromosomes score 0.
 
@@ -279,7 +298,7 @@ All return `(filtered_variants, FilterStats)`. The databases (population frequen
 | `genotype_sv_population()` | Genotype known SVs across samples from per-sample evidence stored in each call (`samples[sample]` with `depth_ratio`, `split_reads`, `discordant_pairs`) | `genotype_matrix`, `quality_scores`, `allele_frequencies` |
 | `sv_allele_frequency()` | AF, MAF, SFS, optionally per-population | Dict with `frequencies`, `maf`, `n_polymorphic`, `sfs`, `population_frequencies` |
 | `sv_association_test()` | Linear (continuous) or logistic (binary) regression | `beta`, `se`, `p_value`, `odds_ratio` (binary only), `n_samples` |
-| `sv_population_structure()` | PCA from genotype matrix | `pcs`, `eigenvalues`, `variance_explained`, `loadings` |
+| `sv_population_structure()` | PCA from genotype matrix | `pcs`, `eigenvalues`, `variance_explained` (each component's eigenvalue over the sum of all eigenvalues, so the returned values sum to 1 only when every component is returned), `loadings` |
 | `sv_ld_analysis()` | LD (r²) between SV and SNP genotypes | `ld_matrix`, `tag_snps`, `max_r2_per_sv` |
 | `merge_sv_callsets()` | Combine calls across samples into unified reference | list of merged dicts (`n_samples`, `samples`, `support_count`, `merged_calls`) |
 
@@ -293,7 +312,7 @@ All return `(filtered_variants, FilterStats)`. The databases (population frequen
 
 | Function | Plot Type | Output |
 |----------|-----------|--------|
-| `plot_circos()` | Circular genome layout with SV chords | Saved to `output_path` (format from the extension), returns `Figure` |
+| `plot_circos()` | Circular genome layout with SV chords from `chrom:start` to `chrom2:pos2` (translocations) or `chrom:end` (other calls) | Saved to `output_path` (format from the extension), returns `Figure` |
 | `plot_coverage_track()` | Read depth per bin (not log2 ratios) + SV overlay | Same |
 | `plot_sv_size_distribution()` | Histogram by SV type | Same |
 | `plot_sv_type_summary()` | Bar chart and pie chart of SV type counts | Same |
@@ -328,7 +347,7 @@ flowchart TD
 **Detailed sequence:**
 
 1. **CNV Detection** (optional but recommended):
-   - Input: read depth per window (1000 bp default) per chromosome, as positive values
+   - Input: read depth per window (1000 bp default) per chromosome, as finite non-negative values (a negative or non-finite value raises `ValueError`)
    - Each chromosome is normalized to its own median and converted to log2 ratios; for tumor vs normal, form the ratio with `calculate_log2_ratio()` first and pass `2**ratio` as depth
    - CBS segmentation → segments with constant mean log2
    - State calling (DEL/DUP/NEUTRAL/AMP/HOMODEL) via thresholds
@@ -340,21 +359,22 @@ flowchart TD
    - Cluster evidence by genomic proximity (≤500 bp)
    - Merge cluster evidence (median breakpoints, total support)
    - Classify SV type from strand patterns and distance
-   - Genotype via allele fraction from supporting vs reference reads
+   - Build a translocation (`TRA`) from the two breakpoints on their own chromosomes (`chrom`/`start` and `chrom2`/`pos2`, `end == start`, `size` 0); an insertion (`INS`) gets `size` 0 and is exempt from `min_sv_size`
+   - Genotype via allele fraction from supporting vs reference reads, with one shared `ReadIndex`
    - Output: `list[StructuralVariant]`
 
 3. **Breakpoint Refinement** (optional, post-processing):
    - For each SV, use the reads you pass in (typically those within a 200–500 bp window of each breakpoint)
-   - Collect soft-clip positions
-   - Mode (most frequent position) as consensus
-   - Detect microhomology from the first read sequence on the chromosome
+   - Collect the soft-clip positions within `window` of each breakpoint, locating each read by its clip and not by its alignment start
+   - Mode (most frequent position) as consensus; the reads that clip there are the supporting reads
+   - Derive `strand`, `microhomology` and `inserted_sequence` for both breakpoints from their own supporting reads (see 3.1)
    - Output: `list[BreakpointPair]` with `Breakpoint` objects
 
 4. **Annotation**:
    - Build an `IntervalIndex` from gene/regulatory entries (parse BED/GTF yourself into dicts or `GenomicInterval`)
    - `query_overlap()` per variant → `OverlapResult` list
-   - Dosage sensitivity lookup (haploinsufficiency scores through `predict_functional_impact()`; HI/TS/pLI/LOEUF through `assess_dosage_sensitivity()`)
-   - TAD boundary proximity check (within 10 kb window)
+   - Dosage sensitivity lookup (HI/TS/pLI/LOEUF databases, each optional, through `predict_functional_impact()` or one gene at a time through `assess_dosage_sensitivity()`)
+   - TAD boundary proximity check (within 10 kb window; a translocation is tested at its first breakpoint only)
    - Composite pathogenicity score (6 evidence lines)
    - Output: `FunctionalImpact` per variant
 
@@ -417,18 +437,21 @@ class StructuralVariant:
     evidence: SVEvidence = field(default_factory=SVEvidence)
     genotype: str = "./."
     filter_status: str = "PASS"
-    chrom2: str = ""                # For translocations
+    chrom2: str = ""                # Second breakpoint's chromosome (translocations; "" otherwise)
     info: dict[str, Any] = field(default_factory=dict)
+    pos2: int | None = None         # Second breakpoint's position on chrom2 (translocations; None otherwise)
+
+# A TRA call has end == start (its first breakpoint) and size 0; size 0 also means "not measured" for INS.
 
 @dataclass
 class Breakpoint:
     chrom: str
     position: int
-    strand: str = "+"
+    strand: str = "+"               # majority is_reverse of the supporting reads ('+' without orientation)
     confidence: float = 0.0
     support: int = 0
-    microhomology: str = ""
-    inserted_sequence: str = ""
+    microhomology: str = ""         # mirror-match heuristic on read bases, per breakpoint
+    inserted_sequence: str = ""     # read bases between primary and supplementary alignment; "" if not derivable
     read_names: list[str] = field(default_factory=list)
 
 @dataclass
@@ -485,19 +508,19 @@ The module imports nothing from other METAINFORMANT packages except `core.utils.
 - **References:** Olshen et al. (2004) Biostatistics.
 
 **Algorithm (recursive):**
-1. Compute the best single split-point statistic and the best circular arc statistic (arcs of at most half the segment) over the segment
-2. Take the more extreme of the two; if its Gumbel-approximated `p ≤ significance`, split
+1. Score every arc `[i, j)` of the segment whose length lies between `min_width` and half the segment (with at least `min_width` bins outside it) by `|mean_in − mean_out| · sqrt(n_in · n_out / n) / s`, where `s` is the segment's sample standard deviation. An arc that touches an end of the segment is a single change point, so plain binary segmentation is the special case of this scan. The arcs of one length are scored together with array arithmetic, which performs the same floating-point operations in the same order as scoring them one at a time; the first arc in `(i, j)` order wins a tie
+2. Take the best arc; if its Gumbel-approximated `p ≤ significance`, split the segment into up to three pieces (before, inside and after the arc)
 3. Recurse on the resulting pieces until no significant change-point remains (or `max_iterations` depth)
 4. Merge adjacent segments with the same CN state within `merge_distance`
 
-### 7.3 Interval Index Using Sorted-Start Binary Search
+### 7.3 Interval Index Using a Max-End Segment Tree
 
-**Alternative considered:** Interval tree (O(log n + k)). **Chosen:** Sorted-start + linear scan.
+**Alternatives considered:** Sorted starts with a linear scan (cost grows with the query's position on the chromosome, and a long interval that starts early is rescanned by every later query); a pointer-based interval tree. **Chosen:** A segment tree of the maximum end over the intervals sorted by `(start, end)`, stored as flat lists.
 
 **Rationale:**
-- Simple implementation, lower memory than a balanced tree.
-- Binary search gives the candidates with `start < query_end`; the scan then checks `end > query_start` for every one of them.
-- That scan is linear in the number of intervals before the query end, so it suits gene-scale databases (tens of thousands of features) and gets slower for queries late on a chromosome with a very large database (see [PERFORMANCE.md](PERFORMANCE.md)).
+- A query descends only into nodes that can hold an overlapping interval, so it costs `O(k log n)` for `k` hits, wherever on the chromosome it falls and however long the intervals are (a gene that spans most of a chromosome is found, and does not slow down the queries after it).
+- The sorted order keeps results sorted by `(start, end)` without a separate sort, and a running maximum of the ends answers the nearest-interval-to-the-left question in constant time.
+- Flat lists keep memory linear in the number of intervals (the tree array has twice as many slots as the next power of two above the count of intervals on a chromosome), and the build costs one sort plus a linear pass (see [PERFORMANCE.md](PERFORMANCE.md)).
 
 ### 7.4 Composite Pathogenicity Score
 
@@ -550,13 +573,13 @@ The classifier never defaults to `DEL` from weak evidence.
 - **Haploinsufficient**: HI ≥ 0.5 OR pLI ≥ 0.9 OR LOEUF < 0.35.
 - **Triplosensitive**: TS ≥ 0.5.
 
-Genes with these properties are flagged when a variant changes copy number (DEL/HOMODEL for HI, DUP for TS). Through `predict_functional_impact()` only the HI database is consulted (see 3.2).
+Genes with these properties are flagged when a variant changes copy number (DEL/HOMODEL for HI, DUP for TS). `predict_functional_impact()` passes all four databases it is given to `assess_dosage_sensitivity()` (see 3.2).
 
 ### 8.4 TAD Disruption Detection
 
 A TAD boundary (midpoint) is disrupted if:
 - **DEL**: Breakpoint(s) within `boundary_window` (10 kb default) of midpoint OR deletion spans midpoint.
-- **INV/TRA/BND**: Either breakpoint within `boundary_window`.
+- **INV/TRA/BND**: Either breakpoint within `boundary_window`. The function reads the variant's `chrom`, `start` and `end` only, and a translocation call from `call_structural_variants()` has `end == start`, so it is tested at its first breakpoint; its `chrom2`/`pos2` are not looked at.
 - **DUP**: Tandem duplication spans midpoint (may re-loop boundary).
 - **Other types**: The variant extended by `boundary_window` covers the midpoint.
 
@@ -624,12 +647,12 @@ The module has no I/O layer: callers convert BAM, VCF or BED into the dict recor
 
 | Operation | Complexity | Notes |
 |-----------|------------|-------|
-| CBS segmentation | **Super-linear (at least O(n²) per recursion level)** | Per chromosome; n = number of bins; pure-Python scans over split points and arcs |
+| CBS segmentation | **O(n²) per recursion level** | Per chromosome; n = number of bins; every arc of at most half the segment is scored, vectorised over the arcs of one length (O(n) array operations of O(n) elements each) |
 | Split-read detection | **O(m)** | m = total reads; parse CIGAR once |
 | Discordant pair detection | **O(m)** | Single pass over reads that carry mate information |
 | Evidence clustering | **O(e log e) sort + O(e·c) cluster scan** | e = evidence items, c = clusters |
-| Genotyping (`genotype_sv`) | **O(v · m)** | Rescans all reads for each called variant |
-| Gene overlap (IntervalIndex) | **O(log g) + linear scan** | g = genes; scan covers every gene starting before the query end |
+| Genotyping (`genotype_sv`) | **O(m log m) once, then O(log m + r) per call** | `ReadIndex` build (sort by start); r = reads that start within one longest-read length before the window. A plain read list costs O(m) per call |
+| Gene overlap (IntervalIndex) | **O(G log G) build, O(k log g) per query** | G = genes in the list, g = genes on the chromosome, k = genes returned; independent of the query's position |
 | Multi-caller merge | **O(v²)** worst case for v variants per chromosome | Sorted sweep with an early break on distance |
 | Population PCA | **Dense eigendecomposition** | `numpy.linalg.eigh` on the smaller of the sample × sample and SV × SV covariance matrices |
 
@@ -665,9 +688,9 @@ Five thresholds (`min_support`, `min_qual`, CNV `significance`, CNV `del_thresho
 
 ### 12.3 No External Binary Dependencies
 
-Although tools like SURVIVOR exist as binaries, module implements core algorithms in pure Python.
+Although tools like SURVIVOR exist as binaries, the module implements its core algorithms in Python (with NumPy for the array work).
 
-**Rationale:** Portability, reproducibility, no compilation, easier debug. Can be slower but acceptable for most cohort sizes (<10K samples). External callers can still be wrapped separately.
+**Rationale:** Portability, reproducibility, no compilation, easier debug. Can be slower than a compiled tool but acceptable for most cohort sizes (<10K samples). External callers can still be wrapped separately.
 
 ### 12.4 Dataclass Return Types
 
@@ -682,7 +705,8 @@ Detection, annotation, filtering and merging return simple dataclasses (`Structu
 - **Real implementations**: Tests in `tests/structural_variants/` run the algorithms themselves on synthetic inputs under the repository's real-implementation policy (`docs/REAL_IMPLEMENTATION_POLICY.md`); `monkeypatch` is used only to set the `SV_` environment variables.
 - **Synthetic datasets**: Fixtures build depth arrays and alignment dicts with injected deletions, duplications, split reads and discordant pairs of known type and size. No BAM files are used.
 - **Fallback parity**: `test_numpy_fallback_parity.py` checks that the numpy and pure-Python code paths agree.
-- **Targeted regressions**: classification direction (`test_sv_classification_direction.py`), consensus medians (`test_sv_consensus_median.py`), and depth tests for detection, merging, filtering and functional impact.
+- **Targeted regressions**: classification direction (`test_sv_classification_direction.py`), consensus medians (`test_sv_consensus_median.py`), and depth tests for detection, merging, filtering and functional impact. Defect regressions (`test_sv_calling_fixes.py`, `test_breakpoint_refinement_fixes.py`, `test_interval_index_correctness.py`, `test_dosage_gain_reachable.py`, `test_quality_filter_fixes.py`, `test_survivor_merge_fixes.py`, `test_cnv_fixes.py`, `test_population_variance_explained.py`) check hand-derived values rather than the implementation's own output; cost claims are ratios between two sizes timed in the same process, never absolute limits, and `test_cnv_fixes.py` keeps a scalar CBS as an oracle for the vectorised one.
+- **Determinism**: the package uses no random number generators and sorts every list built from a set, so a run does not depend on the hash seed (`test_reproducibility.py` runs fresh interpreters with different `PYTHONHASHSEED` values). `annotate_regulatory_overlap()` is the exception that stays a set: its `regulatory_types` value.
 
 ---
 

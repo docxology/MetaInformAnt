@@ -79,7 +79,11 @@ output = {c: [{"chrom": s.chrom, "start": s.start, "end": s.end,
 io.dump_json(output, "cnv_calls.json")
 ```
 
-**Returns:** `dict[str, CNVResult]` keyed by chromosome; each `CNVResult` holds `segments: list[CNVSegment]` (plus `log2_ratios`, `bin_size`, `method`, `parameters`). `segments` includes the `NEUTRAL` stretches as well as gains and losses, so filter on `seg.state != "NEUTRAL"` to keep only the calls. Chromosomes with fewer than `min_segment_bins` bins are skipped. The CBS step grows at least quadratically with the number of bins per chromosome, so 1 kb windows are only practical for small chromosomes or regions; use a coarser `window_size` for whole human chromosomes (see [PERFORMANCE.md](PERFORMANCE.md)).
+**Returns:** `dict[str, CNVResult]` keyed by chromosome; each `CNVResult` holds `segments: list[CNVSegment]` (plus `log2_ratios`, `bin_size`, `method`, `parameters`). `segments` includes the `NEUTRAL` stretches as well as gains and losses, so filter on `seg.state != "NEUTRAL"` to keep only the calls. Chromosomes with fewer than `min_segment_bins` bins are skipped.
+
+**Input:** each value of `depth_data` must be a finite, non-negative depth (zero is a bin with no coverage). A negative or non-finite value raises `ValueError` naming the chromosome, because negative values usually mean that log2 ratios were passed by mistake; segment log2 ratios with `segment_coverage` and `call_cnv_states` instead.
+
+**Cost:** CBS is vectorised with NumPy but still grows with the square of the number of bins per chromosome (about 1 s at 32,000 bins and 4 s at 64,000 on a synthetic profile), so 1 kb windows suit regions and small chromosomes; use a coarser `window_size` for whole human chromosomes (see [PERFORMANCE.md](PERFORMANCE.md)).
 
 ### 3. SV Calling from Alignments
 
@@ -129,7 +133,10 @@ for sv_type, count in Counter(v.sv_type.value for v in variants).most_common():
     print(f"  {sv_type}: {count}")
 
 for sv in variants:
-    print(f"  [{sv.sv_type.value}] {sv.chrom}:{sv.start:,}-{sv.end:,}  "
+    # A translocation has no interval: its second breakpoint is chrom2:pos2
+    where = (f"{sv.chrom}:{sv.start:,} -> {sv.chrom2}:{sv.pos2:,}" if sv.sv_type.value == "TRA"
+             else f"{sv.chrom}:{sv.start:,}-{sv.end:,}")
+    print(f"  [{sv.sv_type.value}] {where}  "
           f"size={sv.size:,}bp qual={sv.quality:.1f} "
           f"support={sv.evidence.split_reads}+{sv.evidence.discordant_pairs}")
 
@@ -148,9 +155,13 @@ io.dump_json(sv_dicts, "sv_calls.json")
 
 **Returns:** `list[StructuralVariant]` with fields:
 - `chrom`, `start`, `end`, `sv_type` (enum: DEL/DUP/INV/TRA/INS/BND/UNKNOWN)
-- `size`, `quality`, `genotype`, `evidence: SVEvidence`, `filter_status`, `chrom2` (`""` for intra-chromosomal calls), `info`
+- `size`, `quality`, `genotype`, `evidence: SVEvidence`, `filter_status`, `chrom2` (`""` for intra-chromosomal calls), `pos2` (`None` for intra-chromosomal calls), `info`
 
-`evidence` holds `split_reads`, `discordant_pairs`, `breakpoint1`/`breakpoint2` and `chrom1`/`chrom2`; for inter-chromosomal (`TRA`) calls take the two breakpoints from there rather than from `start`/`end`. `INS` calls have their two breakpoints less than 50 bp apart, so the default `min_sv_size=50` removes them (lower it to keep insertions; see Example 15 in [EXAMPLES.md](EXAMPLES.md)).
+`evidence` holds `split_reads`, `discordant_pairs`, `breakpoint1`/`breakpoint2` and `chrom1`/`chrom2`.
+
+- **Translocations (`TRA`)** join two loci on different chromosomes, so they have no interval: `chrom` and `start` give the first breakpoint, `chrom2` and `pos2` the second, `end` repeats `start`, and `size` is 0.
+- **Insertions (`INS`)** have `size` 0, meaning "not measured": their two breakpoints are less than 50 bp apart and split-read evidence does not measure the inserted length. They are exempt from `min_sv_size`, which filters DEL, DUP, INV and UNKNOWN calls on their breakpoint distance, so the default `min_sv_size=50` keeps them (see Example 15 in [EXAMPLES.md](EXAMPLES.md)).
+- **Genotypes** come from `genotype_sv` with its default `min_mapq=20`, whatever `min_mapq` you pass here. `call_structural_variants` builds one `ReadIndex` of the reads and shares it between all calls; `genotype_sv` accepts either that index or a plain read list and gives the same answer.
 
 ### 4. Breakpoint Refinement
 
@@ -159,13 +170,13 @@ Refine approximate breakpoints to single-base resolution using local split-read 
 ```python
 from metainformant.structural_variants.detection.breakpoints import refine_breakpoints
 
-# Fetch local reads around each breakpoint. sv.evidence holds both breakpoints with their own
-# chromosome (sv.chrom2 is "" for intra-chromosomal calls).
+# Fetch local reads around each breakpoint. A call's first breakpoint is (chrom, start); its second
+# is (chrom2, pos2) for a translocation and (chrom, end) for every other call.
 local_reads = []
 bam = pysam.AlignmentFile("sample.bam", "rb")
 for sv in variants:
-    ev = sv.evidence
-    for chrom, pos in ((ev.chrom1, ev.breakpoint1), (ev.chrom2 or ev.chrom1, ev.breakpoint2)):
+    second = (sv.chrom2, sv.pos2) if sv.pos2 is not None else (sv.chrom, sv.end)
+    for chrom, pos in ((sv.chrom, sv.start), second):
         for read in bam.fetch(chrom, max(0, pos - 500), pos + 500):
             if read.is_unmapped or read.is_secondary:
                 continue
@@ -176,19 +187,20 @@ for sv in variants:
                 "seq": read.query_sequence or "",
                 "name": read.query_name,
                 "is_reverse": read.is_reverse,
+                "sa_tag": read.get_tag("SA") if read.has_tag("SA") else "",
             })
 bam.close()
 
-# Refine: refine_breakpoints() takes variant dicts (chrom1/breakpoint1, chrom2/breakpoint2, sv_type)
+# Refine: refine_breakpoints() takes variant dicts. The second breakpoint is read from
+# breakpoint2, else pos2, else end, on chrom2 ("" or None means chrom).
 refined = refine_breakpoints(
     variants=[
-        {"chrom1": v.evidence.chrom1, "breakpoint1": v.evidence.breakpoint1,
-         "chrom2": v.evidence.chrom2 or v.evidence.chrom1, "breakpoint2": v.evidence.breakpoint2,
-         "sv_type": v.sv_type.value}
+        {"chrom": v.chrom, "start": v.start, "end": v.end,
+         "chrom2": v.chrom2, "pos2": v.pos2, "sv_type": v.sv_type.value}
         for v in variants
     ],
     reads=local_reads,
-    window=200,   # clips within 200 bp of a breakpoint, from reads starting within 700 bp
+    window=200,   # soft clips within 200 bp of a breakpoint count, wherever their read starts
     min_clip=5,
 )
 
@@ -196,14 +208,21 @@ for bp_pair in refined:
     print(f"  {bp_pair.sv_type}: {bp_pair.bp1.chrom}:{bp_pair.bp1.position} → "
           f"{bp_pair.bp2.chrom}:{bp_pair.bp2.position}  "
           f"conf={bp_pair.confidence:.2f}")
-    if bp_pair.bp1.microhomology:
-        print(f"    Microhomology: {bp_pair.bp1.microhomology}")
+    for bp in (bp_pair.bp1, bp_pair.bp2):
+        if bp.microhomology:
+            print(f"    Microhomology at {bp.position}: {bp.microhomology}")
+        if bp.inserted_sequence:
+            print(f"    Inserted sequence at {bp.position}: {bp.inserted_sequence}")
 ```
 
 **Returns:** `list[BreakpointPair]` (`bp1`, `bp2`, `sv_type`, `confidence`) with `Breakpoint` objects including:
-- `position`, `strand`, `confidence`, `support`, `microhomology`, `read_names`
+- `position`, `strand`, `confidence`, `support`, `microhomology`, `inserted_sequence`, `read_names`
 
-A breakpoint with `support == 0` found no soft-clipped read and keeps its input position. `microhomology` is only set on `bp1`, from the first read that carries a `seq` on that chromosome, assuming the breakpoint sits in the middle of that sequence, so treat it as meaningful only for breakpoint-centred flanking sequences. `Breakpoint.inserted_sequence` exists but is never filled in.
+A breakpoint with `support == 0` found no soft-clipped read in its window and keeps its input position. A read is located by the reference coordinate of its soft clip, not by where its alignment starts, so a long read that spans the breakpoint from far away counts as long as its clip lies within `window`. The reads that clip at the consensus position are the breakpoint's supporting reads, and each of the two breakpoints is analysed from its own supporting reads:
+
+- `strand` is the majority `is_reverse` among them: `'-'` when more are reverse-complemented than not, `'+'` when none reports `is_reverse` or on a tie.
+- `microhomology` is the longest run that `detect_microhomology` finds in the window of each read's `seq` centred on that read's clip junction. It is a mirror-match heuristic on the read sequence (identical bases on both sides of the junction, compared outwards), not true microhomology, which would need the reference sequence.
+- `inserted_sequence` holds the read bases between the primary alignment and the read's single supplementary alignment. It is filled only when a supporting read has `seq`, `is_reverse`, `cigar` and an `sa_tag` with exactly one entry located at the other breakpoint, and the CIGARs of both alignments add up to the length of `seq`; otherwise it is empty.
 
 ### 5. Gene & Regulatory Overlap
 
@@ -256,8 +275,9 @@ from metainformant.structural_variants.annotation.functional_impact import (
     score_pathogenicity,
 )
 
-# Load dosage databases (ClinGen, gnomAD)
+# Load dosage databases (ClinGen, gnomAD); each one is optional
 hi_db = io.load_json("haploinsufficiency_scores.json")   # {gene: HI_score ∈ [0,1]}
+ts_db = io.load_json("triplosensitivity_scores.json")    # {gene: TS_score ∈ [0,1]}
 pli_db = io.load_json("gnomad_pli.json")                # {gene: pLI ∈ [0,1]}
 tad_bounds = io.load_json("tad_boundaries.json")
 
@@ -269,6 +289,8 @@ for variant in annotated:
         gene_annotations=gene_db,
         haploinsufficiency_db=hi_db,
         tad_boundaries=tad_bounds,
+        triplosensitivity_db=ts_db,
+        pli_db=pli_db,
     )
     impacts.append(impact)
 
@@ -281,16 +303,15 @@ for imp in impacts:
     if imp.tad_disrupted:
         print(f"  ⚠ TAD disrupted ({imp.details.get('tad_prediction',{}).get('n_boundaries',0)} boundaries)")
 
-# predict_functional_impact() only takes the haploinsufficiency scores. For pLI (and
-# triplosensitivity) look the gene up directly: HI >= 0.5, pLI >= 0.9 or (with loeuf_db) LOEUF < 0.35
-# counts as haploinsufficient.
+# assess_dosage_sensitivity() looks one gene up in the same databases: HI >= 0.5, pLI >= 0.9 or
+# (with loeuf_db) LOEUF < 0.35 counts as haploinsufficient; TS >= 0.5 counts as triplosensitive.
 ds = assess_dosage_sensitivity("GENE1", haploinsufficiency_db=hi_db, pli_db=pli_db)
 print(ds.is_haploinsufficient, ds.haploinsufficiency_score, ds.pli_score)
 ```
 
 **Impact levels:** `HIGH`, `MODERATE`, `LOW`, `MODIFIER`
 
-**Impact types:** `dosage_loss`, `dosage_gain`, `gene_disruption`, `gene_fusion_candidate`, `gene_duplication`, `gene_inversion`, `gene_insertion`, `tad_disruption`, `large_intergenic`, `intergenic`, `benign`. A gene counts as dosage-sensitive for a deletion when its HI score is at least 0.5; because no triplosensitivity database can be passed, `dosage_gain` is not currently produced and duplications over genes come back as `gene_duplication`.
+**Impact types:** `dosage_loss`, `dosage_gain`, `gene_disruption`, `gene_fusion_candidate`, `gene_duplication`, `gene_inversion`, `gene_insertion`, `tad_disruption`, `large_intergenic`, `intergenic`, `benign`. A gene counts as dosage-sensitive for a deletion (DEL or HOMODEL) when it is haploinsufficient (HI score ≥ 0.5, pLI ≥ 0.9 or LOEUF < 0.35) and for a duplication when it is triplosensitive (TS score ≥ 0.5), judged from whichever of the four databases you pass. A duplication over a triplosensitive gene is `HIGH` / `dosage_gain`; without `triplosensitivity_db` no gene is triplosensitive and a duplication over genes comes back as `gene_duplication` (`MODERATE`). `predict_tad_disruption` (and so `tad_disrupted`) tests the variant's `chrom`, `start` and `end` only, so a translocation is tested at its first breakpoint.
 
 **Returns:** `FunctionalImpact` with:
 - `variant_id` (the variant's `id` key, or `chrom:start-end`), `impact_level`, `impact_type`, `affected_genes`, `dosage_sensitive_genes`
@@ -349,7 +370,7 @@ io.dump_json(filtered, "filtered_svs.json")
 ```
 
 Each filter returns `(variants, FilterStats)` where `FilterStats` has:
-`input_count`, `output_count`, `filtered_count`, `filter_name`, `parameters`, `pass_rate` (a property). It holds counts only, not the removed variants. All four filters take variant dicts (not `StructuralVariant` objects). `filter_by_quality` takes the supporting-read count from a `support`/`n_support` key or, failing that, from the `evidence` entry (`split_reads` + `discordant_pairs`), and it honours the `SV_MIN_QUAL` and `SV_MIN_SUPPORT` environment variables, which override `min_qual` and `min_support`. `filter_by_frequency` accepts the population database as a list of dicts (as above) or a dict keyed by `"chrom:start-end"`; see Example 6 in [EXAMPLES.md](EXAMPLES.md).
+`input_count`, `output_count`, `filtered_count`, `filter_name`, `parameters`, `pass_rate` (a property). It holds counts only, not the removed variants. All four filters take variant dicts (not `StructuralVariant` objects). `filter_by_quality` takes the supporting-read count from a `support`/`n_support` key or, failing that, from the `evidence` entry (`split_reads` + `discordant_pairs`), and it honours the `SV_MIN_QUAL` and `SV_MIN_SUPPORT` environment variables, which override `min_qual` and `min_support`. `filter_by_frequency` accepts the population database as a list of dicts (as above) or a dict keyed by `"chrom:start-end"`, with every frequency in [0, 1]; a database none of whose entries can be read raises `ValueError` naming the supported layouts, and unreadable entries of an otherwise usable database are skipped and counted in a logged warning (see Example 6 in [EXAMPLES.md](EXAMPLES.md)). `filter_by_size` keeps translocations and insertions without a positive `size` (an insertion called from split reads has `size` 0). `apply_blacklist` removes a zero-length variant (`start == end`, such as an insertion point) that lies strictly inside a blacklist region and keeps one on a region's edge.
 
 ### 8. Multi-Caller Merging
 
@@ -385,9 +406,9 @@ for mv in merged:
 
 **Returns:** `(list[MergedVariant], MergeStats)`.
 
-`MergedVariant` includes: `chrom, start, end, sv_type, size, n_callers, caller_names, consensus_quality, genotype, support_variants`. `MergeStats` has `n_input_callsets`, `n_input_variants`, `n_output_variants`, `n_multi_caller`, `n_single_caller`, `caller_counts`. Matching is transitive: if A matches B and B matches C, all three merge even when A and C do not meet `min_overlap` (`survivor_merge` does the same with `max_distance`).
+`MergedVariant` includes: `chrom, start, end, sv_type, size, n_callers, caller_names (sorted), consensus_quality, genotype, support_variants`. `MergeStats` has `n_input_callsets`, `n_input_variants`, `n_output_variants`, `n_multi_caller`, `n_single_caller`, `caller_counts`. Matching is transitive: if A matches B and B matches C, all three merge even when A and C do not meet `min_overlap` (`survivor_merge` does the same with `max_distance`). `merge_callsets` sets `consensus_quality` to the mean call quality plus `100 * log10(n_callers + 1)` and `genotype` to the majority genotype (a tie goes to the genotype seen first).
 
-Alternative: `survivor_merge()` for SURVIVOR-style distance-based merging. It returns the same `(merged, stats)` tuple, treats each VCF file as one caller (`caller_0`, `caller_1`, ...) and keeps only variants seen by at least `min_callers` callers. Unlike `merge_callsets`, it leaves `MergedVariant.genotype` at `"./."` and derives `consensus_quality` from the number of callers only:
+Alternative: `survivor_merge()` for SURVIVOR-style distance-based merging. It returns the same `(merged, stats)` tuple, treats each VCF file as one caller (`caller_0`, `caller_1`, ...) and keeps only variants seen by at least `min_callers` callers. Its `MergedVariant.genotype` is the majority vote among the calls' non-missing genotypes (a tie goes to the genotype with the larger summed call quality, then to the one that sorts first; `"./."` when no call has one), and its `consensus_quality` is the mean call quality plus `10 * n_callers * log10(n_callers + 1)`. Two callers with calls of quality 80 (genotype `0/1`) and 40 (genotype `1/1`) give `0/1` and 69.54:
 ```python
 from metainformant.structural_variants.filtering.merge import survivor_merge
 
@@ -434,6 +455,8 @@ for pop, afs in freq.get("population_frequencies", {}).items():
 
 # PCA for population structure (pca["pcs"] is n_samples × n_components)
 pca = sv_population_structure(gt_matrix, n_components=10)
+# variance_explained is each PC's share of the total variance (the sum of all eigenvalues), so the
+# 10 values add up to less than 1 unless the matrix has at most 10 SVs or samples (all PCs returned)
 print(f"PC1 variance: {pca['variance_explained'][0]:.2%}")
 
 # Association of one SV with a phenotype, adjusted for the top PCs
@@ -445,7 +468,7 @@ print(rec["beta"], rec["p_value"], rec["odds_ratio"])   # odds_ratio is None for
 **Returns:**
 - `genotype_sv_population`: `genotype_matrix`, `quality_scores` (both n_svs × n_samples) and `allele_frequencies` (one per SV). The function does not read BAM files; SVs or samples without evidence default to reference genotypes.
 - `sv_allele_frequency`: `frequencies`, `maf`, `n_polymorphic`, `sfs`, and `population_frequencies` when `sample_labels` is given.
-- `sv_population_structure`: `pcs`, `eigenvalues`, `variance_explained`, `loadings`.
+- `sv_population_structure`: `pcs`, `eigenvalues`, `variance_explained` (each component's share of the total variance, so the returned values sum to 1 only when every component is returned), `loadings`.
 - `sv_association_test`: `beta`, `se`, `p_value`, `odds_ratio` (binary 0/1 phenotypes only), `n_samples`.
 
 ### 10. Visualization
@@ -515,6 +538,7 @@ seg.confidence         # [0, 1]
 # StructuralVariant
 sv: StructuralVariant
 sv.chrom, sv.start, sv.end
+sv.chrom2, sv.pos2     # second breakpoint of a translocation ("" and None otherwise)
 sv.sv_type             # SVType enum
 sv.size, sv.quality, sv.genotype
 sv.evidence            # SVEvidence object
@@ -524,6 +548,7 @@ asdict(sv)             # plain nested dict; sv_type stays an SVType member (use 
 bp_pair: BreakpointPair
 bp_pair.bp1, bp_pair.bp2       # Breakpoint objects
 bp_pair.bp1.position, bp_pair.bp1.strand, bp_pair.bp1.confidence, bp_pair.bp1.microhomology
+bp_pair.bp1.support, bp_pair.bp1.inserted_sequence, bp_pair.bp1.read_names   # the same fields exist on bp2
 ```
 
 ---
@@ -595,8 +620,9 @@ log2_ratios = {
     for chrom in tumor_depth
 }
 
-# Call CNVs. detect_cnv_from_depth() takes depth-like positive values and computes
-# log2(value / median) itself, so pass the linear ratio (2**log2), not the log2 values.
+# Call CNVs. detect_cnv_from_depth() takes depth-like values (finite and >= 0) and computes
+# log2(value / median) itself, so pass the linear ratio (2**log2), not the log2 values
+# (negative log2 values raise ValueError).
 cnv_result = detect_cnv_from_depth(
     depth_data={chrom: np.exp2(lr) for chrom, lr in log2_ratios.items()},
     window_size=1000,

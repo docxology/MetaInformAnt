@@ -40,7 +40,7 @@ Exactly five variables are read. Each is read when the function is called (not a
 | `SV_CNV_DEL_THRESHOLD` | float | `cnv.call_cnv_states()` | `del_threshold` | `-0.3` |
 | `SV_CNV_DUP_THRESHOLD` | float | `cnv.call_cnv_states()` | `dup_threshold` | `0.3` |
 
-- The quality threshold is `SV_MIN_QUAL`. An earlier spelling in these docs, `SV_FILTER_MIN_QUAL`, is not read and has no effect.
+- The quality threshold variable is `SV_MIN_QUAL`; `SV_FILTER_MIN_QUAL` is not read and has no effect.
 - `SV_CNV_DEL_THRESHOLD` and `SV_CNV_DUP_THRESHOLD` affect `call_cnv_states()` only. `detect_cnv_from_depth()` assigns states with its built-in thresholds (deletion `-0.3`, duplication `0.3`, amplification `1.0`, homozygous deletion `-1.5`) and ignores both variables.
 - `SV_MIN_SUPPORT` acts on both stages, so one export changes the detector and the quality filter together.
 - Any other `SV_` variable is ignored.
@@ -56,25 +56,25 @@ Everything else is an ordinary keyword argument. The defaults below are the ones
 | Argument | Default | Function | Description |
 |----------|---------|----------|-------------|
 | `min_support` | `3` | `detection.sv_calling.call_structural_variants` | Minimum supporting reads (split reads plus discordant pairs); replaced by `SV_MIN_SUPPORT` |
-| `min_mapq` | `20` | `call_structural_variants`, `genotype_sv` | Minimum mapping quality of a read |
-| `min_sv_size` | `50` | `call_structural_variants` | Minimum SV size in bp (translocations are exempt) |
+| `min_mapq` | `20` | `call_structural_variants`, `genotype_sv` | Minimum mapping quality of a read. `call_structural_variants` applies its own value to the reads it uses as evidence, but genotypes every call with `genotype_sv`'s default of 20 |
+| `min_sv_size` | `50` | `call_structural_variants` | Minimum size in bp of DEL, DUP, INV and UNKNOWN calls, measured as the breakpoint distance. Translocations (no length) and insertions (length not measured, `size` 0) are exempt |
 | `insert_size_stats` | `None` | `call_structural_variants` | `InsertSizeStats`; estimated from the reads when omitted (mean 400, std 100 if it cannot be estimated) |
 | `min_clip` | `20` | `detect_split_reads` | Minimum soft-clip length for split-read evidence. `call_structural_variants` always uses 20 |
 | `n_std` | `4.0` | `detect_discordant_pairs` | Standard deviations from the mean insert size that count as discordant. `call_structural_variants` always uses 4.0 |
-| `window_size` | `1000` | `detection.cnv.detect_cnv_from_depth` | Bin size in bp; it only scales segment coordinates, the depth arrays must already be binned |
+| `window_size` | `1000` | `detection.cnv.detect_cnv_from_depth` | Bin size in bp; it only scales segment coordinates, the depth arrays must already be binned. The depths must be finite and non-negative: a negative or non-finite value raises `ValueError` naming the chromosome |
 | `method` | `"segmentation"` | `detect_cnv_from_depth` | The only supported method |
 | `significance` | `0.01` | `detect_cnv_from_depth`, `segment_coverage` | CBS p-value threshold; replaced by `SV_CNV_SIGNIFICANCE` in `detect_cnv_from_depth` |
 | `ploidy` | `2` | `detect_cnv_from_depth`, `call_cnv_states` | Expected ploidy |
 | `min_segment_bins` | `3` | `detect_cnv_from_depth` | Minimum bins in a segment |
 | `merge_distance` | `1000` | `detect_cnv_from_depth` | Maximum gap (bp) when merging same-state segments |
 | `max_gap` | `1000` | `cnv.merge_adjacent_segments` | Same, when called directly |
-| `max_iterations`, `min_width` | `100`, `2` | `cnv.segment_coverage` | Recursion depth limit and minimum width (bins) of the pieces tested for a change point; `detect_cnv_from_depth` then drops segments narrower than `min_segment_bins` |
+| `max_iterations`, `min_width` | `100`, `2` | `cnv.segment_coverage` | Recursion depth limit and minimum width (bins) of the pieces tested for a change point (`min_width` below 1 raises `ValueError`); `detect_cnv_from_depth` then drops segments narrower than `min_segment_bins` |
 | `del_threshold`, `dup_threshold` | `-0.3`, `0.3` | `cnv.call_cnv_states` | Log2 ratio thresholds; replaced by `SV_CNV_DEL_THRESHOLD` / `SV_CNV_DUP_THRESHOLD` |
 | `amp_threshold`, `homodel_threshold` | `1.0`, `-1.5` | `call_cnv_states` | Log2 ratio for amplification and homozygous deletion (arguments only) |
 | `pseudocount`, `gc_content` | `1.0`, `None` | `cnv.calculate_log2_ratio` | Pseudocount; per-bin GC fractions switch on GC correction |
-| `window`, `min_clip` | `200`, `5` | `detection.breakpoints.refine_breakpoints` | Search window around each breakpoint and minimum soft-clip length |
+| `window`, `min_clip` | `200`, `5` | `detection.breakpoints.refine_breakpoints` | A read counts for a breakpoint when one of its soft clips lies within `window` bp of it (wherever the read starts); minimum soft-clip length |
 | `max_distance` | `100` | `breakpoints.cluster_breakpoints` | Maximum distance (bp) between clustered breakpoints |
-| `max_homology` | `50` | `breakpoints.detect_microhomology` | Longest microhomology reported |
+| `max_homology` | `50` | `breakpoints.detect_microhomology` | Longest microhomology reported (`refine_breakpoints` uses this default and reads up to 50 bases on each side of a clip junction) |
 
 The evidence clustering distance inside `call_structural_variants` (500 bp) is fixed.
 
@@ -86,7 +86,7 @@ The evidence clustering distance inside `call_structural_variants` (500 bp) is f
 | `max_distance` | `1000000` | `annotation.overlap.IntervalIndex.query_nearest` | Maximum search distance (bp) |
 | `boundary_window` | `10000` | `annotation.functional_impact.predict_tad_disruption` | Window (bp) around a TAD boundary midpoint. `predict_functional_impact` has no such argument and always uses 10 kb |
 
-The dosage-sensitivity cut-offs inside `assess_dosage_sensitivity` are fixed in the code: a gene is haploinsufficient when its HI score is at least 0.5, its pLI at least 0.9, or its LOEUF below 0.35, and triplosensitive when its TS score is at least 0.5.
+The dosage-sensitivity cut-offs inside `assess_dosage_sensitivity` are fixed in the code: a gene is haploinsufficient when its HI score is at least 0.5, its pLI at least 0.9, or its LOEUF below 0.35, and triplosensitive when its TS score is at least 0.5. `predict_functional_impact` takes the four score dictionaries as the optional arguments `haploinsufficiency_db`, `triplosensitivity_db`, `pli_db` and `loeuf_db` and applies these cut-offs: a deletion over a haploinsufficient gene or a duplication over a triplosensitive gene is a high-impact dosage hit (`dosage_loss`, `dosage_gain`).
 
 ### Filtering and Merging
 
@@ -95,11 +95,11 @@ The dosage-sensitivity cut-offs inside `assess_dosage_sensitivity` are fixed in 
 | `min_qual` | `20.0` | `filtering.quality_filter.filter_by_quality` | Minimum quality (Phred); replaced by `SV_MIN_QUAL` |
 | `min_support` | `3` | `filter_by_quality` | Minimum supporting reads; replaced by `SV_MIN_SUPPORT` |
 | `min_mapq`, `min_gq` | `0.0`, `0.0` | `filter_by_quality` | Minimum mean mapping quality and genotype quality (0 disables) |
-| `min_size`, `max_size` | `50`, `None` | `quality_filter.filter_by_size` | Size window in bp |
+| `min_size`, `max_size` | `50`, `None` | `quality_filter.filter_by_size` | Size window in bp. Translocations (TRA/BND) and insertions without a positive `size` are always kept |
 | `max_af` | `0.01` | `quality_filter.filter_by_frequency` | Remove variants whose population frequency is above this |
 | `match_window` | `200` | `filter_by_frequency` | Position window (bp) used as a pre-filter on database entries; the reciprocal-overlap test below decides matches, so the window only matters when `min_reciprocal_overlap` is 0 |
 | `min_reciprocal_overlap` | `0.5` | `filter_by_frequency` | Reciprocal overlap needed to match a database entry |
-| `min_overlap_fraction` | `0.0` | `quality_filter.apply_blacklist` | A variant is removed when its overlap with a single blacklist region is greater than this fraction of the variant (0.0 removes on any overlap) |
+| `min_overlap_fraction` | `0.0` | `quality_filter.apply_blacklist` | A variant is removed when its overlap with a single blacklist region is greater than this fraction of the variant (0.0 removes on any overlap). A zero-length variant (`start == end`) strictly inside a region counts as fully overlapping (fraction 1.0); one on a region's edge, or outside it, does not overlap |
 | `min_overlap`, `type_match` | `0.5`, `True` | `filtering.merge.merge_callsets` | Reciprocal overlap threshold; require matching SV types |
 | `max_distance`, `min_callers`, `type_match`, `strand_match` | `1000`, `2`, `True`, `False` | `merge.survivor_merge` | Breakpoint distance (bp), minimum callers, type and strand matching |
 | `max_distance`, `min_reciprocal_overlap`, `type_match` | `100`, `0.8`, `True` | `merge.deduplicate_variants` | Duplicate collapsing within one callset |
@@ -130,7 +130,7 @@ Figures are saved at 150 dpi (fixed). Colours come from the module constants `SV
 
 ### Not Implemented
 
-These settings appeared in earlier versions of this page. Nothing in `src/` reads them, so setting them has no effect:
+These settings are not implemented. Nothing in `src/` reads them, so setting them has no effect:
 
 - Environment variables: `SV_MIN_MAPQ`, `SV_MIN_SV_SIZE`, `SV_CNV_WINDOW_SIZE`, `SV_CNV_AMP_THRESHOLD`, `SV_CNV_HOMODEL_THRESHOLD`, `SV_CNV_MIN_SEGMENT_BINS`, `SV_CNV_MERGE_DISTANCE`, `SV_MIN_CLIP`, `SV_DISCORDANT_N_STD`, `SV_EVIDENCE_CLUSTER_DISTANCE`, `SV_MAX_GENE_DISTANCE`, `SV_TAD_WINDOW`, `SV_IMPACT_*`, `SV_FILTER_*`, `SV_MERGE_*`, `SV_PCA_COMPONENTS`, `SV_ASSOCIATION_METHOD`, `SV_LD_WINDOW`, `SV_VIS_*`, `SV_LOG_LEVEL`, `SV_OUTPUT_DIR`, `SV_CACHE_TTL`
 - A `structural_variants:` YAML tree, `config.yaml` / `~/.hermes/config.yaml` lookup, `config.get()`, `config.set()`, `config.validate_schema()`
@@ -296,19 +296,19 @@ pop_db = io.load_json("gnomad_sv.json")           # [{"chrom": "chr1", "start": 
 |----------|------------------|
 | `gene_db` (`annotate_gene_overlap`, `find_nearest_gene`), `regulatory_db` | List of dicts with `chrom`, `start`, `end`, `name`, or a list of `GenomicInterval` (any `is_coding` key is ignored) |
 | `gene_annotations` (`predict_functional_impact`) | List of dicts with `chrom`, `start`, `end`, `name` and optionally `is_coding` (default coding); dicts only, not `GenomicInterval` |
-| `haploinsufficiency_db` | `{gene: score}` |
+| `haploinsufficiency_db`, `triplosensitivity_db`, `pli_db`, `loeuf_db` (`predict_functional_impact`, `assess_dosage_sensitivity`) | `{gene: score}`; each is optional, and a gene missing from a dictionary scores 0 (1.0 for LOEUF) |
 | `tad_boundaries` | List of dicts with `chrom`, `start`, `end` (and optionally `genes`) |
-| `population_db` | List of dicts with `chrom`, `start`, `end`, `af` (and optionally `sv_type`), or `{"chrom:start-end": af}` |
+| `population_db` | List of dicts with `chrom`, `start`, `end`, `af` or `allele_frequency` (and optionally `sv_type`), or `{"chrom:start-end": af}` (optionally `"chrom:start-end-SVTYPE"`); `af` must lie in [0, 1]. A non-empty database none of whose entries can be read raises `ValueError` naming these layouts; unreadable entries of an otherwise usable database are skipped and counted in a logged warning |
 | `blacklist_regions` | List of dicts with `chrom`, `start`, `end`, or a list of `(chrom, start, end)` tuples |
 
 ---
 
 ## Optional Behaviour
 
-There are no feature flags. The behaviours the old flag table described are plain function-level choices:
+There are no feature flags. The behaviours a flag might switch are plain function-level choices:
 
 - **GC-bias correction** — pass per-bin GC fractions as `gc_content=` to `cnv.calculate_log2_ratio()`.
-- **Microhomology scan** — `breakpoints.detect_microhomology()` can be called on its own; `refine_breakpoints()` runs it once, on the first read that carries a `seq` on the variant's chromosome, and reports the result on the first breakpoint only.
+- **Microhomology, strand and inserted sequence** — `breakpoints.detect_microhomology()` can be called on its own. `refine_breakpoints()` fills `microhomology`, `strand` and `inserted_sequence` on both breakpoints from the reads that clip at each one: `microhomology` needs the reads' `seq` (a mirror-match heuristic on the read bases around the clip junction, not true microhomology), `strand` uses `is_reverse`, and `inserted_sequence` needs `seq`, `is_reverse`, `cigar` and a one-entry `sa_tag` at the other breakpoint. A field whose input keys are absent keeps its default: `""` for `microhomology` and `inserted_sequence`, `'+'` for `strand`.
 - **Experimental merging** — no such option exists; use `merge_callsets()` or `survivor_merge()`.
 
 ---

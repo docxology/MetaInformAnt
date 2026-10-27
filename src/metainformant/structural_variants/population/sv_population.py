@@ -315,8 +315,10 @@ def sv_population_structure(
         Dictionary with keys:
             - ``pcs``: 2D array (n_samples x n_components) of PC coordinates.
             - ``eigenvalues``: List of eigenvalues for each component.
-            - ``variance_explained``: List of fraction of variance explained
-              per component.
+            - ``variance_explained``: List of the fraction of the total variance
+              (the sum of all eigenvalues of the covariance matrix, not just the
+              returned components) that each component explains. It sums to less
+              than 1 when ``n_components`` is smaller than the rank of the data.
             - ``loadings``: 2D array (n_svs x n_components) of SV loadings.
 
     Raises:
@@ -345,6 +347,7 @@ def sv_population_structure(
         # Compute n_samples x n_samples covariance
         cov = data_scaled @ data_scaled.T / max(n_svs - 1, 1)
         eigenvalues, eigenvectors = np.linalg.eigh(cov)
+        total_var = _total_variance(eigenvalues)
 
         # Sort by descending eigenvalue
         idx = np.argsort(eigenvalues)[::-1][:n_components]
@@ -363,6 +366,7 @@ def sv_population_structure(
         # Standard PCA on SV x SV covariance
         cov = data_scaled.T @ data_scaled / max(n_samples - 1, 1)
         eigenvalues, eigenvectors = np.linalg.eigh(cov)
+        total_var = _total_variance(eigenvalues)
 
         idx = np.argsort(eigenvalues)[::-1][:n_components]
         eigenvalues = eigenvalues[idx]
@@ -370,8 +374,9 @@ def sv_population_structure(
 
         pcs = data_scaled @ loadings
 
-    total_var = float(np.sum(np.abs(eigenvalues)))
-    variance_explained = [float(abs(ev)) / total_var if total_var > 0 else 0.0 for ev in eigenvalues]
+    # Each component's share of the total variance, which comes from all eigenvalues
+    # (taken above, before the top components were selected).
+    variance_explained = [max(float(ev), 0.0) / total_var if total_var > 0 else 0.0 for ev in eigenvalues]
 
     logger.info(
         "PCA on %d SVs x %d samples: top %d PCs explain %.1f%% variance",
@@ -634,6 +639,21 @@ def _genotype_by_split(
         return 1, min(99.0, support * 5.0)
     else:
         return 0, min(99.0, (total - support) * 2.0)
+
+
+def _total_variance(eigenvalues: Any) -> float:
+    """Total variance: the sum of all eigenvalues of a covariance matrix.
+
+    Eigenvalues of a covariance matrix cannot be negative; the tiny negative ones
+    that rounding produces are counted as zero.
+
+    Args:
+        eigenvalues: Every eigenvalue of the matrix, not only the leading ones.
+
+    Returns:
+        The sum of the non-negative parts of the eigenvalues.
+    """
+    return float(np.sum(np.clip(eigenvalues, 0.0, None)))
 
 
 def _linear_regression(

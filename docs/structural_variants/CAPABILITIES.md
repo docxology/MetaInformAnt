@@ -20,19 +20,31 @@
 | `annotate_regulatory_overlap()` | `annotation.overlap` | Annotate structural variants with overlapping regulatory elements. |
 | `calculate_overlap_fraction()` | `annotation.overlap` | Calculate reciprocal overlap fractions between two intervals. |
 | `find_nearest_gene()` | `annotation.overlap` | Find the nearest gene to a structural variant. |
-| `_collect_clip_positions()` | `detection.breakpoints` | Collect soft-clip positions near a target position. |
+| `_cigar_ops()` | `detection.breakpoints` | Split a CIGAR into ``(operation letter, length)`` pairs. |
 | `_consensus_position()` | `detection.breakpoints` | Find consensus breakpoint position from clip positions. |
-| `_parse_clips_from_cigar()` | `detection.breakpoints` | Parse CIGAR to find soft-clip positions and lengths. |
+| `_first_present()` | `detection.breakpoints` | Return the first value among ``keys`` that is not None (0 when none is). |
+| `_inserted_between_alignments()` | `detection.breakpoints` | Bases of ``read`` between its primary and its single supplementary alignment. |
+| `_junction_microhomology()` | `detection.breakpoints` | Longest microhomology among the supporting reads, each centred on its junction. |
+| `_majority_strand()` | `detection.breakpoints` | Orientation of most supporting reads: '-' when more are reverse-complemented than not. |
+| `_parse_clips_from_cigar()` | `detection.breakpoints` | Parse CIGAR to find soft-clip junctions. |
+| `_parse_sa_alignments()` | `detection.breakpoints` | Parse an SA tag (``rname,pos,strand,CIGAR,mapQ,NM;...``) into ``(chrom, start, strand, CIGAR)``. |
 | `_position_std()` | `detection.breakpoints` | Calculate standard deviation of clip positions. |
+| `_query_extent()` | `detection.breakpoints` | Return ``(leading clip, aligned query length, trailing clip, reference length)`` of a CIGAR. |
+| `_refine_breakpoint()` | `detection.breakpoints` | Build the refined breakpoint from the soft clips found near it. |
+| `_split_read_insertion()` | `detection.breakpoints` | Most common inserted sequence among the supporting reads, or '' when not derivable. |
 | `calculate_breakpoint_confidence()` | `detection.breakpoints` | Calculate confidence score for a breakpoint. |
 | `cluster_breakpoints()` | `detection.breakpoints` | Cluster nearby breakpoints using single-linkage clustering. |
 | `detect_microhomology()` | `detection.breakpoints` | Detect microhomology at a breakpoint junction. |
 | `refine_breakpoints()` | `detection.breakpoints` | Refine breakpoint positions to base-pair resolution. |
 | `_assign_cnv_state()` | `detection.cnv` | Assign a copy number state and integer CN from a log2 ratio. |
 | `_calculate_segment_confidence()` | `detection.cnv` | Calculate confidence score for a CNV segment. |
+| `_cbs_best_arc()` | `detection.cnv` | Find the arc whose mean differs most from the rest of the segment. |
 | `_cbs_pvalue()` | `detection.cnv` | Approximate p-value for CBS test statistic. |
 | `_cbs_recursive()` | `detection.cnv` | Recursive CBS implementation. |
+| `_center_on_median()` | `detection.cnv` | Subtract the median of the finite values (pure-Python median centering). |
+| `_check_depths()` | `detection.cnv` | Raise a ValueError naming the problem if the values cannot be read-depth counts. |
 | `_gc_correct()` | `detection.cnv` | GC-content bias correction using binned median normalization. |
+| `_gc_correct_py()` | `detection.cnv` | Pure-Python twin of `_gc_correct()` (binned median normalization). |
 | `calculate_log2_ratio()` | `detection.cnv` | Compute log2 ratio between tumor and normal read depths. |
 | `call_cnv_states()` | `detection.cnv` | Assign copy number states to segments based on log2 ratio thresholds. |
 | `detect_cnv_from_depth()` | `detection.cnv` | Detect copy number variations from read depth data. |
@@ -50,17 +62,26 @@
 | `detect_discordant_pairs()` | `detection.sv_calling` | Detect discordant read pair evidence for structural variants. |
 | `detect_split_reads()` | `detection.sv_calling` | Identify split-read evidence for structural variants. |
 | `genotype_sv()` | `detection.sv_calling` | Genotype a structural variant based on supporting and reference reads. |
+| `_call_quality()` | `filtering.merge` | Quality of one call (``quality``, else ``qual``); 0 when absent or None. |
 | `_consensus_genotype()` | `filtering.merge` | Determine consensus genotype from multiple calls. |
 | `_find()` | `filtering.merge` | Find operation for union-find with path compression. |
+| `_format_genotype()` | `filtering.merge` | Format a called allele tuple (as pysam reports ``GT``) as ``'0/1'``; None when absent. |
 | `_load_vcf_variants()` | `filtering.merge` | Load structural variants from a VCF file. |
+| `_majority_sv_type()` | `filtering.merge` | Consensus SV type by majority vote within a merge group. |
+| `_median_position()` | `filtering.merge` | Median of a list of positions (consensus breakpoint). |
 | `_parse_vcf_basic()` | `filtering.merge` | Basic VCF parser without pysam dependency. |
+| `_pysam_first_genotype()` | `filtering.merge` | Genotype of the first sample of a pysam record, or None when it has no ``GT``. |
 | `_union()` | `filtering.merge` | Union operation for union-find with path compression. |
+| `_vcf_sample_genotype()` | `filtering.merge` | Genotype of the first sample of a VCF record line (``'0/1'``), or None when there is none. |
 | `calculate_reciprocal_overlap()` | `filtering.merge` | Calculate the minimum reciprocal overlap between two SVs. |
 | `deduplicate_variants()` | `filtering.merge` | Remove duplicate structural variant calls. |
 | `merge_callsets()` | `filtering.merge` | Merge structural variant callsets from multiple callers. |
 | `survivor_merge()` | `filtering.merge` | SURVIVOR-style merging of structural variant callsets. |
+| `_as_frequency()` | `filtering.quality_filter` | Return ``value`` as an allele frequency in [0, 1], or None when it is not one. |
+| `_as_position()` | `filtering.quality_filter` | Return ``value`` as an int coordinate, or None when it is not an integral number. |
 | `_build_population_lookup()` | `filtering.quality_filter` | Build a chromosome-keyed lookup from population database. |
 | `_lookup_population_frequency()` | `filtering.quality_filter` | Look up population frequency for a variant. |
+| `_parse_population_db()` | `filtering.quality_filter` | Read a population database, counting the entries that are not in a supported layout. |
 | `apply_blacklist()` | `filtering.quality_filter` | Remove variants overlapping blacklist regions. |
 | `filter_by_frequency()` | `filtering.quality_filter` | Filter structural variants by population allele frequency. |
 | `filter_by_quality()` | `filtering.quality_filter` | Filter structural variants by quality metrics. |
@@ -72,6 +93,7 @@
 | `_logistic_regression()` | `population.sv_population` | Iteratively reweighted least squares logistic regression. |
 | `_normal_cdf_np()` | `population.sv_population` | Standard normal CDF approximation. |
 | `_should_merge()` | `population.sv_population` | Determine if two SV calls should be merged. |
+| `_total_variance()` | `population.sv_population` | Total variance: the sum of all eigenvalues of a covariance matrix. |
 | `genotype_sv_population()` | `population.sv_population` | Population-scale SV genotyping across multiple samples. |
 | `merge_sv_callsets()` | `population.sv_population` | Merge SV calls across samples using reciprocal overlap and breakpoint proximity. |
 | `sv_allele_frequency()` | `population.sv_population` | Compute SV allele frequencies, optionally stratified by population. |
@@ -98,7 +120,7 @@
 
 #### `predict_functional_impact()`
 
-**Signature**: `predict_functional_impact(variant, gene_annotations, haploinsufficiency_db, tad_boundaries)`
+**Signature**: `predict_functional_impact(variant, gene_annotations, haploinsufficiency_db, tad_boundaries, triplosensitivity_db, pli_db, loeuf_db)`
 
 Predict the functional impact of a structural variant.
 
@@ -126,9 +148,19 @@ Args:
         - 'name': Gene name
         - 'is_coding': Whether gene is protein-coding (optional)
     haploinsufficiency_db: Optional dictionary mapping gene names to
-        haploinsufficiency scores (0-1).
+        haploinsufficiency scores (0-1). Genes it marks haploinsufficient
+        count as dosage-sensitive for deletions.
     tad_boundaries: Optional list of TAD boundary dictionaries with
         'chrom', 'start', 'end' keys.
+    triplosensitivity_db: Optional dictionary mapping gene names to
+        triplosensitivity scores (0-1). Genes it marks triplosensitive
+        count as dosage-sensitive for duplications (impact type
+        ``dosage_gain``); without it a duplication can never reach that
+        class.
+    pli_db: Optional dictionary mapping gene names to pLI scores (0-1);
+        a gene with pLI >= 0.9 is haploinsufficient.
+    loeuf_db: Optional dictionary mapping gene names to LOEUF values;
+        a gene with LOEUF < 0.35 is haploinsufficient.
 
 Returns:
     FunctionalImpact object with comprehensive impact assessment.
@@ -461,14 +493,21 @@ Attributes:
     overlap_bp: Number of overlapping base pairs.
     overlap_fraction_variant: Fraction of the variant overlapping the feature.
     overlap_fraction_feature: Fraction of the feature overlapping the variant.
-    relationship: Relationship type ('overlap', 'contained_in', 'contains', 'upstream', 'downstream').
+    relationship: Relationship type ('overlap', 'contained_in', 'contains').
 
 #### `IntervalIndex`
 
-Efficient interval index for overlap queries.
+Interval index for overlap and nearest-interval queries.
 
-Uses a sorted-start approach with binary search for fast overlap queries.
-Suitable for moderate-size feature databases (up to millions of intervals).
+Intervals are grouped by chromosome and sorted by ``(start, end)``. Two
+structures sit on that order, so a query never scans the whole chromosome:
+
+* a segment tree of the maximum ``end`` over ranges of the sorted intervals
+  reports the ``k`` intervals that overlap a region in ``O(k log n)``,
+  however long the intervals are (a gene spanning most of a chromosome is
+  found, and does not slow down the queries after it);
+* the running maximum of the ends, together with the interval that reaches
+  it, gives the nearest interval to the left of a position in ``O(1)``.
 
 **Methods**:
 
@@ -492,24 +531,45 @@ For each variant, examines split reads near the reported breakpoint
 positions and determines the most likely exact breakpoint positions
 by consensus of soft-clip positions.
 
+A read is located by the reference coordinate of its soft clip, not by where
+its alignment starts, so a read that spans the breakpoint from far away (a long
+alignment, or a long deletion or skip in its CIGAR) counts as long as the clip
+itself lies within ``window`` of the breakpoint.
+
+The reads that clip at the consensus position are the breakpoint's supporting
+reads. Their orientation, sequence and supplementary alignment give each
+breakpoint's ``strand``, ``microhomology`` and ``inserted_sequence``; both
+breakpoints of a variant are analysed the same way.
+
 Args:
     variants: List of variant dictionaries, each containing:
         - 'chrom' or 'chrom1': Chromosome of breakpoint 1
         - 'start' or 'breakpoint1': Approximate position of breakpoint 1
         - 'end' or 'breakpoint2': Approximate position of breakpoint 2
-        - 'chrom2': Chromosome of breakpoint 2 (optional, defaults to chrom)
+        - 'pos2': Position of breakpoint 2 on 'chrom2' (translocations; it
+          takes the place of 'end', which then describes breakpoint 1 only).
+          ``dataclasses.asdict`` of a StructuralVariant provides it.
+        - 'chrom2': Chromosome of breakpoint 2 (optional; absent, None or ''
+          means the same chromosome as breakpoint 1)
         - 'sv_type': Type of structural variant (optional)
     reads: List of read alignment dictionaries with:
         - 'chrom': Chromosome
         - 'pos': Alignment start position
         - 'cigar': CIGAR string
         - 'name': Read name
-        - 'seq': Read sequence (optional, for microhomology detection)
+        - 'is_reverse': Whether the read is reverse-complemented (optional;
+          gives the breakpoint strand)
+        - 'seq': Read sequence as stored in the alignment (optional; used for
+          microhomology and inserted-sequence detection)
+        - 'sa_tag': SA tag of a read with exactly one supplementary
+          alignment (optional; with 'seq' and 'is_reverse' it gives the
+          inserted sequence)
     window: Window size around each breakpoint to search for refinement.
     min_clip: Minimum soft-clip length to consider.
 
 Returns:
-    List of BreakpointPair objects with refined positions.
+    List of BreakpointPair objects with refined positions. A breakpoint with
+    no soft clip in its window keeps its input position with ``support`` 0.
 
 #### `detect_microhomology()`
 
@@ -576,35 +636,125 @@ Args:
 Returns:
     Confidence score between 0 and 1.
 
-#### `_collect_clip_positions()`
+#### `_first_present()`
 
-**Signature**: `_collect_clip_positions(reads, chrom, position, window, min_clip)`
+**Signature**: `_first_present(variant, keys)`
 
-Collect soft-clip positions near a target position.
+Return the first value among ``keys`` that is not None (0 when none is).
+
+#### `_refine_breakpoint()`
+
+**Signature**: `_refine_breakpoint(chrom, approx, hits, other_chrom, other_approx, window)`
+
+Build the refined breakpoint from the soft clips found near it.
 
 Args:
-    reads: List of read alignment dictionaries.
-    chrom: Target chromosome.
-    position: Target position.
-    window: Window size around the position.
-    min_clip: Minimum clip length.
+    chrom: Chromosome of this breakpoint.
+    approx: Approximate position (kept when there is no clip).
+    hits: Soft clips within the window around ``approx``.
+    other_chrom: Chromosome of the variant's other breakpoint.
+    other_approx: Approximate position of the other breakpoint.
+    window: Search window (also the tolerance for locating the other breakpoint).
 
 Returns:
-    List of (clip_position, read_name) tuples.
+    The refined Breakpoint.
+
+#### `_majority_strand()`
+
+**Signature**: `_majority_strand(hits)`
+
+Orientation of most supporting reads: '-' when more are reverse-complemented than not.
+
+Reads that do not report ``is_reverse`` carry no orientation and are not counted;
+with no orientation at all (or a tie) the breakpoint keeps the default '+'.
+
+#### `_junction_microhomology()`
+
+**Signature**: `_junction_microhomology(chrom, position, hits)`
+
+Longest microhomology among the supporting reads, each centred on its junction.
+
+`detect_microhomology()` assumes the breakpoint is at the midpoint of the
+sequence it is given, so each read contributes the window of its ``seq`` that is
+centred on its own clip junction (and not the whole read).
+
+#### `_split_read_insertion()`
+
+**Signature**: `_split_read_insertion(hits, other_chrom, other_approx, window)`
+
+Most common inserted sequence among the supporting reads, or '' when not derivable.
+
+Nothing but the read's own two alignments tells inserted bases from reference bases,
+so a sequence is reported only for a read that has its ``seq``, its ``is_reverse``
+flag and an ``sa_tag`` with exactly one supplementary alignment located at the other
+breakpoint. Ties go to the longer sequence, then to the first read.
+
+#### `_inserted_between_alignments()`
+
+**Signature**: `_inserted_between_alignments(read, other_chrom, other_approx, window)`
+
+Bases of ``read`` between its primary and its single supplementary alignment.
+
+Both alignments cover an interval of the read (the CIGAR, leading clip to the end
+of the aligned part). Expressed in the orientation of the stored ``seq``, the bases
+between the two intervals are inserted; overlapping or abutting alignments
+insert nothing. An SA entry on the opposite strand describes the reverse-complemented
+read, so its interval is mirrored (its leading clip becomes its trailing clip).
+
+Args:
+    read: Read dictionary with ``seq``, ``cigar``, ``is_reverse`` and ``sa_tag``.
+    other_chrom: Chromosome the supplementary alignment must lie on.
+    other_approx: Position the supplementary alignment must lie within ``window`` of.
+    window: Positional tolerance in bp.
+
+Returns:
+    The inserted sequence, or '' when it cannot be derived.
+
+#### `_cigar_ops()`
+
+**Signature**: `_cigar_ops(cigar)`
+
+Split a CIGAR into ``(operation letter, length)`` pairs.
+
+Args:
+    cigar: A CIGAR string (``"50M30S"``) or a list of ``(BAM operation code, length)``
+        tuples (``[(0, 50), (4, 30)]``).
+
+#### `_query_extent()`
+
+**Signature**: `_query_extent(cigar)`
+
+Return ``(leading clip, aligned query length, trailing clip, reference length)`` of a CIGAR.
+
+The leading and trailing clips count soft and hard clipped bases; the aligned query
+length counts M, I, = and X; the reference length counts M, D, N, = and X.
+Returns None for an empty or unparseable CIGAR.
+
+#### `_parse_sa_alignments()`
+
+**Signature**: `_parse_sa_alignments(sa_tag)`
+
+Parse an SA tag (``rname,pos,strand,CIGAR,mapQ,NM;...``) into ``(chrom, start, strand, CIGAR)``.
+
+``start`` is the 0-based leftmost reference position. Entries without a numeric
+position or a CIGAR are skipped.
 
 #### `_parse_clips_from_cigar()`
 
 **Signature**: `_parse_clips_from_cigar(cigar, pos, min_clip)`
 
-Parse CIGAR to find soft-clip positions and lengths.
+Parse CIGAR to find soft-clip junctions.
 
 Args:
-    cigar: CIGAR string.
+    cigar: CIGAR string, or a list of ``(BAM operation code, length)`` tuples.
     pos: Alignment start position.
     min_clip: Minimum clip length.
 
 Returns:
-    List of (clip_position, clip_length) tuples.
+    List of ``(clip_position, clip_length, query_offset)`` tuples: the reference
+    coordinate of the junction between the clip and the aligned part, the clip
+    length, and the offset of that junction in the read's stored sequence (hard
+    clipped bases are not stored, so they are not counted).
 
 #### `_consensus_position()`
 
@@ -643,11 +793,16 @@ A structural variant breakpoint.
 Attributes:
     chrom: Chromosome name.
     position: Genomic position (0-based).
-    strand: Strand orientation ('+' or '-').
+    strand: Strand orientation ('+' or '-'): the orientation of most of the
+        reads supporting the breakpoint ('-' when more are reverse-complemented
+        than not). '+' when no supporting read reports ``is_reverse``.
     confidence: Confidence score [0, 1].
     support: Number of supporting reads.
     microhomology: Microhomology sequence at the breakpoint, if any.
-    inserted_sequence: Inserted sequence at the breakpoint, if any.
+    inserted_sequence: Bases inserted between the two alignments of a split
+        read at this breakpoint, as they read along the forward strand of the
+        alignment at this breakpoint; empty when not derivable (see
+        `refine_breakpoints()`).
     read_names: Names of reads supporting this breakpoint.
 
 #### `BreakpointPair`
@@ -659,6 +814,33 @@ Attributes:
     bp2: Second breakpoint.
     sv_type: Inferred structural variant type.
     confidence: Joint confidence score.
+
+#### `_ClipHit`
+
+One soft-clipped junction of one read (internal).
+
+Attributes:
+    position: Reference coordinate of the junction.
+    name: Read name.
+    clip_length: Length of the soft clip.
+    query_offset: Offset of the junction in the read's ``seq`` (bases before it).
+    order: ``(read index, clip index)``: the order in which the clips were read.
+    read: The read dictionary the clip belongs to.
+
+#### `_ClipIndex`
+
+Soft-clipped junctions of a read set, sorted by reference position per chromosome.
+
+Every read is parsed once and found by the coordinate of its clip, never by where
+its alignment starts: a long alignment (or a long deletion or skip in its CIGAR)
+puts the clip far from the read start, so the start position says nothing about
+which reads clip near a breakpoint.
+
+**Methods**:
+
+| Method | Purpose |
+|--------|---------|
+| `near()` | Return the clips within ``window`` bp of ``position``, in the order they were read. |
 
 ## detection.cnv
 
@@ -675,8 +857,10 @@ gain or loss using circular binary segmentation (CBS).
 
 Args:
     depth_data: Dictionary mapping chromosome names to arrays of read depth
-        values. Each value represents the mean depth in a genomic window.
-        Can be numpy arrays or plain lists of floats.
+        values. Each value represents the mean depth in a genomic window and
+        must be finite and non-negative (zero is a bin with no coverage).
+        Can be numpy arrays or plain lists of floats. Log2 ratios are not
+        depths: pass them to `segment_coverage()` instead.
     window_size: Size of each depth bin in base pairs.
     method: Detection method. Currently supports 'segmentation' (CBS).
     significance: P-value threshold for CBS change-point detection.
@@ -689,7 +873,21 @@ Returns:
     detected segments with copy number states.
 
 Raises:
-    ValueError: If depth_data is empty or method is unsupported.
+    ValueError: If depth_data is empty, method is unsupported, or a chromosome
+        that would be analysed holds negative or non-finite depth values.
+
+#### `_check_depths()`
+
+**Signature**: `_check_depths(chrom, depth_array)`
+
+Raise a ValueError naming the problem if the values cannot be read-depth counts.
+
+Args:
+    chrom: Chromosome name (for the message).
+    depth_array: Depth values as a float array.
+
+Raises:
+    ValueError: If any value is negative or not finite.
 
 #### `segment_coverage()`
 
@@ -701,17 +899,51 @@ Recursively finds change-points in a coverage array by testing for
 differences in means across circular permutations of the data, splitting
 at the most significant change-point, and recursing on each half.
 
+Every arc of at most half the data is scored, so the work grows with the
+square of the segment length; the scan is vectorised over all arcs of one
+length, which makes it about two orders of magnitude faster than scoring
+the arcs one at a time (and gives exactly the same segmentation).
+
 Args:
     coverage_array: Array of log2 ratio values to segment. Can be a numpy
         array or list of floats.
     significance: P-value threshold for accepting a change-point. Lower
         values produce fewer, more confident segments.
     max_iterations: Maximum recursion depth to prevent infinite loops.
-    min_width: Minimum segment width in bins.
+    min_width: Minimum segment width in bins (at least 1).
 
 Returns:
     List of (start, end, mean) tuples representing segments, where start
     is inclusive, end is exclusive, and mean is the segment mean.
+
+Raises:
+    ValueError: If min_width is less than 1.
+
+#### `_cbs_best_arc()`
+
+**Signature**: `_cbs_best_arc(segment_data, std_dev, min_width)`
+
+Find the arc whose mean differs most from the rest of the segment.
+
+Scores every arc ``[i, j)`` with ``min_width <= j - i <= n // 2`` (and at least
+``min_width`` bins outside it) by the standardised difference between the mean
+inside and outside the arc,
+``|mean_in - mean_out| * sqrt(len_in * len_out / n) / std_dev``. A change point
+is the arc that touches an end of the segment, so the single-split scan of plain
+binary segmentation is the special case of this one.
+
+The arcs of one length are scored together with array arithmetic that performs
+the same floating-point operations in the same order as scoring them one at a
+time, so the statistics are bit-for-bit the same. The first arc in
+``(i, j)`` order wins a tie.
+
+Args:
+    segment_data: The segment's values (at least ``2 * min_width`` of them).
+    std_dev: Sample standard deviation of the segment (positive).
+    min_width: Minimum arc length, and minimum length outside the arc.
+
+Returns:
+    ``(statistic, i, j)`` of the best arc, or ``(0.0, -1, -1)`` if no arc scores above zero.
 
 #### `_cbs_recursive()`
 
@@ -867,6 +1099,32 @@ Args:
 Returns:
     GC-corrected log2 ratio array.
 
+#### `_center_on_median()`
+
+**Signature**: `_center_on_median(values)`
+
+Subtract the median of the finite values (pure-Python median centering).
+
+Args:
+    values: Log2 ratio values.
+
+Returns:
+    Values shifted so that the median of the finite entries is zero.
+
+#### `_gc_correct_py()`
+
+**Signature**: `_gc_correct_py(log2_ratios, gc_content, n_bins)`
+
+Pure-Python twin of `_gc_correct()` (binned median normalization).
+
+Args:
+    log2_ratios: Log2 ratio values.
+    gc_content: GC content fractions (0-1), one per log2 ratio.
+    n_bins: Number of GC bins for correction.
+
+Returns:
+    GC-corrected, median-centered log2 ratios.
+
 ### Classes
 
 #### `CNVSegment`
@@ -927,10 +1185,18 @@ Args:
     insert_size_stats: Pre-computed insert size distribution statistics.
         If None, will be estimated from the data.
     min_mapq: Minimum mapping quality for reads to be considered.
-    min_sv_size: Minimum structural variant size in base pairs.
+    min_sv_size: Minimum structural variant size in base pairs. It applies
+        to calls that have a measurable length (DEL, DUP, INV and
+        UNKNOWN, measured as the breakpoint distance). Translocations have
+        no length, and the inserted length of an insertion is not measured
+        by split-read evidence, so TRA and INS calls are exempt (their
+        ``size`` is 0).
 
 Returns:
     List of StructuralVariant objects, sorted by chromosome and position.
+    A translocation (TRA) carries its second breakpoint in ``chrom2`` and
+    ``pos2``; its ``start``/``end`` describe the first breakpoint on
+    ``chrom`` only (see `StructuralVariant`).
 
 #### `detect_split_reads()`
 
@@ -978,13 +1244,27 @@ Returns:
 
 Classify the type of structural variant based on evidence patterns.
 
-Uses breakpoint positions, chromosome assignments, and strand orientations
-to determine the SV type:
-    - DEL: Same chromosome, same strand, forward-reverse pair, distant breakpoints
-    - DUP: Same chromosome, reverse-forward orientation
-    - INV: Same chromosome, same strand orientation
-    - TRA: Different chromosomes
-    - INS: Same chromosome, close breakpoints with split-read evidence
+Uses breakpoint positions, chromosome assignments, and strand
+orientations to determine the SV type. Orientation signatures, stated
+for the pair normalised to genomic order (upstream read first):
+
+    - TRA: breakpoints on different chromosomes.
+    - INS: split reads whose breakpoints nearly coincide (within
+      ``_INS_MAX_BREAKPOINT_DISTANCE``) -- the two sides of a split
+      read land at the same insertion junction.
+    - INV: both reads on the same strand.
+    - DUP: everted (tail-to-tail) pair -- the upstream read is on '-'
+      and the downstream read on '+', so the reads point away from
+      each other across the duplication junction.
+    - DEL: inward-facing (head-to-head) pair -- upstream read on '+',
+      downstream on '-' -- with split-read support or a span beyond a
+      normal fragment (``_DEL_MIN_BREAKPOINT_DISTANCE``).
+
+A call is only made when the strand/direction evidence supports it.
+Weak or unrecognisable evidence (e.g. a normal-looking short-span FR
+pair without split support, or unknown strand characters) returns
+``SVType.UNKNOWN``; the classifier never manufactures a deletion from
+weak evidence.
 
 Args:
     evidence: SVEvidence object containing breakpoint and orientation info.
@@ -1006,13 +1286,20 @@ Uses a simple allele-fraction model:
     - 0.15 <= AF < 0.85: heterozygous (0/1)
     - AF >= 0.85: homozygous alternate (1/1)
 
+The reference reads are those spanning ``start - 100 .. start + 100`` (the
+first breakpoint) on ``variant.chrom``.
+
 Args:
     variant: StructuralVariant to genotype.
-    reads: List of read alignment dictionaries.
+    reads: List of read alignment dictionaries, or a `ReadIndex`
+        built from them. Pass an index when genotyping many variants
+        against the same reads: it gives the same answer without scanning
+        every read for every variant.
     min_mapq: Minimum mapping quality for counting reads.
 
 Returns:
-    Genotype string: '0/0', '0/1', or '1/1'.
+    Genotype string: '0/0', '0/1', or '1/1' ('./.' when no read supports
+    either allele).
 
 #### `_estimate_insert_size()`
 
@@ -1154,18 +1441,52 @@ Attributes:
 
 A called structural variant.
 
+Intra-chromosomal calls (DEL, DUP, INV, INS, UNKNOWN) occupy the interval
+``chrom:start-end``. A translocation (TRA) joins two loci on different
+chromosomes, so it has no interval: ``chrom``/``start`` give the first
+breakpoint, ``chrom2``/``pos2`` the second, and ``end`` repeats ``start``
+(a zero-length junction, like an insertion point).
+
 Attributes:
-    chrom: Primary chromosome.
-    start: Start position (0-based).
-    end: End position (0-based).
+    chrom: Primary chromosome (the chromosome of the first breakpoint).
+    start: Start position (0-based). For a TRA, the first breakpoint on ``chrom``.
+    end: End position (0-based). For a TRA, equal to ``start``.
     sv_type: Type of structural variant.
-    size: Size of the variant in base pairs.
+    size: Size of the variant in base pairs. 0 means "not measured": it is
+        always 0 for TRA (no length) and for INS (split-read evidence does
+        not measure the inserted length; the breakpoint distance is not it).
     quality: Quality score.
     evidence: Supporting evidence.
     genotype: Genotype string (e.g., '0/1', '1/1').
     filter_status: Filter status ('PASS' or reason).
-    chrom2: Secondary chromosome (for translocations).
+    chrom2: Chromosome of the second breakpoint (translocations; '' otherwise).
     info: Additional info fields.
+    pos2: Position (0-based) of the second breakpoint on ``chrom2``
+        (translocations; None otherwise).
+
+#### `ReadIndex`
+
+Per-chromosome index of aligned reads by start position.
+
+Genotyping a call only needs the reads that span the 200 bp window around its
+first breakpoint. Scanning every read for every call costs
+``O(calls x reads)`` (about 90% of `call_structural_variants()` at 100k
+reads and 100 calls); with this index a call costs ``O(log reads)`` plus the
+reads that start within one read length of the window.
+
+Build it once from the reads and pass it to `genotype_sv()` in place of the
+read list. Results are identical to scanning the list.
+
+Args:
+    reads: Read alignment dictionaries (see `call_structural_variants()`).
+        ``chrom``, ``pos``, ``mapq``, ``name`` and ``read_length`` are used,
+        with the same defaults as `genotype_sv()` (``read_length`` 150).
+
+**Methods**:
+
+| Method | Purpose |
+|--------|---------|
+| `count_spanning()` | Count reads that start before ``window_start`` and end after ``window_end``. |
 
 ## filtering.merge
 
@@ -1179,7 +1500,10 @@ Merge structural variant callsets from multiple callers.
 
 Uses reciprocal overlap to identify the same SV detected by different
 tools. For each group of matching variants across callers, produces a
-single consensus call with aggregated support.
+single consensus call with aggregated support: median breakpoints, the
+majority SV type, the majority genotype (see `_consensus_genotype()`)
+and ``consensus_quality`` = the mean ``quality`` (or ``qual``) of the merged
+calls plus ``100 * log10(n_callers + 1)``.
 
 Args:
     callsets: Dictionary mapping caller names to lists of variant
@@ -1202,8 +1526,8 @@ Reciprocal overlap requires that the overlap constitutes at least a
 certain fraction of BOTH variants. The minimum of the two fractions
 is returned (i.e., the stricter criterion).
 
-For inter-chromosomal SVs or SVs without clear coordinates,
-uses breakpoint distance as a proxy.
+Variants on different chromosomes (or without coordinates) never
+overlap and yield 0.0.
 
 Args:
     sv1: First variant dictionary with 'chrom', 'start', 'end' keys.
@@ -1225,6 +1549,17 @@ appropriate for imprecise SV calls where exact breakpoints are uncertain.
 Note: If vcf_files contains strings (file paths), this function requires
 pysam or a VCF parser. If vcf_files contains dictionaries, they are
 used directly.
+
+Each merged variant combines the calls of its group as follows:
+
+* ``genotype``: majority vote among the calls' non-missing genotypes
+  (allele order ignored, so '1/0' is '0/1'). A tie goes to the genotype
+  whose calls have the larger summed quality, then to the one that sorts
+  first. ``'./.'`` when no call has a genotype. Genotypes are read from
+  each dict's ``genotype`` and from the first sample of VCF files.
+* ``consensus_quality``: the mean ``quality`` (or ``qual``; 0 when absent)
+  of the merged calls, plus an agreement bonus of
+  ``10 * n_callers * log10(n_callers + 1)``.
 
 Args:
     vcf_files: Either file paths to VCF files or lists of variant
@@ -1284,19 +1619,67 @@ Args:
 Returns:
     Root element.
 
+#### `_median_position()`
+
+**Signature**: `_median_position(values)`
+
+Median of a list of positions (consensus breakpoint).
+
+Args:
+    values: Positions from the variants in a merge group.
+
+Returns:
+    Median position as an int.
+
+#### `_majority_sv_type()`
+
+**Signature**: `_majority_sv_type(variant_dicts)`
+
+Consensus SV type by majority vote within a merge group.
+
+Args:
+    variant_dicts: Variants in the merge group.
+
+Returns:
+    Most frequent SV type (enum values are unwrapped first).
+
+#### `_call_quality()`
+
+**Signature**: `_call_quality(variant)`
+
+Quality of one call (``quality``, else ``qual``); 0 when absent or None.
+
 #### `_consensus_genotype()`
 
-**Signature**: `_consensus_genotype(genotypes)`
+**Signature**: `_consensus_genotype(genotypes, qualities)`
 
 Determine consensus genotype from multiple calls.
 
-Uses majority voting among non-missing genotypes.
+Uses majority voting among non-missing genotypes, ignoring allele order.
 
 Args:
     genotypes: List of genotype strings.
+    qualities: Optional quality of each call, parallel to ``genotypes``. When
+        given, a tie in the vote goes to the genotype with the larger summed
+        quality, then to the one that sorts first. Without it a tie goes to the
+        genotype seen first.
 
 Returns:
     Consensus genotype string.
+
+#### `_format_genotype()`
+
+**Signature**: `_format_genotype(alleles)`
+
+Format a called allele tuple (as pysam reports ``GT``) as ``'0/1'``; None when absent.
+
+#### `_vcf_sample_genotype()`
+
+**Signature**: `_vcf_sample_genotype(fields)`
+
+Genotype of the first sample of a VCF record line (``'0/1'``), or None when there is none.
+
+Phased genotypes (``0|1``) are written with ``/``; a missing call is ``'./.'``.
 
 #### `_load_vcf_variants()`
 
@@ -1313,6 +1696,12 @@ Args:
 Returns:
     List of variant dictionaries.
 
+#### `_pysam_first_genotype()`
+
+**Signature**: `_pysam_first_genotype(record)`
+
+Genotype of the first sample of a pysam record, or None when it has no ``GT``.
+
 #### `_parse_vcf_basic()`
 
 **Signature**: `_parse_vcf_basic(vcf_path)`
@@ -1323,7 +1712,8 @@ Args:
     vcf_path: Path to VCF file.
 
 Returns:
-    List of variant dictionaries.
+    List of variant dictionaries. A record with a sample column also carries
+    the ``genotype`` of its first sample.
 
 ### Classes
 
@@ -1338,10 +1728,12 @@ Attributes:
     sv_type: Consensus SV type.
     size: Consensus size.
     n_callers: Number of callers that detected this variant.
-    caller_names: Names of callers that detected this variant.
+    caller_names: Names of callers that detected this variant (sorted).
     support_variants: Original variant calls that were merged.
-    consensus_quality: Quality based on multi-caller agreement.
-    genotype: Consensus genotype.
+    consensus_quality: Quality based on multi-caller agreement (the rule
+        differs per merge function; see `merge_callsets()` and
+        `survivor_merge()`).
+    genotype: Consensus genotype ('./.' when no merged call has one).
 
 #### `MergeStats`
 
@@ -1396,8 +1788,12 @@ Args:
     variants: List of variant dictionaries. Expected keys:
         - 'size': Variant size in base pairs (int)
         - Or 'start' and 'end' to compute size
-        - 'sv_type': Optional; translocations (TRA) are always kept
-          since they don't have a meaningful "size"
+        - 'sv_type': Optional; translocations (TRA, BND) are always kept
+          since they don't have a meaningful "size", and so are insertions
+          (INS) without a positive 'size': the inserted length of a call from
+          split reads is not measured (``size`` 0), and the start-to-end span
+          of such a call is its junction, not that length. An insertion with a
+          positive 'size' is filtered on it like any other variant.
     min_size: Minimum size in base pairs (default 50, the standard
         SV size threshold).
     max_size: Maximum size in base pairs (default None, no upper limit).
@@ -1431,6 +1827,12 @@ Args:
 Returns:
     Tuple of (filtered_variants, filter_statistics).
 
+Raises:
+    ValueError: If ``population_db`` is given but none of its entries is in a
+        supported layout (so the filter would silently do nothing). Entries
+        of a mostly usable database that cannot be read are skipped with a
+        logged warning that counts them.
+
 #### `apply_blacklist()`
 
 **Signature**: `apply_blacklist(variants, blacklist_regions, min_overlap_fraction)`
@@ -1447,15 +1849,51 @@ Args:
         'end' keys, or as (chrom, start, end) tuples.
     min_overlap_fraction: Minimum fraction of variant overlapping a blacklist
         region to trigger removal (default 0.0, any overlap removes the variant).
+        A zero-length variant (``start == end``, such as an insertion point)
+        has no bases to overlap: it counts as fully overlapping (fraction 1.0)
+        when it lies strictly inside a region, and not at all on a region's
+        edge, the same as a variant that only abuts a region.
 
 Returns:
     Tuple of (filtered_variants, filter_statistics).
+
+#### `_as_position()`
+
+**Signature**: `_as_position(value)`
+
+Return ``value`` as an int coordinate, or None when it is not an integral number.
+
+#### `_as_frequency()`
+
+**Signature**: `_as_frequency(value)`
+
+Return ``value`` as an allele frequency in [0, 1], or None when it is not one.
+
+#### `_parse_population_db()`
+
+**Signature**: `_parse_population_db(population_db)`
+
+Read a population database, counting the entries that are not in a supported layout.
+
+Args:
+    population_db: A dict ``{'chrom:start-end[-svtype]': af}`` or an iterable of dicts
+        with ``chrom``, ``start``, ``end``, ``af`` (or ``allele_frequency``) and
+        optionally ``sv_type``.
+
+Returns:
+    The usable entries by chromosome, plus how many entries were skipped and why.
+
+Raises:
+    ValueError: If ``population_db`` is neither a dict nor an iterable.
 
 #### `_build_population_lookup()`
 
 **Signature**: `_build_population_lookup(population_db)`
 
 Build a chromosome-keyed lookup from population database.
+
+Entries that are not in a supported layout are left out (use
+`_parse_population_db()` to count them).
 
 Args:
     population_db: Population database in either dict or list format.
@@ -1499,6 +1937,16 @@ Attributes:
 | Method | Purpose |
 |--------|---------|
 | `pass_rate()` | Fraction of variants passing the filter. |
+
+#### `_PopulationParse`
+
+Outcome of reading a population database (internal).
+
+Attributes:
+    lookup: Chromosome -> sorted ``(start, end, af, sv_type)`` entries that could be read.
+    n_records: Number of entries in the database.
+    n_skipped: Entries that could not be read.
+    examples: Descriptions of the first few skipped entries.
 
 ## population.sv_population
 
@@ -1610,8 +2058,10 @@ Returns:
     Dictionary with keys:
         - ``pcs``: 2D array (n_samples x n_components) of PC coordinates.
         - ``eigenvalues``: List of eigenvalues for each component.
-        - ``variance_explained``: List of fraction of variance explained
-          per component.
+        - ``variance_explained``: List of the fraction of the total variance
+          (the sum of all eigenvalues of the covariance matrix, not just the
+          returned components) that each component explains. It sums to less
+          than 1 when ``n_components`` is smaller than the rank of the data.
         - ``loadings``: 2D array (n_svs x n_components) of SV loadings.
 
 Raises:
@@ -1706,6 +2156,21 @@ Args:
 Returns:
     Tuple of (genotype, quality).
 
+#### `_total_variance()`
+
+**Signature**: `_total_variance(eigenvalues)`
+
+Total variance: the sum of all eigenvalues of a covariance matrix.
+
+Eigenvalues of a covariance matrix cannot be negative; the tiny negative ones
+that rounding produces are counted as zero.
+
+Args:
+    eigenvalues: Every eigenvalue of the matrix, not only the leading ones.
+
+Returns:
+    The sum of the non-negative parts of the eigenvalues.
+
 #### `_linear_regression()`
 
 **Signature**: `_linear_regression(design, y)`
@@ -1790,13 +2255,22 @@ Draws chromosomes as arcs around a circle, with SVs represented as
 colored chords connecting breakpoint pairs. Intra-chromosomal SVs
 are drawn as arcs within the chromosome. Colors indicate SV type.
 
+A chord runs from ``chrom:start`` to the second breakpoint, which is
+``chrom2:pos2`` for inter-chromosomal calls (as produced by
+``call_structural_variants``, e.g. via ``dataclasses.asdict``) and
+``chrom:end`` for intra-chromosomal calls. A hand-built inter-chromosomal
+dictionary without ``pos2`` (``chrom2`` set to another chromosome) is read
+the way VCF-style callers write it: ``end`` is the position on ``chrom2``.
+
 Args:
     variants: List of variant dictionaries with:
         - 'chrom': Chromosome
-        - 'start': Start position
-        - 'end': End position
+        - 'start': Start position (first breakpoint)
+        - 'end': End position (second breakpoint of an intra-chromosomal SV)
         - 'sv_type': SV type string
-        - 'chrom2': Second chromosome (for translocations, optional)
+        - 'chrom2': Chromosome of the second breakpoint (translocations, optional)
+        - 'pos2': Position of the second breakpoint on 'chrom2'
+          (translocations, optional; None or absent for intra-chromosomal SVs)
     chromosomes: Dictionary mapping chromosome names to sizes (in bp).
     output_path: Path to save the plot image.
     title: Plot title.
@@ -1971,11 +2445,3 @@ Args:
     radius: Radius at which the chord endpoints are placed.
     color: Color of the chord.
     alpha: Transparency.
-
-## Data Structures
-
-| Class | Purpose | Key Attributes |
-|-------|---------|----------------|
-| Dataset | Container for input data | `.data`, `.metadata` |
-| Result | Analysis output | `.values`, `.stats` |
-| Config | Settings object | `.params`, `.paths` |

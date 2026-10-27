@@ -17,6 +17,9 @@ Structural variant (SV) and copy number variation (CNV) detection, annotation, a
 - **quality_filter.py** - Quality/size/frequency filtering, blacklist application
 - **merge.py** - Multi-caller merging, reciprocal overlap, SURVIVOR merge, deduplication
 
+### Population (`population/`)
+- **sv_population.py** - Cohort genotyping, allele frequency, association testing, PCA population structure, SV-SNP linkage disequilibrium, multi-sample callset merging
+
 ### Visualization (`visualization/`)
 - **plots.py** - Circos plots, coverage tracks, SV size distributions, type summaries, breakpoint details, CNV profiles
 
@@ -26,4 +29,7 @@ Structural variant (SV) and copy number variation (CNV) detection, annotation, a
 from metainformant.structural_variants.detection import cnv, sv_calling, breakpoints
 from metainformant.structural_variants.annotation import overlap, functional_impact
 from metainformant.structural_variants.filtering import quality_filter, merge
+from metainformant.structural_variants.population import sv_population
 ```
+
+See [detection](detection.md), [annotation](annotation.md), [filtering](filtering.md) and [population](population.md) for the function reference of each submodule, and [SPEC.md](SPEC.md) for the data model.

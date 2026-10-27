@@ -73,11 +73,13 @@ graph TD
 | Class/Function | Description |
 |----------------|-------------|
 | `call_structural_variants` | Full SV calling pipeline from aligned reads |
-| `SVType` | Enum: DEL, DUP, INV, TRA, INS, BND |
-| `StructuralVariant` | Dataclass with position, type, evidence, and quality |
+| `SVType` | Enum: DEL, DUP, INV, TRA, INS, BND, UNKNOWN |
+| `StructuralVariant` | Dataclass with position, type, evidence, and quality; a TRA call carries its second breakpoint in `chrom2`/`pos2` |
 | `detect_split_reads` | Extract split-read SV evidence from alignments |
 | `detect_discordant_pairs` | Extract discordant read-pair SV evidence |
-| `genotype_sv` | Genotype a single SV in one sample |
+| `genotype_sv` | Genotype a single SV in one sample, from a read list or a `ReadIndex` |
+| `ReadIndex` | Per-chromosome index of reads by start position, shared by all genotyping calls |
+| `refine_breakpoints` | Snap breakpoints to soft-clip positions; reports strand, microhomology and inserted sequence |
 
 ### Annotation
 
@@ -86,7 +88,7 @@ graph TD
 | `annotate_gene_overlap` | Find genes overlapping structural variants |
 | `annotate_regulatory_overlap` | Find regulatory elements overlapping SVs |
 | `find_nearest_gene` | Find closest gene to an SV breakpoint |
-| `IntervalIndex` | Efficient interval overlap queries via sorted index |
+| `IntervalIndex` | Overlap and nearest-interval queries (max-end segment tree: finds intervals of any length) |
 
 ### Filtering
 
@@ -114,19 +116,21 @@ graph TD
 ## Quick Start
 
 ```python
+from dataclasses import asdict
+
 from metainformant.structural_variants.detection.cnv import detect_cnv_from_depth
 from metainformant.structural_variants.detection.sv_calling import call_structural_variants
 from metainformant.structural_variants.filtering.quality_filter import filter_by_quality
 from metainformant.structural_variants.population.sv_population import sv_allele_frequency
 
-# Detect CNVs from per-chromosome read-depth windows
+# Detect CNVs from per-chromosome read-depth windows (finite, non-negative depths, not log2 ratios)
 cnv_results = detect_cnv_from_depth({"chr1": [120, 115, 60, 55, 58, 110, 125]}, window_size=10000)
 
 # Call SVs from aligned reads (list of alignment dicts)
 sv_calls = call_structural_variants(aligned_reads, min_support=3)
 
-# Filter by quality (returns (variants, FilterStats))
-filtered, stats = filter_by_quality(sv_calls, min_qual=20.0)
+# Filter by quality: the filters take dicts, and return (variants, FilterStats)
+filtered, stats = filter_by_quality([asdict(sv) for sv in sv_calls], min_qual=20.0)
 
 # Compute allele frequencies from a genotype matrix (n_svs x n_samples)
 freq = sv_allele_frequency(genotype_matrix)
