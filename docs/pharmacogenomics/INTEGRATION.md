@@ -1,20 +1,38 @@
 # Integration Guide: Pharmacogenomics
 
-Connecting PGx predictions to external systems — EHR, CDS hooks, databases, and
-micro‑services.
+Connecting PGx predictions to external systems: EHR, CDS hooks, databases, and
+micro-services. The package makes no network requests and has no exporters for external
+tools; every pattern below builds on the report dictionary from `generate_clinical_report`
+(see [reporting.md](reporting.md)).
 
 ## HL7 FHIR Observation resource
 
+The package does not ship a FHIR serializer. Generate the report, convert it to plain values
+with the JSON export, and map each gene result onto the coded components of the Observation
+profile your EHR requires:
+
 ```python
-from metainformant.pharmacogenomics.clinical.reporting import generate_clinical_report
-report = generate_clinical_report(patient)
-fhir_obs = report.to_fhir()   # fhir.resources.Observation
+import json
+
+from metainformant.pharmacogenomics.clinical.reporting import export_report, generate_clinical_report
+
+patient = {'patient_id': 'PT001', 'sex': 'F'}
+genotypes = {'CYP2D6': {'diplotype': '*1/*4'}, 'CYP2C19': {'diplotype': '*1/*17'}}
+
+report = generate_clinical_report(patient, genotypes)
+results = json.loads(export_report(report, format='json'))['genotype_results']
+# [{'gene': 'CYP2D6', 'diplotype': '*1/*4', 'activity_score': 1.0,
+#   'phenotype': 'Intermediate Metabolizer', 'phenotype_abbreviation': 'IM', ...}, ...]
 ```
 
-Extension URL: `http://hl7.org/fhir/StructureDefinition/pharmacogenetics`. Component
-`valueCodeableConcept` encodes phenotype string per gene.
+Each entry carries the gene, diplotype, activity score, phenotype name and abbreviation; the
+code systems, profile URLs and `valueCodeableConcept` encoding are yours to supply.
 
 ## CCDA / C-CDA narrative block
+
+`export_report(report, format='html')` returns a complete HTML document, not a fragment. To
+embed results in a narrative block, build the rows from `report['genotype_results']` and
+`report['drug_recommendations']` yourself:
 
 ```html
 <!-- Inside <section> ... -->
@@ -22,18 +40,21 @@ Extension URL: `http://hl7.org/fhir/StructureDefinition/pharmacogenetics`. Compo
   <table>
     <tr><th>Gene</th><th>Diplotype</th><th>Phenotype</th><th>Recommendation</th></tr>
     <tr><td>CYP2D6</td><td>*1/*4</td><td>Intermediate Metabolizer</td>
-        <td>Avoid codeine; consider alternative analgesic (CPIC Level A)</td></tr>
+        <td>Use codeine per standard of care. Monitor for reduced efficacy (CPIC Level A)</td></tr>
   </table>
 </narrative>
 ```
 
-Generate HTML fragment via `export_report(report, format='html')` and embed.
-
 ## REST API pattern (FastAPI)
 
 ```python-snippet
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
+
+from metainformant.pharmacogenomics.alleles.diplotype import determine_diplotype
+from metainformant.pharmacogenomics.alleles.phenotype import classify_phenotype
+from metainformant.pharmacogenomics.alleles.star_allele import call_star_alleles
+from metainformant.pharmacogenomics.clinical.reporting import export_report, generate_clinical_report
 
 app = FastAPI(title='PGx API')
 
@@ -41,23 +62,27 @@ class PredictInput(BaseModel):
     gene: str
     rsids: list[str]
 
+class ReportInput(BaseModel):
+    patient: dict
+    genotypes: dict  # {gene: {'diplotype': '*1/*4'}}
+
 @app.post('/pgx/predict')
 async def predict(payload: PredictInput):
     try:
-        alleles = call_star_alleles(set(payload.rsids), gene=payload.gene)
-        dip = determine_diplotype(alleles[0].name, alleles[1].name, gene=payload.gene)
-        ph  = classify_phenotype(dip, gene=payload.gene)
-        return ph
-    except KeyError:
+        # pad with *1: call_star_alleles may return fewer than two alleles
+        names = [a.name for a in call_star_alleles(set(payload.rsids), gene=payload.gene)] + ['*1', '*1']
+        dip = determine_diplotype(names[0], names[1], gene=payload.gene)
+        return classify_phenotype(dip, gene=payload.gene)
+    except ValueError:  # a gene without built-in allele definitions
         raise HTTPException(404, f'Gene {payload.gene} not supported')
 
 @app.post('/pgx/report')
-async def report(patient: dict):
-    rpt = generate_clinical_report(patient)
-    return export_report(rpt, format='json')
+async def report(payload: ReportInput):
+    rpt = generate_clinical_report(payload.patient, payload.genotypes)
+    return Response(export_report(rpt, format='json'), media_type='application/json')
 ```
 
-Deploy behind API gateway; enable caching (Redis) on `/pgx/predict` keyed by sorted
+Deploy behind an API gateway; enable caching (Redis) on `/pgx/predict` keyed by sorted
 rsID list.
 
 ## Database schema (PostgreSQL example)
@@ -77,11 +102,14 @@ CREATE INDEX idx_pgx_gene ON patient_pgx(gene);
 CREATE INDEX idx_pgx_patient ON patient_pgx(patient_id);
 ```
 
+The columns map onto a `genotype_results` entry (`diplotype`, `phenotype`, `activity_score`);
+`report_id` is generated by your application, because the report carries no identifier.
+
 Bulk insert from Pandas:
 
 ```python-snippet
 import psycopg2, pandas as pd
-df = pd.read_csv('cohort_phenotypes.tsv', sep='	')
+df = pd.read_csv('cohort_phenotypes.tsv', sep='\t')
 conn = psycopg2.connect(dsn)
 cur = conn.cursor()
 cur.executemany(
@@ -100,41 +128,45 @@ rule pgx_phenotype:
         gene_list='config/genes.txt'
     output:
         pheno='results/{sample}_pgx.tsv',
-        report='reports/{sample}_pgx.pdf'
+        report='reports/{sample}_pgx.html'
     threads: 4
     run:
         import vcfpy, pandas as pd
-        from metainformant.pharmacogenomics import predict_metabolizer
-        # parse VCF → dict{sample:{gene: set(rsids)}}
-        # loop genes, call predict_metabolizer, write TSV + PDF report
+        from metainformant.pharmacogenomics.alleles.star_allele import call_star_alleles
+        from metainformant.pharmacogenomics.alleles.diplotype import determine_diplotype
+        from metainformant.pharmacogenomics.alleles.phenotype import classify_phenotype
+        from metainformant.pharmacogenomics.clinical.reporting import export_report, generate_clinical_report
+        # parse VCF -> {gene: set(rsids)}; per gene call alleles, pad with *1, build the diplotype,
+        # classify it; write the phenotype TSV, then generate_clinical_report(...) and
+        # export_report(..., format='html', output_path=output.report)
 ```
 
 ## Interoperability with other tools
 
-| Tool | Bridge method |
-|------|---------------|
-| `PharmCAT` | Export JSON via `report.to_pharmcat()` (roadmap) |
-| `OneOme` | Read phenotype table CSV → OneOme compatible columns |
-| `Genelex` | Not directly compatible; use phenotype table as intermediate |
+The package has no exporter or importer for external pharmacogenomics tools (PharmCAT, OneOme,
+Genelex and similar). Build a phenotype table from `report['genotype_results']` (or from the
+JSON export) and map its columns to the other tool's input format yourself.
 
 ## Auditing & provenance
 
-Every report embeds immutable fields:
+The report header carries `report_type`, `report_version` (`'1.0'`), `generated_at` (UTC) and
+`generator`. It has no report identifier and does not record the versions of the package or of
+the CPIC data, so store these next to the exported report in your audit log:
 
 ```json
 {
-  "report_id": "a1b2c3d4-…",
-  "generated_at": "2025-06-14T10:22:15Z",
-  "metainformant_version": "0.8.0",
-  "cpic_version": "3.0",
-  "pharmgkb_cache_date": "2025-05-15"
+  "patient_id": "PT001",
+  "generated_at": "2026-10-27T15:08:30+00:00",
+  "metainformant_version": "0.4.0",
+  "report_version": "1.0"
 }
 ```
 
-Store alongside patient ID in your audit log for CLIA compliance.
+`metainformant_version` is `metainformant.__version__`; add the date of the guideline data you
+rely on if your compliance process requires it.
 
 ## Security & privacy
 
-- All computation local; no PII leaves the host unless explicitly sent.
-- PharmGKB download over HTTPS; cache permissions 0600.
-- Reports may contain PHI (name, DOB) — protect per HIPAA / GDPR / local law.
+- All computation is local; no patient data leaves the host unless you send it.
+- A report contains the patient identifier, sex, ethnicity, ordering provider and genotype
+  data; name and date of birth are not copied into it. Protect it per HIPAA / GDPR / local law.

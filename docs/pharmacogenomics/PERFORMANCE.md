@@ -1,34 +1,38 @@
 # Performance: Pharmacogenomics
 
-## Benchmark summary (Intel i7-12700K, 32 GB RAM, Python 3.12, metainformant 0.8.0)
+## Per-call cost
 
-| Operation | Mean runtime | 95th pct | Memory | Notes |
-|-----------|--------------|----------|--------|-------|
-| `call_star_alleles(20 variants)` | 6.2 ms | 8.1 ms | <100 KB | first-call includes allele table parse
-| `determine_diplotype()` | 0.3 ms | 0.5 ms | negligible | after allele objects exist
-| `classify_phenotype()` | 0.08 ms | 0.12 ms | negligible | table lookup only
-| `predict_metabolizer()` | 7.1 ms | 9.5 ms | <200 KB | full pipeline top→bottom
-| `CPIC guideline lookup` | 0.2 ms | 0.4 ms | negligible | dict lookup
-| `Drug–interaction analysis (10 meds)` | 4.5 ms | 6.0 ms | negligible |
-| `ACMG classification` | 0.9 ms | 1.3 ms | negligible | few criteria applied
-| `Clinical report build + export` | 1.8 ms | 2.4 ms | negligible | JSON→text
+| Operation | Mean time per call | Notes |
+|-----------|--------------------|-------|
+| `call_star_alleles(variants, 'CYP2D6', allele_definitions=...)` | ~4 µs | 1 to 3 observed variants against the 12 CYP2D6 definitions |
+| `determine_diplotype()` | ~1.4 µs | two table lookups and a sum |
+| `classify_phenotype('*1/*4', 'CYP2D6')` | ~2.6 µs | string diplotype in, band or allele-function rule applied |
+| `predict_metabolizer()` | ~5 µs | dict front end over the same classification |
+| variants → phenotype (`call_star_alleles` → `determine_diplotype` → `classify_phenotype`) | ~11 µs | the whole per-sample pipeline |
+| `get_dosing_recommendation('codeine', 'Poor Metabolizer')` | ~1 µs | list scan of the 9 built-in guidelines |
+| `generate_clinical_report(...)` | ~0.26 ms | two genes, all CPIC drugs for them |
+| `export_report(report, format='text')` | ~11 µs | |
 
-All figures measured on a single sample; per-sample cost is constant, so large cohort performance scales linearly.
+Measured with the benchmark script below on an Apple-silicon laptop (Python 3.12, one core,
+default logging): 10,000 calls per row, 1,000 for the report functions. Expect different
+absolute numbers on other hardware; the per-sample cost does not depend on cohort size, so
+cohort time grows linearly with the number of samples.
 
-## Chunk size & batch streaming
+## Cohort processing
 
-For cohort processing, parallel batches keep memory low and throughput high:
+The per-sample functions are plain Python, so a cohort is processed by mapping a function over
+its samples with `metainformant.core.execution.parallel`:
 
-| Cohort size | Chunk size | Workers | Approx. total time |
-|-------------|------------|---------|-------------------|
-| 1 k         | 100        | 1       | 7–9 s             |
-| 10 k        | 1 000      | 4       | 20–25 s           |
-| 100 k       | 5 000      | 8       | 1.5–2 min         |
-| 1 M+        | 20 000     | 16      | 15–20 min         |
+- `parallel.thread_map(func, items, max_workers=8)`: thread pool, results in input order
+- `parallel.process_map(func, items, max_workers=None)`: process pool for CPU-bound work;
+  `func` must be a top-level (picklable) function
+- `parallel.parallel_batch(func, items, batch_size=10, max_workers=4)`: splits `items` into
+  batches; `func` takes a list and returns a list
 
-Choosing `chunk_size` is a trade-off between memory (larger chunks mean bigger intermediate data structures) and parallelism overhead (tiny chunks under-utilize cores). The defaults (`5000` and `workers=cores`) work well for 10 k–100 k.
-
-## Parallel backend
+There is no `chunk_size` setting in the module. Because one sample costs microseconds, process
+start-up and pickling dominate small jobs; give each worker a batch of many samples (for
+example with `parallel_batch`, or `np.array_split` plus `process_map`) rather than one task per
+sample.
 
 ```python-snippet
 from metainformant.core.execution import parallel
@@ -36,37 +40,34 @@ workers = parallel.resource_aware_workers(task_type="cpu", max_cap=8)
 results = parallel.process_map(func, items, max_workers=workers)
 ```
 
-The maintained process pool is cross-platform; the mapped function must be a
-top-level picklable function.
+The matching code is pure Python, so threads share the GIL; use `process_map` for CPU-bound
+cohorts.
 
-## Bottleneck breakdown
+## What a call costs
 
-| Stage | % of total | Notes |
-|-------|------------|-------|
-| Allele table parsing (first call) | 35 % | once per process, lazy
-| Variant-to-allele matching | 45 % | O(variants × alleles_per_gene)
-| Activity score table lookup | 10 % | dict O(1)
-| Phenotype threshold mapping | 5 % |
-| CPIC lookup + report build | 5 % |
+| Stage | Cost model |
+|-------|------------|
+| Allele tables | Python literals created at import: no parsing on the first call, no warm-up per process |
+| `call_star_alleles` | O(n × m): n definitions of the gene, m defining variants each; set operations on the observed variants |
+| `determine_diplotype` | two dictionary lookups |
+| `classify_phenotype` | a walk over at most five score bands, or one lookup in the allele-function rules |
+| CPIC lookup | a scan of the 9 built-in guidelines |
+| Report | classification plus lookup per gene and drug, then string formatting |
 
-## Memory profile (worst-case gene CYP2D6, 140 defined alleles)
+The largest built-in table is CYP2D6 with 12 calling definitions; the others have 3 to 7
+(CYP2C19 5, CYP2C9 7, CYP3A5 4, DPYD 5, TPMT 5, NUDT15 3, SLCO1B1 4). A custom definition file
+with many alleles raises the matching cost linearly with its size, so load it once and pass the
+list to every call:
 
-- Built-in allele definitions (all genes): ~2 MB
-- Activity score lookup tables: ~800 KB
-- CPIC guideline snapshot: ~500 KB
-- Per-sample transient state: ~2 KB (brief dict + result object)
+```python-snippet
+definitions = load_allele_definitions('CYP2E1', filepath='cyp2e1.json')
+alleles = call_star_alleles(variants, 'CYP2E1', allele_definitions=definitions)
+```
 
-Large parallel workers multiply only the per-sample transient; all tables are memory-shared via copy-on-write (fork), so total RAM ≈ base 4 MB + (N_workers × 2 KB).
-
-## Algorithm choice impacts
-
-`algorithm=` parameter trades accuracy for time:
-
-- `fast` — greedy longest-match first. Almost always yields same top-1 allele as `balanced`. Speed: +15 % vs balanced.
-- `balanced` — falls back to exhaustive search when top-2 candidates have equal size. Slight extra cost (2–5 ms) but avoids rare tie mis-rank.
-- `accurate` — enumerates every minimal subset that covers the observed variants. Used for research validation; speed penalty ×3–5.
-
-Recommendation: use `auto` (default), which starts with `fast`; if it finds ≥3 matched alleles it retries with `balanced` automatically.
+The cost also grows linearly with the number of observed variants per sample, since each is
+tested for membership in each definition's variant set. Pre-filtering a sample's variants to
+those in the gene's definitions (`{v for a in definitions for v in a.defining_variants}`) shortens
+the sets when a sample carries many unrelated identifiers.
 
 ## Profiling recipe
 
@@ -75,7 +76,7 @@ python -m cProfile -o pgx.prof myscript.py
 snakeviz pgx.prof
 ```
 
-Look for accumulated time in `alleles/star_allele.py:call_star_alleles` (matching loop). If disproportionate, consider pre-filtering variants outside the gene's known variant set.
+Look for accumulated time in `alleles/star_allele.py:call_star_alleles` (the matching loop).
 
 ## Caching strategies
 
@@ -96,86 +97,62 @@ def cached_allele_calls(variants, gene='CYP2D6'):
     return names
 ```
 
-Cache hit rate depends on data duplication; for a 100 k cohort with ~5 % duplicate rsID sets, you'll cut runtime by ~5 %.
+At a few microseconds per call, a file-backed cache only pays off for the slow steps around the
+call (a large report batch, or I/O); for the matching itself, an in-memory
+`functools.lru_cache` keyed on `frozenset(variants)` is cheaper.
 
 ## Scaling to >1M samples
 
 For national-scale biobank processing:
 
-- Use Dask distributed (`dask.distributed.Client`) — each worker is a Python process loading the module once.
+- Use Dask distributed (`dask.distributed.Client`): each worker is a Python process that
+  imports the module once.
 - Store results in Parquet with `df.to_parquet('out/', partitioning_on=['phenotype'])` to reduce downstream I/O.
 - Disable `parallel` in child workers to avoid nested pools (guard with `if __name__ == '__main__'`).
 
 ## Limitations & edge cases
 
-- Genes with huge allele counts (CYP2D6: ~140 alleles) have higher matching cost — still <15 ms per sample; acceptable.
-- Copy-number variants (CYP2D6 duplication) are detected only if the specific duplication marker rsIDs are present; otherwise they are silently missed.
-- Rare novel variant outside dbSNP or not in allele definitions is ignored — contributes nothing to matching.
-
-## Future performance work
-
-- Cython rewrite of the subset-matching inner loop (planned for v0.9)
-- Pre-compute allele definition hash table keyed by variant-set fingerprint (future `algorithm='hashed'`)
-- GPU-accelerated allele scoring (experimental CUDA backend under investigation)
+- CYP2D6 copy-number variants are not inferred from variants: pass the copy number to `handle_cyp2d6_cnv`; every other function treats the gene as diploid.
+- A variant outside every allele definition is ignored; it contributes nothing to matching (`detect_novel_alleles` lists such variants).
 
 ## Runtime checklist
 
-- [ ] Are you processing >500 k samples? → increase `chunk_size` to 20k)
-- [ ] Are you CPU-bound? → `parallel.set_n_jobs(cores)` or `workers=CPU_COUNT`
-- [ ] Seeing repeated allele-table parsing? → load each gene's table once with `load_allele_definitions(gene)` and pass it to `call_star_alleles(..., allele_definitions=definitions)`
-- [ ] Memory spiking? → verify no accidental `X.copy()` in processing function
-
-## Per-gene runtime benchmark (single sample, mean n=100)
-
-| Gene | Alleles defined | Avg runtime (ms) | Notes |
-|------|----------------|------------------|-------|
-| CYP2D6 | 140 | 10.5 | largest table; duplication detection adds 0.3 ms |
-| CYP2C19 | 30 | 6.2 | |
-| CYP2C9 | 19 | 5.8 | |
-| TPMT | 13 | 5.4 | |
-| DPYD | 22 | 6.0 | activity score requires hetero-homo lookup |
-| SLCO1B1 | 12 | 5.3 | |
-| UGT1A1 | 10 | 5.2 | |
-| NUDT15 | 9 | 5.1 | |
-
-## Memory calculator
-
-```python
-def estimate_memory(n_samples: int, avg_alleles_per_gene=30):
-    base = 4 * 1024**2                     # 4 MB static tables
-    per = 2 * 1024                         # ~2 KB transient dict per sample
-    return base + n_samples * per
-
-for n in [1_000, 100_000, 1_000_000]:
-    print(f"{n:,} samples → {estimate_memory(n)/1024**2:.1f} MB peak")  
-```
-
-Results:
-- 1 k samples → 4.0 MB
-- 100 k → 204 MB (mostly per-sample dicts)
-- 1 M → 2.0 GB  (fits in RAM, but parallel workers need more)
+- [ ] Are you CPU-bound? → `parallel.process_map` with `parallel.resource_aware_workers(task_type="cpu")` workers and a top-level function
+- [ ] Is each task a single sample? → give each worker a batch of samples
+- [ ] Loading a custom definition file per sample? → load it once with `load_allele_definitions(gene, filepath=...)` and pass `allele_definitions=definitions`
+- [ ] Memory spiking? → do not accumulate results in a list inside the mapped function; let `parallel.thread_map` collect
 
 ## Benchmark script (reproducible)
 
 ```python
-import time, numpy as np
-from metainformant.pharmacogenomics import predict_metabolizer
+import time
+
+import numpy as np
+
+from metainformant.pharmacogenomics.alleles.diplotype import determine_diplotype
+from metainformant.pharmacogenomics.alleles.phenotype import classify_phenotype
+from metainformant.pharmacogenomics.alleles.star_allele import call_star_alleles, load_allele_definitions
 
 N = 10_000
 rng = np.random.default_rng(42)
-# Synthetic variant sets covering ~30 % of known CYP2D6 alleles
-variant_pool = {f'rs{rng.integers(100_000, 999_999)}' for _ in range(150)}
-variants_list = [set(rng.choice(list(variant_pool), size=rng.integers(3,15), replace=False))
-                 for _ in range(N)]
+definitions = load_allele_definitions('CYP2D6')
+# Random variant sets drawn from the identifiers the CYP2D6 table knows
+pool = sorted({v for a in definitions for v in a.defining_variants})
+variants_list = [
+    set(rng.choice(pool, size=int(rng.integers(1, 4)), replace=False).tolist()) for _ in range(N)
+]
+
+def phenotype_of(variants):
+    names = [a.name for a in call_star_alleles(variants, 'CYP2D6', allele_definitions=definitions)]
+    names += ['*1', '*1']  # pad: a single called allele pairs with *1
+    return classify_phenotype(determine_diplotype(names[0], names[1], 'CYP2D6'), 'CYP2D6')
 
 start = time.perf_counter()
-for vs in variants_list:
-    predict_metabolizer(vs, gene='CYP2D6')
+for variants in variants_list:
+    phenotype_of(variants)
 elapsed = time.perf_counter() - start
-print(f'{N} samples → {elapsed:.2f}s  ({N/elapsed:.1f} samples/s)')
+print(f'{N} samples → {elapsed:.2f}s  ({N/elapsed:.0f} samples/s)')
 ```
-
-On the reference machine: ~1 400 samples/s single-core; with 8 workers → ~10 000 samples/s.
 
 ## I/O considerations
 
@@ -188,22 +165,10 @@ df = pl.read_csv('cohort.csv', columns=['rsids'])
 # use `filter` to limit to genes of interest early
 ```
 
-## Cache warm-up time
-
-The first call to any function in a fresh process parses the built-in JSON tables — ~3–5 ms per gene. This is amortized across N; if you only predict 1 sample, overhead dominates. For <100 samples, consider a warm-up call.
-
-## Scaling with variant count per sample
-
-Runtime grows linearly with number of supplied rsIDs (k). Worst-case k ~50 for CYP2D6; still <12 ms. Each additional variant is a set membership test against each allele definition set.
-
-## GIL and parallelism
-
-The matching code is written in pure Python, but uses spaCy's `HashTable` under the hood (Cython) for fast lookups. Parallel speedup close to linear on 8 cores; diminishing returns beyond that due to memory bandwidth.
-
 ## Tips for HPC clusters
 
-- Use `parallel.set_backend('loky')` and `n_jobs=SLURM_CPUS_PER_TASK`.
-- Call `load_allele_definitions(gene)` once per gene in the master and pass the result to `call_star_alleles(..., allele_definitions=definitions)` so child processes do not re-parse the tables.
+- Size the pool from the scheduler allocation:
+  `parallel.process_map(func, items, max_workers=int(os.environ['SLURM_CPUS_PER_TASK']))`.
+- Call `load_allele_definitions(gene)` once per gene in the master and pass the result to
+  `call_star_alleles(..., allele_definitions=definitions)` so child processes do not rebuild it.
 - If using MPI (`mpi4py`), wrap the map in `if rank == 0:` to avoid duplicated work.
-
-— end of PERFORMANCE.md —

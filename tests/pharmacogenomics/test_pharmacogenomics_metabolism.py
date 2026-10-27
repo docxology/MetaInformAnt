@@ -42,7 +42,7 @@ class TestDefaultAlleleFunctionTable:
         cyp2d6 = table["CYP2D6"]
         assert cyp2d6["*1"] == 1.0
         assert cyp2d6["*4"] == 0.0
-        assert cyp2d6["*9"] == 0.5
+        assert cyp2d6["*9"] == 0.25  # CPIC activity value
 
     def test_cyp2c19_star17_increased(self) -> None:
         table = default_allele_function_table()
@@ -70,7 +70,7 @@ class TestComputeActivityScore:
     def test_decreased_function(self) -> None:
         table = default_allele_function_table()["CYP2D6"]
         score = compute_activity_score("*1/*9", table)
-        assert score == 1.5
+        assert score == 1.25
 
     def test_cyp2c19_rapid(self) -> None:
         table = default_allele_function_table()["CYP2C19"]

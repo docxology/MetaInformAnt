@@ -11,8 +11,12 @@ definition files. Clinical report generation (text, JSON, HTML) is included.
   `chr:pos:ref:alt`) to star-allele names with activity values (built-in tables, each
   counting `*1`: CYP2D6 12 alleles, CYP2C19 5, CYP2C9 7, CYP3A5 4, DPYD 5, TPMT 5,
   NUDT15 3, SLCO1B1 4).
-- **Diplotype & phenotype** — summed allele activity scores plus gene-specific
-  thresholds yield PM/IM/NM/RM/UM classification.
+- **Diplotype & phenotype** — alleles carry CPIC activity values (normal function 1.0,
+  decreased 0.5, no function 0.0; CYP2D6 `*9`, `*10` and `*41` are 0.25). The phenotype is
+  assigned the way CPIC defines it for each gene: from the summed activity score for
+  CYP2D6, CYP2C9, DPYD, CYP3A5, TPMT and NUDT15, and from the pair of allele functions for
+  CYP2C19, SLCO1B1 and UGT1A1. Only CYP2C19 has a rapid-metabolizer category; CYP2D6 has
+  none. See [Phenotype definitions](SPEC.md#phenotype-definitions).
 - **Drug–gene recommendations** — 9 built-in CPIC guidelines, all level A (codeine,
   tramadol, tamoxifen / CYP2D6; clopidogrel, voriconazole / CYP2C19; warfarin / CYP2C9;
   fluorouracil / DPYD; simvastatin / SLCO1B1; azathioprine / TPMT), accessible via
@@ -23,7 +27,10 @@ definition files. Clinical report generation (text, JSON, HTML) is included.
   reads your own PharmGKB TSV export. The module makes no network requests.
 - **Clinical reporting** — text / JSON / HTML reports with a UTC-timestamped header,
   per-gene genotype results, drug recommendations, an interaction summary, prioritized
-  action items and a disclaimer (the HTML report omits the interaction summary).
+  action items and a disclaimer (the HTML report omits the interaction summary). Each gene
+  is classified from its diplotype (or taken from a given phenotype), and with `drugs=None`
+  every drug that has a built-in CPIC guideline is analysed for the genotyped genes; see
+  [reporting.md](reporting.md).
 - **Batch use** — there is no dedicated batch API. The per-sample functions are plain
   Python, so cohorts are processed by mapping them with
   `metainformant.core.execution.parallel` (`thread_map`, `process_map`).
@@ -63,10 +70,15 @@ from metainformant.pharmacogenomics.annotations import cpic, pharmgkb
 
 `predict_metabolizer` takes a genotype dict holding a `diplotype` string (or an `alleles`
 list), not a variant set, and returns a dict whose `phenotype` is a lowercase string
-(`'poor'`, `'intermediate'`, `'normal'`, `'rapid'`, `'ultrarapid'`). It uses its own
-allele-function table and thresholds, so its activity scores and phenotype calls can
-differ from `classify_phenotype` (for CYP2D6 `*1/*4` it returns `'intermediate'`, while
-`classify_phenotype` returns Normal Metabolizer).
+(`'poor'`, `'intermediate'`, `'normal'`, `'rapid'`, `'ultrarapid'`). It is a string-and-dict
+front end over the same allele table and phenotype rules as `classify_phenotype`, so the two
+give the same phenotype and activity score for every diplotype (for CYP2D6 `*1/*4` both give
+intermediate, activity score 1.0). They differ in the interface only: `predict_metabolizer`
+raises `ValueError` for an allele that is missing from its table, whereas `classify_phenotype`
+scores an unknown allele as 1.0 (normal function) and logs a warning, and `predict_metabolizer`
+accepts a custom allele table through `activity_scores=`. It covers the 10 genes of
+`default_allele_function_table()`, including UGT1A1 and CYP1A2 (which has no CPIC phenotype
+definition, so the CYP2D6 bands apply with a logged warning).
 
 ## Typical single-patient flow
 
@@ -103,6 +115,6 @@ cached.
 
 | Resource | Built-in content | Override |
 |----------|------------------|----------|
-| Star-allele tables (CPIC-derived) | 8 genes, 45 alleles | `load_allele_definitions(gene, source='file', filepath=…)`, passed as `allele_definitions=` |
+| Star-allele tables (CPIC-derived) | 8 genes, 45 alleles. UGT1A1 and CYP1A2 have activity values but no calling definitions: `load_allele_definitions` says so instead of reporting an unknown gene | `load_allele_definitions(gene, filepath=…)`, passed as `allele_definitions=` |
 | CPIC guidelines | 9 guidelines, all level A | `load_cpic_guidelines(filepath=…)`, passed as `guidelines=` |
 | PharmGKB annotations | 9 clinical annotations, 10 variant annotations, 7 drug pathways | `parse_clinical_annotations(filepath)` on your own TSV export |

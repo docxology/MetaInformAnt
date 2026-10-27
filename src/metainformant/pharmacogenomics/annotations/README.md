@@ -16,7 +16,7 @@ Pharmacogenomics annotation subpackage providing CPIC guideline lookups, PharmGK
 | Function | Description |
 |----------|-------------|
 | `cpic.lookup_drug_gene()` | Look up CPIC drug-gene pair information |
-| `cpic.get_dosing_recommendation()` | Get dosing recommendation for drug/gene/phenotype |
+| `cpic.get_dosing_recommendation()` | Get the dosing recommendation for a drug and phenotype (no gene argument; it returns `None` when nothing matches) |
 | `cpic.list_actionable_genes()` | List all CPIC-actionable pharmacogenes |
 | `cpic.parse_cpic_allele_definitions()` | Parse CPIC allele definition tables |
 | `pharmgkb.query_pharmgkb_annotations()` | Query PharmGKB clinical annotations by gene or drug |
@@ -31,7 +31,7 @@ Pharmacogenomics annotation subpackage providing CPIC guideline lookups, PharmGK
 ```python
 from metainformant.pharmacogenomics.annotations import cpic, pharmgkb, drug_labels
 
-rec = cpic.get_dosing_recommendation("codeine", "CYP2D6", "Poor Metabolizer")
+rec = cpic.get_dosing_recommendation("codeine", "Poor Metabolizer")
 annots = pharmgkb.query_pharmgkb_annotations(gene="CYP2D6")
 labels = drug_labels.search_labels_by_gene("HLA-B")
 ```

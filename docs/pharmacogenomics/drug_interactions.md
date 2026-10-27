@@ -78,9 +78,11 @@ extra drug competing for the same CYP enzyme, and the sum is divided by the numb
 
 ## Report inclusion
 
-`generate_clinical_report()` runs `analyze_drug_gene_interactions()` for the requested drugs and
-adds an `interaction_summary` (counts per severity and an overall risk level) and prioritized
-`clinical_actions` for the major and moderate findings.
+`generate_clinical_report()` runs `analyze_drug_gene_interactions()` for the requested drugs (every
+drug with a built-in CPIC guideline when `drugs=None`; none when `drugs=[]`), using the phenotypes it
+classified from each gene's diplotype, and adds an `interaction_summary` (counts per severity and an
+overall risk level) and prioritized `clinical_actions` for the major and moderate findings. See
+[reporting.md](reporting.md).
 
 ## Extending the knowledge base
 
@@ -115,7 +117,10 @@ Run tests (`pytest tests/pharmacogenomics/test_drug_interactions_depth.py`) to v
 - **Double counting** — If drug A inhibits and drug B induces the same CYP, their effects
   on that enzyme may offset each other, but individual pairwise severities still apply;
   both alerts show.
-- **Phenotype mismatches** — `phenotype` must match one of `{'Poor','PM',…}`; use
-  `MetabolizerPhenotype.POOR.value` for safety.
+- **Phenotype labels** — `analyze_drug_gene_interactions` reads each gene's `phenotype` key and
+  matches it to the CPIC guideline's phenotype names: pass a `MetabolizerPhenotype`, its full name
+  (`'Poor Metabolizer'`) or the two-letter abbreviation (`'PM'`). The bare token `'poor'` matches
+  nothing and the gene yields no entry (the dose-adjustment table in `metabolism` does accept it;
+  see `MetabolizerPhenotype.from_string` to normalise any label first).
 - **Missing CYP entry** — If a drug is not in the internal tables, it is silently
   ignored (contributes no severity). Add it with a custom `interaction_db` as above.

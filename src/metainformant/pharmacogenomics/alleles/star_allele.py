@@ -130,7 +130,7 @@ _BUILTIN_ALLELE_DEFINITIONS: dict[str, dict[str, dict[str, Any]]] = {
         "*9": {
             "defining_variants": frozenset({"rs5030656"}),
             "function": "Decreased function",
-            "activity_value": 0.5,
+            "activity_value": 0.25,
         },
         "*10": {
             "defining_variants": frozenset({"rs1065852"}),
@@ -155,7 +155,7 @@ _BUILTIN_ALLELE_DEFINITIONS: dict[str, dict[str, dict[str, Any]]] = {
         "*41": {
             "defining_variants": frozenset({"rs28371725"}),
             "function": "Decreased function",
-            "activity_value": 0.5,
+            "activity_value": 0.25,
         },
     },
     "CYP2C19": {
@@ -203,8 +203,8 @@ _BUILTIN_ALLELE_DEFINITIONS: dict[str, dict[str, dict[str, Any]]] = {
         },
         "*5": {
             "defining_variants": frozenset({"rs28371686"}),
-            "function": "No function",
-            "activity_value": 0.0,
+            "function": "Decreased function",
+            "activity_value": 0.5,
         },
         "*6": {
             "defining_variants": frozenset({"rs9332131"}),
@@ -213,8 +213,8 @@ _BUILTIN_ALLELE_DEFINITIONS: dict[str, dict[str, dict[str, Any]]] = {
         },
         "*8": {
             "defining_variants": frozenset({"rs7900194"}),
-            "function": "No function",
-            "activity_value": 0.0,
+            "function": "Decreased function",
+            "activity_value": 0.5,
         },
         "*11": {
             "defining_variants": frozenset({"rs28371685"}),
@@ -323,13 +323,13 @@ _BUILTIN_ALLELE_DEFINITIONS: dict[str, dict[str, dict[str, Any]]] = {
         },
         "*5": {
             "defining_variants": frozenset({"rs4149056"}),
-            "function": "Decreased function",
-            "activity_value": 0.5,
+            "function": "No function",
+            "activity_value": 0.0,
         },
         "*15": {
             "defining_variants": frozenset({"rs4149056", "rs2306283"}),
-            "function": "Decreased function",
-            "activity_value": 0.5,
+            "function": "No function",
+            "activity_value": 0.0,
         },
         "*1B": {
             "defining_variants": frozenset({"rs2306283"}),
@@ -342,7 +342,7 @@ _BUILTIN_ALLELE_DEFINITIONS: dict[str, dict[str, dict[str, Any]]] = {
 
 def load_allele_definitions(
     gene: str,
-    source: str = "cpic",
+    source: str | None = None,
     filepath: str | Path | None = None,
 ) -> list[StarAllele]:
     """Load allele definition tables for a pharmacogene.
@@ -351,27 +351,64 @@ def load_allele_definitions(
     from an external file (TSV or JSON format). The built-in tables cover
     CYP2D6, CYP2C19, CYP2C9, CYP3A5, DPYD, TPMT, NUDT15, and SLCO1B1.
 
+    The source is chosen by the arguments and the combination is checked, so a
+    file is never silently ignored and the built-in table is never silently
+    substituted for one:
+
+    - ``filepath`` given, ``source`` omitted or ``"file"``: load that file.
+    - no ``filepath``, ``source`` omitted or ``"cpic"``: load the built-in table.
+    - ``source="file"`` without ``filepath``, ``source="cpic"`` with ``filepath``,
+      or any other ``source``: ``ValueError``.
+
     Args:
         gene: Gene symbol (e.g., "CYP2D6", "CYP2C19")
-        source: Definition source - "cpic" for built-in, "file" for external file
-        filepath: Path to external allele definition file (required if source="file")
+        source: "cpic" for the built-in table, "file" for an external file
+            (case-insensitive), or None (default) to infer it from ``filepath``
+        filepath: Path to an external allele definition file
 
     Returns:
         List of StarAllele objects for the gene
 
     Raises:
-        ValueError: If gene not found in definitions or invalid source
+        ValueError: If ``source`` is invalid or contradicts ``filepath``, or the
+            gene has no built-in definitions (the message says whether it is
+            unknown or known-but-undefined)
         FileNotFoundError: If filepath specified but not found
     """
     gene_upper = gene.upper()
 
-    if source == "file" and filepath is not None:
+    if source is None:
+        mode = "file" if filepath is not None else "cpic"
+    else:
+        mode = source.strip().lower()
+        if mode not in ("cpic", "file"):
+            raise ValueError(f"Invalid source '{source}'. Use 'cpic' or 'file'.")
+
+    if mode == "file":
+        if filepath is None:
+            raise ValueError("source='file' requires a filepath to the allele definition file.")
         return _load_allele_definitions_from_file(gene_upper, filepath)
 
-    if source == "cpic" or filepath is None:
-        return _load_builtin_definitions(gene_upper)
+    if filepath is not None:
+        raise ValueError(
+            "filepath is only used with source='file'; got source='cpic' together with "
+            f"filepath={str(filepath)!r}. Omit source (or pass source='file') to load that file."
+        )
+    return _load_builtin_definitions(gene_upper)
 
-    raise ValueError(f"Invalid source '{source}'. Use 'cpic' or 'file'.")
+
+# Genes that have activity scores in alleles.diplotype but no calling definitions in
+# _BUILTIN_ALLELE_DEFINITIONS, with the reason. Without an entry here a call for such a
+# gene would look like a typo; _load_builtin_definitions() raises a gene-specific error
+# instead, and a test keeps this registry in step with the two tables.
+_GENES_WITHOUT_BUILTIN_DEFINITIONS: dict[str, str] = {
+    "UGT1A1": (
+        "its star alleles are defined by TA-repeat length in the promoter (*28 = (TA)7, *36 = (TA)5, "
+        "*37 = (TA)8) plus c.211G>A (*6), and repeat length cannot be expressed as the presence or "
+        "absence of the variant identifiers this table matches on"
+    ),
+    "CYP1A2": "no CPIC allele definition table is bundled for this gene",
+}
 
 
 def _load_builtin_definitions(gene: str) -> list[StarAllele]:
@@ -387,6 +424,12 @@ def _load_builtin_definitions(gene: str) -> list[StarAllele]:
         ValueError: If gene not found in built-in definitions
     """
     if gene not in _BUILTIN_ALLELE_DEFINITIONS:
+        if gene in _GENES_WITHOUT_BUILTIN_DEFINITIONS:
+            raise ValueError(
+                f"Gene '{gene}' has built-in activity scores but no built-in star-allele definitions: "
+                f"{_GENES_WITHOUT_BUILTIN_DEFINITIONS[gene]}. Build its diplotype from allele names called "
+                f"elsewhere with determine_diplotype(), or load definitions with source='file'."
+            )
         available = sorted(_BUILTIN_ALLELE_DEFINITIONS.keys())
         raise ValueError(
             f"Gene '{gene}' not found in built-in definitions. "

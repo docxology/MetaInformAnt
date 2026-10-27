@@ -141,7 +141,7 @@ report = generate_clinical_report(patient, genotypes, drugs=medications)
 print(export_report(report, format='text'))
 ```
 
-The report is a dict with the keys `header`, `patient_info`, `genotype_results`, `drug_recommendations`, `interaction_summary`, `clinical_actions` and `disclaimer`; the text export prints them as header → patient information → genotype results per gene → drug recommendations (CPIC level) → clinical actions → interaction summary → disclaimer. `patient_info` keeps only `patient_id`, `sex`, `ethnicity` and `ordering_provider`, so `name` and `dob` do not appear. Only drug–gene pairs with a built-in CPIC guideline produce a recommendation (here codeine/CYP2D6, clopidogrel/CYP2C19 and simvastatin/SLCO1B1). Drug recommendations use the `phenotype` you supply in `genotypes`, while the genotype table recomputes the phenotype from `diplotype`, so keep the two consistent (for example by filling `phenotype` from `classify_phenotype`).
+The report is a dict with the keys `header`, `patient_info`, `genotype_results`, `drug_recommendations`, `interaction_summary`, `clinical_actions` and `disclaimer`; the text export prints them as header → patient information → genotype results per gene → drug recommendations (CPIC level) → clinical actions → interaction summary → disclaimer. `patient_info` keeps only `patient_id`, `sex`, `ethnicity` and `ordering_provider`, so `name` and `dob` do not appear. Only drug–gene pairs with a built-in CPIC guideline produce a recommendation (here codeine/CYP2D6, clopidogrel/CYP2C19 and simvastatin/SLCO1B1). Each gene's phenotype is classified from its `diplotype`, and the drug recommendations use the phenotypes shown in the genotype table; a `phenotype` key is used only for a gene without a diplotype (or one that cannot be classified). The `phenotype` keys above agree with the diplotypes and are kept because example 21 passes the same dictionary to `analyze_drug_gene_interactions`, which reads them. `drugs=medications` restricts the report to three drugs; omit it (`drugs=None`) to analyse every drug with a built-in CPIC guideline for these genes, or pass `drugs=[]` for genotype results only.
 
 ### 7. Custom allele table loading for a non-coverage gene
 
@@ -181,7 +181,7 @@ from metainformant.pharmacogenomics.alleles.phenotype import population_phenotyp
 allele_freqs = {'*1': 0.35, '*2': 0.30, '*4': 0.20, '*10': 0.08, '*41': 0.07}
 
 freqs = population_phenotype_frequencies(allele_freqs, gene='CYP2D6')
-print(freqs)  # phenotype abbreviation -> expected frequency under Hardy–Weinberg (empty categories omitted)
+print(freqs)  # {'PM': 0.04, 'IM': 0.3425, 'NM': 0.6175}: expected frequency under Hardy–Weinberg (empty categories omitted)
 ```
 
 For observed frequencies in a cohort, classify each sample (example 2) and count: `df['cyp2d6_phenotype'].value_counts(normalize=True)`.
@@ -191,7 +191,7 @@ For observed frequencies in a cohort, classify each sample (example 2) and count
 ```python
 from metainformant.pharmacogenomics.visualization.plots import plot_metabolizer_status
 
-counts = {'PM': 70, 'IM': 320, 'NM': 500, 'RM': 30, 'UM': 10}
+counts = {'PM': 70, 'IM': 320, 'NM': 530, 'UM': 10}  # CYP2D6 has no rapid-metabolizer category
 path = plot_metabolizer_status(
     counts,
     'output/pharmacogenomics/cyp2d6_distribution.png',

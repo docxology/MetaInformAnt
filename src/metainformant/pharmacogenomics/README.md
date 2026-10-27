@@ -15,7 +15,7 @@ Clinical pharmacogenomic analysis: star allele calling, metabolizer phenotyping,
   - [Star Allele Calling](#star-allele-calling)
   - [Metabolizer Prediction](#metabolizer-prediction)
   - [Guideline Annotations](#guideline-annotations)
-  - [Drug Interactions & Clinical](#drug-interactions-clinical)
+  - [Drug Interactions & Clinical](#drug-interactions--clinical)
 - [Quick Start](#quick-start)
 - [Related](#related)
 
@@ -74,10 +74,10 @@ graph TD
 
 | Function | Description |
 |----------|-------------|
-| `predict_metabolizer_status` | Full pipeline: genotype to metabolizer phenotype |
+| `predict_metabolizer_status` | Genotype dict to metabolizer phenotype; the same phenotype `alleles.phenotype.classify_phenotype` gives for the diplotype |
 | `compute_activity_score` | Sum allele function values into CPIC activity score |
-| `classify_metabolizer` | Map activity score to phenotype (PM/IM/NM/RM/UM) |
-| `dose_adjustment` | Evidence-based dose adjustment recommendations |
+| `classify_metabolizer` | Map activity score to phenotype (PM/IM/NM/RM/UM; CYP2D6 has no RM) |
+| `dose_adjustment` | Evidence-based dose adjustment recommendations; the phenotype may be `"poor"`, `"Poor Metabolizer"` or `"PM"` |
 
 ### Guideline Annotations
 

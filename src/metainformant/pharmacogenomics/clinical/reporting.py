@@ -17,6 +17,7 @@ from typing import Any
 from metainformant.core.utils.logging import get_logger
 
 from ..alleles.phenotype import MetabolizerPhenotype, classify_phenotype
+from ..annotations.cpic import load_cpic_guidelines
 from .drug_interaction import (
     DrugRecommendation,
     InteractionSeverity,
@@ -64,11 +65,17 @@ def generate_clinical_report(
             - "ethnicity": Self-reported ethnicity
             - "ordering_provider": Ordering provider name
         genotypes: Dictionary mapping gene symbol -> genotype info:
-            - "diplotype": Diplotype string (e.g., "*1/*4")
-            - "phenotype": Optional pre-determined phenotype
+            - "diplotype": Diplotype string (e.g., "*1/*4"); the phenotype is classified
+              from it
+            - "phenotype": Optional pre-determined phenotype, in any form
+              ``MetabolizerPhenotype.from_string`` accepts ("Poor Metabolizer", "PM",
+              "poor"); used when no diplotype is given or it cannot be classified
             - "activity_score": Optional pre-computed activity score
-        drugs: Optional list of drugs to generate specific recommendations for.
-            If None, generates recommendations for all drugs with CPIC guidelines.
+        drugs: Drugs to generate specific recommendations for. If None (the default),
+            every drug with a built-in CPIC guideline is analysed against the genes
+            in ``genotypes``. An empty list requests no drug-specific recommendations.
+            Recommendations use the phenotypes reported in "genotype_results", so a
+            gene needs only a diplotype or a phenotype, not both.
 
     Returns:
         Comprehensive report dictionary with sections:
@@ -135,8 +142,22 @@ def generate_clinical_report(
     # ── Drug Recommendations ──────────────────────────────────────────────
     drug_recommendations: list[dict[str, Any]] = []
 
-    if drugs:
-        interactions = analyze_drug_gene_interactions(drugs, genotypes)
+    # None means every drug with a built-in CPIC guideline; an explicit list, even an empty
+    # one, is used as given.
+    drugs_to_analyze = list(dict.fromkeys(g["drug"] for g in load_cpic_guidelines())) if drugs is None else list(drugs)
+
+    if drugs_to_analyze:
+        # Analyse the phenotypes reported above, so a gene given only as a diplotype (the
+        # documented input) is covered as well as one given with a "phenotype" key.
+        reported_phenotypes = {
+            result["gene"]: {
+                "phenotype": _canonical_phenotype(result["phenotype"]),
+                "diplotype": result["diplotype"],
+                "activity_score": result["activity_score"],
+            }
+            for result in genotype_results
+        }
+        interactions = analyze_drug_gene_interactions(drugs_to_analyze, reported_phenotypes)
         for rec in interactions:
             drug_rec = format_recommendation(
                 rec.drug,
@@ -201,17 +222,28 @@ def generate_clinical_report(
     return report
 
 
+def _canonical_phenotype(phenotype: Any) -> Any:
+    """Return the MetabolizerPhenotype for a recognised label ("poor", "PM", ...), else the value as given."""
+    try:
+        return MetabolizerPhenotype.from_string(phenotype)
+    except ValueError:
+        return phenotype
+
+
 def _get_abbrev(phenotype: Any) -> str:
     """Get phenotype abbreviation from various input types."""
-    if isinstance(phenotype, MetabolizerPhenotype):
-        return phenotype.abbreviation
+    canonical = _canonical_phenotype(phenotype)
+    if isinstance(canonical, MetabolizerPhenotype):
+        return canonical.abbreviation
+    # Free text such as "Likely Poor Metabolizer": match on the category word.
     s = str(phenotype).lower()
+    # "ultra" must be tested before "rapid": "ultrarapid" contains it.
     mapping = {
         "poor": "PM",
         "intermediate": "IM",
         "normal": "NM",
+        "ultra": "UM",
         "rapid": "RM",
-        "ultrarapid": "UM",
     }
     for key, abbrev in mapping.items():
         if key in s:

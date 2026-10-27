@@ -279,14 +279,15 @@ def plot_activity_score_distribution(
 
     ax.hist(scores, bins=bins, color="#1976D2", edgecolor="white", alpha=0.8, linewidth=0.5)
 
-    # Add phenotype threshold lines (gene-specific)
-    from ..alleles.phenotype import _PHENOTYPE_THRESHOLDS
+    # Add phenotype threshold lines (gene-specific bands only, not the default mapping)
+    from ..alleles.phenotype import get_phenotype_thresholds
 
-    gene_upper = gene.upper()
-    thresholds = _PHENOTYPE_THRESHOLDS.get(gene_upper, [])
+    thresholds = [band for band in get_phenotype_thresholds(gene) if band["gene_specific"]]
 
     threshold_values_added: set[float] = set()
-    for low, high, phenotype in thresholds:
+    for band in thresholds:
+        low = band["lower_bound"]
+        phenotype = band["phenotype"]
         if low > 0 and low not in threshold_values_added:
             ax.axvline(
                 x=low, color=_PHENOTYPE_COLORS.get(phenotype.value, "#888"), linestyle="--", alpha=0.7, linewidth=1.5

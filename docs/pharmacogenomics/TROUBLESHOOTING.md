@@ -11,6 +11,13 @@
 | `ValueError: Invalid diplotype string format: '*4'. Expected '*X/*Y'.` | `classify_phenotype` received a single allele | Pass `'*1/*4'` or the `Diplotype` returned by `determine_diplotype` |
 | `TypeError: get_dosing_recommendation() got an unexpected keyword argument 'gene'` | The function takes `(drug, phenotype, guidelines=None)`; there is no gene filter | Select the gene's guideline with `lookup_drug_gene(drug, gene)` and pass `guidelines=[guideline]` |
 | `get_dosing_recommendation` returns `None` | No built-in guideline for that drug, or none for that phenotype string (9 drug–gene guidelines are built in) | Check `lookup_drug_gene(drug, gene)`; load your own guidelines with `load_cpic_guidelines(filepath=...)` |
+| `ValueError: Gene 'UGT1A1' has built-in activity scores but no built-in star-allele definitions: ...` | UGT1A1 and CYP1A2 have activity values but no calling definitions (UGT1A1 alleles are defined by promoter TA-repeat length) | Build the diplotype from allele names called elsewhere with `determine_diplotype('*1', '*28', 'UGT1A1')`, or supply a definition file with `load_allele_definitions('UGT1A1', filepath=...)` |
+| `ValueError: source='file' requires a filepath ...` or `ValueError: filepath is only used with source='file' ...` | `load_allele_definitions` got contradicting arguments, which it refuses so that a file is never ignored | Pass `filepath` alone (or `source='file'` with it) to load a file; omit `filepath` for the built-in table |
+| `ValueError: Activity score must be a non-negative number, got nan` | A negative or NaN score reached `alleles.phenotype.predict_metabolizer_status` or `classify_metabolizer`, which refuse to map it to a phenotype | Compute the score from non-negative allele values; check for a missing value upstream |
+| `ValueError: Allele '*99' not found in function table ...` from `predict_metabolizer` | The allele is not in the gene's table; `predict_metabolizer` refuses unknown alleles, whereas `classify_phenotype` scores them 1.0 and logs a warning | Check the allele name, or pass `activity_scores={...}` including it |
+| `ValueError: Unrecognised metabolizer phenotype: 'x'` | `MetabolizerPhenotype.from_string` got a label it does not know | Use a CPIC name (`'Poor Metabolizer'`), an abbreviation (`'PM'`) or a token (`'poor'`) |
+| CYP2D6 `*1/*4` is intermediate, not normal | Activity score 1.0 falls in CPIC's intermediate band (0 < AS < 1.25) | Nothing to fix: `classify_phenotype` and `predict_metabolizer` agree |
+| A report shows `Indeterminate` (`IND`) for a gene | The gene's `diplotype` could not be classified (for example `'*4'` instead of `'*1/*4'`) and no `phenotype` was given | Pass a full `'*X/*Y'` diplotype or a `phenotype` |
 | `ImportError: matplotlib is required for pharmacogenomics visualization` | matplotlib is missing from the environment (it is a core dependency) | `uv pip install matplotlib` |
 
 ## Diagnostic steps
@@ -55,6 +62,6 @@
 
 - **Empty or unmatched variant set** returns `[*1]` without an error, which downstream reads as `*1/*1` (normal function) — handle missing genotype data separately (`if not variants: return None`) instead of treating it as "no variants"
 - **Identifier format** — variants match by exact string equality with the identifiers in the allele table (rsIDs such as `rs3892097`); a numeric-only `3892097` does not match and is ignored without an error
-- **Genes without a scoring table** — `determine_diplotype` does not raise for an unknown gene; every allele scores 1.0 (a warning is logged) unless you pass `scoring_table=`
+- **Genes without a scoring table** — `determine_diplotype` does not raise for an unknown gene; every allele scores 1.0 (a warning is logged) unless you pass `scoring_table=`, and `classify_phenotype` then maps the score with the CYP2D6 bands (also with a warning), which is a fallback and not a CPIC definition
 - **Parallel pickle errors** — apply to `parallel.process_map`: the mapped function must be top-level (not a lambda or nested function); `parallel.thread_map` does not pickle
 - **Memory spikes** — don't accumulate results in a list inside the mapped function; let `parallel.thread_map` collect

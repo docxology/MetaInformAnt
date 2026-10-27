@@ -323,10 +323,10 @@ class TestClassifyPhenotype:
         assert result["activity_score"] == 2.0
 
     def test_classify_intermediate_metabolizer(self) -> None:
-        # CYP2D6 IM threshold is [0.25, 1.0) -- AS=0.5 is intermediate
+        # CPIC: *9 has activity value 0.25, and 0 < AS < 1.25 is intermediate
         result = classify_phenotype("*4/*9", "CYP2D6")
         assert result["phenotype"] == MetabolizerPhenotype.INTERMEDIATE
-        assert result["activity_score"] == 0.5
+        assert result["activity_score"] == 0.25
 
     def test_classify_from_diplotype_object(self) -> None:
         dip = determine_diplotype("*4", "*9", "CYP2D6")

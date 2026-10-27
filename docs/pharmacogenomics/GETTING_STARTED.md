@@ -50,7 +50,7 @@ uv pip install metainformant
 |----------|------------------|------------------|---------------|
 | CPIC guidelines | Drug–gene dosing recommendations per phenotype | 9 guidelines, all level A | `load_cpic_guidelines(filepath=...)`, passed as `guidelines=` |
 | PharmGKB annotations | Evidence-backed variant annotations | 9 clinical annotations, 10 variant annotations, 7 drug pathways | `parse_clinical_annotations(filepath)` on your own TSV export |
-| Star allele tables | Gene→star-allele definitions with activity scores | 8 genes | `load_allele_definitions(gene, source='file', filepath=...)`, passed as `allele_definitions=` |
+| Star allele tables | Gene→star-allele definitions with activity scores | 8 genes | `load_allele_definitions(gene, filepath=...)`, passed as `allele_definitions=` |
 
 ## Core concepts
 
@@ -63,7 +63,11 @@ and using each observed variant for at most one allele.
 (e.g., `*1/*4`). Activity score is the sum of each allele's numeric activity.
 
 **Phenotype** – Clinical interpretation: Poor (PM), Intermediate (IM), Normal (NM),
-Rapid (RM), or Ultrarapid (UM) metabolizer. Thresholds are gene-specific.
+Rapid (RM), or Ultrarapid (UM) metabolizer. Each gene is classified the way CPIC defines it:
+from the activity score for CYP2D6, CYP2C9, DPYD, CYP3A5, TPMT and NUDT15, and from the pair
+of allele functions for CYP2C19, SLCO1B1 and UGT1A1. CYP2D6 has no rapid category (CYP2D6
+`*1/*4`, activity score 1.0, is intermediate). See
+[Phenotype definitions](SPEC.md#phenotype-definitions) for every band.
 
 **CPIC level** – Evidence strength: A (strong), B (moderate), C (optional), D (weak
 evidence or limited data); the built-in guidelines are all level A.
@@ -115,8 +119,8 @@ from metainformant.pharmacogenomics.clinical.reporting import generate_clinical_
 
 patient = {'patient_id': 'PT001', 'sex': 'F'}
 genotypes = {
-    'CYP2D6': {'diplotype': '*4/*10', 'phenotype': 'Intermediate Metabolizer'},
-    'CYP2C19': {'diplotype': '*2/*2', 'phenotype': 'Poor Metabolizer'},
+    'CYP2D6': {'diplotype': '*4/*10'},
+    'CYP2C19': {'diplotype': '*2/*2'},
 }
 report = generate_clinical_report(patient, genotypes, drugs=['codeine', 'clopidogrel'])
 print(export_report(report, format='text'))   # also 'json' and 'html'
@@ -129,9 +133,12 @@ items, an interaction summary and the disclaimer.
 The report is a dict with the keys `header`, `patient_info`, `genotype_results`,
 `drug_recommendations`, `interaction_summary`, `clinical_actions` and `disclaimer`.
 `patient_info` keeps only `patient_id`, `sex`, `ethnicity` and `ordering_provider` (names
-and dates of birth are not copied). Drug recommendations are generated only for the
-`drugs` you pass, using the `phenotype` given in `genotypes`; the genotype table
-recomputes the phenotype from `diplotype`.
+and dates of birth are not copied). Each gene's phenotype is classified from its `diplotype`
+(or taken from its `phenotype` key when there is no diplotype), and the drug
+recommendations use those phenotypes, so a gene needs only one of the two. With `drugs=None`
+(the default) every drug that has a built-in CPIC guideline is analysed against the genotyped
+genes; a list restricts the report to those drugs, and `drugs=[]` requests none. See
+[reporting.md](reporting.md).
 
 ## Configuration
 
@@ -153,6 +160,12 @@ The built-in allele definitions cover 8 pharmacogenes, 45 alleles in total (coun
 - CYP2D6 (12 alleles), CYP2C19 (5), CYP2C9 (7), CYP3A5 (4)
 - TPMT (5), NUDT15 (3)
 - SLCO1B1 (4), DPYD (5)
+
+UGT1A1 and CYP1A2 have activity values (so `determine_diplotype`, `classify_phenotype` and
+`predict_metabolizer` work for them) but no calling definitions: UGT1A1 alleles are defined by
+promoter TA-repeat length, which variant identifiers cannot express. Asking for their
+definitions raises a `ValueError` that says so; build their diplotypes from allele names
+called elsewhere.
 
 Other genes need a definition file (see [CONFIGURATION.md](CONFIGURATION.md)). To list the
 built-in genes, ask for an unknown one; the error names every gene it has:

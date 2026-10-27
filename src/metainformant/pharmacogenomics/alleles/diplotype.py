@@ -65,8 +65,18 @@ class Diplotype:
 
 
 # ── Activity score tables per CPIC guidelines ──────────────────────────────────
-# Maps gene -> allele name -> activity value.
-# These are derived from CPIC allele functionality tables.
+# Maps gene -> allele name -> activity value, from the CPIC allele functionality tables
+# (api.cpicpgx.org/v1/allele, checked 2026-10-27): normal function 1.0, decreased
+# function 0.5, no function 0.0, increased function CYP2C19 *17 1.5. CYP2D6 carries
+# CPIC's own activity values, including 0.25 for *9, *10 and *41. CPIC assigns no
+# activity values for CYP2C19, SLCO1B1 or UGT1A1; their entries encode the CPIC function
+# class on the same scale, which phenotype.py reads pairwise.
+#
+# This is the package's single allele-function table. metabolism.metabolizer_status
+# derives its table from it, and the star-allele calling definitions in
+# star_allele._BUILTIN_ALLELE_DEFINITIONS must carry the same activity values
+# (both are enforced by tests). Phenotype assignment from these values lives in
+# phenotype.py.
 
 _ACTIVITY_SCORE_TABLES: dict[str, dict[str, float]] = {
     "CYP2D6": {
@@ -74,11 +84,11 @@ _ACTIVITY_SCORE_TABLES: dict[str, dict[str, float]] = {
         "*2": 1.0,
         "*33": 1.0,
         "*35": 1.0,
-        "*9": 0.5,
+        "*9": 0.25,
         "*10": 0.25,
         "*17": 0.5,
         "*29": 0.5,
-        "*41": 0.5,
+        "*41": 0.25,
         "*3": 0.0,
         "*4": 0.0,
         "*5": 0.0,
@@ -87,9 +97,13 @@ _ACTIVITY_SCORE_TABLES: dict[str, dict[str, float]] = {
         "*8": 0.0,
         "*11": 0.0,
         "*12": 0.0,
-        "*14": 0.0,
+        "*14": 0.5,
         "*15": 0.0,
         "*36": 0.0,
+        # Symbolic duplication placeholders (xN = N >= 2 copies of the allele). 2.0 is exact
+        # for x2 only; handle_cyp2d6_cnv() scores a real copy number.
+        "*1xN": 2.0,
+        "*2xN": 2.0,
     },
     "CYP2C19": {
         "*1": 1.0,
@@ -101,15 +115,18 @@ _ACTIVITY_SCORE_TABLES: dict[str, dict[str, float]] = {
         "*6": 0.0,
         "*7": 0.0,
         "*8": 0.0,
+        "*9": 0.5,
+        "*10": 0.5,
     },
     "CYP2C9": {
         "*1": 1.0,
         "*2": 0.5,
+        "*4": 0.5,
         "*11": 0.5,
         "*3": 0.0,
-        "*5": 0.0,
+        "*5": 0.5,
         "*6": 0.0,
-        "*8": 0.0,
+        "*8": 0.5,
     },
     "CYP3A5": {
         "*1": 1.0,
@@ -130,6 +147,7 @@ _ACTIVITY_SCORE_TABLES: dict[str, dict[str, float]] = {
         "*3A": 0.0,
         "*3B": 0.0,
         "*3C": 0.0,
+        "*4": 0.0,
     },
     "NUDT15": {
         "*1": 1.0,
@@ -139,14 +157,28 @@ _ACTIVITY_SCORE_TABLES: dict[str, dict[str, float]] = {
     "SLCO1B1": {
         "*1": 1.0,
         "*1B": 1.0,
-        "*5": 0.5,
-        "*15": 0.5,
+        "*5": 0.0,
+        "*15": 0.0,
     },
+    # UGT1A1 and CYP1A2 have activity scores only: no star-allele calling definitions are
+    # bundled for them (see star_allele._GENES_WITHOUT_BUILTIN_DEFINITIONS for why), so
+    # their diplotypes must be built from allele names called elsewhere.
+    # CPIC lists *36 as increased function but gives *1/*36 and *36/*36 the normal
+    # phenotype (Gammal et al., Clin Pharmacol Ther 2016, Table 2), so it carries 1.0.
     "UGT1A1": {
         "*1": 1.0,
         "*6": 0.5,
         "*28": 0.5,
-        "*37": 0.0,
+        "*36": 1.0,
+        "*37": 0.5,
+    },
+    # No CPIC phenotype definition exists for CYP1A2, so phenotype.py applies its
+    # generic default mapping (with a logged warning) to these values.
+    "CYP1A2": {
+        "*1A": 1.0,
+        "*1C": 0.5,
+        "*1F": 1.5,
+        "*1K": 0.5,
     },
 }
 

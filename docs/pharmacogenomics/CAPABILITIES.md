@@ -6,12 +6,17 @@
 
 | Function | Submodule | Purpose |
 |----------|-----------|---------|
+| `_normalize_allele_name()` | `alleles.diplotype` | Normalize an allele name for scoring-table lookup. |
 | `calculate_activity_score()` | `alleles.diplotype` | Calculate activity score for an existing Diplotype. |
 | `calculate_activity_score_from_alleles()` | `alleles.diplotype` | Calculate the combined activity score for two alleles. |
 | `determine_diplotype()` | `alleles.diplotype` | Construct a diplotype from two star alleles with activity scoring. |
 | `phased_diplotype()` | `alleles.diplotype` | Determine diplotype using phasing information. |
 | `resolve_ambiguous_diplotypes()` | `alleles.diplotype` | Resolve ambiguous diplotype calls when phase is unknown. |
+| `_band_phenotype()` | `alleles.phenotype` | Return the phenotype of the band containing an activity score. |
+| `_function_class()` | `alleles.phenotype` | Return the CPIC function class implied by one allele's activity value. |
 | `_generate_clinical_note()` | `alleles.phenotype` | Generate a brief clinical significance note for a phenotype. |
+| `_phenotype_for_alleles()` | `alleles.phenotype` | Phenotype of a diplotype from its two alleles' activity values. |
+| `_phenotype_for_diplotype()` | `alleles.phenotype` | Phenotype of a scored diplotype. |
 | `classify_phenotype()` | `alleles.phenotype` | Full diplotype-to-phenotype classification pipeline. |
 | `get_phenotype_thresholds()` | `alleles.phenotype` | Get gene-specific phenotype threshold definitions. |
 | `population_phenotype_frequencies()` | `alleles.phenotype` | Estimate expected phenotype distribution from allele frequencies. |
@@ -52,6 +57,7 @@
 | `check_gnomad_frequency()` | `clinical.pathogenicity` | Check variant population frequency against gnomAD thresholds. |
 | `classify_variant_acmg()` | `clinical.pathogenicity` | Classify a variant using the ACMG 5-tier system. |
 | `query_clinvar()` | `clinical.pathogenicity` | Look up ClinVar classification for a variant. |
+| `_canonical_phenotype()` | `clinical.reporting` | Return the MetabolizerPhenotype for a recognised label, else the value as given. |
 | `_format_html_report()` | `clinical.reporting` | Format report as HTML. |
 | `_format_json_report()` | `clinical.reporting` | Format report as JSON string. |
 | `_format_text_report()` | `clinical.reporting` | Format report as plain text. |
@@ -67,6 +73,8 @@
 | `default_interaction_database()` | `interaction.drug_interactions` | Return the built-in drug-drug interaction database. |
 | `polypharmacy_risk()` | `interaction.drug_interactions` | Assess polypharmacy risk from multiple concurrent medications. |
 | `predict_drug_interaction()` | `interaction.drug_interactions` | Predict drug-drug interaction between two medications. |
+| `_phenotype_token()` | `metabolism.metabolizer_status` | Return the lowercase token for a phenotype. |
+| `_status_token()` | `metabolism.metabolizer_status` | Return the lowercase phenotype token for any accepted phenotype label. |
 | `classify_metabolizer()` | `metabolism.metabolizer_status` | Classify metabolizer phenotype from an activity score. |
 | `compute_activity_score()` | `metabolism.metabolizer_status` | Compute CPIC-style activity score from a diplotype string. |
 | `default_allele_function_table()` | `metabolism.metabolizer_status` | Return the built-in allele function assignment table. |
@@ -86,6 +94,16 @@
 ## alleles.diplotype
 
 ### Functions
+
+#### `_normalize_allele_name()`
+
+**Signature**: `_normalize_allele_name(name, gene, scoring_table)`
+
+Normalize an allele name for scoring-table lookup.
+
+Star allele names are prefixed with ``*`` when missing. Names already
+present in the scoring table are returned unchanged, so non-star allele
+designations (e.g. DPYD's "c.2846A>T" and "HapB3") are preserved.
 
 #### `determine_diplotype()`
 
@@ -149,7 +167,6 @@ using the following priority rules (per CPIC recommendations):
 1. Prefer diplotypes with known activity scores for both alleles
 2. Among scored diplotypes, prefer the one with the highest activity score
    (conservative: assume best-case metabolism)
-3. If tied, prefer diplotypes containing more common alleles (*1, *2)
 
 Args:
     possible_diplotypes: List of possible Diplotype objects
@@ -207,15 +224,51 @@ Attributes:
 
 ### Functions
 
+#### `_function_class()`
+
+**Signature**: `_function_class(activity)`
+
+Return the CPIC function class implied by one allele's activity value.
+
+An allele's function class is read from its activity value: 0 no function, below 1
+decreased, 1 normal, above 1 increased.
+
+Raises:
+    ValueError: If the value is negative or NaN
+
+#### `_band_phenotype()`
+
+**Signature**: `_band_phenotype(bands, activity_score)`
+
+Return the phenotype of the band containing ``activity_score`` (>= 0).
+
+#### `_phenotype_for_alleles()`
+
+**Signature**: `_phenotype_for_alleles(gene, activity1, activity2)`
+
+Phenotype of a diplotype from its two alleles' activity values.
+
+Genes CPIC defines by allele function are translated from the pair of function classes;
+all others from the summed activity score.
+
+Raises:
+    ValueError: If a value is negative or NaN, or the gene has no phenotype for that pair
+        of allele functions (an increased-function SLCO1B1 or UGT1A1 allele).
+
 #### `predict_metabolizer_status()`
 
 **Signature**: `predict_metabolizer_status(activity_score, gene)`
 
 Map an activity score to a metabolizer phenotype category.
 
-Uses gene-specific threshold tables derived from CPIC guidelines. When a
-gene has no defined thresholds, applies a default mapping:
+Uses the gene-specific bands in ``_PHENOTYPE_THRESHOLDS`` (CPIC definitions, cited
+there). The bands cover every score >= 0 without gaps. When a gene has no defined
+bands, applies the CYP2D6 mapping as a default (with a logged warning):
     AS = 0 -> PM, 0 < AS < 1.25 -> IM, 1.25 <= AS <= 2.25 -> NM, AS > 2.25 -> UM
+
+A score is a sum of allele values, so for CYP2C19 it cannot always identify the
+alleles behind it (a decreased-function allele makes *9/*17 sum to the same 2.0 as
+*1/*1). Use :func:`classify_phenotype` when the diplotype is known.
 
 Args:
     activity_score: Combined activity score (typically sum of two allele scores)
@@ -224,21 +277,33 @@ Args:
 Returns:
     MetabolizerPhenotype enum value
 
+Raises:
+    ValueError: If the activity score is negative or NaN
+
 #### `get_phenotype_thresholds()`
 
 **Signature**: `get_phenotype_thresholds(gene)`
 
 Get gene-specific phenotype threshold definitions.
 
+These are the activity-score bands :func:`predict_metabolizer_status` applies. For
+CYP2C19, SLCO1B1 and UGT1A1, which :func:`classify_phenotype` translates from allele
+function, they are the equivalent bands on the score scale.
+
 Args:
     gene: Gene symbol (e.g., "CYP2D6")
 
 Returns:
-    List of threshold dictionaries with keys:
-        - "lower_bound": Lower activity score boundary (inclusive)
-        - "upper_bound": Upper activity score boundary (exclusive)
+    List of threshold dictionaries, lowest activity first, with keys:
+        - "lower_bound": Lower activity score boundary
+        - "upper_bound": Upper activity score boundary (infinity for the last band)
+        - "lower_inclusive": Whether a score equal to the lower bound is in the band
+        - "upper_inclusive": Whether a score equal to the upper bound is in the band
         - "phenotype": MetabolizerPhenotype value
         - "abbreviation": Phenotype abbreviation (PM, IM, NM, RM, UM)
+        - "gene_specific": False when the gene has no bands of its own and the
+          default (CYP2D6) bands are returned, as :func:`predict_metabolizer_status` applies;
+          such entries also carry a "note"
 
 #### `classify_phenotype()`
 
@@ -247,7 +312,9 @@ Returns:
 Full diplotype-to-phenotype classification pipeline.
 
 Takes a diplotype (object or string like "*1/*4") and gene, computes the
-activity score, and maps it to a metabolizer phenotype.
+activity score, and maps it to a metabolizer phenotype. Genes CPIC defines by
+allele function (CYP2C19, SLCO1B1, UGT1A1) are classified from the function of the
+two alleles, the rest from the activity score.
 
 Args:
     diplotype: Diplotype object or string in format "*X/*Y"
@@ -261,6 +328,17 @@ Returns:
         - "phenotype": MetabolizerPhenotype value
         - "phenotype_abbreviation": Short form (PM, IM, NM, RM, UM)
         - "clinical_significance": Brief clinical note
+
+#### `_phenotype_for_diplotype()`
+
+**Signature**: `_phenotype_for_diplotype(dip, gene)`
+
+Phenotype of a scored diplotype.
+
+Uses the two alleles' own activity values (which the genes CPIC defines by allele
+function need) when they reproduce the diplotype's stored activity score. A diplotype
+scored with a custom scoring table, or containing alleles missing from the built-in
+table, is classified from its stored score alone.
 
 #### `_generate_clinical_note()`
 
@@ -285,6 +363,8 @@ Calculates the expected frequency of each metabolizer phenotype in a
 population given the allele frequency spectrum, assuming Hardy-Weinberg
 equilibrium. For each possible diplotype (all combinations of alleles),
 the diplotype frequency is 2*p*q for heterozygotes and p^2 for homozygotes.
+Each diplotype is assigned its phenotype exactly as :func:`classify_phenotype`
+does.
 
 Args:
     allele_frequencies: Mapping of allele name -> population frequency.
@@ -296,6 +376,12 @@ Returns:
     Example: {"PM": 0.05, "IM": 0.20, "NM": 0.65, "RM": 0.08, "UM": 0.02}
 
 ### Classes
+
+#### `_AlleleFunction`
+
+CPIC allele function classes, ordered from least to most active (an `IntEnum`: no function,
+decreased, normal, increased). `classify_phenotype` reads the class of each allele from its
+activity value and applies the pairwise function rules of CYP2C19, SLCO1B1 and UGT1A1.
 
 #### `MetabolizerPhenotype`
 
@@ -309,6 +395,7 @@ Inherits from str for JSON serialization compatibility.
 | Method | Purpose |
 |--------|---------|
 | `abbreviation()` | Return standard abbreviation (PM, IM, NM, RM, UM). |
+| `from_string()` | Parse a phenotype label written in any of the forms used across the package: the full CPIC name ("Poor Metabolizer"), its abbreviation ("PM"), the bare lowercase token ("poor", "ultrarapid"), variants such as "ultra-rapid", and the pre-2017 CPIC synonym "extensive" for normal, all case-insensitively. A MetabolizerPhenotype is returned unchanged; an unrecognised label raises ValueError. |
 
 ## alleles.star_allele
 
@@ -324,17 +411,32 @@ Loads allele definitions from either the built-in CPIC-derived table or
 from an external file (TSV or JSON format). The built-in tables cover
 CYP2D6, CYP2C19, CYP2C9, CYP3A5, DPYD, TPMT, NUDT15, and SLCO1B1.
 
+The source is chosen by the arguments and the combination is checked, so a
+file is never silently ignored and the built-in table is never silently
+substituted for one:
+
+- ``filepath`` given, ``source`` omitted or ``"file"``: load that file.
+- no ``filepath``, ``source`` omitted or ``"cpic"``: load the built-in table.
+- ``source="file"`` without ``filepath``, ``source="cpic"`` with ``filepath``,
+  or any other ``source``: ``ValueError``.
+
 Args:
     gene: Gene symbol (e.g., "CYP2D6", "CYP2C19")
-    source: Definition source - "cpic" for built-in, "file" for external file
-    filepath: Path to external allele definition file (required if source="file")
+    source: "cpic" for the built-in table, "file" for an external file
+        (case-insensitive), or None (default) to infer it from ``filepath``
+    filepath: Path to an external allele definition file
 
 Returns:
     List of StarAllele objects for the gene
 
 Raises:
-    ValueError: If gene not found in definitions or invalid source
+    ValueError: If ``source`` is invalid or contradicts ``filepath``, or the
+        gene has no built-in definitions (the message says whether it is
+        unknown or known-but-undefined)
     FileNotFoundError: If filepath specified but not found
+
+UGT1A1 and CYP1A2 have built-in activity values but no built-in definitions,
+so asking for their built-in table raises the "known-but-undefined" ValueError.
 
 #### `_load_builtin_definitions()`
 
@@ -1129,11 +1231,17 @@ Args:
         - "ethnicity": Self-reported ethnicity
         - "ordering_provider": Ordering provider name
     genotypes: Dictionary mapping gene symbol -> genotype info:
-        - "diplotype": Diplotype string (e.g., "*1/*4")
-        - "phenotype": Optional pre-determined phenotype
+        - "diplotype": Diplotype string (e.g., "*1/*4"); the phenotype is classified
+          from it
+        - "phenotype": Optional pre-determined phenotype, in any form
+          ``MetabolizerPhenotype.from_string`` accepts ("Poor Metabolizer", "PM",
+          "poor"); used when no diplotype is given or it cannot be classified
         - "activity_score": Optional pre-computed activity score
-    drugs: Optional list of drugs to generate specific recommendations for.
-        If None, generates recommendations for all drugs with CPIC guidelines.
+    drugs: Drugs to generate specific recommendations for. If None (the default),
+        every drug with a built-in CPIC guideline is analysed against the genes
+        in ``genotypes``. An empty list requests no drug-specific recommendations.
+        Recommendations use the phenotypes reported in "genotype_results", so a
+        gene needs only a diplotype or a phenotype, not both.
 
 Returns:
     Comprehensive report dictionary with sections:
@@ -1145,11 +1253,21 @@ Returns:
         - "clinical_actions": Prioritized action items
         - "disclaimer": Clinical disclaimer text
 
+#### `_canonical_phenotype()`
+
+**Signature**: `_canonical_phenotype(phenotype)`
+
+Return the MetabolizerPhenotype for a recognised label ("poor", "PM", ...), else the value as given.
+
 #### `_get_abbrev()`
 
 **Signature**: `_get_abbrev(phenotype)`
 
 Get phenotype abbreviation from various input types.
+
+A recognised label ("Poor Metabolizer", "PM", "poor", "ultra-rapid") gives its
+abbreviation; free text such as "Likely Poor Metabolizer" is matched on the category
+word ("ultra" is tested before "rapid"); anything else gives "IND".
 
 #### `format_recommendation()`
 
@@ -1362,14 +1480,19 @@ Returns:
 
 Return the built-in allele function assignment table.
 
-Covers CYP2D6, CYP2C19, and CYP2C9 with CPIC-consensus function
-assignments. Each gene maps to a dict of allele -> function_value.
+A copy of the package's single allele table,
+``alleles.diplotype._ACTIVITY_SCORE_TABLES`` (CPIC allele functionality tables), so
+the values here can never disagree with ``determine_diplotype`` or
+``alleles.phenotype.classify_phenotype``. Change allele values there, not here.
 
 Returns:
     Dictionary mapping gene name to a dict of
     ``{allele_name: function_value}``. Function values:
     0.0 = no function, 0.5 = decreased function, 1.0 = normal function,
-    1.5 = increased function (CYP2C19 *17).
+    1.5 = increased function (CYP2C19 *17); CYP2D6 *10 is 0.25. Covers
+    CYP2D6, CYP2C19, CYP2C9, CYP3A5, CYP1A2, DPYD, TPMT, NUDT15, SLCO1B1
+    and UGT1A1. The copy is independent: changing it does not change the
+    built-in table.
 
 #### `compute_activity_score()`
 
@@ -1391,14 +1514,30 @@ Returns:
 Raises:
     ValueError: If diplotype format is invalid or alleles not found.
 
+#### `_phenotype_token()`
+
+**Signature**: `_phenotype_token(phenotype)`
+
+Return the lowercase token for a phenotype (``"poor"``, ``"ultrarapid"``, ...).
+
+#### `_status_token()`
+
+**Signature**: `_status_token(status)`
+
+Return the lowercase phenotype token for any accepted phenotype label.
+
+``"Poor Metabolizer"``, ``"PM"``, ``"poor"`` and ``MetabolizerPhenotype.POOR`` all give
+``"poor"``. A label that is not a known phenotype is returned stripped and lowercased.
+
 #### `classify_metabolizer()`
 
 **Signature**: `classify_metabolizer(activity_score, gene)`
 
 Classify metabolizer phenotype from an activity score.
 
-Uses gene-specific thresholds from the CPIC framework to map an
-activity score to a phenotype category.
+Delegates to :func:`metainformant.pharmacogenomics.alleles.phenotype.predict_metabolizer_status`,
+the package's one score-to-phenotype mapping (CPIC definitions, cited there), and returns
+the phenotype as a lowercase token.
 
 Args:
     activity_score: Numeric activity score from :func:`compute_activity_score`.
@@ -1408,6 +1547,9 @@ Returns:
     Phenotype string: one of ``"poor"``, ``"intermediate"``, ``"normal"``,
     ``"rapid"``, or ``"ultrarapid"``.
 
+Raises:
+    ValueError: If the activity score is negative or NaN.
+
 #### `predict_metabolizer_status()`
 
 **Signature**: `predict_metabolizer_status(genotype, gene, activity_scores)`
@@ -1416,7 +1558,10 @@ Predict metabolizer phenotype from genotype information.
 
 Takes a genotype dictionary containing diplotype information and
 computes the metabolizer phenotype using the CPIC activity score
-framework.
+framework. The result is the same phenotype
+:func:`metainformant.pharmacogenomics.alleles.phenotype.classify_phenotype`
+gives for that diplotype (as a lowercase token); the only difference is
+that an allele missing from the table raises here instead of scoring 1.0.
 
 Args:
     genotype: Dictionary with at least a ``"diplotype"`` key containing
@@ -1433,7 +1578,10 @@ Returns:
         - alleles: Tuple of two allele names.
         - gene: Gene symbol.
         - diplotype: Diplotype string.
-        - thresholds_used: The threshold ranges applied.
+        - thresholds_used: The activity-score bands the gene uses, keyed by
+          phenotype token: ``{"low", "high", "low_inclusive", "high_inclusive"}``.
+          CYP2C19, SLCO1B1 and UGT1A1 are classified from allele function, which
+          these bands reproduce for the built-in alleles.
 
 Raises:
     ValueError: If genotype is missing required fields.
@@ -1448,17 +1596,21 @@ Looks up the drug in the dose guideline table and returns the
 recommendation for the given metabolizer phenotype.
 
 Args:
-    metabolizer_status: Metabolizer phenotype string (e.g. ``"poor"``,
-        ``"intermediate"``, ``"normal"``, ``"ultrarapid"``).
+    metabolizer_status: Metabolizer phenotype in any common form: a token
+        (``"poor"``, ``"intermediate"``, ``"normal"``, ``"rapid"``,
+        ``"ultrarapid"``), a CPIC name (``"Poor Metabolizer"``), an abbreviation
+        (``"PM"``) or a ``MetabolizerPhenotype``, case-insensitively.
     drug: Drug name to look up.
     dose_guidelines: Optional custom dose guidelines. If ``None``, uses
         the built-in CPIC-derived guidelines. Expected format:
-        ``{drug: {phenotype: {recommendation, adjusted_dose_fraction, ...}}}``.
+        ``{drug: {phenotype: {recommendation, adjusted_dose_fraction, ...}}}``;
+        the phenotype keys may be written in any of the forms above.
 
 Returns:
     Dictionary with keys:
         - drug: Normalised drug name.
-        - metabolizer_status: Input phenotype.
+        - metabolizer_status: The phenotype token the lookup used (the stripped,
+          lowercased input when it is not a known phenotype).
         - recommendation: Clinical recommendation text.
         - adjusted_dose_fraction: Multiplier for standard dose (0.0 = avoid,
           1.0 = standard, 2.0 = double).
@@ -1602,8 +1754,15 @@ Returns:
 
 ## Data Structures
 
-| Class | Purpose | Key Attributes |
-|-------|---------|----------------|
-| Dataset | Container for input data | `.data`, `.metadata` |
-| Result | Analysis output | `.values`, `.stats` |
-| Config | Settings object | `.params`, `.paths` |
+| Class | Module | Purpose | Key Attributes |
+|-------|--------|---------|----------------|
+| `StarAllele` | `alleles.star_allele` | A pharmacogene star allele | `.name`, `.gene`, `.defining_variants`, `.function`, `.activity_value` |
+| `Diplotype` | `alleles.diplotype` | A pair of alleles with its activity score | `.allele1`, `.allele2`, `.gene`, `.activity_score`, `.phased`, `.confidence`, `.diplotype_string` |
+| `MetabolizerPhenotype` | `alleles.phenotype` | Phenotype categories (a `str` enum) | `.value`, `.abbreviation`, `.from_string()` |
+| `InteractionSeverity` | `clinical.drug_interaction` | Major, Moderate, Minor or None (a `str` enum) | `.value`, `.requires_action` |
+| `DrugRecommendation` | `clinical.drug_interaction` | One drug-gene recommendation | `.drug`, `.gene`, `.phenotype`, `.recommendation`, `.evidence_level`, `.severity`, `.alternatives` |
+| `ACMGClassification` | `clinical.pathogenicity` | ACMG 5-tier classification (a `str` enum) | `.value` |
+| `ACMGCriteria` | `clinical.pathogenicity` | Individual ACMG evidence criteria (a `str` enum) | `.value` |
+
+`classify_phenotype`, `predict_metabolizer`, `generate_clinical_report` and the `annotations`
+functions return plain dictionaries; their keys are listed with each function above.

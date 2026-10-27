@@ -5,6 +5,12 @@ information, activity score computation, and evidence-based dose adjustment
 recommendations. Implements the Clinical Pharmacogenetics Implementation
 Consortium (CPIC) activity score framework for CYP2D6, CYP2C19, and CYP2C9.
 
+This module is a string/dict front end over the ``alleles`` subpackage and holds
+no allele or phenotype data of its own: allele function values come from
+``alleles.diplotype`` and phenotype assignment from ``alleles.phenotype``, so
+``predict_metabolizer_status`` and ``alleles.phenotype.classify_phenotype`` agree
+for every diplotype.
+
 Activity Score (AS) Framework:
     Each allele is assigned a function value (0, 0.5, or 1.0). The diplotype
     activity score is the sum of both alleles. Metabolizer phenotype is then
@@ -17,6 +23,14 @@ from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
+from ..alleles.diplotype import _ACTIVITY_SCORE_TABLES
+from ..alleles.phenotype import (
+    MetabolizerPhenotype,
+    _phenotype_for_alleles,
+    get_phenotype_thresholds,
+    predict_metabolizer_status as _phenotype_from_score,
+)
+
 logger = get_logger(__name__)
 
 
@@ -28,140 +42,21 @@ logger = get_logger(__name__)
 def default_allele_function_table() -> dict:
     """Return the built-in allele function assignment table.
 
-    Covers CYP2D6, CYP2C19, and CYP2C9 with CPIC-consensus function
-    assignments. Each gene maps to a dict of allele -> function_value.
+    A copy of the package's single allele table,
+    ``alleles.diplotype._ACTIVITY_SCORE_TABLES`` (CPIC allele functionality tables), so
+    the values here can never disagree with ``determine_diplotype`` or
+    ``alleles.phenotype.classify_phenotype``. Change allele values there, not here.
 
     Returns:
         Dictionary mapping gene name to a dict of
         ``{allele_name: function_value}``. Function values:
         0.0 = no function, 0.5 = decreased function, 1.0 = normal function,
-        1.5 = increased function (CYP2C19 *17).
+        1.5 = increased function (CYP2C19 *17); CYP2D6 *10 is 0.25. Covers
+        CYP2D6, CYP2C19, CYP2C9, CYP3A5, CYP1A2, DPYD, TPMT, NUDT15, SLCO1B1
+        and UGT1A1. The copy is independent: changing it does not change the
+        built-in table.
     """
-    return {
-        "CYP2D6": {
-            "*1": 1.0,  # Normal function
-            "*2": 1.0,  # Normal function
-            "*3": 0.0,  # No function (frameshift)
-            "*4": 0.0,  # No function (splicing defect)
-            "*5": 0.0,  # No function (gene deletion)
-            "*6": 0.0,  # No function (frameshift)
-            "*7": 0.0,  # No function
-            "*8": 0.0,  # No function
-            "*9": 0.5,  # Decreased function
-            "*10": 0.5,  # Decreased function (common in East Asian)
-            "*14": 0.5,  # Decreased function
-            "*17": 0.5,  # Decreased function
-            "*29": 0.5,  # Decreased function
-            "*41": 0.5,  # Decreased function (reduced splicing)
-            "*1xN": 2.0,  # Increased function (gene duplication, N copies)
-            "*2xN": 2.0,  # Increased function (gene duplication)
-        },
-        "CYP2C19": {
-            "*1": 1.0,  # Normal function
-            "*2": 0.0,  # No function (splicing defect, 681G>A)
-            "*3": 0.0,  # No function (premature stop)
-            "*4": 0.0,  # No function
-            "*5": 0.0,  # No function
-            "*6": 0.0,  # No function
-            "*7": 0.0,  # No function
-            "*8": 0.0,  # No function
-            "*9": 0.5,  # Decreased function
-            "*10": 0.5,  # Decreased function
-            "*17": 1.5,  # Increased function (promoter variant)
-        },
-        "CYP2C9": {
-            "*1": 1.0,  # Normal function
-            "*2": 0.5,  # Decreased function (R144C)
-            "*3": 0.0,  # No function (I359L, substantially reduced)
-            "*4": 0.5,  # Decreased function
-            "*5": 0.0,  # No function
-            "*6": 0.0,  # No function
-            "*8": 0.5,  # Decreased function
-            "*11": 0.5,  # Decreased function
-        },
-        "CYP3A5": {
-            "*1": 1.0,  # Normal function (expresser)
-            "*3": 0.0,  # No function (non-expresser, most common)
-            "*6": 0.0,  # No function
-            "*7": 0.0,  # No function
-        },
-        "CYP1A2": {
-            "*1A": 1.0,  # Normal function
-            "*1C": 0.5,  # Decreased function
-            "*1F": 1.5,  # Increased inducibility
-            "*1K": 0.5,  # Decreased function
-        },
-        "DPYD": {
-            "*1": 1.0,  # Normal function
-            "*2A": 0.0,  # No function (IVS14+1G>A)
-            "*13": 0.0,  # No function
-            "c.2846A>T": 0.5,  # Decreased function
-            "HapB3": 0.5,  # Decreased function
-        },
-        "TPMT": {
-            "*1": 1.0,  # Normal function
-            "*2": 0.0,  # No function
-            "*3A": 0.0,  # No function
-            "*3B": 0.0,  # No function
-            "*3C": 0.0,  # No function
-            "*4": 0.0,  # No function
-        },
-        "UGT1A1": {
-            "*1": 1.0,  # Normal function
-            "*6": 0.5,  # Decreased function
-            "*28": 0.5,  # Decreased function (7 TA repeats)
-            "*36": 1.0,  # Normal function (5 TA repeats)
-            "*37": 0.0,  # No function (8 TA repeats)
-        },
-    }
-
-
-# ---------------------------------------------------------------------------
-# Metabolizer classification thresholds
-# ---------------------------------------------------------------------------
-
-_METABOLIZER_THRESHOLDS: dict[str, dict[str, tuple[float, float]]] = {
-    "CYP2D6": {
-        "poor": (0.0, 0.0),
-        "intermediate": (0.25, 1.0),
-        "normal": (1.25, 2.25),
-        "ultrarapid": (2.5, float("inf")),
-    },
-    "CYP2C19": {
-        "poor": (0.0, 0.0),
-        "intermediate": (0.5, 1.0),
-        "normal": (1.5, 2.0),
-        "rapid": (2.5, 2.5),
-        "ultrarapid": (3.0, float("inf")),
-    },
-    "CYP2C9": {
-        "poor": (0.0, 0.0),
-        "intermediate": (0.5, 1.0),
-        "normal": (1.5, 2.0),
-    },
-    "DPYD": {
-        "poor": (0.0, 0.0),
-        "intermediate": (0.5, 1.0),
-        "normal": (1.5, 2.0),
-    },
-    "TPMT": {
-        "poor": (0.0, 0.0),
-        "intermediate": (0.5, 1.0),
-        "normal": (1.5, 2.0),
-    },
-    "UGT1A1": {
-        "poor": (0.0, 0.5),
-        "intermediate": (1.0, 1.0),
-        "normal": (1.5, 2.0),
-    },
-}
-
-# Fallback thresholds for genes not in the lookup
-_DEFAULT_THRESHOLDS: dict[str, tuple[float, float]] = {
-    "poor": (0.0, 0.0),
-    "intermediate": (0.5, 1.0),
-    "normal": (1.5, 2.0),
-}
+    return {gene: dict(table) for gene, table in _ACTIVITY_SCORE_TABLES.items()}
 
 
 # ---------------------------------------------------------------------------
@@ -433,11 +328,29 @@ def compute_activity_score(
     return activity_score
 
 
+def _phenotype_token(phenotype: MetabolizerPhenotype) -> str:
+    """Return the lowercase token for a phenotype (``"poor"``, ``"ultrarapid"``, ...)."""
+    return phenotype.value.split()[0].lower()
+
+
+def _status_token(status: str) -> str:
+    """Return the lowercase phenotype token for any accepted phenotype label.
+
+    ``"Poor Metabolizer"``, ``"PM"``, ``"poor"`` and ``MetabolizerPhenotype.POOR`` all give
+    ``"poor"``. A label that is not a known phenotype is returned stripped and lowercased.
+    """
+    try:
+        return _phenotype_token(MetabolizerPhenotype.from_string(status))
+    except ValueError:
+        return status.strip().lower()
+
+
 def classify_metabolizer(activity_score: float, gene: str) -> str:
     """Classify metabolizer phenotype from an activity score.
 
-    Uses gene-specific thresholds from the CPIC framework to map an
-    activity score to a phenotype category.
+    Delegates to :func:`metainformant.pharmacogenomics.alleles.phenotype.predict_metabolizer_status`,
+    the package's one score-to-phenotype mapping (CPIC definitions, cited there), and returns
+    the phenotype as a lowercase token.
 
     Args:
         activity_score: Numeric activity score from :func:`compute_activity_score`.
@@ -446,29 +359,14 @@ def classify_metabolizer(activity_score: float, gene: str) -> str:
     Returns:
         Phenotype string: one of ``"poor"``, ``"intermediate"``, ``"normal"``,
         ``"rapid"``, or ``"ultrarapid"``.
+
+    Raises:
+        ValueError: If the activity score is negative or NaN.
     """
     gene_upper = gene.strip().upper()
-    thresholds = _METABOLIZER_THRESHOLDS.get(gene_upper, _DEFAULT_THRESHOLDS)
-
-    for phenotype, (low, high) in thresholds.items():
-        if low <= activity_score <= high:
-            logger.debug(
-                "Classified %s AS=%.2f as %s metabolizer",
-                gene,
-                activity_score,
-                phenotype,
-            )
-            return phenotype
-
-    # If above all ranges, assume ultrarapid; if between ranges, pick nearest
-    max_threshold_phenotype = max(thresholds.items(), key=lambda x: x[1][1])[0]
-    logger.warning(
-        "Activity score %.2f for %s outside defined ranges; defaulting to %s",
-        activity_score,
-        gene,
-        max_threshold_phenotype,
-    )
-    return max_threshold_phenotype
+    phenotype = _phenotype_from_score(activity_score, gene_upper)
+    logger.debug("Classified %s AS=%.2f as %s metabolizer", gene, activity_score, phenotype.value)
+    return _phenotype_token(phenotype)
 
 
 def predict_metabolizer_status(
@@ -480,7 +378,10 @@ def predict_metabolizer_status(
 
     Takes a genotype dictionary containing diplotype information and
     computes the metabolizer phenotype using the CPIC activity score
-    framework.
+    framework. The result is the same phenotype
+    :func:`metainformant.pharmacogenomics.alleles.phenotype.classify_phenotype`
+    gives for that diplotype (as a lowercase token); the only difference is
+    that an allele missing from the table raises here instead of scoring 1.0.
 
     Args:
         genotype: Dictionary with at least a ``"diplotype"`` key containing
@@ -497,7 +398,10 @@ def predict_metabolizer_status(
             - alleles: Tuple of two allele names.
             - gene: Gene symbol.
             - diplotype: Diplotype string.
-            - thresholds_used: The threshold ranges applied.
+            - thresholds_used: The activity-score bands the gene uses, keyed by
+              phenotype token: ``{"low", "high", "low_inclusive", "high_inclusive"}``.
+              CYP2C19, SLCO1B1 and UGT1A1 are classified from allele function, which
+              these bands reproduce for the built-in alleles.
 
     Raises:
         ValueError: If genotype is missing required fields.
@@ -527,15 +431,23 @@ def predict_metabolizer_status(
     else:
         raise ValueError("Genotype must contain 'diplotype' or 'alleles' key")
 
-    # Compute activity score and classify
+    # Compute activity score (this also validates the diplotype and both alleles)
     score = compute_activity_score(diplotype, allele_table)
-    phenotype = classify_metabolizer(score, gene_upper)
 
     # Determine alleles
     allele_parts = diplotype.strip().split("/")
     alleles_tuple = (allele_parts[0].strip(), allele_parts[1].strip())
 
-    thresholds = _METABOLIZER_THRESHOLDS.get(gene_upper, _DEFAULT_THRESHOLDS)
+    # Classify from the two alleles' own values, exactly as alleles.phenotype does
+    phenotype = _phenotype_token(
+        _phenotype_for_alleles(
+            gene_upper,
+            float(allele_table[alleles_tuple[0]]),
+            float(allele_table[alleles_tuple[1]]),
+        )
+    )
+
+    thresholds = get_phenotype_thresholds(gene_upper)
 
     logger.info(
         "Predicted %s metabolizer status for %s %s: %s (AS=%.2f)",
@@ -552,7 +464,15 @@ def predict_metabolizer_status(
         "alleles": alleles_tuple,
         "gene": gene_upper,
         "diplotype": diplotype,
-        "thresholds_used": {k: {"low": v[0], "high": v[1]} for k, v in thresholds.items()},
+        "thresholds_used": {
+            _phenotype_token(band["phenotype"]): {
+                "low": band["lower_bound"],
+                "high": band["upper_bound"],
+                "low_inclusive": band["lower_inclusive"],
+                "high_inclusive": band["upper_inclusive"],
+            }
+            for band in thresholds
+        },
     }
 
 
@@ -567,17 +487,21 @@ def dose_adjustment(
     recommendation for the given metabolizer phenotype.
 
     Args:
-        metabolizer_status: Metabolizer phenotype string (e.g. ``"poor"``,
-            ``"intermediate"``, ``"normal"``, ``"ultrarapid"``).
+        metabolizer_status: Metabolizer phenotype in any common form: a token
+            (``"poor"``, ``"intermediate"``, ``"normal"``, ``"rapid"``,
+            ``"ultrarapid"``), a CPIC name (``"Poor Metabolizer"``), an abbreviation
+            (``"PM"``) or a ``MetabolizerPhenotype``, case-insensitively.
         drug: Drug name to look up.
         dose_guidelines: Optional custom dose guidelines. If ``None``, uses
             the built-in CPIC-derived guidelines. Expected format:
-            ``{drug: {phenotype: {recommendation, adjusted_dose_fraction, ...}}}``.
+            ``{drug: {phenotype: {recommendation, adjusted_dose_fraction, ...}}}``;
+            the phenotype keys may be written in any of the forms above.
 
     Returns:
         Dictionary with keys:
             - drug: Normalised drug name.
-            - metabolizer_status: Input phenotype.
+            - metabolizer_status: The phenotype token the lookup used (the stripped,
+              lowercased input when it is not a known phenotype).
             - recommendation: Clinical recommendation text.
             - adjusted_dose_fraction: Multiplier for standard dose (0.0 = avoid,
               1.0 = standard, 2.0 = double).
@@ -588,7 +512,7 @@ def dose_adjustment(
         dose_guidelines = _DOSE_GUIDELINES
 
     drug_lower = drug.strip().lower()
-    status_lower = metabolizer_status.strip().lower()
+    status_lower = _status_token(metabolizer_status)
 
     drug_entry = dose_guidelines.get(drug_lower)
     if drug_entry is None:
@@ -613,18 +537,21 @@ def dose_adjustment(
 
     status_entry = drug_entry.get(status_lower)
     if status_entry is None:
+        # Custom guidelines may key phenotypes by full name or abbreviation
+        status_entry = next((v for k, v in drug_entry.items() if _status_token(k) == status_lower), None)
+    if status_entry is None:
         # Try to find closest match
         logger.warning(
             "No guideline for %s metabolizer status '%s'; available: %s",
             drug,
-            metabolizer_status,
+            status_lower,
             sorted(drug_entry.keys()),
         )
         return {
             "drug": drug_lower,
             "metabolizer_status": status_lower,
             "recommendation": (
-                f"No specific guideline for {metabolizer_status} metabolizer "
+                f"No specific guideline for {status_lower} metabolizer "
                 f"status with {drug}. Use standard dosing with clinical monitoring."
             ),
             "adjusted_dose_fraction": 1.0,
@@ -635,7 +562,7 @@ def dose_adjustment(
     logger.info(
         "Dose adjustment for %s (%s metabolizer): fraction=%.2f, evidence=%s",
         drug,
-        metabolizer_status,
+        status_lower,
         status_entry["adjusted_dose_fraction"],
         status_entry["evidence_level"],
     )

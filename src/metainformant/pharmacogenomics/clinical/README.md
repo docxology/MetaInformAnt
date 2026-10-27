@@ -23,8 +23,8 @@ Clinical pharmacogenomics subpackage providing ACMG variant classification, drug
 | `drug_interaction.check_contraindications()` | Check for genotype-based contraindications |
 | `drug_interaction.calculate_interaction_severity()` | Score interaction severity (Major/Moderate/Minor) |
 | `drug_interaction.suggest_alternatives()` | Suggest alternative drugs based on genotype |
-| `reporting.generate_clinical_report()` | Generate comprehensive clinical PGx report |
-| `reporting.export_report()` | Export report as text, HTML, or JSON |
+| `reporting.generate_clinical_report()` | Generate a comprehensive clinical PGx report dict; `drugs=None` analyses every drug with a built-in CPIC guideline, `drugs=[]` none |
+| `reporting.export_report()` | Export a report as text, HTML, or JSON (`format=`), optionally writing it to `output_path` |
 
 ## Usage
 
@@ -34,5 +34,5 @@ from metainformant.pharmacogenomics.clinical import pathogenicity, drug_interact
 classification = pathogenicity.classify_variant_acmg(variant, evidence)
 interactions = drug_interaction.analyze_drug_gene_interactions(drugs, genotypes)
 report = reporting.generate_clinical_report(patient_data, genotypes, drugs)
-reporting.export_report(report, "output/pgx_report.html", fmt="html")
+reporting.export_report(report, format="html", output_path="output/pgx_report.html")
 ```

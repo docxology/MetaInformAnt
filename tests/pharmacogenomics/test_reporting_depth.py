@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 
+from metainformant.pharmacogenomics.annotations.cpic import load_cpic_guidelines
 from metainformant.pharmacogenomics.clinical.reporting import (
     add_disclaimer,
     export_report,
@@ -61,24 +62,141 @@ class TestGenerateClinicalReport:
         report = generate_clinical_report({}, {"CYP2D6": {"phenotype": "Ultrarapid Metabolizer"}})
         result = report["genotype_results"][0]
         assert result["diplotype"] == "Not provided"
-        # _get_abbrev matches substring "rapid" first, giving RM
-        assert result["phenotype_abbreviation"] == "RM"
+        # "ultrarapid" contains "rapid"; it must still be reported as UM, not RM
+        assert result["phenotype_abbreviation"] == "UM"
 
-    def test_report_runs_with_drugs_without_matching_guidelines(self) -> None:
-        # analyze_drug_gene_interactions only flags pairs in its built-in
-        # guideline set; these phenotypes do not match, so no recommendations.
+    def test_drug_recommendations_follow_the_classified_phenotypes(self) -> None:
+        # GENOTYPES give only diplotypes (no "phenotype" key): *4/*4 is a CYP2D6 poor metabolizer and
+        # *2/*2 a CYP2C19 poor metabolizer, so both requested drugs carry a major recommendation.
         report = generate_clinical_report({"patient_id": "P-2"}, GENOTYPES, drugs=["clopidogrel", "codeine"])
-        assert report["drug_recommendations"] == []
-        assert report["clinical_actions"] == []
+        recs = {rec["drug"]: rec for rec in report["drug_recommendations"]}
+        assert set(recs) == {"clopidogrel", "codeine"}
+        assert recs["clopidogrel"]["gene"] == "CYP2C19" and recs["clopidogrel"]["phenotype"] == "Poor Metabolizer"
+        assert recs["codeine"]["gene"] == "CYP2D6" and recs["codeine"]["severity"] == "Major"
+        assert {action["drug"] for action in report["clinical_actions"]} == {"clopidogrel", "codeine"}
 
-    def test_no_drugs_no_recommendations(self) -> None:
+    def test_drugs_none_analyses_every_cpic_drug(self) -> None:
         report = generate_clinical_report({}, GENOTYPES, drugs=None)
-        assert report["drug_recommendations"] == []
-        assert report["clinical_actions"] == []
+        genes = set(GENOTYPES)
+        expected = {g["drug"] for g in load_cpic_guidelines() if g["gene"] in genes}
+        assert {rec["drug"] for rec in report["drug_recommendations"]} == expected
+        assert expected >= {"codeine", "tramadol", "tamoxifen", "clopidogrel", "voriconazole"}
+        assert len(report["clinical_actions"]) == len(expected)
 
     def test_timestamp_is_iso_utc(self) -> None:
         report = generate_clinical_report({}, GENOTYPES)
         assert report["header"]["generated_at"].endswith("+00:00")
+
+
+class TestDrugRecommendations:
+    """generate_clinical_report documents ``drugs=None`` as "all drugs with CPIC guidelines" and a
+    genotype entry as a diplotype and/or a phenotype; both must produce recommendations."""
+
+    PM_GENOTYPES = {"CYP2D6": {"diplotype": "*4/*4"}, "CYP2C19": {"diplotype": "*2/*2"}}
+    NM_GENOTYPES = {"CYP2D6": {"diplotype": "*1/*1"}, "CYP2C19": {"diplotype": "*1/*1"}}
+
+    def test_diplotype_only_gene_gets_recommendations_for_requested_drugs(self) -> None:
+        report = generate_clinical_report({}, {"CYP2D6": {"diplotype": "*4/*4"}}, drugs=["codeine"])
+        assert len(report["drug_recommendations"]) == 1
+        rec = report["drug_recommendations"][0]
+        assert (rec["drug"], rec["gene"], rec["phenotype"]) == ("codeine", "CYP2D6", "Poor Metabolizer")
+        assert rec["severity"] == "Major" and rec["urgency"] == "ACTION REQUIRED"
+        assert rec["alternatives"]
+        assert report["clinical_actions"][0]["priority"] == 1
+        assert report["interaction_summary"]["major_count"] == 1
+
+    def test_drugs_none_covers_every_guideline_drug_of_the_genotyped_genes(self) -> None:
+        report = generate_clinical_report({}, self.PM_GENOTYPES)
+        recs = report["drug_recommendations"]
+        assert [(r["drug"], r["gene"]) for r in recs] == [
+            ("codeine", "CYP2D6"),
+            ("tramadol", "CYP2D6"),
+            ("tamoxifen", "CYP2D6"),
+            ("clopidogrel", "CYP2C19"),
+            ("voriconazole", "CYP2C19"),
+        ]
+        assert all(r["severity"] == "Major" for r in recs)
+        assert [a["priority"] for a in report["clinical_actions"]] == [1, 2, 3, 4, 5]
+        assert report["interaction_summary"]["overall_severity"] == "Major"
+
+    def test_drugs_none_matches_naming_the_same_drugs(self) -> None:
+        all_drugs = list(dict.fromkeys(g["drug"] for g in load_cpic_guidelines()))
+        implicit = generate_clinical_report({}, self.PM_GENOTYPES)
+        explicit = generate_clinical_report({}, self.PM_GENOTYPES, drugs=all_drugs)
+        assert implicit["drug_recommendations"] == explicit["drug_recommendations"]
+        assert implicit["clinical_actions"] == explicit["clinical_actions"]
+
+    def test_empty_drug_list_requests_no_recommendations(self) -> None:
+        report = generate_clinical_report({}, self.PM_GENOTYPES, drugs=[])
+        assert report["drug_recommendations"] == []
+        assert report["clinical_actions"] == []
+        assert report["interaction_summary"]["total_interactions"] == 0
+
+    def test_normal_metabolizers_get_informational_recommendations_and_no_actions(self) -> None:
+        report = generate_clinical_report({}, self.NM_GENOTYPES)
+        recs = report["drug_recommendations"]
+        assert {r["drug"] for r in recs} == {"codeine", "tramadol", "tamoxifen", "clopidogrel", "voriconazole"}
+        assert all(r["urgency"] == "FOR INFORMATION" and r["severity"] == "None" for r in recs)
+        assert report["clinical_actions"] == []
+
+    def test_recommendation_follows_the_corrected_phenotype(self) -> None:
+        # *1/*4 is an intermediate metabolizer (it used to be reported as normal), and the codeine
+        # recommendation is the intermediate-metabolizer one.
+        report = generate_clinical_report({}, {"CYP2D6": {"diplotype": "*1/*4"}}, drugs=["codeine"])
+        assert report["genotype_results"][0]["phenotype_abbreviation"] == "IM"
+        rec = report["drug_recommendations"][0]
+        assert rec["phenotype"] == "Intermediate Metabolizer"
+        assert "reduced efficacy" in rec["recommendation"]
+
+    @pytest.mark.parametrize(
+        ("label", "abbreviation", "phenotype"),
+        [
+            ("Poor Metabolizer", "PM", "Poor Metabolizer"),
+            ("poor", "PM", "Poor Metabolizer"),
+            ("PM", "PM", "Poor Metabolizer"),
+            ("Ultrarapid Metabolizer", "UM", "Ultrarapid Metabolizer"),
+            ("ultra-rapid", "UM", "Ultrarapid Metabolizer"),
+            ("UM", "UM", "Ultrarapid Metabolizer"),
+        ],
+    )
+    def test_directly_supplied_phenotype_in_any_form_is_reported_and_analysed(
+        self, label: str, abbreviation: str, phenotype: str
+    ) -> None:
+        report = generate_clinical_report({}, {"CYP2D6": {"phenotype": label}}, drugs=["codeine"])
+        result = report["genotype_results"][0]
+        assert result["phenotype"] == label  # shown as supplied
+        assert result["phenotype_abbreviation"] == abbreviation
+        rec = report["drug_recommendations"][0]
+        assert (rec["drug"], rec["phenotype"], rec["severity"]) == ("codeine", phenotype, "Major")
+
+    def test_free_text_phenotype_keeps_its_category_abbreviation_without_a_recommendation(self) -> None:
+        report = generate_clinical_report({}, {"CYP2D6": {"phenotype": "Likely Poor Metabolizer"}}, drugs=["codeine"])
+        assert report["genotype_results"][0]["phenotype_abbreviation"] == "PM"
+        assert report["drug_recommendations"] == []
+
+    def test_diplotype_wins_over_a_contradicting_phenotype_key(self) -> None:
+        # The classified diplotype (*4/*4, poor) is what the report shows and analyses.
+        genotypes = {"CYP2D6": {"diplotype": "*4/*4", "phenotype": "Normal Metabolizer"}}
+        report = generate_clinical_report({}, genotypes, drugs=["codeine"])
+        assert report["genotype_results"][0]["phenotype_abbreviation"] == "PM"
+        assert report["drug_recommendations"][0]["phenotype"] == "Poor Metabolizer"
+
+    def test_gene_without_a_guideline_adds_no_recommendation(self) -> None:
+        report = generate_clinical_report({}, {"CYP3A5": {"diplotype": "*1/*3"}})
+        assert report["genotype_results"][0]["phenotype_abbreviation"] == "IM"
+        assert report["drug_recommendations"] == []
+        assert report["clinical_actions"] == []
+
+    def test_unclassifiable_diplotype_is_indeterminate_and_adds_no_recommendation(self) -> None:
+        report = generate_clinical_report({}, {"CYP2D6": {"diplotype": "*4"}})
+        assert report["genotype_results"][0]["phenotype_abbreviation"] == "IND"
+        assert report["drug_recommendations"] == []
+
+    def test_recommendations_reach_the_exported_text(self) -> None:
+        text = export_report(generate_clinical_report({"patient_id": "P-9"}, self.PM_GENOTYPES), format="text")
+        assert "DRUG RECOMMENDATIONS" in text
+        assert "[ACTION REQUIRED] codeine / CYP2D6 (Poor Metabolizer)" in text
+        assert "CLINICAL ACTION ITEMS (PRIORITIZED)" in text
 
 
 class TestFormatAndSummary:

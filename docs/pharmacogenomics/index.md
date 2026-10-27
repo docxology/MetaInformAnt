@@ -13,8 +13,9 @@ High‑level map of the module's documentation.
 |------|---------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Layer diagram, data flow, design decisions |
 | [CAPABILITIES.md](CAPABILITIES.md) | Complete function and class catalogue |
-| [SPEC.md](SPEC.md) | Technical specification: data model, algorithms, schemas |
+| [SPEC.md](SPEC.md) | Technical specification: data model, algorithms, phenotype definitions, function contracts |
 | [CONFIGURATION.md](CONFIGURATION.md) | Function arguments that customise tables, guidelines and reports; logging (no env vars or config keys) |
+| [INTEGRATION.md](INTEGRATION.md) | Mapping the report dictionary onto FHIR, C-CDA, REST services, databases and pipelines |
 | [PERFORMANCE.md](PERFORMANCE.md) | Benchmarks, scaling, tuning parameters |
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Symptom → fix table, diagnostics |
 
