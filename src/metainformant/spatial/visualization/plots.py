@@ -10,17 +10,19 @@ All plot functions save to disk and return the matplotlib Figure object.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-# Optional dependencies
+# Optional dependencies. Type checkers model them as installed; at runtime a missing
+# dependency leaves the name bound to None and the functions that need it raise ImportError.
 try:
     import numpy as np
 except ImportError:
-    np = None
+    if not TYPE_CHECKING:
+        np = None
 
 try:
     import matplotlib
@@ -31,10 +33,11 @@ try:
     from matplotlib.collections import PatchCollection
     from matplotlib.patches import Wedge
 except ImportError:
-    plt = None
-    PatchCollection = None
-    Wedge = None
-    mcolors = None
+    if not TYPE_CHECKING:
+        plt = None
+        PatchCollection = None
+        Wedge = None
+        mcolors = None
 
 try:
     import seaborn as sns
@@ -44,7 +47,8 @@ except ImportError:
 try:
     from scipy import sparse as sp_sparse
 except ImportError:
-    sp_sparse = None
+    if not TYPE_CHECKING:
+        sp_sparse = None
 
 
 def _ensure_plotting_deps() -> None:
@@ -367,7 +371,8 @@ def plot_neighborhood_graph(
     coords = np.asarray(coordinates, dtype=np.float64)
 
     if sp_sparse is not None and sp_sparse.issparse(spatial_graph):
-        adj = spatial_graph
+        # scipy-stubs narrow issparse() to a method-less SparseABC; every sparse format provides nonzero()
+        adj = cast("sp_sparse.csr_matrix", spatial_graph)
     else:
         adj = sp_sparse.csr_matrix(np.asarray(spatial_graph)) if sp_sparse else spatial_graph
 

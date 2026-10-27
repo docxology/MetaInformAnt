@@ -8,26 +8,27 @@ for spatial point pattern statistics.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-# Optional dependencies
+# Optional dependencies. Type checkers model them as installed; at runtime a missing
+# dependency leaves the name bound to None and the functions that need it raise ImportError.
 try:
     import numpy as np
-    from numpy.typing import NDArray
 except ImportError:
-    np = None
-    NDArray = None
+    if not TYPE_CHECKING:
+        np = None
 
 try:
     from scipy import sparse as sp_sparse
     from scipy.spatial import KDTree
 except ImportError:
-    sp_sparse = None
-    KDTree = None
+    if not TYPE_CHECKING:
+        sp_sparse = None
+        KDTree = None
 
 try:
     from sklearn.cluster import KMeans
@@ -326,7 +327,8 @@ def ligand_receptor_spatial(
         raise ImportError("scipy.spatial is required: uv pip install scipy")
 
     if sp_sparse is not None and sp_sparse.issparse(expression):
-        expr = expression.toarray()
+        # scipy-stubs narrow issparse() to a method-less SparseABC; every sparse format provides toarray()
+        expr = cast("sp_sparse.csr_matrix", expression).toarray()
     else:
         expr = np.asarray(expression, dtype=np.float64)
 

@@ -6,7 +6,7 @@ functional site annotations from the EMBL-EBI InterPro database.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from urllib.parse import quote
 
 import requests
@@ -14,6 +14,11 @@ from defusedxml import ElementTree as ET
 
 from metainformant.core.utils import logging
 from metainformant.protein._network import get_protein_api_timeout
+
+if TYPE_CHECKING:
+    # Annotation only: defusedxml.ElementTree does not export Element, and nothing in
+    # this module parses XML with the standard-library package.
+    from xml.etree.ElementTree import Element  # nosec B405
 
 logger = logging.get_logger(__name__)
 
@@ -37,7 +42,7 @@ def _coerce_number(value: Any) -> Any:
             return value
 
 
-def _interpro_entry_from_element(element: ET.Element) -> Optional[Dict[str, Any]]:
+def _interpro_entry_from_element(element: Element) -> Optional[Dict[str, Any]]:
     """Find InterPro entry metadata on an XML match element."""
     for candidate in [element, *list(element.iter())]:
         accession = candidate.attrib.get("ac") or candidate.attrib.get("accession") or candidate.attrib.get("id")
@@ -53,7 +58,7 @@ def _interpro_entry_from_element(element: ET.Element) -> Optional[Dict[str, Any]
     return None
 
 
-def _locations_from_element(element: ET.Element) -> List[Dict[str, Any]]:
+def _locations_from_element(element: Element) -> List[Dict[str, Any]]:
     """Extract InterProScan-style location fragments from an XML match element."""
     locations = []
     for candidate in element.iter():
@@ -202,7 +207,7 @@ def search_interpro_entries(query: str, max_results: int = 100) -> List[Dict[str
         >>> # True
     """
     url = "https://www.ebi.ac.uk/interpro/api/entry/InterPro"
-    params = {"search": query, "page_size": min(max_results, 200)}  # API limit
+    params: Dict[str, str | int] = {"search": query, "page_size": min(max_results, 200)}  # API limit
 
     try:
         # The shared helper validates a positive, bounded campaign timeout.

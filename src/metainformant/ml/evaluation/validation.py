@@ -590,8 +590,8 @@ def bootstrap_validate(
 
 def cross_validate(
     model: Any = None,
-    X: np.ndarray = None,
-    y: np.ndarray = None,
+    X: np.ndarray | None = None,
+    y: np.ndarray | None = None,
     cv: int = 5,
     scoring: str = "accuracy",
     classifier_func: Any = None,
@@ -616,6 +616,10 @@ def cross_validate(
 
     Returns:
         Dictionary with cross-validation results
+
+    Raises:
+        ImportError: If scikit-learn is not available.
+        ValueError: If ``classifier_func`` is given without both ``X`` and ``y``.
     """
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for cross-validation")
@@ -625,6 +629,8 @@ def cross_validate(
 
     if classifier_func is not None:
         # Manual CV with classifier function
+        if X is None or y is None:
+            raise ValueError("cross_validate with classifier_func requires both X and y")
         if len(np.unique(y)) < 20:
             kf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=random_state)
         else:
@@ -710,7 +716,7 @@ def learning_curve(
     X: np.ndarray,
     y: np.ndarray,
     model_factory: Any = None,
-    train_sizes: np.ndarray = None,
+    train_sizes: np.ndarray | None = None,
     cv: int = 5,
     random_state: int = 42,
     classifier_func: Any = None,

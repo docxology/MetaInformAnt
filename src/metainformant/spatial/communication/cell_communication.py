@@ -17,20 +17,22 @@ from __future__ import annotations
 
 import zlib
 from collections import defaultdict
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-# Optional dependencies
+# Optional dependencies. Type checkers model them as installed; at runtime a missing
+# dependency leaves the name bound to None and the functions that need it raise ImportError.
 try:
     import numpy as np
 
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    if not TYPE_CHECKING:
+        np = None
 
 try:
     from scipy.spatial.distance import cdist
@@ -39,8 +41,9 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    cdist = None
-    mannwhitneyu = None
+    if not TYPE_CHECKING:
+        cdist = None
+        mannwhitneyu = None
 
 
 def compute_ligand_receptor_interactions(

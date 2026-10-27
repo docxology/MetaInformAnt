@@ -352,6 +352,58 @@ class TestMSAHeatmap:
         plt.close("all")
 
 
+class TestStructureSuperposition:
+    """Tests for the 3D structure superposition plot."""
+
+    def test_default_axes_are_3d_with_one_scatter_per_structure(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        from metainformant.protein.visualization.general import plot_structure_superposition
+
+        rng = np.random.default_rng(3)
+        reference = rng.normal(size=(8, 3))
+        model = reference + 0.1
+
+        ax = plot_structure_superposition([reference, model], labels=["reference", "model"])
+
+        assert ax.name == "3d"
+        assert ax.get_zlabel() == "Z"
+        assert len(ax.collections) == 2
+        assert [text.get_text() for text in ax.get_legend().get_texts()] == ["reference", "model"]
+        import matplotlib.pyplot as plt
+
+        plt.close("all")
+
+    def test_uses_caller_supplied_3d_axes(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        from metainformant.protein.visualization.general import plot_structure_superposition
+
+        supplied = plt.figure().add_subplot(111, projection="3d")
+        ax = plot_structure_superposition([np.zeros((4, 3)), np.ones((4, 3))], ax=supplied)
+
+        assert ax is supplied
+        assert len(ax.collections) == 2
+        plt.close("all")
+
+    def test_rejects_non_3d_coordinates(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        from metainformant.protein.visualization.general import plot_structure_superposition
+
+        with pytest.raises(ValueError, match="n_atoms x 3"):
+            plot_structure_superposition([np.zeros((4, 2))])
+
+        import matplotlib.pyplot as plt
+
+        plt.close("all")
+
+
 class TestPropertyDistribution:
     """Tests for property distribution visualization."""
 

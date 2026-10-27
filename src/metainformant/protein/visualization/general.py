@@ -500,7 +500,7 @@ def plot_structure_superposition(
     validation.validate_type(structures, list, "structures")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=figsize, projection="3d")
+        fig, ax = plt.subplots(figsize=figsize, subplot_kw={"projection": "3d"})
 
     colors = plt.cm.tab10(np.linspace(0, 1, len(structures)))
     # mpl_toolkits.mplot3d exposes no mypy-visible stubs; the 3D axes are

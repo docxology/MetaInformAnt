@@ -5,8 +5,11 @@ All tests use real implementations (real-implementation policy).
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import pytest
+from scipy import stats
 
 from metainformant.spatial.integration.scrna_mapping import (
     ImputationResult,
@@ -107,6 +110,37 @@ class TestMapScrnaToSpatial:
         assert len(result.predicted_labels) == 15
         assert result.method == "anchor_based"
 
+    def test_spearman_correlation_method_is_forwarded(
+        self,
+        scrna_data: np.ndarray,
+        spatial_data: np.ndarray,
+        scrna_labels: np.ndarray,
+    ) -> None:
+        result = map_scrna_to_spatial(
+            scrna_data,
+            spatial_data,
+            method="correlation",
+            scrna_labels=scrna_labels,
+            correlation_method="spearman",
+        )
+        assert result.method == "correlation_spearman"
+
+    def test_unknown_correlation_method_is_rejected(
+        self,
+        scrna_data: np.ndarray,
+        spatial_data: np.ndarray,
+        scrna_labels: np.ndarray,
+    ) -> None:
+        # correlation_method travels through **kwargs, so a misspelling reaches correlation_mapping.
+        with pytest.raises(ValueError, match="Unknown correlation method"):
+            map_scrna_to_spatial(
+                scrna_data,
+                spatial_data,
+                method="correlation",
+                scrna_labels=scrna_labels,
+                correlation_method="kendall",
+            )
+
 
 class TestCorrelationMapping:
     def test_returns_mapping_result(self) -> None:
@@ -119,6 +153,38 @@ class TestCorrelationMapping:
         assert result.label_probabilities.shape == (10, 3)
         # Probabilities should sum to 1 per spot
         np.testing.assert_allclose(result.label_probabilities.sum(axis=1), 1.0, atol=1e-6)
+
+    @pytest.mark.parametrize("method", ["pearson", "spearman"])
+    def test_scores_match_scipy_for_each_method(self, method: Any) -> None:
+        # Log-normal data: skewed enough that Pearson and Spearman give different scores.
+        rng = np.random.RandomState(7)
+        spatial = np.exp(rng.standard_normal((12, 30)))
+        profiles = np.exp(rng.standard_normal((3, 30)))
+        scipy_correlation = {"pearson": stats.pearsonr, "spearman": stats.spearmanr}[method]
+
+        result = correlation_mapping(spatial, profiles, correlation_method=method)
+
+        expected = np.array([[scipy_correlation(spot, profile).statistic for profile in profiles] for spot in spatial])
+        np.testing.assert_allclose(result.prediction_scores, expected.max(axis=1), atol=1e-12)
+        assert result.method == f"correlation_{method}"
+
+    def test_pearson_and_spearman_scores_differ_on_skewed_data(self) -> None:
+        rng = np.random.RandomState(7)
+        spatial = np.exp(rng.standard_normal((12, 30)))
+        profiles = np.exp(rng.standard_normal((3, 30)))
+        pearson = correlation_mapping(spatial, profiles, correlation_method="pearson")
+        spearman = correlation_mapping(spatial, profiles, correlation_method="spearman")
+        assert not np.allclose(pearson.prediction_scores, spearman.prediction_scores)
+
+    @pytest.mark.parametrize("method", ["kendall", "Pearson", ""])
+    def test_unknown_correlation_method_raises(self, method: Any) -> None:
+        # Regression: any value other than "pearson" silently used Spearman and the result
+        # was labelled method="correlation_<value>".
+        rng = np.random.RandomState(42)
+        spatial = np.abs(rng.standard_normal((10, 8)))
+        profiles = np.abs(rng.standard_normal((3, 8)))
+        with pytest.raises(ValueError, match="Unknown correlation method"):
+            correlation_mapping(spatial, profiles, correlation_method=method)
 
 
 class TestAnchorBasedTransfer:

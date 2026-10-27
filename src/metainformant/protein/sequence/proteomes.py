@@ -117,7 +117,7 @@ def get_proteome_metadata(taxon_id: str) -> Dict[str, Any]:
     import requests
 
     # Search for proteome by taxonomy ID
-    params = {"taxid": taxon_id, "size": 1}  # Get first result only
+    params: Dict[str, str | int] = {"taxid": taxon_id, "size": 1}  # Get first result only
 
     try:
         # The shared helper validates a positive, bounded campaign timeout.

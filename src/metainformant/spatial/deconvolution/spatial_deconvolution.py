@@ -14,22 +14,22 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-# Optional dependencies
+# Optional dependencies. Type checkers model them as installed; at runtime a missing
+# dependency leaves the name bound to None and the functions that need it raise ImportError.
 try:
     import numpy as np
-    from numpy.typing import NDArray
 
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
-    NDArray = None
+    if not TYPE_CHECKING:
+        np = None
 
 try:
     from scipy.optimize import nnls as scipy_nnls
@@ -38,8 +38,9 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    scipy_nnls = None
-    cdist = None
+    if not TYPE_CHECKING:
+        scipy_nnls = None
+        cdist = None
 
 
 def deconvolve_spots(

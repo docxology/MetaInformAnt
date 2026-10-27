@@ -13,25 +13,32 @@ suited to whole-slide gene panels (Visium, MERFISH, Xenium aggregated counts).
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal, Optional
+from typing import TYPE_CHECKING, Any, Literal, Optional
 
 from metainformant.core.utils.logging import get_logger
 from metainformant.spatial.analysis.autocorrelation import morans_i, spatial_weights_matrix
 
 logger = get_logger(__name__)
 
-# Optional dependencies
+# Optional dependencies. Type checkers model them as installed; at runtime a missing
+# dependency leaves the name bound to None and the functions that need it raise ImportError.
 try:
     import numpy as np
-    from numpy.typing import NDArray
 except ImportError:
-    np = None
-    NDArray = None
+    if not TYPE_CHECKING:
+        np = None
 
 try:
     from scipy.stats import false_discovery_control
 except ImportError:  # pragma: no cover - scipy<1.11 fallback
-    false_discovery_control = None
+    if not TYPE_CHECKING:
+        false_discovery_control = None
+
+try:
+    from scipy import sparse as sp_sparse
+except ImportError:
+    if not TYPE_CHECKING:
+        sp_sparse = None
 
 
 @dataclass
@@ -61,6 +68,17 @@ class SVGResult:
         return [self.genes[i] for i in order[: min(n, len(self.genes))]]
 
 
+def _gene_row(matrix: Any, index: int, sparse_input: bool) -> Any:
+    """Return gene ``index`` of a genes x spots matrix as a contiguous dense float64 vector.
+
+    A sparse matrix is densified one gene at a time, so a whole-slide matrix never has to exist in dense form;
+    the vector holds the same values the dense matrix would, so every statistic computed from it is identical.
+    """
+    if sparse_input:
+        return matrix.getrow(index).toarray().ravel()
+    return np.ascontiguousarray(matrix[index])
+
+
 def detect_spatially_variable_genes(
     expression: Any,
     coordinates: Any,
@@ -75,7 +93,9 @@ def detect_spatially_variable_genes(
 
     Args:
         expression: Gene-by-spot or spot-by-gene matrix (auto-oriented to
-            genes x spots). Genes failing the mean/variance filters are skipped.
+            genes x spots), dense or any SciPy sparse matrix or array, such as the CSR matrix
+            :func:`load_visium` returns. Sparse input gives the same result as the equivalent
+            dense matrix. Genes failing the mean/variance filters are skipped.
         coordinates: Spot coordinates (n_spots x n_dims).
         genes: Optional gene names. Defaults to ``Gene0..GeneN-1``.
         method: Weight scheme passed to :func:`spatial_weights_matrix`
@@ -96,14 +116,21 @@ def detect_spatially_variable_genes(
     if np is None:
         raise ImportError("NumPy is required: uv pip install numpy")
 
-    X = np.asarray(expression, dtype=np.float64)
+    sparse_input = sp_sparse is not None and sp_sparse.issparse(expression)
+    X: Any
+    if sparse_input:
+        if expression.ndim != 2:
+            raise ValueError(f"expression must be 2-D, got shape {expression.shape}")
+        X = sp_sparse.csr_matrix(expression, dtype=np.float64)
+    else:
+        X = np.asarray(expression, dtype=np.float64)
     coords = np.asarray(coordinates, dtype=np.float64)
     if X.ndim != 2:
         raise ValueError(f"expression must be 2-D, got shape {X.shape}")
 
     n_spots = coords.shape[0]
     if X.shape[0] == n_spots and X.shape[1] != n_spots:
-        X = X.T  # orient to genes x spots
+        X = X.T.tocsr() if sparse_input else X.T  # orient to genes x spots
     if X.shape[1] != n_spots:
         raise ValueError(f"expression has {X.shape[1]} columns after orientation but {n_spots} coordinates")
 
@@ -120,7 +147,7 @@ def detect_spatially_variable_genes(
     p_vals: list[float] = []
 
     for idx in range(X.shape[0]):
-        row = X[idx]
+        row = _gene_row(X, idx, sparse_input)
         if min_mean_expression is not None and row.mean() < min_mean_expression:
             continue
         if row.var() <= min_variance:

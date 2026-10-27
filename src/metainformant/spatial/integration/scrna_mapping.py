@@ -7,28 +7,30 @@ expression profiles.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-# Optional dependencies
+# Optional dependencies. Type checkers model them as installed; at runtime a missing
+# dependency leaves the name bound to None and the functions that need it raise ImportError.
 try:
     import numpy as np
-    from numpy.typing import NDArray
 except ImportError:
-    np = None
-    NDArray = None
+    if not TYPE_CHECKING:
+        np = None
 
 try:
     from scipy import sparse as sp_sparse
     from scipy.stats import pearsonr, spearmanr
 except ImportError:
-    sp_sparse = None
-    pearsonr = None
-    spearmanr = None
+    if not TYPE_CHECKING:
+        sp_sparse = None
+        pearsonr = None
+        spearmanr = None
 
 try:
     from sklearn.decomposition import PCA
@@ -81,7 +83,8 @@ class ImputationResult:
 def _to_dense(matrix: Any) -> Any:
     """Convert sparse matrix to dense numpy array."""
     if sp_sparse is not None and sp_sparse.issparse(matrix):
-        return matrix.toarray()
+        # scipy-stubs narrow issparse() to a method-less SparseABC; every sparse format provides toarray()
+        return cast("sp_sparse.csr_matrix", matrix).toarray()
     return np.asarray(matrix, dtype=np.float64)
 
 
@@ -126,6 +129,10 @@ def correlation_mapping(
 
     Returns:
         MappingResult with predicted labels and probabilities.
+
+    Raises:
+        ImportError: If NumPy or SciPy is not installed.
+        ValueError: If ``correlation_method`` is not "pearson" or "spearman".
     """
     if np is None:
         raise ImportError("NumPy is required: uv pip install numpy")
@@ -144,7 +151,13 @@ def correlation_mapping(
     # Compute correlation between each spot and each profile
     corr_matrix = np.zeros((n_spots, n_types), dtype=np.float64)
 
-    corr_fn = pearsonr if correlation_method == "pearson" else spearmanr
+    corr_fn: Callable[[Any, Any], Any]
+    if correlation_method == "pearson":
+        corr_fn = pearsonr
+    elif correlation_method == "spearman":
+        corr_fn = spearmanr
+    else:
+        raise ValueError(f"Unknown correlation method: {correlation_method}. Use 'pearson' or 'spearman'.")
 
     for i in range(n_spots):
         spot_expr = spatial[i, :]

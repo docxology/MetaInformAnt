@@ -17,26 +17,27 @@ import csv
 import gzip
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import IO, Any, cast
+from typing import IO, TYPE_CHECKING, Any, cast
 
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-# Optional dependencies
+# Optional dependencies. Type checkers model them as installed; at runtime a missing
+# dependency leaves the name bound to None and the functions that need it raise ImportError.
 try:
     import numpy as np
-    from numpy.typing import NDArray
 except ImportError:
-    np = None
-    NDArray = None
+    if not TYPE_CHECKING:
+        np = None
 
 try:
     from scipy import sparse as sp_sparse
     from scipy.io import mmread
 except ImportError:
-    sp_sparse = None
-    mmread = None
+    if not TYPE_CHECKING:
+        sp_sparse = None
+        mmread = None
 
 try:
     import pandas as pd
@@ -169,8 +170,8 @@ def _read_xenium_mex(matrix_dir: Path) -> tuple[Any, list[str], list[str], list[
     if mtx_file is None:
         raise FileNotFoundError(f"No matrix.mtx(.gz) found in {matrix_dir}")
 
-    mat = mmread(str(mtx_file))
-    mat = sp_sparse.csc_matrix(mat).T.tocsr()  # Transpose: (genes x cells) -> (cells x genes)
+    raw = mmread(str(mtx_file))
+    mat = sp_sparse.csc_matrix(raw).T.tocsr()  # Transpose: (genes x cells) -> (cells x genes)
 
     # Read barcodes/cell IDs
     barcodes_file = None

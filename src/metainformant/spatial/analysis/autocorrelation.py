@@ -8,28 +8,29 @@ spatial patterns in gene expression and other continuous variables.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-# Optional dependencies
+# Optional dependencies. Type checkers model them as installed; at runtime a missing
+# dependency leaves the name bound to None and the functions that need it raise ImportError.
 try:
     import numpy as np
-    from numpy.typing import NDArray
 except ImportError:
-    np = None
-    NDArray = None
+    if not TYPE_CHECKING:
+        np = None
 
 try:
     from scipy import sparse as sp_sparse
     from scipy.spatial import KDTree
     from scipy.stats import norm
 except ImportError:
-    sp_sparse = None
-    KDTree = None
-    norm = None
+    if not TYPE_CHECKING:
+        sp_sparse = None
+        KDTree = None
+        norm = None
 
 
 @dataclass
@@ -243,7 +244,7 @@ def spatial_weights_matrix(
         row_sums = np.array(W.sum(axis=1)).flatten()
         row_sums[row_sums == 0] = 1.0
         diag_inv = sp_sparse.diags(1.0 / row_sums)
-        W = diag_inv @ W
+        W = (diag_inv @ W).tocsr()
 
     logger.info(f"Built spatial weights ({method}): {n} observations, {W.nnz} non-zero entries")
     return W
@@ -278,7 +279,8 @@ def morans_i(
     n = len(x)
 
     if sp_sparse is not None and sp_sparse.issparse(weights):
-        W = weights
+        # scipy-stubs narrow issparse() to a method-less SparseABC; every sparse format provides these methods
+        W = cast("sp_sparse.csr_matrix", weights)
     else:
         W = sp_sparse.csr_matrix(np.asarray(weights, dtype=np.float64))
 
@@ -353,7 +355,7 @@ def gearys_c(
 
     Args:
         values: Observed values (length n).
-        weights: Spatial weights matrix (n x n).
+        weights: Spatial weights matrix (n x n), dense or sparse in any scipy format.
 
     Returns:
         GearyCResult with C statistic, z-score, and p-value.
@@ -367,7 +369,7 @@ def gearys_c(
     n = len(x)
 
     if sp_sparse is not None and sp_sparse.issparse(weights):
-        W = weights
+        W = cast("sp_sparse.csr_matrix", weights)
     else:
         W = sp_sparse.csr_matrix(np.asarray(weights, dtype=np.float64))
 
@@ -378,9 +380,11 @@ def gearys_c(
     if S0 == 0:
         return GearyCResult(C=1.0, expected_C=1.0, variance_C=0.0, z_score=0.0, p_value=1.0, n=n)
 
-    # Numerator: sum of w_ij * (x_i - x_j)^2
-    sources, targets = W.nonzero()
-    w_vals = np.array(W[sources, targets]).flatten()
+    # Numerator: sum of w_ij * (x_i - x_j)^2. Read the stored entries as (row, col, value)
+    # triplets of a CSR copy instead of indexing W[sources, targets], which raises for COO, DIA
+    # and BSR weights and does not return a plain array for LIL and DOK weights.
+    W_coo = W.tocsr().tocoo()
+    sources, targets, w_vals = W_coo.row, W_coo.col, W_coo.data
     sq_diffs = (x[sources] - x[targets]) ** 2
     numerator = float(np.sum(w_vals * sq_diffs))
 
@@ -462,7 +466,7 @@ def local_morans_i(
     n = len(x)
 
     if sp_sparse is not None and sp_sparse.issparse(weights):
-        W = weights
+        W = cast("sp_sparse.csr_matrix", weights)
     else:
         W = sp_sparse.csr_matrix(np.asarray(weights, dtype=np.float64))
 
@@ -574,7 +578,7 @@ def getis_ord_g(
     n = len(x)
 
     if sp_sparse is not None and sp_sparse.issparse(weights):
-        W = weights
+        W = cast("sp_sparse.csr_matrix", weights)
     else:
         W = sp_sparse.csr_matrix(np.asarray(weights, dtype=np.float64))
 

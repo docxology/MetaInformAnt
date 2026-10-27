@@ -157,8 +157,8 @@ def identify_salt_bridges(
         residue_atoms[res_key].append((i, atom))
 
     # Find charged groups
-    positive_groups = []
-    negative_groups = []
+    positive_groups: List[Dict[str, Any]] = []
+    negative_groups: List[Dict[str, Any]] = []
 
     for res_key, atom_list in residue_atoms.items():
         chain_id, res_seq, res_name = res_key
@@ -244,7 +244,7 @@ def identify_hydrophobic_contacts(
         residue_atoms[res_key].append((i, atom))
 
     # Find hydrophobic groups (use CB atoms or CA for GLY)
-    hydrophobic_groups = []
+    hydrophobic_groups: List[Dict[str, Any]] = []
 
     for res_key, atom_list in residue_atoms.items():
         chain_id, res_seq, res_name = res_key
@@ -426,7 +426,7 @@ def identify_disulfide_bonds(
     return disulfides
 
 
-def classify_contact_types(atoms: List[Dict[str, Any]], coords: np.ndarray) -> Dict[str, List[Dict[str, Any]]]:
+def classify_contact_types(atoms: List[Dict[str, Any]], coords: np.ndarray) -> Dict[str, Any]:
     """Classify all types of contacts in a protein structure.
 
     Args:
@@ -434,7 +434,9 @@ def classify_contact_types(atoms: List[Dict[str, Any]], coords: np.ndarray) -> D
         coords: Atomic coordinates
 
     Returns:
-        Dictionary mapping contact types to contact lists
+        Dictionary mapping contact types to contact lists, plus the residue
+        contact map (``"residue_contacts"``, an ``np.ndarray``) and a
+        ``"summary"`` dictionary of contact counts
 
     Example:
         >>> # Assuming atom data exists

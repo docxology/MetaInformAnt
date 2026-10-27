@@ -5,8 +5,11 @@ REAL IMPLEMENTATION POLICY: All tests use real implementations.
 
 from __future__ import annotations
 
+import dataclasses
+
 import numpy as np
 import pytest
+from scipy import sparse as sp
 
 from metainformant.spatial.analysis.autocorrelation import (
     GearyCResult,
@@ -244,6 +247,83 @@ class TestGetisOrdG:
         result = getis_ord_g(values, W)
         assert not np.any(result.hot_spots)
         assert not np.any(result.cold_spots)
+
+
+# ---------------------------------------------------------------------------
+# Sparse weight formats
+# ---------------------------------------------------------------------------
+
+SPARSE_FORMATS = ["csr", "csc", "coo", "lil", "dok", "dia", "bsr"]
+SPARSE_FAMILIES = ["matrix", "array"]
+
+
+def _sparse_weights(weights, fmt: str, family: str):
+    """Convert CSR weights to the requested scipy sparse format and container family."""
+    return getattr(sp, f"{fmt}_{family}")(weights)
+
+
+def _gearys_c_from_definition(values, dense_weights) -> float:
+    """Geary's C computed from its definition on a dense matrix (independent of the library code path)."""
+    x = np.asarray(values, dtype=np.float64)
+    n = len(x)
+    squared_differences = (x[:, None] - x[None, :]) ** 2
+    numerator = float((dense_weights * squared_differences).sum())
+    denominator = float(((x - x.mean()) ** 2).sum())
+    return (n - 1) * numerator / (2.0 * float(dense_weights.sum()) * denominator)
+
+
+def _assert_results_close(actual, expected) -> None:
+    """Compare two result dataclasses field by field (labels exactly, numbers to 1e-10 relative)."""
+    for field in dataclasses.fields(expected):
+        got, want = getattr(actual, field.name), getattr(expected, field.name)
+        if isinstance(want, list):
+            assert got == want, field.name
+        else:
+            np.testing.assert_allclose(np.asarray(got), np.asarray(want), rtol=1e-10, atol=1e-12, err_msg=field.name)
+
+
+class TestSparseWeightFormats:
+    """Every statistic accepts any scipy sparse format and container family, not only CSR."""
+
+    @pytest.mark.parametrize("family", SPARSE_FAMILIES)
+    @pytest.mark.parametrize("fmt", SPARSE_FORMATS)
+    def test_gearys_c_matches_definition(self, fmt: str, family: str) -> None:
+        # Regression: gearys_c indexed W[sources, targets], which raises TypeError or
+        # NotImplementedError for COO, DIA, BSR, LIL and DOK weights (matrix and array families).
+        values, coords = _make_grid_data()
+        csr = spatial_weights_matrix(coords, method="knn", k=4, row_standardize=False)
+        result = gearys_c(values, _sparse_weights(csr, fmt, family))
+        assert result.C == pytest.approx(_gearys_c_from_definition(values, csr.toarray()), rel=1e-12)
+
+    @pytest.mark.parametrize("family", SPARSE_FAMILIES)
+    @pytest.mark.parametrize("fmt", SPARSE_FORMATS)
+    def test_all_statistics_independent_of_sparse_format(self, fmt: str, family: str) -> None:
+        values, coords = _make_grid_data()
+        csr = spatial_weights_matrix(coords, method="knn", k=4, row_standardize=False)
+        weights = _sparse_weights(csr, fmt, family)
+
+        for statistic in (morans_i, gearys_c, local_morans_i, getis_ord_g):
+            _assert_results_close(statistic(values, weights), statistic(values, csr))
+
+    def test_gearys_c_dense_weights_match_sparse(self) -> None:
+        values, coords = _make_grid_data()
+        csr = spatial_weights_matrix(coords, method="knn", k=4)
+        _assert_results_close(gearys_c(values, csr.toarray()), gearys_c(values, csr))
+
+    def test_gearys_c_sums_duplicate_coo_entries(self) -> None:
+        # A COO matrix may store one weight as several entries; the matrix value is their sum.
+        values, coords = _make_grid_data()
+        csr = spatial_weights_matrix(coords, method="knn", k=4, row_standardize=False)
+        coo = csr.tocoo()
+        split = sp.coo_matrix(
+            (
+                np.concatenate([coo.data / 2.0, coo.data / 2.0]),
+                (np.concatenate([coo.row, coo.row]), np.concatenate([coo.col, coo.col])),
+            ),
+            shape=csr.shape,
+        )
+        assert split.nnz == 2 * csr.nnz
+        _assert_results_close(gearys_c(values, split), gearys_c(values, csr))
 
 
 # ---------------------------------------------------------------------------

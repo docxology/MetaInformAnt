@@ -335,7 +335,7 @@ def search_uniprot_proteins(query: str, max_results: int = 100) -> List[Dict[str
         >>> # True
     """
     base_url = "https://rest.uniprot.org/uniprotkb/search"
-    params = {"query": query, "format": "json", "size": min(max_results, 500)}  # API limit
+    params: Dict[str, str | int] = {"query": query, "format": "json", "size": min(max_results, 500)}  # API limit
 
     try:
         # The shared helper validates a positive, bounded campaign timeout.
