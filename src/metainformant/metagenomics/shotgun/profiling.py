@@ -25,6 +25,9 @@ logger = get_logger(__name__)
 
 _ENV_PREFIX = "META_"
 
+# Identifier of "no common ancestor": the LCA of taxa that share no rank is the empty lineage
+_NO_ANCESTOR_ID = "unclassified"
+
 
 @dataclass
 class TaxonProfile:
@@ -230,7 +233,7 @@ def _lineage_to_id(lineage: list[tuple[str, str]]) -> str:
     Returns:
         String identifier like "Bacteria;Firmicutes;Bacilli".
     """
-    return ";".join(name for _, name in lineage) if lineage else "unclassified"
+    return ";".join(name for _, name in lineage) if lineage else _NO_ANCESTOR_ID
 
 
 def profile_community(
@@ -247,7 +250,10 @@ def profile_community(
     Classifies reads by matching k-mers against a reference index and
     assigning taxonomy via LCA-based consensus. Each read is classified
     to the most specific taxon supported by >= confidence_threshold of
-    its matched k-mers.
+    its matched k-mers. K-mers shared by taxa with no common ancestor carry
+    no taxonomic information and are ignored, and a read whose matched taxa
+    have no common ancestor stays unclassified (it is not counted as
+    classified).
 
     Args:
         reads: Sequencing reads as dict (id->sequence) or list of sequences.
@@ -295,6 +301,9 @@ def profile_community(
 
     logger.info(f"Profiling {len(read_list)} reads against index with {database.total_kmers} k-mers")
 
+    # Taxa without a lineage (k-mers shared by taxa with no common ancestor) are uninformative
+    uninformative = {tid for tid, lin in database.taxon_lineages.items() if len(lin) == 0} | {_NO_ANCESTOR_ID}
+
     # Classify each read
     taxon_counts: Counter[str] = Counter()
     classified = 0
@@ -312,6 +321,8 @@ def profile_community(
                 total_kmers_in_read += 1
                 if kmer in database.kmer_to_taxon:
                     taxon_id = database.kmer_to_taxon[kmer]
+                    if taxon_id in uninformative:
+                        continue
                     kmer_hits[taxon_id] += 1
 
         total_hits = sum(kmer_hits.values())
@@ -338,12 +349,12 @@ def profile_community(
                 for tid in kmer_hits:
                     if tid in database.taxon_lineages:
                         hit_lineages.append(database.taxon_lineages[tid])
-                if hit_lineages:
-                    lca = _compute_lca(hit_lineages)
-                    lca_id = _lineage_to_id(lca)
-                    taxon_counts[lca_id] += 1
+                lca = _compute_lca(hit_lineages) if hit_lineages else []
+                if lca:
+                    taxon_counts[_lineage_to_id(lca)] += 1
                     classified += 1
                 else:
+                    # The hit taxa share no rank: there is nothing to classify the read as
                     unclassified += 1
         else:
             unclassified += 1

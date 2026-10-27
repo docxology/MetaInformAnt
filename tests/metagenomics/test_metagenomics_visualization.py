@@ -12,8 +12,11 @@ matplotlib.use("Agg")
 
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 
+from metainformant.metagenomics.diversity.metrics import ordination
 from metainformant.metagenomics.visualization.plots import (
     plot_alpha_diversity,
     plot_heatmap,
@@ -207,3 +210,102 @@ class TestPlotHeatmap:
         out = tmp_path / "heatmap_empty.png"
         plot_heatmap({}, output_path=out)
         assert out.exists()
+
+
+# ---------------------------------------------------------------------------
+# Regression tests: plot_ordination(method=) selects the algorithm
+# ---------------------------------------------------------------------------
+
+
+def _pairwise(points: np.ndarray) -> np.ndarray:
+    return np.linalg.norm(points[:, None, :] - points[None, :, :], axis=2)
+
+
+def _plotted_points(fig: object, n_samples: int) -> np.ndarray:
+    ax = fig.axes[0]  # type: ignore[attr-defined]
+    offsets = [np.asarray(c.get_offsets()).reshape(-1, 2) for c in ax.collections]
+    points = np.vstack(offsets)
+    assert points.shape == (n_samples, 2)
+    return points
+
+
+class TestPlotOrdinationMethod:
+    """`method` used to change only the title; the plot was always PCoA."""
+
+    DM = {
+        "s1": {"s1": 0.0, "s2": 0.2, "s3": 0.9, "s4": 0.4, "s5": 0.7},
+        "s2": {"s1": 0.2, "s2": 0.0, "s3": 0.6, "s4": 0.8, "s5": 0.3},
+        "s3": {"s1": 0.9, "s2": 0.6, "s3": 0.0, "s4": 0.5, "s5": 0.95},
+        "s4": {"s1": 0.4, "s2": 0.8, "s3": 0.5, "s4": 0.0, "s5": 0.35},
+        "s5": {"s1": 0.7, "s2": 0.3, "s3": 0.95, "s4": 0.35, "s5": 0.0},
+    }
+
+    @classmethod
+    def _matrix(cls) -> list[list[float]]:
+        samples = sorted(cls.DM)
+        return [[cls.DM[a][b] for b in samples] for a in samples]
+
+    def test_nmds_plots_the_nmds_configuration(self) -> None:
+        fig = plot_ordination(self.DM, method="NMDS", seed=7)
+        try:
+            plotted = _plotted_points(fig, 5)
+            expected = np.array(ordination(self._matrix(), method="nmds", n_components=2, seed=7)["coordinates"])
+            # Ordinations are defined up to rotation/reflection, so compare pairwise distances
+            np.testing.assert_allclose(_pairwise(plotted), _pairwise(expected), atol=1e-9)
+            assert fig.axes[0].get_xlabel() == "NMDS1"
+            assert fig.axes[0].get_ylabel() == "NMDS2"
+            assert "NMDS" in fig.axes[0].get_title()
+        finally:
+            plt.close(fig)
+
+    def test_pcoa_plots_the_pcoa_configuration(self) -> None:
+        fig = plot_ordination(self.DM, method="PCoA")
+        try:
+            plotted = _plotted_points(fig, 5)
+            expected = np.array(ordination(self._matrix(), method="pcoa", n_components=2)["coordinates"])
+            np.testing.assert_allclose(_pairwise(plotted), _pairwise(expected), atol=1e-5)
+            assert fig.axes[0].get_xlabel() == "PC1"
+        finally:
+            plt.close(fig)
+
+    def test_methods_give_different_configurations(self) -> None:
+        pcoa_fig = plot_ordination(self.DM, method="PCoA")
+        nmds_fig = plot_ordination(self.DM, method="NMDS", seed=7)
+        try:
+            gap = np.abs(_pairwise(_plotted_points(pcoa_fig, 5)) - _pairwise(_plotted_points(nmds_fig, 5))).max()
+            assert gap > 0.05
+        finally:
+            plt.close(pcoa_fig)
+            plt.close(nmds_fig)
+
+    def test_method_is_case_insensitive(self) -> None:
+        lower = plot_ordination(self.DM, method="nmds", seed=3)
+        upper = plot_ordination(self.DM, method="NMDS", seed=3)
+        try:
+            np.testing.assert_allclose(_plotted_points(lower, 5), _plotted_points(upper, 5))
+        finally:
+            plt.close(lower)
+            plt.close(upper)
+
+    def test_nmds_seed_changes_the_start_and_is_reproducible(self) -> None:
+        figs = [plot_ordination(self.DM, method="NMDS", seed=s) for s in (1, 1, 2)]
+        try:
+            first, repeat, other = (_plotted_points(f, 5) for f in figs)
+            np.testing.assert_allclose(first, repeat)
+            assert not np.allclose(first, other)
+        finally:
+            for f in figs:
+                plt.close(f)
+
+    def test_unknown_method_raises(self) -> None:
+        with pytest.raises(ValueError, match="method"):
+            plot_ordination(self.DM, method="tsne")
+
+    def test_unknown_method_raises_even_with_too_few_samples(self) -> None:
+        with pytest.raises(ValueError, match="method"):
+            plot_ordination({"s1": {"s1": 0.0}}, method="umap")
+
+    def test_nmds_writes_a_file(self, tmp_path: Path) -> None:
+        out = tmp_path / "nmds.png"
+        assert plot_ordination(self.DM, method="NMDS", output_path=out) == str(out)
+        assert out.stat().st_size > 0

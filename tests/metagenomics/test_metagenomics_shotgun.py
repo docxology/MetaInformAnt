@@ -6,6 +6,12 @@ Uses real implementations -- real-implementation policy.
 
 from __future__ import annotations
 
+import os
+import random
+import subprocess
+import sys
+import textwrap
+
 import pytest
 
 from metainformant.metagenomics.shotgun.assembly import (
@@ -36,6 +42,9 @@ from metainformant.metagenomics.shotgun.profiling import (
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
+# Ten expected single-copy marker genes used by the bin-quality tests
+EXPECTED_MARKERS = [f"m{i}" for i in range(1, 11)]
 
 
 @pytest.fixture
@@ -264,7 +273,14 @@ class TestRefineBins:
                 num_contigs=2,
             )
         ]
-        refined = refine_bins(bins, contigs, completeness_threshold=0.0, contamination_threshold=1.0)
+        refined = refine_bins(
+            bins,
+            contigs,
+            completeness_threshold=0.0,
+            contamination_threshold=1.0,
+            marker_genes={"c1": EXPECTED_MARKERS},
+            marker_set=EXPECTED_MARKERS,
+        )
         assert isinstance(refined, list)
         # At least one bin should survive with these lenient thresholds
         assert len(refined) >= 1
@@ -281,18 +297,20 @@ class TestRefineBins:
 class TestAssessBinQuality:
     """Tests for bin quality assessment."""
 
-    def test_returns_completeness_contamination(self) -> None:
+    def test_quality_unavailable_without_marker_genes(self) -> None:
         bins = [GenomeBin(bin_id="b1", contig_ids=["c1"], total_length=3_000_000)]
         assessed = assess_bin_quality(bins)
         assert len(assessed) == 1
-        assert 0.0 <= assessed[0].completeness <= 1.0
-        assert 0.0 <= assessed[0].contamination <= 1.0
+        assert assessed[0].completeness is None
+        assert assessed[0].contamination is None
+        assert assessed[0].quality_score is None
 
-    def test_with_contig_sequences(self) -> None:
+    def test_sequences_alone_do_not_yield_quality(self) -> None:
         contigs = {"c1": "ATCGATCGATCG" * 1000}
         bins = [GenomeBin(bin_id="b1", contig_ids=["c1"], total_length=12000, num_contigs=1)]
         assessed = assess_bin_quality(bins, contigs)
-        assert assessed[0].quality_score == assessed[0].completeness - 5.0 * assessed[0].contamination
+        assert assessed[0].completeness is None
+        assert assessed[0].quality_score is None
 
     def test_empty(self) -> None:
         assert assess_bin_quality([]) == []
@@ -464,3 +482,345 @@ class TestProfileCommunityUnclassified:
         assert profile.unclassified_reads == 1
         assert profile.classification_rate == 0.0
         assert profile.taxa == []
+
+
+# ---------------------------------------------------------------------------
+# Regression tests: marker-gene based bin quality (no fabricated completeness)
+# ---------------------------------------------------------------------------
+
+
+class TestBinQualityFromMarkerGenes:
+    """Completeness and contamination come only from supplied marker annotations."""
+
+    def test_three_kb_bin_is_never_scored_complete_without_markers(self) -> None:
+        """Any 3 kb bin of ordinary sequence used to score completeness 1.0 from composition alone."""
+        contigs = {"c1": _random_dna(3000, random.Random(1))}
+        genome_bin = GenomeBin("b1", ["c1"], total_length=3000, num_contigs=1)
+        assess_bin_quality([genome_bin], contigs)
+        assert genome_bin.completeness is None
+        assert genome_bin.contamination is None
+        assert genome_bin.quality_score is None
+        assert genome_bin.marker_counts == {}
+
+    def test_genome_size_alone_does_not_make_a_bin_complete(self) -> None:
+        genome_bin = GenomeBin("b1", ["c1"], total_length=3_500_000)
+        assess_bin_quality([genome_bin])
+        assert genome_bin.completeness is None and genome_bin.contamination is None
+
+    def test_hand_computed_completeness_contamination_and_score(self) -> None:
+        markers = {
+            "c1": ["m1", "m2", "m3", "m4", "m5"],
+            "c2": ["m6", "m7", "m8", "m9", "m1", "m2", "m2"],  # m1 gains 1 extra copy, m2 gains 2
+            "c3": ["m10", "not_a_marker"],
+        }
+        bin_a = GenomeBin("a", ["c1", "c2"], total_length=3000)
+        bin_b = GenomeBin("b", ["c3"], total_length=3000)
+        assess_bin_quality([bin_a, bin_b], marker_genes=markers, marker_set=EXPECTED_MARKERS)
+
+        # 9 of 10 markers present; extra copies = (2 - 1) + (3 - 1) = 3
+        assert bin_a.completeness == pytest.approx(0.9)
+        assert bin_a.contamination == pytest.approx(0.3)
+        assert bin_a.quality_score == pytest.approx(0.9 - 5 * 0.3)
+        assert bin_a.marker_counts == {"m1": 2, "m2": 3, "m3": 1, "m4": 1, "m5": 1, "m6": 1, "m7": 1, "m8": 1, "m9": 1}
+        # markers outside the expected set are ignored
+        assert bin_b.completeness == pytest.approx(0.1)
+        assert bin_b.contamination == 0.0
+        assert bin_b.marker_counts == {"m10": 1}
+
+    def test_complete_bin_with_default_marker_set(self) -> None:
+        from metainformant.metagenomics.shotgun.binning import BACTERIAL_SINGLE_COPY_MARKERS
+
+        genome_bin = GenomeBin("b", ["c1"], total_length=3_000_000)
+        assess_bin_quality([genome_bin], marker_genes={"c1": list(BACTERIAL_SINGLE_COPY_MARKERS)})
+        assert genome_bin.completeness == 1.0
+        assert genome_bin.contamination == 0.0
+
+    def test_empty_annotation_means_no_markers_found(self) -> None:
+        """An empty mapping is a real result (annotation ran, found nothing), unlike None."""
+        genome_bin = GenomeBin("b", ["c1"], total_length=3_000_000)
+        assess_bin_quality([genome_bin], marker_genes={}, marker_set=EXPECTED_MARKERS)
+        assert genome_bin.completeness == 0.0
+        assert genome_bin.contamination == 0.0
+
+    def test_empty_marker_set_raises(self) -> None:
+        genome_bin = GenomeBin("b", ["c1"])
+        with pytest.raises(ValueError, match="at least one marker"):
+            assess_bin_quality([genome_bin], marker_genes={"c1": ["m1"]}, marker_set=[])
+
+    def test_contamination_can_exceed_one(self) -> None:
+        """CheckM counts every extra copy, so triplicated markers give 200% contamination."""
+        genome_bin = GenomeBin("b", ["c1"])
+        assess_bin_quality([genome_bin], marker_genes={"c1": EXPECTED_MARKERS * 3}, marker_set=EXPECTED_MARKERS)
+        assert genome_bin.completeness == 1.0
+        assert genome_bin.contamination == pytest.approx(2.0)
+
+    def test_reassessment_without_markers_clears_stale_values(self) -> None:
+        genome_bin = GenomeBin("b", ["c1"])
+        assess_bin_quality([genome_bin], marker_genes={"c1": EXPECTED_MARKERS}, marker_set=EXPECTED_MARKERS)
+        assert genome_bin.completeness == 1.0
+        assess_bin_quality([genome_bin])
+        assert genome_bin.completeness is None and genome_bin.marker_counts == {}
+
+
+class TestHighQualityBinCount:
+    """BinningResult.high_quality_bins used to stay at 0 regardless of the bins."""
+
+    CONTIGS = {"c1": "ATCG" * 500, "c2": "GCTA" * 500, "c3": "AAAA" * 500}
+
+    def test_bin_contigs_fills_high_quality_bins_from_markers(self) -> None:
+        markers = {
+            "c1": EXPECTED_MARKERS,  # complete, clean: high quality
+            "c2": EXPECTED_MARKERS[:6],  # 60% complete
+            "c3": EXPECTED_MARKERS + ["m1"],  # complete but 10% contaminated
+        }
+        result = bin_contigs(
+            self.CONTIGS,
+            method="composition",
+            n_bins=3,
+            min_contig_length=100,
+            marker_genes=markers,
+            marker_set=EXPECTED_MARKERS,
+        )
+        assert len(result.bins) == 3
+        assert result.high_quality_bins == 1
+        assert sorted(b.completeness for b in result.bins if b.completeness is not None) == [0.6, 1.0, 1.0]
+
+    def test_high_quality_bins_unavailable_without_markers(self) -> None:
+        result = bin_contigs(self.CONTIGS, method="composition", n_bins=3, min_contig_length=100)
+        assert result.high_quality_bins is None
+        assert all(b.completeness is None and b.contamination is None for b in result.bins)
+
+    def test_no_bins_means_zero_high_quality_bins(self) -> None:
+        result = bin_contigs({"c1": "ATCG"}, min_contig_length=1000)
+        assert result.high_quality_bins == 0
+
+    def test_count_high_quality_bins_thresholds(self) -> None:
+        from metainformant.metagenomics.shotgun.binning import count_high_quality_bins
+
+        bins = [
+            GenomeBin("a", completeness=0.95, contamination=0.02),
+            GenomeBin("b", completeness=0.90, contamination=0.05),  # boundary values qualify
+            GenomeBin("c", completeness=0.89, contamination=0.01),
+            GenomeBin("d", completeness=1.0, contamination=0.06),
+        ]
+        assert count_high_quality_bins(bins) == 2
+        assert count_high_quality_bins(bins, min_completeness=0.5, max_contamination=1.0) == 4
+        assert count_high_quality_bins([]) == 0
+
+    def test_count_is_unknown_if_any_bin_is_unassessed(self) -> None:
+        from metainformant.metagenomics.shotgun.binning import count_high_quality_bins
+
+        assert count_high_quality_bins([GenomeBin("a", completeness=1.0, contamination=0.0), GenomeBin("b")]) is None
+
+
+class TestRefineBinsWithMarkers:
+    """refine_bins needs real marker annotations to filter and split."""
+
+    CONTIGS = {"c1": "ATCG" * 500, "c2": "GCTA" * 500, "c3": "AAAA" * 500}
+
+    def test_requires_marker_genes(self) -> None:
+        bins = [GenomeBin("b1", ["c1"], total_length=2000, num_contigs=1)]
+        with pytest.raises(ValueError, match="marker_genes"):
+            refine_bins(bins, self.CONTIGS)
+
+    def test_drops_incomplete_bins_and_renumbers(self) -> None:
+        bins = [
+            GenomeBin("a", ["c1"], total_length=2000, num_contigs=1),
+            GenomeBin("b", ["c2"], total_length=2000, num_contigs=1),
+            GenomeBin("c", ["c3"], total_length=2000, num_contigs=1),
+        ]
+        markers = {"c1": EXPECTED_MARKERS, "c2": EXPECTED_MARKERS[:3], "c3": EXPECTED_MARKERS[:8]}
+        refined = refine_bins(
+            bins,
+            self.CONTIGS,
+            completeness_threshold=0.5,
+            contamination_threshold=0.1,
+            marker_genes=markers,
+            marker_set=EXPECTED_MARKERS,
+        )
+        assert [b.completeness for b in refined] == [1.0, 0.8]
+        assert [b.bin_id for b in refined] == ["refined_bin_0000", "refined_bin_0001"]
+
+    def test_contaminated_bin_is_split_and_subbins_are_assessed(self) -> None:
+        contigs = {
+            "x1": "ATCG" * 500,
+            "x2": "ATCG" * 400,
+            "y1": "GGGGCCCCAAAATTTT" * 125,
+            "y2": "GGGGCCCCAAAATTTT" * 100,
+        }
+        # Each composition group carries one complete marker set, so the merged bin has every marker twice
+        markers = {
+            "x1": EXPECTED_MARKERS[:5],
+            "x2": EXPECTED_MARKERS[5:],
+            "y1": EXPECTED_MARKERS[:5],
+            "y2": EXPECTED_MARKERS[5:],
+        }
+        merged = GenomeBin("m", list(contigs), total_length=sum(len(v) for v in contigs.values()), num_contigs=4)
+        refined = refine_bins(
+            [merged],
+            contigs,
+            completeness_threshold=0.9,
+            contamination_threshold=0.1,
+            marker_genes=markers,
+            marker_set=EXPECTED_MARKERS,
+        )
+        assert len(refined) == 2
+        assert sorted(sorted(b.contig_ids) for b in refined) == [["x1", "x2"], ["y1", "y2"]]
+        assert all(b.completeness == 1.0 and b.contamination == 0.0 for b in refined)
+
+
+# ---------------------------------------------------------------------------
+# Regression tests: scaffolding anchors reads on both strands
+# ---------------------------------------------------------------------------
+
+
+def _subprocess_env(**extra: str) -> dict[str, str]:
+    """Environment for a child interpreter that imports the same ``metainformant`` as this process.
+
+    ``tests/conftest.py`` prepends the checkout's ``src`` to ``PYTHONPATH``, so inheriting the
+    variable could silently select a different copy of the package than the one under test.
+    """
+    import metainformant
+
+    package_root = os.path.dirname(os.path.dirname(os.path.abspath(metainformant.__file__)))
+    return {**os.environ, "PYTHONPATH": package_root, **extra}
+
+
+def _reverse_complement(seq: str) -> str:
+    """Independent oracle for the reverse complement."""
+    return seq.translate(str.maketrans("ACGT", "TGCA"))[::-1]
+
+
+def _random_dna(length: int, rng: random.Random) -> str:
+    return "".join(rng.choice("ACGT") for _ in range(length))
+
+
+class TestScaffoldAnchorsBothStrands:
+    """A mate sequenced from the opposite strand maps to the reverse complement of its contig."""
+
+    @staticmethod
+    def _contigs() -> tuple[Contig, Contig]:
+        rng = random.Random(17)
+        return (
+            Contig("c1", _random_dna(400, rng), coverage=10.0),
+            Contig("c2", _random_dna(400, rng), coverage=10.0),
+        )
+
+    def test_reverse_strand_mate_links_contigs(self) -> None:
+        c1, c2 = self._contigs()
+        # Standard FR pair: read 1 forward on c1, read 2 is the reverse complement of c2
+        pairs = {"p1": (c1.sequence[20:80], _reverse_complement(c2.sequence[100:160]))}
+        scaffolds = scaffold_contigs([c1, c2], paired_reads=pairs, min_links=1)
+        assert len(scaffolds) == 1
+        assert {c.contig_id for c in scaffolds[0].contigs} == {"c1", "c2"}
+
+    def test_first_read_on_reverse_strand_links_contigs(self) -> None:
+        c1, c2 = self._contigs()
+        pairs = {"p1": (_reverse_complement(c1.sequence[200:260]), c2.sequence[10:70])}
+        scaffolds = scaffold_contigs([c1, c2], paired_reads=pairs, min_links=1)
+        assert len(scaffolds) == 1
+
+    def test_both_reads_on_reverse_strand_link_contigs(self) -> None:
+        c1, c2 = self._contigs()
+        pairs = {"p1": (_reverse_complement(c1.sequence[5:65]), _reverse_complement(c2.sequence[300:360]))}
+        assert len(scaffold_contigs([c1, c2], paired_reads=pairs, min_links=1)) == 1
+
+    def test_min_links_counts_reverse_strand_pairs(self) -> None:
+        c1, c2 = self._contigs()
+        pairs = {
+            f"p{i}": (c1.sequence[i : i + 60], _reverse_complement(c2.sequence[100 + i : 160 + i])) for i in range(3)
+        }
+        assert len(scaffold_contigs([c1, c2], paired_reads=pairs, min_links=3)) == 1
+        assert len(scaffold_contigs([c1, c2], paired_reads=pairs, min_links=4)) == 2
+
+    def test_unrelated_reads_do_not_link(self) -> None:
+        c1, c2 = self._contigs()
+        other = _random_dna(60, random.Random(99))
+        pairs = {"p1": (c1.sequence[20:80], _reverse_complement(other))}
+        assert len(scaffold_contigs([c1, c2], paired_reads=pairs, min_links=1)) == 2
+
+
+class TestAssemblyIsDeterministic:
+    """Contig order and IDs must not depend on the per-process string hash seed."""
+
+    CODE = textwrap.dedent("""
+        import random
+        from metainformant.metagenomics.shotgun.assembly import assemble_contigs
+
+        rng = random.Random(3)
+        genomes = ["".join(rng.choice("ACGT") for _ in range(300)) for _ in range(3)]
+        reads = [g[i : i + 60] for g in genomes for i in range(0, 241, 5) for _ in range(3)]
+        contigs = assemble_contigs(reads, k_range=[21], min_contig_length=100, min_kmer_coverage=2)
+        print([(c.contig_id, c.sequence) for c in contigs])
+        """)
+
+    def test_output_is_identical_across_hash_seeds(self) -> None:
+        children = [
+            subprocess.Popen(
+                [sys.executable, "-c", self.CODE],
+                env=_subprocess_env(PYTHONHASHSEED=hash_seed),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            for hash_seed in ("0", "1")
+        ]
+        outputs = set()
+        for child in children:
+            stdout, stderr = child.communicate(timeout=300)
+            assert child.returncode == 0, stderr
+            outputs.add(stdout)
+        assert len(outputs) == 1
+
+
+# ---------------------------------------------------------------------------
+# Regression tests: reads without a common ancestor are not "classified"
+# ---------------------------------------------------------------------------
+
+
+class TestProfileNoCommonAncestor:
+    """A read whose k-mers span taxa with no shared rank used to be counted as classified."""
+
+    @staticmethod
+    def _references() -> tuple[dict[str, str], dict[str, list[tuple[str, str]]], str, str, str]:
+        rng = random.Random(9)
+        shared = _random_dna(60, rng)  # identical segment present in a bacterium and an archaeon
+        bac_only = _random_dna(80, rng)
+        arc_only = _random_dna(80, rng)
+        refs = {"bac": bac_only + shared, "arc": arc_only + shared}
+        tax = {
+            "bac": [("domain", "Bacteria"), ("phylum", "Firmicutes")],
+            "arc": [("domain", "Archaea"), ("phylum", "Euryarchaeota")],
+        }
+        return refs, tax, bac_only, arc_only, shared
+
+    def test_split_hits_without_common_ancestor_stay_unclassified(self) -> None:
+        refs, tax, bac_only, arc_only, _ = self._references()
+        read = bac_only[:45] + arc_only[:45]  # half the k-mers support each domain
+        profile = profile_community(
+            [read], reference_sequences=refs, reference_taxonomy=tax, k=11, confidence_threshold=0.6
+        )
+        assert profile.classified_reads == 0
+        assert profile.unclassified_reads == 1
+        assert profile.classification_rate == 0.0
+        assert profile.taxa == []
+
+    def test_kmers_shared_across_domains_do_not_classify_a_read(self) -> None:
+        refs, tax, _, _, shared = self._references()
+        profile = profile_community([shared], reference_sequences=refs, reference_taxonomy=tax, k=11)
+        assert profile.classified_reads == 0
+        assert profile.unclassified_reads == 1
+        assert all(t.name != "unclassified" for t in profile.taxa)
+
+    def test_uninformative_hits_do_not_veto_a_clear_assignment(self) -> None:
+        refs, tax, bac_only, _, shared = self._references()
+        read = bac_only[:50] + shared[:30]  # bacterial k-mers plus k-mers shared with the archaeon
+        profile = profile_community([read], reference_sequences=refs, reference_taxonomy=tax, k=11)
+        assert profile.classified_reads == 1
+        assert [t.name for t in profile.taxa] == ["Firmicutes"]
+
+    def test_read_from_one_taxon_is_still_classified(self) -> None:
+        refs, tax, bac_only, _, _ = self._references()
+        profile = profile_community([bac_only[:60]], reference_sequences=refs, reference_taxonomy=tax, k=11)
+        assert profile.classified_reads == 1
+        assert profile.taxa[0].lineage == [("domain", "Bacteria"), ("phylum", "Firmicutes")]

@@ -105,21 +105,21 @@ The module supports two parallel amplicon analysis strategies:
 | Mode | Method | Resolution | Speed | Recommended For |
 |------|--------|------------|-------|-----------------|
 | **OTU clustering** | Greedy centroid (VSEARCH-style) | 97% identity clusters | Slow: pure-Python alignment, roughly 0.02–0.1 s per 250 bp pair (varies with hardware and load) | Traditional 16S analysis, up to a few thousand sequences (use VSEARCH for >1M reads) |
-| **ASV denoising** | Error-model (DADA2-style) | Exact sequence variants (100%) | Much faster here: no alignments (300 simulated 250 bp reads on one machine: under 0.1 s vs about 14 s for OTU clustering; times vary with hardware, load and data); cost grows with unique sequences × ASVs | High-resolution analysis |
+| **ASV denoising** | Error-model (DADA2-style) | Exact sequence variants (100%) | Much faster here: no alignments (300 simulated 250 bp reads on one machine: under 0.1 s vs about 11 s for OTU clustering; times vary with hardware, load and data); cost grows with unique sequences × ASVs | High-resolution analysis |
 
 **OTU clustering** (`cluster_otus()`):
 - Sorts sequences by length (default) or, with `sort_by="abundance"` and an `abundance` dict, by abundance
 - Iteratively assigns each to best-matching centroid if identity ≥ threshold
 - First sequence becomes centroid #1
-- Complexity: one O(L₁×L₂) alignment per sequence–centroid pair; the k-mer pre-filter skips most alignments between dissimilar sequences, but it is a heuristic and can also skip pairs whose identity is above the threshold
+- Complexity: one O(L₁×L₂) alignment per sequence–centroid pair; the k-mer pre-filter skips the alignments that a k-mer count test (the q-gram lemma) proves cannot reach the threshold. It never skips a pair that qualifies, so the clustering is the same with and without it
 - Output: a `ClusteringResult` whose `otu_table` maps each centroid ID to its number of member sequences (no per-sample counts)
 
 **ASV denoising** (`denoise_sequences()`):
 - Dereplicates identical sequences with counts
-- Uses a supplied `ErrorModel`, one estimated from the reads when `quality_scores` are given (from per-position consensus differences; the Phred values themselves are not used), or a default Phred-30 model
-- Uses Poisson model to merge error variants into true ASVs
+- Uses a supplied `ErrorModel`, one estimated from the reads when `quality_scores` are given (error probabilities from the Phred scores, substitution shares from per-position consensus differences), or a default Phred-30 model; given `quality_scores`, the Phred scores also set the error probability of each mismatch when a variant is tested against a more abundant sequence
+- Merges a variant into an ASV when the Poisson upper-tail probability of its abundance, `P(X >= abundance)` with `lambda = (ASV abundance) × P(variant | ASV)`, exceeds `omega_a`
 - More sensitive to true biological variants (single-nucleotide differences)
-- Output: a `DenoisingResult` whose `asvs` are `ASV(sequence, abundance)` objects pooled over all input reads (no per-sample counts)
+- Output: a `DenoisingResult` whose `asvs` are `ASV` objects (`sequence`, `abundance`, and the mean Phred `quality` of their reads, 0.0 without quality scores) pooled over all input reads (no per-sample counts)
 
 **Recommendation**: Use **ASV** for most studies (higher resolution, and much cheaper than `cluster_otus()` in this pure-Python implementation); use **OTU** for legacy compatibility with 97% OTU tables.
 
@@ -143,7 +143,8 @@ Raw reads (Illumina, PacBio, ONT)
         ↓
 [Binning] — bin_contigs(): tetranucleotide frequency (TNF) + coverage-based k-means
         ↓
-[Bin quality] — assess_bin_quality() / refine_bins(): heuristic stand-in for CheckM-style marker gene QC
+[Bin quality] — assess_bin_quality() / refine_bins(): CheckM-style completeness and contamination from
+                single-copy marker gene annotations supplied by the caller (the marker search is external)
         ↓
 [MAGs] — GenomeBin objects listing contig IDs per bin (no FASTA writer)
         ↓
@@ -165,6 +166,7 @@ Raw reads (Illumina, PacBio, ONT)
 - **Node**: (k-1)-mer, **Edge**: k-mer
 - **Error filtering**: k-mers seen fewer than `min_kmer_coverage` times (default 2) are dropped; there is no tip removal or bubble popping
 - **Multiple k**: contigs are processed longest first, and any contig identical to, or a substring of, one already kept (from any k) is dropped
+- **Reproducibility**: graph start nodes are visited in sorted order, so the same reads and parameters give the same contigs and IDs in every process
 
 **Output data model** (abbreviated):
 ```python
@@ -201,6 +203,7 @@ class AssemblyStats:
   3. **Combined**: Concatenate the TNF vector + log-transformed coverage (recommended)
 
 - **Algorithm**: pure-Python k-means with k-means++ initialization (`seed`). If `n_bins` is not given, it is the smaller of one bin per 3 Mbp of binned sequence and half the number of binnable contigs, raised to at least 2 and capped at the number of binnable contigs.
+- **Quality**: with `marker_genes` (contig ID → marker gene names found on it) every bin is assessed by `assess_bin_quality()` and `BinningResult.high_quality_bins` is filled; without it both stay `None`
 
 **Output** (abbreviated):
 ```python
@@ -212,17 +215,20 @@ class GenomeBin:
     num_contigs: int
     gc_content: float
     mean_coverage: float
-    completeness: float      # 0.0 until assess_bin_quality()/refine_bins() runs
-    contamination: float     # 0.0 until assess_bin_quality()/refine_bins() runs
-    quality_score: float     # completeness - 5 × contamination
-    marker_counts: dict[str, int]
+    completeness: float | None    # None until assessed from marker genes
+    contamination: float | None   # None until assessed from marker genes
+    quality_score: float | None    # completeness - 5 × contamination, or None
+    marker_counts: dict[str, int]  # copy number of each expected marker found
 ```
 
-**Quality assessment** (heuristic stand-in for CheckM; `assess_bin_quality()`):
-- **Completeness**: Fraction of 36 bacterial single-copy marker names counted as present
-- **Contamination**: Fraction of those markers counted in ≥2 copies
-- **Caveat**: no marker gene is searched for. With contigs, presence is inferred from the 4-mer diversity and GC of sequence windows, which almost any non-degenerate sequence passes (a 3 kb bin gets completeness 1.0); without contigs, completeness comes from bin size alone. Use CheckM or BUSCO for reportable values.
-- **High-quality MAG** (the usual criterion): completeness ≥90%, contamination ≤5%; `BinningResult.high_quality_bins` is not filled in by the code, so count them yourself
+**Quality assessment** (CheckM-style, from marker gene annotations; `assess_bin_quality()`):
+- **Input**: `marker_genes` maps each contig ID to the single-copy marker gene names found on it (a name listed twice counts as two copies). The annotations must come from a real marker search of the contigs, for example HMMER with TIGRFAM or Pfam marker profiles; the package does not search sequences. `marker_set` lists the expected markers (default `BACTERIAL_SINGLE_COPY_MARKERS`, a fixed list of 36 bacterial gene symbols; pass the set that matches your annotation names)
+- **Completeness**: expected markers present at least once ÷ expected markers
+- **Contamination**: extra copies (copies − 1, summed over the markers present) ÷ expected markers; it exceeds 1.0 for a bin with several copies of most markers
+- **Quality score**: completeness − 5 × contamination
+- **No annotations**: all three are `None`; nothing is estimated from sequence composition or genome size
+- **High-quality MAG** (the usual criterion): completeness ≥90%, contamination ≤5%; `count_high_quality_bins()` counts them among assessed bins (`None` while any bin is unassessed), and `bin_contigs()` stores that count in `BinningResult.high_quality_bins` when it is given `marker_genes`
+- **Refinement**: `refine_bins()` requires `marker_genes` (`ValueError` otherwise), assesses the bins, drops those below `completeness_threshold`, and splits a bin of three or more contigs whose contamination exceeds `contamination_threshold` by TNF k-means; the sub-bins are assessed with the same annotations
 
 ---
 
@@ -233,6 +239,7 @@ class GenomeBin:
 - **k-mer indexing**: Build k-mer → taxon lookup from reference genomes (forward-strand k-mers). For shared k-mers, store LCA (lowest common ancestor) taxon for that k-mer.
 - **Classification**: For each read, extract k-mers and look them up; reads with fewer than `min_kmer_hits` hits stay unclassified. The taxon with the most hits is assigned if it holds at least `confidence_threshold` of them; otherwise the LCA of all hit taxa is assigned.
 - **Confidence**: Fraction of a read's k-mer hits that support the top taxon.
+- **No common ancestor**: k-mers shared by taxa with no common ancestor carry no taxonomic information and are ignored, and a read whose hit taxa have no common ancestor stays unclassified
 
 **Data model** (abbreviated):
 ```python
@@ -270,7 +277,7 @@ class CommunityProfile:
 
 **Key algorithms**:
 - **`calculate_identity()`**: Needleman-Wunsch global alignment with affine gap penalties; returns identity as a fraction from 0 to 1 (matches divided by alignment columns, gap columns included). O(L₁×L₂) per pair, in pure Python with full dynamic-programming matrices (no banding).
-- **`filter_chimeras()`**: UCHIME-style de novo detection — finds the two most similar parent sequences among those already accepted (processed by abundance, or by length when no abundance is given), builds chimeric models by concatenating left/right segments at 10% breakpoints, computes divergence; flags if score ≥ `min_score`.
+- **`filter_chimeras()`**: UCHIME-style de novo detection — finds the two most similar parent sequences among those already accepted (processed by abundance, or by length when no abundance is given), builds chimeric models by concatenating left/right segments at 10% breakpoints, and computes how much better the model fits the query than the closer parent. A model counts only if it improves the identity by at least `min_divergence` percentage points (the UCHIME `mindiv` convention; 1.0 means 1%); the query is flagged if the best score is ≥ `min_score`.
 
 ---
 
@@ -297,10 +304,10 @@ class CommunityProfile:
 |----------|---------|
 | Alpha diversity | Shannon, Simpson, InvSimpson, Chao1, ACE, Observed, Fisher alpha, Pielou evenness |
 | Beta diversity | Bray-Curtis, Jaccard, Aitchison (CLR-Euclidean) |
-| Ordination | PCoA (eigendecomposition of the double-centered distance matrix), NMDS (gradient stress minimization) |
+| Ordination | PCoA (eigendecomposition of the double-centered distance matrix), NMDS (gradient stress minimization, random start drawn with `seed`, default 42) |
 | Testing | PERMANOVA (pseudo-F permutation test), rarefaction analysis |
 
-**All alpha metrics** accept a single abundance vector as a Python list (`chao1`, `ace` and `fisher_alpha` need raw counts; the others also accept relative abundances); **beta metrics** accept a list of equal-length sample vectors.
+**All alpha metrics** accept a single abundance vector as a list or NumPy array (`chao1`, `ace` and `fisher_alpha` need integer counts and raise `ValueError` for relative abundances; the others also accept relative abundances); **beta metrics** accept a list of equal-length sample vectors. Rarefaction, `rarefy()` and PERMANOVA draw random numbers and are unseeded unless you pass `seed` (default `None`).
 
 ---
 
@@ -308,10 +315,10 @@ class CommunityProfile:
 
 | File | Functions | Purpose |
 |------|-----------|---------|
-| `annotation.py` | `predict_orfs()`, `annotate_genes()`, `classify_gene_families()` | Six-frame start/stop codon ORF scan (not Glimmer or Prodigal); `annotate_genes()` scores against a user-supplied profile set (no hits without one), with COG/KEGG/Pfam assignment by profile ID prefix; `classify_gene_families()` scores against `reference_profiles` or, when that is None, falls back to amino-acid composition heuristics |
+| `annotation.py` | `predict_orfs()`, `annotate_genes()`, `classify_gene_families()` | Six-frame start/stop codon ORF scan (not Glimmer or Prodigal) using an NCBI `translation_table`; `annotate_genes()` scores against a user-supplied profile set (no hits without one; no E-values are computed, so hit E-values are NaN and `e_value_threshold` must be None), with COG/KEGG/Pfam assignment by profile ID prefix; `classify_gene_families()` scores against `reference_profiles` and assigns no family (empty lists) when they are None |
 | `pathways.py` | `reconstruct_pathways()`, `calculate_pathway_completeness()`, `compare_pathway_profiles()`, `find_differential_pathways()` | Metabolic pathway reconstruction and completeness scoring |
 
-**Pathway completeness**: `reconstruct_pathways()` computes the fraction of a pathway's required KOs/ECs present in the annotations, relative to the pathway definition (8 KEGG pathways are built in). Only `calculate_pathway_completeness()` scores `reaction_steps` (a step is complete if any alternative is present); `reconstruct_pathways()` merely divides by the number of steps when a definition has them.
+**Pathway completeness**: `reconstruct_pathways()` computes the fraction of a pathway's required KOs/ECs present in the annotations, relative to the pathway definition (8 KEGG pathways are built in). A definition with `reaction_steps` is scored by steps in both `reconstruct_pathways()` and `calculate_pathway_completeness()` (a step is complete if any alternative is present), so completeness always lies in [0, 1].
 
 ---
 
@@ -322,6 +329,8 @@ class CommunityProfile:
 - **`aldex2_like`**: Welch's t-test and Cohen's d on CLR values averaged over Dirichlet Monte Carlo draws
 - **`ancom_like`**: pairwise log-ratio Welch tests per taxon; the W fraction of rejected comparisons is the effect size and `1 - W` the pseudo p-value
 - **`simple_deseq`**: median-of-ratios size-factor normalization, then Welch's t-test and Cohen's d on the normalized counts
+
+The count matrix may be a list of lists, a NumPy array or a pandas DataFrame. `aldex2_like` (Monte Carlo draws), `indicator_species()` (permutations) and `biomarker_discovery()` (random forest) are unseeded unless you pass `seed` (default `None`).
 
 **Note**: `aldex2_like` handles compositionality with the centered log-ratio (CLR) transform and `ancom_like` with pairwise log-ratios, whereas `simple_deseq` only applies median-of-ratios size-factor normalization; the additive log-ratio (ALR) is not used.
 
@@ -348,7 +357,7 @@ flowchart TD
     subgraph E [Shotgun]
         E1[Host Filter] --> E2[Assembly<br/>de Bruijn graph]
         E2 --> E3[Binning<br/>TNF + Coverage]
-        E3 --> E4[QC Bins<br/>heuristic marker estimate]
+        E3 --> E4[QC Bins<br/>marker gene annotations]
         E4 --> E5[MAGs]
         E5 --> E6[Profiling<br/>k-mer LCA]
         E6 --> E7[Functional<br/>annotation]
@@ -371,9 +380,10 @@ FASTQ (paired-end)
 Merge pairs: merge_paired_reads(forward, reverse) → merged sequences
         ↓
 DADA2-style pipeline:
-1. estimate_error_rates(quality_scores) → ErrorModel (optional; built from the mean Phred
-   score unless sequences= is also passed. denoise_sequences() passes the reads itself when
-   given quality_scores, else uses a default Phred-30 model)
+1. estimate_error_rates(quality_scores) → ErrorModel (optional; the error probability is the
+   mean of 10^(-Q/10) over all scores, and passing sequences= adds substitution shares measured
+   against the per-position consensus. denoise_sequences() passes the reads itself when given
+   quality_scores, else uses a default Phred-30 model)
 2. denoise_sequences(merged, error_rates=error_model) → ASVs
    - Alternative: cluster_otus() → OTUs
         ↓
@@ -402,7 +412,8 @@ Assembly:
         ↓
 Binning (contigs as {id: sequence}):
   bin_contigs(contig_dict, coverage, method="combined") → BinningResult (.bins: list of GenomeBin)
-  refine_bins(result.bins, contig_dict) → bins that pass the (heuristic) quality filter
+  refine_bins(result.bins, contig_dict, marker_genes=marker_genes) → bins that pass the marker-gene
+    quality filter (marker_genes: contig ID → marker names from a marker search such as HMMER)
         ↓
 Profiling (two approaches):
   A) k-mer LCA: build_kmer_index(ref_genomes) → profile_community(reads, database=index) → taxonomic abundances
@@ -433,10 +444,10 @@ otu_table = np.array([
 ])
 n_samples = otu_table.shape[0]
 
-# Alpha diversity (within-sample); abundances must be a Python list, not an array
+# Alpha diversity (within-sample); abundances may be a list or a NumPy array
 for sample_idx in range(n_samples):
     alpha = metrics.alpha_diversity(
-        abundances=otu_table[sample_idx].tolist(),
+        abundances=otu_table[sample_idx],
         metric="shannon",
     )
     print(f"Sample {sample_idx}: Shannon diversity = {alpha['value']:.3f}")
@@ -502,18 +513,18 @@ The `comparative` module provides differential abundance testing across all feat
 # The function shares its name with the module that defines it
 from metainformant.metagenomics.comparative.differential_abundance import differential_abundance
 
-# Every input is a samples × features count matrix (a list of lists: aldex2_like and
-# ancom_like reject numpy arrays, so use .tolist()) with one integer group label per
-# sample and one name per feature (column). Here otu_table needs 6 rows, one per entry of
-# groups (the 3-sample table in the diversity example above is too small)
+# Every input is a samples × features count matrix (a list of lists, a NumPy array or a
+# DataFrame) with one integer group label per sample and one name per feature (column).
+# Here otu_table needs 6 rows, one per entry of groups (the 3-sample table in the
+# diversity example above is too small)
 groups = [0, 0, 0, 1, 1, 1]  # e.g. control vs treatment
 
 # OTU table differential
 otu_diff = differential_abundance(
-    counts=otu_table.tolist(),
+    counts=otu_table,
     groups=groups,
     taxa_names=otu_names,
-    method="aldex2_like",  # CLR-based
+    method="aldex2_like",  # CLR-based; pass seed=... for reproducible Monte Carlo draws
 )
 
 # Taxonomic profile differential
@@ -586,7 +597,7 @@ The main amplicon, shotgun and functional functions return dataclasses for struc
 |-------------|--------------------|-----|
 | `ClusteringResult` | `otus`, `threshold`, `total_sequences`, `num_otus`, `otu_table` | OTU results |
 | `DenoisingResult` | `asvs`, `error_model`, `total_reads`, `num_asvs`, `reads_removed` | ASV results |
-| `BinningResult` | `bins`, `unbinned_contigs`, `total_contigs`, `binned_contigs` | Binning output |
+| `BinningResult` | `bins`, `unbinned_contigs`, `total_contigs`, `binned_contigs`, `high_quality_bins` | Binning output |
 | `AssemblyStats` | `n50`, `l50`, `total_length`, `gc_content` | Assembly quality |
 | `TaxonomyAssignment` | `lineage`, `confidence`, `method` | Classification |
 | `PathwayResult` | `pathway_name`, `completeness`, `matched_kos`, `missing_kos` | Pathway reconstruction |
@@ -597,27 +608,23 @@ Benefits: self-documenting, IDE autocomplete, type checking. Serialize with `dat
 
 ### Environment Variable Override Pattern
 
-Functions that have sensible defaults but allow user customization via environment variables:
+Functions that have sensible defaults but allow user customization via environment variables take the setting as an optional argument that defaults to `None`:
 
 ```python
 _ENV_PREFIX = "META_"
 
-def some_function(threshold=0.97):
-    # Check environment override
-    env_threshold = os.environ.get(f"{_ENV_PREFIX}OTU_THRESHOLD")
-    if env_threshold is not None:
-        try:
-            threshold = float(env_threshold)
-            logger.info(f"Using threshold from environment: {threshold}")
-        except ValueError:
-            logger.warning("Invalid value, using the argument")
+def some_function(threshold=None):
+    # An explicit argument always wins; the environment is consulted only when it is None
+    if threshold is None:
+        raw = os.environ.get(f"{_ENV_PREFIX}OTU_THRESHOLD")
+        threshold = float(raw) if raw and raw.strip() else 0.97  # validated: ValueError outside (0, 1]
     ...
 ```
 
 Used in:
 - `cluster_otus()`: `META_OTU_THRESHOLD` (the only variable the metagenomics package reads)
 
-The environment value replaces the function argument even when the caller passes one explicitly. Other modules define `_ENV_PREFIX = "META_"` but do not read any variable.
+The environment value is read only when `threshold` is `None`, and it is validated like the argument: a value that is not a number in (0, 1] raises `ValueError`, and a blank value counts as unset. Other modules define `_ENV_PREFIX = "META_"` but do not read any variable.
 
 **Rationale**: Allows batch-wide configuration without editing code or config files; useful for HPC where jobs are submitted via script.
 
@@ -678,7 +685,7 @@ taxonomic_abundances = {
 krona_path = meta_viz.plot_krona_chart(taxonomic_abundances, output_path="output/metagenomics/krona.png")
 ```
 
-`plot_ordination` in the metagenomics plots is the alternative that starts from a distance matrix instead: it takes a nested-dict matrix and computes its own 2-D PCoA (the `method` argument only changes the title). The metagenomics plot functions return the saved path when `output_path` is given and a matplotlib `Figure` otherwise.
+`plot_ordination` in the metagenomics plots is the alternative that starts from a distance matrix instead: it takes a nested-dict matrix and computes its own 2-D ordination. `method` (case-insensitive) selects `"PCoA"` (the default; axes labelled PC1 and PC2) or `"NMDS"` (the `ordination()` implementation, started from a random configuration drawn with `seed`, default 42; axes labelled NMDS1 and NMDS2); any other value raises `ValueError`. The metagenomics plot functions return the saved path when `output_path` is given and a matplotlib `Figure` otherwise.
 
 ---
 
@@ -736,7 +743,7 @@ Unlike RNA module, metagenomics does not have a dedicated configuration file sys
 
 | Variable | Purpose | Scope |
 |----------|---------|-------|
-| `META_OTU_THRESHOLD` | Replaces the `threshold` argument (any value that parses as a float, even when the caller passes a threshold; not range-checked) | `cluster_otus()` |
+| `META_OTU_THRESHOLD` | Default for `threshold`, read only when the argument is `None` (an explicit `threshold` always wins). Must be a number in (0, 1], otherwise `ValueError`; a blank value counts as unset and the built-in 0.97 applies | `cluster_otus()` |
 
 No other environment variables are read. Several modules define `_ENV_PREFIX = "META_"`, but no other function uses it, and the package does not use `metainformant.core.utils.config` (no `apply_env_overrides` or `load_typed_env` call).
 
@@ -759,9 +766,9 @@ shotgun:
   assembly:                  # assemble_contigs(reads, **...)
     k_range: [21, 33, 55]
     min_contig_length: 500
-  binning:                   # bin_contigs(contigs, coverage, **...)
+  binning:                   # bin_contigs(contigs, coverage, **...); marker_genes is data, pass it in code
     method: combined
-  refinement:                # refine_bins(bins, contigs, **...)
+  refinement:                # refine_bins(bins, contigs, marker_genes=..., **...)
     completeness_threshold: 0.5
     contamination_threshold: 0.1
 diversity:
@@ -781,12 +788,12 @@ Timings quoted in this document (here and in the Processing Modes table) are mea
 
 - **Naïve O(n²)**: For n sequences, all-vs-all identity calculation would be quadratic.
 - **Greedy centroids**: each sequence is compared only with the existing centroids, so the work is about n × (number of OTUs) comparisons.
-- **With k-mer pre-filter**: Only compute alignment if the shared 8-mer fraction is at least threshold - 0.10.
-- **Cost per alignment**: `calculate_identity()` is pure Python with full O(L₁×L₂) matrices, roughly 0.02–0.1 s for two 250 bp sequences. In tests with 200 simulated sequences from five clusters, clustering took roughly 20 s with the pre-filter and from about half a minute to 6 minutes without it, depending on how many centroids each sequence had to be compared with. Clustering is therefore practical for hundreds to a few thousand sequences, not 100k or more; use an external tool such as VSEARCH for large datasets.
+- **With k-mer pre-filter**: An alignment is computed only if the pair shares at least `longer length - 7 - 8e` 8-mers (repeated 8-mers counted), where `e = floor(shorter length × (1 - threshold) / threshold)` is the largest number of non-matching alignment columns compatible with the identity threshold. For 250 bp sequences at `threshold=0.97`, `e` is 7 and 187 shared 8-mers are required. The bound follows from the q-gram lemma (one edit changes at most eight 8-mers), so no qualifying pair is skipped.
+- **Cost per alignment**: `calculate_identity()` is pure Python with full O(L₁×L₂) matrices, roughly 0.02–0.1 s for two 250 bp sequences. In a test with 200 simulated 250 bp sequences from five templates (1% divergence from the template), clustering took roughly 10–15 s with the pre-filter and about 80 s without it, and both runs produced the same 11 OTUs. Clustering is therefore practical for hundreds to a few thousand sequences, not 100k or more; use an external tool such as VSEARCH for large datasets.
 
 **Scaling**: ~O(n × c) alignments where c = number of centroids that pass the pre-filter for each sequence.
 
-**Optimization**: The `_quick_identity()` pre-filter uses the shared fraction of 8-mers (shared / the larger k-mer set, not a Jaccard index). Dissimilar pairs are rejected in well under a millisecond (a random pair shares about 0.4% of its 8-mers) instead of an alignment. It is a heuristic and not an upper bound on identity: two 250 bp sequences with five evenly spaced substitutions (98% identity) share only about 83% of their 8-mers, below the 0.87 cutoff for `threshold=0.97`, so they end up in separate OTUs unless `prefilter=False` is used.
+**Optimization**: The pre-filter compares multisets of 8-mers, so it costs far less than an alignment: a random pair shares about 0.4% of its 8-mers and is rejected in well under a millisecond. It is a lower bound on what a qualifying pair must share, not a similarity score: two 250 bp sequences with five evenly spaced substitutions (98% identity) still share about 203 of their 243 8-mers (83%), more than the 187 required at `threshold=0.97`, so they are aligned and clustered together whether or not `prefilter` is set.
 
 ---
 
@@ -818,7 +825,7 @@ Planned improvements (not yet implemented):
 | **QIIME2 integration** | Wrapper to import/export QIIME2 artifacts | Q3 2026 |
 | **Kraken2/Bracken integration** | Native wrappers for taxonomic profiling | Q4 2026 |
 | **MetaBAT2/MaxBin2** | External binning tools via subprocess | 2027 |
-| **CheckM integration** | Bin quality assessment (marker gene mapping) | 2027 |
+| **CheckM / HMMER integration** | Marker gene search that produces the `marker_genes` input of `assess_bin_quality()` | 2027 |
 | **PhyloPhlan / RAxML** | Phylogenetic tree building from 16S | 2027 |
 | **Songbird / Qurro** | Multinomial regression for differential abundance | 2028 |
 

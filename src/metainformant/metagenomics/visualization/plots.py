@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger
+from metainformant.metagenomics.diversity.metrics import ordination
 
 logger = get_logger(__name__)
 
@@ -333,23 +334,36 @@ def plot_ordination(
     output_path: str | Path | None = None,
     title: str | None = None,
     groups: dict[str, str] | None = None,
+    seed: int = 42,
 ) -> Any:
-    """Plot ordination (PCoA or classical MDS) from a distance matrix.
+    """Plot ordination (PCoA or NMDS) from a distance matrix.
 
     Performs dimensionality reduction on a pairwise distance matrix and
     plots samples in 2D space.
 
     Args:
         distance_matrix: Nested dict of pairwise distances {sample_i: {sample_j: dist}}.
-        method: Ordination method ('PCoA' or 'NMDS').
+        method: Ordination method, case-insensitive: 'PCoA' (classical scaling by double
+            centering, the default) or 'NMDS' (iterative stress minimisation as in
+            ``metainformant.metagenomics.diversity.metrics.ordination``).
         output_path: Path to save figure.
         title: Plot title.
         groups: Optional dict mapping sample IDs to group labels for coloring.
+        seed: Seed for the NMDS starting configuration (ignored by PCoA).
 
     Returns:
         Path to saved file or matplotlib figure.
+
+    Raises:
+        ValueError: If ``method`` is neither 'PCoA' nor 'NMDS'.
     """
     _ensure_matplotlib()
+
+    method_key = method.strip().lower() if isinstance(method, str) else ""
+    if method_key not in ("pcoa", "nmds"):
+        raise ValueError(f"Invalid ordination method {method!r}. Must be 'PCoA' or 'NMDS'.")
+    method_label = "PCoA" if method_key == "pcoa" else "NMDS"
+    axis_prefix = "PC" if method_key == "pcoa" else "NMDS"
 
     samples = sorted(distance_matrix.keys())
     n = len(samples)
@@ -366,20 +380,23 @@ def plot_ordination(
         for j, sj in enumerate(samples):
             D[i][j] = distance_matrix.get(si, {}).get(sj, 0.0)
 
-    # Classical MDS / PCoA via double centering
-    # 1. Compute squared distances
-    D2 = [[d**2 for d in row] for row in D]
+    if method_key == "pcoa":
+        # Classical MDS / PCoA via double centering
+        # 1. Compute squared distances
+        D2 = [[d**2 for d in row] for row in D]
 
-    row_means = [sum(row) / n for row in D2]
-    grand_mean = sum(row_means) / n
-    col_means = [sum(D2[k][j] for k in range(n)) / n for j in range(n)]
-    B = [[0.0] * n for _ in range(n)]
-    for i in range(n):
-        for j in range(n):
-            B[i][j] = -0.5 * (D2[i][j] - row_means[i] - col_means[j] + grand_mean)
+        row_means = [sum(row) / n for row in D2]
+        grand_mean = sum(row_means) / n
+        col_means = [sum(D2[k][j] for k in range(n)) / n for j in range(n)]
+        B = [[0.0] * n for _ in range(n)]
+        for i in range(n):
+            for j in range(n):
+                B[i][j] = -0.5 * (D2[i][j] - row_means[i] - col_means[j] + grand_mean)
 
-    # 3. Power iteration for top 2 eigenvectors
-    coords = _power_iteration_2d(B, n)
+        # 3. Power iteration for top 2 eigenvectors
+        coords = _power_iteration_2d(B, n)
+    else:
+        coords = ordination(D, method="nmds", n_components=2, seed=seed)["coordinates"]
 
     fig, ax = plt.subplots(figsize=(8, 8))
 
@@ -401,9 +418,9 @@ def plot_ordination(
             ax.scatter(coords[i][0], coords[i][1], c="steelblue", s=80, zorder=3)
             ax.annotate(sample, (coords[i][0], coords[i][1]), fontsize=7, xytext=(5, 5), textcoords="offset points")
 
-    ax.set_xlabel("PC1")
-    ax.set_ylabel("PC2")
-    ax.set_title(title or f"Ordination ({method})")
+    ax.set_xlabel(f"{axis_prefix}1")
+    ax.set_ylabel(f"{axis_prefix}2")
+    ax.set_title(title or f"Ordination ({method_label})")
     ax.axhline(0, color="gray", linewidth=0.5, linestyle="--")
     ax.axvline(0, color="gray", linewidth=0.5, linestyle="--")
 

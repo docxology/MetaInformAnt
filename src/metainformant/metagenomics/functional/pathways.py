@@ -219,6 +219,11 @@ _BUILTIN_PATHWAYS: dict[str, PathwayDefinition] = {
 }
 
 
+def _is_ko(token: str) -> bool:
+    """True for a KEGG Orthology identifier such as ``K00844`` (already upper-cased)."""
+    return token.startswith("K") and len(token) == 6 and token[1:].isdigit()
+
+
 def reconstruct_pathways(
     annotations: dict[str, list[str]],
     database: str = "KEGG",
@@ -229,6 +234,13 @@ def reconstruct_pathways(
 
     Maps annotated KO/EC identifiers to known pathways and calculates
     the completeness (fraction of required reactions present) for each.
+
+    A definition with ``reaction_steps`` is scored by steps, like
+    ``calculate_pathway_completeness``: a step is present when any of its
+    alternatives is annotated, ``total_required`` is the number of steps and
+    ``total_matched`` the number of present steps, so completeness is always in
+    [0, 1] (``required_kos``/``required_ecs`` are then informational only).
+    Otherwise it is the fraction of ``required_kos`` plus ``required_ecs`` present.
 
     Args:
         annotations: Dict mapping gene IDs to lists of KO/EC annotations.
@@ -254,7 +266,7 @@ def reconstruct_pathways(
     for gene_id, gene_annotations in annotations.items():
         for ann in gene_annotations:
             ann_upper = ann.upper().strip()
-            if ann_upper.startswith("K") and len(ann_upper) == 6 and ann_upper[1:].isdigit():
+            if _is_ko(ann_upper):
                 all_kos.add(ann_upper)
                 ko_counts[ann_upper] += 1
             elif "." in ann_upper:
@@ -274,14 +286,34 @@ def reconstruct_pathways(
         matched_ecs = [ec for ec in pathway_def.required_ecs if ec in all_ecs]
         missing_ecs = [ec for ec in pathway_def.required_ecs if ec not in all_ecs]
 
-        total_required = pathway_def.total_required
-        total_matched = len(matched_kos) + len(matched_ecs)
+        if pathway_def.reaction_steps:
+            # Step-based: a step is present when any alternative is annotated. Counting matched
+            # KOs against the number of steps would give completeness above 1.
+            observed = all_kos | all_ecs
+            total_required = len(pathway_def.reaction_steps)
+            total_matched = 0
+            for step in pathway_def.reaction_steps:
+                present = [alt for alt in step if alt.upper().strip() in observed]
+                if present:
+                    total_matched += 1
+                found, absent = (present, []) if present else ([], list(step))
+                for alt in found:
+                    target = matched_kos if _is_ko(alt.upper().strip()) else matched_ecs
+                    if alt not in target:
+                        target.append(alt)
+                for alt in absent:
+                    target = missing_kos if _is_ko(alt.upper().strip()) else missing_ecs
+                    if alt not in target:
+                        target.append(alt)
+        else:
+            total_required = pathway_def.total_required
+            total_matched = len(matched_kos) + len(matched_ecs)
 
         completeness = total_matched / total_required if total_required > 0 else 0.0
 
         # Calculate redundancy (average copy number of matched genes)
         if matched_kos:
-            redundancy = sum(ko_counts[ko] for ko in matched_kos) / len(matched_kos)
+            redundancy = sum(ko_counts.get(ko.upper().strip(), 0) for ko in matched_kos) / len(matched_kos)
         else:
             redundancy = 0.0
 

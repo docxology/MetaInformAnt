@@ -100,21 +100,62 @@ class TaxonomyNode:
         return result
 
 
+def _nb_winner(
+    kmers: list[str],
+    log_prior: dict[str, float],
+    kmer_logp: dict[str, dict[str, float]],
+) -> str | None:
+    """Return the best taxon for a k-mer sample, or None when it cannot be decided.
+
+    Args:
+        kmers: K-mers of the query (or of a bootstrap sample of it).
+        log_prior: Log prior of each taxon.
+        kmer_logp: Log-probability of each informative k-mer under each taxon. K-mers
+            missing from this mapping are absent from every reference and are ignored.
+
+    Returns:
+        The taxon with the highest log posterior, or None if the sample has no
+        informative k-mer or the two best taxa tie.
+    """
+    known = [kmer for kmer in kmers if kmer in kmer_logp]
+    if not known:
+        return None
+    scores = dict(log_prior)
+    for kmer in known:
+        for taxon, logp in kmer_logp[kmer].items():
+            scores[taxon] += logp
+    ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+    if len(ranked) > 1 and ranked[0][1] - ranked[1][1] <= 1e-12 * max(1.0, abs(ranked[0][1])):
+        return None
+    return ranked[0][0]
+
+
 def _naive_bayes_classify(
     query_seq: str,
     reference_db: dict[str, str],
     reference_taxonomy: dict[str, list[tuple[str, str]]],
     k: int = 8,
     bootstrap_n: int = 100,
+    confidence_threshold: float = 0.8,
+    seed: int | None = 42,
 ) -> TaxonomyAssignment:
     """Classify a query sequence using naive Bayes k-mer approach.
 
     The RDP-style naive Bayes classifier:
     1. Extract all k-mers from the query sequence.
     2. For each reference taxon at each rank, compute the posterior probability
-       based on k-mer frequencies.
+       based on k-mer frequencies. K-mers absent from every reference carry no
+       taxonomic information and are ignored; a query with no known k-mer, or one
+       whose best two taxa tie, cannot be classified.
     3. Assign the query to the taxon with highest posterior at each rank.
-    4. Use bootstrap resampling of k-mers for confidence estimation.
+    4. Bootstrap: draw ``ceil(n_kmers / k)`` k-mers with replacement (about the
+       number of non-overlapping words, as in the RDP classifier) ``bootstrap_n``
+       times and reclassify; the confidence is the fraction of trials that agree
+       with the full-query assignment. Trials without a known k-mer, or with a tie,
+       count as disagreeing.
+    5. Abstain: a rank is reported as "unclassified" when its bootstrap confidence is
+       below ``confidence_threshold``, and so is every rank below it (as in RDP, the
+       lineage is cut at the first rank that is not confidently assigned).
 
     Args:
         query_seq: Query nucleotide sequence.
@@ -122,9 +163,13 @@ def _naive_bayes_classify(
         reference_taxonomy: Taxonomy for each reference sequence.
         k: K-mer size for classification.
         bootstrap_n: Number of bootstrap iterations for confidence.
+        confidence_threshold: Minimum bootstrap confidence to report a rank (default 0.8,
+            the RDP default for full-length sequences).
+        seed: Seed of the bootstrap random generator (None draws fresh entropy).
 
     Returns:
-        TaxonomyAssignment with lineage and per-rank confidence scores.
+        TaxonomyAssignment with lineage and per-rank bootstrap confidence scores
+        (the confidence of ranks below the first abstention is still reported).
     """
     query_upper = query_seq.upper()
     query_kmers: list[str] = []
@@ -163,72 +208,61 @@ def _naive_bayes_classify(
             for kmer in ref_kmer_set:
                 rank_taxon_kmers[rank][taxon_name][kmer] += 1
 
+    rng = random.Random(seed)
+    subsample_size = max(1, math.ceil(len(query_kmers) / k))
+    distinct_query_kmers = set(query_kmers)
+
     # Classify at each rank using log-likelihood
     assigned_lineage: list[tuple[str, str]] = []
     confidence_scores: dict[str, float] = {}
+    abstained = False
 
     for rank in TAXONOMIC_RANKS:
         taxon_models = rank_taxon_kmers[rank]
-        if not taxon_models:
+        taxon_totals = {taxon: sum(counts.values()) for taxon, counts in taxon_models.items()}
+        total_refs = sum(taxon_totals.values())
+        if not taxon_models or total_refs == 0:
             assigned_lineage.append((rank, "unclassified"))
             confidence_scores[rank] = 0.0
+            abstained = True
             continue
 
-        # Compute total k-mers per taxon for probability estimation
-        taxon_totals: dict[str, int] = {}
         all_kmers_vocab: set[str] = set()
-        for taxon, kmer_counts in taxon_models.items():
-            taxon_totals[taxon] = sum(kmer_counts.values())
+        for kmer_counts in taxon_models.values():
             all_kmers_vocab.update(kmer_counts.keys())
+        vocab_size = len(all_kmers_vocab)
 
-        vocab_size = len(all_kmers_vocab) if all_kmers_vocab else 1
+        # Prior: fraction of reference k-mers in each taxon
+        log_prior = {taxon: math.log(total / total_refs) for taxon, total in taxon_totals.items()}
 
-        # Log-likelihood for each taxon
-        taxon_scores: dict[str, float] = {}
-        total_refs = sum(taxon_totals.values())
+        # Laplace-smoothed log-probability of each informative query k-mer under each taxon.
+        # K-mers absent from every taxon are uninformative and are left out.
+        kmer_logp: dict[str, dict[str, float]] = {}
+        for qk in distinct_query_kmers & all_kmers_vocab:
+            kmer_logp[qk] = {
+                taxon: math.log((kmer_counts.get(qk, 0) + 0.5) / (taxon_totals[taxon] + 0.5 * vocab_size))
+                for taxon, kmer_counts in taxon_models.items()
+            }
 
-        for taxon, kmer_counts in taxon_models.items():
-            # Prior: fraction of references in this taxon
-            prior = math.log(taxon_totals[taxon] / total_refs) if total_refs > 0 else 0.0
-            log_likelihood = prior
-            total_t = taxon_totals[taxon]
-
-            for qk in query_kmers:
-                # Laplace-smoothed probability
-                count = kmer_counts.get(qk, 0)
-                prob = (count + 0.5) / (total_t + 0.5 * vocab_size)
-                log_likelihood += math.log(prob)
-
-            taxon_scores[taxon] = log_likelihood
-
-        # Best taxon
-        best_taxon = max(taxon_scores, key=taxon_scores.get)  # type: ignore[arg-type]
+        best_taxon = _nb_winner(query_kmers, log_prior, kmer_logp)
 
         # Bootstrap confidence: resample k-mers and reclassify
-        bootstrap_hits = 0
-        if bootstrap_n > 0 and len(query_kmers) > 0:
+        if best_taxon is None or bootstrap_n <= 0:
+            confidence = 0.0
+        else:
+            bootstrap_hits = 0
             for _ in range(bootstrap_n):
-                # Resample k-mers with replacement
-                resampled = random.choices(query_kmers, k=len(query_kmers))
-                resample_scores: dict[str, float] = {}
-                for taxon, kmer_counts in taxon_models.items():
-                    prior = math.log(taxon_totals[taxon] / total_refs) if total_refs > 0 else 0.0
-                    ll = prior
-                    total_t = taxon_totals[taxon]
-                    for qk in resampled:
-                        count = kmer_counts.get(qk, 0)
-                        prob = (count + 0.5) / (total_t + 0.5 * vocab_size)
-                        ll += math.log(prob)
-                    resample_scores[taxon] = ll
-                resample_best = max(resample_scores, key=resample_scores.get)  # type: ignore[arg-type]
-                if resample_best == best_taxon:
+                resampled = rng.choices(query_kmers, k=subsample_size)
+                if _nb_winner(resampled, log_prior, kmer_logp) == best_taxon:
                     bootstrap_hits += 1
             confidence = bootstrap_hits / bootstrap_n
-        else:
-            confidence = 0.0
 
-        assigned_lineage.append((rank, best_taxon))
         confidence_scores[rank] = confidence
+        if abstained or best_taxon is None or best_taxon == "unclassified" or confidence < confidence_threshold:
+            abstained = True
+            assigned_lineage.append((rank, "unclassified"))
+        else:
+            assigned_lineage.append((rank, best_taxon))
 
     return TaxonomyAssignment(
         sequence_id="",
@@ -348,11 +382,14 @@ def classify_taxonomy(
     confidence_threshold: float = 0.8,
     k: int = 8,
     bootstrap_n: int = 100,
+    seed: int | None = 42,
 ) -> list[TaxonomyAssignment]:
     """Classify sequences taxonomically against a reference database.
 
     Supports two classification methods:
-    - naive_bayes: RDP-style k-mer based Bayesian classifier with bootstrap confidence.
+    - naive_bayes: RDP-style k-mer based Bayesian classifier. It abstains (reports
+      "unclassified") at every rank whose bootstrap confidence is below
+      ``confidence_threshold`` and at all ranks below it.
     - blast: Alignment-based classification using k-mer overlap and consensus of top hits.
 
     Args:
@@ -366,6 +403,10 @@ def classify_taxonomy(
             Below this threshold, the taxon is reported as "unclassified".
         k: K-mer size for naive Bayes classifier (default 8).
         bootstrap_n: Number of bootstrap replicates for confidence (default 100).
+        seed: Seed of the naive Bayes bootstrap (default 42, so results are
+            reproducible; None draws fresh entropy). Every query uses its own
+            generator started from this seed, so a result does not depend on the
+            other queries in the batch.
 
     Returns:
         List of TaxonomyAssignment objects, one per input sequence.
@@ -417,6 +458,8 @@ def classify_taxonomy(
                 reference_taxonomy=reference_taxonomy,
                 k=k,
                 bootstrap_n=bootstrap_n,
+                confidence_threshold=confidence_threshold,
+                seed=seed,
             )
         else:
             assignment = _blast_classify(
@@ -470,13 +513,12 @@ def build_taxonomy_tree(classifications: list[TaxonomyAssignment]) -> TaxonomyNo
         current_node = root
         for rank, name in assignment.lineage:
             if name == "unclassified":
-                # Create unclassified branch but don't traverse further
-                child = current_node.add_child(f"unclassified_{rank}", rank)
-                child.count += 1
+                # Create unclassified branch but don't traverse further; the sequence is
+                # counted there and nowhere else
+                current_node = current_node.add_child(f"unclassified_{rank}", rank)
                 break
-            child = current_node.add_child(name, rank)
-            current_node = child
-        # Increment the leaf count
+            current_node = current_node.add_child(name, rank)
+        # Count the sequence once, at the deepest node it reached
         current_node.count += 1
 
     logger.info(f"Taxonomy tree built: {root.total_descendants()} sequences, " f"{len(root.children)} top-level taxa")

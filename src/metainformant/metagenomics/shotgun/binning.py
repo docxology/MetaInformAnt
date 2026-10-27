@@ -11,6 +11,12 @@ Binning strategy:
 3. Combine TNF and coverage features.
 4. Cluster contigs using the combined feature space.
 5. Refine bins using single-copy marker gene assessment.
+
+Bin quality (completeness and contamination) is only ever computed from
+single-copy marker gene annotations supplied by the caller (``marker_genes``: the
+marker genes found on each contig, e.g. from an HMMER search). Without them the
+values are reported as unavailable (``None``); nothing is estimated from sequence
+composition or genome size.
 """
 
 from __future__ import annotations
@@ -18,7 +24,8 @@ from __future__ import annotations
 import itertools
 import math
 import random
-from collections import defaultdict
+from collections import Counter, defaultdict
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 
 from metainformant.core.utils.logging import get_logger
@@ -33,8 +40,10 @@ _ALL_TETRANUCLEOTIDES = ["".join(t) for t in itertools.product(_NUCLEOTIDES, rep
 _TETRA_INDEX = {t: i for i, t in enumerate(_ALL_TETRANUCLEOTIDES)}
 
 # Universal single-copy marker genes (simplified set based on bacterial markers)
-# These represent conserved genes expected once per genome
-_BACTERIAL_MARKERS = [
+# These represent conserved genes expected once per genome. Gene symbols only: annotations
+# must use the same names. Lineage-specific sets (CheckM, BUSCO, Pfam/TIGRFAM IDs) are
+# passed through ``marker_set``.
+BACTERIAL_SINGLE_COPY_MARKERS: tuple[str, ...] = (
     "rpoB",
     "rpoC",
     "rpsB",
@@ -71,7 +80,8 @@ _BACTERIAL_MARKERS = [
     "ffh",
     "rnhB",
     "ychF",
-]
+)
+_BACTERIAL_MARKERS = list(BACTERIAL_SINGLE_COPY_MARKERS)
 
 
 @dataclass
@@ -85,10 +95,14 @@ class GenomeBin:
         num_contigs: Number of contigs in the bin.
         gc_content: GC content of the bin.
         mean_coverage: Average coverage across contigs.
-        completeness: Estimated genome completeness (0.0 to 1.0).
-        contamination: Estimated contamination level (0.0 to 1.0).
-        quality_score: Completeness - 5 * contamination (Parks et al. convention).
-        marker_counts: Count of each detected marker gene.
+        completeness: Fraction of the expected single-copy markers present (0.0 to 1.0),
+            or None while unavailable (no marker annotations were supplied).
+        contamination: Extra copies of expected markers divided by the number of expected
+            markers (CheckM definition; 0.0 or more, and above 1.0 for a bin with
+            several copies of most markers), or None while unavailable.
+        quality_score: Completeness - 5 * contamination (Parks et al. convention), or
+            None while unavailable.
+        marker_counts: Copy number of each expected marker found in the bin.
     """
 
     bin_id: str
@@ -97,9 +111,9 @@ class GenomeBin:
     num_contigs: int = 0
     gc_content: float = 0.0
     mean_coverage: float = 0.0
-    completeness: float = 0.0
-    contamination: float = 0.0
-    quality_score: float = 0.0
+    completeness: float | None = None
+    contamination: float | None = None
+    quality_score: float | None = None
     marker_counts: dict[str, int] = field(default_factory=dict)
 
 
@@ -112,14 +126,16 @@ class BinningResult:
         unbinned_contigs: IDs of contigs not assigned to any bin.
         total_contigs: Total number of input contigs.
         binned_contigs: Number of contigs assigned to bins.
-        high_quality_bins: Number of bins meeting quality thresholds.
+        high_quality_bins: Number of bins with completeness >= 0.9 and contamination
+            <= 0.05, or None when bin quality is unavailable (``bin_contigs`` was not
+            given ``marker_genes``).
     """
 
     bins: list[GenomeBin]
     unbinned_contigs: list[str] = field(default_factory=list)
     total_contigs: int = 0
     binned_contigs: int = 0
-    high_quality_bins: int = 0
+    high_quality_bins: int | None = None
 
 
 def calculate_tetranucleotide_freq(sequence: str, normalize: bool = True) -> list[float]:
@@ -294,6 +310,8 @@ def bin_contigs(
     n_bins: int | None = None,
     min_contig_length: int = 1000,
     seed: int = 42,
+    marker_genes: Mapping[str, Sequence[str]] | None = None,
+    marker_set: Collection[str] | None = None,
 ) -> BinningResult:
     """Bin contigs into putative genomes using composition and coverage.
 
@@ -313,9 +331,16 @@ def bin_contigs(
             based on coverage variation and TNF diversity.
         min_contig_length: Minimum contig length to bin (default 1000 bp).
         seed: Random seed for clustering reproducibility.
+        marker_genes: Optional single-copy marker gene annotations per contig
+            (contig ID -> marker names found on it, repeated for multiple copies).
+            When given, every bin's completeness and contamination are computed
+            (see ``assess_bin_quality``) and ``high_quality_bins`` is filled in.
+        marker_set: Expected marker genes for ``marker_genes`` (default
+            ``BACTERIAL_SINGLE_COPY_MARKERS``).
 
     Returns:
-        BinningResult with genome bins and statistics.
+        BinningResult with genome bins and statistics. Bin completeness, contamination
+        and ``high_quality_bins`` are None unless ``marker_genes`` is given.
 
     Raises:
         ValueError: If contigs is empty or method is unknown.
@@ -349,6 +374,7 @@ def bin_contigs(
             bins=[],
             unbinned_contigs=list(contigs.keys()),
             total_contigs=len(contigs),
+            high_quality_bins=0,
         )
 
     # Compute features
@@ -433,11 +459,15 @@ def bin_contigs(
 
     binned_count = sum(b.num_contigs for b in bins)
 
+    if marker_genes is not None:
+        assess_bin_quality(bins, marker_genes=marker_genes, marker_set=marker_set)
+
     result = BinningResult(
         bins=bins,
         unbinned_contigs=unbinned,
         total_contigs=len(contigs),
         binned_contigs=binned_count,
+        high_quality_bins=count_high_quality_bins(bins),
     )
 
     logger.info(f"Binning complete: {len(bins)} bins, {binned_count} contigs binned, {len(unbinned)} unbinned")
@@ -449,53 +479,71 @@ def refine_bins(
     contigs: dict[str, str],
     completeness_threshold: float = 0.5,
     contamination_threshold: float = 0.1,
+    marker_genes: Mapping[str, Sequence[str]] | None = None,
+    marker_set: Collection[str] | None = None,
 ) -> list[GenomeBin]:
     """Refine bins by assessing quality and merging/splitting as needed.
 
-    Assesses each bin's completeness and contamination using single-copy
-    marker gene analysis, then:
+    Assesses each bin's completeness and contamination from single-copy marker
+    gene annotations (``assess_bin_quality``), then:
     - Removes bins with very low completeness.
-    - Flags bins with high contamination for potential splitting.
-    - Merges small bins that share similar composition profiles.
+    - Splits bins with high contamination by TNF profile; the sub-bins are assessed
+      with the same annotations and kept when their completeness reaches the threshold.
+    - Merging of small bins is not implemented.
 
     Args:
         bins: List of GenomeBin objects to refine.
         contigs: Dictionary mapping contig IDs to sequences.
         completeness_threshold: Minimum completeness to retain a bin (default 0.5).
         contamination_threshold: Maximum acceptable contamination (default 0.1).
+        marker_genes: Single-copy marker gene annotations per contig (contig ID -> marker
+            names found on it). Required whenever ``bins`` is not empty: without
+            them neither completeness nor contamination exists to refine on.
+        marker_set: Expected marker genes (default ``BACTERIAL_SINGLE_COPY_MARKERS``).
 
     Returns:
         Refined list of GenomeBin objects with updated quality metrics.
 
+    Raises:
+        ValueError: If ``bins`` is not empty and ``marker_genes`` is None.
+
     Examples:
-        >>> bin1 = GenomeBin("b1", ["c1", "c2"], total_length=3000000, completeness=0.8)
-        >>> refined = refine_bins([bin1], {"c1": "ATCG" * 500, "c2": "GCTA" * 500})
+        >>> bin1 = GenomeBin("b1", ["c1", "c2"], total_length=3000000)
+        >>> markers = {"c1": list(BACTERIAL_SINGLE_COPY_MARKERS)}
+        >>> refined = refine_bins([bin1], {"c1": "ATCG" * 500, "c2": "GCTA" * 500}, marker_genes=markers)
         >>> len(refined) >= 1
         True
     """
     if not bins:
         return []
+    if marker_genes is None:
+        raise ValueError(
+            "refine_bins requires marker_genes (single-copy marker gene annotations per contig): "
+            "completeness and contamination cannot be estimated without them"
+        )
 
     logger.info(f"Refining {len(bins)} bins")
 
     # Assess quality for each bin
-    assessed_bins = assess_bin_quality(bins, contigs)
+    assessed_bins = assess_bin_quality(bins, contigs, marker_genes=marker_genes, marker_set=marker_set)
 
     # Filter by quality thresholds
     refined: list[GenomeBin] = []
     removed_count = 0
 
     for genome_bin in assessed_bins:
-        if genome_bin.completeness >= completeness_threshold:
-            if genome_bin.contamination <= contamination_threshold:
+        completeness, contamination = _quality_values(genome_bin)
+        if completeness >= completeness_threshold:
+            if contamination <= contamination_threshold:
                 refined.append(genome_bin)
             else:
                 # High contamination: try to split
                 # Simple approach: split by TNF profile divergence
                 if genome_bin.num_contigs > 1:
                     split_bins = _split_contaminated_bin(genome_bin, contigs)
+                    assess_bin_quality(split_bins, marker_genes=marker_genes, marker_set=marker_set)
                     for sb in split_bins:
-                        if sb.completeness >= completeness_threshold:
+                        if _quality_values(sb)[0] >= completeness_threshold:
                             refined.append(sb)
                         else:
                             removed_count += 1
@@ -510,6 +558,17 @@ def refine_bins(
 
     logger.info(f"Refinement complete: {len(refined)} bins retained, {removed_count} removed")
     return refined
+
+
+def _quality_values(genome_bin: GenomeBin) -> tuple[float, float]:
+    """Return ``(completeness, contamination)`` of an assessed bin.
+
+    Raises:
+        ValueError: If the bin has not been assessed.
+    """
+    if genome_bin.completeness is None or genome_bin.contamination is None:
+        raise ValueError(f"Bin {genome_bin.bin_id!r} has no completeness/contamination; assess it with marker_genes")
+    return genome_bin.completeness, genome_bin.contamination
 
 
 def _split_contaminated_bin(
@@ -563,149 +622,138 @@ def _split_contaminated_bin(
 def assess_bin_quality(
     bins: list[GenomeBin],
     contigs: dict[str, str] | None = None,
+    marker_genes: Mapping[str, Sequence[str]] | None = None,
+    marker_set: Collection[str] | None = None,
 ) -> list[GenomeBin]:
-    """Assess quality of genome bins using marker gene analysis.
+    """Assess quality of genome bins from single-copy marker gene annotations.
 
-    Estimates completeness and contamination for each bin based on
-    single-copy marker genes. Completeness is the fraction of expected
-    marker genes present. Contamination is the fraction of marker genes
-    present in multiple copies.
+    CheckM-style estimates for a flat marker list of ``M`` expected single-copy genes:
 
-    This is a simplified version of CheckM-style quality assessment.
-    For production use, integrate with actual CheckM or BUSCO databases.
+    - completeness = (number of expected markers present at least once in the bin) / M
+    - contamination = (extra copies, i.e. sum over markers of ``copies - 1`` where
+      ``copies >= 1``) / M
+    - quality_score = completeness - 5 * contamination (Parks et al.)
+
+    Marker genes must come from a real search of the contigs (for example HMMER with
+    TIGRFAM/Pfam marker profiles); the search is not done here. Without
+    ``marker_genes`` nothing can be said about completeness or contamination, so both
+    (and ``quality_score``) are set to None for every bin: they are never estimated from
+    genome size or sequence composition.
 
     Args:
-        bins: List of GenomeBin objects.
-        contigs: Optional dictionary mapping contig IDs to sequences.
-            If provided, marker genes are searched via sequence signatures.
-            If None, quality is estimated from genome size heuristics.
+        bins: List of GenomeBin objects (updated in place).
+        contigs: Accepted for backward compatibility and unused: no marker search is
+            performed on sequences.
+        marker_genes: Marker gene annotations per contig (contig ID -> marker names found
+            on that contig; a marker listed twice counts as two copies). Contigs that are
+            not in the mapping are treated as carrying no markers.
+        marker_set: Expected marker genes defining the denominator ``M``. Defaults to
+            ``BACTERIAL_SINGLE_COPY_MARKERS``; pass the set matching the annotation names
+            (for example a lineage-specific CheckM or BUSCO set).
 
     Returns:
-        List of GenomeBin objects with updated completeness/contamination.
+        List of GenomeBin objects with updated completeness/contamination
+        (None when ``marker_genes`` is None).
+
+    Raises:
+        ValueError: If ``marker_set`` is given but empty.
 
     Examples:
         >>> bin1 = GenomeBin("b1", ["c1"], total_length=3_000_000)
         >>> assessed = assess_bin_quality([bin1])
-        >>> 0.0 <= assessed[0].completeness <= 1.0
+        >>> assessed[0].completeness is None
         True
+        >>> markers = {"c1": list(BACTERIAL_SINGLE_COPY_MARKERS)}
+        >>> assess_bin_quality([bin1], marker_genes=markers)[0].completeness
+        1.0
     """
     if not bins:
         return []
 
-    logger.info(f"Assessing quality for {len(bins)} bins")
+    if marker_genes is None:
+        logger.warning(
+            f"No marker_genes supplied: completeness and contamination of {len(bins)} bins are unavailable "
+            "(no marker search is performed on sequences)"
+        )
+        for genome_bin in bins:
+            genome_bin.completeness = None
+            genome_bin.contamination = None
+            genome_bin.quality_score = None
+            genome_bin.marker_counts = {}
+        return bins
 
-    total_markers = len(_BACTERIAL_MARKERS)
+    expected = set(BACTERIAL_SINGLE_COPY_MARKERS) if marker_set is None else set(marker_set)
+    if not expected:
+        raise ValueError("marker_set must contain at least one marker gene")
+
+    logger.info(f"Assessing quality for {len(bins)} bins against {len(expected)} marker genes")
+
+    if marker_genes and not any(cid in marker_genes for b in bins for cid in b.contig_ids):
+        logger.warning("None of the contig IDs in marker_genes occur in the bins; check the contig naming")
+
+    total_markers = len(expected)
 
     for genome_bin in bins:
-        if contigs:
-            # Search for marker gene signatures in contig sequences
-            combined_seq = ""
-            for cid in genome_bin.contig_ids:
-                if cid in contigs:
-                    combined_seq += contigs[cid].upper()
+        counts: Counter[str] = Counter()
+        for cid in genome_bin.contig_ids:
+            annotated = marker_genes.get(cid, ())
+            for marker in [annotated] if isinstance(annotated, str) else annotated:
+                if marker in expected:
+                    counts[marker] += 1
 
-            # Simplified marker detection: use hexamer signatures
-            # In production, HMM profiles (HMMER) would be used
-            detected = _detect_markers_by_composition(combined_seq, genome_bin.total_length)
-            genome_bin.marker_counts = detected
+        extra_copies = sum(copies - 1 for copies in counts.values())
 
-            unique_found = len([k for k, v in detected.items() if v >= 1])
-            multi_copy = len([k for k, v in detected.items() if v > 1])
-        else:
-            # Heuristic estimation from genome size
-            # Average bacterial genome ~3-5 Mbp
-            expected_size = 3_500_000
-            size_ratio = min(genome_bin.total_length / expected_size, 1.0)
-            unique_found = int(total_markers * size_ratio)
-            multi_copy = max(0, int(total_markers * max(0, size_ratio - 1.0)))
-            genome_bin.marker_counts = {}
-
-        # Completeness: fraction of expected markers found
-        genome_bin.completeness = unique_found / total_markers if total_markers > 0 else 0.0
-
-        # Contamination: fraction of markers present in multiple copies
-        genome_bin.contamination = multi_copy / total_markers if total_markers > 0 else 0.0
-
-        # Quality score: completeness - 5 * contamination (Parks et al.)
+        genome_bin.marker_counts = dict(counts)
+        genome_bin.completeness = len(counts) / total_markers
+        genome_bin.contamination = extra_copies / total_markers
         genome_bin.quality_score = genome_bin.completeness - 5.0 * genome_bin.contamination
 
-    # Count high-quality bins
-    hq_count = sum(1 for b in bins if b.completeness >= 0.9 and b.contamination <= 0.05)
-    mq_count = sum(1 for b in bins if b.completeness >= 0.5 and b.contamination <= 0.10)
+    hq_count = count_high_quality_bins(bins)
+    mq_count = sum(
+        1
+        for b in bins
+        if b.completeness is not None
+        and b.contamination is not None
+        and b.completeness >= 0.5
+        and b.contamination <= 0.10
+    )
 
     logger.info(f"Quality assessment: {hq_count} high-quality, {mq_count} medium-quality bins")
     return bins
 
 
-def _detect_markers_by_composition(sequence: str, total_length: int) -> dict[str, int]:
-    """Detect marker genes using compositional signatures.
-
-    This simplified method estimates marker gene presence based on:
-    - Sequence length (longer sequences more likely to contain markers).
-    - GC content distribution (marker genes have characteristic GC bias).
-    - K-mer complexity (marker genes have distinct k-mer profiles).
-
-    In production, this should be replaced with proper HMM-based detection
-    (e.g., HMMER with Pfam/TIGRFAM profiles used by CheckM).
+def count_high_quality_bins(
+    bins: list[GenomeBin],
+    min_completeness: float = 0.9,
+    max_contamination: float = 0.05,
+) -> int | None:
+    """Count bins with completeness >= ``min_completeness`` and contamination <= ``max_contamination``.
 
     Args:
-        sequence: Concatenated contig sequences.
-        total_length: Total bin length.
+        bins: Bins whose quality was assessed with ``assess_bin_quality``.
+        min_completeness: Completeness threshold (default 0.9).
+        max_contamination: Contamination threshold (default 0.05).
 
     Returns:
-        Dictionary mapping marker gene names to detected copy counts.
+        The number of high-quality bins (0 for no bins), or None if any bin has no
+        completeness/contamination (quality unavailable, so the count is unknown).
     """
-    detected: dict[str, int] = {}
-
-    if not sequence or total_length == 0:
-        return detected
-
-    # Assign markers probabilistically based on sequence regions
-    # Split sequence into windows and check for marker-like regions
-    window_size = total_length // max(1, len(_BACTERIAL_MARKERS))
-    window_size = max(1000, window_size)
-
-    for marker_idx, marker_name in enumerate(_BACTERIAL_MARKERS):
-        # Determine if this marker is likely present based on
-        # the local sequence complexity in the corresponding window
-        start = (marker_idx * window_size) % max(1, len(sequence) - window_size)
-        end = min(start + window_size, len(sequence))
-        window = sequence[start:end]
-
-        if len(window) < 100:
-            continue
-
-        # Local GC and complexity as proxy for gene content
-        local_gc = (window.count("G") + window.count("C")) / len(window) if window else 0
-        local_kmers: set[str] = set()
-        for i in range(len(window) - 4):
-            kmer = window[i : i + 4]
-            if all(c in "ACGT" for c in kmer):
-                local_kmers.add(kmer)
-        local_complexity = len(local_kmers) / min(256, len(window) - 3) if len(window) > 3 else 0
-
-        # Marker detected if local region has sufficient complexity
-        # and falls within expected GC range for coding regions
-        if local_complexity > 0.3 and 0.25 < local_gc < 0.75:
-            copies = 1
-            # Check for potential duplicates (contamination signal)
-            # Look for similar regions elsewhere in the sequence
-            if total_length > 5_000_000:
-                # Larger than typical single genome -> possible multi-copy
-                size_excess = total_length / 3_500_000
-                if size_excess > 1.5:
-                    # Some markers may be duplicated
-                    copies = 1 + int(size_excess > 2.0)
-            detected[marker_name] = copies
-
-    return detected
+    count = 0
+    for genome_bin in bins:
+        if genome_bin.completeness is None or genome_bin.contamination is None:
+            return None
+        if genome_bin.completeness >= min_completeness and genome_bin.contamination <= max_contamination:
+            count += 1
+    return count
 
 
 __all__ = [
+    "BACTERIAL_SINGLE_COPY_MARKERS",
     "BinningResult",
     "GenomeBin",
     "assess_bin_quality",
     "bin_contigs",
     "calculate_tetranucleotide_freq",
+    "count_high_quality_bins",
     "refine_bins",
 ]

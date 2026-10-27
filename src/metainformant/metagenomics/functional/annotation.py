@@ -12,9 +12,13 @@ Annotation approach:
 
 from __future__ import annotations
 
+import math
 import re
-from collections import defaultdict
+from collections.abc import Mapping
 from dataclasses import dataclass, field
+from functools import lru_cache
+
+from Bio.Data import CodonTable
 
 from metainformant.core.sequence import reverse_complement
 from metainformant.core.utils.logging import get_logger
@@ -91,8 +95,36 @@ _CODON_TABLE: dict[str, str] = {
     "GGG": "G",
 }
 
-_START_CODONS = {"ATG", "GTG", "TTG"}
-_STOP_CODONS = {"TAA", "TAG", "TGA"}
+# Start codons used for ORF calling: the NCBI table's starts restricted to the canonical
+# ATG/GTG/TTG. The rare alternative starts of table 11 (CTG, ATT, ATC, ATA) are excluded
+# because they would add large numbers of spurious nested ORFs.
+_CANONICAL_STARTS = frozenset({"ATG", "GTG", "TTG"})
+
+
+@lru_cache(maxsize=None)
+def _genetic_code(table_id: int) -> tuple[dict[str, str], frozenset[str], frozenset[str]]:
+    """Return ``(codon -> amino acid, start codons, stop codons)`` for an NCBI genetic code.
+
+    Args:
+        table_id: NCBI translation table id (1 = standard, 11 = bacterial, 4 = Mycoplasma, ...).
+
+    Returns:
+        Codon table (stop codons map to ``"*"``), usable start codons and stop codons.
+
+    Raises:
+        ValueError: If the table id is not an NCBI genetic code.
+    """
+    try:
+        table = CodonTable.unambiguous_dna_by_id[table_id]
+    except (KeyError, TypeError):
+        supported = sorted(CodonTable.unambiguous_dna_by_id)
+        raise ValueError(f"Unsupported translation_table {table_id!r}; NCBI table ids: {supported}") from None
+    codons: dict[str, str] = dict(table.forward_table)
+    stops = frozenset(table.stop_codons)
+    for stop in stops:
+        codons[stop] = "*"
+    all_starts = frozenset(table.start_codons)
+    return codons, (all_starts & _CANONICAL_STARTS) or all_starts, stops
 
 
 @dataclass
@@ -121,7 +153,13 @@ class ORF:
 
 @dataclass
 class HMMHit:
-    """Result from HMM-based database search."""
+    """Result from HMM-based database search.
+
+    ``e_value``, ``bias`` and ``domain_e_value`` are NaN: the position-specific scoring
+    matrices used here have no calibrated null model, so no E-value (or composition
+    bias) is computed. ``query_start``/``query_end``/``target_start``/``target_end``
+    are placeholders (the whole query, no target coordinates), not alignment bounds.
+    """
 
     query_id: str
     target_id: str
@@ -153,23 +191,30 @@ class FunctionalAnnotation:
     confidence: float = 0.0
 
 
-def _translate(nucleotide_seq: str, stop_at_stop: bool = False) -> str:
+def _translate(
+    nucleotide_seq: str,
+    stop_at_stop: bool = False,
+    codon_table: Mapping[str, str] | None = None,
+) -> str:
     """Translate nucleotide sequence to protein.
 
     Args:
         nucleotide_seq: DNA sequence (must be uppercase).
         stop_at_stop: If True, stop translation at first stop codon.
+        codon_table: Codon -> amino acid mapping (stops as ``"*"``); the standard
+            code when None.
 
     Returns:
         Amino acid sequence.
     """
+    table = _CODON_TABLE if codon_table is None else codon_table
     protein = []
     seq = nucleotide_seq.upper()
     for i in range(0, len(seq) - 2, 3):
         codon = seq[i : i + 3]
         if len(codon) < 3:
             break
-        aa = _CODON_TABLE.get(codon, "X")
+        aa = table.get(codon, "X")
         if aa == "*" and stop_at_stop:
             break
         if aa != "*":
@@ -195,11 +240,19 @@ def predict_orfs(
         sequence_id: Identifier for the source sequence.
         min_length: Minimum ORF length in nucleotides (default 100).
         allow_partial: Allow ORFs that extend to sequence edges.
-        translation_table: Genetic code table number (default 11 = Bacterial).
+        translation_table: NCBI genetic code table id (default 11 = Bacterial). It sets
+            the amino-acid assignments and the stop codons (for example TGA is
+            tryptophan, not a stop, in table 4) and, through the table's start codons,
+            which of ATG/GTG/TTG can open an ORF.
 
     Returns:
-        List of predicted ORFs sorted by position.
+        List of predicted ORFs sorted by position. Each (strand, start, end) appears
+        once, even when the sequence begins with a start codon.
+
+    Raises:
+        ValueError: If ``translation_table`` is not an NCBI genetic code id.
     """
+    codon_table, start_codons, stop_codons = _genetic_code(translation_table)
     seq_upper = sequence.upper().replace(" ", "").replace("\n", "")
     seq_len = len(seq_upper)
     orfs: list[ORF] = []
@@ -219,14 +272,16 @@ def predict_orfs(
             while pos + 2 < seq_len:
                 codon = working_seq[pos : pos + 3]
 
-                if codon in _START_CODONS:
-                    current_starts.append(pos)
+                if codon in start_codons:
+                    # Position 0 may already be there as the implicit partial start
+                    if pos not in current_starts:
+                        current_starts.append(pos)
 
-                elif codon in _STOP_CODONS:
+                elif codon in stop_codons:
                     for start_pos in current_starts:
                         orf_seq = working_seq[start_pos : pos + 3]
                         if len(orf_seq) >= min_length:
-                            protein = _translate(orf_seq, stop_at_stop=True)
+                            protein = _translate(orf_seq, stop_at_stop=True, codon_table=codon_table)
                             if strand == "+":
                                 genome_start = start_pos
                                 genome_end = pos + 3
@@ -255,7 +310,7 @@ def predict_orfs(
                 for start_pos in current_starts:
                     orf_seq = working_seq[start_pos:pos]
                     if len(orf_seq) >= min_length:
-                        protein = _translate(orf_seq, stop_at_stop=False)
+                        protein = _translate(orf_seq, stop_at_stop=False, codon_table=codon_table)
                         if strand == "+":
                             genome_start = start_pos
                             genome_end = pos
@@ -328,7 +383,7 @@ def _score_hmm_alignment(
 def annotate_genes(
     sequences: dict[str, str],
     hmm_db: dict[str, dict[int, dict[str, float]]] | None = None,
-    e_value_threshold: float = 1e-5,
+    e_value_threshold: float | None = None,
     min_score: float = 25.0,
 ) -> list[FunctionalAnnotation]:
     """Annotate gene sequences using HMM-based database search.
@@ -341,12 +396,24 @@ def annotate_genes(
         sequences: Dict mapping gene/ORF IDs to protein sequences.
         hmm_db: HMM database as {profile_id: {pos: {aa: score}}}.
             If None, only basic sequence statistics are computed.
-        e_value_threshold: Maximum E-value for significant hits.
-        min_score: Minimum alignment score threshold.
+        e_value_threshold: Must be None. The position-specific scoring used here has no
+            calibrated null model, so E-values cannot be computed and hits are filtered
+            by ``min_score`` only; a numeric threshold would be silently ignored, so it
+            is rejected instead.
+        min_score: Minimum alignment score threshold (mean score per matched position).
 
     Returns:
-        List of FunctionalAnnotation objects.
+        List of FunctionalAnnotation objects. ``best_hit.e_value`` is NaN (not computed).
+
+    Raises:
+        ValueError: If ``e_value_threshold`` is given.
     """
+    if e_value_threshold is not None:
+        raise ValueError(
+            "e_value_threshold is not supported: E-values cannot be computed for position-specific "
+            "scoring matrices without a calibrated null model. Filter hits with min_score instead."
+        )
+
     annotations: list[FunctionalAnnotation] = []
 
     for seq_id, protein_seq in sequences.items():
@@ -379,10 +446,10 @@ def annotate_genes(
                     target_id=best_id,
                     target_name=best_id,
                     score=best_score,
-                    e_value=0.0,
-                    bias=0.0,
+                    e_value=math.nan,
+                    bias=math.nan,
                     domain_score=best_score,
-                    domain_e_value=0.0,
+                    domain_e_value=math.nan,
                     query_start=0,
                     query_end=len(protein_seq),
                     target_start=0,
@@ -420,12 +487,13 @@ def classify_gene_families(
     Args:
         genes: Dict mapping gene IDs to protein sequences.
         database: Target database ('COG', 'KEGG', 'Pfam').
-        reference_profiles: Pre-loaded profile database. If None,
-            a simple composition-based classification is used.
+        reference_profiles: Profile database used to assign families. A family can only
+            be assigned by comparison with reference profiles, so when this is None
+            no family is invented: every gene maps to an empty list (unannotated).
         min_score: Minimum score for family assignment.
 
     Returns:
-        Dict mapping gene IDs to lists of family assignments.
+        Dict mapping gene IDs to lists of family assignments (empty = unannotated).
     """
     prefix_map = {"COG": "COG:", "KEGG": "KO:", "Pfam": "PF"}
     prefix = prefix_map.get(database, "")
@@ -444,75 +512,18 @@ def classify_gene_families(
                     families.append(profile_id)
             classifications[gene_id] = families
     else:
-        # Composition-based heuristic classification
-        # Classify based on amino acid composition patterns
-        for gene_id, protein_seq in genes.items():
-            families = _composition_classify(protein_seq, database)
-            classifications[gene_id] = families
+        # Amino-acid composition cannot identify a COG/KEGG/Pfam family, so without reference
+        # profiles every gene is reported as unannotated rather than given an invented label.
+        logger.warning(
+            f"No reference_profiles supplied: {len(genes)} genes left unannotated for {database} "
+            "(composition alone cannot assign a family)"
+        )
+        for gene_id in genes:
+            classifications[gene_id] = []
 
     assigned = sum(1 for fams in classifications.values() if fams)
     logger.info(f"Classified {assigned}/{len(genes)} genes into {database} families")
     return classifications
-
-
-def _composition_classify(protein_seq: str, database: str) -> list[str]:
-    """Simple composition-based classification heuristic.
-
-    Uses amino acid composition patterns to tentatively classify proteins.
-    This is a fallback when no HMM database is available.
-    """
-    if not protein_seq:
-        return []
-
-    seq_upper = protein_seq.upper()
-    length = len(seq_upper)
-    if length == 0:
-        return []
-
-    # Calculate amino acid frequencies
-    aa_counts: dict[str, int] = defaultdict(int)
-    for aa in seq_upper:
-        aa_counts[aa] += 1
-
-    # Simple heuristic features
-    charged = (aa_counts.get("D", 0) + aa_counts.get("E", 0) + aa_counts.get("K", 0) + aa_counts.get("R", 0)) / length
-    hydrophobic = (
-        aa_counts.get("A", 0)
-        + aa_counts.get("V", 0)
-        + aa_counts.get("I", 0)
-        + aa_counts.get("L", 0)
-        + aa_counts.get("M", 0)
-        + aa_counts.get("F", 0)
-        + aa_counts.get("W", 0)
-    ) / length
-    cys_frac = aa_counts.get("C", 0) / length
-    gly_frac = aa_counts.get("G", 0) / length
-    his_frac = aa_counts.get("H", 0) / length
-
-    families: list[str] = []
-
-    if database == "COG":
-        # COG functional categories based on composition heuristics
-        if charged > 0.35:
-            families.append("COG:J")  # Translation, ribosomal
-        if hydrophobic > 0.45:
-            families.append("COG:M")  # Cell wall/membrane
-        if cys_frac > 0.03 and his_frac > 0.02:
-            families.append("COG:C")  # Energy production (metal-binding)
-        if gly_frac > 0.12:
-            families.append("COG:O")  # Post-translational modification
-    elif database == "KEGG":
-        if charged > 0.35:
-            families.append("KO:K03046")  # Ribosomal-like
-        if hydrophobic > 0.45 and length > 200:
-            families.append("KO:K02004")  # Transporter-like
-    elif database == "Pfam":
-        if cys_frac > 0.04:
-            families.append("PF00076")  # RNA recognition motif
-        if gly_frac > 0.15:
-            families.append("PF00071")  # Ras family
-
-    return families
 
 
 __all__ = [

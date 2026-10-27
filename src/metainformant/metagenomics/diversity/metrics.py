@@ -42,6 +42,44 @@ except ImportError:
     np = cast(Any, None)  # optional dependency; callers guard on HAS_NUMPY
 
 
+# Estimators defined on integer counts (singletons, doubletons, log-series)
+_COUNT_METRICS = ("chao1", "ace", "fisher_alpha")
+
+
+def _as_list(values: Any) -> list[Any]:
+    """Return a plain list (Python scalars) for lists, numpy arrays or pandas series.
+
+    Truth-value tests such as ``if not values`` raise for arrays with more than one
+    element, so entry points normalise once and then only use ``len()``.
+    """
+    if hasattr(values, "to_numpy"):
+        values = values.to_numpy()
+    if hasattr(values, "tolist"):
+        values = values.tolist()
+    return list(values)
+
+
+def _require_integer_counts(values: list[float], metric: str) -> None:
+    """Raise ValueError unless every value is an integer count.
+
+    Rounding proportions to integers (0.7 -> 1, 0.2 -> 0, ...) produces meaningless
+    singleton/doubleton statistics, so count-based estimators refuse them.
+
+    Args:
+        values: Positive abundances.
+        metric: Metric name for the error message.
+
+    Raises:
+        ValueError: If any value is not within 1e-9 of an integer.
+    """
+    for value in values:
+        if abs(value - round(value)) > 1e-9:
+            raise ValueError(
+                f"Metric '{metric}' requires integer counts but got the non-integer abundance {value!r}. "
+                "Relative abundances (proportions) cannot be used; supply raw or rarefied counts."
+            )
+
+
 def alpha_diversity(
     abundances: list[float] | list[int],
     metric: str = "shannon",
@@ -52,10 +90,11 @@ def alpha_diversity(
     abundances can be raw counts or relative abundances.
 
     Args:
-        abundances: Abundance values for each taxon/OTU in the sample.
-            For count-based metrics (chao1, ace, observed), integer counts
-            are expected. For entropy-based metrics (shannon, simpson),
-            both counts and proportions are accepted.
+        abundances: Abundance values for each taxon/OTU in the sample (a list or a
+            numpy array). The count-based estimators (chao1, ace, fisher_alpha)
+            require integer-valued counts (floats such as 3.0 are fine); proportions
+            are rejected. For entropy-based metrics (shannon, simpson,
+            invsimpson, pielou_evenness) both counts and proportions are accepted.
         metric: Diversity metric. One of "shannon", "simpson",
             "invsimpson", "chao1", "ace", "observed", "fisher_alpha",
             "pielou_evenness".
@@ -68,7 +107,9 @@ def alpha_diversity(
             - total_count: float sum of all abundances.
 
     Raises:
-        ValueError: If metric is not recognized or abundances is empty.
+        ValueError: If metric is not recognized, abundances is empty, or a count-based
+            estimator (chao1, ace, fisher_alpha) is given non-integer abundances such
+            as relative abundances.
     """
     valid_metrics = (
         "shannon",
@@ -83,13 +124,17 @@ def alpha_diversity(
     if metric not in valid_metrics:
         raise ValueError(f"Invalid metric '{metric}'. Must be one of {valid_metrics}")
 
-    if not abundances:
+    abundances = _as_list(abundances)
+    if len(abundances) == 0:
         raise ValueError("abundances must not be empty")
 
     # Filter to non-zero values
     nonzero = [a for a in abundances if a > 0]
     n_species = len(nonzero)
     total = sum(nonzero)
+
+    if metric in _COUNT_METRICS:
+        _require_integer_counts(nonzero, metric)
 
     if total == 0:
         return {"value": 0.0, "metric": metric, "n_species": 0, "total_count": 0.0}
@@ -236,7 +281,8 @@ def rarefaction_curve(
     Raises:
         ValueError: If abundances is empty or contains negative values.
     """
-    if not abundances:
+    abundances = _as_list(abundances)
+    if len(abundances) == 0:
         raise ValueError("abundances must not be empty")
 
     if any(a < 0 for a in abundances):
@@ -429,6 +475,7 @@ def ordination(
     distance_matrix: list[list[float]],
     method: str = "pcoa",
     n_components: int = 2,
+    seed: int | None = 42,
 ) -> dict:
     """Perform ordination on a distance matrix.
 
@@ -440,6 +487,9 @@ def ordination(
         method: Ordination method. "pcoa" (principal coordinates
             analysis) or "nmds" (non-metric multidimensional scaling).
         n_components: Number of output dimensions.
+        seed: Seed for the random starting configuration of NMDS, so repeated calls
+            give identical results (default 42; None draws fresh entropy). PCoA is
+            deterministic and ignores it.
 
     Returns:
         Dictionary with keys:
@@ -466,7 +516,7 @@ def ordination(
     if method == "pcoa":
         return _pcoa(distance_matrix, n_components)
     else:
-        return _nmds(distance_matrix, n_components)
+        return _nmds(distance_matrix, n_components, seed=seed)
 
 
 # ---------------------------------------------------------------------------
@@ -570,40 +620,52 @@ def _ace(counts: list[int]) -> float:
 def _fisher_alpha(counts: list[int]) -> float:
     """Compute Fisher's log-series alpha.
 
-    Uses Newton's method to solve: S = alpha * ln(1 + N/alpha).
+    Solves ``S = alpha * ln(1 + N / alpha)`` for ``alpha``, where ``S`` is the number
+    of species and ``N`` the number of individuals. The left side minus ``S`` is
+    strictly increasing in ``alpha`` (from ``-S`` at 0 to ``N - S`` at infinity), so
+    there is a unique root exactly when ``N > S``; it is found by bisection on a
+    bracket, which cannot diverge. When every species is a singleton (``N == S``)
+    no finite alpha exists and ``math.inf`` is returned.
 
     Args:
-        counts: Non-zero integer counts per species.
+        counts: Integer counts per species (zeros are ignored).
 
     Returns:
-        Fisher's alpha parameter.
+        Fisher's alpha parameter (0.0 for an empty community, ``inf`` if all
+        species are singletons).
     """
-    s = len(counts)
-    n = sum(counts)
+    positive = [c for c in counts if c > 0]
+    s = len(positive)
+    n = sum(positive)
 
     if s == 0 or n == 0:
         return 0.0
+    if n <= s:
+        return math.inf
 
-    # Initial estimate
-    alpha = s / math.log(n) if n > 1 else float(s)
+    def excess(alpha: float) -> float:
+        return alpha * math.log1p(n / alpha) - s
 
-    # Newton's method
-    for _ in range(100):
-        if alpha <= 0:
-            alpha = 0.01
-        f_val = alpha * math.log(1.0 + n / alpha) - s
-        # Derivative: ln(1 + N/alpha) - N/(alpha + N)
-        f_prime = math.log(1.0 + n / alpha) - n / (alpha + n)
+    lo = 1e-12  # excess(lo) is about -s < 0
+    hi = float(s)
+    for _ in range(2000):
+        if excess(hi) >= 0.0:
+            break
+        lo = hi
+        hi *= 2.0
+    else:
+        return math.inf
 
-        if abs(f_prime) < 1e-15:
+    for _ in range(300):
+        mid = 0.5 * (lo + hi)
+        if excess(mid) < 0.0:
+            lo = mid
+        else:
+            hi = mid
+        if hi - lo <= 1e-14 * hi:
             break
 
-        alpha_new = alpha - f_val / f_prime
-        if abs(alpha_new - alpha) < 1e-8:
-            break
-        alpha = alpha_new
-
-    return max(alpha, 0.0)
+    return 0.5 * (lo + hi)
 
 
 # ---------------------------------------------------------------------------
@@ -858,7 +920,7 @@ def _nmds(
     distance_matrix: list[list[float]],
     n_components: int,
     max_iter: int = 300,
-    seed: int | None = None,
+    seed: int | None = 42,
 ) -> dict:
     """Non-metric multidimensional scaling (NMDS).
 

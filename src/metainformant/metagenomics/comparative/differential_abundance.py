@@ -29,6 +29,7 @@ from collections import Counter
 from typing import Any, cast
 
 from metainformant.core.utils.logging import get_logger
+from metainformant.metagenomics._special import chi2_sf
 
 logger = get_logger(__name__)
 
@@ -58,6 +59,43 @@ except ImportError:
     HAS_SKLEARN = False
     RandomForestClassifier = None
     cross_val_score = None
+
+
+def _as_matrix(counts: Any) -> list[list[Any]]:
+    """Return a plain nested list for lists of rows, numpy arrays or pandas frames.
+
+    Truth-value tests such as ``if not counts`` raise for arrays with more than one
+    element, so every public entry point normalises its input once and then only
+    uses ``len()``.
+
+    Args:
+        counts: Matrix-like object (samples x taxa).
+
+    Returns:
+        The rows as lists.
+
+    Raises:
+        ValueError: If the input is not two-dimensional.
+    """
+    if hasattr(counts, "to_numpy"):
+        counts = counts.to_numpy()
+    if hasattr(counts, "tolist"):
+        counts = counts.tolist()
+    matrix: list[list[Any]] = []
+    for row in counts:
+        if isinstance(row, (str, bytes)) or not hasattr(row, "__iter__"):
+            raise ValueError("counts must be a 2-D matrix (samples x taxa)")
+        matrix.append(list(row))
+    return matrix
+
+
+def _as_list(values: Any) -> list[Any]:
+    """Return a plain list (Python scalars) for lists, numpy arrays or pandas series."""
+    if hasattr(values, "to_numpy"):
+        values = values.to_numpy()
+    if hasattr(values, "tolist"):
+        values = values.tolist()
+    return list(values)
 
 
 def differential_abundance(
@@ -103,6 +141,10 @@ def differential_abundance(
     valid_methods = ("aldex2_like", "ancom_like", "simple_deseq")
     if method not in valid_methods:
         raise ValueError(f"Invalid method '{method}'. Must be one of {valid_methods}")
+
+    counts = _as_matrix(counts)
+    groups = _as_list(groups)
+    taxa_names = _as_list(taxa_names)
 
     n_samples = len(counts)
     if n_samples == 0:
@@ -162,7 +204,8 @@ def clr_transform(
     Raises:
         ValueError: If counts is empty.
     """
-    if not counts:
+    counts = _as_matrix(counts)
+    if len(counts) == 0:
         raise ValueError("counts must not be empty")
 
     logger.debug(f"CLR transform: {len(counts)} samples, pseudocount={pseudocount}")
@@ -212,6 +255,10 @@ def indicator_species(
     Raises:
         ValueError: If inputs are inconsistent.
     """
+    counts = _as_matrix(counts)
+    groups = _as_list(groups)
+    taxa_names = _as_list(taxa_names)
+
     n_samples = len(counts)
     n_taxa = len(counts[0]) if n_samples > 0 else 0
 
@@ -302,6 +349,10 @@ def effect_size_analysis(
     Raises:
         ValueError: If inputs are inconsistent.
     """
+    counts = _as_matrix(counts)
+    groups = _as_list(groups)
+    taxa_names = _as_list(taxa_names)
+
     n_samples = len(counts)
     n_taxa = len(counts[0]) if n_samples > 0 else 0
 
@@ -433,6 +484,10 @@ def biomarker_discovery(
     if method != "random_forest":
         raise ValueError(f"Invalid method '{method}'. Must be 'random_forest'")
 
+    counts = _as_matrix(counts)
+    groups = _as_list(groups)
+    taxa_names = _as_list(taxa_names)
+
     n_samples = len(counts)
     n_taxa = len(counts[0]) if n_samples > 0 else 0
 
@@ -488,7 +543,7 @@ def _aldex2_like(
     if n_monte_carlo < 1:
         raise ValueError(f"n_monte_carlo must be >= 1, got {n_monte_carlo}")
 
-    n_taxa = len(counts[0]) if counts else 0
+    n_taxa = len(counts[0]) if len(counts) > 0 else 0
 
     if HAS_NUMPY:
         rng = np.random.default_rng(seed)
@@ -568,7 +623,7 @@ def _ancom_like(
     Returns:
         List of DA result dictionaries.
     """
-    n_taxa = len(counts[0]) if counts else 0
+    n_taxa = len(counts[0]) if len(counts) > 0 else 0
     pseudocount = 0.5
 
     results: list[dict] = []
@@ -751,8 +806,9 @@ def _sklearn_biomarker(
     )
 
     cv_scores: list[float] = []
-    actual_folds = min(cv_folds, len(set(groups)))
-    actual_folds = min(actual_folds, min(Counter(groups).values()))
+    # Stratified k-fold needs every class to have at least ``n_splits`` members, so the
+    # smallest class bounds the folds; the number of classes is irrelevant.
+    actual_folds = min(cv_folds, min(Counter(groups).values()))
     actual_folds = max(actual_folds, 2)
 
     try:
@@ -816,7 +872,7 @@ def _pure_python_biomarker(
     logger.warning("scikit-learn not available; using effect size ranking as fallback")
 
     unique_groups = sorted(set(groups))
-    n_taxa = len(clr_data[0]) if clr_data else 0
+    n_taxa = len(clr_data[0]) if len(clr_data) > 0 else 0
 
     importances: dict[str, float] = {}
 
@@ -908,6 +964,52 @@ def _welch_t_test(a: list[float], b: list[float]) -> float:
     return p_value
 
 
+def _kruskal_wallis_pure(groups_data: list[list[float]]) -> float:
+    """Kruskal-Wallis H test for any number of groups, without SciPy.
+
+    Pools all values, assigns mid-ranks to ties, and computes
+    ``H = 12 / (N (N + 1)) * sum(R_i ** 2 / n_i) - 3 (N + 1)`` divided by the tie
+    correction ``1 - sum(t ** 3 - t) / (N ** 3 - N)``. The p-value is the chi-square
+    survival function with ``k - 1`` degrees of freedom, matching
+    ``scipy.stats.kruskal``.
+
+    Args:
+        groups_data: List of value lists (one per group).
+
+    Returns:
+        P-value; 1.0 when the test is undefined (fewer than two non-empty groups, or
+        all values identical).
+    """
+    groups = [list(g) for g in groups_data]
+    if len(groups) < 2 or any(len(g) == 0 for g in groups):
+        return 1.0
+
+    n_total = sum(len(g) for g in groups)
+    pooled = sorted((value, idx) for idx, g in enumerate(groups) for value in g)
+
+    rank_sums = [0.0] * len(groups)
+    tie_term = 0.0
+    i = 0
+    while i < n_total:
+        j = i
+        while j < n_total and pooled[j][0] == pooled[i][0]:
+            j += 1
+        mid_rank = (i + j + 1) / 2.0  # ranks are 1-based: positions i..j-1 hold ranks i+1..j
+        for k in range(i, j):
+            rank_sums[pooled[k][1]] += mid_rank
+        tie_size = j - i
+        tie_term += tie_size**3 - tie_size
+        i = j
+
+    tie_correction = 1.0 - tie_term / (n_total**3 - n_total) if n_total > 1 else 0.0
+    if tie_correction <= 0.0:
+        return 1.0  # all values identical: H is undefined
+
+    h = 12.0 / (n_total * (n_total + 1)) * sum(r**2 / len(g) for r, g in zip(rank_sums, groups)) - 3.0 * (n_total + 1)
+    h = max(h / tie_correction, 0.0)
+    return min(chi2_sf(h, len(groups) - 1), 1.0)
+
+
 def _kruskal_wallis_two_group(a: list[float], b: list[float]) -> float:
     """Kruskal-Wallis test for two groups (equivalent to Mann-Whitney).
 
@@ -925,37 +1027,7 @@ def _kruskal_wallis_two_group(a: list[float], b: list[float]) -> float:
         except (ValueError, TypeError):
             return 1.0
 
-    # Fallback: rank-sum approximation
-    combined = [(v, 0) for v in a] + [(v, 1) for v in b]
-    combined.sort(key=lambda x: x[0])
-
-    n = len(combined)
-    n_a = len(a)
-    n_b = len(b)
-
-    # Assign ranks
-    ranks: list[float] = [0.0] * n
-    i = 0
-    while i < n:
-        j = i
-        while j < n and combined[j][0] == combined[i][0]:
-            j += 1
-        avg_rank = (i + j + 1) / 2.0
-        for k in range(i, j):
-            ranks[k] = avg_rank
-        i = j
-
-    rank_sum_a = sum(ranks[i] for i in range(n) if combined[i][1] == 0)
-    mean_rank = (n + 1) / 2.0
-
-    # H statistic
-    h = (12.0 / (n * (n + 1))) * (
-        n_a * (rank_sum_a / n_a - mean_rank) ** 2 + n_b * ((sum(ranks) - rank_sum_a) / n_b - mean_rank) ** 2
-    )
-
-    # Approximate p-value using chi-squared with df=1
-    p_value = math.exp(-h / 2.0)  # Simplified approximation
-    return min(p_value, 1.0)
+    return _kruskal_wallis_pure([a, b])
 
 
 def _kruskal_wallis(groups_data: list[list[float]]) -> float:
@@ -974,11 +1046,8 @@ def _kruskal_wallis(groups_data: list[list[float]]) -> float:
         except (ValueError, TypeError):
             return 1.0
 
-    # Fallback: simplified computation
-    if len(groups_data) < 2:
-        return 1.0
-
-    return _kruskal_wallis_two_group(groups_data[0], groups_data[1])
+    # SciPy unavailable: exact chi-square approximation over ALL groups
+    return _kruskal_wallis_pure(groups_data)
 
 
 def _standard_normal_cdf(x: float) -> float:

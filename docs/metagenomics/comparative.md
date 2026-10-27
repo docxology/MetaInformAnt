@@ -16,11 +16,11 @@ Differential abundance testing, compositional data analysis, indicator species a
 
 ## Function Reference
 
-All functions live in `metainformant.metagenomics.comparative.differential_abundance` (the `metainformant.metagenomics.comparative` package exposes that module, not the functions). Inputs share one layout: `counts` is a samples x taxa list of lists of counts (not a numpy array: most functions raise `ValueError` for one, so pass `array.tolist()`), `groups` holds one integer label per sample, and `taxa_names` holds one name per column. Mismatched lengths raise `ValueError`.
+All functions live in `metainformant.metagenomics.comparative.differential_abundance` (the `metainformant.metagenomics.comparative` package exposes that module, not the functions). Inputs share one layout: `counts` is a samples x taxa matrix of counts (a list of lists, a NumPy array or a pandas DataFrame), `groups` holds one integer label per sample, and `taxa_names` holds one name per column (each a list, array or Series). Mismatched lengths raise `ValueError`.
 
 ### `differential_abundance(counts, groups, taxa_names, method="aldex2_like", n_monte_carlo=128, seed=None) -> List[Dict]`
 
-Test differential abundance between two groups. `groups` must contain exactly two distinct labels; the lower label is "group 1". `n_monte_carlo` (at least 1) and `seed` apply to `aldex2_like` only; without `seed` its p-values vary between runs.
+Test differential abundance between two groups. `groups` must contain exactly two distinct labels; the lower label is "group 1". `n_monte_carlo` (at least 1) and `seed` apply to `aldex2_like` only. `seed` defaults to `None`, an unseeded draw, so its p-values vary between runs unless you pass an integer `seed`; `ancom_like` and `simple_deseq` are deterministic.
 
 **Methods:**
 | Method | Description |
@@ -37,7 +37,7 @@ Apply centered log-ratio transformation. Adds pseudocount before log to handle z
 
 ### `indicator_species(counts, groups, taxa_names, n_permutations=999, seed=None) -> List[Dict]`
 
-IndVal indicator species analysis. Combines specificity (a taxon's mean abundance in a group relative to the sum of its group means) and fidelity (fraction of the group's samples where it occurs). Significance via permutation test; works with more than two groups.
+IndVal indicator species analysis. Combines specificity (a taxon's mean abundance in a group relative to the sum of its group means) and fidelity (fraction of the group's samples where it occurs). Significance via permutation test (`n_permutations` label shuffles; unseeded by default, `seed=None`, so pass an integer `seed` for reproducible p-values); works with more than two groups.
 
 **Returns** per-taxon dicts, sorted by `indicator_value` (descending), with `taxon`, `indicator_value` (0--1), `p_value`, `associated_group` (the group label with the highest IndVal).
 
@@ -49,13 +49,13 @@ LEfSe-style analysis: Kruskal-Wallis p-value plus a simplified LDA-like effect s
 
 ### `biomarker_discovery(counts, groups, taxa_names, method="random_forest", n_estimators=100, cv_folds=5, seed=None) -> Dict`
 
-Machine-learning biomarker identification using random forest on CLR-transformed data (`method="random_forest"` is the only accepted value). Falls back to Cohen's d ranking when scikit-learn is unavailable.
+Machine-learning biomarker identification using random forest on CLR-transformed data (`method="random_forest"` is the only accepted value). The forest is unseeded by default (`seed=None`); pass an integer `seed` for reproducible importances and cross-validation. Falls back to Cohen's d ranking when scikit-learn is unavailable.
 
 **Returns** dict with:
 - `selected_taxa`: Top-ranked taxa (importance > mean).
 - `importances`: Per-taxon importance scores (dict of taxon -> score).
 - `cv_accuracy`: Cross-validated classification accuracy (0.0 in the Cohen's d fallback).
-- `model_summary`: For the random forest: `method`, `n_estimators`, `cv_folds`, `cv_scores`, `n_features`, `n_selected`. `cv_folds` is the number of folds actually used: the requested value capped by the number of distinct groups and by the size of the smallest group, and at least 2. The fallback reports `method="effect_size_ranking"`, a `note`, `n_features`, and `n_selected`.
+- `model_summary`: For the random forest: `method`, `n_estimators`, `cv_folds`, `cv_scores`, `n_features`, `n_selected`. `cv_folds` is the number of folds actually used: the requested value capped by the size of the smallest group (stratified cross-validation needs every group to have at least that many samples, whatever the number of groups) and raised to at least 2. The fallback reports `method="effect_size_ranking"`, a `note`, `n_features`, and `n_selected`.
 
 ## Usage Examples
 
@@ -115,7 +115,7 @@ Used for group comparisons with unequal variances. Falls back to a pure Python i
 
 ### Kruskal-Wallis test
 
-Used by `effect_size_analysis` (`scipy.stats.kruskal`). Without scipy, a rough rank-based approximation (`exp(-H/2)`) is used instead.
+Used by `effect_size_analysis` (`scipy.stats.kruskal`). Without scipy, the same test is computed in pure Python for any number of groups: mid-ranks over the pooled values, the H statistic divided by the tie correction `1 - sum(t^3 - t) / (N^3 - N)`, and the chi-square survival function with `k - 1` degrees of freedom for the p-value. The result matches `scipy.stats.kruskal`; it is 1.0 when the test is undefined (fewer than two groups, or all values identical).
 
 ### Cohen's d Effect Size
 
@@ -129,7 +129,7 @@ This module reads no environment variables; the `META_` prefix used elsewhere in
 
 All three are installed with METAINFORMANT, but the code falls back when they are missing:
 
-- `scipy` -- Welch's t-test, Kruskal-Wallis test (pure-Python approximations otherwise)
+- `scipy` -- Welch's t-test (a normal approximation otherwise) and Kruskal-Wallis test (an equivalent pure-Python computation otherwise)
 - `numpy` -- Dirichlet Monte Carlo draws in `aldex2_like` (single-point CLR otherwise)
 - `scikit-learn` -- random forest and cross-validation in `biomarker_discovery` (Cohen's d ranking otherwise)
 

@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import math
 
+import numpy as np
 import pytest
+from scipy.optimize import brentq
 
 from metainformant.metagenomics.diversity.metrics import (
     alpha_diversity,
@@ -386,3 +388,111 @@ class TestOrdinationInputValidation:
         dm = [[0.0, 0.5, 0.2], [0.5, 0.0, 0.3]]
         with pytest.raises(ValueError, match="square"):
             ordination(dm, method="pcoa")
+
+
+# ---------------------------------------------------------------------------
+# Regression tests: Fisher's alpha, integer-count validation, seeded NMDS
+# ---------------------------------------------------------------------------
+
+
+def _fisher_alpha_oracle(counts: list[int]) -> float:
+    """Independent root finder for S = alpha * ln(1 + N / alpha)."""
+    s, n = len(counts), sum(counts)
+    return float(brentq(lambda a: a * math.log1p(n / a) - s, 1e-9, 1e14, xtol=1e-14, rtol=1e-14, maxiter=500))
+
+
+class TestFisherAlpha:
+    """`_fisher_alpha` used to diverge (about 8.6e8 for [0.7, 0.2, 0.1])."""
+
+    @pytest.mark.parametrize(
+        "counts",
+        [
+            [50, 30, 10, 5, 3, 1, 1],
+            [10, 10, 10],
+            [100, 1],
+            [5, 4, 3, 2, 1, 1, 1],
+            [1000, 500, 1, 1, 1],
+            [2, 1],
+            [7],
+        ],
+    )
+    def test_matches_independent_root_finder(self, counts: list[int]) -> None:
+        from metainformant.metagenomics.diversity.metrics import _fisher_alpha
+
+        assert _fisher_alpha(counts) == pytest.approx(_fisher_alpha_oracle(counts), rel=1e-9)
+
+    def test_known_value(self) -> None:
+        # Hand check: S = 7, N = 100 gives alpha = 1.71437533919620...
+        result = alpha_diversity([50, 30, 10, 5, 3, 1, 1], metric="fisher_alpha")
+        assert result["value"] == pytest.approx(1.7143753391962, rel=1e-10)
+        assert 7 == pytest.approx(result["value"] * math.log(1 + 100 / result["value"]), rel=1e-12)
+
+    def test_zero_counts_are_ignored(self) -> None:
+        assert alpha_diversity([50, 0, 30, 10, 5, 3, 1, 1, 0], metric="fisher_alpha")["value"] == pytest.approx(
+            1.7143753391962, rel=1e-10
+        )
+
+    def test_all_singletons_have_no_finite_alpha(self) -> None:
+        assert alpha_diversity([1, 1, 1, 1], metric="fisher_alpha")["value"] == math.inf
+
+    def test_proportions_are_rejected_with_a_clear_error(self) -> None:
+        with pytest.raises(ValueError, match="integer counts"):
+            alpha_diversity([0.7, 0.2, 0.1], metric="fisher_alpha")
+
+    @pytest.mark.parametrize("metric", ["chao1", "ace", "fisher_alpha"])
+    def test_count_estimators_reject_relative_abundances(self, metric: str) -> None:
+        with pytest.raises(ValueError, match="integer counts"):
+            alpha_diversity([0.5, 0.3, 0.2], metric=metric)
+
+    @pytest.mark.parametrize("metric", ["shannon", "simpson", "invsimpson", "pielou_evenness", "observed"])
+    def test_other_metrics_still_accept_proportions(self, metric: str) -> None:
+        by_counts = alpha_diversity([50, 30, 20], metric=metric)["value"]
+        by_proportions = alpha_diversity([0.5, 0.3, 0.2], metric=metric)["value"]
+        assert by_proportions == pytest.approx(by_counts)
+
+    def test_integer_valued_floats_are_counts(self) -> None:
+        as_floats = alpha_diversity([50.0, 30.0, 10.0, 5.0, 3.0, 1.0, 1.0], metric="fisher_alpha")["value"]
+        assert as_floats == pytest.approx(alpha_diversity([50, 30, 10, 5, 3, 1, 1], metric="fisher_alpha")["value"])
+
+
+class TestNumpyAbundances:
+    """`if not abundances` raised "truth value of an array is ambiguous" for numpy input."""
+
+    def test_alpha_diversity_accepts_arrays(self, diverse_community: list[int]) -> None:
+        for metric in ("shannon", "chao1", "ace", "fisher_alpha", "observed"):
+            assert alpha_diversity(np.array(diverse_community), metric=metric) == alpha_diversity(
+                diverse_community, metric=metric
+            )
+
+    def test_empty_array_is_reported_as_empty(self) -> None:
+        with pytest.raises(ValueError, match="not be empty"):
+            alpha_diversity(np.array([]), metric="shannon")
+        with pytest.raises(ValueError, match="not be empty"):
+            rarefaction_curve(np.array([]))
+
+    def test_rarefaction_curve_accepts_arrays(self, diverse_community: list[int]) -> None:
+        from_array = rarefaction_curve(np.array(diverse_community), n_iterations=4, seed=3)
+        assert from_array == rarefaction_curve(diverse_community, n_iterations=4, seed=3)
+
+
+class TestNmdsIsSeeded:
+    """NMDS started from an unseeded random configuration, so results changed between calls."""
+
+    DM = [
+        [0.0, 0.2, 0.9, 0.4, 0.7],
+        [0.2, 0.0, 0.6, 0.8, 0.3],
+        [0.9, 0.6, 0.0, 0.5, 0.95],
+        [0.4, 0.8, 0.5, 0.0, 0.35],
+        [0.7, 0.3, 0.95, 0.35, 0.0],
+    ]
+
+    def test_default_call_is_reproducible(self) -> None:
+        assert ordination(self.DM, method="nmds") == ordination(self.DM, method="nmds")
+
+    def test_same_seed_reproduces_and_other_seed_differs(self) -> None:
+        first = ordination(self.DM, method="nmds", seed=7)
+        assert first == ordination(self.DM, method="nmds", seed=7)
+        assert first["coordinates"] != ordination(self.DM, method="nmds", seed=8)["coordinates"]
+
+    def test_seed_does_not_affect_pcoa(self) -> None:
+        assert ordination(self.DM, method="pcoa", seed=1) == ordination(self.DM, method="pcoa", seed=2)

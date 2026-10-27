@@ -93,9 +93,9 @@ classifications = amplicon.taxonomy.classify_taxonomy(
     non_chimeric, ref_db, ref_tax, method="naive_bayes", confidence_threshold=0.7
 )
 # Each assignment has .lineage [(rank, name), ...] and .confidence {rank: score};
-# ranks below confidence_threshold are labelled "unclassified". With this toy
-# reference DB the counts are not meaningful: naive Bayes always picks the
-# best-scoring reference, even for sequences unrelated to it.
+# a rank below confidence_threshold, and every rank under it, is labelled "unclassified".
+# The two toy references share almost no 8-mers with real reads, so the classifier
+# abstains for nearly every ASV (use a real reference such as SILVA in practice).
 n_classified = sum(1 for c in classifications if dict(c.lineage)["phylum"] != "unclassified")
 print(f"  Classified {n_classified} ASVs to phylum level")
 
@@ -132,21 +132,21 @@ print(f"  Saved {png}")
 print("\nDone!")
 ```
 
-**Example output** (from a small simulated sample of 250 bp reads with 0.2% sequencing errors; your numbers depend on your data):
+**Example output** (from a simulated sample of 572 reads of 250 bp with 0.2% sequencing errors, drawn from four template sequences and one chimera of two of them; your numbers depend on your data):
 ```
 Loading reads...
   Loaded 572 reads
 Dereplicating sequences...
-  162 unique sequences
+  242 unique sequences
 Denoising to ASVs (DADA2-style)...
   5 ASVs
 Filtering chimeras...
   Removed 1 chimeras
 Classifying taxonomy...
-  Classified 4 ASVs to phylum level
+  Classified 0 ASVs to phylum level
 Computing alpha diversity...
-  Shannon diversity: 1.122
-  Bray-Curtis dissimilarity between samples: 0.607
+  Shannon diversity: 1.275
+  Bray-Curtis dissimilarity between samples: 0.423
 Generating plots...
   Saved output/metagenomics/amplicon_abundance.png
 
@@ -211,11 +211,20 @@ binning_result = binning.bin_contigs(
     n_bins=2,  # or None to estimate from the assembly size
 )
 print(f"  Binned {binning_result.binned_contigs} / {binning_result.total_contigs} contigs")
-# bin_contigs() leaves completeness/contamination at 0.0. assess_bin_quality() fills in
-# heuristic estimates (no marker genes are actually searched), so treat them as rough.
-assessed = binning.assess_bin_quality(binning_result.bins, contig_dict)
-high_quality = sum(1 for b in assessed if b.completeness >= 0.9 and b.contamination <= 0.05)
-print(f"  Bins passing the heuristic high-quality filter (completeness>=0.9, contamination<=0.05): {high_quality}")
+# Bin quality needs single-copy marker gene annotations (contig ID -> marker names found on
+# that contig), normally parsed from a marker search such as HMMER. Without them completeness,
+# contamination and high_quality_bins are None.
+print(f"  High-quality bins without annotations: {binning_result.high_quality_bins}")
+# Hand-written stand-in for a marker search: the first contig carries every expected marker
+# once, the second contig only half of them. The values below describe this stand-in, not the
+# simulated sequences.
+markers = list(binning.BACTERIAL_SINGLE_COPY_MARKERS)
+marker_genes = {contigs[0].contig_id: markers, contigs[1].contig_id: markers[:18]}
+assessed = binning.assess_bin_quality(binning_result.bins, marker_genes=marker_genes)
+for b in assessed:
+    print(f"  {b.bin_id}: completeness={b.completeness:.0%}, contamination={b.contamination:.0%}")
+high_quality = binning.count_high_quality_bins(assessed)
+print(f"  High-quality bins (completeness>=0.9, contamination<=0.05): {high_quality}")
 
 # ── 4. Functional annotation ─────────────────────────────────────────────
 print("Predicting ORFs in contigs...")
@@ -260,7 +269,10 @@ Assembling contigs...
   N50: 4,950, GC: 49.6%
 Binning contigs into MAGs...
   Binned 2 / 2 contigs
-  Bins passing the heuristic high-quality filter (completeness>=0.9, contamination<=0.05): 2
+  High-quality bins without annotations: None
+  bin_0000: completeness=100%, contamination=0%
+  bin_0001: completeness=50%, contamination=0%
+  High-quality bins (completeness>=0.9, contamination<=0.05): 1
 Predicting ORFs in contigs...
   86 ORFs of at least 150 nt (ORFs that share a stop codon count separately)
 Building k-mer index from reference genomes...
@@ -270,7 +282,7 @@ Building k-mer index from reference genomes...
     Bacteroidetes (phylum): 98 reads, 49.75%
 ```
 
-The two 5 kb bins "passing" the quality filter show that `assess_bin_quality` is a heuristic stand-in for CheckM, not a marker-gene measurement (see [shotgun.md](shotgun.md)); use CheckM for quality values you will report.
+The quality values come entirely from the `marker_genes` annotation you supply, here a hand-written stand-in; with real data, build it from the output of a marker search (see [shotgun.md](shotgun.md)). The package never estimates completeness or contamination from sequence composition or bin size.
 
 ---
 
@@ -280,7 +292,7 @@ The two 5 kb bins "passing" the quality filter show that `assess_bin_quality` is
 |-----------|---------|---------|
 | Python | 3.11+ | Core |
 | NumPy | ≥1.24 | PCoA eigendecomposition, Dirichlet Monte Carlo in `aldex2_like` (pure-Python fallbacks exist) |
-| SciPy | ≥1.11 | Welch's t-test, Kruskal-Wallis (pure-Python approximations otherwise) |
+| SciPy | ≥1.11 | Welch's t-test, Kruskal-Wallis, Poisson tail in `denoise_sequences` (pure-Python fallbacks exist; only Welch's t-test falls back to an approximation, a normal one) |
 | scikit-learn | ≥1.3 | Random forest in `biomarker_discovery` (not used for binning, which has its own k-means) |
 | matplotlib | ≥3.8 | `metagenomics.visualization.plots` |
 
@@ -290,7 +302,7 @@ All of these are installed with METAINFORMANT.
 - **fastp** or **Trimmomatic**: adapter/quality trimming (preprocessing)
 - **MEGAHIT** / **metaSPAdes**: assembly (production-scale)
 - **Kraken2** / **Centrifuge**: taxonomic profiling (production)
-- **CheckM**: bin quality assessment
+- **CheckM** / **HMMER**: single-copy marker gene search for bin quality (`assess_bin_quality` and `refine_bins` take the markers found on each contig as input; they do not search for them)
 
 METAINFORMANT does not wrap these tools: run them yourself (for example with Python's `subprocess`) and load their outputs into the plain dicts and lists the functions take.
 
@@ -342,9 +354,9 @@ for sid, seqs in all_reads.items():
 
 asv_result = asv_denoising.denoise_sequences(
     pooled_reads,
-    # quality_scores=...,  # optional: {pooled_read_id: [Phred scores]}; when given, an error model is estimated from the reads
+    # quality_scores=...,  # optional: {pooled_read_id: [Phred scores]}; when given, the scores set the error probability of each mismatch, an error model is estimated from the reads, and each ASV gets a mean .quality
 )
-# asv_result.asvs: list of ASV objects (.sequence, .abundance) pooled over all samples
+# asv_result.asvs: list of ASV objects (.sequence, .abundance, .quality) pooled over all samples
 # asv_result.num_asvs, asv_result.reads_removed: number of ASVs, reads merged into other ASVs
 ```
 
@@ -461,7 +473,8 @@ plots.plot_stacked_bar(
     phylum_abund, level="phylum", output_path="output/metagenomics/phylum_composition.png"
 )
 
-# Ordination plot: takes a nested-dict distance matrix and computes its own 2-D PCoA
+# Ordination plot: takes a nested-dict distance matrix and computes its own 2-D ordination
+# (PCoA by default; pass method="NMDS" for NMDS, whose random start uses seed=42 by default)
 dist_by_sample = {
     sid_a: {sid_b: dist_mat[i][j] for j, sid_b in enumerate(sample_ids)}
     for i, sid_a in enumerate(sample_ids)
@@ -538,9 +551,16 @@ bins = binning.bin_contigs(
     min_contig_length=1000,
 )
 
-# Refine: assesses quality (heuristic estimates, see shotgun.md) and drops bins below the thresholds
-from metainformant.metagenomics.shotgun.binning import refine_bins
-refined = refine_bins(bins.bins, contig_dict)
+# Refine: needs marker gene annotations (contig ID -> marker names found on that contig) from a
+# marker search such as HMMER; without them refine_bins raises ValueError. This hand-written
+# stand-in gives the first contig every expected marker once and the second contig 30 of the 36,
+# so the values below describe the stand-in, not the simulated sequences.
+from metainformant.metagenomics.shotgun.binning import BACTERIAL_SINGLE_COPY_MARKERS, refine_bins
+markers = list(BACTERIAL_SINGLE_COPY_MARKERS)
+marker_genes = {contigs[0].contig_id: markers, contigs[1].contig_id: markers[:30]}
+# Assesses the bins and applies the completeness and contamination thresholds
+# (see shotgun.md for how contaminated bins are split or dropped)
+refined = refine_bins(bins.bins, contig_dict, marker_genes=marker_genes)
 
 print(f"Binning: {len(bins.bins)} bins, {bins.binned_contigs} binned contigs")
 for i, genome_bin in enumerate(refined[:3]):
@@ -558,10 +578,10 @@ Assembly stats:
   GC = 50.3%
 Binning: 2 bins, 2 binned contigs
   Bin 0: 19,996 bp, completeness=100.00%, contamination=0.00%
-  Bin 1: 19,967 bp, completeness=100.00%, contamination=0.00%
+  Bin 1: 19,967 bp, completeness=83.33%, contamination=0.00%
 ```
 
-The completeness and contamination come from the heuristic `assess_bin_quality`, which scores almost any non-degenerate sequence as complete; they are not marker-gene measurements.
+Completeness and contamination come from the `marker_genes` stand-in, not from the simulated sequences. Both bins hold one contig, so a bin whose contamination exceeded `contamination_threshold` would be dropped rather than split.
 
 ---
 
@@ -613,7 +633,7 @@ alpha_df.to_csv("alpha_diversity.tsv", sep="\t", index=False)
 
 ### Pitfall 1: Passing proportions to count-based alpha diversity estimators
 
-`chao1`, `ace` and `fisher_alpha` round every abundance to an integer before estimating richness, so proportions collapse to 0 or 1 and the results are meaningless: `chao1` and `ace` lose the singleton/doubleton information and just return the observed richness, and `fisher_alpha` returns 0.0 for `[0.5, 0.25, 0.125]` but a huge value (about 8.6e8) for `[0.7, 0.2, 0.1]`. They need **raw counts**. `shannon`, `simpson`, `invsimpson`, `pielou_evenness` and `observed` normalize internally and work with counts or proportions. `alpha_diversity` also expects a Python list, not a numpy array (use `.tolist()`).
+`chao1`, `ace` and `fisher_alpha` are defined on integer counts (singletons, doubletons, a log-series), so `alpha_diversity` raises `ValueError` for any abundance that is not an integer, such as the relative abundances `[0.7, 0.2, 0.1]`. They need **raw counts** (or rarefied counts); floats with an integer value, such as `3.0`, are accepted. `shannon`, `simpson`, `invsimpson`, `pielou_evenness` and `observed` normalize internally and work with counts or proportions. `alpha_diversity` takes a Python list or a NumPy array.
 
 **Correct**:
 ```python
@@ -627,7 +647,7 @@ print(alpha["value"])
 **Wrong**:
 ```python
 props = [0.5, 0.25, 0.125]  # proportions
-alpha = alpha_diversity(props, metric="fisher_alpha")  # value 0.0: every proportion rounds to 0 (meaningless)
+alpha = alpha_diversity(props, metric="fisher_alpha")  # raises ValueError: needs integer counts
 ```
 
 **Fine**: `alpha_diversity(props, metric="shannon")` returns the same value as counts in the same proportions (here 4:2:1).

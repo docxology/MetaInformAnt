@@ -17,6 +17,7 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 
+from metainformant.core.sequence import COMPLEMENT_TABLE_UPPER
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -170,14 +171,17 @@ def _collapse_non_branching_paths(graph: dict[str, list[str]]) -> list[str]:
         if in_d != 1 or out_d != 1:
             start_nodes.add(node)
 
-    # If no start nodes found (everything is in cycles), pick arbitrary starts
+    # If no start nodes found (everything is in cycles), pick a start (the smallest node,
+    # so the result does not depend on set iteration order)
     if not start_nodes:
-        start_nodes = {next(iter(all_nodes))} if all_nodes else set()
+        start_nodes = {min(all_nodes)} if all_nodes else set()
 
     visited_edges: set[tuple[str, str]] = set()
     contigs: list[str] = []
 
-    for start in start_nodes:
+    # Sorted so that contig order (and hence contig IDs) is reproducible: iterating a set of
+    # strings follows the per-process hash seed.
+    for start in sorted(start_nodes):
         if start not in graph:
             continue
         for neighbor in graph[start]:
@@ -361,9 +365,12 @@ def scaffold_contigs(
     """Scaffold contigs using paired-end read linkage information.
 
     For each pair of contigs, counts the number of paired-end reads where
-    one read maps to one contig and the mate maps to the other. Contig
+    one read maps to one contig and the mate maps to the other. Reads are
+    anchored on either strand of a contig (a mate sequenced from the opposite
+    strand maps to the reverse complement of the contig). Contig
     pairs with sufficient linking evidence (>= min_links) are joined
-    into scaffolds with estimated gap sizes based on insert size.
+    into scaffolds with estimated gap sizes based on insert size. Contigs are
+    joined in their given orientation; relative orientation is not inferred.
 
     Args:
         contigs: List of assembled Contig objects.
@@ -402,18 +409,20 @@ def scaffold_contigs(
             early_scaffolds.append(scaffold)
         return early_scaffolds
 
-    # Map reads to contigs using k-mer anchoring
+    # Map reads to contigs using k-mer anchoring. Both strands of every contig are indexed,
+    # because a read (typically the reverse mate) can come from either strand.
     k = 31
     contig_kmer_index: dict[str, list[int]] = {}  # kmer -> [contig indices]
 
     for idx, contig in enumerate(contigs):
         seq = contig.sequence.upper()
-        for i in range(len(seq) - k + 1):
-            kmer = seq[i : i + k]
-            if all(c in "ACGT" for c in kmer):
-                if kmer not in contig_kmer_index:
-                    contig_kmer_index[kmer] = []
-                contig_kmer_index[kmer].append(idx)
+        for strand_seq in (seq, seq.translate(COMPLEMENT_TABLE_UPPER)[::-1]):
+            for i in range(len(strand_seq) - k + 1):
+                kmer = strand_seq[i : i + k]
+                if all(c in "ACGT" for c in kmer):
+                    if kmer not in contig_kmer_index:
+                        contig_kmer_index[kmer] = []
+                    contig_kmer_index[kmer].append(idx)
 
     # Count paired-end links between contigs
     link_counts: dict[tuple[int, int], int] = defaultdict(int)

@@ -28,5 +28,7 @@ from metainformant.metagenomics.diversity import metrics
 alpha = metrics.alpha_diversity(abundances, metric="shannon")
 beta = metrics.beta_diversity(samples, metric="bray_curtis")
 curve = metrics.rarefaction_curve(abundances, n_iterations=20, seed=42)
-perm = metrics.permanova(distance_matrix, groups, n_permutations=999)
+perm = metrics.permanova(distance_matrix, groups, n_permutations=999, seed=42)
 ```
+
+`chao1`, `ace` and `fisher_alpha` need integer counts and raise `ValueError` for proportions; the other metrics accept counts or proportions. `rarefaction_curve`, `rarefy` and `permanova` are unseeded by default (`seed=None`); `ordination` seeds its NMDS start with `seed=42`.

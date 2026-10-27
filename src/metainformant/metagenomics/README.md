@@ -73,7 +73,7 @@ classified = taxonomy.classify_taxonomy(sequences, reference_db, reference_taxon
 from metainformant.metagenomics.shotgun import assembly, binning, profiling
 
 contigs = assembly.assemble_contigs(reads, k_range=[21, 33])
-bins = binning.bin_contigs(contig_sequences, coverage)
+bins = binning.bin_contigs(contig_sequences, coverage, marker_genes=marker_genes)  # contig ID -> marker names from a marker search; omit for bins without quality values
 profile = profiling.profile_community(reads, reference_sequences=refs, reference_taxonomy=tax)
 ```
 
@@ -81,7 +81,7 @@ profile = profiling.profile_community(reads, reference_sequences=refs, reference
 
 | Metric Type | Methods |
 |-------------|---------|
-| Alpha diversity | Shannon, Simpson, Chao1 |
+| Alpha diversity | Shannon, Simpson, inverse Simpson, Chao1, ACE, observed, Fisher's alpha, Pielou evenness |
 | Beta diversity | Bray-Curtis, Jaccard, Aitchison |
 | Statistical tests | PERMANOVA |
 | Ordination | PCoA, NMDS |
@@ -91,7 +91,7 @@ profile = profiling.profile_community(reads, reference_sequences=refs, reference
 ```python
 from metainformant.metagenomics.functional import annotation, pathways
 
-orfs = annotation.predict_orfs(contigs)
+orfs = annotation.predict_orfs(contig_sequence)
 annotations = annotation.annotate_genes(protein_sequences, hmm_db=profiles)
 pathway_results = pathways.reconstruct_pathways(gene_to_kos)
 ```

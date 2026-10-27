@@ -7,11 +7,11 @@ Microbiome and metagenomic analysis module for METAINFORMANT. Covers amplicon pr
 ## Contents
 
 - **amplicon/** - OTU clustering, ASV denoising, taxonomic classification
-- **shotgun/** - Metagenome assembly, binning, community profiling
+- **shotgun/** - Metagenome assembly, binning with marker-gene quality assessment, community profiling
 - **diversity/** - Alpha diversity (Shannon, Simpson, Chao1), beta diversity (Bray-Curtis, Jaccard, Aitchison), PERMANOVA, ordination
 - **functional/** - Gene annotation, ORF prediction, metabolic pathway reconstruction
 - **comparative/** - Differential abundance (ALDEx2-like, ANCOM-like), LEfSe-style effect sizes, biomarker discovery
-- **visualization/** - Krona charts, stacked bar plots, rarefaction curves, ordination plots
+- **visualization/** - Krona charts, stacked bar plots, rarefaction curves, ordination plots (PCoA or NMDS)
 
 ## Architecture
 

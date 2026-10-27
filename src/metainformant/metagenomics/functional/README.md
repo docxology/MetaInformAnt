@@ -14,10 +14,10 @@ Functional metagenomics analysis providing ORF prediction, HMM-based gene annota
 
 | Function | Description |
 |----------|-------------|
-| `annotation.predict_orfs()` | Predict open reading frames from assembled contigs |
-| `annotation.annotate_genes()` | HMM-based functional annotation against COG/KEGG/Pfam |
-| `annotation.classify_gene_families()` | Classify annotated genes into gene family categories |
-| `pathways.reconstruct_pathways()` | Map annotations to KEGG/MetaCyc metabolic pathways |
+| `annotation.predict_orfs()` | Predict open reading frames in a nucleotide sequence (six frames, NCBI `translation_table`) |
+| `annotation.annotate_genes()` | Score proteins against user-supplied profile matrices (COG/KEGG/Pfam by profile ID prefix); no E-values are computed |
+| `annotation.classify_gene_families()` | Assign genes to COG/KEGG/Pfam families from `reference_profiles` (no family without them) |
+| `pathways.reconstruct_pathways()` | Map KO/EC annotations to metabolic pathways (8 built-in KEGG pathways or custom definitions) |
 | `pathways.calculate_pathway_completeness()` | Score pathway completeness based on required reactions |
 | `pathways.compare_pathway_profiles()` | Compare pathway profiles across samples |
 | `pathways.find_differential_pathways()` | Find differentially abundant pathways between groups |
@@ -27,7 +27,7 @@ Functional metagenomics analysis providing ORF prediction, HMM-based gene annota
 ```python
 from metainformant.metagenomics.functional import annotation, pathways
 
-orfs = annotation.predict_orfs(contigs, min_length=100)
+orfs = annotation.predict_orfs(contig_sequence, min_length=100)
 annotations = annotation.annotate_genes(protein_sequences, hmm_db=profiles)
 pathway_results = pathways.reconstruct_pathways(gene_to_kos)
 completeness = pathways.calculate_pathway_completeness(pathway_def, observed_kos)

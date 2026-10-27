@@ -11,7 +11,9 @@ if the identity exceeds the threshold, or creates a new OTU centroid.
 
 from __future__ import annotations
 
+import math
 import os
+from collections import Counter
 from dataclasses import dataclass, field
 
 from metainformant.core.utils.logging import get_logger
@@ -20,6 +22,12 @@ logger = get_logger(__name__)
 
 # Config prefix for environment overrides
 _ENV_PREFIX = "META_"
+
+# Identity threshold used when neither an argument nor META_OTU_THRESHOLD is given
+_DEFAULT_OTU_THRESHOLD = 0.97
+
+# K-mer size of the clustering prefilter
+_PREFILTER_K = 8
 
 
 @dataclass
@@ -210,17 +218,19 @@ def calculate_identity(seq1: str, seq2: str) -> float:
 
 
 def _quick_identity(seq1: str, seq2: str) -> float:
-    """Fast approximate identity using k-mer overlap (pre-filter).
+    """Fast similarity heuristic from the shared 8-mer fraction.
 
-    Uses shared 8-mer fraction as a quick upper bound estimate to avoid
-    expensive full alignments for clearly dissimilar sequences.
+    This ranks candidate chimera parents. It is NOT a bound on alignment
+    identity: a single substitution destroys up to eight 8-mers, so a pair
+    with 98% identity typically shares well under 90% of its 8-mers. Use
+    ``_prefilter_may_reach_threshold`` to skip alignments safely.
 
     Args:
         seq1: First sequence.
         seq2: Second sequence.
 
     Returns:
-        Approximate identity estimate (0.0 to 1.0).
+        Shared 8-mer fraction (0.0 to 1.0).
     """
     k = 8
     if len(seq1) < k or len(seq2) < k:
@@ -247,9 +257,102 @@ def _quick_identity(seq1: str, seq2: str) -> float:
     return shared / total
 
 
+def _kmer_counts(seq: str, k: int = _PREFILTER_K) -> Counter[str]:
+    """Return the multiset of k-mers in ``seq`` (empty if ``seq`` is shorter than ``k``)."""
+    return Counter(seq[i : i + k] for i in range(len(seq) - k + 1))
+
+
+def _max_edits_for_identity(shorter_length: int, threshold: float) -> int:
+    """Largest number of non-matching alignment columns compatible with ``identity >= threshold``.
+
+    ``calculate_identity`` reports ``M / (M + e)``, where ``M`` is the number of
+    matching columns and ``e`` the number of mismatch plus gap columns. Hence
+    ``identity >= t`` implies ``e <= M * (1 - t) / t``, and ``M`` cannot exceed the
+    shorter sequence length.
+    """
+    # The epsilon only ever raises the bound, so float rounding cannot cause a false rejection.
+    return int(math.floor(shorter_length * (1.0 - threshold) / threshold + 1e-9))
+
+
+def _prefilter_may_reach_threshold(
+    seq: str,
+    seq_kmers: Counter[str],
+    centroid: str,
+    centroid_kmers: Counter[str],
+    threshold: float,
+    k: int = _PREFILTER_K,
+) -> bool:
+    """Decide whether aligning ``seq`` to ``centroid`` can possibly reach ``threshold``.
+
+    Uses the q-gram lemma (Ukkonen 1992): two strings within edit distance ``e``
+    share at least ``max(len) - k + 1 - k * e`` k-mers (as multisets), because one
+    edit touches at most ``k`` k-mers. An alignment with identity ``>= threshold``
+    has at most ``_max_edits_for_identity`` edits, so a pair sharing fewer k-mers
+    than that cannot qualify. The test is conservative: it returns ``False`` only
+    when ``calculate_identity(seq, centroid) >= threshold`` is impossible, so
+    clustering is identical with and without the prefilter.
+
+    Args:
+        seq: Query sequence (gap characters removed).
+        seq_kmers: k-mer multiset of ``seq``.
+        centroid: Centroid sequence.
+        centroid_kmers: k-mer multiset of ``centroid``.
+        threshold: Identity threshold in (0, 1].
+        k: K-mer size used for ``seq_kmers`` and ``centroid_kmers``.
+
+    Returns:
+        False if the pair is guaranteed to fall below the threshold, else True.
+    """
+    shorter = min(len(seq), len(centroid))
+    if shorter < k:
+        return True
+    longer = max(len(seq), len(centroid))
+    required = longer - k + 1 - k * _max_edits_for_identity(shorter, threshold)
+    if required <= 0:
+        return True
+    shared = sum((seq_kmers & centroid_kmers).values())
+    return shared >= required
+
+
+def _resolve_threshold(threshold: float | None) -> float:
+    """Resolve the clustering identity threshold.
+
+    An explicit argument always wins. When it is None, ``META_OTU_THRESHOLD`` is
+    used if set, and the built-in default otherwise.
+
+    Args:
+        threshold: Explicit threshold or None.
+
+    Returns:
+        Validated threshold in (0.0, 1.0].
+
+    Raises:
+        ValueError: If the explicit threshold, or the environment variable when it
+            is consulted, is not a number in (0.0, 1.0].
+    """
+    if threshold is not None:
+        value = float(threshold)
+        if not 0.0 < value <= 1.0:  # also rejects NaN
+            raise ValueError(f"Threshold must be in (0.0, 1.0], got {threshold}")
+        return value
+
+    env_name = f"{_ENV_PREFIX}OTU_THRESHOLD"
+    raw = os.environ.get(env_name)
+    if raw is None or not raw.strip():
+        return _DEFAULT_OTU_THRESHOLD
+    try:
+        value = float(raw)
+    except ValueError:
+        raise ValueError(f"{env_name} must be a number in (0.0, 1.0], got {raw!r}") from None
+    if not 0.0 < value <= 1.0:
+        raise ValueError(f"{env_name} must be in (0.0, 1.0], got {raw!r}")
+    logger.info(f"Using threshold from {env_name}: {value}")
+    return value
+
+
 def cluster_otus(
     sequences: dict[str, str],
-    threshold: float = 0.97,
+    threshold: float | None = None,
     abundance: dict[str, int] | None = None,
     sort_by: str = "length",
     prefilter: bool = True,
@@ -265,17 +368,23 @@ def cluster_otus(
 
     Args:
         sequences: Dictionary mapping sequence IDs to nucleotide sequences.
-        threshold: Minimum sequence identity to cluster (0.0 to 1.0, default 0.97).
+        threshold: Minimum sequence identity to cluster, in (0.0, 1.0]. If None, the
+            ``META_OTU_THRESHOLD`` environment variable is used when set (it is
+            validated), otherwise 0.97. An explicit value always takes precedence
+            over the environment variable.
         abundance: Optional dictionary of sequence abundances for sorting.
             If None and sort_by="abundance", sequences are sorted by length.
         sort_by: Sorting strategy - "length" (default) or "abundance".
-        prefilter: If True, use k-mer pre-filter for speed (default True).
+        prefilter: If True (default), skip alignments that a k-mer count test proves
+            cannot reach the threshold. The test is conservative, so the clustering
+            is identical with and without it; it only saves time.
 
     Returns:
         ClusteringResult with OTU assignments and statistics.
 
     Raises:
-        ValueError: If threshold is not in (0.0, 1.0] or sequences is empty.
+        ValueError: If sequences is empty, if threshold is not in (0.0, 1.0], or if
+            threshold is None and META_OTU_THRESHOLD is not a number in (0.0, 1.0].
 
     Examples:
         >>> seqs = {"s1": "ATCGATCGATCG", "s2": "ATCGATCGATCG", "s3": "TTTTAAAA"}
@@ -285,17 +394,7 @@ def cluster_otus(
     """
     if not sequences:
         raise ValueError("Input sequences dictionary must not be empty")
-    if not 0.0 < threshold <= 1.0:
-        raise ValueError(f"Threshold must be in (0.0, 1.0], got {threshold}")
-
-    # Environment override for default threshold
-    env_threshold = os.environ.get(f"{_ENV_PREFIX}OTU_THRESHOLD")
-    if env_threshold is not None:
-        try:
-            threshold = float(env_threshold)
-            logger.info(f"Using threshold from environment: {threshold}")
-        except ValueError:
-            logger.warning(f"Invalid {_ENV_PREFIX}OTU_THRESHOLD value: {env_threshold}, using {threshold}")
+    threshold = _resolve_threshold(threshold)
 
     logger.info(f"Clustering {len(sequences)} sequences at {threshold:.2f} identity threshold")
 
@@ -306,7 +405,7 @@ def cluster_otus(
         sorted_ids = sorted(sequences.keys(), key=lambda x: -len(sequences[x]))
 
     otus: list[OTU] = []
-    prefilter_threshold = threshold - 0.10  # k-mer filter is a loose upper bound
+    centroid_kmers: list[Counter[str]] = []  # k-mer multiset per OTU centroid (prefilter only)
 
     for seq_id in sorted_ids:
         seq = sequences[seq_id].upper().replace("-", "").replace(".", "")
@@ -314,17 +413,18 @@ def cluster_otus(
             logger.warning(f"Skipping empty sequence: {seq_id}")
             continue
 
+        seq_kmers = _kmer_counts(seq) if prefilter else Counter()
         best_identity = 0.0
         best_otu_idx = -1
 
         for idx, otu in enumerate(otus):
             centroid_seq = otu.centroid_sequence
 
-            # Pre-filter: skip expensive alignment if k-mer overlap is too low
-            if prefilter and len(seq) >= 8 and len(centroid_seq) >= 8:
-                quick_id = _quick_identity(seq, centroid_seq)
-                if quick_id < prefilter_threshold:
-                    continue
+            # Pre-filter: skip the alignment only when it provably cannot reach the threshold
+            if prefilter and not _prefilter_may_reach_threshold(
+                seq, seq_kmers, centroid_seq, centroid_kmers[idx], threshold
+            ):
+                continue
 
             identity = calculate_identity(seq, centroid_seq)
             if identity >= threshold and identity > best_identity:
@@ -342,6 +442,7 @@ def cluster_otus(
                 size=1,
             )
             otus.append(new_otu)
+            centroid_kmers.append(seq_kmers)
 
     # Build OTU table
     otu_table = {otu.centroid_id: otu.size for otu in otus}
@@ -383,11 +484,18 @@ def filter_chimeras(
         sequences: Dictionary mapping sequence IDs to nucleotide sequences.
         reference_db: Optional reference database of known non-chimeric sequences.
         abundance: Optional abundance counts for abundance-based sorting.
-        min_divergence: Minimum divergence ratio between chimeric model and parents.
+        min_divergence: Minimum divergence, in percentage points of identity (the
+            UCHIME ``mindiv`` convention, so 1.0 means 1%). A chimeric model only
+            counts if it explains the query better than the closest single parent
+            by at least this margin: ``100 * (identity(query, model) -
+            identity(query, closest parent)) >= min_divergence``.
         min_score: Minimum chimera score threshold to flag as chimeric (0.0-1.0).
 
     Returns:
         Dictionary mapping sequence IDs to boolean (True = chimeric, False = non-chimeric).
+
+    Raises:
+        ValueError: If min_divergence is negative or NaN.
 
     Examples:
         >>> seqs = {"s1": "AAAAAAAAAA", "s2": "TTTTTTTTTT", "s3": "AAAAATTTTT"}
@@ -395,6 +503,8 @@ def filter_chimeras(
         >>> isinstance(chimeras, dict)
         True
     """
+    if math.isnan(min_divergence) or min_divergence < 0:
+        raise ValueError(f"min_divergence must be a non-negative percentage, got {min_divergence}")
     if not sequences:
         return {}
 
@@ -499,14 +609,12 @@ def filter_chimeras(
 
                 max_parent_identity = max(parent_a_identity, parent_b_identity)
 
-                # Chimera score: model fits better than either parent alone
+                # Chimera score: model fits better than either parent alone, and by at least
+                # ``min_divergence`` percentage points (UCHIME ``mindiv``)
                 if max_parent_identity > 0:
                     divergence = model_identity - max_parent_identity
-                    chimera_score = divergence / max_parent_identity if max_parent_identity > 0 else 0.0
-                else:
-                    chimera_score = 0.0
-
-                best_chimera_score = max(best_chimera_score, chimera_score)
+                    if divergence * 100.0 >= min_divergence:
+                        best_chimera_score = max(best_chimera_score, divergence / max_parent_identity)
 
         is_chimeric = best_chimera_score >= min_score
         chimera_flags[seq_id] = is_chimeric

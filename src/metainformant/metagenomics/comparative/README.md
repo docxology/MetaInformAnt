@@ -30,3 +30,5 @@ results = differential_abundance.differential_abundance(
 indicators = differential_abundance.indicator_species(counts, groups, taxa_names, seed=42)
 biomarkers = differential_abundance.biomarker_discovery(counts, groups, taxa_names, seed=42)
 ```
+
+`counts` may be a list of lists, a NumPy array or a pandas DataFrame. The randomised procedures (`aldex2_like` Monte Carlo, permutations, random forest) are unseeded by default (`seed=None`); pass `seed` for reproducible results. Without SciPy the Kruskal-Wallis test is computed in pure Python for any number of groups.
