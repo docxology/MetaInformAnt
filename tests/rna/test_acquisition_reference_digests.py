@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import random
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -64,6 +65,8 @@ def test_disappearing_index_is_never_accepted_from_cache(tmp_path: Path) -> None
 def test_native_reference_aliases_and_frozen_corruption_rejection(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    if shutil.which("kallisto") is None:
+        pytest.skip("Real Kallisto executable is required")
     data = tmp_path / "data"
     work = data / "test_species/work"
     index = work / "index/Test_species.idx"

@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 import sys
 import threading
 from pathlib import Path
@@ -579,6 +580,8 @@ def test_invalid_abundance_contract_remains_unconfirmed(observation_files, tmp_p
 
 @pytest.mark.external_tool
 def test_thin_cli_renders_and_verifies_real_pdf(observation_files, tmp_path: Path, capsys) -> None:
+    if shutil.which("pandoc") is None:
+        pytest.skip("pandoc is required to render the observation PDF")
     from metainformant.rna.engine.campaign_observation_cli import main
     from metainformant.rna.engine.campaign_observation_report import (
         verify_observation_bundle,

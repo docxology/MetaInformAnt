@@ -14,8 +14,8 @@ from scripts.quality.verify_real_implementation_policy import (
     scan_repo,
 )
 
-# Measured 2026-10-25 with the ``monkeypatch-setattr`` rule:
-# 104 rebinding sites across 21 tracked files. These are pre-existing
+# Measured 2026-10-26 with the ``monkeypatch-setattr`` rule:
+# 102 rebinding sites across 21 tracked files. These are pre-existing
 # ``monkeypatch.setattr`` calls that replace functions, methods, lambdas or
 # module attributes with test doubles -- a documented violation of
 # tests/REAL_IMPLEMENTATION_TESTING_POLICY.md ("pytest.MonkeyPatch for
@@ -26,7 +26,7 @@ from scripts.quality.verify_real_implementation_policy import (
 # shrink. When a site is migrated to a real implementation, re-measure with
 # ``python scripts/quality/verify_real_implementation_policy.py`` and lower
 # this number; any other change is a regression.
-KNOWN_MONKEYPATCH_SETATTR_SITES = 104
+KNOWN_MONKEYPATCH_SETATTR_SITES = 102
 
 
 @lru_cache(maxsize=1)
@@ -49,7 +49,7 @@ def test_repo_real_implementation_policy_scan_passes() -> None:
 def test_monkeypatch_setattr_debt_is_reported_and_bounded() -> None:
     """The scanner must keep reporting the known monkeypatch.setattr debt.
 
-    104 sites across 21 files rebind callables/attributes via
+    102 sites across 21 files rebind callables/attributes via
     ``monkeypatch.setattr``. Migration to real implementations is tracked
     follow-up work; the scanner reports them so the repository can see the
     debt, and this test documents the exact allowlist size and its rationale

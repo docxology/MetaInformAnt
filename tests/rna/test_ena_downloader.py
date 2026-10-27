@@ -77,8 +77,14 @@ class TestENADownloader(unittest.TestCase):
         downloader = ENADownloader(timeout=30, retries=1, retry_delay_seconds=1)
         output_dir = Path(self.test_dir)
         calls = []
+        probes = []
 
         def fake_curl(command, **_kwargs):
+            if "-o" not in command:
+                # Remote-size probe after an integrity failure; an unknown size
+                # keeps the fresh-retry path these tests exercise.
+                probes.append(command)
+                return subprocess.CompletedProcess(command, 22, "", "")
             calls.append(command)
             partial = Path(command[command.index("-o") + 1])
             partial.parent.mkdir(parents=True, exist_ok=True)
@@ -102,6 +108,7 @@ class TestENADownloader(unittest.TestCase):
         self.assertTrue(success, message)
         self.assertEqual([path.name for path in files], ["SRR1.fastq.gz"])
         self.assertEqual(len(calls), 2)
+        self.assertEqual(len(probes), 1)
         self.assertTrue((output_dir / "SRR1.fastq.gz").is_file())
         self.assertTrue((output_dir / "SRR1.fastq.gz.part.invalid").is_file())
 
@@ -114,7 +121,7 @@ class TestENADownloader(unittest.TestCase):
         calls = []
         partial_sizes = []
 
-        def fake_head(_url):
+        def fake_head(_url, **_kwargs):
             return 10_000_000
 
         def fake_curl(command, **_kwargs):
@@ -154,8 +161,14 @@ class TestENADownloader(unittest.TestCase):
         downloader = ENADownloader(timeout=30, retries=1, integrity_retries=2, retry_delay_seconds=1)
         output_dir = Path(self.test_dir)
         calls = []
+        probes = []
 
         def fake_curl(command, **_kwargs):
+            if "-o" not in command:
+                # Remote-size probe after an integrity failure; an unknown size
+                # keeps the fresh-retry path these tests exercise.
+                probes.append(command)
+                return subprocess.CompletedProcess(command, 22, "", "")
             calls.append(command)
             partial = Path(command[command.index("-o") + 1])
             partial.parent.mkdir(parents=True, exist_ok=True)
@@ -178,6 +191,7 @@ class TestENADownloader(unittest.TestCase):
 
         self.assertTrue(success, message)
         self.assertEqual(len(calls), 3)
+        self.assertEqual(len(probes), 2)
         self.assertEqual(len(list(output_dir.glob("SRR2.fastq.gz.part.invalid*"))), 1)
         manifest = output_dir / ".transfer_integrity_failures.tsv"
         self.assertEqual(len(manifest.read_text().splitlines()), 3)

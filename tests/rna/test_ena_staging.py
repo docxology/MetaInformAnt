@@ -161,7 +161,10 @@ def test_unknown_length_transfer_bound_includes_retained_prefix(tmp_path: Path, 
 
 @pytest.mark.parametrize("slots", [1, 2])
 def test_publication_serialization_has_a_concurrent_negative_control(tmp_path: Path, slots: int) -> None:
-    payload = gzip.compress(b"@r\nACGT\n+\n!!!!\n" * 2_000_000, compresslevel=0, mtime=0)
+    # ~30 MB so both publications overlap long enough to observe, in few
+    # records so strict record validation stays cheap under coverage tracing.
+    record = b"@r\n" + b"A" * 10_000 + b"\n+\n" + b"!" * 10_000 + b"\n"
+    payload = gzip.compress(record * 1_500, compresslevel=0, mtime=0)
     barrier = threading.Barrier(2)
     stopped = threading.Event()
     maximum = [0]

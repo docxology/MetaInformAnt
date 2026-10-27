@@ -23,13 +23,14 @@ returns a non-zero status.
 
 The full `coverage` mode measures the complete maintained package, including
 optional domain facades that are not all exercised by a single CI environment.
-Its blocking baseline is currently `58.00%`, matching the latest hosted full
-suite observation (`58.01%`). This is a real gate, not an ignored check. Raise
-it through `COVERAGE_MINIMUM` only after adding tests and recording the new
-measured baseline:
+Its blocking baseline is currently `70.00%`, one point under the hosted full
+suite observation of `71.02%` (Test Suite run 40240714837, 2026-10-25) so that
+runner variance cannot fail an unchanged tree. This is a real gate, not an
+ignored check. Raise it through `COVERAGE_MINIMUM` only after adding tests and
+recording the new measured baseline:
 
 ```bash
-COVERAGE_MINIMUM=60.00 bash scripts/package/test.sh --mode coverage
+COVERAGE_MINIMUM=71.00 bash scripts/package/test.sh --mode coverage
 ```
 
 The smaller `coverage-fast` mode intentionally uses `--cov-fail-under=0` for
@@ -343,13 +344,14 @@ The test suite provides comprehensive coverage:
 ```python-snippet
 import pytest
 from metainformant.core.io import ensure_directory
-from metainformant.some_module import some_function
+from metainformant.dna.sequence.core import gc_content
+from metainformant.protein.database.uniprot import fetch_uniprot_fasta
 
-class TestSomeFunction:
+class TestGcContent:
     def setup_method(self):
         """Setup test environment."""
-        self.output_dir = ensure_directory("output/test_some_module")
-        self.test_data = {...}
+        self.output_dir = ensure_directory("output/test_dna_sequence")
+        self.test_data = "ATGCGC"
 
     def teardown_method(self):
         """Cleanup after test."""
@@ -358,13 +360,13 @@ class TestSomeFunction:
 
     def test_basic_functionality(self):
         """Test basic function behavior."""
-        result = some_function(self.test_data)
-        assert result is not None
+        result = gc_content(self.test_data)
+        assert result == pytest.approx(4 / 6)
 
     def test_edge_cases(self):
         """Test edge cases and error conditions."""
         with pytest.raises(ValueError):
-            some_function(invalid_input)
+            gc_content("")
 
     @pytest.mark.slow
     def test_performance_intensive(self):
@@ -375,12 +377,11 @@ class TestSomeFunction:
     @pytest.mark.network
     def test_network_dependent(self):
         """Test requiring network access."""
-        # Skip if offline
-        try:
-            result = some_network_function()
-            assert result is not None
-        except ConnectionError:
+        # Skip if offline (fetch_uniprot_fasta returns None when the request fails)
+        result = fetch_uniprot_fasta("P12345")
+        if result is None:
             pytest.skip("Network not available")
+        assert result.startswith(">")
 ```
 
 ## Network and External Tool Testing
@@ -405,7 +406,7 @@ def _check_online():
 @pytest.mark.skipif(not _check_online(), reason="Network not available")
 def test_uniprot_api():
     """Test UniProt API with real network call."""
-    from metainformant.protein.uniprot import map_ids_uniprot
+    from metainformant.protein.database.uniprot import map_ids_uniprot
     
     result = map_ids_uniprot(['P12345'], from_db='UniProtKB_AC-ID', to_db='Gene_Name')
     assert len(result) >= 0  # May be empty if ID not found
