@@ -12,6 +12,7 @@ external dependencies beyond the standard library.
 from __future__ import annotations
 
 import math
+import numbers
 import random
 from typing import Any
 
@@ -25,17 +26,28 @@ logger = get_logger(__name__)
 # ---------------------------------------------------------------------------
 
 
+def _make_rng(random_state: Any) -> random.Random:
+    """The generator for ``random_state`` (``None``, an integer seed or a ``random.Random``).
+
+    A ``random.Random`` is used as given, an integer seeds a fresh one and ``None`` draws system entropy. The global
+    ``random`` state is never seeded or consumed.
+    """
+    if isinstance(random_state, random.Random):
+        return random_state
+    if isinstance(random_state, numbers.Integral):
+        return random.Random(int(random_state))
+    return random.Random(random_state)
+
+
 def _log_factorial(n: int) -> float:
-    """Compute log(n!) using Stirling's approximation for large n."""
+    """Compute log(n!) to floating-point precision as ``lgamma(n + 1)``.
+
+    (An earlier version used Stirling's approximation above n = 20, which is off by about 1 / (12 n) in the logarithm
+    and shifted over-representation p-values by around one percent.)
+    """
     if n <= 1:
         return 0.0
-    if n <= 20:
-        result = 0.0
-        for i in range(2, n + 1):
-            result += math.log(i)
-        return result
-    # Stirling's approximation
-    return n * math.log(n) - n + 0.5 * math.log(2 * math.pi * n)
+    return math.lgamma(n + 1)
 
 
 def _log_comb(n: int, k: int) -> float:
@@ -333,19 +345,34 @@ def gsea(
     n_permutations: int = 1000,
     min_size: int = 15,
     max_size: int = 500,
+    random_state: int | random.Random | None = None,
 ) -> list[dict]:
-    """Gene Set Enrichment Analysis.
+    """Preranked Gene Set Enrichment Analysis (Subramanian et al. 2005).
 
-    Computes enrichment scores for gene sets against a ranked gene list,
-    normalises by permutation, and computes FDR q-values.
+    The enrichment score (ES) of a gene set is the maximum deviation from zero of a weighted Kolmogorov-Smirnov running
+    sum down the ranked list: each member adds ``|rank metric| / (sum of the members' |rank metric|)`` and each
+    non-member subtracts ``1 / (number of non-members)``. Significance comes from a gene-set permutation null:
+    ``n_permutations`` random gene sets of the same size are drawn from the ranked list (so the ranking, and with it the
+    weights, stay fixed) and scored the same way. Then
+
+    - the nominal p-value is one-sided in the direction of the observed ES and is taken against the part of the null
+      with the same sign, ``(1 + #(null ES at least as extreme)) / (1 + #(null ES of that sign))``, so a set that is
+      no more enriched than a random one gets a roughly uniform p-value and a set concentrated at either end of the
+      ranking gets a small one;
+    - NES is the observed ES divided by the mean magnitude of the null ES of the same sign (NaN when no permutation
+      produced an ES of that sign);
+    - FDR is the Benjamini-Hochberg adjustment of the p-values.
 
     Args:
         ranked_genes: List of ``(gene_name, rank_metric)`` tuples, sorted
             by rank metric (e.g. signed -log10 p-value or t-statistic).
         gene_sets: Dictionary mapping term ID to gene set (list or set).
-        n_permutations: Number of permutations for p-value estimation.
+        n_permutations: Number of random gene sets drawn per tested gene set.
         min_size: Minimum gene set size to test.
         max_size: Maximum gene set size to test.
+        random_state: Seed (or a ``random.Random`` generator) for the random gene sets. The same seed gives the same
+            p-values, NES and FDR; the global ``random`` state is neither seeded nor consumed. ``None`` draws fresh
+            entropy.
 
     Returns:
         List of result dicts sorted by FDR, each with:
@@ -354,6 +381,8 @@ def gsea(
     """
     ranked_list = [g[0] for g in ranked_genes]
     rank_weights = [float(g[1]) for g in ranked_genes]
+    rng = _make_rng(random_state)
+    n_genes = len(ranked_list)
 
     results: list[dict] = []
 
@@ -367,30 +396,27 @@ def gsea(
         obs = compute_enrichment_score(ranked_list, gs, weighted=True, weights=rank_weights)
         obs_es = obs["es"]
 
-        # Permutation null distribution
+        # Null distribution: the ES of random gene sets with as many members as this one, drawn from the ranked list
+        set_size = len(obs["hit_indices"])
         null_es: list[float] = []
         for _ in range(n_permutations):
-            perm_weights = list(rank_weights)
-            random.shuffle(perm_weights)
-            perm_result = compute_enrichment_score(ranked_list, gs, weighted=True, weights=perm_weights)
-            null_es.append(perm_result["es"])
+            random_set = {ranked_list[i] for i in rng.sample(range(n_genes), set_size)}
+            null_es.append(compute_enrichment_score(ranked_list, random_set, weighted=True, weights=rank_weights)["es"])
 
-        # Normalise: NES = ES / mean(|null_ES|) for same sign
-        pos_null = [e for e in null_es if e > 0]
-        neg_null = [e for e in null_es if e < 0]
-
+        # Only the part of the null with the sign of the observed ES is used, for the p-value and for the NES
         if obs_es >= 0:
-            mean_null = sum(pos_null) / len(pos_null) if pos_null else 1.0
+            same_sign_null = [e for e in null_es if e >= 0]
+            n_as_extreme = sum(1 for e in same_sign_null if e >= obs_es)
+            magnitudes = [e for e in null_es if e > 0]
         else:
-            mean_null = -sum(neg_null) / len(neg_null) if neg_null else 1.0
+            same_sign_null = [e for e in null_es if e < 0]
+            n_as_extreme = sum(1 for e in same_sign_null if e <= obs_es)
+            magnitudes = [-e for e in null_es if e < 0]
 
-        nes = obs_es / mean_null if mean_null != 0 else 0.0
+        p_value = (n_as_extreme + 1) / (len(same_sign_null) + 1)
 
-        # P-value
-        if obs_es >= 0:
-            p_value = (sum(1 for e in null_es if e >= obs_es) + 1) / (n_permutations + 1)
-        else:
-            p_value = (sum(1 for e in null_es if e <= obs_es) + 1) / (n_permutations + 1)
+        # NES = ES / mean magnitude of the same-signed null ES
+        nes = obs_es / (sum(magnitudes) / len(magnitudes)) if magnitudes else float("nan")
 
         # Leading edge genes
         le_idx = obs["leading_edge_index"]

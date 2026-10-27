@@ -21,7 +21,8 @@ class OllamaConfig:
         top_p: Nucleus sampling threshold (0.0-1.0).
         top_k: Top-k sampling limit.
         timeout: Request timeout in seconds.
-        max_retries: Number of retry attempts on failure.
+        max_retries: Maximum number of attempts per request, the first one included (so 1 means "do not retry"); must
+            be at least 1. A failed connection is retried with an exponentially growing pause between attempts.
         stream: Whether to stream responses by default.
         context_length: Maximum context window size.
         num_predict: Optional maximum generated-token count. ``None`` leaves
@@ -68,6 +69,8 @@ class OllamaConfig:
 
         if self.timeout <= 0:
             raise ValueError(f"timeout must be > 0, got {self.timeout}")
+        if self.max_retries < 1:
+            raise ValueError(f"max_retries must be >= 1, got {self.max_retries}")
         if self.num_predict is not None and self.num_predict <= 0:
             raise ValueError(f"num_predict must be > 0 when set, got {self.num_predict}")
 

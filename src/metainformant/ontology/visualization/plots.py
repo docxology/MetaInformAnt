@@ -202,6 +202,7 @@ def pathway_network_plot(
     top_n: int = 30,
     title: str = "Pathway Similarity Network",
     figsize: tuple[float, float] = (9, 9),
+    layout_seed: int = 42,
     ax: Optional[Any] = None,
     style: Optional[Any] = None,
     **kwargs: Any,
@@ -220,6 +221,8 @@ def pathway_network_plot(
         top_n: Maximum number of nodes to render.
         title: Plot title.
         figsize: Figure dimensions in inches.
+        layout_seed: Seed of the random starting positions of the spring layout. The same seed gives the same layout;
+            the global ``random`` state is neither seeded nor consumed.
 
     Returns:
         ``matplotlib.figure.Figure``.
@@ -268,8 +271,10 @@ def pathway_network_plot(
     import math as _math
     import random
 
-    random.seed(42)
-    positions: dict[str, list[float]] = {n["term_id"]: [random.uniform(-1, 1), random.uniform(-1, 1)] for n in nodes}
+    layout_rng = random.Random(layout_seed)
+    positions: dict[str, list[float]] = {
+        n["term_id"]: [layout_rng.uniform(-1, 1), layout_rng.uniform(-1, 1)] for n in nodes
+    }
 
     def _layout(pos: dict, edges_: list, iterations: int = 80) -> dict:
         ids = list(pos.keys())

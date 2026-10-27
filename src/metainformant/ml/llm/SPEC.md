@@ -64,6 +64,8 @@ class Chain(ABC, Generic[T, R]):
 
 ## Error Handling
 
-- `ConnectionError`: Server unreachable
-- `RuntimeError`: API errors (4xx/5xx)
-- Automatic retry with exponential backoff
+- `ConnectionError`: Server unreachable (after `config.max_retries` attempts)
+- `RuntimeError`: API errors (4xx/5xx); not retried
+- `ValueError`: `max_retries` below 1 (rejected by `OllamaConfig`; also checked by the client before a request)
+- Automatic retry of connection failures with exponential backoff (1 s, 2 s, 4 s, ...); `OllamaConfig.max_retries`
+  (default 3) is the maximum number of attempts per request, the first one included, and must be at least 1

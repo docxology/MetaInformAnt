@@ -7,21 +7,41 @@ statistics and filters.
 
 from __future__ import annotations
 
+import weakref
 from typing import Any, Dict, Iterable, List, Set, Tuple
 
 from metainformant.core.data import validation
 from metainformant.core.utils import errors, logging
-from metainformant.ontology.core.types import Ontology
+from metainformant.ontology.core.types import Ontology, Relationship, Term
 
 logger = logging.get_logger(__name__)
 
-# Global cache for query results
-_query_cache: Dict[str, Any] = {}
+
+class _CacheEntry:
+    """Cached query results of one ontology, valid for as long as the ontology keeps the structure in ``stamp``."""
+
+    __slots__ = ("ref", "stamp", "results")
+
+    def __init__(self, ref: "weakref.ReferenceType[Ontology]", stamp: Tuple[int, ...]) -> None:
+        self.ref = ref
+        self.stamp = stamp
+        self.results: Dict[Tuple[Any, ...], List[str]] = {}
+
+
+# Global cache for query results, one entry per ontology object. An entry holds a weak reference to its ontology, so it
+# is dropped when the ontology is garbage collected and can never be mistaken for a different ontology that happens to
+# reuse the same ``id``; it is also discarded when the ontology's structure stamp changes (see _structure_stamp).
+_query_cache: Dict[int, _CacheEntry] = {}
 _cache_enabled = True
 
 
 def clear_cache() -> None:
-    """Clear the ontology query cache."""
+    """Clear the ontology query cache.
+
+    Cached ``ancestors`` / ``descendants`` results are discarded automatically when terms or relationships are added to
+    an ontology and when the ontology is garbage collected. Call this after editing ``parents_of`` / ``children_of`` in
+    place without adding or removing any entry.
+    """
     global _query_cache
     _query_cache = {}
     logger.info("Ontology query cache cleared.")
@@ -34,12 +54,37 @@ def set_cache_enabled(enabled: bool) -> None:
     logger.info(f"Ontology query cache {'enabled' if enabled else 'disabled'}.")
 
 
-def _get_cache_key(onto: Ontology, func_name: str, *args: Any, **kwargs: Any) -> str:
-    """Generate a cache key for a function call, including ontology identity."""
-    key_parts = [str(id(onto)), func_name]
-    key_parts.extend(str(arg) for arg in args)
-    key_parts.extend(f"{k}={v}" for k, v in sorted(kwargs.items()))
-    return "|".join(key_parts)
+def _structure_stamp(onto: Ontology) -> Tuple[int, ...]:
+    """Cheap fingerprint of the structure that ``ancestors`` / ``descendants`` depend on.
+
+    ``Ontology.add_term`` and ``Ontology.add_relationship`` (the ways to extend an ontology) each grow at least one of
+    these containers, as does adding entries to them directly, so any such change invalidates the cached results.
+    Editing a parent or child set *in place* without changing any container size is not detected; call
+    :func:`clear_cache` after doing that.
+    """
+    return (len(onto.terms), len(onto.relationships), len(onto.parents_of), len(onto.children_of))
+
+
+def _results_cache(onto: Ontology) -> Dict[Tuple[Any, ...], List[str]]:
+    """The cached results of ``onto`` that are still valid for its current structure (an empty dict if none are)."""
+    key = id(onto)
+    stamp = _structure_stamp(onto)
+    entry = _query_cache.get(key)
+    if entry is None or entry.ref() is not onto or entry.stamp != stamp:
+
+        def _forget(ref: "weakref.ReferenceType[Ontology]", key: int = key) -> None:
+            current = _query_cache.get(key)
+            if current is not None and current.ref is ref:
+                del _query_cache[key]
+
+        entry = _CacheEntry(weakref.ref(onto, _forget), stamp)
+        _query_cache[key] = entry
+    return entry.results
+
+
+def _get_cache_key(func_name: str, *args: Any, **kwargs: Any) -> Tuple[Any, ...]:
+    """Key of one function call within the results cache of a single ontology."""
+    return (func_name, *args, *sorted(kwargs.items()))
 
 
 def ancestors(onto: Ontology, term_id: str, relation_type: str = "is_a") -> Set[str]:
@@ -76,14 +121,15 @@ def ancestors(onto: Ontology, term_id: str, relation_type: str = "is_a") -> Set[
     if term_id not in onto.terms:
         raise errors.TermNotFoundError(f"Term '{term_id}' not found in ontology.")
 
-    cache_key = _get_cache_key(onto, "ancestors", term_id, relation_type)
-    if _cache_enabled and cache_key in _query_cache:
-        return set(_query_cache[cache_key])
+    cached = _results_cache(onto) if _cache_enabled else None
+    cache_key = _get_cache_key("ancestors", term_id, relation_type)
+    if cached is not None and cache_key in cached:
+        return set(cached[cache_key])
 
     ancestors_set = set(onto.get_ancestors(term_id, relation_type))
 
-    if _cache_enabled:
-        _query_cache[cache_key] = list(ancestors_set)
+    if cached is not None:
+        cached[cache_key] = list(ancestors_set)
 
     return ancestors_set
 
@@ -123,14 +169,15 @@ def descendants(onto: Ontology, term_id: str, relation_type: str = "is_a") -> Se
     if term_id not in onto.terms:
         raise errors.TermNotFoundError(f"Term '{term_id}' not found in ontology.")
 
-    cache_key = _get_cache_key(onto, "descendants", term_id, relation_type)
-    if _cache_enabled and cache_key in _query_cache:
-        return set(_query_cache[cache_key])
+    cached = _results_cache(onto) if _cache_enabled else None
+    cache_key = _get_cache_key("descendants", term_id, relation_type)
+    if cached is not None and cache_key in cached:
+        return set(cached[cache_key])
 
     descendants_set = set(onto.get_descendants(term_id, relation_type))
 
-    if _cache_enabled:
-        _query_cache[cache_key] = list(descendants_set)
+    if cached is not None:
+        cached[cache_key] = list(descendants_set)
 
     return descendants_set
 
@@ -307,7 +354,10 @@ def get_subontology(onto: Ontology, root_terms: Iterable[str], relation_type: st
         relation_type: Type of relationship to traverse.
 
     Returns:
-        New Ontology object containing the sub-ontology.
+        New Ontology object containing the root terms and their descendants, the ``relation_type`` relationships among
+        them, and (for ``"is_a"``) the parent/child links among them. Parents outside the sub-ontology are not
+        carried over, so a root term whose own parents were left out is a root of the sub-ontology
+        (``get_roots``) and ``get_ancestors`` stays inside it.
 
     Examples:
         >>> bp_ontology = get_subontology(go_ontology, ["GO:0008150"])
@@ -319,7 +369,7 @@ def get_subontology(onto: Ontology, root_terms: Iterable[str], relation_type: st
     validation.validate_not_empty(roots_list, "root_terms")
 
     all_terms = set()
-    for root in root_terms:
+    for root in roots_list:
         all_terms.add(root)
         all_terms.update(descendants(onto, root, relation_type))
 
@@ -328,12 +378,21 @@ def get_subontology(onto: Ontology, root_terms: Iterable[str], relation_type: st
     sub_relationships = [
         rel
         for rel in onto.relationships
-        if rel.source in all_terms and rel.target in all_terms and rel.relation_type == relation_type
+        if rel.source in sub_terms and rel.target in sub_terms and rel.relation_type == relation_type
     ]
 
-    from metainformant.ontology.core.types import create_ontology
-
-    sub_onto = create_ontology(terms=sub_terms, relationships=sub_relationships, **onto.metadata)
+    # Building the result through add_term would take every parent from Term.is_a_parents, including parents that are
+    # not in the sub-ontology: those dangling links made a non-root seed look like it had a parent, so it was no root.
+    parents_of, children_of = _induced_hierarchy(
+        onto, sub_terms, sub_relationships, use_source_links=relation_type == "is_a"
+    )
+    sub_onto = Ontology(
+        terms=sub_terms,
+        parents_of=parents_of,
+        children_of=children_of,
+        relationships=sub_relationships,
+        metadata=dict(onto.metadata),
+    )
 
     logger.info(f"Extracted sub-ontology with {len(sub_onto)} terms from {len(onto)} total terms")
     return sub_onto
@@ -609,6 +668,40 @@ def calculate_ic_map(onto: Ontology, corpus_size: int | None = None) -> Dict[str
     return ic_map
 
 
+def _induced_hierarchy(
+    onto: Ontology,
+    kept_terms: Dict[str, Term],
+    kept_relationships: List[Relationship],
+    use_source_links: bool = True,
+) -> Tuple[Dict[str, Set[str]], Dict[str, Set[str]]]:
+    """``parents_of`` / ``children_of`` for a sub-ontology made of ``kept_terms`` and ``kept_relationships``.
+
+    ``Ontology`` answers ``get_roots``, ``get_leaves``, ``get_parents``, ``get_children`` and ``get_ancestors`` for
+    ``is_a`` from these two maps, so a sub-ontology built without them has no hierarchy at all (every term is a root
+    and every ancestor set is empty). The maps hold the ``is_a`` links of ``onto`` whose two ends are both kept
+    (skipped with ``use_source_links=False`` when the sub-ontology does not carry ``is_a``), plus any kept ``is_a``
+    relationship. A term whose parents were all dropped has no entry, so it is a root of the sub-ontology.
+    """
+    parents_of: Dict[str, Set[str]] = {}
+    children_of: Dict[str, Set[str]] = {}
+
+    def link(child: str, parent: str) -> None:
+        parents_of.setdefault(child, set()).add(parent)
+        children_of.setdefault(parent, set()).add(child)
+
+    if use_source_links:
+        for child, parents in onto.parents_of.items():
+            if child in kept_terms:
+                for parent in parents:
+                    if parent in kept_terms:
+                        link(child, parent)
+    for rel in kept_relationships:
+        if rel.relation_type == "is_a":
+            link(rel.source, rel.target)
+
+    return parents_of, children_of
+
+
 def subgraph(onto: Ontology, term_ids: List[str], relation_type: str = "is_a") -> Ontology:
     """Create a subgraph ontology containing only specified terms and their relationships.
 
@@ -618,7 +711,9 @@ def subgraph(onto: Ontology, term_ids: List[str], relation_type: str = "is_a") -
         relation_type: Type of relationship to consider.
 
     Returns:
-        New Ontology containing only the specified terms and relationships between them.
+        New Ontology containing only the specified terms and relationships between them. When ``relation_type`` is
+        ``"is_a"`` it also carries the parent/child links among those terms, so ``get_roots``, ``get_parents`` and
+        ``get_ancestors`` work on it.
 
     Examples:
         >>> subgraph_onto = subgraph(go_ontology, ["GO:0008150", "GO:0003674"])
@@ -638,8 +733,14 @@ def subgraph(onto: Ontology, term_ids: List[str], relation_type: str = "is_a") -
         if rel.relation_type == relation_type and rel.source in selected_terms and rel.target in selected_terms:
             selected_relationships.append(rel)
 
+    parents_of, children_of = _induced_hierarchy(
+        onto, selected_terms, selected_relationships, use_source_links=relation_type == "is_a"
+    )
+
     return Ontology(
         terms=selected_terms,
+        parents_of=parents_of,
+        children_of=children_of,
         relationships=selected_relationships,
         metadata={**onto.metadata, "subgraph_of": onto.metadata.get("id", "unknown")},
     )
@@ -726,7 +827,8 @@ def filter_by_namespace(onto: Ontology, namespace: str) -> Ontology:
         namespace: Namespace to filter by.
 
     Returns:
-        New Ontology with filtered terms.
+        New Ontology with filtered terms and the parent/child links among them, so ``get_roots``, ``get_parents`` and
+        ``get_ancestors`` work on it (a term whose parents are all in other namespaces becomes a root).
 
     Examples:
         >>> bp_ontology = filter_by_namespace(go_ontology, "biological_process")
@@ -744,8 +846,12 @@ def filter_by_namespace(onto: Ontology, namespace: str) -> Ontology:
         if rel.source in filtered_terms and rel.target in filtered_terms:
             filtered_relationships.append(rel)
 
+    parents_of, children_of = _induced_hierarchy(onto, filtered_terms, filtered_relationships)
+
     return Ontology(
         terms=filtered_terms,
+        parents_of=parents_of,
+        children_of=children_of,
         relationships=filtered_relationships,
         metadata={**onto.metadata, "filtered_by_namespace": namespace},
     )

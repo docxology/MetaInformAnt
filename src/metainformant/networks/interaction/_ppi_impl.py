@@ -36,7 +36,9 @@ def load_ppi_network(ppi_file: Union[str, Path], format: str = "tsv", **kwargs: 
 
     Args:
         ppi_file: Path to PPI data file
-        format: File format ('tsv', 'csv', 'bioplex', 'intact')
+        format: File format ('tsv', 'csv', 'json', 'bioplex', 'intact'). 'json' is the node-link layout that
+            ``save_ppi_network(..., format="json")`` writes; it keeps node and edge attributes and loads as an
+            undirected graph.
         **kwargs: Additional loading parameters
 
     Returns:
@@ -44,7 +46,7 @@ def load_ppi_network(ppi_file: Union[str, Path], format: str = "tsv", **kwargs: 
 
     Raises:
         ImportError: If networkx not available
-        ValueError: If format not supported
+        ValueError: If format not supported, or a 'json' file is not a node-link object
     """
     if not HAS_NETWORKX:
         raise ImportError("networkx required for PPI network loading")
@@ -112,6 +114,36 @@ def load_ppi_network(ppi_file: Union[str, Path], format: str = "tsv", **kwargs: 
                     score = 1.0
                     ppi_data.append((protein1, protein2, score))
 
+    elif format == "json":
+        # Node-link JSON, the layout save_ppi_network(format="json") writes (networkx >= 3.4 names the edge list
+        # "edges", older releases "links")
+        payload = io.load_json(ppi_file)
+        if not isinstance(payload, dict):
+            raise ValueError(f"PPI JSON must be a node-link object, got {type(payload).__name__}")
+
+        G = nx.Graph()
+        for node in payload.get("nodes", []):
+            attrs = dict(node)
+            if "id" not in attrs:
+                raise ValueError(f"PPI JSON node without an 'id': {node!r}")
+            protein = attrs.pop("id")
+            G.add_node(protein)
+            G.nodes[protein].update(attrs)
+        edge_records = payload.get("edges")
+        if edge_records is None:
+            edge_records = payload.get("links", [])
+        for edge in edge_records:
+            attrs = dict(edge)
+            if "source" not in attrs or "target" not in attrs:
+                raise ValueError(f"PPI JSON edge without 'source' and 'target': {edge!r}")
+            protein1, protein2 = attrs.pop("source"), attrs.pop("target")
+            attrs.setdefault("weight", 1.0)
+            G.add_edge(protein1, protein2)
+            G[protein1][protein2].update(attrs)
+
+        logger.info(f"Loaded PPI network: {len(G.nodes())} proteins, {len(G.edges())} interactions")
+        return G
+
     else:
         raise ValueError(f"Unsupported PPI format: {format}")
 
@@ -158,6 +190,12 @@ def construct_ppi_network_from_interactions(interactions: List[Tuple[str, str, f
 
     logger.info(f"Constructed PPI network: {len(G.nodes())} proteins, {len(G.edges())} interactions")
     return G
+
+
+def _top_centrality(centrality: Dict[Any, float], n: int) -> Dict[Any, float]:
+    """The ``n`` most central nodes, most central first; ties are broken by node name so the result is stable."""
+    ranked = sorted(centrality.items(), key=lambda item: (-item[1], str(item[0])))
+    return dict(ranked[:n])
 
 
 def ppi_network_analysis(ppi_graph: Any, **kwargs: Any) -> Dict[str, Any]:
@@ -235,8 +273,8 @@ def ppi_network_analysis(ppi_graph: Any, **kwargs: Any) -> Dict[str, Any]:
             betweenness_cent = nx.betweenness_centrality(ppi_graph)
 
             analysis["centrality"] = {
-                "degree_centrality": dict(list(degree_cent.items())[:10]),  # Top 10
-                "betweenness_centrality": dict(list(betweenness_cent.items())[:10]),
+                "degree_centrality": _top_centrality(degree_cent, 10),
+                "betweenness_centrality": _top_centrality(betweenness_cent, 10),
             }
         except Exception as e:
             logger.warning(f"Could not calculate centrality: {e}")
@@ -599,7 +637,7 @@ class ProteinNetwork:
 
         Args:
             filepath: Path to network file
-            format: File format ('tsv', 'csv', 'json')
+            format: File format ('tsv', 'csv', 'json', 'bioplex', 'intact'), as accepted by ``load_ppi_network``
             name: Name for the network
 
         Returns:

@@ -48,6 +48,8 @@ mi = mutual_information(x, y)
 - Information flow through networks
 - Information-based community detection
 
+Two functions are named `network_entropy`. `metainformant.information.integration.networks.network_entropy(graph, attribute=None, method="shannon")` takes a NetworkX graph (or a NumPy adjacency array) and returns one float, by default the Shannon entropy of the degree distribution. `metainformant.information.network_info.information_flow.network_entropy(adjacency_matrix)` takes a symmetric weighted adjacency matrix and returns a dictionary with the Von Neumann entropy of the Laplacian density matrix `rho = L / trace(L)` (a complete graph on `n` nodes gives `log2(n - 1)`); it raises `ValueError` for a matrix that is not square or not symmetric. The permutation tests of `transfer_entropy`, `information_flow_network` and `mutual_information_network` in `information_flow` take a `random_state` seed and leave the global random state alone, as does the bootstrap of `entropy_bootstrap_confidence`.
+
 ### Continuous Methods
 - Differential entropy for continuous distributions
 - Continuous mutual information estimation

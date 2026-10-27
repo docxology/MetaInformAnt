@@ -89,7 +89,7 @@ pooled = global_max_pool(hidden)                       # (2, 8)
 print(hidden.shape, pooled.shape)
 ```
 
-`conv1d_forward(x, params, stride=1)` takes a `(batch, length, in_channels)` array and returns `(batch, out_length, out_channels)`; it uses explicit Python loops, so it suits small models and inference rather than large batches. A sequence shorter than the kernel makes the output length non-positive and raises `ValueError`, so pad with `max_length`. `global_avg_pool` is the average-pooling counterpart of `global_max_pool`.
+`conv1d_forward(x, params, stride=1)` takes a `(batch, length, in_channels)` array and returns `(batch, out_length, out_channels)`; it uses explicit Python loops, so it suits small models and inference rather than large batches. A sequence shorter than the kernel raises a `ValueError` that names the sequence length and the kernel size; pad with `max_length` or use a smaller kernel. `global_avg_pool` is the average-pooling counterpart of `global_max_pool`.
 
 ### Sequence CNN
 
@@ -119,6 +119,8 @@ print(scores.shape)  # (2, 2)
 ```
 
 `SequenceCNNWeights` holds `conv_layers` (a list of `Conv1DParams`), `dense_weights` of shape `(n_filters[-1], n_classes)` and `dense_bias`; `predict_sequences` returns the raw scores (logits) of the dense layer.
+
+With stride 1 every convolution layer shortens the sequence by `kernel_size - 1`, so the padded or truncated sequences need at least `1 + sum(kernel_size - 1)` positions (11 for the default kernel sizes 8 and 4). `predict_sequences` checks this before it runs any layer and raises a `ValueError` that names the sequence length, the kernel sizes and the minimum length; use longer sequences, a larger `max_length` or smaller kernels.
 
 ## Configuration
 
@@ -189,7 +191,8 @@ print(f"Test accuracy: {(model.predict(X_test) == y_test).mean():.2f}")
 
 - **Pure NumPy**: the forward pass runs on the CPU with Python loops; there is no GPU, mixed-precision or multi-device support
 - **Batch size**: memory grows with `n_sequences x max_length x channels`; encode and score in chunks for large inputs
-- **Padding**: with stride 1 every encoded sequence must be at least `sum(kernel_sizes) - len(kernel_sizes) + 1` long, so set `max_length` at least that large
+- **Padding**: with stride 1 every encoded sequence must be at least `sum(kernel_sizes) - len(kernel_sizes) + 1` long, so set `max_length` at least that large; shorter input raises a `ValueError` (`predict_sequences` names the minimum length, `conv1d_forward` the kernel size)
+- **Seeds**: `init_sequence_cnn_weights(config, random_state=42)` draws the weights from its own `numpy.random.RandomState`, so the default seed gives the same weights on every call and the global NumPy random state is untouched
 
 ## Related Documentation
 

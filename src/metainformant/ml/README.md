@@ -106,6 +106,15 @@ X_selected, indices = select_features_univariate(X, y, method="f_classif", k=50)
 X_pca, model = pca_reduction(X_selected, n_components=2)
 ```
 
+## Reproducibility
+
+Routines that draw random numbers take a `random_state` and use a generator of their own, so a seed reproduces the
+result and the global `random` and NumPy random states are neither seeded nor consumed (`random_state=None` draws fresh
+entropy). The pure-Python routines (`automl.optimization`, `interpretability.explainers`,
+`interpretability.feature_selection`) accept an integer seed or a `random.Random`; the generator comes from
+`metainformant.ml._numeric.resolve_python_rng`. The NumPy-based evaluation helpers (`evaluation.validation`,
+`models.regression.analyze_prediction_uncertainty`) build a `numpy.random.RandomState` from the seed.
+
 ## Integration
 
 - Expression matrices from [`metainformant.rna`](../rna/) feed into feature selection

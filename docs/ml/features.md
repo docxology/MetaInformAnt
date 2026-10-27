@@ -56,12 +56,13 @@ def tsne_reduction(
     X: np.ndarray,
     n_components: int = 2,
     perplexity: float = 30.0,
+    learning_rate: float = 200.0,
     random_state: int | None = None,
     **kwargs: Any,
-) -> tuple[np.ndarray, Any]
+) -> np.ndarray
 ```
 
-t-SNE embedding for visualization. Returns (embedded_data, tsne_model).
+t-SNE embedding for visualization. Returns the embedded data array.
 
 ```python-snippet
 def umap_reduction(
@@ -69,23 +70,25 @@ def umap_reduction(
     n_components: int = 2,
     n_neighbors: int = 15,
     min_dist: float = 0.1,
+    metric: str = "euclidean",
     random_state: int | None = None,
     **kwargs: Any,
-) -> tuple[np.ndarray, Any]
+) -> np.ndarray
 ```
 
-UMAP embedding. Requires `umap-learn` package. Returns (embedded_data, umap_model).
+UMAP embedding. Requires `umap-learn` package. Returns the embedded data array.
 
 ```python-snippet
 def ica_reduction(
     X: np.ndarray,
     n_components: int | None = None,
+    scale_data: bool = True,
     random_state: int | None = None,
     **kwargs: Any,
 ) -> tuple[np.ndarray, Any]
 ```
 
-ICA for independent component extraction. Returns (transformed_data, ica_model).
+ICA for independent component extraction; the data are standardized first unless `scale_data=False`. Returns (transformed_data, ica_model).
 
 ## Usage Examples
 
@@ -104,10 +107,10 @@ X_pca, pca_model = dimensionality.pca_reduction(X, n_components=20, scale_data=T
 print(f"Explained variance: {sum(pca_model.explained_variance_ratio_):.2%}")
 
 # t-SNE for visualization
-X_tsne, _ = dimensionality.tsne_reduction(X_pca, n_components=2, perplexity=30)
+X_tsne = dimensionality.tsne_reduction(X_pca, n_components=2, perplexity=30)
 
 # UMAP embedding (requires umap-learn)
-X_umap, _ = dimensionality.umap_reduction(X_pca, n_components=2, n_neighbors=15)
+X_umap = dimensionality.umap_reduction(X_pca, n_components=2, n_neighbors=15)
 
 # ICA
 X_ica, ica_model = dimensionality.ica_reduction(X, n_components=10)
@@ -115,8 +118,8 @@ X_ica, ica_model = dimensionality.ica_reduction(X, n_components=10)
 
 ## Configuration
 
-- **Environment prefix**: `ML_`
 - **Required**: numpy, scikit-learn
+- No environment variables are read; configure through function arguments
 - **Optional**: umap-learn (for UMAP)
 - All methods accept a `random_state` parameter for reproducibility
 - PCA scaling is enabled by default (recommended for gene expression data)

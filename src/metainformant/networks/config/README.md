@@ -15,9 +15,9 @@ Typed dataclass configuration for network analysis, community detection, pathway
 |-------|-------------|
 | `NetworkConfig` | Base configuration (directed, weighted, min edge weight, max nodes) |
 | `CommunityDetectionConfig` | Community detection method, resolution, number of communities |
-| `PathwayEnrichmentConfig` | Enrichment method, correction, overlap and p-value thresholds |
+| `PathwayEnrichmentConfig` | Enrichment method (`'fisher'` or `'hypergeometric'`; the workflow hands it to `pathway_enrichment`, which raises `ValueError` for any other name), correction, overlap and p-value thresholds |
 | `PPIConfig` | Protein-protein interaction analysis settings |
-| `GRNConfig` | Gene regulatory network inference parameters |
+| `GRNConfig` | Gene regulatory network inference parameters (`method` is `'correlation'` by default; `infer_grn` supports `'correlation'` and `'mutual_info'`) |
 | `NetworkWorkflowConfig` | High-level workflow orchestration configuration |
 
 ## Usage

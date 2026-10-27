@@ -7,12 +7,28 @@ statistical computations use pure Python with no external dependencies.
 ## Key Concepts
 
 **Over-representation analysis** tests whether a gene list is enriched in any
-gene set using the hypergeometric test (Fisher's exact test). Multiple testing
-is corrected with Benjamini-Hochberg FDR or Bonferroni.
+gene set using the hypergeometric test (Fisher's exact test). The tail is
+summed in log space with log-factorials computed as `lgamma(n + 1)` (to
+floating-point precision, for every gene-set size), so the p-values do not rest
+on an approximation of the factorial. Multiple testing is corrected with
+Benjamini-Hochberg FDR or Bonferroni.
 
-**GSEA** computes a running enrichment score against a ranked gene list.
-Significance is estimated via permutation of rank weights, and normalised
-enrichment scores (NES) enable comparison across gene sets.
+**GSEA** is a preranked gene-set analysis after Subramanian et al. (2005). The
+enrichment score (ES) of a gene set is the maximum deviation from zero of a
+weighted Kolmogorov-Smirnov running sum down the ranked list: each member adds
+its `|rank metric|` divided by the sum of the members' `|rank metric|`, and each
+non-member subtracts `1 / (number of non-members)`. Significance comes from a
+gene-set permutation null: `n_permutations` random gene sets of the same size
+are drawn from the ranked list (the ranking, and with it the weights, stay
+fixed) and scored the same way.
+
+- The nominal p-value is one-sided in the direction of the observed ES and is
+  taken against the part of the null with the same sign,
+  `(1 + #(null ES at least as extreme)) / (1 + #(null ES of that sign))`.
+- The normalised enrichment score (NES) is the observed ES divided by the mean
+  magnitude of the null ES of the same sign, and is NaN when no permutation
+  produced an ES of that sign.
+- FDR is the Benjamini-Hochberg adjustment of the p-values.
 
 **Pathway similarity networks** connect gene sets that share genes above a
 Jaccard similarity threshold. Connected components identify clusters of
@@ -63,13 +79,19 @@ def gsea(
     n_permutations: int = 1000,
     min_size: int = 15,
     max_size: int = 500,
+    random_state: int | random.Random | None = None,
 ) -> list[dict]
 ```
 
 Full GSEA pipeline. `ranked_genes` is a list of `(gene_name, rank_metric)`
-tuples sorted by metric. Gene sets outside the `[min_size, max_size]` range
-are skipped. Returns per-gene-set results with `es`, `nes` (normalised),
-`p_value`, `fdr`, `leading_edge`, and `leading_edge_genes`.
+tuples sorted by metric. A gene set is tested when the number of its members
+found in the ranked list lies in `[min_size, max_size]`; others are skipped.
+`n_permutations` is the number of random gene sets drawn per tested gene set.
+`random_state` is an integer seed or a `random.Random` that draws those gene
+sets: the same seed gives the same p-values, NES and FDR, the global `random`
+state is neither seeded nor consumed, and `None` draws fresh entropy. Returns
+per-gene-set results sorted by FDR with `es`, `nes` (normalised), `p_value`,
+`fdr`, `leading_edge`, and `leading_edge_genes`.
 
 ### pathway_network
 
@@ -108,7 +130,7 @@ Significance threshold: adjusted p < 0.05.
 | `_hypergeometric_sf` | Survival function for the hypergeometric distribution |
 | `_fdr_correction` | Benjamini-Hochberg FDR correction |
 | `_bonferroni_correction` | Bonferroni correction |
-| `_log_factorial` / `_log_comb` | Log-space combinatorics (Stirling for large n) |
+| `_log_factorial` / `_log_comb` | Log-space combinatorics (exact: `lgamma(n + 1)`) |
 
 ## Usage Example
 
@@ -128,7 +150,7 @@ for r in results:
 
 # GSEA
 ranked = [("BAX", 3.2), ("MYC", 2.1), ("CDK2", 0.5), ("BCL2", -1.0)]
-gsea_results = gsea(ranked, gene_sets, n_permutations=500, min_size=1)
+gsea_results = gsea(ranked, gene_sets, n_permutations=500, min_size=1, random_state=0)
 
 # Pathway network
 net = pathway_network(results, gene_sets, similarity_threshold=0.2)

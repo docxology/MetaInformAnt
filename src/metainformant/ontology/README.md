@@ -11,9 +11,9 @@ Gene ontology parsing, querying, enrichment analysis, and visualization for META
 
 - [Architecture](#architecture)
 - [Key Capabilities](#key-capabilities)
-  - [GO Loading & Enrichment](#go-loading-enrichment)
+  - [GO Loading & Enrichment](#go-loading--enrichment)
   - [Querying and Traversal](#querying-and-traversal)
-  - [Serialization & Visualization](#serialization-visualization)
+  - [Serialization & Visualization](#serialization--visualization)
 - [Submodules](#submodules)
 - [Quick Start](#quick-start)
 - [Integration](#integration)
@@ -57,8 +57,8 @@ sim = semantic_similarity("GO:0008150", "GO:0003674", term_ic=ic_map, hierarchy=
 | Function | Description |
 |----------|-------------|
 | `load_go_obo` | Load and validate GO ontology from OBO file |
-| `enrich_genes` | Fisher exact / hypergeometric ORA with Bonferroni correction |
-| `semantic_similarity` | Resnik/Lin/Jiang semantic similarity between terms |
+| `enrich_genes` | Fisher exact / hypergeometric ORA with Bonferroni-adjusted p-values and a boolean `significant` column (`alpha`); only genes in the background count |
+| `semantic_similarity` | Resnik (information content in bits, not bounded by 1), Lin and Jiang-Conrath (0-1) similarity between terms |
 | `calculate_term_ic` | Information content from annotation frequency |
 
 ### Querying and Traversal
@@ -76,17 +76,23 @@ path = shortest_path(go, "GO:0008150", "GO:0003674")        # Shortest connectin
 | `common_ancestors` / `most_informative_common_ancestor` | Shared ancestors, MICA |
 | `shortest_path` / `distance` | Path length between terms |
 | `get_roots` / `get_leaves` | Terminal nodes in the DAG |
-| `find_terms_by_name` / `subgraph` | Pattern search, subontology extraction |
+| `find_terms_by_name` / `subgraph` | Pattern search, subontology extraction (with the parent/child links among the kept terms) |
+| `filter_by_namespace` / `get_subontology` | Namespace filter, root-and-descendants extraction (both keep the induced hierarchy, so `get_roots` and `ancestors` work on the result) |
 
 ### Serialization & Visualization
 
 ```python
-from metainformant.ontology.query.serialize import save_ontology, load_ontology
+from metainformant.ontology.query.serialize import save_ontology, load_ontology, ontology_to_graph
 from metainformant.ontology.visualization.visualization import plot_go_dag
 
 save_ontology(go, "output/ontology.json", format="json")
-plot_go_dag(go, terms=["GO:0008150"], output_path="output/dag.png")
+reloaded = load_ontology("output/ontology.json", format="json")  # OBO-parsed ontologies load with every is_a link once
+plot_go_dag(ontology_to_graph(go), terms=["GO:0008150"], output_path="output/dag.png", layout_seed=0)
 ```
+
+`plot_go_dag` takes a `networkx.DiGraph` (convert an ontology with `ontology_to_graph`). The layout functions
+`plot_go_dag`, `plot_ontology_network` and `create_interactive_go_network` of `visualization.visualization` take a
+`layout_seed` (default `None`, unseeded); `pathway_network_plot` of `visualization.plots` takes one too (default 42).
 
 ## Submodules
 
@@ -97,7 +103,7 @@ plot_go_dag(go, terms=["GO:0008150"], output_path="output/dag.png")
 | [`pathway_enrichment/`](pathway_enrichment/) | Over-representation analysis, GSEA, FDR correction, pathway networks |
 | [`visualization/`](visualization/) | GO DAG plotting, enrichment bar/dot charts, semantic similarity matrices |
 | [`annotation/`](annotation/) | GWAS hit genes to GO annotations bridge (`gwas_hits_to_genes`, `genes_to_go_annotations`, GAF loading) |
-| [`workflow/`](workflow/) | Stage-10 GWAS ontology pipeline (`run_ontology`) |
+| [`workflow/`](workflow/) | Stage-10 GWAS ontology pipeline (`run_ontology`); the `ontology.random_state` configuration key seeds its GSEA permutations |
 
 ## Quick Start
 

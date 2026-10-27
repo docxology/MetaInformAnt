@@ -7,7 +7,6 @@ interaction networks, gene regulatory networks, and other biological graphs.
 
 from __future__ import annotations
 
-import random
 from typing import Any, Callable, Dict, List, Optional
 
 from metainformant.core.utils import logging
@@ -134,7 +133,10 @@ def louvain_communities(
         graph: NetworkX graph
         resolution: Resolution parameter (higher = more communities)
         randomize: Whether to randomize the algorithm
-        random_state: Random state for reproducibility
+        random_state: Seed for the randomised node order. python-louvain turns it into a random generator of its own,
+            so the same seed gives the same partition and the global ``random`` / ``numpy.random`` state is never
+            seeded. (python-louvain treats ``randomize`` as a deprecated alternative to ``random_state``, so with a
+            seed only the seed is passed on; ``randomize=False`` stays deterministic and ignores it.)
         **kwargs: Additional parameters for the algorithm
 
     Returns:
@@ -156,13 +158,11 @@ def louvain_communities(
     if trivial is not None:
         return trivial
 
-    # Set random seed if provided
-    if random_state is not None:
-        random.seed(random_state)
-        np.random.seed(random_state)
-
     # Run Louvain algorithm
-    partition = community_louvain.best_partition(graph, resolution=resolution, randomize=randomize, **kwargs)
+    if randomize and random_state is not None:
+        partition = community_louvain.best_partition(graph, resolution=resolution, random_state=random_state, **kwargs)
+    else:
+        partition = community_louvain.best_partition(graph, resolution=resolution, randomize=randomize, **kwargs)
 
     # Convert partition to community lists, sorted by size (largest first)
     grouped: dict[Any, list[Any]] = {}
@@ -268,6 +268,16 @@ def _nx_to_igraph(nx_graph: Any) -> Any:
 def _networkx_greedy_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
     """Keep only kwargs accepted by NetworkX greedy modularity."""
     allowed = {"weight", "resolution", "cutoff", "best_n"}
+    return {key: value for key, value in kwargs.items() if key in allowed}
+
+
+def _louvain_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    """Keep only kwargs that ``louvain_communities`` accepts or hands on to ``community_louvain.best_partition``.
+
+    Leiden-only options such as ``n_iterations`` (or anything meant for ``leidenalg.find_partition``) are dropped:
+    ``best_partition`` raises ``TypeError`` for a keyword it does not know.
+    """
+    allowed = {"resolution", "randomize", "random_state", "weight", "partition"}
     return {key: value for key, value in kwargs.items() if key in allowed}
 
 
@@ -477,8 +487,11 @@ def detect_communities(graph: Any, method: str = "louvain", **kwargs: Any) -> Di
     try:
         community_lists = method_map[method](nx_graph, **kwargs)
     except ImportError:
-        fallback = louvain_communities if method == "leiden" and HAS_LOUVAIN else greedy_modularity_communities
-        community_lists = fallback(nx_graph, **kwargs)
+        if method == "leiden" and HAS_LOUVAIN:
+            # Only the options Louvain understands carry over from a Leiden call (n_iterations etc. do not)
+            community_lists = louvain_communities(nx_graph, **_louvain_kwargs(kwargs))
+        else:
+            community_lists = greedy_modularity_communities(nx_graph, **kwargs)
     except Exception as exc:
         if method != "greedy":
             logger.warning(f"Method {method} failed ({exc}); falling back to greedy modularity")

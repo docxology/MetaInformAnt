@@ -52,7 +52,7 @@ config = OllamaConfig(
 client = OllamaClient(config)
 ```
 
-`OllamaConfig` fields and defaults: `host="http://localhost:11434"`, `model="smollm2:135m-instruct-q4_K_S"`, `temperature=0.7`, `top_p=0.9`, `top_k=40`, `timeout=120.0` (seconds), `max_retries=3` (the number of attempts per request; keep it at least 1), `stream=False`, `context_length=4096` (sent as `num_ctx`), `num_predict=None` (model default), `system_prompt=None` and `stop_sequences=[]`. Values are validated on construction (for example `temperature` must be between 0 and 2) and a `host` without a scheme gets `http://` prepended.
+`OllamaConfig` fields and defaults: `host="http://localhost:11434"`, `model="smollm2:135m-instruct-q4_K_S"`, `temperature=0.7`, `top_p=0.9`, `top_k=40`, `timeout=120.0` (seconds), `max_retries=3` (the maximum number of attempts per request, the first one included, so `1` means "do not retry"; it must be at least 1), `stream=False`, `context_length=4096` (sent as `num_ctx`), `num_predict=None` (model default), `system_prompt=None` and `stop_sequences=[]`. Values are validated on construction (for example `temperature` must be between 0 and 2 and `max_retries` at least 1, otherwise `ValueError` is raised) and a `host` without a scheme gets `http://` prepended.
 
 ### Environment Variables
 
@@ -257,7 +257,7 @@ except RuntimeError as e:
     print(f"Ollama API error: {e}")
 ```
 
-`ConnectionError` is raised when the server cannot be reached (`generate` and `chat` make up to `max_retries` attempts with 1 s, 2 s, ... pauses first) and `RuntimeError` carries the HTTP status and message of an API error, which is not retried. `client.is_available()` returns `True` when the server answers `list_models()`.
+`ConnectionError` is raised when the server cannot be reached (`generate` and `chat` make up to `max_retries` attempts in total, with pauses of 1 s, 2 s, 4 s, ... between them) and `RuntimeError` carries the HTTP status and message of an API error, which is not retried. A request needs at least one attempt: `OllamaConfig` rejects `max_retries` below 1, and a client whose `config.max_retries` was lowered below 1 after construction raises `ValueError` before it contacts the server. `client.is_available()` returns `True` when the server answers `list_models()`.
 
 ## Troubleshooting
 
@@ -298,7 +298,7 @@ client = OllamaClient(config)
 - **Streaming**: `client.generate(prompt, stream=True, stream_callback=print)` hands you each chunk as it arrives
 - **Token limits**: Set `num_predict` to cap generated tokens
 - **Context window**: `context_length` (default 4096) sets the context size; raise it for large prompts
-- **Retries and timeouts**: `timeout` (default 120 s) applies to every request; `max_retries` (default 3) applies to connection failures in `generate` and `chat`
+- **Retries and timeouts**: `timeout` (default 120 s) applies to every request; `max_retries` (default 3, at least 1) is the total number of attempts and applies to connection failures in `generate` and `chat`
 
 ## Related Documentation
 

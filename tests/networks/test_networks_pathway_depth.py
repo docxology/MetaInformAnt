@@ -297,7 +297,8 @@ class TestPathwayEnrichmentFunction:
         assert set(g["overlap_genes"]) == {"G1", "G2", "G3"}
 
     def test_hypergeometric_method(self) -> None:
-        results = pathway_enrichment(["G5", "G6", "G7"], self._network(), method="hypergeom")
+        # "hypergeom" used to be accepted only because every method other than "fisher" ran as hypergeometric
+        results = pathway_enrichment(["G5", "G6", "G7"], self._network(), method="hypergeometric")
         assert results["oxphos"]["p_value"] < 0.05
 
     def test_min_overlap_filters(self) -> None:

@@ -15,7 +15,7 @@ from itertools import product
 from typing import Any, cast
 
 from metainformant.core.utils.logging import get_logger
-from metainformant.ml._numeric import HAS_NUMPY, get_shape, to_1d_list, to_2d_list
+from metainformant.ml._numeric import HAS_NUMPY, get_shape, resolve_python_rng, to_1d_list, to_2d_list
 
 logger = get_logger(__name__)
 
@@ -108,11 +108,12 @@ def _cross_validate(
     return sum(fold_scores) / len(fold_scores) if fold_scores else 0.0
 
 
-def _sample_from_distribution(name: str, dist: Any) -> Any:
+def _sample_from_distribution(name: str, dist: Any, rng: random.Random) -> Any:
     """Sample a value from a parameter distribution specification.
 
     Args:
         name: Parameter name.
+        rng: Generator the draw comes from (never the global ``random`` state).
         dist: Distribution specification. Can be:
             - list/tuple: uniform choice from values
             - dict with 'low', 'high': uniform float in range
@@ -123,7 +124,7 @@ def _sample_from_distribution(name: str, dist: Any) -> Any:
         Sampled value.
     """
     if isinstance(dist, (list, tuple)):
-        return random.choice(dist)
+        return rng.choice(dist)
 
     if isinstance(dist, dict):
         low = dist.get("low", 0)
@@ -132,12 +133,12 @@ def _sample_from_distribution(name: str, dist: Any) -> Any:
         if dist.get("log", False):
             log_low = math.log(max(low, 1e-15))
             log_high = math.log(max(high, 1e-15))
-            return math.exp(random.uniform(log_low, log_high))
+            return math.exp(rng.uniform(log_low, log_high))
 
         if dist.get("type") == "int":
-            return random.randint(int(low), int(high))
+            return rng.randint(int(low), int(high))
 
-        return random.uniform(low, high)
+        return rng.uniform(low, high)
 
     return dist
 
@@ -150,7 +151,7 @@ def random_search(
     n_iter: int = 50,
     cv: int = 5,
     metric: str = "accuracy",
-    random_state: int | None = None,
+    random_state: int | random.Random | None = None,
 ) -> dict:
     """Random search hyperparameter optimization with cross-validation.
 
@@ -170,7 +171,8 @@ def random_search(
         n_iter: Number of parameter combinations to try.
         cv: Number of cross-validation folds.
         metric: Scoring metric ('accuracy', 'mse', 'r2').
-        random_state: Random seed for reproducibility.
+        random_state: Seed (or ``random.Random``) for the parameter draws. The same seed gives the same search; the
+            global ``random`` state is neither seeded nor consumed. ``None`` draws fresh entropy.
 
     Returns:
         Dictionary containing:
@@ -186,8 +188,7 @@ def random_search(
     if not param_distributions:
         raise ValueError("param_distributions must not be empty")
 
-    if random_state is not None:
-        random.seed(random_state)
+    rng = resolve_python_rng(random_state)
 
     X_list = to_2d_list(X)
     y_list = to_1d_list(y)
@@ -206,7 +207,7 @@ def random_search(
 
     for i in range(n_iter):
         # Sample parameters
-        params = {name: _sample_from_distribution(name, dist) for name, dist in param_distributions.items()}
+        params = {name: _sample_from_distribution(name, dist, rng) for name, dist in param_distributions.items()}
 
         try:
             model = model_fn(**params)
@@ -250,7 +251,7 @@ def bayesian_optimization(
     param_space: dict,
     n_iter: int = 30,
     n_initial: int = 5,
-    random_state: int | None = None,
+    random_state: int | random.Random | None = None,
 ) -> dict:
     """Bayesian optimization using a Gaussian process surrogate.
 
@@ -272,7 +273,9 @@ def bayesian_optimization(
             'log': True for log-scale.
         n_iter: Total number of evaluations.
         n_initial: Number of initial random evaluations.
-        random_state: Random seed for reproducibility.
+        random_state: Seed (or ``random.Random``) for the initial points and the EI candidates. The same seed gives
+            the same optimisation run; the global ``random`` state is neither seeded nor consumed. ``None`` draws
+            fresh entropy.
 
     Returns:
         Dictionary containing:
@@ -290,8 +293,7 @@ def bayesian_optimization(
     if n_initial > n_iter:
         raise ValueError(f"n_initial ({n_initial}) must be <= n_iter ({n_iter})")
 
-    if random_state is not None:
-        random.seed(random_state)
+    rng = resolve_python_rng(random_state)
 
     logger.info(
         "Bayesian optimization: %d iterations, %d initial, %d params",
@@ -353,7 +355,7 @@ def bayesian_optimization(
 
     # Phase 1: Initial random evaluations
     for i in range(n_initial):
-        norm_point = [random.random() for _ in range(n_params)]
+        norm_point = [rng.random() for _ in range(n_params)]
         params = _denormalize(norm_point)
 
         try:
@@ -373,7 +375,7 @@ def bayesian_optimization(
     # Phase 2: Bayesian optimization loop
     for i in range(n_initial, n_iter):
         # Fit GP surrogate and find point with maximum EI
-        next_point = _maximize_expected_improvement(X_observed, y_observed, n_params, n_candidates=200)
+        next_point = _maximize_expected_improvement(X_observed, y_observed, n_params, rng, n_candidates=200)
 
         params = _denormalize(next_point)
 
@@ -420,6 +422,7 @@ def _maximize_expected_improvement(
     X_obs: list[list[float]],
     y_obs: list[float],
     n_dims: int,
+    rng: random.Random,
     n_candidates: int = 200,
     length_scale: float = 0.3,
 ) -> list[float]:
@@ -431,6 +434,7 @@ def _maximize_expected_improvement(
         X_obs: Observed points (normalized [0,1]).
         y_obs: Observed values.
         n_dims: Dimensionality.
+        rng: Generator the random candidates come from (never the global ``random`` state).
         n_candidates: Number of random candidates to evaluate.
         length_scale: RBF kernel length scale.
 
@@ -438,7 +442,7 @@ def _maximize_expected_improvement(
         Point (normalized) with maximum EI.
     """
     if not X_obs:
-        return [random.random() for _ in range(n_dims)]
+        return [rng.random() for _ in range(n_dims)]
 
     n = len(X_obs)
     best_y = max(y_obs)
@@ -457,16 +461,16 @@ def _maximize_expected_improvement(
     # Compute K_inv using Cholesky-like approach (or direct inversion for small n)
     K_inv = _invert_matrix(K)
     if K_inv is None:
-        return [random.random() for _ in range(n_dims)]
+        return [rng.random() for _ in range(n_dims)]
 
     # K_inv @ y
     alpha = [sum(K_inv[i][j] * y_obs[j] for j in range(n)) for i in range(n)]
 
     best_ei = -1.0
-    best_candidate = [random.random() for _ in range(n_dims)]
+    best_candidate = [rng.random() for _ in range(n_dims)]
 
     for _ in range(n_candidates):
-        candidate = [random.random() for _ in range(n_dims)]
+        candidate = [rng.random() for _ in range(n_dims)]
 
         # Compute k(candidate, X_obs)
         k_star = [

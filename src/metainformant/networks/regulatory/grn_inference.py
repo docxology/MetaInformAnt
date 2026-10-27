@@ -768,6 +768,7 @@ def _hypergeometric_pvalue(k: int, n: int, K: int, N: int) -> float:
 def compute_network_motifs(
     edges: list[dict],
     motif_size: int = 3,
+    random_state: int | random.Random | None = None,
 ) -> dict:
     """Count network motifs in a directed regulatory network.
 
@@ -779,6 +780,9 @@ def compute_network_motifs(
     Args:
         edges: List of edge dicts with 'source' and 'target' keys.
         motif_size: Size of motifs to search for (2 or 3).
+        random_state: Seed (or a ``random.Random`` generator) for the randomized ensemble behind the z-scores.
+            The same seed gives the same z-scores; the global ``random`` state is neither seeded nor consumed.
+            ``None`` draws fresh entropy.
 
     Returns:
         Dictionary containing:
@@ -861,11 +865,12 @@ def compute_network_motifs(
     random_counts: dict[str, list[int]] = {k: [] for k in motif_counts}
 
     edge_list = [(e["source"], e["target"]) for e in edges]
+    rng = random_state if isinstance(random_state, random.Random) else random.Random(random_state)
 
     for _ in range(n_random):
         # Randomize by shuffling target nodes
         shuffled_targets = [t for _, t in edge_list]
-        random.shuffle(shuffled_targets)
+        rng.shuffle(shuffled_targets)
         random_edges = [{"source": s, "target": t} for (s, _), t in zip(edge_list, shuffled_targets)]
 
         random_result = _count_motifs_fast(random_edges, motif_size, node_list)

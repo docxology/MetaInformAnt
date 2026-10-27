@@ -30,7 +30,7 @@ ppi_network.add_protein_metadata("P12345", gene_name="GENE1", function="kinase")
 print(f"Network has {len(ppi_network)} proteins and {len(ppi_network.interactions)} interactions")
 ```
 
-`len(network)` is the number of proteins, `network.proteins` is the set of protein IDs, `network.interactions` holds `(protein1, protein2, attributes)` records, and `network.graph` is the underlying `networkx.Graph`. Two class methods build a network in one call: `ProteinNetwork.from_interactions([(protein1, protein2), ...])` (no confidence or evidence) and `ProteinNetwork.from_file(path, format="tsv")`, where `format` is one of `'tsv'`, `'csv'`, `'bioplex'` or `'intact'`.
+`len(network)` is the number of proteins, `network.proteins` is the set of protein IDs, `network.interactions` holds `(protein1, protein2, attributes)` records, and `network.graph` is the underlying `networkx.Graph`. Two class methods build a network in one call: `ProteinNetwork.from_interactions([(protein1, protein2), ...])` (no confidence or evidence) and `ProteinNetwork.from_file(path, format="tsv")`, where `format` is one of `'tsv'`, `'csv'`, `'json'`, `'bioplex'` or `'intact'` (see [load_ppi_network()](#load_ppi_network-and-save_ppi_network)).
 
 ### load_string_interactions()
 
@@ -58,6 +58,37 @@ for protein1, protein2, attrs in string_network.interactions:
 ```
 
 An optional `proteins_df` argument (columns `protein_id`, `gene_name`, `protein_name`) attaches protein metadata to the network.
+
+### load_ppi_network() and save_ppi_network()
+
+`load_ppi_network(path, format="tsv")` reads an interaction file into a `networkx.Graph` whose edges carry the score as `weight`, and `ProteinNetwork.from_file(path, format="tsv", name="")` reads the same files into a `ProteinNetwork`. `save_ppi_network(graph, path, format="tsv")` writes a graph back as `'tsv'`, `'csv'` or `'json'`:
+
+```python
+import networkx as nx
+from metainformant.networks.interaction.ppi import ProteinNetwork, load_ppi_network, save_ppi_network
+
+graph = nx.Graph()
+graph.add_edge("P12345", "P67890", weight=0.9)
+graph.add_edge("P67890", "P22222", weight=0.8)
+
+# JSON keeps node and edge attributes; the file is a node-link object
+save_ppi_network(graph, "output/networks/ppi.json", format="json")
+loaded = load_ppi_network("output/networks/ppi.json", format="json")  # a networkx.Graph
+network = ProteinNetwork.from_file("output/networks/ppi.json", format="json", name="demo_ppi")
+print(len(loaded.edges()), len(network))  # 2 interactions, 3 proteins
+```
+
+`load_ppi_network` and `ProteinNetwork.from_file` accept five formats:
+
+| `format` | File layout |
+|----------|-------------|
+| `'tsv'` | Tab-separated `protein1`, `protein2` and an optional score (1.0 when absent); blank lines and lines starting with `#` are skipped |
+| `'csv'` | Comma-separated with a header row, then `protein1`, `protein2` and an optional score |
+| `'json'` | The node-link layout that `save_ppi_network(..., format="json")` writes: `nodes` records with an `id`, and `edges` (or, in files written by older networkx releases, `links`) records with `source` and `target`. Node and edge attributes are kept, an edge without a `weight` gets 1.0, and the graph is loaded as undirected |
+| `'bioplex'` | BioPlex table: a header line, then the two interactor IDs in the first two tab-separated columns; every interaction gets weight 1.0 |
+| `'intact'` | IntAct PSI-MI TAB: lines starting with `#` and rows with fewer than six columns are skipped, each interactor ID is reduced to the text after its last `:`, and every interaction gets weight 1.0 |
+
+Any other format raises `ValueError`, as does a `'json'` file that is not a node-link object or whose nodes lack an `id` or whose edges lack `source` or `target`. When a table lists the same pair more than once, the higher score is kept.
 
 ### predict_interactions()
 
@@ -168,7 +199,7 @@ for module_id, proteins in modules.items():
         print(f"  {term['go_term']}: p={term['p_value']:.2e}")
 ```
 
-`detect_communities` uses Louvain when the optional `python-louvain` package is installed and falls back to greedy modularity otherwise (see [Community Detection](./community.md)). `functional_enrichment_ppi` returns `{function: {"count", "test_count", "background_count", "enrichment_ratio", "p_value", "proteins"}}`; it keeps functions seen at least `min_overlap` times in the module. `go.enrich_genes(genes, background, annotations, alpha=0.05, method="fisher")` returns a DataFrame with the columns `go_term`, `p_value`, `enrichment`, `observed`, `expected`, `term_size`, `query_size` and `bonferroni_p`.
+`detect_communities` uses Louvain when the optional `python-louvain` package is installed and falls back to greedy modularity otherwise (see [Community Detection](./community.md)). `functional_enrichment_ppi` returns `{function: {"count", "test_count", "background_count", "enrichment_ratio", "p_value", "proteins"}}`; it keeps functions seen at least `min_overlap` times in the module. `go.enrich_genes(genes, background, annotations, alpha=0.05, method="fisher")` returns a DataFrame with the columns `go_term`, `p_value`, `enrichment`, `observed`, `expected`, `term_size`, `query_size`, `bonferroni_p` and `significant` (`bonferroni_p <= alpha`); every tested term is returned, with its flag.
 
 ### Network Statistics
 
@@ -198,6 +229,15 @@ for evidence_type, count in evidence_counts.items():
 ```
 
 For degree, connectivity, clustering and centrality summaries of the underlying graph, use `ppi_network_analysis(ppi_network.graph)`; `find_ppi_hubs(ppi_network.graph, percentile=95.0)` returns `(protein, degree)` tuples for hub proteins.
+
+`ppi_network_analysis` returns the sections `basic_stats`, `degree_distribution`, `connectivity`, `clustering`, `topology` and `centrality`. The `centrality` section holds `degree_centrality` and `betweenness_centrality`, each limited to the 10 most central proteins and ordered most central first (ties are ordered by protein ID, so the report is stable). It is replaced by a `skipped` marker when the network has more than `max_nodes_for_centrality` proteins (default 1000).
+
+```python
+from metainformant.networks.interaction.ppi import ppi_network_analysis
+
+report = ppi_network_analysis(ppi_network.graph)
+top_hubs = list(report["centrality"]["degree_centrality"].items())[:3]  # the most connected proteins first
+```
 
 ## Integration Examples
 
@@ -247,7 +287,7 @@ for protein, module_id in membership.items():
 
 for module_id, proteins in modules.items():
     enrichment = go.enrich_genes(proteins, ppi_network.get_proteins(), go_annotations)
-    n_enriched = int((enrichment["bonferroni_p"] <= 0.05).sum()) if len(enrichment) else 0
+    n_enriched = int(enrichment["significant"].sum()) if len(enrichment) else 0
     print(f"Module {module_id}: {n_enriched} enriched GO terms")
 ```
 

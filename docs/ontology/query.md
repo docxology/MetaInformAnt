@@ -21,8 +21,15 @@ have descendants, fewer descendants give a higher IC; a term with no
 descendants (a leaf) has IC `0.0`.
 
 **Caching** is enabled by default. Query results for `ancestors` and
-`descendants` are stored in a module-level dictionary. Use `clear_cache()` and
-`set_cache_enabled()` to manage.
+`descendants` are cached per ontology object. A cache entry holds a weak
+reference to its ontology, so it is dropped together with the ontology and can
+never be served to a different ontology that reuses its memory address. An
+entry is also discarded when the ontology's structure changes: `add_term` and
+`add_relationship` refresh it automatically, because the check compares the
+number of terms, relationships, and parent and child entries. Editing a parent
+or child set in place without adding or removing an entry is not detected, so
+call `clear_cache()` after such an edit. Use `clear_cache()` and
+`set_cache_enabled()` to manage the cache.
 
 ## Function Reference
 
@@ -122,8 +129,13 @@ def get_subontology(
 ```
 
 Extracts a sub-ontology containing the specified root terms, all of their
-descendants, and the relationships of type `relation_type` between them. Raises
-`TermNotFoundError` if a root term is absent.
+descendants, and the relationships of type `relation_type` between them. For
+`relation_type="is_a"` the result also carries the parent and child links among
+its terms, so `get_roots`, `get_parents`, `get_children` and `get_ancestors`
+work on it. Parents outside the sub-ontology are not carried over: a root term
+whose own parents were left out is a root of the sub-ontology, and
+`get_ancestors` stays inside it. `root_terms` can be any iterable, a generator
+included. Raises `TermNotFoundError` if a root term is absent.
 
 ### subgraph
 
@@ -135,10 +147,13 @@ def subgraph(
 
 Creates a new ontology containing only the specified terms (IDs missing from
 `onto` are skipped) and the `relation_type` relationships that connect them.
-The result's parent and child indexes are empty, so queries that rely on them
-(`ancestors`, `descendants`, `path_to_root`, `get_roots`, `get_leaves`) find no
-`is_a` links on it; `shortest_path` and `distance` read the relationship list
-and still work. Run hierarchy queries on the source ontology.
+For `relation_type="is_a"` the result also carries the parent and child links
+among those terms, so `get_roots`, `get_parents`, `get_children`, `ancestors`,
+`descendants` and `path_to_root` work on it. Only links with both ends in the
+subgraph are kept: a term whose parents were all left out is a root of the
+subgraph. For any other `relation_type` the result has no parent and child
+indexes, so the `is_a` queries find no links on it, while `shortest_path` and
+`distance` read the relationship list and still work.
 
 ### find_terms_by_name / find_terms_by_namespace / filter_by_namespace
 
@@ -150,9 +165,11 @@ def filter_by_namespace(onto: Ontology, namespace: str) -> Ontology
 
 `find_terms_by_name` does substring search against term names.
 `find_terms_by_namespace` returns term IDs in a namespace.
-`filter_by_namespace` returns a new `Ontology` with only that namespace's terms
-and the relationships among them; like `subgraph`, its parent and child
-indexes are empty.
+`filter_by_namespace` returns a new `Ontology` with only that namespace's terms,
+the relationships among them, and the parent and child links among them, so
+`get_roots`, `get_parents`, `get_children` and `ancestors` work on it. A term
+whose parents all belong to other namespaces becomes a root of the filtered
+ontology.
 
 ### get_roots / get_leaves
 
@@ -198,6 +215,11 @@ self-loops, and duplicate relationships.
 def clear_cache() -> None
 def set_cache_enabled(enabled: bool) -> None
 ```
+
+`clear_cache` empties the cache of every ontology; it is needed after editing
+`parents_of` or `children_of` in place (see Caching above). Adding terms or
+relationships with `add_term` and `add_relationship`, and garbage-collecting an
+ontology, need no call. `set_cache_enabled(False)` turns caching off.
 
 ## Usage Example
 

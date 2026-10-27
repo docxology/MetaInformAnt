@@ -256,12 +256,17 @@ def enrich_genes(
     Args:
         genes: List of gene identifiers to test for enrichment.
         background: Background gene list. If None, uses all genes in annotations.
-        annotations: Dictionary mapping GO term IDs to sets of gene IDs.
-        alpha: Significance threshold for enrichment.
+        annotations: Dictionary mapping GO term IDs to sets of gene IDs. Only the genes that are in the background
+            count: a term's members outside it are ignored, for both methods (they give the same p-value).
+        alpha: Significance threshold applied to the Bonferroni-adjusted p-value (``bonferroni_p``). It sets the
+            boolean ``significant`` column; every tested term stays in the result so near misses remain visible.
         method: Statistical method ("fisher" or "hypergeometric").
 
     Returns:
-        DataFrame with enrichment results sorted by p-value.
+        DataFrame with one row per tested term (terms sharing no gene with the query are not tested), sorted by
+        p-value, with columns ``go_term``, ``p_value``, ``enrichment``, ``observed``, ``expected``, ``term_size``
+        (the term's genes that are in the background), ``query_size``, ``bonferroni_p`` and ``significant``
+        (``bonferroni_p <= alpha``). The frame is empty when nothing could be tested.
 
     Raises:
         ValueError: If method is not supported or inputs are invalid.
@@ -309,7 +314,10 @@ def enrich_genes(
     results = []
 
     for go_term, annotated_genes in annotations.items():
-        annotated_set = set(annotated_genes)
+        # Only genes in the background can be drawn or counted, so a term contributes just those members. Without this
+        # the term size and the expected overlap (and with them the hypergeometric p-value) counted annotated genes the
+        # background does not contain, and "hypergeometric" disagreed with "fisher" for an explicit background.
+        annotated_set = set(annotated_genes) & background_set
 
         # Calculate contingency table
         # [[in_query_and_term, in_query_not_term],
@@ -357,9 +365,9 @@ def enrich_genes(
         df["bonferroni_p"] = df["p_value"] * len(df)
         df["bonferroni_p"] = df["bonferroni_p"].clip(upper=1.0)
 
-        # Filter by significance
-        significant = df[df["bonferroni_p"] <= alpha].copy()
-        logger.info(f"Found {len(significant)} significantly enriched GO terms (alpha={alpha})")
+        # Flag the terms that pass the significance threshold
+        df["significant"] = df["bonferroni_p"] <= alpha
+        logger.info(f"Found {int(df['significant'].sum())} significantly enriched GO terms (alpha={alpha})")
     else:
         logger.warning("No enrichment results generated")
 
@@ -379,7 +387,11 @@ def semantic_similarity(
         method: Similarity method ("resnik", "lin", "jiang-conrath").
 
     Returns:
-        Similarity score between 0 and 1.
+        Similarity score. ``"lin"`` and ``"jiang-conrath"`` lie between 0 and 1 (Jiang-Conrath rescales the distance
+        by twice the largest information content in ``term_ic``). ``"resnik"`` is the information content of the most
+        informative common ancestor in the units of ``term_ic`` (bits when ``term_ic`` comes from
+        :func:`calculate_term_ic`), so it is not bounded by 1; divide by ``max(term_ic.values())`` for a 0-1 scale.
+        The score is 0.0 when a term is missing from ``term_ic`` or the two terms share no ancestor.
 
     Raises:
         ValueError: If method is not supported or terms are invalid.
@@ -453,34 +465,39 @@ def _fisher_exact_test(a: int, b: int, c: int, d: int) -> float:
         return _hypergeometric_test(a, a + c, a + b, a + b + c + d)
 
 
+def _hypergeometric_upper_tail(k: int, population: int, successes: int, draws: int) -> float:
+    """Exact ``P(X >= k)`` for ``X ~ Hypergeometric(population, successes, draws)``, without scipy.
+
+    Equals ``scipy.stats.hypergeom.sf(k - 1, population, successes, draws)``. The probability mass function is summed
+    in integer arithmetic (each term follows from the previous one by an exactly divisible integer ratio), so the only
+    rounding is the final division.
+    """
+    lowest = max(0, draws - (population - successes))
+    highest = min(successes, draws)
+    first = max(k, lowest)
+    if first > highest:
+        return 0.0
+    # mass(x) = C(successes, x) * C(population - successes, draws - x); mass(x + 1) follows from mass(x) as
+    # mass(x) * (successes - x) * (draws - x) / ((x + 1) * (population - successes - draws + x + 1)).
+    mass = math.comb(successes, first) * math.comb(population - successes, draws - first)
+    tail = 0
+    for x in range(first, highest + 1):
+        tail += mass
+        if x < highest:
+            mass = mass * (successes - x) * (draws - x) // ((x + 1) * (population - successes - draws + x + 1))
+    return tail / math.comb(population, draws)
+
+
 def _hypergeometric_test(k: int, K: int, n: int, N: int) -> float:
-    """Calculate hypergeometric test p-value."""
+    """Calculate hypergeometric test p-value ``P(X >= k)`` where ``X ~ Hypergeometric(N, K, n)``."""
     try:
         from scipy.stats import hypergeom
 
-        # P(X >= k) where X ~ Hypergeometric(N, K, n)
         p_value = hypergeom.sf(k - 1, N, K, n)
         return float(p_value)
     except ImportError:
-        # Very simplified approximation
-        from math import exp, lgamma
-
-        try:
-            # Log probability calculation
-            log_p = (
-                lgamma(K + 1)
-                + lgamma(N - K + 1)
-                + lgamma(n + 1)
-                + lgamma(N - n + 1)
-                - lgamma(N + 1)
-                - lgamma(k + 1)
-                - lgamma(K - k + 1)
-                - lgamma(n - k + 1)
-                - lgamma(N - K - n + k + 1)
-            )
-            return min(1.0, exp(log_p))
-        except (ValueError, OverflowError):
-            return 1.0  # Conservative fallback
+        # No scipy: the same upper tail, computed exactly
+        return _hypergeometric_upper_tail(k, N, K, n)
 
 
 def calculate_term_ic(onto: Ontology, term_counts: Dict[str, int], total_annotations: int) -> Dict[str, float]:

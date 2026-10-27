@@ -18,7 +18,7 @@ Information-theoretic analysis applied to biological data integration and networ
 | `singlecell_integration()` | Information metrics for single-cell expression profiles |
 | `multiomics_integration()` | Cross-omics mutual information and integration scores |
 | `ml_integration()` | Information-theoretic evaluation of ML feature sets |
-| `network_entropy()` | Shannon or von Neumann entropy of a network graph |
+| `network_entropy()` | Shannon (degree-distribution or node-attribute) or von Neumann entropy of a NetworkX graph or NumPy adjacency array, as one float. Not the same function as `network_info.information_flow.network_entropy`, which takes a weighted adjacency matrix and returns a dictionary |
 | `information_flow()` | Random-walk or diffusion-based information flow between nodes |
 | `information_community_detection()` | Community detection via infomap or map equation |
 | `network_information_centrality()` | Entropy-based node centrality ranking |
@@ -31,6 +31,6 @@ Information-theoretic analysis applied to biological data integration and networ
 from metainformant.information.integration.integration import dna_integration
 from metainformant.information.integration.networks import network_entropy
 
-results = dna_integration(sequences, method="entropy")
+results = dna_integration(sequences, analysis_type="entropy")  # or "profile"; k or k_values set the k-mer sizes
 h = network_entropy(graph, method="shannon")
 ```

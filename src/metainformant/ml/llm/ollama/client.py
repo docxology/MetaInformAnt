@@ -211,13 +211,19 @@ class OllamaClient:
         Raises:
             ConnectionError: If server is unreachable.
             RuntimeError: If request fails.
+            ValueError: If ``config.max_retries`` was set below 1 after the config was created (a request needs
+                at least one attempt; ``OllamaConfig`` rejects such values at construction).
         """
+        max_attempts = self.config.max_retries
+        if max_attempts < 1:
+            raise ValueError(f"max_retries must be >= 1, got {max_attempts}")
+
         headers = {"Content-Type": "application/json"}
 
         body = json.dumps(data).encode("utf-8") if data else None
         request = urllib.request.Request(url, data=body, headers=headers, method=method)
 
-        for attempt in range(self.config.max_retries):
+        for attempt in range(max_attempts):
             try:
                 response = urllib.request.urlopen(request, timeout=self.config.timeout)  # nosec B310
 
@@ -232,7 +238,7 @@ class OllamaClient:
                 # retried as connection errors.
                 raise RuntimeError(f"Ollama API error {e.code}: {e.read().decode('utf-8')}") from e
             except urllib.error.URLError as e:
-                if attempt < self.config.max_retries - 1:
+                if attempt < max_attempts - 1:
                     wait_time = 2**attempt
                     logger.warning(f"Request failed, retrying in {wait_time}s: {e}")
                     time.sleep(wait_time)

@@ -374,8 +374,9 @@ def cross_validate_biological(
         method: Classification method ('rf', 'gb', 'lr', 'ensemble')
         cv_folds: Number of cross-validation folds
         random_state: Random state for reproducibility
-        parallel_jobs: Number of parallel jobs used for cross-validation.
-            Use 1 in restricted or resource-sensitive environments.
+        parallel_jobs: Number of parallel jobs used for cross-validation and, for ``method="ensemble"``, by the
+            voting ensemble itself (an explicit ``n_jobs`` keyword overrides the latter). Use 1 in restricted or
+            resource-sensitive environments: it then starts no worker processes at all.
         **kwargs: Additional parameters for classifier
 
     Returns:
@@ -417,8 +418,10 @@ def cross_validate_biological(
         classifier_kwargs.setdefault("max_iter", 1000)
         classifier = LogisticRegression(**classifier_kwargs)
     elif method == "ensemble":
-        # Use ensemble classifier
-        ensemble_jobs = classifier_kwargs.pop("n_jobs", -1)
+        # Use ensemble classifier; train_ensemble_classifier takes random_state as its own argument, so it must not
+        # also arrive through **classifier_kwargs (that is a "multiple values for keyword argument" TypeError)
+        ensemble_jobs = classifier_kwargs.pop("n_jobs", parallel_jobs)
+        classifier_kwargs.pop("random_state", None)
         ensemble_classifier = train_ensemble_classifier(
             X,
             y,

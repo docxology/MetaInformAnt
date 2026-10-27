@@ -8,7 +8,8 @@ GWAS hits, using the metainformant.ontology library modules:
     10b  Extract hit gene list and ranked gene list
     10c  Fetch GO annotations via QuickGO REST API (taxon-specific)
     10d  ORA  – over-representation analysis (hypergeometric, BH-FDR)
-    10e  GSEA – gene set enrichment analysis (permutation NES)
+    10e  GSEA – gene set enrichment analysis (gene-set permutation NES; set ``ontology.random_state`` in the
+         config to make the permutations reproducible)
     10f  Pathway similarity network (Jaccard)
     10g  HPO  – map GWAS phenotype label to HPO terms
     10h  Visualisation: enrichment dotplot + pathway network plot
@@ -101,6 +102,12 @@ def _coerce_float(val: str | float, default: float = 1.0) -> float:
         return default
 
 
+def _gsea_random_state(ont_cfg: dict) -> int | None:
+    """The GSEA permutation seed from the ``random_state`` entry of the ``ontology`` config (``None`` = unseeded)."""
+    value = ont_cfg.get("random_state")
+    return None if value is None else int(value)
+
+
 def _save_tsv(rows: list[dict], path: Path, fields: list[str] | None = None) -> None:
     if not rows:
         logger.info("No rows to save: %s", path)
@@ -136,6 +143,7 @@ def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root
     fdr_threshold: float = float(ont_cfg.get("fdr_threshold", 0.05))
     jaccard_threshold: float = float(ont_cfg.get("jaccard_threshold", 0.3))
     rate_limit_s: float = float(ont_cfg.get("rate_limit_s", 0.2))
+    random_state: int | None = _gsea_random_state(ont_cfg)  # seed of the GSEA permutations; unset = unseeded
 
     # Paths — read from config, same as all other scripts
     paths_cfg = config.get("paths", {})
@@ -362,6 +370,7 @@ def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root
                 n_permutations=min(n_permutations, 200),  # cap for speed
                 min_size=min_set_size,
                 max_size=max_set_size,
+                random_state=random_state,
             )
             n_sig_gsea = sum(1 for r in gsea_results if r.get("fdr", 1.0) < 0.25)
             logger.info("  GSEA: %d gene sets tested, %d significant (FDR<0.25)", len(gsea_results), n_sig_gsea)

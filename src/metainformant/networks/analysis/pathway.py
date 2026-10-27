@@ -9,7 +9,7 @@ from __future__ import annotations
 import math
 import statistics
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from metainformant.core.utils import logging
 
@@ -60,6 +60,31 @@ def _sample_odds_ratio(a: int, b: int, c: int, d: int) -> float:
     if denominator == 0:
         return math.inf if numerator > 0 else math.nan
     return numerator / denominator
+
+
+def _hypergeometric_upper_tail(k: int, population: int, successes: int, draws: int) -> float:
+    """Exact ``P(X >= k)`` for ``X ~ Hypergeometric(population, successes, draws)``, without scipy.
+
+    This is the p-value of the one-sided (``alternative="greater"``) Fisher exact test of the 2x2 table
+    ``[[k, draws - k], [successes - k, population - successes - draws + k]]`` and equals
+    ``scipy.stats.hypergeom.sf(k - 1, population, successes, draws)``. The probability mass function is summed in
+    integer arithmetic (each term follows from the previous one by an exactly divisible integer ratio), so the only
+    rounding is the final division.
+    """
+    lowest = max(0, draws - (population - successes))
+    highest = min(successes, draws)
+    first = max(k, lowest)
+    if first > highest:
+        return 0.0
+    # mass(x) = C(successes, x) * C(population - successes, draws - x); mass(x + 1) follows from mass(x) as
+    # mass(x) * (successes - x) * (draws - x) / ((x + 1) * (population - successes - draws + x + 1)).
+    mass = math.comb(successes, first) * math.comb(population - successes, draws - first)
+    tail = 0
+    for x in range(first, highest + 1):
+        tail += mass
+        if x < highest:
+            mass = mass * (successes - x) * (draws - x) // ((x + 1) * (population - successes - draws + x + 1))
+    return tail / math.comb(population, draws)
 
 
 def _parse_pathway_mapping(pathway_dict: Dict[str, Any]) -> Dict[str, List[str]]:
@@ -283,27 +308,15 @@ def find_pathway_modules(pathway_graph: Any, method: str = "louvain", **kwargs: 
     return detect_communities(pathway_graph, method=method, **kwargs)
 
 
-def pathway_similarity_analysis(pathways: Dict[str, Any], method: str = "jaccard", **kwargs: Any) -> Dict[str, Any]:
-    """Analyze similarities between pathways.
-
-    Args:
-        pathways: Dictionary mapping pathway names to pathway data
-        method: Similarity method ('jaccard', 'overlap', 'cosine')
-        **kwargs: Additional parameters
-
-    Returns:
-        Dictionary with pathway similarities
-
-    Raises:
-        ValueError: If invalid method
-    """
+def _pathway_similarity_pairs(pathways: Dict[str, Any], method: str) -> List[Tuple[str, str, float]]:
+    """Similarity of every unordered pair of pathways as ``(name1, name2, similarity)`` tuples."""
     if method not in ["jaccard", "overlap", "cosine"]:
         raise ValueError(f"Unknown similarity method: {method}")
 
     pathway_names = list(pathways.keys())
     n_pathways = len(pathway_names)
 
-    similarity_matrix = {}
+    pairs: List[Tuple[str, str, float]] = []
 
     for i in range(n_pathways):
         for j in range(i + 1, n_pathways):
@@ -337,14 +350,40 @@ def pathway_similarity_analysis(pathways: Dict[str, Any], method: str = "jaccard
 
             elif method == "cosine":
                 intersection = len(genes1 & genes2)
-                similarity = intersection / (math.sqrt(len(genes1)) * math.sqrt(len(genes2)))
+                norm = math.sqrt(len(genes1)) * math.sqrt(len(genes2))
+                similarity = intersection / norm if norm > 0 else 0.0
 
-            similarity_matrix[f"{name1}_{name2}"] = similarity
+            pairs.append((name1, name2, similarity))
+
+    return pairs
+
+
+def pathway_similarity_analysis(pathways: Dict[str, Any], method: str = "jaccard", **kwargs: Any) -> Dict[str, Any]:
+    """Analyze similarities between pathways.
+
+    Args:
+        pathways: Dictionary mapping pathway names to pathway data (a gene list, or a dict with a ``genes`` entry;
+            anything else counts as a pathway with no genes)
+        method: Similarity method ('jaccard', 'overlap', 'cosine'). Whatever the method, a pathway with no genes has
+            similarity 0.0 with every other pathway (the cosine, for one, is undefined for an empty gene set).
+        **kwargs: Additional parameters
+
+    Returns:
+        Dictionary with pathway similarities. ``similarities`` maps ``"{name1}_{name2}"`` to the similarity of
+        that pair; such a key cannot be split back into the two names when a pathway name contains an underscore
+        (and two different pairs can then share a key), so code that needs the pairs themselves should not parse it
+        (``create_pathway_network`` does not).
+
+    Raises:
+        ValueError: If invalid method
+    """
+    pairs = _pathway_similarity_pairs(pathways, method)
+    pathway_names = list(pathways.keys())
 
     return {
-        "similarities": similarity_matrix,
+        "similarities": {f"{name1}_{name2}": similarity for name1, name2, similarity in pairs},
         "method": method,
-        "n_pathways": n_pathways,
+        "n_pathways": len(pathway_names),
         "pathway_names": pathway_names,
     }
 
@@ -414,8 +453,9 @@ def create_pathway_network(pathways: Dict[str, Any], similarity_threshold: float
     if not HAS_NETWORKX:
         raise ImportError("networkx required for pathway network creation")
 
-    # Calculate pathway similarities
-    similarities = pathway_similarity_analysis(pathways, **kwargs)
+    # Calculate pathway similarities pair by pair: the "{name1}_{name2}" keys of pathway_similarity_analysis cannot
+    # be split back into names when a pathway ID itself contains an underscore.
+    similarity_pairs = _pathway_similarity_pairs(pathways, kwargs.get("method", "jaccard"))
 
     # Create network
     pathway_network = nx.Graph()
@@ -428,9 +468,8 @@ def create_pathway_network(pathways: Dict[str, Any], similarity_threshold: float
             pathway_network.add_node(pathway_name)
 
     # Add similarity edges
-    for key, similarity in similarities["similarities"].items():
+    for pathway1, pathway2, similarity in similarity_pairs:
         if similarity >= similarity_threshold:
-            pathway1, pathway2 = key.split("_", 1)
             pathway_network.add_edge(pathway1, pathway2, similarity=similarity)
 
     logger.info(
@@ -825,7 +864,8 @@ def pathway_enrichment(
         gene_list: List of genes to test for enrichment
         pathway_network: PathwayNetwork object containing pathway definitions
         background_genes: Background gene set (if None, uses all genes in pathways)
-        method: Statistical test method ('fisher', 'hypergeometric')
+        method: Statistical test method ('fisher', 'hypergeometric'). Both report the one-sided
+            (enrichment) p-value ``P(X >= overlap)``; they are computed exactly with or without scipy.
         correction: Multiple testing correction ('bonferroni', 'fdr', None)
         min_overlap: Minimum overlap size to report
 
@@ -833,7 +873,13 @@ def pathway_enrichment(
         Dictionary mapping pathway IDs to enrichment results. When a
         ``correction`` is requested every result carries ``corrected_p_value``,
         including when only one pathway passes ``min_overlap``.
+
+    Raises:
+        ValueError: If ``method`` is not 'fisher' or 'hypergeometric'.
     """
+    if method not in ("fisher", "hypergeometric"):
+        raise ValueError(f"Unknown method: {method}. Use 'fisher' or 'hypergeometric'.")
+
     if not pathway_network.pathways:
         logger.warning("Empty pathway network")
         return {}
@@ -897,13 +943,8 @@ def pathway_enrichment(
 
                 p_value = hypergeom.sf(overlap_size - 1, background_size, pathway_size, query_size)
         else:
-            # Simple approximation when scipy not available
-            logger.warning("SciPy not available, using simplified enrichment calculation")
-            expected = (query_size * pathway_size) / background_size
-            if overlap_size > expected:
-                p_value = max(0.001, 1.0 / (overlap_size / expected))  # Rough approximation
-            else:
-                p_value = 1.0
+            # Without scipy the same upper-tail probability is computed exactly; both methods share it
+            p_value = _hypergeometric_upper_tail(overlap_size, background_size, pathway_size, query_size)
 
         # Calculate enrichment ratio
         expected_overlap = (query_size * pathway_size) / background_size
@@ -927,7 +968,7 @@ def pathway_enrichment(
 
         if correction == "bonferroni":
             corrected_p_values = [min(p * len(results), 1.0) for p in p_values]
-        elif correction == "fdr" and HAS_SCIPY:
+        elif correction == "fdr":
             corrected_p_values = _benjamini_hochberg(p_values)
         else:
             corrected_p_values = p_values

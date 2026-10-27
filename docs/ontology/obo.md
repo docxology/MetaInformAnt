@@ -17,10 +17,11 @@ contains:
 - **[Instance] stanzas** (rare) defining ontology instances.
 
 **Parsed Term fields:** Each `[Term]` stanza produces a `Term` object with
-`id`, `name`, `definition`, `namespace`, `synonyms` (list), `xrefs` (list),
-`alt_ids` (list), `is_obsolete` flag, and a `metadata["relationships"]` list of
-`(relation_type, target_id)` tuples. When the definition cites dbxrefs, they are
-kept apart from the text in `metadata["definition_xrefs"]`.
+`id`, `name`, `definition`, `namespace`, `synonyms` (list of synonym texts),
+`xrefs` (list), `alt_ids` (list), `is_obsolete` flag, and a
+`metadata["relationships"]` list of `(relation_type, target_id)` tuples. When
+the definition cites dbxrefs, they are kept apart from the text in
+`metadata["definition_xrefs"]`.
 
 **Definitions:** The value of a `def:` tag is a quoted string, then a bracketed
 dbxref list, then optional `{...}` trailing modifiers and a `! comment`, for
@@ -44,6 +45,23 @@ definition has no dbxrefs.
   ontology metadata under `typedef:<id>` as `definition` and, when present,
   `definition_xrefs`.
 
+**Synonyms:** The value of a `synonym:` tag is a quoted string, a scope word
+(`EXACT`, `BROAD`, `NARROW` or `RELATED`), an optional synonym type and a
+bracketed dbxref list, for example
+`synonym: "the \"x\" process" EXACT [GOC:mah]`. A `synonym:` line with a quoted
+value adds its text to `Term.synonyms`; the scope and the dbxrefs are not stored
+on the term, and a line whose value is not quoted adds nothing.
+`parse_obo_synonym` reads the value with the same rules as definitions:
+
+- The text is returned without its quotes and with backslash escapes decoded,
+  and an escaped quote does not end it.
+- A `!` inside the quotes is part of the text, not the start of a comment.
+- An unescaped quote inside the text is kept as text unless it is followed by
+  the end of the value, the scope word, `[`, `{` or `!`.
+- Malformed values are read leniently: an unquoted value is returned as written
+  (minus a trailing `! comment`) with no scope and no dbxrefs, and a quoted
+  string that is never closed runs to the end of the value.
+
 **Writing definitions:** `save_ontology(onto, path, format="obo")` (in
 `metainformant.ontology.query.serialize`) writes each definition as
 `def: "<escaped text>" [<escaped dbxrefs>]`. The dbxrefs come from
@@ -54,6 +72,20 @@ dbxrefs, backslashes, commas, closing brackets, double quotes and line breaks
 are escaped. A definition and its dbxrefs therefore survive `save_ontology`
 followed by `load_ontology` (or `parse_obo`); CR and CRLF line breaks come back
 as LF.
+
+**Writing synonyms:** each synonym is written as
+`synonym: "<escaped text>" EXACT []`, quoted with `quote_obo_string`, so
+quotes, backslashes and line breaks in a synonym read back unchanged. Every
+synonym is written with the scope `EXACT` and an empty dbxref list.
+
+**JSON round trip:** `save_ontology(onto, path, format="json")` followed by
+`load_ontology(path, format="json")` restores ontologies parsed from OBO as
+well as ontologies built in code. A parsed term keeps its raw
+`(relation_type, target_id)` pairs in `Term.metadata["relationships"]`, and the
+loader restores the saved metadata as it was. `Ontology.add_term` records the
+`is_a` link of every `is_a_parents` entry, and the saved relationship list
+repeats those links; the loader merges the two, so each `is_a` link comes back
+once, with the metadata its saved relationship carried.
 
 **Relationship extraction:** After all terms are parsed, `is_a`, `part_of`,
 `regulates`, `negatively_regulates`, `positively_regulates`, `has_part`,
@@ -112,24 +144,31 @@ Returns:
   `occurs_in` tag count.
 - `obsolete_count` -- terms marked `is_obsolete: true`.
 
-### parse_obo_definition / quote_obo_string / format_obo_xref_list
+### parse_obo_definition / parse_obo_synonym / quote_obo_string / format_obo_xref_list
 
 ```python-snippet
 def parse_obo_definition(value: str) -> Tuple[str, List[str]]
+def parse_obo_synonym(value: str) -> Tuple[str, Optional[str], List[str]]
 def quote_obo_string(text: str) -> str
 def format_obo_xref_list(xrefs: Iterable[str]) -> str
 ```
 
 `parse_obo_definition` splits everything after `def:` into
 `(definition_text, dbxrefs)` using the rules under Definitions above.
+`parse_obo_synonym` splits everything after `synonym:` into
+`(synonym_text, scope, dbxrefs)` using the rules under Synonyms above; `scope`
+is `None` and `dbxrefs` is empty when the value has none.
 `quote_obo_string` renders text as a quoted OBO string, surrounding quotes
 included, and `format_obo_xref_list` renders dbxrefs as `[a, b]`. They produce
-the two halves of the `def:` line the OBO writer emits, and
-`parse_obo_definition` reads their output back to the original text and items.
+the halves of the `def:` and `synonym:` lines the OBO writer emits, and
+`parse_obo_definition` and `parse_obo_synonym` read their output back to the
+original text and items.
 
 ```pycon
 >>> parse_obo_definition('"A process that \\"x\\" does." [GOC:mah, PMID:123]')
 ('A process that "x" does.', ['GOC:mah', 'PMID:123'])
+>>> parse_obo_synonym('"the \\"x\\" process" EXACT [GOC:mah]')
+('the "x" process', 'EXACT', ['GOC:mah'])
 >>> quote_obo_string('A "quoted" word')
 '"A \\"quoted\\" word"'
 >>> format_obo_xref_list(["GOC:mah", "PMID:1,2"])

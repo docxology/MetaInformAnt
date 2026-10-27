@@ -25,7 +25,7 @@ Algorithms for identifying functional modules and communities:
 
 ### [Protein-Protein Interaction Networks](./ppi.md)
 Analysis of protein interaction networks:
-- STRING-format table import
+- STRING-format table import and TSV, CSV, JSON, BioPlex and IntAct file loading
 - Interaction prediction methods
 - Network topology analysis
 - Functional enrichment of modules
@@ -33,18 +33,18 @@ Analysis of protein interaction networks:
 
 ### [Gene Regulatory Networks](./regulatory.md)
 Regulatory network inference and analysis:
-- Network inference from expression data
+- Network inference from expression data (correlation and mutual information, with a seed for the randomised mutual-information estimate)
 - Transcription factor metadata
 - Regulatory motif detection
 - Regulatory influence propagation
-- Cascade, feed-forward and feedback loop identification
+- Cascade, feed-forward (all three edges) and feedback loop identification
 
 ### [Pathway Analysis](./pathway.md)
 Biological pathway enrichment and analysis:
 - Pathway gene sets from dictionaries, JSON or GMT files
-- Enrichment analysis (Fisher's exact and hypergeometric tests)
+- Enrichment analysis (Fisher's exact and hypergeometric tests, exact with or without scipy)
 - Pathway activity scores from expression data
-- Pathway similarity analysis
+- Pathway similarity analysis and pathway similarity networks
 
 ## Architecture
 
@@ -75,7 +75,7 @@ flowchart TD
 - **Community Detection**: Louvain, Leiden, greedy modularity, Girvan-Newman, label propagation, asynchronous label propagation, fluid communities, plus multi-level `hierarchical_communities`
 - **Centrality Analysis**: Degree, betweenness, closeness, eigenvector centrality and PageRank
 - **Enrichment Analysis**: Hypergeometric and Fisher's exact tests
-- **Network Inference**: Correlation, mutual information and regression (lasso, ridge)
+- **Network Inference**: Correlation, mutual information and regression (lasso, ridge); Granger causality for time series lives in `metainformant.information.network_info.information_flow`
 
 ### Integration Capabilities
 - **Network Combination**: Union and intersection of networks (`network_union`, `network_intersection`)
@@ -139,7 +139,7 @@ for community_id in set(communities.values()):
     print(f"Community {community_id}: {len(community_nodes)} nodes")
 ```
 
-`'leiden'` needs the optional `leidenalg` and `python-igraph` packages and `'louvain'` needs `python-louvain`; without them `detect_communities` falls back to greedy modularity (see [Community Detection](./community.md)).
+`'leiden'` needs the optional `leidenalg` and `python-igraph` packages and `'louvain'` needs `python-louvain`; without them `detect_communities` falls back (Leiden to Louvain when `python-louvain` is installed, everything else to greedy modularity; see [Community Detection](./community.md)). Louvain takes a `random_state` seed that leaves the global random states untouched.
 
 ### Pathway Enrichment
 

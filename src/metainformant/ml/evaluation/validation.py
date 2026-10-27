@@ -157,7 +157,8 @@ def permutation_importance_biological(
         X: Feature matrix
         y: Target labels/values
         n_repeats: Number of permutation repeats per feature
-        random_state: Random state for reproducibility
+        random_state: Seed for the feature permutations and the cross-validation folds. The global NumPy random state
+            is neither seeded nor consumed; give the model its own ``random_state`` if it is stochastic.
         scoring: Scoring metric to use
 
     Returns:
@@ -169,7 +170,7 @@ def permutation_importance_biological(
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for permutation importance")
 
-    np.random.seed(random_state)
+    rng = np.random.RandomState(random_state)
 
     # Get baseline score
     baseline_score = cross_val_score(
@@ -187,7 +188,7 @@ def permutation_importance_biological(
         for j in range(n_repeats):
             # Create permuted version of this feature
             X_permuted = X.copy()
-            perm_indices = np.random.permutation(len(X))
+            perm_indices = rng.permutation(len(X))
             X_permuted[:, i] = X[perm_indices, i]
 
             # Calculate score with permuted feature
@@ -252,7 +253,9 @@ def validate_model_stability(
         model_factory: Function that returns a new model instance
         n_bootstraps: Number of bootstrap iterations
         test_size: Proportion of data for testing
-        random_state: Random state for reproducibility
+        random_state: Seed for the bootstrap samples and the train/test splits. The global NumPy random state is
+            neither seeded nor consumed; give the models from ``model_factory`` their own ``random_state`` if they
+            are stochastic.
         **kwargs: Additional parameters
 
     Returns:
@@ -264,7 +267,7 @@ def validate_model_stability(
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for stability validation")
 
-    np.random.seed(random_state)
+    rng = np.random.RandomState(random_state)
     n_samples = len(X)
 
     scores = []
@@ -272,7 +275,7 @@ def validate_model_stability(
 
     for i in range(n_bootstraps):
         # Bootstrap sample
-        indices = np.random.choice(n_samples, size=n_samples, replace=True)
+        indices = rng.choice(n_samples, size=n_samples, replace=True)
         X_boot = X[indices]
         y_boot = y[indices]
 
@@ -382,12 +385,9 @@ def compare_validation_strategies(
                 score = scores.get("accuracy", scores.get("r2", np.array([0]))).mean()
 
             elif strategy == "stratified_5fold":
+                # ``cv`` is the number of folds; cross_validation_scores builds the shuffled StratifiedKFold itself
                 scores = cross_validation_scores(
-                    model_factory(),
-                    X,
-                    y,
-                    cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state),
-                    random_state=random_state,
+                    model_factory(), X, y, cv=5, stratified=True, random_state=random_state
                 )
                 score = scores.get("accuracy", np.array([0])).mean()
 
@@ -529,7 +529,8 @@ def bootstrap_validate(
                      either predictions array or dict with 'predictions' and metric keys
         n_bootstrap: Number of bootstrap iterations
         test_size: Fraction of data for testing
-        random_state: Random seed
+        random_state: Random seed for the bootstrap samples and splits (the global NumPy random state is neither
+            seeded nor consumed)
 
     Returns:
         Dictionary with bootstrap validation results
@@ -537,7 +538,7 @@ def bootstrap_validate(
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for bootstrap validation")
 
-    np.random.seed(random_state)
+    rng = np.random.RandomState(random_state)
     n_samples = len(X)
 
     bootstrap_results_list = []
@@ -545,7 +546,7 @@ def bootstrap_validate(
 
     for i in range(n_bootstrap):
         # Bootstrap sample
-        bootstrap_indices = np.random.choice(n_samples, size=n_samples, replace=True)
+        bootstrap_indices = rng.choice(n_samples, size=n_samples, replace=True)
         X_boot = X[bootstrap_indices]
         y_boot = y[bootstrap_indices]
 
@@ -734,7 +735,8 @@ def learning_curve(
         model_factory: Function that returns a new model instance
         train_sizes: Array of training set sizes (fractions)
         cv: Number of cross-validation folds
-        random_state: Random seed
+        random_state: Random seed for the folds and the training-set subsampling (the global NumPy random state is
+            neither seeded nor consumed)
         classifier_func: Function taking (X_train, y_train, X_val, y_val) returning dict
         cv_folds: Alias for cv
 
@@ -750,7 +752,7 @@ def learning_curve(
     if train_sizes is None:
         train_sizes = np.linspace(0.1, 1.0, 10)
 
-    np.random.seed(random_state)
+    rng = np.random.RandomState(random_state)
 
     train_scores = []
     val_scores = []
@@ -768,7 +770,7 @@ def learning_curve(
         for train_idx, val_idx in kf.split(X, y):
             # Subsample training data
             n_train = max(1, int(len(train_idx) * train_size))
-            train_subset = np.random.choice(train_idx, size=n_train, replace=False)
+            train_subset = rng.choice(train_idx, size=n_train, replace=False)
 
             X_train_fold = X[train_subset]
             y_train_fold = y[train_subset]

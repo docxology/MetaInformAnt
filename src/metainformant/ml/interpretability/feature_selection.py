@@ -9,12 +9,13 @@ information-based selection. All methods include pure Python fallbacks.
 from __future__ import annotations
 
 import math
+import numbers
 import random
 from collections import defaultdict
 from typing import Any, cast
 
 from metainformant.core.utils.logging import get_logger
-from metainformant.ml._numeric import HAS_NUMPY, get_shape, to_1d_list, to_2d_list
+from metainformant.ml._numeric import HAS_NUMPY, get_shape, resolve_python_rng, to_1d_list, to_2d_list
 
 logger = get_logger(__name__)
 
@@ -37,7 +38,7 @@ def _compute_feature_importances_rf(
     y_list: list[float],
     n_samples: int,
     n_features: int,
-    random_state: int | None = None,
+    random_state: int | random.Random | None = None,
 ) -> list[float]:
     """Compute feature importances using a simple decision stump ensemble.
 
@@ -49,18 +50,21 @@ def _compute_feature_importances_rf(
         y_list: Target values as list.
         n_samples: Number of samples.
         n_features: Number of features.
-        random_state: Random seed.
+        random_state: Random seed (or ``random.Random``); the global ``random`` state is neither seeded nor consumed.
 
     Returns:
         List of importance scores per feature.
     """
+    rng = resolve_python_rng(random_state)
     if HAS_SKLEARN:
         X_arr = np.array(X_list)
         y_arr = np.array(y_list)
+        # scikit-learn takes an int seed; a seed drawn from ``rng`` keeps a generator input reproducible too
+        rf_seed = random_state if isinstance(random_state, numbers.Integral) else rng.randrange(2**31)
         rf = RandomForestClassifier(
             n_estimators=100,
             max_depth=5,
-            random_state=random_state,
+            random_state=int(rf_seed),
             n_jobs=-1,
         )
         try:
@@ -70,9 +74,6 @@ def _compute_feature_importances_rf(
             pass
 
     # Pure Python fallback: variance reduction with random splits
-    if random_state is not None:
-        random.seed(random_state)
-
     importances = [0.0] * n_features
     n_trees = 50
 
@@ -82,7 +83,7 @@ def _compute_feature_importances_rf(
 
     for _ in range(n_trees):
         # Bootstrap sample
-        indices = [random.randint(0, n_samples - 1) for _ in range(n_samples)]
+        indices = [rng.randint(0, n_samples - 1) for _ in range(n_samples)]
         boot_X = [X_list[i] for i in indices]
         boot_y = [y_list[i] for i in indices]
 
@@ -139,7 +140,7 @@ def boruta_selection(
     y: Any,
     max_iter: int = 100,
     alpha: float = 0.05,
-    random_state: int | None = None,
+    random_state: int | random.Random | None = None,
 ) -> dict:
     """Boruta all-relevant feature selection.
 
@@ -160,7 +161,9 @@ def boruta_selection(
         y: Target values (n_samples,).
         max_iter: Maximum number of Boruta iterations.
         alpha: Significance threshold for the binomial test.
-        random_state: Random seed for reproducibility.
+        random_state: Seed (or ``random.Random``) for the shadow features and the importance model. The same seed,
+            0 included, gives the same selection; the global ``random`` state is neither seeded nor consumed.
+            ``None`` draws fresh entropy.
 
     Returns:
         Dictionary containing:
@@ -180,8 +183,7 @@ def boruta_selection(
     if len(y_list) != n_samples:
         raise ValueError(f"y length ({len(y_list)}) must match X rows ({n_samples})")
 
-    if random_state is not None:
-        random.seed(random_state)
+    rng = resolve_python_rng(random_state)
 
     logger.info(
         "Boruta selection: %d features, %d samples, max_iter=%d, alpha=%.4f",
@@ -201,7 +203,7 @@ def boruta_selection(
         shadow_features: list[list[float]] = []
         for feat in range(n_features):
             col = [X_list[i][feat] for i in range(n_samples)]
-            random.shuffle(col)
+            rng.shuffle(col)
             shadow_features.append(col)
 
         # Combine real + shadow features
@@ -216,7 +218,10 @@ def boruta_selection(
             y_list,
             n_samples,
             2 * n_features,
-            random_state=(random_state + iteration) if random_state else None,
+            # an integer seed gives iteration k the seed seed + k; a generator input hands out seeds from itself
+            random_state=(
+                random_state + iteration if isinstance(random_state, numbers.Integral) else rng.randrange(2**31)
+            ),
         )
 
         real_importances = combined_importances[:n_features]
@@ -552,7 +557,7 @@ def stability_selection(
     n_bootstrap: int = 100,
     threshold: float = 0.6,
     alpha: float = 0.1,
-    random_state: int | None = None,
+    random_state: int | random.Random | None = None,
 ) -> dict:
     """Stability selection via L1-regularized models on bootstrap subsamples.
 
@@ -567,7 +572,8 @@ def stability_selection(
         n_bootstrap: Number of bootstrap iterations.
         threshold: Minimum selection probability to include a feature.
         alpha: L1 regularization strength.
-        random_state: Random seed for reproducibility.
+        random_state: Seed (or ``random.Random``) for the subsamples. The same seed gives the same selection; the
+            global ``random`` state is neither seeded nor consumed. ``None`` draws fresh entropy.
 
     Returns:
         Dictionary containing:
@@ -586,8 +592,7 @@ def stability_selection(
     if len(y_list) != n_samples:
         raise ValueError(f"y length ({len(y_list)}) must match X rows ({n_samples})")
 
-    if random_state is not None:
-        random.seed(random_state)
+    rng = resolve_python_rng(random_state)
 
     logger.info(
         "Stability selection: %d features, %d bootstrap, threshold=%.2f, alpha=%.4f",
@@ -602,7 +607,7 @@ def stability_selection(
 
     for iteration in range(n_bootstrap):
         # Random subsample (without replacement)
-        indices = random.sample(range(n_samples), subsample_size)
+        indices = rng.sample(range(n_samples), subsample_size)
         sub_X = [X_list[i] for i in indices]
         sub_y = [y_list[i] for i in indices]
 

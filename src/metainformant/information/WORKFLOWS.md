@@ -52,6 +52,11 @@ G.add_edges_from([("A", "B"), ("B", "C"), ("C", "D")])
 from metainformant.information.integration.networks import network_entropy
 entropy = network_entropy(G)
 ```
+This `network_entropy` is `integration.networks.network_entropy(graph, attribute=None, method="shannon")`: it takes a
+NetworkX graph (or a NumPy adjacency array) and returns one float, by default the Shannon entropy of the degree
+distribution. It is a different function from `network_info.information_flow.network_entropy(adjacency_matrix)`, which
+takes a symmetric weighted adjacency matrix and returns a dictionary with the Von Neumann entropy of the Laplacian
+density matrix. Import each one by its module path.
 
 3. **Analyze Information Flow**
 ```python
@@ -64,8 +69,8 @@ print(f"Path length entropy: {flow['path_length_entropy']:.3f} bits")
 ```python
 from metainformant.information.network_info.information_flow import information_flow_network
 time_series = {"A": [...], "B": [...], "C": [...], "D": [...]}  # equal-length series
-result = information_flow_network(time_series, method="transfer_entropy", threshold=0.05)
-print(result["edges"])  # significant directed edges
+result = information_flow_network(time_series, method="transfer_entropy", threshold=0.05, random_state=0)
+print(result["edges"])  # significant directed edges; the same random_state gives the same edges
 ```
 
 ## Workflow 3: Multi-Omics Information Integration

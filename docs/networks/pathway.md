@@ -99,11 +99,11 @@ for pathway_id, result in ranked[:10]:  # Top 10 enriched pathways
 
 Each result holds `overlap_size`, `pathway_size`, `query_size`, `background_size`, `p_value`, `enrichment_ratio`, `expected_overlap` and the overlapping genes (`overlap_genes`, also available as `overlapping_genes`). When a `correction` is requested, every result also carries the adjusted value as `corrected_p_value`.
 
-**Available methods:**
+**Available methods** (any other name raises `ValueError`):
 - `'fisher'`: One-sided Fisher's exact test (default)
 - `'hypergeometric'`: Hypergeometric test
 
-Any other method name is silently treated as `'hypergeometric'`. `correction` is `'bonferroni'` (default), `'fdr'` (Benjamini-Hochberg) or `None`; an unrecognised value copies the raw p-values into `corrected_p_value` unchanged.
+Both methods report the one-sided enrichment p-value `P(X >= overlap)`, so they test the same upper tail. With scipy installed the p-value comes from `scipy.stats`; without scipy, `pathway_enrichment` computes the same upper tail exactly in integer arithmetic, so the result does not depend on whether scipy is available. `correction` is `'bonferroni'` (default), `'fdr'` (Benjamini-Hochberg) or `None`. Benjamini-Hochberg is pure Python, so `'fdr'` is applied with or without scipy. An unrecognised `correction` value copies the raw p-values into `corrected_p_value` unchanged.
 
 ### network_enrichment_analysis()
 
@@ -138,6 +138,35 @@ for pathway_id, result in ranked[:5]:
     print(f"{pathway_id}: p={result['p_value']:.2e}")
     print(f"  Overlapping genes: {result['overlap_genes']}")
 ```
+
+## Pathway Similarity
+
+### pathway_similarity_analysis() and create_pathway_network()
+
+`pathway_similarity_analysis(pathways, method="jaccard")` scores every unordered pair of pathways, and `create_pathway_network(pathways, similarity_threshold=0.1, method="jaccard")` turns those scores into a `networkx` graph. Both take a mapping of pathway ID to a gene list (or to a dict with a `genes` entry, as in `network.pathways`); `method` is `'jaccard'`, `'overlap'` or `'cosine'`, and any other value raises `ValueError`:
+
+```python
+from metainformant.networks.analysis.pathway import create_pathway_network, pathway_similarity_analysis
+
+# Pathway ID -> gene list; the IDs may contain underscores
+pathway_sets = {
+    "KEGG_GLYCOLYSIS": ["HK1", "PFKL", "FBA", "PGK1", "PGAM1"],
+    "KEGG_GLUCONEOGENESIS": ["FBA", "PGK1", "PGAM1", "PCK1"],
+    "KEGG_TCA_CYCLE": ["CS", "ACO1", "IDH1", "OGDH", "SUCLG1"],
+    "KEGG_UNANNOTATED": [],  # no genes: similarity 0.0 with every other pathway
+}
+
+similarity = pathway_similarity_analysis(pathway_sets, method="jaccard")
+print(similarity["n_pathways"], similarity["pathway_names"])
+
+# One node per pathway; an edge joins two pathways whose similarity reaches the threshold
+graph = create_pathway_network(pathway_sets, similarity_threshold=0.2, method="jaccard")
+print(sorted(graph.edges(data="similarity")))  # [('KEGG_GLYCOLYSIS', 'KEGG_GLUCONEOGENESIS', 0.5)]
+```
+
+`pathway_similarity_analysis` returns `similarities`, `method`, `n_pathways` and `pathway_names`. The keys of `similarities` have the form `"{name1}_{name2}"`. A key cannot be split back into the two pathway names when a pathway ID contains an underscore, and two different pairs can then share a key, so do not parse the keys. `create_pathway_network` does not: it scores the pairs directly, so pathway IDs with underscores (`KEGG_GLYCOLYSIS`, `HALLMARK_APOPTOSIS`, ...) produce edges between the right nodes. Each edge stores the pair's score as `similarity`, and a dict-valued pathway entry becomes the attributes of its node.
+
+A pathway with no genes (an empty list, a dict with an empty `genes` entry, or an entry that is neither a list nor a dict with `genes`) has similarity 0.0 with every other pathway under all three methods. The cosine of an empty gene set is undefined and is defined as 0.0, like the Jaccard and overlap scores.
 
 ## Pathway Integration
 

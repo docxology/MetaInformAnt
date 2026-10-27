@@ -196,17 +196,26 @@ time_series = {
     "P3": [...],
     "P4": [...],
 }
-flow = information_flow_network(time_series, method="transfer_entropy", threshold=0.05)
+flow = information_flow_network(time_series, method="transfer_entropy", threshold=0.05, random_state=0)
 print(f"Significant directed edges: {flow['edges']}")
 print(f"Hub nodes: {flow['hub_nodes']}")
 
 # Build an undirected MI network from a data matrix (observations x variables)
 data_matrix = np.array([...])  # shape (n_observations, 4)
 mi_net = mutual_information_network(
-    data_matrix, variable_names=["P1", "P2", "P3", "P4"], threshold=0.05
+    data_matrix, variable_names=["P1", "P2", "P3", "P4"], threshold=0.05, random_state=0
 )
 print(f"Significant pairs: {mi_net['significant_pairs']}")
 ```
+
+Two functions are called `network_entropy`. The one imported above,
+`integration.networks.network_entropy(graph, attribute=None, method="shannon")`, takes a NetworkX graph (or a NumPy
+adjacency array) and returns one float, by default the Shannon entropy of the degree distribution. The other,
+`network_info.information_flow.network_entropy(adjacency_matrix)`, takes a symmetric weighted adjacency matrix and
+returns a dictionary (`entropy`, `normalized_entropy`, `n_nodes`, `density`) holding the Von Neumann entropy of the
+Laplacian density matrix `rho = L / trace(L)`; it raises `ValueError` for a matrix that is not square or not
+symmetric. The `random_state` arguments make the permutation tests of the flow and MI networks reproducible without
+touching the global random state.
 
 ## Example 6: Single-Cell Data Analysis
 

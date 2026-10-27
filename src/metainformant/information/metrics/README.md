@@ -16,7 +16,7 @@ Information theory library: core measures (entropy, MI, KL divergence), advanced
 |------|---------------|
 | `syntactic.py` | `shannon_entropy()`, `mutual_information()`, `kl_divergence()`, `jensen_shannon_divergence()`, `transfer_entropy()`, `renyi_entropy()` |
 | `continuous.py` | `differential_entropy()`, `mutual_information_continuous()`, `copula_entropy()`, `information_flow_network()` |
-| `estimation.py` | `entropy_estimator()` (plugin, Miller-Madow, Chao-Shen, jackknife), `entropy_bootstrap_confidence()` |
+| `estimation.py` | `entropy_estimator()` (plugin, Miller-Madow, Chao-Shen, jackknife), `entropy_bootstrap_confidence()` (resampling from a local `numpy.random.RandomState` built from `random_state`; the global NumPy random state is neither seeded nor consumed) |
 
 ### advanced/
 

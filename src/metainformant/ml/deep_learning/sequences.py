@@ -104,9 +104,17 @@ def conv1d_forward(
 
     Returns:
         3D output (batch × out_len × out_channels).
+
+    Raises:
+        ValueError: If the input is shorter than the convolution kernel.
     """
     batch_size, seq_len, in_ch = x.shape
     out_ch, _, kernel_size = params.weights.shape
+    if seq_len < kernel_size:
+        raise ValueError(
+            f"Input length {seq_len} is shorter than the convolution kernel size {kernel_size}; "
+            "use longer (or padded) sequences or a smaller kernel."
+        )
     out_len = (seq_len - kernel_size) // stride + 1
 
     output = np.zeros((batch_size, out_len, out_ch), dtype=np.float32)
@@ -244,8 +252,21 @@ def predict_sequences(
 
     Returns:
         2D array (batch × n_classes) of predictions (logits or scores).
+
+    Raises:
+        ValueError: If the (padded or truncated) sequences are too short for the convolution layers.
     """
     x = batch_encode(sequences, max_length=max_length, alphabet=config.alphabet)
+
+    # Each stride-1 layer shortens the sequence by (kernel_size - 1), so the stack needs this many positions
+    kernel_sizes = [conv_params.weights.shape[2] for conv_params in weights.conv_layers]
+    min_length = 1 + sum(size - 1 for size in kernel_sizes)
+    if x.shape[1] < min_length:
+        raise ValueError(
+            f"Sequences are {x.shape[1]} positions long, but the {len(kernel_sizes)} convolution layers "
+            f"(kernel sizes {kernel_sizes}) need at least {min_length}; use longer sequences, a larger "
+            "max_length, or smaller kernels."
+        )
 
     for conv_params in weights.conv_layers:
         x = conv1d_forward(x, conv_params)

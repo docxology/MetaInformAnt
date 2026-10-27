@@ -7,6 +7,8 @@ These helpers centralize that conversion logic.
 
 from __future__ import annotations
 
+import numbers
+import random
 from typing import Any, cast
 
 try:
@@ -16,6 +18,28 @@ try:
 except ImportError:  # pragma: no cover - exercised only without numpy
     HAS_NUMPY = False
     np = cast("Any", None)
+
+
+def resolve_python_rng(random_state: Any = None) -> random.Random:
+    """Return the ``random.Random`` generator that ``random_state`` stands for.
+
+    The pure-Python ML routines draw all their randomness from the generator this returns, so they never seed (or
+    consume) the global ``random`` state. An int gives a fresh, reproducible generator, ``None`` a generator seeded from
+    system entropy, and a ``random.Random`` (or a NumPy ``Generator``, from which a seed is drawn) is used as given.
+
+    Args:
+        random_state: ``None``, an integer seed, a ``random.Random`` or a ``numpy.random.Generator``.
+
+    Returns:
+        A ``random.Random`` instance.
+    """
+    if isinstance(random_state, random.Random):
+        return random_state
+    if HAS_NUMPY and isinstance(random_state, np.random.Generator):
+        return random.Random(int(random_state.integers(0, 2**63 - 1)))
+    if isinstance(random_state, numbers.Integral):
+        return random.Random(int(random_state))
+    return random.Random(random_state)
 
 
 def to_2d_list(X: Any) -> list[list[float]]:

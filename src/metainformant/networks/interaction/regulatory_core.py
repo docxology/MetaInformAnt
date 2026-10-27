@@ -239,7 +239,11 @@ def calculate_regulatory_influence(regulatory_graph: Any, source_nodes: List[str
 
 
 def analyze_regulatory_dynamics(
-    regulatory_graph: Any, initial_states: Dict[str, float], time_steps: int = 10, **kwargs: Any
+    regulatory_graph: Any,
+    initial_states: Dict[str, float],
+    time_steps: int = 10,
+    random_state: Any = None,
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     """Simulate regulatory network dynamics.
 
@@ -247,6 +251,9 @@ def analyze_regulatory_dynamics(
         regulatory_graph: NetworkX regulatory graph
         initial_states: Initial expression states for nodes
         time_steps: Number of simulation time steps
+        random_state: Seed (or ``numpy.random.Generator``) for the noise added at every step. The same seed gives
+            the same trajectories; the global NumPy random state is neither seeded nor consumed. ``None`` draws
+            fresh entropy.
         **kwargs: Additional simulation parameters
 
     Returns:
@@ -263,6 +270,7 @@ def analyze_regulatory_dynamics(
 
     nodes = list(regulatory_graph.nodes())
     n_nodes = len(nodes)
+    rng = np.random.default_rng(random_state)
 
     # Initialize state vector
     states = np.zeros((time_steps + 1, n_nodes))
@@ -284,7 +292,7 @@ def analyze_regulatory_dynamics(
                 new_state = np.mean(regulator_states)
 
                 # Add some noise and decay
-                noise = np.random.normal(0, 0.1)
+                noise = rng.normal(0, 0.1)
                 decay = 0.9
 
                 states[t, i] = decay * new_state + (1 - decay) * states[t - 1, i] + noise
@@ -658,7 +666,7 @@ class GeneRegulatoryNetwork:
             Dictionary of motif types and their instances
         """
         motifs: Dict[str, List[List[str]]] = {
-            "feed_forward": [],  # TF1 -> TF2 -> Target
+            "feed_forward": [],  # TF1 -> TF2 -> Target, and TF1 -> Target
             "auto_regulation": [],  # TF regulates itself
             "mutual_regulation": [],  # TF1 <-> TF2
             "cascade": [],  # TF1 -> TF2 -> TF3
@@ -669,12 +677,13 @@ class GeneRegulatoryNetwork:
             if tf in self.get_tf_targets(tf):
                 motifs["auto_regulation"].append([tf])
 
-        # Find feed-forward loops
+        # Find feed-forward loops: the direct edge TF1 -> Target is part of the motif (without it the chain is a
+        # cascade, not a loop)
         for tf1 in self.get_transcription_factors():
             for tf2 in self.get_tf_targets(tf1):
                 if tf2 in self.tf_targets:  # TF2 is also a TF
                     for target in self.get_tf_targets(tf2):
-                        if target not in [tf1, tf2]:  # Avoid self-loops
+                        if target not in [tf1, tf2] and target in self.get_tf_targets(tf1):
                             motifs["feed_forward"].append([tf1, tf2, target])
 
         # Find mutual regulation

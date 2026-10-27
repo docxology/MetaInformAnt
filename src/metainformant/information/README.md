@@ -71,7 +71,7 @@ graph TD
 | Module | Purpose |
 |--------|---------|
 | [`metrics/`](metrics/) | Information-theoretic measures organized into `core/` (syntactic, continuous, estimation), `advanced/` (geometry, channel, decomposition, hypothesis, semantic), and `analysis/` (information profiles, advanced analysis) |
-| [`network_info/`](network_info/) | Transfer entropy, Granger causality, information flow networks |
+| [`network_info/`](network_info/) | Transfer entropy, Granger causality, Von Neumann network entropy, information flow and mutual-information networks (seeded permutation tests) |
 | [`integration/`](integration/) | Cross-omic information integration (DNA, RNA, single-cell) |
 | [`workflow/`](workflow/) | Batch entropy analysis and end-to-end pipelines |
 

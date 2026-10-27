@@ -24,6 +24,10 @@ Shows the marginal effect of one feature (`partial_dependence`, with individual 
 
 Measures the interaction between a pair of features as the variance of the part of their joint partial dependence that is not explained by the two one-feature partial dependences. Identifies features that have synergistic effects on predictions.
 
+### Reproducibility
+
+Permutation importance, Kernel SHAP, LIME, Boruta and stability selection are randomised and take a `random_state`: an integer seed or a `random.Random`. Their randomness (the shuffles, the sampled coalitions, the perturbed samples, the shadow features and the subsamples) comes from the generator that `metainformant.ml._numeric.resolve_python_rng` builds from it. The same seed gives the same result, `random_state=None` draws fresh entropy, and the global `random` state is neither seeded nor consumed. A seed passed to Boruta, `0` included, makes the selection reproducible. Partial dependence and feature interaction are deterministic.
+
 ## Function Reference
 
 The explainers live in `metainformant.ml.interpretability.explainers` and the feature selection methods in `metainformant.ml.interpretability.feature_selection`; neither is re-exported from `metainformant.ml`.
@@ -37,7 +41,7 @@ def compute_permutation_importance(
     y: Any,
     n_repeats: int = 10,
     metric: str = "accuracy",
-    random_state: int | None = None,
+    random_state: int | random.Random | None = None,
 ) -> dict: ...
 ```
 
@@ -51,10 +55,11 @@ def compute_shap_values_kernel(
     X: Any,
     n_samples: int = 100,
     background: Any | None = None,
+    random_state: int | random.Random | None = None,
 ) -> dict: ...
 ```
 
-Compute Kernel SHAP values for each row of `X`. `predict_fn` is a callable that takes a 2D array and returns one prediction per row (for a classifier pass a wrapper such as `lambda A: model.predict_proba(A)[:, 1]`). `background` defaults to the mean of `X`. Returns `shap_values` (list of lists, n_instances x n_features), `expected_value` (base prediction) and `feature_names`.
+Compute Kernel SHAP values for each row of `X`. `predict_fn` is a callable that takes a 2D array and returns one prediction per row (for a classifier pass a wrapper such as `lambda A: model.predict_proba(A)[:, 1]`). `n_samples` is the number of coalition samples per instance and `background` defaults to the mean of `X`; `random_state` seeds the sampled coalitions. Returns `shap_values` (list of lists, n_instances x n_features), `expected_value` (base prediction) and `feature_names`.
 
 ### compute_lime_explanation
 
@@ -66,10 +71,11 @@ def compute_lime_explanation(
     n_samples: int = 1000,
     n_features: int = 10,
     kernel_width: float | None = None,
+    random_state: int | random.Random | None = None,
 ) -> dict: ...
 ```
 
-Generate a LIME explanation for a single instance (a plain list of feature values). Returns `coefficients` (a list of `(feature_name, coefficient)` tuples for the top `n_features`), `intercept`, `local_prediction`, `r_squared` (fidelity of the local model) and `feature_contributions` (every feature name mapped to its coefficient).
+Generate a LIME explanation for a single instance (a plain list of feature values; `feature_names` is required). `random_state` seeds the perturbed samples. Returns `coefficients` (a list of `(feature_name, coefficient)` tuples for the top `n_features`), `intercept`, `local_prediction`, `r_squared` (fidelity of the local model) and `feature_contributions` (every feature name mapped to its coefficient).
 
 ### partial_dependence
 
@@ -117,7 +123,7 @@ def boruta_selection(
     y: Any,
     max_iter: int = 100,
     alpha: float = 0.05,
-    random_state: int | None = None,
+    random_state: int | random.Random | None = None,
 ) -> dict: ...
 
 def recursive_elimination(
@@ -135,7 +141,7 @@ def stability_selection(
     n_bootstrap: int = 100,
     threshold: float = 0.6,
     alpha: float = 0.1,
-    random_state: int | None = None,
+    random_state: int | random.Random | None = None,
 ) -> dict: ...
 
 def mutual_information_selection(
@@ -177,13 +183,13 @@ for idx in ranking[:5]:
 
 # SHAP values (predict_fn returns the probability of class 1)
 predict_fn = lambda A: model.predict_proba(A)[:, 1]
-shap = compute_shap_values_kernel(predict_fn, X_test[:10], n_samples=100, background=X_train[:50])
+shap = compute_shap_values_kernel(predict_fn, X_test[:10], n_samples=100, background=X_train[:50], random_state=0)
 feature_effects = np.abs(np.array(shap["shap_values"])).mean(axis=0)
 print(f"Top feature effect: {feature_effects.max():.4f}")
 
 # LIME explanation for a single sample
 feature_names = [f"gene_{i}" for i in range(X.shape[1])]
-lime = compute_lime_explanation(predict_fn, X_test[0].tolist(), feature_names, n_features=5)
+lime = compute_lime_explanation(predict_fn, X_test[0].tolist(), feature_names, n_features=5, random_state=0)
 for name, weight in lime["coefficients"]:
     print(f"{name}: weight={weight:.4f}")
 
@@ -211,6 +217,7 @@ print(selected, stable["selected_features"])
 - **Required**: only the METAINFORMANT package itself; NumPy is optional (inputs may be NumPy arrays or nested lists)
 - The methods are configured through their arguments; no environment variables are read
 - `compute_permutation_importance`, `partial_dependence` and `feature_interaction` call `model.predict`
+- The randomised methods draw from their own generator (see Reproducibility), so a seed makes a run repeatable without touching the global random state
 - `compute_shap_values_kernel` and `compute_lime_explanation` take any `predict_fn` that maps a 2D array to one prediction per row, so `predict_proba` works through a small wrapper
 - `recursive_elimination` needs a model with `fit` and `predict` (a `TypeError` is raised otherwise)
 

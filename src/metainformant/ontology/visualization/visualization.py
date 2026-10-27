@@ -55,6 +55,7 @@ def plot_go_dag(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
+    layout_seed: int | None = None,
     **kwargs: Any,
 ) -> Axes:
     """Plot Gene Ontology directed acyclic graph (DAG).
@@ -65,6 +66,8 @@ def plot_go_dag(
         ax: Optional matplotlib axes to plot on
         output_path: Optional path to save the figure
         figsize: Figure size as (width, height)
+        layout_seed: Seed of the random starting positions of the layout; the same seed gives the same drawing.
+            ``None`` leaves the layout unseeded (it then draws from NumPy's global generator, as networkx does).
         **kwargs: Any: Additional arguments for customization
 
     Returns:
@@ -83,9 +86,9 @@ def plot_go_dag(
 
     # Use hierarchical layout
     try:
-        pos = nx.spring_layout(go_graph, k=1, iterations=50)
+        pos = nx.spring_layout(go_graph, k=1, iterations=50, seed=layout_seed)
     except (ValueError, nx.NetworkXError):
-        pos = nx.random_layout(go_graph)
+        pos = nx.random_layout(go_graph, seed=layout_seed)
 
     # Draw nodes
     node_colors = ["red" if terms and node in terms else "lightblue" for node in go_graph.nodes()]
@@ -301,6 +304,7 @@ def plot_ontology_network(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
+    layout_seed: int | None = None,
     **kwargs: Any,
 ) -> Axes:
     """Plot ontology relationship network.
@@ -311,6 +315,8 @@ def plot_ontology_network(
         ax: Optional matplotlib axes to plot on
         output_path: Optional path to save the figure
         figsize: Figure size as (width, height)
+        layout_seed: Seed of the random starting positions of the layout; the same seed gives the same drawing.
+            ``None`` leaves the layout unseeded (it then draws from NumPy's global generator, as networkx does).
         **kwargs: Any: Additional arguments for customization
 
     Returns:
@@ -330,7 +336,7 @@ def plot_ontology_network(
         fig, ax = plt.subplots(figsize=figsize)
 
     # Layout
-    pos = nx.spring_layout(ontology_graph, k=1, iterations=50)
+    pos = nx.spring_layout(ontology_graph, k=1, iterations=50, seed=layout_seed)
 
     # Node colors
     colors: list[str] | str = "lightblue"
@@ -615,6 +621,7 @@ def create_interactive_go_network(
     term_annotations: Dict[str, Any] | None = None,
     *,
     output_path: str | Path | None = None,
+    layout_seed: int | None = None,
     **kwargs: Any,
 ) -> Any:
     """Create an interactive GO network visualization using Plotly.
@@ -623,6 +630,8 @@ def create_interactive_go_network(
         go_graph: NetworkX DiGraph representing GO hierarchy
         term_annotations: Optional annotations for terms
         output_path: Optional path to save the HTML file
+        layout_seed: Seed of the random starting positions of the layout; the same seed gives the same drawing.
+            ``None`` leaves the layout unseeded (it then draws from NumPy's global generator, as networkx does).
         **kwargs: Any: Additional arguments for Plotly customization
 
     Returns:
@@ -634,7 +643,7 @@ def create_interactive_go_network(
     validation.validate_type(go_graph, nx.DiGraph, "go_graph")
 
     # Create positions
-    pos = nx.spring_layout(go_graph, dim=3, k=1, iterations=50)
+    pos = nx.spring_layout(go_graph, dim=3, k=1, iterations=50, seed=layout_seed)
 
     # Extract node and edge data
     node_x = []

@@ -22,6 +22,9 @@ logger = logging.get_logger(__name__)
 _OBO_ESCAPED_PUNCTUATION = frozenset(':,"\\()[]{}')
 _OBO_ESCAPED_WHITESPACE = {"n": "\n", "t": "\t", "W": " "}
 
+# The scope word that follows the quoted text of a ``synonym:`` line
+_OBO_SYNONYM_SCOPE = re.compile(r"(?:EXACT|BROAD|NARROW|RELATED)(?=[\s\[{!]|$)")
+
 
 def _unescape_obo(text: str) -> str:
     """Decode OBO backslash escapes (``\\"``, ``\\\\``, ``\\,``, ``\\n``, ``\\t``, ``\\W`` ...)."""
@@ -70,12 +73,13 @@ def format_obo_xref_list(xrefs: Iterable[str]) -> str:
     return "[" + ", ".join(items) + "]"
 
 
-def _closing_quote_index(value: str) -> int:
+def _closing_quote_index(value: str, synonym: bool = False) -> int:
     """Index of the quote that closes the quoted string opening at ``value[0]``, or -1 if there is none.
 
     An unescaped quote only closes the string when what follows it is the end of the value, the ``[`` of the dbxref
-    list, the ``{`` of trailing modifiers or a ``!`` comment. Any other unescaped quote is kept as literal text, so
-    definitions written without escaping (as older versions of this package did) still read back whole.
+    list, the ``{`` of trailing modifiers or a ``!`` comment (for a ``synonym:`` value, also the scope word that comes
+    before the list). Any other unescaped quote is kept as literal text, so definitions and synonyms written without
+    escaping (as older versions of this package did) still read back whole.
     """
     start = 1
     while True:
@@ -88,7 +92,7 @@ def _closing_quote_index(value: str) -> int:
             backslashes += 1
         if backslashes % 2 == 0:
             tail = value[index + 1 :].lstrip()
-            if not tail or tail[0] in "[{!":
+            if not tail or tail[0] in "[{!" or (synonym and _OBO_SYNONYM_SCOPE.match(tail)):
                 return index
         start = index + 1
 
@@ -161,6 +165,49 @@ def parse_obo_definition(value: str) -> Tuple[str, List[str]]:
     rest = value[close + 1 :].lstrip()
     xrefs = _parse_obo_xref_list(rest) if rest.startswith("[") else []
     return text, xrefs
+
+
+def parse_obo_synonym(value: str) -> Tuple[str, Optional[str], List[str]]:
+    """Parse the value of an OBO ``synonym:`` tag into ``(synonym_text, scope, dbxrefs)``.
+
+    The value is a quoted string, a scope word (``EXACT``, ``BROAD``, ``NARROW`` or ``RELATED``), an optional synonym
+    type and a bracketed dbxref list, for example ``"the \\"x\\" process" EXACT [GOC:mah]``. As for definitions
+    (:func:`parse_obo_definition`) the text is returned without its quotes and with escape sequences decoded, a ``!``
+    inside the quoted text is part of the text and not a comment, and malformed values are read leniently: a value that
+    is not quoted is returned as written (minus a trailing ``! comment``) and a quoted string that is never closed
+    runs to the end of the value.
+
+    Args:
+        value: Everything after ``synonym:`` on the line.
+
+    Returns:
+        Tuple of the synonym text, its scope (``None`` when the value has none) and the list of dbxrefs (empty when
+        none are given).
+
+    Examples:
+        >>> parse_obo_synonym('"the \\\\"x\\\\" process" EXACT [GOC:mah]')
+        ('the "x" process', 'EXACT', ['GOC:mah'])
+    """
+    value = value.strip()
+    if not value.startswith('"'):
+        return value.split(" ! ", 1)[0].strip(), None, []
+
+    close = _closing_quote_index(value, synonym=True)
+    if close < 0:
+        return _unescape_obo(value[1:].rstrip().rstrip('"')), None, []
+
+    text = _unescape_obo(value[1:close])
+    rest = value[close + 1 :].lstrip()
+    scope_match = _OBO_SYNONYM_SCOPE.match(rest)
+    scope = scope_match.group(0) if scope_match else None
+    if scope_match:
+        rest = rest[scope_match.end() :].lstrip()
+    # An optional synonym type identifier may sit between the scope and the dbxref list
+    bracket = rest.find("[")
+    xrefs: List[str] = []
+    if bracket >= 0 and "!" not in rest[:bracket] and "{" not in rest[:bracket]:
+        xrefs = _parse_obo_xref_list(rest[bracket:])
+    return text, scope, xrefs
 
 
 def parse_obo(path: str | Path) -> Ontology:
@@ -317,10 +364,10 @@ def _parse_term_stanza(stanza_lines: List[str]) -> Optional[Term]:
         elif key.startswith("synonym"):
             if "synonyms" not in term_data:
                 term_data["synonyms"] = []
-            # Extract synonym text from quotes
-            synonym_match = re.search(r'"([^"]*)"', value)
-            if synonym_match:
-                term_data["synonyms"].append(synonym_match.group(1))
+            # The synonym is a quoted string followed by a scope and a dbxref list; parse it from the raw value because
+            # a " ! " inside the quotes is text, not a trailing comment, and an escaped quote does not end the text.
+            if raw_value.startswith('"'):
+                term_data["synonyms"].append(parse_obo_synonym(raw_value)[0])
         elif key.startswith("xref"):
             if "xrefs" not in term_data:
                 term_data["xrefs"] = []

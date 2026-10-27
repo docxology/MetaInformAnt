@@ -25,15 +25,25 @@ except ImportError:
 
 
 def infer_regulatory_network_from_expression(
-    expression_data: Any, regulators: List[str], method: str = "correlation", threshold: float = 0.5, **kwargs: Any
+    expression_data: Any,
+    regulators: List[str],
+    method: str = "correlation",
+    threshold: float = 0.5,
+    random_state: Any = None,
+    **kwargs: Any,
 ) -> Any:
     """Infer regulatory network from gene expression data.
 
     Args:
         expression_data: pandas DataFrame with genes as rows, samples as columns
         regulators: List of potential regulator genes
-        method: Inference method ('correlation', 'mutual_info', 'grnboost2')
+        method: Inference method ('correlation' or 'mutual_info'). GRNBoost2 is not implemented (it needs the
+            ``arboreto`` package) and raises ``NotImplementedError`` if requested.
         threshold: Edge weight threshold
+        random_state: Seed (or ``numpy.random.RandomState``) for the small random jitter scikit-learn adds to continuous
+            inputs when it estimates mutual information (only the 'mutual_info' method is random). The same seed gives
+            the same weights and edges; the global NumPy random state is neither seeded nor consumed. ``None`` draws
+            fresh entropy.
         **kwargs: Additional inference parameters
 
     Returns:
@@ -87,7 +97,13 @@ def infer_regulatory_network_from_expression(
     elif method == "mutual_info":
         # Mutual information between regulators and targets
         try:
+            import numpy as np
             from sklearn.feature_selection import mutual_info_regression
+
+            # One generator for the whole run, so every pair gets its own (reproducible) jitter
+            rng = (
+                random_state if isinstance(random_state, np.random.RandomState) else np.random.RandomState(random_state)
+            )
 
             # Transpose for sklearn format (samples x features)
             expr_T = expression_data.T
@@ -107,7 +123,7 @@ def infer_regulatory_network_from_expression(
                     target_expr = expr_T.iloc[:, target_idx]
 
                     # Calculate mutual information
-                    mi = mutual_info_regression(reg_expr.values.reshape(-1, 1), target_expr.values)[0]
+                    mi = mutual_info_regression(reg_expr.values.reshape(-1, 1), target_expr.values, random_state=rng)[0]
 
                     if mi >= threshold:
                         G.add_edge(regulator, target, weight=mi, method="mutual_info")
@@ -136,6 +152,7 @@ def infer_grn(
     method: str = "correlation",
     threshold: float = 0.5,
     tf_genes: Optional[List[str]] = None,
+    random_state: Any = None,
     **kwargs: Any,
 ) -> GeneRegulatoryNetwork:
     """Infer gene regulatory network from expression data.
@@ -143,13 +160,24 @@ def infer_grn(
     Args:
         expression_data: Expression matrix (samples x genes)
         gene_names: List of gene names
-        method: Inference method ('correlation', 'mutual_info', 'granger')
+        method: Inference method ('correlation' or 'mutual_info'). Granger causality is not offered: it needs
+            time-ordered observations, which a samples x genes matrix does not guarantee. For time series use
+            ``metainformant.information.network_info.information_flow.information_flow_network`` with
+            ``method="granger_causality"``.
         threshold: Correlation threshold for edge inclusion
         tf_genes: Optional list of known transcription factors
+        random_state: Seed (or ``numpy.random.RandomState``) for the small random jitter scikit-learn adds to continuous
+            inputs when it estimates mutual information (only the 'mutual_info' method is random). The same seed gives
+            the same weights and edges; the global NumPy random state is neither seeded nor consumed. ``None`` draws
+            fresh entropy.
         **kwargs: Additional method-specific parameters
 
     Returns:
         GeneRegulatoryNetwork instance
+
+    Raises:
+        ValueError: If ``method`` is not one of the supported methods, or ``gene_names`` does not match the
+            number of expression columns.
     """
     if not HAS_NETWORKX:
         raise ImportError("NetworkX required for GRN inference")
@@ -211,6 +239,9 @@ def infer_grn(
         import numpy as np
         from sklearn.feature_selection import mutual_info_regression
 
+        # One generator for the whole run, so every pair gets its own (reproducible) jitter
+        rng = random_state if isinstance(random_state, np.random.RandomState) else np.random.RandomState(random_state)
+
         if tf_genes is None:
             # Use all genes as potential TFs
             tf_genes = gene_names
@@ -228,13 +259,13 @@ def infer_grn(
                 target_expression = expression_matrix[:, j]
 
                 # Calculate mutual information
-                mi = mutual_info_regression(tf_expression.reshape(-1, 1), target_expression)[0]
+                mi = mutual_info_regression(tf_expression.reshape(-1, 1), target_expression, random_state=rng)[0]
 
                 if mi >= threshold:
                     network.add_regulation(tf, target, weight=mi, type="regulates")
 
     else:
-        raise ValueError(f"Unknown GRN inference method: {method}")
+        raise ValueError(f"Unknown GRN inference method: {method}. Supported methods: 'correlation', 'mutual_info'.")
 
     # Set network attributes
     network.metadata.update(
@@ -268,14 +299,18 @@ def regulatory_motifs(grn: GeneRegulatoryNetwork) -> List[Dict[str, Any]]:
     if not HAS_NETWORKX:
         return motifs
 
-    # Find feed-forward loops (TF1 -> TF2 -> Target)
+    # Find feed-forward loops (TF1 -> TF2 -> Target together with the direct edge TF1 -> Target)
     for tf1 in grn.get_transcription_factors():
         for tf2 in grn.get_tf_targets(tf1):
             if tf2 in grn.tf_targets:  # TF2 is also a TF
                 for target in grn.get_tf_targets(tf2):
                     if target not in [tf1, tf2]:  # Avoid self-loops
-                        # Check if TF1 regulates TF2 and TF2 regulates target
-                        if grn.graph.has_edge(tf1, tf2) and grn.graph.has_edge(tf2, target):
+                        # All three edges are required: without TF1 -> Target the chain is a cascade, not a loop
+                        if (
+                            grn.graph.has_edge(tf1, tf2)
+                            and grn.graph.has_edge(tf2, target)
+                            and grn.graph.has_edge(tf1, target)
+                        ):
                             motifs.append(
                                 {"motif_type": "feed_forward_loop", "genes": [tf1, tf2, target], "confidence": 0.8}
                             )

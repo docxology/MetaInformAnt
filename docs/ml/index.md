@@ -138,6 +138,8 @@ print(comparison["best_method"])  # None when every method failed
 
 `cross_validate_biological` raises instead of returning partial results. When a metric cannot be computed (for example `cv_folds` larger than the sample count of every class, non-finite features for a method that rejects them, or a ROC-AUC that is undefined in a fold), the original exception propagates with the failing metric named in an exception note, or a `ValueError` is raised for non-finite fold scores. No entry of `cross_validation` is ever `None` or NaN.
 
+`random_state` seeds the folds and the model of `cross_validate_biological` for every method, `'ensemble'` included. `parallel_jobs` (default `-1`) is the number of parallel jobs for the cross-validation and, for `method="ensemble"`, for the voting ensemble itself unless an explicit `n_jobs` keyword is passed; use `parallel_jobs=1` where process pools are unavailable. To score one model under several validation strategies, see `compare_validation_strategies` in the [evaluation guide](./evaluation.md#compare_validation_strategies).
+
 `compare_classifiers` runs `cross_validate_biological` for each method and catches failures per method. A failed method appears as `{"error": message}` under `comparison[method]` and never wins. `best_method` is the successful method with the highest mean accuracy, or `None` when every method failed.
 
 ### Feature Selection
@@ -189,6 +191,8 @@ bootstrap_results = bootstrap_validate(features, labels, model_func, n_bootstrap
 # Learning curves from a model factory
 curve = learning_curve(features, labels, model_factory)
 ```
+
+Functions that draw random numbers take a `random_state` and use a generator of their own, so a seed reproduces the result and the global NumPy random state is neither seeded nor consumed (see [Reproducibility](./evaluation.md#reproducibility)).
 
 ## Integration with Other Modules
 

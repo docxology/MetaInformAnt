@@ -30,7 +30,7 @@ def random_search(
     n_iter: int = 50,
     cv: int = 5,
     metric: str = "accuracy",                   # Named 'metric' not 'scoring'
-    random_state: int | None = None,
+    random_state: int | random.Random | None = None,   # own generator; the global random state is untouched
 ) -> dict: ...
 ```
 
@@ -62,7 +62,7 @@ def bayesian_optimization(
     param_space: dict,                          # dict[name] = {'low': float, 'high': float, 'log': bool}
     n_iter: int = 30,                           # Not 'n_iterations'
     n_initial: int = 5,
-    random_state: int | None = None,
+    random_state: int | random.Random | None = None,   # own generator; the global random state is untouched
 ) -> dict: ...
 ```
 
@@ -171,7 +171,7 @@ def cross_validate(
 ```
 This is a more general wrapper.
 
-A function named `cross_validate_biological` does exist, but in `models/classification.py`, with a different purpose and signature: `cross_validate_biological(X, y, method="rf", cv_folds=5, random_state=None, algorithm=None, parallel_jobs=-1, **kwargs)` cross-validates a classifier chosen by name and returns a dict (`cross_validation` per-metric `mean`/`std`/`scores`, plus top-level `accuracy` and `mean_accuracy`). A metric that cannot be computed raises instead of becoming a `None` or NaN entry: the original exception propagates with the failing metric named in an exception note, and non-finite fold scores raise a `ValueError`. `compare_classifiers(X, y, methods=None, cv_folds=5, random_state=None)` in the same module runs it per method and returns `{"comparison": ..., "best_method": ...}`; a failed method is reported as `{"error": message}` under `comparison`, is never selected, and `best_method` is `None` when every method failed.
+A function named `cross_validate_biological` does exist, but in `models/classification.py`, with a different purpose and signature: `cross_validate_biological(X, y, method="rf", cv_folds=5, random_state=None, algorithm=None, parallel_jobs=-1, **kwargs)` cross-validates a classifier chosen by name (`'rf'`, `'gb'`, `'lr'` or `'ensemble'`) and returns a dict (`cross_validation` per-metric `mean`/`std`/`scores`, plus top-level `accuracy` and `mean_accuracy`). `random_state` seeds the folds and the model for every method, `'ensemble'` included. `parallel_jobs` sets the parallel jobs of the cross-validation and, for `method="ensemble"`, of the voting ensemble itself unless an explicit `n_jobs` keyword is passed; `parallel_jobs=1` starts no worker processes. A metric that cannot be computed raises instead of becoming a `None` or NaN entry: the original exception propagates with the failing metric named in an exception note, and non-finite fold scores raise a `ValueError`. `compare_classifiers(X, y, methods=None, cv_folds=5, random_state=None)` in the same module runs it per method and returns `{"comparison": ..., "best_method": ...}`; a failed method is reported as `{"error": message}` under `comparison`, is never selected, and `best_method` is `None` when every method failed.
 
 **Recommendation:** Either rename source to match docs or update docs to show actual function names.
 
@@ -224,7 +224,7 @@ def compute_permutation_importance(
     y: Any,
     n_repeats: int = 10,
     metric: str = "accuracy",            # Named 'metric' not 'scoring'
-    random_state: int | None = None,
+    random_state: int | random.Random | None = None,
 ) -> dict: ...
 # Returns: importances_mean, importances_std, feature_names, baseline_score
 # NO 'ranking' key, NO 'scores_per_feature' — different return structure
@@ -253,6 +253,7 @@ def compute_lime_explanation(
     n_samples: int = 1000,
     n_features: int = 10,
     kernel_width: float | None = None,
+    random_state: int | random.Random | None = None,
 ) -> dict: ...
 # Returns: coefficients, intercept, local_prediction, r_squared, feature_contributions
 # NO 'feature_weights', NO 'actual_prediction'
@@ -291,6 +292,7 @@ def compute_shap_values_kernel(
     X: Any,
     n_samples: int = 100,
     background: Any | None = None,
+    random_state: int | random.Random | None = None,   # seeds the sampled coalitions
 ) -> dict: ...
 ```
 
@@ -314,7 +316,7 @@ def boruta_selection(
     y: Any,
     max_iter: int = 100,
     alpha: float = 0.05,                  # Extra parameter not in docs
-    random_state: int | None = None,
+    random_state: int | random.Random | None = None,   # a seed, 0 included, makes the selection reproducible
 ) -> dict: ...
 ```
 **Does NOT take `model` parameter** — builds internal random forest. Docs incorrectly show `model` as first arg.

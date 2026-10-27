@@ -353,7 +353,8 @@ def entropy_bootstrap_confidence(
         method: Estimation method
         n_bootstraps: Number of bootstrap samples
         confidence_level: Confidence level (0-1)
-        random_state: Random state for reproducibility
+        random_state: Seed for the bootstrap resampling. The same seed gives the same interval; the global NumPy
+            random state is neither seeded nor consumed. ``None`` draws fresh entropy.
 
     Returns:
         Dictionary with entropy estimate and confidence interval
@@ -381,13 +382,13 @@ def entropy_bootstrap_confidence(
             "confidence_level": confidence_level,
         }
 
-    np.random.seed(random_state)
+    rng = np.random.RandomState(random_state)
     bootstrap_entropies = []
 
     # Generate bootstrap samples
     for _ in range(n_bootstraps):
         # Bootstrap resampling
-        bootstrap_sample = np.random.choice(items, size=len(items), replace=True)
+        bootstrap_sample = rng.choice(items, size=len(items), replace=True)
 
         # Convert back to counts
         bootstrap_counts = Counter(bootstrap_sample)

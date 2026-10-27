@@ -19,8 +19,13 @@ Model validation and cross-validation utilities for biological data analysis.
 | `bootstrap_validate` | Bootstrap validation of a `(X_train, y_train, X_test, y_test)` model function (`mean_mse`, `std_mse`, per-iteration results) |
 | `validate_model_stability` | Accuracy (or R-squared) spread across bootstrap samples |
 | `learning_curve` | Train/validation scores at increasing training sizes |
+| `compare_validation_strategies` | Score one model under `"holdout"`, `"<k>fold_cv"` (for example `"5fold_cv"`) and `"stratified_5fold"` strategies; returns `comparison`, `best_strategy` and `strategies_tested` |
 
-`cross_validate_biological`, which cross-validates a classifier chosen by name, lives in `metainformant.ml.models.classification` together with `compare_classifiers`. Unlike `cross_validation_scores`, which logs a warning and returns an empty array for a metric that could not be computed, `cross_validate_biological` raises: the original exception propagates with the failing metric named in an exception note, and non-finite fold scores raise a `ValueError`, so no metric entry is ever `None` or NaN. `compare_classifiers` reports a failed method as `{"error": message}`, never selects it as `best_method`, and returns `best_method=None` when every method failed.
+`cross_validate_biological`, which cross-validates a classifier chosen by name (`'rf'`, `'gb'`, `'lr'` or `'ensemble'`), lives in `metainformant.ml.models.classification` together with `compare_classifiers`. `random_state` seeds its folds and its model, for `method="ensemble"` too. `parallel_jobs` is the number of parallel jobs for the cross-validation and, for the ensemble, for the voting ensemble itself unless an explicit `n_jobs` keyword is given; `parallel_jobs=1` starts no worker processes. Unlike `cross_validation_scores`, which logs a warning and returns an empty array for a metric that could not be computed, `cross_validate_biological` raises: the original exception propagates with the failing metric named in an exception note, and non-finite fold scores raise a `ValueError`, so no metric entry is ever `None` or NaN. `compare_classifiers` reports a failed method as `{"error": message}`, never selects it as `best_method`, and returns `best_method=None` when every method failed.
+
+## Reproducibility
+
+The helpers that draw random numbers (`permutation_importance_biological`, `bootstrap_validate`, `validate_model_stability`, `learning_curve`) use a generator of their own, built from `random_state`: the same seed gives the same result, `None` draws fresh entropy, and the global NumPy random state is neither seeded nor consumed. The cross-validation helpers hand `random_state` to the shuffled scikit-learn splitters. A stochastic model needs its own `random_state`.
 
 ## Usage
 

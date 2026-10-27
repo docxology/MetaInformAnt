@@ -75,6 +75,21 @@ class BiologicalRegressor:
     def feature_importances(self) -> dict[str, float] | None
 ```
 
+### Prediction uncertainty
+
+```python-snippet
+def analyze_prediction_uncertainty(
+    X: np.ndarray,
+    y: np.ndarray,
+    X_test: np.ndarray,
+    method: str = "rf",
+    n_bootstraps: int = 100,
+    random_state: int | None = None,
+) -> Dict[str, Any]
+```
+
+`analyze_prediction_uncertainty` (in `metainformant.ml.models.regression`) trains `n_bootstraps` regressors (`method` as for `train_regressor`) on bootstrap samples of `(X, y)` and predicts `X_test` with each. It returns `n_bootstraps`, `mean_predictions`, `std_predictions`, `ci_lower_95`, `ci_upper_95` and `prediction_ranges`, one value per test row. `random_state` seeds the bootstrap samples, which are drawn from a `numpy.random.RandomState` of their own, and the regressors: the same seed gives the same intervals, and the global NumPy random state is neither seeded nor consumed.
+
 ## Usage Examples
 
 ```python
@@ -116,8 +131,8 @@ clf.fit(X_train, y_train)
 
 ## Configuration
 
-- **Environment prefix**: `ML_`
 - **Required**: numpy, scikit-learn
+- No environment variables are read; configure models through their arguments
 - All models support `random_state` for reproducibility
 - Classifiers default to probability-enabled predictions (required for ROC AUC)
 - Regressors compute R-squared, MSE, MAE, and explained variance by default

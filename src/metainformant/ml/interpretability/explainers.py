@@ -13,7 +13,7 @@ import random
 from typing import Any, cast
 
 from metainformant.core.utils.logging import get_logger
-from metainformant.ml._numeric import HAS_NUMPY, get_shape, to_1d_list, to_2d_list
+from metainformant.ml._numeric import HAS_NUMPY, get_shape, resolve_python_rng, to_1d_list, to_2d_list
 
 logger = get_logger(__name__)
 
@@ -89,7 +89,7 @@ def compute_permutation_importance(
     y: Any,
     n_repeats: int = 10,
     metric: str = "accuracy",
-    random_state: int | None = None,
+    random_state: int | random.Random | None = None,
 ) -> dict:
     """Compute permutation feature importance.
 
@@ -104,7 +104,8 @@ def compute_permutation_importance(
         y: True target values (n_samples,).
         n_repeats: Number of times to shuffle each feature.
         metric: Scoring metric ('accuracy', 'mse', 'r2').
-        random_state: Random seed for reproducibility.
+        random_state: Seed (or ``random.Random``) for the shuffles. The same seed gives the same importances; the
+            global ``random`` state is neither seeded nor consumed. ``None`` draws fresh entropy.
 
     Returns:
         Dictionary containing:
@@ -123,8 +124,7 @@ def compute_permutation_importance(
     if len(y_list) != n_samples:
         raise ValueError(f"y length ({len(y_list)}) must match X rows ({n_samples})")
 
-    if random_state is not None:
-        random.seed(random_state)
+    rng = resolve_python_rng(random_state)
 
     logger.info(
         "Computing permutation importance: %d features, %d repeats, metric=%s",
@@ -146,7 +146,7 @@ def compute_permutation_importance(
             # Create shuffled copy
             X_shuffled = [row[:] for row in X_list]
             col_values = [X_shuffled[i][feat_idx] for i in range(n_samples)]
-            random.shuffle(col_values)
+            rng.shuffle(col_values)
             for i in range(n_samples):
                 X_shuffled[i][feat_idx] = col_values[i]
 
@@ -183,6 +183,7 @@ def compute_shap_values_kernel(
     X: Any,
     n_samples: int = 100,
     background: Any | None = None,
+    random_state: int | random.Random | None = None,
 ) -> dict:
     """Kernel SHAP approximation for model explanations.
 
@@ -198,6 +199,8 @@ def compute_shap_values_kernel(
         n_samples: Number of coalition samples per instance.
         background: Background dataset for computing baseline predictions.
             If None, uses the mean of X.
+        random_state: Seed (or ``random.Random``) for the sampled coalitions. The same seed gives the same SHAP
+            values; the global ``random`` state is neither seeded nor consumed. ``None`` draws fresh entropy.
 
     Returns:
         Dictionary containing:
@@ -215,6 +218,7 @@ def compute_shap_values_kernel(
         raise ValueError("X must not be empty")
 
     X_list = to_2d_list(X)
+    rng = resolve_python_rng(random_state)
 
     logger.info(
         "Computing Kernel SHAP: %d instances, %d features, %d coalition samples",
@@ -251,9 +255,9 @@ def compute_shap_values_kernel(
 
         for _ in range(n_samples):
             # Sample a random coalition (binary mask)
-            n_present = random.randint(1, n_features - 1)
+            n_present = rng.randint(1, n_features - 1)
             coalition = [0] * n_features
-            indices = random.sample(range(n_features), n_present)
+            indices = rng.sample(range(n_features), n_present)
             for idx in indices:
                 coalition[idx] = 1
             coalitions.append(coalition)
@@ -417,6 +421,7 @@ def compute_lime_explanation(
     n_samples: int = 1000,
     n_features: int = 10,
     kernel_width: float | None = None,
+    random_state: int | random.Random | None = None,
 ) -> dict:
     """Generate a LIME (Local Interpretable Model-agnostic Explanations) explanation.
 
@@ -432,6 +437,8 @@ def compute_lime_explanation(
         n_features: Number of top features to include in the explanation.
         kernel_width: Width of the exponential kernel for proximity
             weighting. If None, uses sqrt(n_features) * 0.75.
+        random_state: Seed (or ``random.Random``) for the perturbed samples. The same seed gives the same
+            explanation; the global ``random`` state is neither seeded nor consumed. ``None`` draws fresh entropy.
 
     Returns:
         Dictionary containing:
@@ -453,6 +460,7 @@ def compute_lime_explanation(
 
     if kernel_width is None:
         kernel_width = math.sqrt(n_feat) * 0.75
+    rng = resolve_python_rng(random_state)
 
     logger.info(
         "Computing LIME explanation: %d features, %d samples, kernel_width=%.3f",
@@ -473,13 +481,13 @@ def compute_lime_explanation(
         binary = []
         for j in range(n_feat):
             # Randomly decide whether to perturb this feature
-            if random.random() < 0.5:
+            if rng.random() < 0.5:
                 # Keep original value
                 sample.append(instance[j])
                 binary.append(1)
             else:
                 # Perturb with Gaussian noise
-                noise = random.gauss(0, feature_std[j])
+                noise = rng.gauss(0, feature_std[j])
                 sample.append(instance[j] + noise)
                 binary.append(0)
         perturbed.append(sample)

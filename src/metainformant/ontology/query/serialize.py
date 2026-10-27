@@ -7,7 +7,7 @@ including JSON, OBO, and NetworkX graph formats.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from metainformant.core.data import validation
 from metainformant.core.io import dump_json, load_json
@@ -235,7 +235,7 @@ def _save_obo_format(onto: Ontology, path: Path) -> None:
 
         if term.synonyms:
             for synonym in term.synonyms:
-                lines.append(f'synonym: "{synonym}" EXACT []')
+                lines.append(f"synonym: {quote_obo_string(synonym)} EXACT []")
 
         if term.xrefs:
             for xref in term.xrefs:
@@ -297,47 +297,48 @@ def _load_json_format(path: Path) -> Ontology:
     # Load JSON data
     data = load_json(path)
 
-    # Extract metadata
-    metadata = data.get("metadata", {})
+    ontology = Ontology(metadata=dict(data.get("metadata", {})))
 
-    # Reconstruct terms
-    terms = {}
-    for term_id, term_dict in data.get("terms", {}).items():
-        from metainformant.ontology.core.types import create_term
-
-        term = create_term(
-            id=term_dict["id"],
-            name=term_dict.get("name"),
-            definition=term_dict.get("definition"),
-            namespace=term_dict.get("namespace"),
-            synonyms=term_dict.get("synonyms", []),
-            xrefs=term_dict.get("xrefs", []),
-            alt_ids=term_dict.get("alt_ids", []),
-            is_a_parents=term_dict.get("is_a_parents", []),
-            relationships=term_dict.get("relationships", {}),
-            subsets=term_dict.get("subsets", []),
-            is_obsolete=term_dict.get("is_obsolete", False),
-            **term_dict.get("metadata", {}),
+    # Reconstruct terms field by field. ``Term.metadata`` is a nested object that may hold keys which are also
+    # ``create_term`` arguments (terms parsed from OBO keep a ``relationships`` list there), so it must not be splatted
+    # into keyword arguments.
+    for term_dict in data.get("terms", {}).values():
+        ontology.add_term(
+            Term(
+                term_id=term_dict["id"],
+                name=term_dict.get("name"),
+                definition=term_dict.get("definition"),
+                namespace=term_dict.get("namespace"),
+                synonyms=list(term_dict.get("synonyms", [])),
+                xrefs=list(term_dict.get("xrefs", [])),
+                alt_ids=list(term_dict.get("alt_ids", [])),
+                is_a_parents=list(term_dict.get("is_a_parents", [])),
+                relationships=dict(term_dict.get("relationships", {})),
+                subsets=list(term_dict.get("subsets", [])),
+                is_obsolete=term_dict.get("is_obsolete", False),
+                metadata=dict(term_dict.get("metadata", {})),
+            )
         )
-        terms[term_id] = term
 
-    # Reconstruct relationships
-    relationships = []
+    # ``add_term`` already records the ``is_a`` link of every ``is_a_parents`` entry, and the saved relationship list
+    # contains those links as well, so a saved relationship takes the place of its auto-created twin (keeping any
+    # metadata) instead of being added a second time.
+    auto_slots: Dict[Tuple[str, str, str], List[int]] = {}
+    for index, existing in enumerate(ontology.relationships):
+        auto_slots.setdefault((existing.source, existing.target, existing.relation_type), []).append(index)
+
     for rel_dict in data.get("relationships", []):
-        from metainformant.ontology.core.types import create_relationship
-
-        relationship = create_relationship(
+        relationship = Relationship(
             source=rel_dict["source"],
             target=rel_dict["target"],
             relation_type=rel_dict["relation_type"],
-            **rel_dict.get("metadata", {}),
+            metadata=dict(rel_dict.get("metadata", {})),
         )
-        relationships.append(relationship)
-
-    # Create ontology
-    from metainformant.ontology.core.types import create_ontology
-
-    ontology = create_ontology(terms=terms, relationships=relationships, **metadata)
+        slots = auto_slots.get((relationship.source, relationship.target, relationship.relation_type))
+        if slots:
+            ontology.relationships[slots.pop(0)] = relationship
+        else:
+            ontology.add_relationship(relationship)
 
     return ontology
 

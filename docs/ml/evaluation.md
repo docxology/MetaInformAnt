@@ -21,6 +21,10 @@ Resampling with replacement to check how stable model performance is. Each boots
 
 Model performance as a function of training set size, to diagnose overfitting and underfitting and to judge whether more samples would improve performance. `learning_curve` returns the scores; plotting them is left to the caller.
 
+### Reproducibility
+
+Every function that draws random numbers takes a `random_state` and draws from a generator of its own: the same seed gives the same result, and the global NumPy random state is neither seeded nor consumed. `random_state=None` draws fresh entropy and leaves the global stream alone. This covers the feature permutations of `permutation_importance_biological`, the bootstrap samples of `bootstrap_validate` and `validate_model_stability`, the training-set subsamples of `learning_curve`, and the shuffled folds of every cross-validation helper. The functions do not seed the models they evaluate, so give a stochastic model its own `random_state`.
+
 ## Function Reference
 
 All functions live in `metainformant.ml.evaluation.validation` and need scikit-learn (they raise `ImportError` without it).
@@ -136,6 +140,33 @@ def permutation_importance_biological(
 
 Feature importance by permutation: the drop in cross-validated score when one feature is shuffled. Returns `baseline_score`, `scoring_metric`, `n_repeats`, `feature_importances` (a list of `{"feature", "importance_mean", "importance_std", "rank"}`, best first) and `raw_scores`. It ranks features; it is not a significance test of the model.
 
+### compare_validation_strategies
+
+```python-snippet
+def compare_validation_strategies(
+    X: np.ndarray,
+    y: np.ndarray,
+    model_factory: Callable[..., Any],
+    strategies: List[str] | None = None,
+    random_state: int | None = None,
+) -> Dict[str, Any]: ...
+```
+
+Score one model under several validation strategies. `model_factory()` returns a fresh model for each strategy, and `strategies` defaults to `["holdout", "5fold_cv", "10fold_cv", "stratified_5fold"]`:
+
+- `"holdout"`: one stratified 80/20 split (`train_test_split_biological(test_size=0.2)`).
+- `"<k>fold_cv"` (for example `"5fold_cv"` or `"10fold_cv"`): k-fold cross-validation with `cross_validation_scores(cv=k)`; the folds are stratified for classification-like targets.
+- `"stratified_5fold"`: shuffled stratified 5-fold cross-validation (`cross_validation_scores(cv=5, stratified=True)`), mean accuracy over the folds.
+
+Returns `comparison` (each strategy mapped to `{"strategy", "score"}`, or to `{"error": message}` when it failed; an unknown strategy name is reported this way too), `best_strategy` (the strategy with the highest score, `None` when every strategy failed) and `strategies_tested`. The score is the accuracy of a classification-like target (fewer than 20 unique values); the holdout of a target with 20 or more unique values reports R-squared.
+
+### cross_validate_biological
+
+`cross_validate_biological(X, y, method="rf", cv_folds=5, random_state=None, algorithm=None, parallel_jobs=-1, **kwargs)` lives in `metainformant.ml.models.classification`, next to the classifiers. It cross-validates a classifier chosen by name (`'rf'`, `'gb'`, `'lr'` or `'ensemble'`) over shuffled stratified folds.
+
+- `random_state` seeds the folds and the model, for `method="ensemble"` too (an integer `random_state` works with every method).
+- `parallel_jobs` is the number of parallel jobs for the cross-validation and, for `method="ensemble"`, for the voting ensemble itself. An explicit `n_jobs` keyword overrides it for the ensemble only. `parallel_jobs=1` starts no worker processes at all, so use it in restricted or resource-sensitive environments where process pools are unavailable.
+
 ### k_fold_split and biological_data_validator
 
 `k_fold_split(X, y, k=5, stratify=True, random_state=42)` returns a list of `(train_indices, test_indices)` pairs. `biological_data_validator(X, y, checks=None)` checks for missing values, infinite values, constant features and class balance and returns the per-check results with an overall `passed` flag.
@@ -148,11 +179,12 @@ from sklearn.linear_model import LogisticRegression
 from metainformant.ml.evaluation.validation import (
     train_test_split_biological,
     cross_validation_scores,
+    compare_validation_strategies,
     bootstrap_validate,
     learning_curve,
     permutation_importance_biological,
 )
-from metainformant.ml.models.classification import BiologicalClassifier
+from metainformant.ml.models.classification import BiologicalClassifier, cross_validate_biological
 
 # Synthetic data: 120 samples, 8 features, two informative
 rng = np.random.default_rng(0)
@@ -172,6 +204,18 @@ cv_results = cross_validation_scores(
     random_state=42,
 )
 print(f"CV Accuracy: {cv_results['accuracy'].mean():.3f}")
+
+# The same model under several validation strategies (holdout, 5- and 10-fold, stratified 5-fold)
+strategies = compare_validation_strategies(
+    X, y, lambda: LogisticRegression(max_iter=500), random_state=42
+)
+print(strategies["best_strategy"], strategies["comparison"]["stratified_5fold"])
+
+# A classifier chosen by name, here the voting ensemble; parallel_jobs=1 starts no worker processes
+ensemble_cv = cross_validate_biological(
+    X, y, method="ensemble", cv_folds=5, random_state=42, parallel_jobs=1
+)
+print(f"Ensemble accuracy: {ensemble_cv['accuracy']:.3f}")
 
 # Bootstrap validation: model_func receives (X_train, y_train, X_test, y_test)
 def fit_predict(X_tr, y_tr, X_te, y_te):
@@ -207,7 +251,7 @@ print(importance["feature_importances"][0])  # most important feature
 
 ## Related Modules
 
-- `ml.models` -- Classification and regression models to evaluate (`cross_validate_biological` there cross-validates a classifier chosen by name)
+- `ml.models` -- Classification and regression models to evaluate (`cross_validate_biological` there cross-validates a classifier chosen by name; see above)
 - `ml.features` -- Feature selection (evaluate with cross-validation)
 - `ml.interpretability` -- Model explanation methods
 - `ml.automl` -- Automated model selection with built-in evaluation

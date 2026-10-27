@@ -77,13 +77,13 @@ onto = load_go_obo("mini_go.obo")
 matches = find_term_by_name(onto, "transport")
 print(f"Found {len(matches)} matching terms")  # GO:0006810 and GO:0055085
 
-# Get namespace-specific terms
+# Get namespace-specific terms: the filtered ontology keeps the parent/child links among its terms
 bp_onto = filter_by_namespace(onto, "biological_process")
 print(f"Biological process terms: {len(bp_onto)}")  # 4
 
-# Get root and leaf terms of one namespace from the full ontology
-roots = {t for t in get_roots(onto) if onto.get_namespace(t) == "biological_process"}
-leaves = {t for t in get_leaves(onto) if onto.get_namespace(t) == "biological_process"}
+# Root and leaf terms of one namespace
+roots = get_roots(bp_onto)      # {'GO:0008150'}
+leaves = get_leaves(bp_onto)    # {'GO:0055085'}
 
 # Traverse the is_a graph; a term is not counted among its own ancestors or descendants
 ancestors(onto, "GO:0055085")        # {'GO:0006810', 'GO:0009987', 'GO:0008150'}
@@ -93,11 +93,11 @@ path_to_root(onto, "GO:0055085")     # a shortest path to a root, e.g. ['GO:0055
 distance(onto, "GO:0055085", "GO:0008150")  # 2 edges; -1 when the terms are not connected
 ```
 
-`get_roots` and `get_leaves` take only the ontology (and a `relation_type`, `"is_a"` by default), not a namespace. `filter_by_namespace` returns a new `Ontology` holding that namespace's terms and relationships but not the parent/child maps, so run hierarchy queries such as `get_roots`, `get_leaves` and `ancestors` on the full ontology.
+`get_roots` and `get_leaves` take only the ontology (and a `relation_type`, `"is_a"` by default), not a namespace; to look at one namespace, filter first. `filter_by_namespace` returns a new `Ontology` holding that namespace's terms, the relationships among them and the parent/child links among them, so hierarchy queries such as `get_roots`, `get_leaves` and `ancestors` work on the filtered ontology. A term whose parents all lie in other namespaces becomes a root of it. `subgraph` and `get_subontology` carry the parent/child links among their terms in the same way.
 
 ## GO Enrichment
 
-`enrich_genes(genes, background, annotations, alpha=0.05, method="fisher")` runs over-representation analysis. `annotations` maps GO term IDs to sets of gene IDs, and `background` is the gene universe (`None` uses every gene in `annotations`). The method is `"fisher"` (one-sided Fisher's exact test) or `"hypergeometric"`.
+`enrich_genes(genes, background, annotations, alpha=0.05, method="fisher")` runs over-representation analysis. `annotations` maps GO term IDs to sets of gene IDs, and `background` is the gene universe (`None` uses every gene in `annotations`). Only genes in the background count: query genes outside it are dropped with a warning, and so are a term's members outside it. The method is `"fisher"` (one-sided Fisher's exact test) or `"hypergeometric"`; both test the same upper tail on the same background-restricted counts, so they give the same p-value, and without scipy the p-value is the exact upper tail.
 
 ```python
 from metainformant.ontology.core.go import enrich_genes
@@ -110,11 +110,11 @@ annotations = {
 background = [f"g{i}" for i in range(1, 21)]
 
 results = enrich_genes(["g1", "g2", "g3"], background, annotations, alpha=0.05, method="fisher")
-significant = results[results["bonferroni_p"] <= 0.05]
-print(results[["go_term", "p_value", "enrichment", "observed", "bonferroni_p"]])
+significant = results[results["significant"]]
+print(results[["go_term", "p_value", "enrichment", "observed", "bonferroni_p", "significant"]])
 ```
 
-The result is a pandas `DataFrame` sorted by `p_value` with the columns `go_term`, `p_value`, `enrichment`, `observed`, `expected`, `term_size`, `query_size` and `bonferroni_p`. Only terms that annotate at least one query gene are tested, every tested term is returned, and `alpha` only controls the count reported in the log, so filter `bonferroni_p` yourself as above.
+The result is a pandas `DataFrame` sorted by `p_value` with one row per tested term and the columns `go_term`, `p_value`, `enrichment`, `observed`, `expected`, `term_size` (the term's genes that are in the background), `query_size`, `bonferroni_p` and `significant`. Only terms that annotate at least one query gene are tested. `bonferroni_p` is `p_value` times the number of tested terms, capped at 1, and `alpha` sets the boolean `significant` column (`bonferroni_p <= alpha`); every tested term is still returned, so near misses stay visible. The frame is empty when nothing can be tested, for example when no query gene is in the background.
 
 ## Semantic Similarity
 
@@ -131,10 +131,11 @@ term_counts = {"GO:0008150": 20, "GO:0009987": 6, "GO:0006810": 4, "GO:0055085":
 term_ic = calculate_term_ic(onto, term_counts, total_annotations=20)
 hierarchy = build_hierarchy_dict(onto)
 
+resnik = semantic_similarity("GO:0055085", "GO:0006810", term_ic, hierarchy)  # 2.32 bits
 lin = semantic_similarity("GO:0055085", "GO:0006810", term_ic, hierarchy, method="lin")  # 0.82
 ```
 
-The methods are `"resnik"` (the default; the IC of the most informative common ancestor, in bits, so it is not limited to 1), `"lin"` and `"jiang-conrath"` (both between 0 and 1). Terms missing from `term_ic` give 0.0, and an unknown method raises `ValueError`.
+The methods are `"resnik"` (the default), `"lin"` and `"jiang-conrath"`. Resnik is the IC of the most informative common ancestor in the units of `term_ic`, which are bits when `term_ic` comes from `calculate_term_ic`, so it is not bounded by 1; divide by `max(term_ic.values())` for a 0-1 scale. Lin (`2 * IC(MICA) / (IC(term1) + IC(term2))`) and Jiang-Conrath (the distance `IC(term1) + IC(term2) - 2 * IC(MICA)` rescaled by twice the largest IC in `term_ic`) lie between 0 and 1. A score is 0.0 when a term is missing from `term_ic` or the two terms share no ancestor, and an unknown method raises `ValueError`.
 
 ## GO Annotation Files
 

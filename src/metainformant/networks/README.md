@@ -68,15 +68,18 @@ metrics = network_metrics(G)
 | `centrality_measures` | `analysis.graph` | Degree, betweenness, closeness centrality |
 | `get_connected_components` | `analysis.graph` | Connected component extraction |
 
+`detect_communities(graph, method="louvain", random_state=...)` seeds Louvain through python-louvain's own `random_state` and leaves the global random states alone. When the package behind `'leiden'` is missing, it falls back to Louvain with only the options Louvain accepts (Leiden-only options such as `n_iterations` are dropped), or to greedy modularity when python-louvain is missing too.
+
 ### Interaction Networks
 
 | Function | Module | Description |
 |----------|--------|-------------|
-| `load_ppi_network` | `interaction.ppi` | Load PPI networks (TSV, BioPlex, IntAct) |
+| `load_ppi_network` | `interaction.ppi` | Load PPI networks (TSV, CSV, JSON node-link, BioPlex, IntAct) |
 | `construct_regulatory_network` | `interaction.regulatory` | Build gene regulatory networks |
-| `infer_grn` | `interaction.regulatory` | Infer GRN from expression data |
+| `infer_grn` | `interaction.regulatory` | Infer GRN from expression data (`'correlation'` or `'mutual_info'`; `random_state` seeds the mutual-information jitter) |
 | `identify_regulatory_hubs` | `interaction.regulatory` | Find hub transcription factors |
 | `analyze_regulatory_motifs` | `interaction.regulatory` | Detect feed-forward loops, cascades |
+| `regulatory_motifs` | `interaction.regulatory` | Feed-forward loops (all three edges, including the direct TF1 -> target edge), auto- and mutual regulation |
 
 ## Submodules
 
@@ -115,7 +118,7 @@ enriched = pathway_enrichment_analysis(
 
 - **Protein** -- PPI networks from UniProt/InterPro feed into community detection
 - **RNA** -- Co-expression networks from RNA-seq count matrices
-- **Information** -- Transfer entropy and Granger causality for directed information flow
+- **Information** -- Transfer entropy and Granger causality for directed information flow: `information_flow_network(series, method="granger_causality")` in `metainformant.information.network_info.information_flow` (`infer_grn` supports only `'correlation'` and `'mutual_info'`)
 - **Ontology** -- GO enrichment on detected communities
 
 ## Related

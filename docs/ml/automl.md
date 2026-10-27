@@ -24,6 +24,10 @@ Automatically evaluates multiple model types (Random Forest, Gradient Boosting, 
 
 Automatic preprocessing pipeline that handles missing values, scaling, encoding, and optional feature selection based on data characteristics.
 
+### Reproducibility
+
+`random_search` and `bayesian_optimization` take a `random_state`: an integer seed or a `random.Random`. All their randomness (the parameter draws; for Bayesian optimization also the initial points and the expected-improvement candidates) comes from the generator that `metainformant.ml._numeric.resolve_python_rng` builds from it, so the same seed gives the same search and the global `random` state is neither seeded nor consumed. `random_state=None` draws fresh entropy. The seed does not reach the models: give the model returned by `model_fn` its own `random_state` if it is stochastic.
+
 ## Function Reference
 
 ### random_search
@@ -37,7 +41,7 @@ def random_search(
     n_iter: int = 50,
     cv: int = 5,
     metric: str = "accuracy",
-    random_state: int | None = None,
+    random_state: int | random.Random | None = None,
 ) -> dict
 ```
 
@@ -51,7 +55,7 @@ def bayesian_optimization(
     param_space: dict,
     n_iter: int = 30,
     n_initial: int = 5,
-    random_state: int | None = None,
+    random_state: int | random.Random | None = None,
 ) -> dict
 ```
 
@@ -115,7 +119,7 @@ param_dists = {
     "max_depth": [5, 10, 20, None],
     "min_samples_split": [2, 5, 10],
 }
-result = random_search(make_model, param_dists, X, y, n_iter=50, cv=5, metric="accuracy")
+result = random_search(make_model, param_dists, X, y, n_iter=50, cv=5, metric="accuracy", random_state=0)
 print(f"Best params: {result['best_params']}, Score: {result['best_score']:.3f}")
 
 # Bayesian optimization: wrap the data in an objective function
@@ -126,7 +130,7 @@ param_space = {
 def objective(params):
     return cross_val_score(make_model(**params), X, y, cv=5).mean()
 
-bayes_result = bayesian_optimization(objective, param_space, n_iter=30, n_initial=5)
+bayes_result = bayesian_optimization(objective, param_space, n_iter=30, n_initial=5, random_state=0)
 print(f"Best score: {bayes_result['best_score']:.3f}")
 
 # Grid search (exhaustive)
@@ -148,6 +152,7 @@ X_clean = prep["X_processed"]
 - **Required**: numpy
 - **Optional**: scikit-learn (for cross-validation and model training)
 - Bayesian optimization uses a pure Python GP surrogate with no external dependencies
+- `random_search` and `bayesian_optimization` draw from their own generator (see Reproducibility): a seed makes a run repeatable and never touches the global random state
 - Model selection evaluates linear, tree-based, ensemble, KNN, and SVM model types (scikit-learn-backed when available)
 - Scoring is selected with the `metric` argument (`"accuracy"`, `"mse"`, `"r2"`); there is no custom-callable scoring parameter
 

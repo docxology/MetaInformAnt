@@ -532,7 +532,8 @@ def analyze_prediction_uncertainty(
         X_test: Test feature matrix for uncertainty analysis
         method: Regression method
         n_bootstraps: Number of bootstrap iterations
-        random_state: Random state for reproducibility
+        random_state: Seed for the bootstrap samples and the regressors. The same seed gives the same intervals; the
+            global NumPy random state is neither seeded nor consumed.
 
     Returns:
         Dictionary with uncertainty analysis results
@@ -543,7 +544,7 @@ def analyze_prediction_uncertainty(
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for uncertainty analysis")
 
-    np.random.seed(random_state)
+    rng = np.random.RandomState(random_state)
     n_samples = len(X)
 
     # Store predictions from each bootstrap
@@ -551,7 +552,7 @@ def analyze_prediction_uncertainty(
 
     for i in range(n_bootstraps):
         # Bootstrap sample
-        indices = np.random.choice(n_samples, size=n_samples, replace=True)
+        indices = rng.choice(n_samples, size=n_samples, replace=True)
         X_boot = X[indices]
         y_boot = y[indices]
 

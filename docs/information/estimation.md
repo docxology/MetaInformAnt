@@ -14,7 +14,7 @@ Bias-corrected entropy estimation methods including plugin, Miller-Madow, Chao-S
 
 **Panzeri-Treves correction** uses response-specific frequencies for more accurate small-sample bias correction, originally developed for neural coding analysis.
 
-**Bootstrap confidence intervals** resample the observed data with replacement to estimate the sampling distribution of the entropy estimator, yielding confidence intervals without distributional assumptions.
+**Bootstrap confidence intervals** resample the observed data with replacement to estimate the sampling distribution of the entropy estimator, yielding confidence intervals without distributional assumptions. The resampling uses a generator local to the call, so a `random_state` makes the interval reproducible.
 
 **Entropy rate** estimates H(X_{n+1}|X_1^n) for sequential data using block entropies: h = H(blocks of length n+1) - H(blocks of length n). Characterises the per-symbol uncertainty in a stationary process.
 
@@ -47,7 +47,7 @@ Apply general bias correction: H_corrected = H + (d-1)/(2n * ln 2) bits (clamped
 
 ### `entropy_bootstrap_confidence(counts, method="plugin", n_bootstraps=1000, confidence_level=0.95, random_state=None) -> Dict`
 
-Calculate bootstrap confidence interval for entropy.
+Calculate bootstrap confidence interval for entropy. `random_state` seeds the resampling, which draws from a `numpy.random.RandomState` of its own: the same seed gives the same interval, `None` draws fresh entropy, and the global NumPy random state is neither seeded nor consumed.
 
 **Returns** dict with:
 - `entropy`: Point estimate
@@ -120,7 +120,7 @@ print(f"Corrected entropy: {h_corrected:.4f} bits")
 
 ## Configuration
 
-Environment variable prefix: `INFO_`
+No environment variables are read; estimators are configured through their arguments.
 
 ## Related Modules
 

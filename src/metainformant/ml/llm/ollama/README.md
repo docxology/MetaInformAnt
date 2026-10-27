@@ -51,6 +51,7 @@ config = OllamaConfig(
     temperature=0.3,      # Lower = more deterministic
     top_p=0.9,
     timeout=120.0,
+    max_retries=3,        # Maximum attempts per request, the first included (>= 1; 1 = do not retry)
     num_predict=128,      # Optional hard cap on generated tokens
 )
 client = OllamaClient(config)
@@ -187,6 +188,11 @@ except ConnectionError as e:
 except RuntimeError as e:
     print(f"API error: {e}")
 ```
+
+A request that cannot reach the server is attempted up to `config.max_retries` times in total (pauses of 1 s, 2 s, 4 s, ...
+between attempts) before `ConnectionError` is raised; an API error (`RuntimeError`) is not retried. `max_retries` counts
+the first attempt, so it must be at least 1: `OllamaConfig` raises `ValueError` for a smaller value, and a client whose
+`config.max_retries` was lowered below 1 after construction raises `ValueError` before it contacts the server.
 
 ## Performance Tips
 

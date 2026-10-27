@@ -71,7 +71,13 @@ The result is a `GeneRegulatoryNetwork`. Each inferred edge stores the score as 
 - `'correlation'`: absolute Pearson correlation between each regulator and every other gene
 - `'mutual_info'`: mutual information (`sklearn.feature_selection.mutual_info_regression`)
 
-Other routines take a genes x samples matrix and return a plain dictionary with an `edges` list of `{"source", "target", "weight"}` records: `infer_grn_correlation` (`'pearson'` or `'spearman'`), `infer_grn_mutual_info` (ARACNE-style pruning) and `infer_grn_regression` (`'lasso'` or `'ridge'`) in `metainformant.networks.regulatory.grn_inference`. `infer_regulatory_network_from_expression(expression_df, regulators, method="correlation")` returns a signed `networkx.DiGraph` from a genes x samples DataFrame.
+`infer_grn` has no Granger-causality method: a Granger test needs time-ordered observations, which a samples x genes matrix does not guarantee, so `method="granger"` raises `ValueError`. For time series, use `information_flow_network(series, method="granger_causality")` from `metainformant.information.network_info.information_flow`.
+
+`'mutual_info'` is the one randomised method, because scikit-learn adds a tiny random jitter to continuous inputs when it estimates mutual information (the jitter breaks ties between equal values, as in count data). `infer_grn` and `infer_regulatory_network_from_expression` take a `random_state` (an integer seed or a `numpy.random.RandomState`) and share one generator across all the `mutual_info_regression` calls of a run, which are made pair by pair (regulators in the order given, and for each regulator the targets in column or index order). The same seed gives the same weights and edges, and the global NumPy random state is neither seeded nor consumed; `None` draws fresh entropy. `'correlation'` is deterministic and ignores `random_state`.
+
+Other routines take a genes x samples matrix and return a plain dictionary with an `edges` list of `{"source", "target", "weight"}` records: `infer_grn_correlation` (`'pearson'` or `'spearman'`), `infer_grn_mutual_info` (ARACNE-style pruning) and `infer_grn_regression` (`'lasso'` or `'ridge'`) in `metainformant.networks.regulatory.grn_inference`.
+
+`infer_regulatory_network_from_expression(expression_df, regulators, method="correlation", threshold=0.5, random_state=None)` takes a genes x samples DataFrame and returns a `networkx.DiGraph` (correlation edges keep the sign of the correlation). It supports the same two methods. `method="grnboost2"` is not implemented, because GRNBoost2 needs the `arboreto` package, and raises `NotImplementedError`; any other unknown method raises `ValueError`.
 
 ### add_transcription_factor()
 
@@ -157,13 +163,15 @@ Identify regulatory motifs and patterns. The function takes only the network:
 ```python
 from metainformant.networks.interaction.regulatory_analysis import regulatory_motifs
 
-# Let TF1 regulate TF2, so that TF1 -> TF2 -> gene2 forms a chain
+# Let TF1 regulate TF2 and gene2, and TF2 regulate gene2: the three edges
+# TF1 -> TF2, TF2 -> gene2 and TF1 -> gene2 close a feed-forward loop
 reg_network.add_regulation("TF1", "TF2", effect=0.9, confidence=0.8, type="activation")
+reg_network.add_regulation("TF1", "gene2", effect=0.6, confidence=0.7, type="activation")
 
 # Find regulatory motifs
 motifs = regulatory_motifs(reg_network)
 
-print(f"Found {len(motifs)} regulatory motifs")
+print(f"Found {len(motifs)} regulatory motifs")  # 1: the feed-forward loop
 
 for motif in motifs[:5]:  # Show first 5 motifs
     print(f"Motif: {motif['motif_type']}")
@@ -172,11 +180,32 @@ for motif in motifs[:5]:  # Show first 5 motifs
 ```
 
 **Reported motif types:**
-- `'feed_forward_loop'`: a chain TF1 -> TF2 -> target in which TF2 is itself a regulator (the direct TF1 -> target edge is not required)
+- `'feed_forward_loop'`: TF1 -> TF2, TF2 -> target and the direct TF1 -> target edge, where TF2 is itself a regulator (`genes` is `[TF1, TF2, target]`). All three edges are required: without the direct TF1 -> target edge the chain is a cascade, not a feed-forward loop, and is not reported
 - `'auto_regulation'`: a regulator that regulates itself
 - `'mutual_regulation'`: two regulators that regulate each other
 
-The `confidence` of a motif is a fixed score per motif type (0.8, 1.0 and 0.9 respectively), not a value derived from the edge confidences. Related graph-level functions: `detect_regulatory_cascades(reg_network, max_length=5, min_confidence=0.0)` returns paths of three or more genes, `identify_regulatory_hubs(reg_network.graph, direction="out", threshold=0.1)` returns the top fraction of nodes by out-degree as `(gene, degree)` tuples (`direction` can also be `"in"` or `"both"`), and `analyze_regulatory_motifs(reg_network.graph)` reports feed-forward loops, feedback loops and cascades of a plain `networkx` graph.
+The `confidence` of a motif is a fixed score per motif type (0.8, 1.0 and 0.9 respectively), not a value derived from the edge confidences. The `GeneRegulatoryNetwork.regulatory_motifs()` method applies the same feed-forward rule and returns a dictionary with one list of gene lists per motif type (`feed_forward`, `auto_regulation`, `mutual_regulation` and a `cascade` entry that stays empty; use `detect_regulatory_cascades` for cascades). Related graph-level functions: `detect_regulatory_cascades(reg_network, max_length=5, min_confidence=0.0)` returns paths of three or more genes, `identify_regulatory_hubs(reg_network.graph, direction="out", threshold=0.1)` returns the top fraction of nodes by out-degree as `(gene, degree)` tuples (`direction` can also be `"in"` or `"both"`), and `analyze_regulatory_motifs(reg_network.graph)` reports feed-forward loops, feedback loops and cascades of a plain `networkx` graph.
+
+### Randomised analyses and seeds
+
+Two analyses draw random numbers and take a `random_state`: the z-scores of `compute_network_motifs` and the noise of `analyze_regulatory_dynamics`. In both, the same seed reproduces the output, and the global `random` and NumPy random states are neither seeded nor consumed; `None` draws fresh entropy.
+
+```python
+from metainformant.networks.interaction.regulatory_core import analyze_regulatory_dynamics
+from metainformant.networks.regulatory.grn_inference import compute_network_motifs
+
+# Motif counts for an edge list of {"source", "target"} records, with z-scores against 100 randomised
+# networks (the targets are shuffled). random_state is an integer seed or a random.Random
+edges = [{"source": source, "target": target} for source, target in reg_network.graph.edges()]
+report = compute_network_motifs(edges, motif_size=3, random_state=7)
+print(report["motif_counts"], report["z_scores"], report["significant_motifs"])
+
+# Noisy simulation of the regulatory graph. random_state is an integer seed or a numpy.random.Generator
+simulation = analyze_regulatory_dynamics(reg_network.graph, {"TF1": 1.0}, time_steps=20, random_state=7)
+print(simulation["dynamics"]["gene1"]["final_state"])
+```
+
+`compute_network_motifs` counts `feed_forward_loop` (A -> B, B -> C and the direct A -> C), `cascade` (A -> B -> C without A -> C) and `co_regulation` for `motif_size=3`, or `mutual_regulation` and `single_regulation` for `motif_size=2`. A `z_scores` entry is 0.0 when the randomised counts do not vary, and `significant_motifs` lists the motif types with an absolute z-score above 2.
 
 ## Integration Examples
 

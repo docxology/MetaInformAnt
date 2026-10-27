@@ -11,6 +11,7 @@ entropy estimation with optional NumPy acceleration.
 from __future__ import annotations
 
 import math
+import numbers
 import random
 from typing import Any, cast
 
@@ -115,6 +116,19 @@ def _mutual_information_discrete(a: list[int], b: list[int]) -> float:
     return mi
 
 
+def _make_rng(random_state: Any) -> random.Random:
+    """The generator for ``random_state`` (``None``, an integer seed or a ``random.Random``).
+
+    A ``random.Random`` is used as given, an integer seeds a fresh one and ``None`` draws system entropy. The global
+    ``random`` state is never seeded or consumed.
+    """
+    if isinstance(random_state, random.Random):
+        return random_state
+    if isinstance(random_state, numbers.Integral):
+        return random.Random(int(random_state))
+    return random.Random(random_state)
+
+
 def _mean(values: list[float]) -> float:
     """Arithmetic mean."""
     return sum(values) / len(values) if values else 0.0
@@ -139,6 +153,7 @@ def transfer_entropy(
     target: list[float],
     lag: int = 1,
     n_bins: int = 10,
+    random_state: int | random.Random | None = None,
 ) -> dict:
     """Compute transfer entropy from source to target time series.
 
@@ -153,6 +168,8 @@ def transfer_entropy(
         target: Target time series values.
         lag: Time lag for conditioning (default 1).
         n_bins: Number of bins for discretization.
+        random_state: Seed (or ``random.Random``) for the permutation test. The same seed gives the same p-value and
+            effective TE; the global ``random`` state is neither seeded nor consumed. ``None`` draws fresh entropy.
 
     Returns:
         Dictionary with keys:
@@ -191,11 +208,12 @@ def transfer_entropy(
     te = max(0.0, te)  # TE is non-negative in theory
 
     # Permutation test
+    rng = _make_rng(random_state)
     n_perms = 100
     null_tes = []
     for _ in range(n_perms):
         perm_source = list(source)
-        random.shuffle(perm_source)
+        rng.shuffle(perm_source)
         px_past = _discretize(perm_source[:n], n_bins)
         p_triple = _triple_counts(y_future, y_past, px_past)
         p_yp_xp = _joint_counts(y_past, px_past)
@@ -469,15 +487,60 @@ def _f_sf(f: float, df1: int, df2: int) -> float:
 # ---------------------------------------------------------------------------
 
 
+def _jacobi_eigenvalues(matrix: list[list[float]], max_sweeps: int = 100) -> list[float]:
+    """Eigenvalues of a real symmetric matrix by cyclic Jacobi rotations (pure Python, O(n^3) per sweep).
+
+    Each rotation zeroes one off-diagonal pair; the sum of squared off-diagonal entries shrinks quadratically, so a
+    handful of sweeps reach machine precision. The matrix is not modified.
+    """
+    n = len(matrix)
+    a = [list(map(float, row)) for row in matrix]
+    scale = sum(value * value for row in a for value in row)
+    if scale == 0.0:
+        return [0.0] * n
+
+    for _ in range(max_sweeps):
+        off = sum(a[i][j] ** 2 for i in range(n) for j in range(i + 1, n))
+        if off <= 1e-30 * scale:
+            break
+        for p in range(n - 1):
+            for q in range(p + 1, n):
+                if a[p][q] == 0.0:
+                    continue
+                theta = (a[q][q] - a[p][p]) / (2.0 * a[p][q])
+                t = (1.0 if theta >= 0.0 else -1.0) / (abs(theta) + math.sqrt(theta * theta + 1.0))
+                c = 1.0 / math.sqrt(t * t + 1.0)
+                s = t * c
+                for k in range(n):  # A <- A J
+                    akp, akq = a[k][p], a[k][q]
+                    a[k][p] = c * akp - s * akq
+                    a[k][q] = s * akp + c * akq
+                for k in range(n):  # A <- J^T A
+                    apk, aqk = a[p][k], a[q][k]
+                    a[p][k] = c * apk - s * aqk
+                    a[q][k] = s * apk + c * aqk
+    return [a[i][i] for i in range(n)]
+
+
+def _symmetric_eigenvalues(matrix: list[list[float]]) -> list[float]:
+    """Eigenvalues of a real symmetric matrix: ``numpy.linalg.eigvalsh`` when NumPy is available, else Jacobi."""
+    if HAS_NUMPY:
+        return [float(value) for value in np.linalg.eigvalsh(np.asarray(matrix, dtype=float))]
+    return _jacobi_eigenvalues(matrix)
+
+
 def network_entropy(adjacency_matrix: list[list[float]]) -> dict:
-    """Compute Von Neumann entropy of a network.
+    """Compute the Von Neumann entropy of a network.
 
-    The Von Neumann entropy is defined on the normalized Laplacian of the
-    graph: S = -sum(lambda_i * log2(lambda_i)) where lambda_i are the
-    eigenvalues of the normalised Laplacian.
+    The network is described by a density matrix built from its Laplacian (Braunstein, Ghosh and Severini, 2006):
+    ``rho = L / trace(L)`` with ``L = D - W``, where ``W`` holds the absolute values of the edge weights (self-loops
+    are ignored) and ``D`` the weighted degrees. ``rho`` is positive semidefinite with unit trace, and
 
-    Pure Python implementation computes the Laplacian and uses power
-    iteration for eigenvalue estimation.
+        S = -sum_i lambda_i * log2(lambda_i)
+
+    runs over the eigenvalues ``lambda_i`` of ``rho``, computed by a full eigendecomposition (``numpy.linalg.eigvalsh``
+    when NumPy is available, otherwise a pure-Python Jacobi solver). A complete graph on ``n`` nodes has
+    ``S = log2(n - 1)``; a network with no edges has no density matrix and gets 0.
 
     Args:
         adjacency_matrix: Symmetric weighted adjacency matrix (2D list).
@@ -488,65 +551,35 @@ def network_entropy(adjacency_matrix: list[list[float]]) -> dict:
             - normalized_entropy: Entropy normalised by log2(n_nodes).
             - n_nodes: Number of nodes.
             - density: Graph density.
+
+    Raises:
+        ValueError: If the matrix is not square or not symmetric.
     """
     n = len(adjacency_matrix)
     if n == 0:
         return {"entropy": 0.0, "normalized_entropy": 0.0, "n_nodes": 0, "density": 0.0}
 
-    # Compute degree vector
-    degrees = [sum(abs(adjacency_matrix[i][j]) for j in range(n)) for i in range(n)]
+    if any(len(row) != n for row in adjacency_matrix):
+        raise ValueError("adjacency_matrix must be square")
+    largest = max(abs(value) for row in adjacency_matrix for value in row)
+    tolerance = 1e-9 * max(1.0, largest)
+    if any(abs(adjacency_matrix[i][j] - adjacency_matrix[j][i]) > tolerance for i in range(n) for j in range(i + 1, n)):
+        raise ValueError("adjacency_matrix must be symmetric")
 
-    # Normalised Laplacian: L_norm = D^{-1/2} L D^{-1/2}
-    # L = D - A
-    # For entropy, we use the density matrix: rho = L / trace(L)
-    total_degree = sum(degrees)
-    if total_degree == 0:
-        return {"entropy": 0.0, "normalized_entropy": 0.0, "n_nodes": n, "density": 0.0}
+    # Weighted degrees from the off-diagonal edge weights (a self-loop cancels in D - W, so it is dropped)
+    weights = [[abs(adjacency_matrix[i][j]) if i != j else 0.0 for j in range(n)] for i in range(n)]
+    degrees = [sum(row) for row in weights]
 
-    # Compute normalised Laplacian eigenvalues
-    # Use trace of powers method for entropy approximation
-    laplacian = [[0.0] * n for _ in range(n)]
-    for i in range(n):
-        for j in range(n):
-            if i == j:
-                laplacian[i][j] = degrees[i]
-            else:
-                laplacian[i][j] = -adjacency_matrix[i][j]
-
-    # Normalise: rho = L / trace(L)
-    trace = sum(laplacian[i][i] for i in range(n))
+    # Density matrix rho = L / trace(L), L = D - W
+    trace = sum(degrees)
     if trace == 0:
         return {"entropy": 0.0, "normalized_entropy": 0.0, "n_nodes": n, "density": 0.0}
 
-    rho = [[laplacian[i][j] / trace for j in range(n)] for i in range(n)]
+    rho = [[((degrees[i] if i == j else -weights[i][j]) / trace) for j in range(n)] for i in range(n)]
 
-    # Compute entropy using matrix logarithm approximation
-    # S = -Tr(rho * log2(rho))
-    # Approximate using Taylor expansion: -x*log(x) ~ x*(1-x) + ... for eigenvalue estimation
-    # Use trace of rho^k for k=1,2,3
-    tr_rho2 = sum(rho[i][j] * rho[j][i] for i in range(n) for j in range(n))
-
-    # Renyi-2 entropy approximation: S2 = -log2(tr_rho2)
-    # Von Neumann entropy is bounded: S >= S2
-    if tr_rho2 > 0 and tr_rho2 < 1.0:
-        entropy_approx = -math.log2(tr_rho2)
-    elif tr_rho2 >= 1.0:
-        entropy_approx = 0.0
-    else:
-        entropy_approx = math.log2(n)
-
-    # Better approximation using purity: S ~ -sum(lambda * log2(lambda))
-    # Approximate eigenvalues from diagonal of normalised Laplacian
-    eigenvalues_approx = [rho[i][i] for i in range(n)]
-    ev_sum = sum(eigenvalues_approx)
-    if ev_sum > 0:
-        eigenvalues_norm = [e / ev_sum for e in eigenvalues_approx]
-        entropy = 0.0
-        for ev in eigenvalues_norm:
-            if ev > 0:
-                entropy -= ev * math.log2(ev)
-    else:
-        entropy = entropy_approx
+    # S = -Tr(rho log2 rho) = -sum(lambda * log2(lambda)); eigenvalues that are zero (or rounding noise) contribute 0
+    entropy = -sum(value * math.log2(value) for value in _symmetric_eigenvalues(rho) if value > 0.0)
+    entropy = max(0.0, entropy)
 
     max_entropy = math.log2(n) if n > 1 else 1.0
     normalized = entropy / max_entropy if max_entropy > 0 else 0.0
@@ -581,6 +614,7 @@ def information_flow_network(
     time_series: dict,
     method: str = "transfer_entropy",
     threshold: float = 0.05,
+    random_state: int | random.Random | None = None,
 ) -> dict:
     """Build a directed information flow network from multivariate time series.
 
@@ -592,6 +626,9 @@ def information_flow_network(
             All series must have the same length.
         method: ``"transfer_entropy"`` or ``"granger_causality"``.
         threshold: P-value threshold for edge inclusion.
+        random_state: Seed (or ``random.Random``) for the transfer-entropy permutation tests, shared by all pairs so
+            the whole network is reproducible. Unused by Granger causality (a deterministic F-test). The global
+            ``random`` state is neither seeded nor consumed.
 
     Returns:
         Dictionary with keys:
@@ -604,6 +641,7 @@ def information_flow_network(
     n = len(names)
     adj = [[0.0] * n for _ in range(n)]
     edges: list[dict] = []
+    rng = _make_rng(random_state)
 
     for i in range(n):
         for j in range(n):
@@ -618,7 +656,7 @@ def information_flow_network(
                 weight = result["f_statistic"]
                 p_val = result["p_value"]
             else:
-                result = transfer_entropy(src, tgt, lag=1, n_bins=10)
+                result = transfer_entropy(src, tgt, lag=1, n_bins=10, random_state=rng)
                 weight = result["te"]
                 p_val = result["p_value"]
 
@@ -664,6 +702,7 @@ def mutual_information_network(
     variable_names: list[str],
     n_bins: int = 10,
     threshold: float = 0.05,
+    random_state: int | random.Random | None = None,
 ) -> dict:
     """Build an undirected MI-based network from a data matrix.
 
@@ -676,6 +715,8 @@ def mutual_information_network(
         variable_names: Names for each variable/column.
         n_bins: Number of bins for discretization.
         threshold: P-value threshold for edge inclusion.
+        random_state: Seed (or ``random.Random``) for the permutation tests. The same seed gives the same p-values
+            and edges; the global ``random`` state is neither seeded nor consumed. ``None`` draws fresh entropy.
 
     Returns:
         Dictionary with keys:
@@ -691,6 +732,7 @@ def mutual_information_network(
 
     n_obs = len(matrix)
     n_vars = len(variable_names)
+    rng = _make_rng(random_state)
 
     # Extract columns
     columns: list[list[float]] = []
@@ -712,7 +754,7 @@ def mutual_information_network(
             null_mis = []
             for _ in range(50):
                 perm_j = list(disc_j)
-                random.shuffle(perm_j)
+                rng.shuffle(perm_j)
                 null_mis.append(_mutual_information_discrete(disc_i, perm_j))
 
             p_value = (sum(1 for nm in null_mis if nm >= mi) + 1) / (len(null_mis) + 1)
