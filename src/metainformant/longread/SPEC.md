@@ -35,19 +35,30 @@ PacBio and Oxford Nanopore long-read analysis: signal I/O, quality assessment, a
 
 - `fast5.read_fast5` — HDF5 FAST5 signal/basecall reading
 - `bam.read_long_read_bam`, `bam.extract_methylation_tags` — BAM reading and MM/ML tag decoding
+  (result keys are `base + strand + code`, for example `C+m` and `C-m`)
 - `formats.fast5_to_fastq`, `formats.convert_pod5_to_fast5`, `formats.write_paf` — Format conversion
 
 ### Exports — `quality/`
 
 - `metrics.read_length_stats`, `metrics.quality_score_distribution`, `metrics.calculate_n50`,
   `metrics.estimate_accuracy` — N50/Nx, length and Phred statistics
-- `filtering.filter_by_length`, `filter_by_quality`, `trim_adapters`, `split_chimeric_reads`
+- `filtering.filter_by_length`, `filter_by_quality`, `trim_adapters`, `detect_adapters`,
+  `split_chimeric_reads` — Read filters, adapter trimming and detection, chimeric read splitting;
+  the three adapter functions take an identity threshold and `max_false_positive_rate`
+  (default 1e-9 per read offset)
+- `filtering.AdapterMatch` — A `detect_adapters` result, with `edit_distance` and `false_positive_bound`
+- `filtering.adapter_false_positive_bound`, `adapter_error_budget`, `minimum_adapter_length` —
+  False-positive bound, edit budget and minimum length of an adapter search
+  (`DEFAULT_MAX_FALSE_POSITIVE_RATE` is the default rate)
 
 ### Exports — `analysis/`
 
 - `modified_bases.call_5mc`, `call_6ma`, `aggregate_methylation`, `differential_methylation`
-- `structural.detect_sv_from_long_reads`, `phase_structural_variants` — Split-read SV calling
-- `phasing.phase_reads`, `build_haplotype_blocks`, `tag_reads_by_haplotype` — Dataclass-based phasing
+- `structural.detect_sv_from_long_reads`, `phase_structural_variants` — CIGAR and split-read SV calling;
+  INS calls carry `inserted_sequence`, BND calls carry `mate_chromosome` and `mate_position`
+- `phasing.phase_reads`, `build_haplotype_blocks`, `tag_reads_by_haplotype` — Dataclass-based phasing;
+  `phase_reads` takes read alleles from `variants` lists or from `aligned_pairs` plus `query_sequence`
+  and leaves out variants below `min_variant_quality`
 
 ### Exports — `assembly/`
 
@@ -58,8 +69,11 @@ PacBio and Oxford Nanopore long-read analysis: signal I/O, quality assessment, a
 ### Exports — `methylation/` and `phasing/`
 
 - `methylation.calling.call_methylation_from_signal`, `aggregate_methylation`,
-  `detect_dmrs`, `compute_methylation_stats` — Signal-level calling and aggregation
-- `phasing.haplotyping.phase_reads`, `build_phase_blocks`, `haplotag_reads` — Dict-based phasing API
+  `detect_dmrs`, `compute_methylation_stats` — Signal-level calling and aggregation;
+  `call_methylation_from_signal` has a `threshold` and a `bayesian` model (Beta prior `prior_alpha`,
+  `prior_beta`; the Bayesian model pools reads per site and needs numpy)
+- `phasing.haplotyping.phase_reads`, `build_phase_blocks`, `haplotag_reads` — Dict-based phasing API;
+  phase blocks carry `variant_haplotypes`, which `haplotag_reads` votes against
 
 ### Exports — `utils/`
 

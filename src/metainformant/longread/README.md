@@ -63,10 +63,10 @@ graph TD
 | Module | Purpose |
 |--------|---------|
 | [`io/`](io/) | FAST5, POD5, BAM reading/writing and format conversion |
-| [`quality/`](quality/) | Read metrics (N50, Nx, accuracy), filtering by length/quality |
+| [`quality/`](quality/) | Read metrics (N50, Nx, accuracy), filtering by length/quality, adapter detection and trimming |
 | [`analysis/`](analysis/) | Modified base detection, structural variants, phasing |
 | [`assembly/`](assembly/) | Minimizer overlaps, POA consensus, hybrid assembly |
-| [`methylation/`](methylation/) | Signal-level methylation calling and DMR detection |
+| [`methylation/`](methylation/) | Signal-level methylation calling (threshold and Bayesian models) and DMR detection |
 | [`phasing/`](phasing/) | Read-based haplotyping and switch error computation |
 | [`workflow/`](workflow/) | Pipeline orchestration with dependency resolution |
 | [`visualization/`](visualization/) | Read length, quality, alignment, and methylation plots |

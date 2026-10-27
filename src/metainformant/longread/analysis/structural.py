@@ -30,7 +30,7 @@ class StructuralVariant:
         sv_type: Type of SV ('DEL', 'INS', 'INV', 'DUP', 'BND').
         chromosome: Reference chromosome for the SV.
         start: Start position (0-based).
-        end: End position (0-based). For BND, this is the mate position.
+        end: End position (0-based). For BND, ``start + 1``; the partner is in ``mate_chromosome``/``mate_position``.
         size: Size of the variant in base pairs.
         supporting_reads: Number of reads supporting the SV.
         read_names: Names of supporting reads.
@@ -99,7 +99,15 @@ def detect_sv_from_long_reads(
         cigar_tuples = _get_attr(aln, "cigar_tuples", [])
 
         # 1. CIGAR-based SV detection
-        cigar_svs = _detect_cigar_svs(chrom, ref_start, cigar, cigar_tuples, read_name, min_size)
+        cigar_svs = _detect_cigar_svs(
+            chrom,
+            ref_start,
+            cigar,
+            cigar_tuples,
+            read_name,
+            min_size,
+            _get_attr(aln, "query_sequence", "") or "",
+        )
         raw_calls.extend(cigar_svs)
 
         # 2. Split-read based SV detection from supplementary alignments
@@ -138,8 +146,15 @@ def _detect_cigar_svs(
     cigar_tuples: list[tuple[int, int]],
     read_name: str,
     min_size: int,
+    query_sequence: str = "",
 ) -> list[StructuralVariant]:
-    """Detect SVs from large CIGAR operations (insertions and deletions)."""
+    """Detect SVs from large CIGAR operations (insertions and deletions).
+
+    An insertion carries the bases it adds, cut from ``query_sequence`` (the read
+    as stored in the BAM, in reference orientation) at the query offset of the
+    ``I`` operation; the sequence is left empty when the read has no sequence
+    that long.
+    """
     svs: list[StructuralVariant] = []
 
     if cigar_tuples:
@@ -150,6 +165,7 @@ def _detect_cigar_svs(
         return svs
 
     ref_pos = ref_start
+    query_pos = 0
 
     for op, length in tuples:
         if op == 2 and length >= min_size:  # D = deletion
@@ -167,6 +183,7 @@ def _detect_cigar_svs(
                 )
             )
         elif op == 1 and length >= min_size:  # I = insertion
+            inserted = query_sequence[query_pos : query_pos + length]
             svs.append(
                 StructuralVariant(
                     sv_type="INS",
@@ -177,6 +194,7 @@ def _detect_cigar_svs(
                     supporting_reads=1,
                     read_names=[read_name],
                     quality=float(length),
+                    inserted_sequence=inserted if len(inserted) == length else "",
                     info={"source": "cigar"},
                 )
             )
@@ -184,6 +202,9 @@ def _detect_cigar_svs(
         # Advance reference position
         if op in (0, 2, 3, 7, 8):  # M, D, N, =, X consume reference
             ref_pos += length
+        # Advance query position (hard clips are not in the stored sequence)
+        if op in (0, 1, 4, 7, 8):  # M, I, S, =, X consume query
+            query_pos += length
 
     return svs
 
@@ -491,7 +512,14 @@ def _cluster_sv_calls(
     """Cluster overlapping SV calls and merge them.
 
     Groups nearby SV calls of the same type and merges them into
-    consensus calls with combined support.
+    consensus calls with combined support. Breakends (calls with a
+    ``mate_chromosome``) are only merged when they also point to the same mate
+    chromosome and to mate positions within ``max_distance`` of each other, so
+    translocations to different partners stay separate calls. A merged call
+    keeps ``mate_chromosome``, the median ``mate_position`` and, for an
+    insertion, the ``inserted_sequence`` of the supporting call whose length is
+    closest to the merged size (a representative, not a consensus). Read names
+    and sources are listed in a fixed order, so repeated runs agree.
 
     Args:
         calls: List of raw SV calls.
@@ -504,33 +532,38 @@ def _cluster_sv_calls(
     if not calls:
         return []
 
-    # Group by (sv_type, chromosome)
-    groups: dict[tuple[str, str], list[StructuralVariant]] = defaultdict(list)
+    # Group by (sv_type, chromosome, mate chromosome); the mate chromosome is empty except for breakends
+    groups: dict[tuple[str, str, str], list[StructuralVariant]] = defaultdict(list)
     for call in calls:
-        groups[(call.sv_type, call.chromosome)].append(call)
+        groups[(call.sv_type, call.chromosome, call.mate_chromosome)].append(call)
 
     merged: list[StructuralVariant] = []
 
-    for (sv_type, chrom), group_calls in groups.items():
-        # Sort by start position
-        group_calls.sort(key=lambda sv: sv.start)
+    for (sv_type, chrom, mate_chrom), group_calls in groups.items():
+        # Breakends to one mate chromosome are first split by where their mates land, so two events at the
+        # same locus with different partners cannot interleave in the start-ordered clustering below
+        subgroups = _split_by_mate_position(group_calls, max_distance) if mate_chrom else [group_calls]
 
         clusters: list[list[StructuralVariant]] = []
-        current_cluster: list[StructuralVariant] = [group_calls[0]]
+        for subgroup in subgroups:
+            # Sort by start position
+            subgroup.sort(key=lambda sv: sv.start)
 
-        for i in range(1, len(group_calls)):
-            call = group_calls[i]
-            cluster_end = max(sv.end for sv in current_cluster)
-            cluster_start = min(sv.start for sv in current_cluster)
+            current_cluster: list[StructuralVariant] = [subgroup[0]]
 
-            # Check if this call overlaps or is near the current cluster
-            if abs(call.start - cluster_start) <= max_distance or abs(call.start - cluster_end) <= max_distance:
-                current_cluster.append(call)
-            else:
-                clusters.append(current_cluster)
-                current_cluster = [call]
+            for i in range(1, len(subgroup)):
+                call = subgroup[i]
+                cluster_end = max(sv.end for sv in current_cluster)
+                cluster_start = min(sv.start for sv in current_cluster)
 
-        clusters.append(current_cluster)
+                # Check if this call overlaps or is near the current cluster
+                if abs(call.start - cluster_start) <= max_distance or abs(call.start - cluster_end) <= max_distance:
+                    current_cluster.append(call)
+                else:
+                    clusters.append(current_cluster)
+                    current_cluster = [call]
+
+            clusters.append(current_cluster)
 
         # Merge each cluster into a single call
         for cluster in clusters:
@@ -540,8 +573,8 @@ def _cluster_sv_calls(
                 all_reads.extend(sv.read_names)
                 total_support += sv.supporting_reads
 
-            # De-duplicate read names
-            unique_reads = list(set(all_reads))
+            # De-duplicate read names, keeping the order in which they were first seen
+            unique_reads = list(dict.fromkeys(all_reads))
             actual_support = len(unique_reads)
 
             if actual_support < min_support:
@@ -552,6 +585,7 @@ def _cluster_sv_calls(
             median_start = int(statistics.median(sv.start for sv in cluster))
             median_end = int(statistics.median(sv.end for sv in cluster))
             median_size = int(statistics.median(sv.size for sv in cluster))
+            median_mate_position = int(statistics.median(sv.mate_position for sv in cluster))
 
             max_quality = max(sv.quality for sv in cluster)
 
@@ -566,11 +600,36 @@ def _cluster_sv_calls(
                     read_names=unique_reads,
                     quality=max_quality,
                     genotype="0/1" if actual_support >= min_support else "./.",
+                    inserted_sequence=_representative_insertion(cluster, median_size),
+                    mate_chromosome=mate_chrom,
+                    mate_position=median_mate_position,
                     info={
                         "cluster_size": len(cluster),
-                        "sources": list(set(sv.info.get("source", "unknown") for sv in cluster)),
+                        "sources": sorted(set(sv.info.get("source", "unknown") for sv in cluster)),
                     },
                 )
             )
 
     return merged
+
+
+def _split_by_mate_position(calls: list[StructuralVariant], max_distance: int) -> list[list[StructuralVariant]]:
+    """Split breakend calls into groups whose mate positions chain together within ``max_distance``."""
+    ordered = sorted(calls, key=lambda sv: sv.mate_position)
+    subgroups: list[list[StructuralVariant]] = [[ordered[0]]]
+    for previous, call in zip(ordered, ordered[1:]):
+        if call.mate_position - previous.mate_position > max_distance:
+            subgroups.append([])
+        subgroups[-1].append(call)
+    return subgroups
+
+
+def _representative_insertion(cluster: list[StructuralVariant], size: int) -> str:
+    """Inserted sequence of the call in ``cluster`` whose length is closest to ``size``, or "" if none has one.
+
+    Ties go to the earliest call in the cluster.
+    """
+    with_sequence = [sv for sv in cluster if sv.inserted_sequence]
+    if not with_sequence:
+        return ""
+    return min(with_sequence, key=lambda sv: abs(len(sv.inserted_sequence) - size)).inserted_sequence

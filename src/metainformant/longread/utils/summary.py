@@ -411,7 +411,7 @@ def compare_run_summaries(
 
     comparison: dict[str, Any] = {
         "samples": len(summaries),
-        "platforms": list({s.platform for s in summaries}),
+        "platforms": sorted({s.platform for s in summaries}),
         "per_sample": {},
     }
 

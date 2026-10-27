@@ -13,7 +13,7 @@ Publication-quality plotting for long-read sequencing data, including read lengt
 
 | Function | Description |
 |----------|-------------|
-| `plots.plot_read_length_histogram()` | Plot read length distribution as histogram |
+| `plots.plot_read_length_histogram()` | Plot read length distribution as histogram; takes integer lengths (numpy integers included) or read dicts with `length` or `sequence` |
 | `plots.plot_quality_vs_length()` | Scatter plot of quality score versus read length |
 | `plots.plot_dotplot()` | Sequence self-dotplot or pairwise dotplot |
 | `plots.plot_alignment_view()` | Visualize read alignments against a reference |

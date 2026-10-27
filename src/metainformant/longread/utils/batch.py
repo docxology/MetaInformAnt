@@ -148,6 +148,10 @@ def _process_parallel(
                     executor.shutdown(wait=False, cancel_futures=True)
                     break
 
+    # as_completed yields in completion order, which differs from run to run; report in input order
+    result.results = {item_id: result.results[item_id] for item_id in items if item_id in result.results}
+    result.errors = {item_id: result.errors[item_id] for item_id in items if item_id in result.errors}
+
     return result
 
 

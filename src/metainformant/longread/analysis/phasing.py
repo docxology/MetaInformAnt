@@ -32,6 +32,7 @@ class Variant:
         ref_allele: Reference allele.
         alt_allele: Alternate allele.
         genotype: Genotype string (e.g., '0/1').
+        quality: Variant call quality (e.g., the VCF QUAL); None when unknown.
     """
 
     chromosome: str
@@ -39,6 +40,7 @@ class Variant:
     ref_allele: str = ""
     alt_allele: str = ""
     genotype: str = "0/1"
+    quality: float | None = None
 
 
 @dataclass
@@ -129,14 +131,29 @@ def phase_reads(
 
     Args:
         variants: Sequence of Variant objects or dictionaries with keys:
-            chromosome, position, ref_allele, alt_allele.
-        reads: Sequence of read dictionaries, each containing:
-            - read_name (str): Unique read identifier
-            - variants (list): List of dicts with 'position', 'allele', 'quality'
-            OR
-            - aligned_pairs (list): List of (query_pos, ref_pos) tuples
-            - query_sequence (str): Read sequence
+            chromosome, position, ref_allele, alt_allele, and optionally
+            quality (the variant call quality, e.g. the VCF QUAL).
+        reads: Sequence of read dictionaries, each containing a read_name (str)
+            or read_id and the observed alleles, given either as
+            - variants (list): List of dicts with 'position', 'allele' (0 ref,
+              1 alt), 'quality' (base quality, default 30) and optionally
+              'chromosome' (default: the read's reference_name)
+            OR, for reads without a non-empty ``variants`` list,
+            - aligned_pairs (list): List of (query_pos, ref_pos) tuples as given
+              by pysam; pairs with a None position are ignored
+            - query_sequence (str): Read sequence in reference orientation
+            - reference_name (str): Chromosome the read is aligned to
+            - query_qualities (list, optional): Per-base Phred qualities (a base
+              without one counts as quality 30)
+            The alleles are called from ``aligned_pairs`` against the variants'
+            ``ref_allele`` and ``alt_allele``: the read base at a variant
+            position is allele 0 if it equals ``ref_allele``, allele 1 if it
+            equals ``alt_allele`` and is not an observation otherwise. Only
+            single-nucleotide variants can be called this way; other variants
+            are observed through ``variants`` entries only.
         min_variant_quality: Minimum variant quality to use for phasing.
+            Variants whose ``quality`` is below it are left out of the phasing
+            (and of every phase block); variants without a quality are kept.
         min_base_quality: Minimum base quality at variant positions.
 
     Returns:
@@ -154,10 +171,24 @@ def phase_reads(
                     ref_allele=v.get("ref_allele", ""),
                     alt_allele=v.get("alt_allele", ""),
                     genotype=v.get("genotype", "0/1"),
+                    quality=v.get("quality"),
                 )
             )
         else:
             norm_variants.append(v)
+
+    # Drop variants whose own call quality is below the threshold; one with no quality cannot be judged
+    n_called = len(norm_variants)
+    norm_variants = [
+        v for v in norm_variants if (quality := getattr(v, "quality", None)) is None or quality >= min_variant_quality
+    ]
+    if len(norm_variants) < n_called:
+        logger.info(
+            "Excluded %d of %d variants below the minimum variant quality %s",
+            n_called - len(norm_variants),
+            n_called,
+            min_variant_quality,
+        )
 
     if not norm_variants:
         return [], {}
@@ -172,13 +203,23 @@ def phase_reads(
     reads_per_variant: dict[int, list[ReadVariantObservation]] = defaultdict(list)
     variants_per_read: dict[str, list[ReadVariantObservation]] = defaultdict(list)
 
+    aligned_reads_without_sequence = 0
+    called_from_alignment = False
+
     for read in reads:
         read_name = read.get("read_name", read.get("read_id", ""))
         if not read_name:
             continue
 
-        # Get variant observations from the read
+        # Get variant observations from the read: explicit allele observations, or alleles called from
+        # the alignment when the read carries none
         read_vars = read.get("variants", [])
+        if not _has_items(read_vars) and _has_items(read.get("aligned_pairs")):
+            if _has_items(read.get("query_sequence")):
+                read_vars = _alleles_from_aligned_pairs(read, norm_variants, var_positions)
+                called_from_alignment = True
+            else:
+                aligned_reads_without_sequence += 1
         if read_vars:
             for rv in read_vars:
                 pos = rv.get("position", 0)
@@ -197,6 +238,21 @@ def phase_reads(
                         observations.append(obs)
                         reads_per_variant[var_positions[key]].append(obs)
                         variants_per_read[read_name].append(obs)
+
+    if aligned_reads_without_sequence:
+        logger.warning(
+            "%d reads carry aligned_pairs but no query_sequence, so their alleles could not be called",
+            aligned_reads_without_sequence,
+        )
+    if called_from_alignment:
+        n_not_snv = sum(1 for v in norm_variants if len(v.ref_allele) != 1 or len(v.alt_allele) != 1)
+        if n_not_snv:
+            logger.warning(
+                "%d of %d variants are not single-nucleotide variants with ref_allele and alt_allele, so "
+                "they cannot be observed through aligned_pairs",
+                n_not_snv,
+                len(norm_variants),
+            )
 
     if not observations:
         logger.warning("No read-variant observations found for phasing")
@@ -385,8 +441,11 @@ def tag_reads_by_haplotype(
 ) -> list[dict[str, Any]]:
     """Assign reads to haplotypes based on overlap with phase blocks.
 
-    For each read, determines which phase block it overlaps, then assigns
-    it to haplotype 1 or 2 based on allele concordance with the phase block.
+    For each read, considers every phase block it overlaps and takes the one
+    that holds most of the variants the read observed (the first such block on
+    ties, so interleaved blocks are all reachable), then assigns the read to
+    haplotype 1 or 2 based on allele concordance with that block. Reads with
+    no observed variant in an overlapping block, or with tied support, get HP=0.
 
     Args:
         reads: Sequence of read dictionaries with keys:
@@ -420,37 +479,39 @@ def tag_reads_by_haplotype(
 
         assigned_hp = 0
         assigned_ps = 0
+        best_support = 0
 
-        if chrom in block_index:
-            for block in block_index[chrom]:
-                # Check overlap
-                if read_start < block.end and read_end > block.start:
-                    # Read overlaps this phase block
-                    # Determine haplotype from variant observations
-                    read_vars = read_dict.get("variants", [])
-                    if read_vars:
-                        h1_support = 0
-                        h2_support = 0
+        # Every overlapping block is considered, since blocks from phase_reads can interleave; the read
+        # takes the one holding most of its observed variants (the first on ties)
+        for block in block_index.get(chrom, []):
+            # block.end is the last variant position (inclusive); reference_end is exclusive
+            if read_start > block.end or read_end <= block.start:
+                continue
 
-                        for rv in read_vars:
-                            pos = rv.get("position", 0)
-                            allele = rv.get("allele", 0)
+            # Determine haplotype from variant observations
+            h1_support = 0
+            h2_support = 0
 
-                            if pos in block.variants:
-                                idx = block.variants.index(pos)
-                                if idx < len(block.haplotype1):
-                                    if block.haplotype1[idx] == allele:
-                                        h1_support += 1
-                                    elif block.haplotype2[idx] == allele:
-                                        h2_support += 1
+            for rv in read_dict.get("variants", []):
+                pos = rv.get("position", 0)
+                allele = rv.get("allele", 0)
 
-                        if h1_support > h2_support:
-                            assigned_hp = 1
-                            assigned_ps = block.block_id
-                        elif h2_support > h1_support:
-                            assigned_hp = 2
-                            assigned_ps = block.block_id
-                    break  # Only use the first overlapping block
+                if pos in block.variants:
+                    idx = block.variants.index(pos)
+                    if idx < len(block.haplotype1):
+                        if block.haplotype1[idx] == allele:
+                            h1_support += 1
+                        elif block.haplotype2[idx] == allele:
+                            h2_support += 1
+
+            if h1_support + h2_support > best_support:
+                best_support = h1_support + h2_support
+                if h1_support > h2_support:
+                    assigned_hp, assigned_ps = 1, block.block_id
+                elif h2_support > h1_support:
+                    assigned_hp, assigned_ps = 2, block.block_id
+                else:
+                    assigned_hp, assigned_ps = 0, 0
 
         read_dict["HP"] = assigned_hp
         read_dict["PS"] = assigned_ps
@@ -531,6 +592,61 @@ def calculate_phase_block_stats(
 
 
 # --- Internal helper functions ---
+
+
+def _has_items(value: Any) -> bool:
+    """True for a non-None sized value with at least one element (safe for numpy arrays)."""
+    return value is not None and len(value) > 0
+
+
+def _alleles_from_aligned_pairs(
+    read: dict[str, Any],
+    variants: Sequence[Variant],
+    var_positions: dict[tuple[str, int], int],
+) -> list[dict[str, Any]]:
+    """Call the allele a read carries at each single-nucleotide variant it aligns over.
+
+    Walks ``read["aligned_pairs"]`` ((query_pos, ref_pos) pairs, None for gaps), reads
+    the base of ``read["query_sequence"]`` at the pair of a variant position and
+    compares it with the variant's alleles: ``ref_allele`` is allele 0, ``alt_allele``
+    allele 1, and any other base (or a variant that is not a single-nucleotide change)
+    yields no observation. The base quality is ``read["query_qualities"]`` at that
+    position when given, otherwise 30.
+
+    Returns:
+        Observation dicts with ``position``, ``chromosome``, ``allele`` and ``quality``,
+        in the format of ``read["variants"]`` entries.
+    """
+    sequence = read["query_sequence"]
+    qualities: Any = read.get("query_qualities")
+    has_qualities = _has_items(qualities)
+    chrom = read.get("reference_name", "")
+
+    observed: list[dict[str, Any]] = []
+    for query_pos, ref_pos in read["aligned_pairs"]:
+        if query_pos is None or ref_pos is None or query_pos >= len(sequence):
+            continue
+        index = var_positions.get((chrom, ref_pos))
+        if index is None:
+            continue
+
+        variant = variants[index]
+        ref_allele, alt_allele = variant.ref_allele.upper(), variant.alt_allele.upper()
+        if len(ref_allele) != 1 or len(alt_allele) != 1:
+            continue
+
+        base = sequence[query_pos].upper()
+        if base == ref_allele:
+            allele = 0
+        elif base == alt_allele:
+            allele = 1
+        else:
+            continue
+
+        quality = qualities[query_pos] if has_qualities and query_pos < len(qualities) else 30
+        observed.append({"position": ref_pos, "chromosome": chrom, "allele": allele, "quality": quality})
+
+    return observed
 
 
 def _greedy_max_cut(

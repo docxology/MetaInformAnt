@@ -182,13 +182,14 @@ def _parse_fast5_read_group(read_group: Any, group_name: str) -> Fast5Read:
             if isinstance(run_id, bytes):
                 run_id = run_id.decode("utf-8")
 
-    # Read attributes
+    # Read attributes (start_mux is the mux the read started on; 0 when the file does not record it)
     start_time = 0
     duration = 0
     if "Raw" in read_group and hasattr(read_group["Raw"], "attrs"):
         raw_attrs = read_group["Raw"].attrs
         start_time = int(raw_attrs.get("start_time", 0))
         duration = int(raw_attrs.get("duration", 0))
+        mux = int(raw_attrs.get("start_mux", 0))
 
     # Basecalls if available
     sequence = None

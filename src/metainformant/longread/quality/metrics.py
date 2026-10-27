@@ -11,6 +11,7 @@ Optional dependencies:
 from __future__ import annotations
 
 import math
+import numbers
 from dataclasses import dataclass, field
 from typing import Any, Sequence
 
@@ -186,8 +187,8 @@ def read_length_stats(reads: Sequence[dict[str, Any] | int | object]) -> ReadLen
     # Extract lengths
     lengths: list[int] = []
     for r in reads:
-        if isinstance(r, int):
-            lengths.append(r)
+        if isinstance(r, numbers.Integral):  # Python ints and numpy integer scalars
+            lengths.append(int(r))
         elif isinstance(r, dict):
             if "length" in r:
                 lengths.append(int(r["length"]))
@@ -397,8 +398,8 @@ def calculate_throughput(
     """
     lengths: list[int] = []
     for r in reads:
-        if isinstance(r, int):
-            lengths.append(r)
+        if isinstance(r, numbers.Integral):  # Python ints and numpy integer scalars
+            lengths.append(int(r))
         elif isinstance(r, dict):
             if "length" in r:
                 lengths.append(int(r["length"]))

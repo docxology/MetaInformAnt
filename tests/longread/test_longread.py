@@ -400,18 +400,19 @@ class TestQualityFiltering:
 
     def test_trim_adapters_known_adapter(self) -> None:
         """Trimming removes a known adapter from the read start."""
-        adapter = ONT_ADAPTERS["ONT_LSK110_top"]  # CAGCACCT (8 bp)
+        adapter = ONT_ADAPTERS["ONT_LSK109_top"]  # 28 bp
         seq = adapter + "A" * 2000
         reads = [{"sequence": seq, "read_id": "r1"}]
         trimmed = trim_adapters(
             reads,
-            adapter_sequences={"ONT_LSK110_top": adapter},
+            adapter_sequences={"ONT_LSK109_top": adapter},
             min_identity=0.75,
         )
         assert len(trimmed) == 1
-        # The trimmed sequence should be shorter (adapter removed)
-        assert len(trimmed[0].sequence) <= len(seq)
+        # Exactly the adapter is removed
+        assert trimmed[0].sequence == "A" * 2000
         assert trimmed[0].metadata.get("original_length") == len(seq)
+        assert trimmed[0].metadata.get("trimmed_start") == len(adapter)
 
     def test_trim_adapters_no_adapter_present(self) -> None:
         """Read without adapter is returned unchanged."""
@@ -428,17 +429,19 @@ class TestQualityFiltering:
 
     def test_detect_adapters_finds_adapter_at_start(self) -> None:
         """detect_adapters locates adapter at the beginning of a sequence."""
-        adapter = ONT_ADAPTERS["ONT_LSK110_top"]  # CAGCACCT
+        adapter = ONT_ADAPTERS["ONT_LSK109_top"]  # 28 bp
         seq = adapter + _random_dna(5000, seed=77)
         matches = detect_adapters(
             seq,
-            known_adapters={"ONT_LSK110_top": adapter},
+            known_adapters={"ONT_LSK109_top": adapter},
             min_identity=0.75,
         )
-        # Should find at least one match near position 0
-        assert len(matches) >= 1
-        found_start = any(m.location == "start" for m in matches)
-        assert found_start
+        # Exactly one match, at position 0, labelled as a start adapter
+        assert len(matches) == 1
+        assert matches[0].position == 0
+        assert matches[0].end_position == len(adapter)
+        assert matches[0].location == "start"
+        assert matches[0].identity == 1.0
 
     def test_detect_adapters_empty_sequence(self) -> None:
         """Empty sequence returns no matches."""

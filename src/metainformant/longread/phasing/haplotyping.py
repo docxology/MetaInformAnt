@@ -75,7 +75,9 @@ def phase_reads(
             - ``haplotype_assignments``: Dict mapping read_id to haplotype
               (1 or 2).
             - ``phase_blocks``: List of phase block dicts with ``chrom``,
-              ``start``, ``end``, ``n_variants``, ``n_reads``.
+              ``start``, ``end``, ``n_variants``, ``n_reads`` and
+              ``variant_haplotypes`` (position -> allele, 0 ref or 1 alt, that
+              haplotype 1 carries), ready for :func:`haplotag_reads`.
             - ``switch_error_rate``: Estimated switch error rate (0-1).
             - ``n_phased_reads``: Number of successfully phased reads.
 
@@ -205,7 +207,12 @@ def build_phase_blocks(
         phased_variants: List of phased variant dicts, each containing:
             - ``chrom`` (str): Chromosome.
             - ``position`` (int): Genomic position.
-            - ``haplotype`` (int): Assigned haplotype (1 or 2).
+            - ``haplotype`` (int): The haplotype (1 or 2) that carries the
+              alternate allele of this heterozygous variant (VCF genotype
+              ``1|0`` is 1, ``0|1`` is 2). With the optional ``allele`` key it is
+              the haplotype that carries that allele instead.
+            - ``allele`` (int, optional): 0 (reference) or 1 (alternate), the
+              allele carried by ``haplotype``. Defaults to 1.
             - ``quality`` (float, optional): Phasing quality score.
         max_gap: Maximum gap between consecutive variants in the same block.
 
@@ -217,6 +224,10 @@ def build_phase_blocks(
             - ``n_variants`` (int): Number of variants in the block.
             - ``n_reads`` (int): Set to 0 (not available without read data).
             - ``phase_quality`` (float): Mean quality of variants in block.
+            - ``variant_haplotypes`` (dict[int, int]): position -> allele (0 ref
+              or 1 alt) that haplotype 1 carries, the map :func:`haplotag_reads`
+              votes against. Variants whose ``haplotype`` is not 1 or 2, or whose
+              ``allele`` is not 0 or 1, are left out.
     """
     if not phased_variants:
         return []
@@ -331,21 +342,31 @@ def haplotag_reads(
 ) -> list[dict[str, Any]]:
     """Tag reads with haplotype assignment based on phase blocks.
 
-    For each read, finds the overlapping phase block and assigns a
-    haplotype tag (HP) and phase set tag (PS). Reads that do not overlap
-    any phase block receive HP=0, PS=0.
+    Each read votes with the alleles it carries at the variants of every phase
+    block it overlaps: an allele equal to ``variant_haplotypes[position]`` (the
+    allele haplotype 1 carries there) is a vote for haplotype 1, any other allele
+    a vote for haplotype 2. The read takes the block with the most votes (the
+    first such block on ties, so interleaved blocks such as those from
+    :func:`phase_reads` are all reachable) and the haplotype with the majority
+    of that block's votes, with HP (haplotype tag) and PS (phase set tag) set
+    accordingly. Reads that overlap no phase block, carry no allele at a block
+    variant, or split their votes evenly receive HP=0, PS=0. Blocks from
+    :func:`phase_reads` and :func:`build_phase_blocks` carry
+    ``variant_haplotypes``; a block without it cannot tag any read, and a
+    warning says how many such blocks were passed.
 
     Args:
         reads: List of read dicts with ``read_id``, ``chrom``, ``start``,
             ``end``, and optionally ``alleles`` (list of dicts with
             ``position`` and ``allele``).
         phase_blocks: List of phase block dicts with ``chrom``, ``start``,
-            ``end``, and optionally ``variant_haplotypes`` (dict mapping
-            position to haplotype assignment for that block).
+            ``end`` (inclusive: the last variant position) and
+            ``variant_haplotypes`` (dict mapping position to the allele, 0 ref
+            or 1 alt, that haplotype 1 carries there).
 
     Returns:
         List of read dicts with added ``HP`` (int, 0/1/2) and ``PS``
-        (int, phase set index) fields.
+        (int, index of the block in ``phase_blocks``) fields.
     """
     # Index phase blocks by chromosome
     block_index: dict[str, list[tuple[int, dict[str, Any]]]] = defaultdict(list)
@@ -356,6 +377,15 @@ def haplotag_reads(
     for chrom in block_index:
         block_index[chrom].sort(key=lambda x: x[1]["start"])
 
+    blocks_without_map = sum(1 for block in phase_blocks if not block.get("variant_haplotypes"))
+    if blocks_without_map:
+        logger.warning(
+            "%d of %d phase blocks carry no variant_haplotypes; reads overlapping only those blocks cannot be "
+            "haplotagged and keep HP=0",
+            blocks_without_map,
+            len(phase_blocks),
+        )
+
     tagged: list[dict[str, Any]] = []
 
     for read in reads:
@@ -363,35 +393,36 @@ def haplotag_reads(
         chrom = read_dict.get("chrom", "")
         read_start = read_dict.get("start", 0)
         read_end = read_dict.get("end", read_start)
+        alleles = read_dict.get("alleles", [])
 
         hp = 0
         ps = 0
+        best_votes = 0
 
-        if chrom in block_index:
-            for block_idx, block in block_index[chrom]:
-                if read_start < block["end"] and read_end > block["start"]:
-                    # Read overlaps block - assign haplotype from alleles
-                    var_haps = block.get("variant_haplotypes", {})
-                    alleles = read_dict.get("alleles", [])
+        for block_idx, block in block_index.get(chrom, []):
+            # block["end"] is the last variant position (inclusive); read["end"] is exclusive
+            if read_start > block["end"] or read_end <= block["start"]:
+                continue
 
-                    h1_votes = 0
-                    h2_votes = 0
-                    for a in alleles:
-                        pos = a.get("position", -1)
-                        obs_allele = a.get("allele", -1)
-                        if pos in var_haps:
-                            if var_haps[pos] == obs_allele:
-                                h1_votes += 1
-                            else:
-                                h2_votes += 1
+            var_haps = block.get("variant_haplotypes", {})
+            h1_votes = 0
+            h2_votes = 0
+            for a in alleles:
+                pos = a.get("position", -1)
+                if pos in var_haps:
+                    if var_haps[pos] == a.get("allele", -1):
+                        h1_votes += 1
+                    else:
+                        h2_votes += 1
 
-                    if h1_votes > h2_votes:
-                        hp = 1
-                        ps = block_idx
-                    elif h2_votes > h1_votes:
-                        hp = 2
-                        ps = block_idx
-                    break  # Use first overlapping block
+            if h1_votes + h2_votes > best_votes:
+                best_votes = h1_votes + h2_votes
+                if h1_votes > h2_votes:
+                    hp, ps = 1, block_idx
+                elif h2_votes > h1_votes:
+                    hp, ps = 2, block_idx
+                else:
+                    hp, ps = 0, 0
 
         read_dict["HP"] = hp
         read_dict["PS"] = ps
@@ -575,7 +606,9 @@ def _build_blocks_from_graph(
         read_observations: Per-read variant observations.
 
     Returns:
-        List of phase block dicts.
+        List of phase block dicts, each with ``chrom``, ``start``, ``end``,
+        ``n_variants``, ``n_reads`` and ``variant_haplotypes`` (position -> allele
+        carried by haplotype 1).
     """
     n_variants = len(variants)
 
@@ -632,6 +665,9 @@ def _build_blocks_from_graph(
                 "end": max(positions),
                 "n_variants": len(component),
                 "n_reads": len(reads_per_component.get(comp_idx, set())),
+                # allele (0 ref, 1 alt) that haplotype 1 carries at each variant; read assignment and
+                # haplotag_reads vote against this same map
+                "variant_haplotypes": {variants[i]["position"]: variant_haplotype[i] for i in component},
             }
         )
 
@@ -655,6 +691,12 @@ def _summarize_block(
     qualities = [v.get("quality", 1.0) for v in block_variants]
     mean_quality = sum(qualities) / len(qualities) if qualities else 0.0
 
+    variant_haplotypes: dict[int, int] = {}
+    for v in block_variants:
+        haplotype_one_allele = _haplotype_one_allele(v)
+        if haplotype_one_allele is not None:
+            variant_haplotypes[v["position"]] = haplotype_one_allele
+
     return {
         "chrom": chrom,
         "start": min(positions),
@@ -662,7 +704,22 @@ def _summarize_block(
         "n_variants": len(block_variants),
         "n_reads": 0,
         "phase_quality": mean_quality,
+        "variant_haplotypes": variant_haplotypes,
     }
+
+
+def _haplotype_one_allele(variant: dict[str, Any]) -> int | None:
+    """Allele (0 ref, 1 alt) that haplotype 1 carries at a phased variant, or None if unknown.
+
+    ``haplotype`` names the haplotype carrying ``allele`` (default 1, the alternate
+    allele); haplotype 1 therefore carries ``allele`` itself when ``haplotype`` is 1
+    and the other allele when it is 2.
+    """
+    haplotype = variant.get("haplotype")
+    allele = variant.get("allele", 1)
+    if haplotype not in (1, 2) or allele not in (0, 1):
+        return None
+    return int(allele) if haplotype == 1 else 1 - int(allele)
 
 
 def _test_allelic_difference(

@@ -13,7 +13,7 @@ Oxford Nanopore sequencing directly detects DNA base modifications by measuring 
 
 ### Signal-Level Calling
 
-Each per-read, per-site signal record carries a log-likelihood ratio (LLR) for methylation versus no methylation, as produced by a nanopore signal model. The module converts the LLR to a probability with the logistic function and calls the site methylated when the probability reaches the threshold. The `bayesian` model shrinks probabilities above 0.5 toward the prior (to at most 2/3), so thresholds above 0.67 call nothing methylated under it. To score raw current traces or per-site signal features directly, see `longread.analysis.modified_bases`.
+Each per-read, per-site signal record carries a log-likelihood ratio (LLR) for methylation versus no methylation, as produced by a nanopore signal model. The `threshold` model converts the LLR to a probability with the logistic function and calls the site methylated when the probability reaches the threshold, one record at a time. The `bayesian` model pools the reads at one site: they share an unknown methylation rate with a Beta prior, and each read's probability is its posterior given the LLRs of all reads at the site, so a read that disagrees with the rest of its site is pulled toward them. To score raw current traces or per-site signal features directly, see `longread.analysis.modified_bases`.
 
 ### Methylation Aggregation
 
@@ -38,10 +38,15 @@ def call_methylation_from_signal(
     signal_data: list[dict[str, Any]],
     model: str = "threshold",
     threshold: float = 0.5,
+    prior_alpha: float = 1.0,
+    prior_beta: float = 1.0,
 ) -> list[dict[str, Any]]
 ```
 
-Call methylation status for per-read, per-site signal records. Each record in `signal_data` carries `read_id`, `chrom`, `position`, `strand` and `log_likelihood_ratio` (positive favours methylation). Returns a list of the same records, each copied with two added fields: `methylated` (bool) and `confidence` (0-1; 0 at a probability of 0.5, 1 at 0 or 1). `model` is `"threshold"` or `"bayesian"`; any other value raises `ValueError`.
+Call methylation status for per-read, per-site signal records. Each record in `signal_data` carries `read_id`, `chrom`, `position`, `strand` and `log_likelihood_ratio` (positive favours methylation). Returns a list of the same records, each copied with two added fields: `methylated` (bool; true when the probability reaches `threshold`) and `confidence` (0-1: twice the distance of the probability from 0.5, so 0 at a probability of 0.5 and 1 at 0 or 1). `model` is `"threshold"` or `"bayesian"`; any other value raises `ValueError`. A record whose LLR is NaN is called unmethylated with a NaN `confidence`, and under `"bayesian"` it does not contribute to its site.
+
+- `"threshold"`: the probability of a record is the logistic function of its LLR, `1 / (1 + exp(-LLR))`, the posterior under a flat 50 % prior. `prior_alpha` and `prior_beta` are ignored.
+- `"bayesian"`: a hierarchical Bayesian call. Records with the same `(chrom, position, strand)` share an unknown methylation rate `theta ~ Beta(prior_alpha, prior_beta)`; each read is methylated with probability `theta`, and its LLR is the likelihood ratio of its signal. The probability of a read is its posterior `P(methylated | LLRs of all reads at the site)`, the expectation of `logistic(LLR + logit(theta))` over the posterior of `theta`, computed by numerical integration (accurate to better than 1e-6). A read that disagrees with the rest of its site is pulled toward it, and the result does not depend on the order of the reads. A site with one read has probability `logistic(LLR + logit(prior mean))`, where the prior mean is `prior_alpha / (prior_alpha + prior_beta)`; with the default Beta(1, 1) prior that equals the threshold model. Records without both `chrom` and `position` are not pooled: each is its own site. `prior_alpha` and `prior_beta` must each be at least 0.25, otherwise `ValueError`. The model requires numpy and raises `ImportError` without it.
 
 ### aggregate_methylation
 
@@ -114,6 +119,16 @@ def simulate_signal(mean_llr, n_reads=8):
 tumor_calls = calling.call_methylation_from_signal(simulate_signal(2.0), model="threshold", threshold=0.5)
 normal_calls = calling.call_methylation_from_signal(simulate_signal(-2.0), model="threshold", threshold=0.5)
 
+# Bayesian model (needs numpy): reads at one site share a methylation rate with a Beta prior, so a weak
+# dissenting read is pulled toward its site. The prior defaults to Beta(1, 1).
+site = [
+    {"read_id": f"read_{i}", "chrom": "chr1", "position": 1000, "strand": "+", "log_likelihood_ratio": llr}
+    for i, llr in enumerate([3.0, 3.0, 3.0, 3.0, 3.0, -1.0])
+]
+alone = calling.call_methylation_from_signal(site, model="threshold")
+pooled = calling.call_methylation_from_signal(site, model="bayesian", prior_alpha=1.0, prior_beta=1.0)
+print(alone[-1]["methylated"], pooled[-1]["methylated"])  # False True
+
 # Aggregate across reads
 tumor_methylation = calling.aggregate_methylation(tumor_calls, min_coverage=5)
 normal_methylation = calling.aggregate_methylation(normal_calls, min_coverage=5)
@@ -137,8 +152,9 @@ print(f"Unique patterns: {len(patterns['patterns'])}, entropy: {patterns['entrop
 ## Configuration
 
 - **Environment prefix**: `LR_` is honoured only by `workflow.pipelines.load_pipeline_config` and `utils.batch.process_batch` (`LR_BATCH_WORKERS`); the functions on this page read no environment variables
-- **Optional dependencies**: scipy (the Mann-Whitney test in `detect_dmrs` falls back to a Welch t-test approximation without scipy); numpy is not used by this module
+- **Optional dependencies**: numpy (required by `model="bayesian"` in `call_methylation_from_signal`; the other functions do not use it), scipy (the Mann-Whitney test in `detect_dmrs` falls back to a Welch t-test approximation without scipy)
 - Default methylation calling threshold: 0.5 probability
+- Bayesian model prior: Beta(1, 1) by default (`prior_alpha` and `prior_beta`, each at least 0.25)
 - Aggregation requires at least 5 reads per site by default
 - DMR detection requires minimum 3 CpG sites per region and 20% methylation difference
 - Pattern analysis counts a read only if it covers at least `max(1, n // 2)` of the region's `n` CpG sites

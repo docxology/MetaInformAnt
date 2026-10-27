@@ -4,13 +4,42 @@ Provides length-based filtering, quality filtering, adapter detection and
 trimming, and chimeric read detection/splitting. All algorithms are real
 implementations with proper bioinformatics logic.
 
+Adapter matching model
+----------------------
+An adapter is located by semi-global alignment: the whole adapter must align to
+a stretch of the read, the stretch may start and end anywhere, and every
+substitution, insertion or deletion costs one edit. A placement is accepted when
+it needs at most ``max_errors`` edits, the smallest of
+
+* ``floor(len(adapter) * (1 - min_identity))``, the divergence the caller tolerates;
+* the largest budget whose false-positive probability stays within
+  ``max_false_positive_rate`` (:func:`adapter_false_positive_bound`);
+* ``len(adapter) // 7 - 1``, which keeps the exact seeds that propose candidate
+  placements at least 7 bp long. Every placement within the budget contains one
+  of the ``max_errors + 1`` seeds exactly (pigeonhole), so the seed step loses
+  nothing the alignment model would accept, and adapters are found at any offset.
+
+False-positive bound: for i.i.d. uniform bases, the probability that a given read
+offset ends a spurious placement of a ``length``-bp adapter within ``max_errors``
+edits is at most :func:`adapter_false_positive_bound` (a union bound over edit
+scripts, so it is conservative). A read of ``n`` adapter-free bases therefore has
+at most ``2 * n * bound`` expected spurious hits per adapter, counting both
+orientations. With the default rate of 1e-9 that is at most 2e-5 hits for a 10 kb
+read, and the shortest adapter that can be searched is 15 bp
+(:func:`minimum_adapter_length`). The bound assumes uniform base composition;
+GC- or AT-rich sequence raises the true rate, so lower ``max_false_positive_rate``
+for such genomes. An adapter shorter than the minimum is searched by exact match
+only and a warning names it.
+
 Optional dependencies:
     - numpy: For efficient numerical computation
 """
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
+from functools import lru_cache
 from typing import Any, Sequence, TypeVar, cast
 
 from metainformant.core.sequence import reverse_complement
@@ -25,13 +54,21 @@ try:
 except ImportError:
     np = None
 
+#: Default upper bound on the probability that one read offset starts or ends a
+#: spurious adapter placement in adapter-free random sequence.
+DEFAULT_MAX_FALSE_POSITIVE_RATE = 1e-9
 
-# Standard ONT adapter sequences
+_MIN_SEED_LENGTH = 7
+_DETECT_SEARCH_LENGTH = 300
+
+
+# Standard ONT adapter sequences. Every entry must be long enough to be searched with
+# a bounded false-positive rate (see minimum_adapter_length). The 8 bp ONT_LSK110_top
+# and ONT_LSK110_bottom entries (CAGCACCT and AGGTGCTG, reverse complements of each
+# other) were removed: they matched random sequence at about one offset in 240.
 ONT_ADAPTERS: dict[str, str] = {
     "ONT_LSK109_top": "AATGTACTTCGTTCAGTTACGTATTGCT",
     "ONT_LSK109_bottom": "GCAATACGTAACTGAACGAAGT",
-    "ONT_LSK110_top": "CAGCACCT",
-    "ONT_LSK110_bottom": "AGGTGCTG",
     "ONT_RNA_adapter": "GGCGTCTGCTTGGGTGTTTAACCT",
     "ONT_rapid_top": "GTTTTCGCATTTATCGTGAAACGCTTTCGCGTTTTTCGTGCGCCGCTTCA",
     "ONT_rapid_barcode": "AATGTACTTCGTTCAGTTACGTATTGCTAAGGTTAA",
@@ -72,9 +109,13 @@ class AdapterMatch:
         adapter_sequence: Adapter sequence that matched.
         position: Start position in the read (0-based).
         end_position: End position in the read (0-based, exclusive).
-        score: Alignment score of the match.
-        identity: Fraction of matching bases.
+        score: Alignment score of the match (adapter length minus edits).
+        identity: Fraction of the adapter that matched (1 - edit_distance / adapter length).
         location: Where the adapter was found ('start', 'end', 'internal').
+        edit_distance: Substitutions, insertions and deletions in the placement.
+        false_positive_bound: Upper bound on the probability that one offset of an
+            adapter-free random read yields a placement with this adapter length
+            and edit budget (see :func:`adapter_false_positive_bound`).
     """
 
     adapter_name: str
@@ -84,6 +125,8 @@ class AdapterMatch:
     score: float
     identity: float
     location: str
+    edit_distance: int = 0
+    false_positive_bound: float = 0.0
 
 
 def filter_by_length(
@@ -168,29 +211,138 @@ def filter_by_quality(
     return filtered
 
 
+@lru_cache(maxsize=None)
+def adapter_false_positive_bound(adapter_length: int, max_errors: int) -> float:
+    """Upper bound on the chance that a random read offset ends a spurious adapter placement.
+
+    For an i.i.d. uniform ACGT read, the probability that the bases ending at a
+    given offset are within ``max_errors`` edits (substitutions, insertions,
+    deletions) of a fixed adapter of ``adapter_length`` bp. It is a union bound
+    over edit scripts, summed over the lengths a placement can span::
+
+        sum over (d, i, s) with d + i + s <= max_errors of
+            C(L, d) * C(L - d, s) * 3**s * C(L - d + i, i) * 4**i / 4**(L - d + i)
+
+    where d, i and s count deletions, insertions and substitutions. Different
+    scripts can yield the same string, so the true probability is at most this value.
+
+    Args:
+        adapter_length: Adapter length L in bp (at least 1).
+        max_errors: Edit budget (at least 0).
+
+    Returns:
+        A probability in (0, 1]. ``4 ** -adapter_length`` for ``max_errors == 0``.
+
+    Raises:
+        ValueError: If ``adapter_length`` is below 1 or ``max_errors`` is negative.
+    """
+    if adapter_length < 1:
+        raise ValueError(f"adapter_length must be at least 1, got {adapter_length}")
+    if max_errors < 0:
+        raise ValueError(f"max_errors must be non-negative, got {max_errors}")
+
+    total = 0.0
+    for deletions in range(max_errors + 1):
+        kept = adapter_length - deletions
+        for insertions in range(max_errors + 1 - deletions):
+            span = kept + insertions
+            if span < 1:
+                continue
+            substitutions = sum(math.comb(kept, s) * 3**s for s in range(max_errors - deletions - insertions + 1))
+            scripts = math.comb(adapter_length, deletions) * math.comb(span, insertions) * 4**insertions * substitutions
+            total += scripts / 4**span
+    return min(1.0, total)
+
+
+def minimum_adapter_length(max_false_positive_rate: float = DEFAULT_MAX_FALSE_POSITIVE_RATE) -> int:
+    """Shortest adapter, in bp, whose exact match has a false-positive probability within the rate.
+
+    The smallest L with ``4 ** -L <= max_false_positive_rate`` (15 bp for the default 1e-9).
+
+    Raises:
+        ValueError: If ``max_false_positive_rate`` is outside (0, 1).
+    """
+    _validate_search_parameters(1.0, max_false_positive_rate)
+    length = 1
+    while 4.0**-length > max_false_positive_rate:
+        length += 1
+    return length
+
+
+def adapter_error_budget(
+    adapter_length: int,
+    min_identity: float = 0.75,
+    max_false_positive_rate: float = DEFAULT_MAX_FALSE_POSITIVE_RATE,
+) -> int:
+    """Edits tolerated when searching for an adapter of ``adapter_length`` bp.
+
+    The smallest of the divergence implied by ``min_identity``, the largest budget
+    whose :func:`adapter_false_positive_bound` is within ``max_false_positive_rate``,
+    and ``adapter_length // 7 - 1`` (keeps the exact search seeds at least 7 bp).
+
+    Returns:
+        The edit budget, or -1 when even an exact match of this length exceeds the
+        false-positive rate (the adapter is shorter than :func:`minimum_adapter_length`).
+
+    Raises:
+        ValueError: If ``adapter_length`` is below 1, ``min_identity`` is outside 0-1,
+            or ``max_false_positive_rate`` is outside (0, 1).
+    """
+    _validate_search_parameters(min_identity, max_false_positive_rate)
+    if adapter_length < 1:
+        raise ValueError(f"adapter_length must be at least 1, got {adapter_length}")
+
+    tolerated = math.floor(adapter_length * (1.0 - min_identity) + 1e-9)
+    seed_limit = max(0, adapter_length // _MIN_SEED_LENGTH - 1)
+
+    budget = -1
+    for errors in range(min(tolerated, seed_limit) + 1):
+        if adapter_false_positive_bound(adapter_length, errors) > max_false_positive_rate:
+            break
+        budget = errors
+    return budget
+
+
 def trim_adapters(
     reads: Sequence[dict[str, Any] | ReadRecord],
     adapter_sequences: dict[str, str] | None = None,
     max_search_length: int = 200,
     min_identity: float = 0.75,
+    max_false_positive_rate: float = DEFAULT_MAX_FALSE_POSITIVE_RATE,
 ) -> list[ReadRecord]:
     """Trim adapter sequences from the ends of reads.
 
-    Searches for adapters at the beginning and end of each read using
-    semi-global alignment and trims matching regions.
+    Searches the first and last ``max_search_length`` bases of each read for
+    adapters by semi-global alignment (see the module docstring for the error
+    model) and trims everything up to the end of an adapter found at the start,
+    or from the start of an adapter found at the end. Adapter-free reads are
+    returned unchanged: the false-positive probability per searched offset is
+    at most ``max_false_positive_rate`` for adapters of at least
+    :func:`minimum_adapter_length` bases.
 
     Args:
         reads: Sequence of read dictionaries or ReadRecord objects.
         adapter_sequences: Dictionary of adapter_name -> sequence. If None,
-            uses all known ONT and PacBio adapters.
+            uses all known ONT and PacBio adapters. Adapters shorter than
+            :func:`minimum_adapter_length` are matched exactly only, with a warning.
         max_search_length: Maximum number of bases to search at each end.
-        min_identity: Minimum sequence identity to consider a match (0-1).
+        min_identity: Minimum fraction of the adapter that must match (0-1). It
+            caps the tolerated edits; the false-positive bound can lower the cap.
+        max_false_positive_rate: Upper bound on the per-offset probability of a
+            spurious placement in adapter-free i.i.d. uniform sequence.
 
     Returns:
         List of ReadRecord objects with adapters trimmed.
+
+    Raises:
+        ValueError: If ``min_identity`` is outside 0-1 or ``max_false_positive_rate``
+            is outside (0, 1).
     """
     if adapter_sequences is None:
         adapter_sequences = ALL_KNOWN_ADAPTERS
+
+    plan = _plan_adapters(adapter_sequences, min_identity, max_false_positive_rate)
+    start_patterns = [pattern for pattern in plan if not pattern.is_reverse]
 
     trimmed: list[ReadRecord] = []
 
@@ -205,27 +357,19 @@ def trim_adapters(
         trim_start = 0
         trim_end = len(seq)
 
-        # Check for adapters at the start
+        # Check for adapters at the start (forward orientation only)
         search_start = seq[:max_search_length].upper()
-        for adapter_name, adapter_seq in adapter_sequences.items():
-            match = _find_adapter_match(search_start, adapter_seq.upper(), min_identity)
+        for pattern in start_patterns:
+            match = _best_placement(search_start, pattern)
             if match is not None:
                 adapter_end = match[1]
                 trim_start = max(trim_start, adapter_end)
 
-        # Check for adapters at the end
+        # Check for adapters at the end, in both orientations
         search_end = seq[-max_search_length:].upper() if len(seq) > max_search_length else seq.upper()
         offset = len(seq) - len(search_end)
-        for adapter_name, adapter_seq in adapter_sequences.items():
-            # Also check reverse complement of adapter at end
-            rc_adapter = reverse_complement(adapter_seq.upper())
-            match = _find_adapter_match(search_end, rc_adapter, min_identity)
-            if match is not None:
-                adapter_start = offset + match[0]
-                trim_end = min(trim_end, adapter_start)
-
-            # Check forward adapter at end too
-            match = _find_adapter_match(search_end, adapter_seq.upper(), min_identity)
+        for pattern in plan:
+            match = _best_placement(search_end, pattern)
             if match is not None:
                 adapter_start = offset + match[0]
                 trim_end = min(trim_end, adapter_start)
@@ -263,74 +407,51 @@ def trim_adapters(
 def detect_adapters(
     sequence: str,
     known_adapters: dict[str, str] | None = None,
-    max_search_length: int = 300,
+    max_search_length: int = _DETECT_SEARCH_LENGTH,
     min_identity: float = 0.70,
+    max_false_positive_rate: float = DEFAULT_MAX_FALSE_POSITIVE_RATE,
 ) -> list[AdapterMatch]:
     """Detect adapter sequences within a read.
 
-    Searches for known adapter sequences throughout the read, not just at
-    the ends, to identify internal adapters that may indicate chimeric reads.
+    Searches for known adapter sequences throughout the read, at every offset
+    and in both orientations, to identify internal adapters that may indicate
+    chimeric reads. An adapter with up to ``max_errors`` substitutions,
+    insertions or deletions is found wherever it sits (see the module docstring
+    for how ``max_errors`` follows from ``min_identity`` and
+    ``max_false_positive_rate``). On an adapter-free i.i.d. uniform read of
+    ``n`` bases the expected number of spurious matches is at most
+    ``2 * n * false_positive_bound`` per adapter, where the bound is reported on
+    every :class:`AdapterMatch`.
 
     Args:
         sequence: Nucleotide sequence to search.
         known_adapters: Dictionary of adapter_name -> sequence. If None,
-            uses all known adapters.
-        max_search_length: Maximum length of start/end regions to search.
-        min_identity: Minimum identity for a match (0-1).
+            uses all known adapters. Adapters shorter than
+            :func:`minimum_adapter_length` are matched exactly only, with a warning.
+        max_search_length: Length of the start/end regions used to label a
+            match ``'start'`` or ``'end'`` rather than ``'internal'``.
+        min_identity: Minimum fraction of the adapter that must match (0-1). It
+            caps the tolerated edits; the false-positive bound can lower the cap.
+        max_false_positive_rate: Upper bound on the per-offset probability of a
+            spurious placement in adapter-free i.i.d. uniform sequence.
 
     Returns:
-        List of AdapterMatch objects for all detected adapters.
+        List of AdapterMatch objects for all detected adapters, sorted by
+        position, with overlapping matches reduced to the best-scoring one.
+
+    Raises:
+        ValueError: If ``min_identity`` is outside 0-1 or ``max_false_positive_rate``
+            is outside (0, 1).
     """
     if known_adapters is None:
         known_adapters = ALL_KNOWN_ADAPTERS
 
+    plan = _plan_adapters(known_adapters, min_identity, max_false_positive_rate)
+
     if not sequence:
         return []
 
-    matches: list[AdapterMatch] = []
-    seq_upper = sequence.upper()
-
-    for adapter_name, adapter_seq in known_adapters.items():
-        adapter_upper = adapter_seq.upper()
-        rc_adapter = reverse_complement(adapter_upper)
-
-        for search_adapter, suffix in [(adapter_upper, ""), (rc_adapter, "_rc")]:
-            # Scan the sequence with a sliding window
-            adapter_len = len(search_adapter)
-            if adapter_len == 0:
-                continue
-
-            # Search the full sequence
-            for i in range(0, len(seq_upper) - adapter_len + 1, max(1, adapter_len // 2)):
-                window = seq_upper[i : i + adapter_len]
-                identity = _sequence_identity(window, search_adapter)
-
-                if identity >= min_identity:
-                    # Determine location
-                    if i < max_search_length:
-                        location = "start"
-                    elif i > len(seq_upper) - max_search_length:
-                        location = "end"
-                    else:
-                        location = "internal"
-
-                    matches.append(
-                        AdapterMatch(
-                            adapter_name=adapter_name + suffix,
-                            adapter_sequence=search_adapter,
-                            position=i,
-                            end_position=i + adapter_len,
-                            score=identity * adapter_len,
-                            identity=identity,
-                            location=location,
-                        )
-                    )
-
-    # Sort by position and deduplicate overlapping matches
-    matches.sort(key=lambda m: m.position)
-    deduplicated = _deduplicate_adapter_matches(matches)
-
-    return deduplicated
+    return _detect_with_plan(sequence.upper(), plan, max_search_length)
 
 
 def split_chimeric_reads(
@@ -338,26 +459,40 @@ def split_chimeric_reads(
     known_adapters: dict[str, str] | None = None,
     min_fragment_length: int = 500,
     min_adapter_identity: float = 0.75,
+    max_false_positive_rate: float = DEFAULT_MAX_FALSE_POSITIVE_RATE,
 ) -> list[ReadRecord]:
     """Detect and split chimeric reads at internal adapter sequences.
 
     Chimeric reads are artifacts where two separate DNA molecules are
     joined during library preparation. They contain internal adapter
-    sequences. This function finds internal adapters and splits the
-    read into separate fragments.
+    sequences. This function finds internal adapters (see
+    :func:`detect_adapters` for the matching model and its false-positive
+    bound) and splits the read into separate fragments. Adapter-free reads are
+    not split: each adapter has at most ``max_false_positive_rate`` probability
+    per read offset of a spurious internal hit.
 
     Args:
         reads: Sequence of read dictionaries or ReadRecord objects.
         known_adapters: Adapter sequences to search for. If None, uses defaults.
+            Adapters shorter than :func:`minimum_adapter_length` are matched
+            exactly only, with a warning.
         min_fragment_length: Minimum length of resulting fragments to keep.
-        min_adapter_identity: Minimum identity for adapter matching.
+        min_adapter_identity: Minimum fraction of the adapter that must match (0-1).
+        max_false_positive_rate: Upper bound on the per-offset probability of a
+            spurious placement in adapter-free i.i.d. uniform sequence.
 
     Returns:
         List of ReadRecord objects, with chimeric reads split into fragments.
         Non-chimeric reads are returned unchanged.
+
+    Raises:
+        ValueError: If ``min_adapter_identity`` is outside 0-1 or
+            ``max_false_positive_rate`` is outside (0, 1).
     """
     if known_adapters is None:
         known_adapters = ALL_KNOWN_ADAPTERS
+
+    plan = _plan_adapters(known_adapters, min_adapter_identity, max_false_positive_rate)
 
     result: list[ReadRecord] = []
     chimeric_count = 0
@@ -383,7 +518,7 @@ def split_chimeric_reads(
             continue
 
         # Detect internal adapters
-        adapter_matches = detect_adapters(seq, known_adapters, min_identity=min_adapter_identity)
+        adapter_matches = _detect_with_plan(seq.upper(), plan, _DETECT_SEARCH_LENGTH)
         internal_matches = [m for m in adapter_matches if m.location == "internal"]
 
         if not internal_matches:
@@ -494,63 +629,210 @@ def _mean_phred(quality_string: str) -> float:
     return sum(scores) / len(scores)
 
 
-def _sequence_identity(seq1: str, seq2: str) -> float:
-    """Calculate sequence identity between two equal-length sequences.
+@dataclass(frozen=True)
+class _AdapterPattern:
+    """One oriented adapter sequence with its edit budget and exact seeds."""
 
-    Simple character-by-character comparison. Both sequences must be
-    the same length.
-
-    Returns:
-        Fraction of matching positions (0.0 to 1.0).
-    """
-    if not seq1 or not seq2:
-        return 0.0
-    min_len = min(len(seq1), len(seq2))
-    if min_len == 0:
-        return 0.0
-    matches = sum(1 for a, b in zip(seq1[:min_len], seq2[:min_len]) if a == b)
-    return matches / min_len
+    name: str
+    sequence: str
+    is_reverse: bool
+    max_errors: int
+    seeds: tuple[tuple[int, str], ...]
+    false_positive_bound: float
 
 
-def _find_adapter_match(
-    sequence: str,
-    adapter: str,
+def _validate_search_parameters(min_identity: float, max_false_positive_rate: float) -> None:
+    """Reject identity and false-positive settings outside their valid ranges."""
+    if not 0.0 <= min_identity <= 1.0:
+        raise ValueError(f"min_identity must be between 0 and 1, got {min_identity}")
+    if not 0.0 < max_false_positive_rate < 1.0:
+        raise ValueError(f"max_false_positive_rate must be between 0 and 1 (exclusive), got {max_false_positive_rate}")
+
+
+def _split_seeds(sequence: str, pieces: int) -> tuple[tuple[int, str], ...]:
+    """Cut ``sequence`` into ``pieces`` contiguous seeds of near-equal length as (offset, seed)."""
+    base, extra = divmod(len(sequence), pieces)
+    seeds: list[tuple[int, str]] = []
+    offset = 0
+    for index in range(pieces):
+        size = base + (1 if index < extra else 0)
+        seeds.append((offset, sequence[offset : offset + size]))
+        offset += size
+    return tuple(seeds)
+
+
+def _plan_adapters(
+    adapters: dict[str, str],
     min_identity: float,
-) -> tuple[int, int] | None:
-    """Find the best match of an adapter within a sequence using semi-global alignment.
+    max_false_positive_rate: float,
+) -> list[_AdapterPattern]:
+    """Turn an adapter table into oriented search patterns, each with its edit budget.
 
-    Uses a simplified banded alignment approach: slides the adapter across
-    the sequence and returns the position with highest identity above threshold.
+    Adapters too short for any false-positive-bounded search keep an exact-match
+    budget and are reported once through a warning.
 
-    Args:
-        sequence: The sequence to search in.
-        adapter: The adapter sequence to find.
-        min_identity: Minimum identity threshold.
+    Raises:
+        ValueError: If ``min_identity`` or ``max_false_positive_rate`` is out of
+            range, or an adapter contains characters that are not IUPAC DNA.
+    """
+    _validate_search_parameters(min_identity, max_false_positive_rate)
+
+    plan: list[_AdapterPattern] = []
+    for name, raw_sequence in adapters.items():
+        adapter = raw_sequence.upper()
+        if not adapter:
+            continue
+
+        max_errors = adapter_error_budget(len(adapter), min_identity, max_false_positive_rate)
+        if max_errors < 0:
+            logger.warning(
+                "Adapter %s is %d bp but %d bp are needed to keep spurious matches below %.1e per read offset; "
+                "searching exact matches only (spurious-match probability %.1e per offset)",
+                name,
+                len(adapter),
+                minimum_adapter_length(max_false_positive_rate),
+                max_false_positive_rate,
+                adapter_false_positive_bound(len(adapter), 0),
+            )
+            max_errors = 0
+
+        bound = adapter_false_positive_bound(len(adapter), max_errors)
+        oriented = [(name, adapter, False)]
+        reverse = reverse_complement(adapter)
+        if reverse != adapter:
+            oriented.append((f"{name}_rc", reverse, True))
+
+        for pattern_name, sequence, is_reverse in oriented:
+            plan.append(
+                _AdapterPattern(
+                    name=pattern_name,
+                    sequence=sequence,
+                    is_reverse=is_reverse,
+                    max_errors=max_errors,
+                    seeds=_split_seeds(sequence, max_errors + 1),
+                    false_positive_bound=bound,
+                )
+            )
+
+    return plan
+
+
+def _align_adapter(adapter: str, text: str, max_errors: int) -> tuple[int, int, int] | None:
+    """Place the whole ``adapter`` inside ``text`` with the fewest edits.
+
+    Semi-global (Sellers) alignment: the adapter is aligned end to end, the
+    stretch of ``text`` it covers may start and end anywhere, and substitutions,
+    insertions and deletions each cost one edit.
 
     Returns:
-        Tuple of (start, end) positions if found, None otherwise.
+        ``(start, end, edits)`` of the best placement (leftmost end on ties), or
+        None when every placement needs more than ``max_errors`` edits.
     """
-    if not sequence or not adapter:
+    rows: list[list[int]] = [[0] * (len(text) + 1)]
+    for row_index, base in enumerate(adapter, start=1):
+        previous = rows[-1]
+        current = [row_index]
+        for column, other in enumerate(text, start=1):
+            current.append(min(previous[column - 1] + (base != other), previous[column] + 1, current[column - 1] + 1))
+        rows.append(current)
+
+    last_row = rows[-1]
+    edits = min(last_row)
+    if edits > max_errors:
         return None
 
-    adapter_len = len(adapter)
-    if adapter_len > len(sequence):
+    end = last_row.index(edits)
+    row_index, column = len(adapter), end
+    while row_index > 0:
+        here = rows[row_index][column]
+        if column > 0 and here == rows[row_index - 1][column - 1] + (adapter[row_index - 1] != text[column - 1]):
+            row_index, column = row_index - 1, column - 1
+        elif here == rows[row_index - 1][column] + 1:
+            row_index -= 1
+        else:
+            column -= 1
+    return column, end, edits
+
+
+def _find_adapter_placements(text: str, pattern: _AdapterPattern) -> list[tuple[int, int, int]]:
+    """Find every placement of ``pattern`` in upper-case ``text`` within its edit budget.
+
+    Exact seeds propose candidate regions and the alignment confirms them. A
+    placement with at most ``max_errors`` edits always contains one of the
+    ``max_errors + 1`` seeds unchanged, so no accepted placement is missed.
+
+    Returns:
+        ``(start, end, edits)`` tuples; overlapping placements of one adapter
+        occurrence may appear more than once and are reduced by the caller.
+    """
+    adapter = pattern.sequence
+    length = len(adapter)
+    errors = pattern.max_errors
+
+    if errors == 0:
+        exact: list[tuple[int, int, int]] = []
+        position = text.find(adapter)
+        while position != -1:
+            exact.append((position, position + length, 0))
+            position = text.find(adapter, position + 1)
+        return exact
+
+    placements: dict[tuple[int, int], int] = {}
+    checked: set[tuple[int, int]] = set()
+    for seed_offset, seed in pattern.seeds:
+        position = text.find(seed)
+        while position != -1:
+            anchor = position - seed_offset
+            region = (max(0, anchor - errors), min(len(text), anchor + length + errors))
+            if region not in checked:
+                checked.add(region)
+                hit = _align_adapter(adapter, text[region[0] : region[1]], errors)
+                if hit is not None:
+                    placements[(region[0] + hit[0], region[0] + hit[1])] = hit[2]
+            position = text.find(seed, position + 1)
+
+    return [(start, end, edits) for (start, end), edits in placements.items()]
+
+
+def _best_placement(text: str, pattern: _AdapterPattern) -> tuple[int, int] | None:
+    """Return (start, end) of the placement with the fewest edits (leftmost on ties), or None."""
+    placements = _find_adapter_placements(text, pattern)
+    if not placements:
         return None
+    start, end, _ = min(placements, key=lambda placement: (placement[2], placement[0], placement[1]))
+    return start, end
 
-    best_identity = 0.0
-    best_pos = -1
 
-    for i in range(len(sequence) - adapter_len + 1):
-        window = sequence[i : i + adapter_len]
-        identity = _sequence_identity(window, adapter)
-        if identity > best_identity:
-            best_identity = identity
-            best_pos = i
+def _detect_with_plan(sequence: str, plan: list[_AdapterPattern], max_search_length: int) -> list[AdapterMatch]:
+    """Find adapters anywhere in the upper-case ``sequence`` for every planned pattern."""
+    matches: list[AdapterMatch] = []
+    for pattern in plan:
+        length = len(pattern.sequence)
+        for start, end, edits in _find_adapter_placements(sequence, pattern):
+            if start < max_search_length:
+                location = "start"
+            elif start > len(sequence) - max_search_length:
+                location = "end"
+            else:
+                location = "internal"
 
-    if best_identity >= min_identity and best_pos >= 0:
-        return (best_pos, best_pos + adapter_len)
+            matches.append(
+                AdapterMatch(
+                    adapter_name=pattern.name,
+                    adapter_sequence=pattern.sequence,
+                    position=start,
+                    end_position=end,
+                    score=float(length - edits),
+                    identity=(length - edits) / length,
+                    location=location,
+                    edit_distance=edits,
+                    false_positive_bound=pattern.false_positive_bound,
+                )
+            )
 
-    return None
+    # Sort by position and deduplicate overlapping matches
+    matches.sort(key=lambda m: m.position)
+    return _deduplicate_adapter_matches(matches)
 
 
 def _deduplicate_adapter_matches(matches: list[AdapterMatch]) -> list[AdapterMatch]:
@@ -558,8 +840,9 @@ def _deduplicate_adapter_matches(matches: list[AdapterMatch]) -> list[AdapterMat
     if not matches:
         return []
 
-    # Sort by score descending
-    sorted_matches = sorted(matches, key=lambda m: -m.score)
+    # Sort by score descending; ties go to the leftmost, shortest match so boundaries do not
+    # depend on which seed proposed the placement
+    sorted_matches = sorted(matches, key=lambda m: (-m.score, m.position, m.end_position))
     kept: list[AdapterMatch] = []
 
     for match in sorted_matches:

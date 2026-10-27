@@ -81,12 +81,14 @@ class TestCallMethylationFromSignal:
         calls = call_methylation_from_signal(_signal(range(100, 105), "b", -3.0))
         assert all(c["methylated"] is False for c in calls)
 
-    def test_bayesian_model_shrinks_confidence(self) -> None:
+    def test_bayesian_single_read_equals_threshold_under_a_flat_prior(self) -> None:
+        # one read has nothing to pool with, and the Beta(1, 1) prior has mean 0.5, so the posterior of the
+        # read is the logistic function of its LLR; the old model capped it at 2/3
         strong = {"read_id": "r0", "chrom": "chr1", "position": 1, "strand": "+", "log_likelihood_ratio": 10.0}
         bayes = call_methylation_from_signal([strong], model="bayesian")
         thresh = call_methylation_from_signal([strong], model="threshold")
         assert bayes[0]["methylated"] is True
-        assert bayes[0]["confidence"] < thresh[0]["confidence"]
+        assert bayes[0]["confidence"] == pytest.approx(thresh[0]["confidence"], abs=1e-12)
 
     def test_invalid_model_raises(self) -> None:
         with pytest.raises(ValueError, match="Unknown model"):

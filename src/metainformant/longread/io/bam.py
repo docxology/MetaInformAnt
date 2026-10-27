@@ -207,7 +207,8 @@ def _parse_methylation_from_tags(tags: dict[str, Any]) -> dict[str, Any]:
     The ML tag encodes modification probabilities (0-255 scale).
 
     Args:
-        tags: Dictionary of BAM tags.
+        tags: Dictionary of BAM tags. ``ML`` may be a list, tuple, bytes, numpy
+            array or the ``array('B')`` that pysam returns for B-type tags.
 
     Returns:
         Dictionary with parsed methylation data including base type,
@@ -215,8 +216,13 @@ def _parse_methylation_from_tags(tags: dict[str, Any]) -> dict[str, Any]:
     """
     result: dict[str, Any] = {}
 
-    mm_tag = tags.get("MM") or tags.get("Mm")
-    ml_tag = tags.get("ML") or tags.get("Ml")
+    # Explicit None checks: ``or`` would call bool() on an array
+    mm_tag = tags.get("MM")
+    if mm_tag is None:
+        mm_tag = tags.get("Mm")
+    ml_tag = tags.get("ML")
+    if ml_tag is None:
+        ml_tag = tags.get("Ml")
 
     if mm_tag is None:
         return result
@@ -228,14 +234,7 @@ def _parse_methylation_from_tags(tags: dict[str, Any]) -> dict[str, Any]:
     # Split by semicolons for multiple modification types
     mod_entries = [e.strip() for e in mm_str.split(";") if e.strip()]
 
-    ml_probs: list[int] = []
-    if ml_tag is not None:
-        if isinstance(ml_tag, (list, tuple)):
-            ml_probs = list(ml_tag)
-        elif isinstance(ml_tag, bytes):
-            ml_probs = list(ml_tag)
-        else:
-            ml_probs = [int(ml_tag)]
+    ml_probs = _ml_values(ml_tag)
 
     prob_offset = 0
 
@@ -284,6 +283,24 @@ def _parse_methylation_from_tags(tags: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+def _ml_values(ml_tag: Any) -> list[int]:
+    """Return the values of an ML tag as a list of ints.
+
+    Accepts what BAM readers hand back for the B-type ML tag: a list or tuple,
+    bytes, a numpy array, pysam's ``array('B')``, or a single value.
+    """
+    if ml_tag is None:
+        return []
+    if isinstance(ml_tag, (bytes, bytearray)):
+        return list(ml_tag)
+    if isinstance(ml_tag, str):
+        return [int(ml_tag)]
+    try:
+        return [int(value) for value in ml_tag]
+    except TypeError:  # a scalar
+        return [int(ml_tag)]
+
+
 def extract_methylation_tags(alignment: LongReadAlignment) -> dict[str, Any]:
     """Extract and parse methylation data from a LongReadAlignment.
 
@@ -294,8 +311,10 @@ def extract_methylation_tags(alignment: LongReadAlignment) -> dict[str, Any]:
         alignment: A LongReadAlignment with methylation tags parsed.
 
     Returns:
-        Dictionary with modification types as keys and lists of
-        (position, probability) tuples as values.
+        Dictionary keyed by base, strand and modification code as written in the
+        MM tag (``"C+m"`` and ``"C-m"`` are separate entries), each holding
+        ``read_positions``, ``genomic_positions`` (a list of
+        ``(position, probability)`` tuples) and ``probabilities`` (0-1).
     """
     result: dict[str, Any] = {}
 
@@ -348,7 +367,7 @@ def extract_methylation_tags(alignment: LongReadAlignment) -> dict[str, Any]:
                 # Use read-level position if reference mapping unavailable
                 genomic_positions.append((abs_pos, prob))
 
-        mod_key = f"{base_char}+{mod_code}"
+        mod_key = f"{base_char}{mod_info.get('strand', '+')}{mod_code}"
         result[mod_key] = {
             "read_positions": absolute_positions,
             "genomic_positions": genomic_positions,

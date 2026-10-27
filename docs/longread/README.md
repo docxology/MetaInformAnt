@@ -7,10 +7,10 @@ PacBio and Oxford Nanopore long-read sequencing analysis module for METAINFORMAN
 ## Contents
 
 - **io/** - FAST5, POD5, BAM reading/writing and format conversion
-- **quality/** - Read metrics (N50, Nx, accuracy), filtering by length/quality
+- **quality/** - Read metrics (N50, Nx, accuracy), filtering by length/quality, adapter detection and trimming
 - **analysis/** - Modified base detection, structural variants, phasing
 - **assembly/** - Minimizer overlaps, POA consensus, hybrid assembly
-- **methylation/** - Signal-level methylation calling and DMR detection
+- **methylation/** - Signal-level methylation calling (threshold and Bayesian models) and DMR detection
 - **phasing/** - Read-based haplotyping and switch error computation
 - **workflow/** - Pipeline orchestration with dependency resolution
 - **visualization/** - Read length, quality, alignment, and methylation plots

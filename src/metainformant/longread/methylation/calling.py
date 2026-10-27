@@ -44,23 +44,47 @@ except ImportError:
     HAS_SCIPY = False
     scipy_stats = None
 
+# Numerical integration settings of the Bayesian model (see _site_posteriors)
+_RATE_LOGIT_LIMIT = 60.0  # the site rate is integrated over logit(theta) in [-60, 60]
+_LLR_LIMIT = 700.0  # larger |LLR| is certain evidence; clipping keeps the arithmetic finite
+_MIN_PRIOR_PARAMETER = 0.25  # smaller Beta parameters put prior mass beyond the integration range
+_WINDOW_NATS = 30.0  # nodes whose log density is further below the peak carry less than 1e-13 of the mass
+_COARSE_NODES = 121
+_FINE_NODES = 401
+_MAX_REFINEMENTS = 4
+_READ_CHUNK = 2048  # reads per block, bounding the size of the nodes x reads arrays
+
 
 def call_methylation_from_signal(
     signal_data: list[dict[str, Any]],
     model: str = "threshold",
     threshold: float = 0.5,
+    prior_alpha: float = 1.0,
+    prior_beta: float = 1.0,
 ) -> list[dict[str, Any]]:
     """Call methylation status from Nanopore signal-level data.
 
     Each input entry contains signal-derived features including a
-    log-likelihood ratio (LLR) for methylation vs unmethylation. The LLR
-    is converted to a probability using the logistic function and
-    compared against the threshold.
+    log-likelihood ratio (LLR) for methylation vs unmethylation, that is
+    ``log P(signal | methylated) - log P(signal | unmethylated)``. A call is
+    ``methylated`` when the probability of methylation reaches ``threshold``.
 
     Supported models:
-        - ``"threshold"``: Simple LLR threshold classification.
-        - ``"bayesian"``: Bayesian posterior with a Beta(1,1) prior on
-          the methylation rate, integrating the LLR evidence.
+        - ``"threshold"``: the probability is the logistic function of the LLR,
+          ``1 / (1 + exp(-LLR))``, which is the posterior under a flat 50 % prior.
+        - ``"bayesian"``: a hierarchical Bayesian call. Reads at the same
+          ``(chrom, position, strand)`` share an unknown methylation rate
+          ``theta ~ Beta(prior_alpha, prior_beta)``; each read is methylated with
+          probability ``theta`` and its LLR is the likelihood ratio of its
+          signal. The probability of a read is its posterior
+          ``P(methylated | LLRs of all reads at the site)``, the expectation of
+          ``logistic(LLR + logit(theta))`` over the posterior of ``theta``,
+          computed by numerical integration (accurate to better than 1e-6). Reads
+          that disagree with the rest of a site are pulled toward it, a site
+          with one read has probability ``logistic(LLR + logit(prior mean))``
+          (identical to the threshold model for the default Beta(1, 1) prior),
+          and results do not depend on the order of the reads. Entries without
+          ``chrom`` and ``position`` are not pooled. Requires numpy.
 
     Args:
         signal_data: List of per-read signal dictionaries, each containing:
@@ -72,34 +96,42 @@ def call_methylation_from_signal(
               methylation (positive = more likely methylated).
         model: Classification model. ``"threshold"`` or ``"bayesian"``.
         threshold: Probability threshold for calling a site as methylated.
+        prior_alpha: Alpha of the Beta prior on the site methylation rate
+            (``"bayesian"`` only). At least 0.25.
+        prior_beta: Beta of the Beta prior on the site methylation rate
+            (``"bayesian"`` only). At least 0.25. The prior mean is
+            ``prior_alpha / (prior_alpha + prior_beta)``.
 
     Returns:
         List of call dictionaries, each containing all original fields plus:
             - ``methylated`` (bool): Whether the site is called methylated.
-            - ``confidence`` (float): Classification confidence (0-1).
+            - ``confidence`` (float): Classification confidence (0-1): twice
+              the distance of the probability from 0.5. An entry whose LLR is
+              NaN is called unmethylated with a NaN confidence and does not
+              contribute to its site.
 
     Raises:
-        ValueError: If model is unrecognized.
+        ValueError: If model is unrecognized, or (``"bayesian"`` only) a prior
+            parameter is below 0.25.
+        ImportError: If model is ``"bayesian"`` and numpy is not installed.
     """
     if model not in ("threshold", "bayesian"):
         raise ValueError(f"Unknown model: {model}. Use 'threshold' or 'bayesian'.")
 
+    if model == "bayesian":
+        if not (prior_alpha >= _MIN_PRIOR_PARAMETER and prior_beta >= _MIN_PRIOR_PARAMETER):
+            raise ValueError(
+                f"prior_alpha and prior_beta must be at least {_MIN_PRIOR_PARAMETER}, "
+                f"got {prior_alpha} and {prior_beta}"
+            )
+        probabilities = _bayesian_probabilities(signal_data, prior_alpha, prior_beta)
+    else:
+        probabilities = [_llr_to_probability(float(entry.get("log_likelihood_ratio", 0.0))) for entry in signal_data]
+
     calls: list[dict[str, Any]] = []
 
-    for entry in signal_data:
-        llr = float(entry.get("log_likelihood_ratio", 0.0))
-
-        # Convert LLR to probability
-        prob = _llr_to_probability(llr)
-
-        if model == "bayesian":
-            # Bayesian posterior with Beta(1,1) prior
-            # posterior = Beta(1 + prob, 1 + (1-prob))
-            # posterior mean = (1 + prob) / (3)
-            # simplified as weighted prior
-            prob = (1.0 + prob) / 3.0 if prob > 0.5 else prob
-
-        methylated = prob >= threshold
+    for entry, prob in zip(signal_data, probabilities):
+        methylated = bool(prob >= threshold)
         confidence = abs(prob - 0.5) * 2.0  # 0 at boundary, 1 at extremes
 
         call = dict(entry)
@@ -554,6 +586,124 @@ def _llr_to_probability(llr: float) -> float:
     if llr < -500:
         return 0.0
     return 1.0 / (1.0 + math.exp(-llr))
+
+
+def _bayesian_probabilities(
+    signal_data: list[dict[str, Any]],
+    prior_alpha: float,
+    prior_beta: float,
+) -> list[float]:
+    """Posterior probability of methylation for every entry, pooling the reads of each site.
+
+    Entries are grouped by ``(chrom, position, strand)``; an entry without ``chrom``
+    and ``position`` forms its own group. An entry whose LLR is NaN gets a NaN
+    probability and is left out of its site's evidence.
+
+    Raises:
+        ImportError: If numpy is not installed.
+    """
+    if not HAS_NUMPY:
+        raise ImportError("numpy is required for model='bayesian': uv pip install numpy")
+
+    llrs = [float(entry.get("log_likelihood_ratio", 0.0)) for entry in signal_data]
+
+    groups: dict[Any, list[int]] = {}
+    for index, entry in enumerate(signal_data):
+        if "chrom" in entry and "position" in entry:
+            key: Any = (entry["chrom"], int(entry["position"]), entry.get("strand", "+"))
+        else:
+            key = index
+        groups.setdefault(key, []).append(index)
+
+    probabilities = [math.nan] * len(signal_data)
+    for indices in groups.values():
+        usable = [i for i in indices if not math.isnan(llrs[i])]
+        if not usable:
+            continue
+        for i, probability in zip(usable, _site_posteriors([llrs[i] for i in usable], prior_alpha, prior_beta)):
+            probabilities[i] = probability
+
+    return probabilities
+
+
+def _softplus(x: Any) -> Any:
+    """``log(1 + exp(x))`` without overflow."""
+    return np.logaddexp(0.0, x)
+
+
+def _sigmoid(x: Any) -> Any:
+    """``1 / (1 + exp(-x))`` without overflow."""
+    return np.exp(-np.logaddexp(0.0, -x))
+
+
+def _log_rate_density(u: Any, llr: Any, alpha: float, beta: float) -> Any:
+    """Unnormalised log posterior density of ``u = logit(theta)`` for a site's methylation rate.
+
+    The density of ``theta`` is ``theta^(alpha-1) (1-theta)^(beta-1) prod_i (1 - theta + theta e^LLR_i)``:
+    the Beta prior times, for every read, its likelihood ratio averaged over whether the read is
+    methylated. The change of variable to ``u`` adds the Jacobian ``theta (1-theta)``, which gives
+    ``-alpha softplus(-u) - beta softplus(u) + sum_i [softplus(u + LLR_i) - softplus(u)]``.
+    """
+    total = -alpha * _softplus(-u) - beta * _softplus(u)
+    baseline = _softplus(u)
+    for start in range(0, len(llr), _READ_CHUNK):
+        chunk = llr[start : start + _READ_CHUNK]
+        total = total + (_softplus(u[:, None] + chunk[None, :]) - baseline[:, None]).sum(axis=1)
+    return total
+
+
+def _occupied_window(nodes: Any, log_density: Any) -> tuple[float, float]:
+    """Interval of the grid that holds every node within 30 nats of the peak, padded by one node."""
+    occupied = np.nonzero(log_density >= log_density.max() - _WINDOW_NATS)[0]
+    return (
+        float(nodes[max(int(occupied[0]) - 1, 0)]),
+        float(nodes[min(int(occupied[-1]) + 1, len(nodes) - 1)]),
+    )
+
+
+def _site_posteriors(llrs: list[float], alpha: float, beta: float) -> list[float]:
+    """Posterior probability that each read at one site is methylated, given every read's LLR.
+
+    Model: ``theta ~ Beta(alpha, beta)``; read ``i`` is methylated with probability ``theta``;
+    its LLR is the log likelihood ratio of its signal. The posterior of read ``i`` is the
+    expectation of ``sigmoid(LLR_i + logit(theta))`` over the posterior of ``theta`` given all
+    reads, its own included (read ``i`` is conditionally independent of the others given
+    ``theta``, so this is exact). One read has the closed form
+    ``sigmoid(LLR + log(alpha / beta))``.
+
+    The posterior of ``u = logit(theta)`` is integrated on a uniform grid. A coarse grid over the
+    whole range finds the window that holds its mass (every node within 30 nats of the peak, which
+    is all but 1e-13 of it); a fine grid over that window integrates it, and while the window found
+    on the fine grid is less than half as wide as the grid itself (many reads) the integration is
+    repeated on it. Checked against exact enumeration of all methylation states, the probabilities
+    agree to better than 1e-6 for every admissible prior (about 1e-13 for parameters of at least 0.5).
+    """
+    if len(llrs) == 1:
+        return [_llr_to_probability(llrs[0] + math.log(alpha / beta))]
+
+    llr = np.clip(np.asarray(llrs, dtype=float), -_LLR_LIMIT, _LLR_LIMIT)
+
+    nodes = np.linspace(-_RATE_LOGIT_LIMIT, _RATE_LOGIT_LIMIT, _COARSE_NODES)
+    log_density = _log_rate_density(nodes, llr, alpha, beta)
+    low, high = _occupied_window(nodes, log_density)
+
+    for _ in range(_MAX_REFINEMENTS):
+        nodes = np.linspace(low, high, _FINE_NODES)
+        log_density = _log_rate_density(nodes, llr, alpha, beta)
+        narrower_low, narrower_high = _occupied_window(nodes, log_density)
+        if narrower_high - narrower_low > 0.5 * (high - low):
+            break
+        low, high = narrower_low, narrower_high
+
+    weights = np.exp(log_density - log_density.max())
+    weights /= weights.sum()
+
+    posteriors = np.empty(len(llr))
+    for start in range(0, len(llr), _READ_CHUNK):
+        chunk = llr[start : start + _READ_CHUNK]
+        posteriors[start : start + len(chunk)] = weights @ _sigmoid(nodes[:, None] + chunk[None, :])
+
+    return [float(min(1.0, max(0.0, p))) for p in posteriors]
 
 
 def _segment_cpgs(

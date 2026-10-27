@@ -16,6 +16,7 @@ Optional dependencies:
 from __future__ import annotations
 
 import math
+import numbers
 import statistics
 from pathlib import Path
 from typing import Any, Sequence
@@ -766,9 +767,10 @@ def _extract_lengths(reads: Sequence[int | dict[str, Any] | object]) -> list[int
     """Extract read lengths from various representations."""
     lengths: list[int] = []
     for r in reads:
-        if isinstance(r, int):
-            if r > 0:
-                lengths.append(r)
+        if isinstance(r, numbers.Integral):  # Python ints and numpy integer scalars
+            length = int(r)
+            if length > 0:
+                lengths.append(length)
         elif isinstance(r, dict):
             if "length" in r:
                 lengths.append(int(r["length"]))
