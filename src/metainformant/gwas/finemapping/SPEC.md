@@ -46,7 +46,7 @@ GWAS statistical fine-mapping submodule: Wakefield approximate Bayes factors, cr
 | `conditional_analysis` | `(z_scores, ld_matrix, max_signals=10, p_threshold=5e-8)` | `list[dict]` with `index`, `z_score`, `z_conditional`, `p_value`, `signal_number` |
 | `annotate_credible_set` | `(credible_set, annotations=None)` | `status`, `credible_set`, `annotated_snps`, `enrichment`, `n_annotated` |
 
-`compute_credible_set` accepts `prior` of `"uniform"` or `"distance"` and `coverage` in (0, 1]. `snp_pp_h4` holds each variant's probability of being the shared causal variant given H4 and sums to 1. `bayes_factor_model` maps `"trait_1"` and `"trait_2"` to `{"variance_model", "prior_variance"}`.
+`compute_credible_set` accepts `prior` of `"uniform"` or `"distance"` and `coverage` in (0, 1]. Its `ld_matrix` holds LD correlations r (signed entries in [-1, 1], ones on the diagonal, square with one row per Z-score), not r-squared: the adjustment multiplies each variant's Bayes factor by `1 - r**2`, where r is its largest absolute correlation with a variant that has a larger Bayes factor (the factor never drops below 0.01). `snp_pp_h4` holds each variant's probability of being the shared causal variant given H4 and sums to 1. `bayes_factor_model` maps `"trait_1"` and `"trait_2"` to `{"variance_model", "prior_variance"}`.
 
 ### colocalization
 
@@ -55,13 +55,25 @@ GWAS statistical fine-mapping submodule: Wakefield approximate Bayes factors, cr
 | `multi_trait_coloc` | `(z_scores, ld_matrix=None, *, prior_variances=None, standard_errors=None, sample_sizes=None, maf=None, case_fractions=None)` | `status`, `pairwise`, `multi_trait_pp_shared`, `n_traits`, `n_variants`, `summary` |
 | `eqtl_coloc` | `(gwas_z, eqtl_z, gene_id, ld_matrix=None, *, gwas_prior_variance=None, eqtl_prior_variance=None, gwas_standard_errors=None, eqtl_standard_errors=None, gwas_sample_size=None, eqtl_sample_size=None, maf=None, gwas_case_fraction=None)` | `status`, `gene_id`, `coloc_result`, `pp_h4`, `is_colocalized`, `lead_variant_gwas`, `lead_variant_eqtl`, `shared_variant`, `interpretation` |
 | `compute_clpp` | `(pip_1, pip_2)` | `status`, `clpp`, `per_variant_clpp`, `max_clpp_index`, `max_clpp_value`, `is_colocalized`, `n_variants` |
-| `regional_coloc` | `(z_scores_dict, region, ld_matrix=None, *, prior_variances=None, standard_errors=None, sample_sizes=None, maf=None, case_fractions=None)` | `status`, `best_window`, `all_windows`, `n_windows`, `region` |
+| `regional_coloc` | `(z_scores_dict, region, ld_matrix=None, *, prior_variances=None, standard_errors=None, sample_sizes=None, maf=None, case_fractions=None)` | `status`, `best_window`, `all_windows`, `n_windows`, `n_failed_windows`, `region` |
 
 The per-trait arguments of `multi_trait_coloc` and `regional_coloc` are mappings keyed by trait name; `maf` is shared by all traits. `eqtl_coloc` treats the eQTL trait as quantitative.
 
+`regional_coloc` picks `best_window` among the windows that succeeded and counts the others in `n_failed_windows`; a failed window stays in `all_windows` with its own `status` and `message`. When every window fails, the result is `{"status": "error", "message": ..., "all_windows": ..., "n_windows": ..., "n_failed_windows": ...}` with no `best_window`.
+
 ### eqtl
 
-`cis_eqtl_scan`, `trans_eqtl_scan`, `conditional_eqtl`, `eqtl_effect_sizes`, `eqtl_summary_stats` and `load_transcriptome_variants`.
+| Function | Signature | Returns |
+|----------|-----------|---------|
+| `cis_eqtl_scan` | `(expression_matrix, genotype_matrix, gene_positions, variant_positions, cis_window=1_000_000, maf_threshold=0.05)` | DataFrame: `gene_id`, `variant_id`, `beta`, `se`, `pvalue`, `distance`, `maf`, `status`, `error`; raises `ValueError` for a repeated id in `gene_positions`, `variant_positions` or the genotype index |
+| `trans_eqtl_scan` | `(expression_matrix, genotype_matrix, gene_positions, variant_positions, cis_window=1_000_000, maf_threshold=0.05, pvalue_threshold=1e-5)` | DataFrame of the variants with `pvalue` below the threshold: `gene_id`, `variant_id`, `beta`, `se`, `pvalue`, `is_trans`, `maf` |
+| `conditional_eqtl` | `(expression_vector, genotype_matrix, lead_variant_id, test_variant_ids=None)` | DataFrame: `variant_id`, `conditioned_on`, `beta`, `se`, `pvalue`, `status`, `error` |
+| `eqtl_effect_sizes` | `(expression_matrix, genotype_matrix, associations)` | DataFrame: `gene_id`, `variant_id`, `beta`, `se`, `pvalue`, `r_squared`, `status`, `error`, `mean_expr_gt0` to `mean_expr_gt2` where a genotype class is present |
+| `eqtl_summary_stats` | `(cis_results, fdr_threshold=0.05)` | `n_tests`, `n_tests_failed`, `n_egenes`, `n_eqtls` and, when there are tests, `fdr_threshold`, `mean_effect_size` |
+| `write_eqtl_results` | `(results, output_path)` | `Path` of the tab-separated file; every missing value is written as `NA` |
+| `load_transcriptome_variants` | `(vcf_path)` | `(genotype_matrix, variant_positions)` from a VCF or VCF.gz |
+
+A fit that cannot be made (fewer than 3 complete observations, a constant genotype, or a zero standard error) has NaN `beta`, `se` and `pvalue` (and NaN `r_squared` in `eqtl_effect_sizes`), `status == "error"` and the reason in `error`, in `cis_eqtl_scan`, `conditional_eqtl` and `eqtl_effect_sizes`. NaN is missing, never p = 1. `eqtl_summary_stats` counts in `n_tests` the rows that have a p-value, runs Benjamini-Hochberg over them and reports the rest as `n_tests_failed`. `trans_eqtl_scan` never reports a failed fit, because NaN is not below the threshold.
 
 ### Error contract
 

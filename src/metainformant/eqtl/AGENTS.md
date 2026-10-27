@@ -20,5 +20,9 @@ orchestration. Scripts are thin; business logic lives here.
 - External tools are subprocess-wrapped; check availability with
   `check_tools()` before runs; never mock tools in tests.
 - Keep real-expression loading separate from synthetic generation so
-  provenance stays explicit (real vs synthetic genotypes).
+  provenance stays explicit (real vs synthetic genotypes). `parse_gene_positions()`
+  invents the TSS positions; never present its output as an annotation.
+- Synthetic variant IDs are `var_<full gene id>_<i>` (never a shortened gene ID, which
+  collides across a chromosome); `create_synthetic_genotypes()` raises `ValueError` for a
+  repeated gene ID.
 - Repo-wide policy: see the repository-root `AGENTS.md`.

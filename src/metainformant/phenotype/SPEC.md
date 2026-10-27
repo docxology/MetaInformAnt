@@ -25,7 +25,7 @@ behavioral, chemical, acoustic, and electronic tracking domains.
 
 ### Exports — `morphological/`
 
-- `Measurement` — Dataclass for morphometric measurements with unit conversion (mm↔cm↔m↔µm)
+- `Measurement` — Dataclass for morphometric measurements with exact unit conversion between `um` (also written `µm` or `μm`), `mm`, `cm` and `m`; an unsupported unit raises `ValueError`
 - `MorphometricProfile` — Collection of measurements for a specimen
 
 ### Exports — `analysis/statistical.py`

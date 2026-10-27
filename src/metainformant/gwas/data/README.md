@@ -17,7 +17,8 @@ GWAS data retrieval, download utilities, genome mapping, and sample metadata man
 | Function | Module | Description |
 |----------|--------|-------------|
 | `download_reference_genome()` | `download` | Download reference genome from NCBI (Datasets API or FTP) |
-| `download_variant_database()` | `download` | Download dbSNP, 1000 Genomes, or HapMap variants |
+| `download_variant_database()` | `download` | Download dbSNP or 1000 Genomes variants (`db_name` `"dbsnp"` or `"1000genomes"`; any other name raises `ValueError`) |
+| `download_variant_data()` | `download` | Download the association summary table of a GWAS Catalog study. Only `data_type="summary_stats"` is supported: `"vcf"` (the default) and `"both"` raise `NotImplementedError`, and an unknown type raises `ValueError` |
 | `download_sra_run()` | `download` | Download individual SRA run data |
 | `download_sra_project()` | `download` | Download all runs from an SRA project |
 | `search_sra_for_organism()` | `download` | Search SRA for organism-specific sequencing data |

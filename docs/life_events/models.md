@@ -146,7 +146,7 @@ Standalone functions for learning event vector representations.
 | Function | Signature | Purpose |
 |----------|-----------|---------|
 | `learn_event_embeddings` | `(sequences, embedding_dim=100, window_size=5, min_count=1, sg=1, epochs=5, method=None, random_state=None, verbose=False, **kwargs)` | word2vec event embeddings (skip-gram or CBOW, negative sampling), trained in NumPy |
-| `biological_embedding` | `(sequences, embedding_type="event_type", random_state=None, **kwargs)` | Heuristic embeddings by `embedding_type` (`"event_type"`, `"domain"`, `"temporal"`) |
+| `biological_embedding` | `(sequences, embedding_type="event_type", random_state=None, **kwargs)` | Heuristic embeddings by `embedding_type` (`"event_type"`, `"domain"`, `"temporal"`); an unknown type raises `ValueError` |
 | `domain_specific_embeddings` | `(sequences, domains, embedding_dim=50, **kwargs)` | One `learn_event_embeddings` model per life domain |
 
 ```python
@@ -174,6 +174,8 @@ embeddings = learn_event_embeddings(sequences, embedding_dim=100, window_size=5,
 The keyword options (`negative`, `learning_rate`, `min_learning_rate`, `ns_exponent`, `cbow_mean`, `combine`, and the aliases) go through `**kwargs`; any other keyword is ignored with a logged warning. `ValueError` is raised for empty input, a non-positive `embedding_dim`, `window_size`, or `epochs`, `negative` below 1, a non-positive `learning_rate`, a negative `min_learning_rate`, an unknown `method` or `combine`, and when no event reaches `min_count`.
 
 `biological_embedding` returns a dictionary with the vectors under `"embeddings"`. The `"domain"` embeddings contain a small random variation around each domain's centre that is reproducible: it is drawn from `random_state` (alias `seed`) and from a fixed default seed when none is given. The `"event_type"` embeddings involve no randomness.
+
+The `"temporal"` embeddings work for any `EventSequence` and involve no randomness either. Sequences with at least two events are grouped by their first three event types, the intervals between consecutive events (in days; datetime timestamps are converted, numeric timestamps are subtracted as given) of a group are pooled, and the group's vector holds their mean, standard deviation, minimum, maximum, count and median, zero padded to `embedding_dim` (default 30) and scaled so that its largest absolute entry is 1. The result's `"embeddings"` are keyed by the string of the three-type tuple. Because the vector holds six statistics, an `embedding_dim` below 6 raises `ValueError`.
 
 ## Typical Workflow
 

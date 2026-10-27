@@ -305,7 +305,9 @@ def compare_populations(
         **kwargs: Additional analysis options
 
     Returns:
-        Dictionary containing comparison results
+        Dictionary containing comparison results. ``visualizations`` lists the plots that were written and
+        ``visualization_errors`` the plots that failed, each as ``{"type", "error_type", "error"}`` (an empty
+        list when the plot was written). A failed plot does not stop the comparison.
     """
     if not sequences1 or not sequences2:
         raise ValueError("Both sequence groups must be non-empty")
@@ -331,25 +333,31 @@ def compare_populations(
         "group2": {"n_sequences": len(sequences2), **group2_stats},
         "comparison": {},
         "visualizations": [],
+        "visualization_errors": [],
         "output_dir": str(output_dir),
     }
 
     # Statistical comparisons
     results["comparison"] = _compare_sequence_groups(sequences1, sequences2, group_names)
 
-    # Generate comparison visualizations
-    try:
+    # Generate the comparison plot. A failure is recorded in the results (and logged) rather than only logged.
+    def _plot_population_comparison(_sequences: List[Any], _outcomes: Optional[List[str]]) -> Any:
         from metainformant.life_events import visualization
 
-        fig = visualization.plot_population_comparison(
+        return visualization.plot_population_comparison(
             sequences1, sequences2, group1_label=group_names[0], group2_label=group_names[1]
         )
-        if fig:
-            comp_plot = output_dir / "population_comparison.png"
-            fig.savefig(comp_plot, dpi=300, bbox_inches="tight")
-            results["visualizations"].append({"type": "population_comparison", "file": str(comp_plot)})
-    except Exception as e:
-        logger.warning(f"Error generating comparison visualizations: {e}")
+
+    comp_plot = output_dir / "population_comparison.png"
+    failure = _save_plot(_plot_population_comparison, sequences1, None, comp_plot)
+    if failure is None:
+        results["visualizations"].append({"type": "population_comparison", "file": str(comp_plot)})
+    else:
+        error_type, message = failure
+        results["visualization_errors"].append(
+            {"type": "population_comparison", "error_type": error_type, "error": message}
+        )
+        logger.warning(f"Could not generate the population_comparison plot ({error_type}): {message}")
 
     # Save results
     results_file = output_dir / "comparison_results.json"
@@ -424,14 +432,28 @@ def intervention_analysis(
 ) -> Dict[str, Any]:
     """Analyze the effects of an intervention on life event sequences.
 
+    Every sequence is split at ``intervention_time`` into a pre-intervention part (events before it) and a
+    post-intervention part (events at or after it); a person with events on both sides contributes one
+    sequence to each part. The pre-intervention sequences come first, then the post-intervention ones, each
+    group in the order of ``sequences``.
+
     Args:
         sequences: List of EventSequence objects
         intervention_time: Timestamp of the intervention
         output_dir: Directory to save analysis results (optional)
-        outcomes: Optional list of outcomes to compare before/after intervention
+        outcomes: Optional outcomes to compare before/after intervention: one value for each
+            pre-intervention sequence followed by one value for each post-intervention sequence, so
+            ``len(outcomes)`` must equal the number of pre-intervention plus the number of
+            post-intervention sequences. Ignored when ``pre_intervention_outcomes`` or
+            ``post_intervention_outcomes`` is given.
+        pre_intervention_outcomes: Optional outcomes of the pre-intervention sequences, one per sequence
+        post_intervention_outcomes: Optional outcomes of the post-intervention sequences, one per sequence
 
     Returns:
         Dictionary containing pre/post intervention analysis
+
+    Raises:
+        ValueError: If ``outcomes`` does not hold exactly one value per pre- and post-intervention sequence
     """
     import datetime
     from pathlib import Path
@@ -463,8 +485,14 @@ def intervention_analysis(
     pre_outcomes = pre_intervention_outcomes
     post_outcomes = post_intervention_outcomes
     if outcomes is not None and pre_outcomes is None and post_outcomes is None:
+        n_expected = len(pre_sequences) + len(post_sequences)
+        if len(outcomes) != n_expected:
+            raise ValueError(
+                f"outcomes must hold one value per pre-intervention sequence followed by one per post-intervention "
+                f"sequence ({len(pre_sequences)} + {len(post_sequences)} = {n_expected}), got {len(outcomes)}"
+            )
         pre_outcomes = outcomes[: len(pre_sequences)]
-        post_outcomes = outcomes[len(pre_sequences) :] if len(outcomes) > len(pre_sequences) else None
+        post_outcomes = outcomes[len(pre_sequences) :]
 
     pre_output = output_dir / "pre" if output_dir else None
     post_output = output_dir / "post" if output_dir else None
@@ -524,17 +552,28 @@ def event_importance(
 
     Args:
         sequences: List of EventSequence objects
-        method: Method for calculating importance ('frequency', 'temporal', 'transition')
+        method: Method for calculating importance:
+            - ``'frequency'``: how often the event type occurs (its number of occurrences)
+            - ``'temporal'``: how early the event type occurs; the score is one minus the mean
+              relative position of its occurrences within their sequences (0 for the first
+              event, 1 for the last)
+            - ``'transition'``: how many transitions enter or leave the event type
         normalize: Whether to normalize scores to [0,1] range
 
     Returns:
         Dictionary mapping event types to importance scores
+
+    Raises:
+        ValueError: If ``method`` is not one of the three above
 
     Examples:
         >>> sequences = [EventSequence(...), ...]
         >>> importance = event_importance(sequences, method='frequency')
         >>> print(f"Most important event: {max(importance, key=importance.get)}")
     """
+    if method not in ("frequency", "temporal", "transition"):
+        raise ValueError(f"Unknown method {method!r}: expected 'frequency', 'temporal' or 'transition'")
+
     if not sequences:
         return {}
 
@@ -562,8 +601,10 @@ def event_importance(
 
     importance_scores: Dict[str, float] = {}
     if method == "frequency":
-        # Simple frequency-based importance
+        # Frequency-based importance: the number of occurrences
         importance_scores = {k: float(v) for k, v in event_counts.items()}
+
+    elif method == "temporal":
         for event_type, positions in event_positions.items():
             # Events that appear early get higher importance
             avg_position = sum(positions) / len(positions)

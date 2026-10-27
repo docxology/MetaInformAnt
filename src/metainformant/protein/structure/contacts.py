@@ -29,7 +29,8 @@ def calculate_residue_contacts(
         Contact map matrix (n_residues, n_residues)
 
     Example:
-        >>> coords = np.random.rand(50, 3) * 50
+        >>> rng = np.random.default_rng(0)
+        >>> coords = rng.random((50, 3)) * 50
         >>> residue_ranges = [(0, 5), (5, 10), (10, 15)]  # 3 residues
         >>> contacts = calculate_residue_contacts(coords, residue_ranges)
         >>> contacts.shape
@@ -295,7 +296,8 @@ def analyze_contact_network(contact_map: np.ndarray) -> Dict[str, Any]:
         Network analysis results
 
     Example:
-        >>> contact_map = np.random.randint(0, 2, (10, 10))
+        >>> rng = np.random.default_rng(0)
+        >>> contact_map = rng.integers(0, 2, (10, 10))
         >>> analysis = analyze_contact_network(contact_map)
         >>> isinstance(analysis, dict)
         True
@@ -360,7 +362,8 @@ def calculate_contact_persistence(contact_maps: List[np.ndarray]) -> np.ndarray:
         Persistence matrix showing how often each contact appears
 
     Example:
-        >>> maps = [np.random.randint(0, 2, (5, 5)) for _ in range(3)]
+        >>> rng = np.random.default_rng(0)
+        >>> maps = [rng.integers(0, 2, (5, 5)) for _ in range(3)]
         >>> persistence = calculate_contact_persistence(maps)
         >>> persistence.shape
         (5, 5)

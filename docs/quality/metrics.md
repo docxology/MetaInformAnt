@@ -109,8 +109,14 @@ def batch_quality_analysis(
 ) -> Dict[str, Any]
 ```
 
-Analyses multiple files and produces per-file results plus summary statistics
-(mean, median, min, max scores across files).
+Analyses multiple FASTQ files and produces per-file results plus summary statistics
+(mean, median, min, max scores across files). Only `data_type="fastq"` is supported,
+because it is the only type this package has a per-file analyzer for. `"vcf"` and
+`"bam"` raise `NotImplementedError` (score precomputed VCF or BAM metrics with
+`calculate_quality_score` instead) and any other value raises `ValueError`; both are
+raised before a file is touched, so an empty `file_paths` raises too. A file that
+fails is recorded with `status: "failed"` and an `error`, and the summary counts the
+successful and failed analyses.
 
 ### calculate_coverage_metrics
 

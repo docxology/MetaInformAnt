@@ -40,7 +40,7 @@ Modular tools for protein sequences and structures. Examples write to `output/` 
     ```
 
 - AlphaFold (`metainformant.protein.structure.alphafold`)
-  - Build model URLs and fetch models
+  - Build model URLs and fetch models; read per-residue pLDDT and the predicted aligned error from local model files (`get_alphafold_metadata`, `parse_alphafold_pae`). Sequence search, keyword search and coverage statistics are not implemented and raise `NotImplementedError`
   - Example:
     ```python-snippet
     from pathlib import Path
@@ -70,6 +70,9 @@ Modular tools for protein sequences and structures. Examples write to `output/` 
     # ... build B ... then
     rmsd = compute_rmsd_kabsch(A, B)
     ```
+
+- Structure analysis (`metainformant.protein.structure.analysis`)
+  - `analyze_structural_motifs`: helices, extended segments and zinc sites from the C-alpha trace; `identify_ligand_binding_sites`: LIGSITE-style buried pockets. Domain identification, surface area and structural similarity are simplified approximations (see the structure [README](../../src/metainformant/protein/structure/README.md))
 
 - CLI
   - Taxon IDs: `uv run python -m metainformant protein taxon-ids --file tests/data/protein/taxon_id_list.txt`

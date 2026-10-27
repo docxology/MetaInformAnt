@@ -61,7 +61,24 @@ def cis_eqtl_scan(
             - se: Standard error
             - pvalue: P-value from association test
             - distance: Distance from variant to TSS
+            - maf: Minor allele frequency of the variant
+            - status: ``"success"``, or ``"error"`` for a fit that could not be made
+            - error: Reason for a failed fit; missing (NaN) for a fit that was made
+
+        A failed fit (fewer than 3 complete observations, a constant genotype, or a zero standard error)
+        has NaN for ``beta``, ``se`` and ``pvalue``: they are missing, not an effect of 0 or a p-value
+        of 1. :func:`eqtl_summary_stats` leaves such rows out of its multiple-testing family, and
+        :func:`write_eqtl_results` writes them as ``NA``.
+
+    Raises:
+        ValueError: If a gene id repeats in ``gene_positions``, a variant id repeats in
+            ``variant_positions`` or in the index of ``genotype_matrix``. A repeated id would test the
+            same pair twice or run a gene against another variant's genotypes.
     """
+    _require_unique(gene_positions, "gene_id", "gene_positions")
+    _require_unique(variant_positions, "variant_id", "variant_positions")
+    _require_unique(genotype_matrix.index, None, "genotype_matrix index")
+
     logger.info(
         f"Starting cis-eQTL scan: {len(gene_positions)} genes, "
         f"{len(variant_positions)} variants, window={cis_window:,}bp"
@@ -106,11 +123,7 @@ def cis_eqtl_scan(
             if var_id not in geno.index:
                 continue
 
-            var_geno = geno.loc[var_id]
-            # Handle potential duplicate indices
-            if isinstance(var_geno, pd.DataFrame):
-                var_geno = var_geno.iloc[0]
-            var_geno = var_geno.values
+            var_geno = geno.loc[var_id].values
 
             # Filter by MAF
             maf = _compute_maf(var_geno)
@@ -118,7 +131,7 @@ def cis_eqtl_scan(
                 continue
 
             # Run association
-            beta, se, pval = _linear_regression(gene_expr, var_geno)
+            beta, se, pval, error = _linear_fit(gene_expr, var_geno)
             distance = int(var_row["position"] - tss)
 
             results.append(
@@ -130,10 +143,18 @@ def cis_eqtl_scan(
                     "pvalue": pval,
                     "distance": distance,
                     "maf": maf,
+                    "status": "success" if error is None else "error",
+                    "error": error,
                 }
             )
 
     result_df = pd.DataFrame(results)
+    n_failed = sum(1 for row in results if row["status"] == "error")
+    if n_failed:
+        logger.warning(
+            f"{n_failed} of {len(results)} cis-eQTL fits failed (NaN statistics); "
+            "they are left out of the summary statistics"
+        )
     logger.info(f"cis-eQTL scan complete: {len(result_df)} tests")
     return result_df
 
@@ -234,7 +255,9 @@ def conditional_eqtl(
         test_variant_ids: Variants to test (default: all except lead).
 
     Returns:
-        DataFrame with conditional association results.
+        DataFrame with conditional association results (``variant_id``, ``conditioned_on``, ``beta``,
+        ``se``, ``pvalue``, ``status``, ``error``). A fit that could not be made has NaN statistics and
+        ``status == "error"``, as in :func:`cis_eqtl_scan`.
     """
     logger.info(f"Conditional eQTL analysis, conditioning on {lead_variant_id}")
 
@@ -257,7 +280,7 @@ def conditional_eqtl(
         _, _, lead_resid = _linear_regression_residuals(expression_vector, lead_geno)
 
         # Test residuals vs this variant
-        beta, se, pval = _linear_regression(lead_resid, var_geno)
+        beta, se, pval, error = _linear_fit(lead_resid, var_geno)
 
         results.append(
             {
@@ -266,6 +289,8 @@ def conditional_eqtl(
                 "beta": beta,
                 "se": se,
                 "pvalue": pval,
+                "status": "success" if error is None else "error",
+                "error": error,
             }
         )
 
@@ -290,6 +315,8 @@ def eqtl_effect_sizes(
             - se: Standard error
             - r_squared: Variance explained
             - mean_expr_by_genotype: Mean expression per genotype class
+            - status, error: ``"success"``, or ``"error"`` with the reason for a fit that could not
+              be made; its ``beta``, ``se``, ``pvalue`` and ``r_squared`` are NaN (missing)
     """
     common_samples = list(set(expression_matrix.columns) & set(genotype_matrix.columns))
     expr = expression_matrix[common_samples]
@@ -313,8 +340,8 @@ def eqtl_effect_sizes(
             var_geno = var_geno.iloc[0]
         var_geno = var_geno.values
 
-        beta, se, pval = _linear_regression(gene_expr, var_geno)
-        r2 = _compute_r_squared(gene_expr, var_geno)
+        beta, se, pval, error = _linear_fit(gene_expr, var_geno)
+        r2 = _compute_r_squared(gene_expr, var_geno) if error is None else float("nan")
 
         # Mean expression by genotype (0, 1, 2)
         means = {}
@@ -331,6 +358,8 @@ def eqtl_effect_sizes(
                 "se": se,
                 "pvalue": pval,
                 "r_squared": r2,
+                "status": "success" if error is None else "error",
+                "error": error,
                 **means,
             }
         )
@@ -344,31 +373,65 @@ def eqtl_summary_stats(
 ) -> dict[str, Any]:
     """Generate eQTL summary statistics.
 
+    The Benjamini-Hochberg family is the rows that have a p-value. A row whose fit failed (NaN
+    p-value, see :func:`cis_eqtl_scan`) is left out of the family instead of counting as p = 1, and is
+    reported in ``n_tests_failed``.
+
     Args:
         cis_results: Results from cis_eqtl_scan.
         fdr_threshold: FDR threshold for significant eQTLs.
 
     Returns:
-        Dictionary with summary statistics.
+        Dictionary with summary statistics: ``n_tests`` (tests that have a p-value), ``n_tests_failed``,
+        ``n_egenes``, ``n_eqtls``, and, when there are tests, ``fdr_threshold`` and ``mean_effect_size``
+        (mean absolute beta over the tests that ran).
     """
     if len(cis_results) == 0:
-        return {"n_tests": 0, "n_egenes": 0, "n_eqtls": 0}
+        return {"n_tests": 0, "n_tests_failed": 0, "n_egenes": 0, "n_eqtls": 0}
 
-    pvals = cis_results["pvalue"].astype(float).values
-    fdr = stats.false_discovery_control(pvals, method="bh")
+    all_pvals = cis_results["pvalue"].astype(float).values
+    tested = np.isfinite(all_pvals)
+    n_failed = int((~tested).sum())
+    if not tested.any():
+        return {"n_tests": 0, "n_tests_failed": n_failed, "n_egenes": 0, "n_eqtls": 0}
 
-    significant = fdr < fdr_threshold
+    fdr = stats.false_discovery_control(all_pvals[tested], method="bh")
+
+    significant = np.zeros(len(all_pvals), dtype=bool)
+    significant[tested] = fdr < fdr_threshold
 
     n_egenes = cis_results.loc[significant, "gene_id"].nunique()
     n_eqtls = significant.sum()
 
     return {
-        "n_tests": len(cis_results),
+        "n_tests": int(tested.sum()),
+        "n_tests_failed": n_failed,
         "n_egenes": n_egenes,
         "n_eqtls": int(n_eqtls),
         "fdr_threshold": fdr_threshold,
-        "mean_effect_size": float(cis_results["beta"].abs().mean()),
+        "mean_effect_size": float(cis_results.loc[tested, "beta"].abs().mean()),
     }
+
+
+def write_eqtl_results(results: pd.DataFrame, output_path: str | Path) -> Path:
+    """Write an eQTL result table (from the scans above) as a tab-separated file.
+
+    Every missing value, such as the NaN of a failed fit, is written as ``NA`` (the marker GWAS-SSF
+    and PLINK use, read as missing by pandas and R), never as an empty field or a number: an absent
+    p-value is not 1 and an absent effect is not 0.
+
+    Args:
+        results: Table returned by :func:`cis_eqtl_scan`, :func:`conditional_eqtl` or
+            :func:`eqtl_effect_sizes`.
+        output_path: File to write; missing parent directories are created.
+
+    Returns:
+        Path of the written file.
+    """
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    results.to_csv(path, sep="\t", index=False, na_rep="NA")
+    return path
 
 
 # ---------------------------------------------------------------------------
@@ -480,18 +543,45 @@ def _compute_maf(genotypes: np.ndarray) -> float:
     return min(af, 1 - af)
 
 
-def _linear_regression(y: np.ndarray, x: np.ndarray) -> tuple[float, float, float]:
-    """Simple linear regression returning beta, SE, p-value."""
+def _require_unique(ids: Any, column: str | None, name: str) -> None:
+    """Raise ValueError when ``ids`` (or its ``column``) holds a repeated id.
+
+    A repeated id would test one gene-variant pair twice, or look up another entry's genotypes, without a
+    sign that anything is wrong. A table without the column is left to fail where it is used.
+    """
+    if column is not None:
+        if column not in ids.columns:
+            return
+        ids = ids[column]
+    values = pd.Index(ids)
+    repeated = values[values.duplicated()].unique()
+    if len(repeated) > 0:
+        shown = ", ".join(repr(str(value)) for value in repeated[:3])
+        raise ValueError(
+            f"{name} has {len(repeated)} repeated id(s) (e.g. {shown}); ids must be unique so that every "
+            "gene-variant pair is tested once, against its own genotypes"
+        )
+
+
+def _linear_fit(y: np.ndarray, x: np.ndarray) -> tuple[float, float, float, str | None]:
+    """Simple linear regression of ``y`` on ``x``: ``(beta, se, p_value, error)``.
+
+    A fit that cannot be made (fewer than 3 complete observations, a constant ``x``, or a zero standard
+    error because ``y`` is constant or fits ``x`` exactly) has NaN for beta, se and the p-value and the
+    reason in ``error``; ``error`` is None for a fit. NaN is missing data: it is not an effect of 0 or a
+    p-value of 1.
+    """
+    nan = float("nan")
     # Ensure 1D arrays
-    y = np.asarray(y).flatten()
-    x = np.asarray(x).flatten()
+    y = np.asarray(y, dtype=float).flatten()
+    x = np.asarray(x, dtype=float).flatten()
 
     valid = ~(np.isnan(y) | np.isnan(x))
-    if valid.sum() < 3:
-        return np.nan, np.nan, 1.0
+    n = int(valid.sum())
+    if n < 3:
+        return nan, nan, nan, f"fewer than 3 complete observations ({n})"
 
     y_v, x_v = y[valid], x[valid]
-    n = len(y_v)
 
     # Center variables
     x_c = x_v - np.mean(x_v)
@@ -500,34 +590,36 @@ def _linear_regression(y: np.ndarray, x: np.ndarray) -> tuple[float, float, floa
     # Calculate beta
     ss_x = np.sum(x_c**2)
     if ss_x == 0:
-        return np.nan, np.nan, 1.0
+        return nan, nan, nan, "the genotype is constant across the complete observations"
 
     beta = np.sum(x_c * y_c) / ss_x
 
-    # Residuals and SE
+    # Residuals and SE (n >= 3, so n - 2 >= 1)
     y_pred = np.mean(y_v) + beta * x_c
     resid = y_v - y_pred
-    mse = np.sum(resid**2) / (n - 2) if n > 2 else 1.0
-    se = np.sqrt(mse / ss_x) if ss_x > 0 else np.nan
+    mse = np.sum(resid**2) / (n - 2)
+    se = np.sqrt(mse / ss_x)
 
     # T-statistic and p-value
-    if se > 0 and not np.isnan(se):
-        t_stat = beta / se
-        from scipy import stats
+    if not se > 0:
+        return nan, nan, nan, "zero standard error (the response is constant or fits the genotype exactly)"
 
-        pval = 2 * stats.t.sf(abs(t_stat), n - 2)
-    else:
-        pval = 1.0
+    from scipy import stats
 
-    return float(beta), float(se), float(pval)
+    pval = 2 * stats.t.sf(abs(beta / se), n - 2)
+    return float(beta), float(se), float(pval), None
+
+
+def _linear_regression(y: np.ndarray, x: np.ndarray) -> tuple[float, float, float]:
+    """Simple linear regression returning beta, SE, p-value (all NaN for a fit that cannot be made)."""
+    beta, se, pval, _ = _linear_fit(y, x)
+    return beta, se, pval
 
 
 def _linear_regression_residuals(y: np.ndarray, x: np.ndarray) -> tuple[float, float, np.ndarray]:
-    """Linear regression returning beta, SE, and residuals."""
-    valid = ~(np.isnan(y) | np.isnan(x))
-    y_v, x_v = y.copy(), x.copy()
-    y_v[~valid] = np.nan
-    x_v[~valid] = np.nan
+    """Linear regression returning beta, SE, and residuals (integer inputs are read as floats)."""
+    y = np.asarray(y, dtype=float)
+    x = np.asarray(x, dtype=float)
 
     beta, se, _ = _linear_regression(y, x)
 
@@ -539,11 +631,13 @@ def _linear_regression_residuals(y: np.ndarray, x: np.ndarray) -> tuple[float, f
 
 
 def _compute_r_squared(y: np.ndarray, x: np.ndarray) -> float:
-    """Compute R-squared between response and predictor."""
+    """Compute R-squared between response and predictor (NaN when it is undefined, never 0)."""
     valid = ~(np.isnan(y) | np.isnan(x))
     if valid.sum() < 3:
-        return 0.0
+        return float("nan")
 
     y_v, x_v = y[valid], x[valid]
+    if np.ptp(y_v) == 0 or np.ptp(x_v) == 0:  # a constant variable has no correlation
+        return float("nan")
     correlation = np.corrcoef(y_v, x_v)[0, 1]
-    return float(correlation**2) if not np.isnan(correlation) else 0.0
+    return float(correlation**2) if not np.isnan(correlation) else float("nan")

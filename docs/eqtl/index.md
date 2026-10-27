@@ -1,6 +1,6 @@
 # eQTL Integration Pipeline
 
-> **Note**: eQTL is a **cross-cutting integration pipeline** — it does not have its own `src/metainformant/eqtl/` module. Core logic lives in `metainformant.gwas.finemapping.eqtl`, `metainformant.gwas.visualization.eqtl_visualization`, and `metainformant.multiomics.analysis.integration`. Scripts are in `scripts/eqtl/`.
+> **Note**: eQTL is a **cross-cutting integration pipeline**. Scan statistics live in `metainformant.gwas.finemapping.eqtl`, plots in `metainformant.gwas.visualization.eqtl_visualization` and multi-omics helpers in `metainformant.multiomics.analysis.integration`; the `metainformant.eqtl` package holds the synthetic and real input builders and the transcriptome SNP-calling pipeline. Scripts are in `scripts/eqtl/`.
 
 ## Documentation
 
@@ -13,7 +13,8 @@
 ## Quick Start
 
 ```bash
-# Run real-data eQTL analysis (uses Amalgkit expression data)
+# Real Amalgkit expression scanned against SYNTHETIC genotypes at SYNTHETIC gene positions
+# (a workflow demonstration: the associations are not biological findings)
 uv run python scripts/eqtl/run_eqtl_real.py
 
 # Run synthetic demo (for testing/validation)

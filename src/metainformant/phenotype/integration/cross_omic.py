@@ -12,6 +12,8 @@ from __future__ import annotations
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
+from scipy import stats as scipy_stats
+
 
 def phenotype_genotype_association(
     phenotypes: Dict[str, float],
@@ -285,7 +287,11 @@ def phenotype_environment_interaction(
 
 
 def _pearson_correlation(x: List[float], y: List[float]) -> Tuple[float, float]:
-    """Pearson correlation coefficient with p-value approximation."""
+    """Pearson correlation coefficient with its two-sided p-value.
+
+    The p-value is that of the t statistic ``r * sqrt((n - 2) / (1 - r**2))`` under Student's t distribution
+    with ``n - 2`` degrees of freedom (the test ``scipy.stats.pearsonr`` performs), whatever the sample size.
+    """
     n = len(x)
     if n < 3 or len(y) != n:
         return 0.0, 1.0
@@ -302,19 +308,21 @@ def _pearson_correlation(x: List[float], y: List[float]) -> Tuple[float, float]:
 
     r = cov_xy / math.sqrt(var_x * var_y)
 
-    # P-value approximation using t-distribution
+    # Two-sided p-value from Student's t with n - 2 degrees of freedom
     if abs(r) >= 1.0:
         return r, 0.0 if r != 0 else 1.0
 
     t_stat = r * math.sqrt((n - 2) / (1 - r**2))
-    # Rough p-value approximation
-    p_value = 2 * (1 - _t_cdf(abs(t_stat), n - 2))
+    p_value = float(2.0 * scipy_stats.t.sf(abs(t_stat), df=n - 2))
 
     return r, max(0.0, min(1.0, p_value))
 
 
 def _spearman_correlation(x: List[float], y: List[float]) -> Tuple[float, float]:
-    """Spearman rank correlation."""
+    """Spearman rank correlation and its two-sided p-value (Student's t on the ranks, as ``scipy.stats.spearmanr``).
+
+    Tied values get average ranks, so the result equals ``scipy.stats.spearmanr`` on data with ties.
+    """
     n = len(x)
     if n < 3 or len(y) != n:
         return 0.0, 1.0
@@ -327,17 +335,32 @@ def _spearman_correlation(x: List[float], y: List[float]) -> Tuple[float, float]
 
 
 def _to_ranks(values: List[float]) -> List[float]:
-    """Convert values to ranks."""
-    indexed = [(v, i) for i, v in enumerate(values)]
-    sorted_vals = sorted(indexed, key=lambda x: x[0])
+    """Convert values to ranks, 1 for the smallest; tied values share the mean of the ranks they span.
+
+    Averaging makes a rank depend on the value alone: ranking tied values by their position in the list (1, 2, 3
+    for three equal values) would make Spearman's coefficient depend on the order of the samples, and on data
+    with many ties, such as expression with many zeros, it would not be Spearman's coefficient at all.
+    """
+    order = sorted(range(len(values)), key=lambda i: values[i])
     ranks = [0.0] * len(values)
-    for rank, (_, orig_idx) in enumerate(sorted_vals):
-        ranks[orig_idx] = float(rank + 1)
+    first = 0
+    while first < len(order):
+        last = first
+        while last + 1 < len(order) and values[order[last + 1]] == values[order[first]]:
+            last += 1
+        average_rank = (first + last) / 2.0 + 1.0  # the mean of the 1-based ranks first + 1 .. last + 1
+        for position in range(first, last + 1):
+            ranks[order[position]] = average_rank
+        first = last + 1
     return ranks
 
 
 def _linear_regression_stats(x: List[float], y: List[float]) -> Tuple[float, float, float, float]:
-    """Simple linear regression with stats."""
+    """Simple linear regression: slope, intercept, R-squared and the p-value of the slope.
+
+    The p-value is that of the F statistic ``R**2 / ((1 - R**2) / (n - 2))`` with 1 and ``n - 2`` degrees of
+    freedom, which equals the two-sided t-test of the slope (the p-value of ``scipy.stats.linregress``).
+    """
     n = len(x)
     if n < 3:
         return 0.0, 0.0, 0.0, 1.0
@@ -357,35 +380,11 @@ def _linear_regression_stats(x: List[float], y: List[float]) -> Tuple[float, flo
 
     r_squared = (ss_xy**2) / (ss_xx * ss_yy) if ss_yy > 0 else 0.0
 
-    # P-value from F-statistic
+    # P-value from the F distribution with (1, n - 2) degrees of freedom
     if r_squared < 1.0 and r_squared > 0:
         f_stat = (r_squared / 1) / ((1 - r_squared) / (n - 2))
-        p_value = 1 - _f_cdf(f_stat, 1, n - 2)
+        p_value = float(scipy_stats.f.sf(f_stat, 1, n - 2))
     else:
         p_value = 0.0 if r_squared > 0 else 1.0
 
     return slope, intercept, r_squared, max(0.0, min(1.0, p_value))
-
-
-def _t_cdf(t: float, df: int) -> float:
-    """Approximate t-distribution CDF."""
-    # Simple approximation using normal for large df
-    if df > 30:
-        return float(_normal_cdf(t))
-    # Very rough approximation for small df
-    x = df / (df + t**2)
-    return float(0.5 + 0.5 * (1 - x ** (df / 2)) * (1 if t >= 0 else -1))
-
-
-def _f_cdf(f: float, df1: int, df2: int) -> float:
-    """Approximate F-distribution CDF."""
-    if f <= 0:
-        return 0.0
-    # Simple approximation
-    x = df2 / (df2 + df1 * f)
-    return float(1 - x ** (df2 / 2))
-
-
-def _normal_cdf(z: float) -> float:
-    """Approximate standard normal CDF using error function approximation."""
-    return 0.5 * (1 + math.erf(z / math.sqrt(2)))

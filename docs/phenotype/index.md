@@ -158,7 +158,7 @@ from metainformant.simulation.models.popgen import generate_genotype_matrix
 from metainformant.gwas.analysis.structure import compute_kinship_matrix
 
 rng = random.Random(0)
-n = 40  # use 33 or more samples: p-values are only roughly approximated below 30 degrees of freedom
+n = 40  # samples; a phenotype needs at least 3 non-missing samples to be tested
 genotype = [rng.choice([0, 1, 2]) for _ in range(n)]  # additive dosage of one variant, one value per sample
 phenotypes = {
     "body_length": [5.0 + 0.8 * g + rng.gauss(0, 0.5) for g in genotype],
@@ -187,14 +187,36 @@ categories = categorize_phenotypes(phenotypes)
 print(categories["categories"])  # {'endocrine': ['type_2_diabetes']}
 ```
 
-Each `run_phewas` result holds `phenotype`, `beta`, `se`, `p_value`, `n_samples` and `phenotype_category`; the last is always `"uncategorized"`, so use `categorize_phenotypes` to group the names. The p-values use a normal approximation of the t distribution above 30 degrees of freedom and a rough approximation below that.
+Each `run_phewas` result holds `phenotype`, `beta`, `se`, `p_value`, `n_samples` and `phenotype_category`; the last is always `"uncategorized"`, so use `categorize_phenotypes` to group the names. The p-values are two-sided Student's t with `n_samples - 2` degrees of freedom (`scipy.stats.t`), exact at any sample size. A phenotype with fewer than 3 non-missing samples is skipped.
+
+### Cross-omic Integration
+
+```python
+from metainformant.phenotype.integration.cross_omic import (
+    phenotype_genotype_association,
+    trait_expression_correlation,
+)
+
+traits = {f"s{i}": v for i, v in enumerate([1.2, 0.8, 2.5, 1.9, 0.4, 2.2, 1.1, 0.9])}
+expression = {"geneA": {f"s{i}": v for i, v in enumerate([0, 0, 5.1, 3.3, 0, 4.0, 0, 0])}}
+
+# Spearman correlation of a trait with each gene's expression
+result = trait_expression_correlation(traits, expression, method="spearman")
+print(result["correlations"]["geneA"])  # correlation, p_value, n_samples
+
+# One variant (0/1/2 dosage per sample) against the trait
+genotypes = {"var1": [0, 1, 2, 1, 0, 2, 1, 0]}
+association = phenotype_genotype_association(traits, genotypes, method="linear_regression")
+print(association["associations"]["var1"])  # beta, intercept, r_squared, p_value, n_valid
+```
+
+The p-values of `phenotype_genotype_association`, `trait_expression_correlation` and `phenotype_environment_interaction` come from `scipy.stats`: a Pearson correlation uses the t statistic `r * sqrt((n - 2) / (1 - r**2))` with `n - 2` degrees of freedom (the test of `scipy.stats.pearsonr`), and the `"linear_regression"` method uses the F distribution with 1 and `n - 2` degrees of freedom (the test of the slope in `scipy.stats.linregress`). `method="spearman"` correlates ranks with tied values sharing the mean of the ranks they span, so it equals `scipy.stats.spearmanr` on data with ties, such as expression with many zeros, and does not depend on the order of the samples.
 
 ---
 
 ## Unit Conversion
 
-The `Measurement` class supports automatic unit conversion for metric length units
-(um, mm, cm, m):
+The `Measurement` class converts between the metric length units `um`, `mm`, `cm` and `m`, in any direction. The micrometre may also be written `µm` (micro sign) or `μm` (Greek mu). Unit symbols are case-sensitive.
 
 ```python
 from metainformant.phenotype.morphological.measurement import Measurement
@@ -202,6 +224,8 @@ from metainformant.phenotype.morphological.measurement import Measurement
 m = Measurement(name="leg_length", value=3.5, unit="mm")
 m_cm = m.convert("cm")   # Measurement(name='leg_length', value=0.35, unit='cm', ...)
 ```
+
+The conversion is exact arithmetic: the factor between two units is a ratio of whole numbers of micrometres, and the value and its `uncertainty` are each rounded to a float once, so `Measurement("x", 1.0, "mm").convert("um").value` is exactly `1000.0` rather than `1000.0000000000001`. Converting to the measurement's own unit returns the measurement itself. A measurement whose unit, or a `target_unit`, is not one of these raises `ValueError`.
 
 ---
 

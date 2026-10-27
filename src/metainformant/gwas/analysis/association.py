@@ -48,6 +48,14 @@ def association_test_linear(
         Dictionary with association test results. ``n_samples`` is the number
         of complete cases analyzed and ``n_missing_dropped`` counts the
         excluded samples.
+
+        A test that cannot be fitted (no complete cases, fewer than 3, a
+        constant genotype, a singular design) has ``status == "error"``,
+        ``converged`` False, the reason in ``error``, and NaN for ``beta``,
+        ``se``, ``t_stat``, ``p_value`` and ``r_squared``. NaN means missing:
+        it is not an effect of 0 or a p-value of 1, and the corrections,
+        summaries and writers in this package leave such a test out (writers
+        print it as ``NA``).
     """
     if len(genotypes) != len(phenotypes):
         raise ValueError("Genotypes and phenotypes must have same length")
@@ -87,19 +95,11 @@ def association_test_linear(
 
     if not X:
         logger.warning("Linear regression failed: no complete cases after dropping missing values")
-        return {
-            "status": "error",
-            "beta": 0.0,
-            "se": 0.0,
-            "t_stat": 0.0,
-            "p_value": 1.0,
-            "r_squared": 0.0,
-            "n_samples": 0,
-            "n_missing_dropped": n_missing_dropped,
-            "test_type": "linear",
-            "converged": False,
-            "error": "No complete cases after excluding missing genotypes/phenotypes",
-        }
+        return _failed_linear_test(
+            "No complete cases after excluding missing genotypes/phenotypes",
+            n_samples=0,
+            n_missing_dropped=n_missing_dropped,
+        )
 
     # Simple linear regression implementation
     try:
@@ -120,21 +120,27 @@ def association_test_linear(
 
     except Exception as e:
         logger.warning(f"Linear regression failed: {e}")
-        result = {
-            "status": "error",
-            "beta": 0.0,
-            "se": 0.0,
-            "t_stat": 0.0,
-            "p_value": 1.0,
-            "r_squared": 0.0,
-            "n_samples": len(keep_indices),
-            "n_missing_dropped": n_missing_dropped,
-            "test_type": "linear",
-            "converged": False,
-            "error": str(e),
-        }
+        result = _failed_linear_test(str(e), n_samples=len(keep_indices), n_missing_dropped=n_missing_dropped)
 
     return result
+
+
+def _failed_linear_test(error: str, *, n_samples: int, n_missing_dropped: int) -> Dict[str, Any]:
+    """Result of a linear test that could not be fitted: the reason, and NaN (missing) for every statistic."""
+    nan = float("nan")
+    return {
+        "status": "error",
+        "beta": nan,
+        "se": nan,
+        "t_stat": nan,
+        "p_value": nan,
+        "r_squared": nan,
+        "n_samples": n_samples,
+        "n_missing_dropped": n_missing_dropped,
+        "test_type": "linear",
+        "converged": False,
+        "error": error,
+    }
 
 
 def association_test_logistic(
@@ -165,6 +171,14 @@ def association_test_logistic(
         Dictionary with association test results. ``n_samples`` is the number
         of complete cases analyzed, ``n_cases`` and ``n_controls`` are counted
         on those cases, and ``n_missing_dropped`` counts the excluded samples.
+
+        A test that cannot be fitted has ``status == "failed"`` (fewer than 2
+        cases or controls among the complete cases) or ``"error"`` (the fit
+        itself failed), ``converged`` False, the reason in ``error``, and NaN
+        for ``beta``, ``se``, ``z_stat``, ``p_value`` and ``odds_ratio``. NaN
+        means missing: it is not an effect of 0 or a p-value of 1, and the
+        corrections, summaries and writers in this package leave such a test
+        out (writers print it as ``NA``).
 
     Raises:
         ValueError: If genotypes and phenotypes differ in length, a phenotype
@@ -216,21 +230,14 @@ def association_test_logistic(
         message = f"Insufficient cases ({n_cases}) or controls ({n_controls})"
         if n_missing_dropped:
             message += f" after dropping {n_missing_dropped} sample(s) with missing genotype or covariate values"
-        return {
-            "status": "failed",
-            "beta": 0.0,
-            "se": 0.0,
-            "z_stat": 0.0,
-            "p_value": 1.0,
-            "odds_ratio": 1.0,
-            "n_samples": n,
-            "n_missing_dropped": n_missing_dropped,
-            "n_cases": n_cases,
-            "n_controls": n_controls,
-            "test_type": "logistic",
-            "converged": False,
-            "error": message,
-        }
+        return _failed_logistic_test(
+            message,
+            status="failed",
+            n_samples=n,
+            n_missing_dropped=n_missing_dropped,
+            n_cases=n_cases,
+            n_controls=n_controls,
+        )
 
     # Logistic regression with proper statistical inference
     try:
@@ -266,23 +273,44 @@ def association_test_logistic(
 
     except Exception as e:
         logger.warning(f"Logistic regression failed: {e}")
-        result = {
-            "status": "error",
-            "beta": 0.0,
-            "se": 0.0,
-            "z_stat": 0.0,
-            "p_value": 1.0,
-            "odds_ratio": 1.0,
-            "n_samples": n,
-            "n_missing_dropped": n_missing_dropped,
-            "n_cases": n_cases,
-            "n_controls": n_controls,
-            "test_type": "logistic",
-            "converged": False,
-            "error": str(e),
-        }
+        result = _failed_logistic_test(
+            str(e),
+            status="error",
+            n_samples=n,
+            n_missing_dropped=n_missing_dropped,
+            n_cases=n_cases,
+            n_controls=n_controls,
+        )
 
     return result
+
+
+def _failed_logistic_test(
+    error: str,
+    *,
+    status: str,
+    n_samples: int,
+    n_missing_dropped: int,
+    n_cases: int,
+    n_controls: int,
+) -> Dict[str, Any]:
+    """Result of a logistic test that could not be fitted: the reason, and NaN (missing) for every statistic."""
+    nan = float("nan")
+    return {
+        "status": status,
+        "beta": nan,
+        "se": nan,
+        "z_stat": nan,
+        "p_value": nan,
+        "odds_ratio": nan,
+        "n_samples": n_samples,
+        "n_missing_dropped": n_missing_dropped,
+        "n_cases": n_cases,
+        "n_controls": n_controls,
+        "test_type": "logistic",
+        "converged": False,
+        "error": error,
+    }
 
 
 def run_linear_model_gwas(
@@ -373,6 +401,8 @@ def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[flo
     n = len(y)
     if n < 3:
         raise ValueError(f"Linear regression needs at least 3 complete cases, got {n}")
+    if max(y) == min(y):
+        raise ValueError("Phenotype is constant across the tested samples; no association test is possible")
 
     # Simple slope calculation for single predictor
     if len(X[0]) == 2:  # Intercept + one predictor
@@ -405,7 +435,7 @@ def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[flo
         se = math.sqrt(mse / denominator) if mse >= 0 and denominator > 0 else 0.0
 
         # t-statistic
-        t_stat = beta / se if se > 0 else 0.0
+        t_stat = _t_statistic(beta, se)
 
         p_value = _two_sided_t_p(t_stat, n - 2)
 
@@ -452,7 +482,7 @@ def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[flo
         r_squared = 1.0 - (ss_res / ss_tot) if ss_tot > 0 else 0.0
 
         # t-statistic and p-value
-        t_stat = beta / se if se > 0 else 0.0
+        t_stat = _t_statistic(beta, se)
 
         p_value = _two_sided_t_p(t_stat, dof)
 
@@ -491,10 +521,24 @@ def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[flo
     ss_res_pp = sum(r**2 for r in resid_pp)
     r_squared = 1.0 - (ss_res_pp / ss_tot_pp) if ss_tot_pp > 0 else 0.0
 
-    t_stat = beta / se if se > 0 else 0.0
+    t_stat = _t_statistic(beta, se)
     p_value = _two_sided_t_p(t_stat, dof_pp)
 
     return beta, se, t_stat, p_value, r_squared
+
+
+def _t_statistic(beta: float, se: float) -> float:
+    """beta / se; an exact fit (zero residual variance) has an infinite statistic of beta's sign.
+
+    Raises:
+        ValueError: If the residual variance is zero and the genotype has no effect, where
+            the statistic is undefined.
+    """
+    if se > 0:
+        return beta / se
+    if beta == 0:
+        raise ValueError("Zero residual variance and no genotype effect: the test statistic is undefined")
+    return math.copysign(math.inf, beta)
 
 
 def _two_sided_t_p(t_stat: float, dof: int) -> float:

@@ -72,9 +72,12 @@ print(record["domains"])            # Annotated domains
 | Function | Description |
 |----------|-------------|
 | `calculate_contact_map` | Residue contact map from 3D coordinates |
-| `identify_domains` | Structural domain identification |
+| `identify_domains` | Simplified domain identification: a new domain at a chain change or a jump of more than 10 in the residue number |
+| `analyze_structural_motifs` | Helices and extended segments from the C-alpha trace, and zinc coordination sites |
+| `identify_ligand_binding_sites` | Buried pockets found by a LIGSITE-style grid search |
 | `build_alphafold_url` | AlphaFold DB URL from UniProt accession |
 | `fetch_alphafold_model` | Download AlphaFold predicted structure |
+| `get_alphafold_metadata`, `parse_alphafold_pae`, `parse_alphafold_confidence` | pLDDT (per residue) and predicted aligned error read from local AlphaFold model files |
 
 ```python
 from metainformant.protein.structure.analysis import calculate_contact_map, identify_domains
@@ -84,6 +87,8 @@ contacts = calculate_contact_map(coords, threshold=8.0)   # numpy array
 domains = identify_domains(structure_dict)                  # list of domain dicts
 model_path = fetch_alphafold_model("P12345", out_dir=Path("output/structures"))
 ```
+
+The domain, surface-area, similarity and secondary-structure functions are simplified approximations; [structure/README.md](structure/README.md) lists what each one computes.
 
 ### Sequence Processing
 

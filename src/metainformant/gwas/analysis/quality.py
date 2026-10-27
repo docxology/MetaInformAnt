@@ -509,8 +509,11 @@ def apply_qc_filters(
         had a missing QUAL).
 
     Raises:
-        ValueError: If ``min_qual`` is not a number, or if it is set and the
-            parsed data does not hold one variant record per genotype column.
+        ValueError: If ``min_qual`` is not a number, or if the data is not
+            consistent: the genotype rows (one per sample) must all have the
+            same length, and ``variants`` must hold one record per genotype
+            column. A mismatch is reported up front rather than as an
+            ``IndexError`` from deep inside the filters.
     """
     logger.info("Applying QC filters to VCF data")
 
@@ -539,9 +542,25 @@ def apply_qc_filters(
             "filtered_data": vcf_data,
         }
 
-    # Transpose genotypes to [variant][sample] for filtering functions
+    # The filters index the variant records by genotype column, so the two must line up. Check it here,
+    # with a message that names both counts, instead of failing later with an IndexError (or, for a
+    # longer variant list, silently dropping the surplus records).
     n_samples = len(genotypes_by_sample)
-    n_variants = len(genotypes_by_sample[0]) if n_samples > 0 else 0
+    row_lengths = {len(row) for row in genotypes_by_sample}
+    if len(row_lengths) != 1:
+        raise ValueError(
+            "genotypes must be sample-major with the same number of variants for every sample: "
+            f"got row lengths {sorted(row_lengths)} across {n_samples} samples"
+        )
+    n_variants = row_lengths.pop()
+    n_variant_records = len(vcf_data.get("variants", []))
+    if n_variant_records != n_variants:
+        raise ValueError(
+            f"variant records and genotype columns differ: got {n_variant_records} variant records "
+            f"for {n_variants} genotype columns ({n_samples} samples)"
+        )
+
+    # Transpose genotypes to [variant][sample] for filtering functions
     genotypes = [[genotypes_by_sample[s][v] for s in range(n_samples)] for v in range(n_variants)]
 
     num_variants_before = len(genotypes)
@@ -551,15 +570,9 @@ def apply_qc_filters(
     candidate_indices = list(range(num_variants_before))
     qual_filter: Optional[Dict[str, Any]] = None
     if min_qual is not None:
-        variants = vcf_data.get("variants", [])
-        if len(variants) != num_variants_before:
-            raise ValueError(
-                f"min_qual needs one variant record per genotype column: got {len(variants)} variant "
-                f"records for {num_variants_before} genotype columns"
-            )
         candidate_indices = []
         n_missing_qual = 0
-        for index, variant in enumerate(variants):
+        for index, variant in enumerate(vcf_data.get("variants", [])):
             qual = _coerce_qual(variant.get("qual"))
             if qual is None:
                 n_missing_qual += 1

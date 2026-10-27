@@ -84,7 +84,7 @@ def run_eqtl_analysis():
         maf_threshold=0.05,
     )
 
-    cis_results.to_csv(RESULTS_DIR / "cis_eqtl_results.tsv", sep="\t", index=False)
+    cis_results.to_csv(RESULTS_DIR / "cis_eqtl_results.tsv", sep="\t", index=False, na_rep="NA")
     logger.info(f"cis-eQTL results: {len(cis_results)} tests")
 
     # Step 3: Compute effect sizes
@@ -92,7 +92,7 @@ def run_eqtl_analysis():
     if len(cis_results) > 0:
         top_hits = cis_results.nsmallest(50, "pvalue")
         effect_sizes = eqtl_effect_sizes(expr, geno, top_hits)
-        effect_sizes.to_csv(RESULTS_DIR / "effect_sizes.tsv", sep="\t", index=False)
+        effect_sizes.to_csv(RESULTS_DIR / "effect_sizes.tsv", sep="\t", index=False, na_rep="NA")
         logger.info(f"Computed effect sizes for {len(effect_sizes)} top hits")
     else:
         effect_sizes = pd.DataFrame()

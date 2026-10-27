@@ -9,9 +9,10 @@ This module provides the main workflow execution functions:
 from __future__ import annotations
 
 import json
+import math
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from metainformant.core.utils import logging
 
@@ -19,6 +20,7 @@ from metainformant.core.utils import logging
 from metainformant.gwas.analysis.annotation import annotate_variants_with_genes
 from metainformant.gwas.analysis.association import association_test_linear
 from metainformant.gwas.analysis.correction import (
+    as_p_value,
     bonferroni_correction,
     fdr_correction,
     genomic_control,
@@ -39,6 +41,7 @@ from metainformant.gwas.analysis.quality import (
 from metainformant.gwas.analysis.structure import compute_kinship_matrix, compute_pca
 from metainformant.gwas.analysis.summary_stats import (
     create_results_summary,
+    minor_allele_frequency,
     write_significant_hits,
     write_summary_statistics,
 )
@@ -243,6 +246,41 @@ def _run_variant_associations(
     return assoc_results, model
 
 
+def _row_p_value(row: Dict[str, Any]) -> float:
+    """The row's p-value, or NaN when its test failed or produced none.
+
+    A test that failed carries NaN (or None) for its p-value: it is missing, not p = 1.
+    """
+    p_value = as_p_value(row.get("p_value", row.get("pval")))
+    return float("nan") if p_value is None else p_value
+
+
+def _tested_rows(assoc_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """The association rows whose test produced a p-value (plots, top hits and fine-mapping take only these)."""
+    return [row for row in assoc_results if as_p_value(row.get("p_value", row.get("pval"))) is not None]
+
+
+def _attach_maf(assoc_results: List[Dict[str, Any]], genotypes: Sequence[Sequence[Any]]) -> None:
+    """Give each association row the minor allele frequency (``maf``) of the genotype row it was tested on.
+
+    ``genotypes`` is the variants x samples matrix the tests ran on, one row per result. A row that already
+    has a finite ``maf`` or ``MAF`` keeps it, and one whose genotypes have no called dosage gets none: a
+    missing MAF stays missing. When rows and genotypes do not line up nothing is attached.
+    """
+    if len(genotypes) != len(assoc_results):
+        logger.warning(
+            f"Not attaching minor allele frequencies: {len(assoc_results)} results for {len(genotypes)} genotype rows"
+        )
+        return
+    for row, genotype_row in zip(assoc_results, genotypes):
+        existing = row.get("maf", row.get("MAF"))
+        if isinstance(existing, (int, float)) and not isinstance(existing, bool) and math.isfinite(existing):
+            continue
+        maf = minor_allele_frequency(genotype_row)
+        if maf is not None:
+            row["maf"] = maf
+
+
 def _lambda_gc_from_associations(
     assoc_results: List[Dict[str, Any]],
 ) -> Optional[float]:
@@ -264,11 +302,15 @@ def _lambda_gc_from_associations(
 def _apply_qvalue_and_bonferroni_annotations(
     assoc_results: List[Dict[str, Any]],
 ) -> None:
-    """Attach FDR q-values and Bonferroni flags to association rows."""
+    """Attach FDR q-values and Bonferroni flags to association rows.
+
+    The family of tests is the rows that have a p-value. A row whose test failed (NaN p-value) gets a NaN
+    q-value and is never flagged significant; it is not counted as p = 1.
+    """
     if not assoc_results:
         return
 
-    p_values = [r.get("p_value", 1.0) for r in assoc_results]
+    p_values = [_row_p_value(r) for r in assoc_results]
     fdr_result = fdr_correction(p_values)
     q_values = fdr_result.get("adjusted_p_values", [])
 
@@ -294,6 +336,11 @@ def _apply_full_correction_outputs(
     ``[correction][method]`` configured) runs the full stack for backward
     compatibility. Unrecognized values fall back to the full stack with a
     warning; config validation rejects invalid methods earlier.
+
+    The family of tests is the rows that have a p-value. A row whose test failed
+    (NaN p-value) is left out of the family rather than counted as p = 1: it is
+    flagged not significant and its adjusted p-values are NaN. The outputs stay
+    aligned with ``association_results``.
     """
     method = (correction_method or "").strip().lower()
     if method and method not in ("bonferroni", "fdr", "genomic_control"):
@@ -303,10 +350,9 @@ def _apply_full_correction_outputs(
     run_fdr = not method or method == "fdr"
     run_genomic_control = not method or method == "genomic_control"
 
-    p_values = [
-        r.get("p_value", r.get("pval", 1.0)) for r in association_results if r.get("p_value", r.get("pval")) is not None
-    ]
-    if not p_values:
+    # One entry per row, so that every correction's output lines up with the rows it annotates.
+    p_values = [_row_p_value(r) for r in association_results]
+    if all(math.isnan(p) for p in p_values):
         return {}
 
     outputs: Dict[str, Any] = {}
@@ -354,13 +400,19 @@ def _write_summary_outputs(
     variant_info: List[Dict[str, Any]],
     output_dir: Path,
     threshold: float,
+    *,
+    genotypes: Optional[Sequence[Sequence[Any]]] = None,
 ) -> Dict[str, Any]:
-    """Write standard GWAS summary outputs and return path metadata."""
+    """Write standard GWAS summary outputs and return path metadata.
+
+    ``genotypes`` is the variants x samples matrix (0/1/2 dosages) the association results were computed
+    from, one row per result. The writers derive the MAF column from it; without it that column is ``NA``.
+    """
     stats_path = output_dir / "summary_statistics.tsv"
-    write_summary_statistics(assoc_results, variant_info, stats_path)
+    write_summary_statistics(assoc_results, variant_info, stats_path, genotypes=genotypes)
 
     sig_path = output_dir / "significant_hits.tsv"
-    write_significant_hits(assoc_results, variant_info, sig_path, threshold=threshold)
+    write_significant_hits(assoc_results, variant_info, sig_path, threshold=threshold, genotypes=genotypes)
 
     summary_path = output_dir / "results_summary.json"
     summary = create_results_summary(assoc_results, summary_path, threshold=threshold)
@@ -434,7 +486,9 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
 
         # Step 2.5: LD pruning (remove correlated variants before PCA)
         logger.info("Step 2.5: LD pruning")
-        genotype_matrix = _extract_genotype_matrix(filtered_data)
+        # The genotypes come from parse_vcf_full / apply_qc_filters, which are sample-major. Say so rather than
+        # letting the shape decide: a square matrix (as many variants as samples) is ambiguous by shape.
+        genotype_matrix = _extract_genotype_matrix(filtered_data, layout="sample_major")
         variants_info = filtered_data.get("variants", [])
 
         ld_config = config.get("ld_pruning", {})
@@ -555,9 +609,23 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
                 if "maf" not in result and "MAF" in result:
                     result["maf"] = result["MAF"]
 
+            # Each row carries the MAF of the genotypes it was tested on, for the MAF plots and any later reader
+            _attach_maf(association_results, genotype_matrix)
+
         results["steps_completed"].append("association_testing")
         results["steps"].append("association_testing")
         results["outputs"]["association_results"] = association_results
+
+        # A test that failed has NaN statistics. Its row stays, so that rows line up with the variants and the
+        # summary tables write it as NA, but it is left out of the corrections, plots, top hit and fine-mapping.
+        tested_results = _tested_rows(association_results)
+        n_failed_tests = len(association_results) - len(tested_results)
+        results["outputs"]["n_tests_failed"] = n_failed_tests
+        if n_failed_tests:
+            logger.warning(
+                f"{n_failed_tests} of {len(association_results)} association tests failed; they are left out of "
+                "the corrections, plots and summaries and written as NA"
+            )
 
         # Step 5: Multiple testing correction & genomic control
         logger.info("Step 5: Multiple testing correction")
@@ -644,7 +712,9 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
         if association_results and variants_info:
             try:
                 summary_path = results_dir / "summary_statistics.tsv"
-                write_summary_statistics(association_results, variants_info, summary_path)
+                # genotype_matrix (variants x samples) is what the association tests ran on, row for row, so the
+                # writers can fill the MAF column from it instead of writing NA.
+                write_summary_statistics(association_results, variants_info, summary_path, genotypes=genotype_matrix)
                 logger.info(f"Summary statistics written to {summary_path}")
 
                 sig_threshold = config.get("significance_threshold", 5e-8)
@@ -654,6 +724,7 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
                     variants_info,
                     sig_path,
                     threshold=sig_threshold,
+                    genotypes=genotype_matrix,
                 )
                 logger.info(f"Significant hits written to {sig_path}")
             except Exception as exc:
@@ -697,19 +768,27 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
 
             # 6a: Core plots (Manhattan, QQ, PCA, Kinship)
             plot_results = generate_all_plots(
-                association_results=association_results,
+                association_results=tested_results,
                 output_dir=results_dir,
                 pca_file=pca_file,
                 kinship_file=kinship_file,
                 vcf_file=Path(config["vcf_path"]),
             )
+            missing_core_plots = [name for name in ("manhattan", "qq") if name not in plot_results]
+            if missing_core_plots:
+                reason = (
+                    f"none of the {len(association_results)} association tests produced a p-value"
+                    if not tested_results
+                    else "see the plot warnings above for the reason"
+                )
+                logger.warning(f"Core plots not produced: {', '.join(missing_core_plots)} ({reason})")
 
             # 6b: Effect size distribution plot
             try:
                 from metainformant.gwas.visualization.general import effect_size_plot
 
                 fig = effect_size_plot(
-                    association_results,
+                    tested_results,
                     output_path=results_dir / "effect_size_plot.png",
                 )
                 if fig is not None:
@@ -745,14 +824,14 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
             try:
                 from metainformant.gwas.visualization.general import regional_plot
 
-                if association_results:
-                    top_hit = min(association_results, key=lambda r: r.get("p_value", 1.0))
+                if tested_results:
+                    top_hit = min(tested_results, key=_row_p_value)
                     top_chrom = str(top_hit.get("chrom", "1"))
                     top_pos = top_hit.get("pos", 0)
                     region_start = max(0, top_pos - 500000)
                     region_end = top_pos + 500000
                     fig = regional_plot(
-                        association_results,
+                        tested_results,
                         top_chrom,
                         region_start,
                         region_end,
@@ -1092,6 +1171,20 @@ def run_gwas(
         results["steps_completed"].append("association_testing")
         results["results"]["association_results"] = assoc_results
 
+        # A test that failed has NaN statistics. Its row stays, so that rows line up with the variants and the
+        # summary tables write it as NA, but it is left out of the corrections, plots and fine-mapping.
+        tested_results = _tested_rows(assoc_results)
+        n_failed_tests = len(assoc_results) - len(tested_results)
+        results["results"]["n_tests_failed"] = n_failed_tests
+        if n_failed_tests:
+            logger.warning(
+                f"{n_failed_tests} of {len(assoc_results)} association tests failed; they are left out of "
+                "the corrections, plots and summaries and written as NA"
+            )
+
+        # Each row carries the MAF of the genotypes it was tested on (the first min_samples samples)
+        _attach_maf(assoc_results, [row[:min_samples] for row in genotypes_by_variant])
+
         # Compute lambda GC for inflation assessment
         lambda_gc = _lambda_gc_from_associations(assoc_results)
         if lambda_gc is not None:
@@ -1147,6 +1240,8 @@ def run_gwas(
                     variant_info,
                     output_dir,
                     threshold=config.get("significance_threshold", 5e-8),
+                    # The samples the association tests used: _run_variant_associations trims every row to min_samples.
+                    genotypes=[row[:min_samples] for row in genotypes_by_variant],
                 )
                 results["steps_completed"].append("summary_statistics")
                 results["results"].update(summary_outputs)
@@ -1170,11 +1265,11 @@ def run_gwas(
 
         # Step 9b: Fine-mapping credible sets (optional)
         finemapping_config = config.get("finemapping", {})
-        if isinstance(finemapping_config, dict) and finemapping_config.get("enabled", False) and assoc_results:
+        if isinstance(finemapping_config, dict) and finemapping_config.get("enabled", False) and tested_results:
             logger.info("Step 9b: Computing fine-mapping credible sets")
             try:
                 credible_level = finemapping_config.get("credible_level", 0.95)
-                cs_result = compute_credible_set(assoc_results, credible_level=credible_level)
+                cs_result = compute_credible_set(tested_results, credible_level=credible_level)
                 if cs_result.get("status") == "success":
                     results["steps_completed"].append("fine_mapping")
                     results["results"]["fine_mapping"] = {
@@ -1199,7 +1294,7 @@ def run_gwas(
             )
 
             plot_results = gen_plots(
-                association_results=assoc_results,
+                association_results=tested_results,
                 output_dir=output_dir,
                 significance_threshold=config.get("significance_threshold", 5e-8),
             )
@@ -1228,7 +1323,7 @@ def run_gwas(
             )
             try:
                 summary_panel = gwas_summary_panel(
-                    assoc_results,
+                    tested_results,
                     pca_data=pca_data_for_viz,
                     kinship_matrix=kinship_for_viz,
                     output_file=output_dir / "gwas_summary_panel.png",
@@ -1392,6 +1487,7 @@ def run_multi_trait_gwas(
 
                 trait_result["steps"].append("association_testing")
                 trait_result["n_tests"] = len(assoc_results)
+                trait_result["n_tests_failed"] = len(assoc_results) - len(_tested_rows(assoc_results))
 
                 # Multiple testing correction
                 if assoc_results:
@@ -1401,7 +1497,13 @@ def run_multi_trait_gwas(
                 # Summary stats
                 if assoc_results and filtered_data.get("variants"):
                     stats_path = trait_dir / "summary_statistics.tsv"
-                    write_summary_statistics(assoc_results, filtered_data["variants"], stats_path)
+                    write_summary_statistics(
+                        assoc_results,
+                        filtered_data["variants"],
+                        stats_path,
+                        # The samples this trait's tests used: every row is trimmed to min_s samples.
+                        genotypes=[row[:min_s] for row in genotypes_by_variant],
+                    )
                     trait_result["steps"].append("summary_statistics")
 
                 trait_result["status"] = "success"

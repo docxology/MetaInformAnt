@@ -420,7 +420,7 @@ print(f"Found {len(significant)} significant variants")
    - Ready for immediate analysis
 
 3.**Custom URL** (Moderate, requires known source)
-   - Use `download_variant_data(source="custom", url=...)`
+   - Fetch the file with `metainformant.core.io.download.download_with_progress(url, dest_path)` (`download_variant_data` only downloads a GWAS Catalog summary table, with `data_type="summary_stats"`; `"vcf"` and `"both"` raise `NotImplementedError`)
    - Download from research group servers
    - Verify data quality
 

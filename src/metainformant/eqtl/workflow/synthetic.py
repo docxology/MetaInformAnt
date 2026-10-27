@@ -172,6 +172,11 @@ def create_synthetic_genotypes(
     Note: in real analysis genotypes come from matched WGS/genotyping data;
     this generator exists for demonstration and workflow testing.
 
+    Variant ids are ``var_<gene_id>_<i>``, built from the full gene id, so they are unique
+    whenever the gene ids are (kallisto transcript ids such as
+    ``lcl|NC_037638.1_mrna_XM_623972.6_1`` share their first 20 characters across a whole
+    chromosome, so a shortened id would collide).
+
     Args:
         sample_ids: Sample identifiers (genotype columns).
         gene_positions: DataFrame with columns [gene_id, chrom, tss_position].
@@ -181,7 +186,17 @@ def create_synthetic_genotypes(
     Returns:
         Tuple of (genotype_matrix, variant_positions). Genotypes are
         variants x samples dosages in {0, 1, 2} with MAF ~ 0.25.
+
+    Raises:
+        ValueError: If ``gene_positions`` repeats a gene id (the variant ids would collide).
     """
+    repeated = gene_positions["gene_id"][gene_positions["gene_id"].duplicated()].unique()
+    if len(repeated) > 0:
+        raise ValueError(
+            f"gene_positions repeats {len(repeated)} gene id(s), e.g. {[str(g) for g in repeated[:3]]}; "
+            "variant ids are built from the gene id and must be unique"
+        )
+
     logger.info("Creating synthetic genotypes (real genotypes not available)")
     rng = np.random.default_rng(seed)
 
@@ -191,7 +206,7 @@ def create_synthetic_genotypes(
 
     for _, row in gene_positions.iterrows():
         for i in range(variants_per_gene):
-            var_id = f"var_{row['gene_id'][:20]}_{i}"
+            var_id = f"var_{row['gene_id']}_{i}"
             variant_ids.append(var_id)
             var_chroms.append(row["chrom"])
             var_positions.append(int(row["tss_position"]) + (i - 1) * 5000)

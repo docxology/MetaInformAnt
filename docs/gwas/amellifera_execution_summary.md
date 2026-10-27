@@ -1,5 +1,9 @@
 # Apis mellifera GWAS - Execution Summary
 
+> Historical snapshot: this report is retained for provenance and may not
+> describe the current checkout. Regenerate validation outputs under `output/`
+> when current evidence is needed.
+
 **Date**: December 2024  
 **Status**: ✅ **GENOME DOWNLOADED - PIPELINE READY**
 

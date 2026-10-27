@@ -23,10 +23,10 @@ variant statistics, and pipeline orchestration.
 
 ### Exports — `workflow/synthetic.py`
 
-- `create_synthetic_data` — Synthetic expression/genotype matrices with known cis-eQTL effects
-- `parse_gene_positions` — Approximate positions from kallisto target IDs
-- `create_synthetic_genotypes` — Synthetic dosages matched to gene positions
-- `load_real_expression_data` — Real quantification loader (TPM filter, top-gene cap)
+- `create_synthetic_data(n_genes=100, n_variants=500, n_samples=50, seed=42)` — Synthetic expression/genotype matrices with known cis-eQTL effects (about 30% of genes get an effect on their first cis variant). Gene IDs are `LOC<n>`, variant IDs `rs<n>`; `n_variants` must be at least `5 * n_genes`
+- `parse_gene_positions(gene_ids)` — Gene table `[gene_id, chrom, tss_position]` from kallisto target IDs. Only the chromosome accession (`NC_`, `NW_` or `NT_`; `unknown` when absent) is read from the ID. The TSS positions are synthetic: `1_000_000 + 10_000 * index`, in the order of the IDs, because real coordinates need a GFF/GTF annotation
+- `create_synthetic_genotypes(sample_ids, gene_positions, variants_per_gene=1, seed=42)` — Synthetic dosages matched to gene positions (MAF about 0.25). Variant IDs are `var_<full gene id>_<i>`, built from the whole gene ID so they are unique whenever the gene IDs are; a repeated gene ID in `gene_positions` raises `ValueError`
+- `load_real_expression_data(quant_dir, max_samples=100, min_tpm=1.0, max_genes=1000)` — Real quantification loader (TPM filter, top-gene cap). The genotypes of an analysis built on it are synthetic unless matched genotype data are supplied
 
 ### Exports — `workflow/variant_calling.py`
 

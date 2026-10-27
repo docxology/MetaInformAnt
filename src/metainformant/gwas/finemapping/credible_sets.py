@@ -110,9 +110,13 @@ def compute_credible_set(
 
     Args:
         z_scores: Z-scores for each variant in the region.
-        ld_matrix: Optional LD (r-squared) matrix. If provided, used to
-            weight Bayes factors by LD structure. Square matrix of size
-            len(z_scores) x len(z_scores).
+        ld_matrix: Optional LD correlation matrix r (signed entries in
+            [-1, 1], ones on the diagonal), square with len(z_scores) rows and
+            columns. It is not an r-squared matrix: the adjustment squares it.
+            Each variant's Bayes factor is multiplied by ``1 - r**2``, where r
+            is its largest absolute correlation with a variant that has a
+            larger Bayes factor (the factor never drops below 0.01), so a
+            variant that tags a stronger signal loses posterior mass to it.
         coverage: Target cumulative posterior probability for the credible
             set (default 0.95).
         prior: Prior type on causal status. One of "uniform" (equal prior

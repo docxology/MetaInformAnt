@@ -13,9 +13,9 @@ End-to-end life course analysis workflows: sequence loading, statistical analysi
 | Function | Description |
 |----------|-------------|
 | `analyze_life_course()` | Full analysis of event sequences: summary statistics, word2vec embeddings, optional outcome prediction, summary plots; returns `visualizations` (plots written) and `visualization_errors` (plots that failed) |
-| `compare_populations()` | Statistical comparison of event patterns between two population groups |
-| `intervention_analysis()` | Model the effect of interventions on event sequence outcomes |
-| `event_importance()` | Rank event types by how early they occur (`"frequency"`) or by transition connectivity (`"transition"`) |
+| `compare_populations()` | Statistical comparison of event patterns between two population groups; plot failures are recorded in `visualization_errors` |
+| `intervention_analysis()` | Model the effect of interventions on event sequence outcomes; `outcomes` must hold one value per pre-intervention sequence followed by one per post-intervention sequence, otherwise `ValueError` |
+| `event_importance()` | Rank event types by their number of occurrences (`"frequency"`), by how early they occur (`"temporal"`) or by transition connectivity (`"transition"`); an unknown method raises `ValueError` |
 
 ## Workflow Steps
 

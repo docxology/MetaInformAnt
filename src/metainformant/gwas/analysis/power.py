@@ -165,6 +165,7 @@ def subsample_convergence(
     n_replicates: int = 5,
     alpha: float = 5e-8,
     config: Optional[Dict[str, Any]] = None,
+    seed: int = 42,
 ) -> Dict[str, Any]:
     """Assess GWAS result stability by subsampling variants at different fractions.
 
@@ -175,6 +176,14 @@ def subsample_convergence(
     - Mean effect size (|β|)
     - Mean -log10(p)
 
+    The subsamples are drawn with their own generator seeded by ``seed``: the
+    same inputs and seed give the same replicates, and the global ``random``
+    state is neither read nor advanced.
+
+    A variant whose test fails (for instance a monomorphic one) has no p-value
+    or effect size; it is left out of the metrics of its replicate instead of
+    entering them as p = 1 and |β| = 0.
+
     Args:
         genotype_matrix: Variant × sample genotype matrix (0/1/2/-1).
         traits: Phenotype values per sample.
@@ -183,6 +192,7 @@ def subsample_convergence(
         n_replicates: Number of random replicates per fraction.
         alpha: Significance threshold.
         config: Optional GWAS config dict.
+        seed: Seed of the generator that draws the variant subsamples.
 
     Returns:
         Dictionary with fractions and per-fraction mean/std of each metric.
@@ -211,6 +221,7 @@ def subsample_convergence(
     }
 
     actual_traits = traits[:n_samples]
+    rng = random.Random(seed)
 
     for frac in fractions:
         m_sub = max(1, int(frac * n_variants))
@@ -224,17 +235,17 @@ def subsample_convergence(
             if frac >= 1.0:
                 sub_indices = list(range(n_variants))
             else:
-                sub_indices = sorted(random.sample(range(n_variants), m_sub))
+                sub_indices = sorted(rng.sample(range(n_variants), m_sub))
 
             # Run association on subsampled variants
             p_values = []
             betas = []
             for idx in sub_indices:
                 result = association_test_linear(genotype_matrix[idx], actual_traits)
-                pv = result.get("p_value", 1.0)
-                b = result.get("beta", 0.0)
-                p_values.append(pv)
-                betas.append(abs(b))
+                if result.get("status") != "success":
+                    continue  # a failed test has no p-value or effect (NaN): it takes no part in the metrics
+                p_values.append(result["p_value"])
+                betas.append(abs(result["beta"]))
 
             # Compute metrics
             n_sig = sum(1 for p in p_values if p < alpha)
@@ -504,8 +515,10 @@ def _compute_statistic(
     betas = []
     for idx in variant_indices:
         result = association_test_linear(genotype_matrix[idx], traits)
-        p_values.append(result.get("p_value", 1.0))
-        betas.append(abs(result.get("beta", 0.0)))
+        if result.get("status") != "success":
+            continue  # a failed test has no p-value or effect (NaN): it takes no part in the statistic
+        p_values.append(result["p_value"])
+        betas.append(abs(result["beta"]))
 
     if statistic == "lambda_gc":
         gc_result = genomic_control(p_values=p_values)

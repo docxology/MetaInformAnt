@@ -35,7 +35,7 @@ graph TD
 
 | Module | Purpose |
 |--------|---------|
-| [`workflow/synthetic.py`](workflow/synthetic.py) | Synthetic expression/genotype generators, kallisto target-ID position parsing, real quantification loader |
+| [`workflow/synthetic.py`](workflow/synthetic.py) | Synthetic expression/genotype generators, kallisto target-ID position parsing (synthetic TSS positions), real quantification loader |
 | [`workflow/variant_calling.py`](workflow/variant_calling.py) | Tool checks, FASTQ acquisition, HISAT2 index/alignment, bcftools call/filter/merge |
 | [`variant_stats.py`](variant_stats.py) | bcftools stats parsing, per-sample and population summaries, allele-frequency extraction |
 | [`pipeline.py`](pipeline.py) | Parameter resolution and end-to-end run orchestration |
@@ -57,6 +57,12 @@ uv run python scripts/eqtl/rna_snp_pipeline.py --species amellifera --n-samples 
 # Demo with synthetic data
 uv run python scripts/eqtl/run_eqtl_demo.py
 ```
+
+## Real and Synthetic Inputs
+
+`load_real_expression_data()` reads real expression. `parse_gene_positions()` reads only the chromosome accession from each kallisto target ID and invents the TSS positions (evenly spaced, in the order of the IDs); real positions need a GFF/GTF annotation. `create_synthetic_genotypes()` draws random dosages and names its variants `var_<full gene id>_<i>`, built from the whole gene ID so that they are unique whenever the gene IDs are (a repeated gene ID raises `ValueError`). A scan on these inputs pairs real expression with synthetic genotypes and positions, so its associations are not biological findings: `scripts/eqtl/run_eqtl_real.py` labels its gene positions, scan, summaries and plots accordingly (`gene_positions_synthetic.tsv`, `*_synthetic_genotypes.*`).
+
+`cis_eqtl_scan()` raises `ValueError` on a repeated ID in the gene positions, the variant positions or the genotype index. A fit that cannot be made has NaN `beta`, `se` and `pvalue`, `status == "error"` and an `error` message (also in `conditional_eqtl()` and `eqtl_effect_sizes()`). `eqtl_summary_stats()` reports `n_tests` (tests with a p-value) and `n_tests_failed`, and `write_eqtl_results()` writes missing values as `NA`.
 
 ## Tests
 

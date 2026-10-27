@@ -81,20 +81,20 @@ if result["status"] == "success":
     # High kinship between samples 0 and 1 (identical)
 ```
 
-### `estimate_population_structure(vcf_path, config, output_dir=None)`
+### `estimate_population_structure(vcf_input, config=None, output_dir=None)`
 
-Estimate population structure from VCF file.
+Estimate population structure from a VCF file or a genotype matrix.
 
 **Parameters**:
-- `vcf_path`: Path to VCF file
-- `config`: Dictionary with structure configuration:
+- `vcf_input`: Path to a VCF file, or a genotype matrix (samples × variants, one list of genotypes per sample)
+- `config`: Optional dictionary with structure configuration:
   - `compute_pca`: Boolean (default: True)
   - `n_components`: Number of PCs (default: 10)
   - `compute_relatedness`: Boolean (default: True)
   - `kinship_method`: Method name (default: "vanraden")
-- `output_dir`: Optional directory to write results
+- `output_dir`: Optional directory to write results (`structure_summary.json`)
 
-**Returns**: Dictionary with PCA and kinship results
+**Returns**: Dictionary with `status` (`"success"`, or `"failed"` with an `error` for an empty matrix), `pca` (`pcs`, `explained_variance_ratio`) and `kinship` (`matrix`, `method`). A step that fails is reported as `pca_error` or `kinship_error` instead.
 
 **Example**:
 ```python
@@ -108,7 +108,7 @@ config = {
 }
 
 result = estimate_population_structure(
-    vcf_path="variants.vcf",
+    vcf_input="variants.vcf",
     config=config,
     output_dir="output/structure"
 )
@@ -165,14 +165,12 @@ config = {
 }
 
 result = estimate_population_structure(
-    vcf_path="data/genotypes.vcf",
+    vcf_input="data/genotypes.vcf",
     config=config,
     output_dir="output/population_structure"
 )
 
 # Results saved to:
-# - output/population_structure/pca_components.tsv
-# - output/population_structure/kinship_matrix.tsv
 # - output/population_structure/structure_summary.json
 ```
 
@@ -185,15 +183,16 @@ from metainformant.gwas.data.config import load_gwas_config
 # Load GWAS configuration
 config = load_gwas_config("config/gwas/analysis.yaml")
 
-# Structure analysis is automatically included in workflow
+# PCA and kinship are computed by the workflow's population_structure step
 results = execute_gwas_workflow(config)
 
-# Access structure results
-if "structure" in results:
-    structure = results["structure"]
-    if "pca" in structure:
-        pcs = structure["pca"]["pcs"]
+# The kinship method and statistics are returned; the components and the
+# matrix are written to pca_results.json and kinship_results.json in the
+# output directory
+print(results["outputs"]["kinship_metadata"])
 ```
+
+The workflow uses up to 5 principal components as covariates of the association tests.
 
 ## Methods
 
@@ -219,12 +218,12 @@ Yang method (2011) from GCTA:
 
 ## Visualization
 
-See `metainformant.gwas.visualization_population` for plotting functions:
+See `metainformant.gwas.visualization.population` for plotting functions:
 - `pca_plot()`: 2D/3D PCA scatter plots
 - `pca_scree_plot()`: Variance explained by each PC
 - `kinship_heatmap()`: Kinship matrix visualization
 - `admixture_plot()`: Ancestry proportions (requires ADMIXTURE output)
-- `population_tree()`: Hierarchical clustering dendrogram
+- `kinship_dendrogram()`: Hierarchical clustering dendrogram of the kinship matrix
 
 ## Notes
 

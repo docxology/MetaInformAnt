@@ -2,6 +2,13 @@
 
 This module provides functions for correcting p-values in GWAS for multiple testing,
 including Bonferroni, FDR, and genomic control methods.
+
+A test that failed or never ran carries NaN (or None) for its p-value (see
+:func:`metainformant.gwas.analysis.association.association_test_linear`). That is a
+missing p-value, not p = 1, so every correction here leaves such tests out of the family:
+the number of tests ``m`` counts only the tests that have a p-value, the corrected values
+of a missing p-value are NaN, and it is never reported significant. Outputs stay aligned
+with the input list.
 """
 
 from __future__ import annotations
@@ -23,6 +30,21 @@ except ImportError:  # pragma: no cover - exercised only in lean environments
     HAS_SCIPY = False
 
 EXPECTED_MEDIAN_CHI2_1DF = 0.454936423119572
+
+
+def as_p_value(value: Any) -> Optional[float]:
+    """Return ``value`` as a finite float, or None when the p-value is missing.
+
+    A test that failed or never ran carries NaN (or None) for its p-value. That is a missing p-value, not
+    p = 1: the corrections in this module leave such tests out of the family instead of counting them.
+    """
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        p_value = float(value)
+    except (TypeError, ValueError):
+        return None
+    return p_value if math.isfinite(p_value) else None
 
 
 def _valid_p_value(p_value: Any) -> bool:
@@ -128,12 +150,16 @@ def bonferroni_correction(
     """Apply Bonferroni correction for multiple testing.
 
     Args:
-        p_values: List of p-values to correct
+        p_values: List of p-values to correct. A missing p-value (NaN or None: a test that failed) is left out
+            of the family; it is not counted as p = 1.
         alpha: Family-wise error rate
         return_dict: If True, return dict (default); if False, return tuple (legacy)
 
     Returns:
-        Dictionary with correction results or tuple of (significant_flags, corrected_alpha)
+        Dictionary with correction results or tuple of (significant_flags, corrected_alpha).
+        ``significant`` is aligned with ``p_values`` (False for a missing p-value). ``n_tests`` counts the
+        p-values that are present, and ``corrected_alpha`` is ``alpha / n_tests``; ``n_excluded`` counts the
+        missing ones.
     """
     if not p_values:
         if return_dict:
@@ -144,15 +170,20 @@ def bonferroni_correction(
                 "method": "bonferroni",
                 "n_tests": 0,
                 "n_significant": 0,
+                "n_excluded": 0,
             }
         return [], alpha
 
-    n_tests = len(p_values)
-    corrected_alpha = alpha / n_tests
+    present = [as_p_value(p) for p in p_values]
+    n_tests = sum(1 for p in present if p is not None)
+    n_excluded = len(p_values) - n_tests
+    corrected_alpha = alpha / n_tests if n_tests else alpha
 
-    significant = [p <= corrected_alpha for p in p_values]
+    significant = [p is not None and p <= corrected_alpha for p in present]
 
     logger.info(f"Bonferroni correction: {sum(significant)}/{n_tests} tests significant at α={alpha}")
+    if n_excluded:
+        logger.info(f"Bonferroni correction: {n_excluded} missing p-value(s) left out of the family")
 
     if return_dict:
         return {
@@ -164,6 +195,7 @@ def bonferroni_correction(
             "n_significant": sum(significant),
             "significant_count": sum(significant),  # Alias for backward compatibility
             "alpha": alpha,
+            "n_excluded": n_excluded,
         }
     return significant, corrected_alpha
 
@@ -195,13 +227,17 @@ def fdr_correction(
     """Apply false discovery rate correction.
 
     Args:
-        p_values: List of p-values to correct
+        p_values: List of p-values to correct. A missing p-value (NaN or None: a test that failed) is left out
+            of the family; it is not counted as p = 1.
         alpha: False discovery rate threshold
         method: Correction method ('bh' for Benjamini-Hochberg, 'by' for Benjamini-Yekutieli)
         return_dict: If True, return dict (default); if False, return tuple (legacy)
 
     Returns:
-        Dictionary with correction results or tuple of (significant_flags, adjusted_p_values)
+        Dictionary with correction results or tuple of (significant_flags, adjusted_p_values).
+        Both lists are aligned with ``p_values``: a missing p-value is never significant and its adjusted value
+        is NaN. ``n_tests`` counts the p-values that are present (the ``m`` of the procedure); ``n_excluded``
+        counts the missing ones.
     """
     if not p_values:
         if return_dict:
@@ -212,17 +248,24 @@ def fdr_correction(
                 "method": f"fdr_{method}",
                 "n_tests": 0,
                 "n_significant": 0,
+                "n_excluded": 0,
             }
         return [], []
 
     if method.lower() not in ["bh", "by"]:
         raise ValueError("Method must be 'bh' (Benjamini-Hochberg) or 'by' (Benjamini-Yekutieli)")
 
-    # Sort p-values and keep track of original indices
-    indexed_p = sorted(enumerate(p_values), key=lambda x: x[1])
+    # The family is the p-values that are present. Sort them and keep track of the original indices.
+    present: List[Tuple[int, float]] = []
+    for position, raw_p in enumerate(p_values):
+        p_present = as_p_value(raw_p)
+        if p_present is not None:
+            present.append((position, p_present))
+    indexed_p = sorted(present, key=lambda x: x[1])
     sorted_p = [p for _, p in indexed_p]
 
     n = len(sorted_p)
+    n_excluded = len(p_values) - n
     adjusted_p = [0.0] * n
 
     # Benjamini-Hochberg procedure
@@ -241,15 +284,17 @@ def fdr_correction(
     for i in range(n - 2, -1, -1):
         adjusted_p[i] = min(adjusted_p[i], adjusted_p[i + 1])
 
-    # Map back to original order
-    original_adjusted = [0.0] * n
+    # Map back to original order; a missing p-value has no adjusted value
+    original_adjusted = [float("nan")] * len(p_values)
     for i, (original_idx, _) in enumerate(indexed_p):
         original_adjusted[original_idx] = adjusted_p[i]
 
-    # Determine significance
+    # Determine significance (NaN <= alpha is False: a missing p-value is never significant)
     significant = [adj_p <= alpha for adj_p in original_adjusted]
 
     logger.info(f"FDR correction ({method}): {sum(significant)}/{n} tests significant at FDR={alpha}")
+    if n_excluded:
+        logger.info(f"FDR correction ({method}): {n_excluded} missing p-value(s) left out of the family")
 
     if return_dict:
         return {
@@ -262,6 +307,7 @@ def fdr_correction(
             "n_significant": sum(significant),
             "significant_count": sum(significant),  # Alias for backward compatibility
             "alpha": alpha,
+            "n_excluded": n_excluded,
         }
     return significant, original_adjusted
 
@@ -425,21 +471,30 @@ def qvalue_estimation(p_values: List[float], pi0: Optional[float] = None) -> Tup
     """Estimate q-values from p-values.
 
     Args:
-        p_values: List of p-values
+        p_values: List of p-values. A missing p-value (NaN or None: a test that failed) is left out of the
+            family; it is not counted as p = 1.
         pi0: Proportion of true null hypotheses (estimated if None)
 
     Returns:
-        Tuple of (q_values, estimated_pi0)
+        Tuple of (q_values, estimated_pi0). ``q_values`` is aligned with ``p_values``; the q-value of a
+        missing p-value is NaN.
     """
     if not p_values:
         return [], 1.0
 
+    # The family is the p-values that are present
+    present: List[Tuple[int, float]] = []
+    for position, raw_p in enumerate(p_values):
+        p_present = as_p_value(raw_p)
+        if p_present is not None:
+            present.append((position, p_present))
+
     # Estimate π₀ if not provided
     if pi0 is None:
-        pi0 = _estimate_pi0(p_values)
+        pi0 = _estimate_pi0([p for _, p in present])
 
     # Apply q-value procedure (similar to BH-FDR but with π₀)
-    indexed_p = sorted(enumerate(p_values), key=lambda x: x[1])
+    indexed_p = sorted(present, key=lambda x: x[1])
     sorted_p = [p for _, p in indexed_p]
 
     n = len(sorted_p)
@@ -454,8 +509,8 @@ def qvalue_estimation(p_values: List[float], pi0: Optional[float] = None) -> Tup
     for i in range(n - 2, -1, -1):
         q_values[i] = min(q_values[i], q_values[i + 1])
 
-    # Map back to original order
-    original_q = [0.0] * n
+    # Map back to original order; a missing p-value has no q-value
+    original_q = [float("nan")] * len(p_values)
     for i, (original_idx, _) in enumerate(indexed_p):
         original_q[original_idx] = q_values[i]
 
@@ -550,16 +605,19 @@ def adjust_p_values(p_values: List[float], method: str = "bonferroni", **kwargs:
     """General function for p-value adjustment.
 
     Args:
-        p_values: List of p-values to adjust
+        p_values: List of p-values to adjust. A missing p-value (NaN or None: a test that failed) is left out of
+            the family and keeps a missing (NaN) adjusted value, except for genomic control, which passes it through.
         method: Adjustment method ('bonferroni', 'fdr', 'genomic_control', 'qvalue')
         **kwargs: Method-specific parameters
 
     Returns:
-        List of adjusted p-values or significance indicators
+        List of adjusted p-values or significance indicators, aligned with ``p_values``
     """
     if method.lower() == "bonferroni":
-        # Bonferroni-adjusted p-value (approximation): p * n, capped at 1.0
-        return [min(p * len(p_values), 1.0) for p in p_values]
+        # Bonferroni-adjusted p-value (approximation): p * n, capped at 1.0, where n counts the p-values present
+        present = [as_p_value(p) for p in p_values]
+        n_tests = sum(1 for p in present if p is not None)
+        return [min(p * n_tests, 1.0) if p is not None else float("nan") for p in present]
 
     elif method.lower() == "fdr":
         _, adjusted_p = fdr_correction(

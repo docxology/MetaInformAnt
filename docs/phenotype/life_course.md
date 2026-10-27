@@ -144,6 +144,32 @@ def analyze_life_course(
 Comprehensive analysis combining duration stats, event frequencies, sequence
 complexity metrics, outcome analysis, and trajectory pattern identification.
 
+**Returns** a dictionary with `n_sequences`, `n_sequences_with_events`,
+`mean_duration` (the mean over the sequences that have events, in timestamp
+units), `duration_stats`, `event_frequency`, `complexity_stats`, `components`,
+`trajectory_patterns` and, when `outcomes` is given, `outcome_analysis`. An empty
+list of sequences returns `{"error": "No sequences provided"}`. When no sequence
+has any events there is nothing to summarise: `mean_duration`, `duration_stats`
+and `complexity_stats` are `None` and `event_frequency` is `{}`.
+
+**Outcome analysis.** A person's outcomes are recorded in
+`sequence.metadata["outcomes"]` as a collection of the outcome names that person
+experienced (an empty collection means none). A sequence without that entry has an
+unknown outcome status: it is left out of the analysis of every outcome, never
+counted as negative, and the counts and the prevalence are reported among the
+sequences that have data. `outcome_analysis[outcome]` holds:
+
+| Key | Content |
+|-----|---------|
+| `status` | `"ok"`, or `"no_outcome_data"` when no sequence records its outcomes (then `prevalence` is `None` and nothing else is computed) |
+| `n_sequences`, `n_with_outcome_data`, `n_missing_outcome_data`, `n_with_outcome`, `n_without_outcome` | The counts behind the analysis (the last two among the sequences with data) |
+| `prevalence` | `n_with_outcome / n_with_outcome_data` |
+| `trajectory_comparison` | For `n_events`, `duration` and `complexity` (distinct event types per event): the mean among sequences with and without the outcome, their difference and the two-sided Mann-Whitney U `p_value`. Empty unless both groups exist; a feature is `None` when a group has no sequence that defines it (duration and complexity need events) |
+| `event_type_association` | For every event type: `n_exposed`, `n_exposed_with_outcome`, `n_unexposed_with_outcome`, the sample `odds_ratio` (`None` when a zero cell makes it infinite or undefined) and the two-sided Fisher exact `p_value` of the 2x2 table (event type present or not, outcome or not), ordered by p-value. The p-values are not adjusted for the number of event types tested |
+
+A `metadata["outcomes"]` that is not a collection of names raises
+`errors.ValidationError` (`metainformant.core.utils.errors`).
+
 ### create_life_course_report
 
 ```python-snippet
@@ -169,9 +195,15 @@ events = [
     Event(timestamp=22.0, event_type="job_start"),
     Event(timestamp=30.0, event_type="health_event"),
 ]
-seq = EventSequence(person_id="P001", events=events)
+seq = EventSequence(person_id="P001", events=events, metadata={"outcomes": ["career_success"]})
+other = EventSequence(
+    person_id="P002",
+    events=[Event(timestamp=19.0, event_type="job_start")],
+    metadata={"outcomes": []},  # recorded: no outcome (a missing entry would mean unknown)
+)
 
-results = analyze_life_course([seq], outcomes=["career_success"])
+results = analyze_life_course([seq, other], outcomes=["career_success"])
+print(results["outcome_analysis"]["career_success"]["prevalence"])  # 0.5
 report = create_life_course_report([seq], output_path="output/phenotype/report.txt")
 ```
 

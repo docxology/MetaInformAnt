@@ -165,16 +165,21 @@ def ld_decay_plot(
     ld_decay_result: Dict[str, Any],
     output_path: Optional[Union[str, Path]] = None,
     title: str = "LD Decay",
+    seed: int = 42,
 ) -> Any:
     """Plot r² vs. genomic distance (LD decay curve).
 
     Shows scatter of raw pairs (transparent) overlaid with binned mean r²,
-    and marks the estimated LD half-distance.
+    and marks the estimated LD half-distance. When there are more than 5000
+    pairs only a random 5000 are scattered; they are drawn with their own
+    generator seeded by ``seed``, so the figure is reproducible and the global
+    ``random`` state is left alone.
 
     Args:
         ld_decay_result: Output of compute_ld_decay().
         output_path: File path for saving the figure.
         title: Plot title.
+        seed: Seed for the display subsample of the raw pairs.
 
     Returns:
         matplotlib Figure or None.
@@ -196,7 +201,7 @@ def ld_decay_plot(
 
     # Raw scatter (subsample for display)
     if len(pairs) > 5000:
-        display_pairs = random.sample(pairs, 5000)
+        display_pairs = random.Random(seed).sample(pairs, 5000)
     else:
         display_pairs = pairs
     dists_raw = [d / 1000 for d, _ in display_pairs]  # kb

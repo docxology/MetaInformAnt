@@ -22,7 +22,7 @@ Quality scoring, contamination detection, and outlier analysis for sequencing da
 | `detect_outliers()` | Statistical outlier detection (IQR, z-score, or modified z-score) |
 | `calculate_data_integrity_score()` | Data completeness and consistency score (FASTQ checks) |
 | `generate_quality_report()` | Multi-section quality assessment report |
-| `batch_quality_analysis()` | Run FASTQ quality analysis across multiple files |
+| `batch_quality_analysis()` | Run FASTQ quality analysis across multiple files; `"vcf"` and `"bam"` raise `NotImplementedError` and any other `data_type` but `"fastq"` raises `ValueError`, even for an empty list |
 
 ## Usage
 

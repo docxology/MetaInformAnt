@@ -1,5 +1,9 @@
 # GWAS Module Assessment
 
+> Historical snapshot: this report is retained for provenance and may not
+> describe the current checkout. Regenerate validation outputs under `output/`
+> when current evidence is needed.
+
 **Date**: November 3, 2025  
 **Status**: FULLY FUNCTIONAL - PRODUCTION READY
 **Assessment Type**: End-to-End Verification

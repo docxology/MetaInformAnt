@@ -360,7 +360,8 @@ def test_association_logistic_all_genotypes_missing_reports_failure() -> None:
     assert result["converged"] is False
     assert result["n_samples"] == 0
     assert result["n_missing_dropped"] == 4
-    assert result["p_value"] == 1.0
+    # A failed test has no p-value: NaN (missing), not the fabricated p = 1 it used to carry.
+    assert math.isnan(result["p_value"])
 
 
 def test_association_logistic_rejects_covariates_of_the_wrong_length() -> None:

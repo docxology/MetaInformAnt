@@ -13,7 +13,7 @@ Genome-Wide Association Studies analysis, fine-mapping, variant-expression integ
 - [Key Capabilities](#key-capabilities)
   - [Association Testing](#association-testing)
   - [Quality Control and Summary Statistics](#quality-control-and-summary-statistics)
-  - [Fine-Mapping & Colocalization](#fine-mapping-colocalization)
+  - [Fine-Mapping & Colocalization](#fine-mapping--colocalization)
   - [Compute-Time Benchmarking](#compute-time-benchmarking)
   - [Data I/O](#data-io)
   - [Heritability Estimation](#heritability-estimation)
@@ -62,7 +62,9 @@ graph TD
 | `association_test_mixed()` | EMMA mixed model with kinship correction |
 | `run_multi_trait_gwas()` | Multi-trait GWAS sharing VCF/QC/PCA/kinship |
 
-The linear and logistic tests analyse complete cases. A sample is dropped when its genotype is missing (a negative or non-finite dosage) or a covariate value is missing or non-finite; the linear test also drops samples with a missing phenotype, and the logistic test raises `ValueError` for a phenotype that is not 0 or 1. `n_samples` counts the samples analysed and `n_missing_dropped` the samples dropped. The linear test takes p-values from Student's t distribution (a normal approximation when SciPy is unavailable) and returns `status: "error"` for a degenerate design: fewer than 3 complete cases, a constant genotype or a singular design matrix. The logistic test reports `converged`; a fit that did not converge (for example under perfect separation) keeps `status: "success"` but its estimate and p-value are unreliable, and fewer than 2 cases or 2 controls among the complete cases returns `status: "failed"`.
+The linear and logistic tests analyse complete cases. A sample is dropped when its genotype is missing (a negative or non-finite dosage) or a covariate value is missing or non-finite; the linear test also drops samples with a missing phenotype, and the logistic test raises `ValueError` for a phenotype that is not 0 or 1. `n_samples` counts the samples analysed and `n_missing_dropped` the samples dropped. The linear test takes p-values from Student's t distribution (a normal approximation when SciPy is unavailable). The logistic test reports `converged`; a fit that did not converge (for example under perfect separation) keeps `status: "success"` but its estimate and p-value are unreliable.
+
+A test that cannot be fitted is returned with NaN for its statistics (`beta`, `se`, `t_stat` or `z_stat`, `p_value`, and `r_squared` or `odds_ratio`), `converged=False`, a `status` and the reason in `error`: `"error"` for a linear test (fewer than 3 complete cases, a constant genotype or phenotype, a singular design matrix), `"failed"` or `"error"` for a logistic test (fewer than 2 cases or 2 controls, or a failed fit), and `"error"` for a mixed-model row. NaN is missing, not an effect of 0 or a p-value of 1: the corrections, summaries and writers leave a failed test out, and the writers print it as `NA`. A linear fit with zero residual variance and a nonzero genotype effect reports t of plus or minus infinity and p = 0. The workflows report the number of failed tests as `n_tests_failed`.
 
 ### Quality Control and Summary Statistics
 
@@ -73,9 +75,9 @@ The linear and logistic tests analyse complete cases. A sample is dropped when i
 | `write_summary_statistics()` | Summary statistics TSV with columns `CHR POS SNP REF ALT BETA SE P Q_FDR N MAF` |
 | `write_significant_hits()` | The same columns for variants below a p-value threshold, sorted by p-value |
 
-`apply_qc_filters(vcf_data, qc_config)` reads `min_maf` (default 0.01), `max_missing` (0.1), `min_hwe_p` (1e-6) and an optional `min_qual`. A variant passes `min_qual` when its QUAL is at least the threshold. A variant with a missing QUAL (`.` in the VCF) is removed whenever `min_qual` is set, and the result's `qual_filter` entry counts how many variants were removed and how many of those had a missing QUAL; leave `min_qual` unset for a VCF without QUAL values. `filter_variants_bcftools()` joins its thresholds into one `&&` expression and passes it to `bcftools filter -i`.
+`apply_qc_filters(vcf_data, qc_config)` reads `min_maf` (default 0.01), `max_missing` (0.1), `min_hwe_p` (1e-6) and an optional `min_qual`, and raises `ValueError` when the genotype rows differ in length or the number of variant records differs from the number of genotype columns. A variant passes `min_qual` when its QUAL is at least the threshold. A variant with a missing QUAL (`.` in the VCF) is removed whenever `min_qual` is set, and the result's `qual_filter` entry counts how many variants were removed and how many of those had a missing QUAL; leave `min_qual` unset for a VCF without QUAL values. `filter_variants_bcftools()` joins its thresholds into one `&&` expression and passes it to `bcftools filter -i`.
 
-`write_summary_statistics()` writes `NA` for a missing or non-finite numeric value and `.` for missing text. `Q_FDR` is the result's own `q_value`, `q_fdr` or `Q_FDR` when present, and otherwise the Benjamini-Hochberg q-value over the p-values of `results`, so pass every test rather than a subset. `MAF` is the result's own `maf` or `MAF` when present, and otherwise computed from the optional `genotypes=` matrix (variants x samples, 0/1/2 alternate-allele dosages); without either it is `NA`.
+`write_summary_statistics()` writes `NA` for a missing or non-finite numeric value and `.` for missing text. `Q_FDR` is the result's own `q_value`, `q_fdr` or `Q_FDR` when present, and otherwise the Benjamini-Hochberg q-value over the p-values of `results`, so pass every test rather than a subset. `MAF` is the result's own `maf` or `MAF` when present, and otherwise computed from the optional `genotypes=` matrix (variants x samples, 0/1/2 alternate-allele dosages); without either it is `NA`. The workflows give each result a `maf` and pass the genotypes to the writers, so `summary_statistics.tsv` carries a MAF column.
 
 ### Fine-Mapping & Colocalization
 
@@ -140,7 +142,8 @@ Scaling models used per step:
 |----------|---------|
 | `parse_vcf_full()` | Parse VCF files into genotype/variant dicts |
 | `download_reference_genome()` | Download reference genome from NCBI |
-| `download_variant_database()` | Download dbSNP / 1000 Genomes data |
+| `download_variant_database()` | Download dbSNP / 1000 Genomes data (`"dbsnp"` or `"1000genomes"`) |
+| `download_variant_data()` | Download the association summary table of a GWAS Catalog study (`data_type="summary_stats"` only; `"vcf"` and `"both"` raise `NotImplementedError`) |
 | `download_sra_run()` | Download SRA sequencing data |
 | `normalize_chromosome_name()` | Chromosome name normalization (NCBI acc, chr, roman) |
 | `parse_gff3_genes()` | Parse GFF3 gene annotations |

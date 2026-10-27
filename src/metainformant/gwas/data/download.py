@@ -839,20 +839,42 @@ def download_annotation(accession: str, output_dir: str | Path) -> Path:
 def download_variant_data(study_accession: str, output_dir: str | Path, data_type: str = "vcf") -> Path:
     """Download variant data for a GWAS study.
 
+    Only the association summary table of a study can be downloaded
+    (``data_type="summary_stats"``): the GWAS Catalog REST API serves association
+    records, not study-level genotype files. Genotype VCFs (``"vcf"``, the default,
+    and ``"both"``) are not implemented, so those values raise ``NotImplementedError``
+    before anything is written or requested; pass ``data_type="summary_stats"`` to
+    download.
+
     Args:
         study_accession: GWAS study accession (e.g., GCST123456)
         output_dir: Output directory for downloaded files
-        data_type: Type of data to download ('vcf', 'summary_stats', 'both')
+        data_type: ``"summary_stats"``, the only data type that can be downloaded.
+            ``"vcf"`` and ``"both"`` raise ``NotImplementedError``.
 
     Returns:
         Path to downloaded data directory
 
     Raises:
-        ValueError: If study accession is invalid
+        ValueError: If study accession is invalid or data_type is not recognised
+        NotImplementedError: If data_type asks for genotype VCFs ("vcf" or "both")
         requests.RequestException: If download fails
     """
     if not re.fullmatch(r"GCST\d+", study_accession):
         raise ValueError(f"Invalid GWAS Catalog study accession: {study_accession!r}")
+
+    if data_type in ("vcf", "both"):
+        raise NotImplementedError(
+            f"data_type={data_type!r} is not implemented: the GWAS Catalog REST API publishes association "
+            "summaries, not study-level genotype VCFs, so there is nothing to download. Use "
+            "data_type='summary_stats' for the association table; for genotypes follow the data-availability "
+            "statement of the study's publication, or use download_variant_database for dbSNP, 1000 Genomes "
+            "or HapMap variants."
+        )
+    if data_type != "summary_stats":
+        raise ValueError(
+            f"Unknown data_type {data_type!r}: expected 'summary_stats' ('vcf' and 'both' are not implemented)"
+        )
 
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -879,58 +901,27 @@ def download_variant_data(study_accession: str, output_dir: str | Path, data_typ
 
         downloaded_files = []
 
-        # Download summary statistics if requested
-        if data_type in ["summary_stats", "both"]:
-            # Try to get summary statistics URL
-            associations_url = f"{gwas_api_url}/associations"
-            assoc_response = requests.get(associations_url, timeout=30)
+        # Download the association summary table
+        associations_url = f"{gwas_api_url}/associations"
+        assoc_response = requests.get(associations_url, timeout=30)
 
-            if assoc_response.status_code == 200:
-                associations = assoc_response.json().get("_embedded", {}).get("associations", [])
+        if assoc_response.status_code == 200:
+            associations = assoc_response.json().get("_embedded", {}).get("associations", [])
 
-                # Save summary statistics
-                stats_file = study_dir / f"{study_accession}_summary_stats.tsv"
-                with open(stats_file, "w") as f:
-                    f.write("variant\trisk_allele\tp_value\todds_ratio\tbeta\n")
-                    for assoc in associations[:1000]:  # Limit to avoid huge files
-                        variant = assoc.get("loci", [{}])[0].get("strongestRiskAlleles", [{}])[0]
-                        p_value = assoc.get("pvalueMantissa", "") + "e" + str(assoc.get("pvalueExponent", ""))
-                        odds_ratio = assoc.get("orPerCopyNum", "")
-                        beta = assoc.get("betaNum", "")
+            # Save summary statistics
+            stats_file = study_dir / f"{study_accession}_summary_stats.tsv"
+            with open(stats_file, "w") as f:
+                f.write("variant\trisk_allele\tp_value\todds_ratio\tbeta\n")
+                for assoc in associations[:1000]:  # Limit to avoid huge files
+                    variant = assoc.get("loci", [{}])[0].get("strongestRiskAlleles", [{}])[0]
+                    p_value = assoc.get("pvalueMantissa", "") + "e" + str(assoc.get("pvalueExponent", ""))
+                    odds_ratio = assoc.get("orPerCopyNum", "")
+                    beta = assoc.get("betaNum", "")
 
-                        f.write(f"{variant}\t\t{p_value}\t{odds_ratio}\t{beta}\n")
+                    f.write(f"{variant}\t\t{p_value}\t{odds_ratio}\t{beta}\n")
 
-                downloaded_files.append(stats_file)
-                logger.info(f"Downloaded summary statistics to {stats_file}")
-
-        # For VCF files, try dbSNP or other sources
-        if data_type in ["vcf", "both"]:
-            # This would typically involve downloading from dbSNP or study-specific repositories
-            # For now, create a placeholder structure
-            vcf_dir = study_dir / "vcf"
-            vcf_dir.mkdir(exist_ok=True)
-
-            # Create a README explaining how to obtain VCF files
-            readme_file = vcf_dir / "README.md"
-            with open(readme_file, "w") as f:
-                f.write(f"""# VCF Data for {study_accession}
-
-This study contains GWAS variants that may be available in dbSNP or other repositories.
-
-To obtain VCF files:
-1. Check the original publication (PMID: {pubmed_id}) for data availability
-2. Look for data on GWAS Catalog FTP: ftp://ftp.ebi.ac.uk/pub/databases/gwas/
-3. Search dbSNP for the reported variants
-4. Contact the study authors for raw data
-
-Study information:
-- Accession: {study_accession}
-- Trait: {trait}
-- Publication: https://pubmed.ncbi.nlm.nih.gov/{pubmed_id}/
-""")
-
-            downloaded_files.append(vcf_dir)
-            logger.info(f"Created VCF directory structure at {vcf_dir}")
+            downloaded_files.append(stats_file)
+            logger.info(f"Downloaded summary statistics to {stats_file}")
 
         # Save study metadata
         metadata_file = study_dir / f"{study_accession}_metadata.json"

@@ -86,23 +86,32 @@ All Bayes factors, posterior inclusion probabilities and colocalization posterio
 
 The linear and logistic tests analyse complete cases. A sample is left out when its genotype is missing (a negative dose such as -1, NaN, infinite or non-numeric) or when any covariate value is missing or non-finite, and the linear test also drops samples with a missing phenotype. `n_samples` in the result counts the samples analysed and `n_missing_dropped` the samples left out.
 
-- **Linear test**: the p-value is two-sided from Student's t with `n_samples` minus the number of fitted parameters as degrees of freedom (a normal approximation is used only when SciPy is unavailable). A degenerate design (fewer than 3 complete cases, a constant genotype, collinear covariates) returns `status: "error"` with `p_value` 1.0, `converged` False and an `error` message instead of a statistic.
+- **Linear test**: the p-value is two-sided from Student's t with `n_samples` minus the number of fitted parameters as degrees of freedom (a normal approximation is used only when SciPy is unavailable).
 - **Logistic test**: phenotypes must be 0 or 1 (anything else raises `ValueError`), and at least 2 cases and 2 controls must remain among the complete cases, otherwise `status` is `"failed"`. `converged` is the fit's own convergence flag and is False when the fit does not converge (for example under separation), in which case the estimate and p-value are unreliable; `n_cases` and `n_controls` count the complete cases.
+
+**Failed tests.** A test that cannot be fitted is returned, not raised. It carries NaN for `beta`, `se`, `t_stat` (`z_stat` for the logistic test), `p_value` and `r_squared` (`odds_ratio` for the logistic test), plus `status`, an `error` message and `converged=False`. The linear `status` is `"error"`, the logistic `status` is `"failed"` or `"error"`, and mixed-model rows carry `status` as well. NaN means missing: it is not an effect of 0 or a p-value of 1.
+
+- A linear test fails for fewer than 3 complete cases, a constant genotype, a constant phenotype (the message says so), collinear covariates or no residual degrees of freedom.
+- Zero residual variance is read for what it means: an exact fit with a nonzero genotype effect reports t of plus or minus infinity and p = 0, and zero residual variance with a zero effect is a failed test.
+- `fdr_correction()`, `bonferroni_correction()`, `qvalue_estimation()` and `adjust_p_values()` leave NaN or `None` p-values out of the family. Their outputs stay aligned with the input, with NaN at a missing entry, and the dictionaries of `fdr_correction()` and `bonferroni_correction()` report `n_tests` (p-values present) and `n_excluded` (p-values missing). `as_p_value()` is the helper that decides what is missing.
+- `create_results_summary()` counts in `n_variants_tested` only the tests that ran and reports the others as `n_tests_failed`; `compute_comprehensive_summary()` also reports `n_tests_failed`. `per_chromosome_summary()`, `sign_test()`, `subsample_convergence()` and `jackknife_se()` skip failed tests, and the summary-statistics writers print them as `NA`.
+- `execute_gwas_workflow()`, `run_gwas()` and `run_multi_trait_gwas()` report the number of failed tests as `n_tests_failed` (in `results["outputs"]`, in `results["results"]` and per trait in `results["trait_results"]`).
 
 ### Data I/O
 
 | Function | Module | Purpose |
 |----------|--------|---------|
 | `parse_vcf_full()` | `metainformant.gwas.analysis.quality` | Parse VCF variant files |
-| `apply_qc_filters()` | `metainformant.gwas.analysis.quality` | QC filters applied in the order QUAL (`min_qual`, optional), MAF, missingness, Hardy-Weinberg; a variant without a QUAL value fails the QUAL filter whenever `min_qual` is set |
+| `apply_qc_filters()` | `metainformant.gwas.analysis.quality` | QC filters applied in the order QUAL (`min_qual`, optional), MAF, missingness, Hardy-Weinberg; a variant without a QUAL value fails the QUAL filter whenever `min_qual` is set; raises `ValueError` when the genotype rows differ in length or the variant records do not match the genotype columns |
 | `filter_variants_bcftools()` | `metainformant.gwas.analysis.calling` | Keep the sites that meet every given threshold (`min_qual` as `QUAL>=`, `max_missing` as `F_MISSING<=`, `min_depth` as `DP>=`) with `bcftools filter -i`; needs bcftools on `PATH` |
+| `download_variant_data()` | `metainformant.gwas.data.download` | Download the association summary table of a GWAS Catalog study. Only `data_type="summary_stats"` is supported: `"vcf"` (the default) and `"both"` raise `NotImplementedError`, and an unknown type raises `ValueError` |
 | `discover_sample_vcfs()` | `metainformant.gwas.data.vcf_utils` | Discover per-sample VCFs under a data root |
 | `count_variants()` | `metainformant.gwas.data.vcf_utils` | Count variants in a VCF |
 | `merge_vcfs()` | `metainformant.gwas.data.vcf_utils` | Merge per-sample VCFs |
 | `subsample_vcf()` | `metainformant.gwas.data.vcf_utils` | Subsample a VCF by fraction or interval |
 | `extract_sample_ids()` | `metainformant.gwas.data.vcf_utils` | Extract sample IDs from a VCF |
 | `bgzip_and_index()` | `metainformant.gwas.data.vcf_utils` | Bgzip-compress and tabix-index a VCF |
-| `write_summary_statistics()` | `metainformant.gwas.analysis.summary_stats` | Write the summary-statistics TSV (`CHR POS SNP REF ALT BETA SE P Q_FDR N MAF`). `Q_FDR` is the result's own q-value, else Benjamini-Hochberg over all results; `MAF` is the result's own, else computed from the optional `genotypes=`; any other missing value is `NA`. `write_significant_hits()` writes the rows below a p-value threshold in the same format |
+| `write_summary_statistics()` | `metainformant.gwas.analysis.summary_stats` | Write the summary-statistics TSV (`CHR POS SNP REF ALT BETA SE P Q_FDR N MAF`). `Q_FDR` is the result's own q-value, else Benjamini-Hochberg over all results; `MAF` is the result's own, else computed from the optional `genotypes=` (the workflows pass them, so the column is filled); any other missing value is `NA`, including every statistic of a failed test. `write_significant_hits()` writes the rows below a p-value threshold in the same format |
 
 There is no PLINK bed/bim/fam reader in the current checkout.
 

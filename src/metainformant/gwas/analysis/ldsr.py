@@ -26,6 +26,7 @@ References:
 from __future__ import annotations
 
 import math
+import random
 import statistics
 from typing import Any, Dict, List, Optional
 
@@ -249,14 +250,20 @@ def ldsr_plot(
     ld_scores: List[float],
     ldsr_result: Dict[str, Any],
     output_path: Optional[str] = None,
+    seed: int = 42,
 ) -> Any:
     """Scatter plot of χ² vs LD score with fitted LDSR line.
+
+    With more than 3000 variants only a random 3000 are scattered; they are drawn
+    with their own generator seeded by ``seed``, so the figure is reproducible and
+    the global ``random`` state is left alone.
 
     Args:
         chi2_stats: Per-variant chi-square values.
         ld_scores: Per-variant LD scores.
         ldsr_result: Output of ldsr_regression().
         output_path: File path to save.
+        seed: Seed for the display subsample.
 
     Returns:
         matplotlib Figure or None.
@@ -277,9 +284,7 @@ def ldsr_plot(
 
     # Scatter (subsample for display)
     if n > 3000:
-        import random as _rnd
-
-        idx = _rnd.sample(range(n), 3000)
+        idx = random.Random(seed).sample(range(n), 3000)
         xs = [ld_arr[i] for i in idx]
         ys = [chi2_arr[i] for i in idx]
     else:

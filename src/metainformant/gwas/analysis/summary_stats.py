@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import math
+import random
 from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
@@ -70,6 +71,15 @@ def _first_finite(record: Dict[str, Any], keys: Sequence[str]) -> Optional[float
     return None
 
 
+def _tested_results(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """The results whose test produced a p-value.
+
+    A test that failed carries NaN (or None) for its p-value: it is missing, not p = 1, so the summaries
+    below leave it out of their counts, calibration and top hits instead of counting it as a null test.
+    """
+    return [result for result in results if _finite_float(result.get("p_value")) is not None]
+
+
 def _format_number(value: Any, spec: str) -> str:
     """Format ``value`` with ``spec``; a missing or non-finite value becomes ``NA``."""
     number = _finite_float(value)
@@ -110,7 +120,7 @@ def _benjamini_hochberg_q_values(results: List[Dict[str, Any]]) -> List[Optional
     return [next(adjusted) if p is not None else None for p in p_values]
 
 
-def _minor_allele_frequency(genotype_row: Sequence[Any]) -> Optional[float]:
+def minor_allele_frequency(genotype_row: Sequence[Any]) -> Optional[float]:
     """Minor allele frequency from one variant's 0/1/2 alternate-allele dosages.
 
     Any other code (such as -1 or NaN) is treated as missing, as in
@@ -176,7 +186,7 @@ def _derived_columns(
     if genotypes is not None:
         for i, result in enumerate(results):
             if _first_finite(result, _MAF_KEYS) is None:
-                mafs[i] = _minor_allele_frequency(genotypes[i])
+                mafs[i] = minor_allele_frequency(genotypes[i])
     return q_values, mafs
 
 
@@ -295,19 +305,24 @@ def create_results_summary(
 ) -> Dict[str, Any]:
     """Create JSON summary of GWAS results.
 
+    A test that failed has NaN (or None) for its p-value. It is left out of ``n_variants_tested``, the
+    inflation factor, the significance counts and the top hits, and is reported in ``n_tests_failed``.
+
     Args:
         results: List of association test result dictionaries
         output_path: Path to output JSON file
         threshold: Genome-wide significance threshold
 
     Returns:
-        Summary dictionary with lambda_gc, n_significant, top_hits
+        Summary dictionary with n_variants_tested, n_tests_failed, lambda_gc, n_significant, top_hits
     """
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    p_values = [r.get("p_value", 1.0) for r in results]
+    tested = _tested_results(results)
+    p_values = [float(r["p_value"]) for r in tested]
     n_tests = len(p_values)
+    n_failed = len(results) - n_tests
 
     # Compute genomic inflation factor via the canonical chi-square conversion
     lambda_gc = lambda_gc_from_p_values(p_values)
@@ -318,14 +333,14 @@ def create_results_summary(
     n_significant = sum(1 for p in p_values if p < threshold)
     n_suggestive = sum(1 for p in p_values if p < 1e-5)
 
-    # Top hits (sorted by p-value)
-    indexed_results = [(i, r) for i, r in enumerate(results)]
-    indexed_results.sort(key=lambda x: x[1].get("p_value", 1.0))
+    # Top hits (sorted by p-value; variant_index is the position in ``results``)
+    indexed_results = [(i, r) for i, r in enumerate(results) if _finite_float(r.get("p_value")) is not None]
+    indexed_results.sort(key=lambda x: float(x[1]["p_value"]))
     top_hits = []
     for idx, result in indexed_results[:20]:
         hit = {
             "variant_index": idx,
-            "p_value": result.get("p_value", 1.0),
+            "p_value": float(result["p_value"]),
             "beta": result.get("beta", 0.0),
             "se": result.get("se", 0.0),
         }
@@ -339,6 +354,7 @@ def create_results_summary(
 
     summary = {
         "n_variants_tested": n_tests,
+        "n_tests_failed": n_failed,
         "lambda_gc": lambda_gc,
         "n_significant_genome_wide": n_significant,
         "n_suggestive": n_suggestive,
@@ -352,6 +368,8 @@ def create_results_summary(
     logger.info(
         f"Results summary: {n_tests} variants, lambda_gc={lambda_gc:.3f}, " f"{n_significant} genome-wide significant"
     )
+    if n_failed:
+        logger.warning(f"Results summary: {n_failed} failed test(s) left out of the counts and top hits")
     return summary
 
 
@@ -454,14 +472,20 @@ def calculate_ld_decay(
     variants_info: List[Dict[str, Any]],
     max_distance: int = 1000000,
     bins: int = 50,
+    seed: int = 42,
 ) -> Dict[str, Any]:
     """Calculate Linkage Disequilibrium (r^2) decay across genomic distances.
+
+    Variant pairs are drawn at random, so the result depends on ``seed``. The draw uses its own generator:
+    the same inputs and seed always give the same curve, and the global ``random`` state is neither read nor
+    advanced.
 
     Args:
         genotype_matrix: List of genotypes (variants x samples)
         variants_info: List of variant metadata
         max_distance: Maximum base-pair distance to compute LD
         bins: Number of distance bins for decay curve
+        seed: Seed of the generator that draws the variant pairs
 
     Returns:
         Dictionary with 'distances' (bin centers) and 'r2_means' (mean r^2 in each bin)
@@ -484,14 +508,13 @@ def calculate_ld_decay(
     r2_vals = []
     distances = []
 
-    import random
-
+    rng = random.Random(seed)
     pairs: set[tuple[int, int]] = set()
     attempts = 0
     while len(pairs) < sample_pairs and attempts < sample_pairs * 5:
         attempts += 1
-        i = random.randint(0, n_vars - 1)
-        j = random.randint(0, n_vars - 1)
+        i = rng.randint(0, n_vars - 1)
+        j = rng.randint(0, n_vars - 1)
         if i == j:
             continue
 
@@ -557,6 +580,9 @@ def compute_comprehensive_summary(
     quantiles; significance counts; and top-10 hits.  Extracted from
     script ``08_post_gwas.py`` step 8f.
 
+    A test that failed has NaN (or None) for its p-value and statistics. It is left out of every
+    distribution and count here and reported in ``n_tests_failed``.
+
     Args:
         association_results: List of result dicts, each containing at least
             ``p_value``, ``beta``, ``se``, ``MAF``, ``chrom``, ``pos``, ``snp``.
@@ -566,6 +592,9 @@ def compute_comprehensive_summary(
         Nested summary dictionary.
     """
     import statistics as _stats
+
+    n_failed = len(association_results) - len(_tested_results(association_results))
+    association_results = _tested_results(association_results)
 
     p_values = [r["p_value"] for r in association_results]
     betas = [r["beta"] for r in association_results]
@@ -623,6 +652,7 @@ def compute_comprehensive_summary(
 
     return {
         "n_variants": len(association_results),
+        "n_tests_failed": n_failed,
         "n_chromosomes": len(chrom_counts),
         "maf_distribution": {
             "mean": round(_stats.mean(mafs), 6),
@@ -673,6 +703,8 @@ def sign_test(
     Uses the normal approximation for n > 30.  Extracted from script
     ``08_post_gwas.py`` step 8h.
 
+    A test that failed has NaN (or None) for its p-value and effect; it takes no part in the test.
+
     Args:
         association_results: List of dicts with ``beta`` and ``p_value`` keys.
         significance_threshold: GW threshold for sub-analysis.
@@ -681,6 +713,7 @@ def sign_test(
         Dict with n_positive, n_negative, z_statistic, p_value_two_sided,
         interpretation, and GW-hit breakdowns.
     """
+    association_results = _tested_results(association_results)
     betas = [r["beta"] for r in association_results]
     n_pos = sum(1 for b in betas if b > 0)
     n_neg = sum(1 for b in betas if b < 0)
@@ -734,11 +767,13 @@ def per_chromosome_summary(
             ``beta``, ``MAF``.
         significance_threshold: GW threshold.
 
+    A test that failed has NaN (or None) for its p-value and statistics; it is left out of the table.
+
     Returns:
         List of per-chromosome summary dicts sorted by chromosome.
     """
     chrom_data: Dict[str, List[Dict[str, Any]]] = {}
-    for r in association_results:
+    for r in _tested_results(association_results):
         chrom_data.setdefault(r["chrom"], []).append(r)
 
     rows = []

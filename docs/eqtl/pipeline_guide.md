@@ -80,7 +80,12 @@ output/eqtl/{species}/
 After the pipeline completes, use `load_transcriptome_variants()` to feed the real SNPs into the eQTL scan:
 
 ```python
-from metainformant.gwas.finemapping.eqtl import load_transcriptome_variants, cis_eqtl_scan
+from metainformant.gwas.finemapping.eqtl import (
+    cis_eqtl_scan,
+    eqtl_summary_stats,
+    load_transcriptome_variants,
+    write_eqtl_results,
+)
 
 # Load real transcriptome-derived variants
 geno_matrix, var_positions = load_transcriptome_variants(
@@ -89,7 +94,14 @@ geno_matrix, var_positions = load_transcriptome_variants(
 
 # Run eQTL scan with real RNA expression + real RNA-derived variants
 results = cis_eqtl_scan(expr_matrix, geno_matrix, gene_positions, var_positions)
+
+print(eqtl_summary_stats(results))
+write_eqtl_results(results, "output/eqtl/amellifera/results/cis_eqtl_results.tsv")
 ```
+
+- `gene_positions` is a table with the columns `gene_id`, `chrom` and `tss_position`. For a real analysis take the TSS positions from a GFF/GTF annotation: `metainformant.eqtl.workflow.synthetic.parse_gene_positions` only invents them (the chromosome accession comes from the transcript ID, the positions are evenly spaced).
+- A variant ID is the VCF `ID` column, or `<chrom>_<pos>` where the column is `.`. IDs must be unique in `var_positions` and in the index of `geno_matrix`, and gene IDs unique in `gene_positions`; `cis_eqtl_scan` raises `ValueError` for a repeated ID rather than testing a pair twice.
+- A fit that cannot be made (fewer than 3 complete observations, a constant genotype, or a zero standard error) has NaN `beta`, `se` and `pvalue`, `status == "error"` and the reason in `error`. `eqtl_summary_stats` counts only the tests with a p-value in `n_tests` and reports the others as `n_tests_failed`, and `write_eqtl_results` writes the missing values as `NA`.
 
 ## Related
 

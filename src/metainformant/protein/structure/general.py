@@ -32,8 +32,9 @@ def compute_rmsd_kabsch(coords_ref: np.ndarray, coords_mobile: np.ndarray) -> fl
         ValueError: If coordinate arrays have incompatible shapes
 
     Example:
-        >>> ref_coords = np.random.rand(100, 3)
-        >>> mobile_coords = np.random.rand(100, 3)
+        >>> rng = np.random.default_rng(0)
+        >>> ref_coords = rng.random((100, 3))
+        >>> mobile_coords = rng.random((100, 3))
         >>> rmsd = compute_rmsd_kabsch(ref_coords, mobile_coords)
         >>> rmsd >= 0
         True
@@ -85,8 +86,9 @@ def compute_rmsd_simple(coords_ref: np.ndarray, coords_mobile: np.ndarray) -> fl
         RMSD value
 
     Example:
-        >>> ref_coords = np.random.rand(50, 3)
-        >>> mobile_coords = np.random.rand(50, 3)
+        >>> rng = np.random.default_rng(0)
+        >>> ref_coords = rng.random((50, 3))
+        >>> mobile_coords = rng.random((50, 3))
         >>> rmsd = compute_rmsd_simple(ref_coords, mobile_coords)
         >>> rmsd >= 0
         True
@@ -111,8 +113,9 @@ def align_structures_kabsch(coords_ref: np.ndarray, coords_mobile: np.ndarray) -
         Tuple of (aligned_coords, rotation_matrix, rmsd)
 
     Example:
-        >>> ref = np.random.rand(100, 3)
-        >>> mobile = np.random.rand(100, 3)
+        >>> rng = np.random.default_rng(0)
+        >>> ref = rng.random((100, 3))
+        >>> mobile = rng.random((100, 3))
         >>> aligned, rotation, rmsd = align_structures_kabsch(ref, mobile)
         >>> aligned.shape == ref.shape
         True
@@ -165,7 +168,8 @@ def calculate_radius_of_gyration(coords: np.ndarray) -> float:
         Radius of gyration in Angstroms
 
     Example:
-        >>> coords = np.random.rand(100, 3) * 50
+        >>> rng = np.random.default_rng(0)
+        >>> coords = rng.random((100, 3)) * 50
         >>> rg = calculate_radius_of_gyration(coords)
         >>> rg >= 0
         True
@@ -188,7 +192,8 @@ def calculate_center_of_mass(coords: np.ndarray, masses: Optional[np.ndarray] = 
         Center of mass coordinates (3,)
 
     Example:
-        >>> coords = np.random.rand(50, 3)
+        >>> rng = np.random.default_rng(0)
+        >>> coords = rng.random((50, 3))
         >>> com = calculate_center_of_mass(coords)
         >>> com.shape
         (3,)
@@ -220,7 +225,8 @@ def calculate_inertia_tensor(coords: np.ndarray, masses: Optional[np.ndarray] = 
         3x3 inertia tensor matrix
 
     Example:
-        >>> coords = np.random.rand(50, 3)
+        >>> rng = np.random.default_rng(0)
+        >>> coords = rng.random((50, 3))
         >>> tensor = calculate_inertia_tensor(coords)
         >>> tensor.shape
         (3, 3)
@@ -262,7 +268,8 @@ def find_principal_axes(coords: np.ndarray, masses: Optional[np.ndarray] = None)
         Tuple of (eigenvalues, eigenvectors)
 
     Example:
-        >>> coords = np.random.rand(50, 3)
+        >>> rng = np.random.default_rng(0)
+        >>> coords = rng.random((50, 3))
         >>> eigenvals, eigenvecs = find_principal_axes(coords)
         >>> len(eigenvals) == 3
         True
@@ -290,7 +297,8 @@ def calculate_structural_statistics(coords: np.ndarray) -> Dict[str, float]:
         Dictionary with structural statistics
 
     Example:
-        >>> coords = np.random.rand(100, 3) * 50
+        >>> rng = np.random.default_rng(0)
+        >>> coords = rng.random((100, 3)) * 50
         >>> stats = calculate_structural_statistics(coords)
         >>> "radius_of_gyration" in stats
         True
@@ -331,7 +339,8 @@ def identify_secondary_structure_elements(coords: np.ndarray, backbone_atoms: Li
         List of secondary structure elements
 
     Example:
-        >>> coords = np.random.rand(200, 3)
+        >>> rng = np.random.default_rng(0)
+        >>> coords = rng.random((200, 3))
         >>> backbone = list(range(0, 200, 4))  # Every 4th atom
         >>> elements = identify_secondary_structure_elements(coords, backbone)
         >>> isinstance(elements, list)
@@ -371,7 +380,8 @@ def calculate_solvent_accessible_surface_area(coords: np.ndarray, probe_radius: 
         Surface area in Å²
 
     Example:
-        >>> coords = np.random.rand(50, 3) * 20
+        >>> rng = np.random.default_rng(0)
+        >>> coords = rng.random((50, 3)) * 20
         >>> area = calculate_solvent_accessible_surface_area(coords)
         >>> area >= 0
         True

@@ -120,26 +120,29 @@ correction:
 ### Data Download (`download.py`)
 - dbSNP integration
 - 1000 Genomes Project downloads
-- Public GWAS datasets
+- GWAS Catalog association summary tables (`download_variant_data`; `data_type="summary_stats"` is the only supported type)
 
 ## Output Structure
 
+`execute_gwas_workflow` writes to one output directory (`output.results_dir`, else `work_dir`):
+
 ```
-output/gwas/
- genome/ # Reference genome
- variants/ # VCF files (raw and filtered)
- structure/ # Population structure results
- pca_components.tsv
- kinship_matrix.tsv
- structure_summary.json
- results/ # Association test results
- association_results.tsv
- summary.json
- plots/ # Visualizations
- manhattan.png
+output/gwas/<study>/
+ summary_statistics.tsv # CHR POS SNP REF ALT BETA SE P Q_FDR N MAF; NA for a failed test
+ significant_hits.tsv
+ pca_results.json
+ kinship_results.json
+ manhattan_plot.png
  qq_plot.png
- regional_*.png
+ pca_plot.png
+ kinship_plot.png
+ effect_size_plot.png
+ maf_spectrum_plot.png
+ regional_plot.png
+ strain_analysis/ # strain PCA, dendrogram, Fst and allele-frequency plots
 ```
+
+`run_gwas` writes `summary_statistics.tsv`, `significant_hits.tsv`, `results_summary.json` (with `n_variants_tested` and `n_tests_failed`) and its plots to `output_dir`.
 
 ## Input File Formats
 

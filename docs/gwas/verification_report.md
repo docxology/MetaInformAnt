@@ -1,5 +1,9 @@
 # GWAS Pipeline Verification Report
 
+> Historical snapshot: this report is retained for provenance and may not
+> describe the current checkout. Regenerate validation outputs under `output/`
+> when current evidence is needed.
+
 **Date**: October 30, 2025  
 **Status**:**100% FUNCTIONAL**
 **Configuration**: `config/gwas_pbarbatus.yaml` and `config/gwas_template.yaml`

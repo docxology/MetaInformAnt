@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import math
 import random
 import subprocess
 import time
@@ -658,8 +659,50 @@ def run_full_gwas(vcf_path: Path, pheno_path: Path, gff_path: Path | None, outpu
     return results
 
 
+def _result_maf(result: Dict[str, Any]) -> float | None:
+    """The minor allele frequency a result carries (``maf`` or ``MAF``), or None when it has none."""
+    for key in ("maf", "MAF"):
+        value = result.get(key)
+        if isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value):
+            return float(value)
+    return None
+
+
+def _plot_maf_distribution(assoc_results: List[Dict[str, Any]], plots_dir: Path) -> str | None:
+    """Draw the MAF distribution of the results that carry a minor allele frequency.
+
+    ``run_gwas`` attaches to every result the MAF of the genotypes its test ran on. |beta| is an effect size,
+    not an allele frequency, so a result without a MAF is left out of the plot and, when none has one, the
+    plot is skipped with a warning.
+
+    Returns:
+        Path of the written plot, or None when nothing was drawn.
+    """
+    from metainformant.gwas.visualization.genomic.variants import maf_distribution
+
+    mafs = [maf for maf in (_result_maf(r) for r in assoc_results) if maf is not None]
+    if not mafs:
+        logger.warning("MAF distribution skipped: the association results carry no minor allele frequency")
+        return None
+    if len(mafs) < len(assoc_results):
+        logger.warning(
+            f"MAF distribution drawn from {len(mafs)} of {len(assoc_results)} results: "
+            "the others carry no minor allele frequency"
+        )
+    maf_path = plots_dir / "maf_distribution.png"
+    outcome = maf_distribution(mafs, output_file=str(maf_path))
+    if outcome.get("status") != "success":
+        logger.warning(f"MAF distribution plot failed: {outcome.get('error', 'unknown error')}")
+        return None
+    return str(maf_path)
+
+
 def generate_visualizations(gwas_results: dict, output_dir: Path) -> dict:
-    """Generate comprehensive publication-quality GWAS visualizations."""
+    """Generate comprehensive publication-quality GWAS visualizations.
+
+    The MAF distribution is drawn from the minor allele frequencies the association results carry; without
+    any, that panel is skipped (a warning says so) rather than drawn from another quantity.
+    """
     import matplotlib
 
     matplotlib.use("Agg")
@@ -668,11 +711,9 @@ def generate_visualizations(gwas_results: dict, output_dir: Path) -> dict:
     plots_dir = output_dir / "plots"
     plots_dir.mkdir(parents=True, exist_ok=True)
 
+    from metainformant.gwas.analysis.correction import as_p_value
     from metainformant.gwas.visualization.general import kinship_heatmap, manhattan_plot, qq_plot
-    from metainformant.gwas.visualization.genomic.variants import (
-        maf_distribution,
-        variant_density_plot,
-    )
+    from metainformant.gwas.visualization.genomic.variants import variant_density_plot
     from metainformant.gwas.visualization.population.population import (
         pca_plot,
         pca_scree_plot,
@@ -691,8 +732,14 @@ def generate_visualizations(gwas_results: dict, output_dir: Path) -> dict:
         logger.warning("No association results for visualization")
         return plot_results
 
+    # A test that failed has NaN statistics (no p-value): it has nothing to plot.
+    assoc_results = [r for r in assoc_results if as_p_value(r.get("p_value")) is not None]
+    if not assoc_results:
+        logger.warning("No successful association tests for visualization")
+        return plot_results
+
     # Extract data for plots
-    p_values = [r.get("p_value", 1.0) for r in assoc_results]
+    p_values = [r["p_value"] for r in assoc_results]
     [r.get("beta", 0) for r in assoc_results]
 
     # 1. Manhattan plot
@@ -774,18 +821,13 @@ def generate_visualizations(gwas_results: dict, output_dir: Path) -> dict:
     except Exception as e:
         logger.warning(f"Variant density plot failed: {e}")
 
-    # 6. MAF distribution
+    # 6. MAF distribution (skipped, with a warning, when the results carry no minor allele frequency)
     logger.info("Generating MAF distribution plot...")
     try:
-        # Compute real MAFs from genotype data
-        mafs = []
-        for r in assoc_results:
-            maf = abs(r.get("beta", 0.0))
-            maf = min(maf, 0.5)
-            mafs.append(maf)
-        maf_distribution(mafs, output_file=str(plots_dir / "maf_distribution.png"))
-        plot_results["maf_distribution"] = str(plots_dir / "maf_distribution.png")
-        logger.info("  -> maf_distribution.png")
+        maf_path = _plot_maf_distribution(assoc_results, plots_dir)
+        if maf_path is not None:
+            plot_results["maf_distribution"] = maf_path
+            logger.info("  -> maf_distribution.png")
     except Exception as e:
         logger.warning(f"MAF distribution plot failed: {e}")
 
@@ -970,14 +1012,19 @@ def main(argv: list[str] | None = None) -> tuple[dict, dict]:
     print(f"  Variants after QC:   {qc_summary.get('variants_after_qc', 'N/A')}")
     print(f"  Association tests:   {len(assoc_results)}")
 
-    if assoc_results:
-        p_vals = [r.get("p_value", 1.0) for r in assoc_results]
+    # A test that failed has NaN statistics (no p-value): it is reported, not counted as p = 1.
+    from metainformant.gwas.analysis.correction import as_p_value
+
+    p_vals = [p for p in (as_p_value(r.get("p_value")) for r in assoc_results) if p is not None]
+    if p_vals:
         n_sig_5e8 = sum(1 for p in p_vals if p < 5e-8)
         n_sig_5e5 = sum(1 for p in p_vals if p < 5e-5)
         min_p = min(p_vals)
         print(f"  Min p-value:         {min_p:.2e}")
         print(f"  Genome-wide sig:     {n_sig_5e8} (p < 5e-8)")
         print(f"  Suggestive sig:      {n_sig_5e5} (p < 5e-5)")
+    if len(p_vals) < len(assoc_results):
+        print(f"  Failed tests:        {len(assoc_results) - len(p_vals)} (left out of the counts above)")
 
     ld_result = results_data.get("ld_pruning", {})
     if ld_result:

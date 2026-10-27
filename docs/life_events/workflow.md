@@ -10,7 +10,7 @@ model training, statistical analysis, and visualization into complete pipelines:
 - **analyze_life_course** -- Full analysis with embeddings, optional outcome prediction, and summary plots
 - **compare_populations** -- Statistical comparison between two population groups
 - **intervention_analysis** -- Before/after analysis around an intervention time point
-- **event_importance** -- Rank event types by how early they occur or by their transition connectivity
+- **event_importance** -- Rank event types by how often they occur, how early they occur, or their transition connectivity
 
 Every function accepts event sequences and returns a results dictionary;
 `analyze_life_course`, `compare_populations`, and `intervention_analysis` also write their outputs to a directory.
@@ -80,11 +80,13 @@ result = compare_populations(
 )
 ```
 
-**Returns:** `{"group1_name", "group2_name", "group1_stats", "group2_stats", "group1", "group2", "comparison", "visualizations", "output_dir"}`.
+**Returns:** `{"group1_name", "group2_name", "group1_stats", "group2_stats", "group1", "group2", "comparison", "visualizations", "visualization_errors", "output_dir"}`.
 `comparison` includes `length_comparison` (mean and median sequence length per group), `event_types` (unique counts,
 overlap, and Jaccard similarity of the event-type sets), `common_event_types`, `unique_to_group1`, and
 `unique_to_group2`. The function writes `comparison_results.json` and, when the comparison plot can be drawn,
 `population_comparison.png`, and raises `ValueError` when either group is empty.
+
+`visualizations` lists the plots that were written (`{"type", "file"}`). A plot that fails is recorded in `visualization_errors` as `{"type", "error_type", "error"}` and logged, and the comparison carries on; the list is empty when the plot was written. `error_type` is the exception class name, or `"NoFigure"` when the plot function returned no figure (matplotlib is missing or there is nothing to draw).
 
 ### intervention_analysis
 
@@ -105,10 +107,12 @@ result = intervention_analysis(
 
 Each sequence is split at `intervention_time` (a `datetime` or POSIX seconds; events at the intervention time count as
 after it) and the events before and after it are analysed with `analyze_life_course` (files under `output_dir/pre`
-and `output_dir/post`). A list of outcomes must have one value per sequence on its side (`n_pre_sequences` and
-`n_post_sequences` of the result), otherwise `analyze_life_course` raises `ValueError`. The single `outcomes` argument is
-split by position instead: its first `n_pre_sequences` values belong to the pre-intervention side and the following values to the
-post-intervention side.
+and `output_dir/post`). A person with events on both sides contributes one sequence to each side; the pre-intervention
+sequences come first, then the post-intervention ones, each group in the order of `sequences`. A list of outcomes must have
+one value per sequence on its side (`n_pre_sequences` and `n_post_sequences` of the result), otherwise `analyze_life_course`
+raises `ValueError`. The single `outcomes` argument is split by position instead: it must hold `n_pre_sequences + n_post_sequences`
+values, the pre-intervention values first, and any other length raises `ValueError`. It is ignored when `pre_intervention_outcomes`
+or `post_intervention_outcomes` is given.
 
 **Returns:** `{"pre_intervention", "post_intervention", "differences", "outcome_change", "intervention_time", "n_pre_sequences", "n_post_sequences", "output_dir"}`.
 `pre_intervention` and `post_intervention` are `analyze_life_course` results (`{}` when no sequence has events on that
@@ -124,17 +128,18 @@ from metainformant.life_events.workflow.workflow import event_importance
 
 importance = event_importance(
     sequences=sequences,
-    method="frequency",    # "frequency" or "transition"
+    method="frequency",    # "frequency", "temporal" or "transition"
     normalize=True
 )
 # Returns Dict[str, float] mapping event types to importance scores
 ```
 
 **Methods:**
-- `"frequency"` -- `1 - mean normalised position`: the position of every occurrence is scaled to [0, 1] within its sequence, so event types that tend to occur early score higher; occurrence counts do not enter the score
+- `"frequency"` -- the number of occurrences of the event type across all sequences, so the most common event type ranks first
+- `"temporal"` -- how early the event type occurs: `1 - mean normalised position`, where the position of every occurrence is scaled to [0, 1] within its sequence (0 for the first event, 1 for the last), so event types that tend to occur early score higher; occurrence counts do not enter the score
 - `"transition"` -- number of transitions into and out of the event type between consecutive events
 
-Any other `method` returns an empty dictionary. With `normalize=True` the scores are rescaled to [0, 1] (all scores equal gives 0.5). Keys are event types without the domain prefix. For importance based on a fitted predictor, use `event_importance(predictor, sequences, method="permutation")` and `shapley_values` in `metainformant.life_events.analysis.interpretability`.
+An unknown `method` raises `ValueError`, and an empty list of sequences returns an empty dictionary. With `normalize=True` the scores are rescaled to [0, 1] (all scores equal gives 0.5). Keys are event types without the domain prefix. For importance based on a fitted predictor, use `event_importance(predictor, sequences, method="permutation")` and `shapley_values` in `metainformant.life_events.analysis.interpretability`.
 
 ## End-to-End Example
 
@@ -158,7 +163,7 @@ short = [s for s in sequences if len(s.events) <= 10]
 long = [s for s in sequences if len(s.events) > 10]
 compare_populations(short, long, ["Short", "Long"], "output/life_events/compare")
 
-# Event ranking
+# Event ranking: by connectivity here; "frequency" ranks by count and "temporal" by earliness
 rankings = event_importance(sequences, method="transition", normalize=True)
 for event_type, score in sorted(rankings.items(), key=lambda x: -x[1])[:10]:
     print(f"  {event_type}: {score:.3f}")

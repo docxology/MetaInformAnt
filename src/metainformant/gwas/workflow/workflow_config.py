@@ -333,18 +333,39 @@ def validate_gwas_config(config: Dict[str, Any], *, check_files: bool = False) -
     return errors
 
 
-def _extract_genotype_matrix(vcf_data: Dict[str, Any]) -> Union[List[List[int]], Any]:
-    """Extract genotype matrix from VCF data.
+_GENOTYPE_LAYOUTS = ("sample_major", "variant_major")
+
+
+def _extract_genotype_matrix(vcf_data: Dict[str, Any], *, layout: Optional[str] = None) -> Union[List[List[int]], Any]:
+    """Extract genotype matrix from VCF data, as variants x samples.
+
+    ``parse_vcf_full`` and ``apply_qc_filters`` return the genotypes sample-major (one row per sample), while the
+    GWAS functions want them variant-major (one row per variant), so the matrix is usually transposed here. Whether
+    that is needed is a property of how the data was produced and cannot always be read off its shape:
+
+    - With ``layout`` given, the matrix is taken to be in exactly that layout, and a shape that does not fit the
+      samples (and, when ``vcf_data["variants"]`` is present, the variant records) is a ``ValueError``. Pass it
+      whenever the producer is known, e.g. ``layout="sample_major"`` for anything that came from ``parse_vcf_full``.
+    - Without it the layout is inferred from the shape against the declared counts (the sample columns of the VCF
+      header and, when present, the variant records): a matrix of ``n_samples x n_variants`` is sample-major and is
+      transposed, a matrix whose rows each hold ``n_samples`` genotypes is variant-major and is returned as it is.
+    - A square matrix (as many variants as samples) fits both readings, so nothing in the data decides. It is
+      then **assumed to be variant-major and returned unchanged**, and a warning is logged. Unlike a rectangular
+      matrix, a wrong assumption passes silently, so do not rely on this for sample-major data: pass ``layout``.
 
     Args:
         vcf_data: Parsed VCF data from parse_vcf_full()
+        layout: ``"sample_major"``, ``"variant_major"`` or None to infer (see above)
 
     Returns:
         Genotype matrix (variants x samples)
 
     Raises:
-        ValueError: If VCF data is malformed or missing genotypes
+        ValueError: If VCF data is malformed or missing genotypes, ``layout`` is not a known layout, or the
+            matrix does not fit the layout
     """
+    if layout is not None and layout not in _GENOTYPE_LAYOUTS:
+        raise ValueError(f"Unknown genotype layout {layout!r}; expected one of {_GENOTYPE_LAYOUTS} or None")
     if "genotypes" not in vcf_data:
         raise ValueError("VCF data missing genotypes field")
 
@@ -359,18 +380,39 @@ def _extract_genotype_matrix(vcf_data: Dict[str, Any]) -> Union[List[List[int]],
     if sample_count == 0:
         raise ValueError("No samples found in VCF data")
 
-    # Detect if matrix is sample-major (samples x variants) and transpose if needed
-    # parse_vcf_full transposes to sample-major, but GWAS functions expect variant-major
     is_numpy = hasattr(genotypes, "shape")
+    n_rows = int(genotypes.shape[0]) if is_numpy else len(genotypes)
+    row_lengths = {int(genotypes.shape[1])} if is_numpy else {len(row) for row in genotypes}
+    if len(row_lengths) != 1:
+        raise ValueError(f"Genotype rows have different lengths: {sorted(row_lengths)}")
+    n_columns = next(iter(row_lengths))
 
-    if is_numpy:
-        if genotypes.shape == (sample_count, variant_count) and sample_count != variant_count:
-            logger.info("Detecting sample-major genotype matrix. Transposing to variant-major...")
-            genotypes = genotypes.T
+    if layout is None:
+        # parse_vcf_full transposes to sample-major, but GWAS functions expect variant-major
+        sample_major = n_rows == sample_count and n_columns == variant_count and sample_count != variant_count
+        if n_rows == sample_count and n_columns == sample_count:
+            logger.warning(
+                f"The {n_rows} x {n_columns} genotype matrix is square, so its orientation cannot be told from its "
+                "shape; assuming variant-major (variants x samples) and leaving it as it is. Pass layout= to say "
+                "which it is."
+            )
     else:
-        if len(genotypes) == sample_count and len(genotypes[0]) == variant_count and sample_count != variant_count:
-            logger.info("Detecting sample-major genotype matrix. Transposing to variant-major...")
-            genotypes = [[genotypes[s][v] for s in range(sample_count)] for v in range(variant_count)]
+        sample_major = layout == "sample_major"
+        if sample_major:
+            if n_rows != sample_count or (variant_count and n_columns != variant_count):
+                raise ValueError(
+                    f"layout='sample_major' needs one row per sample ({sample_count}) and, when variant records "
+                    f"are given, one column per variant ({variant_count}); the matrix is {n_rows} x {n_columns}"
+                )
+        elif variant_count and n_rows != variant_count:
+            raise ValueError(
+                f"layout='variant_major' needs one row per variant record ({variant_count}); "
+                f"the matrix has {n_rows} rows"
+            )
+
+    if sample_major:
+        logger.info("Genotype matrix is sample-major. Transposing to variant-major...")
+        genotypes = genotypes.T if is_numpy else [[genotypes[s][v] for s in range(n_rows)] for v in range(n_columns)]
 
     # Validate shape using numpy attributes if possible
     if is_numpy:

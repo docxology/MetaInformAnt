@@ -33,6 +33,10 @@ _EMBEDDING_COMBINATIONS = ("sum", "input")
 _DEFAULT_DOMAIN_SEED = 0
 _DOMAIN_VARIATION_SCALE = 0.1
 
+# Temporal embeddings summarise the intervals between consecutive events with six statistics.
+_SECONDS_PER_DAY = 86400.0
+_N_TEMPORAL_STATISTICS = 6
+
 
 def _sigmoid(values: np.ndarray) -> np.ndarray:
     """Numerically stable logistic function."""
@@ -329,7 +333,9 @@ def biological_embedding(
 
     Args:
         sequences: List of EventSequence objects
-        embedding_type: Type of biological embedding ('event_type', 'domain', 'temporal')
+        embedding_type: Type of biological embedding ('event_type', 'domain', 'temporal'). A ``'temporal'``
+            embedding summarises the intervals, in days, between consecutive events (see
+            ``_create_temporal_embeddings``); its ``embedding_dim`` must be at least 6.
         random_state: Seed for the random variation of the ``'domain'`` embeddings; different seeds give
             different variations. ``seed`` is accepted as an alias. Defaults to a fixed seed.
         **kwargs: Additional parameters (``embedding_dim`` for every type)
@@ -426,17 +432,40 @@ def _create_domain_embeddings(sequences: List[Any], random_state: int | None = N
     }
 
 
+def _interval_in_days(earlier: Any, later: Any) -> float:
+    """Time from ``earlier`` to ``later`` in days; timestamps that are plain numbers are subtracted as given."""
+    delta = later - earlier
+    if hasattr(delta, "total_seconds"):
+        return float(delta.total_seconds()) / _SECONDS_PER_DAY
+    return float(delta)
+
+
 def _create_temporal_embeddings(sequences: List[Any], **kwargs: Any) -> Dict[str, Any]:
-    """Create embeddings based on temporal patterns."""
+    """Create embeddings based on temporal patterns.
+
+    Sequences with at least two events are grouped by their first three event types. The intervals between
+    consecutive events (in days) of all sequences of a group are pooled, and the group's embedding holds their
+    mean, standard deviation, minimum, maximum, count and median, zero padded to ``embedding_dim`` and scaled so
+    that its largest absolute entry is 1. Event timestamps are datetimes; numeric timestamps are subtracted as
+    given.
+    """
+    embedding_dim = kwargs.get("embedding_dim", 30)
+    if embedding_dim < _N_TEMPORAL_STATISTICS:
+        raise ValueError(
+            f"embedding_dim must be at least {_N_TEMPORAL_STATISTICS} for temporal embeddings "
+            f"(they hold {_N_TEMPORAL_STATISTICS} interval statistics), got {embedding_dim}"
+        )
+
     # Analyze temporal patterns across sequences
-    temporal_patterns: Dict[tuple[str, ...], list[Any]] = {}
+    temporal_patterns: Dict[tuple[str, ...], list[float]] = {}
 
     for seq in sequences:
         events = sorted(seq.events, key=lambda x: x.timestamp)
         if len(events) > 1:
-            # Calculate time differences
-            timestamps = [event.timestamp for event in events]
-            time_diffs = np.diff(timestamps)
+            # Time between consecutive events, in days
+            time_diffs = [
+                _interval_in_days(earlier.timestamp, later.timestamp) for earlier, later in zip(events, events[1:])
+            ]
 
             pattern_key = tuple(event.event_type for event in events[:3])  # First 3 events
             if pattern_key not in temporal_patterns:
@@ -445,7 +474,6 @@ def _create_temporal_embeddings(sequences: List[Any], **kwargs: Any) -> Dict[str
             temporal_patterns[pattern_key].extend(time_diffs)
 
     # Create embeddings based on temporal patterns
-    embedding_dim = kwargs.get("embedding_dim", 30)
     embeddings = {}
 
     for pattern, diffs in temporal_patterns.items():
@@ -460,7 +488,7 @@ def _create_temporal_embeddings(sequences: List[Any], **kwargs: Any) -> Dict[str
                     len(diffs),  # number of transitions
                     np.median(diffs),  # median interval
                 ]
-                + [0.0] * (embedding_dim - 6)
+                + [0.0] * (embedding_dim - _N_TEMPORAL_STATISTICS)
             )
 
             # Normalize

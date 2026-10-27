@@ -46,7 +46,14 @@ def association_test_mixed(
         covariates: Optional covariate matrix (covariates x samples)
 
     Returns:
-        Dictionary with association test results
+        Dictionary with association test results.
+
+        A test that cannot be fitted has ``status == "error"``, ``converged`` False, the reason in ``error``,
+        and NaN for ``beta``, ``se``, ``t_stat`` and ``p_value``. NaN means missing: it is not an effect of 0
+        or a p-value of 1, and the corrections, summaries and writers in this package leave such a test out
+        (writers print it as ``NA``). When only the SNP could not be tested (a singular design or no residual
+        degrees of freedom) the variance components of the null model are still reported; when the model
+        itself failed, they are NaN too.
     """
     if not HAS_NUMPY:
         raise ImportError("numpy is required for mixed model association testing")
@@ -93,9 +100,10 @@ def association_test_mixed(
         # Test this SNP
         snp_rot = Ut @ snp
         result = _emma_test_snp(snp_rot, y_rot, X_rot, eigenvalues, delta)
+        snp_error = result.get("error")
 
-        return {
-            "status": "success",
+        output: Dict[str, Any] = {
+            "status": "error" if snp_error else "success",
             "beta": result["beta"],
             "se": result["se"],
             "t_stat": result["t_stat"],
@@ -105,20 +113,25 @@ def association_test_mixed(
             "heritability": float(heritability),
             "n_samples": n,
             "test_type": "mixed",
-            "converged": True,
+            "converged": not snp_error,
         }
+        if snp_error:
+            logger.warning(f"Mixed model association test failed: {snp_error}")
+            output["error"] = snp_error
+        return output
 
     except Exception as e:
         logger.warning(f"Mixed model association test failed: {e}")
+        nan = float("nan")
         return {
             "status": "error",
-            "beta": 0.0,
-            "se": 0.0,
-            "t_stat": 0.0,
-            "p_value": 1.0,
-            "sigma_g": 0.0,
-            "sigma_e": 0.0,
-            "heritability": 0.0,
+            "beta": nan,
+            "se": nan,
+            "t_stat": nan,
+            "p_value": nan,
+            "sigma_g": nan,
+            "sigma_e": nan,
+            "heritability": nan,
             "n_samples": n,
             "test_type": "mixed",
             "converged": False,
@@ -145,7 +158,11 @@ def run_mixed_model_gwas(
         covariates: Optional covariate matrix (covariates x samples)
 
     Returns:
-        List of result dictionaries, one per variant
+        List of result dictionaries, one per variant, in the order of ``genotype_matrix``. Every row has a
+        ``status``. A SNP that cannot be tested (a singular design or no residual degrees of freedom, for
+        instance a monomorphic SNP) has ``status == "error"``, ``converged`` False, the reason in ``error``,
+        and NaN for ``beta``, ``se``, ``t_stat`` and ``p_value``: missing, not an effect of 0 or a p-value of
+        1. The corrections, summaries and writers in this package leave such a row out.
     """
     if not HAS_NUMPY:
         raise ImportError("numpy is required for mixed model GWAS")
@@ -187,14 +204,19 @@ def run_mixed_model_gwas(
         snp_rot = Ut @ snp
         snp_result = _emma_test_snp(snp_rot, y_rot, X_rot, eigenvalues, delta)
 
+        snp_error = snp_result.get("error")
         result: Dict[str, Any] = {
             "variant_index": i,
+            "status": "error" if snp_error else "success",
             "beta": snp_result["beta"],
             "se": snp_result["se"],
             "t_stat": snp_result["t_stat"],
             "p_value": snp_result["p_value"],
             "test_type": "mixed",
         }
+        if snp_error:
+            result["converged"] = False
+            result["error"] = snp_error
 
         if variant_info and i < len(variant_info):
             result["variant_id"] = variant_info[i].get("id", f"variant_{i}")
@@ -377,7 +399,7 @@ def _emma_test_snp(
     X_rot: Any,
     eigenvalues: Any,
     delta: float,
-) -> Dict[str, float]:
+) -> Dict[str, Any]:
     """Test a single SNP using pre-computed EMMA parameters.
 
     Args:
@@ -388,7 +410,9 @@ def _emma_test_snp(
         delta: sigma_e / sigma_g ratio
 
     Returns:
-        Dictionary with beta, se, t_stat, p_value
+        Dictionary with beta, se, t_stat, p_value. When the SNP cannot be tested (singular design, or no
+        residual degrees of freedom) all four are NaN (missing, not 0 and not p = 1) and ``error`` gives the
+        reason.
     """
     n = len(y_rot)
     d = eigenvalues + delta
@@ -406,13 +430,13 @@ def _emma_test_snp(
     try:
         beta_vec = np.linalg.solve(XtDinvX, XtDinvy)
     except np.linalg.LinAlgError:
-        return {"beta": 0.0, "se": 0.0, "t_stat": 0.0, "p_value": 1.0}
+        return _failed_snp_test("Design matrix is singular (monomorphic or collinear SNP)")
 
     residuals = y_rot - X_full @ beta_vec
     dof = n - p
 
     if dof <= 0:
-        return {"beta": 0.0, "se": 0.0, "t_stat": 0.0, "p_value": 1.0}
+        return _failed_snp_test(f"No residual degrees of freedom ({n} samples, {p} parameters)")
 
     sigma2 = float(np.sum(d_inv * residuals**2) / dof)
 
@@ -420,13 +444,17 @@ def _emma_test_snp(
     try:
         cov_beta = sigma2 * np.linalg.inv(XtDinvX)
     except np.linalg.LinAlgError:
-        return {"beta": 0.0, "se": 0.0, "t_stat": 0.0, "p_value": 1.0}
+        return _failed_snp_test("Design matrix is singular (monomorphic or collinear SNP)")
 
     # SNP coefficient is the last one
     snp_idx = p - 1
     beta = float(beta_vec[snp_idx])
     se = float(math.sqrt(max(cov_beta[snp_idx, snp_idx], 0.0)))
-    t_stat = beta / se if se > 1e-10 else 0.0
+    if not se > 1e-10:
+        return _failed_snp_test(
+            "Zero residual variance (constant phenotype or exact fit): the test statistic is undefined"
+        )
+    t_stat = beta / se
 
     # p-value from t-distribution
     try:
@@ -438,6 +466,12 @@ def _emma_test_snp(
         p_value = 2 * _normal_cdf_complement(abs(t_stat))
 
     return {"beta": beta, "se": se, "t_stat": t_stat, "p_value": p_value}
+
+
+def _failed_snp_test(error: str) -> Dict[str, Any]:
+    """Result of a SNP that could not be tested: the reason, and NaN (missing) for every statistic."""
+    nan = float("nan")
+    return {"beta": nan, "se": nan, "t_stat": nan, "p_value": nan, "error": error}
 
 
 def _normal_cdf_complement(x: float) -> float:

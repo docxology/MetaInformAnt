@@ -100,7 +100,8 @@ This document provides a review of the METAINFORMANT GWAS module, assessing end-
 **Status**:**FIXED** (February 2026)
 
 **Current State**:
-- `download_variant_data()` provides dbSNP download via real FTP and a README guide for study-level VCF
+- `download_variant_data()` downloads the association summary table of a GWAS Catalog study. `data_type="summary_stats"` is the only supported value: `"vcf"` (the default) and `"both"` raise `NotImplementedError`, and an unknown type raises `ValueError`
+- `download_variant_database()` fetches dbSNP (`"dbsnp"`) or 1000 Genomes (`"1000genomes"`) VCFs over FTP
 - `_download_from_ftp()` replaced with real NCBI FTP download using ftplib
 - Annotation download has FTP fallback when NCBI Datasets API fails
 - SRA download raises proper errors instead of returning empty directories

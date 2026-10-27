@@ -13,6 +13,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from scipy import stats as scipy_stats
+
 from metainformant.core.data import validation
 from metainformant.core.utils import errors, logging
 
@@ -755,27 +757,173 @@ def identify_trajectory_patterns(sequences: List[EventSequence]) -> Dict[str, An
     }
 
 
+def _recorded_outcomes(sequence: EventSequence) -> Optional[set[str]]:
+    """The outcome names recorded for a person in ``metadata["outcomes"]``, or None when none are recorded.
+
+    A sequence without that entry has an unknown outcome status, which is not the same as having no outcome:
+    it is left out of the outcome analysis instead of being counted as negative.
+    """
+    recorded = sequence.metadata.get("outcomes")
+    if recorded is None:
+        return None
+    if isinstance(recorded, str):
+        return {recorded}
+    try:
+        return set(recorded)
+    except TypeError:
+        raise errors.ValidationError(
+            f"metadata['outcomes'] of sequence {sequence.person_id!r} must be a collection of outcome names, "
+            f"got {type(recorded).__name__}"
+        ) from None
+
+
+def _rank_sum_p_value(with_outcome: List[float], without_outcome: List[float]) -> float:
+    """Two-sided Mann-Whitney U p-value; 1.0 when every value is the same (scipy returns NaN there)."""
+    if len(set(with_outcome) | set(without_outcome)) == 1:
+        return 1.0
+    return float(scipy_stats.mannwhitneyu(with_outcome, without_outcome, alternative="two-sided").pvalue)
+
+
+def _compare_feature(with_outcome: List[float], without_outcome: List[float]) -> Optional[Dict[str, Any]]:
+    """Mean of a trajectory feature in the groups with and without the outcome, and a rank-sum test."""
+    if not with_outcome or not without_outcome:
+        return None
+    mean_with = statistics.fmean(with_outcome)
+    mean_without = statistics.fmean(without_outcome)
+    return {
+        "n_with_outcome": len(with_outcome),
+        "n_without_outcome": len(without_outcome),
+        "mean_with_outcome": mean_with,
+        "mean_without_outcome": mean_without,
+        "difference": mean_with - mean_without,
+        "p_value": _rank_sum_p_value(with_outcome, without_outcome),
+    }
+
+
+def _event_type_associations(rows: List[Tuple[set[str], bool]]) -> Dict[str, Dict[str, Any]]:
+    """Association of having each event type with the outcome, as Fisher exact tests on 2x2 tables.
+
+    ``rows`` holds, per sequence with a known outcome status, the set of its event types and whether it has the
+    outcome. The result is ordered by p-value (ties by event type).
+    """
+    n_with = sum(1 for _, has_outcome in rows if has_outcome)
+    n_without = len(rows) - n_with
+    associations: Dict[str, Dict[str, Any]] = {}
+    for event_type in sorted({event_type for types, _ in rows for event_type in types}):
+        exposed_with = sum(1 for types, has_outcome in rows if has_outcome and event_type in types)
+        exposed_without = sum(1 for types, has_outcome in rows if not has_outcome and event_type in types)
+        unexposed_with = n_with - exposed_with
+        unexposed_without = n_without - exposed_without
+        denominator = exposed_without * unexposed_with
+        associations[event_type] = {
+            "n_exposed": exposed_with + exposed_without,
+            "n_exposed_with_outcome": exposed_with,
+            "n_unexposed_with_outcome": unexposed_with,
+            # Sample odds ratio; None when a zero cell makes it infinite or undefined
+            "odds_ratio": exposed_with * unexposed_without / denominator if denominator else None,
+            "p_value": float(
+                scipy_stats.fisher_exact([[exposed_with, exposed_without], [unexposed_with, unexposed_without]]).pvalue
+            ),
+        }
+    # p-values that agree to 12 decimals are ties (the exact sums behind them can differ in the last bits)
+    return dict(sorted(associations.items(), key=lambda item: (round(item[1]["p_value"], 12), item[0])))
+
+
+def _analyze_outcome(
+    sequences: List[EventSequence], recorded: List[Optional[set[str]]], outcome: str
+) -> Dict[str, Any]:
+    """Prevalence of one outcome and how it relates to the trajectories, among sequences with a known status."""
+    observed = [(seq, outcome in names) for seq, names in zip(sequences, recorded) if names is not None]
+    n_with = sum(1 for _, has_outcome in observed if has_outcome)
+    analysis: Dict[str, Any] = {
+        "status": "ok" if observed else "no_outcome_data",
+        "n_sequences": len(sequences),
+        "n_with_outcome_data": len(observed),
+        "n_missing_outcome_data": len(sequences) - len(observed),
+        "n_with_outcome": n_with,
+        "n_without_outcome": len(observed) - n_with,
+        "prevalence": n_with / len(observed) if observed else None,
+        "trajectory_comparison": {},
+        "event_type_association": {},
+    }
+    if not n_with or n_with == len(observed):
+        return analysis  # a comparison needs sequences both with and without the outcome
+
+    def feature_values(has_outcome: bool, feature: str) -> List[float]:
+        values = {
+            "n_events": [float(len(seq.events)) for seq, has in observed if has == has_outcome],
+            # duration and complexity are only defined for sequences that have events
+            "duration": [float(seq.duration) for seq, has in observed if has == has_outcome and seq.events],
+            "complexity": [
+                len({event.event_type for event in seq.events}) / len(seq.events)
+                for seq, has in observed
+                if has == has_outcome and seq.events
+            ],
+        }
+        return values[feature]
+
+    analysis["trajectory_comparison"] = {
+        feature: _compare_feature(feature_values(True, feature), feature_values(False, feature))
+        for feature in ("n_events", "duration", "complexity")
+    }
+    analysis["event_type_association"] = _event_type_associations(
+        [({event.event_type for event in seq.events}, has_outcome) for seq, has_outcome in observed]
+    )
+    return analysis
+
+
 def analyze_life_course(sequences: List[EventSequence], outcomes: List[str] | None = None) -> Dict[str, Any]:
     """Comprehensive analysis of life course trajectories.
 
     Args:
         sequences: List of event sequences to analyze
-        outcomes: Optional list of outcome measures to analyze
+        outcomes: Optional list of outcome names to analyze. A person's outcomes are recorded in
+            ``sequence.metadata["outcomes"]`` as a collection of the outcome names that person experienced
+            (an empty collection means none). A sequence without that entry has an unknown status and is
+            left out of the analysis of every outcome, never counted as negative.
 
     Returns:
-        Dictionary containing comprehensive life course analysis
+        Dictionary containing comprehensive life course analysis: ``n_sequences``, ``n_sequences_with_events``,
+        ``mean_duration`` (mean over the sequences that have events, in timestamp units), ``duration_stats``,
+        ``event_frequency``, ``complexity_stats`` and ``trajectory_patterns``. When no sequence has any events
+        there is nothing to summarise: ``mean_duration``, ``duration_stats`` and ``complexity_stats`` are None
+        and ``event_frequency`` is empty (``{"error": ...}`` is returned for an empty list of sequences).
+        With ``outcomes`` it also holds ``outcome_analysis``, one entry per requested outcome:
+
+        - ``status``: ``"ok"``, or ``"no_outcome_data"`` when no sequence records its outcomes (then
+          ``prevalence`` is None and nothing else is computed)
+        - ``n_sequences``, ``n_with_outcome_data``, ``n_missing_outcome_data``, ``n_with_outcome`` and
+          ``n_without_outcome``: the counts behind the analysis (the last two among sequences with data)
+        - ``prevalence``: ``n_with_outcome / n_with_outcome_data``
+        - ``trajectory_comparison``: for ``n_events``, ``duration`` (in timestamp units) and ``complexity``
+          (distinct event types / events), the mean among sequences with and without the outcome, their
+          difference and the two-sided Mann-Whitney U p-value; empty unless both groups exist, and a
+          feature is None when a group has no sequence that defines it (duration and complexity need events)
+        - ``event_type_association``: for every event type, how many sequences have it, how many of those
+          have the outcome, the sample odds ratio (None when a zero cell makes it infinite or undefined) and
+          the two-sided Fisher exact p-value of the 2x2 table (event type present or not, outcome or not),
+          ordered by p-value. The p-values are not adjusted for the number of event types tested.
+
+    Raises:
+        errors.ValidationError: If a sequence's ``metadata["outcomes"]`` is not a collection of names
     """
     if not sequences:
         return {"error": "No sequences provided"}
 
+    # Only sequences with events have a duration, a complexity or event frequencies; with none there is nothing
+    # to summarise, and the summaries below say so explicitly (None / empty) instead of being left out.
+    durations = [seq.duration for seq in sequences if seq.events]
     results: Dict[str, Any] = {
         "n_sequences": len(sequences),
-        "analysis_timestamp": statistics.mean([seq.duration for seq in sequences if seq.events]) if sequences else 0,
+        "n_sequences_with_events": len(durations),
+        "mean_duration": statistics.mean(durations) if durations else None,
         "components": {},
+        "duration_stats": None,
+        "event_frequency": {},
+        "complexity_stats": None,
     }
 
     # Basic statistics
-    durations = [seq.duration for seq in sequences if seq.events]
     if durations:
         results["duration_stats"] = {
             "mean": statistics.mean(durations),
@@ -815,16 +963,12 @@ def analyze_life_course(sequences: List[EventSequence], outcomes: List[str] | No
             "max": max(complexities),
         }
 
-    # Outcome analysis (placeholder)
+    # Outcome analysis: prevalence and trajectory associations among sequences with recorded outcomes
     if outcomes:
-        results["outcome_analysis"] = {}
-        for outcome in outcomes:
-            # This would integrate with predictive models
-            results["outcome_analysis"][outcome] = {
-                "n_with_outcome": sum(1 for seq in sequences if outcome in seq.metadata.get("outcomes", [])),
-                "prevalence": sum(1 for seq in sequences if outcome in seq.metadata.get("outcomes", []))
-                / len(sequences),
-            }
+        recorded_outcomes = [_recorded_outcomes(seq) for seq in sequences]
+        results["outcome_analysis"] = {
+            outcome: _analyze_outcome(sequences, recorded_outcomes, outcome) for outcome in outcomes
+        }
 
     # Trajectory patterns
     results["trajectory_patterns"] = identify_trajectory_patterns(sequences)

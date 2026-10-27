@@ -12,7 +12,7 @@ Repo-wide policy: see the repository-root `AGENTS.md`.
 |--------|-----------|
 | `credible_sets.py` | `compute_credible_set()`, `compute_log_bayes_factors()`, `compute_bayes_factors()`, `log_sum_exp()`, `susie_regression()`, `colocalization()`, `colocalization_from_log_bayes_factors()`, `conditional_analysis()`, `annotate_credible_set()` |
 | `colocalization.py` | `multi_trait_coloc()`, `eqtl_coloc()`, `compute_clpp()`, `regional_coloc()` |
-| `eqtl.py` | `cis_eqtl_scan()`, `trans_eqtl_scan()`, `conditional_eqtl()`, `eqtl_effect_sizes()`, `eqtl_summary_stats()`, `load_transcriptome_variants()` |
+| `eqtl.py` | `cis_eqtl_scan()`, `trans_eqtl_scan()`, `conditional_eqtl()`, `eqtl_effect_sizes()`, `eqtl_summary_stats()`, `write_eqtl_results()`, `load_transcriptome_variants()` |
 
 The package `__init__.py` exports the three modules, not their functions. `metainformant.gwas` re-exports `eqtl_coloc`, `multi_trait_coloc`, `compute_clpp`, `regional_coloc`, `cis_eqtl_scan`, `trans_eqtl_scan`, `conditional_eqtl`, `eqtl_effect_sizes` and `eqtl_summary_stats`; its `compute_credible_set` is the association-result wrapper in `visualization/interactive/finemapping.py`, not `credible_sets.compute_credible_set`.
 
@@ -24,7 +24,9 @@ The package `__init__.py` exports the three modules, not their functions. `metai
 - A function that computes Bayes factors from Z-scores accepts the same scale arguments and reports the `variance_model` and `prior_variance` it used (`variance_model` and `prior_variance` from `compute_credible_set()`, `bayes_factor_model` from `colocalization()`).
 - `colocalization_from_log_bayes_factors()` takes per-variant log Bayes factors from any source; `colocalization()` computes them from Z-scores first. The `i != j` sum behind `H3` is built from leave-one-out log sums, not from `sum(BF1) * sum(BF2) - sum(BF1 * BF2)`, which cancels catastrophically when one variant dominates both traits.
 - Dict-returning functions report invalid input as `{"status": "error", "message": ...}`. `compute_log_bayes_factors()` and `compute_bayes_factors()` raise `ValueError`.
-- `multi_trait_coloc()` and `regional_coloc()` take per-trait scale inputs as mappings keyed by trait name, and a trait in no mapping is scored on the z-score scale. `multi_trait_coloc()` returns an error for a key that is not a trait of `z_scores`. `regional_coloc()` slices per-variant inputs with each window and returns an error when one does not hold one value per variant of the region.
+- `multi_trait_coloc()` and `regional_coloc()` take per-trait scale inputs as mappings keyed by trait name, and a trait in no mapping is scored on the z-score scale. `multi_trait_coloc()` returns an error for a key that is not a trait of `z_scores`. `regional_coloc()` slices per-variant inputs with each window and returns an error when one does not hold one value per variant of the region. It chooses `best_window` among the windows that succeeded, reports `n_failed_windows`, and returns `status: "error"` with a `message` and no `best_window` when every window fails.
+- The `ld_matrix` of `compute_credible_set()` holds LD correlations r (signed, ones on the diagonal), not r-squared; the adjustment squares it.
+- eQTL scans: `cis_eqtl_scan()` raises `ValueError` for an id that repeats in `gene_positions`, `variant_positions` or the genotype index. A fit that cannot be made has NaN `beta`, `se` and `pvalue` (and NaN `r_squared` in `eqtl_effect_sizes()`), `status` and `error` in `cis_eqtl_scan()`, `conditional_eqtl()` and `eqtl_effect_sizes()`; a zero standard error counts as a failure. `eqtl_summary_stats()` counts only tests with a p-value in `n_tests` and reports `n_tests_failed`. `write_eqtl_results()` writes `NA` for every missing value; do not write a NaN as a number or an empty field.
 
 ## Tests
 

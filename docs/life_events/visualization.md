@@ -77,7 +77,7 @@ fig = plot_event_embeddings(
 | `plot_temporal_density` | `(sequences, output_path)` | KDE of event occurrence over time |
 | `plot_temporal_patterns` | `(sequences, importance_scores, output_path)` | Temporal patterns with importance overlay |
 | `plot_event_cooccurrence` | `(sequences, output_path)` | Co-occurrence matrix |
-| `plot_transition_network` | `(sequences, output_path, min_transitions)` | Directed event-to-event transition graph |
+| `plot_transition_network` | `(sequences, output_path, top_n, figsize)` | Directed event-to-event transition graph of the `top_n` (default 10) most frequent transitions |
 
 ### Comparison
 
@@ -106,7 +106,7 @@ plot_event_timeline(seq, "output/timeline.png", show_domains=True)
 # Cohort-level plots
 plot_domain_distribution(sequences, "output/domains.png")
 plot_event_frequency_heatmap(sequences, "output/freq_heatmap.png")
-plot_transition_network(sequences, "output/network.png", min_transitions=2)
+plot_transition_network(sequences, "output/network.png", top_n=15)
 plot_temporal_density(sequences, "output/density.png")
 ```
 

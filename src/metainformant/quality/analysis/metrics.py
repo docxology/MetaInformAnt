@@ -579,27 +579,37 @@ def batch_quality_analysis(
 ) -> Dict[str, Any]:
     """Perform quality analysis on multiple FASTQ files.
 
-    Only ``data_type="fastq"`` performs per-file analysis; other data
-    types are scored against empty quality data and yield no components.
+    Only ``data_type="fastq"`` is supported: it is the only type this package has a per-file analyzer for.
+    Any other type raises before a file is touched, instead of scoring empty quality data and reporting every
+    file as a successful analysis with a score of 0.
 
     Args:
         file_paths: List of file paths to analyze
-        data_type: Type of biological data
+        data_type: Type of biological data; must be ``"fastq"``
         n_reads: Number of reads to sample per file
 
     Returns:
         Dictionary with batch analysis results
+
+    Raises:
+        NotImplementedError: If ``data_type`` is ``"vcf"`` or ``"bam"``, which
+            :func:`calculate_quality_score` can score but this function cannot analyze files for
+        ValueError: If ``data_type`` is not a data type at all
     """
+    if data_type in ("vcf", "bam"):
+        raise NotImplementedError(
+            f"batch_quality_analysis analyzes FASTQ files only: there is no per-file analyzer for "
+            f"data_type={data_type!r}. Score precomputed {data_type} metrics with calculate_quality_score instead."
+        )
+    if data_type != "fastq":
+        raise ValueError(f"Unsupported data type: {data_type}")
+
     results: Dict[str, Dict[str, Any]] = {}
 
     for file_path in file_paths:
         try:
             logger.info(f"Analyzing {file_path}")
-            if data_type == "fastq":
-                quality_data = analyze_fastq_quality(file_path, n_reads)
-            else:
-                # Placeholder for other data types
-                quality_data = {}
+            quality_data = analyze_fastq_quality(file_path, n_reads)
 
             quality_score = calculate_quality_score(quality_data, data_type)
 

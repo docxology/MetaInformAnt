@@ -469,11 +469,16 @@ def regional_coloc(
 
     Returns:
         Dictionary with keys:
-            - status: "success" or "error"
-            - best_window: Coloc result for the best sub-window
-            - all_windows: List of per-window coloc results
+            - status: "success", or "error" when the input is invalid or no
+              window could be analysed (every window returned an error)
+            - best_window: Coloc result for the best sub-window, chosen among
+              the windows that succeeded (absent on error)
+            - all_windows: List of per-window coloc results, including any
+              window that failed, which carries its own ``status`` and ``message``
             - n_windows: Number of windows tested
+            - n_failed_windows: Number of windows whose analysis returned an error
             - region: The input region specification
+            - message: Why the analysis failed (only when ``status`` is "error")
     """
     if not z_scores_dict:
         return {"status": "error", "message": "No Z-scores provided"}
@@ -572,13 +577,34 @@ def regional_coloc(
 
         all_window_results.append(window_result)
 
-    # Select best window by highest multi-trait PP(shared)
-    best_window = None
-    best_pp = -1.0
-    for wr in all_window_results:
-        pp = wr.get("multi_trait_pp_shared", 0.0)
-        if pp > best_pp:
-            best_pp = pp
+    # A window that errored has no PP(shared): it can neither be the best window nor count as a result.
+    # Its own ``status``/``message`` stay in ``all_windows``.
+    region_summary = {
+        "chrom": chrom,
+        "start": start,
+        "end": end,
+        "n_variants": n_variants,
+    }
+    successful_windows = [wr for wr in all_window_results if wr.get("status") == "success"]
+    n_failed_windows = len(all_window_results) - len(successful_windows)
+
+    if not successful_windows:
+        reasons = list(
+            dict.fromkeys(str(wr.get("message", "unknown error")) for wr in all_window_results)  # distinct, in order
+        )
+        return {
+            "status": "error",
+            "message": f"Colocalization failed in all {len(all_window_results)} windows: " + "; ".join(reasons),
+            "all_windows": all_window_results,
+            "n_windows": len(all_window_results),
+            "n_failed_windows": n_failed_windows,
+            "region": region_summary,
+        }
+
+    # Select best window by highest multi-trait PP(shared); the earliest window wins a tie
+    best_window = successful_windows[0]
+    for wr in successful_windows[1:]:
+        if wr["multi_trait_pp_shared"] > best_window["multi_trait_pp_shared"]:
             best_window = wr
 
     return {
@@ -586,12 +612,8 @@ def regional_coloc(
         "best_window": best_window,
         "all_windows": all_window_results,
         "n_windows": len(all_window_results),
-        "region": {
-            "chrom": chrom,
-            "start": start,
-            "end": end,
-            "n_variants": n_variants,
-        },
+        "n_failed_windows": n_failed_windows,
+        "region": region_summary,
     }
 
 

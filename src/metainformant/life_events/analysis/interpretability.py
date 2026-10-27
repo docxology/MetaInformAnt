@@ -7,6 +7,7 @@ including feature attribution, attention weights, and temporal pattern analysis.
 from __future__ import annotations
 
 import math
+import warnings
 from types import SimpleNamespace
 from typing import Any, Dict, List, Optional
 
@@ -543,9 +544,11 @@ def shapley_values(
     Args:
         predictor: Fitted model with ``predict(list_of_sequences)``, called on lists of event tokens
         sequence: The sequence to explain: an EventSequence or a list of event tokens
-        background_sequences: Not used. Absent events are removed rather than replaced by values
-            drawn from a background dataset, so no background distribution enters the value
-            function. Kept for interface compatibility.
+        background_sequences: Deprecated and ignored. Absent events are removed rather than replaced
+            by values drawn from a background dataset, so no background distribution enters the value
+            function; a background has no canonical meaning for sequences of different lengths. A
+            non-empty value emits a ``DeprecationWarning``. The argument is kept only so existing
+            positional calls keep working and will be removed.
         n_samples: Number of random permutations when the sequence has more than
             ``max_exact_events`` events
         random_state: Seed for the permutation sampling
@@ -567,15 +570,19 @@ def shapley_values(
         raise ValueError("Predictor must be fitted before computing Shapley values")
     if not callable(getattr(predictor, "predict", None)):
         raise TypeError("predictor must provide a predict() method")
+    if background_sequences:
+        warnings.warn(
+            "shapley_values ignores background_sequences: absent events are removed from the sequence, not "
+            "replaced by background values. The argument is deprecated and will be removed; stop passing it.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
     items = list(sequence.events) if hasattr(sequence, "events") else list(sequence)
     tokens = _sequence_to_tokens(SimpleNamespace(events=items) if items and hasattr(items[0], "event_type") else items)
     n_events = len(tokens)
     if n_events == 0:
         return {}
-
-    if background_sequences:
-        logger.debug("shapley_values does not use background_sequences")
 
     if n_events <= max_exact_events:
         logger.info(f"Computing exact Shapley values for {n_events} events")
