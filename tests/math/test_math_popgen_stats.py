@@ -154,9 +154,10 @@ def test_equilibrium_heterozygosity_infinite_alleles():
 
 
 def test_bottleneck_effective_size_known_value():
-    # Ne = 1 / (1/Ni + d/Nb + 1/Nf)
-    expected = 1.0 / (1.0 / 10000.0 + 10.0 / 100.0 + 1.0 / 10000.0)
+    # Harmonic mean over d + 2 generations: Ne = (d + 2) / (1/Ni + d/Nb + 1/Nf)
+    expected = 12.0 / (1.0 / 10000.0 + 10.0 / 100.0 + 1.0 / 10000.0)
     assert bottleneck_effective_size(10000, 100, 10, 10000) == pytest.approx(expected)
+    assert bottleneck_effective_size(500, 500, 3, 500) == pytest.approx(500.0)
 
 
 def test_variance_standard_deviation_skewness_kurtosis_edges():

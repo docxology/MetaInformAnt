@@ -133,11 +133,19 @@ def generate_two_populations(
     f_st: float | None = None,
     fst: float | None = None,
     theta: float = 0.01,
-    n_sites: int = 1000,
+    n_sites: int | None = None,
     rng: random.Random | None = None,
     sequence_length: int | None = None,
 ) -> Tuple[List[str], List[str]]:
-    """Generate two populations with specified differentiation (F_ST).
+    """Generate two populations differentiated by F_ST under the Balding-Nichols model.
+
+    Each polymorphic site gets an ancestral derived-allele frequency p drawn
+    uniformly from [0.05, 0.95]. Each population then has frequency
+    p_k ~ Beta(p(1 - F)/F, (1 - p)(1 - F)/F), so E[p_k] = p and
+    Var(p_k) = F p(1 - p), which makes Hudson's F_ST equal F in expectation.
+    Every sequence carries the derived allele at each site independently with
+    its population's frequency. F = 0 gives identical frequencies and F = 1
+    fixes each population for one allele.
 
     Args:
         n_pop1: Size of population 1
@@ -145,8 +153,10 @@ def generate_two_populations(
         length: Sequence length
         f_st: Desired F_ST value (0-1)
         fst: Alias for f_st (lowercase)
-        theta: Population mutation parameter
-        n_sites: Number of polymorphic sites
+        theta: Per-site population mutation rate; sets the default ``n_sites``
+        n_sites: Number of polymorphic sites, at most ``length``. Defaults to
+            Watterson's expectation ``theta * length * a_n`` for the
+            ``n_pop1 + n_pop2`` sequences (at least 1).
         rng: Random number generator for reproducibility
         sequence_length: Alias for length
 
@@ -171,36 +181,31 @@ def generate_two_populations(
     validation.validate_range(length, min_val=1, name="length")
     validation.validate_range(f_st, min_val=0.0, max_val=1.0, name="f_st")
     validation.validate_range(theta, min_val=0.0, name="theta")
+    if n_sites is None:
+        a_n = sum(1.0 / i for i in range(1, n_pop1 + n_pop2))
+        n_sites = max(1, round(theta * length * a_n))
     validation.validate_range(n_sites, min_val=1, name="n_sites")
 
     rng = coerce_and_seed(rng)
 
-    # Generate ancestral population
-    ancestral_pop = generate_population_sequences(max(n_pop1, n_pop2), length, theta=theta, n_sites=n_sites, rng=rng)
+    ancestral = [rng.choice("ACGT") for _ in range(length)]
+    populations = [[list(ancestral) for _ in range(n_pop1)], [list(ancestral) for _ in range(n_pop2)]]
+    for position in sorted(rng.sample(range(length), min(n_sites, length))):
+        derived = rng.choice([base for base in "ACGT" if base != ancestral[position]])
+        p = rng.uniform(0.05, 0.95)
+        for population in populations:
+            if f_st == 0:
+                frequency = p
+            elif f_st == 1:
+                frequency = 1.0 if rng.random() < p else 0.0
+            else:
+                frequency = rng.betavariate(p * (1 - f_st) / f_st, (1 - p) * (1 - f_st) / f_st)
+            for sequence in population:
+                if rng.random() < frequency:
+                    sequence[position] = derived
 
-    # Split into two populations
-    pop1_indices = rng.sample(range(len(ancestral_pop)), n_pop1)
-    pop2_indices = rng.sample(range(len(ancestral_pop)), n_pop2)
-
-    pop1 = [ancestral_pop[i] for i in pop1_indices]
-    pop2 = [ancestral_pop[i] for i in pop2_indices]
-
-    # Apply additional differentiation to achieve target F_ST
-    if f_st > 0:
-        # Add population-specific mutations
-        n_diff_sites = int(f_st * n_sites)
-        diff_positions = rng.sample(range(length), n_diff_sites)
-
-        for pos in diff_positions:
-            # Mutate some individuals in pop2
-            for i in range(len(pop2)):
-                if rng.random() < 0.5:  # 50% chance to mutate
-                    seq_list = list(pop2[i])
-                    current_base = seq_list[pos]
-                    possible_mutations = [b for b in "ATCG" if b != current_base]
-                    seq_list[pos] = rng.choice(possible_mutations)
-                    pop2[i] = "".join(seq_list)
-
+    pop1 = ["".join(sequence) for sequence in populations[0]]
+    pop2 = ["".join(sequence) for sequence in populations[1]]
     return pop1, pop2
 
 

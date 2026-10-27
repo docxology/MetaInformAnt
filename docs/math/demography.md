@@ -10,88 +10,86 @@ Demographic history (population size changes) affects genetic diversity and the 
 
 ## Functions
 
-### `exponential_growth_effective_size(current_size, growth_rate, generations)`
+### `exponential_growth_effective_size(initial_size, growth_rate, generations)`
 
-Calculate effective population size under exponential growth.
+Calculate effective population size under exponential growth or decline.
 
 **Parameters**:
-- `current_size`: Current population size (N_t)
-- `growth_rate`: Per-generation growth rate (r). Positive for growth, negative for decline
-- `generations`: Number of generations over which to calculate harmonic mean
+- `initial_size`: Population size at generation 0 (N₀)
+- `growth_rate`: Per-generation growth rate (r > −1). Positive for growth, negative for decline
+- `generations`: Number of generations (t)
 
-**Returns**: Effective population size (harmonic mean)
+**Returns**: Effective population size, the harmonic mean of the census sizes over generations 0..t−1
 
-**Formula**: Under exponential growth N(t) = N₀ × e^(r×t), the effective size is the harmonic mean: Ne = t / Σ(1/N_i)
+**Formula**: The census size follows `exponential_growth_model`, Nᵢ = N₀ (1 + r)ⁱ, and Ne = t / Σᵢ 1/Nᵢ (Wright 1938).
 
 **Example**:
-```python-snippet
-from metainformant.math.demography import exponential_growth_effective_size
+```python
+from metainformant.math.population_genetics.demography import exponential_growth_effective_size
 
-# Population growing from ~1000 to 10000 over 10 generations
-ne = exponential_growth_effective_size(
-    current_size=10000,
-    growth_rate=0.23,  # ~23% per generation
-    generations=10
-)
-# Returns: ~4342 (harmonic mean of sizes over time)
+# Population growing from 1000 by 23% per generation for 10 generations (to ~6400)
+ne = exponential_growth_effective_size(initial_size=1000, growth_rate=0.23, generations=10)
+# Returns: ~2140, weighted toward the early, small generations
 ```
 
-### `bottleneck_effective_size(pre_bottleneck_size, bottleneck_size, bottleneck_duration, recovery_generations=0)`
+### `bottleneck_effective_size(pre_bottleneck_size, bottleneck_size, post_bottleneck_size, recovery_generations=0)`
 
 Calculate effective population size through a bottleneck.
 
 **Parameters**:
 - `pre_bottleneck_size`: Population size before bottleneck
 - `bottleneck_size`: Population size during bottleneck
-- `bottleneck_duration`: Number of generations at bottleneck size
-- `recovery_generations`: Number of generations after bottleneck (default: 0)
+- `post_bottleneck_size`: Population size after bottleneck
+- `recovery_generations`: Number of generations of recovery after bottleneck (default: 0)
 
-**Returns**: Effective population size (harmonic mean)
+**Returns**: Effective population size, the harmonic mean over one generation at each of the three sizes plus `recovery_generations` further generations at the post-bottleneck size: Ne = (3 + k) / (1/N_pre + 1/N_bottleneck + (1 + k)/N_post)
 
 **Example**:
-```python-snippet
-from metainformant.math.demography import bottleneck_effective_size
+```python
+from metainformant.math.population_genetics.demography import bottleneck_effective_size
 
-# Severe bottleneck: 10000 → 100 for 5 generations
+# Severe bottleneck: 10000 → 100 → 10000
 ne = bottleneck_effective_size(
     pre_bottleneck_size=10000,
     bottleneck_size=100,
-    bottleneck_duration=5
+    post_bottleneck_size=10000
 )
-# Returns: ~109 (heavily weighted by bottleneck)
+# Returns: ~294 (the bottleneck generation dominates)
 
-# With recovery to original size over 10 generations
+# With 10 further generations at the recovered size
 ne_recovery = bottleneck_effective_size(
     pre_bottleneck_size=10000,
     bottleneck_size=100,
-    bottleneck_duration=5,
+    post_bottleneck_size=10000,
     recovery_generations=10
 )
-# Returns: ~200 (recovery improves effective size)
+# Returns: ~1161
 ```
 
-### `two_epoch_effective_size(ancient_size, current_size, time_since_change)`
+`math.population_genetics.statistics.bottleneck_effective_size(initial_size, bottleneck_size, bottleneck_duration, final_size)` is the same harmonic mean for a bottleneck lasting `bottleneck_duration` generations between one generation at each of the other sizes.
 
-Calculate effective population size for two-epoch model.
+### `two_epoch_effective_size(ancient_size, recent_size, split_time)`
+
+Calculate the coalescent effective size of a population whose size changed once.
 
 **Parameters**:
-- `ancient_size`: Population size before change
-- `current_size`: Population size after change
-- `time_since_change`: Number of generations since size change
+- `ancient_size`: Population size before the change
+- `recent_size`: Population size since the change
+- `split_time`: Generations since the size changed (T)
 
-**Returns**: Effective population size (harmonic mean)
+**Returns**: The constant population size with the same expected pairwise coalescence time, and hence the same expected nucleotide diversity. For a diploid population Ne = N_recent + (N_ancient − N_recent) e^(−T / 2N_recent).
 
 **Example**:
-```python-snippet
-from metainformant.math.demography import two_epoch_effective_size
+```python
+from metainformant.math.population_genetics.demography import two_epoch_effective_size
 
 # Population expansion: 1000 → 10000, 50 generations ago
-ne = two_epoch_effective_size(
-    ancient_size=1000,
-    current_size=10000,
-    time_since_change=50
-)
-# Returns: ~1960 (harmonic mean of 1000 and 10000)
+ne = two_epoch_effective_size(ancient_size=1000, recent_size=10000, split_time=50)
+# Returns: ~1022 (diversity has barely begun to rise)
+
+# The reverse contraction is not symmetric
+ne = two_epoch_effective_size(ancient_size=10000, recent_size=1000, split_time=50)
+# Returns: ~9778 (diversity has barely begun to fall)
 ```
 
 ## Use Cases
@@ -101,7 +99,7 @@ ne = two_epoch_effective_size(
 Effective population size affects genetic diversity:
 
 ```python-snippet
-from metainformant.math.demography import exponential_growth_effective_size
+from metainformant.math.population_genetics.demography import exponential_growth_effective_size
 from metainformant.dna.population import nucleotide_diversity
 
 # Calculate diversity
@@ -110,7 +108,7 @@ pi = nucleotide_diversity(sequences)
 
 # Estimate effective size from growth model
 ne = exponential_growth_effective_size(
-    current_size=10000,
+    initial_size=10000,
     growth_rate=0.1,
     generations=100
 )
@@ -124,7 +122,7 @@ ne = exponential_growth_effective_size(
 Combine multiple demographic events:
 
 ```python-snippet
-from metainformant.math.demography import (
+from metainformant.math.population_genetics.demography import (
     bottleneck_effective_size,
     exponential_growth_effective_size,
 )
@@ -134,13 +132,13 @@ from metainformant.math.demography import (
 ne_bottleneck = bottleneck_effective_size(
     pre_bottleneck_size=10000,
     bottleneck_size=100,
-    bottleneck_duration=5,
+    post_bottleneck_size=10000,
     recovery_generations=10
 )
 
 # Step 2: Growth after recovery
 ne_growth = exponential_growth_effective_size(
-    current_size=10000,
+    initial_size=10000,
     growth_rate=0.05,
     generations=50
 )
@@ -153,7 +151,7 @@ ne_growth = exponential_growth_effective_size(
 Compare different demographic scenarios:
 
 ```python-snippet
-from metainformant.math.demography import (
+from metainformant.math.population_genetics.demography import (
     exponential_growth_effective_size,
     two_epoch_effective_size,
 )
@@ -173,17 +171,19 @@ print(f"Two-epoch Ne: {ne_epoch:.2f}")
 
 ### Harmonic Mean
 
-Effective population size under changing population size is the harmonic mean:
+Over t generations of changing census size, the effective population size is the harmonic mean (Wright 1938):
 
 Ne = t / (1/N₁ + 1/N₂ + ... + 1/Nₜ)
 
-This reflects that coalescence rates are inversely proportional to population size, so periods of small population size dominate the effective size.
+Drift is strongest when the population is small, so small generations dominate the effective size.
 
 ### Exponential Growth
 
-Under exponential growth: N(t) = N₀ × e^(r×t)
+Under discrete exponential growth Nᵢ = N₀ (1 + r)ⁱ, the effective size lies between the initial and current sizes and below their arithmetic mean, because the harmonic mean is weighted by the smaller early sizes.
 
-The effective size is less than the current size because the harmonic mean is weighted by the smaller historical sizes.
+### Two Epochs
+
+Going back in time, two lineages coalesce at rate 1/(2N) per generation. With rate 1/(2N_recent) for the T generations since a size change and 1/(2N_ancient) before it, the expected coalescence time is 2[N_recent + (N_ancient − N_recent) e^(−T / 2N_recent)], twice the effective size `two_epoch_effective_size` reports.
 
 ### Bottlenecks
 
@@ -207,7 +207,7 @@ Bottlenecks dramatically reduce effective population size because:
 ### With Coalescent Theory
 
 ```python-snippet
-from metainformant.math.demography import exponential_growth_effective_size
+from metainformant.math.population_genetics.demography import exponential_growth_effective_size
 from metainformant.math.population_genetics.coalescent import expected_segregating_sites
 
 # Calculate expected diversity under demographic model
@@ -223,20 +223,19 @@ S_expected = expected_segregating_sites(
 ### With Effective Size Estimators
 
 ```python-snippet
-from metainformant.math.demography import bottleneck_effective_size
-from metainformant.math.popgen import effective_population_size_from_heterozygosity
+from metainformant.math.population_genetics.demography import bottleneck_effective_size
+from metainformant.math.population_genetics.effective_size import effective_population_size_from_heterozygosity
 
 # Estimate Ne from observed heterozygosity
 observed_H = 0.3
 mutation_rate = 0.0001
 ne_estimated = effective_population_size_from_heterozygosity(
-    observed_heterozygosity=observed_H,
-    mutation_rate=mutation_rate,
-    ploidy=2
+    heterozygosity=observed_H,
+    mutation_rate=mutation_rate
 )
 
 # Compare to demographic model
-ne_model = bottleneck_effective_size(10000, 100, 5)
+ne_model = bottleneck_effective_size(10000, 100, 10000)
 ```
 
 ## References

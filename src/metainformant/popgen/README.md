@@ -42,8 +42,8 @@ graph TD
 ```python
 from metainformant.popgen import summarize_scenario, compare_two_population_sequences
 
-suite = summarize_scenario(["ATCG", "ATCG", "GCTA"], label="demo")
-print(suite["neutrality_tests"]["tajimas_d"])
+suite = summarize_scenario(["AAAA", "AAAA", "AACT", "AAAT"], label="demo")
+print(suite["neutrality_tests"]["tajima_d"])
 ```
 
 ```bash

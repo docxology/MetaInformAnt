@@ -180,21 +180,31 @@ def fixation_probability(
 def bottleneck_effective_size(
     initial_size: int, bottleneck_size: int, bottleneck_duration: int, final_size: int
 ) -> float:
-    """Calculate effective population size after bottleneck.
+    """Calculate effective population size across a bottleneck.
+
+    Ne is the harmonic mean of the census sizes (Wright 1938) over one generation
+    at the initial size, ``bottleneck_duration`` generations at the bottleneck
+    size and one generation at the final size:
+    Ne = (d + 2) / (1/N_initial + d/N_bottleneck + 1/N_final).
 
     Args:
         initial_size: Initial population size
         bottleneck_size: Population size during bottleneck
-        bottleneck_duration: Duration of bottleneck in generations
+        bottleneck_duration: Duration of bottleneck in generations (d)
         final_size: Final population size
 
     Returns:
         Effective population size
+
+    Raises:
+        ValueError: If a size is not positive or the duration is negative
     """
-    # Simplified approximation
-    # Ne = 1 / (1/N_initial + 1/N_bottleneck * duration + 1/N_final)
-    Ne = 1.0 / (1.0 / initial_size + bottleneck_duration * 1.0 / bottleneck_size + 1.0 / final_size)
-    return Ne
+    if min(initial_size, bottleneck_size, final_size) <= 0:
+        raise ValueError("Population sizes must be positive")
+    if bottleneck_duration < 0:
+        raise ValueError("Bottleneck duration cannot be negative")
+    generations = bottleneck_duration + 2
+    return generations / (1.0 / initial_size + bottleneck_duration / bottleneck_size + 1.0 / final_size)
 
 
 def effective_size_from_family_size_variance(family_sizes: List[int] | float, Vk: float | None = None) -> float:
@@ -436,7 +446,7 @@ def compare_statistics(stats1: Any, stats2: Any, test_type: str = "ttest") -> Di
             else:
                 test_stat, p_value = scipy_stats.ttest_ind(a, b, equal_var=False)
         except Exception:
-            test_stat, p_value = statistic, 1.0
+            test_stat, p_value = np.float64(statistic), np.float64(1.0)
         return {"test_statistic": float(test_stat), "p_value": float(p_value), "test_type": test_type}
 
     results = {}

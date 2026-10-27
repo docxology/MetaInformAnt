@@ -15,7 +15,7 @@ thetaW = coal.watterson_theta(42, 10)
 Es = coal.expected_segregating_sites(theta=0.01, sample_size=10)
 
 const = coal.tajima_constants(10)
-D = coal.tajimas_D(num_segregating_sites=42, pairwise_diversity=pi, sample_size=10)
+D = coal.tajimas_D(k, 42, 10)  # k: mean pairwise differences per sequence, 42 segregating sites, n = 10
 
 sfs = coal.expected_sfs_counts(sample_size=10, theta=0.01)
 Tk = coal.expected_coalescent_waiting_times(10, 1e5)
@@ -36,7 +36,7 @@ Functions
 - expected_segregating_sites(n, θ, sequence_length=None): E[S] = a1 θ (or ×L)
 - expected_sfs_counts(n, θ, sequence_length=None): E[X_i] = θ/i (or θL/i)
 - tajima_constants(n): a1,a2,b1,b2,c1,c2,e1,e2
-- tajimas_D(S, π, n): standard normalized D returning 0 when undefined
+- tajimas_D(π, S, n): standard normalized D returning 0 when undefined; π is the mean number of pairwise differences per sequence, not per site
 
 Examples
 

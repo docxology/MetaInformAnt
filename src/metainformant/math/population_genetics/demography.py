@@ -6,6 +6,7 @@ age structure dynamics, and demographic processes.
 
 from __future__ import annotations
 
+import math
 from typing import Any, Dict, List, Sequence
 
 from metainformant.core.utils import logging
@@ -148,91 +149,103 @@ def age_structure_model(
     return results
 
 
+def _harmonic_mean_size(sizes: Sequence[float]) -> float:
+    """Wright's (1938) effective size of a population whose census size varies by generation."""
+    return len(sizes) / math.fsum(1.0 / size for size in sizes)
+
+
 def bottleneck_effective_size(
     pre_bottleneck_size: float, bottleneck_size: float, post_bottleneck_size: float, recovery_generations: int = 0
 ) -> float:
-    """Calculate effective population size after a bottleneck.
+    """Calculate the effective population size across a one-generation bottleneck.
+
+    Ne is the harmonic mean of the census sizes (Wright 1938) over one generation
+    at each of the three sizes plus ``recovery_generations`` further generations
+    at the post-bottleneck size:
+    Ne = (3 + k) / (1/N_pre + 1/N_bottleneck + (1 + k)/N_post).
 
     Args:
-        pre_bottleneck_size: Population size before bottleneck
-        bottleneck_size: Population size during bottleneck
-        post_bottleneck_size: Population size after bottleneck
-        recovery_generations: Generations of recovery (optional)
+        pre_bottleneck_size: Population size before the bottleneck
+        bottleneck_size: Population size during the bottleneck generation
+        post_bottleneck_size: Population size after the bottleneck
+        recovery_generations: Additional generations spent at the post-bottleneck size
 
     Returns:
         Effective population size
+
+    Raises:
+        ValueError: If a size is not positive or ``recovery_generations`` is negative
     """
-    if pre_bottleneck_size <= 0 or bottleneck_size <= 0:
-        raise ValueError("Pre-bottleneck and bottleneck sizes must be positive")
-    if post_bottleneck_size < 0:
-        raise ValueError("Post-bottleneck size cannot be negative")
+    if min(pre_bottleneck_size, bottleneck_size, post_bottleneck_size) <= 0:
+        raise ValueError("Population sizes must be positive")
+    if recovery_generations < 0:
+        raise ValueError("Recovery generations cannot be negative")
 
-    # Special case: if post_bottleneck_size is 0, it might mean no recovery
-    if post_bottleneck_size == 0:
-        return pre_bottleneck_size
-
-    base_ne = (bottleneck_size * 3 + pre_bottleneck_size * 0.1 + post_bottleneck_size * 0.1) / 3.2
-
-    # If recovery generations specified, increase effective size
-    if recovery_generations > 0:
-        recovery_factor = min(recovery_generations / 10.0, 1.0)  # Cap at 10 generations
-        base_ne *= 1 + recovery_factor * 0.5  # Increase by up to 50%
-
-    return base_ne
+    return _harmonic_mean_size(
+        [pre_bottleneck_size, bottleneck_size] + [post_bottleneck_size] * (1 + recovery_generations)
+    )
 
 
 def exponential_growth_effective_size(initial_size: float, growth_rate: float, generations: int) -> float:
-    """Calculate effective population size during exponential growth.
+    """Calculate the effective size of an exponentially growing or declining population.
+
+    The census size follows :func:`exponential_growth_model`, N_i = N_0 (1 + r)^i,
+    and Ne over generations 0..t-1 is the harmonic mean of those sizes
+    (Wright 1938). Growth therefore gives an Ne above N_0 but weighted toward the
+    early, small generations; decline gives an Ne below N_0.
 
     Args:
-        initial_size: Initial population size
-        growth_rate: Growth rate per generation
-        generations: Number of generations
+        initial_size: Population size at generation 0 (N_0)
+        growth_rate: Growth rate per generation (r), greater than -1
+        generations: Number of generations (t)
 
     Returns:
-        Effective population size
+        Effective population size; ``initial_size`` when ``generations`` is 0
+
+    Raises:
+        ValueError: If ``initial_size`` is not positive, ``generations`` is
+            negative or ``growth_rate`` is -1 or less
     """
     if initial_size <= 0:
         raise ValueError("Initial population size must be positive")
     if generations < 0:
         raise ValueError("Generations cannot be negative")
+    if growth_rate <= -1:
+        raise ValueError("Growth rate must exceed -1 so population sizes stay positive")
 
-    if generations == 0 or abs(growth_rate) < 1e-10:
-        return initial_size
-
-    # For exponential growth, effective size is approximately geometric mean
-    # For testing purposes, return a value less than initial for positive growth
-    if growth_rate > 0:
-        return initial_size * 0.8  # Simplified for test
-    elif growth_rate < 0:
-        return initial_size * 0.9  # Simplified for test
-    else:
-        return initial_size
+    if generations == 0 or growth_rate == 0:
+        return float(initial_size)
+    return _harmonic_mean_size([initial_size * (1 + growth_rate) ** i for i in range(generations)])
 
 
 def two_epoch_effective_size(ancient_size: float, recent_size: float, split_time: int) -> float:
-    """Calculate effective population size for a two-epoch model.
+    """Calculate the coalescent effective size of a two-epoch population.
+
+    The population had ``ancient_size`` until ``split_time`` generations ago and
+    ``recent_size`` since. Ne is the constant size with the same expected pairwise
+    coalescence time, and hence the same expected nucleotide diversity. For a
+    diploid population,
+    Ne = N_recent + (N_ancient - N_recent) exp(-T / (2 N_recent)),
+    so diversity still reflects the ancient size shortly after a change and the
+    recent size long after it.
 
     Args:
-        ancient_size: Population size in ancient epoch
-        recent_size: Population size in recent epoch
-        split_time: Time when population size changed (generations ago)
+        ancient_size: Population size before the change
+        recent_size: Population size since the change
+        split_time: Generations since the size changed (T)
 
     Returns:
-        Effective population size
+        Effective population size; ``ancient_size`` when ``split_time`` is 0
+
+    Raises:
+        ValueError: If a size is not positive or ``split_time`` is negative
     """
     if ancient_size <= 0 or recent_size <= 0:
         raise ValueError("Population sizes must be positive")
     if split_time < 0:
         raise ValueError("Split time cannot be negative")
 
-    if split_time == 0:
-        return recent_size
-
-    # For simplicity, return the harmonic mean of the two sizes
-    # This ensures symmetry: expansion and contraction give same result
-    sizes = [ancient_size, recent_size]
-    return len(sizes) / sum(1.0 / size for size in sizes)
+    return recent_size + (ancient_size - recent_size) * math.exp(-split_time / (2.0 * recent_size))
 
 
 def island_model_update(allele_frequency: float, migration_rate: float, migrant_allele_frequency: float) -> float:

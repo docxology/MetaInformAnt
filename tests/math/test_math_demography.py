@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 
+import numpy as np
 import pytest
 
 from metainformant.math.population_genetics.demography import (
@@ -18,92 +19,89 @@ from metainformant.math.population_genetics.demography import (
 
 
 class TestExponentialGrowthEffectiveSize:
-    """Test exponential growth effective size calculation."""
+    """Wright's harmonic mean over the exponential_growth_model trajectory."""
 
     def test_no_growth(self):
-        """Test with zero growth rate."""
         ne = exponential_growth_effective_size(1000, growth_rate=0.0, generations=10)
         assert ne == 1000.0
 
-    def test_positive_growth(self):
-        """Test with positive growth rate."""
-        ne = exponential_growth_effective_size(10000, growth_rate=0.23, generations=10)
-        # Should be less than current size but greater than initial size
-        assert ne < 10000
-        assert ne > 1000  # Rough check
+    def test_positive_growth_matches_geometric_series(self):
+        # sum_{i<t} 1/(N0 (1+r)^i) = (1 - (1+r)^-t) / (N0 (1 - 1/(1+r)))
+        n0, r, t = 10000, 0.23, 10
+        expected = t * n0 * (1 - 1 / (1 + r)) / (1 - (1 + r) ** -t)
+        ne = exponential_growth_effective_size(n0, growth_rate=r, generations=t)
+        assert ne == pytest.approx(expected, rel=1e-12)
+        # Above the founding size, but well below the arithmetic mean of the trajectory
+        assert n0 < ne < sum(exponential_growth_model(n0, r, t - 1)) / t
 
     def test_negative_growth(self):
-        """Test with negative growth rate (decline)."""
         ne = exponential_growth_effective_size(1000, growth_rate=-0.1, generations=10)
-        # Should be less than current size
+        assert ne == pytest.approx(10 / sum(1 / (1000 * 0.9**i) for i in range(10)), rel=1e-12)
         assert ne < 1000
 
     def test_zero_generations(self):
-        """Test with zero generations."""
         ne = exponential_growth_effective_size(1000, growth_rate=0.1, generations=0)
         assert ne == 1000.0
 
+    def test_rejects_rates_that_empty_the_population(self):
+        with pytest.raises(ValueError, match="exceed -1"):
+            exponential_growth_effective_size(1000, growth_rate=-1.0, generations=3)
+
 
 class TestBottleneckEffectiveSize:
-    """Test bottleneck effective size calculation."""
+    """Harmonic mean over one generation at each size plus recovery generations."""
 
-    def test_severe_bottleneck(self):
-        """Test severe bottleneck."""
+    def test_harmonic_mean_of_three_generations(self):
         ne = bottleneck_effective_size(10000, 100, 5)
-        # Should be heavily weighted by bottleneck size
-        assert ne < 1000  # Much less than pre-bottleneck
-        assert ne > 50  # But more than just bottleneck (harmonic mean)
+        assert ne == pytest.approx(3 / (1 / 10000 + 1 / 100 + 1 / 5), rel=1e-12)
+        # Dominated by the smallest generation
+        assert 5 < ne < 15
 
     def test_mild_bottleneck(self):
-        """Test mild bottleneck."""
-        ne = bottleneck_effective_size(10000, 5000, 5)
-        # Should be intermediate
-        assert ne < 10000
-        assert ne > 1000
+        ne = bottleneck_effective_size(10000, 5000, 10000)
+        assert ne == pytest.approx(3 / (1 / 10000 + 1 / 5000 + 1 / 10000), rel=1e-12)
+        assert 5000 < ne < 10000
 
-    def test_bottleneck_with_recovery(self):
-        """Test bottleneck with recovery period."""
-        ne_no_recovery = bottleneck_effective_size(10000, 100, 5)
-        ne_with_recovery = bottleneck_effective_size(10000, 100, 5, recovery_generations=10)
+    def test_recovery_generations_raise_ne(self):
+        ne_no_recovery = bottleneck_effective_size(10000, 100, 5000)
+        ne_with_recovery = bottleneck_effective_size(10000, 100, 5000, recovery_generations=10)
 
-        # With recovery, effective size should be larger
+        assert ne_with_recovery == pytest.approx(13 / (1 / 10000 + 1 / 100 + 11 / 5000), rel=1e-12)
         assert ne_with_recovery > ne_no_recovery
 
-    def test_zero_duration(self):
-        """Test with zero bottleneck duration."""
-        ne = bottleneck_effective_size(10000, 100, 0)
-        assert ne == 10000.0
+    def test_rejects_non_positive_sizes(self):
+        with pytest.raises(ValueError, match="positive"):
+            bottleneck_effective_size(10000, 100, 0)
+        with pytest.raises(ValueError, match="negative"):
+            bottleneck_effective_size(10000, 100, 50, recovery_generations=-1)
 
 
 class TestTwoEpochEffectiveSize:
-    """Test two-epoch effective size calculation."""
+    """Coalescent effective size: the constant size with the same expected pairwise coalescence time."""
 
-    def test_population_expansion(self):
-        """Test population expansion."""
+    def test_recent_expansion_still_reflects_the_ancient_size(self):
         ne = two_epoch_effective_size(1000, 10000, 50)
-        # Should be intermediate (harmonic mean)
-        assert ne > 1000
-        assert ne < 10000
+        assert ne == pytest.approx(10000 - 9000 * math.exp(-50 / 20000), rel=1e-12)
+        assert 1000 < ne < 1100
 
-    def test_population_contraction(self):
-        """Test population contraction."""
+    def test_recent_contraction_still_reflects_the_ancient_size(self):
         ne = two_epoch_effective_size(10000, 1000, 50)
-        # Should be intermediate (harmonic mean)
-        assert ne > 1000
-        assert ne < 10000
+        assert ne == pytest.approx(1000 + 9000 * math.exp(-50 / 2000), rel=1e-12)
+        assert 9000 < ne < 10000
 
-    def test_symmetric_epochs(self):
-        """Test that expansion and contraction give same harmonic mean."""
-        ne_expand = two_epoch_effective_size(1000, 10000, 50)
-        ne_contract = two_epoch_effective_size(10000, 1000, 50)
-
-        # Harmonic mean should be symmetric
-        assert math.isclose(ne_expand, ne_contract, rel_tol=0.01)
+    def test_old_change_approaches_the_recent_size(self):
+        assert two_epoch_effective_size(1000, 100, 10_000) == pytest.approx(100, rel=1e-6)
 
     def test_zero_time(self):
-        """Test with zero time since change."""
-        ne = two_epoch_effective_size(1000, 10000, 0)
-        assert ne == 10000.0
+        assert two_epoch_effective_size(1000, 10000, 0) == 1000.0
+
+    def test_matches_simulated_pairwise_coalescence(self):
+        """E[T2] / 2 for a diploid pair: rate 1/(2 N_recent) until T, then 1/(2 N_ancient)."""
+        ancient, recent, split = 1000, 100, 300
+        rng = np.random.default_rng(20261026)
+        first = rng.exponential(2 * recent, size=2_000_000)  # standard error ~0.15% of the mean
+        coalescence = np.where(first < split, first, split + rng.exponential(2 * ancient, size=first.size))
+        assert two_epoch_effective_size(ancient, recent, split) == pytest.approx(coalescence.mean() / 2, rel=0.01)
 
 
 class TestExponentialGrowthModel:

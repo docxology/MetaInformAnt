@@ -207,18 +207,24 @@ class TestCalculateFayWuH:
     """Tests for calculate_fay_wu_h."""
 
     def test_returns_tuple_of_two_floats(self, polymorphic_sequences: list[str]) -> None:
-        """Must return (h_statistic, p_value) tuple."""
-        result = calculate_fay_wu_h(polymorphic_sequences)
+        """With an outgroup, must return (h_statistic, p_value) floats."""
+        result = calculate_fay_wu_h(polymorphic_sequences, outgroup=polymorphic_sequences[0])
         assert isinstance(result, tuple), f"Expected tuple, got {type(result)}"
         assert len(result) == 2
         h, p_value = result
         assert isinstance(h, float)
         assert isinstance(p_value, float)
 
+    def test_p_value_needs_an_outgroup(self, polymorphic_sequences: list[str]) -> None:
+        """Without polarized sites the null distribution is unknown, so no p-value is reported."""
+        h, p_value = calculate_fay_wu_h(polymorphic_sequences)
+        assert isinstance(h, float)
+        assert p_value is None
+
     def test_p_value_in_valid_range(self, polymorphic_sequences: list[str]) -> None:
         """p-value must be between 0 and 1."""
-        _, p_value = calculate_fay_wu_h(polymorphic_sequences)
-        assert 0.0 <= p_value <= 1.0, f"p-value out of range: {p_value}"
+        _, p_value = calculate_fay_wu_h(polymorphic_sequences, outgroup=polymorphic_sequences[0])
+        assert p_value is not None and 0.0 <= p_value <= 1.0, f"p-value out of range: {p_value}"
 
     def test_identical_sequences_returns_zero(self, identical_sequences: list[str]) -> None:
         """No variation -> H should be 0 and p-value 1."""
@@ -262,7 +268,7 @@ class TestCalculateFayWuH:
 
     def test_short_sequences(self, short_sequences: list[str]) -> None:
         """Short sequences should still work without errors."""
-        h, p = calculate_fay_wu_h(short_sequences)
+        h, p = calculate_fay_wu_h(short_sequences, outgroup=short_sequences[0])
         assert isinstance(h, float)
         assert isinstance(p, float)
 
@@ -571,10 +577,11 @@ class TestIntegrationNeutralityWorkflow:
         assert len(hw) == 3
         assert abs(sum(hw) - 1.0) < 1e-9
 
-        # Fay-Wu H
-        h, h_p = calculate_fay_wu_h(seqs)
+        # Fay-Wu H (a p-value needs an outgroup to polarize the sites)
+        h, h_p = calculate_fay_wu_h(seqs, outgroup=seqs[0])
         assert isinstance(h, float) and isinstance(h_p, float)
         assert 0.0 <= h_p <= 1.0
+        assert calculate_fay_wu_h(seqs)[1] is None
 
         # Fu-Li F*
         f_star, f_p = calculate_fu_li_f(seqs)

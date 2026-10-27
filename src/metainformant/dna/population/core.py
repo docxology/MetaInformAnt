@@ -8,7 +8,11 @@ metrics used in population genomics.
 from __future__ import annotations
 
 import math
+from collections import Counter
+from functools import lru_cache
 from typing import Dict, Iterable, List, Sequence, Tuple, cast
+
+import numpy as np
 
 from metainformant.core.utils import logging
 
@@ -135,44 +139,24 @@ def nucleotide_diversity(seqs: Sequence[str]) -> float:
 
 
 def tajimas_d(seqs: Sequence[str]) -> float:
-    """Calculate Tajima's D statistic.
+    """Calculate Tajima's (1989) D.
 
-    Tajima's D compares nucleotide diversity (π) with the number of
-    segregating sites to detect deviations from neutral evolution.
+    D = (k - eta/a_n) / sqrt(Var), where k is the mean number of differences
+    between two sequences (per sequence, not per site), eta the number of
+    mutations and a_n = sum_{i=1}^{n-1} 1/i. Only columns where every sequence
+    has A, C, G or T are used; see :func:`_site_frequency_spectrum`.
 
     Args:
         seqs: Sequence of aligned DNA sequences
 
     Returns:
-        Tajima's D value
+        Tajima's D, or 0.0 when no column is polymorphic
 
     Raises:
-        ValueError: If insufficient sequences or data
+        ValueError: If fewer than 4 sequences are given or they are not aligned
     """
-    if len(seqs) < 4:
-        raise ValueError("Tajima's D requires at least 4 sequences")
-
-    if not _check_alignment(seqs):
-        raise ValueError("Sequences must be aligned")
-
-    # Calculate π (nucleotide diversity)
-    pi = nucleotide_diversity(seqs)
-
-    # Calculate S (segregating sites)
-    s = segregating_sites(seqs)
-
-    # Calculate θ (Watterson's estimator)
-    n = len(seqs)
-    theta = wattersons_theta(seqs)
-
-    if theta == 0:
-        return 0.0
-
-    # Tajima's D = (π - θ) / sqrt(Var(π - θ))
-    # Simplified calculation (approximation)
-    d = (pi - theta) / math.sqrt(_variance_pi_theta(n, s))
-
-    return d
+    _require_neutrality_input(seqs, "Tajima's D")
+    return _neutrality_statistic(seqs, "tajima_d")
 
 
 def wattersons_theta(seqs: Sequence[str]) -> float:
@@ -320,61 +304,70 @@ def hudson_fst(pop1: Sequence[str], pop2: Sequence[str]) -> float:
 
 
 def fu_and_li_d_star_from_sequences(seqs: Sequence[str]) -> float:
-    """Calculate Fu and Li's D* statistic from sequences.
+    """Calculate Fu and Li's (1993) D*, which needs no outgroup.
 
-    D* compares the number of singletons with nucleotide diversity.
+    D* = (n/(n-1) eta - a_n eta_s) / sqrt(Var), where eta is the number of
+    mutations and eta_s the number whose allele is carried by exactly one
+    sequence. Column handling follows :func:`tajimas_d`.
 
     Args:
         seqs: Sequence of aligned DNA sequences
 
     Returns:
-        Fu and Li's D* value
+        Fu and Li's D*, or 0.0 when no column is polymorphic
+
+    Raises:
+        ValueError: If fewer than 4 sequences are given or they are not aligned
     """
-    if len(seqs) < 4:
-        raise ValueError("Fu and Li's D* requires at least 4 sequences")
-
-    # Count singletons (mutations that appear only once)
-    singletons = _count_singletons(seqs)
-
-    # Calculate π
-    pi = nucleotide_diversity(seqs)
-
-    # Calculate D* = (n/(n-1)) * singletons - π
-    n = len(seqs)
-    if n <= 1:
-        return 0.0
-
-    d_star = (n / (n - 1)) * singletons - pi
-
-    return d_star
+    _require_neutrality_input(seqs, "Fu and Li's D*")
+    return _neutrality_statistic(seqs, "fu_li_d_star")
 
 
 def fu_and_li_f_star_from_sequences(seqs: Sequence[str]) -> float:
-    """Calculate Fu and Li's F* statistic from sequences.
+    """Calculate Fu and Li's (1993) F*, which needs no outgroup.
 
-    F* compares the number of singletons with the number of segregating sites.
+    F* = (k - (n-1)/n eta_s) / sqrt(Var), with k and eta_s as in
+    :func:`tajimas_d` and :func:`fu_and_li_d_star_from_sequences`. The variance
+    is computed exactly from the SFS covariance rather than from a published
+    closed form.
 
     Args:
         seqs: Sequence of aligned DNA sequences
 
     Returns:
-        Fu and Li's F* value
+        Fu and Li's F*, or 0.0 when no column is polymorphic
+
+    Raises:
+        ValueError: If fewer than 4 sequences are given or they are not aligned
     """
-    if len(seqs) < 4:
-        raise ValueError("Fu and Li's F* requires at least 4 sequences")
+    _require_neutrality_input(seqs, "Fu and Li's F*")
+    return _neutrality_statistic(seqs, "fu_li_f_star")
 
-    # Count singletons and segregating sites
-    singletons = _count_singletons(seqs)
-    s = segregating_sites(seqs)
 
-    if s == 0:
-        return 0.0
+def normalized_fay_wu_h(seqs: Sequence[str], outgroup: str) -> float:
+    """Calculate Zeng et al.'s (2006) normalized Fay and Wu's H.
 
-    # Calculate F* = (n/(n-1)) * singletons - 1 + 1/(n-1)
-    n = len(seqs)
-    f_star = (n / (n - 1)) * singletons - 1 + 1 / (n - 1)
+    H = (theta_pi - theta_L) / sqrt(Var), where theta_L = sum_i i xi_i / (n-1)
+    over the spectrum polarized by ``outgroup``. Negative values indicate an
+    excess of high-frequency derived alleles, as after a selective sweep.
+    Unlike :func:`fay_wu_h_from_sequences`, this is standardized, so it can be
+    compared with a normal distribution.
 
-    return f_star
+    Args:
+        seqs: Sequence of aligned DNA sequences
+        outgroup: Outgroup sequence aligned to ``seqs``; its base is ancestral
+
+    Returns:
+        Normalized H, or 0.0 when no column can be polarized
+
+    Raises:
+        ValueError: If fewer than 4 sequences are given, they are not aligned,
+            or the outgroup length differs
+    """
+    _require_neutrality_input(seqs, "Fay and Wu's H")
+    if len(outgroup) != len(seqs[0]):
+        raise ValueError("Outgroup must be aligned to the sequences")
+    return _neutrality_statistic(seqs, "fay_wu_h", outgroup)
 
 
 def fay_wu_h_from_sequences(seqs: Sequence[str], outgroup: str | None = None) -> float:
@@ -425,9 +418,6 @@ def fay_wu_h_from_sequences(seqs: Sequence[str], outgroup: str | None = None) ->
 
         if len(nucs) < 2:
             continue
-
-        # Count allele frequencies
-        from collections import Counter
 
         allele_counts = Counter(nucs)
 
@@ -625,52 +615,128 @@ def _check_alignment(seqs: Sequence[str]) -> bool:
     return all(len(seq) == length for seq in seqs)
 
 
-def _count_singletons(seqs: Sequence[str]) -> int:
-    """Count singleton mutations (alleles that appear only once)."""
-    if len(seqs) < 2:
-        return 0
+# --- Site-frequency-spectrum neutrality tests ------------------------------
+#
+# Tajima's D, Fu and Li's D* and F*, and the normalized Fay and Wu's H are
+# standardized linear functions of the site frequency spectrum (SFS). For a
+# numerator N = sum_i w_i xi_i over the unfolded spectrum (xi_i mutations carried
+# by i of n sequences), the standard neutral model with infinite sites gives
+# Var(N) = alpha*theta + beta*theta^2 with alpha = sum_i w_i^2 / i and
+# beta = w' Sigma w, where Sigma is Fu's (1995) covariance of the spectrum
+# (Achaz 2009). theta and theta^2 are estimated by eta/a_n and
+# eta(eta - 1)/(a_n^2 + b_n) from the number of mutations eta. This reproduces
+# the closed forms of Tajima (1989), Fu and Li (1993) for D* and Zeng et al.
+# (2006) for H, and gives the exact variance for F*.
 
-    seq_length = len(seqs[0])
-    singletons = 0
 
-    for pos in range(seq_length):
-        alleles = [seq[pos].upper() for seq in seqs if seq[pos].upper() in "ATCG"]
+def _require_neutrality_input(seqs: Sequence[str], statistic: str) -> None:
+    if len(seqs) < 4:
+        raise ValueError(f"{statistic} requires at least 4 sequences")
+    if not _check_alignment(seqs):
+        raise ValueError("Sequences must be aligned")
 
-        if len(alleles) < 2:
+
+def _site_frequency_spectrum(seqs: Sequence[str], outgroup: str | None = None) -> np.ndarray:
+    """Count mutations by how many sequences carry the derived allele.
+
+    Only columns where every sequence (and the outgroup, when given) has A, C,
+    G or T contribute. Every allele other than the ancestral one counts as one
+    mutation. With an outgroup its base is ancestral, columns where no sequence
+    carries it are skipped, and the spectrum is unfolded. Without one the most
+    frequent allele is taken as ancestral and each mutation is counted at its
+    minor-allele frequency (the folded spectrum, indices 1..n//2).
+
+    Returns:
+        Array of length n whose entry i (1..n-1) counts mutations carried by i
+        sequences; entry 0 is unused.
+    """
+    n = len(seqs)
+    spectrum = np.zeros(n)
+    ancestral_bases = outgroup.upper() if outgroup is not None else None
+    for position, column in enumerate(zip(*(seq.upper() for seq in seqs))):
+        if not all(base in "ACGT" for base in column):
             continue
+        counts = Counter(column)
+        if len(counts) < 2:
+            continue
+        if ancestral_bases is None:
+            for count in sorted(counts.values(), reverse=True)[1:]:
+                spectrum[min(count, n - count)] += 1
+        elif ancestral_bases[position] in counts:
+            for base, count in counts.items():
+                if base != ancestral_bases[position]:
+                    spectrum[count] += 1
+    return spectrum
 
-        # Count frequency of each allele
-        from collections import Counter
 
-        counts = Counter(alleles)
-
-        # Check if any allele appears exactly once
-        if 1 in counts.values():
-            singletons += 1
-
-    return singletons
+def _harmonic_sums(n: int) -> Tuple[float, float]:
+    """Return ``(a_n, b_n)``: the sums of 1/i and 1/i^2 for i = 1..n-1."""
+    return sum(1.0 / i for i in range(1, n)), sum(1.0 / (i * i) for i in range(1, n))
 
 
-def _variance_pi_theta(n: int, s: int) -> float:
-    """Calculate variance of π - θ for Tajima's D."""
-    # Simplified variance calculation
-    # Full calculation involves complex formulas
-    if n < 2 or s < 1:
-        return 1.0
+def _neutrality_weights(n: int) -> Dict[str, np.ndarray]:
+    """Weights w_1..w_{n-1} of each test's numerator over the unfolded spectrum.
 
-    # Approximation
-    a1 = sum(1.0 / i for i in range(1, n))
-    a2 = sum(1.0 / (i * i) for i in range(1, n))
+    The first three are symmetric in i and n - i, so they apply unchanged to the
+    folded spectrum; ``fay_wu_h`` needs polarized frequencies.
+    """
+    i = np.arange(1, n, dtype=float)
+    a_n, _ = _harmonic_sums(n)
+    pairwise = i * (n - i) / (n * (n - 1) / 2.0)  # mean pairwise differences
+    singleton = ((i == 1) | (i == n - 1)).astype(float)  # allele carried by one sequence
+    return {
+        "tajima_d": pairwise - 1.0 / a_n,
+        "fu_li_d_star": n / (n - 1) - a_n * singleton,
+        "fu_li_f_star": pairwise - (n - 1) / n * singleton,
+        "fay_wu_h": pairwise - i / (n - 1),
+    }
 
-    b1 = (n + 1) / (3 * (n - 1))
-    b2 = 2 * (n * n + n + 3) / (9 * n * (n - 1))
 
-    c1 = b1 - 1 / a1
-    c2 = b2 - (n + 2) / (a1 * n) + a2 / (a1 * a1)
+@lru_cache(maxsize=64)
+def _neutrality_variance_coefficients(n: int) -> Dict[str, Tuple[float, float]]:
+    """Return ``(alpha, beta)`` with Var(N) = alpha*theta + beta*theta^2 for each test numerator."""
+    weights = _neutrality_weights(n)
+    # Fu (1995): a[k] = sum_{m=1}^{k-1} 1/m for k = 0..n+1, and beta_n(k) for k = 1..n-1.
+    a = np.concatenate(([0.0, 0.0], np.cumsum(1.0 / np.arange(1, n + 1))))
+    k = np.arange(1, n)
+    fu_beta = np.zeros(n)
+    fu_beta[1:] = 2.0 * n / ((n - k + 1) * (n - k)) * (a[n + 1] - a[k]) - 2.0 / (n - k)
 
-    e1 = c1 / a1
-    e2 = c2 / (a1 * a1 + a2)
+    quadratic = dict.fromkeys(weights, 0.0)
+    for i in range(1, n):
+        if 2 * i < n:
+            diagonal = fu_beta[i + 1]
+        elif 2 * i == n:
+            diagonal = 2.0 * (a[n] - a[i]) / (n - i) - 1.0 / i**2
+        else:
+            diagonal = fu_beta[i] - 1.0 / i**2
+        j = np.arange(1, i)  # sigma_ij for j < i
+        row = np.empty(i - 1)
+        low, high = i + j < n, i + j > n
+        if low.any():
+            row[low] = (fu_beta[i + 1] - fu_beta[i]) / 2.0
+        row[high] = (fu_beta[j[high]] - fu_beta[j[high] + 1]) / 2.0 - 1.0 / (i * j[high])
+        m = n - i
+        if 1 <= m < i:
+            row[m - 1] = (
+                (a[n] - a[i]) / (n - i) + (a[n] - a[m]) / (n - m) - (fu_beta[i] + fu_beta[m + 1]) / 2.0 - 1.0 / (i * m)
+            )
+        for name, w in weights.items():
+            quadratic[name] += w[i - 1] * (w[i - 1] * diagonal + 2.0 * float(row @ w[: i - 1]))
 
-    variance = e1 * s + e2 * s * (s - 1)
+    i_values = np.arange(1, n, dtype=float)
+    return {name: (float(np.sum(w**2 / i_values)), quadratic[name]) for name, w in weights.items()}
 
-    return max(variance, 0.01)  # Avoid division by zero
+
+def _neutrality_statistic(seqs: Sequence[str], test: str, outgroup: str | None = None) -> float:
+    """Standardize one test's numerator by its estimated neutral variance."""
+    n = len(seqs)
+    spectrum = _site_frequency_spectrum(seqs, outgroup)
+    mutations = float(spectrum.sum())
+    if mutations == 0:
+        return 0.0
+    numerator = float(_neutrality_weights(n)[test] @ spectrum[1:])
+    alpha, beta = _neutrality_variance_coefficients(n)[test]
+    a_n, b_n = _harmonic_sums(n)
+    variance = alpha * mutations / a_n + beta * mutations * (mutations - 1) / (a_n * a_n + b_n)
+    return numerator / math.sqrt(variance)

@@ -118,6 +118,25 @@ class TestInterpretNeutralityResults:
         result = analysis.interpret_neutrality_results({"tajima_d": None})
         assert result["tajima_d"] == "calculation_failed"
 
+    def test_non_significant_statistics_are_consistent_with_neutrality(self):
+        result = analysis.interpret_neutrality_results(
+            {"tajima_d": 1.2, "tajima_d_p_value": 0.23, "fu_li_d_star": -0.4, "fu_li_d_star_p_value": 0.69}
+        )
+        assert result == {"tajima_d": "neutral_evolution", "fu_li_d_star": "neutral_evolution"}
+
+    def test_significant_statistics_keep_their_direction(self):
+        result = analysis.interpret_neutrality_results(
+            {"tajima_d": -2.4, "tajima_d_p_value": 0.016, "fu_li_d_star": 2.1, "fu_li_d_star_p_value": 0.036}
+        )
+        assert result == {
+            "tajima_d": "positive_selection_or_population_expansion",
+            "fu_li_d_star": "balancing_selection",
+        }
+        assert analysis.interpret_neutrality_results({"tajima_d": -2.4, "tajima_d_p_value": 0.016}, alpha=0.01) == {
+            "tajima_d": "neutral_evolution",
+            "fu_li_d_star": "calculation_failed",
+        }
+
 
 def _scenario_fst_matrix():
     return np.array([[0.0, 0.1], [0.1, 0.0]])
@@ -220,6 +239,17 @@ def test_plot_pca_results_draws_real_scatter():
     point_counts = [len(collection.get_offsets()) for collection in scatters]
     assert 4 in point_counts
     assert "PC1 (60.0% variance)" == fig.axes[0].get_xlabel()
+    assert len(plt.get_fignums()) == 0
+    plt.close(fig)
+
+
+def test_plot_population_structure_three_components_uses_3d_axes():
+    coords = np.array([[0.0, 0.0, 0.0], [1.0, 1.0, 0.5], [2.0, 0.5, 1.0], [0.5, 2.0, 1.5]])
+    fig = vizcore.plot_population_structure(coords, cluster_labels=[0, 0, 1, 1])
+    assert fig is not None
+    ax = fig.axes[0]
+    assert ax.name == "3d"
+    assert (ax.get_xlabel(), ax.get_ylabel(), ax.get_zlabel()) == ("PC1", "PC2", "PC3")
     assert len(plt.get_fignums()) == 0
     plt.close(fig)
 

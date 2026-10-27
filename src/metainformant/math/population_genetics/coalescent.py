@@ -267,13 +267,16 @@ def tajimas_D(pi: float, s: int, n: int, constants: Dict[str, float] | None = No
     """Calculate Tajima's D statistic.
 
     Args:
-        pi: Nucleotide diversity
+        pi: Mean number of pairwise differences between sequences, per sequence
+            rather than per site (a per-site diversity must be multiplied by the
+            number of sites)
         s: Number of segregating sites
         n: Sample size
-        tajima_constants: Pre-computed Tajima constants (optional)
+        constants: Pre-computed :func:`tajima_constants` for ``n`` (optional)
 
     Returns:
-        Tajima's D value
+        Tajima's D value; a non-integral ``s`` with integral ``pi`` is read as
+        the legacy ``(s, pi, n)`` argument order
     """
     if isinstance(s, float) and not float(s).is_integer():
         pi, s = s, int(pi)

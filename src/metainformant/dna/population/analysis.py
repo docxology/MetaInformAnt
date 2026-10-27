@@ -7,7 +7,7 @@ including demographic inference, selection tests, and population structure analy
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -148,91 +148,52 @@ def detect_selection(sequences: List[str], method: str = "tajima_d") -> Dict[str
     return results
 
 
+def _two_sided_normal_p(statistic: float) -> float:
+    """Two-sided p-value of a standardized statistic under the normal approximation."""
+    return math.erfc(abs(statistic) / math.sqrt(2.0))
+
+
 def calculate_tajima_d(sequences: List[str]) -> Tuple[float, float]:
-    """Calculate Tajima's D statistic for neutrality testing.
+    """Calculate Tajima's D and its two-sided p-value.
+
+    See :func:`metainformant.dna.population.core.tajimas_d`. The p-value uses
+    the normal approximation, which is rough for small samples.
 
     Args:
-        sequences: List of DNA sequences
+        sequences: List of aligned DNA sequences
 
     Returns:
-        Tuple of (tajima_d, p_value)
+        Tuple of (tajima_d, p_value); ``(0.0, 1.0)`` for fewer than 4 sequences
 
     Example:
-        >>> seqs = ["ATCG", "ATCG", "GCTA"]
+        >>> seqs = ["AAAA", "AAAA", "AACT", "AAAT"]
         >>> tajima_d, p_value = calculate_tajima_d(seqs)
-        >>> isinstance(tajima_d, float)
-        True
+        >>> round(tajima_d, 4)
+        0.5916
     """
     if len(sequences) < 4:
         return 0.0, 1.0  # Not enough sequences for meaningful test
 
-    # Calculate segregating sites (S)
-    seq_length = len(sequences[0])
-    segregating_sites = 0
+    from . import core as population
 
-    for pos in range(seq_length):
-        alleles = set(seq[pos] for seq in sequences)
-        if len(alleles) > 1:
-            segregating_sites += 1
-
-    n = len(sequences)
-
-    # Calculate average pairwise differences (pi)
-    pi = calculate_nucleotide_diversity(sequences)
-
-    # Calculate Watterson's theta
-    theta_w = calculate_wattersons_theta(sequences)
-
-    if theta_w == 0:
-        return 0.0, 1.0
-
-    # Tajima's D formula
-    d = pi - theta_w
-
-    # Variance of D (approximate)
-    a1 = sum(1.0 / i for i in range(1, n))
-    a2 = sum(1.0 / (i**2) for i in range(1, n))
-
-    b1 = (n + 1) / (3 * (n - 1))
-    b2 = 2 * (n**2 + n + 3) / (9 * n * (n - 1))
-
-    c1 = b1 - 1 / a1
-    c2 = b2 - (n + 2) / (a1 * n) + a2 / (a1**2)
-
-    e1 = c1 / a1
-    e2 = c2 / (a1**2 + a2)
-
-    var_d = e1 * segregating_sites + e2 * segregating_sites * (segregating_sites - 1)
-
-    if var_d <= 0:
-        return 0.0, 1.0
-
-    # Standardize D
-    tajima_d = d / math.sqrt(var_d)
-
-    # Approximate p-value (two-tailed test)
-    from scipy import stats
-
-    try:
-        p_value = 2 * (1 - stats.norm.cdf(abs(tajima_d)))
-    except ImportError:
-        # Fallback approximation
-        p_value = min(1.0, 2 * (1 - 0.5 * (1 + math.erf(abs(tajima_d) / math.sqrt(2)))))
-
-    return tajima_d, p_value
+    tajima_d = population.tajimas_d(sequences)
+    return tajima_d, _two_sided_normal_p(tajima_d)
 
 
 def calculate_fu_li_d(sequences: List[str]) -> Tuple[float, float]:
-    """Calculate Fu and Li's D statistic.
+    """Calculate Fu and Li's D* (no outgroup) and its two-sided p-value.
+
+    See :func:`metainformant.dna.population.core.fu_and_li_d_star_from_sequences`.
+    The p-value uses the normal approximation.
 
     Args:
-        sequences: List of DNA sequences
+        sequences: List of aligned DNA sequences
 
     Returns:
-        Tuple of (fu_li_d, p_value)
+        Tuple of (fu_li_d_star, p_value); ``(0.0, 1.0)`` for fewer than 4 sequences
 
     Example:
-        >>> seqs = ["ATCG", "ATCG", "GCTA"]
+        >>> seqs = ["ATCG", "ATCG", "GCTA", "GCTT"]
         >>> fu_li_d, p_value = calculate_fu_li_d(seqs)
         >>> isinstance(fu_li_d, float)
         True
@@ -240,67 +201,10 @@ def calculate_fu_li_d(sequences: List[str]) -> Tuple[float, float]:
     if len(sequences) < 4:
         return 0.0, 1.0
 
-    # Count singletons (alleles that appear only once)
-    seq_length = len(sequences[0])
-    singletons = 0
+    from . import core as population
 
-    for pos in range(seq_length):
-        alleles = [seq[pos] for seq in sequences]
-        allele_counts: Dict[str, int] = {}
-
-        for allele in alleles:
-            allele_counts[allele] = allele_counts.get(allele, 0) + 1
-
-        # Count alleles that appear exactly once
-        singletons += sum(1 for count in allele_counts.values() if count == 1)
-
-    n = len(sequences)
-
-    # Fu and Li's D formula (simplified)
-    # D = (singletons - a1 * segregating_sites) / sqrt(var)
-
-    # For now, return a basic implementation
-    segregating_sites = sum(1 for pos in range(seq_length) if len(set(seq[pos] for seq in sequences)) > 1)
-
-    if segregating_sites == 0:
-        return 0.0, 1.0
-
-    # Approximate calculation
-    a1 = sum(1.0 / i for i in range(1, n))
-
-    expected_singletons = a1 * segregating_sites
-    variance = calculate_fu_li_variance(n, segregating_sites)
-
-    if variance <= 0:
-        return 0.0, 1.0
-
-    fu_li_d = (singletons - expected_singletons) / math.sqrt(variance)
-
-    # Approximate p-value
-    try:
-        from scipy import stats
-
-        p_value = 2 * (1 - stats.norm.cdf(abs(fu_li_d)))
-    except ImportError:
-        p_value = 0.5  # Conservative estimate
-
-    return fu_li_d, p_value
-
-
-def calculate_fu_li_variance(n: int, s: int) -> float:
-    """Calculate variance for Fu and Li's D (approximate)."""
-    if n < 2 or s < 1:
-        return 0.0
-
-    # Simplified variance calculation
-    a1 = sum(1.0 / i for i in range(1, n))
-    a2 = sum(1.0 / (i**2) for i in range(1, n))
-
-    variance = ((n - 2) / (6 * (n - 1))) * s + (18 * n * (n - 1) * a2 - 88 * n * a1**2) / (9 * (n - 1) ** 2) * s * (
-        s - 1
-    )
-
-    return max(0, variance)
+    d_star = population.fu_and_li_d_star_from_sequences(sequences)
+    return d_star, _two_sided_normal_p(d_star)
 
 
 def _fisher_exact_two_sided_2x2(a: int, b: int, c: int, d: int) -> float:
@@ -316,6 +220,7 @@ def _fisher_exact_two_sided_2x2(a: int, b: int, c: int, d: int) -> float:
     if a + b == 0 or c + d == 0 or a + c == 0 or b + d == 0:
         return 1.0  # A degenerate margin leaves nothing to test
 
+    scipy_stats: Any  # None when SciPy is unavailable
     try:
         from scipy import stats as scipy_stats
     except ImportError:
@@ -682,11 +587,13 @@ def calculate_summary_statistics(
 
     Args:
         sequences: List of DNA sequences (for sequence-based statistics)
-        genotype_matrix: Genotype matrix (for genotype-based statistics)
+        genotype_matrix: Individuals x loci matrix of diploid 0/1/2 alternate-allele
+            counts (for genotype-based statistics); other values count as missing
         populations: Population assignments for each individual
 
     Returns:
-        Dictionary containing various population genetics statistics
+        Dictionary containing various population genetics statistics; ``fu_li_d``
+        holds Fu and Li's D*, which needs no outgroup
 
     Example:
         >>> seqs = ["ATCG", "ATCG", "GCTA"]
@@ -735,18 +642,15 @@ def calculate_summary_statistics(
         results["num_individuals"] = len(genotypes)
         results["num_loci"] = genotypes.shape[1] if genotypes.size > 0 else 0
 
-        # Heterozygosity
+        # Observed heterozygosity: entries are diploid 0/1/2 alternate-allele
+        # counts, so only 1 is heterozygous; other values count as missing.
         if genotypes.size > 0:
-            from . import core as population
+            called = np.isin(genotypes, (0, 1, 2)).sum(axis=0)
+            heterozygous = (genotypes == 1).sum(axis=0)
+            het_values = np.divide(heterozygous, called, out=np.zeros(genotypes.shape[1]), where=called > 0)
 
-            het_values = []
-            for locus in range(genotypes.shape[1]):
-                locus_genotypes = [(genotypes[i, locus] // 2, genotypes[i, locus] % 2) for i in range(len(genotypes))]
-                het = population.observed_heterozygosity(locus_genotypes)
-                het_values.append(het)
-
-            results["mean_heterozygosity"] = np.mean(het_values) if het_values else 0.0
-            results["heterozygosity_variance"] = np.var(het_values) if het_values else 0.0
+            results["mean_heterozygosity"] = float(np.mean(het_values))
+            results["heterozygosity_variance"] = float(np.var(het_values))
 
     if populations and sequences:
         # Population differentiation
@@ -825,73 +729,53 @@ def compare_populations(pop1_data: Dict[str, Any], pop2_data: Dict[str, Any]) ->
     return comparison
 
 
-def calculate_fay_wu_h(sequences: List[str]) -> Tuple[float, float]:
-    """Calculate Fay and Wu's H statistic.
+def calculate_fay_wu_h(sequences: List[str], outgroup: Optional[str] = None) -> Tuple[float, Optional[float]]:
+    """Calculate Fay and Wu's H and, with an outgroup, its two-sided p-value.
 
-    Delegates to fay_wu_h_from_sequences() in core.py and adds
-    a p-value approximation using a normal distribution.
+    ``h`` is :func:`metainformant.dna.population.core.fay_wu_h_from_sequences`
+    (per-site theta_pi - theta_H). Its null distribution needs derived-allele
+    frequencies, so the p-value comes from Zeng et al.'s (2006) normalized H
+    (:func:`metainformant.dna.population.core.normalized_fay_wu_h`) under the
+    normal approximation and is None when no outgroup polarizes the sites of
+    a polymorphic sample. A monomorphic sample has H = 0 and p-value 1.0.
 
     Args:
-        sequences: List of DNA sequences
+        sequences: List of aligned DNA sequences
+        outgroup: Optional outgroup sequence aligned to ``sequences``
 
     Returns:
-        Tuple of (fay_wu_h, p_value)
+        Tuple of (fay_wu_h, p_value); ``(0.0, 1.0)`` for fewer than 4 sequences
 
     Example:
         >>> seqs = ["ATCG", "ATCG", "GCTA", "GCTA"]
         >>> h, p = calculate_fay_wu_h(seqs)
-        >>> isinstance(h, float)
-        True
+        >>> isinstance(h, float), p is None
+        (True, True)
     """
     if len(sequences) < 4:
         return 0.0, 1.0
 
     from . import core as population
 
-    h = population.fay_wu_h_from_sequences(sequences)
-
-    # Approximate p-value using normal distribution
-    # Variance approximation for Fay and Wu's H
-    n = len(sequences)
-    seq_length = len(sequences[0])
-    seg_sites = sum(1 for pos in range(seq_length) if len(set(seq[pos] for seq in sequences)) > 1)
-
-    if seg_sites == 0:
-        return 0.0, 1.0
-
-    # Simplified variance: Var(H) ~ theta * f(n)
-    # Use a conservative normal approximation
-    a1 = sum(1.0 / i for i in range(1, n))
-    theta_w = seg_sites / a1 if a1 > 0 else 0.0
-    # Approximate variance of H (Zeng et al. 2006 simplified)
-    var_h = (theta_w * (n - 2) / (6 * (n - 1))) if n > 1 else 1.0
-
-    if var_h <= 0:
+    h = population.fay_wu_h_from_sequences(sequences, outgroup)
+    if outgroup is not None:
+        return h, _two_sided_normal_p(population.normalized_fay_wu_h(sequences, outgroup))
+    if population.segregating_sites(sequences) == 0:
         return h, 1.0
-
-    z = h / math.sqrt(var_h)
-
-    try:
-        from scipy import stats
-
-        p_value = 2 * (1 - stats.norm.cdf(abs(z)))
-    except ImportError:
-        p_value = min(1.0, 2 * (1 - 0.5 * (1 + math.erf(abs(z) / math.sqrt(2)))))
-
-    return h, p_value
+    return h, None
 
 
 def calculate_fu_li_f(sequences: List[str]) -> Tuple[float, float]:
-    """Calculate Fu and Li's F* statistic.
+    """Calculate Fu and Li's F* (no outgroup) and its two-sided p-value.
 
-    Delegates to fu_and_li_f_star_from_sequences() in core.py and adds
-    a p-value approximation using a normal distribution.
+    See :func:`metainformant.dna.population.core.fu_and_li_f_star_from_sequences`.
+    The p-value uses the normal approximation.
 
     Args:
-        sequences: List of DNA sequences
+        sequences: List of aligned DNA sequences
 
     Returns:
-        Tuple of (fu_li_f_star, p_value)
+        Tuple of (fu_li_f_star, p_value); ``(0.0, 1.0)`` for fewer than 4 sequences
 
     Example:
         >>> seqs = ["ATCG", "ATCG", "GCTA", "GCTA"]
@@ -905,38 +789,15 @@ def calculate_fu_li_f(sequences: List[str]) -> Tuple[float, float]:
     from . import core as population
 
     f_star = population.fu_and_li_f_star_from_sequences(sequences)
-
-    # Approximate p-value using normal distribution
-    n = len(sequences)
-    seq_length = len(sequences[0])
-    seg_sites = sum(1 for pos in range(seq_length) if len(set(seq[pos] for seq in sequences)) > 1)
-
-    if seg_sites == 0:
-        return 0.0, 1.0
-
-    # Use variance from Fu and Li (1993) simplified
-    variance = calculate_fu_li_variance(n, seg_sites)
-
-    if variance <= 0:
-        return f_star, 1.0
-
-    z = f_star / math.sqrt(variance)
-
-    try:
-        from scipy import stats
-
-        p_value = 2 * (1 - stats.norm.cdf(abs(z)))
-    except ImportError:
-        p_value = min(1.0, 2 * (1 - 0.5 * (1 + math.erf(abs(z) / math.sqrt(2)))))
-
-    return f_star, p_value
+    return f_star, _two_sided_normal_p(f_star)
 
 
-def neutrality_test_suite(sequences: List[str]) -> Dict[str, Any]:
+def neutrality_test_suite(sequences: List[str], outgroup: Optional[str] = None) -> Dict[str, Any]:
     """Run a comprehensive suite of neutrality tests.
 
     Args:
         sequences: List of DNA sequences from a population
+        outgroup: Optional outgroup sequence; without it ``fay_wu_h_p_value`` is None
 
     Returns:
         Dictionary containing results from multiple neutrality tests
@@ -988,7 +849,7 @@ def neutrality_test_suite(sequences: List[str]) -> Dict[str, Any]:
 
     # Fay and Wu's H
     try:
-        fay_wu_h, fay_wu_h_p = calculate_fay_wu_h(sequences)
+        fay_wu_h, fay_wu_h_p = calculate_fay_wu_h(sequences, outgroup)
         results["fay_wu_h"] = fay_wu_h
         results["fay_wu_h_p_value"] = fay_wu_h_p
     except Exception as e:
@@ -1002,39 +863,35 @@ def neutrality_test_suite(sequences: List[str]) -> Dict[str, Any]:
     return results
 
 
-def interpret_neutrality_results(results: Dict[str, Any]) -> Dict[str, str]:
+_NEUTRALITY_LABELS = {
+    "tajima_d": ("balancing_selection_or_population_bottleneck", "positive_selection_or_population_expansion"),
+    "fu_li_d_star": ("balancing_selection", "positive_selection_or_population_expansion"),
+}
+
+
+def interpret_neutrality_results(results: Dict[str, Any], alpha: float = 0.05) -> Dict[str, str]:
     """Interpret neutrality test results.
+
+    A statistic gets a directional label only when it departs from neutrality:
+    its ``<name>_p_value`` is below ``alpha``, or the results carry no p-value
+    and the statistic is nonzero. Otherwise it is ``"neutral_evolution"``,
+    meaning consistent with neutrality.
 
     Args:
         results: Results from neutrality_test_suite
+        alpha: Significance level for the p-values
 
     Returns:
         Dictionary with interpretation of results
     """
     interpretation = {}
-
-    # Tajima's D interpretation
-    tajima_d = results.get("tajima_d")
-    if tajima_d is not None:
-        if tajima_d > 0:
-            interpretation["tajima_d"] = "balancing_selection_or_population_bottleneck"
-        elif tajima_d < 0:
-            interpretation["tajima_d"] = "positive_selection_or_population_expansion"
+    for name, (positive, negative) in _NEUTRALITY_LABELS.items():
+        value = results.get(name)
+        p_value = results.get(f"{name}_p_value")
+        if value is None:
+            interpretation[name] = "calculation_failed"
+        elif (p_value is not None and p_value >= alpha) or value == 0:
+            interpretation[name] = "neutral_evolution"
         else:
-            interpretation["tajima_d"] = "neutral_evolution"
-    else:
-        interpretation["tajima_d"] = "calculation_failed"
-
-    # Fu and Li's tests interpretation
-    fu_li_d_star = results.get("fu_li_d_star")
-    if fu_li_d_star is not None:
-        if fu_li_d_star > 0:
-            interpretation["fu_li_d_star"] = "balancing_selection"
-        elif fu_li_d_star < 0:
-            interpretation["fu_li_d_star"] = "positive_selection_or_population_expansion"
-        else:
-            interpretation["fu_li_d_star"] = "neutral_evolution"
-    else:
-        interpretation["fu_li_d_star"] = "calculation_failed"
-
+            interpretation[name] = positive if value > 0 else negative
     return interpretation

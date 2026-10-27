@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import random
+import statistics
 
 import numpy as np
 import pytest
 
+from metainformant.dna.population import hudson_fst
 from metainformant.simulation.models.popgen import (
     generate_genotype_matrix,
     generate_linkage_disequilibrium_data,
@@ -156,6 +158,30 @@ class TestGenerateTwoPopulations:
         )
         assert len(pop1) == 10
         assert len(pop2) == 10
+
+    @pytest.mark.parametrize("target", [0.0, 0.05, 0.2, 0.5])
+    def test_hudson_fst_matches_the_target(self, target):
+        """Balding-Nichols frequencies make Hudson's F_ST equal the target in expectation."""
+        estimates = []
+        for seed in range(4):
+            pop1, pop2 = generate_two_populations(
+                n_pop1=50, n_pop2=50, sequence_length=2000, n_sites=500, fst=target, rng=random.Random(seed)
+            )
+            estimates.append(hudson_fst(pop1, pop2))
+        assert statistics.mean(estimates) == pytest.approx(target, abs=0.04 if target else 0.01)
+
+    def test_complete_differentiation_fixes_each_population(self):
+        pop1, pop2 = generate_two_populations(
+            n_pop1=10, n_pop2=10, sequence_length=400, n_sites=100, fst=1.0, rng=random.Random(5)
+        )
+        assert len(set(pop1)) == 1 and len(set(pop2)) == 1
+        assert hudson_fst(pop1, pop2) == 1.0
+
+    def test_default_site_count_follows_watterson(self):
+        pop1, pop2 = generate_two_populations(n_pop1=10, n_pop2=10, sequence_length=1000, fst=0.1, rng=random.Random(3))
+        variable = sum(len(set(column)) > 1 for column in zip(*(pop1 + pop2)))
+        expected_sites = round(0.01 * 1000 * sum(1 / i for i in range(1, 20)))  # 35
+        assert 0 < variable <= expected_sites
 
 
 class TestGenerateGenotypeMatrix:

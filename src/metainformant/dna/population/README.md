@@ -22,8 +22,10 @@ Population genetics analysis including diversity statistics, neutrality tests, F
 | `observed_heterozygosity()` | Fraction of heterozygous genotypes |
 | `linkage_disequilibrium()` | D' coefficient between two polymorphic sites |
 | `calculate_fst()` | Pairwise F_ST from raw sequence data |
-| `detect_selection()` | Run Tajima's D, Fu-Li, or Fay-Wu tests for selection |
-| `neutrality_test_suite()` | Combined D, F, and H tests with interpretation |
+| `fu_and_li_d_star_from_sequences()`, `fu_and_li_f_star_from_sequences()` | Fu and Li's D* and F* (no outgroup) |
+| `normalized_fay_wu_h()` | Zeng et al.'s normalized Fay and Wu's H from an outgroup-polarized spectrum |
+| `detect_selection()` | Run Tajima's D, Fu and Li's D*, or the McDonald-Kreitman test |
+| `neutrality_test_suite()` | Tajima's D, Fu and Li's D*/F* and Fay and Wu's H with p-values and interpretation |
 | `detect_population_structure()` | Infer K subpopulations from sequence data |
 | `plot_fst_matrix()` | Heatmap of pairwise F_ST values |
 | `plot_allele_frequency_spectrum()` | Site frequency spectrum bar chart |

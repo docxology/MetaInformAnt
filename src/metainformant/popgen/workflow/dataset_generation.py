@@ -52,7 +52,7 @@ def generate_comprehensive_dataset(
     logger.info(f"  Sequences per scenario: {n_sequences_per_scenario}")
     logger.info(f"  Sequence length: {sequence_length}")
 
-    dataset_info = {
+    dataset_info: dict[str, Any] = {
         "generation_time": datetime.utcnow().isoformat(),
         "seed": seed,
         "n_sequences_per_scenario": n_sequences_per_scenario,
@@ -160,7 +160,6 @@ def generate_comprehensive_dataset(
         n_pop1=n_sequences_per_scenario,
         n_pop2=n_sequences_per_scenario,
         sequence_length=sequence_length,
-        n_sites=sequence_length,
         fst=0.05,
         rng=rng,
     )
@@ -184,7 +183,6 @@ def generate_comprehensive_dataset(
         n_pop1=n_sequences_per_scenario,
         n_pop2=n_sequences_per_scenario,
         sequence_length=sequence_length,
-        n_sites=sequence_length,
         fst=0.3,
         rng=rng,
     )

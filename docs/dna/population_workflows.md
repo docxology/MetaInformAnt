@@ -4,12 +4,12 @@ This guide demonstrates common workflows and orchestration patterns for populati
 
 ## Overview
 
-The `dna.population_analysis` module provides high-level orchestrators that combine multiple population genetics statistics into convenient workflows. These functions are designed to simplify common analysis tasks while maintaining flexibility.
+The `dna.population.analysis` module provides high-level orchestrators that combine multiple population genetics statistics into convenient workflows. These functions are designed to simplify common analysis tasks while maintaining flexibility.
 
 ## Quick Start
 
 ```python-snippet
-from metainformant.dna.population_analysis import (
+from metainformant.dna.population.analysis import (
     calculate_summary_statistics,
     compare_populations,
     neutrality_test_suite,
@@ -23,7 +23,7 @@ from metainformant.dna.population_analysis import (
 Calculate multiple population genetics statistics in a single call:
 
 ```python-snippet
-from metainformant.dna.population_analysis import calculate_summary_statistics
+from metainformant.dna.population.analysis import calculate_summary_statistics
 
 # Using sequence data
 sequences = ["AAAA", "AAAT", "AATT", "ATTT"]
@@ -31,15 +31,17 @@ stats = calculate_summary_statistics(sequences=sequences)
 
 print(f"Nucleotide diversity (π): {stats['nucleotide_diversity']:.4f}")
 print(f"Segregating sites: {stats['segregating_sites']}")
-print(f"Watterson's theta: {stats['wattersons_theta']:.4f}")
-print(f"Tajima's D: {stats['tajimas_d']:.4f}")
+print(f"Watterson's theta: {stats['watterson_theta']:.4f}")
+print(f"Tajima's D: {stats['tajima_d']:.4f}")
 ```
 
 **Output includes:**
 - `nucleotide_diversity`: Average pairwise differences per site (π)
 - `segregating_sites`: Number of polymorphic sites
-- `wattersons_theta`: Watterson's theta estimator
-- `tajimas_d`: Tajima's D statistic
+- `watterson_theta`: Watterson's theta estimator
+- `tajima_d`: Tajima's D statistic
+- `tajima_d_p_value`: p-value for Tajima's D
+- `fu_li_d`, `fu_li_d_p_value`: Fu and Li's D statistic and its p-value
 - `sample_size`: Number of sequences
 - `sequence_length`: Length of sequences
 
@@ -53,100 +55,109 @@ genotypes = [
 ]
 
 stats = calculate_summary_statistics(genotype_matrix=genotypes)
-print(f"Allele frequencies: {stats['allele_frequencies']}")
-print(f"Observed heterozygosity: {stats['observed_heterozygosity']:.4f}")
+print(f"Individuals: {stats['num_individuals']}, loci: {stats['num_loci']}")
+print(f"Mean observed heterozygosity: {stats['mean_heterozygosity']:.4f}")
 ```
+
+**Genotype-matrix output:** `num_individuals`, `num_loci`, `mean_heterozygosity` (mean of the per-locus observed heterozygosity), `heterozygosity_variance`.
 
 ### 2. Population Comparison
 
 Compare two populations using multiple statistics:
 
 ```python-snippet
-from metainformant.dna.population_analysis import compare_populations
+from metainformant.dna.population import hudson_fst
+from metainformant.dna.population.analysis import calculate_summary_statistics, compare_populations
 
 # Define two populations
 pop1_sequences = ["AAAA", "AAAA", "AAAT"]
 pop2_sequences = ["TTTT", "TTTT", "TTTA"]
 
-# Compare populations
-comparison = compare_populations(
-    pop1_sequences=pop1_sequences,
-    pop2_sequences=pop2_sequences
-)
+# Summarize each population, then compare the two summaries
+pop1_stats = calculate_summary_statistics(sequences=pop1_sequences)
+pop2_stats = calculate_summary_statistics(sequences=pop2_sequences)
+comparison = compare_populations(pop1_stats, pop2_stats)
 
-print(f"Fst: {comparison['fst']:.4f}")
-print(f"Differentiation: {comparison['differentiation']}")
+# Fst is computed from the sequences directly
+fst = hudson_fst(pop1_sequences, pop2_sequences)
+print(f"Fst: {fst:.4f}")
+print(f"Diversity ratio (pop2/pop1): {comparison['nucleotide_diversity_ratio']:.4f}")
+print(f"Tajima's D difference: {comparison['tajima_d_difference']:.4f}")
+print(f"Pop1 selection pattern: {comparison['pop1_selection_pattern']}")
 
 # Access individual population statistics
-print(f"Pop1 diversity: {comparison['pop1_stats']['nucleotide_diversity']:.4f}")
-print(f"Pop2 diversity: {comparison['pop2_stats']['nucleotide_diversity']:.4f}")
+print(f"Pop1 diversity: {pop1_stats['nucleotide_diversity']:.4f}")
+print(f"Pop2 diversity: {pop2_stats['nucleotide_diversity']:.4f}")
 ```
 
-**Differentiation levels:**
-- `"none"`: Fst < 0.05
-- `"low"`: 0.05 ≤ Fst < 0.15
-- `"moderate"`: 0.15 ≤ Fst < 0.25
-- `"high"`: Fst ≥ 0.25
+**Comparison output:**
+- `nucleotide_diversity_ratio`, `nucleotide_diversity_difference`: π of population 2 relative to population 1
+- `tajima_d_difference`: Tajima's D of population 2 minus population 1
+- `pop1_selection_pattern`, `pop2_selection_pattern`: `"balancing_selection"` (D > 2), `"positive_selection"` (D < -2), or `"neutral"`
+- `fst_difference`, `fst_ratio`: only present when both summaries contain an `fst` entry
 
 ### 3. Neutrality Test Suite
 
 Run a comprehensive suite of neutrality tests:
 
 ```python-snippet
-from metainformant.dna.population_analysis import neutrality_test_suite
+from metainformant.dna.population.analysis import neutrality_test_suite
 
 sequences = ["AAAA", "AAAT", "AATT", "ATTT", "TTTT"]
 results = neutrality_test_suite(sequences)
 
-print(f"Tajima's D: {results['tajimas_d']:.4f}")
-print(f"π/θ ratio: {results['pi_theta_ratio']:.4f}")
-print(f"Interpretation: {results['interpretation']}")
+print(f"Tajima's D: {results['tajima_d']:.4f}")
+print(f"Fu and Li's D*: {results['fu_li_d_star']:.4f}")
+print(f"Interpretation: {results['neutrality_summary']['tajima_d']}")
 ```
 
-**Interpretation values:**
-- `"strong_negative_d"`: D < -2.0 (suggests population expansion or purifying selection)
-- `"negative_d"`: -2.0 ≤ D < -1.0
-- `"neutral"`: -1.0 ≤ D ≤ 1.0 (consistent with neutral evolution)
-- `"positive_d"`: 1.0 < D ≤ 2.0
-- `"strong_positive_d"`: D > 2.0 (suggests balancing selection or population contraction)
+**Output includes:**
+- `tajima_d`, `fu_li_d_star`, `fu_li_f_star`, `fay_wu_h`: test statistics, each with a matching `<name>_p_value` (a statistic is `None` if it could not be computed)
+- `num_sequences`, `sequence_length`: Number and length of sequences
+- `neutrality_summary`: Interpretation strings for `tajima_d` and `fu_li_d_star`
+
+**Interpretation values** (based on the sign of the statistic):
+- `neutrality_summary["tajima_d"]`: `"balancing_selection_or_population_bottleneck"` (D > 0) or `"positive_selection_or_population_expansion"` (D < 0) when the p-value is below `alpha` (default 0.05); otherwise `"neutral_evolution"` (consistent with neutrality); `"calculation_failed"` when D is `None`
+- `neutrality_summary["fu_li_d_star"]`: `"balancing_selection"` (D* > 0) or `"positive_selection_or_population_expansion"` (D* < 0) under the same rule
 
 ## Integration Examples
 
 ### Combining with Math Module
 
 ```python-snippet
-from metainformant.dna.population_analysis import calculate_summary_statistics
-from metainformant.math.population_genetics.coalescent import tajimas_D, wattersons_theta
+from metainformant.dna.population.analysis import calculate_summary_statistics
+from metainformant.math.population_genetics.coalescent import tajimas_D, watterson_theta
 
 # Calculate basic statistics
 sequences = ["AAAA", "AAAT", "AATT"]
 stats = calculate_summary_statistics(sequences=sequences)
 
 # Use math module for more advanced calculations
-theta_w = wattersons_theta(
+theta_w = watterson_theta(
     num_segregating_sites=stats["segregating_sites"],
     sample_size=stats["sample_size"]
 )
 
 # Full Tajima's D with variance (for publication-quality analysis)
 tajima_d_full = tajimas_D(
-    sequences=sequences,
-    sample_size=stats["sample_size"]
+    pi=stats["nucleotide_diversity"],
+    s=stats["segregating_sites"],
+    n=stats["sample_size"]
 )
 ```
 
 ### Combining with GWAS Structure Analysis
 
 ```python-snippet
-from metainformant.dna.population_analysis import compare_populations
-from metainformant.gwas.structure import compute_pca, compute_kinship_matrix
+from metainformant.dna.population.analysis import calculate_summary_statistics, compare_populations
+from metainformant.gwas.analysis.structure import compute_pca, compute_kinship_matrix
 
 # Compare populations
 pop1 = ["AAAA", "AAAA", "AAAT"]
 pop2 = ["TTTT", "TTTT", "TTTA"]
 comparison = compare_populations(
-    pop1_sequences=pop1,
-    pop2_sequences=pop2
+    calculate_summary_statistics(sequences=pop1),
+    calculate_summary_statistics(sequences=pop2)
 )
 
 # Convert sequences to genotype matrix for PCA
@@ -174,30 +185,30 @@ kinship_result = compute_kinship_matrix(genotype_matrix, method="vanraden")
 Always ensure sequences are aligned before analysis:
 
 ```python-snippet
-from metainformant.dna.alignment import align_sequences
+from metainformant.dna.alignment.msa import align_msa
 
-# Align sequences first
-unaligned = ["AAAA", "AAAT", "AATT"]
-aligned = align_sequences(unaligned)
+# Align sequences first (align_msa takes and returns {id: sequence} dicts)
+unaligned = {"seq1": "AAAA", "seq2": "AAAT", "seq3": "AATT"}
+aligned = align_msa(unaligned)
 
 # Then calculate statistics
-stats = calculate_summary_statistics(sequences=aligned)
+stats = calculate_summary_statistics(sequences=list(aligned.values()))
 ```
 
 ### 2. Handling Missing Data
 
-The orchestrators handle sequence length mismatches automatically (with warnings):
+Sequence statistics need an alignment: sequences of different lengths raise
+`ValueError`. Within an alignment, gaps and ambiguous bases are skipped:
+nucleotide diversity compares each pair over the sites both sequences cover,
+and the neutrality tests use only columns where every sequence has A, C, G or T.
 
 ```python
-import warnings
-
-# Sequences with different lengths
 sequences = ["AAAA", "AAAT", "AAT"]  # Last sequence is shorter
 
-# Warning will be issued, but analysis proceeds
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    stats = calculate_summary_statistics(sequences=sequences)
+try:
+    calculate_summary_statistics(sequences=sequences)
+except ValueError as exc:
+    print(exc)  # Sequences must be aligned (same length)
 ```
 
 ### 3. Sample Size Considerations
@@ -208,7 +219,7 @@ Many statistics require sufficient sample size:
 sequences = ["AAAA", "AAAT"]  # Only 2 sequences
 
 stats = calculate_summary_statistics(sequences=sequences)
-# Some statistics may be less reliable with small samples
+# Neutrality tests need at least 4 sequences; below that they report 0.0 with p-value 1.0
 ```
 
 ### 4. Quality Control
@@ -255,7 +266,7 @@ def custom_diversity_analysis(sequences):
     # Calculate expected vs observed
     theta = 0.01  # Assumed mutation parameter
     S_expected = expected_segregating_sites(
-        sample_size=n,
+        n_samples=n,
         theta=theta,
         sequence_length=len(sequences[0])
     )
