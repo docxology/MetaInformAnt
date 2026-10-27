@@ -89,6 +89,13 @@ def _ensure_axis(ax: Optional[Any], style: Any, figsize: Optional[Any] = None) -
     return fig, new_ax
 
 
+def _prepare_output_path(output_path: Union[str, Path]) -> Path:
+    """Return ``output_path`` as a ``Path`` after creating its parent directories."""
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
+
+
 def _save_owned_figure(
     fig: Optional[Any],
     output_path: Optional[Union[str, Path]],
@@ -98,7 +105,7 @@ def _save_owned_figure(
 ) -> None:
     """Save only figures created by this module, not caller-owned axes."""
     if output_path and fig is not None:
-        saved_path = Path(output_path)
+        saved_path = _prepare_output_path(output_path)
         fig.savefig(saved_path, dpi=dpi or style.dpi, bbox_inches="tight")
         logger.info(f"Saved {plot_name} to {saved_path}")
 
@@ -909,7 +916,7 @@ def pca_plot(
 
         # ── Scree inset ──
         if explained_var and len(explained_var) >= 3:
-            inset_ax = ax.inset_axes([0.72, 0.02, 0.26, 0.22])  # [x, y, w, h]
+            inset_ax = ax.inset_axes((0.72, 0.02, 0.26, 0.22))  # (x, y, w, h)
             n_pcs = min(10, len(explained_var))
             pcs_idx = np.arange(1, n_pcs + 1)
             var_pct = [v * 100 for v in explained_var[:n_pcs]]
@@ -926,7 +933,7 @@ def pca_plot(
         plt.tight_layout()
 
         if output_path and fig is not None:
-            output_path = Path(output_path)
+            output_path = _prepare_output_path(output_path)
             fig.savefig(output_path, dpi=style.dpi, bbox_inches="tight")
             logger.info(f"Saved PCA plot to {output_path}")
 
@@ -1134,7 +1141,7 @@ def kinship_heatmap(
         plt.tight_layout()
 
         if output_path and fig is not None:
-            output_path = Path(output_path)
+            output_path = _prepare_output_path(output_path)
             fig.savefig(output_path, dpi=style.dpi, bbox_inches="tight")
             logger.info(f"Saved kinship heatmap to {output_path}")
 
@@ -1172,20 +1179,20 @@ def effect_size_plot(results: List[Dict[str, Any]], output_path: Optional[Union[
         logger.warning("No effect sizes found in results")
         return None
 
-    effect_sizes = np.array(effect_sizes)
+    effect_array = np.array(effect_sizes)
 
     # Create figure with two subplots
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
     # Histogram of effect sizes
-    ax1.hist(effect_sizes, bins=50, edgecolor="black", alpha=0.7, color="steelblue")
+    ax1.hist(effect_array, bins=50, edgecolor="black", alpha=0.7, color="steelblue")
     ax1.axvline(x=0, color="red", linestyle="--", alpha=0.7, label="Null effect")
     ax1.axvline(
-        x=np.mean(effect_sizes),
+        x=np.mean(effect_array),
         color="green",
         linestyle="-",
         alpha=0.7,
-        label=f"Mean: {np.mean(effect_sizes):.4f}",
+        label=f"Mean: {np.mean(effect_array):.4f}",
     )
     ax1.set_xlabel("Effect Size (Beta)")
     ax1.set_ylabel("Frequency")
@@ -1194,7 +1201,7 @@ def effect_size_plot(results: List[Dict[str, Any]], output_path: Optional[Union[
     ax1.grid(True, alpha=0.3)
 
     # Box plot
-    ax2.boxplot(effect_sizes, vert=True)
+    ax2.boxplot(effect_array, vert=True)
     ax2.set_ylabel("Effect Size (Beta)")
     ax2.set_title("Effect Size Box Plot")
     ax2.grid(True, alpha=0.3)
@@ -1203,7 +1210,7 @@ def effect_size_plot(results: List[Dict[str, Any]], output_path: Optional[Union[
 
     # Save if output path provided
     if output_path:
-        output_path = Path(output_path)
+        output_path = _prepare_output_path(output_path)
         fig.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved effect size plot to {output_path}")
 
@@ -1444,7 +1451,7 @@ def missingness_plot(vcf_data: Dict[str, Any], output_path: Optional[Union[str, 
     plt.tight_layout()
 
     if output_path:
-        output_path = Path(output_path)
+        output_path = _prepare_output_path(output_path)
         fig.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved missingness plot to {output_path}")
 
@@ -1493,7 +1500,7 @@ def functional_enrichment_plot(
         ax.set_title("Functional Enrichment Analysis")
 
         if output_path:
-            output_path = Path(output_path)
+            output_path = _prepare_output_path(output_path)
             fig.savefig(output_path, dpi=300, bbox_inches="tight")
             logger.info(f"Saved functional enrichment plot to {output_path}")
 
@@ -1521,7 +1528,7 @@ def functional_enrichment_plot(
     plt.tight_layout()
 
     if output_path:
-        output_path = Path(output_path)
+        output_path = _prepare_output_path(output_path)
         fig.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved functional enrichment plot to {output_path}")
 

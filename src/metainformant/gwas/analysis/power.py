@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import math
 import random
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Union
 
 try:
     import numpy as np
@@ -22,7 +22,8 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    if not TYPE_CHECKING:  # runtime-only fallback; type checkers keep the real module type
+        np = None
 
 from metainformant.core.utils import logging
 
@@ -35,7 +36,8 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    scipy_stats = None
+    if not TYPE_CHECKING:  # runtime-only fallback; type checkers keep the real module type
+        scipy_stats = None
 
 
 # ---------------------------------------------------------------------------
@@ -507,7 +509,7 @@ def _compute_statistic(
 
     if statistic == "lambda_gc":
         gc_result = genomic_control(p_values=p_values)
-        return gc_result.get("lambda_gc", 1.0) if isinstance(gc_result, dict) else 1.0
+        return float(gc_result.get("lambda_gc", 1.0))
     elif statistic == "n_significant":
         return float(sum(1 for p in p_values if p < alpha))
     elif statistic == "mean_abs_beta":

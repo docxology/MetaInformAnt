@@ -301,7 +301,9 @@ class TestMultiCovariateRegression:
         """Multi-covariate regression should NOT return hardcoded 0.1/0.05/2.0/0.05/0.5."""
         genotypes = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0]
         phenotypes = [10.0, 11.0, 12.0, 10.0, 11.0, 12.0, 10.0, 11.0, 12.0, 10.0]
-        covariates = [[30, 40, 50, 30, 40, 50, 30, 40, 50, 30]]
+        # Not collinear with the genotype; an exactly collinear covariate is a singular design
+        # and is reported as an error (see test_gwas_association_reporting.py).
+        covariates = [[30, 42, 51, 28, 39, 52, 31, 38, 49, 33]]
 
         result = association_test_linear(genotypes, phenotypes, covariates=covariates)
         assert result["status"] == "success"

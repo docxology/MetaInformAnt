@@ -78,7 +78,7 @@ def _get_experiment_runs(
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 
     # Search for runs in this experiment
-    search_params = {
+    search_params: Dict[str, str | int] = {
         "db": "sra",
         "term": f"{experiment_acc}[Experiment Accession]",
         "retmax": 100,
@@ -144,7 +144,7 @@ def _get_biosample_runs(
     contact = resolve_ncbi_contact(email, allow_anonymous=allow_anonymous)
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 
-    search_params = {
+    search_params: Dict[str, str | int] = {
         "db": "sra",
         "term": f"{biosample_acc}[BioSample]",
         "retmax": 100,
@@ -276,7 +276,7 @@ def prefetch_sra_metadata(
         batch = accessions[i : i + batch_size]
 
         # Search for these accessions
-        search_params = {
+        search_params: Dict[str, str | int] = {
             "db": "sra",
             "term": " OR ".join(f"{acc}[Accession]" for acc in batch),
             "retmax": len(batch),

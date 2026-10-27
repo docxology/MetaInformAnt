@@ -7,7 +7,7 @@ genotypes and phenotypes, including linear and logistic regression.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from metainformant.core.utils import logging
 
@@ -18,7 +18,8 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    if not TYPE_CHECKING:  # runtime-only fallback; type checkers keep the real module type
+        np = None
 
 logger = logging.get_logger(__name__)
 
@@ -32,8 +33,9 @@ def association_test_linear(
     """Perform linear regression association test.
 
     Uses complete-case analysis: samples are excluded before fitting when the
-    genotype is missing (negative dosage, e.g. -1 for unknown) or the
-    phenotype is missing (NaN, None, or non-numeric values such as "NA").
+    genotype is missing (negative dosage, e.g. -1 for unknown), the
+    phenotype is missing (NaN, None, or non-numeric values such as "NA"), or
+    any covariate value is missing or non-finite.
     Missing values are never treated as numeric allele doses.
 
     Args:
@@ -53,18 +55,21 @@ def association_test_linear(
     n_input = len(genotypes)
     logger.debug(f"Running linear association test on {n_input} samples")
 
-    # Complete-case filtering: drop pairs with missing genotypes (dose < 0,
-    # e.g. -1 for unknown) or missing/NaN phenotypes.
+    # Complete-case filtering: drop samples with missing genotypes (dose < 0,
+    # e.g. -1 for unknown), missing/NaN phenotypes, or non-finite covariates.
     keep_indices: List[int] = []
     for i in range(n_input):
         try:
             gt_value = float(genotypes[i])
             ph_value = float(phenotypes[i])
+            covariate_values = [float(cov[i]) for cov in covariates] if covariates else []
         except (TypeError, ValueError):
             continue
         if not math.isfinite(gt_value) or gt_value < 0:
             continue
         if not math.isfinite(ph_value):
+            continue
+        if not all(math.isfinite(value) for value in covariate_values):
             continue
         keep_indices.append(i)
 
@@ -141,15 +146,29 @@ def association_test_logistic(
 ) -> Dict[str, Any]:
     """Perform logistic regression association test.
 
+    Uses complete-case analysis, exactly like :func:`association_test_linear`:
+    samples are excluded before fitting when the genotype is missing (negative
+    dosage, e.g. -1 for unknown; NaN or infinite; ``None`` or another
+    non-numeric value such as "NA") or when any covariate value is missing or
+    non-finite. Missing values are never treated as numeric allele doses.
+    Covariates are subset to the retained samples and the case/control counts
+    are recomputed on them.
+
     Args:
-        genotypes: Genotype values (0, 1, 2) for each sample
+        genotypes: Genotype values (0, 1, 2; negative values encode missing)
         phenotypes: Binary phenotype values (0, 1) for each sample
         covariates: Optional covariate matrix (covariates x samples)
         max_iter: Maximum iterations for optimization
         **kwargs: Additional parameters
 
     Returns:
-        Dictionary with association test results
+        Dictionary with association test results. ``n_samples`` is the number
+        of complete cases analyzed, ``n_cases`` and ``n_controls`` are counted
+        on those cases, and ``n_missing_dropped`` counts the excluded samples.
+
+    Raises:
+        ValueError: If genotypes and phenotypes differ in length, a phenotype
+            is not 0 or 1, or a covariate does not have one value per sample.
     """
     if len(genotypes) != len(phenotypes):
         raise ValueError("Genotypes and phenotypes must have same length")
@@ -157,15 +176,46 @@ def association_test_logistic(
     if not all(p in (0, 1) for p in phenotypes):
         raise ValueError("Logistic regression requires binary phenotypes (0 or 1)")
 
-    logger.debug(f"Running logistic association test on {len(genotypes)} samples")
+    n_input = len(genotypes)
+    logger.debug(f"Running logistic association test on {n_input} samples")
 
-    n = len(genotypes)
+    covariate_rows = list(covariates) if covariates is not None and len(covariates) > 0 else []
+    for j, covariate in enumerate(covariate_rows):
+        if len(covariate) != n_input:
+            raise ValueError(
+                f"Each covariate must have one value per sample: covariate {j} has {len(covariate)} "
+                f"values for {n_input} samples"
+            )
 
-    # Check for sufficient cases/controls
-    n_cases = sum(1 for p in phenotypes if p == 1)
-    n_controls = sum(1 for p in phenotypes if p == 0)
+    # Complete-case filtering: a sample is usable only when its genotype is a finite,
+    # non-negative dose and every covariate value is finite.
+    keep_indices: List[int] = []
+    X: List[List[float]] = []
+    for i in range(n_input):
+        try:
+            gt_value = float(genotypes[i])
+            covariate_values = [float(covariate[i]) for covariate in covariate_rows]
+        except (TypeError, ValueError):
+            continue
+        if not math.isfinite(gt_value) or gt_value < 0:
+            continue
+        if not all(math.isfinite(value) for value in covariate_values):
+            continue
+        keep_indices.append(i)
+        X.append([1.0, gt_value, *covariate_values])  # Intercept + genotype + covariates
+
+    n = len(keep_indices)
+    n_missing_dropped = n_input - n
+    kept_phenotypes = [phenotypes[i] for i in keep_indices]
+
+    # Check for sufficient cases/controls among the complete cases
+    n_cases = sum(1 for p in kept_phenotypes if p == 1)
+    n_controls = sum(1 for p in kept_phenotypes if p == 0)
     if n_cases < 2 or n_controls < 2:
         logger.warning(f"Insufficient cases ({n_cases}) or controls ({n_controls}) for logistic regression")
+        message = f"Insufficient cases ({n_cases}) or controls ({n_controls})"
+        if n_missing_dropped:
+            message += f" after dropping {n_missing_dropped} sample(s) with missing genotype or covariate values"
         return {
             "status": "failed",
             "beta": 0.0,
@@ -174,29 +224,27 @@ def association_test_logistic(
             "p_value": 1.0,
             "odds_ratio": 1.0,
             "n_samples": n,
+            "n_missing_dropped": n_missing_dropped,
             "n_cases": n_cases,
             "n_controls": n_controls,
             "test_type": "logistic",
             "converged": False,
-            "error": f"Insufficient cases ({n_cases}) or controls ({n_controls})",
+            "error": message,
         }
-
-    # Prepare design matrix
-    X = [[1.0, float(gt)] for gt in genotypes]  # Intercept + genotype
-
-    # Add covariates if provided
-    if covariates:
-        for i in range(len(covariates[0])):  # For each sample
-            for j, cov in enumerate(covariates):
-                X[i].append(cov[i])
 
     # Logistic regression with proper statistical inference
     try:
         if not HAS_NUMPY:
             raise ImportError("numpy is required for logistic regression")
         X_array = np.array(X)
-        y_array = np.array(phenotypes)
-        beta, se, z_stat, p_value = _logistic_regression_with_stats(X_array, y_array, max_iter)
+        y_array = np.array(kept_phenotypes)
+        beta, se, z_stat, p_value, converged = _logistic_regression_with_stats(X_array, y_array, max_iter)
+        if not converged:
+            logger.warning(
+                "Logistic regression did not converge in %d iterations (possible separation); "
+                "the estimate and p-value are unreliable",
+                max_iter,
+            )
 
         # Calculate odds ratio
         odds_ratio = math.exp(beta) if abs(beta) < 700 else float("inf")
@@ -209,10 +257,11 @@ def association_test_logistic(
             "p_value": p_value,
             "odds_ratio": odds_ratio,
             "n_samples": n,
+            "n_missing_dropped": n_missing_dropped,
             "n_cases": n_cases,
             "n_controls": n_controls,
             "test_type": "logistic",
-            "converged": True,
+            "converged": converged,
         }
 
     except Exception as e:
@@ -225,6 +274,7 @@ def association_test_logistic(
             "p_value": 1.0,
             "odds_ratio": 1.0,
             "n_samples": n,
+            "n_missing_dropped": n_missing_dropped,
             "n_cases": n_cases,
             "n_controls": n_controls,
             "test_type": "logistic",
@@ -320,10 +370,9 @@ def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[flo
     Returns:
         Tuple of (beta, se, t_stat, p_value, r_squared)
     """
-    # Very simplified OLS - in practice would use proper linear algebra
     n = len(y)
     if n < 3:
-        return 0.0, 0.0, 0.0, 1.0, 0.0
+        raise ValueError(f"Linear regression needs at least 3 complete cases, got {n}")
 
     # Simple slope calculation for single predictor
     if len(X[0]) == 2:  # Intercept + one predictor
@@ -339,7 +388,7 @@ def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[flo
         denominator = sum((x - x_mean) ** 2 for x in x_vals)
 
         if denominator == 0:
-            return 0.0, 0.0, 0.0, 1.0, 0.0
+            raise ValueError("Genotype is constant across complete cases; the slope is not estimable")
 
         beta = numerator / denominator
         intercept = y_mean - beta * x_mean
@@ -358,8 +407,7 @@ def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[flo
         # t-statistic
         t_stat = beta / se if se > 0 else 0.0
 
-        # p-value approximation (two-tailed)
-        p_value = 2 * (1 - _normal_cdf(abs(t_stat)))
+        p_value = _two_sided_t_p(t_stat, n - 2)
 
         return beta, se, t_stat, p_value, r_squared
 
@@ -370,8 +418,10 @@ def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[flo
         # OLS via least squares: beta = (X'X)^-1 X'y
         try:
             beta_vec, residuals_arr, rank, sv = np.linalg.lstsq(X_arr, y_arr, rcond=None)
-        except np.linalg.LinAlgError:
-            return 0.0, 0.0, 0.0, 1.0, 0.0
+        except np.linalg.LinAlgError as exc:
+            raise ValueError(f"Least-squares fit failed: {exc}") from exc
+        if rank < X_arr.shape[1]:
+            raise ValueError("Design matrix is singular (collinear genotype or covariates)")
 
         # Predicted values and residuals
         y_pred_arr = X_arr @ beta_vec
@@ -379,15 +429,15 @@ def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[flo
         p = len(beta_vec)  # number of predictors including intercept
         dof = n - p
         if dof <= 0:
-            return 0.0, 0.0, 0.0, 1.0, 0.0
+            raise ValueError(f"No residual degrees of freedom ({n} cases, {p} parameters)")
 
         mse = float(np.sum(resid**2) / dof)
 
         # Variance-covariance matrix of beta
         try:
             XtX_inv = np.linalg.inv(X_arr.T @ X_arr)
-        except np.linalg.LinAlgError:
-            return 0.0, 0.0, 0.0, 1.0, 0.0
+        except np.linalg.LinAlgError as exc:
+            raise ValueError("Design matrix is singular (collinear genotype or covariates)") from exc
 
         beta_cov = mse * XtX_inv
 
@@ -404,13 +454,7 @@ def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[flo
         # t-statistic and p-value
         t_stat = beta / se if se > 0 else 0.0
 
-        # Use scipy t-distribution if available, otherwise normal approximation
-        try:
-            from scipy import stats as scipy_stats
-
-            p_value = float(2 * scipy_stats.t.sf(abs(t_stat), dof))
-        except ImportError:
-            p_value = 2 * (1 - _normal_cdf(abs(t_stat)))
+        p_value = _two_sided_t_p(t_stat, dof)
 
         return beta, se, t_stat, p_value, r_squared
 
@@ -423,21 +467,21 @@ def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[flo
     Xty = [sum(X[s][i] * y[s] for s in range(n)) for i in range(k)]
     beta_vec_pp = _solve_linear_system(XtX, Xty)
     if beta_vec_pp is None:
-        return 0.0, 0.0, 0.0, 1.0, 0.0
+        raise ValueError("Design matrix is singular (collinear genotype or covariates)")
 
     # Predicted and residuals
     y_pred_pp = [sum(X[s][j] * beta_vec_pp[j] for j in range(k)) for s in range(n)]
     resid_pp = [y[s] - y_pred_pp[s] for s in range(n)]
     dof_pp = n - k
     if dof_pp <= 0:
-        return 0.0, 0.0, 0.0, 1.0, 0.0
+        raise ValueError(f"No residual degrees of freedom ({n} cases, {k} parameters)")
 
     mse_pp = sum(r**2 for r in resid_pp) / dof_pp
 
     # Inverse of X'X for standard errors
     XtX_inv_pp = _matrix_inverse(XtX)
     if XtX_inv_pp is None:
-        return 0.0, 0.0, 0.0, 1.0, 0.0
+        raise ValueError("Design matrix is singular (collinear genotype or covariates)")
 
     beta = beta_vec_pp[1]
     se = math.sqrt(max(mse_pp * XtX_inv_pp[1][1], 0.0))
@@ -448,12 +492,21 @@ def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[flo
     r_squared = 1.0 - (ss_res_pp / ss_tot_pp) if ss_tot_pp > 0 else 0.0
 
     t_stat = beta / se if se > 0 else 0.0
-    p_value = 2 * (1 - _normal_cdf(abs(t_stat)))
+    p_value = _two_sided_t_p(t_stat, dof_pp)
 
     return beta, se, t_stat, p_value, r_squared
 
 
-def _logistic_regression_with_stats(X: Any, y: Any, max_iter: int) -> Tuple[float, float, float, float]:
+def _two_sided_t_p(t_stat: float, dof: int) -> float:
+    """Two-sided p-value of a t statistic, from Student's t when SciPy is installed."""
+    try:
+        from scipy import stats as scipy_stats
+    except ImportError:
+        return 2 * (1 - _normal_cdf(abs(t_stat)))
+    return float(2 * scipy_stats.t.sf(abs(t_stat), dof))
+
+
+def _logistic_regression_with_stats(X: Any, y: Any, max_iter: int) -> Tuple[float, float, float, float, bool]:
     """Perform logistic regression with statistical inference via statsmodels.
 
     statsmodels is the only supported backend: it supplies model-based standard
@@ -490,8 +543,9 @@ def _logistic_regression_with_stats(X: Any, y: Any, max_iter: int) -> Tuple[floa
         p_value = float(result.pvalues[1])
         z_stat = beta / result.bse[1] if result.bse[1] != 0 else 0.0
         se = float(result.bse[1])
+        converged = bool(result.mle_retvals.get("converged", False))
 
-        return beta, se, z_stat, p_value
+        return beta, se, z_stat, p_value, converged
     except Exception as exc:
         raise RuntimeError(
             f"statsmodels logistic regression failed ({exc}); refusing to return " "fabricated standard errors/p-values"

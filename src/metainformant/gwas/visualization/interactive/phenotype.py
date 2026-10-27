@@ -8,7 +8,7 @@ principal components.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from metainformant.core.utils import logging
 
@@ -24,7 +24,8 @@ try:
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
-    plt = None
+    if not TYPE_CHECKING:  # runtime-only fallback; type checkers keep the real module type
+        plt = None
 
 try:
     import numpy as np
@@ -32,7 +33,8 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    if not TYPE_CHECKING:  # runtime-only fallback; type checkers keep the real module type
+        np = None
 
 
 def phenotype_distribution(
@@ -262,8 +264,9 @@ def phenotype_correlation_matrix(
         # Build data matrix: rows = samples, cols = traits
         data_matrix = np.column_stack([np.array(phenotypes_dict[t], dtype=np.float64) for t in trait_names])
 
-        # Compute correlation matrix
-        corr_matrix = np.corrcoef(data_matrix, rowvar=False)
+        # Compute correlation matrix (two or more traits: always n_traits x n_traits; atleast_2d
+        # only narrows the scalar branch that the numpy stubs allow for corrcoef)
+        corr_matrix = np.atleast_2d(np.corrcoef(data_matrix, rowvar=False))
 
         fig, ax = plt.subplots(figsize=(max(8, n_traits * 1.5), max(6, n_traits * 1.2)))
 

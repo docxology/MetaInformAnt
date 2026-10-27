@@ -215,7 +215,7 @@ def plot_qq_overlay(ax: Any, p_values: np.ndarray, label: str, color: str | None
     expected = np.arange(1, n + 1) / (n + 1)
 
     # Convert to -log10
-    observed_log = -np.log10(p_values.clip(lower=1e-300))
+    observed_log = -np.log10(np.clip(p_values, 1e-300, None))
     expected_log = -np.log10(expected)
 
     # Plot
@@ -411,6 +411,7 @@ def calculate_population_enrichment(
         # Chi-square test (simplified p-value calculation)
         from scipy import stats
 
+        p_value: float
         try:
             contingency = [
                 [sig_snps, total_snps - sig_snps],

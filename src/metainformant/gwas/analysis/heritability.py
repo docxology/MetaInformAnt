@@ -15,7 +15,7 @@ Reference: Yang et al. (2011) Nature Genetics 43:519-525 (GCTA-GREML).
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from metainformant.core.utils import logging
 from metainformant.gwas.heritability.estimation import greml_simple
@@ -28,7 +28,8 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    if not TYPE_CHECKING:  # runtime-only fallback; type checkers keep the real module type
+        np = None
 
 
 def estimate_heritability(

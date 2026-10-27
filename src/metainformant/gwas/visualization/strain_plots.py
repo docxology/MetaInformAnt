@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union, cast
 
 from metainformant.core.utils import logging
 
@@ -39,6 +39,9 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
+
+# Linkage methods accepted by scipy.cluster.hierarchy.linkage (scipy validates the runtime value).
+_LinkageMethod = Literal["single", "complete", "average", "weighted", "centroid", "median", "ward"]
 
 # ── Shared strain palette ───────────────────────────────────────────────
 STRAIN_PALETTE = {"C": "#2196F3", "I": "#FF9800", "M": "#4CAF50", "R": "#F44336"}
@@ -191,7 +194,7 @@ def strain_pca_plot(
         y=0.98,
     )
 
-    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    plt.tight_layout(rect=(0, 0, 1, 0.95))
 
     if output_path:
         output_path = Path(output_path)
@@ -330,7 +333,7 @@ def dendrogram_plot(
     condensed = squareform(D, checks=False)
 
     # Linkage
-    Z = sch.linkage(condensed, method=method)
+    Z = sch.linkage(condensed, method=cast(_LinkageMethod, method))
 
     # Cophenetic correlation
     coph_corr, _ = sch.cophenet(Z, condensed)

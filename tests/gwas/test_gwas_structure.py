@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import json
+import random
+import subprocess
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -138,3 +142,65 @@ chr1	500	rs5	A	T	90	PASS	.	GT	0/0	1/1	0/1	0/0	1/1
     # Check output files if generated
     if structure_dir.exists():
         assert (structure_dir / "structure_summary.json").exists()
+
+
+# ``_vanraden_kinship`` and ``compute_pca`` import numpy inside the function and fall back to pure Python
+# on ImportError. Blocking the import in a fresh interpreter (after computing the NumPy reference) runs
+# those fallbacks on exactly the same inputs.
+_PURE_PYTHON_FALLBACKS = """
+import json
+import sys
+
+import numpy as np
+
+from metainformant.gwas.analysis import structure
+
+payload = json.load(sys.stdin)
+variant_major = payload["variant_major"]
+sample_major = [list(column) for column in zip(*variant_major)]
+
+reference_kinship = np.array(structure._vanraden_kinship(variant_major))
+
+real_numpy = sys.modules["numpy"]
+sys.modules["numpy"] = None  # `import numpy` inside the functions now raises ImportError
+try:
+    fallback_kinship = structure._vanraden_kinship(variant_major)
+    fallback_pca = structure.compute_pca(sample_major, n_components=3)
+finally:
+    sys.modules["numpy"] = real_numpy
+
+print(
+    json.dumps(
+        {
+            "kinship_max_abs_diff": float(np.abs(reference_kinship - np.array(fallback_kinship)).max()),
+            "kinship_diagonal": [fallback_kinship[i][i] for i in range(len(fallback_kinship))],
+            "pca_status": fallback_pca["status"],
+            "pca_shape": [len(fallback_pca["pcs"]), len(fallback_pca["pcs"][0])],
+            "pca_n_components": fallback_pca["n_components"],
+        }
+    )
+)
+"""
+
+
+def test_pure_python_fallbacks_agree_with_numpy_kinship_and_produce_pca_scores() -> None:
+    """Without NumPy the VanRaden kinship still matches the NumPy result and PCA still returns scores."""
+    rng = random.Random(5)
+    n_variants, n_samples = 40, 12
+    variant_major = [[rng.choice([0, 1, 2, 2, 1, -1]) for _ in range(n_samples)] for _ in range(n_variants)]
+
+    proc = subprocess.run(
+        [sys.executable, "-c", _PURE_PYTHON_FALLBACKS],
+        input=json.dumps({"variant_major": variant_major}),
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    assert proc.returncode == 0, proc.stderr
+    result = json.loads(proc.stdout.strip().splitlines()[-1])
+
+    assert result["kinship_max_abs_diff"] < 1e-9
+    assert len(result["kinship_diagonal"]) == n_samples
+    assert result["pca_status"] == "success"
+    assert result["pca_shape"] == [n_samples, 3]
+    assert result["pca_n_components"] == 3

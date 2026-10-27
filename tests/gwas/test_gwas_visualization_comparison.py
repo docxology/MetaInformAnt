@@ -2,16 +2,22 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
+from typing import Any
 
+import numpy as np
 import pytest
 
 from metainformant.gwas.visualization.statistical.comparison import (
     analyze_genetic_architecture,
+    compare_analysis_methods,
+    compare_gwas_studies,
     concordance_plot,
     cross_cohort_forest,
     miami_plot,
     multi_trait_manhattan,
+    plot_qq_overlay,
 )
 
 
@@ -187,3 +193,83 @@ def test_analyze_genetic_architecture_skips_missing_p_column() -> None:
     architecture = analyze_genetic_architecture({"PopC": {"results": pd.DataFrame({"BETA": [1.0]})}})
 
     assert architecture == {}
+
+
+def test_plot_qq_overlay_plots_observed_against_expected_with_zero_clipping() -> None:
+    """Observed -log10(p) uses clip(min=1e-300); NaNs are dropped and the rest sorted.
+
+    ``ndarray.clip`` has no ``lower`` keyword (that is the pandas spelling), so the
+    previous implementation raised ``TypeError`` for every NumPy input.
+    """
+    plt = pytest.importorskip("matplotlib.pyplot")
+
+    fig, ax = plt.subplots()
+    try:
+        plot_qq_overlay(ax, np.array([0.5, 0.0, 0.2, np.nan, 1e-12]), "Study", "tab:blue")
+
+        (collection,) = ax.collections
+        offsets = np.asarray(collection.get_offsets())
+    finally:
+        plt.close(fig)
+
+    sorted_p = [0.0, 1e-12, 0.2, 0.5]
+    expected_x = [-math.log10(rank / (len(sorted_p) + 1)) for rank in range(1, len(sorted_p) + 1)]
+    expected_y = [-math.log10(max(p, 1e-300)) for p in sorted_p]
+    assert offsets[:, 0] == pytest.approx(expected_x)
+    assert offsets[:, 1] == pytest.approx(expected_y)
+    assert offsets[0, 1] == pytest.approx(300.0)
+
+
+def _study_frame(seed: int, n: int = 60) -> Any:
+    import pandas as pd
+
+    rng = np.random.default_rng(seed)
+    return pd.DataFrame(
+        {
+            "CHR": [1] * (n // 2) + [2] * (n - n // 2),
+            "P": rng.uniform(1e-6, 1.0, n),
+            "BETA": rng.normal(0.0, 0.2, n),
+        }
+    )
+
+
+def test_compare_gwas_studies_builds_figure_for_real_dataframes(tmp_path: Path) -> None:
+    """Studies with a P column must produce one Q-Q overlay per study instead of crashing."""
+    pytest.importorskip("pandas")
+    pytest.importorskip("seaborn")
+    plt = pytest.importorskip("matplotlib.pyplot")
+
+    output_path = tmp_path / "study_comparison.png"
+    fig = compare_gwas_studies(
+        {"StudyA": {"results": _study_frame(1)}, "StudyB": {"results": _study_frame(2)}},
+        output_file=output_path,
+    )
+    try:
+        assert fig is not None
+        assert output_path.exists() and output_path.stat().st_size > 0
+        qq_axis = fig.axes[1]
+        assert len(qq_axis.collections) == 2
+        n_points = sorted(len(c.get_offsets()) for c in qq_axis.collections)
+        assert n_points == [60, 60]
+    finally:
+        plt.close(fig)
+
+
+def test_compare_analysis_methods_builds_figure_for_real_dataframes(tmp_path: Path) -> None:
+    """Method comparison draws a Q-Q overlay per method (it shares the same overlay helper)."""
+    pytest.importorskip("pandas")
+    pytest.importorskip("seaborn")
+    plt = pytest.importorskip("matplotlib.pyplot")
+
+    output_path = tmp_path / "method_comparison.png"
+    fig = compare_analysis_methods(
+        {"Linear": {"results": _study_frame(3)}, "Mixed": {"results": _study_frame(4)}},
+        output_file=output_path,
+    )
+    try:
+        assert fig is not None
+        assert output_path.exists() and output_path.stat().st_size > 0
+        qq_axis = fig.axes[1]
+        assert len(qq_axis.collections) == 2
+    finally:
+        plt.close(fig)

@@ -676,19 +676,19 @@ def regional_ld_plot(
             }
 
         n_snps = len(positions)
-        positions = np.array(positions)
-        genotypes = np.array(genotypes, dtype=float)
+        positions_arr = np.array(positions)
+        genotype_arr = np.array(genotypes, dtype=float)
 
         # Calculate LD matrix (r² values) using correlation
         # Handle missing data by replacing with mean
-        for i in range(genotypes.shape[0]):
-            col = genotypes[i]
+        for i in range(genotype_arr.shape[0]):
+            col = genotype_arr[i]
             valid_mask = ~np.isnan(col)
             if valid_mask.sum() > 0:
                 col[~valid_mask] = np.mean(col[valid_mask])
 
         # Calculate pairwise correlations (r²)
-        ld_matrix = np.corrcoef(genotypes)
+        ld_matrix = np.corrcoef(genotype_arr)
         ld_matrix = np.square(ld_matrix)  # Convert r to r²
 
         # Handle NaN values (e.g., constant genotypes)
@@ -704,12 +704,12 @@ def regional_ld_plot(
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={"height_ratios": [1, 3]})
 
     # Top plot: SNP positions
-    ax1.scatter(positions, [1] * n_snps, c="blue", s=50, alpha=0.7)
+    ax1.scatter(positions_arr, [1] * n_snps, c="blue", s=50, alpha=0.7)
     if lead_snp_pos:
         # Highlight lead SNP
-        lead_idx = np.argmin(np.abs(positions - lead_snp_pos))
+        lead_idx = np.argmin(np.abs(positions_arr - lead_snp_pos))
         ax1.scatter(
-            positions[lead_idx],
+            positions_arr[lead_idx],
             1,
             c="red",
             s=100,

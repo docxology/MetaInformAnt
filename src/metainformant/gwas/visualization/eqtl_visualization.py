@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Sequence
+from typing import TYPE_CHECKING, Any, Dict, List, Sequence
 
 import numpy as np
 import pandas as pd
@@ -21,7 +21,8 @@ try:
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
-    plt = None
+    if not TYPE_CHECKING:  # runtime-only fallback; type checkers keep the real module type
+        plt = None
 
 
 def plot_eqtl_volcano(

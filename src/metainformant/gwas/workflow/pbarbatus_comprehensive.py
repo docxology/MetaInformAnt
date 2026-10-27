@@ -6,7 +6,10 @@ The CLI wrapper lives in ``scripts/gwas/pipelines/run_pbarbatus_analysis.py``.
 from __future__ import annotations
 
 import sys
+from pathlib import Path
+from typing import Any, Dict
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -17,6 +20,7 @@ from metainformant.gwas.analysis.quality import apply_qc_filters, parse_vcf_full
 from metainformant.gwas.analysis.structure import compute_kinship_matrix, compute_pca
 from metainformant.gwas.data.config import load_gwas_config
 from metainformant.gwas.visualization._general_impl import manhattan_plot, qq_plot
+from metainformant.gwas.workflow.workflow_config import _phenotypes_in_sample_order
 
 
 def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
@@ -28,7 +32,7 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
 
     # Load configuration
     print("\nLoading configuration...")
-    config = load_gwas_config("config/gwas/gwas_pbarbatus_synthetic.yaml")
+    config = load_gwas_config(config_path)
     print("✓ Configuration loaded")
 
     # Parse VCF
@@ -39,28 +43,28 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
 
     # Quality control
     print("\n[2/7] Applying quality control filters...")
-    qc_filters = {
-        "min_maf": config.qc.get("min_maf", 0.05),
-        "max_missing": config.qc.get("max_missing", 0.10),
-        "hwe_pval": config.qc.get("hwe_pval", 1e-6),
-        "min_qual": config.qc.get("min_qual", 30.0),
+    # float(): YAML 1.1 loads "1e-6" (no decimal point) as a string
+    qc_config = {
+        "min_maf": float(config.qc.get("min_maf", 0.05)),
+        "max_missing": float(config.qc.get("max_missing", 0.10)),
+        "min_hwe_p": float(config.qc.get("hwe_pval", 1e-6)),
+        "min_qual": float(config.qc.get("min_qual", 30.0)),
     }
 
-    # Create filtered output file
-    qc_result = apply_qc_filters(
-        vcf_path=vcf_file,
-        config=qc_filters,
-        output_vcf=None,  # Don't write, just get stats
-    )
+    qc_result = apply_qc_filters(vcf_data, qc_config)
 
     if qc_result.get("status") == "success":
         n_passing = qc_result.get("num_variants_after", 0)
         n_total = qc_result.get("num_variants_before", 50000)
         print(f"✓ QC complete: {n_passing}/{n_total} variants passed ({n_passing/max(n_total, 1)*100:.1f}%)")
+        if n_passing == 0:
+            print("✗ No variants passed QC; nothing to analyze")
+            sys.exit(1)
 
-        # Use original data (QC already filtered it internally)
-        genotypes = vcf_data["genotypes"]
-        variants_passing = vcf_data["variants"]
+        # Everything downstream runs on the QC-filtered variants and genotypes
+        filtered_data = qc_result["filtered_data"]
+        genotypes = filtered_data["genotypes"]
+        variants_passing = filtered_data["variants"]
     else:
         print(f'✗ QC failed: {qc_result.get("error")}')
         sys.exit(1)
@@ -89,8 +93,9 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
         print(f'✗ Kinship failed: {kinship_result.get("error")}')
 
     # Save intermediate results
-    results_dir = ensure_directory(config.work_dir / "results")
-    dump_json(qc_result, results_dir / "qc_results.json", indent=2)
+    results_dir = ensure_directory(Path(config.work_dir) / "results")
+    qc_summary = {key: value for key, value in qc_result.items() if key != "filtered_data"}
+    dump_json(qc_summary, results_dir / "qc_results.json", indent=2)
     if pcs is not None:
         dump_json(pca_result, results_dir / "pca_results.json", indent=2)
     dump_json(kinship_result, results_dir / "kinship_results.json", indent=2)
@@ -110,12 +115,12 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
         ("disease_resistance", "logistic"),
     ]
 
-    all_results = {}
+    all_results: Dict[str, Dict[str, Any]] = {}
 
     for trait_name, test_type in traits_to_test:
         print(f"\n  Testing trait: {trait_name} ({test_type})...")
 
-        phenotypes = pheno_df[trait_name].tolist()
+        phenotypes = _phenotypes_in_sample_order(pheno_df, trait_name, vcf_data["samples"])
         assoc_results = []
 
         # Test subset of variants for speed (first 5000)
@@ -133,9 +138,9 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
             if result.get("status") == "success":
                 assoc_results.append(
                     {
-                        "variant_id": variant.get("ID", f"var_{idx}"),
-                        "chrom": variant.get("CHROM"),
-                        "pos": variant.get("POS"),
+                        "variant_id": variant.get("id", f"var_{idx}"),
+                        "chrom": variant.get("chrom"),
+                        "pos": variant.get("pos"),
                         "beta": result["beta"],
                         "se": result["se"],
                         "p_value": result["p_value"],
@@ -169,7 +174,7 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
 
     # Visualization
     print("\n[7/7] Generating visualizations...")
-    plots_dir = ensure_directory(config.work_dir / "plots")
+    plots_dir = ensure_directory(Path(config.work_dir) / "plots")
 
     for trait_name in all_results.keys():
         assoc_results = all_results[trait_name]["associations"]
@@ -177,10 +182,11 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
         # Manhattan plot
         manhattan_file = plots_dir / f"manhattan_{trait_name}.png"
         try:
-            manhattan_result = manhattan_plot(
+            manhattan_fig = manhattan_plot(
                 assoc_results, manhattan_file, title=f'{trait_name.replace("_", " ").title()} GWAS - P. barbatus'
             )
-            if manhattan_result.get("status") == "success":
+            if manhattan_fig is not None:
+                plt.close(manhattan_fig)
                 print(f"  ✓ Manhattan plot: {manhattan_file.name}")
         except Exception as e:
             print(f"  ✗ Manhattan plot failed: {e}")
@@ -188,12 +194,13 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
         # Q-Q plot
         qq_file = plots_dir / f"qq_{trait_name}.png"
         try:
-            qq_result = qq_plot(
+            qq_fig = qq_plot(
                 [r["p_value"] for r in assoc_results],
                 qq_file,
                 title=f'Q-Q Plot - {trait_name.replace("_", " ").title()}',
             )
-            if qq_result.get("status") == "success":
+            if qq_fig is not None:
+                plt.close(qq_fig)
                 print(f"  ✓ Q-Q plot: {qq_file.name}")
         except Exception as e:
             print(f"  ✗ Q-Q plot failed: {e}")

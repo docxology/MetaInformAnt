@@ -254,16 +254,16 @@ def effect_size_plot(results: List[Dict[str, Any]], output_path: Optional[Union[
         logger.warning("No effect sizes found in results")
         return None
 
-    effect_sizes = np.array(effect_sizes)
+    effect_array = np.array(effect_sizes)
 
     # Create figure with two subplots
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
     # Histogram of effect sizes
-    ax1.hist(effect_sizes, bins=50, edgecolor="black", alpha=0.7, color="steelblue")
+    ax1.hist(effect_array, bins=50, edgecolor="black", alpha=0.7, color="steelblue")
     ax1.axvline(x=0, color="red", linestyle="--", alpha=0.7, label="Null effect")
     ax1.axvline(
-        x=np.mean(effect_sizes), color="green", linestyle="-", alpha=0.7, label=f"Mean: {np.mean(effect_sizes):.4f}"
+        x=np.mean(effect_array), color="green", linestyle="-", alpha=0.7, label=f"Mean: {np.mean(effect_array):.4f}"
     )
     ax1.set_xlabel("Effect Size (Beta)")
     ax1.set_ylabel("Frequency")
@@ -272,7 +272,7 @@ def effect_size_plot(results: List[Dict[str, Any]], output_path: Optional[Union[
     ax1.grid(True, alpha=0.3)
 
     # Box plot
-    ax2.boxplot(effect_sizes, vert=True)
+    ax2.boxplot(effect_array, vert=True)
     ax2.set_ylabel("Effect Size (Beta)")
     ax2.set_title("Effect Size Box Plot")
     ax2.grid(True, alpha=0.3)

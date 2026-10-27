@@ -198,6 +198,26 @@ def call_variants_gatk(
         raise
 
 
+def _bcftools_filter_command(vcf_path: str | Path, output_vcf: str | Path, filters: Dict[str, Any]) -> List[str]:
+    """Build the ``bcftools filter`` command that keeps sites passing every threshold.
+
+    The thresholds are conditions a site must meet, so they are combined with
+    ``&&`` and passed to ``-i`` (include); ``-e`` would drop the passing sites.
+    """
+    cmd = ["bcftools", "filter", "-o", str(output_vcf), "-O", "v"]  # uncompressed VCF
+    keep = []
+    if "min_qual" in filters:
+        keep.append(f"QUAL>={filters['min_qual']}")
+    if "max_missing" in filters:
+        keep.append(f"F_MISSING<={filters['max_missing']}")
+    if "min_depth" in filters:
+        keep.append(f"DP>={filters['min_depth']}")
+    if keep:
+        cmd.extend(["-i", " && ".join(f"({expr})" for expr in keep)])
+    cmd.append(str(vcf_path))
+    return cmd
+
+
 def filter_variants_bcftools(
     vcf_path: str | Path, output_vcf: str | Path, filters: Dict[str, Any]
 ) -> subprocess.CompletedProcess:
@@ -218,26 +238,7 @@ def filter_variants_bcftools(
     output_vcf = Path(output_vcf)
     output_vcf.parent.mkdir(parents=True, exist_ok=True)
 
-    cmd = ["bcftools", "filter", "-o", str(output_vcf), "-O", "v"]  # uncompressed VCF
-
-    # Build filter expressions
-    filter_expr = []
-
-    if "min_qual" in filters:
-        filter_expr.append(f"QUAL>={filters['min_qual']}")
-
-    if "max_missing" in filters:
-        max_missing = filters["max_missing"]
-        filter_expr.append(f"F_MISSING<={max_missing}")
-
-    if "min_depth" in filters:
-        min_depth = filters["min_depth"]
-        filter_expr.append(f"DP>={min_depth}")
-
-    if filter_expr:
-        cmd.extend(["-e", " || ".join(f"({expr})" for expr in filter_expr)])
-
-    cmd.append(str(vcf_path))
+    cmd = _bcftools_filter_command(vcf_path, output_vcf, filters)
 
     logger.info(f"Running bcftools filter: {' '.join(cmd[:5])}...")
 

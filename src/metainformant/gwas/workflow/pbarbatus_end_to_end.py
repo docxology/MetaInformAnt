@@ -17,7 +17,9 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -33,16 +35,17 @@ from metainformant.gwas.visualization.structure_plots import (
     plot_pca_scatter,
     plot_pca_scree,
 )
+from metainformant.gwas.workflow.workflow_config import _phenotypes_in_sample_order
 
 
-def print_banner(text: str, char: str = "=", width: int = 80):
+def print_banner(text: str, char: str = "=", width: int = 80) -> None:
     """Print a formatted banner."""
     print("\n" + char * width)
     print(text.center(width))
     print(char * width + "\n")
 
 
-def print_step(step_num: int, total_steps: int, description: str):
+def print_step(step_num: int, total_steps: int, description: str) -> None:
     """Print a step header."""
     print(f"\n[{step_num}/{total_steps}] {description}")
     print("-" * 80)
@@ -57,7 +60,6 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
     print_banner("P. BARBATUS GWAS - COMPLETE END-TO-END ANALYSIS")
 
     # Configuration
-    config_path = "config/gwas/gwas_pbarbatus_synthetic.yaml"
     print(f"Configuration: {config_path}")
 
     # Load configuration
@@ -99,24 +101,21 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
 
     # Quality control
     print_step(3, 10, "Applying Quality Control Filters")
+    # float(): YAML 1.1 loads "1e-6" (no decimal point) as a string
     qc_config = {
-        "min_maf": config.qc.get("min_maf", 0.05),
-        "max_missing": config.qc.get("max_missing", 0.10),
-        "hwe_pval": config.qc.get("hwe_pval", 1e-6),
-        "min_qual": config.qc.get("min_qual", 30.0),
+        "min_maf": float(config.qc.get("min_maf", 0.05)),
+        "max_missing": float(config.qc.get("max_missing", 0.10)),
+        "min_hwe_p": float(config.qc.get("hwe_pval", 1e-6)),
+        "min_qual": float(config.qc.get("min_qual", 30.0)),
     }
     print("QC parameters:")
     print(f'  Min MAF: {qc_config["min_maf"]}')
     print(f'  Max missing: {qc_config["max_missing"]}')
-    print(f'  HWE p-value: {qc_config["hwe_pval"]}')
+    print(f'  HWE p-value: {qc_config["min_hwe_p"]}')
     print(f'  Min quality: {qc_config["min_qual"]}')
 
     qc_start = time.time()
-    qc_result = apply_qc_filters(
-        vcf_path=str(vcf_file),
-        config=qc_config,
-        output_vcf=None,
-    )
+    qc_result = apply_qc_filters(vcf_data, qc_config)
     qc_time = time.time() - qc_start
 
     if qc_result.get("status") == "success":
@@ -126,9 +125,14 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
         print(f"✓ QC completed successfully ({qc_time:.1f}s)")
         print(f"  Variants passing QC: {n_passing:,} ({pct_passing:.1f}%)")
         print(f"  Variants filtered out: {n_failed:,}")
+        if n_passing == 0:
+            print("✗ No variants passed QC; nothing to analyze")
+            sys.exit(1)
 
-        genotypes = vcf_data["genotypes"]
-        variants_passing = vcf_data["variants"]
+        # Everything downstream runs on the QC-filtered variants and genotypes
+        filtered_data = qc_result["filtered_data"]
+        genotypes = filtered_data["genotypes"]
+        variants_passing = filtered_data["variants"]
     else:
         print(f'✗ QC failed: {qc_result.get("error")}')
         sys.exit(1)
@@ -145,7 +149,7 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
 
     if pca_result["status"] == "success":
         pcs = np.array(pca_result["pcs"])
-        explained_var = pca_result["explained_variance_ratio"]
+        explained_var = np.array(pca_result["explained_variance_ratio"])
         cumsum_var = np.cumsum(explained_var)
 
         print(f"✓ PCA computed successfully ({pca_time:.1f}s)")
@@ -201,10 +205,12 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
     # Save intermediate results
     print_step(6, 10, "Saving Intermediate Results")
     # Use the correct output directories from config
-    results_dir = ensure_directory(Path(config.output.get("results_dir", config.work_dir / "results")))
-    plots_dir_config = Path(config.output.get("plots_dir", config.work_dir / "plots"))
+    work_dir = Path(config.work_dir)
+    results_dir = ensure_directory(Path(config.output.get("results_dir", work_dir / "results")))
+    plots_dir_config = Path(config.output.get("plots_dir", work_dir / "plots"))
 
-    dump_json(qc_result, results_dir / "qc_results.json", indent=2)
+    qc_summary = {key: value for key, value in qc_result.items() if key != "filtered_data"}
+    dump_json(qc_summary, results_dir / "qc_results.json", indent=2)
     if pcs is not None:
         dump_json(pca_result, results_dir / "pca_results.json", indent=2)
     dump_json(kinship_result, results_dir / "kinship_results.json", indent=2)
@@ -236,7 +242,7 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
         ("caste", "logistic", "Caste (major worker)"),
     ]
 
-    all_results = {}
+    all_results: Dict[str, Dict[str, Any]] = {}
     # Test a reasonable subset of variants (5000 is sufficient for demonstration)
     n_variants_to_test = min(5000, len(variants_passing))
     total_tests = n_variants_to_test * len(traits_to_test)
@@ -254,7 +260,7 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
             print("    ✗ Trait not found in phenotype file, skipping")
             continue
 
-        phenotypes = pheno_df[trait_name].tolist()
+        phenotypes = _phenotypes_in_sample_order(pheno_df, trait_name, vcf_data["samples"])
         assoc_results = []
 
         trait_start = time.time()
@@ -273,9 +279,9 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
                 if result.get("status") == "success":
                     assoc_results.append(
                         {
-                            "variant_id": variant.get("ID", f"var_{idx}"),
-                            "chrom": variant.get("CHROM"),
-                            "pos": variant.get("POS"),
+                            "variant_id": variant.get("id", f"var_{idx}"),
+                            "chrom": variant.get("chrom"),
+                            "pos": variant.get("pos"),
                             "beta": result["beta"],
                             "se": result["se"],
                             "p_value": result["p_value"],
@@ -313,15 +319,15 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
             print(f"    Bonferroni significant (α=0.05): {n_bonf_sig}")
             print(f"    FDR significant (α=0.05): {n_fdr_sig}")
 
-            # Add significance flags
-            bonf_sig_set = set(bonf_result.get("significant_indices", []))
-            fdr_sig_set = set(fdr_result.get("significant_indices", []))
-            bonf_adjusted = [r["p_value"] * len(p_values) for r in assoc_results]
+            # Add significance flags (one boolean per tested variant, in input order)
+            bonf_flags = bonf_result.get("significant", [])
+            fdr_flags = fdr_result.get("significant", [])
+            bonf_adjusted = [min(1.0, r["p_value"] * len(p_values)) for r in assoc_results]
             fdr_adjusted = fdr_result.get("corrected_pvalues", p_values)
 
             for i, r in enumerate(assoc_results):
-                r["bonferroni_sig"] = i in bonf_sig_set
-                r["fdr_sig"] = i in fdr_sig_set
+                r["bonferroni_sig"] = bool(bonf_flags[i])
+                r["fdr_sig"] = bool(fdr_flags[i])
                 r["bonferroni_adjusted_p"] = bonf_adjusted[i]
                 r["fdr_adjusted_p"] = fdr_adjusted[i]
 
@@ -370,43 +376,52 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
         if kinship_result_viz.get("status") == "success":
             print(f"    ✓ Kinship heatmap: {kinship_plot.name}")
             print(f'      Mean relatedness: {kinship_result_viz["mean_relatedness"]:.4f}')
+        else:
+            print(f"    ✗ Kinship heatmap failed: {kinship_result_viz.get('error')}")
     except Exception as e:
         print(f"    ✗ Kinship heatmap failed: {e}")
 
-    # 2. PCA scree plot
-    print("  → Generating PCA scree plot...")
-    scree_plot = plots_dir / "pca_scree_plot.png"
-    try:
-        scree_result = plot_pca_scree(
-            variance_explained=explained_var,
-            output_path=scree_plot,
-            title=f"PCA Scree Plot\nP. barbatus (n={n_samples} samples, {len(genotypes[0]):,} variants)",
-        )
-        if scree_result.get("status") == "success":
-            print(f"    ✓ PCA scree plot: {scree_plot.name}")
-            print(f'      Total variance: {scree_result["total_variance"]:.1f}%')
-            print(f'      80% variance: PC1-PC{scree_result["pcs_for_80"]}')
-    except Exception as e:
-        print(f"    ✗ PCA scree plot failed: {e}")
-
-    # 3. PCA scatter plots (multiple combinations)
-    pca_combinations = [(0, 1), (0, 2), (1, 2)]
-    for pc_x, pc_y in pca_combinations:
-        print(f"  → Generating PCA scatter: PC{pc_x+1} vs PC{pc_y+1}...")
-        pca_plot = plots_dir / f"pca_scatter_PC{pc_x+1}_vs_PC{pc_y+1}.png"
+    if pcs is not None:
+        # 2. PCA scree plot
+        print("  → Generating PCA scree plot...")
+        scree_plot = plots_dir / "pca_scree_plot.png"
         try:
-            pca_scatter_result = plot_pca_scatter(
-                pca_components=pcs,
+            scree_result = plot_pca_scree(
                 variance_explained=explained_var,
-                output_path=pca_plot,
-                pc_x=pc_x,
-                pc_y=pc_y,
-                title=f"PCA Scatter Plot\nP. barbatus (n={n_samples} samples)",
+                output_path=scree_plot,
+                title=f"PCA Scree Plot\nP. barbatus (n={n_samples} samples, {len(genotypes[0]):,} variants)",
             )
-            if pca_scatter_result.get("status") == "success":
-                print(f"    ✓ PCA scatter: {pca_plot.name}")
+            if scree_result.get("status") == "success":
+                print(f"    ✓ PCA scree plot: {scree_plot.name}")
+                print(f'      Total variance: {scree_result["total_variance"]:.1f}%')
+                print(f'      80% variance: PC1-PC{scree_result["pcs_for_80"]}')
+            else:
+                print(f"    ✗ PCA scree plot failed: {scree_result.get('error')}")
         except Exception as e:
-            print(f"    ✗ PCA scatter failed: {e}")
+            print(f"    ✗ PCA scree plot failed: {e}")
+
+        # 3. PCA scatter plots (multiple combinations)
+        pca_combinations = [(0, 1), (0, 2), (1, 2)]
+        for pc_x, pc_y in pca_combinations:
+            print(f"  → Generating PCA scatter: PC{pc_x+1} vs PC{pc_y+1}...")
+            pca_plot = plots_dir / f"pca_scatter_PC{pc_x+1}_vs_PC{pc_y+1}.png"
+            try:
+                pca_scatter_result = plot_pca_scatter(
+                    pca_components=pcs,
+                    variance_explained=explained_var,
+                    output_path=pca_plot,
+                    pc_x=pc_x,
+                    pc_y=pc_y,
+                    title=f"PCA Scatter Plot\nP. barbatus (n={n_samples} samples)",
+                )
+                if pca_scatter_result.get("status") == "success":
+                    print(f"    ✓ PCA scatter: {pca_plot.name}")
+                else:
+                    print(f"    ✗ PCA scatter failed: {pca_scatter_result.get('error')}")
+            except Exception as e:
+                print(f"    ✗ PCA scatter failed: {e}")
+    else:
+        print("  ✗ PCA unavailable; skipping PCA plots")
 
     # ============================================================================
     # PART B: Association Test Visualizations (Manhattan & Q-Q plots)
@@ -422,7 +437,7 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
         # Manhattan plot
         manhattan_file = plots_dir / f"manhattan_{trait_name}.png"
         try:
-            manhattan_result = manhattan_plot(
+            manhattan_fig = manhattan_plot(
                 assoc_results,
                 str(manhattan_file),
                 title=(
@@ -430,7 +445,8 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
                     f"(n={n_samples} samples, {len(assoc_results):,} variants)"
                 ),
             )
-            if manhattan_result.get("status") == "success":
+            if manhattan_fig is not None:
+                plt.close(manhattan_fig)
                 print(f"    ✓ Manhattan plot: {manhattan_file.name}")
         except Exception as e:
             print(f"    ✗ Manhattan plot failed: {e}")
@@ -438,10 +454,11 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
         # Q-Q plot
         qq_file = plots_dir / f"qq_{trait_name}.png"
         try:
-            qq_result = qq_plot(
+            qq_fig = qq_plot(
                 [r["p_value"] for r in assoc_results], str(qq_file), title=f"Q-Q Plot: {trait_label}\nP. barbatus GWAS"
             )
-            if qq_result.get("status") == "success":
+            if qq_fig is not None:
+                plt.close(qq_fig)
                 print(f"    ✓ Q-Q plot: {qq_file.name}")
         except Exception as e:
             print(f"    ✗ Q-Q plot failed: {e}")
@@ -493,7 +510,7 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
         f.write("-" * 80 + "\n")
         f.write(f'Min MAF: {qc_config["min_maf"]}\n')
         f.write(f'Max Missing Rate: {qc_config["max_missing"]}\n')
-        f.write(f'HWE P-value Threshold: {qc_config["hwe_pval"]}\n')
+        f.write(f'HWE P-value Threshold: {qc_config["min_hwe_p"]}\n')
         f.write(f'Min Quality Score: {qc_config["min_qual"]}\n\n')
 
         f.write("-" * 80 + "\n")

@@ -7,13 +7,16 @@ clustermaps for visualizing population relatedness and ancestry proportions.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Literal, Optional, cast
 
 import numpy as np
 
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
+
+# Linkage methods accepted by scipy.cluster.hierarchy.linkage (scipy validates the runtime value).
+_LinkageMethod = Literal["single", "complete", "average", "weighted", "centroid", "median", "ward"]
 
 
 def _load_kinship_from_file(kinship_file: str | Path) -> tuple[np.ndarray, List[str]]:
@@ -98,7 +101,7 @@ def kinship_heatmap(
         actual_output_path: Optional[Path] = None
 
         # Handle file path input
-        if isinstance(kinship_matrix, (str, Path)) and not isinstance(kinship_matrix, np.ndarray):
+        if isinstance(kinship_matrix, (str, Path)):
             mat_path = Path(kinship_matrix)
             if mat_path.is_file():
                 kinship_matrix, sample_labels = _load_kinship_from_file(mat_path)
@@ -448,7 +451,7 @@ def kinship_dendrogram(
         condensed_dist = squareform(distance_matrix, checks=False)
 
         # Perform hierarchical clustering
-        linkage_matrix = linkage(condensed_dist, method=method)
+        linkage_matrix = linkage(condensed_dist, method=cast(_LinkageMethod, method))
 
         # Determine leaf colors from metadata
         leaf_colors: Optional[Dict[str, str]] = None
@@ -614,7 +617,7 @@ def kinship_clustermap(
         condensed_dist = squareform(distance_matrix, checks=False)
 
         # Perform hierarchical clustering
-        linkage_matrix = linkage(condensed_dist, method=method)
+        linkage_matrix = linkage(condensed_dist, method=cast(_LinkageMethod, method))
 
         # Determine population annotations
         has_pop_annotations = False

@@ -177,12 +177,14 @@ def compute_pca(genotype_matrix: List[List[int]], n_components: int = 10) -> Dic
         # PC scores per sample: project samples onto principal components
         # pcs[sample_idx] = [pc1_score, pc2_score, ...]
         pcs = []
-        for s in range(n_samples):
+        for sample_idx in range(n_samples):
             sample_scores = []
             for i in range(n_comp):
                 _, eigenvector = eigen_pairs[i]
                 # Project this sample onto the eigenvector
-                score = sum(centered_matrix[v][s] * eigenvector[v] for v in range(min(n_variants, len(eigenvector))))
+                score = sum(
+                    centered_matrix[v][sample_idx] * eigenvector[v] for v in range(min(n_variants, len(eigenvector)))
+                )
                 sample_scores.append(score)
             pcs.append(sample_scores)
 
@@ -382,7 +384,7 @@ def _vanraden_kinship(genotype_matrix: List[List[int]]) -> List[List[float]]:
         valid_p_mask = (p > 0.0) & (p < 1.0)
 
         if not np.any(valid_p_mask):
-            return cast(List[List[float]], np.eye(n_samples).tolist())
+            return np.eye(n_samples).tolist()
 
         # Filter genotype matrix to valid variants
         X = X[valid_p_mask, :]
@@ -420,10 +422,10 @@ def _vanraden_kinship(genotype_matrix: List[List[int]]) -> List[List[float]]:
         Z = Z - means
 
         # Compute scaling: 2 * sum(p * (1-p))
-        scaling = 2.0 * np.sum(p * (1.0 - p))
+        scaling = float(2.0 * np.sum(p * (1.0 - p)))
 
         if scaling <= 0:
-            return cast(List[List[float]], np.eye(n_samples).tolist())
+            return np.eye(n_samples).tolist()
 
         # Compute Kinship: K = Z.T @ Z / scaling
         # Z is (variants, samples). Z.T is (samples, variants)
@@ -466,8 +468,8 @@ def _vanraden_kinship(genotype_matrix: List[List[int]]) -> List[List[float]]:
 
     for k, v_idx in enumerate(valid_variant_indices):
         locus = genotype_matrix[v_idx]
-        p = allele_freqs[k]
-        two_p = 2.0 * p
+        freq_k = allele_freqs[k]
+        two_p = 2.0 * freq_k
 
         # Compute centered genotypes for this variant
         z = []

@@ -9,7 +9,7 @@ from __future__ import annotations
 import math
 import random
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from metainformant.core.utils import logging
 
@@ -24,7 +24,8 @@ try:
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
-    plt = None
+    if not TYPE_CHECKING:  # runtime-only fallback; type checkers keep the real module type
+        plt = None
 
 try:
     import numpy as np
@@ -32,7 +33,8 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    if not TYPE_CHECKING:  # runtime-only fallback; type checkers keep the real module type
+        np = None
 
 
 def _compute_r_squared(geno_a: List[int], geno_b: List[int]) -> float:
@@ -436,7 +438,7 @@ def ld_heatmap_region(
         # Normalize positions for plotting
         pos_arr = np.array(region_positions, dtype=np.float64)
         pos_arr.min()
-        pos_range = pos_arr.max() - pos_arr.min()
+        pos_range = float(pos_arr.max() - pos_arr.min())
         if pos_range == 0:
             pos_range = 1.0
 

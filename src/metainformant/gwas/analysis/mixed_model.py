@@ -15,7 +15,7 @@ EMMA eigendecomposes K once, rotates the model, then tests each SNP in O(n) time
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from metainformant.core.utils import logging
 
@@ -27,7 +27,8 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    if not TYPE_CHECKING:  # runtime-only fallback; type checkers keep the real module type
+        np = None
 
 
 def association_test_mixed(

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from metainformant.core.utils import logging
 
@@ -23,7 +23,8 @@ try:
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
-    plt = None
+    if not TYPE_CHECKING:  # runtime-only fallback; type checkers keep the real module type
+        plt = None
 
 try:
     import numpy as np
@@ -31,83 +32,60 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    if not TYPE_CHECKING:  # runtime-only fallback; type checkers keep the real module type
+        np = None
 
 
 def compute_credible_set(
     assoc_results: List[Dict[str, Any]],
     credible_level: float = 0.95,
 ) -> Dict[str, Any]:
-    """Compute approximate Bayes factor credible set from association results.
+    """Compute a Wakefield approximate Bayes factor credible set from association results.
 
-    Uses approximate Bayes factors derived from p-values to compute posterior
-    inclusion probabilities (PIPs) and identify the credible set of variants.
+    Delegates to :func:`metainformant.gwas.finemapping.credible_sets.compute_credible_set`.
+    Each Z-score is ``beta / se`` when every result has a positive ``se``, and is
+    then scaled with V = se^2; otherwise it is recovered from the two-sided
+    ``p_value`` (or ``P``) and the Z-scale variance model is used.
 
     Args:
-        assoc_results: List of dicts, each with at least a "p_value" key.
+        assoc_results: List of dicts with ``p_value`` (or ``P``), optionally ``beta`` and ``se``.
         credible_level: Cumulative PIP threshold for the credible set (default 0.95).
 
     Returns:
-        Dict with status, PIPs, credible set indices, size, and cumulative probability.
+        Dict with status, PIPs, credible set indices (highest PIP first), size, and cumulative probability.
     """
-    if not HAS_NUMPY:
-        logger.warning("numpy not available for credible set computation")
-        return {"status": "skipped", "reason": "numpy not available"}
-
     if not assoc_results:
         logger.error("No association results provided")
         return {"status": "failed", "reason": "No association results provided"}
 
-    # Extract p-values
-    p_values = []
-    for result in assoc_results:
-        p = result.get("p_value")
-        if p is None:
-            p = result.get("P", 1.0)
-        p_values.append(float(p))
+    from scipy import stats as scipy_stats
 
-    p_values_arr = np.array(p_values, dtype=np.float64)
+    from metainformant.gwas.finemapping.credible_sets import compute_credible_set as wakefield_credible_set
 
-    # Clamp p-values to avoid log(0)
-    p_values_arr = np.clip(p_values_arr, 1e-300, 1.0)
+    has_beta_and_se = all(
+        isinstance(r.get("se"), (int, float)) and r["se"] > 0 and r.get("beta") is not None for r in assoc_results
+    )
+    if has_beta_and_se:
+        standard_errors = [float(r["se"]) for r in assoc_results]
+        z_scores = [float(r["beta"]) / se for r, se in zip(assoc_results, standard_errors)]
+        result = wakefield_credible_set(z_scores, coverage=credible_level, standard_errors=standard_errors)
+    else:
+        p_values = [float(r["p_value"] if r.get("p_value") is not None else r.get("P", 1.0)) for r in assoc_results]
+        # The inverse survival function stays accurate for tiny p; clamp p = 0 to the double range.
+        z_scores = [float(scipy_stats.norm.isf(max(p, 1e-300) / 2.0)) for p in p_values]
+        result = wakefield_credible_set(z_scores, coverage=credible_level)
 
-    # Compute approximate chi-squared statistic: chi2 ~ -2 * log(p)
-    chi2_stats = -2.0 * np.log(p_values_arr)
+    if result.get("status") != "success":
+        return {"status": "failed", "reason": result.get("message", "credible set computation failed")}
 
-    # Compute approximate Bayes factors: ABF_i = exp(0.5 * chi2_i)
-    # Larger chi2 (smaller p-value) => larger ABF => more evidence for association
-    # Using log-space for numerical stability
-    log_abf = 0.5 * chi2_stats
-
-    # Normalize to avoid overflow: subtract max before exponentiation
-    log_abf_shifted = log_abf - np.max(log_abf)
-    abf = np.exp(log_abf_shifted)
-
-    # Compute posterior inclusion probabilities (PIPs)
-    total_abf = np.sum(abf)
-    if total_abf == 0:
-        logger.error("Total ABF is zero; cannot compute PIPs")
-        return {"status": "failed", "reason": "Total ABF is zero"}
-
-    pips = abf / total_abf
-
-    # Sort by PIP descending and accumulate until credible_level
-    sorted_indices = np.argsort(-pips)
-    cumulative_pip = 0.0
-    credible_set_indices: List[int] = []
-
-    for idx in sorted_indices:
-        credible_set_indices.append(int(idx))
-        cumulative_pip += float(pips[idx])
-        if cumulative_pip >= credible_level:
-            break
-
+    pips = result["pips"]
+    indices = sorted(result["snps_in_set"], key=lambda index: -pips[index])
     return {
         "status": "success",
-        "pips": pips.tolist(),
-        "credible_set_indices": credible_set_indices,
-        "credible_set_size": len(credible_set_indices),
-        "cumulative_probability": float(cumulative_pip),
+        "pips": list(pips),
+        "credible_set_indices": indices,
+        "credible_set_size": len(indices),
+        "cumulative_probability": float(result["coverage_achieved"]),
     }
 
 

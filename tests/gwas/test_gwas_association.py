@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 import numpy as np
@@ -118,6 +119,32 @@ def test_association_linear_missing_data_matches_complete_case() -> None:
     assert result_all_missing["converged"] is False
 
 
+def test_association_linear_drops_samples_with_non_finite_covariates() -> None:
+    """A NaN/inf covariate must drop its sample, not poison the design into a silent beta=0, p=1."""
+    genotypes = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2]
+    phenotypes = [10.0, 11.2, 12.1, 10.4, 11.6, 12.3, 9.6, 10.9, 11.4, 10.2, 11.1, 12.6]
+    age = [25.0, 35.0, 45.0, 30.0, 40.0, 50.0, 28.0, 38.0, 48.0, 33.0, 36.0, 44.0]
+    sex = [1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0]
+    age_with_gaps = list(age)
+    age_with_gaps[1] = float("nan")
+    sex_with_gaps = list(sex)
+    sex_with_gaps[6] = float("inf")
+
+    result = association_test_linear(genotypes, phenotypes, covariates=[age_with_gaps, sex_with_gaps])
+
+    assert result["status"] == "success"
+    assert result["n_missing_dropped"] == 2
+    assert result["n_samples"] == 10
+
+    keep = [i for i in range(len(genotypes)) if i not in (1, 6)]
+    design = np.column_stack(
+        [np.ones(len(keep)), [genotypes[i] for i in keep], [age[i] for i in keep], [sex[i] for i in keep]]
+    )
+    beta, *_ = np.linalg.lstsq(design, np.array([phenotypes[i] for i in keep]), rcond=None)
+    assert result["beta"] == pytest.approx(float(beta[1]), rel=1e-9)
+    assert result["beta"] != 0.0
+
+
 def test_association_logistic_without_statsmodels_errors(
     monkeypatch: "pytest.MonkeyPatch",
 ) -> None:
@@ -178,6 +205,172 @@ def test_association_logistic_insufficient_cases() -> None:
 
     assert result["status"] == "failed"
     assert "error" in result
+
+
+def _logistic_newton_oracle(design: np.ndarray, y: np.ndarray) -> dict[str, float]:
+    """Independent logistic-regression oracle (Newton-Raphson with Wald inference).
+
+    Deliberately shares no code with the implementation under test and does not use
+    statsmodels.  ``design`` already contains the intercept in column 0 and the
+    genotype in column 1; inference is reported for the genotype coefficient.
+    """
+    beta = np.zeros(design.shape[1])
+    for _ in range(200):
+        mu = 1.0 / (1.0 + np.exp(-(design @ beta)))
+        weights = mu * (1.0 - mu)
+        step = np.linalg.solve(design.T @ (design * weights[:, None]), design.T @ (y - mu))
+        beta = beta + step
+        if np.max(np.abs(step)) < 1e-13:
+            break
+    mu = 1.0 / (1.0 + np.exp(-(design @ beta)))
+    weights = mu * (1.0 - mu)
+    covariance = np.linalg.inv(design.T @ (design * weights[:, None]))
+    se = float(np.sqrt(covariance[1, 1]))
+    z_stat = float(beta[1]) / se
+    return {
+        "beta": float(beta[1]),
+        "se": se,
+        "z_stat": z_stat,
+        "p_value": math.erfc(abs(z_stat) / math.sqrt(2.0)),
+    }
+
+
+def _case_control_cohort(n: int = 240, seed: int = 20261024) -> tuple[np.ndarray, np.ndarray, list[list[float]]]:
+    """Dosages, binary phenotypes and two covariates (covariates x samples)."""
+    rng = np.random.default_rng(seed)
+    dosage = rng.integers(0, 3, n)
+    age = rng.normal(50.0, 10.0, n)
+    sex = rng.integers(0, 2, n).astype(float)
+    eta = -0.4 + 0.9 * dosage + 0.02 * (age - 50.0) + 0.3 * sex
+    phenotype = (rng.random(n) < 1.0 / (1.0 + np.exp(-eta))).astype(int)
+    return dosage, phenotype, [age.tolist(), sex.tolist()]
+
+
+def test_association_logistic_missing_genotypes_match_complete_case() -> None:
+    """A missing call (-1) must be dropped, never entered into the model as dosage -1."""
+    dosage, phenotype, covariates = _case_control_cohort()
+    n = len(dosage)
+    missing = np.random.default_rng(1).choice(n, 40, replace=False)
+    keep = np.ones(n, dtype=bool)
+    keep[missing] = False
+
+    genotypes_with_missing = dosage.astype(float)
+    genotypes_with_missing[missing] = -1
+
+    result = association_test_logistic(genotypes_with_missing.tolist(), phenotype.tolist(), covariates=covariates)
+    complete = association_test_logistic(
+        dosage[keep].tolist(),
+        phenotype[keep].tolist(),
+        covariates=[np.asarray(cov)[keep].tolist() for cov in covariates],
+    )
+
+    assert result["status"] == "success"
+    assert result["n_missing_dropped"] == 40
+    assert complete["n_missing_dropped"] == 0
+    assert result["n_samples"] == complete["n_samples"] == 200
+    assert result["n_cases"] == int(phenotype[keep].sum())
+    assert result["n_controls"] == int((1 - phenotype[keep]).sum())
+    for key in ("beta", "se", "z_stat", "p_value", "odds_ratio"):
+        assert result[key] == pytest.approx(complete[key], rel=1e-9), key
+
+    # Independent oracle on the complete cases only.
+    design = np.column_stack(
+        [np.ones(int(keep.sum())), dosage[keep], np.asarray(covariates[0])[keep], np.asarray(covariates[1])[keep]]
+    )
+    oracle = _logistic_newton_oracle(design, phenotype[keep].astype(float))
+    for key in ("beta", "se", "z_stat", "p_value"):
+        assert result[key] == pytest.approx(oracle[key], rel=1e-6), key
+
+    # Sensitivity of the fixture: feeding -1 to the model as a dose gives a materially different effect,
+    # so agreement above cannot be an accident of weak data.
+    all_rows = np.column_stack(
+        [np.ones(n), genotypes_with_missing, np.asarray(covariates[0]), np.asarray(covariates[1])]
+    )
+    misfit = _logistic_newton_oracle(all_rows, phenotype.astype(float))
+    assert abs(misfit["beta"] - oracle["beta"]) > 0.1
+
+
+def test_association_logistic_drops_nan_none_and_non_numeric_genotypes() -> None:
+    """NaN, inf, None and non-numeric calls are all missing and are excluded from the fit."""
+    dosage, phenotype, _ = _case_control_cohort(n=90, seed=7)
+    bad_positions = {3: float("nan"), 11: None, 20: "NA", 33: float("inf"), 47: float("nan"), 60: "./."}
+    genotypes: list = dosage.tolist()
+    for position, value in bad_positions.items():
+        genotypes[position] = value
+    keep = np.array([i not in bad_positions for i in range(len(dosage))])
+
+    result = association_test_logistic(genotypes, phenotype.tolist())
+    complete = association_test_logistic(dosage[keep].tolist(), phenotype[keep].tolist())
+
+    assert result["status"] == "success"
+    assert result["n_missing_dropped"] == len(bad_positions)
+    assert result["n_samples"] == int(keep.sum())
+    for key in ("beta", "se", "p_value"):
+        assert result[key] == pytest.approx(complete[key], rel=1e-9), key
+
+    oracle = _logistic_newton_oracle(
+        np.column_stack([np.ones(int(keep.sum())), dosage[keep]]), phenotype[keep].astype(float)
+    )
+    assert result["beta"] == pytest.approx(oracle["beta"], rel=1e-6)
+    assert result["se"] == pytest.approx(oracle["se"], rel=1e-6)
+
+
+def test_association_logistic_drops_samples_with_non_finite_covariates() -> None:
+    """A sample whose covariate is missing cannot enter the model; covariates are subset to match."""
+    dosage, phenotype, covariates = _case_control_cohort(n=120, seed=11)
+    covariates[0][5] = float("nan")
+    covariates[1][17] = float("inf")
+    keep = np.ones(len(dosage), dtype=bool)
+    keep[[5, 17]] = False
+
+    result = association_test_logistic(dosage.tolist(), phenotype.tolist(), covariates=covariates)
+
+    assert result["status"] == "success"
+    assert result["n_missing_dropped"] == 2
+    assert result["n_samples"] == 118
+    design = np.column_stack(
+        [np.ones(118), dosage[keep], np.asarray(covariates[0])[keep], np.asarray(covariates[1])[keep]]
+    )
+    oracle = _logistic_newton_oracle(design, phenotype[keep].astype(float))
+    assert result["beta"] == pytest.approx(oracle["beta"], rel=1e-6)
+    assert result["se"] == pytest.approx(oracle["se"], rel=1e-6)
+
+
+def test_association_logistic_recounts_cases_and_controls_after_dropping() -> None:
+    """Group sizes are judged on the complete cases, not on the raw input."""
+    # Three controls in the input, but two of them have no genotype call: one usable control remains.
+    genotypes = [0, 1, 2, 1, -1, -1, 0]
+    phenotypes = [1, 1, 1, 1, 0, 0, 0]
+
+    result = association_test_logistic(genotypes, phenotypes)
+
+    assert result["status"] == "failed"
+    assert result["converged"] is False
+    assert result["n_cases"] == 4
+    assert result["n_controls"] == 1
+    assert result["n_samples"] == 5
+    assert result["n_missing_dropped"] == 2
+
+
+def test_association_logistic_all_genotypes_missing_reports_failure() -> None:
+    """With no complete case there is nothing to fit; report it instead of fitting garbage."""
+    result = association_test_logistic([-1, float("nan"), -1, -1], [0, 1, 0, 1])
+
+    assert result["status"] == "failed"
+    assert result["converged"] is False
+    assert result["n_samples"] == 0
+    assert result["n_missing_dropped"] == 4
+    assert result["p_value"] == 1.0
+
+
+def test_association_logistic_rejects_covariates_of_the_wrong_length() -> None:
+    """Covariates must carry one value per sample; a short or long covariate is an input error."""
+    genotypes = [0, 1, 2, 1, 0, 2, 1, 0]
+    phenotypes = [0, 1, 1, 0, 0, 1, 1, 0]
+    with pytest.raises(ValueError, match="covariate"):
+        association_test_logistic(genotypes, phenotypes, covariates=[[1.0, 2.0, 3.0]])
+    with pytest.raises(ValueError, match="covariate"):
+        association_test_logistic(genotypes, phenotypes, covariates=[[float(i) for i in range(len(genotypes) + 2)]])
 
 
 def test_run_gwas_integration(tmp_path: Path) -> None:

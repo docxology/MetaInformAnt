@@ -26,6 +26,7 @@ References:
 from __future__ import annotations
 
 import math
+import statistics
 from typing import Any, Dict, List, Optional
 
 from metainformant.core.utils import logging
@@ -186,9 +187,10 @@ def ldsr_regression(
 
         method = "statsmodels_OLS"
     elif HAS_SCIPY and HAS_NUMPY:
-        slope, intercept, r_val, p_val, se = scipy_stats.linregress(ld_arr, chi2_arr)
-        slope_se = se
-        intercept_se = se * float(np.std(ld_arr))
+        fit = scipy_stats.linregress(ld_arr, chi2_arr)
+        slope, intercept = float(fit.slope), float(fit.intercept)
+        # OLS standard errors: SE(intercept) = SE(slope) * sqrt(mean(x^2)), which scipy reports directly.
+        slope_se, intercept_se = float(fit.stderr), float(fit.intercept_stderr)
         method = "scipy_linregress"
     else:
         # Fallback: manual OLS
@@ -216,7 +218,7 @@ def ldsr_regression(
 
     # Fraction of λ_GC explained by polygenicity (vs. confounding)
     # λ_GC ≈ median chi2 / 0.4549
-    median_chi2 = sorted(chi2_arr)[n // 2]
+    median_chi2 = float(statistics.median(chi2_arr))
     lambda_gc = median_chi2 / 0.4549
     polygenicity_fraction = 1.0 - max(0.0, (intercept - 1.0)) / max(0.001, lambda_gc - 1.0)
 

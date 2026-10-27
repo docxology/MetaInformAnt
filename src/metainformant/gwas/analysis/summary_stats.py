@@ -2,17 +2,22 @@
 
 This module provides functions for writing GWAS results in standard formats,
 including full summary statistics TSV, significant hits tables, and JSON summaries.
+
+Missing values are written as ``NA`` in the numeric columns (the marker used by
+GWAS-SSF, PLINK and GCTA, and read as missing by pandas and R), never as a
+fabricated number: an absent q-value or allele frequency is not 1 or 0.
 """
 
 from __future__ import annotations
 
 import json
 import math
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from metainformant.core.utils import logging
-from metainformant.gwas.analysis.correction import lambda_gc_from_p_values
+from metainformant.gwas.analysis.correction import fdr_correction, lambda_gc_from_p_values
 
 try:
     import numpy as np
@@ -20,67 +25,212 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    if not TYPE_CHECKING:  # runtime-only fallback; type checkers keep the real module type
+        np = None
 
 logger = logging.get_logger(__name__)
+
+#: Marker written for a numeric value that is absent or not finite.
+MISSING_VALUE = "NA"
+#: Marker written for an absent text field (chromosome, id, alleles), as in VCF.
+MISSING_TEXT = "."
+
+_SUMMARY_HEADER = "CHR\tPOS\tSNP\tREF\tALT\tBETA\tSE\tP\tQ_FDR\tN\tMAF\n"
+_Q_VALUE_KEYS = ("q_value", "q_fdr", "Q_FDR")
+_N_KEYS = ("n_samples", "N")
+_MAF_KEYS = ("maf", "MAF")
+
+
+def _first_present(record: Dict[str, Any], keys: Sequence[str]) -> Any:
+    """Return the first value among ``keys`` that is present and not None."""
+    for key in keys:
+        value = record.get(key)
+        if value is not None:
+            return value
+    return None
+
+
+def _finite_float(value: Any) -> Optional[float]:
+    """Return ``value`` as a finite float, or None if it is missing or not a finite number."""
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
+
+
+def _first_finite(record: Dict[str, Any], keys: Sequence[str]) -> Optional[float]:
+    """Return the first value among ``keys`` that is a finite number, or None."""
+    for key in keys:
+        number = _finite_float(record.get(key))
+        if number is not None:
+            return number
+    return None
+
+
+def _format_number(value: Any, spec: str) -> str:
+    """Format ``value`` with ``spec``; a missing or non-finite value becomes ``NA``."""
+    number = _finite_float(value)
+    return MISSING_VALUE if number is None else format(number, spec)
+
+
+def _format_count(value: Any) -> str:
+    """Format an integer-valued column (position, sample size); missing becomes ``NA``."""
+    number = _finite_float(value)
+    if number is None:
+        return MISSING_VALUE
+    return str(int(number)) if number.is_integer() else format(number, ".6g")
+
+
+def _format_text(value: Any) -> str:
+    """Format a text column; a missing or empty value becomes ``.``."""
+    if isinstance(value, (list, tuple)):
+        value = ",".join(str(item) for item in value)
+    return MISSING_TEXT if value is None or value == "" else str(value)
+
+
+def _benjamini_hochberg_q_values(results: List[Dict[str, Any]]) -> List[Optional[float]]:
+    """Benjamini-Hochberg q-values over the p-values of ``results``.
+
+    The family of tests is every result with a valid p-value (finite, in [0, 1]);
+    results without one get None.
+    """
+    p_values: List[Optional[float]] = []
+    for result in results:
+        p_value = _finite_float(result.get("p_value"))
+        p_values.append(p_value if p_value is not None and 0.0 <= p_value <= 1.0 else None)
+
+    valid = [p for p in p_values if p is not None]
+    if not valid:
+        return [None] * len(results)
+
+    adjusted = iter(fdr_correction(valid, method="bh")["adjusted_p_values"])
+    return [next(adjusted) if p is not None else None for p in p_values]
+
+
+def _minor_allele_frequency(genotype_row: Sequence[Any]) -> Optional[float]:
+    """Minor allele frequency from one variant's 0/1/2 alternate-allele dosages.
+
+    Any other code (such as -1 or NaN) is treated as missing, as in
+    ``quality.filter_by_maf``. Returns None when no genotype is called.
+    """
+    alt_alleles = 0
+    n_called = 0
+    for genotype in genotype_row:
+        if genotype in (0, 1, 2):
+            alt_alleles += int(genotype)
+            n_called += 1
+    if n_called == 0:
+        return None
+    alt_frequency = alt_alleles / (2 * n_called)
+    return min(alt_frequency, 1.0 - alt_frequency)
+
+
+def _format_row(
+    result: Dict[str, Any],
+    variant: Dict[str, Any],
+    computed_q_value: Optional[float],
+    computed_maf: Optional[float],
+) -> str:
+    """Format one summary-statistics TSV row.
+
+    The result's own finite q-value and MAF win; ``computed_*`` fill in only when the
+    result carries none. Anything still unknown is written as ``NA``.
+    """
+    q_value = _first_finite(result, _Q_VALUE_KEYS)
+    if q_value is None:
+        q_value = computed_q_value
+    maf = _first_finite(result, _MAF_KEYS)
+    if maf is None:
+        maf = computed_maf
+
+    return (
+        f"{_format_text(variant.get('chrom'))}\t{_format_count(variant.get('pos'))}\t"
+        f"{_format_text(variant.get('id'))}\t{_format_text(variant.get('ref'))}\t{_format_text(variant.get('alt'))}\t"
+        f"{_format_number(result.get('beta'), '.6g')}\t{_format_number(result.get('se'), '.6g')}\t"
+        f"{_format_number(result.get('p_value'), '.6e')}\t{_format_number(q_value, '.6e')}\t"
+        f"{_format_count(_first_present(result, _N_KEYS))}\t{_format_number(maf, '.4f')}\n"
+    )
+
+
+def _derived_columns(
+    results: List[Dict[str, Any]],
+    genotypes: Optional[Sequence[Sequence[Any]]],
+) -> tuple[List[Optional[float]], List[Optional[float]]]:
+    """Compute the per-result q-values and MAFs that results do not already carry.
+
+    Q_FDR is Benjamini-Hochberg over the p-values of ``results``; MAF comes from the
+    genotype row of the same index. Both are None where the inputs do not exist.
+    """
+    if genotypes is not None and len(genotypes) != len(results):
+        raise ValueError(f"Genotypes ({len(genotypes)}) and results ({len(results)}) must have the same length")
+
+    needs_q = any(_first_finite(result, _Q_VALUE_KEYS) is None for result in results)
+    q_values: List[Optional[float]] = [None] * len(results)
+    if needs_q:
+        q_values = _benjamini_hochberg_q_values(results)
+
+    mafs: List[Optional[float]] = [None] * len(results)
+    if genotypes is not None:
+        for i, result in enumerate(results):
+            if _first_finite(result, _MAF_KEYS) is None:
+                mafs[i] = _minor_allele_frequency(genotypes[i])
+    return q_values, mafs
 
 
 def write_summary_statistics(
     results: List[Dict[str, Any]],
     variant_info: List[Dict[str, Any]],
     output_path: Union[str, Path],
+    *,
+    genotypes: Optional[Sequence[Sequence[Any]]] = None,
 ) -> Path:
     """Write full GWAS summary statistics to TSV file.
 
     Output format follows standard GWAS summary statistics convention, with
-    optional FDR-adjusted q-values:
+    FDR-adjusted q-values:
     CHR  POS  SNP  REF  ALT  BETA  SE  P  Q_FDR  N  MAF
+
+    Nothing is invented for values the results do not have. Q_FDR is the
+    result's own ``q_value``/``q_fdr``/``Q_FDR`` when present, otherwise the
+    Benjamini-Hochberg q-value over the p-values of ``results`` (so pass the full
+    set of tests, not a subset). MAF is the result's own ``maf``/``MAF`` when
+    present, otherwise computed from ``genotypes`` when given. Any other missing
+    or non-finite numeric value is written as ``NA``, and a missing text field as
+    ``.``.
 
     Args:
         results: List of association test result dictionaries
         variant_info: List of variant info dictionaries with chrom, pos, id, ref, alt
         output_path: Path to output TSV file
+        genotypes: Optional genotype matrix (variants x samples) of 0/1/2
+            alternate-allele dosages, with any other code treated as missing,
+            used to compute MAF for results that lack one.
 
     Returns:
         Path to written file
 
     Raises:
-        ValueError: If results and variant_info have different lengths
+        ValueError: If results and variant_info (or genotypes) have different lengths
     """
     if len(results) != len(variant_info):
         raise ValueError(
             f"Results ({len(results)}) and variant_info ({len(variant_info)}) " "must have the same length"
         )
 
+    q_values, mafs = _derived_columns(results, genotypes)
+
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     logger.info(f"Writing summary statistics for {len(results)} variants to {output_path}")
 
-    header = "CHR\tPOS\tSNP\tREF\tALT\tBETA\tSE\tP\tQ_FDR\tN\tMAF\n"
-
     with open(output_path, "w") as f:
-        f.write(header)
-        for result, vinfo in zip(results, variant_info):
-            chrom = vinfo.get("chrom", ".")
-            pos = vinfo.get("pos", 0)
-            snp_id = vinfo.get("id", ".")
-            ref = vinfo.get("ref", ".")
-            alt = vinfo.get("alt", ".")
-            if isinstance(alt, list):
-                alt = ",".join(alt)
-
-            beta = result.get("beta", 0.0)
-            se = result.get("se", 0.0)
-            p_value = result.get("p_value", 1.0)
-            q_fdr = result.get("q_value", result.get("q_fdr", result.get("Q_FDR", 1.0)))
-            n_samples = result.get("n_samples", result.get("N", 0))
-            maf = result.get("maf", result.get("MAF", 0.0))
-
-            f.write(
-                f"{chrom}\t{pos}\t{snp_id}\t{ref}\t{alt}\t"
-                f"{beta:.6g}\t{se:.6g}\t{p_value:.6e}\t{q_fdr:.6e}\t{n_samples}\t{maf:.4f}\n"
-            )
+        f.write(_SUMMARY_HEADER)
+        for result, vinfo, q_value, maf in zip(results, variant_info, q_values, mafs):
+            f.write(_format_row(result, vinfo, q_value, maf))
 
     logger.info(f"Summary statistics written to {output_path}")
     return output_path
@@ -91,52 +241,49 @@ def write_significant_hits(
     variant_info: List[Dict[str, Any]],
     output_path: Union[str, Path],
     threshold: float = 5e-8,
+    *,
+    genotypes: Optional[Sequence[Sequence[Any]]] = None,
 ) -> Path:
     """Write genome-wide significant hits to TSV file.
+
+    Columns and missing-value handling are those of :func:`write_summary_statistics`.
+    Q_FDR and MAF are derived over the full ``results`` before the significant
+    hits are selected, so a q-value reflects every test performed.
 
     Args:
         results: List of association test result dictionaries
         variant_info: List of variant info dictionaries
         output_path: Path to output TSV file
         threshold: Significance threshold (default: 5e-8 genome-wide)
+        genotypes: Optional genotype matrix (variants x samples), as for
+            :func:`write_summary_statistics`.
 
     Returns:
         Path to written file
+
+    Raises:
+        ValueError: If genotypes and results have different lengths
     """
+    q_values, mafs = _derived_columns(results, genotypes)
+
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    significant = [
-        (result, vinfo) for result, vinfo in zip(results, variant_info) if result.get("p_value", 1.0) < threshold
-    ]
+    significant = []
+    for result, vinfo, q_value, maf in zip(results, variant_info, q_values, mafs):
+        p_value = _finite_float(result.get("p_value"))
+        if p_value is not None and p_value < threshold:
+            significant.append((p_value, result, vinfo, q_value, maf))
 
     # Sort by p-value
-    significant.sort(key=lambda x: x[0].get("p_value", 1.0))
+    significant.sort(key=lambda hit: hit[0])
 
     logger.info(f"Writing {len(significant)} significant hits (threshold={threshold:.2e}) to {output_path}")
 
     with open(output_path, "w") as f:
-        f.write("CHR\tPOS\tSNP\tREF\tALT\tBETA\tSE\tP\tQ_FDR\tN\tMAF\n")
-        for result, vinfo in significant:
-            chrom = vinfo.get("chrom", ".")
-            pos = vinfo.get("pos", 0)
-            snp_id = vinfo.get("id", ".")
-            ref = vinfo.get("ref", ".")
-            alt = vinfo.get("alt", ".")
-            if isinstance(alt, list):
-                alt = ",".join(alt)
-
-            beta = result.get("beta", 0.0)
-            se = result.get("se", 0.0)
-            p_value = result.get("p_value", 1.0)
-            q_fdr = result.get("q_value", result.get("q_fdr", result.get("Q_FDR", 1.0)))
-            n_samples = result.get("n_samples", result.get("N", 0))
-            maf = result.get("maf", result.get("MAF", 0.0))
-
-            f.write(
-                f"{chrom}\t{pos}\t{snp_id}\t{ref}\t{alt}\t"
-                f"{beta:.6g}\t{se:.6g}\t{p_value:.6e}\t{q_fdr:.6e}\t{n_samples}\t{maf:.4f}\n"
-            )
+        f.write(_SUMMARY_HEADER)
+        for _, result, vinfo, q_value, maf in significant:
+            f.write(_format_row(result, vinfo, q_value, maf))
 
     return output_path
 

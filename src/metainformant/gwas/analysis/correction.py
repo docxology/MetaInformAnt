@@ -7,7 +7,7 @@ including Bonferroni, FDR, and genomic control methods.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, Iterable, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Literal, Optional, Tuple, overload
 
 from metainformant.core.utils import logging
 
@@ -18,7 +18,8 @@ try:
 
     HAS_SCIPY = True
 except ImportError:  # pragma: no cover - exercised only in lean environments
-    _scipy_stats = None
+    if not TYPE_CHECKING:  # runtime-only fallback; type checkers keep the real module type
+        _scipy_stats = None
     HAS_SCIPY = False
 
 EXPECTED_MEDIAN_CHI2_1DF = 0.454936423119572
@@ -103,6 +104,24 @@ def lambda_gc_from_p_values(p_values: Iterable[float]) -> Optional[float]:
     return lambda_gc
 
 
+@overload
+def bonferroni_correction(
+    p_values: List[float], alpha: float = ..., return_dict: Literal[True] = ...
+) -> Dict[str, Any]: ...
+
+
+@overload
+def bonferroni_correction(
+    p_values: List[float], alpha: float = ..., *, return_dict: Literal[False]
+) -> Tuple[List[bool], float]: ...
+
+
+@overload
+def bonferroni_correction(
+    p_values: List[float], alpha: float = ..., return_dict: bool = ...
+) -> Dict[str, Any] | Tuple[List[bool], float]: ...
+
+
 def bonferroni_correction(
     p_values: List[float], alpha: float = 0.05, return_dict: bool = True
 ) -> Dict[str, Any] | Tuple[List[bool], float]:
@@ -147,6 +166,24 @@ def bonferroni_correction(
             "alpha": alpha,
         }
     return significant, corrected_alpha
+
+
+@overload
+def fdr_correction(
+    p_values: List[float], alpha: float = ..., method: str = ..., return_dict: Literal[True] = ...
+) -> Dict[str, Any]: ...
+
+
+@overload
+def fdr_correction(
+    p_values: List[float], alpha: float = ..., method: str = ..., *, return_dict: Literal[False]
+) -> Tuple[List[bool], List[float]]: ...
+
+
+@overload
+def fdr_correction(
+    p_values: List[float], alpha: float = ..., method: str = ..., return_dict: bool = ...
+) -> Dict[str, Any] | Tuple[List[bool], List[float]]: ...
 
 
 def fdr_correction(
@@ -227,6 +264,34 @@ def fdr_correction(
             "alpha": alpha,
         }
     return significant, original_adjusted
+
+
+@overload
+def genomic_control(
+    p_values: List[float] | None = ...,
+    chi2_stats: List[float] | None = ...,
+    return_dict: Literal[True] = ...,
+    pvalues: List[float] | None = ...,
+) -> Dict[str, Any]: ...
+
+
+@overload
+def genomic_control(
+    p_values: List[float] | None = ...,
+    chi2_stats: List[float] | None = ...,
+    *,
+    return_dict: Literal[False],
+    pvalues: List[float] | None = ...,
+) -> Tuple[List[float], float]: ...
+
+
+@overload
+def genomic_control(
+    p_values: List[float] | None = ...,
+    chi2_stats: List[float] | None = ...,
+    return_dict: bool = ...,
+    pvalues: List[float] | None = ...,
+) -> Dict[str, Any] | Tuple[List[float], float]: ...
 
 
 def genomic_control(
@@ -497,19 +562,16 @@ def adjust_p_values(p_values: List[float], method: str = "bonferroni", **kwargs:
         return [min(p * len(p_values), 1.0) for p in p_values]
 
     elif method.lower() == "fdr":
-        _, adjusted_p = cast(
-            Tuple[List[bool], List[float]],
-            fdr_correction(
-                p_values,
-                kwargs.get("alpha", 0.05),
-                kwargs.get("fdr_method", "bh"),
-                return_dict=False,
-            ),
+        _, adjusted_p = fdr_correction(
+            p_values,
+            kwargs.get("alpha", 0.05),
+            kwargs.get("fdr_method", "bh"),
+            return_dict=False,
         )
         return adjusted_p
 
     elif method.lower() == "genomic_control":
-        adjusted_p, _ = cast(Tuple[List[float], float], genomic_control(p_values, return_dict=False))
+        adjusted_p, _ = genomic_control(p_values, return_dict=False)
         return adjusted_p
 
     elif method.lower() == "qvalue":

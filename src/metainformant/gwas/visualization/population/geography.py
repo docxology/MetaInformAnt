@@ -8,7 +8,7 @@ matplotlib scatter and bubble charts.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from metainformant.core.utils import logging
 
@@ -24,7 +24,8 @@ try:
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
-    plt = None
+    if not TYPE_CHECKING:  # runtime-only fallback; type checkers keep the real module type
+        plt = None
 
 try:
     import numpy as np
@@ -32,7 +33,8 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    if not TYPE_CHECKING:  # runtime-only fallback; type checkers keep the real module type
+        np = None
 
 
 def sample_map(

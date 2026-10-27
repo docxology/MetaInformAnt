@@ -15,6 +15,7 @@ import random
 import subprocess
 import time
 from pathlib import Path
+from typing import Any, Dict, List
 
 from metainformant.core import io
 from metainformant.core.utils import logging
@@ -25,7 +26,7 @@ logger = logging.get_logger(__name__)
 # REAL Apis mellifera HAv3.1 genome data
 # NCBI Assembly: GCF_003254395.2
 # ============================================================================
-AMEL_CHROMOSOMES = {
+AMEL_CHROMOSOMES: Dict[str, Dict[str, Any]] = {
     "NC_037638.1": {"name": "chr1", "size": 27693688, "num": 1},
     "NC_037639.1": {"name": "chr2", "size": 16399024, "num": 2},
     "NC_037640.1": {"name": "chr3", "size": 13619445, "num": 3},
@@ -45,7 +46,7 @@ AMEL_CHROMOSOMES = {
 }
 
 # Known Apis mellifera gene regions (real gene loci from NCBI)
-KNOWN_GENES = [
+KNOWN_GENES: List[Dict[str, Any]] = [
     {"chrom": "NC_037638.1", "start": 5000000, "end": 5050000, "name": "LOC552007", "desc": "defensin-1"},
     {"chrom": "NC_037638.1", "start": 10200000, "end": 10250000, "name": "LOC408451", "desc": "vitellogenin"},
     {"chrom": "NC_037639.1", "start": 3000000, "end": 3050000, "name": "LOC406085", "desc": "odorant receptor 11"},
@@ -90,7 +91,7 @@ KNOWN_GENES = [
 ]
 
 # Apis mellifera subspecies for population structure
-DEFAULT_SUBSPECIES = {
+DEFAULT_SUBSPECIES: Dict[str, Dict[str, Any]] = {
     "A.m.ligustica": {"label": "Italian", "n_samples": 25, "pop_effect": 0.0},
     "A.m.carnica": {"label": "Carniolan", "n_samples": 20, "pop_effect": 0.3},
     "A.m.mellifera": {"label": "Dark European", "n_samples": 15, "pop_effect": -0.2},
@@ -130,7 +131,7 @@ def _check_manifest(vcf_path: Path, params: dict) -> bool:
     try:
         with open(manifest) as f:
             existing = json.load(f)
-        return existing == json.loads(json.dumps(params, default=str))
+        return bool(existing == json.loads(json.dumps(params, default=str)))
     except (json.JSONDecodeError, OSError):
         return False
 
@@ -293,7 +294,7 @@ def generate_real_vcf(
     total_size = sum(c["size"] for c in AMEL_CHROMOSOMES.values())
 
     # Distribute variants proportionally across chromosomes
-    variants = []
+    variants: List[Dict[str, Any]] = []
     for chrom_acc, chrom_info in AMEL_CHROMOSOMES.items():
         n_chrom_variants = max(10, int(n_variants * chrom_info["size"] / total_size))
 
@@ -681,7 +682,7 @@ def generate_visualizations(gwas_results: dict, output_dir: Path) -> dict:
         volcano_plot,
     )
 
-    plot_results = {}
+    plot_results: Dict[str, str] = {}
     assoc_results = gwas_results.get("results", {}).get("association_results", [])
     pca_result = gwas_results.get("results", {}).get("pca", {})
     kinship_result = gwas_results.get("results", {}).get("kinship", {})
@@ -1000,7 +1001,7 @@ def main(argv: list[str] | None = None) -> tuple[dict, dict]:
     results_json.parent.mkdir(parents=True, exist_ok=True)
 
     # Make results JSON-serializable
-    serializable_results = {}
+    serializable_results: Dict[str, Any] = {}
     for key, value in gwas_results.items():
         if key == "results":
             serializable_results[key] = {}

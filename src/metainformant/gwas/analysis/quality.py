@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import math
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TextIO, Tuple, Union, cast
 
@@ -427,11 +428,65 @@ def check_haplodiploidy(
     }
 
 
+def _coerce_qual(value: Any) -> Optional[float]:
+    """Return a variant QUAL as a float, or ``None`` when it is missing.
+
+    VCF writes a missing QUAL as ``.``; parsed data carries it as ``None``. Blank
+    text, NaN and values that are not numbers are treated as missing too.
+    """
+    if value is None:
+        return None
+    if isinstance(value, str):
+        text = value.strip()
+        if text in ("", "."):
+            return None
+        try:
+            qual = float(text)
+        except ValueError:
+            return None
+    else:
+        try:
+            qual = float(value)
+        except (TypeError, ValueError):
+            return None
+    return None if math.isnan(qual) else qual
+
+
+def _format_qual(value: Any) -> str:
+    """Format a QUAL for a VCF record: a number, or ``.`` when it is missing."""
+    qual = _coerce_qual(value)
+    return "." if qual is None else repr(qual)
+
+
+def _vcf_text(value: Any, missing: str = ".") -> str:
+    """Format an optional VCF text column, using ``missing`` for ``None`` or blank values."""
+    if value is None:
+        return missing
+    text = str(value)
+    return text if text.strip() else missing
+
+
+def _validated_min_qual(value: Any) -> Optional[float]:
+    """Return ``min_qual`` as a float (``None`` when the filter is disabled); reject non-numbers."""
+    if value is None:
+        return None
+    try:
+        threshold = float(value)
+    except (TypeError, ValueError):
+        raise ValueError(f"min_qual must be a number, got {value!r}") from None
+    if math.isnan(threshold):
+        raise ValueError("min_qual must be a number, got NaN")
+    return threshold
+
+
 def apply_qc_filters(
     vcf_input: Union[str, Path, Dict[str, Any]],
     qc_config: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Apply comprehensive quality control filters to VCF data.
+
+    Filters run in this order: QUAL, minor allele frequency, missing data, and
+    Hardy-Weinberg equilibrium. A variant must pass every filter that is enabled.
 
     Args:
         vcf_input: VCF file path or pre-parsed VCF data dictionary
@@ -439,10 +494,23 @@ def apply_qc_filters(
             - min_maf: Minimum minor allele frequency (default 0.01)
             - max_missing: Maximum missing data proportion (default 0.1)
             - min_hwe_p: Minimum HWE p-value threshold (default 1e-6)
-            - min_qual: Minimum variant quality (optional)
+            - min_qual: Minimum variant quality (optional; omit or set to
+              ``None`` to disable). A variant passes when its QUAL is at least
+              ``min_qual`` (inclusive). A variant whose QUAL is missing (``.``
+              in the VCF, ``None`` once parsed) cannot be shown to meet the
+              threshold and is removed, whatever the threshold value; the
+              result's ``qual_filter`` entry reports how many variants that
+              was. Leave ``min_qual`` unset for VCFs that carry no QUAL values.
 
     Returns:
-        Dictionary with status and QC results
+        Dictionary with status and QC results. When ``min_qual`` is set it also
+        holds ``qual_filter`` with ``min_qual``, ``n_removed`` (variants removed
+        by this filter) and ``n_missing_qual`` (the part of ``n_removed`` that
+        had a missing QUAL).
+
+    Raises:
+        ValueError: If ``min_qual`` is not a number, or if it is set and the
+            parsed data does not hold one variant record per genotype column.
     """
     logger.info("Applying QC filters to VCF data")
 
@@ -458,6 +526,7 @@ def apply_qc_filters(
     min_maf = qc_config.get("min_maf", 0.01)
     max_missing = qc_config.get("max_missing", 0.1)
     min_hwe_p = qc_config.get("min_hwe_p", 1e-6)
+    min_qual = _validated_min_qual(qc_config.get("min_qual"))
 
     # Get genotypes - need to transpose from [sample][variant] to [variant][sample] for filtering
     genotypes_by_sample = vcf_data.get("genotypes", [])
@@ -477,30 +546,65 @@ def apply_qc_filters(
 
     num_variants_before = len(genotypes)
 
-    # Apply filters
-    filtered_genotypes, maf_indices = filter_by_maf(genotypes, min_maf)
-    if len(filtered_genotypes) == 0:
-        logger.warning("No variants passed MAF filter")
-        return {
+    # QUAL filter. ``candidate_indices`` maps the rows of ``genotypes`` back to the original variant
+    # order, so the later filters (which report indices into the rows they were given) stay aligned.
+    candidate_indices = list(range(num_variants_before))
+    qual_filter: Optional[Dict[str, Any]] = None
+    if min_qual is not None:
+        variants = vcf_data.get("variants", [])
+        if len(variants) != num_variants_before:
+            raise ValueError(
+                f"min_qual needs one variant record per genotype column: got {len(variants)} variant "
+                f"records for {num_variants_before} genotype columns"
+            )
+        candidate_indices = []
+        n_missing_qual = 0
+        for index, variant in enumerate(variants):
+            qual = _coerce_qual(variant.get("qual"))
+            if qual is None:
+                n_missing_qual += 1
+            elif qual >= min_qual:
+                candidate_indices.append(index)
+        genotypes = [genotypes[index] for index in candidate_indices]
+        qual_filter = {
+            "min_qual": min_qual,
+            "n_removed": num_variants_before - len(candidate_indices),
+            "n_missing_qual": n_missing_qual,
+        }
+        logger.info(f"QUAL filter (min_qual={min_qual}): kept {len(candidate_indices)}/{num_variants_before} variants")
+        if n_missing_qual:
+            logger.warning(
+                f"min_qual={min_qual}: removed {n_missing_qual} variant(s) whose QUAL is missing ('.'); "
+                "a missing QUAL cannot meet a minimum quality"
+            )
+
+    def _no_variants_left(reason: str) -> Dict[str, Any]:
+        logger.warning(f"No variants passed {reason}")
+        outcome: Dict[str, Any] = {
             "status": "success",
             "num_variants_before": num_variants_before,
             "num_variants_after": 0,
             "filtered_data": {**vcf_data, "genotypes": [], "variants": []},
         }
+        if qual_filter is not None:
+            outcome["qual_filter"] = qual_filter
+        return outcome
+
+    if min_qual is not None and len(genotypes) == 0:
+        return _no_variants_left("QUAL filter")
+
+    # Apply filters
+    filtered_genotypes, maf_indices = filter_by_maf(genotypes, min_maf)
+    if len(filtered_genotypes) == 0:
+        return _no_variants_left("MAF filter")
 
     # Re-filter by missing data on MAF-filtered set
     filtered_genotypes, missing_indices = filter_by_missing(filtered_genotypes, max_missing)
     if len(filtered_genotypes) == 0:
-        logger.warning("No variants passed missing data filter")
-        return {
-            "status": "success",
-            "num_variants_before": num_variants_before,
-            "num_variants_after": 0,
-            "filtered_data": {**vcf_data, "genotypes": [], "variants": []},
-        }
+        return _no_variants_left("missing data filter")
 
     # Map back to original indices
-    final_indices = [maf_indices[i] for i in missing_indices]
+    final_indices = [candidate_indices[maf_indices[i]] for i in missing_indices]
 
     # Apply HWE filter
     hwe_p_values = test_hwe(filtered_genotypes, alpha=min_hwe_p)
@@ -517,7 +621,7 @@ def apply_qc_filters(
 
     logger.info(f"QC filtering complete: {len(final_genotypes)}/{num_variants_before} variants passed")
 
-    return {
+    result: Dict[str, Any] = {
         "status": "success",
         "num_variants_before": num_variants_before,
         "num_variants_after": len(final_genotypes),
@@ -530,8 +634,12 @@ def apply_qc_filters(
             "min_maf": min_maf,
             "max_missing": max_missing,
             "min_hwe_p": min_hwe_p,
+            "min_qual": min_qual,
         },
     }
+    if qual_filter is not None:
+        result["qual_filter"] = qual_filter
+    return result
 
 
 def write_filtered_vcf(filtered_data: Dict[str, Any], output_path: Union[str, Path]) -> None:
@@ -570,14 +678,16 @@ def write_filtered_vcf(filtered_data: Dict[str, Any], output_path: Union[str, Pa
             f.write(f"\t{sample}")
         f.write("\n")
 
-        # Write filtered variants (simplified)
+        # Write filtered variants (simplified). A QUAL, ID, FILTER or INFO that is None (a value the
+        # parser could not provide) is written as the VCF missing marker ".", never as the text "None".
         for i, variant in enumerate(filtered_data.get("variants", [])):
             f.write(
-                f"{variant['chrom']}\t{variant['pos']}\t{variant['id']}\t{variant['ref']}\t{','.join(variant['alt'])}\t"
+                f"{variant['chrom']}\t{variant['pos']}\t{_vcf_text(variant['id'])}\t{variant['ref']}\t"
+                f"{','.join(variant['alt'])}\t"
             )
             f.write(
-                f"{variant.get('qual', '.')}\t{variant.get('filter', 'PASS')}\t"
-                f"{variant.get('info', '.')}\t{variant.get('format', 'GT')}"
+                f"{_format_qual(variant.get('qual'))}\t{_vcf_text(variant.get('filter', 'PASS'))}\t"
+                f"{_vcf_text(variant.get('info', '.'))}\t{_vcf_text(variant.get('format', 'GT'), 'GT')}"
             )
             # Write genotypes (convert numeric to VCF GT format).
             # "genotypes" is sample-major ([sample][variant]), matching

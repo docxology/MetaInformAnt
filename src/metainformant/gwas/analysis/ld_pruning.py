@@ -6,7 +6,7 @@ window approach, commonly used before PCA computation to remove correlated SNPs.
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from metainformant.core.utils import logging
 
@@ -19,7 +19,8 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    if not TYPE_CHECKING:  # runtime-only fallback; type checkers keep the real module type
+        np = None
 
 
 def ld_prune(
@@ -71,7 +72,9 @@ def ld_prune(
     if n_variants == 0 or n_samples == 0:
         return []
 
-    physical_mode = variant_positions is not None and len(variant_positions) == n_variants
+    physical_positions = (
+        variant_positions if variant_positions is not None and len(variant_positions) == n_variants else None
+    )
 
     logger.info(f"LD pruning: {n_variants} variants, window={window_size}, " f"step={step_size}, r2={r2_threshold}")
 
@@ -84,8 +87,8 @@ def ld_prune(
         n_missing = sum(1 for g in variant_gts if g < 0)
         missingness.append(n_missing / n_samples if n_samples > 0 else 0.0)
 
-    if physical_mode:
-        positions = [float(pos) for pos in variant_positions]
+    if physical_positions is not None:
+        positions = [float(pos) for pos in physical_positions]
         window_span_bp = float(window_size) * 1000.0
         # Visit variants in ascending positional order so the inner scan can
         # stop as soon as the physical window is exceeded.

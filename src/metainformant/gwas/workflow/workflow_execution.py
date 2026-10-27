@@ -270,11 +270,7 @@ def _apply_qvalue_and_bonferroni_annotations(
 
     p_values = [r.get("p_value", 1.0) for r in assoc_results]
     fdr_result = fdr_correction(p_values)
-
-    if isinstance(fdr_result, dict):
-        q_values = fdr_result.get("adjusted_p_values", [])
-    else:
-        _, q_values = fdr_result
+    q_values = fdr_result.get("adjusted_p_values", [])
 
     for i, q_val in enumerate(q_values):
         if i < len(assoc_results):
@@ -555,7 +551,9 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
             for result in association_results:
                 result.setdefault("N", n_samples)
                 result.setdefault("n_samples", result["N"])
-                result.setdefault("maf", result.get("MAF", 0.0))
+                # Copy an upper-case MAF across, but never invent one: the writer reports a missing MAF as NA.
+                if "maf" not in result and "MAF" in result:
+                    result["maf"] = result["MAF"]
 
         results["steps_completed"].append("association_testing")
         results["steps"].append("association_testing")

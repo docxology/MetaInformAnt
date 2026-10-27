@@ -588,7 +588,7 @@ def _get_project_runs(
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 
     # Search for runs in this project
-    search_params = {
+    search_params: Dict[str, str | int] = {
         "db": "sra",
         "term": f"{project_id}[BioProject]",
         "retmax": 1000,
@@ -691,7 +691,7 @@ def search_sra_for_organism(
 
     query = f'"{organism}"[Organism] AND "RNA-seq"[Strategy]'
 
-    search_params = {
+    search_params: Dict[str, str | int] = {
         "db": "sra",
         "term": query,
         "retmax": min(max_results, 1000),

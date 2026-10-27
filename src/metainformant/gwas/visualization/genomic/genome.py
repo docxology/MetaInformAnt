@@ -7,11 +7,14 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
 import numpy as np
 
 from metainformant.core.utils import logging
+
+if TYPE_CHECKING:
+    from matplotlib.projections.polar import PolarAxes
 
 logger = logging.get_logger(__name__)
 
@@ -81,7 +84,8 @@ def circular_manhattan_plot(
             "error": "Input data must be a DataFrame or list of dicts",
         }
 
-    fig, ax = plt.subplots(1, 1, figsize=(10, 10), subplot_kw=dict(projection="polar"))
+    fig, polar_ax = plt.subplots(1, 1, figsize=(10, 10), subplot_kw=dict(projection="polar"))
+    ax = cast("PolarAxes", polar_ax)  # projection="polar" yields a PolarAxes
 
     # Prepare data
     unique_chroms = sorted(set(str(c) for c in chroms_list))
@@ -486,13 +490,13 @@ def genome_wide_ld_heatmap(
         axes[i].set_visible(False)
 
     # Add colorbar
-    cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])
+    cbar_ax = fig.add_axes((0.92, 0.15, 0.02, 0.7))
     cbar = fig.colorbar(scatter, cax=cbar_ax)
     cbar.set_label("LD (r²)")
 
     fig.suptitle(title, fontsize=14)
 
-    plt.tight_layout(rect=[0, 0, 0.9, 0.95])
+    plt.tight_layout(rect=(0, 0, 0.9, 0.95))
 
     if output_file:
         plt.savefig(output_file, dpi=300, bbox_inches="tight")

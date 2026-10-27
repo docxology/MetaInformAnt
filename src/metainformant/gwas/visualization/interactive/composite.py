@@ -7,7 +7,7 @@ visualizations into unified summary figures for publication and reporting.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from metainformant.core.utils import logging
 
@@ -23,7 +23,8 @@ try:
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
-    plt = None
+    if not TYPE_CHECKING:  # runtime-only fallback; type checkers keep the real module type
+        plt = None
 
 try:
     import numpy as np
@@ -31,7 +32,8 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    if not TYPE_CHECKING:  # runtime-only fallback; type checkers keep the real module type
+        np = None
 
 
 def gwas_summary_panel(
@@ -147,7 +149,7 @@ def gwas_summary_panel(
             ax_kinship.set_title("Kinship Heatmap")
 
         fig.suptitle(title, fontsize=16, y=0.98)
-        fig.tight_layout(rect=[0, 0, 1, 0.96])
+        fig.tight_layout(rect=(0, 0, 1, 0.96))
 
         output_path_str: Optional[str] = None
         if output_file:
@@ -360,7 +362,7 @@ def population_structure_panel(
             ax_bar.set_title("Population Sample Counts")
 
         fig.suptitle(title, fontsize=16, y=0.98)
-        fig.tight_layout(rect=[0, 0, 1, 0.96])
+        fig.tight_layout(rect=(0, 0, 1, 0.96))
 
         output_path_str: Optional[str] = None
         if output_file:
@@ -564,7 +566,7 @@ def top_hit_detail_panel(
         panels_generated += 1
 
         fig.suptitle(title, fontsize=16, y=0.98)
-        fig.tight_layout(rect=[0, 0, 1, 0.94])
+        fig.tight_layout(rect=(0, 0, 1, 0.94))
 
         output_path_str: Optional[str] = None
         if output_file:

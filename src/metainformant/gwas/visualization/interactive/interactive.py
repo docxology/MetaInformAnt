@@ -95,6 +95,125 @@ Install <code>plotly</code> for interactive plots.</p>
 # 1. Interactive Manhattan Plot
 # ---------------------------------------------------------------------------
 
+#: Result keys that may hold the chromosome, in priority order (``chrom`` is what
+#: ``run_*_gwas`` results and VCF variant records use).
+_CHROMOSOME_KEYS = ("chromosome", "chrom", "chr", "CHROM", "CHR")
+_POSITION_KEYS = ("position", "pos", "POS")
+_P_VALUE_KEYS = ("p_value", "pvalue", "P")
+
+
+def _first_present(record: Dict[str, Any], keys: Tuple[str, ...]) -> Any:
+    """Return the first value among ``keys`` that is present and not None."""
+    for key in keys:
+        value = record.get(key)
+        if value is not None:
+            return value
+    return None
+
+
+def _chromosome_label(value: Any) -> Optional[str]:
+    """Normalise a chromosome value to a label; None if absent or blank.
+
+    Integral floats (``1.0``, as read from a numeric column with gaps) become
+    ``"1"`` so they sort and group with ``"1"``.
+    """
+    if value is None:
+        return None
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            return None
+        if value.is_integer():
+            value = int(value)
+    label = str(value).strip()
+    return label or None
+
+
+def _integer_position(value: Any) -> Optional[int]:
+    """Convert a base-pair position to ``int``; None if absent or not a finite number."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return int(number) if math.isfinite(number) else None
+
+
+def _positive_p_value(value: Any) -> Optional[float]:
+    """Convert a p-value to ``float``; None unless it is finite and positive."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) and number > 0 else None
+
+
+def _chrom_sort_key(c: str) -> Tuple[int, str]:
+    """Sort numeric chromosomes numerically, then the rest (X, Y, MT, ...) by name."""
+    c_clean = c.replace("chr", "")
+    try:
+        return (0, str(int(c_clean)).zfill(5))
+    except ValueError:
+        return (1, c_clean)
+
+
+def _prepare_manhattan_records(
+    assoc_results: List[Dict[str, Any]],
+) -> Tuple[List[Dict[str, Any]], List[str], int]:
+    """Normalise association results into plottable Manhattan records.
+
+    A result is usable only if it has a chromosome, a position and a positive
+    finite p-value; nothing is defaulted, so a variant is never drawn on a
+    chromosome it was not assigned to. Each record gets its cumulative x position
+    (``cum_pos``, chromosomes laid end to end in sorted order) and ``neg_log_p``.
+
+    Args:
+        assoc_results: Association result dicts (see :func:`interactive_manhattan`).
+
+    Returns:
+        Tuple of (records, chromosome labels in plotting order, number of results
+        skipped as unusable).
+    """
+    records: List[Dict[str, Any]] = []
+    n_skipped = 0
+    for r in assoc_results:
+        chrom = _chromosome_label(_first_present(r, _CHROMOSOME_KEYS))
+        pos = _integer_position(_first_present(r, _POSITION_KEYS))
+        pval = _positive_p_value(_first_present(r, _P_VALUE_KEYS))
+        if chrom is None or pos is None or pval is None:
+            n_skipped += 1
+            continue
+        vid = _first_present(r, ("variant_id", "rsid"))
+        if vid is None:
+            vid = f"{chrom}:{pos}"
+        records.append(
+            {
+                "chromosome": chrom,
+                "position": pos,
+                "p_value": pval,
+                "variant_id": str(vid),
+                "beta": _first_present(r, ("beta", "effect_size")),
+            }
+        )
+
+    chrom_set = sorted({r["chromosome"] for r in records}, key=_chrom_sort_key)
+
+    # Per-chromosome max position gives the cumulative offset of the next chromosome
+    chrom_max: Dict[str, int] = {}
+    for r in records:
+        c = r["chromosome"]
+        chrom_max[c] = max(chrom_max.get(c, 0), r["position"])
+
+    cum_offset: Dict[str, int] = {}
+    running = 0
+    for c in chrom_set:
+        cum_offset[c] = running
+        running += chrom_max.get(c, 0) + 1
+
+    for r in records:
+        r["cum_pos"] = r["position"] + cum_offset[r["chromosome"]]
+        r["neg_log_p"] = -math.log10(max(r["p_value"], 1e-300))
+
+    return records, chrom_set, n_skipped
+
 
 def interactive_manhattan(
     assoc_results: List[Dict[str, Any]],
@@ -111,9 +230,13 @@ def interactive_manhattan(
     is not installed.
 
     Args:
-        assoc_results: List of dicts, each with at least ``"chromosome"`` (or
-            ``"chr"``), ``"position"`` (or ``"pos"``), and ``"p_value"`` (or
-            ``"pvalue"``).  Optional keys: ``"variant_id"``, ``"beta"``.
+        assoc_results: List of dicts, each with at least a chromosome
+            (``"chromosome"``, ``"chrom"``, ``"chr"``, ``"CHROM"`` or ``"CHR"``), a
+            position (``"position"``, ``"pos"`` or ``"POS"``), and a p-value
+            (``"p_value"``, ``"pvalue"`` or ``"P"``).  Optional keys:
+            ``"variant_id"``, ``"beta"``.  Results missing any of the three
+            required values are skipped (and counted in ``"n_skipped"``), never
+            placed on a default chromosome.
         output_file: Path for the output HTML file.
         gene_annotations: Optional list of dicts with ``"variant_id"`` and
             ``"gene"`` keys to annotate specific points.
@@ -121,8 +244,8 @@ def interactive_manhattan(
         title: Plot title.
 
     Returns:
-        Dict with ``"status"``, ``"output_path"``, ``"n_variants"``, and
-        ``"interactive"`` keys.
+        Dict with ``"status"``, ``"output_path"``, ``"n_variants"``,
+        ``"n_skipped"``, and ``"interactive"`` keys.
     """
     if not assoc_results:
         logger.warning("No association results provided for Manhattan plot")
@@ -130,29 +253,18 @@ def interactive_manhattan(
             "status": "skipped",
             "output_path": None,
             "n_variants": 0,
+            "n_skipped": 0,
             "interactive": False,
         }
 
     out = _ensure_output_dir(output_file)
 
-    # --- Normalise keys ------------------------------------------------
-    records: List[Dict[str, Any]] = []
-    for r in assoc_results:
-        chrom = r.get("chromosome", r.get("chr", r.get("CHROM", "1")))
-        pos = r.get("position", r.get("pos", r.get("POS", 0)))
-        pval = r.get("p_value", r.get("pvalue", r.get("P", None)))
-        if pval is None or pval <= 0:
-            continue
-        vid = r.get("variant_id", r.get("rsid", f"{chrom}:{pos}"))
-        beta = r.get("beta", r.get("effect_size", None))
-        records.append(
-            {
-                "chromosome": str(chrom),
-                "position": int(pos),
-                "p_value": float(pval),
-                "variant_id": str(vid),
-                "beta": beta,
-            }
+    # --- Normalise keys, sort chromosomes and compute cumulative positions
+    records, chrom_set, n_skipped = _prepare_manhattan_records(assoc_results)
+    if n_skipped:
+        logger.warning(
+            f"Skipped {n_skipped} of {len(assoc_results)} results without a chromosome, "
+            "position and positive p-value in the Manhattan plot"
         )
 
     if not records:
@@ -161,38 +273,12 @@ def interactive_manhattan(
             "status": "skipped",
             "output_path": None,
             "n_variants": 0,
+            "n_skipped": n_skipped,
             "interactive": False,
         }
 
     n_variants = len(records)
-
-    # --- Sort chromosomes and compute cumulative positions -------------
-    def _chrom_sort_key(c: str) -> Tuple[int, str]:
-        c_clean = c.replace("chr", "")
-        try:
-            return (0, str(int(c_clean)).zfill(5))
-        except ValueError:
-            return (1, c_clean)
-
-    chrom_set = sorted({r["chromosome"] for r in records}, key=_chrom_sort_key)
     chrom_to_idx = {c: i for i, c in enumerate(chrom_set)}
-
-    # Compute per-chromosome max position for cumulative offset
-    chrom_max: Dict[str, int] = {}
-    for r in records:
-        c = r["chromosome"]
-        chrom_max[c] = max(chrom_max.get(c, 0), r["position"])
-
-    cum_offset: Dict[str, int] = {}
-    running = 0
-    for c in chrom_set:
-        cum_offset[c] = running
-        running += chrom_max.get(c, 0) + 1
-
-    # Augment records with cumulative position and -log10(p)
-    for r in records:
-        r["cum_pos"] = r["position"] + cum_offset[r["chromosome"]]
-        r["neg_log_p"] = -math.log10(max(r["p_value"], 1e-300))
 
     # --- Build annotations lookup if provided --------------------------
     annotation_map: Dict[str, str] = {}
@@ -293,6 +379,7 @@ def interactive_manhattan(
             "status": "success",
             "output_path": str(out) if out else None,
             "n_variants": n_variants,
+            "n_skipped": n_skipped,
             "interactive": True,
         }
 
@@ -320,6 +407,7 @@ def interactive_manhattan(
         "status": "success",
         "output_path": str(out) if out else None,
         "n_variants": n_variants,
+        "n_skipped": n_skipped,
         "interactive": False,
     }
 
@@ -523,7 +611,8 @@ def interactive_volcano(
     Args:
         assoc_results: List of dicts, each with ``"p_value"`` (or ``"pvalue"``)
             and ``"beta"`` (or ``"effect_size"``).  Optional: ``"variant_id"``,
-            ``"chromosome"``.
+            and the chromosome (``"chromosome"``, ``"chrom"``, ``"chr"``,
+            ``"CHROM"`` or ``"CHR"``).
         output_file: Path for the output HTML file.
         significance_threshold: P-value threshold for genome-wide significance.
         fold_change_threshold: Effect-size threshold for vertical guide lines.
@@ -552,7 +641,7 @@ def interactive_volcano(
         if pval is None or pval <= 0:
             continue
         vid = r.get("variant_id", r.get("rsid", ""))
-        chrom = r.get("chromosome", r.get("chr", ""))
+        chrom = _chromosome_label(_first_present(r, _CHROMOSOME_KEYS)) or ""
         neg_log_p = -math.log10(max(pval, 1e-300))
 
         # Categorise

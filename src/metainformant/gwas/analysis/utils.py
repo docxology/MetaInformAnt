@@ -7,7 +7,7 @@ extracted to eliminate code duplication.
 from __future__ import annotations
 
 import math
-from typing import List
+from typing import TYPE_CHECKING, List
 
 try:
     import numpy as np
@@ -15,7 +15,8 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    if not TYPE_CHECKING:  # runtime-only fallback; type checkers keep the real module type
+        np = None
 
 
 def compute_r_squared(geno_a: List[int], geno_b: List[int]) -> float:

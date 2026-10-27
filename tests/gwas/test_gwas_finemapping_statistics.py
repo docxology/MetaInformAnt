@@ -99,9 +99,14 @@ class TestCredibleSetConstruction:
         assert result["snps_in_set"][0] == 0
 
     def test_two_signals_need_larger_set_than_one(self) -> None:
-        """A second comparable signal forces more variants into the set."""
+        """A second comparable signal forces more variants into the set.
+
+        Comparable means a Bayes factor ratio of a few, not a 2-SD gap in z: with correctly
+        scaled Bayes factors z = 12 beats z = 10 by about exp(21), so the pair used to
+        look comparable only because the old Bayes factors were nearly flat.
+        """
         single = compute_credible_set([15.0], coverage=0.95)
-        two = compute_credible_set([12.0, 10.0, 0.5, 0.5], coverage=0.95)
+        two = compute_credible_set([12.0, 11.9, 0.5, 0.5], coverage=0.95)
 
         assert single["n_snps"] == 1
         assert two["n_snps"] >= 2

@@ -13,7 +13,7 @@ This module provides configuration management for GWAS workflows:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Sequence, Union, cast
 
 from metainformant.core import io
 from metainformant.core.utils import logging
@@ -88,6 +88,27 @@ class GWASWorkflowConfig:
         return cls(**config_dict)
 
 
+_NUMERIC_QC_KEYS = ("min_maf", "max_missing", "min_hwe_p", "min_qual", "min_call_rate")
+
+
+def _coerce_qc_thresholds(qc: Dict[str, Any]) -> Dict[str, Any]:
+    """Return ``qc`` with numeric thresholds as floats.
+
+    YAML 1.1 (PyYAML) reads exponent notation without a decimal point, such as
+    ``hwe_pval: 1e-6``, as a string, which later breaks threshold comparisons.
+    """
+    coerced = dict(qc)
+    for key in _NUMERIC_QC_KEYS:
+        value = coerced.get(key)
+        if value is None or isinstance(value, bool):
+            continue
+        try:
+            coerced[key] = float(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"quality_control.{key} must be numeric, got {value!r}") from exc
+    return coerced
+
+
 def _normalize_config(config: Dict[str, Any]) -> Dict[str, Any]:
     """Normalize nested YAML config format to flat workflow format.
 
@@ -148,6 +169,8 @@ def _normalize_config(config: Dict[str, Any]) -> Dict[str, Any]:
             if "min_call_rate" in qc:
                 qc_mapped["min_call_rate"] = qc["min_call_rate"]
             normalized["quality_control"] = qc_mapped
+    if isinstance(normalized.get("quality_control"), dict):
+        normalized["quality_control"] = _coerce_qc_thresholds(normalized["quality_control"])
 
     # Map association.model -> model
     if "model" not in normalized:
@@ -500,6 +523,31 @@ def _load_phenotypes(phenotype_path: str | Path, trait: str | None = None) -> Li
 
     except Exception as e:
         raise ValueError(f"Error loading phenotypes from {phenotype_path}: {e}")
+
+
+def _phenotypes_in_sample_order(pheno_df: Any, trait: str, samples: Sequence[str]) -> List[Any]:
+    """Return ``trait`` values in the order of the genotyped ``samples``, matched on ``sample_id``.
+
+    Rows are matched by identifier, never by position: a phenotype table sorted
+    differently from the VCF would otherwise pair genotypes with other
+    individuals' phenotypes. A table that does not cover exactly the genotyped
+    samples is refused rather than silently misaligned.
+    """
+    if "sample_id" not in pheno_df.columns:
+        raise ValueError("phenotype table needs a 'sample_id' column to align with the VCF samples")
+    ids = [str(sample) for sample in pheno_df["sample_id"]]
+    if len(set(ids)) != len(ids):
+        raise ValueError("phenotype table has duplicate sample_id values")
+    by_id = dict(zip(ids, pheno_df[trait].tolist()))
+    wanted = [str(sample) for sample in samples]
+    missing = [sample for sample in wanted if sample not in by_id]
+    extra = sorted(set(by_id) - set(wanted))
+    if missing or extra:
+        raise ValueError(
+            f"phenotype samples do not match the VCF: {len(missing)} missing {missing[:3]}, "
+            f"{len(extra)} extra {extra[:3]}"
+        )
+    return [by_id[sample] for sample in wanted]
 
 
 def _load_phenotypes_by_id(phenotype_path: str | Path, trait: str | None = None) -> Dict[str, float]:
