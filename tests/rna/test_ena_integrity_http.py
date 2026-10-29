@@ -4,10 +4,57 @@ from __future__ import annotations
 
 import gzip
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from metainformant.rna.retrieval.ena_downloader import ENADownloader
+
+
+def test_low_speed_timeout_resumes_retained_bytes(tmp_path: Path) -> None:
+    payload = gzip.compress(b"@read\nACGT\n+\n!!!!\n" * 1000, mtime=0)
+    split = len(payload) // 2
+    release = threading.Event()
+    requests: list[str | None] = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            byte_range = self.headers.get("Range")
+            requests.append(byte_range)
+            self.send_response(206 if byte_range else 200)
+            if byte_range:
+                assert byte_range == f"bytes={split}-"
+                self.send_header("Content-Range", f"bytes {split}-{len(payload) - 1}/{len(payload)}")
+                body = payload[split:]
+            else:
+                body = payload
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body if byte_range else body[:split])
+            self.wfile.flush()
+            if not byte_range:
+                release.wait(timeout=15)
+
+        def log_message(self, format: str, *args: object) -> None:
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    started = time.monotonic()
+    try:
+        success, message, files = ENADownloader(
+            timeout=12, retries=0, integrity_retries=0, speed_time_seconds=1, retry_delay_seconds=1,
+        )._download_files([f"http://127.0.0.1:{server.server_port}/reads.fastq.gz"], tmp_path)
+        assert success, message
+        assert time.monotonic() - started < 10
+        assert requests == [None, f"bytes={split}-"]
+        assert files[0].read_bytes() == payload
+    finally:
+        release.set()
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
 
 
 def test_unknown_size_corruption_retries_fresh_and_preserves_witness(

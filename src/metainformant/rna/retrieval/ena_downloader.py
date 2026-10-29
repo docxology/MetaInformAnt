@@ -23,18 +23,22 @@ Example:
 import concurrent.futures
 import csv
 import gzip
+import hashlib
 import os
 import signal
 import subprocess
 import time
-import urllib.error
-import urllib.request
 import zlib
 from pathlib import Path
 from typing import List, Mapping, Tuple
+from urllib.parse import urlsplit
 
 from metainformant.core.utils.hash import md5_file
 from metainformant.core.utils.logging import get_logger
+from metainformant.rna.retrieval.ena_transport import (
+    ena_request_slot,
+    validate_connection_budgets,
+)
 
 logger = get_logger(__name__)
 
@@ -44,7 +48,7 @@ _RETRYABLE_HTTP_STATUS_CODES = frozenset({403, 408, 425, 429, 500, 502, 503, 504
 
 def _run_command_in_process_group(
     command: list[str],
-    timeout: int,
+    timeout: float,
     *,
     env: Mapping[str, str] | None = None,
     output_dirs: list[Path] | None = None,
@@ -169,7 +173,7 @@ def _is_retryable_transfer_failure(result: subprocess.CompletedProcess[str]) -> 
     return False
 
 
-def _remote_content_length(url: str) -> int | None:
+def _remote_content_length(url: str, *, timeout: float = 30) -> int | None:
     """Return the advertised Content-Length for ``url`` (HEAD request), or None.
 
     Used to distinguish a *truncated* transfer (payload shorter than the
@@ -178,19 +182,27 @@ def _remote_content_length(url: str) -> int | None:
     so the caller falls back to the existing fresh-retry behavior.
     """
 
-    if not url.lower().startswith("https://"):
-        # B310: only the pinned ENA/EBI HTTPS endpoints are ever probed here.
+    parsed = urlsplit(url)
+    if parsed.scheme != "https" and not (parsed.scheme == "http" and parsed.hostname in {"127.0.0.1", "::1"}):
+        # Remote probes require HTTPS; plain HTTP is limited to loopback fixtures.
         return None
     try:
-        request = urllib.request.Request(url, method="HEAD")
-        # nosec B310: scheme restricted to https:// above; only pinned ENA/EBI endpoints reach this call.
-        with urllib.request.urlopen(request, timeout=30) as response:  # nosec B310
-            header = response.headers.get("Content-Length")
-        if header is None:
+        deadline = time.monotonic() + timeout
+        with ena_request_slot(url, kind="file", deadline_at=deadline):
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return None
+            response = _run_command_in_process_group(
+                ["curl", "-fsSLI", "--max-time", str(remaining), "--output", os.devnull,
+                 "--write-out", "%header{content-length}", url],
+                timeout=remaining,
+            )
+        header = response.stdout.strip()
+        if response.returncode != 0 or not header or len(header) > 20:
             return None
         length = int(header)
         return length if length >= 0 else None
-    except (OSError, ValueError, urllib.error.URLError):
+    except (OSError, ValueError, subprocess.SubprocessError):
         return None
 
 
@@ -237,6 +249,7 @@ def record_invalid_transfer(
     *,
     reason: str,
     max_witness_bytes: int = 16 * 1024 * 1024,
+    deadline_at: float | None = None,
 ) -> Path | None:
     """Record a corrupt payload and retain at most one full witness per file.
 
@@ -251,7 +264,17 @@ def record_invalid_transfer(
         return None
     try:
         size_bytes = file_path.stat().st_size
-        digest = calculate_md5(file_path)
+        if deadline_at is None:
+            digest = calculate_md5(file_path)
+        else:
+            fingerprint = hashlib.md5(usedforsecurity=False)
+            with file_path.open("rb") as handle:
+                while chunk := handle.read(1024 * 1024):
+                    if time.monotonic() >= deadline_at:
+                        logger.info("Integrity evidence budget expired; retaining %s", file_path)
+                        return None
+                    fingerprint.update(chunk)
+            digest = fingerprint.hexdigest()
     except OSError as exc:
         logger.warning("Unable to fingerprint invalid transfer %s: %s", file_path, exc)
         size_bytes = 0
@@ -290,7 +313,7 @@ def record_invalid_transfer(
     return retained_path
 
 
-def verify_gzip_integrity(file_path: Path) -> bool:
+def verify_gzip_integrity(file_path: Path, *, deadline_at: float | None = None) -> bool:
     """Verify the integrity of a gzip file.
 
     Args:
@@ -306,7 +329,9 @@ def verify_gzip_integrity(file_path: Path) -> bool:
     try:
         with gzip.open(file_path, "rb") as f:
             while True:
-                chunk = f.read(8192)
+                if deadline_at is not None and time.monotonic() >= deadline_at:
+                    return False
+                chunk = f.read(1024 * 1024)
                 if not chunk:
                     break
         return True
@@ -325,6 +350,7 @@ class ENADownloader:
     """
 
     ENA_HTTP_BASE = "https://ftp.sra.ebi.ac.uk/vol1/fastq"
+    ENA_API_BASE = "https://www.ebi.ac.uk/ena/portal/api/filereport"
 
     def __init__(
         self,
@@ -339,6 +365,8 @@ class ENADownloader:
         api_retry_delay_seconds: int = 2,
         api_timeout_seconds: int = 30,
         file_workers: int = 1,
+        run_timeout_seconds: int = 0,
+        api_base_url: str = ENA_API_BASE,
     ):
         """
         Initialize the downloader.
@@ -375,8 +403,11 @@ class ENADownloader:
                 (default: 30). Keep this shorter than an enclosing test or
                 workflow watchdog when operating in bounded environments.
         """
+        validate_connection_budgets()
         if timeout <= 0:
             raise ValueError("timeout must be positive")
+        if type(run_timeout_seconds) is not int or run_timeout_seconds < 0:
+            raise ValueError("run_timeout_seconds must be a nonnegative integer")
         if retries < 0:
             raise ValueError("retries must be non-negative")
         if integrity_retries < 0:
@@ -398,6 +429,11 @@ class ENADownloader:
         if type(file_workers) is not int or file_workers not in (1, 2):
             raise ValueError("file_workers must be 1 or 2")
         self.file_workers = file_workers
+        self.run_timeout_seconds = run_timeout_seconds
+        self.api_base_url = api_base_url
+        self.file_sizes: dict[str, int] = {}
+        self.file_md5: dict[str, str] = {}
+        self.last_metadata_error: str | None = None
         self.timeout = timeout
         self.retries = retries
         self.integrity_retries = integrity_retries
@@ -407,9 +443,9 @@ class ENADownloader:
         self.speed_time_seconds = speed_time_seconds
         self.api_retries = api_retries
         self.api_retry_delay_seconds = api_retry_delay_seconds
-        self.api_timeout_seconds = api_timeout_seconds
+        self.api_timeout_seconds = min(api_timeout_seconds, run_timeout_seconds) if run_timeout_seconds else api_timeout_seconds
 
-    def get_fastq_urls(self, sample_id: str) -> List[str]:
+    def get_fastq_urls(self, sample_id: str, *, deadline_at: float | None = None) -> List[str]:
         """
         Discover FASTQ URLs for a sample using the ENA Portal API.
 
@@ -438,15 +474,37 @@ class ENADownloader:
             HTTP URLs for curl compatibility. Single-end runs return
             one URL; paired-end runs return two URLs (forward and reverse).
         """
+        self.file_sizes.clear()
+        self.file_md5.clear()
+        self.last_metadata_error = None
+        if self.run_timeout_seconds:
+            local_deadline = time.monotonic() + self.run_timeout_seconds
+            deadline_at = min(deadline_at, local_deadline) if deadline_at is not None else local_deadline
         api_url = (
-            f"https://www.ebi.ac.uk/ena/portal/api/filereport?"
-            f"accession={sample_id}&result=read_run&fields=fastq_ftp"
+            f"{self.api_base_url}?"
+            f"accession={sample_id}&result=read_run&fields=fastq_ftp,fastq_bytes,fastq_md5"
         )
 
         for attempt in range(self.api_retries + 1):
             try:
-                with urllib.request.urlopen(api_url, timeout=self.api_timeout_seconds) as response:  # nosec B310
-                    content = response.read().decode("utf-8")
+                remaining = min(self.api_timeout_seconds, deadline_at - time.monotonic()) if deadline_at is not None else self.api_timeout_seconds
+                if remaining <= 0:
+                    return []
+                request_deadline = time.monotonic() + remaining
+                with ena_request_slot(api_url, kind="metadata", deadline_at=request_deadline):
+                    remaining = request_deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise TimeoutError("ENA metadata request deadline exhausted")
+                    response = _run_command_in_process_group(
+                        ["curl", "-fsSL", "--max-time", str(remaining), "--max-filesize", "1048576", "--write-out", "\n%{http_code}", api_url],
+                        timeout=remaining,
+                    )
+                if response.returncode != 0:
+                    raise OSError(f"ENA metadata transport failed: curl_exit={response.returncode}, http_status={_curl_http_status(response) or 0}")
+                content = response.stdout.rsplit("\n", 1)[0]
+                if len(content.encode("utf-8")) > 1048576:
+                    raise ValueError("ENA metadata response exceeds one MiB")
+                if content:
                     lines = content.strip().split("\n")
 
                     if len(lines) < 2:
@@ -457,6 +515,9 @@ class ENADownloader:
                     parts = lines[1].split("\t")
                     if len(parts) < 2:
                         return []
+
+                    if parts[0].strip() != sample_id:
+                        raise ValueError("ENA returned a different run accession")
 
                     ftp_field = parts[1].strip()
 
@@ -472,10 +533,28 @@ class ENADownloader:
                             # ENA API returns "ftp.sra...".  Use HTTPS so that
                             # large transfers are not downgraded to a less auditable
                             # clear-text endpoint.
-                            urls.append(f"https://{ftp_path}")
+                            parsed = urlsplit(ftp_path)
+                            if parsed.scheme == "https" or (parsed.scheme == "http" and parsed.hostname in {"127.0.0.1", "::1"}):
+                                urls.append(ftp_path)
+                            else:
+                                urls.append(f"https://{ftp_path}")
 
+                    columns = dict(zip(lines[0].split("\t"), parts, strict=True))
+                    size_tokens = columns.get("fastq_bytes", "").split(";")
+                    md5_tokens = columns.get("fastq_md5", "").split(";")
+                    self.file_sizes.clear()
+                    self.file_md5.clear()
+                    if columns.get("fastq_bytes"):
+                        if len(size_tokens) != len(urls) or any(not token.isdecimal() or int(token) <= 0 for token in size_tokens):
+                            raise ValueError("ENA FASTQ size cardinality/value mismatch")
+                        self.file_sizes.update((url.rsplit("/", 1)[-1], int(size)) for url, size in zip(urls, size_tokens, strict=True))
+                    if columns.get("fastq_md5"):
+                        if len(md5_tokens) != len(urls) or any(len(token) != 32 or any(char not in "0123456789abcdef" for char in token.lower()) for token in md5_tokens):
+                            raise ValueError("ENA FASTQ checksum cardinality/value mismatch")
+                        self.file_md5.update((url.rsplit("/", 1)[-1], digest.lower()) for url, digest in zip(urls, md5_tokens, strict=True))
                     return urls
             except Exception as exc:
+                self.last_metadata_error = f"ENA metadata {type(exc).__name__}: {str(exc)[:512]}"
                 if attempt >= self.api_retries:
                     logger.warning(
                         "ENA API query failed for %s after %d retries: %s",
@@ -484,15 +563,21 @@ class ENADownloader:
                         exc,
                     )
                     return []
+                delay_seconds = float(self.api_retry_delay_seconds)
+                if deadline_at is not None:
+                    remaining = deadline_at - time.monotonic()
+                    if remaining <= 0:
+                        return []
+                    delay_seconds = min(delay_seconds, remaining)
                 logger.info(
                     "ENA API query failed for %s (%s); retrying in %ss (%d/%d)",
                     sample_id,
                     exc,
-                    self.api_retry_delay_seconds,
+                    delay_seconds,
                     attempt + 1,
                     self.api_retries,
                 )
-                time.sleep(self.api_retry_delay_seconds)
+                time.sleep(delay_seconds)
         return []
 
     def download_run(self, sample_id: str, output_dir: Path) -> Tuple[bool, str, List[Path]]:
@@ -539,29 +624,47 @@ class ENADownloader:
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
+        deadline = time.monotonic() + self.run_timeout_seconds if self.run_timeout_seconds else None
         # 1. Discover URLs
-        urls = self.get_fastq_urls(sample_id)
+        urls = self.get_fastq_urls(sample_id, deadline_at=deadline) if deadline is not None else self.get_fastq_urls(sample_id)
         if not urls:
             return False, "Not found on ENA", []
 
-        return self._download_files(urls, output_dir)
+        return self._download_files(urls, output_dir, deadline_at=deadline)
 
-    def _download_files(self, urls: list[str], output_dir: Path) -> Tuple[bool, str, List[Path]]:
+    def _download_files(
+        self, urls: list[str], output_dir: Path, *,
+        max_file_bytes: Mapping[str, int] | None = None,
+        deadline_at: float | None = None,
+        require_existing_output: bool = False,
+    ) -> Tuple[bool, str, List[Path]]:
         """Transfer discovered file URLs with independent ownership and bounded overlap."""
-        output_dir.mkdir(parents=True, exist_ok=True)
+        if require_existing_output:
+            if not output_dir.is_dir():
+                return False, "Selected transfer directory disappeared; refusing to recreate it", []
+        else:
+            output_dir.mkdir(parents=True, exist_ok=True)
         filenames = [url.split("/")[-1] for url in urls]
         if any(not name or name in {".", ".."} for name in filenames) or len(set(filenames)) != len(filenames):
             raise ValueError("ENA URLs require distinct safe output filenames")
+        if self.run_timeout_seconds:
+            deadline_at = min(deadline_at or float("inf"), time.monotonic() + self.run_timeout_seconds)
+
+        def transfer(url: str) -> Tuple[bool, str, List[Path]]:
+            return self._download_file(
+                url, output_dir, deadline_at=deadline_at,
+                max_bytes=(max_file_bytes or {}).get(url.split("/")[-1]),
+            )
         if self.file_workers == 1:
             outcomes = []
             for url in urls:
-                outcome = self._download_file(url, output_dir)
+                outcome = transfer(url)
                 outcomes.append(outcome)
                 if not outcome[0]:
                     break
         else:
             with concurrent.futures.ThreadPoolExecutor(max_workers=self.file_workers) as executor:
-                outcomes = list(executor.map(lambda url: self._download_file(url, output_dir), urls))
+                outcomes = list(executor.map(transfer, urls))
         # All submitted mates have settled before fallback may touch this directory.
         files = [path for success, _, paths in outcomes if success for path in paths]
         errors = [message for success, message, _ in outcomes if not success]
@@ -569,18 +672,25 @@ class ENADownloader:
             return False, "; ".join(errors), files
         return True, f"Downloaded {len(files)} files", files
 
-    def _download_file(self, url: str, output_dir: Path) -> Tuple[bool, str, List[Path]]:
+    def _download_file(
+        self, url: str, output_dir: Path, *, deadline_at: float | None = None,
+        max_bytes: int | None = None,
+    ) -> Tuple[bool, str, List[Path]]:
         """Own one distinct mate's resumable transfer and integrity evidence."""
         filename = url.split("/")[-1]
         output_file = output_dir / filename
+        if deadline_at is not None and time.monotonic() >= deadline_at:
+            return False, "Download time budget exhausted; retained existing inputs", []
 
         partial_file = output_file.with_name(f"{output_file.name}.part")
 
         # Check if already exists and non-empty. Resume support must still
         # reject corrupt gzip files from interrupted prior downloads.
         if output_file.exists() and output_file.stat().st_size > 0:
-            if verify_gzip_integrity(output_file):
+            if verify_gzip_integrity(output_file, deadline_at=deadline_at):
                 return True, "Reused validated FASTQ", [output_file]
+            if deadline_at is not None and time.monotonic() >= deadline_at:
+                return False, "Validation time budget exhausted; retained existing FASTQ", []
             logger.warning(
                 "Existing FASTQ failed gzip integrity check; preserving it and starting a fresh transfer: %s",
                 output_file,
@@ -589,6 +699,7 @@ class ENADownloader:
                 output_file,
                 reason="existing_invalid_gzip",
                 max_witness_bytes=self.invalid_witness_max_bytes,
+                deadline_at=deadline_at,
             )
 
         # A previous interrupted curl is retained as ``.part``.  ENA
@@ -617,8 +728,12 @@ class ENADownloader:
             "%{http_code}",
             url,
         ]
+        if max_bytes is not None and (type(max_bytes) is not int or max_bytes <= 0):
+            raise ValueError("transfer size bound must be a positive integer")
 
         deadline = time.monotonic() + self.timeout
+        if deadline_at is not None:
+            deadline = min(deadline, deadline_at)
         consecutive_no_progress = 0
         retry_events = 0
         gzip_integrity_retries = 0
@@ -628,11 +743,23 @@ class ENADownloader:
                 return False, f"Download timed out; retained partial {partial_file.name}", []
 
             size_before = partial_file.stat().st_size if partial_file.exists() else 0
+            transfer_cmd = cmd
+            if max_bytes is not None:
+                if size_before >= max_bytes:
+                    if size_before == max_bytes and verify_gzip_integrity(partial_file, deadline_at=deadline):
+                        partial_file.replace(output_file)
+                        return True, "Reused complete bounded FASTQ", [output_file]
+                    return False, "Retained partial reached its transfer size bound", []
+                transfer_cmd = [cmd[0], "--max-filesize", str(max_bytes - size_before), *cmd[1:]]
             try:
-                result = _run_command_in_process_group(
-                    cmd,
-                    timeout=max(1, int(remaining_seconds)),
-                )
+                with ena_request_slot(url, kind="file", deadline_at=deadline):
+                    remaining_seconds = deadline - time.monotonic()
+                    if remaining_seconds <= 0:
+                        raise TimeoutError("ENA file request deadline exhausted; retained inputs")
+                    result = _run_command_in_process_group(
+                        transfer_cmd,
+                        timeout=remaining_seconds,
+                    )
             except subprocess.TimeoutExpired:
                 return False, f"Download timed out; retained partial {partial_file.name}", []
             except Exception as e:
@@ -642,18 +769,20 @@ class ENADownloader:
                 result.returncode == 0
                 and partial_file.exists()
                 and partial_file.stat().st_size > 0
-                and verify_gzip_integrity(partial_file)
+                and verify_gzip_integrity(partial_file, deadline_at=deadline)
             ):
                 partial_file.replace(output_file)
                 return True, "Downloaded validated FASTQ", [output_file]
 
             if result.returncode == 0:
+                if time.monotonic() >= deadline:
+                    return False, "Validation time budget exhausted; retained partial FASTQ", []
                 # Before discarding the payload, check whether it is merely
                 # truncated: if the transfer is shorter than the advertised
                 # Content-Length, retain the bytes and resume rather than
                 # repeating the whole download from byte zero.
                 local_size = partial_file.stat().st_size if partial_file.exists() else 0
-                remote_size = _remote_content_length(url)
+                remote_size = _remote_content_length(url, timeout=min(30, max(0.001, deadline - time.monotonic())))
                 if (
                     local_size > 0
                     and remote_size is not None
@@ -683,12 +812,14 @@ class ENADownloader:
                         partial_file,
                         reason="completed_transfer_invalid_gzip",
                         max_witness_bytes=self.invalid_witness_max_bytes,
+                        deadline_at=deadline,
                     )
                 if output_file.exists():
                     record_invalid_transfer(
                         output_file,
                         reason="completed_output_invalid_gzip",
                         max_witness_bytes=self.invalid_witness_max_bytes,
+                        deadline_at=deadline,
                     )
                 gzip_integrity_retries += 1
                 if gzip_integrity_retries <= self.integrity_retries:
@@ -716,7 +847,8 @@ class ENADownloader:
                 return (
                     False,
                     f"Download retry budget exhausted after {self.retries} "
-                    f"consecutive no-progress failures; retained partial {partial_file.name}",
+                    f"consecutive no-progress failures; curl_exit={result.returncode}, "
+                    f"http_status={_curl_http_status(result) or 0}; retained partial {partial_file.name}",
                     [],
                 )
 
