@@ -533,9 +533,6 @@ class TestLeveragePlot:
 
     def test_basic_leverage_plot(self):
         """Test basic leverage plot creation."""
-        if not HAS_SKLEARN:
-            pytest.skip("scikit-learn required for leverage plot")
-
         import matplotlib
 
         matplotlib.use("Agg")
@@ -556,18 +553,6 @@ class TestLeveragePlot:
 
         with pytest.raises(ValueError, match="same number of samples"):
             leverage_plot(X, y)
-
-    def test_leverage_plot_no_sklearn(self):
-        """Test leverage plot when scikit-learn is not available."""
-        X = np.random.randn(50, 3)
-        y = np.random.randn(50)
-        original = statistical_module.HAS_SKLEARN
-        statistical_module.HAS_SKLEARN = False
-        try:
-            with pytest.raises(ImportError, match="scikit-learn required"):
-                leverage_plot(X, y)
-        finally:
-            statistical_module.HAS_SKLEARN = original
 
 
 class TestExistingAxesAndValidationGaps:

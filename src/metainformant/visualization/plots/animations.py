@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, List, Tuple, cast
 
 import matplotlib.pyplot as plt
+import pandas as pd
 from matplotlib.animation import FuncAnimation, PillowWriter
 from matplotlib.collections import PathCollection
 from matplotlib.lines import Line2D
@@ -39,16 +40,30 @@ except ImportError:
     HAS_NETWORKX = False
 
 
+def _padded_limits(low: float, high: float, margin: float = 0.05) -> Tuple[float, float]:
+    """Axis limits that contain ``[low, high]`` with a margin of ``margin`` of the span on each side.
+
+    Scaling the limits by 1.1 (``low * 1.1, high * 1.1``) cut off data whenever the lower bound is positive or
+    the upper bound negative: the minimum of an all-positive series lay outside the axes.
+    """
+    span = high - low
+    pad = margin * span if span > 0 else max(abs(high), 1.0) * margin
+    return low - pad, high + pad
+
+
 def animate_time_series(
     data: Any, *, interval: int = 200, output_path: str | Path | None = None, **kwargs: Any
 ) -> Tuple[plt.Figure, FuncAnimation]:
     """Create an animated time series plot.
 
     Args:
-        data: Time series data (pandas DataFrame or numpy array)
+        data: Time series data: a numpy array or list (one row per series, one column per time point; a 1-D input
+            is one series), or a pandas DataFrame (one column per series, one row per time point; the column
+            names label the lines)
         interval: Animation interval in milliseconds
         output_path: Optional path to save animation (GIF)
-        **kwargs: Additional arguments for animation
+        **kwargs: ``figsize`` sizes the figure, ``anim_kwargs`` is passed to FuncAnimation, and any other
+            keyword argument is passed to matplotlib plot() for every line
 
     Returns:
         Tuple of (figure, animation) objects
@@ -59,25 +74,28 @@ def animate_time_series(
     if not HAS_NUMPY:
         raise ImportError("numpy required for animations")
 
-    validation.validate_type(data, (np.ndarray, list), "data")
+    validation.validate_type(data, (np.ndarray, list, pd.DataFrame), "data")
 
     anim_kwargs = kwargs.pop("anim_kwargs", {})
     fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 6)))
 
-    if isinstance(data, list):
-        data = np.array(data)
-
-    if data.ndim == 1:
-        data = data.reshape(1, -1)
+    if isinstance(data, pd.DataFrame):
+        series_labels = [str(column) for column in data.columns]
+        data = data.to_numpy(dtype=float).T
+    else:
+        data = np.asarray(data)
+        if data.ndim == 1:
+            data = data.reshape(1, -1)
+        series_labels = [f"Series {i + 1}" for i in range(data.shape[0])]
 
     # Setup the plot
     lines: list[Line2D] = []
     for i in range(data.shape[0]):
-        (line,) = ax.plot([], [], label=f"Series {i+1}", **kwargs)
+        (line,) = ax.plot([], [], **{"label": series_labels[i], **kwargs})
         lines.append(line)
 
     ax.set_xlim(0, data.shape[1])
-    ax.set_ylim(data.min() * 1.1, data.max() * 1.1)
+    ax.set_ylim(*_padded_limits(float(np.nanmin(data)), float(np.nanmax(data))))
     ax.set_xlabel("Time")
     ax.set_ylabel("Value")
     ax.set_title("Time Series Animation")
@@ -108,14 +126,21 @@ def animate_evolution(
 ) -> Tuple[plt.Figure, FuncAnimation]:
     """Create an animated sequence evolution visualization.
 
+    The generations are shown one after another; each is revealed one character per frame, so there are
+    ``sum(len(sequence))`` frames. A second line lists the first five positions at which the revealed part of the
+    current generation differs from generation 1.
+
     Args:
         sequences: List of sequences showing evolutionary progression
         interval: Animation interval in milliseconds
         output_path: Optional path to save animation (GIF)
-        **kwargs: Additional arguments for animation
+        **kwargs: ``figsize`` sizes the figure and ``anim_kwargs`` is passed to FuncAnimation
 
     Returns:
         Tuple of (figure, animation) objects
+
+    Raises:
+        ValueError: If ``sequences`` is empty or contains no characters
     """
     if not HAS_NUMPY:
         raise ImportError("numpy required for animations")
@@ -124,52 +149,46 @@ def animate_evolution(
 
     if not sequences:
         raise ValueError("Sequences list cannot be empty")
+    if not any(sequences):
+        raise ValueError("Sequences must contain at least one character to animate")
 
     anim_kwargs = kwargs.pop("anim_kwargs", {})
     fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (12, 8)))
 
-    # Setup the plot
-    text_objects = []
-    for i, seq in enumerate(sequences):
-        text = ax.text(0.1, 0.9 - i * 0.1, "", fontsize=12, transform=ax.transAxes, family="monospace")
-        text_objects.append(text)
+    # Setup the plot: a line for the revealed sequence and a line for its differences from generation 1
+    generation_text = ax.text(0.1, 0.9, "", fontsize=12, transform=ax.transAxes, family="monospace")
+    mutation_text = ax.text(0.1, 0.8, "", fontsize=12, transform=ax.transAxes, family="monospace")
+    text_objects = [generation_text, mutation_text]
 
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
     ax.set_title("Sequence Evolution Animation")
 
+    # Frame k reveals ``shown`` characters of generation ``generation``: generation 1 first, then 2, and so on
+    plan = [(generation, shown) for generation, seq in enumerate(sequences) for shown in range(1, len(seq) + 1)]
+
     # Animation function
     def animate(frame: int) -> list[Text]:
-        current_seq_idx = min(frame, len(sequences) - 1)
-        seq = sequences[current_seq_idx]
+        generation, shown = plan[frame]
+        displayed_seq = sequences[generation][:shown]
 
-        # Display sequence with gradual revelation
-        display_length = min(len(seq), frame - current_seq_idx * len(seq) + 1)
-        displayed_seq = seq[:display_length] if display_length > 0 else ""
+        generation_text.set_text(f"Generation {generation + 1}: {displayed_seq}")
 
-        text_objects[0].set_text(f"Generation {current_seq_idx + 1}: {displayed_seq}")
-
-        # Show mutations (simplified - highlight differences from first sequence)
-        if current_seq_idx > 0 and displayed_seq:
-            original = sequences[0][:display_length]
-            mutations = []
-            for i, (orig, curr) in enumerate(zip(original, displayed_seq)):
+        # Show mutations: positions where the revealed part differs from the first sequence
+        mutations = []
+        if generation > 0:
+            for i, (orig, curr) in enumerate(zip(sequences[0][:shown], displayed_seq)):
                 if orig != curr:
                     mutations.append(f"{i+1}:{orig}->{curr}")
-
-            if mutations:
-                mutation_text = f'Mutations: {", ".join(mutations[:5])}'  # Show first 5
-                if len(text_objects) > 1:
-                    text_objects[1].set_text(mutation_text)
+        mutation_text.set_text(f'Mutations: {", ".join(mutations[:5])}' if mutations else "")
 
         return text_objects
 
-    total_frames = sum(len(seq) for seq in sequences)
     anim = FuncAnimation(
         fig,
         animate,
-        frames=total_frames,
+        frames=len(plan),
         interval=interval,
         blit=False,  # Text animation doesn't work well with blit
         **anim_kwargs,
@@ -194,18 +213,23 @@ def animate_clustering(
 ) -> Tuple[plt.Figure, FuncAnimation]:
     """Create an animated clustering process visualization.
 
+    Every frame recolours the points by that frame's cluster labels. The colour of a label is the same in every
+    frame (the colour scale spans the smallest to the largest label of the whole run).
+
     Args:
         data: 2D data points to cluster
-        cluster_labels_over_time: List of cluster assignments for each frame
+        cluster_labels_over_time: One sequence of integer cluster labels per frame, one label per data point
         interval: Animation interval in milliseconds
         output_path: Optional path to save animation (GIF)
-        **kwargs: Additional arguments for animation
+        **kwargs: ``figsize`` sizes the figure and ``anim_kwargs`` is passed to FuncAnimation; any other keyword
+            argument (``cmap``, ``alpha``, ``s``, ...) is passed to matplotlib scatter()
 
     Returns:
         Tuple of (figure, animation) objects
 
     Raises:
-        ValueError: If data dimensions don't match cluster assignments
+        ValueError: If data is not 2D, ``cluster_labels_over_time`` is empty, or a frame does not have one label
+            per data point
     """
     if not HAS_NUMPY:
         raise ImportError("numpy required for animations")
@@ -216,33 +240,48 @@ def animate_clustering(
     if isinstance(data, list):
         data = np.array(data)
 
-    if data.shape[1] != 2:
+    if data.ndim != 2 or data.shape[1] != 2:
         raise ValueError("Data must be 2D for clustering animation")
 
     if not cluster_labels_over_time:
         raise ValueError("Cluster labels over time cannot be empty")
 
+    frames = [np.asarray(labels) for labels in cluster_labels_over_time]
+    for frame_index, labels in enumerate(frames):
+        if labels.shape != (len(data),):
+            raise ValueError(
+                f"Frame {frame_index} has labels of shape {labels.shape}; "
+                f"the animation needs one label for each of the {len(data)} data points"
+            )
+
     anim_kwargs = kwargs.pop("anim_kwargs", {})
     fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 8)))
 
-    # Setup the plot
-    scatter = ax.scatter(data[:, 0], data[:, 1], c=cluster_labels_over_time[0], cmap="tab10", alpha=0.7, **kwargs)
+    # Setup the plot: one colour scale for the whole run, so a label keeps its colour from frame to frame
+    all_labels = np.concatenate(frames)
+    scatter_kwargs: dict[str, Any] = {
+        "cmap": "tab10",
+        "alpha": 0.7,
+        "vmin": all_labels.min(),
+        "vmax": all_labels.max(),
+        **kwargs,
+    }
+    scatter = ax.scatter(data[:, 0], data[:, 1], c=frames[0], **scatter_kwargs)
 
     ax.set_xlabel("Feature 1")
     ax.set_ylabel("Feature 2")
-    ax.set_title("Clustering Animation - Iteration 0")
+    ax.set_title("Clustering Animation - Iteration 1")
 
     # Animation function
     def animate(frame: int) -> list[PathCollection]:
-        labels = cluster_labels_over_time[min(frame, len(cluster_labels_over_time) - 1)]
-        scatter.set_color(plt.cm.tab10(cast("Any", labels) / max(labels) if max(labels) > 0 else 1))
+        scatter.set_array(frames[min(frame, len(frames) - 1)])
         ax.set_title(f"Clustering Animation - Iteration {frame + 1}")
         return [scatter]
 
     anim = FuncAnimation(
         fig,
         animate,
-        frames=len(cluster_labels_over_time),
+        frames=len(frames),
         interval=interval,
         blit=True,
         **anim_kwargs,
@@ -263,10 +302,10 @@ def animate_network(
     """Create an animated network evolution visualization.
 
     Args:
-        graphs_over_time: List of NetworkX graphs showing network evolution
+        graphs_over_time: List of NetworkX graphs showing network evolution; later graphs may add nodes
         interval: Animation interval in milliseconds
         output_path: Optional path to save animation (GIF)
-        **kwargs: Additional arguments for animation
+        **kwargs: ``figsize`` sizes the figure and ``anim_kwargs`` is passed to FuncAnimation
 
     Returns:
         Tuple of (figure, animation) objects
@@ -285,8 +324,9 @@ def animate_network(
     anim_kwargs = kwargs.pop("anim_kwargs", {})
     fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 8)))
 
-    # Fixed positions for consistent layout
-    pos = nx.spring_layout(graphs_over_time[0], seed=42)
+    # Fixed positions for consistent layout, over every node that appears in any frame (a node added later
+    # would otherwise have no position and nx.draw would raise)
+    pos = nx.spring_layout(nx.compose_all(graphs_over_time), seed=42)
 
     # Setup initial plot
     G_initial = graphs_over_time[0]
@@ -397,8 +437,8 @@ def animate_trajectory(
     # Set axis limits
     all_x = np.concatenate([traj[:, 0] for traj in traj_arrays])
     all_y = np.concatenate([traj[:, 1] for traj in traj_arrays])
-    ax.set_xlim(all_x.min() * 1.1, all_x.max() * 1.1)
-    ax.set_ylim(all_y.min() * 1.1, all_y.max() * 1.1)
+    ax.set_xlim(*_padded_limits(float(all_x.min()), float(all_x.max())))
+    ax.set_ylim(*_padded_limits(float(all_y.min()), float(all_y.max())))
 
     ax.set_xlabel("X Position")
     ax.set_ylabel("Y Position")

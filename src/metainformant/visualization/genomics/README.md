@@ -20,10 +20,13 @@ Genomics-specific visualization including Manhattan plots, volcano plots, expres
 | `manhattan_plot()` | Genome-wide association Manhattan plot |
 | `volcano_plot()` | -log10(p) vs fold-change scatter |
 | `regional_plot()` | Locus zoom regional association plot, with an optional recombination-rate track from a `recombination_rate` DataFrame (`BP`, `RATE`, optional `CHR`) |
-| `chromosome_ideogram()` | Chromosome banding pattern diagram |
+| `chromosome_ideogram()` | One bar per chromosome with its relative length (GRCh38 by default, or any `chromosome_lengths`); no cytogenetic bands |
 | `plot_network_basic()` | Spring-layout network visualization |
-| `plot_phylo_tree()` | Rectangular phylogenetic tree |
-| `circular_tree_plot()` | Circular/radial phylogenetic tree layout |
+| `plot_phylo_tree()` | Rectangular phylogram (branch lengths to scale, bootstrap support beside the nodes) of a `dna.phylogeny` tree dictionary, a Newick string, a `Bio.Phylo` tree or a NetworkX `DiGraph` |
+| `circular_tree_plot()` | Circular/radial phylogenetic tree layout (leaves on the unit circle, branch lengths not to scale) |
+| `unrooted_tree_plot()` | Unrooted tree (a two-child root is removed; seeded force-directed layout, topology only) |
+| `tree_comparison_plot()` | Two trees side by side, on a new figure or inside a given `ax` |
+| `tree_annotation_plot()` | A tree with per-node `color` and `label` annotations |
 
 ## Usage
 

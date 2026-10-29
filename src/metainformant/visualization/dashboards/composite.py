@@ -18,6 +18,7 @@ from matplotlib.figure import Figure
 
 from metainformant.core.io import paths
 from metainformant.core.utils import logging
+from metainformant.visualization.config.conventions import save_figure_deterministic
 
 logger = logging.get_logger(__name__)
 
@@ -81,7 +82,7 @@ def multi_panel(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        fig.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(fig, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Multi-panel figure saved to {output_path}")
 
     return fig
@@ -101,12 +102,15 @@ def genomic_overview(
     """Create a genomic overview dashboard with up to 6 panels.
 
     Expected keys in *data* (all optional — panels are skipped when absent):
-        - ``"expression"`` — DataFrame of gene expression values
-        - ``"pca_data"`` — 2-D array suitable for PCA scatter
+        - ``"expression"`` — DataFrame of gene expression values (genes x samples); the heatmap shows the first 20
+          rows and 20 columns, and its title says so when the matrix is larger
+        - ``"pca_data"`` — 2-D array suitable for PCA scatter (at least two columns)
         - ``"pvalues"`` — array of p-values for a QQ plot
-        - ``"fold_changes"`` / ``"log2fc"`` + ``"pvalues"`` — volcano data
+        - ``"log2fc"`` + ``"pvalues"`` — volcano data, one log2 fold change per p-value
         - ``"gc_content"`` — list/array of GC percentages
         - ``"quality_scores"`` — list/array of quality scores
+
+    Other keys are ignored and logged as a warning.
 
     Args:
         data: Data dictionary keyed by panel type.
@@ -115,28 +119,47 @@ def genomic_overview(
 
     Returns:
         The :class:`~matplotlib.figure.Figure` object.
+
+    Raises:
+        ValueError: If a value is not shaped as described above. It is checked before its panel is created, so
+            an unusable value no longer leaves an empty panel in the figure.
     """
+    known = {"expression", "pca_data", "pvalues", "log2fc", "gc_content", "quality_scores"}
+    if set(data) - known:
+        logger.warning(f"genomic_overview ignores unrecognised keys: {sorted(set(data) - known)}")
+    if "expression" in data and not isinstance(data["expression"], pd.DataFrame):
+        raise ValueError("data['expression'] must be a pandas DataFrame")
+    if "pca_data" in data:
+        pca_shape = np.asarray(data["pca_data"]).shape
+        if len(pca_shape) != 2 or pca_shape[1] < 2:
+            raise ValueError(f"data['pca_data'] must be a 2-D array with at least two columns, got shape {pca_shape}")
+    if "log2fc" in data and "pvalues" in data and np.shape(data["log2fc"]) != np.shape(data["pvalues"]):
+        raise ValueError("data['log2fc'] and data['pvalues'] must have one value per gene (same shape)")
+
     fig = plt.figure(figsize=figsize)
     gs = gridspec.GridSpec(2, 3, figure=fig, hspace=0.35, wspace=0.3)
 
     # Panel 1 — expression heatmap
     if "expression" in data:
         ax = fig.add_subplot(gs[0, 0])
-        expr = data["expression"]
-        if isinstance(expr, pd.DataFrame):
-            im = ax.imshow(expr.values[:20, :20], cmap="RdBu_r", aspect="auto")
-            ax.set_title("Expression Heatmap (top 20)")
-            plt.colorbar(im, ax=ax, fraction=0.046)
+        shown = data["expression"].values[:20, :20]
+        im = ax.imshow(shown, cmap="RdBu_r", aspect="auto")
+        truncated = shown.shape != data["expression"].shape
+        ax.set_title(
+            f"Expression Heatmap (first {shown.shape[0]} genes x {shown.shape[1]} samples)"
+            if truncated
+            else "Expression Heatmap"
+        )
+        fig.colorbar(im, ax=ax, fraction=0.046)
 
     # Panel 2 — PCA scatter
     if "pca_data" in data:
         ax = fig.add_subplot(gs[0, 1])
         pca_arr = np.asarray(data["pca_data"])
-        if pca_arr.ndim == 2 and pca_arr.shape[1] >= 2:
-            ax.scatter(pca_arr[:, 0], pca_arr[:, 1], s=20, alpha=0.7)
-            ax.set_xlabel("PC1")
-            ax.set_ylabel("PC2")
-            ax.set_title("PCA")
+        ax.scatter(pca_arr[:, 0], pca_arr[:, 1], s=20, alpha=0.7)
+        ax.set_xlabel("PC1")
+        ax.set_ylabel("PC2")
+        ax.set_title("PCA")
 
     # Panel 3 — QQ plot
     if "pvalues" in data:
@@ -194,7 +217,7 @@ def genomic_overview(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        fig.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(fig, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Genomic overview dashboard saved to {output_path}")
 
     return fig
@@ -289,7 +312,7 @@ def qc_summary(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        fig.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(fig, output_path, dpi=300, bbox_inches="tight")
         logger.info(f"QC summary dashboard saved to {output_path}")
 
     return fig

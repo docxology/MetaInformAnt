@@ -19,6 +19,7 @@ from matplotlib.axes import Axes
 
 from metainformant.core.io import paths
 from metainformant.core.utils import logging
+from metainformant.visualization.config.conventions import save_figure_deterministic
 
 logger = logging.get_logger(__name__)
 
@@ -59,12 +60,32 @@ def _require_plotly_for_html(output_path: str | Path | None) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _scatter_by_category(ax: Axes, x: pd.Series, y: pd.Series, categories: pd.Series, *, legend_title: str) -> None:
+def _marker_sizes(sizes: pd.Series) -> np.ndarray:
+    """Marker areas (points squared) for a size column: 20 for its smallest value up to 200 for its largest.
+
+    A column that does not vary gets one middle size.
+    """
+    values = pd.to_numeric(sizes, errors="raise").to_numpy(dtype=float)
+    low, high = np.nanmin(values), np.nanmax(values)
+    if not high > low:
+        return np.full(len(values), 60.0)
+    return np.asarray(20.0 + (values - low) / (high - low) * 180.0)
+
+
+def _scatter_by_category(
+    ax: Axes,
+    x: pd.Series,
+    y: pd.Series,
+    categories: pd.Series,
+    *,
+    legend_title: str,
+    sizes: np.ndarray | None = None,
+) -> None:
     """Scatter *x* against *y* with one coloured series per category and a legend.
 
     Mirrors the discrete colouring Plotly gives a non-numeric column. Categories
     keep their order of first appearance, and rows with a missing category are
-    drawn grey as "missing" rather than dropped.
+    drawn grey as "missing" rather than dropped. ``sizes`` are per-row marker areas.
     """
     from ..config import palettes
 
@@ -74,9 +95,18 @@ def _scatter_by_category(ax: Axes, x: pd.Series, y: pd.Series, categories: pd.Se
     labels = list(dict.fromkeys(values[present]))
     for label, color in zip(labels, palettes.categorical(len(labels))):
         mask = present & (values == label)
-        ax.scatter(xs[mask], ys[mask], color=color, alpha=0.7, label=str(label))
+        ax.scatter(
+            xs[mask], ys[mask], s=None if sizes is None else sizes[mask], color=color, alpha=0.7, label=str(label)
+        )
     if not present.all():
-        ax.scatter(xs[~present], ys[~present], color="#9E9E9E", alpha=0.7, label="missing")
+        ax.scatter(
+            xs[~present],
+            ys[~present],
+            s=None if sizes is None else sizes[~present],
+            color="#9E9E9E",
+            alpha=0.7,
+            label="missing",
+        )
     if ax.get_legend_handles_labels()[0]:  # an empty frame has nothing to label
         ax.legend(title=legend_title)
 
@@ -101,8 +131,9 @@ def interactive_scatter(
         color: Column for color encoding. Without Plotly, a numeric column is
             drawn as a continuous colour scale and any other column as one
             coloured series per category with a legend.
-        size: Column for size encoding.
-        hover_data: Extra columns shown on hover.
+        size: Column for size encoding (without Plotly, marker areas scale linearly from 20 to 200 with the column).
+        hover_data: Extra columns shown on hover. A static image has no hover, so without Plotly they are not
+            drawn and a warning says so.
         title: Figure title.
         output_path: Path to save. HTML with Plotly; without Plotly a static image
             (such as PNG), and an HTML path raises ``ImportError``.
@@ -136,25 +167,37 @@ def interactive_scatter(
 
     # Matplotlib fallback
     logger.warning("Plotly not available, falling back to static scatter")
+    if hover_data:
+        logger.warning(f"A static scatter has no hover text; hover_data {list(hover_data)} is not drawn")
     fig_m, ax = plt.subplots(figsize=(8, 6))
     c = data[color] if color and color in data.columns else None
+    sizes = _marker_sizes(data[size]) if size is not None else None
     if c is not None and not pd.api.types.is_numeric_dtype(c):
         # matplotlib would read the strings as colour names; give each category its own colour instead
-        _scatter_by_category(ax, data[x], data[y], c, legend_title=str(color))
+        _scatter_by_category(ax, data[x], data[y], c, legend_title=str(color), sizes=sizes)
     else:
-        ax.scatter(data[x], data[y], c=c, alpha=0.7)
+        ax.scatter(data[x], data[y], c=c, s=sizes, alpha=0.7)
     ax.set_xlabel(x)
     ax.set_ylabel(y)
     ax.set_title(title)
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        fig_m.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(fig_m, output_path, dpi=300, bbox_inches="tight")
     return ax
 
 
 # ---------------------------------------------------------------------------
 # Interactive heatmap
 # ---------------------------------------------------------------------------
+
+
+def _matplotlib_colormap(colorscale: str) -> str:
+    """Name of the matplotlib colormap that stands in for a Plotly colorscale name (default "RdBu_r")."""
+    registered = {name.lower(): name for name in plt.colormaps()}
+    if colorscale.lower() in registered:
+        return registered[colorscale.lower()]
+    logger.warning(f"colorscale {colorscale!r} is not a matplotlib colormap; the static heatmap uses 'RdBu_r'")
+    return "RdBu_r"
 
 
 def interactive_heatmap(
@@ -172,7 +215,9 @@ def interactive_heatmap(
         data: 2-D array or DataFrame.
         x_labels: Column labels.
         y_labels: Row labels.
-        colorscale: Plotly colorscale name.
+        colorscale: Plotly colorscale name. Without Plotly it is used as a matplotlib colormap name when one of that
+            name exists (case-insensitively, so "Viridis" and "RdBu_r" work); otherwise a warning says so and
+            "RdBu_r" is used.
         title: Figure title.
         output_path: Path to save. Without Plotly an HTML path raises ``ImportError``
             and any other path is saved as a static image.
@@ -202,8 +247,9 @@ def interactive_heatmap(
         return fig
 
     logger.warning("Plotly not available, falling back to static heatmap")
+    cmap = _matplotlib_colormap(colorscale)
     fig_m, ax = plt.subplots(figsize=(10, 8))
-    im = ax.imshow(z, cmap="RdBu_r", aspect="auto")
+    im = ax.imshow(z, cmap=cmap, aspect="auto")
     plt.colorbar(im, ax=ax)
     if x_labels:
         ax.set_xticks(range(len(x_labels)))
@@ -214,7 +260,7 @@ def interactive_heatmap(
     ax.set_title(title)
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        fig_m.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(fig_m, output_path, dpi=300, bbox_inches="tight")
     return ax
 
 
@@ -296,6 +342,10 @@ def interactive_volcano(
     fig_m, ax = plt.subplots(figsize=(8, 6))
     for sig, color in color_map.items():
         mask = df["significance"] == sig
+        if (
+            not mask.any()
+        ):  # a category with no genes (such as "Significant", which up/down always replace) has no entry
+            continue
         ax.scatter(df.loc[mask, log2fc_col], df.loc[mask, "neg_log10_p"], c=color, label=sig, s=10, alpha=0.6)
     ax.axhline(-np.log10(p_threshold), ls="--", color="grey", alpha=0.7)
     ax.axvline(fc_threshold, ls="--", color="grey", alpha=0.7)
@@ -306,7 +356,7 @@ def interactive_volcano(
     ax.legend(markerscale=2)
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        fig_m.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(fig_m, output_path, dpi=300, bbox_inches="tight")
     return ax
 
 
@@ -412,5 +462,5 @@ def interactive_manhattan(
     ax.set_title(title)
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        fig_m.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(fig_m, output_path, dpi=300, bbox_inches="tight")
     return ax

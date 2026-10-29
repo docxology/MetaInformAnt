@@ -36,7 +36,12 @@ except ImportError:
 def plot_expression_heatmap(
     data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
-    """Create a gene expression heatmap.
+    """Create a gene expression heatmap of per-gene z-scores.
+
+    Each row (gene) is standardised across the samples to mean 0 and standard deviation 1 (sample standard
+    deviation, ``ddof=1``), so genes with very different expression levels share one colour scale and the plot shows
+    each gene's pattern across samples. A gene with no variation is drawn as 0. Only the numeric columns are used.
+    The same values are drawn whether or not seaborn is installed.
 
     Args:
         data: DataFrame with genes as rows and samples as columns
@@ -63,10 +68,13 @@ def plot_expression_heatmap(
     if ax is None:
         fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (12, 8)))
 
+    # Z-score each gene (row) across samples; a constant gene has no spread to scale by and is drawn as 0
+    row_mean = numeric_data.mean(axis=1)
+    row_std = numeric_data.std(axis=1)
+    z_scored = numeric_data.sub(row_mean, axis=0).div(row_std.where(row_std > 0), axis=0).fillna(0.0)
+
     # Use seaborn if available, otherwise matplotlib
     if HAS_SEABORN:
-        # Z-score normalize for better visualization
-        z_scored = (numeric_data - numeric_data.mean()) / numeric_data.std()
         sns.heatmap(
             z_scored,
             ax=ax,
@@ -76,21 +84,22 @@ def plot_expression_heatmap(
             fmt=kwargs.pop("fmt", ".2f"),
             **kwargs,
         )
-        ax.set_title("Gene Expression Heatmap (Z-score normalized)")
     else:
         logger.warning("Seaborn not available, using basic heatmap")
-        # Basic matplotlib heatmap
-        im = ax.imshow(numeric_data.values, cmap=kwargs.pop("cmap", "viridis"), **kwargs)
-        plt.colorbar(im, ax=ax)
-        ax.set_title("Gene Expression Heatmap")
+        # Basic matplotlib heatmap of the same z-scores
+        limit = float(np.abs(z_scored.to_numpy()).max()) or 1.0
+        imshow_kwargs: dict[str, Any] = {"cmap": "RdYlBu_r", "vmin": -limit, "vmax": limit, "aspect": "auto", **kwargs}
+        im = ax.imshow(z_scored.values, **imshow_kwargs)
+        root_figure(ax).colorbar(im, ax=ax)
 
-        # Set tick labels if not too many
-        if len(data.index) <= 20:
-            ax.set_yticks(range(len(data.index)))
-            ax.set_yticklabels(data.index, fontsize=8)
-        if len(data.columns) <= 20:
-            ax.set_xticks(range(len(data.columns)))
-            ax.set_xticklabels(data.columns, rotation=45, ha="right", fontsize=8)
+        # Set tick labels if not too many; they name the columns that were drawn (the numeric ones)
+        if len(z_scored.index) <= 20:
+            ax.set_yticks(range(len(z_scored.index)))
+            ax.set_yticklabels(z_scored.index, fontsize=8)
+        if len(z_scored.columns) <= 20:
+            ax.set_xticks(range(len(z_scored.columns)))
+            ax.set_xticklabels(z_scored.columns, rotation=45, ha="right", fontsize=8)
+    ax.set_title("Gene Expression Heatmap (per-gene Z-score)")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
@@ -101,13 +110,20 @@ def plot_expression_heatmap(
 
 
 def plot_enrichment_barplot(
-    enrichment_results: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
+    enrichment_results: pd.DataFrame,
+    *,
+    top_n: int = 20,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
+    **kwargs: Any,
 ) -> Axes:
-    """Create a pathway enrichment barplot.
+    """Create a pathway enrichment barplot of the most significant terms.
 
     Args:
         enrichment_results: DataFrame with enrichment results containing
                            columns like 'Term', 'p.adjust', 'Count', 'Fold.Enrichment'
+        top_n: Number of terms drawn: the ``top_n`` with the smallest adjusted p-values (default 20); the figure
+            title says when terms were left out.
         ax: Optional matplotlib axes to plot on. Creates new if None.
         output_path: Optional path to save the figure.
         **kwargs: Additional arguments passed to matplotlib barh().
@@ -116,8 +132,10 @@ def plot_enrichment_barplot(
         matplotlib Axes object
 
     Raises:
-        ValueError: If required columns are missing
+        ValueError: If required columns are missing, or ``top_n`` is below 1
     """
+    if top_n < 1:
+        raise ValueError("top_n must be at least 1")
     validation.validate_type(enrichment_results, pd.DataFrame, "enrichment_results")
 
     if enrichment_results.empty:
@@ -143,7 +161,7 @@ def plot_enrichment_barplot(
         fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 6)))
 
     # Sort by p-value and take top N
-    sorted_results = enrichment_results.sort_values(pval_col).head(20)
+    sorted_results = enrichment_results.sort_values(pval_col).head(top_n)
     terms = sorted_results[term_col]
     neg_log_pvals = -np.log10(sorted_results[pval_col].clip(lower=1e-300))
 
@@ -156,7 +174,10 @@ def plot_enrichment_barplot(
     term_labels = [term[:50] + "..." if len(str(term)) > 50 else str(term) for term in terms]
     ax.set_yticklabels(term_labels, fontsize=8)
     ax.set_xlabel("-log₁₀(adjusted p-value)")
-    ax.set_title("Pathway Enrichment Results")
+    omitted = len(enrichment_results) - len(sorted_results)
+    ax.set_title(
+        "Pathway Enrichment Results" + (f" (top {len(sorted_results)} of {len(enrichment_results)})" if omitted else "")
+    )
 
     # Add count/size information if available
     count_col = None
@@ -188,7 +209,9 @@ def plot_differential_expression(
               columns like 'log2FoldChange', 'padj', 'baseMean'
         ax: Optional matplotlib axes to plot on. Creates new if None.
         output_path: Optional path to save the figure.
-        **kwargs: Additional arguments passed to matplotlib scatter().
+        **kwargs: Additional arguments passed to matplotlib scatter(). Point sizes grow with the mean-expression
+            column (``baseMean``, ``mean`` or ``avg``) when the data has one that varies; a caller-supplied
+            ``s`` replaces that scaling.
 
     Returns:
         matplotlib Axes object
@@ -239,12 +262,16 @@ def plot_differential_expression(
         else:
             colors.append("gray")  # Not significant
 
-    # Plot with size based on expression level if available
-    sizes = kwargs.pop("s", 20)
-    if mean_col and mean_col in plot_data.columns:
-        # Scale point sizes by expression level
-        mean_vals = plot_data[mean_col]
-        sizes = 20 + (mean_vals - mean_vals.min()) / (mean_vals.max() - mean_vals.min()) * 80
+    # Point size: a caller-supplied ``s`` wins; otherwise scale by the expression level when the data has one
+    # (a mean column that does not vary gets the default size), else a constant 20
+    sizes: Any = kwargs.pop("s", None)
+    if sizes is None:
+        sizes = 20
+        if mean_col and mean_col in plot_data.columns:
+            mean_vals = plot_data[mean_col]
+            spread = mean_vals.max() - mean_vals.min()
+            if spread > 0:
+                sizes = 20 + (mean_vals - mean_vals.min()) / spread * 80
 
     ax.scatter(plot_data[logfc_col], plot_data["logP"], c=colors, s=sizes, alpha=kwargs.pop("alpha", 0.6), **kwargs)
 

@@ -8,7 +8,7 @@ coverage plots, and variant visualizations.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Hashable, Mapping, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,6 +22,64 @@ from metainformant.visualization.config.conventions import save_figure_determini
 from metainformant.visualization.config.figures import root_figure
 
 logger = logging.get_logger(__name__)
+
+#: GRCh38 primary-assembly chromosome lengths in base pairs, used by :func:`chromosome_ideogram` by default.
+GRCH38_CHROMOSOME_LENGTHS: dict[str, int] = {
+    "1": 248956422,
+    "2": 242193529,
+    "3": 198295559,
+    "4": 190214555,
+    "5": 181538259,
+    "6": 170805979,
+    "7": 159345973,
+    "8": 145138636,
+    "9": 138394717,
+    "10": 133797422,
+    "11": 135086622,
+    "12": 133275309,
+    "13": 114364328,
+    "14": 107043718,
+    "15": 101991189,
+    "16": 90338345,
+    "17": 83257441,
+    "18": 80373285,
+    "19": 58617616,
+    "20": 64444167,
+    "21": 46709983,
+    "22": 50818468,
+    "X": 156040895,
+    "Y": 57227415,
+}
+
+
+def _chromosome_sort_key(label: Hashable) -> tuple[int, int, str]:
+    """Natural genome order for a chromosome label: 1, 2, ..., 10, ..., X, Y, M/MT, then anything else by name.
+
+    A ``chr`` prefix is ignored, so ``"chr10"`` follows ``"chr2"``. Plain string sorting put "10" and "11" before
+    "2" and raised ``TypeError`` for a mix of integer and string labels.
+    """
+    name = str(label).strip()
+    bare = name[3:] if name.lower().startswith("chr") else name
+    if bare.isdigit():
+        return (0, int(bare), "")
+    special = {"X": 1, "Y": 2, "M": 3, "MT": 3}
+    if bare.upper() in special:
+        return (1, special[bare.upper()], "")
+    return (2, 0, name)
+
+
+def _check_pvalues(values: pd.Series, column: str) -> None:
+    """Raise ``ValueError`` for a p-value outside [0, 1]; ``-log10`` of one is a fabricated peak or a negative height.
+
+    A p-value below 0 used to be clipped to 1e-300 and drawn at a height of 300, and one above 1 drawn below zero.
+    Missing values (NaN) are not drawn and are not an error.
+    """
+    invalid = values[(values < 0) | (values > 1)]
+    if len(invalid):
+        raise ValueError(
+            f"p-values in column {column!r} must lie between 0 and 1; {len(invalid)} value(s) do not "
+            f"(for example {invalid.iloc[0]!r})"
+        )
 
 
 def manhattan_plot(
@@ -64,11 +122,12 @@ def manhattan_plot(
     # Prepare data
     if data.empty:
         raise ValueError("Manhattan plot requires at least one data row")
+    _check_pvalues(data[pval_col], pval_col)
     plot_data = data.copy()
     plot_data["logP"] = -np.log10(plot_data[pval_col].clip(lower=1e-300))  # Avoid log(0)
 
-    # Calculate cumulative positions for chromosomes
-    chromosomes = sorted(plot_data[chr_col].unique())
+    # Calculate cumulative positions for chromosomes (natural genome order: 1, 2, ..., 10, ..., X, Y)
+    chromosomes = sorted(plot_data[chr_col].unique(), key=_chromosome_sort_key)
     cumulative_pos = 0
 
     for chr_num in chromosomes:
@@ -253,7 +312,14 @@ def regional_plot(
         ax.set_xlabel(f"Position on chromosome {chr}")
         ax.set_ylabel("-log₁₀(p-value)")
         ax.set_title(f"Regional Plot - {chr}:{start}-{end}")
+        # an empty region is still a figure the caller asked to have written
+        if output_path:
+            paths.ensure_directory(Path(output_path).parent)
+            save_figure_deterministic(root_figure(ax), output_path, dpi=300, bbox_inches="tight")
+            logger.info(f"Regional plot saved to {output_path}")
         return ax
+
+    _check_pvalues(region_data["P"], "P")
 
     # Calculate relative positions
     region_data["relative_pos"] = region_data["BP"] - start
@@ -318,8 +384,8 @@ def circular_manhattan_plot(
     plot_data = data.copy()
     plot_data["logP"] = -np.log10(plot_data["P"].clip(lower=1e-300))
 
-    # Calculate angles for chromosomes (divide circle evenly)
-    chromosomes = sorted(plot_data["CHR"].unique())
+    # Calculate angles for chromosomes (divide circle evenly), in natural genome order
+    chromosomes = sorted(plot_data["CHR"].unique(), key=_chromosome_sort_key)
     chr_angles = np.linspace(0, 2 * np.pi, len(chromosomes) + 1)[:-1]
 
     # Marker size and opacity are read once: popping them inside the loop gave the caller's values to the
@@ -370,61 +436,51 @@ def circular_manhattan_plot(
     return ax
 
 
-def chromosome_ideogram(*, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any) -> Axes:
-    """Create a chromosome ideogram visualization.
+def chromosome_ideogram(
+    *,
+    chromosome_lengths: Mapping[Any, int] | None = None,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
+    **kwargs: Any,
+) -> Axes:
+    """Draw one horizontal bar per chromosome, with its length relative to the longest chromosome.
+
+    Only the lengths are drawn (no cytogenetic bands, which would need real banding data). By default the bars
+    are the 24 human chromosomes of GRCh38 (:data:`GRCH38_CHROMOSOME_LENGTHS`); pass ``chromosome_lengths`` for
+    any other genome, such as the linkage groups of an ant assembly.
 
     Args:
+        chromosome_lengths: Mapping from chromosome name to length in base pairs, drawn top to bottom in mapping
+            order. Defaults to GRCh38.
         ax: Optional matplotlib axes to plot on. Creates new if None.
         output_path: Optional path to save the figure.
-        **kwargs: Additional arguments passed to plotting functions.
+        **kwargs: Additional arguments passed to matplotlib barh() (``alpha``, ``color``, ``edgecolor``, ...);
+            ``figsize`` sizes a new figure.
 
     Returns:
         matplotlib Axes object
+
+    Raises:
+        ValueError: If ``chromosome_lengths`` is empty or has a length that is not positive
     """
+    lengths = dict(GRCH38_CHROMOSOME_LENGTHS if chromosome_lengths is None else chromosome_lengths)
+    if not lengths:
+        raise ValueError("chromosome_lengths cannot be empty")
+    if any(length <= 0 for length in lengths.values()):
+        raise ValueError("chromosome lengths must be positive")
+
     if ax is None:
         fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (12, 4)))
 
-    # Simplified chromosome ideogram (would need real cytogenetic data)
-    chromosomes = list(range(1, 23)) + ["X", "Y"]
-    chr_lengths = {
-        1: 248956422,
-        2: 242193529,
-        3: 198295559,
-        4: 190214555,
-        5: 181538259,
-        6: 170805979,
-        7: 159345973,
-        8: 145138636,
-        9: 138394717,
-        10: 133797422,
-        11: 135086622,
-        12: 133275309,
-        13: 114364328,
-        14: 107043718,
-        15: 101991189,
-        16: 90338345,
-        17: 83257441,
-        18: 80373285,
-        19: 58617616,
-        20: 64444167,
-        21: 46709983,
-        22: 50818468,
-        "X": 156040895,
-        "Y": 57227415,
-    }
+    # Plot chromosomes as horizontal bars (caller keyword arguments override the defaults)
+    max_length = max(lengths.values())
+    bar_kwargs: dict[str, Any] = {"height": 0.8, "alpha": 0.7, "color": "lightblue", "edgecolor": "black", **kwargs}
+    ax.barh(range(len(lengths)), [length / max_length for length in lengths.values()], **bar_kwargs)
 
-    # Plot chromosomes as horizontal bars
-    y_positions = range(len(chromosomes))
-    max_length = max(chr_lengths.values())
-
-    for i, chr_name in enumerate(chromosomes):
-        length = chr_lengths.get(chr_name, chr_lengths[1])  # fallback
-        ax.barh(i, length / max_length, height=0.8, alpha=0.7, color="lightblue", edgecolor="black")
-
-    ax.set_yticks(y_positions)
-    ax.set_yticklabels([f"{c}" for c in chromosomes])
+    ax.set_yticks(range(len(lengths)))
+    ax.set_yticklabels([str(name) for name in lengths])
     ax.set_xlabel("Relative Chromosome Length")
-    ax.set_title("Human Chromosome Ideogram")
+    ax.set_title("Human Chromosome Lengths (GRCh38)" if chromosome_lengths is None else "Chromosome Lengths")
     ax.grid(True, alpha=0.3)
 
     if output_path:

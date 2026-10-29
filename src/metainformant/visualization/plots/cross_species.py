@@ -459,11 +459,26 @@ def plot_family_violin(
     fig, ax = plt.subplots(figsize=(14, 7))
     palette = {cat: "#27ae60" if "Within" in cat else "#e67e22" for cat in order}
     sns.violinplot(
-        data=df, x="Category", y="Divergence", order=order, palette=palette, inner="box", linewidth=1, ax=ax, cut=0
+        data=df,
+        x="Category",
+        y="Divergence",
+        order=order,
+        hue="Category",
+        hue_order=order,
+        palette=palette,
+        legend=False,
+        inner="box",
+        linewidth=1,
+        ax=ax,
+        cut=0,
     )
-    sns.stripplot(
-        data=df, x="Category", y="Divergence", order=order, color="#2c3e50", size=3, alpha=0.4, jitter=True, ax=ax
-    )
+    # Individual pairs over the violins, with a fixed jitter (+-0.1 category widths, as seaborn's default): seaborn's
+    # stripplot draws its jitter from the global NumPy random state, so the figure differed on every call and
+    # advanced the caller's random stream
+    jitter = np.random.default_rng(0)
+    for position, category in enumerate(order):
+        values = df.loc[df["Category"] == category, "Divergence"].to_numpy(dtype=float)
+        ax.scatter(position + jitter.uniform(-0.1, 0.1, len(values)), values, s=9, color="#2c3e50", alpha=0.4, zorder=3)
 
     ax.set_title(
         f"Expression Divergence by Taxonomic Relationship\n(descriptive; no inferential test; {_species_note(n)})",
@@ -846,8 +861,10 @@ def plot_combined_summary(
         leaf_rotation=40,
         leaf_font_size=8,
         ax=ax1,
-        color_threshold=0.4,
-        above_threshold_color="#7f8c8d",
+        # Monochrome, as in plot_dendrogram: colouring branches below an arbitrary distance would imply clusters
+        # that nothing in the data defines (the caption says this is not a species tree)
+        color_threshold=0.0,
+        above_threshold_color="#333333",
     )
     if family_map and family_colors:
         _color_family_tick_labels(ax1, family_map, family_colors)

@@ -344,7 +344,7 @@ class TestBranchAndFormattingGaps:
         plt.close("all")
 
     def test_forecast_confidence_intervals_missing_columns(self):
-        """Test forecast plot ignores confidence intervals lacking lower/upper columns."""
+        """Confidence intervals lacking lower/upper columns are refused, not silently left out of the plot."""
         import matplotlib
 
         matplotlib.use("Agg")
@@ -354,9 +354,8 @@ class TestBranchAndFormattingGaps:
         forecast = pd.Series(np.arange(10.0, 15.0))
         ci = pd.DataFrame({"bad": [1.0] * 5})  # No 'lower'/'upper' columns
 
-        ax = plot_forecast(historical, forecast, confidence_intervals=ci)
-        assert ax is not None
-        assert len(ax.lines) == 2  # Historical and forecast lines only
+        with pytest.raises(ValueError, match="'lower' and 'upper'"):
+            plot_forecast(historical, forecast, confidence_intervals=ci)
         plt.close("all")
 
     def test_trend_analysis_reports_direction(self):

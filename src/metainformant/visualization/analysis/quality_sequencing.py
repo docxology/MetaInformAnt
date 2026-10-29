@@ -18,7 +18,7 @@ from metainformant.core.data import validation
 from metainformant.core.io import paths
 from metainformant.core.utils import logging
 from metainformant.visualization.config.conventions import save_figure_deterministic
-from metainformant.visualization.config.figures import root_figure
+from metainformant.visualization.config.figures import panel_grid, root_figure
 
 logger = logging.get_logger(__name__)
 
@@ -44,65 +44,100 @@ def _annotate_bars(ax: Axes, bars: Iterable[Any], values: Iterable[Any], fmt: st
         )
 
 
+#: Sections of ``qc_data`` in drawing order, with the keys each section's payload must have.
+_QC_SECTIONS: Dict[str, Tuple[str, ...]] = {
+    "per_base_quality": ("positions", "mean_qualities"),
+    "gc_content_distribution": ("bins", "counts"),
+    "sequence_length_distribution": ("lengths", "counts"),
+    "basic_statistics": (),
+}
+
+#: The statistics ``basic_statistics`` may hold, in plotting order.
+_BASIC_STATISTICS = ("num_reads", "total_bases", "min_length", "max_length", "mean_length")
+
+
 def plot_quality_metrics(
     qc_data: Dict[str, Any], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a comprehensive quality metrics visualization.
 
+    One panel is drawn for each section present in ``qc_data`` (a compact grid of at most two columns, no empty
+    panels), in this order:
+
+    * ``per_base_quality``: ``{"positions": [...], "mean_qualities": [...]}``, a line
+    * ``gc_content_distribution``: ``{"bins": [bin edges], "counts": [one per bin]}``, bars as wide as their bins
+    * ``sequence_length_distribution``: ``{"lengths": [...], "counts": [...]}``, bars
+    * ``basic_statistics``: any of ``num_reads``, ``total_bases``, ``min_length``, ``max_length``, ``mean_length``;
+      a statistic that is absent is not drawn (it used to be drawn as a bar of 0)
+
     Args:
         qc_data: Dictionary containing various QC metrics.
-        ax: Optional matplotlib axes to plot on.
+        ax: Optional matplotlib axes that should hold the panels: they are laid out inside its grid slot and
+            ``ax`` is hidden. Creates a new figure if None.
         output_path: Optional path to save the figure.
+        **kwargs: ``figsize`` sets the size of a new figure.
 
     Returns:
-        matplotlib Axes object
+        The axes of the first panel
+
+    Raises:
+        ValueError: If ``qc_data`` is empty, has no recognised section, or a section is not shaped as above
     """
     validation.validate_type(qc_data, dict, "qc_data")
     if not qc_data:
         raise ValueError("QC data dictionary cannot be empty")
 
-    fig, axes_grid = plt.subplots(2, 2, figsize=kwargs.pop("figsize", (12, 10)))
-    axes: list[Axes] = list(axes_grid.flatten())
+    sections = [name for name in _QC_SECTIONS if name in qc_data]
+    if not sections:
+        raise ValueError(f"qc_data has none of the recognised sections: {list(_QC_SECTIONS)}")
+    for name in sections:
+        payload = qc_data[name]
+        if not (isinstance(payload, dict) and all(key in payload for key in _QC_SECTIONS[name])):
+            raise ValueError(f"qc_data[{name!r}] must be a dict with the keys {list(_QC_SECTIONS[name])}")
+    if "basic_statistics" in sections and not any(stat in qc_data["basic_statistics"] for stat in _BASIC_STATISTICS):
+        raise ValueError(f"qc_data['basic_statistics'] has none of the statistics {list(_BASIC_STATISTICS)}")
+    if "gc_content_distribution" in sections:
+        gc = qc_data["gc_content_distribution"]
+        if len(gc["counts"]) != len(gc["bins"]) - 1:
+            raise ValueError(
+                f"gc_content_distribution needs one count per bin: {len(gc['bins'])} bin edges give "
+                f"{len(gc['bins']) - 1} bins, got {len(gc['counts'])} counts"
+            )
 
-    if "per_base_quality" in qc_data:
-        qual_data = qc_data["per_base_quality"]
-        if "positions" in qual_data and "mean_qualities" in qual_data:
-            axes[0].plot(qual_data["positions"], qual_data["mean_qualities"])
-            axes[0].set_xlabel("Position in Read")
-            axes[0].set_ylabel("Mean Quality Score")
-            axes[0].set_title("Per-Base Quality")
-            axes[0].grid(True, alpha=0.3)
+    axes = panel_grid(ax, len(sections), max_cols=2, figsize=kwargs.pop("figsize", (12, 10)))
 
-    if "gc_content_distribution" in qc_data:
-        gc_data = qc_data["gc_content_distribution"]
-        if "bins" in gc_data and "counts" in gc_data:
-            bin_centers = [(gc_data["bins"][i] + gc_data["bins"][i + 1]) / 2 for i in range(len(gc_data["bins"]) - 1)]
-            axes[1].bar(bin_centers, gc_data["counts"], width=2, alpha=0.7)
-            axes[1].set_xlabel("GC Content (%)")
-            axes[1].set_ylabel("Frequency")
-            axes[1].set_title("GC Content Distribution")
-            axes[1].grid(True, alpha=0.3)
+    for panel, name in zip(axes, sections):
+        payload = qc_data[name]
+        if name == "per_base_quality":
+            panel.plot(payload["positions"], payload["mean_qualities"])
+            panel.set_xlabel("Position in Read")
+            panel.set_ylabel("Mean Quality Score")
+            panel.set_title("Per-Base Quality")
+            panel.grid(True, alpha=0.3)
+        elif name == "gc_content_distribution":
+            edges = np.asarray(payload["bins"], dtype=float)
+            panel.bar((edges[:-1] + edges[1:]) / 2, payload["counts"], width=np.diff(edges), alpha=0.7)
+            panel.set_xlabel("GC Content (%)")
+            panel.set_ylabel("Frequency")
+            panel.set_title("GC Content Distribution")
+            panel.grid(True, alpha=0.3)
+        elif name == "sequence_length_distribution":
+            panel.bar(payload["lengths"], payload["counts"], alpha=0.7)
+            panel.set_xlabel("Read Length")
+            panel.set_ylabel("Count")
+            panel.set_title("Read Length Distribution")
+            panel.grid(True, alpha=0.3)
+        else:  # basic_statistics
+            stat_names = [stat for stat in _BASIC_STATISTICS if stat in payload]
+            stat_values = [payload[stat] for stat in stat_names]
+            bars = panel.bar(stat_names, stat_values, alpha=0.7)
+            panel.set_ylabel("Value")
+            panel.set_title("Basic Statistics")
+            panel.tick_params(axis="x", rotation=45)
+            _annotate_bars(panel, bars, stat_values, "{:.0f}")
 
-    if "sequence_length_distribution" in qc_data:
-        length_data = qc_data["sequence_length_distribution"]
-        if "lengths" in length_data and "counts" in length_data:
-            axes[2].bar(length_data["lengths"], length_data["counts"], alpha=0.7)
-            axes[2].set_xlabel("Read Length")
-            axes[2].set_ylabel("Count")
-            axes[2].set_title("Read Length Distribution")
-            axes[2].grid(True, alpha=0.3)
-
-    if "basic_statistics" in qc_data:
-        stats = qc_data["basic_statistics"]
-        stat_names = ["num_reads", "total_bases", "min_length", "max_length", "mean_length"]
-        stat_values = [stats.get(name, 0) for name in stat_names]
-        bars = axes[3].bar(stat_names, stat_values, alpha=0.7)
-        axes[3].set_ylabel("Value")
-        axes[3].set_title("Basic Statistics")
-        axes[3].tick_params(axis="x", rotation=45)
-        _annotate_bars(axes[3], bars, stat_values, "{:.0f}")
-
-    plt.tight_layout()
+    if ax is None:
+        root_figure(axes[0]).tight_layout()
 
     _save_figure(axes[0], output_path, f"Quality metrics plot saved to {output_path}")
 
@@ -140,7 +175,7 @@ def plot_adapter_content(
     adapters_sorted = [adapters[i] for i in sorted_indices]
     percentages_sorted = [percentages[i] for i in sorted_indices]
 
-    bars = ax.bar(range(len(adapters_sorted)), percentages_sorted, alpha=0.7, **kwargs)
+    bars = ax.bar(range(len(adapters_sorted)), percentages_sorted, **{"alpha": 0.7, **kwargs})
     ax.set_xlabel("Adapter Type")
     ax.set_ylabel("Maximum Content (%)")
     ax.set_title("Adapter Content Analysis")
@@ -175,7 +210,7 @@ def plot_gc_distribution(
     if ax is None:
         fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 6)))
 
-    n, bins, patches = ax.hist(gc_data, bins=kwargs.pop("bins", 20), alpha=0.7, edgecolor="black", **kwargs)
+    n, bins, patches = ax.hist(gc_data, **{"bins": 20, "alpha": 0.7, "edgecolor": "black", **kwargs})
     ax.set_xlabel("GC Content (%)")
     ax.set_ylabel("Frequency")
     ax.set_title("GC Content Distribution")
@@ -219,7 +254,7 @@ def plot_length_distribution(
     if ax is None:
         fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 6)))
 
-    n, bins, patches = ax.hist(length_data, bins=kwargs.pop("bins", "auto"), alpha=0.7, edgecolor="black", **kwargs)
+    n, bins, patches = ax.hist(length_data, **{"bins": "auto", "alpha": 0.7, "edgecolor": "black", **kwargs})
     ax.set_xlabel("Read Length (bp)")
     ax.set_ylabel("Frequency")
     ax.set_title("Read Length Distribution")
@@ -279,7 +314,7 @@ def plot_per_base_quality_boxplot(
         positions.append(mid_pos)
         qualities.append(qual_list)
 
-    bp = ax.boxplot(qualities, positions=positions, widths=2, patch_artist=True, **kwargs)
+    bp = ax.boxplot(qualities, **{"positions": positions, "widths": 2, "patch_artist": True, **kwargs})
     colors = plt.cm.RdYlGn(np.linspace(0, 1, len(qualities)))
     for patch, color in zip(bp["boxes"], colors):
         patch.set_facecolor(color)
@@ -322,7 +357,7 @@ def plot_sequence_duplication_levels(
     levels = list(duplication_levels.keys())
     percentages = list(duplication_levels.values())
 
-    bars = ax.bar(range(len(levels)), percentages, color="skyblue", alpha=0.8, **kwargs)
+    bars = ax.bar(range(len(levels)), percentages, **{"color": "skyblue", "alpha": 0.8, **kwargs})
     ax.set_xlabel("Duplication Level")
     ax.set_ylabel("Percentage (%)")
     ax.set_title("Sequence Duplication Levels")
@@ -364,14 +399,17 @@ def plot_overrepresented_sequences(
     if not overrepresented_seqs:
         ax.text(0.5, 0.5, "No overrepresented sequences found", ha="center", va="center", transform=ax.transAxes)
         ax.set_title("Overrepresented Sequences")
+        # the figure is the result the caller asked to have written: an empty finding is still a finding
+        _save_figure(ax, output_path, f"Overrepresented sequences plot saved to {output_path}")
         return ax
 
-    sequences = [seq.get("sequence", f"Seq {i+1}")[:20] + "..." for i, seq in enumerate(overrepresented_seqs)]
+    full_sequences = [str(seq.get("sequence", f"Seq {i+1}")) for i, seq in enumerate(overrepresented_seqs)]
+    sequences = [seq[:20] + "..." if len(seq) > 20 else seq for seq in full_sequences]  # "..." only when cut
     counts = [seq.get("count", 0) for seq in overrepresented_seqs]
     percentages = [seq.get("percentage", 0) for seq in overrepresented_seqs]
 
     y_pos = np.arange(len(sequences))
-    bars = ax.barh(y_pos, percentages, color="coral", alpha=0.8, **kwargs)
+    bars = ax.barh(y_pos, percentages, **{"color": "coral", "alpha": 0.8, **kwargs})
     ax.set_yticks(y_pos)
     ax.set_yticklabels(sequences)
     ax.set_xlabel("Percentage of Total Reads")
@@ -422,7 +460,7 @@ def plot_kmer_profiles(
     sorted_kmers = sorted(kmer_counts.items(), key=lambda x: x[1], reverse=True)[:top_n]
     kmers, counts = zip(*sorted_kmers)
 
-    bars = ax.bar(range(len(kmers)), counts, color="purple", alpha=0.8, **kwargs)
+    bars = ax.bar(range(len(kmers)), counts, **{"color": "purple", "alpha": 0.8, **kwargs})
     ax.set_xlabel("K-mer")
     ax.set_ylabel("Count")
     ax.set_title(f"Top {top_n} K-mer Frequencies")

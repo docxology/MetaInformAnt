@@ -188,11 +188,15 @@ def qq_plot(
     output_path: str | Path | None = None,
     **kwargs: Any,
 ) -> Axes:
-    """Create a Q-Q plot.
+    """Create a Q-Q plot against a normal or uniform distribution fitted to the data.
+
+    The i-th smallest of n observations is plotted against the quantile of the fitted distribution at the
+    plotting position ``(i - 0.5) / n``, so a sample from that distribution lies along the dashed ``y = x`` line.
+    The fitted distribution has the sample mean and standard deviation ("norm") or the sample range ("uniform").
 
     Args:
         data: Data to plot
-        distribution: Distribution to compare against ("norm", "uniform", etc.)
+        distribution: Distribution to compare against: "norm" or "uniform"
         ax: Optional matplotlib axes to plot on. Creates new if None.
         output_path: Optional path to save the figure.
         **kwargs: Additional arguments passed to matplotlib scatter().
@@ -201,30 +205,34 @@ def qq_plot(
         matplotlib Axes object
 
     Raises:
-        ValueError: If data is empty or distribution is unsupported
+        ValueError: If data is empty or constant, or distribution is unsupported
     """
     validation.validate_type(data, np.ndarray, "data")
     if len(data) == 0:
         raise ValueError("Data array cannot be empty")
 
+    if distribution not in ("norm", "uniform"):
+        raise ValueError(f"Unsupported distribution: {distribution}")
+
     if not HAS_SCIPY:
         raise ImportError("scipy required for Q-Q plot")
+
+    if np.max(data) == np.min(data):
+        raise ValueError("Q-Q plot needs data that is not constant: a constant sample has no fitted distribution")
 
     if ax is None:
         fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 6)))
 
-    # Calculate theoretical quantiles
+    # Plotting positions (i - 0.5) / n: strictly inside (0, 1) and symmetric, so the tails are not squeezed
     data_sorted = np.sort(data)
     n = len(data)
-    theoretical_quantiles = np.linspace(0.01, 0.99, n)
+    probabilities = (np.arange(1, n + 1) - 0.5) / n
 
     # Get distribution quantiles
     if distribution == "norm":
-        sample_quantiles = stats.norm.ppf(theoretical_quantiles, loc=np.mean(data), scale=np.std(data))
-    elif distribution == "uniform":
-        sample_quantiles = stats.uniform.ppf(theoretical_quantiles, loc=np.min(data), scale=np.max(data) - np.min(data))
+        sample_quantiles = stats.norm.ppf(probabilities, loc=np.mean(data), scale=np.std(data))
     else:
-        raise ValueError(f"Unsupported distribution: {distribution}")
+        sample_quantiles = stats.uniform.ppf(probabilities, loc=np.min(data), scale=np.max(data) - np.min(data))
 
     ax.scatter(sample_quantiles, data_sorted, **kwargs)
     ax.plot(
@@ -536,10 +544,15 @@ def residual_plot(
 def leverage_plot(
     X: np.ndarray, y: np.ndarray, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
-    """Create a leverage plot for regression diagnostics.
+    """Create a residuals-versus-leverage plot for an ordinary least squares fit with an intercept.
+
+    The leverage of observation i is the i-th diagonal element ``h_ii`` of the hat matrix
+    ``H = D (D'D)^+ D'`` of the design ``D = [1, X]`` (the values sum to the number of fitted parameters, and a
+    simple regression has ``h_ii = 1/n + (x_i - mean(x))^2 / Sxx``). The vertical axis is the internally
+    studentized residual ``e_i / sqrt(s^2 (1 - h_ii))`` with ``s^2 = RSS / (n - p)``.
 
     Args:
-        X: Feature matrix
+        X: Feature matrix of shape (n_samples, n_features), or a vector for one feature
         y: Target values
         ax: Optional matplotlib axes to plot on. Creates new if None.
         output_path: Optional path to save the figure.
@@ -549,8 +562,8 @@ def leverage_plot(
         matplotlib Axes object
 
     Raises:
-        ValueError: If arrays have mismatched dimensions
-        ImportError: If sklearn is not available
+        ValueError: If X and y have different numbers of samples, or there are not more samples than fitted
+            parameters
     """
     validation.validate_type(X, np.ndarray, "X")
     validation.validate_type(y, np.ndarray, "y")
@@ -558,27 +571,30 @@ def leverage_plot(
     if len(X) != len(y):
         raise ValueError("X and y must have same number of samples")
 
-    if not HAS_SKLEARN:
-        raise ImportError("scikit-learn required for leverage plot")
+    features = np.asarray(X, dtype=float)
+    if features.ndim == 1:
+        features = features.reshape(-1, 1)
+    target = np.asarray(y, dtype=float)
+    n_samples = len(target)
 
-    from sklearn.linear_model import LinearRegression
+    design = np.column_stack([np.ones(n_samples), features])
+    left, singular_values, _ = np.linalg.svd(design, full_matrices=False)
+    rank = int(np.sum(singular_values > singular_values.max() * max(design.shape) * np.finfo(float).eps))
+    if n_samples <= rank:
+        raise ValueError(f"Leverage plot needs more samples ({n_samples}) than fitted parameters ({rank})")
+
+    # Hat values: squared row norms of the orthonormal basis of the design's column space
+    leverage = np.sum(left[:, :rank] ** 2, axis=1)
+    residuals = target - left[:, :rank] @ (left[:, :rank].T @ target)
+    residual_variance = float(np.sum(residuals**2)) / (n_samples - rank)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        standardized_residuals = residuals / np.sqrt(residual_variance * (1.0 - leverage))
+    # An observation with leverage 1 fits itself exactly and has no studentized residual; it is not drawn
+    standardized_residuals[~np.isfinite(standardized_residuals)] = np.nan
 
     if ax is None:
         fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 6)))
-
-    # Fit linear regression
-    model = LinearRegression()
-    model.fit(X, y)
-    y_pred = model.predict(X)
-
-    # Calculate leverage (hat values)
-    # For simplicity, use a basic approximation
-    leverage = np.sum(X**2, axis=1) / np.sum(X**2)
-
-    # Calculate standardized residuals
-    residuals = y - y_pred
-    residual_std = np.std(residuals)
-    standardized_residuals = residuals / residual_std
 
     ax.scatter(leverage, standardized_residuals, **kwargs)
     ax.axhline(y=0, color="r", linestyle="--", alpha=0.7)

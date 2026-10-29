@@ -11,9 +11,13 @@ and rendering by any web framework or standalone HTML viewer.
 
 from __future__ import annotations
 
+import html
 import json
 import math
 from pathlib import Path
+
+import numpy as np
+from scipy.cluster.hierarchy import leaves_list, linkage, optimal_leaf_ordering
 
 from metainformant.core.utils.logging import get_logger
 
@@ -23,6 +27,110 @@ logger = get_logger(__name__)
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _json_for_script(data: object) -> str:
+    """JSON text that is safe to place inside an HTML ``<script>`` element.
+
+    ``</script>`` (or ``<!--``) inside a string value would end the script block and let the rest of the value be
+    parsed as markup, so ``<``, ``>`` and ``&`` are written as their JSON ``\\u`` escapes, which decode to the same
+    characters.
+    """
+    text = json.dumps(data, default=str)
+    return text.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+
+
+def _is_number(value: object) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def _scale(value: float, low: float, high: float, start: float, end: float) -> float:
+    """Map ``value`` from ``[low, high]`` to ``[start, end]``; a degenerate range maps to the middle."""
+    if not high > low:
+        return (start + end) / 2.0
+    return start + (value - low) / (high - low) * (end - start)
+
+
+def _panel_svg(plot_data: dict, width: int = 480, height: int = 300) -> str | None:
+    """Draw ``plot_data`` from a ``create_interactive_*`` function as an SVG string, or None if it is not drawable.
+
+    * scatter and volcano data (points with ``x`` and ``y``): one circle per point, filled with the point's
+      ``color``;
+    * heatmap data (cells with ``row_idx``, ``col_idx`` and ``value``): one rectangle per cell on a blue-white-red
+      scale spanning the values;
+    * genome browser data (``track_data`` features with ``start`` and ``end``): one bar per feature.
+
+    Every label is HTML-escaped and attached as an SVG ``<title>``, which browsers show on hover.
+    """
+    margin = 30
+    inner_w, inner_h = width - 2 * margin, height - 2 * margin
+    body: list[str] = []
+    points = plot_data.get("plot_data")
+
+    if isinstance(points, list) and points and all(isinstance(p, dict) and "x" in p and "y" in p for p in points):
+        xs = [p["x"] for p in points if _is_number(p["x"])]
+        ys = [p["y"] for p in points if _is_number(p["y"])]
+        if not xs or not ys:
+            return None
+        x_low, x_high, y_low, y_high = min(xs), max(xs), min(ys), max(ys)
+        for index, point in enumerate(points):
+            if not (_is_number(point["x"]) and _is_number(point["y"])):
+                continue
+            cx = _scale(point["x"], x_low, x_high, margin, margin + inner_w)
+            cy = _scale(point["y"], y_low, y_high, margin + inner_h, margin)
+            label = point.get("gene") or point.get("label") or f"Point {index}"
+            color = html.escape(str(point.get("color", "#1f77b4")), quote=True)
+            body.append(
+                f'<circle cx="{cx:.2f}" cy="{cy:.2f}" r="4" fill="{color}">'
+                f"<title>{html.escape(str(label))} ({point['x']:.3g}, {point['y']:.3g})</title></circle>"
+            )
+        body.append(f'<text x="{margin}" y="{height - 8}" font-size="10">x: {x_low:.3g} to {x_high:.3g}</text>')
+        body.append(f'<text x="{margin}" y="{margin - 8}" font-size="10">y: {y_low:.3g} to {y_high:.3g}</text>')
+    elif (
+        isinstance(points, list)
+        and points
+        and all(isinstance(p, dict) and {"row_idx", "col_idx", "value"} <= set(p) for p in points)
+    ):
+        n_rows = max(p["row_idx"] for p in points) + 1
+        n_cols = max(p["col_idx"] for p in points) + 1
+        values = [p["value"] for p in points if _is_number(p["value"])]
+        low, high = (min(values), max(values)) if values else (0.0, 1.0)
+        cell_w, cell_h = inner_w / n_cols, inner_h / n_rows
+        for cell in points:
+            if not _is_number(cell["value"]):
+                continue
+            t = _scale(cell["value"], low, high, 0.0, 1.0)
+            # blue (low) -> white (middle) -> red (high)
+            red = 255 if t >= 0.5 else int(255 * 2 * t)
+            blue = 255 if t <= 0.5 else int(255 * 2 * (1 - t))
+            green = int(255 * (1 - abs(2 * t - 1)))
+            body.append(
+                f'<rect x="{margin + cell["col_idx"] * cell_w:.2f}" y="{margin + cell["row_idx"] * cell_h:.2f}" '
+                f'width="{cell_w:.2f}" height="{cell_h:.2f}" fill="rgb({red},{green},{blue})">'
+                f"<title>{html.escape(str(cell.get('row')))}, {html.escape(str(cell.get('col')))}: "
+                f"{cell['value']:.3g}</title></rect>"
+            )
+    elif isinstance(plot_data.get("track_data"), list) and plot_data["track_data"]:
+        features = plot_data["track_data"]
+        low, high = plot_data["coordinate_range"]
+        bar_h = min(24.0, inner_h)
+        for feature in features:
+            x0 = _scale(feature["start"], low, high, margin, margin + inner_w)
+            x1 = _scale(feature["end"], low, high, margin, margin + inner_w)
+            color = html.escape(str(feature.get("color", "#636363")), quote=True)
+            body.append(
+                f'<rect x="{x0:.2f}" y="{margin + (inner_h - bar_h) / 2:.2f}" width="{max(x1 - x0, 1.0):.2f}" '
+                f'height="{bar_h:.2f}" fill="{color}"><title>{html.escape(str(feature.get("name")))} '
+                f"({feature['start']}-{feature['end']})</title></rect>"
+            )
+        body.append(f'<text x="{margin}" y="{height - 8}" font-size="10">{low} to {high}</text>')
+    else:
+        return None
+
+    return (
+        f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" role="img">'
+        f'<rect width="{width}" height="{height}" fill="white"/>' + "".join(body) + "</svg>"
+    )
 
 
 def _mean(values: list[float]) -> float:
@@ -39,40 +147,33 @@ def _std(values: list[float]) -> float:
     return math.sqrt(sum((x - mu) ** 2 for x in values) / (n - 1))
 
 
-def _hierarchical_cluster_order(
-    data: list[list[float]],
-    axis: int = 0,
-) -> list[int]:
-    """Simple hierarchical clustering for row/column ordering.
+def _cluster_axis(data: list[list[float]], axis: int = 0) -> tuple[list[int], list[list[float]]]:
+    """Hierarchically cluster the rows (``axis=0``) or columns (``axis=1``) of *data*.
 
-    Uses a greedy nearest-neighbour approach for ordering.
+    Average-linkage (UPGMA) clustering on Euclidean distance, with the leaves ordered so that the order is the
+    smoothest one the tree allows (``optimal_leaf_ordering``). Every cluster occupies one contiguous block of the
+    returned order, which the greedy nearest-neighbour chain this replaces did not guarantee: it appended a late
+    neighbour of an early row at the very end, splitting their cluster.
+
+    Returns:
+        ``(order, merges)``. ``order`` lists the original indices in display order. ``merges`` is the dendrogram
+        in SciPy's linkage format, one ``[left, right, height, size]`` row per merge: an id below the number of
+        leaves is an original index, and id ``n + i`` is the cluster formed by merge ``i``. It is empty when there
+        is nothing to merge.
+
+    Raises:
+        ValueError: If the data contains NaN or infinite values.
     """
-    if axis == 1:
-        # Transpose for column clustering
-        n_cols = len(data[0]) if data else 0
-        vectors = [[data[i][j] for i in range(len(data))] for j in range(n_cols)]
-    else:
-        vectors = data
-
+    matrix = np.asarray(data, dtype=float)
+    vectors = matrix.T if axis == 1 else matrix
     n = len(vectors)
     if n <= 1:
-        return list(range(n))
+        return list(range(n)), []
+    if not np.isfinite(vectors).all():
+        raise ValueError("Cannot cluster data with NaN or infinite values; fill them or pass cluster_rows/cols=False")
 
-    remaining = list(range(n))
-    order = [remaining.pop(0)]
-
-    while remaining:
-        last = order[-1]
-        best_idx = 0
-        best_dist = float("inf")
-        for idx, r in enumerate(remaining):
-            d = sum((vectors[last][k] - vectors[r][k]) ** 2 for k in range(len(vectors[0])))
-            if d < best_dist:
-                best_dist = d
-                best_idx = idx
-        order.append(remaining.pop(best_idx))
-
-    return order
+    merges = optimal_leaf_ordering(linkage(vectors, method="average", metric="euclidean"), vectors)
+    return [int(i) for i in leaves_list(merges)], merges.tolist()
 
 
 # ---------------------------------------------------------------------------
@@ -176,7 +277,7 @@ def create_interactive_heatmap(
         data: 2D matrix of values.
         row_names: Row labels.
         col_names: Column labels.
-        cluster_rows: Whether to cluster rows.
+        cluster_rows: Whether to cluster rows (average-linkage hierarchical clustering, see :func:`_cluster_axis`).
         cluster_cols: Whether to cluster columns.
 
     Returns:
@@ -184,8 +285,14 @@ def create_interactive_heatmap(
             - plot_data: Heatmap cell data with row, col, value.
             - row_order: Ordered row indices.
             - col_order: Ordered column indices.
-            - dendrograms: Row/col dendrogram data (structure for rendering).
+            - dendrograms: ``{"rows": ..., "cols": ...}``, each ``{"order", "clustered", "linkage"}``, where
+              ``linkage`` is the dendrogram as ``[left, right, height, size]`` merge rows (SciPy format; empty when
+              not clustered).
             - color_range: (min_value, max_value).
+
+    Raises:
+        ValueError: If the labels do not match the data, or clustering is requested for data with NaN or infinite
+            values.
     """
     n_rows = len(data)
     n_cols = len(data[0]) if data else 0
@@ -195,8 +302,8 @@ def create_interactive_heatmap(
     if len(col_names) != n_cols:
         raise ValueError(f"col_names ({len(col_names)}) != data cols ({n_cols})")
 
-    row_order = _hierarchical_cluster_order(data, axis=0) if cluster_rows else list(range(n_rows))
-    col_order = _hierarchical_cluster_order(data, axis=1) if cluster_cols else list(range(n_cols))
+    row_order, row_linkage = _cluster_axis(data, axis=0) if cluster_rows else (list(range(n_rows)), [])
+    col_order, col_linkage = _cluster_axis(data, axis=1) if cluster_cols else (list(range(n_cols)), [])
 
     cells = []
     all_values = []
@@ -217,8 +324,8 @@ def create_interactive_heatmap(
     color_range = (min(all_values), max(all_values)) if all_values else (0.0, 1.0)
 
     dendrograms = {
-        "rows": {"order": row_order, "clustered": cluster_rows},
-        "cols": {"order": col_order, "clustered": cluster_cols},
+        "rows": {"order": row_order, "clustered": cluster_rows, "linkage": row_linkage},
+        "cols": {"order": col_order, "clustered": cluster_cols, "linkage": col_linkage},
     }
 
     logger.info("Created interactive heatmap: %dx%d", n_rows, n_cols)
@@ -244,9 +351,10 @@ def create_genome_browser_track(
     """Generate genome browser track data.
 
     Args:
-        features: List of feature dicts, each with at least ``start``,
-            ``end``, and ``name`` keys. Optional: ``strand``, ``score``,
-            ``chromosome``, ``color``.
+        features: List of feature dicts, each with ``start``, ``end``, and
+            ``name`` keys. Optional: ``strand`` (default ``"+"``), ``score``
+            (default 0), ``chromosome`` (default None: unknown, not a guessed
+            chromosome), ``color`` (default by track type).
         track_type: Track type: ``"gene"``, ``"variant"``, ``"peak"``,
             ``"coverage"``.
 
@@ -254,17 +362,24 @@ def create_genome_browser_track(
         Dictionary with keys:
             - track_data: Processed feature list.
             - track_type: Track type.
-            - coordinate_range: (min_start, max_end).
+            - coordinate_range: (min_start, max_end); (0, 0) for a track with no features.
             - n_features: Number of features.
+
+    Raises:
+        ValueError: If a feature lacks ``start``, ``end`` or ``name``. They used to be replaced by position 0,
+            ``start + 1`` and "unnamed", which drew features that were never in the input.
     """
     processed = []
     min_start = float("inf")
     max_end = float("-inf")
 
-    for feat in features:
-        start = feat.get("start", 0)
-        end = feat.get("end", start + 1)
-        name = feat.get("name", "unnamed")
+    for index, feat in enumerate(features):
+        missing = [key for key in ("start", "end", "name") if key not in feat]
+        if missing:
+            raise ValueError(f"feature {index} is missing the required key(s) {missing}")
+        start = feat["start"]
+        end = feat["end"]
+        name = feat["name"]
 
         min_start = min(min_start, start)
         max_end = max(max_end, end)
@@ -275,7 +390,7 @@ def create_genome_browser_track(
             "name": name,
             "strand": feat.get("strand", "+"),
             "score": feat.get("score", 0),
-            "chromosome": feat.get("chromosome", "chr1"),
+            "chromosome": feat.get("chromosome"),
             "color": feat.get("color", _track_color(track_type)),
             "width": end - start,
         }
@@ -283,7 +398,7 @@ def create_genome_browser_track(
 
     if not processed:
         min_start = 0
-        max_end = 1000
+        max_end = 0
 
     logger.info(
         "Created genome browser track (%s): %d features, range %d-%d",
@@ -336,14 +451,24 @@ def create_interactive_volcano(
             - plot_data: Point data with x (log2FC), y (-log10 p), gene, status.
             - significance_counts: Dict with up, down, ns counts.
             - thresholds: Applied threshold values.
+
+    Raises:
+        ValueError: If a result has no fold change or no p-value. A missing p-value used to count as 1.0 and a
+            missing fold change as 0.0, which reported genes as "not significant" that were never tested.
     """
     points = []
     counts = {"up": 0, "down": 0, "not_significant": 0}
 
-    for result in de_results:
+    for index, result in enumerate(de_results):
         gene = result.get("gene", result.get("name", "unnamed"))
-        fc = result.get("log2_fold_change", result.get("log2fc", 0.0))
-        pval = result.get("p_value", result.get("pvalue", result.get("adjusted_p", 1.0)))
+        fc_keys = [key for key in ("log2_fold_change", "log2fc") if key in result]
+        p_keys = [key for key in ("p_value", "pvalue", "adjusted_p") if key in result]
+        if not fc_keys:
+            raise ValueError(f"result {index} ({gene!r}) has no fold change: expected 'log2_fold_change' or 'log2fc'")
+        if not p_keys:
+            raise ValueError(f"result {index} ({gene!r}) has no p-value: expected 'p_value', 'pvalue' or 'adjusted_p'")
+        fc = result[fc_keys[0]]
+        pval = result[p_keys[0]]
 
         if pval <= 0:
             neg_log_p = 300.0
@@ -409,8 +534,13 @@ def export_to_html(
 ) -> str:
     """Export interactive plot to standalone HTML file.
 
-    Generates a self-contained HTML file with embedded SVG graphics and
-    vanilla JavaScript for interactivity (hover tooltips, zoom).
+    Generates a self-contained UTF-8 HTML file. Scatter-like data (points with ``x`` and ``y``, such as
+    :func:`create_interactive_scatter` and :func:`create_interactive_volcano`) is drawn with embedded SVG and vanilla
+    JavaScript for hover tooltips. Heatmap and genome-browser data are drawn as static SVG with native hover
+    titles. Any other structure is embedded as data but not drawn, and a warning says so.
+
+    The title and every label are HTML-escaped, and the data is embedded so that no value can close the script
+    block: untrusted gene names or titles cannot inject markup.
 
     Args:
         plot_data: Plot data structure from any ``create_interactive_*`` function.
@@ -423,14 +553,23 @@ def export_to_html(
     out = Path(output_path)
     out.parent.mkdir(parents=True, exist_ok=True)
 
-    data_json = json.dumps(plot_data, default=str)
+    data_json = _json_for_script(plot_data)
+    safe_title = html.escape(title)
+
+    points = plot_data.get("plot_data")
+    scatter_like = bool(
+        isinstance(points, list) and points and isinstance(points[0], dict) and "x" in points[0] and "y" in points[0]
+    )
+    static_svg = "" if scatter_like else (_panel_svg(plot_data, 800, 600) or "")
+    if not scatter_like and not static_svg:
+        logger.warning("export_to_html cannot draw this plot structure; the file embeds the data only")
 
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{title}</title>
+    <title>{safe_title}</title>
     <style>
         body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                margin: 0; padding: 20px; background: #fafafa; }}
@@ -448,8 +587,8 @@ def export_to_html(
 </head>
 <body>
     <div class="container">
-        <h1>{title}</h1>
-        <div class="plot-area" id="plot"></div>
+        <h1>{safe_title}</h1>
+        <div class="plot-area" id="plot">{static_svg}</div>
         <div class="stats" id="stats"></div>
     </div>
     <div class="tooltip" id="tooltip"></div>
@@ -458,6 +597,10 @@ def export_to_html(
         const container = document.getElementById('plot');
         const tooltip = document.getElementById('tooltip');
         const stats = document.getElementById('stats');
+
+        // Escape text and attribute values: labels and colours come from the data
+        const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                                  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
         // Render based on data structure
         if (plotData.plot_data && Array.isArray(plotData.plot_data)) {{
@@ -484,8 +627,8 @@ def export_to_html(
                 points.forEach((p, i) => {{
                     const cx = m.l + ((p.x - xMin) / xRange) * pw;
                     const cy = m.t + ph - ((p.y - yMin) / yRange) * ph;
-                    const color = p.color || '#1f77b4';
-                    const label = p.gene || p.label || ('Point ' + i);
+                    const color = esc(p.color || '#1f77b4');
+                    const label = esc(p.gene || p.label || ('Point ' + i));
                     svg += '<circle class="point" cx="'+cx+'" cy="'+cy+'" r="4" fill="'+color+'"' +
                            ' data-label="'+label+'" data-x="'+p.x.toFixed(3)+'" data-y="'+p.y.toFixed(3)+'"/>';
                 }});
@@ -519,7 +662,7 @@ def export_to_html(
 </body>
 </html>"""
 
-    out.write_text(html_content)
+    out.write_text(html_content, encoding="utf-8")
     abs_path = str(out.resolve())
     logger.info("Exported interactive plot to %s", abs_path)
     return abs_path
@@ -529,6 +672,8 @@ def export_to_html(
 # Dashboard Composition
 # ---------------------------------------------------------------------------
 
+_DASHBOARD_LAYOUTS = ("grid", "rows", "columns")
+
 
 def create_dashboard(
     panels: list[dict],
@@ -537,10 +682,15 @@ def create_dashboard(
 ) -> dict:
     """Compose multiple plots into a dashboard layout.
 
+    Each panel is drawn into the returned HTML: scatter and volcano data as circles, heatmap data as coloured
+    cells, genome-browser data as bars (see :func:`_panel_svg`), each with hover titles. A panel whose
+    ``plot_data`` has any other structure is shown as its data, truncated with a visible marker and labelled "not
+    drawn". The title, panel titles and all labels are HTML-escaped.
+
     Args:
         panels: List of panel dicts, each with ``title`` and ``plot_data``
             keys (from any ``create_interactive_*`` function). Optional
-            ``width`` and ``height`` keys.
+            ``width`` (pixels, default: an equal share of the row) and ``height`` (pixels) keys.
         layout: Layout strategy: ``"grid"`` (auto-arrange), ``"rows"``
             (one per row), or ``"columns"`` (side-by-side).
         title: Dashboard title.
@@ -551,7 +701,14 @@ def create_dashboard(
             - html: Standalone HTML string for the dashboard.
             - n_panels: Number of panels.
             - layout: Layout used.
+
+    Raises:
+        ValueError: If ``layout`` is not ``"grid"``, ``"rows"`` or ``"columns"`` (it used to fall back to
+            ``"grid"`` without a word).
     """
+    if layout not in _DASHBOARD_LAYOUTS:
+        raise ValueError(f"Unknown dashboard layout {layout!r}; expected one of {list(_DASHBOARD_LAYOUTS)}")
+
     n = len(panels)
     if n == 0:
         cols, rows = 1, 1
@@ -561,12 +718,9 @@ def create_dashboard(
     elif layout == "rows":
         cols = 1
         rows = n
-    elif layout == "columns":
+    else:  # columns
         cols = n
         rows = 1
-    else:
-        cols = math.ceil(math.sqrt(n))
-        rows = math.ceil(n / cols)
 
     panel_width = 100.0 / cols
     panel_height = max(300, 600 // rows)
@@ -575,42 +729,57 @@ def create_dashboard(
     for idx, panel in enumerate(panels):
         row = idx // cols
         col = idx % cols
+        size = {
+            "width_pct": panel_width,
+            "height_px": panel.get("height", panel_height),
+        }
+        if "width" in panel:
+            size["width_px"] = panel["width"]
         positioned_panels.append(
             {
                 "title": panel.get("title", f"Panel {idx + 1}"),
                 "plot_data": panel.get("plot_data", {}),
                 "position": {"row": row, "col": col},
-                "size": {
-                    "width_pct": panel_width,
-                    "height_px": panel.get("height", panel_height),
-                },
+                "size": size,
             }
         )
 
-    # Generate simple HTML dashboard
+    # Simple HTML dashboard: every panel is drawn, not dumped as JSON
     html_panels = []
     for pp in positioned_panels:
-        plot_data = json.dumps(pp["plot_data"], indent=1, default=str)[:2000]
-        panel_html = f"""<div style="display:inline-block;width:{pp['size']['width_pct']:.1f}%;
+        svg = _panel_svg(pp["plot_data"], int(pp["size"].get("width_px", 480)), int(pp["size"]["height_px"]))
+        if svg is None:
+            dumped = json.dumps(pp["plot_data"], indent=1, default=str)
+            if len(dumped) > 2000:
+                dumped = dumped[:2000] + "\n... (truncated)"
+            content = (
+                '<p style="margin:0 0 5px 0;font-size:11px;color:#666;">not drawn: unsupported plot structure</p>'
+                f'<pre style="font-size:11px;overflow:auto;max-height:400px;">{html.escape(dumped)}</pre>'
+            )
+        else:
+            content = svg
+        width_css = f"{pp['size']['width_px']}px" if "width_px" in pp["size"] else f"{pp['size']['width_pct']:.1f}%"
+        panel_html = f"""<div style="display:inline-block;width:{width_css};
             vertical-align:top;padding:10px;box-sizing:border-box;">
-            <h3 style="margin:0 0 5px 0;font-size:14px;color:#333;">{pp['title']}</h3>
+            <h3 style="margin:0 0 5px 0;font-size:14px;color:#333;">{html.escape(str(pp['title']))}</h3>
             <div style="background:#f5f5f5;border:1px solid #ddd;border-radius:4px;
                 padding:10px;min-height:{pp['size']['height_px']}px;">
-                <pre style="font-size:11px;overflow:auto;max-height:400px;">{plot_data}</pre>
+                {content}
             </div>
         </div>"""
         html_panels.append(panel_html)
 
-    html = f"""<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>{title}</title>
-<style>body{{font-family:sans-serif;margin:20px;}}h1{{color:#333;}}</style></head>
-<body><h1>{title}</h1><div>{''.join(html_panels)}</div></body></html>"""
+    safe_title = html.escape(title)
+    html_doc = f"""<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>{safe_title}</title>
+<style>body{{font-family:sans-serif;margin:20px;}}h1{{color:#333;}}svg{{width:100%;height:auto;}}</style></head>
+<body><h1>{safe_title}</h1><div>{''.join(html_panels)}</div></body></html>"""
 
     logger.info("Created dashboard: %d panels, layout=%s", n, layout)
 
     return {
         "dashboard_data": positioned_panels,
-        "html": html,
+        "html": html_doc,
         "n_panels": n,
         "layout": layout,
     }

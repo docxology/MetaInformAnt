@@ -140,7 +140,8 @@ class TestVisualization:
         )
 
         fig, ax = plt.subplots(figsize=(12, 6))
-        result_ax = plots.manhattan_plot(data, "position", "log_p", ax=ax)
+        # the p-value column holds raw p-values (-log10 is applied by the plot); the -log10 column would be refused
+        result_ax = plots.manhattan_plot(data, "position", "p_value", ax=ax)
         assert result_ax is ax
         plt.close(fig)
 

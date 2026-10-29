@@ -71,11 +71,10 @@ class TestVennDiagram:
         import matplotlib.pyplot as plt
 
         sets = {name: {1, 2} for name in ("A", "B", "C", "D")}
-        # Without matplotlib-venn the fallback path raises ImportError; with it
-        # installed the dedicated branch raises ValueError. Both are the loud
-        # failure this contract requires.
-        expected = ValueError if HAS_MPL_VENN else ImportError
-        with pytest.raises(expected):
+        # The same ValueError whether or not matplotlib-venn is installed: an unsupported number of sets is not
+        # a missing dependency (it used to be an ImportError that told the user to install a package that
+        # cannot draw more than three sets either).
+        with pytest.raises(ValueError, match="two or three sets"):
             plot_venn_diagram(sets)
         plt.close("all")
 

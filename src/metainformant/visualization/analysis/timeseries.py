@@ -14,13 +14,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
-from matplotlib.figure import Figure, SubFigure
 
 from metainformant.core.data import validation
 from metainformant.core.io import paths
 from metainformant.core.utils import logging
 from metainformant.visualization.config.conventions import save_figure_deterministic
-from metainformant.visualization.config.figures import root_figure
+from metainformant.visualization.config.figures import panel_grid, root_figure
 
 logger = logging.get_logger(__name__)
 
@@ -143,18 +142,21 @@ def plot_seasonal_decomposition(
     output_path: str | Path | None = None,
     **kwargs: Any,
 ) -> Axes:
-    """Create a seasonal decomposition plot.
+    """Create a seasonal decomposition plot with four stacked panels: original, trend, seasonal and residual.
 
     Args:
         data: Pandas Series with time series data
         model: Decomposition model ('additive' or 'multiplicative')
-        period: Period for seasonal decomposition (auto-detected if None)
-        ax: Optional matplotlib axes to plot on. Creates new if None.
+        period: Period for seasonal decomposition. If None, statsmodels infers it from the frequency of the
+            series' datetime index, and raises ValueError when the index has no frequency.
+        ax: Optional matplotlib axes that should hold the four panels: they are laid out inside the grid slot of
+            ``ax``, which is hidden. Creates a new figure if None.
         output_path: Optional path to save the figure.
-        **kwargs: Additional arguments passed to decomposition.
+        **kwargs: Additional arguments passed to ``statsmodels.tsa.seasonal.seasonal_decompose`` (for example
+            ``two_sided`` or ``extrapolate_trend``). ``figsize`` sizes a new figure.
 
     Returns:
-        matplotlib Axes object
+        The axes of the first (original series) panel
 
     Raises:
         ValueError: If data is not suitable for decomposition
@@ -168,20 +170,12 @@ def plot_seasonal_decomposition(
     if not HAS_STATSMODELS:
         raise ImportError("statsmodels required for seasonal decomposition")
 
-    # Create decomposition
-    decomposition = seasonal_decompose(data, model=model, period=period)
+    figsize = kwargs.pop("figsize", (12, 10))
 
-    fig: Figure | SubFigure
-    axes: list[Axes]
-    if ax is None:
-        fig, axes_grid = plt.subplots(4, 1, figsize=kwargs.pop("figsize", (12, 10)), sharex=True)
-        axes = list(axes_grid.flatten())
-    else:
-        # If single ax provided, create subplots anyway for decomposition
-        fig = ax.figure
-        axes = []
-        for i in range(4):
-            axes.append(fig.add_subplot(4, 1, i + 1, sharex=axes[0] if axes else None))
+    # Create decomposition
+    decomposition = seasonal_decompose(data, model=model, period=period, **kwargs)
+
+    axes = panel_grid(ax, 4, max_cols=1, figsize=figsize, sharex=True)
 
     # Plot components
     axes[0].plot(data.index, data.values, label="Original")
@@ -200,7 +194,8 @@ def plot_seasonal_decomposition(
     axes[3].set_title("Residual Component")
     axes[3].legend()
 
-    plt.tight_layout()
+    if ax is None:
+        root_figure(axes[0]).tight_layout()
 
     if output_path:
         _save_plot(axes[0], output_path, "Seasonal decomposition plot")
@@ -213,6 +208,7 @@ def plot_forecast(
     forecast: pd.Series,
     *,
     confidence_intervals: pd.DataFrame | None = None,
+    confidence_level: float | None = None,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     **kwargs: Any,
@@ -222,7 +218,10 @@ def plot_forecast(
     Args:
         data: Pandas Series with historical time series data
         forecast: Pandas Series with forecast values
-        confidence_intervals: DataFrame with 'lower' and 'upper' columns for CI
+        confidence_intervals: DataFrame with 'lower' and 'upper' columns, one row per forecast value
+        confidence_level: Nominal coverage of ``confidence_intervals`` as a fraction (0.95 for a 95% interval),
+            used only in the legend. The level is not known to this function, so without it the band is labelled
+            "Confidence interval" rather than being given a level nobody supplied.
         ax: Optional matplotlib axes to plot on. Creates new if None.
         output_path: Optional path to save the figure.
         **kwargs: Additional arguments passed to plotting.
@@ -231,13 +230,26 @@ def plot_forecast(
         matplotlib Axes object
 
     Raises:
-        ValueError: If data and forecast don't align properly
+        ValueError: If data and forecast are empty, ``confidence_intervals`` lacks 'lower' or 'upper' or does not
+            have one row per forecast value, or ``confidence_level`` is outside (0, 1)
     """
     validation.validate_type(data, pd.Series, "data")
     validation.validate_type(forecast, pd.Series, "forecast")
 
     if data.empty or forecast.empty:
         raise ValueError("Data and forecast Series cannot be empty")
+
+    if confidence_intervals is not None:
+        validation.validate_type(confidence_intervals, pd.DataFrame, "confidence_intervals")
+        missing = [column for column in ("lower", "upper") if column not in confidence_intervals.columns]
+        if missing:
+            raise ValueError(f"confidence_intervals must have 'lower' and 'upper' columns; missing {missing}")
+        if len(confidence_intervals) != len(forecast):
+            raise ValueError(
+                f"confidence_intervals has {len(confidence_intervals)} rows for {len(forecast)} forecast values"
+            )
+    if confidence_level is not None and not 0.0 < confidence_level < 1.0:
+        raise ValueError(f"confidence_level must be a fraction between 0 and 1, got {confidence_level}")
 
     if ax is None:
         fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (12, 6)))
@@ -254,16 +266,14 @@ def plot_forecast(
 
     # Plot confidence intervals if provided
     if confidence_intervals is not None:
-        validation.validate_type(confidence_intervals, pd.DataFrame, "confidence_intervals")
-        if "lower" in confidence_intervals.columns and "upper" in confidence_intervals.columns:
-            ax.fill_between(
-                forecast.index,
-                confidence_intervals["lower"],
-                confidence_intervals["upper"],
-                alpha=0.3,
-                color="red",
-                label="95% CI",
-            )
+        ax.fill_between(
+            forecast.index,
+            confidence_intervals["lower"],
+            confidence_intervals["upper"],
+            alpha=0.3,
+            color="red",
+            label="Confidence interval" if confidence_level is None else f"{confidence_level:.0%} CI",
+        )
 
     ax.set_xlabel("Time")
     ax.set_ylabel("Value")
@@ -316,9 +326,14 @@ def plot_trend_analysis(
     # Plot trend line
     ax.plot(data.index, trend_line, label=f"Trend (slope: {coefficients[0]:.4f})", color="red", linewidth=2)
 
-    # Add trend information as text
+    # Add trend information as text. A slope that is zero up to the rounding of the fit is flat: a constant
+    # series has a slope of exactly 0.0 (or noise around it), which is neither increasing nor decreasing.
     slope = coefficients[0]
-    trend_direction = "increasing" if slope > 0 else "decreasing"
+    flat_tolerance = 1e-12 * max(float(np.ptp(data.values)), 1.0)
+    if abs(slope) * max(len(data) - 1, 1) <= flat_tolerance:
+        trend_direction = "flat"
+    else:
+        trend_direction = "increasing" if slope > 0 else "decreasing"
     ax.text(
         0.02,
         0.98,

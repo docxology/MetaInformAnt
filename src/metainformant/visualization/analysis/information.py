@@ -280,7 +280,8 @@ def plot_information_network(
         edges: List of (source, target, weight) tuples for edges
         ax: Optional matplotlib axes to plot on. Creates new if None.
         output_path: Optional path to save the figure.
-        **kwargs: Additional arguments passed to networkx draw().
+        **kwargs: Additional arguments passed to networkx draw(). ``layout_kwargs`` is passed to
+            ``networkx.spring_layout`` on top of the default ``seed=42``, so the layout is reproducible.
 
     Returns:
         matplotlib Axes object
@@ -311,8 +312,9 @@ def plot_information_network(
             raise ValueError(f"Edge connects unknown nodes: {source} -> {target}")
         G.add_edge(source, target, weight=weight)
 
-    # Calculate node positions (layout_kwargs belong to the layout, not to networkx.draw)
-    pos = nx.spring_layout(G, **kwargs.pop("layout_kwargs", {}))
+    # Calculate node positions (layout_kwargs belong to the layout, not to networkx.draw). The layout is seeded
+    # (42) unless layout_kwargs says otherwise: an unseeded spring layout drew the same graph differently each call.
+    pos = nx.spring_layout(G, **{"seed": 42, **kwargs.pop("layout_kwargs", {})})
 
     # Draw network (caller keyword arguments override these defaults instead of colliding with them)
     node_sizes = [G.degree(node) * 100 + 300 for node in G.nodes()]  # Size by degree

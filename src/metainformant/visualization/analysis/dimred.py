@@ -339,7 +339,9 @@ def biplot(
         pca_model: Fitted sklearn PCA model
         ax: Optional matplotlib axes to plot on. Creates new if None.
         output_path: Optional path to save the figure.
-        **kwargs: Additional arguments passed to plotting functions.
+        **kwargs: Additional arguments passed to matplotlib scatter() for the samples. ``figsize`` sizes a new
+            figure and ``scaling_factor`` multiplies the loadings to draw the feature arrows (default
+            ``std(scores) / std(loadings) * 0.8``).
 
     Returns:
         matplotlib Axes object
@@ -369,13 +371,20 @@ def biplot(
 
     # Get PCA scores
     scores = pca_model.transform(data_array)
+    loadings = pca_model.components_[:2].T
 
-    # Plot samples
-    ax.scatter(scores[:, 0], scores[:, 1], alpha=0.7, label="Samples", **kwargs)
+    # scaling_factor belongs to the arrows: left in kwargs it was passed to scatter(), which rejects it, so the
+    # option could never be used
+    default_scaling = scores.std() / loadings.std() * 0.8
+    scaling_factor = kwargs.pop("scaling_factor", None)
+    if scaling_factor is None:
+        scaling_factor = default_scaling
+
+    # Plot samples (caller keyword arguments override the defaults instead of colliding with them)
+    scatter_kwargs: dict[str, Any] = {"alpha": 0.7, "label": "Samples", **kwargs}
+    ax.scatter(scores[:, 0], scores[:, 1], **scatter_kwargs)
 
     # Plot loadings as arrows
-    loadings = pca_model.components_[:2].T
-    scaling_factor = kwargs.get("scaling_factor", scores.std() / loadings.std() * 0.8)
 
     for i, (x, y) in enumerate(loadings):
         ax.arrow(
