@@ -40,19 +40,19 @@ class TestParseBcftoolsStats:
         assert stats["n_indels"] == 2
         assert stats["ts_tv_ratio"] == pytest.approx(8.33)
 
-    def test_empty_text_gives_zeroes(self):
+    def test_empty_text_gives_zero_counts_and_no_ratio(self):
         stats = parse_bcftools_stats("")
         assert stats == {
             "n_records": 0,
             "n_snps": 0,
             "n_indels": 0,
-            "ts_tv_ratio": 0.0,
+            "ts_tv_ratio": None,  # not 0.0: a ratio of 0 would mean "no transitions"
         }
 
     def test_malformed_tstv_is_tolerated(self):
         text = "TSTV\t0\t10\t2\tnot-a-float\n"
         stats = parse_bcftools_stats(text)
-        assert stats["ts_tv_ratio"] == 0.0
+        assert stats["ts_tv_ratio"] is None
 
 
 class TestComputeSampleStats:
@@ -61,7 +61,7 @@ class TestComputeSampleStats:
 
         if shutil.which("bcftools") is None:
             pytest.skip("bcftools not installed")
-        from metainformant.eqtl.test_support import build_tiny_vcf
+        from tests.eqtl.test_support import build_tiny_vcf
 
         vcf = build_tiny_vcf(tmp_path)
         out = tmp_path / "stats" / "sample_stats.json"
@@ -78,7 +78,7 @@ class TestComputeAlleleFrequencies:
 
         if shutil.which("bcftools") is None:
             pytest.skip("bcftools not installed")
-        from metainformant.eqtl.test_support import build_tiny_vcf
+        from tests.eqtl.test_support import build_tiny_vcf
 
         vcf = build_tiny_vcf(tmp_path)
         out = tmp_path / "af" / "af.tsv"
@@ -106,7 +106,7 @@ class TestComputePopgenSummary:
             with pytest.raises(RuntimeError, match="bcftools"):
                 compute_popgen_summary(tmp_path / "missing.vcf.gz", sample_stats, out)
         else:
-            from metainformant.eqtl.test_support import build_tiny_vcf
+            from tests.eqtl.test_support import build_tiny_vcf
 
             vcf = build_tiny_vcf(tmp_path)
             summary = compute_popgen_summary(vcf, sample_stats, out)

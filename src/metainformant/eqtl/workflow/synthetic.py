@@ -41,14 +41,19 @@ def create_synthetic_data(
 
     Args:
         n_genes: Number of genes (must satisfy n_variants >= 5 * n_genes).
-        n_variants: Total number of variants (5 per gene in cis window).
+        n_variants: Total number of variants: 5 in the cis window of each gene, and the
+            remaining ``n_variants - 5 * n_genes`` as background variants. A background
+            variant influences no gene and lies 10 Mb or more beyond the last TSS (on
+            chromosomes 1-5 in turn), so it is outside every cis window and only a trans scan
+            tests it. Their number used to be ignored: asking for more than ``5 * n_genes``
+            variants still gave ``5 * n_genes``.
         n_samples: Number of samples.
         seed: Random seed for reproducibility.
 
     Returns:
         Tuple of (expression_matrix, genotype_matrix, gene_positions,
         variant_positions). Expression is genes x samples; genotypes are
-        variants x samples with dosages in {0, 1, 2}.
+        variants x samples (``n_variants`` rows) with dosages in {0, 1, 2}.
     """
     min_variants = 5 * n_genes
     if n_variants < min_variants:
@@ -86,6 +91,13 @@ def create_synthetic_data(
             var_chromosomes.append(chromosomes[gene_idx])
             # Position within cis window
             var_positions.append(tss_positions[gene_idx] + (var_offset - 2) * 10_000)
+
+    # Background variants: no gene depends on them and none is within a cis window of any gene
+    background_start = max(tss_positions, default=0) + 10_000_000
+    for k in range(n_variants - min_variants):
+        variant_ids.append(f"rs{min_variants + k}")
+        var_chromosomes.append(str((k % 5) + 1))
+        var_positions.append(background_start + k * 10_000)
 
     variant_positions = pd.DataFrame(
         {

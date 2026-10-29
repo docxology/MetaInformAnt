@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -221,6 +222,49 @@ def download_fastq(
     return fastqs
 
 
+_MATE_PATTERN = re.compile(r"_([12])\.f(?:ast)?q(?:\.gz)?$")
+
+
+def hisat2_command(fastqs: list[Path], index_prefix: Path, threads: int = 4) -> list[str]:
+    """Build the ``hisat2`` command line for the FASTQ files of one run.
+
+    One file is single-end and two files are a read pair (``-1``, ``-2``), as before. ENA also serves
+    runs as three files: a pair named ``<run>_1.fastq.gz`` and ``<run>_2.fastq.gz`` plus the unpaired
+    reads ``<run>.fastq.gz``. Those were aligned as single-end using the first file alone, so the pair
+    was dropped without a message; the pair now goes to ``-1``/``-2`` and the unpaired reads to ``-U``.
+
+    Args:
+        fastqs: The run's FASTQ files.
+        index_prefix: HISAT2 index prefix.
+        threads: Alignment threads.
+
+    Raises:
+        ValueError: If there are no files, or more than two and they are not exactly one ``_1`` mate,
+            one ``_2`` mate and any number of unpaired files (the layout is ambiguous, and guessing
+            would drop reads).
+    """
+    if not fastqs:
+        raise ValueError("no FASTQ files to align")
+    command = ["hisat2", "--dta", "-p", str(threads), "-x", str(index_prefix)]
+    if len(fastqs) == 1:
+        return command + ["-U", str(fastqs[0])]
+    if len(fastqs) == 2:
+        return command + ["-1", str(fastqs[0]), "-2", str(fastqs[1])]
+
+    first = [f for f in fastqs if (m := _MATE_PATTERN.search(Path(f).name)) and m.group(1) == "1"]
+    second = [f for f in fastqs if (m := _MATE_PATTERN.search(Path(f).name)) and m.group(1) == "2"]
+    unpaired = [f for f in fastqs if f not in first and f not in second]
+    if len(first) != 1 or len(second) != 1:
+        raise ValueError(
+            f"cannot tell the read layout of {len(fastqs)} FASTQ files "
+            f"({', '.join(Path(f).name for f in fastqs)}): expected one '_1' mate, one '_2' mate and any unpaired files"
+        )
+    command += ["-1", str(first[0]), "-2", str(second[0])]
+    if unpaired:
+        command += ["-U", ",".join(str(f) for f in unpaired)]
+    return command
+
+
 def align_reads(
     fastqs: list[Path],
     index_prefix: Path,
@@ -245,12 +289,7 @@ def align_reads(
     output_bam.parent.mkdir(parents=True, exist_ok=True)
 
     # Build hisat2 command
-    hisat2_cmd = ["hisat2", "--dta", "-p", str(threads), "-x", str(index_prefix)]
-
-    if len(fastqs) == 2:
-        hisat2_cmd += ["-1", str(fastqs[0]), "-2", str(fastqs[1])]
-    else:
-        hisat2_cmd += ["-U", str(fastqs[0])]
+    hisat2_cmd = hisat2_command(fastqs, index_prefix, threads)
 
     # Pipe through samtools sort
     logger.info(f"Aligning {len(fastqs)} FASTQ file(s)...")
@@ -408,16 +447,17 @@ def merge_vcfs(vcf_files: list[Path], output_vcf: Path) -> bool:
         output_vcf: Destination merged compressed VCF.
 
     Returns:
-        True on success; a single input VCF is copied when only one exists.
+        True on success; a single input VCF is copied when only one exists (the destination
+        directory is created first: a one-sample run used to fail on a missing directory).
     """
+    output_vcf.parent.mkdir(parents=True, exist_ok=True)
+
     if len(vcf_files) < 2:
         logger.warning("Need at least 2 VCFs to merge")
         if vcf_files:
             shutil.copy2(vcf_files[0], output_vcf)
             subprocess.run(["bcftools", "index", str(output_vcf)], check=True)
         return bool(vcf_files)
-
-    output_vcf.parent.mkdir(parents=True, exist_ok=True)
 
     cmd = [
         "bcftools",

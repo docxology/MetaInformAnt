@@ -126,7 +126,9 @@ def run_pipeline(
         eqtl_output: eQTL output root (defaults to output/eqtl under cwd).
 
     Returns:
-        Pipeline run summary dict (species, samples, SNP totals, timing).
+        Pipeline run summary dict (species, samples, SNP totals, timing). ``total_snps``, ``total_indels``
+        and ``ts_tv_ratio`` are None when the run produced no population summary (no sample completed) or
+        bcftools reported no Ti/Tv ratio; they are not reported as 0.
 
     Raises:
         SystemExit: When required tools are missing or no samples/genome
@@ -278,9 +280,10 @@ def run_pipeline(
         "n_samples_requested": len(samples),
         "n_samples_completed": len(filtered_vcfs),
         "samples": [s["sample_id"] for s in all_sample_stats],
-        "total_snps": pop_summary.get("total_snps", 0),
-        "total_indels": pop_summary.get("total_indels", 0),
-        "ts_tv_ratio": pop_summary.get("ts_tv_ratio", 0.0),
+        # None, not 0: a run in which no sample completed has no SNP count and no Ti/Tv, it did not find none
+        "total_snps": pop_summary.get("total_snps"),
+        "total_indels": pop_summary.get("total_indels"),
+        "ts_tv_ratio": pop_summary.get("ts_tv_ratio"),
         "elapsed_seconds": round(elapsed, 1),
         "output_dir": str(species_out),
     }
@@ -292,8 +295,8 @@ def run_pipeline(
     logger.info("Pipeline Complete!")
     logger.info(f"  Species: {species}")
     logger.info(f"  Samples: {run_summary['n_samples_completed']}/{run_summary['n_samples_requested']}")
-    logger.info(f"  SNPs: {run_summary['total_snps']}")
-    logger.info(f"  Ti/Tv: {run_summary['ts_tv_ratio']}")
+    logger.info(f"  SNPs: {'n/a' if run_summary['total_snps'] is None else run_summary['total_snps']}")
+    logger.info(f"  Ti/Tv: {'n/a' if run_summary['ts_tv_ratio'] is None else run_summary['ts_tv_ratio']}")
     logger.info(f"  Time: {elapsed:.0f}s")
     logger.info(f"  Output: {species_out}")
     logger.info("=" * 70)

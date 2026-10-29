@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -25,14 +26,16 @@ def parse_bcftools_stats(stats_text: str) -> dict[str, Any]:
         stats_text: Raw stdout of ``bcftools stats``.
 
     Returns:
-        Dict with keys ``n_records``, ``n_snps``, ``n_indels``,
-        ``ts_tv_ratio`` (0.0 when absent).
+        Dict with keys ``n_records``, ``n_snps``, ``n_indels`` (0 when the line is absent) and
+        ``ts_tv_ratio``: the ratio bcftools reports, or None when it reports none (no ``TSTV`` line, or a
+        value that is not a finite number: bcftools prints ``nan`` when there is no transversion). Ti/Tv is
+        not 0.0 there; a ratio of 0 is a real value (no transition), which these cases are not.
     """
     stats: dict[str, Any] = {
         "n_records": 0,
         "n_snps": 0,
         "n_indels": 0,
-        "ts_tv_ratio": 0.0,
+        "ts_tv_ratio": None,
     }
 
     for line in stats_text.split("\n"):
@@ -51,9 +54,11 @@ def parse_bcftools_stats(stats_text: str) -> dict[str, Any]:
             parts = line.split("\t")
             if len(parts) >= 5:
                 try:
-                    stats["ts_tv_ratio"] = float(parts[4])
-                except (ValueError, IndexError):
-                    pass
+                    ratio = float(parts[4])
+                except ValueError:
+                    continue
+                if math.isfinite(ratio):
+                    stats["ts_tv_ratio"] = ratio
 
     return stats
 
@@ -111,7 +116,7 @@ def compute_popgen_summary(
         output_json: Destination JSON file (parent dirs created).
 
     Returns:
-        Summary dict with totals, Ti/Tv ratio, and per-sample stats.
+        Summary dict with totals, Ti/Tv ratio (None when bcftools reports none), and per-sample stats.
     """
     stdout = _run_bcftools_stats(merged_vcf)
     parsed = parse_bcftools_stats(stdout)
