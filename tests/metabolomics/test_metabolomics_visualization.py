@@ -173,7 +173,9 @@ class TestPrepareSpectrumPlot:
     def test_empty_spectrum(self) -> None:
         result = prepare_spectrum_plot(np.array([]), np.array([]))
         assert len(result.mz_values) == 0
-        assert result.base_peak_mz == 0.0
+        # an empty spectrum has no base peak: NaN, not an invented m/z or intensity of 0.0
+        assert np.isnan(result.base_peak_mz)
+        assert np.isnan(result.base_peak_intensity)
 
 
 class TestRetentionTimeAlignment:

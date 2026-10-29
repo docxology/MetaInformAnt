@@ -228,7 +228,9 @@ def pathway_activity_scoring(
         metabolite_scores: Dict mapping metabolite name to numeric score.
         pathway_db: Dict mapping pathway name to metabolite lists.
         min_coverage: Minimum fraction of pathway metabolites that must
-            be measured to compute a score.
+            be measured to compute a score. A pathway with no measured
+            metabolite is never scored, whatever the value: there is nothing
+            to average, and a score of 0.0 would be made up.
 
     Returns:
         List of PathwayActivityScore sorted by absolute activity score.
@@ -241,11 +243,13 @@ def pathway_activity_scoring(
             if met in metabolite_scores:
                 contributions[met] = metabolite_scores[met]
 
-        coverage = len(contributions) / len(pw_mets) if pw_mets else 0
+        if not contributions:
+            continue
+        coverage = len(contributions) / len(pw_mets)
         if coverage < min_coverage:
             continue
 
-        activity = sum(contributions.values()) / len(contributions) if contributions else 0.0
+        activity = sum(contributions.values()) / len(contributions)
 
         results.append(
             PathwayActivityScore(

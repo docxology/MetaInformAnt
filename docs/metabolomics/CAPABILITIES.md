@@ -26,7 +26,7 @@ Exhaustive reference of all functions, classes, and algorithms in the metabolomi
 **Complexity**: O(n × m) where n = observed peaks, m = database entries.
 
 **Parameters**:
-- `observed_mz` (np.ndarray): 1D array of m/z values from mass spectrometer
+- `observed_mz` (np.ndarray): 1D array of positive, finite m/z values from the mass spectrometer; zero, negative and non-finite observations raise `ValueError`
 - `database` (dict[str, float]): Mapping metabolite name → exact monoisotopic m/z
 - `ppm_tolerance` (float): Maximum allowed mass error in parts per million (default 10.0); must be a positive, finite number
 
@@ -69,7 +69,7 @@ matches = identify_metabolites(observed, db, ppm_tolerance=10)
 **Complexity**: O(n × m × a) where a = number of adducts tried (default ~7 per mode).
 
 **Parameters**:
-- `observed_mz` (np.ndarray): 1D array of observed m/z values
+- `observed_mz` (np.ndarray): 1D array of positive, finite observed m/z values; invalid observations raise `ValueError`
 - `database` (dict[str, float]): Metabolite name → neutral monoisotopic mass
 - `adducts` (dict[str, float] | None): Custom adduct definitions; if None, uses built-in COMMON_ADDUCTS filtered by `ion_mode`
 - `ppm_tolerance` (float): Matching tolerance in ppm (default 10.0); must be a positive, finite number
@@ -196,7 +196,7 @@ downregulated = np.where(fc < -1)[0]  # > 2-fold down
    ```
 5. Two-tailed p-value from t-distribution (approximated via normal for large df)
 
-**Parameters**: Same as `fold_change()`
+**Parameters**: Same as `fold_change()`, but each group must contain at least two samples; otherwise `ValueError` is raised because a one-sample group has no estimable variance.
 
 **Returns**: `tuple[np.ndarray, np.ndarray]` — (t_statistics, p_values)
 
@@ -254,14 +254,14 @@ sim = cosine_spectral_similarity(spec1, spec2)  # ~0.93
 | Method | Strategy | Pros | Cons |
 |--------|----------|------|------|
 | `min_half` | Half of row minimum | Simple, conservative | Downvalues imputed features |
-| `knn` | k=5 nearest neighbors (row correlation) | Preserves relationships | Slower, may introduce bias |
+| `knn` | Up to 5 most correlated rows sharing at least 2 observed samples | Uses shared observations | Slower, may introduce bias; imputed earlier rows can enter later calculations |
 | `median` | Row median | Robust to outliers | Assumes symmetry |
 
 **Parameters**:
 - `intensities` (np.ndarray): 2D array with zeros/NaNs as missing
 - `method` (str): `"min_half"`, `"knn"`, or `"median"`
 
-**Returns**: Imputed 2D np.ndarray (no NaNs/zeros remain)
+**Returns**: A 2D np.ndarray. Unfillable values stay `0.0`, the module's missing-value sentinel, rather than receiving invented intensities. This includes a wholly unobserved row and a KNN target with no usable neighbor in that sample.
 
 **Recommendation**: Use `"min_half"` (default in most MS software) for standard analysis; `"knn"` for machine learning pipelines where imputed values affect model training.
 
@@ -317,12 +317,12 @@ dataset = MetabolomicsDataset(
 
 **Fields**:
 - `scan_number` (int): Scan index
-- `retention_time` (float): RT in seconds
+- `retention_time` (float): RT in seconds; `NaN` when an MGF block has no `RTINSECONDS`
 - `ms_level` (int): 1 for MS1, 2 for MS2, etc.
 - `mz_array` (np.ndarray): 1D m/z values
 - `intensity_array` (np.ndarray): 1D intensities (same length as mz_array)
 - `precursor_mz` (float | None): Precursor m/z for MS2+
-- `total_ion_current` (float): Sum of intensities
+- `total_ion_current` (float): Sum of intensities, computed from `intensity_array` when omitted or `NaN`; an explicitly supplied value is retained
 
 **Example**:
 ```python
@@ -404,7 +404,7 @@ END IONS
 **Raises** `ValueError`, naming the file and the spectrum (counted from 1 in file order), if `PEPMASS=` has no value, a `PEPMASS`, `RTINSECONDS` or `SCANS` value is not a number (`SCANS` an integer), or a peak line is malformed or non-finite.
 
 **Known limitations**:
-- Text before the first `BEGIN IONS` is ignored, and so is a `BEGIN IONS` block that is never closed by `END IONS` (for example the last spectrum of a truncated file); the file is not rejected, so compare the number of spectra returned with what you expect
+- Text outside blocks is ignored except for unmatched delimiters: an unclosed or nested `BEGIN IONS`, or a stray `END IONS`, raises `ValueError`. Truncated final spectra cannot silently disappear.
 - `CHARGE`, `TITLE`, `SEQ` and other optional headers are ignored
 - mzML and mzXML are not supported; convert them to MGF
 
@@ -412,7 +412,7 @@ END IONS
 
 #### `write_mgf(spectra, filepath)`
 
-**Writes** list of MassSpectrum objects to MGF file.
+**Writes** a list of `MassSpectrum` objects to MGF, preserving numeric float precision. A missing (`NaN`) retention time is omitted rather than written as a fictitious zero.
 
 ---
 
@@ -446,8 +446,8 @@ good = filter_spectra(
 
 **Parameters**:
 - `spectra` (list[MassSpectrum]): MS1 spectra ordered by RT
-- `target_mz` (float): Target m/z to extract
-- `ppm_tolerance` (float): Mass window (default 10 ppm)
+- `target_mz` (float): Positive, finite target m/z; invalid values raise `ValueError`
+- `ppm_tolerance` (float): Finite mass window >= 0 (default 10 ppm); zero accepts exact m/z matches only. Invalid tolerances raise `ValueError` even for empty input.
 
 **Returns**: `(rts, intensities)` — arrays of retention times and max intensities per scan
 
@@ -646,6 +646,12 @@ for ps in pathway_scores[:5]:
 | `retention_time_alignment_data(reference_rts, sample_rts)` | `(deviations, corrected_rts, rmse)` from a polynomial fit |
 
 `detect_chromatographic_peaks` integrates each peak's area with the trapezoidal rule, written out in the module, so it runs on every supported NumPy (>= 1.24).
+
+`volcano_plot_data` requires equally sized one-dimensional arrays and names, and p-values in [0, 1] or `NaN`. Invalid p-values raise; `NaN` stays missing and is never significant, while p=0 is plotted at -log10(p)=300.
+
+`pca_metabolomics` requires finite data and `1 <= n_components <= min(n_samples, n_metabolites)`. Impute missing values first. Its scores have samples as rows; zero-variance data produce zero explained-variance fractions.
+
+`prepare_spectrum_plot` requires matching 1D arrays, positive integer `top_n` and finite `ppm_tolerance >= 0`, checked even without annotations or for empty input. It selects the most intense peaks with stable tie handling and retains their input order. An empty spectrum returns empty arrays and `NaN` base-peak fields.
 
 **Recommendation**: For production figures, pass the prepared data to `metainformant.visualization` plotting utilities.
 

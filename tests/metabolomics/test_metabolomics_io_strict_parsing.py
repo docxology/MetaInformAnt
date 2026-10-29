@@ -249,14 +249,13 @@ class TestMgfPeakLines:
         assert spectrum.scan_number == 7
         assert spectrum.mz_array.tolist() == [100.0]
 
-    def test_a_block_that_is_never_closed_is_ignored_as_documented(self, tmp_path: Path) -> None:
-        # documented behaviour (unchanged): only closed blocks are spectra, so a truncated last block is dropped
+    def test_a_block_that_is_never_closed_is_an_error_not_a_dropped_spectrum(self, tmp_path: Path) -> None:
+        # it used to be dropped without a word; see test_metabolomics_mgf_truncation.py for the full contract
         path = tmp_path / "truncated.mgf"
         path.write_text(_mgf("100.0 1") + "BEGIN IONS\n200.0 2\n")
 
-        (spectrum,) = read_mgf(path)
-
-        assert spectrum.mz_array.tolist() == [100.0]
+        with pytest.raises(ValueError, match=r"spectrum 2: .*not closed by END IONS"):
+            read_mgf(path)
 
     def test_a_third_peak_column_such_as_a_charge_is_ignored(self, tmp_path: Path) -> None:
         path = tmp_path / "charge.mgf"

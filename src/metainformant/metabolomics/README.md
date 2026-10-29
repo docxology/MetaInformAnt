@@ -79,11 +79,25 @@ The readers and matchers report bad input instead of repairing it silently.
   `NaN` (not a floored value) for a metabolite with a missing value in either group.
 - `formats.read_mgf`: peak lines are read whatever their first character (`.5 99`, `+200.0 20`), comment lines
   (`#`, `;`, `!`, `/`) are skipped, and an empty or non-numeric `PEPMASS`, `RTINSECONDS` or `SCANS` value or a
-  malformed peak line raises `ValueError` naming the spectrum. A `BEGIN IONS` block that is never closed by
-  `END IONS` (for example the last spectrum of a truncated file) is dropped without an error.
+  malformed peak line raises `ValueError` naming the spectrum. `BEGIN IONS` / `END IONS` are recognised as whole
+  lines; a block that is not closed by `END IONS` before the next `BEGIN IONS` or the end of the file (for example
+  the last spectrum of a truncated file), and an `END IONS` outside a block, raise `ValueError` naming the
+  spectrum (counted from 1, with its `TITLE` when it has one) and the line. A spectrum without `RTINSECONDS` has a
+  `NaN` retention time, not `0.0` (`filter_spectra(rt_range=...)` then drops it, and `write_mgf` leaves the line
+  out). `MassSpectrum.total_ion_current` is computed from the intensities when it is not given.
+- `formats.extract_chromatogram` / `visualization.plots.prepare_spectrum_plot`: `ppm_tolerance` must be a finite
+  number >= 0 (zero keeps only an exact match; a negative or NaN window used to return an all-zero chromatogram
+  or no annotation), `target_mz` a positive finite number, `top_n` a positive integer, and the two spectrum
+  arrays 1D and of one length. An empty spectrum has a `NaN` base peak, not an invented `0.0`.
+- `visualization.plots.volcano_plot_data` / `pca_metabolomics`: a p-value outside [0, 1] (NaN is allowed and never
+  significant) and a `n_components` beyond `min(n_samples, n_metabolites)` or non-finite intensities raise
+  `ValueError` instead of being clipped, truncated or left to an obscure SVD failure.
 - `identification.identify_metabolites` / `identify_with_adducts`: `ppm_tolerance` must be a positive finite
-  number; in `identify_with_adducts`, `ion_mode` is `"positive"` or `"negative"` in any case and anything else
-  raises `ValueError`, even when `adducts` is given.
+  number and every observed m/z positive and finite; in `identify_with_adducts`, `ion_mode` is `"positive"` or
+  `"negative"` in any case and anything else raises `ValueError`, even when `adducts` is given.
+- `identification.differential_abundance`: Welch's test needs at least two samples per group; fewer raises
+  `ValueError` (one observation per group used to give `p = 0.0`). `missing_value_imputation(method="knn")` only
+  averages metabolites that share at least two observed samples with the one being filled.
 - `enrichment.metabolite_set_enrichment`: a `background_size` smaller than the query or a pathway raises
   `ValueError`, because it cannot be a universe that contains them.
 - `visualization.plots.detect_chromatographic_peaks` integrates peaks with the trapezoidal rule and runs on

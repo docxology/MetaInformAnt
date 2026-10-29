@@ -188,6 +188,7 @@ metabolite_df = pd.DataFrame(normalized.T, index=dataset.samples, columns=datase
 X_c, Y_c, x_weights, y_weights, correlations = integration.canonical_correlation(
     {"metabolomics": metabolite_df, "transcriptomics": gene_expression_df},
     n_components=5,
+    regularization=0.1,
 )
 ```
 

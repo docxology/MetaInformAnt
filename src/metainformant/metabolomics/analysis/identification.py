@@ -56,6 +56,24 @@ def _validated_ppm_tolerance(ppm_tolerance: float) -> float:
     return tolerance
 
 
+def _validated_observed_mz(observed_mz: Any) -> np.ndarray:
+    """Return ``observed_mz`` as a float array, rejecting values that are not a positive, finite m/z.
+
+    A ppm error is divided by the observed m/z. A negative m/z turns every error negative, so it was
+    "within tolerance" of every database entry at once (with scores above 1); zero divides by zero and
+    NaN matches nothing without saying why.
+    """
+    observed = np.asarray(observed_mz, dtype=float)
+    invalid = ~(np.isfinite(observed) & (observed > 0))
+    if invalid.any():
+        index = np.flatnonzero(invalid.ravel())[0]
+        raise ValueError(
+            f"observed_mz must contain only positive finite m/z values; element {int(index)} is "
+            f"{float(observed.ravel()[index])!r} ({int(invalid.sum())} invalid value(s))"
+        )
+    return observed
+
+
 _ION_MODES = ("positive", "negative")
 
 
@@ -78,7 +96,7 @@ def identify_metabolites(
     mass tolerance (in ppm).
 
     Args:
-        observed_mz: 1D array of observed m/z values.
+        observed_mz: 1D array of observed m/z values, each positive and finite.
         database: Dict mapping metabolite names to their exact m/z values.
         ppm_tolerance: Maximum mass error in ppm for a match; a positive, finite number.
 
@@ -87,9 +105,11 @@ def identify_metabolites(
         for the corresponding observed m/z.
 
     Raises:
-        ValueError: If ``ppm_tolerance`` is not a positive, finite number.
+        ValueError: If ``ppm_tolerance`` is not a positive, finite number, or an observed m/z is not
+            positive and finite.
     """
     ppm_tolerance = _validated_ppm_tolerance(ppm_tolerance)
+    observed_mz = _validated_observed_mz(observed_mz)
     results: list[list[MetaboliteMatch]] = []
     db_names = list(database.keys())
     db_mz = np.array(list(database.values()))
@@ -214,23 +234,36 @@ def differential_abundance(
 
     Args:
         intensities: 2D array (metabolites × samples).
-        group_a: Sample indices for group A.
-        group_b: Sample indices for group B.
+        group_a: Sample indices for group A; at least two.
+        group_b: Sample indices for group B; at least two.
 
     Returns:
-        Tuple of (t_statistics, p_values), each 1D array per metabolite.
+        Tuple of (t_statistics, p_values), each 1D array per metabolite. A metabolite that is constant
+        in both groups has t = 0 (p = 1) when the two constants are equal and t = ±inf (p = 0) when
+        they differ, since then the groups differ with no variation at all. A missing value (NaN) in
+        either group gives NaN for that metabolite.
+
+    Raises:
+        ValueError: If a group has fewer than two samples. Welch's test estimates each group's variance,
+            which one observation cannot do; the t-statistic and p-value would be inventions (a variance
+            of zero was assumed, and two single observations that differ got p = 0).
     """
     data_a = intensities[:, group_a]
     data_b = intensities[:, group_b]
 
     n_a = data_a.shape[1]
     n_b = data_b.shape[1]
+    if n_a < 2 or n_b < 2:
+        raise ValueError(
+            f"differential_abundance needs at least 2 samples in each group to estimate a variance, "
+            f"got {n_a} in group A and {n_b} in group B"
+        )
 
     mean_a = data_a.mean(axis=1)
     mean_b = data_b.mean(axis=1)
 
-    var_a = data_a.var(axis=1, ddof=1) if n_a > 1 else np.zeros(intensities.shape[0])
-    var_b = data_b.var(axis=1, ddof=1) if n_b > 1 else np.zeros(intensities.shape[0])
+    var_a = data_a.var(axis=1, ddof=1)
+    var_b = data_b.var(axis=1, ddof=1)
 
     va = var_a / n_a
     vb = var_b / n_b
@@ -248,11 +281,7 @@ def differential_abundance(
     if HAS_SCIPY and _scipy_stats is not None:
         # Welch-Satterthwaite degrees of freedom; zero-variance groups
         # contribute no degrees of freedom.
-        denom = np.zeros_like(se2)
-        if n_a > 1:
-            denom = denom + va**2 / (n_a - 1)
-        if n_b > 1:
-            denom = denom + vb**2 / (n_b - 1)
+        denom = va**2 / (n_a - 1) + vb**2 / (n_b - 1)
         df = np.where(denom > 0, se2**2 / np.where(denom > 0, denom, 1.0), np.inf)
         p_values = 2.0 * np.asarray(_scipy_stats.t.sf(np.abs(t_stats), df))
     else:
@@ -351,7 +380,7 @@ def identify_with_adducts(
     neutral mass and matches against the database.
 
     Args:
-        observed_mz: 1D array of observed m/z values.
+        observed_mz: 1D array of observed m/z values, each positive and finite.
         database: Dict mapping metabolite names to neutral monoisotopic masses.
         adducts: Dict of adduct name -> mass delta. If None, uses common adducts
             filtered by ion_mode.
@@ -363,11 +392,12 @@ def identify_with_adducts(
         List of lists of AdductMatch per observed m/z.
 
     Raises:
-        ValueError: If ``ppm_tolerance`` is not a positive, finite number or ``ion_mode``
-            is not 'positive' or 'negative'.
+        ValueError: If ``ppm_tolerance`` is not a positive, finite number, ``ion_mode``
+            is not 'positive' or 'negative', or an observed m/z is not positive and finite.
     """
     ppm_tolerance = _validated_ppm_tolerance(ppm_tolerance)
     ion_mode = _normalised_ion_mode(ion_mode)
+    observed_mz = _validated_observed_mz(observed_mz)
     if adducts is None:
         if ion_mode == "positive":
             adducts = {k: v for k, v in COMMON_ADDUCTS.items() if k.endswith("]+")}
@@ -411,11 +441,17 @@ def missing_value_imputation(
         intensities: 2D array (metabolites × samples). Zeros and NaNs treated as missing.
         method: Imputation method:
             - 'min_half': Replace with half the minimum non-zero value per metabolite.
-            - 'knn': Simple k-nearest neighbors using row (metabolite) correlation.
+            - 'knn': Simple k-nearest neighbors using row (metabolite) correlation. Only metabolites
+              that share at least two observed samples with the one being filled can be neighbors.
             - 'median': Replace with row median.
 
     Returns:
-        Imputed intensity matrix.
+        Imputed intensity matrix. A value with nothing to impute it from (a metabolite with no observed
+        value at all, or, for 'knn', no neighbor observed in that sample) stays at ``0.0``, which this
+        module treats as missing; no value is made up for it.
+
+    Raises:
+        ValueError: If ``method`` is unknown.
     """
     data = intensities.copy().astype(float)
     data[data == 0] = np.nan
@@ -454,6 +490,8 @@ def missing_value_imputation(
                 correlations[j] = np.sum(ci * cj) / denom if denom > 0 else 0
 
             top_k = np.argsort(correlations)[-k:]
+            # rows with too little overlap have a correlation of -inf: they are not neighbors, whatever their values
+            top_k = top_k[np.isfinite(correlations[top_k])]
             for col in np.where(missing_mask)[0]:
                 neighbor_vals = data[top_k, col]
                 valid_neighbors = neighbor_vals[~np.isnan(neighbor_vals)]

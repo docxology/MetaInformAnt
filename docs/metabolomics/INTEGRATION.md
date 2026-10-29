@@ -95,11 +95,10 @@ from metainformant.multiomics.analysis.integration import MultiOmicsData, canoni
 # as DataFrames that share sample IDs
 omics = MultiOmicsData(metabolomics=metabolite_df, transcriptomics=expression_df)
 
-# Canonical correlation between the two layers. When the layers together have more features
-# than samples (typical with RNA-seq), the default regularization=0 returns some canonical
-# correlations of exactly 1 (a perfect in-sample fit); pass regularization > 0 there.
+# Wide layers can force perfect in-sample correlations without a ridge.
+# Unregularized CCA raises when their combined numerical rank exceeds n_samples - 1.
 X_c, Y_c, x_weights, y_weights, correlations = canonical_correlation(
-    omics, layers=("metabolomics", "transcriptomics"), n_components=5
+    omics, layers=("metabolomics", "transcriptomics"), n_components=5, regularization=0.1
 )
 
 # Metabolites and genes contributing most to the first canonical component
@@ -131,7 +130,7 @@ P = from_protein_abundance("protein_abundance.csv", transpose=True)
 # (metabolite_df: samples × metabolites DataFrame with the same sample IDs)
 omics = MultiOmicsData(metabolomics=metabolite_df, proteomics=P)
 X_c, Y_c, x_weights, y_weights, corr = canonical_correlation(
-    omics, layers=("metabolomics", "proteomics"), n_components=5
+    omics, layers=("metabolomics", "proteomics"), n_components=5, regularization=0.1
 )
 ```
 

@@ -6,9 +6,12 @@ metabolomics datasets.
 
 from __future__ import annotations
 
+import operator
 from dataclasses import dataclass
 
 import numpy as np
+
+from metainformant.metabolomics.io.formats import _nonnegative_ppm_tolerance
 
 
 @dataclass
@@ -43,19 +46,41 @@ def volcano_plot_data(
     Args:
         metabolite_names: List of metabolite names.
         log2_fold_changes: 1D array of log2 fold changes.
-        p_values: 1D array of p-values.
+        p_values: 1D array of p-values, each in [0, 1] or NaN. A NaN p-value (a test that could not be
+            run) gives a NaN ``neg_log10_p`` and is never significant. A p-value of exactly 0 is plotted
+            at 300 (``-log10(1e-300)``) so that it stays finite.
         fc_threshold: Minimum absolute log2 FC for significance.
         p_threshold: Maximum p-value for significance.
 
     Returns:
         List of VolcanoPoint for plotting.
+
+    Raises:
+        ValueError: If the names and the two arrays differ in length, or a p-value lies outside [0, 1].
+            Such a value used to be clipped silently into range, so a negative p-value was plotted as
+            the most significant metabolite.
     """
-    neg_log10_p = -np.log10(np.clip(p_values, 1e-300, 1.0))
+    p_array = np.asarray(p_values, dtype=float)
+    fc_array = np.asarray(log2_fold_changes, dtype=float)
+    if p_array.ndim != 1 or fc_array.ndim != 1 or not len(metabolite_names) == len(p_array) == len(fc_array):
+        raise ValueError(
+            f"metabolite_names ({len(metabolite_names)}), log2_fold_changes ({fc_array.size}) and "
+            f"p_values ({p_array.size}) must be 1D and of the same length"
+        )
+    out_of_range = ~np.isnan(p_array) & ((p_array < 0.0) | (p_array > 1.0))
+    if out_of_range.any():
+        first = int(np.argmax(out_of_range))
+        raise ValueError(
+            f"p_values must lie in [0, 1]; {metabolite_names[first]!r} has {float(p_array[first])!r} "
+            f"({int(out_of_range.sum())} value(s) out of range)"
+        )
+
+    neg_log10_p = -np.log10(np.clip(p_array, 1e-300, 1.0))
     points = []
     for i, name in enumerate(metabolite_names):
-        lfc = float(log2_fold_changes[i])
+        lfc = float(fc_array[i])
         nlp = float(neg_log10_p[i])
-        sig = abs(lfc) >= fc_threshold and p_values[i] <= p_threshold
+        sig = bool(abs(lfc) >= fc_threshold and p_array[i] <= p_threshold)
         points.append(VolcanoPoint(name=name, log2_fc=lfc, neg_log10_p=nlp, significant=sig))
     return points
 
@@ -70,16 +95,33 @@ def pca_metabolomics(
     before decomposition.
 
     Args:
-        intensities: 2D array (metabolites × samples). Transposed internally
+        intensities: 2D array (metabolites × samples), finite. Transposed internally
             so samples are rows for PCA.
-        n_components: Number of principal components to return.
+        n_components: Number of principal components to return, from 1 to
+            min(n_samples, n_metabolites).
 
     Returns:
         Tuple of (scores, explained_variance_ratio).
         - scores: (n_samples, n_components) projected coordinates.
-        - explained_variance_ratio: fraction of variance per component.
+        - explained_variance_ratio: fraction of variance per component (zeros for data with no variance).
+
+    Raises:
+        ValueError: If ``n_components`` is outside 1..min(n_samples, n_metabolites) (fewer components than
+            requested used to be returned silently, so the shapes did not match the documentation) or the
+            data contain NaN or infinite values (impute them first, for example with
+            :func:`~metainformant.metabolomics.analysis.identification.missing_value_imputation`).
     """
-    X = intensities.T.astype(float)
+    X = np.asarray(intensities, dtype=float).T
+    if not np.all(np.isfinite(X)):
+        raise ValueError(
+            "intensities must be finite for PCA; impute missing values first "
+            "(see metainformant.metabolomics.analysis.identification.missing_value_imputation)"
+        )
+    max_components = min(X.shape)
+    if not 1 <= n_components <= max_components:
+        raise ValueError(
+            f"n_components must be between 1 and min(n_samples, n_metabolites) = {max_components}, got {n_components}"
+        )
     X_centered = X - X.mean(axis=0)
 
     U, S, Vt = np.linalg.svd(X_centered, full_matrices=False)
@@ -226,8 +268,8 @@ class MassSpectrumPlotData:
         mz_values: m/z values for stick plot.
         intensities: Relative intensities (0-100 scale).
         annotations: Dict mapping m/z to annotation text.
-        base_peak_mz: m/z of the most intense peak.
-        base_peak_intensity: Raw intensity of the base peak.
+        base_peak_mz: m/z of the most intense peak; NaN for an empty spectrum, which has none.
+        base_peak_intensity: Raw intensity of the base peak; NaN for an empty spectrum.
     """
 
     mz_values: np.ndarray
@@ -251,21 +293,45 @@ def prepare_spectrum_plot(
 
     Args:
         mz_array: 1D array of m/z values.
-        intensity_array: 1D array of intensities.
-        top_n: Number of top peaks to include.
-        annotation_db: Optional dict of m/z -> annotation label.
-        ppm_tolerance: Tolerance for annotation matching (ppm).
+        intensity_array: 1D array of intensities, the same length as ``mz_array``.
+        top_n: Number of top peaks to include; a positive integer. Of equally intense peaks the one
+            with the higher m/z is kept first.
+        annotation_db: Optional dict of m/z -> annotation label. A peak takes the label of the first entry
+            (in the dict's order) that lies within ``ppm_tolerance`` of it.
+        ppm_tolerance: Tolerance for annotation matching in ppm of the peak's m/z; a finite number >= 0.
+            Zero annotates only a peak whose m/z equals a database m/z exactly.
 
     Returns:
         MassSpectrumPlotData ready for plotting.
+
+    Raises:
+        ValueError: If ``ppm_tolerance`` is not a finite number >= 0 (it is checked even when no
+            ``annotation_db`` is given, and for an empty spectrum), ``top_n`` is not a positive integer
+            (``top_n=0`` used to return every peak and a negative one silently dropped the weakest), or the
+            two arrays are not 1D arrays of the same length.
     """
+    ppm_tolerance = _nonnegative_ppm_tolerance(ppm_tolerance)
+    try:
+        top_n = operator.index(top_n)
+    except TypeError:
+        raise ValueError(f"top_n must be a positive integer, got {top_n!r}") from None
+    if top_n < 1:
+        raise ValueError(f"top_n must be a positive integer, got {top_n!r}")
+    mz_array = np.asarray(mz_array, dtype=float)
+    intensity_array = np.asarray(intensity_array, dtype=float)
+    if mz_array.ndim != 1 or mz_array.shape != intensity_array.shape:
+        raise ValueError(
+            f"mz_array and intensity_array must be 1D arrays of the same length, got shapes "
+            f"{mz_array.shape} and {intensity_array.shape}"
+        )
+
     if len(mz_array) == 0:
         return MassSpectrumPlotData(
             mz_values=np.array([]),
             intensities=np.array([]),
             annotations={},
-            base_peak_mz=0.0,
-            base_peak_intensity=0.0,
+            base_peak_mz=float("nan"),
+            base_peak_intensity=float("nan"),
         )
 
     base_peak_idx = int(np.argmax(intensity_array))
@@ -275,9 +341,9 @@ def prepare_spectrum_plot(
     # Relative intensities
     rel_int = intensity_array / base_peak_int * 100.0 if base_peak_int > 0 else intensity_array
 
-    # Select top N peaks
+    # Select top N peaks (a stable sort, so equally intense peaks are chosen the same way on every platform)
     if len(mz_array) > top_n:
-        top_indices = np.argsort(rel_int)[-top_n:]
+        top_indices = np.argsort(rel_int, kind="stable")[-top_n:]
         top_indices = np.sort(top_indices)  # sort by m/z order
     else:
         top_indices = np.arange(len(mz_array))
@@ -289,9 +355,9 @@ def prepare_spectrum_plot(
     annotations: dict[float, str] = {}
     if annotation_db is not None:
         for mz in mz_out:
+            window = mz * ppm_tolerance / 1e6
             for db_mz, label in annotation_db.items():
-                ppm_err = abs(mz - db_mz) / mz * 1e6
-                if ppm_err <= ppm_tolerance:
+                if abs(mz - db_mz) <= window:
                     annotations[float(mz)] = label
                     break
 
