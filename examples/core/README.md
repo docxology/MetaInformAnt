@@ -14,3 +14,8 @@ Runnable examples for Core workflows. Keep these examples small, deterministic, 
 ```bash
 uv run python examples/core/example_config.py
 ```
+
+The [workflow example](example_workflow.py) reads the checked-out project metadata
+and example dependency manifest, joins both results through the workflow engine,
+and writes its configuration and results under `output/examples/core/`. It runs
+without network access and raises an error if validation or execution fails.

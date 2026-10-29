@@ -16,6 +16,45 @@ from typing import Any, Dict, List
 import pytest
 
 
+def test_workflow_example_creates_results_from_an_empty_working_directory(tmp_path):
+    """A clean run must write observations derived from the actual project files."""
+    import tomllib
+
+    repository = Path(__file__).resolve().parents[2]
+    result = subprocess.run(
+        [sys.executable, str(repository / "examples/core/example_workflow.py")],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=120,
+        env={
+            **os.environ,
+            "PYTHONPATH": os.pathsep.join(filter(None, [str(repository / "src"), os.environ.get("PYTHONPATH")])),
+        },
+    )
+    assert result.returncode == 0, f"STDOUT: {result.stdout}\nSTDERR: {result.stderr}"
+    output = tmp_path / "output/examples/core"
+    observed = json.loads((output / "workflow_results.json").read_text())
+    expected_project = tomllib.loads((repository / "pyproject.toml").read_text())["project"]
+    expected_examples = json.loads((repository / "examples/dependencies.json").read_text())
+    execution = observed["workflow_execution"]
+    assert execution["success"] is True
+    assert execution["errors"] == []
+    assert set(execution["execution_order"][:2]) == {"project", "examples"}
+    assert execution["execution_order"][2:] == ["summary"]
+    assert execution["results"]["summary"] == {
+        "project": execution["results"]["project"],
+        "examples": execution["results"]["examples"],
+    }
+    assert execution["results"]["project"]["project"] == expected_project
+    assert execution["results"]["examples"] == expected_examples
+    assert observed["observations"] == {
+        "project_name": expected_project["name"],
+        "project_version": expected_project["version"],
+        "documented_examples": len(expected_examples["example_dependencies"]),
+    }
+
+
 class TestExamples:
     """Pytest-based example testing."""
 

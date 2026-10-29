@@ -113,7 +113,7 @@
     },
     "core/example_workflow.py": {
       "required": ["metainformant.core"],
-      "optional": ["pyyaml"]
+      "optional": []
     },
     "dna/example_sequences.py": {
       "required": ["metainformant.dna", "metainformant.core"],
