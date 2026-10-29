@@ -1,11 +1,13 @@
 # AGENTS.md — `MetaInformAnt/tests/information/`
 
 tests for the information-theory module.
-Files (verified 2026-10-27): `__init__.py`, `test_continuous_entropy.py`, `test_information_chao_shen.py`,
+Files (verified 2026-10-28): `__init__.py`, `test_continuous_entropy.py`, `test_information_chao_shen.py`,
 `test_information_comprehensive.py`, `test_information_estimation_depth.py`,
-`test_information_geometry_decomposition.py`, `test_information_integration.py`,
-`test_information_new_modules.py`, `test_information_seeded_randomness.py`, `test_information_sequence_scans.py`,
-`test_network_entropy_von_neumann.py` (10 test files plus `__init__.py`).
+`test_information_geometry_decomposition.py`, `test_information_integration.py`, `test_information_new_modules.py`,
+`test_information_seeded_randomness.py`, `test_information_sequence_scans.py`,
+`test_information_units_and_options.py`, `test_integration_failed_platform.py`,
+`test_integration_network_entropy_von_neumann.py`, `test_integration_network_flow_and_motifs.py`,
+`test_network_entropy_von_neumann.py` (14 test files plus `__init__.py`).
 
 
 ## Conventions

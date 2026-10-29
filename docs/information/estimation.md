@@ -37,9 +37,9 @@ Estimate Shannon entropy with selectable method and optional bias correction.
 
 Estimate mutual information I(X;Y) = H(X) + H(Y) - H(X,Y) with bias-corrected entropy estimates. Ensures non-negative result.
 
-### `kl_divergence_estimator(p, q, method="plugin", bias_correction=True) -> float`
+### `kl_divergence_estimator(p, q, method="plugin", bias_correction=False) -> float`
 
-Estimate KL divergence D_KL(P||Q) from sample lists. Converts to empirical probability distributions and computes divergence. Returns infinity when Q has zero probability for an event observed in P.
+Estimate KL divergence D_KL(P||Q) in bits from equal-length sample lists. Only `method="plugin"` is supported; `bias_correction=True` raises `NotImplementedError`. Returns infinity when Q has zero probability for an event observed in P.
 
 ### `bias_correction(entropy, sample_size, alphabet_size) -> float`
 

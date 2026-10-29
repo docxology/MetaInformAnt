@@ -64,7 +64,9 @@ causality is a deterministic F-test: `granger_causality` takes no seed, and `inf
 
 `metainformant.information.integration.networks.network_entropy(graph, attribute=None, method="shannon")` is a different
 function. It takes a NetworkX graph (or a NumPy adjacency array) and returns a single float: by default the Shannon
-entropy of the degree distribution (or of a node attribute), or, with `method="von_neumann"`, an entropy computed from
-the eigenvalues of the row-normalised adjacency matrix. The function documented here lives in `information_flow`,
-computes the entropy of the Laplacian density matrix, and returns the dictionary described above. Import them by module
-path (`network_info.information_flow` or `integration.networks`) so the two names do not collide.
+entropy of the degree distribution (or of a node attribute), or, with `method="von_neumann"`, the same Von Neumann
+entropy of the Laplacian density matrix `rho = L / trace(L)` that the function documented here computes (it calls this
+function; a complete graph on `n` nodes gives `log2(n - 1)`). The `von_neumann` method is defined for undirected graphs
+and raises `ValueError` for a directed one. The function documented here lives in `information_flow` and returns the
+dictionary described above. Import them by module path (`network_info.information_flow` or `integration.networks`) so
+the two names do not collide.

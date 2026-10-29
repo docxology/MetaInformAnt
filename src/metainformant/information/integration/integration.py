@@ -318,7 +318,8 @@ def multiomics_integration(
         **kwargs: Named platform data (e.g., genomics_data=..., transcriptomics_data=...)
 
     Returns:
-        Dictionary with multi-omics information integration
+        Dictionary with multi-omics information integration. With ``method="platform_entropy"`` a sequence platform
+        that cannot be analysed has ``<platform>_entropy`` set to ``None`` and its reason under ``errors``.
     """
     # Build platform data from kwargs or omics_data
     # Separate sequence data (lists of strings) from numeric arrays
@@ -356,8 +357,11 @@ def multiomics_integration(
                 metrics = dna_result.get("integrated_metrics", {})
                 results[f"{platform_name}_entropy"] = metrics.get("mean_entropy", 0.0)
             except Exception as e:
+                # A platform that cannot be analysed has no entropy: record None and the reason, not a 0.0 that
+                # reads as a genuinely constant platform.
                 logger.warning(f"Failed {platform_name} integration: {e}")
-                results[f"{platform_name}_entropy"] = 0.0
+                results[f"{platform_name}_entropy"] = None
+                results.setdefault("errors", {})[platform_name] = str(e)
 
         # Handle numeric platforms
         for platform_name, data in platforms.items():

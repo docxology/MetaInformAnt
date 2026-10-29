@@ -52,14 +52,15 @@ def shannon_entropy(probs: "np.ndarray | Sequence[float]", base: float = 2.0) ->
     return float(entropy)
 
 
-def shannon_entropy_from_counts(counts: Union[Sequence[int], Dict[Any, int]]) -> float:
+def shannon_entropy_from_counts(counts: Union[Sequence[int], Dict[Any, int]], base: float = 2.0) -> float:
     """Calculate Shannon entropy from frequency counts.
 
     Args:
         counts: Either a sequence of counts or a dictionary mapping items to counts
+        base: Logarithm base (2.0 for bits, math.e for nats)
 
     Returns:
-        Shannon entropy in bits
+        Shannon entropy in units of ``base`` (bits by default)
 
     Raises:
         ValueError: If counts contain negative values or all counts are zero
@@ -84,7 +85,7 @@ def shannon_entropy_from_counts(counts: Union[Sequence[int], Dict[Any, int]]) ->
     # Convert to probabilities
     probs = count_array / total
 
-    return shannon_entropy(probs, base=2.0)
+    return shannon_entropy(probs, base=base)
 
 
 def joint_entropy(x: Sequence[Any], y: Sequence[Any], base: float = 2.0) -> float:
@@ -143,7 +144,7 @@ def conditional_entropy(x: Sequence[Any], y: Sequence[Any], base: float = 2.0) -
     h_xy = joint_entropy(x, y, base=base)
 
     # Calculate entropy of Y H(Y)
-    h_y = shannon_entropy_from_counts(Counter(y))
+    h_y = shannon_entropy_from_counts(Counter(y), base=base)
 
     # H(X|Y) = H(X,Y) - H(Y)
     return h_xy - h_y
@@ -170,8 +171,8 @@ def mutual_information(x: Sequence[Any], y: Sequence[Any], base: float = 2.0) ->
         raise ValueError("Sequences must have the same length")
 
     # I(X;Y) = H(X) + H(Y) - H(X,Y)
-    h_x = shannon_entropy_from_counts(Counter(x))
-    h_y = shannon_entropy_from_counts(Counter(y))
+    h_x = shannon_entropy_from_counts(Counter(x), base=base)
+    h_y = shannon_entropy_from_counts(Counter(y), base=base)
     h_xy = joint_entropy(x, y, base=base)
 
     return h_x + h_y - h_xy
@@ -202,7 +203,7 @@ def conditional_mutual_information(x: Sequence[Any], y: Sequence[Any], z: Sequen
     # I(X;Y|Z) = H(X,Z) + H(Y,Z) - H(Z) - H(X,Y,Z)
     h_xz = joint_entropy(x, z, base=base)
     h_yz = joint_entropy(y, z, base=base)
-    h_z = shannon_entropy_from_counts(Counter(z))
+    h_z = shannon_entropy_from_counts(Counter(z), base=base)
 
     # Calculate joint entropy H(X,Y,Z)
     xyz_counts = Counter(zip(x, y, z))
@@ -321,10 +322,10 @@ def total_correlation(variables: List[Sequence[Any]], base: float = 2.0) -> floa
 
     Args:
         variables: List of sequences (all same length)
-        base: Logarithm base
+        base: Logarithm base (2.0 for bits, math.e for nats)
 
     Returns:
-        Total correlation value
+        Total correlation value in units of ``base``
 
     Raises:
         ValueError: If variables have different lengths
@@ -345,11 +346,11 @@ def total_correlation(variables: List[Sequence[Any]], base: float = 2.0) -> floa
         return 0.0
 
     # Total correlation: sum(H(X_i)) - H(X_1, X_2, ..., X_n)
-    individual_entropies = sum(shannon_entropy_from_counts(Counter(var)) for var in variables)
+    individual_entropies = sum(shannon_entropy_from_counts(Counter(var), base=base) for var in variables)
 
     # Joint entropy of all variables
     joint_counts = Counter(zip(*variables))
-    joint_entropy_val = shannon_entropy_from_counts(joint_counts)
+    joint_entropy_val = shannon_entropy_from_counts(joint_counts, base=base)
 
     return individual_entropies - joint_entropy_val
 
@@ -450,10 +451,13 @@ def renyi_entropy(probs: Sequence[float], alpha: float = 2.0, base: float = 2.0)
 def tsallis_entropy(probs: Sequence[float], q: float = 2.0, base: float = 2.0) -> float:
     """Calculate Tsallis entropy of order q.
 
+    ``S_q = (1 - sum(p^q)) / (q - 1)``. The Tsallis entropy contains no logarithm, so ``base`` has no effect on the
+    result; it is accepted for a uniform signature with the other entropy functions.
+
     Args:
         probs: Probability distribution
         q: Entropic index (q != 1)
-        base: Logarithm base
+        base: Accepted for interface symmetry; not used
 
     Returns:
         Tsallis entropy value
@@ -476,13 +480,10 @@ def tsallis_entropy(probs: Sequence[float], q: float = 2.0, base: float = 2.0) -
     # Remove zero probabilities
     probs_array = probs_array[probs_array > 0]
 
-    if q == 0:
-        # Hartley entropy
-        return math.log(len(probs_array), base)
-    else:
-        # Tsallis entropy: S_q = (1 - sum(p^q)) / (q - 1)
-        sum_p_q = float(np.sum(probs_array**q))
-        return (1.0 - sum_p_q) / (q - 1.0)
+    # Tsallis entropy: S_q = (1 - sum(p^q)) / (q - 1). At q = 0 this is the support size minus one, not the Hartley
+    # entropy log(support size) (that is Renyi's order-0 entropy), which this function used to return there.
+    sum_p_q = float(np.sum(probs_array**q))
+    return (1.0 - sum_p_q) / (q - 1.0)
 
 
 def normalized_mutual_information(
@@ -511,9 +512,9 @@ def normalized_mutual_information(
     # Calculate mutual information
     mi = mutual_information(x, y, base=base)
 
-    # Calculate entropies for normalization
-    h_x = shannon_entropy_from_counts(Counter(x))
-    h_y = shannon_entropy_from_counts(Counter(y))
+    # Calculate entropies for normalization (in the same units as the mutual information)
+    h_x = shannon_entropy_from_counts(Counter(x), base=base)
+    h_y = shannon_entropy_from_counts(Counter(y), base=base)
 
     # Choose normalization method
     if method == "arithmetic":
@@ -568,8 +569,8 @@ def information_coefficient(x: Sequence[Any], y: Sequence[Any], base: float = 2.
     # Information coefficient: I(X;Y) / [H(X) + H(Y) - I(X;Y)]
     # This gives a value between 0 and 1
     mi = mutual_information(x, y, base=base)
-    h_x = shannon_entropy_from_counts(Counter(x))
-    h_y = shannon_entropy_from_counts(Counter(y))
+    h_x = shannon_entropy_from_counts(Counter(x), base=base)
+    h_y = shannon_entropy_from_counts(Counter(y), base=base)
 
     denominator = h_x + h_y - mi
 

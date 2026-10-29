@@ -19,10 +19,10 @@ Information-theoretic analysis applied to biological data integration and networ
 | `multiomics_integration()` | Cross-omics mutual information and integration scores |
 | `ml_integration()` | Information-theoretic evaluation of ML feature sets |
 | `network_entropy()` | Shannon (degree-distribution or node-attribute) or von Neumann entropy of a NetworkX graph or NumPy adjacency array, as one float. Not the same function as `network_info.information_flow.network_entropy`, which takes a weighted adjacency matrix and returns a dictionary |
-| `information_flow()` | Random-walk or diffusion-based information flow between nodes |
+| `information_flow()` | Random-walk (expected visits, walked per source) or diffusion-based information flow between nodes; unknown or empty node lists raise `ValueError` |
 | `information_community_detection()` | Community detection via infomap or map equation |
 | `network_information_centrality()` | Entropy-based node centrality ranking |
-| `network_motif_information()` | Information content of network motif patterns |
+| `network_motif_information()` | Information content of network motif patterns (seeded with `random_state`; directed graphs are classified and randomised as directed; `sampled` reports a subsample of node combinations) |
 | `information_graph_distance()` | Entropy-based distance between two graphs |
 
 ## Usage

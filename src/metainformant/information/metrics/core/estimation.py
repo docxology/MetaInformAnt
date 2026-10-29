@@ -254,22 +254,35 @@ def mutual_information_estimator(
     return max(0.0, mi)
 
 
-def kl_divergence_estimator(p: List[Any], q: List[Any], method: str = "plugin", bias_correction: bool = True) -> float:
-    """Estimate KL divergence D_KL(P||Q) with bias correction, in bits.
+def kl_divergence_estimator(p: List[Any], q: List[Any], method: str = "plugin", bias_correction: bool = False) -> float:
+    """Plug-in estimate of the KL divergence D_KL(P||Q) from two equal-length samples, in bits.
+
+    The empirical distributions of the two samples are compared: ``sum_x p(x) * log2(p(x) / q(x))`` over the
+    outcomes seen in ``p``. The plug-in estimate is biased upwards for small samples, and no bias correction exists
+    for it here: ``method`` accepts only ``"plugin"`` and ``bias_correction=True`` raises. (An earlier version took
+    ``method`` and ``bias_correction=True`` as the defaults, advertised "bias correction" and ignored both: every
+    call returned the plug-in value.)
 
     Args:
         p: Samples from distribution P
         q: Samples from distribution Q
-        method: Estimation method
-        bias_correction: Whether to apply bias correction
+        method: Estimation method; only ``"plugin"``
+        bias_correction: Must be ``False``; no bias correction is implemented
 
     Returns:
         KL divergence estimate in bits (inf if q assigns zero probability
         to an outcome observed under p)
 
     Raises:
-        ValueError: If sample lists have different lengths
+        ValueError: If sample lists have different lengths or ``method`` is not ``"plugin"``
+        NotImplementedError: If ``bias_correction`` is true
     """
+    if method != "plugin":
+        raise ValueError(f"Unknown KL divergence estimator method {method!r}; only 'plugin' is available")
+    if bias_correction:
+        raise NotImplementedError(
+            "bias_correction is not implemented for kl_divergence_estimator (plug-in estimate only)"
+        )
     if len(p) != len(q):
         raise ValueError("Sample lists must have the same length")
 

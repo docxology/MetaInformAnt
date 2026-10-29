@@ -449,9 +449,14 @@ def rate_distortion_function(
         distortion_matrix: Matrix ``d[i, j]`` giving the distortion of
             reproducing source symbol *i* as reproduction symbol *j*.
             Shape ``(n, m)`` where *n* is the source alphabet size.
-        max_rate: Upper bound on the rate axis (nats).  The sweep of the
-            Lagrange parameter is chosen so that R stays below this value.
-        n_points: Number of (R, D) points to compute along the curve.
+        max_rate: Upper bound on the rate axis (nats).  The rate grows with the
+            Lagrange parameter, so the sweep stops at the first parameter
+            whose rate exceeds this value: every returned point has
+            ``R <= max_rate`` and fewer than ``n_points`` points come back
+            when the curve reaches ``max_rate`` before the sweep ends.
+            (Earlier versions ignored this argument.)
+        n_points: Number of (R, D) points to compute along the curve (at
+            most; see ``max_rate``).
 
     Returns:
         Dictionary with keys:
@@ -478,6 +483,8 @@ def rate_distortion_function(
         raise ValueError("distortion_matrix contains negative entries")
     if n_points < 2:
         raise ValueError(f"n_points must be >= 2, got {n_points}")
+    if not max_rate > 0:
+        raise ValueError(f"max_rate must be positive, got {max_rate}")
 
     # D_max: distortion when we ignore the source entirely and pick the
     # single reproduction symbol that minimises expected distortion.
@@ -518,6 +525,8 @@ def rate_distortion_function(
         rate = float(np.sum(p_x[:, np.newaxis] * q_cond * log_ratio))
         rate = max(0.0, rate)
 
+        if rate > max_rate:
+            break  # the rate only grows with beta: the rest of the sweep is beyond the requested axis
         rates.append(rate)
         distortions.append(expected_distortion)
 
