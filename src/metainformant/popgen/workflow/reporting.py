@@ -10,6 +10,36 @@ from pathlib import Path
 from typing import Any
 
 
+def _by_scenario(values: dict[str, float], names: tuple[str, ...], digits: int) -> str:
+    """``name value`` pairs of the scenarios among ``names`` that were analyzed."""
+    return "; ".join(f"{name.replace('_', ' ')} {values[name]:.{digits}f}" for name in names if name in values)
+
+
+def _conclusions(dataset_info: dict[str, Any], comparative: dict[str, Any]) -> str:
+    """The conclusions of the report, read off the analysis results rather than assumed."""
+    lines = []
+    diversity = _by_scenario(comparative["diversity_comparison"], tuple(comparative["diversity_comparison"]), 6)
+    lines.append(f"1. **Diversity**: nucleotide diversity (π) by scenario: {diversity}")
+    tajima = comparative["tajimas_d_comparison"]
+    lines.append(
+        "2. **Demographic signatures**: Tajima's D by scenario: "
+        + _by_scenario(tajima, ("neutral", "bottleneck", "expansion"), 3)
+        + ". A bottleneck sampled soon afterwards lacks rare variants and has a D above the neutral value; an "
+        "expansion has an excess of rare variants and a D below it. One locus is one random genealogy, so a "
+        "single sample can depart from these expectations."
+    )
+    fst = comparative["fst_comparison"]
+    if fst:
+        lines.append("3. **Population structure**: Fst by comparison: " + _by_scenario(fst, tuple(fst), 4))
+    genotypes = dataset_info["scenarios"].get("large_genotypes", {})
+    if "n_individuals" in genotypes and "n_sites" in genotypes:
+        lines.append(
+            f"4. **Large-scale analysis**: a genotype matrix of {genotypes['n_individuals']} individuals × "
+            f"{genotypes['n_sites']} sites went through PCA, kinship and Hardy-Weinberg analyses"
+        )
+    return "\n".join(lines) + "\n"
+
+
 def generate_summary_report(
     dataset_info: dict[str, Any],
     analysis_results: dict[str, Any],
@@ -161,23 +191,6 @@ def generate_summary_report(
                 f.write("- **All validation checks passed** ✓\n")
 
         f.write("\n## Conclusions\n\n")
-        f.write("This comprehensive analysis demonstrates:\n\n")
-        f.write("1. **Diversity Control**: Successfully generated populations with target diversity levels\n")
-        f.write(
-            "2. **Demographic Signatures**: Bottleneck and expansion scenarios show expected patterns\n"
-            " (negative Tajima's D)\n"
-        )
-        f.write("3. **Population Structure**: Fst values match target specifications\n")
-        f.write(
-            "4. **Large-Scale Analysis**: Successfully analyzed large genotype matrices\n"
-            " (1000 individuals × 10000 sites)\n"
-        )
-        f.write(
-            "5. **Comprehensive Neutrality Testing**: All neutrality tests (Tajima's D, Fu & Li's,\n"
-            " Fay & Wu's H) calculated across scenarios\n"
-        )
-        f.write("6. **Statistical Validation**: Results validated for completeness and correctness\n")
-        f.write("7. **Integration**: All modules work together seamlessly for comprehensive analysis\n")
-        f.write("8. **Visualizations**: Comprehensive publication-quality plots generated for all analyses\n")
+        f.write(_conclusions(dataset_info, comp))
 
     print(f"Summary report saved to {report_file}")

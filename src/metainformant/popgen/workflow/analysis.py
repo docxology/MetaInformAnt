@@ -144,6 +144,21 @@ def compare_two_population_sequences(
     return result
 
 
+def _hwe_chi_square(genotypes: list[int]) -> float | None:
+    """Pearson chi-square of one site's 0/1/2 genotypes against Hardy-Weinberg proportions.
+
+    The statistic :func:`metainformant.gwas.analysis.quality.test_hwe` turns into its p-value (other
+    codes are missing and not counted); ``None`` when no genotype is called.
+    """
+    counts = [sum(1 for genotype in genotypes if genotype == code) for code in (0, 1, 2)]
+    called = sum(counts)
+    if called == 0:
+        return None
+    reference = (2 * counts[0] + counts[1]) / (2 * called)
+    expected = [called * reference**2, 2 * called * reference * (1 - reference), called * (1 - reference) ** 2]
+    return sum((seen - wanted) ** 2 / wanted for seen, wanted in zip(counts, expected) if wanted > 0)
+
+
 def genotype_structure_analysis(
     genotype_matrix: list[list[int]],
     n_components: int = 10,
@@ -157,7 +172,9 @@ def genotype_structure_analysis(
         kinship_method: Kinship estimator name (default VanRaden).
 
     Returns:
-        Dict with ``pca``, ``kinship``, and ``hardy_weinberg_test`` keys.
+        Dict with ``pca``, ``kinship``, and ``hardy_weinberg_test`` keys. The last holds one row per
+        site: its ``p_value`` and the ``chi_square`` statistic behind it (a test with
+        ``degrees_of_freedom`` 1), and ``hwe_deviated`` when the p-value is below 0.05.
     """
     pca_result = compute_pca(genotype_matrix, n_components=n_components)
     kinship_result = compute_kinship_matrix(genotype_matrix, method=kinship_method)
@@ -165,17 +182,18 @@ def genotype_structure_analysis(
 
     # test_hwe expects a variants x samples matrix; the input here is
     # individuals x sites, so transpose before testing (one p-value per site).
-    hwe_p_values = test_hwe(np.asarray(genotype_matrix, dtype=int).T.tolist())
+    sites = np.asarray(genotype_matrix, dtype=int).T.tolist()
+    hwe_p_values = test_hwe(sites)
 
     hwe_result = [
         {
             "locus": f"Site_{i}",
             "p_value": p_value,
-            "chi_square": None,
-            "degrees_of_freedom": 2,
+            "chi_square": _hwe_chi_square(genotypes),
+            "degrees_of_freedom": 1,  # three genotype classes, one allele frequency estimated
             "hwe_deviated": p_value < 0.05,
         }
-        for i, p_value in enumerate(hwe_p_values)
+        for i, (p_value, genotypes) in enumerate(zip(hwe_p_values, sites))
     ]
 
     return {

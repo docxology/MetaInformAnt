@@ -101,9 +101,7 @@ def _small_dataset_info(data_dir: Path) -> dict[str, Any]:
     dump_json(genotypes, str(genotype_file))
     scenarios["large_genotypes"] = {"file": str(genotype_file)}
 
-    ld_genotypes = generate_linkage_disequilibrium_data(
-        n_individuals=40, n_sites=60, r_squared_target=0.5, recombination_rate=0.01, rng=rng
-    )
+    ld_genotypes = generate_linkage_disequilibrium_data(n_individuals=40, n_sites=60, r_squared_target=0.5, rng=rng)
     ld_file = data_dir / "ld_genotypes.json"
     dump_json(ld_genotypes, str(ld_file))
     scenarios["linkage_disequilibrium"] = {"file": str(ld_file)}

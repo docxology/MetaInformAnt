@@ -6,9 +6,11 @@ Uses real seeded simulation generators (no mocks) and real temp files.
 from __future__ import annotations
 
 import random
+import statistics
 from pathlib import Path
 
 import pytest
+from scipy import stats
 
 from metainformant.popgen.workflow.analysis import (
     analyze_dataset,
@@ -148,6 +150,27 @@ class TestGenotypeStructureAnalysis:
         assert hwe[2]["hwe_deviated"] is False
 
 
+class TestHardyWeinbergRows:
+    """Each site's row reports the chi-square behind its p-value, a test with one degree of freedom."""
+
+    def test_rows_hold_the_pearson_statistic_and_its_degrees_of_freedom(self):
+        # Site 1 is all heterozygotes: counts (0, 4, 0) against (1, 2, 1) give 1 + 2 + 1 = 4; site 0 is (2, 1, 1)
+        genotypes = [[0, 1, 2], [1, 1, 1], [0, 1, 2], [2, 1, 1]]
+        rows = genotype_structure_analysis(genotypes, n_components=2)["hardy_weinberg_test"]
+        assert [row["degrees_of_freedom"] for row in rows] == [1, 1, 1]
+        assert rows[1]["chi_square"] == pytest.approx(4.0)
+        for row in rows:
+            assert row["p_value"] == pytest.approx(stats.chi2.sf(row["chi_square"], 1), abs=1e-6)
+            assert row["hwe_deviated"] == (row["p_value"] < 0.05)
+
+    def test_uncalled_genotypes_are_not_counted_and_an_uncalled_site_has_no_statistic(self):
+        # Site 0 has counts (2, 2, 2) among six calls: expected (1.5, 3, 1.5) gives 1/6 + 1/3 + 1/6 = 2/3
+        genotypes = [[0, -1], [1, -1], [2, -1], [-1, -1], [-1, -1], [0, -1], [1, -1], [2, -1]]
+        rows = genotype_structure_analysis(genotypes, n_components=2)["hardy_weinberg_test"]
+        assert rows[0]["chi_square"] == pytest.approx(2 / 3)
+        assert rows[1]["chi_square"] is None and rows[1]["p_value"] == 1.0
+
+
 class TestLdSummary:
     def test_linked_sites_higher_r2(self):
         # generate_linkage_disequilibrium_data targets r2=0.5
@@ -155,12 +178,35 @@ class TestLdSummary:
             n_individuals=60,
             n_sites=5,
             r_squared_target=0.5,
-            recombination_rate=0.01,
             rng=random.Random(5),
         )
         summary = ld_summary(linked, max_pairs=4)
         assert 0.0 <= summary["mean_r_squared"] <= 1.0
         assert len(summary["r_squared_values"]) >= 1
+
+    def test_coalescent_ld_data_lose_adjacent_r2_as_recombination_rate_rises(self):
+        """With model="coalescent" recombination_rate takes effect: neighbouring SNPs are less correlated."""
+
+        def mean_adjacent_r2(rate: float) -> tuple[float, float]:
+            values = [
+                ld_summary(
+                    generate_linkage_disequilibrium_data(
+                        60,
+                        80,
+                        model="coalescent",
+                        recombination_rate=rate,
+                        sequence_length=8000,
+                        rng=random.Random(seed),
+                    ),
+                    max_pairs=79,
+                )["mean_r_squared"]
+                for seed in range(40)
+            ]
+            return statistics.mean(values), statistics.stdev(values) / len(values) ** 0.5
+
+        linked, linked_se = mean_adjacent_r2(0.0)
+        free, free_se = mean_adjacent_r2(1e-6)  # measured 0.17 and 0.105
+        assert linked - free > 4 * (linked_se**2 + free_se**2) ** 0.5
 
     def test_empty_matrix_zero_mean(self):
         summary = ld_summary([[0, 0], [0, 0]], max_pairs=1)
