@@ -244,7 +244,7 @@ class TestBioinformaticsWorkflow:
 
         # Canonical correlation between layers
         X_can, Y_can, X_weights, Y_weights, correlations = canonical_correlation(
-            omics_data, layers=("transcriptomics", "proteomics"), n_components=3  # Reduced from 5
+            omics_data, layers=("transcriptomics", "proteomics"), n_components=3, regularization=0.1
         )
 
         assert X_can.shape == (n_samples, 3)
@@ -703,7 +703,7 @@ class TestEndToEndBiologicalScenarios:
 
         # Canonical correlation between transcriptomics and proteomics
         X_can, Y_can, _, _, correlations = canonical_correlation(
-            omics_data, layer_pair=("transcriptomics", "proteomics"), n_components=5
+            omics_data, layer_pair=("transcriptomics", "proteomics"), n_components=5, regularization=0.1
         )
 
         # Verify results
