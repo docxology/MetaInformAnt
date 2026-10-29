@@ -188,12 +188,19 @@ def rarefaction_curve(abundances: List[float], max_samples: Optional[int] = None
     """Calculate rarefaction curve for species richness estimation.
 
     Args:
-        abundances: Species abundance data
+        abundances: Species abundance data (individual counts)
         max_samples: Maximum number of samples to evaluate
 
     Returns:
         List of (sample_size, richness) tuples
+
+    Raises:
+        ValueError: If an abundance is not a whole number.
     """
+    # Rarefaction draws individuals: it needs counts. int() would silently cut 2.7 down to 2.
+    if any(x > 0 and x != int(x) for x in abundances):
+        raise ValueError("rarefaction_curve needs whole-number abundances (individual counts)")
+
     # Filter and sort abundances (descending)
     counts: List[int] = sorted([int(x) for x in abundances if x > 0], reverse=True)
 
@@ -232,7 +239,8 @@ def species_accumulation_curve(sampling_effort: List[int]) -> List[Tuple[int, fl
         sampling_effort: List of cumulative species counts at each sampling effort
 
     Returns:
-        Smoothed accumulation curve as (effort, richness) tuples
+        The accumulation curve as (effort, richness) tuples, effort counting from 1. The cumulative counts are
+        reported as given; no smoothing or rarefaction is applied.
     """
     if not sampling_effort:
         return [(0, 0.0)]
@@ -410,21 +418,28 @@ def species_area_relationship(species_counts: List[int], area_sizes: List[float]
 
 
 def nestedness_temperature_calculator(presence_absence_matrix: List[List[int]]) -> float:
-    """Calculate nestedness temperature (NTC) for a community matrix.
+    """Percentage of species comparisons between pairs of sites that break perfect nestedness.
 
-    Nestedness measures how much the species composition of smaller communities
-    is a subset of larger communities.
+    Sites are ordered by richness. For every pair of sites (richer, poorer) and every species, a comparison is
+    *unexpected* when the poorer site has the species and the richer site lacks it: in a perfectly nested matrix
+    the species of every poorer site are a subset of those of every richer site, so there are none. The result is
+    ``100 * unexpected / (site pairs * species)``.
+
+    This is a simple disorder index, **not** Atmar and Patterson's (1993) matrix temperature, which packs rows and
+    columns by their totals and measures each unexpected cell against an isocline of perfect order. It is
+    0 for a perfectly nested matrix and grows with disorder, but it is not scaled so that 100 means a random
+    matrix.
 
     Args:
         presence_absence_matrix: Binary matrix (rows = sites, columns = species)
 
     Returns:
-        Nestedness temperature (0 = perfectly nested, 100 = random)
+        The percentage described above (0 = perfectly nested). A matrix with fewer than two sites or two species
+        has no pair to compare; it is reported as 100.0, the most disordered value, and an empty matrix likewise.
     """
     if not presence_absence_matrix:
         return 100.0
 
-    # Convert to numpy-like operations (simplified implementation)
     matrix = presence_absence_matrix
     n_sites = len(matrix)
     n_species = len(matrix[0]) if matrix else 0
@@ -475,6 +490,11 @@ def calculate_biodiversity_indices(
 
     Returns:
         Dictionary mapping index names to lists of values
+
+    Raises:
+        ValueError: If an index name is not supported, or ``community_data`` is empty.
+        TypeError: If ``community_data`` is a mapping instead of a list of abundance vectors, or holds
+            abundances that are not numbers.
     """
     if indices is None:
         indices = ["shannon", "simpson", "invsimpson", "richness"]
@@ -482,20 +502,15 @@ def calculate_biodiversity_indices(
     results: Dict[str, List[float]] = {}
 
     for index_name in indices:
-        try:
-            values = calculate_diversity(community_data, index_name)
-            if isinstance(values, list):
-                results[index_name] = values
-            else:
-                # calculate_diversity only returns a dict for dict input; community_data is
-                # a list, so fall back to the same zeros used when the index fails.
-                results[index_name] = [0.0] * len(community_data)
-        except ValueError:
-            # Invalid index name / method: surface the error to the caller
-            raise
-        except Exception as e:
-            logger.warning(f"Could not calculate {index_name} index: {e}")
-            results[index_name] = [0.0] * len(community_data)
+        # An unknown index or malformed abundances raise from here. They used to be caught and replaced by a
+        # list of zeros, which reads as "every community has zero diversity" rather than "this failed".
+        values = calculate_diversity(community_data, index_name)
+        if not isinstance(values, list):
+            raise TypeError(
+                "community_data must be a list of abundance vectors, not a mapping of community names "
+                f"(got {type(community_data).__name__})"
+            )
+        results[index_name] = values
 
     return results
 
@@ -532,35 +547,50 @@ def community_similarity_matrix(communities: List[List[float]], method: str = "b
 def alpha_beta_gamma_diversity(communities: List[List[float]]) -> Dict[str, float]:
     """Calculate alpha, beta, and gamma diversity for a set of communities.
 
-    Alpha: Average diversity within communities
-    Beta: Diversity between communities
-    Gamma: Total diversity across all communities
+    Shannon entropy is decomposed over the communities weighted by their total abundance (Lande 1996;
+    Jost 2007), so the parts are consistent: ``gamma >= alpha`` always, and the difference is the
+    information the communities carry about their own identity.
+
+    * **alpha**: abundance-weighted mean Shannon entropy within the communities (nats).
+    * **gamma**: Shannon entropy of the pooled community (nats).
+    * **beta**: multiplicative beta diversity ``exp(gamma - alpha)``, the ratio of the effective number of
+      species in the pool to the effective number within a community (Whittaker's ``gamma / alpha`` applied to
+      true diversities, not to entropies). It is 1 when every community has the same composition and reaches the
+      number of communities when they share no species and are equally large, e.g. 3.0 for three
+      equally abundant single-species communities of different species. (The ratio ``gamma / alpha`` of the
+      entropies, which this used to return, is not a diversity partition; it was 0.0 whenever alpha was 0, even
+      for communities with nothing in common.)
 
     Args:
-        communities: List of community abundance vectors
+        communities: List of community abundance vectors, aligned by species. Non-positive abundances
+            count as absent.
 
     Returns:
-        Dictionary with alpha, beta, and gamma diversity values
+        Dictionary with alpha, beta, and gamma diversity values. With no individuals at all there is no
+        diversity to partition and all three are 0.0.
     """
-    if not communities:
+    totals = [sum(a for a in comm if a > 0) for comm in communities]
+    grand_total = sum(totals)
+    if grand_total == 0:
         return {"alpha": 0.0, "beta": 0.0, "gamma": 0.0}
 
-    # Alpha diversity (mean Shannon diversity)
-    alpha_values = calculate_diversity(communities, "shannon")
-    alpha = statistics.mean(alpha_values) if isinstance(alpha_values, list) and alpha_values else 0.0
+    # Alpha: mean within-community entropy, each community weighted by its share of all individuals
+    alpha = sum(
+        (total / grand_total) * calculate_single_diversity(comm, "shannon")
+        for comm, total in zip(communities, totals)
+        if total > 0
+    )
 
-    # Gamma diversity (diversity of pooled communities)
-    pooled_abundances = []
-    max_species = max(len(comm) for comm in communities) if communities else 0
-
-    for species_idx in range(max_species):
-        total_abundance = sum(comm[species_idx] if species_idx < len(comm) else 0 for comm in communities)
-        pooled_abundances.append(total_abundance)
-
+    # Gamma: entropy of the pooled abundances
+    max_species = max(len(comm) for comm in communities)
+    pooled_abundances = [
+        sum(comm[species_idx] for comm in communities if species_idx < len(comm) and comm[species_idx] > 0)
+        for species_idx in range(max_species)
+    ]
     gamma = calculate_single_diversity(pooled_abundances, "shannon")
 
-    # Beta diversity (gamma / alpha)
-    beta = gamma / alpha if alpha > 0 else 0.0
+    # Beta: ratio of effective numbers of species, exp(gamma) / exp(alpha)
+    beta = math.exp(gamma - alpha)
 
     return {
         "alpha": alpha,

@@ -47,6 +47,11 @@ def simple_linear_regression(x: List[float], y: List[float]) -> Dict[str, float]
     Raises:
         ValueError: If inputs have different lengths or fewer than 2 points.
 
+    Note:
+        When every x is identical the slope is undefined. The helper then returns the flat line through the mean
+        of y (slope 0, ``r_squared`` 0) instead of raising; the model-fitting functions in this module
+        (:func:`species_area_power`, :func:`distance_decay`, ...) check for variation in x first and raise.
+
     Example:
         >>> result = simple_linear_regression([1, 2, 3], [2, 4, 6])
         >>> abs(result["slope"] - 2.0) < 1e-9
@@ -77,6 +82,12 @@ def simple_linear_regression(x: List[float], y: List[float]) -> Dict[str, float]
     return {"slope": slope, "intercept": intercept, "r_squared": r_squared}
 
 
+def _require_variation(values: List[float], name: str) -> None:
+    """Raise ``ValueError`` unless *values* are not all the same (a slope against them is then undefined)."""
+    if max(values) == min(values):
+        raise ValueError(f"{name} must not all be equal: the fitted slope would be undefined")
+
+
 def chi_squared_gof(observed: List[float], expected: List[float]) -> Dict[str, float]:
     """Chi-squared goodness-of-fit statistic.
 
@@ -97,6 +108,9 @@ def chi_squared_gof(observed: List[float], expected: List[float]) -> Dict[str, f
     """
     if len(observed) != len(expected):
         raise ValueError("observed and expected must have the same length")
+    for label, values in (("observed", observed), ("expected", expected)):
+        if any(not math.isfinite(v) or v < 0.0 for v in values):
+            raise ValueError(f"{label} frequencies must be finite and non-negative")
 
     chi2 = 0.0
     k = 0
@@ -201,6 +215,34 @@ def _validate_abundances(abundances: List[float], name: str = "abundances") -> L
 # ---------------------------------------------------------------------------
 
 
+def _fisher_alpha(species: float, individuals: float) -> float:
+    """Solve ``S = alpha * ln(1 + N / alpha)`` for Fisher's alpha, given ``0 < S < N``.
+
+    The right-hand side increases from 0 to N as alpha grows, so the root exists exactly when S < N and
+    bisection on ``ln(alpha)`` finds it to machine precision for every such pair (including one species, and
+    nearly all singletons, where Newton's method from a fixed starting guess has no guarantee).
+    """
+
+    def excess(alpha: float) -> float:
+        return alpha * math.log1p(individuals / alpha) - species
+
+    lower, upper = 1e-12, 1.0
+    while excess(upper) <= 0.0:
+        lower = upper
+        upper *= 2.0
+        if upper > 1e18:  # pragma: no cover - needs N - S below ~1e-18 * S**2
+            raise ValueError("Fisher's alpha is too large to resolve for these abundances")
+    for _ in range(300):
+        middle = math.sqrt(lower * upper)
+        if excess(middle) > 0.0:
+            upper = middle
+        else:
+            lower = middle
+        if upper / lower - 1.0 < 1e-15:
+            break
+    return math.sqrt(lower * upper)
+
+
 def fit_logseries(abundances: List[float]) -> Dict[str, Any]:
     """Fit Fisher's log-series distribution to abundance data.
 
@@ -233,31 +275,24 @@ def fit_logseries(abundances: List[float]) -> Dict[str, Any]:
 
     logger.info(f"Fitting Fisher's log-series: S={s}, N={n}")
 
-    if s == 1:
+    if n < s:
+        raise ValueError(
+            "Fisher's log-series needs individual counts: "
+            f"the total abundance ({n}) is below the number of species ({s})"
+        )
+    if n == s:
+        # Every species is a singleton. S = alpha * ln(1 + N / alpha) has no finite root (its right-hand side
+        # stays below N = S), so alpha is infinite, not an arbitrary large number a solver stopped at. In that
+        # limit x = N / (N + alpha) = 0 and every one of the S species is expected to hold exactly one individual.
         return {
-            "alpha": 0.0,
+            "alpha": math.inf,
             "x": 0.0,
             "expected_frequencies": [float(s)],
             "goodness_of_fit": {"chi_squared": 0.0, "degrees_of_freedom": 0},
-            "fisher_diversity": 0.0,
+            "fisher_diversity": math.inf,
         }
 
-    # Newton's method to solve S = alpha * ln(1 + N/alpha) for alpha
-    alpha = s / math.log(1.0 + n / s)  # initial guess
-    for _ in range(200):
-        ratio = n / alpha
-        f_val = alpha * math.log(1.0 + ratio) - s
-        # derivative: ln(1 + N/alpha) - N/(alpha + N)
-        f_prime = math.log(1.0 + ratio) - ratio / (1.0 + ratio)
-        if abs(f_prime) < 1e-15:
-            break
-        alpha_new = alpha - f_val / f_prime
-        if alpha_new <= 0:
-            alpha_new = alpha / 2.0
-        if abs(alpha_new - alpha) < 1e-12 * alpha:
-            alpha = alpha_new
-            break
-        alpha = alpha_new
+    alpha = _fisher_alpha(float(s), float(n))
 
     x = n / (n + alpha)
 
@@ -380,9 +415,11 @@ def fit_lognormal(abundances: List[float]) -> Dict[str, Any]:
 
 
 def _normal_cdf(z: float) -> float:
-    """Approximate the standard normal CDF using the Abramowitz & Stegun formula.
+    """Standard normal CDF, P(Z <= z), from the complementary error function.
 
-    Accurate to about 1e-7 for all z.
+    ``0.5 * erfc(-z / sqrt(2))`` is exact to machine precision in both tails. (The Abramowitz & Stegun 7.1.26
+    polynomial this replaces was applied to ``z`` where it needs ``z / sqrt(2)``: it was off by up to 0.037,
+    not the 1e-7 it claimed.)
 
     Args:
         z: Standard normal deviate.
@@ -390,17 +427,7 @@ def _normal_cdf(z: float) -> float:
     Returns:
         Probability P(Z <= z).
     """
-    if z < -8.0:
-        return 0.0
-    if z > 8.0:
-        return 1.0
-    # Horner form of the rational approximation
-    a1, a2, a3, a4, a5 = 0.254829592, -0.284496736, 1.421413741, -1.453152027, 1.061405429
-    p = 0.3275911
-    sign = 1.0 if z >= 0 else -1.0
-    t = 1.0 / (1.0 + p * abs(z))
-    y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * math.exp(-z * z / 2.0)
-    return 0.5 * (1.0 + sign * y)
+    return 0.5 * math.erfc(-z / math.sqrt(2.0))
 
 
 # ---------------------------------------------------------------------------
@@ -549,11 +576,65 @@ def fit_geometric_series(abundances: List[float]) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
+def _logseries_rank_abundances(alpha: float, x: float, n_species: int, max_observed: float) -> List[float]:
+    """Abundance the fitted log-series predicts at each rank (1 = most abundant).
+
+    The expected number of species with ``j`` individuals is ``alpha * x**j / j``; the species of rank ``r``
+    has the largest abundance ``a`` for which the expected number of species with at least ``a`` individuals is
+    still ``>= r - 1/2``.
+    """
+    if math.isinf(alpha):  # every species a singleton
+        return [1.0] * n_species
+    log_x = math.log(x)
+    # Sum the series far enough that what is left (at most alpha * x**top / (top * (1 - x))) is negligible; for
+    # x close to 1 that is many times the largest observed abundance. Capped to keep the table small.
+    needed = int(math.ceil(math.log(1e-12 * (1.0 - x)) / log_x)) if x < 1.0 else 0
+    top = min(max(int(4 * max_observed + 20), needed), 2_000_000)
+    tail = [0.0] * (top + 2)  # tail[a] = expected number of species with at least a individuals
+    for j in range(top, 0, -1):
+        tail[j] = tail[j + 1] + alpha * math.exp(j * log_x) / j
+    predicted: List[float] = []
+    a = top
+    for rank in range(1, n_species + 1):
+        while a > 1 and tail[a] < rank - 0.5:
+            a -= 1
+        predicted.append(float(a))
+    return predicted
+
+
+def _lognormal_rank_abundances(mu: float, sigma: float, n_species: int) -> List[float]:
+    """Abundance the fitted lognormal predicts at each rank: the ``(r - 1/2) / S`` upper quantile."""
+    if sigma <= 0.0:
+        return [math.exp(mu)] * n_species
+    normal = statistics.NormalDist()
+    return [math.exp(mu + sigma * normal.inv_cdf(1.0 - (rank - 0.5) / n_species)) for rank in range(1, n_species + 1)]
+
+
+def _log_abundance_aicc(observed: List[float], predicted: List[float], n_params: int) -> float:
+    """AICc of a model's rank-abundance curve from Gaussian residuals of log abundance.
+
+    ``n * ln(RSS / n) + 2k``, plus the small-sample term ``2k(k + 1) / (n - k - 1)`` when ``n > k + 1``, with
+    ``RSS = sum((ln observed - ln predicted)**2)`` over the ``n`` ranks. Every model is scored on the same
+    ``n`` observations of the same response, which is what makes the values comparable (the constant for the
+    residual variance is the same for all models and drops out of the ranking).
+    """
+    n = len(observed)
+    rss = sum((math.log(o) - math.log(e)) ** 2 for o, e in zip(observed, predicted))
+    aic = n * math.log(max(rss, 1e-300) / n) + 2.0 * n_params
+    if n > n_params + 1:
+        aic += (2.0 * n_params * (n_params + 1)) / (n - n_params - 1)
+    return aic
+
+
 def compare_sad_models(abundances: List[float]) -> Dict[str, Dict[str, Any]]:
     """Fit and compare all four species abundance distribution models.
 
     Models compared: log-series, lognormal, broken stick, geometric series.
-    Ranking is by AIC (lower is better).
+    Ranking is by AICc (lower is better), computed for every model in the same way: from the residuals of log
+    abundance between the observed rank-abundance curve and the one the fitted model predicts (see
+    :func:`_log_abundance_aicc`). The chi-squared statistics the fits return (``gof``) are on different bins for
+    different models (abundance classes for the log-series, octaves for the lognormal, ranks for the other two),
+    so AICs derived from them are not comparable; they are reported for each model's own fit only.
 
     Args:
         abundances: Species abundance counts (positive values).
@@ -561,8 +642,9 @@ def compare_sad_models(abundances: List[float]) -> Dict[str, Dict[str, Any]]:
     Returns:
         Dictionary keyed by model name, each containing:
             - ``parameters``: Fitted model parameters.
-            - ``gof``: Goodness-of-fit chi-squared dict.
-            - ``aic``: AIC value.
+            - ``gof``: The fit's own goodness-of-fit chi-squared dict.
+            - ``expected_abundances``: The abundance predicted at each rank (1 = most abundant).
+            - ``aic``: The AICc described above.
             - ``rank``: Integer rank (1 = best).
 
     Raises:
@@ -588,26 +670,32 @@ def compare_sad_models(abundances: List[float]) -> Dict[str, Dict[str, Any]]:
         "logseries": {
             "parameters": {"alpha": ls["alpha"], "x": ls["x"]},
             "gof": ls["goodness_of_fit"],
-            "aic": aic_from_gof(ls["goodness_of_fit"]["chi_squared"], 1, n_obs),
+            "expected_abundances": _logseries_rank_abundances(ls["alpha"], ls["x"], n_obs, max(pos)),
+            "n_params": 1,
         },
         "lognormal": {
             "parameters": {"mu": ln["mu"], "sigma": ln["sigma"]},
             "gof": ln["goodness_of_fit"],
-            "aic": aic_from_gof(ln["goodness_of_fit"]["chi_squared"], 2, n_obs),
+            "expected_abundances": _lognormal_rank_abundances(ln["mu"], ln["sigma"], n_obs),
+            "n_params": 2,
         },
         "broken_stick": {
             "parameters": {},
             "gof": bs["goodness_of_fit"],
-            "aic": aic_from_gof(bs["goodness_of_fit"]["chi_squared"], 0, n_obs),
+            "expected_abundances": list(bs["expected_abundances"]),
+            "n_params": 0,
         },
         "geometric_series": {
             "parameters": {"k": gs["k"]},
             "gof": gs["goodness_of_fit"],
-            "aic": aic_from_gof(gs["goodness_of_fit"]["chi_squared"], 1, n_obs),
+            "expected_abundances": list(gs["expected_abundances"]),
+            "n_params": 1,
         },
     }
+    for model in models.values():
+        model["aic"] = _log_abundance_aicc(pos, model["expected_abundances"], model.pop("n_params"))
 
-    # Rank by AIC
+    # Rank by AICc
     ranked = sorted(models.items(), key=lambda item: item[1]["aic"])
     for rank, (name, _) in enumerate(ranked, 1):
         models[name]["rank"] = rank
@@ -659,6 +747,7 @@ def species_area_power(
 
     log_a = [math.log(a) for a in areas]
     log_s = [math.log(s) for s in species_counts]
+    _require_variation(log_a, "areas")
 
     reg = simple_linear_regression(log_a, log_s)
     z = reg["slope"]
@@ -667,6 +756,9 @@ def species_area_power(
 
     # Bootstrap CI for z
     def _slope_fn(xb: List[float], yb: List[float]) -> float:
+        # A resample that drew one area only has no slope; raising lets bootstrap_ci discard it instead of
+        # counting a slope of 0 that no data supports (which pulls the interval towards 0).
+        _require_variation(xb, "resampled areas")
         r = simple_linear_regression(xb, yb)
         return r["slope"]
 
@@ -726,6 +818,7 @@ def species_area_logarithmic(
 
     ln_a = [math.log(a) for a in areas]
     s_vals = [float(s) for s in species_counts]
+    _require_variation(ln_a, "areas")
 
     reg = simple_linear_regression(ln_a, s_vals)
     a = reg["intercept"]
@@ -769,9 +862,12 @@ def distance_decay(
             - ``exponential``: {a, b, r_squared} for the exponential model.
             - ``power_law``: {a, b, r_squared} for the power-law model.
             - ``best_model``: Name of the model with higher R-squared.
+            - ``n_used``: Number of (distance, similarity) pairs fitted. Pairs whose distance or similarity
+              is not positive have no logarithm and are left out, so this can be fewer than the pairs given.
 
     Raises:
-        ValueError: If inputs differ in length or have < 2 points.
+        ValueError: If inputs differ in length, have < 2 points, have fewer than 2 pairs with a positive distance
+            and similarity, or those pairs all share one distance.
 
     Example:
         >>> result = distance_decay([1, 5, 10, 20], [0.9, 0.6, 0.3, 0.1])
@@ -790,6 +886,7 @@ def distance_decay(
 
     dist_v = [v[0] for v in valid]
     sim_v = [v[1] for v in valid]
+    _require_variation(dist_v, "distances")
 
     # --- Exponential model: ln(sim) = ln(a) - b * distance ---
     log_sim = [math.log(s) for s in sim_v]
@@ -813,6 +910,7 @@ def distance_decay(
         "exponential": {"a": exp_a, "b": exp_b, "r_squared": exp_r2},
         "power_law": {"a": pow_a, "b": pow_b, "r_squared": pow_r2},
         "best_model": best,
+        "n_used": len(valid),
     }
 
 
@@ -935,6 +1033,7 @@ def metabolic_scaling(
 
     log_m = [math.log(m) for m in body_masses]
     log_b = [math.log(r) for r in metabolic_rates]
+    _require_variation(log_m, "body_masses")
 
     reg = simple_linear_regression(log_m, log_b)
     b_exp = reg["slope"]
@@ -1060,6 +1159,7 @@ def taylors_power_law(
 
     log_m = [math.log(v[0]) for v in valid]
     log_v = [math.log(v[1]) for v in valid]
+    _require_variation(log_m, "means")
 
     reg = simple_linear_regression(log_m, log_v)
     a = math.exp(reg["intercept"])

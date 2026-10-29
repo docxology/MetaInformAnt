@@ -162,10 +162,13 @@ class TestFunctionalRichness:
         fric = functional_richness(trait_2d)
         assert abs(fric - 1.0) < 1e-10
 
-    def test_fric_3d_bounding_box(self, trait_3d: List[List[float]]) -> None:
-        """In 3D, FRic approximates the bounding-box volume = 2 * 3 * 4 = 24."""
+    def test_fric_3d_convex_hull(self, trait_3d: List[List[float]]) -> None:
+        """In 3D, FRic is the convex hull volume: the tetrahedron with legs 2, 3, 4 holds 2 * 3 * 4 / 6 = 4.
+
+        It used to be the bounding-box volume 2 * 3 * 4 = 24, six times the hull (see ``test_ecology_r4_fixes.py``).
+        """
         fric = functional_richness(trait_3d)
-        assert abs(fric - 24.0) < 1e-10
+        assert abs(fric - 4.0) < 1e-10
 
     def test_fric_filters_zero_abundance(self) -> None:
         """Species with zero abundance are excluded."""

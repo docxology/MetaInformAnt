@@ -800,10 +800,16 @@ class TestNriNti:
         assert len(result["nti"]) == 2
 
     def test_nri_nti_single_taxon(self, simple_tree: dict) -> None:
-        """A community with <2 taxa gives NRI=NTI=0."""
+        """A community with <2 taxa has no pairwise distance to standardise: NRI and NTI are undefined (nan).
+
+        They used to be reported as 0.0 with p = 1.0, i.e. as a measured "no clustering" (see
+        ``test_ecology_r4_fixes.py``).
+        """
         result = nri_nti(simple_tree, [["A"]], n_randomizations=49)
-        assert result["nri"][0] == 0.0
-        assert result["nti"][0] == 0.0
+        assert math.isnan(result["nri"][0])
+        assert math.isnan(result["nti"][0])
+        assert math.isnan(result["p_values"]["nri"][0])
+        assert math.isnan(result["p_values"]["nti"][0])
 
 
 # ============================================================================

@@ -20,6 +20,7 @@ Uses real implementations only (real-implementation policy).
 
 from __future__ import annotations
 
+import math
 from typing import List
 
 import matplotlib
@@ -174,9 +175,15 @@ class TestFitLogseries:
         assert abs(result["fisher_diversity"] - result["alpha"]) < 1e-12
 
     def test_logseries_single_species(self) -> None:
-        """Single species yields alpha=0."""
+        """One species of 100 individuals has the alpha that solves S = alpha * ln(1 + N / alpha) (about 0.154).
+
+        Fisher's alpha was reported as 0.0 here, which does not satisfy the equation that defines it (it would
+        make the expected number of species 0, not 1); see ``test_ecology_r4_fixes.py``.
+        """
         result = fit_logseries([100])
-        assert result["alpha"] == 0.0
+        alpha = result["alpha"]
+        assert alpha == pytest.approx(0.1544496866791, rel=1e-9)
+        assert alpha * math.log(1.0 + 100.0 / alpha) == pytest.approx(1.0, rel=1e-9)
 
     def test_logseries_empty_raises(self) -> None:
         """Empty input raises ValidationError."""

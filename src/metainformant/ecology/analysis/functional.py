@@ -5,14 +5,17 @@ community structure through species traits. Implements Functional Richness (FRic
 Functional Evenness (FEve), Functional Divergence (FDiv), Functional Dispersion
 (FDis), Rao's Quadratic Entropy, Community Weighted Means, and related metrics.
 
-All algorithms are pure Python implementations with no external dependencies
-beyond the standard library.
+The metrics are pure Python except where a convex hull in three or more trait
+dimensions is needed (FRic, FDiv), which uses NumPy and SciPy's Qhull.
 """
 
 from __future__ import annotations
 
 import math
 from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
+from scipy.spatial import ConvexHull
 
 from metainformant.core.data import validation
 from metainformant.core.utils import logging
@@ -191,6 +194,33 @@ def _polygon_area(vertices: List[Tuple[float, float]]) -> float:
     return abs(area) / 2.0
 
 
+def _hull_vertex_indices(points: List[List[float]]) -> List[int]:
+    """Indices of the points that are vertices of the convex hull of *points* in trait space.
+
+    The hull is taken in the affine subspace the points span, so points that are collinear, coplanar or
+    identical (fewer independent directions than traits) give the vertices of the lower-dimensional hull.
+    """
+    array = np.asarray(points, dtype=float)
+    n_points = array.shape[0]
+    centred = array - array.mean(axis=0)
+    _, singular_values, directions = np.linalg.svd(centred, full_matrices=False)
+    scale = float(singular_values[0]) if singular_values.size else 0.0
+    rank = int(np.sum(singular_values > scale * max(array.shape) * np.finfo(float).eps)) if scale > 0 else 0
+
+    if rank == 0:
+        return [0]
+    projected = centred @ directions[:rank].T  # coordinates within the spanned subspace
+    if rank == 1:
+        line = projected[:, 0]
+        return sorted({int(np.argmin(line)), int(np.argmax(line))})
+    if rank == 2:
+        by_point = {(float(x), float(y)): i for i, (x, y) in reversed(list(enumerate(projected)))}
+        return sorted(by_point[vertex] for vertex in convex_hull_2d(list(by_point)))
+    if n_points <= rank:  # pragma: no cover - rank <= n_points - 1 for centred points
+        return list(range(n_points))
+    return sorted(int(i) for i in ConvexHull(projected).vertices)
+
+
 # ---------------------------------------------------------------------------
 # Helper: minimum spanning tree (Prim's algorithm)
 # ---------------------------------------------------------------------------
@@ -269,9 +299,10 @@ def _to_relative(abundances: List[float]) -> List[float]:
 def functional_richness(trait_matrix: List[List[float]], abundances: Optional[List[float]] = None) -> float:
     """Calculate Functional Richness (FRic).
 
-    FRic measures the volume of functional trait space occupied by the community.
-    For 1-D it is the range; for 2-D it is the convex hull area; for 3-D and
-    above it is approximated from the maximum pairwise trait distance envelope.
+    FRic measures the volume of functional trait space occupied by the community: the range for one trait, the
+    convex hull area for two, and the convex hull volume for three or more (Cornwell et al. 2006; Villeger et
+    al. 2008). Species that do not span the trait space (fewer than ``traits + 1`` species, or all on a plane or
+    line) enclose no volume in it: FRic is 0.
 
     Args:
         trait_matrix: Species-by-traits matrix (each row is one species).
@@ -314,7 +345,7 @@ def functional_richness(trait_matrix: List[List[float]], abundances: Optional[Li
     # 1-D: range of trait values
     if n_traits == 1:
         vals = [row[0] for row in filtered]
-        return max(vals) - min(vals)
+        return float(max(vals) - min(vals))
 
     # 2-D: convex hull area
     if n_traits == 2:
@@ -322,18 +353,19 @@ def functional_richness(trait_matrix: List[List[float]], abundances: Optional[Li
         hull = convex_hull_2d(points)
         return _polygon_area(hull)
 
-    # 3-D+: approximate as product of per-trait ranges (hyper-volume approximation)
-    # This gives a bounding-box volume which is a standard FRic approximation
-    # when convex hull algorithms for > 2-D are unavailable.
-    volume = 1.0
-    any_nonzero = False
-    for t in range(n_traits):
-        vals = [filtered[i][t] for i in range(n_species)]
-        r = max(vals) - min(vals)
-        if r > 0:
-            volume *= r
-            any_nonzero = True
-    return volume if any_nonzero else 0.0
+    # 3-D+: volume of the convex hull. Species that do not span all the trait dimensions (coplanar, collinear,
+    # fewer than traits + 1) enclose no volume. (A product of per-trait ranges, the bounding box, used to stand
+    # in for the hull: it is 1 for a unit tetrahedron whose hull volume is 1/6, and for points in one plane it
+    # returned the product of the two non-constant ranges, an area, as a volume.)
+    cloud = np.asarray(filtered, dtype=float)
+    centred = cloud - cloud.mean(axis=0)
+    singular_values = np.linalg.svd(centred, compute_uv=False)
+    if singular_values.size < n_traits or singular_values[0] == 0.0:
+        return 0.0
+    tolerance = float(singular_values[0]) * max(cloud.shape) * np.finfo(float).eps
+    if int(np.sum(singular_values > tolerance)) < n_traits:
+        return 0.0
+    return float(ConvexHull(cloud).volume)
 
 
 def functional_evenness(trait_matrix: List[List[float]], abundances: List[float]) -> float:
@@ -423,7 +455,8 @@ def functional_divergence(trait_matrix: List[List[float]], abundances: List[floa
     species have extreme trait values.
 
     The algorithm (Villeger et al. 2008):
-        1. Compute the abundance-weighted centroid *G*.
+        1. Compute the centre of gravity *G* of the vertices of the convex hull of the species in trait
+           space (the unweighted mean of the hull's vertices, not the abundance-weighted mean of all species).
         2. Compute each species' Euclidean distance to the centroid: ``dG_i``.
         3. Compute the mean distance: ``mean_dG = sum(dG_i) / S``.
         4. ``FDiv = (deltaD + mean_dG) / (deltaAbs + mean_dG)``
@@ -461,10 +494,9 @@ def functional_divergence(trait_matrix: List[List[float]], abundances: List[floa
     s = len(tm)
     n_traits = len(tm[0])
 
-    # Abundance-weighted centroid
-    centroid = [0.0] * n_traits
-    for t in range(n_traits):
-        centroid[t] = sum(rel[i] * tm[i][t] for i in range(s))
+    # Centre of gravity of the convex hull's vertices (Villeger et al. 2008)
+    vertices = _hull_vertex_indices(tm)
+    centroid = [sum(tm[v][t] for v in vertices) / len(vertices) for t in range(n_traits)]
 
     # Distances to centroid
     dg = [_euclidean_distance(tm[i], centroid) for i in range(s)]

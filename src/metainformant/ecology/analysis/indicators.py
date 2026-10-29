@@ -33,7 +33,7 @@ logger = logging.get_logger(__name__)
 
 
 def _validate_square_matrix(matrix: List[List[float]], name: str = "distance_matrix") -> int:
-    """Validate that a matrix is square and symmetric-ish.
+    """Validate that a matrix is square, finite, non-negative and symmetric.
 
     Args:
         matrix: The matrix to validate.
@@ -43,7 +43,9 @@ def _validate_square_matrix(matrix: List[List[float]], name: str = "distance_mat
         The dimension (number of rows/columns).
 
     Raises:
-        ValueError: If the matrix is empty, non-square, or contains negative values.
+        ValueError: If the matrix is empty, non-square, contains non-finite or negative values, or is not
+            symmetric (the tests below use only the upper triangle, so an asymmetric matrix would be silently
+            half-ignored).
     """
     validation.validate_not_empty(matrix, name)
     n = len(matrix)
@@ -51,8 +53,14 @@ def _validate_square_matrix(matrix: List[List[float]], name: str = "distance_mat
         if len(row) != n:
             raise ValueError(f"{name} must be square: row {i} has {len(row)} elements, expected {n}")
         for j, val in enumerate(row):
+            if not math.isfinite(val):
+                raise ValueError(f"{name} contains a non-finite value at ({i}, {j}): {val}")
             if val < 0:
                 raise ValueError(f"{name} contains negative value at ({i}, {j}): {val}")
+    for i in range(n):
+        for j in range(i + 1, n):
+            if abs(matrix[i][j] - matrix[j][i]) > 1e-8 * max(1.0, abs(matrix[i][j]), abs(matrix[j][i])):
+                raise ValueError(f"{name} is not symmetric: [{i}][{j}]={matrix[i][j]} != [{j}][{i}]={matrix[j][i]}")
     return n
 
 
@@ -230,7 +238,7 @@ def indval(
                 "specificity": round(obs_spec, 4),
                 "fidelity": round(obs_fid, 4),
                 "best_group": obs_grp,
-                "p_value": round(p_value, 4),
+                "p_value": p_value,
             }
         )
 
@@ -272,7 +280,8 @@ def anosim(
             - ``n_permutations``: Number of permutations performed.
 
     Raises:
-        ValueError: If matrix is not square or labels do not match.
+        ValueError: If matrix is not square or labels do not match, or the design has fewer than two groups or
+            no group with two observations (there is then no within-group or no between-group dissimilarity).
 
     Example:
         >>> dm = [[0, 1, 5, 5], [1, 0, 5, 5], [5, 5, 0, 1], [5, 5, 1, 0]]
@@ -283,6 +292,15 @@ def anosim(
     """
     n = _validate_square_matrix(distance_matrix)
     _validate_labels_match(group_labels, n)
+
+    groups = _unique_groups(group_labels)
+    if len(groups) < 2:
+        raise ValueError("At least two distinct groups are required for ANOSIM")
+    if len(groups) == n:
+        raise ValueError(
+            "ANOSIM compares within-group with between-group dissimilarities: at least one group needs "
+            "two observations (every observation is alone in its group)"
+        )
 
     rng = random.Random(seed)
     logger.info("Running ANOSIM: %d observations, %d permutations", n, n_permutations)
@@ -345,7 +363,7 @@ def anosim(
     logger.info("ANOSIM complete: R=%.4f, p=%.4f", observed_r, p_value)
     return {
         "r_statistic": round(observed_r, 6),
-        "p_value": round(p_value, 4),
+        "p_value": p_value,
         "n_permutations": n_permutations,
     }
 
@@ -366,7 +384,9 @@ def permanova(
 
     PERMANOVA partitions the total sum of squared distances into
     within-group and between-group components and tests for significant
-    differences among groups using a pseudo-F statistic.
+    differences among groups using a pseudo-F statistic. When no distance falls
+    inside a group (every within-group sum of squares is 0) while the groups
+    differ, ``f_statistic`` is ``inf`` and ``r_squared`` is 1.
 
     Args:
         distance_matrix: Symmetric pairwise distance matrix (N x N).
@@ -382,7 +402,8 @@ def permanova(
             - ``n_permutations``: Number of permutations performed.
 
     Raises:
-        ValueError: If matrix is not square or labels do not match.
+        ValueError: If matrix is not square or labels do not match, there are fewer than two groups, there are
+            not more observations than groups, or every distance is zero.
 
     Example:
         >>> dm = [[0, 1, 5, 5], [1, 0, 5, 5], [5, 5, 0, 1], [5, 5, 1, 0]]
@@ -397,6 +418,11 @@ def permanova(
     groups = _unique_groups(group_labels)
     if len(groups) < 2:
         raise ValueError("At least two distinct groups are required for PERMANOVA")
+    if n - len(groups) <= 0:
+        raise ValueError(
+            f"PERMANOVA needs more observations than groups to estimate the within-group variance "
+            f"({n} observations, {len(groups)} groups)"
+        )
 
     rng = random.Random(seed)
     logger.info("Running PERMANOVA: %d observations, %d groups, %d permutations", n, len(groups), n_permutations)
@@ -404,21 +430,15 @@ def permanova(
     # Pre-compute squared distances
     sq_dist: List[List[float]] = [[d * d for d in row] for row in distance_matrix]
 
+    # Total sum of squares (Gower's centring); it does not depend on the labels
+    ss_total = sum(sq_dist[i][j] for i in range(n) for j in range(i + 1, n)) / n
+    if ss_total <= 0.0:
+        raise ValueError("All distances are zero: there is no variation for the groups to explain")
+
     def _compute_f(labels: List[str]) -> Tuple[float, float]:
         """Return (pseudo_F, r_squared) for given labels."""
-        # Total sum of squared distances / N
-        ss_total = 0.0
-        for i in range(n):
-            for j in range(i + 1, n):
-                ss_total += sq_dist[i][j]
-        ss_total /= n  # Gower's centring
-
         # Within-group sum of squares
         ss_within = 0.0
-        group_sizes: Dict[str, int] = defaultdict(int)
-        for lb in labels:
-            group_sizes[lb] += 1
-
         for grp in groups:
             members = [idx for idx, lb in enumerate(labels) if lb == grp]
             ng = len(members)
@@ -430,17 +450,18 @@ def permanova(
                     grp_ss += sq_dist[members[a_idx]][members[b_idx]]
             ss_within += grp_ss / ng
 
-        ss_between = ss_total - ss_within
+        ss_between = max(ss_total - ss_within, 0.0)
 
-        a = len(groups)  # number of groups
-        df_between = a - 1
-        df_within = n - a
+        df_between = len(groups) - 1
+        df_within = n - len(groups)
 
-        if df_within <= 0 or ss_within == 0:
-            return 0.0, 0.0
-
+        r_sq = ss_between / ss_total
+        if ss_within <= 0.0:
+            # No distance inside any group while some separate the groups: the groups explain everything and
+            # the ratio is infinite. (It used to be reported as F = 0, R2 = 0, p = 1: perfect separation read
+            # as no effect.)
+            return math.inf, r_sq
         f_stat = (ss_between / df_between) / (ss_within / df_within)
-        r_sq = ss_between / ss_total if ss_total > 0 else 0.0
         return f_stat, r_sq
 
     observed_f, observed_r2 = _compute_f(group_labels)
@@ -457,7 +478,7 @@ def permanova(
     logger.info("PERMANOVA complete: F=%.4f, R2=%.4f, p=%.4f", observed_f, observed_r2, p_value)
     return {
         "f_statistic": round(observed_f, 6),
-        "p_value": round(p_value, 4),
+        "p_value": p_value,
         "r_squared": round(observed_r2, 6),
         "n_permutations": n_permutations,
     }
@@ -495,7 +516,8 @@ def cluster_communities(
               (only meaningful when *n_clusters* is given; otherwise every
               observation is its own cluster label equal to its index).
             - ``cophenetic_correlation``: Pearson correlation between
-              original distances and cophenetic distances.
+              original distances and cophenetic distances; ``nan`` where it is undefined (two observations, or all
+              distances equal).
 
     Raises:
         ValueError: If *method* is unsupported or *n_clusters* is out of range.
@@ -683,7 +705,7 @@ def _pearson_correlation(mat_a: List[List[float]], mat_b: List[List[float]], n: 
         n: Matrix dimension.
 
     Returns:
-        Pearson r in [-1, 1], or 0.0 if undefined.
+        Pearson r in [-1, 1], or ``nan`` if undefined (fewer than two pairs, or no variation in either matrix).
     """
     vals_a: List[float] = []
     vals_b: List[float] = []
@@ -693,7 +715,7 @@ def _pearson_correlation(mat_a: List[List[float]], mat_b: List[List[float]], n: 
             vals_b.append(mat_b[i][j])
 
     if len(vals_a) < 2:
-        return 0.0
+        return math.nan
 
     mean_a = sum(vals_a) / len(vals_a)
     mean_b = sum(vals_b) / len(vals_b)
@@ -703,7 +725,7 @@ def _pearson_correlation(mat_a: List[List[float]], mat_b: List[List[float]], n: 
     var_b = sum((b - mean_b) ** 2 for b in vals_b)
 
     denom = math.sqrt(var_a * var_b)
-    return cov / denom if denom > 0 else 0.0
+    return cov / denom if denom > 0 else math.nan
 
 
 # ---------------------------------------------------------------------------
@@ -856,14 +878,16 @@ def multivariate_dispersion(
 
     Returns:
         Dictionary with keys:
-            - ``f_statistic``: F-value comparing group dispersions.
+            - ``f_statistic``: F-value comparing group dispersions (``inf`` when the groups' distances to
+              their centroids differ but vary not at all inside any group; 0 when they do not differ either).
             - ``p_value``: Permutation *p*-value.
             - ``group_dispersions``: Dict mapping each group label to its
               mean distance-to-centroid.
             - ``n_permutations``: Number of permutations performed.
 
     Raises:
-        ValueError: If matrix is not square or labels do not match.
+        ValueError: If matrix is not square or labels do not match, there are fewer than two groups, or there
+            are not more observations than groups.
 
     Example:
         >>> dm = [[0, 1, 4, 5], [1, 0, 5, 4], [4, 5, 0, 1], [5, 4, 1, 0]]
@@ -878,6 +902,11 @@ def multivariate_dispersion(
     groups = _unique_groups(group_labels)
     if len(groups) < 2:
         raise ValueError("At least two distinct groups are required for PERMDISP")
+    if n - len(groups) <= 0:
+        raise ValueError(
+            f"PERMDISP needs more observations than groups to estimate the within-group variance "
+            f"({n} observations, {len(groups)} groups)"
+        )
 
     rng = random.Random(seed)
     logger.info("Running PERMDISP: %d observations, %d groups", n, len(groups))
@@ -949,10 +978,23 @@ def multivariate_dispersion(
         df_between = a - 1
         df_within = n - a
 
-        if df_within <= 0 or ss_within == 0:
+        if df_between <= 0 or df_within <= 0:
             return 0.0, group_means
 
-        f_val = (ss_between / df_between) / (ss_within / df_within) if df_between > 0 else 0.0
+        # The distances to centroids come out of floating-point arithmetic, so "no spread" is judged against
+        # rounding noise: variation below 1e-20 of the squared magnitude of the distances is none.
+        noise = 1e-20 * n * grand_mean**2
+        total = ss_between + ss_within
+        if total <= noise:
+            # The distance to the centroid is the same for every observation: nothing differs between groups
+            return 0.0, group_means
+        if ss_within <= 1e-20 * total:
+            # Every observation sits as far from its centroid as the rest of its group (no spread inside
+            # groups) while the groups' distances differ: the ratio is infinite. (It used to be reported as 0,
+            # reading a perfect dispersion contrast as none.)
+            return math.inf, group_means
+
+        f_val = (ss_between / df_between) / (ss_within / df_within)
         return f_val, group_means
 
     observed_dists = _distances_to_centroids(group_labels)
@@ -975,7 +1017,7 @@ def multivariate_dispersion(
     logger.info("PERMDISP complete: F=%.4f, p=%.4f", observed_f, p_value)
     return {
         "f_statistic": round(observed_f, 6),
-        "p_value": round(p_value, 4),
+        "p_value": p_value,
         "group_dispersions": group_dispersions_out,
         "n_permutations": n_permutations,
     }

@@ -29,6 +29,16 @@ except ImportError:
     go = None
 
 
+def _save_axes_figure(ax: Axes, output_path: str | Path) -> None:
+    """Save the figure that *ax* is drawn on.
+
+    ``plt.savefig`` writes pyplot's *current* figure, which is not the caller's figure when they passed an axes
+    of an earlier figure (the file was then a blank or unrelated image). ``ax.figure.figure`` is the root
+    figure also for axes created through ``Figure.subfigures``.
+    """
+    ax.figure.figure.savefig(output_path, dpi=300, bbox_inches="tight")
+
+
 def plot_species_abundance_distribution(
     abundance_data: np.ndarray,
     species_names: List[str] | None = None,
@@ -92,7 +102,7 @@ def plot_species_abundance_distribution(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        _save_axes_figure(ax, output_path)
         logger.info(f"Species abundance distribution saved to {output_path}")
 
     return ax
@@ -151,7 +161,7 @@ def plot_diversity_accumulation_curve(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        _save_axes_figure(ax, output_path)
         logger.info(f"Diversity accumulation curve saved to {output_path}")
 
     return ax
@@ -223,7 +233,7 @@ def plot_community_composition(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        _save_axes_figure(ax, output_path)
         logger.info(f"Community composition plot saved to {output_path}")
 
     return ax
@@ -288,12 +298,12 @@ def plot_beta_diversity_ordination(
         ax.legend()
     else:
         # Add colorbar
-        cbar = plt.colorbar(scatter, ax=ax)
+        cbar = ax.figure.colorbar(scatter, ax=ax)
         cbar.set_label("Sample Index")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        _save_axes_figure(ax, output_path)
         logger.info(f"Beta diversity ordination saved to {output_path}")
 
     return ax
@@ -360,7 +370,7 @@ def plot_diversity_indices_comparison(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        _save_axes_figure(ax, output_path)
         logger.info(f"Diversity indices comparison saved to {output_path}")
 
     return ax
@@ -415,7 +425,7 @@ def plot_ecological_network(
                 G.add_edge(i, j, weight=abs(interaction_matrix[i, j]))
 
     # Plot network
-    pos = nx.spring_layout(G, k=1, iterations=50)
+    pos = nx.spring_layout(G, k=1, iterations=50, seed=kwargs.get("seed", 0))
 
     # Node sizes based on degree
     degrees = dict(G.degree())
@@ -434,7 +444,7 @@ def plot_ecological_network(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        _save_axes_figure(ax, output_path)
         logger.info(f"Ecological network plot saved to {output_path}")
 
     return ax
@@ -487,7 +497,7 @@ def plot_rank_abundance_curve_comparison(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        _save_axes_figure(ax, output_path)
         logger.info(f"Rank-abundance comparison saved to {output_path}")
 
     return ax
@@ -543,7 +553,7 @@ def plot_biodiversity_rarefaction(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        _save_axes_figure(ax, output_path)
         logger.info(f"Biodiversity rarefaction plot saved to {output_path}")
 
     return ax
@@ -588,12 +598,12 @@ def plot_ecological_distance_heatmap(
         ax.set_yticklabels(sample_names)
 
     # Add colorbar
-    cbar = plt.colorbar(im, ax=ax)
+    cbar = ax.figure.colorbar(im, ax=ax)
     cbar.set_label("Ecological Distance")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        _save_axes_figure(ax, output_path)
         logger.info(f"Ecological distance heatmap saved to {output_path}")
 
     return ax

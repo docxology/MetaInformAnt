@@ -5,8 +5,9 @@ unweighted), Net Relatedness Index (NRI), Nearest Taxon Index (NTI),
 phylogenetic signal tests (Blomberg's K, Pagel's lambda), and simple
 tree construction (UPGMA/NJ) from distance matrices.
 
-All algorithms are pure Python implementations using nested-dict tree
-representations::
+The diversity metrics are pure Python implementations using nested-dict tree
+representations; the phylogenetic-signal tests also use NumPy and SciPy for the
+linear algebra of the tree's covariance matrix::
 
     tree = {
         "name": "root",
@@ -25,7 +26,9 @@ from __future__ import annotations
 
 import math
 import random
-from typing import Any
+
+import numpy as np
+from scipy import linalg, optimize, stats
 
 from metainformant.core.utils.logging import get_logger
 
@@ -170,6 +173,20 @@ def faiths_pd(tree: dict, taxa_present: list[str]) -> float:
 # ---------------------------------------------------------------------------
 
 
+def _edges_with_tips(node: dict, is_root: bool = True) -> list[tuple[float, frozenset[str]]]:
+    """Every branch below the root as ``(branch_length, tips descending from it)``.
+
+    Walking the nested dicts directly, instead of looking each branch up by name, keeps trees whose internal
+    nodes share a name (or have none) correct.
+    """
+    branches: list[tuple[float, frozenset[str]]] = []
+    for child in node.get("children", []):
+        branches.extend(_edges_with_tips(child, is_root=False))
+    if not is_root:
+        branches.append((node.get("branch_length", 0.0), frozenset(_get_all_tips(node))))
+    return branches
+
+
 def compute_unifrac(
     tree: dict,
     abundances_a: dict,
@@ -178,8 +195,12 @@ def compute_unifrac(
 ) -> float:
     """Compute UniFrac distance between two communities.
 
-    Unweighted UniFrac measures the fraction of branch length unique to
-    either community. Weighted UniFrac accounts for abundance differences.
+    Unweighted UniFrac is the fraction of the branch length spanned by either community that leads to
+    descendants of only one of them: ``sum(l_i * |A_i - B_i|) / sum(l_i * max(A_i, B_i))`` for branches ``i`` with
+    presence indicators ``A_i`` and ``B_i`` (Lozupone and Knight 2005). Branches with no descendant in either
+    community are outside the denominator; counting them (the whole tree's length) shrinks the distance towards 0
+    for every taxon the tree holds beyond the two communities. Weighted UniFrac accounts for abundance
+    differences (normalised weighted UniFrac, Lozupone et al. 2007).
 
     Args:
         tree: Phylogenetic tree as nested dict.
@@ -188,10 +209,10 @@ def compute_unifrac(
         weighted: If ``True``, compute weighted UniFrac.
 
     Returns:
-        UniFrac distance in [0, 1].
+        UniFrac distance in [0, 1]; 0.0 when neither community has a taxon on a branch with positive length.
     """
     all_tips = set(_get_all_tips(tree))
-    edges = _get_all_edges(tree)
+    branches = _edges_with_tips(tree)
 
     if not weighted:
         # Unweighted UniFrac
@@ -199,24 +220,20 @@ def compute_unifrac(
         taxa_b = set(t for t, v in abundances_b.items() if v > 0 and t in all_tips)
 
         unique_bl = 0.0
-        total_bl = 0.0
+        observed_bl = 0.0
 
-        for _, child_name, bl in edges:
-            # Find tips descending from this edge
-            # Simple approach: check if child_name is a tip
-            # For internal nodes, collect tips below
-            tips_below = _tips_below_node(tree, child_name)
-
-            has_a = bool(tips_below.intersection(taxa_a))
-            has_b = bool(tips_below.intersection(taxa_b))
-
-            total_bl += bl
+        for bl, tips_below in branches:
+            has_a = not tips_below.isdisjoint(taxa_a)
+            has_b = not tips_below.isdisjoint(taxa_b)
+            if not (has_a or has_b):
+                continue  # a branch neither community reaches
+            observed_bl += bl
             if has_a != has_b:  # unique to one community
                 unique_bl += bl
 
-        if total_bl == 0:
+        if observed_bl == 0:
             return 0.0
-        return unique_bl / total_bl
+        return unique_bl / observed_bl
 
     else:
         # Weighted UniFrac
@@ -226,9 +243,7 @@ def compute_unifrac(
         numerator = 0.0
         denominator = 0.0
 
-        for _, child_name, bl in edges:
-            tips_below = _tips_below_node(tree, child_name)
-
+        for bl, tips_below in branches:
             prop_a = sum(abundances_a.get(t, 0.0) for t in tips_below) / total_a
             prop_b = sum(abundances_b.get(t, 0.0) for t in tips_below) / total_b
 
@@ -238,25 +253,6 @@ def compute_unifrac(
         if denominator == 0:
             return 0.0
         return numerator / denominator
-
-
-def _tips_below_node(tree: dict, node_name: str) -> set[str]:
-    """Find all tips below a named node in the tree."""
-    result = _find_node(tree, node_name)
-    if result is None:
-        return set()
-    return set(_get_all_tips(result))
-
-
-def _find_node(tree: dict, name: str) -> dict | None:
-    """Find a node by name in the tree."""
-    if tree.get("name") == name:
-        return tree
-    for child in tree.get("children", []):
-        result = _find_node(child, name)
-        if result is not None:
-            return result
-    return None
 
 
 # ---------------------------------------------------------------------------
@@ -275,15 +271,27 @@ def phylogenetic_beta_diversity(
         tree: Phylogenetic tree as nested dict.
         communities: List of communities, each a list of taxon names.
         metric: Distance metric: ``"unweighted_unifrac"`` or
-            ``"weighted_unifrac"`` (or ``"unifrac"`` for unweighted).
+            ``"weighted_unifrac"`` (or ``"unifrac"`` for unweighted). Communities are presence/absence lists, so
+            weighted UniFrac here weights every listed taxon equally.
 
     Returns:
         Dictionary with keys:
             - distance_matrix: 2D list of distances between communities.
             - metric: Metric used.
             - n_communities: Number of communities.
+
+    Raises:
+        ValueError: If ``metric`` is none of these.
     """
-    weighted = "weighted" in metric.lower()
+    # "unweighted_unifrac" contains the substring "weighted", so the metric name has to be matched exactly:
+    # a substring test computed weighted UniFrac for the metric that asks for unweighted.
+    metric_key = metric.lower()
+    if metric_key in ("unifrac", "unweighted_unifrac"):
+        weighted = False
+    elif metric_key == "weighted_unifrac":
+        weighted = True
+    else:
+        raise ValueError(f"Unsupported metric {metric!r}. Use 'unifrac', 'unweighted_unifrac' or 'weighted_unifrac'")
     n = len(communities)
     dist_matrix = [[0.0] * n for _ in range(n)]
 
@@ -327,17 +335,26 @@ def nri_nti(
         tree: Phylogenetic tree as nested dict.
         communities: List of communities (each a list of taxon names).
         n_randomizations: Number of randomizations for null distribution.
+        seed: Seed of the random number generator used for the null draws. With ``None`` the draws are
+            different on every call; either way they come from a private generator, so the interpreter's
+            global ``random`` state is neither read nor changed.
 
     Returns:
         Dictionary with keys:
             - nri: List of NRI values per community.
             - nti: List of NTI values per community.
-            - p_values: Dict with ``"nri"`` and ``"nti"`` lists of p-values.
+            - p_values: Dict with ``"nri"`` and ``"nti"`` lists of one-sided (clustering) p-values,
+              ``(1 + number of null values <= observed) / (1 + n_randomizations)``, so none is 0.
             - ses_values: Dict with ``"nri"`` and ``"nti"`` lists of SES values.
+
+        A community with fewer than two taxa on the tree has no pairwise distance to standardise: its NRI, NTI
+        and p-values are ``nan``, not 0 and 1. A community whose null distribution has no spread (for instance
+        every pairwise distance on the tree is equal) has a zero standard deviation to divide by: its NRI or
+        NTI is ``nan`` (the p-value, which does not divide by it, is still reported).
     """
     all_tips = _get_all_tips(tree)
     pw_dist = _pairwise_distances(tree)
-    rng = random.Random(seed) if seed is not None else random
+    rng = random.Random(seed)
 
     def _mpd(taxa: list[str]) -> float:
         if len(taxa) < 2:
@@ -369,14 +386,15 @@ def nri_nti(
     nti_vals: list[float] = []
     p_nri: list[float] = []
     p_nti: list[float] = []
+    undefined = float("nan")
 
     for comm in communities:
         valid_taxa = [t for t in comm if t in all_tips]
         if len(valid_taxa) < 2:
-            nri_vals.append(0.0)
-            nti_vals.append(0.0)
-            p_nri.append(1.0)
-            p_nti.append(1.0)
+            nri_vals.append(undefined)
+            nti_vals.append(undefined)
+            p_nri.append(undefined)
+            p_nti.append(undefined)
             continue
 
         obs_mpd = _mpd(valid_taxa)
@@ -395,13 +413,14 @@ def nri_nti(
         mean_null_mntd = sum(null_mntds) / len(null_mntds)
         sd_null_mntd = math.sqrt(sum((x - mean_null_mntd) ** 2 for x in null_mntds) / max(len(null_mntds) - 1, 1))
 
-        # NRI = -(obs - mean_null) / sd_null  (negative sign: clustering = positive)
-        nri = -(obs_mpd - mean_null_mpd) / sd_null_mpd if sd_null_mpd > 0 else 0.0
-        nti = -(obs_mntd - mean_null_mntd) / sd_null_mntd if sd_null_mntd > 0 else 0.0
+        # NRI = -(obs - mean_null) / sd_null  (negative sign: clustering = positive); undefined without spread
+        nri = -(obs_mpd - mean_null_mpd) / sd_null_mpd if sd_null_mpd > 0 else undefined
+        nti = -(obs_mntd - mean_null_mntd) / sd_null_mntd if sd_null_mntd > 0 else undefined
 
-        # P-values (proportion of null <= observed for clustering)
-        p_nri_val = sum(1 for x in null_mpds if x <= obs_mpd) / len(null_mpds)
-        p_nti_val = sum(1 for x in null_mntds if x <= obs_mntd) / len(null_mntds)
+        # One-sided (clustering) p-values: the observed value counts as one more draw from the null, so a
+        # finite randomization never yields p = 0
+        p_nri_val = (1 + sum(1 for x in null_mpds if x <= obs_mpd)) / (1 + len(null_mpds))
+        p_nti_val = (1 + sum(1 for x in null_mntds if x <= obs_mntd)) / (1 + len(null_mntds))
 
         nri_vals.append(nri)
         nti_vals.append(nti)
@@ -431,90 +450,128 @@ def phylogenetic_signal(
 ) -> dict:
     """Test for phylogenetic signal in a continuous trait.
 
+    Both statistics assume the trait evolves by Brownian motion along the tree, whose covariance between two
+    tips is the length of the root path they share (the root's own branch is ignored).
+
+    * ``"blomberg_k"``: Blomberg et al.'s (2003) K, the observed ratio of the mean squared error of the trait
+      about its arithmetic mean to that about its phylogenetic (generalised least squares) mean, divided by the
+      ratio expected under Brownian motion. K = 1 for a Brownian trait, K < 1 means relatives resemble each
+      other less than that, K > 1 more. The p-value is a one-sided randomization test (999 shuffles of the
+      trait across tips): the share of shuffles whose K is at least the observed one, counting the observed
+      value as one more draw.
+    * ``"pagel_lambda"``: Pagel's (1999) lambda, the maximum-likelihood value in [0, 1] by which the tree's
+      internal (off-diagonal) covariances are multiplied, 0 meaning no signal and 1 Brownian motion on the
+      tree as given. The p-value is the likelihood-ratio test against lambda = 0 (chi-square, 1 degree of
+      freedom; conservative because 0 is on the boundary of the parameter range).
+
     Args:
         tree: Phylogenetic tree as nested dict.
         trait_values: Dict mapping taxon name to trait value.
         method: ``"blomberg_k"`` or ``"pagel_lambda"``.
+        seed: Seed for the Blomberg's K randomization (a private generator is used; the global ``random``
+            state is untouched). Pagel's lambda is deterministic.
 
     Returns:
         Dictionary with keys:
-            - statistic: Test statistic value.
-            - p_value: P-value from randomization test.
+            - statistic: Blomberg's K, or the maximum-likelihood lambda.
+            - p_value: P-value as described above.
             - method: Method used.
             - n_taxa: Number of taxa with trait data.
+            - log_likelihood, log_likelihood_lambda0: (``"pagel_lambda"`` only) maximised log-likelihood and its
+              value at lambda = 0.
+
+    Raises:
+        ValueError: If ``method`` is unknown, fewer than 3 taxa have trait values, the trait does not vary, or
+            the tree's covariance matrix is singular (or, for lambda, has no covariance between tips, so lambda is
+            not identifiable).
     """
+    if method not in ("blomberg_k", "pagel_lambda"):
+        raise ValueError(f"Unknown method '{method}'. Use 'blomberg_k' or 'pagel_lambda'.")
+
     all_tips = _get_all_tips(tree)
     valid_taxa = [t for t in all_tips if t in trait_values]
 
     if len(valid_taxa) < 3:
         raise ValueError(f"Need at least 3 taxa with trait values, got {len(valid_taxa)}")
 
-    pw_dist = _pairwise_distances(tree)
-    n = len(valid_taxa)
-    traits = [float(trait_values[t]) for t in valid_taxa]
-    trait_mean = sum(traits) / n
+    traits = np.asarray([float(trait_values[t]) for t in valid_taxa], dtype=float)
+    if not np.all(np.isfinite(traits)):
+        raise ValueError("Trait values must be finite")
+    if float(np.ptp(traits)) == 0.0:
+        raise ValueError("The trait has no variation across taxa, so there is no signal to measure")
 
-    rng = random.Random(seed) if seed is not None else random
+    vcv = _phylogenetic_vcv(tree, valid_taxa)
     if method == "blomberg_k":
-        return _blomberg_k(valid_taxa, traits, trait_mean, pw_dist, n, rng=rng)
-    elif method == "pagel_lambda":
-        return _pagel_lambda(valid_taxa, traits, trait_mean, pw_dist, n, rng=rng)
-    else:
-        raise ValueError(f"Unknown method '{method}'. Use 'blomberg_k' or 'pagel_lambda'.")
+        return _blomberg_k(traits, vcv, random.Random(seed))
+    return _pagel_lambda(traits, vcv)
 
 
-def _blomberg_k(
-    taxa: list[str],
-    traits: list[float],
-    trait_mean: float,
-    pw_dist: dict[tuple[str, str], float],
-    n: int,
-    rng: Any = random,
-) -> dict:
-    """Compute Blomberg's K statistic."""
-    # MSE0: observed mean squared error
-    mse0 = sum((t - trait_mean) ** 2 for t in traits) / (n - 1)
-    if mse0 == 0:
-        return {"statistic": 0.0, "p_value": 1.0, "method": "blomberg_k", "n_taxa": n}
+def _phylogenetic_vcv(tree: dict, taxa: list[str]) -> np.ndarray:
+    """Covariance matrix of a Brownian-motion trait at the tips *taxa*.
 
-    # MSE: phylogenetic mean squared error (average of squared differences
-    # weighted by inverse distance)
-    total_weighted_diff = 0.0
-    total_weight = 0.0
+    ``C[i, j]`` is the length of the root path that tips ``i`` and ``j`` share (their root-to-ancestor distance),
+    and ``C[i, i]`` is the root-to-tip distance. Nodes are told apart by identity, not name.
+    """
+    paths: dict[str, list[tuple[int, float]]] = {}
+    counter = [0]
+
+    def walk(node: dict, depth: float, trail: list[tuple[int, float]]) -> None:
+        children = node.get("children") or []
+        if not children:
+            paths[node["name"]] = trail
+            return
+        for child in children:
+            counter[0] += 1
+            child_depth = depth + float(child.get("branch_length", 0.0))
+            walk(child, child_depth, trail + [(counter[0], child_depth)])
+
+    walk(tree, 0.0, [])
+
+    n = len(taxa)
+    vcv = np.zeros((n, n))
     for i in range(n):
+        path_i = paths[taxa[i]]
+        vcv[i, i] = path_i[-1][1] if path_i else 0.0
         for j in range(i + 1, n):
-            d = pw_dist.get((taxa[i], taxa[j]), 1.0)
-            if d > 0:
-                w = 1.0 / d
-                total_weighted_diff += w * (traits[i] - traits[j]) ** 2
-                total_weight += w
+            shared = 0.0
+            for (node_i, depth_i), (node_j, _) in zip(path_i, paths[taxa[j]]):
+                if node_i != node_j:
+                    break
+                shared = depth_i
+            vcv[i, j] = vcv[j, i] = shared
+    return vcv
 
-    mse_phylo = total_weighted_diff / total_weight if total_weight > 0 else mse0
 
-    k_obs = (mse0 / mse_phylo) if mse_phylo > 0 else 0.0
+def _blomberg_k(traits: np.ndarray, vcv: np.ndarray, rng: random.Random) -> dict:
+    """Blomberg's K and its randomization p-value (see :func:`phylogenetic_signal`)."""
+    n = len(traits)
+    try:
+        vcv_inv = np.linalg.inv(vcv)
+    except np.linalg.LinAlgError as exc:
+        raise ValueError("The tree's covariance matrix is singular (do some tips sit at the same position?)") from exc
+    ones = np.ones(n)
+    information = float(ones @ vcv_inv @ ones)
+    # Expected MSE0 / MSE under Brownian motion: (tr(C) - n / (1' C^-1 1)) / (n - 1)
+    expected_ratio = (float(np.trace(vcv)) - n / information) / (n - 1)
+    if not expected_ratio > 0:
+        raise ValueError("The tree has no branch length separating the tips, so K is not defined")
 
-    # Randomization test
+    def k_statistic(values: np.ndarray) -> float:
+        phylogenetic_mean = float(ones @ vcv_inv @ values) / information
+        centred = values - phylogenetic_mean
+        mse = float(centred @ vcv_inv @ centred) / (n - 1)
+        arithmetic = values - values.mean()
+        mse0 = float(arithmetic @ arithmetic) / (n - 1)
+        return (mse0 / mse) / expected_ratio
+
+    k_obs = k_statistic(traits)
+
     n_rand = 999
     count_ge = 0
+    shuffled = list(traits)
     for _ in range(n_rand):
-        perm_traits = list(traits)
-        rng.shuffle(perm_traits)
-        perm_mse0 = sum((t - trait_mean) ** 2 for t in perm_traits) / (n - 1)
-
-        tw_diff = 0.0
-        tw = 0.0
-        for i in range(n):
-            for j in range(i + 1, n):
-                d = pw_dist.get((taxa[i], taxa[j]), 1.0)
-                if d > 0:
-                    w = 1.0 / d
-                    tw_diff += w * (perm_traits[i] - perm_traits[j]) ** 2
-                    tw += w
-
-        perm_mse_phylo = tw_diff / tw if tw > 0 else perm_mse0
-        k_perm = (perm_mse0 / perm_mse_phylo) if perm_mse_phylo > 0 else 0.0
-
-        if k_perm >= k_obs:
+        rng.shuffle(shuffled)
+        if k_statistic(np.asarray(shuffled)) >= k_obs:
             count_ge += 1
 
     p_value = (count_ge + 1) / (n_rand + 1)
@@ -529,73 +586,61 @@ def _blomberg_k(
     }
 
 
-def _pagel_lambda(
-    taxa: list[str],
-    traits: list[float],
-    trait_mean: float,
-    pw_dist: dict[tuple[str, str], float],
-    n: int,
-    rng: Any = random,
-) -> dict:
-    # Compute correlation between |trait_i - trait_j| and phylo distance
-    diffs = []
-    dists = []
-    for i in range(n):
-        for j in range(i + 1, n):
-            diffs.append(abs(traits[i] - traits[j]))
-            dists.append(pw_dist.get((taxa[i], taxa[j]), 0.0))
+def _pagel_lambda(traits: np.ndarray, vcv: np.ndarray) -> dict:
+    """Maximum-likelihood Pagel's lambda and its likelihood-ratio p-value (see :func:`phylogenetic_signal`)."""
+    n = len(traits)
+    diagonal = np.diag(np.diag(vcv))
+    off_diagonal = vcv - diagonal
+    if not np.any(off_diagonal):
+        raise ValueError("Pagel's lambda is not identifiable: no two tips share any ancestry on this tree")
+    ones = np.ones(n)
 
-    if len(diffs) < 3:
-        return {"statistic": 0.0, "p_value": 1.0, "method": "pagel_lambda", "n_taxa": n}
+    def log_likelihood(lam: float) -> float:
+        # diag(C) + lam * offdiag(C) is positive definite for lam in [0, 1] whenever C is, so a Cholesky factor
+        # gives both the log-determinant and the solves (and fails cleanly when C is singular)
+        scaled = diagonal + lam * off_diagonal
+        try:
+            factor = (np.linalg.cholesky(scaled), True)
+        except np.linalg.LinAlgError:
+            return -math.inf
+        log_det = 2.0 * float(np.sum(np.log(np.diag(factor[0]))))
+        solved_ones = linalg.cho_solve(factor, ones)
+        generalised_mean = float(solved_ones @ traits) / float(solved_ones @ ones)
+        residual = traits - generalised_mean
+        sigma2 = float(residual @ linalg.cho_solve(factor, residual)) / n
+        if not sigma2 > 0:
+            return -math.inf
+        return -0.5 * (n * math.log(2.0 * math.pi * sigma2) + log_det + n)
 
-    # Pearson correlation
-    mean_diff = sum(diffs) / len(diffs)
-    mean_dist = sum(dists) / len(dists)
-    sd_diff = math.sqrt(sum((d - mean_diff) ** 2 for d in diffs) / (len(diffs) - 1))
-    sd_dist = math.sqrt(sum((d - mean_dist) ** 2 for d in dists) / (len(dists) - 1))
-
-    if sd_diff == 0 or sd_dist == 0:
-        lam = 0.0
+    grid = np.linspace(0.0, 1.0, 101)
+    grid_values = [log_likelihood(float(lam)) for lam in grid]
+    best = int(np.argmax(grid_values))
+    if not math.isfinite(grid_values[best]):
+        raise ValueError("The likelihood cannot be evaluated: the tree's covariance matrix is singular")
+    refined = optimize.minimize_scalar(
+        lambda lam: -log_likelihood(float(lam)),
+        bounds=(float(grid[max(best - 1, 0)]), float(grid[min(best + 1, len(grid) - 1)])),
+        method="bounded",
+        options={"xatol": 1e-10},
+    )
+    if -float(refined.fun) >= grid_values[best]:
+        lam_hat, ll_hat = float(refined.x), -float(refined.fun)
     else:
-        r = sum((di - mean_diff) * (dj - mean_dist) for di, dj in zip(diffs, dists)) / (
-            (len(diffs) - 1) * sd_diff * sd_dist
-        )
-        # Lambda approximation: higher correlation -> higher signal -> lambda near 1
-        lam = max(0.0, min(1.0, r))
+        lam_hat, ll_hat = float(grid[best]), grid_values[best]
+    ll_null = grid_values[0]  # lambda = 0
 
-    # Randomization test
-    n_rand = 999
-    count_ge = 0
-    for _ in range(n_rand):
-        perm = list(traits)
-        rng.shuffle(perm)
-        perm_diffs = []
-        for i in range(n):
-            for j in range(i + 1, n):
-                perm_diffs.append(abs(perm[i] - perm[j]))
+    statistic = max(0.0, 2.0 * (ll_hat - ll_null))
+    p_value = float(stats.chi2.sf(statistic, df=1))
 
-        pm = sum(perm_diffs) / len(perm_diffs)
-        ps = math.sqrt(sum((d - pm) ** 2 for d in perm_diffs) / (len(perm_diffs) - 1))
-        if ps > 0 and sd_dist > 0:
-            r_perm = sum((di - pm) * (dj - mean_dist) for di, dj in zip(perm_diffs, dists)) / (
-                (len(perm_diffs) - 1) * ps * sd_dist
-            )
-            lam_perm = max(0.0, min(1.0, r_perm))
-        else:
-            lam_perm = 0.0
-
-        if lam_perm >= lam:
-            count_ge += 1
-
-    p_value = (count_ge + 1) / (n_rand + 1)
-
-    logger.info("Pagel's lambda = %.4f, p = %.4f (n=%d)", lam, p_value, n)
+    logger.info("Pagel's lambda = %.4f, p = %.4f (n=%d)", lam_hat, p_value, n)
 
     return {
-        "statistic": lam,
+        "statistic": lam_hat,
         "p_value": p_value,
         "method": "pagel_lambda",
         "n_taxa": n,
+        "log_likelihood": ll_hat,
+        "log_likelihood_lambda0": ll_null,
     }
 
 

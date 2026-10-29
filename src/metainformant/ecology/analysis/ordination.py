@@ -109,7 +109,9 @@ def pcoa(
         Dictionary with keys:
             - ``coordinates``: List[List[float]] of shape (n, n_components).
             - ``eigenvalues``: List[float] of the top eigenvalues.
-            - ``variance_explained``: List[float] fraction of variance per axis.
+            - ``variance_explained``: List[float] share of the total variance (the sum of all positive
+              eigenvalues of the double-centred matrix, not just the returned ones) that each returned axis
+              explains; it sums to less than 1 when fewer axes are returned than carry variance.
 
     Raises:
         ValueError: If the distance matrix is empty, not square, not symmetric,
@@ -148,8 +150,11 @@ def pcoa(
     grand_mean = D_sq.mean()
     B = -0.5 * (D_sq - row_means - col_means + grand_mean)
 
-    # Eigendecomposition of B
-    eigenvalues, eigenvectors = _eigen_symmetric(B, n_components)
+    # Eigendecomposition of B: the whole spectrum, because the variance each axis explains is a fraction of
+    # the variance on all axes, not of the axes that are returned.
+    all_eigenvalues, all_eigenvectors = _eigen_symmetric(B, n)
+    eigenvalues = all_eigenvalues[:n_components]
+    eigenvectors = all_eigenvectors[:, :n_components]
 
     # Coordinates = eigenvectors * sqrt(max(eigenvalue, 0))
     # Negative eigenvalues are clamped to zero (may occur with non-Euclidean distances)
@@ -158,8 +163,9 @@ def pcoa(
         lam = max(eigenvalues[k], 0.0)
         coords[:, k] = eigenvectors[:, k] * math.sqrt(lam)
 
-    # Variance explained
-    positive_eigenvalues = eigenvalues[eigenvalues > 0]
+    # Variance explained: each returned eigenvalue over the sum of all positive eigenvalues. Keeping only the
+    # first components used to renormalise them to sum to 1, whatever share of the variance they hold.
+    positive_eigenvalues = all_eigenvalues[all_eigenvalues > 0]
     total_variance = float(positive_eigenvalues.sum()) if len(positive_eigenvalues) > 0 else 1.0
     variance_explained = [max(float(ev), 0.0) / total_variance for ev in eigenvalues]
 
@@ -201,36 +207,29 @@ def _isotonic_regression(values: np.ndarray, weights: Optional[np.ndarray] = Non
     if weights is None:
         weights = np.ones(n, dtype=np.float64)
 
-    result = values.astype(np.float64).copy()
-    w = weights.astype(np.float64).copy()
+    targets = values.astype(np.float64)
+    w = weights.astype(np.float64)
 
-    # Pool adjacent violators
-    i = 0
-    while i < n - 1:
-        if result[i] > result[i + 1]:
-            # Merge blocks
-            pooled = (result[i] * w[i] + result[i + 1] * w[i + 1]) / (w[i] + w[i + 1])
-            result[i] = pooled
-            result[i + 1] = pooled
-            w[i] = w[i] + w[i + 1]
-            w[i + 1] = w[i]
-            # Walk back
-            j = i
-            while j > 0 and result[j - 1] > result[j]:
-                pooled = (result[j - 1] * w[j - 1] + result[j] * w[j]) / (w[j - 1] + w[j])
-                result[j - 1] = pooled
-                result[j] = pooled
-                w[j - 1] = w[j - 1] + w[j]
-                w[j] = w[j - 1]
-                j -= 1
-        i += 1
+    # Pool adjacent violators over an explicit stack of blocks. Each block keeps its weighted mean, its total
+    # weight and its size, so pooling a new element with a block that already merged several elements weights
+    # the block by everything it holds. (Updating only the two elements next to a merge double-counts weight and
+    # leaves stale values inside the block.)
+    block_means: list[float] = []
+    block_weights: list[float] = []
+    block_sizes: list[int] = []
+    for i in range(n):
+        mean, weight, size = float(targets[i]), float(w[i]), 1
+        while block_means and block_means[-1] > mean:
+            previous_mean = block_means.pop()
+            previous_weight = block_weights.pop()
+            size += block_sizes.pop()
+            mean = (previous_mean * previous_weight + mean * weight) / (previous_weight + weight)
+            weight += previous_weight
+        block_means.append(mean)
+        block_weights.append(weight)
+        block_sizes.append(size)
 
-    # Forward pass to propagate merged values
-    for i in range(1, n):
-        if result[i] < result[i - 1]:
-            result[i] = result[i - 1]
-
-    return result
+    return np.repeat(np.asarray(block_means, dtype=np.float64), block_sizes)
 
 
 def _kruskal_stress(
@@ -718,8 +717,8 @@ def procrustes(
     Translates, uniformly scales, and rotates *coords2* to best match
     *coords1* in the least-squares sense.  This is orthogonal Procrustes
     analysis with reflection prevention: when the optimal orthogonal
-    transform has det < 0 (a reflection), the last column of V is flipped
-    so only proper rotations are applied.
+    transform has det < 0 (a reflection), the singular direction with the
+    smallest singular value is flipped so only proper rotations are applied.
 
     Args:
         coords1: Reference configuration of shape (n, p).
@@ -729,14 +728,19 @@ def procrustes(
         Dictionary with keys:
             - ``transformed_coords``: List[List[float]] -- coords2 after
               translation, scaling, and rotation to match coords1.
-            - ``m2``: float -- sum of squared differences (Procrustes
-              statistic) after transformation.
-            - ``correlation``: float -- Procrustes correlation (1 - m2)
-              normalised to [0, 1].
+            - ``m2``: float -- sum of squared differences between the two
+              configurations after each is centred and scaled to unit sum of
+              squares and *coords2* is rotated onto *coords1* (0 for
+              configurations that coincide up to rotation and scale).
+            - ``correlation``: float -- Procrustes correlation ``1 - m2 / 2``,
+              the sum of the singular values of the cross-product matrix
+              (the last one counted negative when a reflection had to be
+              excluded), clipped to [0, 1].
 
     Raises:
-        ValueError: If configurations have different shapes, are empty, or
-            have fewer than 2 points.
+        ValueError: If configurations have different shapes, are empty, have
+            fewer than 2 points, or have all points of one configuration at the same place
+            (there is no shape to superimpose).
 
     Example:
         >>> c1 = [[0, 0], [1, 0], [0, 1]]
@@ -778,12 +782,9 @@ def procrustes(
     ss_Y = float(np.sum(Y_c**2))
 
     if ss_X < 1e-15 or ss_Y < 1e-15:
-        # Degenerate: all points coincide
-        return {
-            "transformed_coords": X_c.tolist(),
-            "m2": 0.0,
-            "correlation": 1.0,
-        }
+        # All points of a configuration coincide: it has no shape, so no fit can be reported. (Returning a
+        # perfect fit, m2 = 0 and correlation = 1, here would present a point against a shape as a match.)
+        raise ValueError("Procrustes analysis needs configurations whose points do not all coincide")
 
     norm_X = math.sqrt(ss_X)
     norm_Y = math.sqrt(ss_Y)
@@ -791,19 +792,17 @@ def procrustes(
     Y_n = Y_c / norm_Y
 
     # Step 3: Optimal rotation via SVD
-    # Find R that minimises || X_n - Y_n @ R ||^2
-    # Solution: R = V @ U^T where U S V^T = SVD(Y_n^T @ X_n)
+    # Minimise || X_n - Y_n @ R ||^2 over orthogonal R. With U S V^T = SVD(Y_n^T @ X_n) the minimiser is
+    # R = U @ V^T (tr(R^T M) = sum(S) there); V @ U^T is the transpose, i.e. the inverse rotation.
     M = Y_n.T @ X_n  # (p, p)
     U, S, Vt = np.linalg.svd(M)
-    V = Vt.T
 
-    # Check for reflection: det(V @ U^T) should be +1 for proper rotation
-    # If det < 0, flip sign of last column of V
-    d = np.linalg.det(V @ U.T)
-    if d < 0:
-        V[:, -1] *= -1
-
-    R = V @ U.T  # (p, p) rotation matrix
+    # Reflection prevention: if U @ V^T has det -1, give the direction of the smallest singular value the
+    # opposite sign so that R is a proper rotation.
+    signs = np.ones(p)
+    if np.linalg.det(U @ Vt) < 0:
+        signs[-1] = -1.0
+    R = (U * signs) @ Vt  # (p, p) rotation matrix
 
     # Step 4: Apply rotation and scale Y to match X
     Y_rotated = Y_n @ R  # (n, p)
@@ -811,15 +810,13 @@ def procrustes(
     # Scale back to X's scale
     Y_transformed = Y_rotated * norm_X + X_centroid
 
-    # Procrustes statistic m2 = sum of squared differences after optimal superimposition
-    # Computed on the normalised coordinates
+    # Procrustes statistic m2 = sum of squared differences after optimal superimposition,
+    # computed on the normalised coordinates: m2 = 2 - 2 tr(R^T M).
     m2 = float(np.sum((X_n - Y_rotated) ** 2))
 
-    # Correlation: related to the trace of S
-    # Procrustes correlation = sqrt(1 - m2) when properly normalised
-    trace_S = float(np.sum(S))
-    # m2 = 2 * (1 - trace_S) when both are normalised to unit SS
-    correlation = max(0.0, min(1.0, trace_S))
+    # The correlation is the trace actually achieved by the rotation, tr(R^T M) = 1 - m2 / 2. It equals
+    # sum(S) unless a reflection was excluded, when the smallest singular value counts negatively.
+    correlation = max(0.0, min(1.0, 1.0 - m2 / 2.0))
 
     logger.info("Procrustes: %d points, %d dims, m2=%.6f, correlation=%.4f", n, p, m2, correlation)
 
