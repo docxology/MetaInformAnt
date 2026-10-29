@@ -7,7 +7,9 @@ a lowest common ancestor (LCA) algorithm for taxonomic assignment.
 
 K-mer profiling approach:
 1. Build a k-mer index from reference genomes, associating each k-mer
-   with its taxonomic lineage.
+   with its taxonomic lineage. K-mers are stored in canonical form (the
+   smaller of a k-mer and its reverse complement) so a read matches its
+   reference whichever strand it was sequenced from.
 2. For each read, extract k-mers and look up their taxonomy.
 3. Use LCA to assign the read to the most specific taxon supported by
    the majority of its k-mers.
@@ -25,6 +27,15 @@ logger = get_logger(__name__)
 
 _ENV_PREFIX = "META_"
 
+_COMPLEMENT = str.maketrans("ACGT", "TGCA")
+
+
+def _canonical_kmer(kmer: str) -> str:
+    """Strand-independent form of an upper-case ACGT k-mer: the smaller of it and its reverse complement."""
+    reverse = kmer.translate(_COMPLEMENT)[::-1]
+    return kmer if kmer <= reverse else reverse
+
+
 # Identifier of "no common ancestor": the LCA of taxa that share no rank is the empty lineage
 _NO_ANCESTOR_ID = "unclassified"
 
@@ -40,7 +51,7 @@ class TaxonProfile:
         lineage: Full taxonomic lineage as list of (rank, name) tuples.
         read_count: Number of reads assigned.
         relative_abundance: Fraction of total classified reads.
-        kmer_count: Number of unique k-mers matched.
+        kmer_count: Number of distinct index k-mers hit by the reads assigned to this taxon.
     """
 
     taxon_id: str
@@ -83,6 +94,10 @@ class KmerIndex:
         k: K-mer size used in the index.
         total_kmers: Total number of unique k-mers indexed.
         num_taxa: Number of taxa represented.
+        canonical: True when the keys of ``kmer_to_taxon`` are canonical k-mers (the smaller
+            of a k-mer and its reverse complement), which ``build_kmer_index`` produces. A
+            hand-built index with plain forward-strand keys leaves it False and is then
+            queried with the read's k-mers as they are.
     """
 
     kmer_to_taxon: dict[str, str]
@@ -90,6 +105,7 @@ class KmerIndex:
     k: int
     total_kmers: int = 0
     num_taxa: int = 0
+    canonical: bool = False
 
 
 def build_kmer_index(
@@ -99,9 +115,10 @@ def build_kmer_index(
 ) -> KmerIndex:
     """Build a k-mer index from reference sequences for taxonomic profiling.
 
-    For each reference sequence, extracts all k-mers and associates them
-    with the sequence's taxonomic lineage. K-mers shared between multiple
-    taxa are assigned to their lowest common ancestor (LCA).
+    For each reference sequence, extracts all k-mers (in canonical form, so a read from
+    either strand finds them) and associates them with the sequence's taxonomic
+    lineage. K-mers shared between multiple taxa are assigned to their lowest common
+    ancestor (LCA).
 
     Args:
         reference_sequences: Dictionary mapping reference IDs to DNA sequences.
@@ -143,7 +160,7 @@ def build_kmer_index(
         for i in range(len(seq_upper) - k + 1):
             kmer = seq_upper[i : i + k]
             if all(c in "ACGT" for c in kmer):
-                kmer_taxa[kmer].add(ref_id)
+                kmer_taxa[_canonical_kmer(kmer)].add(ref_id)
 
     # Resolve shared k-mers using LCA
     kmer_to_taxon: dict[str, str] = {}
@@ -174,6 +191,7 @@ def build_kmer_index(
         k=k,
         total_kmers=len(kmer_to_taxon),
         num_taxa=len(taxon_lineages),
+        canonical=True,
     )
 
     logger.info(f"K-mer index built: {index.total_kmers} k-mers, {index.num_taxa} taxa")
@@ -306,6 +324,7 @@ def profile_community(
 
     # Classify each read
     taxon_counts: Counter[str] = Counter()
+    taxon_kmers: dict[str, set[str]] = defaultdict(set)
     classified = 0
     unclassified = 0
 
@@ -313,17 +332,20 @@ def profile_community(
         read_upper = read.upper()
         # Extract k-mers from read
         kmer_hits: Counter[str] = Counter()
+        matched_keys: list[str] = []
         total_kmers_in_read = 0
 
         for i in range(len(read_upper) - k + 1):
             kmer = read_upper[i : i + k]
             if all(c in "ACGT" for c in kmer):
                 total_kmers_in_read += 1
-                if kmer in database.kmer_to_taxon:
-                    taxon_id = database.kmer_to_taxon[kmer]
+                key = _canonical_kmer(kmer) if database.canonical else kmer
+                if key in database.kmer_to_taxon:
+                    taxon_id = database.kmer_to_taxon[key]
                     if taxon_id in uninformative:
                         continue
                     kmer_hits[taxon_id] += 1
+                    matched_keys.append(key)
 
         total_hits = sum(kmer_hits.values())
 
@@ -342,6 +364,7 @@ def profile_community(
 
             if confidence >= confidence_threshold:
                 taxon_counts[best_taxon] += 1
+                taxon_kmers[best_taxon].update(matched_keys)
                 classified += 1
             else:
                 # Try LCA of all hit taxa
@@ -351,7 +374,9 @@ def profile_community(
                         hit_lineages.append(database.taxon_lineages[tid])
                 lca = _compute_lca(hit_lineages) if hit_lineages else []
                 if lca:
-                    taxon_counts[_lineage_to_id(lca)] += 1
+                    lca_id = _lineage_to_id(lca)
+                    taxon_counts[lca_id] += 1
+                    taxon_kmers[lca_id].update(matched_keys)
                     classified += 1
                 else:
                     # The hit taxa share no rank: there is nothing to classify the read as
@@ -381,6 +406,7 @@ def profile_community(
             lineage=lineage,
             read_count=count,
             relative_abundance=count / classified if classified > 0 else 0.0,
+            kmer_count=len(taxon_kmers[taxon_id]),
         )
         taxa_profiles.append(profile)
 

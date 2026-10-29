@@ -489,10 +489,11 @@ class TestNmdsIsSeeded:
     def test_default_call_is_reproducible(self) -> None:
         assert ordination(self.DM, method="nmds") == ordination(self.DM, method="nmds")
 
-    def test_same_seed_reproduces_and_other_seed_differs(self) -> None:
+    def test_same_seed_reproduces_and_other_seed_draws_other_starts(self) -> None:
         first = ordination(self.DM, method="nmds", seed=7)
         assert first == ordination(self.DM, method="nmds", seed=7)
-        assert first["coordinates"] != ordination(self.DM, method="nmds", seed=8)["coordinates"]
+        other = ordination(self.DM, method="nmds", seed=8)
+        assert first["stress_by_start"][1:] != other["stress_by_start"][1:]  # different random starting configurations
 
     def test_seed_does_not_affect_pcoa(self) -> None:
         assert ordination(self.DM, method="pcoa", seed=1) == ordination(self.DM, method="pcoa", seed=2)

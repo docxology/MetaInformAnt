@@ -264,7 +264,8 @@ class TestPlotOrdinationMethod:
             plotted = _plotted_points(fig, 5)
             expected = np.array(ordination(self._matrix(), method="pcoa", n_components=2)["coordinates"])
             np.testing.assert_allclose(_pairwise(plotted), _pairwise(expected), atol=1e-5)
-            assert fig.axes[0].get_xlabel() == "PC1"
+            assert fig.axes[0].get_xlabel().startswith("PC1 (")  # "PC1 (35.2%)": share of positive-eigenvalue variance
+            assert fig.axes[0].get_xlabel().endswith("%)")
         finally:
             plt.close(fig)
 
@@ -287,15 +288,18 @@ class TestPlotOrdinationMethod:
             plt.close(lower)
             plt.close(upper)
 
-    def test_nmds_seed_changes_the_start_and_is_reproducible(self) -> None:
+    def test_nmds_seed_is_reproducible_and_the_best_start_is_the_same_solution(self) -> None:
+        """The seed draws the random starts; keeping the best of several makes the solution seed-independent."""
         figs = [plot_ordination(self.DM, method="NMDS", seed=s) for s in (1, 1, 2)]
         try:
             first, repeat, other = (_plotted_points(f, 5) for f in figs)
             np.testing.assert_allclose(first, repeat)
-            assert not np.allclose(first, other)
+            np.testing.assert_allclose(_pairwise(first), _pairwise(other), atol=1e-6)
         finally:
             for f in figs:
                 plt.close(f)
+        starts = [ordination(self._matrix(), method="nmds", n_components=2, seed=s)["stress_by_start"] for s in (1, 2)]
+        assert starts[0][1:] != starts[1][1:]  # the seeds really gave different random starts
 
     def test_unknown_method_raises(self) -> None:
         with pytest.raises(ValueError, match="method"):

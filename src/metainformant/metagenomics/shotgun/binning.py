@@ -303,6 +303,36 @@ def _kmeans_cluster(
     return assignments
 
 
+def _gc_fraction(sequences: Sequence[str]) -> float:
+    """GC fraction over the unambiguous (ACGT) bases of ``sequences``; 0.0 when there are none."""
+    gc_count = 0
+    valid_bases = 0
+    for seq in sequences:
+        upper = seq.upper()
+        gc_count += upper.count("G") + upper.count("C")
+        valid_bases += sum(upper.count(base) for base in _NUCLEOTIDES)
+    return gc_count / valid_bases if valid_bases > 0 else 0.0
+
+
+def _mean_contig_coverage(
+    contig_ids: Sequence[str],
+    coverage: Mapping[str, float] | Mapping[str, list[float]] | None,
+) -> float:
+    """Mean of the per-contig coverage (each contig's mean over samples); 0.0 when none is known."""
+    if not coverage:
+        return 0.0
+    values: list[float] = []
+    for cid in contig_ids:
+        cov = coverage.get(cid)
+        if cov is None:
+            continue
+        if isinstance(cov, list):
+            values.append(sum(cov) / len(cov) if cov else 0.0)
+        else:
+            values.append(float(cov))
+    return sum(values) / len(values) if values else 0.0
+
+
 def bin_contigs(
     contigs: dict[str, str],
     coverage: dict[str, float] | dict[str, list[float]] | None = None,
@@ -327,8 +357,9 @@ def bin_contigs(
             - dict[str, list[float]]: Multi-sample coverage profiles.
             If None, only composition-based binning is performed.
         method: Binning method - "composition", "coverage", or "combined".
-        n_bins: Number of bins to create. If None, estimated automatically
-            based on coverage variation and TNF diversity.
+        n_bins: Number of bins to create. If None, estimated from the total length of the
+            binned contigs assuming an average genome of 3 Mbp (at least 2 bins, at most half
+            the number of contigs); coverage and composition are not consulted.
         min_contig_length: Minimum contig length to bin (default 1000 bp).
         seed: Random seed for clustering reproducibility.
         marker_genes: Optional single-copy marker gene annotations per contig
@@ -343,7 +374,9 @@ def bin_contigs(
         and ``high_quality_bins`` are None unless ``marker_genes`` is given.
 
     Raises:
-        ValueError: If contigs is empty or method is unknown.
+        ValueError: If contigs is empty, method is unknown, ``method="coverage"`` is given no
+            coverage, a contig that is binned has no coverage value although coverage was
+            supplied, or the coverage profiles differ in length.
 
     Examples:
         >>> contigs = {"c1": "ATCG" * 500, "c2": "GCTA" * 500, "c3": "AAAA" * 500}
@@ -356,6 +389,11 @@ def bin_contigs(
         raise ValueError("Input contigs dictionary must not be empty")
     if method not in ("composition", "coverage", "combined"):
         raise ValueError(f"Unknown binning method: {method}. Use 'composition', 'coverage', or 'combined'.")
+
+    if method == "coverage" and not coverage:
+        raise ValueError("method='coverage' requires coverage data")
+    if method == "combined" and not coverage:
+        logger.warning("method='combined' was given no coverage: binning on composition (TNF) only")
 
     logger.info(f"Binning {len(contigs)} contigs using {method} method")
 
@@ -389,19 +427,19 @@ def bin_contigs(
 
         if method in ("coverage", "combined") and coverage:
             cov_val = coverage.get(cid)
-            if cov_val is not None:
-                if isinstance(cov_val, list):
-                    # Multi-sample coverage: log-transform
-                    feat.extend([math.log(max(c, 0.01)) for c in cov_val])
-                else:
-                    feat.append(math.log(max(float(cov_val), 0.01)))
+            if cov_val is None:
+                # a made-up coverage would place the contig on top of genuinely low-coverage ones
+                raise ValueError(f"coverage has no value for contig {cid!r}")
+            if isinstance(cov_val, list):
+                # Multi-sample coverage: log-transform
+                feat.extend([math.log(max(c, 0.01)) for c in cov_val])
             else:
-                if method == "coverage":
-                    feat.append(0.0)
-                elif method == "combined":
-                    feat.append(0.0)
+                feat.append(math.log(max(float(cov_val), 0.01)))
 
         features.append(feat)
+
+    if len({len(feat) for feat in features}) > 1:
+        raise ValueError("coverage profiles must have the same number of samples for every contig")
 
     # Estimate number of bins if not provided
     if n_bins is None:
@@ -428,24 +466,8 @@ def bin_contigs(
         bin_seqs = [contigs[cid] for cid in members]
 
         total_len = sum(len(s) for s in bin_seqs)
-
-        # GC content
-        gc_count = sum(s.upper().count("G") + s.upper().count("C") for s in bin_seqs)
-        valid_bases = sum(sum(1 for c in s.upper() if c in "ACGT") for s in bin_seqs)
-        gc = gc_count / valid_bases if valid_bases > 0 else 0.0
-
-        # Mean coverage
-        mean_cov = 0.0
-        if coverage:
-            cov_vals = []
-            for cid in members:
-                cv = coverage.get(cid)
-                if cv is not None:
-                    if isinstance(cv, list):
-                        cov_vals.append(sum(cv) / len(cv) if cv else 0.0)
-                    else:
-                        cov_vals.append(float(cv))
-            mean_cov = sum(cov_vals) / len(cov_vals) if cov_vals else 0.0
+        gc = _gc_fraction(bin_seqs)
+        mean_cov = _mean_contig_coverage(members, coverage)
 
         genome_bin = GenomeBin(
             bin_id=f"bin_{bin_idx:04d}",
@@ -481,31 +503,45 @@ def refine_bins(
     contamination_threshold: float = 0.1,
     marker_genes: Mapping[str, Sequence[str]] | None = None,
     marker_set: Collection[str] | None = None,
+    coverage: Mapping[str, float] | Mapping[str, list[float]] | None = None,
+    seed: int = 42,
 ) -> list[GenomeBin]:
-    """Refine bins by assessing quality and merging/splitting as needed.
+    """Refine bins by assessing quality and splitting contaminated ones.
 
     Assesses each bin's completeness and contamination from single-copy marker
     gene annotations (``assess_bin_quality``), then:
-    - Removes bins with very low completeness.
-    - Splits bins with high contamination by TNF profile; the sub-bins are assessed
-      with the same annotations and kept when their completeness reaches the threshold.
+
+    - Removes bins whose completeness is below ``completeness_threshold``.
+    - Keeps bins that also have contamination at most ``contamination_threshold``.
+    - Splits the remaining (contaminated) bins by TNF profile. Every sub-bin is assessed with
+      the same annotations and kept only if it meets *both* criteria: completeness at
+      least ``completeness_threshold`` and contamination at most ``contamination_threshold``.
+      A bin that cannot be split (two contigs or fewer) keeps its contamination and is
+      therefore removed, and so is any sub-bin that is still contaminated.
     - Merging of small bins is not implemented.
 
     Args:
         bins: List of GenomeBin objects to refine.
-        contigs: Dictionary mapping contig IDs to sequences.
+        contigs: Dictionary mapping contig IDs to sequences. Every contig of a bin that has
+            to be split must be present.
         completeness_threshold: Minimum completeness to retain a bin (default 0.5).
         contamination_threshold: Maximum acceptable contamination (default 0.1).
         marker_genes: Single-copy marker gene annotations per contig (contig ID -> marker
             names found on it). Required whenever ``bins`` is not empty: without
             them neither completeness nor contamination exists to refine on.
         marker_set: Expected marker genes (default ``BACTERIAL_SINGLE_COPY_MARKERS``).
+        coverage: Optional per-contig coverage (as for ``bin_contigs``), used to fill the
+            ``mean_coverage`` of sub-bins created by splitting. Without it their
+            ``mean_coverage`` is 0.0 (unknown).
+        seed: Seed of the k-means that splits contaminated bins.
 
     Returns:
-        Refined list of GenomeBin objects with updated quality metrics.
+        Refined list of GenomeBin objects with updated quality metrics. Sub-bins carry the
+        GC content computed from their own contigs.
 
     Raises:
-        ValueError: If ``bins`` is not empty and ``marker_genes`` is None.
+        ValueError: If ``bins`` is not empty and ``marker_genes`` is None, or a contig of
+            a bin that has to be split is missing from ``contigs``.
 
     Examples:
         >>> bin1 = GenomeBin("b1", ["c1", "c2"], total_length=3000000)
@@ -527,26 +563,27 @@ def refine_bins(
     # Assess quality for each bin
     assessed_bins = assess_bin_quality(bins, contigs, marker_genes=marker_genes, marker_set=marker_set)
 
-    # Filter by quality thresholds
+    def acceptable(candidate: GenomeBin) -> bool:
+        completeness, contamination = _quality_values(candidate)
+        return completeness >= completeness_threshold and contamination <= contamination_threshold
+
     refined: list[GenomeBin] = []
     removed_count = 0
 
     for genome_bin in assessed_bins:
         completeness, contamination = _quality_values(genome_bin)
-        if completeness >= completeness_threshold:
-            if contamination <= contamination_threshold:
-                refined.append(genome_bin)
-            else:
-                # High contamination: try to split
-                # Simple approach: split by TNF profile divergence
-                if genome_bin.num_contigs > 1:
-                    split_bins = _split_contaminated_bin(genome_bin, contigs)
-                    assess_bin_quality(split_bins, marker_genes=marker_genes, marker_set=marker_set)
-                    for sb in split_bins:
-                        if _quality_values(sb)[0] >= completeness_threshold:
-                            refined.append(sb)
-                        else:
-                            removed_count += 1
+        if completeness < completeness_threshold:
+            removed_count += 1
+        elif contamination <= contamination_threshold:
+            refined.append(genome_bin)
+        elif len(genome_bin.contig_ids) > 1:
+            # High contamination: try to split by TNF profile divergence. A bin that cannot be
+            # split comes back unchanged, is still contaminated, and fails the check below.
+            split_bins = _split_contaminated_bin(genome_bin, contigs, coverage=coverage, seed=seed)
+            assess_bin_quality(split_bins, marker_genes=marker_genes, marker_set=marker_set)
+            for sub_bin in split_bins:
+                if acceptable(sub_bin):
+                    refined.append(sub_bin)
                 else:
                     removed_count += 1
         else:
@@ -574,47 +611,63 @@ def _quality_values(genome_bin: GenomeBin) -> tuple[float, float]:
 def _split_contaminated_bin(
     genome_bin: GenomeBin,
     contigs: dict[str, str],
+    coverage: Mapping[str, float] | Mapping[str, list[float]] | None = None,
+    seed: int = 42,
 ) -> list[GenomeBin]:
-    """Split a contaminated bin into sub-bins using TNF divergence.
+    """Split a contaminated bin into two sub-bins using TNF divergence.
 
     Args:
         genome_bin: Bin to split.
-        contigs: Contig sequences.
+        contigs: Contig sequences; every contig of the bin must be present.
+        coverage: Optional per-contig coverage for the sub-bins' ``mean_coverage``.
+        seed: Seed of the k-means.
 
     Returns:
-        List of sub-bins.
+        List of sub-bins, each with total length, GC content and (if ``coverage`` is given)
+        mean coverage computed from its own contigs. The bin itself is returned, unsplit,
+        when it has two contigs or fewer, or fewer than three contigs long enough (4 bp) to
+        have a tetranucleotide profile.
+
+    Raises:
+        ValueError: If a contig of a bin with more than two contigs is missing from ``contigs``.
     """
-    if genome_bin.num_contigs <= 2:
+    if len(genome_bin.contig_ids) <= 2:
         return [genome_bin]
+
+    missing = [cid for cid in genome_bin.contig_ids if cid not in contigs]
+    if missing:
+        raise ValueError(f"Cannot split bin {genome_bin.bin_id!r}: contigs without a sequence: {missing}")
 
     # Calculate TNF for each contig
     features: list[list[float]] = []
     valid_ids: list[str] = []
     for cid in genome_bin.contig_ids:
-        if cid in contigs and len(contigs[cid]) >= 4:
-            tnf = calculate_tetranucleotide_freq(contigs[cid])
-            features.append(tnf)
+        if len(contigs[cid]) >= 4:
+            features.append(calculate_tetranucleotide_freq(contigs[cid]))
             valid_ids.append(cid)
+        else:
+            logger.warning(f"Contig {cid!r} is shorter than 4 bp and has no TNF profile; left out of the split")
 
     if len(valid_ids) <= 2:
         return [genome_bin]
 
     # Split into 2 sub-bins
-    assignments = _kmeans_cluster(features, 2, seed=42)
+    assignments = _kmeans_cluster(features, 2, seed=seed)
 
     sub_bins: list[GenomeBin] = []
-    for cluster_id in set(assignments):
+    for cluster_id in sorted(set(assignments)):
         members = [valid_ids[i] for i, a in enumerate(assignments) if a == cluster_id]
-        if not members:
-            continue
-        total_len = sum(len(contigs[cid]) for cid in members if cid in contigs)
-        sb = GenomeBin(
-            bin_id=f"{genome_bin.bin_id}_split{cluster_id}",
-            contig_ids=members,
-            total_length=total_len,
-            num_contigs=len(members),
+        member_seqs = [contigs[cid] for cid in members]
+        sub_bins.append(
+            GenomeBin(
+                bin_id=f"{genome_bin.bin_id}_split{cluster_id}",
+                contig_ids=members,
+                total_length=sum(len(seq) for seq in member_seqs),
+                num_contigs=len(members),
+                gc_content=_gc_fraction(member_seqs),
+                mean_coverage=_mean_contig_coverage(members, coverage),
+            )
         )
-        sub_bins.append(sb)
 
     return sub_bins
 

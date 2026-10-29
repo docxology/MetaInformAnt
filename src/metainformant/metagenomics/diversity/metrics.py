@@ -101,7 +101,9 @@ def alpha_diversity(
 
     Returns:
         Dictionary with keys:
-            - value: float computed diversity value.
+            - value: float computed diversity value (``inf`` for ``fisher_alpha`` and
+              ``ace`` when the estimator has no finite value: every species a singleton,
+              or every rare species a singleton).
             - metric: str metric name used.
             - n_species: int number of species with non-zero abundance.
             - total_count: float sum of all abundances.
@@ -421,13 +423,18 @@ def permanova(
 
     Returns:
         Dictionary with keys:
-            - pseudo_f: float observed pseudo-F statistic.
-            - p_value: float permutation p-value.
-            - r_squared: float fraction of variance explained by groups.
+            - pseudo_f: float observed pseudo-F statistic (``inf`` when the groups are
+              perfectly separated, i.e. every within-group distance is zero; NaN when all
+              distances are zero).
+            - p_value: float permutation p-value (NaN when all distances are zero).
+            - r_squared: float fraction of variance explained by groups (NaN when all
+              distances are zero).
             - n_permutations: int number of permutations used.
 
     Raises:
-        ValueError: If dimensions are inconsistent or fewer than 2 groups.
+        ValueError: If dimensions are inconsistent, the matrix is not a valid distance
+            matrix, there are fewer than 2 groups, or there are no more samples than groups
+            (no residual degrees of freedom).
     """
     n = len(distance_matrix)
     if len(groups) != n:
@@ -436,21 +443,37 @@ def permanova(
     unique_groups = sorted(set(groups))
     if len(unique_groups) < 2:
         raise ValueError("At least 2 groups required for PERMANOVA")
+    if n <= len(unique_groups):
+        raise ValueError(
+            f"PERMANOVA needs more samples ({n}) than groups ({len(unique_groups)}): "
+            "with none left over the residual degrees of freedom are zero"
+        )
+    distance_matrix = _validate_distance_matrix(distance_matrix)
 
     logger.info(f"Running PERMANOVA: {n} samples, {len(unique_groups)} groups, " f"{n_permutations} permutations")
 
     # Compute observed pseudo-F
     observed_f = _compute_pseudo_f(distance_matrix, groups, unique_groups)
+    if math.isnan(observed_f):
+        logger.warning("PERMANOVA is undefined: every distance is zero")
+        return {
+            "pseudo_f": math.nan,
+            "p_value": math.nan,
+            "r_squared": math.nan,
+            "n_permutations": n_permutations,
+        }
 
-    # Permutation test
+    # Permutation test. The comparison allows for rounding: a permutation that reproduces the
+    # observed partition can differ from it in the last bits.
     rng = random.Random(seed)
     n_greater = 0
+    threshold = observed_f - 1e-12 * max(1.0, abs(observed_f)) if math.isfinite(observed_f) else observed_f
 
     for _ in range(n_permutations):
         perm_groups = list(groups)
         rng.shuffle(perm_groups)
         perm_f = _compute_pseudo_f(distance_matrix, perm_groups, unique_groups)
-        if perm_f >= observed_f:
+        if perm_f >= threshold:
             n_greater += 1
 
     p_value = (n_greater + 1) / (n_permutations + 1)
@@ -459,7 +482,7 @@ def permanova(
     ss_total = _compute_ss_total(distance_matrix)
     ss_within = _compute_ss_within(distance_matrix, groups, unique_groups)
     ss_between = ss_total - ss_within
-    r_squared = ss_between / ss_total if ss_total > 0 else 0.0
+    r_squared = ss_between / ss_total
 
     logger.info(f"PERMANOVA: pseudo-F={observed_f:.4f}, p={p_value:.4f}, " f"R^2={r_squared:.4f}")
 
@@ -476,47 +499,90 @@ def ordination(
     method: str = "pcoa",
     n_components: int = 2,
     seed: int | None = 42,
+    n_init: int = 5,
 ) -> dict:
     """Perform ordination on a distance matrix.
 
     Reduces the distance matrix to a low-dimensional representation
     for visualization.
 
+    PCoA (classical scaling) eigendecomposes the double-centred squared distance matrix. A
+    distance matrix that is not Euclidean (Bray-Curtis, Jaccard and most ecological
+    dissimilarities) gives that matrix negative eigenvalues; they have no real coordinates
+    and are never hidden. ``all_eigenvalues`` lists the whole spectrum,
+    ``n_negative_eigenvalues`` and ``negative_eigenvalue_fraction`` quantify the
+    non-Euclidean part, ``variance_explained`` is relative to the sum of the *positive*
+    eigenvalues (so it never exceeds 1), and axes whose eigenvalue is not positive get
+    coordinates of zero.
+
+    NMDS is Kruskal's non-metric multidimensional scaling: the configuration is fitted so
+    that its inter-point distances are a monotone (isotonic) function of the
+    dissimilarities, minimising Kruskal's stress-1 by SMACOF majorisation. Ties in the
+    dissimilarities are not forced onto equal distances (Kruskal's primary approach).
+    Because stress has local minima, the best of ``n_init`` seeded random starts and one
+    classical-scaling start is returned. The configuration is centred, rotated to its
+    principal axes (sign fixed) and scaled so that its root-mean-square distance equals the
+    root-mean-square dissimilarity. NMDS axes have no eigenvalues and no share of variance,
+    so none is reported; judge the fit by ``stress`` (below 0.05 excellent, below 0.1 good,
+    above 0.2 poor, after Clarke 1993).
+
     Args:
-        distance_matrix: Square symmetric distance matrix.
+        distance_matrix: Square symmetric distance matrix with a zero diagonal.
         method: Ordination method. "pcoa" (principal coordinates
             analysis) or "nmds" (non-metric multidimensional scaling).
         n_components: Number of output dimensions.
-        seed: Seed for the random starting configuration of NMDS, so repeated calls
+        seed: Seed for the random starting configurations of NMDS, so repeated calls
             give identical results (default 42; None draws fresh entropy). PCoA is
             deterministic and ignores it.
+        n_init: Number of random starting configurations for NMDS, tried in addition to
+            the classical-scaling start (default 5; 0 uses the classical start only).
+            PCoA ignores it.
 
     Returns:
-        Dictionary with keys:
+        PCoA: dictionary with keys
             - coordinates: list[list[float]] of sample coordinates
-              (n_samples x n_components).
-            - eigenvalues: list[float] eigenvalues (pcoa) or stress values
-              (nmds) per component.
-            - variance_explained: list[float] fraction of variance
-              explained by each component (pcoa only).
+              (n_samples x n_components; fewer columns if n_components > n_samples - 1).
+            - eigenvalues: list[float] of the leading ``n_components`` eigenvalues.
+            - variance_explained: list[float] eigenvalue / sum of positive eigenvalues
+              for each retained axis (0.0 for a non-positive eigenvalue).
+            - all_eigenvalues: list[float] the complete spectrum, descending, negative
+              eigenvalues included.
+            - n_negative_eigenvalues: int eigenvalues below zero beyond rounding noise.
+            - negative_eigenvalue_fraction: float share of the total absolute eigenvalue
+              mass that is negative (0.0 for a Euclidean distance matrix).
+
+        NMDS: dictionary with keys
+            - coordinates: list[list[float]] of sample coordinates.
+            - stress: float Kruskal stress-1 of the returned configuration (0 is a perfect
+              rank-order fit).
+            - stress_by_start: list[float] final stress of every start, the classical
+              start first.
+            - n_iter: int iterations used by the returned start.
+            - converged: bool whether the returned start met the stress tolerance before
+              the iteration limit.
 
     Raises:
-        ValueError: If method is not recognized or matrix is not square.
+        ValueError: If method is not recognized, the matrix is not square, symmetric,
+            finite, non-negative and zero on its diagonal, ``n_components`` or ``n_init``
+            is out of range, or NMDS is given fewer than 3 samples or all-zero
+            dissimilarities.
     """
     valid_methods = ("pcoa", "nmds")
     if method not in valid_methods:
         raise ValueError(f"Invalid method '{method}'. Must be one of {valid_methods}")
+    if n_components < 1:
+        raise ValueError(f"n_components must be at least 1, got {n_components}")
+    if n_init < 0:
+        raise ValueError(f"n_init must be non-negative, got {n_init}")
 
-    n = len(distance_matrix)
-    if any(len(row) != n for row in distance_matrix):
-        raise ValueError("Distance matrix must be square")
+    matrix = _validate_distance_matrix(distance_matrix)
+    n = len(matrix)
 
     logger.info(f"Running ordination ({method}): {n} samples, {n_components} components")
 
     if method == "pcoa":
-        return _pcoa(distance_matrix, n_components)
-    else:
-        return _nmds(distance_matrix, n_components, seed=seed)
+        return _pcoa(matrix, n_components)
+    return _nmds(matrix, n_components, seed=seed, n_init=n_init)
 
 
 # ---------------------------------------------------------------------------
@@ -583,7 +649,9 @@ def _ace(counts: list[int]) -> float:
         counts: Non-zero integer counts per species.
 
     Returns:
-        ACE estimated richness.
+        ACE estimated richness. When every rare species (abundance of at most 10) is a
+        singleton the sample coverage is zero, the estimate diverges and ``math.inf`` is
+        returned (as for Fisher's alpha with no finite solution), not the observed richness.
     """
     threshold = 10  # Abundance threshold for rare/abundant
     rare = [c for c in counts if c <= threshold]
@@ -600,7 +668,7 @@ def _ace(counts: list[int]) -> float:
     c_ace = 1.0 - f1 / n_rare
 
     if c_ace <= 0:
-        return float(len(counts))
+        return math.inf
 
     # Coefficient of variation squared
     sum_fi_i = sum(c * (c - 1) for c in rare)
@@ -767,20 +835,20 @@ def _compute_pseudo_f(
         unique_groups: Sorted unique group labels.
 
     Returns:
-        Pseudo-F statistic.
+        Pseudo-F statistic. With no within-group variation (``SS_within`` of zero) it is
+        ``inf`` when the groups differ and NaN when every distance is zero; it is never
+        replaced by 0, which would give a perfectly separated design a p-value of 1.
     """
     n = len(groups)
     a = len(unique_groups)
 
-    if a <= 1 or n <= a:
-        return 0.0
-
     ss_total = _compute_ss_total(dist_matrix)
     ss_within = _compute_ss_within(dist_matrix, groups, unique_groups)
-    ss_between = ss_total - ss_within
+    ss_between = max(ss_total - ss_within, 0.0)
 
-    f_stat = (ss_between / (a - 1)) / (ss_within / (n - a)) if ss_within > 0 else 0.0
-    return f_stat
+    if ss_within > 0:
+        return (ss_between / (a - 1)) / (ss_within / (n - a))
+    return math.inf if ss_between > 0 else math.nan
 
 
 def _compute_ss_total(dist_matrix: list[list[float]]) -> float:
@@ -844,66 +912,207 @@ def _compute_ss_within(
 # Private helpers: Ordination
 # ---------------------------------------------------------------------------
 
+# Relative size below which an eigenvalue, or the asymmetry of a distance matrix, is rounding noise
+_EIGEN_NOISE = 1e-10
+
+# SMACOF settings for NMDS: iteration limit and the relative stress improvement that counts as converged
+_NMDS_MAX_ITER = 500
+_NMDS_TOLERANCE = 1e-6
+
+
+def _validate_distance_matrix(distance_matrix: Any) -> list[list[float]]:
+    """Return ``distance_matrix`` as float rows after checking that it is a distance matrix.
+
+    Args:
+        distance_matrix: Square matrix as nested lists, a numpy array or a pandas frame.
+
+    Returns:
+        The matrix as a list of lists of floats.
+
+    Raises:
+        ValueError: If the matrix is empty, not square, has a non-finite or negative entry,
+            has a non-zero diagonal, or is not symmetric (beyond rounding noise).
+    """
+    rows = _as_list(distance_matrix)
+    n = len(rows)
+    if n == 0:
+        raise ValueError("Distance matrix must not be empty")
+
+    matrix: list[list[float]] = []
+    for row in rows:
+        if isinstance(row, (str, bytes)) or not hasattr(row, "__iter__"):
+            raise ValueError("Distance matrix must be square (a 2-D matrix)")
+        cells = _as_list(row)
+        if len(cells) != n:
+            raise ValueError("Distance matrix must be square")
+        matrix.append([float(value) for value in cells])
+
+    scale = 1.0
+    for i in range(n):
+        for j in range(n):
+            value = matrix[i][j]
+            if not math.isfinite(value):
+                raise ValueError(f"Distance matrix entry ({i}, {j}) is not finite: {value!r}")
+            if value < 0:
+                raise ValueError(f"Distance matrix entry ({i}, {j}) is negative: {value!r}")
+            scale = max(scale, value)
+
+    tolerance = _EIGEN_NOISE * scale
+    for i in range(n):
+        if matrix[i][i] > tolerance:
+            raise ValueError(f"Distance matrix must have a zero diagonal, but entry ({i}, {i}) is {matrix[i][i]!r}")
+        for j in range(i + 1, n):
+            if abs(matrix[i][j] - matrix[j][i]) > tolerance:
+                raise ValueError(
+                    f"Distance matrix must be symmetric, but entries ({i}, {j}) and ({j}, {i}) are "
+                    f"{matrix[i][j]!r} and {matrix[j][i]!r}"
+                )
+    return matrix
+
+
+def _jacobi_eigh(matrix: list[list[float]], max_sweeps: int = 100) -> tuple[list[float], list[list[float]]]:
+    """Eigendecomposition of a real symmetric matrix by cyclic Jacobi rotations (pure Python).
+
+    Unlike power iteration, which finds the eigenvalue of largest *magnitude* one at a time
+    (a large negative eigenvalue of a non-Euclidean PCoA matrix would be returned first),
+    Jacobi diagonalises the whole matrix, so every eigenvalue, negative ones included, is
+    exact to rounding.
+
+    Args:
+        matrix: Symmetric matrix (not modified).
+        max_sweeps: Upper bound on full sweeps over the off-diagonal (a handful suffice).
+
+    Returns:
+        ``(eigenvalues, eigenvectors)`` with eigenvalues ascending and ``eigenvectors[i][k]`` the
+        i-th component of the eigenvector of eigenvalue ``k``.
+    """
+    n = len(matrix)
+    a = [list(row) for row in matrix]
+    v = [[1.0 if i == j else 0.0 for j in range(n)] for i in range(n)]
+
+    for _ in range(max_sweeps):
+        off_diagonal = sum(a[i][j] ** 2 for i in range(n) for j in range(i + 1, n))
+        diagonal = sum(a[i][i] ** 2 for i in range(n))
+        if off_diagonal <= 1e-28 * (diagonal + off_diagonal):
+            break
+        for p in range(n - 1):
+            for q in range(p + 1, n):
+                a_pq = a[p][q]
+                if a_pq == 0.0:
+                    continue
+                theta = (a[q][q] - a[p][p]) / (2.0 * a_pq)
+                t = math.copysign(1.0, theta) / (abs(theta) + math.sqrt(theta * theta + 1.0))
+                c = 1.0 / math.sqrt(t * t + 1.0)
+                s = t * c
+                for k in range(n):  # columns p, q of A
+                    a_kp, a_kq = a[k][p], a[k][q]
+                    a[k][p] = c * a_kp - s * a_kq
+                    a[k][q] = s * a_kp + c * a_kq
+                for k in range(n):  # rows p, q of A
+                    a_pk, a_qk = a[p][k], a[q][k]
+                    a[p][k] = c * a_pk - s * a_qk
+                    a[q][k] = s * a_pk + c * a_qk
+                for k in range(n):  # accumulate the eigenvectors
+                    v_kp, v_kq = v[k][p], v[k][q]
+                    v[k][p] = c * v_kp - s * v_kq
+                    v[k][q] = s * v_kp + c * v_kq
+
+    order = sorted(range(n), key=lambda k: a[k][k])
+    return [a[k][k] for k in order], [[v[i][k] for k in order] for i in range(n)]
+
+
+def _symmetric_eigh(matrix: list[list[float]]) -> tuple[list[float], list[list[float]]]:
+    """Eigenvalues (descending) and eigenvectors of a real symmetric matrix.
+
+    Uses ``numpy.linalg.eigh`` when NumPy is installed and ``_jacobi_eigh`` otherwise. The sign
+    of each eigenvector is fixed (its largest-magnitude component is positive) because the
+    sign is arbitrary and differs between LAPACK builds.
+
+    Args:
+        matrix: Symmetric matrix.
+
+    Returns:
+        ``(eigenvalues, eigenvectors)``, eigenvalues descending and ``eigenvectors[i][k]`` the
+        i-th component of the eigenvector of eigenvalue ``k``.
+    """
+    n = len(matrix)
+    if HAS_NUMPY:
+        values_np, vectors_np = np.linalg.eigh(np.array(matrix, dtype=np.float64))
+        values = [float(x) for x in values_np[::-1]]
+        vectors = vectors_np[:, ::-1].tolist()
+    else:
+        ascending, ascending_vectors = _jacobi_eigh(matrix)
+        values = ascending[::-1]
+        vectors = [row[::-1] for row in ascending_vectors]
+
+    for k in range(n):
+        pivot = max(range(n), key=lambda i: abs(vectors[i][k]))
+        if vectors[pivot][k] < 0:
+            for i in range(n):
+                vectors[i][k] = -vectors[i][k]
+    return values, vectors
+
+
+def _double_centre(matrix: list[list[float]]) -> list[list[float]]:
+    """Gower's double-centred matrix ``B = -1/2 J D**2 J`` of a symmetric distance matrix."""
+    n = len(matrix)
+    squared = [[value * value for value in row] for row in matrix]
+    row_means = [sum(row) / n for row in squared]
+    grand_mean = sum(row_means) / n
+    return [[-0.5 * (squared[i][j] - row_means[i] - row_means[j] + grand_mean) for j in range(n)] for i in range(n)]
+
 
 def _pcoa(
     distance_matrix: list[list[float]],
     n_components: int,
+    warn_non_euclidean: bool = True,
 ) -> dict:
     """Principal Coordinates Analysis (classical multidimensional scaling).
 
-    Performs eigendecomposition of the double-centered distance matrix
-    to find coordinates that preserve the original distances.
+    Eigendecomposes the double-centred squared distance matrix (``numpy.linalg.eigh``, or exact
+    Jacobi rotations without NumPy). The whole spectrum is kept so that negative eigenvalues,
+    which arise whenever the distances are not Euclidean, are reported instead of being
+    dropped.
 
     Args:
-        distance_matrix: Square distance matrix.
+        distance_matrix: Validated square distance matrix.
         n_components: Number of output dimensions.
+        warn_non_euclidean: Log a warning when there are negative eigenvalues (NMDS uses PCoA only
+            as a starting point, where they do not matter).
 
     Returns:
-        Dictionary with coordinates, eigenvalues, and variance_explained.
+        Dictionary with coordinates, eigenvalues, variance_explained, all_eigenvalues,
+        n_negative_eigenvalues and negative_eigenvalue_fraction (see ``ordination``).
     """
     n = len(distance_matrix)
     actual_components = min(n_components, n - 1) if n > 1 else 1
 
-    # Step 1: Square the distances
-    D_sq = [[distance_matrix[i][j] ** 2 for j in range(n)] for i in range(n)]
+    eigenvalues, eigenvectors = _symmetric_eigh(_double_centre(distance_matrix))
 
-    # Step 2: Double centering
-    # B = -0.5 * J * D^2 * J, where J = I - 1/n * ones
-    row_means = [sum(D_sq[i]) / n for i in range(n)]
-    col_means = [sum(D_sq[i][j] for i in range(n)) / n for j in range(n)]
-    grand_mean = sum(sum(row) for row in D_sq) / (n * n)
+    noise = _EIGEN_NOISE * max((abs(e) for e in eigenvalues), default=0.0)
+    positive_mass = sum(e for e in eigenvalues if e > noise)
+    negative_mass = -sum(e for e in eigenvalues if e < -noise)
+    n_negative = sum(1 for e in eigenvalues if e < -noise)
+    total_mass = positive_mass + negative_mass
+    negative_fraction = negative_mass / total_mass if total_mass > 0 else 0.0
 
-    B = [[0.0] * n for _ in range(n)]
-    for i in range(n):
-        for j in range(n):
-            B[i][j] = -0.5 * (D_sq[i][j] - row_means[i] - col_means[j] + grand_mean)
+    # An axis needs a positive eigenvalue to have real coordinates; the others stay at zero
+    coords = [
+        [
+            eigenvectors[i][k] * math.sqrt(eigenvalues[k]) if eigenvalues[k] > noise else 0.0
+            for k in range(actual_components)
+        ]
+        for i in range(n)
+    ]
+    retained = eigenvalues[:actual_components]
+    variance_explained = [e / positive_mass if e > noise and positive_mass > 0 else 0.0 for e in retained]
 
-    # Step 3: Eigendecomposition
-    if HAS_NUMPY:
-        B_np = np.array(B, dtype=np.float64)
-        eigenvalues, eigenvectors = np.linalg.eigh(B_np)
-        # Sort by decreasing eigenvalue
-        idx = np.argsort(eigenvalues)[::-1]
-        eigenvalues = eigenvalues[idx]
-        eigenvectors = eigenvectors[:, idx]
-
-        # Take top components
-        evals = eigenvalues[:actual_components].tolist()
-        coords = []
-        for i in range(n):
-            row = []
-            for j in range(actual_components):
-                ev = max(eigenvalues[j], 0.0)
-                row.append(float(eigenvectors[i, j] * math.sqrt(ev)))
-            coords.append(row)
-    else:
-        # Pure Python fallback: power iteration for top eigenvectors
-        coords, evals = _power_iteration_eigen(B, actual_components)
-
-    # Compute variance explained
-    total_var = sum(max(e, 0.0) for e in evals)
-    variance_explained = [max(e, 0.0) / total_var if total_var > 0 else 0.0 for e in evals]
-
+    if n_negative and warn_non_euclidean:
+        logger.warning(
+            f"PCoA: the distance matrix is not Euclidean; {n_negative} negative eigenvalues hold "
+            f"{negative_fraction:.1%} of the total absolute eigenvalue mass, and the axes represent only "
+            "the Euclidean part"
+        )
     logger.info(
         f"PCoA complete: {actual_components} components, "
         f"variance explained = {[f'{v:.3f}' for v in variance_explained]}"
@@ -911,154 +1120,239 @@ def _pcoa(
 
     return {
         "coordinates": coords,
-        "eigenvalues": evals,
+        "eigenvalues": retained,
         "variance_explained": variance_explained,
+        "all_eigenvalues": eigenvalues,
+        "n_negative_eigenvalues": n_negative,
+        "negative_eigenvalue_fraction": negative_fraction,
     }
+
+
+def _isotonic_fit(values: list[float]) -> list[float]:
+    """Least-squares non-decreasing fit of ``values`` (pool adjacent violators).
+
+    Args:
+        values: Sequence to fit, in the order its fit must be non-decreasing.
+
+    Returns:
+        The isotonic regression of ``values``, same length.
+    """
+    sums: list[float] = []
+    counts: list[int] = []
+    for value in values:
+        sums.append(value)
+        counts.append(1)
+        # pool the last two blocks while their means decrease (cross-multiplied to avoid divisions)
+        while len(sums) > 1 and sums[-2] * counts[-1] > sums[-1] * counts[-2]:
+            pooled_sum = sums.pop()
+            pooled_count = counts.pop()
+            sums[-1] += pooled_sum
+            counts[-1] += pooled_count
+    fitted: list[float] = []
+    for total, count in zip(sums, counts):
+        fitted.extend([total / count] * count)
+    return fitted
+
+
+class _PairIndex:
+    """The ``n (n - 1) / 2`` unordered pairs of an NMDS problem and the order of their dissimilarities.
+
+    Pairs are sorted by dissimilarity once. Pairs whose dissimilarities tie form blocks inside
+    which the order is free (Kruskal's primary approach: tied dissimilarities need not map to
+    equal distances), so each iteration only reorders those blocks by the current distances.
+    """
+
+    def __init__(self, dissimilarities: list[list[float]]) -> None:
+        n = len(dissimilarities)
+        self.n = n
+        self.i = [i for i in range(n - 1) for _ in range(i + 1, n)]
+        self.j = [j for i in range(n - 1) for j in range(i + 1, n)]
+        self.delta = [dissimilarities[i][j] for i, j in zip(self.i, self.j)]
+        self.size = len(self.delta)
+        self.base_order = sorted(range(self.size), key=self.delta.__getitem__)
+        self.tie_blocks: list[tuple[int, int]] = []
+        start = 0
+        for position in range(1, self.size + 1):
+            if position == self.size or self.delta[self.base_order[position]] != self.delta[self.base_order[start]]:
+                if position - start > 1:
+                    self.tie_blocks.append((start, position))
+                start = position
+
+    def distances(self, config: list[list[float]]) -> list[float]:
+        """Euclidean distances of the configuration for every pair."""
+        return [math.dist(config[i], config[j]) for i, j in zip(self.i, self.j)]
+
+    def disparities(self, distances: list[float]) -> list[float]:
+        """Isotonic regression of ``distances`` on the dissimilarities (the disparities)."""
+        order = list(self.base_order)
+        for lo, hi in self.tie_blocks:
+            order[lo:hi] = sorted(order[lo:hi], key=distances.__getitem__)
+        fitted = _isotonic_fit([distances[k] for k in order])
+        disparities = [0.0] * self.size
+        for position, k in enumerate(order):
+            disparities[k] = fitted[position]
+        return disparities
+
+
+def _kruskal_stress1(distances: list[float], disparities: list[float]) -> float:
+    """Kruskal's stress-1, ``sqrt(sum((d - d_hat)**2) / sum(d**2))``."""
+    total = sum(d * d for d in distances)
+    if total <= 0.0:
+        return 0.0
+    return math.sqrt(sum((d - h) ** 2 for d, h in zip(distances, disparities)) / total)
+
+
+def _nmds_stress(pairs: _PairIndex, config: list[list[float]]) -> float:
+    """Kruskal's stress-1 of a configuration, with its optimal monotone disparities."""
+    distances = pairs.distances(config)
+    return _kruskal_stress1(distances, pairs.disparities(distances))
+
+
+def _smacof_nmds(
+    pairs: _PairIndex,
+    config: list[list[float]],
+    max_iter: int,
+    tolerance: float,
+) -> tuple[list[list[float]], float, int, bool]:
+    """Minimise Kruskal's stress-1 from one starting configuration (SMACOF with isotonic disparities).
+
+    Each iteration fits the disparities (isotonic regression of the current distances on the
+    dissimilarities), rescales them to a fixed sum of squares so the configuration cannot
+    shrink to nothing, and applies the Guttman transform, which never increases the raw
+    stress for fixed disparities.
+
+    Args:
+        pairs: Pair index of the dissimilarities.
+        config: Starting configuration (n x p), not modified.
+        max_iter: Iteration limit.
+        tolerance: Stop when the stress improves by less than this fraction of itself.
+
+    Returns:
+        ``(configuration, stress, iterations, converged)`` for the best configuration visited.
+    """
+    n = pairs.n
+    dim = len(config[0])
+    current = [list(row) for row in config]
+    best = current
+    best_stress = math.inf
+    previous = math.inf
+    converged = False
+    iterations = 0
+
+    for iterations in range(1, max_iter + 1):
+        distances = pairs.distances(current)
+        disparities = pairs.disparities(distances)
+        stress = _kruskal_stress1(distances, disparities)
+        if stress < best_stress:
+            best, best_stress = current, stress
+        if stress <= 1e-12 or (previous < math.inf and previous - stress <= tolerance * previous):
+            converged = True
+            break
+        previous = stress
+
+        total_sq = sum(h * h for h in disparities)
+        if total_sq <= 0.0:
+            break
+        scale = math.sqrt(pairs.size / total_sq)
+        updated = [[0.0] * dim for _ in range(n)]
+        for i, j, d, h in zip(pairs.i, pairs.j, distances, disparities):
+            if d > 0.0:
+                factor = scale * h / d
+                xi, xj, ui, uj = current[i], current[j], updated[i], updated[j]
+                for c in range(dim):
+                    step = factor * (xi[c] - xj[c])
+                    ui[c] += step
+                    uj[c] -= step
+        current = [[value / n for value in row] for row in updated]
+
+    return best, best_stress, iterations, converged
+
+
+def _principal_axes(config: list[list[float]]) -> list[list[float]]:
+    """Centre a configuration and rotate it to its principal axes (largest variance first, sign fixed)."""
+    n = len(config)
+    dim = len(config[0])
+    means = [sum(row[c] for row in config) / n for c in range(dim)]
+    centred = [[row[c] - means[c] for c in range(dim)] for row in config]
+    covariance = [[sum(row[a] * row[b] for row in centred) for b in range(dim)] for a in range(dim)]
+    _, axes = _symmetric_eigh(covariance)
+    return [[sum(row[a] * axes[a][k] for a in range(dim)) for k in range(dim)] for row in centred]
 
 
 def _nmds(
     distance_matrix: list[list[float]],
     n_components: int,
-    max_iter: int = 300,
     seed: int | None = 42,
+    n_init: int = 5,
 ) -> dict:
-    """Non-metric multidimensional scaling (NMDS).
+    """Kruskal's non-metric multidimensional scaling with isotonic regression.
 
-    Iteratively optimizes coordinates to preserve the rank order of
-    pairwise distances. Uses stress as the goodness-of-fit metric.
+    Runs SMACOF (see ``_smacof_nmds``) from a classical-scaling start and from ``n_init``
+    random starts drawn from a generator seeded with ``seed``, and returns the configuration
+    with the lowest stress-1.
 
     Args:
-        distance_matrix: Square distance matrix.
+        distance_matrix: Validated square distance matrix.
         n_components: Number of output dimensions.
-        max_iter: Maximum iterations.
-        seed: Random seed.
+        seed: Seed of the random starts (None draws fresh entropy).
+        n_init: Number of random starts besides the classical one.
 
     Returns:
-        Dictionary with coordinates, eigenvalues (stress per iteration),
-        and variance_explained.
+        Dictionary with coordinates, stress, stress_by_start, n_iter and converged
+        (see ``ordination``).
+
+    Raises:
+        ValueError: If there are fewer than 3 samples or every dissimilarity is zero.
     """
     n = len(distance_matrix)
+    if n < 3:
+        raise ValueError(f"NMDS needs at least 3 samples, got {n}")
+
+    pairs = _PairIndex(distance_matrix)
+    if not any(value > 0.0 for value in pairs.delta):
+        raise ValueError("All dissimilarities are zero; NMDS is undefined")
+
     rng = random.Random(seed)
+    mean_delta_sq = sum(value * value for value in pairs.delta) / pairs.size
 
-    # Initialize with random coordinates
-    coords = [[rng.gauss(0, 1) for _ in range(n_components)] for _ in range(n)]
+    # Start 0: classical scaling. Axes without a positive eigenvalue are filled with small noise
+    # so that the starting points do not lie in a lower-dimensional subspace.
+    classical = _pcoa(distance_matrix, n_components, warn_non_euclidean=False)["coordinates"]
+    jitter = 1e-3 * math.sqrt(mean_delta_sq)
+    starts = [
+        [
+            [value + rng.gauss(0.0, jitter) for value in row]
+            + [rng.gauss(0.0, jitter) for _ in range(n_components - len(row))]
+            for row in classical
+        ]
+    ]
+    for _ in range(n_init):
+        starts.append([[rng.gauss(0.0, 1.0) for _ in range(n_components)] for _ in range(n)])
 
-    stress_history: list[float] = []
+    outcomes = [_smacof_nmds(pairs, start, _NMDS_MAX_ITER, _NMDS_TOLERANCE) for start in starts]
+    stress_by_start = [outcome[1] for outcome in outcomes]
+    best = min(outcomes, key=lambda outcome: outcome[1])  # the earliest start wins a tie
 
-    for iteration in range(max_iter):
-        # Compute current distances
-        current_dists = [[0.0] * n for _ in range(n)]
-        for i in range(n):
-            for j in range(i + 1, n):
-                d = _euclidean(coords[i], coords[j])
-                current_dists[i][j] = d
-                current_dists[j][i] = d
+    coordinates = _principal_axes(best[0])
+    # Scale so the configuration's root-mean-square distance equals that of the dissimilarities
+    mean_d_sq = sum(d * d for d in pairs.distances(coordinates)) / pairs.size
+    if mean_d_sq > 0.0:
+        factor = math.sqrt(mean_delta_sq / mean_d_sq)
+        coordinates = [[value * factor for value in row] for row in coordinates]
 
-        # Compute stress
-        stress_num = 0.0
-        stress_denom = 0.0
-        for i in range(n):
-            for j in range(i + 1, n):
-                delta = distance_matrix[i][j]
-                d = current_dists[i][j]
-                stress_num += (d - delta) ** 2
-                stress_denom += delta**2
-
-        stress = math.sqrt(stress_num / stress_denom) if stress_denom > 0 else 0.0
-        stress_history.append(stress)
-
-        # Check convergence
-        if iteration > 0 and abs(stress_history[-1] - stress_history[-2]) < 1e-6:
-            break
-
-        # Gradient step: move points to reduce stress
-        learning_rate = 0.1 / (1 + iteration * 0.01)
-        new_coords = [list(row) for row in coords]
-
-        for i in range(n):
-            for dim in range(n_components):
-                gradient = 0.0
-                for j in range(n):
-                    if i == j:
-                        continue
-                    d = current_dists[i][j]
-                    delta = distance_matrix[i][j]
-                    if d > 0:
-                        gradient += (d - delta) / d * (coords[i][dim] - coords[j][dim])
-
-                new_coords[i][dim] -= learning_rate * gradient
-
-        coords = new_coords
-
-    final_stress = stress_history[-1] if stress_history else 0.0
-    logger.info(f"NMDS complete: {len(stress_history)} iterations, " f"final stress={final_stress:.4f}")
+    stress = _nmds_stress(pairs, coordinates)
+    logger.info(
+        f"NMDS complete: {len(starts)} starts, best stress-1={stress:.4f} after {best[2]} iterations "
+        f"({'converged' if best[3] else 'iteration limit'})"
+    )
 
     return {
-        "coordinates": coords,
-        "eigenvalues": stress_history[-min(n_components, len(stress_history)) :],
-        "variance_explained": [1.0 - final_stress] * n_components,
+        "coordinates": coordinates,
+        "stress": stress,
+        "stress_by_start": stress_by_start,
+        "n_iter": best[2],
+        "converged": best[3],
     }
-
-
-def _power_iteration_eigen(
-    matrix: list[list[float]],
-    n_components: int,
-    max_iter: int = 100,
-) -> tuple[list[list[float]], list[float]]:
-    """Extract top eigenvectors via power iteration (pure Python fallback).
-
-    Args:
-        matrix: Symmetric matrix.
-        n_components: Number of eigenvectors to extract.
-        max_iter: Maximum iterations per eigenvector.
-
-    Returns:
-        Tuple of (coordinates, eigenvalues).
-    """
-    n = len(matrix)
-    eigenvalues: list[float] = []
-    eigenvectors: list[list[float]] = []
-    work_matrix = [list(row) for row in matrix]
-
-    for comp in range(n_components):
-        # Random initialization
-        rng = random.Random(42 + comp)
-        vec = [rng.gauss(0, 1) for _ in range(n)]
-        norm = math.sqrt(sum(v * v for v in vec))
-        vec = [v / norm for v in vec]
-
-        eigenvalue = 0.0
-        for _ in range(max_iter):
-            # Matrix-vector multiplication
-            new_vec = [sum(work_matrix[i][j] * vec[j] for j in range(n)) for i in range(n)]
-
-            # Compute eigenvalue (Rayleigh quotient)
-            eigenvalue = sum(new_vec[i] * vec[i] for i in range(n))
-
-            # Normalize
-            norm = math.sqrt(sum(v * v for v in new_vec))
-            if norm == 0:
-                break
-            vec = [v / norm for v in new_vec]
-
-        eigenvalues.append(eigenvalue)
-        eigenvectors.append(vec)
-
-        # Deflate matrix
-        for i in range(n):
-            for j in range(n):
-                work_matrix[i][j] -= eigenvalue * vec[i] * vec[j]
-
-    # Convert eigenvectors to coordinates
-    coords: list[list[float]] = []
-    for i in range(n):
-        row = []
-        for comp in range(n_components):
-            ev = max(eigenvalues[comp], 0.0)
-            row.append(eigenvectors[comp][i] * math.sqrt(ev))
-        coords.append(row)
-
-    return coords, eigenvalues
 
 
 __all__ = [

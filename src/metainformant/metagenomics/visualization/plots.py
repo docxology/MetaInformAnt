@@ -72,14 +72,19 @@ def plot_krona_chart(
 
     Args:
         taxonomy_data: Dict mapping taxonomic lineage strings (semicolon-separated)
-            to abundance values. Example: {"Bacteria;Proteobacteria;Gammaproteobacteria": 0.35}
+            to abundance values, as counts or fractions (they are normalised to sum to 1).
+            Example: {"Bacteria;Proteobacteria;Gammaproteobacteria": 0.35}
         output_path: Path to save figure. If None, returns figure object.
         title: Plot title.
         max_depth: Maximum taxonomic depth to display.
-        min_fraction: Minimum fraction to include (filter small taxa).
+        min_fraction: Minimum fraction of the total abundance a taxon needs to be drawn.
 
     Returns:
         Path to saved file or matplotlib figure.
+
+    Raises:
+        ValueError: If ``taxonomy_data`` is not empty but its abundances do not sum to a
+            positive number.
     """
     _ensure_matplotlib()
 
@@ -92,8 +97,8 @@ def plot_krona_chart(
 
     # Normalize abundances
     total = sum(taxonomy_data.values())
-    if total <= 0:
-        total = 1.0
+    if not total > 0:
+        raise ValueError(f"taxonomy_data abundances must have a positive sum, got {total}")
 
     normalized = {k: v / total for k, v in taxonomy_data.items() if v / total >= min_fraction}
 
@@ -119,9 +124,10 @@ def plot_krona_chart(
         depth: int,
         start_angle: float,
         end_angle: float,
+        node_abundance: float,
     ) -> None:
         nonlocal color_idx
-        if depth >= max_depth or not node:
+        if depth >= max_depth or not node or node_abundance <= 0:
             return
 
         inner_r = 0.3 + depth * 0.15
@@ -131,11 +137,13 @@ def plot_krona_chart(
         current_angle = start_angle
 
         for name, data in items:
-            frac = data["_abundance"] / total if total > 0 else 0
+            # ``_abundance`` is already a fraction of the grand total (normalised above), so it is
+            # compared with ``min_fraction`` as it is. A child takes its share of the parent's arc.
+            frac = data["_abundance"]
             if frac < min_fraction:
                 continue
 
-            span = (end_angle - start_angle) * (frac / max(sum(d["_abundance"] for _, d in items), 1e-10) * total)
+            span = (end_angle - start_angle) * frac / node_abundance
             span = min(span, end_angle - current_angle)
 
             if span <= 0:
@@ -165,10 +173,10 @@ def plot_krona_chart(
                     rotation=0,
                 )
 
-            _draw_ring(data["_children"], depth + 1, current_angle, current_angle + span)
+            _draw_ring(data["_children"], depth + 1, current_angle, current_angle + span, frac)
             current_angle += span
 
-    _draw_ring(tree, 0, 0, 2 * math.pi)
+    _draw_ring(tree, 0, 0, 2 * math.pi, sum(entry["_abundance"] for entry in tree.values()))
 
     ax.set_title(title, fontsize=14, pad=20)
     ax.set_yticklabels([])
@@ -328,6 +336,41 @@ def plot_rarefaction_curves(
     return _save_or_show(fig, output_path)
 
 
+def _distance_matrix_from_dict(
+    distance_matrix: dict[str, dict[str, float]],
+) -> tuple[list[str], list[list[float]]]:
+    """Convert a nested ``{sample_i: {sample_j: dist}}`` mapping into sorted sample IDs and a dense matrix.
+
+    A distance may be given in either triangle (``d[a][b]`` or ``d[b][a]``), and a sample's
+    distance to itself defaults to 0. Any other missing distance is an error: it is never
+    replaced by 0, which would silently place the two samples on top of each other.
+
+    Args:
+        distance_matrix: Nested dict of pairwise distances.
+
+    Returns:
+        ``(samples, matrix)`` with samples sorted and ``matrix[i][j]`` their distance.
+
+    Raises:
+        ValueError: If a distance between two different samples is missing.
+    """
+    samples = sorted(set(distance_matrix) | {other for row in distance_matrix.values() for other in row})
+    matrix: list[list[float]] = []
+    for sample_i in samples:
+        row: list[float] = []
+        for sample_j in samples:
+            if sample_j in distance_matrix.get(sample_i, {}):
+                row.append(float(distance_matrix[sample_i][sample_j]))
+            elif sample_i in distance_matrix.get(sample_j, {}):
+                row.append(float(distance_matrix[sample_j][sample_i]))
+            elif sample_i == sample_j:
+                row.append(0.0)
+            else:
+                raise ValueError(f"distance_matrix has no distance between {sample_i!r} and {sample_j!r}")
+        matrix.append(row)
+    return samples, matrix
+
+
 def plot_ordination(
     distance_matrix: dict[str, dict[str, float]],
     method: str = "PCoA",
@@ -339,23 +382,34 @@ def plot_ordination(
     """Plot ordination (PCoA or NMDS) from a distance matrix.
 
     Performs dimensionality reduction on a pairwise distance matrix and
-    plots samples in 2D space.
+    plots samples in 2D space. Both methods come from
+    ``metainformant.metagenomics.diversity.metrics.ordination``.
+
+    PCoA axes are labelled with their share of the positive-eigenvalue variance. A
+    distance matrix that is not Euclidean (Bray-Curtis, Jaccard, ...) has negative
+    eigenvalues, which cannot be drawn; the plot says how much of the eigenvalue mass
+    they hold, and the shares on the axes are relative to the positive eigenvalues only.
+    NMDS axes are arbitrary, so they carry no variance; the plot shows Kruskal's stress-1
+    instead.
 
     Args:
         distance_matrix: Nested dict of pairwise distances {sample_i: {sample_j: dist}}.
+            Either triangle may be given; a distance that is missing in both is an error.
         method: Ordination method, case-insensitive: 'PCoA' (classical scaling by double
-            centering, the default) or 'NMDS' (iterative stress minimisation as in
+            centering and eigendecomposition, the default) or 'NMDS' (Kruskal's non-metric
+            scaling by isotonic-regression SMACOF, as in
             ``metainformant.metagenomics.diversity.metrics.ordination``).
         output_path: Path to save figure.
         title: Plot title.
         groups: Optional dict mapping sample IDs to group labels for coloring.
-        seed: Seed for the NMDS starting configuration (ignored by PCoA).
+        seed: Seed for the NMDS random starts (ignored by PCoA).
 
     Returns:
         Path to saved file or matplotlib figure.
 
     Raises:
-        ValueError: If ``method`` is neither 'PCoA' nor 'NMDS'.
+        ValueError: If ``method`` is neither 'PCoA' nor 'NMDS', or the distance matrix
+            has a missing, negative, non-finite or asymmetric distance.
     """
     _ensure_matplotlib()
 
@@ -363,10 +417,8 @@ def plot_ordination(
     if method_key not in ("pcoa", "nmds"):
         raise ValueError(f"Invalid ordination method {method!r}. Must be 'PCoA' or 'NMDS'.")
     method_label = "PCoA" if method_key == "pcoa" else "NMDS"
-    axis_prefix = "PC" if method_key == "pcoa" else "NMDS"
 
-    samples = sorted(distance_matrix.keys())
-    n = len(samples)
+    n = len(set(distance_matrix) | {other for row in distance_matrix.values() for other in row})
 
     if n < 3:
         logger.warning(f"Need at least 3 samples for ordination, got {n}")
@@ -374,29 +426,22 @@ def plot_ordination(
         ax.text(0.5, 0.5, f"Need >= 3 samples (got {n})", ha="center", va="center")
         return _save_or_show(fig, output_path)
 
-    # Build distance matrix as 2D list
-    D = [[0.0] * n for _ in range(n)]
-    for i, si in enumerate(samples):
-        for j, sj in enumerate(samples):
-            D[i][j] = distance_matrix.get(si, {}).get(sj, 0.0)
+    samples, D = _distance_matrix_from_dict(distance_matrix)
+    result = ordination(D, method=method_key, n_components=2, seed=seed)
+    coords = result["coordinates"]
 
     if method_key == "pcoa":
-        # Classical MDS / PCoA via double centering
-        # 1. Compute squared distances
-        D2 = [[d**2 for d in row] for row in D]
-
-        row_means = [sum(row) / n for row in D2]
-        grand_mean = sum(row_means) / n
-        col_means = [sum(D2[k][j] for k in range(n)) / n for j in range(n)]
-        B = [[0.0] * n for _ in range(n)]
-        for i in range(n):
-            for j in range(n):
-                B[i][j] = -0.5 * (D2[i][j] - row_means[i] - col_means[j] + grand_mean)
-
-        # 3. Power iteration for top 2 eigenvectors
-        coords = _power_iteration_2d(B, n)
+        shares = result["variance_explained"]
+        x_label, y_label = f"PC1 ({shares[0]:.1%})", f"PC2 ({shares[1]:.1%})"
+        note = None
+        if result["n_negative_eigenvalues"]:
+            note = (
+                f"{result['n_negative_eigenvalues']} negative eigenvalues "
+                f"({result['negative_eigenvalue_fraction']:.0%} of |eigenvalue| mass)"
+            )
     else:
-        coords = ordination(D, method="nmds", n_components=2, seed=seed)["coordinates"]
+        x_label, y_label = "NMDS1", "NMDS2"
+        note = f"stress = {result['stress']:.3f}"
 
     fig, ax = plt.subplots(figsize=(8, 8))
 
@@ -418,71 +463,16 @@ def plot_ordination(
             ax.scatter(coords[i][0], coords[i][1], c="steelblue", s=80, zorder=3)
             ax.annotate(sample, (coords[i][0], coords[i][1]), fontsize=7, xytext=(5, 5), textcoords="offset points")
 
-    ax.set_xlabel(f"{axis_prefix}1")
-    ax.set_ylabel(f"{axis_prefix}2")
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
     ax.set_title(title or f"Ordination ({method_label})")
     ax.axhline(0, color="gray", linewidth=0.5, linestyle="--")
     ax.axvline(0, color="gray", linewidth=0.5, linestyle="--")
+    if note:
+        ax.text(0.99, 0.01, note, transform=ax.transAxes, ha="right", va="bottom", fontsize=8, color="dimgray")
 
     fig.tight_layout()
     return _save_or_show(fig, output_path)
-
-
-def _power_iteration_2d(matrix: list[list[float]], n: int, max_iter: int = 300) -> list[list[float]]:
-    """Extract top 2 eigenvectors using power iteration.
-
-    Simple pure-Python implementation for PCoA coordinate extraction.
-    """
-    rng = random.Random(42)
-
-    def _mat_vec(mat: list[list[float]], vec: list[float]) -> list[float]:
-        return [sum(mat[i][j] * vec[j] for j in range(n)) for i in range(n)]
-
-    def _dot(a: list[float], b: list[float]) -> float:
-        return sum(ai * bi for ai, bi in zip(a, b))
-
-    def _norm(v: list[float]) -> float:
-        return math.sqrt(max(_dot(v, v), 1e-30))
-
-    def _normalize(v: list[float]) -> list[float]:
-        n_val = _norm(v)
-        return [vi / n_val for vi in v]
-
-    coords: list[list[float]] = [[0.0, 0.0] for _ in range(n)]
-    eigenvectors: list[list[float]] = []
-
-    for comp in range(2):
-        v = [rng.gauss(0, 1) for _ in range(n)]
-        v = _normalize(v)
-
-        for _ in range(max_iter):
-            v_new = _mat_vec(matrix, v)
-
-            # Deflate: remove projections onto previous eigenvectors
-            for prev in eigenvectors:
-                proj = _dot(v_new, prev)
-                v_new = [vi - proj * pi for vi, pi in zip(v_new, prev)]
-
-            new_norm = _norm(v_new)
-            if new_norm < 1e-15:
-                break
-            v_new = _normalize(v_new)
-
-            # Check convergence
-            diff = sum((a - b) ** 2 for a, b in zip(v, v_new))
-            v = v_new
-            if diff < 1e-12:
-                break
-
-        eigenvalue = _dot(_mat_vec(matrix, v), v)
-        scale = math.sqrt(max(eigenvalue, 0))
-
-        for i in range(n):
-            coords[i][comp] = v[i] * scale
-
-        eigenvectors.append(v)
-
-    return coords
 
 
 def plot_alpha_diversity(
@@ -604,7 +594,8 @@ def plot_heatmap(
     Args:
         abundance_matrix: Dict mapping sample IDs to {taxon: abundance} dicts.
         output_path: Path to save figure.
-        cluster: Whether to cluster rows and columns.
+        cluster: Whether to reorder rows and columns so that similar profiles are adjacent
+            (a greedy nearest-neighbour ordering, not a hierarchical clustering; no dendrogram is drawn).
         title: Plot title.
         cmap: Matplotlib colormap name.
         top_n: Maximum number of taxa to show.
@@ -643,13 +634,13 @@ def plot_heatmap(
     n_samples = len(samples)
 
     if cluster and n_taxa > 2 and n_samples > 2:
-        # Simple hierarchical clustering by sorting by similarity
-        # Row clustering: sort taxa by their abundance profiles
+        # Greedy nearest-neighbour ordering (not hierarchical clustering)
+        # Row ordering: sort taxa by their abundance profiles
         row_order = _hierarchical_sort(matrix)
         matrix = [matrix[i] for i in row_order]
         selected_taxa = [selected_taxa[i] for i in row_order]
 
-        # Column clustering: sort samples by their profiles
+        # Column ordering: sort samples by their profiles
         transposed = [[matrix[i][j] for i in range(len(matrix))] for j in range(n_samples)]
         col_order = _hierarchical_sort(transposed)
         samples = [samples[i] for i in col_order]
@@ -685,9 +676,10 @@ def plot_heatmap(
 
 
 def _hierarchical_sort(vectors: list[list[float]]) -> list[int]:
-    """Sort vectors by similarity using agglomerative approach.
+    """Order vectors so that similar ones are adjacent (greedy nearest-neighbour chain).
 
-    Simple greedy nearest-neighbor ordering.
+    Starts from the first vector and repeatedly appends the nearest unused one by Euclidean
+    distance. This is an ordering heuristic, not hierarchical (agglomerative) clustering.
     """
     n = len(vectors)
     if n <= 1:

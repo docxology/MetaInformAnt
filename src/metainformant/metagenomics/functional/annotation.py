@@ -157,8 +157,9 @@ class HMMHit:
 
     ``e_value``, ``bias`` and ``domain_e_value`` are NaN: the position-specific scoring
     matrices used here have no calibrated null model, so no E-value (or composition
-    bias) is computed. ``query_start``/``query_end``/``target_start``/``target_end``
-    are placeholders (the whole query, no target coordinates), not alignment bounds.
+    bias) is computed. ``query_start``/``query_end`` (0-based, end exclusive) bound the
+    part of the query protein covered by the best ungapped placement of the profile, and
+    ``target_start``/``target_end`` the profile positions scored in it.
     """
 
     query_id: str
@@ -178,7 +179,19 @@ class HMMHit:
 
 @dataclass
 class FunctionalAnnotation:
-    """Functional annotation for a gene/ORF."""
+    """Functional annotation for a gene/ORF.
+
+    ``profile_coverage`` and ``consensus_identity`` describe the best hit (``best_hit``) and
+    are None while there is no hit:
+
+    - ``profile_coverage``: fraction of the profile's positions that the protein covers in the
+      best ungapped placement (1.0 when the whole profile is aligned, less for a protein that
+      is truncated at an end of the profile).
+    - ``consensus_identity``: fraction of the aligned positions where the protein carries the
+      profile's best-scoring residue (the profile consensus).
+
+    Neither is a probability or a significance; there is no calibrated null model here.
+    """
 
     orf_id: str
     gene_families: list[str] = field(default_factory=list)
@@ -188,7 +201,8 @@ class FunctionalAnnotation:
     ec_numbers: list[str] = field(default_factory=list)
     best_hit: HMMHit | None = None
     description: str = ""
-    confidence: float = 0.0
+    profile_coverage: float | None = None
+    consensus_identity: float | None = None
 
 
 def _translate(
@@ -336,48 +350,96 @@ def predict_orfs(
     return orfs
 
 
-def _score_hmm_alignment(
+@dataclass(frozen=True)
+class _ProfileAlignment:
+    """Best ungapped placement of a position-specific scoring matrix on a protein.
+
+    Attributes:
+        score: Mean score per scored position.
+        offset: Protein index aligned with profile position 0.
+        scored_positions: Number of profile positions scored in the window.
+        consensus_matches: Scored positions where the residue is the column's best-scoring one.
+        profile_positions: Number of positions the profile defines.
+        first_position: First scored profile position.
+        last_position: Last scored profile position.
+    """
+
+    score: float
+    offset: int
+    scored_positions: int
+    consensus_matches: int
+    profile_positions: int
+    first_position: int
+    last_position: int
+
+    @property
+    def coverage(self) -> float:
+        """Fraction of the profile's positions that were scored."""
+        return self.scored_positions / self.profile_positions
+
+    @property
+    def identity(self) -> float:
+        """Fraction of the scored positions that carry the profile consensus residue."""
+        return self.consensus_matches / self.scored_positions
+
+
+def _align_profile(
     query_profile: dict[int, dict[str, float]],
     target_seq: str,
-) -> float:
-    """Score a sequence against a simple position-specific scoring matrix.
+) -> _ProfileAlignment | None:
+    """Place a simple position-specific scoring matrix on a protein without gaps.
 
-    Uses a simplified HMM-like scoring: sum of log-odds scores for each
-    position in the profile. Real HMM implementations (HMMER) use full
-    profile HMMs with match/insert/delete states.
+    Uses a simplified HMM-like scoring: the mean log-odds score over the profile positions
+    that fall on the protein, maximised over the offsets of the profile along the protein.
+    Real HMM implementations (HMMER) use full profile HMMs with match/insert/delete states.
+    A residue a profile column does not list scores -1.0.
 
     Args:
         query_profile: Position-specific scoring matrix {pos: {aa: score}}.
         target_seq: Target amino acid sequence.
 
     Returns:
-        Alignment score (sum of position-specific scores).
+        The best placement (the earliest offset on ties), or None when the profile or the
+        sequence is empty and so nothing can be aligned.
     """
     if not query_profile or not target_seq:
-        return 0.0
+        return None
 
     profile_len = max(query_profile.keys()) + 1
     seq_len = len(target_seq)
 
-    if seq_len == 0 or profile_len == 0:
-        return 0.0
-
-    # Simple ungapped alignment scoring
-    best_score = float("-inf")
+    best: _ProfileAlignment | None = None
     for offset in range(max(1, seq_len - profile_len + 1)):
         score = 0.0
         matched = 0
+        consensus = 0
+        first_position = -1
+        last_position = -1
         for pos in range(min(profile_len, seq_len - offset)):
+            column = query_profile.get(pos)
+            if column is None:
+                continue
             aa = target_seq[offset + pos]
-            if pos in query_profile:
-                score += query_profile[pos].get(aa, -1.0)
-                matched += 1
-        if matched > 0:
-            normalized = score / matched
-            if normalized > best_score:
-                best_score = normalized
+            column_score = column.get(aa, -1.0)
+            score += column_score
+            matched += 1
+            if aa in column and column_score >= max(column.values()):
+                consensus += 1
+            if first_position < 0:
+                first_position = pos
+            last_position = pos
+        if matched > 0 and (best is None or score / matched > best.score):
+            best = _ProfileAlignment(
+                score=score / matched,
+                offset=offset,
+                scored_positions=matched,
+                consensus_matches=consensus,
+                profile_positions=len(query_profile),
+                first_position=first_position,
+                last_position=last_position,
+            )
 
-    return best_score if best_score > float("-inf") else 0.0
+    return best
 
 
 def annotate_genes(
@@ -403,7 +465,9 @@ def annotate_genes(
         min_score: Minimum alignment score threshold (mean score per matched position).
 
     Returns:
-        List of FunctionalAnnotation objects. ``best_hit.e_value`` is NaN (not computed).
+        List of FunctionalAnnotation objects. ``best_hit.e_value`` is NaN (not computed);
+        ``profile_coverage`` and ``consensus_identity`` describe the best hit and are None
+        for a gene without one.
 
     Raises:
         ValueError: If ``e_value_threshold`` is given.
@@ -420,15 +484,15 @@ def annotate_genes(
         annotation = FunctionalAnnotation(orf_id=seq_id)
 
         if hmm_db is not None:
-            hits: list[tuple[str, float]] = []
+            hits: list[tuple[str, float, _ProfileAlignment]] = []
             for profile_id, profile in hmm_db.items():
-                score = _score_hmm_alignment(profile, protein_seq)
-                if score >= min_score:
-                    hits.append((profile_id, score))
+                alignment = _align_profile(profile, protein_seq)
+                if alignment is not None and alignment.score >= min_score:
+                    hits.append((profile_id, alignment.score, alignment))
 
             hits.sort(key=lambda h: h[1], reverse=True)
 
-            for profile_id, score in hits:
+            for profile_id, _, _ in hits:
                 # Parse family/database from profile ID convention
                 if profile_id.startswith("KO:"):
                     annotation.kegg_orthologs.append(profile_id.removeprefix("KO:"))
@@ -440,7 +504,7 @@ def annotate_genes(
                     annotation.gene_families.append(profile_id)
 
             if hits:
-                best_id, best_score = hits[0]
+                best_id, best_score, best_alignment = hits[0]
                 annotation.best_hit = HMMHit(
                     query_id=seq_id,
                     target_id=best_id,
@@ -450,12 +514,13 @@ def annotate_genes(
                     bias=math.nan,
                     domain_score=best_score,
                     domain_e_value=math.nan,
-                    query_start=0,
-                    query_end=len(protein_seq),
-                    target_start=0,
-                    target_end=0,
+                    query_start=best_alignment.offset + best_alignment.first_position,
+                    query_end=best_alignment.offset + best_alignment.last_position + 1,
+                    target_start=best_alignment.first_position,
+                    target_end=best_alignment.last_position + 1,
                 )
-                annotation.confidence = min(1.0, best_score / 100.0)
+                annotation.profile_coverage = best_alignment.coverage
+                annotation.consensus_identity = best_alignment.identity
 
         # Extract EC numbers from description patterns (if embedded in IDs)
         ec_pattern = re.compile(r"EC:(\d+\.\d+\.\d+\.\d+)")
@@ -507,8 +572,8 @@ def classify_gene_families(
         for gene_id, protein_seq in genes.items():
             families: list[str] = []
             for profile_id, profile in db_profiles.items():
-                score = _score_hmm_alignment(profile, protein_seq)
-                if score >= min_score:
+                alignment = _align_profile(profile, protein_seq)
+                if alignment is not None and alignment.score >= min_score:
                     families.append(profile_id)
             classifications[gene_id] = families
     else:

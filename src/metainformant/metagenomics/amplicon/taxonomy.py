@@ -35,7 +35,10 @@ class TaxonomyAssignment:
         confidence: Confidence scores per rank (0.0 to 1.0).
         method: Classification method used.
         best_hit_id: ID of the best matching reference (if alignment-based).
-        best_hit_identity: Sequence identity to best hit.
+        best_hit_identity: Similarity to the best hit. For the "blast" method this is the
+            Jaccard similarity of the 11-mer sets of query and reference, a value in [0, 1]
+            that is not a percent identity from an alignment; it is 0.0 when there is no hit
+            (and always for naive Bayes).
     """
 
     sequence_id: str
@@ -278,10 +281,12 @@ def _blast_classify(
     reference_taxonomy: dict[str, list[tuple[str, str]]],
     top_n: int = 5,
 ) -> TaxonomyAssignment:
-    """Classify using alignment-based (BLAST-like) approach.
+    """Classify by k-mer similarity to the references (a BLAST-like consensus of top hits).
 
-    Finds the top N most similar reference sequences using k-mer overlap,
-    then assigns taxonomy based on the consensus of top hits.
+    Finds the top N most similar reference sequences by the Jaccard similarity of their
+    11-mer sets (no alignment is performed), then assigns taxonomy by a similarity-weighted
+    vote of the top hits. ``best_hit_identity`` is that Jaccard similarity, not a percent
+    identity.
 
     Args:
         query_seq: Query sequence.
@@ -390,7 +395,7 @@ def classify_taxonomy(
     - naive_bayes: RDP-style k-mer based Bayesian classifier. It abstains (reports
       "unclassified") at every rank whose bootstrap confidence is below
       ``confidence_threshold`` and at all ranks below it.
-    - blast: Alignment-based classification using k-mer overlap and consensus of top hits.
+    - blast: k-mer similarity search (11-mer Jaccard, no alignment) and a vote of the top hits.
 
     Args:
         sequences: Dictionary mapping sequence IDs to nucleotide sequences.

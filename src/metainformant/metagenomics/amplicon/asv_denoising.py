@@ -186,7 +186,8 @@ def estimate_error_rates(
         ErrorModel with transition rates and quality-based error rates.
 
     Raises:
-        ValueError: If quality_scores is empty.
+        ValueError: If quality_scores is empty, or ``sequences`` is given (and not empty)
+            with a different length than ``quality_scores``.
 
     Examples:
         >>> scores = [[30, 30, 25, 20], [28, 30, 22, 18]]
@@ -197,6 +198,11 @@ def estimate_error_rates(
     if len(quality_scores) == 0:
         raise ValueError("Quality scores list must not be empty")
 
+    if sequences is not None and len(sequences) > 0 and len(sequences) != len(quality_scores):
+        raise ValueError(
+            f"sequences ({len(sequences)}) and quality_scores ({len(quality_scores)}) must have one entry per read"
+        )
+
     logger.info(f"Estimating error rates from {len(quality_scores)} reads")
 
     quality_error_rates: dict[int, float] = {}
@@ -206,7 +212,7 @@ def estimate_error_rates(
 
     transition_rates: list[list[float]] = [[0.0] * 4 for _ in range(4)]
 
-    if sequences is not None and len(sequences) > 0 and len(sequences) == len(quality_scores):
+    if sequences is not None and len(sequences) > 0:
         # Empirical substitution shares from comparison with the positional consensus
         max_len = max(len(s) for s in sequences)
         position_bases: list[Counter[str]] = [Counter() for _ in range(max_len)]
@@ -637,7 +643,8 @@ def merge_paired_reads(
         >>> "r1" in merged
         True
     """
-    common_ids = set(forward.keys()) & set(reverse.keys())
+    # Input order, so the result does not depend on the per-process string hash seed
+    common_ids = [read_id for read_id in forward if read_id in reverse]
     if not common_ids:
         raise ValueError("No common read IDs between forward and reverse read sets")
 

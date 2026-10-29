@@ -16,13 +16,13 @@ Shotgun metagenomics analysis providing de Bruijn graph assembly, tetranucleotid
 | Function | Description |
 |----------|-------------|
 | `assembly.assemble_contigs()` | Assemble reads into contigs using de Bruijn graph approach |
-| `assembly.scaffold_contigs()` | Scaffold contigs using paired-end information |
+| `assembly.scaffold_contigs()` | Scaffold contigs from paired-end reads (FR libraries): order, orientation (`Scaffold.orientations`) and gap sizes are inferred from the strands and positions of the mates |
 | `assembly.calculate_assembly_stats()` | Compute N50, L50, GC content, and other assembly metrics |
 | `binning.bin_contigs()` | Bin contigs into genome bins using TNF and coverage features |
-| `binning.refine_bins()` | Refine bins using single-copy marker gene assessment (requires `marker_genes`) |
+| `binning.refine_bins()` | Refine bins using single-copy marker gene assessment (requires `marker_genes`); keeps only bins and split sub-bins that meet both the completeness and the contamination threshold |
 | `binning.assess_bin_quality()` | Compute completeness, contamination and quality score from per-contig marker gene annotations (`None` without them) |
 | `binning.count_high_quality_bins()` | Count assessed bins with completeness >= 0.9 and contamination <= 0.05 |
-| `profiling.build_kmer_index()` | Build k-mer index from reference genomes |
+| `profiling.build_kmer_index()` | Build a canonical (strand-independent) k-mer index from reference genomes |
 | `profiling.profile_community()` | Classify reads and generate community profiles |
 | `profiling.calculate_relative_abundance()` | Calculate taxon relative abundances |
 

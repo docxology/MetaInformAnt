@@ -77,8 +77,10 @@ class ClusteringResult:
 def calculate_identity(seq1: str, seq2: str) -> float:
     """Calculate pairwise sequence identity using global alignment.
 
-    Uses a banded Needleman-Wunsch global alignment with affine gap penalties
-    to compute the fraction of identical positions in the alignment.
+    Uses a full (not banded) Needleman-Wunsch global alignment with affine gap
+    penalties to compute the fraction of identical positions among the alignment
+    columns, gaps included. Time and memory are proportional to the product of
+    the two sequence lengths.
 
     Args:
         seq1: First nucleotide sequence (uppercase ACGT expected).

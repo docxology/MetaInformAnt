@@ -13,10 +13,10 @@ Specialized visualization functions for metagenomic data, including Krona-style 
 
 | Function | Description |
 |----------|-------------|
-| `plots.plot_krona_chart()` | Krona-style hierarchical taxonomy sunburst chart |
+| `plots.plot_krona_chart()` | Krona-style hierarchical taxonomy sunburst chart (abundances may be counts or fractions) |
 | `plots.plot_stacked_bar()` | Stacked bar plot of taxonomic composition across samples |
 | `plots.plot_rarefaction_curves()` | Rarefaction curves for species richness estimation |
-| `plots.plot_ordination()` | PCoA or NMDS (`method`, case-insensitive; `seed` for NMDS) ordination scatter plot of a distance matrix |
+| `plots.plot_ordination()` | PCoA or NMDS (`method`, case-insensitive; `seed` for the NMDS random starts) ordination scatter plot of a distance matrix. PCoA axes show their share of the positive-eigenvalue variance and a note gives the weight of negative eigenvalues; NMDS shows Kruskal's stress-1. A distance missing from the matrix raises `ValueError` |
 | `plots.plot_alpha_diversity()` | Alpha diversity boxplots by group |
 | `plots.plot_heatmap()` | Abundance heatmap with rows and columns ordered by greedy nearest-neighbour similarity |
 

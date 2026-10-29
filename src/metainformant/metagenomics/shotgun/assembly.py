@@ -14,15 +14,23 @@ The de Bruijn graph approach:
 
 from __future__ import annotations
 
+import statistics
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 
-from metainformant.core.sequence import COMPLEMENT_TABLE_UPPER
+from metainformant.core.sequence import COMPLEMENT_TABLE_UPPER, reverse_complement
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
 _ENV_PREFIX = "META_"
+
+# K-mer size used to anchor paired reads on contigs
+_ANCHOR_K = 31
+
+# Smallest gap written into a scaffold. It is also the gap of a junction whose pairs give no
+# usable position (see ``scaffold_contigs``), where the size is genuinely unknown.
+_MIN_GAP = 10
 
 
 @dataclass
@@ -91,8 +99,17 @@ class Scaffold:
         scaffold_id: Unique identifier.
         contigs: Ordered list of contigs in this scaffold.
         gaps: Gap sizes between consecutive contigs (in bp, estimated from paired-end data).
-        sequence: Full scaffold sequence (with N's for gaps).
+        sequence: Full scaffold sequence (with N's for gaps); a contig whose orientation
+            is "-" appears reverse-complemented.
         total_length: Total scaffold length including gaps.
+        orientations: One entry per contig: "+" if the contig is used as given, "-" if its
+            reverse complement is used.
+        link_counts: One entry per junction: the number of read pairs that link the two
+            contigs in the way the scaffold joins them.
+        orientation_support: One entry per junction: how many of those pairs have both reads
+            placed on a definite strand of their contig. 0 means no pair could resolve the
+            relative orientation (for example contigs that are their own reverse complement),
+            so the junction keeps the orientation the contigs were given in.
     """
 
     scaffold_id: str
@@ -100,6 +117,9 @@ class Scaffold:
     gaps: list[int] = field(default_factory=list)
     sequence: str = ""
     total_length: int = 0
+    orientations: list[str] = field(default_factory=list)
+    link_counts: list[int] = field(default_factory=list)
+    orientation_support: list[int] = field(default_factory=list)
 
 
 def _calculate_gc(sequence: str) -> float:
@@ -355,6 +375,89 @@ def assemble_contigs(
     return filtered_contigs
 
 
+@dataclass(frozen=True)
+class _ReadPlacement:
+    """Where a read lies on a contig.
+
+    Attributes:
+        contig: Index of the contig.
+        strand: "+" when the read matches the contig as given, "-" when it matches the
+            reverse complement, None when both strands match equally well.
+        start: Index of the read's first base on the matched strand (the "+" strand when
+            ``strand`` is None); negative or beyond the contig when the read overhangs an end.
+    """
+
+    contig: int
+    strand: str | None
+    start: int
+
+
+def _build_anchor_index(contigs: list[Contig], k: int) -> dict[str, list[tuple[int, int, int]]]:
+    """Index every k-mer of both strands of every contig.
+
+    Both strands are indexed because a read (typically the reverse mate) can come from either
+    strand. For each k-mer only its first position on each strand of each contig is kept.
+
+    Args:
+        contigs: Contigs to index.
+        k: K-mer size.
+
+    Returns:
+        Mapping of k-mer to ``(contig index, strand, position)`` where strand is 0 for the
+        contig as given and 1 for its reverse complement.
+    """
+    index: dict[str, list[tuple[int, int, int]]] = {}
+    for idx, contig in enumerate(contigs):
+        seq = contig.sequence.upper()
+        for strand, strand_seq in enumerate((seq, seq.translate(COMPLEMENT_TABLE_UPPER)[::-1])):
+            for pos in range(len(strand_seq) - k + 1):
+                kmer = strand_seq[pos : pos + k]
+                if not all(c in "ACGT" for c in kmer):
+                    continue
+                entries = index.setdefault(kmer, [])
+                if not any(e[0] == idx and e[1] == strand for e in entries):
+                    entries.append((idx, strand, pos))
+    return index
+
+
+def _place_read(read: str, index: dict[str, list[tuple[int, int, int]]], k: int) -> _ReadPlacement | None:
+    """Place a read on the contig most of its k-mers hit, and on the strand they favour.
+
+    Args:
+        read: Upper-case read sequence.
+        index: Output of ``_build_anchor_index``.
+        k: K-mer size of the index.
+
+    Returns:
+        The placement, or None if no k-mer hits a contig or two contigs hit equally well (a
+        repeat shared between contigs anchors the read nowhere in particular).
+    """
+    votes: dict[tuple[int, int], int] = defaultdict(int)
+    starts: dict[tuple[int, int], list[int]] = defaultdict(list)
+    for i in range(len(read) - k + 1):
+        for contig, strand, pos in index.get(read[i : i + k], ()):
+            votes[(contig, strand)] += 1
+            starts[(contig, strand)].append(pos - i)
+    if not votes:
+        return None
+
+    best_per_contig: dict[int, int] = defaultdict(int)
+    for (contig, _), count in votes.items():
+        best_per_contig[contig] = max(best_per_contig[contig], count)
+    top = max(best_per_contig.values())
+    winners = [contig for contig, count in best_per_contig.items() if count == top]
+    if len(winners) != 1:
+        return None
+
+    contig = winners[0]
+    forward, reverse = votes.get((contig, 0), 0), votes.get((contig, 1), 0)
+    if forward > reverse:
+        return _ReadPlacement(contig, "+", int(statistics.median(starts[(contig, 0)])))
+    if reverse > forward:
+        return _ReadPlacement(contig, "-", int(statistics.median(starts[(contig, 1)])))
+    return _ReadPlacement(contig, None, int(statistics.median(starts[(contig, 0)])))
+
+
 def scaffold_contigs(
     contigs: list[Contig],
     paired_reads: dict[str, tuple[str, str]] | None = None,
@@ -364,24 +467,48 @@ def scaffold_contigs(
 ) -> list[Scaffold]:
     """Scaffold contigs using paired-end read linkage information.
 
-    For each pair of contigs, counts the number of paired-end reads where
-    one read maps to one contig and the mate maps to the other. Reads are
-    anchored on either strand of a contig (a mate sequenced from the opposite
-    strand maps to the reverse complement of the contig). Contig
-    pairs with sufficient linking evidence (>= min_links) are joined
-    into scaffolds with estimated gap sizes based on insert size. Contigs are
-    joined in their given orientation; relative orientation is not inferred.
+    Each read is anchored on a contig by its 31-mers, on either strand of the contig (a mate
+    sequenced from the opposite strand matches the reverse complement). A read is used only if
+    one contig attracts clearly more of its k-mers than any other.
+
+    The library is assumed to be a standard paired-end one: the forward read lies on one
+    strand of the fragment and the reverse read on the other, facing each other (FR, as
+    Illumina paired-end libraries are). The strand each mate matches then fixes which end of
+    its contig faces the other contig, so a pair says how two contigs lie relative to each
+    other and in which orientation (a mate-pair or long-insert library, where the reads face
+    away from each other, is not supported). The relative orientation of every join is
+    inferred from these strands and the scaffold sequence contains the reverse complement of
+    contigs that have to be flipped.
+
+    Joins are chosen greedily: pairs vote for a join of two contig ends, joins with at least
+    ``min_links`` pairs are taken in order of the support for their orientation, each contig
+    end is joined at most once and no join closes a cycle, so every scaffold is a linear
+    chain of oriented contigs. A contig linked to several others keeps only its best join
+    at each end. The position of each mate gives the distance from its read to the contig
+    end, so a junction's gap is ``insert_size`` minus those two distances, taken as the median
+    over the pairs and raised to at least 10 bp. That estimate is biased low as the gap
+    approaches the insert size, because only the longer fragments of the insert distribution can
+    span a wide gap. A pair whose gap would be shorter than ``-3 * insert_std`` is inconsistent
+    with the two contigs being neighbours and is ignored.
+
+    Limitations: a read whose two strands match equally well (a contig that is its own reverse
+    complement) cannot resolve the orientation. Such pairs still link the contigs, but they
+    support every orientation equally, so the contigs are joined in the orientation given and
+    ``orientation_support`` is 0 for that junction; its gap is the 10 bp minimum because no
+    position is available. Repeats are not modelled beyond ignoring reads that two contigs
+    claim equally.
 
     Args:
         contigs: List of assembled Contig objects.
         paired_reads: Dictionary mapping pair IDs to (forward, reverse) tuples.
             If None, each contig becomes its own scaffold.
-        insert_size: Expected insert size in bp (default 500).
+        insert_size: Expected fragment length in bp, from the outer end of one read to the
+            outer end of its mate (default 500).
         insert_std: Standard deviation of insert size (default 100).
         min_links: Minimum paired-end links to join contigs (default 3).
 
     Returns:
-        List of Scaffold objects.
+        List of Scaffold objects, longest first.
 
     Examples:
         >>> c1 = Contig("c1", "ATCGATCGATCG" * 20)
@@ -405,62 +532,57 @@ def scaffold_contigs(
                 gaps=[],
                 sequence=contig.sequence,
                 total_length=contig.length,
+                orientations=["+"],
             )
             early_scaffolds.append(scaffold)
         return early_scaffolds
 
-    # Map reads to contigs using k-mer anchoring. Both strands of every contig are indexed,
-    # because a read (typically the reverse mate) can come from either strand.
-    k = 31
-    contig_kmer_index: dict[str, list[int]] = {}  # kmer -> [contig indices]
+    k = _ANCHOR_K
+    index = _build_anchor_index(contigs, k)
 
-    for idx, contig in enumerate(contigs):
-        seq = contig.sequence.upper()
-        for strand_seq in (seq, seq.translate(COMPLEMENT_TABLE_UPPER)[::-1]):
-            for i in range(len(strand_seq) - k + 1):
-                kmer = strand_seq[i : i + k]
-                if all(c in "ACGT" for c in kmer):
-                    if kmer not in contig_kmer_index:
-                        contig_kmer_index[kmer] = []
-                    contig_kmer_index[kmer].append(idx)
+    # Vote for joins of two contig ends. An end is (contig index, "L" or "R"): the left end is
+    # the start of the contig as given, the right end its last base. A read matching the
+    # contig as given faces its right end, one matching the reverse complement its left end.
+    End = tuple[int, str]
+    Edge = tuple[End, End]
+    edge_votes: dict[Edge, int] = defaultdict(int)
+    edge_resolved: dict[Edge, int] = defaultdict(int)
+    edge_gaps: dict[Edge, list[int]] = defaultdict(list)
 
-    # Count paired-end links between contigs
-    link_counts: dict[tuple[int, int], int] = defaultdict(int)
+    def facing_ends(placement: _ReadPlacement) -> list[End]:
+        strands = ("+", "-") if placement.strand is None else (placement.strand,)
+        return [(placement.contig, "R" if strand == "+" else "L") for strand in strands]
 
     for pair_id, (fwd, rev) in paired_reads.items():
-        fwd_upper = fwd.upper()
-        rev_upper = rev.upper()
+        first = _place_read(fwd.upper(), index, k)
+        second = _place_read(rev.upper(), index, k)
+        if first is None or second is None or first.contig == second.contig:
+            continue
 
-        # Find which contigs the forward and reverse reads map to
-        fwd_contigs: set[int] = set()
-        for i in range(len(fwd_upper) - k + 1):
-            kmer = fwd_upper[i : i + k]
-            if kmer in contig_kmer_index:
-                fwd_contigs.update(contig_kmer_index[kmer])
+        resolved = first.strand is not None and second.strand is not None
+        gap_estimate = 0
+        if resolved:
+            # bases of each contig covered by the fragment, from its read to the facing end
+            length_first = len(contigs[first.contig].sequence)
+            length_second = len(contigs[second.contig].sequence)
+            covered_first = min(max(length_first - first.start, 0), length_first)
+            covered_second = min(max(length_second - second.start, 0), length_second)
+            gap_estimate = insert_size - covered_first - covered_second
+            if gap_estimate < -3 * insert_std:
+                continue
 
-        rev_contigs: set[int] = set()
-        for i in range(len(rev_upper) - k + 1):
-            kmer = rev_upper[i : i + k]
-            if kmer in contig_kmer_index:
-                rev_contigs.update(contig_kmer_index[kmer])
+        for end_a in facing_ends(first):
+            for end_b in facing_ends(second):
+                edge: Edge = (end_a, end_b) if end_a < end_b else (end_b, end_a)
+                edge_votes[edge] += 1
+                if resolved:
+                    edge_resolved[edge] += 1
+                    edge_gaps[edge].append(gap_estimate)
 
-        # Count links between different contigs
-        for fc in fwd_contigs:
-            for rc in rev_contigs:
-                if fc != rc:
-                    pair_key = (min(fc, rc), max(fc, rc))
-                    link_counts[pair_key] += 1
+    candidates = [edge for edge, votes in edge_votes.items() if votes >= min_links]
+    # Best-supported orientation first; among equals prefer "first contig then second, both as given"
+    candidates.sort(key=lambda e: (-edge_resolved[e], -edge_votes[e], 0 if (e[0][1], e[1][1]) == ("R", "L") else 1, e))
 
-    # Build scaffold graph
-    scaffold_edges: list[tuple[int, int, int]] = []  # (contig_a, contig_b, link_count)
-    for (a, b), count in link_counts.items():
-        if count >= min_links:
-            scaffold_edges.append((a, b, count))
-
-    # Sort edges by link count (greedy scaffolding)
-    scaffold_edges.sort(key=lambda x: -x[2])
-
-    # Build scaffolds using union-find
     parent: dict[int, int] = {i: i for i in range(len(contigs))}
 
     def find(x: int) -> int:
@@ -469,51 +591,68 @@ def scaffold_contigs(
             x = parent[x]
         return x
 
-    def union(x: int, y: int) -> None:
-        px, py = find(x), find(y)
-        if px != py:
-            parent[px] = py
+    joined: dict[End, tuple[End, Edge]] = {}
+    for edge in candidates:
+        end_a, end_b = edge
+        if end_a in joined or end_b in joined:
+            continue
+        root_a, root_b = find(end_a[0]), find(end_b[0])
+        if root_a == root_b:
+            continue
+        parent[root_a] = root_b
+        joined[end_a] = (end_b, edge)
+        joined[end_b] = (end_a, edge)
 
-    for a, b, count in scaffold_edges:
-        ra, rb = find(a), find(b)
-        if ra != rb:
-            union(ra, rb)
-
-    # Rebuild scaffold member sets based on final parent
-    final_groups: dict[int, list[int]] = defaultdict(list)
+    components: dict[int, list[int]] = defaultdict(list)
     for i in range(len(contigs)):
-        final_groups[find(i)].append(i)
+        components[find(i)].append(i)
 
-    # Create scaffold objects
     scaffolds: list[Scaffold] = []
-    for scaffold_idx, (root, members) in enumerate(sorted(final_groups.items())):
-        # Sort members by contig length (largest first)
-        members.sort(key=lambda i: -contigs[i].length)
-        scaffold_contigs_list = [contigs[i] for i in members]
+    for scaffold_idx, members in enumerate(sorted(components.values(), key=min)):
+        # A chain has two contigs with a free end (one contig with two free ends when alone)
+        degree = {m: sum(1 for end in ("L", "R") if (m, end) in joined) for m in members}
+        first_contig = min(m for m in members if degree[m] < 2)
+        # Read the chain from a free end: orient the first contig so its free end is on the left
+        orientation = "-" if (first_contig, "L") in joined else "+"
 
-        # Estimate gaps between consecutive contigs
+        chain: list[tuple[int, str]] = []
+        junctions: list[Edge] = []
+        current = first_contig
+        while True:
+            chain.append((current, orientation))
+            exit_end: End = (current, "R" if orientation == "+" else "L")
+            if exit_end not in joined:
+                break
+            (next_contig, entry_side), edge = joined[exit_end]
+            junctions.append(edge)
+            orientation = "+" if entry_side == "L" else "-"
+            current = next_contig
+
         gaps: list[int] = []
-        for i in range(len(scaffold_contigs_list) - 1):
-            # Estimate gap from insert size and contig lengths
-            estimated_gap = max(10, insert_size - min(scaffold_contigs_list[i].length, insert_size))
-            gaps.append(estimated_gap)
+        for edge in junctions:
+            estimates = edge_gaps.get(edge)
+            gaps.append(max(_MIN_GAP, round(statistics.median(estimates))) if estimates else _MIN_GAP)
 
-        # Build scaffold sequence with N-gaps
-        scaffold_seq_parts: list[str] = []
-        for i, contig in enumerate(scaffold_contigs_list):
-            scaffold_seq_parts.append(contig.sequence)
-            if i < len(gaps):
-                scaffold_seq_parts.append("N" * gaps[i])
-        scaffold_seq = "".join(scaffold_seq_parts)
+        parts: list[str] = []
+        for position, (member, member_orientation) in enumerate(chain):
+            sequence = contigs[member].sequence
+            parts.append(sequence if member_orientation == "+" else reverse_complement(sequence))
+            if position < len(gaps):
+                parts.append("N" * gaps[position])
+        scaffold_seq = "".join(parts)
 
-        scaffold = Scaffold(
-            scaffold_id=f"scaffold_{scaffold_idx:06d}",
-            contigs=scaffold_contigs_list,
-            gaps=gaps,
-            sequence=scaffold_seq,
-            total_length=len(scaffold_seq),
+        scaffolds.append(
+            Scaffold(
+                scaffold_id=f"scaffold_{scaffold_idx:06d}",
+                contigs=[contigs[member] for member, _ in chain],
+                gaps=gaps,
+                sequence=scaffold_seq,
+                total_length=len(scaffold_seq),
+                orientations=[member_orientation for _, member_orientation in chain],
+                link_counts=[edge_votes[edge] for edge in junctions],
+                orientation_support=[edge_resolved[edge] for edge in junctions],
+            )
         )
-        scaffolds.append(scaffold)
 
     scaffolds.sort(key=lambda s: -s.total_length)
     logger.info(f"Scaffolding complete: {len(scaffolds)} scaffolds from {len(contigs)} contigs")

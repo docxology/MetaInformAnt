@@ -242,18 +242,34 @@ def reconstruct_pathways(
     [0, 1] (``required_kos``/``required_ecs`` are then informational only).
     Otherwise it is the fraction of ``required_kos`` plus ``required_ecs`` present.
 
+    ``redundancy`` is the mean number of gene copies per matched KO (0.0 when only ECs
+    matched), and ``confidence`` is ``completeness * min(1, redundancy)``. That equals
+    ``completeness`` whenever at least one KO matched and 0.0 otherwise; it is a heuristic
+    score, not a probability.
+
     Args:
         annotations: Dict mapping gene IDs to lists of KO/EC annotations.
             Example: {"gene1": ["K00844", "K00845"], "gene2": ["K01810"]}
-        database: Pathway database to use ('KEGG' or 'MetaCyc').
+        database: Which built-in pathway set to use; only 'KEGG' has built-in
+            definitions. Ignored when ``pathway_definitions`` is given.
         pathway_definitions: Custom pathway definitions. If None, uses built-in set.
         min_completeness: Minimum completeness threshold to include in results.
 
     Returns:
         List of PathwayResult objects, sorted by completeness descending.
+
+    Raises:
+        ValueError: If ``pathway_definitions`` is None and there are no built-in
+            definitions for ``database`` (an empty result would be indistinguishable
+            from "no pathway is present").
     """
     if pathway_definitions is None:
         pathways = {pid: pdef for pid, pdef in _BUILTIN_PATHWAYS.items() if pdef.database == database}
+        if not pathways:
+            raise ValueError(
+                f"No built-in pathway definitions for database {database!r}; "
+                "pass pathway_definitions (built-in: 'KEGG')"
+            )
     else:
         pathways = pathway_definitions
 
@@ -421,8 +437,9 @@ def find_differential_pathways(
 ) -> list[dict[str, Any]]:
     """Find pathways differentially present between two sample groups.
 
-    Compares mean pathway completeness between groups and identifies
-    pathways with significant differences.
+    Compares mean pathway completeness between groups and reports the
+    pathways whose means differ by at least ``min_diff``. No statistical test is
+    performed: the difference is descriptive and is not a significance statement.
 
     Args:
         group1_samples: Annotations for group 1 samples.

@@ -403,12 +403,12 @@ class TestKruskalWallisFallback:
             expected = scipy_stats.kruskal(*groups).pvalue
             assert _kruskal_wallis_pure(groups) == pytest.approx(expected, rel=1e-8, abs=1e-14)
 
-    def test_undefined_cases_return_one(self) -> None:
+    def test_undefined_cases_are_nan_not_one(self) -> None:
         from metainformant.metagenomics.comparative.differential_abundance import _kruskal_wallis_pure
 
-        assert _kruskal_wallis_pure([[1.0, 1.0], [1.0, 1.0]]) == 1.0  # all values identical
-        assert _kruskal_wallis_pure([[1.0, 2.0]]) == 1.0  # one group
-        assert _kruskal_wallis_pure([[1.0, 2.0], []]) == 1.0  # empty group
+        assert math.isnan(_kruskal_wallis_pure([[1.0, 1.0], [1.0, 1.0]]))  # all values identical
+        assert math.isnan(_kruskal_wallis_pure([[1.0, 2.0]]))  # one group
+        assert math.isnan(_kruskal_wallis_pure([[1.0, 2.0], []]))  # empty group
 
     def test_effect_size_analysis_p_values_without_scipy(self) -> None:
         """Run the real fallback path in a child interpreter in which SciPy cannot be imported."""
