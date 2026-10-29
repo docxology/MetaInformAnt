@@ -33,6 +33,38 @@ except ImportError:
     HAS_SKLEARN = False
 
 
+# The documented metric names and the scikit-learn scorer that implements each of them
+_SKLEARN_SCORING = {"accuracy": "accuracy", "r2": "r2", "mse": "neg_mean_squared_error"}
+
+
+def _score_predictions(metric: str, y_true: list[float], y_pred: list[float]) -> float:
+    """Score one fold in pure Python; larger is better (``mse`` is returned negated)."""
+    if metric == "accuracy":
+        return sum(1 for yt, yp in zip(y_true, y_pred) if round(yt) == round(yp)) / len(y_true)
+    if metric == "mse":
+        return -sum((yt - yp) ** 2 for yt, yp in zip(y_true, y_pred)) / len(y_true)
+    if metric == "r2":
+        if len(y_true) < 2:
+            return math.nan
+        mean_y = sum(y_true) / len(y_true)
+        ss_tot = sum((yt - mean_y) ** 2 for yt in y_true)
+        ss_res = sum((yt - yp) ** 2 for yt, yp in zip(y_true, y_pred))
+        if ss_tot == 0.0:
+            return 1.0 if ss_res == 0.0 else 0.0
+        return 1.0 - ss_res / ss_tot
+    raise ValueError(f"Unsupported metric {metric!r}; use 'accuracy', 'mse' or 'r2'")
+
+
+def _finite_mean(fold_scores: list[float], metric: str) -> float:
+    """Mean of the fold scores; a score that is not a number (R^2 of a single test sample, say) is an error.
+
+    A NaN used to flow through as the model's score, and was reported as a successful run.
+    """
+    if not all(math.isfinite(score) for score in fold_scores):
+        raise ValueError(f"metric {metric!r} is undefined on at least one fold (scores: {fold_scores})")
+    return sum(fold_scores) / len(fold_scores)
+
+
 def _cross_validate(
     model: Any,
     X_list: list[list[float]],
@@ -40,27 +72,36 @@ def _cross_validate(
     cv: int = 5,
     metric: str = "accuracy",
 ) -> float:
-    """Cross-validate a model and return mean score.
+    """Cross-validate a model and return mean score (larger is better; ``mse`` is negated).
+
+    A scikit-learn estimator is scored by scikit-learn. Any other object with ``fit`` / ``predict`` (or no
+    scikit-learn) is cross-validated here, in contiguous folds. Errors from fitting or scoring propagate: a fold that
+    failed used to be scored 0.0 and averaged in (0.0 is the *best* possible negated MSE), and a scikit-learn
+    failure silently re-ran the pure-Python route, which itself returned 0.0 for every model because it appended to a
+    ``scores`` list that was never defined.
 
     Args:
         model: Model with fit/predict interface.
         X_list: Feature matrix.
         y_list: Target values.
         cv: Number of folds.
-        metric: Scoring metric.
+        metric: Scoring metric ('accuracy', 'mse' or 'r2').
 
     Returns:
         Mean CV score.
-    """
-    if HAS_SKLEARN and HAS_NUMPY:
-        try:
-            scoring = metric
-            scores = cross_val_score(model, np.array(X_list), np.array(y_list), cv=cv, scoring=scoring)
-            return float(scores.mean())
-        except Exception:
-            pass
 
-    # Pure Python fallback
+    Raises:
+        ValueError: If ``metric`` is not one of the supported names.
+    """
+    if metric not in _SKLEARN_SCORING:
+        raise ValueError(f"Unsupported metric {metric!r}; use 'accuracy', 'mse' or 'r2'")
+
+    if HAS_SKLEARN and HAS_NUMPY and hasattr(model, "get_params"):
+        scores = cross_val_score(
+            model, np.array(X_list), np.array(y_list), cv=cv, scoring=_SKLEARN_SCORING[metric], error_score="raise"
+        )
+        return _finite_mean(scores.tolist(), metric)
+
     n = len(y_list)
     fold_size = n // cv
     fold_scores: list[float] = []
@@ -78,34 +119,18 @@ def _cross_validate(
         if not train_X or not test_X:
             continue
 
-        try:
-            if HAS_NUMPY:
-                model.fit(np.array(train_X), np.array(train_y))
-                preds = model.predict(np.array(test_X))
-            else:
-                model.fit(train_X, train_y)
-                preds = model.predict(test_X)
+        if HAS_NUMPY:
+            model.fit(np.array(train_X), np.array(train_y))
+            preds = model.predict(np.array(test_X))
+        else:
+            model.fit(train_X, train_y)
+            preds = model.predict(test_X)
 
-            preds_list = [float(p) for p in preds]
+        fold_scores.append(_score_predictions(metric, test_y, [float(p) for p in preds]))
 
-            if metric == "accuracy":
-                correct = sum(1 for yt, yp in zip(test_y, preds_list) if round(yt) == round(yp))
-                scores.append(correct / len(test_y))
-            elif metric == "mse":
-                mse = sum((yt - yp) ** 2 for yt, yp in zip(test_y, preds_list)) / len(test_y)
-                scores.append(-mse)
-            elif metric == "r2":
-                mean_y = sum(test_y) / len(test_y)
-                ss_tot = sum((yt - mean_y) ** 2 for yt in test_y)
-                ss_res = sum((yt - yp) ** 2 for yt, yp in zip(test_y, preds_list))
-                scores.append(1.0 - ss_res / ss_tot if ss_tot > 1e-15 else 0.0)
-            else:
-                correct = sum(1 for yt, yp in zip(test_y, preds_list) if round(yt) == round(yp))
-            fold_scores.append(correct / len(test_y))
-        except Exception:
-            fold_scores.append(0.0)
-
-    return sum(fold_scores) / len(fold_scores) if fold_scores else 0.0
+    if not fold_scores:
+        raise ValueError(f"cross-validation with cv={cv} produced no fold from {n} samples")
+    return _finite_mean(fold_scores, metric)
 
 
 def _sample_from_distribution(name: str, dist: Any, rng: random.Random) -> Any:
@@ -737,16 +762,18 @@ def model_selection(
             }
             logger.info("Model %s: CV score = %.4f", model_name, score)
         except Exception as exc:
+            # A model that could not be scored has no score: it is reported as such and never ranked (0.0 outranked
+            # every working model whose R^2 was negative)
             cv_results[model_name] = {
-                "score": 0.0,
+                "score": None,
                 "model_type": model_name,
                 "status": f"failed: {exc}",
             }
             logger.warning("Model %s failed: %s", model_name, exc)
 
-    # Rank by score
+    # Rank the models that were scored by score
     rankings = sorted(
-        [(name, info["score"]) for name, info in cv_results.items()],
+        [(name, info["score"]) for name, info in cv_results.items() if info["score"] is not None],
         key=lambda t: t[1],
         reverse=True,
     )

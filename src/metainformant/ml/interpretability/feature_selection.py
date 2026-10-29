@@ -282,7 +282,12 @@ def boruta_selection(
 
 
 def _binomial_test_pvalue(k: int, n: int, p: float) -> float:
-    """Compute one-sided binomial test p-value (upper tail).
+    """Exact one-sided binomial test p-value (upper tail) ``P(X >= k)`` for ``X ~ Binomial(n, p)``.
+
+    Equals ``scipy.stats.binom.sf(k - 1, n, p)``. The probabilities are formed in log space and summed after factoring
+    out the largest term. (An earlier version used the normal approximation without continuity correction, which
+    halves the tail for few trials: with 8 hits in 10 iterations it reported 0.029 for the exact 0.055, so Boruta
+    confirmed a feature that the exact test at 0.05 does not.)
 
     Args:
         k: Number of successes.
@@ -290,20 +295,25 @@ def _binomial_test_pvalue(k: int, n: int, p: float) -> float:
         p: Null hypothesis probability.
 
     Returns:
-        P-value.
+        P-value, in [0, 1].
     """
-    if n == 0:
+    if k <= 0:
+        return 1.0
+    if k > n:
+        return 0.0
+    if p <= 0.0:
+        return 0.0
+    if p >= 1.0:
         return 1.0
 
-    mean = n * p
-    variance = n * p * (1 - p)
-
-    if variance < 1e-15:
-        return 0.0 if k > mean else 1.0
-
-    z = (k - mean) / math.sqrt(variance)
-    p_val = 0.5 * math.erfc(z / math.sqrt(2.0))
-    return max(0.0, min(1.0, p_val))
+    log_p, log_q = math.log(p), math.log1p(-p)
+    log_n_factorial = math.lgamma(n + 1)
+    log_terms = [
+        log_n_factorial - math.lgamma(x + 1) - math.lgamma(n - x + 1) + x * log_p + (n - x) * log_q
+        for x in range(k, n + 1)
+    ]
+    peak = max(log_terms)
+    return min(1.0, math.exp(peak + math.log(math.fsum(math.exp(term - peak) for term in log_terms))))
 
 
 def _validate_model_contract(model: Any) -> None:
@@ -460,7 +470,7 @@ def _get_model_importances(
                 return [float(abs(v)) for v in coef]
             return [float(abs(v)) for v in coef]
     except Exception as exc:
-        logger.warning("Model fitting failed: %s, using variance-based importance", exc)
+        logger.warning("Model fitting failed: %s, using absolute correlation with the target as importance", exc)
 
     # Fallback: use correlation with target
     importances = []
@@ -516,6 +526,11 @@ def _cross_validate_simple(
 
     Returns:
         Mean CV accuracy.
+
+    Raises:
+        ValueError: If ``cv`` leaves no fold with both training and test samples. Errors from fitting or predicting
+            propagate: a fold that failed used to be scored 0.0 and averaged in, so a model that could not be fitted
+            looked like one that was merely inaccurate.
     """
     n = len(y_list)
     fold_size = n // cv
@@ -534,21 +549,20 @@ def _cross_validate_simple(
         if not train_X or not test_X:
             continue
 
-        try:
-            if HAS_NUMPY:
-                model.fit(np.array(train_X), np.array(train_y))
-                preds = model.predict(np.array(test_X))
-            else:
-                model.fit(train_X, train_y)
-                preds = model.predict(test_X)
+        if HAS_NUMPY:
+            model.fit(np.array(train_X), np.array(train_y))
+            preds = model.predict(np.array(test_X))
+        else:
+            model.fit(train_X, train_y)
+            preds = model.predict(test_X)
 
-            preds_list = [float(p) for p in preds]
-            correct = sum(1 for yt, yp in zip(test_y, preds_list) if round(yt) == round(yp))
-            scores.append(correct / len(test_y))
-        except Exception:
-            scores.append(0.0)
+        preds_list = [float(p) for p in preds]
+        correct = sum(1 for yt, yp in zip(test_y, preds_list) if round(yt) == round(yp))
+        scores.append(correct / len(test_y))
 
-    return sum(scores) / len(scores) if scores else 0.0
+    if not scores:
+        raise ValueError(f"cv={cv} leaves no fold with training and test samples among {n} samples")
+    return sum(scores) / len(scores)
 
 
 def stability_selection(

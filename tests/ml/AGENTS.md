@@ -1,12 +1,13 @@
 # AGENTS.md — `MetaInformAnt/tests/ml/`
 
 tests for the ML module.
-Files (verified 2026-10-27): `__init__.py`, `test_ml_automl.py`, `test_ml_comprehensive.py`, `test_ml_deep_learning.py`,
-`test_ml_dimensionality.py`, `test_ml_ensemble_parallel_jobs.py`, `test_ml_evaluation.py`,
-`test_ml_evaluation_arguments.py`, `test_ml_feature_selection_depth.py`, `test_ml_features.py`,
+Files (verified 2026-10-28): `__init__.py`, `test_ml_automl.py`, `test_ml_automl_cross_validation.py`,
+`test_ml_comprehensive.py`, `test_ml_deep_learning.py`, `test_ml_dimensionality.py`,
+`test_ml_ensemble_parallel_jobs.py`, `test_ml_evaluation.py`, `test_ml_evaluation_arguments.py`,
+`test_ml_feature_selection_depth.py`, `test_ml_feature_selection_exact_tests.py`, `test_ml_features.py`,
 `test_ml_interpretability.py`, `test_ml_models.py`, `test_ml_seeded_randomness.py`,
-`test_ml_sequence_cnn_short_inputs.py`, `test_ml_validation_strategies_and_ensemble_cv.py` (14 test files plus
-`__init__.py`).
+`test_ml_sequence_cnn_short_inputs.py`, `test_ml_stability_selection_failures.py`,
+`test_ml_validation_strategies_and_ensemble_cv.py` (17 test files plus `__init__.py`).
 
 ## Children (documented on disk)
 - llm/ (test_ollama_chains.py, test_ollama_client.py, test_ollama_config_retries.py, test_ollama_local_server.py, test_ollama_prompts.py)

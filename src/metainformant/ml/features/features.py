@@ -233,9 +233,17 @@ def select_features_stability(
 
     Raises:
         ImportError: If scikit-learn not available
+        ValueError: If ``method`` is not one of the base methods. (It used to be accepted: every bootstrap iteration
+            raised inside the loop, was logged and skipped, and the all-zero frequencies then ranked the *last*
+            features as "top-ranked", with only a warning.)
+        RuntimeError: If every bootstrap iteration failed, so no selection frequency exists
     """
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for stability selection")
+    if method not in ("rf", "random_forest", "lasso", "univariate"):
+        raise ValueError(f"Unknown stability method: {method}. Use 'rf', 'lasso' or 'univariate'.")
+    if n_bootstraps < 1 and "n_bootstrap" not in kwargs:
+        raise ValueError(f"n_bootstraps must be at least 1, got {n_bootstraps}")
 
     if "n_bootstrap" in kwargs:
         n_bootstraps = int(kwargs.pop("n_bootstrap"))
@@ -256,6 +264,7 @@ def select_features_stability(
 
     # Track feature selection frequency
     selection_counts = np.zeros(n_features)
+    n_completed = 0
 
     # Perform bootstrap iterations
     for i in range(n_bootstraps):
@@ -287,13 +296,17 @@ def select_features_stability(
             selector.fit(X_boot, y_boot)
             selected = selector.get_support()
             selection_counts += selected.astype(int)
+            n_completed += 1
 
         except Exception as e:
             logger.warning(f"Bootstrap iteration {i} failed: {e}")
             continue
 
-    # Calculate selection frequency
-    selection_freq = selection_counts / n_bootstraps
+    if n_completed == 0:
+        raise RuntimeError(f"all {n_bootstraps} bootstrap iterations failed; see the logged warnings for the cause")
+
+    # Selection frequency among the iterations that ran (a failed one is not a vote against every feature)
+    selection_freq = selection_counts / n_completed
 
     # Select features above threshold
     selected_indices = np.where(selection_freq >= threshold)[0]
