@@ -122,12 +122,23 @@ class TestFindMarkerGenes:
         assert len(markers) == 10  # 5 genes x 2 groups
 
     def test_identifies_cluster_specific_genes(self) -> None:
-        # genes 0-4 elevated in cluster B cells (rows 30+)
-        data = kmeans_clustering(_make_clustered_data(), n_clusters=2, random_state=0)
+        # genes 0-4 are elevated in the B cells (rows 30+) and nowhere else; the other 15 genes do not differ.
+        # (In _make_clustered_data every gene differs by the same 4 units, so there it was only ties in the
+        # underflowed p-values that put genes 0-4 first.)
+        rng = np.random.RandomState(0)
+        X = rng.normal(5, 0.5, (60, 20))
+        X[30:, :5] += 4.0
+        obs = pd.DataFrame({"cell_type": ["A"] * 30 + ["B"] * 30}, index=[f"c{i}" for i in range(60)])
+        data = SingleCellData(X, obs=obs, var=pd.DataFrame(index=[f"g{i}" for i in range(20)]))
+
         markers = find_marker_genes(data, groupby="cell_type", n_genes=5)
+
         group_b = markers[markers["group"] == "B"]
-        top_b = set(group_b.sort_values("log_fold_change", ascending=False).head(5)["gene"])
-        assert top_b == {f"g{i}" for i in range(5)}
+        assert set(group_b["gene"]) == {f"g{i}" for i in range(5)}
+        assert (group_b["log_fold_change"] > 0).all()
+        group_a = markers[markers["group"] == "A"]
+        assert set(group_a["gene"]) == {f"g{i}" for i in range(5)}  # depleted in A, the same genes
+        assert (group_a["log_fold_change"] < 0).all()
 
     def test_invalid_groupby_raises(self) -> None:
         data = _make_clustered_data()

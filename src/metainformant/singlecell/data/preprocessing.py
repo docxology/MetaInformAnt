@@ -355,6 +355,15 @@ def filter_cells(
         a later :func:`filter_genes` reads current values; other annotations are carried over. ``uns``
         is copied recursively, so the input object is never modified.
 
+        A neighbor graph stored by :func:`~metainformant.singlecell.analysis.nonlinear_methods.compute_neighbors`
+        (``uns["neighbors"]``, indexed by cell) describes the cells before the filter, and a k-nearest-neighbor
+        graph of the retained cells is not a subset of it: some of every cell's neighbors are gone and the next
+        nearest cells would take their places. When any cell is removed that graph is therefore dropped, and
+        ``uns["neighbors_dropped"]`` records why, how many cells there were and the graph's parameters, so it
+        can be recomputed with the same settings; the diffusion map, DPT and PAGA each rebuild a missing graph.
+        With no cell removed the graph is still valid and is kept. Pairwise matrices in ``obsp`` are subset
+        to the retained cells.
+
     Raises:
         ValidationError: If data is not SingleCellData
     """
@@ -420,7 +429,41 @@ def filter_cells(
         result.uns["qc_summary"]["cells_after_filtering"] = n_kept
         result.uns["qc_summary"]["cells_filtered"] = n_filtered
 
+    if n_filtered:
+        _drop_stale_neighbors(result, n_cells_before=data.n_obs, n_cells_after=int(n_kept))
+
     return result
+
+
+#: Entries of ``uns["neighbors"]`` that ``compute_neighbors`` indexes by cell.
+_PER_CELL_NEIGHBOR_KEYS = ("indices", "distances", "connectivities")
+
+
+def _drop_stale_neighbors(result: SingleCellData, *, n_cells_before: int, n_cells_after: int) -> None:
+    """Remove a per-cell neighbor graph from ``result.uns`` after cells were removed, and record why.
+
+    A graph without any per-cell entry (for example the parameter dictionary scanpy keeps in ``uns``, whose
+    matrices live in ``obsp``) does not describe cells and is left alone.
+    """
+    graph = result.uns.get("neighbors")
+    if not isinstance(graph, dict) or not any(key in graph for key in _PER_CELL_NEIGHBOR_KEYS):
+        return
+
+    removed = n_cells_before - n_cells_after
+    result.uns.pop("neighbors")
+    result.uns["neighbors_dropped"] = {
+        "reason": (
+            f"filter_cells removed {removed} of {n_cells_before} cells; the stored neighbor graph was indexed by the "
+            "original cells and is not a valid graph of the retained ones. Recompute it with compute_neighbors."
+        ),
+        "n_cells_before": n_cells_before,
+        "n_cells_after": n_cells_after,
+        "params": deepcopy(graph.get("params", {})),
+    }
+    logger.warning(
+        f"filter_cells dropped uns['neighbors']: it described {n_cells_before} cells and {removed} were removed. "
+        "Recompute it with compute_neighbors."
+    )
 
 
 def filter_genes(
@@ -708,6 +751,12 @@ def identify_highly_variable_genes(
 ) -> SingleCellData:
     """Identify highly variable genes.
 
+    Both flavors are simplified. ``"seurat"`` fits a quadratic in log10(mean) to the squared coefficient of
+    variation and ranks genes by their relative residual; it is not Seurat's mean-binned, z-scored dispersion
+    (``select_hvgs(flavor="seurat_v3")`` in the dimensionality module implements the Seurat v3 variance-stabilizing
+    selection). ``"cell_ranger"`` ranks by the squared coefficient of variation alone, without Cell Ranger's
+    mean-binned normalization.
+
     Args:
         data: SingleCellData object (should be normalized and log-transformed)
         n_top_genes: Number of top variable genes to select
@@ -786,6 +835,13 @@ def identify_highly_variable_genes(
 
 def remove_batch_effects(data: SingleCellData, batch_key: str, method: str = "regress_out") -> SingleCellData:
     """Remove batch effects from expression data.
+
+    Both methods are simple per-batch adjustments. ``"regress_out"`` subtracts each batch's per-gene mean.
+    ``"combat"`` is NOT ComBat: it z-scores every gene within each batch (subtracts the batch mean and divides by
+    the batch standard deviation, leaving the cells of a constant-in-batch gene unchanged), which also removes real
+    differences between batches in mean and spread, and it has no empirical-Bayes shrinkage or covariates. Use
+    :func:`~metainformant.singlecell.data.integration.combat_integration` for a location-scale correction toward a
+    reference batch.
 
     Args:
         data: SingleCellData object

@@ -49,7 +49,7 @@ graph TD
 | [`doublet/`](doublet/) | Simulation-based doublet detection (Scrublet-style KNN scoring) |
 | [`velocity/`](velocity/) | RNA velocity estimation for dynamic trajectories |
 | [`visualization/`](visualization/) | `plot_umap`, trajectory plots, QC visualizations |
-| [`io.py`](io.py) | GEO/SRA downloads (`download_geo_supplementary`, `download_sra_fastqs`, `fetch_atlas_datasets`) and Salmon alevin quantification (`run_salmon_alevin`). The nine helpers for R and pySCENIC tools (`run_seurat_integration`, `run_differential_expression`, `run_scenic_grnboost2`, `run_scenic_cistarget`, `run_scenic_aucell`, `filter_regulons_post_scenic`, `run_pseudotime_trajectory`, `run_go_enrichment`, `run_shinycell_export`) are not implemented: they raise `NotImplementedError` and create no files |
+| [`io.py`](io.py) | GEO/SRA downloads (`download_geo_supplementary`, `download_sra_fastqs`, `fetch_atlas_datasets`) and Salmon alevin quantification (`run_salmon_alevin`); `fetch_atlas_datasets` raises `NotImplementedError` for the ArrayExpress dataset (`Li-2022`) and creates nothing. The nine helpers for R and pySCENIC tools (`run_seurat_integration`, `run_differential_expression`, `run_scenic_grnboost2`, `run_scenic_cistarget`, `run_scenic_aucell`, `filter_regulons_post_scenic`, `run_pseudotime_trajectory`, `run_go_enrichment`, `run_shinycell_export`) are not implemented: they raise `NotImplementedError` and create no files |
 
 ## Key Capabilities
 

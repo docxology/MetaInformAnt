@@ -12,6 +12,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from metainformant.core.utils.errors import ValidationError
+
 
 @dataclass
 class DoubletResult:
@@ -60,7 +62,20 @@ def detect_doublets(
 
     Returns:
         DoubletResult with scores and predicted doublets.
+
+    Raises:
+        ValidationError: If ``counts`` is not a 2D array of finite, non-negative numbers with at least 2 cells and
+            1 gene. The check is made here, not left to the SVD: whether LAPACK fails or quietly returns NaN for a
+            non-finite matrix depends on the build, and a failed SVD must never be replaced by raw gene columns.
     """
+    counts = np.asarray(counts, dtype=float)
+    if counts.ndim != 2 or counts.shape[0] < 2 or counts.shape[1] < 1:
+        raise ValidationError(f"counts must be a 2D array of at least 2 cells and 1 gene, got shape {counts.shape}")
+    if not np.all(np.isfinite(counts)):
+        raise ValidationError("counts must be finite (it has NaN or infinity)")
+    if np.any(counts < 0):
+        raise ValidationError("counts must be non-negative")
+
     rng = np.random.RandomState(random_state)
     n_cells, n_genes = counts.shape
 
@@ -94,11 +109,8 @@ def detect_doublets(
     # PCA
     centered = combined - combined.mean(axis=0)
     n_components = min(n_pcs, combined.shape[0] - 1, combined.shape[1])
-    try:
-        u, s, vt = np.linalg.svd(centered, full_matrices=False)
-        pca_coords = u[:, :n_components] * s[:n_components]
-    except np.linalg.LinAlgError:
-        pca_coords = centered[:, :n_components]
+    u, s, vt = np.linalg.svd(centered, full_matrices=False)
+    pca_coords = u[:, :n_components] * s[:n_components]
 
     # KNN doublet scoring
     k = min(n_neighbors, len(combined) - 1)

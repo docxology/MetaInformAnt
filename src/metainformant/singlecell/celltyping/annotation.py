@@ -22,6 +22,7 @@ from __future__ import annotations
 import math
 import random
 from collections import Counter
+from statistics import NormalDist
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger
@@ -505,7 +506,7 @@ def cell_type_composition(
             - n_groups: int number of unique groups (1 if no groups).
 
     Raises:
-        ValueError: If labels is empty or groups length mismatches.
+        ValueError: If labels is empty, groups length mismatches, or confidence_level is not strictly between 0 and 1.
     """
     if not labels:
         raise ValueError("labels must not be empty")
@@ -808,7 +809,7 @@ def _wilson_interval(
         Tuple of (lower_bound, upper_bound) for the proportion.
     """
     if total == 0:
-        return (0.0, 0.0)
+        return (math.nan, math.nan)  # no trials, no proportion to put an interval around
 
     p_hat = successes / total
     denom = 1 + z * z / total
@@ -821,36 +822,22 @@ def _wilson_interval(
 
 
 def _z_score_for_confidence(confidence: float) -> float:
-    """Return approximate z-score for a given confidence level.
+    """Return the two-sided normal z-score for a confidence level.
 
     Args:
-        confidence: Confidence level (e.g., 0.95).
+        confidence: Confidence level strictly between 0 and 1 (e.g., 0.95).
 
     Returns:
-        Corresponding z-score.
+        The z with P(-z < Z < z) = confidence for Z ~ N(0, 1), exact (the inverse normal CDF of the standard library),
+        for example 1.9600 for 0.95.
+
+    Raises:
+        ValueError: If ``confidence`` is not strictly between 0 and 1. No interval is substituted for an invalid
+            level: a 95% interval under another name would be a wrong answer with no sign of it.
     """
-    # Common z-scores for typical confidence levels
-    z_map = {
-        0.90: 1.645,
-        0.95: 1.960,
-        0.99: 2.576,
-    }
-    if confidence in z_map:
-        return z_map[confidence]
-
-    # Approximate using inverse error function approximation
-    # For confidence c, z = sqrt(2) * erfinv(c)
-    # Using a rational approximation
-    alpha = 1.0 - confidence
-    if alpha <= 0 or alpha >= 1:
-        return 1.96  # fallback
-
-    # Abramowitz and Stegun approximation for probit
-    t = math.sqrt(-2.0 * math.log(alpha / 2.0))
-    c0, c1, c2 = 2.515517, 0.802853, 0.010328
-    d1, d2, d3 = 1.432788, 0.189269, 0.001308
-    z = t - (c0 + c1 * t + c2 * t * t) / (1 + d1 * t + d2 * t * t + d3 * t * t * t)
-    return z
+    if not 0.0 < confidence < 1.0:
+        raise ValueError(f"confidence level must be strictly between 0 and 1, got {confidence}")
+    return NormalDist().inv_cdf((1.0 + confidence) / 2.0)
 
 
 __all__ = [

@@ -109,11 +109,18 @@ class TestCombatIntegration:
         result = combat_integration(data.copy(), batch_key="batch")
         assert result.X.shape == data.X.shape
 
-    def test_with_covariates(self) -> None:
+    def test_covariates_are_refused_not_silently_ignored(self) -> None:
+        """The adjustment cannot preserve covariates; accepting the argument would pretend that it does."""
         data = _make_batched_counts()
         data.obs["condition"] = ["ctrl"] * 30 + ["treated"] * 30
-        result = combat_integration(data.copy(), batch_key="batch", covariates=["condition"])
+        with pytest.raises(NotImplementedError, match="covariates"):
+            combat_integration(data.copy(), batch_key="batch", covariates=["condition"])
+
+    def test_an_empty_covariate_list_is_the_same_as_none(self) -> None:
+        data = _make_batched_counts()
+        result = combat_integration(data.copy(), batch_key="batch", covariates=[])
         assert result.X.shape == data.X.shape
+        assert result.uns["combat"]["covariates"] == []
 
 
 # ---------------------------------------------------------------------------

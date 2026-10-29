@@ -4,9 +4,10 @@ This module provides functions for inferring developmental trajectories and
 pseudotemporal ordering from single-cell expression data.
 
 Diffusion pseudotime (:func:`compute_diffusion_pseudotime`, :func:`dpt_trajectory`) implements the DPT
-algorithm of Haghverdi et al. (2016). The cluster-level functions (PAGA-style connectivity,
-Slingshot-style paths) and the embedding-based pseudotime are simplified approximations; see their
-docstrings.
+algorithm of Haghverdi et al. (2016). :func:`paga_trajectory` computes the PAGA connectivity of Wolf et
+al. (2019) from the k-nearest-neighbor graph; the group pseudotime that it adds (hops from a root group)
+is a simple heuristic. The Slingshot-style paths and the embedding-based pseudotime are simplified
+approximations; see their docstrings.
 """
 
 from __future__ import annotations
@@ -17,11 +18,14 @@ import numpy as np
 import pandas as pd
 from scipy import sparse
 from scipy.sparse.csgraph import connected_components
-from scipy.sparse.linalg import eigsh
 
 from metainformant.core.data import validation
 from metainformant.core.utils import errors, logging
-from metainformant.singlecell.analysis.nonlinear_methods import compute_neighbors
+from metainformant.singlecell.analysis.nonlinear_methods import (
+    _checked_neighbor_arrays,
+    _leading_eigenpairs,
+    compute_neighbors,
+)
 from metainformant.singlecell.data.preprocessing import SingleCellData
 
 # Optional scientific dependencies
@@ -34,10 +38,6 @@ except ImportError:
     NearestNeighbors = None
 
 logger = logging.get_logger(__name__)
-
-# Eigenproblems up to this many cells use the dense symmetric solver (exact, and fast at this size);
-# larger ones ask ARPACK for just the leading eigenpairs.
-_DENSE_EIGEN_LIMIT = 1000
 
 
 def _default_root_cell(X: np.ndarray) -> int:
@@ -63,18 +63,6 @@ def _dpt_transition_operator(affinities: sparse.csr_matrix) -> sparse.csr_matrix
     density_normalised = inverse_degree @ affinities @ inverse_degree
     inverse_root = sparse.diags(1.0 / np.sqrt(np.asarray(density_normalised.sum(axis=1)).ravel()))
     return sparse.csr_matrix(inverse_root @ density_normalised @ inverse_root)
-
-
-def _leading_eigenpairs(operator: sparse.csr_matrix, k: int) -> tuple[np.ndarray, np.ndarray]:
-    """The ``k`` algebraically largest eigenpairs of a symmetric matrix, largest eigenvalue first."""
-    n = operator.shape[0]
-    if n <= _DENSE_EIGEN_LIMIT or k >= n - 1:
-        values, vectors = np.linalg.eigh(operator.toarray())
-    else:
-        # Fixed start vector: ARPACK's own default is drawn from internal state that changes between calls
-        values, vectors = eigsh(operator, k=k, which="LA", v0=np.random.default_rng(0).standard_normal(n))
-    order = np.argsort(values)[::-1][:k]
-    return values[order], vectors[:, order]
 
 
 def _dpt_distances(operator: sparse.csr_matrix, root: int, n_components: int) -> tuple[np.ndarray, np.ndarray]:
@@ -243,59 +231,109 @@ def dpt_trajectory(data: SingleCellData, root_cell: int | None = None) -> Single
     return compute_diffusion_pseudotime(data, root_cell, n_components=10)
 
 
-def paga_trajectory(data: SingleCellData, groups: str) -> SingleCellData:
-    """Compute Partition-based Graph Abstraction (PAGA) trajectory.
+def paga_trajectory(
+    data: SingleCellData,
+    groups: str,
+    *,
+    n_neighbors: int = 15,
+    threshold: float = 0.01,
+    root_group: Any | None = None,
+) -> SingleCellData:
+    """Compute Partition-based Graph Abstraction (PAGA) connectivity between groups of cells.
+
+    Implements the connectivity of Wolf et al. (2019, Genome Biology 20:59) on the k-nearest-neighbor graph of
+    the cells: the graph in ``data.uns["neighbors"]`` when there is one (see
+    :func:`~metainformant.singlecell.analysis.nonlinear_methods.compute_neighbors`), otherwise one built with
+    ``n_neighbors`` neighbors and stored in the returned object. For two groups i and j, the observed number
+    of edges ``e_ij`` between them (every directed edge from a cell of one to a cell of the other, both ways
+    added) is compared with the number expected if the same edges ended at random cells,
+    ``(e_i * n_j + e_j * n_i) / (n - 1)``, where ``e_i`` is the number of edges that start in group i, ``n_i``
+    its number of cells and ``n`` the number of cells in all. The connectivity is observed over expected, capped
+    at 1: it is near 0 for groups that the graph keeps apart, and reaches 1 when they are linked at least as
+    often as chance. The order of the cells in the data plays no role.
+
+    The function also adds a group-level pseudotime, ``obs["paga_pseudotime"]``. That part is a heuristic, not
+    part of PAGA: the number of hops from a root group over the edges whose connectivity is at least
+    ``threshold``, divided by the largest number of hops. Without ``root_group`` the root is the least connected
+    group (an end of a chain); the pseudotime direction is then only as meaningful as that guess. Groups that
+    the thresholded graph does not link to the root get ``inf``.
 
     Args:
         data: SingleCellData object with cluster assignments
-        groups: Column name containing cluster/group labels
+        groups: Column name containing cluster/group labels (no missing values)
+        n_neighbors: Neighbors per cell for the graph that is built when ``data.uns["neighbors"]`` is absent
+        threshold: Smallest connectivity that counts as an edge between two groups in the pseudotime step
+        root_group: Label of the group where the pseudotime starts (default: chosen as described above)
 
     Returns:
-        SingleCellData with PAGA connectivity information
+        SingleCellData with ``obs["paga_pseudotime"]`` and ``uns["paga"]``: ``groups``, ``unique_groups``,
+        ``n_groups``, ``connectivity_matrix`` (symmetric, zero diagonal, rows and columns in the order of
+        ``unique_groups``), ``observed_edges`` and ``expected_edges`` (the two terms of the ratio), ``threshold``,
+        ``root_group``, ``root_selection`` (``"user"`` or ``"heuristic"``), ``n_neighbors`` and
+        ``neighbors_source`` (``"uns"`` or ``"X"``).
 
     Raises:
-        ValidationError: If data is not SingleCellData or the groups column is not in data.obs
+        ValidationError: If data is not SingleCellData; the groups column is not in data.obs or has a missing
+            value; there are fewer than two cells; n_neighbors or threshold is out of range; root_group is not a
+            group; or ``uns["neighbors"]`` lacks ``indices`` or does not match the number of cells (a stale
+            graph: recompute it with ``compute_neighbors``)
     """
     validation.validate_type(data, SingleCellData, "data")
 
     if data.obs is None or groups not in data.obs.columns:
         raise errors.ValidationError(f"Groups column '{groups}' not found in data.obs")
+    validation.validate_range(n_neighbors, min_val=1, name="n_neighbors")
+    validation.validate_range(threshold, min_val=0.0, max_val=1.0, name="threshold")
+    if data.n_obs < 2:
+        raise errors.ValidationError("PAGA needs at least 2 cells")
 
     logger.info(f"Computing PAGA trajectory using groups from '{groups}'")
+
+    group_codes, group_labels = pd.factorize(data.obs[groups], sort=True)
+    if np.any(group_codes < 0):
+        raise errors.ValidationError(f"Groups column '{groups}' has missing values")
+    unique_clusters = np.asarray(group_labels)
+    if root_group is not None and root_group not in unique_clusters:
+        raise errors.ValidationError(f"root_group {root_group!r} is not a group in '{groups}'")
 
     # Create copy
     result = data.copy()
 
-    # Get cluster labels
-    cluster_labels = data.obs[groups].values
-    unique_clusters = np.unique(cluster_labels)
+    # The k-nearest-neighbor graph of the cells
+    if "neighbors" in result.uns:
+        neighbors_source = "uns"
+    else:
+        neighbors_source = "X"
+        result = compute_neighbors(result, n_neighbors=min(n_neighbors, result.n_obs), inplace=True)
+    (neighbor_indices,) = _checked_neighbor_arrays(result, "indices")
 
-    # Compute cluster centroids
-    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
-    cluster_centroids = {}
+    # Connectivity between groups
+    connectivity_matrix, observed_edges, expected_edges = _compute_cluster_connectivity(
+        group_codes, len(unique_clusters), neighbor_indices
+    )
 
-    for cluster in unique_clusters:
-        mask = cluster_labels == cluster
-        if np.sum(mask) > 0:
-            cluster_centroids[cluster] = np.mean(X[mask], axis=0)
-
-    # Compute connectivity between clusters
-    connectivity_matrix = _compute_cluster_connectivity(cluster_labels, unique_clusters)
-
+    # Group-level pseudotime (a heuristic on top of the connectivity)
+    root_index = None if root_group is None else int(np.flatnonzero(unique_clusters == root_group)[0])
+    cluster_pseudotime, root_index = _compute_cluster_pseudotime(
+        connectivity_matrix, unique_clusters, threshold=threshold, root_index=root_index
+    )
     # Store PAGA results
     result.uns["paga"] = {
         "groups": groups,
         "unique_groups": unique_clusters.tolist(),
         "connectivity_matrix": connectivity_matrix.tolist(),
+        "observed_edges": observed_edges.tolist(),
+        "expected_edges": expected_edges.tolist(),
         "n_groups": len(unique_clusters),
+        "threshold": threshold,
+        "root_group": unique_clusters.tolist()[root_index],
+        "root_selection": "heuristic" if root_group is None else "user",
+        "n_neighbors": result.uns["neighbors"].get("params", {}).get("n_neighbors"),
+        "neighbors_source": neighbors_source,
     }
 
-    # Add cluster-level pseudotime (simplified)
-    # In practice, PAGA would compute a trajectory through the abstracted graph
-    cluster_pseudotime = _compute_cluster_pseudotime(connectivity_matrix, unique_clusters)
-
-    # Assign pseudotime to cells based on their cluster
-    cell_pseudotime = np.array([cluster_pseudotime[cluster] for cluster in cluster_labels])
+    # Assign pseudotime to cells based on their group
+    cell_pseudotime = np.array([cluster_pseudotime[cluster] for cluster in unique_clusters])[group_codes]
 
     result.obs = result.obs.copy() if result.obs is not None else pd.DataFrame()
     result.obs["paga_pseudotime"] = cell_pseudotime
@@ -596,59 +634,79 @@ def _compute_shortest_path_distances(distances: np.ndarray, root: int) -> np.nda
     return pseudotime
 
 
-def _compute_cluster_connectivity(cluster_labels: np.ndarray, unique_clusters: np.ndarray) -> np.ndarray:
-    """Compute connectivity matrix between clusters."""
+def _compute_cluster_connectivity(
+    group_codes: np.ndarray, n_groups: int, neighbor_indices: np.ndarray
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """PAGA connectivity between groups of cells (Wolf et al., 2019), from a k-nearest-neighbor graph.
+
+    Args:
+        group_codes: Group of each cell, as an integer in ``range(n_groups)``
+        n_groups: Number of groups
+        neighbor_indices: Row ``v`` lists the neighbors of cell ``v`` (a cell's own entry is ignored)
+
+    Returns:
+        ``(connectivity, observed, expected)``, each ``n_groups x n_groups`` and symmetric with a zero diagonal.
+        ``observed[i, j]`` is the number of directed edges from group i to group j plus those from j to i;
+        ``expected[i, j] = (e_i * n_j + e_j * n_i) / (n - 1)`` is the number of such edges if each edge from a cell
+        ended at a uniformly random other cell, with ``e_i`` the number of edges starting in group i and ``n_i`` the
+        number of cells in it; ``connectivity = min(1, observed / expected)`` (0 where nothing is expected).
+    """
+    n_cells = len(group_codes)
+    sources = np.repeat(np.arange(n_cells), neighbor_indices.shape[1])
+    targets = neighbor_indices.reshape(-1)
+    listed = sources != targets
+    sources, targets = sources[listed], targets[listed]
+
+    edges_from_group = np.bincount(group_codes[sources], minlength=n_groups).astype(float)  # e_i
+    group_sizes = np.bincount(group_codes, minlength=n_groups).astype(float)  # n_i
+    pair_counts = np.bincount(group_codes[sources] * n_groups + group_codes[targets], minlength=n_groups**2)
+    directed = pair_counts.reshape(n_groups, n_groups).astype(float)
+
+    observed = directed + directed.T
+    expected = (np.outer(edges_from_group, group_sizes) + np.outer(group_sizes, edges_from_group)) / (n_cells - 1)
+    np.fill_diagonal(observed, 0.0)
+    np.fill_diagonal(expected, 0.0)
+
+    connectivity = np.zeros((n_groups, n_groups))
+    np.divide(observed, expected, out=connectivity, where=expected > 0)
+    return np.minimum(connectivity, 1.0), observed, expected
+
+
+def _compute_cluster_pseudotime(
+    connectivity: np.ndarray,
+    unique_clusters: np.ndarray,
+    *,
+    threshold: float = 0.01,
+    root_index: int | None = None,
+) -> tuple[Dict[Any, float], int]:
+    """Hops from a root group over the edges with connectivity of at least ``threshold``, scaled to [0, 1].
+
+    Without ``root_index`` the root is the group with the fewest such edges (the first one on a tie), the end of a
+    chain in a linear trajectory. Groups the thresholded graph does not link to the root get ``inf``.
+
+    Returns:
+        The pseudotime of each group label, and the index of the root group.
+    """
     n_clusters = len(unique_clusters)
-    connectivity = np.zeros((n_clusters, n_clusters))
+    edges = (connectivity >= threshold) & (connectivity > 0)
 
-    cluster_to_idx = {cluster: i for i, cluster in enumerate(unique_clusters)}
+    if root_index is None:
+        root_index = int(np.argmin(edges.sum(axis=0)))
 
-    # Count transitions between clusters
-    for i in range(len(cluster_labels) - 1):
-        from_cluster = cluster_labels[i]
-        to_cluster = cluster_labels[i + 1]
-
-        from_idx = cluster_to_idx[from_cluster]
-        to_idx = cluster_to_idx[to_cluster]
-
-        connectivity[from_idx, to_idx] += 1
-
-    # Normalize by row sums
-    row_sums = connectivity.sum(axis=1)
-    row_sums = np.where(row_sums == 0, 1, row_sums)  # Avoid division by zero
-    connectivity = connectivity / row_sums[:, np.newaxis]
-
-    return connectivity
-
-
-def _compute_cluster_pseudotime(connectivity: np.ndarray, unique_clusters: np.ndarray) -> Dict[Any, float]:
-    """Compute pseudotime for clusters based on connectivity."""
-    n_clusters = len(unique_clusters)
-
-    # Simple topological sort - assume linear progression
-    # In practice, this would be more sophisticated
-    cluster_pseudotime = {}
-
-    # Find starting cluster (most incoming connections)
-    incoming = connectivity.sum(axis=0)
-    start_idx = int(np.argmin(incoming))  # Cluster with fewest incoming connections
-
-    # Assign pseudotime based on graph distance from start
+    # Breadth-first search for the number of hops from the root
     distances = np.full(n_clusters, np.inf)
-    distances[start_idx] = 0
-
-    # Simple BFS to compute distances
-    queue = [start_idx]
-    visited = set([start_idx])
+    distances[root_index] = 0
+    queue = [root_index]
+    visited = {root_index}
 
     while queue:
         current = queue.pop(0)
 
-        for neighbor in range(n_clusters):
-            if connectivity[current, neighbor] > 0 and neighbor not in visited:
+        for neighbor in np.flatnonzero(edges[current]):
+            if int(neighbor) not in visited:
                 distances[neighbor] = distances[current] + 1
-                visited.add(neighbor)
-                queue.append(neighbor)
+                visited.add(int(neighbor))
+                queue.append(int(neighbor))
 
     # Normalize distances
     max_dist = np.max(distances[distances < np.inf])
@@ -656,10 +714,9 @@ def _compute_cluster_pseudotime(connectivity: np.ndarray, unique_clusters: np.nd
         distances = distances / max_dist
 
     # Map back to cluster labels
-    for i, cluster in enumerate(unique_clusters):
-        cluster_pseudotime[cluster] = distances[i]
+    cluster_pseudotime = {cluster: float(distances[i]) for i, cluster in enumerate(unique_clusters)}
 
-    return cluster_pseudotime
+    return cluster_pseudotime, root_index
 
 
 def _compute_slingshot_trajectory(

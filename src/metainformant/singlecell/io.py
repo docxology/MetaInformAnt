@@ -6,7 +6,8 @@ compression/decompression, and running Salmon Alevin.
 The ``run_*`` helpers for R and pySCENIC tools (Seurat, Monocle3, clusterProfiler, ShinyCell,
 pySCENIC) are not implemented. They raise ``NotImplementedError`` and create nothing at the
 requested output path, because an empty file or directory there would be mistaken for a real
-result by the next pipeline step.
+result by the next pipeline step. :func:`fetch_atlas_datasets` follows the same rule for the datasets
+that live in ArrayExpress, for which no fetcher exists.
 """
 
 from __future__ import annotations
@@ -83,23 +84,53 @@ def _compress_fastq(path: Path) -> None:
     subprocess.run(cmd, check=True)
 
 
+#: Atlas dataset name -> accession. ``GSE`` accessions are fetched from GEO; ``E-`` accessions are ArrayExpress.
+_ATLAS_ACCESSIONS = {
+    "Davie-2018": "GSE107451",
+    "Baker-2021": "GSE152495",
+    "Park-2022": "GSE207799",
+    "Dopp-2024": "GSE221239",
+    "LeeBenton-2023": "GSE247965",
+    "Li-2022": "E-MTAB-10519",
+}
+
+
 def fetch_atlas_datasets(datasets: List[str], output_base: str | Path) -> List[Path]:
-    """Fetch multiple datasets (Davie-2018, Baker-2021, etc.) to the output base."""
+    """Fetch the GEO supplementary files of atlas datasets (Davie-2018, Baker-2021, etc.) to the output base.
+
+    Each known dataset is downloaded into ``output_base / <name>`` with :func:`download_geo_supplementary`.
+    Unknown names are skipped with a warning. A dataset whose accession is in ArrayExpress (an ``E-``
+    accession such as ``Li-2022``) cannot be fetched, because there is no ArrayExpress downloader. That is
+    an error, not a skip: an empty directory in the returned list would pass for a downloaded dataset.
+
+    Args:
+        datasets: Names of the atlas datasets to fetch.
+        output_base: Directory that receives one sub-directory per dataset.
+
+    Returns:
+        The directory of each fetched dataset, in the order requested (unknown names left out).
+
+    Raises:
+        NotImplementedError: If a requested dataset is an ArrayExpress accession. The check runs before
+            anything is created or downloaded, so the call leaves ``output_base`` untouched.
+        subprocess.CalledProcessError: If a download fails.
+    """
     output_base = Path(output_base)
+
+    unfetchable = [name for name in datasets if _ATLAS_ACCESSIONS.get(name, "").startswith("E-")]
+    if unfetchable:
+        accessions = ", ".join(f"{name} ({_ATLAS_ACCESSIONS[name]})" for name in unfetchable)
+        raise NotImplementedError(
+            f"fetch_atlas_datasets() cannot fetch {accessions}: they are ArrayExpress accessions and no "
+            "ArrayExpress downloader exists. Download them from https://www.ebi.ac.uk/biostudies/arrayexpress "
+            "yourself, or leave them out of the request. Nothing was created or downloaded."
+        )
+
     output_base.mkdir(parents=True, exist_ok=True)
     fetched_paths = []
 
-    dataset_map = {
-        "Davie-2018": "GSE107451",
-        "Baker-2021": "GSE152495",
-        "Park-2022": "GSE207799",
-        "Dopp-2024": "GSE221239",
-        "LeeBenton-2023": "GSE247965",
-        "Li-2022": "E-MTAB-10519",
-    }
-
     for ds_name in datasets:
-        acc = dataset_map.get(ds_name)
+        acc = _ATLAS_ACCESSIONS.get(ds_name)
         if not acc:
             logger.warning(f"Unknown dataset name: {ds_name}")
             continue
@@ -108,10 +139,7 @@ def fetch_atlas_datasets(datasets: List[str], output_base: str | Path) -> List[P
         ds_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Fetching {ds_name} ({acc}) -> {ds_dir}")
 
-        if acc.startswith("GSE"):
-            download_geo_supplementary(acc, ds_dir)
-        elif acc.startswith("E-"):
-            logger.info(f"Skipping direct fetch for {acc} (implement custom handler).")
+        download_geo_supplementary(acc, ds_dir)
 
         fetched_paths.append(ds_dir)
 

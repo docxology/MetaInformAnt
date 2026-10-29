@@ -68,9 +68,11 @@ class TestDifferentialExpression:
             "pct_group2",
             "mean_group1",
             "mean_group2",
+            "test_status",
         }
         for r in results:
             assert set(r.keys()) == expected_keys
+            assert r["test_status"] == "ok"
 
     def test_de_genes_have_high_foldchange(self) -> None:
         """Known DE genes should appear with large absolute log2fc."""
@@ -409,8 +411,10 @@ class TestGeneSetScoring:
         matrix = [[1.0, 2.0]] * 10
         gene_sets = {"missing": ["NOT_A_GENE"]}
         result = gene_set_scoring(matrix, gene_sets, ["a", "b"])
-        # Should return zeros for missing gene sets
-        assert all(s == 0.0 for s in result["scores"]["missing"])
+        # A set with no gene in the matrix cannot be scored: NaN, not a 0.0 that would read as a real score
+        assert len(result["scores"]["missing"]) == 10
+        assert all(np.isnan(s) for s in result["scores"]["missing"])
+        assert result["gene_set_sizes"]["missing"] == 0
 
     def test_invalid_method_raises(self) -> None:
         with pytest.raises(ValueError, match="Invalid method"):
@@ -445,7 +449,9 @@ class TestWilcoxonTieCorrection:
         b = [5.0, 5.0, 0.0, 0.0, 0.0, 3.0]
         expected = float(mannwhitneyu(a, b, alternative="two-sided").pvalue)
         assert expected < 1.0
-        assert _wilcoxon_rank_sum(a, b) == pytest.approx(expected)
+        outcome = _wilcoxon_rank_sum(a, b)
+        assert outcome.p_value == pytest.approx(expected)
+        assert outcome.status == "ok"
 
     def test_public_wilcoxon_matches_scipy_on_tied_counts(self) -> None:
         from scipy.stats import mannwhitneyu

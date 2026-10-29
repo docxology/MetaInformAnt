@@ -188,7 +188,8 @@ class TestLoadCountMatrixRaisesWhatItDocuments:
         with pytest.raises(ValidationError, match="does not exist") as raised:
             load_count_matrix(tmp_path / "missing.h5ad")
 
-        assert not isinstance(raised.value, (FileNotFoundError, ValueError))
+        assert not isinstance(raised.value, FileNotFoundError)
+        assert isinstance(raised.value, ValueError)  # ValidationError is also a ValueError
         assert "FileNotFoundError" not in (load_count_matrix.__doc__ or "")
 
     def test_the_documented_exceptions_are_exactly_the_ones_the_code_raises(self) -> None:
@@ -201,7 +202,7 @@ class TestLoadCountMatrixRaisesWhatItDocuments:
         with pytest.raises(ValidationError, match="Unsupported format: xyz") as raised:
             load_count_matrix(source, format="xyz")
 
-        assert not isinstance(raised.value, ValueError)
+        assert isinstance(raised.value, ValueError)  # ValidationError is also a ValueError
 
     def test_a_matrix_market_load_without_gene_and_barcode_files_raises_the_packages_ioerror(
         self, tmp_path: Path

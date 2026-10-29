@@ -3,6 +3,12 @@
 This module provides functions for integrating multiple single-cell datasets
 by correcting for batch effects and technical variation. Methods include
 mutual nearest neighbors (MNN), BBKNN, Harmony, and Scanorama-like approaches.
+
+Only :func:`bbknn_integration` follows its published algorithm (a batch-balanced k-nearest-neighbor graph).
+:func:`harmony_integration`, :func:`scanorama_integration`, :func:`mnn_integration` and
+:func:`combat_integration` are simplified location-scale or nearest-neighbor corrections named after the
+method they approximate; their docstrings say what they actually compute. None of them are ports of the
+reference implementations, so their output is not comparable to those packages'.
 """
 
 from __future__ import annotations
@@ -35,16 +41,45 @@ def _to_dense(x: Any) -> Any:
     return x.toarray() if hasattr(x, "toarray") else x
 
 
+def _require_same_genes(data_list: List[SingleCellData]) -> None:
+    """Refuse datasets whose genes differ: the integrations stack the matrices column by column.
+
+    Raises:
+        ValidationError: If a dataset has another number of genes than the first, or other gene names
+    """
+    first = data_list[0]
+    for i, data in enumerate(data_list[1:], 1):
+        if data.n_vars != first.n_vars:
+            raise errors.ValidationError(
+                f"data_list[{i}] has {data.n_vars} genes but data_list[0] has {first.n_vars}: "
+                "the datasets must have the same genes in the same order"
+            )
+        if first.var is not None and data.var is not None and not data.var.index.equals(first.var.index):
+            raise errors.ValidationError(
+                f"data_list[{i}] has other gene names than data_list[0]: "
+                "the datasets must have the same genes in the same order"
+            )
+
+
 def bbknn_integration(data: SingleCellData, batch_key: str, n_neighbors: int = 15) -> SingleCellData:
-    """Perform BBKNN (Batch Balanced K-Nearest Neighbors) integration.
+    """Build a batch-balanced k-nearest-neighbor graph (BBKNN, Polanski et al. 2020).
+
+    The cells are embedded in a PCA space (of the standardized expression matrix, at most 50 components) and every
+    cell is connected to its ``n_neighbors`` nearest cells *in each batch* separately, its own included in its own
+    batch, so that a cell's neighborhood draws equally on every batch instead of on the batch it came from. The
+    expression matrix is not changed: BBKNN corrects the neighbor graph, not the data.
 
     Args:
         data: SingleCellData object with batch labels
         batch_key: Column name containing batch labels
-        n_neighbors: Number of neighbors for kNN graph
+        n_neighbors: Number of neighbors per cell in each batch (fewer for a batch with fewer cells)
 
     Returns:
-        SingleCellData with integrated coordinates
+        SingleCellData with the graph in ``uns["bbknn"]`` (``indices`` and ``distances``, one row per cell and the
+        neighbors of every batch side by side, ``connectivities`` as a symmetric sparse matrix, ``batch_key``,
+        ``n_batches``, ``n_neighbors`` and ``batch_adjacency_shape``) and in ``uns["neighbors"]`` (the same
+        arrays with ``params``), where the diffusion map, DPT and PAGA read it. ``obs["bbknn_1"]`` and
+        ``obs["bbknn_2"]`` are a t-SNE of the PCA space, for plotting only; that embedding is not batch corrected.
 
     Raises:
         ValidationError: If data is not SingleCellData or batch_key is not in data.obs
@@ -72,45 +107,88 @@ def bbknn_integration(data: SingleCellData, batch_key: str, n_neighbors: int = 1
 
     logger.info(f"Found {len(unique_batches)} batches: {unique_batches}")
 
-    # Compute a PCA embedding for downstream batch-mixing visualization
+    # PCA embedding in which the neighbors are searched
     pca = PCA(n_components=min(50, X.shape[1]), random_state=42)
     X_pca = pca.fit_transform(StandardScaler().fit_transform(X))
 
     n_cells = X.shape[0]
 
-    # Store integration metadata
+    # Batch-balanced graph: the nearest cells of every batch, found in that batch alone
+    from scipy import sparse
+    from sklearn.neighbors import NearestNeighbors
+
+    index_blocks: List[np.ndarray] = []
+    distance_blocks: List[np.ndarray] = []
+    for batch in unique_batches:
+        members = np.flatnonzero(batch_labels == batch)
+        k_batch = min(n_neighbors, len(members))
+        batch_distances, batch_indices = NearestNeighbors(n_neighbors=k_batch).fit(X_pca[members]).kneighbors(X_pca)
+        index_blocks.append(members[batch_indices])
+        distance_blocks.append(batch_distances)
+    indices = np.hstack(index_blocks)
+    distances = np.hstack(distance_blocks)
+
+    # Gaussian-kernel connectivities, symmetrized by averaging, as compute_neighbors does
+    positive = distances[distances > 0]
+    sigma = float(np.median(positive)) if positive.size else 1.0
+    weights = np.exp(-(distances.reshape(-1) ** 2) / (2 * sigma**2))
+    rows = np.repeat(np.arange(n_cells), indices.shape[1])
+    directed = sparse.csr_matrix((weights, (rows, indices.reshape(-1))), shape=(n_cells, n_cells))
+    connectivities = sparse.csr_matrix((directed + directed.T) / 2)
+
     result.uns["bbknn"] = {
         "batch_key": batch_key,
         "n_neighbors": n_neighbors,
         "n_batches": len(unique_batches),
-        "batch_adjacency_shape": (n_cells, n_cells),
+        "indices": indices,
+        "distances": distances,
+        "connectivities": connectivities,
+        "batch_adjacency_shape": connectivities.shape,
+    }
+    result.uns["neighbors"] = {
+        "indices": indices,
+        "distances": distances,
+        "connectivities": connectivities,
+        "params": {
+            "n_neighbors": n_neighbors,
+            "metric": "euclidean",
+            "use_rep": "X_pca",
+            "method": "bbknn",
+            "batch_key": batch_key,
+        },
     }
 
-    # For visualization, we can compute a 2D embedding from the graph
-    # This is a simplified approach
-    try:
-        from sklearn.manifold import TSNE
+    # For plotting, a 2D embedding of the (uncorrected) PCA space; it is not part of the graph
+    from sklearn.manifold import TSNE
 
-        X_embed = TSNE(n_components=2, random_state=42, perplexity=min(30, n_cells - 1)).fit_transform(X_pca)
+    result.obs = result.obs.copy() if result.obs is not None else pd.DataFrame()
+    if n_cells >= 4:
+        perplexity = min(30.0, (n_cells - 1) / 3.0)
+        X_embed = TSNE(n_components=2, random_state=42, perplexity=perplexity).fit_transform(X_pca)
         result.obs["bbknn_1"] = X_embed[:, 0]
         result.obs["bbknn_2"] = X_embed[:, 1]
-    except Exception as e:
-        logger.warning(f"Could not compute BBKNN embedding: {e}")
+    else:
+        logger.warning("Fewer than 4 cells: no t-SNE embedding for plotting is added")
 
     logger.info("BBKNN integration completed")
     return result
 
 
 def harmony_integration(data: SingleCellData, batch_key: str, n_components: int = 50) -> SingleCellData:
-    """Perform Harmony integration for batch correction.
+    """Correct batch effects in a PCA space by centering each batch (a simplified stand-in for Harmony).
+
+    The standardized expression matrix is embedded with PCA (at most 50 components), the mean of each batch is
+    subtracted from its cells, and the centered coordinates are re-embedded with PCA. Real Harmony (Korsunsky et al.
+    2019) iterates soft clustering and per-cluster linear corrections and can mix batches that differ in composition;
+    this one only aligns batch centroids, so it is not Harmony's output.
 
     Args:
         data: SingleCellData object with batch labels
         batch_key: Column name containing batch labels
-        n_components: Number of Harmony components
+        n_components: Number of components of the re-embedding
 
     Returns:
-        SingleCellData with Harmony-corrected coordinates
+        SingleCellData with batch-centered PCA coordinates
 
     Raises:
         ValidationError: If data is not SingleCellData or batch_key is not in data.obs
@@ -174,17 +252,22 @@ def harmony_integration(data: SingleCellData, batch_key: str, n_components: int 
 
 
 def scanorama_integration(data_list: List[SingleCellData], batch_key: str) -> SingleCellData:
-    """Perform Scanorama-like integration of multiple datasets.
+    """Concatenate datasets, standardize each one per gene and embed them with PCA (Scanorama-like).
+
+    This is a simplified integration, not Scanorama (Hie et al. 2019): there is no panorama stitching by mutual
+    nearest neighbors of the datasets' embeddings. The datasets must have the same genes in the same order: nothing
+    is aligned by gene name, so datasets that disagree are refused.
 
     Args:
         data_list: List of SingleCellData objects to integrate
         batch_key: Column name that will contain batch labels
 
     Returns:
-        Integrated SingleCellData object
+        Integrated SingleCellData object (its columns are principal components)
 
     Raises:
-        ValidationError: If data_list is empty or contains an object that is not SingleCellData
+        ValidationError: If data_list is empty, contains an object that is not SingleCellData, or the datasets do not
+            have the same genes in the same order
         ImportError: If scikit-learn not available
     """
     if not HAS_SKLEARN:
@@ -198,6 +281,7 @@ def scanorama_integration(data_list: List[SingleCellData], batch_key: str) -> Si
     for i, data in enumerate(data_list):
         if not isinstance(data, SingleCellData):
             raise errors.ValidationError(f"data_list[{i}] is not a SingleCellData object")
+    _require_same_genes(data_list)
 
     logger.info(f"Performing Scanorama integration of {len(data_list)} datasets")
 
@@ -265,7 +349,11 @@ def scanorama_integration(data_list: List[SingleCellData], batch_key: str) -> Si
 
 
 def mnn_integration(data_list: List[SingleCellData], batch_key: str) -> SingleCellData:
-    """Perform Mutual Nearest Neighbors (MNN) integration.
+    """Integrate datasets pairwise with a simplified mutual-nearest-neighbor correction.
+
+    Mutual nearest neighbors between each new dataset and the integrated data define a correction vector that is
+    applied to the new dataset; it follows Haghverdi et al. (2018) in outline, not in detail (no cosine
+    normalization, no smoothing of the correction vectors), so it is not their output.
 
     Args:
         data_list: List of SingleCellData objects to integrate
@@ -275,7 +363,9 @@ def mnn_integration(data_list: List[SingleCellData], batch_key: str) -> SingleCe
         Integrated SingleCellData object
 
     Raises:
-        ValidationError: If data_list has fewer than 2 datasets or contains an object that is not SingleCellData
+        ValidationError: If data_list has fewer than 2 datasets, contains an object that is not SingleCellData,
+            the datasets do not have the same genes in the same order, or a dataset has no mutual nearest neighbor
+            among the datasets before it (it would otherwise be left out of the result)
         ImportError: If scikit-learn not available
     """
     if not HAS_SKLEARN:
@@ -287,6 +377,7 @@ def mnn_integration(data_list: List[SingleCellData], batch_key: str) -> SingleCe
     for i, data in enumerate(data_list):
         if not isinstance(data, SingleCellData):
             raise errors.ValidationError(f"data_list[{i}] is not a SingleCellData object")
+    _require_same_genes(data_list)
 
     logger.info(f"Performing MNN integration of {len(data_list)} datasets")
 
@@ -307,8 +398,11 @@ def mnn_integration(data_list: List[SingleCellData], batch_key: str) -> SingleCe
         mnn_pairs = _find_mutual_nearest_neighbors(X1, X2, k=20)
 
         if len(mnn_pairs) == 0:
-            logger.warning(f"No MNN pairs found between integrated data and dataset {i}")
-            continue
+            # Skipping the dataset would drop its cells from the result without a trace
+            raise errors.ValidationError(
+                f"No mutual nearest neighbors between dataset {i} and the datasets before it: the batches cannot be "
+                "aligned, and leaving the dataset out would lose its cells"
+            )
 
         # Correct batch effects using MNN pairs
         X1_corrected, X2_corrected = _correct_batch_effects_mnn(X1, X2, mnn_pairs)
@@ -348,20 +442,35 @@ def mnn_integration(data_list: List[SingleCellData], batch_key: str) -> SingleCe
 
 
 def combat_integration(data: SingleCellData, batch_key: str, covariates: Optional[List[str]] = None) -> SingleCellData:
-    """Perform ComBat batch effect correction.
+    """Correct batch effects gene by gene with a location-scale adjustment in the spirit of ComBat.
+
+    Every gene of each non-reference batch is standardized with its own mean and variance and rescaled to the mean
+    and variance of the first batch. Real ComBat (Johnson et al. 2007) shrinks the batch estimates toward a common
+    prior by empirical Bayes and can protect covariates; this function does neither, so it is not ComBat's output.
+    A batch with a single cell cannot be estimated and is left uncorrected.
 
     Args:
         data: SingleCellData object with batch labels
         batch_key: Column name containing batch labels
-        covariates: Optional list of covariate columns to preserve
+        covariates: Not supported. Covariates cannot be preserved by this adjustment, so a non-empty list is
+            refused rather than accepted and ignored.
 
     Returns:
         Batch-corrected SingleCellData
 
     Raises:
-        ValidationError: If data is not SingleCellData or batch_key is not in data.obs
+        ValidationError: If data is not SingleCellData, batch_key is not in data.obs, or the first batch has fewer
+            than 2 cells
+        NotImplementedError: If ``covariates`` is not empty
     """
     validation.validate_type(data, SingleCellData, "data")
+
+    if covariates:
+        raise NotImplementedError(
+            "combat_integration() cannot preserve covariates: the location-scale adjustment does not model them, "
+            f"so {list(covariates)} would be silently ignored. Run ComBat itself (for example scanpy.pp.combat with "
+            "covariates) when covariates matter."
+        )
 
     if data.obs is None or batch_key not in data.obs.columns:
         raise errors.ValidationError(f"Batch key '{batch_key}' not found in data.obs")
@@ -398,12 +507,14 @@ def combat_integration(data: SingleCellData, batch_key: str, covariates: Optiona
 
         # Use reference batch (first batch) as baseline
         ref_batch = unique_batches[0]
+        if ref_batch not in batch_means:
+            raise errors.ValidationError(f"The reference batch {ref_batch!r} has fewer than 2 cells")
         ref_mean = batch_means[ref_batch]
         ref_var = batch_vars[ref_batch]
 
-        # Correct each batch to reference
+        # Correct each batch to reference (a batch with one cell has no estimate and is left as it is)
         for batch in unique_batches:
-            if batch != ref_batch:
+            if batch != ref_batch and batch in batch_vars:
                 batch_mask = batch_labels == batch
                 batch_expr = gene_expr[batch_mask]
 
@@ -419,7 +530,8 @@ def combat_integration(data: SingleCellData, batch_key: str, covariates: Optiona
     result.uns["combat"] = {
         "batch_key": batch_key,
         "n_batches": len(unique_batches),
-        "covariates": covariates or [],
+        "covariates": [],
+        "method": "location_scale",
     }
 
     logger.info("ComBat integration completed")

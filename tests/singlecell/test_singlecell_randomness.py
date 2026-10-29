@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from metainformant.core.utils.errors import ValidationError
 from metainformant.singlecell.analysis.clustering import compute_cluster_silhouette, hierarchical_clustering
 from metainformant.singlecell.analysis.nonlinear_methods import compute_dimensionality_metrics, diffusion_map_reduction
 from metainformant.singlecell.data.preprocessing import SingleCellData
@@ -162,9 +163,9 @@ class TestMarkerHeatmapSubsample:
 class TestDiffusionMapReduction:
     """A failed eigendecomposition used to be replaced by random vectors and a re-seeded global RNG.
 
-    Whether LAPACK reports failure for a non-finite matrix depends on the library build and the matrix
-    size, so the tests first check that it does for the exact all-NaN matrix the function will build
-    (a NaN anywhere makes the kernel width, hence every kernel entry, NaN) and skip where it does not.
+    A non-finite expression value makes every entry of the kernel NaN. Whether LAPACK raises or silently
+    returns NaN for such a matrix depends on the library build, so the function checks its input itself and
+    raises ``ValidationError`` on every platform: the tests need no solver behaviour and never skip.
     """
 
     N_CELLS = 6
@@ -173,23 +174,24 @@ class TestDiffusionMapReduction:
     def _non_finite_data(cls) -> SingleCellData:
         data = _structureless(cls.N_CELLS, n_genes=3)
         data.X[2, 1] = np.nan
-        try:
-            np.linalg.eigh(np.full((cls.N_CELLS, cls.N_CELLS), np.nan))
-        except np.linalg.LinAlgError:
-            return data
-        pytest.skip("this LAPACK build returns NaN instead of failing on a non-finite matrix")
+        return data
 
-    def test_a_failed_eigendecomposition_raises_instead_of_returning_random_vectors(self) -> None:
+    def test_non_finite_values_raise_instead_of_returning_random_vectors(self) -> None:
         data = self._non_finite_data()
 
-        with pytest.raises(np.linalg.LinAlgError):
+        with pytest.raises(ValidationError, match="non-finite"):
             diffusion_map_reduction(data, n_components=2, n_neighbors=5)
 
-    def test_the_global_random_state_is_not_reseeded(self) -> None:
+    def test_the_global_random_state_is_not_reseeded_by_the_failure(self) -> None:
         data = self._non_finite_data()
 
         def run() -> None:
-            with pytest.raises(np.linalg.LinAlgError):
+            with pytest.raises(ValidationError):
                 diffusion_map_reduction(data, n_components=2, n_neighbors=5)
 
         assert _leaves_global_state_alone(run)
+
+    def test_the_global_random_state_is_not_touched_by_a_successful_run(self) -> None:
+        data = _structureless(20, n_genes=4)
+
+        assert _leaves_global_state_alone(lambda: diffusion_map_reduction(data, n_components=3, n_neighbors=5))

@@ -17,13 +17,20 @@ Statistical methods:
       per-sample sums, then performs sample-level testing. More
       appropriate for multi-donor designs where cells within a donor are
       not independent.
+
+Undefined tests: a gene whose test cannot be computed (an empty group, fewer than two values for a t-test,
+constant values, non-finite values) gets ``p_value = NaN`` and ``adjusted_p = NaN``, and its
+``test_status`` says why. No p-value is ever substituted for a test that did not run: such genes take no
+part in the Benjamini-Hochberg correction (it runs over the genes that have a p-value) and sort after
+every gene that has one.
 """
 
 from __future__ import annotations
 
 import math
 import random
-from typing import Any
+from collections.abc import Sequence
+from typing import Any, NamedTuple
 
 from metainformant.core.utils.errors import ValidationError
 from metainformant.core.utils.logging import get_logger
@@ -61,8 +68,12 @@ def differential_expression(
     """Test for differential expression between two cell groups.
 
     Performs gene-by-gene statistical testing to identify genes whose
-    expression differs significantly between cells in group 0 and group 1.
+    expression differs significantly between the cells of the two groups.
     Returns results sorted by adjusted p-value.
+
+    The two group labels are ordered: "group 1" below is the cells carrying the smaller label (0 for the
+    usual 0/1 labels) and "group 2" the cells carrying the larger one. ``log2fc`` is group 1 over group 2,
+    so a gene that is higher in the cells labelled 1 has a NEGATIVE ``log2fc``.
 
     Args:
         expression_matrix: Expression matrix (cells x genes). Accepts lists
@@ -80,19 +91,21 @@ def differential_expression(
         min_log2fc: Minimum absolute log2 fold change to include in results.
             Applied AFTER multiple-testing correction: Benjamini-Hochberg
             adjusted p-values are computed over the full tested family
-            (every gene passing min_cells), so this effect-size filter
-            never shrinks the BH family or inflates adjusted significance.
+            (every gene passing min_cells that has a p-value), so this
+            effect-size filter never shrinks the BH family or inflates
+            adjusted significance.
 
     Returns:
-        Sorted list of dictionaries, each containing:
+        List of dictionaries sorted by adjusted p-value (genes without a p-value last), each containing:
             - gene: str gene name.
-            - log2fc: float log2 fold change (group 1 vs group 0).
-            - p_value: float raw p-value from the statistical test.
-            - adjusted_p: float Benjamini-Hochberg adjusted p-value.
+            - log2fc: float log2 fold change, log2((mean_group1 + 1) / (mean_group2 + 1)).
+            - p_value: float raw two-sided p-value; NaN when the test is undefined for this gene.
+            - adjusted_p: float Benjamini-Hochberg adjusted p-value; NaN when ``p_value`` is NaN.
             - pct_group1: float percentage of group-1 cells expressing the gene.
-            - pct_group2: float percentage of group-0 cells expressing the gene.
+            - pct_group2: float percentage of group-2 cells expressing the gene.
             - mean_group1: float mean expression in group 1.
-            - mean_group2: float mean expression in group 0.
+            - mean_group2: float mean expression in group 2.
+            - test_status: ``"ok"``, or why the test is undefined (for example ``"zero_variance: ..."``).
 
     Raises:
         ValueError: If groups does not contain exactly two unique values,
@@ -138,11 +151,11 @@ def differential_expression(
         mean_g2 = sum(expr_g2) / len(expr_g2) if expr_g2 else 0.0
         log2fc = compute_log_fold_change(mean_g1, mean_g2)
 
-        # Statistical test (every tested gene contributes to the BH family)
+        # Statistical test. A gene whose test is undefined keeps NaN and a status; it is not part of the BH family.
         if method == "wilcoxon":
-            p_value = _wilcoxon_rank_sum(expr_g1, expr_g2)
+            outcome = _wilcoxon_rank_sum(expr_g1, expr_g2)
         else:  # t_test
-            p_value = _welch_t_test(expr_g1, expr_g2)
+            outcome = _welch_t_test(expr_g1, expr_g2)
 
         pct_g1 = (n_expr_g1 / len(expr_g1) * 100) if expr_g1 else 0.0
         pct_g2 = (n_expr_g2 / len(expr_g2) * 100) if expr_g2 else 0.0
@@ -151,27 +164,29 @@ def differential_expression(
             {
                 "gene": gene_names[gene_idx],
                 "log2fc": log2fc,
-                "p_value": p_value,
-                "adjusted_p": 0.0,  # placeholder, filled below
+                "p_value": outcome.p_value,
+                "adjusted_p": math.nan,  # filled below
                 "pct_group1": pct_g1,
                 "pct_group2": pct_g2,
                 "mean_group1": mean_g1,
                 "mean_group2": mean_g2,
+                "test_status": outcome.status,
             }
         )
-        raw_p_values.append(p_value)
+        raw_p_values.append(outcome.p_value)
 
-    # Benjamini-Hochberg correction over the FULL tested family: the
+    # Benjamini-Hochberg correction over the FULL family of genes that have a p-value: the
     # min_log2fc effect-size filter is applied only afterwards, so it can
     # never shrink the BH family or inflate adjusted significance.
     adjusted = _benjamini_hochberg(raw_p_values)
     for i, res in enumerate(results):
         res["adjusted_p"] = adjusted[i]
+    _warn_about_undefined_tests(results)
 
     results = [res for res in results if abs(res["log2fc"]) >= min_log2fc]
 
-    # Sort by adjusted p-value
-    results.sort(key=lambda x: x["adjusted_p"])
+    # Sort by adjusted p-value; genes without one go last
+    results.sort(key=_adjusted_p_sort_key)
 
     logger.info(
         f"DE analysis complete: {len(raw_p_values)} genes tested, {len(results)} reported "
@@ -211,8 +226,9 @@ def pseudobulk_de(
 
     Returns:
         Sorted list of dictionaries with DE results (same format as
-        differential_expression) plus a "normalization" key recording the
-        sample-level normalization applied ("cpm").
+        differential_expression, including ``test_status`` and the NaN convention for undefined tests: with
+        a single sample in a group there is no t-test, so every gene has ``p_value = NaN``) plus a
+        "normalization" key recording the sample-level normalization applied ("cpm").
 
     Raises:
         ValidationError: If a sample's cells are assigned to more than
@@ -313,8 +329,9 @@ def pseudobulk_de(
 
         log2fc = compute_log_fold_change(mean_g1, mean_g2)
 
-        # Welch's t-test on CPM-normalized sample-level aggregates
-        p_value = _welch_t_test(vals_g1, vals_g2)
+        # Welch's t-test on CPM-normalized sample-level aggregates (NaN and a status when it is undefined,
+        # for example with a single sample in a group)
+        outcome = _welch_t_test(vals_g1, vals_g2)
 
         pct_g1 = (sum(1 for v in vals_g1 if v > 0) / len(vals_g1) * 100) if vals_g1 else 0.0
         pct_g2 = (sum(1 for v in vals_g2 if v > 0) / len(vals_g2) * 100) if vals_g2 else 0.0
@@ -323,23 +340,25 @@ def pseudobulk_de(
             {
                 "gene": gene_names[gene_idx],
                 "log2fc": log2fc,
-                "p_value": p_value,
-                "adjusted_p": 0.0,
+                "p_value": outcome.p_value,
+                "adjusted_p": math.nan,  # filled below
                 "pct_group1": pct_g1,
                 "pct_group2": pct_g2,
                 "mean_group1": mean_g1,
                 "mean_group2": mean_g2,
                 "normalization": "cpm",
+                "test_status": outcome.status,
             }
         )
-        raw_p_values.append(p_value)
+        raw_p_values.append(outcome.p_value)
 
-    # Benjamini-Hochberg correction
+    # Benjamini-Hochberg correction over the genes that have a p-value
     adjusted = _benjamini_hochberg(raw_p_values)
     for i, res in enumerate(results):
         res["adjusted_p"] = adjusted[i]
+    _warn_about_undefined_tests(results)
 
-    results.sort(key=lambda x: x["adjusted_p"])
+    results.sort(key=_adjusted_p_sort_key)
 
     logger.info(
         f"Pseudobulk DE complete: {len(results)} genes, "
@@ -379,7 +398,9 @@ def volcano_data(
 
     Classifies each gene as "up" (significantly upregulated), "down"
     (significantly downregulated), or "ns" (not significant) based on
-    fold change and p-value thresholds.
+    fold change and p-value thresholds. A gene without an adjusted p-value (NaN, because its test was
+    undefined, or no ``adjusted_p`` key at all) cannot be called significant: it is "ns" with a NaN
+    ``neg_log10_p``, never a made-up p-value of 1.
 
     Args:
         de_results: List of DE result dictionaries from
@@ -391,11 +412,12 @@ def volcano_data(
         Dictionary with keys:
             - genes: list[str] of gene names.
             - log2fc: list[float] of log2 fold change values (x-axis).
-            - neg_log10_p: list[float] of -log10(adjusted_p) values (y-axis).
+            - neg_log10_p: list[float] of -log10(adjusted_p) values (y-axis); NaN for genes without an
+              adjusted p-value.
             - classification: list[str] of "up", "down", or "ns" per gene.
             - n_up: int count of upregulated genes.
             - n_down: int count of downregulated genes.
-            - n_ns: int count of non-significant genes.
+            - n_ns: int count of non-significant genes (including those without an adjusted p-value).
     """
     genes: list[str] = []
     log2fc_values: list[float] = []
@@ -405,17 +427,18 @@ def volcano_data(
     for res in de_results:
         gene = res.get("gene", "unknown")
         fc = res.get("log2fc", 0.0)
-        adj_p = res.get("adjusted_p", 1.0)
+        adj_p = res.get("adjusted_p", math.nan)
 
         genes.append(gene)
         log2fc_values.append(fc)
 
-        # Compute -log10(p), clamping to avoid log(0)
-        safe_p = max(adj_p, 1e-300)
-        neg_log10 = -math.log10(safe_p)
-        neg_log10_p.append(neg_log10)
+        # Compute -log10(p), clamping to avoid log(0); no p-value, no y value
+        if math.isnan(adj_p):
+            neg_log10_p.append(math.nan)
+        else:
+            neg_log10_p.append(-math.log10(max(adj_p, 1e-300)))
 
-        # Classify
+        # Classify (a NaN p-value compares False, so it can only be "ns")
         if adj_p < p_threshold and fc > fc_threshold:
             classification.append("up")
         elif adj_p < p_threshold and fc < -fc_threshold:
@@ -466,7 +489,9 @@ def gene_set_scoring(
     Returns:
         Dictionary with keys:
             - scores: dict mapping gene set names to lists of per-cell
-              scores (one float per cell).
+              scores (one float per cell). A gene set with none of its
+              genes in the expression matrix cannot be scored: its scores
+              are all NaN (not 0.0, which would read as a real score).
             - n_cells: int number of cells scored.
             - n_gene_sets: int number of gene sets.
             - gene_set_sizes: dict mapping gene set names to the number
@@ -498,7 +523,8 @@ def gene_set_scoring(
         gene_set_sizes[gs_name] = len(gs_indices)
 
         if not gs_indices:
-            scores[gs_name] = [0.0] * n_cells
+            logger.warning(f"Gene set '{gs_name}' has none of its genes in the expression matrix: scores are NaN")
+            scores[gs_name] = [math.nan] * n_cells
             continue
 
         non_gs = set(gs_indices)
@@ -559,7 +585,52 @@ def _to_list_matrix(data: Any) -> list[list[float]]:
     raise TypeError(f"Unsupported expression matrix type: {type(data)}")
 
 
-def _wilcoxon_rank_sum(a: list[float], b: list[float]) -> float:
+class _TestOutcome(NamedTuple):
+    """Outcome of one two-sample test.
+
+    ``p_value`` is NaN, and ``status`` names the reason, when the test cannot be computed; ``status`` is
+    ``"ok"`` otherwise. A p-value is never invented to stand in for a test that did not run.
+    """
+
+    statistic: float
+    p_value: float
+    status: str
+
+
+_STATUS_OK = "ok"
+
+
+def _undefined(status: str) -> _TestOutcome:
+    """The outcome of a test that could not be computed: no statistic, no p-value, and the reason."""
+    return _TestOutcome(math.nan, math.nan, status)
+
+
+def _all_finite(values: Sequence[float]) -> bool:
+    """Whether every value is a finite number."""
+    if HAS_NUMPY:
+        return bool(np.isfinite(np.asarray(values, dtype=float)).all())
+    return all(math.isfinite(v) for v in values)
+
+
+def _mean_and_variance(values: Sequence[float]) -> tuple[float, float]:
+    """Mean and unbiased sample variance of at least two values.
+
+    Constant values have variance exactly 0.0: a variance computed as a sum of squared deviations from a
+    rounded mean can come out as 1e-33 instead, and a t statistic built on that would be astronomically large.
+    """
+    n = len(values)
+    if HAS_NUMPY:
+        array = np.asarray(values, dtype=float)
+        mean = float(array.mean())
+        variance = 0.0 if array.min() == array.max() else float(array.var(ddof=1))
+        return mean, variance
+    mean = sum(values) / n
+    if min(values) == max(values):
+        return mean, 0.0
+    return mean, sum((v - mean) ** 2 for v in values) / (n - 1)
+
+
+def _wilcoxon_rank_sum(a: Sequence[float], b: Sequence[float]) -> _TestOutcome:
     """Perform Wilcoxon rank-sum test (Mann-Whitney U test).
 
     Tie-aware by construction: with scipy, uses
@@ -569,26 +640,38 @@ def _wilcoxon_rank_sum(a: list[float], b: list[float]) -> float:
     Python fallback applies the tie correction term
     ``sum(t**3 - t) / (12 * n * (n - 1))`` to the normal approximation.
 
+    The test is undefined, and gives NaN with a status instead of a p-value, when a group is empty, when a
+    value is not finite, and when every value of both groups is tied (the rank-sum statistic then has zero
+    variance).
+
     Args:
         a: Values from group A.
         b: Values from group B.
 
     Returns:
-        Two-sided p-value.
+        The U statistic of group A, the two-sided p-value and ``"ok"``; or NaN, NaN and the reason.
     """
-    if HAS_SCIPY:
-        try:
-            _, p_val = scipy_stats.mannwhitneyu(a, b, alternative="two-sided")
-            return float(p_val)
-        except (ValueError, TypeError):
-            return 1.0
-
-    # Pure Python fallback: Mann-Whitney U with tie-corrected normal
-    # approximation
     n_a = len(a)
     n_b = len(b)
     if n_a == 0 or n_b == 0:
-        return 1.0
+        return _undefined("empty_group: a group has no observations")
+    if not (_all_finite(a) and _all_finite(b)):
+        return _undefined("non_finite_values: the values contain NaN or infinity")
+    if min(min(a), min(b)) == max(max(a), max(b)):
+        return _undefined("zero_variance: every value of both groups is tied, so the rank-sum statistic has no spread")
+
+    if HAS_SCIPY:
+        try:
+            result = scipy_stats.mannwhitneyu(a, b, alternative="two-sided")
+        except (ValueError, ArithmeticError) as exc:
+            return _undefined(f"error: {type(exc).__name__}: {exc}")
+        p_value = float(result.pvalue)
+        if math.isnan(p_value):
+            return _undefined("numerical_failure: scipy.stats.mannwhitneyu returned NaN")
+        return _TestOutcome(float(result.statistic), p_value, _STATUS_OK)
+
+    # Pure Python fallback: Mann-Whitney U with tie-corrected normal
+    # approximation
 
     # Combine and rank
     combined = [(v, 0) for v in a] + [(v, 1) for v in b]
@@ -620,102 +703,144 @@ def _wilcoxon_rank_sum(a: list[float], b: list[float]) -> float:
     n = n_a + n_b
     mu = n_a * n_b / 2.0
     sigma_sq = (n_a * n_b / 12.0) * ((n + 1) - tie_term / (n * (n - 1)))
-    sigma = math.sqrt(sigma_sq) if sigma_sq > 0 else 0.0
+    if sigma_sq <= 0:
+        return _undefined("zero_variance: the rank-sum statistic has no spread")
 
-    if sigma == 0:
-        return 1.0
+    z = (u_a - mu) / math.sqrt(sigma_sq)
 
-    z = (u_a - mu) / sigma
-
-    # Two-sided p-value from standard normal
-    p_value = 2.0 * _standard_normal_cdf(-abs(z))
-    return p_value
+    # Two-sided p-value from the standard normal
+    return _TestOutcome(u_a, 2.0 * _standard_normal_cdf(-abs(z)), _STATUS_OK)
 
 
-def _welch_t_test(a: list[float], b: list[float]) -> float:
+def _welch_t_test(a: Sequence[float], b: Sequence[float]) -> _TestOutcome:
     """Perform Welch's t-test for unequal variances.
+
+    The statistic is ``(mean_a - mean_b) / sqrt(var_a / n_a + var_b / n_b)`` on the Welch-Satterthwaite
+    degrees of freedom, with a two-sided p-value from the exact Student t distribution (scipy's, or the
+    in-module incomplete-beta evaluation when scipy is unavailable; never a normal approximation).
+
+    The test is undefined, and gives NaN with a status instead of a p-value, with fewer than two values in
+    a group, with non-finite values, and when both groups are constant (the standard error is then zero).
 
     Args:
         a: Values from group A.
         b: Values from group B.
 
     Returns:
-        Two-sided p-value.
+        The t statistic, the two-sided p-value and ``"ok"``; or NaN, NaN and the reason.
     """
-    if HAS_SCIPY:
-        try:
-            stat, p_val = scipy_stats.ttest_ind(a, b, equal_var=False)
-            return float(p_val) if not math.isnan(p_val) else 1.0
-        except (ValueError, TypeError):
-            return 1.0
-
-    # Pure Python fallback
     n_a = len(a)
     n_b = len(b)
     if n_a < 2 or n_b < 2:
+        return _undefined("insufficient_observations: Welch's t-test needs at least 2 values in each group")
+    if not (_all_finite(a) and _all_finite(b)):
+        return _undefined("non_finite_values: the values contain NaN or infinity")
+
+    mean_a, var_a = _mean_and_variance(a)
+    mean_b, var_b = _mean_and_variance(b)
+    squared_error_a = var_a / n_a
+    squared_error_b = var_b / n_b
+    squared_error = squared_error_a + squared_error_b
+    if squared_error == 0.0:
+        return _undefined("zero_variance: both groups are constant, so the t statistic is undefined")
+
+    t_statistic = (mean_a - mean_b) / math.sqrt(squared_error)
+    degrees_of_freedom = squared_error**2 / (squared_error_a**2 / (n_a - 1) + squared_error_b**2 / (n_b - 1))
+    p_value = _student_t_two_sided_p(t_statistic, degrees_of_freedom)
+    if math.isnan(p_value):
+        return _undefined("numerical_failure: the Student t tail probability did not converge")
+    return _TestOutcome(t_statistic, p_value, _STATUS_OK)
+
+
+def _student_t_two_sided_p(t_statistic: float, degrees_of_freedom: float) -> float:
+    """Two-sided tail probability ``P(|T| >= |t|)`` of Student's t distribution (NaN if it cannot be evaluated)."""
+    if HAS_SCIPY:
+        return min(1.0, float(2.0 * scipy_stats.t.sf(abs(t_statistic), degrees_of_freedom)))
+    # P(|T| >= |t|) = I_x(df / 2, 1 / 2) with x = df / (df + t^2)
+    x = degrees_of_freedom / (degrees_of_freedom + t_statistic * t_statistic)
+    return _regularized_incomplete_beta(degrees_of_freedom / 2.0, 0.5, x)
+
+
+def _regularized_incomplete_beta(a: float, b: float, x: float) -> float:
+    """Regularized incomplete beta ``I_x(a, b)`` by Lentz's continued fraction (NaN if it does not converge)."""
+    if x <= 0.0:
+        return 0.0
+    if x >= 1.0:
         return 1.0
+    log_front = math.lgamma(a + b) - math.lgamma(a) - math.lgamma(b) + a * math.log(x) + b * math.log1p(-x)
+    front = math.exp(log_front)
+    # The continued fraction converges quickly below the mean of the beta distribution; use the symmetry above it
+    if x < (a + 1.0) / (a + b + 2.0):
+        return front * _beta_continued_fraction(a, b, x) / a
+    return 1.0 - front * _beta_continued_fraction(b, a, 1.0 - x) / b
 
-    mean_a = sum(a) / n_a
-    mean_b = sum(b) / n_b
-    var_a = sum((x - mean_a) ** 2 for x in a) / (n_a - 1)
-    var_b = sum((x - mean_b) ** 2 for x in b) / (n_b - 1)
 
-    se = math.sqrt(var_a / n_a + var_b / n_b)
-    if se == 0:
-        return 1.0
-
-    t_stat = (mean_a - mean_b) / se
-    # Approximate p-value using normal distribution for large df
-    p_value = 2.0 * _standard_normal_cdf(-abs(t_stat))
-    return p_value
+def _beta_continued_fraction(a: float, b: float, x: float, max_iterations: int = 100_000) -> float:
+    """Continued fraction of the incomplete beta function (modified Lentz); NaN if it does not converge."""
+    tiny = 1e-300
+    qab = a + b
+    qap = a + 1.0
+    qam = a - 1.0
+    c = 1.0
+    d = 1.0 - qab * x / qap
+    d = 1.0 / (d if abs(d) > tiny else tiny)
+    h = d
+    for m in range(1, max_iterations + 1):
+        m2 = 2 * m
+        # Even step
+        step = m * (b - m) * x / ((qam + m2) * (a + m2))
+        d = 1.0 + step * d
+        d = 1.0 / (d if abs(d) > tiny else tiny)
+        c = 1.0 + step / c
+        c = c if abs(c) > tiny else tiny
+        h *= d * c
+        # Odd step
+        step = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2))
+        d = 1.0 + step * d
+        d = 1.0 / (d if abs(d) > tiny else tiny)
+        c = 1.0 + step / c
+        c = c if abs(c) > tiny else tiny
+        delta = d * c
+        h *= delta
+        if abs(delta - 1.0) < 1e-15:
+            return h
+    return math.nan
 
 
 def _standard_normal_cdf(x: float) -> float:
-    """Approximate CDF of the standard normal distribution.
-
-    Uses the Abramowitz and Stegun approximation (formula 7.1.26).
+    """CDF of the standard normal distribution, ``P(Z <= x)``, from the complementary error function.
 
     Args:
         x: Value at which to evaluate the CDF.
 
     Returns:
-        Approximate P(Z <= x) for Z ~ N(0,1).
+        ``P(Z <= x)`` for ``Z ~ N(0, 1)``, accurate to machine precision in both tails (a rational erf
+        approximation is only good to about 1e-7 absolute, which is useless for p-values below that).
     """
-    # Error function approximation
-    sign = 1 if x >= 0 else -1
-    x = abs(x) / math.sqrt(2.0)
-
-    # Rational approximation of erf
-    t = 1.0 / (1.0 + 0.3275911 * x)
-    a1, a2, a3, a4, a5 = (
-        0.254829592,
-        -0.284496736,
-        1.421413741,
-        -1.453152027,
-        1.061405429,
-    )
-    erf = 1.0 - (a1 * t + a2 * t**2 + a3 * t**3 + a4 * t**4 + a5 * t**5) * math.exp(-x * x)
-
-    return 0.5 * (1.0 + sign * erf)
+    return 0.5 * math.erfc(-x / math.sqrt(2.0))
 
 
 def _benjamini_hochberg(p_values: list[float]) -> list[float]:
     """Apply Benjamini-Hochberg FDR correction to a list of p-values.
 
+    NaN p-values (tests that were undefined) take no part in the correction: the family size is the
+    number of p-values that exist, and a NaN input yields a NaN output at its position.
+
     Args:
-        p_values: Raw p-values.
+        p_values: Raw p-values (NaN where there is none).
 
     Returns:
         Adjusted p-values (same length and order as input).
     """
-    n = len(p_values)
+    adjusted = [math.nan] * len(p_values)
+    defined = [(index, p_value) for index, p_value in enumerate(p_values) if not math.isnan(p_value)]
+    n = len(defined)
     if n == 0:
-        return []
+        return adjusted
 
     # Sort p-values and track original indices
-    indexed = sorted(enumerate(p_values), key=lambda x: x[1])
+    indexed = sorted(defined, key=lambda x: x[1])
 
-    adjusted = [0.0] * n
     min_so_far = 1.0
 
     for rank_idx in range(n - 1, -1, -1):
@@ -728,6 +853,28 @@ def _benjamini_hochberg(p_values: list[float]) -> list[float]:
         min_so_far = adj
 
     return adjusted
+
+
+def _adjusted_p_sort_key(result: dict) -> tuple[bool, float]:
+    """Sort key that orders results by adjusted p-value and puts the ones without a p-value (NaN) last."""
+    adjusted_p = result["adjusted_p"]
+    return (math.isnan(adjusted_p), 0.0 if math.isnan(adjusted_p) else adjusted_p)
+
+
+def _warn_about_undefined_tests(results: list[dict]) -> None:
+    """Log one warning that counts the genes whose test was undefined, by reason."""
+    reasons: dict[str, int] = {}
+    for result in results:
+        status = result["test_status"]
+        if status != _STATUS_OK:
+            reason = status.split(":", 1)[0]
+            reasons[reason] = reasons.get(reason, 0) + 1
+    if reasons:
+        summary = ", ".join(f"{count} {reason}" for reason, count in sorted(reasons.items()))
+        logger.warning(
+            f"{sum(reasons.values())} of {len(results)} genes have no p-value ({summary}): "
+            "p_value and adjusted_p are NaN and they are excluded from the Benjamini-Hochberg correction"
+        )
 
 
 __all__ = [

@@ -9,7 +9,7 @@ marker gene identification.
 from __future__ import annotations
 
 import warnings
-from typing import Any, Dict, Literal, Optional, get_args
+from typing import Any, Dict, Literal, NamedTuple, Optional, get_args
 
 import numpy as np
 import pandas as pd
@@ -21,6 +21,7 @@ from scipy.stats import ranksums
 from metainformant.core.data import validation
 from metainformant.core.utils import errors, logging
 from metainformant.singlecell.data.preprocessing import SingleCellData
+from metainformant.singlecell.differential.expression import _welch_t_test
 
 # Optional scientific dependencies
 try:
@@ -130,23 +131,52 @@ def _leiden_stack_available() -> bool:
     return bool(HAS_NETWORKX and HAS_IGRAPH and HAS_LEIDEN)
 
 
-def _leiden_labels(X: np.ndarray, *, resolution: float, n_neighbors: int, random_state: int | None) -> np.ndarray:
-    """Leiden communities of the kNN graph over the rows of ``X`` (needs the Leiden stack)."""
-    # Construct kNN graph
-    distances = _compute_pairwise_distances(X)
+class _LeidenProblem(NamedTuple):
+    """Everything that is handed to leidenalg: the graph, the edge weights and the algorithm's parameters."""
 
-    # Build adjacency matrix
-    adjacency = _build_knn_adjacency(distances, n_neighbors)
+    n_vertices: int
+    edges: list[tuple[int, int]]
+    weights: list[float] | None
+    resolution: float
+    seed: int | None
 
-    # Convert to networkx graph
-    G = _graph_from_adjacency(adjacency)
 
-    # Perform Leiden clustering
-    partition = leidenalg.find_partition(
-        ig.Graph.from_networkx(G),
-        leidenalg.RBConfigurationVertexPartition,
-        resolution_parameter=resolution,
+def _knn_graph_edges(X: np.ndarray, n_neighbors: int) -> tuple[list[tuple[int, int]], list[float]]:
+    """Undirected kNN graph over the rows of ``X``: each edge once (``i < j``), with its inverse-distance weight."""
+    adjacency = _build_knn_adjacency(_compute_pairwise_distances(X), n_neighbors)
+    upper = sparse.triu(adjacency, k=1).tocoo()
+    return list(zip(upper.row.tolist(), upper.col.tolist())), upper.data.tolist()
+
+
+def _leiden_problem(
+    X: np.ndarray, *, resolution: float, n_neighbors: int, random_state: int | None, use_weights: bool
+) -> _LeidenProblem:
+    """The kNN graph and parameters for leidenalg; the edge weights are included only when ``use_weights``."""
+    edges, weights = _knn_graph_edges(X, n_neighbors)
+    return _LeidenProblem(
+        n_vertices=X.shape[0],
+        edges=edges,
+        weights=weights if use_weights else None,
+        resolution=resolution,
         seed=random_state,
+    )
+
+
+def _leiden_labels(
+    X: np.ndarray, *, resolution: float, n_neighbors: int, random_state: int | None, use_weights: bool = True
+) -> np.ndarray:
+    """Leiden communities of the kNN graph over the rows of ``X`` (needs the Leiden stack)."""
+    problem = _leiden_problem(
+        X, resolution=resolution, n_neighbors=n_neighbors, random_state=random_state, use_weights=use_weights
+    )
+
+    # Perform Leiden clustering on the weighted (or, without use_weights, unweighted) graph
+    partition = leidenalg.find_partition(
+        ig.Graph(n=problem.n_vertices, edges=problem.edges, directed=False),
+        leidenalg.RBConfigurationVertexPartition,
+        weights=problem.weights,
+        resolution_parameter=problem.resolution,
+        seed=problem.seed,
     )
 
     # Get cluster assignments
@@ -176,8 +206,8 @@ def leiden_clustering(
         resolution: Resolution parameter for Leiden algorithm
         n_neighbors: Number of neighbors for kNN graph construction
         random_state: Random seed for reproducibility
-        use_weights: Recorded in ``uns``; the partition is currently computed on the unweighted graph
-            (edge weights are not passed to leidenalg)
+        use_weights: Weight each edge of the kNN graph by the inverse distance between its two cells (the
+            weights are passed to leidenalg) when True; give every edge weight 1 when False. Recorded in ``uns``.
         feature_matrix: Matrix-style alias for callers that only need labels
         allow_kmeans_fallback: Matrix input only. When the Leiden stack is unavailable, cluster the rows
             with k-means (the number of clusters follows ``resolution``) instead of raising, and emit a
@@ -206,7 +236,9 @@ def leiden_clustering(
 
     if _leiden_stack_available():
         logger.info(f"Performing Leiden clustering with resolution={resolution}, n_neighbors={n_neighbors}")
-        clusters = _leiden_labels(X, resolution=resolution, n_neighbors=n_neighbors, random_state=random_state)
+        clusters = _leiden_labels(
+            X, resolution=resolution, n_neighbors=n_neighbors, random_state=random_state, use_weights=use_weights
+        )
     elif cells is None and allow_kmeans_fallback:
         message = (
             "Leiden clustering is unavailable (it needs networkx, python-igraph and leidenalg): "
@@ -246,6 +278,17 @@ def leiden_clustering(
     return result
 
 
+def _louvain_graph(X: np.ndarray, n_neighbors: int, *, use_weights: bool) -> Any:
+    """kNN graph over the rows of ``X`` as a networkx graph whose ``weight`` edge attribute python-louvain reads.
+
+    The attribute is the inverse distance between the two cells with ``use_weights`` and 1 on every edge without.
+    """
+    adjacency = _build_knn_adjacency(_compute_pairwise_distances(X), n_neighbors)
+    if not use_weights:
+        adjacency.data[:] = 1.0
+    return _graph_from_adjacency(adjacency)
+
+
 def louvain_clustering(
     data: SingleCellData,
     resolution: float = 1.0,
@@ -260,7 +303,8 @@ def louvain_clustering(
         resolution: Resolution parameter for Louvain algorithm
         n_neighbors: Number of neighbors for kNN graph construction
         random_state: Random seed for reproducibility
-        use_weights: Whether to use edge weights in clustering
+        use_weights: Weight each edge of the kNN graph by the inverse distance between its two cells when True
+            (python-louvain reads the ``weight`` edge attribute); give every edge weight 1 when False
 
     Returns:
         SingleCellData with cluster assignments added to obs
@@ -282,12 +326,8 @@ def louvain_clustering(
     # Get expression matrix
     X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
-    # Construct kNN graph
-    distances = _compute_pairwise_distances(X)
-    adjacency = _build_knn_adjacency(distances, n_neighbors)
-
-    # Convert to networkx graph
-    G = _graph_from_adjacency(adjacency)
+    # Construct the kNN graph as a networkx graph (unit edge weights unless use_weights)
+    G = _louvain_graph(X, n_neighbors, use_weights=use_weights)
 
     # Perform Louvain clustering
     partition = community_louvain.best_partition(G, resolution=resolution, random_state=random_state)
@@ -514,17 +554,44 @@ def hierarchical_clustering(
     return result
 
 
+def _ranksums_outcome(a: np.ndarray, b: np.ndarray) -> tuple[float, float, str]:
+    """Wilcoxon rank-sum z statistic, two-sided p-value and status of two samples.
+
+    NaN, NaN and the reason are returned when the test is undefined.
+
+    The test is undefined when a sample is empty, a value is not finite, or all values of both samples are tied
+    (the rank sums then have no spread): no p-value is made up for those.
+    """
+    if a.size == 0 or b.size == 0:
+        return np.nan, np.nan, "empty_group: a group has no observations"
+    if not (np.all(np.isfinite(a)) and np.all(np.isfinite(b))):
+        return np.nan, np.nan, "non_finite_values: the values contain NaN or infinity"
+    if min(a.min(), b.min()) == max(a.max(), b.max()):
+        return np.nan, np.nan, "zero_variance: every value of both groups is tied, so the rank sums have no spread"
+    statistic, p_value = ranksums(a, b)
+    return float(statistic), float(p_value), "ok"
+
+
 def find_marker_genes(data: SingleCellData, groupby: str, method: str = "t-test", n_genes: int = 100) -> pd.DataFrame:
     """Find marker genes for clusters or groups.
+
+    Each group is compared with all the other cells, gene by gene. ``"t-test"`` is Welch's t-test (exact Student
+    t tail on the Welch-Satterthwaite degrees of freedom) and ``"wilcoxon"`` the rank-sum z test without a tie
+    correction. A gene whose test is undefined for a group (constant in both, a group with fewer than two cells
+    for the t-test, non-finite values) has ``p_value = NaN`` and a ``test_status`` that says why; it is ranked
+    after every gene that has a p-value, and no p-value is made up for it.
 
     Args:
         data: SingleCellData object with cluster assignments
         groupby: Column in obs containing group/cluster labels
-        method: Statistical method for differential expression
-        n_genes: Number of top marker genes to return per group
+        method: Statistical method for differential expression ("t-test" or "wilcoxon")
+        n_genes: Number of top marker genes to return per group, ranked by p-value (ties, such as p-values that
+            underflow to 0, by the size of the statistic)
 
     Returns:
-        DataFrame with marker gene statistics
+        DataFrame with marker gene statistics: gene, group, mean_expr, mean_expr_other, log_fold_change
+        (``log2((mean_expr + 1e-10) / (mean_expr_other + 1e-10))``, NaN when that ratio is not positive),
+        pct_expressed, statistic, p_value, method and test_status
 
     Raises:
         ValidationError: If data is not SingleCellData, the groupby column is not in data.obs or method is unsupported
@@ -533,6 +600,8 @@ def find_marker_genes(data: SingleCellData, groupby: str, method: str = "t-test"
 
     if data.obs is None or groupby not in data.obs.columns:
         raise errors.ValidationError(f"Group column '{groupby}' not found in data.obs")
+    if method not in ("t-test", "wilcoxon"):
+        raise errors.ValidationError(f"Unsupported method: {method}")
 
     logger.info(f"Finding marker genes using {method} method")
 
@@ -557,47 +626,18 @@ def find_marker_genes(data: SingleCellData, groupby: str, method: str = "t-test"
             expr_out = out_group[:, gene_idx]
 
             if method == "t-test":
-                # Simple t-test implementation
-                mean_in = np.mean(expr_in)
-                mean_out = np.mean(expr_out)
-                std_in = np.std(expr_in, ddof=1)
-                std_out = np.std(expr_out, ddof=1)
-
-                n_in = len(expr_in)
-                n_out = len(expr_out)
-
-                if std_in == 0 and std_out == 0:
-                    t_stat = 0
-                    p_val = 1.0
-                elif std_in == 0 or std_out == 0:
-                    # Large difference if one group has no variation
-                    t_stat = 1000 if mean_in > mean_out else -1000
-                    p_val = 1e-10
-                else:
-                    # Calculate t-statistic
-                    se_diff = np.sqrt(std_in**2 / n_in + std_out**2 / n_out)
-                    t_stat = (mean_in - mean_out) / se_diff if se_diff > 0 else 0
-
-                    # Approximate p-value (simplified)
-                    df = min(n_in, n_out) - 1
-                    p_val = 2 * (1 - _student_t_cdf(abs(t_stat), df))
-            elif method == "wilcoxon":
-                # Simplified Wilcoxon rank-sum test
-                try:
-                    t_stat, p_val = ranksums(expr_in, expr_out)
-                except (ValueError, TypeError, RuntimeError):
-                    t_stat, p_val = 0, 1.0
-
+                t_stat, p_val, test_status = _welch_t_test(expr_in, expr_out)
             else:
-                raise errors.ValidationError(f"Unsupported method: {method}")
+                t_stat, p_val, test_status = _ranksums_outcome(expr_in, expr_out)
 
-            # Calculate fold change and other metrics
-            mean_expr = np.mean(expr_in)
-            mean_expr_other = np.mean(expr_out)
-            fold_change = mean_expr / (mean_expr_other + 1e-10)
-            log_fold_change = np.log2(fold_change) if fold_change > 0 else 0
+            # Calculate fold change and other metrics. A gene absent from one side gets a large finite log ratio; a
+            # ratio that is not positive (negative means, as in scaled data) has no logarithm: NaN, not 0
+            mean_expr = np.mean(expr_in) if expr_in.size else np.nan
+            mean_expr_other = np.mean(expr_out) if expr_out.size else np.nan
+            ratio = (mean_expr + 1e-10) / (mean_expr_other + 1e-10)
+            log_fold_change = np.log2(ratio) if ratio > 0 else np.nan
 
-            pct_expressed = np.mean(expr_in > 0) * 100
+            pct_expressed = np.mean(expr_in > 0) * 100 if expr_in.size else np.nan
 
             marker_results.append(
                 {
@@ -610,6 +650,7 @@ def find_marker_genes(data: SingleCellData, groupby: str, method: str = "t-test"
                     "statistic": t_stat,
                     "p_value": p_val,
                     "method": method,
+                    "test_status": test_status,
                 }
             )
 
@@ -627,10 +668,14 @@ def find_marker_genes(data: SingleCellData, groupby: str, method: str = "t-test"
                 "statistic",
                 "p_value",
                 "method",
+                "test_status",
             ]
         )
     results_df = pd.DataFrame(marker_results)
-    results_df = results_df.sort_values(["group", "p_value"])
+    # Rank by p-value, then (p-values that underflow to 0 tie) by the size of the statistic; NaN sorts last
+    results_df["_abs_statistic"] = results_df["statistic"].abs()
+    results_df = results_df.sort_values(["group", "p_value", "_abs_statistic"], ascending=[True, True, False])
+    results_df = results_df.drop(columns="_abs_statistic")
 
     # Keep top N genes per group
     top_markers = []
@@ -848,18 +893,6 @@ def _build_knn_adjacency(distances: np.ndarray, n_neighbors: int) -> sparse.csr_
             adjacency[j, i] = weight  # Undirected graph
 
     return adjacency.tocsr()
-
-
-def _student_t_cdf(t: float, df: int) -> float:
-    """Approximate cumulative distribution function for Student's t-distribution."""
-    # Simplified approximation
-    if df <= 1:
-        return 0.5
-    elif df == 2:
-        return 0.5 + float((t / np.sqrt(2 + t**2)) / (2 * np.sqrt(2)))
-    else:
-        # Use normal approximation for large df
-        return float(0.5 * (1 + np.sign(t) * np.sqrt(1 - np.exp(-2 * t**2 / np.pi))))
 
 
 def evaluate_clustering_performance(

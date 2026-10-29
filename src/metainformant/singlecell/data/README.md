@@ -16,16 +16,16 @@ Data loading, preprocessing, QC filtering, normalization, and batch integration 
 | `SingleCellData` | Core data container for count matrix, metadata, and embeddings; `copy()` copies `uns` recursively |
 | `load_count_matrix()` | Load from h5ad, CSV, or MTX format |
 | `calculate_qc_metrics()` | Compute mitochondrial %, gene counts, total UMIs |
-| `filter_cells()` | Remove low-quality cells by QC thresholds; recomputes the per-gene QC columns already in `var` on the retained cells and copies `uns` recursively. The cell-indexed `uns["neighbors"]` is not updated, so recompute the neighbor graph afterwards |
+| `filter_cells()` | Remove low-quality cells by QC thresholds; recomputes the per-gene QC columns already in `var` on the retained cells and copies `uns` recursively. When any cell is removed the cell-indexed `uns["neighbors"]` is dropped (a kNN graph of the retained cells is not a subset of the old one) and `uns["neighbors_dropped"]` records why and the graph's parameters; the diffusion map, DPT and PAGA rebuild a missing graph |
 | `filter_genes()` | Remove lowly expressed genes |
 | `normalize_counts()` | Library size normalization (also `median`, `size_factors` methods); `uns["normalization"]["size_factors"]` holds one divisor per cell for every method, so `X_norm == X / size_factors * target_sum` |
 | `log_transform()` | Log1p transformation with configurable base |
 | `scale_data()` | Z-score standardization with optional clipping |
 | `identify_highly_variable_genes()` | Select HVGs for downstream analysis |
 | `harmony_integration()` | Harmony batch correction on PCA space |
-| `bbknn_integration()` | Batch-balanced kNN graph construction |
+| `bbknn_integration()` | Batch-balanced kNN graph: the nearest cells of each batch in PCA space, stored in `uns["bbknn"]` and `uns["neighbors"]`; the expression matrix is not changed |
 | `scanorama_integration()` | Scanorama batch integration across datasets |
-| `combat_integration()` | ComBat-style batch correction on a `batch_key` |
+| `combat_integration()` | Location-scale batch adjustment toward the first batch (not ComBat: no empirical Bayes); `covariates` is refused with `NotImplementedError` |
 | `mnn_integration()` | Mutual-nearest-neighbor integration of multiple datasets |
 | `integrate_multiple_batches()` | Dispatcher for all integration methods |
 | `evaluate_integration_quality()` | Batch mixing and distance-ratio metrics |

@@ -519,13 +519,30 @@ class TestIoUtilities:
         fetched = singlecell_io.fetch_atlas_datasets(["Not-A-Dataset"], tmp_path)
         assert fetched == []
 
-    def test_fetch_atlas_datasets_array_express_skipped(self, tmp_path):
-        """ArrayExpress accessions are recognized but not fetched directly."""
+    def test_fetch_atlas_datasets_array_express_raises_and_creates_nothing(self, tmp_path):
+        """An ArrayExpress accession has no fetcher: it raises instead of returning an empty 'fetched' directory."""
         from metainformant.singlecell import io as singlecell_io
 
-        fetched = singlecell_io.fetch_atlas_datasets(["Li-2022"], tmp_path)
-        assert fetched == [tmp_path / "Li-2022"]
-        assert (tmp_path / "Li-2022").is_dir()
+        output_base = tmp_path / "atlases"
+        with pytest.raises(NotImplementedError, match=r"Li-2022 \(E-MTAB-10519\)"):
+            singlecell_io.fetch_atlas_datasets(["Li-2022"], output_base)
+
+        assert not output_base.exists()  # not even the base directory: nothing looks fetched
+
+    def test_fetch_atlas_datasets_checks_every_name_before_downloading_any(self, tmp_path):
+        """A request that mixes a GEO dataset with an ArrayExpress one fails up front, with no partial download."""
+        from metainformant.singlecell import io as singlecell_io
+
+        with pytest.raises(NotImplementedError, match="Li-2022"):
+            singlecell_io.fetch_atlas_datasets(["Davie-2018", "Li-2022"], tmp_path)
+
+        assert list(tmp_path.rglob("*")) == []  # Davie-2018's directory was not created either
+
+    def test_fetch_atlas_datasets_reports_the_unfetchable_dataset_whatever_else_is_requested(self, tmp_path):
+        from metainformant.singlecell import io as singlecell_io
+
+        with pytest.raises(NotImplementedError, match="Li-2022"):
+            singlecell_io.fetch_atlas_datasets(["Not-A-Dataset", "Li-2022"], tmp_path)
 
     @pytest.mark.parametrize("name", sorted(_UNWRAPPED_TOOL_HELPERS))
     def test_unwrapped_tool_helpers_raise_and_create_nothing(self, tmp_path, name):

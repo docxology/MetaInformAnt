@@ -19,6 +19,8 @@ Statistical testing for differential gene expression between cell groups. Suppor
 | `volcano_data()` | Prepare data for volcano plot visualization |
 | `gene_set_scoring()` | Score gene set activity per cell |
 
+A gene whose test cannot be computed (a group with no or one value, constant values, non-finite values) has `p_value = NaN`, `adjusted_p = NaN` and a `test_status` that says why; it takes no part in the Benjamini-Hochberg correction and sorts last. `log2fc` is group 1 over group 2, where group 1 carries the smaller group label.
+
 ## Usage
 
 ```python
