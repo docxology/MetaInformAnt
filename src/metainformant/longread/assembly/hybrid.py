@@ -117,7 +117,11 @@ def hybrid_assemble(
     2. Correct long reads using short-read k-mer support
     3. Find overlaps between corrected long reads
     4. Generate consensus contigs from overlapping reads
-    5. Scaffold contigs using remaining long-read information
+
+    Scaffolding is not part of this function: ``HybridAssemblyResult.scaffolds`` stays empty. Pass the
+    contigs and the long reads to :func:`scaffold_with_long_reads` to scaffold them. A cluster's
+    consensus is built on its longest read (see ``generate_consensus``), so a contig is not longer
+    than the longest read of its cluster.
 
     Args:
         long_reads: Sequence of long-read sequences (strings or dicts with 'sequence').
@@ -231,15 +235,15 @@ def correct_with_short_reads(
        supported alternative from the short-read data
     4. Apply corrections where short-read evidence is strong
 
-    This approach corrects random errors (substitutions and small indels)
-    common in long-read data while preserving the long-range structure.
+    This corrects single-base substitutions only: an insertion or deletion in a long read changes
+    every k-mer across it and is not repaired. Long-range structure is preserved.
 
     Args:
         long_reads: Sequence of long-read sequences.
         short_reads: Sequence of short-read sequences.
         kmer_size: K-mer size for error correction.
         min_kmer_support: Minimum short-read k-mer count to consider trusted.
-        window_size: Window size for local correction context.
+        window_size: Not used (kept for compatibility); every k-mer position is checked.
 
     Returns:
         List of CorrectedRead objects.
@@ -357,10 +361,14 @@ def scaffold_with_long_reads(
     """Scaffold contigs using long reads as bridges.
 
     Algorithm:
-    1. Map long reads to contigs using k-mer anchoring
+    1. Map long reads to contigs using k-mer anchoring (forward strand only)
     2. Identify long reads that span multiple contigs
-    3. Determine contig order and orientation from bridging reads
+    3. Determine contig order from bridging reads
     4. Join contigs into scaffolds with gap size estimates
+
+    Only pairs of contigs are joined, and orientation is not inferred: every ``contig_orientations``
+    entry is ``"+"`` (contigs are taken as given), and a read that matches a contig reverse-complemented
+    does not bridge.
 
     Args:
         contigs: Sequence of contig sequences (strings or dicts).

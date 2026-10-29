@@ -397,6 +397,14 @@ def _sigmoid(x: float) -> float:
     return 1.0 / (1.0 + math.exp(-x))
 
 
+def _given_probability(value: Any) -> float:
+    """A modification probability supplied with a feature dictionary, checked to lie in 0-1."""
+    probability = float(value)
+    if not 0.0 <= probability <= 1.0:  # also rejects NaN
+        raise ValueError(f"A feature probability must be between 0 and 1, got {value!r}")
+    return probability
+
+
 def call_5mc(signal_features: Sequence[dict[str, Any]]) -> list[MethylationCall]:
     """Call 5-methylcytosine from pre-extracted signal features.
 
@@ -418,11 +426,19 @@ def call_5mc(signal_features: Sequence[dict[str, Any]]) -> list[MethylationCall]
         - Dwell time deviation (30%)
         - Current variability (30%)
 
+    A feature dictionary that carries ``probability`` (0-1) is not scored: the probability is
+    used as given and the signal features are ignored. That is how a modification probability the
+    basecaller already wrote (the ML tag of a modified-base BAM) enters, instead of being
+    pushed through signal features it never had.
+
     Args:
         signal_features: Sequence of feature dictionaries for CpG sites.
 
     Returns:
         List of MethylationCall objects.
+
+    Raises:
+        ValueError: If a ``probability`` is outside 0-1.
     """
     calls: list[MethylationCall] = []
 
@@ -432,21 +448,24 @@ def call_5mc(signal_features: Sequence[dict[str, Any]]) -> list[MethylationCall]
         strand = feat.get("strand", "+")
         context = feat.get("context", "CpG")
 
-        current_shift = float(feat.get("context_shift", 0.0))
-        dwell_time = float(feat.get("dwell_time", 1.0))
-        current_std = float(feat.get("current_std", 0.0))
+        if "probability" in feat:
+            probability = _given_probability(feat["probability"])
+        else:
+            current_shift = float(feat.get("context_shift", 0.0))
+            dwell_time = float(feat.get("dwell_time", 1.0))
+            current_std = float(feat.get("current_std", 0.0))
 
-        # Feature-based probability scoring
-        # 5mC typically causes 2-5 pA current shift
-        shift_score = _sigmoid(abs(current_shift) * 0.6 - 1.0)
+            # Feature-based probability scoring
+            # 5mC typically causes 2-5 pA current shift
+            shift_score = _sigmoid(abs(current_shift) * 0.6 - 1.0)
 
-        # Modified bases may have altered dwell times
-        dwell_score = _sigmoid(abs(dwell_time - 1.0) * 2.0 - 0.3)
+            # Modified bases may have altered dwell times
+            dwell_score = _sigmoid(abs(dwell_time - 1.0) * 2.0 - 0.3)
 
-        # Current variability feature
-        std_score = _sigmoid(current_std * 1.5 - 0.5)
+            # Current variability feature
+            std_score = _sigmoid(current_std * 1.5 - 0.5)
 
-        probability = 0.40 * shift_score + 0.30 * dwell_score + 0.30 * std_score
+            probability = 0.40 * shift_score + 0.30 * dwell_score + 0.30 * std_score
 
         calls.append(
             MethylationCall(
@@ -456,6 +475,7 @@ def call_5mc(signal_features: Sequence[dict[str, Any]]) -> list[MethylationCall]
                 modification_type="5mC",
                 probability=probability,
                 context=context,
+                read_id=str(feat.get("read_id", "")),
             )
         )
 
@@ -466,13 +486,17 @@ def call_6ma(signal_features: Sequence[dict[str, Any]]) -> list[MethylationCall]
     """Call N6-methyladenine from pre-extracted signal features.
 
     Same interface as call_5mc but tuned for 6mA detection. N6-methyladenine
-    shows a larger current shift (~5-10 pA) than 5mC.
+    shows a larger current shift (~5-10 pA) than 5mC. As in call_5mc, a feature
+    dictionary with ``probability`` (0-1) is used as given and not scored.
 
     Args:
         signal_features: Sequence of feature dictionaries for adenine sites.
 
     Returns:
         List of MethylationCall objects.
+
+    Raises:
+        ValueError: If a ``probability`` is outside 0-1.
     """
     calls: list[MethylationCall] = []
 
@@ -482,16 +506,19 @@ def call_6ma(signal_features: Sequence[dict[str, Any]]) -> list[MethylationCall]
         strand = feat.get("strand", "+")
         context = feat.get("context", "A")
 
-        current_shift = float(feat.get("context_shift", 0.0))
-        dwell_time = float(feat.get("dwell_time", 1.0))
-        current_std = float(feat.get("current_std", 0.0))
+        if "probability" in feat:
+            probability = _given_probability(feat["probability"])
+        else:
+            current_shift = float(feat.get("context_shift", 0.0))
+            dwell_time = float(feat.get("dwell_time", 1.0))
+            current_std = float(feat.get("current_std", 0.0))
 
-        # 6mA has larger current shift than 5mC
-        shift_score = _sigmoid(abs(current_shift) * 0.4 - 0.8)
-        dwell_score = _sigmoid(abs(dwell_time - 1.0) * 1.5 - 0.2)
-        std_score = _sigmoid(current_std * 1.2 - 0.4)
+            # 6mA has larger current shift than 5mC
+            shift_score = _sigmoid(abs(current_shift) * 0.4 - 0.8)
+            dwell_score = _sigmoid(abs(dwell_time - 1.0) * 1.5 - 0.2)
+            std_score = _sigmoid(current_std * 1.2 - 0.4)
 
-        probability = 0.45 * shift_score + 0.30 * dwell_score + 0.25 * std_score
+            probability = 0.45 * shift_score + 0.30 * dwell_score + 0.25 * std_score
 
         calls.append(
             MethylationCall(
@@ -501,6 +528,7 @@ def call_6ma(signal_features: Sequence[dict[str, Any]]) -> list[MethylationCall]
                 modification_type="6mA",
                 probability=probability,
                 context=context,
+                read_id=str(feat.get("read_id", "")),
             )
         )
 

@@ -348,25 +348,48 @@ def _build_methylation_steps(orch: LongReadOrchestrator, reads: Any) -> list[Pip
     steps.append(PipelineStep(name="aggregate_regions", function=_aggregate_regions, params={}, depends_on=agg_deps))
 
     def _differential_analysis(ctx: dict[str, Any]) -> dict[str, Any]:
+        """Differential methylation between the two samples the reads are labelled with (their ``sample`` key).
+
+        It used to split the list of calls into a first and a second half and test those against each
+        other, which compares arbitrary halves of one sample and reports their differences as findings.
+        Without exactly two sample labels nothing is tested and the result says why.
+        """
         all_calls = []
         if "call_5mc" in ctx and ctx["call_5mc"]:
             all_calls.extend(ctx["call_5mc"])
         if "call_6ma" in ctx and ctx["call_6ma"]:
             all_calls.extend(ctx["call_6ma"])
 
+        def skipped(reason: str) -> dict[str, Any]:
+            logger.info("Differential methylation skipped: %s", reason)
+            return {"results": [], "num_tested": 0, "num_significant": 0, "status": "skipped", "reason": reason}
+
         if not all_calls:
-            return {"results": [], "num_tested": 0, "num_significant": 0}
+            return skipped("no methylation calls")
 
-        midpoint = len(all_calls) // 2
-        if midpoint < 2:
-            return {"results": [], "num_tested": 0, "num_significant": 0}
+        sample_of = {
+            str(read.get("read_id") or read.get("read_name")): read["sample"]
+            for read in ctx["load_reads"]
+            if isinstance(read, dict)
+            and read.get("sample") is not None
+            and (read.get("read_id") or read.get("read_name"))
+        }
+        calls_by_sample: dict[Any, list[Any]] = defaultdict(list)
+        for call in all_calls:
+            label = sample_of.get(str(call.read_id))
+            if label is not None:
+                calls_by_sample[label].append(call)
 
-        sample1 = all_calls[:midpoint]
-        sample2 = all_calls[midpoint:]
+        if len(calls_by_sample) != 2:
+            return skipped(
+                "differential methylation compares two samples, and the reads carry "
+                f"{len(calls_by_sample)} sample label(s) (set 'sample' on every read)"
+            )
 
+        first, second = sorted(calls_by_sample, key=str)
         diff_results = differential_methylation(
-            sample1,
-            sample2,
+            calls_by_sample[first],
+            calls_by_sample[second],
             regions=regions if regions else None,
             min_coverage=min_coverage,
             min_difference=min_difference,
@@ -377,6 +400,8 @@ def _build_methylation_steps(orch: LongReadOrchestrator, reads: Any) -> list[Pip
             "results": diff_results,
             "num_tested": len(diff_results),
             "num_significant": sum(1 for r in diff_results if r.is_significant),
+            "status": "completed",
+            "samples": [first, second],
         }
 
     steps.append(

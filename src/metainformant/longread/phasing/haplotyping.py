@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
+from collections.abc import Mapping
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger
@@ -104,6 +105,7 @@ def phase_reads(
 
     # Extract read-variant observations
     read_observations: dict[str, list[tuple[int, int]]] = {}
+    uncalled = 0
     for read in reads:
         read_id = read.get("read_id", "")
         if not read_id:
@@ -114,10 +116,18 @@ def phase_reads(
         for a in alleles:
             key = (read.get("chrom", ""), a.get("position", -1))
             if key in var_index:
-                obs.append((var_index[key], int(a.get("allele", 0))))
+                allele = a.get("allele")
+                if allele not in (0, 1):
+                    # a missing or no-call allele says nothing about the haplotype (it used to count as 0, ref)
+                    uncalled += 1
+                    continue
+                obs.append((var_index[key], int(allele)))
 
         if obs:
             read_observations[read_id] = obs
+
+    if uncalled:
+        logger.warning("%d read alleles at variant sites are neither 0 (ref) nor 1 (alt) and were not used", uncalled)
 
     if not read_observations:
         logger.warning("No read-variant observations found for phasing")
@@ -222,11 +232,15 @@ def build_phase_blocks(
             - ``start`` (int): Block start position.
             - ``end`` (int): Block end position.
             - ``n_variants`` (int): Number of variants in the block.
-            - ``n_reads`` (int): Set to 0 (not available without read data).
-            - ``phase_quality`` (float): Mean quality of variants in block.
+            - ``n_reads`` (None): The number of reads is not known here, because no
+              reads are given (it used to be reported as 0).
+            - ``phase_quality`` (float | None): Mean ``quality`` of the block's variants
+              that have one; None when none does (it used to count a variant without a
+              quality as 1.0, a perfect score nobody measured).
             - ``variant_haplotypes`` (dict[int, int]): position -> allele (0 ref
               or 1 alt) that haplotype 1 carries, the map :func:`haplotag_reads`
-              votes against. Variants whose ``haplotype`` is not 1 or 2, or whose
+              votes against (it also takes the text keys JSON turns these ints
+              into). Variants whose ``haplotype`` is not 1 or 2, or whose
               ``allele`` is not 0 or 1, are left out.
     """
     if not phased_variants:
@@ -355,29 +369,42 @@ def haplotag_reads(
     ``variant_haplotypes``; a block without it cannot tag any read, and a
     warning says how many such blocks were passed.
 
+    Blocks may come back from JSON: JSON object keys are always text, so a
+    ``variant_haplotypes`` map written to JSON and read again has keys such as
+    ``"1000"`` where :func:`phase_reads` produced ``1000``. The keys are normalised to
+    integer positions on input, so reloaded blocks tag the same reads as the originals.
+
     Args:
         reads: List of read dicts with ``read_id``, ``chrom``, ``start``,
             ``end``, and optionally ``alleles`` (list of dicts with
             ``position`` and ``allele``).
         phase_blocks: List of phase block dicts with ``chrom``, ``start``,
             ``end`` (inclusive: the last variant position) and
-            ``variant_haplotypes`` (dict mapping position to the allele, 0 ref
-            or 1 alt, that haplotype 1 carries there).
+            ``variant_haplotypes`` (dict mapping position, as an int or as text
+            holding an int, to the allele, 0 ref or 1 alt, that haplotype 1
+            carries there).
 
     Returns:
         List of read dicts with added ``HP`` (int, 0/1/2) and ``PS``
         (int, index of the block in ``phase_blocks``) fields.
+
+    Raises:
+        ValueError: If a ``variant_haplotypes`` key is not an integer position, two keys
+            name the same position with different alleles, or an allele is not 0 or 1.
+        TypeError: If ``variant_haplotypes`` is not a mapping.
     """
-    # Index phase blocks by chromosome
+    # Index phase blocks by chromosome; each block's variant map is normalised once, up front
     block_index: dict[str, list[tuple[int, dict[str, Any]]]] = defaultdict(list)
+    variant_maps: dict[int, dict[int, int]] = {}
     for idx, block in enumerate(phase_blocks):
+        variant_maps[idx] = _normalise_variant_haplotypes(block.get("variant_haplotypes"), idx)
         block_index[block["chrom"]].append((idx, block))
 
     # Sort blocks by start
     for chrom in block_index:
         block_index[chrom].sort(key=lambda x: x[1]["start"])
 
-    blocks_without_map = sum(1 for block in phase_blocks if not block.get("variant_haplotypes"))
+    blocks_without_map = sum(1 for idx in range(len(phase_blocks)) if not variant_maps[idx])
     if blocks_without_map:
         logger.warning(
             "%d of %d phase blocks carry no variant_haplotypes; reads overlapping only those blocks cannot be "
@@ -387,6 +414,7 @@ def haplotag_reads(
         )
 
     tagged: list[dict[str, Any]] = []
+    uncalled = 0
 
     for read in reads:
         read_dict = dict(read)
@@ -404,13 +432,18 @@ def haplotag_reads(
             if read_start > block["end"] or read_end <= block["start"]:
                 continue
 
-            var_haps = block.get("variant_haplotypes", {})
+            var_haps = variant_maps[block_idx]
             h1_votes = 0
             h2_votes = 0
             for a in alleles:
                 pos = a.get("position", -1)
                 if pos in var_haps:
-                    if var_haps[pos] == a.get("allele", -1):
+                    allele = a.get("allele")
+                    if allele not in (0, 1):
+                        # no call, or no allele at all: not a vote for haplotype 2 (it used to be one)
+                        uncalled += 1
+                        continue
+                    if var_haps[pos] == allele:
                         h1_votes += 1
                     else:
                         h2_votes += 1
@@ -427,6 +460,11 @@ def haplotag_reads(
         read_dict["HP"] = hp
         read_dict["PS"] = ps
         tagged.append(read_dict)
+
+    if uncalled:
+        logger.warning(
+            "%d read alleles at block variants are neither 0 (ref) nor 1 (alt) and were not counted", uncalled
+        )
 
     n_tagged = sum(1 for r in tagged if r["HP"] > 0)
     logger.info(
@@ -452,7 +490,8 @@ def allele_specific_analysis(
     Args:
         reads: List of read dicts with ``read_id``, ``chrom``, ``start``,
             ``end``, and ``signal`` (float, e.g., expression level or
-            methylation probability).
+            methylation probability). A read without a ``signal`` is left out
+            (a warning counts them); it used to contribute a signal of 0.0.
         haplotype_assignments: Dict mapping read_id to haplotype (1 or 2).
         region: Region dict with ``chrom``, ``start``, ``end``.
 
@@ -462,8 +501,12 @@ def allele_specific_analysis(
             - ``haplotype_2_signal``: Mean signal on haplotype 2.
             - ``allelic_imbalance``: Absolute difference in signal between
               haplotypes, normalized by total.
-            - ``p_value``: Statistical p-value from Mann-Whitney U test
-              (or Welch's t-test fallback).
+            - ``p_value``: Statistical p-value from the Mann-Whitney U test
+              (or a normal approximation of Welch's t statistic).
+
+        When either haplotype has no read with a signal in the region the
+        test cannot be run: the signals and the imbalance are 0.0 and the
+        p-value 1.0, which means "nothing to compare", not a measurement.
 
     Raises:
         ImportError: If numpy is not available.
@@ -477,6 +520,7 @@ def allele_specific_analysis(
 
     h1_signals: list[float] = []
     h2_signals: list[float] = []
+    without_signal = 0
 
     for read in reads:
         read_id = read.get("read_id", "")
@@ -491,13 +535,21 @@ def allele_specific_analysis(
         if read_chrom != chrom or read_start >= end or read_end <= start:
             continue
 
-        signal = float(read.get("signal", 0.0))
+        if read.get("signal") is None:
+            without_signal += 1
+            continue
+        signal = float(read["signal"])
         hp = haplotype_assignments[read_id]
 
         if hp == 1:
             h1_signals.append(signal)
         elif hp == 2:
             h2_signals.append(signal)
+
+    if without_signal:
+        logger.warning(
+            "%d reads in the region have no signal and were left out of the allele-specific analysis", without_signal
+        )
 
     if not h1_signals or not h2_signals:
         return {
@@ -688,8 +740,8 @@ def _summarize_block(
         Phase block summary dict.
     """
     positions = [v["position"] for v in block_variants]
-    qualities = [v.get("quality", 1.0) for v in block_variants]
-    mean_quality = sum(qualities) / len(qualities) if qualities else 0.0
+    qualities = [v["quality"] for v in block_variants if v.get("quality") is not None]
+    mean_quality = sum(qualities) / len(qualities) if qualities else None
 
     variant_haplotypes: dict[int, int] = {}
     for v in block_variants:
@@ -702,10 +754,53 @@ def _summarize_block(
         "start": min(positions),
         "end": max(positions),
         "n_variants": len(block_variants),
-        "n_reads": 0,
+        "n_reads": None,
         "phase_quality": mean_quality,
         "variant_haplotypes": variant_haplotypes,
     }
+
+
+def _normalise_variant_haplotypes(variant_haplotypes: Any, block_index: int) -> dict[int, int]:
+    """A block's position -> haplotype-1 allele map with integer positions, from int or text keys.
+
+    JSON turns the int keys of the maps :func:`phase_reads` and :func:`build_phase_blocks` build into text,
+    and a map that went through JSON would otherwise match no read position. A missing or empty map gives
+    an empty dict (the block cannot tag reads).
+
+    Raises:
+        TypeError: If ``variant_haplotypes`` is neither None nor a mapping.
+        ValueError: If a key is not an integer position, an allele is not 0 or 1, or two keys that name
+            one position disagree.
+    """
+    if variant_haplotypes is None:
+        return {}
+    if not isinstance(variant_haplotypes, Mapping):
+        raise TypeError(
+            f"phase block {block_index}: variant_haplotypes must map positions to alleles, "
+            f"got {type(variant_haplotypes).__name__}"
+        )
+
+    normalised: dict[int, int] = {}
+    for key, value in variant_haplotypes.items():
+        try:
+            if isinstance(key, float) and not key.is_integer():
+                raise ValueError(key)
+            position = int(key.strip()) if isinstance(key, str) else int(key)
+        except (TypeError, ValueError, AttributeError):
+            raise ValueError(
+                f"phase block {block_index}: variant_haplotypes key {key!r} is not an integer position"
+            ) from None
+        if value not in (0, 1):
+            raise ValueError(
+                f"phase block {block_index}: variant_haplotypes[{key!r}] is {value!r}; an allele is 0 (ref) or 1 (alt)"
+            )
+        if position in normalised and normalised[position] != int(value):
+            raise ValueError(
+                f"phase block {block_index}: variant_haplotypes names position {position} twice "
+                f"with different alleles"
+            )
+        normalised[position] = int(value)
+    return normalised
 
 
 def _haplotype_one_allele(variant: dict[str, Any]) -> int | None:
@@ -728,7 +823,8 @@ def _test_allelic_difference(
 ) -> float:
     """Test for significant difference between two signal distributions.
 
-    Uses Mann-Whitney U test if scipy is available, otherwise Welch's t-test.
+    Uses the Mann-Whitney U test if scipy is available. Without scipy, or when scipy rejects the data
+    (a warning says so), it uses a normal approximation of Welch's t statistic.
 
     Args:
         signals_a: Signal values from haplotype 1.
@@ -741,8 +837,8 @@ def _test_allelic_difference(
         try:
             _, p_val = scipy_stats.mannwhitneyu(signals_a, signals_b, alternative="two-sided")
             return float(p_val)
-        except Exception:
-            pass
+        except ValueError as exc:
+            logger.warning("Mann-Whitney U test failed (%s); using the normal approximation of Welch's t instead", exc)
 
     # Welch's t-test fallback
     n_a = len(signals_a)

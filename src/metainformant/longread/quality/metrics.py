@@ -86,6 +86,54 @@ class QualityDistribution:
     histogram: dict[int, int] = field(default_factory=dict)
 
 
+def _as_length(value: Any) -> int:
+    """Return ``value`` as a whole number of bases.
+
+    Integers (Python or numpy), integral floats such as ``1000.0`` (what numpy gives after a mean, a
+    division or a pandas column with missing values) and text holding such a number are accepted. A
+    fractional length, NaN or infinity raises ``ValueError`` and a bool or any other type raises
+    ``TypeError``: a length that cannot be counted must not quietly vanish from the statistics.
+    """
+    if isinstance(value, bool):
+        raise TypeError(f"A read length must be a number, not the bool {value!r}")
+    if isinstance(value, numbers.Integral):
+        return int(value)
+    if isinstance(value, str):
+        text = value.strip()
+        try:
+            return int(text)
+        except ValueError:
+            value = float(text)  # ValueError for text that is not a number at all
+    if isinstance(value, numbers.Real):
+        number = float(value)
+        if not number.is_integer():
+            raise ValueError(f"A read length must be a whole number of bases, got {value!r}")
+        return int(number)
+    raise TypeError(f"A read length must be a number, got {type(value).__name__}")
+
+
+def _read_length(read: object) -> int | None:
+    """Length of one read given as a length, a dict or an object, or None when it carries no length.
+
+    A number is the length itself. A dict is read through its ``length`` key and then its ``sequence``;
+    an object through its ``sequence`` and then its ``query_length``. Numeric lengths go through
+    :func:`_as_length`, so a float length is counted when it is a whole number and raises when it is not.
+    """
+    if isinstance(read, (numbers.Real, bool)):  # Python and numpy numbers
+        return _as_length(read)
+    if isinstance(read, dict):
+        if "length" in read:
+            return _as_length(read["length"])
+        sequence = read.get("sequence")
+        return len(sequence) if sequence else None
+    sequence = getattr(read, "sequence", None)
+    if sequence:
+        return len(sequence)
+    if hasattr(read, "query_length"):
+        return _as_length(read.query_length)
+    return None
+
+
 def calculate_n50(read_lengths: Sequence[int]) -> int:
     """Calculate the N50 statistic for a set of read lengths.
 
@@ -174,30 +222,23 @@ def _calculate_lx(read_lengths: Sequence[int], x: int = 50) -> int:
 def read_length_stats(reads: Sequence[dict[str, Any] | int | object]) -> ReadLengthStatistics:
     """Calculate comprehensive read length statistics.
 
-    Accepts either a sequence of integers (read lengths) or a sequence of
-    dictionaries with a 'length' or 'sequence' key.
+    Accepts either a sequence of numbers (read lengths) or a sequence of
+    dictionaries with a 'length' or 'sequence' key, or of read objects with a
+    ``sequence`` or ``query_length``. Zero-length and negative entries are left out.
 
     Args:
-        reads: Sequence of read lengths (int) or read dictionaries containing
-            'length' (int) or 'sequence' (str) keys.
+        reads: Sequence (or numpy array) of read lengths or read dictionaries
+            containing 'length' (int) or 'sequence' (str) keys. A length may be an
+            integer or a whole-number float such as ``1000.0``.
 
     Returns:
         ReadLengthStatistics with all computed metrics.
+
+    Raises:
+        ValueError: If a length is not a whole number (``1500.5``, NaN, infinity).
+        TypeError: If a length is a bool or not a number.
     """
-    # Extract lengths
-    lengths: list[int] = []
-    for r in reads:
-        if isinstance(r, numbers.Integral):  # Python ints and numpy integer scalars
-            lengths.append(int(r))
-        elif isinstance(r, dict):
-            if "length" in r:
-                lengths.append(int(r["length"]))
-            elif "sequence" in r and r["sequence"]:
-                lengths.append(len(r["sequence"]))
-        elif hasattr(r, "sequence") and r.sequence:
-            lengths.append(len(r.sequence))
-        elif hasattr(r, "query_length"):
-            lengths.append(int(r.query_length))
+    lengths = [length for read in reads if (length := _read_length(read)) is not None]
 
     if not lengths:
         return ReadLengthStatistics()
@@ -382,8 +423,9 @@ def calculate_throughput(
     of reads and an optional run duration.
 
     Args:
-        reads: Sequence of read lengths (int) or read dictionaries containing
-            'length' (int) or 'sequence' (str) keys.
+        reads: Sequence (or numpy array) of read lengths or read dictionaries
+            containing 'length' (int) or 'sequence' (str) keys. A length may be an
+            integer or a whole-number float such as ``1000.0``.
         run_duration: Total run duration in hours. If None, only total metrics
             are returned without per-hour rates.
 
@@ -395,20 +437,12 @@ def calculate_throughput(
             - reads_per_hour: Reads per hour (if run_duration provided).
             - gigabases_per_hour: Gigabases per hour (if run_duration provided).
             - mean_read_length: Average read length.
+
+    Raises:
+        ValueError: If a length is not a whole number (``1500.5``, NaN, infinity).
+        TypeError: If a length is a bool or not a number.
     """
-    lengths: list[int] = []
-    for r in reads:
-        if isinstance(r, numbers.Integral):  # Python ints and numpy integer scalars
-            lengths.append(int(r))
-        elif isinstance(r, dict):
-            if "length" in r:
-                lengths.append(int(r["length"]))
-            elif "sequence" in r and r["sequence"]:
-                lengths.append(len(r["sequence"]))
-        elif hasattr(r, "sequence") and r.sequence:
-            lengths.append(len(r.sequence))
-        elif hasattr(r, "query_length"):
-            lengths.append(int(r.query_length))
+    lengths = [length for read in reads if (length := _read_length(read)) is not None]
 
     total_bases = sum(lengths)
     total_reads = len(lengths)

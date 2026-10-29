@@ -116,13 +116,20 @@ def calculate_alignment_stats(
 ) -> AlignmentStats
 ```
 
-`read_long_read_bam` parses a BAM file with pysam and returns alignments; a `region` query needs a `.bai` index, and secondary alignments are skipped unless `include_secondary` is set. `extract_methylation_tags` decodes the MM/ML tags of one alignment into a dictionary keyed by base, strand and modification code as the MM tag writes them (`base + strand + code`, for example `"C+m"`, `"C-m"` or `"A+a"`); entries that differ only in strand are separate keys. Each value holds `read_positions`, `genomic_positions` (a list of `(position, probability)` tuples that uses the reference coordinate when the base is aligned and the read coordinate otherwise) and `probabilities` on a 0-1 scale. The `ML` tag may be a list, tuple, bytes, a numpy array or the `array('B')` that pysam returns for B-type tags; its values are shared out in MM order, one per delta position of each entry. `get_supplementary_alignments` parses the `SA` tag of one alignment (useful for SV detection) and returns one dictionary per split segment with `reference_name`, `reference_start` (0-based), `strand`, `cigar`, `mapping_quality`, `edit_distance`, `aligned_length` and `is_reverse`. `calculate_alignment_stats` returns an `AlignmentStats`; `total_reads` counts every alignment passed in, while the mean fields, `total_bases` and `total_aligned_bases` cover mapped alignments only.
+`read_long_read_bam` parses a BAM file with pysam and returns alignments; a `region` query needs a `.bai` index, and secondary alignments are skipped unless `include_secondary` is set. `extract_methylation_tags` returns one entry per base, strand and modification code as written in MM: `C+m` and `C-m` are separate keys, while `C+mh` produces `C+m` and `C+h`.
 
-**MM/ML decoding limits.** The decoder handles a subset of the SAM `MM`/`ML` specification:
+Each entry contains:
 
-- The base letter of every entry, `-` strand entries included, is counted in `query_sequence` as stored in the BAM, and reverse-aligned reads (`is_reverse`) are not re-oriented. The decoded `read_positions` and `genomic_positions` of reverse-aligned reads and of `-` strand entries are therefore not corrected for orientation.
-- Multi-code entries such as `C+mh` are not supported: the letters after the strand are read as one code (`mh`) and `ML` supplies one value per position instead of one per code and position.
-- The `.` flag (`C+m.,...`) is not supported: the entry does not parse and is skipped without consuming `ML` values, so the probabilities of the entries after it are shifted. The `?` flag is parsed.
+- `base` (the letter counted), `strand`, `modification`, `modified_base` (the counted letter for `+`, its complement for `-`) and `implicit`.
+- `read_positions`: ascending 0-based positions in the stored `query_sequence`.
+- `genomic_positions`: `(reference_position_or_None, probability_or_None)` for each listed site, in read-position order. An insertion, soft clip or unmapped base has no reference position; a missing or unusable ML tag leaves probability unknown.
+- `probabilities`: usable ML values scaled by `value / 255`, in read-position order; empty without usable ML values.
+- `skipped_read_positions` and `skipped_genomic_positions`: counted bases absent from the listed MM positions. Their status is unmodified when `implicit=True` (no flag or `.`) and unknown for the `?` flag.
+- `n_unplaced`: listed sites that could not be placed because the read lacks sequence or a skip runs past its counted bases; a warning reports them.
+
+MM skip counts refer to the read as sequenced. Reverse-aligned reads are reverse-complemented for counting, then coordinates are mapped back to the stored sequence. Every entry counts its written fundamental base, including `-` entries; the strand describes the modified base relative to that counted strand. Multi-code entries interleave ML values by position and code. The decoder accepts `ML` as a list, tuple, bytes, numpy array or pysam's `array('B')`, and reads draft tag names `Mm`/`Ml` when the uppercase tags are absent. Malformed MM tags and inconsistent ML lengths produce warnings rather than invented positions or probabilities. An optional `MN` tag must be a nonnegative integer matching the stored sequence length; stale or invalid lengths raise `ValueError` before either raw or cached modification calls are used.
+
+`get_supplementary_alignments` parses the `SA` tag and returns `reference_name`, `reference_start` (0-based), `strand`, `cigar`, `mapping_quality`, `edit_distance`, `aligned_length` and `is_reverse` per split segment. `calculate_alignment_stats` returns `AlignmentStats`: `total_reads` counts all alignments, while mean fields, `total_bases` and `total_aligned_bases` cover mapped alignments.
 
 ### Format Conversion
 

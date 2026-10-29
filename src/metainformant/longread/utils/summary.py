@@ -11,7 +11,7 @@ import statistics
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 from metainformant.core.utils.logging import get_logger
 
@@ -52,8 +52,8 @@ class RunSummary:
 
 
 def generate_qc_summary(
-    read_lengths: list[int],
-    quality_scores: list[float] | None = None,
+    read_lengths: Iterable[int],
+    quality_scores: Iterable[float] | None = None,
     filtered_count: int | None = None,
     adapter_trimmed: int = 0,
     chimeras_split: int = 0,
@@ -64,19 +64,27 @@ def generate_qc_summary(
     metrics functions.
 
     Args:
-        read_lengths: List of read lengths (post-filtering if applicable).
-        quality_scores: Optional list of per-read mean quality scores.
+        read_lengths: Read lengths (post-filtering if applicable), as a list or a
+            numpy array. A length may be an integer or a whole-number float.
+        quality_scores: Optional per-read mean quality scores (list or numpy array).
+            ``None`` or an empty collection leaves the quality fields out.
         filtered_count: Number of reads removed by filtering (None = not filtered).
         adapter_trimmed: Number of reads with adapters trimmed.
         chimeras_split: Number of chimeric reads split.
 
     Returns:
         Dict with QC summary statistics.
+
+    Raises:
+        ValueError: If a read length is not a whole number (``1500.5``, NaN, infinity).
+        TypeError: If a read length is a bool or not a number.
     """
     from metainformant.longread.quality.metrics import (
         read_length_stats,
     )
 
+    # list() first: truth-testing a numpy array with more than one element raises
+    read_lengths = list(read_lengths)
     if not read_lengths:
         return {
             "total_reads": 0,
@@ -101,12 +109,13 @@ def generate_qc_summary(
         "std_dev": round(stats.std_dev, 1),
     }
 
-    if quality_scores:
-        mean_q = sum(quality_scores) / len(quality_scores)
+    scores = [float(q) for q in quality_scores] if quality_scores is not None else []
+    if scores:
+        mean_q = sum(scores) / len(scores)
         summary["mean_quality"] = round(mean_q, 2)
-        summary["q7_fraction"] = round(sum(1 for q in quality_scores if q >= 7) / len(quality_scores), 4)
-        summary["q10_fraction"] = round(sum(1 for q in quality_scores if q >= 10) / len(quality_scores), 4)
-        summary["q20_fraction"] = round(sum(1 for q in quality_scores if q >= 20) / len(quality_scores), 4)
+        summary["q7_fraction"] = round(sum(1 for q in scores if q >= 7) / len(scores), 4)
+        summary["q10_fraction"] = round(sum(1 for q in scores if q >= 10) / len(scores), 4)
+        summary["q20_fraction"] = round(sum(1 for q in scores if q >= 20) / len(scores), 4)
 
     if filtered_count is not None:
         original_count = stats.count + filtered_count
@@ -122,7 +131,7 @@ def generate_qc_summary(
 
 
 def generate_assembly_summary(
-    contig_lengths: list[int],
+    contig_lengths: Iterable[int],
     num_reads_used: int = 0,
     polish_iterations: int = 0,
     coverage: float = 0.0,
@@ -130,20 +139,25 @@ def generate_assembly_summary(
     """Generate assembly summary statistics.
 
     Args:
-        contig_lengths: List of assembled contig lengths.
+        contig_lengths: Assembled contig lengths, as a list or a numpy array. A length
+            may be an integer or a whole-number float.
         num_reads_used: Number of input reads.
         polish_iterations: Number of polishing rounds performed.
         coverage: Mean coverage depth.
 
     Returns:
         Dict with assembly summary statistics.
-    """
-    from metainformant.longread.quality.metrics import calculate_n50, calculate_nx
 
-    if not contig_lengths:
+    Raises:
+        ValueError: If a contig length is not a whole number (``1500.5``, NaN, infinity).
+        TypeError: If a contig length is a bool or not a number.
+    """
+    from metainformant.longread.quality.metrics import _as_length, calculate_n50, calculate_nx
+
+    sorted_lengths = sorted((_as_length(length) for length in contig_lengths), reverse=True)
+    if not sorted_lengths:
         return {"total_contigs": 0, "total_bases": 0, "status": "no_assembly"}
 
-    sorted_lengths = sorted(contig_lengths, reverse=True)
     total_bases = sum(sorted_lengths)
 
     return {

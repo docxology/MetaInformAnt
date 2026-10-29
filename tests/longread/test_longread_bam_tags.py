@@ -6,7 +6,8 @@ real modified-base BAM, and ``tags.get("ML") or ...`` raised ``ValueError`` for 
 ``extract_methylation_tags`` keyed every entry ``X+code``, so ``C-m`` replaced ``C+m``.
 
 pysam is not installed in this environment, so the tests build the tag dictionaries a pysam
-read would give (``array('B')`` values) and run the real parsing on them.
+read would give (``array('B')`` values) and run the real parsing on them. The orientation, strand,
+multi-code and flag rules of the SAM tags specification are pinned in ``test_longread_mm_ml_spec.py``.
 """
 
 from __future__ import annotations
@@ -102,16 +103,20 @@ class TestExtractWithPysamStyleTags:
         assert result["A+a"]["probabilities"] == pytest.approx([1.0, 0.0])
 
     def test_methylation_features_are_built_from_array_tags(self) -> None:
-        # the workflow path that feeds call_5mc from MM/ML tags
+        # the workflow path that feeds call_5mc from MM/ML tags: positions come from decoding the tags on the
+        # read (C at 1, 5, 9, 13 of SEQUENCE: skip none -> 1, skip one -> 9) and its CIGAR, not from the skip counts
         reads = [
             {
                 "tags": {"MM": "C+m,0,1;", "ML": array("B", [200, 100])},
+                "sequence": SEQUENCE,
+                "cigar_string": "16M",
                 "reference_name": "chr1",
                 "reference_start": 5000,
             }
         ]
         features = _extract_methylation_features(reads, "5mC")
-        assert [f["context_shift"] for f in features] == pytest.approx([200 / 255 * 5.0, 100 / 255 * 5.0])
+        assert [f["position"] for f in features] == [5001, 5009]
+        assert [f["probability"] for f in features] == pytest.approx([200 / 255, 100 / 255])
         assert all(f["chromosome"] == "chr1" for f in features)
 
 

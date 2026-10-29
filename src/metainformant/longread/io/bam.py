@@ -4,16 +4,35 @@ Provides real parsing of BAM files from long-read sequencers with support for
 modified base tags (MM/ML), supplementary alignment extraction for structural
 variant detection, and comprehensive alignment statistics.
 
+Modified base tags (MM/ML) follow the SAM optional-tags specification (hts-specs ``SAMtags``,
+"Base modifications"), checked against the htslib reference implementation:
+
+* An MM entry ``<base><strand><codes>[<flag>],<skip>,<skip>,...;`` counts the letter ``<base>`` in the
+  read **as it was sequenced**. For an alignment with FLAG 0x10 the SEQ field is the reverse
+  complement of that read, so SEQ is reverse-complemented before counting and the positions are mapped
+  back to the stored (SEQ) orientation afterwards. Each skip counts the letters passed over before the
+  next modified one.
+* The strand says on which strand the modification sits: ``+`` the sequenced strand, ``-`` the opposite
+  one. The counted letter is the same either way, so ``G-m`` counts the Gs of the read and marks the
+  5-methylcytosines opposite them (``modified_base`` of such an entry is the complement of the letter).
+* An entry with several codes (``C+mh``) carries one ML value per code at every listed position,
+  interleaved in code order; ML is consumed entry after entry in MM order.
+* The flag after the codes says what the skipped bases are: ``.`` unmodified, ``?`` unknown. Without
+  a flag the specification's default, ``.``, applies.
+* MM without ML leaves the probabilities unknown (not zero).
+* When present, MN must equal the stored SEQ length; a mismatch makes MM/ML stale and decoding raises.
+
 Optional dependencies:
     - pysam: For reading BAM/CRAM files
 """
 
 from __future__ import annotations
 
+import operator
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, NamedTuple, Sequence
 
 from metainformant.core.utils.logging import get_logger
 
@@ -199,20 +218,92 @@ def read_long_read_bam(
     return alignments
 
 
-def _parse_methylation_from_tags(tags: dict[str, Any]) -> dict[str, Any]:
-    """Parse MM/ML methylation tags from BAM alignment tags.
+#: Scale of the ML values: 0 (certainly unmodified) to 255; the specification quantises a probability in
+#: 1/256ths, and this module reports value / 255 on the 0-1 scale.
+_ML_SCALE = 255
 
-    The MM tag encodes modified base positions using the SAM spec:
-        MM:Z:C+m,0,1,0;  (CpG methylation at positions 0, 2, 3)
-    The ML tag encodes modification probabilities (0-255 scale).
+_MM_ENTRY = re.compile(r"([ACGTUN])([+-])([A-Za-z]+|[0-9]+)([.?]?)((?:\s*,\s*[0-9]+)*)")
+_COMPLEMENT = str.maketrans("ACGT", "TGCA")
+
+
+class _MmEntry(NamedTuple):
+    """One parsed entry of an MM tag: ``C+mh?,5,12,0;`` is base C, strand +, codes (m, h), flag ?, skips (5, 12, 0)."""
+
+    base: str
+    strand: str
+    codes: tuple[str, ...]
+    flag: str
+    skips: tuple[int, ...]
+
+
+def _complement_base(base: str) -> str:
+    """Complement of one A/C/G/T/U/N letter (U and T pair with A; N stays N)."""
+    return "A" if base == "U" else base.translate(_COMPLEMENT)
+
+
+def _parse_mm_tag(mm_tag: Any) -> list[_MmEntry]:
+    """Parse the text of an MM tag into entries.
+
+    Grammar (SAM tags specification): ``([ACGTUN][-+]([a-z]+|[0-9]+)[.?]?(,[0-9]+)*;)*``. A run of letters
+    is several codes (``mh`` is ``m`` and ``h``), a run of digits is one ChEBI code, and an entry may list
+    no positions (``C+m;``). A missing final ``;`` is accepted.
+
+    Raises:
+        ValueError: If an entry does not follow the grammar. The skips of a malformed entry cannot be told
+            apart from the ML values that belong to it, so nothing after it can be decoded reliably.
+    """
+    text = mm_tag.decode("ascii", errors="replace") if isinstance(mm_tag, (bytes, bytearray)) else str(mm_tag)
+    entries: list[_MmEntry] = []
+    for raw in text.split(";"):
+        raw = raw.strip()
+        if not raw:
+            continue
+        match = _MM_ENTRY.fullmatch(raw)
+        if match is None:
+            raise ValueError(f"malformed MM entry {raw!r}")
+        base, strand, codes, flag, skips = match.groups()
+        entries.append(
+            _MmEntry(
+                base=base,
+                strand=strand,
+                codes=(codes,) if codes.isdigit() else tuple(codes),
+                flag=flag,
+                skips=tuple(int(token) for token in skips.split(",") if token.strip()),
+            )
+        )
+    return entries
+
+
+def _parse_methylation_from_tags(tags: dict[str, Any]) -> dict[str, Any]:
+    """Parse MM/ML base-modification tags from BAM alignment tags.
+
+    The MM tag lists, per base and strand, how many bases to skip before each modified one::
+
+        MM:Z:C+m,0,1,0;   (5mC at the 1st, 3rd and 4th C of the read as sequenced)
+        MM:Z:C+mh?,2;A+a,0;
+
+    and the ML tag holds one probability (0-255) per listed position and code, entry after entry in MM
+    order, interleaved in code order within an entry (``C+mh,3,1`` with ML ``10,20,30,40`` is m=10, h=20 at
+    the first position and m=30, h=40 at the second). See the module docstring for the full rules.
+
+    The optional MN value is retained for validation against the read sequence.
+    Positions are not decoded here: that needs the read sequence and its orientation, see
+    :func:`extract_methylation_tags`.
 
     Args:
         tags: Dictionary of BAM tags. ``ML`` may be a list, tuple, bytes, numpy
-            array or the ``array('B')`` that pysam returns for B-type tags.
+            array or the ``array('B')`` that pysam returns for B-type tags. The
+            draft names ``Mm`` and ``Ml`` are read when ``MM`` and ``ML`` are absent.
 
     Returns:
-        Dictionary with parsed methylation data including base type,
-        modification code, positions, and probabilities.
+        ``{}`` without an MM tag, or when the tag is malformed (a warning says why). Otherwise
+        ``{"modifications": [...]}`` with one dictionary per entry and code, in MM order, holding ``base``
+        (the letter counted), ``strand``, ``modification`` (one code), ``modified_base`` (the base that
+        carries the modification: ``base`` for ``+``, its complement for ``-``), ``implicit`` (True when the
+        skipped bases are unmodified, the ``.`` flag or no flag; False for ``?``, where they are unknown),
+        ``delta_positions``, ``probabilities`` (this code's raw 0-255 ML values, one per position; empty
+        when there is no ML tag or its length does not match the MM tag, which a warning reports) and
+        ``probability_scale``.
     """
     result: dict[str, Any] = {}
 
@@ -227,58 +318,49 @@ def _parse_methylation_from_tags(tags: dict[str, Any]) -> dict[str, Any]:
     if mm_tag is None:
         return result
 
-    # Parse MM tag: format is "C+m,0,1,0;" or "C+m?,0,1,0;A+a,2,0;"
-    modifications: list[dict[str, Any]] = []
-    mm_str = str(mm_tag)
-
-    # Split by semicolons for multiple modification types
-    mod_entries = [e.strip() for e in mm_str.split(";") if e.strip()]
+    try:
+        entries = _parse_mm_tag(mm_tag)
+    except ValueError as exc:
+        logger.warning("Base modifications not decoded: %s", exc)
+        return result
 
     ml_probs = _ml_values(ml_tag)
-
-    prob_offset = 0
-
-    for entry in mod_entries:
-        # Parse: base_char+mod_code[?],delta1,delta2,...
-        match = re.match(r"([ACGTN])([+-])([a-zA-Z0-9]+)(\??),(.*)", entry)
-        if not match:
-            continue
-
-        base_char = match.group(1)
-        strand = match.group(2)
-        mod_code = match.group(3)
-        implicit_flag = match.group(4)
-        deltas_str = match.group(5)
-
-        # Parse delta positions
-        deltas = []
-        for d in deltas_str.split(","):
-            d = d.strip()
-            if d:
-                try:
-                    deltas.append(int(d))
-                except ValueError:
-                    continue
-
-        # Extract probabilities for this modification
-        n_positions = len(deltas)
-        probs = ml_probs[prob_offset : prob_offset + n_positions]
-        prob_offset += n_positions
-
-        modifications.append(
-            {
-                "base": base_char,
-                "strand": strand,
-                "modification": mod_code,
-                "implicit": implicit_flag == "?",
-                "delta_positions": deltas,
-                "probabilities": probs,
-                "probability_scale": 255,  # ML tag uses 0-255 scale
-            }
+    expected = sum(len(entry.skips) * len(entry.codes) for entry in entries)
+    if ml_probs and len(ml_probs) != expected:
+        logger.warning(
+            "Base modification probabilities not used: the ML tag has %d values but the MM tag lists %d "
+            "(positions x codes)",
+            len(ml_probs),
+            expected,
         )
+        ml_probs = []
+
+    modifications: list[dict[str, Any]] = []
+    offset = 0
+    for entry in entries:
+        n_codes = len(entry.codes)
+        n_positions = len(entry.skips)
+        for code_index, code in enumerate(entry.codes):
+            # ML interleaves the codes of an entry: position p, code c is at offset + p * n_codes + c
+            probs = ml_probs[offset + code_index : offset + n_positions * n_codes : n_codes] if ml_probs else []
+            modifications.append(
+                {
+                    "base": entry.base,
+                    "strand": entry.strand,
+                    "modification": code,
+                    "modified_base": entry.base if entry.strand == "+" else _complement_base(entry.base),
+                    "implicit": entry.flag != "?",
+                    "delta_positions": list(entry.skips),
+                    "probabilities": probs,
+                    "probability_scale": _ML_SCALE,
+                }
+            )
+        offset += n_positions * n_codes
 
     if modifications:
         result["modifications"] = modifications
+        if "MN" in tags:
+            result["MN"] = tags["MN"]
 
     return result
 
@@ -301,22 +383,172 @@ def _ml_values(ml_tag: Any) -> list[int]:
         return [int(ml_tag)]
 
 
-def extract_methylation_tags(alignment: LongReadAlignment) -> dict[str, Any]:
-    """Extract and parse methylation data from a LongReadAlignment.
+def _original_orientation(sequence: str, is_reverse: bool) -> str:
+    """The read as it was sequenced: SEQ, reverse-complemented for an alignment on the reverse strand (FLAG 0x10).
 
-    Converts raw MM/ML tags into absolute genomic positions with methylation
-    probabilities. Handles both CpG (5mC) and 6mA modification types.
+    Upper-cased, with RNA ``U`` read as ``T`` (SEQ stores T). Letters other than A/C/G/T stay as they are
+    (their complement is not needed: only the four bases and ``N`` are ever counted).
+    """
+    seq = sequence.upper().replace("U", "T")
+    if not is_reverse:
+        return seq
+    return seq[::-1].translate(_COMPLEMENT)
 
-    Args:
-        alignment: A LongReadAlignment with methylation tags parsed.
+
+def _locate_sites(
+    sequence: str, base: str, skips: Sequence[int], is_reverse: bool
+) -> tuple[list[tuple[int, int]], list[int]]:
+    """Place the listed positions of one MM entry on the stored read.
+
+    Counts the letter ``base`` (any base for ``N``) in the read as it was sequenced, passing over ``skip``
+    letters before each modified one, and maps the positions back to indices of ``sequence`` as stored
+    (the reverse complement's index ``i`` is stored index ``len - 1 - i``).
 
     Returns:
-        Dictionary keyed by base, strand and modification code as written in the
-        MM tag (``"C+m"`` and ``"C-m"`` are separate entries), each holding
-        ``read_positions``, ``genomic_positions`` (a list of
-        ``(position, probability)`` tuples) and ``probabilities`` (0-1).
+        ``(placed, skipped)``: ``placed`` holds ``(stored position, index into skips)`` in ascending
+        stored order for the positions found; a skip that runs past the last letter of the read ends the
+        list, so the positions after it are missing. ``skipped`` holds the stored positions of every
+        counted letter that is not a listed one, ascending.
+    """
+    length = len(sequence)
+    original = _original_orientation(sequence, is_reverse)
+    letter = "T" if base == "U" else base
+    counted = [i for i, c in enumerate(original) if letter == "N" or c == letter]
+
+    found: list[tuple[int, int]] = []  # (index into counted letters of the sequenced read, index into skips)
+    cursor = 0
+    for index, skip in enumerate(skips):
+        cursor += skip
+        if cursor >= len(counted):
+            break
+        found.append((counted[cursor], index))
+        cursor += 1
+
+    def stored(i: int) -> int:
+        return length - 1 - i if is_reverse else i
+
+    listed = {position for position, _ in found}
+    placed = sorted((stored(position), index) for position, index in found)
+    skipped = sorted(stored(i) for i in counted if i not in listed)
+    return placed, skipped
+
+
+def _aligned_pairs_from_cigar(
+    cigar_tuples: Sequence[tuple[int, int]], reference_start: int
+) -> list[tuple[int | None, int | None]]:
+    """``(query position, reference position)`` pairs of an alignment, like pysam's ``get_aligned_pairs()``.
+
+    Query positions index SEQ as stored. Matches (``M``, ``=``, ``X``) pair both coordinates, insertions and
+    soft clips (``I``, ``S``) have no reference position, deletions and skipped regions (``D``, ``N``) have no
+    query position, and hard clips and padding (``H``, ``P``) are not in SEQ and give no pair.
+    """
+    pairs: list[tuple[int | None, int | None]] = []
+    query = 0
+    reference = reference_start
+    for operation, length in cigar_tuples:
+        if operation in (0, 7, 8):
+            pairs.extend((query + i, reference + i) for i in range(length))
+            query += length
+            reference += length
+        elif operation in (1, 4):
+            pairs.extend((query + i, None) for i in range(length))
+            query += length
+        elif operation in (2, 3):
+            pairs.extend((None, reference + i) for i in range(length))
+            reference += length
+    return pairs
+
+
+_CIGAR_OPERATIONS = {"M": 0, "I": 1, "D": 2, "N": 3, "S": 4, "H": 5, "P": 6, "=": 7, "X": 8}
+
+
+def _alignment_from_read_dict(read: dict[str, Any]) -> LongReadAlignment:
+    """A LongReadAlignment for a read dictionary as the workflow loaders produce it.
+
+    Reads the sequence from ``query_sequence`` or ``sequence``, and the tags, ``is_reverse`` and
+    ``reference_*`` fields under their usual names. ``aligned_pairs`` are taken from the dictionary or,
+    when it has none, built from ``cigar_tuples`` / ``cigar_string`` and ``reference_start``; a read with
+    neither has no reference coordinates.
+    """
+    cigar_tuples = list(read.get("cigar_tuples") or [])
+    cigar_string = read.get("cigar_string") or ""
+    if not cigar_tuples and cigar_string:
+        cigar_tuples = [(_CIGAR_OPERATIONS[op], int(n)) for n, op in re.findall(r"(\d+)([MIDNSHP=X])", cigar_string)]
+
+    aligned_pairs = read.get("aligned_pairs")
+    if aligned_pairs is None or len(aligned_pairs) == 0:
+        aligned_pairs = _aligned_pairs_from_cigar(cigar_tuples, int(read.get("reference_start") or 0))
+
+    return LongReadAlignment(
+        read_name=str(read.get("read_name") or read.get("read_id") or ""),
+        query_sequence=read.get("query_sequence") or read.get("sequence") or "",
+        reference_name=read.get("reference_name") or "",
+        reference_start=int(read.get("reference_start") or 0),
+        cigar_string=cigar_string,
+        cigar_tuples=cigar_tuples,
+        is_reverse=bool(read.get("is_reverse", False)),
+        is_unmapped=bool(read.get("is_unmapped", False)),
+        tags=dict(read.get("tags") or {}),
+        aligned_pairs=list(aligned_pairs),
+    )
+
+
+def _validate_mn_length(tags: dict[str, Any], sequence_length: int, read_name: str) -> None:
+    """Reject modification coordinates produced for a different SEQ length."""
+    if "MN" not in tags:
+        return
+    value = tags["MN"]
+    try:
+        mn_length = operator.index(value)
+    except TypeError:
+        raise ValueError(f"Read {read_name}: MN tag must be a nonnegative integer") from None
+    if isinstance(value, bool) or mn_length < 0:
+        raise ValueError(f"Read {read_name}: MN tag must be a nonnegative integer")
+    if mn_length != sequence_length:
+        raise ValueError(
+            f"Read {read_name}: MN tag length {mn_length} does not match SEQ length {sequence_length}; "
+            "MM/ML values are out-of-date"
+        )
+
+
+def extract_methylation_tags(alignment: LongReadAlignment) -> dict[str, Any]:
+    """Extract and place the base modifications of a LongReadAlignment.
+
+    Decodes the MM/ML tags into positions on the read and on the reference, following the SAM tags
+    specification (see the module docstring): the skip counts refer to the read as sequenced, so
+    for a reverse-aligned read (``is_reverse``) the counting runs over the reverse complement of
+    ``query_sequence`` and the positions are mapped back to the stored sequence. Covers CpG (5mC), 6mA and
+    every other code the tags carry.
+
+    Args:
+        alignment: A LongReadAlignment with its ``tags`` (or ``methylation_tags``), ``query_sequence``,
+            ``is_reverse`` and, for reference coordinates, ``aligned_pairs``.
+
+    Returns:
+        Dictionary keyed by base, strand and modification code as written in the MM tag
+        (``"C+m"`` and ``"C-m"`` are separate entries; ``C+mh`` gives ``"C+m"`` and ``"C+h"``), each holding:
+
+        * ``base``, ``strand``, ``modification``, ``modified_base`` and ``implicit`` as in
+          :func:`_parse_methylation_from_tags`.
+        * ``read_positions``: 0-based indices into ``query_sequence`` as stored, ascending.
+        * ``genomic_positions``: ``(reference position or None, probability or None)`` per listed site, in
+          the order of ``read_positions``; the reference position is None where the base is not aligned
+          (insertion, soft clip, unaligned read), and the probability is None without an ML tag.
+        * ``probabilities``: the ML values on a 0-1 scale (value / 255), in the order of ``read_positions``;
+          empty without usable ML values.
+        * ``skipped_read_positions`` and ``skipped_genomic_positions``: the counted bases the entry does not
+          list. They are unmodified when ``implicit`` is True and of unknown status when it is False.
+        * ``n_unplaced``: listed positions that could not be placed because the read ran out of counted
+          bases (a warning reports them) or has no sequence.
+
+    Raises:
+        ValueError: If an MN tag is invalid or differs from the stored SEQ length,
+            including an MN value retained in prematerialized methylation tags.
     """
     result: dict[str, Any] = {}
+    seq = alignment.query_sequence or ""
+    _validate_mn_length(alignment.tags, len(seq), alignment.read_name)
+    _validate_mn_length(alignment.methylation_tags, len(seq), alignment.read_name)
 
     if not alignment.methylation_tags or "modifications" not in alignment.methylation_tags:
         # Try parsing from raw tags
@@ -327,51 +559,75 @@ def extract_methylation_tags(alignment: LongReadAlignment) -> dict[str, Any]:
     else:
         mods = alignment.methylation_tags["modifications"]
 
-    seq = alignment.query_sequence
+    to_reference = {
+        query: reference for query, reference in alignment.aligned_pairs if query is not None and reference is not None
+    }
 
     for mod_info in mods:
         base_char = mod_info["base"]
+        strand = mod_info.get("strand", "+")
         mod_code = mod_info["modification"]
         deltas = mod_info["delta_positions"]
         probs = mod_info.get("probabilities", [])
+        if probs and len(probs) != len(deltas):
+            logger.warning(
+                "Read %s: %s%s%s lists %d positions but has %d probabilities; the probabilities are not used",
+                alignment.read_name,
+                base_char,
+                strand,
+                mod_code,
+                len(deltas),
+                len(probs),
+            )
+            probs = []
 
-        # Convert delta-encoded positions to absolute positions in the read
-        # Deltas encode the number of skipped target bases between modifications
-        absolute_positions: list[int] = []
-        if seq:
-            # Find all positions of the target base in the sequence
-            target_positions = [i for i, c in enumerate(seq.upper()) if c == base_char]
+        placed, skipped = _locate_sites(seq, base_char, deltas, alignment.is_reverse) if seq else ([], [])
+        n_unplaced = len(deltas) - len(placed)
+        if n_unplaced and not seq:
+            logger.warning(
+                "Read %s: %s%s%s lists %d positions but the alignment has no sequence to place them on",
+                alignment.read_name,
+                base_char,
+                strand,
+                mod_code,
+                n_unplaced,
+            )
+        elif n_unplaced:
+            logger.warning(
+                "Read %s: %s%s%s lists %d positions but only %d could be placed on the %d bp read; %d lie beyond "
+                "its last %s",
+                alignment.read_name,
+                base_char,
+                strand,
+                mod_code,
+                len(deltas),
+                len(placed),
+                len(seq),
+                n_unplaced,
+                base_char,
+            )
 
-            target_idx = 0
-            for i, delta in enumerate(deltas):
-                target_idx += delta
-                if target_idx < len(target_positions):
-                    absolute_positions.append(target_positions[target_idx])
-                    target_idx += 1  # Move past the modified base
+        read_positions = [position for position, _ in placed]
+        site_probs = [probs[index] / _ML_SCALE for _, index in placed] if probs else []
+        genomic_positions: list[tuple[int | None, float | None]] = [
+            (to_reference.get(position), site_probs[i] if site_probs else None)
+            for i, position in enumerate(read_positions)
+        ]
 
-        # Convert to genomic coordinates if aligned
-        genomic_positions: list[tuple[int, float]] = []
-        for i, abs_pos in enumerate(absolute_positions):
-            # Convert read position to reference position using aligned pairs
-            ref_pos = None
-            for qpos, rpos in alignment.aligned_pairs:
-                if qpos == abs_pos and rpos is not None:
-                    ref_pos = rpos
-                    break
-
-            prob = probs[i] / 255.0 if i < len(probs) else 0.0
-
-            if ref_pos is not None:
-                genomic_positions.append((ref_pos, prob))
-            else:
-                # Use read-level position if reference mapping unavailable
-                genomic_positions.append((abs_pos, prob))
-
-        mod_key = f"{base_char}{mod_info.get('strand', '+')}{mod_code}"
+        mod_key = f"{base_char}{strand}{mod_code}"
         result[mod_key] = {
-            "read_positions": absolute_positions,
+            "base": base_char,
+            "strand": strand,
+            "modification": mod_code,
+            "modified_base": mod_info.get("modified_base")
+            or (base_char if strand == "+" else _complement_base(base_char)),
+            "implicit": mod_info.get("implicit", True),
+            "read_positions": read_positions,
             "genomic_positions": genomic_positions,
-            "probabilities": [p / 255.0 for p in probs] if probs else [],
+            "probabilities": site_probs,
+            "skipped_read_positions": skipped,
+            "skipped_genomic_positions": [to_reference.get(position) for position in skipped],
+            "n_unplaced": n_unplaced,
         }
 
     return result

@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from metainformant.core.utils.logging import get_logger
+from metainformant.longread.quality.metrics import _read_length
 
 logger = get_logger(__name__)
 
@@ -764,20 +765,16 @@ def plot_phasing_blocks(
 
 
 def _extract_lengths(reads: Sequence[int | dict[str, Any] | object]) -> list[int]:
-    """Extract read lengths from various representations."""
+    """Extract read lengths from various representations.
+
+    Lengths come from :func:`metainformant.longread.quality.metrics._read_length`, so a whole-number
+    float counts like the integer and a fractional or non-finite length raises ``ValueError``. Plain
+    numbers that are not positive are left out.
+    """
     lengths: list[int] = []
     for r in reads:
-        if isinstance(r, numbers.Integral):  # Python ints and numpy integer scalars
-            length = int(r)
-            if length > 0:
-                lengths.append(length)
-        elif isinstance(r, dict):
-            if "length" in r:
-                lengths.append(int(r["length"]))
-            elif "sequence" in r and r["sequence"]:
-                lengths.append(len(r["sequence"]))
-        elif hasattr(r, "sequence") and r.sequence:
-            lengths.append(len(r.sequence))
-        elif hasattr(r, "query_length"):
-            lengths.append(int(r.query_length))
+        length = _read_length(r)
+        if length is None or (isinstance(r, numbers.Real) and length <= 0):
+            continue
+        lengths.append(length)
     return lengths

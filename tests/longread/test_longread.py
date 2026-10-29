@@ -1149,7 +1149,9 @@ class TestAssemblyConsensus:
         result = generate_consensus([seq])
         assert result.sequence == seq
         assert result.num_reads == 1
-        assert result.mean_quality == 30.0
+        # one read is no evidence about its own errors: coverage 1, and no made-up Q30
+        assert result.mean_quality == 0.0 and result.quality == [0.0] * len(seq)
+        assert result.coverage == [1] * len(seq)
 
     def test_generate_consensus_empty(self) -> None:
         """No reads returns empty ConsensusResult."""

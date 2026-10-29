@@ -345,8 +345,8 @@ def detect_insertions(
 ) -> list[StructuralVariant]:
     """Detect insertions from long-read alignments.
 
-    Specifically targets insertion events from CIGAR I operations and
-    unaligned portions of split reads.
+    Specifically targets insertion events from CIGAR I operations: it returns the
+    insertions of :func:`detect_sv_from_long_reads` (split reads yield no insertions).
 
     Args:
         alignments: Sequence of alignment objects.
@@ -599,7 +599,7 @@ def _cluster_sv_calls(
                     supporting_reads=actual_support,
                     read_names=unique_reads,
                     quality=max_quality,
-                    genotype="0/1" if actual_support >= min_support else "./.",
+                    genotype="./.",  # read support alone does not say het or hom; phase_structural_variants refines it
                     inserted_sequence=_representative_insertion(cluster, median_size),
                     mate_chromosome=mate_chrom,
                     mate_position=median_mate_position,

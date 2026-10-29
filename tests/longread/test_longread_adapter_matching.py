@@ -10,6 +10,13 @@ These tests pin the repaired behaviour on seeded random reads and on reads with
 real adapters spliced in at random offsets, and check the false-positive bound
 that justifies the thresholds against an exhaustive count and against random
 sequence. Everything runs on real sequences; there are no mocks.
+
+Two later fixes are pinned at the end of the file. The table entry called ``PacBio_barcoded`` is the
+Illumina Nextera read-1 adapter, so it is ``Illumina_Nextera_read1`` now and the old name still
+resolves, with a ``DeprecationWarning``. And ``ONT_rapid_barcode`` contains ``ONT_LSK109_top``, so a
+longer adapter could take the shorter one's exact site by spending edits on the bases the shorter one
+does not have; overlapping placements are now resolved by edit rate per adapter base, then by the
+adapter bases covered.
 """
 
 from __future__ import annotations
@@ -18,6 +25,7 @@ import itertools
 import logging
 import math
 import random
+import warnings
 
 import pytest
 
@@ -27,6 +35,7 @@ from metainformant.longread.quality.filtering import (
     ALL_KNOWN_ADAPTERS,
     ONT_ADAPTERS,
     PACBIO_ADAPTERS,
+    AdapterMatch,
     detect_adapters,
     split_chimeric_reads,
     trim_adapters,
@@ -106,7 +115,7 @@ class TestDefaultAdapterTable:
             "ONT_rapid_top": 6,
             "ONT_rapid_barcode": 4,
             "PacBio_SMRTbell": 5,
-            "PacBio_barcoded": 3,
+            "Illumina_Nextera_read1": 3,
         }
         # an 8 bp adapter cannot be searched within the default false-positive rate, not even exactly
         assert filtering.adapter_error_budget(8, 0.75) == -1
@@ -421,3 +430,219 @@ class TestFalsePositiveBound:
             filtering.adapter_false_positive_bound(10, -1)
         with pytest.raises(ValueError, match="adapter_length"):
             filtering.adapter_error_budget(0)
+
+
+NEXTERA_READ1 = "TCGTCGGCAGCGTCAGATGTGTATAAGAGACAG"  # the Illumina Nextera transposase read-1 adapter
+BARCODE = ONT_ADAPTERS["ONT_rapid_barcode"]  # 36 bp: ONT_LSK109_top followed by AAGGTTAA
+BARCODE_TAIL = BARCODE[len(TOP) :]
+# the 8 bases after TOP, three substitutions away from the tail of ONT_rapid_barcode: the barcode adapter
+# fits TOP plus these bases within its edit budget, although the read only carries the shorter adapter
+NEARLY_BARCODE_TAIL = "AAGGAAAT"
+
+
+class TestRenamedNexteraAdapter:
+    """The Illumina Nextera read-1 sequence was listed as ``PacBio_barcoded``."""
+
+    def test_the_entry_has_an_honest_name_and_the_same_sequence(self) -> None:
+        assert ALL_KNOWN_ADAPTERS["Illumina_Nextera_read1"] == NEXTERA_READ1
+        assert filtering.ILLUMINA_ADAPTERS == {"Illumina_Nextera_read1": NEXTERA_READ1}
+        assert "AGATGTGTATAAGAGACAG" in NEXTERA_READ1  # the Tn5 mosaic end of the Nextera adapter
+
+    def test_no_table_lists_it_under_the_pacbio_name_or_as_a_pacbio_adapter(self) -> None:
+        assert "PacBio_barcoded" not in list(ALL_KNOWN_ADAPTERS)
+        assert "PacBio_barcoded" not in ALL_KNOWN_ADAPTERS.keys()
+        assert "PacBio_barcoded" not in {**ALL_KNOWN_ADAPTERS}
+        assert sorted(PACBIO_ADAPTERS) == ["PacBio_SMRTbell"]
+        assert (
+            len(ALL_KNOWN_ADAPTERS) == len(ONT_ADAPTERS) + len(PACBIO_ADAPTERS) + len(filtering.ILLUMINA_ADAPTERS) == 7
+        )
+
+    def test_the_default_search_still_looks_for_it(self) -> None:
+        rng = random.Random(21)
+        insert = _dna(rng, 2000)
+        (match,) = detect_adapters(_dna(rng, 300) + NEXTERA_READ1 + insert)
+        assert match.adapter_name == "Illumina_Nextera_read1"
+        assert match.adapter_sequence == NEXTERA_READ1
+        (trimmed,) = trim_adapters([{"read_id": "r", "sequence": NEXTERA_READ1 + insert}])
+        assert trimmed.sequence == insert
+
+    @pytest.mark.parametrize("table", [ALL_KNOWN_ADAPTERS, PACBIO_ADAPTERS], ids=["all-known", "pacbio"])
+    def test_the_old_name_still_resolves_with_a_deprecation_warning(self, table: dict[str, str]) -> None:
+        with pytest.warns(DeprecationWarning, match="Illumina_Nextera_read1"):
+            assert table["PacBio_barcoded"] == NEXTERA_READ1
+        with pytest.warns(DeprecationWarning, match="PacBio_barcoded"):
+            assert table.get("PacBio_barcoded") == NEXTERA_READ1
+        with pytest.warns(DeprecationWarning, match="Illumina_Nextera_read1"):
+            assert "PacBio_barcoded" in table
+        with pytest.warns(DeprecationWarning):
+            assert table.get("PacBio_barcoded", "unused") == NEXTERA_READ1
+
+    def test_current_and_unknown_names_do_not_warn(self) -> None:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            assert ALL_KNOWN_ADAPTERS["Illumina_Nextera_read1"] == NEXTERA_READ1
+            assert ALL_KNOWN_ADAPTERS["PacBio_SMRTbell"] == PACBIO_ADAPTERS["PacBio_SMRTbell"]
+            assert "Illumina_Nextera_read1" in ALL_KNOWN_ADAPTERS
+            assert "no_such_adapter" not in ALL_KNOWN_ADAPTERS
+            assert ALL_KNOWN_ADAPTERS.get("no_such_adapter") is None
+            assert ALL_KNOWN_ADAPTERS.get("no_such_adapter", "fallback") == "fallback"
+            assert {**ALL_KNOWN_ADAPTERS} == dict(ALL_KNOWN_ADAPTERS)
+            with pytest.raises(KeyError):
+                ALL_KNOWN_ADAPTERS["no_such_adapter"]
+
+    def test_a_real_key_of_the_old_name_wins_over_the_alias(self) -> None:
+        table = filtering._AdapterTable({"PacBio_barcoded": "ACGT" * 5}, renamed=filtering._RENAMED_ADAPTERS)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            assert table["PacBio_barcoded"] == "ACGT" * 5
+            assert table.get("PacBio_barcoded") == "ACGT" * 5
+            assert "PacBio_barcoded" in table
+
+
+class TestNestedAdapters:
+    """``ONT_rapid_barcode`` is ``ONT_LSK109_top`` plus 8 bases; the longer one must not take the exact short site."""
+
+    TABLE = {"top": TOP, "barcode": BARCODE}
+
+    def test_the_two_adapters_are_nested(self) -> None:
+        assert BARCODE.startswith(TOP)
+        assert BARCODE_TAIL == "AAGGTTAA"
+        assert sum(a != b for a, b in zip(BARCODE_TAIL, NEARLY_BARCODE_TAIL)) == 3
+        assert filtering.adapter_error_budget(len(BARCODE), 0.75) == 4  # so the three edits fit the barcode budget
+
+    def test_an_exact_short_adapter_is_not_taken_by_the_longer_one_spending_edits(self) -> None:
+        rng = random.Random(1)
+        left, right = _dna(rng, 400), _dna(rng, 400)
+        matches = detect_adapters(left + TOP + NEARLY_BARCODE_TAIL + right, self.TABLE)
+        assert [(m.adapter_name, m.position, m.end_position, m.edit_distance) for m in matches] == [
+            ("top", 400, 400 + len(TOP), 0)
+        ]
+
+    def test_the_default_table_reports_the_short_adapter_too(self) -> None:
+        rng = random.Random(2)
+        left, right = _dna(rng, 400), _dna(rng, 400)
+        matches = detect_adapters(left + TOP + NEARLY_BARCODE_TAIL + right)
+        assert [(m.adapter_name, m.position, m.edit_distance) for m in matches] == [("ONT_LSK109_top", 400, 0)]
+
+    def test_the_longer_adapter_wins_when_it_matches_at_an_equal_edit_rate(self) -> None:
+        rng = random.Random(3)
+        left, right = _dna(rng, 400), _dna(rng, 400)
+        (match,) = detect_adapters(left + BARCODE + right, self.TABLE)
+        assert (match.adapter_name, match.position, match.end_position, match.edit_distance) == (
+            "barcode",
+            400,
+            400 + len(BARCODE),
+            0,
+        )
+
+    def test_the_longer_adapter_wins_when_it_matches_at_a_lower_edit_rate(self) -> None:
+        # one substitution inside the shared 28 bases: 1 / 36 per barcode base beats 1 / 28 per top base
+        rng = random.Random(4)
+        left, right = _dna(rng, 400), _dna(rng, 400)
+        read = left + BARCODE[:10] + _other_base(BARCODE[10]) + BARCODE[11:] + right
+        (match,) = detect_adapters(read, self.TABLE)
+        assert (match.adapter_name, match.position, match.end_position, match.edit_distance) == (
+            "barcode",
+            400,
+            400 + len(BARCODE),
+            1,
+        )
+
+    def test_the_shorter_adapter_keeps_its_site_when_the_longer_one_needs_a_higher_edit_rate(self) -> None:
+        # top matches with one edit (1 / 28); the barcode would need three more in its extra bases (4 / 36)
+        rng = random.Random(5)
+        left, right = _dna(rng, 400), _dna(rng, 400)
+        read = left + _substitute(TOP, 9) + NEARLY_BARCODE_TAIL + right
+        (match,) = detect_adapters(read, self.TABLE)
+        assert (match.adapter_name, match.edit_distance) == ("top", 1)
+
+    def test_random_tails_never_hand_an_exact_short_adapter_to_the_longer_one(self) -> None:
+        rng = random.Random(2027)
+        for _ in range(150):
+            tail = list(BARCODE_TAIL)
+            for index in rng.sample(range(len(tail)), rng.randint(1, 4)):
+                tail[index] = _other_base(tail[index])
+            left, right = _dna(rng, rng.randint(0, 300)), _dna(rng, rng.randint(0, 300))
+            matches = detect_adapters(left + TOP + "".join(tail) + right, self.TABLE)
+            assert [(m.adapter_name, m.position, m.edit_distance) for m in matches] == [("top", len(left), 0)]
+
+    def test_trim_adapters_trims_only_the_short_adapter_at_the_start(self) -> None:
+        rng = random.Random(6)
+        insert = _dna(rng, 2000)
+        (trimmed,) = trim_adapters(
+            [{"read_id": "r", "sequence": TOP + NEARLY_BARCODE_TAIL + insert}], self.TABLE, min_identity=0.75
+        )
+        assert trimmed.metadata["trimmed_start"] == len(TOP)  # the barcode claim used to cut 34 bases
+        assert trimmed.sequence == NEARLY_BARCODE_TAIL + insert
+
+    def test_trim_adapters_trims_only_the_short_adapter_at_the_end(self) -> None:
+        rng = random.Random(7)
+        insert = _dna(rng, 2000)
+        # the reverse complement of BARCODE_TAIL is TTAACCTT; two substitutions away from it
+        prefix = "TTTTCCTT"
+        assert _levenshtein(prefix, reverse_complement(BARCODE_TAIL)) == 2
+        (trimmed,) = trim_adapters(
+            [{"read_id": "r", "sequence": insert + prefix + reverse_complement(TOP)}], self.TABLE, min_identity=0.75
+        )
+        assert trimmed.metadata["trimmed_end"] == len(TOP)  # the barcode claim used to cut 36 bases
+        assert trimmed.sequence == insert + prefix
+
+    def test_trim_adapters_still_trims_the_whole_longer_adapter_when_it_is_exact(self) -> None:
+        rng = random.Random(8)
+        insert = _dna(rng, 2000)
+        (trimmed,) = trim_adapters([{"read_id": "r", "sequence": BARCODE + insert}], self.TABLE)
+        assert trimmed.metadata["trimmed_start"] == len(BARCODE)
+        assert trimmed.sequence == insert
+
+    def test_trim_adapters_keeps_two_separate_adapters_in_one_window(self) -> None:
+        # placements that do not overlap are all kept: the read start holds two adapters back to back
+        rng = random.Random(9)
+        insert = _dna(rng, 2000)
+        spacer = _dna(rng, 20)
+        (trimmed,) = trim_adapters([{"read_id": "r", "sequence": TOP + spacer + SMRTBELL + insert}])
+        assert trimmed.sequence == insert
+
+    def test_split_chimeric_reads_splits_after_the_short_adapter_only(self) -> None:
+        rng = random.Random(10)
+        first, second = _dna(rng, 1500), _dna(rng, 1500)
+        read = {"read_id": "c", "sequence": first + TOP + NEARLY_BARCODE_TAIL + second}
+        result = split_chimeric_reads([read], self.TABLE, min_fragment_length=500)
+        assert [r.sequence for r in result] == [first, NEARLY_BARCODE_TAIL + second]
+
+    @staticmethod
+    def _match(name: str, adapter: str, start: int, edits: int) -> AdapterMatch:
+        length = len(adapter)
+        return AdapterMatch(
+            adapter_name=name,
+            adapter_sequence=adapter,
+            position=start,
+            end_position=start + length,
+            score=float(length - edits),
+            identity=(length - edits) / length,
+            location="internal",
+            edit_distance=edits,
+        )
+
+    def test_overlap_resolution_compares_exact_edit_rates_then_adapter_length(self) -> None:
+        short, long_ = "ACGT" * 7, "ACGT" * 14  # 28 and 56 bp
+        resolve = filtering._deduplicate_adapter_matches
+
+        def winner(short_edits: int, long_edits: int) -> list[str]:
+            matches = [self._match("short", short, 100, short_edits), self._match("long", long_, 100, long_edits)]
+            return [m.adapter_name for m in resolve(matches)]
+
+        assert winner(1, 2) == ["long"]  # equal rates, 1 / 28 and 2 / 56: the match covering more adapter bases wins
+        assert winner(1, 1) == ["long"]  # lower rate and longer
+        assert winner(1, 3) == ["short"]  # 3 / 56 is above 1 / 28: the longer adapter cannot claim the site
+        assert winner(1, 4) == ["short"]
+        assert winner(0, 1) == ["short"]  # an exact short match keeps its site against any edit in the longer one
+        assert winner(0, 0) == ["long"]  # equal rates again
+        # placements of one adapter at shifted offsets: the one with fewer edits wins, not the later or longer span
+        shifted = [self._match("a", short, 100, 2), self._match("a", short, 101, 0)]
+        assert [(m.position, m.edit_distance) for m in resolve(shifted)] == [(101, 0)]
+
+    def test_non_overlapping_matches_are_all_kept_in_position_order(self) -> None:
+        short = "ACGT" * 7
+        matches = [self._match("b", short, 300, 3), self._match("a", short, 100, 0), self._match("c", short, 128, 1)]
+        kept = filtering._deduplicate_adapter_matches(matches)
+        assert [m.position for m in kept] == [100, 128, 300]

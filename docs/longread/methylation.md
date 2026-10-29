@@ -43,7 +43,7 @@ def call_methylation_from_signal(
 ) -> list[dict[str, Any]]
 ```
 
-Call methylation status for per-read, per-site signal records. Each record in `signal_data` carries `read_id`, `chrom`, `position`, `strand` and `log_likelihood_ratio` (positive favours methylation). Returns a list of the same records, each copied with two added fields: `methylated` (bool; true when the probability reaches `threshold`) and `confidence` (0-1: twice the distance of the probability from 0.5, so 0 at a probability of 0.5 and 1 at 0 or 1). `model` is `"threshold"` or `"bayesian"`; any other value raises `ValueError`. A record whose LLR is NaN is called unmethylated with a NaN `confidence`, and under `"bayesian"` it does not contribute to its site.
+Call methylation status for per-read, per-site signal records. Each record in `signal_data` carries `read_id`, `chrom`, `position`, `strand` and `log_likelihood_ratio` (positive favours methylation). Returns a list of the same records, each copied with two added fields: `methylated` (bool; true when the probability reaches `threshold`) and `confidence` (0-1: twice the distance of the probability from 0.5, so 0 at a probability of 0.5 and 1 at 0 or 1). `model` is `"threshold"` or `"bayesian"`; any other value raises `ValueError`. A missing `log_likelihood_ratio` raises `ValueError`; it is not treated as neutral evidence. A record whose LLR is NaN is called unmethylated with a NaN `confidence`, and under `"bayesian"` it does not contribute to its site.
 
 - `"threshold"`: the probability of a record is the logistic function of its LLR, `1 / (1 + exp(-LLR))`, the posterior under a flat 50 % prior. `prior_alpha` and `prior_beta` are ignored.
 - `"bayesian"`: a hierarchical Bayesian call. Records with the same `(chrom, position, strand)` share an unknown methylation rate `theta ~ Beta(prior_alpha, prior_beta)`; each read is methylated with probability `theta`, and its LLR is the likelihood ratio of its signal. The probability of a read is its posterior `P(methylated | LLRs of all reads at the site)`, the expectation of `logistic(LLR + logit(theta))` over the posterior of `theta`, computed by numerical integration (accurate to better than 1e-6). A read that disagrees with the rest of its site is pulled toward it, and the result does not depend on the order of the reads. A site with one read has probability `logistic(LLR + logit(prior mean))`, where the prior mean is `prior_alpha / (prior_alpha + prior_beta)`; with the default Beta(1, 1) prior that equals the threshold model. Records without both `chrom` and `position` are not pooled: each is its own site. `prior_alpha` and `prior_beta` must each be at least 0.25, otherwise `ValueError`. The model requires numpy and raises `ImportError` without it.
@@ -57,7 +57,7 @@ def aggregate_methylation(
 ) -> dict[str, Any]
 ```
 
-Aggregate per-read calls (the output of `call_methylation_from_signal`, which need `chrom`, `position`, `strand` and `methylated`) into per-site methylation frequencies. Sites with fewer than `min_coverage` reads are dropped, and `min_coverage < 1` raises `ValueError`. Returns a dictionary with `sites` (a list of dicts holding `chrom`, `position`, `strand`, `methylation_freq`, `coverage`, `n_methylated` and `n_unmethylated`), `n_sites` and `mean_coverage`.
+Aggregate per-read calls (the output of `call_methylation_from_signal`, which need `chrom`, `position`, `strand` and `methylated`) into per-site methylation frequencies. Sites with fewer than `min_coverage` reads are dropped, and `min_coverage < 1` raises `ValueError`. Every call must supply non-null `position` and `methylated` fields; missing values raise `ValueError`. Returns a dictionary with `sites` (a list of dicts holding `chrom`, `position`, `strand`, `methylation_freq`, `coverage`, `n_methylated` and `n_unmethylated`), `n_sites` and `mean_coverage`.
 
 ### compute_methylation_stats
 
@@ -67,7 +67,7 @@ def compute_methylation_stats(
 ) -> dict[str, Any]
 ```
 
-Compute summary statistics for the `sites` list returned by `aggregate_methylation` (each site needs `methylation_freq`; `coverage` and `context` are optional). Returns `global_methylation`, `n_sites`, `mean_coverage`, `methylation_distribution` (`min`, `max`, `median`, `std`, `q25`, `q75`), `context_proportions`, `highly_methylated_fraction` (frequency of at least 0.8) and `lowly_methylated_fraction` (at most 0.2). An empty list returns the same keys with zero or empty values.
+Compute summary statistics for the `sites` list returned by `aggregate_methylation` (each site needs `methylation_freq`; `coverage` and `context` are optional). Returns `global_methylation`, `n_sites`, `mean_coverage`, `methylation_distribution` (`min`, `max`, `median`, `std`, `q25`, `q75`), `context_proportions`, `highly_methylated_fraction` (frequency of at least 0.8) and `lowly_methylated_fraction` (at most 0.2). Quartiles and the median use linearly interpolated percentiles. An empty list returns the same keys with zero or empty values.
 
 ### detect_dmrs
 
@@ -81,7 +81,7 @@ def detect_dmrs(
 ) -> list[dict[str, Any]]
 ```
 
-Detect differentially methylated regions between two samples. Both arguments are `aggregate_methylation` results (the whole dictionary, with its `sites` list). Only positions present in both samples are used; consecutive shared CpGs no farther apart than `max_distance` form a candidate region, and regions with at least `min_cpgs` sites and an absolute mean difference of at least `min_diff` are tested. Returns a list of DMR dicts with `chrom`, `start`, `end`, `n_cpgs`, `mean_diff` (B minus A), `p_value` and `direction` (`"hyper"` if B is higher, otherwise `"hypo"`). Nothing is reported when either sample has no sites; the p-value is not adjusted for multiple testing.
+Detect differentially methylated regions between two samples. Both arguments are `aggregate_methylation` results (the whole dictionary, with its `sites` list). Only positions present in both samples are used; consecutive shared CpGs no farther apart than `max_distance` form a candidate region, and regions with at least `min_cpgs` sites and an absolute mean difference of at least `min_diff` are tested. Returns a list of DMR dicts with `chrom`, `start`, `end`, `n_cpgs`, `mean_diff` (B minus A), `p_value` and `direction` (`"hyper"` if B is higher, otherwise `"hypo"`). An empty sample or no shared CpG positions returns an empty list with a warning; the p-value is not adjusted for multiple testing.
 
 ### methylation_pattern_analysis
 
@@ -92,7 +92,7 @@ def methylation_pattern_analysis(
 ) -> dict[str, Any]
 ```
 
-Analyze single-read methylation patterns inside a region. `calls` are per-read call dicts (`read_id`, `chrom`, `position`, `methylated`) and `region` is a dict with `chrom`, `start` and `end`. A read is counted only when it covers at least `max(1, n // 2)` of the `n` CpG positions seen in the region (so a single site is enough when `n` is below 4). Returns `patterns` (the distinct epiallele strings over `M`, `U` and `?` for an uncovered CpG, most frequent first), `entropy` (Shannon entropy in bits), `n_reads` and `epialleles` (pattern string to count).
+Analyze single-read methylation patterns inside a region. `calls` are per-read call dicts (`read_id`, `chrom`, `position`, `methylated`) and `region` is a dict with non-null `chrom`, `start` and `end`; an incomplete region raises `ValueError`. A read is counted only when it covers at least `max(1, n // 2)` of the `n` CpG positions seen in the region (so a single site is enough when `n` is below 4). Returns `patterns` (the distinct epiallele strings over `M`, `U` and `?` for an uncovered CpG, most frequent first), `entropy` (Shannon entropy in bits), `n_reads` and `epialleles` (pattern string to count).
 
 ## Usage Examples
 

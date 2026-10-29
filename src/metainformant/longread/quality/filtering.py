@@ -31,6 +31,16 @@ GC- or AT-rich sequence raises the true rate, so lower ``max_false_positive_rate
 for such genomes. An adapter shorter than the minimum is searched by exact match
 only and a warning names it.
 
+Overlapping placements: adapters can contain one another (``ONT_rapid_barcode``
+begins with all of ``ONT_LSK109_top``), and a longer adapter can reach a shorter
+one's site by spending edits on the bases the shorter one does not have. When
+placements overlap, the one with the lower edit rate per adapter base is kept and,
+at an equal rate, the one that covers more adapter bases. A longer adapter therefore
+replaces a nested shorter one only by matching at an equal or lower edit rate; at
+a higher rate the shorter adapter keeps its site, so a few edits in the extra bases
+can never turn an exact short match into a long one. Reads with a longer adapter that
+carries edits only in its extra bases are trimmed to the end of the shorter one.
+
 Optional dependencies:
     - numpy: For efficient numerical computation
 """
@@ -38,9 +48,11 @@ Optional dependencies:
 from __future__ import annotations
 
 import math
+import warnings
 from dataclasses import dataclass, field
+from fractions import Fraction
 from functools import lru_cache
-from typing import Any, Sequence, TypeVar, cast
+from typing import Any, Callable, Mapping, NamedTuple, Sequence, TypeVar, cast, overload
 
 from metainformant.core.sequence import reverse_complement
 from metainformant.core.utils.logging import get_logger
@@ -48,6 +60,8 @@ from metainformant.core.utils.logging import get_logger
 logger = get_logger(__name__)
 
 _ReadT = TypeVar("_ReadT")
+_ItemT = TypeVar("_ItemT")
+_DefaultT = TypeVar("_DefaultT")
 np: Any  # None when numpy is unavailable (optional dependency)
 try:
     import numpy as np
@@ -74,13 +88,78 @@ ONT_ADAPTERS: dict[str, str] = {
     "ONT_rapid_barcode": "AATGTACTTCGTTCAGTTACGTATTGCTAAGGTTAA",
 }
 
-# Standard PacBio adapter sequences
-PACBIO_ADAPTERS: dict[str, str] = {
-    "PacBio_SMRTbell": "ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT",
-    "PacBio_barcoded": "TCGTCGGCAGCGTCAGATGTGTATAAGAGACAG",
-}
+#: Illumina Nextera transposase read-1 adapter (the Tn5 mosaic end with its Nextera overhang).
+#: It used to be listed as ``"PacBio_barcoded"``, but it is an Illumina sequence, not a PacBio one.
+_NEXTERA_READ1 = "TCGTCGGCAGCGTCAGATGTGTATAAGAGACAG"
 
-ALL_KNOWN_ADAPTERS: dict[str, str] = {**ONT_ADAPTERS, **PACBIO_ADAPTERS}
+#: Names an adapter used to go by, mapped to ``(current name, sequence)``. The tables below answer to
+#: the old name with a DeprecationWarning (see :class:`_AdapterTable`).
+_RENAMED_ADAPTERS: dict[str, tuple[str, str]] = {"PacBio_barcoded": ("Illumina_Nextera_read1", _NEXTERA_READ1)}
+
+
+class _AdapterTable(dict[str, str]):
+    """Adapter name to sequence mapping that still answers to the names its entries used to have.
+
+    Looking an adapter up by a renamed name (``table["PacBio_barcoded"]``, ``table.get(...)``,
+    ``name in table``) returns the sequence the entry always had and emits a ``DeprecationWarning``
+    that names the current key. The old names are not keys: iteration, ``len``, ``keys()`` and
+    ``{**table}`` see the current names only, so a search over the table never runs an adapter twice.
+    A real key of the same name always wins over a renamed one.
+    """
+
+    def __init__(self, entries: Mapping[str, str], renamed: Mapping[str, tuple[str, str]] | None = None) -> None:
+        super().__init__(entries)
+        self._renamed: dict[str, tuple[str, str]] = dict(renamed or {})
+
+    def _renamed_sequence(self, name: object) -> str | None:
+        """Sequence behind a renamed ``name`` (with a DeprecationWarning), or None when ``name`` was not renamed."""
+        if not isinstance(name, str) or dict.__contains__(self, name) or name not in self._renamed:
+            return None
+        current, sequence = self._renamed[name]
+        warnings.warn(
+            f"Adapter name {name!r} is deprecated: the sequence is the Illumina Nextera read-1 adapter, not a "
+            f"PacBio adapter, and the entry is now called {current!r}",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+        return sequence
+
+    def __getitem__(self, name: str) -> str:
+        sequence = self._renamed_sequence(name)
+        return sequence if sequence is not None else super().__getitem__(name)
+
+    def __contains__(self, name: object) -> bool:
+        return dict.__contains__(self, name) or self._renamed_sequence(name) is not None
+
+    @overload
+    def get(self, name: str, default: None = None, /) -> str | None: ...
+
+    @overload
+    def get(self, name: str, default: str, /) -> str: ...
+
+    @overload
+    def get(self, name: str, default: _DefaultT, /) -> str | _DefaultT: ...
+
+    def get(self, name: str, default: Any = None, /) -> Any:
+        sequence = self._renamed_sequence(name)
+        return sequence if sequence is not None else super().get(name, default)
+
+
+# Standard PacBio adapter sequences. Only the SMRTbell hairpin is listed: other SMRTbell and barcode
+# sequences have not been checked against primary sources and are deliberately absent.
+PACBIO_ADAPTERS: dict[str, str] = _AdapterTable(
+    {"PacBio_SMRTbell": "ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT"},
+    renamed=_RENAMED_ADAPTERS,
+)
+
+# Illumina adapters that can end up in long-read libraries (Tn5/Nextera tagmentation). The entry is part of
+# ALL_KNOWN_ADAPTERS, so the default search still looks for it.
+ILLUMINA_ADAPTERS: dict[str, str] = {"Illumina_Nextera_read1": _NEXTERA_READ1}
+
+ALL_KNOWN_ADAPTERS: dict[str, str] = _AdapterTable(
+    {**ONT_ADAPTERS, **PACBIO_ADAPTERS, **ILLUMINA_ADAPTERS},
+    renamed=_RENAMED_ADAPTERS,
+)
 
 
 @dataclass
@@ -180,7 +259,8 @@ def filter_by_quality(
     """Filter reads by mean Phred quality score.
 
     Calculates the mean quality for each read and retains only those
-    with mean quality >= min_q.
+    with mean quality >= min_q. A read with no quality string cannot be judged and is kept;
+    the log line reports how many were.
 
     Args:
         reads: Sequence of read dictionaries or ReadRecord objects.
@@ -192,6 +272,7 @@ def filter_by_quality(
     filtered: list[_ReadT] = []
     total = 0
     passed = 0
+    unjudged = 0
 
     for read in reads:
         total += 1
@@ -200,6 +281,7 @@ def filter_by_quality(
             # If no quality info, include the read
             filtered.append(read)
             passed += 1
+            unjudged += 1
             continue
 
         mean_q = _mean_phred(qual_str)
@@ -207,7 +289,13 @@ def filter_by_quality(
             filtered.append(read)
             passed += 1
 
-    logger.info("Quality filter: %d/%d reads passed (min_q=%.1f)", passed, total, min_q)
+    logger.info(
+        "Quality filter: %d/%d reads passed (min_q=%.1f), %d of them kept without a quality string",
+        passed,
+        total,
+        min_q,
+        unjudged,
+    )
     return filtered
 
 
@@ -315,7 +403,11 @@ def trim_adapters(
     Searches the first and last ``max_search_length`` bases of each read for
     adapters by semi-global alignment (see the module docstring for the error
     model) and trims everything up to the end of an adapter found at the start,
-    or from the start of an adapter found at the end. Adapter-free reads are
+    or from the start of an adapter found at the end. Each adapter contributes its
+    best placement in a search window; when placements of different adapters overlap
+    (nested adapters such as ``ONT_rapid_barcode`` and ``ONT_LSK109_top``) only the
+    preferred one counts: the lower edit rate per adapter base, and at an equal rate
+    the longer adapter (see the module docstring). Adapter-free reads are
     returned unchanged: the false-positive probability per searched offset is
     at most ``max_false_positive_rate`` for adapters of at least
     :func:`minimum_adapter_length` bases.
@@ -359,20 +451,14 @@ def trim_adapters(
 
         # Check for adapters at the start (forward orientation only)
         search_start = seq[:max_search_length].upper()
-        for pattern in start_patterns:
-            match = _best_placement(search_start, pattern)
-            if match is not None:
-                adapter_end = match[1]
-                trim_start = max(trim_start, adapter_end)
+        for placement in _preferred_placements(search_start, start_patterns):
+            trim_start = max(trim_start, placement.end)
 
         # Check for adapters at the end, in both orientations
         search_end = seq[-max_search_length:].upper() if len(seq) > max_search_length else seq.upper()
         offset = len(seq) - len(search_end)
-        for pattern in plan:
-            match = _best_placement(search_end, pattern)
-            if match is not None:
-                adapter_start = offset + match[0]
-                trim_end = min(trim_end, adapter_start)
+        for placement in _preferred_placements(search_end, plan):
+            trim_end = min(trim_end, offset + placement.start)
 
         # Apply trimming
         trimmed_seq = seq[trim_start:trim_end]
@@ -437,7 +523,10 @@ def detect_adapters(
 
     Returns:
         List of AdapterMatch objects for all detected adapters, sorted by
-        position, with overlapping matches reduced to the best-scoring one.
+        position. Overlapping matches are reduced to the preferred one: the lower
+        edit rate per adapter base (``edit_distance / len(adapter_sequence)``) and,
+        at an equal rate, the match that covers more adapter bases, so a longer
+        adapter cannot take a shorter adapter's site by spending edits.
 
     Raises:
         ValueError: If ``min_identity`` is outside 0-1 or ``max_false_positive_rate``
@@ -794,13 +883,57 @@ def _find_adapter_placements(text: str, pattern: _AdapterPattern) -> list[tuple[
     return [(start, end, edits) for (start, end), edits in placements.items()]
 
 
-def _best_placement(text: str, pattern: _AdapterPattern) -> tuple[int, int] | None:
-    """Return (start, end) of the placement with the fewest edits (leftmost on ties), or None."""
+class _Placement(NamedTuple):
+    """One adapter placement in a searched text: where it lies and how well the whole adapter matches."""
+
+    start: int
+    end: int
+    edits: int
+    adapter_length: int
+
+
+def _placement_rank(edits: int, adapter_length: int, start: int, end: int) -> tuple[Fraction, int, int, int]:
+    """Sort key that orders overlapping placements best first.
+
+    The lower edit rate per adapter base wins; at an equal rate the placement that covers more adapter
+    bases (the longer adapter) wins; remaining ties go to the leftmost, then shortest, placement so the
+    outcome does not depend on which seed proposed it. The rate is an exact fraction, so equal rates
+    compare equal.
+    """
+    return (Fraction(edits, max(1, adapter_length)), -adapter_length, start, end)
+
+
+def _keep_preferred(
+    items: Sequence[_ItemT],
+    rank: Callable[[_ItemT], tuple[Any, ...]],
+    span: Callable[[_ItemT], tuple[int, int]],
+) -> list[_ItemT]:
+    """Greedy best-first selection of the items whose ``span`` (start, end) overlaps no better one."""
+    kept: list[_ItemT] = []
+    for item in sorted(items, key=rank):
+        start, end = span(item)
+        if all(end <= span(other)[0] or start >= span(other)[1] for other in kept):
+            kept.append(item)
+    return kept
+
+
+def _best_placement(text: str, pattern: _AdapterPattern) -> _Placement | None:
+    """Return the placement of ``pattern`` with the fewest edits (leftmost on ties), or None."""
     placements = _find_adapter_placements(text, pattern)
     if not placements:
         return None
-    start, end, _ = min(placements, key=lambda placement: (placement[2], placement[0], placement[1]))
-    return start, end
+    start, end, edits = min(placements, key=lambda placement: (placement[2], placement[0], placement[1]))
+    return _Placement(start, end, edits, len(pattern.sequence))
+
+
+def _preferred_placements(text: str, patterns: Sequence[_AdapterPattern]) -> list[_Placement]:
+    """Best placement of every pattern in ``text``, reduced to those that overlap no preferred placement."""
+    candidates = [placement for pattern in patterns if (placement := _best_placement(text, pattern)) is not None]
+    return _keep_preferred(
+        candidates,
+        rank=lambda p: _placement_rank(p.edits, p.adapter_length, p.start, p.end),
+        span=lambda p: (p.start, p.end),
+    )
 
 
 def _detect_with_plan(sequence: str, plan: list[_AdapterPattern], max_search_length: int) -> list[AdapterMatch]:
@@ -836,25 +969,16 @@ def _detect_with_plan(sequence: str, plan: list[_AdapterPattern], max_search_len
 
 
 def _deduplicate_adapter_matches(matches: list[AdapterMatch]) -> list[AdapterMatch]:
-    """Remove overlapping adapter matches, keeping the highest-scoring one."""
-    if not matches:
-        return []
+    """Reduce overlapping adapter matches to the preferred one, returned in position order.
 
-    # Sort by score descending; ties go to the leftmost, shortest match so boundaries do not
-    # depend on which seed proposed the placement
-    sorted_matches = sorted(matches, key=lambda m: (-m.score, m.position, m.end_position))
-    kept: list[AdapterMatch] = []
-
-    for match in sorted_matches:
-        overlap_found = False
-        for kept_match in kept:
-            # Check for overlap
-            if match.position < kept_match.end_position and match.end_position > kept_match.position:
-                overlap_found = True
-                break
-        if not overlap_found:
-            kept.append(match)
-
-    # Re-sort by position
+    Preference follows :func:`_placement_rank`: the lower edit rate per adapter base, then the match that
+    covers more adapter bases. The old ``adapter length - edits`` score is not used: it let a longer
+    adapter win a shorter adapter's site as soon as the extra bases cost fewer edits than they added.
+    """
+    kept = _keep_preferred(
+        matches,
+        rank=lambda m: _placement_rank(m.edit_distance, len(m.adapter_sequence), m.position, m.end_position),
+        span=lambda m: (m.position, m.end_position),
+    )
     kept.sort(key=lambda m: m.position)
     return kept

@@ -111,12 +111,16 @@ def call_methylation_from_signal(
               contribute to its site.
 
     Raises:
-        ValueError: If model is unrecognized, or (``"bayesian"`` only) a prior
-            parameter is below 0.25.
+        ValueError: If model is unrecognized, an entry has no
+            ``log_likelihood_ratio`` (a missing LLR used to count as 0.0, a probability
+            of 0.5, which the default threshold calls methylated), or (``"bayesian"`` only)
+            a prior parameter is below 0.25.
         ImportError: If model is ``"bayesian"`` and numpy is not installed.
     """
     if model not in ("threshold", "bayesian"):
         raise ValueError(f"Unknown model: {model}. Use 'threshold' or 'bayesian'.")
+
+    llrs = [_required_llr(entry, index) for index, entry in enumerate(signal_data)]
 
     if model == "bayesian":
         if not (prior_alpha >= _MIN_PRIOR_PARAMETER and prior_beta >= _MIN_PRIOR_PARAMETER):
@@ -124,9 +128,9 @@ def call_methylation_from_signal(
                 f"prior_alpha and prior_beta must be at least {_MIN_PRIOR_PARAMETER}, "
                 f"got {prior_alpha} and {prior_beta}"
             )
-        probabilities = _bayesian_probabilities(signal_data, prior_alpha, prior_beta)
+        probabilities = _bayesian_probabilities(signal_data, llrs, prior_alpha, prior_beta)
     else:
-        probabilities = [_llr_to_probability(float(entry.get("log_likelihood_ratio", 0.0))) for entry in signal_data]
+        probabilities = [_llr_to_probability(llr) for llr in llrs]
 
     calls: list[dict[str, Any]] = []
 
@@ -164,8 +168,9 @@ def aggregate_methylation(
 
     Args:
         calls: List of per-read call dictionaries as returned by
-            ``call_methylation_from_signal``. Each must contain ``chrom``,
-            ``position``, ``strand``, ``methylated`` (bool).
+            ``call_methylation_from_signal``. Each must contain ``position`` and
+            ``methylated`` (bool); ``chrom`` (default ``""``) and ``strand``
+            (default ``"+"``) name the site when present.
         min_coverage: Minimum number of reads covering a site for it to
             be included in the output.
 
@@ -179,7 +184,9 @@ def aggregate_methylation(
             - ``mean_coverage``: Mean coverage across reported sites.
 
     Raises:
-        ValueError: If min_coverage < 1.
+        ValueError: If min_coverage < 1, or a call has no ``position`` or no ``methylated`` (they
+            used to default to position 0 and unmethylated, which put the call at a site it was
+            never made at, or counted a missing call as unmethylated).
     """
     if min_coverage < 1:
         raise ValueError("min_coverage must be at least 1")
@@ -187,11 +194,14 @@ def aggregate_methylation(
     # Group calls by (chrom, position, strand)
     site_data: dict[tuple[str, int, str], list[bool]] = defaultdict(list)
 
-    for call in calls:
+    for index, call in enumerate(calls):
+        for required in ("position", "methylated"):
+            if call.get(required) is None:
+                raise ValueError(f"calls[{index}] has no {required!r}")
         chrom = call.get("chrom", "")
-        position = int(call.get("position", 0))
+        position = int(call["position"])
         strand = call.get("strand", "+")
-        methylated = bool(call.get("methylated", False))
+        methylated = bool(call["methylated"])
         site_data[(chrom, position, strand)].append(methylated)
 
     sites: list[dict[str, Any]] = []
@@ -248,8 +258,10 @@ def detect_dmrs(
 
     Segments CpG sites into candidate regions based on genomic proximity
     (``max_distance``), then tests each region for significant methylation
-    differences between the two samples using a Wilcoxon rank-sum test
-    (or Fisher's exact test as fallback).
+    differences between the two samples using the Mann-Whitney U (Wilcoxon
+    rank-sum) test, or a normal approximation of Welch's t statistic when scipy
+    is unavailable or the exact test fails (a warning says so). The p-values are
+    per region and are not corrected for the number of regions tested.
 
     Args:
         methylation_a: Aggregated methylation from sample A as returned by
@@ -270,8 +282,7 @@ def detect_dmrs(
             - ``p_value`` (float): Statistical p-value.
             - ``direction`` (str): ``"hyper"`` if B > A, ``"hypo"`` otherwise.
 
-    Raises:
-        ValueError: If input samples have no sites.
+        An empty list, with a warning, when either sample has no sites or the two share no position.
     """
     sites_a = methylation_a.get("sites", [])
     sites_b = methylation_b.get("sites", [])
@@ -368,16 +379,20 @@ def methylation_pattern_analysis(
             - ``patterns``: List of unique epiallele strings (e.g.,
               ``"MMUUM"`` for methylated/unmethylated pattern).
             - ``entropy``: Shannon entropy of the epiallele distribution.
-            - ``n_reads``: Number of reads covering the region.
+            - ``n_reads``: Number of reads counted: those that call at least half
+              of the CpGs seen in the region.
             - ``epialleles``: Dictionary mapping epiallele pattern string
               to its count.
 
     Raises:
-        ValueError: If region is missing required keys.
+        ValueError: If region is missing ``chrom``, ``start`` or ``end``.
     """
-    chrom = region.get("chrom", "")
-    start = int(region.get("start", 0))
-    end = int(region.get("end", 0))
+    missing = [key for key in ("chrom", "start", "end") if region.get(key) is None]
+    if missing:
+        raise ValueError(f"region is missing {', '.join(missing)}")
+    chrom = region["chrom"]
+    start = int(region["start"])
+    end = int(region["end"])
 
     # Filter calls to region
     region_calls: list[dict[str, Any]] = []
@@ -512,16 +527,9 @@ def compute_methylation_stats(
     global_meth = sum(freqs) / n
     mean_cov = sum(coverages) / n if coverages else 0.0
 
-    # Sort for percentiles
+    # Sort for percentiles (linear interpolation between order statistics, like numpy.percentile)
     sorted_freqs = sorted(freqs)
-    q25_idx = max(0, int(n * 0.25) - 1)
-    q75_idx = min(n - 1, int(n * 0.75))
-    median_idx = n // 2
-
-    if n % 2 == 0 and n > 1:
-        median_val = (sorted_freqs[median_idx - 1] + sorted_freqs[median_idx]) / 2.0
-    else:
-        median_val = sorted_freqs[median_idx]
+    median_val = _percentile(sorted_freqs, 50.0)
 
     variance = sum((f - global_meth) ** 2 for f in freqs) / max(n - 1, 1)
     std_val = math.sqrt(variance)
@@ -531,8 +539,8 @@ def compute_methylation_stats(
         "max": sorted_freqs[-1],
         "median": median_val,
         "std": std_val,
-        "q25": sorted_freqs[q25_idx],
-        "q75": sorted_freqs[q75_idx],
+        "q25": _percentile(sorted_freqs, 25.0),
+        "q75": _percentile(sorted_freqs, 75.0),
     }
 
     # Context proportions
@@ -570,6 +578,14 @@ def compute_methylation_stats(
 # ---------------------------------------------------------------------------
 
 
+def _percentile(sorted_values: list[float], percent: float) -> float:
+    """``percent``-th percentile of ascending ``sorted_values`` by linear interpolation (numpy's default)."""
+    rank = (len(sorted_values) - 1) * percent / 100.0
+    lower = math.floor(rank)
+    upper = min(lower + 1, len(sorted_values) - 1)
+    return sorted_values[lower] + (sorted_values[upper] - sorted_values[lower]) * (rank - lower)
+
+
 def _llr_to_probability(llr: float) -> float:
     """Convert log-likelihood ratio to probability.
 
@@ -588,8 +604,17 @@ def _llr_to_probability(llr: float) -> float:
     return 1.0 / (1.0 + math.exp(-llr))
 
 
+def _required_llr(entry: dict[str, Any], index: int) -> float:
+    """The ``log_likelihood_ratio`` of one signal entry; an entry without one cannot be called."""
+    value = entry.get("log_likelihood_ratio")
+    if value is None:
+        raise ValueError(f"signal_data[{index}] has no 'log_likelihood_ratio'; the site cannot be called without it")
+    return float(value)
+
+
 def _bayesian_probabilities(
     signal_data: list[dict[str, Any]],
+    llrs: list[float],
     prior_alpha: float,
     prior_beta: float,
 ) -> list[float]:
@@ -604,8 +629,6 @@ def _bayesian_probabilities(
     """
     if not HAS_NUMPY:
         raise ImportError("numpy is required for model='bayesian': uv pip install numpy")
-
-    llrs = [float(entry.get("log_likelihood_ratio", 0.0)) for entry in signal_data]
 
     groups: dict[Any, list[int]] = {}
     for index, entry in enumerate(signal_data):
@@ -745,8 +768,8 @@ def _test_methylation_difference(
 ) -> float:
     """Test for methylation difference between two groups.
 
-    Uses Wilcoxon rank-sum test if scipy is available, otherwise falls back
-    to a simple t-test approximation.
+    Uses the Mann-Whitney U (Wilcoxon rank-sum) test if scipy is available. Without scipy, or when scipy
+    rejects the data (a warning says so), it falls back to a normal approximation of Welch's t statistic.
 
     Args:
         freqs_a: Methylation frequencies from sample A.
@@ -759,8 +782,8 @@ def _test_methylation_difference(
         try:
             stat, p_val = scipy_stats.mannwhitneyu(freqs_a, freqs_b, alternative="two-sided")
             return float(p_val)
-        except Exception:
-            pass
+        except ValueError as exc:
+            logger.warning("Mann-Whitney U test failed (%s); using the normal approximation of Welch's t instead", exc)
 
     # Fallback: Welch's t-test
     n_a = len(freqs_a)

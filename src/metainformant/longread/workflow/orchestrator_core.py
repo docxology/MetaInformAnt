@@ -518,19 +518,33 @@ def _extract_methylation_features(
     reads: list[dict[str, Any]],
     mod_type: str = "5mC",
 ) -> list[dict[str, Any]]:
-    """Extract methylation signal features from read dictionaries.
+    """Extract methylation call inputs from read dictionaries.
 
-    Looks for pre-computed methylation features in the read metadata,
-    or constructs synthetic features from alignment methylation tags.
+    Uses the pre-computed features in a read's ``methylation_features`` when it has them. Otherwise the
+    read's MM/ML tags are decoded with :func:`metainformant.longread.io.bam.extract_methylation_tags`
+    (read orientation, strand, multi-code entries and flags as the SAM tags specification defines them)
+    and every site of the requested modification becomes one feature at its reference position. The
+    feature carries the ML probability as ``probability``, which ``call_5mc`` and ``call_6ma`` use as
+    given: signal features such as dwell time or current noise are not invented for it.
+
+    A site is left out, and counted in one warning, when it has no reference position (the read has no
+    CIGAR or aligned pairs, or the base is soft-clipped or inserted) or no ML probability.
 
     Args:
-        reads: List of read dictionaries.
+        reads: List of read dictionaries. Tag-based reads need ``tags``, the sequence (``sequence`` or
+            ``query_sequence``), ``is_reverse``, ``reference_name``, ``reference_start`` and a CIGAR
+            (``cigar_tuples`` or ``cigar_string``) or ``aligned_pairs``.
         mod_type: Modification type to extract ('5mC' or '6mA').
 
     Returns:
-        List of feature dictionaries suitable for call_5mc() or call_6ma().
+        List of feature dictionaries suitable for call_5mc() or call_6ma(). ``strand`` is the reference
+        strand of the modified base: the MM strand, flipped for a reverse-aligned read.
     """
+    from ..io.bam import _alignment_from_read_dict, extract_methylation_tags
+
     features: list[dict[str, Any]] = []
+    unplaced = 0
+    without_probability = 0
 
     for read in reads:
         # Check for pre-computed features
@@ -541,49 +555,58 @@ def _extract_methylation_features(
                     features.append(feat)
             continue
 
-        # Try to extract from methylation tags (BAM MM/ML tags)
+        # Decode the methylation tags (BAM MM/ML tags)
         tags = read.get("tags", {})
-        if isinstance(tags, dict):
-            mm_tag = tags.get("MM") or tags.get("Mm")
-            if mm_tag:
-                from ..io.bam import _parse_methylation_from_tags
+        if not isinstance(tags, dict) or (tags.get("MM") is None and tags.get("Mm") is None):
+            continue
 
-                parsed = _parse_methylation_from_tags(tags)
-                modifications = parsed.get("modifications", [])
-                for mod in modifications:
-                    base = mod.get("base", "")
-                    mod_code = mod.get("modification", "")
+        alignment = _alignment_from_read_dict(read)
+        for entry in extract_methylation_tags(alignment).values():
+            if not _is_target_modification(entry, mod_type):
+                continue
+            reference_strand = "+" if (entry["strand"] == "+") != alignment.is_reverse else "-"
+            for reference_position, probability in entry["genomic_positions"]:
+                if reference_position is None:
+                    unplaced += 1
+                elif probability is None:
+                    without_probability += 1
+                else:
+                    features.append(
+                        {
+                            "position": reference_position,
+                            "chromosome": alignment.reference_name,
+                            "strand": reference_strand,
+                            "probability": probability,
+                            "context": "",  # the tags do not say whether the site is CpG, CHG or CHH
+                            "modification_type": mod_type,
+                            "read_id": alignment.read_name,
+                        }
+                    )
+            unplaced += entry["n_unplaced"]
 
-                    # Map modification codes to types
-                    is_target = False
-                    if mod_type == "5mC" and base == "C" and mod_code in ("m", "5mC"):
-                        is_target = True
-                    elif mod_type == "6mA" and base == "A" and mod_code in ("a", "6mA"):
-                        is_target = True
-
-                    if is_target:
-                        deltas = mod.get("delta_positions", [])
-                        probs = mod.get("probabilities", [])
-                        chrom = read.get("reference_name", "")
-                        ref_start = read.get("reference_start", 0)
-
-                        for idx in range(len(deltas)):
-                            position = ref_start + sum(deltas[: idx + 1]) + idx
-                            prob = probs[idx] / 255.0 if idx < len(probs) else 0.0
-                            features.append(
-                                {
-                                    "position": position,
-                                    "chromosome": chrom,
-                                    "strand": "+",
-                                    "context_shift": prob * 5.0,  # Scale probability to approximate pA shift
-                                    "dwell_time": 1.0,
-                                    "current_std": 0.5,
-                                    "context": "CpG" if mod_type == "5mC" else "A",
-                                    "modification_type": mod_type,
-                                }
-                            )
+    if unplaced or without_probability:
+        logger.warning(
+            "%s methylation features: %d tagged sites left out for lack of a reference position (no CIGAR or "
+            "aligned pairs, or not aligned) and %d for lack of an ML probability",
+            mod_type,
+            unplaced,
+            without_probability,
+        )
 
     return features
+
+
+def _is_target_modification(entry: dict[str, Any], mod_type: str) -> bool:
+    """True when a decoded MM entry is 5-methylcytosine (``mod_type`` '5mC') or 6-methyladenine ('6mA').
+
+    The base that carries the modification decides, not the letter counted: ``G-m`` is 5mC on the
+    strand opposite the read.
+    """
+    if mod_type == "5mC":
+        return bool(entry["modified_base"] == "C" and entry["modification"] in ("m", "5mC"))
+    if mod_type == "6mA":
+        return bool(entry["modified_base"] == "A" and entry["modification"] in ("a", "6mA"))
+    return False
 
 
 def _write_json_safe(data: Any, path: Path) -> None:

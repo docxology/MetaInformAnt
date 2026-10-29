@@ -42,7 +42,7 @@ qc:
 
   # Adapter trimming
   trim_adapters: true
-  adapter_sequences: null  # null = use default ONT/PacBio adapters
+  adapter_sequences: null  # null = use built-in adapter tables; see longread.quality.filtering
 
   # Chimeric read splitting
   split_chimeras: true

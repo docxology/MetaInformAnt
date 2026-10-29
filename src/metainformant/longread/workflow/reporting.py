@@ -138,11 +138,12 @@ def generate_qc_report(pipeline_result: Any) -> QCReport:
     for step in steps:
         if step.name == "trim_adapters" and step.result is not None:
             if isinstance(step.result, list):
+                # a read counts as trimmed when bases were cut at either end (the end alone used to be missed)
                 adapter_trimmed = sum(
                     1
                     for r in step.result
-                    if (isinstance(r, dict) and r.get("metadata", {}).get("trimmed_start", 0) > 0)
-                    or (hasattr(r, "metadata") and r.metadata.get("trimmed_start", 0) > 0)
+                    if (metadata := r.get("metadata", {}) if isinstance(r, dict) else getattr(r, "metadata", {}))
+                    and (metadata.get("trimmed_start", 0) > 0 or metadata.get("trimmed_end", 0) > 0)
                 )
 
     # Calculate filter pass rate

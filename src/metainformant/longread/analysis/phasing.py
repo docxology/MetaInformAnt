@@ -98,7 +98,10 @@ class PhaseBlockStats:
         max_block_size: Largest phase block (bp).
         mean_block_size: Mean phase block size (bp).
         median_block_size: Median phase block size (bp).
-        switch_error_rate: Estimated switch error rate.
+        switch_error_rate: Variant-weighted mean of ``1 - block quality``: the fraction of read-supported
+            variant links that disagree with the phasing. It is not a truth-based switch error
+            rate (that needs a truth phasing, see ``phasing.haplotyping.compute_switch_errors``), and blocks
+            from ``build_haplotype_blocks`` carry quality 1.0 because no read evidence was available.
         total_phased_span: Total genomic span covered by phase blocks.
     """
 
@@ -357,7 +360,8 @@ def build_haplotype_blocks(
     """Construct haplotype phase blocks from pre-phased variant data.
 
     Groups consecutive phased variants into blocks, breaking at gaps
-    larger than max_gap or at phase set boundaries.
+    larger than max_gap or at phase set boundaries. The blocks get ``quality`` 1.0: the variants
+    arrive already phased, with no read evidence to score.
 
     Args:
         phased_variants: Sequence of phased variant dictionaries, each containing:
@@ -528,8 +532,8 @@ def calculate_phase_block_stats(
 ) -> PhaseBlockStats:
     """Calculate summary statistics for a set of phase blocks.
 
-    Computes N50, size distribution, and switch error rate estimates
-    for a collection of phase blocks.
+    Computes N50, size distribution, and the read-link disagreement rate
+    (``switch_error_rate``, see :class:`PhaseBlockStats`) for a collection of phase blocks.
 
     Args:
         blocks: Sequence of PhaseBlock objects.
@@ -567,15 +571,13 @@ def calculate_phase_block_stats(
             n50 = size
             break
 
-    # Estimate switch error rate from quality scores
-    # Higher quality blocks have lower switch error rates
+    # A block's quality is the fraction of its read-supported variant links that agree with the phasing
+    # (_compute_block_quality), so 1 - quality is the fraction that disagree: the same measure
+    # haplotyping.phase_reads reports as switch_error_rate. Weighted by variants over all blocks.
     total_quality = sum(b.quality * b.num_variants for b in blocks if b.num_variants > 0)
     total_vars_quality = sum(b.num_variants for b in blocks if b.num_variants > 0)
     if total_vars_quality > 0:
-        mean_quality = total_quality / total_vars_quality
-        # Convert quality to approximate switch error rate
-        # Using a simple model: SER ~ 1 / (1 + quality * 10)
-        switch_error_rate = 1.0 / (1.0 + mean_quality * 10.0)
+        switch_error_rate = 1.0 - total_quality / total_vars_quality
     else:
         switch_error_rate = 0.0
 

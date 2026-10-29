@@ -6,9 +6,10 @@ estimation. All algorithms are real implementations.
 
 The consensus pipeline:
 1. Select a backbone read (longest or highest quality)
-2. Align all reads to the backbone using banded dynamic programming
-3. Build a weighted DAG from alignments
-4. Compute consensus by traversing the heaviest path
+2. Align all reads to the backbone by semi-global dynamic programming (full matrix up to 10^8 cells, a
+   k-mer anchored approximation beyond that; there is no banded variant)
+3. Count the aligned bases per backbone position (a position-weight matrix, not a POA graph)
+4. Take the most frequent base at each position
 5. Optionally polish with iterative re-alignment
 
 Optional dependencies:
@@ -86,9 +87,14 @@ def generate_consensus(
 
     Algorithm:
     1. Select backbone (longest read or provided sequence)
-    2. Align each read to the current consensus using banded semi-global DP
+    2. Align each read to the backbone by semi-global DP (see the module docstring)
     3. Build a position-weight matrix from alignments
     4. Generate consensus from the most frequent base at each position
+
+    The consensus has at most the length of the backbone: bases a read has beyond the backbone's ends or
+    in insertions relative to it do not enter. With a single read the consensus is that read, with coverage
+    1 and quality 0.0 at every base (one read carries no evidence about its own errors; the quality used to
+    be a made-up Q30).
 
     Args:
         reads: Sequence of DNA strings or read dictionaries with 'sequence' key.
@@ -118,11 +124,11 @@ def generate_consensus(
         seq = sequences[0]
         return ConsensusResult(
             sequence=seq,
-            quality=[30.0] * len(seq),
+            quality=[0.0] * len(seq),
             coverage=[1] * len(seq),
             num_reads=1,
             length=len(seq),
-            mean_quality=30.0,
+            mean_quality=0.0,
             mean_coverage=1.0,
         )
 
@@ -273,10 +279,12 @@ def _banded_semiglobal_align(
     gap_extend: int = -2,
     bandwidth: int = 100,
 ) -> dict[str, Any]:
-    """Banded semi-global alignment of query to reference.
+    """Semi-global alignment of query to reference.
 
-    Semi-global: no penalty for starting/ending gaps in the query,
-    allowing partial overlaps.
+    Despite the name this is not banded: ``bandwidth`` is accepted and ignored. Up to 10^8 matrix
+    cells (and 50 kb per sequence) the full dynamic-programming matrix is filled; beyond that a k-mer anchored
+    approximation is used. Gaps cost ``gap_extend`` per base (``gap_open`` only sets the first query
+    gap of the first row). The reference is aligned end to end; the query may end early (free trailing gap).
 
     Args:
         ref: Reference sequence.
@@ -285,7 +293,7 @@ def _banded_semiglobal_align(
         mismatch_penalty: Penalty for mismatches.
         gap_open: Gap opening penalty.
         gap_extend: Gap extension penalty.
-        bandwidth: Band width for the DP matrix.
+        bandwidth: Ignored (kept for compatibility).
 
     Returns:
         Dictionary with alignment results: ref_aligned, query_aligned, ref_start, score.
@@ -436,8 +444,12 @@ def _simple_align(ref: str, query: str) -> dict[str, Any]:
                 anchors.append((ref_pos, j))
 
     if not anchors:
-        # No anchors found, return unaligned
-        return {"ref_aligned": ref, "query_aligned": query, "ref_start": 0, "score": 0}
+        # No shared k-mer: there is no alignment to report. Returning ref and query side by side would
+        # pair base i with base i and count those random pairs into the consensus, so the read gets no vote.
+        logger.warning(
+            "No shared %d-mer between a %d bp and a %d bp sequence; the read is left unaligned", k, len(ref), len(query)
+        )
+        return {"ref_aligned": "", "query_aligned": "", "ref_start": 0, "score": 0}
 
     # Chain anchors on the main diagonal
     anchors.sort(key=lambda a: a[0])
@@ -528,14 +540,16 @@ def polish_consensus(
             sequences.append(r.sequence)
 
     if not sequences:
+        # nothing to polish with: the sequence comes back with no read support (it used to claim
+        # coverage 1 and Q30 with num_reads 0)
         return ConsensusResult(
             sequence=current_seq,
-            quality=[30.0] * len(current_seq),
-            coverage=[1] * len(current_seq),
+            quality=[0.0] * len(current_seq),
+            coverage=[0] * len(current_seq),
             num_reads=0,
             length=len(current_seq),
-            mean_quality=30.0,
-            mean_coverage=1.0,
+            mean_quality=0.0,
+            mean_coverage=0.0,
         )
 
     for iteration in range(iterations):
@@ -559,16 +573,13 @@ def multiple_sequence_alignment(
     gap_open: int = -4,
     gap_extend: int = -2,
 ) -> MSAResult:
-    """Perform progressive multiple sequence alignment.
+    """Align sequences against a center sequence (a star alignment, not a progressive or guide-tree one).
 
-    Uses a progressive alignment approach:
-    1. Compute all pairwise alignment scores
-    2. Build a guide tree using UPGMA
-    3. Align sequences progressively following the guide tree
-
-    For simplicity and correctness, uses a star-alignment approach where
-    the center sequence (most similar to all others) is used as the
-    reference, and all other sequences are aligned to it.
+    The center is the sequence sharing the most 7-mers with the others; every other sequence is
+    aligned to it pairwise. The pairwise alignments are then padded with trailing gaps to one length
+    (``_merge_star_alignments``), so the rows are NOT column-consistent when the sequences contain
+    indels relative to the center, and ``conservation`` is correspondingly approximate. A warning is
+    logged when padding was needed.
 
     Args:
         sequences: Sequence of DNA strings to align.
@@ -621,6 +632,11 @@ def multiple_sequence_alignment(
     # Merge pairwise alignments into MSA
     # The center sequence defines the reference frame
     aligned = _merge_star_alignments(center_idx, pairwise_alignments)
+    if len({len(row) for _, row in pairwise_alignments}) > 1:
+        logger.warning(
+            "Pairwise alignments to the center differ in length; the rows were padded with trailing gaps and are "
+            "not column-consistent"
+        )
 
     # Compute consensus and conservation
     consensus_seq, conservation = _msa_consensus(aligned)

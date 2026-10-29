@@ -17,12 +17,15 @@ The classical OLC assembly approach:
 
 ### Consensus Generation
 
-Uses a partial-order alignment (POA) style approach:
-1. Select a backbone read (longest or highest quality)
-2. Align all reads to the backbone using banded dynamic programming
-3. Build a weighted directed acyclic graph (DAG) from alignments
-4. Compute consensus by traversing the heaviest path
+The implementation aligns reads independently to a backbone and counts bases at each backbone position:
+
+1. Select the supplied backbone or the longest read
+2. Align reads by semi-global dynamic programming (a full matrix up to 10^8 cells, then a k-mer anchored approximation)
+3. Build a position-weight matrix
+4. Call the most frequent base at each backbone position
 5. Optionally polish with iterative re-alignment
+
+Insertions relative to the backbone and extensions past its ends are not added to the consensus, whose length is capped by that backbone.
 
 ### Hybrid Assembly
 
@@ -100,29 +103,23 @@ Build and clean the overlap graph. `filter_contained_reads` removes reads fully 
 ### Consensus
 
 ```python-snippet
-def generate_consensus(reads: list[str], backbone_idx: int | None = None) -> ConsensusResult
-def polish_consensus(consensus: str, reads: list[str], n_rounds: int = 2) -> ConsensusResult
-def multiple_sequence_alignment(sequences: list[str]) -> MSAResult
-def calculate_consensus_quality(consensus: ConsensusResult) -> dict[str, Any]
+def generate_consensus(reads: Sequence[str | dict[str, Any]], backbone: str | None=None, match_score: int=2, mismatch_penalty: int=-4, gap_open: int=-4, gap_extend: int=-2) -> ConsensusResult
+def polish_consensus(consensus: str | ConsensusResult, reads: Sequence[str | dict[str, Any]], iterations: int=2) -> ConsensusResult
+def multiple_sequence_alignment(sequences: Sequence[str], gap_open: int=-4, gap_extend: int=-2) -> MSAResult
+def calculate_consensus_quality(consensus: str | ConsensusResult, reads: Sequence[str | dict[str, Any]]) -> dict[str, Any]
 ```
 
-`generate_consensus` produces a consensus from aligned reads. `polish_consensus` iteratively improves accuracy. `multiple_sequence_alignment` aligns multiple sequences for consensus building. `calculate_consensus_quality` provides detailed quality metrics.
+`generate_consensus` aligns reads to a backbone and calls a consensus; a single read has coverage 1 and quality 0.0 because it provides no independent error evidence. `polish_consensus` iteratively realigns the reads. `multiple_sequence_alignment` aligns each read to the backbone independently: its rows are not guaranteed to be column-consistent when insertions differ, and a warning identifies this limitation. Use a full multiple-sequence aligner when shared insertion columns are required. `calculate_consensus_quality` reports quality metrics.
 
 ### Hybrid Assembly
 
 ```python-snippet
-def hybrid_assemble(
-    long_reads: dict[str, str], short_reads: dict[str, str],
-) -> dict[str, Any]
-def correct_with_short_reads(
-    long_read: str, short_reads: list[str],
-) -> str
-def scaffold_with_long_reads(
-    contigs: list[str], long_reads: dict[str, str],
-) -> list[dict[str, Any]]
+def hybrid_assemble(long_reads: Sequence[str | dict[str, Any]], short_reads: Sequence[str | dict[str, Any]], min_long_read_length: int=2000, kmer_size: int=21, min_overlap: int=1000) -> HybridAssemblyResult
+def correct_with_short_reads(long_reads: Sequence[str | dict[str, Any]], short_reads: Sequence[str | dict[str, Any]], kmer_size: int=21, min_kmer_support: int=3, window_size: int=50) -> list[CorrectedRead]
+def scaffold_with_long_reads(contigs: Sequence[str | dict[str, Any]], long_reads: Sequence[str | dict[str, Any]], min_alignment_length: int=1000, min_bridge_reads: int=2) -> list[Scaffold]
 ```
 
-`hybrid_assemble` combines long and short reads. `correct_with_short_reads` polishes a single long read using short read alignments. `scaffold_with_long_reads` orders and orients contigs using long-read spanning information.
+`hybrid_assemble` combines long and short reads. `correct_with_short_reads` polishes a single long read using short read alignments. `scaffold_with_long_reads` orders contigs using long-read spanning information; it does not infer contig orientation.
 
 ## Usage Examples
 
@@ -147,7 +144,7 @@ result = assembly.generate_consensus(read_sequences)
 print(f"Consensus: {result.length} bp, mean Q{result.mean_quality:.1f}")
 
 # Polish consensus
-polished = assembly.polish_consensus(result.sequence, read_sequences, n_rounds=3)
+polished = assembly.polish_consensus(result.sequence, read_sequences, iterations=3)
 
 # Hybrid assembly
 hybrid_result = assembly.hybrid_assemble(long_reads, short_reads)

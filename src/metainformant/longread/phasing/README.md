@@ -19,7 +19,7 @@ Read-based haplotype phasing for long-read sequencing, using heterozygous varian
 | `haplotyping.haplotag_reads()` | Tag reads with `HP` and `PS` from phase blocks |
 | `haplotyping.allele_specific_analysis()` | Compare a per-read signal (expression or methylation) between the two haplotypes in a region |
 
-Blocks from `phase_reads()` and `build_phase_blocks()` carry `variant_haplotypes`, a map from variant position to the allele (0 reference, 1 alternate) that haplotype 1 carries there. `haplotag_reads()` votes against that map, so either function's blocks can be passed to it unchanged. See [docs/longread/phasing.md](../../../../docs/longread/phasing.md) for the voting rule and block fields.
+Blocks from `phase_reads()` and `build_phase_blocks()` carry `variant_haplotypes`, a map from variant position to the allele (0 reference, 1 alternate) that haplotype 1 carries there. `haplotag_reads()` votes against that map, so either function's blocks can be passed to it unchanged, including blocks reloaded from JSON (JSON turns the integer position keys into text; `haplotag_reads()` reads both). A read allele that is not 0 or 1 is not a vote. See [docs/longread/phasing.md](../../../../docs/longread/phasing.md) for the voting rule and block fields.
 
 ## Usage
 
