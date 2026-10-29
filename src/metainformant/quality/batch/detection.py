@@ -29,9 +29,11 @@ class BatchEffectReport:
         n_samples: Total number of samples.
         n_batches: Number of distinct batches.
         batch_labels: List of batch labels per sample.
-        pvca_variance: Dict mapping source (batch, residual) to variance proportion.
+        pvca_variance: Dict mapping source (batch, residual) to variance proportion: the between-batch and
+            within-batch sums of squares of all features pooled, each as a share of their total.
         silhouette_score: Score measuring batch separation in PCA space (-1 to 1).
-        n_significant_features: Number of features significantly associated with batch.
+        n_significant_features: Number of features whose one-way F-test against the batch labels has a raw
+            (uncorrected for multiple testing) p-value below ``alpha``.
         severity: Overall severity (low, moderate, high, critical).
     """
 
@@ -49,23 +51,60 @@ def detect_batch_effects(
     batch_labels: list[str],
     alpha: float = 0.05,
 ) -> BatchEffectReport:
-    """Detect batch effects via PVCA and silhouette analysis.
+    """Detect batch effects via a PVCA-style variance split, per-feature F-tests and a silhouette score.
 
-    Performs Principal Variance Component Analysis (PVCA) to estimate the
-    proportion of variance attributable to batch, and computes a silhouette
-    score in PCA space to quantify batch separation.
+    Three quantities are computed:
+
+    * the variance split ``pvca_variance``: the between-batch sum of squares of all features, pooled,
+      as a share of the total sum of squares. This is a PVCA-style summary, not Li et al.'s PVCA: it
+      works on the features themselves, not on principal components, and fits no mixed model, so
+      features with a large variance dominate it;
+    * one one-way F-test per feature against the batch labels, whose exact p-values come from the
+      survival function of the F distribution, so a very small p-value is not rounded to zero. A feature
+      that does not vary within a batch but differs between batches is perfectly explained by the batch
+      (F is infinite, p = 0); a feature that does not vary at all has no association (p = 1);
+    * the silhouette score of the batches in the space of the first (up to 10) principal components.
+
+    ``severity`` is "critical" when the batch share of the variance exceeds 0.3 or the silhouette exceeds 0.5,
+    otherwise "high" above 0.15 / 0.3, "moderate" above 0.05 / 0.1, and "low" below.
 
     Args:
-        data: 2D array (samples × features).
+        data: 2D array (samples × features), finite.
         batch_labels: List of batch identifiers, one per sample.
-        alpha: Significance threshold for per-feature batch association test.
+        alpha: Significance threshold for per-feature batch association test, in (0, 1). The p-values are
+            raw: they are not corrected for the number of features.
 
     Returns:
-        BatchEffectReport with severity assessment.
+        BatchEffectReport with severity assessment. With a single batch there is nothing to detect: the
+        batch share of the variance is 0 and no feature is significant.
+
+    Raises:
+        ValueError: If ``data`` is not 2D, has no samples or contains NaN/inf (a missing value would
+            otherwise make its feature look unassociated with the batch), ``batch_labels`` does not have
+            one entry per sample, ``alpha`` is not in (0, 1), or every sample is a batch of its own (no
+            feature has within-batch variation to test against; the labels may be sample identifiers).
     """
-    n_samples, n_features = data.shape
+    values = np.asarray(data, dtype=float)
+    if values.ndim != 2:
+        raise ValueError(f"data must be a 2D samples x features array, got {values.ndim}D")
+    n_samples, n_features = values.shape
+    if n_samples == 0:
+        raise ValueError("data has no samples")
+    if len(batch_labels) != n_samples:
+        raise ValueError(f"batch_labels has {len(batch_labels)} entries for {n_samples} samples")
+    if not np.all(np.isfinite(values)):
+        raise ValueError("data contains NaN or infinite values; impute or remove them before batch detection")
+    if not 0.0 < alpha < 1.0:  # False for NaN as well
+        raise ValueError(f"alpha must be in (0, 1), got {alpha!r}")
+    data = values
+
     unique_batches = sorted(set(batch_labels))
     n_batches = len(unique_batches)
+    if n_batches > 1 and n_batches == n_samples:
+        raise ValueError(
+            f"all {n_samples} samples are in batches of their own, so there is no within-batch variation to "
+            "test against; check that batch_labels are batch identifiers and not sample identifiers"
+        )
     batch_map = {b: i for i, b in enumerate(unique_batches)}
     batch_idx = np.array([batch_map[b] for b in batch_labels])
 
@@ -82,31 +121,33 @@ def detect_batch_effects(
         ss_between += n_b * (batch_mean - grand_mean) ** 2
         ss_within += ((data[mask] - batch_mean) ** 2).sum(axis=0)
 
-    df_between = max(n_batches - 1, 1)
-    df_within = max(n_samples - n_batches, 1)
-    ms_between = ss_between / df_between
-    ms_within = ss_within / df_within
-    f_stats = np.where(ms_within > 0, ms_between / ms_within, 0.0)
-
-    # Exact p-values from the F-distribution
-    p_values = 1.0 - f_dist.cdf(f_stats, df_between, df_within)
+    if n_batches > 1:
+        ms_between = ss_between / (n_batches - 1)
+        ms_within = ss_within / (n_samples - n_batches)
+        varies_within = ms_within > 0
+        f_stats = np.zeros(n_features)
+        np.divide(ms_between, ms_within, out=f_stats, where=varies_within)
+        # constant within every batch yet different between batches: the batch explains the feature exactly
+        f_stats[~varies_within & (ms_between > 0)] = np.inf
+        # Exact p-values from the F-distribution. sf, not 1 - cdf: the cdf rounds to 1.0 for every p-value
+        # below about 1e-16, so 1 - cdf reports 0.0 for p-values of 1e-17 and of 1e-300 alike.
+        p_values = f_dist.sf(f_stats, n_batches - 1, n_samples - n_batches)
+    else:
+        p_values = np.ones(n_features)  # one batch: nothing to be associated with
 
     n_significant = int((p_values < alpha).sum())
 
-    # PVCA-like variance decomposition
+    # PVCA-style variance decomposition
     total_ss = ss_between.sum() + ss_within.sum()
     batch_var_prop = float(ss_between.sum() / total_ss) if total_ss > 0 else 0.0
     residual_var_prop = 1.0 - batch_var_prop
 
-    # PCA-based silhouette score
+    # PCA-based silhouette score (a failure of the SVD propagates: a silhouette in some other space would
+    # not be the PCA-space score the report promises)
     centered = data - data.mean(axis=0)
-    try:
-        u, s, vt = np.linalg.svd(centered, full_matrices=False)
-        n_pcs = min(10, n_features, n_samples)
-        pca_coords = u[:, :n_pcs] * s[:n_pcs]
-    except np.linalg.LinAlgError:
-        logger.warning("SVD failed during PCA; falling back to raw first features for silhouette")
-        pca_coords = centered[:, : min(10, n_features)]
+    u, s, _ = np.linalg.svd(centered, full_matrices=False)
+    n_pcs = min(10, n_features, n_samples)
+    pca_coords = u[:, :n_pcs] * s[:n_pcs]
 
     # Simplified silhouette
     silhouette = _compute_silhouette(pca_coords, batch_idx, n_batches)

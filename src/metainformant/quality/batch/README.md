@@ -14,7 +14,7 @@ parametric empirical-Bayes ComBat correction.
 | Symbol | Description |
 |--------|-------------|
 | `BatchEffectReport` | Dataclass: sample/batch counts, PVCA variance split, silhouette score, severity |
-| `detect_batch_effects()` | Per-feature F-tests against batch labels, variance decomposition, PCA-space silhouette |
+| `detect_batch_effects()` | Per-feature F-tests against batch labels (exact `sf` p-values, raw not multiplicity-corrected), a pooled between-batch variance share (PVCA-style, not Li et al.'s PVCA), PCA-space silhouette |
 | `correct_batch_combat()` | Parametric empirical-Bayes ComBat (Johnson, Li & Rabinovic 2007, no covariates): removes batch location/scale effects |
 
 ## Usage
@@ -30,8 +30,11 @@ print(report.severity, report.pvca_variance, report.silhouette_score)
 corrected = correct_batch_combat(data, batch_labels=["A", "A", "B", "B"])
 ```
 
-`detect_batch_effects` uses scipy for exact F-distribution p-values (the module imports scipy,
-a core dependency, so both functions need numpy and scipy).
+`detect_batch_effects` uses scipy for exact F-distribution p-values from the survival function, so a p-value of
+1e-30 is not rounded to zero (the module imports scipy, a core dependency, so both functions need numpy and
+scipy). It raises `ValueError` for data that are not a finite 2D array, a label list of the wrong length, an
+`alpha` outside (0, 1), and labels that put every sample in a batch of its own. A feature that is constant within
+every batch but differs between them is significant (F is infinite); a feature constant everywhere is not.
 
 ## `correct_batch_combat` behaviour
 

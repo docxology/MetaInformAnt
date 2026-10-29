@@ -1,12 +1,13 @@
 # AGENTS.md — `MetaInformAnt/tests/quality/`
 
 tests for the quality module.
-Files (verified 2026-10-27): __init__.py, test_contamination_depth.py, test_doc_calls_and_links.py, test_doc_imports.py, test_documentation_verifier.py, test_fastq_depth.py, test_quality_batch_analysis.py, test_quality_batch_combat.py, test_quality_batch_detection.py, test_quality_contamination.py, test_quality_fastq.py, test_quality_metrics.py, test_quality_reporting.py, test_real_implementation_policy.py (13 test files).
+Files (verified 2026-10-28): __init__.py, test_contamination_depth.py, test_doc_calls_and_links.py, test_doc_imports.py, test_documentation_verifier.py, test_fastq_depth.py, test_quality_batch_analysis.py, test_quality_batch_combat.py, test_quality_batch_detection.py, test_quality_batch_detection_pvalues.py, test_quality_contamination.py, test_quality_fastq.py, test_quality_metrics.py, test_quality_reporting.py, test_real_implementation_policy.py (14 test files).
 
 ## Contract tests
 
 - `test_quality_batch_analysis.py`: `batch_quality_analysis` accepts only `data_type="fastq"`; `"vcf"` and `"bam"` raise `NotImplementedError` and any other value raises `ValueError`, before a file is touched and even for an empty list.
 - `test_quality_batch_combat.py`: `correct_batch_combat` is a parametric empirical-Bayes ComBat that does not depend on batch order or labels.
+- `test_quality_batch_detection_pvalues.py`: `detect_batch_effects` counts features with exact `sf` p-values (a tiny `alpha` is not satisfied by a p-value that `1 - cdf` rounded to 0), treats a feature constant within each batch but different between them as significant, and refuses non-finite data, a label list of the wrong length, a bad `alpha` and sample-id labels.
 - `test_doc_calls_and_links.py`: calls quoted in documents are bound against the current signatures, and relative links resolve against the real directory trees.
 
 ## Conventions

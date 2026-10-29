@@ -219,6 +219,8 @@ class ContaminationDetector:
             adapter_matches = 0
             match_positions = []
             for seq in sequences:
+                if not seq:
+                    continue  # an empty read is a prefix and a suffix of every adapter, but holds no adapter DNA
                 # Check for exact adapter matches
                 if adapter in seq:
                     adapter_matches += 1
@@ -405,6 +407,8 @@ def detect_vector_contamination(sequences: List[str], vector_sequences: Optional
     }
     results: Dict[str, Any] = {}
     for idx, seq in enumerate(sequences):
+        if not seq:
+            continue  # the empty string is a substring of every vector motif; an empty read matches none
         matched = []
         for vector_name, vector_seq in vector_patterns.items():
             if vector_seq in seq.upper() or seq.upper() in vector_seq:
@@ -442,23 +446,53 @@ def detect_cross_species_contamination(
     target_species: Optional[str] = None,
     other_species: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
-    """Detect cross-species contamination. Returns {seq_idx: species_name}."""
+    """Detect cross-species contamination. Returns {seq_idx: species_name}.
+
+    A read is assigned to the species whose genome shares the longest substring with it (as a fraction of the
+    read) when that fraction reaches ``threshold``.
+
+    Args:
+        sequences: Reads to classify.
+        reference_genomes: Species name to genome sequence.
+        threshold: Minimum shared fraction of the read to call a match.
+        target_species: The species the reads are expected to come from. It is never reported as a contaminant;
+            when its genome is among ``reference_genomes``, a read is also only reported when it matches the
+            contaminant better than it matches the target (a read from the target genome that shares a
+            homologous stretch with another species is not contamination).
+        other_species: Restrict the candidate contaminants to these species. By default every reference species
+            except ``target_species`` is a candidate.
+
+    Raises:
+        ValueError: If ``other_species`` names a species that is not in ``reference_genomes``.
+    """
     if not sequences or not reference_genomes:
         return {}
+    if other_species is not None:
+        missing = [name for name in other_species if name not in reference_genomes]
+        if missing:
+            raise ValueError(f"other_species not in reference_genomes: {missing}")
+        candidates = [name for name in other_species if name != target_species]
+    else:
+        candidates = [name for name in reference_genomes if name != target_species]
+
+    target_genome = reference_genomes.get(target_species) if target_species is not None else None
     results: Dict[str, Any] = {}
     for idx, seq in enumerate(sequences):
+        if len(seq) == 0:
+            continue
         best_species = None
         best_score = 0.0
-        for species, genome in reference_genomes.items():
-            if len(seq) == 0:
-                continue
-            match_len = _longest_shared_substring_len(seq, genome)
-            score = match_len / len(seq) if len(seq) > 0 else 0
+        for species in candidates:
+            match_len = _longest_shared_substring_len(seq, reference_genomes[species])
+            score = match_len / len(seq)
             if score > best_score:
                 best_score = score
                 best_species = species
-        if best_score >= threshold and best_species is not None:
-            results[str(idx)] = best_species
+        if best_score < threshold or best_species is None:
+            continue
+        if target_genome is not None and _longest_shared_substring_len(seq, target_genome) / len(seq) >= best_score:
+            continue  # at least as close to the expected species as to the contaminant
+        results[str(idx)] = best_species
     return results
 
 
@@ -470,6 +504,8 @@ def detect_mycoplasma_contamination(
     patterns = ["TTAAATTTAAATTT", "AAATTTAAATTTAAATTT"]
     results: Dict[str, Any] = {}
     for idx, seq in enumerate(sequences):
+        if not seq:
+            continue  # the empty string is a substring of every genome; an empty read is not contamination
         detected = False
         if mycoplasma_genome:
             if seq in mycoplasma_genome or mycoplasma_genome in seq:

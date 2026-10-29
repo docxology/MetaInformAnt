@@ -117,6 +117,15 @@ def _calculate_fastq_quality_score(data: Dict[str, Any]) -> Dict[str, Any]:
             "details": f"Max adapter content: {max_adapter_percent:.1f}%",
         }
 
+    # If no components were calculated, return the same error state as VCF and BAM instead of a bare score of 0
+    if not score_components:
+        return {
+            "overall_score": 0.0,
+            "components": {},
+            "grade": "F",
+            "error": "No FASTQ quality metrics provided - cannot calculate score",
+        }
+
     return _finalize_score(score_components)
 
 
@@ -309,7 +318,9 @@ def detect_outliers(data: List[float], method: str = "iqr", threshold: float = 1
 
     Args:
         data: List of numeric values
-        method: Outlier detection method ("iqr", "zscore", "modified_zscore")
+        method: Outlier detection method ("iqr", "zscore", "modified_zscore"). The modified z-score is
+            ``0.6745 * (x - median) / MAD``; when the MAD is 0 (more than half the values equal the median) it is
+            ``(x - median) / (1.253314 * mean absolute deviation)``, and constant data have no outliers.
         threshold: Threshold for outlier detection
 
     Returns:
@@ -347,13 +358,21 @@ def detect_outliers(data: List[float], method: str = "iqr", threshold: float = 1
 
     elif method == "modified_zscore":
         median = np.median(data_array)
-        mad = np.median(np.abs(data_array - median))
-        if mad == 0:
+        absolute_deviations = np.abs(data_array - median)
+        mad = float(np.median(absolute_deviations))
+        if mad > 0:
+            scale = mad / 0.6745
+        else:
+            # More than half the values equal the median, so the MAD is 0 even though the data are not constant
+            # ([5, 5, 5, 5, 5, 100]); treating that as "no outliers" hid the 100. Iglewicz and Hoaglin's
+            # fallback divides by 1.253314 times the mean absolute deviation instead.
+            scale = 1.253314 * float(np.mean(absolute_deviations))
+        if scale == 0:
             # Constant data: every deviation is zero, so no outliers
             outliers = []
             outlier_indices = []
         else:
-            modified_z_scores = 0.6745 * (data_array - median) / mad
+            modified_z_scores = (data_array - median) / scale
             outlier_indices = np.where(np.abs(modified_z_scores) > threshold)[0].tolist()
             outliers = data_array[outlier_indices].tolist()
 
@@ -493,7 +512,8 @@ def compare_quality_metrics(
                     "dataset1": stats1[key],
                     "dataset2": stats2[key],
                     "difference": diff,
-                    "percent_change": (diff / stats1[key] * 100) if stats1[key] != 0 else 0,
+                    # a change from 0 has no percentage: None, not "0% change"
+                    "percent_change": (diff / stats1[key] * 100) if stats1[key] != 0 else None,
                 }
 
     return comparison
