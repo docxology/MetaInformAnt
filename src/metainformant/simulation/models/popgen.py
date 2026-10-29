@@ -14,20 +14,29 @@ rate ``1 / size(t)`` (``size`` relative to ``N_ref``) and mutations fall on ever
 ``theta / 2`` per unit time, where ``theta = 4 * N_ref * mu`` is the population mutation
 parameter of the whole sequence. Size changes are described by :class:`PopulationEpoch` histories,
 which rescale the coalescent rates through time exactly.
+
+Recombination is added by Hudson's ancestral recombination graph
+(:func:`simulate_recombinant_genealogy`, :func:`simulate_recombinant_haplotypes`): a lineage splits
+in two at rate ``rho / 2`` per unit of the sequence it spans (``rho = 4 * N_ref * r``), every site keeps
+the Kingman genealogy and the marginal trees along the sequence are correlated through the branches
+they share, so linkage disequilibrium decays with distance. With ``rho = 0`` it is the non-recombining
+engine above. :func:`generate_linkage_disequilibrium_data` offers it as ``model="coalescent"``.
 """
 
 from __future__ import annotations
 
 import math
 import random
+from bisect import bisect_right
 from dataclasses import dataclass
-from typing import Any, Dict, List, Sequence, Tuple, Union
+from itertools import accumulate
+from typing import Any, Dict, Iterator, List, Sequence, Tuple, Union
 
 import numpy as np
 
 from metainformant.core.data import validation
 from metainformant.core.utils import errors, logging
-from metainformant.simulation.rng import coerce_and_seed, coerce_rng, seed_numpy_from_rng
+from metainformant.simulation.rng import coerce_and_seed, coerce_rng
 
 logger = logging.get_logger(__name__)
 
@@ -102,6 +111,11 @@ class _SizeHistory:
         if not math.isfinite(hazards[-1]):
             raise ValueError("epoch growth rates are too large: the integrated coalescent hazard overflows")
         self._hazard_starts = np.array(hazards)
+        # Plain-float copies for the event-by-event simulations, which map one time or hazard at a time.
+        self._start_list = starts.tolist()
+        self._hazard_list = hazards
+        self._size_list = sizes.tolist()
+        self._rate_list = rates.tolist()
 
     def _epoch_hazard(self, index: int, elapsed: float) -> float:
         """Hazard accumulated over ``elapsed`` time inside epoch ``index``."""
@@ -122,6 +136,20 @@ class _SizeHistory:
         safe_rate = np.where(constant, 1.0, rate)
         elapsed = np.where(constant, remaining * size, np.log1p(safe_rate * size * remaining) / safe_rate)
         return np.asarray(self._starts[index] + elapsed)
+
+    def hazard_at(self, time: float) -> float:
+        """Integrated coalescent hazard accumulated by backward time ``time`` (the inverse of :meth:`time_at`)."""
+        index = bisect_right(self._start_list, time) - 1
+        return float(self._hazard_list[index] + self._epoch_hazard(index, time - self._start_list[index]))
+
+    def time_at(self, hazard: float) -> float:
+        """Backward time at which the integrated hazard reaches ``hazard``; one value, without array overhead."""
+        index = bisect_right(self._hazard_list, hazard) - 1
+        remaining = hazard - self._hazard_list[index]
+        size, rate = self._size_list[index], self._rate_list[index]
+        if rate == 0.0:
+            return float(self._start_list[index] + remaining * size)
+        return float(self._start_list[index] + math.log1p(rate * size * remaining) / rate)
 
 
 def _numpy_generator(rng: RandomSource) -> np.random.Generator:
@@ -389,6 +417,593 @@ def haplotypes_to_sequences(
     return sequences
 
 
+# --- recombination: Hudson's ancestral recombination graph -------------------------------------------------
+
+#: Most coalescent plus recombination events one genealogy may take: a guard against runaway requests.
+_MAX_ARG_EVENTS = 2_000_000
+
+#: Ancestral material of a lineage: ``(left, right, node, samples below)`` for the stretch ``[left, right)``.
+_Segment = Tuple[float, float, int, int]
+#: An edge of the genealogy: ``(left, right, parent, child)``, the parent of ``child`` over ``[left, right)``.
+_Edge = Tuple[float, float, int, int]
+
+
+@dataclass(frozen=True, eq=False)
+class MarginalTree:
+    """The genealogy of the sample over one stretch ``[left, right)`` of the sequence.
+
+    Attributes:
+        left: First position of the stretch
+        right: End of the stretch (exclusive)
+        parent: ``parent[v]`` is the parent of node ``v`` in this tree, and ``-1`` for the root and for the
+            nodes that do not belong to it; nodes ``0 .. n_samples - 1`` are the sampled sequences
+        total_length: Sum of the branch lengths of the tree
+        tmrca: Time of its most recent common ancestor
+    """
+
+    left: float
+    right: float
+    parent: np.ndarray
+    total_length: float
+    tmrca: float
+
+
+@dataclass(frozen=True, eq=False)
+class RecombinantGenealogy:
+    """The ancestral recombination graph of a sample, as the marginal trees along the sequence.
+
+    The sequence is the interval ``[0, sequence_length)``. Between two breakpoints the sample has one
+    genealogy, a binary tree; across a breakpoint some branch of it moves. Nodes ``0 .. n_samples - 1`` are the
+    samples at time 0, and the internal nodes follow in the order (and at the times) of their coalescence, so
+    a node's identifier increases with its time. Time is in the units of :class:`PopulationEpoch`. A node is
+    the parent of its children on a stretch of the sequence only (an edge); the edge arrays hold, for every
+    such stretch ``[edge_left, edge_right)``, the ``edge_parent`` of a node ``edge_child``, with contiguous
+    stretches of one edge merged.
+
+    Attributes:
+        n_samples: Number of sampled sequences
+        sequence_length: Length of the sequence, in sites
+        rho: Total population recombination parameter ``4 * N_ref * r`` of the whole sequence
+        node_times: Time of every node
+        edge_left: Start of every edge's stretch
+        edge_right: End of every edge's stretch
+        edge_parent: Parent node of every edge
+        edge_child: Child node of every edge
+        breakpoints: Boundaries of the marginal trees, from 0 to ``sequence_length`` (one more than trees)
+        tree_lengths: Total branch length of every marginal tree
+        tree_tmrca: Time of the most recent common ancestor of every marginal tree
+        n_coalescences: Number of common-ancestor events of the graph, including those between lineages
+            with no ancestral material in common
+        n_recombinations: Number of recombination events of the graph: every event that split the ancestral
+            material of a lineage between two lineages
+        n_gap_recombinations: Number of those events whose breakpoint fell in a stretch of the lineage that
+            is not ancestral to the sample (between two ancestral stretches). They move no branch of any
+            marginal tree at the moment they happen, but they separate the ancestry of the stretches on
+            either side. The others, :attr:`n_ancestral_recombinations`, are the breakpoints Hudson's
+            expectation ``rho * sum(1 / i for i < n_samples)`` counts
+    """
+
+    n_samples: int
+    sequence_length: float
+    rho: float
+    node_times: np.ndarray
+    edge_left: np.ndarray
+    edge_right: np.ndarray
+    edge_parent: np.ndarray
+    edge_child: np.ndarray
+    breakpoints: np.ndarray
+    tree_lengths: np.ndarray
+    tree_tmrca: np.ndarray
+    n_coalescences: int
+    n_recombinations: int
+    n_gap_recombinations: int
+
+    @property
+    def n_trees(self) -> int:
+        """Number of distinct marginal trees along the sequence."""
+        return int(self.tree_lengths.size)
+
+    @property
+    def n_ancestral_recombinations(self) -> int:
+        """Recombination events whose breakpoint fell in ancestral material of the lineage it split."""
+        return self.n_recombinations - self.n_gap_recombinations
+
+    def _edges(self) -> List[_Edge]:
+        return list(
+            zip(
+                self.edge_left.tolist(),
+                self.edge_right.tolist(),
+                self.edge_parent.tolist(),
+                self.edge_child.tolist(),
+            )
+        )
+
+    def trees(self) -> Iterator[MarginalTree]:
+        """Yield the marginal trees from the left end of the sequence to the right end."""
+        for left, right, parent, _, total, tmrca in _sweep_trees(
+            self.n_samples, self.node_times.tolist(), self._edges(), carriers=False
+        ):
+            yield MarginalTree(left, right, np.array(parent, dtype=np.int64), total, tmrca)
+
+    def tree_at(self, position: float) -> MarginalTree:
+        """The marginal tree over the stretch that holds ``position``."""
+        if not 0.0 <= position < self.sequence_length:
+            raise ValueError(f"position must lie in [0, {self.sequence_length}), got {position}")
+        index = int(np.searchsorted(self.breakpoints, position, side="right")) - 1
+        for tree_index, tree in enumerate(self.trees()):
+            if tree_index == index:
+                return tree
+        raise RuntimeError("internal error: the marginal trees do not cover the sequence")  # pragma: no cover
+
+    def mutate(
+        self,
+        *,
+        theta: float | None = None,
+        segregating_sites: int | None = None,
+        rng: RandomSource = None,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """Place infinite-sites mutations on the marginal trees and return where they are and who carries them.
+
+        Exactly one of ``theta`` and ``segregating_sites`` fixes the mutation load, as in
+        :func:`simulate_coalescent_spectra`:
+
+        * ``theta``: mutations fall on a stretch of the sequence of width ``w`` with a tree of total length
+          ``T`` as a Poisson number with mean ``theta * w * T / (2 * sequence_length)``, so under constant size
+          the expected number of segregating sites is ``theta * sum(1 / i for i < n_samples)`` however much
+          the sequence recombines.
+        * ``segregating_sites``: exactly that many mutations, spread over the stretches in proportion to
+          ``w * T`` (the stretch's share of the total branch length of the graph) on a genealogy drawn
+          without weighting, the approach of Hudson's ``ms -s``.
+
+        Within a stretch a mutation takes a uniformly distributed position and a branch chosen in proportion to
+        its length, and is carried by the sequences below that branch. Every mutation has its own position,
+        so none happens twice.
+
+        Args:
+            theta: Population mutation parameter of the whole sequence, ``4 * N_ref * mu * sequence_length``
+            segregating_sites: Number of mutations to place
+            rng: ``random.Random``, ``numpy.random.Generator`` or integer seed; ``None`` draws fresh entropy
+
+        Returns:
+            ``(positions, haplotypes)``: the sorted positions of the mutations, a float array of shape
+            ``(S,)``, and the ``uint8`` matrix of shape ``(n_samples, S)`` whose entry ``[i, j]`` is 1 when
+            sequence ``i`` carries the derived allele of mutation ``j``
+
+        Raises:
+            ValueError: If neither or both of the arguments are given, or either is invalid
+        """
+        if (theta is None) == (segregating_sites is None):
+            raise ValueError("give exactly one of theta and segregating_sites")
+        if theta is not None:
+            _check_theta(theta)
+        if segregating_sites is not None:
+            if not isinstance(segregating_sites, (int, np.integer)) or segregating_sites < 0:
+                raise ValueError(f"segregating_sites must be a non-negative integer, got {segregating_sites!r}")
+        generator = _numpy_generator(rng)
+
+        masses = self.tree_lengths * np.diff(self.breakpoints)  # a stretch's share of the branch length
+        if segregating_sites is not None:
+            counts = generator.multinomial(int(segregating_sites), masses / masses.sum())
+        else:
+            counts = generator.poisson((theta or 0.0) / (2.0 * self.sequence_length) * masses)
+        total = int(counts.sum())
+        if total == 0:
+            return np.zeros(0), np.zeros((self.n_samples, 0), dtype=np.uint8)
+
+        positions = np.empty(total)
+        carriers: List[int] = []
+        times = self.node_times
+        filled = 0
+        for tree_index, (left, right, parent, mask, _, _) in enumerate(
+            _sweep_trees(self.n_samples, times.tolist(), self._edges(), carriers=True)
+        ):
+            count = int(counts[tree_index])
+            if count == 0:
+                continue
+            parents = np.asarray(parent)
+            children = np.flatnonzero(parents >= 0)
+            cumulative = np.cumsum(times[parents[children]] - times[children])
+            chosen = np.searchsorted(cumulative, generator.random(count) * cumulative[-1], side="right")
+            chosen = np.minimum(chosen, children.size - 1)
+            stretch = generator.random(count)
+            positions[filled : filled + count] = np.minimum(left + (right - left) * stretch, np.nextafter(right, left))
+            carriers.extend(mask[node] for node in children[chosen].tolist())
+            filled += count
+
+        order = np.argsort(positions, kind="stable")
+        width = (self.n_samples + 7) // 8
+        packed = np.frombuffer(b"".join(carriers[i].to_bytes(width, "little") for i in order), dtype=np.uint8)
+        bits = np.unpackbits(packed.reshape(total, width), axis=1, bitorder="little")[:, : self.n_samples]
+        return positions[order], np.ascontiguousarray(bits.T)
+
+
+@dataclass(frozen=True, eq=False)
+class RecombinantSample:
+    """A sample from the coalescent with recombination: its genealogy and the mutations placed on it.
+
+    Attributes:
+        genealogy: The marginal trees along the sequence
+        positions: Sorted positions of the segregating sites in ``[0, sequence_length)``
+        haplotypes: ``uint8`` matrix of shape ``(n_samples, S)`` of 0 (ancestral) and 1 (derived) alleles, one
+            column per segregating site in the order of ``positions``
+    """
+
+    genealogy: RecombinantGenealogy
+    positions: np.ndarray
+    haplotypes: np.ndarray
+
+
+def _sweep_trees(
+    n_samples: int, node_times: Sequence[float], edges: Sequence[_Edge], *, carriers: bool
+) -> Iterator[Tuple[float, float, List[int], List[int], float, float]]:
+    """Walk the marginal trees from left to right, yielding ``(left, right, parent, carrier, length, tmrca)``.
+
+    The ``parent`` list (and the ``carrier`` list when ``carriers`` is set) is updated in place between the
+    yields, edge by edge, so a consumer must copy what it keeps. ``carrier[v]`` is a bit mask of the samples
+    below node ``v``. Nodes are identified by increasing time, so ``parent[v] > v``.
+    """
+    n_nodes = len(node_times)
+    parent = [-1] * n_nodes
+    n_children = [0] * n_nodes
+    carrier = [1 << i for i in range(n_samples)] + [0] * (n_nodes - n_samples) if carriers else []
+    inserted: Dict[float, List[int]] = {}
+    removed: Dict[float, List[int]] = {}
+    for index, (left, right, _, _) in enumerate(edges):
+        inserted.setdefault(left, []).append(index)
+        removed.setdefault(right, []).append(index)
+    boundaries = sorted(inserted.keys() | removed.keys())
+    roots: set[int] = set()
+    length = 0.0
+    for left, right in zip(boundaries, boundaries[1:]):
+        for index in removed.get(left, ()):
+            _, _, above, node = edges[index]
+            parent[node] = -1
+            length -= node_times[above] - node_times[node]
+            n_children[above] -= 1
+            if n_children[above] == 0:
+                roots.discard(above)
+            if n_children[node] > 0:
+                roots.add(node)
+            if carriers:
+                below = carrier[node]
+                while above != -1:
+                    carrier[above] ^= below
+                    above = parent[above]
+        for index in inserted.get(left, ()):
+            _, _, above, node = edges[index]
+            parent[node] = above
+            length += node_times[above] - node_times[node]
+            n_children[above] += 1
+            roots.discard(node)
+            if parent[above] == -1:
+                roots.add(above)
+            if carriers:
+                below = carrier[node]
+                while above != -1:
+                    carrier[above] |= below
+                    above = parent[above]
+        if len(roots) != 1:  # pragma: no cover - a broken genealogy
+            raise RuntimeError(f"internal error: {len(roots)} roots over [{left}, {right})")
+        yield left, right, parent, carrier, length, node_times[next(iter(roots))]
+
+
+def _merge_lineages(
+    first: Sequence[_Segment],
+    second: Sequence[_Segment],
+    n_samples: int,
+    time: float,
+    node_times: List[float],
+    edges: List[_Edge],
+) -> List[_Segment]:
+    """Merge two lineages at ``time``: the common-ancestor event of Hudson's algorithm.
+
+    Where the two carry ancestral material of the same stretch their ancestries coalesce into a new node
+    (one per event, appended to ``node_times``) with an edge to each of the two nodes; stretches carried by
+    one lineage only pass to the merged lineage unchanged. A stretch below which all ``n_samples`` samples
+    have been gathered has reached its most recent common ancestor, is no longer ancestral to anything, and
+    is dropped. The result may be empty.
+    """
+    out: List[_Segment] = []
+    n_first, n_second = len(first), len(second)
+    i = j = 0
+    head_first, head_second = first[0], second[0]
+    new_node = -1
+    while i < n_first and j < n_second:
+        left_a, right_a, node_a, count_a = head_first
+        left_b, right_b, node_b, count_b = head_second
+        if right_a <= left_b:
+            out.append(head_first)
+            i += 1
+            if i < n_first:
+                head_first = first[i]
+        elif right_b <= left_a:
+            out.append(head_second)
+            j += 1
+            if j < n_second:
+                head_second = second[j]
+        else:
+            if left_a < left_b:
+                out.append((left_a, left_b, node_a, count_a))
+            elif left_b < left_a:
+                out.append((left_b, left_a, node_b, count_b))
+            left = max(left_a, left_b)
+            right = min(right_a, right_b)
+            if new_node < 0:
+                new_node = len(node_times)
+                node_times.append(time)
+            edges.append((left, right, new_node, node_a))
+            edges.append((left, right, new_node, node_b))
+            if count_a + count_b < n_samples:
+                out.append((left, right, new_node, count_a + count_b))
+            if right_a == right:
+                i += 1
+                if i < n_first:
+                    head_first = first[i]
+            else:
+                head_first = (right, right_a, node_a, count_a)
+            if right_b == right:
+                j += 1
+                if j < n_second:
+                    head_second = second[j]
+            else:
+                head_second = (right, right_b, node_b, count_b)
+    if i < n_first:
+        out.append(head_first)
+        out.extend(first[i + 1 :])
+    if j < n_second:
+        out.append(head_second)
+        out.extend(second[j + 1 :])
+
+    joined: List[_Segment] = []
+    for segment in out:  # adjacent stretches under one node with equal sample counts are one stretch
+        if joined and joined[-1][1] == segment[0] and joined[-1][2:] == segment[2:]:
+            joined[-1] = (joined[-1][0], segment[1], segment[2], segment[3])
+        else:
+            joined.append(segment)
+    return joined
+
+
+def _split_lineage(lineage: Sequence[_Segment], cut: float) -> Tuple[List[_Segment], List[_Segment], bool]:
+    """Split a lineage at the position ``cut``; also report whether the cut fell in ancestral material."""
+    index = 0
+    while lineage[index][1] <= cut:
+        index += 1
+    left, right, node, count = lineage[index]
+    if left < cut:
+        return (
+            list(lineage[:index]) + [(left, cut, node, count)],
+            [(cut, right, node, count)] + list(lineage[index + 1 :]),
+            True,
+        )
+    return list(lineage[:index]), list(lineage[index:]), False
+
+
+def _simulate_arg(
+    n_samples: int, length: float, rho: float, history: _SizeHistory, generator: np.random.Generator
+) -> Tuple[List[float], List[_Edge], int, int, int]:
+    """Hudson's algorithm: the coalescent with recombination, backwards in time, over ``[0, length)``.
+
+    Every lineage carries the stretches of the sequence that are still ancestral to the sample, each with
+    the node it stands for and the number of samples below it. With ``k`` lineages, any of the ``k (k - 1) / 2``
+    pairs merges at rate ``1 / size(t)`` (the coalescent clock, mapped through the integrated hazard of
+    ``history``), and a lineage whose material spans ``s`` units of sequence splits in two at rate
+    ``rho * s / (2 * length)`` with a breakpoint uniform over that span. The earlier of the two independent
+    clocks decides the next event. The process ends when every stretch of the sequence has reached its most
+    recent common ancestor.
+
+    Returns:
+        ``(node_times, edges, n_coalescences, n_recombinations, n_gap_recombinations)`` with the edges
+        merged along contiguous stretches
+    """
+    rate_per_span = rho / (2.0 * length)
+    lineages: List[List[_Segment]] = [[(0.0, length, node, 1)] for node in range(n_samples)]
+    spans = [length] * n_samples  # span of every lineage: from its first to its last ancestral position
+    node_times: List[float] = [0.0] * n_samples
+    edges: List[_Edge] = []
+    exponential, uniform = generator.standard_exponential, generator.random
+    time = hazard = 0.0
+    n_coalescences = n_recombinations = n_gap_recombinations = 0
+
+    def drop(index: int) -> None:
+        last, last_span = lineages.pop(), spans.pop()
+        if index < len(lineages):
+            lineages[index], spans[index] = last, last_span
+
+    while lineages:
+        if n_coalescences + n_recombinations >= _MAX_ARG_EVENTS:
+            raise ValueError(
+                f"the ancestral recombination graph needs more than {_MAX_ARG_EVENTS} events: lower rho "
+                f"({rho:g}), the sample size ({n_samples}) or the sequence length"
+            )
+        k = len(lineages)
+        next_recombination = time + exponential() / (rate_per_span * sum(spans)) if rho > 0.0 else math.inf
+        step = exponential() / (k * (k - 1) / 2.0)
+        next_coalescence = history.time_at(hazard + step)
+        if next_coalescence <= next_recombination:
+            time, hazard = next_coalescence, hazard + step
+            first = int(uniform() * k)
+            second = int(uniform() * (k - 1))
+            second += second >= first
+            merged = _merge_lineages(lineages[first], lineages[second], n_samples, time, node_times, edges)
+            n_coalescences += 1
+            if merged:
+                lineages[first], spans[first] = merged, merged[-1][1] - merged[0][0]
+                drop(second)
+            else:
+                drop(max(first, second))
+                drop(min(first, second))
+        else:
+            time, hazard = next_recombination, history.hazard_at(next_recombination)
+            cumulative = list(accumulate(spans))
+            chosen = min(bisect_right(cumulative, uniform() * cumulative[-1]), k - 1)
+            lineage = lineages[chosen]
+            start, end = lineage[0][0], lineage[-1][1]
+            cut = start + (end - start) * uniform()
+            if not start < cut < end:  # the draw sits on an end of the span: no event at all
+                continue
+            left_lineage, right_lineage, ancestral = _split_lineage(lineage, cut)
+            lineages[chosen], spans[chosen] = left_lineage, left_lineage[-1][1] - left_lineage[0][0]
+            lineages.append(right_lineage)
+            spans.append(right_lineage[-1][1] - right_lineage[0][0])
+            n_recombinations += 1
+            n_gap_recombinations += not ancestral
+
+    edges.sort(key=lambda edge: (edge[2], edge[3], edge[0]))
+    squashed: List[_Edge] = []
+    for edge in edges:  # contiguous stretches of one (parent, child) pair are one edge
+        if squashed and squashed[-1][2:] == edge[2:] and squashed[-1][1] == edge[0]:
+            squashed[-1] = (squashed[-1][0], edge[1], edge[2], edge[3])
+        else:
+            squashed.append(edge)
+    return node_times, squashed, n_coalescences, n_recombinations, n_gap_recombinations
+
+
+def _resolve_rho(rho: float | None, rho_per_site: float | None, sequence_length: float) -> float:
+    """The total recombination parameter of a request: ``rho``, or ``rho_per_site`` times the length, or 0."""
+    if rho is not None and rho_per_site is not None:
+        raise ValueError("give at most one of rho (the total) and rho_per_site")
+    value = 0.0
+    for name, rate in (("rho", rho), ("rho_per_site", rho_per_site)):
+        if rate is not None:
+            if not math.isfinite(rate):
+                raise ValueError(f"{name} must be a finite number, got {rate}")
+            validation.validate_range(rate, min_val=0.0, name=name)
+            value = rate * sequence_length if name == "rho_per_site" else rate
+    if not math.isfinite(value):
+        raise ValueError("the total recombination parameter overflows: lower rho_per_site or the sequence length")
+    return float(value)
+
+
+def simulate_recombinant_genealogy(
+    n_samples: int,
+    sequence_length: float,
+    *,
+    rho: float | None = None,
+    rho_per_site: float | None = None,
+    epochs: Sequence[PopulationEpoch] | None = None,
+    rng: RandomSource = None,
+) -> RecombinantGenealogy:
+    """Simulate the genealogy of a sample over a recombining sequence: Hudson's ancestral recombination graph.
+
+    The sequence is the interval ``[0, sequence_length)`` of ``sequence_length`` sites and recombination can
+    break it anywhere (at a uniformly distributed position, so every site boundary is equally likely). Going
+    back in time from the sample, each lineage carries the stretches of the sequence that are ancestral to the
+    sample. A pair of lineages merges at rate ``1 / size(t)`` as in :func:`simulate_coalescent_spectra`, and a
+    lineage splits in two, its material divided at a breakpoint, at rate ``rho_per_site / 2`` per site of the
+    span between its first and last ancestral site (``rho / 2`` for material covering the whole sequence).
+    With this clock every site, taken on its own, has the Kingman genealogy (constant size or ``epochs``),
+    and the sites are correlated by the branches they share. ``rho`` is the total ``4 * N_ref * r`` of the
+    sequence, with ``r`` the probability per generation of a recombination breakpoint within it and ``N_ref`` the
+    reference size that sets the time unit of ``epochs``: ``rho_per_site`` is the same rate per site. With
+    ``rho = 0`` the graph is one tree, drawn as :func:`simulate_coalescent_haplotypes` draws it. Under
+    constant size the graph holds ``rho * sum(1 / i for i < n_samples)`` recombination events in expectation
+    whose breakpoint fell in ancestral material (:attr:`RecombinantGenealogy.n_ancestral_recombinations`),
+    and some further ones in stretches that are not ancestral, which grow in number with ``rho``. The cost
+    of the simulation grows with the number of events, a little faster than ``rho ** 1.8``: 100 samples
+    take about 0.1 s at ``rho = 400``, 1 s at ``rho = 2000`` and 5 s at ``rho = 4000``.
+
+    Args:
+        n_samples: Number of sampled sequences (at least 2)
+        sequence_length: Length of the sequence in sites (positive and finite)
+        rho: Total population recombination parameter of the whole sequence
+        rho_per_site: Population recombination parameter per site (``rho = rho_per_site * sequence_length``).
+            At most one of the two may be given; with neither, there is no recombination
+        epochs: Demographic history (see :class:`PopulationEpoch`); constant size when omitted
+        rng: ``random.Random``, ``numpy.random.Generator`` or integer seed; ``None`` draws fresh entropy
+
+    Returns:
+        The graph, with the marginal trees recoverable from :meth:`RecombinantGenealogy.trees`; place
+        mutations on it with :meth:`RecombinantGenealogy.mutate`
+
+    Raises:
+        ValueError: If ``n_samples``, ``sequence_length`` or the recombination parameters are invalid, both
+            ``rho`` and ``rho_per_site`` are given, the epochs are invalid, or the graph would need more
+            than two million events
+    """
+    validation.validate_range(n_samples, min_val=2, name="n_samples")
+    if not isinstance(sequence_length, (int, float, np.integer, np.floating)) or not 0.0 < sequence_length < math.inf:
+        raise ValueError(f"sequence_length must be a positive finite number, got {sequence_length!r}")
+    length = float(sequence_length)
+    total_rho = _resolve_rho(rho, rho_per_site, length)
+    history = _SizeHistory(epochs)
+    generator = _numpy_generator(rng)
+
+    node_times, edges, n_coalescences, n_recombinations, n_gaps = _simulate_arg(
+        n_samples, length, total_rho, history, generator
+    )
+    lefts, rights, parents, children = (np.array(column) for column in zip(*edges))
+    tree_lengths, tree_tmrca, boundaries = [], [], [0.0]
+    for left, right, _, _, total, tmrca in _sweep_trees(n_samples, node_times, edges, carriers=False):
+        tree_lengths.append(total)
+        tree_tmrca.append(tmrca)
+        boundaries.append(right)
+    return RecombinantGenealogy(
+        n_samples=n_samples,
+        sequence_length=length,
+        rho=total_rho,
+        node_times=np.array(node_times),
+        edge_left=lefts.astype(float),
+        edge_right=rights.astype(float),
+        edge_parent=parents.astype(np.int64),
+        edge_child=children.astype(np.int64),
+        breakpoints=np.array(boundaries),
+        tree_lengths=np.array(tree_lengths),
+        tree_tmrca=np.array(tree_tmrca),
+        n_coalescences=n_coalescences,
+        n_recombinations=n_recombinations,
+        n_gap_recombinations=n_gaps,
+    )
+
+
+def simulate_recombinant_haplotypes(
+    n_samples: int,
+    sequence_length: float,
+    *,
+    theta: float | None = None,
+    segregating_sites: int | None = None,
+    rho: float | None = None,
+    rho_per_site: float | None = None,
+    epochs: Sequence[PopulationEpoch] | None = None,
+    rng: RandomSource = None,
+) -> RecombinantSample:
+    """Simulate one neutral sample over a recombining sequence, with infinite-sites mutation.
+
+    The genealogy is Hudson's ancestral recombination graph (:func:`simulate_recombinant_genealogy`) and
+    the mutations are placed on its marginal trees at uniformly distributed positions
+    (:meth:`RecombinantGenealogy.mutate`): exactly one of ``theta`` and ``segregating_sites`` fixes their
+    number. Every site has the neutral genealogy of :func:`simulate_coalescent_haplotypes`, so the expected
+    site frequency spectrum, the expected number of segregating sites and the expected diversity are those of
+    the non-recombining sample (``E[S] = theta * a_n``, ``E[xi_i] = theta / i``, ``E[pi] = theta`` under
+    constant size, for ``theta`` the total over the sequence); recombination changes their variances, and it
+    makes pairs of sites at distance ``d`` less correlated as ``rho_per_site * d`` grows: linkage
+    disequilibrium decays, and two sites can show all four gametes. Sites of one marginal tree never do.
+
+    Args:
+        n_samples: Number of sampled sequences (at least 2)
+        sequence_length: Length of the sequence in sites
+        theta: Population mutation parameter of the whole sequence, ``4 * N_ref * mu * sequence_length``
+        segregating_sites: Number of mutations (alternative to ``theta``)
+        rho: Total population recombination parameter ``4 * N_ref * r`` of the whole sequence
+        rho_per_site: The same rate per site (at most one of ``rho`` and ``rho_per_site``)
+        epochs: Demographic history (see :class:`PopulationEpoch`); constant size when omitted
+        rng: ``random.Random``, ``numpy.random.Generator`` or integer seed; ``None`` draws fresh entropy
+
+    Returns:
+        The genealogy, the sorted mutation positions and the haplotype matrix
+
+    Raises:
+        ValueError: As :func:`simulate_recombinant_genealogy` and :meth:`RecombinantGenealogy.mutate`
+    """
+    if (theta is None) == (segregating_sites is None):
+        raise ValueError("give exactly one of theta and segregating_sites")
+    generator = _numpy_generator(rng)
+    genealogy = simulate_recombinant_genealogy(
+        n_samples, sequence_length, rho=rho, rho_per_site=rho_per_site, epochs=epochs, rng=generator
+    )
+    positions, haplotypes = genealogy.mutate(theta=theta, segregating_sites=segregating_sites, rng=generator)
+    return RecombinantSample(genealogy=genealogy, positions=positions, haplotypes=haplotypes)
+
+
 def _coalescent_sequences(
     n_sequences: int,
     length: int,
@@ -547,9 +1162,9 @@ def generate_two_populations(
         f_st: Desired F_ST value (0-1)
         fst: Alias for f_st (lowercase)
         theta: Per-site population mutation rate; sets the default ``n_sites``
-        n_sites: Number of polymorphic sites, at most ``length``. Defaults to
-            Watterson's expectation ``theta * length * a_n`` for the
-            ``n_pop1 + n_pop2`` sequences (at least 1).
+        n_sites: Number of polymorphic sites, at most ``length`` (a larger number is an error, not a
+            truncation). Defaults to Watterson's expectation ``theta * length * a_n`` for the
+            ``n_pop1 + n_pop2`` sequences (at least 1), which must also fit in ``length``.
         rng: Random number generator for reproducibility
         sequence_length: Alias for length
 
@@ -557,7 +1172,8 @@ def generate_two_populations(
         Tuple of (population1_sequences, population2_sequences)
 
     Raises:
-        ValueError: If parameters are invalid
+        ValueError: If parameters are invalid, or more polymorphic sites are asked for (or follow from
+            ``theta``) than the sequences have positions
     """
     # Handle parameter aliases
     if sequence_length is not None and length is None:
@@ -578,12 +1194,17 @@ def generate_two_populations(
         a_n = sum(1.0 / i for i in range(1, n_pop1 + n_pop2))
         n_sites = max(1, round(theta * length * a_n))
     validation.validate_range(n_sites, min_val=1, name="n_sites")
+    if n_sites > length:
+        raise errors.ValidationError(
+            f"{n_sites} polymorphic sites do not fit in sequences of length {length}: lower theta or n_sites, "
+            "or lengthen the sequences"
+        )
 
     rng = coerce_and_seed(rng)
 
     ancestral = [rng.choice("ACGT") for _ in range(length)]
     populations = [[list(ancestral) for _ in range(n_pop1)], [list(ancestral) for _ in range(n_pop2)]]
-    for position in sorted(rng.sample(range(length), min(n_sites, length))):
+    for position in sorted(rng.sample(range(length), n_sites)):
         derived = rng.choice([base for base in "ACGT" if base != ancestral[position]])
         p = rng.uniform(0.05, 0.95)
         for population in populations:
@@ -624,7 +1245,8 @@ def generate_genotype_matrix(
         maf_min: Minimum minor allele frequency
         maf_max: Maximum minor allele frequency
         hwe_deviation: Deviation from Hardy-Weinberg equilibrium (0 = perfect HWE)
-        hwe: Whether to generate genotypes under HWE (True) or not (False)
+        hwe: Whether to generate genotypes under HWE (True) or not (False). ``hwe=False`` with no
+            ``hwe_deviation`` uses a deviation of 0.3; an explicit ``hwe_deviation`` is always honoured
         allele_frequencies: List of allele frequencies for each site
         ploidy: Ploidy level (1=haploid, 2=diploid)
         rng: Random number generator for reproducibility
@@ -652,9 +1274,9 @@ def generate_genotype_matrix(
     validation.validate_range(hwe_deviation, min_val=0.0, max_val=1.0, name="hwe_deviation")
     validation.validate_range(ploidy, min_val=1, max_val=2, name="ploidy")
 
-    # Convert hwe boolean to hwe_deviation
-    if not hwe:
-        hwe_deviation = 0.3  # Some deviation from HWE
+    # hwe=False without a deviation of its own means "some deviation from HWE"
+    if not hwe and hwe_deviation == 0:
+        hwe_deviation = 0.3
 
     rng = coerce_and_seed(rng)
 
@@ -701,6 +1323,135 @@ def generate_genotype_matrix(
     return genotype_matrix
 
 
+#: Mutations in every simulated locus behind the Tajima's D reported by the statistics interfaces.
+_SIGNATURE_SEGREGATING_SITES = 50
+
+
+def _check_summary_sample(sample_size: int, n_replicates: int) -> None:
+    """Validate the size of the simulated sample behind the statistics interfaces."""
+    validation.validate_range(sample_size, min_val=4, name="sample_size")
+    validation.validate_range(n_replicates, min_val=2, name="n_replicates")
+
+
+def _expansion_epochs(factor: float, duration: float) -> List[PopulationEpoch]:
+    """Exponential growth by ``factor`` over the last ``duration`` time units before the sample."""
+    if factor == 1.0:
+        return [PopulationEpoch(0.0, 1.0)]
+    return [PopulationEpoch(0.0, factor, math.log(factor) / duration), PopulationEpoch(duration, 1.0)]
+
+
+def _bottleneck_epochs(size: float, duration: float, recovery: float = 0.0) -> List[PopulationEpoch]:
+    """A bottleneck of relative ``size`` and ``duration`` that ended ``recovery`` time units before the sample."""
+    epochs = (
+        [PopulationEpoch(0.0, 1.0), PopulationEpoch(recovery, size)] if recovery > 0.0 else [PopulationEpoch(0.0, size)]
+    )
+    return epochs + [PopulationEpoch(recovery + duration, 1.0)]
+
+
+def _epochs_from_sizes(sizes: Sequence[int], reference_size: float) -> List[PopulationEpoch]:
+    """The history of a per-generation size trajectory read backwards from its last generation.
+
+    Runs of equal sizes become one epoch (time in units of ``2 * reference_size`` generations), and the
+    size of the first generation continues into the past for ever.
+    """
+    runs: List[List[int]] = []  # [size, generations], latest first
+    for size in reversed(sizes):
+        if runs and runs[-1][0] == size:
+            runs[-1][1] += 1
+        else:
+            runs.append([size, 1])
+    epochs, start = [], 0
+    for size, length in runs:
+        epochs.append(PopulationEpoch(start / (2.0 * reference_size), size / reference_size))
+        start += length
+    return epochs
+
+
+def _expected_branch_spectrum(
+    n_samples: int, epochs: Sequence[PopulationEpoch] | None, n_replicates: int, generator: np.random.Generator
+) -> np.ndarray:
+    """Mean total branch length carried by ``i`` of the samples, ``i = 1..n_samples-1``, over seeded genealogies.
+
+    The expected site frequency spectrum of a neutral sample is proportional to it (``E[xi_i] = theta E[L_i] / 2``);
+    its relative sampling error is about ``1 / sqrt(n_replicates)`` per class.
+    """
+    history = _SizeHistory(epochs)
+    total = np.zeros(n_samples - 1)
+    block = max(1, _BLOCK_CELLS // n_samples)
+    for begin in range(0, n_replicates, block):
+        times = _coalescent_event_times(n_samples, min(block, n_replicates - begin), history, generator)
+        total += _branch_length_spectra(times, n_samples, generator).sum(axis=0)
+    return total / n_replicates
+
+
+def _tajimas_d(spectra: np.ndarray, n_samples: int) -> np.ndarray:
+    """Tajima's (1989) D of every row of ``spectra`` (mutations carried by 1..n-1 samples); 0 without mutations."""
+    i = np.arange(1, n_samples, dtype=float)
+    a1, a2 = float(np.sum(1.0 / i)), float(np.sum(1.0 / i**2))
+    b1 = (n_samples + 1) / (3.0 * (n_samples - 1))
+    b2 = 2.0 * (n_samples**2 + n_samples + 3) / (9.0 * n_samples * (n_samples - 1))
+    c1 = b1 - 1.0 / a1
+    c2 = b2 - (n_samples + 2) / (a1 * n_samples) + a2 / a1**2
+    segregating = spectra.sum(axis=1).astype(float)
+    pairwise = spectra @ (i * (n_samples - i) / (n_samples * (n_samples - 1) / 2.0))
+    variance = c1 / a1 * segregating + c2 / (a1**2 + a2) * segregating * (segregating - 1.0)
+    statistic: np.ndarray = np.divide(
+        pairwise - segregating / a1, np.sqrt(variance), out=np.zeros_like(pairwise), where=variance > 0
+    )
+    return statistic
+
+
+def _trajectory_statistics(
+    population_sizes: Sequence[int],
+    epochs: Sequence[PopulationEpoch],
+    *,
+    initial_size: int,
+    mutation_rate: float,
+    locus_length: int,
+    sample_size: int,
+    n_replicates: int,
+    generator: np.random.Generator,
+) -> Dict[str, Any]:
+    """Statistics of a size trajectory that follow from the coalescent.
+
+    ``diversity_trajectory`` is the expected per-site nucleotide diversity after every generation, from the
+    recursion ``pi' = (1 - 1 / (2 N)) pi + 2 mu`` (two lineages share a parent with probability ``1 / (2 N)``
+    and each accrues ``mu`` mutations per site), started at the mutation-drift equilibrium ``4 N mu`` of the
+    initial size. ``mutation_trajectory`` counts the new mutations of the whole population, Poisson with mean
+    ``2 N mu * locus_length`` per generation. The rest describes a sample of ``sample_size`` chromosomes drawn
+    after the last generation, from ``n_replicates`` genealogies of the history ``epochs``.
+    """
+    pi = 4.0 * initial_size * mutation_rate
+    diversity = []
+    for size in population_sizes:
+        pi = (1.0 - 1.0 / (2.0 * size)) * pi + 2.0 * mutation_rate
+        diversity.append(pi)
+    new_mutations = generator.poisson(2.0 * np.asarray(population_sizes, dtype=float) * mutation_rate * locus_length)
+    mutation_trajectory = np.cumsum(new_mutations)
+
+    theta_locus = 4.0 * initial_size * mutation_rate * locus_length
+    branch = _expected_branch_spectrum(sample_size, epochs, n_replicates, generator)
+    classes = np.arange(1, sample_size, dtype=float)
+    spectra = simulate_coalescent_spectra(
+        sample_size, n_replicates, segregating_sites=_SIGNATURE_SEGREGATING_SITES, epochs=epochs, rng=generator
+    )
+    d = _tajimas_d(spectra, sample_size)
+    return {
+        "diversity_trajectory": diversity,
+        "mutation_trajectory": mutation_trajectory.tolist(),
+        "total_mutations": int(mutation_trajectory[-1]),
+        "final_diversity": diversity[-1],
+        "sample_size": sample_size,
+        "n_replicates": n_replicates,
+        "expected_sfs": (theta_locus / 2.0 * branch).tolist(),
+        "neutral_sfs": (theta_locus / classes).tolist(),
+        "singleton_fraction": float(branch[0] / branch.sum()),
+        "neutral_singleton_fraction": float(1.0 / np.sum(1.0 / classes)),
+        "tajimas_d": float(d.mean()),
+        "tajimas_d_se": float(d.std(ddof=1) / math.sqrt(n_replicates)),
+    }
+
+
 def simulate_bottleneck_population(
     initial_size: int | None = None,
     bottleneck_size: int | None = None,
@@ -714,6 +1465,9 @@ def simulate_bottleneck_population(
     sequence_length: int | None = None,
     bottleneck_duration: int | None = None,
     pre_bottleneck_diversity: float | None = None,
+    # Statistics interface: the sample behind the reported site frequency spectrum and Tajima's D
+    sample_size: int = 20,
+    n_replicates: int = 2000,
 ) -> List[str] | Dict[str, Any]:
     """Simulate a population bottleneck followed by recovery.
 
@@ -733,9 +1487,20 @@ def simulate_bottleneck_population(
     per-site population mutation parameter ``pre_bottleneck_diversity`` (``4 * N * mu`` per site, its
     expected nucleotide diversity).
 
-    Statistics interface: a deterministic size trajectory with heuristic diversity and Poisson
-    mutation counts. It is not a coalescent simulation. The bottleneck occupies the middle third of
-    ``generations``.
+    Statistics interface: the deterministic size trajectory (``initial_size`` for the first third of
+    ``generations``, ``bottleneck_size`` for the middle third, ``final_size`` for the last) and what the
+    coalescent says about it, with the sample drawn after the last generation (see
+    :func:`_trajectory_statistics`): ``diversity_trajectory`` is the expected per-site nucleotide diversity
+    after every generation (an exact recursion, started at the equilibrium ``4 * initial_size * mutation_rate``
+    of the initial population), ``mutation_trajectory`` the cumulative count of new mutations in the whole
+    population (Poisson, ``2 * size * mutation_rate * sequence_length`` per generation), and ``expected_sfs``,
+    ``singleton_fraction`` and ``tajimas_d`` describe a sample of ``sample_size`` chromosomes simulated from
+    the coalescent of that history: ``expected_sfs[i - 1]`` is the expected number of mutations in the locus
+    carried by ``i`` chromosomes, averaged over ``n_replicates`` seeded genealogies (``neutral_sfs`` is the
+    constant-size expectation ``theta / i`` for comparison), and ``tajimas_d`` is the mean Tajima's D of
+    ``n_replicates`` loci that carry 50 mutations each (``tajimas_d_se`` is its standard error). A bottleneck
+    sampled while its signature lasts shows a deficit of rare variants (a ``singleton_fraction`` below
+    ``neutral_singleton_fraction``) and a positive D; recovery for long enough turns both around.
 
     Args:
         initial_size: Population size before the bottleneck. Sequence interface: default
@@ -752,14 +1517,22 @@ def simulate_bottleneck_population(
             ``pre_bottleneck_diversity`` already fixes their ``4 * N * mu``
         rng: Random number generator for reproducibility
         n_sequences: Number of sequences to generate (selects the sequence interface)
-        sequence_length: Length of each sequence (required with ``n_sequences``)
+        sequence_length: Length of each sequence (required with ``n_sequences``). Statistics interface:
+            length of the locus in base pairs, which scales the mutation counts and the expected
+            spectrum (default 1000)
         bottleneck_duration: Duration of the bottleneck in generations (sequence interface, default 10;
             0 means no bottleneck)
         pre_bottleneck_diversity: Per-site population mutation parameter, the expected nucleotide
             diversity, before the bottleneck (sequence interface, default 0.01)
+        sample_size: Chromosomes in the sample behind the spectrum and Tajima's D (statistics interface,
+            default 20, at least 4)
+        n_replicates: Genealogies behind the spectrum and Tajima's D (statistics interface, default 2000,
+            at least 2); their sampling error is about ``1 / sqrt(n_replicates)``
 
     Returns:
-        List of sequences if n_sequences provided, otherwise dictionary with simulation results
+        List of sequences if n_sequences provided, otherwise dictionary with ``population_sizes``,
+        ``diversity_trajectory``, ``mutation_trajectory``, ``bottleneck_start``, ``bottleneck_end``,
+        ``total_mutations``, ``final_diversity`` and the coalescent summary keys above
 
     Raises:
         ValueError: If ``sequence_length`` is missing with ``n_sequences``, or the infinite-sites model
@@ -806,57 +1579,37 @@ def simulate_bottleneck_population(
         final_size = initial_size
     if generations is None:
         generations = 100
+    locus_length = 1000 if sequence_length is None else sequence_length
 
     validation.validate_range(initial_size, min_val=2, name="initial_size")
     validation.validate_range(bottleneck_size, min_val=2, name="bottleneck_size")
     validation.validate_range(final_size, min_val=2, name="final_size")
     validation.validate_range(generations, min_val=1, name="generations")
     validation.validate_range(mutation_rate, min_val=0.0, name="mutation_rate")
+    validation.validate_range(locus_length, min_val=1, name="sequence_length")
+    _check_summary_sample(sample_size, n_replicates)
 
-    seed_numpy_from_rng(rng)
-
-    # Simulate population size changes
     bottleneck_start = generations // 3
     bottleneck_end = 2 * generations // 3
-
-    population_sizes = []
-
-    for gen in range(generations):
-        if gen < bottleneck_start:
-            size = initial_size
-        elif gen < bottleneck_end:
-            size = bottleneck_size
-        else:
-            size = final_size
-        population_sizes.append(size)
-
-    # Simulate genetic diversity changes (simplified)
-    initial_diversity = 1.0
-    diversity_trajectory = []
-
-    for size in population_sizes:
-        diversity = initial_diversity * (size / initial_size)
-        diversity = max(diversity, 0.01)
-        diversity_trajectory.append(diversity)
-
-    # Simulate mutations
-    total_mutations = 0
-    mutation_trajectory = []
-
-    for gen, size in enumerate(population_sizes):
-        expected_mutations = size * 1000 * mutation_rate
-        mutations_this_gen = np.random.poisson(expected_mutations)
-        total_mutations += mutations_this_gen
-        mutation_trajectory.append(total_mutations)
-
+    population_sizes = [
+        initial_size if gen < bottleneck_start else bottleneck_size if gen < bottleneck_end else final_size
+        for gen in range(generations)
+    ]
+    statistics = _trajectory_statistics(
+        population_sizes,
+        _epochs_from_sizes(population_sizes, initial_size),
+        initial_size=initial_size,
+        mutation_rate=mutation_rate,
+        locus_length=locus_length,
+        sample_size=sample_size,
+        n_replicates=n_replicates,
+        generator=_numpy_generator(rng),
+    )
     return {
         "population_sizes": population_sizes,
-        "diversity_trajectory": diversity_trajectory,
-        "mutation_trajectory": mutation_trajectory,
         "bottleneck_start": bottleneck_start,
         "bottleneck_end": bottleneck_end,
-        "total_mutations": total_mutations,
-        "final_diversity": diversity_trajectory[-1],
+        **statistics,
     }
 
 
@@ -871,6 +1624,9 @@ def simulate_population_expansion(
     n_sequences: int | None = None,
     sequence_length: int | None = None,
     expansion_factor: float | None = None,
+    # Statistics interface: the sample behind the reported site frequency spectrum and Tajima's D
+    sample_size: int = 20,
+    n_replicates: int = 2000,
 ) -> List[str] | Dict[str, Any]:
     """Simulate exponential population expansion.
 
@@ -889,8 +1645,20 @@ def simulate_population_expansion(
     population mutation parameter 0.01 (``4 * N * mu`` per site), as the founders of the former
     generator did.
 
-    Statistics interface: a deterministic size trajectory with heuristic diversity and Poisson
-    mutation counts. It is not a coalescent simulation.
+    Statistics interface: the deterministic size trajectory (exponential growth from ``initial_size`` to
+    ``final_size`` over ``expansion_time`` generations, sizes truncated to whole individuals) and what the
+    coalescent says about it, with the sample drawn when the growth ends (see
+    :func:`_trajectory_statistics`): ``diversity_trajectory`` is the expected per-site nucleotide diversity
+    after every generation (an exact recursion, started at the equilibrium ``4 * initial_size * mutation_rate``
+    of the initial population), ``mutation_trajectory`` the cumulative count of new mutations in the whole
+    population (Poisson, ``2 * size * mutation_rate * sequence_length`` per generation), and ``expected_sfs``,
+    ``singleton_fraction`` and ``tajimas_d`` describe a sample of ``sample_size`` chromosomes simulated from
+    the coalescent of that history: ``expected_sfs[i - 1]`` is the expected number of mutations in the locus
+    carried by ``i`` chromosomes, averaged over ``n_replicates`` seeded genealogies (``neutral_sfs`` is the
+    constant-size expectation ``theta / i`` for comparison), and ``tajimas_d`` is the mean Tajima's D of
+    ``n_replicates`` loci that carry 50 mutations each (``tajimas_d_se`` is its standard error). Growth
+    leaves an excess of rare variants (a ``singleton_fraction`` above ``neutral_singleton_fraction``) and a
+    negative D.
 
     Args:
         initial_size: Population size before the expansion (default 100, both interfaces)
@@ -902,12 +1670,20 @@ def simulate_population_expansion(
             whose ancestral ``4 * N * mu`` per site is fixed at 0.01
         rng: Random number generator for reproducibility
         n_sequences: Number of sequences to generate (selects the sequence interface)
-        sequence_length: Length of each sequence (required with ``n_sequences``)
+        sequence_length: Length of each sequence (required with ``n_sequences``). Statistics interface:
+            length of the locus in base pairs, which scales the mutation counts and the expected
+            spectrum (default 1000)
         expansion_factor: Factor by which the population expanded (sequence interface, default 10.0,
             at least 1; 1 means no expansion)
+        sample_size: Chromosomes in the sample behind the spectrum and Tajima's D (statistics interface,
+            default 20, at least 4)
+        n_replicates: Genealogies behind the spectrum and Tajima's D (statistics interface, default 2000,
+            at least 2); their sampling error is about ``1 / sqrt(n_replicates)``
 
     Returns:
-        List of sequences if n_sequences provided, otherwise dictionary with simulation results
+        List of sequences if n_sequences provided, otherwise dictionary with ``population_sizes``,
+        ``diversity_trajectory``, ``mutation_trajectory``, ``growth_rate``, ``expansion_time``,
+        ``total_mutations``, ``final_diversity`` and the coalescent summary keys above
 
     Raises:
         ValueError: If ``sequence_length`` is missing with ``n_sequences``, or the infinite-sites model
@@ -954,47 +1730,46 @@ def simulate_population_expansion(
         final_size = 10000
     if expansion_time is None:
         expansion_time = 100
+    locus_length = 1000 if sequence_length is None else sequence_length
 
     validation.validate_range(initial_size, min_val=2, name="initial_size")
     validation.validate_range(final_size, min_val=initial_size, name="final_size")
     validation.validate_range(expansion_time, min_val=1, name="expansion_time")
     validation.validate_range(mutation_rate, min_val=0.0, name="mutation_rate")
-
-    seed_numpy_from_rng(rng)
+    validation.validate_range(locus_length, min_val=1, name="sequence_length")
+    _check_summary_sample(sample_size, n_replicates)
 
     # Exponential growth model
     growth_rate = (np.log(final_size) - np.log(initial_size)) / expansion_time
-
-    population_sizes = []
-    diversity_trajectory = []
-    mutation_trajectory = []
-
-    total_mutations = 0
-    current_diversity = 1.0
-
-    for gen in range(expansion_time + 1):
-        size = int(initial_size * np.exp(growth_rate * gen))
-        size = min(size, final_size)
-        population_sizes.append(size)
-
-        diversity_increase = (size - initial_size) / (final_size - initial_size) * 0.1
-        current_diversity = min(1.0, current_diversity + diversity_increase)
-        diversity_trajectory.append(current_diversity)
-
-        expected_mutations = size * 1000 * mutation_rate
-        mutations_this_gen = np.random.poisson(expected_mutations)
-        total_mutations += mutations_this_gen
-        mutation_trajectory.append(total_mutations)
-
+    population_sizes = [
+        min(int(initial_size * np.exp(growth_rate * gen)), final_size) for gen in range(expansion_time + 1)
+    ]
+    # In units of 2 * initial_size generations the growth lasts expansion_time / (2 * initial_size)
+    epochs = _expansion_epochs(final_size / initial_size, expansion_time / (2.0 * initial_size))
+    statistics = _trajectory_statistics(
+        population_sizes,
+        epochs,
+        initial_size=initial_size,
+        mutation_rate=mutation_rate,
+        locus_length=locus_length,
+        sample_size=sample_size,
+        n_replicates=n_replicates,
+        generator=_numpy_generator(rng),
+    )
     return {
         "population_sizes": population_sizes,
-        "diversity_trajectory": diversity_trajectory,
-        "mutation_trajectory": mutation_trajectory,
         "growth_rate": growth_rate,
         "expansion_time": expansion_time,
-        "total_mutations": total_mutations,
-        "final_diversity": diversity_trajectory[-1],
+        **statistics,
     }
+
+
+#: Parameters of each demographic model of :func:`generate_site_frequency_spectrum`, with their defaults.
+_SFS_MODEL_PARAMETERS: Dict[str, Dict[str, float]] = {
+    "constant": {},
+    "expansion": {"expansion_factor": 10.0, "expansion_time": 0.5, "n_replicates": 10_000},
+    "bottleneck": {"bottleneck_size": 0.1, "bottleneck_duration": 0.05, "recovery_time": 0.0, "n_replicates": 10_000},
+}
 
 
 def generate_site_frequency_spectrum(
@@ -1009,20 +1784,47 @@ def generate_site_frequency_spectrum(
 ) -> List[int]:
     """Generate a site frequency spectrum under different demographic models.
 
+    Every one of the ``n_sites`` polymorphic sites has the genealogy of its own (unlinked sites) from the
+    neutral coalescent of the model, carries one mutation, and falls in the class of the number of the
+    ``n_samples`` chromosomes that carry it. A site in class ``i`` is therefore drawn with the probability
+    ``E[L_i] / E[L]``, the expected share of the branch length of a genealogy that supports ``i`` chromosomes
+    (the mutation is more likely on a longer branch), and the counts are one multinomial draw:
+
+    * ``"constant"``: constant size. The probabilities are the closed form ``(1 / i) / a_n``, with ``a_n`` the
+      sum of ``1 / j`` for ``j < n_samples``.
+    * ``"expansion"``: exponential growth by ``expansion_factor`` over the last ``expansion_time`` before the
+      sample (constant size before). Growth leaves long external branches: an excess of rare variants and a
+      negative Tajima's D.
+    * ``"bottleneck"``: size shrinks to ``bottleneck_size`` of the ancestral size for ``bottleneck_duration``
+      and ends ``recovery_time`` before the sample. Lineages coalesce inside it, which removes rare variants
+      and leaves a positive Tajima's D until recovery has added new mutations to the long external branches.
+
+    For the last two the probabilities are not available in closed form: they are the mean branch-length
+    spectrum of ``n_replicates`` genealogies simulated from the history with the seeded coalescent
+    (:func:`simulate_coalescent_spectra` and its time change), 10000 by default, so each probability carries
+    a relative sampling error of about ``1 / sqrt(n_replicates)`` on top of the multinomial draw.
+
     Args:
         n_samples: Number of sampled chromosomes (alias: sample_size)
         n_sites: Number of polymorphic sites
         sample_size: Alias for n_samples
         folded: Whether to return folded SFS (default False)
         demographic_model: Demographic model ("constant", "expansion", "bottleneck")
-        parameters: Model-specific parameters
+        parameters: Model-specific parameters, with times in units of ``2 * N_ref`` generations and sizes
+            relative to the ancestral size ``N_ref``; unknown names are rejected. ``"expansion"``:
+            ``expansion_factor`` (final over ancestral size, at least 1, default 10), ``expansion_time``
+            (default 0.5), ``n_replicates`` (default 10000). ``"bottleneck"``: ``bottleneck_size`` (in
+            (0, 1], default 0.1), ``bottleneck_duration`` (default 0.05), ``recovery_time`` (default 0, the
+            sample is taken as the bottleneck ends), ``n_replicates``. ``"constant"`` has none
         rng: Random number generator for reproducibility
 
     Returns:
-        Site frequency spectrum as list of counts
+        Site frequency spectrum as list of counts: ``n_samples - 1`` entries (entry ``i - 1`` counts the
+        sites carried by ``i`` chromosomes), or the ``n_samples // 2`` folded classes
 
     Raises:
         ValueError: If parameters are invalid
+        ValidationError: If the model is unknown or ``parameters`` holds a name the model does not take
     """
     # Handle parameter aliases
     if sample_size is not None and n_samples is None:
@@ -1035,47 +1837,48 @@ def generate_site_frequency_spectrum(
     validation.validate_range(n_samples, min_val=2, name="n_samples")
     validation.validate_range(n_sites, min_val=1, name="n_sites")
 
-    if demographic_model not in ["constant", "expansion", "bottleneck"]:
+    if demographic_model not in _SFS_MODEL_PARAMETERS:
         raise errors.ValidationError(f"Unknown demographic model: {demographic_model}")
+    defaults = _SFS_MODEL_PARAMETERS[demographic_model]
+    unknown = sorted(set(parameters or {}) - set(defaults))
+    if unknown:
+        raise errors.ValidationError(
+            f"unknown parameter(s) {unknown} for the {demographic_model!r} model; it takes {sorted(defaults) or 'none'}"
+        )
+    values = {**defaults, **(parameters or {})}
+    generator = _numpy_generator(coerce_rng(rng))
 
-    rng = coerce_and_seed(rng)
+    epochs: List[PopulationEpoch] | None = None  # None: constant size, whose spectrum has a closed form
+    replicates = 1
+    if demographic_model != "constant":
+        for name, value in values.items():
+            if not math.isfinite(value):
+                raise errors.ValidationError(f"{name} must be a finite number, got {value}")
+        replicates = int(values["n_replicates"])
+        if replicates != values["n_replicates"] or replicates < 1:
+            raise errors.ValidationError(f"n_replicates must be a positive integer, got {values['n_replicates']}")
+        if demographic_model == "expansion":
+            validation.validate_range(values["expansion_factor"], min_val=1.0, name="expansion_factor")
+            validation.validate_range(values["expansion_time"], min_val=0.0, name="expansion_time")
+            if values["expansion_factor"] > 1.0:
+                if values["expansion_time"] <= 0.0:
+                    raise errors.ValidationError("expansion_time must be positive when expansion_factor exceeds 1")
+                epochs = _expansion_epochs(values["expansion_factor"], values["expansion_time"])
+        else:
+            if not 0.0 < values["bottleneck_size"] <= 1.0:
+                raise errors.ValidationError(f"bottleneck_size must be in (0, 1], got {values['bottleneck_size']}")
+            validation.validate_range(values["bottleneck_duration"], min_val=0.0, name="bottleneck_duration")
+            validation.validate_range(values["recovery_time"], min_val=0.0, name="recovery_time")
+            if values["bottleneck_duration"] > 0.0 and values["bottleneck_size"] < 1.0:
+                epochs = _bottleneck_epochs(
+                    values["bottleneck_size"], values["bottleneck_duration"], values["recovery_time"]
+                )
+    if epochs is None:
+        weights = 1.0 / np.arange(1, n_samples, dtype=float)
+    else:
+        weights = _expected_branch_spectrum(n_samples, epochs, replicates, generator)
 
-    if parameters is None:
-        parameters = {}
-
-    # Unfolded SFS has n-1 bins
-    sfs = [0] * (n_samples - 1)
-
-    for site in range(n_sites):
-        if demographic_model == "constant":
-            # Neutral coalescent - 1/i distribution
-            weights = [1.0 / i for i in range(1, n_samples)]
-            total = sum(weights)
-            weights = [w / total for w in weights]
-            freq = rng.choices(range(1, n_samples), weights=weights)[0]
-        elif demographic_model == "expansion":
-            # Favor low frequency variants (zipf requires exponent > 1; for
-            # alpha <= 1 fall back to the neutral 1/i weighting)
-            alpha = parameters.get("alpha", 1.0)
-            if alpha > 1.0:
-                freq = min(int(np.random.zipf(alpha)), n_samples - 1)
-            else:
-                weights = [1.0 / i for i in range(1, n_samples)]
-                total = sum(weights)
-                weights = [w / total for w in weights]
-                freq = rng.choices(range(1, n_samples), weights=weights)[0]
-        elif demographic_model == "bottleneck":
-            # Favor high frequency variants
-            bottleneck_strength = parameters.get("bottleneck_strength", 0.1)
-            if rng.random() < bottleneck_strength:
-                freq = rng.randint(n_samples // 2, n_samples - 1)
-            else:
-                freq = rng.randint(1, max(2, n_samples // 2))
-
-        # Ensure valid frequency
-        freq = max(1, min(freq, n_samples - 1))
-
-        sfs[freq - 1] += 1
+    sfs: List[int] = generator.multinomial(n_sites, weights / weights.sum()).tolist()
 
     # Fold SFS if requested
     if folded:
@@ -1120,54 +1923,99 @@ def _adjacent_ld_conditionals(p_prev: float, p_cur: float, correlation: float) -
     return min(1.0, p_cur + d / p_prev), max(0.0, p_cur - d / (1.0 - p_prev)), capped
 
 
+#: The models of :func:`generate_linkage_disequilibrium_data`.
+_LD_MODELS = ("markov", "coalescent")
+#: Region length per SNP, in base pairs, of the coalescent model when no ``sequence_length`` is given.
+_DEFAULT_BP_PER_SNP = 100
+#: Per-generation recombination probability per base pair of the coalescent model by default (a human average).
+_DEFAULT_RECOMBINATION_RATE = 1e-8
+#: Effective population size of the coalescent model by default.
+_DEFAULT_EFFECTIVE_SIZE = 10_000.0
+
+
 def generate_linkage_disequilibrium_data(
     n_individuals: int,
     n_snps: int | None = None,
     *,
     n_sites: int | None = None,
-    recombination_rate: float = 1e-8,
+    recombination_rate: float | None = None,
     selection_coefficient: float = 0.0,
     r_squared_target: float | None = None,
     allele_frequencies: List[float] | None = None,
     rng: random.Random | None = None,
+    model: str = "markov",
+    effective_size: float | None = None,
+    sequence_length: int | None = None,
 ) -> List[List[int]]:
-    """Generate 0/1 allele data with linkage disequilibrium between adjacent sites.
+    """Generate 0/1 allele data with linkage disequilibrium between sites.
 
-    Sites are generated left to right as a first-order Markov chain, one row per individual. Every
-    site keeps its own allele frequency exactly, and each adjacent pair is given the
+    ``model`` chooses how the linkage disequilibrium arises. Both models return the same kind of matrix, one
+    row per individual (a haploid sequence) and one column per site, holding 0/1 alleles.
+
+    ``model="markov"`` (the default): sites are generated left to right as a first-order Markov chain.
+    Every site keeps its own allele frequency exactly, and each adjacent pair is given the
     disequilibrium D = r * sqrt(p1 (1 - p1) p2 (1 - p2)) with r = sqrt(``r_squared_target``), so
     the expected r-squared between adjacent sites equals ``r_squared_target`` (a sample r-squared
     scatters around it by about 2 r (1 - r-squared) / sqrt(``n_individuals``)). For sites with
-    equal frequencies the correlation falls to r ** k between sites k apart.
+    equal frequencies the correlation falls to r ** k between sites k apart. The model has no recombination
+    and no physical distance, so ``recombination_rate`` has no effect on it.
+
+    ``model="coalescent"``: the sample is drawn from the neutral coalescent with recombination
+    (:func:`simulate_recombinant_haplotypes`, Hudson's ancestral recombination graph) over a region of
+    ``sequence_length`` base pairs in a population of ``effective_size`` diploid individuals, with a
+    recombination probability of ``recombination_rate`` per base pair per generation, so the population
+    recombination parameter is ``rho = 4 * effective_size * recombination_rate * sequence_length``. Exactly
+    ``n_snps`` mutations are placed on the genealogy (the segregating-sites conditioning of Hudson's
+    ``ms -s``; the mutation rate is therefore not an input), at positions along the region that follow the
+    marginal trees; the columns are those segregating sites in order of position, and allele 1 is the derived
+    allele. Allele frequencies and r-squared are outcomes of the genealogy, not inputs: they follow the
+    neutral site frequency spectrum (rare derived alleles dominate), and r-squared decays with the distance
+    between sites as recombination breaks the shared genealogy (the quantity ``E[D^2] / E[p (1 - p) q (1 - q)]``
+    is close to ``(10 + rho_d) / ((2 + rho_d) (11 + rho_d))`` for two sites ``rho_d`` apart, with ``rho_d`` the
+    recombination parameter between them). With ``recombination_rate = 0`` all columns come from one tree and
+    any two of them show at most three of the four gametes. To get the SNP positions, or a mutation rate
+    instead of a fixed number of sites, use :func:`simulate_recombinant_haplotypes`.
 
     Args:
         n_individuals: Number of individuals (rows), at least 2
         n_snps: Number of sites (columns), at least 2 (alias: n_sites). Taken from the length of
-            ``allele_frequencies`` when that is given
+            ``allele_frequencies`` when that is given. Under the coalescent model, the exact number of
+            segregating sites simulated
         n_sites: Alias for n_snps
-        recombination_rate: Accepted and validated (it must not be negative) but it does not change
-            the output. The model has no recombination step: LD between adjacent sites is set by
-            ``r_squared_target`` alone and decays geometrically with distance
+        recombination_rate: Probability of a recombination breakpoint per base pair per generation,
+            default 1e-8. Used by ``model="coalescent"`` only; ``model="markov"`` accepts and validates it
+            (it must not be negative) but it does not change the output, and says so in the log
         selection_coefficient: Selection coefficient (0 = neutral). When non-zero, its absolute
             value replaces sqrt(``r_squared_target``) as the correlation r between adjacent
-            sites (capped at 1); a heuristic coupling, not a model of selection
+            sites (capped at 1); a heuristic coupling, not a model of selection. Markov model only
         r_squared_target: Target r-squared between adjacent sites, within [0, 1]. The default,
             0.25, is the r-squared this generator produced before a target was honoured. A pair
             whose allele frequencies cannot reach the target (a rare allele next to a common one
             limits r-squared) is generated at the largest attainable r-squared and a warning is
-            logged
+            logged. Markov model only
         allele_frequencies: Frequency of allele 1 at each site, each within [0, 1] (default 0.5
-            at every site)
+            at every site). Markov model only
         rng: Random number generator for reproducibility
+        model: ``"markov"`` or ``"coalescent"``
+        effective_size: Effective population size ``N_e`` of the coalescent model (default 10000), which
+            sets how many generations of recombination one unit of coalescent time stands for. Coalescent
+            model only
+        sequence_length: Length of the simulated region in base pairs, at least ``n_snps`` (default
+            100 base pairs per SNP). Coalescent model only
 
     Returns:
         List of lists with one row per individual and one column per site, holding 0/1 alleles
 
     Raises:
         ValueError: If neither n_snps nor n_sites is given
-        ValidationError: If a parameter is out of range, or r_squared_target, an allele frequency
-            or selection_coefficient is not a valid number
+        ValidationError: If a parameter is out of range, r_squared_target, an allele frequency
+            or selection_coefficient is not a valid number, or a parameter is given that the chosen
+            model does not use (``effective_size`` and ``sequence_length`` under ``"markov"``,
+            ``r_squared_target``, ``selection_coefficient`` and ``allele_frequencies`` under ``"coalescent"``)
     """
+    if model not in _LD_MODELS:
+        raise errors.ValidationError(f"model must be one of {_LD_MODELS}, got {model!r}")
+
     # Handle parameter aliases
     if n_sites is not None and n_snps is None:
         n_snps = n_sites
@@ -1178,13 +2026,41 @@ def generate_linkage_disequilibrium_data(
 
     validation.validate_range(n_individuals, min_val=2, name="n_individuals")
     validation.validate_range(n_snps, min_val=2, name="n_snps")
-    validation.validate_range(recombination_rate, min_val=0.0, name="recombination_rate")
+    if recombination_rate is not None:
+        if not math.isfinite(recombination_rate):
+            raise errors.ValidationError(f"recombination_rate must be finite, got {recombination_rate}")
+        validation.validate_range(recombination_rate, min_val=0.0, name="recombination_rate")
+    if not np.isfinite(selection_coefficient):
+        raise errors.ValidationError(f"selection_coefficient must be finite, got {selection_coefficient}")
+
+    if model == "coalescent":
+        return _coalescent_ld_data(
+            n_individuals,
+            n_snps,
+            recombination_rate=_DEFAULT_RECOMBINATION_RATE if recombination_rate is None else recombination_rate,
+            effective_size=effective_size,
+            sequence_length=sequence_length,
+            unused={
+                "r_squared_target": r_squared_target is not None,
+                "selection_coefficient": selection_coefficient != 0,
+                "allele_frequencies": allele_frequencies is not None,
+            },
+            rng=rng,
+        )
+
+    for name, value in (("effective_size", effective_size), ("sequence_length", sequence_length)):
+        if value is not None:
+            raise errors.ValidationError(f"{name} is used by model='coalescent' only, not by model='markov'")
+    if recombination_rate is not None:
+        logger.warning(
+            "recombination_rate=%g has no effect on model='markov', which has no recombination step; "
+            "use model='coalescent' for linkage disequilibrium that depends on it",
+            recombination_rate,
+        )
     if r_squared_target is not None and not 0.0 <= r_squared_target <= 1.0:
         raise errors.ValidationError(f"r_squared_target must be within [0, 1], got {r_squared_target}")
     if allele_frequencies is not None and not all(0.0 <= freq <= 1.0 for freq in allele_frequencies):
         raise errors.ValidationError("allele_frequencies must all be within [0, 1]")
-    if not np.isfinite(selection_coefficient):
-        raise errors.ValidationError(f"selection_coefficient must be finite, got {selection_coefficient}")
 
     rng = coerce_and_seed(rng)
 
@@ -1228,6 +2104,39 @@ def generate_linkage_disequilibrium_data(
     return genotype_matrix
 
 
+def _coalescent_ld_data(
+    n_individuals: int,
+    n_snps: int,
+    *,
+    recombination_rate: float,
+    effective_size: float | None,
+    sequence_length: int | None,
+    unused: Dict[str, bool],
+    rng: random.Random | None,
+) -> List[List[int]]:
+    """The ``model="coalescent"`` branch of :func:`generate_linkage_disequilibrium_data`."""
+    for name, given in unused.items():
+        if given:
+            raise errors.ValidationError(
+                f"{name} is an input of model='markov' only: under model='coalescent' it is an outcome of the "
+                "genealogy"
+            )
+    size = _DEFAULT_EFFECTIVE_SIZE if effective_size is None else effective_size
+    if not math.isfinite(size) or size <= 0:
+        raise errors.ValidationError(f"effective_size must be a positive finite number, got {size}")
+    length = _DEFAULT_BP_PER_SNP * n_snps if sequence_length is None else sequence_length
+    validation.validate_range(length, min_val=n_snps, name="sequence_length")
+    if not math.isfinite(length):
+        raise errors.ValidationError(f"sequence_length must be finite, got {length}")
+
+    rho = 4.0 * size * recombination_rate * length
+    sample = simulate_recombinant_haplotypes(
+        n_individuals, length, segregating_sites=n_snps, rho=rho, rng=_numpy_generator(rng)
+    )
+    matrix: List[List[int]] = sample.haplotypes.tolist()
+    return matrix
+
+
 def simulate_admixture(
     n_populations: int,
     population_sizes: List[int],
@@ -1237,18 +2146,33 @@ def simulate_admixture(
     migration_rate: float = 0.01,
     rng: random.Random | None = None,
 ) -> Dict[str, Any]:
-    """Simulate population admixture.
+    """Simulate population admixture: migration among populations and genetic drift at one locus.
+
+    Each population starts with its own allele frequency, drawn uniformly from [0.1, 0.9]. Every generation
+    a fraction ``migration_rate`` of each population is replaced by migrants whose allele frequency is the
+    mixture ``admixture_proportions @ p`` of the populations' frequencies ``p`` (row ``i`` holds the
+    proportions in which population ``i`` receives its migrants from every population), so the frequencies
+    become ``(1 - m) p + m * admixture_proportions @ p``; ``migration_rate = 1`` replaces everyone. Genetic
+    drift then resamples the ``2 * population_sizes[i]`` chromosomes of population ``i`` binomially, so a
+    small population drifts more (the variance of its frequency change is ``p (1 - p) / (2 N)``) and a very
+    large one hardly at all.
 
     Args:
         n_populations: Number of ancestral populations
-        population_sizes: Size of each ancestral population
-        admixture_proportions: Mixing proportions (n_populations x n_populations)
+        population_sizes: Number of diploid individuals in each ancestral population (positive integers)
+        admixture_proportions: Mixing proportions (n_populations x n_populations): non-negative, every
+            row summing to 1
         generations: Generations since admixture
-        migration_rate: Migration rate between populations
+        migration_rate: Fraction of every population replaced by migrants each generation, within [0, 1]
         rng: Random number generator for reproducibility
 
     Returns:
-        Dictionary with admixture simulation results
+        Dictionary with ``ancestral_frequencies``, the ``frequency_trajectory`` (one array of the
+        populations' frequencies per generation, ``generations + 1`` of them), ``final_frequencies``,
+        ``admixture_trajectory`` (per generation, a matrix whose entry ``[i, j]`` is the expected share of
+        population ``i``'s ancestry that comes from the original population ``j``: the identity at the
+        start, ``((1 - m) I + m * admixture_proportions) ** t`` after ``t`` generations, drift aside),
+        ``generations`` and ``migration_rate``
 
     Raises:
         ValueError: If parameters are invalid
@@ -1260,11 +2184,18 @@ def simulate_admixture(
 
     if len(population_sizes) != n_populations:
         raise errors.ValidationError(f"population_sizes must have length {n_populations}")
+    for size in population_sizes:
+        validation.validate_range(size, min_val=1, name="population_sizes entries")
 
-    if admixture_proportions.shape != (n_populations, n_populations):
+    proportions = np.asarray(admixture_proportions, dtype=float)
+    if proportions.shape != (n_populations, n_populations):
         raise errors.ValidationError(f"admixture_proportions must have shape {(n_populations, n_populations)}")
+    if not np.isfinite(proportions).all() or (proportions < 0).any() or not np.allclose(proportions.sum(axis=1), 1.0):
+        raise errors.ValidationError("admixture_proportions must be non-negative with every row summing to 1")
 
-    rng = coerce_and_seed(rng)
+    rng = coerce_rng(rng)
+    generator = _numpy_generator(rng)
+    chromosomes = 2 * np.asarray(population_sizes)
 
     # Initialize ancestral populations
     ancestral_frequencies = []
@@ -1272,27 +2203,19 @@ def simulate_admixture(
         freq = rng.uniform(0.1, 0.9)  # Allele frequency in ancestral population
         ancestral_frequencies.append(freq)
 
-    # Simulate admixture over generations
+    # Migration mixes the populations' frequencies; drift resamples every population's chromosomes
+    mixing = (1.0 - migration_rate) * np.eye(n_populations) + migration_rate * proportions
     current_frequencies = np.array(ancestral_frequencies)
     frequency_trajectory = [current_frequencies.copy()]
+    ancestry = np.eye(n_populations)
+    admixture_trajectory = [ancestry.copy()]
 
     for gen in range(generations):
-        # Apply migration/admixture
-        new_frequencies = admixture_proportions @ current_frequencies
-
-        # Add some drift
-        for i in range(n_populations):
-            drift_effect = np.random.normal(0, 0.01)
-            new_frequencies[i] += drift_effect
-            new_frequencies[i] = np.clip(new_frequencies[i], 0.0, 1.0)
-
-        current_frequencies = new_frequencies
+        mixed = np.clip(mixing @ current_frequencies, 0.0, 1.0)
+        current_frequencies = generator.binomial(chromosomes, mixed) / chromosomes
         frequency_trajectory.append(current_frequencies.copy())
-
-    # Calculate admixture proportions over time
-    admixture_trajectory = []
-    for freqs in frequency_trajectory:
-        admixture_trajectory.append(freqs / np.sum(freqs))
+        ancestry = mixing @ ancestry
+        admixture_trajectory.append(ancestry.copy())
 
     return {
         "ancestral_frequencies": ancestral_frequencies,
@@ -1336,6 +2259,10 @@ def simulate_selection(
 
     if fitness_effects.shape != (n_snps, 3):
         raise errors.ValidationError(f"fitness_effects must have shape ({n_snps}, 3)")
+    if not (1 + selection_strength * fitness_effects > 0).all():
+        raise errors.ValidationError(
+            "1 + selection_strength * fitness_effects must be positive for every genotype: a fitness cannot be negative"
+        )
 
     rng = coerce_and_seed(rng)
 
