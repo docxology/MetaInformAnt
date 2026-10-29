@@ -10,7 +10,6 @@ heptad repeat scoring, and regex-based motif detection).
 
 from __future__ import annotations
 
-import math
 import re
 from typing import Any, Dict, List, Tuple
 
@@ -143,8 +142,10 @@ def scan_domains(
             - name: human-readable domain name
             - start: 0-based start position in sequence
             - end: 0-based end position (exclusive)
-            - score: raw match score (higher is better)
-            - e_value: estimated statistical significance
+            - score: heuristic match score (match length plus bonuses for key residues, plausible length and
+              consensus matches; higher is better). It is not an alignment or HMM score.
+            - e_value: always None. A regular-expression hit carries no score distribution, so no statistical
+              significance can be derived from it.
             - description: domain description string
 
     Raises:
@@ -168,12 +169,7 @@ def scan_domains(
                 end = match.end()
                 matched_seq = match.group()
 
-                # Score based on match length relative to expected domain size
-                match_len = end - start
                 score = _score_domain_hit(matched_seq, profile)
-
-                # Estimate E-value using Karlin-Altschul-like statistics
-                e_value = _estimate_e_value(score, len(seq), match_len)
 
                 hits.append(
                     {
@@ -182,7 +178,7 @@ def scan_domains(
                         "start": start,
                         "end": end,
                         "score": round(score, 2),
-                        "e_value": e_value,
+                        "e_value": None,
                         "description": profile.get("description", ""),
                         "matched_sequence": matched_seq,
                     }
@@ -234,34 +230,6 @@ def _score_domain_hit(matched_seq: str, profile: Dict[str, Any]) -> float:
         score += matches * 2.0
 
     return score
-
-
-def _estimate_e_value(score: float, seq_length: int, match_length: int) -> float:
-    """Estimate E-value using simplified Karlin-Altschul statistics.
-
-    Args:
-        score: Raw alignment score.
-        seq_length: Length of the query sequence.
-        match_length: Length of the matched region.
-
-    Returns:
-        Estimated E-value (lower is more significant).
-    """
-    # Simplified parameters for amino acid sequences
-    lambda_param = 0.267
-    k_param = 0.041
-
-    # Effective search space
-    search_space = float(seq_length * match_length)
-    if search_space <= 0:
-        return 1.0
-
-    try:
-        e_value = k_param * search_space * math.exp(-lambda_param * score)
-    except OverflowError:
-        e_value = 0.0
-
-    return round(max(e_value, 1e-300), 6)
 
 
 def _remove_overlapping_hits(hits: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

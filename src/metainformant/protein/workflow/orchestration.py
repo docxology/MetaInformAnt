@@ -303,7 +303,11 @@ def compare_structures(
     pdb_path_b: Union[str, Path],
     align: bool = True,
 ) -> Dict[str, Any]:
-    """Compare two protein structures with RMSD, alignment, and contact analysis.
+    """Compare two protein structures with RMSD, TM-score, alignment, and contact analysis.
+
+    The C-alpha atoms (ATOM records) of the two structures are paired by chain, residue number and insertion code,
+    and only residues present in both are compared, so files that differ in numbering or length are compared
+    residue to residue and not position to position.
 
     Args:
         pdb_path_a: Path to first PDB file
@@ -311,8 +315,9 @@ def compare_structures(
         align: Whether to perform Kabsch alignment before computing RMSD
 
     Returns:
-        Dictionary with comparison results including RMSD, contact differences,
-        and per-residue distance deviations
+        Dictionary with comparison results including RMSD, the TM-score of the pairs normalised by the C-alpha atoms
+        of the first structure (``tm_score``, ``tm_score_d0``; None for fewer than 3 pairs), contact differences, and
+        per-residue distance deviations. ``error`` is set instead when no pair can be formed.
     """
     import numpy as np
 
@@ -332,25 +337,33 @@ def compare_structures(
     if not atoms_a or not atoms_b:
         return {"error": "One or both structures have no atoms"}
 
-    # Extract CA coordinates
-    ca_a = np.array([[a["x"], a["y"], a["z"]] for a in atoms_a if a["name"] == "CA"])
-    ca_b = np.array([[a["x"], a["y"], a["z"]] for a in atoms_b if a["name"] == "CA"])
+    from metainformant.protein.structure.analysis import match_ca_atoms
+    from metainformant.protein.structure.general import calculate_tm_score
 
     results: Dict[str, Any] = {
         "structure_a": str(pdb_path_a),
         "structure_b": str(pdb_path_b),
-        "n_ca_atoms_a": len(ca_a),
-        "n_ca_atoms_b": len(ca_b),
     }
 
-    # Truncate to common length for comparison
-    n_common = min(len(ca_a), len(ca_b))
-    if n_common == 0:
-        results["error"] = "No CA atoms found in one or both structures"
+    try:
+        pairs = match_ca_atoms(struct_a, struct_b)
+    except ValueError as error:
+        results["error"] = str(error)
         return results
 
-    ca_a_common = ca_a[:n_common]
-    ca_b_common = ca_b[:n_common]
+    ca_a_common = pairs["reference"]
+    ca_b_common = pairs["mobile"]
+    n_common = len(ca_a_common)
+    results["n_ca_atoms_a"] = pairs["n_residues_1"]
+    results["n_ca_atoms_b"] = pairs["n_residues_2"]
+
+    if n_common >= 3:
+        scored = calculate_tm_score(ca_a_common, ca_b_common, n_reference=pairs["n_residues_1"])
+        results["tm_score"] = scored["tm_score"]
+        results["tm_score_d0"] = scored["d0"]
+    else:
+        results["tm_score"] = None
+        results["tm_score_d0"] = None
 
     if align:
         from metainformant.protein.structure.general import align_structures_kabsch

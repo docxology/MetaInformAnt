@@ -72,7 +72,9 @@ print(record["domains"])            # Annotated domains
 | Function | Description |
 |----------|-------------|
 | `calculate_contact_map` | Residue contact map from 3D coordinates |
-| `identify_domains` | Simplified domain identification: a new domain at a chain change or a jump of more than 10 in the residue number |
+| `identify_domains` | Domains by spectral bisection of the residue contact graph (normalised cut, `min_domain_size`, `max_normalized_cut`) |
+| `calculate_structural_similarity` | Kabsch RMSD and TM-score of the C-alpha atoms of two structures |
+| `calculate_structure_sasa` | Shrake-Rupley solvent accessible surface area per atom and per residue |
 | `analyze_structural_motifs` | Helices and extended segments from the C-alpha trace, and zinc coordination sites |
 | `identify_ligand_binding_sites` | Buried pockets found by a LIGSITE-style grid search |
 | `build_alphafold_url` | AlphaFold DB URL from UniProt accession |
@@ -88,7 +90,7 @@ domains = identify_domains(structure_dict)                  # list of domain dic
 model_path = fetch_alphafold_model("P12345", out_dir=Path("output/structures"))
 ```
 
-The domain, surface-area, similarity and secondary-structure functions are simplified approximations; [structure/README.md](structure/README.md) lists what each one computes.
+Domains, surface areas, structural similarity and P-SEA secondary structure elements use the standard algorithms listed in [structure/README.md](structure/README.md), which also lists the simple approximations that remain (sequence-based secondary structure prediction, distance-only hydrogen bonds).
 
 ### Sequence Processing
 

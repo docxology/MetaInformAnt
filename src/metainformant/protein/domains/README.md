@@ -14,7 +14,7 @@ Protein domain detection, scanning, and family classification. Identifies struct
 
 | Function | Description |
 |----------|-------------|
-| `detection.scan_domains()` | Scan sequence against domain profiles |
+| `detection.scan_domains()` | Scan sequence against domain profiles by pattern; a hit has a heuristic `score` and `e_value` None (a pattern hit has no score distribution) |
 | `detection.detect_signal_peptide()` | Predict N-terminal signal peptides |
 | `detection.predict_transmembrane()` | Predict transmembrane helices via hydrophobicity |
 | `detection.find_coiled_coils()` | Identify coiled-coil regions using heptad scoring |
@@ -24,7 +24,7 @@ Protein domain detection, scanning, and family classification. Identifies struct
 | `classification.classify_protein_family()` | Classify protein into known family by domains |
 | `classification.compute_domain_similarity()` | Compute pairwise domain architecture similarity |
 | `classification.cluster_by_domain()` | Cluster proteins by shared domain content |
-| `classification.domain_enrichment()` | Test for domain enrichment in a protein set |
+| `classification.domain_enrichment()` | One-sided Fisher test of domain over-representation; proteins are counted once per domain |
 
 ## Usage
 

@@ -1,156 +1,150 @@
 """Protein secondary structure prediction utilities.
 
 This module provides tools for predicting and analyzing protein secondary
-structure elements using various algorithms and methods.
+structure elements from sequence propensities, and for reading DSSP output.
 """
 
 from __future__ import annotations
 
-import time
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Tuple, Union
 
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 
+#: Chou-Fasman conformational parameters (Pa, Pb, Pt) of the twenty amino acids: the propensity of a residue for an
+#: alpha-helix, a beta-sheet and a turn (Chou & Fasman, Adv Enzymol Relat Areas Mol Biol 47:45-148, 1978). A value
+#: above 1 favours the conformation. This is the one table used by every function of this module.
+CHOU_FASMAN_PARAMETERS: Dict[str, Tuple[float, float, float]] = {
+    "A": (1.42, 0.83, 0.66),
+    "R": (0.98, 0.93, 0.95),
+    "N": (0.67, 0.89, 1.56),
+    "D": (1.01, 0.54, 1.46),
+    "C": (0.70, 1.19, 1.19),
+    "Q": (1.11, 1.10, 0.98),
+    "E": (1.51, 0.37, 0.74),
+    "G": (0.57, 0.75, 1.56),
+    "H": (1.00, 0.87, 0.95),
+    "I": (1.08, 1.60, 0.47),
+    "L": (1.21, 1.30, 0.59),
+    "K": (1.16, 0.74, 1.01),
+    "M": (1.45, 1.05, 0.60),
+    "F": (1.13, 1.38, 0.60),
+    "P": (0.57, 0.55, 1.52),
+    "S": (0.77, 0.75, 1.43),
+    "T": (0.83, 1.19, 0.96),
+    "W": (1.08, 1.37, 0.96),
+    "Y": (0.69, 1.47, 1.14),
+    "V": (1.06, 1.70, 0.50),
+}
 
-def predict_secondary_structure(sequence: str, method: str = "psipred") -> List[str]:
-    """Predict secondary structure for a protein sequence.
+#: Methods of :func:`predict_secondary_structure` that run here, from the sequence alone
+SEQUENCE_METHODS: Tuple[str, ...] = ("window", "simple")
+
+#: Predictors that need an external service or program; they are recognised only to be refused
+EXTERNAL_METHODS: Tuple[str, ...] = ("psipred", "jpred")
+
+_WINDOW_SIZE = 7  # residues averaged by the "window" method
+_WINDOW_THRESHOLD = 1.0  # a window mean must exceed 1, the neutral value of the parameters, to call a helix or sheet
+_MIN_ELEMENT_LENGTH = 3  # shorter helices and sheets of the "window" method become coil
+
+
+def predict_secondary_structure(sequence: str, method: str = "window") -> List[str]:
+    """Predict secondary structure for a protein sequence from residue propensities.
+
+    Two methods run locally and use nothing but the sequence and the Chou-Fasman parameters
+    (:data:`CHOU_FASMAN_PARAMETERS`):
+
+    - ``"window"`` (default): the mean helix and sheet parameters over a window of 7 residues centred on each
+      position (shorter at the ends, counting only the standard amino acids in it). The position is helix (``"H"``)
+      when the helix mean is the larger and exceeds 1, sheet (``"E"``) when the sheet mean is the larger and exceeds
+      1, and coil (``"C"``) otherwise; helices and sheets shorter than 3 residues become coil.
+    - ``"simple"``: each residue on its own gets the conformation of its largest parameter: helix when its helix
+      parameter is the largest, sheet when its sheet parameter is (also on a tie with the turn parameter), coil
+      when its turn parameter is.
+
+    Residues that are not one of the twenty standard amino acids are coil. Neither method is a substitute for
+    PSIPRED, JPred or DSSP: single-sequence propensity methods have limited accuracy. ``"psipred"`` and ``"jpred"``
+    are not available: they need the PSIPRED/JPred service or a local installation of the program, this package
+    calls neither, and it does not substitute another method for them.
 
     Args:
         sequence: Protein sequence (amino acid string)
-        method: Prediction method ("psipred", "jpred", "simple")
+        method: ``"window"`` or ``"simple"``
 
     Returns:
-        List of secondary structure assignments (H, E, C)
+        List of secondary structure assignments (H, E, C), one per residue; empty for an empty sequence
 
     Raises:
-        ValueError: If sequence is invalid or method is unsupported
+        NotImplementedError: If ``method`` is ``"psipred"`` or ``"jpred"``
+        ValueError: If ``method`` is not known
 
     Example:
         >>> sequence = "MKLVLSDEL"
         >>> ss = predict_secondary_structure(sequence, method="simple")
         >>> len(ss) == len(sequence)
         True
+        >>> predict_secondary_structure("EEEEEEEEEE")
+        ['H', 'H', 'H', 'H', 'H', 'H', 'H', 'H', 'H', 'H']
     """
     if not sequence:
         return []
 
-    if method not in ["psipred", "jpred", "simple"]:
-        raise ValueError(f"Unsupported method: {method}")
+    if method in EXTERNAL_METHODS:
+        raise NotImplementedError(
+            f"method {method!r} is not available: it needs the {method.upper()} service or program, which this package "
+            f"does not call (and it will not silently substitute another method). Use one of {SEQUENCE_METHODS}, or "
+            "run the program yourself and read its output."
+        )
+    if method not in SEQUENCE_METHODS:
+        raise ValueError(f"Unsupported method: {method}; use one of {SEQUENCE_METHODS}")
 
     if method == "simple":
         return _simple_secondary_structure_prediction(sequence)
-    elif method == "psipred":
-        return _psipred_prediction(sequence)
-    elif method == "jpred":
-        return _jpred_prediction(sequence)
-    else:
-        # Fallback to simple method
-        return _simple_secondary_structure_prediction(sequence)
+    return _window_secondary_structure_prediction(sequence)
 
 
 def _simple_secondary_structure_prediction(sequence: str) -> List[str]:
-    """Simple secondary structure prediction based on amino acid propensities."""
-    # Simplified Chou-Fasman parameters
-    ss_predictions = []
-
-    for aa in sequence.upper():
-        # Basic rules based on amino acid properties
-        if aa in {"E", "A", "L", "M", "H", "K"}:
-            ss_predictions.append("H")  # Helix formers
-        elif aa in {"V", "I", "Y", "F", "W", "C"}:
-            ss_predictions.append("E")  # Sheet formers
+    """Residue-by-residue prediction from the largest Chou-Fasman parameter of each residue."""
+    assignments = []
+    for residue in sequence.upper():
+        parameters = CHOU_FASMAN_PARAMETERS.get(residue)
+        if parameters is None:
+            assignments.append("C")
+        elif parameters[0] > parameters[1] and parameters[0] > parameters[2]:
+            assignments.append("H")
+        elif parameters[1] >= parameters[2]:
+            assignments.append("E")
         else:
-            ss_predictions.append("C")  # Coil
+            assignments.append("C")
+    return assignments
 
-    return ss_predictions
 
-
-def _improved_secondary_structure_prediction(sequence: str) -> List[str]:
-    """Improved secondary structure prediction with window-based analysis."""
-    # Chou-Fasman parameters (simplified but more realistic)
-    # Helix propensities (higher values = more likely to form helix)
-    helix_propensity = {
-        "E": 1.53,
-        "A": 1.45,
-        "L": 1.34,
-        "H": 1.24,
-        "M": 1.20,
-        "Q": 1.17,
-        "W": 1.14,
-        "V": 1.14,
-        "F": 1.12,
-        "K": 1.07,
-        "I": 1.00,
-        "T": 0.83,
-        "S": 0.79,
-        "R": 0.79,
-        "D": 0.62,
-        "N": 0.60,
-        "C": 0.77,
-        "Y": 0.61,
-        "P": 0.59,
-        "G": 0.53,
-    }
-
-    # Sheet propensities
-    sheet_propensity = {
-        "V": 1.49,
-        "I": 1.38,
-        "T": 1.28,
-        "Y": 1.25,
-        "F": 1.23,
-        "W": 1.19,
-        "L": 1.17,
-        "C": 1.15,
-        "M": 1.05,
-        "A": 0.97,
-        "G": 0.81,
-        "R": 0.95,
-        "K": 0.74,
-        "Q": 0.80,
-        "E": 0.26,
-        "N": 0.65,
-        "D": 0.39,
-        "S": 0.72,
-        "H": 0.71,
-        "P": 0.36,
-    }
-
+def _window_secondary_structure_prediction(sequence: str) -> List[str]:
+    """Window-averaged Chou-Fasman parameters, with short helices and sheets turned into coil."""
     sequence = sequence.upper()
     n = len(sequence)
-    predictions = ["C"] * n  # Default to coil
-
-    # Use sliding window approach
-    window_size = 7  # Typical for secondary structure prediction
+    predictions = ["C"] * n
 
     for i in range(n):
-        # Get window around position i
-        start = max(0, i - window_size // 2)
-        end = min(n, i + window_size // 2 + 1)
-        window = sequence[start:end]
+        start = max(0, i - _WINDOW_SIZE // 2)
+        end = min(n, i + _WINDOW_SIZE // 2 + 1)
+        known = [CHOU_FASMAN_PARAMETERS[aa] for aa in sequence[start:end] if aa in CHOU_FASMAN_PARAMETERS]
+        if not known:
+            continue
+        helix_score = sum(parameters[0] for parameters in known) / len(known)
+        sheet_score = sum(parameters[1] for parameters in known) / len(known)
 
-        # Calculate helix and sheet scores for window
-        helix_score = sum(helix_propensity.get(aa, 0.5) for aa in window) / len(window)
-        sheet_score = sum(sheet_propensity.get(aa, 0.5) for aa in window) / len(window)
-
-        # Assign secondary structure based on highest propensity
-        if helix_score > sheet_score and helix_score > 0.9:
+        if helix_score > sheet_score and helix_score > _WINDOW_THRESHOLD:
             predictions[i] = "H"
-        elif sheet_score > helix_score and sheet_score > 0.9:
+        elif sheet_score > helix_score and sheet_score > _WINDOW_THRESHOLD:
             predictions[i] = "E"
-        else:
-            predictions[i] = "C"
 
-    # Apply minimum length constraints (secondary structures should be at least 3 residues)
-    predictions = _apply_minimum_length_constraints(predictions)
-
-    return predictions
+    return _apply_minimum_length_constraints(predictions)
 
 
 def _apply_minimum_length_constraints(predictions: List[str]) -> List[str]:
-    """Apply minimum length constraints to secondary structure predictions."""
+    """Turn helices and sheets shorter than the minimum element length into coil."""
     result = predictions.copy()
     n = len(predictions)
 
@@ -166,96 +160,13 @@ def _apply_minimum_length_constraints(predictions: List[str]) -> List[str]:
         length = j - i
 
         # If secondary structure element is too short, convert to coil
-        if current_ss in ["H", "E"] and length < 3:
+        if current_ss in ["H", "E"] and length < _MIN_ELEMENT_LENGTH:
             for k in range(i, j):
                 result[k] = "C"
 
         i = j
 
     return result
-
-
-def _psipred_prediction(sequence: str) -> List[str]:
-    """PSIPRED secondary structure prediction via web service or local prediction."""
-    try:
-        # Try to use PSIPRED web service
-        import requests
-
-        # PSIPRED web service URL (this would need to be updated with actual service)
-        psipred_url = "http://bioinf.cs.ucl.ac.uk/psipred/api/submit"
-
-        # Prepare submission data
-        submission_data = {"input": sequence, "format": "fasta"}
-
-        # Submit job
-        response = requests.post(psipred_url, data=submission_data, timeout=30)
-
-        if response.status_code == 200:
-            result_data = response.json()
-            job_id = result_data.get("job_id")
-
-            # Poll for results (simplified - would need proper polling implementation)
-            result_url = f"http://bioinf.cs.ucl.ac.uk/psipred/api/result/{job_id}"
-
-            for _ in range(10):  # Try up to 10 times
-                result_response = requests.get(result_url, timeout=30)
-                if result_response.status_code == 200:
-                    prediction_data = result_response.json()
-                    ss_string = prediction_data.get("prediction", "")
-                    if ss_string:
-                        return list(ss_string)
-
-                time.sleep(5)  # Wait 5 seconds between polls
-
-        logger.warning("PSIPRED web service unavailable, falling back to local prediction")
-
-    except (requests.RequestException, ImportError) as e:
-        logger.warning(f"PSIPRED web service failed: {e}, falling back to local prediction")
-
-    # Fall back to improved local prediction
-    return _improved_secondary_structure_prediction(sequence)
-
-
-def _jpred_prediction(sequence: str) -> List[str]:
-    """JPRED secondary structure prediction via web service."""
-    try:
-        # Try to use JPRED web service
-        import requests
-
-        # JPRED submission URL (this would need to be updated with actual service)
-        jpred_url = "http://www.compbio.dundee.ac.uk/jpred4/api/submit"
-
-        # Prepare FASTA format
-        fasta_data = f">query\n{sequence}"
-
-        # Submit job
-        files = {"input": ("query.fasta", fasta_data)}
-        response = requests.post(jpred_url, files=files, timeout=30)
-
-        if response.status_code == 200:
-            result_data = response.json()
-            job_id = result_data.get("jobid")
-
-            # Poll for results
-            result_url = f"http://www.compbio.dundee.ac.uk/jpred4/api/job/{job_id}/results"
-
-            for _ in range(15):  # JPRED can take longer
-                result_response = requests.get(result_url, timeout=30)
-                if result_response.status_code == 200:
-                    prediction_data = result_response.json()
-                    ss_string = prediction_data.get("jpred", {}).get("prediction", "")
-                    if ss_string:
-                        return list(ss_string)
-
-                time.sleep(10)  # Wait 10 seconds between polls
-
-        logger.warning("JPRED web service unavailable, falling back to local prediction")
-
-    except (requests.RequestException, ImportError) as e:
-        logger.warning(f"JPRED web service failed: {e}, falling back to local prediction")
-
-    # Fall back to improved local prediction
-    return _improved_secondary_structure_prediction(sequence)
 
 
 def calculate_ss_composition(ss_assignments: List[str]) -> Dict[str, float]:
@@ -408,8 +319,9 @@ def parse_dssp_file(dssp_content: str) -> Dict[str, Any]:
     """Parse DSSP output file.
 
     Parses the standard DSSP output format, extracting per-residue secondary
-    structure assignments, solvent accessibility, phi/psi angles, and
-    hydrogen bond data.
+    structure assignments, solvent accessibility and phi/psi angles. An
+    accessibility or angle that the line does not hold is NaN (never 0), and an
+    angle DSSP leaves undefined keeps its value of 360.0.
 
     Args:
         dssp_content: DSSP file content as string
@@ -474,30 +386,30 @@ def parse_dssp_file(dssp_content: str) -> Dict[str, Any]:
             else:
                 ss_norm = "C"
 
-            # Parse accessibility
-            acc = 0.0
+            # Parse accessibility; a field that is missing or not a number is NaN, not zero
+            acc = float("nan")
             if len(line) >= 38:
                 acc_str = line[35:38].strip()
                 if acc_str:
                     try:
                         acc = float(acc_str)
                     except ValueError:
-                        acc = 0.0
+                        acc = float("nan")
 
-            # Parse phi/psi angles
-            phi = 0.0
-            psi = 0.0
+            # Parse phi/psi angles (DSSP writes 360.0 for an angle that is undefined); NaN where the line has none
+            phi = float("nan")
+            psi = float("nan")
             if len(line) >= 109:
                 phi_str = line[103:109].strip()
                 psi_str = line[109:115].strip() if len(line) >= 115 else ""
                 try:
-                    phi = float(phi_str) if phi_str else 0.0
+                    phi = float(phi_str) if phi_str else float("nan")
                 except ValueError:
-                    phi = 0.0
+                    phi = float("nan")
                 try:
-                    psi = float(psi_str) if psi_str else 0.0
+                    psi = float(psi_str) if psi_str else float("nan")
                 except ValueError:
-                    psi = 0.0
+                    psi = float("nan")
 
             # Parse residue number and chain
             res_num_str = line[5:10].strip()
@@ -538,121 +450,92 @@ def parse_dssp_file(dssp_content: str) -> Dict[str, Any]:
 
 
 def predict_transmembrane_regions(sequence: str) -> List[Dict[str, Any]]:
-    """Predict transmembrane regions from sequence.
+    """Predict transmembrane regions from sequence by Kyte-Doolittle hydropathy.
+
+    The mean Kyte-Doolittle hydropathy is taken over every window of 19 residues (the typical length of a
+    transmembrane helix). Windows whose mean exceeds 1.5 are hydrophobic enough to span a membrane; overlapping
+    windows that follow each other are merged, so a transmembrane stretch is reported once, from the first residue of
+    its first window to the last residue of its last. Letters without a hydropathy value count as 0.
+
+    This is a hydropathy plot, not a topology predictor like TMHMM: it does not tell the orientation or tell a
+    signal peptide or another hydrophobic helix from a transmembrane one.
 
     Args:
         sequence: Protein sequence
 
     Returns:
-        List of transmembrane region predictions
+        List of regions in sequence order, each with ``start`` and ``end`` (0-based, both included), ``length``,
+        ``avg_hydrophobicity`` (mean hydropathy over the region) and ``sequence``
 
     Example:
-        >>> sequence = "M" * 20 + "A" * 10 + "M" * 20  # Hydrophobic regions
-        >>> tm_regions = predict_transmembrane_regions(sequence)
-        >>> isinstance(tm_regions, list)
-        True
+        >>> regions = predict_transmembrane_regions("L" * 25)  # seven overlapping windows, one region
+        >>> [(region["start"], region["end"], region["length"]) for region in regions]
+        [(0, 24, 25)]
     """
-    # Simple hydrophobicity-based prediction
-    # In practice, would use TMHMM or similar
-    regions = []
-
     # Kyte-Doolittle hydrophobicity scale (canonical table from sequence.sequences)
     from metainformant.protein.sequence.sequences import KD_HYDROPHOBICITY
 
-    hydrophobicity = KD_HYDROPHOBICITY
-
+    sequence = sequence.upper()
     window_size = 19  # Typical TM helix length
     threshold = 1.5  # Hydrophobicity threshold
 
+    regions: List[Dict[str, Any]] = []
+    first = last = None
     for i in range(len(sequence) - window_size + 1):
         window = sequence[i : i + window_size]
-        avg_hydro = sum(hydrophobicity.get(aa, 0) for aa in window) / window_size
-
-        if avg_hydro > threshold:
-            regions.append(
-                {
-                    "start": i,
-                    "end": i + window_size - 1,
-                    "length": window_size,
-                    "avg_hydrophobicity": avg_hydro,
-                    "sequence": window,
-                }
-            )
+        if sum(KD_HYDROPHOBICITY.get(aa, 0) for aa in window) / window_size > threshold:
+            if first is None:
+                first = i
+            last = i + window_size - 1
+        elif first is not None and last is not None:
+            regions.append(_transmembrane_region(sequence, first, last, KD_HYDROPHOBICITY))
+            first = last = None
+    if first is not None and last is not None:
+        regions.append(_transmembrane_region(sequence, first, last, KD_HYDROPHOBICITY))
 
     return regions
 
 
+def _transmembrane_region(sequence: str, first: int, last: int, hydropathy: Dict[str, float]) -> Dict[str, Any]:
+    """The transmembrane region ``sequence[first:last + 1]`` with its mean hydropathy."""
+    segment = sequence[first : last + 1]
+    return {
+        "start": first,
+        "end": last,
+        "length": last - first + 1,
+        "avg_hydrophobicity": sum(hydropathy.get(aa, 0) for aa in segment) / len(segment),
+        "sequence": segment,
+    }
+
+
 def calculate_ss_propensities(sequence: str) -> Dict[str, Dict[str, Union[float, str]]]:
-    """Calculate secondary structure propensities for amino acids.
+    """Look up the Chou-Fasman conformational parameters of the amino acids in a sequence.
 
     Args:
         sequence: Protein sequence
 
     Returns:
-        Dictionary with propensity scores
+        For every distinct standard amino acid of the sequence, a dictionary with its helix (``"helix"``), sheet
+        (``"sheet"``) and turn (``"turn"``) parameters from :data:`CHOU_FASMAN_PARAMETERS`, and ``"preferred"``,
+        ``"helix"`` or ``"sheet"`` according to the larger of the first two. Letters that are not one of the twenty
+        standard amino acids are left out.
 
     Example:
         >>> sequence = "ACDEFGHIKLMNPQRSTVWY"
         >>> propensities = calculate_ss_propensities(sequence)
-        >>> isinstance(propensities, dict)
-        True
+        >>> propensities["E"]["helix"], propensities["V"]["preferred"]
+        (1.51, 'sheet')
     """
-    # Chou-Fasman parameters (simplified)
-    helix_params = {
-        "P": 0.57,
-        "V": 0.90,
-        "I": 1.09,
-        "M": 0.82,
-        "F": 1.16,
-        "Y": 0.72,
-        "W": 1.14,
-        "A": 1.45,
-        "E": 0.51,
-        "L": 1.34,
-        "H": 0.96,
-        "Q": 0.98,
-        "G": 0.53,
-        "T": 0.82,
-        "S": 0.79,
-        "R": 0.95,
-        "K": 0.81,
-        "D": 0.66,
-        "N": 0.43,
-        "C": 0.66,
-    }
+    propensities: Dict[str, Dict[str, Union[float, str]]] = {}
 
-    sheet_params = {
-        "P": 0.31,
-        "V": 1.87,
-        "I": 1.67,
-        "M": 1.20,
-        "F": 1.33,
-        "Y": 1.24,
-        "W": 1.01,
-        "A": 0.97,
-        "E": 0.39,
-        "L": 1.22,
-        "H": 0.51,
-        "Q": 0.58,
-        "G": 0.81,
-        "T": 1.20,
-        "S": 0.94,
-        "R": 0.99,
-        "K": 0.88,
-        "D": 0.40,
-        "N": 0.65,
-        "C": 1.19,
-    }
-
-    propensities = {}
-
-    for aa in set(sequence.upper()):
-        if aa in helix_params:
+    for aa in sorted(set(sequence.upper())):
+        if aa in CHOU_FASMAN_PARAMETERS:
+            helix, sheet, turn = CHOU_FASMAN_PARAMETERS[aa]
             propensities[aa] = {
-                "helix": helix_params[aa],
-                "sheet": sheet_params[aa],
-                "coil": 1.0,  # Simplified
-                "preferred": "helix" if helix_params[aa] > sheet_params[aa] else "sheet",
+                "helix": helix,
+                "sheet": sheet,
+                "turn": turn,
+                "preferred": "helix" if helix > sheet else "sheet",
             }
 
     return propensities
@@ -670,10 +553,12 @@ def validate_ss_prediction(ss_assignments: List[str], sequence: str) -> Dict[str
 
     Example:
         >>> ss = ['H', 'H', 'E']
-        >>> seq = "ALAALAALA"
+        >>> seq = "ALA"
         >>> validation = validate_ss_prediction(ss, seq)
         >>> validation['valid_length']
         True
+        >>> validate_ss_prediction(ss, "ALAALAALA")['valid_length']
+        False
     """
     validation: Dict[str, Any] = {
         "valid_length": len(ss_assignments) == len(sequence),

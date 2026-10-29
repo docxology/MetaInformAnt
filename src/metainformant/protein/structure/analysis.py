@@ -7,13 +7,30 @@ including domain identification, surface analysis, and structural motifs.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from scipy import ndimage
+from scipy.sparse import csr_matrix, diags, triu
+from scipy.sparse.csgraph import connected_components
+from scipy.sparse.linalg import eigsh
 from scipy.spatial import cKDTree
 
 from metainformant.core.utils import logging
+
+from .general import (
+    _CA_BOND_RANGE,
+    DEFAULT_SASA_POINTS,
+    VAN_DER_WAALS_RADII,
+    WATER_PROBE_RADIUS,
+    _as_points,
+    _dihedral_degrees,
+    calculate_atomic_sasa,
+    calculate_solvent_accessible_surface_area,
+    calculate_tm_score,
+    compute_rmsd_kabsch,
+    van_der_waals_radius,
+)
 
 logger = logging.get_logger(__name__)
 
@@ -51,130 +68,406 @@ def calculate_contact_map(coords: np.ndarray, threshold: float = 8.0) -> np.ndar
     return contact_map
 
 
-def identify_domains(structure: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """Identify structural domains in a protein structure.
+# ---------------------------------------------------------------------------------------------------------------------
+# Domain identification from the residue contact graph
+# ---------------------------------------------------------------------------------------------------------------------
+
+#: Default C-alpha distance in angstrom within which two residues are in contact (the default of
+#: :func:`calculate_contact_map`)
+DOMAIN_CONTACT_DISTANCE = 8.0
+
+#: Default smallest number of residues of a domain
+DOMAIN_MIN_SIZE = 40
+
+#: Default largest normalised cut (see :func:`identify_domains`) at which a bisection is accepted as a domain boundary
+DOMAIN_MAX_NORMALIZED_CUT = 0.10
+
+# Graphs up to this many residues are decomposed with a dense eigensolver, larger ones with ARPACK
+_DENSE_EIGEN_LIMIT = 1000
+
+
+def _record_type(atom: Dict[str, Any]) -> str:
+    """Record type (``ATOM`` or ``HETATM``) of an atom dict from either PDB loader of this package."""
+    return str(atom.get("record_name") or atom.get("record_type") or "ATOM").strip().upper()
+
+
+def _insertion_code(atom: Dict[str, Any]) -> str:
+    return str(atom.get("icode") or atom.get("ins_code") or "").strip()
+
+
+def _ca_residues(atoms: Sequence[Dict[str, Any]]) -> List[Tuple[Tuple[str, Any, str], np.ndarray]]:
+    """The C-alpha atom of every protein residue, in file order, as ``((chain, number, insertion code), position)``.
+
+    Only ATOM records count, so a calcium ion (atom name ``CA`` in a HETATM record) is not a C-alpha, and only the
+    first alternate location of a residue is used.
+
+    Raises:
+        ValueError: If a C-alpha atom has no ``x``, ``y`` or ``z`` coordinate
+    """
+    seen = set()
+    residues: List[Tuple[Tuple[str, Any, str], np.ndarray]] = []
+    for atom in atoms:
+        if _record_type(atom) != "ATOM" or str(atom.get("name", "")).strip().upper() != "CA":
+            continue
+        key = (str(atom.get("chain_id", "")), atom["res_seq"], _insertion_code(atom))
+        if key in seen:
+            continue
+        seen.add(key)
+        try:
+            position = np.array([atom["x"], atom["y"], atom["z"]], dtype=float)
+        except KeyError as error:
+            raise ValueError(
+                f"atom records need x, y and z coordinates; residue {key} has no {error.args[0]!r}"
+            ) from None
+        residues.append((key, position))
+    return residues
+
+
+def _residue_contact_graph(positions: np.ndarray, contact_distance: float) -> csr_matrix:
+    """Symmetric 0/1 adjacency matrix of the residues whose C-alpha atoms are at most ``contact_distance`` apart."""
+    n_residues = len(positions)
+    pairs = cKDTree(positions).query_pairs(contact_distance, output_type="ndarray")
+    rows = np.concatenate([pairs[:, 0], pairs[:, 1]])
+    columns = np.concatenate([pairs[:, 1], pairs[:, 0]])
+    return csr_matrix((np.ones(len(rows)), (rows, columns)), shape=(n_residues, n_residues))
+
+
+def _spectral_order(adjacency: csr_matrix) -> np.ndarray:
+    """Residue order along the Fiedler vector of a connected contact graph (spectral ordering).
+
+    The Fiedler vector is the eigenvector of the second smallest eigenvalue of the normalised Laplacian
+    ``I - D^-1/2 A D^-1/2``, scaled by ``D^-1/2``; it varies slowly inside a densely connected group of residues and
+    jumps across a narrow connection, so sorting residues by it puts the two sides of a bottleneck on opposite ends.
+    The eigensolver starts from a fixed vector, so the result is deterministic.
+    """
+    n_residues = adjacency.shape[0]
+    inverse_root_degree = 1.0 / np.sqrt(np.asarray(adjacency.sum(axis=1)).ravel())
+    if n_residues <= _DENSE_EIGEN_LIMIT:
+        scaled = adjacency.toarray() * inverse_root_degree[:, np.newaxis] * inverse_root_degree[np.newaxis, :]
+        _, vectors = np.linalg.eigh(scaled)
+        second = vectors[:, -2]
+    else:
+        scaling = diags(inverse_root_degree)
+        start = np.random.default_rng(0).standard_normal(n_residues)
+        _, vectors = eigsh(scaling @ adjacency @ scaling, k=2, which="LA", v0=start)
+        second = vectors[:, 0]  # eigsh returns the eigenvalues in ascending order; the first is the second largest
+    return np.asarray(np.lexsort((np.arange(n_residues), second * inverse_root_degree)))
+
+
+def _best_normalized_cut(adjacency: csr_matrix, order: np.ndarray, min_size: int) -> Tuple[int, float]:
+    """Size ``k`` of the first side of the best split of ``order`` into two prefixes, and its normalised cut.
+
+    The normalised cut of a split into ``S`` and the rest is ``cut / vol(S) + cut / vol(rest)``, with ``cut`` the number
+    of contacts between the two sides and ``vol`` the total number of contacts of the residues of a side (Shi & Malik
+    2000). Both sides must hold at least ``min_size`` residues; ``(0, inf)`` is returned when no split qualifies.
+    """
+    n_residues = len(order)
+    degree = np.asarray(adjacency.sum(axis=1)).ravel()
+    rank = np.empty(n_residues, dtype=int)
+    rank[order] = np.arange(n_residues)
+    edges = triu(adjacency, k=1).tocoo()
+    internal = np.cumsum(np.bincount(np.maximum(rank[edges.row], rank[edges.col]), minlength=n_residues))
+    volume = np.cumsum(degree[order])
+    cut = volume - 2.0 * internal
+    sizes = np.arange(1, n_residues + 1)
+    valid = (sizes >= min_size) & (n_residues - sizes >= min_size) & (volume > 0) & (volume < volume[-1])
+    if not valid.any():
+        return 0, float("inf")
+    normalized = np.full(n_residues, np.inf)
+    normalized[valid] = cut[valid] / volume[valid] + cut[valid] / (volume[-1] - volume[valid])
+    best = int(np.argmin(normalized))
+    return best + 1, float(normalized[best])
+
+
+def _decompose_contact_graph(
+    members: np.ndarray, adjacency: csr_matrix, positions: np.ndarray, min_size: int, max_cut: float
+) -> List[np.ndarray]:
+    """Split a set of residues (indices into ``adjacency``) into domains by recursive spectral bisection.
+
+    Residues that are not connected through contacts form separate pieces. A piece of at least ``min_size`` residues is
+    bisected further while the best bisection costs at most ``max_cut``; a smaller piece is no domain and joins the
+    domain that holds the residue closest to it in space.
+    """
+    if len(members) < 2 * min_size:
+        return [members]
+    subgraph = adjacency[members][:, members]
+    n_pieces, labels = connected_components(subgraph, directed=False)
+    if n_pieces > 1:
+        pieces = [members[labels == label] for label in range(n_pieces)]
+        large = [piece for piece in pieces if len(piece) >= min_size]
+        if not large:
+            return [members]
+        domains = [
+            domain
+            for piece in large
+            for domain in _decompose_contact_graph(piece, adjacency, positions, min_size, max_cut)
+        ]
+        owner = np.concatenate([np.full(len(domain), label) for label, domain in enumerate(domains)])
+        placed = np.concatenate(domains)
+        nearest_tree = cKDTree(positions[placed])
+        for piece in (piece for piece in pieces if len(piece) < min_size):
+            distance, closest = nearest_tree.query(positions[piece])
+            label = int(owner[closest[int(np.argmin(distance))]])
+            domains[label] = np.sort(np.concatenate([domains[label], piece]))
+        return domains
+
+    order = _spectral_order(subgraph)
+    size, normalized_cut = _best_normalized_cut(subgraph, order, min_size)
+    if size == 0 or normalized_cut > max_cut:
+        return [members]
+    first, second = np.sort(members[order[:size]]), np.sort(members[order[size:]])
+    return _decompose_contact_graph(first, adjacency, positions, min_size, max_cut) + _decompose_contact_graph(
+        second, adjacency, positions, min_size, max_cut
+    )
+
+
+def identify_domains(
+    structure: Dict[str, Any],
+    *,
+    contact_distance: float = DOMAIN_CONTACT_DISTANCE,
+    min_domain_size: int = DOMAIN_MIN_SIZE,
+    max_normalized_cut: float = DOMAIN_MAX_NORMALIZED_CUT,
+) -> List[Dict[str, Any]]:
+    """Identify structural domains from the residue contact graph by recursive spectral bisection.
+
+    Each chain is treated on its own. Its residues are the nodes of a graph in which two residues are linked when
+    their C-alpha atoms are at most ``contact_distance`` apart. A domain is a group of residues that is far more
+    densely connected inside than to the rest, so the method looks for the cheapest way to cut the graph in two:
+
+    1. Residues that are not connected through contacts at all are separate pieces.
+    2. A connected set of residues is ordered by the Fiedler vector of its normalised graph Laplacian (spectral
+       ordering). Of the cuts that split this order into a first part and the rest, each part with at least
+       ``min_domain_size`` residues, the one with the smallest normalised cut ``cut / vol(A) + cut / vol(B)`` is
+       taken (Shi & Malik 2000), where ``cut`` counts the contacts between the parts and ``vol`` the contacts of a
+       part's residues.
+    3. The cut is accepted when its normalised cut is at most ``max_normalized_cut``, and both parts are then
+       treated in the same way; otherwise the set is one domain.
+    4. A piece of fewer than ``min_domain_size`` residues that is disconnected from the rest is no domain; it joins the
+       domain holding the residue nearest to it.
+
+    Domains need not be continuous in sequence: a domain inserted into another splits it into two ``segments``.
+    The result depends on the coordinates only; residue numbers are used for labelling.
+
+    The parameters are not fitted to a domain database. With the defaults, planted compact globules of 90-250
+    residues keep a best bisection with a normalised cut of 0.18-0.32 and stay whole, whereas two compact groups of
+    80 residues joined by a linker of 6-14 residues cost 0.002-0.005 and are split. Elongated single-domain
+    structures (long helices, coiled coils, solenoids) have a cheap bisection, and are split too.
 
     Args:
-        structure: Structure dictionary from PDB loading
+        structure: Structure dictionary from PDB loading. Only ATOM records with the atom name ``CA`` (the first
+            alternate location of each residue) are used, so every atom needs ``chain_id``, ``res_seq``, ``name``,
+            ``x``, ``y`` and ``z``; the keys of both PDB loaders of this package work.
+        contact_distance: C-alpha distance in angstrom up to which two residues are in contact
+        min_domain_size: Smallest number of residues of a domain (also the smallest part of an accepted cut)
+        max_normalized_cut: Largest normalised cut, between 0 and 2, at which a cut is accepted; lower values
+            split less readily
 
     Returns:
-        List of identified domains
+        Domains in order of their first residue, each a dictionary with ``domain_id`` (1, 2, ... over the structure),
+        ``chain_id``, ``residues`` (residue numbers in chain order), ``residue_ids`` (the same with insertion codes,
+        such as ``"52A"``), ``start`` and ``end`` (lowest and highest residue number), ``size``, ``segments``
+        (``{"start", "end"}`` residue numbers of each stretch of consecutive residues of the chain that belongs to the
+        domain) and ``n_contacts`` (contacts between residues of the domain). A structure without atoms, or without
+        protein residues, has no domains.
+
+    Raises:
+        ValueError: If a parameter is out of range, atoms lack coordinates, or the structure has coordinates but no
+            ``atoms`` records
+
+    Reference:
+        Shi J, Malik J. Normalized cuts and image segmentation. IEEE Trans Pattern Anal Mach Intell 2000;22:888-905.
+        The use of the Fiedler vector for graph bisection follows Fiedler (1973) and Pothen, Simon & Liou (1990).
 
     Example:
-        >>> # Assuming structure data exists
-        >>> # domains = identify_domains(structure)
-        >>> # isinstance(domains, list)
-        >>> # True
+        >>> identify_domains({"atoms": []})
+        []
     """
-    # This is a simplified domain identification
-    # Real implementation would use domain databases or clustering
+    if contact_distance <= 0 or not np.isfinite(contact_distance):
+        raise ValueError(f"contact_distance must be positive, got {contact_distance!r}")
+    if int(min_domain_size) != min_domain_size or min_domain_size < 2:
+        raise ValueError(f"min_domain_size must be an integer of at least 2, got {min_domain_size!r}")
+    if not 0 <= max_normalized_cut <= 2:
+        raise ValueError(f"max_normalized_cut must lie in [0, 2], got {max_normalized_cut!r}")
 
-    atoms = structure.get("atoms", [])
+    atoms = structure.get("atoms") or []
     if not atoms:
+        coordinates = structure.get("coordinates")
+        if coordinates is not None and len(coordinates) > 0:
+            raise ValueError(
+                "structure has coordinates but no 'atoms' records: chain and residue labels are needed to "
+                "define domains"
+            )
         return []
 
-    # Group atoms by residue
-    residues: Dict[Tuple[Any, Any], List[Any]] = {}
-    for atom in atoms:
-        key = (atom["chain_id"], atom["res_seq"])
-        if key not in residues:
-            residues[key] = []
-        residues[key].append(atom)
+    chains: Dict[str, List[Tuple[Tuple[str, Any, str], np.ndarray]]] = {}
+    for residue in _ca_residues(atoms):
+        chains.setdefault(residue[0][0], []).append(residue)
 
-    # Simple domain identification based on chain breaks
-    domains = []
-    current_domain = []
-    prev_chain = None
-    prev_res_seq: Any = None
-
-    for (chain_id, res_seq), residue_atoms in sorted(residues.items()):
-        if prev_chain is not None and (chain_id != prev_chain or res_seq > prev_res_seq + 10):
-            # Chain break or large gap - start new domain
-            if current_domain:
-                domains.append(
-                    {
-                        "residues": current_domain,
-                        "chain_id": prev_chain,
-                        "start": min(current_domain),
-                        "end": max(current_domain),
-                        "size": len(current_domain),
-                    }
-                )
-            current_domain = []
-
-        current_domain.append(res_seq)
-        prev_chain = chain_id
-        prev_res_seq = res_seq
-
-    # Add final domain
-    if current_domain:
-        domains.append(
-            {
-                "residues": current_domain,
-                "chain_id": prev_chain,
-                "start": min(current_domain),
-                "end": max(current_domain),
-                "size": len(current_domain),
-            }
+    domains: List[Dict[str, Any]] = []
+    for chain_id, residues in chains.items():
+        positions = np.array([position for _, position in residues])
+        adjacency = _residue_contact_graph(positions, contact_distance)
+        parts = _decompose_contact_graph(
+            np.arange(len(residues)), adjacency, positions, int(min_domain_size), float(max_normalized_cut)
         )
-
+        for members in sorted((np.sort(part) for part in parts), key=lambda part: int(part[0])):
+            numbers = [residues[i][0][1] for i in members]
+            labels = [f"{residues[i][0][1]}{residues[i][0][2]}" for i in members]
+            breaks = np.flatnonzero(np.diff(members) != 1) + 1
+            segments = [
+                {"start": numbers[int(chunk[0])], "end": numbers[int(chunk[-1])]}
+                for chunk in np.split(np.arange(len(members)), breaks)
+            ]
+            domains.append(
+                {
+                    "domain_id": len(domains) + 1,
+                    "chain_id": chain_id,
+                    "residues": numbers,
+                    "residue_ids": labels,
+                    "start": min(numbers),
+                    "end": max(numbers),
+                    "size": len(numbers),
+                    "segments": segments,
+                    "n_contacts": int(round(adjacency[members][:, members].sum() / 2)),
+                }
+            )
     return domains
 
 
-def calculate_surface_area(coords: np.ndarray, probe_radius: float = 1.4) -> float:
-    """Calculate solvent accessible surface area.
+# ---------------------------------------------------------------------------------------------------------------------
+# Solvent accessible surface area
+# ---------------------------------------------------------------------------------------------------------------------
+
+
+def calculate_surface_area(
+    coords: np.ndarray,
+    probe_radius: float = WATER_PROBE_RADIUS,
+    radii: Union[None, float, Sequence[float], np.ndarray] = None,
+    n_points: int = DEFAULT_SASA_POINTS,
+) -> float:
+    """Calculate the solvent accessible surface area of a set of atoms (Shrake-Rupley).
+
+    This is :func:`metainformant.protein.structure.general.calculate_solvent_accessible_surface_area`: every atom is a
+    sphere of its van der Waals radius plus the probe radius, ``n_points`` test points per sphere are checked against
+    all other spheres, and the area is the accessible fraction of the sphere areas. An isolated atom of radius ``r``
+    has exactly ``4 pi (r + probe_radius)^2``.
 
     Args:
-        coords: Atomic coordinates
-        probe_radius: Solvent probe radius (Å)
+        coords: Atom centres (n_atoms, 3) in angstrom
+        probe_radius: Solvent probe radius (Å), 1.4 for water
+        radii: Van der Waals radii in angstrom, one per atom or one for all; None gives every atom the carbon radius
+            (1.70 Å), since bare coordinates carry no elements. Use :func:`calculate_structure_sasa` for a structure.
+        n_points: Test points per atomic sphere; more points approximate the exact area more closely
 
     Returns:
-        Surface area in Å²
+        Surface area in Å² (0.0 for no atoms)
 
     Example:
-        >>> rng = np.random.default_rng(0)
-        >>> coords = rng.random((100, 3)) * 30
-        >>> area = calculate_surface_area(coords)
-        >>> area > 0
+        >>> single_carbon = np.zeros((1, 3))
+        >>> abs(calculate_surface_area(single_carbon) - 4 * math.pi * (1.70 + 1.4) ** 2) < 1e-9
         True
     """
-    # Simplified SASA calculation
-    # Real implementation would use more sophisticated algorithms
+    return calculate_solvent_accessible_surface_area(coords, probe_radius=probe_radius, radii=radii, n_points=n_points)
 
-    if len(coords) < 4:
-        # For small structures, approximate as sphere
-        if len(coords) > 0:
-            radius = np.max(np.linalg.norm(coords - np.mean(coords, axis=0), axis=1))
-            return float(4 * np.pi * (radius + probe_radius) ** 2)
-        return 0.0
 
-    # Use convex hull as approximation
-    try:
-        from scipy.spatial import ConvexHull
+def calculate_structure_sasa(
+    structure: Dict[str, Any],
+    *,
+    probe_radius: float = WATER_PROBE_RADIUS,
+    n_points: int = DEFAULT_SASA_POINTS,
+    include_hetero: bool = False,
+) -> Dict[str, Any]:
+    """Solvent accessible surface area of a structure by the Shrake-Rupley algorithm, per atom and per residue.
 
-        hull = ConvexHull(coords)
+    Radii are the van der Waals radii of the atoms' elements (``VAN_DER_WAALS_RADII`` of
+    :mod:`metainformant.protein.structure.general`, Bondi 1964). The element is the ``element`` field of the atom;
+    when it is empty the first letter of the atom name is used for ATOM records (``CA`` of a protein residue is
+    carbon), while a HETATM record without an element is an error. Only the first alternate location of each atom is
+    used. The area of an atom counts the other atoms present, so the result for ``include_hetero=False`` is the
+    surface of the protein alone.
 
-        # Approximate surface area (this is rough)
-        # In practice, would need proper SASA calculation
-        surface_area = hull.area
+    Args:
+        structure: Structure dictionary from PDB loading, with ``atoms`` (``name``, ``res_name``, ``chain_id``,
+            ``res_seq``, ``x``, ``y``, ``z`` and normally ``element``)
+        probe_radius: Probe radius in angstrom (1.4 for water)
+        n_points: Test points per atomic sphere
+        include_hetero: Whether HETATM records (waters, ions, ligands) take part; by default only ATOM records do
 
-        # Add probe radius effect (simplified)
-        surface_area *= 1 + probe_radius / 10.0
+    Returns:
+        Dictionary with ``total`` (Å²), ``per_atom`` (Å² of each used atom), ``atom_indices`` (indices of those atoms
+        in ``structure["atoms"]``), ``per_residue`` (one ``{"chain_id", "res_seq", "res_name", "n_atoms", "sasa"}`` per
+        residue in order of appearance), ``n_atoms``, ``probe_radius`` and ``n_points``
 
-        return float(surface_area)
+    Raises:
+        ValueError: If a parameter is out of range, atoms lack coordinates, an element has no known radius, or the
+            structure has coordinates but no ``atoms`` records
 
-    except ImportError:
-        # Fallback to bounding box approximation
-        min_coords = np.min(coords, axis=0)
-        max_coords = np.max(coords, axis=0)
-        dimensions = max_coords - min_coords
-
-        # Approximate as rectangular box surface area
-        surface_area = 2 * (
-            dimensions[0] * dimensions[1] + dimensions[1] * dimensions[2] + dimensions[2] * dimensions[0]
+    Example:
+        >>> atoms = [{"name": "C", "res_name": "ALA", "chain_id": "A", "res_seq": 1, "x": 0.0, "y": 0.0, "z": 0.0}]
+        >>> result = calculate_structure_sasa({"atoms": atoms})
+        >>> abs(result["total"] - 4 * math.pi * (1.70 + 1.4) ** 2) < 1e-9
+        True
+    """
+    atoms = structure.get("atoms") or []
+    if not atoms:
+        coordinates = structure.get("coordinates")
+        if coordinates is not None and len(coordinates) > 0:
+            raise ValueError("structure has coordinates but no 'atoms' records: the elements are needed for the radii")
+    seen = set()
+    used: List[int] = []
+    radii: List[float] = []
+    for index, atom in enumerate(atoms):
+        is_atom_record = _record_type(atom) == "ATOM"
+        if not (is_atom_record or include_hetero):
+            continue
+        key = (
+            str(atom.get("chain_id", "")),
+            atom.get("res_seq"),
+            _insertion_code(atom),
+            str(atom.get("name", "")).strip(),
         )
+        if key in seen:
+            continue
+        seen.add(key)
+        element = str(atom.get("element") or "").strip()
+        if not element:
+            if not is_atom_record:
+                raise ValueError(f"HETATM {key[3]!r} of residue {key[:3]} has no element, so its radius is unknown")
+            element = key[3].lstrip("0123456789")[:1]
+        used.append(index)
+        radii.append(van_der_waals_radius(element))
 
-        return float(surface_area)
+    try:
+        coords = np.array([[atoms[i]["x"], atoms[i]["y"], atoms[i]["z"]] for i in used], dtype=float).reshape(-1, 3)
+    except KeyError as error:
+        raise ValueError(f"atom records need x, y and z coordinates; an atom has no {error.args[0]!r}") from None
+    areas = calculate_atomic_sasa(coords, radii=radii or None, probe_radius=probe_radius, n_points=n_points)
+
+    per_residue: Dict[Tuple[str, Any, str], Dict[str, Any]] = {}
+    for index, area in zip(used, areas):
+        atom = atoms[index]
+        residue = (str(atom.get("chain_id", "")), atom.get("res_seq"), _insertion_code(atom))
+        entry = per_residue.setdefault(
+            residue,
+            {
+                "chain_id": residue[0],
+                "res_seq": residue[1],
+                "res_name": str(atom.get("res_name", "")).strip(),
+                "n_atoms": 0,
+                "sasa": 0.0,
+            },
+        )
+        entry["n_atoms"] += 1
+        entry["sasa"] += float(area)
+    return {
+        "total": math.fsum(areas),
+        "per_atom": [float(area) for area in areas],
+        "atom_indices": used,
+        "per_residue": list(per_residue.values()),
+        "n_atoms": len(used),
+        "probe_radius": float(probe_radius),
+        "n_points": int(n_points),
+    }
 
 
 #: Motif types :func:`analyze_structural_motifs` searches for by default.
@@ -184,7 +477,6 @@ SUPPORTED_MOTIF_TYPES: Tuple[str, ...] = ("helix", "extended", "zinc_site")
 # CA(i)-CA(i+3) = 5.05 A, CA(i)-CA(i+4) = 6.20 A and a virtual torsion of +50 degrees over four consecutive C-alpha
 # atoms; an extended strand has CA(i)-CA(i+2) of about 6.6 A and CA(i)-CA(i+3) of about 10 A. The windows below
 # are those ideal values with a margin that admits real, distorted elements (distances in A, torsions in degrees).
-_CA_BOND_RANGE = (2.9, 4.6)  # consecutive C-alpha atoms outside it are not bonded: a chain break (ideal 3.8, cis 2.9)
 _HELIX_D3_WINDOW = (4.5, 5.7)
 _HELIX_D4_WINDOW = (5.5, 6.9)
 _HELIX_TORSION_WINDOW = (20.0, 80.0)
@@ -206,30 +498,8 @@ _ZINC_LIGAND_ATOMS = {
 _ZINC_LIGAND_CUTOFF = 2.8  # A; Zn-S(Cys) is about 2.3 A, Zn-N(His) 2.0-2.1 A and Zn-O(Asp/Glu) 2.0-2.2 A
 
 
-def _record_type(atom: Dict[str, Any]) -> str:
-    """Record type (``ATOM`` or ``HETATM``) of an atom dict from either PDB loader of this package."""
-    return str(atom.get("record_name") or atom.get("record_type") or "ATOM").strip().upper()
-
-
-def _insertion_code(atom: Dict[str, Any]) -> str:
-    return str(atom.get("icode") or atom.get("ins_code") or "").strip()
-
-
 def _in_window(values: np.ndarray, window: Tuple[float, float]) -> np.ndarray:
     return (values >= window[0]) & (values <= window[1])
-
-
-def _dihedral_degrees(p0: np.ndarray, p1: np.ndarray, p2: np.ndarray, p3: np.ndarray) -> np.ndarray:
-    """Dihedral angle in degrees (IUPAC sign: positive for a right-handed twist) of rows of four points."""
-    b0 = p0 - p1
-    b1 = p2 - p1
-    b2 = p3 - p2
-    b1 = b1 / np.linalg.norm(b1, axis=-1, keepdims=True)
-    v = b0 - np.sum(b0 * b1, axis=-1, keepdims=True) * b1
-    w = b2 - np.sum(b2 * b1, axis=-1, keepdims=True) * b1
-    x = np.sum(v * w, axis=-1)
-    y = np.sum(np.cross(b1, v) * w, axis=-1)
-    return np.asarray(np.degrees(np.arctan2(y, x)))
 
 
 def _ca_segments(atoms: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -238,17 +508,9 @@ def _ca_segments(atoms: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]:
     Only ATOM records count, so a calcium ion (atom name ``CA`` in a HETATM record) is not a C-alpha, and only
     the first alternate location of a residue is used.
     """
-    seen = set()
     chains: Dict[str, List[Tuple[int, np.ndarray]]] = {}
-    for atom in atoms:
-        if _record_type(atom) != "ATOM" or str(atom.get("name", "")).strip().upper() != "CA":
-            continue
-        residue = (str(atom.get("chain_id", "")), atom["res_seq"], _insertion_code(atom))
-        if residue in seen:
-            continue
-        seen.add(residue)
-        position = np.array([atom["x"], atom["y"], atom["z"]], dtype=float)
-        chains.setdefault(residue[0], []).append((atom["res_seq"], position))
+    for (chain_id, number, _), position in _ca_residues(atoms):
+        chains.setdefault(chain_id, []).append((number, position))
 
     segments: List[Dict[str, Any]] = []
     for chain_id, residues in chains.items():
@@ -476,45 +738,153 @@ def analyze_structural_motifs(
     return motifs
 
 
-def calculate_structural_similarity(structure1: Dict[str, Any], structure2: Dict[str, Any]) -> Dict[str, float]:
-    """Calculate structural similarity between two proteins.
+_PAIRING_MODES = ("residue_id", "order")
+
+
+def _ca_trace(structure: Dict[str, Any], name: str) -> Tuple[List[Tuple[str, Any, str]], np.ndarray]:
+    """Residue labels and C-alpha positions of a structure: its C-alpha ATOM records, or else its coordinates.
+
+    A structure without ``atoms`` records but with ``coordinates`` is read as a C-alpha trace: one point per residue,
+    labelled by its position.
+
+    Raises:
+        ValueError: If the structure has no coordinates, or atom records but no C-alpha atoms
+    """
+    atoms = structure.get("atoms") or []
+    if atoms:
+        residues = _ca_residues(atoms)
+        if not residues:
+            raise ValueError(f"{name} has atom records but no C-alpha ATOM records to compare")
+        return [key for key, _ in residues], np.array([position for _, position in residues])
+    coordinates = structure.get("coordinates")
+    if coordinates is None or len(coordinates) == 0:
+        raise ValueError(f"{name} has no coordinates to compare")
+    points = _as_points(coordinates, f"{name} coordinates")
+    return [("", index, "") for index in range(len(points))], points
+
+
+def match_ca_atoms(
+    structure1: Dict[str, Any], structure2: Dict[str, Any], pair_by: str = "residue_id"
+) -> Dict[str, Any]:
+    """Pair the C-alpha atoms of two structures residue by residue.
+
+    Only C-alpha atoms of ATOM records are used (a structure without ``atoms`` but with ``coordinates`` is read as a
+    C-alpha trace of one point per residue).
 
     Args:
-        structure1: First structure dictionary
-        structure2: Second structure dictionary
+        structure1: Reference structure dictionary
+        structure2: Structure dictionary to pair with it
+        pair_by: ``"residue_id"`` pairs residues with the same chain, residue number and insertion code and leaves
+            residues present in only one structure out; ``"order"`` pairs the i-th C-alpha atom of one with the i-th
+            of the other, which needs equally many
 
     Returns:
-        Similarity metrics
+        Dictionary with ``reference`` and ``mobile`` (the coordinates of the paired atoms, shape (n_pairs, 3), in
+        the order of ``structure1``), ``labels`` (the (chain, number, insertion code) of each reference atom),
+        ``n_residues_1`` and ``n_residues_2`` (C-alpha atoms in each structure)
+
+    Raises:
+        ValueError: If a structure has no coordinates or no C-alpha atoms, no residue is shared (``"residue_id"``),
+            the lengths differ (``"order"``) or ``pair_by`` is unknown
+    """
+    if pair_by not in _PAIRING_MODES:
+        raise ValueError(f"pair_by must be one of {', '.join(_PAIRING_MODES)}, got {pair_by!r}")
+    labels1, trace1 = _ca_trace(structure1, "structure1")
+    labels2, trace2 = _ca_trace(structure2, "structure2")
+
+    if pair_by == "order":
+        if len(trace1) != len(trace2):
+            raise ValueError(
+                f"pairing by order needs equally long C-alpha traces, got {len(trace1)} and {len(trace2)} residues"
+            )
+        first = np.arange(len(trace1))
+        second = first
+    else:
+        position2 = {label: index for index, label in enumerate(labels2)}
+        matched = [(index, position2[label]) for index, label in enumerate(labels1) if label in position2]
+        if not matched:
+            raise ValueError(
+                "the structures have no residue in common (matched by chain, residue number and insertion code)"
+            )
+        first = np.array([pair[0] for pair in matched])
+        second = np.array([pair[1] for pair in matched])
+
+    return {
+        "reference": trace1[first],
+        "mobile": trace2[second],
+        "labels": [labels1[index] for index in first],
+        "n_residues_1": len(trace1),
+        "n_residues_2": len(trace2),
+    }
+
+
+def _compare_ca_traces(structure1: Dict[str, Any], structure2: Dict[str, Any], pair_by: str) -> Dict[str, Any]:
+    """Kabsch RMSD and TM-score of the paired C-alpha atoms of two structures (``calculate_structural_similarity``)."""
+    pairs = match_ca_atoms(structure1, structure2, pair_by)
+    reference, mobile = pairs["reference"], pairs["mobile"]
+    scored = calculate_tm_score(reference, mobile, n_reference=pairs["n_residues_1"])
+    return {
+        "rmsd": compute_rmsd_kabsch(reference, mobile),
+        "tm_score": scored["tm_score"],
+        "d0": scored["d0"],
+        "n_aligned": len(reference),
+        "n_residues_1": pairs["n_residues_1"],
+        "n_residues_2": pairs["n_residues_2"],
+    }
+
+
+def calculate_structural_similarity(
+    structure1: Dict[str, Any], structure2: Dict[str, Any], *, pair_by: str = "residue_id"
+) -> Dict[str, Any]:
+    """Compare two structures by the Kabsch-superposed RMSD and the TM-score of their C-alpha atoms.
+
+    The C-alpha atoms (ATOM records) of the two structures are paired; the pairs are superposed and scored:
+
+    - ``rmsd``: the root-mean-square deviation of all pairs after the optimal rigid superposition (Kabsch algorithm
+      with a reflection check, :func:`metainformant.protein.structure.general.compute_rmsd_kabsch`), in angstrom. It
+      does not depend on how the structures are placed in space.
+    - ``tm_score``: the TM-score of Zhang & Skolnick (2004), the maximum over superpositions of
+      ``(1 / L) * sum 1 / (1 + (d_i / d0)^2)`` with ``d0 = 1.24 * (L - 15)^(1/3) - 1.8`` (0.5 for ``L <= 21``) and
+      ``L`` the number of C-alpha atoms of ``structure1``. It lies in (0, 1] and is 1 for identical structures; its
+      d0 scales with the length, so the score of unrelated proteins (about 0.17) does not depend on it. Residues of
+      ``structure1`` without a partner score 0.
+
+    No structural alignment is searched for: the pairing must be given by the data.
+
+    Args:
+        structure1: Reference structure dictionary from PDB loading (``atoms``; or only ``coordinates``, read as one
+            point per residue)
+        structure2: Structure dictionary to compare
+        pair_by: ``"residue_id"`` pairs residues with the same chain, residue number and insertion code (residues
+            present in only one structure are left out of the superposition); ``"order"`` pairs the i-th C-alpha atom
+            of one with the i-th of the other, which needs equally many
+
+    Returns:
+        Dictionary with ``rmsd`` (angstrom), ``tm_score``, ``d0`` (angstrom), ``n_aligned`` (pairs), ``n_residues_1``
+        and ``n_residues_2`` (C-alpha atoms of each structure)
+
+    Raises:
+        ValueError: If a structure has no coordinates or C-alpha atoms, fewer than 3 residues can be paired, no
+            residue is shared (``pair_by="residue_id"``), the lengths differ (``pair_by="order"``) or ``pair_by`` is
+            unknown
+
+    Reference:
+        Zhang Y, Skolnick J. Scoring function for automated assessment of protein structure template quality.
+        Proteins 2004;57:702-710.
 
     Example:
-        >>> # Assuming structure data exists
-        >>> # similarity = calculate_structural_similarity(struct1, struct2)
-        >>> # isinstance(similarity, dict)
-        >>> # True
+        >>> def chain(shift):  # a straight chain of 30 C-alpha atoms, moved along x by ``shift``
+        ...     return {"atoms": [{"name": "CA", "chain_id": "A", "res_seq": i, "x": 3.8 * i + shift, "y": 0, "z": 0}
+        ...                       for i in range(1, 31)]}
+        >>> result = calculate_structural_similarity(chain(0.0), chain(10.0))
+        >>> round(result["tm_score"], 6), round(result["rmsd"], 6)
+        (1.0, 0.0)
     """
-    coords1 = structure1.get("coordinates")
-    coords2 = structure2.get("coordinates")
-
-    if coords1 is None or coords2 is None:
-        return {"rmsd": float("inf"), "similarity": 0.0}
-
-    # Use RMSD as similarity measure
-    from .general import compute_rmsd_simple
-
-    rmsd = compute_rmsd_simple(coords1, coords2)
-
-    # Convert RMSD to similarity score (simplified)
-    # Lower RMSD = higher similarity
-    if rmsd == 0:
-        similarity = 1.0
-    else:
-        similarity = 1.0 / (1.0 + rmsd / 10.0)  # Arbitrary scaling
-
-    return {"rmsd": rmsd, "similarity": similarity, "n_atoms_1": len(coords1), "n_atoms_2": len(coords2)}
+    return _compare_ca_traces(structure1, structure2, pair_by)
 
 
-# Van der Waals radii (A, Bondi) by element; any other element gets the carbon radius.
-_VDW_RADII = {"H": 1.20, "C": 1.70, "N": 1.55, "O": 1.52, "P": 1.80, "S": 1.80, "SE": 1.90}
+# Van der Waals radii (A, Bondi) by element, shared with the SASA calculation; any other element gets the carbon radius.
+_VDW_RADII = VAN_DER_WAALS_RADII
 _DEFAULT_VDW_RADIUS = 1.70
 _WATER_RESIDUES = frozenset({"HOH", "WAT", "H2O", "DOD"})
 
@@ -767,41 +1137,41 @@ def analyze_protein_flexibility(structure: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def calculate_structural_alignment_quality(structure1: Dict[str, Any], structure2: Dict[str, Any]) -> Dict[str, float]:
-    """Assess quality of structural alignment.
+def calculate_structural_alignment_quality(
+    structure1: Dict[str, Any], structure2: Dict[str, Any], *, pair_by: str = "residue_id"
+) -> Dict[str, Any]:
+    """Assess how well two structures with corresponding residues superpose, by the TM-score and the RMSD.
+
+    This is :func:`calculate_structural_similarity` under the keys of a quality report. ``quality_score`` is the
+    TM-score (0 to 1, higher is better; 1 for identical structures). ``rmsd`` is the Kabsch RMSD of all pairs.
 
     Args:
-        structure1: First structure
-        structure2: Second structure
+        structure1: Reference structure dictionary
+        structure2: Structure dictionary to assess
+        pair_by: ``"residue_id"`` or ``"order"``, as in :func:`calculate_structural_similarity`
 
     Returns:
-        Alignment quality metrics
+        Dictionary with ``quality_score`` (= ``tm_score``), ``tm_score``, ``rmsd`` (angstrom), ``d0`` (angstrom),
+        ``aligned_atoms`` (C-alpha atoms paired), ``structure1_atoms`` and ``structure2_atoms`` (C-alpha atoms of each)
+
+    Raises:
+        ValueError: As :func:`calculate_structural_similarity`
 
     Example:
-        >>> # Assuming structure data exists
-        >>> # quality = calculate_structural_alignment_quality(struct1, struct2)
-        >>> # isinstance(quality, dict)
-        >>> # True
+        >>> def chain(shift):  # a straight chain of 30 C-alpha atoms, moved along x by ``shift``
+        ...     return {"atoms": [{"name": "CA", "chain_id": "A", "res_seq": i, "x": 3.8 * i + shift, "y": 0, "z": 0}
+        ...                       for i in range(1, 31)]}
+        >>> quality = calculate_structural_alignment_quality(chain(0.0), chain(-4.0))
+        >>> round(quality["quality_score"], 6), quality["aligned_atoms"]
+        (1.0, 30)
     """
-    coords1 = structure1.get("coordinates")
-    coords2 = structure2.get("coordinates")
-
-    if coords1 is None or coords2 is None:
-        return {"quality_score": 0.0, "aligned_atoms": 0}
-
-    # Calculate RMSD
-    from .general import compute_rmsd_simple
-
-    rmsd = compute_rmsd_simple(coords1, coords2)
-
-    # Calculate alignment quality (simplified)
-    # Lower RMSD = higher quality
-    quality_score = max(0.0, 1.0 - rmsd / 20.0)  # Arbitrary scaling
-
+    comparison = _compare_ca_traces(structure1, structure2, pair_by)
     return {
-        "quality_score": quality_score,
-        "rmsd": rmsd,
-        "aligned_atoms": min(len(coords1), len(coords2)),
-        "structure1_atoms": len(coords1),
-        "structure2_atoms": len(coords2),
+        "quality_score": comparison["tm_score"],
+        "tm_score": comparison["tm_score"],
+        "rmsd": comparison["rmsd"],
+        "d0": comparison["d0"],
+        "aligned_atoms": comparison["n_aligned"],
+        "structure1_atoms": comparison["n_residues_1"],
+        "structure2_atoms": comparison["n_residues_2"],
     }

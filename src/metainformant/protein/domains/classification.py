@@ -459,12 +459,14 @@ def domain_enrichment(
     For each domain observed in the protein set, performs a one-sided
     Fisher's exact test (computed via the hypergeometric distribution)
     to determine whether the domain is over-represented compared to the
-    background set. Results are sorted by p-value ascending.
+    background set. Results are sorted by p-value ascending. Proteins are
+    counted once per domain however often the domain is repeated in them, and
+    each protein is counted once in the sizes of the sets.
 
     Args:
         protein_set: List of protein identifiers in the foreground set.
         background: List of protein identifiers in the background set.
-            Should include the foreground proteins.
+            Foreground proteins that are missing from it are added to it.
         domain_annotations: Dict mapping protein identifiers to lists
             of domain names present in that protein.
 
@@ -497,20 +499,18 @@ def domain_enrichment(
     bg_domain_counts: Counter[str] = Counter()
 
     for pid in bg_ids:
-        domains = domain_annotations.get(pid, [])
-        for domain in domains:
+        for domain in set(domain_annotations.get(pid, [])):  # a protein counts once per domain it has
             bg_domain_counts[domain] += 1
             if pid in set_ids:
                 set_domain_counts[domain] += 1
 
-    # Also count domains from set proteins not in background
+    # Also count domains from set proteins not in background: the background grows by one protein each
     for pid in set_ids:
         if pid not in bg_ids:
-            domains = domain_annotations.get(pid, [])
-            for domain in domains:
+            bg_size += 1
+            for domain in set(domain_annotations.get(pid, [])):
                 set_domain_counts[domain] += 1
                 bg_domain_counts[domain] += 1
-                bg_size += 1  # conceptually expand background
 
     # Test each domain
     all_domains = set(set_domain_counts.keys()) | set(bg_domain_counts.keys())

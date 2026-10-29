@@ -14,16 +14,16 @@ Core protein sequence processing: FASTA I/O, physicochemical property calculatio
 
 | Function | Description |
 |----------|-------------|
-| `read_fasta()` | Parse protein sequences from FASTA file into dict |
+| `read_fasta()` | Parse protein sequences from FASTA file into dict (a repeated ID raises `ValueError`) |
 | `write_fasta()` | Write sequence dict to FASTA file |
-| `molecular_weight()` | Calculate protein molecular weight from sequence |
+| `molecular_weight()` | Sum of the average residue masses plus the water of the termini |
 | `isoelectric_point()` | Estimate isoelectric point (pI) |
 | `hydropathy_score()` | Kyte-Doolittle hydropathy windowed scores |
 | `amino_acid_composition()` | Fractional amino acid frequencies |
-| `instability_index()` | Guruprasad instability index |
+| `instability_index()` | Guruprasad instability index with the complete 400-pair table (`DIWV`) |
 | `global_align()` | Needleman-Wunsch global alignment of two sequences |
 | `local_align()` | Smith-Waterman local alignment |
-| `multi_sequence_alignment()` | Progressive MSA for protein families |
+| `multi_sequence_alignment()` | Center-star MSA (Gusfield 1993): rows in input order, each row without gaps is its sequence |
 | `read_taxon_ids()` | Load taxonomy IDs from file |
 | `download_proteome_fasta()` | Download proteome FASTA from UniProt by taxon |
 | `compare_proteomes()` | Statistical comparison of two proteome FASTA files |

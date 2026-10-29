@@ -60,25 +60,52 @@ def calculate_residue_contacts(
     return contact_map
 
 
+def _element_of(atom: Dict[str, Any]) -> str:
+    """Upper-case element of an atom dict: its ``element`` field, else the first letter of an ATOM record's name."""
+    element = str(atom.get("element") or "").strip().upper()
+    if element:
+        return element
+    record = str(atom.get("record_name") or atom.get("record_type") or "ATOM").strip().upper()
+    return str(atom.get("name") or "").strip().lstrip("0123456789")[:1].upper() if record == "ATOM" else ""
+
+
+def _residue_of(atom: Dict[str, Any]) -> Tuple[Any, Any, str]:
+    return (
+        atom.get("chain_id"),
+        atom.get("res_seq"),
+        str(atom.get("icode") or atom.get("ins_code") or "").strip(),
+    )
+
+
 def identify_hydrogen_bonds(
-    atoms: List[Dict[str, Any]], coords: np.ndarray, distance_threshold: float = 3.5, angle_threshold: float = 120.0
+    atoms: List[Dict[str, Any]], coords: np.ndarray, distance_threshold: float = 3.5
 ) -> List[Dict[str, Any]]:
-    """Identify hydrogen bonds in protein structure.
+    """Identify hydrogen bonds in protein structure by the donor-acceptor distance alone.
+
+    A nitrogen atom is a donor and an oxygen atom an acceptor when they are at most ``distance_threshold`` apart.
+    Hydrogen atoms are absent from most structures, so no donor-hydrogen-acceptor angle is tested and the result
+    is a list of candidate bonds, not a validated set. Pairs that are covalently close are not hydrogen bonds and are
+    left out: two atoms of the same residue, the amide nitrogen of a residue and the carbonyl oxygen of the residue
+    before it (2.3 A apart across the peptide bond), and the nitrogen of proline, which carries no hydrogen. Oxygen
+    donors (hydroxyls, water) and nitrogen acceptors (histidine) are not considered.
 
     Args:
         atoms: List of atom dictionaries
         coords: Atomic coordinates
-        distance_threshold: Maximum H-bond distance (Å)
-        angle_threshold: Minimum H-bond angle (degrees)
+        distance_threshold: Maximum donor-acceptor distance (Å)
 
     Returns:
-        List of hydrogen bond dictionaries
+        List of hydrogen bond dictionaries, each with ``donor_atom`` and ``acceptor_atom`` (the atom dictionaries) and
+        ``distance`` (Å)
 
     Example:
-        >>> # Assuming atom data exists
-        >>> # h_bonds = identify_hydrogen_bonds(atoms, coords)
-        >>> # isinstance(h_bonds, list)
-        >>> # True
+        >>> atoms = [
+        ...     {"element": "N", "name": "NZ", "res_name": "LYS", "chain_id": "A", "res_seq": 1},
+        ...     {"element": "O", "name": "OD1", "res_name": "ASP", "chain_id": "A", "res_seq": 9},
+        ... ]
+        >>> bonds = identify_hydrogen_bonds(atoms, np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.9]]))
+        >>> [(b["donor_atom"]["name"], b["acceptor_atom"]["name"], b["distance"]) for b in bonds]
+        [('NZ', 'OD1', 2.9)]
     """
     h_bonds = []
 
@@ -87,12 +114,14 @@ def identify_hydrogen_bonds(
     acceptors = []
 
     for i, atom in enumerate(atoms):
-        element = atom.get("element", "").upper()
-        atom.get("name", "").upper()
+        element = _element_of(atom)
 
-        # Nitrogen atoms (potential donors)
+        # Nitrogen atoms (potential donors), except the proline nitrogen that has no hydrogen
         if element == "N":
-            donors.append(i)
+            if not (
+                str(atom.get("res_name", "")).strip().upper() == "PRO" and str(atom.get("name", "")).strip() == "N"
+            ):
+                donors.append(i)
 
         # Oxygen atoms (potential acceptors)
         elif element == "O":
@@ -100,26 +129,34 @@ def identify_hydrogen_bonds(
 
     # Check all donor-acceptor pairs
     for donor_idx in donors:
+        donor = atoms[donor_idx]
         donor_pos = coords[donor_idx]
 
         for acceptor_idx in acceptors:
-            if donor_idx == acceptor_idx:
-                continue
+            acceptor = atoms[acceptor_idx]
+            if _residue_of(donor) == _residue_of(acceptor):
+                continue  # atoms of one residue are bonded or one bond apart, not hydrogen bonded
+            if (
+                str(donor.get("name", "")).strip() == "N"
+                and str(acceptor.get("name", "")).strip() == "O"
+                and donor.get("chain_id") == acceptor.get("chain_id")
+                and donor.get("res_seq") is not None
+                and acceptor.get("res_seq") is not None
+                and donor["res_seq"] - acceptor["res_seq"] == 1
+            ):
+                continue  # N(i+1) and O(i) are the two ends of the peptide bond C(=O)-N
 
             acceptor_pos = coords[acceptor_idx]
-            distance = np.linalg.norm(donor_pos - acceptor_pos)
+            distance = float(np.linalg.norm(donor_pos - acceptor_pos))
 
             if distance <= distance_threshold:
-                # Check angle (simplified - would need hydrogen position for accurate angle)
-                # For now, just use distance-based criterion
-                h_bond = {
-                    "donor_atom": atoms[donor_idx],
-                    "acceptor_atom": atoms[acceptor_idx],
-                    "distance": distance,
-                    "angle": None,  # Would calculate if H positions available
-                    "strength": max(0, 1 - distance / distance_threshold),
-                }
-                h_bonds.append(h_bond)
+                h_bonds.append(
+                    {
+                        "donor_atom": donor,
+                        "acceptor_atom": acceptor,
+                        "distance": distance,
+                    }
+                )
 
     return h_bonds
 

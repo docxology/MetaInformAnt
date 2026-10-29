@@ -31,6 +31,7 @@ logger = get_logger(__name__)
 # ---------------------------------------------------------------------------
 
 # Kyte-Doolittle hydrophobicity scale (canonical table from sequence.sequences)
+from metainformant.protein.sequence.sequences import instability_index  # noqa: E402
 from metainformant.protein.sequence.sequences import KD_HYDROPHOBICITY as _KD_HYDROPHOBICITY  # noqa: E402
 
 # Amino acid molecular weights (residue masses, Da)
@@ -257,7 +258,7 @@ _MTS_PATTERN = r"^M[LFIVMA]{1,3}[RK].{0,4}[LFIVMA]{2,4}[^DE]{3,8}[RK]"
 
 _ER_RETENTION_PATTERNS = [
     r"KDEL$",  # ER retention signal (C-terminal)
-    r"KKXX$",  # ER retrieval signal (C-terminal dilysine)
+    r"KK..$",  # ER retrieval signal KKXX: two lysines at positions -4 and -3 from the C-terminus, any two residues
     r"[KR]DEL$",
 ]
 
@@ -727,7 +728,7 @@ def _charge_at_ph(seq: str, ph: float) -> float:
 
 
 def _compute_instability_index(seq: str) -> float:
-    """Compute instability index (Guruprasad et al. 1990).
+    """Compute instability index (Guruprasad et al. 1990) with the complete DIWV table of the sequence module.
 
     Args:
         seq: Uppercase amino acid sequence.
@@ -735,96 +736,4 @@ def _compute_instability_index(seq: str) -> float:
     Returns:
         Instability index value. Values > 40 indicate likely unstable in vitro.
     """
-    if len(seq) < 2:
-        return 0.0
-
-    # DIWV weight values for common dipeptides
-    diwv: Dict[str, float] = {
-        "WW": 1.0,
-        "WC": 1.0,
-        "WM": 24.68,
-        "WH": 24.68,
-        "CW": -14.03,
-        "CH": 33.60,
-        "CC": 1.0,
-        "CF": -14.03,
-        "FY": 33.60,
-        "FF": 1.0,
-        "FK": -14.03,
-        "FL": 1.0,
-        "GG": 13.34,
-        "GE": -14.03,
-        "GA": -7.49,
-        "GR": 1.0,
-        "EE": 33.60,
-        "ED": -14.03,
-        "EK": 1.0,
-        "EA": 11.0,
-        "KK": 1.0,
-        "KD": 1.0,
-        "KE": 33.60,
-        "KR": 33.60,
-        "DD": 1.0,
-        "DG": 1.0,
-        "DE": 1.0,
-        "DR": -6.54,
-        "AA": 1.0,
-        "AE": 1.0,
-        "AG": 1.0,
-        "AV": 1.0,
-        "RR": 58.28,
-        "RK": 44.94,
-        "RL": 1.0,
-        "RA": 1.0,
-        "VV": 1.0,
-        "VA": 1.0,
-        "VL": 1.0,
-        "VK": -7.49,
-        "LL": 1.0,
-        "LA": 1.0,
-        "LK": -7.49,
-        "LR": 1.0,
-        "SS": 1.0,
-        "SA": 1.0,
-        "SG": 1.0,
-        "SR": 44.94,
-        "PP": 20.26,
-        "PG": 1.0,
-        "PA": 20.26,
-        "PV": 20.26,
-        "II": 1.0,
-        "IA": 1.0,
-        "IL": 20.26,
-        "IV": -7.49,
-        "TT": 1.0,
-        "TA": 1.0,
-        "TG": -7.49,
-        "TR": 1.0,
-        "YY": 33.60,
-        "YF": 33.60,
-        "YW": -9.37,
-        "YA": 24.68,
-        "HH": 1.0,
-        "HW": -1.88,
-        "HR": 1.0,
-        "HA": 1.0,
-        "QQ": 20.26,
-        "QR": 1.0,
-        "QE": 33.60,
-        "QK": 1.0,
-        "NN": 1.0,
-        "NR": 1.0,
-        "NG": -14.03,
-        "NK": 24.68,
-        "MM": -1.88,
-        "MK": 1.0,
-        "ML": 1.0,
-        "MA": 1.0,
-    }
-
-    score = 0.0
-    for i in range(len(seq) - 1):
-        dipeptide = seq[i : i + 2]
-        score += diwv.get(dipeptide, 1.0)
-
-    return (10.0 / len(seq)) * score
+    return instability_index(seq)

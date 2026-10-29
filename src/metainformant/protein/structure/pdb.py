@@ -19,6 +19,11 @@ logger = logging.get_logger(__name__)
 PDB_DOWNLOAD_BASE_URL = "https://files.rcsb.org/download"
 
 
+def _residue_key(atom: Dict[str, Any]) -> Tuple[Any, Any, str]:
+    """(chain, residue number, insertion code) of an atom dict, so that residues 52 and 52A stay apart."""
+    return (atom["chain_id"], atom["res_seq"], str(atom.get("ins_code") or atom.get("icode") or "").strip())
+
+
 def fetch_pdb_structure(pdb_id: str, out_dir: Path, *, fmt: str = "pdb") -> Path:
     """Download PDB structure from RCSB PDB database.
 
@@ -148,7 +153,7 @@ def load_pdb_file(path: Path) -> Dict[str, Any]:
     # Extract additional information
     pdb_id = path.stem.upper()
     chains = set(atom["chain_id"] for atom in atoms if atom["chain_id"])
-    residues = set((atom["chain_id"], atom["res_seq"]) for atom in atoms)
+    residues = set(_residue_key(atom) for atom in atoms)
 
     pdb_data = {
         "pdb_id": pdb_id,
@@ -274,6 +279,9 @@ def get_residue_atoms(atoms: List[Dict[str, Any]], chain_id: str, res_seq: int) 
 def calculate_pdb_statistics(pdb_data: Dict[str, Any]) -> Dict[str, Any]:
     """Calculate statistics for PDB structure.
 
+    ``residue_types`` counts residues, not atoms: every distinct residue (chain, number and insertion code) is counted
+    once under its residue name, whatever its number of atoms, so water and ligand molecules are counted as well.
+
     Args:
         pdb_data: PDB data from load_pdb_file
 
@@ -281,10 +289,13 @@ def calculate_pdb_statistics(pdb_data: Dict[str, Any]) -> Dict[str, Any]:
         Statistics dictionary
 
     Example:
-        >>> # Assuming PDB data exists
-        >>> # stats = calculate_pdb_statistics(pdb_data)
-        >>> # "n_atoms" in stats
-        >>> # True
+        >>> atoms = [
+        ...     {"name": "N", "res_name": "GLY", "chain_id": "A", "res_seq": 1},
+        ...     {"name": "CA", "res_name": "GLY", "chain_id": "A", "res_seq": 1},
+        ...     {"name": "N", "res_name": "GLY", "chain_id": "A", "res_seq": 2},
+        ... ]
+        >>> calculate_pdb_statistics({"atoms": atoms})["residue_types"]
+        {'GLY': 2}
     """
     atoms = pdb_data.get("atoms", [])
 
@@ -293,7 +304,7 @@ def calculate_pdb_statistics(pdb_data: Dict[str, Any]) -> Dict[str, Any]:
 
     stats = {
         "n_atoms": len(atoms),
-        "n_residues": pdb_data.get("n_residues", 0),
+        "n_residues": pdb_data["n_residues"] if "n_residues" in pdb_data else len({_residue_key(a) for a in atoms}),
         "chains": pdb_data.get("chains", []),
         "n_chains": len(pdb_data.get("chains", [])),
     }
@@ -315,20 +326,23 @@ def calculate_pdb_statistics(pdb_data: Dict[str, Any]) -> Dict[str, Any]:
     stats["atom_types"] = atom_types
     stats["elements"] = elements
 
-    # Residue type distribution
-    res_types: Dict[str, int] = {}
+    # Residue type distribution: one count per residue, however many atoms it has
+    residue_names: Dict[Tuple[Any, Any, str], str] = {}
     for atom in atoms:
-        res_name = atom["res_name"]
+        residue_names.setdefault(_residue_key(atom), atom["res_name"])
+    res_types: Dict[str, int] = {}
+    for res_name in residue_names.values():
         res_types[res_name] = res_types.get(res_name, 0) + 1
-
-    # Convert to per-residue counts
-    stats["residue_types"] = {res: count // 5 for res, count in res_types.items()}  # Approximate
+    stats["residue_types"] = res_types
 
     return stats
 
 
 def validate_pdb_file(path: Path) -> Dict[str, Any]:
     """Validate PDB file format and content.
+
+    The whole file is read, so ``n_atoms`` counts every ATOM and HETATM record of it. A file is valid when it has a
+    HEADER record and at least one atom record.
 
     Args:
         path: Path to PDB file
@@ -352,13 +366,10 @@ def validate_pdb_file(path: Path) -> Dict[str, Any]:
 
     try:
         with open(path, "r") as f:
-            content = f.read(10000)  # Read first 10KB
-
-            lines = content.split("\n")
             n_atoms = 0
             has_header = False
 
-            for line in lines:
+            for line in f:
                 if line.startswith("HEADER"):
                     has_header = True
                 elif line.startswith("ATOM") or line.startswith("HETATM"):
@@ -384,8 +395,12 @@ def validate_pdb_file(path: Path) -> Dict[str, Any]:
 def get_pdb_sequence(pdb_data: Dict[str, Any], chain_id: Optional[str] = None) -> str:
     """Extract amino acid sequence from PDB data.
 
+    The sequence is that of the polymer residues in the ATOM records, in file order: HETATM groups (water, ligands,
+    modified residues) are not part of it. A residue name that is not one of the twenty standard amino acids is
+    ``"X"``. Residues are told apart by chain, number and insertion code.
+
     Args:
-        pdb_data: PDB data from load_pdb_file
+        pdb_data: PDB data from load_pdb_file or parse_pdb_file
         chain_id: Specific chain to extract (optional)
 
     Returns:
@@ -402,18 +417,15 @@ def get_pdb_sequence(pdb_data: Dict[str, Any], chain_id: Optional[str] = None) -
     if not atoms:
         return ""
 
-    # Group atoms by residue
-    residues = {}
+    # Group the ATOM records by residue, in file order
+    residues: Dict[Tuple[Any, Any, str], str] = {}
     for atom in atoms:
         if chain_id and atom["chain_id"] != chain_id:
             continue
+        if str(atom.get("record_type") or atom.get("record_name") or "ATOM").strip().upper() != "ATOM":
+            continue
 
-        key = (atom["chain_id"], atom["res_seq"])
-        if key not in residues:
-            residues[key] = atom["res_name"]
-
-    # Sort by chain and residue number
-    sorted_residues = sorted(residues.items(), key=lambda x: (x[0][0], x[0][1]))
+        residues.setdefault(_residue_key(atom), atom["res_name"])
 
     # Convert 3-letter codes to 1-letter codes
     aa_codes = {
@@ -440,7 +452,7 @@ def get_pdb_sequence(pdb_data: Dict[str, Any], chain_id: Optional[str] = None) -
     }
 
     sequence = []
-    for _, res_name in sorted_residues:
+    for res_name in residues.values():
         aa = aa_codes.get(res_name, "X")  # X for unknown
         sequence.append(aa)
 

@@ -727,19 +727,21 @@ def matrix_align(
     Args:
         seq1: First protein sequence
         seq2: Second protein sequence
-        matrix: Substitution matrix (default: BLOSUM62)
+        matrix: Substitution matrix (default: BLOSUM62). A pair of residues that the matrix does not list scores -1.
         gap_open: Gap opening penalty
         gap_extend: Gap extension penalty
         mode: "global" or "local"
 
     Returns:
-        Dictionary with alignment results
+        Dictionary with alignment results; ``matrix`` names the matrix used, ``"BLOSUM62"`` for the default and
+        ``"custom"`` for a matrix that was passed in
     """
     if mode not in {"global", "local"}:
         raise ValueError(f"Unknown alignment mode: {mode}. Valid modes: global, local")
 
     if matrix is None:
         matrix = BLOSUM62
+    matrix_name = "BLOSUM62" if matrix is BLOSUM62 else "custom"
 
     seq1 = seq1.upper()
     seq2 = seq2.upper()
@@ -767,7 +769,7 @@ def matrix_align(
             "score": score,
             "identity": 0.0,
             "method": mode,
-            "matrix": "BLOSUM62",
+            "matrix": matrix_name,
             "gap_open": gap_open,
             "gap_extend": gap_extend,
         }
@@ -918,108 +920,122 @@ def matrix_align(
         "score": score if score != NEG_INF else 0,
         "identity": identity,
         "method": mode,
-        "matrix": "BLOSUM62",
+        "matrix": matrix_name,
         "gap_open": gap_open,
         "gap_extend": gap_extend,
     }
 
 
-def multi_sequence_alignment(sequences: List[str], method: str = "progressive") -> Dict[str, Any]:
-    """Perform multiple sequence alignment using progressive alignment.
+def multi_sequence_alignment(sequences: List[str], method: str = "center_star") -> Dict[str, Any]:
+    """Align several protein sequences by the center-star method (Gusfield 1993).
 
-    Uses a guide tree based on pairwise distances to align sequences
-    progressively.
+    The sequence with the highest total pairwise alignment score (``global_align`` with its default scores) is the
+    center, the lowest index on a tie. Every other sequence is aligned to the center, and the pairwise alignments are
+    merged on the residues of the center: the gaps that any alignment inserts into the center are kept in all rows
+    ("once a gap, always a gap"). The rows are returned in the order of the input; each row without its gaps is the
+    input sequence, and all rows have the same length. The result is the alignment of the center-star
+    approximation, not an optimal multiple alignment, and no guide tree is built.
 
     Args:
         sequences: List of protein sequences
-        method: Alignment method ("progressive")
+        method: Alignment method; only ``"center_star"``
 
     Returns:
-        Dictionary with MSA results
-    """
-    if not sequences:
-        return {"aligned_sequences": [], "score": 0, "n_sequences": 0}
+        Dictionary with ``aligned_sequences`` (in input order), ``n_sequences``, ``alignment_length``, ``score`` (sum
+        of pairs: every pair of rows adds +1 per matching column, -1 per mismatch and -2 per column with one gap; a
+        column of two gaps adds 0), ``method`` and ``center`` (index of the center sequence; None for no sequences)
 
-    if len(sequences) == 1:
-        return {"aligned_sequences": sequences, "score": 0, "n_sequences": 1}
+    Raises:
+        ValueError: If ``method`` is not ``"center_star"``
+
+    Example:
+        >>> result = multi_sequence_alignment(["ACDEFG", "ACDFG", "ACDEFG"])
+        >>> result["aligned_sequences"]
+        ['ACDEFG', 'ACD-FG', 'ACDEFG']
+    """
+    if method != "center_star":
+        raise ValueError(f"Unknown alignment method: {method!r}; only 'center_star' is available")
 
     n = len(sequences)
+    if n == 0:
+        return {
+            "aligned_sequences": [],
+            "score": 0,
+            "n_sequences": 0,
+            "alignment_length": 0,
+            "method": method,
+            "center": None,
+        }
+    if n == 1:
+        return {
+            "aligned_sequences": list(sequences),
+            "score": 0,
+            "n_sequences": 1,
+            "alignment_length": len(sequences[0]),
+            "method": method,
+            "center": 0,
+        }
 
-    # Step 1: Compute pairwise alignment scores
-    distance_matrix = [[0.0] * n for _ in range(n)]
+    # The center: the sequence with the highest total pairwise score
+    totals = [0.0] * n
     for i in range(n):
         for j in range(i + 1, n):
-            result = global_align(sequences[i], sequences[j])
-            identity = result.get("identity", 0.0)
-            dist = 1.0 - identity
-            distance_matrix[i][j] = dist
-            distance_matrix[j][i] = dist
+            score = global_align(sequences[i], sequences[j])["score"]
+            totals[i] += score
+            totals[j] += score
+    center = max(range(n), key=lambda index: (totals[index], -index))
+    reference = sequences[center]
+    length = len(reference)
 
-    # Step 2: Build guide tree using neighbor-joining (simplified UPGMA)
-    # Start by aligning the two closest sequences
-    min_dist = float("inf")
-    best_i, best_j = 0, 1
-    for i in range(n):
-        for j in range(i + 1, n):
-            if distance_matrix[i][j] < min_dist:
-                min_dist = distance_matrix[i][j]
-                best_i, best_j = i, j
+    # Align every other sequence to the center; split each alignment into the residues placed in the gaps of the
+    # center, before each of its residues (slots 0..length), and the character facing each residue of the center.
+    inserted: Dict[int, List[str]] = {}
+    facing: Dict[int, List[str]] = {}
+    for index in range(n):
+        if index == center:
+            inserted[index] = [""] * (length + 1)
+            facing[index] = list(reference)
+            continue
+        alignment = global_align(reference, sequences[index])
+        slots = [""] * (length + 1)
+        partner: List[str] = []
+        for center_char, other_char in zip(alignment["aligned_seq1"], alignment["aligned_seq2"]):
+            if center_char == "-":
+                slots[len(partner)] += other_char
+            else:
+                partner.append(other_char)
+        inserted[index] = slots
+        facing[index] = partner
 
-    # Step 3: Progressive alignment
-    # Align closest pair first, then add remaining sequences
-    result = global_align(sequences[best_i], sequences[best_j])
-    aligned = [result["aligned_seq1"], result["aligned_seq2"]]
-    used = {best_i, best_j}
-    order = [best_i, best_j]
+    # "Once a gap, always a gap": every slot is as wide as the longest insertion into it
+    widths = [max(len(inserted[index][slot]) for index in range(n)) for slot in range(length + 1)]
+    rows = []
+    for index in range(n):
+        parts = []
+        for slot in range(length + 1):
+            parts.append(inserted[index][slot].ljust(widths[slot], "-"))
+            if slot < length:
+                parts.append(facing[index][slot])
+        rows.append("".join(parts))
 
-    # Add remaining sequences one by one (closest to current profile)
-    while len(used) < n:
-        best_next = -1
-        best_score = float("-inf")
-
-        for k in range(n):
-            if k in used:
-                continue
-            # Score against first aligned sequence as profile representative
-            r = global_align(aligned[0].replace("-", ""), sequences[k])
-            if r["score"] > best_score:
-                best_score = r["score"]
-                best_next = k
-
-        if best_next == -1:
-            break
-
-        # Align new sequence against profile representative
-        r = global_align(aligned[0].replace("-", ""), sequences[best_next])
-
-        # Adjust existing alignments to accommodate new gaps
-        new_aligned = []
-        profile_aligned = r["aligned_seq1"]
-        new_seq_aligned = r["aligned_seq2"]
-
-        # Map gaps from new alignment back to existing MSA
-        gap_positions = [i for i, c in enumerate(profile_aligned) if c == "-"]
-        for existing in aligned:
-            adjusted = list(existing)
-            for pos in sorted(gap_positions):
-                if pos <= len(adjusted):
-                    adjusted.insert(pos, "-")
-            new_aligned.append("".join(adjusted))
-
-        new_aligned.append(new_seq_aligned)
-        aligned = new_aligned
-        used.add(best_next)
-        order.append(best_next)
-
-    # Pad to same length
-    max_len = max(len(s) for s in aligned)
-    aligned = [s.ljust(max_len, "-") for s in aligned]
+    total = 0
+    for column in zip(*rows):
+        for a in range(n):
+            for b in range(a + 1, n):
+                if column[a] == "-" and column[b] == "-":
+                    continue
+                if column[a] == "-" or column[b] == "-":
+                    total -= 2
+                else:
+                    total += 1 if column[a] == column[b] else -1
 
     return {
-        "aligned_sequences": aligned,
-        "n_sequences": len(aligned),
-        "alignment_length": max_len,
-        "order": order,
+        "aligned_sequences": rows,
+        "n_sequences": n,
+        "alignment_length": len(rows[0]),
+        "score": total,
+        "method": method,
+        "center": center,
     }
 
 

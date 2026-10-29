@@ -24,10 +24,10 @@ class TestSequenceProperties:
         """Test MW for a short known sequence."""
         from metainformant.protein.sequence.sequences import molecular_weight
 
-        # Glycine tripeptide: G-G-G
+        # Glycine tripeptide: G-G-G is three residues of 57.0519 Da plus the water of its termini (189.17 Da)
         mw = molecular_weight("GGG")
         assert mw > 0
-        assert abs(mw - 57.0519 * 3) < 1.0  # 3 Gly residues
+        assert abs(mw - (57.0519 * 3 + 18.01528)) < 0.01
 
     def test_molecular_weight_empty(self):
         from metainformant.protein.sequence.sequences import molecular_weight
@@ -355,7 +355,7 @@ class TestStructuralGeometry:
     def test_inertia_tensor_shape(self):
         from metainformant.protein.structure.general import calculate_inertia_tensor
 
-        coords = np.random.rand(20, 3) * 10
+        coords = np.random.default_rng(101).random((20, 3)) * 10
         tensor = calculate_inertia_tensor(coords)
         assert tensor.shape == (3, 3)
         # Inertia tensor should be symmetric
@@ -364,7 +364,7 @@ class TestStructuralGeometry:
     def test_principal_axes(self):
         from metainformant.protein.structure.general import find_principal_axes
 
-        coords = np.random.rand(30, 3) * 10
+        coords = np.random.default_rng(102).random((30, 3)) * 10
         eigenvals, eigenvecs = find_principal_axes(coords)
         assert len(eigenvals) == 3
         assert eigenvecs.shape == (3, 3)
@@ -374,7 +374,7 @@ class TestStructuralGeometry:
     def test_structural_statistics(self):
         from metainformant.protein.structure.general import calculate_structural_statistics
 
-        coords = np.random.rand(50, 3) * 20
+        coords = np.random.default_rng(103).random((50, 3)) * 20
         stats = calculate_structural_statistics(coords)
         assert "n_atoms" in stats
         assert stats["n_atoms"] == 50
@@ -384,7 +384,7 @@ class TestStructuralGeometry:
     def test_rmsd_identical(self):
         from metainformant.protein.structure.general import compute_rmsd_kabsch
 
-        coords = np.random.rand(20, 3) * 10
+        coords = np.random.default_rng(104).random((20, 3)) * 10
         rmsd = compute_rmsd_kabsch(coords, coords.copy())
         assert rmsd < 1e-8
 
@@ -399,15 +399,15 @@ class TestStructuralGeometry:
     def test_rmsd_shape_mismatch(self):
         from metainformant.protein.structure.general import compute_rmsd_kabsch
 
-        a = np.random.rand(10, 3)
-        b = np.random.rand(5, 3)
+        a = np.random.default_rng(105).random((10, 3))
+        b = np.random.default_rng(106).random((5, 3))
         with pytest.raises(ValueError):
             compute_rmsd_kabsch(a, b)
 
     def test_align_structures(self):
         from metainformant.protein.structure.general import align_structures_kabsch
 
-        coords = np.random.rand(15, 3) * 10
+        coords = np.random.default_rng(107).random((15, 3)) * 10
         # Rotate around Z axis
         theta = np.pi / 4
         R = np.array([[np.cos(theta), -np.sin(theta), 0], [np.sin(theta), np.cos(theta), 0], [0, 0, 1]])
@@ -419,7 +419,7 @@ class TestStructuralGeometry:
     def test_sasa_calculation(self):
         from metainformant.protein.structure.general import calculate_solvent_accessible_surface_area
 
-        coords = np.random.rand(30, 3) * 20
+        coords = np.random.default_rng(108).random((30, 3)) * 20
         area = calculate_solvent_accessible_surface_area(coords)
         assert area > 0
 
@@ -438,7 +438,7 @@ class TestContactMap:
     def test_contact_map_diagonal_zero(self):
         from metainformant.protein.structure.analysis import calculate_contact_map
 
-        coords = np.random.rand(10, 3)
+        coords = np.random.default_rng(109).random((10, 3))
         cmap = calculate_contact_map(coords, threshold=100.0)
         for i in range(10):
             assert cmap[i, i] == 0
@@ -446,7 +446,7 @@ class TestContactMap:
     def test_contact_map_symmetric(self):
         from metainformant.protein.structure.analysis import calculate_contact_map
 
-        coords = np.random.rand(15, 3) * 10
+        coords = np.random.default_rng(110).random((15, 3)) * 10
         cmap = calculate_contact_map(coords, threshold=5.0)
         np.testing.assert_array_equal(cmap, cmap.T)
 
@@ -541,19 +541,24 @@ class TestStructureAnalysis:
     """Tests for structure-level analysis."""
 
     def test_identify_domains(self):
+        """Domains come from the coordinates: a numbering gap inside one compact fold is not a domain boundary."""
         from metainformant.protein.structure.analysis import identify_domains
 
+        k = np.arange(8)
+        helix = np.column_stack([2.3 * np.cos(np.radians(100) * k), 2.3 * np.sin(np.radians(100) * k), 1.5 * k])
+        numbers = [1, 2, 3, 50, 51, 52, 53, 54]  # a jump of more than 10 inside one helix
         structure = {
             "atoms": [
-                {"chain_id": "A", "res_seq": 1},
-                {"chain_id": "A", "res_seq": 2},
-                {"chain_id": "A", "res_seq": 3},
-                {"chain_id": "A", "res_seq": 50},  # gap > 10
-                {"chain_id": "A", "res_seq": 51},
+                {"record_name": "ATOM", "name": "CA", "chain_id": "A", "res_seq": number, "x": x, "y": y, "z": z}
+                for number, (x, y, z) in zip(numbers, helix)
             ]
         }
+
         domains = identify_domains(structure)
-        assert len(domains) == 2
+
+        assert len(domains) == 1
+        assert domains[0]["residues"] == numbers
+        assert (domains[0]["start"], domains[0]["end"], domains[0]["size"]) == (1, 54, 8)
 
     def test_identify_domains_empty(self):
         from metainformant.protein.structure.analysis import identify_domains
@@ -563,7 +568,7 @@ class TestStructureAnalysis:
     def test_surface_area(self):
         from metainformant.protein.structure.analysis import calculate_surface_area
 
-        coords = np.random.rand(30, 3) * 20
+        coords = np.random.default_rng(111).random((30, 3)) * 20
         area = calculate_surface_area(coords)
         assert area > 0
 
@@ -584,7 +589,7 @@ class TestStructureAnalysis:
                 {"chain_id": "A", "res_seq": 2, "temp_factor": 50.0},
                 {"chain_id": "A", "res_seq": 2, "temp_factor": 55.0},
             ],
-            "coordinates": np.random.rand(4, 3),
+            "coordinates": np.random.default_rng(112).random((4, 3)),
         }
         flex = analyze_protein_flexibility(structure)
         assert "flexibility_score" in flex

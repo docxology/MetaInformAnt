@@ -240,19 +240,14 @@ def search_interpro_entries(query: str, max_results: int = 100) -> List[Dict[str
 
 
 def get_interpro_hierarchy(interpro_id: str) -> Dict[str, Any]:
-    """Get hierarchy information for an InterPro entry.
+    """Get hierarchy information for an InterPro entry (not implemented).
 
     Args:
         interpro_id: InterPro accession
 
-    Returns:
-        Hierarchy information including parent/child relationships
-
-    Example:
-        >>> # This would get hierarchy info
-        >>> # hierarchy = get_interpro_hierarchy("IPR000001")
-        >>> # isinstance(hierarchy, dict)
-        >>> # True
+    Raises:
+        NotImplementedError: Always. The function cannot return parent/child relationships from the current REST
+            API, and an empty hierarchy would claim that the entry has none.
     """
     raise NotImplementedError("InterPro hierarchy retrieval is not implemented against the current REST API")
 
@@ -338,34 +333,25 @@ def parse_interpro_results(xml_content: str) -> List[Dict[str, Any]]:
 
 
 def get_interpro_statistics() -> Dict[str, Any]:
-    """Get statistics about the InterPro database.
+    """Get statistics about the InterPro database (not implemented).
 
-    Returns:
-        Database statistics
-
-    Example:
-        >>> stats = get_interpro_statistics()
-        >>> "total_entries" in stats
-        True
+    Raises:
+        NotImplementedError: Always. No statistics are returned: fixed numbers written into the source would not be
+            data from the database.
     """
     raise NotImplementedError("InterPro database statistics are not implemented against the current REST API")
 
 
 def find_similar_interpro_entries(interpro_id: str, max_results: int = 10) -> List[Dict[str, Any]]:
-    """Find InterPro entries similar to the given entry.
+    """Find InterPro entries similar to the given entry (not implemented).
 
     Args:
         interpro_id: Reference InterPro accession
         max_results: Maximum number of similar entries
 
-    Returns:
-        List of similar InterPro entries
-
-    Example:
-        >>> # This would find similar entries
-        >>> # similar = find_similar_interpro_entries("IPR000001", max_results=5)
-        >>> # isinstance(similar, list)
-        >>> # True
+    Raises:
+        NotImplementedError: Always. The current REST API offers no similarity search, and an empty list would claim
+            that no similar entry exists.
     """
     raise NotImplementedError("InterPro similarity search is not implemented against the current REST API")
 
