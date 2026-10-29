@@ -48,14 +48,42 @@ def to_newick(tree: Tree) -> str:
     return _to_newick_recursive(root) + ";"
 
 
+_BOOTSTRAP_METHODS = ("nj", "upgma")
+
+
+def _support_key(clade: frozenset[str], all_leaves: frozenset[str], method: str) -> Any:
+    """Identify what a replicate must reproduce for the node whose descendant leaves are ``clade``.
+
+    UPGMA trees are rooted, so the key is the clade itself. Neighbor joining returns an unrooted tree drawn
+    with an arbitrary root, so the key is the bipartition the node's branch induces (the smaller side, as in
+    ``_get_bipartitions``), which does not depend on where a replicate happens to be rooted. The key is None for a
+    trivial split (one side empty or a single leaf): every tree over these taxa has it.
+    """
+    if method == "upgma":
+        return clade
+    complement = all_leaves - clade
+    if len(clade) <= 1 or len(complement) <= 1:
+        return None
+    if len(clade) != len(complement):
+        return clade if len(clade) < len(complement) else complement
+    return min(clade, complement, key=lambda side: sorted(side))
+
+
 def bootstrap_support(tree: Tree, sequences: Dict[str, str], n_replicates: int = 100, method: str = "nj") -> Tree:
     """Calculate bootstrap support for tree branches.
 
     Performs bootstrap analysis by resampling alignment sites with replacement,
-    building trees from resampled data, and counting how often each clade appears.
+    building trees from resampled data, and counting how often each branch appears.
+    The resampling uses a fixed seed, so repeated calls give the same values.
+
+    A branch of a UPGMA tree is counted when a replicate has the same clade (the same set of descendant leaves
+    under the same root). A branch of a neighbor-joining tree is counted when a replicate has the same split of
+    the leaves into two groups: neighbor joining does not determine the root, so a replicate that places its root
+    elsewhere still supports the branch. Both children of the root, which lie on one branch, therefore get the
+    same value, and a branch to a single leaf (or the root itself) is always supported (100).
 
     Args:
-        tree: Original tree
+        tree: Original tree, built from ``sequences`` by the same method
         sequences: Original sequence data
         n_replicates: Number of bootstrap replicates
         method: Tree building method ('nj' or 'upgma')
@@ -63,7 +91,14 @@ def bootstrap_support(tree: Tree, sequences: Dict[str, str], n_replicates: int =
     Returns:
         A new tree with bootstrap support values (0-100) on its internal nodes. The input
         ``tree`` is never modified: its internal-node dictionaries are copied, not shared.
+
+    Raises:
+        ValueError: If ``method`` is not 'nj' or 'upgma', or the leaves of ``tree`` are not the names in
+            ``sequences``.
     """
+    if method not in _BOOTSTRAP_METHODS:
+        raise ValueError(f"Unknown bootstrap method {method!r}; expected one of {list(_BOOTSTRAP_METHODS)}")
+
     logger.info(f"Calculating bootstrap support with {n_replicates} replicates")
 
     if not sequences:
@@ -78,11 +113,22 @@ def bootstrap_support(tree: Tree, sequences: Dict[str, str], n_replicates: int =
     if alignment_length == 0:
         return copy.deepcopy(tree)
 
-    # Extract clades from original tree
-    original_clades = _extract_clades(tree)
+    all_leaves = frozenset(_get_all_leaves(tree))
+    if all_leaves != set(sequences):
+        only_in_tree = sorted(all_leaves - set(sequences))
+        only_in_sequences = sorted(set(sequences) - all_leaves)
+        raise ValueError(
+            f"The tree and the sequences must have the same taxa: only in tree {only_in_tree}, "
+            f"only in sequences {only_in_sequences}"
+        )
 
-    # Run bootstrap replicates
-    clade_counts = {frozenset(clade): 0 for clade in original_clades}
+    # What each internal node of the original tree needs a replicate to reproduce
+    node_keys = {
+        node: _support_key(frozenset(_get_descendant_leaves(tree, node)), all_leaves, method)
+        for node, entry in tree.items()
+        if isinstance(entry, dict)
+    }
+    key_counts = {key: 0 for key in node_keys.values() if key is not None}
 
     rng = np.random.default_rng(42)  # Reproducibility (local generator)
 
@@ -100,53 +146,34 @@ def bootstrap_support(tree: Tree, sequences: Dict[str, str], n_replicates: int =
             # Build tree directly from sequences (functions handle distance matrix internally)
             if method == "nj":
                 rep_tree = neighbor_joining_tree(resampled_seqs)
+                present = _get_bipartitions(rep_tree, set(all_leaves))
             else:
                 rep_tree = upgma_tree(resampled_seqs)
-
-            # Extract clades from replicate tree
-            rep_clades = _extract_clades(rep_tree)
-
-            # Count matching clades
-            for clade in original_clades:
-                clade_set = frozenset(clade)
-                if clade_set in [frozenset(c) for c in rep_clades]:
-                    clade_counts[clade_set] = clade_counts.get(clade_set, 0) + 1
-
+                present = {frozenset(clade) for clade in _extract_clades(rep_tree)}
         except Exception as e:
             logger.debug(f"Bootstrap replicate {rep} failed: {e}")
             continue
+
+        for key in key_counts:
+            if key in present:
+                key_counts[key] += 1
 
     # Add bootstrap values to a deep copy: a shallow dict.copy() would share the internal-node
     # dictionaries with the caller's tree and write the support values into it.
     supported_tree = copy.deepcopy(tree)
 
-    def _add_bootstrap_values(node: str, current_clade: Any = None) -> None:
-        if isinstance(supported_tree.get(node), dict):
-            children = [c for c in supported_tree[node].keys() if c != "bootstrap"]
-
-            # Calculate clade for this node
-            clade = _get_descendant_leaves(supported_tree, node)
-            clade_set = frozenset(clade)
-
-            # Get bootstrap support
-            if clade_set in clade_counts:
-                support = int(100 * clade_counts[clade_set] / max(1, n_replicates))
-            else:
-                support = 0
-
-            supported_tree[node]["bootstrap"] = support
-
-            for child in children:
-                _add_bootstrap_values(child)
-
-    root = _find_root(supported_tree)
-    _add_bootstrap_values(root)
+    for node, key in node_keys.items():
+        count = n_replicates if key is None else key_counts[key]
+        supported_tree[node]["bootstrap"] = int(100 * count / max(1, n_replicates))
 
     return supported_tree
 
 
 def to_ascii(tree: Tree) -> str:
     """Convert tree to ASCII art representation.
+
+    The root is printed on the first line and every other node once, on its own line, indented under its
+    parent; leaves are not repeated. A ``"bootstrap"`` support entry is not a node and is not printed.
 
     Args:
         tree: Tree represented as nested dictionary
@@ -155,41 +182,27 @@ def to_ascii(tree: Tree) -> str:
         ASCII art string representation
     """
 
-    def _build_ascii(node: str, prefix: str = "", is_last: bool = True) -> list[str]:
-        lines = []
+    def _build_ascii(node: str, prefix: str = "") -> list[str]:
+        lines: list[str] = []
+        entry = tree[node]
+        children = [c for c in entry.keys() if c != "bootstrap"] if isinstance(entry, dict) else []
+        for i, child in enumerate(children):
+            is_last_child = i == len(children) - 1
 
-        if isinstance(tree[node], dict):
-            children = [c for c in tree[node].keys() if c != "bootstrap"]
-            for i, child in enumerate(children):
-                is_last_child = i == len(children) - 1
+            # Branch symbol
+            branch = "└── " if is_last_child else "├── "
 
-                # Branch symbol
-                branch = "└── " if is_last_child else "├── "
+            # Child branch
+            child_prefix = prefix + ("    " if is_last_child else "│   ")
 
-                # Child branch
-                child_prefix = prefix + ("    " if is_last_child else "│   ")
-
-                lines.append(f"{prefix}{branch}{child}")
-                lines.extend(_build_ascii(child, child_prefix, is_last_child))
-        else:
-            lines.append(f"{prefix}{node}")
+            lines.append(f"{prefix}{branch}{child}")
+            lines.extend(_build_ascii(child, child_prefix))
 
         return lines
 
     root = _find_root(tree)
 
-    ascii_lines = [root]
-    if tree[root]:
-        children = [c for c in tree[root].keys() if c != "bootstrap"]
-        for i, child in enumerate(children):
-            is_last = i == len(children) - 1
-            branch = "└── " if is_last else "├── "
-            child_prefix = "    " if is_last else "│   "
-
-            ascii_lines.append(f"{branch}{child}")
-            ascii_lines.extend(_build_ascii(child, child_prefix, is_last))
-
-    return "\n".join(ascii_lines)
+    return "\n".join([root, *_build_ascii(root)])
 
 
 def basic_tree_stats(tree: Tree) -> Dict[str, int]:

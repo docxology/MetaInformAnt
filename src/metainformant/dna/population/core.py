@@ -235,7 +235,9 @@ def hudson_fst(pop1: Sequence[str], pop2: Sequence[str]) -> float:
     fewer than two valid copies in either population are skipped. When no
     site contributes a positive denominator, the result is 1.0 if the
     populations showed a frequency difference (fixed for different
-    alleles) and 0.0 otherwise (identically fixed).
+    alleles) and 0.0 otherwise (identically fixed). A pair of populations
+    with no site that has an unambiguous base in both has no F_ST at all,
+    and raises instead of reporting 0.0.
 
     Note: the estimate can be slightly negative when the populations are
     effectively undifferentiated -- a known property of the unbiased
@@ -251,7 +253,8 @@ def hudson_fst(pop1: Sequence[str], pop2: Sequence[str]) -> float:
         F_ST value
 
     Raises:
-        ValueError: If populations have different sequence lengths
+        ValueError: If populations have different sequence lengths, or no site has an
+            unambiguous base (A, C, G or T) in both of them
     """
     if not pop1 or not pop2:
         raise ValueError("Both populations must contain sequences")
@@ -294,7 +297,9 @@ def hudson_fst(pop1: Sequence[str], pop2: Sequence[str]) -> float:
 
     if denominator_sum > 0:
         return numerator_sum / denominator_sum
-    if saw_valid_pair and not saw_shared_allele:
+    if not saw_valid_pair:
+        raise ValueError("No site has an unambiguous base (A, C, G or T) in both populations: F_ST is undefined")
+    if not saw_shared_allele:
         # No site was usable for the corrected estimator, but every
         # comparable site is fixed for different alleles: complete
         # differentiation.

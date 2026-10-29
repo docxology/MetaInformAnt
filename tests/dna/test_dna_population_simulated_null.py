@@ -8,10 +8,13 @@ are checked against hand-computed and exactly integrated values.
 
 from __future__ import annotations
 
+import json
 import math
+import os
 import random
 import subprocess
 import sys
+from pathlib import Path
 from typing import Any, Callable, Tuple
 
 import numpy as np
@@ -32,6 +35,12 @@ TESTS: dict[str, Callable[..., Tuple[float, float]]] = {
     "fu_li_d_star": analysis.calculate_fu_li_d,
     "fu_li_f_star": analysis.calculate_fu_li_f,
 }
+
+
+def _child_env(**extra: str) -> dict[str, str]:
+    """Environment of a child interpreter that imports the same ``metainformant`` tree as this process."""
+    source_root = Path(analysis.__file__).resolve().parents[3]
+    return {**os.environ, "PYTHONPATH": str(source_root), **extra}
 
 
 def _neutral_p_values(test: str, theta_per_site: float, samples: int, simulations: int) -> np.ndarray:
@@ -339,5 +348,147 @@ def test_the_simulation_domain_is_loaded_only_when_a_simulated_p_value_is_reques
         "analysis.calculate_tajima_d(seqs, p_value_method='simulation', n_simulations=20, random_state=1)\n"
         "print(before, loaded() > 0)\n"
     )
-    run = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)
+    run = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True, env=_child_env())
     assert run.stdout.split() == ["0", "True"], run.stdout
+
+
+# --- detect_selection and calculate_summary_statistics -----------------------------------------------------
+
+
+OPTIONS: dict[str, Any] = {"p_value_method": "simulation", "n_simulations": 500, "random_state": 7}
+
+
+def test_detect_selection_takes_the_simulated_null_through_the_same_adapter() -> None:
+    sequences = generate_population_sequences(15, 400, theta=0.03, rng=random.Random(4))
+    direct = neutrality_null.simulated_neutrality_tests(
+        sequences, ["tajima_d", "fu_li_d_star"], n_simulations=500, random_state=7
+    )
+    tajima = analysis.detect_selection(sequences, "tajima_d", **OPTIONS)
+    fu_li = analysis.detect_selection(sequences, "fu_li_d", **OPTIONS)
+    assert tajima == {"tajima_d": direct["tajima_d"][0], "p_value": direct["tajima_d"][1]}
+    assert fu_li == {"fu_li_d": direct["fu_li_d_star"][0], "p_value": direct["fu_li_d_star"][1]}
+    assert tajima == dict(zip(("tajima_d", "p_value"), analysis.calculate_tajima_d(sequences, **OPTIONS)))
+
+    normal = analysis.detect_selection(sequences, "tajima_d")  # the default is still the normal approximation
+    assert normal["tajima_d"] == tajima["tajima_d"] and normal["p_value"] != tajima["p_value"]
+    assert normal["p_value"] == pytest.approx(math.erfc(abs(normal["tajima_d"]) / math.sqrt(2)), rel=1e-12)
+    assert normal == analysis.detect_selection(sequences, "tajima_d", p_value_method="normal")
+
+
+def test_detect_selection_simulated_p_values_are_seeded_for_every_kind_of_source() -> None:
+    sequences = generate_population_sequences(15, 400, theta=0.03, rng=random.Random(4))
+    for make in (lambda: 7, lambda: random.Random(7), lambda: np.random.default_rng(7)):
+        options = {**OPTIONS, "random_state": make()}
+        first = analysis.detect_selection(sequences, **options)
+        assert first == analysis.detect_selection(sequences, **{**OPTIONS, "random_state": make()})
+    other = analysis.detect_selection(sequences, **{**OPTIONS, "random_state": 8})
+    assert other["tajima_d"] == first["tajima_d"] and other["p_value"] != first["p_value"]
+    assert abs(other["p_value"] - first["p_value"]) < 0.15
+
+
+def test_detect_selection_refuses_a_simulated_null_for_the_mk_test_and_checks_every_option() -> None:
+    codons = [
+        "ATGGCATTTAAACAAGGT",
+        "ATGGCATTTAAACAAGGG",
+        "ATGGCATTTAAACAGGGT",
+        "ATGGCATTTAATCAAGGT",
+        "ATAGCGTTAAAACAAGGT",
+    ]
+    assert analysis.detect_selection(codons, "mk_test", p_value_method="normal")["alpha"] == pytest.approx(0.75)
+    with pytest.raises(ValueError, match="McDonald-Kreitman"):
+        analysis.detect_selection(codons, "mk_test", p_value_method="simulation")
+    for method in ("tajima_d", "fu_li_d", "mk_test"):
+        with pytest.raises(ValueError, match="p_value_method"):
+            analysis.detect_selection(codons, method, p_value_method="bootstrap")
+        for bad in (0, -3, 2.5, True):
+            with pytest.raises(ValueError, match="n_simulations"):
+                analysis.detect_selection(codons, method, p_value_method="simulation", n_simulations=bad)
+
+
+def test_detect_selection_without_sequences_reports_the_keys_of_the_method_asked_for() -> None:
+    """It used to answer {'tajima_d': 0.0, 'p_value': 1.0} to every method, and to a method that does not exist."""
+    for method_options in ({}, {"p_value_method": "simulation", "n_simulations": 20}):
+        assert analysis.detect_selection([], "tajima_d", **method_options) == {"tajima_d": 0.0, "p_value": 1.0}
+        assert analysis.detect_selection([], "fu_li_d", **method_options) == {"fu_li_d": 0.0, "p_value": 1.0}
+    assert analysis.detect_selection([], "mk_test") == {"alpha": 0.0, "omega": 0.0}
+    for empty in ([], ["ACGT"]):
+        with pytest.raises(ValueError, match="Unknown selection detection method"):
+            analysis.detect_selection(empty, "hka")
+
+
+def test_summary_statistics_take_the_simulated_null_for_both_neutrality_tests() -> None:
+    sequences = generate_population_sequences(15, 400, theta=0.03, rng=random.Random(4))
+    simulated = analysis.calculate_summary_statistics(sequences=sequences, **OPTIONS)
+    normal = analysis.calculate_summary_statistics(sequences=sequences)
+    direct = neutrality_null.simulated_neutrality_tests(
+        sequences, ["tajima_d", "fu_li_d_star"], n_simulations=500, random_state=7
+    )
+    assert (simulated["tajima_d"], simulated["tajima_d_p_value"]) == direct["tajima_d"]
+    assert (simulated["fu_li_d"], simulated["fu_li_d_p_value"]) == direct["fu_li_d_star"]
+    assert simulated == analysis.calculate_summary_statistics(sequences=sequences, **OPTIONS)  # seeded
+    # Everything but the two p-values is the same, and the default is the normal approximation
+    unchanged = {key: value for key, value in simulated.items() if not key.endswith("_p_value")}
+    assert unchanged == {key: value for key, value in normal.items() if not key.endswith("_p_value")}
+    assert normal["tajima_d_p_value"] == pytest.approx(math.erfc(abs(normal["tajima_d"]) / math.sqrt(2)), rel=1e-12)
+    assert simulated["tajima_d_p_value"] != normal["tajima_d_p_value"]
+
+
+def test_summary_statistics_check_the_options_instead_of_swallowing_errors() -> None:
+    sequences = generate_population_sequences(8, 100, theta=0.03, rng=random.Random(2))
+    for kwargs in ({"sequences": sequences}, {}, {"genotype_matrix": [[0, 1], [1, 2]]}):
+        with pytest.raises(ValueError, match="p_value_method"):
+            analysis.calculate_summary_statistics(p_value_method="bootstrap", **kwargs)
+        for bad in (0, -5, 2.5, True):
+            with pytest.raises(ValueError, match="n_simulations"):
+                analysis.calculate_summary_statistics(p_value_method="simulation", n_simulations=bad, **kwargs)
+    with pytest.raises(ValueError, match="aligned"):
+        analysis.calculate_summary_statistics(sequences=["ACGT", "ACG", "ACGT", "ACGT"], **OPTIONS)
+    assert analysis.calculate_summary_statistics(sequences=sequences[:3], **OPTIONS)["tajima_d_p_value"] == 1.0
+    assert analysis.calculate_summary_statistics() == {}
+
+
+def test_summary_statistics_fst_is_the_mean_over_all_pairs_of_populations_in_any_order() -> None:
+    pops = {
+        "north": ["AAAA", "AAAA", "AAAT", "AAAA"],
+        "south": ["TTTT", "TTTA", "TTTT", "TTAT"],
+        "east": ["AATT", "AATT", "AATA", "ATTT"],
+    }
+    sequences = [sequence for members in pops.values() for sequence in members]
+    labels = [name for name, members in pops.items() for _ in members]
+    pairs = [("north", "south"), ("north", "east"), ("south", "east")]
+    expected = sum(analysis.calculate_fst(pops[a], pops[b]) for a, b in pairs) / 3
+    assert len({round(analysis.calculate_fst(pops[a], pops[b]), 6) for a, b in pairs}) == 3  # pairs differ
+
+    fst = analysis.calculate_summary_statistics(sequences=sequences, populations=labels)["fst"]
+    assert fst == pytest.approx(expected, rel=1e-12)
+    order = list(range(len(sequences)))
+    random.Random(3).shuffle(order)
+    shuffled = analysis.calculate_summary_statistics(
+        sequences=[sequences[i] for i in order], populations=[labels[i] for i in order]
+    )["fst"]
+    assert shuffled == pytest.approx(expected, rel=1e-12)
+    two = analysis.calculate_summary_statistics(sequences=pops["north"] + pops["south"], populations=[0] * 4 + [1] * 4)
+    assert two["fst"] == pytest.approx(analysis.calculate_fst(pops["north"], pops["south"]), rel=1e-12)
+    assert "fst" not in analysis.calculate_summary_statistics(sequences=sequences, populations=["x"] * 12)
+    with pytest.raises(ValueError, match="populations has 11 entries for 12 sequences"):
+        analysis.calculate_summary_statistics(sequences=sequences, populations=labels[:-1])
+
+    # It used to compare the first two populations of a set(), whose order for strings changes with the hash seed
+    code = (
+        "import json, sys\n"
+        "from metainformant.dna.population import analysis\n"
+        "seqs, labels = json.loads(sys.argv[1])\n"
+        "print(repr(analysis.calculate_summary_statistics(sequences=seqs, populations=labels)['fst']))\n"
+    )
+    payload = json.dumps([sequences, labels])
+    outputs = {
+        subprocess.run(
+            [sys.executable, "-c", code, payload],
+            capture_output=True,
+            text=True,
+            check=True,
+            env=_child_env(PYTHONHASHSEED=str(seed)),
+        ).stdout.strip()
+        for seed in range(6)
+    }
+    assert outputs == {repr(fst)}

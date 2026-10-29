@@ -99,9 +99,10 @@ def neighbor_joining_tree(id_to_seq: Dict[str, str]) -> Tree:
         taxa.remove(taxon2)
         taxa.append(new_node)
 
-    # Connect final two nodes
+    # Connect final two nodes (in sorted order: iterating a set of strings follows the per-process hash seed,
+    # which made the child order of the root, and so the Newick string, differ from one run to the next)
     if len(active_taxa) == 2:
-        remaining = list(active_taxa)
+        remaining = sorted(active_taxa)
         final_node = f"Root_{len(tree)}"
         tree[final_node] = {
             remaining[0]: distance_matrix[taxa.index(remaining[0])][taxa.index(remaining[1])] / 2,
@@ -316,9 +317,9 @@ def nj_tree_from_kmer(id_to_seq: Dict[str, str], *, k: int = 3, metric: str = "c
         active_taxa.remove(taxon2)
         active_taxa.add(new_node)
 
-    # Connect final two nodes
+    # Connect final two nodes (sorted: see neighbor_joining_tree)
     if len(active_taxa) == 2:
-        remaining = list(active_taxa)
+        remaining = sorted(active_taxa)
         idx1 = working_taxa.index(remaining[0])
         idx2 = working_taxa.index(remaining[1])
         final_dist = working_matrix[idx1][idx2]

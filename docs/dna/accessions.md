@@ -3,7 +3,10 @@
 Tools for validating and working with NCBI accession identifiers. NCBI uses specific
 accession formats for genome assemblies, chromosomes, contigs, and scaffolds. The
 `metainformant.dna.external.genomes` module provides validation functions that check
-accession strings against these patterns.
+accession strings against these patterns. Datasets assembly requests additionally
+require a version suffix: `GCF_003254395.2` is accepted, while an unversioned
+identifier can pass `is_valid_assembly_accession` but is refused by the Datasets
+retrieval functions.
 
 ---
 

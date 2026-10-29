@@ -1,11 +1,14 @@
 ### DNA: NCBI Integration
 
-The `metainformant.dna.external` package provides three modules for interacting with
+The `metainformant.dna.external` package provides four modules for interacting with
 NCBI services: `entrez` (Entrez E-utilities client), `ncbi` (higher-level NCBI API
-client), and `genomes` (genome assembly retrieval via the NCBI Datasets API).
+client), `ncbi_datasets` (typed Datasets v2 requests, pagination and downloads), and
+`genomes` (genome assembly retrieval built on that Datasets client).
 
 All network-dependent functions require internet access. NCBI enforces rate limits:
-3 requests/second without an API key, 10 requests/second with one.
+E-utilities and Datasets are separate services: E-utilities clients pace requests
+at 0.4 seconds without a key and 0.1 seconds with one. The Datasets client sends
+its API key in a header; it does not automatically pace requests or retry 429s.
 
 ---
 
@@ -15,6 +18,7 @@ All network-dependent functions require internet access. NCBI enforces rate limi
 |------------|-----------------------------------------------------------|------------------------------------|
 | `entrez`   | `EntrezClient`, `search_genbank`, `fetch_fasta_sequence`  | Entrez E-utilities (efetch, esearch, esummary, elink) |
 | `ncbi`     | `NCBIClient`, `search_nucleotide`, `fetch_sequence`       | Nucleotide/protein search, taxonomy lookups |
+| `ncbi_datasets` | `NCBIDatasetsClient`, `NCBIDatasetsError`, `AssemblyNotFoundError` | Datasets v2 transport, report pagination and streamed packages |
 | `genomes`  | `download_genome_package`, `get_genome_metadata`          | Genome assembly downloads via Datasets API  |
 
 ---
@@ -46,6 +50,11 @@ client = EntrezClient(email="user@example.com", api_key="your_ncbi_key")
 | `fetch`     | Retrieve records via efetch (FASTA, GenBank, etc.)   | `str`                 |
 | `summary`   | Get document summaries via esummary                  | `Dict[str, Any]`      |
 | `link`      | Find linked records across databases via elink       | `Dict[str, Any]`      |
+
+HTTP/transport failures, malformed JSON and recognized E-utilities error bodies
+raise `NCBIRequestError`, a `requests.RequestException` subclass exported by
+`entrez` and `ncbi`. `EntrezClient.search` validates integer `max_results` in
+1..10,000. Empty result lists represent no matches, not failed requests.
 
 ### Convenience Functions
 
@@ -135,6 +144,16 @@ client = NCBIClient(email="user@example.com", api_key="your_key")
 | `search_protein`     | Search protein database with summaries         | `List[Dict[str, Any]]` |
 | `get_taxonomy_info`  | Retrieve taxonomy by NCBI taxonomy ID          | `Dict[str, Any] | None`|
 
+HTTP/transport failures, malformed JSON and recognized E-utilities error bodies
+raise `NCBIRequestError`, a `requests.RequestException` subclass exported by
+`entrez` and `ncbi`. `EntrezClient.search` validates integer `max_results` in
+1..10,000. Empty result lists represent no matches, not failed requests.
+
+The high-level search methods validate integer `max_results` in 1..1,000.
+`fetch_sequence` returns one FASTA record without the header; a missing body
+returns `None`, while multiple records and non-FASTA error bodies raise.
+Unreported sequence lengths remain `None`.
+
 ### Convenience Functions
 
 ```python
@@ -170,7 +189,13 @@ tax_info = get_taxonomy_info(7460)  # Apis mellifera
 ### `download_genome_package`
 
 Download a genome assembly via the NCBI Datasets v2 API. Validates the accession
-before making network requests. Downloads a ZIP archive and extracts it.
+before making network requests. Assembly retrieval requires a versioned
+accession such as `GCF_003254395.2`. The ZIP is streamed to disk and extracted;
+unsafe member paths are refused, but there is no uncompressed-size cap.
+`include` accepts `genome`, `gff3`, `gtf`, `gbff`, `rna`, `protein`, `cds`,
+`seq-report`, or supported API enum names, sent as repeated
+`include_annotation_type` parameters. Omitting it requests the default genomic
+FASTA. The assembly report accompanies the package.
 
 ```python
 from metainformant.dna.external.genomes import download_genome_package
@@ -187,13 +212,24 @@ returned as evidence of a genome download.
 
 ### `get_genome_metadata`
 
-Retrieve genome metadata (organism, assembly level, genome size, GC content, etc.)
-without downloading the full assembly.
+Retrieve one assembly report without downloading its package. The request uses
+`/genome/accession/{accession}/dataset_report` and requires a versioned accession.
 
 ```python
 from metainformant.dna.external.genomes import get_genome_metadata
 
-metadata = get_genome_metadata("GCF_000001405.39")
+metadata = get_genome_metadata("GCF_003254395.2")
+print(metadata["organism_name"])  # Apis mellifera
+```
+
+Reported fields include organism/taxonomy, assembly name/level/status, source
+database and paired accession, assembly statistics, release date and submitter.
+`genome_size` is an integer number of bases; unreported fields are `None`.
+`AssemblyNotFoundError` means no matching report. Request or response failures
+raise `NCBIDatasetsError`; both are available from `dna.external.ncbi_datasets`,
+and request errors derive from `requests.RequestException`. Failures are not
+returned as metadata dictionaries carrying an `error` field.
+
 # {
 #     "accession": "GCF_000001405.39",
 #     "organism_name": "Homo sapiens",
@@ -207,7 +243,13 @@ metadata = get_genome_metadata("GCF_000001405.39")
 
 ### `list_genome_assemblies`
 
-Search for all genome assemblies for a given organism.
+Search assembly reports by scientific/common name or taxonomy ID using
+`/genome/taxon/{taxon}/dataset_report`, following pagination up to positive
+integer `max_results`. Optional keyword-only arguments are `reference_only`
+(default `False`), `assembly_source` (default `"refseq"`; also `"genbank"` or
+`"all"`) and `client`. A GenBank-only species needs `"genbank"` or `"all"`.
+Results follow service order. `[]` means no matches (also an unknown organism);
+request failures raise `NCBIDatasetsError`.
 
 ```python
 from metainformant.dna.external.genomes import list_genome_assemblies
@@ -218,7 +260,10 @@ assemblies = list_genome_assemblies("Drosophila melanogaster", max_results=5)
 
 ### `download_reference_genome`
 
-Convenience function that searches for the primary reference assembly and downloads it.
+Select a reported reference assembly and download its package, with optional
+`include=` and `client=`. `None` means that no reference is listed. Lookup and
+download failures raise; the first arbitrary search result is not assumed to be
+a reference.
 
 ```python
 from metainformant.dna.external.genomes import download_reference_genome
@@ -228,18 +273,25 @@ from metainformant.dna.external.genomes import download_reference_genome
 
 ### `get_chromosome_lengths`
 
-Retrieve chromosome/contig lengths for an assembly. Requires BioPython.
+Retrieve all paginated sequence reports through
+`/genome/accession/{accession}/sequence_reports`; Biopython is not required.
+The default `names="accession"` keys lengths by sequence accession.
+`names="chromosome"` uses reported chromosome names for assembled molecules and
+accession for other sequences. A missing assembly or unsuccessful request raises.
 
 ```python
 from metainformant.dna.external.genomes import get_chromosome_lengths
 
 # lengths = get_chromosome_lengths("GCF_000001405.39")
-# {"chr1": 248956422, "chr2": 242193529, ...}
+# Keys are sequence accessions by default; request names="chromosome" for chromosome labels.
 ```
 
 ### `validate_genome_files`
 
-Check that a downloaded genome directory contains expected files (FASTA, GFF).
+Search recursively for FASTA (`.fna`, `.fa`, `.fasta`) and GFF (`.gff`, `.gff3`),
+each optionally gzip-compressed. This includes the extracted
+`ncbi_dataset/data/<accession>/` layout. The result contains file counts,
+issues and a `valid` flag.
 
 ```python
 from metainformant.dna.external.genomes import validate_genome_files
@@ -252,13 +304,14 @@ results = validate_genome_files("output/genomes/GCF_000001405.39/")
 
 ## Configuration and Rate Limits
 
-NCBI-facing clients share one explicit contact policy. An explicit ``email=``
+E-utilities clients and `get_chromosome_lengths` share one explicit contact policy. An explicit ``email=``
 argument takes precedence over ``NCBI_EMAIL``. If neither is available, callers
 must pass ``allow_anonymous=True``; anonymous mode warns, leaves the request
 identity unset, and is recorded as ``contact_mode="anonymous"`` on the client.
-No configuration file or test fixture invents or persists an email. An API key
-is optional but recommended for production use (raises rate limit from 3 to 10
-requests/second).
+No configuration file or test fixture invents or persists an email.
+`NCBIDatasetsClient` accepts optional contact information and does not require
+anonymous opt-in. All three clients honor an explicit API key before
+`NCBI_API_KEY`. Genome helpers accept a configured `client=`.
 
 Set credentials via constructor parameters or environment variables:
 
@@ -270,7 +323,8 @@ os.environ["NCBI_API_KEY"] = "your_key_here"
 
 Without an API key, the client automatically sleeps 0.4 seconds between requests
 to respect the 3 requests/second limit. All clients accept ``timeout=`` in
-seconds (default ``30``); non-positive values are rejected.
+seconds (E-utilities default ``30``, Datasets default ``60``); non-positive
+values are rejected. Request exceptions redact credential-bearing URLs.
 
 ---
 
@@ -281,3 +335,4 @@ seconds (default ``30``); non-positive values are rejected.
 - `metainformant.dna.external.entrez` -- Entrez source module
 - `metainformant.dna.external.ncbi` -- NCBI client source module
 - `metainformant.dna.external.genomes` -- Genome retrieval source module
+- `metainformant.dna.external.ncbi_datasets` -- Datasets v2 transport and request builders

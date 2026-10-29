@@ -112,15 +112,45 @@ def calculate_fst(population1: List[str], population2: List[str]) -> float:
     return numerator_sum / total_sites
 
 
-def detect_selection(sequences: List[str], method: str = "tajima_d") -> Dict[str, float]:
+_SELECTION_METHODS = ("tajima_d", "fu_li_d", "mk_test")
+
+
+def detect_selection(
+    sequences: List[str],
+    method: str = "tajima_d",
+    *,
+    p_value_method: str = "normal",
+    n_simulations: int = DEFAULT_NULL_SIMULATIONS,
+    random_state: int | random.Random | np.random.Generator | None = None,
+) -> Dict[str, float]:
     """Detect signatures of natural selection in population data.
+
+    ``"tajima_d"`` and ``"fu_li_d"`` (Fu and Li's D*) return the statistic and its two-sided p-value, from
+    :func:`calculate_tajima_d` and :func:`calculate_fu_li_d`; ``p_value_method`` selects the null behind the
+    p-value as there: ``"normal"`` (default) is the normal approximation, ``"simulation"`` a Monte Carlo
+    p-value against ``n_simulations`` neutral coalescent samples conditioned on the observed number of
+    mutations, seeded by ``random_state`` (see :func:`calculate_tajima_d` for the details). Fewer than 4
+    sequences, empty input included, give the statistic 0.0 and the p-value 1.0, as there. ``"mk_test"``
+    returns the McDonald-Kreitman ``alpha`` and ``omega`` (:func:`mcdonald_kreitman_test`), whose
+    significance is Fisher's exact test (:func:`mcdonald_kreitman_contingency`), not a normal or simulated
+    null: a ``p_value_method`` other than ``"normal"`` is refused for it rather than ignored.
 
     Args:
         sequences: List of DNA sequences from a population
         method: Selection detection method ("tajima_d", "fu_li_d", "mk_test")
+        p_value_method: ``"normal"`` or ``"simulation"``
+        n_simulations: Number of coalescent replicates for ``"simulation"`` (default 2000)
+        random_state: Seed of the simulated replicates (an integer, a ``random.Random`` or a
+            ``numpy.random.Generator``); ``None`` draws fresh entropy
 
     Returns:
-        Dictionary with selection statistics
+        Dictionary with selection statistics: ``{method: statistic, "p_value": p}`` for the first two
+        methods, ``{"alpha": ..., "omega": ...}`` for ``"mk_test"``
+
+    Raises:
+        ValueError: If ``method`` or ``p_value_method`` is unknown, ``n_simulations`` is not a positive
+            integer, the sequences are not aligned, or ``p_value_method="simulation"`` is combined with
+            ``"mk_test"``
 
     Example:
         >>> seqs = ["ATCG", "ATCG", "GCTA"]
@@ -128,28 +158,35 @@ def detect_selection(sequences: List[str], method: str = "tajima_d") -> Dict[str
         >>> "tajima_d" in selection
         True
     """
-    if not sequences:
-        return {"tajima_d": 0.0, "p_value": 1.0}
+    if method not in _SELECTION_METHODS:
+        raise ValueError(f"Unknown selection detection method: {method}")
+    _check_p_value_options(p_value_method, n_simulations)
 
     results = {}
 
     if method == "tajima_d":
-        tajima_d, p_value = calculate_tajima_d(sequences)
+        tajima_d, p_value = calculate_tajima_d(
+            sequences, p_value_method=p_value_method, n_simulations=n_simulations, random_state=random_state
+        )
         results["tajima_d"] = tajima_d
         results["p_value"] = p_value
 
     elif method == "fu_li_d":
-        fu_li_d, p_value = calculate_fu_li_d(sequences)
+        fu_li_d, p_value = calculate_fu_li_d(
+            sequences, p_value_method=p_value_method, n_simulations=n_simulations, random_state=random_state
+        )
         results["fu_li_d"] = fu_li_d
         results["p_value"] = p_value
 
-    elif method == "mk_test":
+    else:
+        if p_value_method != "normal":
+            raise ValueError(
+                f"p_value_method={p_value_method!r} does not apply to the McDonald-Kreitman test, whose "
+                "significance is Fisher's exact test (mcdonald_kreitman_contingency)"
+            )
         alpha, omega = mcdonald_kreitman_test(sequences)
         results["alpha"] = alpha
         results["omega"] = omega
-
-    else:
-        raise ValueError(f"Unknown selection detection method: {method}")
 
     return results
 
@@ -555,14 +592,22 @@ def detect_population_structure(sequences: List[str], k_max: int = 5) -> Dict[st
 def calculate_ld_decay(sequences: List[str], max_distance: int = 0) -> List[Tuple[int, float]]:
     """Calculate linkage disequilibrium (r²) decay with physical distance.
 
-    Computes pairwise r² between biallelic polymorphic sites and averages by distance.
+    Computes pairwise r² between biallelic polymorphic sites and averages by distance. A site is
+    biallelic when exactly two of A, C, G and T occur at it; the other characters (gaps, N, ...) are
+    missing data. A pair of sites is scored on the sequences that carry an unambiguous base at both
+    of them (and only when they are at least two, and each site still shows both of its alleles among
+    them), so missing data never pair a sequence's allele at one site with another sequence's at the
+    other.
 
     Args:
         sequences: List of aligned DNA sequences
         max_distance: Maximum distance to consider (0 = all)
 
     Returns:
-        List of tuples (distance, average_r_squared)
+        List of tuples (distance, average_r_squared), sorted by distance
+
+    Raises:
+        ValueError: If the sequences are not aligned
 
     Example:
         >>> seqs = ["ATCGATCG", "GCTAGCTA", "ATCGATCG", "GCTAGCTA"]
@@ -570,70 +615,41 @@ def calculate_ld_decay(sequences: List[str], max_distance: int = 0) -> List[Tupl
         >>> isinstance(ld_decay, list)
         True
     """
-    from collections import Counter
-
     if len(sequences) < 2:
         return []
-
     seq_length = len(sequences[0])
+    if any(len(seq) != seq_length for seq in sequences):
+        raise ValueError("Sequences must be aligned (same length)")
 
-    # Find biallelic polymorphic sites
-    polymorphic = []
-    for pos in range(seq_length):
-        alleles = set(seq[pos].upper() for seq in sequences if seq[pos].upper() in "ACGT")
-        if len(alleles) == 2:
-            polymorphic.append(pos)
-
-    if len(polymorphic) < 2:
+    codes = np.array([np.frombuffer(seq.upper().encode("ascii", "replace"), dtype=np.uint8) for seq in sequences])
+    counts = np.array([(codes == ord(base)).sum(axis=0) for base in "ACGT"])  # allele counts per site
+    sites = np.flatnonzero((counts > 0).sum(axis=0) == 2)  # biallelic polymorphic sites
+    if sites.size < 2:
         return []
 
-    ld_by_distance: Dict[int, List[float]] = {}
+    valid = np.isin(codes[:, sites], [ord(base) for base in "ACGT"])
+    major = np.array([ord("ACGT"[index]) for index in counts[:, sites].argmax(axis=0)], dtype=np.uint8)
+    present = valid.astype(float)  # sequence has an unambiguous base at the site
+    minor = (valid & (codes[:, sites] != major)).astype(float)  # ... and it is not the major allele
 
-    for idx_i in range(len(polymorphic)):
-        for idx_j in range(idx_i + 1, len(polymorphic)):
-            pos_i = polymorphic[idx_i]
-            pos_j = polymorphic[idx_j]
-            distance = pos_j - pos_i
+    sums = np.zeros(seq_length)
+    pairs = np.zeros(seq_length)
+    for begin in range(0, sites.size, 256):  # blocks bound the memory of the pairwise matrices
+        rows = slice(begin, begin + 256)
+        n_both = present[:, rows].T @ present
+        with np.errstate(divide="ignore", invalid="ignore"):  # pairs without data or without both alleles are dropped
+            freq_a = (minor[:, rows].T @ present) / n_both
+            freq_b = (present[:, rows].T @ minor) / n_both
+            d = (minor[:, rows].T @ minor) / n_both - freq_a * freq_b
+            r_squared = d * d / (freq_a * (1 - freq_a) * freq_b * (1 - freq_b))
+        distance = sites[None, :] - sites[rows, None]
+        keep = (distance > 0) & (n_both >= 2) & (freq_a > 0) & (freq_a < 1) & (freq_b > 0) & (freq_b < 1)
+        if max_distance > 0:
+            keep &= distance <= max_distance
+        sums += np.bincount(distance[keep], weights=r_squared[keep], minlength=seq_length)
+        pairs += np.bincount(distance[keep], minlength=seq_length)
 
-            if max_distance > 0 and distance > max_distance:
-                continue
-
-            alleles_i = [seq[pos_i].upper() for seq in sequences if seq[pos_i].upper() in "ACGT"]
-            alleles_j = [seq[pos_j].upper() for seq in sequences if seq[pos_j].upper() in "ACGT"]
-
-            if len(alleles_i) != len(alleles_j) or len(alleles_i) < 2:
-                continue
-
-            # Encode as 0/1 (major=0, minor=1)
-            count_i = Counter(alleles_i)
-            count_j = Counter(alleles_j)
-            major_i = count_i.most_common(1)[0][0]
-            major_j = count_j.most_common(1)[0][0]
-
-            x = [0 if a == major_i else 1 for a in alleles_i]
-            y = [0 if a == major_j else 1 for a in alleles_j]
-
-            n_hap = len(x)
-            p_a = sum(x) / n_hap
-            p_b = sum(y) / n_hap
-
-            if p_a == 0 or p_a == 1 or p_b == 0 or p_b == 1:
-                continue
-
-            p_ab = sum(1 for xi, yi in zip(x, y) if xi == 1 and yi == 1) / n_hap
-            d = p_ab - p_a * p_b
-            r_squared = (d * d) / (p_a * (1 - p_a) * p_b * (1 - p_b))
-
-            if distance not in ld_by_distance:
-                ld_by_distance[distance] = []
-            ld_by_distance[distance].append(r_squared)
-
-    avg_ld_by_distance = []
-    for dist in sorted(ld_by_distance.keys()):
-        avg_r2 = sum(ld_by_distance[dist]) / len(ld_by_distance[dist])
-        avg_ld_by_distance.append((dist, avg_r2))
-
-    return avg_ld_by_distance
+    return [(int(dist), float(sums[dist] / pairs[dist])) for dist in np.flatnonzero(pairs)]
 
 
 # Helper functions that delegate to existing implementations
@@ -662,18 +678,38 @@ def calculate_summary_statistics(
     sequences: List[str] | None = None,
     genotype_matrix: List[List[int]] | None = None,
     populations: List[int] | None = None,
+    *,
+    p_value_method: str = "normal",
+    n_simulations: int = DEFAULT_NULL_SIMULATIONS,
+    random_state: int | random.Random | np.random.Generator | None = None,
 ) -> Dict[str, Any]:
     """Calculate comprehensive population genetics summary statistics.
+
+    The neutrality tests of the sequences (Tajima's D and Fu and Li's D*) take their p-values from
+    ``p_value_method`` as in :func:`calculate_tajima_d`: the normal approximation (default) or a Monte Carlo
+    p-value against ``n_simulations`` neutral coalescent samples conditioned on the observed number of
+    mutations, seeded by ``random_state``. Fewer than 4 sequences give the statistics 0.0 and the p-values
+    1.0 there, and so here.
 
     Args:
         sequences: List of DNA sequences (for sequence-based statistics)
         genotype_matrix: Individuals x loci matrix of diploid 0/1/2 alternate-allele
             counts (for genotype-based statistics); other values count as missing
-        populations: Population assignments for each individual
+        populations: Population assignments for each individual. With sequences, ``fst`` is the
+            heterozygosity-based F_ST (:func:`calculate_fst`) of the two populations, or the mean over all
+            pairs of populations when there are more
+        p_value_method: ``"normal"`` or ``"simulation"``
+        n_simulations: Number of coalescent replicates for ``"simulation"`` (default 2000)
+        random_state: Seed of the simulated replicates (an integer, a ``random.Random`` or a
+            ``numpy.random.Generator``); ``None`` draws fresh entropy, so pass a seed for reproducible p-values
 
     Returns:
         Dictionary containing various population genetics statistics; ``fu_li_d``
         holds Fu and Li's D*, which needs no outgroup
+
+    Raises:
+        ValueError: If ``p_value_method`` is unknown, ``n_simulations`` is not a positive integer, the
+            sequences are not aligned, or ``populations`` does not assign every sequence to a population
 
     Example:
         >>> seqs = ["ATCG", "ATCG", "GCTA"]
@@ -681,6 +717,12 @@ def calculate_summary_statistics(
         >>> isinstance(stats, dict)
         True
     """
+    _check_p_value_options(p_value_method, n_simulations)
+    p_options: Dict[str, Any] = {
+        "p_value_method": p_value_method,
+        "n_simulations": n_simulations,
+        "random_state": random_state,
+    }
     results: Dict[str, Any] = {}
 
     if sequences:
@@ -692,21 +734,13 @@ def calculate_summary_statistics(
         results["segregating_sites"] = calculate_segregating_sites(sequences)
 
         # Neutrality tests
-        try:
-            tajima_d, tajima_p = calculate_tajima_d(sequences)
-            results["tajima_d"] = tajima_d
-            results["tajima_d_p_value"] = tajima_p
-        except Exception:
-            results["tajima_d"] = None
-            results["tajima_d_p_value"] = None
+        tajima_d, tajima_p = calculate_tajima_d(sequences, **p_options)
+        results["tajima_d"] = tajima_d
+        results["tajima_d_p_value"] = tajima_p
 
-        try:
-            fu_li_d, fu_li_p = calculate_fu_li_d(sequences)
-            results["fu_li_d"] = fu_li_d
-            results["fu_li_d_p_value"] = fu_li_p
-        except Exception:
-            results["fu_li_d"] = None
-            results["fu_li_d_p_value"] = None
+        fu_li_d, fu_li_p = calculate_fu_li_d(sequences, **p_options)
+        results["fu_li_d"] = fu_li_d
+        results["fu_li_d_p_value"] = fu_li_p
 
         # Sequence properties
         results["sequence_length"] = len(sequences[0]) if sequences else 0
@@ -733,21 +767,18 @@ def calculate_summary_statistics(
             results["heterozygosity_variance"] = float(np.var(het_values))
 
     if populations and sequences:
-        # Population differentiation
-        if len(set(populations)) > 1:
-            pop_indices = {}
-            for i, pop in enumerate(set(populations)):
-                pop_indices[pop] = [j for j, p in enumerate(populations) if p == pop]
-
-            if len(pop_indices) >= 2:
-                pop1_idx, pop2_idx = list(pop_indices.values())[:2]
-                pop1_seqs = [sequences[i] for i in pop1_idx]
-                pop2_seqs = [sequences[i] for i in pop2_idx]
-
-                try:
-                    results["fst"] = calculate_fst(pop1_seqs, pop2_seqs)
-                except Exception:
-                    results["fst"] = None
+        # Population differentiation: the mean over all pairs of populations (one pair gives that pair's value)
+        if len(populations) != len(sequences):
+            raise ValueError(f"populations has {len(populations)} entries for {len(sequences)} sequences")
+        labels = sorted(set(populations), key=str)
+        if len(labels) >= 2:
+            members = {label: [sequences[j] for j, p in enumerate(populations) if p == label] for label in labels}
+            fst_values = [
+                calculate_fst(members[first], members[second])
+                for index, first in enumerate(labels)
+                for second in labels[index + 1 :]
+            ]
+            results["fst"] = sum(fst_values) / len(fst_values)
 
     return results
 

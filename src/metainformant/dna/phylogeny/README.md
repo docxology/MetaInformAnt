@@ -19,13 +19,21 @@ Phylogenetic tree construction (Neighbor-Joining, UPGMA, k-mer based) and tree a
 | `nj_tree_from_kmer()` | Alignment-free tree from k-mer distance profiles |
 | `to_newick()` | Serialize a tree to Newick format string |
 | `from_newick()` | Parse a Newick string into a tree data structure |
-| `bootstrap_support()` | Resample alignment sites, rebuild a tree per replicate (`method` `"nj"` or `"upgma"`), and return a new tree with a `bootstrap` support value (0-100) on each internal node; the input tree is not modified |
-| `to_ascii()` | Render a tree as an ASCII art diagram |
-| `basic_tree_stats()` | Number of leaves, internal nodes, and total branch length |
+| `bootstrap_support()` | Resample alignment sites, rebuild a tree per replicate (`method` `"nj"` or `"upgma"`; anything else raises `ValueError`), and return a new tree with a `bootstrap` support value (0-100) on each internal node; the input tree is not modified. UPGMA branches are counted as rooted clades, neighbor-joining branches as splits of the leaf set (neighbor joining leaves the root arbitrary), and the tree must have exactly the taxa of the sequences |
+| `to_ascii()` | Render a tree as an ASCII art diagram: the root, then every other node once under its parent |
+| `basic_tree_stats()` | Number of leaves, internal nodes and total nodes, and the tree height (edges on the longest root-to-leaf path) |
+| `total_branch_length()` | Sum of all branch lengths |
 | `robinson_foulds_distance()` | Topological distance between two trees |
 | `is_monophyletic()` | Test whether a set of taxa forms a monophyletic group |
 | `prune_tree()` | Remove specified taxa from a tree |
 | `tree_diameter()` | Longest path between any two leaves |
+
+## Tree representation
+
+Every builder and parser returns the same flat dictionary: each node is a key, a leaf maps to `None` and an internal
+node maps to `{child: branch_length}`; `bootstrap_support` adds a `"bootstrap"` entry (a support value, not a child)
+to each internal node. `metainformant.visualization.genomics.trees` draws this dictionary, a Newick string, a
+`Bio.Phylo` tree or a NetworkX `DiGraph` directly, for example `plot_phylo_tree(tree)`.
 
 ## Usage
 

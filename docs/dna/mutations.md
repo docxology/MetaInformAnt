@@ -52,13 +52,13 @@ Features:
 - **Substitution**: in both modes a mutated base is replaced by a nucleotide chosen uniformly among the A/C/G/T bases that differ from it
 - **Uppercase output**: `generate_point_mutations` converts its input to uppercase
 - **Reproducible**: `generate_point_mutations` takes a keyword-only `rng` (a `random.Random`) that supplies every random draw and leaves Python's global `random` state untouched. Without `rng` it draws from the global generator, so `random.seed(...)` before the call makes the result reproducible
-- **Sequence evolution**: `simulate_sequence_evolution(sequence, generations, mutation_rate=0.001)` has no `rng` and applies exactly one point mutation per generation (its `mutation_rate` does not change that), so use `random.seed(...)` to make a lineage reproducible
+- **Sequence evolution**: `simulate_sequence_evolution(sequence, generations, mutation_rate=0.001, *, rng=None)` applies the per-site mutation probability independently in every generation. A rate of 0 leaves every generation unchanged; a rate of 1 changes every position in every generation. A private `random.Random` supplied as `rng` reproduces counts, positions and replacement bases without touching global state; with `rng=None`, `random.seed(...)` controls the lineage.
 - **Mutant library**: `generate_mutant_library` gives one single-substitution mutant per position/base pair, silently skips positions outside the sequence, and raises `ValueError` when the two lists differ in length
 - **Distance calculation**: Hamming distance between sequences (`distances.hamming_distance`, equal lengths and A/C/G/T only)
 
 Mutation types:
 - **Point mutations**: Single nucleotide changes
 - **Substitutions**: Replace existing base with different base
-- **Classification**: `classify_mutations(ancestral, derived)` counts `transitions`, `transversions`, `synonymous`, `nonsynonymous` and `total` changes between equal-length sequences, reading codons from position 0
+- **Classification**: `classify_mutations(ancestral, derived)` counts `transitions`, `transversions`, `synonymous`, `nonsynonymous`, `ambiguous` and `total` changes between equal-length sequences, reading codons from position 0. Differences involving a non-ACGT base count as `ambiguous`, so `transitions + transversions + ambiguous == total`; incomplete or ambiguous codons receive no synonymous/nonsynonymous classification
 
 Related: Used in evolutionary analyses and [phylogeny](./phylogeny.md) simulations.

@@ -105,9 +105,10 @@ class TestDetectSelectionSignatures:
         assert result["diversity"] == pytest.approx(0.0)
         assert result["conservation"] == pytest.approx(1.0)
 
-    def test_empty_refs_default(self) -> None:
-        result = mutations.detect_selection_signatures("ATCG", [])
-        assert result == {"diversity": 0.0, "conservation": 1.0}
+    def test_empty_refs_raise(self) -> None:
+        # No reference means the divergence is undefined; it used to be reported as perfect conservation
+        with pytest.raises(ValueError, match="same length"):
+            mutations.detect_selection_signatures("ATCG", [])
 
     def test_diversity_between_zero_and_one(self) -> None:
         result = mutations.detect_selection_signatures("ATCGATCG", ["ATCGATCA", "TCGAATCG"])
@@ -115,9 +116,13 @@ class TestDetectSelectionSignatures:
         assert result["conservation"] == pytest.approx(1.0 - result["diversity"])
 
     def test_length_mismatched_refs_ignored(self) -> None:
-        # refs of wrong length contribute no diversity samples
-        result = mutations.detect_selection_signatures("ATCG", ["ATCGAAA", "TCG"])
+        # refs of wrong length contribute no diversity samples; the identical one that remains gives 0
+        result = mutations.detect_selection_signatures("ATCG", ["ATCGAAA", "TCG", "ATCG"])
         assert result["diversity"] == 0.0
+
+    def test_only_length_mismatched_refs_raise(self) -> None:
+        with pytest.raises(ValueError, match="same length"):
+            mutations.detect_selection_signatures("ATCG", ["ATCGAAA", "TCG"])
 
 
 class TestGenerateMutantLibrary:
@@ -177,5 +182,5 @@ class TestSimulateSequenceEvolution:
 
     def test_high_rate_eventually_changes(self) -> None:
         lineage = mutations.simulate_sequence_evolution("AAAAAAAAAA", generations=10, mutation_rate=1.0)
-        # With rate 1.0 and num_mutations=1 per generation, later generations differ from start
-        assert any(seq != lineage[0] for seq in lineage[1:])
+        # At rate 1.0 every site mutates every generation, so each generation differs from the last
+        assert all(a != b for a, b in zip(lineage, lineage[1:]))

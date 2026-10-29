@@ -25,10 +25,10 @@ VCF parsing and variant analysis including variant calling from pileups, mutatio
 | `call_variants_pileup()` | Call variants from read pileup data |
 | `genotype_variants()` | Assign genotypes to called variant sites |
 | `calculate_mutation_rate()` | Substitution rate between ancestral and derived sequences |
-| `classify_mutations()` | Count transitions, transversions, and mutation types |
+| `classify_mutations()` | Count transitions, transversions, ambiguous changes and coding mutation types |
 | `generate_point_mutations()` | Mutate a sequence: exactly `num_mutations` distinct positions when it is given, otherwise each position independently with probability `mutation_rate`; keyword-only `rng` (a `random.Random`) makes it reproducible |
-| `simulate_sequence_evolution()` | Generate evolved sequences over multiple generations, one point mutation per generation |
-| `analyze_mutation_spectrum()` | Summarize mutation types between a sequence and reference |
+| `simulate_sequence_evolution()` | Draw Binomial(sequence length, mutation rate) point mutations per generation; keyword-only `rng` controls reproducibility |
+| `analyze_mutation_spectrum()` | Summarize mutation types and Ti/Tv ratio: `inf` for transitions without transversions, `nan` when both counts are zero |
 
 ## Usage
 

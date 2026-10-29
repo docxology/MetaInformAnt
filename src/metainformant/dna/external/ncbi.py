@@ -2,6 +2,11 @@
 
 This module provides tools for interacting with NCBI databases including
 Entrez, BLAST, and other NCBI services for genomic data retrieval.
+
+A request that fails raises :class:`NCBIRequestError` (a
+``requests.RequestException``); it no longer returns an empty list or ``None``,
+which a caller could not tell from "no hits".  Fields NCBI leaves out of a
+record are ``None``, not an invented ``""`` or ``0``.
 """
 
 from __future__ import annotations
@@ -13,7 +18,29 @@ import requests
 from metainformant.core.ncbi import resolve_ncbi_contact
 from metainformant.core.utils import logging
 
+from ._http import NCBIRequestError, get_json_object, get_text, resolve_api_key
+from .entrez import (
+    _esearch_ids,
+    _esummary_documents,
+    _require_positive_int,
+    parse_fasta_sequence,
+    summarize_nucleotide_doc,
+    summarize_protein_doc,
+    summarize_taxonomy_doc,
+)
+
 logger = logging.get_logger(__name__)
+
+_MAX_SEARCH_RESULTS = 1000  # most records one search is asked for; esummary ids travel in a single GET URL
+
+__all__ = [
+    "NCBIClient",
+    "NCBIRequestError",
+    "fetch_sequence",
+    "get_taxonomy_info",
+    "search_nucleotide",
+    "search_protein",
+]
 
 
 class NCBIClient:
@@ -30,7 +57,7 @@ class NCBIClient:
         """Initialize NCBI client.
 
         Args:
-            api_key: NCBI API key for higher rate limits
+            api_key: NCBI API key for higher rate limits. If omitted, ``NCBI_API_KEY`` is used.
             email: Explicit contact email. If omitted, ``NCBI_EMAIL`` is used.
             allow_anonymous: Explicitly permit a request without an email.
             timeout: Per-request timeout in seconds.
@@ -39,7 +66,7 @@ class NCBIClient:
             raise ValueError("timeout must be greater than zero")
 
         contact = resolve_ncbi_contact(email, allow_anonymous=allow_anonymous)
-        self.api_key = api_key
+        self.api_key = resolve_api_key(api_key)
         self.email = contact.email
         self.contact_mode = contact.mode
         self.timeout = timeout
@@ -52,87 +79,63 @@ class NCBIClient:
             headers["From"] = contact.email
         self.session.headers.update(headers)
 
+    def _credentials(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Add the API key and contact email to ``params`` when configured."""
+        if self.api_key:
+            params["api_key"] = self.api_key
+        if self.email:
+            params["email"] = self.email
+        return params
+
     def search_nucleotide(self, query: str, max_results: int = 100) -> List[Dict[str, Any]]:
         """Search NCBI Nucleotide database.
 
         Args:
             query: Search query
-            max_results: Maximum number of results
+            max_results: Maximum number of results, from 1 to 1000
 
         Returns:
-            List of search results
+            List of search results (an empty list means the search matched nothing)
+
+        Raises:
+            ValueError: If ``max_results`` is not an integer from 1 to 1000.
+            NCBIRequestError: If a request fails.
         """
         # First, search using esearch
         search_params: dict[str, str | int] = {
             "db": "nucleotide",
             "term": query,
-            "retmax": min(max_results, 1000),  # NCBI limit
+            "retmax": _require_positive_int(max_results, "max_results", maximum=_MAX_SEARCH_RESULTS),
             "retmode": "json",
             "usehistory": "y",
         }
-
-        if self.api_key:
-            search_params["api_key"] = self.api_key
-        if self.email:
-            search_params["email"] = self.email
-
-        try:
-            response = self.session.get(f"{self.base_url}/esearch.fcgi", params=search_params, timeout=self.timeout)
-            response.raise_for_status()
-
-            search_data = response.json()
-
-            if "esearchresult" not in search_data:
-                return []
-
-            id_list = search_data["esearchresult"].get("idlist", [])
-            webenv = search_data["esearchresult"].get("webenv")
-            query_key = search_data["esearchresult"].get("querykey")
-
-            if not id_list:
-                return []
-
-            # Fetch summaries using esummary
-            summary_params = {"db": "nucleotide", "id": ",".join(id_list[:max_results]), "retmode": "json"}
-
-            if webenv and query_key:
-                summary_params.update({"WebEnv": webenv, "query_key": query_key})
-
-            if self.api_key:
-                summary_params["api_key"] = self.api_key
-            if self.email:
-                summary_params["email"] = self.email
-
-            summary_response = self.session.get(
-                f"{self.base_url}/esummary.fcgi", params=summary_params, timeout=self.timeout
-            )
-            summary_response.raise_for_status()
-
-            summary_data = summary_response.json()
-
-            results = []
-            if "result" in summary_data:
-                for uid in id_list[:max_results]:
-                    if uid in summary_data["result"]:
-                        result = summary_data["result"][uid]
-                        results.append(
-                            {
-                                "id": uid,
-                                "accession": result.get("accessionversion", ""),
-                                "title": result.get("title", ""),
-                                "organism": result.get("organism", ""),
-                                "length": result.get("slen", 0),
-                                "moltype": result.get("moltype", ""),
-                                "created": result.get("createdate", ""),
-                                "updated": result.get("updatedate", ""),
-                            }
-                        )
-
-            return results
-
-        except requests.RequestException as e:
-            logger.error(f"NCBI search failed: {e}")
+        search_data = get_json_object(
+            self.session,
+            f"{self.base_url}/esearch.fcgi",
+            operation="NCBI esearch",
+            params=self._credentials(search_params),
+            timeout=self.timeout,
+        )
+        id_list = _esearch_ids(search_data, "NCBI esearch")[:max_results]
+        if not id_list:
             return []
+
+        # Fetch summaries using esummary
+        summary_params: Dict[str, Any] = {"db": "nucleotide", "id": ",".join(id_list), "retmode": "json"}
+        esearch_block = search_data["esearchresult"]
+        webenv = esearch_block.get("webenv")
+        query_key = esearch_block.get("querykey")
+        if webenv and query_key:
+            summary_params.update({"WebEnv": webenv, "query_key": query_key})
+
+        summary_data = get_json_object(
+            self.session,
+            f"{self.base_url}/esummary.fcgi",
+            operation="NCBI esummary",
+            params=self._credentials(summary_params),
+            timeout=self.timeout,
+        )
+        return [summarize_nucleotide_doc(uid, doc) for uid, doc in _esummary_documents(summary_data, id_list)]
 
     def fetch_sequence(self, accession: str) -> Optional[str]:
         """Fetch DNA sequence by accession.
@@ -141,111 +144,65 @@ class NCBIClient:
             accession: Sequence accession
 
         Returns:
-            DNA sequence string, or None if not found
+            DNA sequence string, or None if NCBI returned an empty record
+
+        Raises:
+            NCBIRequestError: If the request fails or the response is not a single FASTA record.
         """
-        try:
-            # Use efetch to get sequence
-            fetch_params = {"db": "nucleotide", "id": accession, "rettype": "fasta", "retmode": "text"}
-
-            if self.api_key:
-                fetch_params["api_key"] = self.api_key
-            if self.email:
-                fetch_params["email"] = self.email
-
-            response = self.session.get(f"{self.base_url}/efetch.fcgi", params=fetch_params, timeout=self.timeout)
-            response.raise_for_status()
-
-            content = response.text
-
-            # Parse FASTA format
-            lines = content.strip().split("\n")
-            if len(lines) < 2:
-                return None
-
-            # Skip header line and join sequence
-            sequence = "".join(lines[1:]).replace("\n", "")
-
-            return sequence
-
-        except requests.RequestException as e:
-            logger.error(f"Failed to fetch sequence {accession}: {e}")
-            return None
+        # Use efetch to get sequence
+        fetch_params: Dict[str, Any] = {"db": "nucleotide", "id": accession, "rettype": "fasta", "retmode": "text"}
+        content = get_text(
+            self.session,
+            f"{self.base_url}/efetch.fcgi",
+            operation="NCBI efetch",
+            params=self._credentials(fetch_params),
+            timeout=self.timeout,
+        )
+        return parse_fasta_sequence(content)
 
     def search_protein(self, query: str, max_results: int = 100) -> List[Dict[str, Any]]:
         """Search NCBI Protein database.
 
         Args:
             query: Search query
-            max_results: Maximum number of results
+            max_results: Maximum number of results, from 1 to 1000
 
         Returns:
-            List of protein search results
+            List of protein search results (an empty list means the search matched nothing)
+
+        Raises:
+            ValueError: If ``max_results`` is not an integer from 1 to 1000.
+            NCBIRequestError: If a request fails.
         """
         # Similar to nucleotide search but for protein database
         search_params: dict[str, str | int] = {
             "db": "protein",
             "term": query,
-            "retmax": min(max_results, 1000),
+            "retmax": _require_positive_int(max_results, "max_results", maximum=_MAX_SEARCH_RESULTS),
             "retmode": "json",
             "usehistory": "y",
         }
-
-        if self.api_key:
-            search_params["api_key"] = self.api_key
-        if self.email:
-            search_params["email"] = self.email
-
-        try:
-            response = self.session.get(f"{self.base_url}/esearch.fcgi", params=search_params, timeout=self.timeout)
-            response.raise_for_status()
-
-            search_data = response.json()
-
-            if "esearchresult" not in search_data:
-                return []
-
-            id_list = search_data["esearchresult"].get("idlist", [])
-
-            if not id_list:
-                return []
-
-            # Fetch summaries
-            summary_params = {"db": "protein", "id": ",".join(id_list[:max_results]), "retmode": "json"}
-
-            if self.api_key:
-                summary_params["api_key"] = self.api_key
-            if self.email:
-                summary_params["email"] = self.email
-
-            summary_response = self.session.get(
-                f"{self.base_url}/esummary.fcgi", params=summary_params, timeout=self.timeout
-            )
-            summary_response.raise_for_status()
-
-            summary_data = summary_response.json()
-
-            results = []
-            if "result" in summary_data:
-                for uid in id_list[:max_results]:
-                    if uid in summary_data["result"]:
-                        result = summary_data["result"][uid]
-                        results.append(
-                            {
-                                "id": uid,
-                                "accession": result.get("accessionversion", ""),
-                                "name": result.get("name", ""),
-                                "organism": result.get("organism", ""),
-                                "length": result.get("slen", 0),
-                                "created": result.get("createdate", ""),
-                                "updated": result.get("updatedate", ""),
-                            }
-                        )
-
-            return results
-
-        except requests.RequestException as e:
-            logger.error(f"NCBI protein search failed: {e}")
+        search_data = get_json_object(
+            self.session,
+            f"{self.base_url}/esearch.fcgi",
+            operation="NCBI esearch",
+            params=self._credentials(search_params),
+            timeout=self.timeout,
+        )
+        id_list = _esearch_ids(search_data, "NCBI esearch")[:max_results]
+        if not id_list:
             return []
+
+        # Fetch summaries
+        summary_params: Dict[str, Any] = {"db": "protein", "id": ",".join(id_list), "retmode": "json"}
+        summary_data = get_json_object(
+            self.session,
+            f"{self.base_url}/esummary.fcgi",
+            operation="NCBI esummary",
+            params=self._credentials(summary_params),
+            timeout=self.timeout,
+        )
+        return [summarize_protein_doc(uid, doc) for uid, doc in _esummary_documents(summary_data, id_list)]
 
     def get_taxonomy_info(self, tax_id: int) -> Optional[Dict[str, Any]]:
         """Get taxonomy information for a taxonomic ID.
@@ -254,37 +211,25 @@ class NCBIClient:
             tax_id: NCBI taxonomy ID
 
         Returns:
-            Taxonomy information dictionary
+            Taxonomy information dictionary, or None if NCBI has no such taxonomy ID
+
+        Raises:
+            NCBIRequestError: If the request fails.
         """
-        try:
-            summary_params = {"db": "taxonomy", "id": str(tax_id), "retmode": "json"}
+        summary_params: Dict[str, Any] = {"db": "taxonomy", "id": str(tax_id), "retmode": "json"}
+        data = get_json_object(
+            self.session,
+            f"{self.base_url}/esummary.fcgi",
+            operation="NCBI esummary",
+            params=self._credentials(summary_params),
+            timeout=self.timeout,
+        )
 
-            if self.api_key:
-                summary_params["api_key"] = self.api_key
-            if self.email:
-                summary_params["email"] = self.email
+        result = data.get("result")
+        if isinstance(result, dict) and isinstance(result.get(str(tax_id)), dict):
+            return summarize_taxonomy_doc(tax_id, result[str(tax_id)])
 
-            response = self.session.get(f"{self.base_url}/esummary.fcgi", params=summary_params, timeout=self.timeout)
-            response.raise_for_status()
-
-            data = response.json()
-
-            if "result" in data and str(tax_id) in data["result"]:
-                result = data["result"][str(tax_id)]
-                return {
-                    "tax_id": tax_id,
-                    "scientific_name": result.get("scientificname", ""),
-                    "common_name": result.get("commonname", ""),
-                    "rank": result.get("rank", ""),
-                    "division": result.get("division", ""),
-                    "lineage": result.get("lineage", ""),
-                }
-
-            return None
-
-        except requests.RequestException as e:
-            logger.error(f"Failed to get taxonomy info for {tax_id}: {e}")
-            return None
+        return None
 
 
 def search_nucleotide(
@@ -300,7 +245,7 @@ def search_nucleotide(
 
     Args:
         query: Search query
-        max_results: Maximum results to return
+        max_results: Maximum results to return, from 1 to 1000
         api_key: NCBI API key
         email: Explicit contact email; otherwise ``NCBI_EMAIL``.
         allow_anonymous: Explicitly permit an anonymous request.
@@ -308,6 +253,10 @@ def search_nucleotide(
 
     Returns:
         List of search results
+
+    Raises:
+        ValueError: If ``max_results`` is not an integer from 1 to 1000.
+        NCBIRequestError: If a request fails.
     """
     client = NCBIClient(api_key=api_key, email=email, allow_anonymous=allow_anonymous, timeout=timeout)
     return client.search_nucleotide(query, max_results)
@@ -332,6 +281,9 @@ def fetch_sequence(
 
     Returns:
         DNA sequence string
+
+    Raises:
+        NCBIRequestError: If the request fails or the response is not a single FASTA record.
     """
     client = NCBIClient(api_key=api_key, email=email, allow_anonymous=allow_anonymous, timeout=timeout)
     return client.fetch_sequence(accession)
@@ -350,7 +302,7 @@ def search_protein(
 
     Args:
         query: Search query
-        max_results: Maximum results to return
+        max_results: Maximum results to return, from 1 to 1000
         api_key: NCBI API key
         email: Explicit contact email; otherwise ``NCBI_EMAIL``.
         allow_anonymous: Explicitly permit an anonymous request.
@@ -358,6 +310,10 @@ def search_protein(
 
     Returns:
         List of protein search results
+
+    Raises:
+        ValueError: If ``max_results`` is not an integer from 1 to 1000.
+        NCBIRequestError: If a request fails.
     """
     client = NCBIClient(api_key=api_key, email=email, allow_anonymous=allow_anonymous, timeout=timeout)
     return client.search_protein(query, max_results)
@@ -381,7 +337,10 @@ def get_taxonomy_info(
         timeout: Per-request timeout in seconds.
 
     Returns:
-        Taxonomy information
+        Taxonomy information, or None if NCBI has no such taxonomy ID
+
+    Raises:
+        NCBIRequestError: If the request fails.
     """
     client = NCBIClient(api_key=api_key, email=email, allow_anonymous=allow_anonymous, timeout=timeout)
     return client.get_taxonomy_info(tax_id)
