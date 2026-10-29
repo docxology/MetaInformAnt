@@ -546,7 +546,9 @@ class TestSvAssociationTest:
             sv_association_test([0, 1, 2], [1.0, 2.0])
 
     def test_all_same_genotype(self) -> None:
-        """With no genotype variation, test still returns valid results."""
+        """With no genotype variation the association cannot be tested: it is reported missing, not as beta 0, p 1."""
+        import math
+
         from metainformant.structural_variants.population import sv_association_test
 
         genotypes = [0] * 20
@@ -554,8 +556,10 @@ class TestSvAssociationTest:
 
         result = sv_association_test(genotypes, phenotypes)
         assert result["n_samples"] == 20
-        # Beta should be ~0 since genotype has no variation
-        assert abs(result["beta"]) < 1e-3
+        # The design matrix is singular: no effect size, standard error or p-value exists. (This test used to pin
+        # beta ~ 0, with a p-value of 1.0, as if the SV had been tested and found no effect.)
+        assert math.isnan(result["beta"]) and math.isnan(result["se"]) and math.isnan(result["p_value"])
+        assert "singular" in result["error"]
 
 
 @pytest.mark.skipif(not HAS_NUMPY, reason="numpy required")

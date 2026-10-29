@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger
+from metainformant.structural_variants._breakends import breakends, is_translocation, variant_regions
 
 logger = get_logger(__name__)
 
@@ -76,10 +77,17 @@ class TADPrediction:
         variant_chrom: Chromosome.
         variant_start: Variant start position.
         variant_end: Variant end position.
-        disrupted_boundaries: List of disrupted TAD boundary positions.
+        disrupted_boundaries: List of disrupted TAD boundary positions (the
+            boundary midpoints).
         n_boundaries_disrupted: Number of TAD boundaries disrupted.
         genes_in_affected_tads: Genes within affected TAD domains.
         disruption_score: TAD disruption severity score [0, 1].
+        variant_chrom2: Chromosome of the second breakpoint of a translocation
+            ('' for every other variant).
+        variant_pos2: Position of the second breakpoint on ``variant_chrom2``
+            (None unless the variant is a translocation with a known partner).
+        disrupted_chroms: Chromosome of each entry of ``disrupted_boundaries``
+            (a translocation can disrupt boundaries on two chromosomes).
     """
 
     variant_chrom: str = ""
@@ -89,6 +97,9 @@ class TADPrediction:
     n_boundaries_disrupted: int = 0
     genes_in_affected_tads: list[str] = field(default_factory=list)
     disruption_score: float = 0.0
+    variant_chrom2: str = ""
+    variant_pos2: int | None = None
+    disrupted_chroms: list[str] = field(default_factory=list)
 
 
 def predict_functional_impact(
@@ -111,12 +122,18 @@ def predict_functional_impact(
     4. Variant type-specific considerations (DEL vs DUP vs INV)
     5. Aggregate pathogenicity scoring
 
+    A translocation (``TRA``/``BND``) has two breakpoints, ``chrom``/``start`` and
+    ``chrom2``/``pos2``: its genes are those that contain either one (the first
+    breakpoint's first) and its TAD check covers both (see
+    :func:`predict_tad_disruption`).
+
     Args:
         variant: Variant dictionary containing:
             - 'chrom': Chromosome
             - 'start': Start position
             - 'end': End position
             - 'sv_type': Type of SV (DEL, DUP, INV, TRA, INS)
+            - 'chrom2', 'pos2': Second breakpoint (translocations)
             - 'id': Optional variant identifier
             - 'overlapping_genes': Optional pre-computed gene overlaps
         gene_annotations: List of gene annotation dictionaries with:
@@ -153,10 +170,10 @@ def predict_functional_impact(
     variant_id = variant.get("id", f"{chrom}:{start}-{end}")
     size = abs(end - start)
 
-    # Find overlapping genes
+    # Find overlapping genes (a translocation disrupts the genes at either of its two breakpoints)
     overlapping_genes = variant.get("overlapping_genes", [])
     if not overlapping_genes:
-        overlapping_genes = _find_overlapping_genes(chrom, start, end, gene_annotations)
+        overlapping_genes = _find_variant_genes(variant, gene_annotations)
 
     # Assess dosage sensitivity with every database that was given
     dosage_genes: list[str] = []
@@ -238,7 +255,9 @@ def assess_dosage_sensitivity(
 
     Looks up the gene in multiple dosage sensitivity databases and
     produces a composite assessment. A gene is classified as
-    haploinsufficient if its HI score exceeds 0.5 or pLI exceeds 0.9.
+    haploinsufficient if its HI score is at least 0.5, its pLI at least 0.9 or
+    its LOEUF below 0.35, and as triplosensitive if its TS score is at least 0.5.
+    A gene missing from a database counts as unconstrained (scores 0, LOEUF 1.0).
 
     Args:
         gene: Gene name to look up.
@@ -296,8 +315,15 @@ def predict_tad_disruption(
     A boundary is considered disrupted if the SV breakpoint falls
     within boundary_window base pairs of the boundary midpoint.
 
+    A translocation (``TRA``/``BND``) has two breakpoints on possibly
+    different chromosomes: ``chrom``/``start`` and ``chrom2``/``pos2``. Both
+    are checked, each against the boundaries of its own chromosome, and a
+    boundary counts once however many breakpoints fall near it. A translocation
+    without a ``pos2`` (a single breakend) is checked at its one breakpoint.
+
     Args:
-        variant: Variant dictionary with 'chrom', 'start', 'end', 'sv_type'.
+        variant: Variant dictionary with 'chrom', 'start', 'end', 'sv_type'
+            (a translocation also 'chrom2' and 'pos2').
         tad_boundaries: List of TAD boundary dictionaries with:
             - 'chrom': Chromosome
             - 'start': Boundary start position
@@ -317,12 +343,22 @@ def predict_tad_disruption(
     if hasattr(sv_type, "value"):
         sv_type = sv_type.value
 
+    # A translocation is tested at each of its breakpoints, on that breakpoint's own chromosome.
+    breakpoints: list[tuple[str, int]] = []
+    chrom2, pos2 = "", None
+    if is_translocation(variant):
+        first, second = breakends(variant)
+        breakpoints = [first] if second is None else [first, second]
+        if second is not None:
+            chrom2, pos2 = second
+
     disrupted: list[int] = []
+    disrupted_chroms: list[str] = []
     affected_genes: list[str] = []
 
     for boundary in tad_boundaries:
         b_chrom = boundary.get("chrom", "")
-        if b_chrom != chrom:
+        if not breakpoints and b_chrom != chrom:
             continue
 
         b_start = boundary.get("start", 0)
@@ -333,18 +369,23 @@ def predict_tad_disruption(
         # Disruption can occur from:
         # 1. Deletion spanning the boundary
         # 2. Inversion with breakpoint near boundary
-        # 3. Translocation with breakpoint near boundary
+        # 3. Translocation with a breakpoint near boundary
 
         is_disrupted = False
 
-        if sv_type == "DEL":
+        if breakpoints:
+            # Translocation: either breakpoint near a boundary of its chromosome
+            is_disrupted = any(
+                b_chrom == bp_chrom and abs(bp_pos - b_mid) <= boundary_window for bp_chrom, bp_pos in breakpoints
+            )
+        elif sv_type == "DEL":
             # Deletion spanning the boundary
             if start < b_mid < end:
                 is_disrupted = True
             # Deletion breakpoint near boundary
             elif abs(start - b_mid) <= boundary_window or abs(end - b_mid) <= boundary_window:
                 is_disrupted = True
-        elif sv_type in ("INV", "TRA", "BND"):
+        elif sv_type == "INV":
             # Breakpoint near boundary
             if abs(start - b_mid) <= boundary_window or abs(end - b_mid) <= boundary_window:
                 is_disrupted = True
@@ -359,6 +400,7 @@ def predict_tad_disruption(
 
         if is_disrupted:
             disrupted.append(b_mid)
+            disrupted_chroms.append(b_chrom)
             # Collect genes from boundary annotation
             b_genes = boundary.get("genes", [])
             affected_genes.extend(b_genes)
@@ -382,6 +424,9 @@ def predict_tad_disruption(
         n_boundaries_disrupted=n_disrupted,
         genes_in_affected_tads=sorted(set(affected_genes)),
         disruption_score=disruption_score,
+        variant_chrom2=chrom2,
+        variant_pos2=pos2,
+        disrupted_chroms=disrupted_chroms,
     )
 
 
@@ -391,8 +436,11 @@ def score_pathogenicity(
 ) -> float:
     """Compute aggregate pathogenicity score for a structural variant.
 
-    Combines multiple evidence lines into a single [0, 1] score using
-    a weighted logistic model:
+    Combines multiple evidence lines into a single [0, 1] score as a
+    weighted sum of component scores (only the size component is a logistic
+    curve; there is no logistic link on the sum). The weights are heuristic and
+    not calibrated against clinical classifications (ACMG/ClinGen), so the score
+    ranks variants but is not a probability of pathogenicity:
 
     - Size of the variant (larger = more likely pathogenic)
     - Number of affected coding genes
@@ -409,7 +457,9 @@ def score_pathogenicity(
             - 'tad_disrupted': Whether TAD boundary is disrupted
             - 'impact_level': Impact level string
             - 'n_coding_genes': Number of affected coding genes
-            - 'population_frequency': Allele frequency in population (optional)
+            - 'population_frequency': Allele frequency in population (optional).
+              Without it the variant is scored as absent from the population
+              (the frequency term takes its maximum).
 
     Returns:
         Pathogenicity score between 0 and 1.
@@ -479,6 +529,23 @@ def score_pathogenicity(
     )
 
     return max(0.0, min(1.0, raw_score))
+
+
+def _find_variant_genes(variant: dict[str, Any], gene_annotations: list[dict[str, Any]]) -> list[str]:
+    """Find the genes a variant overlaps: those under its interval, or at either breakpoint of a translocation.
+
+    Args:
+        variant: Variant dictionary (see :func:`predict_functional_impact`).
+        gene_annotations: List of gene annotation dicts.
+
+    Returns:
+        Gene names, those of the first region first; a gene already listed is not repeated for a later breakpoint.
+    """
+    regions = variant_regions(variant)
+    genes = _find_overlapping_genes(*regions[0], gene_annotations)
+    for region in regions[1:]:
+        genes += [gene for gene in _find_overlapping_genes(*region, gene_annotations) if gene not in genes]
+    return genes
 
 
 def _find_overlapping_genes(

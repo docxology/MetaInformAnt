@@ -3,16 +3,33 @@
 Implements algorithms for merging SV callsets from multiple detection
 tools, computing reciprocal overlap between SVs, SURVIVOR-style
 distance-based merging, and deduplication of variant calls.
+
+Intra-chromosomal variants are matched on their interval. A translocation
+(``TRA``/``BND``) is a zero-length record, so reciprocal overlap can never join
+two of them: it is matched on both of its breakpoints instead (``chrom`` and
+``start``, plus ``chrom2`` and ``pos2``), each pair of positions within the
+merge distance, whichever breakpoint a caller wrote first. A translocation never
+matches an interval variant. See :mod:`metainformant.structural_variants._breakends`
+for how the second breakpoint is read.
 """
 
 from __future__ import annotations
 
 import math
+import re
 import statistics
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
 from typing import Any, Sequence
 
 from metainformant.core.utils.logging import get_logger
+from metainformant.structural_variants._breakends import (
+    TRANSLOCATION_TYPES,
+    canonical_junction,
+    consensus_junction,
+    is_translocation,
+    junction_links,
+)
 
 np: Any  # None when numpy is unavailable (optional dependency)
 try:
@@ -40,6 +57,12 @@ class MergedVariant:
             differs per merge function; see :func:`merge_callsets` and
             :func:`survivor_merge`).
         genotype: Consensus genotype ('./.' when no merged call has one).
+        chrom2: Chromosome of the second breakpoint of a merged translocation
+            ('' for every other variant).
+        pos2: Position of the second breakpoint on ``chrom2`` (None unless the
+            merged variant is a translocation with a known partner). A merged
+            translocation lists its breakpoints in (chromosome, position)
+            order, with ``start`` and ``end`` both the first one and ``size`` 0.
     """
 
     chrom: str
@@ -52,6 +75,8 @@ class MergedVariant:
     support_variants: list[dict[str, Any]] = field(default_factory=list)
     consensus_quality: float = 0.0
     genotype: str = "./."
+    chrom2: str = ""
+    pos2: int | None = None
 
 
 @dataclass
@@ -79,6 +104,7 @@ def merge_callsets(
     callsets: dict[str, list[dict[str, Any]]],
     min_overlap: float = 0.5,
     type_match: bool = True,
+    max_distance: int = 1000,
 ) -> tuple[list[MergedVariant], MergeStats]:
     """Merge structural variant callsets from multiple callers.
 
@@ -86,16 +112,30 @@ def merge_callsets(
     tools. For each group of matching variants across callers, produces a
     single consensus call with aggregated support: median breakpoints, the
     majority SV type, the majority genotype (see :func:`_consensus_genotype`)
-    and ``consensus_quality`` = the mean ``quality`` (or ``qual``) of the merged
-    calls plus ``100 * log10(n_callers + 1)``.
+    and ``consensus_quality`` = the mean ``quality`` (or ``qual``; 0 when
+    absent or None) of the merged calls plus ``100 * log10(n_callers + 1)``.
+
+    A translocation (``TRA``/``BND``) has no interval, so reciprocal overlap
+    cannot match it. It is matched instead on both breakpoints: ``chrom`` and
+    ``start`` of one call against the other's, and ``chrom2`` and ``pos2``
+    likewise, each pair of positions within ``max_distance``. A junction
+    recorded from its other side (the second breakpoint first) matches too. A
+    translocation never merges with an interval variant, and ``min_overlap``
+    does not apply to it. The consensus of a group of translocations takes the
+    median of each breakpoint and lists them in (chromosome, position) order,
+    with the second one in ``chrom2``/``pos2`` of the :class:`MergedVariant`.
 
     Args:
         callsets: Dictionary mapping caller names to lists of variant
             dictionaries. Each variant should have 'chrom', 'start',
-            'end', 'sv_type' keys.
+            'end', 'sv_type' keys; a translocation also 'chrom2' and 'pos2'.
         min_overlap: Minimum reciprocal overlap fraction (0-1) to consider
             two variants as the same event (default 0.5 = 50%).
         type_match: Whether SV types must match for merging (default True).
+            ``TRA`` and ``BND`` count as the same type.
+        max_distance: Largest distance in bp between the corresponding
+            breakpoints of two translocations that are the same event
+            (default 1000, the SURVIVOR default).
 
     Returns:
         Tuple of (merged_variants, merge_statistics).
@@ -125,6 +165,8 @@ def merge_callsets(
 
     for i in range(n):
         v_i = all_variants[i][1]
+        if is_translocation(v_i):
+            continue  # matched on both breakpoints below
         chrom_i = v_i.get("chrom", "")
         end_i = v_i.get("end", 0)
         type_i = v_i.get("sv_type", "")
@@ -144,6 +186,9 @@ def merge_callsets(
             if start_j > end_i + 10_000:
                 break
 
+            if is_translocation(v_j):
+                continue  # a translocation never matches an interval
+
             type_j = v_j.get("sv_type", "")
             if hasattr(type_j, "value"):
                 type_j = type_j.value
@@ -162,6 +207,11 @@ def merge_callsets(
                 # Union-find merge
                 _union(merged_into, i, j)
 
+    # Translocations: the same junction when both breakpoints agree (TRA and BND are one type)
+    for i, j in _translocation_links([v for _, v in all_variants], max_distance):
+        if all_variants[i][0] != all_variants[j][0]:  # Don't merge variants from the same caller
+            _union(merged_into, i, j)
+
     # Group variants by their union-find root
     groups: dict[int, list[int]] = {}
     for i in range(n):
@@ -178,15 +228,14 @@ def merge_callsets(
         callers = sorted({caller for caller, _ in group_variants})
         variant_dicts = [v for _, v in group_variants]
 
-        consensus_start = _median_position([v.get("start", 0) for v in variant_dicts])
-        consensus_end = _median_position([v.get("end", 0) for v in variant_dicts])
+        chrom, consensus_start, consensus_end, chrom2, pos2 = _group_position(variant_dicts)
         consensus_type = _majority_sv_type(variant_dicts)
 
         size = abs(consensus_end - consensus_start)
 
         # Quality from multi-caller support
         n_callers = len(callers)
-        base_qual = sum(v.get("quality", v.get("qual", 0.0)) for v in variant_dicts) / len(variant_dicts)
+        base_qual = sum(_call_quality(v) for v in variant_dicts) / len(variant_dicts)
         consensus_quality = base_qual + 10.0 * math.log10(n_callers + 1) * 10
 
         # Consensus genotype
@@ -194,7 +243,7 @@ def merge_callsets(
         consensus_gt = _consensus_genotype(genotypes)
 
         merged = MergedVariant(
-            chrom=variant_dicts[0].get("chrom", ""),
+            chrom=chrom,
             start=consensus_start,
             end=consensus_end,
             sv_type=consensus_type,
@@ -204,6 +253,8 @@ def merge_callsets(
             support_variants=variant_dicts,
             consensus_quality=consensus_quality,
             genotype=consensus_gt,
+            chrom2=chrom2,
+            pos2=pos2,
         )
         merged_list.append(merged)
 
@@ -304,19 +355,37 @@ def survivor_merge(
       of the merged calls, plus an agreement bonus of
       ``10 * n_callers * log10(n_callers + 1)``.
 
+    A translocation (``TRA``/``BND``) is compared on both of its breakpoints,
+    not on its interval: ``chrom`` and ``start`` of one call against the other's,
+    and ``chrom2`` and ``pos2`` likewise, each pair of positions within
+    ``max_distance``. A junction recorded from its other side (the second
+    breakpoint first) matches too, and a translocation never merges with an
+    interval variant. The consensus of a group of translocations takes the
+    median of each breakpoint and lists them in (chromosome, position) order,
+    the second one in ``chrom2``/``pos2`` of the :class:`MergedVariant`. VCF
+    records give their second breakpoint through a BND ALT (``N[chr2:500[``) or
+    ``CHR2`` with ``END``/``POS2`` in INFO.
+
     Args:
         vcf_files: Either file paths to VCF files or lists of variant
             dictionaries. If file paths, each file is treated as one caller.
-            If dicts, each dict should have a '_caller' key.
+            If dicts, each dict must have a '_caller' key naming its caller:
+            a call without one cannot be assigned to a caller, and counting
+            it as a caller of its own would inflate ``n_callers``.
         max_distance: Maximum distance between breakpoints to consider
             variants as the same event (default 1000bp).
         min_callers: Minimum number of callers required to keep a merged
             variant (default 2).
-        type_match: Whether SV types must match (default True).
+        type_match: Whether SV types must match (default True). ``TRA`` and
+            ``BND`` count as the same type.
         strand_match: Whether strand orientations must match (default False).
 
     Returns:
         Tuple of (merged_variants, merge_statistics).
+
+    Raises:
+        ValueError: If a dict in ``vcf_files`` has no '_caller' key.
+        TypeError: If an item of ``vcf_files`` is not a path, a dict or a list.
     """
     # Load variants from VCF files or use provided dicts
     callsets: dict[str, list[dict[str, Any]]] = {}
@@ -328,13 +397,23 @@ def survivor_merge(
             variants = _load_vcf_variants(item)
             callsets[caller_name] = variants
         elif isinstance(item, dict):
-            caller_name = item.get("_caller", f"caller_{i}")
+            if item.get("_caller") is None:
+                raise ValueError(
+                    f"vcf_files[{i}] is a dict without a '_caller' key: tag each call with the name of the "
+                    "caller that made it (a call counted as a caller of its own would inflate n_callers)"
+                )
+            caller_name = item["_caller"]
             if caller_name not in callsets:
                 callsets[caller_name] = []
             callsets[caller_name].append(item)
         elif isinstance(item, list):
             caller_name = f"caller_{i}"
             callsets[caller_name] = item
+        else:
+            raise TypeError(
+                f"vcf_files[{i}] is a {type(item).__name__}: expected a VCF path (str), a variant dict with a "
+                "'_caller' key, or a list of variant dicts"
+            )
 
     # Flatten all variants with caller tags
     all_variants: list[tuple[str, dict[str, Any]]] = []
@@ -355,6 +434,8 @@ def survivor_merge(
 
     for i in range(n):
         v_i = all_variants[i][1]
+        if is_translocation(v_i):
+            continue  # matched on both breakpoints below
         chrom_i = v_i.get("chrom", "")
         start_i = v_i.get("start", 0)
         end_i = v_i.get("end", 0)
@@ -375,6 +456,9 @@ def survivor_merge(
             # Quick exit: if starts are too far apart
             if start_j - start_i > max_distance + (end_i - start_i):
                 break
+
+            if is_translocation(v_j):
+                continue  # a translocation never matches an interval
 
             end_j = v_j.get("end", 0)
             type_j = v_j.get("sv_type", "")
@@ -401,6 +485,14 @@ def survivor_merge(
             if dist_start <= max_distance and dist_end <= max_distance:
                 _union(parent, i, j)
 
+    # Translocations: the same junction when both breakpoints are within max_distance
+    for i, j in _translocation_links([v for _, v in all_variants], max_distance):
+        if all_variants[i][0] == all_variants[j][0]:
+            continue  # Don't merge same-caller variants
+        if strand_match and all_variants[i][1].get("strand", "+") != all_variants[j][1].get("strand", "+"):
+            continue
+        _union(parent, i, j)
+
     # Group by root
     groups: dict[int, list[int]] = {}
     for i in range(n):
@@ -421,8 +513,7 @@ def survivor_merge(
 
         variant_dicts = [v for _, v in group_variants]
 
-        consensus_start = _median_position([v.get("start", 0) for v in variant_dicts])
-        consensus_end = _median_position([v.get("end", 0) for v in variant_dicts])
+        chrom, consensus_start, consensus_end, chrom2, pos2 = _group_position(variant_dicts)
         consensus_type = _majority_sv_type(variant_dicts)
 
         size = abs(consensus_end - consensus_start)
@@ -434,7 +525,7 @@ def survivor_merge(
         genotype = _consensus_genotype([v.get("genotype", "./.") for v in variant_dicts], call_qualities)
 
         merged = MergedVariant(
-            chrom=variant_dicts[0].get("chrom", ""),
+            chrom=chrom,
             start=consensus_start,
             end=consensus_end,
             sv_type=consensus_type,
@@ -444,6 +535,8 @@ def survivor_merge(
             support_variants=variant_dicts,
             consensus_quality=quality,
             genotype=genotype,
+            chrom2=chrom2,
+            pos2=pos2,
         )
         merged_list.append(merged)
 
@@ -478,13 +571,23 @@ def deduplicate_variants(
     Identifies duplicate calls based on proximity and reciprocal overlap,
     keeping the highest-quality call from each group of duplicates.
 
+    A translocation (``TRA``/``BND``) has no interval, so reciprocal overlap
+    cannot identify its duplicates. Two translocations are duplicates when both
+    breakpoints agree: ``chrom`` and ``start`` of one against the other's, and
+    ``chrom2`` and ``pos2`` likewise, each pair of positions within
+    ``max_distance`` (``min_reciprocal_overlap`` does not apply), whichever
+    breakpoint each call wrote first. A translocation is never a duplicate of
+    an interval variant.
+
     Args:
         variants: List of variant dictionaries with 'chrom', 'start', 'end',
-            'sv_type', and optionally 'quality' keys.
+            'sv_type', and optionally 'quality' keys (a translocation also
+            'chrom2' and 'pos2').
         max_distance: Maximum breakpoint distance for duplicate candidates.
         min_reciprocal_overlap: Minimum reciprocal overlap to classify as
             duplicate (default 0.8 = 80%).
-        type_match: Whether SV types must match (default True).
+        type_match: Whether SV types must match (default True). ``TRA`` and
+            ``BND`` count as the same type.
 
     Returns:
         Tuple of (deduplicated_variants, n_removed).
@@ -501,6 +604,8 @@ def deduplicate_variants(
 
     for i in range(n):
         v_i = sorted_vars[i]
+        if is_translocation(v_i):
+            continue  # matched on both breakpoints below
         chrom_i = v_i.get("chrom", "")
         start_i = v_i.get("start", 0)
         end_i = v_i.get("end", 0)
@@ -519,6 +624,9 @@ def deduplicate_variants(
             if start_j - start_i > max_distance + (end_i - start_i):
                 break
 
+            if is_translocation(v_j):
+                continue  # a translocation is never a duplicate of an interval
+
             type_j = v_j.get("sv_type", "")
             if hasattr(type_j, "value"):
                 type_j = type_j.value
@@ -536,6 +644,10 @@ def deduplicate_variants(
                 if ro >= min_reciprocal_overlap:
                     _union(parent, i, j)
 
+    # Translocations: duplicates when both breakpoints are within max_distance
+    for i, j in _translocation_links(sorted_vars, max_distance):
+        _union(parent, i, j)
+
     # Group duplicates and keep highest quality
     groups: dict[int, list[int]] = {}
     for i in range(n):
@@ -547,10 +659,7 @@ def deduplicate_variants(
     deduped: list[dict[str, Any]] = []
     for indices in groups.values():
         # Pick the variant with highest quality
-        best_idx = max(
-            indices,
-            key=lambda i: sorted_vars[i].get("quality", sorted_vars[i].get("qual", 0.0)),
-        )
+        best_idx = max(indices, key=lambda i: _call_quality(sorted_vars[i]))
         deduped.append(sorted_vars[best_idx])
 
     # Sort output
@@ -604,6 +713,50 @@ def _median_position(values: list[int]) -> int:
     if np is not None:
         return int(np.median(values))
     return int(statistics.median(values))
+
+
+def _translocation_links(variants: Sequence[Mapping[str, Any]], max_distance: int) -> Iterator[tuple[int, int]]:
+    """Index pairs of translocation records that are the same junction.
+
+    Args:
+        variants: Variant records (interval variants are skipped).
+        max_distance: Largest distance between corresponding breakpoints.
+
+    Yields:
+        ``(i, j)`` indices into ``variants`` of two translocations whose breakpoints agree on both chromosomes
+        and lie within ``max_distance``, in either orientation.
+    """
+    indices = [i for i, variant in enumerate(variants) if is_translocation(variant)]
+    if len(indices) < 2:
+        return
+    junctions = [canonical_junction(variants[i]) for i in indices]
+    for a, b in junction_links(junctions, max_distance):
+        yield indices[a], indices[b]
+
+
+def _group_position(variant_dicts: Sequence[Mapping[str, Any]]) -> tuple[str, int, int, str, int | None]:
+    """Consensus position of a merge group.
+
+    Args:
+        variant_dicts: The variants of one group. A group holds either interval variants or translocations,
+            never both (they are never linked).
+
+    Returns:
+        ``(chrom, start, end, chrom2, pos2)``: the median start and end of interval variants (``chrom2`` ''
+        and ``pos2`` None), or the median of each breakpoint of translocations, in (chromosome, position)
+        order, with ``end == start``.
+    """
+    if is_translocation(variant_dicts[0]):
+        (chrom, start), second = consensus_junction([canonical_junction(v) for v in variant_dicts], _median_position)
+        chrom2, pos2 = ("", None) if second is None else second
+        return chrom, start, start, chrom2, pos2
+    return (
+        variant_dicts[0].get("chrom", ""),
+        _median_position([v.get("start", 0) for v in variant_dicts]),
+        _median_position([v.get("end", 0) for v in variant_dicts]),
+        "",
+        None,
+    )
 
 
 def _majority_sv_type(variant_dicts: list[dict[str, Any]]) -> str:
@@ -716,6 +869,13 @@ def _load_vcf_variants(vcf_path: str) -> list[dict[str, Any]]:
                     "quality": record.qual or 0.0,
                     "filter": list(record.filter),
                 }
+                if sv_type in TRANSLOCATION_TYPES:
+                    _set_translocation_breakpoints(
+                        variant,
+                        record.alts[0] if record.alts else None,
+                        record.info.get("CHR2"),
+                        record.info.get("POS2", record.info.get("END")),
+                    )
                 genotype = _pysam_first_genotype(record)
                 if genotype is not None:
                     variant["genotype"] = genotype
@@ -735,6 +895,38 @@ def _pysam_first_genotype(record: Any) -> str | None:
         return None
 
 
+#: The mate of a BND ALT: ``N[chr2:500[``, ``N]chr2:500]``, ``]chr2:500]N`` or ``[chr2:500[N`` (1-based position).
+_BND_MATE = re.compile(r"[\[\]]([^\[\]]+):(\d+)[\[\]]")
+
+
+def _breakend_partner(alt: str | None, chrom2: str | None, position2: int | None) -> tuple[str, int] | None:
+    """Second breakpoint of a translocation record, as ``(chromosome, 0-based position)``, or None.
+
+    The mate named in a BND ALT wins; else ``CHR2`` with its 1-based position (``POS2``, else ``END``). A record
+    with neither (a single breakend such as ``N.``) has no partner.
+    """
+    if alt:
+        mate = _BND_MATE.search(alt)
+        if mate:
+            return mate.group(1), int(mate.group(2)) - 1
+    if chrom2 and position2 is not None:
+        return str(chrom2), int(position2) - 1
+    return None
+
+
+def _set_translocation_breakpoints(variant: dict[str, Any], alt: str | None, chrom2: Any, position2: Any) -> None:
+    """Give a TRA/BND record the package's translocation shape: a zero-length junction plus ``chrom2``/``pos2``.
+
+    ``end`` repeats ``start`` as in :class:`~metainformant.structural_variants.detection.sv_calling.StructuralVariant`
+    (a VCF ``END`` of such a record is a position on ``CHR2``, not the end of an interval). The second breakpoint is
+    added when the record names one.
+    """
+    variant["end"] = variant["start"]
+    partner = _breakend_partner(alt, chrom2, int(position2) if position2 is not None else None)
+    if partner is not None:
+        variant["chrom2"], variant["pos2"] = partner
+
+
 def _parse_vcf_basic(vcf_path: str) -> list[dict[str, Any]]:
     """Basic VCF parser without pysam dependency.
 
@@ -743,7 +935,10 @@ def _parse_vcf_basic(vcf_path: str) -> list[dict[str, Any]]:
 
     Returns:
         List of variant dictionaries. A record with a sample column also carries
-        the ``genotype`` of its first sample.
+        the ``genotype`` of its first sample. A translocation (``SVTYPE`` TRA or
+        BND) is a zero-length junction (``end == start``) with its second
+        breakpoint in ``chrom2``/``pos2`` when the record names one: the mate of a
+        BND ALT, or ``CHR2`` with ``POS2``/``END`` in INFO.
     """
     variants: list[dict[str, Any]] = []
 
@@ -780,6 +975,11 @@ def _parse_vcf_basic(vcf_path: str) -> list[dict[str, Any]]:
                 "sv_type": sv_type,
                 "quality": qual,
             }
+            if sv_type in TRANSLOCATION_TYPES:
+                position2 = info_dict.get("POS2", info_dict.get("END"))
+                _set_translocation_breakpoints(
+                    variant, fields[4], info_dict.get("CHR2"), int(position2) if position2 else None
+                )
             genotype = _vcf_sample_genotype(fields)
             if genotype is not None:
                 variant["genotype"] = genotype

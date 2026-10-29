@@ -73,6 +73,20 @@ def collect_results() -> dict[str, Any]:
     )
     results["merge_callsets"] = [[m.chrom, m.start, m.end, m.sv_type, m.size] for m in merged]
 
+    # The same translocation written from opposite sides by two callers (second breakpoints 20000 and 20101).
+    junction_merged, _ = merge.merge_callsets(
+        {
+            "caller_a": [
+                {"chrom": "chr1", "start": 10000, "end": 10000, "sv_type": "TRA", "chrom2": "chr2", "pos2": 20000}
+            ],
+            "caller_b": [
+                {"chrom": "chr2", "start": 20101, "end": 20101, "sv_type": "TRA", "chrom2": "chr1", "pos2": 10100}
+            ],
+        },
+        max_distance=500,
+    )
+    results["merge_callsets_translocation"] = [[m.chrom, m.start, m.chrom2, m.pos2] for m in junction_merged]
+
     alignments = [
         {
             "name": f"pair{i}",
@@ -137,7 +151,12 @@ _RUNNER = (
 
 def _run_without_numpy(workdir: Path) -> dict[str, Any]:
     """Execute :func:`collect_results` in a fresh interpreter whose modules were imported without numpy."""
-    env = dict(os.environ)
+    import metainformant.structural_variants as structural_variants
+
+    # The child must import the very copy of the package that this process is testing: the directory that holds
+    # ``metainformant`` (``src`` in the repository), not whichever copy the environment lists first.
+    package_root = Path(structural_variants.__file__).parents[2]
+    env = dict(os.environ, PYTHONPATH=str(package_root))
     env["MPLBACKEND"] = "Agg"
     completed = subprocess.run(
         [sys.executable, "-c", _RUNNER, str(Path(__file__).resolve())],
@@ -192,6 +211,16 @@ def test_merge_callsets_consensus_is_the_median_of_both_callers(
     expected = [["chr1", 10050, 15100, "DEL", 5050]]
     assert numpy_results["merge_callsets"] == expected
     assert fallback_results["merge_callsets"] == expected
+
+
+def test_merged_translocation_breakpoints_are_the_median_of_each_breakpoint(
+    numpy_results: dict[str, Any], fallback_results: dict[str, Any]
+) -> None:
+    # first breakpoints 10000 and 10100 -> 10050; second breakpoints 20000 and 20101 -> 20050.5 -> 20050 (truncated,
+    # as for the interval medians); the junction lists chr1 first although the second caller wrote chr2 first.
+    expected = [["chr1", 10050, "chr2", 20050]]
+    assert numpy_results["merge_callsets_translocation"] == expected
+    assert fallback_results["merge_callsets_translocation"] == expected
 
 
 def test_called_breakpoints_are_the_median_of_the_cluster(

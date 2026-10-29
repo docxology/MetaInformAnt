@@ -3,6 +3,10 @@
 Provides interval-based overlap detection between structural variants and
 genomic features (genes, regulatory elements), nearest-gene finding, and
 reciprocal overlap computation.
+
+A translocation (``TRA``/``BND``) joins two loci, so it touches each feature at
+two breakpoints, ``chrom``/``start`` and ``chrom2``/``pos2``. The functions here
+look at both, each against the features of its own chromosome.
 """
 
 from __future__ import annotations
@@ -12,6 +16,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger
+from metainformant.structural_variants._breakends import variant_regions
 
 logger = get_logger(__name__)
 
@@ -66,6 +71,9 @@ class OverlapResult:
 
 # Sentinel below every coordinate: the maximum of an empty range of interval ends.
 _NO_END = -(1 << 62)
+
+# A distance no pair of coordinates reaches: ``query_nearest`` with no search limit.
+_NO_LIMIT = 1 << 62
 
 
 class IntervalIndex:
@@ -225,24 +233,94 @@ class IntervalIndex:
             return best_iv, best_dist
         return None, -1
 
+    def query_nearest_region(
+        self, chrom: str, start: int, end: int, max_distance: int = 1_000_000
+    ) -> tuple[GenomicInterval | None, int]:
+        """Find the interval nearest to the region ``[start, end)``.
+
+        The distance is measured between the region and the interval (as ``bedtools closest`` does), not from a
+        point of the region: the number of bases between them in half-open coordinates, ``interval.start - end``
+        or ``start - interval.end``. It is 0 when they overlap, and also when they abut. A region that overlaps
+        several intervals gets the one with the largest overlap (the first of them on a tie).
+
+        Args:
+            chrom: Query chromosome.
+            start: Region start (inclusive).
+            end: Region end (exclusive); equal to ``start`` for a point such as an insertion or a breakpoint.
+            max_distance: Largest distance to report.
+
+        Returns:
+            Tuple of (nearest_interval, distance). Returns (None, -1) if no interval on the chromosome is within
+            max_distance.
+        """
+        if chrom not in self._by_chrom:
+            return None, -1
+
+        overlapping = self.query_overlap(chrom, start, end)
+        if overlapping:
+            best_overlap = max(overlapping, key=lambda iv: _compute_overlap_bp(start, end, iv.start, iv.end))
+            return best_overlap, 0
+
+        # No interval overlaps the region, so each lies wholly to its left (end <= start) or to its right
+        # (start >= end). The nearest on the left is the nearest interval to ``start`` among those ending before
+        # it, and the nearest on the right is the nearest to ``end``; ``query_nearest`` from each of the two
+        # positions finds one of them or the other, and together they always include the nearest overall.
+        best_iv: GenomicInterval | None = None
+        best_gap = max_distance + 1
+        for position in (start, end):
+            candidate, _ = self.query_nearest(chrom, position, _NO_LIMIT)
+            if candidate is None:
+                continue
+            gap = max(candidate.start - end, start - candidate.end, 0)
+            if gap < best_gap:
+                best_iv, best_gap = candidate, gap
+
+        if best_iv is not None and best_gap <= max_distance:
+            return best_iv, best_gap
+        return None, -1
+
+    @classmethod
+    def from_features(
+        cls, features: list[dict[str, Any]] | list[GenomicInterval], feature_type: str = ""
+    ) -> IntervalIndex:
+        """Build an index from feature dictionaries (``chrom``, ``start``, ``end``, ``name``) or intervals.
+
+        Build the index once and pass it in place of the feature list to :func:`annotate_gene_overlap`,
+        :func:`annotate_regulatory_overlap` and :func:`find_nearest_gene` to annotate many variants without
+        indexing the features again for each call.
+
+        Args:
+            features: Feature dictionaries (as accepted by :func:`annotate_gene_overlap`) or GenomicInterval objects.
+            feature_type: Default feature type for dictionaries that give none.
+        """
+        return cls(_normalize_intervals(features, feature_type=feature_type))
+
 
 def annotate_gene_overlap(
     variants: list[dict[str, Any]],
-    gene_db: list[dict[str, Any]] | list[GenomicInterval],
+    gene_db: list[dict[str, Any]] | list[GenomicInterval] | IntervalIndex,
 ) -> list[dict[str, Any]]:
     """Annotate structural variants with overlapping genes.
 
     For each variant, finds all genes that overlap with the variant
-    interval and adds gene annotation information.
+    interval and adds gene annotation information. A translocation
+    (``TRA``/``BND``) has no interval: the genes it disrupts are those that
+    contain either breakpoint, ``chrom``/``start`` or ``chrom2``/``pos2``
+    (the genes at the second breakpoint follow those at the first), and each
+    ``OverlapResult`` records the breakpoint it was found at as its variant
+    chromosome and position.
 
     Args:
         variants: List of variant dictionaries, each containing:
             - 'chrom': Chromosome
             - 'start': Start position
             - 'end': End position
+            - 'chrom2', 'pos2': Second breakpoint (translocations)
             - Additional fields are preserved in the output.
         gene_db: List of gene entries as dictionaries with 'chrom', 'start',
-            'end', 'name' keys, or as GenomicInterval objects.
+            'end', 'name' keys, or as GenomicInterval objects; or an
+            :class:`IntervalIndex` built once for many calls
+            (``IntervalIndex.from_features(genes, "gene")``).
 
     Returns:
         List of variant dictionaries with added fields:
@@ -250,45 +328,43 @@ def annotate_gene_overlap(
             - 'gene_overlaps': List of OverlapResult objects
             - 'n_genes_affected': Number of genes affected
     """
-    # Build interval index from gene database
-    gene_intervals = _normalize_intervals(gene_db, feature_type="gene")
-    index = IntervalIndex(gene_intervals)
+    index = _as_index(gene_db, feature_type="gene")
 
     annotated: list[dict[str, Any]] = []
 
     for variant in variants:
-        chrom = variant.get("chrom", "")
-        start = variant.get("start", 0)
-        end = variant.get("end", 0)
-
-        overlapping = index.query_overlap(chrom, start, end)
-
         gene_names: list[str] = []
         overlap_results: list[OverlapResult] = []
+        seen: set[int] = set()  # genes found at an earlier breakpoint of a translocation
 
-        for gene in overlapping:
-            overlap_bp = _compute_overlap_bp(start, end, gene.start, gene.end)
-            variant_size = max(1, end - start)
-            gene_size = max(1, gene.end - gene.start)
+        for chrom, start, end in variant_regions(variant):
+            found = index.query_overlap(chrom, start, end)
+            for gene in found:
+                if id(gene) in seen:
+                    continue  # both breakpoints of a translocation fall in this gene
+                overlap_bp = _compute_overlap_bp(start, end, gene.start, gene.end)
+                variant_size = max(1, end - start)
+                gene_size = max(1, gene.end - gene.start)
 
-            frac_variant = overlap_bp / variant_size
-            frac_gene = overlap_bp / gene_size
+                frac_variant = overlap_bp / variant_size
+                frac_gene = overlap_bp / gene_size
 
-            relationship = _classify_relationship(start, end, gene.start, gene.end)
+                relationship = _classify_relationship(start, end, gene.start, gene.end)
 
-            gene_names.append(gene.name)
-            overlap_results.append(
-                OverlapResult(
-                    variant_chrom=chrom,
-                    variant_start=start,
-                    variant_end=end,
-                    feature=gene,
-                    overlap_bp=overlap_bp,
-                    overlap_fraction_variant=frac_variant,
-                    overlap_fraction_feature=frac_gene,
-                    relationship=relationship,
+                gene_names.append(gene.name)
+                overlap_results.append(
+                    OverlapResult(
+                        variant_chrom=chrom,
+                        variant_start=start,
+                        variant_end=end,
+                        feature=gene,
+                        overlap_bp=overlap_bp,
+                        overlap_fraction_variant=frac_variant,
+                        overlap_fraction_feature=frac_gene,
+                        relationship=relationship,
+                    )
                 )
-            )
+            seen.update(id(gene) for gene in found)
 
         result = dict(variant)
         result["overlapping_genes"] = gene_names
@@ -303,18 +379,21 @@ def annotate_gene_overlap(
 
 def annotate_regulatory_overlap(
     variants: list[dict[str, Any]],
-    regulatory_db: list[dict[str, Any]] | list[GenomicInterval],
+    regulatory_db: list[dict[str, Any]] | list[GenomicInterval] | IntervalIndex,
 ) -> list[dict[str, Any]]:
     """Annotate structural variants with overlapping regulatory elements.
 
     For each variant, finds all regulatory elements (enhancers, promoters,
-    silencers, insulators, etc.) that overlap with the variant interval.
+    silencers, insulators, etc.) that overlap with the variant interval. A
+    translocation (``TRA``/``BND``) is checked at each of its two breakpoints
+    (``chrom``/``start`` and ``chrom2``/``pos2``), as in :func:`annotate_gene_overlap`.
 
     Args:
         variants: List of variant dictionaries (same format as annotate_gene_overlap).
         regulatory_db: List of regulatory element entries as dictionaries with
             'chrom', 'start', 'end', 'name', 'feature_type' keys, or as
-            GenomicInterval objects.
+            GenomicInterval objects; or an :class:`IntervalIndex` built once
+            for many calls (``IntervalIndex.from_features(elements, "regulatory")``).
 
     Returns:
         List of variant dictionaries with added fields:
@@ -323,46 +402,45 @@ def annotate_regulatory_overlap(
             - 'regulatory_types': Set of affected regulatory element types
             - 'n_regulatory_affected': Count of affected elements
     """
-    reg_intervals = _normalize_intervals(regulatory_db, feature_type="regulatory")
-    index = IntervalIndex(reg_intervals)
+    index = _as_index(regulatory_db, feature_type="regulatory")
 
     annotated: list[dict[str, Any]] = []
 
     for variant in variants:
-        chrom = variant.get("chrom", "")
-        start = variant.get("start", 0)
-        end = variant.get("end", 0)
-
-        overlapping = index.query_overlap(chrom, start, end)
-
         reg_names: list[str] = []
         overlap_results: list[OverlapResult] = []
         reg_types: set[str] = set()
+        seen: set[int] = set()  # elements found at an earlier breakpoint of a translocation
 
-        for reg in overlapping:
-            overlap_bp = _compute_overlap_bp(start, end, reg.start, reg.end)
-            variant_size = max(1, end - start)
-            reg_size = max(1, reg.end - reg.start)
+        for chrom, start, end in variant_regions(variant):
+            found = index.query_overlap(chrom, start, end)
+            for reg in found:
+                if id(reg) in seen:
+                    continue  # both breakpoints of a translocation fall in this element
+                overlap_bp = _compute_overlap_bp(start, end, reg.start, reg.end)
+                variant_size = max(1, end - start)
+                reg_size = max(1, reg.end - reg.start)
 
-            frac_variant = overlap_bp / variant_size
-            frac_reg = overlap_bp / reg_size
+                frac_variant = overlap_bp / variant_size
+                frac_reg = overlap_bp / reg_size
 
-            relationship = _classify_relationship(start, end, reg.start, reg.end)
+                relationship = _classify_relationship(start, end, reg.start, reg.end)
 
-            reg_names.append(reg.name)
-            reg_types.add(reg.feature_type)
-            overlap_results.append(
-                OverlapResult(
-                    variant_chrom=chrom,
-                    variant_start=start,
-                    variant_end=end,
-                    feature=reg,
-                    overlap_bp=overlap_bp,
-                    overlap_fraction_variant=frac_variant,
-                    overlap_fraction_feature=frac_reg,
-                    relationship=relationship,
+                reg_names.append(reg.name)
+                reg_types.add(reg.feature_type)
+                overlap_results.append(
+                    OverlapResult(
+                        variant_chrom=chrom,
+                        variant_start=start,
+                        variant_end=end,
+                        feature=reg,
+                        overlap_bp=overlap_bp,
+                        overlap_fraction_variant=frac_variant,
+                        overlap_fraction_feature=frac_reg,
+                        relationship=relationship,
+                    )
                 )
-            )
+            seen.update(id(reg) for reg in found)
 
         result = dict(variant)
         result["overlapping_regulatory"] = reg_names
@@ -417,63 +495,52 @@ def calculate_overlap_fraction(
 
 def find_nearest_gene(
     variant: dict[str, Any],
-    gene_db: list[dict[str, Any]] | list[GenomicInterval],
+    gene_db: list[dict[str, Any]] | list[GenomicInterval] | IntervalIndex,
     max_distance: int = 100_000,
 ) -> dict[str, Any]:
     """Find the nearest gene to a structural variant.
 
-    If the variant overlaps a gene, the distance is 0. Otherwise, finds
-    the closest gene within max_distance base pairs of either breakpoint.
+    The distance runs from the variant *interval* to the gene interval, as
+    ``bedtools closest`` measures it, and not from the variant's midpoint: the
+    number of bases between them in half-open coordinates (``gene.start -
+    variant.end`` or ``variant.start - gene.end``). It is 0 when the variant
+    overlaps a gene, in which case the gene with the largest overlap is
+    returned, and also when a gene merely abuts the variant (``'overlapping'``
+    is reported only for a real overlap). A point variant (``start == end``,
+    such as an insertion) overlaps a gene that contains it strictly.
+
+    A translocation (``TRA``/``BND``) has no interval: its two breakpoints,
+    ``chrom``/``start`` and ``chrom2``/``pos2``, are each looked up on their own
+    chromosome and the nearer gene is returned (the first breakpoint's on a tie).
+
+    Indexing the genes costs more than looking one variant up. To annotate many
+    variants, build the index once (``IntervalIndex.from_features(genes, "gene")``)
+    and pass it as ``gene_db``; a list of genes is indexed again on every call.
 
     Args:
         variant: Variant dictionary with 'chrom', 'start', 'end' keys.
-        gene_db: Gene database (see annotate_gene_overlap for format).
+        gene_db: Gene database (see annotate_gene_overlap for format), or an
+            :class:`IntervalIndex` of the genes.
         max_distance: Maximum distance to search for nearest gene.
 
     Returns:
         Dictionary with:
             - 'nearest_gene': Name of nearest gene (empty string if none found)
             - 'distance': Distance to nearest gene in bp (0 if overlapping, -1 if none found)
-            - 'direction': 'upstream', 'downstream', 'overlapping', or 'none'
+            - 'direction': 'upstream' or 'downstream' (the variant lies before or after
+              the gene in genomic coordinates, whatever the gene's strand),
+              'overlapping', or 'none'
             - 'gene_interval': The GenomicInterval of the nearest gene, or None
     """
-    gene_intervals = _normalize_intervals(gene_db, feature_type="gene")
-    index = IntervalIndex(gene_intervals)
+    index = _as_index(gene_db, feature_type="gene")
 
-    chrom = variant.get("chrom", "")
-    start = variant.get("start", 0)
-    end = variant.get("end", 0)
-
-    # First check for overlap
-    overlapping = index.query_overlap(chrom, start, end)
-    if overlapping:
-        # Return the gene with largest overlap
-        best_gene = max(
-            overlapping,
-            key=lambda g: _compute_overlap_bp(start, end, g.start, g.end),
-        )
-        return {
-            "nearest_gene": best_gene.name,
-            "distance": 0,
-            "direction": "overlapping",
-            "gene_interval": best_gene,
-        }
-
-    # Search from both breakpoints
-    midpoint = (start + end) // 2
-    nearest, dist = index.query_nearest(chrom, midpoint, max_distance)
-
-    if nearest is None:
-        # Try from start and end
-        nearest_start, dist_start = index.query_nearest(chrom, start, max_distance)
-        nearest_end, dist_end = index.query_nearest(chrom, end, max_distance)
-
-        if nearest_start is not None and (nearest_end is None or dist_start <= dist_end):
-            nearest = nearest_start
-            dist = dist_start
-        elif nearest_end is not None:
-            nearest = nearest_end
-            dist = dist_end
+    nearest: GenomicInterval | None = None
+    distance = -1
+    region = (0, 0)
+    for chrom, start, end in variant_regions(variant):
+        gene, gene_distance = index.query_nearest_region(chrom, start, end, max_distance)
+        if gene is not None and (nearest is None or gene_distance < distance):
+            nearest, distance, region = gene, gene_distance, (start, end)
 
     if nearest is None:
         return {
@@ -483,17 +550,27 @@ def find_nearest_gene(
             "gene_interval": None,
         }
 
-    # Determine direction
-    gene_mid = (nearest.start + nearest.end) // 2
-    variant_mid = (start + end) // 2
-    direction = "upstream" if variant_mid < gene_mid else "downstream"
+    start, end = region
+    if nearest.start < end and nearest.end > start:
+        direction = "overlapping"
+    else:
+        direction = "upstream" if end <= nearest.start else "downstream"
 
     return {
         "nearest_gene": nearest.name,
-        "distance": dist,
+        "distance": distance,
         "direction": direction,
         "gene_interval": nearest,
     }
+
+
+def _as_index(
+    features: list[dict[str, Any]] | list[GenomicInterval] | IntervalIndex, feature_type: str = ""
+) -> IntervalIndex:
+    """Return ``features`` as an interval index: a prebuilt index is used as is, a list is indexed."""
+    if isinstance(features, IntervalIndex):
+        return features
+    return IntervalIndex(_normalize_intervals(features, feature_type=feature_type))
 
 
 def _normalize_intervals(

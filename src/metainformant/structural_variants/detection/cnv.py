@@ -106,7 +106,8 @@ def detect_cnv_from_depth(
             depths: pass them to :func:`segment_coverage` instead.
         window_size: Size of each depth bin in base pairs.
         method: Detection method. Currently supports 'segmentation' (CBS).
-        significance: P-value threshold for CBS change-point detection.
+        significance: P-value threshold for CBS change-point detection. The
+            environment variable ``SV_CNV_SIGNIFICANCE``, when set, overrides it.
         ploidy: Expected ploidy of the organism (default 2 for diploid).
         min_segment_bins: Minimum number of bins for a valid segment.
         merge_distance: Maximum gap (in bp) to merge adjacent same-state segments.
@@ -234,9 +235,11 @@ def segment_coverage(
 ) -> list[tuple[int, int, float]]:
     """Circular Binary Segmentation (CBS) algorithm for coverage segmentation.
 
-    Recursively finds change-points in a coverage array by testing for
-    differences in means across circular permutations of the data, splitting
-    at the most significant change-point, and recursing on each half.
+    Recursively finds change-points in a coverage array by scoring the
+    difference in means between every circular arc of the data and the rest,
+    splitting at the best-scoring arc, and recursing on the pieces. The
+    p-value of the best arc is an asymptotic approximation (see
+    :func:`_cbs_pvalue`); no permutation test is run.
 
     Every arc of at most half the data is scored, so the work grows with the
     square of the segment length; the scan is vectorised over all arcs of one
@@ -372,9 +375,8 @@ def _cbs_recursive(
     # single change-point is the case where the arc touches an end of the segment.
     best_t_stat, best_i, best_j = _cbs_best_arc(segment_data, std_dev, min_width)
 
-    # Assess significance via permutation-derived critical values
-    # Approximation using the asymptotic distribution of the CBS statistic
-    # For large n, the statistic follows approximately a Gumbel distribution
+    # Assess significance with an asymptotic approximation of the null distribution of the maximum statistic
+    # (a Gumbel law for large n); this is not a permutation test, so no random numbers are involved.
     p_value = _cbs_pvalue(best_t_stat, n)
 
     if p_value > significance:
@@ -396,16 +398,19 @@ def _cbs_recursive(
 def _cbs_pvalue(statistic: float, n: int) -> float:
     """Approximate p-value for CBS test statistic.
 
-    Uses the asymptotic approximation from Olshen et al. (2004) where the
-    maximum of the standardized CBS statistic converges to a Gumbel
-    distribution with parameters depending on the segment length.
+    Uses an asymptotic approximation in the spirit of Olshen et al. (2004):
+    the maximum of the standardized CBS statistic is taken to follow a Gumbel
+    distribution with parameters depending on the segment length. It is an
+    approximation, not the permutation p-value of the original method.
 
     Args:
         statistic: CBS test statistic value.
         n: Number of data points in the segment.
 
     Returns:
-        Approximate p-value.
+        Approximate p-value. A segment of fewer than 4 points is too short for
+        the approximation: 1.0 is returned, which means "no change point can be
+        claimed here", not a measured probability.
     """
     if n < 4:
         return 1.0
@@ -451,16 +456,22 @@ def call_cnv_states(
             or CNVSegment objects.
         ploidy: Expected ploidy (default 2 for diploid).
         del_threshold: Log2 ratio threshold below which a segment is called
-            as a deletion (default -0.3, approximately CN=1 for diploid).
+            as a deletion (default -0.3, approximately CN=1 for diploid). The
+            environment variable ``SV_CNV_DEL_THRESHOLD``, when set, overrides it.
         dup_threshold: Log2 ratio threshold above which a segment is called
-            as a duplication (default 0.3, approximately CN=3 for diploid).
+            as a duplication (default 0.3, approximately CN=3 for diploid). The
+            environment variable ``SV_CNV_DUP_THRESHOLD``, when set, overrides it.
         amp_threshold: Log2 ratio threshold for high-level amplification
             (default 1.0, approximately CN=4+ for diploid).
         homodel_threshold: Log2 ratio threshold for homozygous deletion
             (default -1.5, approximately CN=0 for diploid).
 
     Returns:
-        List of CNVSegment objects with state and cn fields populated.
+        List of CNVSegment objects with state and cn fields populated. Tuples carry
+        no chromosome and positions in bins, so their segments have
+        ``chrom == "unknown"`` and ``start``/``end`` equal to the bin indices;
+        ``confidence`` is 0.0 for every segment (it needs the per-bin values, which
+        are not given here).
     """
     # Read environment overrides for thresholds
     env_del = os.environ.get(f"{_ENV_PREFIX}CNV_DEL_THRESHOLD")
@@ -645,7 +656,9 @@ def calculate_log2_ratio(
     """Compute log2 ratio between tumor and normal read depths.
 
     Calculates the log2(tumor/normal) ratio with optional GC-content bias
-    correction using LOESS-like smoothing.
+    correction by binned median normalization (the median of each GC bin is
+    subtracted; there is no LOESS or other smooth fit), and centers the ratios
+    on their median.
 
     Args:
         tumor_depth: Array of tumor read depth values per window.

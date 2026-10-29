@@ -10,6 +10,7 @@ from __future__ import annotations
 import bisect
 import math
 from collections import Counter
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Sequence
 
@@ -36,12 +37,18 @@ class Breakpoint:
             than not). '+' when no supporting read reports ``is_reverse``.
         confidence: Confidence score [0, 1].
         support: Number of supporting reads.
-        microhomology: Microhomology sequence at the breakpoint, if any.
+        microhomology: Microhomology sequence at the breakpoint, if any. From
+            :func:`refine_breakpoints` this is the mirror-match heuristic on the
+            supporting reads' own sequence, which is not microhomology proper
+            (``microhomology_method`` says so); :func:`detect_microhomology` with a
+            reference sequence gives the real thing.
         inserted_sequence: Bases inserted between the two alignments of a split
             read at this breakpoint, as they read along the forward strand of the
             alignment at this breakpoint; empty when not derivable (see
             :func:`refine_breakpoints`).
         read_names: Names of reads supporting this breakpoint.
+        microhomology_method: How ``microhomology`` was found: ``"mirror_heuristic"``,
+            ``"reference"``, or ``""`` when no sequence was examined.
     """
 
     chrom: str
@@ -52,6 +59,7 @@ class Breakpoint:
     microhomology: str = ""
     inserted_sequence: str = ""
     read_names: list[str] = field(default_factory=list)
+    microhomology_method: str = ""
 
 
 @dataclass
@@ -95,7 +103,12 @@ def refine_breakpoints(
     The reads that clip at the consensus position are the breakpoint's supporting
     reads. Their orientation, sequence and supplementary alignment give each
     breakpoint's ``strand``, ``microhomology`` and ``inserted_sequence``; both
-    breakpoints of a variant are analysed the same way.
+    breakpoints of a variant are analysed the same way. ``microhomology`` here is
+    the mirror-match heuristic on the reads' own sequence (reads carry no
+    reference), which is not true microhomology: ``microhomology_method`` is
+    ``"mirror_heuristic"`` when a read sequence was examined, ``""`` when none was.
+    For true microhomology pass the reference sequence to
+    :func:`detect_microhomology`.
 
     Args:
         variants: List of variant dictionaries, each containing:
@@ -159,79 +172,185 @@ def refine_breakpoints(
     return refined_pairs
 
 
+class Microhomology(str):
+    """A microhomology sequence that says how it was found.
+
+    It is the sequence itself as a string (compare it, take its length, concatenate it) plus ``method``:
+
+    * ``"reference"``: true microhomology, the longest sequence identical at both breakpoint junctions in the
+      reference sequence;
+    * ``"mirror_heuristic"``: the run of bases that mirror each other across the midpoint of a flanking sequence.
+      This is a palindrome signature of the sequence around one junction, not microhomology: it needs no
+      reference, and it is not evidence of a repair mechanism.
+
+    An empty sequence still carries its method: "searched and found none" differs from "not searched".
+    """
+
+    method: str
+
+    def __new__(cls, sequence: str = "", method: str = "mirror_heuristic") -> Microhomology:
+        value = super().__new__(cls, sequence)
+        value.method = method
+        return value
+
+    def __reduce__(self) -> tuple[Any, ...]:
+        return (Microhomology, (str(self), self.method))
+
+    def __repr__(self) -> str:
+        return f"Microhomology({str.__repr__(self)}, method={self.method!r})"
+
+
 def detect_microhomology(
     breakpoint: dict[str, Any] | Breakpoint,
-    flanking_seq: str,
+    flanking_seq: str = "",
     max_homology: int = 50,
-) -> str:
+    *,
+    reference: str | Mapping[str, str] | None = None,
+    partner: dict[str, Any] | Breakpoint | None = None,
+    reference_start: int | Mapping[str, int] = 0,
+) -> Microhomology:
     """Detect microhomology at a breakpoint junction.
 
-    Examines the sequence around a breakpoint to find short regions of
-    sequence identity (microhomology), which are indicative of the
-    repair mechanism (e.g., NHEJ, MMEJ/alt-EJ).
+    Microhomology is a short stretch of sequence that is identical at both
+    breakpoints of a junction, so that the junction can be placed anywhere along it
+    (the signature of microhomology-mediated end joining, MMEJ). It cannot be seen
+    in one sequence alone; it needs the reference at both breakpoints.
 
-    The algorithm slides a window from the breakpoint position in both
-    directions, comparing bases for matches. The longest run of matching
-    bases starting from the breakpoint is reported.
+    **With a reference** (``reference`` and ``partner`` given) the result is true
+    microhomology for a junction that joins the sequence before ``breakpoint`` to the
+    sequence from ``partner`` on, as in a deletion or a tandem duplication. The
+    breakpoints are junction positions (0-based, the junction lies before that base):
+    the homology extends left while the bases before the two positions are equal, and
+    right while the bases at and after them are equal, so
+    ``reference[a - h_left:a + h_right] == reference[b - h_left:b + h_right]``. The
+    stretch is reported from its leftmost base, cut to ``max_homology`` bases, and only
+    A, C, G and T count (an N never matches). Bases beyond the ends of the reference
+    are not examined. Inversions and other junctions that join a reverse-complemented
+    arm are not handled here: they need the orientation of each breakend, which a
+    :class:`Breakpoint` does not record.
+
+    **Without a reference** the result is only a heuristic. The sequence is scanned
+    outwards from the midpoint of ``flanking_seq`` (the breakpoint is assumed to be
+    there) and the longest run of bases that *mirror* each other is reported
+    (``seq[mid - 1 - i] == seq[mid + i]``). That is a palindrome signature of the
+    sequence around one junction, not microhomology, and the returned value says so
+    through its ``method``, ``"mirror_heuristic"``.
 
     Args:
         breakpoint: Breakpoint position info. Can be a dict with 'position'
-            key or a Breakpoint object.
-        flanking_seq: Sequence flanking the breakpoint. The breakpoint is
-            assumed to be at the midpoint of this sequence.
+            (and, for a reference lookup, 'chrom') or a Breakpoint object.
+        flanking_seq: Sequence flanking the breakpoint, for the heuristic. The
+            breakpoint is assumed to be at the midpoint of this sequence. Ignored
+            when ``reference`` is given.
         max_homology: Maximum microhomology length to search for.
+        reference: Reference sequence: one string covering both breakpoints, or a
+            mapping from chromosome name to its sequence (for breakpoints on two
+            chromosomes).
+        partner: The other breakpoint of the junction (a dict with 'chrom' and
+            'position', or a Breakpoint). Required with ``reference``.
+        reference_start: Coordinate of the first base of ``reference`` (an int, or a
+            mapping from chromosome name to it): ``0`` for whole chromosomes, the
+            region start for a fetched region.
 
     Returns:
-        Microhomology sequence string (empty if none found).
-    """
-    if not flanking_seq:
-        return ""
+        A :class:`Microhomology`: the sequence (empty if none found) with the
+        ``method`` that found it, ``"reference"`` or ``"mirror_heuristic"``.
 
+    Raises:
+        ValueError: If ``reference`` is given without ``partner``, a breakpoint has no
+            position, a breakpoint lies outside the reference, or the two breakpoints
+            are the same position.
+    """
+    if reference is not None:
+        if partner is None:
+            raise ValueError("a reference sequence needs the other breakpoint of the junction (partner)")
+        return _reference_microhomology(reference, reference_start, breakpoint, partner, max_homology)
+    return Microhomology(_mirror_match(flanking_seq, max_homology), "mirror_heuristic")
+
+
+def _mirror_match(flanking_seq: str, max_homology: int) -> str:
+    """Longest run of bases that mirror each other across the midpoint of a sequence.
+
+    Compares ``seq[mid - 1 - i]`` with ``seq[mid + i]`` for increasing ``i`` and stops at the first pair that
+    differs or is not A, C, G or T (a run of N is not homology).
+    """
     seq = flanking_seq.upper()
     mid = len(seq) // 2
-
-    if mid <= 0 or mid >= len(seq):
+    if mid <= 0:
         return ""
 
-    # Compare bases extending from the breakpoint in both directions
-    # Microhomology: identical bases on both sides of the junction
-    homology: list[str] = []
-
+    run: list[str] = []
     for i in range(min(max_homology, mid, len(seq) - mid)):
-        left_idx = mid - 1 - i
-        right_idx = mid + i
-
-        if left_idx < 0 or right_idx >= len(seq):
-            break
-
-        if seq[left_idx] == seq[right_idx]:
-            homology.append(seq[right_idx])
+        left_base = seq[mid - 1 - i]
+        if left_base == seq[mid + i] and left_base in "ACGT":
+            run.append(left_base)
         else:
             break
+    return "".join(run)
 
-    if not homology:
-        return ""
 
-    # Also check forward microhomology (same bases on each side of break)
-    forward_mh: list[str] = []
-    for i in range(min(max_homology, len(seq) - mid)):
-        left_idx = mid - 1 - i
-        right_idx = mid + i
+def _locus(breakpoint: dict[str, Any] | Breakpoint) -> tuple[str, int]:
+    """Chromosome and position of a breakpoint given as a dict or a Breakpoint."""
+    if isinstance(breakpoint, Breakpoint):
+        return breakpoint.chrom, breakpoint.position
+    if breakpoint.get("position") is None:
+        raise ValueError(f"breakpoint {breakpoint!r} has no 'position'")
+    return breakpoint.get("chrom", ""), int(breakpoint["position"])
 
-        if left_idx < 0 or right_idx >= len(seq):
-            break
 
-        left_base = seq[left_idx]
-        right_base = seq[right_idx]
+def _reference_window(
+    reference: str | Mapping[str, str], reference_start: int | Mapping[str, int], chrom: str, position: int
+) -> tuple[str, int]:
+    """Return ``(sequence, index)``: the reference sequence of ``chrom`` and the index of ``position`` in it."""
+    if isinstance(reference, str):
+        sequence = reference
+    else:
+        if chrom not in reference:
+            raise ValueError(f"the reference has no sequence for chromosome {chrom!r}")
+        sequence = reference[chrom]
+    offset = reference_start if isinstance(reference_start, int) else reference_start.get(chrom, 0)
+    index = position - offset
+    if not 0 <= index <= len(sequence):
+        raise ValueError(
+            f"breakpoint {chrom}:{position} lies outside the reference sequence ({offset}..{offset + len(sequence)})"
+        )
+    return sequence.upper(), index
 
-        if left_base == right_base and left_base in "ACGT":
-            forward_mh.append(left_base)
-        else:
-            break
 
-    # Return the longer homology
-    result = "".join(homology) if len(homology) >= len(forward_mh) else "".join(forward_mh)
-    return result
+def _reference_microhomology(
+    reference: str | Mapping[str, str],
+    reference_start: int | Mapping[str, int],
+    breakpoint: dict[str, Any] | Breakpoint,
+    partner: dict[str, Any] | Breakpoint,
+    max_homology: int,
+) -> Microhomology:
+    """True microhomology of the junction between two breakpoints, from the reference (see detect_microhomology)."""
+    first, second = _locus(breakpoint), _locus(partner)
+    if first == second:
+        raise ValueError(f"both breakpoints are at {first[0]}:{first[1]}: there is no junction to compare")
+    seq_a, i = _reference_window(reference, reference_start, *first)
+    seq_b, j = _reference_window(reference, reference_start, *second)
+
+    # Extend right while the bases at and after the two junctions agree, and left while those before them do.
+    right = 0
+    while (
+        right < max_homology
+        and i + right < len(seq_a)
+        and j + right < len(seq_b)
+        and seq_a[i + right] == seq_b[j + right]
+        and seq_a[i + right] in "ACGT"
+    ):
+        right += 1
+    left = 0
+    while (
+        left < max_homology
+        and i - left - 1 >= 0
+        and j - left - 1 >= 0
+        and seq_a[i - left - 1] == seq_b[j - left - 1]
+        and seq_a[i - left - 1] in "ACGT"
+    ):
+        left += 1
+    return Microhomology(seq_a[i - left : i + right][:max_homology], "reference")
 
 
 def cluster_breakpoints(
@@ -313,6 +432,13 @@ def calculate_breakpoint_confidence(
     - Number of supporting reads (more = higher confidence)
     - Positional consistency (lower std = higher confidence)
     - Ratio of supporting to total nearby split reads
+    - Mean mapping quality of the supporting reads
+
+    The support count is required. Each other metric that the evidence does not
+    give (absent or None) is left out and the weights of the rest are rescaled to
+    sum to 1, so an unmeasured quantity never enters the score as an invented
+    value. With every metric given the weights are 0.35 (support), 0.30
+    (position), 0.20 (fraction of clips) and 0.15 (mapping quality).
 
     Args:
         evidence: Dictionary or object containing:
@@ -326,38 +452,35 @@ def calculate_breakpoint_confidence(
     """
     if isinstance(evidence, dict):
         support: int = evidence.get("support", 0)
-        total_clips: int = evidence.get("total_clips", support)
-        position_std: float = evidence.get("position_std", 10.0)
-        mapq_mean: float = evidence.get("mapq_mean", 30.0)
+        total_clips: int | None = evidence.get("total_clips")
+        position_std: float | None = evidence.get("position_std")
+        mapq_mean: float | None = evidence.get("mapq_mean")
     else:
         support = getattr(evidence, "support", 0)
-        total_clips = getattr(evidence, "total_clips", support)
-        position_std = getattr(evidence, "position_std", 10.0)
-        mapq_mean = getattr(evidence, "mapq_mean", 30.0)
+        total_clips = getattr(evidence, "total_clips", None)
+        position_std = getattr(evidence, "position_std", None)
+        mapq_mean = getattr(evidence, "mapq_mean", None)
 
     if support <= 0:
         return 0.0
 
     # Component 1: Support count (sigmoid scaling, saturates around 20)
-    support_score = 1.0 - 1.0 / (1.0 + support / 5.0)
+    components = [(0.35, 1.0 - 1.0 / (1.0 + support / 5.0))]
 
     # Component 2: Positional consistency (lower std is better)
-    if position_std <= 0:
-        position_score = 1.0
-    else:
-        position_score = 1.0 / (1.0 + position_std / 5.0)
+    if position_std is not None:
+        components.append((0.30, 1.0 if position_std <= 0 else 1.0 / (1.0 + position_std / 5.0)))
 
     # Component 3: Fraction of local clips supporting this position
-    if total_clips > 0:
-        fraction_score = support / total_clips
-    else:
-        fraction_score = 0.5
+    if total_clips is not None and total_clips > 0:
+        components.append((0.20, min(1.0, support / total_clips)))
 
     # Component 4: Mapping quality
-    mapq_score = min(1.0, mapq_mean / 60.0)
+    if mapq_mean is not None:
+        components.append((0.15, min(1.0, mapq_mean / 60.0)))
 
-    # Weighted combination
-    confidence = 0.35 * support_score + 0.30 * position_score + 0.20 * fraction_score + 0.15 * mapq_score
+    # Weighted combination over the components that were measured
+    confidence = sum(weight * score for weight, score in components) / sum(weight for weight, _ in components)
 
     return max(0.0, min(1.0, confidence))
 
@@ -456,10 +579,13 @@ def _refine_breakpoint(
     """
     clips = [(hit.position, hit.name) for hit in hits]
     position, support, names = _consensus_position(clips, approx)
-    confidence = calculate_breakpoint_confidence(
-        {"support": support, "total_clips": len(clips), "position_std": _position_std(clips)}
-    )
     supporters = [hit for hit in hits if hit.position == position] if support else []
+    evidence: dict[str, Any] = {"support": support, "total_clips": len(clips), "position_std": _position_std(clips)}
+    mapqs = [hit.read["mapq"] for hit in supporters if hit.read.get("mapq") is not None]
+    if mapqs:  # reads that do not report a mapping quality leave that term out of the confidence
+        evidence["mapq_mean"] = sum(mapqs) / len(mapqs)
+    confidence = calculate_breakpoint_confidence(evidence)
+    microhomology = _junction_microhomology(chrom, position, supporters)
 
     return Breakpoint(
         chrom=chrom,
@@ -467,9 +593,10 @@ def _refine_breakpoint(
         strand=_majority_strand(supporters),
         confidence=confidence,
         support=support,
-        microhomology=_junction_microhomology(chrom, position, supporters),
+        microhomology=str(microhomology) if microhomology is not None else "",
         inserted_sequence=_split_read_insertion(supporters, other_chrom, other_approx, window),
         read_names=names,
+        microhomology_method=microhomology.method if microhomology is not None else "",
     )
 
 
@@ -491,14 +618,18 @@ def _majority_strand(hits: list[_ClipHit]) -> str:
     return "-" if reverse > forward else "+"
 
 
-def _junction_microhomology(chrom: str, position: int, hits: list[_ClipHit]) -> str:
-    """Longest microhomology among the supporting reads, each centred on its junction.
+def _junction_microhomology(chrom: str, position: int, hits: list[_ClipHit]) -> Microhomology | None:
+    """Longest mirror-match run among the supporting reads, each centred on its junction.
 
     :func:`detect_microhomology` assumes the breakpoint is at the midpoint of the
     sequence it is given, so each read contributes the window of its ``seq`` that is
-    centred on its own clip junction (and not the whole read).
+    centred on its own clip junction (and not the whole read). Reads give no
+    reference, so this is the heuristic (``method == "mirror_heuristic"``).
+
+    Returns:
+        The longest result, or None when no supporting read had a sequence window to examine.
     """
-    best = ""
+    best: Microhomology | None = None
     for hit in hits:
         seq = hit.read.get("seq")
         if not seq:
@@ -508,7 +639,7 @@ def _junction_microhomology(chrom: str, position: int, hits: list[_ClipHit]) -> 
             continue
         flank = seq[hit.query_offset - half : hit.query_offset + half]
         homology = detect_microhomology({"chrom": chrom, "position": position}, flank)
-        if len(homology) > len(best):
+        if best is None or len(homology) > len(best):
             best = homology
     return best
 

@@ -42,6 +42,22 @@ callsets = {
 merged, _ = merge_callsets(callsets)
 survivors, _ = survivor_merge([v[0] for v in callsets.values()], max_distance=500, min_callers=2)
 
+# One translocation per caller, half of them written from the other side.
+def junction(name, k):
+    if k % 2 == 0:
+        first, second = ("chr1", 1000 + 10 * k), ("chr2", 5000 + 10 * k)
+    else:
+        first, second = ("chr2", 5000 + 10 * k), ("chr1", 1000 + 10 * k)
+    return {
+        "chrom": first[0], "start": first[1], "end": first[1], "sv_type": "TRA",
+        "chrom2": second[0], "pos2": second[1], "_caller": name,
+    }
+
+
+junctions = {name: [junction(name, k)] for k, name in enumerate(callers)}
+junction_merged, _ = merge_callsets(junctions)
+junction_survivors, _ = survivor_merge([v[0] for v in junctions.values()], max_distance=500, min_callers=2)
+
 reads = [
     {
         "name": f"read_{i:02d}", "chrom": "chr1", "pos": 1000 + i, "mapq": 60, "cigar": "50M60S",
@@ -60,6 +76,8 @@ tad = predict_tad_disruption(
 print(json.dumps({
     "merge_callsets": [m.caller_names for m in merged],
     "survivor_merge": [m.caller_names for m in survivors],
+    "junction_merge": [[m.chrom, m.start, m.chrom2, m.pos2, m.caller_names] for m in junction_merged],
+    "junction_survivor_merge": [[m.chrom, m.start, m.chrom2, m.pos2, m.caller_names] for m in junction_survivors],
     "evidence_reads": [c.evidence.evidence_reads for c in calls],
     "calls": [json.dumps(asdict(c), sort_keys=True, default=str) for c in calls],
     "tad_genes": tad.genes_in_affected_tads,
@@ -98,6 +116,11 @@ class TestHashOrder:
         first = runs[0]
         assert first["merge_callsets"] == [["delly", "gridss", "lumpy", "manta", "pindel", "svaba"]]
         assert first["survivor_merge"] == [["delly", "gridss", "lumpy", "manta", "pindel", "svaba"]]
+        # Six callers, first breakpoints 1000..1050 and second breakpoints 5000..5050 whichever side each wrote
+        # first: the medians are 1025 and 5025.
+        everyone = ["delly", "gridss", "lumpy", "manta", "pindel", "svaba"]
+        assert first["junction_merge"] == [["chr1", 1025, "chr2", 5025, everyone]]
+        assert first["junction_survivor_merge"] == [["chr1", 1025, "chr2", 5025, everyone]]
         assert first["evidence_reads"] == [[f"read_{i:02d}" for i in range(12)]]
         assert first["tad_genes"] == ["BRCA1", "EGFR", "KRAS", "MYC", "PTEN", "TP53"]
 

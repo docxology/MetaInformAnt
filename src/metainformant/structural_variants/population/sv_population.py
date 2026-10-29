@@ -21,6 +21,12 @@ from collections import defaultdict
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger
+from metainformant.structural_variants._breakends import (
+    canonical_junction,
+    consensus_junction,
+    is_translocation,
+    junctions_agree,
+)
 
 logger = get_logger(__name__)
 
@@ -55,15 +61,24 @@ def genotype_sv_population(
     using the specified method. The depth method uses read depth signals,
     while the split method uses split-read and discordant-pair evidence.
 
+    A sample with no usable evidence for an SV (no entry in ``samples``, or no
+    ``depth_ratio`` for the depth method / no ``total_reads`` for the split
+    method) is called 0 (reference) with quality 0.0: nothing was observed, so it
+    counts as reference in the allele frequency (which therefore understates the
+    frequency when many samples lack data) but carries no confidence. The number
+    of such calls is logged as a warning.
+
     Args:
         sv_calls: List of SV call dicts, each containing:
             - ``chrom`` (str): Chromosome.
             - ``start`` (int): Start position.
             - ``end`` (int): End position.
-            - ``sv_type`` (str): SV type (DEL, DUP, INV, etc.).
+            - ``sv_type`` (str): SV type (DEL, DUP, INV, etc.); required by the
+              depth method, whose thresholds depend on it.
             - ``samples`` (dict): Mapping sample name to evidence dict with
               ``depth_ratio`` (float), ``split_reads`` (int),
-              ``discordant_pairs`` (int).
+              ``discordant_pairs`` (int), ``total_reads`` (int). The split
+              method treats missing ``split_reads``/``discordant_pairs`` as 0.
         samples: List of sample names to genotype.
         method: Genotyping method, ``"depth"`` or ``"split"``.
 
@@ -72,11 +87,12 @@ def genotype_sv_population(
             - ``genotype_matrix``: 2D list (n_svs x n_samples) of genotype
               integers (0, 1, or 2 for number of alt alleles).
             - ``quality_scores``: 2D list (n_svs x n_samples) of genotype
-              quality scores (0-100).
+              quality scores (0-100; 0.0 where there was no evidence).
             - ``allele_frequencies``: List of allele frequencies per SV.
 
     Raises:
-        ValueError: If method is unrecognized.
+        ValueError: If method is unrecognized, or an SV has no ``sv_type`` under
+            the depth method.
     """
     if method not in ("depth", "split"):
         raise ValueError(f"Unknown genotyping method: {method}. Use 'depth' or 'split'.")
@@ -86,32 +102,45 @@ def genotype_sv_population(
 
     genotype_matrix: list[list[int]] = []
     quality_matrix: list[list[float]] = []
+    n_without_evidence = 0
 
-    for sv in sv_calls:
+    for index, sv in enumerate(sv_calls):
         sv_genotypes: list[int] = []
         sv_qualities: list[float] = []
         sample_evidence = sv.get("samples", {})
+        if method == "depth" and sv.get("sv_type") is None:
+            raise ValueError(f"sv_calls[{index}] has no 'sv_type': the depth method needs it to pick thresholds")
 
         for sample in samples:
             evidence = sample_evidence.get(sample, {})
 
             if method == "depth":
-                gt, qual = _genotype_by_depth(
-                    evidence.get("depth_ratio", 1.0),
-                    sv.get("sv_type", "DEL"),
-                )
+                depth_ratio = evidence.get("depth_ratio")
+                observed = depth_ratio is not None
+                gt, qual = _genotype_by_depth(depth_ratio, sv["sv_type"]) if observed else (0, 0.0)
             else:
-                gt, qual = _genotype_by_split(
-                    evidence.get("split_reads", 0),
-                    evidence.get("discordant_pairs", 0),
-                    evidence.get("total_reads", 30),
+                total_reads = evidence.get("total_reads")
+                observed = total_reads is not None
+                gt, qual = (
+                    _genotype_by_split(evidence.get("split_reads", 0), evidence.get("discordant_pairs", 0), total_reads)
+                    if observed
+                    else (0, 0.0)
                 )
 
+            n_without_evidence += not observed
             sv_genotypes.append(gt)
             sv_qualities.append(qual)
 
         genotype_matrix.append(sv_genotypes)
         quality_matrix.append(sv_qualities)
+
+    if n_without_evidence:
+        logger.warning(
+            "%d of %d sample genotypes had no %s evidence: called 0 (reference) with quality 0.0",
+            n_without_evidence,
+            n_svs * n_samples,
+            "depth_ratio" if method == "depth" else "total_reads",
+        )
 
     # Compute allele frequencies
     allele_freqs: list[float] = []
@@ -161,12 +190,20 @@ def sv_allele_frequency(
 
     Raises:
         ImportError: If numpy is not available.
+        ValueError: If a genotype is not 0, 1 or 2 (a missing-genotype code such
+            as -1 would otherwise be summed as an allele count), or
+            ``sample_labels`` does not have one label per sample.
     """
     if not HAS_NUMPY:
         raise ImportError("numpy is required: uv pip install numpy")
 
-    gt = np.asarray(genotype_matrix, dtype=np.int32)
+    raw = np.asarray(genotype_matrix, dtype=np.float64)
+    if not np.all(np.isin(raw, (0.0, 1.0, 2.0))):
+        raise ValueError("genotype_matrix must contain only 0, 1 and 2 (remove or impute missing genotypes first)")
+    gt = raw.astype(np.int32)
     n_svs, n_samples = gt.shape
+    if sample_labels is not None and len(sample_labels) != n_samples:
+        raise ValueError(f"sample_labels has {len(sample_labels)} entries for {n_samples} samples")
 
     # Overall allele frequencies
     alt_counts = gt.sum(axis=1)
@@ -228,6 +265,16 @@ def sv_association_test(
     (binary phenotype) of phenotype on genotype, optionally adjusting for
     covariates.
 
+    A test that cannot be carried out is reported as missing, not as "no
+    association": ``beta``, ``se`` and ``p_value`` are NaN (and ``odds_ratio``
+    NaN for a binary phenotype) and ``error`` gives the reason. That happens
+    when the design matrix is singular (a monomorphic SV, or covariates
+    collinear with the genotype; checked by its rank, never by whether the
+    solver raises), when a linear fit has no residual degrees of freedom or no
+    residual variance (a constant phenotype or an exact fit), and when the
+    logistic fit does not converge (complete or quasi-complete separation, or
+    a constant phenotype).
+
     Args:
         genotypes: Genotype values per sample (0, 1, or 2).
         phenotypes: Phenotype values per sample (continuous or binary 0/1).
@@ -237,13 +284,22 @@ def sv_association_test(
         Dictionary with keys:
             - ``beta``: Effect size (regression coefficient for genotype).
             - ``se``: Standard error of beta.
-            - ``p_value``: Two-sided p-value.
+            - ``p_value``: Two-sided p-value: the t distribution with the
+              residual degrees of freedom for a continuous phenotype, the
+              normal distribution (Wald test) for a binary one. Without SciPy
+              the normal distribution stands in for the t distribution, which
+              understates the p-value for small samples; ``p_value_method`` says
+              which was used.
+            - ``p_value_method``: ``"t"``, ``"normal_approximation_of_t"`` or
+              ``"wald_normal"``.
             - ``odds_ratio``: Odds ratio (only for binary phenotype, else None).
             - ``n_samples``: Number of samples analyzed.
+            - ``error``: None, or why the test could not be carried out.
 
     Raises:
         ImportError: If numpy is not available.
-        ValueError: If genotypes and phenotypes have different lengths.
+        ValueError: If genotypes and phenotypes have different lengths, or any
+            value is not finite.
     """
     if not HAS_NUMPY:
         raise ImportError("numpy is required: uv pip install numpy")
@@ -256,10 +312,6 @@ def sv_association_test(
 
     n = len(gt)
 
-    # Determine if binary phenotype
-    unique_pheno = set(pheno.tolist())
-    is_binary = unique_pheno.issubset({0.0, 1.0})
-
     # Build design matrix
     if covariates is not None:
         cov = np.asarray(covariates, dtype=np.float64)
@@ -267,15 +319,39 @@ def sv_association_test(
     else:
         design = np.column_stack([np.ones(n), gt])
 
+    if not (np.all(np.isfinite(design)) and np.all(np.isfinite(pheno))):
+        raise ValueError("genotypes, phenotypes and covariates must be finite (remove or impute missing values)")
+
+    # Determine if binary phenotype
+    unique_pheno = set(pheno.tolist())
+    is_binary = unique_pheno.issubset({0.0, 1.0})
+
+    n_params = design.shape[1]
+    # The rank test catches a monomorphic SV or a collinear covariate on every platform, including those whose
+    # solver would still invert the nearly singular matrix without raising.
+    if np.linalg.matrix_rank(design) < n_params:
+        return _failed_association(n, is_binary, "design matrix is singular (monomorphic SV or collinear covariates)")
+
     if is_binary:
-        beta, se, p_value = _logistic_regression(design, pheno)
+        fit = _logistic_regression(design, pheno)
+        method = "wald_normal"
+        df = None
     else:
-        beta, se, p_value = _linear_regression(design, pheno)
+        df = n - n_params
+        if df <= 0:
+            return _failed_association(
+                n, is_binary, f"no residual degrees of freedom ({n} samples, {n_params} parameters)"
+            )
+        fit = _linear_regression(design, pheno)
+        method = "t" if HAS_SCIPY else "normal_approximation_of_t"
+    if isinstance(fit, str):
+        return _failed_association(n, is_binary, fit)
+    beta, se = fit
 
     # Genotype coefficient is at index 1
-    gt_beta = float(beta[1]) if len(beta) > 1 else 0.0
-    gt_se = float(se[1]) if len(se) > 1 else 0.0
-    gt_pvalue = float(p_value[1]) if len(p_value) > 1 else 1.0
+    gt_beta = float(beta[1])
+    gt_se = float(se[1])
+    gt_pvalue = _two_sided_p_value(gt_beta / gt_se, df)
 
     odds_ratio = math.exp(gt_beta) if is_binary else None
 
@@ -291,8 +367,10 @@ def sv_association_test(
         "beta": gt_beta,
         "se": gt_se,
         "p_value": gt_pvalue,
+        "p_value_method": method,
         "odds_ratio": odds_ratio,
         "n_samples": n,
+        "error": None,
     }
 
 
@@ -302,19 +380,38 @@ def sv_population_structure(
 ) -> dict[str, Any]:
     """PCA on SV genotype matrix for population structure analysis.
 
-    Centers and scales the genotype matrix, then computes the top principal
-    components to visualize population structure driven by structural
-    variant genotypes.
+    Centers each SV to mean 0 and scales it to unit (population) variance, giving
+    the standardised matrix ``X`` (n_samples x n_svs). With the singular value
+    decomposition ``X = U S Vt``, every returned quantity is defined the same way
+    whatever the shape of the data:
+
+    * ``pcs``: the sample scores ``X V = U S`` (principal-component coordinates);
+    * ``eigenvalues``: the eigenvalues of the sample covariance matrix
+      ``Xt X / (n_samples - 1)``, i.e. ``S**2 / (n_samples - 1)``;
+    * ``loadings``: ``V``, the unit-length eigenvectors of that covariance matrix.
+
+    When there are fewer samples than SVs the decomposition is computed from the
+    smaller ``n_samples x n_samples`` matrix ``X Xt`` (same eigenvalues, after
+    dividing by ``n_samples - 1``), and the scores and loadings are recovered from
+    its eigenvectors; the result is the same as for the covariance matrix.
+
+    The sign of each component is arbitrary (it depends on the LAPACK build), so
+    compare components up to sign. A component beyond the rank of the data (the
+    centered data has rank at most ``n_samples - 1``) has eigenvalue 0, scores 0
+    and loadings 0: its direction is not defined.
 
     Args:
         genotype_matrix: Genotype matrix (n_svs x n_samples) with values
             0, 1, or 2.
-        n_components: Number of principal components to compute.
+        n_components: Number of principal components to compute (at least 1; at
+            most ``min(n_samples, n_svs)`` are returned).
 
     Returns:
         Dictionary with keys:
-            - ``pcs``: 2D array (n_samples x n_components) of PC coordinates.
-            - ``eigenvalues``: List of eigenvalues for each component.
+            - ``pcs``: 2D array (n_samples x n_components) of PC coordinates
+              (sample scores).
+            - ``eigenvalues``: List of covariance-matrix eigenvalues for each
+              component, in descending order.
             - ``variance_explained``: List of the fraction of the total variance
               (the sum of all eigenvalues of the covariance matrix, not just the
               returned components) that each component explains. It sums to less
@@ -323,11 +420,20 @@ def sv_population_structure(
 
     Raises:
         ImportError: If numpy is not available.
+        ValueError: If the matrix is not 2D or has non-finite values, or
+            ``n_components`` is below 1.
     """
     if not HAS_NUMPY:
         raise ImportError("numpy is required: uv pip install numpy")
 
+    if n_components < 1:
+        raise ValueError(f"n_components must be at least 1, got {n_components}")
+
     gt = np.asarray(genotype_matrix, dtype=np.float64)
+    if gt.ndim != 2:
+        raise ValueError(f"genotype_matrix must be 2D (n_svs x n_samples), got shape {gt.shape}")
+    if not np.all(np.isfinite(gt)):
+        raise ValueError("genotype_matrix has non-finite values: remove or impute missing genotypes first")
 
     # Transpose: PCA on samples, so we need samples as rows
     # gt is (n_svs x n_samples), transpose to (n_samples x n_svs)
@@ -342,41 +448,41 @@ def sv_population_structure(
     std[std == 0] = 1.0
     data_scaled = (data - mean) / std
 
-    # Covariance matrix (sample x sample)
+    dof = max(n_samples - 1, 1)
+
     if n_samples < n_svs:
-        # Compute n_samples x n_samples covariance
-        cov = data_scaled @ data_scaled.T / max(n_svs - 1, 1)
-        eigenvalues, eigenvectors = np.linalg.eigh(cov)
-        total_var = _total_variance(eigenvalues)
-
-        # Sort by descending eigenvalue
-        idx = np.argsort(eigenvalues)[::-1][:n_components]
-        eigenvalues = eigenvalues[idx]
-        eigenvectors = eigenvectors[:, idx]
-
-        pcs = eigenvectors  # (n_samples x n_components)
-
-        # Loadings: project back to SV space
-        loadings = data_scaled.T @ pcs  # (n_svs x n_components)
-        for j in range(n_components):
-            norm = np.linalg.norm(loadings[:, j])
-            if norm > 0:
-                loadings[:, j] /= norm
+        # Gram matrix X Xt (n_samples x n_samples): eigenvalues S**2, eigenvectors U.
+        squared_singular, u = np.linalg.eigh(data_scaled @ data_scaled.T)
+        order = np.argsort(squared_singular)[::-1]
+        squared_singular = np.clip(squared_singular[order], 0.0, None)
+        u = u[:, order]
+        all_eigenvalues = squared_singular / dof  # eigenvalues of the covariance matrix Xt X / dof
+        keep = all_eigenvalues[:n_components]
+        singular = np.sqrt(squared_singular[:n_components])
+        pcs = u[:, :n_components] * singular  # U S
+        defined = _defined_components(keep, all_eigenvalues, n_samples, n_svs)
+        # V = Xt U / S, where the component has a direction
+        loadings = data_scaled.T @ u[:, :n_components]
+        loadings[:, defined] /= singular[defined]
+        loadings[:, ~defined] = 0.0
     else:
-        # Standard PCA on SV x SV covariance
-        cov = data_scaled.T @ data_scaled / max(n_samples - 1, 1)
-        eigenvalues, eigenvectors = np.linalg.eigh(cov)
-        total_var = _total_variance(eigenvalues)
+        # Covariance matrix Xt X / dof (n_svs x n_svs).
+        values, vectors = np.linalg.eigh(data_scaled.T @ data_scaled / dof)
+        order = np.argsort(values)[::-1]
+        all_eigenvalues = np.clip(values[order], 0.0, None)
+        vectors = vectors[:, order]
+        keep = all_eigenvalues[:n_components]
+        defined = _defined_components(keep, all_eigenvalues, n_samples, n_svs)
+        loadings = vectors[:, :n_components].copy()
+        loadings[:, ~defined] = 0.0
+        pcs = data_scaled @ loadings  # X V
 
-        idx = np.argsort(eigenvalues)[::-1][:n_components]
-        eigenvalues = eigenvalues[idx]
-        loadings = eigenvectors[:, idx]
-
-        pcs = data_scaled @ loadings
+    total_var = float(np.sum(all_eigenvalues))
+    eigenvalues = np.where(defined, keep, 0.0)
 
     # Each component's share of the total variance, which comes from all eigenvalues
     # (taken above, before the top components were selected).
-    variance_explained = [max(float(ev), 0.0) / total_var if total_var > 0 else 0.0 for ev in eigenvalues]
+    variance_explained = [float(ev) / total_var if total_var > 0 else 0.0 for ev in eigenvalues]
 
     logger.info(
         "PCA on %d SVs x %d samples: top %d PCs explain %.1f%% variance",
@@ -400,29 +506,36 @@ def sv_ld_analysis(
     sv_positions: list[int],
     snp_positions: list[int],
 ) -> dict[str, Any]:
-    """Compute LD between SVs and nearby SNPs.
+    """Compute LD between SVs and SNPs.
 
-    For each SV, computes the squared Pearson correlation (r^2) with all
-    SNPs within a window, identifying tag SNPs (SNPs in highest LD with
-    each SV).
+    For each SV, computes the squared Pearson correlation (r^2) with every
+    SNP in ``genotype_matrix_snp`` (there is no window: the positions are not
+    used to select SNPs, so pass only the SNPs near the SVs), identifying the
+    tag SNP (the SNP in highest LD with each SV).
 
     Args:
         genotype_matrix_sv: SV genotype matrix (n_svs x n_samples), values
             0/1/2.
         genotype_matrix_snp: SNP genotype matrix (n_snps x n_samples),
             values 0/1/2.
-        sv_positions: Genomic position for each SV.
-        snp_positions: Genomic position for each SNP.
+        sv_positions: Genomic position for each SV (one per SV; checked, not
+            used in the computation).
+        snp_positions: Genomic position for each SNP (one per SNP); the
+            position of the tag SNP is reported from it.
 
     Returns:
         Dictionary with keys:
             - ``ld_matrix``: 2D list (n_svs x n_snps) of r^2 values.
             - ``tag_snps``: List of dicts per SV with ``snp_index``,
-              ``snp_position``, ``r2``.
+              ``snp_position``, ``r2``. When no SNP has r^2 above 0 (for example
+              a monomorphic SV) there is no tag SNP: the first SNP is listed
+              with ``r2`` 0.0 (``snp_index`` and ``snp_position`` are None when
+              there are no SNPs at all).
             - ``max_r2_per_sv``: List of maximum r^2 value for each SV.
 
     Raises:
         ImportError: If numpy is not available.
+        ValueError: If a position list does not have one entry per SV or SNP.
     """
     if not HAS_NUMPY:
         raise ImportError("numpy is required: uv pip install numpy")
@@ -432,6 +545,11 @@ def sv_ld_analysis(
 
     n_svs = sv_gt.shape[0]
     n_snps = snp_gt.shape[0]
+
+    if len(sv_positions) != n_svs:
+        raise ValueError(f"sv_positions has {len(sv_positions)} entries for {n_svs} SVs")
+    if len(snp_positions) != n_snps:
+        raise ValueError(f"snp_positions has {len(snp_positions)} entries for {n_snps} SNPs")
 
     ld_matrix: list[list[float]] = []
     tag_snps: list[dict[str, Any]] = []
@@ -465,8 +583,8 @@ def sv_ld_analysis(
         max_r2_per_sv.append(best_r2)
         tag_snps.append(
             {
-                "snp_index": best_snp_idx,
-                "snp_position": snp_positions[best_snp_idx] if best_snp_idx < len(snp_positions) else 0,
+                "snp_index": best_snp_idx if n_snps else None,
+                "snp_position": snp_positions[best_snp_idx] if n_snps else None,
                 "r2": best_r2,
             }
         )
@@ -496,20 +614,38 @@ def merge_sv_callsets(
     represent the same event based on reciprocal overlap fraction and
     breakpoint distance criteria.
 
+    Calls are clustered greedily in chromosome and start order: the first call
+    not yet merged anchors a cluster, and a call joins it only when it matches
+    the anchor itself (a chain of calls that each match the next is not
+    followed).
+
+    A translocation (``TRA``/``BND``) has no interval, so reciprocal overlap
+    cannot match it. It is matched on both breakpoints instead: ``chrom`` and
+    ``start`` of one call against the other's, and ``chrom2`` and ``pos2``
+    likewise, each pair of positions within ``max_breakpoint_distance``,
+    whichever breakpoint each call wrote first. ``min_overlap`` does not apply
+    to it, and it never merges with an interval variant. The consensus of
+    translocations takes the median of each breakpoint, in (chromosome,
+    position) order, with ``end == start`` and the second breakpoint in
+    ``chrom2``/``pos2``.
+
     Args:
         callsets: List of callsets, each a list of SV call dicts containing:
             - ``chrom`` (str): Chromosome.
             - ``start`` (int): Start position.
             - ``end`` (int): End position.
             - ``sv_type`` (str): SV type.
-            - ``sample`` (str, optional): Source sample name.
+            - ``chrom2`` (str), ``pos2`` (int): Second breakpoint (translocations).
+            - ``sample`` (str, optional): Source sample name; a call without one
+              is named ``sample_<index of its callset>``.
         min_overlap: Minimum reciprocal overlap fraction (0-1) for merging.
         max_breakpoint_distance: Maximum distance between breakpoints for
             merging.
 
     Returns:
         List of merged SV dicts, each containing:
-            - ``chrom``, ``start``, ``end``, ``sv_type``: Consensus call.
+            - ``chrom``, ``start``, ``end``, ``sv_type``: Consensus call (and
+              ``chrom2``, ``pos2`` for a translocation).
             - ``n_samples``: Number of samples supporting this SV.
             - ``samples``: List of sample names.
             - ``support_count``: Total number of supporting calls.
@@ -641,80 +777,127 @@ def _genotype_by_split(
         return 0, min(99.0, (total - support) * 2.0)
 
 
-def _total_variance(eigenvalues: Any) -> float:
-    """Total variance: the sum of all eigenvalues of a covariance matrix.
+def _defined_components(kept: Any, all_eigenvalues: Any, n_samples: int, n_svs: int) -> Any:
+    """Which of the kept components have a direction: eigenvalue above the numerical noise of the decomposition.
 
-    Eigenvalues of a covariance matrix cannot be negative; the tiny negative ones
-    that rounding produces are counted as zero.
+    The eigenvalues of a covariance matrix cannot be negative; the tiny ones that rounding produces (and the
+    ``n_samples - 1`` rank limit of centered data) are noise, in the sense of :func:`numpy.linalg.matrix_rank`.
 
     Args:
-        eigenvalues: Every eigenvalue of the matrix, not only the leading ones.
+        kept: Eigenvalues of the returned components.
+        all_eigenvalues: Every eigenvalue of the covariance matrix, descending (not only the leading ones).
+        n_samples: Number of samples.
+        n_svs: Number of SVs.
 
     Returns:
-        The sum of the non-negative parts of the eigenvalues.
+        Boolean array, True for each kept component that is above the tolerance.
     """
-    return float(np.sum(np.clip(eigenvalues, 0.0, None)))
+    if all_eigenvalues.size == 0 or float(all_eigenvalues[0]) <= 0.0:
+        return np.zeros(len(kept), dtype=bool)
+    tolerance = max(n_samples, n_svs) * np.finfo(np.float64).eps * float(all_eigenvalues[0])
+    return kept > tolerance
+
+
+# Largest linear predictor the logistic fit works with: exp(-20) is below 1e-8, so the fitted probability is 0 or 1.
+_MAX_LINEAR_PREDICTOR = 20.0
+
+
+def _failed_association(n: int, is_binary: bool, error: str) -> dict[str, Any]:
+    """Result of an association test that could not be carried out: NaN statistics and the reason."""
+    nan = float("nan")
+    return {
+        "beta": nan,
+        "se": nan,
+        "p_value": nan,
+        "p_value_method": None,
+        "odds_ratio": nan if is_binary else None,
+        "n_samples": n,
+        "error": error,
+    }
+
+
+def _two_sided_p_value(statistic: float, df: int | None) -> float:
+    """Two-sided p-value of a Wald or t statistic.
+
+    Args:
+        statistic: The statistic.
+        df: Residual degrees of freedom for a t statistic; None for a Wald (normal) statistic.
+
+    Returns:
+        The t distribution's tail when ``df`` is given and SciPy is available, else the normal tail. The normal
+        tail is ``erfc(|z| / sqrt(2))``, exact far into the tail (``2 * (1 - cdf)`` underflows to 0 beyond about 8).
+    """
+    if df is not None and HAS_SCIPY:
+        return float(2.0 * scipy_stats.t.sf(abs(statistic), df))
+    return math.erfc(abs(statistic) / math.sqrt(2.0))
 
 
 def _linear_regression(
     design: Any,
     y: Any,
-) -> tuple[Any, Any, Any]:
+) -> tuple[Any, Any] | str:
     """Ordinary least squares linear regression.
 
     Args:
-        design: Design matrix (n x p) including intercept.
+        design: Design matrix (n x p) of full column rank, including intercept.
         y: Response vector (n,).
 
     Returns:
-        Tuple of (coefficients, standard_errors, p_values).
+        ``(coefficients, standard_errors)``, or the reason why the standard errors are undefined (a constant
+        response, or an exact fit).
     """
     n, p = design.shape
 
-    # OLS: beta = (X^T X)^{-1} X^T y
-    xtx = design.T @ design
-    xtx += np.eye(p) * 1e-8  # Regularization
-    xtx_inv = np.linalg.inv(xtx)
-    beta = xtx_inv @ design.T @ y
+    # Solve through the QR decomposition rather than the normal equations: squaring the condition number of a
+    # nearly collinear design would make the answer depend on the BLAS build. The caller has already rejected
+    # a design that is rank deficient.
+    q, r = np.linalg.qr(design)
+    try:
+        beta = np.linalg.solve(r, q.T @ y)
+        r_inv = np.linalg.inv(r)
+    except np.linalg.LinAlgError:
+        return "design matrix is numerically singular"
+    xtx_inv = r_inv @ r_inv.T  # (Xt X)^-1 = R^-1 R^-T
 
     # Residuals
     residuals = y - design @ beta
     rss = float(np.sum(residuals**2))
-    sigma2 = rss / max(n - p, 1)
+    tss = float(np.sum((y - np.mean(y)) ** 2))
+    if tss == 0.0:
+        return "phenotype is constant"
+    if rss <= 1e-12 * tss:
+        return "zero residual variance (exact fit): the test statistic is undefined"
+    sigma2 = rss / (n - p)
 
     # Standard errors
     se = np.sqrt(np.diag(xtx_inv) * sigma2)
-    se[se == 0] = 1e-10
-
-    # T-statistics and p-values
-    t_stats = beta / se
-    p_values = np.array([2.0 * (1.0 - _normal_cdf_np(abs(t))) for t in t_stats])
-
-    return beta, se, p_values
+    return beta, se
 
 
 def _logistic_regression(
     design: Any,
     y: Any,
     max_iter: int = 50,
-) -> tuple[Any, Any, Any]:
+) -> tuple[Any, Any] | str:
     """Iteratively reweighted least squares logistic regression.
 
     Args:
-        design: Design matrix (n x p) including intercept.
+        design: Design matrix (n x p) of full column rank, including intercept.
         y: Binary response vector (n,).
         max_iter: Maximum IRLS iterations.
 
     Returns:
-        Tuple of (coefficients, standard_errors, p_values).
+        ``(coefficients, standard_errors)``, or the reason why the fit is not usable (no convergence, which is
+        what complete or quasi-complete separation and a constant response look like).
     """
     n, p = design.shape
     beta = np.zeros(p, dtype=np.float64)
+    converged = False
 
     for _iteration in range(max_iter):
         eta = design @ beta
         # Clip to avoid overflow
-        eta = np.clip(eta, -20, 20)
+        eta = np.clip(eta, -_MAX_LINEAR_PREDICTOR, _MAX_LINEAR_PREDICTOR)
         mu = 1.0 / (1.0 + np.exp(-eta))
 
         # Weight matrix diagonal
@@ -723,47 +906,43 @@ def _logistic_regression(
 
         # Weighted least squares update
         z = eta + (y - mu) / w
-        w_diag = np.diag(w)
-
-        xtwx = design.T @ w_diag @ design
-        xtwx += np.eye(p) * 1e-8
-        xtwx_inv = np.linalg.inv(xtwx)
-        beta_new = xtwx_inv @ design.T @ w_diag @ z
+        xtw = design.T * w
+        try:
+            beta_new = np.linalg.solve(xtw @ design, xtw @ z)
+        except np.linalg.LinAlgError:
+            return "information matrix is singular (separation or a constant phenotype)"
 
         # Check convergence
-        if np.max(np.abs(beta_new - beta)) < 1e-6:
-            beta = beta_new
-            break
+        converged = bool(np.all(np.isfinite(beta_new)) and np.max(np.abs(beta_new - beta)) < 1e-6)
         beta = beta_new
+        if converged:
+            break
+
+    if not converged:
+        return (
+            f"logistic regression did not converge in {max_iter} iterations "
+            "(complete or quasi-complete separation, or a constant phenotype)"
+        )
+
+    # Under separation the linear predictor runs off to infinity: the clip above then stalls the iteration at a
+    # finite value that looks converged, but the fitted probabilities are numerically 0 or 1 and the Wald test is
+    # meaningless (the standard error explodes with the coefficient).
+    if np.any(np.abs(design @ beta) >= _MAX_LINEAR_PREDICTOR):
+        return "fitted probabilities are numerically 0 or 1 (complete or quasi-complete separation)"
 
     # Standard errors from final information matrix
     eta = design @ beta
-    eta = np.clip(eta, -20, 20)
     mu = 1.0 / (1.0 + np.exp(-eta))
-    w = mu * (1.0 - mu)
-    w = np.maximum(w, 1e-10)
-
-    info_matrix = design.T @ np.diag(w) @ design
-    info_matrix += np.eye(p) * 1e-8
+    w = np.maximum(mu * (1.0 - mu), 1e-10)
 
     try:
-        cov_matrix = np.linalg.inv(info_matrix)
-        se = np.sqrt(np.maximum(np.diag(cov_matrix), 0.0))
+        cov_matrix = np.linalg.inv((design.T * w) @ design)
     except np.linalg.LinAlgError:
-        se = np.ones(p) * 1e10
-
-    se[se == 0] = 1e-10
-
-    # Wald test p-values
-    z_stats = beta / se
-    p_values = np.array([2.0 * (1.0 - _normal_cdf_np(abs(z))) for z in z_stats])
-
-    return beta, se, p_values
-
-
-def _normal_cdf_np(x: float) -> float:
-    """Standard normal CDF approximation."""
-    return 0.5 * (1.0 + math.erf(float(x) / math.sqrt(2.0)))
+        return "information matrix is singular (separation or a constant phenotype)"
+    se = np.sqrt(np.maximum(np.diag(cov_matrix), 0.0))
+    if not np.all(se > 0.0):
+        return "standard error of a coefficient is zero or undefined"
+    return beta, se
 
 
 def _should_merge(
@@ -774,7 +953,9 @@ def _should_merge(
 ) -> bool:
     """Determine if two SV calls should be merged.
 
-    Checks chromosome, SV type, reciprocal overlap, and breakpoint distance.
+    Checks chromosome, SV type, reciprocal overlap, and breakpoint distance; two
+    translocations are compared on both breakpoints instead (see
+    :func:`merge_sv_callsets`).
 
     Args:
         call_a: First SV call dict.
@@ -785,6 +966,15 @@ def _should_merge(
     Returns:
         True if calls should be merged.
     """
+    # A translocation is compared on both breakpoints, never with an interval variant
+    translocation_a, translocation_b = is_translocation(call_a), is_translocation(call_b)
+    if translocation_a or translocation_b:
+        return (
+            translocation_a
+            and translocation_b
+            and junctions_agree(canonical_junction(call_a), canonical_junction(call_b), max_bp_dist)
+        )
+
     # Must be same chromosome and type
     if call_a.get("chrom", "") != call_b.get("chrom", ""):
         return False
@@ -827,15 +1017,23 @@ def _build_consensus(
         cluster: List of SV call dicts to merge.
 
     Returns:
-        Consensus SV call dict.
+        Consensus SV call dict. A cluster of translocations has ``end == start`` and
+        carries its second breakpoint as ``chrom2``/``pos2`` (``''`` and None for a
+        single breakend).
     """
-    starts = [c.get("start", 0) for c in cluster]
-    ends = [c.get("end", 0) for c in cluster]
-
     # True median breakpoints. Positions are integer coordinates, so the half-integer
     # median of an even-sized cluster is truncated, as in filtering.merge._median_position.
-    consensus_start = int(statistics.median(starts))
-    consensus_end = int(statistics.median(ends))
+    translocation = is_translocation(cluster[0])
+    chrom = cluster[0].get("chrom", "")
+    second = None
+    if translocation:
+        (chrom, consensus_start), second = consensus_junction(
+            [canonical_junction(c) for c in cluster], lambda positions: int(statistics.median(positions))
+        )
+        consensus_end = consensus_start
+    else:
+        consensus_start = int(statistics.median([c.get("start", 0) for c in cluster]))
+        consensus_end = int(statistics.median([c.get("end", 0) for c in cluster]))
 
     # Majority SV type
     type_counts: dict[str, int] = defaultdict(int)
@@ -850,8 +1048,8 @@ def _build_consensus(
         if sample and sample not in samples:
             samples.append(sample)
 
-    return {
-        "chrom": cluster[0].get("chrom", ""),
+    consensus: dict[str, Any] = {
+        "chrom": chrom,
         "start": consensus_start,
         "end": consensus_end,
         "sv_type": consensus_type,
@@ -860,3 +1058,6 @@ def _build_consensus(
         "support_count": len(cluster),
         "merged_calls": cluster,
     }
+    if translocation:
+        consensus["chrom2"], consensus["pos2"] = ("", None) if second is None else second
+    return consensus

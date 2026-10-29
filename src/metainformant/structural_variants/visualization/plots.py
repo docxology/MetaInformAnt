@@ -677,12 +677,21 @@ def plot_cnv_profile(
         output_path: Path to save the plot.
         title: Plot title.
         figsize: Figure size.
-        ploidy: Expected ploidy for reference line.
+        ploidy: Expected ploidy. The dashed reference lines sit at the log2
+            ratio of one copy lost, ``log2((ploidy - 1) / ploidy)``, and of one
+            copy gained, ``log2((ploidy + 1) / ploidy)``. For ploidy 1 a lost
+            copy is a zero ratio (log2 of 0 is -infinity), so no deletion line
+            is drawn.
 
     Returns:
         matplotlib Figure object.
+
+    Raises:
+        ValueError: If ``ploidy`` is below 1.
     """
     _check_matplotlib()
+    if ploidy < 1:
+        raise ValueError(f"ploidy must be at least 1, got {ploidy}")
 
     fig, ax = plt.subplots(figsize=figsize)
 
@@ -749,16 +758,17 @@ def plot_cnv_profile(
 
     # Reference lines
     ax.axhline(y=0, color="black", linewidth=1, linestyle="-", alpha=0.5)
+    if ploidy > 1:  # with one copy, losing it is a zero ratio: log2 is -infinity, there is no line to draw
+        ax.axhline(
+            y=math.log2((ploidy - 1) / ploidy),
+            color="#E74C3C",
+            linewidth=0.5,
+            linestyle="--",
+            alpha=0.5,
+            label="DEL",
+        )
     ax.axhline(
-        y=math.log2(1 / ploidy + 1e-10) if ploidy > 0 else -1,
-        color="#E74C3C",
-        linewidth=0.5,
-        linestyle="--",
-        alpha=0.5,
-        label="DEL",
-    )
-    ax.axhline(
-        y=math.log2((ploidy + 1) / ploidy) if ploidy > 0 else 0.58,
+        y=math.log2((ploidy + 1) / ploidy),
         color="#3498DB",
         linewidth=0.5,
         linestyle="--",

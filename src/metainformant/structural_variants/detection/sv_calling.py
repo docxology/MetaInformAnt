@@ -165,10 +165,15 @@ def call_structural_variants(
             - 'mate_is_reverse': Whether mate is reverse-complemented (bool, optional)
             - 'is_supplementary': Whether this is a supplementary alignment (bool, optional)
             - 'sa_tag': SA tag for supplementary alignments (str, optional)
-        min_support: Minimum number of supporting reads for a call.
+        min_support: Minimum number of supporting reads for a call. The
+            environment variable ``SV_MIN_SUPPORT``, when set, overrides it.
         insert_size_stats: Pre-computed insert size distribution statistics.
-            If None, will be estimated from the data.
-        min_mapq: Minimum mapping quality for reads to be considered.
+            If None, will be estimated from the data; when no read has a usable
+            insert size (a logged warning), typical Illumina values (mean 400,
+            standard deviation 100) are assumed.
+        min_mapq: Minimum mapping quality for reads to be considered, both as
+            evidence and as reference reads when genotyping (``genotype_sv`` is
+            called with the same ``min_mapq``).
         min_sv_size: Minimum structural variant size in base pairs. It applies
             to calls that have a measurable length (DEL, DUP, INV and
             UNKNOWN, measured as the breakpoint distance). Translocations have
@@ -264,10 +269,12 @@ def call_structural_variants(
     # Sort by position
     variants.sort(key=lambda v: (v.chrom, v.start))
 
-    # Genotype all variants against one shared position index of the reads
+    # Genotype all variants against one shared position index of the reads, counting reference reads at the same
+    # mapping-quality threshold as the evidence: the index holds the reads with MAPQ >= min_mapq, so genotyping at
+    # a stricter default would drop the reads between the two from the reference count only.
     read_index = ReadIndex(filtered)
     for variant in variants:
-        variant.genotype = genotype_sv(variant, read_index)
+        variant.genotype = genotype_sv(variant, read_index, min_mapq=min_mapq)
 
     logger.info(f"Called {len(variants)} structural variants from {len(all_evidence)} evidence items")
     return variants
@@ -654,8 +661,10 @@ def genotype_sv(
 def _estimate_insert_size(reads: list[dict[str, Any]]) -> InsertSizeStats:
     """Estimate insert size distribution from properly paired reads.
 
-    Samples insert sizes from reads that appear properly paired (same
-    chromosome, FR orientation) and computes robust statistics.
+    Samples the insert sizes of reads whose mate is on the same chromosome and
+    whose absolute insert size is between 1 and 9,999 bp (orientation is not
+    checked) and computes their mean, standard deviation, median and median
+    absolute deviation.
 
     Args:
         reads: List of read alignment dictionaries.
@@ -797,8 +806,11 @@ def _cluster_evidence(
 ) -> list[list[SVEvidence]]:
     """Cluster SV evidence by genomic proximity.
 
-    Groups evidence items whose breakpoints are within max_distance of each
-    other on the same chromosome pair, using single-linkage clustering.
+    Greedy leader clustering on the sorted evidence: an item joins the most
+    recent cluster whose first item has the same chromosome pair and both
+    breakpoints within max_distance of its own, otherwise it starts a new
+    cluster. This is not single-linkage: a chain of items that are each close to
+    the next but far from the cluster's first item is split.
 
     Args:
         evidence_list: List of SVEvidence objects.
@@ -901,7 +913,9 @@ def _calculate_sv_quality(evidence: SVEvidence, total_support: int) -> float:
         total_support: Total support count.
 
     Returns:
-        Quality score (Phred-scaled, capped at 999).
+        A heuristic score between 0 and 90 (up to 60 from the support count,
+        10 for having both kinds of evidence, up to 20 for unique reads). It is
+        not a calibrated Phred-scaled probability.
     """
     if total_support <= 0:
         return 0.0

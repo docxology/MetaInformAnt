@@ -14,6 +14,14 @@ from dataclasses import dataclass
 from typing import Any, NamedTuple
 
 from metainformant.core.utils.logging import get_logger
+from metainformant.structural_variants._breakends import (
+    TRANSLOCATION_TYPES,
+    Junction,
+    canonical_junction,
+    is_translocation,
+    junctions_agree,
+    variant_regions,
+)
 
 logger = get_logger(__name__)
 
@@ -64,8 +72,12 @@ def filter_by_quality(
             - 'support' or 'n_support': Number of supporting reads (int)
             - 'mapq': Mean mapping quality of supporting reads (float, optional)
             - 'gq': Genotype quality (float, optional)
-        min_qual: Minimum quality score (Phred-scaled, default 20).
-        min_support: Minimum number of supporting reads (default 3).
+            A variant without 'mapq' or 'gq' is not filtered on it (the filter
+            treats the missing value as passing, as 60 and 99).
+        min_qual: Minimum quality score (default 20). The environment variable
+            ``SV_MIN_QUAL``, when set, overrides it.
+        min_support: Minimum number of supporting reads (default 3). The
+            environment variable ``SV_MIN_SUPPORT``, when set, overrides it.
         min_mapq: Minimum mean mapping quality (default 0, no filter).
         min_gq: Minimum genotype quality (default 0, no filter).
 
@@ -219,16 +231,31 @@ def filter_by_frequency(
     Variant matching uses both position proximity and reciprocal overlap
     to find matching database entries.
 
+    A translocation (``TRA``/``BND``) has no interval, so reciprocal overlap
+    cannot match it. It is matched on both breakpoints instead, against database
+    entries that are translocations too: ``chrom`` and ``start`` of the variant
+    against the entry's, and ``chrom2`` and ``pos2`` likewise, each pair of
+    positions within ``match_window``, whichever breakpoint each wrote first.
+    ``min_reciprocal_overlap`` does not apply to it. Only the list layout can
+    hold a translocation entry (a dict with 'sv_type' TRA or BND and the
+    second breakpoint in 'chrom2' and 'pos2'); the frequency of the best
+    matching entry is used, as for intervals. An interval variant never matches
+    a translocation entry, nor a translocation an interval entry.
+
     Args:
         variants: List of variant dictionaries with 'chrom', 'start', 'end',
-            'sv_type' keys. May also have 'af' or 'allele_frequency' pre-computed.
+            'sv_type' keys (a translocation also 'chrom2' and 'pos2'). May also
+            have 'af' or 'allele_frequency' pre-computed.
         population_db: Population frequency database. Can be:
             - dict mapping 'chrom:start-end' to allele frequency
-            - list of dicts with 'chrom', 'start', 'end', 'af' keys
+            - list of dicts with 'chrom', 'start', 'end', 'af' keys (a
+              translocation entry: 'chrom', 'start', 'chrom2', 'pos2', 'af' and
+              'sv_type' TRA or BND)
             - None (no filtering applied, all variants pass)
         max_af: Maximum population allele frequency to keep (default 0.01 = 1%).
         match_window: Window in bp around breakpoints for matching database entries.
-        min_reciprocal_overlap: Minimum reciprocal overlap fraction for matching.
+        min_reciprocal_overlap: Minimum reciprocal overlap fraction for matching
+            interval variants.
 
     Returns:
         Tuple of (filtered_variants, filter_statistics).
@@ -257,9 +284,10 @@ def filter_by_frequency(
 
     # Normalize population database to a lookup structure
     pop_lookup: dict[str, list[tuple[int, int, float, str]]] = {}
+    pop_translocations: list[tuple[Junction, float]] = []
     if population_db is not None:
         parsed = _parse_population_db(population_db)
-        if parsed.n_records and not parsed.lookup:
+        if parsed.n_records and not parsed.lookup and not parsed.translocations:
             raise ValueError(
                 f"population_db layout is not supported: none of its {parsed.n_records} entries could be used "
                 f"(for example {parsed.examples[0]}). {_POPULATION_DB_LAYOUTS}"
@@ -270,6 +298,7 @@ def filter_by_frequency(
                 f"in an unsupported layout (for example {parsed.examples[0]}). {_POPULATION_DB_LAYOUTS}"
             )
         pop_lookup = parsed.lookup
+        pop_translocations = parsed.translocations
 
     passed: list[dict[str, Any]] = []
 
@@ -277,18 +306,21 @@ def filter_by_frequency(
         # Check if AF is pre-computed on the variant
         af = v.get("af", v.get("allele_frequency", None))
 
-        if af is None and pop_lookup:
+        if af is None and (pop_lookup or pop_translocations):
             # Look up in population database
-            chrom = v.get("chrom", "")
-            start = v.get("start", 0)
-            end = v.get("end", 0)
-            sv_type = v.get("sv_type", "")
-            if hasattr(sv_type, "value"):
-                sv_type = sv_type.value
+            if is_translocation(v):
+                af = _lookup_translocation_frequency(pop_translocations, v, match_window)
+            else:
+                chrom = v.get("chrom", "")
+                start = v.get("start", 0)
+                end = v.get("end", 0)
+                sv_type = v.get("sv_type", "")
+                if hasattr(sv_type, "value"):
+                    sv_type = sv_type.value
 
-            af = _lookup_population_frequency(
-                pop_lookup, chrom, start, end, sv_type, match_window, min_reciprocal_overlap
-            )
+                af = _lookup_population_frequency(
+                    pop_lookup, chrom, start, end, sv_type, match_window, min_reciprocal_overlap
+                )
 
         if af is not None and af > max_af:
             continue
@@ -331,7 +363,11 @@ def apply_blacklist(
             A zero-length variant (``start == end``, such as an insertion point)
             has no bases to overlap: it counts as fully overlapping (fraction 1.0)
             when it lies strictly inside a region, and not at all on a region's
-            edge, the same as a variant that only abuts a region.
+            edge, the same as a variant that only abuts a region. A translocation
+            (``TRA``/``BND``) is tested at each of its two breakpoints
+            (``chrom``/``start`` and ``chrom2``/``pos2``) as a zero-length variant on
+            that breakpoint's own chromosome, and is removed when either one
+            qualifies.
 
     Returns:
         Tuple of (filtered_variants, filter_statistics).
@@ -369,34 +405,10 @@ def apply_blacklist(
     passed: list[dict[str, Any]] = []
 
     for v in variants:
-        chrom = v.get("chrom", "")
-        start = v.get("start", 0)
-        end = v.get("end", 0)
-        variant_size = max(1, end - start)
-
-        if chrom not in bl_by_chrom:
-            passed.append(v)
-            continue
-
-        # Check overlap with any blacklist region
-        max_overlap_frac = 0.0
-        for bl_start, bl_end in bl_by_chrom[chrom]:
-            if bl_start >= end:
-                break  # No more possible overlaps (sorted)
-            if bl_end <= start:
-                continue
-
-            if end == start:
-                # Zero-length variant strictly inside the region (the two checks above
-                # ruled out a region that begins at or after it, or ends at or before it).
-                max_overlap_frac = 1.0
-                break
-
-            overlap_start = max(start, bl_start)
-            overlap_end = min(end, bl_end)
-            overlap_bp = max(0, overlap_end - overlap_start)
-            overlap_frac = overlap_bp / variant_size
-            max_overlap_frac = max(max_overlap_frac, overlap_frac)
+        # An interval variant is one region; a translocation is a zero-length region at each breakpoint.
+        max_overlap_frac = max(
+            _blacklist_overlap(bl_by_chrom.get(chrom, []), start, end) for chrom, start, end in variant_regions(v)
+        )
 
         if max_overlap_frac > min_overlap_fraction:
             continue
@@ -421,6 +433,31 @@ def apply_blacklist(
     return passed, stats
 
 
+def _blacklist_overlap(regions: list[tuple[int, int]], start: int, end: int) -> float:
+    """Largest fraction of ``[start, end)`` that one of the sorted blacklist ``regions`` covers.
+
+    A zero-length interval strictly inside a region counts as fully covered (1.0); on a region's edge, not at all.
+    """
+    variant_size = max(1, end - start)
+    max_overlap_frac = 0.0
+    for bl_start, bl_end in regions:
+        if bl_start >= end:
+            break  # No more possible overlaps (sorted)
+        if bl_end <= start:
+            continue
+
+        if end == start:
+            # Zero-length variant strictly inside the region (the two checks above
+            # ruled out a region that begins at or after it, or ends at or before it).
+            return 1.0
+
+        overlap_start = max(start, bl_start)
+        overlap_end = min(end, bl_end)
+        overlap_bp = max(0, overlap_end - overlap_start)
+        max_overlap_frac = max(max_overlap_frac, overlap_bp / variant_size)
+    return max_overlap_frac
+
+
 _POPULATION_DB_LAYOUTS = (
     "Supported layouts: a dict mapping 'chrom:start-end' (or 'chrom:start-end-svtype') to an allele "
     "frequency, or a list of dicts with 'chrom', 'start', 'end' and 'af' (or 'allele_frequency') "
@@ -436,12 +473,15 @@ class _PopulationParse(NamedTuple):
         n_records: Number of entries in the database.
         n_skipped: Entries that could not be read.
         examples: Descriptions of the first few skipped entries.
+        translocations: ``(canonical junction, af)`` of the translocation entries that could be read (they have no
+            interval, so they are not in ``lookup``).
     """
 
     lookup: dict[str, list[tuple[int, int, float, str]]]
     n_records: int
     n_skipped: int
     examples: list[str]
+    translocations: list[tuple[Junction, float]]
 
 
 def _as_position(value: Any) -> int | None:
@@ -471,15 +511,19 @@ def _parse_population_db(population_db: Any) -> _PopulationParse:
     Args:
         population_db: A dict ``{'chrom:start-end[-svtype]': af}`` or an iterable of dicts
             with ``chrom``, ``start``, ``end``, ``af`` (or ``allele_frequency``) and
-            optionally ``sv_type``.
+            optionally ``sv_type``. A dict with ``sv_type`` TRA or BND is a translocation entry:
+            ``chrom``, ``start``, ``af`` and its second breakpoint as ``chrom2``/``pos2`` (no ``end``
+            is needed).
 
     Returns:
-        The usable entries by chromosome, plus how many entries were skipped and why.
+        The usable entries by chromosome, the translocation entries, plus how many entries were
+        skipped and why.
 
     Raises:
         ValueError: If ``population_db`` is neither a dict nor an iterable.
     """
     lookup: dict[str, list[tuple[int, int, float, str]]] = {}
+    translocations: list[tuple[Junction, float]] = []
     n_records = 0
     n_skipped = 0
     examples: list[str] = []
@@ -519,22 +563,42 @@ def _parse_population_db(population_db: Any) -> _PopulationParse:
                 skip(f"entry {index}: {type(entry).__name__}, not a dict")
                 continue
             chrom = entry.get("chrom")
-            start = _as_position(entry.get("start"))
-            end = _as_position(entry.get("end"))
-            frequency = _as_frequency(entry.get("af", entry.get("allele_frequency")))
-            if not isinstance(chrom, str) or not chrom or start is None or end is None or frequency is None:
-                skip(f"entry {index}: {sorted(str(k) for k in entry)}")
-                continue
             sv_type = entry.get("sv_type", "")
             if hasattr(sv_type, "value"):
                 sv_type = sv_type.value
+            frequency = _as_frequency(entry.get("af", entry.get("allele_frequency")))
+            if sv_type in TRANSLOCATION_TYPES:
+                junction = _entry_junction(entry)
+                if not isinstance(chrom, str) or not chrom or junction is None or frequency is None:
+                    skip(f"entry {index}: {sorted(str(k) for k in entry)}")
+                    continue
+                translocations.append((junction, frequency))
+                continue
+            start = _as_position(entry.get("start"))
+            end = _as_position(entry.get("end"))
+            if not isinstance(chrom, str) or not chrom or start is None or end is None or frequency is None:
+                skip(f"entry {index}: {sorted(str(k) for k in entry)}")
+                continue
             lookup.setdefault(chrom, []).append((start, end, frequency, sv_type))
 
     # Sort each chromosome
     for chrom in lookup:
         lookup[chrom].sort()
 
-    return _PopulationParse(lookup, n_records, n_skipped, examples)
+    return _PopulationParse(lookup, n_records, n_skipped, examples, translocations)
+
+
+def _entry_junction(entry: Mapping[str, Any]) -> Junction | None:
+    """Canonical junction of a translocation database entry, or None when its positions cannot be read.
+
+    ``start`` is required (a missing one is not position 0); ``pos2`` and ``end``, when present, must be integral.
+    """
+    if _as_position(entry.get("start")) is None:
+        return None
+    try:
+        return canonical_junction(entry)
+    except ValueError:
+        return None
 
 
 def _build_population_lookup(
@@ -606,4 +670,29 @@ def _lookup_population_frequency(
             if best_af is None or p_af > best_af:
                 best_af = p_af
 
+    return best_af
+
+
+def _lookup_translocation_frequency(
+    translocations: list[tuple[Junction, float]],
+    variant: Mapping[str, Any],
+    match_window: int,
+) -> float | None:
+    """Look up the population frequency of a translocation.
+
+    Args:
+        translocations: ``(canonical junction, af)`` of the translocation entries of the database.
+        variant: The translocation (``chrom``/``start`` and ``chrom2``/``pos2``).
+        match_window: Largest distance between corresponding breakpoints.
+
+    Returns:
+        The highest frequency among the entries whose two breakpoints lie within ``match_window`` of the
+        variant's, in either orientation; None when no entry matches.
+    """
+    junction = canonical_junction(variant)
+    best_af: float | None = None
+    for entry_junction, entry_af in translocations:
+        if junctions_agree(junction, entry_junction, match_window):
+            if best_af is None or entry_af > best_af:
+                best_af = entry_af
     return best_af
