@@ -1,6 +1,6 @@
 # Cloud Module
 
-Cloud deployment and infrastructure automation for METAINFORMANT bioinformatics workflows.
+Google Cloud deployment of the METAINFORMANT amalgkit RNA-seq pipeline.
 
 ## Overview
 
@@ -49,7 +49,15 @@ flowchart TD
     end
 ```
 
-`create_vm` attaches `scripts/cloud/cloud_startup.sh` as the instance startup script and passes the pipeline settings as instance metadata. On boot the script installs Docker, mounts any local NVMe SSDs, clones the repository, builds the Docker image and starts the amalgkit RNA-seq pipeline container (`scripts/rna/process_species.py`). If a GCS bucket is configured it also installs a cron job that syncs results every 30 minutes.
+`create_vm` attaches `scripts/cloud/cloud_startup.sh` as the instance startup script and passes the pipeline settings as instance metadata. On boot the script:
+
+- installs Docker and mounts any local NVMe SSDs (RAID 0 on `/opt/MetaInformAnt`);
+- clones the repository (shallow, branch `repo_branch`) into `/opt/MetaInformAnt` and builds the Docker image;
+- starts a container named `metainformant-pipeline` with `--restart unless-stopped`, `--cpus` set to `threads`, `--memory=90g`, `/opt/MetaInformAnt/projects` and `/opt/MetaInformAnt/config` bind-mounted at `/app/projects` and `/app/config`, and `PIPELINE_MAX_GB`, `PIPELINE_WORKERS` and `PIPELINE_THREADS` taken from the metadata;
+- runs `scripts/rna/process_species.py --species apis_mellifera --config-dir projects/hymenoptera_amalgkit/config/amalgkit --data-root "$AMALGKIT_DATA_ROOT"` in that container, so the species is fixed in the script;
+- if a GCS bucket is configured, installs a cron job that runs `gsutil -m rsync -r /opt/MetaInformAnt/projects/ gs://<bucket>/projects/` every 30 minutes.
+
+The script logs to `/var/log/metainformant-startup.log`. As written, it has two limits. It never defines `AMALGKIT_DATA_ROOT` and runs under `set -u`, so it stops at the `docker run` line unless that variable is already set in its environment. And `projects/hymenoptera_amalgkit` is a git submodule that the shallow `git clone` does not populate, so the config directory above is empty until the submodule is initialised.
 
 ## Key Components
 
@@ -61,7 +69,7 @@ Configuration management for cloud deployments:
 from metainformant.cloud import CloudConfig
 
 config = CloudConfig(
-    project="my-gcp-project",
+    project="my-gcp-project",  # placeholder: replace with your GCP project ID
     zone="us-central1-a",
     machine_type="n2-standard-32",
     disk_size_gb=500,
@@ -72,6 +80,8 @@ config = CloudConfig(
 
 errors = config.validate()  # [] when valid
 ```
+
+Names such as `my-gcp-project`, `my-analysis-001`, `my-results-bucket` and `MY_PROJECT` on this page are placeholders: replace them with your own GCP project ID, instance name and bucket.
 
 **Configuration Fields:**
 
@@ -84,16 +94,16 @@ errors = config.validate()  # [] when valid
 | `disk_size_gb` | int | Boot disk size in GB (default: 500) |
 | `local_ssd_count` | int | Number of NVMe local SSDs to attach (default: 0) |
 | `spot` | bool | Use Spot provisioning for cost savings (default: `True`) |
-| `max_gb` | float | Maximum sample size in GB for the pipeline (default: 20.0) |
+| `max_gb` | float | Sample size cap for the pipeline (default: 20.0): samples whose `total_bases` exceed `max_gb` x 10^9 are skipped |
 | `workers` | int | Parallel download/quantification workers (default: 80) |
-| `threads` | int | Total CPU threads for the pipeline (default: 96) |
+| `threads` | int | Total CPU threads for the pipeline (default: 96); the startup script also uses it as the container's `--cpus` limit |
 | `gcs_bucket` | str | Optional GCS bucket for result sync (default: `""`) |
 | `repo_url` | str | Git URL the VM clones (default: the MetaInformAnt repository) |
 | `repo_branch` | str | Git branch to check out (default: `main`) |
 | `docker_image` | str | Name of the Docker image built on the VM (default: `metainformant-pipeline`) |
 | `service_account_email` | str | Optional service account for the VM (default: `""`) |
-| `config_dir` | str | Local config directory (default: `config/amalgkit`) |
-| `output_dir` | str | Local output directory (default: `output/amalgkit`) |
+| `config_dir` | str | Declared with default `config/amalgkit`; not read by `GCPDeployer` or `deploy_gcp.py` |
+| `output_dir` | str | Declared with default `output/amalgkit`; not read by `GCPDeployer` or `deploy_gcp.py` |
 | `image_family` | str | Boot image family (default: `debian-12`) |
 | `image_project` | str | Boot image project (default: `debian-cloud`) |
 
@@ -137,16 +147,16 @@ deployer.delete_vm()                  # delete the VM and its disks
 | Method | Description |
 |--------|-------------|
 | `GCPDeployer.gcloud_installed()` | Static: True when the `gcloud` CLI is on `PATH` |
-| `create_vm(dry_run=False)` | Create the VM with the startup script and metadata; returns the instance details, or `{"dry_run": True, "command": ...}` when `dry_run=True`. Raises `ValueError` for an invalid config and `FileNotFoundError` without the startup script |
-| `delete_vm()` | Delete the VM and all its disks; returns True on success |
-| `stop_vm()` / `start_vm()` | Stop (keeping the disk) or start the VM; return True on success |
-| `get_vm_status()` | Instance description as a dict (`{"status": "NOT_FOUND"}` when it does not exist) |
+| `create_vm(dry_run=False)` | Create the VM with the startup script and metadata; returns the instance details, or `{"dry_run": True, "command": ...}` when `dry_run=True`. Raises `ValueError` for an invalid config, `FileNotFoundError` without the startup script, and `subprocess.CalledProcessError` when `gcloud` fails |
+| `delete_vm()` | Delete the VM and all its disks; returns True on success and False when `gcloud` exits non-zero |
+| `stop_vm()` / `start_vm()` | Stop (keeping the disk) or start the VM; return True on success and False when `gcloud` exits non-zero |
+| `get_vm_status()` | Instance description as a dict; `{"status": "NOT_FOUND"}` whenever `gcloud describe` exits non-zero (for example when the VM does not exist or the project is wrong) |
 | `get_pipeline_status()` | Run the remote status check over SSH and return its text |
 | `tail_logs(lines=50)` | Tail the pipeline container's logs over SSH |
 | `get_startup_log()` | Read the VM startup script log (`journalctl`) over SSH |
 | `wait_for_ssh(max_wait=300)` | Block until SSH works; returns False after `max_wait` seconds |
-| `download_results(local_dir="output/amalgkit")` | Download quantification results with `scripts/cloud/download_results.sh` (direct `gcloud compute scp` fallback) |
-| `sync_to_gcs()` | Run a `gsutil rsync` to the configured bucket on the VM (False without `gcs_bucket`) |
+| `download_results(local_dir="output/amalgkit")` | Create `local_dir`, then run `bash scripts/cloud/download_results.sh --output <local_dir>`; returns True, or False if the 2 hour timeout expires, and raises `subprocess.CalledProcessError` when the script exits non-zero. The script takes the project, zone and VM from the `GCP_PROJECT`, `GCP_ZONE` and `GCP_VM` environment variables (defaults `cryptoptera`, `us-central1-a`, `metainformant-pipeline`), not from `CloudConfig`. Only when the script file is missing does the method fall back to direct `gcloud compute scp` calls, which use the config's project, zone and instance name |
+| `sync_to_gcs()` | Run `gsutil -m rsync -r /opt/MetaInformAnt/projects/ gs://<bucket>/amalgkit/` on the VM over SSH (False without `gcs_bucket`, or when the command fails) |
 | `full_deploy()` | Create the VM, wait for SSH and print a summary; returns `{"vm": ..., "ssh_ready": ..., "status": ...}` |
 
 ### Command-line interface
@@ -155,14 +165,16 @@ deployer.delete_vm()                  # delete the VM and its disks
 
 ```text
 python scripts/cloud/deploy_gcp.py deploy --project MY_PROJECT [--dry-run]
-python scripts/cloud/deploy_gcp.py status
-python scripts/cloud/deploy_gcp.py logs [--lines 100]
-python scripts/cloud/deploy_gcp.py startup-log
-python scripts/cloud/deploy_gcp.py download [--output output/amalgkit]
-python scripts/cloud/deploy_gcp.py stop | start | destroy
+python scripts/cloud/deploy_gcp.py status --project MY_PROJECT
+python scripts/cloud/deploy_gcp.py logs --project MY_PROJECT [--lines 100]
+python scripts/cloud/deploy_gcp.py startup-log --project MY_PROJECT
+python scripts/cloud/deploy_gcp.py download [--output output/amalgkit]   # needs GCP_PROJECT in the environment
+python scripts/cloud/deploy_gcp.py stop | start | destroy   # each with --project MY_PROJECT
 ```
 
-Its `deploy` defaults (`n2-standard-32`, 1000 GB disk, 28 workers, 32 threads) differ from the `CloudConfig` defaults above. `status`, `logs`, `startup-log`, `download`, `stop`, `start` and `destroy` also accept `--project`, `--zone` and `--name`.
+Its `deploy` defaults (`n2-standard-32`, 1000 GB disk, 28 workers, 32 threads) differ from the `CloudConfig` defaults above; `--max-gb` defaults to 20.0 in both. `deploy` also takes `--zone`, `--name`, `--machine-type`, `--disk-gb`, `--local-ssd-count`, `--max-gb`, `--workers`, `--threads`, `--gcs-bucket` and `--no-spot`, and `--dry-run` prints the `gcloud` command without running it.
+
+`status`, `logs`, `startup-log`, `download`, `stop`, `start` and `destroy` also accept `--project`, `--zone` and `--name`. Every `gcloud` call passes `--project`, so give these commands the same `--project`, `--zone` and `--name` that `deploy` used. `destroy` asks for confirmation (`[y/N]`) before deleting the VM and all its disks. With `download_results.sh` present, `download` has no use for `--project`, `--zone` and `--name`: the script reads `GCP_PROJECT`, `GCP_ZONE` and `GCP_VM` from the environment (see the `download_results` row above), so export those first.
 
 ## Genome Preparation
 
@@ -178,7 +190,7 @@ genome_dir = download_reference_genome("GCA_003254395.2", "/data/genomes/")  # A
 fasta_path = prepare_reference_genome(genome_dir)
 ```
 
-**Indexing tools:** `prepare_reference_genome` runs BWA (`bwa index`) and the SAMtools FASTA index (`samtools faidx`). Kallisto transcriptome indexes for the RNA workflow are built by `metainformant.rna.amalgkit.genome_prep` (`build_kallisto_index`, `orchestrate_genome_setup`).
+**Indexing tools:** `prepare_reference_genome` runs BWA (`bwa index`) and the SAMtools FASTA index (`samtools faidx`). Kallisto transcriptome indexes for the RNA workflow are built by the streaming orchestrator itself when an index is missing (`metainformant.rna.engine.workflow_planning.prepare_reference_genome` downloads `genome.files.transcriptome_fasta` from `genome.ftp_url` and runs `kallisto index -i`), ahead of time for every species config by `scripts/cloud/prep_genomes.py`, or with the helpers in `metainformant.rna.amalgkit.genome_prep` (`build_kallisto_index`, `orchestrate_genome_setup`).
 
 ## Workflow Example: RNA-seq on Cloud
 
@@ -202,14 +214,16 @@ deployment = deployer.full_deploy()
 print(deployer.get_pipeline_status())
 print(deployer.tail_logs(lines=100))
 
-# 3. Download results (quantification output, not raw FASTQ files)
+# 3. Download results (quantification output, not raw FASTQ files). The download
+#    script reads GCP_PROJECT, GCP_ZONE and GCP_VM from the environment, so export
+#    them for this project and instance name first.
 deployer.download_results("output/cloud_run/")
 
 # 4. Clean up (deletes the VM and its disks)
 deployer.delete_vm()
 ```
 
-The pipeline reads its species and data root from the repository on the VM (`scripts/rna/process_species.py` with `projects/hymenoptera_amalgkit/config/amalgkit`); `CloudConfig` only sets the resource limits (`max_gb`, `workers`, `threads`) it passes through instance metadata.
+The startup script fixes the species (`apis_mellifera`) and the config directory (`projects/hymenoptera_amalgkit/config/amalgkit`); `CloudConfig` only sets the resource limits (`max_gb`, `workers`, `threads`) that it passes through instance metadata. To process every configured species, run `scripts/rna/run_all_species.py` on the VM; `scripts/cloud/vm_setup.sh` does that natively, without Docker.
 
 ## Cost Optimization
 
@@ -230,11 +244,13 @@ The comment in `cloud_config.py` puts the default `n2-highcpu-96` machine at abo
 
 | Failure | Cause | Fix |
 |---------|-------|-----|
-| `ValueError: Invalid config: GCP project ID is required` | `project` is empty | Set `CloudConfig(project=...)` or pass `--project` |
+| `ValueError: Invalid config: GCP project ID is required (--project)` | `project` is empty | Set `CloudConfig(project=...)` or pass `--project` |
 | `FileNotFoundError: Startup script not found` | Running outside a repository checkout | Use a checkout that contains `scripts/cloud/cloud_startup.sh` |
 | `PERMISSION_DENIED` | Missing IAM roles | Grant `compute.instanceAdmin.v1` + `storage.objectAdmin` |
-| `INSUFFICIENT_CPU` | Quota exhausted | Request quota increase or use different zone |
+| `Quota 'CPUS_ALL_REGIONS' exceeded` | The machine type needs more vCPUs than the project quota allows | Request a quota increase, or pass a smaller `--machine-type` |
 | VM runs but the pipeline never starts | Startup script failed (for example Docker install or repository clone) | `deployer.get_startup_log()`, or read `/var/log/metainformant-startup.log` on the VM |
+| `AMALGKIT_DATA_ROOT: unbound variable` in the startup log | The script uses the variable under `set -u` without defining it | Provide `AMALGKIT_DATA_ROOT` in the script's environment, or edit the `--data-root` argument |
+| Container exits with `no runnable configuration found for 'apis_mellifera'` | `projects/hymenoptera_amalgkit` (a submodule) is empty after the shallow clone | Initialise the submodule under `/opt/MetaInformAnt`, or use `config/amalgkit` as `--config-dir` |
 | `wait_for_ssh` returns False | Firewall blocking, or the VM is still booting | Allow TCP:22 in VPC firewall rules; wait and retry |
 
 ---
@@ -245,9 +261,9 @@ The comment in `cloud_config.py` puts the default `n2-highcpu-96` machine at abo
 
 ## See Also
 
-- **Documentation**: [index.md](index.md) — Architecture, deployment guides, cost optimization
-- **API Reference**: [SPEC.md](SPEC.md) — Full type signatures, error codes, JSON schemas
-- **Troubleshooting**: [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — Common errors + fixes, logs to inspect, escalation paths
-- **Economics**: [ECONOMICS.md](ECONOMICS.md) — Cost breakdown, preemptible VM strategy
+- **Documentation**: [index.md](index.md) — Overview, defaults, links to the guides
+- **API Reference**: [SPEC.md](SPEC.md) — Type signatures, failure behavior, instance metadata keys, CLI and script reference
+- **Troubleshooting**: [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — Issues met during the first deployment and their fixes
+- **Economics**: [ECONOMICS.md](ECONOMICS.md) — Spot versus standard provisioning, disk sizing, cost-related pipeline settings
 - **GWAS Pipeline**: [../gwas/index.md](../gwas/index.md) — No cloud runner yet; the startup script launches the amalgkit RNA-seq pipeline
 - **Mothership**: [README.md](../README.md) — Project homepage
