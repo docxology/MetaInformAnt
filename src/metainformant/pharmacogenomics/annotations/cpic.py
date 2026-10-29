@@ -20,6 +20,9 @@ from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
+from ..alleles.phenotype import MetabolizerPhenotype
+from ..alleles.star_allele import _parse_activity_value
+
 logger = get_logger(__name__)
 
 
@@ -295,7 +298,10 @@ def load_cpic_guidelines(
     """Load CPIC guideline data.
 
     Loads from either an external file (TSV or JSON) or the built-in guideline
-    table. The built-in table covers major CPIC Level A/A-B guidelines.
+    table. The built-in table holds 9 Level A drug-gene guidelines (codeine, tramadol,
+    tamoxifen, clopidogrel, voriconazole, warfarin, fluorouracil, azathioprine and
+    simvastatin), a small subset of CPIC's: a drug-gene pair missing from it does not
+    mean CPIC has no guideline for it. Load the full set from a file for that.
 
     Args:
         filepath: Optional path to external CPIC guideline file.
@@ -444,7 +450,10 @@ def get_dosing_recommendation(
 def _normalize_phenotype_string(phenotype: str) -> str:
     """Normalize phenotype string for matching.
 
-    Handles abbreviations (PM, IM, NM, RM, UM) and full names.
+    Handles every form ``MetabolizerPhenotype.from_string`` accepts: full names ("Poor
+    Metabolizer"), abbreviations (PM, IM, NM, RM, UM; EM is the old "extensive" for normal)
+    and the bare tokens ("poor", "ultra-rapid") that ``metabolism.predict_metabolizer_status``
+    returns. Any other text is only stripped and lowercased.
 
     Args:
         phenotype: Raw phenotype string
@@ -452,17 +461,11 @@ def _normalize_phenotype_string(phenotype: str) -> str:
     Returns:
         Normalized phenotype string
     """
-    abbrev_map = {
-        "pm": "poor metabolizer",
-        "im": "intermediate metabolizer",
-        "nm": "normal metabolizer",
-        "em": "normal metabolizer",  # "Extensive" is old terminology
-        "rm": "rapid metabolizer",
-        "um": "ultrarapid metabolizer",
-    }
-
     normalized = phenotype.strip().lower()
-    return abbrev_map.get(normalized, normalized)
+    try:
+        return MetabolizerPhenotype.from_string(normalized).value.lower()
+    except ValueError:
+        return normalized
 
 
 def list_actionable_genes(
@@ -474,21 +477,29 @@ def list_actionable_genes(
     Args:
         guidelines: Optional pre-loaded guidelines
         min_level: Minimum CPIC level to include ("A" for Level A only,
-            "B" for Level A and B)
+            "B" for Level A and B), case-insensitive
 
     Returns:
         List of dictionaries with keys: gene, drug, cpic_level
+
+    Raises:
+        ValueError: If ``min_level`` is not "A", "B", "C" or "D" (an unrecognised level is not
+            read as "A").
     """
     if guidelines is None:
         guidelines = _CPIC_GUIDELINES
 
+    level_floor = min_level.strip().upper()
+    if level_floor not in ("A", "B", "C", "D"):
+        raise ValueError(f"Unrecognised min_level {min_level!r}: use 'A', 'B', 'C' or 'D'")
+
     accepted_levels = {"A"}
-    if min_level.upper() in ("B", "C", "D"):
+    if level_floor in ("B", "C", "D"):
         accepted_levels.add("A/B")
         accepted_levels.add("B")
-    if min_level.upper() in ("C", "D"):
+    if level_floor in ("C", "D"):
         accepted_levels.add("C")
-    if min_level.upper() == "D":
+    if level_floor == "D":
         accepted_levels.add("D")
 
     actionable: list[dict[str, str]] = []
@@ -534,6 +545,9 @@ def parse_cpic_allele_definitions(
 
     Expected TSV columns: gene, allele, rsid, position, ref, alt, function, activity_value
 
+    Every TSV row needs a gene, an allele and an activity value (a number >= 0): none is assumed,
+    so an allele with no activity value is not read as normal function (1.0).
+
     Args:
         filepath: Path to allele definition TSV/JSON file
 
@@ -543,6 +557,7 @@ def parse_cpic_allele_definitions(
 
     Raises:
         FileNotFoundError: If file does not exist
+        ValueError: If a TSV row has no gene or allele, or no valid activity value
     """
     from metainformant.core import io
 
@@ -565,12 +580,13 @@ def parse_cpic_allele_definitions(
         allele_meta: dict[tuple[str, str], dict[str, Any]] = {}
 
         for row in reader:
-            gene = row.get("gene", "").upper()
-            allele = row.get("allele", "")
-            rsid = row.get("rsid", "")
-            position = row.get("position", "")
-            function = row.get("function", "Unknown function")
-            activity = row.get("activity_value", "1.0")
+            gene = (row.get("gene") or "").strip().upper()
+            allele = (row.get("allele") or "").strip()
+            if not gene or not allele:
+                raise ValueError(f"Allele definition file {filepath} has a row without a gene or an allele name")
+            rsid = row.get("rsid") or ""
+            position = row.get("position") or ""
+            function = row.get("function") or "Unknown function"
 
             key = (gene, allele)
             if key not in allele_variants:
@@ -578,15 +594,15 @@ def parse_cpic_allele_definitions(
                 allele_meta[key] = {
                     "allele": allele,
                     "function": function,
-                    "activity_value": float(activity) if activity else 1.0,
+                    "activity_value": _parse_activity_value(row.get("activity_value"), f"{gene} {allele}", filepath),
                 }
 
             # Add variant identifier
             if rsid:
                 allele_variants[key].append(rsid)
             elif position:
-                ref = row.get("ref", "")
-                alt = row.get("alt", "")
+                ref = row.get("ref") or ""
+                alt = row.get("alt") or ""
                 allele_variants[key].append(f"{position}:{ref}:{alt}")
 
     # Assemble results

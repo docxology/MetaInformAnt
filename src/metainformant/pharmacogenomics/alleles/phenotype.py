@@ -10,18 +10,27 @@ allele-function rules of CYP2C19, SLCO1B1 and UGT1A1, where a sum of activity
 values cannot always tell the allele pairs apart. Also supports population-level
 phenotype frequency estimation from allele frequency data.
 
+Only genes that CPIC defines a phenotype for are classified (``supported_phenotype_genes()``).
+For any other gene, including CYP1A2 whose alleles have activity values but no CPIC
+phenotype, every function here that assigns a phenotype or lists bands raises
+``ValueError`` naming the gene and the supported genes: no other gene's bands are borrowed.
+A diplotype with an allele that has no activity value is indeterminate (CPIC's term),
+never scored as normal function.
+
 Metabolizer categories:
     - Poor Metabolizer (PM): No or very low enzyme activity
     - Intermediate Metabolizer (IM): Reduced activity between PM and NM
     - Normal Metabolizer (NM): Typical activity level (reference)
     - Rapid Metabolizer (RM): Increased activity (one increased-function allele)
     - Ultrarapid Metabolizer (UM): Very high activity (gene duplication or two increased-function alleles)
+    - Indeterminate (IND): No phenotype can be assigned (an uncharacterized allele)
 """
 
 from __future__ import annotations
 
 import math
 import re
+from collections.abc import Sequence
 from enum import Enum, IntEnum
 from typing import Any
 
@@ -32,6 +41,7 @@ from .diplotype import (
     Diplotype,
     _normalize_allele_name,
     determine_diplotype,
+    uncharacterized_alleles,
 )
 
 logger = get_logger(__name__)
@@ -113,9 +123,6 @@ _NM = MetabolizerPhenotype.NORMAL
 _RM = MetabolizerPhenotype.RAPID
 _UM = MetabolizerPhenotype.ULTRARAPID
 _INF = math.inf
-
-# Gene whose bands stand in for genes that have none (logged as a warning when used).
-_DEFAULT_THRESHOLD_GENE = "CYP2D6"
 
 # ── Gene-specific phenotype bands over the activity score ──────────────────────
 # The activity score of a diplotype is the sum of its two allele values in
@@ -203,6 +210,45 @@ _PHENOTYPE_THRESHOLDS: dict[str, tuple[tuple[float, bool, MetabolizerPhenotype],
         (_INF, True, _NM),
     ),
 }
+
+
+def supported_phenotype_genes() -> list[str]:
+    """Return the genes that have a CPIC phenotype definition, sorted.
+
+    These are the only genes the functions of this module classify; every other gene raises
+    ``ValueError``. A gene can have activity values and still not be listed: CYP1A2 can be
+    scored (``diplotype.determine_diplotype``) but CPIC defines no phenotype for it.
+    """
+    return sorted(_PHENOTYPE_THRESHOLDS)
+
+
+def _canonical_gene(gene: str) -> str:
+    """Return the gene symbol as the tables spell it (stripped, upper case)."""
+    return gene.strip().upper()
+
+
+def _unsupported_gene_error(gene_upper: str) -> ValueError:
+    """Build the ValueError for a gene without a CPIC phenotype definition."""
+    if gene_upper in _ACTIVITY_SCORE_TABLES:
+        detail = " (it has activity values, so it can be scored, but CPIC defines no phenotype for it)"
+    else:
+        detail = ""
+    return ValueError(
+        f"No CPIC phenotype definition for gene {gene_upper!r}{detail}. "
+        f"Supported genes: {', '.join(supported_phenotype_genes())}"
+    )
+
+
+def _phenotype_bands(gene_upper: str) -> tuple[tuple[float, bool, MetabolizerPhenotype], ...]:
+    """Return a gene's score bands.
+
+    Raises:
+        ValueError: If CPIC defines no phenotype for the gene. No other gene's bands stand in.
+    """
+    bands = _PHENOTYPE_THRESHOLDS.get(gene_upper)
+    if bands is None:
+        raise _unsupported_gene_error(gene_upper)
+    return bands
 
 
 # ── Phenotype from the function of the two alleles ─────────────────────────────
@@ -299,10 +345,11 @@ def _phenotype_for_alleles(gene: str, activity1: float, activity2: float) -> Met
     all others from the summed activity score.
 
     Raises:
-        ValueError: If a value is negative or NaN, or the gene has no phenotype for that pair
-            of allele functions (an increased-function SLCO1B1 or UGT1A1 allele).
+        ValueError: If a value is negative or NaN, the gene has no CPIC phenotype definition, or
+            the gene has no phenotype for that pair of allele functions (an increased-function
+            SLCO1B1 or UGT1A1 allele).
     """
-    gene_upper = gene.upper()
+    gene_upper = _canonical_gene(gene)
     rules = _FUNCTION_PHENOTYPES.get(gene_upper)
     if rules is None:
         return predict_metabolizer_status(activity1 + activity2, gene_upper)
@@ -324,9 +371,11 @@ def predict_metabolizer_status(
     """Map an activity score to a metabolizer phenotype category.
 
     Uses the gene-specific bands in ``_PHENOTYPE_THRESHOLDS`` (CPIC definitions, cited
-    there). The bands cover every score >= 0 without gaps. When a gene has no defined
-    bands, applies the CYP2D6 mapping as a default (with a logged warning):
+    there). The bands cover every score >= 0 without gaps. For example, the CYP2D6 bands:
         AS = 0 -> PM, 0 < AS < 1.25 -> IM, 1.25 <= AS <= 2.25 -> NM, AS > 2.25 -> UM
+
+    A gene CPIC defines no phenotype for has no bands, and no other gene's bands stand in
+    for it: it raises (see :func:`supported_phenotype_genes`).
 
     A score is a sum of allele values, so for CYP2C19 it cannot always identify the
     alleles behind it (a decreased-function allele makes *9/*17 sum to the same 2.0 as
@@ -340,23 +389,14 @@ def predict_metabolizer_status(
         MetabolizerPhenotype enum value
 
     Raises:
-        ValueError: If the activity score is negative or NaN
+        ValueError: If the activity score is negative, NaN or None (an unscored diplotype has
+            no score to classify), or the gene has no CPIC phenotype definition; the message
+            names the gene and lists the supported genes
     """
-    if math.isnan(activity_score) or activity_score < 0:
+    if activity_score is None or math.isnan(activity_score) or activity_score < 0:
         raise ValueError(f"Activity score must be a non-negative number, got {activity_score!r}")
 
-    gene_upper = gene.upper()
-    bands = _PHENOTYPE_THRESHOLDS.get(gene_upper)
-
-    if bands is None:
-        logger.warning(
-            "No phenotype thresholds defined for %s, using default %s-like mapping",
-            gene_upper,
-            _DEFAULT_THRESHOLD_GENE,
-        )
-        bands = _PHENOTYPE_THRESHOLDS[_DEFAULT_THRESHOLD_GENE]
-
-    return _band_phenotype(bands, activity_score)
+    return _band_phenotype(_phenotype_bands(_canonical_gene(gene)), activity_score)
 
 
 def get_phenotype_thresholds(
@@ -379,33 +419,30 @@ def get_phenotype_thresholds(
             - "upper_inclusive": Whether a score equal to the upper bound is in the band
             - "phenotype": MetabolizerPhenotype value
             - "abbreviation": Phenotype abbreviation (PM, IM, NM, RM, UM)
-            - "gene_specific": False when the gene has no bands of its own and the
-              default (CYP2D6) bands are returned, as :func:`predict_metabolizer_status` applies;
-              such entries also carry a "note"
+            - "gene_specific": Always True. It used to be False for the default (CYP2D6) bands
+              returned for a gene with none of its own; such a gene now raises. The key is kept
+              so callers written before that still work.
+
+    Raises:
+        ValueError: If the gene has no CPIC phenotype definition; the message names the gene
+            and lists the supported genes
     """
-    gene_upper = gene.upper()
-    bands = _PHENOTYPE_THRESHOLDS.get(gene_upper)
-    gene_specific = bands is not None
-    if bands is None:
-        bands = _PHENOTYPE_THRESHOLDS[_DEFAULT_THRESHOLD_GENE]
+    bands = _phenotype_bands(_canonical_gene(gene))
 
     result: list[dict[str, Any]] = []
     lower, lower_inclusive = 0.0, True
     for upper, upper_inclusive, phenotype in bands:
-        entry: dict[str, Any] = {
-            "lower_bound": lower,
-            "upper_bound": upper,
-            "lower_inclusive": lower_inclusive,
-            "upper_inclusive": upper_inclusive,
-            "phenotype": phenotype,
-            "abbreviation": phenotype.abbreviation,
-            "gene_specific": gene_specific,
-        }
-        if not gene_specific:
-            entry["note"] = (
-                f"No specific thresholds defined for {gene_upper}, using defaults ({_DEFAULT_THRESHOLD_GENE}-like)"
-            )
-        result.append(entry)
+        result.append(
+            {
+                "lower_bound": lower,
+                "upper_bound": upper,
+                "lower_inclusive": lower_inclusive,
+                "upper_inclusive": upper_inclusive,
+                "phenotype": phenotype,
+                "abbreviation": phenotype.abbreviation,
+                "gene_specific": True,
+            }
+        )
         lower, lower_inclusive = upper, not upper_inclusive
 
     return result
@@ -422,6 +459,14 @@ def classify_phenotype(
     allele function (CYP2C19, SLCO1B1, UGT1A1) are classified from the function of the
     two alleles, the rest from the activity score.
 
+    A ``Diplotype`` whose ``activity_score`` is ``None`` (not scored) is scored here from
+    its alleles; it is never read as a score of 0.0. If an allele has no activity value in
+    the built-in table (an uncharacterized allele), no score or phenotype can be assigned:
+    the result is indeterminate, with ``activity_score`` ``None`` and the allele named, as
+    CPIC calls such a diplotype indeterminate. It is never scored as normal function. A
+    ``Diplotype`` that carries a score (for example one built with a custom
+    ``scoring_table``) is classified from that score.
+
     Args:
         diplotype: Diplotype object or string in format "*X/*Y"
         gene: Gene symbol
@@ -430,12 +475,20 @@ def classify_phenotype(
         Dictionary with:
             - "gene": Gene symbol
             - "diplotype": Diplotype string
-            - "activity_score": Computed activity score
+            - "activity_score": Computed activity score, or None when it cannot be computed
             - "phenotype": MetabolizerPhenotype value
-            - "phenotype_abbreviation": Short form (PM, IM, NM, RM, UM)
+            - "phenotype_abbreviation": Short form (PM, IM, NM, RM, UM, IND)
             - "clinical_significance": Brief clinical note
+            - "unknown_alleles": Alleles with no activity value (empty unless the phenotype is
+              indeterminate for that reason)
+
+    Raises:
+        ValueError: If the gene has no CPIC phenotype definition (the message names the gene and
+            lists the supported genes; CYP1A2 can be scored but not classified), the string is not
+            ``*X/*Y``, or a ``Diplotype`` object belongs to a different gene.
     """
-    gene_upper = gene.upper()
+    gene_upper = _canonical_gene(gene)
+    _phenotype_bands(gene_upper)
 
     if isinstance(diplotype, str):
         parts = diplotype.strip().split("/")
@@ -446,26 +499,29 @@ def classify_phenotype(
         dip = determine_diplotype(allele1, allele2, gene_upper)
     else:
         dip = diplotype
+        if dip.gene != gene_upper:
+            raise ValueError(f"Diplotype {dip.diplotype_string} belongs to gene {dip.gene}, not {gene_upper}")
 
-    phenotype = _phenotype_for_diplotype(dip, gene_upper)
+    activity_score, phenotype, unknown_alleles = _assess_diplotype(dip, gene_upper)
 
     # Generate clinical significance note
-    clinical_notes = _generate_clinical_note(phenotype, gene_upper)
+    clinical_notes = _generate_clinical_note(phenotype, gene_upper, unknown_alleles)
 
     result = {
         "gene": gene_upper,
         "diplotype": dip.diplotype_string,
-        "activity_score": dip.activity_score,
+        "activity_score": activity_score,
         "phenotype": phenotype,
         "phenotype_abbreviation": phenotype.abbreviation,
         "clinical_significance": clinical_notes,
+        "unknown_alleles": unknown_alleles,
     }
 
     logger.info(
-        "Classified %s %s -> AS=%.2f -> %s (%s)",
+        "Classified %s %s -> AS=%s -> %s (%s)",
         gene_upper,
         dip.diplotype_string,
-        dip.activity_score,
+        "none" if activity_score is None else f"{activity_score:.2f}",
         phenotype.value,
         phenotype.abbreviation,
     )
@@ -473,36 +529,59 @@ def classify_phenotype(
     return result
 
 
-def _phenotype_for_diplotype(dip: Diplotype, gene: str) -> MetabolizerPhenotype:
-    """Phenotype of a scored diplotype.
+def _assess_diplotype(dip: Diplotype, gene: str) -> tuple[float | None, MetabolizerPhenotype, list[str]]:
+    """Activity score, phenotype and unscorable alleles of a diplotype of a classifiable gene.
 
-    Uses the two alleles' own activity values (which the genes CPIC defines by allele
-    function need) when they reproduce the diplotype's stored activity score. A diplotype
-    scored with a custom scoring table, or containing alleles missing from the built-in
-    table, is classified from its stored score alone.
+    An unscored diplotype (``activity_score`` None) is scored from its alleles' values in the
+    built-in table; with an allele missing from the table it has no score and is indeterminate.
+    A scored diplotype uses the two alleles' own activity values (which the genes CPIC defines
+    by allele function need) when they reproduce its stored score. One scored with a custom
+    scoring table, or containing alleles missing from the built-in table, is classified from its
+    stored score alone: the score was supplied, so the alleles are not treated as uncharacterized.
+
+    Returns:
+        ``(activity_score, phenotype, unknown_alleles)``
     """
     table = _ACTIVITY_SCORE_TABLES.get(gene, {})
-    activity1 = table.get(dip.allele1)
-    activity2 = table.get(dip.allele2)
-    if (
-        activity1 is not None
-        and activity2 is not None
-        and math.isclose(activity1 + activity2, dip.activity_score, abs_tol=1e-9)
-    ):
-        return _phenotype_for_alleles(gene, activity1, activity2)
-    return predict_metabolizer_status(dip.activity_score, gene)
+    stored = dip.activity_score
+    unknown = uncharacterized_alleles(dip.allele1, dip.allele2, gene)
+    name1 = _normalize_allele_name(dip.allele1, gene, table)
+    name2 = _normalize_allele_name(dip.allele2, gene, table)
+
+    if stored is None:
+        if unknown:
+            return None, MetabolizerPhenotype.INDETERMINATE, unknown
+        activity1, activity2 = table[name1], table[name2]
+        return activity1 + activity2, _phenotype_for_alleles(gene, activity1, activity2), []
+
+    if not unknown:
+        activity1, activity2 = table[name1], table[name2]
+        if math.isclose(activity1 + activity2, stored, abs_tol=1e-9):
+            return stored, _phenotype_for_alleles(gene, activity1, activity2), []
+    return stored, predict_metabolizer_status(stored, gene), []
 
 
-def _generate_clinical_note(phenotype: MetabolizerPhenotype, gene: str) -> str:
+def _generate_clinical_note(
+    phenotype: MetabolizerPhenotype,
+    gene: str,
+    unknown_alleles: Sequence[str] = (),
+) -> str:
     """Generate a brief clinical significance note for a phenotype.
 
     Args:
         phenotype: Metabolizer phenotype
         gene: Gene symbol
+        unknown_alleles: Alleles with no activity value, named in an indeterminate note
 
     Returns:
         Clinical significance string
     """
+    if phenotype == MetabolizerPhenotype.INDETERMINATE and unknown_alleles:
+        return (
+            f"Indeterminate metabolizer status for {gene}. Allele(s) {', '.join(unknown_alleles)} have no "
+            "activity value in the CPIC allele table (uncharacterized), so no activity score or phenotype "
+            "can be assigned. CPIC calls a diplotype with an uncharacterized allele indeterminate."
+        )
     notes = {
         MetabolizerPhenotype.POOR: (
             f"Poor metabolizer for {gene}. Significantly reduced or absent enzyme activity. "
@@ -542,42 +621,61 @@ def population_phenotype_frequencies(
     equilibrium. For each possible diplotype (all combinations of alleles),
     the diplotype frequency is 2*p*q for heterozygotes and p^2 for homozygotes.
     Each diplotype is assigned its phenotype exactly as :func:`classify_phenotype`
-    does.
+    does, so a diplotype with an allele that has no activity value (an uncharacterized
+    allele) counts as indeterminate ("IND"), never as normal.
 
     Args:
         allele_frequencies: Mapping of allele name -> population frequency.
-            Frequencies should sum to approximately 1.0.
+            Frequencies should sum to approximately 1.0. Names that normalize to the same
+            allele ("4" and "*4") are added together.
         gene: Gene symbol
 
     Returns:
-        Dictionary mapping phenotype abbreviation -> expected frequency.
+        Dictionary mapping phenotype abbreviation -> expected frequency, without the
+        categories that have none ("IND" appears only when an uncharacterized allele has
+        a nonzero frequency).
         Example: {"PM": 0.05, "IM": 0.20, "NM": 0.65, "RM": 0.08, "UM": 0.02}
+
+    Raises:
+        ValueError: If the gene has no CPIC phenotype definition (the message names the gene
+            and lists the supported genes), a frequency is negative or NaN, or no frequency
+            is positive.
     """
-    gene_upper = gene.upper()
+    gene_upper = _canonical_gene(gene)
+    _phenotype_bands(gene_upper)
 
     scoring_table = _ACTIVITY_SCORE_TABLES.get(gene_upper, {})
 
     # Normalize allele names (non-star designations already in the table are kept)
     alleles: dict[str, float] = {}
     for name, freq in allele_frequencies.items():
-        alleles[_normalize_allele_name(name, gene_upper, scoring_table)] = freq
+        if math.isnan(freq) or freq < 0:
+            raise ValueError(f"Allele frequency of {name!r} must be a non-negative number, got {freq!r}")
+        key = _normalize_allele_name(name, gene_upper, scoring_table)
+        alleles[key] = alleles.get(key, 0.0) + freq
 
     # Verify frequencies sum to ~1.0
     total_freq = sum(alleles.values())
+    if total_freq <= 0:
+        raise ValueError("allele_frequencies must contain at least one positive frequency")
     if abs(total_freq - 1.0) > 0.05:
         logger.warning(
             "Allele frequencies for %s sum to %.4f (expected ~1.0). Normalizing.",
             gene_upper,
             total_freq,
         )
-        if total_freq > 0:
-            alleles = {k: v / total_freq for k, v in alleles.items()}
+        alleles = {k: v / total_freq for k, v in alleles.items()}
 
     # Calculate diplotype frequencies under HWE
     allele_names = sorted(alleles.keys())
-    phenotype_freqs: dict[str, float] = {
-        p.abbreviation: 0.0 for p in MetabolizerPhenotype if p != MetabolizerPhenotype.INDETERMINATE
-    }
+    uncharacterized = [name for name in allele_names if name not in scoring_table]
+    if uncharacterized:
+        logger.warning(
+            "Allele(s) %s of %s have no activity value; diplotypes carrying them are counted as indeterminate",
+            ", ".join(uncharacterized),
+            gene_upper,
+        )
+    phenotype_freqs: dict[str, float] = {p.abbreviation: 0.0 for p in MetabolizerPhenotype}
 
     for i, a1 in enumerate(allele_names):
         for j, a2 in enumerate(allele_names):
@@ -593,15 +691,17 @@ def population_phenotype_frequencies(
             else:
                 diplotype_freq = 2 * freq1 * freq2
 
-            # Get the allele activity values for this diplotype
-            score1 = scoring_table.get(a1, 1.0)
-            score2 = scoring_table.get(a2, 1.0)
+            # Get the allele activity values for this diplotype; an allele with none makes the
+            # diplotype indeterminate (it is not assumed to be normal function)
+            score1 = scoring_table.get(a1)
+            score2 = scoring_table.get(a2)
 
-            phenotype = _phenotype_for_alleles(gene_upper, score1, score2)
-            abbrev = phenotype.abbreviation
+            if score1 is None or score2 is None:
+                phenotype = MetabolizerPhenotype.INDETERMINATE
+            else:
+                phenotype = _phenotype_for_alleles(gene_upper, score1, score2)
 
-            if abbrev in phenotype_freqs:
-                phenotype_freqs[abbrev] += diplotype_freq
+            phenotype_freqs[phenotype.abbreviation] += diplotype_freq
 
     # Normalize in case of rounding
     total = sum(phenotype_freqs.values())

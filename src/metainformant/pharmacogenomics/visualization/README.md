@@ -14,8 +14,8 @@ Publication-quality plots for pharmacogenomics data, including metabolizer statu
 | Function | Description |
 |----------|-------------|
 | `plots.plot_metabolizer_status()` | Bar chart of metabolizer phenotype distributions |
-| `plots.plot_allele_frequencies()` | Allele frequency bar chart for a pharmacogene |
-| `plots.plot_activity_score_distribution()` | Histogram of activity scores across samples |
+| `plots.plot_allele_frequencies()` | Allele frequency chart for a pharmacogene: `plot_type="bar"` or `"pie"` (anything else raises `ValueError`) |
+| `plots.plot_activity_score_distribution()` | Histogram of activity scores across samples, with CPIC phenotype boundaries for genes that have them (none for CYP1A2, which CPIC defines no phenotype for) |
 | `plots.plot_drug_response_heatmap()` | Drug-gene matrix of interaction severity or phenotype for `drugs` x `genes` |
 | `plots.plot_population_comparison()` | Cross-population allele frequency comparison |
 | `plots.plot_acmg_criteria()` | Summary plot of ACMG evidence criteria |

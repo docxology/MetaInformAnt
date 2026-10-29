@@ -11,10 +11,12 @@ from __future__ import annotations
 from pathlib import Path
 
 import matplotlib
+import pytest
 
 matplotlib.use("Agg")
 
 
+from metainformant.pharmacogenomics.visualization import plots
 from metainformant.pharmacogenomics.visualization.plots import (
     plot_acmg_criteria,
     plot_activity_score_distribution,
@@ -194,3 +196,73 @@ class TestPlotACMGCriteria:
         output = tmp_path / "acmg_empty.png"
         plot_acmg_criteria(criteria, output)
         assert output.exists()
+
+
+class TestPlotAlleleFrequenciesChartType:
+    FREQS = {"*1": 0.5, "*2": 0.3, "*4": 0.2}
+
+    @pytest.mark.parametrize("plot_type", ["line", "scatter", "", "bars"])
+    def test_an_unsupported_plot_type_raises_instead_of_drawing_a_bar_chart(
+        self, tmp_path: Path, plot_type: str
+    ) -> None:
+        output = tmp_path / "never.png"
+        with pytest.raises(ValueError, match="plot_type"):
+            plot_allele_frequencies(self.FREQS, "CYP2D6", output, plot_type=plot_type)
+        assert not output.exists()
+
+    @pytest.mark.parametrize("plot_type", ["bar", "BAR", " Pie ", "pie"])
+    def test_supported_plot_types_are_case_insensitive(self, tmp_path: Path, plot_type: str) -> None:
+        output = tmp_path / f"{plot_type.strip().lower()}.png"
+        assert plot_allele_frequencies(self.FREQS, "CYP2D6", output, plot_type=plot_type) == output
+        assert output.stat().st_size > 0
+
+    def test_the_two_chart_types_draw_different_figures(self, tmp_path: Path) -> None:
+        bar, pie = tmp_path / "bar.png", tmp_path / "pie.png"
+        plot_allele_frequencies(self.FREQS, "CYP2D6", bar, plot_type="bar")
+        plot_allele_frequencies(self.FREQS, "CYP2D6", pie, plot_type="pie")
+        assert bar.read_bytes() != pie.read_bytes()
+
+
+class TestBarLabels:
+    """Bar labels printed fractions to one decimal place: 0.02 read "0.0" and 0.65 read "0.7"."""
+
+    @pytest.mark.parametrize(
+        ("value", "label"),
+        [
+            (5.0, "5"),
+            (0.0, "0"),
+            (65.0, "65"),
+            (1234.0, "1234"),
+            (0.02, "0.02"),
+            (0.05, "0.05"),
+            (0.65, "0.65"),
+            (0.123456, "0.1235"),
+            (12.5, "12.5"),
+        ],
+    )
+    def test_labels_keep_the_value(self, value: float, label: str) -> None:
+        assert plots._format_bar_value(value) == label
+
+    def test_a_frequency_chart_renders_with_small_fractions(self, tmp_path: Path) -> None:
+        output = tmp_path / "freq.png"
+        plot_metabolizer_status({"PM": 0.02, "IM": 0.08, "NM": 0.65, "UM": 0.0}, output)
+        assert output.stat().st_size > 0
+
+
+class TestActivityScoreThresholds:
+    def test_a_gene_with_cpic_bands_marks_them(self) -> None:
+        bands = plots._threshold_bands("CYP2D6")
+        assert [band["abbreviation"] for band in bands] == ["PM", "IM", "NM", "UM"]
+
+    def test_a_gene_cpic_defines_no_phenotype_for_gets_no_lines_and_a_warning(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        with caplog.at_level("WARNING"):
+            assert plots._threshold_bands("CYP1A2") == []
+        assert any("CYP1A2" in record.getMessage() for record in caplog.records)
+
+    def test_such_a_gene_is_still_plotted(self, tmp_path: Path) -> None:
+        # CYP1A2 can be scored but not classified: the scores are plotted without boundaries
+        output = tmp_path / "cyp1a2_scores.png"
+        assert plot_activity_score_distribution([1.0, 1.5, 2.0, 2.5], "CYP1A2", output) == output
+        assert output.stat().st_size > 0

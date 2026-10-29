@@ -63,6 +63,32 @@ def _ensure_output_dir(output_path: str | Path) -> Path:
     return path
 
 
+def _threshold_bands(gene: str) -> list[dict[str, Any]]:
+    """Return the phenotype score bands to mark on an activity-score plot of ``gene``.
+
+    Empty for a gene CPIC defines no phenotype for (a warning is logged): its scores are
+    plotted without boundaries, and no other gene's boundaries stand in.
+    """
+    from ..alleles.phenotype import get_phenotype_thresholds
+
+    try:
+        return get_phenotype_thresholds(gene)
+    except ValueError as exc:
+        logger.warning("Drawing %s activity scores without phenotype threshold lines: %s", gene, exc)
+        return []
+
+
+def _format_bar_value(value: float) -> str:
+    """Label for a bar: a whole number as an integer, anything else to four significant digits.
+
+    Counts print as integers and frequencies keep their size (0.02 stays "0.02"; a fixed one
+    decimal place would print it as "0.0").
+    """
+    if float(value).is_integer():
+        return str(int(value))
+    return f"{value:.4g}"
+
+
 # ── Phenotype color palettes ──────────────────────────────────────────────────
 
 _PHENOTYPE_COLORS = {
@@ -125,7 +151,7 @@ def plot_metabolizer_status(
         ax.text(
             bar.get_x() + bar.get_width() / 2.0,
             height + max(values) * 0.01,
-            f"{val:.1f}" if isinstance(val, float) and val != int(val) else str(int(val)),
+            _format_bar_value(val),
             ha="center",
             va="bottom",
             fontsize=10,
@@ -164,14 +190,21 @@ def plot_allele_frequencies(
             Example: {"*1": 0.45, "*2": 0.25, "*4": 0.15, "*10": 0.10, "*17": 0.05}
         gene: Gene symbol for the title
         output_path: Path to save the figure
-        plot_type: "bar" for bar chart, "pie" for pie chart
+        plot_type: "bar" for bar chart, "pie" for pie chart (case-insensitive)
         title: Optional custom title
         figsize: Figure size in inches
 
     Returns:
         Path to saved figure
+
+    Raises:
+        ValueError: If ``plot_type`` is neither "bar" nor "pie" (no other chart is drawn in
+            its place)
     """
     _ensure_matplotlib()
+    chart = str(plot_type).strip().lower()
+    if chart not in ("bar", "pie"):
+        raise ValueError(f"Unsupported plot_type {plot_type!r}: use 'bar' or 'pie'")
     path = _ensure_output_dir(output_path)
 
     alleles = list(allele_freqs.keys())
@@ -180,7 +213,7 @@ def plot_allele_frequencies(
 
     fig, ax = plt.subplots(figsize=figsize)
 
-    if plot_type == "pie":
+    if chart == "pie":
         # Filter out very small slices for readability
         threshold = 0.02
         labels_display = []
@@ -251,7 +284,10 @@ def plot_activity_score_distribution(
     """Plot activity score distribution as a histogram.
 
     Shows the distribution of activity scores across a cohort, with vertical
-    lines indicating phenotype threshold boundaries.
+    lines indicating phenotype threshold boundaries. Only a gene CPIC defines a
+    phenotype for has boundaries: for any other gene (CYP1A2 has activity values but no
+    CPIC phenotype) the histogram is drawn without lines and a warning is logged; no
+    other gene's boundaries are drawn in their place.
 
     Args:
         scores: List of activity score values
@@ -279,10 +315,8 @@ def plot_activity_score_distribution(
 
     ax.hist(scores, bins=bins, color="#1976D2", edgecolor="white", alpha=0.8, linewidth=0.5)
 
-    # Add phenotype threshold lines (gene-specific bands only, not the default mapping)
-    from ..alleles.phenotype import get_phenotype_thresholds
-
-    thresholds = [band for band in get_phenotype_thresholds(gene) if band["gene_specific"]]
+    # Add phenotype threshold lines, for a gene that has CPIC bands of its own
+    thresholds = _threshold_bands(gene)
 
     threshold_values_added: set[float] = set()
     for band in thresholds:

@@ -24,7 +24,7 @@ class Diplotype:                         # alleles.diplotype
     allele1: str                         # the pair is stored in string order, so
     allele2: str                         # "*4/*10" is stored as "*10/*4"
     gene: str
-    activity_score: float                # sum of the two allele values
+    activity_score: float | None         # sum of known values; None if unscored
     phased: bool                         # False unless built by phased_diplotype
     confidence: str                      # "high", "moderate" or "low"
 
@@ -37,8 +37,8 @@ class MetabolizerPhenotype(str, Enum):   # alleles.phenotype
 
 `classify_phenotype` returns a plain dict with `gene`, `diplotype`, `activity_score`,
 `phenotype` (a `MetabolizerPhenotype`), `phenotype_abbreviation` and
-`clinical_significance`. `predict_metabolizer` returns a dict whose `phenotype` is a
-lowercase token (`'poor'` … `'ultrarapid'`); see the contracts table below.
+`clinical_significance` and `unknown_alleles`. `predict_metabolizer` returns a dict whose `phenotype` is a
+lowercase token (`'poor'` … `'ultrarapid'`, or `'indeterminate'`); see the contracts table below.
 
 ## Subset-matching engine (`call_star_alleles`)
 
@@ -61,22 +61,22 @@ variant set therefore reads as the reference allele, not as an error.
 
 - `determine_diplotype(allele1, allele2, gene, scoring_table=None)` looks each allele up in
   `alleles.diplotype._ACTIVITY_SCORE_TABLES[gene]` (or in `scoring_table`) and sums the two
-  values. An allele missing from the table scores 1.0 and logs a warning; an unknown gene
-  does not raise. Names without a `*` get one unless they are in the table (DPYD's
+  values. An allele missing from the table leaves `activity_score=None` and logs a warning;
+  an unknown gene has no built-in scores and its alleles remain unscored. Names without a `*` get one unless they are in the table (DPYD's
   `c.2846A>T` and `HapB3` are kept).
 - `resolve_ambiguous_diplotypes` prefers candidates whose two alleles both have a known
   value, then the highest activity score.
-- `phased_diplotype` calls alleles separately on the two haplotypes of a phase map.
+- `phased_diplotype` calls one allele per haplotype. Multiple matches on a haplotype select the lowest-activity allele with a warning and `moderate` confidence. Unphased variants are still copied onto both haplotypes with a warning, so `phased=True` does not establish observed phase for every input variant.
 - `handle_cyp2d6_cnv(variants, copy_number)` interprets copy number: 0 gives `*5/*5`, 1 gives
   the called allele with `*5`, 2 is ordinary calling, and 3 or more assigns the extra copies
   to the more active allele, multiplying its activity by `copy_number - 1` and suffixing its
   name `x<copy_number - 1>` (copy number 3 gives `*1x2/*4` for a `*1`/`*4` genotype). The
-  marker identifiers `CYP2D6_DEL` and `CYP2D6_DUP` are removed before alleles are called.
+  marker identifiers `CYP2D6_DEL` and `CYP2D6_DUP` are removed before alleles are called. Copy number must be a non-negative whole number; negative, fractional, NaN, infinite, boolean and nonnumeric values raise `ValueError`.
 
 ## Allele values
 
 `alleles.diplotype._ACTIVITY_SCORE_TABLES` is the package's single allele-function table.
-Values come from the CPIC allele functionality tables (the source comments record the
+Values for the classified genes come from the CPIC allele functionality tables (CYP1A2's retained values still need primary-source qualification; the source comments record the
 check date, 2026-10-27): normal function 1.0, decreased 0.5, no function 0.0, CYP2C19 `*17`
 (increased) 1.5. CYP2D6 carries CPIC's own activity values, including 0.25 for `*9`, `*10`
 and `*41` and 0.5 for `*14`. Other values worth knowing:
@@ -141,16 +141,17 @@ one ends (the first at 0) and the last runs to infinity. The CYP2C19, SLCO1B1 an
 entries are the function rules restated on the score scale, for callers that hold only a
 score. `get_phenotype_thresholds(gene)` returns them as dicts with `lower_bound`,
 `upper_bound`, `lower_inclusive`, `upper_inclusive`, `phenotype`, `abbreviation` and
-`gene_specific`. A gene without bands of its own (for example CYP1A2) is mapped with the
-CYP2D6 bands and a logged warning; its entries have `gene_specific` False and a `note`.
+`gene_specific`. A gene without its own supported definition (including CYP1A2) raises `ValueError`.
+Returned entries always have `gene_specific=True` and no fallback note.
 `alleles.phenotype.predict_metabolizer_status(score, gene)` applies the bands to a score and
 cannot apply the function rules; use `classify_phenotype` when the diplotype is known.
 
 **One implementation.** `metabolism.metabolizer_status` holds no allele or phenotype data of
 its own: it reads the allele table above and delegates classification to
 `alleles.phenotype`, so `predict_metabolizer` and `classify_phenotype` return the same
-phenotype for every diplotype. A diplotype scored with a custom `scoring_table`, or holding
-an allele missing from the built-in table, is classified from its stored activity score.
+phenotype for every diplotype. A diplotype carrying a custom `scoring_table` score is classified from that score.
+An unscored diplotype is scored from its alleles; unknown alleles yield an indeterminate phenotype,
+a `None` score and their names in `unknown_alleles`.
 
 ## Input and output contracts
 
@@ -158,10 +159,10 @@ an allele missing from the built-in table, is classified from its stored activit
 |----------|-------|--------|--------|
 | `call_star_alleles(variants, gene, allele_definitions=None)` | `set`, `frozenset` or `list` of identifiers | `list[StarAllele]`, sorted by name | `ValueError` for a gene without built-in definitions when `allele_definitions` is not given |
 | `load_allele_definitions(gene, source=None, filepath=None)` | gene symbol; a built-in table or a file | `list[StarAllele]` | `ValueError` for a contradicting `source` and `filepath`, an unknown `source` or a gene without definitions; `FileNotFoundError` for a missing file |
-| `determine_diplotype(allele1, allele2, gene, scoring_table=None)` | allele names or `StarAllele` objects | `Diplotype` | none for an unknown gene or allele (scores 1.0, logs a warning) |
-| `classify_phenotype(diplotype, gene)` | `Diplotype` or `"*X/*Y"` | dict (see above) | `ValueError` for a string that is not `*X/*Y`; an unknown gene or allele does not raise (it scores 1.0 and the CYP2D6 bands apply, with a logged warning) |
-| `alleles.phenotype.predict_metabolizer_status(activity_score, gene)` | score, gene | `MetabolizerPhenotype` | `ValueError` for a negative or NaN score |
-| `predict_metabolizer(genotype, gene, activity_scores=None)` (`metabolism.metabolizer_status.predict_metabolizer_status`) | dict with `"diplotype"` or `"alleles"` | dict: `phenotype` (token), `activity_score`, `alleles`, `gene`, `diplotype`, `thresholds_used` | `ValueError` for a missing key, an allele missing from the table, a gene without a table, or an increased-function allele value for SLCO1B1 or UGT1A1 in a custom table |
+| `determine_diplotype(allele1, allele2, gene, scoring_table=None)` | allele names or `StarAllele` objects | `Diplotype`, with score `None` when an allele has no value | unknown gene/alleles remain unscored with a warning |
+| `classify_phenotype(diplotype, gene)` | `Diplotype` or `"*X/*Y"` | dict including `unknown_alleles`; unknown allele gives Indeterminate and score `None` | `ValueError` for malformed strings, mismatched gene or a gene without a phenotype definition |
+| `alleles.phenotype.predict_metabolizer_status(activity_score, gene)` | score, gene | `MetabolizerPhenotype` | `ValueError` for negative, NaN or `None` score, or unsupported phenotype gene |
+| `predict_metabolizer(genotype, gene, activity_scores=None)` (`metabolism.metabolizer_status.predict_metabolizer_status`) | dict with `diplotype` or two `alleles` | dict: phenotype token, score, alleles, gene, diplotype, `unknown_alleles`, `thresholds_used` | `ValueError` for malformed genotype, unsupported phenotype gene, absent gene table or incompatible custom function values; unknown alleles return `indeterminate` |
 | `dose_adjustment(metabolizer_status, drug, dose_guidelines=None)` | phenotype in any common form, drug | dict with `recommendation`, `adjusted_dose_fraction`, `evidence_level`, `guideline_source` | none; an unknown drug or phenotype returns standard dosing with evidence level `D` |
 | `generate_clinical_report(patient_data, genotypes, drugs=None)` | patient dict, `{gene: {"diplotype": ..., "phenotype": ...}}` | report dict | none for an unclassifiable diplotype: the gene is reported as Indeterminate |
 
@@ -193,7 +194,7 @@ file has the columns `allele`, `defining_variants` (semicolon-separated), `funct
 }
 ```
 
-`defining_variants` is the only required key for matching; `activity_value` defaults to 1.0.
+File entries require an allele name and an explicit `activity_value`; missing or empty activity values raise `ValueError`. Omitted `defining_variants` produce an empty set. A gene-keyed JSON file must contain the selected gene.
 `clinical_significance` and `evidence_level` are optional.
 
 ## Bundled data

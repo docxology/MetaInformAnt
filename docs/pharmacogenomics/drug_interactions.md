@@ -110,7 +110,7 @@ risk = polypharmacy_risk(['my_drug', 'warfarin'], interaction_db=db)
 `cyp_inhibition_prediction` accepts a custom `cyp_profiles` dictionary
 (`{'inhibitors': {cyp: [{'drug', 'type', 'potency'}]}, 'inducers': {...}}`).
 
-Run tests (`pytest tests/pharmacogenomics/test_drug_interactions_depth.py`) to validate.
+Run `uv run python -m pytest tests/pharmacogenomics/test_drug_interactions_depth.py` to validate.
 
 ## Pitfalls
 
@@ -119,8 +119,6 @@ Run tests (`pytest tests/pharmacogenomics/test_drug_interactions_depth.py`) to v
   both alerts show.
 - **Phenotype labels** — `analyze_drug_gene_interactions` reads each gene's `phenotype` key and
   matches it to the CPIC guideline's phenotype names: pass a `MetabolizerPhenotype`, its full name
-  (`'Poor Metabolizer'`) or the two-letter abbreviation (`'PM'`). The bare token `'poor'` matches
-  nothing and the gene yields no entry (the dose-adjustment table in `metabolism` does accept it;
-  see `MetabolizerPhenotype.from_string` to normalise any label first).
+  (`'Poor Metabolizer'`), the two-letter abbreviation (`'PM'`) or a bare token (`'poor'`). These forms are normalized to the same phenotype before guideline lookup.
 - **Missing CYP entry** — If a drug is not in the internal tables, it is silently
   ignored (contributes no severity). Add it with a custom `interaction_db` as above.

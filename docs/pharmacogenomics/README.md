@@ -68,17 +68,7 @@ from metainformant.pharmacogenomics.clinical.pathogenicity import classify_varia
 from metainformant.pharmacogenomics.annotations import cpic, pharmgkb
 ```
 
-`predict_metabolizer` takes a genotype dict holding a `diplotype` string (or an `alleles`
-list), not a variant set, and returns a dict whose `phenotype` is a lowercase string
-(`'poor'`, `'intermediate'`, `'normal'`, `'rapid'`, `'ultrarapid'`). It is a string-and-dict
-front end over the same allele table and phenotype rules as `classify_phenotype`, so the two
-give the same phenotype and activity score for every diplotype (for CYP2D6 `*1/*4` both give
-intermediate, activity score 1.0). They differ in the interface only: `predict_metabolizer`
-raises `ValueError` for an allele that is missing from its table, whereas `classify_phenotype`
-scores an unknown allele as 1.0 (normal function) and logs a warning, and `predict_metabolizer`
-accepts a custom allele table through `activity_scores=`. It covers the 10 genes of
-`default_allele_function_table()`, including UGT1A1 and CYP1A2 (which has no CPIC phenotype
-definition, so the CYP2D6 bands apply with a logged warning).
+`predict_metabolizer` takes a genotype dict holding a `diplotype` string or two `alleles`, and returns a dict with a lowercase phenotype token: `poor`, `intermediate`, `normal`, `rapid`, `ultrarapid` or `indeterminate`. It shares the allele table and phenotype rules with `classify_phenotype`; both report an unknown allele in `unknown_alleles`, with an indeterminate phenotype and `activity_score=None`. `predict_metabolizer` accepts custom activity values through `activity_scores=`. The activity table covers 10 genes, but CYP1A2 has no supported CPIC phenotype definition and can only be scored; phenotype APIs raise `ValueError` for it and other unsupported genes.
 
 ## Typical single-patient flow
 

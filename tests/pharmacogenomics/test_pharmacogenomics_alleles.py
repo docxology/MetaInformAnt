@@ -290,6 +290,39 @@ class TestPhasedDiplotype:
         assert dip.confidence == "high"
         assert dip.gene == "CYP2D6"
 
+    def test_markers_on_separate_haplotypes_are_two_alleles(self) -> None:
+        dip = phased_diplotype({"rs3892097", "rs16947"}, {"rs3892097": 0, "rs16947": 1}, "CYP2D6")
+        assert dip.diplotype_string == "*2/*4"
+        assert dip.activity_score == 1.0
+        assert dip.confidence == "high"
+
+    def test_a_haplotype_matching_two_alleles_is_called_by_its_most_impaired_one(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # rs3892097 (*4, no function) and rs16947 (*2, normal function) on the same haplotype used to be
+        # called "*2": the calls come back in name order and the first was taken, dropping the no-function allele.
+        with caplog.at_level("WARNING"):
+            dip = phased_diplotype({"rs3892097", "rs16947"}, {"rs3892097": 0, "rs16947": 0}, "CYP2D6")
+        assert dip.diplotype_string == "*1/*4"
+        assert dip.activity_score == 1.0
+        assert classify_phenotype(dip, "CYP2D6")["phenotype"] == MetabolizerPhenotype.INTERMEDIATE
+        assert dip.phased is True
+        assert dip.confidence == "moderate"  # the call between the two alleles is an assumption
+        warnings = [r.getMessage() for r in caplog.records if r.levelname == "WARNING"]
+        assert any("Haplotype A" in m and "*2" in m and "*4" in m for m in warnings), warnings
+
+    @pytest.mark.parametrize(
+        ("markers", "expected"),
+        [
+            ({"rs28371706", "rs3892097"}, "*4"),  # *17 (0.5) sorts before *4 (0.0)
+            ({"rs16947", "rs1065852"}, "*10"),  # *10 (0.25) sorts before *2 (1.0)
+            ({"rs16947", "rs35742686"}, "*3"),  # *2 (1.0) sorts before *3 (0.0)
+        ],
+    )
+    def test_the_lowest_activity_allele_wins_whatever_the_name_order(self, markers: set[str], expected: str) -> None:
+        dip = phased_diplotype(markers, {marker: 0 for marker in markers}, "CYP2D6")
+        assert dip.diplotype_string == f"*1/{expected}"
+
 
 class TestMetabolizerPhenotype:
     """Tests for the MetabolizerPhenotype enum."""
@@ -366,10 +399,9 @@ class TestGetPhenotypeThresholds:
         assert all("phenotype" in t and "abbreviation" in t for t in thresholds)
 
     def test_get_thresholds_unknown_gene(self) -> None:
-        thresholds = get_phenotype_thresholds("UNKNOWN_GENE")
-        assert isinstance(thresholds, list)
-        assert len(thresholds) > 0
-        assert "note" in thresholds[0]
+        # No CYP2D6 bands are substituted for a gene CPIC defines no phenotype for.
+        with pytest.raises(ValueError, match="UNKNOWN_GENE"):
+            get_phenotype_thresholds("UNKNOWN_GENE")
 
 
 class TestPopulationPhenotypeFrequencies:
@@ -408,3 +440,46 @@ class TestHandleCYP2D6CNV:
         result = handle_cyp2d6_cnv(set(), 3)
         assert result["cnv_type"] == "duplication"
         assert result["total_activity_score"] > 2.0
+
+    def test_duplication_multiplies_the_duplicated_allele_by_its_total_copies(self) -> None:
+        # CN 3 with *1: two copies of *1 and one *1 => 3.0; CN 4 => three copies of *1 and one *1 => 4.0
+        three = handle_cyp2d6_cnv(set(), 3)
+        assert three["diplotype_string"] == "*1x2/*1" and three["total_activity_score"] == 3.0
+        four = handle_cyp2d6_cnv(set(), 4)
+        assert four["diplotype_string"] == "*1x3/*1" and four["total_activity_score"] == 4.0
+
+    def test_extra_copies_go_to_the_more_active_allele(self) -> None:
+        result = handle_cyp2d6_cnv({"rs3892097"}, 3)  # *4 (no function) beside the reference *1
+        assert result["diplotype_string"] == "*1x2/*4"
+        assert result["total_activity_score"] == 2.0
+
+    @pytest.mark.parametrize("copy_number", [1, 2, 3])
+    def test_alleles_called_beyond_what_the_copies_can_carry_are_named_not_dropped_silently(
+        self, copy_number: int, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # *10, *2 and *4 are all called; sorted by name the first two (or one) are kept. The ignored
+        # no-function *4 used to vanish without a trace.
+        with caplog.at_level("WARNING"):
+            result = handle_cyp2d6_cnv({"rs1065852", "rs16947", "rs3892097"}, copy_number)
+        carried = 1 if copy_number == 1 else 2
+        ignored = ["*10", "*2", "*4"][carried:]
+        for name in ignored:
+            assert name in result["notes"]
+        assert f"at most {carried} can be carried" in result["notes"]
+        assert any("ignored" in record.getMessage() for record in caplog.records)
+
+    def test_no_note_when_every_called_allele_is_carried(self) -> None:
+        for variants, copies in [({"rs3892097"}, 2), ({"rs3892097", "rs16947"}, 2), ({"rs3892097"}, 1), (set(), 3)]:
+            assert "ignored" not in handle_cyp2d6_cnv(variants, copies)["notes"]
+
+    @pytest.mark.parametrize("bad", [-1, -3, -2.0, 2.5, True, "2", None, float("nan"), float("inf")])
+    def test_a_copy_number_that_is_not_a_non_negative_integer_raises(self, bad: object) -> None:
+        # A negative count used to be read as a homozygous deletion and 2.5 as "*1x1.5"
+        with pytest.raises(ValueError, match="non-negative integer"):
+            handle_cyp2d6_cnv(set(), bad)  # type: ignore[arg-type]
+
+    @pytest.mark.parametrize("whole", [2, 2.0])
+    def test_a_whole_number_copy_count_is_accepted_as_an_integer(self, whole: float) -> None:
+        result = handle_cyp2d6_cnv(set(), whole)  # type: ignore[arg-type]
+        assert result["copy_number"] == 2 and isinstance(result["copy_number"], int)
+        assert result["cnv_type"] == "normal"

@@ -74,9 +74,9 @@ graph TD
 
 | Function | Description |
 |----------|-------------|
-| `predict_metabolizer_status` | Genotype dict to metabolizer phenotype; the same phenotype `alleles.phenotype.classify_phenotype` gives for the diplotype |
+| `predict_metabolizer_status` | Genotype dict to metabolizer phenotype; the same phenotype `alleles.phenotype.classify_phenotype` gives for the diplotype (an allele with no activity value is `"indeterminate"`, never normal) |
 | `compute_activity_score` | Sum allele function values into CPIC activity score |
-| `classify_metabolizer` | Map activity score to phenotype (PM/IM/NM/RM/UM; CYP2D6 has no RM) |
+| `classify_metabolizer` | Map activity score to phenotype (PM/IM/NM/RM/UM; CYP2D6 has no RM); a gene CPIC defines no phenotype for, such as CYP1A2, raises `ValueError` |
 | `dose_adjustment` | Evidence-based dose adjustment recommendations; the phenotype may be `"poor"`, `"Poor Metabolizer"` or `"PM"` |
 
 ### Guideline Annotations

@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 
+from metainformant.pharmacogenomics.alleles.phenotype import MetabolizerPhenotype
 from metainformant.pharmacogenomics.annotations.cpic import load_cpic_guidelines
 from metainformant.pharmacogenomics.clinical.reporting import (
     add_disclaimer,
@@ -50,13 +51,17 @@ class TestGenerateClinicalReport:
             assert g["phenotype"] is not None
             assert g["phenotype_abbreviation"]
 
-    def test_unknown_gene_defaults_to_cyp2d6_like_mapping(self) -> None:
-        # Unknown alleles score 1.0 each; unknown gene uses default thresholds,
-        # so *99/*100 classifies as Normal (NM), not IND.
+    def test_unknown_gene_is_indeterminate_not_a_cyp2d6_like_normal(self) -> None:
+        # A gene CPIC defines no phenotype for used to score its unknown alleles 1.0 and take the
+        # CYP2D6 bands, so *99/*100 read as Normal (NM). It is Indeterminate (IND), with the reason.
         report = generate_clinical_report({}, {"NOTAGENE": {"diplotype": "*99/*100"}})
         result = report["genotype_results"][0]
         assert result["gene"] == "NOTAGENE"
-        assert result["phenotype_abbreviation"] == "NM"
+        assert result["phenotype_abbreviation"] == "IND"
+        assert result["phenotype"] == MetabolizerPhenotype.INDETERMINATE
+        assert "NOTAGENE" in result["clinical_significance"]
+        assert "CYP2D6" in result["clinical_significance"]  # the supported genes are listed
+        assert report["drug_recommendations"] == []
 
     def test_direct_phenotype_without_diplotype(self) -> None:
         report = generate_clinical_report({}, {"CYP2D6": {"phenotype": "Ultrarapid Metabolizer"}})
@@ -273,3 +278,73 @@ class TestExportReport:
         text = export_report(report, format="json")
         assert isinstance(text, str)
         json.loads(text)
+
+
+class TestIndeterminateGenesInReports:
+    """A diplotype CPIC cannot call (an uncharacterized allele, a gene without a phenotype) is
+    reported Indeterminate, with the reason, and never as a normal metabolizer."""
+
+    UNKNOWN_ALLELE = {"CYP2D6": {"diplotype": "*1/*999"}}
+
+    def test_an_uncharacterized_allele_is_indeterminate_and_named(self) -> None:
+        report = generate_clinical_report({"patient_id": "P-7"}, self.UNKNOWN_ALLELE, drugs=["codeine"])
+        (result,) = report["genotype_results"]
+        assert result["phenotype"] == MetabolizerPhenotype.INDETERMINATE
+        assert result["phenotype_abbreviation"] == "IND"
+        assert result["activity_score"] is None
+        assert result["unknown_alleles"] == ["*999"]
+        assert "*999" in result["clinical_significance"]
+        # No recommendation for the gene: Indeterminate is not read as normal
+        assert report["drug_recommendations"] == []
+        assert report["clinical_actions"] == []
+
+    def test_cyp1a2_cannot_be_classified_and_the_report_says_why(self) -> None:
+        report = generate_clinical_report({}, {"CYP1A2": {"diplotype": "*1A/*1F"}}, drugs=None)
+        (result,) = report["genotype_results"]
+        assert result["phenotype_abbreviation"] == "IND"
+        assert "CYP1A2" in result["clinical_significance"]
+        assert "CPIC defines no phenotype" in result["clinical_significance"]
+        assert report["drug_recommendations"] == []
+
+    def test_the_reason_lists_the_genes_that_can_be_classified(self) -> None:
+        report = generate_clinical_report({}, {"NOTAGENE": {"diplotype": "*1/*2"}})
+        significance = report["genotype_results"][0]["clinical_significance"]
+        assert "NOTAGENE" in significance and "Supported genes" in significance
+        for gene in ("CYP2C19", "CYP2D6", "DPYD", "TPMT"):
+            assert gene in significance
+
+    def test_a_phenotype_supplied_beside_an_unclassifiable_diplotype_keeps_its_own_abbreviation(self) -> None:
+        # The result showed "Poor Metabolizer" next to the abbreviation "IND"
+        genotypes = {"NOTAGENE": {"diplotype": "*1/*2", "phenotype": "Poor Metabolizer"}}
+        (result,) = generate_clinical_report({}, genotypes, drugs=[])["genotype_results"]
+        assert result["phenotype"] == "Poor Metabolizer"
+        assert result["phenotype_abbreviation"] == "PM"
+        assert "Poor Metabolizer" in result["clinical_significance"]
+        assert "NOTAGENE" in result["clinical_significance"]
+
+    def test_exports_show_a_missing_activity_score_as_not_available(self) -> None:
+        report = generate_clinical_report({}, self.UNKNOWN_ALLELE, drugs=[])
+        text = export_report(report, format="text")
+        assert "Activity Score: N/A" in text and "Activity Score: None" not in text
+        html = export_report(report, format="html")
+        assert "<td>N/A</td>" in html and "<td>None</td>" not in html
+
+    def test_the_json_export_carries_the_null_score_and_the_allele(self) -> None:
+        parsed = json.loads(export_report(generate_clinical_report({}, self.UNKNOWN_ALLELE, drugs=[]), format="json"))
+        (result,) = parsed["genotype_results"]
+        assert result["activity_score"] is None
+        assert result["phenotype"] == "Indeterminate"
+        assert result["unknown_alleles"] == ["*999"]
+
+    def test_a_supplied_activity_score_is_escaped_in_the_html_report(self) -> None:
+        genotypes = {"NOTAGENE": {"diplotype": "*1/*2", "activity_score": "<script>alert(1)</script>"}}
+        html = export_report(generate_clinical_report({}, genotypes, drugs=[]), format="html")
+        assert "<script>alert(1)</script>" not in html
+        assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+
+    def test_classifiable_genes_are_unaffected(self) -> None:
+        report = generate_clinical_report({}, {"CYP2D6": {"diplotype": "*4/*4"}}, drugs=["codeine"])
+        (result,) = report["genotype_results"]
+        assert result["phenotype_abbreviation"] == "PM" and result["activity_score"] == 0.0
+        assert result["unknown_alleles"] == []
+        assert report["drug_recommendations"][0]["severity"] == "Major"

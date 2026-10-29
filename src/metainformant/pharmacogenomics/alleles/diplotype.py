@@ -6,10 +6,17 @@ per CPIC guidelines, ambiguous diplotype resolution, and phased diplotype infere
 A diplotype represents the combination of two haplotypes (one from each chromosome)
 for a given gene. The activity score system converts diplotype information into a
 numerical value that maps to metabolizer phenotype categories.
+
+An allele with no activity value in the scoring table is uncharacterized, and it is
+never scored as normal function: the diplotype's activity score is ``None`` and
+:func:`~metainformant.pharmacogenomics.alleles.phenotype.classify_phenotype` calls the
+phenotype indeterminate, as CPIC does.
 """
 
 from __future__ import annotations
 
+import math
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from metainformant.core.utils.logging import get_logger
@@ -27,7 +34,12 @@ class Diplotype:
         allele1: First star allele (typically the lower-numbered or reference)
         allele2: Second star allele
         gene: Gene symbol
-        activity_score: Combined activity score for the diplotype
+        activity_score: Combined activity score for the diplotype, or ``None`` (the default)
+            when it has not been scored. ``None`` is not 0.0: it never reads as a poor
+            metabolizer. Score it with :func:`calculate_activity_score`, or build the
+            diplotype with :func:`determine_diplotype`, which does; ``classify_phenotype``
+            computes the score from the alleles of an unscored diplotype. ``None`` also
+            results when an allele has no activity value in the scoring table.
         phased: Whether the diplotype assignment is phased (True) or inferred (False)
         confidence: Confidence in the diplotype call ("high", "moderate", "low")
     """
@@ -35,7 +47,7 @@ class Diplotype:
     allele1: str
     allele2: str
     gene: str
-    activity_score: float = 0.0
+    activity_score: float | None = None
     phased: bool = False
     confidence: str = "high"
 
@@ -70,7 +82,13 @@ class Diplotype:
 # function 0.5, no function 0.0, increased function CYP2C19 *17 1.5. CYP2D6 carries
 # CPIC's own activity values, including 0.25 for *9, *10 and *41. CPIC assigns no
 # activity values for CYP2C19, SLCO1B1 or UGT1A1; their entries encode the CPIC function
-# class on the same scale, which phenotype.py reads pairwise.
+# class on the same scale, which phenotype.py reads pairwise. CYP1A2 is the one gene in
+# the table with no CPIC source at all (see its entry).
+#
+# An allele that is absent from a gene's table has no activity value. It is never scored
+# as normal function: calculate_activity_score_from_alleles() returns None for the
+# diplotype, and phenotype.classify_phenotype() reports it as indeterminate, naming the
+# allele (CPIC calls a diplotype with an uncharacterized allele indeterminate).
 #
 # This is the package's single allele-function table. metabolism.metabolizer_status
 # derives its table from it, and the star-allele calling definitions in
@@ -172,8 +190,18 @@ _ACTIVITY_SCORE_TABLES: dict[str, dict[str, float]] = {
         "*36": 1.0,
         "*37": 0.5,
     },
-    # No CPIC phenotype definition exists for CYP1A2, so phenotype.py applies its
-    # generic default mapping (with a logged warning) to these values.
+    # CYP1A2 does NOT come from CPIC. CPIC lists no CYP1A2 allele values and defines no CYP1A2
+    # phenotype (checked against api.cpicpgx.org by the maintainers on 2026-10-27), so these
+    # four alleles can be scored but not classified: phenotype.py raises ValueError for CYP1A2
+    # instead of borrowing another gene's bands.
+    # Provenance of the values: unattributed. The table first appeared in the metabolism module
+    # with the inline labels "Normal function" (*1A), "Decreased function" (*1C, *1K) and
+    # "Increased inducibility" (*1F) and no citation, and no source for them is cited anywhere
+    # in this repository: not PharmVar's function assignments, not the literature on the
+    # inducibility of *1F. They have not been checked against either. 0.5 and 1.5 are only the
+    # generic decreased/increased-function values this table uses for the genes CPIC does
+    # score, not measured or published CYP1A2 activities. Treat them as unsourced until they
+    # are traced to PharmVar or primary literature, and do not read them as CPIC values.
     "CYP1A2": {
         "*1A": 1.0,
         "*1C": 0.5,
@@ -183,7 +211,7 @@ _ACTIVITY_SCORE_TABLES: dict[str, dict[str, float]] = {
 }
 
 
-def _normalize_allele_name(name: str, gene: str, scoring_table: dict[str, float] | None = None) -> str:
+def _normalize_allele_name(name: str, gene: str, scoring_table: Mapping[str, float] | None = None) -> str:
     """Normalize an allele name for scoring-table lookup.
 
     Star allele names are prefixed with ``*`` when missing. Names already
@@ -216,7 +244,9 @@ def determine_diplotype(
             If None, uses built-in CPIC-derived tables.
 
     Returns:
-        Diplotype object with computed activity score
+        Diplotype object with its computed activity score. The score is ``None`` when
+        either allele has no activity value in the scoring table (an uncharacterized
+        allele; a warning names it): such a diplotype is indeterminate, not normal.
     """
     gene_upper = gene.upper()
 
@@ -235,13 +265,43 @@ def determine_diplotype(
     )
 
     logger.info(
-        "Determined diplotype %s for %s (activity score: %.2f)",
+        "Determined diplotype %s for %s (activity score: %s)",
         diplotype.diplotype_string,
         gene_upper,
-        activity,
+        "none (uncharacterized allele)" if activity is None else f"{activity:.2f}",
     )
 
     return diplotype
+
+
+def uncharacterized_alleles(
+    allele1_name: str,
+    allele2_name: str,
+    gene: str,
+    scoring_table: Mapping[str, float] | None = None,
+) -> list[str]:
+    """Return the alleles of a diplotype that have no activity value in the scoring table.
+
+    Names are normalized as in :func:`calculate_activity_score_from_alleles`, listed in the
+    order given and without repeats (a homozygous diplotype names its allele once).
+
+    Args:
+        allele1_name: First allele name
+        allele2_name: Second allele name
+        gene: Gene symbol
+        scoring_table: Optional custom scoring table. If None, uses the built-in table for the
+            gene (an empty table for a gene without one, so every allele is uncharacterized).
+
+    Returns:
+        The normalized names of the uncharacterized alleles; an empty list when both are scored.
+    """
+    gene_upper = gene.upper()
+    table = scoring_table if scoring_table is not None else _ACTIVITY_SCORE_TABLES.get(gene_upper, {})
+    names = (
+        _normalize_allele_name(allele1_name, gene_upper, table),
+        _normalize_allele_name(allele2_name, gene_upper, table),
+    )
+    return [name for name in dict.fromkeys(names) if name not in table]
 
 
 def calculate_activity_score_from_alleles(
@@ -249,7 +309,7 @@ def calculate_activity_score_from_alleles(
     allele2_name: str,
     gene: str,
     scoring_table: dict[str, float] | None = None,
-) -> float:
+) -> float | None:
     """Calculate the combined activity score for two alleles.
 
     Args:
@@ -259,31 +319,34 @@ def calculate_activity_score_from_alleles(
         scoring_table: Optional custom scoring table
 
     Returns:
-        Combined activity score (sum of individual allele scores)
+        Combined activity score (sum of individual allele scores), or ``None`` if either allele
+        has no activity value in the table. An uncharacterized allele is never assumed to be
+        normal function (1.0); a warning names it, and the diplotype is indeterminate.
     """
     gene_upper = gene.upper()
     table = scoring_table if scoring_table is not None else _ACTIVITY_SCORE_TABLES.get(gene_upper, {})
 
+    unknown = uncharacterized_alleles(allele1_name, allele2_name, gene_upper, table)
+    if unknown:
+        logger.warning(
+            "No activity value for allele(s) %s in the %s scoring table; the diplotype has no activity "
+            "score and its phenotype is indeterminate (pass scoring_table= with a value for the allele to score it)",
+            ", ".join(unknown),
+            gene_upper,
+        )
+        return None
+
     # Normalize allele names (non-star designations already in the table are kept)
     name1 = _normalize_allele_name(allele1_name, gene_upper, table)
     name2 = _normalize_allele_name(allele2_name, gene_upper, table)
-
-    score1 = table.get(name1, 1.0)  # Default to 1.0 (normal function) if unknown
-    score2 = table.get(name2, 1.0)
-
-    if name1 not in table:
-        logger.warning("Allele %s not found in scoring table for %s, defaulting to 1.0", name1, gene_upper)
-    if name2 not in table:
-        logger.warning("Allele %s not found in scoring table for %s, defaulting to 1.0", name2, gene_upper)
-
-    return score1 + score2
+    return table[name1] + table[name2]
 
 
 def calculate_activity_score(
     diplotype: Diplotype,
     gene: str,
     scoring_table: dict[str, float] | None = None,
-) -> float:
+) -> float | None:
     """Calculate activity score for an existing Diplotype.
 
     Args:
@@ -292,7 +355,9 @@ def calculate_activity_score(
         scoring_table: Optional custom scoring table
 
     Returns:
-        Combined activity score, also updates the Diplotype object
+        Combined activity score, also updates the Diplotype object; ``None`` (stored on the
+        diplotype too) if an allele has no activity value in the table, see
+        :func:`calculate_activity_score_from_alleles`.
     """
     score = calculate_activity_score_from_alleles(diplotype.allele1, diplotype.allele2, gene.upper(), scoring_table)
     diplotype.activity_score = score
@@ -311,6 +376,10 @@ def resolve_ambiguous_diplotypes(
     1. Prefer diplotypes with known activity scores for both alleles
     2. Among scored diplotypes, prefer the one with the highest activity score
        (conservative: assume best-case metabolism)
+
+    A diplotype that has not been scored (``activity_score`` is ``None``) ranks by the score
+    its alleles imply; if one of its alleles has no activity value it has no score and ranks
+    after every diplotype with as many known alleles.
 
     Args:
         possible_diplotypes: List of possible Diplotype objects
@@ -340,7 +409,10 @@ def resolve_ambiguous_diplotypes(
         if dip.allele2 in table:
             known_count += 1
 
-        scored.append((dip.activity_score, known_count, dip))
+        score = dip.activity_score
+        if score is None and known_count == 2:
+            score = table[dip.allele1] + table[dip.allele2]
+        scored.append((-math.inf if score is None else score, known_count, dip))
 
     # Sort: highest known_count first, then highest activity score (conservative)
     scored.sort(key=lambda x: (x[1], x[0]), reverse=True)
@@ -358,6 +430,39 @@ def resolve_ambiguous_diplotypes(
     return selected
 
 
+def _haplotype_allele(called: list[StarAllele], gene: str, haplotype: str) -> tuple[StarAllele, bool]:
+    """Return the one allele a haplotype carries, and whether more than one was called for it.
+
+    A haplotype is a single star allele. When the variants on it match several definitions
+    (for example a loss-of-function marker beside a normal-function one), the most impaired
+    allele is taken: a no-function variant is not offset by a normal-function marker on the same
+    haplotype, and the calls come back ordered by name, so taking the first would pick "*2" over
+    "*4". The ambiguity is logged and returned so the caller can lower its confidence.
+
+    Args:
+        called: Alleles called from the haplotype's variants (:func:`call_star_alleles`)
+        gene: Gene symbol
+        haplotype: Label of the haplotype, for the log message
+
+    Returns:
+        ``(allele, ambiguous)``. An empty ``called`` gives the reference ``*1``.
+    """
+    if not called:
+        return StarAllele(name="*1", gene=gene), False
+    if len(called) == 1:
+        return called[0], False
+    chosen = min(called, key=lambda allele: (allele.activity_value, allele.name))
+    logger.warning(
+        "Haplotype %s of %s matches %d alleles (%s); calling %s, the most impaired function",
+        haplotype,
+        gene,
+        len(called),
+        ", ".join(allele.name for allele in called),
+        chosen.name,
+    )
+    return chosen, True
+
+
 def phased_diplotype(
     variants: set[str] | frozenset[str],
     phase_data: dict[str, int],
@@ -369,6 +474,11 @@ def phased_diplotype(
     When phase information is available (e.g., from long reads, family data,
     or statistical phasing), this function assigns variants to maternal and
     paternal haplotypes before calling star alleles on each independently.
+
+    A haplotype carries one allele. If its variants match more than one definition, the allele
+    with the lowest activity value is taken (a loss-of-function variant is not offset by a
+    normal-function marker on the same haplotype), a warning names the candidates, and the
+    diplotype's confidence is ``"moderate"`` instead of ``"high"``.
 
     Args:
         variants: Set of all observed variant identifiers
@@ -414,13 +524,13 @@ def phased_diplotype(
     alleles_a = call_star_alleles(hap_a_variants, gene_upper, allele_definitions)
     alleles_b = call_star_alleles(hap_b_variants, gene_upper, allele_definitions)
 
-    # Take the best (most specific) allele call from each haplotype
-    allele1 = alleles_a[0] if alleles_a else StarAllele(name="*1", gene=gene_upper)
-    allele2 = alleles_b[0] if alleles_b else StarAllele(name="*1", gene=gene_upper)
+    # One allele per haplotype: the most impaired one when several definitions match
+    allele1, ambiguous_a = _haplotype_allele(alleles_a, gene_upper, "A")
+    allele2, ambiguous_b = _haplotype_allele(alleles_b, gene_upper, "B")
 
     diplotype = determine_diplotype(allele1, allele2, gene_upper)
     diplotype.phased = True
-    diplotype.confidence = "high"
+    diplotype.confidence = "moderate" if ambiguous_a or ambiguous_b else "high"
 
     logger.info(
         "Phased diplotype for %s: %s (hap_a=%d variants, hap_b=%d variants, unphased=%d)",

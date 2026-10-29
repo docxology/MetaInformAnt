@@ -66,10 +66,14 @@ def generate_clinical_report(
             - "ordering_provider": Ordering provider name
         genotypes: Dictionary mapping gene symbol -> genotype info:
             - "diplotype": Diplotype string (e.g., "*1/*4"); the phenotype is classified
-              from it
+              from it. A diplotype with an allele that has no activity value is reported
+              Indeterminate (IND, activity score ``None``), as CPIC calls it; the report
+              names the allele and adds no drug recommendation for that gene.
             - "phenotype": Optional pre-determined phenotype, in any form
               ``MetabolizerPhenotype.from_string`` accepts ("Poor Metabolizer", "PM",
-              "poor"); used when no diplotype is given or it cannot be classified
+              "poor"); used when no diplotype is given or it cannot be classified (a gene
+              CPIC defines no phenotype for, such as CYP1A2, or a malformed diplotype), in
+              which case the reason is reported. With neither, the gene is Indeterminate.
             - "activity_score": Optional pre-computed activity score
         drugs: Drugs to generate specific recommendations for. If None (the default),
             every drug with a built-in CPIC guideline is analysed against the genes
@@ -116,14 +120,25 @@ def generate_clinical_report(
             try:
                 pheno_result = classify_phenotype(diplotype_str, gene_upper)
             except (ValueError, KeyError) as e:
+                # A gene CPIC defines no phenotype for, or a malformed diplotype: the reason is
+                # reported, and the phenotype is the one supplied with the genotype or Indeterminate
                 logger.warning("Could not classify phenotype for %s %s: %s", gene_upper, diplotype_str, e)
+                supplied = geno_info.get("phenotype")
+                fallback = MetabolizerPhenotype.INDETERMINATE if supplied is None else supplied
                 pheno_result = {
                     "gene": gene_upper,
                     "diplotype": diplotype_str,
                     "activity_score": geno_info.get("activity_score", None),
-                    "phenotype": geno_info.get("phenotype", MetabolizerPhenotype.INDETERMINATE),
-                    "phenotype_abbreviation": "IND",
-                    "clinical_significance": "Unable to determine phenotype automatically.",
+                    "phenotype": fallback,
+                    "phenotype_abbreviation": _get_abbrev(fallback),
+                    "clinical_significance": (
+                        f"Unable to determine phenotype automatically: {e}"
+                        + (
+                            ""
+                            if supplied is None
+                            else f" Showing the phenotype supplied with the genotype: {supplied}."
+                        )
+                    ),
                 }
         else:
             # Use provided phenotype directly
@@ -418,8 +433,9 @@ def _format_text_report(report: dict[str, Any]) -> str:
         if isinstance(phenotype, MetabolizerPhenotype):
             phenotype = phenotype.value
         abbrev = result.get("phenotype_abbreviation", "")
-        score = result.get("activity_score", "N/A")
-        lines.append(f"  {gene}: {diplotype} | {phenotype} ({abbrev}) | Activity Score: {score}")
+        score = result.get("activity_score")
+        score_text = "N/A" if score is None else score
+        lines.append(f"  {gene}: {diplotype} | {phenotype} ({abbrev}) | Activity Score: {score_text}")
         significance = result.get("clinical_significance", "")
         if significance:
             lines.append(f"    -> {significance}")
@@ -540,11 +556,12 @@ def _format_html_report(report: dict[str, Any]) -> str:
         phenotype = result.get("phenotype", "")
         if isinstance(phenotype, MetabolizerPhenotype):
             phenotype = phenotype.value
+        score = result.get("activity_score")
         html_parts.append(
             f"<tr><td>{_html_escape(str(result.get('gene', '')))}</td>"
             f"<td>{_html_escape(str(result.get('diplotype', '')))}</td>"
             f"<td>{_html_escape(str(phenotype))}</td>"
-            f"<td>{result.get('activity_score', 'N/A')}</td>"
+            f"<td>{_html_escape('N/A' if score is None else str(score))}</td>"
             f"<td>{_html_escape(str(result.get('clinical_significance', '')))}</td></tr>"
         )
     html_parts.append("</table>")

@@ -22,6 +22,9 @@ from pathlib import Path
 import metainformant.pharmacogenomics as pharmacogenomics
 
 PACKAGE_DIR = Path(pharmacogenomics.__file__).resolve().parent
+# The source tree this process imported. Child interpreters must import the same one:
+# tests/conftest.py prepends the repository's src to PYTHONPATH, which would otherwise win.
+SOURCE_ROOT = PACKAGE_DIR.parents[1]
 
 # Any use of a random-number or random-id source. If a stochastic method is ever added it must
 # take an explicit seed, and this pattern list is the place to allow it.
@@ -43,6 +46,7 @@ import logging
 logging.disable(logging.CRITICAL)
 
 from metainformant.pharmacogenomics.alleles.diplotype import (
+    Diplotype,
     determine_diplotype,
     phased_diplotype,
     resolve_ambiguous_diplotypes,
@@ -76,6 +80,16 @@ out["classify"] = {
 allele_frequencies = {"*1": 0.5, "*2": 0.1, "*4": 0.2, "*10": 0.1, "*41": 0.1}
 out["population"] = population_phenotype_frequencies(allele_frequencies, "CYP2D6")
 out["predict"] = predict_metabolizer_status({"diplotype": "*2/*41"}, "CYP2D6")
+# Alleles with no activity value: the indeterminate paths name them, in an order that must not depend on hashing
+out["indeterminate"] = {
+    "classify": classify_phenotype("*998/*999", "CYP2D6"),
+    "scored_object": classify_phenotype(Diplotype("*41", "*10", "CYP2D6"), "CYP2D6"),
+    "population": population_phenotype_frequencies({"*1": 0.5, "*997": 0.2, "*998": 0.2, "*999": 0.1}, "CYP2D6"),
+    "facade": predict_metabolizer_status({"diplotype": "*999/*998"}, "CYP2D6"),
+    "ambiguous": resolve_ambiguous_diplotypes(
+        [Diplotype("*998", "*999", "CYP2D6"), Diplotype("*1", "*4", "CYP2D6"), Diplotype("*1", "*2", "CYP2D6")]
+    ).diplotype_string,
+}
 genotypes = {
     "CYP2D6": {"diplotype": "*4/*10"},
     "CYP2C19": {"diplotype": "*2/*17"},
@@ -96,7 +110,7 @@ print(json.dumps(out, default=str))
 
 
 def _run_analysis(hash_seed: str) -> str:
-    env = {**os.environ, "PYTHONHASHSEED": hash_seed}
+    env = {**os.environ, "PYTHONHASHSEED": hash_seed, "PYTHONPATH": str(SOURCE_ROOT)}
     completed = subprocess.run(
         [sys.executable, "-c", ANALYSIS],
         env=env,
@@ -138,6 +152,10 @@ class TestNoUnseededRandomness:
         outputs = {seed: _run_analysis(seed) for seed in ("0", "1", "4242")}
         reference = outputs["0"]
         assert json.loads(reference)["report"]["genotype_results"]  # a real analysis ran
+        indeterminate = json.loads(reference)["indeterminate"]
+        assert indeterminate["classify"]["unknown_alleles"] == ["*998", "*999"]
+        assert indeterminate["facade"]["unknown_alleles"] == ["*999", "*998"]  # in the order written
+        assert indeterminate["population"]["IND"] > 0  # the uncharacterized alleles' share
         for seed, output in outputs.items():
             assert output == reference, f"PYTHONHASHSEED={seed} changed an analysis result"
 

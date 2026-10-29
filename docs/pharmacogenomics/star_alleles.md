@@ -30,7 +30,7 @@ error.
 
 `handle_cyp2d6_cnv(variants, copy_number)` takes the copy number from the caller; the marker
 identifiers `CYP2D6_DEL` (the defining variant of `*5`) and `CYP2D6_DUP` are not used to infer
-it and are removed before alleles are called.
+it and are removed before alleles are called. `copy_number` must be a non-negative whole number (integral floats such as `2.0` are accepted). Negative, fractional, NaN, infinite, boolean and nonnumeric values raise `ValueError`.
 
 | Copy number | Result |
 |-------------|--------|
@@ -66,6 +66,7 @@ values:
 
 UGT1A1 and CYP1A2 have values only: no calling definitions are bundled for them (see
 [CONFIGURATION.md](CONFIGURATION.md#genes-with-activity-values-but-no-calling-definitions)).
+CYP1A2's retained activity values are not sourced to CPIC and need primary-source qualification; no supported CYP1A2 phenotype definition is bundled, so phenotype APIs raise for it.
 The calling definitions (`_BUILTIN_ALLELE_DEFINITIONS`, 8 genes and 45 alleles) carry the same
 values for the alleles they define; a test enforces it.
 

@@ -326,8 +326,13 @@ class TestSingleSourceOfTruth:
                 assert definition["activity_value"] == _ACTIVITY_SCORE_TABLES[gene][name], f"{gene} {name}"
 
     def test_both_apis_agree_on_every_diplotype_of_every_gene(self) -> None:
+        # CYP1A2 has activity values but no CPIC phenotype: neither API classifies it (see
+        # test_unknown_genes_alleles_diplotypes.py), so the genes compared are the ones CPIC defines.
+        assert set(_ACTIVITY_SCORE_TABLES) - set(_PHENOTYPE_THRESHOLDS) == {"CYP1A2"}
         checked = 0
         for gene, table in _ACTIVITY_SCORE_TABLES.items():
+            if gene not in _PHENOTYPE_THRESHOLDS:
+                continue
             for first, second in itertools.combinations_with_replacement(sorted(table), 2):
                 diplotype = f"{first}/{second}"
                 classified = classify_phenotype(diplotype, gene)
@@ -368,7 +373,7 @@ class TestScoreBands:
             assert current["lower_inclusive"] != previous["upper_inclusive"]
         assert all(band["gene_specific"] for band in bands)
 
-    @pytest.mark.parametrize("gene", [*sorted(_PHENOTYPE_THRESHOLDS), "NOTAGENE"])
+    @pytest.mark.parametrize("gene", sorted(_PHENOTYPE_THRESHOLDS))
     def test_phenotype_never_decreases_as_activity_rises(self, gene: str) -> None:
         order = [PM, IM, NM, RM, UM]
         ranks = [order.index(predict_metabolizer_status(i * 0.05, gene)) for i in range(0, 121)]
@@ -411,14 +416,18 @@ class TestScoreBands:
         with pytest.raises(ValueError, match="non-negative"):
             classify_metabolizer(bad_score, "CYP2D6")
 
-    def test_unknown_gene_reports_the_default_bands_it_applies(self) -> None:
-        bands = get_phenotype_thresholds("NOTAGENE")
-        reference = get_phenotype_thresholds("CYP2D6")
-        assert [(b["lower_bound"], b["upper_bound"], b["phenotype"]) for b in bands] == [
-            (b["lower_bound"], b["upper_bound"], b["phenotype"]) for b in reference
-        ]
-        assert all(b["gene_specific"] is False and "NOTAGENE" in b["note"] for b in bands)
-        assert predict_metabolizer_status(1.0, "NOTAGENE") == IM
+    def test_unknown_gene_raises_instead_of_applying_the_cyp2d6_bands(self) -> None:
+        # A gene CPIC defines no phenotype for used to be classified with the CYP2D6 bands (a score
+        # of 1.0 read as intermediate); it now raises, naming the gene and the supported genes.
+        for call in (
+            lambda: get_phenotype_thresholds("NOTAGENE"),
+            lambda: predict_metabolizer_status(1.0, "NOTAGENE"),
+            lambda: classify_metabolizer(1.0, "NOTAGENE"),
+        ):
+            with pytest.raises(ValueError, match="NOTAGENE") as caught:
+                call()
+            for supported in _PHENOTYPE_THRESHOLDS:
+                assert supported in str(caught.value)
 
 
 class TestFunctionRulesVersusSums:

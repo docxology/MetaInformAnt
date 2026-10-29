@@ -6,8 +6,9 @@ based on the 2015 Richards et al. guidelines. Evaluates individual evidence
 criteria (PVS, PS, PM, PP, BA, BS, BP) and combines them into a final
 classification: Pathogenic, Likely Pathogenic, VUS, Likely Benign, or Benign.
 
-Also provides ClinVar data querying (from local parsed data) and gnomAD
-population frequency checks for the BA1/BS1 benign criteria.
+Also provides lookup in a small built-in table of ClinVar-style records (6
+pharmacogene variants, not a ClinVar download) and gnomAD population frequency checks
+for the BA1/BS1 benign criteria.
 """
 
 from __future__ import annotations
@@ -201,6 +202,20 @@ _CLINVAR_DATA: dict[str, dict[str, Any]] = {
 }
 
 
+def _population_frequencies(af_data: Any) -> dict[str, float]:
+    """Return a variant's allele frequencies by population; empty when it carries none.
+
+    ``af_data`` is a number (one "Global" frequency), a mapping of population to frequency, or
+    absent (``None`` or an empty string). An absent frequency is not zero: callers must not read
+    "no data" as "absent from controls".
+    """
+    if isinstance(af_data, dict):
+        return {str(population): float(freq) for population, freq in af_data.items()}
+    if af_data is None or (isinstance(af_data, str) and not af_data.strip()):
+        return {}
+    return {"Global": float(af_data)}
+
+
 def classify_variant_acmg(
     variant: dict[str, Any],
     evidence: dict[str, bool] | None = None,
@@ -289,6 +304,10 @@ def apply_acmg_criteria(
     Systematically evaluates each ACMG criterion based on available variant
     information. Each criterion is assessed independently.
 
+    The population-frequency criteria (PM2, BA1, BS1) need an ``allele_frequency``. A variant
+    that carries none has not been observed to be absent from controls, so none of the three is
+    met: a missing frequency is not read as a frequency of 0.
+
     Args:
         variant_data: Variant information dictionary (see classify_variant_acmg)
 
@@ -299,12 +318,9 @@ def apply_acmg_criteria(
 
     consequence = variant_data.get("consequence", "").lower()
 
-    # Get allele frequency (handle both dict and float)
-    af_data = variant_data.get("allele_frequency", 0.0)
-    if isinstance(af_data, dict):
-        max_af = max(af_data.values()) if af_data else 0.0
-    else:
-        max_af = float(af_data) if af_data else 0.0
+    # Get allele frequency (handle both dict and float); None when the variant carries none
+    frequencies = _population_frequencies(variant_data.get("allele_frequency"))
+    max_af: float | None = max(frequencies.values()) if frequencies else None
 
     comp_preds = variant_data.get("computational_predictions", {})
     functional = variant_data.get("functional_data", {})
@@ -350,7 +366,7 @@ def apply_acmg_criteria(
 
     # ── PM2: Absent from controls ─────────────────────────────────────────
     pm2_threshold = variant_data.get("pm2_threshold", 0.0001)
-    criteria["PM2"] = max_af < pm2_threshold
+    criteria["PM2"] = max_af is not None and max_af < pm2_threshold
 
     # ── PM3: In trans with pathogenic (recessive) ─────────────────────────
     criteria["PM3"] = bool(variant_data.get("in_trans_pathogenic", False))
@@ -389,11 +405,11 @@ def apply_acmg_criteria(
     criteria["PP5"] = bool(variant_data.get("reputable_source_pathogenic", False))
 
     # ── BA1: Stand-alone benign (AF > 5%) ─────────────────────────────────
-    criteria["BA1"] = max_af > 0.05
+    criteria["BA1"] = max_af is not None and max_af > 0.05
 
     # ── BS1: Allele frequency greater than expected for disease ───────────
     disease_af_threshold = variant_data.get("disease_af_threshold", 0.01)
-    criteria["BS1"] = max_af > disease_af_threshold and not criteria["BA1"]
+    criteria["BS1"] = max_af is not None and max_af > disease_af_threshold and not criteria["BA1"]
 
     # ── BS2: Observed in healthy individual (penetrant condition) ─────────
     criteria["BS2"] = bool(variant_data.get("observed_healthy_adult", False))
@@ -474,7 +490,9 @@ def aggregate_evidence(
         (i) 1 Strong + 1 Supporting
         (ii) >=2 Supporting
 
-    VUS: Everything else
+    VUS: Everything else, including contradictory evidence: when the criteria for a pathogenic
+    (or likely pathogenic) call and for a benign (or likely benign) call are both met, the
+    variant is VUS, as Table 5 says; one side does not win by being checked first.
 
     Args:
         criteria: Dictionary of criterion name -> True/False
@@ -493,7 +511,24 @@ def aggregate_evidence(
     bs = sum(1 for c in met if c.startswith("BS"))
     bp = sum(1 for c in met if c.startswith("BP"))
 
-    # ── Benign rules (check first - BA1 is standalone) ────────────────────
+    pathogenic_call = _pathogenic_classification(pvs, ps, pm, pp)
+    benign_call = _benign_classification(ba, bs, bp)
+
+    # Pathogenic and benign criteria that both reach a call contradict each other
+    if pathogenic_call is not None and benign_call is not None:
+        return ACMGClassification.VUS
+    if pathogenic_call is not None:
+        return pathogenic_call
+    if benign_call is not None:
+        return benign_call
+
+    # ── Default: VUS ──────────────────────────────────────────────────────
+    return ACMGClassification.VUS
+
+
+def _benign_classification(ba: int, bs: int, bp: int) -> ACMGClassification | None:
+    """Benign or Likely Benign call from the counts of BA, BS and BP criteria met, else None."""
+    # ── Benign rules (BA1 is standalone) ──────────────────────────────────
     if ba >= 1:
         return ACMGClassification.BENIGN
     if bs >= 2:
@@ -504,7 +539,11 @@ def aggregate_evidence(
         return ACMGClassification.LIKELY_BENIGN
     if bp >= 2:
         return ACMGClassification.LIKELY_BENIGN
+    return None
 
+
+def _pathogenic_classification(pvs: int, ps: int, pm: int, pp: int) -> ACMGClassification | None:
+    """Pathogenic or Likely Pathogenic call from the counts of PVS, PS, PM and PP criteria met, else None."""
     # ── Pathogenic rules ──────────────────────────────────────────────────
     if pvs >= 1:
         if ps >= 1:
@@ -542,9 +581,7 @@ def aggregate_evidence(
         return ACMGClassification.LIKELY_PATHOGENIC
     if pm >= 1 and pp >= 4:
         return ACMGClassification.LIKELY_PATHOGENIC
-
-    # ── Default: VUS ──────────────────────────────────────────────────────
-    return ACMGClassification.VUS
+    return None
 
 
 def query_clinvar(
@@ -552,14 +589,17 @@ def query_clinvar(
 ) -> dict[str, Any] | None:
     """Look up ClinVar classification for a variant.
 
-    Queries the local ClinVar data cache for a variant's classification,
-    review status, and associated conditions.
+    Looks the variant up in the built-in table of 6 ClinVar-style records for its
+    classification, review status, and associated conditions. There is no ClinVar
+    download behind it, so ``None`` means the variant is not in that table, not that
+    ClinVar has no record of it.
 
     Args:
-        variant_id: Variant identifier (rsID, ClinVar variation ID, or HGVS)
+        variant_id: Variant rsID or HGVS expression, case-insensitive (ClinVar variation
+            IDs are not indexed)
 
     Returns:
-        ClinVar record dictionary, or None if not found.
+        ClinVar record dictionary, or None if not in the built-in table.
         Keys: variant_id, gene, hgvs, classification, review_status,
         stars, condition, last_evaluated, submitter_count
     """
@@ -595,45 +635,49 @@ def check_gnomad_frequency(
         variant: Variant dictionary with "allele_frequency" key containing
             either a float or a dict of population -> frequency
         population: Optional specific population to check (e.g., "European",
-            "East_Asian"). If None, checks maximum across all populations.
+            "East_Asian"), matched case-insensitively. If None, checks maximum
+            across all populations.
         threshold: Frequency threshold for classification (default 0.05 for BA1)
 
     Returns:
         Dictionary with:
-            - "max_frequency": Maximum allele frequency observed
-            - "population": Population with highest frequency
+            - "max_frequency": Maximum allele frequency observed (None if the variant carries
+              no frequency: that is not a frequency of 0)
+            - "population": Population with highest frequency (None if there is none)
             - "exceeds_threshold": Whether threshold is exceeded
             - "ba1_triggered": Whether BA1 benign criterion is met (AF > 5%)
             - "bs1_triggered": Whether BS1 benign criterion is met (AF > disease threshold)
             - "frequencies": All population frequencies if available
-    """
-    af_data = variant.get("allele_frequency", 0.0)
 
-    if isinstance(af_data, dict):
-        frequencies = {k: float(v) for k, v in af_data.items()}
-    elif isinstance(af_data, (int, float)):
-        frequencies = {"Global": float(af_data)}
-    else:
-        frequencies = {"Global": 0.0}
+    Raises:
+        ValueError: If ``population`` is not one of the variant's populations. A population
+            the variant has no frequency for is not read as a frequency of 0.
+    """
+    frequencies = _population_frequencies(variant.get("allele_frequency"))
 
     if population:
-        check_freq = frequencies.get(population, 0.0)
-        max_pop = population
+        matches = [name for name in frequencies if name.lower() == population.strip().lower()]
+        if not matches:
+            raise ValueError(
+                f"Population {population!r} has no allele frequency for this variant; "
+                f"available populations: {sorted(frequencies)}"
+            )
+        max_pop: str | None = matches[0]
+        check_freq: float | None = frequencies[matches[0]]
+    elif frequencies:
+        max_pop = max(frequencies, key=lambda k: frequencies[k])
+        check_freq = frequencies[max_pop]
     else:
-        if frequencies:
-            max_pop = max(frequencies, key=lambda k: frequencies[k])
-            check_freq = frequencies[max_pop]
-        else:
-            max_pop = "Unknown"
-            check_freq = 0.0
+        max_pop = None
+        check_freq = None
 
-    ba1 = check_freq > 0.05
-    bs1 = check_freq > threshold and not ba1
+    ba1 = check_freq is not None and check_freq > 0.05
+    bs1 = check_freq is not None and check_freq > threshold and not ba1
 
     result = {
         "max_frequency": check_freq,
         "population": max_pop,
-        "exceeds_threshold": check_freq > threshold,
+        "exceeds_threshold": check_freq is not None and check_freq > threshold,
         "ba1_triggered": ba1,
         "bs1_triggered": bs1,
         "frequencies": frequencies,

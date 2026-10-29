@@ -3,7 +3,7 @@
 `clinical.pathogenicity` classifies variants with the ACMG/AMP 2015 five-tier system
 (Richards et al., *Genet Med* 17:405). It is meant for pharmacogene variants that lack
 population-frequency or functional data. The functions work on a plain dictionary of evidence
-that you supply; nothing is fetched from ClinVar or gnomAD.
+that you supply; nothing is fetched from ClinVar or gnomAD. Missing frequency data do not establish rarity: PM2, BA1 and BS1 all remain unmet without a supplied `allele_frequency`.
 
 ## Criteria the module evaluates
 
@@ -82,7 +82,7 @@ criteria come from the variant dict or from `evidence`.
 `aggregate_evidence(criteria)` is the combining step: it applies the rules of Richards et al.
 2015, Table 5, to the counts of very strong, strong, moderate and supporting pathogenic criteria
 and of stand-alone, strong and supporting benign criteria, and returns an `ACMGClassification`.
-Anything the rules do not cover is `Uncertain Significance`.
+When pathogenic and benign evidence each independently reach a classification, the result is `Uncertain Significance` (VUS). Anything the combining rules do not cover is also VUS.
 
 ## Related helpers
 
@@ -90,16 +90,13 @@ Anything the rules do not cover is `Uncertain Significance`.
   record set bundled in the module (6 pharmacogene variants) and returns the record or `None`.
   It makes no network request.
 - `check_gnomad_frequency(variant, population=None, threshold=0.05)` compares a frequency you
-  supply with the BA1 (5%) and BS1 cut-offs and reports which population has the highest one.
+  supply with the BA1 (5%) and BS1 cut-offs and reports which population has the highest one. Without frequency data, `max_frequency` and `population` are `None`, and threshold flags are false. A requested population absent from the supplied frequency map raises `ValueError`; population names are matched case-insensitively.
 - `visualization.plots.plot_acmg_criteria(criteria_results, output_path)` draws which criteria
   are met.
 
 ## Combining with phenotype
 
-The classification is not connected to star-allele calling or to activity values. If you add a
-novel loss-of-function allele through a custom definition file, you may cite its ACMG
-classification as the evidence for giving it an activity value of 0.0, but you assign that
-value yourself.
+ACMG classification is separate from star-allele calling and activity scoring. These functions do not assign an activity value to a novel allele; any custom activity value needs independent supporting evidence.
 
 ## References
 

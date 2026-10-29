@@ -4,9 +4,11 @@ Provides functions for predicting drug-drug interactions from a built-in
 interaction database, assessing polypharmacy risk from multiple concurrent
 medications, and predicting CYP enzyme inhibition/induction potential.
 
-The built-in database covers ~100 common drug pairs with severity levels,
+The built-in database is a small curated set of 39 drug pairs with severity levels,
 mechanisms, and evidence grades derived from established pharmacological
-knowledge.
+knowledge. It is not a comprehensive interaction reference: a pair absent from it is
+reported as "no known interaction" (evidence level D), which is not evidence that none
+exists.
 """
 
 from __future__ import annotations
@@ -114,7 +116,7 @@ _CYP_INDUCERS: dict[str, list[dict[str, str]]] = {
 def default_interaction_database() -> dict:
     """Return the built-in drug-drug interaction database.
 
-    The database contains approximately 100 common drug pairs with severity,
+    The database contains 39 drug pairs with severity,
     mechanism, description, and evidence level. Each entry is keyed by a
     frozenset-style tuple of two drug names (lowercased, sorted).
 

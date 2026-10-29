@@ -55,8 +55,7 @@ print(guideline['cpic_level'])  # A
 searches every guideline for the drug and returns the first recommendation whose phenotype
 matches. The phenotype is matched by its full name (`'Poor Metabolizer'`) or by a two-letter
 abbreviation (`'PM'`, `'IM'`, `'NM'`, `'RM'`, `'UM'`; the old `'EM'` counts as normal), in any
-case. The bare token `'poor'` matches nothing; normalise a label with
-`MetabolizerPhenotype.from_string(label).value` first if you hold one.
+case. Bare tokens such as `'poor'` are also normalized by `MetabolizerPhenotype.from_string` and match the same guideline as a full name or abbreviation.
 
 ```python
 rec = get_dosing_recommendation('codeine', 'Poor Metabolizer')
@@ -85,7 +84,7 @@ for entry in list_actionable_genes(min_level='A'):
 ```
 
 `list_actionable_genes(guidelines=None, min_level='B')` returns pairs at the given level or
-better (`'B'` also includes `'A/B'`).
+better (`'B'` also includes `'A/B'`). Unrecognized `min_level` values raise `ValueError`.
 
 ## Using your own guidelines
 

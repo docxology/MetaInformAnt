@@ -15,9 +15,9 @@ Metabolizer status prediction from pharmacogenomic genotype data, providing CPIC
 |----------|-------------|
 | `metabolizer_status.default_allele_function_table()` | Get an independent copy of the built-in CPIC allele function assignments |
 | `metabolizer_status.compute_activity_score()` | Compute activity score from a diplotype string and an allele table |
-| `metabolizer_status.classify_metabolizer()` | Classify a gene's metabolizer phenotype token from an activity score (negative or NaN raises `ValueError`) |
-| `metabolizer_status.predict_metabolizer_status()` | End-to-end metabolizer prediction from a genotype dict (also exported as `pharmacogenomics.predict_metabolizer`) |
-| `metabolizer_status.dose_adjustment()` | Get the dose adjustment for a phenotype (any common form: `"poor"`, `"Poor Metabolizer"`, `"PM"`) and a drug |
+| `metabolizer_status.classify_metabolizer()` | Classify a gene's metabolizer phenotype token from an activity score (negative or NaN raises `ValueError`, as does a gene CPIC defines no phenotype for) |
+| `metabolizer_status.predict_metabolizer_status()` | End-to-end metabolizer prediction from a genotype dict (also exported as `pharmacogenomics.predict_metabolizer`). An allele with no value in the table gives `"indeterminate"`, an activity score of `None` and `unknown_alleles` naming it |
+| `metabolizer_status.dose_adjustment()` | Get the dose adjustment for a phenotype (any common form: `"poor"`, `"Poor Metabolizer"`, `"PM"`) and a drug; an `"indeterminate"` status gets no dose (`adjusted_dose_fraction` is `None`) |
 
 ## Usage
 
@@ -31,4 +31,12 @@ adjustment = metabolizer_status.dose_adjustment(phenotype, "codeine")
 
 # or in one step from a genotype dict
 result = metabolizer_status.predict_metabolizer_status({"diplotype": "*1/*4"}, "CYP2D6")
+
+# an allele missing from the table is not normal function: the diplotype is indeterminate
+result = metabolizer_status.predict_metabolizer_status({"diplotype": "*1/*999"}, "CYP2D6")
+# result["phenotype"] == "indeterminate", result["activity_score"] is None, result["unknown_alleles"] == ["*999"]
 ```
+
+CYP1A2 has activity values, so `compute_activity_score` scores it, but CPIC defines no CYP1A2
+phenotype, so `classify_metabolizer` and `predict_metabolizer_status` raise `ValueError` for it
+(and for any gene without a CPIC phenotype), naming the supported genes.

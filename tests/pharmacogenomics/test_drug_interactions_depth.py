@@ -7,8 +7,11 @@ with real data structures only.
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
+from metainformant.pharmacogenomics.interaction import drug_interactions
 from metainformant.pharmacogenomics.interaction.drug_interactions import (
     _find_shared_cyp_pathways,
     cyp_inhibition_prediction,
@@ -31,6 +34,15 @@ class TestDefaultDatabase:
 
     def test_database_is_deterministic_across_calls(self) -> None:
         assert default_interaction_database() == default_interaction_database()
+
+    def test_docstrings_state_the_real_number_of_pairs(self) -> None:
+        # They claimed "approximately 100 common drug pairs" for a database of a few dozen
+        size = len(default_interaction_database())
+        for text in (drug_interactions.__doc__, default_interaction_database.__doc__):
+            claimed = [int(n) for n in re.findall(r"(\d+)\s+(?:common\s+|curated\s+)?drug pairs", text or "")]
+            assert claimed, text
+            assert set(claimed) == {size}, f"docstring claims {claimed} pairs, the database has {size}"
+        assert size < 100
 
     def test_severity_distribution_is_nontrivial(self) -> None:
         db = default_interaction_database()

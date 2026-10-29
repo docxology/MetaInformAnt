@@ -35,8 +35,8 @@ Never import `annotations` from inside `alleles` to avoid a circular dependency.
    where the previous one ends, and the last ends at `math.inf`. Do not round the bounds
    (CYP2D6 uses 1.25 and 2.25). If CPIC defines the gene by pairs of allele functions, also
    add `_FUNCTION_PHENOTYPES["GENE"]`, keyed by the `(less active, more active)` function
-   classes. A gene with no entry falls back to the CYP2D6 bands with a logged warning, which
-   is a fallback, not a definition.
+   classes. A gene with no supported phenotype entry raises `ValueError`; no other gene's bands
+   are substituted.
 4. **Special rules.** Copy-number handling exists for CYP2D6 only (`handle_cyp2d6_cnv`); there
    is no registry of per-gene diplotype rules to extend.
 
@@ -49,7 +49,7 @@ Never import `annotations` from inside `alleles` to avoid a circular dependency.
     - Diplotype canonical ordering (`*1/*4` and `*4/*1` are the same diplotype)
     - Phenotype classification at band boundaries
 
-    Run `env -u VIRTUAL_ENV .venv/bin/python -m pytest -q tests/pharmacogenomics`.
+    Run `uv run python -m pytest -q tests/pharmacogenomics`.
 
 5b. If the gene has copy-number rules, add a test for the duplication markers.
 

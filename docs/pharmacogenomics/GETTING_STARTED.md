@@ -161,11 +161,7 @@ The built-in allele definitions cover 8 pharmacogenes, 45 alleles in total (coun
 - TPMT (5), NUDT15 (3)
 - SLCO1B1 (4), DPYD (5)
 
-UGT1A1 and CYP1A2 have activity values (so `determine_diplotype`, `classify_phenotype` and
-`predict_metabolizer` work for them) but no calling definitions: UGT1A1 alleles are defined by
-promoter TA-repeat length, which variant identifiers cannot express. Asking for their
-definitions raises a `ValueError` that says so; build their diplotypes from allele names
-called elsewhere.
+UGT1A1 and CYP1A2 have activity values but no calling definitions. UGT1A1 can be classified from allele names called elsewhere; its promoter TA-repeat alleles cannot be expressed by presence-only variant identifiers. CYP1A2 can only be scored: no supported CPIC phenotype definition is bundled, so phenotype APIs raise `ValueError`. Asking for either gene's calling definitions raises a `ValueError` describing the gap.
 
 Other genes need a definition file (see [CONFIGURATION.md](CONFIGURATION.md)). To list the
 built-in genes, ask for an unknown one; the error names every gene it has:

@@ -132,4 +132,4 @@ not grow with cohort size. See [PERFORMANCE.md](PERFORMANCE.md) for scaling note
 - A variant outside every allele definition is ignored: it adds neither a match score nor a
   penalty (use `detect_novel_alleles` to list such variants).
 - UGT1A1 and CYP1A2 have activity values but no calling definitions.
-- Phenotypes for a gene without bands of its own use the CYP2D6 bands, with a logged warning.
+- Phenotype APIs raise `ValueError` for a gene without its own supported definition. CYP1A2 values permit scoring only and still need primary-source qualification.

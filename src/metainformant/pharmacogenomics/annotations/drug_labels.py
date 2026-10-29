@@ -13,6 +13,7 @@ The FDA categorizes pharmacogenomic biomarkers in drug labels as:
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -196,7 +197,10 @@ def parse_drug_label(
             - "gene_biomarker": Gene/biomarker mentioned
             - "sections": Dict of label sections with PGx content
             - "biomarker_info": Extracted biomarker testing information
-            - "label_type": Classification of PGx labeling strength
+            - "label_type": Classification of PGx labeling strength: the file's own
+              ``label_type`` when it is one of the four types, otherwise classified from
+              the PGx language of the sections by :func:`classify_label_type` (a label with
+              no ``label_type`` is not simply "informational")
     """
     from metainformant.core import io
 
@@ -224,7 +228,8 @@ def parse_drug_label(
         "gene_biomarker": data.get("gene_biomarker", ""),
         "sections": {},
         "biomarker_info": {},
-        "label_type": data.get("label_type", "informational"),
+        # Left blank when the file has none, so classify_label_type() reads the sections below
+        "label_type": data.get("label_type", ""),
     }
 
     # Extract PGx-relevant sections
@@ -246,8 +251,9 @@ def parse_drug_label(
         if content and _contains_pgx_terms(str(content)):
             result["sections"][key] = str(content)
 
-    result["biomarker_info"] = extract_biomarker_info(result)
+    # Classify first: the biomarker information depends on the label type
     result["label_type"] = classify_label_type(result)["label_type"]
+    result["biomarker_info"] = extract_biomarker_info(result)
 
     logger.info(
         "Parsed drug label for %s (biomarker: %s, type: %s)",
@@ -305,8 +311,24 @@ def _parse_label_text(text: str) -> dict[str, Any]:
     return sections
 
 
+# Pharmacogenomic vocabulary, matched as whole words (plurals included) so that "gene" does not
+# match "general" or "degenerative"; "genetic" and "genomic" also match their derived forms
+# ("genetics", "genomically"); gene symbols match as prefixes of their star-allele or variant
+# names (CYP2D6, HLA-B*57:01).
+_PGX_TERM_PATTERN = re.compile(
+    r"\b(?:pharmacogenomics?|pharmacogenetics?|genotypes?|genotyping|alleles?|metabolizers?|genes?"
+    r"|polymorphisms?|variants?|biomarkers?)\b"
+    r"|\b(?:genetic|genomic)\w*"
+    r"|\b(?:CYP(?:\d\w*)?|HLA\w*|DPYD|TPMT|NUDT15|SLCO1B1|VKORC1|CFTR|G6PD|UGT1A1)\b",
+    re.IGNORECASE,
+)
+
+
 def _contains_pgx_terms(text: str) -> bool:
     """Check if text contains pharmacogenomic-relevant terms.
+
+    Terms match as whole words, so ordinary words that merely contain one ("general",
+    "challenge") are not pharmacogenomic content.
 
     Args:
         text: Text to check
@@ -314,33 +336,7 @@ def _contains_pgx_terms(text: str) -> bool:
     Returns:
         True if PGx terms found
     """
-    pgx_terms = [
-        "pharmacogenomic",
-        "pharmacogenetic",
-        "genotype",
-        "genotyping",
-        "allele",
-        "metabolizer",
-        "CYP",
-        "HLA",
-        "DPYD",
-        "TPMT",
-        "NUDT15",
-        "SLCO1B1",
-        "VKORC1",
-        "CFTR",
-        "G6PD",
-        "UGT1A1",
-        "poor metabolizer",
-        "intermediate metabolizer",
-        "ultrarapid metabolizer",
-        "gene",
-        "polymorphism",
-        "variant",
-        "biomarker",
-    ]
-    text_lower = text.lower()
-    return any(term.lower() in text_lower for term in pgx_terms)
+    return _PGX_TERM_PATTERN.search(text) is not None
 
 
 def extract_biomarker_info(

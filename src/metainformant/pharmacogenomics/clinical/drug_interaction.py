@@ -258,12 +258,17 @@ def analyze_drug_gene_interactions(
         drugs: List of drug names to analyze
         genotype_data: Dictionary mapping gene symbol to genotype information.
             Each gene entry should have:
-                - "phenotype": MetabolizerPhenotype or string (e.g., "Poor Metabolizer")
+                - "phenotype": MetabolizerPhenotype or string in any form
+                  ``MetabolizerPhenotype.from_string`` accepts (e.g., "Poor Metabolizer",
+                  "PM", "poor"; the token ``metabolism.predict_metabolizer_status`` returns)
                 - "diplotype": Optional diplotype string (e.g., "*1/*4")
                 - "activity_score": Optional activity score
 
     Returns:
-        List of DrugRecommendation objects for all identified interactions
+        List of DrugRecommendation objects for all identified interactions. A gene whose
+        phenotype is Indeterminate, or a label that is not a phenotype (free text such as
+        "Likely Poor Metabolizer"), gets no recommendation: a warning is logged, and the
+        absence of a recommendation is not a finding of no interaction.
     """
     recommendations: list[DrugRecommendation] = []
 
@@ -275,17 +280,23 @@ def analyze_drug_gene_interactions(
             gene_upper = gene.upper()
             phenotype = geno_info.get("phenotype", "")
 
-            if isinstance(phenotype, MetabolizerPhenotype):
-                phenotype_str = phenotype.value
-                phenotype_abbrev = phenotype.abbreviation
-            else:
-                phenotype_str = str(phenotype)
-                phenotype_abbrev = _abbreviate_phenotype(phenotype_str)
-
             # Look up CPIC guideline
             guideline = lookup_drug_gene(drug_lower, gene_upper)
             if guideline is None:
                 continue
+
+            try:
+                canonical = MetabolizerPhenotype.from_string(phenotype)
+            except ValueError:
+                logger.warning(
+                    "No recommendation for %s/%s: %r is not a metabolizer phenotype", drug, gene_upper, phenotype
+                )
+                continue
+            if canonical == MetabolizerPhenotype.INDETERMINATE:
+                logger.warning("No recommendation for %s/%s: the phenotype is indeterminate", drug, gene_upper)
+                continue
+            phenotype_str = canonical.value
+            phenotype_abbrev = canonical.abbreviation
 
             # Get specific recommendation for this phenotype
             dosing = get_dosing_recommendation(drug_lower, phenotype_str)
@@ -347,23 +358,20 @@ def analyze_drug_gene_interactions(
 
 
 def _abbreviate_phenotype(phenotype: str) -> str:
-    """Convert phenotype string to abbreviation.
+    """Convert a phenotype label to its abbreviation.
 
     Args:
-        phenotype: Full phenotype name
+        phenotype: Phenotype in any form ``MetabolizerPhenotype.from_string`` accepts
+            ("Poor Metabolizer", "poor", "PM", "Extensive Metabolizer", ...)
 
     Returns:
-        Abbreviation (PM, IM, NM, RM, UM)
+        Abbreviation (PM, IM, NM, RM, UM, IND)
+
+    Raises:
+        ValueError: If the label is not a recognised phenotype. No abbreviation is made up
+            from its first letters.
     """
-    mapping = {
-        "poor metabolizer": "PM",
-        "intermediate metabolizer": "IM",
-        "normal metabolizer": "NM",
-        "extensive metabolizer": "NM",
-        "rapid metabolizer": "RM",
-        "ultrarapid metabolizer": "UM",
-    }
-    return mapping.get(phenotype.lower().strip(), phenotype.upper()[:2])
+    return MetabolizerPhenotype.from_string(phenotype).abbreviation
 
 
 def check_contraindications(
@@ -376,7 +384,8 @@ def check_contraindications(
 
     Args:
         drug: Drug name (case-insensitive)
-        phenotype: Metabolizer phenotype (string or enum)
+        phenotype: Metabolizer phenotype: the enum, or a string in any form
+            ``MetabolizerPhenotype.from_string`` accepts ("Poor Metabolizer", "PM", "poor")
 
     Returns:
         Dictionary with:
@@ -384,15 +393,18 @@ def check_contraindications(
             - "severity": Interaction severity
             - "gene_interactions": List of specific gene-level contraindication details
             - "overall_recommendation": Summary recommendation
+
+    Raises:
+        ValueError: If the phenotype is Indeterminate or not a recognised phenotype label.
+            Neither can be answered with "no known contraindication", so no answer is given.
     """
     drug_lower = drug.lower().strip()
 
-    if isinstance(phenotype, MetabolizerPhenotype):
-        phenotype_abbrev = phenotype.abbreviation
-        phenotype_str = phenotype.value
-    else:
-        phenotype_abbrev = _abbreviate_phenotype(str(phenotype))
-        phenotype_str = str(phenotype)
+    canonical = MetabolizerPhenotype.from_string(phenotype)
+    if canonical == MetabolizerPhenotype.INDETERMINATE:
+        raise ValueError(f"Cannot check contraindications of {drug} for an indeterminate phenotype")
+    phenotype_abbrev = canonical.abbreviation
+    phenotype_str = canonical.value
 
     gene_interactions: list[dict[str, Any]] = []
     any_contraindicated = False

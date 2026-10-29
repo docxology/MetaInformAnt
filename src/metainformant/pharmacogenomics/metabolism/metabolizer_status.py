@@ -9,7 +9,11 @@ This module is a string/dict front end over the ``alleles`` subpackage and holds
 no allele or phenotype data of its own: allele function values come from
 ``alleles.diplotype`` and phenotype assignment from ``alleles.phenotype``, so
 ``predict_metabolizer_status`` and ``alleles.phenotype.classify_phenotype`` agree
-for every diplotype.
+for every diplotype. That includes the cases without a normal answer: a gene CPIC
+defines no phenotype for (CYP1A2 has activity values but no phenotype) raises
+``ValueError`` naming the supported genes, and a diplotype with an allele that has no
+activity value is ``"indeterminate"`` with an activity score of ``None``, never
+normal.
 
 Activity Score (AS) Framework:
     Each allele is assigned a function value (0, 0.5, or 1.0). The diplotype
@@ -29,6 +33,7 @@ from ..alleles.phenotype import (
     _phenotype_for_alleles,
     get_phenotype_thresholds,
     predict_metabolizer_status as _phenotype_from_score,
+    supported_phenotype_genes,
 )
 
 logger = get_logger(__name__)
@@ -53,8 +58,10 @@ def default_allele_function_table() -> dict:
         0.0 = no function, 0.5 = decreased function, 1.0 = normal function,
         1.5 = increased function (CYP2C19 *17); CYP2D6 *10 is 0.25. Covers
         CYP2D6, CYP2C19, CYP2C9, CYP3A5, CYP1A2, DPYD, TPMT, NUDT15, SLCO1B1
-        and UGT1A1. The copy is independent: changing it does not change the
-        built-in table.
+        and UGT1A1. CYP1A2's values are not from CPIC (see the table in
+        ``alleles.diplotype``) and CPIC defines no CYP1A2 phenotype, so it can be
+        scored but not classified. The copy is independent: changing it does not
+        change the built-in table.
     """
     return {gene: dict(table) for gene, table in _ACTIVITY_SCORE_TABLES.items()}
 
@@ -274,6 +281,18 @@ _DOSE_GUIDELINES: dict[str, dict[str, dict[str, Any]]] = {
 # ---------------------------------------------------------------------------
 
 
+def _split_diplotype(diplotype: str) -> tuple[str, str]:
+    """Split a ``"*1/*4"`` diplotype string into its two allele names.
+
+    Raises:
+        ValueError: If the string does not contain exactly one ``/``.
+    """
+    parts = diplotype.strip().split("/")
+    if len(parts) != 2:
+        raise ValueError(f"Invalid diplotype format '{diplotype}': expected exactly one '/' separator")
+    return parts[0].strip(), parts[1].strip()
+
+
 def compute_activity_score(
     diplotype: str,
     allele_function_table: dict,
@@ -282,6 +301,10 @@ def compute_activity_score(
 
     Parses a diplotype of the form ``"*1/*4"`` and sums the function values
     of each allele from the provided table.
+
+    This is the strict score: an allele with no value in the table is an error, not
+    normal function. :func:`predict_metabolizer_status` reports such a diplotype as
+    indeterminate instead.
 
     Args:
         diplotype: Diplotype string, e.g. ``"*1/*4"``, ``"*1xN/*2"``.
@@ -294,12 +317,7 @@ def compute_activity_score(
     Raises:
         ValueError: If diplotype format is invalid or alleles not found.
     """
-    parts = diplotype.strip().split("/")
-    if len(parts) != 2:
-        raise ValueError(f"Invalid diplotype format '{diplotype}': expected exactly one '/' separator")
-
-    allele_a = parts[0].strip()
-    allele_b = parts[1].strip()
+    allele_a, allele_b = _split_diplotype(diplotype)
 
     score_a = allele_function_table.get(allele_a)
     score_b = allele_function_table.get(allele_b)
@@ -361,7 +379,9 @@ def classify_metabolizer(activity_score: float, gene: str) -> str:
         ``"rapid"``, or ``"ultrarapid"``.
 
     Raises:
-        ValueError: If the activity score is negative or NaN.
+        ValueError: If the activity score is negative or NaN, or the gene has no CPIC
+            phenotype definition (the message names the gene and lists the supported
+            genes; CYP1A2 can be scored but not classified). No other gene's bands stand in.
     """
     gene_upper = gene.strip().upper()
     phenotype = _phenotype_from_score(activity_score, gene_upper)
@@ -380,8 +400,10 @@ def predict_metabolizer_status(
     computes the metabolizer phenotype using the CPIC activity score
     framework. The result is the same phenotype
     :func:`metainformant.pharmacogenomics.alleles.phenotype.classify_phenotype`
-    gives for that diplotype (as a lowercase token); the only difference is
-    that an allele missing from the table raises here instead of scoring 1.0.
+    gives for that diplotype (as a lowercase token), including for an allele
+    missing from the table: the diplotype is ``"indeterminate"`` with an activity
+    score of ``None`` and the allele named in ``unknown_alleles`` (CPIC's term for a
+    diplotype with an uncharacterized allele), never normal function.
 
     Args:
         genotype: Dictionary with at least a ``"diplotype"`` key containing
@@ -393,18 +415,25 @@ def predict_metabolizer_status(
 
     Returns:
         Dictionary with keys:
-            - phenotype: Metabolizer classification string.
-            - activity_score: Computed numeric activity score.
+            - phenotype: Metabolizer classification string (``"indeterminate"`` when an
+              allele has no value in the table).
+            - activity_score: Computed numeric activity score, or ``None`` when an allele
+              has no value in the table.
             - alleles: Tuple of two allele names.
             - gene: Gene symbol.
             - diplotype: Diplotype string.
+            - unknown_alleles: The alleles with no value in the table (empty when none).
             - thresholds_used: The activity-score bands the gene uses, keyed by
               phenotype token: ``{"low", "high", "low_inclusive", "high_inclusive"}``.
               CYP2C19, SLCO1B1 and UGT1A1 are classified from allele function, which
               these bands reproduce for the built-in alleles.
 
     Raises:
-        ValueError: If genotype is missing required fields.
+        ValueError: If genotype is missing required fields or the diplotype string is
+            malformed, or if the gene has no CPIC phenotype definition (the message names
+            the gene and lists the supported genes; CYP1A2 has activity values but no CPIC
+            phenotype, so it can be scored with :func:`compute_activity_score` but not
+            classified here).
     """
     gene_upper = gene.strip().upper()
 
@@ -417,8 +446,12 @@ def predict_metabolizer_status(
         if not allele_table:
             raise ValueError(
                 f"No allele function table available for gene '{gene}'. "
-                f"Available genes: {sorted(full_table.keys())}"
+                f"Supported genes: {', '.join(supported_phenotype_genes())}"
             )
+
+    # Only a gene CPIC defines a phenotype for is classified: this raises for the rest (CYP1A2
+    # has allele values, a custom table may name any gene) rather than borrowing another gene's bands
+    thresholds = get_phenotype_thresholds(gene_upper)
 
     # Extract diplotype
     if "diplotype" in genotype:
@@ -431,31 +464,39 @@ def predict_metabolizer_status(
     else:
         raise ValueError("Genotype must contain 'diplotype' or 'alleles' key")
 
-    # Compute activity score (this also validates the diplotype and both alleles)
-    score = compute_activity_score(diplotype, allele_table)
+    # Determine alleles (this also validates the diplotype format)
+    alleles_tuple = _split_diplotype(diplotype)
+    unknown_alleles = [allele for allele in dict.fromkeys(alleles_tuple) if allele not in allele_table]
 
-    # Determine alleles
-    allele_parts = diplotype.strip().split("/")
-    alleles_tuple = (allele_parts[0].strip(), allele_parts[1].strip())
-
-    # Classify from the two alleles' own values, exactly as alleles.phenotype does
-    phenotype = _phenotype_token(
-        _phenotype_for_alleles(
+    score: float | None
+    if unknown_alleles:
+        # An allele with no value is uncharacterized: the diplotype is indeterminate, as CPIC says,
+        # and is never scored as normal function
+        logger.warning(
+            "No activity value for allele(s) %s of %s: metabolizer status is indeterminate",
+            ", ".join(unknown_alleles),
             gene_upper,
-            float(allele_table[alleles_tuple[0]]),
-            float(allele_table[alleles_tuple[1]]),
         )
-    )
-
-    thresholds = get_phenotype_thresholds(gene_upper)
+        score = None
+        phenotype = _phenotype_token(MetabolizerPhenotype.INDETERMINATE)
+    else:
+        score = compute_activity_score(diplotype, allele_table)
+        # Classify from the two alleles' own values, exactly as alleles.phenotype does
+        phenotype = _phenotype_token(
+            _phenotype_for_alleles(
+                gene_upper,
+                float(allele_table[alleles_tuple[0]]),
+                float(allele_table[alleles_tuple[1]]),
+            )
+        )
 
     logger.info(
-        "Predicted %s metabolizer status for %s %s: %s (AS=%.2f)",
+        "Predicted %s metabolizer status for %s %s: %s (AS=%s)",
         gene,
         diplotype,
         alleles_tuple,
         phenotype,
-        score,
+        "none" if score is None else f"{score:.2f}",
     )
 
     return {
@@ -464,6 +505,7 @@ def predict_metabolizer_status(
         "alleles": alleles_tuple,
         "gene": gene_upper,
         "diplotype": diplotype,
+        "unknown_alleles": unknown_alleles,
         "thresholds_used": {
             _phenotype_token(band["phenotype"]): {
                 "low": band["lower_bound"],
@@ -504,9 +546,16 @@ def dose_adjustment(
               lowercased input when it is not a known phenotype).
             - recommendation: Clinical recommendation text.
             - adjusted_dose_fraction: Multiplier for standard dose (0.0 = avoid,
-              1.0 = standard, 2.0 = double).
+              1.0 = standard, 2.0 = double); ``None`` for an ``"indeterminate"`` status
+              (see below).
             - evidence_level: Evidence grade (``"A"`` through ``"D"``).
             - guideline_source: Source of the guideline.
+
+    An ``"indeterminate"`` status, which :func:`predict_metabolizer_status` returns for a
+    diplotype with an uncharacterized allele, is not normal: unless the guidelines hold an
+    entry for it, no dose is recommended (``adjusted_dose_fraction`` is ``None``, not 1.0).
+    An unknown drug or an unrecognised status label still returns standard dosing with
+    evidence level ``"D"``.
     """
     if dose_guidelines is None:
         dose_guidelines = _DOSE_GUIDELINES
@@ -522,6 +571,28 @@ def dose_adjustment(
                 drug_entry = val
                 break
 
+    status_entry = None
+    if drug_entry is not None:
+        status_entry = drug_entry.get(status_lower)
+        if status_entry is None:
+            # Custom guidelines may key phenotypes by full name or abbreviation
+            status_entry = next((v for k, v in drug_entry.items() if _status_token(k) == status_lower), None)
+
+    if status_entry is None and status_lower == _phenotype_token(MetabolizerPhenotype.INDETERMINATE):
+        logger.warning("No dose recommendation for %s: the metabolizer status is indeterminate", drug)
+        return {
+            "drug": drug_lower,
+            "metabolizer_status": status_lower,
+            "recommendation": (
+                f"No dose recommendation for {drug}: the metabolizer phenotype is indeterminate (for example a "
+                "diplotype with an uncharacterized allele). It is not assumed to be normal; resolve the "
+                "phenotype before dosing by genotype."
+            ),
+            "adjusted_dose_fraction": None,
+            "evidence_level": "D",
+            "guideline_source": "None",
+        }
+
     if drug_entry is None:
         logger.warning("No dose guidelines available for drug '%s'", drug)
         return {
@@ -535,10 +606,6 @@ def dose_adjustment(
             "guideline_source": "None",
         }
 
-    status_entry = drug_entry.get(status_lower)
-    if status_entry is None:
-        # Custom guidelines may key phenotypes by full name or abbreviation
-        status_entry = next((v for k, v in drug_entry.items() if _status_token(k) == status_lower), None)
     if status_entry is None:
         # Try to find closest match
         logger.warning(

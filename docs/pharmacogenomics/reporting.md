@@ -40,7 +40,8 @@ report = generate_clinical_report(patient, genotypes, drugs=[])          # genot
 |------------------|-------------------------|
 | a `diplotype` that `classify_phenotype` accepts | classified from the diplotype, even when a `phenotype` key disagrees |
 | no `diplotype`, a `phenotype` | the phenotype as supplied, in any form `MetabolizerPhenotype.from_string` accepts (`'Poor Metabolizer'`, `'PM'`, `'poor'`); free text such as `'Likely Poor Metabolizer'` keeps its category abbreviation |
-| a `diplotype` that cannot be classified (for example `'*4'`) | `Indeterminate` (`IND`); the gene adds no recommendation |
+| a malformed diplotype or a gene without a supported phenotype definition (including CYP1A2) | supplied phenotype when present, otherwise `Indeterminate` (`IND`); `clinical_significance` records the classification failure |
+| a supported gene's diplotype with an uncharacterized allele | `Indeterminate`, score `None` and the allele named in `unknown_alleles` |
 | neither | `Indeterminate` |
 
 Drug recommendations are built from the phenotypes shown in `genotype_results`, so a gene needs
@@ -56,7 +57,7 @@ The report is a dict with these keys:
 |-----|---------|
 | `header` | `report_type`, `report_version` (`'1.0'`), `generated_at` (UTC ISO 8601 timestamp) and `generator` |
 | `patient_info` | `patient_id` (`'UNKNOWN'` if absent), `sex`, `ethnicity`, `ordering_provider` (`'Not specified'` if absent). `name` and `dob` are not copied |
-| `genotype_results` | one dict per gene: `gene`, `diplotype`, `activity_score`, `phenotype`, `phenotype_abbreviation`, `clinical_significance` |
+| `genotype_results` | one dict per gene: `gene`, `diplotype`, `activity_score`, `phenotype`, `phenotype_abbreviation`, `clinical_significance`; successful classification also includes `unknown_alleles` |
 | `drug_recommendations` | one dict per drug-gene pair: `drug`, `gene`, `phenotype`, `recommendation`, `evidence_level`, `source`, `severity`, `urgency`, `alternatives` |
 | `interaction_summary` | `overall_severity`, `major_count`, `moderate_count`, `minor_count`, `total_interactions`, `risk_level`, `summary` |
 | `clinical_actions` | the Major and Moderate recommendations, Major first, each with `priority`, `drug`, `gene`, `severity`, `action`, `alternatives` |
@@ -74,6 +75,8 @@ text = export_report(report, format='text')   # plain text
 json_text = export_report(report, format='json')
 html = export_report(report, format='html', output_path='output/pharmacogenomics/report.html')
 ```
+
+Unknown activity scores render as `N/A` in text and HTML and as `null` in JSON.
 
 `export_report(report, format='text', output_path=None)` returns the rendered string and, when
 `output_path` is given, also writes it there (creating parent directories). Any `format` other

@@ -198,3 +198,126 @@ class TestGenesWithoutCallingDefinitions:
         assert [a.name for a in called] == ["*28"]
         diplotype = determine_diplotype(called[0], "*28", "UGT1A1")
         assert classify_phenotype(diplotype, "UGT1A1")["phenotype"] == MetabolizerPhenotype.POOR
+
+
+class TestActivityValuesAreRequiredInDefinitionFiles:
+    """A definition without an activity value used to score 1.0, normal function.
+
+    That made a "No function" allele with no value read as fully functional, and gave any allele
+    a missing column an activity of 1.0.
+    """
+
+    def test_a_json_allele_without_an_activity_value_raises(self, tmp_path: Path) -> None:
+        path = tmp_path / "no_activity.json"
+        path.write_text(
+            json.dumps(
+                {
+                    "*1": {"defining_variants": [], "function": "Normal function", "activity_value": 1.0},
+                    "*77": {"defining_variants": ["rs7700001"], "function": "No function"},
+                }
+            ),
+            encoding="utf-8",
+        )
+        with pytest.raises(ValueError, match=r"'\*77'") as caught:
+            load_allele_definitions("CYP2E1", filepath=path)
+        message = str(caught.value)
+        assert "activity_value" in message and "no_activity.json" in message and "1.0" in message
+
+    @pytest.mark.parametrize("value", [None, "", "  ", "fast", True, -0.5, float("nan"), float("inf"), [1.0]])
+    def test_a_json_activity_value_that_is_not_a_finite_non_negative_number_raises(
+        self, tmp_path: Path, value: object
+    ) -> None:
+        path = tmp_path / "bad_activity.json"
+        path.write_text(
+            json.dumps({"*77": {"defining_variants": [], "function": "No function", "activity_value": value}}),
+            encoding="utf-8",
+        )
+        with pytest.raises(ValueError, match=r"'\*77'"):
+            load_allele_definitions("CYP2E1", filepath=path)
+
+    def test_numeric_strings_and_integers_are_accepted(self, tmp_path: Path) -> None:
+        path = tmp_path / "numbers.json"
+        path.write_text(
+            json.dumps(
+                {
+                    "*1": {"defining_variants": [], "function": "Normal function", "activity_value": "1"},
+                    "*2": {"defining_variants": ["rs2"], "function": "No function", "activity_value": 0},
+                }
+            ),
+            encoding="utf-8",
+        )
+        assert [a.activity_value for a in load_allele_definitions("CYP2E1", filepath=path)] == [1.0, 0.0]
+
+    def test_a_tsv_without_an_activity_column_raises(self, tmp_path: Path) -> None:
+        path = tmp_path / "no_column.tsv"
+        path.write_text("allele\tdefining_variants\tfunction\n*1\t\tNormal function\n", encoding="utf-8")
+        with pytest.raises(ValueError, match="no activity_value"):
+            load_allele_definitions("CYP2E1", filepath=path)
+
+    def test_a_tsv_blank_cell_raises_with_a_message_naming_the_allele(self, tmp_path: Path) -> None:
+        # It used to raise the bare "could not convert string to float: ''"
+        path = tmp_path / "blank.tsv"
+        path.write_text(
+            "allele\tdefining_variants\tfunction\tactivity_value\n*1\t\tNormal function\t1.0\n"
+            "*77\trs7700001\tNo function\t\n",
+            encoding="utf-8",
+        )
+        with pytest.raises(ValueError, match=r"'\*77' in .*blank.tsv has no activity_value"):
+            load_allele_definitions("CYP2E1", filepath=path)
+
+    def test_a_tsv_row_without_an_allele_name_raises(self, tmp_path: Path) -> None:
+        path = tmp_path / "unnamed.tsv"
+        path.write_text(
+            "allele\tdefining_variants\tfunction\tactivity_value\n\trs1\tNo function\t0.0\n", encoding="utf-8"
+        )
+        with pytest.raises(ValueError, match="without an allele name"):
+            load_allele_definitions("CYP2E1", filepath=path)
+
+    def test_a_no_function_allele_is_never_scored_as_normal_function(self, tmp_path: Path) -> None:
+        # The label said "No function" but the activity value fell back to 1.0
+        path = tmp_path / "labelled.json"
+        path.write_text(
+            json.dumps({"*77": {"defining_variants": ["rs7700001"], "function": "No function", "activity_value": 0.0}}),
+            encoding="utf-8",
+        )
+        (allele,) = load_allele_definitions("CYP2E1", filepath=path)
+        assert allele.is_no_function and allele.activity_value == 0.0
+
+
+class TestGeneKeyedDefinitionFiles:
+    """A file keyed by gene symbol must be read for the requested gene, or refused."""
+
+    @pytest.fixture()
+    def multi_gene(self, tmp_path: Path) -> Path:
+        path = tmp_path / "multi_gene.json"
+        path.write_text(
+            json.dumps(
+                {
+                    "CYP2E1": {"*1": _definition([], "Normal function", 1.0)},
+                    "CYP2B6": {"*6": _definition(["rs3745274"], "Decreased function", 0.5)},
+                }
+            ),
+            encoding="utf-8",
+        )
+        return path
+
+    def test_a_gene_missing_from_the_file_raises_instead_of_reading_gene_entries_as_alleles(
+        self, multi_gene: Path
+    ) -> None:
+        # It used to return the alleles "*CYP2E1" and "*CYP2B6", each with activity 1.0
+        with pytest.raises(ValueError, match="CYP3A4") as caught:
+            load_allele_definitions("CYP3A4", filepath=multi_gene)
+        assert "CYP2B6" in str(caught.value) and "CYP2E1" in str(caught.value)
+
+    def test_the_requested_gene_is_found_whatever_its_case(self, multi_gene: Path) -> None:
+        assert [a.name for a in load_allele_definitions("cyp2b6", filepath=multi_gene)] == ["*6"]
+        assert [a.name for a in load_allele_definitions("CYP2E1", filepath=multi_gene)] == ["*1"]
+
+    def test_a_flat_single_gene_table_is_still_read_for_any_gene(self, custom_json: Path) -> None:
+        assert [a.name for a in load_allele_definitions("CYP3A4", filepath=custom_json)] == CUSTOM_NAMES
+
+    def test_json_that_is_not_an_object_raises(self, tmp_path: Path) -> None:
+        path = tmp_path / "list.json"
+        path.write_text(json.dumps([_definition([], "Normal function", 1.0)]), encoding="utf-8")
+        with pytest.raises(ValueError, match="must hold a JSON object"):
+            load_allele_definitions("CYP2E1", filepath=path)

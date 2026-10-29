@@ -86,7 +86,7 @@ JSON file per gene (allele name → definition; the table may also be nested und
 }
 ```
 
-Allele keys: `defining_variants` (list of dbSNP rsIDs or `chr:pos:ref:alt` identifiers used for matching), `function` (free-text), `activity_value` (float; usually 0.0, 0.5, 1.0, 1.5+; a missing value defaults to 1.0, i.e. normal function). `clinical_significance` and `evidence_level` are optional. A TSV with the columns `allele`, `defining_variants` (semicolon-separated), `function` and `activity_value` is also accepted.
+Allele keys: `defining_variants` (list of dbSNP rsIDs or `chr:pos:ref:alt` identifiers used for matching), `function` (free-text), `activity_value` (float; usually 0.0, 0.5, 1.0, 1.5+; required in every file entry; a missing or empty value raises `ValueError`). `clinical_significance` and `evidence_level` are optional. A TSV with the columns `allele`, `defining_variants` (semicolon-separated), `function` and `activity_value` is also accepted.
 
 Load one gene's table from a file and pass it to the allele caller:
 
@@ -97,7 +97,7 @@ from metainformant.pharmacogenomics.alleles.diplotype import determine_diplotype
 definitions = load_allele_definitions('CYP2E1', filepath='/my/custom/path/CYP2E1.json')
 alleles = call_star_alleles({'rs3813867'}, 'CYP2E1', allele_definitions=definitions)
 
-# determine_diplotype scores from its own built-in tables and treats unknown alleles as 1.0,
+# determine_diplotype leaves alleles absent from its scoring table unscored,
 # so give it the custom activity values explicitly
 scores = {a.name: a.activity_value for a in definitions}
 diplotype = determine_diplotype(alleles[0], '*1', 'CYP2E1', scoring_table=scores)
@@ -121,23 +121,11 @@ substituted for one:
 
 ### Phenotypes for a custom gene
 
-Definitions are loaded per gene and are used only when passed as `allele_definitions`; without
-it, `call_star_alleles` uses the built-in tables. A gene without bands of its own gets the CYP2D6
-score bands from `classify_phenotype` and `alleles.phenotype.predict_metabolizer_status`, with a
-logged warning, and `get_phenotype_thresholds(gene)` marks those entries `gene_specific: False`
-with a `note`; that is a fallback, not a CPIC definition. A diplotype scored with a custom
-`scoring_table`, or holding an allele that is missing from the built-in table, is classified from
-its stored activity score and the gene's score bands.
+Definitions are loaded per gene and used only when passed as `allele_definitions`; otherwise `call_star_alleles` uses its built-in definitions. Custom definitions and activity values do not add a phenotype definition. `classify_phenotype`, `get_phenotype_thresholds` and the metabolizer front end raise `ValueError` for a gene without its own supported phenotype bands. Returned thresholds always have `gene_specific=True`. A supported gene's diplotype carrying a custom `scoring_table` score is classified from that score; an allele missing from the applicable table instead yields an indeterminate phenotype, `activity_score=None` and its name in `unknown_alleles`.
 
 ### Genes with activity values but no calling definitions
 
-UGT1A1 and CYP1A2 have built-in activity values (so `determine_diplotype`, `classify_phenotype`
-and `predict_metabolizer` work for them) but no built-in star-allele calling definitions.
-`load_allele_definitions('UGT1A1')`, `call_star_alleles(variants, 'UGT1A1')` and
-`phased_diplotype` raise a `ValueError` that names the gap instead of reporting an unknown gene:
-UGT1A1 alleles are defined by promoter TA-repeat length, which cannot be written as the presence of
-variant identifiers, and no CPIC definition table is bundled for CYP1A2. Build their diplotypes from
-allele names called elsewhere with `determine_diplotype`, or supply a definition file.
+UGT1A1 and CYP1A2 have activity values but no bundled calling definitions. `load_allele_definitions`, `call_star_alleles` and `phased_diplotype` without custom definitions raise a `ValueError` naming that gap. UGT1A1 alleles depend on promoter TA-repeat length, which presence-only variant identifiers cannot express; build its diplotype from allele names called elsewhere or supply a definition file. CYP1A2 can be scored, but its retained activity values are not sourced to a supported CPIC phenotype definition: `classify_phenotype` and `predict_metabolizer` raise for CYP1A2.
 
 ## CPIC guidelines override
 
@@ -191,8 +179,8 @@ Alternatively set `CORE_LOG_LEVEL=DEBUG` in the environment and call `metainform
 | What | Function and argument | Default |
 |------|-----------------------|---------|
 | Star-allele definitions | `call_star_alleles(variants, gene, allele_definitions=...)`; `load_allele_definitions(gene, source=None, filepath=None)` | built-in tables (`source=None` without `filepath`; `filepath` alone loads that file) |
-| Allele activity scores | `determine_diplotype(allele1, allele2, gene, scoring_table=...)`; `calculate_activity_score(diplotype, gene, scoring_table=...)` | built-in scoring tables; unknown alleles score 1.0 |
-| Allele function table for `predict_metabolizer` | `predict_metabolizer(genotype, gene, activity_scores=...)`, one gene's `{allele: value}` dict | that gene's entry of `default_allele_function_table()`; an allele missing from the table raises `ValueError` |
+| Allele activity scores | `determine_diplotype(allele1, allele2, gene, scoring_table=...)`; `calculate_activity_score(diplotype, gene, scoring_table=...)` | built-in tables; an unknown allele leaves score `None` |
+| Allele function table for `predict_metabolizer` | `predict_metabolizer(genotype, gene, activity_scores=...)`, one gene's `{allele: value}` dict | built-in table; an unknown allele yields `indeterminate`, a `None` score and `unknown_alleles`; unsupported phenotype genes raise |
 | CPIC guidelines | `lookup_drug_gene`, `get_dosing_recommendation`, `list_actionable_genes(guidelines=..., min_level='B')` | built-in guidelines; `min_level='B'` |
 | Dose guidelines | `dose_adjustment(metabolizer_status, drug, dose_guidelines=...)`; the status may be `"poor"`, `"Poor Metabolizer"`, `"PM"` or a `MetabolizerPhenotype`, and a custom table may key its phenotypes in any of those forms | built-in dose table |
 | Which drugs a report covers | `generate_clinical_report(patient_data, genotypes, drugs=...)` | `drugs=None`: every drug with a built-in CPIC guideline for the genotyped genes; `drugs=[]`: none |

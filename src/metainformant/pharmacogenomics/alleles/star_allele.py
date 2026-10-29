@@ -11,6 +11,8 @@ represent variant haplotypes defined by specific combinations of SNPs and indels
 
 from __future__ import annotations
 
+import math
+import operator
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -372,7 +374,9 @@ def load_allele_definitions(
     Raises:
         ValueError: If ``source`` is invalid or contradicts ``filepath``, or the
             gene has no built-in definitions (the message says whether it is
-            unknown or known-but-undefined)
+            unknown or known-but-undefined), or a file allele has no valid
+            ``activity_value`` (none is assumed), or a JSON file keyed by gene
+            lacks ``gene``
         FileNotFoundError: If filepath specified but not found
     """
     gene_upper = gene.upper()
@@ -453,12 +457,69 @@ def _load_builtin_definitions(gene: str) -> list[StarAllele]:
     return alleles
 
 
+def _parse_activity_value(raw: Any, allele: str, source: str | Path) -> float:
+    """Parse the activity value of an allele definition read from a file.
+
+    The value is required. A definition without one is not assumed to be normal function (1.0):
+    that would score an uncharacterized allele as normal, and a "No function" allele with no
+    value would read as 1.0.
+
+    Args:
+        raw: The cell or JSON value
+        allele: Allele name, for the error message
+        source: File the definition came from, for the error message
+
+    Raises:
+        ValueError: If the value is missing, blank, not a number, not finite, or negative.
+    """
+    if raw is None or (isinstance(raw, str) and not raw.strip()):
+        raise ValueError(
+            f"Allele {allele!r} in {source} has no activity_value; "
+            "an allele without one is not assumed to be normal function (1.0)"
+        )
+    if isinstance(raw, bool):
+        raise ValueError(f"Allele {allele!r} in {source} has a non-numeric activity_value: {raw!r}")
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        raise ValueError(f"Allele {allele!r} in {source} has a non-numeric activity_value: {raw!r}") from None
+    if not math.isfinite(value) or value < 0:
+        raise ValueError(f"Allele {allele!r} in {source} has activity_value {raw!r}: it must be a finite number >= 0")
+    return value
+
+
+def _select_gene_definitions(data: Any, gene: str, source: str | Path) -> dict[str, Any]:
+    """Pick one gene's allele definitions out of a parsed JSON definition file.
+
+    The file is either one gene's table (allele -> definition) or a mapping of gene symbol to
+    such a table. A gene-keyed file that does not contain the requested gene is an error: its
+    gene entries must not be read as alleles.
+
+    Raises:
+        ValueError: If the JSON is not an object, or is keyed by gene but lacks ``gene``.
+    """
+    if not isinstance(data, dict):
+        raise ValueError(f"Allele definition file {source} must hold a JSON object, got {type(data).__name__}")
+    for key, value in data.items():
+        if isinstance(key, str) and key.upper() == gene and isinstance(value, dict):
+            return value
+    is_gene_keyed = bool(data) and all(
+        isinstance(table, dict) and table and all(isinstance(defn, dict) for defn in table.values())
+        for table in data.values()
+    )
+    if is_gene_keyed:
+        raise ValueError(f"Allele definition file {source} has definitions for {sorted(data)} but not for gene {gene}")
+    return data
+
+
 def _load_allele_definitions_from_file(gene: str, filepath: str | Path) -> list[StarAllele]:
     """Load allele definitions from an external file.
 
     Supports TSV format with columns: allele, defining_variants (semicolon-separated),
     function, activity_value. Also supports JSON format with the same structure as
-    _BUILTIN_ALLELE_DEFINITIONS.
+    _BUILTIN_ALLELE_DEFINITIONS, either one gene's table or a mapping of gene symbol to table.
+
+    Every allele needs an ``activity_value`` (a number >= 0): none is assumed.
 
     Args:
         gene: Uppercased gene symbol
@@ -466,6 +527,11 @@ def _load_allele_definitions_from_file(gene: str, filepath: str | Path) -> list[
 
     Returns:
         List of StarAllele objects
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+        ValueError: If an allele has no allele name or no valid activity value, or a JSON file
+            keyed by gene does not contain ``gene``.
     """
     from metainformant.core import io
 
@@ -477,7 +543,7 @@ def _load_allele_definitions_from_file(gene: str, filepath: str | Path) -> list[
 
     if path.suffix == ".json" or path.suffix == ".gz" and path.stem.endswith(".json"):
         data = io.load_json(path)
-        gene_data = data.get(gene, data)
+        gene_data = _select_gene_definitions(data, gene, filepath)
 
         for allele_name, defn in gene_data.items():
             variants_raw = defn.get("defining_variants", [])
@@ -494,7 +560,7 @@ def _load_allele_definitions_from_file(gene: str, filepath: str | Path) -> list[
                     gene=gene,
                     defining_variants=variants,
                     function=defn.get("function", "Unknown function"),
-                    activity_value=float(defn.get("activity_value", 1.0)),
+                    activity_value=_parse_activity_value(defn.get("activity_value"), allele_name, filepath),
                     clinical_significance=defn.get("clinical_significance", ""),
                     evidence_level=defn.get("evidence_level", ""),
                 )
@@ -506,8 +572,10 @@ def _load_allele_definitions_from_file(gene: str, filepath: str | Path) -> list[
         with open(path, "r", encoding="utf-8") as fh:
             reader = csv.DictReader(fh, delimiter="\t")
             for row in reader:
-                allele_name = row.get("allele", row.get("name", ""))
-                variants_str = row.get("defining_variants", "")
+                allele_name = (row.get("allele") or row.get("name") or "").strip()
+                if not allele_name:
+                    raise ValueError(f"Allele definition file {filepath} has a row without an allele name")
+                variants_str = row.get("defining_variants") or ""
                 variants = frozenset(v.strip() for v in variants_str.split(";") if v.strip())
 
                 alleles.append(
@@ -515,10 +583,10 @@ def _load_allele_definitions_from_file(gene: str, filepath: str | Path) -> list[
                         name=allele_name,
                         gene=gene,
                         defining_variants=variants,
-                        function=row.get("function", "Unknown function"),
-                        activity_value=float(row.get("activity_value", 1.0)),
-                        clinical_significance=row.get("clinical_significance", ""),
-                        evidence_level=row.get("evidence_level", ""),
+                        function=row.get("function") or "Unknown function",
+                        activity_value=_parse_activity_value(row.get("activity_value"), allele_name, filepath),
+                        clinical_significance=row.get("clinical_significance") or "",
+                        evidence_level=row.get("evidence_level") or "",
                     )
                 )
 
@@ -730,9 +798,33 @@ def detect_novel_alleles(
     }
 
 
+def _validated_copy_number(copy_number: Any) -> int:
+    """Return ``copy_number`` as an int, or raise.
+
+    Accepts integers (including NumPy integers) and floats with an integral value (2.0).
+
+    Raises:
+        ValueError: If it is negative, fractional, NaN, infinite, a bool, or not a number.
+    """
+    if isinstance(copy_number, bool):
+        raise ValueError(f"copy_number must be a non-negative integer, got {copy_number!r}")
+    if isinstance(copy_number, float):
+        if not copy_number.is_integer():
+            raise ValueError(f"copy_number must be a non-negative integer, got {copy_number!r}")
+        value = int(copy_number)
+    else:
+        try:
+            value = operator.index(copy_number)
+        except TypeError:
+            raise ValueError(f"copy_number must be a non-negative integer, got {copy_number!r}") from None
+    if value < 0:
+        raise ValueError(f"copy_number must be a non-negative integer, got {copy_number!r}")
+    return value
+
+
 def handle_cyp2d6_cnv(
     variants: set[str] | frozenset[str],
-    copy_number: int,
+    copy_number: int | float,
 ) -> dict[str, Any]:
     """Handle CYP2D6 copy number variation for star allele calling.
 
@@ -746,13 +838,15 @@ def handle_cyp2d6_cnv(
         - 2: Normal diploid (standard calling)
         - 3+: Gene duplication/multiplication
 
-    For duplications (CN >= 3), the activity score of the duplicated allele
-    is multiplied by the additional copy count. Per CPIC guidelines, functional
-    allele duplications are denoted with "xN" suffix (e.g., *1x2).
+    For duplications (CN >= 3), the extra copies are assigned to the called allele with the
+    higher activity value, and that allele's activity value is multiplied by its total number
+    of copies (CN - 1; the other allele has one). Per CPIC guidelines, functional allele
+    duplications are denoted with "xN" suffix (e.g., *1x2).
 
     Args:
         variants: Set of observed variant identifiers
-        copy_number: CYP2D6 gene copy number (0, 1, 2, 3+)
+        copy_number: CYP2D6 gene copy number (0, 1, 2, 3+): a non-negative whole number
+            (an integer, or a float with an integral value such as 2.0)
 
     Returns:
         Dictionary with:
@@ -762,7 +856,13 @@ def handle_cyp2d6_cnv(
             - "total_activity_score": Sum of all allele activity values
             - "cnv_type": "deletion", "normal", or "duplication"
             - "notes": Clinical notes about the CNV
+
+    Raises:
+        ValueError: If ``copy_number`` is negative or not a whole number (a negative count is not
+            read as a deletion).
     """
+    copy_number = _validated_copy_number(copy_number)
+
     gene = "CYP2D6"
     observed = frozenset(variants) if not isinstance(variants, frozenset) else variants
 
@@ -790,6 +890,18 @@ def handle_cyp2d6_cnv(
     non_cnv_variants = {v for v in observed if v not in {"CYP2D6_DEL", "CYP2D6_DUP"}}
     called = call_star_alleles(non_cnv_variants, gene, allele_definitions)
 
+    # A hemizygous gene carries one called allele and any other carries two; calls beyond that are
+    # not used (the first by name are kept), which the notes and a warning say rather than hide
+    alleles_carried = 1 if copy_number == 1 else 2
+    ignored = [allele.name for allele in called[alleles_carried:]]
+    ignored_note = ""
+    if ignored:
+        ignored_note = (
+            f" {len(called)} alleles were called but at most {alleles_carried} can be carried: the first "
+            f"{alleles_carried} by name were used and {', '.join(ignored)} ignored."
+        )
+        logger.warning("CYP2D6 copy number %d:%s", copy_number, ignored_note)
+
     if copy_number == 1:
         # Hemizygous: one called allele + *5 deletion
         primary_allele = (
@@ -804,7 +916,10 @@ def handle_cyp2d6_cnv(
             "diplotype_string": f"{alleles[0].name}/{alleles[1].name}",
             "total_activity_score": total_score,
             "cnv_type": "deletion",
-            "notes": f"Hemizygous CYP2D6. One gene copy with {primary_allele.name} ({primary_allele.function}).",
+            "notes": (
+                f"Hemizygous CYP2D6. One gene copy with {primary_allele.name} ({primary_allele.function})."
+                f"{ignored_note}"
+            ),
         }
 
     if copy_number == 2:
@@ -828,7 +943,7 @@ def handle_cyp2d6_cnv(
             "diplotype_string": f"{alleles[0].name}/{alleles[1].name}",
             "total_activity_score": total_score,
             "cnv_type": "normal",
-            "notes": "Normal diploid CYP2D6.",
+            "notes": f"Normal diploid CYP2D6.{ignored_note}",
         }
 
     # copy_number >= 3: Duplication/Multiplication
@@ -867,6 +982,6 @@ def handle_cyp2d6_cnv(
         "notes": (
             f"CYP2D6 gene duplication detected (CN={copy_number}). "
             f"{duplicated_allele.name} duplicated {extra_copies} extra time(s). "
-            f"Total activity score: {total_score:.2f}."
+            f"Total activity score: {total_score:.2f}.{ignored_note}"
         ),
     }
