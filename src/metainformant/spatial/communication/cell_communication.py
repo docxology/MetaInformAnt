@@ -68,8 +68,10 @@ def compute_ligand_receptor_interactions(
     mapping from a name to a column exists, so a gene that the data do not contain is never scored.
 
     Statistical significance is assessed by permutation testing: cell type
-    labels are shuffled to build a null distribution and a p-value is
-    computed for each interaction.
+    labels are shuffled 100 times to build a null distribution and a one-sided p-value
+    ``(b + 1) / 101`` is computed for each interaction, where b is the number of permutations whose score is at
+    least the observed one. It is never 0 (the smallest possible value is 1/101): a finite number of permutations
+    cannot show that a score is impossible under the null.
 
     Args:
         expression: Expression matrix (n_cells x n_genes) as a numpy array, list of lists or scipy sparse
@@ -91,7 +93,7 @@ def compute_ligand_receptor_interactions(
         Dictionary with keys:
             - ``interactions``: List of interaction dicts, each containing
               ``ligand``, ``receptor``, ``source_type``, ``target_type``,
-              ``score`` (float), ``p_value`` (float).
+              ``score`` (float), ``p_value`` (float, the permutation p-value above).
             - ``n_significant``: Number of interactions with p < 0.05.
             - ``summary``: Dictionary with ``total_pairs_tested`` (the number of interaction rows, i.e.
               scored pair x source type x target type), ``unique_cell_types``, ``unique_ligands`` and
@@ -185,7 +187,8 @@ def compute_ligand_receptor_interactions(
                     perm_score = (perm_lig * perm_rec) / (bg_ligand * bg_receptor)
                     perm_scores.append(perm_score)
 
-                p_value = sum(1 for ps in perm_scores if ps >= score) / len(perm_scores)
+                # (permutations scoring at least as high + 1) / (permutations + 1): never 0
+                p_value = (1 + sum(1 for ps in perm_scores if ps >= score)) / (len(perm_scores) + 1)
 
                 interactions.append(
                     {

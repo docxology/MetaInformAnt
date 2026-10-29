@@ -44,7 +44,7 @@ class CellMetadata:
         x: Cell centroid x-coordinate.
         y: Cell centroid y-coordinate.
         z: Cell centroid z-coordinate (layer/z-plane).
-        volume: Cell volume (in cubic microns).
+        volume: Cell volume (in cubic microns); NaN when unknown (the parsers never invent a volume).
         fov: Field of view index.
         extra: Additional metadata key-value pairs.
     """
@@ -68,7 +68,7 @@ class TranscriptSpot:
         y: Transcript y-coordinate.
         z: Transcript z-coordinate.
         cell_id: Cell assignment (if segmented), or empty.
-        quality: Detection quality/confidence score.
+        quality: Detection quality/confidence score; NaN when unknown (the loader never invents a quality).
     """
 
     gene: str
@@ -127,7 +127,8 @@ def parse_cell_metadata(metadata_file: str | Path) -> list[CellMetadata]:
 
     Reads cell centroid positions, volumes, FOVs, and any additional columns.
     The file should have columns including: cell_id (or CellID), center_x, center_y
-    (or x, y), and optionally center_z, volume, fov.
+    (or x, y), and optionally center_z, volume, fov. A cell whose volume is not given (no volume column, or an
+    empty value) has a NaN volume: a volume of 0 would read as a measurement.
 
     Args:
         metadata_file: Path to cell_metadata.csv or cell_metadata.tsv. The delimiter follows the file
@@ -181,7 +182,7 @@ def parse_cell_metadata(metadata_file: str | Path) -> list[CellMetadata]:
                     x=float(row[x_col]),
                     y=float(row[y_col]),
                     z=float(row[z_col]) if z_col and row.get(z_col) else 0.0,
-                    volume=float(row[vol_col]) if vol_col and row.get(vol_col) else 0.0,
+                    volume=float(row[vol_col]) if vol_col and row.get(vol_col) else float("nan"),
                     fov=int(float(row[fov_col])) if fov_col and row.get(fov_col) else 0,
                     extra=extra,
                 )
@@ -195,7 +196,8 @@ def load_transcript_spots(spots_file: str | Path) -> list[TranscriptSpot]:
     """Load individual transcript spot coordinates from a MERFISH detected transcripts file.
 
     The file should have columns: gene, x (or global_x), y (or global_y),
-    and optionally z, cell_id, quality.
+    and optionally z, cell_id, quality. A spot whose quality is not given (no quality column, or an empty value)
+    has a NaN quality: a quality of 1.0 would read as a perfect detection.
 
     Args:
         spots_file: Path to detected_transcripts.csv (or a ``.tsv`` file; the delimiter follows the
@@ -237,7 +239,7 @@ def load_transcript_spots(spots_file: str | Path) -> list[TranscriptSpot]:
                     y=float(row[y_col]),
                     z=float(row[z_col]) if z_col and row.get(z_col) else 0.0,
                     cell_id=str(row[cell_col]) if cell_col and row.get(cell_col) else "",
-                    quality=float(row[qual_col]) if qual_col and row.get(qual_col) else 1.0,
+                    quality=float(row[qual_col]) if qual_col and row.get(qual_col) else float("nan"),
                 )
             )
 

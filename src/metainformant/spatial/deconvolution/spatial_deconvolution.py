@@ -519,7 +519,7 @@ def niche_identification(
             - ``niche_labels``: Array of niche assignments (length n_spots),
               integers from 0 to n_niches-1.
             - ``niche_compositions``: Dictionary mapping niche label to mean
-              cell type proportion vector.
+              cell type proportion vector (all NaN for a niche to which no spot was assigned).
             - ``spatial_coherence``: Float between 0 and 1 indicating how
               spatially contiguous the niches are.
 
@@ -559,7 +559,7 @@ def niche_identification(
         if mask.sum() > 0:
             niche_compositions[k] = np.mean(props[mask, :], axis=0).tolist()
         else:
-            niche_compositions[k] = [0.0] * props.shape[1]
+            niche_compositions[k] = [float("nan")] * props.shape[1]  # no spot, no composition
 
     # Compute spatial coherence
     # For each spot, check if its nearest neighbors share the same niche
@@ -691,8 +691,13 @@ def _kmeans(
             np.array([np.sum((data - centers[j]) ** 2, axis=1) for j in range(c)]),
             axis=0,
         )
-        dists /= dists.sum() + 1e-15
-        next_idx = rng.choice(n_samples, p=dists)
+        total = dists.sum()
+        if total > 0:
+            next_idx = rng.choice(n_samples, p=dists / total)
+        else:
+            # Every sample coincides with a chosen center (fewer distinct samples than clusters): the sampling
+            # weights are all 0 and numpy would refuse them, so draw uniformly; the surplus cluster stays empty
+            next_idx = rng.randint(0, n_samples)
         centers[c] = data[next_idx]
 
     labels = np.zeros(n_samples, dtype=np.int64)

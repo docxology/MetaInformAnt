@@ -80,7 +80,13 @@ class TestSpatialClusterRadiusGraph:
         expression, coordinates = self._grid()
 
         result = spatial_cluster(
-            expression, coordinates, method=method, graph_method="radius", radius=1.5, seed=1  # type: ignore[arg-type]
+            expression,
+            coordinates,
+            method=method,  # type: ignore[arg-type]
+            graph_method="radius",
+            radius=1.5,
+            seed=1,
+            allow_greedy_fallback=True,
         )
 
         assert len(result.labels) == 40
@@ -91,7 +97,14 @@ class TestSpatialClusterRadiusGraph:
         expression, coordinates = self._grid()
 
         result = spatial_cluster(
-            expression, coordinates, method="louvain", graph_method="radius", radius=1.0, spatial_weight=1.0, seed=1
+            expression,
+            coordinates,
+            method="louvain",
+            graph_method="radius",
+            radius=1.0,
+            spatial_weight=1.0,
+            seed=1,
+            allow_greedy_fallback=True,
         )
 
         expected = build_spatial_graph(coordinates, method="radius", radius=1.0).toarray()
@@ -101,8 +114,22 @@ class TestSpatialClusterRadiusGraph:
     def test_a_larger_radius_connects_more_spots(self) -> None:
         expression, coordinates = self._grid()
 
-        small = spatial_cluster(expression, coordinates, graph_method="radius", radius=1.0, spatial_weight=1.0)
-        large = spatial_cluster(expression, coordinates, graph_method="radius", radius=2.0, spatial_weight=1.0)
+        small = spatial_cluster(
+            expression,
+            coordinates,
+            graph_method="radius",
+            radius=1.0,
+            spatial_weight=1.0,
+            allow_greedy_fallback=True,
+        )
+        large = spatial_cluster(
+            expression,
+            coordinates,
+            graph_method="radius",
+            radius=2.0,
+            spatial_weight=1.0,
+            allow_greedy_fallback=True,
+        )
 
         assert np.count_nonzero(large.spatial_graph.toarray()) > np.count_nonzero(small.spatial_graph.toarray())
 

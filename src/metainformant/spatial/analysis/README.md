@@ -23,7 +23,7 @@ Spatial statistics and analysis algorithms for spatial transcriptomics data, pro
 | `autocorrelation.getis_ord_g()` | Getis-Ord G* statistic for clustering |
 | `clustering.build_spatial_graph()` | Build KNN/Delaunay/radius spatial graph; the KNN graph weighs an edge `1 / (1 + distance)` and is symmetrised with the entrywise maximum |
 | `clustering.spatial_cluster()` | Spatially-aware clustering combining expression and location; `graph_method='radius'` requires `radius=` |
-| `clustering.leiden_clustering()` / `louvain_clustering()` | Community detection on an adjacency matrix, returning `(labels, modularity)`; they fall back to a greedy modularity routine without `leidenalg` / `python-louvain` and the return value does not say so. `leiden_clustering(n_iterations=-1)` runs until convergence and `0` raises `ValueError` |
+| `clustering.leiden_clustering()` / `louvain_clustering()` | Community detection on an adjacency matrix, returning `(labels, modularity)`; they raise `ImportError` without `leidenalg` / `python-louvain` unless `allow_greedy_fallback=True` selects a greedy modularity routine (with a `UserWarning`; `spatial_cluster` records the method that ran). `leiden_clustering(n_iterations=-1)` runs until convergence and `0` raises `ValueError` |
 | `clustering.spatial_domains()` | BayesSpace-inspired spatial domain identification; without `n_domains` the number (2 to 15) is chosen with the gap statistic and recorded in `metadata["n_domains_selection"]` (`"gap_statistic"` or `"user"`) |
 | `deconvolution.deconvolve_spots()` | Deconvolve spot expression into cell type proportions |
 | `neighborhood.neighborhood_enrichment()` | Compute cell type co-localization enrichment |

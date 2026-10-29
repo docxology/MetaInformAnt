@@ -274,22 +274,26 @@ class TestSpatialCluster:
             method="leiden",
             resolution=0.5,
             seed=42,
+            allow_greedy_fallback=True,  # inert where python-igraph and leidenalg are installed
         )
         assert isinstance(result, SpatialClusterResult)
         assert len(result.labels) == 50
         assert result.n_clusters >= 1
+        assert result.method in {"leiden", "greedy_modularity"}
+        assert result.metadata["requested_method"] == "leiden"
+        assert result.metadata["fallback_used"] == (result.method != "leiden")
 
 
 class TestLeidenAndLouvain:
     def test_leiden_clustering_direct(self, small_coordinates: np.ndarray) -> None:
         adj = build_spatial_graph(small_coordinates, method="knn", n_neighbors=5)
-        labels, modularity = leiden_clustering(adj, resolution=1.0, seed=42)
+        labels, modularity = leiden_clustering(adj, resolution=1.0, seed=42, allow_greedy_fallback=True)
         assert len(labels) == 50
         assert isinstance(modularity, float)
 
     def test_louvain_clustering_direct(self, small_coordinates: np.ndarray) -> None:
         adj = build_spatial_graph(small_coordinates, method="knn", n_neighbors=5)
-        labels, modularity = louvain_clustering(adj, resolution=1.0, seed=42)
+        labels, modularity = louvain_clustering(adj, resolution=1.0, seed=42, allow_greedy_fallback=True)
         assert len(labels) == 50
         assert isinstance(modularity, float)
 

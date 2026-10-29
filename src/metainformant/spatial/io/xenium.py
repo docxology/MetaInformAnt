@@ -254,13 +254,17 @@ def read_transcripts(
 
     Args:
         transcripts_path: Path to transcripts.csv or transcripts.csv.gz.
-        min_quality: Minimum Phred quality score to keep (default 20 = Q20).
+        min_quality: Minimum Phred quality score to keep (default 20 = Q20). A transcript whose quality is unknown
+            (an empty value) cannot pass a threshold and is dropped; with ``min_quality <= 0`` nothing is dropped and
+            an unknown quality is stored as NaN. A made-up quality is never assigned.
 
     Returns:
         List of XeniumTranscript records passing the quality filter.
 
     Raises:
         FileNotFoundError: If the transcripts file does not exist.
+        ValueError: If a required column is missing, or the file has no quality column while ``min_quality`` is above
+            0 (the filter cannot be applied; pass ``min_quality=0`` to read the transcripts unfiltered).
     """
     tpath = Path(transcripts_path)
     if not tpath.exists():
@@ -284,12 +288,17 @@ def read_transcripts(
 
         if gene_col is None or x_col is None or y_col is None:
             raise ValueError(f"Required columns not found in {tpath}. Available: {sorted(headers)}")
+        if qv_col is None and min_quality > 0:
+            raise ValueError(
+                f"{tpath} has no quality column (qv), so min_quality={min_quality} cannot be applied. "
+                "Pass min_quality=0 to read the transcripts unfiltered, with unknown (NaN) quality values."
+            )
 
         total = 0
         for row in reader:
             total += 1
-            qv = float(row[qv_col]) if qv_col and row.get(qv_col) else 20.0
-            if qv < min_quality:
+            qv = float(row[qv_col]) if qv_col and row.get(qv_col) else float("nan")
+            if min_quality > 0 and not qv >= min_quality:  # an unknown (NaN) quality does not pass a threshold
                 continue
 
             transcripts.append(
@@ -415,7 +424,8 @@ def load_xenium(
         path: Path to the Xenium output directory.
         load_transcripts: If True, load individual transcript coordinates.
         load_boundaries: If True, load cell segmentation boundaries.
-        min_transcript_quality: Minimum quality for transcript filtering.
+        min_transcript_quality: Minimum quality for transcript filtering (see :func:`read_transcripts`; a transcripts
+            file without a quality column is an error unless this is 0).
 
     Returns:
         XeniumDataset with expression matrix, coordinates, and optional extras.

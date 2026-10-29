@@ -3,6 +3,11 @@
 Implements classical spatial statistics including Moran's I, Geary's C,
 Local Moran's I (LISA), Getis-Ord G*, and spatial variograms for measuring
 spatial patterns in gene expression and other continuous variables.
+
+A statistic that is undefined for the input (constant values, a weights matrix without edges, too few
+observations for a variance) is NaN, never a stand-in such as I = 0, C = 1 or p = 1: those would read as
+a measured "no autocorrelation". The result then says why (``status`` on the global results; NaN entries on
+the per-observation ones) and its p-value is NaN.
 """
 
 from __future__ import annotations
@@ -47,6 +52,7 @@ class MoransIResult:
         z_score: Standardized Z-score: (I - E[I]) / sqrt(Var[I]).
         p_value: Two-sided p-value from normal approximation.
         n: Number of observations.
+        status: ``"ok"``, or why the statistic (``I``, NaN) or its variance, z-score and p-value (NaN) are undefined.
     """
 
     I: float  # noqa: E741 - public API uses Moran's I notation.
@@ -55,6 +61,7 @@ class MoransIResult:
     z_score: float
     p_value: float
     n: int
+    status: str = "ok"
 
 
 @dataclass
@@ -71,6 +78,7 @@ class GearyCResult:
         z_score: Standardized Z-score.
         p_value: Two-sided p-value.
         n: Number of observations.
+        status: ``"ok"``, or why the statistic (``C``, NaN) or its variance, z-score and p-value (NaN) are undefined.
     """
 
     C: float
@@ -79,6 +87,7 @@ class GearyCResult:
     z_score: float
     p_value: float
     n: int
+    status: str = "ok"
 
 
 @dataclass
@@ -93,8 +102,9 @@ class LocalMoransResult:
         cluster_labels: LISA cluster classification per observation:
             "HH" = High-High (hot spot), "LL" = Low-Low (cold spot),
             "HL" = High-Low (spatial outlier), "LH" = Low-High (spatial outlier),
-            "NS" = Not significant.
+            "NS" = Not significant (also for observations whose z-score and p-value are NaN).
         significance_level: Alpha level used for classification.
+        status: ``"ok"``, or why the statistics of every observation are undefined (NaN).
     """
 
     local_I: Any  # np.ndarray (n,)
@@ -103,6 +113,7 @@ class LocalMoransResult:
     p_values: Any  # np.ndarray (n,)
     cluster_labels: list[str]
     significance_level: float
+    status: str = "ok"
 
 
 @dataclass
@@ -115,6 +126,7 @@ class GetisOrdResult:
         hot_spots: Boolean mask for significant hot spots.
         cold_spots: Boolean mask for significant cold spots.
         significance_level: Alpha level used.
+        status: ``"ok"``, or why G* and the p-values of every observation are undefined (NaN).
     """
 
     g_star: Any  # np.ndarray (n,)
@@ -122,6 +134,7 @@ class GetisOrdResult:
     hot_spots: Any  # np.ndarray (n,) bool
     cold_spots: Any  # np.ndarray (n,) bool
     significance_level: float
+    status: str = "ok"
 
 
 @dataclass
@@ -140,9 +153,9 @@ class VariogramResult:
     bin_centers: Any  # np.ndarray (n_bins,)
     semivariance: Any  # np.ndarray (n_bins,)
     n_pairs: Any  # np.ndarray (n_bins,) int
-    nugget: float = 0.0
-    sill: float = 0.0
-    range_param: float = 0.0
+    nugget: float = float("nan")
+    sill: float = float("nan")
+    range_param: float = float("nan")
 
 
 def spatial_weights_matrix(
@@ -268,7 +281,10 @@ def morans_i(
         weights: Spatial weights matrix (n x n), sparse or dense.
 
     Returns:
-        MoransIResult with I statistic, expected value, variance, z-score, p-value.
+        MoransIResult with I statistic, expected value, variance, z-score, p-value. ``I`` is NaN (and the
+        variance, z-score and p-value too) with fewer than 2 observations, a weights matrix without edges,
+        or constant values; the variance, z-score and p-value are NaN with fewer than 4 observations or a
+        variance that is not positive. ``status`` says which.
     """
     if np is None:
         raise ImportError("NumPy is required: uv pip install numpy")
@@ -284,6 +300,16 @@ def morans_i(
     else:
         W = sp_sparse.csr_matrix(np.asarray(weights, dtype=np.float64))
 
+    # What is returned when the statistic cannot be computed: NaN, and why
+    expected_i = -1.0 / (n - 1) if n > 1 else float("nan")
+
+    def undefined(reason: str) -> MoransIResult:
+        nan = float("nan")
+        return MoransIResult(I=nan, expected_I=expected_i, variance_I=nan, z_score=nan, p_value=nan, n=n, status=reason)
+
+    if n < 2:
+        return undefined("fewer than 2 observations")
+
     # Center values
     x_mean = x.mean()
     z = x - x_mean
@@ -291,19 +317,19 @@ def morans_i(
     # Sum of weights
     S0 = float(W.sum())
     if S0 == 0:
-        return MoransIResult(I=0.0, expected_I=0.0, variance_I=0.0, z_score=0.0, p_value=1.0, n=n)
+        return undefined("the weights matrix has no edges (all weights are zero)")
 
     # Moran's I
     numerator = float(z @ (W @ z))
     denominator = float(z @ z)
 
     if denominator == 0:
-        return MoransIResult(I=0.0, expected_I=0.0, variance_I=0.0, z_score=0.0, p_value=1.0, n=n)
+        return undefined("the values are constant, so Moran's I (0 / 0) is undefined")
 
     moran_i = (n / S0) * (numerator / denominator)
 
     # Expected value under null
-    E_I = -1.0 / (n - 1)
+    E_I = expected_i
 
     # Variance under normality assumption (randomization)
     S1 = float(((W + W.T).multiply(W + W.T)).sum()) / 2.0
@@ -317,18 +343,22 @@ def morans_i(
     B = b2 * ((n**2 - n) * S1 - 2 * n * S2 + 6 * S0**2)
     C = (n - 1) * (n - 2) * (n - 3) * S0**2
 
+    status = "ok"
     if C == 0:
-        Var_I = 0.0
+        Var_I = float("nan")
+        status = "the variance of Moran's I is undefined for fewer than 4 observations"
     else:
         Var_I = (A - B) / C - E_I**2
 
-    # Z-score and p-value
+    # Z-score and p-value (NaN when the variance is missing or not positive)
     if Var_I > 0:
         z_score = (moran_i - E_I) / np.sqrt(Var_I)
         p_value = float(2 * norm.sf(abs(z_score)))
     else:
-        z_score = 0.0
-        p_value = 1.0
+        z_score = float("nan")
+        p_value = float("nan")
+        if status == "ok":
+            status = "the variance of Moran's I is not positive, so its z-score and p-value are undefined"
 
     logger.info(f"Moran's I={moran_i:.4f}, z={z_score:.2f}, p={p_value:.4e}")
     return MoransIResult(
@@ -338,6 +368,7 @@ def morans_i(
         z_score=z_score,
         p_value=p_value,
         n=n,
+        status=status,
     )
 
 
@@ -358,7 +389,10 @@ def gearys_c(
         weights: Spatial weights matrix (n x n), dense or sparse in any scipy format.
 
     Returns:
-        GearyCResult with C statistic, z-score, and p-value.
+        GearyCResult with C statistic, z-score, and p-value. ``C`` is NaN (and the variance, z-score and
+        p-value too) with fewer than 2 observations, a weights matrix without edges, or constant values; the
+        variance, z-score and p-value are NaN with fewer than 4 observations or a variance that is not
+        positive. ``status`` says which.
     """
     if np is None:
         raise ImportError("NumPy is required: uv pip install numpy")
@@ -373,12 +407,20 @@ def gearys_c(
     else:
         W = sp_sparse.csr_matrix(np.asarray(weights, dtype=np.float64))
 
+    # What is returned when the statistic cannot be computed: NaN, and why (the null expectation of C is 1)
+    def undefined(reason: str) -> GearyCResult:
+        nan = float("nan")
+        return GearyCResult(C=nan, expected_C=1.0, variance_C=nan, z_score=nan, p_value=nan, n=n, status=reason)
+
+    if n < 2:
+        return undefined("fewer than 2 observations")
+
     x_mean = x.mean()
     z = x - x_mean
     S0 = float(W.sum())
 
     if S0 == 0:
-        return GearyCResult(C=1.0, expected_C=1.0, variance_C=0.0, z_score=0.0, p_value=1.0, n=n)
+        return undefined("the weights matrix has no edges (all weights are zero)")
 
     # Numerator: sum of w_ij * (x_i - x_j)^2. Read the stored entries as (row, col, value)
     # triplets of a CSR copy instead of indexing W[sources, targets], which raises for COO, DIA
@@ -392,7 +434,7 @@ def gearys_c(
     denominator = float(np.sum(z**2))
 
     if denominator == 0:
-        return GearyCResult(C=1.0, expected_C=1.0, variance_C=0.0, z_score=0.0, p_value=1.0, n=n)
+        return undefined("the values are constant, so Geary's C (0 / 0) is undefined")
 
     C = ((n - 1) / (2.0 * S0)) * (numerator / denominator)
 
@@ -405,17 +447,22 @@ def gearys_c(
     S2 = float((S2_vec**2).sum())
 
     n_f = float(n)
+    status = "ok"
     if n > 3:
         Var_C = ((2 * S1 + S2) * (n_f - 1) - 4 * S0**2) / (2 * (n_f + 1) * S0**2)
     else:
-        Var_C = 0.0
+        Var_C = float("nan")
+        status = "the variance of Geary's C is undefined for fewer than 4 observations"
 
+    # Z-score and p-value (NaN when the variance is missing or not positive)
     if Var_C > 0:
         z_score = (C - E_C) / np.sqrt(Var_C)
         p_value = float(2 * norm.sf(abs(z_score)))
     else:
-        z_score = 0.0
-        p_value = 1.0
+        z_score = float("nan")
+        p_value = float("nan")
+        if status == "ok":
+            status = "the variance of Geary's C is not positive, so its z-score and p-value are undefined"
 
     logger.info(f"Geary's C={C:.4f}, z={z_score:.2f}, p={p_value:.4e}")
     return GearyCResult(
@@ -425,6 +472,7 @@ def gearys_c(
         z_score=z_score,
         p_value=p_value,
         n=n,
+        status=status,
     )
 
 
@@ -455,7 +503,10 @@ def local_morans_i(
         significance: Significance level for cluster classification.
 
     Returns:
-        LocalMoransResult with local I values, z-scores, p-values, and cluster labels.
+        LocalMoransResult with local I values, z-scores, p-values, and cluster labels. The z-scores and
+        p-values come from a normal approximation with a simplified variance (see the code comment). They are
+        NaN for an observation without a positive variance (one with no neighbor), and everything is NaN
+        (``status`` says why) with fewer than 3 observations or constant values; such observations are "NS".
     """
     if np is None:
         raise ImportError("NumPy is required: uv pip install numpy")
@@ -470,20 +521,30 @@ def local_morans_i(
     else:
         W = sp_sparse.csr_matrix(np.asarray(weights, dtype=np.float64))
 
+    # What is returned when the statistics cannot be computed: NaN for every observation, and why
+    expected_i = -1.0 / (n - 1) if n > 1 else float("nan")
+
+    def undefined(reason: str) -> LocalMoransResult:
+        return LocalMoransResult(
+            local_I=np.full(n, np.nan),
+            expected_I=expected_i,
+            z_scores=np.full(n, np.nan),
+            p_values=np.full(n, np.nan),
+            cluster_labels=["NS"] * n,
+            significance_level=significance,
+            status=reason,
+        )
+
+    if n < 3:
+        return undefined("fewer than 3 observations")
+
     x_mean = x.mean()
     z = x - x_mean
 
     # Variance of z
     m2 = float(np.sum(z**2) / n)
     if m2 == 0:
-        return LocalMoransResult(
-            local_I=np.zeros(n),
-            expected_I=-1.0 / (n - 1),
-            z_scores=np.zeros(n),
-            p_values=np.ones(n),
-            cluster_labels=["NS"] * n,
-            significance_level=significance,
-        )
+        return undefined("the values are constant, so the local statistics (0 / 0) are undefined")
 
     # Local Moran's I for each observation
     # I_i = (z_i / m2) * sum_j(w_ij * z_j)
@@ -491,26 +552,26 @@ def local_morans_i(
     local_I = (z / m2) * Wz
 
     # Expected value
-    E_Ii = -1.0 / (n - 1)
+    E_Ii = expected_i
 
-    # Variance of local I (under randomization)
-    # Simplified: use conditional permutation variance approximation
+    # Variance of local I: a normal approximation with a simplified variance. It keeps Anselin's (1995)
+    # randomization form, but uses (sum_j w_ij)^2 where his cross-product term has 2 * sum_{k != h} w_ik w_ih.
     w_i_sq = np.array(W.multiply(W).sum(axis=1)).flatten()
     w_i_sum = np.array(W.sum(axis=1)).flatten()
 
     b2 = (np.sum(z**4) / n) / (m2**2)
 
-    Var_Ii = np.zeros(n, dtype=np.float64)
-    for i in range(n):
-        wii_sq = w_i_sq[i]
-        wi_sum = w_i_sum[i]
-        Var_Ii[i] = wii_sq * (n - b2) / (n - 1) + wi_sum**2 * (2 * b2 - n) / ((n - 1) * (n - 2)) - E_Ii**2
+    Var_Ii = (w_i_sq * (n - b2) / (n - 1) + w_i_sum**2 * (2 * b2 - n) / ((n - 1) * (n - 2)) - E_Ii**2).astype(
+        np.float64
+    )
 
-    Var_Ii = np.maximum(Var_Ii, 1e-20)
-
-    # Z-scores and p-values
-    z_scores = (local_I - E_Ii) / np.sqrt(Var_Ii)
-    p_values = 2 * norm.sf(np.abs(z_scores))
+    # Z-scores and p-values exist only where the variance is positive (an observation without any neighbor has
+    # none); elsewhere they are NaN and the observation is "NS"
+    z_scores = np.full(n, np.nan)
+    p_values = np.full(n, np.nan)
+    positive = Var_Ii > 0
+    z_scores[positive] = (local_I[positive] - E_Ii) / np.sqrt(Var_Ii[positive])
+    p_values[positive] = 2 * norm.sf(np.abs(z_scores[positive]))
 
     # Spatial lag (mean of neighbors)
     spatial_lag = Wz  # already W @ z
@@ -518,7 +579,7 @@ def local_morans_i(
     # Classify clusters
     cluster_labels: list[str] = []
     for i in range(n):
-        if p_values[i] > significance:
+        if not p_values[i] <= significance:  # also true for a NaN p-value
             cluster_labels.append("NS")
         elif z[i] > 0 and spatial_lag[i] > 0:
             cluster_labels.append("HH")
@@ -567,7 +628,10 @@ def getis_ord_g(
         significance: Significance level for hot/cold spot identification.
 
     Returns:
-        GetisOrdResult with G* statistics and hot/cold spot identification.
+        GetisOrdResult with G* statistics and hot/cold spot identification. G* and the p-value are NaN for an
+        observation that weighs all observations equally (its weights have no spread to standardize by), and
+        for every observation (``status`` says why) with fewer than 2 observations or constant values; such
+        observations are neither hot nor cold spots.
     """
     if np is None:
         raise ImportError("NumPy is required: uv pip install numpy")
@@ -582,45 +646,46 @@ def getis_ord_g(
     else:
         W = sp_sparse.csr_matrix(np.asarray(weights, dtype=np.float64))
 
+    # What is returned when G* cannot be computed: NaN for every observation, and why
+    def undefined(reason: str) -> GetisOrdResult:
+        return GetisOrdResult(
+            g_star=np.full(n, np.nan),
+            p_values=np.full(n, np.nan),
+            hot_spots=np.zeros(n, dtype=bool),
+            cold_spots=np.zeros(n, dtype=bool),
+            significance_level=significance,
+            status=reason,
+        )
+
+    if n < 2:
+        return undefined("fewer than 2 observations")
+
     x_bar = x.mean()
     S = np.sqrt(np.sum((x - x_bar) ** 2) / n)
 
     if S == 0:
-        return GetisOrdResult(
-            g_star=np.zeros(n),
-            p_values=np.ones(n),
-            hot_spots=np.zeros(n, dtype=bool),
-            cold_spots=np.zeros(n, dtype=bool),
-            significance_level=significance,
-        )
+        return undefined("the values are constant, so G* (0 / 0) is undefined")
 
     # Include self-weight (G* vs G)
     # Add identity to weights for G*
     W_star = W + sp_sparse.eye(n)
 
-    g_star = np.zeros(n, dtype=np.float64)
-
     W_star_sum = np.array(W_star.sum(axis=1)).flatten()
     W_star_sq_sum = np.array(W_star.multiply(W_star).sum(axis=1)).flatten()
     Wx = np.array(W_star @ x).flatten()
 
-    for i in range(n):
-        wi_sum = W_star_sum[i]
-        wi_sq_sum = W_star_sq_sum[i]
+    # G* is a z-score only where the denominator is positive; elsewhere (an observation that weighs all n
+    # observations equally, so its weights have no spread) it is undefined: NaN, not 0
+    g_star = np.full(n, np.nan)
+    numerator = Wx - x_bar * W_star_sum
+    denominator_inner = (n * W_star_sq_sum - W_star_sum**2) / (n - 1)
+    defined = denominator_inner > 0
+    g_star[defined] = numerator[defined] / (S * np.sqrt(denominator_inner[defined]))
 
-        numerator = Wx[i] - x_bar * wi_sum
-        denominator_inner = (n * wi_sq_sum - wi_sum**2) / (n - 1)
-
-        if denominator_inner > 0:
-            denominator = S * np.sqrt(denominator_inner)
-            g_star[i] = numerator / denominator
-        else:
-            g_star[i] = 0.0
-
-    # P-values (two-sided normal)
+    # P-values (two-sided normal); NaN where G* is undefined
     p_values = 2 * norm.sf(np.abs(g_star))
 
-    # Identify hot/cold spots
+    # Identify hot/cold spots (a NaN comparison is False, so undefined observations are neither)
     hot_spots = (g_star > 0) & (p_values < significance)
     cold_spots = (g_star < 0) & (p_values < significance)
 
@@ -666,7 +731,9 @@ def spatial_variogram(
             maximum pairwise distance.
 
     Returns:
-        VariogramResult with semivariance values and estimated parameters.
+        VariogramResult with semivariance values and estimated parameters. A bin without any pair has a
+        NaN semivariance (``n_pairs`` is 0 there); ``nugget``, ``sill`` and ``range_param`` are NaN when they
+        cannot be estimated (no pair at all, or a sill of zero for the range), and for fewer than 2 points.
     """
     if np is None:
         raise ImportError("NumPy is required: uv pip install numpy")
@@ -680,6 +747,9 @@ def spatial_variogram(
             bin_centers=np.array([]),
             semivariance=np.array([]),
             n_pairs=np.array([], dtype=np.int64),
+            nugget=float("nan"),
+            sill=float("nan"),
+            range_param=float("nan"),
         )
 
     # Compute pairwise distances and squared differences
@@ -739,17 +809,19 @@ def spatial_variogram(
                 semivariance[bin_idx] += sq_diffs_arr[k]
                 pair_counts[bin_idx] += 1
 
-    # Average semivariance per bin: gamma(h) = (1/2N(h)) * sum (x_i - x_j)^2
+    # Average semivariance per bin: gamma(h) = (1/2N(h)) * sum (x_i - x_j)^2. A bin without pairs has no
+    # semivariance: NaN, not a zero that would read as identical values
     valid = pair_counts > 0
     semivariance[valid] = semivariance[valid] / (2.0 * pair_counts[valid])
+    semivariance[~valid] = np.nan
 
-    # Estimate variogram parameters
-    nugget = float(semivariance[valid][0]) if valid.any() else 0.0
-    sill = float(np.max(semivariance[valid])) if valid.any() else 0.0
+    # Estimate variogram parameters (NaN when no bin has a pair, or when the sill is not reached/positive)
+    nugget = float(semivariance[valid][0]) if valid.any() else float("nan")
+    sill = float(np.max(semivariance[valid])) if valid.any() else float("nan")
 
     # Range: first bin where semivariance reaches ~95% of sill
-    range_param = 0.0
-    if sill > 0 and valid.any():
+    range_param = float("nan")
+    if sill > 0:
         threshold = 0.95 * sill
         for bi in range(n_bins):
             if valid[bi] and semivariance[bi] >= threshold:

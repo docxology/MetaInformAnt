@@ -12,12 +12,19 @@ All tests use real implementations (real-implementation policy).
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any
 
 import pytest
+
+import metainformant
+
+# The directory that holds the ``metainformant`` package this test session imported. The child interpreter is told to
+# import from there, not from whatever its own search path finds first, so it always tests the code under test.
+PACKAGE_ROOT = str(Path(metainformant.__file__).resolve().parent.parent)
 
 # module -> names that must be bound to None when the optional dependencies are absent
 FALLBACK_NAMES: dict[str, list[str]] = {
@@ -109,11 +116,26 @@ def blocked_report(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Any]:
         text=True,
         timeout=180,
         cwd=workdir,
+        env={**os.environ, "PYTHONPATH": PACKAGE_ROOT},
     )
     assert proc.returncode == 0, proc.stderr[-2000:]
     line = next(line for line in proc.stdout.splitlines() if line.startswith(MARKER))
     report: dict[str, Any] = json.loads(line[len(MARKER) :])
     return report
+
+
+def test_the_child_imports_the_package_the_session_imported() -> None:
+    """The child's search path starts with the directory of the parent's ``metainformant``."""
+    proc = subprocess.run(
+        [sys.executable, "-c", "import metainformant, sys; print(metainformant.__file__)"],
+        capture_output=True,
+        text=True,
+        timeout=180,
+        env={**os.environ, "PYTHONPATH": PACKAGE_ROOT},
+    )
+
+    assert proc.returncode == 0, proc.stderr[-2000:]
+    assert Path(proc.stdout.strip()).resolve() == Path(metainformant.__file__).resolve()
 
 
 class TestMissingDependencies:

@@ -86,7 +86,7 @@ class TestSpatialCluster:
     @pytest.mark.parametrize("method", ["leiden", "louvain", "kmeans"])
     def test_all_methods_run(self, method: str) -> None:
         X, coords = _make_spatial_expression()
-        result = spatial_cluster(X, coords, n_clusters=3, method=method, seed=0)
+        result = spatial_cluster(X, coords, n_clusters=3, method=method, seed=0, allow_greedy_fallback=True)
         labels = np.asarray(result.labels)
         assert len(labels) == 90
         # graph-based fallbacks may over-partition; kmeans must be exact
@@ -244,3 +244,39 @@ class TestIdentifyNiches:
         props, coords = self._proportions()
         result = identify_niches(props, coords, n_niches=2, random_state=0)
         assert result.niche_diversity is not None
+
+
+class TestNichesThatNoSpotJoins:
+    """A niche with no spot has no composition and no diversity: NaN, not a row of zeros that reads as a measurement."""
+
+    @staticmethod
+    def _two_distinct_profiles() -> tuple[np.ndarray, np.ndarray]:
+        proportions = np.vstack([np.tile([0.8, 0.2], (6, 1)), np.tile([0.1, 0.9], (6, 1))])
+        coordinates = np.vstack([np.tile([0.0, 0.0], (6, 1)), np.tile([10.0, 10.0], (6, 1))])
+        return proportions, coordinates
+
+    def test_identify_niches_marks_the_empty_niche_nan(self) -> None:
+        proportions, coordinates = self._two_distinct_profiles()
+
+        result = identify_niches(proportions, coordinates, n_niches=3, n_neighbors=3, random_state=0)
+
+        empty = [k for k, size in enumerate(result.niche_sizes) if size == 0]
+        assert empty, "two distinct profiles cannot fill three niches"
+        for k in empty:
+            assert np.isnan(result.compositions[k]).all()
+            assert np.isnan(result.niche_diversity[k])
+        filled = [k for k in range(3) if k not in empty]
+        for k in filled:
+            assert result.compositions[k].sum() == pytest.approx(1.0)
+            assert np.isfinite(result.niche_diversity[k])
+
+    def test_niche_identification_survives_fewer_distinct_spots_than_niches(self) -> None:
+        """k-means++ used to hand numpy all-zero sampling weights here ('probabilities do not sum to 1')."""
+        proportions, coordinates = self._two_distinct_profiles()
+
+        result = niche_identification(proportions, [tuple(c) for c in coordinates], n_niches=3, seed=0)
+
+        compositions = result["niche_compositions"]
+        empty = [k for k, vector in compositions.items() if all(np.isnan(v) for v in vector)]
+        assert len(result["niche_labels"]) == 12 and empty
+        assert all(sum(compositions[k]) == pytest.approx(1.0) for k in compositions if k not in empty)

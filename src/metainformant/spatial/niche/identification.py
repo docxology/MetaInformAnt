@@ -20,10 +20,12 @@ class NicheResult:
     Attributes:
         niche_labels: Per-spot niche assignment.
         n_niches: Number of identified niches.
-        compositions: Per-niche mean cell type composition (niche × cell_type).
+        compositions: Per-niche mean cell type composition (niche × cell_type); NaN for a niche to which no spot was
+            assigned.
         cell_type_names: Names of cell types.
         niche_sizes: Number of spots per niche.
-        niche_diversity: Shannon diversity of cell types within each niche.
+        niche_diversity: Shannon diversity of cell types within each niche; NaN for a niche to which no spot was
+            assigned.
     """
 
     niche_labels: np.ndarray
@@ -73,7 +75,7 @@ def identify_niches(
     labels = _kmeans(smoothed, n_niches, rng)
 
     # Characterize niches
-    compositions = np.zeros((n_niches, n_types))
+    compositions = np.full((n_niches, n_types), np.nan)  # a niche that no spot is assigned to keeps NaN
     niche_sizes = []
     niche_diversity = []
 
@@ -90,7 +92,7 @@ def identify_niches(
             h = float(-np.sum(p * np.log(p)))
             niche_diversity.append(h)
         else:
-            niche_diversity.append(0.0)
+            niche_diversity.append(float("nan"))
 
     return NicheResult(
         niche_labels=labels,

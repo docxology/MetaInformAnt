@@ -128,12 +128,15 @@ class TestMoransI:
         result = morans_i(values, W)
         assert result.n == 25
 
-    def test_constant_values_zero_I(self):
+    def test_constant_values_have_no_morans_i(self):
+        """0 / 0 is undefined: NaN and a status, not an I of 0 and a p-value of 1 that read as a measurement."""
         coords = np.random.RandomState(42).rand(20, 2)
         values = np.ones(20)
         W = spatial_weights_matrix(coords, method="knn", k=4)
         result = morans_i(values, W)
-        assert result.I == pytest.approx(0.0)
+        assert np.isnan(result.I) and np.isnan(result.z_score) and np.isnan(result.p_value)
+        assert result.expected_I == pytest.approx(-1.0 / 19)
+        assert "constant" in result.status
 
 
 # ---------------------------------------------------------------------------
@@ -167,7 +170,9 @@ class TestGearysC:
         values = np.ones(20) * 5.0
         W = spatial_weights_matrix(coords, method="knn", k=4)
         result = gearys_c(values, W)
-        assert result.C == pytest.approx(1.0)
+        assert np.isnan(result.C) and np.isnan(result.z_score) and np.isnan(result.p_value)
+        assert result.expected_C == 1.0  # the null expectation is still defined
+        assert "constant" in result.status
 
 
 # ---------------------------------------------------------------------------
@@ -276,7 +281,7 @@ def _assert_results_close(actual, expected) -> None:
     """Compare two result dataclasses field by field (labels exactly, numbers to 1e-10 relative)."""
     for field in dataclasses.fields(expected):
         got, want = getattr(actual, field.name), getattr(expected, field.name)
-        if isinstance(want, list):
+        if isinstance(want, (list, str)):
             assert got == want, field.name
         else:
             np.testing.assert_allclose(np.asarray(got), np.asarray(want), rtol=1e-10, atol=1e-12, err_msg=field.name)

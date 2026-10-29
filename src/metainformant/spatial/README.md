@@ -91,12 +91,12 @@ The Xenium and MERFISH loaders raise `FileNotFoundError` or `ValueError` when th
 | Function | Description |
 |----------|-------------|
 | `spatial_cluster` | Unified interface for spatial clustering methods; `graph_method='radius'` needs `radius=` |
-| `leiden_clustering` | Leiden community detection on spatial graph (`n_iterations=-1` runs until convergence, `0` is rejected) |
-| `louvain_clustering` | Louvain community detection on spatial graph |
+| `leiden_clustering` | Leiden community detection on spatial graph (`n_iterations=-1` runs until convergence, `0` is rejected); raises `ImportError` without `python-igraph` and `leidenalg` unless `allow_greedy_fallback=True` |
+| `louvain_clustering` | Louvain community detection on spatial graph; raises `ImportError` without `python-louvain` and `networkx` unless `allow_greedy_fallback=True` |
 | `spatial_domains` | Identify spatially coherent tissue domains; without `n_domains` the number (2 to 15) is chosen with the gap statistic and recorded in `metadata["n_domains_selection"]` |
 | `build_spatial_graph` | Construct KNN, Delaunay or radius-based spatial graph (the KNN graph is symmetrised with the entrywise maximum) |
 
-`leiden_clustering` and `louvain_clustering` fall back to a built-in greedy modularity routine when `leidenalg` or `python-louvain` is missing; the returned `(labels, modularity)` does not say so.
+`leiden_clustering` and `louvain_clustering` never substitute another algorithm silently: when their packages are missing they raise `ImportError`, and with `allow_greedy_fallback=True` they run a built-in greedy modularity routine and emit a `UserWarning`. `spatial_cluster` takes the same keyword and records the method that ran in `SpatialClusterResult.method` (`"greedy_modularity"` after a fallback) with `metadata["requested_method"]` and `metadata["fallback_used"]`.
 
 ### Cell-Cell Communication
 

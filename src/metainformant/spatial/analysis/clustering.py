@@ -8,8 +8,9 @@ domain identification approach.
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, cast
 
 from metainformant.core.utils.logging import get_logger
 
@@ -51,10 +52,13 @@ class SpatialClusterResult:
     Attributes:
         labels: Cluster label per spot/cell (integer array of length n).
         n_clusters: Number of clusters found.
-        method: Clustering method used.
+        method: Clustering method that actually ran: ``"leiden"``, ``"louvain"``, ``"kmeans"``,
+            ``"spatial_domains"``, or ``"greedy_modularity"`` when a graph method was requested and its package was
+            missing and the greedy fallback was explicitly allowed.
         modularity: Modularity score (for graph-based methods).
         spatial_graph: Adjacency matrix used for clustering.
-        metadata: Additional result metadata.
+        metadata: Additional result metadata. For the graph methods it holds ``requested_method`` (what the caller
+            asked for) and ``fallback_used`` (whether ``method`` differs from it).
     """
 
     labels: Any  # np.ndarray of shape (n,)
@@ -191,17 +195,128 @@ def _leidenalg_iterations(n_iterations: int) -> int:
     return -1 if n_iterations < 0 else int(n_iterations)
 
 
+class _GraphClustering(NamedTuple):
+    """Outcome of a graph clustering: the labels, their modularity and the method that actually produced them."""
+
+    labels: Any
+    modularity: float
+    method: str
+
+
+def _greedy_fallback(
+    adj: Any, *, requested: str, missing: str, resolution: float, seed: int, allow_greedy_fallback: bool
+) -> _GraphClustering:
+    """Run the greedy modularity optimization in place of an unavailable ``requested`` method, if that is allowed.
+
+    Raises:
+        ImportError: Unless ``allow_greedy_fallback`` is set. The greedy optimization is a different, simpler algorithm
+            than Leiden or Louvain and finds different partitions, so it is never substituted silently.
+    """
+    if not allow_greedy_fallback:
+        raise ImportError(
+            f"{requested.capitalize()} clustering requires {missing}, which could not be imported. Install them, or "
+            "pass allow_greedy_fallback=True to cluster with the in-package greedy modularity optimization instead "
+            "(a different, simpler algorithm)."
+        )
+    message = (
+        f"{requested.capitalize()} clustering is unavailable ({missing} could not be imported): clustered with the "
+        "greedy modularity optimization instead, which finds different partitions"
+    )
+    logger.warning(message)
+    warnings.warn(message, UserWarning, stacklevel=4)
+    labels, modularity = _greedy_modularity_clustering(adj, resolution=resolution, seed=seed)
+    return _GraphClustering(labels, modularity, "greedy_modularity")
+
+
+def _leiden(
+    adj: Any, *, resolution: float, iterations: int, seed: int, allow_greedy_fallback: bool
+) -> _GraphClustering:
+    """Leiden partition of the graph with ``adj`` as its weighted adjacency, or the explicitly allowed fallback."""
+    try:
+        import igraph as ig
+        import leidenalg
+    except (ImportError, SyntaxError):
+        # Some leidenalg releases fail during import because of an invalid escape in an upstream docstring
+        return _greedy_fallback(
+            adj,
+            requested="leiden",
+            missing="python-igraph and leidenalg",
+            resolution=resolution,
+            seed=seed,
+            allow_greedy_fallback=allow_greedy_fallback,
+        )
+
+    # Convert scipy sparse to igraph
+    sources, targets = adj.nonzero()
+    weights = np.array(adj[sources, targets]).flatten()
+    mask = sources < targets  # upper triangle only for undirected
+    edges = list(zip(sources[mask].tolist(), targets[mask].tolist()))
+    edge_weights = weights[mask].tolist()
+
+    g = ig.Graph(n=adj.shape[0], edges=edges, directed=False)
+    g.es["weight"] = edge_weights
+
+    partition = leidenalg.find_partition(
+        g,
+        leidenalg.RBConfigurationVertexPartition,
+        weights="weight",
+        resolution_parameter=resolution,
+        n_iterations=iterations,
+        seed=seed,
+    )
+
+    labels = np.array(partition.membership, dtype=np.int32)
+    modularity = float(partition.modularity)
+    logger.info(f"Leiden clustering: {len(set(labels))} clusters, modularity={modularity:.4f}")
+    return _GraphClustering(labels, modularity, "leiden")
+
+
+def _louvain(adj: Any, *, resolution: float, seed: int, allow_greedy_fallback: bool) -> _GraphClustering:
+    """Louvain partition of the graph with ``adj`` as its weighted adjacency, or the explicitly allowed fallback."""
+    try:
+        import community as community_louvain
+        import networkx as nx
+    except ImportError:
+        return _greedy_fallback(
+            adj,
+            requested="louvain",
+            missing="python-louvain and networkx",
+            resolution=resolution,
+            seed=seed,
+            allow_greedy_fallback=allow_greedy_fallback,
+        )
+
+    n = adj.shape[0]
+
+    # Convert to networkx graph
+    G = nx.Graph()
+    G.add_nodes_from(range(n))
+    sources, targets = adj.nonzero()
+    weights = np.array(adj[sources, targets]).flatten()
+    for s, t, w in zip(sources.tolist(), targets.tolist(), weights.tolist()):
+        if s < t:
+            G.add_edge(s, t, weight=w)
+
+    partition = community_louvain.best_partition(G, resolution=resolution, random_state=seed)
+    labels = np.array([partition[i] for i in range(n)], dtype=np.int32)
+    modularity = float(community_louvain.modularity(partition, G))
+    logger.info(f"Louvain clustering: {len(set(labels))} clusters, modularity={modularity:.4f}")
+    return _GraphClustering(labels, modularity, "louvain")
+
+
 def leiden_clustering(
     adjacency_matrix: Any,
     resolution: float = 1.0,
     n_iterations: int = -1,
     seed: int = 42,
+    *,
+    allow_greedy_fallback: bool = False,
 ) -> tuple[Any, float]:
     """Leiden community detection on a graph.
 
-    Implements the Leiden algorithm using a modularity-optimization approach.
-    Falls back to a greedy modularity maximization if the leidenalg package
-    is not available.
+    Runs the Leiden algorithm of leidenalg on the weighted graph, which needs python-igraph and leidenalg. A
+    different algorithm is never substituted silently: without those packages the function raises
+    ``ImportError``, unless ``allow_greedy_fallback=True``.
 
     Args:
         adjacency_matrix: Sparse adjacency matrix (n x n).
@@ -210,13 +325,18 @@ def leiden_clustering(
             an iteration brings no improvement. Zero is rejected. The greedy fallback ignores it: it
             sweeps the nodes until none moves, at most 50 times.
         seed: Random seed for reproducibility.
+        allow_greedy_fallback: When python-igraph or leidenalg is unavailable, cluster with the in-package greedy
+            modularity optimization instead of raising, and emit a ``UserWarning`` and a log warning that say so.
+            The greedy optimization is a simpler algorithm and finds different partitions; the returned tuple does
+            not say which ran, so rely on that warning. :func:`spatial_cluster` records the method used in
+            ``SpatialClusterResult.method``. The flag does nothing when Leiden is available.
 
     Returns:
         Tuple of (labels, modularity) where labels is an integer array
         and modularity is the partition quality score.
 
     Raises:
-        ImportError: If neither leidenalg nor required fallback deps are available.
+        ImportError: If python-igraph or leidenalg is unavailable and ``allow_greedy_fallback`` is not set.
         ValueError: If ``n_iterations`` is zero.
     """
     if np is None:
@@ -226,64 +346,40 @@ def leiden_clustering(
 
     iterations = _leidenalg_iterations(n_iterations)
     adj = sp_sparse.csr_matrix(adjacency_matrix)
-    n = adj.shape[0]
-
-    # Try leidenalg first (optimal implementation)
-    try:
-        import igraph as ig
-        import leidenalg
-
-        # Convert scipy sparse to igraph
-        sources, targets = adj.nonzero()
-        weights = np.array(adj[sources, targets]).flatten()
-        mask = sources < targets  # upper triangle only for undirected
-        edges = list(zip(sources[mask].tolist(), targets[mask].tolist()))
-        edge_weights = weights[mask].tolist()
-
-        g = ig.Graph(n=n, edges=edges, directed=False)
-        g.es["weight"] = edge_weights
-
-        partition = leidenalg.find_partition(
-            g,
-            leidenalg.RBConfigurationVertexPartition,
-            weights="weight",
-            resolution_parameter=resolution,
-            n_iterations=iterations,
-            seed=seed,
-        )
-
-        labels = np.array(partition.membership, dtype=np.int32)
-        modularity = float(partition.modularity)
-        logger.info(f"Leiden clustering: {len(set(labels))} clusters, modularity={modularity:.4f}")
-        return labels, modularity
-
-    except (ImportError, SyntaxError) as exc:
-        # Some optional leidenalg releases fail during import because of an
-        # invalid escape in an upstream docstring.  Treat that as unavailable
-        # and use the deterministic in-package fallback.
-        logger.info("leidenalg unavailable (%s); using greedy modularity fallback", exc)
-
-    # Fallback: greedy modularity optimization (simplified Louvain-like)
-    return _greedy_modularity_clustering(adj, resolution=resolution, seed=seed)
+    outcome = _leiden(
+        adj, resolution=resolution, iterations=iterations, seed=seed, allow_greedy_fallback=allow_greedy_fallback
+    )
+    return outcome.labels, outcome.modularity
 
 
 def louvain_clustering(
     adjacency_matrix: Any,
     resolution: float = 1.0,
     seed: int = 42,
+    *,
+    allow_greedy_fallback: bool = False,
 ) -> tuple[Any, float]:
     """Louvain community detection on a graph.
 
-    Implements the Louvain method for modularity-based community detection.
-    Uses community_louvain if available, otherwise falls back to a greedy approach.
+    Runs the Louvain method of python-louvain on the weighted graph, which needs python-louvain and networkx. A
+    different algorithm is never substituted silently: without those packages the function raises
+    ``ImportError``, unless ``allow_greedy_fallback=True``.
 
     Args:
         adjacency_matrix: Sparse adjacency matrix (n x n).
         resolution: Resolution parameter (higher = more clusters).
         seed: Random seed.
+        allow_greedy_fallback: When python-louvain or networkx is unavailable, cluster with the in-package greedy
+            modularity optimization instead of raising, and emit a ``UserWarning`` and a log warning that say so.
+            The greedy optimization is a simpler algorithm and finds different partitions; the returned tuple does
+            not say which ran, so rely on that warning. :func:`spatial_cluster` records the method used in
+            ``SpatialClusterResult.method``. The flag does nothing when Louvain is available.
 
     Returns:
         Tuple of (labels, modularity).
+
+    Raises:
+        ImportError: If python-louvain or networkx is unavailable and ``allow_greedy_fallback`` is not set.
     """
     if np is None:
         raise ImportError("NumPy is required: uv pip install numpy")
@@ -291,32 +387,8 @@ def louvain_clustering(
         raise ImportError("scipy is required: uv pip install scipy")
 
     adj = sp_sparse.csr_matrix(adjacency_matrix)
-    n = adj.shape[0]
-
-    # Try python-louvain (community package) first
-    try:
-        import community as community_louvain
-        import networkx as nx
-
-        # Convert to networkx graph
-        G = nx.Graph()
-        G.add_nodes_from(range(n))
-        sources, targets = adj.nonzero()
-        weights = np.array(adj[sources, targets]).flatten()
-        for s, t, w in zip(sources.tolist(), targets.tolist(), weights.tolist()):
-            if s < t:
-                G.add_edge(s, t, weight=w)
-
-        partition = community_louvain.best_partition(G, resolution=resolution, random_state=seed)
-        labels = np.array([partition[i] for i in range(n)], dtype=np.int32)
-        modularity = float(community_louvain.modularity(partition, G))
-        logger.info(f"Louvain clustering: {len(set(labels))} clusters, modularity={modularity:.4f}")
-        return labels, modularity
-
-    except ImportError:
-        logger.info("python-louvain not available; using greedy modularity fallback")
-
-    return _greedy_modularity_clustering(adj, resolution=resolution, seed=seed)
+    outcome = _louvain(adj, resolution=resolution, seed=seed, allow_greedy_fallback=allow_greedy_fallback)
+    return outcome.labels, outcome.modularity
 
 
 def _greedy_modularity_clustering(
@@ -468,6 +540,7 @@ def spatial_cluster(
     spatial_weight: float = 0.5,
     n_pcs: int = 15,
     seed: int = 42,
+    allow_greedy_fallback: bool = False,
 ) -> SpatialClusterResult:
     """Spatially-aware clustering combining expression and spatial proximity.
 
@@ -498,13 +571,19 @@ def spatial_cluster(
         spatial_weight: Weight for spatial graph in [0, 1]. 0 = expression only, 1 = spatial only.
         n_pcs: Number of PCA components for expression.
         seed: Random seed.
+        allow_greedy_fallback: Graph methods only. When the package behind "leiden" (python-igraph and leidenalg)
+            or "louvain" (python-louvain and networkx) is unavailable, cluster with the in-package greedy modularity
+            optimization instead of raising, with a ``UserWarning``. The result then says so: ``method`` is
+            ``"greedy_modularity"``, ``metadata["requested_method"]`` the method asked for and
+            ``metadata["fallback_used"]`` is True. It does nothing when the package is available.
 
     Returns:
-        SpatialClusterResult with labels and metadata.
+        SpatialClusterResult with labels and metadata. ``method`` is the method that actually ran.
 
     Raises:
         ValueError: If a graph-based method is used with ``graph_method="radius"`` and no ``radius``, or
             if KMeans is requested without ``n_clusters``.
+        ImportError: If the package behind a graph method is unavailable and ``allow_greedy_fallback`` is not set.
     """
     if np is None:
         raise ImportError("NumPy is required: uv pip install numpy")
@@ -609,20 +688,28 @@ def spatial_cluster(
     combined = (1.0 - spatial_weight) * expr_graph + spatial_weight * spatial_graph
 
     # 4. Cluster
+    combined = sp_sparse.csr_matrix(combined)
     if method == "leiden":
-        labels, modularity = leiden_clustering(combined, resolution=resolution, seed=seed)
+        outcome = _leiden(
+            combined,
+            resolution=resolution,
+            iterations=_leidenalg_iterations(-1),
+            seed=seed,
+            allow_greedy_fallback=allow_greedy_fallback,
+        )
     elif method == "louvain":
-        labels, modularity = louvain_clustering(combined, resolution=resolution, seed=seed)
+        outcome = _louvain(combined, resolution=resolution, seed=seed, allow_greedy_fallback=allow_greedy_fallback)
     else:
         raise ValueError(f"Unknown method: {method}")
 
+    labels = outcome.labels
     n_found = len(np.unique(labels))
 
     return SpatialClusterResult(
         labels=labels,
         n_clusters=n_found,
-        method=method,
-        modularity=modularity,
+        method=outcome.method,
+        modularity=outcome.modularity,
         spatial_graph=combined,
         metadata={
             "spatial_weight": spatial_weight,
@@ -630,6 +717,8 @@ def spatial_cluster(
             "resolution": resolution,
             "graph_method": graph_method,
             "radius": radius,
+            "requested_method": method,
+            "fallback_used": outcome.method != method,
         },
     )
 

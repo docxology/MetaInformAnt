@@ -131,22 +131,33 @@ def neighborhood_enrichment(
     2. Count observed pairwise type interactions.
     3. Permute cell type labels N times to build null distribution.
     4. Compute Z-score: (observed - mean_null) / std_null.
+    5. One-sided permutation p-value (b + 1) / (N + 1), where b is the number of permutations whose count is
+       at least the observed one. It is never 0: a finite number of permutations cannot show that the observed
+       count is impossible under the null, only that it is rarer than 1 in N + 1.
 
     Args:
         cell_types: Array of cell type labels (length n).
         coordinates: Spatial coordinates (n x 2).
         radius: If specified, use radius-based neighbors instead of KNN.
         n_neighbors: Number of neighbors for KNN (ignored if radius is set).
-        n_permutations: Number of permutations for null distribution.
+        n_permutations: Number of permutations for null distribution (at least 1).
         seed: Random seed.
 
     Returns:
-        NeighborhoodEnrichmentResult with enrichment matrix and statistics.
+        NeighborhoodEnrichmentResult with enrichment matrix and statistics. A cell-type pair whose count has no
+        variance under permutation (for example with a single cell type) has a NaN enrichment: the z-score is 0 / 0
+        or a finite difference over zero, and no value is substituted for the missing spread.
+
+    Raises:
+        ValueError: If ``n_permutations`` is below 1.
     """
     if np is None:
         raise ImportError("NumPy is required: uv pip install numpy")
     if KDTree is None:
         raise ImportError("scipy.spatial is required: uv pip install scipy")
+
+    if n_permutations < 1:
+        raise ValueError(f"n_permutations must be at least 1, got {n_permutations}")
 
     rng = np.random.RandomState(seed)
     types = np.asarray(cell_types)
@@ -195,20 +206,20 @@ def neighborhood_enrichment(
     # Compute statistics
     expected = perm_counts.mean(axis=0)
     std_null = perm_counts.std(axis=0)
-    std_null[std_null == 0] = 1.0  # avoid division by zero
 
-    enrichment = (observed - expected) / std_null
+    # Z-score; undefined (NaN) where the null has no spread, instead of dividing by a made-up 1
+    enrichment = np.full((n_types, n_types), np.nan, dtype=np.float64)
+    np.divide(observed - expected, std_null, out=enrichment, where=std_null > 0)
 
-    # P-values: fraction of permutations with count >= observed
-    p_values = np.zeros((n_types, n_types), dtype=np.float64)
-    for ti in range(n_types):
-        for tj in range(n_types):
-            p_values[ti, tj] = np.mean(perm_counts[:, ti, tj] >= observed[ti, tj])
+    # P-values: (permutations with count >= observed + 1) / (permutations + 1), so never 0
+    at_least_as_many = (perm_counts >= observed[np.newaxis, :, :]).sum(axis=0)
+    p_values = (at_least_as_many + 1.0) / (n_permutations + 1.0)
 
     type_names = [str(t) for t in unique_types]
+    max_enrichment = float(np.nanmax(enrichment)) if np.isfinite(enrichment).any() else float("nan")
     logger.info(
         f"Neighborhood enrichment: {n_types} types, "
-        f"{n_permutations} permutations, max enrichment={enrichment.max():.2f}"
+        f"{n_permutations} permutations, max enrichment={max_enrichment:.2f}"
     )
 
     return NeighborhoodEnrichmentResult(

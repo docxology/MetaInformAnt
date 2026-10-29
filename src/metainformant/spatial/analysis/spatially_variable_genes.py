@@ -50,8 +50,10 @@ class SVGResult:
             sorted by Moran's I descending.
         morans_i: Moran's I per gene.
         z_scores: Standardized Z-score per gene.
-        p_values: Two-sided normal-approximation p-value per gene.
-        q_values: Benjamini-Hochberg adjusted p-values (None when unavailable).
+        p_values: Two-sided normal-approximation p-value per gene; NaN where Moran's I is undefined (for example
+            a weights matrix without edges).
+        q_values: Benjamini-Hochberg adjusted p-values over the genes that have a p-value (NaN for the others);
+            None when scipy lacks ``false_discovery_control``.
         n_spots: Number of spatial spots used.
     """
 
@@ -172,12 +174,15 @@ def detect_spatially_variable_genes(
     i_arr = np.asarray(i_vals, dtype=np.float64)
     order = np.argsort(-i_arr)
 
+    # Benjamini-Hochberg over the genes that have a p-value: Moran's I is undefined (NaN p-value) for a gene on a
+    # weights matrix without edges, and such a gene takes no part in the correction and has a NaN q-value
     q_arr: Optional[Any] = None
     if false_discovery_control is not None:
-        try:
-            q_arr = false_discovery_control(np.asarray(p_vals, dtype=np.float64), method="bh")
-        except Exception:  # pragma: no cover - degenerate p arrays
-            q_arr = None
+        p_arr = np.asarray(p_vals, dtype=np.float64)
+        q_arr = np.full(p_arr.shape, np.nan)
+        defined = ~np.isnan(p_arr)
+        if defined.any():
+            q_arr[defined] = false_discovery_control(p_arr[defined], method="bh")
     if q_arr is not None:
         q_arr = q_arr[order]
 
