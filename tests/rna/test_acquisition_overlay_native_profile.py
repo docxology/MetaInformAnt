@@ -132,7 +132,9 @@ def test_overlay_twelve_acquisitions_twenty_four_transfers_q8_and_native_replay(
                     urls = ";".join(f"http://127.0.0.1:{self.server.server_port}/{name}" for name in names)
                     sizes = ";".join(str(len(payloads[name])) for name in names)
                     md5s = ";".join(hashlib.md5(payloads[name], usedforsecurity=False).hexdigest() for name in names)
-                    body = f"run_accession\tfastq_ftp\tfastq_bytes\tfastq_md5\n{accession}\t{urls}\t{sizes}\t{md5s}\n".encode()
+                    body = (
+                        f"run_accession\tfastq_ftp\tfastq_bytes\tfastq_md5\n" f"{accession}\t{urls}\t{sizes}\t{md5s}\n"
+                    ).encode()
                 else:
                     if not release.wait(30):
                         failures.append("24 simultaneous native transfers were not reached")

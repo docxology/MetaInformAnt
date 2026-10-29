@@ -68,7 +68,10 @@ def _read_bound(path: Path, expected_sha256: str) -> bytes:
         opened = os.fstat(handle.fileno())
         payload = handle.read(1024 * 1024 + 1)
         after = os.fstat(handle.fileno())
-    signature = lambda s: (s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
+
+    def signature(info: os.stat_result) -> tuple[int, int, int, int, int]:
+        return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
     if (
         not stat.S_ISREG(opened.st_mode)
         or signature(before) != signature(opened)
