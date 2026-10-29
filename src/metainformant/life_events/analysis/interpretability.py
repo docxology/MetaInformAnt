@@ -27,51 +27,33 @@ def attention_weights(
 ) -> Dict[str, Any]:
     """Extract attention weights from a model.
 
-    Supports models that expose attention weights (e.g., transformer models).
-    For sklearn or other non-attention models, computes proxy attention via
-    feature importance gradients if possible.
+    Returns real weights only when the model provides them:
+
+    * a model with a ``transformer`` or ``attention`` attribute and a ``get_attention_weights(sequences)``
+      method: that method's output, for the given sequences;
+    * a fitted scikit-learn model with ``feature_importances_`` or ``coef_``: those global, per-feature values
+      (one vector for the model, not one per sequence; ``sequences`` and ``embeddings`` are not used for them).
+
+    Anything else, including a transformer whose layers merely exist (their attention is computed inside the
+    forward pass and is not available from the module), is reported as ``supported: False`` with an empty
+    ``attention_weights`` list. (A list of the string ``"attention_layer_present"`` per encoder layer used to be
+    returned as the weights, flagged supported.)
 
     Args:
         model: Trained prediction model (sklearn, torch, or custom)
-        sequences: List of event sequences
-        embeddings: Optional event embeddings
+        sequences: List of event sequences (passed to ``get_attention_weights``)
+        embeddings: Unused; accepted for backward compatibility
 
     Returns:
         Dictionary with attention weight information
     """
-    # Check for PyTorch transformer model
-    try:
-        import torch
-
-        if hasattr(model, "transformer") or hasattr(model, "attention"):
-            # Extract attention from transformer model
-            if hasattr(model, "get_attention_weights"):
-                weights = model.get_attention_weights(sequences)
-                return {
-                    "attention_weights": weights,
-                    "supported": True,
-                    "model_type": "transformer",
-                }
-            elif hasattr(model, "encoder") and hasattr(model.encoder, "layers"):
-                # Try to extract from encoder layers
-                weights = []
-                model.eval()
-                with torch.no_grad():
-                    for layer in model.encoder.layers:
-                        if hasattr(layer, "self_attn"):
-                            weights.append("attention_layer_present")
-                if weights:
-                    return {
-                        "attention_weights": weights,
-                        "supported": True,
-                        "model_type": "transformer",
-                        "note": (
-                            "Layer attention detected - use model.forward() with "
-                            "output_attentions=True for full weights"
-                        ),
-                    }
-    except ImportError:
-        pass
+    if (hasattr(model, "transformer") or hasattr(model, "attention")) and hasattr(model, "get_attention_weights"):
+        weights = model.get_attention_weights(sequences)
+        return {
+            "attention_weights": weights,
+            "supported": True,
+            "model_type": "transformer",
+        }
 
     # Check for sklearn models with feature_importances_
     if hasattr(model, "feature_importances_"):
@@ -102,7 +84,7 @@ def attention_weights(
         "supported": False,
         "model_type": str(type(model).__name__),
         "message": "Attention weights not available for this model type. "
-        "Use transformer models or tree/linear models for feature attribution.",
+        "Use a model that provides get_attention_weights, or a tree/linear model for feature attribution.",
     }
 
 

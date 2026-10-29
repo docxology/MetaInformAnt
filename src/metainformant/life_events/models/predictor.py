@@ -13,7 +13,6 @@ available through :class:`EventSequencePredictor`.
 from __future__ import annotations
 
 import json
-import pickle
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
@@ -22,6 +21,14 @@ import numpy as np
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
+
+
+def _unsupported_model_payload(component: str) -> str:
+    """Message for a model file whose ``component`` is not a JSON object of arrays and numbers."""
+    return (
+        f"The model file's {component!r} is not a JSON object. Models are saved as JSON by save_model; a "
+        "serialised (pickled) payload is not loaded, because unpickling a file runs whatever code it contains."
+    )
 
 
 def _unsupported_model_type(model_type: str) -> ValueError:
@@ -93,8 +100,6 @@ class EventSequencePredictor:
         self.reverse_vocab: Dict[int, str] = {}
         self.classes_: Optional[np.ndarray] = None
         self.sequence_length_model: Optional[Dict[int, Any]] = None
-
-        np.random.seed(random_seed)
 
     def _extract_events(self, seq: Any) -> List[str]:
         """Extract event strings from a sequence."""
@@ -256,7 +261,8 @@ class EventSequencePredictor:
 
         Raises:
             FileNotFoundError: If path doesn't exist
-            ValueError: If JSON is invalid or required fields are missing
+            ValueError: If JSON is invalid, required fields are missing, or the classifier / regressor is a
+                serialised (pickled) payload instead of the JSON object ``save_model`` writes
         """
         path = Path(path)
         if not path.exists():
@@ -300,18 +306,14 @@ class EventSequencePredictor:
         # Load classifier/regressor
         if "classifier" in model_data:
             clf_data = model_data["classifier"]
-            if isinstance(clf_data, dict):
-                model.classifier = {k: np.array(v) if isinstance(v, list) else v for k, v in clf_data.items()}
-            else:
-                # Model payloads are produced by this class and must come from
-                # a trusted local artifact; pickle is not a general input format.
-                model.classifier = pickle.loads(bytes.fromhex(clf_data))  # nosec B301
+            if not isinstance(clf_data, dict):
+                raise ValueError(_unsupported_model_payload("classifier"))
+            model.classifier = {k: np.array(v) if isinstance(v, list) else v for k, v in clf_data.items()}
         if "regressor" in model_data:
             reg_data = model_data["regressor"]
-            if isinstance(reg_data, dict):
-                model.regressor = {k: np.array(v) if isinstance(v, list) else v for k, v in reg_data.items()}
-            else:
-                model.regressor = pickle.loads(bytes.fromhex(reg_data))  # nosec B301
+            if not isinstance(reg_data, dict):
+                raise ValueError(_unsupported_model_payload("regressor"))
+            model.regressor = {k: np.array(v) if isinstance(v, list) else v for k, v in reg_data.items()}
 
         if model.model_type == "simple":
             model.sequence_length_model = cls._read_sequence_length_model(model_data)
@@ -350,25 +352,27 @@ class EventSequencePredictor:
         event_embeddings: Optional[Dict[str, np.ndarray]] = None,
     ) -> None:
         """Fit embedding-based model."""
-        all_events = set()
+        unique_events = set()
         for seq in sequences:
             events = self._extract_events(seq)
             for event in events:
-                all_events.add(event)
+                unique_events.add(event)
 
+        # Sorted, not in set order: the order of a set of strings changes with the interpreter's hash seed, and
+        # it decided both the vocabulary indices and which random vector each event received
+        all_events = sorted(unique_events)
         self.event_vocab = {event: i for i, event in enumerate(all_events)}
         self.reverse_vocab = {i: event for event, i in self.event_vocab.items()}
 
-        # Use pre-computed or randomly initialized embeddings
-        if event_embeddings:
-            for event in all_events:
-                if event in event_embeddings:
-                    self.embeddings[event] = event_embeddings[event]
-                else:
-                    self.embeddings[event] = np.random.normal(0, 0.1, self.embedding_dim)
-        else:
-            for event in all_events:
-                self.embeddings[event] = np.random.normal(0, 0.1, self.embedding_dim)
+        # Use pre-computed or randomly initialized embeddings. The generator is private and seeded from
+        # random_seed at every fit, so the same seed gives the same embeddings however many predictors were built
+        # before (the module-level numpy generator was reseeded in __init__ and drawn from here).
+        rng = np.random.default_rng(self.random_seed)
+        for event in all_events:
+            if event_embeddings and event in event_embeddings:
+                self.embeddings[event] = event_embeddings[event]
+            else:
+                self.embeddings[event] = rng.normal(0, 0.1, self.embedding_dim)
 
         # Compute sequence features (average embeddings)
         X = []

@@ -370,8 +370,9 @@ def generate_cohort_sequences(
     # Parameter aliases
     if random_state is not None and random_seed is None:
         random_seed = random_state
-    if random_seed is not None:
-        random.seed(random_seed)
+    # A private generator: seeding the module-level one changed the caller's global random state, and the
+    # output depended on it. random.Random(seed) draws the same stream random.seed(seed) used to start.
+    rng = random.Random(random_seed)
 
     # Default event types and domains
     if event_types is None:
@@ -402,7 +403,7 @@ def generate_cohort_sequences(
         person_id = f"person_{i:04d}"
 
         # Determine number of events with optional bounds
-        n_events = max(1, int(random.gauss(avg_events_per_sequence, 2)))
+        n_events = max(1, int(rng.gauss(avg_events_per_sequence, 2)))
         if min_events_per_sequence is not None:
             n_events = max(n_events, min_events_per_sequence)
         if max_events_per_sequence is not None:
@@ -413,7 +414,7 @@ def generate_cohort_sequences(
         # Generate events with temporal progression
         for j in range(n_events):
             # Select random event type
-            event_type = random.choice(event_types)
+            event_type = rng.choice(event_types)
 
             # Select domain based on event type
             if "school" in event_type or "college" in event_type:
@@ -432,13 +433,13 @@ def generate_cohort_sequences(
             elif "moved" in event_type:
                 domain = "housing"
             else:
-                domain = random.choice(domains)
+                domain = rng.choice(domains)
 
             # Generate timestamp with some progression
             year_offset = int((end_year - start_year) * (j / max(1, n_events - 1)))
             event_year = start_year + year_offset
-            event_month = random.randint(1, 12)
-            event_day = random.randint(1, 28)
+            event_month = rng.randint(1, 12)
+            event_day = rng.randint(1, 28)
 
             timestamp = datetime(event_year, event_month, event_day)
 
@@ -654,8 +655,7 @@ def generate_event_chain(
     # Handle parameter aliases
     if random_state is not None and random_seed is None:
         random_seed = random_state
-    if random_seed is not None:
-        random.seed(random_seed)
+    rng = random.Random(random_seed)  # private generator; the global random state is left alone
 
     if event_types is None:
         event_types = [
@@ -703,7 +703,7 @@ def generate_event_chain(
                 transitions["job_change"] = 0.2
 
             # Add some random transitions
-            for other_event in random.sample(event_types, min(3, len(event_types))):
+            for other_event in rng.sample(event_types, min(3, len(event_types))):
                 if other_event not in transitions:
                     transitions[other_event] = 0.05
 
@@ -722,17 +722,17 @@ def generate_event_chain(
     for _ in range(n_events - 1):
         if current_event not in transition_matrix:
             # Random choice if no transitions defined
-            current_event = random.choice(event_types)
+            current_event = rng.choice(event_types)
         else:
             transitions = transition_matrix[current_event]
             if not transitions:
-                current_event = random.choice(event_types)
+                current_event = rng.choice(event_types)
             else:
                 # Sample from transition probabilities
                 items = list(transitions.items())
                 events_tuple = tuple(k for k, _ in items)
                 probs_tuple = tuple(v for _, v in items)
-                current_event = random.choices(events_tuple, weights=probs_tuple, k=1)[0]
+                current_event = rng.choices(events_tuple, weights=probs_tuple, k=1)[0]
 
         sequence.append(current_event)
 
@@ -882,8 +882,7 @@ def generate_synthetic_life_events(
     if not temporal_noise >= 0.0:
         raise ValueError(f"temporal_noise must not be negative, got {temporal_noise!r}")
 
-    if random_state is not None:
-        random.seed(random_state)
+    rng = random.Random(random_state)  # private generator; the global random state is left alone
 
     rare_rng = _feature_rng("rare_events", random_state) if rare_event_probability > 0 else None
     missing_rng = _feature_rng("missing_data", random_state) if missing_data_probability > 0 else None
@@ -938,17 +937,17 @@ def generate_synthetic_life_events(
         person_id = f"person_{seq_id:04d}"
 
         # Determine number of events
-        n_events = random.randint(min_events_per_sequence, max_events_per_sequence)
+        n_events = rng.randint(min_events_per_sequence, max_events_per_sequence)
 
         events: list[Any] = []
         used_events: set[str] = set()
 
         # Generate base timeline
-        start_year = random.randint(1950, 2000)
+        start_year = rng.randint(1950, 2000)
         current_year = start_year
 
         # Add education events (most people have these)
-        if random.random() < 0.8:  # 80% have education
+        if rng.random() < 0.8:  # 80% have education
             for event_type in education_chain:
                 if len(events) < n_events and event_type not in used_events:
                     year_offset = {
@@ -958,8 +957,8 @@ def generate_synthetic_life_events(
                         "graduated_college": 8,
                     }.get(event_type, 0)
                     event_year = start_year + year_offset
-                    event_month = random.randint(1, 12)
-                    event_day = random.randint(1, 28)
+                    event_month = rng.randint(1, 12)
+                    event_day = rng.randint(1, 28)
 
                     event = Event(
                         event_type=event_type,
@@ -971,13 +970,13 @@ def generate_synthetic_life_events(
                     current_year = max(current_year, event_year)
 
         # Add career events
-        if random.random() < 0.7:  # 70% have career
-            career_start = current_year + random.randint(0, 2)
+        if rng.random() < 0.7:  # 70% have career
+            career_start = current_year + rng.randint(0, 2)
             for i, event_type in enumerate(career_chain):
                 if len(events) < n_events and event_type not in used_events:
-                    event_year = career_start + i * random.randint(2, 5)
-                    event_month = random.randint(1, 12)
-                    event_day = random.randint(1, 28)
+                    event_year = career_start + i * rng.randint(2, 5)
+                    event_month = rng.randint(1, 12)
+                    event_day = rng.randint(1, 28)
 
                     event = Event(
                         event_type=event_type, timestamp=datetime(event_year, event_month, event_day), domain="career"
@@ -987,13 +986,13 @@ def generate_synthetic_life_events(
                     current_year = max(current_year, event_year)
 
         # Add family events
-        if random.random() < 0.6:  # 60% have family events
-            family_start = current_year - random.randint(0, 5)
+        if rng.random() < 0.6:  # 60% have family events
+            family_start = current_year - rng.randint(0, 5)
             for event_type in family_chain:
                 if len(events) < n_events and event_type not in used_events:
-                    event_year = family_start + random.randint(0, 3)
-                    event_month = random.randint(1, 12)
-                    event_day = random.randint(1, 28)
+                    event_year = family_start + rng.randint(0, 3)
+                    event_month = rng.randint(1, 12)
+                    event_day = rng.randint(1, 28)
 
                     event = Event(
                         event_type=event_type, timestamp=datetime(event_year, event_month, event_day), domain="family"
@@ -1002,12 +1001,12 @@ def generate_synthetic_life_events(
                     used_events.add(event_type)
 
         # Add health events (less common)
-        if random.random() < 0.3 and len(events) < n_events:  # 30% have health issues
+        if rng.random() < 0.3 and len(events) < n_events:  # 30% have health issues
             for event_type in health_chain:
                 if len(events) < n_events and event_type not in used_events:
-                    event_year = current_year + random.randint(0, 10)
-                    event_month = random.randint(1, 12)
-                    event_day = random.randint(1, 28)
+                    event_year = current_year + rng.randint(0, 10)
+                    event_month = rng.randint(1, 12)
+                    event_day = rng.randint(1, 28)
 
                     event = Event(
                         event_type=event_type, timestamp=datetime(event_year, event_month, event_day), domain="health"
@@ -1017,12 +1016,12 @@ def generate_synthetic_life_events(
 
         # Fill remaining events with random events
         while len(events) < n_events:
-            event_type = random.choice(event_types)
+            event_type = rng.choice(event_types)
             # Allow duplicate event types once all unique types are exhausted
             if event_type not in used_events or len(used_events) >= len(event_types):
-                event_year = current_year + random.randint(0, 5)
-                event_month = random.randint(1, 12)
-                event_day = random.randint(1, 28)
+                event_year = current_year + rng.randint(0, 5)
+                event_month = rng.randint(1, 12)
+                event_day = rng.randint(1, 28)
 
                 # Assign domain based on event type
                 domain = (
@@ -1040,7 +1039,7 @@ def generate_synthetic_life_events(
                                 else (
                                     "finance"
                                     if "financial" in event_type or "inheritance" in event_type
-                                    else random.choice(domains)
+                                    else rng.choice(domains)
                                 )
                             )
                         )
@@ -1067,7 +1066,7 @@ def generate_synthetic_life_events(
         # missing, so missing data hides information from the sequence rather than relabelling it.
         if generate_outcomes:
             if outcome_relationship == "random":
-                outcome = random.choice([0, 1])
+                outcome = rng.choice([0, 1])
             elif outcome_relationship == "event_based":
                 # Outcome based on presence of certain events
                 has_negative_events = any(

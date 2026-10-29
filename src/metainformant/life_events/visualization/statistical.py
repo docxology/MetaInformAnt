@@ -50,7 +50,12 @@ def plot_event_embeddings(
         title: Plot title
 
     Returns:
-        Matplotlib figure if matplotlib available, None otherwise
+        Matplotlib figure if matplotlib available, None otherwise. The axes are labelled with the projection
+        actually drawn: ``method='umap'`` without the umap package falls back to PCA, and says so.
+
+    Raises:
+        ValueError: If ``method`` is not 'pca', 'tsne' or 'umap' (an unknown name used to be drawn as PCA under
+            that name's label).
     """
     if not HAS_MATPLOTLIB:
         logger.warning("matplotlib not available for embedding plotting")
@@ -67,30 +72,32 @@ def plot_event_embeddings(
     reducer_components = min(n_components, embedding_matrix.shape[0], embedding_matrix.shape[1])
     plot_components = max(2, min(reducer_components, 3))
 
+    method_key = method.lower()
+    if method_key not in ("pca", "tsne", "umap"):
+        raise ValueError(f"Unknown reduction method {method!r}. Use 'pca', 'tsne' or 'umap'.")
+    method_used = method_key  # the axes are labelled with the projection that was drawn
+
     if embedding_matrix.shape[1] > plot_components:
         # Reduce to 2D if needed
-        if method.lower() == "pca":
+        if method_key == "pca":
             from sklearn.decomposition import PCA
 
             reducer = PCA(n_components=plot_components)
-        elif method.lower() == "tsne":
+        elif method_key == "tsne":
             from sklearn.manifold import TSNE
 
             reducer = TSNE(n_components=plot_components, random_state=42)
-        elif method.lower() == "umap":
+        else:
             try:
                 import umap
 
                 reducer = umap.UMAP(n_components=plot_components, random_state=42)
             except ImportError:
-                logger.warning("UMAP not available, falling back to PCA")
+                logger.warning("UMAP not available, using PCA (the axes are labelled PCA)")
                 from sklearn.decomposition import PCA
 
                 reducer = PCA(n_components=plot_components)
-        else:
-            from sklearn.decomposition import PCA
-
-            reducer = PCA(n_components=plot_components)
+                method_used = "pca"
 
         embedding_2d = reducer.fit_transform(embedding_matrix)
     else:
@@ -107,7 +114,7 @@ def plot_event_embeddings(
             cmap="viridis",
             alpha=0.7,
         )
-        ax.set_zlabel(f"{method.upper()} Component 3")
+        ax.set_zlabel(f"{method_used.upper()} Component 3")
     else:
         fig, ax = plt.subplots(figsize=figsize)
         scatter = ax.scatter(
@@ -118,8 +125,8 @@ def plot_event_embeddings(
             alpha=0.7,
         )
 
-    ax.set_xlabel(f"{method.upper()} Component 1")
-    ax.set_ylabel(f"{method.upper()} Component 2")
+    ax.set_xlabel(f"{method_used.upper()} Component 1")
+    ax.set_ylabel(f"{method_used.upper()} Component 2")
     ax.set_title(title)
     ax.grid(True, alpha=0.3)
 

@@ -134,7 +134,7 @@ def kaplan_meier_estimator(
             variance = current_surv**2 * greenwood_sum
             se = math.sqrt(max(0.0, variance))
 
-            # 95% CI using log transform
+            # 95% CI: plain (linear) Greenwood interval, clipped to [0, 1]
             ci_lower = max(0.0, current_surv - 1.96 * se)
             ci_upper = min(1.0, current_surv + 1.96 * se)
 
@@ -538,8 +538,8 @@ def recurrent_events(
     for t in unique_times:
         # Count events at this time
         n_events_at_t = sum(1 for et in all_event_times if et == t)
-        # Number at risk = subjects with max observation time >= t
-        n_at_risk = sum(1 for i in range(n) if max(times[i]) >= t)
+        # Number at risk = subjects with max observation time >= t (a subject with no times is never at risk)
+        n_at_risk = sum(1 for i in range(n) if times[i] and max(times[i]) >= t)
         if n_at_risk > 0:
             cumulative += n_events_at_t / n_at_risk
         mcf_entries.append((t, cumulative))
