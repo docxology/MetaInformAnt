@@ -73,6 +73,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reports a stale core API reference.
 
 ### Changed
+- RNA acquisition anchors its first-pass service deadline at admission, before
+  synchronous logging. Admission queue time remains outside that budget.
+- Unknown pharmacogenomic alleles now produce Indeterminate calls, unsupported
+  genes raise instead of borrowing CYP2D6 bands, and missing ACMG frequencies
+  cannot supply rarity evidence. Unscored diplotypes retain a missing score.
+- NCBI genome adapters use Datasets v2 report, sequence-report and download
+  endpoints, with explicit request errors, pagination and annotation selection.
+  Package downloads preserve existing archives on failed or interrupted transfers;
+  repeated assembly accessions across report pages raise an integrity error.
+- DDM likelihoods use a first-passage density; sequence evolution honours its
+  mutation rate; population simulation adds an ancestral recombination graph
+  and demographic sampling rather than heuristic summary substitutions.
+- Multi-trait colocalization enumerates causal-sharing configurations in log
+  space, with explicit prior and study-model assumptions.
+- Long-read workflows share SAM-compatible MM/ML decoding, preserve unknown
+  modification probabilities, reject stale MN sequence lengths, and retain phasing keys through JSON.
+- MGF parsing rejects truncated records; multiomics CCA shares a ridge core
+  and rejects unregularized rank degeneracy; Cox and log-rank calculations
+  handle ties and group covariance explicitly.
+- Information metrics respect logarithm units, enrichment tests validate
+  their background and correction choices, and failed model evaluations
+  remain failures instead of zero scores. Association covariance uses the design
+  pseudoinverse directly, and pure-Python R-squared rejects one-sample folds.
+- Single-cell and spatial methods validate graph weights, diffusion spectra,
+  missing coordinates and undefined statistics. Requested algorithms are no
+  longer silently replaced by unrelated fallbacks.
+- Structural-variant processing uses both translocation breakends; protein
+  structure analysis uses explicit contact, surface and alignment algorithms.
+  Missing structure fields remain missing.
+- Domain documentation and the active backlog now describe these contracts;
+  unresolved provenance, approximation and live-service work remains open.
 - The blocking dependency audit covers every package in `uv.lock` (all extras,
   dependency groups and environment markers): `security_checks.sh` exports a
   PEP 751 `pylock.toml` and audits it in place against OSV, which carries both
