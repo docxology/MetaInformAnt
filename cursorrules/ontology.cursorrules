@@ -31,5 +31,5 @@
   ```python
   from metainformant.core import io
   from metainformant.core.utils import logging
-  from metainformant.ontology import utils
+  from metainformant.ontology.annotation import annotate
   ```

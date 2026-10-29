@@ -127,13 +127,14 @@ Ensure `.tmp/` and `.cache/` are in `.gitignore`:
 
 ### File I/O Patterns
 ```python
-from metainformant.core import io, paths
+from metainformant.core import io
+from metainformant.core.io import paths
 from pathlib import Path
 
 # Reading files
-data = io.load_json("config/example.yaml")
+data = io.load_yaml("config/example.yaml")
 records = list(io.read_jsonl("data/records.jsonl"))
-df = io.load_csv("data/table.csv")
+df = io.read_csv("data/table.csv")
 
 # Writing files (always to output/ by default)
 output_path = Path("output/module/subdir") / "result.json"
@@ -335,7 +336,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 # Core imports
-from metainformant.core import io, paths, logging, config
+from metainformant.core import io
+from metainformant.core.io import paths
+from metainformant.core.utils import config, logging
 
 # Domain imports (lazy when optional dependencies)
 try:
@@ -527,15 +530,15 @@ Each module should have:
 
 ### Workflow Patterns
 ```python
-from metainformant.core.workflow import run_config_based_workflow
+from metainformant.core.execution.workflow import run_config_based_workflow
 
 # Domain-specific workflow
-from metainformant.rna.workflow import load_workflow_config, plan_workflow, execute_workflow
+from metainformant.rna.engine.workflow import load_workflow_config, plan_workflow, execute_workflow
 
 config = load_workflow_config("config/amalgkit/species.yaml")
 steps = plan_workflow(config)
-# Execute steps
-return_codes = execute_workflow(config)
+# Execute steps; returns a WorkflowExecutionResult
+result = execute_workflow(config)
 ```
 
 **Command-line execution** (recommended for end-to-end workflows):

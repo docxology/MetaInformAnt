@@ -31,5 +31,5 @@
   ```python
   from metainformant.core import io
   from metainformant.core.utils import logging
-  from metainformant.spatial import utils
+  from metainformant.spatial.analysis import autocorrelation
   ```

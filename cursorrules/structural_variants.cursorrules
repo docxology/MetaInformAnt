@@ -31,5 +31,5 @@
   ```python
   from metainformant.core import io
   from metainformant.core.utils import logging
-  from metainformant.structural_variants import utils
+  from metainformant.structural_variants.annotation import functional_impact
   ```

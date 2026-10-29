@@ -31,5 +31,5 @@
   ```python
   from metainformant.core import io
   from metainformant.core.utils import logging
-  from metainformant.singlecell import utils
+  from metainformant.singlecell.analysis import clustering
   ```

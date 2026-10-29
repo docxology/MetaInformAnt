@@ -31,5 +31,5 @@
   ```python
   from metainformant.core import io
   from metainformant.core.utils import logging
-  from metainformant.math import utils
+  from metainformant.math.bayesian import inference
   ```

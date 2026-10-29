@@ -31,5 +31,5 @@
   ```python
   from metainformant.core import io
   from metainformant.core.utils import logging
-  from metainformant.multiomics import utils
+  from metainformant.multiomics.analysis import descriptive_summary
   ```

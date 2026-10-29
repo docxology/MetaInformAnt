@@ -31,5 +31,5 @@
   ```python
   from metainformant.core import io
   from metainformant.core.utils import logging
-  from metainformant.networks import utils
+  from metainformant.networks.analysis import community
   ```
