@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, cast
 import numpy as np
 
 from metainformant.core.utils import logging
-from metainformant.gwas.visualization.utils import chromosome_label, get_chromosome, get_position
+from metainformant.gwas.visualization.utils import record_placement
 
 logger = logging.get_logger(__name__)
 
@@ -171,7 +171,8 @@ def variant_density_plot(
 
     Args:
         variants: List of variant dicts with a chromosome ("CHROM", "chrom", "chromosome", "chr" or "CHR") and a
-                  position ("POS", "pos", "position" or "BP") key, or list of positions, or
+                  position ("POS", "pos", "position" or "BP") key (a variant without either makes the plot fail
+                  with an error that names the accepted keys), or list of positions, or
                   (positions, chromosome_lengths) tuple
         output_file: Optional output file path
         title: Plot title
@@ -191,12 +192,14 @@ def variant_density_plot(
     if isinstance(variants, (list, tuple)) and len(variants) > 0 and isinstance(variants[0], dict):
         # Extract chromosome and position from list of dicts
         chrom_positions: Dict[str, List[int]] = {}
-        for v in variants:
-            chrom = chromosome_label(get_chromosome(v, "1"))
-            pos = int(get_position(v, 0))
-            if chrom not in chrom_positions:
-                chrom_positions[chrom] = []
-            chrom_positions[chrom].append(pos)
+        for index, v in enumerate(variants):
+            try:
+                chrom, position = record_placement(v, index, plot="variant_density_plot")
+            except ValueError as exc:
+                # A variant with no chromosome or position cannot be placed: it used to go to chromosome 1, position 0
+                logger.error(str(exc))
+                return {"status": "failed", "error": str(exc)}
+            chrom_positions.setdefault(chrom, []).append(int(position))
     else:
         if not variants:
             logger.error("No variant positions provided")
@@ -549,6 +552,14 @@ def transition_transversion_plot(
 ) -> Dict[str, Any]:
     """Create a plot showing transition vs transversion ratios.
 
+    From variant records, only single-base substitutions between A, C, G and T (in either case) are classified:
+    A<->G and C<->T are transitions and every other pair a transversion. An indel, a multi-allelic site, an
+    ambiguity code, or a site whose REF and ALT are equal is classified as neither (and counted in
+    ``n_unclassified``); they used to be counted as transversions. The ratio is undefined without a
+    transversion, so ``ts_tv_ratio`` is then None and the title says so, where it used to be reported as 0.0.
+    In the array form, a window without a transversion has no ratio: it is left out of the ratio panel and of
+    its mean, and counted in ``n_windows_without_transversions``.
+
     Args:
         variants: List of variant dicts with "REF" and "ALT" keys,
                   or dict with "transitions"/"transversions" arrays
@@ -556,7 +567,7 @@ def transition_transversion_plot(
         title: Plot title
 
     Returns:
-        Dict with status and metadata including ts_tv_ratio
+        Dict with status and metadata including ts_tv_ratio (None when it is undefined)
     """
     try:
         import matplotlib.pyplot as plt
@@ -583,14 +594,17 @@ def transition_transversion_plot(
             # Compute Ts/Tv from individual variant records
             ts_count = 0
             tv_count = 0
+            n_unclassified = 0
             for v in variants:
-                ref = v.get("REF", "")
-                alt = v.get("ALT", "")
-                if len(ref) == 1 and len(alt) == 1:
+                ref = str(v.get("REF", "")).upper()
+                alt = str(v.get("ALT", "")).upper()
+                if ref in "ACGT" and alt in "ACGT" and len(ref) == 1 and len(alt) == 1 and ref != alt:
                     if (ref, alt) in transition_pairs:
                         ts_count += 1
                     else:
                         tv_count += 1
+                else:
+                    n_unclassified += 1
 
             # Create a simple bar chart for Ts vs Tv
             fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
@@ -621,8 +635,8 @@ def transition_transversion_plot(
             sub_matrix = np.zeros((4, 4))
             base_idx = {b: i for i, b in enumerate(bases)}
             for v in variants:
-                ref = v.get("REF", "")
-                alt = v.get("ALT", "")
+                ref = str(v.get("REF", "")).upper()
+                alt = str(v.get("ALT", "")).upper()
                 if ref in base_idx and alt in base_idx:
                     sub_matrix[base_idx[ref]][base_idx[alt]] += 1
 
@@ -643,9 +657,10 @@ def transition_transversion_plot(
                     if val > 0:
                         ax2.text(j, i, str(val), ha="center", va="center", fontsize=10)
 
-            ts_tv_ratio = ts_count / tv_count if tv_count > 0 else 0.0
+            ts_tv_ratio = ts_count / tv_count if tv_count > 0 else None
 
-            fig.suptitle(f"{title} (Ts/Tv = {ts_tv_ratio:.2f})", fontsize=14)
+            ratio_text = f"{ts_tv_ratio:.2f}" if ts_tv_ratio is not None else "undefined, no transversions"
+            fig.suptitle(f"{title} (Ts/Tv = {ratio_text})", fontsize=14)
             plt.tight_layout()
 
             if output_file:
@@ -659,6 +674,7 @@ def transition_transversion_plot(
                 "transitions": ts_count,
                 "transversions": tv_count,
                 "n_variants": len(variants),
+                "n_unclassified": n_unclassified,
             }
 
     # Legacy dict input format
@@ -689,20 +705,16 @@ def transition_transversion_plot(
         ax1.grid(True, alpha=0.3)
 
         # Plot 2: Ts/Tv ratio
-        ts_tv_ratios = []
-        for ts, tv in zip(transitions_list, transversions_list):
-            if tv > 0:
-                ts_tv_ratios.append(ts / tv)
-            else:
-                ts_tv_ratios.append(0)
+        # A window without a transversion has no ratio (NaN): not 0, which would drag the mean down
+        ts_tv_ratios = [ts / tv if tv > 0 else float("nan") for ts, tv in zip(transitions_list, transversions_list)]
+        n_without_transversions = sum(1 for ratio in ts_tv_ratios if np.isnan(ratio))
+        mean_ratio: Optional[float] = (
+            None if n_without_transversions == len(ts_tv_ratios) else float(np.nanmean(ts_tv_ratios))
+        )
 
         ax2.plot(positions, ts_tv_ratios, "g-", label="Ts/Tv Ratio")
-        ax2.axhline(
-            y=np.mean(ts_tv_ratios),
-            color="red",
-            linestyle="--",
-            label=f"Mean: {np.mean(ts_tv_ratios):.2f}",
-        )
+        if mean_ratio is not None:
+            ax2.axhline(y=mean_ratio, color="red", linestyle="--", label=f"Mean: {mean_ratio:.2f}")
         ax2.set_xlabel("Genomic Position")
         ax2.set_ylabel("Ts/Tv Ratio")
         ax2.set_title("Transition/Transversion Ratio")
@@ -716,9 +728,12 @@ def transition_transversion_plot(
             plt.savefig(output_file, dpi=300, bbox_inches="tight")
             logger.info(f"Saved transition/transversion plot to {output_file}")
 
-        mean_ratio = float(np.mean(ts_tv_ratios))
         plt.close(fig)
-        return {"status": "success", "ts_tv_ratio": mean_ratio}
+        return {
+            "status": "success",
+            "ts_tv_ratio": mean_ratio,
+            "n_windows_without_transversions": n_without_transversions,
+        }
 
     logger.error("Invalid input format for transition/transversion plot")
     return {"status": "failed", "error": "Invalid input format"}

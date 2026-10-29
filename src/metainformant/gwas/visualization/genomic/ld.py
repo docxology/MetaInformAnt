@@ -60,6 +60,7 @@ def compute_ld_decay(
     max_distance: int = 500000,
     n_bins: int = 50,
     chromosomes: Optional[List[int]] = None,
+    seed: int = 42,
 ) -> Dict[str, Any]:
     """Compute mean r-squared in distance bins across variant pairs.
 
@@ -74,6 +75,9 @@ def compute_ld_decay(
         n_bins: Number of distance bins.
         chromosomes: Optional chromosome assignments per variant. When provided,
             only pairs on the same chromosome are evaluated.
+        seed: Seed of the draw used when there are more than 100000 candidate pairs and 100000 of them are
+            sampled. The draw has its own generator: the same inputs and seed always give the same curve,
+            and the module-level ``random`` state is neither read nor changed (it used to be reseeded to 42).
 
     Returns:
         Dictionary with status, bin_centers, mean_r2, n_pairs per bin, and total_pairs.
@@ -124,8 +128,7 @@ def compute_ld_decay(
     # Subsample if needed
     if len(candidate_pairs) > max_pairs:
         logger.info(f"Subsampling {max_pairs} pairs from {len(candidate_pairs)} candidates")
-        random.seed(42)
-        candidate_pairs = random.sample(candidate_pairs, max_pairs)
+        candidate_pairs = random.Random(seed).sample(candidate_pairs, max_pairs)
 
     total_pairs = 0
     for i, j in candidate_pairs:

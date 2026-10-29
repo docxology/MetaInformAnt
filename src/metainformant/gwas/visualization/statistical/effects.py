@@ -19,8 +19,10 @@ from metainformant.gwas.visualization.utils import (
     chromosome_label,
     chromosome_sort_key,
     cumulative_chromosome_offsets,
+    get_beta,
     get_chromosome,
     get_position,
+    record_placement,
 )
 
 logger = logging.get_logger(__name__)
@@ -641,8 +643,14 @@ def effect_direction_plot(
 ) -> dict[str, Any]:
     """Create an effect direction plot showing beta coefficients by chromosome.
 
+    Chromosome, position and effect are read under every spelling of
+    :mod:`metainformant.gwas.visualization.utils` (``CHROM``/``chrom``/..., ``POS``/``pos``/``BP``/...,
+    ``BETA``/``beta``). A result without an effect estimate (NaN, None or ``"NA"``) is not drawn, rather than
+    drawn as an effect of 0, and ``n_without_effect`` reports how many were left out. A result without a
+    chromosome or position fails the plot with an error that names the accepted keys.
+
     Args:
-        results: GWAS results with CHROM, POS, BETA columns
+        results: GWAS results, each with a chromosome, a position and a beta
         output_path: Path to save the plot
         figsize: Figure size
 
@@ -665,18 +673,26 @@ def effect_direction_plot(
 
         # Extract data
         chromosomes: list[str] = []
-        positions = []
-        betas = []
+        positions: list[float] = []
+        betas: list[float] = []
+        n_without_effect = 0
 
-        for result in results:
-            chrom = chromosome_label(get_chromosome(result, 1))
-            pos = result.get("POS", result.get("pos", 0))
-            beta = result.get("BETA", result.get("beta", 0))
+        for index, result in enumerate(results):
+            chrom, pos = record_placement(result, index, plot="effect_direction_plot")
+            beta = get_beta(result)
+            if math.isnan(beta):
+                n_without_effect += 1
+                continue
 
             chromosomes.append(chrom)
             positions.append(pos)
             betas.append(beta)
 
+        if n_without_effect:
+            logger.warning(
+                f"{n_without_effect} of {len(results)} results have no effect estimate and are not drawn "
+                "in the effect direction plot"
+            )
         if not betas:
             return {"status": "failed", "error": "No beta values found"}
 
@@ -732,6 +748,7 @@ def effect_direction_plot(
             "n_chromosomes": len(unique_chroms),
             "positive_effects": sum(1 for b in betas if b > 0),
             "negative_effects": sum(1 for b in betas if b < 0),
+            "n_without_effect": n_without_effect,
             "output_path": str(output_path) if output_path else None,
         }
 

@@ -51,10 +51,17 @@ class TestLoadTraitsWithIds:
         assert ids == ["C15", "C16"]
         assert vals == pytest.approx([0.9, 0.95])
 
-    def test_missing_id_column_returns_empty(self, tmp_path) -> None:
+    def test_missing_id_column_is_an_error(self, tmp_path) -> None:
+        """An explicitly requested ID column that is not in the file used to give two empty lists, silently."""
         f = tmp_path / "pheno.csv"
         f.write_text("a,b\n1,2\n")
-        ids, vals = traits.load_traits_with_ids(f, id_column="nonexistent")
+        with pytest.raises(ValueError, match="id_column 'nonexistent' is not a column"):
+            traits.load_traits_with_ids(f, id_column="nonexistent")
+
+    def test_no_id_column_to_detect_returns_empty(self, tmp_path) -> None:
+        f = tmp_path / "pheno.csv"
+        f.write_text("a,b\n1,2\n")
+        ids, vals = traits.load_traits_with_ids(f)
         assert ids == [] and vals == []
 
 

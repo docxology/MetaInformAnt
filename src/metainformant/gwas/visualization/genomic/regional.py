@@ -11,7 +11,12 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 
 from metainformant.core.utils import logging
-from metainformant.gwas.visualization.utils import chromosome_label, get_chromosome, standardize_result_columns
+from metainformant.gwas.visualization.utils import (
+    chromosome_label,
+    get_chromosome,
+    require_result_columns,
+    standardize_result_columns,
+)
 
 logger = logging.get_logger(__name__)
 
@@ -24,6 +29,55 @@ def _on_chromosome(chrom_column: Any, chrom: Any) -> Any:
     """
     labels = {value: chromosome_label(value) for value in chrom_column.unique()}
     return chrom_column.map(labels) == chromosome_label(chrom)
+
+
+def _standardized_results(results: Any) -> Any:
+    """Results as a DataFrame with the standard ``CHR``, ``BP`` and ``P`` columns, or None for other input."""
+    if isinstance(results, list):
+        import pandas as pd
+
+        # Normalize column names: chrom / CHROM / ... become CHR, pos / POS / ... become BP, p_value / ... become P
+        return standardize_result_columns(pd.DataFrame(results))
+    if hasattr(results, "columns"):
+        return standardize_result_columns(results)
+    return None
+
+
+def _results_in_region(results_df: Any, chrom: Any, start: Optional[int], end: Optional[int], *, plot: str) -> Any:
+    """Copy of the rows of ``results_df`` that lie in the region and can be drawn.
+
+    A row counts when it is on ``chrom`` (if given) and between ``start`` and ``end`` (each optional, and
+    applied whether or not a chromosome is given). A result without a usable position or p-value (a failed
+    test carries NaN or "NA") has nothing to draw: it is left out and counted in a warning.
+
+    Raises:
+        ValueError: If the results lack a column the region needs. The message names the accepted keys, where
+            a bare ``KeyError`` used to come from the middle of the plot. ``CHR`` is needed only when
+            ``chrom`` is given. An empty input has no columns and is not an error.
+    """
+    if len(results_df) == 0:
+        return results_df.copy()
+    require_result_columns(results_df, (["CHR"] if chrom is not None else []) + ["BP", "P"], plot=plot)
+
+    import pandas as pd
+
+    frame = results_df.copy()
+    frame["BP"] = pd.to_numeric(frame["BP"], errors="coerce")
+    frame["P"] = pd.to_numeric(frame["P"], errors="coerce")
+    drawable = frame["BP"].notna() & frame["P"].notna()
+    if not drawable.all():
+        logger.warning(
+            f"{int((~drawable).sum())} of {len(frame)} results have no usable position or p-value "
+            f"(failed or missing tests) and are not drawn in {plot}"
+        )
+    mask = drawable
+    if chrom is not None:
+        mask = mask & _on_chromosome(frame["CHR"], chrom)
+    if start is not None:
+        mask = mask & (frame["BP"] >= start)
+    if end is not None:
+        mask = mask & (frame["BP"] <= end)
+    return frame[mask].copy()
 
 
 def _region_label(chrom: Any, start: Optional[int], end: Optional[int]) -> str:
@@ -74,27 +128,13 @@ def gene_annotation_plot(
         return {"status": "skipped", "reason": "matplotlib not available"}
 
     # Convert list of dicts to internal format
-    if isinstance(results, list):
-        import pandas as pd
-
-        # Normalize column names: chrom / CHROM / ... become CHR, pos / POS / ... become BP, p_value / ... become P
-        results_df = standardize_result_columns(pd.DataFrame(results))
-    elif hasattr(results, "columns"):
-        results_df = standardize_result_columns(results)
-    else:
+    results_df = _standardized_results(results)
+    if results_df is None:
         logger.error("Input data must be a list of dicts or DataFrame")
         return {"status": "failed", "reason": "Invalid input data format"}
 
     # Filter data for region if specified
-    if chrom is not None:
-        mask = _on_chromosome(results_df["CHR"], chrom)
-        if start is not None:
-            mask = mask & (results_df["BP"] >= start)
-        if end is not None:
-            mask = mask & (results_df["BP"] <= end)
-        region_data = results_df[mask].copy()
-    else:
-        region_data = results_df.copy()
+    region_data = _results_in_region(results_df, chrom, start, end, plot="gene_annotation_plot")
 
     if region_data.empty:
         logger.warning(f"No data found for region {chrom}:{start}-{end}")
@@ -549,26 +589,25 @@ def regional_plot(
         return {"status": "skipped", "reason": "matplotlib not available"}
 
     # Convert list of dicts to DataFrame
-    if isinstance(results, list):
-        import pandas as pd
-
-        # Normalize column names: chrom / CHROM / ... become CHR, pos / POS / ... become BP, p_value / ... become P
-        results_df = standardize_result_columns(pd.DataFrame(results))
-    elif hasattr(results, "columns"):
-        results_df = standardize_result_columns(results)
-    else:
+    results_df = _standardized_results(results)
+    if results_df is None:
         return {"status": "failed", "reason": "Invalid input data format"}
 
     # Filter data for the specified region
-    if chrom is not None:
-        mask = _on_chromosome(results_df["CHR"], chrom)
-        if start is not None:
-            mask = mask & (results_df["BP"] >= start)
-        if end is not None:
-            mask = mask & (results_df["BP"] <= end)
-        region_data = results_df[mask].copy()
-    else:
-        region_data = results_df.copy()
+    region_data = _results_in_region(results_df, chrom, start, end, plot="regional_plot")
+
+    if recombination_rate is not None:
+        if not hasattr(recombination_rate, "columns"):
+            raise ValueError(
+                "regional_plot: recombination_rate must be a DataFrame with 'BP' and 'RATE' columns, "
+                f"got {type(recombination_rate).__name__}"
+            )
+        missing_recombination = [name for name in ("BP", "RATE") if name not in recombination_rate.columns]
+        if missing_recombination:
+            raise ValueError(
+                f"regional_plot: recombination_rate has no {missing_recombination} column(s); it needs 'BP' and "
+                f"'RATE' (and may carry 'CHR'); the columns present are {sorted(map(str, recombination_rate.columns))}"
+            )
 
     if region_data.empty:
         chrom_label = chrom or "unknown"
@@ -600,7 +639,7 @@ def regional_plot(
     )
 
     # Add recombination rate if provided (an open end of the region leaves that side unbounded)
-    if recombination_rate is not None and hasattr(recombination_rate, "columns"):
+    if recombination_rate is not None:
         recomb_data = recombination_rate
         if chrom is not None and "CHR" in recomb_data.columns:
             recomb_data = recomb_data[_on_chromosome(recomb_data["CHR"], chrom)]

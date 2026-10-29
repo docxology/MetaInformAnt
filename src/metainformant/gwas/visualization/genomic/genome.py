@@ -16,7 +16,12 @@ from metainformant.gwas.visualization.utils import (
     chromosome_label,
     chromosome_sort_key,
     cumulative_chromosome_offsets,
-    get_chromosome,
+    finite_float,
+    get_p_value,
+    record_placement,
+    require_result_columns,
+    safe_log10_p,
+    standardize_result_columns,
 )
 
 if TYPE_CHECKING:
@@ -59,36 +64,48 @@ def circular_manhattan_plot(
         logger.warning("matplotlib not available for circular Manhattan plot")
         return {"status": "failed", "error": "matplotlib not available"}
 
-    # Convert list-of-dicts to parallel arrays
-    if isinstance(results_df, list):
-        if not results_df:
-            return {"status": "failed", "error": "No results provided"}
-        chroms_list = []
-        positions_list = []
-        pvalues_list = []
-        for entry in results_df:
-            chroms_list.append(get_chromosome(entry, "1"))
-            positions_list.append(entry.get("POS", entry.get("BP", entry.get("pos", 0))))
-            pvalues_list.append(entry.get("p_value", entry.get("P", entry.get("pval", 1.0))))
-    elif hasattr(results_df, "columns"):
-        # DataFrame path
-        required_cols = ["CHR", "BP", "P"]
-        missing_cols = [col for col in required_cols if col not in results_df.columns]
-        if missing_cols:
-            logger.error(f"Missing required columns: {missing_cols}")
+    # Convert list-of-dicts to parallel arrays. Chromosome, position and p-value are read under every spelling
+    # of the shared helpers; a result without a p-value (a failed test) is not drawn, and one that cannot be
+    # placed is an error rather than a variant on chromosome 1 at position 0.
+    try:
+        if isinstance(results_df, list):
+            if not results_df:
+                return {"status": "failed", "error": "No results provided"}
+            chroms_list = []
+            positions_list = []
+            pvalues_list = []
+            for index, entry in enumerate(results_df):
+                chromosome, position = record_placement(entry, index, plot="circular_manhattan_plot")
+                chroms_list.append(chromosome)
+                positions_list.append(position)
+                pvalues_list.append(get_p_value(entry))
+        elif hasattr(results_df, "columns"):
+            standardized = standardize_result_columns(results_df)
+            require_result_columns(standardized, ("CHR", "BP", "P"), plot="circular_manhattan_plot")
+            chroms_list = [chromosome_label(value) for value in standardized["CHR"].tolist()]
+            positions_list = standardized["BP"].tolist()
+            pvalues_list = [finite_float(value) for value in standardized["P"].tolist()]
+        else:
+            logger.error("Input data must be a DataFrame or list of dicts")
             return {
                 "status": "failed",
-                "error": f"Missing required columns: {missing_cols}",
+                "error": "Input data must be a DataFrame or list of dicts",
             }
-        chroms_list = results_df["CHR"].tolist()
-        positions_list = results_df["BP"].tolist()
-        pvalues_list = results_df["P"].tolist()
-    else:
-        logger.error("Input data must be a DataFrame or list of dicts")
-        return {
-            "status": "failed",
-            "error": "Input data must be a DataFrame or list of dicts",
-        }
+    except ValueError as exc:
+        logger.error(str(exc))
+        return {"status": "failed", "error": str(exc)}
+
+    with_p_value = [i for i, p in enumerate(pvalues_list) if not math.isnan(p)]
+    if len(with_p_value) < len(pvalues_list):
+        logger.warning(
+            f"{len(pvalues_list) - len(with_p_value)} of {len(pvalues_list)} results have no p-value "
+            "(failed or missing tests) and are not drawn in the circular Manhattan plot"
+        )
+        chroms_list = [chroms_list[i] for i in with_p_value]
+        positions_list = [positions_list[i] for i in with_p_value]
+        pvalues_list = [pvalues_list[i] for i in with_p_value]
+    if not pvalues_list:
+        return {"status": "failed", "error": "No results with a p-value"}
 
     fig, polar_ax = plt.subplots(1, 1, figsize=(10, 10), subplot_kw=dict(projection="polar"))
     ax = cast("PolarAxes", polar_ax)  # projection="polar" yields a PolarAxes
@@ -273,9 +290,13 @@ def chromosome_ideogram(
         if not chromosome_data:
             return {"status": "failed", "error": "No chromosome data provided"}
         chromosome_lengths: Dict[str, int] = {}
-        for entry in chromosome_data:
-            chrom = str(get_chromosome(entry, "1"))
-            pos = int(entry.get("POS", entry.get("BP", entry.get("pos", 0))))
+        for index, entry in enumerate(chromosome_data):
+            try:
+                chrom, position = record_placement(entry, index, plot="chromosome_ideogram")
+            except ValueError as exc:
+                logger.error(str(exc))
+                return {"status": "failed", "error": str(exc)}
+            pos = int(position)
             if chrom not in chromosome_lengths or pos > chromosome_lengths[chrom]:
                 chromosome_lengths[chrom] = pos
     elif isinstance(chromosome_data, dict):
@@ -526,8 +547,14 @@ def manhattan_plot(
 ) -> dict[str, Any]:
     """Create a Manhattan plot for GWAS results.
 
+    Chromosome, position and p-value are read under every spelling of
+    :mod:`metainformant.gwas.visualization.utils` (``CHROM``/``chrom``/..., ``POS``/``pos``/``BP``/...,
+    ``p_value``/``pvalue``/``pval``/``P``). A result without a p-value (a failed test: NaN, None or ``"NA"``) is
+    not drawn and not counted in ``n_variants``; ``n_without_p_value`` reports how many were left out. A result
+    without a chromosome or position fails the plot with an error that names the accepted keys.
+
     Args:
-        results: List of dictionaries with CHROM, POS, p_value keys
+        results: List of dictionaries with a chromosome, a position and a p-value
         output_path: Path to save the plot
         significance_threshold: P-value threshold for significance line
         suggestiveness_threshold: P-value threshold for suggestive significance line
@@ -554,11 +581,28 @@ def manhattan_plot(
         chromosomes: List[str] = []
         positions: List[float] = []
         p_values: List[float] = []
+        n_without_p_value = 0
 
-        for result in results:
-            chromosomes.append(chromosome_label(get_chromosome(result, 1)))
-            positions.append(result.get("POS", result.get("pos", 0)))
-            p_values.append(result.get("p_value", result.get("P", 1.0)))
+        for index, result in enumerate(results):
+            # Every spelling of the shared helpers is read; a result that cannot be placed raises ValueError
+            # naming the accepted keys (reported below as the failure), where it used to be drawn on
+            # chromosome 1 at position 0.
+            chromosome, position = record_placement(result, index, plot="manhattan_plot")
+            p_value = get_p_value(result)
+            if math.isnan(p_value):
+                n_without_p_value += 1  # a failed test has no p-value: nothing to draw, and it is not p = 1
+                continue
+            chromosomes.append(chromosome)
+            positions.append(position)
+            p_values.append(p_value)
+
+        if n_without_p_value:
+            logger.warning(
+                f"{n_without_p_value} of {len(results)} results have no p-value (failed or missing tests) "
+                "and are not drawn in the Manhattan plot"
+            )
+        if not p_values:
+            return {"status": "failed", "error": "No results with a p-value"}
 
         # Chromosomes in natural order (1, 2, ..., 10, ..., X), laid end to end: a variant's x position is
         # its chromosome's offset plus its position on that chromosome
@@ -570,7 +614,7 @@ def manhattan_plot(
         x_positions = [chrom_offsets[chrom] + pos for chrom, pos in zip(chromosomes, positions)]
 
         # Convert p-values to -log10
-        neg_log_p = [-math.log10(max(p, 1e-300)) for p in p_values]
+        neg_log_p = [safe_log10_p(p) for p in p_values]
 
         # Create plot
         fig, ax = plt.subplots(figsize=figsize)
@@ -642,7 +686,8 @@ def manhattan_plot(
 
         return {
             "status": "success",
-            "n_variants": len(results),
+            "n_variants": len(p_values),
+            "n_without_p_value": n_without_p_value,
             "n_chromosomes": len(unique_chroms),
             "significance_threshold": significance_threshold,
             "chromosomes": unique_chroms,

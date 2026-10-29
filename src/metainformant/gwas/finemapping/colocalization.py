@@ -3,7 +3,7 @@
 Extends pairwise colocalization to multiple traits, provides specialized
 GWAS-eQTL colocalization with gene-level summaries, implements the CLPP
 (colocalization posterior probability) method from individual PIPs, and
-supports region-based colocalization with automatic window selection.
+supports region-based colocalization over sliding windows.
 
 Evidence is built from Wakefield approximate Bayes factors, which need the
 scale of each trait's effect estimates: pass standard errors, or sample sizes
@@ -12,8 +12,19 @@ scale of each trait's effect estimates: pass standard errors, or sample sizes
 Traits given neither are scored on the z-score scale. All accumulation is in log
 space, so strong signals (|z| in the tens or hundreds) cannot overflow.
 
+The probability that ``N`` traits share one causal variant
+(:func:`multi_trait_coloc`) is the exact posterior of coloc's model generalised to ``N``
+traits (a partition model in the manner of MOLOC and HyPrColoc): each trait has no causal
+variant or one, traits with the same causal variant form a group, and a group of ``k``
+traits at one variant has prior ``p1 * (p12 / p1) ** (k - 1)``. For two traits it is coloc's
+``PP.H4``. It was a heuristic, ``sum_v prod_t BF / (n + sum_t sum_v BF + sum_v prod_t BF)``,
+whose flat priors and missing "distinct variants" hypothesis made it call a null trait
+"shared" whenever the other traits shared a signal (see :func:`multi_trait_coloc`).
+
 References:
     - Giambartolomei et al. (2014) PLoS Genetics 10:e1004383 (coloc)
+    - Giambartolomei et al. (2018) Bioinformatics 34:2538-2545 (MOLOC)
+    - Foley et al. (2021) Nature Communications 12:764 (HyPrColoc)
     - Hormozdiari et al. (2016) AJHG 98:667-680 (eCAVIAR / CLPP)
     - Wallace (2020) PLoS Genetics 16:e1008720 (coloc extensions)
     - Wakefield (2009) Genetic Epidemiology 33:79-86 (approximate Bayes factors)
@@ -26,14 +37,19 @@ from collections.abc import Mapping, Sequence
 from numbers import Real
 from typing import Any, cast
 
+import numpy as np
+
 from metainformant.core.utils.logging import get_logger
-from metainformant.gwas.finemapping.credible_sets import (
-    colocalization as _pairwise_coloc,
-    compute_log_bayes_factors,
-    log_sum_exp,
-)
+from metainformant.gwas.finemapping.credible_sets import colocalization as _pairwise_coloc, compute_log_bayes_factors
 
 logger = get_logger(__name__)
+
+#: PP above which a shared causal variant is called strong evidence (coloc's conventional PP.H4 cut-off).
+COLOC_STRONG_THRESHOLD = 0.8
+#: PP above which a shared causal variant is called moderate evidence.
+COLOC_MODERATE_THRESHOLD = 0.5
+#: Most traits :func:`multi_trait_coloc` evaluates exactly: the cost grows as ``2 ** N`` per variant.
+MAX_EXACT_TRAITS = 10
 
 # ---------------------------------------------------------------------------
 # Public API
@@ -49,14 +65,34 @@ def multi_trait_coloc(
     sample_sizes: Mapping[str, float | Sequence[float]] | None = None,
     maf: float | Sequence[float] | None = None,
     case_fractions: Mapping[str, float] | None = None,
+    prior_p1: float = 1e-4,
+    prior_p12: float = 1e-5,
 ) -> dict:
     """Multi-trait colocalization extending pairwise analysis to N traits.
 
     For each pair of traits, runs pairwise colocalization and then
-    synthesizes results into an overall summary. Also computes a
-    multi-trait posterior probability of a single shared causal variant
-    using the product-of-Bayes-factors approach. Bayes factors are summed
-    in log space, so the result stays finite however strong the signals are.
+    synthesizes results into an overall summary. ``multi_trait_pp_shared`` is the
+    posterior probability that **all** traits have the same causal variant.
+
+    The model is coloc's, generalised to ``N`` traits (see the module docstring). Each trait has
+    either no causal variant in the region or exactly one; traits with the same causal variant
+    form a group. A set of ``k`` traits sharing one specific variant has prior
+    ``p1 * (p12 / p1) ** (k - 1)`` (``p1`` for one trait, ``p12`` for two, ``p12 ** 2 / p1`` for
+    three, ...), and the Bayes factors of the traits multiply. The probability of "all share" is
+    the weight of the configurations in which every trait has the same variant, over the weight of
+    every configuration, computed exactly (a dynamic programme over variants and trait subsets, in
+    log space, so the result stays finite however strong the signals are). For two traits it is
+    coloc's ``PP.H4``, and the pairwise results use the same priors. The traits are taken as
+    independent studies (no sample overlap), and each has at most one causal variant: LD is not
+    modelled, so two distinct causal variants in strong LD can still look shared, as they do in
+    coloc. Cost is ``O(n_variants * 2 ** n_traits)`` and at most :data:`MAX_EXACT_TRAITS` traits are
+    accepted; analyse subsets of more traits.
+
+    The previous statistic was a heuristic that gave the null hypothesis, "some trait
+    associated" and "all share" equal prior weight and had no hypothesis of distinct causal
+    variants. In simulations it called a null third trait "shared" in 99% of regions where the other
+    two shared a signal, and "shared" in 87% where the third had a distinct signal, at the 0.8
+    cut-off; the posterior here flags about 1% of those.
 
     The per-trait mappings below are keyed by the trait names of ``z_scores``;
     a trait absent from every mapping is scored on the z-score scale. See
@@ -67,7 +103,8 @@ def multi_trait_coloc(
         z_scores: Dictionary mapping trait names to lists of Z-scores.
             All Z-score lists must have the same length (same variant set).
             Example: {"height": [1.2, -0.5, ...], "bmi": [0.8, 2.1, ...]}
-        ld_matrix: Optional LD matrix shared across all traits.
+        ld_matrix: Accepted for API compatibility and **not used**: the Bayes-factor model does not
+            model LD, so the result is the same with or without it (a warning is logged if given).
         prior_variances: Optional prior variance W of the true effect per trait.
         standard_errors: Optional standard errors per trait (scalar or one per
             variant).
@@ -76,17 +113,29 @@ def multi_trait_coloc(
             traits, used with ``sample_sizes``.
         case_fractions: Optional case fraction per case-control trait; traits
             left out are treated as quantitative.
+        prior_p1: Prior probability that a given variant is the causal variant of a given trait.
+        prior_p12: Prior probability that a given variant is the causal variant of two given traits
+            (coloc's ``p12``); larger groups follow ``p1 * (p12 / p1) ** (k - 1)``.
 
     Returns:
         Dictionary with keys:
             - status: "success" or "error"
             - pairwise: Dict of pairwise coloc results keyed by trait pair
             - multi_trait_pp_shared: Posterior probability all traits share
-              a single causal variant
+              a single causal variant (``PP.H4`` for two traits)
+            - multi_trait_pp_all_associated: Posterior probability that every trait has a
+              causal variant in the region, shared or not (an upper bound on the previous key; the
+              gap between the two says the traits are associated but not shared)
+            - snp_pp_shared: Per variant, the probability of being the shared causal variant
+              given that all traits share one (sums to 1)
+            - priors: The priors used: ``p1``, ``p12`` and ``p0`` (the weight of "no trait associated")
             - n_traits: Number of traits analyzed
             - n_variants: Number of variants in the region
             - summary: Human-readable summary
     """
+    if ld_matrix is not None:
+        logger.warning("multi_trait_coloc: ld_matrix is not used by the Wakefield Bayes-factor model and is ignored")
+
     if not z_scores:
         return {"status": "error", "message": "No Z-scores provided"}
 
@@ -108,9 +157,23 @@ def multi_trait_coloc(
             "message": f"Z-score lengths differ across traits: {lengths}",
         }
 
+    if n_traits > MAX_EXACT_TRAITS:
+        return {
+            "status": "error",
+            "message": (
+                f"{n_traits} traits exceed the {MAX_EXACT_TRAITS} for which the posterior is computed exactly "
+                "(its cost doubles with every trait); analyse subsets of the traits"
+            ),
+        }
+
     n_variants = list(lengths.values())[0]
     if n_variants == 0:
         return {"status": "error", "message": "Z-score lists are empty"}
+
+    try:
+        log_prior_p0 = _log_null_weight(n_traits, prior_p1, prior_p12)
+    except ValueError as exc:
+        return {"status": "error", "message": str(exc)}
 
     per_trait_inputs = {
         "prior_variances": prior_variances,
@@ -155,7 +218,10 @@ def multi_trait_coloc(
             result = _pairwise_coloc(
                 z_scores_1=z_scores[trait_a],
                 z_scores_2=z_scores[trait_b],
-                ld_matrix=ld_matrix,
+                ld_matrix=None,
+                prior_p1=prior_p1,
+                prior_p2=prior_p1,
+                prior_p12=prior_p12,
                 prior_variance_1=kw_a["prior_variance"],
                 prior_variance_2=kw_b["prior_variance"],
                 standard_errors_1=kw_a["standard_errors"],
@@ -166,39 +232,26 @@ def multi_trait_coloc(
                 case_fraction_1=kw_a["case_fraction"],
                 case_fraction_2=kw_b["case_fraction"],
             )
+            if result.get("status") != "success":
+                reason = result.get("message", "unknown error")
+                return {"status": "error", "message": f"pairwise colocalization of {pair_key} failed: {reason}"}
             pairwise_results[pair_key] = result
 
-    # Step 2: Compute multi-trait shared causal variant probability.
-    # For each variant the product of BFs across traits is the sum of log BFs.
-    log_product_bfs = [sum(all_log_bfs[name][v_idx] for name in trait_names) for v_idx in range(n_variants)]
-    log_sum_product = log_sum_exp(log_product_bfs)
-
-    # Null BF for multi-trait (all traits have no association)
-    log_null = math.log(n_variants)
-
-    # Individual trait BFs (at least one trait has association)
-    # Use sum of individual Bayes factors as a rough alternative
-    log_sum_individual = log_sum_exp(lbf for log_bfs in all_log_bfs.values() for lbf in log_bfs)
-
-    # Normalize
-    log_total_evidence = log_sum_exp([log_null, log_sum_individual, log_sum_product])
-    pp_shared = math.exp(log_sum_product - log_total_evidence)
+    # Step 2: the exact posterior that every trait shares one causal variant
+    posterior = _shared_causal_posterior([all_log_bfs[name] for name in trait_names], prior_p1, prior_p12, log_prior_p0)
+    pp_shared = posterior["pp_shared"]
 
     # Step 3: Summarize pairwise PP(H4) values
-    pp_h4_values = []
-    for pair_key, result in pairwise_results.items():
-        if result.get("status") == "success":
-            pp_h4_values.append(result.get("PP_H4", 0.0))
-
-    mean_pp_h4 = sum(pp_h4_values) / len(pp_h4_values) if pp_h4_values else 0.0
-    min_pp_h4 = min(pp_h4_values) if pp_h4_values else 0.0
+    pp_h4_values = [result["PP_H4"] for result in pairwise_results.values()]
+    mean_pp_h4 = sum(pp_h4_values) / len(pp_h4_values)
+    min_pp_h4 = min(pp_h4_values)
 
     # Determine summary
-    if pp_shared > 0.8:
+    if pp_shared > COLOC_STRONG_THRESHOLD:
         verdict = "Strong evidence for a shared causal variant across all traits"
-    elif pp_shared > 0.5:
+    elif pp_shared > COLOC_MODERATE_THRESHOLD:
         verdict = "Moderate evidence for a shared causal variant"
-    elif mean_pp_h4 > 0.5:
+    elif mean_pp_h4 > COLOC_MODERATE_THRESHOLD:
         verdict = "Pairwise colocalization supports some shared signals"
     else:
         verdict = "Limited evidence for shared causal variants"
@@ -213,6 +266,9 @@ def multi_trait_coloc(
         "status": "success",
         "pairwise": pairwise_results,
         "multi_trait_pp_shared": float(pp_shared),
+        "multi_trait_pp_all_associated": float(posterior["pp_all_associated"]),
+        "snp_pp_shared": posterior["snp_pp_shared"],
+        "priors": {"p1": prior_p1, "p12": prior_p12, "p0": math.exp(log_prior_p0)},
         "n_traits": n_traits,
         "n_variants": n_variants,
         "summary": summary,
@@ -253,7 +309,8 @@ def eqtl_coloc(
         eqtl_z: Z-scores from eQTL analysis for the target gene.
         gene_id: Gene identifier (e.g., ENSG ID or gene symbol) for
             annotation and reporting.
-        ld_matrix: Optional LD matrix for the region.
+        ld_matrix: Accepted for API compatibility and **not used**: the Bayes-factor model does not
+            model LD, so the result is the same with or without it (a warning is logged if given).
         gwas_prior_variance: Prior variance W of the true GWAS effect.
         eqtl_prior_variance: Prior variance W of the true eQTL effect.
         gwas_standard_errors: GWAS standard errors (scalar or one per variant).
@@ -275,6 +332,9 @@ def eqtl_coloc(
             - shared_variant: Index of most likely shared variant (if H4)
             - interpretation: Human-readable interpretation
     """
+    if ld_matrix is not None:
+        logger.warning("eqtl_coloc: ld_matrix is not used by the Wakefield Bayes-factor model and is ignored")
+
     if not gwas_z or not eqtl_z:
         return {"status": "error", "message": "GWAS and eQTL Z-scores are required"}
 
@@ -291,7 +351,7 @@ def eqtl_coloc(
     coloc_result = _pairwise_coloc(
         z_scores_1=gwas_z,
         z_scores_2=eqtl_z,
-        ld_matrix=ld_matrix,
+        ld_matrix=None,
         prior_variance_1=gwas_prior_variance,
         prior_variance_2=eqtl_prior_variance,
         standard_errors_1=gwas_standard_errors,
@@ -309,8 +369,8 @@ def eqtl_coloc(
             "gene_id": gene_id,
         }
 
-    pp_h4 = coloc_result.get("PP_H4", 0.0)
-    is_colocalized = pp_h4 > 0.8
+    pp_h4 = coloc_result["PP_H4"]
+    is_colocalized = pp_h4 > COLOC_STRONG_THRESHOLD
 
     # Find lead variants for each trait
     lead_gwas = max(range(n_variants), key=lambda i: abs(gwas_z[i]))
@@ -329,7 +389,7 @@ def eqtl_coloc(
             f"is at index {shared_variant}, suggesting this gene mediates "
             f"the GWAS association."
         )
-    elif pp_h4 > 0.5:
+    elif pp_h4 > COLOC_MODERATE_THRESHOLD:
         interp = (
             f"Moderate evidence for colocalization (PP.H4={pp_h4:.3f}) between "
             f"GWAS signal and eQTL for {gene_id}. The shared causal variant "
@@ -441,12 +501,13 @@ def regional_coloc(
     maf: float | Sequence[float] | None = None,
     case_fractions: Mapping[str, float] | None = None,
 ) -> dict:
-    """Run colocalization across a genomic region with automatic window selection.
+    """Run colocalization across a genomic region over overlapping windows.
 
-    Takes Z-scores for multiple traits across a genomic region and
-    automatically selects sub-windows centered on the strongest signals.
-    Runs colocalization within each window and returns results for the
-    best window as well as per-window summaries.
+    Takes Z-scores for multiple traits across a genomic region and cuts the
+    variants into windows of up to 100 variants that overlap by half (one window for
+    a region of 100 variants or fewer); the windows follow the order of the variants, not
+    the signals. Runs :func:`multi_trait_coloc` within each window and returns the window
+    with the highest ``multi_trait_pp_shared`` as well as per-window summaries.
 
     Args:
         z_scores_dict: Dictionary mapping trait names to lists of Z-scores.
@@ -458,7 +519,8 @@ def regional_coloc(
             - positions: Optional list of variant positions (bp) matching
               the Z-score indices. If not provided, variants are assumed
               to be uniformly spaced.
-        ld_matrix: Optional LD matrix for the region.
+        ld_matrix: Accepted for API compatibility and **not used** (see :func:`multi_trait_coloc`);
+            a warning is logged if given.
         prior_variances: Optional prior variance W of the true effect per trait.
         standard_errors: Optional standard errors per trait: a scalar, or one
             value per variant of the whole region (sliced with each window).
@@ -480,6 +542,9 @@ def regional_coloc(
             - region: The input region specification
             - message: Why the analysis failed (only when ``status`` is "error")
     """
+    if ld_matrix is not None:
+        logger.warning("regional_coloc: ld_matrix is not used by the Wakefield Bayes-factor model and is ignored")
+
     if not z_scores_dict:
         return {"status": "error", "message": "No Z-scores provided"}
 
@@ -541,8 +606,7 @@ def regional_coloc(
     )
 
     # Determine window size and windows
-    region_size = end - start
-    window_size = _select_window_size(region_size, n_variants)
+    window_size = _select_window_size(n_variants)
     windows = _generate_windows(positions, window_size, n_variants)
 
     all_window_results: list[dict] = []
@@ -553,15 +617,9 @@ def regional_coloc(
         for name in trait_names:
             window_z[name] = z_scores_dict[name][w_start_idx:w_end_idx]
 
-        # Slice LD matrix if provided
-        window_ld: list[list[float]] | None = None
-        if ld_matrix is not None:
-            window_ld = [row[w_start_idx:w_end_idx] for row in ld_matrix[w_start_idx:w_end_idx]]
-
         # Run multi-trait coloc for this window, slicing per-variant scale inputs
         window_result = multi_trait_coloc(
             z_scores=window_z,
-            ld_matrix=window_ld,
             prior_variances=prior_variances,
             standard_errors=_slice_trait_values(standard_errors, w_start_idx, w_end_idx),
             sample_sizes=_slice_trait_values(sample_sizes, w_start_idx, w_end_idx),
@@ -622,6 +680,89 @@ def regional_coloc(
 # ---------------------------------------------------------------------------
 
 
+def _log_group_prior(size: int, prior_p1: float, prior_p12: float) -> float:
+    """Log prior that one specific variant is the causal variant of one specific set of ``size`` traits.
+
+    ``p1 * (p12 / p1) ** (size - 1)``: ``p1`` for one trait and ``p12`` for two, as in coloc.
+    """
+    return math.log(prior_p1) + (size - 1) * (math.log(prior_p12) - math.log(prior_p1))
+
+
+def _log_null_weight(n_traits: int, prior_p1: float, prior_p12: float) -> float:
+    """Log weight of "no trait has a causal variant": one minus the prior mass of every non-empty trait set.
+
+    For two traits this is ``1 - p1 - p2 - p12``, the weight :func:`...credible_sets.colocalization`
+    gives its H0.
+
+    Raises:
+        ValueError: If a prior is not a positive finite number, or the priors sum to more than 1.
+    """
+    candidates: tuple[tuple[str, Any], ...] = (("prior_p1", prior_p1), ("prior_p12", prior_p12))
+    for name, value in candidates:
+        if isinstance(value, bool) or not isinstance(value, Real) or not math.isfinite(value) or value <= 0:
+            raise ValueError(f"{name} must be a positive finite number, got {value!r}")
+    mass = sum(
+        math.comb(n_traits, size) * math.exp(_log_group_prior(size, prior_p1, prior_p12))
+        for size in range(1, n_traits + 1)
+    )
+    if mass > 1.0:
+        raise ValueError(
+            f"Prior probabilities sum to more than 1 for {n_traits} traits (p1={prior_p1}, p12={prior_p12})"
+        )
+    return math.log1p(-mass) if mass < 1.0 else -math.inf
+
+
+def _shared_causal_posterior(
+    log_bfs: Sequence[Sequence[float]], prior_p1: float, prior_p12: float, log_prior_p0: float
+) -> dict[str, Any]:
+    """Exact posterior that every trait shares one causal variant, and that every trait has one.
+
+    ``log_bfs[t][v]`` is the natural-log Bayes factor of trait ``t`` at variant ``v``. A configuration
+    gives every trait no causal variant or one; the traits that have the same one form a group, and its
+    weight is the product of the group priors (:func:`_log_group_prior`) and of the Bayes factors of
+    its traits. The sum over all configurations is a dynamic programme over variants: ``state[U]`` is the log
+    weight of the configurations over the variants seen so far in which exactly the traits in the bitmask
+    ``U`` have a causal variant, and each variant hosts at most one group, of traits not yet placed. Every
+    term is positive, so nothing cancels, and everything is in log space.
+
+    Returns:
+        ``pp_shared``, ``pp_all_associated`` and ``snp_pp_shared`` (see :func:`multi_trait_coloc`).
+    """
+    log_bf = np.asarray(log_bfs, dtype=float)
+    n_traits, n_variants = log_bf.shape
+    n_sets = 1 << n_traits
+    full = n_sets - 1
+
+    # log_group[S, v]: log prior of the trait set S sharing a variant, plus its summed log Bayes factors at v
+    summed = np.zeros((n_sets, n_variants))
+    log_group = np.full((n_sets, n_variants), -np.inf)
+    for mask in range(1, n_sets):
+        lowest = mask & -mask
+        summed[mask] = summed[mask ^ lowest] + log_bf[lowest.bit_length() - 1]
+        log_group[mask] = _log_group_prior(mask.bit_count(), prior_p1, prior_p12) + summed[mask]
+
+    everything = np.arange(n_sets)
+    unplaced = [None] + [everything[(everything & mask) == 0] for mask in range(1, n_sets)]
+
+    state = np.full(n_sets, -np.inf)
+    state[0] = 0.0  # no variant seen: no trait has a causal variant yet (weight 1, rescaled by the null weight)
+    for variant in range(n_variants):
+        updated = state.copy()  # this variant is nobody's causal variant
+        for mask in range(1, n_sets):
+            rest = unplaced[mask]
+            updated[rest | mask] = np.logaddexp(updated[rest | mask], state[rest] + log_group[mask, variant])
+        state = updated
+
+    log_total = np.logaddexp(log_prior_p0, np.logaddexp.reduce(state[1:]))
+    log_shared = np.logaddexp.reduce(log_group[full])
+    snp_pp_shared = np.exp(summed[full] - np.logaddexp.reduce(summed[full]))
+    return {
+        "pp_shared": float(min(1.0, math.exp(log_shared - log_total))),
+        "pp_all_associated": float(min(1.0, math.exp(state[full] - log_total))),
+        "snp_pp_shared": [float(value) for value in snp_pp_shared],
+    }
+
+
 def _variant_count(values: float | Sequence[float] | None) -> int | None:
     """Return how many per-variant values ``values`` holds, or None for a scalar/absent value."""
     if values is None or isinstance(values, Real):
@@ -645,27 +786,18 @@ def _slice_trait_values(
     return {name: _slice_variant_values(trait_values, start, end) for name, trait_values in values.items()}
 
 
-def _select_window_size(region_size: int, n_variants: int) -> int:
-    """Select an appropriate window size for regional colocalization.
+def _select_window_size(n_variants: int) -> int:
+    """Window size, in variants, for regional colocalization: 100, or all variants if there are fewer.
 
-    Uses heuristics based on region size and variant density.
+    The size depends only on the number of variants; the base-pair length of the region plays no part.
 
     Args:
-        region_size: Size of the region in base pairs.
         n_variants: Number of variants in the region.
 
     Returns:
         Window size in number of variants.
     """
-    # Aim for windows of ~250kb or ~100 variants, whichever is smaller
-    if n_variants <= 100:
-        return n_variants  # Single window
-
-    # Target ~100 variants per window
-    target_size = min(100, n_variants)
-
-    # But ensure at least 20 variants per window
-    return max(target_size, 20)
+    return min(100, n_variants)
 
 
 def _generate_windows(

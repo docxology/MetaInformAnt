@@ -21,8 +21,10 @@ All inputs are real computations on seeded pseudo-random z-scores; nothing is mo
 
 from __future__ import annotations
 
+import itertools
 import math
 import random
+from collections import Counter
 from decimal import Decimal, localcontext
 from typing import Sequence
 
@@ -604,28 +606,50 @@ class TestEqtlColocDiscriminates:
 # ---------------------------------------------------------------------------
 
 
-def _multi_trait_oracle(log_bfs: dict[str, list[float]]) -> float:
-    """pp_shared = sum_v prod_t BF / (n + sum_t sum_v BF + sum_v prod_t BF), in 100-digit decimals."""
+def _multi_trait_oracle(log_bfs: dict[str, list[float]], p1: float = 1e-4, p12: float = 1e-5) -> tuple[float, float]:
+    """``(P(all traits share one variant), P(every trait has a causal variant))`` by enumerating every configuration.
+
+    A configuration gives each trait no causal variant or one variant; traits at the same variant form a group of
+    prior ``p1 * (p12 / p1) ** (k - 1)`` for ``k`` traits (coloc's ``p1`` and ``p12`` for one and two), and the Bayes
+    factors of the traits multiply. "No trait associated" weighs one minus the prior mass of every non-empty trait
+    set, the convention of ``colocalization``. This is the definition of the model, with no dynamic programme.
+    """
     with localcontext() as ctx:
         ctx.prec = 100
         names = list(log_bfs)
-        n = len(log_bfs[names[0]])
-        shared = Decimal(0)
-        for v in range(n):
-            product = Decimal(1)
-            for name in names:
-                product *= Decimal(log_bfs[name][v]).exp()
-            shared += product
-        individual = sum((Decimal(x).exp() for name in names for x in log_bfs[name]), Decimal(0))
-        return float(shared / (Decimal(n) + individual + shared))
+        n_traits = len(names)
+        n_variants = len(log_bfs[names[0]])
+        bayes = [[Decimal(x).exp() for x in log_bfs[name]] for name in names]
+        d1, d12 = Decimal(p1), Decimal(p12)
+
+        def group_prior(size: int) -> Decimal:
+            return d1 * (d12 / d1) ** (size - 1)
+
+        total = Decimal(1) - sum((math.comb(n_traits, k) * group_prior(k) for k in range(1, n_traits + 1)), Decimal(0))
+        shared = all_associated = Decimal(0)
+        for config in itertools.product(range(n_variants + 1), repeat=n_traits):  # 0: no causal variant
+            if not any(config):
+                continue
+            weight = Decimal(1)
+            for size in Counter(c for c in config if c).values():
+                weight *= group_prior(size)
+            for trait, variant in enumerate(config):
+                if variant:
+                    weight *= bayes[trait][variant - 1]
+            total += weight
+            if all(config):
+                all_associated += weight
+                if len(set(config)) == 1:
+                    shared += weight
+        return float(shared / total), float(all_associated / total)
 
 
 class TestMultiTraitColoc:
     def test_pp_shared_matches_independent_enumeration(self) -> None:
         z = {
-            "a": _region_with_signals(31, 40, {7: 4.5}),
-            "b": _region_with_signals(32, 40, {7: 4.0}),
-            "c": _region_with_signals(33, 40, {7: 3.5, 9: 2.0}),
+            "a": _region_with_signals(31, 6, {2: 4.5}),
+            "b": _region_with_signals(32, 6, {2: 4.0}),
+            "c": _region_with_signals(33, 6, {2: 3.5, 4: 2.0}),
         }
         result = coloc_module.multi_trait_coloc(z, standard_errors={"a": 0.05, "b": 0.05}, sample_sizes={"c": 3000})
         log_bfs = {
@@ -633,14 +657,16 @@ class TestMultiTraitColoc:
             "b": credible_sets.compute_log_bayes_factors(z["b"], standard_errors=0.05),
             "c": credible_sets.compute_log_bayes_factors(z["c"], sample_size=3000),
         }
+        shared, all_associated = _multi_trait_oracle(log_bfs)
         assert result["status"] == "success"
-        assert result["multi_trait_pp_shared"] == pytest.approx(_multi_trait_oracle(log_bfs), rel=1e-10)
+        assert result["multi_trait_pp_shared"] == pytest.approx(shared, rel=1e-10)
+        assert result["multi_trait_pp_all_associated"] == pytest.approx(all_associated, rel=1e-10)
 
     def test_z_only_traits_match_the_z_scale_oracle(self) -> None:
-        z = {"a": _region_with_signals(34, 30, {3: 6.0}), "b": _region_with_signals(35, 30, {3: 6.5})}
+        z = {"a": _region_with_signals(34, 8, {3: 6.0}), "b": _region_with_signals(35, 8, {3: 6.5})}
         result = coloc_module.multi_trait_coloc(z)
         log_bfs = {name: credible_sets.compute_log_bayes_factors(values) for name, values in z.items()}
-        assert result["multi_trait_pp_shared"] == pytest.approx(_multi_trait_oracle(log_bfs), rel=1e-10)
+        assert result["multi_trait_pp_shared"] == pytest.approx(_multi_trait_oracle(log_bfs)[0], rel=1e-10)
         assert result["multi_trait_pp_shared"] > 0.99
         assert set(result["pairwise"]) == {"a_vs_b"}
 

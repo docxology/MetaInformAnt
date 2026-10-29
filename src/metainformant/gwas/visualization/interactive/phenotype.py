@@ -7,10 +7,12 @@ principal components.
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from metainformant.core.utils import logging
+from metainformant.gwas.visualization.utils import get_p_value
 
 logger = logging.get_logger(__name__)
 
@@ -347,7 +349,7 @@ def genotype_phenotype_boxplot(
         phenotypes: List of numeric phenotype values.
         variant_id: Identifier for the variant being plotted.
         output_file: Optional path to save the plot image.
-        metadata: Optional dictionary of additional variant metadata.
+        metadata: Not used; accepted for API compatibility.
 
     Returns:
         Dictionary with status, group statistics, F-test results, and output path.
@@ -597,8 +599,9 @@ def top_hits_genotype_phenotype(
     generates individual boxplots for each.
 
     Args:
-        assoc_results: List of association result dictionaries. Each must
-            contain at minimum a "p_value" key, and optionally "variant_id".
+        assoc_results: List of association result dictionaries. Each needs a p-value (any of the spellings
+            of :data:`~metainformant.gwas.visualization.utils.P_VALUE_KEYS`) to be ranked; a result without
+            one is left out of the top hits (and logged), not ranked last as p = 1. "variant_id" is optional.
         genotype_matrix: List of genotype vectors, one per variant
             (same order as assoc_results). Each vector has one entry per sample.
         phenotypes: List of phenotype values, one per sample.
@@ -642,9 +645,15 @@ def top_hits_genotype_phenotype(
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        # Sort by p-value, take top N
-        indexed_results = [(i, r) for i, r in enumerate(assoc_results)]
-        indexed_results.sort(key=lambda x: x[1].get("p_value", 1.0))
+        # Sort by p-value, take top N. A result without a p-value (a failed test) cannot be ranked: it used to
+        # sort last as p = 1 and be labelled "p=1.00e+00".
+        indexed_results = [(i, r) for i, r in enumerate(assoc_results) if not math.isnan(get_p_value(r))]
+        if len(indexed_results) < len(assoc_results):
+            logger.warning(
+                f"{len(assoc_results) - len(indexed_results)} of {len(assoc_results)} results have no p-value "
+                "and are not ranked for the top-hit plots"
+            )
+        indexed_results.sort(key=lambda x: get_p_value(x[1]))
         top_results = indexed_results[: min(n_top, len(indexed_results))]
 
         generated_files: List[str] = []
@@ -652,7 +661,7 @@ def top_hits_genotype_phenotype(
 
         for rank, (orig_idx, result) in enumerate(top_results, start=1):
             variant_id = result.get("variant_id", f"variant_{orig_idx}")
-            p_val = result.get("p_value", 1.0)
+            p_val = get_p_value(result)
             geno_vector = genotype_matrix[orig_idx]
 
             out_file = output_dir / f"top{rank}_{variant_id}.png"

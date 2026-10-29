@@ -165,18 +165,27 @@ def create_synthetic_data(
         sample_ids: Explicit sample IDs (default: C/I/M/R pattern).
         n_samples: Number of samples (only used if sample_ids is None).
         n_variants: Number of variants to generate.
-        calibration_mode: One of NULL, LOW, HIGH.
+        calibration_mode: One of NULL, LOW, HIGH (see :data:`CALIBRATION_MODES`). NULL has no causal variant
+            (``n_causal`` is 0); an unknown name is an error rather than a silent LOW dataset recorded under
+            the unknown name.
         noise_sd: Phenotype noise standard deviation.
-        seed: Random seed for reproducibility.
+        seed: Random seed for reproducibility. The module-level ``random`` state is neither read nor changed.
 
     Returns:
         Dict with paths to generated files and calibration metadata.
+
+    Raises:
+        ValueError: If ``calibration_mode`` is not one of :data:`CALIBRATION_MODES`.
     """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    random.seed(seed)
+    if calibration_mode not in CALIBRATION_MODES:
+        raise ValueError(f"Unknown calibration_mode {calibration_mode!r}; expected one of {sorted(CALIBRATION_MODES)}")
+    # The generator has its own random state: seeding the module-level ``random`` would reset the stream of any
+    # other code that draws from it. A ``random.Random(seed)`` draws the same numbers as ``random.seed(seed)`` did.
+    rng = random.Random(seed)
 
-    mode = CALIBRATION_MODES.get(calibration_mode, CALIBRATION_MODES["LOW"])
+    mode = CALIBRATION_MODES[calibration_mode]
     h2 = mode["h2"]
 
     # Generate sample IDs if not provided
@@ -195,14 +204,15 @@ def create_synthetic_data(
         n_samples = len(sample_ids)
 
     # Assign causal variant positions near known genes
-    n_causal = max(1, int(n_variants * mode["target_gw_sig_pct"] / 100))
-    causal_indices = set(random.sample(range(n_variants), min(n_causal, n_variants)))
+    # No causal variant at all in the pure-null mode (it used to report one, with an effect of 0)
+    n_causal = max(1, int(n_variants * mode["target_gw_sig_pct"] / 100)) if mode["h2"] > 0 else 0
+    causal_indices = set(rng.sample(range(n_variants), min(n_causal, n_variants)))
 
     # Generate variant coordinates across karyotype
     total_genome = sum(length for _, length, _ in APIS_CHROMOSOMES)
     variants = []
     for _ in range(n_variants):
-        pos_in_genome = random.randint(0, total_genome - 1)
+        pos_in_genome = rng.randint(0, total_genome - 1)
         cumulative = 0
         for chrom, length, _ in APIS_CHROMOSOMES:
             cumulative += length
@@ -218,14 +228,14 @@ def create_synthetic_data(
     mafs = []
 
     for vi in range(n_variants):
-        maf = random.uniform(0.05, 0.49)
+        maf = rng.uniform(0.05, 0.49)
         mafs.append(maf)
 
         # Generate genotypes under HWE
         genos = []
         for _ in range(n_samples):
-            a1 = 1 if random.random() < maf else 0
-            a2 = 1 if random.random() < maf else 0
+            a1 = 1 if rng.random() < maf else 0
+            a2 = 1 if rng.random() < maf else 0
             genos.append(a1 + a2)
         genotype_matrix.append(genos)
 
@@ -234,7 +244,7 @@ def create_synthetic_data(
             var_g = 2 * maf * (1 - maf)
             if var_g > 0:
                 beta = math.sqrt(h2 / (n_causal * var_g)) * noise_sd
-                if random.random() < 0.5:
+                if rng.random() < 0.5:
                     beta = -beta
             else:
                 beta = 0.0
@@ -246,7 +256,7 @@ def create_synthetic_data(
     phenotypes = []
     for si in range(n_samples):
         genetic_value = sum(effect_sizes[vi] * genotype_matrix[vi][si] for vi in range(n_variants))
-        noise = random.gauss(0, noise_sd)
+        noise = rng.gauss(0, noise_sd)
         phenotypes.append(genetic_value + noise)
 
     # Write VCF

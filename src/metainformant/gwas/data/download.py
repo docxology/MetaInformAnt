@@ -2,15 +2,25 @@
 
 This module provides tools for downloading reference genomes, variant databases,
 and SRA sequencing data for GWAS analysis.
+
+The GWAS Catalog association table (:func:`download_variant_data`) is split into a thin HTTP layer and
+pure code that takes response text and returns values (:func:`decode_catalog_response`,
+:func:`parse_catalog_study`, :func:`parse_catalog_associations` and the sans-IO :class:`AssociationsPager`),
+so the response handling can be tested without a network.
 """
 
 from __future__ import annotations
 
+import csv
+import json
+import math
 import re
 import stat
 import zipfile
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import IO, Any, BinaryIO, Dict, List
+from typing import IO, Any, BinaryIO, Dict, Iterable, List, Mapping, Optional, Tuple
 
 import requests
 
@@ -316,13 +326,16 @@ def _download_dbsnp(output_dir: Path, chromosome: str | None = None) -> Path:
         raise RuntimeError(f"dbSNP download failed: {e}")
 
 
-def _download_1000genomes(output_dir: Path, chromosome: str | None = None, population: str | None = None) -> Path:
+def _download_1000genomes(output_dir: Path, chromosome: str | None = None) -> Path:
     """Download 1000 Genomes Project VCF data.
 
     Args:
         output_dir: Output directory
         chromosome: Specific chromosome to download (e.g., '1', '22'), or None for index
-        population: Population code filter (e.g., 'EUR', 'AFR'), or None for all
+
+    The release VCFs hold every sample, so there is no per-population download: the sample panel
+    (``integrated_call_samples_v3.20130502.ALL.panel``) maps samples to populations. (A ``population``
+    argument was accepted and ignored.)
 
     Returns:
         Path to downloaded 1000 Genomes directory
@@ -836,7 +849,430 @@ def download_annotation(accession: str, output_dir: str | Path) -> Path:
             )
 
 
-def download_variant_data(study_accession: str, output_dir: str | Path, data_type: str = "vcf") -> Path:
+#: Base URL of the GWAS Catalog REST API, the HAL/JSON service :func:`download_variant_data` reads.
+GWAS_CATALOG_API_URL = "https://www.ebi.ac.uk/gwas/rest/api"
+
+#: Columns of the association summary table written by :func:`download_variant_data`.
+SUMMARY_STATS_COLUMNS: Tuple[str, ...] = ("variant", "risk_allele", "p_value", "odds_ratio", "beta")
+
+#: Associations requested per page unless ``page_size`` says otherwise.
+DEFAULT_ASSOCIATIONS_PAGE_SIZE = 200
+
+#: Pages one download may read before it gives up (a service that keeps announcing more pages is misbehaving).
+MAX_ASSOCIATION_PAGES = 5000
+
+_CATALOG_TIMEOUT_SECONDS = 30
+
+
+@dataclass
+class AssociationsPage:
+    """One decoded page of the ``/studies/{accession}/associations`` response.
+
+    Attributes:
+        rows: One row per association, keyed by :data:`SUMMARY_STATS_COLUMNS`; every value is text, and a value
+            the response does not carry is the empty string.
+        number: Zero-based number the service gives this page, or None if the response has no ``page`` block.
+        total_pages: Number of pages the service reports, or None.
+        total_elements: Number of associations the study has according to the service, or None.
+        has_next: Whether the response announces a further page.
+    """
+
+    rows: List[Dict[str, str]] = field(default_factory=list)
+    number: Optional[int] = None
+    total_pages: Optional[int] = None
+    total_elements: Optional[int] = None
+    has_next: bool = False
+
+
+def _excerpt(text: str, limit: int = 200) -> str:
+    """The first ``limit`` characters of a response body, for an error message."""
+    flat = " ".join(text.split())
+    return flat if len(flat) <= limit else flat[:limit] + "..."
+
+
+def _json_object(payload: Any, what: str) -> Mapping[str, Any]:
+    """``payload`` (JSON text, or an already decoded value) as a JSON object, or ``ValueError``."""
+    decoded = payload
+    if isinstance(payload, (str, bytes, bytearray)):
+        try:
+            decoded = json.loads(payload)
+        except ValueError as exc:
+            raise ValueError(f"{what} is not valid JSON: {exc}") from exc
+    if not isinstance(decoded, Mapping):
+        raise ValueError(f"{what} must be a JSON object, got {type(decoded).__name__}")
+    return decoded
+
+
+def decode_catalog_response(status_code: int, body: str, url: str) -> Dict[str, Any]:
+    """Decode a GWAS Catalog REST response, accepting only HTTP 200 with a JSON object as its body.
+
+    This is the status check of every request :func:`download_variant_data` makes. Any other status, such as a
+    404 for an unknown study or a 5xx from the service, is an error: it used to be skipped, which left a
+    download that looked complete but held no association table.
+
+    Args:
+        status_code: HTTP status of the response.
+        body: Response body text.
+        url: Requested URL, named in the error message.
+
+    Returns:
+        The decoded JSON object.
+
+    Raises:
+        requests.HTTPError: If the status is not 200.
+        ValueError: If a 200 response is not a JSON object.
+    """
+    if status_code != 200:
+        raise requests.HTTPError(
+            f"GWAS Catalog request to {url} returned HTTP {status_code}, not 200: {_excerpt(body)}"
+        )
+    return dict(_json_object(body, f"GWAS Catalog response from {url}"))
+
+
+def _fetch_catalog_json(url: str, params: Optional[Mapping[str, Any]] = None) -> Dict[str, Any]:
+    """GET ``url`` from the GWAS Catalog and return its decoded JSON object (see :func:`decode_catalog_response`)."""
+    response = requests.get(url, params=params, timeout=_CATALOG_TIMEOUT_SECONDS)
+    return decode_catalog_response(response.status_code, response.text, url)
+
+
+def _catalog_number(value: Any, field_name: str) -> float:
+    """``value`` as a finite float; the GWAS Catalog sends numbers as JSON numbers, and older exports as text."""
+    if isinstance(value, bool) or value is None:
+        raise ValueError(f"{field_name} must be a number, got {value!r}")
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name} must be a number, got {value!r}") from exc
+    if not math.isfinite(number):
+        raise ValueError(f"{field_name} must be finite, got {value!r}")
+    return number
+
+
+def _is_absent(value: Any) -> bool:
+    """Whether a response field carries no value (missing, null or blank)."""
+    return value is None or (isinstance(value, str) and not value.strip())
+
+
+def _format_number(number: float) -> str:
+    """Shortest text that reads back as ``number`` (``2`` for 2.0, ``0.37`` for 0.37)."""
+    return format(number, ".15g")
+
+
+def format_catalog_p_value(mantissa: Any, exponent: Any) -> str:
+    """Text ``"<mantissa>e<exponent>"`` for the ``pvalueMantissa`` / ``pvalueExponent`` pair of an association.
+
+    Both fields may be JSON numbers (``2`` and ``-8`` give ``"2e-8"``) or numeric text, which the earlier string
+    concatenation turned into a ``TypeError`` for numbers. No p-value (both fields absent) is the empty string;
+    one field without the other is malformed.
+
+    Raises:
+        ValueError: If only one of the two is present, a field is not a finite number, or the exponent is not
+            a whole number.
+    """
+    if _is_absent(mantissa) and _is_absent(exponent):
+        return ""
+    if _is_absent(mantissa) or _is_absent(exponent):
+        raise ValueError(f"pvalueMantissa and pvalueExponent must come as a pair, got {mantissa!r} and {exponent!r}")
+    base = _catalog_number(mantissa, "pvalueMantissa")
+    power = _catalog_number(exponent, "pvalueExponent")
+    if not power.is_integer():
+        raise ValueError(f"pvalueExponent must be a whole number, got {exponent!r}")
+    return f"{_format_number(base)}e{int(power)}"
+
+
+def _optional_number_text(value: Any, field_name: str) -> str:
+    """``value`` formatted as text, or the empty string when the response carries none."""
+    return "" if _is_absent(value) else _format_number(_catalog_number(value, field_name))
+
+
+def _optional_int(value: Any, field_name: str) -> Optional[int]:
+    """A non-negative whole number from the ``page`` block of a response, or None when it is absent."""
+    if _is_absent(value):
+        return None
+    number = _catalog_number(value, field_name)
+    if not number.is_integer() or number < 0:
+        raise ValueError(f"{field_name} must be a non-negative whole number, got {value!r}")
+    return int(number)
+
+
+def _list_field(owner: Mapping[str, Any], key: str, where: str) -> List[Any]:
+    """``owner[key]`` as a list: absent or null is empty, anything but a list is an error."""
+    value = owner.get(key)
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise ValueError(f"{where}.{key} must be a list, got {type(value).__name__}")
+    return value
+
+
+def _split_risk_allele(name: str) -> Tuple[str, str]:
+    """Split a ``riskAlleleName`` such as ``"rs7329174-A"`` into ``("rs7329174", "A")``.
+
+    The allele follows the last hyphen; a name without a hyphen is a variant with no stated allele.
+    """
+    text = name.strip()
+    variant, separator, allele = text.rpartition("-")
+    if not separator:
+        return text, ""
+    return variant, allele
+
+
+def _association_row(index: int, association: Any) -> Dict[str, str]:
+    """One summary-table row from one element of ``_embedded.associations``."""
+    where = f"association {index}"
+    if not isinstance(association, Mapping):
+        raise ValueError(f"{where} must be a JSON object, got {type(association).__name__}")
+
+    variants: List[str] = []
+    alleles: List[str] = []
+    for locus_index, locus in enumerate(_list_field(association, "loci", where)):
+        if not isinstance(locus, Mapping):
+            raise ValueError(f"{where}.loci[{locus_index}] must be a JSON object, got {type(locus).__name__}")
+        for risk_allele in _list_field(locus, "strongestRiskAlleles", f"{where}.loci[{locus_index}]"):
+            if not isinstance(risk_allele, Mapping):
+                raise ValueError(f"{where} has a strongestRiskAlleles entry that is not a JSON object")
+            name = risk_allele.get("riskAlleleName")
+            if _is_absent(name):
+                continue
+            if not isinstance(name, str):
+                raise ValueError(f"{where} has a riskAlleleName that is not text: {name!r}")
+            variant, allele = _split_risk_allele(name)
+            variants.append(variant)
+            alleles.append(allele)
+
+    try:
+        p_value = format_catalog_p_value(association.get("pvalueMantissa"), association.get("pvalueExponent"))
+        odds_ratio = _optional_number_text(association.get("orPerCopyNum"), "orPerCopyNum")
+        beta = _optional_number_text(association.get("betaNum"), "betaNum")
+    except ValueError as exc:
+        raise ValueError(f"{where}: {exc}") from exc
+
+    # A haplotype or interaction has several risk alleles but one p-value: one row, alleles joined with ';'
+    return {
+        "variant": ";".join(variants),
+        "risk_allele": ";".join(alleles),
+        "p_value": p_value,
+        "odds_ratio": odds_ratio,
+        "beta": beta,
+    }
+
+
+def parse_catalog_study(payload: Any) -> Dict[str, Optional[str]]:
+    """Trait and PubMed id of a study from the ``/studies/{accession}`` response.
+
+    Args:
+        payload: The response text, or its decoded JSON object.
+
+    Returns:
+        ``{"trait": ..., "pubmed_id": ...}``; either is None when the response does not carry it (a study with
+        no ``diseaseTrait`` or ``publicationInfo`` block is not an error).
+
+    Raises:
+        ValueError: If the payload is not a JSON object.
+    """
+    study = _json_object(payload, "GWAS Catalog study response")
+    publication = study.get("publicationInfo")
+    disease_trait = study.get("diseaseTrait")
+    pubmed_id = publication.get("pubmedId") if isinstance(publication, Mapping) else None
+    trait = disease_trait.get("traitName") if isinstance(disease_trait, Mapping) else None
+    return {
+        "trait": None if _is_absent(trait) else str(trait),
+        "pubmed_id": None if _is_absent(pubmed_id) else str(pubmed_id),
+    }
+
+
+def parse_catalog_associations(payload: Any) -> AssociationsPage:
+    """Decode one page of the ``/studies/{accession}/associations`` response into summary-table rows.
+
+    This is a pure function of the response, written against the response shape ``download_variant_data`` has
+    always assumed (the GWAS Catalog serves HAL JSON). No real response could be fetched while this was written,
+    so the shape below is an assumption that the tests reproduce, not a recorded response::
+
+        {
+          "_embedded": {"associations": [
+            {
+              "pvalueMantissa": 2, "pvalueExponent": -8,      # JSON numbers (text is accepted too)
+              "orPerCopyNum": 1.07, "betaNum": null,
+              "loci": [{"strongestRiskAlleles": [{"riskAlleleName": "rs7329174-A"}]}]
+            }
+          ]},
+          "_links": {"next": {"href": "..."}},                 # present while a further page exists
+          "page": {"size": 200, "totalElements": 412, "totalPages": 3, "number": 0}
+        }
+
+    The ``variant`` and ``risk_allele`` columns come from ``riskAlleleName`` (``<variant>-<allele>``, split at
+    the last hyphen); an association with several risk alleles (a haplotype or an interaction) keeps them in
+    order, joined with ``;``. ``p_value`` is ``"<mantissa>e<exponent>"``. A field the response does not carry
+    gives an empty cell, never a placeholder value; ``_embedded`` may be absent for a study with no
+    associations. A page is "the last" when the ``page`` block says so, or, without a ``page`` block, when
+    there is no ``_links.next``.
+
+    Args:
+        payload: The response text, or its decoded JSON object.
+
+    Returns:
+        The page's rows and its paging information.
+
+    Raises:
+        ValueError: If the payload is not a JSON object, an association has a field of the wrong type (a
+            non-numeric p-value, a risk allele that is not text, ...), or a ``page`` field is not a
+            non-negative whole number.
+    """
+    document = _json_object(payload, "GWAS Catalog associations response")
+
+    embedded = document.get("_embedded")
+    if embedded is not None and not isinstance(embedded, Mapping):
+        raise ValueError(f"_embedded must be a JSON object, got {type(embedded).__name__}")
+    associations = _list_field(embedded or {}, "associations", "_embedded")
+    rows = [_association_row(index, association) for index, association in enumerate(associations)]
+
+    page_block = document.get("page")
+    if page_block is not None and not isinstance(page_block, Mapping):
+        raise ValueError(f"page must be a JSON object, got {type(page_block).__name__}")
+    number = _optional_int((page_block or {}).get("number"), "page.number")
+    total_pages = _optional_int((page_block or {}).get("totalPages"), "page.totalPages")
+    total_elements = _optional_int((page_block or {}).get("totalElements"), "page.totalElements")
+
+    if number is not None and total_pages is not None:
+        has_next = number + 1 < total_pages
+    else:
+        links = document.get("_links")
+        next_link = links.get("next") if isinstance(links, Mapping) else None
+        has_next = isinstance(next_link, Mapping) and not _is_absent(next_link.get("href"))
+
+    return AssociationsPage(
+        rows=rows, number=number, total_pages=total_pages, total_elements=total_elements, has_next=has_next
+    )
+
+
+def write_summary_stats_table(path: str | Path, rows: Iterable[Mapping[str, str]]) -> Path:
+    """Write association rows as a tab-separated table headed by :data:`SUMMARY_STATS_COLUMNS`.
+
+    The rows go through :mod:`csv`, so a tab, quote or newline inside a cell is quoted instead of adding a
+    column or a row.
+
+    Args:
+        path: File to write (its directory must exist).
+        rows: Rows keyed by :data:`SUMMARY_STATS_COLUMNS`, as :func:`parse_catalog_associations` returns them.
+
+    Returns:
+        ``path`` as a :class:`~pathlib.Path`.
+    """
+    path = Path(path)
+    with open(path, "w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(SUMMARY_STATS_COLUMNS), delimiter="\t", lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+    return path
+
+
+class AssociationsPager:
+    """Sans-IO state machine that pages through ``/studies/{accession}/associations``.
+
+    The pager owns the paging decisions of :func:`download_variant_data` and does no I/O: ask it for the query
+    of the next request, fetch that page, hand the decoded response back::
+
+        pager = AssociationsPager(page_size=200)
+        while (query := pager.request()) is not None:
+            pager.accept(parse_catalog_associations(fetch(associations_url, query)))
+        pager.check_complete()
+        pager.rows, pager.truncated, pager.available
+
+    Attributes:
+        rows: The association rows collected so far (never more than ``max_associations``).
+        available: Number of associations the service reports for the study, or None if it never said.
+        truncated: True once ``max_associations`` cut the table short of the study's associations.
+        pages_read: Number of pages accepted.
+    """
+
+    def __init__(self, page_size: int = DEFAULT_ASSOCIATIONS_PAGE_SIZE, max_associations: Optional[int] = None) -> None:
+        """Start a download at the first page.
+
+        Args:
+            page_size: Associations requested per page.
+            max_associations: Stop after this many associations; None collects them all.
+
+        Raises:
+            ValueError: If ``page_size`` or ``max_associations`` is not a positive whole number.
+        """
+        if isinstance(page_size, bool) or not isinstance(page_size, int) or page_size < 1:
+            raise ValueError(f"page_size must be a positive whole number, got {page_size!r}")
+        if max_associations is not None and (
+            isinstance(max_associations, bool) or not isinstance(max_associations, int) or max_associations < 1
+        ):
+            raise ValueError(f"max_associations must be a positive whole number or None, got {max_associations!r}")
+        self.page_size = page_size
+        self.max_associations = max_associations
+        self.rows: List[Dict[str, str]] = []
+        self.available: Optional[int] = None
+        self.truncated = False
+        self.pages_read = 0
+        self._next_page: Optional[int] = 0
+
+    def request(self) -> Optional[Dict[str, int]]:
+        """Query parameters (``page`` and ``size``) of the next request, or None when no page is left.
+
+        Raises:
+            RuntimeError: If the service has already announced :data:`MAX_ASSOCIATION_PAGES` pages and still
+                announces another.
+        """
+        if self._next_page is None:
+            return None
+        if self.pages_read >= MAX_ASSOCIATION_PAGES:
+            raise RuntimeError(
+                f"the service announces more than {MAX_ASSOCIATION_PAGES} pages of associations at "
+                f"page_size={self.page_size}; read {len(self.rows)} associations and stopped"
+            )
+        return {"page": self._next_page, "size": self.page_size}
+
+    def accept(self, page: AssociationsPage) -> None:
+        """Take the decoded response to the request :meth:`request` last returned.
+
+        Raises:
+            ValueError: If the service answered with another page than the one requested (it ignored the
+                page parameter), which would make the download repeat or skip associations.
+            RuntimeError: If no page was outstanding.
+        """
+        requested = self._next_page
+        if requested is None:
+            raise RuntimeError("accept() called although every page has been read")
+        if page.number is not None and page.number != requested:
+            raise ValueError(f"requested association page {requested} but the service returned page {page.number}")
+
+        self.pages_read += 1
+        if page.total_elements is not None:
+            self.available = page.total_elements
+        self.rows.extend(page.rows)
+        following = requested + 1 if page.has_next else None
+
+        if self.max_associations is not None and len(self.rows) >= self.max_associations:
+            # The table is short exactly when this cap cut rows off or the service still has pages
+            self.truncated = len(self.rows) > self.max_associations or following is not None
+            self.rows = self.rows[: self.max_associations]
+            following = None
+        self._next_page = following
+
+    def check_complete(self) -> None:
+        """Check the rows read against the study's association count, unless the table was cut on purpose.
+
+        Raises:
+            RuntimeError: If the service reported a count and it differs from the number of rows read.
+        """
+        if not self.truncated and self.available is not None and len(self.rows) != self.available:
+            raise RuntimeError(
+                f"the service reports {self.available} associations but {len(self.rows)} were read; "
+                "the download is incomplete"
+            )
+
+
+def download_variant_data(
+    study_accession: str,
+    output_dir: str | Path,
+    data_type: str = "vcf",
+    *,
+    page_size: int = DEFAULT_ASSOCIATIONS_PAGE_SIZE,
+    max_associations: Optional[int] = None,
+) -> Path:
     """Download variant data for a GWAS study.
 
     Only the association summary table of a study can be downloaded
@@ -846,21 +1282,37 @@ def download_variant_data(study_accession: str, output_dir: str | Path, data_typ
     before anything is written or requested; pass ``data_type="summary_stats"`` to
     download.
 
+    The table has one row per association (see :data:`SUMMARY_STATS_COLUMNS`) and is read page by page until
+    the service reports the last page (:class:`AssociationsPager`), so a study with more associations than one
+    page holds is downloaded whole. Every request must answer HTTP 200 (:func:`decode_catalog_response`); a
+    failure raises and leaves nothing on disk. When the service reports how many associations the study has,
+    the rows read are checked against it. The response shape this relies on is documented at
+    :func:`parse_catalog_associations`.
+
     Args:
         study_accession: GWAS study accession (e.g., GCST123456)
         output_dir: Output directory for downloaded files
         data_type: ``"summary_stats"``, the only data type that can be downloaded.
             ``"vcf"`` and ``"both"`` raise ``NotImplementedError``.
+        page_size: Associations requested per page.
+        max_associations: Keep at most this many associations. ``None`` (the default) keeps all of them. When
+            the cap cuts the table short the download is flagged, not silent: a warning is logged and the
+            metadata file records ``"truncated": true`` with the number of associations available.
 
     Returns:
-        Path to downloaded data directory
+        Path to downloaded data directory. It holds ``<accession>_summary_stats.tsv`` and
+        ``<accession>_metadata.json`` (trait, PubMed id, the files written, ``n_associations``,
+        ``n_associations_available`` and ``truncated``).
 
     Raises:
-        ValueError: If study accession is invalid or data_type is not recognised
+        ValueError: If study accession is invalid, data_type is not recognised, ``page_size`` or
+            ``max_associations`` is not a positive whole number, or a response cannot be decoded
         NotImplementedError: If data_type asks for genotype VCFs ("vcf" or "both")
-        requests.RequestException: If download fails
+        requests.RequestException: If a request fails or does not answer HTTP 200
+        RuntimeError: If the service reports more associations than were read, or announces more than
+            ``MAX_ASSOCIATION_PAGES`` pages
     """
-    if not re.fullmatch(r"GCST\d+", study_accession):
+    if not re.fullmatch(r"GCST[0-9]+", study_accession):
         raise ValueError(f"Invalid GWAS Catalog study accession: {study_accession!r}")
 
     if data_type in ("vcf", "both"):
@@ -876,81 +1328,55 @@ def download_variant_data(study_accession: str, output_dir: str | Path, data_typ
             f"Unknown data_type {data_type!r}: expected 'summary_stats' ('vcf' and 'both' are not implemented)"
         )
 
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    study_dir = output_dir / study_accession
-    study_dir.mkdir(exist_ok=True)
+    pager = AssociationsPager(page_size=page_size, max_associations=max_associations)
 
     logger.info(f"Downloading variant data for {study_accession}")
 
+    study_url = f"{GWAS_CATALOG_API_URL}/studies/{study_accession}"
+    associations_url = f"{study_url}/associations"
+
     try:
-        # Try GWAS Catalog API first
-        gwas_api_url = f"https://www.ebi.ac.uk/gwas/rest/api/studies/{study_accession}"
+        study = parse_catalog_study(_fetch_catalog_json(study_url))
+        logger.info(f"Study {study_accession}: {study['trait']} (PMID: {study['pubmed_id']})")
 
-        response = requests.get(gwas_api_url, timeout=30)
-        response.raise_for_status()
-
-        study_data = response.json()
-
-        # Extract relevant information
-        pubmed_id = study_data.get("publicationInfo", {}).get("pubmedId")
-        trait = study_data.get("diseaseTrait", {}).get("traitName")
-
-        logger.info(f"Study {study_accession}: {trait} (PMID: {pubmed_id})")
-
-        downloaded_files = []
-
-        # Download the association summary table
-        associations_url = f"{gwas_api_url}/associations"
-        assoc_response = requests.get(associations_url, timeout=30)
-
-        if assoc_response.status_code == 200:
-            associations = assoc_response.json().get("_embedded", {}).get("associations", [])
-
-            # Save summary statistics
-            stats_file = study_dir / f"{study_accession}_summary_stats.tsv"
-            with open(stats_file, "w") as f:
-                f.write("variant\trisk_allele\tp_value\todds_ratio\tbeta\n")
-                for assoc in associations[:1000]:  # Limit to avoid huge files
-                    variant = assoc.get("loci", [{}])[0].get("strongestRiskAlleles", [{}])[0]
-                    p_value = assoc.get("pvalueMantissa", "") + "e" + str(assoc.get("pvalueExponent", ""))
-                    odds_ratio = assoc.get("orPerCopyNum", "")
-                    beta = assoc.get("betaNum", "")
-
-                    f.write(f"{variant}\t\t{p_value}\t{odds_ratio}\t{beta}\n")
-
-            downloaded_files.append(stats_file)
-            logger.info(f"Downloaded summary statistics to {stats_file}")
-
-        # Save study metadata
-        metadata_file = study_dir / f"{study_accession}_metadata.json"
-        with open(metadata_file, "w") as f:
-            import json
-
-            import pandas as pd
-
-            json.dump(
-                {
-                    "accession": study_accession,
-                    "trait": trait,
-                    "pubmed_id": pubmed_id,
-                    "downloaded_files": [str(f) for f in downloaded_files],
-                    "download_date": str(pd.Timestamp.now()),
-                },
-                f,
-                indent=2,
-            )
-
-        logger.info(f"Downloaded variant data to {study_dir}")
-        return study_dir
-
-    except requests.RequestException as e:
+        while (query := pager.request()) is not None:
+            pager.accept(parse_catalog_associations(_fetch_catalog_json(associations_url, query)))
+        pager.check_complete()
+    except (requests.RequestException, ValueError, RuntimeError) as e:
         logger.error(f"Failed to download variant data for {study_accession}: {e}")
         raise
-    except Exception as e:
-        logger.error(f"Unexpected error downloading variant data: {e}")
-        raise
+
+    rows = pager.rows
+    if pager.truncated:
+        available = pager.available if pager.available is not None else "an unknown number of"
+        logger.warning(f"{study_accession}: wrote the first {len(rows)} of {available} associations (max_associations)")
+
+    output_dir = Path(output_dir)
+    study_dir = output_dir / study_accession
+    study_dir.mkdir(parents=True, exist_ok=True)
+
+    stats_file = write_summary_stats_table(study_dir / f"{study_accession}_summary_stats.tsv", rows)
+    logger.info(f"Downloaded {len(rows)} associations to {stats_file}")
+
+    metadata_file = study_dir / f"{study_accession}_metadata.json"
+    with open(metadata_file, "w", encoding="utf-8") as handle:
+        json.dump(
+            {
+                "accession": study_accession,
+                "trait": study["trait"],
+                "pubmed_id": study["pubmed_id"],
+                "downloaded_files": [str(stats_file)],
+                "n_associations": len(rows),
+                "n_associations_available": pager.available,
+                "truncated": pager.truncated,
+                "download_date": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            },
+            handle,
+            indent=2,
+        )
+
+    logger.info(f"Downloaded variant data to {study_dir}")
+    return study_dir
 
 
 def prepare_reference_genome(output_dir: str | Path) -> Path | None:

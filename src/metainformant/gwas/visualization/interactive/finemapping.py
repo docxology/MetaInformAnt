@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from metainformant.core.utils import logging
+from metainformant.gwas.visualization.utils import POSITION_KEYS, get_p_value, get_position, safe_log10_p
 
 logger = logging.get_logger(__name__)
 
@@ -261,6 +262,8 @@ def conditional_analysis_plot(
     """Create an overlay plot of multiple rounds of conditional association analysis.
 
     Each round is plotted as a separate trace with its own color/marker.
+    A result without a p-value (a failed test) is not drawn and is counted in ``n_without_p_value``; a result
+    without a position makes the plot fail with a reason that names the accepted keys.
 
     Args:
         assoc_results_list: List of association result lists (one per round).
@@ -270,7 +273,7 @@ def conditional_analysis_plot(
         title: Plot title.
 
     Returns:
-        Dict with status, output_path, and n_rounds.
+        Dict with status, output_path, n_rounds and n_without_p_value.
     """
     if not HAS_MATPLOTLIB or not HAS_NUMPY:
         logger.warning("matplotlib/numpy not available for conditional analysis plot")
@@ -306,22 +309,38 @@ def conditional_analysis_plot(
     ]
     markers = ["o", "s", "^", "D", "v", "<", ">", "p"]
 
-    fig, ax = plt.subplots(figsize=(12, 6))
-
+    # Positions and -log10 p of every round, read under every spelling of the shared helpers. A result without a
+    # p-value (a failed test) is not drawn: it used to be drawn as p = 1; one without a position used to be placed
+    # at its index in the list.
+    rounds: List[tuple] = []
+    n_without_p_value = 0
     for round_idx, (results, label) in enumerate(zip(assoc_results_list, labels)):
         if not results:
             continue
-
-        # Extract positions and p-values
         positions = []
         neg_log_p = []
         for i, result in enumerate(results):
-            pos = result.get("position", result.get("POS", result.get("BP", i)))
-            p = result.get("p_value", result.get("P", 1.0))
-            p = max(float(p), 1e-300)
-            positions.append(float(pos))
-            neg_log_p.append(-math.log10(p))
+            position = get_position(result)
+            if position is None:
+                reason = (
+                    f"result {i} of round {round_idx + 1} has no position "
+                    f"(accepted keys: {', '.join(repr(key) for key in POSITION_KEYS)})"
+                )
+                logger.error(f"conditional_analysis_plot: {reason}")
+                return {"status": "failed", "reason": reason, "output_path": None}
+            p = get_p_value(result)
+            if math.isnan(p):
+                n_without_p_value += 1
+                continue
+            positions.append(float(position))
+            neg_log_p.append(safe_log10_p(p))
+        rounds.append((round_idx, label, positions, neg_log_p))
+    if n_without_p_value:
+        logger.warning(f"{n_without_p_value} results have no p-value (failed tests) and are not drawn")
 
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    for round_idx, label, positions, neg_log_p in rounds:
         color = colors[round_idx % len(colors)]
         marker = markers[round_idx % len(markers)]
 
@@ -368,6 +387,7 @@ def conditional_analysis_plot(
         "status": "success",
         "output_path": output_path_str,
         "n_rounds": n_rounds,
+        "n_without_p_value": n_without_p_value,
     }
 
 

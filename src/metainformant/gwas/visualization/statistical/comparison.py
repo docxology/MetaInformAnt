@@ -14,6 +14,7 @@ import numpy as np
 
 from metainformant.core.utils import logging
 from metainformant.gwas.analysis.correction import lambda_gc_from_p_values
+from metainformant.gwas.visualization.utils import get_beta, get_p_value, record_placement, safe_log10_p
 
 logger = logging.get_logger(__name__)
 
@@ -1135,6 +1136,11 @@ def concordance_plot(
 ) -> dict[str, Any]:
     """Create a concordance plot comparing two GWAS studies.
 
+    Variants are matched on ``ID`` or, without one, on chromosome and position (any spelling of
+    :mod:`metainformant.gwas.visualization.utils`; a record with neither fails the plot with an error that names
+    the accepted keys). A matched variant without a p-value in either study is not drawn and is counted in
+    ``n_without_p_value``; ``n_overlapping_snps`` counts the variants that are drawn.
+
     Args:
         study1_results: Results from first study
         study2_results: Results from second study
@@ -1163,13 +1169,20 @@ def concordance_plot(
         snp_to_data1: Dict[str, Dict[str, Any]] = {}
         snp_to_data2: Dict[str, Dict[str, Any]] = {}
 
-        for result in study1_results:
-            snp_id = result.get("ID", f"{result.get('CHROM')}:{result.get('POS')}")
-            snp_to_data1[snp_id] = result
-
-        for result in study2_results:
-            snp_id = result.get("ID", f"{result.get('CHROM')}:{result.get('POS')}")
-            snp_to_data2[snp_id] = result
+        for study_index, (study_results, snp_to_data) in enumerate(
+            ((study1_results, snp_to_data1), (study2_results, snp_to_data2)), start=1
+        ):
+            for index, result in enumerate(study_results):
+                snp_id = result.get("ID")
+                if snp_id is None:
+                    # No ID: the variant is its chromosome and position (any spelling of the shared helpers).
+                    # It used to be "None:None" for every record without uppercase CHROM and POS keys, so
+                    # all of them collapsed into one overlapping "SNP".
+                    chromosome, position = record_placement(
+                        result, index, plot=f"concordance_plot (study {study_index})"
+                    )
+                    snp_id = f"{chromosome}:{int(position) if float(position).is_integer() else position}"
+                snp_to_data[snp_id] = result
 
         # Find overlapping SNPs
         common_snps = set(snp_to_data1.keys()) & set(snp_to_data2.keys())
@@ -1183,22 +1196,31 @@ def concordance_plot(
         betas1 = []
         betas2 = []
 
+        n_without_p_value = 0
         for snp in sorted(common_snps):
             d1 = snp_to_data1[snp]
             d2 = snp_to_data2[snp]
 
-            p1 = d1.get("p_value", d1.get("P", 1.0))
-            p2 = d2.get("p_value", d2.get("P", 1.0))
-            p_values1.append(-math.log10(max(p1, 1e-300)))
-            p_values2.append(-math.log10(max(p2, 1e-300)))
+            # A variant without a p-value in either study (a failed test) has no point to draw; it used to be
+            # drawn at -log10 p = 0 for that study, as if the test had run and found nothing.
+            p1 = get_p_value(d1)
+            p2 = get_p_value(d2)
+            if math.isnan(p1) or math.isnan(p2):
+                n_without_p_value += 1
+                continue
+            p_values1.append(safe_log10_p(p1))
+            p_values2.append(safe_log10_p(p2))
 
-            b1 = d1.get("beta", d1.get("BETA"))
-            b2 = d2.get("beta", d2.get("BETA"))
-            if b1 is not None and b2 is not None:
+            b1 = get_beta(d1)
+            b2 = get_beta(d2)
+            if not (math.isnan(b1) or math.isnan(b2)):
                 betas1.append(b1)
                 betas2.append(b2)
 
-        n = len(common_snps)
+        if not p_values1:
+            return {"status": "failed", "error": "No overlapping SNPs with a p-value in both studies"}
+
+        n = len(p_values1)
 
         # Calculate correlation (use betas if available, else p-values)
         correlation = None
@@ -1239,6 +1261,7 @@ def concordance_plot(
         concordance_result: Dict[str, Any] = {
             "status": "success",
             "n_overlapping_snps": n,
+            "n_without_p_value": n_without_p_value,
             "study1_snps": len(snp_to_data1),
             "study2_snps": len(snp_to_data2),
             "output_path": str(output_path) if output_path else None,

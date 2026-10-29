@@ -8,6 +8,8 @@ tests (sign test, credible sets, conditional analysis).
 
 from __future__ import annotations
 
+import html as _html
+import math
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -15,13 +17,33 @@ from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
+#: What the report shows for a statistic the summary does not carry (never a made-up 0 or 1).
+MISSING = "NA"
 
-def _fmt_p(p: float) -> str:
-    """Format a p-value for display."""
+
+def _as_float(value: Any) -> Optional[float]:
+    """``value`` as a finite float, or None when it is absent, NaN, infinite or not a number."""
     try:
-        return f"{float(p):.3e}"
-    except Exception:
-        return str(p)
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
+
+
+def _fmt_num(value: Any, spec: str) -> str:
+    """``value`` formatted with ``spec``, or :data:`MISSING` when it is absent, NaN, infinite or not a number."""
+    number = _as_float(value)
+    return MISSING if number is None else format(number, spec)
+
+
+def _fmt_p(p: Any) -> str:
+    """Format a p-value for display; :data:`MISSING` when there is none (it is not shown as p = 1)."""
+    return _fmt_num(p, ".3e")
+
+
+def _esc(value: Any) -> str:
+    """HTML-escape a value that comes from the data (trait, model, variant ids, gene names, free text)."""
+    return _html.escape(str(value))
 
 
 def generate_html_report(
@@ -39,6 +61,10 @@ def generate_html_report(
 ) -> Path:
     """Generate a self-contained HTML summary report.
 
+    A statistic the summary does not carry is shown as ``NA``: it is not replaced by 0 or 1 (a missing minimum
+    p-value used to read ``1.000e+00``, a missing calibration ratio passed the calibration check, and a missing
+    top-hit field crashed the report). Everything that comes from the data is HTML-escaped.
+
     Args:
         output_dir: Directory to write the report into.
         summary_stats: Dict from ``compute_comprehensive_summary``.
@@ -48,7 +74,7 @@ def generate_html_report(
         gene_annotations: Optional list of gene annotations.
         trait: Trait name for the report header.
         model: GWAS model name.
-        n_samples: Number of samples.
+        n_samples: Number of samples, shown in the report header (``NA`` when not given; it used to be ignored).
         filename: Output filename (default ``report.html``).
 
     Returns:
@@ -68,13 +94,16 @@ def generate_html_report(
     sign_row = ""
     if sign_test_results:
         st = sign_test_results
+        sign_p = st.get("p_value_two_sided")
+        sign_p_value = _as_float(sign_p)
+        sign_passes = sign_p_value is not None and sign_p_value < 0.05
         sign_row = f"""
         <tr><td>Effect direction (sign test)</td>
-        <td>n+={st.get("n_positive_beta", "?")}, n−={st.get("n_negative_beta", "?")},
-        z={st.get("z_statistic", "?")}, p={_fmt_p(st.get("p_value_two_sided", 1))}</td>
-        <td>{"✅" if st.get("p_value_two_sided", 1) < 0.05 else "—"}</td></tr>
+        <td>n+={_esc(st.get("n_positive_beta", "?"))}, n−={_esc(st.get("n_negative_beta", "?"))},
+        z={_esc(st.get("z_statistic", "?"))}, p={_fmt_p(sign_p)}</td>
+        <td>{"✅" if sign_passes else "—"}</td></tr>
         <tr><td colspan="3" style="color:#555;font-size:0.9em;padding-left:20px">
-        {st.get("interpretation", "")}</td></tr>
+        {_esc(st.get("interpretation", ""))}</td></tr>
         """
 
     # ── Credible set row ──
@@ -82,23 +111,23 @@ def generate_html_report(
     if credible_set_results:
         cs = credible_set_results
         cs_row = f"""<tr><td>Credible set (95% coverage)</td>
-        <td>{cs.get("n_snps", "?")} variants</td><td>✅</td></tr>"""
+        <td>{_esc(cs.get("n_snps", "?"))} variants</td><td>✅</td></tr>"""
 
     # ── Conditional analysis row ──
     cond_row = ""
     if conditional_results:
         cr = conditional_results
         cond_row = f"""<tr><td>Independent signals (conditional)</td>
-        <td>{cr.get("n_independent_signals", "?")}</td><td>✅</td></tr>"""
+        <td>{_esc(cr.get("n_independent_signals", "?"))}</td><td>✅</td></tr>"""
 
     # ── Gene annotation rows ──
     gene_rows = ""
     for ann in (gene_annotations or [])[:5]:
         genes = ann.get("nearby_genes", [])
-        gene_str = ", ".join([g.get("gene_name", "?") for g in genes[:3]]) if genes else "—"
+        gene_str = ", ".join([_esc(g.get("gene_name", "?")) for g in genes[:3]]) if genes else "—"
         gene_rows += f"""<tr>
-            <td>{ann.get("snp", "?")}</td>
-            <td>{ann.get("chrom", "?")}:{ann.get("pos", "?")}</td>
+            <td>{_esc(ann.get("snp", "?"))}</td>
+            <td>{_esc(ann.get("chrom", "?"))}:{_esc(ann.get("pos", "?"))}</td>
             <td>{gene_str}</td>
         </tr>"""
 
@@ -106,20 +135,27 @@ def generate_html_report(
     top_hit_rows = ""
     for h in top_hits[:5]:
         top_hit_rows += f"""<tr>
-            <td>{h.get("snp", "?")}</td>
-            <td>{h.get("chrom", "?")}:{h.get("pos", "?"):,}</td>
-            <td>{h.get("beta", "?"):.3f}</td>
-            <td>{h.get("se", "?"):.3f}</td>
-            <td>{_fmt_p(h.get("p_value", 1))}</td>
-            <td>{h.get("MAF", "?"):.3f}</td>
+            <td>{_esc(h.get("snp", "?"))}</td>
+            <td>{_esc(h.get("chrom", "?"))}:{_fmt_num(h.get("pos"), ",.0f")}</td>
+            <td>{_fmt_num(h.get("beta"), ".3f")}</td>
+            <td>{_fmt_num(h.get("se"), ".3f")}</td>
+            <td>{_fmt_p(h.get("p_value"))}</td>
+            <td>{_fmt_num(h.get("MAF"), ".3f")}</td>
         </tr>"""
 
-    lambda_gc = cal.get("lambda_gc", float("nan"))
-    lambda_warn = "⚠️ Inflated λ_GC — check for stratification or strong signal" if lambda_gc > 2 else ""
+    lambda_gc = cal.get("lambda_gc")
+    lambda_value = _as_float(lambda_gc)
+    lambda_warn = (
+        "⚠️ Inflated λ_GC — check for stratification or strong signal"
+        if lambda_value is not None and lambda_value > 2
+        else ""
+    )
     calibration_quantiles = cal.get("calibration_quantiles", {})
     calibration_q50 = calibration_quantiles.get("q50", {})
-    calibration_ratio = calibration_q50.get("ratio_obs_exp", "—")
-    calibration_pass = "✅" if abs(calibration_q50.get("ratio_obs_exp", 1) - 1) < 0.5 else "⚠️"
+    # Without an observed/expected ratio the calibration is unknown: it is neither a pass nor a warning
+    ratio = _as_float(calibration_q50.get("ratio_obs_exp"))
+    calibration_ratio = _fmt_num(ratio, "g") if ratio is not None else "—"
+    calibration_pass = ("✅" if abs(ratio - 1) < 0.5 else "⚠️") if ratio is not None else "—"
     gene_section = (
         "<h2>Gene Proximity Annotation (Top 5 Hits)</h2>"
         "<table><tr><th>SNP</th><th>Location</th><th>Nearby Genes</th></tr>" + gene_rows + "</table>"
@@ -132,7 +168,7 @@ def generate_html_report(
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GWAS Report — {trait} ({model})</title>
+<title>GWAS Report — {_esc(trait)} ({_esc(model)})</title>
 <style>
   body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, sans-serif;
          max-width: 1100px; margin: 40px auto; color: #1a1a1a; line-height: 1.6; }}
@@ -158,35 +194,36 @@ def generate_html_report(
 </head>
 <body>
 <h1>GWAS Summary Report</h1>
-<p><strong>Trait:</strong> {trait} &nbsp;|&nbsp;
-   <strong>Model:</strong> {model} &nbsp;|&nbsp;
-   <strong>Variants tested:</strong> {ss.get("n_variants", "?"):,} &nbsp;|&nbsp;
-   <strong>Chromosomes:</strong> {ss.get("n_chromosomes", "?")}</p>
+<p><strong>Trait:</strong> {_esc(trait)} &nbsp;|&nbsp;
+   <strong>Model:</strong> {_esc(model)} &nbsp;|&nbsp;
+   <strong>Samples:</strong> {_fmt_num(n_samples, ",.0f")} &nbsp;|&nbsp;
+   <strong>Variants tested:</strong> {_fmt_num(ss.get("n_variants"), ",.0f")} &nbsp;|&nbsp;
+   <strong>Chromosomes:</strong> {_esc(ss.get("n_chromosomes", MISSING))}</p>
 
 <h2>Key Statistics</h2>
 <div class="stat-grid">
   <div class="stat-card">
-    <div class="value">{sig.get("genome_wide_5e-8", 0)}</div>
+    <div class="value">{_fmt_num(sig.get("genome_wide_5e-8"), ".0f")}</div>
     <div class="label">GW-significant hits (p&lt;5e-8)</div>
   </div>
   <div class="stat-card">
-    <div class="value">{sig.get("suggestive_1e-5", 0)}</div>
+    <div class="value">{_fmt_num(sig.get("suggestive_1e-5"), ".0f")}</div>
     <div class="label">Suggestive hits (p&lt;1e-5)</div>
   </div>
   <div class="stat-card">
-    <div class="value">{lambda_gc:.3f}</div>
+    <div class="value">{_fmt_num(lambda_gc, ".3f")}</div>
     <div class="label">λ_GC (genomic inflation)</div>
   </div>
   <div class="stat-card">
-    <div class="value">{_fmt_p(cal.get("min_p", 1))}</div>
+    <div class="value">{_fmt_p(cal.get("min_p"))}</div>
     <div class="label">Minimum p-value</div>
   </div>
   <div class="stat-card">
-    <div class="value">{maf.get("mean", 0):.3f}</div>
+    <div class="value">{_fmt_num(maf.get("mean"), ".3f")}</div>
     <div class="label">Mean MAF</div>
   </div>
   <div class="stat-card">
-    <div class="value">{eff.get("mean_abs_beta", 0):.3f}</div>
+    <div class="value">{_fmt_num(eff.get("mean_abs_beta"), ".3f")}</div>
     <div class="label">Mean |β|</div>
   </div>
 </div>
@@ -228,7 +265,7 @@ def generate_html_report(
   <div><p><strong>Power Curves</strong></p><img src="../power_analysis/power_curves.png" alt="Power curves"></div>
 </div>
 
-<footer>Generated by MetaInformAnt GWAS Pipeline &bull; Trait: {trait} &bull; Model: {model}</footer>
+<footer>Generated by MetaInformAnt GWAS Pipeline &bull; Trait: {_esc(trait)} &bull; Model: {_esc(model)}</footer>
 </body>
 </html>
 """

@@ -7,12 +7,14 @@ from __future__ import annotations
 
 import gzip
 import json
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TextIO, Union
 
 import numpy as np
 
 from metainformant.core.utils import logging
+from metainformant.gwas.visualization.utils import chromosome_label
 
 logger = logging.get_logger(__name__)
 
@@ -58,6 +60,17 @@ def _get_pos_column(df: Any) -> str:
         if col in df.columns:
             return col
     raise KeyError(f"No position column found. Available columns: {list(df.columns)}")
+
+
+def _chromosome_stem(label: str) -> str:
+    """Chromosome label as it is written into a file name or variant id: no ``chr`` prefix, no path characters.
+
+    ``"1"`` and ``"chr1"`` both give ``"1"`` (the name is built as ``chr<stem>``), and anything outside
+    letters, digits, ``.``, ``_`` and ``-`` becomes ``_``, so a contig name cannot reach outside the output
+    directory.
+    """
+    stem = label[3:] if label.lower().startswith("chr") and len(label) > 3 else label
+    return re.sub(r"[^A-Za-z0-9._-]", "_", stem)
 
 
 def _is_number(cell: str) -> bool:
@@ -351,19 +364,22 @@ def generate_all_plots(
         chrom_col = _get_chrom_column(df)
         pos_col = _get_pos_column(df)
 
-        # Convert DataFrame rows to list-of-dicts format for general.py plot functions
+        # Convert DataFrame rows to list-of-dicts format for general.py plot functions. The columns are read
+        # one at a time: iterrows() upcasts a row with a float p-value to float, which turned the integer
+        # chromosome 1 into "1.0" (and the regional file names into "chr1.0").
+        chrom_labels = [chromosome_label(value) for value in df[chrom_col].tolist()]
+        positions = [int(value) for value in df[pos_col].tolist()]
+        p_values_all = [float(value) for value in df[p_col].tolist()]
+        betas = [float(value) for value in df["BETA"].tolist()] if "BETA" in df.columns else None
+        standard_errors = [float(value) for value in df["SE"].tolist()] if "SE" in df.columns else None
         records = []
-        for _, row in df.iterrows():
-            record: Dict[str, Any] = {
-                "chrom": str(row[chrom_col]),
-                "pos": int(row[pos_col]),
-                "p_value": float(row[p_col]),
-            }
+        for i, (chrom_label, position, p_value) in enumerate(zip(chrom_labels, positions, p_values_all)):
+            record: Dict[str, Any] = {"chrom": chrom_label, "pos": position, "p_value": p_value}
             # Include optional columns if present
-            if "BETA" in df.columns:
-                record["beta"] = float(row["BETA"])
-            if "SE" in df.columns:
-                record["se"] = float(row["SE"])
+            if betas is not None:
+                record["beta"] = betas[i]
+            if standard_errors is not None:
+                record["se"] = standard_errors[i]
             records.append(record)
 
         # Generate Manhattan plot
@@ -403,10 +419,11 @@ def generate_all_plots(
 
             top_hits = df.nsmallest(5, p_col)
 
-            for i, (_, hit) in enumerate(top_hits.iterrows()):
-                chrom = str(hit[chrom_col])
-                pos = int(hit[pos_col])
-                regional_file = output_dir / f"regional_plot_chr{chrom}_{pos}.png"
+            for i, hit_index in enumerate(top_hits.index):
+                hit = records[df.index.get_loc(hit_index)]
+                chrom = hit["chrom"]
+                pos = hit["pos"]
+                regional_file = output_dir / f"regional_plot_chr{_chromosome_stem(chrom)}_{pos}.png"
 
                 plot = regional_plot(
                     records,
@@ -568,7 +585,7 @@ def generate_all_plots(
         # LD Decay and LD Heatmap (requires genotype_matrix + positions)
         # ---------------------------------------------------------------
         if genotype_matrix is not None and len(genotype_matrix) >= 2:
-            positions_list = [int(row[pos_col]) for _, row in df.iterrows()]
+            positions_list = list(positions)
 
             # LD Decay curve
             try:
@@ -592,8 +609,7 @@ def generate_all_plots(
             try:
                 from ..genomic.ld import ld_heatmap_region
 
-                top_hit_row = df.nsmallest(1, p_col).iloc[0]
-                top_pos = int(top_hit_row[pos_col])
+                top_pos = records[df.index.get_loc(df.nsmallest(1, p_col).index[0])]["pos"]
                 region_start = max(0, top_pos - 500000)
                 region_end = top_pos + 500000
 
@@ -739,10 +755,10 @@ def generate_all_plots(
                 from .phenotype import genotype_phenotype_boxplot
 
                 # Use the top hit by p-value
-                top_idx = int(df[p_col].idxmin())
+                top_idx = df.index.get_loc(df[p_col].idxmin())
                 if top_idx < len(genotype_matrix):
                     top_genotypes = genotype_matrix[top_idx]
-                    top_variant_id = f"chr{df.iloc[top_idx][chrom_col]}:{df.iloc[top_idx][pos_col]}"
+                    top_variant_id = f"chr{_chromosome_stem(chrom_labels[top_idx])}:{positions[top_idx]}"
                     gp_file = output_dir / "genotype_phenotype_boxplot.png"
                     gp_result = genotype_phenotype_boxplot(
                         genotypes=top_genotypes,

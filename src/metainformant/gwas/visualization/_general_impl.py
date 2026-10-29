@@ -14,7 +14,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from metainformant.core.utils import logging
-from metainformant.gwas.visualization.utils import P_VALUE_KEYS, chromosome_label, get_chromosome, get_position
+from metainformant.gwas.visualization.utils import (
+    P_VALUE_KEYS,
+    chromosome_label,
+    get_chromosome,
+    get_position,
+    record_placement,
+)
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     import pandas as pd
@@ -701,7 +707,9 @@ def regional_plot(
 ) -> Any:
     """Create a regional association plot.
 
-    Results without a p-value (failed tests) are not drawn.
+    Results without a p-value (failed tests) are not drawn. With ``ld_values`` (``ld_values={variant id or
+    "chrom:pos": r2 to the top hit}`` in ``kwargs``) the points are coloured by LD; a variant with no LD value
+    is drawn in grey, not as ``r2 = 0`` (no LD with the top hit), which is a claim nobody made.
 
     Args:
         results: GWAS results for the region
@@ -712,6 +720,10 @@ def regional_plot(
 
     Returns:
         matplotlib Figure object
+
+    Raises:
+        ValueError: If a result has no chromosome or no position (the error names the accepted keys). Such a
+            result used to be dropped (no chromosome) or placed at position 0 (no position).
     """
     if not HAS_MATPLOTLIB or not HAS_NUMPY:
         logger.warning("matplotlib or numpy not available, cannot create regional plot")
@@ -721,10 +733,9 @@ def regional_plot(
 
     # Filter results to the specified region
     region_results = []
-    for result in _normalize_result_records(results):
-        r_chrom = str(result.get("chrom", result.get("chromosome", "")))
-        r_pos = result.get("pos", result.get("position", 0))
-        if r_chrom == str(chrom) and start <= r_pos <= end:
+    for index, result in enumerate(_normalize_result_records(results)):
+        r_chrom, r_pos = record_placement(result, index, plot="regional_plot")
+        if r_chrom == chromosome_label(chrom) and start <= r_pos <= end:
             region_results.append(result)
 
     if not region_results:
@@ -758,17 +769,38 @@ def regional_plot(
     ld_dict = kwargs.get("ld_values", None)
 
     if ld_dict and isinstance(ld_dict, dict):
-        ld_vals = []
+        ld_vals: List[Optional[float]] = []
         for r in region_results:
             vid = r.get("variant_id", "")
             # fallback to chr:pos string matching if exact ID not found
             if vid not in ld_dict:
-                vid = f"{r.get('chrom', '')}:{r.get('pos', 0)}"
-            ld_vals.append(ld_dict.get(vid, 0.0))
+                vid = f"{r.get('chrom', '')}:{r.get('pos', '')}"
+            value = _as_finite_float(ld_dict.get(vid))
+            ld_vals.append(None if math.isnan(value) else value)
 
-        scatter = ax.scatter(positions, p_values, c=ld_vals, cmap="viridis_r", **scatter_kwargs)
-        cbar = plt.colorbar(scatter, ax=ax, pad=0.02)
-        cbar.set_label("LD ($r^2$ to top hit)")
+        with_ld = [i for i, value in enumerate(ld_vals) if value is not None]
+        without_ld = [i for i, value in enumerate(ld_vals) if value is None]
+        if without_ld:
+            logger.warning(f"{len(without_ld)} of {len(ld_vals)} variants have no LD value and are drawn in grey")
+            grey_kwargs = {key: value for key, value in scatter_kwargs.items() if key not in ("c", "color", "cmap")}
+            ax.scatter(
+                [positions[i] for i in without_ld],
+                [p_values[i] for i in without_ld],
+                color="lightgrey",
+                **grey_kwargs,
+            )
+        if with_ld:
+            scatter = ax.scatter(
+                [positions[i] for i in with_ld],
+                [p_values[i] for i in with_ld],
+                c=[ld_vals[i] for i in with_ld],
+                cmap="viridis_r",
+                vmin=0.0,
+                vmax=1.0,
+                **scatter_kwargs,
+            )
+            cbar = plt.colorbar(scatter, ax=ax, pad=0.02)
+            cbar.set_label("LD ($r^2$ to top hit)")
     else:
         scatter_kwargs.setdefault("color", style.suggestive_color)
         ax.scatter(positions, p_values, **scatter_kwargs)
@@ -1584,11 +1616,16 @@ def functional_enrichment_plot(
     gff_path: Union[str, Path],
     output_path: Optional[Union[str, Path]] = None,
 ) -> Any:
-    """Create functional enrichment plot showing enrichment of significant variants in functional categories.
+    """Plot the number of genome-wide significant variants (p < 5e-8) on each chromosome.
+
+    Despite the name, this does not compute functional enrichment: no functional category is assigned to any
+    variant and the GFF file is **not read** (a warning is logged if one is given). For enrichment in functional
+    categories use :func:`metainformant.gwas.visualization.statistical.effects.functional_enrichment_plot`, which
+    counts the categories the caller supplies. A result without a p-value is not significant and is not counted.
 
     Args:
-        results: GWAS results with 'chrom', 'pos', and 'p_value' fields
-        gff_path: Path to GFF annotation file
+        results: GWAS results with a chromosome and a p-value
+        gff_path: Not used; accepted for API compatibility
         output_path: Path to save the plot (optional)
 
     Returns:
@@ -1598,10 +1635,14 @@ def functional_enrichment_plot(
         logger.warning("matplotlib not available, cannot create functional enrichment plot")
         return None
 
-    logger.info("Creating functional enrichment plot")
+    logger.info("Creating significant-variants-by-chromosome plot")
+    if gff_path:
+        logger.warning(
+            f"functional_enrichment_plot does not read the GFF file {gff_path}; it counts by chromosome only"
+        )
 
     # Count significant variants
-    significant = [r for r in results if r.get("p_value", r.get("pval", 1.0)) < 5e-8]
+    significant = [r for r in results if _record_p_value(r) < 5e-8]
 
     if not significant:
         logger.warning("No significant variants found for enrichment analysis")
@@ -1618,7 +1659,7 @@ def functional_enrichment_plot(
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
         ax.axis("off")
-        ax.set_title("Functional Enrichment Analysis")
+        ax.set_title("Significant Variants by Chromosome")
 
         if output_path:
             output_path = _prepare_output_path(output_path)
@@ -1630,7 +1671,8 @@ def functional_enrichment_plot(
     # Create summary plot of p-value distribution by chromosome
     chrom_counts: dict[str, int] = {}
     for r in significant:
-        chrom = str(r.get("chrom", r.get("chromosome", "unknown")))
+        chromosome = get_chromosome(r)
+        chrom = chromosome_label(chromosome) if chromosome is not None else "unknown"
         chrom_counts[chrom] = chrom_counts.get(chrom, 0) + 1
 
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -1669,6 +1711,10 @@ def forest_plot(
 
     Each row shows one variant ordered by p-value (most significant at top).
     GW-significant hits shown in red; sub-threshold in blue.
+
+    A result needs a p-value, an effect (``beta``/``BETA``) and a standard error (``se``/``SE``) to be drawn. One
+    that lacks any of them is left out and counted in a warning: it used to be drawn as an effect of 0 with a
+    zero-width interval and p = 1.
     """
     if not HAS_MATPLOTLIB:
         logger.warning("matplotlib not available for forest plot")
@@ -1681,7 +1727,23 @@ def forest_plot(
 
         style = get_style()
 
-    sorted_r = sorted(results, key=lambda r: r.get("p_value", 1.0))[:top_n]
+    usable = []
+    for record in results:
+        p_value = _record_p_value(record)
+        beta_value = _as_finite_float(record.get("beta", record.get("BETA")))
+        se_value = _as_finite_float(record.get("se", record.get("SE")))
+        if math.isnan(p_value) or math.isnan(beta_value) or math.isnan(se_value):
+            continue
+        usable.append((p_value, beta_value, se_value, record))
+    if len(usable) < len(results):
+        logger.warning(
+            f"{len(results) - len(usable)} of {len(results)} results lack a p-value, an effect or a standard error "
+            "and are not drawn in the forest plot"
+        )
+    if not usable:
+        return None
+
+    sorted_r = sorted(usable, key=lambda item: item[0])[:top_n]
     plot_r = list(reversed(sorted_r))
     n = len(plot_r)
 
@@ -1689,18 +1751,16 @@ def forest_plot(
     if ax is None:
         fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, max(4, n * 0.55 + 1.5))))
 
-    betas_all = [r.get("beta", 0.0) for r in plot_r]
-    ses_all = [r.get("se", 0.0) for r in plot_r]
+    betas_all = [beta for _, beta, _, _ in plot_r]
+    ses_all = [se for _, _, se, _ in plot_r]
     ci_los = [b - 1.96 * s for b, s in zip(betas_all, ses_all)]
     ci_his = [b + 1.96 * s for b, s in zip(betas_all, ses_all)]
     x_min = min(ci_los) * 1.15
     x_max = max(ci_his) * 1.15
 
-    for i, r in enumerate(plot_r):
-        beta = r.get("beta", 0.0)
+    for i, (p_val, beta, _, r) in enumerate(plot_r):
         ci_lo = ci_los[i]
         ci_hi = ci_his[i]
-        p_val = r.get("p_value", 1.0)
         is_sig = p_val < significance_threshold
         color = style.significance_color if is_sig else style.suggestive_color
         marker = "D" if is_sig else "o"
@@ -1711,14 +1771,14 @@ def forest_plot(
     ax.axvline(0, color="#555555", linewidth=1.5, linestyle="--")
     ax.set_yticks(range(n))
     ax.set_yticklabels(
-        [f"{r.get('snp', '?')}  p={r.get('p_value', 1):.1e}" for r in plot_r],
+        [f"{r.get('snp', '?')}  p={p_val:.1e}" for p_val, _, _, r in plot_r],
         fontsize=8,
     )
     ax.set_xlim(x_min, x_max)
     ax.set_xlabel("Effect size (β) and 95% CI", fontsize=11)
     ax.set_title(
         f"Effect Size Forest Plot — Top {n} GWAS Hits\n"
-        f"{sum(1 for r in sorted_r if r.get('p_value', 1) < significance_threshold)} "
+        f"{sum(1 for p_val, _, _, _ in sorted_r if p_val < significance_threshold)} "
         f"GW-significant (p<{significance_threshold:.0e}, ◆)",
         fontsize=11,
     )

@@ -71,13 +71,17 @@ def cis_eqtl_scan(
         :func:`write_eqtl_results` writes them as ``NA``.
 
     Raises:
-        ValueError: If a gene id repeats in ``gene_positions``, a variant id repeats in
-            ``variant_positions`` or in the index of ``genotype_matrix``. A repeated id would test the
-            same pair twice or run a gene against another variant's genotypes.
+        ValueError: If a gene id repeats in ``gene_positions`` or in the index of ``expression_matrix``,
+            a variant id repeats in ``variant_positions`` or in the index of ``genotype_matrix``, or a
+            sample id repeats in the columns of either matrix. A repeated id would test the same pair
+            twice, or run a gene against another variant's genotypes or a sample against another's.
+
+    Fewer than 10 samples common to both matrices is not enough to scan: the scan then returns an empty
+    DataFrame (after a warning) instead of tests it could not support.
     """
     _require_unique(gene_positions, "gene_id", "gene_positions")
     _require_unique(variant_positions, "variant_id", "variant_positions")
-    _require_unique(genotype_matrix.index, None, "genotype_matrix index")
+    _require_matrix_ids(expression_matrix, genotype_matrix)
 
     logger.info(
         f"Starting cis-eQTL scan: {len(gene_positions)} genes, "
@@ -86,8 +90,9 @@ def cis_eqtl_scan(
 
     results = []
 
-    # Ensure sample alignment
-    common_samples = list(set(expression_matrix.columns) & set(genotype_matrix.columns))
+    # Ensure sample alignment (in the order of the expression matrix, so that a run does not depend on the
+    # hash order of a set: the sums of a fit change in their last bits with the order of their terms)
+    common_samples = _common_samples(expression_matrix, genotype_matrix)
     if len(common_samples) < 10:
         logger.warning(f"Only {len(common_samples)} common samples found")
         return pd.DataFrame()
@@ -112,11 +117,7 @@ def cis_eqtl_scan(
         if len(cis_variants) == 0:
             continue
 
-        gene_expr = expr.loc[gene_id]
-        # Handle potential duplicate indices
-        if isinstance(gene_expr, pd.DataFrame):
-            gene_expr = gene_expr.iloc[0]
-        gene_expr = gene_expr.values
+        gene_expr = expr.loc[gene_id].to_numpy()
 
         for _, var_row in cis_variants.iterrows():
             var_id = var_row["variant_id"]
@@ -182,12 +183,20 @@ def trans_eqtl_scan(
         pvalue_threshold: Only report results below this threshold.
 
     Returns:
-        DataFrame with trans-eQTL results.
+        DataFrame with trans-eQTL results. Only fits that were made and fall below ``pvalue_threshold``
+        are reported: a fit that could not be made has no p-value and is not a hit.
+
+    Raises:
+        ValueError: If an id repeats, as for :func:`cis_eqtl_scan`.
     """
+    _require_unique(gene_positions, "gene_id", "gene_positions")
+    _require_unique(variant_positions, "variant_id", "variant_positions")
+    _require_matrix_ids(expression_matrix, genotype_matrix)
+
     logger.info("Starting trans-eQTL scan")
 
     results = []
-    common_samples = list(set(expression_matrix.columns) & set(genotype_matrix.columns))
+    common_samples = _common_samples(expression_matrix, genotype_matrix)
     expr = expression_matrix[common_samples]
     geno = genotype_matrix[common_samples]
 
@@ -257,8 +266,20 @@ def conditional_eqtl(
     Returns:
         DataFrame with conditional association results (``variant_id``, ``conditioned_on``, ``beta``,
         ``se``, ``pvalue``, ``status``, ``error``). A fit that could not be made has NaN statistics and
-        ``status == "error"``, as in :func:`cis_eqtl_scan`.
+        ``status == "error"``, as in :func:`cis_eqtl_scan`. An empty DataFrame if ``lead_variant_id`` is
+        not in the genotype matrix.
+
+    Raises:
+        ValueError: If a variant id repeats in the index of ``genotype_matrix``, or ``expression_vector``
+            does not have one value per sample (column) of ``genotype_matrix``.
     """
+    _require_unique(genotype_matrix.index, None, "genotype_matrix index")
+    if len(expression_vector) != genotype_matrix.shape[1]:
+        raise ValueError(
+            f"expression_vector has {len(expression_vector)} values but genotype_matrix has "
+            f"{genotype_matrix.shape[1]} samples; they must match one to one"
+        )
+
     logger.info(f"Conditional eQTL analysis, conditioning on {lead_variant_id}")
 
     if lead_variant_id not in genotype_matrix.index:
@@ -310,15 +331,26 @@ def eqtl_effect_sizes(
         associations: DataFrame with gene_id, variant_id columns.
 
     Returns:
-        DataFrame with effect size details:
+        DataFrame with one row per row of ``associations``, in order, and the effect size details:
             - beta: Effect size
             - se: Standard error
             - r_squared: Variance explained
-            - mean_expr_by_genotype: Mean expression per genotype class
+            - mean_expr_gt0, mean_expr_gt1, mean_expr_gt2: Mean expression of the samples whose
+              (rounded) dosage is 0, 1 and 2 and that have an expression value; a class with no
+              such sample is left out (missing)
             - status, error: ``"success"``, or ``"error"`` with the reason for a fit that could not
-              be made; its ``beta``, ``se``, ``pvalue`` and ``r_squared`` are NaN (missing)
+              be made; its ``beta``, ``se``, ``pvalue`` and ``r_squared`` are NaN (missing). An
+              association whose gene is not in ``expression_matrix`` or whose variant is not in
+              ``genotype_matrix`` is such a row, with that reason; it used to be dropped without a word.
+
+    Raises:
+        ValueError: If a gene id repeats in the index of ``expression_matrix``, a variant id in the index
+            of ``genotype_matrix``, or a sample id in the columns of either. A repeated id used to be
+            resolved by taking its first row, so an association could be computed on the wrong gene or
+            variant without any sign of it, exactly the case :func:`cis_eqtl_scan` rejects.
     """
-    common_samples = list(set(expression_matrix.columns) & set(genotype_matrix.columns))
+    _require_matrix_ids(expression_matrix, genotype_matrix)
+    common_samples = _common_samples(expression_matrix, genotype_matrix)
     expr = expression_matrix[common_samples]
     geno = genotype_matrix[common_samples]
 
@@ -327,26 +359,40 @@ def eqtl_effect_sizes(
         gene_id = assoc["gene_id"]
         var_id = assoc["variant_id"]
 
-        if gene_id not in expr.index or var_id not in geno.index:
+        unknown = [
+            f"{label} {identifier!r} is not in {source}"
+            for label, identifier, source, known in (
+                ("gene", gene_id, "expression_matrix", expr.index),
+                ("variant", var_id, "genotype_matrix", geno.index),
+            )
+            if identifier not in known
+        ]
+        if unknown:
+            results.append(
+                {
+                    "gene_id": gene_id,
+                    "variant_id": var_id,
+                    "beta": float("nan"),
+                    "se": float("nan"),
+                    "pvalue": float("nan"),
+                    "r_squared": float("nan"),
+                    "status": "error",
+                    "error": "; ".join(unknown),
+                }
+            )
             continue
 
-        gene_expr = expr.loc[gene_id]
-        if isinstance(gene_expr, pd.DataFrame):
-            gene_expr = gene_expr.iloc[0]
-        gene_expr = gene_expr.values
-
-        var_geno = geno.loc[var_id]
-        if isinstance(var_geno, pd.DataFrame):
-            var_geno = var_geno.iloc[0]
-        var_geno = var_geno.values
+        gene_expr = expr.loc[gene_id].to_numpy()
+        var_geno = geno.loc[var_id].to_numpy()
 
         beta, se, pval, error = _linear_fit(gene_expr, var_geno)
         r2 = _compute_r_squared(gene_expr, var_geno) if error is None else float("nan")
 
-        # Mean expression by genotype (0, 1, 2)
+        # Mean expression by genotype (0, 1, 2), over the samples that have an expression value
         means = {}
+        has_expression = ~np.isnan(gene_expr)
         for gt in [0, 1, 2]:
-            mask = np.round(var_geno) == gt
+            mask = (np.round(var_geno) == gt) & has_expression
             if mask.sum() > 0:
                 means[f"mean_expr_gt{gt}"] = np.mean(gene_expr[mask])
 
@@ -561,6 +607,24 @@ def _require_unique(ids: Any, column: str | None, name: str) -> None:
             f"{name} has {len(repeated)} repeated id(s) (e.g. {shown}); ids must be unique so that every "
             "gene-variant pair is tested once, against its own genotypes"
         )
+
+
+def _require_matrix_ids(expression_matrix: pd.DataFrame, genotype_matrix: pd.DataFrame) -> None:
+    """Raise ValueError for a repeated gene, variant or sample id in the expression or genotype matrix.
+
+    Rows are genes (expression) and variants (genotypes), columns are samples. A repeated row id makes
+    ``.loc[id]`` return several rows, and a repeated sample id misaligns the two matrices.
+    """
+    _require_unique(expression_matrix.index, None, "expression_matrix index")
+    _require_unique(genotype_matrix.index, None, "genotype_matrix index")
+    _require_unique(expression_matrix.columns, None, "expression_matrix columns")
+    _require_unique(genotype_matrix.columns, None, "genotype_matrix columns")
+
+
+def _common_samples(expression_matrix: pd.DataFrame, genotype_matrix: pd.DataFrame) -> list[Any]:
+    """Samples present in both matrices, in the order of the expression matrix columns."""
+    in_genotypes = set(genotype_matrix.columns)
+    return [sample for sample in expression_matrix.columns if sample in in_genotypes]
 
 
 def _linear_fit(y: np.ndarray, x: np.ndarray) -> tuple[float, float, float, str | None]:

@@ -112,7 +112,8 @@ def classify_variant_location(
     """Classify a variant's location relative to nearby genes.
 
     Args:
-        chrom: Chromosome number
+        chrom: Chromosome number. Not used: ``genes`` must already be the genes of this chromosome, and
+            the function does not check that they are.
         pos: Variant position (1-based)
         genes: List of gene dictionaries (sorted by start) on this chromosome
         window_bp: Search window in base pairs

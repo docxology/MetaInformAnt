@@ -697,7 +697,8 @@ def _ldsc_regression_numpy(
     Args:
         y_vals: Dependent variable (chi2 or z-product).
         ld_scores: LD scores (independent variable).
-        n_samples: Sample size (for weight computation).
+        n_samples: Not used: the weights below are the simplified ``1 / max(l_j, 1) ** 2``, which do not
+            depend on the sample size.
         m_snps: Number of SNPs.
         fit_intercept: Whether to fit an intercept.
 
@@ -766,7 +767,7 @@ def _ldsc_regression_pure(
     Args:
         y_vals: Dependent variable.
         ld_scores: LD scores.
-        n_samples: Sample size.
+        n_samples: Not used (the weights do not depend on the sample size).
         m_snps: Number of SNPs.
         fit_intercept: Whether to fit an intercept.
 

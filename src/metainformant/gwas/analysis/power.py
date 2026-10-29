@@ -187,11 +187,11 @@ def subsample_convergence(
     Args:
         genotype_matrix: Variant × sample genotype matrix (0/1/2/-1).
         traits: Phenotype values per sample.
-        variants_info: Optional variant metadata (chrom, pos, etc.).
+        variants_info: Not used; accepted for API compatibility.
         fractions: Data fractions to evaluate (default 10% to 100%).
         n_replicates: Number of random replicates per fraction.
         alpha: Significance threshold.
-        config: Optional GWAS config dict.
+        config: Not used; accepted for API compatibility.
         seed: Seed of the generator that draws the variant subsamples.
 
     Returns:

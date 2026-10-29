@@ -28,12 +28,18 @@ def load_traits(
 
     Args:
         phenotype_path: Path to a CSV file with a header row.
-        trait_column: Explicit column name to use as trait values.
+        trait_column: Explicit column name to use as trait values. It must be a column of the file: a
+            name that is not in the header is an error, not a cue to pick another column.
         id_column: Column name for sample IDs (unused by this function
             but reserved for future ``load_traits_with_ids``).
 
     Returns:
-        List of float trait values (rows with non-numeric values are skipped).
+        List of float trait values (rows with non-numeric values are skipped, and their number is
+        logged: the values are positional, so a caller that matches them to samples by position should
+        use :func:`load_traits_with_ids` instead).
+
+    Raises:
+        ValueError: If *trait_column* is given and the file has no such column.
     """
     traits: List[float] = []
     id_columns = {"sample_id", "sample", "id"}
@@ -45,7 +51,12 @@ def load_traits(
             return traits
 
         # Resolve trait column name
-        col = trait_column if trait_column and trait_column in reader.fieldnames else None
+        if trait_column and trait_column not in reader.fieldnames:
+            raise ValueError(
+                f"trait_column {trait_column!r} is not a column of {phenotype_path}; "
+                f"its columns are {reader.fieldnames}"
+            )
+        col = trait_column if trait_column else None
         if not col:
             for c in reversed(reader.fieldnames):
                 if c.lower() not in id_columns:
@@ -60,12 +71,17 @@ def load_traits(
             return traits
 
         logger.info("Loading trait column '%s' from %s", col, phenotype_path)
+        n_skipped = 0
         for row in reader:
             try:
                 traits.append(float(row[col]))
-            except (ValueError, KeyError):
-                continue
+            except (ValueError, KeyError, TypeError):
+                n_skipped += 1
 
+    if n_skipped:
+        logger.warning(
+            "Skipped %d row(s) of %s whose '%s' value is missing or not a number", n_skipped, phenotype_path, col
+        )
     logger.info("Loaded %d trait values from %s", len(traits), phenotype_path)
     return traits
 
@@ -80,11 +96,17 @@ def load_traits_with_ids(
 
     Args:
         phenotype_path: Path to CSV with header.
-        trait_column: Column for trait values (auto-detected if None).
-        id_column: Column for sample IDs (auto-detected if None).
+        trait_column: Column for trait values (auto-detected if None). A name that is not in the header
+            is an error: every row used to be skipped and the result was an empty pair of lists.
+        id_column: Column for sample IDs (auto-detected if None). Same rule.
 
     Returns:
-        Tuple of (sample_ids, trait_values).
+        Tuple of (sample_ids, trait_values). Rows whose value is missing or not a number are skipped
+        together with their ID, and their number is logged. Empty lists if the file is empty or no column
+        could be auto-detected.
+
+    Raises:
+        ValueError: If *trait_column* or *id_column* is given and the file has no such column.
     """
     id_columns = {"sample_id", "sample", "id"}
     sample_ids: List[str] = []
@@ -94,6 +116,12 @@ def load_traits_with_ids(
         reader = csv.DictReader(f)
         if not reader.fieldnames:
             return sample_ids, trait_values
+
+        for label, requested in (("trait_column", trait_column), ("id_column", id_column)):
+            if requested and requested not in reader.fieldnames:
+                raise ValueError(
+                    f"{label} {requested!r} is not a column of {phenotype_path}; its columns are {reader.fieldnames}"
+                )
 
         # Resolve ID column
         id_col = id_column
@@ -114,12 +142,17 @@ def load_traits_with_ids(
         if not id_col or not trait_col:
             return sample_ids, trait_values
 
+        n_skipped = 0
         for row in reader:
             try:
                 val = float(row[trait_col])
                 sample_ids.append(row[id_col])
                 trait_values.append(val)
-            except (ValueError, KeyError):
-                continue
+            except (ValueError, KeyError, TypeError):
+                n_skipped += 1
 
+    if n_skipped:
+        logger.warning(
+            "Skipped %d row(s) of %s whose '%s' value is missing or not a number", n_skipped, phenotype_path, trait_col
+        )
     return sample_ids, trait_values
