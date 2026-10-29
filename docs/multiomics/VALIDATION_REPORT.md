@@ -12,6 +12,17 @@
 > now consumes the actual `joint_nmf()` return values. The older mismatch
 > entries below are retained as historical audit evidence, not current status.
 
+> Current contract note (2026-10-29): both public CCA functions use one thin-SVD
+> ridge core and reject forced-perfect unregularized designs; the analysis
+> entry point imputes feature-wise means, while the matrix entry point refuses
+> missing values and additionally returns weights. Pathway permutation APIs now
+> expose `random_state` and `n_permutations`. Cox regression uses consistent
+> Breslow derivatives and raises on non-convergence; multigroup log-rank tests
+> use the full covariance and raise when no comparison is possible. See
+> [integration](integration.md), [methods](methods.md), [pathways](pathways.md)
+> and [survival](survival.md) for current contracts. These are source updates,
+> not a rerun or reclassification of the historical validation below.
+
 **Validation Date:** 2026-04-29
 **Repository:** /home/trim/Documents/Git/MetaInformAnt
 **Module:** src/metainformant/multiomics/

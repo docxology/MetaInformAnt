@@ -13,8 +13,8 @@ Matrix factorization and fusion algorithms (numpy or pure-Python fallback):
 | `joint_nmf()` | Joint non-negative matrix factorization across omic layers (shared W, per-layer H) |
 | `mofa_simple()` | Simplified MOFA+ Bayesian factor model with ARD priors |
 | `tensor_decomposition()` | CP (CANDECOMP/PARAFAC) tensor decomposition via ALS |
-| `similarity_network_fusion()` | Similarity Network Fusion of patient similarity networks |
-| `canonical_correlation()` | Regularized (ridge) CCA for two omic matrices via SVD; takes arrays, centres but does not standardize them, and returns a dict (the DataFrame-based variant that standardizes and returns a tuple is `analysis.integration.canonical_correlation`) |
+| `similarity_network_fusion()` | Similarity Network Fusion of patient similarity networks (`alpha` has no effect and warns when changed) |
+| `canonical_correlation()` | Regularized (ridge) CCA for two omic matrices via thin SVDs; takes arrays, centres but does not standardize them (so `regularization`, default 0.1, is on the covariance scale of the data given), and returns a dict with scores, canonical weights, loadings and correlations. It runs the same numerical core as the DataFrame-based variant that standardizes and returns a tuple (`analysis.integration.canonical_correlation`), so the two agree on standardized data; with `regularization=0` it raises `ValueError` when a matrix has numerical rank `n_samples - 1` or more (every correlation would be 1) and it refuses NaN |
 
 ### clustering.py
 

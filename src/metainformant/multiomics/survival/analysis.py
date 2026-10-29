@@ -32,10 +32,94 @@ except ImportError:
     HAS_NUMPY = False
     np = None
 
+sp_stats: Any  # None when scipy is unavailable (scipy is a declared dependency, so this is a safety net)
+try:
+    from scipy import stats as sp_stats
+except ImportError:
+    sp_stats = None
+
 
 # ---------------------------------------------------------------------------
 # Cox Proportional Hazards Regression
 # ---------------------------------------------------------------------------
+
+
+_COX_MAX_ITERATIONS = 50
+_COX_MAX_HALVINGS = 30
+
+
+def _breslow_partial_likelihood(time: Any, event: Any, covariates: Any, beta: Any) -> tuple[float, Any, Any]:
+    """Log partial likelihood, its gradient and the information matrix at ``beta`` (Breslow ties).
+
+    The three inputs are sorted by ascending time. For every distinct event time ``tau`` with ``d`` events
+    and risk set ``R`` (everyone observed for at least ``tau``, tied subjects included), with
+    ``S0 = sum_R exp(eta)``, ``S1 = sum_R x exp(eta)`` and ``S2 = sum_R x x' exp(eta)``::
+
+        loglik   += sum_events eta - d log S0
+        gradient += sum_events x - d S1 / S0
+        info     += d (S2 / S0 - (S1 / S0)(S1 / S0)')
+
+    The risk-set sums are accumulated while walking the distinct times from the latest to the earliest, so
+    only ``p x p`` matrices are formed.
+
+    Returns:
+        ``(loglik, gradient, information)``; the information matrix is minus the Hessian.
+    """
+    n, p = covariates.shape
+    eta = covariates @ beta
+    shift = float(eta.max())  # exp(eta - shift) cannot overflow; the shift is added back into the likelihood
+    weight = np.exp(eta - shift)
+
+    loglik = 0.0
+    gradient = np.zeros(p)
+    information = np.zeros((p, p))
+    s0 = 0.0
+    s1 = np.zeros(p)
+    s2 = np.zeros((p, p))
+
+    stop = n
+    while stop > 0:
+        start = stop - 1
+        while start > 0 and time[start - 1] == time[stop - 1]:
+            start -= 1
+        group_weight = weight[start:stop]
+        group_x = covariates[start:stop]
+        s0 += float(group_weight.sum())
+        s1 += group_weight @ group_x
+        s2 += (group_x * group_weight[:, None]).T @ group_x
+
+        is_event = event[start:stop] == 1
+        n_events = int(is_event.sum())
+        if n_events:
+            mean_x = s1 / s0
+            loglik += float(eta[start:stop][is_event].sum()) - n_events * (math.log(s0) + shift)
+            gradient += group_x[is_event].sum(axis=0) - n_events * mean_x
+            information += n_events * (s2 / s0 - np.outer(mean_x, mean_x))
+        stop = start
+
+    return loglik, gradient, information
+
+
+def _checked_information(information: Any, *, at_start: bool) -> None:
+    """Raise unless the information matrix is numerically positive definite (a unique maximum exists).
+
+    At the starting point (all coefficients zero) a singular matrix means the design itself is degenerate; later
+    in the iteration it means the information is vanishing because a coefficient is running off to infinity.
+    """
+    eigenvalues = np.linalg.eigvalsh(information)
+    tolerance = information.shape[0] * np.finfo(float).eps * max(float(eigenvalues[-1]), 1e-300)
+    if float(eigenvalues[0]) > tolerance:
+        return
+    if at_start:
+        raise ValueError(
+            "The Cox information matrix is singular, so the coefficients are not identified: a covariate is "
+            "constant or the covariates are collinear (or the sample has too few events for this many "
+            "covariates). Drop or combine covariates, or use multi_omic_survival_model for penalised fits."
+        )
+    raise ValueError(
+        "Cox regression did not converge: the information matrix vanished as the coefficients grew, so a "
+        "coefficient is infinite because a covariate (or a combination of them) separates the events perfectly"
+    )
 
 
 def cox_regression(
@@ -47,8 +131,10 @@ def cox_regression(
     """Cox proportional hazards regression.
 
     Fits a Cox PH model by maximising the partial likelihood using
-    Newton-Raphson optimisation.  Handles tied event times with the
-    Breslow approximation.
+    Newton-Raphson optimisation with exact gradient and Hessian (step halving
+    whenever a step lowers the likelihood).  Handles tied event times with the
+    Breslow approximation: every subject observed for at least the event time,
+    tied subjects included, is in the risk set.
 
     The hazard for subject i is:
         h_i(t) = h_0(t) * exp(X_i @ beta)
@@ -57,7 +143,7 @@ def cox_regression(
     coefficients.
 
     Args:
-        time: Observed survival times (n subjects).
+        time: Observed survival times (n subjects), finite.
         event: Event indicators (1 = event/death, 0 = censored).
         covariates: Covariate matrix (n x p) as numpy array or
             list-of-lists.
@@ -67,14 +153,18 @@ def cox_regression(
         Dictionary with keys:
             coefficients: Regression coefficients (list of float).
             hazard_ratios: exp(coefficients) per covariate.
-            se: Standard errors of coefficients.
+            se: Standard errors of coefficients (square roots of the diagonal of the inverse information
+                matrix at the maximum).
             p_values: Wald test p-values for each coefficient.
             concordance_index: Harrell's C-index for the fitted model.
-            log_likelihood: Final log partial likelihood.
+            log_likelihood: Log partial likelihood (Breslow) at the fitted coefficients.
             covariate_names: Names of covariates.
 
     Raises:
-        ValueError: If inputs have incompatible lengths or no events.
+        ValueError: If inputs have incompatible lengths, a time is not finite, an event indicator is not 0
+            or 1, there is no event, the covariates are collinear or constant (the information matrix is
+            singular), or the iteration does not converge (typically complete separation, where a
+            coefficient is infinite).
         ImportError: If numpy is not available.
     """
     n = len(time)
@@ -82,6 +172,8 @@ def cox_regression(
         raise ValueError(f"time ({n}) and event ({len(event)}) must have the same length")
     if n == 0:
         raise ValueError("Cannot fit Cox model on empty data")
+    if any(e not in (0, 1) for e in event):
+        raise ValueError("event must contain only 0 (censored) and 1 (event)")
     if sum(event) == 0:
         raise ValueError("No events in the data; Cox model cannot be fitted")
 
@@ -99,113 +191,59 @@ def cox_regression(
     p = X.shape[1]
     t = np.asarray(time, dtype=np.float64)
     d = np.asarray(event, dtype=np.float64)
+    if not np.all(np.isfinite(t)):
+        raise ValueError("time must be finite")
+    if not np.all(np.isfinite(X)):
+        raise ValueError("covariates must be finite")
 
     if covariate_names is None:
         covariate_names = [f"X{i}" for i in range(p)]
     if len(covariate_names) != p:
         raise ValueError(f"covariate_names has {len(covariate_names)} entries but need {p}")
 
-    # Sort by time (descending for risk set construction)
-    order = np.argsort(-t)
-    t = t[order]
-    d = d[order]
-    X = X[order]
+    order = np.argsort(t, kind="stable")
+    t_sorted, d_sorted, x_sorted = t[order], d[order], X[order]
 
-    # Newton-Raphson
     beta = np.zeros(p, dtype=np.float64)
-    max_iter = 50
-    tol = 1e-6
+    log_lik, gradient, information = _breslow_partial_likelihood(t_sorted, d_sorted, x_sorted, beta)
+    converged = False
+    for iteration in range(1, _COX_MAX_ITERATIONS + 1):
+        _checked_information(information, at_start=iteration == 1)
+        step = np.linalg.solve(information, gradient)
 
-    for iteration in range(max_iter):
-        # Compute risk scores
-        eta = X @ beta
-        exp_eta = np.exp(eta - eta.max())  # numerical stability
+        # Newton step, halved while it lowers the likelihood
+        for _ in range(_COX_MAX_HALVINGS):
+            candidate = beta + step
+            new_log_lik, new_gradient, new_information = _breslow_partial_likelihood(
+                t_sorted, d_sorted, x_sorted, candidate
+            )
+            if new_log_lik >= log_lik - 1e-12 * abs(log_lik):
+                break
+            step = step / 2.0
+        else:
+            raise ValueError("Cox regression could not find an increasing step; the likelihood is not improvable")
 
-        # Ascending view of the descending-sorted arrays: the risk set at
-        # time t[i] covers all subjects with observed time >= t[i], so the
-        # per-time risk sums are reverse cumulative sums over this view.
-        asc = np.argsort(t)
-        t_asc = t[asc]
-        d_asc = d[asc]
-        X_asc = X[asc]
-        exp_eta_asc = exp_eta[asc]
-
-        # Reverse cumulative sums
-        S0 = np.cumsum(exp_eta_asc[::-1])[::-1]  # sum exp_eta for risk set
-        S1 = np.cumsum((X_asc * exp_eta_asc[:, None])[::-1], axis=0)[::-1]
-        S2_diag = np.cumsum((X_asc**2 * exp_eta_asc[:, None])[::-1], axis=0)[::-1]
-
-        # Gradient and log partial likelihood
-        gradient = np.zeros(p, dtype=np.float64)
-        log_lik = 0.0
-
-        for i in range(n):
-            if d_asc[i] == 0:
-                continue
-            s0_i = S0[i] + 1e-10
-            s1_i = S1[i]
-            mean_x = s1_i / s0_i
-            gradient += X_asc[i] - mean_x
-            log_lik += float(np.dot(X_asc[i], beta)) - math.log(s0_i)
-
-        # Simplified Hessian (diagonal + off-diagonal from S1 outer product)
-        hessian_full = np.zeros((p, p), dtype=np.float64)
-        for i in range(n):
-            if d_asc[i] == 0:
-                continue
-            s0_i = S0[i] + 1e-10
-            s1_i = S1[i]
-            mean_x = s1_i / s0_i
-            var_x = S2_diag[i] / s0_i - mean_x**2
-            for j in range(p):
-                hessian_full[j, j] -= var_x[j]
-                for j2 in range(j + 1, p):
-                    cov_jj2 = s1_i[j] * s1_i[j2] / (s0_i**2)
-                    # Cross-covariance approximation
-                    hessian_full[j, j2] += cov_jj2
-                    hessian_full[j2, j] += cov_jj2
-
-        # Newton step
-        try:
-            delta = np.linalg.solve(hessian_full - 1e-6 * np.eye(p), gradient)
-        except np.linalg.LinAlgError:
-            logger.warning("Hessian singular at iteration %d; using gradient step", iteration)
-            delta = 0.01 * gradient
-
-        beta_new = beta - delta
-        if np.max(np.abs(beta_new - beta)) < tol:
-            beta = beta_new
-            logger.info("Cox regression converged at iteration %d", iteration + 1)
+        converged = (
+            abs(new_log_lik - log_lik) <= 1e-10 * (abs(new_log_lik) + 0.1) and float(np.max(np.abs(step))) < 1e-7
+        )
+        beta, log_lik, gradient, information = candidate, new_log_lik, new_gradient, new_information
+        if converged:
+            logger.info("Cox regression converged at iteration %d", iteration)
             break
-        beta = beta_new
+    if not converged:
+        raise ValueError(
+            f"Cox regression did not converge in {_COX_MAX_ITERATIONS} iterations; a coefficient is probably "
+            "infinite because a covariate (or a combination of them) separates the events perfectly"
+        )
 
-    # Standard errors from inverse Hessian
-    try:
-        info = -hessian_full
-        cov_matrix = np.linalg.inv(info + 1e-8 * np.eye(p))
-        se = np.sqrt(np.abs(np.diag(cov_matrix)))
-    except np.linalg.LinAlgError:
-        se = np.full(p, float("nan"))
+    # Standard errors from the inverse information matrix at the maximum
+    _checked_information(information, at_start=False)
+    se = np.sqrt(np.diag(np.linalg.inv(information)))
 
-    # Wald test p-values
-    z_scores = beta / (se + 1e-10)
-    p_values: list[float] = []
-    for z in z_scores:
-        pval = 2.0 * (0.5 * math.erfc(abs(float(z)) / math.sqrt(2.0)))
-        p_values.append(pval)
+    # Wald test p-values: two-sided normal tail, exact through erfc
+    p_values = [math.erfc(abs(float(b / s)) / math.sqrt(2.0)) for b, s in zip(beta, se)]
 
-    # Concordance index
-    risk_scores_final = (X @ beta).tolist()
-    # Need original order for concordance
-    original_risk = [0.0] * n
-    original_time = [0.0] * n
-    original_event = [0] * n
-    for i, idx in enumerate(asc):
-        original_risk[idx] = risk_scores_final[i]
-        original_time[idx] = float(t_asc[i])
-        original_event[idx] = int(d_asc[i])
-
-    c_result = compute_concordance_index(original_risk, original_time, original_event)
+    c_result = compute_concordance_index((X @ beta).tolist(), t.tolist(), d.astype(int).tolist())
 
     logger.info(
         "Cox regression complete: C-index=%.4f, log_lik=%.4f",
@@ -361,6 +399,33 @@ def _km_single(time: list[float], event: list[int]) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
+def _solve_symmetric(matrix: list[list[float]], rhs: list[float]) -> list[float]:
+    """Solve ``matrix @ x = rhs`` by Gaussian elimination with partial pivoting (pure Python).
+
+    Raises:
+        ValueError: If the matrix is numerically singular.
+    """
+    size = len(rhs)
+    aug = [list(matrix[i]) + [rhs[i]] for i in range(size)]
+    scale = max((abs(matrix[i][i]) for i in range(size)), default=0.0)
+    for col in range(size):
+        pivot = max(range(col, size), key=lambda r: abs(aug[r][col]))
+        if abs(aug[pivot][col]) <= 1e-12 * scale:
+            raise ValueError(
+                "The log-rank covariance matrix is singular, so the groups cannot be compared: some groups "
+                "are never separable at the observed event times (check for groups with identical at-risk sets)"
+            )
+        aug[col], aug[pivot] = aug[pivot], aug[col]
+        for row in range(col + 1, size):
+            factor = aug[row][col] / aug[col][col]
+            for k in range(col, size + 1):
+                aug[row][k] -= factor * aug[col][k]
+    solution = [0.0] * size
+    for row in range(size - 1, -1, -1):
+        solution[row] = (aug[row][size] - sum(aug[row][k] * solution[k] for k in range(row + 1, size))) / aug[row][row]
+    return solution
+
+
 def log_rank_test(
     time: list[float],
     event: list[int],
@@ -369,7 +434,15 @@ def log_rank_test(
     """Log-rank test comparing survival between groups.
 
     Implements the Mantel-Haenszel test statistic comparing observed vs
-    expected events in each group at every distinct event time.
+    expected events in each group at every distinct event time.  With ``d``
+    events among ``N`` subjects at risk, ``n_g`` of them in group ``g``, the
+    expected events of group ``g`` are ``d n_g / N`` and the hypergeometric
+    covariance of the group scores is
+    ``d (N - d) n_g (N delta_gh - n_h) / (N**2 (N - 1))``.  The statistic is
+    ``(O - E)' V^-1 (O - E)`` over all groups but one, which is chi-squared
+    with (number of groups - 1) degrees of freedom; for two groups it is
+    ``(O - E)**2 / V``.  A group that is never at risk when an event occurs
+    carries no information and is left out (and the degrees of freedom with it).
 
     Args:
         time: Observed survival times.
@@ -379,12 +452,14 @@ def log_rank_test(
     Returns:
         Dictionary with keys:
             chi2: Chi-squared test statistic.
-            p_value: P-value from chi-squared distribution with (g-1) df.
-            df: Degrees of freedom.
+            p_value: P-value from chi-squared distribution with ``df`` degrees of freedom.
+            df: Degrees of freedom (the number of compared groups minus one).
             observed_expected_per_group: {group: {observed, expected}}.
 
     Raises:
-        ValueError: If inputs have incompatible lengths or fewer than 2 groups.
+        ValueError: If inputs have incompatible lengths, fewer than 2 groups are given, no event occurs
+            while two groups are at risk (the groups cannot be compared, and a p-value of 1.0 would
+            claim they were), or the covariance matrix is singular.
     """
     n = len(time)
     if n != len(event) or n != len(groups):
@@ -395,23 +470,27 @@ def log_rank_test(
     unique_groups = sorted(set(groups))
     if len(unique_groups) < 2:
         raise ValueError("Need at least 2 groups for log-rank test")
+    n_groups = len(unique_groups)
+    slot = {g: i for i, g in enumerate(unique_groups)}
 
-    logger.info("Running log-rank test: n=%d, groups=%d", n, len(unique_groups))
+    logger.info("Running log-rank test: n=%d, groups=%d", n, n_groups)
 
     # Sort by time
     order = sorted(range(n), key=lambda i: time[i])
     t_sorted = [time[i] for i in order]
     e_sorted = [event[i] for i in order]
-    g_sorted = [groups[i] for i in order]
+    g_sorted = [slot[groups[i]] for i in order]
 
     # Unique event times
     event_times = sorted(set(t_sorted[i] for i in range(n) if e_sorted[i] == 1))
 
     # Track at-risk counts per group
-    at_risk: dict[int, int] = {g: sum(1 for gi in groups if gi == g) for g in unique_groups}
-    observed: dict[int, float] = {g: 0.0 for g in unique_groups}
-    expected: dict[int, float] = {g: 0.0 for g in unique_groups}
-    variance: dict[int, float] = {g: 0.0 for g in unique_groups}
+    at_risk = [0] * n_groups
+    for g in g_sorted:
+        at_risk[g] += 1
+    observed = [0.0] * n_groups
+    expected = [0.0] * n_groups
+    covariance = [[0.0] * n_groups for _ in range(n_groups)]
 
     ptr = 0  # pointer into sorted arrays
     for t_event in event_times:
@@ -421,61 +500,60 @@ def log_rank_test(
             ptr += 1
 
         # Count events at this time
-        total_at_risk = sum(at_risk.values())
+        total_at_risk = sum(at_risk)
         if total_at_risk == 0:
             continue
 
-        events_at_t: dict[int, int] = {g: 0 for g in unique_groups}
+        events_at_t = [0] * n_groups
         temp_ptr = ptr
         while temp_ptr < n and t_sorted[temp_ptr] == t_event:
             if e_sorted[temp_ptr] == 1:
                 events_at_t[g_sorted[temp_ptr]] += 1
             temp_ptr += 1
 
-        d_j = sum(events_at_t.values())
+        d_j = sum(events_at_t)
 
-        for g in unique_groups:
-            n_g = at_risk[g]
-            e_g = d_j * n_g / total_at_risk if total_at_risk > 0 else 0.0
+        for g in range(n_groups):
             observed[g] += events_at_t[g]
-            expected[g] += e_g
+            expected[g] += d_j * at_risk[g] / total_at_risk
 
-            # Variance contribution
-            if total_at_risk > 1:
-                v_g = (d_j * n_g * (total_at_risk - n_g) * (total_at_risk - d_j)) / (
-                    total_at_risk**2 * (total_at_risk - 1)
-                )
-                variance[g] += v_g
+        # Hypergeometric covariance of the group scores at this event time
+        if total_at_risk > 1:
+            factor = d_j * (total_at_risk - d_j) / (total_at_risk**2 * (total_at_risk - 1))
+            for g in range(n_groups):
+                for h in range(n_groups):
+                    own = total_at_risk if g == h else 0
+                    covariance[g][h] += factor * at_risk[g] * (own - at_risk[h])
 
         # Advance pointer past events at this time
         while ptr < n and t_sorted[ptr] == t_event:
             at_risk[g_sorted[ptr]] -= 1
             ptr += 1
 
-    # Chi-squared statistic (use first g-1 groups)
-    df = len(unique_groups) - 1
-    chi2 = 0.0
-    for g in unique_groups[:-1]:
-        v = variance[g]
-        if v > 0:
-            chi2 += (observed[g] - expected[g]) ** 2 / v
+    # Chi-squared statistic over the groups that were at risk at an event time, all but the last of them
+    active = [g for g in range(n_groups) if expected[g] > 0]
+    df = len(active) - 1
+    if df < 1:
+        raise ValueError(
+            "No event occurs while two or more groups are at risk, so the groups cannot be compared "
+            "(a chi-squared of 0 with p = 1.0 would claim there is no difference)"
+        )
+    kept = active[:-1]
+    deviation = [observed[g] - expected[g] for g in kept]
+    weighted = _solve_symmetric([[covariance[g][h] for h in kept] for g in kept], deviation)
+    chi2 = max(0.0, sum(a * b for a, b in zip(deviation, weighted)))
 
     # P-value
-    if HAS_NUMPY:
-        from scipy import stats as _stats
-
-        p_value = float(_stats.chi2.sf(chi2, df))
+    if sp_stats is not None:
+        p_value = float(sp_stats.chi2.sf(chi2, df))
     else:
-        # Approximate
-        if df > 0:
-            z = ((chi2 / df) ** (1.0 / 3) - (1 - 2.0 / (9 * df))) / math.sqrt(2.0 / (9 * df))
-            p_value = 0.5 * math.erfc(z / math.sqrt(2.0))
-        else:
-            p_value = 1.0
+        logger.warning("scipy is not available: the log-rank p-value is a Wilson-Hilferty approximation")
+        z = ((chi2 / df) ** (1.0 / 3) - (1 - 2.0 / (9 * df))) / math.sqrt(2.0 / (9 * df))
+        p_value = 0.5 * math.erfc(z / math.sqrt(2.0))
 
     obs_exp: dict[int, dict[str, float]] = {}
     for g in unique_groups:
-        obs_exp[g] = {"observed": observed[g], "expected": expected[g]}
+        obs_exp[g] = {"observed": observed[slot[g]], "expected": expected[slot[g]]}
 
     logger.info("Log-rank test: chi2=%.4f, df=%d, p=%.4e", chi2, df, p_value)
 
@@ -504,7 +582,10 @@ def multi_omic_survival_model(
     with L1 (lasso) penalty for automatic feature selection.
 
     The L1-penalised partial log-likelihood is optimised using coordinate
-    descent.
+    descent.  The penalty strength is not tuned: it is fixed at one tenth of the
+    smallest penalty that would remove every feature (lambda_max / 10), with the
+    features standardized, so the number of selected features is a property of
+    that choice and of the data, not the outcome of a cross-validated search.
 
     Args:
         omic_features: Mapping from omic name to feature matrix (n x p_m)
@@ -687,7 +768,9 @@ def risk_stratification(
                 (approximate, based on log-rank O/E ratio).
 
     Raises:
-        ValueError: If inputs are incompatible or n_groups < 2.
+        ValueError: If inputs are incompatible or n_groups < 2, or the risk groups cannot be compared
+            (from :func:`log_rank_test`: all scores fall in one group, or no event occurs while two groups
+            are at risk).
     """
     n = len(risk_scores)
     if n != len(time) or n != len(event):
@@ -779,7 +862,9 @@ def compute_concordance_index(
 
     Returns:
         Dictionary with keys:
-            c_index: Concordance index value.
+            c_index: Concordance index value.  When no pair of subjects is comparable (for
+                example no event at all) it is reported as 0.5, the value of a model that does
+                not discriminate, and ``se`` as 0.0: a convention, not an estimate.
             se: Standard error estimate.
             n_concordant: Number of concordant pairs.
             n_discordant: Number of discordant pairs.

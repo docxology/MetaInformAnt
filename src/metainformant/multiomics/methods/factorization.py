@@ -11,13 +11,15 @@ Algorithms:
     - MOFA simple: EM-based Bayesian factor model with ARD sparsity priors.
     - Tensor decomposition: alternating least squares CP decomposition.
     - SNF: iterative diffusion to fuse patient similarity networks.
-    - CCA: SVD-based regularized canonical correlation for two views.
+    - CCA: SVD-based regularized canonical correlation for two views (the one numerical core,
+      ``_ridge_cca``, also serves ``analysis.integration.canonical_correlation``).
 """
 
 from __future__ import annotations
 
 import math
 import random
+import warnings
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger
@@ -54,9 +56,12 @@ def _py_zeros(rows: int, cols: int) -> list[list[float]]:
     return [[0.0] * cols for _ in range(rows)]
 
 
-def _py_random_matrix(rows: int, cols: int) -> list[list[float]]:
-    """Create a rows x cols matrix of random non-negative values."""
-    return [[random.random() * 0.5 + 0.01 for _ in range(cols)] for _ in range(rows)]
+def _py_random_matrix(rows: int, cols: int, rng: random.Random) -> list[list[float]]:
+    """Create a rows x cols matrix of random non-negative values drawn from ``rng``.
+
+    The generator is passed in so that seeding it never touches the global ``random`` state of the process.
+    """
+    return [[rng.random() * 0.5 + 0.01 for _ in range(cols)] for _ in range(rows)]
 
 
 def _py_matmul(A: list[list[float]], B: list[list[float]]) -> list[list[float]]:
@@ -194,12 +199,12 @@ def joint_nmf(
             n_feat = V.shape[1]
             H_dict[name] = rng.rand(k, n_feat).astype(np.float64) * 0.5 + 0.01
     else:
-        random.seed(42)
-        W = _py_random_matrix(n_samples, k)
+        py_rng = random.Random(42)  # a private generator: seeding the global one would reset it for the whole process
+        W = _py_random_matrix(n_samples, k, py_rng)
         H_dict = {}
         for name, V in views.items():
             n_feat = len(V[0])
-            H_dict[name] = _py_random_matrix(k, n_feat)
+            H_dict[name] = _py_random_matrix(k, n_feat, py_rng)
 
     # --- Multiplicative updates ------------------------------------------
     prev_error = float("inf")
@@ -658,8 +663,10 @@ def similarity_network_fusion(
             list-of-lists.
         k_neighbors: Number of neighbours for local kernel construction.
         n_iter: Number of diffusion iterations.
-        alpha: Scaling parameter for the kernel normalisation (controls
-            kernel bandwidth).  Higher values produce sparser kernels.
+        alpha: Has no effect and is kept only so that existing calls still run.  In published SNF the
+            hyper-parameter scales the heat kernel that turns distances into similarities; this function
+            receives similarity matrices that are already computed, so there is no kernel to scale.  A
+            value other than the default 0.5 raises a ``UserWarning``.
 
     Returns:
         Dictionary with keys:
@@ -674,6 +681,13 @@ def similarity_network_fusion(
     """
     if len(networks) < 2:
         raise ValueError("SNF requires at least 2 networks to fuse")
+    if alpha != 0.5:
+        warnings.warn(
+            f"similarity_network_fusion: alpha={alpha!r} has no effect (the similarity matrices are given, so "
+            "there is no kernel to scale); the argument is accepted only for backward compatibility",
+            UserWarning,
+            stacklevel=2,
+        )
 
     logger.info("Running SNF with %d networks, k=%d, n_iter=%d", len(networks), k_neighbors, n_iter)
 
@@ -895,6 +909,138 @@ def _compute_silhouette(similarity: Any, labels: list[int]) -> float:
 # ---------------------------------------------------------------------------
 
 
+def _thin_svd(matrix: Any) -> tuple[Any, Any, Any]:
+    """Thin SVD keeping only the numerically non-zero singular values (the numerical rank)."""
+    u, s, vt = np.linalg.svd(matrix, full_matrices=False)
+    if s.size == 0 or s[0] == 0.0:
+        return u[:, :0], s[:0], vt[:0]
+    rank = int(np.sum(s > s[0] * max(matrix.shape) * np.finfo(matrix.dtype).eps))
+    return u[:, :rank], s[:rank], vt[:rank]
+
+
+def _ridge_cca(
+    x: Any,
+    y: Any,
+    n_components: int,
+    regularization: float,
+    names: tuple[str, str] = ("X", "Y"),
+) -> tuple[Any, Any, Any, Any, Any]:
+    """Ridge-regularized CCA of two column-centred matrices: the one numerical core behind both public CCAs.
+
+    Solves the whitened problem ``M = (Cxx + lI)^(-1/2) Cxy (Cyy + lI)^(-1/2)`` (``C`` are the
+    sample covariance matrices of ``x`` and ``y`` with divisor ``n - 1``, ``l`` is ``regularization``).
+    With the thin SVDs ``x = Ux Sx Vx'`` and ``y = Uy Sy Vy'`` the nonzero singular values of ``M`` are
+    those of the small matrix ``K = diag(gx) Ux'Uy diag(gy)`` with ``g = s / sqrt(s**2 + (n - 1) l)``,
+    so no ``p x p`` or ``q x q`` matrix is ever formed. The canonical directions are
+    ``A = Vx diag(sqrt(n - 1) / sqrt(Sx**2 + (n - 1) l)) P`` where ``K = P R Q'``, which gives
+    ``A'(Cxx + lI)A = I``. The scale of the columns is the caller's choice: ``l`` is on the scale of the
+    covariance matrices of whatever is passed in (correlation matrices if the columns were standardized).
+
+    Without a ridge the problem is only identified when the layers leave room for each other. Centred
+    data of ``n`` samples live in ``n - 1`` dimensions, so a layer of numerical rank ``n - 1`` (for
+    example any layer with ``n - 1`` or more informative features) spans all of them, every column of the
+    other layer lies in that span, and *every* canonical correlation is exactly 1 whatever the data are.
+    More generally, when the two ranks add up to more than ``n - 1`` the column spaces must share at
+    least that excess of dimensions, and the leading canonical correlations (the ones an analysis
+    reports) are exactly 1 by construction. Both cases are refused with a ValueError.
+
+    Args:
+        x: First centred matrix (n x p).
+        y: Second centred matrix (n x q), the same ``n``.
+        n_components: Number of canonical pairs wanted.
+        regularization: Ridge parameter ``l >= 0`` (validated by the callers).
+        names: How the two layers are called in messages.
+
+    Returns:
+        ``(x_scores, y_scores, x_weights, y_weights, correlations)``: the canonical variates (n x pairs),
+        the canonical weights (p x pairs and q x pairs; ``x_scores = x @ x_weights``) and the canonical
+        correlations (descending, in [0, 1]). Fewer pairs than ``n_components`` are returned, with a
+        warning, when the ranks of the layers cannot support that many. The sign of each pair is fixed:
+        its largest-magnitude ``x`` weight is positive.
+
+    Raises:
+        ValueError: If a layer has no variation, or ``regularization`` is zero and the two layers' ranks
+            add up to more than ``n - 1`` (the leading correlations would be 1 by construction; a layer
+            of rank ``n - 1`` makes all of them 1).
+    """
+    n = x.shape[0]
+    ux, sx, vxt = _thin_svd(x)
+    uy, sy, vyt = _thin_svd(y)
+    if sx.size == 0 or sy.size == 0:
+        raise ValueError("CCA needs layers with at least one non-constant feature")
+
+    if regularization == 0.0:
+        for name, matrix, rank in ((names[0], x, sx.size), (names[1], y, sy.size)):
+            if rank >= n - 1:
+                raise ValueError(
+                    f"Unregularized CCA is degenerate for these data: layer {name!r} has {matrix.shape[1]} "
+                    f"features of numerical rank {rank}, and {n} centred samples span only {n - 1} dimensions, "
+                    f"so that layer spans all of them and every canonical correlation is exactly 1 whatever "
+                    f"the data are. Use regularization > 0 (a small ridge such as 0.1 keeps the correlations "
+                    f"informative), or reduce the layer to fewer than {n - 1} features."
+                )
+        if sx.size + sy.size > n - 1:
+            raise ValueError(
+                f"Unregularized CCA is degenerate for these data: the layers {names[0]!r} and {names[1]!r} have "
+                f"numerical ranks {sx.size} and {sy.size}, but {n} centred samples span only {n - 1} dimensions, "
+                f"so their column spaces share at least {sx.size + sy.size - (n - 1)} dimension(s) and the leading "
+                f"canonical correlation(s) equal 1 by construction, whatever the data are. Use "
+                f"regularization > 0 (a small ridge such as 0.1 keeps the correlations informative), or reduce "
+                f"the layers to at most {n - 1} combined informative features."
+            )
+
+    ridge = regularization * (n - 1)
+    kernel = (sx / np.sqrt(sx**2 + ridge))[:, None] * (ux.T @ uy) * (sy / np.sqrt(sy**2 + ridge))[None, :]
+    left, rho, right_t = np.linalg.svd(kernel, full_matrices=False)
+
+    n_pairs = min(n_components, rho.size)
+    if n_pairs < n_components:
+        logger.warning(
+            "Only %d canonical pair(s) can be estimated (rank of the layers is %d and %d); "
+            "returning %d instead of %d",
+            n_pairs,
+            sx.size,
+            sy.size,
+            n_pairs,
+            n_components,
+        )
+
+    x_weights = vxt.T @ ((np.sqrt(n - 1) / np.sqrt(sx**2 + ridge))[:, None] * left[:, :n_pairs])
+    y_weights = vyt.T @ ((np.sqrt(n - 1) / np.sqrt(sy**2 + ridge))[:, None] * right_t[:n_pairs].T)
+
+    # Deterministic sign: the largest-magnitude X weight of each pair is positive. Both members of a
+    # pair flip together, so the canonical variates stay positively correlated.
+    for j in range(n_pairs):
+        if x_weights[np.argmax(np.abs(x_weights[:, j])), j] < 0.0:
+            x_weights[:, j] *= -1.0
+            y_weights[:, j] *= -1.0
+
+    correlations = np.clip(rho[:n_pairs], 0.0, 1.0)
+    return x @ x_weights, y @ y_weights, x_weights, y_weights, correlations
+
+
+def _checked_ridge(value: Any) -> float:
+    """``value`` as a float if it is a finite real number >= 0 (text is not a number), else a ValueError."""
+    try:
+        ridge = math.nan if isinstance(value, (str, bytes)) else float(value)
+    except (TypeError, ValueError):
+        ridge = math.nan
+    if not (math.isfinite(ridge) and ridge >= 0):
+        raise ValueError(f"regularization must be a finite number >= 0, got {value!r}")
+    return ridge
+
+
+def _structure_correlations(centered: Any, scores: Any) -> Any:
+    """Correlation of every column of ``centered`` with every column of ``scores`` (both column-centred).
+
+    NaN where a column is constant: a feature without variation has no correlation with anything.
+    """
+    column_norm = np.linalg.norm(centered, axis=0)
+    score_norm = np.linalg.norm(scores, axis=0)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return (centered.T @ scores) / np.outer(column_norm, score_norm)
+
+
 def canonical_correlation(
     X: Any,
     Y: Any,
@@ -907,35 +1053,51 @@ def canonical_correlation(
     correlated.  Regularisation (ridge penalty) is applied to the
     covariance matrices to handle high-dimensional / collinear data.
 
+    The matrices are centred, not standardized, so ``regularization`` is on the scale of the covariance
+    matrices of the data as given (standardize first for the correlation-matrix scale that
+    ``analysis.integration.canonical_correlation`` uses). Both functions run the same numerical core: they give
+    the same canonical correlations, variates and weights for the same standardized data and the same
+    ``regularization``.
+
     SVD-based implementation:
-        1. Compute within- and between-view covariance matrices.
-        2. Add regularisation to within-view covariances.
-        3. Solve the generalised eigenvalue problem via SVD of the
-           whitened cross-covariance matrix.
+        1. Take thin SVDs of the centred matrices, so only ``n x n`` quantities are formed.
+        2. Whiten each view with its ridge-regularised covariance ``C + regularization * I``.
+        3. The canonical correlations are the singular values of the whitened cross-covariance matrix.
 
     Args:
         X: First omic data matrix (n_samples x p) as numpy array or
             list-of-lists.
         Y: Second omic data matrix (n_samples x q) as numpy array or
             list-of-lists.
-        n_components: Number of canonical components to extract.
-        regularization: Ridge regularisation parameter (lambda >= 0).
+        n_components: Number of canonical components to extract.  Fewer are returned (with a warning) when
+            the matrices have fewer features, or too low a rank, to support that many pairs.
+        regularization: Ridge regularisation parameter (lambda >= 0, finite).  Zero is classical CCA, which
+            is refused when it is degenerate (see Raises).
 
     Returns:
         Dictionary with keys:
             x_scores: Canonical scores for X (n_samples x n_components).
             y_scores: Canonical scores for Y (n_samples x n_components).
-            correlations: Canonical correlations per component.
-            x_loadings: Loading matrix for X (p x n_components).
-            y_loadings: Loading matrix for Y (q x n_components).
+            correlations: Canonical correlations per component, descending, in [0, 1].
+            x_weights: Canonical weights for X (p x n_components); ``x_scores = centred X @ x_weights``.
+            y_weights: Canonical weights for Y (q x n_components).
+            x_loadings: Correlation of each X variable with each canonical score (p x n_components); NaN for
+                a constant variable.
+            y_loadings: Correlation of each Y variable with each canonical score (q x n_components).
 
     Raises:
-        ValueError: If X and Y have different numbers of samples, or
-            n_components < 1.
+        ValueError: If X and Y have different numbers of samples, are not 2-D, have fewer than 2 samples,
+            contain NaN or infinite values, or have no variation; if ``n_components < 1``; if
+            ``regularization`` is negative or not finite; or if ``regularization`` is 0 and either matrix
+            has numerical rank ``n_samples - 1`` or more, which happens whenever it has that many
+            informative features. Centred data of n samples span n - 1 dimensions, so such a matrix spans all of
+            them and every canonical correlation is exactly 1 whatever the data are: pass
+            ``regularization > 0``.
         ImportError: If numpy is not available.
     """
     if n_components < 1:
         raise ValueError(f"n_components must be >= 1, got {n_components}")
+    regularization = _checked_ridge(regularization)
 
     logger.info(
         "Running regularised CCA with n_components=%d, reg=%.4f",
@@ -955,67 +1117,28 @@ def canonical_correlation(
         raise ValueError(
             f"Sample-dimension mismatch: X has {X_arr.shape[0]} samples, " f"Y has {Y_arr.shape[0]} samples"
         )
-
     n = X_arr.shape[0]
-    p = X_arr.shape[1]
-    q = Y_arr.shape[1]
-    n_components = min(n_components, p, q, n)
+    if n < 2:
+        raise ValueError(f"CCA requires at least 2 samples, got {n}")
+    if not (np.all(np.isfinite(X_arr)) and np.all(np.isfinite(Y_arr))):
+        raise ValueError("X and Y must not contain NaN or infinite values; impute or remove them first")
 
     # Center
     X_c = X_arr - X_arr.mean(axis=0, keepdims=True)
     Y_c = Y_arr - Y_arr.mean(axis=0, keepdims=True)
 
-    # Covariance matrices
-    Cxx = (X_c.T @ X_c) / (n - 1) + regularization * np.eye(p)
-    Cyy = (Y_c.T @ Y_c) / (n - 1) + regularization * np.eye(q)
-    Cxy = (X_c.T @ Y_c) / (n - 1)
+    x_scores, y_scores, x_weights, y_weights, correlations = _ridge_cca(
+        X_c, Y_c, min(n_components, X_arr.shape[1], Y_arr.shape[1]), float(regularization)
+    )
 
-    # Whiten X and Y
-    Ux, Sx, _ = np.linalg.svd(Cxx)
-    Uy, Sy, _ = np.linalg.svd(Cyy)
-
-    # Regularised inverse square root
-    Sx_inv_sqrt = np.diag(1.0 / np.sqrt(Sx + 1e-10))
-    Sy_inv_sqrt = np.diag(1.0 / np.sqrt(Sy + 1e-10))
-
-    Cxx_inv_sqrt = Ux @ Sx_inv_sqrt @ Ux.T
-    Cyy_inv_sqrt = Uy @ Sy_inv_sqrt @ Uy.T
-
-    # SVD of whitened cross-covariance
-    M = Cxx_inv_sqrt @ Cxy @ Cyy_inv_sqrt
-    U, S, Vt = np.linalg.svd(M, full_matrices=False)
-
-    # Canonical directions
-    A = Cxx_inv_sqrt @ U[:, :n_components]  # (p, n_components)
-    B = Cyy_inv_sqrt @ Vt[:n_components, :].T  # (q, n_components)
-
-    # Canonical correlations
-    correlations = S[:n_components].tolist()
-
-    # Scores
-    x_scores = (X_c @ A).tolist()
-    y_scores = (Y_c @ B).tolist()
-
-    # Loadings: correlation of original variables with canonical scores
-    x_scores_arr = X_c @ A
-    y_scores_arr = Y_c @ B
-
-    x_loadings = np.zeros((p, n_components))
-    for j in range(p):
-        for c in range(n_components):
-            x_loadings[j, c] = float(np.corrcoef(X_c[:, j], x_scores_arr[:, c])[0, 1])
-
-    y_loadings = np.zeros((q, n_components))
-    for j in range(q):
-        for c in range(n_components):
-            y_loadings[j, c] = float(np.corrcoef(Y_c[:, j], y_scores_arr[:, c])[0, 1])
-
-    logger.info("CCA complete: correlations=%s", correlations)
+    logger.info("CCA complete: correlations=%s", correlations.tolist())
 
     return {
-        "x_scores": x_scores,
-        "y_scores": y_scores,
-        "correlations": correlations,
-        "x_loadings": x_loadings.tolist(),
-        "y_loadings": y_loadings.tolist(),
+        "x_scores": x_scores.tolist(),
+        "y_scores": y_scores.tolist(),
+        "correlations": correlations.tolist(),
+        "x_weights": x_weights.tolist(),
+        "y_weights": y_weights.tolist(),
+        "x_loadings": _structure_correlations(X_c, x_scores).tolist(),
+        "y_loadings": _structure_correlations(Y_c, y_scores).tolist(),
     }

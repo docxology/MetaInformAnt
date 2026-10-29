@@ -13,9 +13,9 @@ Cox proportional hazards regression, Kaplan-Meier estimation, log-rank tests, an
 
 | Function | Description |
 |----------|-------------|
-| `cox_regression()` | Cox proportional hazards regression via Newton-Raphson with Breslow ties |
+| `cox_regression()` | Cox proportional hazards regression via Newton-Raphson with exact gradient and Hessian and Breslow ties; the log partial likelihood, standard errors and Wald p-values match statsmodels' `PHReg`; collinear covariates or a non-converging (separated) fit raise `ValueError` |
 | `kaplan_meier()` | Product-limit survival curve estimator with Greenwood variance |
-| `log_rank_test()` | Mantel-Haenszel chi-squared test comparing survival curves |
+| `log_rank_test()` | Mantel-Haenszel chi-squared test comparing survival curves, with the full covariance matrix for three or more groups (matches statsmodels' `survdiff`); a comparison with nothing to compare raises `ValueError` |
 | `multi_omic_survival_model()` | L1-penalized Lasso-Cox model for multi-omic feature selection |
 | `risk_stratification()` | Stratify subjects into risk groups from Cox model predictions |
 | `compute_concordance_index()` | Harrell's C-index for discrimination evaluation |

@@ -85,7 +85,7 @@ def similarity_network_fusion(
 
 Fuses >= 2 similarity networks via iterative diffusion. Returns
 `fused_network`, `cluster_labels` (from spectral clustering), and
-`silhouette_score`. Requires numpy.
+`silhouette_score`. Requires numpy. The compatibility argument `alpha` does not scale the supplied similarity matrices; values other than 0.5 warn that it has no effect.
 
 ### canonical_correlation
 
@@ -98,13 +98,14 @@ def canonical_correlation(
 ```
 
 SVD-based regularised CCA for two omic matrices. Returns `x_scores`,
-`y_scores`, `correlations`, `x_loadings`, `y_loadings`. Requires numpy.
+`y_scores`, `correlations`, `x_weights`, `y_weights`, `x_loadings` and `y_loadings`. Requires numpy. The weights reproduce the scores by multiplication with the centred input; loadings are feature-score correlations.
 
 The matrices are centred but not standardized, and `regularization` is added
 to the diagonal of the raw within-matrix covariance matrices, so with
 `regularization > 0` the result depends on the scale of the columns.
-`n_components` is capped at the smaller of the sample count and the two
-feature counts. This function is separate from
+The returned pair count is capped by the numerical ranks. Inputs must be finite: NaN and infinity raise rather than being imputed. With zero regularization, a layer of rank `n_samples - 1` or combined layer ranks above `n_samples - 1` raise because leading correlations would be perfect by construction.
+
+Both CCA entry points share the same thin-SVD ridge core. Their input scaling and return formats differ. This function differs from
 `metainformant.multiomics.analysis.integration.canonical_correlation`
 ([reference](integration.md#canonical_correlation)), which takes a
 `MultiOmicsData` object or DataFrames, standardizes each layer, defaults to

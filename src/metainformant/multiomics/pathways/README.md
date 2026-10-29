@@ -14,7 +14,7 @@ Methods for combining pathway-level signals across multiple omic layers, includi
 | Function | Description |
 |----------|-------------|
 | `multi_omic_enrichment()` | Combine pathway p-values across omics via Fisher/Stouffer/min-p |
-| `active_module_detection()` | Greedy seed-and-grow active subnetwork module detection; optional `omic_scores={omic: {node: p}}` gives each module an `omic_contributions` entry per omic (`{}` without it) |
+| `active_module_detection()` | Greedy seed-and-grow active subnetwork module detection; optional `omic_scores={omic: {node: p}}` gives each module an `omic_contributions` entry per omic (`{}` without it); `random_state` (default 42) seeds every module's permutation test, `n_permutations` must be at least 1 and `alpha` in (0, 1] |
 | `pathway_topology_analysis()` | Topology-weighted pathway impact analysis |
 | `cross_omic_pathway_concordance()` | Assess cross-omic concordance at the pathway level |
 
@@ -42,6 +42,7 @@ concordance = enrichment.cross_omic_pathway_concordance(
   `p = 1`). A layer that supports the module scores above zero and one that does not scores below zero. The
   argument does not change which modules are found or how they are scored.
 - **Determinism**: node and pathway identifiers are visited in sorted order, ties are broken by identifier, and
-  the permutation tests use a fixed seed (`random.Random(42)`), so results do not depend on `PYTHONHASHSEED`.
+  the permutation tests start from a `random.Random(random_state)` (default 42, also for `pathway_topology_analysis`,
+  which takes `n_permutations` as well), so results do not depend on `PYTHONHASHSEED`.
 
 See [docs/multiomics/pathways.md](../../../../docs/multiomics/pathways.md) for the full reference.

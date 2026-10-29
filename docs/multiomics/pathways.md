@@ -35,8 +35,10 @@ indicates concordant signals.
 input in every process. Sets of node and pathway identifiers are visited in
 sorted order (Python randomises string hashes per process, so set order would
 otherwise vary), ties are broken by identifier, and the two permutation tests
-(`active_module_detection`, `pathway_topology_analysis`) draw from
-`random.Random(42)`. Results do not depend on `PYTHONHASHSEED`.
+(`active_module_detection`, `pathway_topology_analysis`) use a private generator
+seeded by `random_state` (default 42). An integer reproduces their p-values;
+`None` uses fresh entropy and repeated calls may differ. Results with a fixed
+seed do not depend on `PYTHONHASHSEED`.
 
 ## Function Reference
 
@@ -70,6 +72,7 @@ def active_module_detection(
     alpha: float = 0.05,
     n_permutations: int = 1000,
     omic_scores: dict[str, dict[str, float]] | None = None,
+    random_state: int | None = 42,
 ) -> list[dict[str, Any]]
 ```
 
@@ -77,8 +80,9 @@ Finds active subnetwork modules via seed-and-grow. `scores` holds one combined
 p-value per node. The module score is the sum of the node scores
 `-log(p) - threshold` with `threshold = -log(alpha)`; a node missing from
 `scores` counts as `p = 1`. Ties between equally scored neighbours are broken
-by node identifier, and the permutation test uses a fixed seed, so the same
-input always returns the same modules.
+by node identifier, and the permutation test uses `random_state` (default 42). An integer seed
+reproduces p-values; `None` permits different draws. `n_permutations` must be
+an integer >= 1, and `alpha` must be in (0, 1].
 
 Returns modules sorted by permutation p-value, each with:
 
@@ -102,14 +106,18 @@ modules are found or how they are scored; it only supplies the data for
 def pathway_topology_analysis(
     pathway_graph: dict[str, list[str]],
     gene_scores: dict[str, float],
+    n_permutations: int = 1000,
+    random_state: int | None = 42,
 ) -> dict[str, Any]
 ```
 
 Computes a topology-weighted impact factor:
 `IF = sum(score_i * centrality_i) / sum(centrality_i)` where centrality is
 normalised degree centrality and score is -log10(p). Significance is assessed
-via 1000 permutations of the gene scores over the nodes in sorted order, drawn
-from a fixed seed, so the p-value is reproducible.
+via `n_permutations` permutations (default 1000) of gene scores over sorted
+nodes, using `random_state` (default 42). An integer seed reproduces the
+p-value; `None` permits different draws. Empty inputs or fewer than one
+permutation raise `ValueError`.
 
 Returns `impact_factor`, `p_value`, `perturbed_genes` (p < 0.05, sorted), and
 `pathway_perturbation` (per-gene score, centrality, weighted score).

@@ -9,7 +9,9 @@ stratification, and concordance index computation.
 **Cox proportional hazards** models the hazard as
 `h_i(t) = h_0(t) * exp(X_i @ beta)`. Coefficients are estimated by
 maximising the partial likelihood via Newton-Raphson; tied events use the
-Breslow approximation.
+Breslow treatment. The score, observed information and reported partial
+log-likelihood use the same risk sets and tied-event multiplicities; standard
+errors come from the information matrix at the fitted coefficients.
 
 **Kaplan-Meier** is the product-limit estimator for the survival function.
 Confidence intervals use Greenwood's variance formula:
@@ -42,7 +44,9 @@ def cox_regression(
 
 Fits a Cox PH model. Returns `coefficients`, `hazard_ratios` (exp(beta)),
 `se` (standard errors), `p_values` (Wald test), `concordance_index`,
-`log_likelihood`, and `covariate_names`. Requires numpy.
+`log_likelihood`, and `covariate_names`. Requires numpy. Singular information,
+perfect separation, failed likelihood-increasing steps and non-convergence
+raise `ValueError`; they do not produce a successful model with default values.
 
 ### kaplan_meier
 
@@ -69,7 +73,11 @@ def log_rank_test(
 ```
 
 Mantel-Haenszel test comparing survival between >= 2 groups. Returns `chi2`,
-`p_value`, `df`, and `observed_expected_per_group`.
+`p_value`, `df`, and `observed_expected_per_group`. The multigroup statistic
+uses the full hypergeometric covariance, including off-diagonal terms. Groups
+never at risk during an event carry no information and are excluded from the
+comparison. Uncomparable groups, incompatible inputs or singular covariance
+raise `ValueError` instead of returning p=1.
 
 ### multi_omic_survival_model
 
@@ -83,7 +91,8 @@ def multi_omic_survival_model(
 ```
 
 Concatenates multi-omic features, standardises, and fits a Lasso-Cox model
-via coordinate descent. Lambda is set heuristically at `lambda_max / 10`.
+via an approximate-curvature coordinate-descent update. Lambda is fixed
+heuristically at `lambda_max / 10`; it is not selected by cross-validation.
 Returns `selected_features` (non-zero coefficients), `coefficients`,
 `c_index`, and `risk_scores`. Requires numpy.
 
@@ -101,7 +110,8 @@ def risk_stratification(
 Splits patients into risk groups by quantiles of predicted risk scores. Fits
 Kaplan-Meier curves per group and computes a log-rank test. Returns
 `group_labels`, `survival_curves`, `log_rank_p`, and `hazard_ratio`
-(highest vs lowest group, from observed/expected ratios).
+(highest vs lowest group, from observed/expected ratios). Uncomparable groups
+propagate the `log_rank_test` `ValueError`.
 
 ### compute_concordance_index
 
@@ -114,7 +124,9 @@ def compute_concordance_index(
 ```
 
 Harrell's C-index with Noether standard error estimate. Returns `c_index`,
-`se`, `n_concordant`, `n_discordant`, `n_tied`.
+`se`, `n_concordant`, `n_discordant`, `n_tied`. With no comparable pairs, the
+current convention returns C=0.5; this is a sentinel and provides no evidence
+of predictive discrimination.
 
 ## Usage Example
 
@@ -128,27 +140,29 @@ from metainformant.multiomics.survival.analysis import (
     risk_stratification,
 )
 
-# Cox regression
-time = [5.0, 10.0, 15.0, 20.0, 25.0, 30.0]
-event = [1, 0, 1, 1, 0, 1]
-covariates = [[0.5, 1.2], [1.0, 0.8], [0.3, 1.5], [0.7, 0.9], [1.2, 0.3], [0.9, 1.1]]
-result = cox_regression(time, event, covariates, covariate_names=["age", "stage"])
+# Deterministic simulated example with enough observations to estimate three coefficients
+rng = np.random.default_rng(11)
+covariates = rng.standard_normal((120, 3))
+latent_time = rng.exponential(1.0 / np.exp(covariates @ np.array([0.8, -0.5, 0.3])))
+censor_time = rng.exponential(2.0, 120)
+time = np.minimum(latent_time, censor_time).tolist()
+event = (latent_time <= censor_time).astype(int).tolist()
+result = cox_regression(time, event, covariates, covariate_names=["x0", "x1", "x2"])
 print(f"C-index: {result['concordance_index']:.4f}")
 
 # Kaplan-Meier with groups
-km = kaplan_meier(time, event, groups=[0, 0, 0, 1, 1, 1])
+groups = (covariates[:, 0] > 0).astype(int).tolist()
+km = kaplan_meier(time, event, groups=groups)
 for g, curve in km["groups"].items():
     print(f"Group {g}: median survival = {curve['median_survival']}")
 
 # Multi-omic survival model
-omic_data = {"rna": np.random.randn(50, 20), "protein": np.random.randn(50, 15)}
-times = np.random.exponential(10, 50).tolist()
-events = np.random.binomial(1, 0.6, 50).tolist()
-model = multi_omic_survival_model(omic_data, times, events)
-print(f"Selected features: {len(model['selected_features'])}/{35}")
+omic_data = {"rna": covariates, "protein": rng.standard_normal((120, 2))}
+model = multi_omic_survival_model(omic_data, time, event)
+print(f"Selected features: {len(model['selected_features'])}/5")
 
 # Risk stratification
-strat = risk_stratification(model["risk_scores"], times, events, n_groups=3)
+strat = risk_stratification(model["risk_scores"], time, event, n_groups=3)
 print(f"Log-rank p: {strat['log_rank_p']:.4e}, HR: {strat['hazard_ratio']:.2f}")
 ```
 

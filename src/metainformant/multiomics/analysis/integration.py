@@ -17,6 +17,7 @@ import pandas as pd
 from metainformant.core.data import validation
 from metainformant.core.io import dump_json, ensure_directory, load_json, open_text_auto
 from metainformant.core.utils import errors, logging
+from metainformant.multiomics.methods.factorization import _ridge_cca
 
 logger = logging.get_logger(__name__)
 
@@ -572,64 +573,22 @@ def joint_nmf(
     return W, H
 
 
-def _thin_svd(matrix: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Thin SVD keeping only the numerically non-zero singular values (the numerical rank)."""
-    u, s, vt = np.linalg.svd(matrix, full_matrices=False)
-    if s.size == 0 or s[0] == 0.0:
-        return u[:, :0], s[:0], vt[:0]
-    rank = int(np.sum(s > s[0] * max(matrix.shape) * np.finfo(matrix.dtype).eps))
-    return u[:, :rank], s[:rank], vt[:rank]
+def _impute_column_means(values: np.ndarray, layer: str) -> np.ndarray:
+    """Replace each NaN by the mean of the observed values of its own column.
 
-
-def _ridge_cca(
-    x: np.ndarray, y: np.ndarray, n_components: int, regularization: float
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Ridge-regularized CCA of two centred matrices with unit-sample-variance columns.
-
-    Solves the whitened problem ``M = (Cxx + lI)^(-1/2) Cxy (Cyy + lI)^(-1/2)`` (``C`` are the
-    sample covariance matrices with divisor ``n - 1``, ``l`` is ``regularization``). With the thin
-    SVDs ``x = Ux Sx Vx'`` and ``y = Uy Sy Vy'`` the nonzero singular values of ``M`` are those of
-    the small matrix ``K = diag(gx) Ux'Uy diag(gy)`` with ``g = s / sqrt(s**2 + (n - 1) l)``, so no
-    ``p x p`` or ``q x q`` matrix is ever formed. The canonical directions are
-    ``A = Vx diag(sqrt(n - 1) / sqrt(Sx**2 + (n - 1) l)) P`` where ``K = P R Q'``, which gives
-    ``A'(Cxx + lI)A = I``.
+    A column with no observed value has no mean to impute with and raises instead of being filled with
+    something made up.
     """
-    n = x.shape[0]
-    ux, sx, vxt = _thin_svd(x)
-    uy, sy, vyt = _thin_svd(y)
-    if sx.size == 0 or sy.size == 0:
-        raise ValueError("CCA needs layers with at least one non-constant feature")
-
-    ridge = regularization * (n - 1)
-    kernel = (sx / np.sqrt(sx**2 + ridge))[:, None] * (ux.T @ uy) * (sy / np.sqrt(sy**2 + ridge))[None, :]
-    left, rho, right_t = np.linalg.svd(kernel, full_matrices=False)
-
-    if regularization == 0.0 and sx.size + sy.size > n - 1:
-        logger.warning(
-            f"Unregularized CCA is degenerate here: at least {sx.size + sy.size - (n - 1)} canonical "
-            f"correlation(s) equal 1 by construction because the layers have more features than "
-            f"samples can constrain ({n} samples). Use regularization > 0 for a meaningful analysis."
+    missing = np.isnan(values)
+    if not missing.any():
+        return values
+    unobserved = missing.all(axis=0)
+    if unobserved.any():
+        raise ValueError(
+            f"layer {layer!r} has {int(unobserved.sum())} feature(s) with no observed value, which cannot be "
+            "imputed; drop them first"
         )
-
-    n_pairs = min(n_components, rho.size)
-    if n_pairs < n_components:
-        logger.warning(
-            f"Only {n_pairs} canonical pair(s) can be estimated (rank of the layers is {sx.size} and "
-            f"{sy.size}); returning {n_pairs} instead of {n_components}"
-        )
-
-    x_weights = vxt.T @ ((np.sqrt(n - 1) / np.sqrt(sx**2 + ridge))[:, None] * left[:, :n_pairs])
-    y_weights = vyt.T @ ((np.sqrt(n - 1) / np.sqrt(sy**2 + ridge))[:, None] * right_t[:n_pairs].T)
-
-    # Deterministic sign: the largest-magnitude X weight of each pair is positive. Both members of a
-    # pair flip together, so the canonical variates stay positively correlated.
-    for j in range(n_pairs):
-        if x_weights[np.argmax(np.abs(x_weights[:, j])), j] < 0.0:
-            x_weights[:, j] *= -1.0
-            y_weights[:, j] *= -1.0
-
-    correlations = np.clip(rho[:n_pairs], 0.0, 1.0)
-    return x @ x_weights, y @ y_weights, x_weights, y_weights, correlations
+    return np.where(missing, np.nanmean(values, axis=0), values)
 
 
 def canonical_correlation(
@@ -649,6 +608,12 @@ def canonical_correlation(
     ``(Cxx + lambda I)^(-1/2) Cxy (Cyy + lambda I)^(-1/2)``. The solution is computed from thin SVDs
     of the standardized layers, so layers with many more features than samples are supported.
 
+    Missing values (NaN) are replaced by the mean of the observed values of their own feature before
+    standardizing. This is the same numerical core as
+    :func:`metainformant.multiomics.methods.factorization.canonical_correlation`, which takes arrays,
+    centres but does not standardize them and returns a dict: for layers standardized to unit sample
+    variance the two give the same correlations, variates and weights.
+
     Args:
         multiomics_data: MultiOmicsData object or dictionary of omics datasets
         layers: Tuple of (layer1, layer2) to correlate. Required if more than 2 layers.
@@ -657,10 +622,13 @@ def canonical_correlation(
             fewer features, or too low a rank, to support that many pairs.
         regularization: Ridge parameter ``lambda >= 0``, on the scale of a correlation matrix
             (``0`` is classical, unregularized CCA). Larger values shrink every canonical
-            correlation; each one is non-increasing in ``lambda``. Without regularization, when the
-            ranks of the two layers add up to more than ``n_samples - 1`` (for example with far
-            more features than samples), at least that excess number of canonical correlations
-            equal exactly 1 (a perfect in-sample fit), so use ``lambda > 0`` for such data.
+            correlation; each one is non-increasing in ``lambda``. Classical CCA is only identified
+            when the layers leave room for each other: the standardized samples span ``n_samples - 1``
+            dimensions, so a layer of that rank (for example one with ``n_samples - 1`` or more
+            informative features) spans them all, and then every canonical correlation is exactly 1
+            whatever the data are. That is refused with a ``ValueError``: use ``lambda > 0``. When the
+            ranks of the two layers merely add up to more than ``n_samples - 1``, that excess number of
+            correlations equals exactly 1 (a perfect in-sample fit) and a warning is logged.
 
     Returns:
         Tuple of (X_c, Y_c, X_weights, Y_weights, correlations):
@@ -679,7 +647,9 @@ def canonical_correlation(
         ValidationError: If ``regularization`` is negative or not finite, ``n_components < 1``, or
             layers are not specified and there are not exactly 2 datasets
         ValueError: If a requested layer is missing, the layers have different numbers of samples,
-            or a layer has no non-constant feature
+            a layer has no non-constant feature or has a feature with no observed value, or
+            ``regularization`` is 0 and a layer has numerical rank ``n_samples - 1`` or more (every
+            canonical correlation would be 1; the message asks for ``regularization > 0``)
     """
     if not HAS_SKLEARN:
         raise ImportError(
@@ -714,8 +684,8 @@ def canonical_correlation(
     logger.info(f"Performing CCA between {omics_types[0]} and {omics_types[1]} (regularization={regularization:g})")
 
     # Get the two datasets
-    X = data_dict[omics_types[0]].values
-    Y = data_dict[omics_types[1]].values
+    X = np.asarray(data_dict[omics_types[0]].to_numpy(), dtype=float)
+    Y = np.asarray(data_dict[omics_types[1]].to_numpy(), dtype=float)
     if X.shape[0] != Y.shape[0]:
         raise ValueError(
             f"CCA layers must have the same samples: {omics_types[0]} has {X.shape[0]} rows, "
@@ -725,9 +695,10 @@ def canonical_correlation(
     if n_samples < 2:
         raise ValueError("CCA requires at least 2 samples")
 
-    # Handle missing values
-    X = np.nan_to_num(X, nan=np.nanmean(X))
-    Y = np.nan_to_num(Y, nan=np.nanmean(Y))
+    # Handle missing values: each feature's own mean (a mean over the whole layer would put the mean of
+    # unrelated features, on other scales, into a gap)
+    X = _impute_column_means(X, omics_types[0])
+    Y = _impute_column_means(Y, omics_types[1])
 
     # Standardize to unit *sample* variance (StandardScaler divides by the population std), so the
     # within-layer covariances (divisor n - 1) are correlation matrices and ``regularization`` is
@@ -737,7 +708,9 @@ def canonical_correlation(
     Y_scaled = StandardScaler().fit_transform(Y) * to_sample_variance
 
     n_comp = min(n_components, X_scaled.shape[1], Y_scaled.shape[1])
-    X_c, Y_c, x_weights, y_weights, correlations = _ridge_cca(X_scaled, Y_scaled, n_comp, regularization)
+    X_c, Y_c, x_weights, y_weights, correlations = _ridge_cca(
+        X_scaled, Y_scaled, n_comp, float(regularization), names=(omics_types[0], omics_types[1])
+    )
 
     logger.info(f"CCA completed: {len(correlations)} components")
     return X_c, Y_c, x_weights, y_weights, correlations
@@ -966,7 +939,9 @@ def from_rna_expression(
 
     Args:
         expression_data: RNA-seq or microarray expression matrix path/DataFrame
-        normalize: Whether to normalize the data
+        normalize: Whether to normalize the data: ``log1p`` when every observed value is non-negative
+            (counts, TPM; zeros and missing values do not matter), then a z-score of each gene. Data with a
+            negative value (already on a log scale, or centred) are only z-scored.
         sample_ids: Optional sample IDs to retain
         gene_ids: Optional gene IDs to retain
         transpose: If True, transpose input from genes-by-samples to samples-by-genes
@@ -986,8 +961,9 @@ def from_rna_expression(
     )
 
     if normalize:
-        # Simple normalization - log transform and z-score
-        if (processed_data > 0).all().all():
+        # Simple normalization - log transform and z-score. log1p is defined for zeros (that is what it is for)
+        # and a missing value says nothing about the scale, so neither may switch the transform off.
+        if bool((processed_data.min(skipna=True) >= 0).all()):
             processed_data = np.log1p(processed_data)
 
         processed_data = _zscore_dataframe(processed_data)
@@ -1036,27 +1012,20 @@ def from_protein_abundance(
 def from_epigenome_data(epigenome_data: pd.DataFrame, data_type: str = "methylation", **kwargs: Any) -> pd.DataFrame:
     """Convert epigenome data for multi-omics integration.
 
+    No transformation is applied for any ``data_type``: beta values, ChIP-seq or ATAC-seq intensities are
+    taken as they are, so scale or transform them before integration if the analysis needs it.
+
     Args:
         epigenome_data: Epigenetic data (methylation, ChIP-seq, etc.)
-        data_type: Type of epigenetic data
-        **kwargs: Conversion parameters
+        data_type: Label of the kind of epigenetic data; used only in the log message
+        **kwargs: Ignored
 
     Returns:
-        Processed epigenome data suitable for integration
+        A copy of ``epigenome_data``, unchanged
     """
     logger.info(f"Converting {data_type} epigenome data for integration")
 
-    processed_data = epigenome_data.copy()
-
-    if data_type == "methylation":
-        # Methylation data often needs beta-value transformation
-        # Assume data is already in appropriate format
-        pass
-    elif data_type in ["chipseq", "atacseq"]:
-        # Peak data - convert to binary or intensity values
-        pass
-
-    return processed_data
+    return epigenome_data.copy()
 
 
 def from_metabolomics(metabolomics_data: pd.DataFrame, normalize: bool = True, **kwargs: Any) -> pd.DataFrame:
@@ -1064,7 +1033,9 @@ def from_metabolomics(metabolomics_data: pd.DataFrame, normalize: bool = True, *
 
     Args:
         metabolomics_data: Metabolomics measurements
-        normalize: Whether to normalize the data
+        normalize: Whether to normalize the data: the natural log when every observed value is strictly
+            positive, then a z-score of each metabolite. Data with a zero or a negative value cannot be
+            logged and are only z-scored; a missing value does not decide either way.
         **kwargs: Conversion parameters
 
     Returns:
@@ -1077,13 +1048,10 @@ def from_metabolomics(metabolomics_data: pd.DataFrame, normalize: bool = True, *
     if normalize:
         # Metabolomics data often has large dynamic range
         # Log transform if positive, then z-score
-        if (processed_data > 0).all().all():
+        if bool((processed_data.min(skipna=True) > 0).all()):
             processed_data = np.log(processed_data)
 
-        scaler = StandardScaler()
-        processed_data = pd.DataFrame(
-            scaler.fit_transform(processed_data), index=processed_data.index, columns=processed_data.columns
-        )
+        processed_data = _zscore_dataframe(processed_data)
 
     return processed_data
 

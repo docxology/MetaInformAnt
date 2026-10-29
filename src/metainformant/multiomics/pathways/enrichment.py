@@ -16,6 +16,7 @@ Methods:
 from __future__ import annotations
 
 import math
+import operator
 import random
 import statistics
 from collections import defaultdict
@@ -51,24 +52,35 @@ except ImportError:
 
 
 def _py_chi2_sf(x: float, df: int) -> float:
-    """Approximate survival function for chi-squared distribution.
+    """Survival function of the chi-squared distribution without scipy.
 
-    Uses the incomplete gamma function approximation for even df.
-    Falls back to a rough normal approximation for large df.
+    Exact for even ``df`` (the only kind Fisher's method uses, ``df = 2k``): the closed form
+    ``exp(-x/2) * sum_{j<k} (x/2)**j / j!``, summed in log space so large statistics neither overflow nor
+    lose their tail. For odd ``df`` it is the Wilson-Hilferty cube-root normal approximation, within about
+    0.01 of the exact value in absolute terms (and proportionally less accurate far in the tail).
 
     Args:
         x: Test statistic.
         df: Degrees of freedom.
 
     Returns:
-        Approximate p-value (survival function).
+        P-value (survival function).
     """
     if x <= 0:
         return 1.0
     if df <= 0:
         return 0.0
 
-    # For moderate df, use a Wilson-Hilferty normal approximation
+    if df % 2 == 0:
+        half = x / 2.0
+        log_term = -half  # log of the j = 0 term, exp(-x/2)
+        total = 0.0
+        for j in range(df // 2):
+            total += math.exp(log_term)
+            log_term += math.log(half) - math.log(j + 1)
+        return min(total, 1.0)
+
+    # Odd df: Wilson-Hilferty normal approximation
     z = ((x / df) ** (1.0 / 3) - (1.0 - 2.0 / (9 * df))) / math.sqrt(2.0 / (9 * df))
     # Standard normal survival
     return 0.5 * math.erfc(z / math.sqrt(2.0))
@@ -92,7 +104,8 @@ def _py_norm_ppf(p: float) -> float:
     Uses Abramowitz & Stegun rational approximation (26.2.23).
 
     Args:
-        p: Probability in (0, 1).
+        p: Probability in (0, 1). A value at or beyond the ends is clamped to a z-score of -10.0 or 10.0
+            instead of the infinity it stands for.
 
     Returns:
         Approximate z-score.
@@ -225,7 +238,10 @@ def multi_omic_enrichment(
             pathway_id: Pathway identifier.
             pathway_name: Same as pathway_id (caller may augment with names).
             combined_p: Combined p-value across omics.
-            per_omic_p: Per-omic p-values {omic: p}.
+            per_omic_p: Per-omic p-values {omic: p}. An omic whose results contain none of the
+                pathway's genes has no evidence about it and is entered as ``p = 1.0``; it is still one
+                of the omics being combined (with Fisher's method that adds two degrees of freedom, with
+                ``min_p`` it raises the Bonferroni factor).
             n_genes: Number of genes in the pathway.
             leading_edge: Genes contributing most to the signal.
 
@@ -314,6 +330,44 @@ def multi_omic_enrichment(
 # Active module detection
 # ---------------------------------------------------------------------------
 
+_DEFAULT_PERMUTATION_SEED = 42
+
+
+def _validated_random_state(random_state: int | None) -> int | None:
+    """``random_state`` as an int (or None for an OS-seeded generator); anything else is a TypeError."""
+    if random_state is None:
+        return None
+    try:
+        return operator.index(random_state)
+    except TypeError:
+        raise TypeError(f"random_state must be an int or None, got {random_state!r}") from None
+
+
+def _validated_n_permutations(n_permutations: int) -> int:
+    """``n_permutations`` as an int >= 1.
+
+    With none, the permutation p-value ``(0 + 1) / (0 + 1)`` would report 1.0 for a test that was never run.
+    """
+    try:
+        count = operator.index(n_permutations)
+    except TypeError:
+        raise ValueError(f"n_permutations must be an integer >= 1, got {n_permutations!r}") from None
+    if count < 1:
+        raise ValueError(f"n_permutations must be an integer >= 1, got {n_permutations!r}")
+    return count
+
+
+def _check_p_values(p_values: dict[str, float], label: str) -> None:
+    """Raise ValueError naming the first entry of ``p_values`` that is not a p-value in [0, 1].
+
+    A negative p-value would be clamped to the most significant score and a NaN one would silently never
+    be significant, so neither is allowed through.
+    """
+    for key, value in p_values.items():
+        number = float(value)
+        if not 0.0 <= number <= 1.0:  # False for NaN as well
+            raise ValueError(f"{label} must be p-values in [0, 1]; {key!r} has {value!r}")
+
 
 def _active_module_node_score(p_value: float, threshold: float) -> float:
     """Transformed node score used by :func:`active_module_detection`: ``-log(p) - threshold``."""
@@ -346,6 +400,7 @@ def active_module_detection(
     alpha: float = 0.05,
     n_permutations: int = 1000,
     omic_scores: dict[str, dict[str, float]] | None = None,
+    random_state: int | None = _DEFAULT_PERMUTATION_SEED,
 ) -> list[dict[str, Any]]:
     """Find active subnetwork modules using node scores from multi-omic integration.
 
@@ -359,19 +414,24 @@ def active_module_detection(
         score_i = -log(p_i) - threshold, where threshold = -log(alpha).
 
     The search is deterministic: ties between equally scored neighbours are broken by node
-    identifier and the permutation test uses a fixed seed, so the same input always returns
-    the same modules.
+    identifier, and the permutation test of every module draws from its own generator seeded
+    with ``random_state``, so the same input and seed always return the same modules and a
+    module's p-value does not depend on which other modules were found.
 
     Args:
         network: Adjacency list {node: [neighbour1, neighbour2, ...]}.
-        scores: Node scores {node: p_value}.  Lower p-values indicate
+        scores: Node scores {node: p_value}, each in [0, 1].  Lower p-values indicate
             more significant nodes.
-        alpha: Significance threshold for seed selection and score transform.
-        n_permutations: Number of permutations for module significance.
+        alpha: Significance threshold for seed selection and score transform; in (0, 1].
+        n_permutations: Number of permutations for module significance; an integer >= 1.
         omic_scores: Optional per-omic node p-values ``{omic: {node: p_value}}``, the same
             mapping that :func:`multi_omic_enrichment` takes as ``omic_results``. It does not
             change which modules are found or how they are scored; it only supplies the data for
             ``omic_contributions``, because the combined ``scores`` carry no per-omic information.
+        random_state: Seed of the permutation test (default 42, the value that used to be fixed).
+            Every module starts a generator from this seed, so equally sized modules are tested
+            against the same random node sets; ``None`` seeds each module's generator from the
+            operating system, which makes the p-values vary from run to run.
 
     Returns:
         List of module dictionaries sorted by p-value, each containing:
@@ -385,12 +445,22 @@ def active_module_detection(
                 not given.
 
     Raises:
-        ValueError: If network or scores are empty.
+        ValueError: If network or scores are empty, ``alpha`` is not in (0, 1], ``n_permutations`` is
+            below 1 (no permutation test would be run, yet a p-value of 1.0 would be reported), or a
+            p-value in ``scores`` or ``omic_scores`` is outside [0, 1] or NaN.
+        TypeError: If ``random_state`` is neither an integer nor None.
     """
     if not network:
         raise ValueError("network must not be empty")
     if not scores:
         raise ValueError("scores must not be empty")
+    if not 0.0 < alpha <= 1.0:  # False for NaN as well
+        raise ValueError(f"alpha must be in (0, 1], got {alpha!r}")
+    n_permutations = _validated_n_permutations(n_permutations)
+    random_state = _validated_random_state(random_state)
+    _check_p_values(scores, "scores")
+    for omic, omic_p_values in (omic_scores or {}).items():
+        _check_p_values(omic_p_values, f"omic_scores[{omic!r}]")
 
     logger.info(
         "Running active module detection: %d nodes, %d scored, alpha=%.4f",
@@ -462,7 +532,7 @@ def active_module_detection(
         # Permutation test for module significance
         module_size = len(module_nodes)
         perm_count = 0
-        rng = random.Random(42)
+        rng = random.Random(random_state)
 
         for _ in range(n_permutations):
             if len(all_nodes) >= module_size:
@@ -499,6 +569,8 @@ def active_module_detection(
 def pathway_topology_analysis(
     pathway_graph: dict[str, list[str]],
     gene_scores: dict[str, float],
+    n_permutations: int = 1000,
+    random_state: int | None = _DEFAULT_PERMUTATION_SEED,
 ) -> dict[str, Any]:
     """Topology-based pathway analysis incorporating graph structure.
 
@@ -516,6 +588,9 @@ def pathway_topology_analysis(
     Args:
         pathway_graph: Adjacency list {gene: [downstream_genes]}.
         gene_scores: Per-gene scores {gene: p_value}.
+        n_permutations: Number of permutations behind ``p_value``; an integer >= 1.
+        random_state: Seed of the permutation test (default 42, the value that used to be fixed);
+            ``None`` seeds it from the operating system, which makes ``p_value`` vary from run to run.
 
     Returns:
         Dictionary with keys:
@@ -526,12 +601,15 @@ def pathway_topology_analysis(
                 {gene: {score, centrality, weighted_score}}.
 
     Raises:
-        ValueError: If inputs are empty.
+        ValueError: If inputs are empty or ``n_permutations`` is below 1.
+        TypeError: If ``random_state`` is neither an integer nor None.
     """
     if not pathway_graph:
         raise ValueError("pathway_graph must not be empty")
     if not gene_scores:
         raise ValueError("gene_scores must not be empty")
+    n_perms = _validated_n_permutations(n_permutations)
+    random_state = _validated_random_state(random_state)
 
     logger.info(
         "Running pathway topology analysis: %d nodes, %d scored",
@@ -583,8 +661,7 @@ def pathway_topology_analysis(
     impact_factor = sum_weighted / sum_centrality if sum_centrality > 0 else 0.0
 
     # Permutation p-value
-    rng = random.Random(42)
-    n_perms = 1000
+    rng = random.Random(random_state)
     perm_count = 0
     score_list = list(gene_scores.values())
 

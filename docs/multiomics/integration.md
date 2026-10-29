@@ -228,7 +228,7 @@ Each layer is standardized first (columns centred and scaled to unit sample vari
 - `layers` (Optional[Tuple[str, str]]): Names of the two layers to correlate; both must exist in the data. If omitted, the data must hold exactly two layers, which are used in their stored order.
 - `layer_pair` (Optional[Tuple[str, str]]): Alias for `layers`.
 - `n_components` (int): Number of canonical pairs to extract; must be at least 1. Default: 10. The number of pairs is capped at the smaller of the two layers' feature counts. Fewer pairs are also returned when the numerical rank of the layers supports fewer (the rank is at most `n_samples - 1`); that case logs a warning.
-- `regularization` (float): Ridge parameter `λ >= 0` on the scale of a correlation matrix, added to the diagonal of each within-layer covariance matrix. It must be finite. Default: 0.0, which is classical, unregularized CCA. Larger values shrink every canonical correlation, and each correlation is non-increasing in `λ`. Without regularization, when the ranks of the two layers add up to more than `n_samples - 1` (for example with far more features than samples), at least that excess number of canonical correlations equal exactly 1, a perfect in-sample fit, and a warning is logged. Use `λ > 0` for such data.
+- `regularization` (float): Ridge parameter `λ >= 0` on the scale of a correlation matrix, added to the diagonal of each within-layer covariance matrix. It must be finite. Default: 0.0, which is classical, unregularized CCA. Larger values shrink every canonical correlation, and each correlation is non-increasing in `λ`. Without regularization, when the ranks of the two layers add up to more than `n_samples - 1` (for example with far more features than samples), at least that excess number of canonical correlations equal exactly 1, a perfect in-sample fit, and `ValueError` is raised. Use `λ > 0` for such data. The same refusal applies when either layer alone has numerical rank `n_samples - 1`.
 
 The function takes no other keyword arguments.
 
@@ -240,13 +240,13 @@ The function takes no other keyword arguments.
 - The sign of each pair is fixed so that the largest-magnitude X weight is positive, and both members of a pair flip together.
 
 **Note:**
-- Missing values (NaN) in a layer are replaced by the mean of all non-missing entries of that layer before standardization; this is the layer-wide mean, not a per-feature mean.
+- Missing values (NaN) are replaced by the observed mean of their own feature before standardization. A wholly unobserved feature raises `ValueError`; it has no mean to impute.
 - Constant columns become all zeros after standardization and receive zero weight, so the result equals the one computed without them.
 
 **Raises:**
 - `ImportError`: If scikit-learn is not installed
-- `ValidationError` (`metainformant.core.utils.errors`, not a `ValueError` subclass): If `regularization` is negative or not finite, if `n_components < 1`, or if `layers` is omitted and the data does not hold exactly two layers
-- `ValueError`: If a requested layer is not in the data, if the two layers have different numbers of samples, if there are fewer than 2 samples, or if a layer has no non-constant feature
+- `ValidationError` (`metainformant.core.utils.errors`, also a `ValueError` subclass): If `regularization` is negative or not finite, if `n_components < 1`, or if `layers` is omitted and the data does not hold exactly two layers
+- `ValueError`: If a requested layer is not in the data, if the two layers have different numbers of samples, if there are fewer than 2 samples, if a layer has no non-constant feature or has a wholly unobserved feature, or if unregularized layers have combined numerical rank above `n_samples - 1`
 - `TypeError`: If an unknown keyword argument is passed
 
 ### from_dna_variants
@@ -292,7 +292,7 @@ def from_rna_expression(
 **Parameters:**
 
 - `expression_data` (Union[str, Path, pd.DataFrame]): Path to expression file (CSV or TSV) or an existing expression matrix.
-- `normalize` (bool): If True, apply log1p for positive matrices followed by column-wise z-score normalization.
+- `normalize` (bool): If True, apply `log1p` when every observed value is non-negative, then column-wise z-score normalization. Zeros and missing values do not disable the log transform. If any value is negative, only z-score normalization is applied.
 - `sample_ids` (Optional[List[str]]): Optional list of sample IDs to include
 - `gene_ids` (Optional[List[str]]): Optional list of gene IDs to include
 - `transpose` (bool): If True, assumes file has genes as rows and samples as columns. If False (default), assumes samples as rows and genes as columns.

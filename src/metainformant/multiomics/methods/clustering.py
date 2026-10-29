@@ -41,6 +41,16 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 
+def _trapezoid_area(y: Any, x: Any) -> float:
+    """Area under ``y(x)`` by the trapezoidal rule.
+
+    Spelled out because NumPy renamed ``np.trapz`` to ``np.trapezoid`` in 2.0 and later removed the old name,
+    while this package supports NumPy >= 1.24: neither name exists on every supported version. The arithmetic
+    is exactly NumPy's own.
+    """
+    return float(np.sum(np.diff(x) * (y[1:] + y[:-1]) / 2.0))
+
+
 def _silhouette_from_data(X: Any, labels: list[int]) -> float:
     """Compute silhouette score from data matrix and labels.
 
@@ -167,8 +177,10 @@ def multi_omic_clustering(
                 contributed to the final clustering.
 
     Raises:
-        ValueError: If method is unsupported, n_clusters < 2, or matrices
-            are incompatible.
+        ValueError: If method is unsupported, n_clusters < 2 or larger than the
+            number of samples (the spectral route used to return one cluster
+            per sample with a silhouette of 0.0 instead), or matrices are
+            incompatible.
         ImportError: If numpy is not available.
     """
     valid_methods = {"snf", "concatenation", "late_integration"}
@@ -198,6 +210,8 @@ def multi_omic_clustering(
         views[name] = arr
 
     assert n_samples is not None
+    if n_clusters > n_samples:
+        raise ValueError(f"Cannot form n_clusters={n_clusters} clusters from {n_samples} samples")
 
     omic_contributions: dict[str, Any] = {}
 
@@ -299,15 +313,17 @@ def consensus_clustering(
     Returns:
         Dictionary with keys:
             optimal_k: The k with lowest PAC score.
-            labels: Cluster labels for optimal_k (hierarchical clustering
-                of the consensus matrix).
+            labels: Cluster labels for optimal_k (spectral clustering of the
+                consensus matrix).
             consensus_matrix: Consensus matrix for optimal_k (n x n).
             cdf_area: Area under the CDF curve for each k.
             pac_score: PAC score for each k.
 
     Raises:
-        ValueError: If data is empty, proportion not in (0,1], or k_range
-            is empty.
+        ValueError: If data is empty, proportion not in (0,1], k_range
+            is empty or holds a k below 2 (one cluster has a perfect, empty
+            consensus and would always win), or n_resamples is below 1 (no
+            resampling would give every k a perfect PAC of 0.0).
         ImportError: If numpy is not available.
     """
     if not HAS_NUMPY:
@@ -328,6 +344,10 @@ def consensus_clustering(
         raise ValueError("k_range must be non-empty")
     if proportion <= 0 or proportion > 1.0:
         raise ValueError(f"proportion must be in (0, 1], got {proportion}")
+    if any(k < 2 for k in k_range):
+        raise ValueError(f"every k in k_range must be at least 2, got {k_range}")
+    if n_resamples < 1:
+        raise ValueError(f"n_resamples must be at least 1, got {n_resamples}")
 
     logger.info(
         "Running consensus clustering: k_range=%s, n_resamples=%d, proportion=%.2f",
@@ -390,7 +410,7 @@ def consensus_clustering(
         cdf_vals = np.arange(1, n_pairs + 1) / n_pairs
 
         # Area under CDF
-        area = float(np.trapezoid(cdf_vals, sorted_vals))
+        area = _trapezoid_area(cdf_vals, sorted_vals)
         cdf_area[k] = area
 
         # PAC: fraction of entries in (0.1, 0.9) -- ambiguous zone

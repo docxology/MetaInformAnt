@@ -176,7 +176,7 @@ print(f"Transcriptomics weights shape: {X_w.shape}")
 print(f"Proteomics weights shape: {Y_w.shape}")
 ```
 
-The weights apply to the standardized features (columns centred and scaled to unit sample variance) and reproduce the canonical variates: `X_c = standardized_X @ X_w`. With `regularization=0.0`, when the ranks of the two layers add up to more than `n_samples - 1` (for example genome-scale layers with a few dozen samples), at least that excess number of canonical correlations equal exactly 1 and a warning is logged. With `regularization > 0` each correlation is penalised, shrinks as the value grows, and is a lower bound on the sample correlation of the returned variates. See [canonical_correlation](./integration.md#canonical_correlation) for the full contract.
+The weights apply to the standardized features (columns centred and scaled to unit sample variance) and reproduce the canonical variates: `X_c = standardized_X @ X_w`. With `regularization=0.0`, when the ranks of the two layers add up to more than `n_samples - 1` (for example genome-scale layers with a few dozen samples), at least that excess number of canonical correlations would equal exactly 1 and `ValueError` is raised. A layer of rank `n_samples - 1` is likewise refused without a ridge. With `regularization > 0` each correlation is penalised, shrinks as the value grows, and is a lower bound on the sample correlation of the returned variates. See [canonical_correlation](./integration.md#canonical_correlation) for the full contract.
 
 ## Integration with Other Modules
 

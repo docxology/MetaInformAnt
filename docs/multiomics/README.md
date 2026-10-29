@@ -59,7 +59,7 @@ result = eqtl_coloc(
 | `integrate_omics_data()` | Unified integration | Combine DNA/RNA/protein |
 | `joint_pca()` | Joint dimensionality reduction | Find shared patterns |
 | `joint_nmf()` | Non-negative factorization | Identify positive factors |
-| `canonical_correlation()` | Ridge-regularized CCA | Correlate two data layers (`regularization=0.0` is classical CCA) |
+| `canonical_correlation()` | Ridge-regularized CCA | Correlate two data layers; zero ridge is refused when their combined ranks exceed `n_samples - 1` |
 
 ### Data Converters
 

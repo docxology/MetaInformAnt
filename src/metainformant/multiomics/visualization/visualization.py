@@ -113,8 +113,10 @@ def plot_integrated_omics_heatmap(
     """Plot integrated heatmap showing multiple omics layers.
 
     Args:
-        omics_data: Dictionary mapping omics types to data matrices
-        feature_names: Optional names for features
+        omics_data: Dictionary mapping omics types to data matrices (features x samples); the matrices
+            are stacked in dictionary order
+        feature_names: Optional names for the rows of the stacked matrix: one per feature of the first
+            matrix, then one per feature of the second, and so on
         sample_names: Optional names for samples
         ax: Optional matplotlib axes to plot on
         output_path: Optional path to save the figure
@@ -123,8 +125,18 @@ def plot_integrated_omics_heatmap(
 
     Returns:
         matplotlib Axes object
+
+    Raises:
+        ValueError: If ``feature_names`` does not have one name per row of the stacked matrix. Its first
+            names used to be repeated for every matrix after the first, labelling their rows wrongly.
     """
     validation.validate_type(omics_data, dict, "omics_data")
+    total_rows = sum(data.shape[0] for data in omics_data.values())
+    if feature_names and len(feature_names) != total_rows:
+        raise ValueError(
+            f"feature_names has {len(feature_names)} entries but the stacked matrix has {total_rows} rows "
+            f"({', '.join(f'{name}: {data.shape[0]}' for name, data in omics_data.items())})"
+        )
 
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
@@ -132,20 +144,24 @@ def plot_integrated_omics_heatmap(
     # Combine all omics data
     combined_data = []
     omics_labels = []
-    feature_labels = []
+    feature_labels = list(feature_names) if feature_names else []
 
     for omics_type, data in omics_data.items():
         combined_data.append(data)
         omics_labels.extend([omics_type] * data.shape[0])
-        if feature_names:
-            feature_labels.extend(feature_names[: data.shape[0]])
 
     combined_matrix = np.vstack(combined_data) if combined_data else np.array([])
 
     # Plot integrated heatmap
     if HAS_SEABORN:
+        # seaborn takes "auto" (not None) for "no names given"
         ax = sns.heatmap(
-            combined_matrix, cmap="RdYlBu_r", ax=ax, xticklabels=sample_names, yticklabels=feature_labels, **kwargs
+            combined_matrix,
+            cmap="RdYlBu_r",
+            ax=ax,
+            xticklabels=sample_names if sample_names else "auto",
+            yticklabels=feature_labels if feature_labels else "auto",
+            **kwargs,
         )
     else:
         im = ax.imshow(combined_matrix, cmap="RdYlBu_r", aspect="auto")
@@ -329,6 +345,10 @@ def plot_pathway_enrichment_integration(
 ) -> Axes:
     """Plot integrated pathway enrichment across multiple omics.
 
+    Cells show ``-log10(pvalue)``; a pathway that an omic did not report, or that it reported without a
+    ``pvalue``, is left blank (masked) instead of being drawn as ``p = 1``, and a p-value of exactly 0 is
+    drawn at 300 (``-log10(1e-300)``).
+
     Args:
         enrichment_results: Dictionary mapping omics types to enrichment results
         ax: Optional matplotlib axes to plot on
@@ -349,7 +369,7 @@ def plot_pathway_enrichment_integration(
     for results in enrichment_results.values():
         all_pathways.update([r.get("pathway", r.get("term", "")) for r in results])
 
-    pathway_list = list(all_pathways)
+    pathway_list = sorted(all_pathways)  # a set's order changes from process to process (string hashing)
     n_pathways = len(pathway_list)
     omics_types = list(enrichment_results.keys())
 
@@ -361,7 +381,9 @@ def plot_pathway_enrichment_integration(
             results = enrichment_results[omics_type]
             for result in results:
                 if result.get("pathway", result.get("term", "")) == pathway:
-                    enrichment_matrix[i, j] = -np.log10(result.get("pvalue", 1.0))
+                    p_value = result.get("pvalue")
+                    if p_value is not None:
+                        enrichment_matrix[i, j] = -np.log10(max(float(p_value), 1e-300))
                     break
 
     # Plot heatmap
@@ -400,9 +422,13 @@ def plot_multiomics_network(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 10),
+    layout_seed: int | None = 42,
     **kwargs: Any,
 ) -> Axes:
     """Plot multi-omics integration network.
+
+    Omics types are coloured in sorted order and the spring layout is seeded, so the same network is drawn the
+    same way every time and the process-wide NumPy random state is left alone.
 
     Args:
         integration_network: NetworkX graph of integrated features
@@ -410,6 +436,7 @@ def plot_multiomics_network(
         ax: Optional matplotlib axes to plot on
         output_path: Optional path to save the figure
         figsize: Figure size as (width, height)
+        layout_seed: Seed of the spring layout (default 42); ``None`` draws a different layout every time
         **kwargs: Additional arguments for customization
 
     Returns:
@@ -424,7 +451,7 @@ def plot_multiomics_network(
         fig, ax = plt.subplots(figsize=figsize)
 
     # Get unique omics types and assign colors
-    omics_types = list(set(node_omics_types.values()))
+    omics_types = sorted(set(node_omics_types.values()))
     colors = plt.cm.Set1(np.linspace(0, 1, len(omics_types)))
     omics_color_map = dict(zip(omics_types, colors))
 
@@ -432,7 +459,7 @@ def plot_multiomics_network(
     node_colors = [omics_color_map[node_omics_types.get(node, "unknown")] for node in integration_network.nodes()]
 
     # Layout
-    pos = nx.spring_layout(integration_network, k=1, iterations=50)
+    pos = nx.spring_layout(integration_network, k=1, iterations=50, seed=layout_seed)
 
     # Draw network
     nx.draw_networkx_nodes(integration_network, pos, node_color=node_colors, node_size=200, alpha=0.8, ax=ax)
@@ -447,7 +474,7 @@ def plot_multiomics_network(
 
     # Add legend
     legend_elements = [
-        plt.scatter([], [], c=color, label=omics_type, s=100) for omics_type, color in omics_color_map.items()
+        plt.scatter([], [], c=[color], label=omics_type, s=100) for omics_type, color in omics_color_map.items()
     ]
     ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc="upper left")
 
@@ -561,10 +588,51 @@ def plot_multiomics_upset(
     return fig
 
 
+def _network_layout(network_data: Any) -> tuple[List[str], Dict[str, Tuple[float, float]], List[Tuple[str, str]]]:
+    """Nodes, a deterministic 2-D layout and the edges of a network given as a graph or an adjacency mapping.
+
+    Args:
+        network_data: A NetworkX graph, or ``{node: [neighbour, ...]}``.
+
+    Returns:
+        ``(nodes, positions, edges)``; ``positions`` maps each node to ``(x, y)`` from a spring layout with a
+        fixed seed, so the same network is always drawn the same way.
+
+    Raises:
+        ValueError: If ``network_data`` is neither a graph nor an adjacency mapping, or has no node.
+    """
+    import networkx as nx
+
+    if isinstance(network_data, nx.Graph):
+        graph = network_data
+    elif isinstance(network_data, dict):
+        graph = nx.Graph()
+        for node, neighbours in network_data.items():
+            graph.add_node(node)
+            graph.add_edges_from((node, neighbour) for neighbour in neighbours)
+    else:
+        raise ValueError(
+            "network_data must be a networkx graph or a {node: [neighbours]} mapping, "
+            f"got {type(network_data).__name__}"
+        )
+    if graph.number_of_nodes() == 0:
+        raise ValueError("network_data has no nodes to draw")
+    layout = nx.spring_layout(graph, seed=42)
+    nodes = [str(node) for node in graph.nodes()]
+    positions = {str(node): (float(x), float(y)) for node, (x, y) in layout.items()}
+    edges = [(str(u), str(v)) for u, v in graph.edges()]
+    return nodes, positions, edges
+
+
 def create_interactive_multiomics_dashboard(
     multiomics_data: Dict[str, Any], *, output_path: str | Path | None = None, **kwargs: Any
 ) -> Any:
     """Create an interactive multi-omics dashboard using Plotly.
+
+    Panels are drawn from the keys present in ``multiomics_data``: ``correlation_matrix`` (heatmap),
+    ``pca_coords`` (samples x 2 scatter) and ``network_data`` (the network itself: a NetworkX graph or a
+    ``{node: [neighbours]}`` mapping, drawn with a fixed-seed spring layout). The fourth, "Enrichment", panel
+    is reserved and stays empty: nothing is drawn into it.
 
     Args:
         multiomics_data: Dictionary containing multi-omics datasets and analysis results
@@ -573,6 +641,11 @@ def create_interactive_multiomics_dashboard(
 
     Returns:
         Plotly Figure object
+
+    Raises:
+        ImportError: If plotly is not installed.
+        ValueError: If ``network_data`` is not a graph or an adjacency mapping, or has no node. (It used to
+            be replaced by a fixed three-point zig-zag, whatever the network was.)
     """
     if not HAS_PLOTLY or not make_subplots:
         raise ImportError("plotly required for interactive multi-omics dashboard")
@@ -595,10 +668,27 @@ def create_interactive_multiomics_dashboard(
         pca_coords = multiomics_data["pca_coords"]
         fig.add_trace(go.Scatter(x=pca_coords[:, 0], y=pca_coords[:, 1], mode="markers"), row=1, col=2)
 
-    # Add network plot (simplified)
+    # Add the network itself: edges as one line trace, nodes as markers with their names
     if "network_data" in multiomics_data:
-        # Simplified network visualization
-        fig.add_trace(go.Scatter(x=[0, 1, 2], y=[0, 1, 0], mode="markers+lines"), row=2, col=1)
+        nodes, positions, edges = _network_layout(multiomics_data["network_data"])
+        edge_x: List[float | None] = []
+        edge_y: List[float | None] = []
+        for source, target in edges:
+            edge_x += [positions[source][0], positions[target][0], None]
+            edge_y += [positions[source][1], positions[target][1], None]
+        fig.add_trace(go.Scatter(x=edge_x, y=edge_y, mode="lines", hoverinfo="none", name="edges"), row=2, col=1)
+        fig.add_trace(
+            go.Scatter(
+                x=[positions[node][0] for node in nodes],
+                y=[positions[node][1] for node in nodes],
+                mode="markers",
+                text=nodes,
+                hoverinfo="text",
+                name="nodes",
+            ),
+            row=2,
+            col=1,
+        )
 
     fig.update_layout(title="Interactive Multi-Omics Dashboard", **kwargs)
 

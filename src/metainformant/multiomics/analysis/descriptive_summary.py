@@ -9,7 +9,8 @@ summarization regardless of evidence-manifest freeze state.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import warnings
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
@@ -32,6 +33,8 @@ class OmicsBlockSummary:
         std: Per-feature sample standard deviation (ddof=1).
         missing_fraction: Fraction of missing values across the block.
         quantiles: Requested quantiles of all non-NaN values, keyed by q.
+        feature_names: The block's column labels, one per feature, as text. A summary built by hand without
+            names is reported under positional names (``feature_0``, ...).
     """
 
     name: str
@@ -41,6 +44,7 @@ class OmicsBlockSummary:
     std: Any  # np.ndarray (n_features,)
     missing_fraction: float
     quantiles: Dict[str, float]
+    feature_names: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -105,6 +109,9 @@ class MultiOmicsDescriptiveSummary:
 
 
 def _feature_names_safe(block: OmicsBlockSummary) -> List[str]:
+    """The block's own feature names; positional names only for a summary that was built without them."""
+    if len(block.feature_names) == len(block.mean):
+        return list(block.feature_names)
     return [f"feature_{i}" for i in range(len(block.mean))]
 
 
@@ -127,8 +134,12 @@ def summarize_omics_block(
     if not isinstance(data, pd.DataFrame):
         raise TypeError("summarize_omics_block expects a pandas DataFrame")
     arr = data.to_numpy(dtype=np.float64, na_value=np.nan)
-    mean = np.nanmean(arr, axis=0) if arr.size else np.array([])
-    std = np.nanstd(arr, axis=0, ddof=1) if arr.size else np.array([])
+    with warnings.catch_warnings():
+        # NaN is the documented answer for a column without observed values (mean) or with a single one (std);
+        # NumPy's "Mean of empty slice" / "Degrees of freedom <= 0" warnings would only repeat it
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        mean = np.nanmean(arr, axis=0) if arr.size else np.array([])
+        std = np.nanstd(arr, axis=0, ddof=1) if arr.size else np.array([])
     flat = arr.ravel()
     flat = flat[~np.isnan(flat)]
     pooled = {str(q): float(np.quantile(flat, q)) for q in quantiles if flat.size}
@@ -143,6 +154,7 @@ def summarize_omics_block(
         std=std,
         missing_fraction=n_missing / total,
         quantiles=pooled,
+        feature_names=[str(column) for column in data.columns],
     )
 
 

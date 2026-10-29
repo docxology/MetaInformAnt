@@ -252,7 +252,10 @@ class TestCanonicalCorrelation:
 
         data = MultiOmicsData(genomics=genomics, transcriptomics=transcriptomics)
 
-        X_c, Y_c, X_w, Y_w, correlations = canonical_correlation(data, ("genomics", "transcriptomics"), n_components=5)
+        # 30 features on 20 samples: a ridge is required (unregularized CCA would give all correlations 1)
+        X_c, Y_c, X_w, Y_w, correlations = canonical_correlation(
+            data, ("genomics", "transcriptomics"), n_components=5, regularization=0.1
+        )
 
         assert X_c.shape == (20, 5)
         assert Y_c.shape == (20, 5)
@@ -282,7 +285,9 @@ class TestCanonicalCorrelation:
 
         data = MultiOmicsData(genomics=genomics, transcriptomics=transcriptomics)
 
-        _, _, _, _, correlations = canonical_correlation(data, ("genomics", "transcriptomics"), n_components=3)
+        _, _, _, _, correlations = canonical_correlation(
+            data, ("genomics", "transcriptomics"), n_components=3, regularization=0.1
+        )
 
         # First canonical correlation should be high
         assert correlations[0] > 0.8

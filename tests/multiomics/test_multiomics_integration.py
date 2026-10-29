@@ -25,7 +25,6 @@ from metainformant.multiomics.analysis.integration import (
     joint_nmf,
     joint_pca,
 )
-from metainformant.multiomics.methods.factorization import canonical_correlation as ridge_cca_oracle
 
 
 class TestMultiOmicsData:
@@ -644,9 +643,9 @@ class TestCanonicalCorrelation:
         )
 
     def test_canonical_correlation_basic(self):
-        """Test basic CCA functionality."""
+        """Test basic CCA functionality (40 features on 30 samples need a ridge; see test_multiomics_cca_degenerate)."""
         X_can, Y_can, X_weights, Y_weights, correlations = canonical_correlation(
-            self.omics_data, layer_pair=("genomics", "transcriptomics"), n_components=5
+            self.omics_data, layer_pair=("genomics", "transcriptomics"), n_components=5, regularization=0.1
         )
 
         # Check output dimensions
@@ -666,7 +665,7 @@ class TestCanonicalCorrelation:
     def test_canonical_correlation_actual_correlation(self):
         """Test that canonical variables achieve expected correlations."""
         X_can, Y_can, X_weights, Y_weights, correlations = canonical_correlation(
-            self.omics_data, layer_pair=("genomics", "transcriptomics"), n_components=3
+            self.omics_data, layer_pair=("genomics", "transcriptomics"), n_components=3, regularization=0.1
         )
 
         # Check actual correlations between canonical variables
@@ -729,6 +728,27 @@ def _classical_cca_correlations(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     return np.linalg.svd(qx.T @ qy, compute_uv=False)
 
 
+def _dense_ridge_cca(x_std: np.ndarray, y_std: np.ndarray, lam: float, k: int) -> tuple[np.ndarray, np.ndarray]:
+    """Textbook ridge CCA with explicit p x p and q x q matrices, sharing no code with the implementation.
+
+    Returns the first ``k`` singular values of ``(Cxx + lam I)^(-1/2) Cxy (Cyy + lam I)^(-1/2)`` (the canonical
+    correlations) and the X-side canonical variates ``Xc (Cxx + lam I)^(-1/2) U`` (up to the sign of each column).
+    """
+    n = x_std.shape[0]
+    xc, yc = x_std - x_std.mean(axis=0), y_std - y_std.mean(axis=0)
+    cxx = xc.T @ xc / (n - 1) + lam * np.eye(xc.shape[1])
+    cyy = yc.T @ yc / (n - 1) + lam * np.eye(yc.shape[1])
+    cxy = xc.T @ yc / (n - 1)
+
+    def inverse_sqrt(c: np.ndarray) -> np.ndarray:
+        values, vectors = np.linalg.eigh(c)
+        return vectors @ np.diag(values**-0.5) @ vectors.T
+
+    whiten_x = inverse_sqrt(cxx)
+    u, rho, _ = np.linalg.svd(whiten_x @ cxy @ inverse_sqrt(cyy), full_matrices=False)
+    return rho[:k], xc @ whiten_x @ u[:, :k]
+
+
 _RIDGE_GRID = (0.0, 0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0)
 
 
@@ -773,22 +793,20 @@ class TestCanonicalCorrelationRidge:
         default = canonical_correlation(_cca_layers(x, y), layers=("a", "b"), n_components=3)[4]
         np.testing.assert_array_equal(default, corr)
 
-    def test_ridge_matches_factorization_oracle(self):
-        """Same definition as methods.factorization.canonical_correlation: (R + lambda I) whitening."""
+    def test_ridge_matches_the_dense_textbook_definition(self):
+        """(R + lambda I) whitening, checked against an implementation that forms the p x p matrices."""
         x, y = _cca_inputs()
         x_std, y_std = _standardize_ddof1(x), _standardize_ddof1(y)
         for lam in (0.01, 0.1, 1.0, 10.0):
-            x_c, y_c, _, _, corr = canonical_correlation(
+            x_c, _, _, _, corr = canonical_correlation(
                 _cca_layers(x, y), layers=("a", "b"), n_components=3, regularization=lam
             )
-            oracle = ridge_cca_oracle(x_std, y_std, n_components=3, regularization=lam)
+            oracle_corr, oracle_x_scores = _dense_ridge_cca(x_std, y_std, lam, 3)
 
-            np.testing.assert_allclose(corr, oracle["correlations"], rtol=1e-6, err_msg=f"lambda={lam}")
+            np.testing.assert_allclose(corr, oracle_corr, rtol=1e-9, err_msg=f"lambda={lam}")
             for k in range(3):
-                for mine, theirs in ((x_c, oracle["x_scores"]), (y_c, oracle["y_scores"])):
-                    theirs = np.asarray(theirs)[:, k]
-                    sign = np.sign(mine[:, k] @ theirs)
-                    np.testing.assert_allclose(sign * mine[:, k], theirs, atol=1e-6, err_msg=f"lambda={lam}, k={k}")
+                sign = np.sign(x_c[:, k] @ oracle_x_scores[:, k])
+                np.testing.assert_allclose(sign * x_c[:, k], oracle_x_scores[:, k], atol=1e-8, err_msg=f"lam={lam}")
 
     def test_identical_layers_match_the_closed_form_ridge_solution(self):
         """Analytic oracle with no CCA code in it.
@@ -813,18 +831,19 @@ class TestCanonicalCorrelationRidge:
         x = latent @ rng.standard_normal((3, 40)) + 0.5 * rng.standard_normal((30, 40))
         y = latent @ rng.standard_normal((3, 25)) + 0.3 * rng.standard_normal((30, 25))
 
-        # Without a ridge every canonical correlation is exactly 1 (perfect in-sample overfit).
-        unregularized = canonical_correlation(_cca_layers(x, y), layers=("a", "b"), n_components=5)[4]
-        np.testing.assert_allclose(unregularized, np.ones(5), atol=1e-8)
+        # Without a ridge every canonical correlation would be exactly 1 (perfect in-sample overfit), so the
+        # unregularized analysis is refused (see test_multiomics_cca_degenerate.py); any ridge works.
+        with pytest.raises(ValueError, match=r"regularization > 0"):
+            canonical_correlation(_cca_layers(x, y), layers=("a", "b"), n_components=5)
 
         x_std, y_std = _standardize_ddof1(x), _standardize_ddof1(y)
-        previous = unregularized
+        previous = np.ones(5)
         for lam in (0.05, 0.5, 5.0):
             _, _, _, _, corr = canonical_correlation(
                 _cca_layers(x, y), layers=("a", "b"), n_components=5, regularization=lam
             )
-            oracle = ridge_cca_oracle(x_std, y_std, n_components=5, regularization=lam)
-            np.testing.assert_allclose(corr, oracle["correlations"], rtol=1e-6, err_msg=f"lambda={lam}")
+            oracle_corr, _ = _dense_ridge_cca(x_std, y_std, lam, 5)
+            np.testing.assert_allclose(corr, oracle_corr, rtol=1e-9, err_msg=f"lambda={lam}")
             assert np.all(corr < previous)  # strictly below the previous (smaller) lambda
             previous = corr
 
