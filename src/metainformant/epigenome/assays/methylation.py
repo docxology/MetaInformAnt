@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import math
 import statistics
-from bisect import bisect_left
+from bisect import bisect_left, bisect_right
 from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple
@@ -358,7 +358,9 @@ def find_differentially_methylated_regions(
     correction when every expected count of the methylated/unmethylated by condition table is at least 10, and
     Fisher's exact test otherwise (low coverage, or levels at 0% or 100%), so sites that are fully methylated in one
     condition and unmethylated in the other are tested rather than discarded. Runs of consecutive significant
-    positions with at least ``min_sites`` positions become regions.
+    positions that change in the same direction (all more methylated in condition 1, or all less) and have at least
+    ``min_sites`` positions become regions; a run that switches direction is cut where it switches, because a region
+    mixing hyper- and hypomethylated sites has no single ``direction`` (it used to be labelled by its first site).
 
     Args:
         site_data1: Methylation data for condition 1
@@ -418,8 +420,9 @@ def find_differentially_methylated_regions(
                 significant = p_value <= p_value_threshold
 
             if significant:
+                direction = "hyper" if site1.methylation_level > site2.methylation_level else "hypo"
                 gap_ok = max_gap is None or current_dmr is None or pos - current_dmr["end"] <= max_gap
-                if current_dmr is not None and not gap_ok:
+                if current_dmr is not None and (not gap_ok or current_dmr["direction"] != direction):
                     # Flush the current DMR before starting a new one
                     if len(current_dmr["sites"]) >= min_sites:
                         dmr_list.append(_finish_dmr(current_dmr))
@@ -434,7 +437,7 @@ def find_differentially_methylated_regions(
                         "mean_delta": delta,
                         "mean_p_value": p_value,
                         "min_p_value": p_value,
-                        "direction": "hyper" if site1.methylation_level > site2.methylation_level else "hypo",
+                        "direction": direction,
                         "_p_values": [p_value],
                     }
                 else:
@@ -549,19 +552,105 @@ def _two_proportion_p_value(methylated1: int, total1: int, methylated2: int, tot
     return _fisher_exact_two_sided(methylated1, total1, methylated2, total2)
 
 
+def _island_statistics(c_count: int, g_count: int, cpg_count: int, length: int) -> Tuple[float, float]:
+    """GC fraction and observed/expected CpG ratio from the base counts of a stretch of DNA.
+
+    Observed/expected CpG is ``CpG count * length / (C count * G count)`` (Gardiner-Garden & Frommer, 1987),
+    taken as 0.0 when the stretch has no C or no G. Every island criterion goes through this one function, so the
+    stretch a scan accepts and the statistics it reports can never disagree in the last bit.
+    """
+    gc_content = (c_count + g_count) / length if length else 0.0
+    cpg_ratio = cpg_count * length / (c_count * g_count) if c_count and g_count else 0.0
+    return gc_content, cpg_ratio
+
+
 def _cpg_statistics(sequence: str) -> Tuple[float, float, int]:
     """GC fraction, observed/expected CpG ratio and CpG count of an upper-case DNA sequence.
 
     Observed/expected CpG is ``CpG count * length / (C count * G count)`` (Gardiner-Garden & Frommer, 1987),
     taken as 0.0 when the sequence has no C or no G.
     """
-    length = len(sequence)
-    c_count = sequence.count("C")
-    g_count = sequence.count("G")
     cpg_count = sequence.count("CG")
-    gc_content = (c_count + g_count) / length if length else 0.0
-    cpg_ratio = cpg_count * length / (c_count * g_count) if c_count and g_count else 0.0
+    gc_content, cpg_ratio = _island_statistics(sequence.count("C"), sequence.count("G"), cpg_count, len(sequence))
     return gc_content, cpg_ratio, cpg_count
+
+
+def _refine_island(
+    sequence: str,
+    start: int,
+    end: int,
+    low: int,
+    high: int,
+    min_gc: float,
+    min_cpg_ratio: float,
+    min_length: int,
+) -> Optional[Tuple[int, int]]:
+    """Move the ends of a merged stretch of qualifying windows onto CpG dinucleotides.
+
+    The candidate ends are the CpGs within ``[low, high)`` (the stretch ``[start, end)`` plus the room the caller
+    allows beyond it). The stretch is first drawn in to its outermost CpGs; then the left end is moved out to the
+    outermost CpG for which the whole island still meets every criterion, then the right end likewise, and so on
+    until neither moves. An island that meets the criteria at the CpGs it starts from is therefore never made to
+    break them, and no single CpG at either end can be added to the result without breaking them.
+
+    Args:
+        sequence: Upper-case DNA sequence.
+        start: Start of the stretch (0-based).
+        end: End of the stretch (exclusive).
+        low: Leftmost position the island may reach.
+        high: Position the island may not pass (exclusive end).
+        min_gc: Minimum GC fraction of the island.
+        min_cpg_ratio: Minimum observed/expected CpG ratio of the island.
+        min_length: Minimum length of the island in bp.
+
+    Returns:
+        ``(start, end)`` of the refined island: the C of a CpG and the position after the G of a CpG. ``None`` when
+        the stretch holds no CpG, or when no pair of CpGs bounds an interval that meets the criteria (the stretch
+        qualifies, if it does, only thanks to the flanking bases of its end windows).
+    """
+    # The CpGs of the zone, with the number of C and G bases before each, so any island between two CpGs is scored
+    # from counts in constant time
+    positions: List[int] = []
+    c_before: List[int] = []
+    g_before: List[int] = []
+    c_seen = g_seen = 0
+    scanned = low
+    cpg = sequence.find("CG", low, high)
+    while cpg != -1:
+        c_seen += sequence.count("C", scanned, cpg)
+        g_seen += sequence.count("G", scanned, cpg)
+        scanned = cpg
+        positions.append(cpg)
+        c_before.append(c_seen)
+        g_before.append(g_seen)
+        cpg = sequence.find("CG", cpg + 2, high)
+
+    def meets_criteria(first: int, last: int) -> bool:
+        """Whether the island from CpG ``first`` to CpG ``last`` (indices into ``positions``) qualifies."""
+        length = positions[last] + 2 - positions[first]
+        if length < min_length:
+            return False
+        # The first CpG's own C and G lie inside the island, the last CpG's C and G are the ``+ 1`` in each count
+        c_count = c_before[last] - c_before[first] + 1
+        g_count = g_before[last] - g_before[first] + 1
+        gc_content, cpg_ratio = _island_statistics(c_count, g_count, last - first + 1, length)
+        return gc_content >= min_gc and cpg_ratio >= min_cpg_ratio
+
+    first = bisect_left(positions, start)
+    last = bisect_right(positions, end - 2) - 1
+    if first > last:
+        return None
+
+    while True:
+        wider_first = next((k for k in range(first) if meets_criteria(k, last)), first)
+        wider_last = next((k for k in range(len(positions) - 1, last, -1) if meets_criteria(wider_first, k)), last)
+        if (wider_first, wider_last) == (first, last):
+            break
+        first, last = wider_first, wider_last
+
+    if meets_criteria(first, last):
+        return positions[first], positions[last] + 2
+    return None
 
 
 def find_cpg_islands(
@@ -577,11 +666,24 @@ def find_cpg_islands(
     A CpG island is a stretch of at least ``min_length`` bp (200) whose GC fraction is at least ``min_gc`` (0.5)
     and whose observed/expected CpG ratio, ``CpG count * length / (C count * G count)``, is at least
     ``min_cpg_ratio`` (0.6). Each chromosome is scanned with windows of ``window_size`` bp every ``step_size`` bp
-    (the last window is aligned to the end of the sequence); windows that meet the GC and CpG criteria are merged
-    when they overlap or touch, and a merged stretch is reported when it is at least ``min_length`` long and still
-    meets both criteria as a whole. Island boundaries are therefore resolved to about ``window_size`` bp (a window
-    that is partly island still qualifies), finer with a smaller ``window_size`` and ``step_size``. Sequence is
-    upper-cased, and bases other than C and G (including N) count as neither.
+    (the last window is aligned to the end of the sequence), and windows that meet the GC and CpG criteria are
+    merged into stretches when they overlap or touch. Sequence is upper-cased, and bases other than C and G
+    (including N) count as neither.
+
+    The merged windows only locate an island to within a window (a window that is partly island still qualifies,
+    and a window grid can stop short of the true edge), so each stretch is then refined to single-base resolution,
+    following the idea of Takai & Jones (2002) of fitting island boundaries to the CpGs instead of reporting window
+    edges (their stricter 500 bp, 55 % and 0.65 thresholds are not applied unless passed as arguments, and this is
+    not a re-implementation of their program). An island starts at the C of a CpG and ends at the G of a CpG. Its
+    ends are first drawn in to the outermost CpGs inside the stretch, so flanking sequence without CpGs that only
+    partly filled an end window is dropped. Then each end is pushed outward again, the left one first, to the
+    outermost CpG at which the island as a whole still meets all three criteria, up to ``min(window_size,
+    step_size)`` bp beyond the merged windows (the most the window grid can leave uncovered) and never into the next
+    stretch, repeating until neither end moves. The island is reported when it meets every criterion, whether or not
+    the padded stretch does (flanking sequence can pull a short stretch below the GC or CpG limit). When no pair of
+    CpGs bounds an interval that meets the criteria, or the stretch holds no CpG (possible only with
+    ``min_cpg_ratio`` of 0 or less), the stretch is reported as it is, with the boundaries of the merged windows,
+    if it is at least ``min_length`` long and meets both criteria as a whole; otherwise it is dropped.
 
     Args:
         sequences: Mapping of chromosome name to its DNA sequence.
@@ -592,8 +694,9 @@ def find_cpg_islands(
         min_length: Minimum island length in bp.
 
     Returns:
-        Islands in the order of ``sequences`` and then by start. Each is a dict with ``chromosome``, ``start`` and
-        ``end`` (0-based, end exclusive), ``length``, ``gc_content``, ``cpg_ratio`` and ``cpg_count``.
+        Islands in the order of ``sequences`` and then by start, never overlapping. Each is a dict with
+        ``chromosome``, ``start`` and ``end`` (0-based, end exclusive), ``length``, ``gc_content``, ``cpg_ratio`` and
+        ``cpg_count``, all measured on the refined island.
 
     Raises:
         ValueError: If ``window_size`` or ``step_size`` is below 1.
@@ -623,22 +726,45 @@ def find_cpg_islands(
             else:
                 stretches.append([start, start + window_size])
 
-        for start, end in stretches:
-            if end - start < min_length:
-                continue
-            gc_content, cpg_ratio, cpg_count = _cpg_statistics(sequence[start:end])
-            if gc_content >= min_gc and cpg_ratio >= min_cpg_ratio:
-                islands.append(
-                    {
-                        "chromosome": chromosome,
-                        "start": start,
-                        "end": end,
-                        "length": end - start,
-                        "gc_content": gc_content,
-                        "cpg_ratio": cpg_ratio,
-                        "cpg_count": cpg_count,
-                    }
-                )
+        # Refine the stretches from left to right, each within the room left by the island before it and the stretch
+        # after it
+        reach = min(window_size, step_size)
+        previous_end = 0
+        for number, (start, end) in enumerate(stretches):
+            next_start = stretches[number + 1][0] if number + 1 < len(stretches) else len(sequence)
+            refined = _refine_island(
+                sequence,
+                start,
+                end,
+                max(previous_end, start - reach),
+                min(next_start, end + reach),
+                min_gc,
+                min_cpg_ratio,
+                min_length,
+            )
+            if refined is None:
+                # No CpG-bounded interval qualifies: the merged windows are still an island if they qualify as a whole
+                if end - start < min_length:
+                    continue
+                gc_content, cpg_ratio, _ = _cpg_statistics(sequence[start:end])
+                if gc_content < min_gc or cpg_ratio < min_cpg_ratio:
+                    continue
+                refined = (start, end)
+
+            island_start, island_end = refined
+            previous_end = island_end
+            gc_content, cpg_ratio, cpg_count = _cpg_statistics(sequence[island_start:island_end])
+            islands.append(
+                {
+                    "chromosome": chromosome,
+                    "start": island_start,
+                    "end": island_end,
+                    "length": island_end - island_start,
+                    "gc_content": gc_content,
+                    "cpg_ratio": cpg_ratio,
+                    "cpg_count": cpg_count,
+                }
+            )
 
     return islands
 
@@ -656,9 +782,12 @@ def identify_cpg_islands(
     """Identify CpG islands in DNA sequence and summarize the methylation sites inside them.
 
     Islands are called from the sequence with :func:`find_cpg_islands` (Gardiner-Garden & Frommer: at least
-    ``min_length`` bp, GC fraction at least ``min_gc``, observed/expected CpG at least ``min_cpg_ratio``). Methylation
-    levels cannot stand in for sequence: GC content and CpG depletion are properties of the DNA, so the sequence is
-    required. The methylation sites are only summarized per island.
+    ``min_length`` bp, GC fraction at least ``min_gc``, observed/expected CpG at least ``min_cpg_ratio``), with their
+    ends refined to the outermost CpGs there, so the sites counted are those inside the CpG-bounded island rather
+    than those in the flank of the windows that overlapped it (:func:`find_cpg_islands` says which stretches keep
+    the boundaries of the merged windows instead). Methylation levels cannot stand in for sequence: GC content and
+    CpG depletion are properties of the DNA, so the sequence is required. The methylation sites are only summarized
+    per island.
 
     Args:
         methylation_data: Dictionary of methylation sites by chromosome (may be empty or lack chromosomes: the

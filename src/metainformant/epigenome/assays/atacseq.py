@@ -7,6 +7,7 @@ transcription factor binding site identification.
 
 from __future__ import annotations
 
+import math
 import statistics
 from collections import defaultdict
 from pathlib import Path
@@ -391,9 +392,11 @@ def calculate_atac_specific_metrics(peaks: List[ATACPeak]) -> Dict[str, Any]:
     lengths = [p.length for p in peaks]
 
     # Typical ATAC-seq peaks should be around nucleosome-free regions (~100-200bp)
-    nfr_peaks = sum(1 for length in lengths if 50 <= length <= 150)  # Nucleosome-free region
-    mono_peaks = sum(1 for length in lengths if 150 <= length <= 250)  # Mononucleosome
-    di_peaks = sum(1 for length in lengths if 250 <= length <= 350)  # Dinucleosome
+    # Half-open classes: a peak of exactly 150 or 250 bp used to be in two classes at once, so the fractions could
+    # add up to more than 1
+    nfr_peaks = sum(1 for length in lengths if 50 <= length < 150)  # Nucleosome-free region
+    mono_peaks = sum(1 for length in lengths if 150 <= length < 250)  # Mononucleosome
+    di_peaks = sum(1 for length in lengths if 250 <= length < 350)  # Dinucleosome
 
     total_peaks = len(peaks)
     if total_peaks > 0:
@@ -457,18 +460,38 @@ def calculate_atac_specific_metrics(peaks: List[ATACPeak]) -> Dict[str, Any]:
 
 
 def identify_tss_enrichment(
-    peaks: List[ATACPeak], tss_positions: Dict[str, List[int]], window_size: int = 2000
+    peaks: List[ATACPeak],
+    tss_positions: Dict[str, List[int]],
+    window_size: int = 2000,
+    genome_size: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Calculate TSS (Transcription Start Site) enrichment.
+
+    The enrichment ratio is the fraction of TSS whose ``window_size`` window overlaps at least one peak. Whether that
+    fraction is high needs a chance expectation, and the expectation needs the size of the genome the peaks and TSS
+    sit in, which the peaks cannot tell: ``expected_ratio`` is the chance that a window placed at random meets at
+    least one of the peaks, ``1 - exp(-N (W + L) / G)`` for N peaks of mean length L, a window of W bp and a genome
+    of G bp (a window meets a peak whose start lies within W + L bp of it). The function used to assume G = 3e9, the
+    human genome, for every species, and to leave the peak length out of the expectation.
 
     Args:
         peaks: List of ATACPeak objects
         tss_positions: Dictionary mapping chromosome to list of TSS positions
         window_size: Window size around TSS to check for peaks
+        genome_size: Size of the genome in bp (for example the assembly length), needed for the chance expectation
 
     Returns:
-        Dictionary with TSS enrichment statistics
+        Dictionary with TSS enrichment statistics: ``total_tss``, ``enriched_tss``, ``enrichment_ratio`` and
+        ``window_size``, plus ``expected_ratio`` and ``fold_enrichment`` (``enrichment_ratio / expected_ratio``).
+        Both are ``None`` without ``genome_size``, and ``fold_enrichment`` is also ``None`` when there are no peaks
+        (the expectation is then 0).
+
+    Raises:
+        ValueError: If ``genome_size`` is given and is not positive.
     """
+    if genome_size is not None and genome_size <= 0:
+        raise ValueError(f"genome_size must be positive, got {genome_size}")
+
     logger.info("Calculating TSS enrichment")
 
     total_tss = sum(len(positions) for positions in tss_positions.values())
@@ -492,11 +515,13 @@ def identify_tss_enrichment(
 
     enrichment_ratio = enriched_tss / total_tss if total_tss > 0 else 0
 
-    # Calculate expected enrichment by chance
-    total_genome_size = 3e9  # Approximate human genome size
-    expected_ratio = (len(peaks) * window_size) / total_genome_size
-
-    fold_enrichment = enrichment_ratio / expected_ratio if expected_ratio > 0 else 0
+    # Calculate expected enrichment by chance, which depends on the genome the peaks are scattered over
+    expected_ratio: Optional[float] = None
+    fold_enrichment: Optional[float] = None
+    if genome_size is not None:
+        mean_length = sum(peak.length for peak in peaks) / len(peaks) if peaks else 0.0
+        expected_ratio = 1.0 - math.exp(-len(peaks) * (window_size + mean_length) / genome_size)
+        fold_enrichment = enrichment_ratio / expected_ratio if expected_ratio > 0 else None
 
     return {
         "total_tss": total_tss,

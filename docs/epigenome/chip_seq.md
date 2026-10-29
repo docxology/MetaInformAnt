@@ -71,7 +71,7 @@ Find every pair of peaks, one from each list, that are on the same chromosome an
 
 ### `merge_overlapping_peaks(peaks, max_distance=0) -> List[ChIPPeak]`
 
-Merge peaks that overlap, touch, or lie within `max_distance` bp of each other into single peaks, per chromosome. The result lists chromosomes in order of first appearance, each sorted by start. A merged peak keeps the summit and strand of the first (lowest-`start`) peak, the highest score and signal value, and the lowest p-value and q-value among the peaks it joins (`None` as soon as one of them has none). A p-value or q-value of 0.0 is a value, not a missing one.
+Merge peaks that overlap, touch, or lie within `max_distance` bp of each other into single peaks, per chromosome. The result lists chromosomes in order of first appearance, each sorted by start. A merged peak keeps the summit of the highest-score constituent (the earlier constituent wins a score tie), the strand of the first (lowest-`start`) peak, the highest score and signal value, and the lowest p-value and q-value among the peaks it joins (`None` as soon as one of them has none). A p-value or q-value of 0.0 is a value, not a missing one.
 
 ### `calculate_peak_enrichment(peaks, genome_size, expected_peaks=None) -> Dict`
 

@@ -14,15 +14,16 @@ Simplified ChromHMM-style chromatin state discovery and annotation, implemented 
 
 ## Function Reference
 
-### `learn_chromatin_states(signal_matrix, n_states=15, max_iter=200, tol=1e-4) -> Dict`
+### `learn_chromatin_states(signal_matrix, n_states=15, max_iter=200, tol=1e-4, random_state=42) -> Dict`
 
-Discover chromatin states from a signal matrix (bins x marks) using EM-based GMM fitting with diagonal covariance. Centroids are initialized with k-means++ using a fixed internal seed, so there is no `seed` argument and the same input gives the same model.
+Discover chromatin states from a signal matrix (bins x marks) using EM-based GMM fitting with diagonal covariance. Centroids are initialized with k-means++ using a private generator. The same input and integer `random_state` reproduce the model; `random_state=None` draws a fresh seed without reading or changing Python's global random state.
 
 **Parameters:**
 - `signal_matrix`: 2D list or numpy array of signal values (genomic bins x histone marks). `ValueError` if it is an empty list, a numpy array that is not 2-D, has rows of different lengths, or has fewer bins than `n_states`.
 - `n_states`: Number of states to learn (default 15).
 - `max_iter`: Maximum EM iterations (default 200).
-- `tol`: Convergence threshold for the log-likelihood change (default 1e-4).
+- `tol`: Positive, finite convergence threshold for the log-likelihood change (default 1e-4).
+- `random_state`: Integer initialization seed (default 42), or `None` for fresh initialization. Non-finite signals, invalid dimensions/state counts and non-positive iteration limits raise `ValueError`.
 
 **Returns** dict with:
 - `states`: Number of states.
@@ -41,15 +42,15 @@ Assign each genomic bin to a state by Viterbi decoding with the emission paramet
 
 ### `interpret_states(emission_params, mark_names) -> List[Dict]`
 
-Label each state from its emission means. `emission_params` is `model["emission_params"]` (not the whole model) and `mark_names` is required, in the column order of the signal matrix. Marks are recognized by substring, case-insensitively (`K4me3`, `K4me1`, `K27ac`, `K27me3`, `K9me3`, `K36me3`), and a mark counts as high in a state when its mean is at least the mean across states plus half a standard deviation. Labels are assigned in this order: "Bivalent Promoter" (K4me3 and K27me3), "Active Promoter" (K4me3 and K27ac), "Promoter" (K4me3), "Active Enhancer" (K4me1 and K27ac), "Poised Enhancer" (K4me1 and K27me3), "Weak Enhancer" (K4me1), "Polycomb Repressed" (K27me3), "Heterochromatin" (K9me3), "Transcribed" (K36me3), "Active Regulatory" (K27ac), "Quiescent" (no mark high), otherwise "Unknown".
+Label each state from its emission means. `emission_params` is `model["emission_params"]` (not the whole model) and `mark_names` is required, in the column order of the signal matrix. Marks are recognized by substring, case-insensitively (`K4me3`, `K4me1`, `K27ac`, `K27me3`, `K9me3`, `K36me3`), and a mark counts as high in a state when its mean is strictly above the mean across states plus half a standard deviation. Labels are assigned in this order: "Bivalent Promoter" (K4me3 and K27me3), "Active Promoter" (K4me3 and K27ac), "Promoter" (K4me3), "Active Enhancer" (K4me1 and K27ac), "Poised Enhancer" (K4me1 and K27me3), "Weak Enhancer" (K4me1), "Polycomb Repressed" (K27me3), "Heterochromatin" (K9me3), "Transcribed" (K36me3), "Active Regulatory" (K27ac), "Quiescent" (no mark high), otherwise "Unknown".
 
-Returns per-state dicts with `state_id`, `label`, `category`, `dominant_marks` (the marks that are high in the state), `mean_signal`, `description` and `emission_means`.
+Returns per-state dicts with `state_id`, `label`, `category`, `dominant_marks` (the marks that are high in the state), `mean_signal`, `description` and `emission_means`. Non-finite emission values or a mark-name count that differs from the number of emission columns raise `ValueError`.
 
 ### `compute_state_enrichment(state_assignments, annotations, n_states) -> Dict`
 
-Test enrichment of chromatin states in annotations. `annotations` maps an annotation name (promoters, gene bodies, ...) to the indices of the bins it covers, and `n_states` is the total number of states (not the number of bins). For every state and annotation it computes the observed and expected overlap, the fold enrichment and a one-sided Fisher's exact test p-value (a chi-squared approximation when scipy is unavailable).
+Test enrichment of chromatin states in annotations. `annotations` maps an annotation name (promoters, gene bodies, ...) to the indices of the bins it covers, and `n_states` is the total number of states (not the number of bins). For every state and annotation it computes the observed and expected overlap, the fold enrichment and a one-sided Fisher's exact test p-value (an exact hypergeometric tail when SciPy is unavailable).
 
-Returns a dict with `enrichment_matrix` (keyed `"state_<id>__<annotation>"`; each value has `state_id`, `annotation`, `observed_overlap`, `expected_overlap`, `fold_enrichment`, `p_value`, `n_state_bins` and `n_annotation_bins`), `summary` (per state: `state_id`, `n_bins`, `most_enriched_annotation`, `best_fold_enrichment`, `best_p_value`), `n_bins`, `n_states` and `n_annotations`.
+Returns a dict with `enrichment_matrix` (keyed `"state_<id>__<annotation>"`; each value has `state_id`, `annotation`, `observed_overlap`, `expected_overlap`, `fold_enrichment`, `p_value`, `n_state_bins` and `n_annotation_bins`), `summary` (per state: `state_id`, `n_bins`, `most_enriched_annotation`, `best_fold_enrichment`, `best_p_value`), `n_bins`, `n_states` and `n_annotations`. Without annotations, the best-annotation and associated enrichment/p-value summary fields are `None`.
 
 ### `segment_genome(state_assignments, bin_size=200, min_segment=1) -> List[Dict]`
 

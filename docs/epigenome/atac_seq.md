@@ -48,11 +48,11 @@ Compute summary statistics for a peak set: total count, length distribution (mea
 
 ### `calculate_atac_specific_metrics(peaks) -> Dict`
 
-ATAC-seq-specific QC computed from peak lengths: `nfr_peak_fraction` (50--150 bp), `mononucleosome_peak_fraction` (150--250 bp), `dinucleosome_peak_fraction` (250--350 bp), and periodicity scores around expected nucleosome periods (147/200/300 bp). Takes a peak list, not raw fragment sizes.
+ATAC-seq-specific QC computed from peak lengths: `nfr_peak_fraction` ([50, 150) bp), `mononucleosome_peak_fraction` ([150, 250) bp), `dinucleosome_peak_fraction` ([250, 350) bp), and periodicity scores around expected nucleosome periods (147/200/300 bp). Takes a peak list, not raw fragment sizes.
 
-### `identify_tss_enrichment(peaks, tss_positions, window_size=2000) -> Dict`
+### `identify_tss_enrichment(peaks, tss_positions, window_size=2000, genome_size=None) -> Dict`
 
-Measure peak density around annotated transcription start sites. `tss_positions` maps chromosome names to lists of TSS positions. Returns `total_tss`, `enriched_tss`, `enrichment_ratio`, `expected_ratio`, `fold_enrichment`, and `window_size`.
+Measure peak density around annotated transcription start sites. `tss_positions` maps chromosome names to lists of TSS positions. Returns `total_tss`, `enriched_tss`, `enrichment_ratio`, `expected_ratio`, `fold_enrichment`, and `window_size`. A positive `genome_size` in bp is needed for the chance expectation `1 - exp(-N * (window_size + mean_peak_length) / genome_size)`. Without it, `expected_ratio` and `fold_enrichment` are `None`; with no peaks the fold enrichment is also `None`.
 
 ### `find_tf_binding_sites(peaks, tf_motifs, genome_fasta=None, peak_sequences=None) -> Dict`
 
@@ -110,7 +110,8 @@ print(f"Mono-nucleosomal: {metrics['mononucleosome_peak_fraction']:.2%}")
 
 # TSS enrichment QC (chromosome -> TSS positions)
 tss_positions = {"chr1": [1000, 50000], "chr2": [25000]}
-tss = identify_tss_enrichment(peaks, tss_positions, window_size=2000)
+tss = identify_tss_enrichment(peaks, tss_positions, window_size=2000, genome_size=3_000_000_000)
+# Replace genome_size above with the length of the assembly used for these peaks.
 print(f"Fold enrichment: {tss['fold_enrichment']:.2f}")
 
 # TF motif scan over the peak sequence (IUPAC consensus motifs, both strands);

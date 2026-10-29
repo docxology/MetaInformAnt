@@ -6,7 +6,7 @@ Analysis of DNA methylation patterns, implemented in `metainformant.epigenome.as
 
 **Beta values** represent the methylation level at each CpG site as the ratio of methylated reads to total reads: beta = M / (M + U), where M and U are the methylated and unmethylated read counts. Values range from 0.0 (unmethylated) to 1.0 (fully methylated); sites with no reads get 0.0. `MethylationSite.methylation_level` is the same ratio for site objects.
 
-**Differentially Methylated Regions (DMRs)** are contiguous runs of CpG sites whose methylation differs between conditions. Sites present in both conditions are compared one by one: a site is significant when its methylation difference reaches a minimum and a two-proportion test on the read counts gives a small p-value (a pooled z-test with Yates' continuity correction when every expected count is at least 10, Fisher's exact test otherwise). Consecutive significant sites are chained into regions of at least `min_sites` sites. There is no sliding window.
+**Differentially Methylated Regions (DMRs)** are contiguous runs of CpG sites whose methylation differs between conditions. Sites present in both conditions are compared one by one: a site is significant when its methylation difference reaches a minimum and a two-proportion test on the read counts gives a small p-value (a pooled z-test with Yates' continuity correction when every expected count is at least 10, Fisher's exact test otherwise). Consecutive significant sites with the same direction of change are chained into regions of at least `min_sites` sites; a direction switch ends the current region. There is no sliding window.
 
 **CpG islands** are regions of high CG dinucleotide density in GC-rich sequence. `find_cpg_islands` calls them from DNA sequence with the Gardiner-Garden & Frommer (1987) criteria: length >= 200 bp, GC content >= 50%, and observed/expected CpG ratio >= 0.6, where observed/expected CpG is `CpG count * length / (C count * G count)`. GC content and CpG depletion are properties of the DNA, so methylation levels cannot stand in for sequence: `identify_cpg_islands` also requires the sequence and only summarizes the methylation sites inside each island.
 
@@ -64,15 +64,15 @@ Find DMRs between two conditions, each a `Dict[str, List[MethylationSite]]`. Onl
 
 The test is a pooled two-proportion z-test with Yates' continuity correction when every expected count of the methylated/unmethylated by condition table is at least 10, and Fisher's exact test otherwise. The smallest expected count is `min(n1, n2) * min(M, U) / (n1 + n2)`, where `n1` and `n2` are the total reads of the two conditions and `M` and `U` the pooled methylated and unmethylated counts, so few reads or a pooled level close to 0% or 100% selects Fisher's exact test. A site that is fully methylated in one condition and unmethylated in the other is tested like any other site. When every read of both conditions agrees (no methylated reads at all, or no unmethylated ones), the conditions cannot differ and the p-value is 1.
 
-Runs of consecutive significant positions with at least `min_sites` positions become regions; `max_gap` (bp) optionally ends a run when neighboring significant positions are further apart (default `None`: no gap limit).
+Runs of consecutive significant positions with the same direction and at least `min_sites` positions become regions; a direction switch ends the run, and `max_gap` (bp) optionally ends a run when neighboring significant positions are further apart (default `None`: no gap limit).
 
-Returns dicts, ordered by chromosome name and then position, with `chromosome`, `start`, `end`, `sites` (the list of positions), `mean_delta`, `mean_p_value` (the mean of the per-site p-values), `min_p_value` (the smallest of them) and `direction` (`"hyper"` or `"hypo"`: condition 1 relative to condition 2 at the region's first site).
+Returns dicts, ordered by chromosome name and then position, with `chromosome`, `start`, `end`, `sites` (the list of positions), `mean_delta`, `mean_p_value` (the mean of the per-site p-values), `min_p_value` (the smallest of them) and `direction` (`"hyper"` or `"hypo"`: condition 1 relative to condition 2 throughout the region).
 
 ### `find_cpg_islands(sequences, window_size=200, step_size=50, min_gc=0.5, min_cpg_ratio=0.6, min_length=200) -> List[Dict]`
 
 Call CpG islands in DNA sequence. `sequences` maps a chromosome name to its sequence, which is upper-cased; bases other than C and G, including N, count as neither. A chromosome shorter than `window_size` is skipped; the others are scanned with windows of `window_size` bp every `step_size` bp, the last window aligned to the end of the sequence. Windows with a GC fraction of at least `min_gc` and an observed/expected CpG ratio of at least `min_cpg_ratio` are merged when they overlap or touch, and a merged stretch is reported when it is at least `min_length` bp long and still meets both criteria as a whole.
 
-Island boundaries are therefore resolved to about `window_size` bp, because a window that is only partly island still qualifies. Use a smaller `window_size` with `step_size=1` for finer edges. `ValueError` if `window_size` or `step_size` is below 1.
+Each merged stretch is refined to CpG-bounded, single-base edges: trim to the outermost CpGs, then extend to qualifying flanking CpGs within `min(window_size, step_size)` bp without entering the next stretch. The final interval must meet every criterion. If no qualifying CpG-bounded interval exists, the merged-window boundaries are kept only when that whole stretch meets the criteria; otherwise it is dropped. A returned edge can therefore still be a window boundary in that fallback case. `ValueError` if `window_size` or `step_size` is below 1.
 
 Returns the islands in the order of `sequences` and then by start, as dicts with `chromosome`, `start` and `end` (0-based, end exclusive), `length`, `gc_content`, `cpg_ratio` and `cpg_count`.
 
@@ -132,7 +132,7 @@ for dmr in dmrs:
     )
 
 # CpG islands are called from DNA sequence; here a CG repeat at 1000-1300 inside AT-only flanks.
-# With window_size=50 and step_size=1 the island comes out as 975-1325.
+# With window_size=50 and step_size=1 the refined island comes out as 1000-1300.
 sequences = {"chr1": "AT" * 500 + "CG" * 150 + "AT" * 500}
 islands = find_cpg_islands(sequences, window_size=50, step_size=1)
 

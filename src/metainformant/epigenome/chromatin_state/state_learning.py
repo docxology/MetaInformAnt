@@ -11,6 +11,7 @@ annotations, genome segmentation, and cross-condition comparison.
 from __future__ import annotations
 
 import math
+import operator
 import random
 import statistics
 from collections import defaultdict
@@ -57,11 +58,17 @@ def _to_2d_list(signal_matrix: list[list[float]] | Any) -> list[list[float]]:
         2D list of floats.
 
     Raises:
-        ValueError: If the input is empty or has inconsistent dimensions.
+        ValueError: If the input is empty, has inconsistent dimensions or holds a value that is not finite (a NaN
+            or infinite signal would otherwise turn every responsibility into NaN and assign every bin to state 0
+            without any error).
     """
     if HAS_NUMPY and isinstance(signal_matrix, np.ndarray):
         if signal_matrix.ndim != 2:
             raise ValueError(f"Expected 2D array, got {signal_matrix.ndim}D")
+        if signal_matrix.size == 0:
+            raise ValueError("signal_matrix must not be empty")
+        if not np.isfinite(signal_matrix).all():
+            raise ValueError("signal_matrix must hold only finite values (found NaN or infinity)")
         return cast("list[list[float]]", signal_matrix.tolist())
 
     if not signal_matrix:
@@ -75,11 +82,27 @@ def _to_2d_list(signal_matrix: list[list[float]] | Any) -> list[list[float]]:
             expected_cols = len(converted)
         elif len(converted) != expected_cols:
             raise ValueError(f"Inconsistent row lengths: expected {expected_cols}, " f"got {len(converted)}")
+        if not all(math.isfinite(v) for v in converted):
+            raise ValueError("signal_matrix must hold only finite values (found NaN or infinity)")
         result.append(converted)
 
     if expected_cols is None or expected_cols == 0:
         raise ValueError("signal_matrix must have at least one column")
     return result
+
+
+def _check_random_state(random_state: Any) -> int | None:
+    """Return *random_state* as a plain integer seed, or ``None`` for an operating-system seed.
+
+    Raises:
+        ValueError: If *random_state* is neither an integer (numpy integers included) nor ``None``.
+    """
+    if random_state is None:
+        return None
+    try:
+        return operator.index(random_state)
+    except TypeError:
+        raise ValueError(f"random_state must be an integer or None, got {random_state!r}") from None
 
 
 def _multivariate_gaussian_logpdf(
@@ -130,6 +153,7 @@ def _kmeans_init(
     data: list[list[float]],
     n_clusters: int,
     max_iter: int = 20,
+    random_state: int | None = 42,
 ) -> list[list[float]]:
     """Simple k-means++ initialisation to get starting centroids.
 
@@ -137,6 +161,8 @@ def _kmeans_init(
         data: 2D list of observations.
         n_clusters: Number of clusters.
         max_iter: Maximum k-means iterations.
+        random_state: Seed of the private generator that draws the centroids; ``None`` seeds it from the operating
+            system. The global ``random`` state is never touched.
 
     Returns:
         List of centroid vectors.
@@ -148,7 +174,7 @@ def _kmeans_init(
         return data[:n_clusters]
 
     # k-means++ initialisation
-    rng = random.Random(42)
+    rng = random.Random(random_state)
     centroids: list[list[float]] = [data[rng.randint(0, n - 1)]]
 
     for _ in range(1, n_clusters):
@@ -213,6 +239,7 @@ def learn_chromatin_states(
     n_states: int = 15,
     max_iter: int = 200,
     tol: float = 1e-4,
+    random_state: int | None = 42,
 ) -> dict:
     """Learn chromatin states using a multivariate Gaussian mixture model.
 
@@ -220,12 +247,20 @@ def learn_chromatin_states(
     algorithm with diagonal covariance.  Rows of *signal_matrix*
     correspond to genomic bins and columns to histone marks.
 
+    EM starts from k-means++ centroids, and drawing those is the only random step: the same *signal_matrix*,
+    parameters and *random_state* always give the same model, and a different *random_state* can reach a different
+    local optimum, so run several seeds and keep the model with the highest ``log_likelihood`` when the states
+    matter.
+
     Args:
         signal_matrix: Matrix of shape (n_bins, n_marks).  Accepts
             numpy arrays or nested lists.
         n_states: Number of chromatin states to learn.
         max_iter: Maximum EM iterations.
         tol: Convergence tolerance on log-likelihood change.
+        random_state: Integer seed of the k-means++ initialisation (default 42, the seed this function always
+            used, so results with the default are unchanged).  ``None`` seeds it from the operating system, so
+            repeated calls may differ.  The global ``random`` state is never read or changed.
 
     Returns:
         Dictionary with keys:
@@ -239,11 +274,20 @@ def learn_chromatin_states(
         - ``log_likelihood``: Final log-likelihood.
         - ``n_iterations``: Number of EM iterations performed.
         - ``converged``: Whether the algorithm converged.
+        - ``weights``: Mixing weight of each state.
+        - ``state_counts``: Number of bins assigned to each state that has any.
 
     Raises:
         ValueError: If signal_matrix is empty, has fewer rows than
-            states, or has inconsistent dimensions.
+            states, has inconsistent dimensions or holds a value that is not finite, if *n_states* or *max_iter*
+            is below 1, or if *random_state* is neither an integer nor ``None``.
     """
+    if n_states < 1:
+        raise ValueError(f"n_states must be at least 1, got {n_states}")
+    if max_iter < 1:
+        raise ValueError(f"max_iter must be at least 1, got {max_iter}")
+    seed = _check_random_state(random_state)
+
     data = _to_2d_list(signal_matrix)
     n_bins = len(data)
     n_marks = len(data[0])
@@ -261,7 +305,7 @@ def learn_chromatin_states(
     )
 
     # Initialise parameters via k-means
-    centroids = _kmeans_init(data, n_states)
+    centroids = _kmeans_init(data, n_states, random_state=seed)
 
     # Emission parameters: per-state mean and diagonal variance
     means: list[list[float]] = [list(c) for c in centroids]
@@ -499,16 +543,23 @@ def interpret_states(
     """Automatically label chromatin states based on emission patterns.
 
     Uses known associations between histone marks and functional
-    categories:
+    categories; the first rule that matches decides the label:
 
-    - H3K4me3 high -> Active Promoter
-    - H3K4me1 high + H3K27ac high -> Active Enhancer
-    - H3K4me1 high + H3K27ac low -> Poised Enhancer
+    - H3K4me3 + H3K27me3 high -> Bivalent Promoter
+    - H3K4me3 + H3K27ac high -> Active Promoter
+    - H3K4me3 high -> Promoter
+    - H3K4me1 + H3K27ac high -> Active Enhancer
+    - H3K4me1 + H3K27me3 high -> Poised Enhancer
+    - H3K4me1 high -> Weak Enhancer
     - H3K27me3 high -> Polycomb Repressed
     - H3K9me3 high -> Heterochromatin
-    - H3K36me3 high -> Transcribed / Gene Body
-    - H3K27ac high (without H3K4me1/H3K4me3) -> Active Regulatory
-    - Low signal across all marks -> Quiescent
+    - H3K36me3 high -> Transcribed
+    - H3K27ac high -> Active Regulatory
+    - no mark high -> Quiescent
+    - anything else -> Unknown
+
+    A mark counts as "high" in a state when the state's mean for it lies strictly above the mean of that mark across
+    states plus half its standard deviation, so a mark that does not vary between states is high in none of them.
 
     Args:
         emission_params: Dictionary with ``means`` key containing
@@ -521,10 +572,19 @@ def interpret_states(
         List of dictionaries (one per state) with keys: ``state_id``,
         ``label``, ``category``, ``dominant_marks``, ``mean_signal``,
         ``description``.
+
+    Raises:
+        ValueError: If the number of *mark_names* differs from the number of marks the states were fitted on (the
+            labels would otherwise be matched to the wrong columns, or the extra columns ignored, without notice).
     """
     means = emission_params["means"]
     n_states = len(means)
     n_marks = len(mark_names)
+    if n_states and len(means[0]) != n_marks:
+        raise ValueError(
+            f"mark_names lists {n_marks} marks but the emission means have {len(means[0])} columns; "
+            "give one name per column, in column order"
+        )
 
     logger.info(
         "Interpreting %d chromatin states with %d marks: %s",
@@ -532,6 +592,9 @@ def interpret_states(
         n_marks,
         mark_names,
     )
+
+    if n_states == 0:
+        return []
 
     # Normalise mark names to lowercase for pattern matching
     mark_lower = [m.lower() for m in mark_names]
@@ -551,7 +614,9 @@ def interpret_states(
     idx_k9me3 = _find_mark("k9me3")
     idx_k36me3 = _find_mark("k36me3")
 
-    # Compute per-mark thresholds (mean + 0.5*std across states)
+    # Compute per-mark thresholds (mean + 0.5*std across states). A state is "high" for a mark only when it lies
+    # strictly above its threshold: a mark that is the same in every state (std 0) puts no state above it, where
+    # ">=" made every state high for it and labelled all of them by that mark
     mark_thresholds: list[float] = []
     for j in range(n_marks):
         vals = [means[k][j] for k in range(n_states)]
@@ -570,7 +635,7 @@ def interpret_states(
         # Determine which marks are "high" for this state
         high_marks: list[str] = []
         for j in range(n_marks):
-            if state_means[j] >= mark_thresholds[j]:
+            if state_means[j] > mark_thresholds[j]:
                 high_marks.append(mark_names[j])
 
         # Classify state based on mark patterns
@@ -578,12 +643,12 @@ def interpret_states(
         category = "other"
         description = "Uncharacterised chromatin state"
 
-        has_k4me3 = idx_k4me3 is not None and state_means[idx_k4me3] >= mark_thresholds[idx_k4me3]
-        has_k4me1 = idx_k4me1 is not None and state_means[idx_k4me1] >= mark_thresholds[idx_k4me1]
-        has_k27ac = idx_k27ac is not None and state_means[idx_k27ac] >= mark_thresholds[idx_k27ac]
-        has_k27me3 = idx_k27me3 is not None and state_means[idx_k27me3] >= mark_thresholds[idx_k27me3]
-        has_k9me3 = idx_k9me3 is not None and state_means[idx_k9me3] >= mark_thresholds[idx_k9me3]
-        has_k36me3 = idx_k36me3 is not None and state_means[idx_k36me3] >= mark_thresholds[idx_k36me3]
+        has_k4me3 = idx_k4me3 is not None and state_means[idx_k4me3] > mark_thresholds[idx_k4me3]
+        has_k4me1 = idx_k4me1 is not None and state_means[idx_k4me1] > mark_thresholds[idx_k4me1]
+        has_k27ac = idx_k27ac is not None and state_means[idx_k27ac] > mark_thresholds[idx_k27ac]
+        has_k27me3 = idx_k27me3 is not None and state_means[idx_k27me3] > mark_thresholds[idx_k27me3]
+        has_k9me3 = idx_k9me3 is not None and state_means[idx_k9me3] > mark_thresholds[idx_k9me3]
+        has_k36me3 = idx_k36me3 is not None and state_means[idx_k36me3] > mark_thresholds[idx_k36me3]
 
         if has_k4me3 and has_k27me3:
             label = "Bivalent Promoter"
@@ -680,7 +745,8 @@ def compute_state_enrichment(
 
         - ``enrichment_matrix``: Dict mapping
           ``(state_id, annotation)`` to enrichment fold and p-value.
-        - ``summary``: Per-state list of most enriched annotation.
+        - ``summary``: Per-state list of most enriched annotation, its fold enrichment and its p-value (``None``
+          for all three when there are no annotations to test).
     """
     n_bins = len(state_assignments)
     if n_bins == 0:
@@ -743,13 +809,15 @@ def compute_state_enrichment(
             if best_enrichment is None or fold > best_enrichment["fold_enrichment"]:
                 best_enrichment = enrichment_matrix[key]
 
+        # With no annotation there was nothing to test: the best annotation, its fold enrichment and its p-value are
+        # all absent (a fold of 0.0 and a p-value of 1.0 would report a test that never happened)
         summary.append(
             {
                 "state_id": state_id,
                 "n_bins": n_state,
                 "most_enriched_annotation": (best_enrichment["annotation"] if best_enrichment else None),
-                "best_fold_enrichment": (best_enrichment["fold_enrichment"] if best_enrichment else 0.0),
-                "best_p_value": (best_enrichment["p_value"] if best_enrichment else 1.0),
+                "best_fold_enrichment": (best_enrichment["fold_enrichment"] if best_enrichment else None),
+                "best_p_value": (best_enrichment["p_value"] if best_enrichment else None),
             }
         )
 
@@ -765,11 +833,77 @@ def compute_state_enrichment(
     return result
 
 
-def _fisher_or_chi2(a: int, b: int, c: int, d: int) -> float:
-    """Compute p-value from 2x2 contingency table.
+def _fisher_exact_greater(a: int, b: int, c: int, d: int) -> float:
+    """One-sided (enrichment) Fisher exact p-value of the 2x2 table ``[[a, b], [c, d]]``, in pure Python.
 
-    Uses scipy's Fisher exact test when available, otherwise falls
-    back to chi-squared approximation.
+    With the margins fixed, the overlap ``a`` follows a hypergeometric distribution, and the p-value is
+    ``P(X >= a)``. The tail is summed from the probability of ``a`` outwards, where the terms fall off geometrically,
+    so the cost is proportional to the spread of the distribution rather than to the table total. Above the mean
+    the tail is summed directly; at or below it the tail is at least about one half and is taken as ``1 - P(X < a)``,
+    where nothing cancels.
+
+    Args:
+        a: Overlap count.
+        b: State-only count.
+        c: Annotation-only count.
+        d: Neither count.
+
+    Returns:
+        ``P(X >= a)``, in [0, 1]; 1.0 for an empty table.
+    """
+    total = a + b + c + d
+    row = a + b  # draws: the bins of the state
+    column = a + c  # successes in the population: the bins of the annotation
+    if total == 0 or a <= max(0, row + column - total):
+        return 1.0  # every table with these margins has at least this overlap
+    highest = min(row, column)
+    if a > highest:
+        return 0.0
+
+    def log_pmf(k: int) -> float:
+        return (
+            math.lgamma(column + 1)
+            - math.lgamma(k + 1)
+            - math.lgamma(column - k + 1)
+            + math.lgamma(total - column + 1)
+            - math.lgamma(row - k + 1)
+            - math.lgamma(total - column - row + k + 1)
+            - (math.lgamma(total + 1) - math.lgamma(row + 1) - math.lgamma(total - row + 1))
+        )
+
+    mean = row * column / total
+    if a > mean:
+        # pmf(k + 1) = pmf(k) * (column - k) (row - k) / ((k + 1) (total - column - row + k + 1)): a ratio below one
+        # from the mean upwards
+        term = 1.0
+        series = 1.0
+        k = a
+        while k < highest and term >= series * 1e-17:
+            term *= (column - k) * (row - k) / ((k + 1) * (total - column - row + k + 1))
+            series += term
+            k += 1
+        return min(1.0, math.exp(log_pmf(a) + math.log(series)))
+
+    # a <= mean: add the lower tail P(X <= a - 1) from its largest term downwards,
+    # pmf(k - 1) = pmf(k) * k (total - column - row + k) / ((column - k + 1) (row - k + 1))
+    lowest = max(0, row + column - total)
+    term = math.exp(log_pmf(a - 1))
+    lower = term
+    k = a - 1
+    while k > lowest and term > lower * 1e-17:
+        term *= k * (total - column - row + k) / ((column - k + 1) * (row - k + 1))
+        lower += term
+        k -= 1
+    return min(1.0, max(0.0, 1.0 - lower))
+
+
+def _fisher_or_chi2(a: int, b: int, c: int, d: int) -> float:
+    """Compute the one-sided enrichment p-value of a 2x2 contingency table.
+
+    Uses scipy's Fisher exact test when available, otherwise the same test in pure Python
+    (:func:`_fisher_exact_greater`). The fallback used to be a chi-squared approximation that squared the deviation
+    from the expected overlap, so a state *depleted* in an annotation got as small a p-value as an enriched one and
+    was reported as enriched whenever SciPy was missing.
 
     Args:
         a: Overlap count.
@@ -785,19 +919,7 @@ def _fisher_or_chi2(a: int, b: int, c: int, d: int) -> float:
         _, pval = scipy_stats.fisher_exact(table, alternative="greater")
         return float(pval)
 
-    # Chi-squared approximation fallback
-    n = a + b + c + d
-    if n == 0:
-        return 1.0
-
-    expected_a = (a + b) * (a + c) / n
-    if expected_a <= 0:
-        return 1.0
-
-    chi2 = (a - expected_a) ** 2 / expected_a
-    # Approximate p-value from chi2 with 1 df using complementary error function
-    pval = 0.5 * math.erfc(math.sqrt(chi2 / 2.0))
-    return max(0.0, min(1.0, pval))
+    return _fisher_exact_greater(a, b, c, d)
 
 
 def segment_genome(
@@ -1037,13 +1159,22 @@ def compute_state_transition_rates(
           derived from self-transition rate.
         - ``n_transitions``: Total number of transitions.
 
+        A state with no observed transition out of it (it never occurs, or only in the last bin) has no transition
+        distribution to report: its row of ``transition_probabilities``, its self-transition rate, entropy and mean
+        segment length are all NaN, not a uniform row with the self-rate, entropy and segment length that row would
+        imply. A state that only ever transitions to itself has an infinite mean segment length.
+
     Raises:
-        ValueError: If assignments is empty or n_states < 1.
+        ValueError: If assignments is empty, n_states < 1, or an assignment is not in ``[0, n_states)`` (such a
+            transition used to be left out of the counts while still being counted in ``n_transitions``).
     """
     if not assignments:
         raise ValueError("assignments must not be empty")
     if n_states < 1:
         raise ValueError(f"n_states must be >= 1, got {n_states}")
+    outside = sorted({s for s in assignments if not 0 <= s < n_states})
+    if outside:
+        raise ValueError(f"assignments must lie in [0, {n_states}); found {outside[:5]}")
 
     logger.info(
         "Computing transition rates: %d bins, %d states",
@@ -1054,20 +1185,17 @@ def compute_state_transition_rates(
     # Count transitions
     counts: list[list[int]] = [[0] * n_states for _ in range(n_states)]
     for i in range(len(assignments) - 1):
-        s_from = assignments[i]
-        s_to = assignments[i + 1]
-        if 0 <= s_from < n_states and 0 <= s_to < n_states:
-            counts[s_from][s_to] += 1
+        counts[assignments[i]][assignments[i + 1]] += 1
 
-    # Normalise to probabilities
+    # Normalise to probabilities; a state nothing was seen to leave has an unknown, not a uniform, distribution
+    nan = float("nan")
     probabilities: list[list[float]] = []
     for k in range(n_states):
         row_sum = sum(counts[k])
         if row_sum > 0:
             probabilities.append([c / row_sum for c in counts[k]])
         else:
-            # Uniform if no transitions observed from this state
-            probabilities.append([1.0 / n_states] * n_states)
+            probabilities.append([nan] * n_states)
 
     # Self-transition rates
     self_rates: list[float] = []
@@ -1077,6 +1205,9 @@ def compute_state_transition_rates(
     # Transition entropy per state
     entropies: list[float] = []
     for k in range(n_states):
+        if math.isnan(probabilities[k][0]):
+            entropies.append(nan)
+            continue
         h = 0.0
         for p in probabilities[k]:
             if p > 0:
@@ -1087,7 +1218,9 @@ def compute_state_transition_rates(
     mean_lengths: list[float] = []
     for k in range(n_states):
         p_self = probabilities[k][k]
-        if p_self < 1.0:
+        if math.isnan(p_self):
+            mean_lengths.append(nan)
+        elif p_self < 1.0:
             mean_lengths.append(round(1.0 / (1.0 - p_self), 4))
         else:
             mean_lengths.append(float("inf"))
@@ -1104,9 +1237,13 @@ def compute_state_transition_rates(
         "n_states": n_states,
     }
 
+    observed_rates = [rate for rate in self_rates if not math.isnan(rate)]
+    observed_entropies = [h for h in entropies if not math.isnan(h)]
     logger.info(
-        "Computed transition rates: mean self-rate=%.4f, " "mean entropy=%.4f",
-        sum(self_rates) / n_states if n_states > 0 else 0,
-        sum(entropies) / n_states if n_states > 0 else 0,
+        "Computed transition rates for %d of %d states: mean self-rate=%.4f, mean entropy=%.4f",
+        len(observed_rates),
+        n_states,
+        sum(observed_rates) / len(observed_rates) if observed_rates else float("nan"),
+        sum(observed_entropies) / len(observed_entropies) if observed_entropies else float("nan"),
     )
     return result

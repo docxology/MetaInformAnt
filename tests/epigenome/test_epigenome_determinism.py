@@ -2,7 +2,8 @@
 
 Audit of ``src/metainformant/epigenome`` for random number use: nothing draws from the global ``random`` module or from
 ``numpy.random``. The one generator (the k-means++ start of ``learn_chromatin_states``) is a private
-``random.Random(42)``, so it is seeded and does not touch global state. ``TestNoUnseededRandomness`` keeps it that way.
+``random.Random(random_state)``, seeded by the caller's ``random_state`` (default 42), so it does not touch global
+state. ``TestNoUnseededRandomness`` keeps it that way; ``test_chromatin_random_state.py`` tests the seed itself.
 
 The audit did find results whose *order* depended on the iteration order of a ``set`` of chromosome names, which changes
 from one Python process to the next (string hashing is randomized per process): ``find_overlapping_peaks`` (order of the

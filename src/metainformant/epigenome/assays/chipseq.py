@@ -456,7 +456,8 @@ def _lowest_probability(first: Optional[float], second: Optional[float]) -> Opti
 def merge_overlapping_peaks(peaks: List[ChIPPeak], max_distance: int = 0) -> List[ChIPPeak]:
     """Merge overlapping or nearby peaks.
 
-    A merged peak takes the lower p-value and q-value of the two peaks it joins (``None`` when either has none).
+    A merged peak takes the lower p-value and q-value of the two peaks it joins (``None`` when either has none), the
+    higher score and signal value, and the summit of the peak with the higher signal value (the earlier one on a tie).
 
     Args:
         peaks: List of ChIPPeak objects
@@ -492,7 +493,8 @@ def merge_overlapping_peaks(peaks: List[ChIPPeak], max_distance: int = 0) -> Lis
                     chromosome=chromosome,
                     start=min(current_peak.start, peak.start),
                     end=max(current_peak.end, peak.end),
-                    summit=current_peak.summit,  # Keep first summit
+                    # The summit of the stronger peak, so that it sits where the retained signal value was measured
+                    summit=peak.summit if peak.signal_value > current_peak.signal_value else current_peak.summit,
                     score=max(current_peak.score, peak.score),  # Use higher score
                     strand=current_peak.strand,
                     signal_value=max(current_peak.signal_value, peak.signal_value),

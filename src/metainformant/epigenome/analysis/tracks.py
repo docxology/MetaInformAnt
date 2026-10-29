@@ -8,6 +8,7 @@ custom track files for epigenomic data visualization and analysis.
 from __future__ import annotations
 
 import heapq
+import math
 import statistics
 from collections import defaultdict
 from pathlib import Path
@@ -130,7 +131,14 @@ class GenomicTrack:
 
         Args:
             method: Normalization method ("minmax", "zscore", "robust")
+
+        Raises:
+            ValueError: If the method is not one of the three above (an unknown name used to change nothing and still
+                log that the values had been normalized).
         """
+        if method not in ("minmax", "zscore", "robust"):
+            raise ValueError(f"Unsupported normalization method {method!r}; use 'minmax', 'zscore' or 'robust'")
+
         all_values: List[float] = []
         for features in self.data.values():
             all_values.extend(f["value"] for f in features)
@@ -721,15 +729,60 @@ def extract_track_region(track: GenomicTrack, chromosome: str, start: int, end: 
     return region_track
 
 
+def _shared_pieces(
+    first: List[Tuple[int, int, float]], second: List[Tuple[int, int, float]]
+) -> List[Tuple[int, float, float]]:
+    """``(length, value in first, value in second)`` for every stretch that both coverage profiles cover."""
+    pieces: List[Tuple[int, float, float]] = []
+    i = j = 0
+    while i < len(first) and j < len(second):
+        start = max(first[i][0], second[j][0])
+        end = min(first[i][1], second[j][1])
+        if start < end:
+            pieces.append((end - start, first[i][2], second[j][2]))
+        if first[i][1] < second[j][1]:
+            i += 1
+        else:
+            j += 1
+    return pieces
+
+
+def _weighted_correlation(pieces: List[Tuple[int, float, float]]) -> Optional[float]:
+    """Pearson correlation of the two values over the pieces, each piece weighted by its length.
+
+    ``None`` when there is nothing to correlate or one of the two tracks takes a single value over the pieces (the
+    correlation is undefined there; comparing the variance with zero would turn rounding noise into a correlation).
+    """
+    total = sum(length for length, _, _ in pieces)
+    if total <= 0 or len({x for _, x, _ in pieces}) < 2 or len({y for _, _, y in pieces}) < 2:
+        return None
+
+    mean_x = sum(length * x for length, x, _ in pieces) / total
+    mean_y = sum(length * y for length, _, y in pieces) / total
+    covariance = sum(length * (x - mean_x) * (y - mean_y) for length, x, y in pieces)
+    variance_x = sum(length * (x - mean_x) ** 2 for length, x, _ in pieces)
+    variance_y = sum(length * (y - mean_y) ** 2 for length, _, y in pieces)
+    return max(-1.0, min(1.0, covariance / math.sqrt(variance_x * variance_y)))
+
+
 def compare_tracks(track1: GenomicTrack, track2: GenomicTrack) -> Dict[str, Any]:
     """Compare two genomic tracks.
+
+    The tracks are compared base by base on the chromosomes they share: a feature's value applies to every base it
+    covers, and where several features of one track overlap the highest value counts (the convention of
+    ``merge_tracks``). ``correlation_coefficient`` is the Pearson correlation of the two tracks' values over the
+    bases that both cover, so it does not depend on how the features are cut or in which order they were added. (It
+    used to pair the first features of the two tracks by list position, whatever their coordinates, which made the
+    number a function of insertion order.)
 
     Args:
         track1: First GenomicTrack
         track2: Second GenomicTrack
 
     Returns:
-        Dictionary with comparison statistics
+        Dictionary with comparison statistics: the feature counts, ``shared_chromosomes``, ``unique_to_track1``,
+        ``unique_to_track2``, ``shared_bases`` (bases covered by both tracks) and ``correlation_coefficient`` (``None``
+        when there is no shared base, or one of the tracks has a single value over the shared bases).
     """
     logger.info("Comparing genomic tracks")
 
@@ -737,6 +790,7 @@ def compare_tracks(track1: GenomicTrack, track2: GenomicTrack) -> Dict[str, Any]
         "track1_features": track1.get_total_features(),
         "track2_features": track2.get_total_features(),
         "shared_chromosomes": 0,
+        "shared_bases": 0,
         "correlation_coefficient": None,
     }
 
@@ -747,31 +801,18 @@ def compare_tracks(track1: GenomicTrack, track2: GenomicTrack) -> Dict[str, Any]
     comparison["unique_to_track1"] = len(chr1 - chr2)
     comparison["unique_to_track2"] = len(chr2 - chr1)
 
-    # Compare feature values on shared chromosomes
-    shared_values1 = []
-    shared_values2 = []
+    # Compare the values over the bases both tracks cover
+    pieces: List[Tuple[int, float, float]] = []
+    for chromosome in sorted(chr1 & chr2):
+        pieces.extend(
+            _shared_pieces(
+                _coverage_profile(track1.get_features(chromosome)),
+                _coverage_profile(track2.get_features(chromosome)),
+            )
+        )
 
-    for chromosome in chr1 & chr2:
-        features1 = track1.get_features(chromosome)
-        features2 = track2.get_features(chromosome)
-
-        # Simple value comparison (this could be more sophisticated)
-        vals1 = [f["value"] for f in features1]
-        vals2 = [f["value"] for f in features2]
-
-        if vals1 and vals2:
-            # Take minimum length for comparison
-            min_len = min(len(vals1), len(vals2))
-            shared_values1.extend(vals1[:min_len])
-            shared_values2.extend(vals2[:min_len])
-
-    if shared_values1 and shared_values2:
-        # Calculate correlation
-        try:
-            correlation = statistics.correlation(shared_values1, shared_values2)
-            comparison["correlation_coefficient"] = correlation
-        except (ValueError, statistics.StatisticsError):
-            comparison["correlation_coefficient"] = None
+    comparison["shared_bases"] = sum(length for length, _, _ in pieces)
+    comparison["correlation_coefficient"] = _weighted_correlation(pieces)
 
     return comparison
 

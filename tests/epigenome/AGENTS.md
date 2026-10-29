@@ -26,6 +26,12 @@ Behavior-specific tests:
 - `test_tracks_merge.py` — `merge_tracks` operations, including a real intersection checked against a position-by-position model.
 - `test_workflow_fixes.py` — BED input, the q-value filter, the `sites` and `peaks` lists, and the ChIP-seq/ATAC-seq integration.
 - `test_epigenome_determinism.py` — no unseeded randomness and no dependence on the hash seed in result order.
+- `test_cpg_island_edges.py` — CpG island edges at base resolution on planted islands with sharp edges (off-grid positions, thin-margin islands the window grid stops short of, islands as short as the minimum length), site summaries inside the refined island, and the refinement against a slicing oracle.
+- `test_differential_peaks_pairing.py` — `differential_peaks` pairing by maximum overlap (order independence, ties, symmetry, brute-force oracle), measured statistics for unique peaks, degenerate p-values, per-chromosome tracks and input checks.
+- `test_chromatin_random_state.py` — the `random_state` of `learn_chromatin_states`: the default reproduces the former fixed seed, other seeds restart EM, and invalid arguments are refused.
+- `test_methylation_peak_association_index.py` — the methylation-versus-peak association against a scan of every peak on random data, peaks that used to crash it, reported skips and a genome-scale run in a child interpreter.
+- `test_epigenome_numeric_fixes.py` — summit refinement against a polynomial fit, tiny Poisson p-values, the pure-Python Fisher tail (with SciPy blocked in a child), unobserved transition states, base-weighted track correlation and the TSS chance expectation.
+- `test_epigenome_silent_failures.py` — nucleosome length classes, merged peak summits, DMR direction, `interpret_states` mark names, `filter_peaks` warnings and unknown normalization methods.
 
 ## Conventions
 - Real implementations with small deterministic data; the lexical no-mocks gate

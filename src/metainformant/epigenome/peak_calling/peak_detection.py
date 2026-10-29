@@ -9,9 +9,13 @@ and filtering, FRiP quality metrics, and differential peak analysis.
 from __future__ import annotations
 
 import math
+import operator
+from bisect import bisect_left
+from collections.abc import Mapping, Sequence
 from typing import Any, cast
 
 from metainformant.core.utils import logging
+from metainformant.epigenome.assays.chipseq import _poisson_upper_tail
 
 logger = logging.get_logger(__name__)
 
@@ -34,32 +38,22 @@ except ImportError:
 def _poisson_pvalue(observed: float, expected: float) -> float:
     """Compute one-sided Poisson p-value P(X >= observed | lambda=expected).
 
-    Uses scipy when available, otherwise falls back to a pure-Python
-    cumulative Poisson CDF computation.
+    The upper tail is summed directly in log space (the same routine the ChIP-seq enrichment uses), with or without
+    SciPy installed. The former ``1 - cdf`` could not represent a p-value below about 1e-16: a count of 20 over a
+    background of 1 (p = 1.6e-19) came out as exactly 0.0, so every strong peak tied at p = 0 and a score of 300,
+    and their q-values were all 0 whatever the evidence. ``observed`` is truncated to an integer count.
 
     Args:
         observed: Observed count (signal value in a window).
         expected: Expected count (lambda from background estimate).
 
     Returns:
-        One-sided p-value.
+        One-sided p-value (0.0 only where it underflows, or for a background of 0 with a positive count).
     """
     if expected <= 0:
         return 1.0 if observed <= 0 else 0.0
 
-    if HAS_SCIPY:
-        return float(1.0 - scipy_stats.poisson.cdf(int(observed) - 1, expected))
-
-    # Pure-Python fallback: sum CDF up to observed - 1
-    k_max = max(0, int(observed) - 1)
-    cdf = 0.0
-    log_lambda = math.log(expected)
-    log_fact = 0.0  # log(0!)
-    for k in range(k_max + 1):
-        if k > 0:
-            log_fact += math.log(k)
-        cdf += math.exp(k * log_lambda - expected - log_fact)
-    return max(0.0, 1.0 - cdf)
+    return _poisson_upper_tail(int(observed), expected)[0]
 
 
 def _benjamini_hochberg(pvalues: list[float]) -> list[float]:
@@ -483,15 +477,18 @@ def peak_summit_refinement(
 ) -> dict:
     """Refine peak summit position using parabolic interpolation.
 
-    Fits a parabola to the signal values around the current summit
-    and adjusts the summit to the vertex of the parabola.  This yields
-    sub-bin resolution for the summit location.
+    Finds the highest bin within *window* of the current summit (inside the peak and the signal), fits the parabola
+    through that bin and its two neighbours, and moves the summit to the vertex of the parabola.  This yields
+    sub-bin resolution for the summit location, never more than half a bin from the highest bin.  When the highest
+    bin sits at the edge of the searched region, or the three bins are collinear, the highest bin itself is the
+    summit.
 
     Args:
         signal: Full signal array.
         peak: Peak dictionary with at least ``start``, ``end``, and
             ``summit`` keys.
-        window: Half-window around the summit to use for fitting.
+        window: Half-window around the summit in which to look for the highest bin (the parabola itself always
+            uses just that bin and its two neighbours).
 
     Returns:
         A new peak dictionary with updated ``summit`` and
@@ -531,9 +528,12 @@ def peak_summit_refinement(
         y_centre = region[local_max_idx]
         y_right = region[local_max_idx + 1]
 
-        denominator = 2.0 * (2.0 * y_centre - y_left - y_right)
-        if abs(denominator) > 1e-12:
-            offset = (y_left - y_right) / denominator
+        # Vertex of the parabola through (-1, y_left), (0, y_centre) and (1, y_right). The curvature is negative at
+        # a maximum; the vertex lies towards the higher neighbour (the offset had the opposite sign, so a summit
+        # was moved away from the stronger side)
+        curvature = y_left - 2.0 * y_centre + y_right
+        if abs(curvature) > 1e-12:
+            offset = 0.5 * (y_left - y_right) / curvature
             refined_position = abs_max_idx + offset
 
     refined = dict(peak)
@@ -642,7 +642,10 @@ def filter_peaks(
 
     Applies sequential filters: first by fold enrichment, then by
     q-value (or p-value when q-value is absent), and finally excludes
-    peaks that overlap blacklisted genomic regions.
+    peaks that overlap blacklisted genomic regions.  A peak without
+    ``fold_enrichment``, or with neither ``q_value`` nor ``p_value``,
+    cannot pass the corresponding filter and is removed; a warning
+    counts such peaks instead of dropping them silently.
 
     Args:
         peaks: List of peak dictionaries.
@@ -669,10 +672,22 @@ def filter_peaks(
     filtered = list(peaks)
 
     # Filter by fold enrichment
+    without_fold = sum(1 for p in filtered if "fold_enrichment" not in p)
+    if without_fold:
+        logger.warning(
+            "%d of %d peaks have no fold_enrichment and are removed by the fold filter", without_fold, len(peaks)
+        )
     filtered = [p for p in filtered if p.get("fold_enrichment", 0) >= min_fold]
     logger.debug("%d peaks pass fold enrichment filter", len(filtered))
 
     # Filter by q-value (fall back to p-value if q-value absent)
+    without_significance = sum(1 for p in filtered if "q_value" not in p and "p_value" not in p)
+    if without_significance:
+        logger.warning(
+            "%d of %d peaks have neither q_value nor p_value and are removed by the significance filter",
+            without_significance,
+            len(filtered),
+        )
     filtered = [p for p in filtered if p.get("q_value", p.get("p_value", 1.0)) <= max_qvalue]
     logger.debug("%d peaks pass q-value filter", len(filtered))
 
@@ -757,37 +772,236 @@ def compute_frip(reads_in_peaks: int, total_reads: int) -> dict:
     return result
 
 
+def _peak_extents(peaks: list[dict], label: str) -> list[tuple[str, int, int]]:
+    """The ``(chrom, start, end)`` of every peak, checked.
+
+    Args:
+        peaks: Peak dictionaries with integer ``start`` and ``end`` (``chrom`` defaults to ``"chr_unknown"``).
+        label: Name of the peak set, for error messages.
+
+    Raises:
+        ValueError: If a peak has no integer ``start`` and ``end``, starts below 0 or has no extent (``end <= start``).
+            Such a peak used to give zero signal means and a significant-looking row instead of an error.
+    """
+    extents: list[tuple[str, int, int]] = []
+    for position, peak in enumerate(peaks):
+        try:
+            start = operator.index(peak["start"])
+            end = operator.index(peak["end"])
+        except (KeyError, TypeError):
+            raise ValueError(
+                f"Peak {position} of {label} needs integer 'start' and 'end' values, got {peak!r}"
+            ) from None
+        if start < 0 or end <= start:
+            raise ValueError(f"Peak {position} of {label} must satisfy 0 <= start < end, got start={start}, end={end}")
+        extents.append((peak.get("chrom", "chr_unknown"), start, end))
+    return extents
+
+
+def _best_overlaps(
+    queries: list[tuple[str, int, int]],
+    targets: list[tuple[str, int, int]],
+) -> list[int | None]:
+    """For every query peak, the index of the target peak it shares the most bases with.
+
+    Peaks overlap when they are on the same chromosome and share at least one base (intervals are half-open). A tie
+    in the number of shared bases goes to the target that starts first, then ends first, then comes first in
+    *targets*, so the answer does not depend on the order of the targets.
+
+    Args:
+        queries: ``(chrom, start, end)`` of the peaks to look up.
+        targets: ``(chrom, start, end)`` of the peaks to look in.
+
+    Returns:
+        One entry per query: the index into *targets*, or ``None`` when the query overlaps no target.
+    """
+    grouped: dict[str, list[tuple[int, int, int]]] = {}
+    for position, (chrom, start, end) in enumerate(targets):
+        grouped.setdefault(chrom, []).append((start, end, position))
+
+    # Per chromosome: the targets by start, their starts, and the running maximum of their ends. A target can only
+    # overlap a query that starts before it ends, and once the running maximum end is at or before the query's
+    # start no earlier target can overlap it, so the scan below stops there
+    index: dict[str, tuple[list[tuple[int, int, int]], list[int], list[int]]] = {}
+    for chrom, items in grouped.items():
+        items.sort()
+        running_end: list[int] = []
+        highest = items[0][1]
+        for _, end, _ in items:
+            highest = max(highest, end)
+            running_end.append(highest)
+        index[chrom] = (items, [item[0] for item in items], running_end)
+
+    best: list[int | None] = []
+    for chrom, query_start, query_end in queries:
+        choice: int | None = None
+        entry = index.get(chrom)
+        if entry is not None:
+            items, starts, running_end = entry
+            best_key: tuple[int, int, int, int] | None = None
+            for k in range(bisect_left(starts, query_end) - 1, -1, -1):
+                if running_end[k] <= query_start:
+                    break
+                start, end, position = items[k]
+                shared = min(query_end, end) - max(query_start, start)
+                if shared <= 0:
+                    continue
+                key = (-shared, start, end, position)
+                if best_key is None or key < best_key:
+                    best_key = key
+                    choice = position
+        best.append(choice)
+    return best
+
+
+def _signal_tracks(
+    signals_a: Sequence[float] | Mapping[str, Sequence[float]],
+    signals_b: Sequence[float] | Mapping[str, Sequence[float]],
+    chromosomes: set[str],
+) -> dict[str, tuple[Sequence[float], Sequence[float]]]:
+    """The two signal tracks to read for each chromosome that has peaks.
+
+    Raises:
+        ValueError: If the tracks differ in length, only one of the two arguments is a mapping, a chromosome with
+            peaks has no track, or one plain track would have to describe peaks on several chromosomes.
+    """
+    if isinstance(signals_a, Mapping) or isinstance(signals_b, Mapping):
+        if not (isinstance(signals_a, Mapping) and isinstance(signals_b, Mapping)):
+            raise ValueError("signals_a and signals_b must both be lists or both be dicts of chromosome -> list")
+        if set(signals_a) != set(signals_b):
+            raise ValueError(f"Signal chromosomes must match: A={sorted(signals_a)}, B={sorted(signals_b)}")
+        for chrom in signals_a:
+            if len(signals_a[chrom]) != len(signals_b[chrom]):
+                raise ValueError(
+                    f"Signal lengths must match for {chrom}: A={len(signals_a[chrom])}, B={len(signals_b[chrom])}"
+                )
+        missing = sorted(chromosomes - set(signals_a))
+        if missing:
+            raise ValueError(f"No signal track for the chromosomes of peaks: {missing}")
+        return {chrom: (signals_a[chrom], signals_b[chrom]) for chrom in chromosomes}
+
+    if len(signals_a) != len(signals_b):
+        raise ValueError(f"Signal lengths must match: A={len(signals_a)}, B={len(signals_b)}")
+    if len(chromosomes) > 1:
+        raise ValueError(
+            f"One signal track cannot describe peaks on several chromosomes ({sorted(chromosomes)}): "
+            "pass signals_a and signals_b as dicts of chromosome -> signal list"
+        )
+    return {chrom: (signals_a, signals_b) for chrom in chromosomes}
+
+
+def _differential_record(
+    chrom: str,
+    start: int,
+    end: int,
+    status: str,
+    track_a: Sequence[float],
+    track_b: Sequence[float],
+) -> dict:
+    """Compare the two conditions' signal over ``[start, end)`` of one chromosome.
+
+    The part of the region beyond the end of the tracks is ignored.
+
+    Raises:
+        ValueError: If the region lies wholly outside the tracks, or a mean signal is negative (no fold change).
+    """
+    low = max(0, start)
+    high = min(len(track_a), end)
+    if high <= low:
+        raise ValueError(f"Peak {chrom}:{start}-{end} lies outside the signal tracks (length {len(track_a)})")
+
+    values_a = track_a[low:high]
+    values_b = track_b[low:high]
+    mean_a = math.fsum(values_a) / len(values_a)
+    mean_b = math.fsum(values_b) / len(values_b)
+    if mean_a < 0 or mean_b < 0:
+        raise ValueError(
+            f"Mean signal over {chrom}:{start}-{end} is negative (A={mean_a:.4g}, B={mean_b:.4g}): "
+            "a fold change needs non-negative signal"
+        )
+
+    pseudo = 1e-10
+    log2fc = math.log2((mean_a + pseudo) / (mean_b + pseudo))
+    p_value = _compute_differential_pvalue(values_a, values_b)
+
+    if abs(log2fc) >= 1.0 and p_value < 0.05:
+        direction = "up_in_A" if log2fc > 0 else "up_in_B"
+    else:
+        direction = "unchanged"
+
+    return {
+        "chrom": chrom,
+        "start": start,
+        "end": end,
+        "log2_fold_change": round(log2fc, 4),
+        "p_value": p_value,
+        "direction": direction,
+        "status": status,
+        "mean_signal_a": round(mean_a, 4),
+        "mean_signal_b": round(mean_b, 4),
+    }
+
+
 def differential_peaks(
     peaks_a: list[dict],
     peaks_b: list[dict],
-    signals_a: list[float],
-    signals_b: list[float],
+    signals_a: Sequence[float] | Mapping[str, Sequence[float]],
+    signals_b: Sequence[float] | Mapping[str, Sequence[float]],
 ) -> list[dict]:
     """Identify differential peaks between two conditions.
 
-    Compares peak sets from two conditions, identifies peaks unique to
-    each condition, and for shared peaks computes fold change and a
-    statistical test (Welch's t-test or simple fold-change threshold)
-    on the signal values.
+    Every peak is paired with the peak of the other condition it overlaps most, and the signal of the two
+    conditions is compared over each pair.
+
+    **Pairing.** Two peaks overlap when they are on the same chromosome and share at least one base. Every A peak is
+    paired with the B peak it shares the most bases with, and every B peak with the A peak it shares the most bases
+    with (ties go to the peak that starts first, then ends first, then comes first in its list); a pair chosen from
+    both sides is reported once. A peak that overlaps several peaks of the other condition is therefore compared with
+    the best-matching one, not with whichever comes first in the list, and a peak is ``"shared"`` as soon as it
+    overlaps anything: ``"unique_A"`` and ``"unique_B"`` are exactly the peaks that overlap no peak of the other
+    condition. A peak that is the best partner of several peaks, or whose best partner prefers another peak,
+    appears in several records. The records do not depend on the order of the peaks in either list.
+
+    **Statistics.** The region of a record is the union of its pair (the peak itself for a unique peak).
+    ``mean_signal_a`` and ``mean_signal_b`` are the mean signal of each condition over the region and
+    ``log2_fold_change`` is ``log2((mean_a + 1e-10) / (mean_b + 1e-10))``, finite even when one mean is 0.
+    ``p_value`` is the two-sided Welch's t-test of the per-base signal of A against B over the region (bases are
+    autocorrelated, so it ranks regions but is not a calibrated probability); with SciPy missing, the t distribution
+    is replaced by a normal one. It is ``nan`` for a one-base region, which cannot be tested; ``0.0`` when neither
+    condition varies within the region and the two levels differ (an infinite t statistic); and ``1.0`` when
+    neither varies and the levels are equal. ``direction`` is ``"up_in_A"`` or ``"up_in_B"`` when
+    ``|log2_fold_change| >= 1`` and ``p_value < 0.05``, else ``"unchanged"``; unique peaks are tested the same way
+    (their other-condition signal is read from the track, not assumed to be zero), so a unique peak is only ``up``
+    when its signal really is higher. There is no fold-change threshold argument.
 
     Args:
-        peaks_a: Peaks from condition A.
+        peaks_a: Peaks from condition A (dicts with integer ``start`` and ``end``, end exclusive, and ``chrom``,
+            ``"chr_unknown"`` when absent).
         peaks_b: Peaks from condition B.
-        signals_a: Full signal track for condition A.
-        signals_b: Full signal track for condition B.
+        signals_a: Signal track of condition A, indexed by position: one list for peaks on a single chromosome, or
+            a dict of chromosome -> list when the peaks span several.
+        signals_b: Signal track(s) of condition B, of the same layout and lengths.
 
     Returns:
         List of differential peak dictionaries with keys: ``chrom``,
         ``start``, ``end``, ``log2_fold_change``, ``p_value``,
         ``direction`` ("up_in_A", "up_in_B", or "unchanged"),
         ``status`` ("shared", "unique_A", or "unique_B"),
-        ``mean_signal_a``, ``mean_signal_b``.
+        ``mean_signal_a``, ``mean_signal_b``. The records of the A peaks come first, in the order of ``peaks_a``,
+        then the records of B peaks whose best partner is an A peak that chose another B peak, and the unique B
+        peaks, in the order of ``peaks_b``.
 
     Raises:
-        ValueError: If signal lengths differ.
+        ValueError: If the signal tracks differ in length, one plain track would have to describe several
+            chromosomes, a peak lacks integer ``start`` and ``end``, has no extent or lies wholly outside the
+            tracks, or a region's mean signal is negative.
     """
-    if len(signals_a) != len(signals_b):
-        raise ValueError(f"Signal lengths must match: A={len(signals_a)}, B={len(signals_b)}")
+    # Validate the tracks before anything else, so a length mismatch is reported even without peaks
+    extents_a = _peak_extents(peaks_a, "peaks_a")
+    extents_b = _peak_extents(peaks_b, "peaks_b")
+    tracks = _signal_tracks(
+        signals_a, signals_b, {chrom for chrom, _, _ in extents_a} | {chrom for chrom, _, _ in extents_b}
+    )
 
     logger.info(
         "Computing differential peaks: %d peaks in A, %d peaks in B",
@@ -795,136 +1009,36 @@ def differential_peaks(
         len(peaks_b),
     )
 
+    best_b_for_a = _best_overlaps(extents_a, extents_b)
+    best_a_for_b = _best_overlaps(extents_b, extents_a)
+
     results: list[dict] = []
 
-    # Build interval index for peaks_b for overlap detection
-    def _peaks_by_region(peaks: list[dict]) -> dict[str, list[dict]]:
-        """Index peaks by chromosome."""
-        index: dict[str, list[dict]] = {}
-        for p in peaks:
-            chrom = p.get("chrom", "chr_unknown")
-            if chrom not in index:
-                index[chrom] = []
-            index[chrom].append(p)
-        return index
+    # The A peaks first, each with its best B partner
+    listed: set[tuple[int, int]] = set()
+    for index_a, (chrom, start_a, end_a) in enumerate(extents_a):
+        track_a, track_b = tracks[chrom]
+        partner_b = best_b_for_a[index_a]
+        if partner_b is None:
+            results.append(_differential_record(chrom, start_a, end_a, "unique_A", track_a, track_b))
+            continue
+        listed.add((index_a, partner_b))
+        _, start_b, end_b = extents_b[partner_b]
+        results.append(
+            _differential_record(chrom, min(start_a, start_b), max(end_a, end_b), "shared", track_a, track_b)
+        )
 
-    index_b = _peaks_by_region(peaks_b)
-    matched_b: set[int] = set()  # Track which B peaks are matched
-
-    # For each peak in A, find overlapping peaks in B
-    for peak_a in peaks_a:
-        chrom_a = peak_a.get("chrom", "chr_unknown")
-        a_start = peak_a["start"]
-        a_end = peak_a["end"]
-
-        # Extract mean signal for the peak region
-        region_start = max(0, a_start)
-        region_end = min(len(signals_a), a_end)
-        if region_end > region_start:
-            mean_a = sum(signals_a[region_start:region_end]) / (region_end - region_start)
-            mean_b = sum(signals_b[region_start:region_end]) / (region_end - region_start)
-        else:
-            mean_a = 0.0
-            mean_b = 0.0
-
-        # Find overlapping peak in B
-        overlap_found = False
-        candidates_b = index_b.get(chrom_a, [])
-
-        for idx_b, peak_b in enumerate(candidates_b):
-            b_start = peak_b["start"]
-            b_end = peak_b["end"]
-            # Check overlap
-            if a_start < b_end and a_end > b_start:
-                overlap_found = True
-                # Compute using the union region
-                union_start = min(a_start, b_start)
-                union_end = max(a_end, b_end)
-                u_start = max(0, union_start)
-                u_end = min(len(signals_a), union_end)
-
-                if u_end > u_start:
-                    mean_a = sum(signals_a[u_start:u_end]) / (u_end - u_start)
-                    mean_b = sum(signals_b[u_start:u_end]) / (u_end - u_start)
-
-                # Log2 fold change
-                pseudo = 1e-10
-                log2fc = math.log2((mean_a + pseudo) / (mean_b + pseudo))
-
-                # Simple statistical test on region values
-                vals_a = signals_a[u_start:u_end]
-                vals_b = signals_b[u_start:u_end]
-                pval = _compute_differential_pvalue(vals_a, vals_b)
-
-                if abs(log2fc) >= 1.0 and pval < 0.05:
-                    direction = "up_in_A" if log2fc > 0 else "up_in_B"
-                else:
-                    direction = "unchanged"
-
-                results.append(
-                    {
-                        "chrom": chrom_a,
-                        "start": union_start,
-                        "end": union_end,
-                        "log2_fold_change": round(log2fc, 4),
-                        "p_value": pval,
-                        "direction": direction,
-                        "status": "shared",
-                        "mean_signal_a": round(mean_a, 4),
-                        "mean_signal_b": round(mean_b, 4),
-                    }
-                )
-
-                # Mark this B peak as matched
-                # Use id() for tracking since peaks are dicts
-                matched_b.add(id(peak_b))
-                break
-
-        if not overlap_found:
-            # Peak unique to A
+    # Then the B peaks: those with no overlap, and those whose best partner is an A peak that preferred another B peak
+    for index_b, (chrom, start_b, end_b) in enumerate(extents_b):
+        track_a, track_b = tracks[chrom]
+        partner_a = best_a_for_b[index_b]
+        if partner_a is None:
+            results.append(_differential_record(chrom, start_b, end_b, "unique_B", track_a, track_b))
+        elif (partner_a, index_b) not in listed:
+            _, start_a, end_a = extents_a[partner_a]
             results.append(
-                {
-                    "chrom": chrom_a,
-                    "start": a_start,
-                    "end": a_end,
-                    "log2_fold_change": float("inf") if mean_a > 0 else 0.0,
-                    "p_value": 0.0,
-                    "direction": "up_in_A",
-                    "status": "unique_A",
-                    "mean_signal_a": round(mean_a, 4),
-                    "mean_signal_b": round(mean_b, 4),
-                }
+                _differential_record(chrom, min(start_a, start_b), max(end_a, end_b), "shared", track_a, track_b)
             )
-
-    # Find B peaks not matched to any A peak
-    for chrom_b, peaks_in_chrom in index_b.items():
-        for peak_b in peaks_in_chrom:
-            if id(peak_b) not in matched_b:
-                b_start = peak_b["start"]
-                b_end = peak_b["end"]
-                region_start = max(0, b_start)
-                region_end = min(len(signals_b), b_end)
-
-                if region_end > region_start:
-                    mean_a = sum(signals_a[region_start:region_end]) / (region_end - region_start)
-                    mean_b = sum(signals_b[region_start:region_end]) / (region_end - region_start)
-                else:
-                    mean_a = 0.0
-                    mean_b = 0.0
-
-                results.append(
-                    {
-                        "chrom": chrom_b,
-                        "start": b_start,
-                        "end": b_end,
-                        "log2_fold_change": float("-inf") if mean_b > 0 else 0.0,
-                        "p_value": 0.0,
-                        "direction": "up_in_B",
-                        "status": "unique_B",
-                        "mean_signal_a": round(mean_a, 4),
-                        "mean_signal_b": round(mean_b, 4),
-                    }
-                )
 
     logger.info(
         "Identified %d differential peaks: %d shared, %d unique_A, %d unique_B",
@@ -937,47 +1051,53 @@ def differential_peaks(
 
 
 def _compute_differential_pvalue(
-    vals_a: list[float],
-    vals_b: list[float],
+    vals_a: Sequence[float],
+    vals_b: Sequence[float],
 ) -> float:
     """Compute p-value for differential signal between two conditions.
 
-    Uses Welch's t-test via scipy when available, otherwise falls back
-    to a simple z-test approximation.
+    Welch's t-test (unequal variances) of the two samples; the t distribution comes from SciPy when it is
+    available, otherwise it is approximated by a normal distribution. The degenerate cases get their own answers
+    instead of a silent 1.0: a sample of fewer than two values cannot be tested (``nan``), and when neither sample
+    varies the t statistic is infinite if their values differ (p = 0.0) and undefined but null if they are equal
+    (p = 1.0).
 
     Args:
         vals_a: Signal values from condition A.
         vals_b: Signal values from condition B.
 
     Returns:
-        Two-sided p-value.
+        Two-sided p-value, or ``nan`` if fewer than two values are available in either sample.
     """
-    if len(vals_a) < 2 or len(vals_b) < 2:
-        return 1.0
+    n_a, n_b = len(vals_a), len(vals_b)
+    if n_a < 2 or n_b < 2:
+        return float("nan")
+
+    def mean_and_variance(values: Sequence[float]) -> tuple[float, float]:
+        # A sample whose values are all equal has exactly zero variance (summing floats would leave rounding noise)
+        if min(values) == max(values):
+            return float(values[0]), 0.0
+        mean = math.fsum(values) / len(values)
+        return mean, math.fsum((x - mean) ** 2 for x in values) / (len(values) - 1)
+
+    mean_a, var_a = mean_and_variance(vals_a)
+    mean_b, var_b = mean_and_variance(vals_b)
+
+    term_a = var_a / n_a
+    term_b = var_b / n_b
+    squared_error = term_a + term_b
+    if squared_error == 0.0:
+        return 1.0 if mean_a == mean_b else 0.0
+
+    t_statistic = abs(mean_a - mean_b) / math.sqrt(squared_error)
 
     if HAS_SCIPY:
-        stat, pval = scipy_stats.ttest_ind(vals_a, vals_b, equal_var=False)
-        return float(pval) if not math.isnan(pval) else 1.0
+        # Welch-Satterthwaite degrees of freedom, written with the two terms as shares of the squared error so that
+        # tiny variances cannot underflow the squares; a sample with zero variance contributes no term
+        share_a = term_a / squared_error
+        share_b = term_b / squared_error
+        degrees_of_freedom = 1.0 / (share_a**2 / (n_a - 1) + share_b**2 / (n_b - 1))
+        return float(2.0 * scipy_stats.t.sf(t_statistic, degrees_of_freedom))
 
-    # Pure-Python fallback: z-test approximation
-    mean_a = sum(vals_a) / len(vals_a)
-    mean_b = sum(vals_b) / len(vals_b)
-
-    if len(vals_a) > 1:
-        var_a = sum((x - mean_a) ** 2 for x in vals_a) / (len(vals_a) - 1)
-    else:
-        var_a = 0.0
-
-    if len(vals_b) > 1:
-        var_b = sum((x - mean_b) ** 2 for x in vals_b) / (len(vals_b) - 1)
-    else:
-        var_b = 0.0
-
-    se = math.sqrt(var_a / len(vals_a) + var_b / len(vals_b))
-    if se < 1e-12:
-        return 1.0
-
-    z = abs(mean_a - mean_b) / se
-    # Approximate two-sided p-value from z-score
-    p_approx = 2.0 * (1.0 - 0.5 * (1.0 + math.erf(z / math.sqrt(2.0))))
-    return max(0.0, min(1.0, p_approx))
+    # Pure-Python fallback: normal approximation of the two-sided tail
+    return math.erfc(t_statistic / math.sqrt(2.0))

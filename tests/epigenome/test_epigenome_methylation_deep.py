@@ -283,10 +283,10 @@ class TestCpGIslands:
 
         assert [island["chromosome"] for island in islands] == ["chr1"]  # the AT-only chr3 has none
         (island,) = islands
-        # The stretch of qualifying windows contains the planted island and reaches less than a window beyond it
-        assert island["start"] <= 500 and island["end"] >= 900
-        assert island["start"] >= 500 - 200 and island["end"] <= 900 + 200
-        assert island["length"] == island["end"] - island["start"] >= 200
+        # The edges are resolved to the base: the island starts at the C of its first CpG and ends at the G of its last
+        # (they used to be the edges of the merged windows, up to a window beyond the planted island)
+        assert (island["start"], island["end"]) == (500, 900)
+        assert island["length"] == island["end"] - island["start"] == 400
         assert island["gc_content"] >= 0.5
         assert island["cpg_ratio"] >= 0.6
         assert island["cpg_count"] == 200
@@ -312,7 +312,7 @@ class TestCpGIslands:
         assert identify_cpg_islands({}, sequences={"chr1": "CGAAAAAAAA" * 100}) == []
 
     def test_min_length_is_enforced(self) -> None:
-        # The planted island is called as a 600 bp stretch (see above); 700 bp is not reached
+        # The planted island is 400 bp; neither it nor the 600 bp the merged windows span reaches 700 bp
         assert identify_cpg_islands({}, step_size=1, min_length=700, sequences=_genome_with_island()) == []
 
     def test_sites_inside_the_island_are_summarised(self) -> None:

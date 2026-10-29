@@ -40,7 +40,7 @@ Merge peaks whose gap is at most `distance` bins, one chromosome at a time. Peak
 
 ### `filter_peaks(peaks, min_fold=2.0, max_qvalue=0.05, blacklist_regions=None) -> List[Dict]`
 
-Keep peaks with `fold_enrichment >= min_fold` and `q_value <= max_qvalue` (a peak without `q_value` is judged on its `p_value`), then remove peaks that overlap a blacklist region. `blacklist_regions` is a list of dicts with `chrom`, `start` and `end`; they are matched against each peak's `chrom` key.
+Keep peaks with `fold_enrichment >= min_fold` and `q_value <= max_qvalue` (a peak without `q_value` is judged on its `p_value`), then remove peaks that overlap a blacklist region. Peaks without fold enrichment or without either significance field are removed with a counted warning. `blacklist_regions` is a list of dicts with `chrom`, `start` and `end`; they are matched against each peak's `chrom` key.
 
 ### `compute_frip(reads_in_peaks, total_reads) -> Dict`
 
@@ -56,9 +56,13 @@ Calculate the Fraction of Reads in Peaks from two counts. The function does not 
 
 ### `differential_peaks(peaks_a, peaks_b, signals_a, signals_b) -> List[Dict]`
 
-Compare two peak sets using the full signal track of each condition (`ValueError` if the track lengths differ). Peaks are matched by `chrom` and overlap. For a peak in A that overlaps a peak in B, the union region is reported as `"shared"` with the log2 fold change of mean signal (A over B) and a Welch's t-test p-value (a z-test approximation when scipy is unavailable); `direction` is `"up_in_A"` or `"up_in_B"` when |log2 fold change| >= 1 and p < 0.05, otherwise `"unchanged"`. Each A peak is paired with the first overlapping peak of `peaks_b` only, so another B peak overlapping the same A peak is reported as `"unique_B"` unless a different A peak pairs with it. Peaks found in only one set are reported as `"unique_A"` or `"unique_B"` (with `direction` `"up_in_A"` or `"up_in_B"`) with `p_value` 0.0 and a log2 fold change of positive or negative infinity (0.0 when the signal over that peak is zero). There is no fold-change threshold argument.
+Compare measured signal over the union of each peak pair. Each A peak selects the B peak with greatest overlap, and each B peak selects the A peak with greatest overlap; ties use start, end and then list order. A pair selected from both sides is emitted once. A peak overlapping anything is `shared`; `unique_A` and `unique_B` mean no partner exists.
 
-Returns dicts with `chrom`, `start`, `end`, `log2_fold_change`, `p_value`, `direction`, `status` (`"shared"`, `"unique_A"` or `"unique_B"`), `mean_signal_a` and `mean_signal_b`.
+Tracks may be lists for a single chromosome or chromosome-to-track dictionaries for several chromosomes. Unequal track lengths, invalid coordinates, empty/out-of-track regions, negative regional mean signals and ambiguous multi-chromosome plain tracks raise `ValueError`.
+
+Every record, including a unique peak, uses both measured tracks. `log2_fold_change` is `log2((mean_a + 1e-10) / (mean_b + 1e-10))`. Its two-sided Welch p-value (normal approximation without SciPy) ranks regions; autocorrelated bases are not independent biological replicates. A one-base region has `NaN` p; equal constant signals give p=1 and unequal constant signals give p=0. `direction` is `up_in_A` or `up_in_B` only when absolute log2 fold change is at least 1 and p < 0.05, otherwise `unchanged`.
+
+Returns `chrom`, `start`, `end`, `log2_fold_change`, `p_value`, `direction`, `status`, `mean_signal_a` and `mean_signal_b`. There is no fold-change threshold argument.
 
 ## Usage Examples
 
