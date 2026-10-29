@@ -17,10 +17,13 @@ def test_effective_size_from_family_size_variance():
 
 
 def test_effective_size_from_family_size_list_mode():
-    # mean k = 2, variance (population) = 0.5 -> Ne = 2 / (0.5 - 1) < 0? variance <= 1 -> inf
-    assert effective_size_from_family_size_variance([2, 2, 2, 2]) == float("inf")
-    # variance > 1: sizes [1, 5] -> mean 3, var 4 -> Ne = 3/3 = 1
-    assert effective_size_from_family_size_variance([1, 5]) == pytest.approx(1.0)
+    # Ne = (4N - 2) / (Vk + 2) with N = len(list) and Vk the population variance of the counts.
+    # [2, 2, 2, 2]: N = 4, Vk = 0 -> 14 / 2 = 7 (equal family sizes give Ne = 2N - 1)
+    assert effective_size_from_family_size_variance([2, 2, 2, 2]) == pytest.approx(7.0)
+    # [0, 1, 2, 3, 4]: N = 5, deviations -2..2 give a sum of squares of 10, Vk = 10 / 5 = 2 -> 18 / 4 = 4.5
+    assert effective_size_from_family_size_variance([0, 1, 2, 3, 4]) == pytest.approx(4.5)
+    # [0, 4]: N = 2, Vk = 4 -> 6 / 6 = 1
+    assert effective_size_from_family_size_variance([0, 4]) == pytest.approx(1.0)
 
 
 def test_effective_size_from_family_size_empty_list():

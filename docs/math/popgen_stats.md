@@ -48,7 +48,7 @@ Permutation test for a difference in means between two groups.
 - `random_state`: Integer seed for a private `numpy` generator (`None` draws fresh entropy)
 
 **Returns:**
-Dictionary with `test_statistic` (also under `statistic`), the observed absolute difference in means; `p_value`, the fraction of permutations whose absolute difference is at least as large; `n_permutations`; and `significant` (`p_value < 0.05`). An empty group returns `p_value` 1.0 and a zero statistic.
+Dictionary with `test_statistic` (also under `statistic`), the observed absolute difference in means; `p_value`, calculated as (1 + k) / (1 + n_permutations), where k is the number of permutations whose absolute difference is at least as large; `n_permutations`; and `significant` (`p_value < 0.05`). An empty group raises `ValueError`.
 
 **Example:**
 ```python-snippet
@@ -94,7 +94,7 @@ Compare two groups of values, or two dictionaries of named statistics.
 - `test_type`: one of `COMPARISON_TESTS`: `"ttest"` (Welch's t-test, default), `"mannwhitney"` (two-sided Mann-Whitney U) or `"kruskal"` (Kruskal-Wallis H); any other value raises `ValueError`. Input that cannot be tested raises `ValueError` instead of returning a number: empty, non-finite or non-1-D groups, fewer than two observations per group for the t-test, constant groups, or all-identical values for the rank tests. Dictionaries of summary statistics support only `"ttest"`, because there is nothing to rank.
 
 **Returns:**
-For sequences, a dictionary with `test_statistic`, `p_value` and `test_type`. For dictionaries, a dictionary keyed by each statistic name present in both inputs, holding `statistic_name`, `population1_value`, `population2_value`, `difference`, `test_statistic`, `p_value` and `significant`; those p-values come from a rough normal approximation whose standard error is built from the `variance` entries (default 1.0) as if each population had 10 observations, so treat them as indicative only.
+For sequences, a dictionary with `test_statistic`, `p_value` and `test_type`. For dictionaries, a dictionary keyed by each statistic name present in both inputs, holding `statistic_name`, `population1_value`, `population2_value`, `difference`, `test_statistic`, `p_value` and `significant`; those p-values come from a rough normal approximation whose standard error is built from the `variance` entries (default 1.0) as if each population had 10 observations, so treat them as indicative only. A zero standard error raises `ValueError` instead of producing a p-value.
 
 ### Confidence Intervals
 

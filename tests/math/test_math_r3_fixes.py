@@ -67,14 +67,15 @@ class TestFamilySizeVariance:
         general = (census * k - 1.0) / (k - 1.0 + vk / k)
         assert effective_size_from_family_size_variance(census, Vk=vk) == pytest.approx(general)
 
-    def test_list_form_is_unchanged(self) -> None:
-        assert effective_size_from_family_size_variance([1, 5]) == pytest.approx(1.0)
-        assert effective_size_from_family_size_variance([2, 2, 2, 2]) == float("inf")
+    def test_list_form_is_the_standard_expression(self) -> None:
+        """Hand-computed: [1, 3, 2, 2] has N = 4 and Vk = (1 + 1 + 0 + 0) / 4 = 0.5, so Ne = 14 / 2.5 = 5.6."""
+        assert effective_size_from_family_size_variance([1, 3, 2, 2]) == pytest.approx(5.6)
+        assert effective_size_from_family_size_variance([2, 2, 2, 2]) == pytest.approx(7.0)
         assert effective_size_from_family_size_variance([]) == 0.0
 
     def test_tuple_and_array_offspring_counts_are_accepted(self) -> None:
-        assert effective_size_from_family_size_variance((1, 5)) == pytest.approx(1.0)
-        assert effective_size_from_family_size_variance(np.array([1, 5])) == pytest.approx(1.0)
+        assert effective_size_from_family_size_variance((1, 3, 2, 2)) == pytest.approx(5.6)
+        assert effective_size_from_family_size_variance(np.array([1, 3, 2, 2])) == pytest.approx(5.6)
 
     @pytest.mark.parametrize(
         "args",

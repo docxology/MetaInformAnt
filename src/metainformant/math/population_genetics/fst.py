@@ -274,21 +274,29 @@ def weirs_fst(population_counts: Dict[str, Dict[str, int]]) -> float:
 
 
 def fst_confidence_interval(fst_value: float, sample_size: int, confidence_level: float = 0.95) -> Tuple[float, float]:
-    """Calculate confidence interval for F_ST estimate.
+    """Calculate an approximate normal confidence interval for an F_ST estimate.
 
-    Uses bootstrap resampling to estimate confidence intervals.
+    A heuristic, not a bootstrap and not an estimate from the data: nothing is resampled, because only
+    the point estimate and a sample size are given. The standard error is
+    ``sqrt(2 * F^2 * (1 - F)^2 / n)``, multiplied by ``sqrt(1 + 3 / (4 n - 4))`` when ``n < 30``, with ``F``
+    the estimate clamped to [0.001, 0.999] (so an estimate of 0 still gets a non-zero width); the interval
+    is ``F_ST +- z * SE`` clipped to [0, 1], with ``z`` the normal quantile of ``confidence_level``. The
+    variance formula's derivation is not documented in the source; for an interval that reflects the loci
+    actually sampled, resample or jackknife over loci.
 
     Args:
         fst_value: Point estimate of F_ST
-        sample_size: Sample size used for estimation
+        sample_size: Sample size used for estimation, at least 2
         confidence_level: Confidence level (default 0.95)
 
     Returns:
         Tuple of (lower_bound, upper_bound)
+
+    Raises:
+        ValueError: If ``sample_size`` is below 2
     """
-    # Calculate standard error using Weir & Cockerham approximation
-    # SE(F_ST) ≈ sqrt(F_ST * (1 - F_ST) / n) for large samples
-    # For small samples, add correction factor
+    # Standard error of the heuristic described above (the comments below follow the code, not a source)
+    # SE(F_ST) ≈ sqrt(2 * F_ST^2 * (1 - F_ST)^2 / n); for small samples, add correction factor
 
     if sample_size < 2:
         raise ValueError("Sample size must be at least 2 for confidence interval calculation")
@@ -340,7 +348,8 @@ def fst_from_heterozygosity(Hs: float, Ht: float) -> float:
         Ht: Total heterozygosity
 
     Returns:
-        F_ST value
+        F_ST value, clipped to [0, 1] (``Hs > Ht``, which no real population has, reads as 0.0); 0.0
+        when ``Ht`` is 0, where the ratio is undefined
 
     Examples:
         >>> fst = fst_from_heterozygosity(0.2, 0.5)

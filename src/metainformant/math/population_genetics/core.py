@@ -17,8 +17,10 @@ def hardy_weinberg_genotype_freqs(allele_a_frequency: float) -> Tuple[float, flo
         allele_a_frequency: Frequency of allele A (0.0 to 1.0)
 
     Returns:
-        Tuple of (AA_frequency, Aa_frequency, aa_frequency); zeros if the
-        frequency falls outside [0, 1].
+        Tuple of (AA_frequency, Aa_frequency, aa_frequency)
+
+    Raises:
+        ValueError: If the frequency falls outside [0, 1] (NaN included)
 
     Example:
         >>> hardy_weinberg_genotype_freqs(0.6)
@@ -28,9 +30,8 @@ def hardy_weinberg_genotype_freqs(allele_a_frequency: float) -> Tuple[float, flo
         >>> hardy_weinberg_genotype_freqs(1.0)
         (1.0, 0.0, 0.0)
     """
-    # Handle invalid frequencies gracefully by returning zeros
     if not (0.0 <= allele_a_frequency <= 1.0):
-        return (0.0, 0.0, 0.0)
+        raise ValueError("Allele frequency must be between 0 and 1")
 
     p = allele_a_frequency
     q = 1.0 - p

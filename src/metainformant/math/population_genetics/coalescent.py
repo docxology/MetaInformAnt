@@ -28,13 +28,12 @@ def expected_time_to_mrca(n_samples: int, effective_size: float) -> float:
         Expected time in generations (4Ne for diploid populations)
 
     Raises:
-        ValueError: If n_samples < 2
+        ValueError: If n_samples < 2 or effective_size is not positive
     """
     if n_samples < 2:
         raise ValueError("Need at least 2 samples")
-    # Handle zero/invalid effective size gracefully
     if effective_size <= 0:
-        return 0.0
+        raise ValueError("Effective size must be positive")
 
     # For diploid populations, time is scaled by 4Ne
     # Expected time for n lineages to coalesce to 1 is sum_{k=2 to n} 4Ne / (k(k-1))
@@ -43,6 +42,15 @@ def expected_time_to_mrca(n_samples: int, effective_size: float) -> float:
         expected_time += 4 * effective_size / (k * (k - 1))
 
     return expected_time
+
+
+def _harmonic_number(m: int) -> float:
+    """Harmonic number H_m = sum(1/i for i in 1..m), exact to double precision for any m >= 0.
+
+    Summed term by term (``math.fsum`` rounds the total once), never replaced by ``log(m) + gamma``, whose
+    error of about 1 / (2 m) is large enough to show in Watterson's estimator and in branch lengths.
+    """
+    return math.fsum(1.0 / i for i in range(1, m + 1))
 
 
 def watterson_theta(
@@ -71,6 +79,9 @@ def watterson_theta(
         n_sequences: Alias for n
         num_segregating_sites: Alias for S
         sample_size: Alias for n
+
+    Returns:
+        Watterson's θ, ``S / (a_n * sequence_length)`` with ``a_n = sum(1/i for i in 1 .. n-1)``
 
     Raises:
         ValueError: If parameters are invalid
@@ -101,25 +112,10 @@ def watterson_theta(
         raise ValueError("Number of sequences must be > 1")
     if segregating < 0:
         raise ValueError("Number of segregating sites cannot be negative")
+    if sequence_length <= 0:
+        raise ValueError("Sequence length must be positive")
 
-    # Harmonic number a_1 = sum(1/i for i in 1..n-1)
-    harmonic_sum = 0.0
-    try:
-        from scipy import special
-
-        # psi is digamma function. H_n = psi(n+1) + gamma
-        harmonic_sum = special.digamma(num_seqs) + np.euler_gamma
-    except ImportError:
-        # Fallback: exact sum or approximation
-        if num_seqs > 100:
-            harmonic_sum = math.log(num_seqs - 1) + 0.5772156649015329  # γ
-        else:
-            harmonic_sum = sum(1.0 / i for i in range(1, num_seqs))
-
-    if harmonic_sum == 0:
-        return 0.0
-
-    return segregating / (harmonic_sum * sequence_length)
+    return segregating / (_harmonic_number(num_seqs - 1) * sequence_length)
 
 
 def expected_coalescent_waiting_times(n_samples: int, effective_size: float) -> List[float]:
@@ -222,18 +218,18 @@ def expected_total_branch_length(n_samples: int, effective_size: float) -> float
         effective_size: Effective population size
 
     Returns:
-        Expected total branch length
+        Expected total branch length in generations, ``4 * effective_size * H_{n-1}`` with ``H_{n-1}``
+        the exact harmonic number; 0.0 for fewer than two lineages, which form no tree
+
+    Raises:
+        ValueError: If effective_size is not positive
     """
+    if effective_size <= 0:
+        raise ValueError("Effective size must be positive")
     if n_samples < 2:
         return 0.0
 
-    # Calculate harmonic sum H_{n-1}
-    if n_samples - 1 > 100:
-        harmonic_sum = math.log(n_samples - 1) + 0.5772156649015329  # γ
-    else:
-        harmonic_sum = sum(1.0 / i for i in range(1, n_samples))
-
-    return 4 * effective_size * harmonic_sum
+    return 4 * effective_size * _harmonic_number(n_samples - 1)
 
 
 def tajima_constants(n: int) -> Dict[str, float]:

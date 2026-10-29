@@ -16,6 +16,10 @@ logger = logging.get_logger(__name__)
 def replicator_derivative(fitnesses: List[float], frequencies: List[float]) -> List[float]:
     """Calculate the derivative of replicator dynamics.
 
+    dx_i/dt = x_i * (f_i - mean fitness), with mean fitness the frequency-weighted mean of the
+    ``fitnesses``. The derivative is defined whatever the mean fitness is, including zero (or negative)
+    fitnesses.
+
     Args:
         fitnesses: Fitness values for each strategy
         frequencies: Current frequencies of each strategy
@@ -37,9 +41,6 @@ def replicator_derivative(fitnesses: List[float], frequencies: List[float]) -> L
     # Mean fitness
     mean_fitness = sum(f * freq for f, freq in zip(fitnesses, frequencies))
 
-    if mean_fitness == 0:
-        return [0.0] * len(frequencies)
-
     # Replicator equation: dx_i/dt = x_i * (f_i - mean_f)
     derivatives = []
     for fitness, freq in zip(fitnesses, frequencies):
@@ -58,13 +59,22 @@ def replicator_step(fitnesses: List[float], frequencies: List[float], time_step:
         time_step: Time step for Euler integration
 
     Returns:
-        Updated frequencies after one time step
+        Updated frequencies after one time step: Euler step, clipped to [0, 1], renormalised to sum to 1
+
+    Raises:
+        ValueError: If a frequency is negative, the frequencies sum to zero, or the step drives every
+            frequency to zero (a time step too large for frequencies that do not sum to 1)
 
     Examples:
         >>> fitnesses = [1.1, 0.9, 1.0]
         >>> frequencies = [0.4, 0.3, 0.3]
         >>> new_freqs = replicator_step(fitnesses, frequencies, 0.01)
     """
+    if any(freq < 0 for freq in frequencies):
+        raise ValueError("Frequencies must be non-negative")
+    if frequencies and sum(frequencies) <= 0:
+        raise ValueError("Frequencies must sum to a positive value")
+
     derivatives = replicator_derivative(fitnesses, frequencies)
 
     # Euler integration
@@ -77,11 +87,6 @@ def replicator_step(fitnesses: List[float], frequencies: List[float], time_step:
 
     # Renormalize to ensure they sum to 1
     total = sum(new_frequencies)
-    if total > 0:
-        new_frequencies = [f / total for f in new_frequencies]
-    else:
-        # If all frequencies became 0, reset to uniform
-        n = len(new_frequencies)
-        new_frequencies = [1.0 / n] * n
-
-    return new_frequencies
+    if new_frequencies and total <= 0:
+        raise ValueError("The step drove every frequency to zero: reduce the time step or normalise the frequencies")
+    return [f / total for f in new_frequencies]

@@ -19,19 +19,23 @@ logger = logging.get_logger(__name__)
 def expected_pairwise_diversity(sample_size: int, theta: float) -> float:
     """Calculate expected pairwise nucleotide diversity (π).
 
+    Under the neutral infinite-sites model every pair of sequences has the same expected number of
+    differences, ``theta`` (Tajima 1983), whatever the sample size: π is an unbiased estimator of θ,
+    unlike the segregating-sites count, which grows with the harmonic number
+    (:func:`expected_segregating_sites`).
+
     Args:
         sample_size: Number of sequences (n)
         theta: Population mutation parameter (4Neμ)
 
     Returns:
-        Expected pairwise diversity
+        ``theta``, the expected mean number of pairwise differences; 0.0 for fewer than two sequences,
+        which form no pair
     """
     if sample_size < 2:
         return 0.0
 
-    # E[π] = θ * (n/(n-1)) * sum(1/i for i in 1 to n-1)
-    harmonic_sum = sum(1.0 / i for i in range(1, sample_size))
-    return theta * (sample_size / (sample_size - 1)) * harmonic_sum
+    return theta
 
 
 def expected_segregating_sites(sample_size: int, theta: float) -> float:
@@ -55,25 +59,24 @@ def expected_segregating_sites(sample_size: int, theta: float) -> float:
 def expected_coalescent_waiting_times(sample_size: int, Ne: float) -> List[float]:
     """Calculate expected waiting times for coalescent events.
 
+    With k lineages left in a diploid population of effective size Ne, the expected wait for the next
+    coalescence is 4 Ne / (k (k - 1)) generations. This is the same calculation as
+    :func:`metainformant.math.population_genetics.coalescent.expected_coalescent_waiting_times`.
+
     Args:
         sample_size: Starting number of lineages
         Ne: Effective population size
 
     Returns:
-        List of expected waiting times for each coalescent interval
+        List of expected waiting times in generations, one per coalescent interval, from
+        ``sample_size`` lineages down to the last two (``sample_size - 1`` entries)
+
+    Raises:
+        ValueError: If ``sample_size`` is below 2 or ``Ne`` is not positive
     """
-    waiting_times = []
-    current_lineages = sample_size
+    from .coalescent import expected_coalescent_waiting_times as _expected_waiting_times
 
-    while current_lineages > 1:
-        # Expected waiting time for next coalescence
-        # Time is in units of 4Ne generations
-        rate = current_lineages * (current_lineages - 1) / 2
-        expected_time = 1.0 / rate
-        waiting_times.append(expected_time)
-        current_lineages -= 1
-
-    return waiting_times
+    return _expected_waiting_times(sample_size, Ne)
 
 
 def expected_r2_from_Ne_c(recombination_rate: float, Ne: float | None = None, distance_bp: float = 1.0) -> float:
@@ -86,6 +89,11 @@ def expected_r2_from_Ne_c(recombination_rate: float, Ne: float | None = None, di
 
     Returns:
         Expected r² value
+
+    Note:
+        A call in the order ``(Ne, recombination_rate)`` is recognised and the two are swapped when
+        ``distance_bp`` is 1, the first argument exceeds 1 and the second is at most 0.5; pass keywords
+        to avoid relying on that guess.
     """
     # r² decays as 1/(1 + 4Ne*c*d) where c is recombination rate, d is distance
     if Ne is None:
@@ -102,8 +110,13 @@ def expected_r2_from_Ne_c(recombination_rate: float, Ne: float | None = None, di
 def equilibrium_heterozygosity_infinite_alleles(theta: float, mutation_rate: float | None = None) -> float:
     """Calculate equilibrium heterozygosity under infinite alleles model.
 
+    H = θ / (1 + θ). When ``mutation_rate`` is given, the first argument is read as the effective
+    population size Ne instead and θ = 4 Ne μ is formed from it.
+
     Args:
-        theta: Population mutation parameter (4Neμ)
+        theta: Population mutation parameter (4Neμ), or the effective size Ne when ``mutation_rate``
+            is given
+        mutation_rate: Per-generation mutation rate μ; turns ``theta`` into an effective size
 
     Returns:
         Equilibrium heterozygosity (H)
@@ -207,38 +220,57 @@ def bottleneck_effective_size(
     return generations / (1.0 / initial_size + bottleneck_duration / bottleneck_size + 1.0 / final_size)
 
 
-def effective_size_from_family_size_variance(family_sizes: List[int] | float, Vk: float | None = None) -> float:
-    """Estimate effective population size from variance in family sizes.
+def effective_size_from_family_size_variance(
+    family_sizes: Sequence[float] | np.ndarray | float, Vk: float | None = None
+) -> float:
+    """Estimate effective population size from the variance in family size.
 
-    Two forms:
+    Both forms return the standard expression for a population of constant size, in which the
+    average parent leaves two offspring (Wright 1938; Crow and Kimura 1970; Crow and Denniston 1988):
 
-    - With ``Vk``, ``family_sizes`` is the census size N (an int or a float) and the
-      Crow-Denniston approximation Ne = (4N - 2) / (Vk + 2) is returned.
-    - Without ``Vk``, ``family_sizes`` is a list (or tuple or array) of offspring counts, one
-      per parent.
+        Ne = (4N - 2) / (Vk + 2)
+
+    where N is the number of parents and Vk the variance of the number of offspring per parent.
+    Equal family sizes (Vk = 0) give Ne = 2N - 1, almost twice the census size, and Poisson
+    reproduction (Vk = 2) gives Ne = N - 1/2.
+
+    - With ``Vk``, ``family_sizes`` is the number of parents N (an int or a float) and ``Vk`` is
+      the variance of their offspring numbers.
+    - Without ``Vk``, ``family_sizes`` is a list (or tuple or array) of offspring counts, one per
+      parent. N is its length and Vk is its **population** variance (denominator N, as
+      ``numpy.var`` computes it by default), not the sample variance (denominator N - 1): the list is
+      the whole set of N parents the formula refers to, not a sample from a larger set. The result is
+      therefore exactly the ``Vk`` form evaluated at ``N = len(family_sizes)`` and
+      ``Vk = numpy.var(family_sizes)``.
+
+    The realised mean number of offspring is not used: the expression assumes that it is 2. Counts
+    whose mean is far from 2 describe a growing or shrinking population, for which the general
+    Crow-Kimura form (N k - 1) / (k - 1 + Vk / k) with mean family size k is the right one.
 
     Args:
-        family_sizes: Census population size N when ``Vk`` is given, otherwise the offspring
-            counts per parent
-        Vk: Variance in family size, given together with the census size N
+        family_sizes: Number of parents N when ``Vk`` is given, otherwise the offspring counts per
+            parent (finite and non-negative)
+        Vk: Variance of the offspring number per parent, given together with N; it must be
+            non-negative and finite
 
     Returns:
-        Estimated effective population size
+        Estimated effective population size; 0.0 for an empty list of counts
 
     Raises:
         TypeError: If ``Vk`` is given but ``family_sizes`` is not a number, or ``Vk`` is omitted
             but ``family_sizes`` is not a list, tuple or array
-        ValueError: If N is not positive and finite, or Vk is negative or not finite
+        ValueError: If N is below 1 or not finite, Vk is negative or not finite, or the offspring
+            counts are not a one-dimensional set of finite non-negative numbers
     """
     if Vk is not None:
         if isinstance(family_sizes, bool) or not isinstance(family_sizes, (int, float, np.integer, np.floating)):
             raise TypeError(
-                f"family_sizes must be the census size N (an int or a float) when Vk is given, "
+                f"family_sizes must be the number of parents N (an int or a float) when Vk is given, "
                 f"got {type(family_sizes).__name__}"
             )
         N = float(family_sizes)
-        if not math.isfinite(N) or N <= 0:
-            raise ValueError(f"The census size N must be positive and finite, got {family_sizes}")
+        if not math.isfinite(N) or N < 1:
+            raise ValueError(f"The number of parents N must be finite and at least 1, got {family_sizes}")
         if not math.isfinite(Vk) or Vk < 0:
             raise ValueError(f"Vk must be non-negative and finite, got {Vk}")
         return (4.0 * N - 2.0) / (Vk + 2.0)
@@ -247,20 +279,15 @@ def effective_size_from_family_size_variance(family_sizes: List[int] | float, Vk
         raise TypeError(
             f"family_sizes must be a list of offspring counts when Vk is not given, got {type(family_sizes).__name__}"
         )
-    sizes = list(family_sizes)
-
-    if not sizes:
+    counts = np.asarray(family_sizes, dtype=float)
+    if counts.ndim != 1:
+        raise ValueError("The offspring counts must be a one-dimensional list, one count per parent")
+    if counts.size == 0:
         return 0.0
+    if not np.all(np.isfinite(counts)) or np.any(counts < 0):
+        raise ValueError("The offspring counts must be finite and non-negative")
 
-    n = len(sizes)
-    mean_family_size = sum(sizes) / n
-    variance = sum((x - mean_family_size) ** 2 for x in sizes) / n
-
-    # Ne = k / (V_k - 1) where k is mean family size, V_k is variance
-    if variance > 1:
-        return mean_family_size / (variance - 1)
-    else:
-        return float("inf")  # No variance means infinite Ne
+    return effective_size_from_family_size_variance(float(counts.size), Vk=float(np.var(counts)))
 
 
 def bootstrap_confidence_interval(
@@ -271,16 +298,20 @@ def bootstrap_confidence_interval(
     n_bootstraps: int = 1000,
     random_state: int | None = None,
 ) -> Dict[str, Any]:
-    """Calculate bootstrap confidence interval.
+    """Calculate a percentile bootstrap confidence interval.
 
     Args:
         values: Original sample values
+        statistic_func: Statistic computed on each resample (default ``numpy.mean``)
         confidence_level: Confidence level (0.95 for 95% CI)
+        n_bootstrap: Number of bootstrap resamples; overrides ``n_bootstraps`` when given
         n_bootstraps: Number of bootstrap resamples
+        random_state: Seed for ``numpy.random.default_rng``; None draws fresh entropy
 
     Returns:
-        Dictionary with keys ``statistic``, ``ci_lower``, ``ci_upper``,
-        ``confidence_level`` and ``n_bootstrap`.
+        Dictionary with keys ``statistic``, ``ci_lower``, ``ci_upper``, ``confidence_level`` and
+        ``n_bootstrap``. An empty ``values`` returns NaN for the statistic and both limits and
+        ``n_bootstrap`` 0 rather than raising.
     """
     if n_bootstrap is not None:
         n_bootstraps = n_bootstrap
@@ -431,6 +462,11 @@ def compare_population_statistic(
 ) -> Dict[str, Any]:
     """Compare a population genetic statistic between two populations.
 
+    A rough normal approximation for point values, not a test of the underlying observations: each
+    population is treated as if it held 10 observations whose variance is its ``variance`` entry
+    (default 1.0), so the standard error is ``sqrt(mean variance * 2 / 10)`` whatever the real sample
+    sizes are. Treat the p-value as indicative only.
+
     Args:
         pop1_stats: Statistics for population 1
         pop2_stats: Statistics for population 2
@@ -438,6 +474,11 @@ def compare_population_statistic(
 
     Returns:
         Dictionary with comparison results
+
+    Raises:
+        ValueError: If the statistic is missing from either population, a ``variance`` entry is
+            negative, or both are zero (the standard error is then zero and the statistic undefined,
+            not a p-value of 1)
     """
     if statistic_name not in pop1_stats or statistic_name not in pop2_stats:
         raise ValueError(f"Statistic '{statistic_name}' not found in both populations")
@@ -449,16 +490,17 @@ def compare_population_statistic(
     # p-value. Not for cross-species release outputs while the evidence manifest is
     # unfrozen (descriptive-only boundary, SHARED_CONTEXT Round 3+).
     diff = stat1 - stat2
-    pooled_var = (pop1_stats.get("variance", 1.0) + pop2_stats.get("variance", 1.0)) / 2
+    variance1, variance2 = pop1_stats.get("variance", 1.0), pop2_stats.get("variance", 1.0)
+    if variance1 < 0 or variance2 < 0:
+        raise ValueError("variance entries must be non-negative")
+    pooled_var = (variance1 + variance2) / 2
+    if pooled_var == 0:
+        raise ValueError("Both variances are zero: the standard error vanishes and the test statistic is undefined")
     se = math.sqrt(pooled_var * 2 / 10)  # Approximate SE
 
-    if se > 0:
-        t_stat = abs(diff) / se
-        # Approximate p-value using normal distribution
-        p_value = 2 * (1 - 0.5 * (1 + math.erf(t_stat / math.sqrt(2))))
-    else:
-        t_stat = 0.0
-        p_value = 1.0
+    t_stat = abs(diff) / se
+    # Approximate p-value using normal distribution
+    p_value = 2 * (1 - 0.5 * (1 + math.erf(t_stat / math.sqrt(2))))
 
     return {
         "statistic_name": statistic_name,
@@ -594,8 +636,11 @@ def detect_outliers(values: List[float], method: str = "iqr", threshold: float =
         outlier_mask = (values_array < lower_bound) | (values_array > upper_bound)
 
     elif method == "zscore":
-        z_scores = np.abs((values_array - np.mean(values_array)) / np.std(values_array))
-        outlier_mask = z_scores > threshold
+        spread = np.std(values_array)
+        if spread == 0:  # identical values: nothing lies away from the mean
+            outlier_mask = np.zeros(values_array.shape, dtype=bool)
+        else:
+            outlier_mask = np.abs((values_array - np.mean(values_array)) / spread) > threshold
 
     else:
         raise ValueError(f"Unknown outlier detection method: {method}")
@@ -619,20 +664,34 @@ def permutation_test(
 ) -> Dict[str, Any]:
     """Perform permutation test to compare two distributions.
 
+    The statistic is the absolute difference of the group means. Its null distribution comes from
+    ``n_permutations`` random reassignments of the pooled values to the two groups, and the two-sided
+    p-value is ``(1 + k) / (1 + n_permutations)`` with ``k`` the number of permutations whose statistic
+    is at least the observed one (Davison and Hinkley 1997; Phipson and Smyth 2010). The observed
+    assignment is itself one of the possible permutations, so a Monte Carlo p-value is never 0.
+
     Args:
         values1: Values from first distribution
         values2: Values from second distribution
-        n_permutations: Number of permutations to perform
+        n_permutations: Number of permutations to perform, at least 1
+        random_state: Seed for ``numpy.random.default_rng``; None draws fresh entropy
 
     Returns:
-        Dictionary with permutation test results
+        Dictionary with ``test_statistic`` (also under ``statistic``), ``p_value``,
+        ``n_permutations`` and ``significant``
+
+    Raises:
+        ValueError: If either group is empty, because no p-value exists for it (it is not 1), or
+            ``n_permutations`` is below 1
 
     INFERENTIAL (post-evidence-freeze use): permutation p-values are not for
     cross-species release outputs while the evidence manifest is unfrozen
     (descriptive-only boundary, SHARED_CONTEXT Round 3+).
     """
     if not values1 or not values2:
-        return {"p_value": 1.0, "test_statistic": 0.0, "statistic": 0.0, "n_permutations": 0}
+        raise ValueError("Both groups must contain at least one value")
+    if n_permutations < 1:
+        raise ValueError("n_permutations must be at least 1")
 
     # Observed difference in means
     observed_diff = abs(np.mean(values1) - np.mean(values2))
@@ -649,7 +708,7 @@ def permutation_test(
         if perm_diff >= observed_diff:
             count += 1
 
-    p_value = count / n_permutations
+    p_value = (count + 1) / (n_permutations + 1)
 
     return {
         "test_statistic": observed_diff,
@@ -702,21 +761,21 @@ def tajimas_d_outliers(d_values: List[float], window_size: int = 10, threshold: 
 
 
 def variance(values: List[float]) -> float:
-    """Calculate variance of a list of values."""
+    """Calculate the population variance (denominator n) of a list of values; 0.0 for fewer than two values."""
     if not values:
         return 0.0
     return float(np.var(values, ddof=0)) if len(values) > 1 else 0.0
 
 
 def standard_deviation(values: List[float]) -> float:
-    """Calculate standard deviation of a list of values."""
+    """Calculate the population standard deviation (denominator n); 0.0 for fewer than two values."""
     if not values:
         return 0.0
     return float(np.std(values, ddof=0)) if len(values) > 1 else 0.0
 
 
 def skewness(values: List[float]) -> float:
-    """Calculate skewness of a list of values."""
+    """Calculate the skewness of a list of values; 0.0 for fewer than three values."""
     if not values or len(values) < 3:
         return 0.0
     from scipy.stats import skew
@@ -725,7 +784,7 @@ def skewness(values: List[float]) -> float:
 
 
 def kurtosis(values: List[float]) -> float:
-    """Calculate kurtosis of a list of values."""
+    """Calculate the excess kurtosis of a list of values; 0.0 for fewer than four values."""
     if not values or len(values) < 4:
         return 0.0
     from scipy.stats import kurtosis as scipy_kurtosis

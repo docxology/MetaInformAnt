@@ -76,4 +76,6 @@ The dictionary also repeats `n_samples`, `effective_size` and `mutation_rate`. `
 Notes
 
 - These helpers assume standard neutral coalescent and per-site mutation rates when θ is used.
+- `expected_time_to_mrca` requires at least two samples and a positive effective size; invalid values raise `ValueError`.
+- Harmonic numbers are summed term by term with `math.fsum`, including for small sample sizes.
 - For outputs generated in examples or notebooks, write files under `output/` by default.

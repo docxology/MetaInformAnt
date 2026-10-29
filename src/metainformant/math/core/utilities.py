@@ -96,8 +96,8 @@ def linear_regression(x: Sequence[float] | np.ndarray, y: Sequence[float] | np.n
 
 
 def r_squared(
-    x_or_pA: List[float] | float,
-    y_or_pa: List[float] | float | None = None,
+    x_or_pA: Sequence[float] | np.ndarray | float,
+    y_or_pa: Sequence[float] | np.ndarray | float | None = None,
     pB: float | None = None,
     pb: float | None = None,
     pAB: float | None = None,
@@ -117,12 +117,19 @@ def r_squared(
 
     Returns:
         R-squared value
+
+    Raises:
+        TypeError: If the first two arguments are not numbers in LD mode, or not lists (tuples or
+            arrays) in regression mode
+        ValueError: If ``y`` is missing in regression mode, or the regression inputs are unusable
     """
     # Check if we're in LD mode (allele frequencies)
     if pB is not None and pb is not None and pAB is not None:
-        pA = x_or_pA
-        pa = y_or_pa
-        assert isinstance(pA, float) and isinstance(pa, float)
+        for name, value in (("pA", x_or_pA), ("pa", y_or_pa)):
+            if isinstance(value, bool) or not isinstance(value, (int, float, np.integer, np.floating)):
+                raise TypeError(f"{name} must be an allele frequency (a number) in LD mode, got {type(value).__name__}")
+        pA = float(x_or_pA)  # type: ignore[arg-type]
+        pa = float(y_or_pa)  # type: ignore[arg-type]
         # Calculate D = P(AB) - P(A)*P(B)
         D = pAB - pA * pB
         # r² = D² / (pA * pa * pB * pb)
@@ -136,8 +143,10 @@ def r_squared(
     y = y_or_pa
     if y is None:
         raise ValueError("y is required for linear regression mode")
-    assert isinstance(x, list) and isinstance(y, list)
-    _, _, r2 = linear_regression(x, y)
+    for name, value in (("x", x), ("y", y)):
+        if not isinstance(value, (list, tuple, np.ndarray)):
+            raise TypeError(f"{name} must be a list, tuple or array in regression mode, got {type(value).__name__}")
+    _, _, r2 = linear_regression(x, y)  # type: ignore[arg-type]
     return r2
 
 
@@ -181,21 +190,24 @@ def fisher_exact_test(a: int, b: int, c: int, d: int) -> tuple[float, float]:
 
 
 def covariance(x: List[float], y: List[float]) -> float:
-    """Calculate covariance between two variables.
+    """Calculate the population covariance between two variables.
+
+    The denominator is the number of pairs n, not n - 1 (``numpy.cov(..., ddof=0)``), which matches
+    the population variance of :func:`metainformant.math.population_genetics.statistics.variance`.
 
     Args:
         x: First variable values
         y: Second variable values
 
     Returns:
-        Covariance value
+        Population covariance; 0.0 for fewer than two pairs
 
     Examples:
         >>> x = [1, 2, 3, 4, 5]
         >>> y = [2, 4, 6, 8, 10]
         >>> cov = covariance(x, y)
         >>> print(f"Covariance: {cov}")
-        Covariance: 5.0
+        Covariance: 4.0
     """
     if len(x) != len(y):
         raise ValueError("Input lists must have equal length")

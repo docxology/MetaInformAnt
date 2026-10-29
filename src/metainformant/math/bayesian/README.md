@@ -16,9 +16,9 @@ Bayesian inference methods for biological and statistical modelling, including M
 | `metropolis_hastings()` | MCMC sampling via Metropolis-Hastings algorithm; keyword-only `random_state` makes a chain reproducible |
 | `abc_rejection()` | Approximate Bayesian Computation with rejection sampling; needs a `prior_sampler` and a `simulator` |
 | `compute_bayes_factor()` | Bayes factor and Jeffreys-scale reading from two log marginal likelihoods |
-| `conjugate_beta_binomial()` | Conjugate Beta-Binomial posterior analysis (`prior_alpha` and `prior_beta` set the prior; the 95% interval uses a normal approximation to the Beta posterior) |
-| `conjugate_normal()` | Conjugate Normal-Normal posterior analysis |
-| `compute_dic()` | Deviance Information Criterion for model selection (p_D is estimated as half the variance of the deviance) |
+| `conjugate_beta_binomial()` | Conjugate Beta-Binomial posterior analysis (`prior_alpha` and `prior_beta` set the prior; the 95% interval is the equal-tailed interval from the exact Beta quantiles) |
+| `conjugate_normal()` | Conjugate Normal-Normal posterior analysis; without `known_var` the sample variance is plugged in, so at least two distinct observations are needed (otherwise `ValueError`) |
+| `compute_dic()` | Deviance Information Criterion for model selection (p_D is half the variance of the deviance, or the mean deviance minus the deviance at the posterior mean when `log_likelihood_at_mean` is given; `deviance_at_mean` is `None` without it) |
 | `compute_waic()` | Widely Applicable Information Criterion for model selection |
 
 ## Usage
@@ -62,3 +62,4 @@ posterior = inference.conjugate_beta_binomial(successes=7, trials=10, prior_alph
 - `metropolis_hastings(..., random_state=...)` accepts an `int` seed or a `random.Random`. An `int` seeds a private generator and a `random.Random` is used as given (and advances); in both cases Python's global `random` state is neither read nor changed, so the same seed always gives the same chain. The default `random_state=None` draws from the global generator, which `random.seed(...)` controls.
 - `abc_rejection` draws no random numbers itself and has no `random_state`: seed `prior_sampler` and `simulator` instead.
 - `compute_bayes_factor`, `conjugate_beta_binomial`, `conjugate_normal`, `compute_dic` and `compute_waic` are deterministic.
+- `metropolis_hastings` raises `ValueError` when `log_posterior` is not finite at the initial point or returns NaN or +inf at a proposal (-inf is a zero density and is rejected), and for a negative `burn_in` or a non-positive `proposal_scale`.

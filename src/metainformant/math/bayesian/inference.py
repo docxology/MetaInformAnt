@@ -147,16 +147,25 @@ def metropolis_hastings(
             - n_params: Number of parameters.
 
     Raises:
-        ValueError: If burn_in >= n_samples.
+        ValueError: If burn_in >= n_samples, burn_in is negative, proposal_scale is not positive, or
+            ``log_posterior`` is not finite at ``initial`` or returns NaN or +inf at a proposal (-inf is
+            a legitimate zero density and the proposal is rejected). A NaN used to be accepted as if it
+            were an improvement, silently turning the chain into an unguided random walk.
     """
     if burn_in >= n_samples:
         raise ValueError(f"burn_in ({burn_in}) must be less than n_samples ({n_samples})")
+    if burn_in < 0:
+        raise ValueError(f"burn_in must be non-negative, got {burn_in}")
+    if not proposal_scale > 0:
+        raise ValueError(f"proposal_scale must be positive, got {proposal_scale}")
 
     rng = _resolve_rng(random_state)
 
     n_params = len(initial)
     current = list(initial)
     current_lp = float(log_posterior(current))
+    if not math.isfinite(current_lp):
+        raise ValueError(f"log_posterior must be finite at the initial point, got {current_lp} at {current}")
 
     all_samples: list[list[float]] = []
     all_lp: list[float] = []
@@ -167,6 +176,8 @@ def metropolis_hastings(
         proposal = [current[i] + rng.gauss(0, proposal_scale) for i in range(n_params)]
 
         proposal_lp = float(log_posterior(proposal))
+        if math.isnan(proposal_lp) or proposal_lp == math.inf:
+            raise ValueError(f"log_posterior returned {proposal_lp} at the proposal {proposal}")
 
         # Accept/reject
         log_alpha = proposal_lp - current_lp
@@ -393,17 +404,21 @@ def conjugate_beta_binomial(
             - posterior_alpha: Updated alpha.
             - posterior_beta: Updated beta.
             - posterior_mean: Posterior mean.
-            - credible_interval_95: Tuple of (lower, upper) 95% credible interval.
+            - credible_interval_95: Tuple of (lower, upper), the equal-tailed 95% credible interval
+              from the exact quantiles (2.5% and 97.5%) of the Beta posterior.
             - prior_mean: Prior mean.
-            - map_estimate: Maximum a posteriori estimate.
+            - map_estimate: Maximum a posteriori estimate (the posterior mean when the posterior has no
+              interior mode, that is when posterior_alpha or posterior_beta is at most 1).
 
     Raises:
-        ValueError: If successes > trials or negative values.
+        ValueError: If successes > trials, a count is negative, or a prior parameter is not positive.
     """
     if successes < 0 or trials < 0:
         raise ValueError("successes and trials must be non-negative")
     if successes > trials:
         raise ValueError(f"successes ({successes}) > trials ({trials})")
+    if not (prior_alpha > 0 and prior_beta > 0):
+        raise ValueError(f"prior_alpha and prior_beta must be positive, got {prior_alpha} and {prior_beta}")
 
     post_alpha = prior_alpha + successes
     post_beta = prior_beta + (trials - successes)
@@ -417,12 +432,12 @@ def conjugate_beta_binomial(
     else:
         map_est = post_mean
 
-    # 95% credible interval via quantile approximation
-    # Use normal approximation for Beta distribution
-    post_var = (post_alpha * post_beta) / ((post_alpha + post_beta) ** 2 * (post_alpha + post_beta + 1))
-    post_sd = math.sqrt(post_var)
-    ci_lower = max(0.0, post_mean - 1.96 * post_sd)
-    ci_upper = min(1.0, post_mean + 1.96 * post_sd)
+    # Equal-tailed 95% credible interval from the exact Beta quantiles (a normal approximation is poor for
+    # small counts and for posteriors piled against 0 or 1)
+    from scipy.stats import beta as beta_distribution
+
+    ci_lower = float(beta_distribution.ppf(0.025, post_alpha, post_beta))
+    ci_upper = float(beta_distribution.ppf(0.975, post_alpha, post_beta))
 
     logger.info(
         "Beta-Binomial update: %d/%d successes, posterior=Beta(%.2f, %.2f), " "mean=%.4f, CI=[%.4f, %.4f]",
@@ -466,8 +481,8 @@ def conjugate_normal(
         data: Observed data values.
         prior_mean: Prior mean (mu_0).
         prior_var: Prior variance (tau_0^2).
-        known_var: Known data variance (sigma^2). If ``None``, estimated
-            from the data.
+        known_var: Known data variance (sigma^2), positive. If ``None``, the
+            sample variance of the data is used as a plug-in value.
 
     Returns:
         Dictionary with keys:
@@ -479,7 +494,10 @@ def conjugate_normal(
             - data_var: Sample (or known) variance.
 
     Raises:
-        ValueError: If data is empty or prior_var <= 0.
+        ValueError: If data is empty, prior_var <= 0, or known_var is not positive. Without
+            ``known_var`` the data variance must be estimable: a single observation has no sample
+            variance and identical observations give zero, and no stand-in value (1.0 or 1e-10 used
+            to be substituted) is invented for them.
     """
     if not data:
         raise ValueError("Data must contain at least one observation")
@@ -491,14 +509,14 @@ def conjugate_normal(
 
     if known_var is None:
         if n < 2:
-            data_var = 1.0
-        else:
-            data_var = sum((x - data_mean) ** 2 for x in data) / (n - 1)
+            raise ValueError("A single observation has no sample variance: pass known_var")
+        data_var = sum((x - data_mean) ** 2 for x in data) / (n - 1)
+        if data_var <= 0:
+            raise ValueError("The observations are all equal, so the sample variance is zero: pass known_var")
     else:
+        if not known_var > 0:
+            raise ValueError(f"known_var must be positive, got {known_var}")
         data_var = known_var
-
-    if data_var <= 0:
-        data_var = 1e-10
 
     # Posterior precision = prior precision + data precision
     prior_prec = 1.0 / prior_var
@@ -543,22 +561,32 @@ def conjugate_normal(
 def compute_dic(
     log_likelihoods: list[float],
     parameters: list[list[float]],
+    log_likelihood_at_mean: float | None = None,
 ) -> dict:
     """Compute the Deviance Information Criterion.
 
-    DIC = D_bar + p_D, where D_bar is the mean deviance and p_D is the
-    effective number of parameters.
+    DIC = D_bar + p_D, where D_bar is the mean deviance of the samples and p_D is the effective number
+    of parameters. The two estimators of p_D need different inputs:
+
+    - With ``log_likelihood_at_mean`` (the log-likelihood evaluated at the posterior mean of the
+      parameters, which only the caller's model can compute), p_D = D_bar - D(theta_bar)
+      (Spiegelhalter et al. 2002).
+    - Without it, p_D = var(D) / 2, with var the population variance of the sampled deviances
+      (Gelman et al. 2004), which needs no further model evaluation. The deviance at the mean is then
+      unavailable, and is reported as ``None`` rather than as the mean deviance.
 
     Args:
         log_likelihoods: List of log-likelihood values at each MCMC sample.
-        parameters: List of parameter vectors at each MCMC sample.
+        parameters: List of parameter vectors at each MCMC sample; only checked to hold one vector per
+            sample (the likelihood function is needed to use them).
+        log_likelihood_at_mean: Log-likelihood at the posterior mean parameters, or None.
 
     Returns:
         Dictionary with keys:
             - dic: DIC value.
             - effective_parameters: Estimated effective number of parameters (p_D).
             - mean_deviance: Mean deviance D_bar.
-            - deviance_at_mean: Deviance evaluated at posterior mean parameters.
+            - deviance_at_mean: -2 * ``log_likelihood_at_mean``, or None when it was not supplied.
 
     Raises:
         ValueError: If inputs have different lengths or are empty.
@@ -574,14 +602,15 @@ def compute_dic(
     deviances = [-2.0 * ll for ll in log_likelihoods]
     d_bar = _mean(deviances)
 
-    # Deviance at mean parameters
-    mean_ll = _mean(log_likelihoods)
-    d_at_mean = -2.0 * mean_ll
-
-    # p_D = D_bar - D(theta_bar)
-    # Since we don't have the likelihood function, approximate:
-    # p_D = 0.5 * var(deviance)
-    p_d = 0.5 * _variance(deviances, ddof=0) if len(deviances) > 1 else 0.0
+    d_at_mean: float | None
+    if log_likelihood_at_mean is not None:
+        # p_D = D_bar - D(theta_bar)
+        d_at_mean = -2.0 * log_likelihood_at_mean
+        p_d = d_bar - d_at_mean
+    else:
+        # Without the likelihood function the deviance at theta_bar is unknown: p_D = 0.5 * var(deviance)
+        d_at_mean = None
+        p_d = 0.5 * _variance(deviances, ddof=0) if len(deviances) > 1 else 0.0
 
     dic = d_bar + p_d
 

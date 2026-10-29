@@ -136,7 +136,11 @@ def selection_update(
         fitness_aa: Fitness of aa homozygote
 
     Returns:
-        New allele frequency after selection
+        New allele frequency after selection, clipped to [0, 1]. With explicit fitnesses it is the exact
+        one-generation update ``(p^2 w_AA + p q w_Aa) / mean fitness`` (unchanged when the mean fitness is
+        0). With a selection coefficient it is a weak-selection approximation: ``s p q / 2`` for the
+        additive ``dominance_coefficient`` of 0.5, otherwise ``s p q (h p + q)``, without dividing by the
+        mean fitness.
     """
     if not (0 <= allele_frequency <= 1):
         raise ValueError("Allele frequency must be between 0 and 1")
@@ -350,6 +354,9 @@ def multilevel_selection_decomposition(
 
     Returns:
         Dictionary with multilevel selection components
+
+    Raises:
+        ValueError: If ``group_size`` is not positive, or a variance is missing in the summary-statistic form
     """
     if group_means is not None or individual_deviations is not None:
         group_means = group_means or []
@@ -370,7 +377,8 @@ def multilevel_selection_decomposition(
 
     if group_size is None or group_size <= 0:
         raise ValueError("Group size must be positive")
-    assert individual_trait_variance is not None and group_trait_variance is not None
+    if individual_trait_variance is None or group_trait_variance is None:
+        raise ValueError("individual_trait_variance and group_trait_variance are required")
 
     # Total phenotypic variance
     total_variance = individual_trait_variance + group_trait_variance * group_size

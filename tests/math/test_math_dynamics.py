@@ -72,15 +72,17 @@ class TestEgtReplicator:
     def test_derivative_empty(self):
         assert egt_replicator_derivative([], []) == []
 
-    def test_zero_mean_fitness_returns_zeros(self):
-        assert egt_replicator_derivative([1.0, -1.0], [0.5, 0.5]) == [0.0, 0.0]
+    def test_zero_mean_fitness_still_has_a_derivative(self):
+        # dx_i/dt = x_i (f_i - mean f) needs no division by the mean: here the mean fitness is 0, so the
+        # derivatives are x_i f_i = (0.5, -0.5), not zeros
+        assert egt_replicator_derivative([1.0, -1.0], [0.5, 0.5]) == [0.5, -0.5]
 
     def test_step_renormalizes(self):
         new_freqs = egt_replicator_step([1.0, 2.0], [0.5, 0.5], time_step=0.1)
         assert sum(new_freqs) == pytest.approx(1.0)
         assert all(0.0 <= f <= 1.0 for f in new_freqs)
 
-    def test_step_all_zero_frequencies_resets_uniform(self):
-        # Zero frequencies leave nothing to renormalize; the step resets to uniform
-        new_freqs = egt_replicator_step([1.0, 2.0], [0.0, 0.0], time_step=0.1)
-        assert new_freqs == [0.5, 0.5]
+    def test_step_all_zero_frequencies_raises(self):
+        # Zero frequencies leave nothing to renormalize; a uniform population is not invented for them
+        with pytest.raises(ValueError, match="positive"):
+            egt_replicator_step([1.0, 2.0], [0.0, 0.0], time_step=0.1)

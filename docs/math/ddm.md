@@ -1,6 +1,6 @@
 ### Math: Drift–Diffusion Model (DDM)
 
-Functions in `metainformant.math.decision_theory.ddm`: `ddm_analytic_accuracy`, `ddm_mean_decision_time`, `ddm_log_likelihood`, `fit_ddm_parameters`.
+Functions in `metainformant.math.decision_theory.ddm`: `ddm_analytic_accuracy`, `ddm_mean_decision_time`, `ddm_first_passage_density`, `ddm_log_likelihood`, `fit_ddm_parameters`.
 
 ```mermaid
 flowchart LR
@@ -33,15 +33,15 @@ noisy = ddm.ddm_mean_decision_time(0.2, 1.0, noise_sd=2.0)  # 0.0625: more noise
 flipped = ddm.ddm_analytic_accuracy(-0.2, 1.0)  # 0.4502, which is 1 - acc
 ```
 
-#### Likelihood and fitting (approximation)
+#### First-passage likelihood and fitting
 
-`ddm_log_likelihood(rt, choice, drift_rate, boundary_separation, starting_point=0.5, non_decision_time=0.0)` and `fit_ddm_parameters(rt_data, choice_data, bounds=None)` do not use the closed forms or the exact first-passage density of the diffusion above. They model the time to reach the chosen boundary as a normal distribution with mean (a − z) / v and variance (a − z) · a / (3 v²), where z = `starting_point` · a (for `choice=2` the drift is negated and z becomes a − z). This is a normal approximation, with these consequences:
+`ddm_first_passage_density(rt, choice, drift_rate, boundary_separation, starting_point=0.5, non_decision_time=0.0, noise_sd=1.0, *, log=False)` evaluates the joint density of response time and boundary choice for the same diffusion, using the small-time and large-time Wiener first-passage series. Choice 1 reaches the upper boundary and choice 2 the lower boundary. `starting_point` is the starting position as a fraction of the boundary separation, strictly inside (0, 1). The density includes competition between both absorbing boundaries and supports either sign of drift, including zero.
 
-- There is no noise parameter, and the opposite boundary is ignored.
-- Choice 1 (upper boundary) needs a positive drift and choice 2 a negative one; otherwise, zero drift included, the log-likelihood is −inf. It is also −inf for a response time that does not exceed `non_decision_time`.
-- Its time scale differs from `ddm_mean_decision_time`: for v = 1, a = 2 and an unbiased start it is centred on 1.0, where the closed form gives 0.76.
+The function broadcasts response times and choices. It returns zero, or `-inf` with `log=True`, when `rt <= non_decision_time`; invalid choices, non-finite response times or invalid model parameters raise `ValueError`.
 
-`fit_ddm_parameters` maximises this approximate likelihood with L-BFGS-B (default bounds: `drift_rate` 0.01 to 2.0, `boundary_separation` 0.5 to 3.0, `starting_point` 0.2 to 0.8, `non_decision_time` 0 to 0.5) and falls back to a coarse grid search when SciPy's optimiser is unavailable or does not converge. It returns a dictionary with `drift_rate`, `boundary_separation`, `starting_point`, `non_decision_time` and `log_likelihood`. Read the fitted values as approximate, not as maximum-likelihood estimates for the diffusion model of the closed forms.
+`ddm_log_likelihood(rt, choice, drift_rate, boundary_separation, starting_point=0.5, non_decision_time=0.0, noise_sd=1.0)` sums the corresponding log densities. Both correct and error responses contribute to one likelihood. `noise_sd` fixes the otherwise unidentified common scale of drift, boundary separation and noise.
+
+`fit_ddm_parameters(rt_data, choice_data, bounds=None, *, noise_sd=1.0)` maximises that first-passage likelihood with deterministic multi-start L-BFGS-B. It starts from the three best points of a fixed grid over the bounds. Default bounds are `drift_rate` 0.01–2.0, `boundary_separation` 0.5–3.0, `starting_point` 0.2–0.8 and `non_decision_time` 0–0.5; the upper non-decision-time bound is capped below the smallest response time, and an incompatible lower bound raises `ValueError`. It returns `drift_rate`, `boundary_separation`, `starting_point`, `non_decision_time` and `log_likelihood`. Invalid data or bounds raise `ValueError`, and non-convergence raises `RuntimeError`; a failed fit does not return default parameters.
 
 #### References
 

@@ -133,21 +133,18 @@ def test_bootstrap_with_empty_data():
 
 
 def test_permutation_test_with_empty_groups():
-    """Test permutation test with empty groups."""
-    group1 = []
-    group2 = [1.0, 2.0]
-
-    result = permutation_test(group1, group2, n_permutations=100)
-
-    assert result["p_value"] == 1.0
-    assert result["n_permutations"] == 0
+    """An empty group has no mean to compare: no p-value exists (it used to be reported as 1.0)."""
+    with pytest.raises(ValueError, match="at least one value"):
+        permutation_test([], [1.0, 2.0], n_permutations=100)
+    with pytest.raises(ValueError, match="at least one value"):
+        permutation_test([1.0, 2.0], [], n_permutations=100)
 
 
 def test_expected_pairwise_diversity_and_segregating_sites_degenerate_n():
     assert expected_pairwise_diversity(1, 5.0) == 0.0
     assert expected_segregating_sites(0, 5.0) == 0.0
-    # n=2: E[pi] = theta * 2/1 * 1 = 2*theta; E[S] = theta
-    assert expected_pairwise_diversity(2, 0.5) == pytest.approx(1.0)
+    # n=2: E[pi] = theta (every pair differs by theta on average, whatever n is); E[S] = theta * H_1 = theta
+    assert expected_pairwise_diversity(2, 0.5) == pytest.approx(0.5)
     assert expected_segregating_sites(2, 0.5) == pytest.approx(0.5)
 
 

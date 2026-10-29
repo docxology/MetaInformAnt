@@ -117,11 +117,11 @@ class TestSDTMetrics:
         assert 0.0 <= result["d_prime"] <= 6.0
         assert result["beta"] > 0.0
 
-    def test_no_signal_trials(self):
-        # Empty noise trial class must not crash
-        result = sdt_metrics(hits=5, misses=5, false_alarms=0, correct_rejections=0)
-        assert result["false_alarm_rate"] == pytest.approx(0.0)
+    def test_no_noise_trials_leave_the_false_alarm_rate_undefined(self):
+        # An empty noise class has no false-alarm rate; a rate of 0 is not invented for it
+        with pytest.raises(ValueError, match="No noise trials"):
+            sdt_metrics(hits=5, misses=5, false_alarms=0, correct_rejections=0)
 
-    def test_no_noise_trials(self):
-        result = sdt_metrics(hits=0, misses=0, false_alarms=3, correct_rejections=7)
-        assert result["hit_rate"] == pytest.approx(0.0)
+    def test_no_signal_trials_leave_the_hit_rate_undefined(self):
+        with pytest.raises(ValueError, match="No signal trials"):
+            sdt_metrics(hits=0, misses=0, false_alarms=3, correct_rejections=7)

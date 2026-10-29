@@ -97,7 +97,7 @@ ne = effective_population_size_from_heterozygosity(0.5, mutation_rate=1e-8)
 Calculate effective population size from variance in family size. The function has two forms:
 
 - With `Vk`, `family_sizes` is the census size N, given as an `int` or a `float`. It uses the Crow and Denniston approximation.
-- Without `Vk`, `family_sizes` is a list (or tuple, or NumPy array) of offspring counts, one per parent.
+- Without `Vk`, `family_sizes` is a list (or tuple, or NumPy array) of offspring counts, one per parent. N is the number of parents and Vk is the population variance (`numpy.var`, denominator N) of those counts.
 
 **Parameters**:
 - `family_sizes`: Census population size N (when `Vk` is given), or the offspring counts per parent
@@ -107,9 +107,9 @@ Calculate effective population size from variance in family size. The function h
 
 **Raises**:
 - `TypeError` if `Vk` is given and `family_sizes` is not a number (booleans are rejected too), or if `Vk` is omitted and `family_sizes` is not a list, tuple or array
-- `ValueError` if N is not positive and finite, or `Vk` is negative or not finite
+- `ValueError` if N is non-finite or less than 1, `Vk` is negative or not finite, or the offspring counts are non-finite, negative or not one-dimensional
 
-**Formula**: With `Vk`, Ne = (4N - 2) / (Vk + 2). With a list, Ne = k / (V - 1), where k is the mean family size and V the population variance (denominator n) of the list; the result is `inf` when V is at most 1 and 0.0 for an empty list.
+**Formula**: Both forms use Ne = (4N − 2) / (Vk + 2). In list form, N is the number of entries and Vk their population variance; zero variance therefore yields a finite value. An empty list retains the convention of returning 0.0.
 
 **Example**:
 ```python

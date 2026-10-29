@@ -81,8 +81,11 @@ def test_expected_total_branch_length_harmonic():
 def test_time_to_mrca_validation():
     with pytest.raises(ValueError, match="at least 2"):
         expected_time_to_mrca(1, 1000)
-    # Non-positive effective size degrades gracefully to zero
-    assert expected_time_to_mrca(5, 0.0) == 0.0
+    # A non-positive effective size has no coalescent time; it used to be reported as 0.0
+    with pytest.raises(ValueError, match="positive"):
+        expected_time_to_mrca(5, 0.0)
+    with pytest.raises(ValueError, match="positive"):
+        expected_time_to_mrca(5, -10.0)
 
 
 def test_watterson_theta_alias_conventions():

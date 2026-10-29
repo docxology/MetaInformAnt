@@ -6,7 +6,7 @@ This module provides mathematical functions for analyzing linkage disequilibrium
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -16,7 +16,7 @@ logger = logging.get_logger(__name__)
 
 
 def ld_coefficients(
-    pA_or_genotypes: float | List[List[int]],
+    pA_or_genotypes: float | Sequence[Any] | np.ndarray,
     pa: float | None = None,
     pB: float | None = None,
     pb: float | None = None,
@@ -52,8 +52,12 @@ def ld_coefficients(
     """
     # Check if we're in frequency mode
     if pa is not None and pB is not None and pb is not None and pAB is not None:
-        pA = pA_or_genotypes
-        assert isinstance(pA, float)
+        if isinstance(pA_or_genotypes, bool) or not isinstance(pA_or_genotypes, (int, float, np.integer, np.floating)):
+            raise TypeError(
+                f"The first argument must be the frequency of allele A in frequency mode, "
+                f"got {type(pA_or_genotypes).__name__}"
+            )
+        pA = float(pA_or_genotypes)
         # Calculate D = P(AB) - P(A)*P(B)
         D = pAB - pA * pB
 
@@ -68,8 +72,13 @@ def ld_coefficients(
         return D, D_prime
 
     # Otherwise use genotype mode
-    genotypes = pA_or_genotypes
-    assert isinstance(genotypes, list)
+    if not isinstance(pA_or_genotypes, (list, tuple, np.ndarray)):
+        raise TypeError(
+            f"genotypes must be a list, tuple or array of rows in genotype mode, got {type(pA_or_genotypes).__name__}"
+        )
+    genotypes: List[Any] = list(
+        pA_or_genotypes.tolist() if isinstance(pA_or_genotypes, np.ndarray) else pA_or_genotypes
+    )
     if len(genotypes) < 2 or len(genotypes[0]) != 2:
         raise ValueError("Need at least 2 samples with 2 loci each")
 
@@ -133,7 +142,8 @@ def _em_haplotype_frequencies(
 
     Returns:
         Mapping (allele at locus 1, allele at locus 2) -> frequency, with
-        the four frequencies summing to 1.
+        the four frequencies summing to 1. The iteration stops after ``max_iter`` rounds even if the
+        frequencies are still changing by more than ``tol``; no warning is given.
 
     Raises:
         ValueError: If rows are not diploid two-locus pairs or alleles are
@@ -346,11 +356,17 @@ def haldane_d_to_c(genetic_distance: float) -> float:
     where d is genetic distance in Morgans and c is recombination fraction.
 
     Args:
-        genetic_distance: Genetic distance in Morgans
+        genetic_distance: Genetic distance in Morgans, non-negative
 
     Returns:
         Recombination fraction (0 <= c <= 0.5)
+
+    Raises:
+        ValueError: If genetic_distance is negative
     """
+    if genetic_distance < 0:
+        raise ValueError("Genetic distance cannot be negative")
+
     return 0.5 * (1 - math.exp(-2 * genetic_distance))
 
 

@@ -27,7 +27,7 @@ Mathematical foundations for population genetics: coalescent theory, demography,
 | `ld_coefficients()` | D, D-prime, and r-squared from allele or genotype data |
 | `ld_decay_r2()` | Fit r² = r²₀·exp(−k·d) to every (distance, r²) pair; returns `decay_rate`, `half_decay_distance` and `initial_r2` |
 | `effective_size_sex_ratio()` | Ne = 4·Nm·Nf / (Nm + Nf); the validated `sex_ratio` argument does not change the result |
-| `effective_size_from_family_size_variance()` | Ne from the census size N and the family-size variance Vk, or from a list of offspring counts |
+| `effective_size_from_family_size_variance()` | Ne = (4N - 2) / (Vk + 2) from the number of parents N and the family-size variance Vk, or from a list of offspring counts (N is its length, Vk its population variance) |
 | `simulate_coalescent()` | One simulated genealogy; keyword-only `random_state` (int, numpy `Generator` or `RandomState`) makes it reproducible |
 | `breeders_equation_response()` | Response to selection via breeder's equation |
 | `kin_selection_response()` | Hamilton's rule for kin selection |

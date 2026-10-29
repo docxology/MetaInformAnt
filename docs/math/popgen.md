@@ -36,6 +36,7 @@ theta_w = coalescent.watterson_theta(25, 10, sequence_length=1000)  # S = 25 sit
 ```
 
 Notes:
+- `hardy_weinberg_genotype_freqs` requires an allele frequency in [0, 1]; values outside that interval, including NaN, raise `ValueError`.
 - `selection_update` takes either explicit genotype fitnesses (`fitness_AA`, `fitness_Aa`, `fitness_aa`) or `selection_coefficient` with `dominance_coefficient` (default 0.5, additive).
 - `mutation_update` needs both rates: `mutation_rate_forward` (A to a, alias `mu`) and `mutation_rate_backward` (a to A, alias `nu`).
 - `fixation_probability(initial_frequency, population_size, selection_coefficient)` uses Kimura's diffusion approximation; `Ne` and `p0` are keyword aliases for `population_size` and `initial_frequency`, and a neutral allele (`selection_coefficient=0`) fixes with probability equal to its frequency.

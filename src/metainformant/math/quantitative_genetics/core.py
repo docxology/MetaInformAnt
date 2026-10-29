@@ -21,12 +21,17 @@ def narrow_sense_heritability(additive_genetic_variance: float, phenotypic_varia
         phenotypic_variance: Total phenotypic variance (VP)
 
     Returns:
-        Narrow-sense heritability (h² = VA/VP)
+        Narrow-sense heritability (h² = VA/VP), clipped to [0, 1]: a ratio above 1 (estimates of VA
+        and VP that are inconsistent) is reported as 1.0, and a non-positive ``phenotypic_variance``,
+        for which the ratio is undefined, as 0.0
+
+    Raises:
+        ValueError: If ``additive_genetic_variance`` is negative
     """
-    if phenotypic_variance <= 0:
-        return 0.0
     if additive_genetic_variance < 0:
         raise ValueError("Additive genetic variance cannot be negative")
+    if phenotypic_variance <= 0:
+        return 0.0
 
     return max(0.0, min(1.0, additive_genetic_variance / phenotypic_variance))
 
@@ -44,7 +49,8 @@ def realized_heritability(
         selection_differential: Selection differential (S)
 
     Returns:
-        Realized heritability (h²)
+        Realized heritability (h² = R / S); 0.0 when no response was given or ``selection_differential``
+        is 0, for which the ratio is undefined
     """
     if response is not None:
         selection_response = response

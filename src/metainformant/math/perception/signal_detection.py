@@ -11,6 +11,12 @@ import math
 import numpy as np
 
 
+def _check_rate(name: str, rate: float) -> None:
+    """Reject a rate that is not a proportion; only exact 0 and 1 are clipped, never an out-of-range value."""
+    if not 0.0 <= rate <= 1.0:
+        raise ValueError(f"{name} must be a proportion between 0 and 1, got {rate}")
+
+
 def d_prime(hit_rate: float, false_alarm_rate: float, correction: float = 1e-6) -> float:
     """Calculate sensitivity index d' (d-prime).
 
@@ -19,13 +25,19 @@ def d_prime(hit_rate: float, false_alarm_rate: float, correction: float = 1e-6) 
     Args:
         hit_rate: Proportion of signal trials correctly identified (0 to 1)
         false_alarm_rate: Proportion of noise trials incorrectly identified as signal
-        correction: Small epsilon to avoid infinite Z-scores at rates of 0 or 1
+        correction: Small epsilon to avoid infinite Z-scores at rates of exactly 0 or 1
 
     Returns:
         d' value. Higher values indicate better sensitivity.
         0 indicates inability to distinguish signal from noise.
+
+    Raises:
+        ValueError: If a rate is outside [0, 1] (NaN included)
     """
     from scipy.stats import norm
+
+    _check_rate("hit_rate", hit_rate)
+    _check_rate("false_alarm_rate", false_alarm_rate)
 
     # Clip rates to avoid infinity
     h = np.clip(hit_rate, correction, 1 - correction)
@@ -49,8 +61,14 @@ def criterion_c(hit_rate: float, false_alarm_rate: float, correction: float = 1e
         c = 0: Unbiased
         c > 0: Conservative (tendency to say "No")
         c < 0: Liberal (tendency to say "Yes")
+
+    Raises:
+        ValueError: If a rate is outside [0, 1] (NaN included)
     """
     from scipy.stats import norm
+
+    _check_rate("hit_rate", hit_rate)
+    _check_rate("false_alarm_rate", false_alarm_rate)
 
     h = np.clip(hit_rate, correction, 1 - correction)
     fa = np.clip(false_alarm_rate, correction, 1 - correction)
@@ -90,16 +108,21 @@ def sdt_metrics(hits: int, misses: int, false_alarms: int, correct_rejections: i
         correct_rejections: Signal absent, response "No"
 
     Returns:
-        Dictionary containing hit_rate, fa_rate, d_prime, c, beta
+        Dictionary containing hit_rate, false_alarm_rate, d_prime, c, beta
+
+    Raises:
+        ValueError: If a count is negative, or there are no signal trials (hits + misses) or no noise
+            trials (false alarms + correct rejections): the hit or false-alarm rate is then undefined,
+            and no rate of 0 is invented for it
     """
+    if min(hits, misses, false_alarms, correct_rejections) < 0:
+        raise ValueError("Trial counts must be non-negative")
     n_signal = hits + misses
     n_noise = false_alarms + correct_rejections
-
-    # Handle cases with no trials
     if n_signal == 0:
-        n_signal = 1
+        raise ValueError("No signal trials (hits + misses = 0): the hit rate is undefined")
     if n_noise == 0:
-        n_noise = 1
+        raise ValueError("No noise trials (false alarms + correct rejections = 0): the false-alarm rate is undefined")
 
     hit_rate = hits / n_signal
     fa_rate = false_alarms / n_noise

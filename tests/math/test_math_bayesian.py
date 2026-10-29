@@ -230,7 +230,7 @@ class TestConjugateNormal:
 
     def test_credible_interval(self):
         data = [10.0] * 50
-        result = conjugate_normal(data, prior_mean=10.0, prior_var=100.0)
+        result = conjugate_normal(data, prior_mean=10.0, prior_var=100.0, known_var=1.0)
         ci = result["credible_interval_95"]
         assert ci[0] <= result["posterior_mean"] <= ci[1]
 

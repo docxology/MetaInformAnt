@@ -6,6 +6,8 @@ coalescent theory, epidemiology, dynamics, and selection.
 
 from __future__ import annotations
 
+import pytest
+
 from metainformant.math.decision_theory.ddm import ddm_analytic_accuracy, ddm_mean_decision_time
 from metainformant.math.epidemiology.models import basic_reproduction_number, herd_immunity_threshold, sir_step
 from metainformant.math.evolutionary_dynamics.core import logistic_map, lotka_volterra_step
@@ -329,18 +331,17 @@ class TestEdgeCases:
         assert cov == 0.0 and trans == 0.0 and total == 0.0
 
     def test_zero_population_size(self):
-        """Test functions with zero population size."""
-        t = expected_time_to_mrca(10, 0.0)
-        assert t == 0.0
+        """A zero population size has no coalescent time (it used to be reported as 0.0)."""
+        with pytest.raises(ValueError, match="positive"):
+            expected_time_to_mrca(10, 0.0)
 
     def test_invalid_frequencies(self):
-        """Test functions with invalid frequency inputs."""
-        # Hardy-Weinberg with invalid p
-        freqs = hardy_weinberg_genotype_freqs(-0.1)
-        assert freqs == (0.0, 0.0, 0.0)
+        """An allele frequency outside [0, 1] is an error (it used to be answered with zeros)."""
+        with pytest.raises(ValueError, match="between 0 and 1"):
+            hardy_weinberg_genotype_freqs(-0.1)
 
-        freqs = hardy_weinberg_genotype_freqs(1.5)
-        assert freqs == (0.0, 0.0, 0.0)
+        with pytest.raises(ValueError, match="between 0 and 1"):
+            hardy_weinberg_genotype_freqs(1.5)
 
     def test_extreme_selection_coefficients(self):
         """Test with extreme selection coefficients."""

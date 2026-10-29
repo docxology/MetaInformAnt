@@ -44,7 +44,8 @@ def herd_immunity_threshold(R0: float) -> float:
         R0: Basic reproduction number
 
     Returns:
-        Herd immunity threshold (1 - 1/R₀)
+        Herd immunity threshold (1 - 1/R₀). It is not clipped: for R₀ < 1 the value is negative (the
+        outbreak dies out without immunity) and R₀ = 0 raises ``ZeroDivisionError``.
     """
     return 1 - 1 / R0
 
