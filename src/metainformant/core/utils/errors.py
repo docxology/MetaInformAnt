@@ -85,8 +85,12 @@ class IOError(METAINFORMANTError):
     pass
 
 
-class ValidationError(METAINFORMANTError):
-    """Data validation errors."""
+class ValidationError(METAINFORMANTError, ValueError):
+    """Data validation errors.
+
+    Also a ``ValueError``, so callers that follow the standard library convention and
+    catch ``ValueError`` for invalid arguments catch it too.
+    """
 
     pass
 
