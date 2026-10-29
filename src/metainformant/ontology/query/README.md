@@ -18,8 +18,8 @@ Querying, traversal, and serialization of ontology data structures. Provides anc
 | `query.descendants()` | Find all descendants of a term (the term itself is excluded) |
 | `query.common_ancestors()` | Compute shared ancestors between two terms |
 | `query.shortest_path()` | Find shortest path between two terms |
-| `query.get_roots()` | Identify root terms with no parents |
-| `query.get_leaves()` | Identify leaf terms with no children |
+| `query.get_roots()` | Identify root terms with no parents (`Ontology.get_roots(relation_type)` honours the relation type) |
+| `query.get_leaves()` | Identify leaf terms with no children (`Ontology.get_leaves(relation_type)` honours the relation type) |
 | `query.information_content()` | Compute information content of a term |
 | `query.find_terms_by_name()` | Search terms by name pattern |
 | `query.filter_by_namespace()` | New ontology with one namespace's terms and the parent/child links among them (`get_roots`, `get_parents`, `ancestors` work on it) |

@@ -107,6 +107,7 @@ def test_written_synonym_lines_are_quoted_with_the_obo_escapes(tmp_path: Path) -
     save_ontology(create_ontology(terms={term.id: term}), path, format="obo")
 
     lines = path.read_text().splitlines()
-    assert f"synonym: {quote_obo_string('say \"hi\"')} EXACT []" in lines
+    quoted = quote_obo_string('say "hi"')
+    assert f"synonym: {quoted} EXACT []" in lines
     assert 'synonym: "say \\"hi\\"" EXACT []' in lines
     assert 'synonym: "multi\\nline" EXACT []' in lines

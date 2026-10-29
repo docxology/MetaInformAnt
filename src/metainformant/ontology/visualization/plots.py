@@ -81,15 +81,24 @@ def enrichment_dotplot(
         output_path: Optional file path to save PNG.
         top_n: Maximum number of terms to show (most significant first).
         title: Plot title.
-        alpha_threshold: FDR threshold for dashed-line annotation.
+        alpha_threshold: FDR threshold, in ``(0, 1]``. A dashed line at ``-log10(alpha_threshold)`` on the colour bar
+            separates the terms that pass it from those that do not (it is left out when no plotted term reaches it).
+            Earlier versions documented this argument and never drew the line.
         figsize: Figure size ``(width, height)`` in inches.
+        ax: Existing axes to draw on (a new figure is created when omitted).
+        style: Accepted for interface symmetry with the other plots; it has no effect.
 
     Returns:
         ``matplotlib.figure.Figure``.
 
+    Raises:
+        ValueError: If ``alpha_threshold`` is not in ``(0, 1]``.
+
     Examples:
         >>> fig = enrichment_dotplot(ora_results, "enrichment_dot.png", top_n=15)
     """
+    if not 0.0 < alpha_threshold <= 1.0:
+        raise ValueError(f"alpha_threshold must be in (0, 1], got {alpha_threshold}")
     try:
         import matplotlib.pyplot as plt
 
@@ -172,6 +181,12 @@ def enrichment_dotplot(
     try:
         cbar = ax.figure.colorbar(sm, ax=ax, pad=0.01)
         cbar.set_label("-log10(adj p-value)", fontsize=9)
+        threshold_nlp = -math.log10(alpha_threshold)
+        if threshold_nlp <= max_nlp:
+            cbar.ax.axhline(threshold_nlp, color="black", linestyle="--", linewidth=1.2)
+            cbar.ax.text(
+                1.15, threshold_nlp, f"FDR = {alpha_threshold:g}", transform=cbar.ax.get_yaxis_transform(), fontsize=8
+            )
     except Exception:
         pass
 

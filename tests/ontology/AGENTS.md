@@ -1,15 +1,16 @@
 # AGENTS.md — `MetaInformAnt/tests/ontology/`
 
 tests for the ontology module.
-Files (verified 2026-10-27): `__init__.py`, `test_get_subontology_hierarchy.py`,
+Files (verified 2026-10-28): `__init__.py`, `test_get_subontology_hierarchy.py`,
 `test_go_enrichment_alpha_and_fallbacks.py`, `test_go_enrichment_background.py`, `test_gsea_permutation_null.py`,
 `test_obo_synonyms.py`, `test_ontology_annotation_regression.py`, `test_ontology_api.py`,
 `test_ontology_comprehensive.py`, `test_ontology_enrichment.py`, `test_ontology_go_basic.py`,
 `test_ontology_json_roundtrip.py`, `test_ontology_layout_and_workflow_seeds.py`, `test_ontology_obo_definitions.py`,
 `test_ontology_obo_parser.py`, `test_ontology_query.py`, `test_ontology_query_exports.py`,
-`test_ontology_query_semantics.py`, `test_ontology_query_subsets_and_cache.py`, `test_ontology_seeded_randomness.py`,
-`test_ontology_serialization.py`, `test_ontology_serialize.py`, `test_ontology_types.py`,
-`test_ontology_visualization.py`, `test_ora_exact_log_factorials.py` (24 test files plus `__init__.py`).
+`test_ontology_query_semantics.py`, `test_ontology_query_subsets_and_cache.py`,
+`test_ontology_relation_roots_leaves.py`, `test_ontology_seeded_randomness.py`, `test_ontology_serialization.py`,
+`test_ontology_serialize.py`, `test_ontology_types.py`, `test_ontology_visualization.py`,
+`test_ora_correction_names.py`, `test_ora_exact_log_factorials.py` (26 test files plus `__init__.py`).
 
 ## Coverage notes
 - `test_ontology_obo_definitions.py`: `def:` parsing (quoted text, dbxref list, escapes, trailing modifiers, malformed values), `metadata["definition_xrefs"]`, `[Typedef]` definitions, and OBO save/load round trips of definitions and dbxrefs.

@@ -272,16 +272,26 @@ class Ontology:
         return descendants
 
     def get_roots(self, relation_type: str = "is_a") -> Set[str]:
-        """Get all root terms (terms with no parents)."""
-        all_terms = set(self.terms.keys())
-        terms_with_parents = set(self.parents_of.keys())
-        return all_terms - terms_with_parents
+        """Get all root terms: terms with no parent under ``relation_type`` (``is_a`` unless told otherwise).
+
+        ``relation_type`` used to be ignored, so ``get_roots("part_of")`` answered with the ``is_a`` roots.
+        """
+        if relation_type == "is_a":
+            with_parents = {term_id for term_id, parents in self.parents_of.items() if parents}
+        else:
+            with_parents = {rel.source for rel in self.relationships if rel.relation_type == relation_type}
+        return set(self.terms) - with_parents
 
     def get_leaves(self, relation_type: str = "is_a") -> Set[str]:
-        """Get all leaf terms (terms with no children)."""
-        all_terms = set(self.terms.keys())
-        terms_with_children = set(self.children_of.keys())
-        return all_terms - terms_with_children
+        """Get all leaf terms: terms with no child under ``relation_type`` (``is_a`` unless told otherwise).
+
+        ``relation_type`` used to be ignored, so ``get_leaves("part_of")`` answered with the ``is_a`` leaves.
+        """
+        if relation_type == "is_a":
+            with_children = {term_id for term_id, children in self.children_of.items() if children}
+        else:
+            with_children = {rel.target for rel in self.relationships if rel.relation_type == relation_type}
+        return set(self.terms) - with_children
 
     def __len__(self) -> int:
         """Return the number of terms in the ontology."""

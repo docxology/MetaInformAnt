@@ -141,7 +141,8 @@ def over_representation_analysis(
         background: Optional background gene universe. If ``None``, the
             union of all genes in gene_sets is used.
         correction: Multiple testing correction: ``"fdr_bh"`` (default),
-            ``"bonferroni"``, or ``"none"``.
+            ``"bonferroni"``, or ``"none"``. Any other name raises ``ValueError``; it used to leave the p-values
+            uncorrected under the key ``adjusted_p`` (``"fdr"`` and ``"BH"`` are not ``"fdr_bh"``).
 
     Returns:
         List of result dicts sorted by adjusted p-value, each with:
@@ -153,7 +154,12 @@ def over_representation_analysis(
             - n_genes: Size of the gene set.
             - n_overlap: Number of overlapping genes.
             - overlap_genes: List of overlapping gene names.
+
+    Raises:
+        ValueError: If ``correction`` is not ``"fdr_bh"``, ``"bonferroni"`` or ``"none"``.
     """
+    if correction not in ("fdr_bh", "bonferroni", "none"):
+        raise ValueError(f"Unknown correction: {correction!r}. Use 'fdr_bh', 'bonferroni' or 'none'.")
     query_set = set(gene_list)
 
     if background is None:
@@ -215,7 +221,7 @@ def over_representation_analysis(
             adj_ps = _fdr_correction(raw_ps)
         elif correction == "bonferroni":
             adj_ps = _bonferroni_correction(raw_ps)
-        else:
+        else:  # "none"
             adj_ps = raw_ps
 
         for i, r in enumerate(results):
