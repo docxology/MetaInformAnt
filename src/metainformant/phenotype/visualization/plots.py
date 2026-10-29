@@ -27,6 +27,8 @@ from matplotlib.offsetbox import AnchoredText
 # ── Strain palette (shared with GWAS viz) ───────────────────────────────
 STRAIN_PALETTE = {"C": "#2196F3", "I": "#FF9800", "M": "#4CAF50", "R": "#F44336"}
 
+_JITTER_SEED = 0  # display jitter of discrete scatter points is reproducible
+
 
 # ── Internal helpers ────────────────────────────────────────────────────
 
@@ -430,7 +432,7 @@ def plot_regression_scatter(
     Features:
       - OLS regression line with 95% confidence band
       - R², adjusted R², p-value, β (slope), SE, and Cohen's f²
-      - Random jitter for discrete x/y values
+      - Reproducible (fixed-seed) jitter for discrete x/y values
       - Optional residual distribution inset (QQ)
 
     Args:
@@ -458,18 +460,20 @@ def plot_regression_scatter(
         ci=95,
     )
 
-    # Jitter for discrete variables
+    # Jitter for discrete variables. A private, fixed-seed generator makes the same data give the same figure
+    # and leaves numpy's global random state to the caller.
+    jitter_rng = np.random.default_rng(_JITTER_SEED)
     plot_df = df.copy()
     if pd.api.types.is_numeric_dtype(plot_df[x_col]):
         unique_x = plot_df[x_col].nunique()
         if unique_x < 20:
             jitter = 0.15 * (plot_df[x_col].max() - plot_df[x_col].min()) / max(unique_x, 1)
-            plot_df[x_col] = plot_df[x_col] + np.random.uniform(-jitter, jitter, size=len(plot_df))
+            plot_df[x_col] = plot_df[x_col] + jitter_rng.uniform(-jitter, jitter, size=len(plot_df))
     if pd.api.types.is_numeric_dtype(plot_df[y_col]):
         unique_y = plot_df[y_col].nunique()
         if unique_y < 20:
             jitter = 0.15 * (plot_df[y_col].max() - plot_df[y_col].min()) / max(unique_y, 1)
-            plot_df[y_col] = plot_df[y_col] + np.random.uniform(-jitter, jitter, size=len(plot_df))
+            plot_df[y_col] = plot_df[y_col] + jitter_rng.uniform(-jitter, jitter, size=len(plot_df))
 
     # Scatter with hue
     palette = STRAIN_PALETTE if hue else None

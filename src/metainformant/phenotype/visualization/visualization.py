@@ -40,6 +40,16 @@ except ImportError:
     px = None
 
 
+def _save_axes_figure(ax: Axes, output_path: str | Path) -> None:
+    """Save the figure that *ax* is drawn on.
+
+    ``plt.savefig`` writes pyplot's *current* figure, which is not the caller's figure when they passed an axes
+    of an earlier figure (the file was then a blank or unrelated image). ``ax.figure.figure`` is the root
+    figure also for axes created through ``Figure.subfigures``.
+    """
+    ax.figure.figure.savefig(output_path, dpi=300, bbox_inches="tight")
+
+
 def plot_trait_distribution(
     trait_values: np.ndarray,
     trait_name: str = "Trait",
@@ -89,7 +99,7 @@ def plot_trait_distribution(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        _save_axes_figure(ax, output_path)
         logger.info(f"Trait distribution plot saved to {output_path}")
 
     return ax
@@ -133,13 +143,13 @@ def plot_trait_correlation_matrix(
         ax.set_yticks(range(len(corr_matrix.index)))
         ax.set_xticklabels(corr_matrix.columns, rotation=45, ha="right")
         ax.set_yticklabels(corr_matrix.index)
-        plt.colorbar(im, ax=ax)
+        ax.figure.colorbar(im, ax=ax)
 
     ax.set_title("Phenotypic Trait Correlations")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        _save_axes_figure(ax, output_path)
         logger.info(f"Trait correlation matrix saved to {output_path}")
 
     return ax
@@ -230,13 +240,13 @@ def plot_life_course_trajectory(
 
     # Add legend
     legend_elements = [
-        plt.scatter([], [], c=color, label=event, s=50, edgecolors="black") for event, color in event_color_map.items()
+        ax.scatter([], [], c=color, label=event, s=50, edgecolors="black") for event, color in event_color_map.items()
     ]
     ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc="upper left")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        _save_axes_figure(ax, output_path)
         logger.info(f"Life course trajectory saved to {output_path}")
 
     return ax
@@ -291,7 +301,7 @@ def plot_morphological_measurements(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        _save_axes_figure(ax, output_path)
         logger.info(f"Morphological measurements plot saved to {output_path}")
 
     return ax
@@ -345,7 +355,7 @@ def plot_behavioral_patterns(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        _save_axes_figure(ax, output_path)
         logger.info(f"Behavioral patterns plot saved to {output_path}")
 
     return ax
@@ -395,12 +405,12 @@ def plot_phenotype_pca(
     ax.grid(True, alpha=0.3)
 
     # Add colorbar
-    cbar = plt.colorbar(scatter, ax=ax)
+    cbar = ax.figure.colorbar(scatter, ax=ax)
     cbar.set_label("Sample Index")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        _save_axes_figure(ax, output_path)
         logger.info(f"Phenotype PCA plot saved to {output_path}")
 
     return ax
@@ -475,7 +485,7 @@ def plot_trait_heritability(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        _save_axes_figure(ax, output_path)
         logger.info(f"Trait heritability plot saved to {output_path}")
 
     return ax
@@ -526,7 +536,7 @@ def plot_life_history_comparison(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        _save_axes_figure(ax, output_path)
         logger.info(f"Life history comparison plot saved to {output_path}")
 
     return ax
@@ -594,7 +604,7 @@ def plot_phenotype_network(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        _save_axes_figure(ax, output_path)
         logger.info(f"Phenotype network plot saved to {output_path}")
 
     return ax

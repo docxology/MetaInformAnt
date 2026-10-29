@@ -216,4 +216,13 @@ def test_gene_by_environment_interaction_p_value_matches_scipy() -> None:
     interaction = np.array(calls, dtype=float) * environment
     oracle = stats.pearsonr(interaction, outcome)
     assert result["interactions"]["v1"]["gxe_correlation"] == pytest.approx(oracle.statistic, rel=1e-9)
-    assert result["interactions"]["v1"]["p_value"] == pytest.approx(oracle.pvalue, rel=1e-6)
+
+    # The p-value is that of the interaction coefficient in y ~ 1 + g + e + g*e (statsmodels OLS as the oracle),
+    # not that of the product's correlation with y, which a main effect alone would make significant
+    import statsmodels.api as sm
+
+    design = sm.add_constant(np.column_stack([np.array(calls, dtype=float), environment, interaction]))
+    fit = sm.OLS(outcome, design).fit()
+    assert result["interactions"]["v1"]["gxe_beta"] == pytest.approx(fit.params[3], rel=1e-9)
+    assert result["interactions"]["v1"]["gxe_se"] == pytest.approx(fit.bse[3], rel=1e-9)
+    assert result["interactions"]["v1"]["p_value"] == pytest.approx(fit.pvalues[3], rel=1e-6)

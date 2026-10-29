@@ -5,6 +5,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+from scipy import stats
+
 from metainformant.core.utils.errors import ValidationError
 
 from .ethogram import Ethogram
@@ -146,6 +148,11 @@ class BehaviorSequence:
 
         Args:
             time_window: Custom time window. If None, uses sequence span.
+
+        Returns:
+            The number of events divided by the window (or span). A sequence whose events all share one timestamp
+            has a span of zero, over which a rate is not defined; the number of events is returned then (the
+            rate over one unit of time). A non-positive ``time_window`` returns 0.0.
         """
         if not self.events:
             return 0.0
@@ -158,14 +165,24 @@ class BehaviorSequence:
             return float(len(self.events))
         return len(self.events) / span
 
-    def markov_stationarity_chi2(self) -> Dict[str, float]:
-        """Chi-squared test for first-order Markov stationarity.
+    def markov_stationarity_chi2(self) -> Dict[str, Any]:
+        """Chi-squared test of first-order Markov stationarity (homogeneity of the transitions over time).
 
-        Splits the sequence in half and compares transition matrices.
-        Returns chi2 statistic and degrees of freedom.
+        Splits the sequence in half and compares the transition counts of the two halves state by state: for each
+        behavior observed in both halves, the 2 x K table (half by next behavior) is tested for homogeneity with
+        Pearson's chi-squared, its expected counts coming from the table's own margins
+        (``row total * column total / state total``), so halves that contribute different numbers of transitions
+        from a state are not mistaken for a change in the transition probabilities. The statistics add up over
+        states, with ``sum(K - 1)`` degrees of freedom. The chi-squared reference distribution is asymptotic and
+        unreliable when expected counts are small.
+
+        Returns:
+            Dict with ``chi2``, ``df``, ``p_value`` and ``sufficient_data``. With fewer than six events, or no
+            behavior followed by a transition in both halves, there is nothing to compare:
+            ``sufficient_data`` is False, ``chi2`` is 0.0, ``df`` is 0 and ``p_value`` is ``nan``.
         """
         if len(self.events) < 6:
-            return {"chi2": 0.0, "df": 0, "sufficient_data": False}
+            return {"chi2": 0.0, "df": 0, "p_value": math.nan, "sufficient_data": False}
 
         mid = len(self.events) // 2
         first_half = self.events[:mid]
@@ -180,24 +197,23 @@ class BehaviorSequence:
         c1 = _counts(first_half)
         c2 = _counts(second_half)
 
-        all_states = set(c1.keys()) | set(c2.keys())
-        all_targets: set[str] = set()
-        for d in list(c1.values()) + list(c2.values()):
-            all_targets.update(d.keys())
-
         chi2 = 0.0
         df = 0
-        for s in all_states:
-            for t in all_targets:
-                o1 = c1.get(s, {}).get(t, 0)
-                o2 = c2.get(s, {}).get(t, 0)
-                total = o1 + o2
-                if total > 0:
-                    expected = total / 2.0
-                    chi2 += (o1 - expected) ** 2 / expected + (o2 - expected) ** 2 / expected
-                    df += 1
+        for state in set(c1.keys()) & set(c2.keys()):
+            row1, row2 = c1[state], c2[state]
+            n1, n2 = sum(row1.values()), sum(row2.values())
+            targets = set(row1) | set(row2)
+            for target in targets:
+                o1, o2 = row1.get(target, 0), row2.get(target, 0)
+                column = o1 + o2
+                expected1 = n1 * column / (n1 + n2)
+                expected2 = n2 * column / (n1 + n2)
+                chi2 += (o1 - expected1) ** 2 / expected1 + (o2 - expected2) ** 2 / expected2
+            df += len(targets) - 1
 
-        return {"chi2": chi2, "df": max(0, df - 1), "sufficient_data": True}
+        if df == 0:
+            return {"chi2": 0.0, "df": 0, "p_value": math.nan, "sufficient_data": False}
+        return {"chi2": chi2, "df": df, "p_value": float(stats.chi2.sf(chi2, df)), "sufficient_data": True}
 
     def latency_to_first(self, behavior_code: str) -> Optional[float]:
         """Time from sequence start to first occurrence of a behavior."""

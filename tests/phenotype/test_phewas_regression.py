@@ -231,12 +231,14 @@ class TestHeritabilityScreen:
         assert results[0]["se"] >= 0.0
 
     def test_zero_variance_phenotype(self):
+        # A phenotype with no variance has no variance to partition: its heritability is undefined (nan), not a
+        # measured 0 with p = 1 (see test_phenotype_r4_fixes.py).
         kin = _block_kinship(6)
         pheno = {"flat": [5.0] * 6}
         results = phenotype_heritability_screen(pheno, kin)
-        assert results[0]["h2"] == 0.0
-        assert results[0]["se"] == 0.0
-        assert results[0]["p_value"] == 1.0
+        assert math.isnan(results[0]["h2"])
+        assert math.isnan(results[0]["se"])
+        assert math.isnan(results[0]["p_value"])
 
     def test_length_mismatch_skipped(self):
         kin = _block_kinship(6)

@@ -13,21 +13,16 @@ a single phenotype.
 from __future__ import annotations
 
 import math
-from typing import Any, cast
+from typing import Any
 
+import numpy as np
 from scipy import stats as scipy_stats
 
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-try:
-    import numpy as np
-
-    HAS_NUMPY = True
-except ImportError:
-    HAS_NUMPY = False
-    np = cast("Any", None)
+HAS_NUMPY = True  # NumPy is a hard dependency of the package; the flag is kept for callers that test it
 
 
 # ---------------------------------------------------------------------------
@@ -57,7 +52,12 @@ def _std(values: list[float], ddof: int = 1) -> float:
 
 
 def _pearson_r(x: list[float], y: list[float]) -> tuple[float, float]:
-    """Compute Pearson correlation and approximate p-value.
+    """Compute the Pearson correlation and its two-sided p-value.
+
+    The p-value is that of ``t = r * sqrt((n - 2) / (1 - r**2))`` under Student's t with ``n - 2`` degrees of
+    freedom (exact, as ``scipy.stats.pearsonr``). Fewer than three pairs, or a constant variable, leave the
+    correlation undefined; this helper reports ``(0.0, 1.0)`` there, so callers that must tell "uncorrelated"
+    from "not computable" check for that first (as :func:`phenotype_correlation_matrix` does).
 
     Args:
         x: First variable values.
@@ -77,11 +77,9 @@ def _pearson_r(x: list[float], y: list[float]) -> tuple[float, float]:
         return 0.0, 1.0
     r = sum((xi - mx) * (yi - my) for xi, yi in zip(x, y)) / ((n - 1) * sx * sy)
     r = max(-1.0, min(1.0, r))
-    # t-test approximation
     if abs(r) >= 1.0:
         return r, 0.0
     t_stat = r * math.sqrt((n - 2) / (1.0 - r * r))
-    # Approximate two-tailed p from t using normal approximation for large n
     p_value = float(2.0 * scipy_stats.t.sf(abs(t_stat), df=n - 2))
     return r, p_value
 
@@ -91,63 +89,76 @@ def _simple_linear_regression(
     x: list[float],
     covariates: list[list[float]] | None = None,
 ) -> tuple[float, float, float]:
-    """Simple linear regression of y on x.
+    """Simple linear regression of y on x, optionally adjusted for covariates.
 
-    Returns (beta, se, p_value). Covariates are residualised out first
-    if provided.
+    Returns ``(beta, se, p_value)``: the coefficient of x in ``y ~ 1 + covariates + x``, its standard error and
+    the two-sided Student's t p-value on ``n - rank`` degrees of freedom, where ``rank`` counts the intercept,
+    the (independent) covariates and x. By the Frisch-Waugh-Lovell theorem this equals the simple regression of
+    the covariate-residualised y on the covariate-residualised x, with the covariates' degrees of freedom
+    taken out.
+
+    When the coefficient cannot be estimated (fewer samples than parameters plus one, or x constant once the
+    covariates are accounted for) the result is ``(nan, nan, nan)``, not a fit with beta 0 and p 1.
     """
+    undefined = (math.nan, math.nan, math.nan)
     n = len(y)
     if n < 3:
-        return 0.0, 1.0, 1.0
+        return undefined
 
-    # If covariates, residualise y and x on covariates via OLS
-    dep = list(y)
-    pred = list(x)
-
-    if covariates and len(covariates) > 0 and len(covariates[0]) > 0:
-        dep = _residualise(dep, covariates)
-        pred = _residualise(pred, covariates)
+    has_covariates = bool(covariates) and len(covariates[0]) > 0  # type: ignore[index]
+    if has_covariates:
+        dep = _residualise(list(y), covariates)  # type: ignore[arg-type]
+        pred = _residualise(list(x), covariates)  # type: ignore[arg-type]
+        design = np.column_stack([np.ones(n), np.asarray(covariates, dtype=float), np.asarray(x, dtype=float)])
+        n_parameters = int(np.linalg.matrix_rank(design))
+    else:
+        dep, pred = list(y), list(x)
+        n_parameters = 2
+    df = n - n_parameters
+    if df < 1:
+        return undefined
 
     mx = _mean(pred)
     my = _mean(dep)
     ss_xx = sum((xi - mx) ** 2 for xi in pred)
-    if ss_xx == 0:
-        return 0.0, 1.0, 1.0
+    scale = max(1.0, sum(xi * xi for xi in x))
+    if ss_xx <= 1e-24 * scale:  # x carries no information beyond the intercept and covariates
+        return undefined
     ss_xy = sum((xi - mx) * (yi - my) for xi, yi in zip(pred, dep))
     beta = ss_xy / ss_xx
     y_hat = [my + beta * (xi - mx) for xi in pred]
     residuals = [yi - yhi for yi, yhi in zip(dep, y_hat)]
     ss_res = sum(r * r for r in residuals)
-    mse = ss_res / max(n - 2, 1)
+    mse = ss_res / df
     se = math.sqrt(max(mse / ss_xx, 1e-20))
-    if se == 0:
-        return beta, 1.0, 1.0
     t_stat = beta / se
-    p_value = float(2.0 * scipy_stats.t.sf(abs(t_stat), df=n - 2))
+    p_value = float(2.0 * scipy_stats.t.sf(abs(t_stat), df=df))
     return beta, se, p_value
 
 
 def _residualise(y: list[float], covariates: list[list[float]]) -> list[float]:
-    """Residualise y on covariates using OLS (pure Python)."""
+    """Residuals of y after a multiple linear regression on all the covariates together (with an intercept).
+
+    (A sequence of one-covariate regressions, each on the previous residual, is not the projection onto the
+    covariates' span when they are correlated: it leaves part of the covariates' effect in the residual.)
+
+    Raises:
+        ValueError: If there are not more samples than covariates plus the intercept (adjusting is then
+            impossible; returning y unadjusted would silently drop the requested adjustment).
+    """
     n = len(y)
     k = len(covariates[0]) if covariates else 0
-    if k == 0 or n < k + 1:
-        return y
+    if k == 0:
+        return list(y)
+    if len(covariates) != n:
+        raise ValueError(f"covariates has {len(covariates)} rows for {n} samples")
+    if n <= k + 1:
+        raise ValueError(f"Cannot adjust for {k} covariates with {n} samples")
 
-    # Build design matrix X (with intercept)
-    # Use simple sequential residualisation for pure Python
-    residuals = list(y)
-    for col_idx in range(k):
-        col = [covariates[i][col_idx] for i in range(n)]
-        mc = _mean(col)
-        mr = _mean(residuals)
-        ss = sum((c - mc) ** 2 for c in col)
-        if ss == 0:
-            continue
-        sp = sum((c - mc) * (r - mr) for c, r in zip(col, residuals))
-        b = sp / ss
-        residuals = [r - b * (c - mc) for r, c in zip(residuals, col)]
-    return residuals
+    design = np.column_stack([np.ones(n), np.asarray(covariates, dtype=float)])
+    target = np.asarray(y, dtype=float)
+    coefficients, *_ = np.linalg.lstsq(design, target, rcond=None)
+    return [float(r) for r in target - design @ coefficients]
 
 
 # ---------------------------------------------------------------------------
@@ -168,15 +179,20 @@ def run_phewas(
     Args:
         genotype: List of genotype values (0, 1, 2) for each sample.
         phenotypes: Dictionary mapping phenotype name to list of values
-            (continuous or binary). Each list must have the same length as
-            ``genotype``.
+            (continuous or binary). A phenotype whose list is not as long as
+            ``genotype`` cannot be matched to the samples and is skipped with a
+            warning (it is absent from the result), as is one with fewer than
+            three complete samples or a genotype that does not vary across them.
         covariates: Optional list of covariate vectors. Outer list is
-            per-sample, inner list is per-covariate.
+            per-sample, inner list is per-covariate. They enter the regression
+            together with the genotype (``phenotype ~ 1 + covariates + genotype``),
+            so the genotype's p-value uses the degrees of freedom they leave. A
+            sample with a missing covariate is dropped like one with a missing value.
 
     Returns:
         List of result dicts sorted by p-value, each with keys:
             - phenotype: Name of the phenotype.
-            - beta: Regression coefficient.
+            - beta: Regression coefficient of the genotype.
             - se: Standard error of beta.
             - p_value: Two-sided p-value.
             - n_samples: Number of non-missing samples.
@@ -184,9 +200,12 @@ def run_phewas(
               (``"uncategorized"`` if not categorised).
 
     Raises:
-        ValueError: If genotype and phenotype lengths do not match.
+        ValueError: If ``covariates`` does not have one row per genotype, or there are too few samples to
+            adjust for them.
     """
     n = len(genotype)
+    if covariates is not None and len(covariates) != n:
+        raise ValueError(f"covariates has {len(covariates)} rows for {n} samples")
     results: list[dict] = []
 
     for pheno_name, pheno_values in phenotypes.items():
@@ -199,14 +218,17 @@ def run_phewas(
             )
             continue
 
-        # Filter missing values (None or NaN)
+        # Filter missing values (None or NaN) in the genotype, the phenotype and the covariates
         valid_indices = []
         for i in range(n):
             g = genotype[i]
             p = pheno_values[i]
             if g is not None and p is not None:
                 try:
-                    if not math.isnan(float(p)) and not math.isnan(float(g)):
+                    values = [float(p), float(g)]
+                    if covariates is not None:
+                        values.extend(float(c) for c in covariates[i])
+                    if not any(math.isnan(v) for v in values):
                         valid_indices.append(i)
                 except (TypeError, ValueError):
                     continue
@@ -219,9 +241,16 @@ def run_phewas(
         pheno_valid = [float(pheno_values[i]) for i in valid_indices]
         cov_valid = None
         if covariates is not None:
-            cov_valid = [[covariates[i][j] for j in range(len(covariates[0]))] for i in valid_indices]
+            cov_valid = [[float(covariates[i][j]) for j in range(len(covariates[0]))] for i in valid_indices]
 
         beta, se, p_value = _simple_linear_regression(pheno_valid, geno_valid, cov_valid)
+        if math.isnan(p_value):
+            logger.warning(
+                "Phenotype '%s': the genotype effect is not estimable on %d samples; skipping",
+                pheno_name,
+                len(valid_indices),
+            )
+            continue
 
         results.append(
             {
@@ -254,10 +283,11 @@ def phenotype_correlation_matrix(phenotypes: dict) -> dict:
 
     Returns:
         Dictionary with keys:
-            - correlation_matrix: 2D list of correlation coefficients.
-            - p_value_matrix: 2D list of p-values.
+            - correlation_matrix: 2D list of correlation coefficients; ``nan`` for a pair with fewer than three
+              complete observations or with a constant phenotype (the correlation is undefined there, not 0).
+            - p_value_matrix: 2D list of p-values (``nan`` for those pairs).
             - phenotype_names: Ordered list of phenotype names.
-            - n_samples: Number of samples used.
+            - n_samples: Number of samples in each phenotype (pairs are analysed on their complete cases).
 
     Raises:
         ValueError: If fewer than 2 phenotypes or inconsistent lengths.
@@ -296,8 +326,9 @@ def phenotype_correlation_matrix(phenotypes: dict) -> dict:
                     except (TypeError, ValueError):
                         continue
 
-            if len(xi) < 3:
-                r, p = 0.0, 1.0
+            if len(xi) < 3 or len(set(xi)) < 2 or len(set(xj)) < 2:
+                # fewer than three complete pairs, or a constant phenotype: the correlation is not defined
+                r, p = math.nan, math.nan
             else:
                 r, p = _pearson_r(xi, xj)
 
@@ -430,14 +461,22 @@ def phenotype_heritability_screen(
             shape ``(n_samples, n_samples)``.
 
     Returns:
-        List of dicts sorted by p-value, each with keys:
+        List of dicts sorted by p-value (undefined ones last), each with keys:
             - phenotype: Phenotype name.
             - h2: Estimated heritability (clamped to [0, 1]).
             - se: Standard error of h2.
-            - p_value: P-value for h2 > 0.
+            - p_value: One-sided p-value for h2 > 0 (the slope is negative): half the two-sided p-value of the
+              regression slope when it is negative, one minus that half when it is positive.
 
-    Raises:
-        ValueError: If dimensions do not match.
+        A phenotype that does not vary, or whose slope cannot be estimated (for example kinship that is the same
+        for every pair), has an undefined heritability: ``h2``, ``se`` and ``p_value`` are ``nan``.
+
+        The p-values treat the ``n (n - 1) / 2`` pairs as independent observations, which they are not
+        (each individual enters ``n - 1`` pairs), so they are optimistic; use them to rank phenotypes, not as
+        calibrated tests.
+
+        Phenotypes whose list does not have one value per row of the kinship matrix, or with fewer than five
+        non-missing values, are skipped.
     """
     # Convert kinship to list-of-lists
     if HAS_NUMPY and isinstance(kinship_matrix, np.ndarray):
@@ -471,14 +510,8 @@ def phenotype_heritability_screen(
         vals = [float(pheno_values[i]) for i in valid]
         pheno_var = _variance(vals)
         if pheno_var == 0:
-            results.append(
-                {
-                    "phenotype": pheno_name,
-                    "h2": 0.0,
-                    "se": 0.0,
-                    "p_value": 1.0,
-                }
-            )
+            # no phenotypic variance, so no share of it to attribute to genes
+            results.append({"phenotype": pheno_name, "h2": math.nan, "se": math.nan, "p_value": math.nan})
             continue
 
         # Haseman-Elston: regress (Yi - Yj)^2 on kinship_ij
@@ -496,12 +529,18 @@ def phenotype_heritability_screen(
         if len(diffs_sq) < 3:
             continue
 
-        beta, se, p_value = _simple_linear_regression(diffs_sq, kin_vals)
+        beta, se, p_two_sided = _simple_linear_regression(diffs_sq, kin_vals)
+        if math.isnan(beta):
+            results.append({"phenotype": pheno_name, "h2": math.nan, "se": math.nan, "p_value": math.nan})
+            continue
 
         # h2 = -beta / (2 * Var(Y)) for squared-difference HE regression
-        h2 = -beta / (2.0 * pheno_var) if pheno_var > 0 else 0.0
+        h2 = -beta / (2.0 * pheno_var)
         h2 = max(0.0, min(1.0, h2))
-        h2_se = abs(se / (2.0 * pheno_var)) if pheno_var > 0 else 0.0
+        h2_se = abs(se / (2.0 * pheno_var))
+        # H1: h2 > 0, i.e. a negative slope. The two-sided p-value of a *positive* slope would otherwise rank
+        # the phenotype as significant while h2 is clamped to 0.
+        p_value = p_two_sided / 2.0 if beta < 0 else 1.0 - p_two_sided / 2.0
 
         results.append(
             {
@@ -512,7 +551,7 @@ def phenotype_heritability_screen(
             }
         )
 
-    results.sort(key=lambda r: r["p_value"])
+    results.sort(key=lambda r: (math.isnan(r["p_value"]), r["p_value"]))
     logger.info("Heritability screening: %d phenotypes assessed", len(results))
     return results
 

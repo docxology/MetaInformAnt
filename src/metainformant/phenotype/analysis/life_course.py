@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+import numpy as np
 from scipy import stats as scipy_stats
 
 from metainformant.core.data import validation
@@ -193,14 +194,23 @@ def aggregate_temporal_phenotypes(
     Can be called with either explicit time_windows or with time_window_years
     for auto-generated windows based on the event data.
 
+    Windows are half-open, ``[start, end)``, except the last one, which includes its end: an event on the
+    boundary between two windows belongs to exactly one of them, so the window counts add up to the number of
+    events (a closed interval on both sides counted it in both).
+
     Args:
         sequences: List of EventSequence objects (life_events or local)
         time_window_years: Window size in years (used when time_windows not provided)
         time_windows: Optional explicit list of (start, end) time tuples
-        trait_categories: Optional list of trait categories to analyze
+        trait_categories: Optional list of trait categories (event domains) to analyze: only events whose
+            ``domain`` is in the list are counted, in the totals and in every window. ``None`` keeps all events.
 
     Returns:
-        Dictionary with time_windows and aggregates
+        Dictionary with ``time_windows`` (the generated window dictionaries, each with ``start_time``,
+        ``end_time``, ``n_events``, ``n_people`` and ``domain_counts``; or the explicit windows as given),
+        ``window_aggregates`` (those same per-window counts for either kind of window) and ``aggregates``
+        (``total_events``, ``total_people``, ``time_span_years``). Events without a timestamp are counted in
+        the totals but belong to no window.
 
     Raises:
         errors.ValidationError: If sequences is invalid or time_window_years <= 0
@@ -210,14 +220,23 @@ def aggregate_temporal_phenotypes(
     if time_window_years <= 0:
         raise errors.ValidationError("time_window_years must be positive")
 
-    # Collect all events across sequences
+    category_filter = set(trait_categories) if trait_categories is not None else None
+
+    def keep(event: Any) -> bool:
+        return category_filter is None or getattr(event, "domain", None) in category_filter
+
+    # Collect the events (with their person) across sequences
     all_events: list[Any] = []
+    event_people: list[Any] = []
     people_with_events = set()
     for seq in sequences:
-        events = getattr(seq, "events", [])
-        if events:
-            people_with_events.add(getattr(seq, "person_id", "unknown"))
-        all_events.extend(events)
+        person = getattr(seq, "person_id", "unknown")
+        for event in getattr(seq, "events", []):
+            if not keep(event):
+                continue
+            people_with_events.add(person)
+            all_events.append(event)
+            event_people.append(person)
 
     total_events = len(all_events)
     total_people = len(people_with_events)
@@ -225,6 +244,7 @@ def aggregate_temporal_phenotypes(
     if not all_events:
         return {
             "time_windows": [],
+            "window_aggregates": [],
             "aggregates": {
                 "total_events": 0,
                 "total_people": 0,
@@ -233,63 +253,72 @@ def aggregate_temporal_phenotypes(
         }
 
     # Get timestamps
-    raw_timestamps = [getattr(e, "timestamp", None) for e in all_events]
-    timestamps = [t for t in raw_timestamps if t is not None]
-    if not timestamps:
-        timestamps = [0.0]
+    stamped: list[Tuple[Any, Any, Any]] = [
+        (getattr(e, "timestamp", None), e, person) for e, person in zip(all_events, event_people)
+    ]
+    stamped = [(ts, e, person) for ts, e, person in stamped if ts is not None]
+    timestamps: list[Any] = [ts for ts, _, _ in stamped]
 
-    first = min(timestamps)
-    last = max(timestamps)
-    try:
-        time_span = (last - first).days / 365.25
-    except (TypeError, AttributeError):
-        time_span = float(last - first)
+    if timestamps:
+        first = min(timestamps)
+        last = max(timestamps)
+        try:
+            time_span = (last - first).days / 365.25
+        except (TypeError, AttributeError):
+            time_span = float(last - first)
+    else:
+        time_span = 0.0
+
+    def window_counts(start: Any, end: Any, closed_end: bool) -> Dict[str, Any]:
+        inside = [(e, person) for ts, e, person in stamped if start <= ts and (ts <= end if closed_end else ts < end)]
+        domain_counts: Dict[str, int] = defaultdict(int)
+        for e, _ in inside:
+            domain_counts[getattr(e, "domain", "unknown")] += 1
+        return {
+            "n_events": len(inside),
+            "n_people": len({person for _, person in inside}),
+            "domain_counts": dict(domain_counts),
+        }
 
     # Auto-generate time windows if not provided
     if time_windows is None:
         from datetime import timedelta
 
-        generated_windows = []
-        current = first
-        while current < last:
+        def advance(point: Any) -> Any:
             try:
-                window_end = current + timedelta(days=time_window_years * 365.25)
+                return point + timedelta(days=time_window_years * 365.25)
             except TypeError:
-                window_end = current + time_window_years
-            if window_end > last:
-                window_end = last
-            generated_windows.append({"start_time": current, "end_time": window_end})
+                return point + time_window_years
 
-            # Count events and people in this window
-            window_events = [e for e in all_events if current <= getattr(e, "timestamp", current) <= window_end]
-            window_people = set()
-            for seq in sequences:
-                seq_events = getattr(seq, "events", [])
-                for e in seq_events:
-                    ts = getattr(e, "timestamp", None)
-                    if ts is not None and current <= ts <= window_end:
-                        window_people.add(getattr(seq, "person_id", "unknown"))
-                        break
+        edges = []
+        if timestamps:
+            current = first
+            while current < last:
+                edges.append((current, min(advance(current), last)))
+                current = advance(current)
+            if not edges:  # every event shares one timestamp: a single, degenerate window holds them all
+                edges.append((first, last))
 
-            domain_counts: Dict[str, int] = defaultdict(int)
-            for e in window_events:
-                domain_counts[getattr(e, "domain", "unknown")] += 1
-
-            generated_windows[-1]["n_events"] = len(window_events)
-            generated_windows[-1]["n_people"] = len(window_people)
-            generated_windows[-1]["domain_counts"] = dict(domain_counts)
-
-            try:
-                current = current + timedelta(days=time_window_years * 365.25)
-            except TypeError:
-                current = current + time_window_years
-
+        generated_windows = [
+            {"start_time": start, "end_time": end, **window_counts(start, end, closed_end=index == len(edges) - 1)}
+            for index, (start, end) in enumerate(edges)
+        ]
         result_windows_list: list[Any] = list(generated_windows)
+        window_aggregates: list[Any] = list(generated_windows)
     else:
-        result_windows_list = list(time_windows) if time_windows is not None else []
+        result_windows_list = list(time_windows)
+        window_aggregates = [
+            {
+                "start_time": start,
+                "end_time": end,
+                **window_counts(start, end, closed_end=index == len(result_windows_list) - 1),
+            }
+            for index, (start, end) in enumerate(result_windows_list)
+        ]
 
     return {
         "time_windows": result_windows_list,
+        "window_aggregates": window_aggregates,
         "aggregates": {
             "total_events": total_events,
             "total_people": total_people,
@@ -356,15 +385,29 @@ def analyze_life_course_trajectories(
 ) -> Dict[str, Any]:
     """Analyze life course trajectories and their outcomes.
 
+    The outcome measures are simple counting indices on a 0-10 scale, not validated instruments:
+
+    * ``career_success``: ``min(10, 2 * number of job_start events)``
+    * ``health_outcomes``: ``max(0, 10 - number of health_event events)``
+    * ``social_stability``: ``min(10, max(0, relationship_start - relationship_end events))``
+
     Args:
         sequences: List of EventSequence objects
-        outcome_measures: Optional list of outcome measures to analyze
+        outcome_measures: Optional list of outcome measures to analyze; the three above are the default
 
     Returns:
         Dictionary with trajectory analysis results
+
+    Raises:
+        ValueError: If an outcome measure is not one of the three above (an unknown name used to be skipped
+            without a word, leaving it out of the result).
     """
+    supported_outcomes = ("career_success", "health_outcomes", "social_stability")
     if outcome_measures is None:
-        outcome_measures = ["career_success", "health_outcomes", "social_stability"]
+        outcome_measures = list(supported_outcomes)
+    unknown = [outcome for outcome in outcome_measures if outcome not in supported_outcomes]
+    if unknown:
+        raise ValueError(f"Unknown outcome measure(s) {unknown}; supported: {list(supported_outcomes)}")
 
     results: Dict[str, Any] = {
         "total_sequences": len(sequences),
@@ -398,14 +441,14 @@ def analyze_life_course_trajectories(
 
     results["trajectory_patterns"] = dict(trajectory_patterns)
 
-    # Analyze outcomes (simplified analysis)
+    # Analyze outcomes
     for outcome in outcome_measures:
         if outcome == "career_success":
             # Simple career success based on job events
             career_scores = []
             for sequence in sequences:
                 job_events = sequence.get_events_by_type("job_start")
-                career_score = min(10, len(job_events) * 2)  # More jobs = higher score (simplified)
+                career_score = min(10, len(job_events) * 2)  # two points per job started, capped at 10
                 career_scores.append(career_score)
 
             results["outcome_analysis"][outcome] = {
@@ -534,15 +577,40 @@ def identify_critical_periods(sequences: List[EventSequence], age_ranges: List[T
     return results
 
 
+def _poisson_forecast(n_observed: int, exposure_years: float, horizon_years: float) -> Dict[str, Any]:
+    """Forecast of the events in the next *horizon_years* from *n_observed* events in *exposure_years*.
+
+    Events are a Poisson process with an unknown rate. With Jeffreys' prior the rate's posterior is
+    ``Gamma(n + 1/2, exposure)``, so the count in the horizon follows a negative binomial with size ``n + 1/2``
+    and success probability ``exposure / (exposure + horizon)``. ``expected`` is the maximum-likelihood
+    extrapolation ``n / exposure * horizon`` and ``lower`` / ``upper`` are the 2.5% and 97.5% quantiles of the
+    predictive count (an equal-tailed 95% interval).
+    """
+    expected = n_observed / exposure_years * horizon_years
+    size = n_observed + 0.5
+    probability = exposure_years / (exposure_years + horizon_years)
+    quantiles = np.atleast_1d(scipy_stats.nbinom.ppf([0.025, 0.975], size, probability))
+    return {"expected": expected, "lower": int(quantiles[0]), "upper": int(quantiles[1])}
+
+
 def predict_life_course_outcomes(sequences: List[EventSequence], prediction_horizon: float = 5.0) -> Dict[str, Any]:
     """Predict future life course outcomes based on current trajectories.
+
+    Event timestamps are taken to be in days. For each person the rate of job starts, health events and social
+    events over the observed span (at least one year, so a short record does not extrapolate to an absurd rate)
+    is extrapolated linearly over ``prediction_horizon`` years. The count is truncated to a whole number, and the
+    uncertainty is a 95% Poisson-process predictive interval (see :func:`_poisson_forecast`) for the
+    additional events, reported in ``confidence_intervals`` as bounds on the total count (observed plus
+    additional).
 
     Args:
         sequences: List of EventSequence objects with historical data
         prediction_horizon: Years to predict into the future
 
     Returns:
-        Dictionary with outcome predictions
+        Dictionary with ``prediction_horizon``, ``outcome_predictions`` (keyed ``<person_id>_career``,
+        ``_health`` and ``_social``) and ``confidence_intervals`` (the same keys, each with ``predicted``,
+        ``lower_bound``, ``upper_bound`` and ``level``).
     """
     validation.validate_not_empty(sequences, "sequences")
     validation.validate_range(prediction_horizon, min_val=0.1, name="prediction_horizon")
@@ -553,70 +621,63 @@ def predict_life_course_outcomes(sequences: List[EventSequence], prediction_hori
         "confidence_intervals": {},
     }
 
-    # Simple prediction model based on current trajectory patterns
     predictions: Dict[str, Any] = {}
+    confidence_intervals: Dict[str, Any] = {}
+
+    def record(key: str, current: int, forecast: Dict[str, Any]) -> int:
+        predicted = int(forecast["expected"])
+        confidence_intervals[key] = {
+            "predicted": current + predicted,
+            "lower_bound": current + forecast["lower"],
+            "upper_bound": current + forecast["upper"],
+            "level": 0.95,
+        }
+        return predicted
 
     for sequence in sequences:
         person_id = sequence.person_id
+        exposure_years = max(1.0, sequence.duration / 365.25)
 
         # Predict career trajectory
         job_events = sequence.get_events_by_type("job_start")
-        career_growth_rate = len(job_events) / max(1, sequence.duration / 365.25)  # jobs per year
-
-        # Simple linear extrapolation
-        predicted_jobs = int(career_growth_rate * prediction_horizon)
-        predictions[f"{person_id}_career"] = {
+        key = f"{person_id}_career"
+        predicted_jobs = record(
+            key, len(job_events), _poisson_forecast(len(job_events), exposure_years, prediction_horizon)
+        )
+        predictions[key] = {
             "current_jobs": len(job_events),
             "predicted_additional_jobs": predicted_jobs,
-            "confidence": 0.7,  # Simplified confidence
+            "observed_years": exposure_years,
         }
 
         # Predict health trajectory
         health_events = sequence.get_events_by_type("health_event")
-        health_rate = len(health_events) / max(1, sequence.duration / 365.25)
-
-        predicted_health_events = int(health_rate * prediction_horizon)
-        predictions[f"{person_id}_health"] = {
+        key = f"{person_id}_health"
+        predicted_health_events = record(
+            key, len(health_events), _poisson_forecast(len(health_events), exposure_years, prediction_horizon)
+        )
+        predictions[key] = {
             "current_health_events": len(health_events),
             "predicted_health_events": predicted_health_events,
             "risk_level": (
                 "high" if predicted_health_events > 2 else "moderate" if predicted_health_events > 0 else "low"
             ),
+            "observed_years": exposure_years,
         }
 
         # Predict social trajectory
         social_events = sequence.get_events_by_type("social_event")
-        social_rate = len(social_events) / max(1, sequence.duration / 365.25)
-
-        predicted_social_events = int(social_rate * prediction_horizon)
-        predictions[f"{person_id}_social"] = {
+        key = f"{person_id}_social"
+        predicted_social_events = record(
+            key, len(social_events), _poisson_forecast(len(social_events), exposure_years, prediction_horizon)
+        )
+        predictions[key] = {
             "current_social_events": len(social_events),
             "predicted_social_events": predicted_social_events,
+            "observed_years": exposure_years,
         }
 
     results["outcome_predictions"] = predictions
-
-    # Calculate confidence intervals (simplified)
-    confidence_intervals = {}
-    for key, prediction in predictions.items():
-        if "predicted" in key:
-            base_value = prediction.get(
-                "current_jobs", prediction.get("current_health_events", prediction.get("current_social_events", 0))
-            )
-            predicted_value = prediction.get(
-                "predicted_additional_jobs",
-                prediction.get("predicted_health_events", prediction.get("predicted_social_events", 0)),
-            )
-            total = base_value + predicted_value
-
-            # Simple confidence interval
-            margin = int(total * 0.2)  # 20% margin
-            confidence_intervals[key] = {
-                "predicted": total,
-                "lower_bound": max(0, total - margin),
-                "upper_bound": total + margin,
-            }
-
     results["confidence_intervals"] = confidence_intervals
 
     return results

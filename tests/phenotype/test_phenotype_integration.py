@@ -5,6 +5,8 @@ REAL IMPLEMENTATION POLICY: All tests use real implementations.
 
 from __future__ import annotations
 
+import pytest
+
 from metainformant.phenotype.integration.cross_omic import (
     multi_phenotype_integration,
     phenotype_environment_interaction,
@@ -189,12 +191,14 @@ class TestPhenotypeEnvironmentInteraction:
         )
         assert result["model"] == "multiplicative"
 
-    def test_additive_model(self):
+    def test_additive_model_is_rejected(self):
+        # g + e is the sum of the two main effects and has no interaction term to test; it used to be
+        # correlated with the phenotype and reported as an "additive interaction" (see test_phenotype_r4_fixes.py)
         phenotypes = _make_phenotypes()
         genotypes = _make_genotypes()
         environment = {f"sample_{i}": float(i * 0.5) for i in range(20)}
-        result = phenotype_environment_interaction(phenotypes, genotypes, environment, interaction_model="additive")
-        assert result["model"] == "additive"
+        with pytest.raises(ValueError, match="additive"):
+            phenotype_environment_interaction(phenotypes, genotypes, environment, interaction_model="additive")
 
     def test_empty_input(self):
         result = phenotype_environment_interaction({}, {}, {})

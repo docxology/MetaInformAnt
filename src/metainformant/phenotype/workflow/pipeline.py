@@ -218,9 +218,11 @@ class PhenotypePipeline:
                 step_result = self._step_functions[step_name]()
                 outputs[step_name] = step_result
 
-                # Collect step warnings
+                # Collect step warnings and the errors a step recorded but survived (the other steps still run)
                 if isinstance(step_result, dict) and "warnings" in step_result:
                     all_warnings.extend(step_result["warnings"])
+                if isinstance(step_result, dict) and "errors" in step_result:
+                    all_errors.extend(step_result["errors"])
 
             except Exception as e:
                 error_msg = f"Step '{step_name}' failed: {str(e)}"
@@ -325,6 +327,7 @@ class PhenotypePipeline:
             return {"status": "skipped", "reason": "no_data"}
 
         results = {}
+        errors = []
         for ptype in self.config.phenotype_types:
             analyzer = self._get_analyzer(ptype)
             if analyzer:
@@ -332,10 +335,17 @@ class PhenotypePipeline:
                     result = analyzer(data, self.config.parameters.get(ptype, {}))
                     results[ptype] = result
                 except Exception as e:
+                    # Keep going so the other domains are analysed, but report the failure on the run: it used to
+                    # live only inside the results, leaving the run "successful" with no error recorded
                     results[ptype] = {"error": str(e)}
+                    errors.append(f"Analysis of '{ptype}' failed: {e}")
 
         self._state["results"] = results
-        return {"status": "analyzed", "domains": list(results.keys()), "results": results}
+        step_result: Dict[str, Any] = {"status": "analyzed", "domains": list(results.keys()), "results": results}
+        if errors:
+            step_result["status"] = "analyzed_with_errors"
+            step_result["errors"] = errors
+        return step_result
 
     def _step_summarize(self) -> Dict[str, Any]:
         """Generate summary statistics."""

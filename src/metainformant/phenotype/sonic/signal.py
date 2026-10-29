@@ -56,14 +56,21 @@ class AcousticSignal:
         return cls(waveform=waveform, sample_rate=sample_rate, metadata={"type": "tone", "frequency": frequency})
 
     def dominant_frequency(self) -> float:
-        """Dominant frequency using FFT (Hz)."""
-        if len(self.waveform) == 0:
+        """Dominant frequency using FFT (Hz).
+
+        The 0 Hz bin (the waveform's mean, i.e. a recording offset) is not a frequency of the sound and is left
+        out; with it in, any recording whose offset exceeds half the tone's amplitude reported a dominant
+        frequency of 0 Hz. A constant (or one-sample) waveform has no oscillation and returns 0.0.
+        """
+        if len(self.waveform) < 2:
             return 0.0
 
         spectrum = np.fft.rfft(self.waveform)
         frequencies = np.fft.rfftfreq(len(self.waveform), d=1 / self.sample_rate)
-        peak_idx = np.argmax(np.abs(spectrum))
-        return float(frequencies[peak_idx])
+        magnitudes = np.abs(spectrum[1:])
+        if magnitudes.size == 0 or float(np.max(magnitudes)) == 0.0:
+            return 0.0
+        return float(frequencies[1:][int(np.argmax(magnitudes))])
 
     def power_spectrum(self) -> Tuple[np.ndarray, np.ndarray]:
         """Compute power spectrum density.
