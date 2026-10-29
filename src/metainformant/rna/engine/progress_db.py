@@ -14,6 +14,7 @@ Sample state machine::
 
 from __future__ import annotations
 
+import os
 import sqlite3
 import threading
 import time
@@ -43,6 +44,28 @@ VALID_STATES = frozenset(
 EXCLUSION_REASON_CODES = frozenset({"permanent_drop", "re_download"})
 
 DEFAULT_DB_PATH = Path("output/amalgkit/pipeline_progress.db")
+
+
+def configured_progress_db_path(default: Path, configured: str | None) -> Path:
+    """Resolve an explicitly migrated progress store, refusing implicit creation.
+
+    An override must name an existing absolute regular file without symlinks or
+    lexical parent traversal. Migration and storage-root attestation belong to
+    the campaign operator; this helper never copies or initializes that store.
+    """
+    if configured is None:
+        return default
+    path = Path(configured)
+    if (
+        not configured
+        or not path.is_absolute()
+        or ".." in path.parts
+        or any(part.is_symlink() for part in (path, *path.parents))
+        or not path.is_file()
+        or path.resolve(strict=True) != path
+    ):
+        raise ValueError("Configured progress database must be an existing absolute nonsymlink file")
+    return path
 
 
 SAMPLE_ERROR_CLASSES: dict[str, str] = {
@@ -135,7 +158,12 @@ class ProgressDB:
         print(db.get_counts())
     """
 
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(self, db_path: Optional[Path] = None, *, journal_mode: str | None = None):
+        selected_mode = (
+            journal_mode if journal_mode is not None else os.environ.get("AMALGKIT_PROGRESS_DB_JOURNAL_MODE", "WAL")
+        )
+        if selected_mode not in {"WAL", "DELETE"}:
+            raise ValueError("Progress database journal mode must be WAL or DELETE")
         self.db_path = Path(db_path) if db_path else DEFAULT_DB_PATH
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
@@ -144,10 +172,23 @@ class ProgressDB:
             check_same_thread=False,
             isolation_level="DEFERRED",
         )
-        self._conn.execute("PRAGMA journal_mode=WAL")
-        self._conn.execute("PRAGMA busy_timeout=5000")
-        self._conn.executescript(_SCHEMA)
-        self._conn.commit()
+        try:
+            self._conn.execute("PRAGMA busy_timeout=5000")
+            actual_mode = self._conn.execute(f"PRAGMA journal_mode={selected_mode}").fetchone()
+            if actual_mode != (selected_mode.lower(),):
+                raise RuntimeError("Progress database journal mode was not applied")
+            if selected_mode == "DELETE":
+                self._conn.execute("PRAGMA synchronous=FULL")
+                self._conn.execute("PRAGMA mmap_size=0")
+                if self._conn.execute("PRAGMA synchronous").fetchone() != (2,) or self._conn.execute(
+                    "PRAGMA mmap_size"
+                ).fetchone() != (0,):
+                    raise RuntimeError("Progress database durable rollback policy was not applied")
+            self._conn.executescript(_SCHEMA)
+            self._conn.commit()
+        except BaseException:
+            self._conn.close()
+            raise
         logger.debug(f"ProgressDB opened at {self.db_path}")
 
     # ---- Write operations ----

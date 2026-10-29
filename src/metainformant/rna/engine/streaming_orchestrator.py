@@ -2069,6 +2069,10 @@ class StreamingPipelineOrchestrator:
     """Orchestrator for streaming ENA download -> Quant processing."""
 
     def __init__(self, config_dir: Path = CONFIG_DIR, log_dir: Path = LOG_DIR, db_path: Optional[Path] = None):
+        from metainformant.rna.engine.ehd_storage import capture_ehd_write_policy
+
+        # Validate every managed write root before logs or SQLite are opened.
+        self._ehd_write_policy = capture_ehd_write_policy(Path(config_dir), Path(log_dir), db_path)
         self.acquisition_slots = int(os.environ.get("AMALGKIT_PIPELINE_ACQUISITION_SLOTS", "0"))
         self.acquisition_queue_timeout_seconds = float(
             os.environ.get("AMALGKIT_PIPELINE_ACQUISITION_QUEUE_TIMEOUT_SECONDS", "7200")
@@ -2133,7 +2137,11 @@ class StreamingPipelineOrchestrator:
         # macOS reaches an emergency-full state.  On Linux/CI, a nonexistent
         # macOS path disables this host-specific guard without affecting the
         # external data-root throttle below.
-        self.system_root = Path(os.environ.get("AMALGKIT_SYSTEM_ROOT", "/System/Volumes/Data")).expanduser()
+        self.system_root = (
+            None
+            if self._ehd_write_policy is not None
+            else Path(os.environ.get("AMALGKIT_SYSTEM_ROOT", "/System/Volumes/Data")).expanduser()
+        )
         try:
             self.min_system_free_gb = max(
                 0.0,
@@ -2752,14 +2760,19 @@ class StreamingPipelineOrchestrator:
         if not semaphore.acquire(timeout=self.acquisition_queue_timeout_seconds):
             raise StagingDeadline("sample acquisition admission queue exhausted; inputs retained")
         try:
+            admitted_at = time.monotonic()
             logger.info(
                 "Acquisition admitted for %s after %.3f queue seconds; slots=%d",
                 srr_id,
-                time.monotonic() - queued_at,
+                admitted_at - queued_at,
                 self.acquisition_slots,
             )
             return self._download_fastq_admitted(
-                srr_id, out_dir, expected_paired, defer_ncbi_fallback=defer_ncbi_fallback
+                srr_id,
+                out_dir,
+                expected_paired,
+                defer_ncbi_fallback=defer_ncbi_fallback,
+                admitted_at=admitted_at,
             )
         finally:
             semaphore.release()
@@ -2771,6 +2784,7 @@ class StreamingPipelineOrchestrator:
         expected_paired: bool | None = None,
         *,
         defer_ncbi_fallback: bool = False,
+        admitted_at: float | None = None,
     ) -> bool | None:
         """Download FASTQ files using ENADownloader.
 
@@ -2789,7 +2803,12 @@ class StreamingPipelineOrchestrator:
             acquisition routes fail, or None when NCBI acquisition was
             deliberately deferred to the scheduler's dedicated fallback lane.
         """
-        deadline = time.monotonic() + self.download_first_pass_seconds if self.download_first_pass_seconds else None
+        # Admission logging consumes service time too; only the semaphore queue is excluded.
+        deadline = (
+            (admitted_at if admitted_at is not None else time.monotonic()) + self.download_first_pass_seconds
+            if self.download_first_pass_seconds
+            else None
+        )
         sample_dir = out_dir / srr_id
         guarded_acquisition = (
             self.local_ena_scratch_dir is not None or self.record_validation_required or deadline is not None
@@ -2892,7 +2911,9 @@ class StreamingPipelineOrchestrator:
             try:
                 external_free_gb = shutil.disk_usage(out_dir).free / (1024**3)
                 system_free_gb = None
-                if self.system_root.is_dir():
+                if self._ehd_write_policy is not None:
+                    self._ehd_write_policy.revalidate(out_dir)
+                if self.system_root is not None and self.system_root.is_dir():
                     system_free_gb = shutil.disk_usage(self.system_root).free / (1024**3)
                 system_low = system_free_gb is not None and system_free_gb < self.min_system_free_gb
                 if external_free_gb < self.min_external_free_gb or system_low:
@@ -2922,7 +2943,12 @@ class StreamingPipelineOrchestrator:
                 raise
             except Exception as e:
                 logger.error(f"Failed to check disk space: {e}")
-                if self.local_ena_scratch_dir is not None or self.record_validation_required or deadline is not None:
+                if (
+                    self._ehd_write_policy is not None
+                    or self.local_ena_scratch_dir is not None
+                    or self.record_validation_required
+                    or deadline is not None
+                ):
                     raise StagingError("acquisition capacity check failed; inputs retained") from e
                 break  # Proceed anyway if check fails
 

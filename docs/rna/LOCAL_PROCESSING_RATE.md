@@ -124,3 +124,95 @@ new completions after an admitted cutover before claiming a campaign gain.
 
 See [generic acquisition](GENERIC_ACQUISITION.md) for worker contracts and
 [RNA workflow validation](VALIDATION.md) for validation scope.
+# Opt-in HD-first storage
+
+The local launcher accepts `AMALGKIT_LOCAL_STORAGE_MODE=hd_first`. It disables
+SSD FASTQ, quant-workspace and fasterq scratch overrides, selecting the existing
+canonical bulk workspaces instead. Source, the operational progress database,
+small runtime caches and the optional index cache remain on GitVault.
+In continuous HD-first operation, temporary checkpoint restore verification also
+uses the bulk volume's `.checkpoint-verify` directory. Hash/reference validation
+and raw-reclamation ordering are unchanged; a symlinked restore workspace refuses.
+The default `ssd_compute` retains the previous staging behavior. Invalid modes
+refuse before cache directories or controls are created.
+
+Inspect effective configuration without creating directories or invoking tools:
+
+```bash
+AMALGKIT_LOCAL_STORAGE_MODE=hd_first \
+  bash output/hymenoptera_local_20261019/run.sh print-storage-profile
+```
+
+Supply the ordinary `AMALGKIT_DATA_ROOT` and `AMALGKIT_FROZEN_ROOT` bindings.
+This inspection is configuration only; it does not verify mounts, native
+qualification, available capacity, or deployment approval. No free-space floor,
+validation rule, quantification deadline, retry history or thread budget changes.
+An HD-first profile requires its own reviewed launch bindings before activation.
+Compare full representative samples with the same total CPU budget; fixture
+timing and high CPU usage do not establish higher validated completions/hour.
+The continuous CLI rejects malformed worker/slot/frontier arguments before
+loading the scientific dependency stack; valid invocations use the same engine.
+
+## EHD-only runtime data
+
+The opt-in `AMALGKIT_LOCAL_STORAGE_MODE=ehd_only` separates read-only software
+from RNA runtime data. `METAINFORMANT_ROOT` names the existing software checkout;
+`AMALGKIT_OPERATIONS_ROOT` names an existing, disjoint runtime directory below
+the mounted `AMALGKIT_DATA_NAMESPACE`. That namespace must be the volume's
+`Data` directory, with `AMALGKIT_DATA_VOLUME_UUID` matching the actual mounted,
+unlocked volume. Both Python prefixes remain on the distinct source volume.
+
+Supply existing Data paths for `AMALGKIT_DATA_ROOT`, `AMALGKIT_FROZEN_ROOT`,
+`AMALGKIT_CONFIG_DIR`, `AMALGKIT_PROGRESS_DB_PATH`, the source and toolchain
+manifests, and any size overlay. The runtime root contains the unchanged frozen
+envelope at `frozen/manifest.jsonl`. Progress policy must be `DELETE`; selecting
+this mode neither creates nor repairs a database. Qualified native software
+continues to use `AMALGKIT_RUNTIME_DIR` and `AMALGKIT_TOOLCHAIN_BIN` on the
+read-only source volume.
+
+The launcher places HOME, TMP, uv/XDG/Matplotlib/Numba caches and the index cache
+below the Data runtime root, clears scratch overrides, disables FASTQ staging
+and source bytecode writes, and refuses mismatched or symlinked roots before
+creating controls. Runtime receipts record both roots and the executing source
+program. Configuration inspection uses the existing `print-storage-profile`
+command and performs the EHD root checks without creating directories.
+
+The source-side `sample_rate.py` accepts `--source-root` independently of
+`--operations`. For EHD-only runtimes it requires `--stdout`; a separately
+reviewed operator owns receipt publication. It rechecks source and manifest
+bytes after sampling. The unchanged acquisition observer takes explicit Data
+operations, frozen manifest, selection and journal paths. Pathname growth
+remains a lower bound, without authenticated native-FD or network attribution.
+
+Host process collection uses `host_sample.py` outside the worker's file-write
+sandbox: macOS refuses the setuid process-query tool inside that sandbox.
+Supply the exact sampler and `/bin/ps` SHA-256 bindings using
+`--sampler-sha256` and `--ps-sha256`, together with `--operations`,
+`--source-root`, `--manifest` and the bounded `--seconds` window. The collector
+always requests stdout-only output, refuses Python file mutations and permits
+only the pinned process-query command. Its Python audit hook is a guard on
+reviewed code, not an OS sandbox for arbitrary native code. The operator owns
+the inherited stdout destination. Worker and artifact-writer write restrictions
+remain separate; moving host observation does not permit their writes outside
+the selected Data workspace.
+
+This mode preserves existing capacity guards, thread budgets, deadlines,
+validation, checkpoint identity and attempt history. It supplies no migration
+or launch authority. A deployment still requires source/profile/operator review,
+quiescence, raw database/sidecar preservation and private integrity/backup checks.
+Private native fixtures do not establish a representative full-sample thread
+optimum, hardware power-loss durability or repair of prior storage faults.
+
+
+### Acquisition startup dependencies
+
+RNA subpackages load on first access. Importing the campaign acquisition worker
+does not initialize analysis plots or platform font discovery. Existing public
+RNA module names and explicit analysis imports remain available. This controls
+startup overhead; it does not establish full-input throughput or optimal native
+thread counts.
+
+
+### Validated EHD capacity admission
+
+The opt-in `ehd_only` mode validates the mounted Data UUID, ordinary control/bulk/config/progress roots, both external Python prefixes, and every managed cache/temp/home/index/log path before the engine opens logs or SQLite. SSD scratch and FASTQ staging are refused. This mode checks the actual EHD output filesystem and retains at least256GiB of external headroom; it has no RNA admission dependency on unused internal free space. The production launcher must also apply its reviewed native write sandbox. Legacy SSD/HD-first modes keep their existing system-space guard. The EHD root identities and path environment are rechecked before acquisition; path redirection, changed declarations or capacity telemetry failure refuse without accepting inputs. This concerns managed RNA writes; macOS may independently use internal storage for its own services.

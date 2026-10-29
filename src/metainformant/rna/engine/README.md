@@ -7,6 +7,16 @@ the campaign preflight before any discovery or scheduling work.
 
 ## Components
 
+For a separately qualified local recovery, `AMALGKIT_PROGRESS_DB_PATH` may
+select an already migrated, existing absolute nonsymlink progress database.
+`AMALGKIT_PROGRESS_DB_JOURNAL_MODE=DELETE` selects rollback journaling with
+verified `synchronous=FULL` and `mmap_size=0`. The default remains WAL at the
+data root. Invalid modes and absent, relative or symlinked override paths
+refuse rather than initializing a replacement store. Operators must preserve
+the original database and WAL/SHM files, verify a complete native SQLite
+backup, and attest the new storage root before activation. This option
+changes operational progress storage, not quantification inputs or results.
+
 The opt-in local `acquisition_frontier.py` scheduler separates acquisition,
 recovery and quantification pools. `AMALGKIT_LOCAL_FRONTIER_SIZE=48` bounds
 planned plus admitted identities; `AMALGKIT_LOCAL_RAW_RESERVATION_BYTES` bounds
@@ -233,3 +243,17 @@ Frozen size weights can contain metadata fallbacks and do not subtract retained
 local inputs or resumable parts. Only a new phase can use a new ordering policy;
 never rewrite an active partition or discard its download progress.
 
+For strict ascending cross-species acquisition priority, select
+`AMALGKIT_LOCAL_ACQUISITION_ORDER=smallest_first`. This uses
+`plan_acquisition_order(..., global_size_order=True)`: positive frozen weights
+are globally sorted, ties use task identity, and nonpositive/unknown sizes come
+last. Checkpoint reuse remains interleaved. The launcher default stays
+`size_bands`; the explicit mode takes effect only in a new phase. Independent
+recovery pools, reservations and concurrent service can change start/completion
+order. Frozen weights are estimated total compressed sizes, not remaining
+network bytes; this policy does not alter validation, concurrency or deadlines.
+
+
+### Frozen size supplements
+
+Local bounded frontiers can fill zero estimated compressed FASTQ weights from an independently reviewed size supplement without changing the frozen task manifest, task IDs, references, metadata inputs, or checkpoint identity. Configure both AMALGKIT_LOCAL_SIZE_OVERLAY_PATH (an existing absolute nonsymlink file) and AMALGKIT_LOCAL_SIZE_OVERLAY_SHA256. The overlay binds the exact frozen manifest hash, preserves run/layout/reference identity, and requires positive per-mate byte counts and advertised MD5s from HTTPS ENA file URLs. It cannot replace positive frozen weights. Global ordering and raw reservation use the same immutable size map; actual download/FASTQ validation and service deadlines remain unchanged. Overlay file metadata is a planning estimate, not new validation of downloaded payloads. The runtime, active scope, frontier events, and worker result record its path/hash/count. Missing or conflicting configuration refuses rather than silently falling back.

@@ -3,6 +3,18 @@
 ## 🎯 Scope
 Current RNA/Amalgkit execution engine.
 
+`configured_progress_db_path(default, configured)` retains the default when
+unset and otherwise requires an existing absolute nonsymlink regular file
+without parent traversal. Acquisition workers use it for an explicit
+`AMALGKIT_PROGRESS_DB_PATH`; continuous runtime and scope receipts record the
+selected path and journal policy. `ProgressDB(..., journal_mode=...)` accepts
+only `WAL` or `DELETE`, defaulting to `AMALGKIT_PROGRESS_DB_JOURNAL_MODE` or WAL.
+Mode selection is validated before directory or database creation. DELETE
+must actually apply rollback journaling, FULL synchronization and zero page
+mmap; refusal closes the connection. Recovery migration belongs to a
+separately reviewed operator and must retain all schema, rows and original
+database sidecars. Changing the operational store does not reset attempts.
+
 The opt-in local frontier persists stage observations and bounds planned plus
 admitted identities separately from acquisition, extraction and quantification
 slots. Raw reservations use frozen compressed-size weights and are retained
@@ -152,7 +164,19 @@ Inputs are not mutated. Order is deterministic under input permutation.
 
 The local launcher defaults `AMALGKIT_LOCAL_ACQUISITION_ORDER` to `size_bands`;
 direct continuous invocation defaults to `species_fair`. Those are the only
-accepted values. Runtime and scope receipts record the policy. Selection is
+accepted legacy values. The explicit `smallest_first` mode sets
+`global_size_order=True`, creating one globally ascending acquisition lane
+with task-ID tie breaks and unknown/nonpositive weights last. Size bands and
+strict size order are mutually exclusive. Checkpoint verification remains
+interleaved without changing the acquisition subsequence's order. The weights
+are frozen total compressed estimates, not remaining wire bytes. This is a
+selection/admission priority; separate pools, capacity constraints and concurrent
+execution do not promise globally ordered starts or completions.
+Runtime and scope receipts record the policy. Selection is
 an operational scheduling priority, never a cohort filter, partial deletion,
 deadline reset, global completion barrier or promise of higher wire throughput.
 
+
+## Local size-overlay contract
+
+Schema metainformant.rna.size_overlay.v1 has exactly schema, frozen_manifest_sha256, and records. Each record has task_id, accession, expected_paired, reference_index_sha256, fastq_bytes, and files. Each file has name, url, bytes, and md5. Only zero frozen weights may be supplemented; all task IDs and records must match the hash-bound manifest, mate names/cardinality must match the declared layout, and file sizes must sum to a positive bounded integer total. The file must be absolute, regular, nonsymlink, at most 1 MiB, and unchanged during its pinned-hash read. Duplicate JSON keys/identities/files, foreign URLs, invalid checksums, missing mates, changed references, and partial path/hash configuration refuse. This optional POSIX local-frontier planning input does not mutate the manifest or alter quantification provenance, checkpoints, validation, deadlines, or scientific eligibility. Reservation release uses the originally admitted effective charge. Default behavior without an overlay is unchanged.

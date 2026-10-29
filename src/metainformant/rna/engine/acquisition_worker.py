@@ -33,6 +33,7 @@ from metainformant.rna.engine.acquisition_prerequisites import (
 from metainformant.rna.engine.acquisition_references import prepare_reference_inputs
 from metainformant.rna.engine.acquisition_sample import execute_manifest_task, reuse_manifest_quantification
 from metainformant.rna.engine.fastq_compression import compression_level
+from metainformant.rna.engine.progress_db import configured_progress_db_path
 from metainformant.rna.engine.streaming_orchestrator import (
     StreamingPipelineOrchestrator,
     _cached_sra_validation_result,
@@ -61,10 +62,15 @@ def _run_manifest_owned(
     """Run all manifest tasks with bounded idempotent concurrency."""
 
     snapshot, manifest_tasks = load_snapshot(manifest_path)
+    from metainformant.rna.engine.acquisition_size_overlay import configured_size_overlay
+
+    size_overlay = configured_size_overlay(manifest_path, manifest_tasks)
     frontier_size = int(os.environ.get("AMALGKIT_LOCAL_FRONTIER_SIZE", "0"))
     frontier_raw_bytes = int(os.environ.get("AMALGKIT_LOCAL_RAW_RESERVATION_BYTES", "0"))
     if not 0 <= frontier_size <= 256 or frontier_raw_bytes < 0:
         raise ValueError("invalid local frontier bounds")
+    if size_overlay.path is not None and not frontier_size:
+        raise ValueError("Size overlays require the bounded local acquisition frontier")
     if frontier_size and (
         not frontier_raw_bytes
         or os.environ.get("AMALGKIT_DURABLE_BUCKET")
@@ -136,7 +142,9 @@ def _run_manifest_owned(
     orchestrator = StreamingPipelineOrchestrator(
         config_dir=config_dir,
         log_dir=data_root / "logs",
-        db_path=data_root / "pipeline_progress.db",
+        db_path=configured_progress_db_path(
+            data_root / "pipeline_progress.db", os.environ.get("AMALGKIT_PROGRESS_DB_PATH")
+        ),
     )
     try:
         orchestrator._resource_profile = profile
@@ -307,6 +315,7 @@ def _run_manifest_owned(
                     handle.write(
                         json.dumps(
                             {
+                                **size_overlay.receipt(),
                                 "task_id": task["task_id"],
                                 "stage": stage,
                                 "at_epoch": time.time(),
@@ -340,6 +349,7 @@ def _run_manifest_owned(
                 should_stop=should_stop,
                 transition=transition,
                 reuse=lambda task: reuse_manifest_quantification(task, data_root, config_dir),
+                size_overrides=size_overlay.sizes,
             )
         else:
             lane_summary = run_acquisition_lanes(
@@ -360,6 +370,7 @@ def _run_manifest_owned(
         results.sort(key=lambda result: str(result.get("task_id", "")))
 
         summary = {
+            **size_overlay.receipt(),
             "schema": {
                 "metainformant.hymenoptera.gcp_snapshot.v1": "metainformant.hymenoptera.gcp_worker_result.v1",
                 "metainformant.rna.acquisition_snapshot.v1": "metainformant.rna.acquisition_result.v1",

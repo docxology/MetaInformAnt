@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import concurrent.futures
 from collections import deque
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from enum import StrEnum
 from typing import TypedDict, assert_never
 
 from metainformant.rna.engine.acquisition_lanes import AdmissionDecision, Result, Task
+from metainformant.rna.engine.acquisition_size_overlay import effective_fastq_bytes
 
 
 class Stage(StrEnum):
@@ -45,6 +46,7 @@ def run_acquisition_frontier(
     transition: Callable[[Task, str], None],
     should_stop: Callable[[], bool] | None = None,
     reuse: Callable[[Task], Result | None] | None = None,
+    size_overrides: Mapping[str, int] | None = None,
 ) -> FrontierSummary:
     if min(acquisition_slots, quant_slots, recovery_slots, max_in_flight, frontier_size, raw_bytes_limit) <= 0:
         raise ValueError("frontier capacities and raw reservation limit must be positive")
@@ -58,6 +60,7 @@ def run_acquisition_frontier(
     recovery: deque[Task] = deque()
     revalidate: deque[Task] = deque()
     live: dict[str, Task] = {}
+    reserved_weights: dict[str, int] = {}
     futures: dict[concurrent.futures.Future[Result], tuple[Task, Stage]] = {}
     reuse_probed: set[str] = set()
     reused_without_acquisition = 0
@@ -71,7 +74,7 @@ def run_acquisition_frontier(
         finished(task, result)
         transition(task, "checkpointed" if result.get("quantified") else "deferred_or_failed")
         del live[str(task["task_id"])]
-        reserved -= int(task["fastq_bytes"])
+        reserved -= reserved_weights.pop(str(task["task_id"]))
 
     def recover_result(task: Task) -> Result:
         return {"recovered": recover(task)}
@@ -119,7 +122,7 @@ def run_acquisition_frontier(
                 if available is None:
                     break
                 task = planned[available]
-                weight = int(task.get("fastq_bytes", 0))
+                weight = effective_fastq_bytes(task, size_overrides)
                 if weight <= 0 or weight > raw_bytes_limit:
                     del planned[available]
                     del planned_local[str(task["task_id"])]
@@ -146,6 +149,7 @@ def run_acquisition_frontier(
                     transition(task, "admission_refused")
                     continue
                 live[str(task["task_id"])] = task
+                reserved_weights[str(task["task_id"])] = weight
                 reserved += weight
                 peak_live = max(peak_live, len(live))
                 peak_raw = max(peak_raw, reserved)
@@ -161,7 +165,7 @@ def run_acquisition_frontier(
             if reuse is not None:
                 for task in tuple(planned):
                     identity = str(task["task_id"])
-                    weight = int(task.get("fastq_bytes", 0))
+                    weight = effective_fastq_bytes(task, size_overrides)
                     if stopped() or len(live) >= max_in_flight:
                         break
                     if (
@@ -185,6 +189,7 @@ def run_acquisition_frontier(
                     planned.remove(task)
                     del planned_local[identity]
                     live[identity] = task
+                    reserved_weights[identity] = weight
                     reserved += weight
                     peak_live = max(peak_live, len(live))
                     peak_raw = max(peak_raw, reserved)

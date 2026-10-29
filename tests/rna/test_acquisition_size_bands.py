@@ -155,7 +155,7 @@ def test_continuous_cli_refuses_unknown_order_before_control_writes(
         text=True,
     )
     assert completed.returncode != 0
-    assert "AMALGKIT_LOCAL_ACQUISITION_ORDER must be species_fair or size_bands" in completed.stderr
+    assert "AMALGKIT_LOCAL_ACQUISITION_ORDER must be species_fair, size_bands or smallest_first" in completed.stderr
     assert {str(path): path.read_bytes() if path.exists() else None for path in paths} == before
 
 
@@ -163,6 +163,17 @@ def test_continuous_cli_refuses_unknown_order_before_control_writes(
 def test_size_ordered_native_partition_executes_in_order_and_replays_without_rewrite(
     tmp_path: Path, native_acquisition_factory
 ) -> None:
+    _exercise_native_order_and_replay(tmp_path, native_acquisition_factory, strict=False)
+
+
+@pytest.mark.external_tool
+def test_global_smallest_first_native_partition_executes_and_replays_without_rewrite(
+    tmp_path: Path, native_acquisition_factory
+) -> None:
+    _exercise_native_order_and_replay(tmp_path, native_acquisition_factory, strict=True)
+
+
+def _exercise_native_order_and_replay(tmp_path: Path, native_acquisition_factory, *, strict: bool) -> None:
     fixture = native_acquisition_factory(accessions=("SRR125", "SRR123", "SRR124"))
     counts = {"SRR123": 20, "SRR124": 40, "SRR125": 90}
     raw = {}
@@ -196,7 +207,7 @@ def test_size_ordered_native_partition_executes_in_order_and_replays_without_rew
     for record in snapshot["input_files"]:
         record["sha256"] = sha256_file(tmp_path / record["path"])
     snapshot_path.write_text(json.dumps(snapshot))
-    ordered = plan_acquisition_order(tasks, [], global_size_bands=True)
+    ordered = plan_acquisition_order(tasks, [], global_size_bands=not strict, global_size_order=strict)
     assert ordered == [
         "test_species/SRR123",
         "test_species/SRR124",

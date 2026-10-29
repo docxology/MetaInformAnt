@@ -3,6 +3,7 @@ from __future__ import annotations
 import concurrent.futures
 import gzip
 import json
+import logging
 import threading
 import time
 from contextlib import ExitStack
@@ -304,3 +305,67 @@ def test_acquisition_queue_expiry_preserves_inputs_and_exception_releases_slot(
         owner._acquisition_semaphore.release()
     finally:
         owner.db.close()
+
+
+@pytest.mark.parametrize("budget", [1, 3])
+def test_admission_logging_consumes_first_pass_service_budget(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, budget: int
+) -> None:
+    monkeypatch.setenv("AMALGKIT_PIPELINE_ACQUISITION_SLOTS", "1")
+    caplog.set_level("INFO", logger="metainformant.rna.engine.streaming_orchestrator")
+    payload = gzip.compress(b"@r\nACGT\n+\n!!!!\n", mtime=0)
+    owner = build_owner(tmp_path, monkeypatch, staging=False, strict=True, budget=budget)
+    sample = tmp_path / "data/getfastq/SRR123"
+    sample.mkdir(parents=True)
+    partial = sample / "SRR123.fastq.gz.part"
+    partial.write_bytes(payload[:4])
+    before = partial.read_bytes(), partial.stat().st_ino, partial.stat().st_mtime_ns
+
+    class SlowAdmissionHandler(logging.Handler):
+        def __init__(self) -> None:
+            super().__init__()
+            self.admissions = 0
+
+        def emit(self, record: logging.LogRecord) -> None:
+            if str(record.msg).startswith("Acquisition admitted for"):
+                self.admissions += 1
+                time.sleep(1.25)
+
+    handler = SlowAdmissionHandler()
+    admission_log = logging.getLogger("metainformant.rna.engine.streaming_orchestrator")
+    admission_log.addHandler(handler)
+    started = time.monotonic()
+    requests: list = []
+    try:
+        with transfer_site({"SRR123.fastq.gz": payload}) as site:
+            requests = site.requests
+            monkeypatch.setenv("AMALGKIT_ENA_API_BASE_URL", site.base + "/api")
+            if budget == 1:
+                with pytest.raises((FirstPassDeferred, StagingDeadline), match="time budget"):
+                    owner.download_fastq("SRR123", sample.parent, False)
+                assert site.requests == []
+                assert (partial.read_bytes(), partial.stat().st_ino, partial.stat().st_mtime_ns) == before
+                assert not (sample / "SRR123.fastq.gz").exists()
+                assert not _raw_validation_marker(sample, "SRR123").exists()
+            else:
+                assert owner.download_fastq("SRR123", sample.parent, False) is True
+                assert (sample / "SRR123.fastq.gz").read_bytes() == payload
+                assert _raw_validation_marker(sample, "SRR123").is_file()
+                assert any(path == "/SRR123.fastq.gz" for _, path, _ in site.requests)
+            assert handler.admissions == 1
+    finally:
+        admission_log.removeHandler(handler)
+        owner.db.close()
+        (tmp_path / "admission-logging-control.json").write_text(
+            json.dumps(
+                {
+                    "budget": budget,
+                    "logging_delay": 1.25,
+                    "admissions": handler.admissions,
+                    "elapsed": time.monotonic() - started,
+                    "requests": requests,
+                    "partial_retained": partial.is_file() and partial.read_bytes() == before[0],
+                },
+                indent=2,
+            )
+        )
