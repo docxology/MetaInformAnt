@@ -273,7 +273,13 @@ def find_tf_binding_motifs(
 
 
 def _binomial_pvalue(k: int, n: int, p: float) -> float:
-    """Compute approximate binomial p-value using normal approximation.
+    """Exact one-sided binomial p-value (upper tail) ``P(X >= k)`` for ``X ~ Binomial(n, p)``.
+
+    Equals ``scipy.stats.binom.sf(k - 1, n, p)``. The probabilities are formed in log space; the terms fall off
+    geometrically past the mode, so the sum stops once they are negligible next to the largest one. An earlier
+    version used the normal approximation, which is far too small in the tail of a rare event (a 6-mer with an
+    expected frequency of 1/4096): 8 occurrences in 10 000 k-mers got 1.9e-4 for the exact 3.7e-3, so k-mers were
+    ranked and reported with p-values twenty times too small.
 
     Args:
         k: Number of successes.
@@ -281,21 +287,27 @@ def _binomial_pvalue(k: int, n: int, p: float) -> float:
         p: Expected probability.
 
     Returns:
-        Approximate one-sided p-value.
+        One-sided p-value, in [0, 1]. A probability outside (0, 1) gives 1.0 (no expectation to test against).
     """
     if n == 0 or p <= 0 or p >= 1:
         return 1.0
+    if k <= 0:
+        return 1.0
+    if k > n:
+        return 0.0
 
-    mean = n * p
-    variance = n * p * (1 - p)
-
-    if variance < 1e-15:
-        return 0.0 if k > mean else 1.0
-
-    z = (k - mean) / math.sqrt(variance)
-    # One-sided p-value (upper tail)
-    p_val = 0.5 * math.erfc(z / math.sqrt(2.0))
-    return max(0.0, min(1.0, p_val))
+    log_p, log_q = math.log(p), math.log1p(-p)
+    log_n_factorial = math.lgamma(n + 1)
+    mode = int((n + 1) * p)
+    log_terms: list[float] = []
+    peak = -math.inf
+    for x in range(k, n + 1):
+        term = log_n_factorial - math.lgamma(x + 1) - math.lgamma(n - x + 1) + x * log_p + (n - x) * log_q
+        log_terms.append(term)
+        peak = max(peak, term)
+        if x > mode and term < peak - 45.0:
+            break  # past the mode the terms only shrink: the rest is below 1e-19 of the sum
+    return min(1.0, math.exp(peak + math.log(math.fsum(math.exp(term - peak) for term in log_terms))))
 
 
 def _cluster_kmers(

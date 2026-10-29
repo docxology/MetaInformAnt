@@ -199,7 +199,7 @@ for module_id, proteins in modules.items():
         print(f"  {term['go_term']}: p={term['p_value']:.2e}")
 ```
 
-`detect_communities` uses Louvain when the optional `python-louvain` package is installed and falls back to greedy modularity otherwise (see [Community Detection](./community.md)). `functional_enrichment_ppi` returns `{function: {"count", "test_count", "background_count", "enrichment_ratio", "p_value", "proteins"}}`; it keeps functions seen at least `min_overlap` times in the module. `go.enrich_genes(genes, background, annotations, alpha=0.05, method="fisher")` returns a DataFrame with the columns `go_term`, `p_value`, `enrichment`, `observed`, `expected`, `term_size`, `query_size`, `bonferroni_p` and `significant` (`bonferroni_p <= alpha`); every tested term is returned, with its flag.
+`detect_communities` uses Louvain when the optional `python-louvain` package is installed and falls back to greedy modularity otherwise (see [Community Detection](./community.md)). `functional_enrichment_ppi` returns `{function: {"count", "test_count", "background_count", "enrichment_ratio", "p_value", "proteins"}}`; it keeps functions with at least `min_overlap` module proteins and an enrichment p-value no greater than `max_p_value` (default 0.05). Query and annotated protein counts are restricted to the declared background. `go.enrich_genes(genes, background, annotations, alpha=0.05, method="fisher")` returns a DataFrame with the columns `go_term`, `p_value`, `enrichment`, `observed`, `expected`, `term_size`, `query_size`, `bonferroni_p` and `significant` (`bonferroni_p <= alpha`); every tested term is returned, with its flag.
 
 ### Network Statistics
 

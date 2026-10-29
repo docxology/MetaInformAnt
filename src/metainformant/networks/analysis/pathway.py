@@ -49,6 +49,22 @@ def _benjamini_hochberg(p_values: List[float]) -> List[float]:
     return corrected_p_values
 
 
+def _check_correction(correction: Optional[str]) -> Optional[str]:
+    """Validate a multiple-testing correction name: ``'bonferroni'``, ``'fdr'`` or no correction.
+
+    ``None``, ``''`` and ``'none'`` mean no correction. Any other name raises: a name such as ``'holm'`` or ``'BH'``
+    used to be accepted and silently left the p-values uncorrected, under the heading "corrected".
+
+    Raises:
+        ValueError: If ``correction`` is none of those.
+    """
+    if not correction or correction == "none":
+        return None
+    if correction not in ("bonferroni", "fdr"):
+        raise ValueError(f"Unknown correction: {correction!r}. Use 'bonferroni', 'fdr' or None.")
+    return correction
+
+
 def _sample_odds_ratio(a: int, b: int, c: int, d: int) -> float:
     """Sample odds ratio ``(a * d) / (b * c)`` of the 2x2 table ``[[a, b], [c, d]]``.
 
@@ -109,7 +125,7 @@ def pathway_enrichment_analysis(
     background_genes: List[str],
     pathways: Dict[str, List[str]],
     method: str = "fisher",
-    correction: str = "bonferroni",
+    correction: str | None = "bonferroni",
     **kwargs: Any,
 ) -> List[Dict[str, Any]]:
     """Perform pathway enrichment analysis.
@@ -121,7 +137,7 @@ def pathway_enrichment_analysis(
             the background count toward a pathway)
         method: Statistical test method: 'fisher' (two-sided Fisher exact test)
             or 'hypergeometric' (upper tail, i.e. enrichment only)
-        correction: Multiple testing correction ('bonferroni', 'fdr')
+        correction: Multiple testing correction ('bonferroni', 'fdr', or None for none)
         **kwargs: Additional parameters
 
     Returns:
@@ -129,9 +145,11 @@ def pathway_enrichment_analysis(
 
     Raises:
         ImportError: If scipy not available
+        ValueError: If ``method`` or ``correction`` is not one of the supported names
     """
     if not HAS_SCIPY:
         raise ImportError("scipy required for statistical tests")
+    correction = _check_correction(correction)
 
     if not HAS_NETWORKX:
         raise ImportError("networkx required for pathway analysis")
@@ -203,7 +221,7 @@ def pathway_enrichment_analysis(
     elif correction == "fdr":
         corrected_p_values = _benjamini_hochberg(p_values)
     else:
-        corrected_p_values = p_values
+        corrected_p_values = p_values  # correction=None: nothing to correct
 
     # Add corrected p-values
     for result, corrected_p in zip(results, corrected_p_values):
@@ -855,7 +873,7 @@ def pathway_enrichment(
     pathway_network: PathwayNetwork,
     background_genes: Optional[List[str]] = None,
     method: str = "fisher",
-    correction: str = "bonferroni",
+    correction: str | None = "bonferroni",
     min_overlap: int = 1,
 ) -> Dict[str, Dict[str, Any]]:
     """Perform pathway enrichment analysis for a gene list against a pathway network.
@@ -875,10 +893,12 @@ def pathway_enrichment(
         including when only one pathway passes ``min_overlap``.
 
     Raises:
-        ValueError: If ``method`` is not 'fisher' or 'hypergeometric'.
+        ValueError: If ``method`` is not 'fisher' or 'hypergeometric', or ``correction`` is not 'bonferroni',
+            'fdr' or None.
     """
     if method not in ("fisher", "hypergeometric"):
         raise ValueError(f"Unknown method: {method}. Use 'fisher' or 'hypergeometric'.")
+    correction = _check_correction(correction)
 
     if not pathway_network.pathways:
         logger.warning("Empty pathway network")
@@ -968,10 +988,8 @@ def pathway_enrichment(
 
         if correction == "bonferroni":
             corrected_p_values = [min(p * len(results), 1.0) for p in p_values]
-        elif correction == "fdr":
-            corrected_p_values = _benjamini_hochberg(p_values)
         else:
-            corrected_p_values = p_values
+            corrected_p_values = _benjamini_hochberg(p_values)
 
         # Add corrected p-values to results
         for i, pathway_id in enumerate(results.keys()):

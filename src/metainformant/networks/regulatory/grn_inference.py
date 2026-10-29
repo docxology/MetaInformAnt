@@ -192,6 +192,31 @@ def _get_matrix_shape(matrix: Any) -> tuple[int, int]:
     return n_rows, n_cols
 
 
+def _resolve_tf_indices(tf_list: list[str] | None, gene_names: list[str]) -> list[int]:
+    """Row indices of the regulators: every gene when ``tf_list`` is ``None``, otherwise the listed genes.
+
+    Entries of ``tf_list`` that are not in ``gene_names`` are ignored (a genome-wide TF catalogue is routinely longer
+    than the measured genes) and repeated entries count once. An earlier version silently replaced a ``tf_list`` that
+    matched nothing (a misspelt or wrongly-cased catalogue, an empty list) with *all* genes, returning the full
+    all-against-all network where the caller had asked for a regulator-restricted one; repeated entries produced
+    duplicate edges.
+
+    Raises:
+        ValueError: If ``tf_list`` is given but none of its entries is a gene in ``gene_names``.
+    """
+    if tf_list is None:
+        return list(range(len(gene_names)))
+    gene_to_idx = {name: i for i, name in enumerate(gene_names)}
+    indices = list(dict.fromkeys(gene_to_idx[tf] for tf in tf_list if tf in gene_to_idx))
+    if not indices:
+        preview = ", ".join(repr(tf) for tf in list(tf_list)[:5]) or "an empty list"
+        raise ValueError(
+            f"none of the regulators in tf_list ({preview}) is in gene_names; pass tf_list=None to use every gene "
+            "as a potential regulator"
+        )
+    return indices
+
+
 def infer_grn_correlation(
     expression_matrix: Any,
     gene_names: list[str],
@@ -209,7 +234,10 @@ def infer_grn_correlation(
             a numpy array or list of lists.
         gene_names: List of gene names corresponding to matrix rows.
         tf_list: List of transcription factor gene names. If None, all genes
-            are considered potential regulators.
+            are considered potential regulators. Names that are not in
+            ``gene_names`` are ignored and repeated names count once; a list
+            that matches no gene raises ``ValueError`` instead of silently
+            widening to all genes.
         method: Correlation method, one of 'pearson' or 'spearman'.
         threshold: Minimum absolute correlation to include an edge.
 
@@ -222,8 +250,8 @@ def infer_grn_correlation(
             - adjacency_matrix: Correlation matrix as list of lists.
 
     Raises:
-        ValueError: If gene_names length does not match matrix rows or
-            method is not supported.
+        ValueError: If gene_names length does not match matrix rows, method
+            is not supported, or ``tf_list`` matches no gene.
     """
     n_genes, n_samples = _get_matrix_shape(expression_matrix)
 
@@ -242,16 +270,7 @@ def infer_grn_correlation(
     )
 
     data = _to_list_of_lists(expression_matrix, n_genes, n_samples)
-    gene_to_idx = {name: i for i, name in enumerate(gene_names)}
-
-    # Determine TF indices
-    if tf_list is not None:
-        tf_indices = [gene_to_idx[tf] for tf in tf_list if tf in gene_to_idx]
-        if not tf_indices:
-            logger.warning("No TFs found in gene_names, using all genes as TFs")
-            tf_indices = list(range(n_genes))
-    else:
-        tf_indices = list(range(n_genes))
+    tf_indices = _resolve_tf_indices(tf_list, gene_names)
 
     # Select correlation function
     if method == "pearson":
@@ -336,7 +355,10 @@ def infer_grn_mutual_info(
             a numpy array or list of lists.
         gene_names: List of gene names corresponding to matrix rows.
         tf_list: List of transcription factor gene names. If None, all genes
-            are considered potential regulators.
+            are considered potential regulators. Names that are not in
+            ``gene_names`` are ignored and repeated names count once; a list
+            that matches no gene raises ``ValueError`` instead of silently
+            widening to all genes.
         n_bins: Number of bins for mutual information discretization.
 
     Returns:
@@ -346,7 +368,8 @@ def infer_grn_mutual_info(
             - mi_matrix: Full mutual information matrix as list of lists.
 
     Raises:
-        ValueError: If gene_names length does not match matrix rows.
+        ValueError: If gene_names length does not match matrix rows or
+            ``tf_list`` matches no gene.
     """
     n_genes, n_samples = _get_matrix_shape(expression_matrix)
 
@@ -361,15 +384,7 @@ def infer_grn_mutual_info(
     )
 
     data = _to_list_of_lists(expression_matrix, n_genes, n_samples)
-    gene_to_idx = {name: i for i, name in enumerate(gene_names)}
-
-    # Determine TF indices
-    if tf_list is not None:
-        tf_indices = [gene_to_idx[tf] for tf in tf_list if tf in gene_to_idx]
-        if not tf_indices:
-            tf_indices = list(range(n_genes))
-    else:
-        tf_indices = list(range(n_genes))
+    tf_indices = _resolve_tf_indices(tf_list, gene_names)
 
     # Compute MI matrix
     mi_matrix: list[list[float]] = [[0.0] * n_genes for _ in range(n_genes)]
@@ -465,7 +480,10 @@ def infer_grn_regression(
             a numpy array or list of lists.
         gene_names: List of gene names corresponding to matrix rows.
         tf_list: List of transcription factor gene names. If None, all genes
-            are considered potential regulators.
+            are considered potential regulators. Names that are not in
+            ``gene_names`` are ignored and repeated names count once; a list
+            that matches no gene raises ``ValueError`` instead of silently
+            widening to all genes.
         method: Regression method, one of 'lasso' or 'ridge'.
         alpha: Regularization strength. Higher values produce sparser networks
             for lasso.
@@ -478,8 +496,8 @@ def infer_grn_regression(
             - r_squared_per_gene: Dict mapping gene name to R-squared value.
 
     Raises:
-        ValueError: If gene_names length does not match matrix rows or
-            method is not supported.
+        ValueError: If gene_names length does not match matrix rows, method
+            is not supported, or ``tf_list`` matches no gene.
     """
     n_genes, n_samples = _get_matrix_shape(expression_matrix)
 
@@ -498,15 +516,7 @@ def infer_grn_regression(
     )
 
     data = _to_list_of_lists(expression_matrix, n_genes, n_samples)
-    gene_to_idx = {name: i for i, name in enumerate(gene_names)}
-
-    # Determine TF indices
-    if tf_list is not None:
-        tf_indices = [gene_to_idx[tf] for tf in tf_list if tf in gene_to_idx]
-        if not tf_indices:
-            tf_indices = list(range(n_genes))
-    else:
-        tf_indices = list(range(n_genes))
+    tf_indices = _resolve_tf_indices(tf_list, gene_names)
 
     n_tfs = len(tf_indices)
 
@@ -650,8 +660,13 @@ def score_regulators(
     """Score transcription factors for enrichment of their targets in a gene set.
 
     For each TF in the GRN, computes how many of its targets overlap with the
-    given gene set, then performs a Fisher exact test (or hypergeometric
-    approximation) to assess significance.
+    given gene set, then tests the overlap with the exact one-sided (enrichment)
+    Fisher test, i.e. the hypergeometric upper tail.
+
+    The population of that test is the set of distinct targets in the GRN, and its successes are the gene-set
+    members that are in that population (matched case-insensitively). Gene-set members that the GRN never targets
+    cannot be drawn by any TF, so they are left out; counting them (and duplicate entries of ``gene_set``) made
+    every p-value too large.
 
     Args:
         grn: GRN dictionary as returned by infer_grn_* functions. Must contain
@@ -660,11 +675,13 @@ def score_regulators(
             genes).
 
     Returns:
-        Sorted list of dicts, each containing:
+        List of dicts sorted by ``enrichment_p``, each containing:
             - tf: Transcription factor name.
             - n_targets: Total number of targets for this TF.
             - n_in_set: Number of targets found in gene_set.
-            - enrichment_p: P-value for enrichment (Fisher exact test).
+            - enrichment_p: Exact one-sided Fisher p-value of observing at least ``n_in_set`` gene-set targets
+              among the ``n_targets``, in ``[0, 1]``. It is not rounded, so a strongly enriched TF keeps its tiny
+              p-value (rounding to 8 decimals reported 0.0 for anything below 5e-9).
             - regulation_score: Weighted regulation score.
 
     Raises:
@@ -690,7 +707,8 @@ def score_regulators(
             tf_scores[source] += abs(edge.get("weight", 1.0))
 
     total_targets = len(all_targets)
-    set_size = len(gene_set)
+    # Successes in the population: the gene-set members that some TF targets
+    set_size = sum(1 for target in all_targets if target.lower() in gene_set_lower)
 
     results: list[dict] = []
 
@@ -699,7 +717,7 @@ def score_regulators(
         targets_in_set = {t for t in targets if t.lower() in gene_set_lower}
         n_in_set = len(targets_in_set)
 
-        # Fisher exact test (hypergeometric) approximation
+        # Exact hypergeometric upper tail (one-sided Fisher test)
         enrichment_p = _hypergeometric_pvalue(n_in_set, n_targets, set_size, total_targets)
 
         # Regulation score: weighted by edge weights toward the gene set
@@ -710,7 +728,7 @@ def score_regulators(
                 "tf": tf,
                 "n_targets": n_targets,
                 "n_in_set": n_in_set,
-                "enrichment_p": round(enrichment_p, 8),
+                "enrichment_p": enrichment_p,
                 "regulation_score": round(regulation_score, 6),
             }
         )
@@ -727,42 +745,56 @@ def score_regulators(
     return results
 
 
-def _hypergeometric_pvalue(k: int, n: int, K: int, N: int) -> float:
-    """Compute hypergeometric p-value (probability of observing >= k successes).
+def _log_binomial(n: int, k: int) -> float:
+    """``log(C(n, k))`` for ``0 <= k <= n``, through ``lgamma`` so that huge binomials never overflow."""
+    return math.lgamma(n + 1) - math.lgamma(k + 1) - math.lgamma(n - k + 1)
 
-    Uses the approximation via the normal distribution for the hypergeometric
-    when scipy is not available.
+
+def _hypergeometric_pvalue(k: int, n: int, K: int, N: int) -> float:
+    """Exact upper tail ``P(X >= k)`` of ``X ~ Hypergeometric(N, K, n)``.
+
+    This is the p-value of the one-sided (``alternative="greater"``) Fisher exact test of the 2x2 table
+    ``[[k, n - k], [K - k, N - K - n + k]]`` and equals ``scipy.stats.hypergeom.sf(k - 1, N, K, n)``. Every
+    probability mass ``C(K, x) C(N - K, n - x) / C(N, n)`` of the tail is formed in log space (``lgamma``) and the
+    tail is summed after factoring out its largest term, so no binomial overflows and a tiny tail keeps its relative
+    precision (about 1e-10 for a population of 20 000). SciPy is not needed and the result does not depend on whether
+    it is installed. The result only underflows to 0.0 when the true p-value is below about 5e-324.
+
+    An earlier version fell back to a normal approximation without SciPy. That approximation is poor exactly where
+    enrichment is tested: small counts and a small gene set in a large population.
 
     Args:
         k: Number of successes observed.
         n: Number of draws (TF targets).
-        K: Total successes in population (gene set size).
+        K: Total successes in population (gene-set members among the targets).
         N: Population size (total targets).
 
     Returns:
-        P-value for enrichment.
+        P-value for enrichment, in [0, 1]. ``k <= 0`` gives 1.0, and a ``k`` larger than ``min(n, K)`` (more
+        successes than there are draws or successes) is an impossible event with probability 0.0.
+
+    Raises:
+        ValueError: If the arguments do not describe a draw from a population (``K`` or ``n`` negative or larger
+            than ``N``). A call used to return 1.0 for what is an invalid population (for example a gene set larger
+            than the target universe, where SciPy returns NaN that was then clamped to 1.0).
     """
-    if N == 0 or n == 0 or K == 0:
-        return 1.0
+    if N < 0 or not 0 <= K <= N or not 0 <= n <= N:
+        raise ValueError(
+            f"inconsistent hypergeometric parameters: population N={N}, successes K={K}, draws n={n} "
+            "(need 0 <= K <= N and 0 <= n <= N)"
+        )
+    lowest_possible = max(0, n + K - N)
+    highest_possible = min(K, n)
+    if k <= lowest_possible:
+        return 1.0  # every possible outcome is at least k
+    if k > highest_possible:
+        return 0.0  # more successes than a draw can hold
 
-    if HAS_SCIPY:
-        # Use scipy's hypergeometric survival function
-        from scipy.stats import hypergeom
-
-        pval = float(hypergeom.sf(k - 1, N, K, n))
-        return max(0.0, min(1.0, pval))
-
-    # Normal approximation to hypergeometric
-    expected = n * K / N
-    variance = n * K * (N - K) * (N - n) / (N * N * max(N - 1, 1))
-
-    if variance < 1e-15:
-        return 0.0 if k > expected else 1.0
-
-    z = (k - expected) / math.sqrt(variance)
-    # One-sided p-value from normal approximation
-    p = 0.5 * math.erfc(z / math.sqrt(2.0))
-    return max(0.0, min(1.0, p))
+    log_total = _log_binomial(N, n)
+    log_terms = [_log_binomial(K, x) + _log_binomial(N - K, n - x) - log_total for x in range(k, highest_possible + 1)]
+    peak = max(log_terms)
+    log_tail = peak + math.log(math.fsum(math.exp(term - peak) for term in log_terms))
+    return min(1.0, math.exp(log_tail))
 
 
 def compute_network_motifs(
@@ -775,7 +807,10 @@ def compute_network_motifs(
     Identifies and counts recurring small subgraph patterns (motifs) such as
     feed-forward loops (FFLs), mutual regulation pairs, and regulatory
     cascades. Compares observed counts against a randomized ensemble to
-    compute z-scores.
+    compute z-scores. Motifs span two or three distinct nodes, so
+    autoregulation (self-loops) and repeated edges are not counted; a z-score
+    is ``+inf`` / ``-inf`` when the randomized counts never vary and the
+    observed count differs from them.
 
     Args:
         edges: List of edge dicts with 'source' and 'target' keys.
@@ -798,67 +833,15 @@ def compute_network_motifs(
 
     logger.info("Computing network motifs of size %d from %d edges", motif_size, len(edges))
 
-    # Build adjacency set
-    adj: dict[str, set[str]] = defaultdict(set)
     nodes: set[str] = set()
     for edge in edges:
-        s, t = edge["source"], edge["target"]
-        adj[s].add(t)
-        nodes.add(s)
-        nodes.add(t)
-
+        nodes.add(edge["source"])
+        nodes.add(edge["target"])
     node_list = sorted(nodes)
-    motif_counts: dict[str, int] = {}
 
-    if motif_size == 2:
-        # Two-node motifs
-        mutual_regulation = 0
-        for a in node_list:
-            for b in adj[a]:
-                if a < b and a in adj[b]:
-                    mutual_regulation += 1
-
-        # Count non-mutual single regulations properly
-        total_directed = sum(len(targets) for targets in adj.values())
-        single_regulation = total_directed - 2 * mutual_regulation
-
-        motif_counts = {
-            "mutual_regulation": mutual_regulation,
-            "single_regulation": single_regulation,
-        }
-
-    elif motif_size == 3:
-        # Three-node motifs
-        feed_forward_loop = 0  # A->B, A->C, B->C
-        cascade = 0  # A->B->C (no A->C)
-        three_chain = 0  # A->B, C->B (co-regulation)
-
-        for a in node_list:
-            for b in adj[a]:
-                for c in adj[b]:
-                    if c == a:
-                        continue
-                    if c in adj[a]:
-                        # A->B, B->C, A->C => feed-forward loop
-                        feed_forward_loop += 1
-                    else:
-                        # A->B, B->C, no A->C => cascade
-                        cascade += 1
-
-        # Co-regulation: count pairs of TFs regulating the same target
-        target_regulators: dict[str, list[str]] = defaultdict(list)
-        for edge in edges:
-            target_regulators[edge["target"]].append(edge["source"])
-
-        for target, regulators in target_regulators.items():
-            if len(regulators) >= 2:
-                three_chain += len(regulators) * (len(regulators) - 1) // 2
-
-        motif_counts = {
-            "feed_forward_loop": feed_forward_loop,
-            "cascade": cascade,
-            "co_regulation": three_chain,
-        }
+    # The observed network and every randomized one are counted by the same function, so a motif means the same
+    # thing on both sides of the z-score.
+    motif_counts = _count_motifs_fast(edges, motif_size, node_list)
 
     # Compute z-scores via edge randomization
     n_random = 100
@@ -877,15 +860,7 @@ def compute_network_motifs(
         for k in motif_counts:
             random_counts[k].append(random_result.get(k, 0))
 
-    z_scores: dict[str, float] = {}
-    for k, observed in motif_counts.items():
-        vals = random_counts[k]
-        mean_val = sum(vals) / len(vals) if vals else 0.0
-        std_val = math.sqrt(sum((v - mean_val) ** 2 for v in vals) / max(len(vals) - 1, 1))
-        if std_val > 1e-15:
-            z_scores[k] = round((observed - mean_val) / std_val, 4)
-        else:
-            z_scores[k] = 0.0
+    z_scores = _motif_z_scores(motif_counts, random_counts)
 
     significant_motifs = [k for k, z in z_scores.items() if abs(z) > 2.0]
 
@@ -902,12 +877,38 @@ def compute_network_motifs(
     }
 
 
+def _motif_z_scores(motif_counts: dict[str, int], random_counts: dict[str, list[int]]) -> dict[str, float]:
+    """z-score of each observed motif count against its randomized counts.
+
+    When the randomized counts do not vary at all the z-score is undefined: it is 0.0 if the observed count equals
+    them, and ``+inf`` / ``-inf`` if it is above / below them (infinitely many standard deviations away). It used to
+    be 0.0 whatever the observed count was, which hid a motif that never occurs in the random ensemble.
+    """
+    z_scores: dict[str, float] = {}
+    for motif, observed in motif_counts.items():
+        values = random_counts[motif]
+        mean_val = sum(values) / len(values) if values else 0.0
+        std_val = math.sqrt(sum((v - mean_val) ** 2 for v in values) / max(len(values) - 1, 1))
+        if std_val > 1e-15:
+            z_scores[motif] = round((observed - mean_val) / std_val, 4)
+        elif observed == mean_val:
+            z_scores[motif] = 0.0
+        else:
+            z_scores[motif] = math.copysign(math.inf, observed - mean_val)
+    return z_scores
+
+
 def _count_motifs_fast(edges: list[dict], motif_size: int, node_list: list[str]) -> dict[str, int]:
-    """Fast motif counting helper for randomized networks.
+    """Count 2- or 3-node regulatory motifs of a directed edge list.
+
+    Autoregulation (a self-loop) belongs to no motif of two or three distinct nodes and is ignored: counting it made
+    ``A->A, A->B`` contain a feed-forward loop on two nodes, and a network with every TF autoregulated report 7
+    feed-forward loops where there is 1. Repeated edges count once, and co-regulation counts the pairs of
+    *distinct* regulators of each target.
 
     Args:
         edges: List of edge dicts with 'source' and 'target'.
-        motif_size: Size of motifs to count.
+        motif_size: Size of motifs to count (2 or 3).
         node_list: Sorted list of node names.
 
     Returns:
@@ -915,12 +916,13 @@ def _count_motifs_fast(edges: list[dict], motif_size: int, node_list: list[str])
     """
     adj: dict[str, set[str]] = defaultdict(set)
     for edge in edges:
-        adj[edge["source"]].add(edge["target"])
+        if edge["source"] != edge["target"]:
+            adj[edge["source"]].add(edge["target"])
 
     if motif_size == 2:
         mutual = 0
         for a in node_list:
-            for b in adj[a]:
+            for b in adj.get(a, set()):
                 if a < b and a in adj.get(b, set()):
                     mutual += 1
         total_directed = sum(len(t) for t in adj.values())
@@ -929,11 +931,11 @@ def _count_motifs_fast(edges: list[dict], motif_size: int, node_list: list[str])
             "single_regulation": total_directed - 2 * mutual,
         }
 
-    # Size 3
-    ffl = 0
-    cascade = 0
+    # Size 3: a, b, c are distinct because there are no self-loops and c == a is skipped
+    ffl = 0  # A->B, B->C, A->C
+    cascade = 0  # A->B, B->C, no A->C
     for a in node_list:
-        for b in adj[a]:
+        for b in adj.get(a, set()):
             for c in adj.get(b, set()):
                 if c == a:
                     continue
@@ -942,11 +944,11 @@ def _count_motifs_fast(edges: list[dict], motif_size: int, node_list: list[str])
                 else:
                     cascade += 1
 
-    target_regs: dict[str, int] = defaultdict(int)
-    for edge in edges:
-        target_regs[edge["target"]] += 1
-
-    co_reg = sum(n * (n - 1) // 2 for n in target_regs.values() if n >= 2)
+    regulators: dict[str, set[str]] = defaultdict(set)
+    for source, targets in adj.items():
+        for target in targets:
+            regulators[target].add(source)
+    co_reg = sum(len(r) * (len(r) - 1) // 2 for r in regulators.values())
 
     return {
         "feed_forward_loop": ffl,
@@ -1058,11 +1060,34 @@ def validate_grn(
     return result
 
 
+def _score_groups(scored: list[tuple[float, bool]]) -> list[tuple[int, int]]:
+    """``(positives, negatives)`` for each distinct score, from the highest score to the lowest.
+
+    Items with the same score cannot be ranked against each other, so a curve may only move from one distinct score
+    to the next. Walking the items one at a time instead let the order of tied items decide the area: the candidate
+    edges come out of a ``set`` of string pairs, whose iteration order changes with ``PYTHONHASHSEED``, so an
+    unweighted prediction (every predicted edge scoring 1.0, every other edge 0.0) got a different AUROC and AUPRC
+    from one run to the next.
+    """
+    groups: list[tuple[int, int]] = []
+    previous_score: float | None = None
+    for score, is_positive in sorted(scored, key=lambda item: item[0], reverse=True):
+        if previous_score is None or score != previous_score:
+            groups.append((0, 0))
+            previous_score = score
+        positives, negatives = groups[-1]
+        groups[-1] = (positives + int(is_positive), negatives + int(not is_positive))
+    return groups
+
+
 def _compute_auroc(scored: list[tuple[float, bool]]) -> float:
-    """Compute AUROC from scored predictions.
+    """Compute AUROC from scored predictions, ties handled exactly.
+
+    The ROC curve moves from one distinct score to the next along a straight segment, so tied positives and
+    negatives count half, as in the Mann-Whitney statistic.
 
     Args:
-        scored: List of (score, is_positive) tuples sorted by score descending.
+        scored: List of (score, is_positive) tuples.
 
     Returns:
         Area under ROC curve.
@@ -1079,11 +1104,9 @@ def _compute_auroc(scored: list[tuple[float, bool]]) -> float:
     fp = 0
     auc = 0.0
 
-    for _, is_pos in scored:
-        if is_pos:
-            tp += 1
-        else:
-            fp += 1
+    for group_pos, group_neg in _score_groups(scored):
+        tp += group_pos
+        fp += group_neg
 
         tpr = tp / n_pos
         fpr = fp / n_neg
@@ -1097,10 +1120,14 @@ def _compute_auroc(scored: list[tuple[float, bool]]) -> float:
 
 
 def _compute_auprc(scored: list[tuple[float, bool]]) -> float:
-    """Compute AUPRC from scored predictions.
+    """Compute AUPRC (average precision) from scored predictions, ties handled exactly.
+
+    Precision and recall are evaluated once per distinct score, after all items with that score are counted, so the
+    result is the step-wise average precision ``sum((R_n - R_{n-1}) * P_n)`` of scikit-learn's
+    ``average_precision_score`` and does not depend on the order of tied items.
 
     Args:
-        scored: List of (score, is_positive) tuples sorted by score descending.
+        scored: List of (score, is_positive) tuples.
 
     Returns:
         Area under precision-recall curve.
@@ -1114,16 +1141,13 @@ def _compute_auprc(scored: list[tuple[float, bool]]) -> float:
     auprc = 0.0
     prev_recall = 0.0
 
-    for _, is_pos in scored:
-        if is_pos:
-            tp += 1
-        else:
-            fp += 1
+    for group_pos, group_neg in _score_groups(scored):
+        tp += group_pos
+        fp += group_neg
 
         precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
         recall = tp / n_pos
 
-        # Trapezoidal area
         auprc += (recall - prev_recall) * precision
         prev_recall = recall
 

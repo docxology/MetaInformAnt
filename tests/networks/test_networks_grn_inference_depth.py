@@ -177,11 +177,10 @@ class TestInferGrnCorrelation:
         result = infer_grn_correlation(matrix, names, tf_list=["GENE0"], threshold=0.4)
         assert all(e["source"] == "GENE0" for e in result["edges"])
 
-    def test_tf_list_with_unknown_gene_falls_back(self) -> None:
+    def test_tf_list_that_matches_nothing_raises_instead_of_widening_to_all_genes(self) -> None:
         matrix, names = _make_expression()
-        # TF list that matches nothing -> falls back to all genes
-        result = infer_grn_correlation(matrix, names, tf_list=["NOT_A_GENE"], threshold=0.9)
-        assert result["n_edges"] >= 0
+        with pytest.raises(ValueError, match="tf_list"):
+            infer_grn_correlation(matrix, names, tf_list=["NOT_A_GENE"], threshold=0.9)
 
     def test_gene_name_length_mismatch_raises(self) -> None:
         matrix, names = _make_expression()
@@ -329,10 +328,18 @@ class TestHypergeometricPvalue:
         p = _hypergeometric_pvalue(k=30, n=30, K=50, N=200)
         assert p < 0.001
 
-    def test_degenerate_cases_return_one(self) -> None:
-        assert _hypergeometric_pvalue(k=5, n=0, K=10, N=100) == 1.0
-        assert _hypergeometric_pvalue(k=5, n=10, K=0, N=100) == 1.0
-        assert _hypergeometric_pvalue(k=5, n=10, K=10, N=0) == 1.0
+    def test_degenerate_cases_are_exact_not_fabricated(self) -> None:
+        # No draws, no successes, or an empty population: observing nothing is certain, observing something
+        # is impossible. Neither is the "1.0" the function used to answer for every zero.
+        assert _hypergeometric_pvalue(k=0, n=0, K=10, N=100) == 1.0
+        assert _hypergeometric_pvalue(k=0, n=10, K=0, N=100) == 1.0
+        assert _hypergeometric_pvalue(k=0, n=0, K=0, N=0) == 1.0
+        assert _hypergeometric_pvalue(k=5, n=0, K=10, N=100) == 0.0
+        assert _hypergeometric_pvalue(k=5, n=10, K=0, N=100) == 0.0
+
+    def test_successes_larger_than_the_population_raise(self) -> None:
+        with pytest.raises(ValueError, match="inconsistent hypergeometric parameters"):
+            _hypergeometric_pvalue(k=5, n=10, K=10, N=0)
 
     def test_bounded_in_unit_interval(self) -> None:
         for k in (0, 5, 10, 20):

@@ -433,12 +433,14 @@ class TestFunctionalEnrichment:
 
     def test_kinase_enrichment(self) -> None:
         net = self._annotated_network()
-        results = functional_enrichment_ppi(["K1", "K2", "K3"], net, min_overlap=2)
+        # all three kinases drawn from five proteins: P(X >= 3) = 1 / C(5, 3) = 0.1, above the default 0.05
+        assert functional_enrichment_ppi(["K1", "K2", "K3"], net, min_overlap=2) == {}
+        results = functional_enrichment_ppi(["K1", "K2", "K3"], net, min_overlap=2, max_p_value=0.1)
         assert "kinase" in results
         k = results["kinase"]
         assert k["count"] == 3
-        assert k["enrichment_ratio"] > 1.0
-        assert 0.0 <= k["p_value"] <= 1.0
+        assert k["enrichment_ratio"] == pytest.approx((3 / 3) / (3 / 5))
+        assert k["p_value"] == pytest.approx(0.1)
 
     def test_min_overlap_filters(self) -> None:
         net = self._annotated_network()
@@ -460,8 +462,10 @@ class TestFunctionalEnrichment:
         net.add_protein_metadata("B", function="strand")
         net.add_protein_metadata("C", function="other")
         net.add_protein_metadata("D", function="other")
-        results = functional_enrichment_ppi(["A", "B"], net, min_overlap=2)
+        # both "strand" proteins drawn from four: P(X >= 2) = 1/6, so it is reported only when max_p_value allows it
+        results = functional_enrichment_ppi(["A", "B"], net, min_overlap=2, max_p_value=0.2)
         assert "strand" in results
+        assert results["strand"]["p_value"] == pytest.approx(1 / 6)
 
 
 class TestPredictInteractions:

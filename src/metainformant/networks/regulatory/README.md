@@ -39,6 +39,21 @@ hits = motif_analysis.scan_sequence_for_motifs(sequence, motif_library)
 
 `compute_network_motifs` draws its randomised networks from a generator of its own: `random_state` is an integer seed or a `random.Random`, the same seed gives the same z-scores, and the global `random` state is neither seeded nor consumed (`None` draws fresh entropy).
 
+## Behaviour notes
+
+- `tf_list` of `infer_grn_correlation`, `infer_grn_mutual_info` and `infer_grn_regression` restricts the regulators. Names
+  that are not genes of the matrix are ignored and repeated names count once, but a list that matches no gene raises
+  `ValueError`; it never widens silently to every gene.
+- `score_regulators()` reports `enrichment_p`, the exact one-sided Fisher p-value (hypergeometric upper tail, summed in
+  log space, with or without SciPy). Its population is the set of distinct targets in the GRN and its successes are the
+  gene-set members among them; gene-set entries the GRN never targets, and duplicates, are not counted. The p-value is
+  not rounded.
+- `compute_network_motifs()` counts motifs of two or three distinct nodes: autoregulation (self-loops) and repeated edges
+  are ignored, and a z-score is `+inf` / `-inf` when the randomised counts never vary and the observed count differs.
+- `validate_grn()` evaluates its curves once per distinct score, so `auroc` (ties count half, as in the Mann-Whitney
+  statistic) and `auprc` (step-wise average precision) do not depend on the order of tied edges or on `PYTHONHASHSEED`.
+- `find_tf_binding_motifs()` ranks k-mers by the exact binomial upper tail of their count under the expected frequency.
+
 ## Related inference functions
 
 `infer_grn()` and `infer_regulatory_network_from_expression()` live in `metainformant.networks.interaction.regulatory_analysis`, next to `GeneRegulatoryNetwork` (see [`../interaction/`](../interaction/)):

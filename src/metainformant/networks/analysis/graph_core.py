@@ -430,10 +430,14 @@ def add_edges_from_dataframe(
         source_column: Column containing source node identifiers
         target_column: Column containing target node identifiers
         attribute_columns: Columns to use as edge attributes
-        directed: Whether edges are directed
+        directed: Set to True to assert that the edges are directed. The edges go into ``graph`` as that graph holds
+            them (a DiGraph keeps their direction, a Graph does not), so ``directed=True`` with an undirected
+            graph is an error. (The flag used to be ignored: edges meant to be directed were silently stored as
+            undirected ones.)
 
     Raises:
         ImportError: If networkx or pandas not available
+        ValueError: If ``df`` is not a DataFrame, or ``directed=True`` is combined with an undirected graph
     """
     if not HAS_NETWORKX:
         raise ImportError("networkx required for edge addition")
@@ -442,6 +446,8 @@ def add_edges_from_dataframe(
 
     if not isinstance(df, pd.DataFrame):
         raise ValueError("df must be a pandas DataFrame")
+    if directed and not graph.is_directed():
+        raise ValueError("directed=True needs a directed graph (nx.DiGraph); this graph stores edges undirected")
 
     edges_to_add: list[tuple[Any, ...]] = []
     for _, row in df.iterrows():

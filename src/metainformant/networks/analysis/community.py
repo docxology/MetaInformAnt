@@ -284,11 +284,12 @@ def _louvain_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
 def greedy_modularity_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
     """Detect communities using greedy modularity optimization.
 
-    This is NetworkX's built-in greedy modularity algorithm.
+    This is NetworkX's built-in greedy modularity algorithm. It is deterministic: a ``random_state`` / ``seed`` option
+    is accepted (like any option NetworkX does not know) and has no effect.
 
     Args:
         graph: NetworkX graph
-        **kwargs: Additional parameters
+        **kwargs: Additional parameters (``weight``, ``resolution``, ``cutoff``, ``best_n``)
 
     Returns:
         List of community lists
@@ -318,10 +319,22 @@ def greedy_modularity_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
     return community_lists
 
 
+def _drop_seed(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    """Remove ``random_state`` / ``seed`` from the options of a deterministic algorithm.
+
+    ``detect_communities`` and ``community_stability`` hand one seed to whichever method they run. A deterministic
+    method has no use for it, but must not choke on it: the resulting ``TypeError`` used to be caught by
+    ``detect_communities``, which then silently ran greedy modularity instead of the requested method.
+    """
+    return {key: value for key, value in kwargs.items() if key not in ("random_state", "seed")}
+
+
 def girvan_newman_communities(graph: Any, n_communities: Optional[int] = None, **kwargs: Any) -> List[List[str]]:
     """Detect communities using Girvan-Newman algorithm.
 
-    This algorithm progressively removes edges with highest betweenness centrality.
+    This algorithm progressively removes edges with highest betweenness centrality. It is deterministic, so a
+    ``random_state`` / ``seed`` option is accepted (for a uniform interface with the stochastic methods) and has no
+    effect.
 
     Args:
         graph: NetworkX graph
@@ -337,6 +350,7 @@ def girvan_newman_communities(graph: Any, n_communities: Optional[int] = None, *
     if not HAS_NETWORKX:
         raise ImportError("networkx required for community detection")
 
+    kwargs = _drop_seed(kwargs)
     graph = _as_networkx_graph(graph)
 
     # Make a copy to avoid modifying original
@@ -365,7 +379,9 @@ def label_propagation_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
     """Detect communities using label propagation algorithm.
 
     This algorithm assigns labels to nodes and iteratively updates them
-    based on the majority label of neighbors.
+    based on the majority label of neighbors. NetworkX's semi-synchronous variant used here is deterministic, so a
+    ``random_state`` / ``seed`` option is accepted (for a uniform interface) and has no effect; use
+    ``asyn_lpa_communities`` for the stochastic asynchronous variant.
 
     Args:
         graph: NetworkX graph
@@ -380,6 +396,7 @@ def label_propagation_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
     if not HAS_NETWORKX:
         raise ImportError("networkx required for community detection")
 
+    kwargs = _drop_seed(kwargs)
     graph = _as_networkx_graph(graph)
     trivial = _trivial_partition(graph)
     if trivial is not None:
@@ -394,12 +411,15 @@ def label_propagation_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
     return community_lists
 
 
-def asyn_lpa_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
+def asyn_lpa_communities(graph: Any, random_state: Optional[int] = None, **kwargs: Any) -> List[List[str]]:
     """Detect communities using asynchronous label propagation.
 
     Args:
         graph: NetworkX graph
-        **kwargs: Additional parameters
+        random_state: Seed for the random update order (NetworkX's ``seed``); the same seed gives the same partition
+            and the global random state is untouched. ``None`` draws fresh entropy. An explicit ``seed`` option is
+            accepted too.
+        **kwargs: Additional parameters (``weight``, ``seed``)
 
     Returns:
         List of community lists
@@ -410,6 +430,8 @@ def asyn_lpa_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
     if not HAS_NETWORKX:
         raise ImportError("networkx required for community detection")
 
+    if random_state is not None:
+        kwargs.setdefault("seed", random_state)
     graph = _as_networkx_graph(graph)
     trivial = _trivial_partition(graph)
     if trivial is not None:
@@ -424,13 +446,16 @@ def asyn_lpa_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
     return community_lists
 
 
-def fluid_communities(graph: Any, k: int, **kwargs: Any) -> List[List[str]]:
+def fluid_communities(graph: Any, k: int, random_state: Optional[int] = None, **kwargs: Any) -> List[List[str]]:
     """Detect communities using the fluid communities algorithm.
 
     Args:
         graph: NetworkX graph
         k: Number of communities to find
-        **kwargs: Additional parameters
+        random_state: Seed for the random initial communities and update order (NetworkX's ``seed``); the same seed
+            gives the same partition and the global random state is untouched. ``None`` draws fresh entropy. An
+            explicit ``seed`` option is accepted too.
+        **kwargs: Additional parameters (``max_iter``, ``seed``)
 
     Returns:
         List of community lists
@@ -441,6 +466,8 @@ def fluid_communities(graph: Any, k: int, **kwargs: Any) -> List[List[str]]:
     if not HAS_NETWORKX:
         raise ImportError("networkx required for community detection")
 
+    if random_state is not None:
+        kwargs.setdefault("seed", random_state)
     graph = _as_networkx_graph(graph)
     if graph.number_of_nodes() == 0:
         return []
@@ -695,26 +722,68 @@ def hierarchical_communities(
     return hierarchies
 
 
+def _contingency_table(labels1: List[Any], labels2: List[Any]) -> Any:
+    """Counts of nodes per (label in the first assignment, label in the second) pair."""
+    _, first = np.unique(np.asarray(labels1), return_inverse=True)
+    _, second = np.unique(np.asarray(labels2), return_inverse=True)
+    table = np.zeros((int(first.max()) + 1, int(second.max()) + 1), dtype=np.int64)
+    np.add.at(table, (first.ravel(), second.ravel()), 1)
+    return table
+
+
+def _adjusted_rand_index(table: Any) -> float:
+    """Adjusted Rand index of a contingency table (the pair-counting form scikit-learn uses)."""
+    n_samples = int(table.sum())
+    row_sums = table.sum(axis=1)
+    column_sums = table.sum(axis=0)
+    sum_squares = int((table.astype(object) ** 2).sum())
+    # Pair counts (ordered pairs, as scikit-learn's pair confusion matrix): together in both, apart in both, ...
+    tp = sum_squares - n_samples
+    fp = int((table.astype(object) @ column_sums.astype(object)).sum()) - sum_squares
+    fn = int((table.T.astype(object) @ row_sums.astype(object)).sum()) - sum_squares
+    tn = n_samples**2 - fp - fn - sum_squares
+    if fn == 0 and fp == 0:
+        return 1.0  # identical partitions (also covers the empty and the single-community cases)
+    return 2.0 * (tp * tn - fn * fp) / ((tp + fn) * (fn + tn) + (tp + fp) * (fp + tn))
+
+
+def _normalized_mutual_information(table: Any) -> float:
+    """Mutual information of a contingency table over the arithmetic mean of the two entropies."""
+    n_samples = float(table.sum())
+    row_sums = table.sum(axis=1).astype(float)
+    column_sums = table.sum(axis=0).astype(float)
+    if len(row_sums) == 1 and len(column_sums) == 1:
+        return 1.0  # both assignments put everything in one community
+    rows, columns = np.nonzero(table)
+    counts = table[rows, columns].astype(float)
+    mutual = float(np.sum(counts / n_samples * np.log(counts * n_samples / (row_sums[rows] * column_sums[columns]))))
+    if mutual <= 0.0:
+        return 0.0
+    entropy_rows = -float(np.sum(row_sums / n_samples * np.log(row_sums / n_samples)))
+    entropy_columns = -float(np.sum(column_sums / n_samples * np.log(column_sums / n_samples)))
+    return float(min(1.0, mutual / ((entropy_rows + entropy_columns) / 2.0)))
+
+
 def compare_communities(communities1: Dict[str, int], communities2: Dict[str, int]) -> Dict[str, float]:
-    """Compare two node-to-community assignments."""
+    """Compare two node-to-community assignments on the nodes they share.
+
+    Returns the normalized mutual information (arithmetic-mean normalisation) and the adjusted Rand index. Both are
+    computed exactly from the contingency table of the two assignments, so they do not depend on the community
+    numbering: the same partition under different labels scores 1.0. (An earlier version fell back to the fraction
+    of nodes with equal labels, reported as both measures, whenever scikit-learn raised, which scores a relabelled
+    copy of a partition 0.0.)
+    """
     common_nodes = sorted(set(communities1) & set(communities2))
     if not common_nodes:
         return {"normalized_mutual_information": 0.0, "adjusted_rand_index": 0.0}
 
-    labels1 = [communities1[node] for node in common_nodes]
-    labels2 = [communities2[node] for node in common_nodes]
-
-    try:
-        from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
-
-        nmi = float(normalized_mutual_info_score(labels1, labels2))
-        ari = float(adjusted_rand_score(labels1, labels2))
-    except Exception:
-        matches = sum(a == b for a, b in zip(labels1, labels2))
-        nmi = matches / len(common_nodes)
-        ari = nmi
-
-    return {"normalized_mutual_information": nmi, "adjusted_rand_index": ari}
+    table = _contingency_table(
+        [communities1[node] for node in common_nodes], [communities2[node] for node in common_nodes]
+    )
+    return {
+        "normalized_mutual_information": _normalized_mutual_information(table),
+        "adjusted_rand_index": _adjusted_rand_index(table),
+    }
 
 
 def community_stability(
@@ -790,15 +859,23 @@ def optimize_resolution(
 def modularity(graph: Any, communities: List[List[str]] | Dict[str, int]) -> float:
     """Calculate modularity of community partitioning.
 
+    Uses NetworkX's modularity (edge weights included). Names in ``communities`` that are not nodes of the graph are
+    ignored, and nodes of the graph that no community lists are counted as singleton communities, so a partial
+    assignment gets the modularity of the partition it implies. An empty assignment, or a graph without edges,
+    gives 0.0.
+
     Args:
         graph: NetworkX graph
-        communities: List of community lists
+        communities: List of community lists, or a node -> community id mapping
 
     Returns:
         Modularity score (-1 to 1)
 
     Raises:
         ImportError: If networkx not available
+        networkx.NetworkXError: (``NotAPartition``) If a node is listed in more than one community. An earlier
+            version answered such overlapping lists, and any other input NetworkX rejects, with an unweighted
+            edge-count formula instead of an error.
     """
     if not HAS_NETWORKX:
         raise ImportError("networkx required for modularity calculation")
@@ -808,25 +885,9 @@ def modularity(graph: Any, communities: List[List[str]] | Dict[str, int]) -> flo
     if not community_lists or graph.number_of_edges() == 0:
         return 0.0
 
-    try:
-        return float(nx.algorithms.community.modularity(graph, community_lists))
-    except Exception:
-        # Fallback: simple modularity approximation
-        # This is a simplified calculation for cases where NetworkX fails
-        total_edges = graph.number_of_edges()
-        if total_edges == 0:
-            return 0.0
-
-        modularity = 0.0
-        for community in community_lists:
-            subgraph = graph.subgraph(community)
-            community_edges = subgraph.number_of_edges()
-            expected_edges = sum(graph.degree(node) for node in community) ** 2 / (4 * total_edges)
-
-            if expected_edges > 0:
-                modularity += (community_edges - expected_edges) / total_edges
-
-        return modularity
+    listed = {node for community in community_lists for node in community}
+    community_lists = community_lists + [[node] for node in graph.nodes() if node not in listed]
+    return float(nx.algorithms.community.modularity(graph, community_lists))
 
 
 def community_metrics(graph: Any, communities: List[List[str]]) -> Dict[str, Any]:

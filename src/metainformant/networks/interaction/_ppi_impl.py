@@ -11,6 +11,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
 
 from metainformant.core import io
 from metainformant.core.utils import logging
+from metainformant.networks.analysis.pathway import _hypergeometric_upper_tail
 
 logger = logging.get_logger(__name__)
 
@@ -474,12 +475,15 @@ def ppi_network_enrichment(
     if not HAS_NETWORKX:
         raise ImportError("networkx required for PPI enrichment")
 
+    in_network = set(ppi_graph.nodes())
     if background_proteins is None:
-        background_proteins = list(ppi_graph.nodes())
+        background_proteins = list(in_network)
 
-    # Filter to proteins in network
-    test_proteins = [p for p in protein_list if p in ppi_graph.nodes()]
-    background_proteins = [p for p in background_proteins if p in ppi_graph.nodes()]
+    # Filter to proteins in the network; the tested proteins are drawn from the background, so those outside it
+    # cannot be part of the draw
+    background_proteins = [p for p in dict.fromkeys(background_proteins) if p in in_network]
+    background_set = set(background_proteins)
+    test_proteins = [p for p in dict.fromkeys(protein_list) if p in background_set]
 
     if not test_proteins:
         return {"error": "No test proteins found in PPI network"}
@@ -488,11 +492,12 @@ def ppi_network_enrichment(
     test_subgraph = ppi_graph.subgraph(test_proteins)
     observed_interactions = len(test_subgraph.edges())
 
-    # Expected interactions under random model
+    # Expected interactions under random model: the density of the background network (the interactions among
+    # background proteins, not every edge of the graph) applied to the pairs of the test set
     n_test = len(test_proteins)
     n_background = len(background_proteins)
     total_possible_interactions = n_background * (n_background - 1) / 2
-    observed_background_interactions = len(ppi_graph.edges())
+    observed_background_interactions = ppi_graph.subgraph(background_proteins).number_of_edges()
 
     expected_interactions = (
         observed_background_interactions * (n_test * (n_test - 1) / 2) / total_possible_interactions
@@ -503,12 +508,12 @@ def ppi_network_enrichment(
     # Calculate enrichment statistics
     enrichment_ratio = observed_interactions / expected_interactions if expected_interactions > 0 else 1.0
 
-    # Statistical significance (approximate)
+    # Statistical significance (approximate): Poisson upper tail P(X >= observed). The survival function is used
+    # rather than 1 - cdf, which cancels to exactly 0.0 for every p-value below about 1e-16.
     try:
         import scipy.stats as stats
 
-        # Use Poisson approximation for large numbers
-        p_value = 1 - stats.poisson.cdf(observed_interactions - 1, expected_interactions)
+        p_value = float(stats.poisson.sf(observed_interactions - 1, expected_interactions))
     except ImportError:
         p_value = None
 
@@ -1225,95 +1230,91 @@ def functional_enrichment_ppi(
 ) -> Dict[str, Dict[str, Any]]:
     """Perform functional enrichment analysis on a protein list using PPI network.
 
+    For every annotation found under ``function_key`` the test asks whether the protein list holds more annotated
+    proteins than a random draw of the same size from the background would. The p-value is the exact upper tail of
+    the hypergeometric distribution (the one-sided Fisher exact test): ``P(X >= count)`` where ``X`` is the number of
+    annotated proteins in ``n`` draws from ``N`` distinct background proteins of which ``K`` carry the annotation.
+    ``n`` is the number of distinct proteins of ``protein_list`` that are in the background; proteins outside the
+    background cannot be drawn from it and are left out of the test (a warning says how many). Duplicates in either
+    list count once.
+
     Args:
         protein_list: List of proteins to test for enrichment
         ppi_network: ProteinNetwork instance with functional annotations
-        function_key: Key in protein annotations containing functional categories
+        function_key: Key in protein annotations containing functional categories (a string, or an iterable of
+            strings for proteins with several annotations; a missing or ``None`` value means no annotation)
         background_proteins: Background protein set (default: all proteins in network)
-        min_overlap: Minimum overlap for enrichment consideration
-        max_p_value: Maximum p-value for significant enrichment
+        min_overlap: Minimum number of test proteins (inside the background) carrying an annotation for it to be
+            tested
+        max_p_value: Largest p-value that is reported. Annotations with a larger p-value are dropped, including
+            every depleted annotation; pass ``1.0`` to see every tested annotation. (An earlier version also
+            reported anything with ``enrichment_ratio >= 1``, which made this threshold a no-op.)
 
     Returns:
-        Dictionary mapping functions to enrichment statistics
+        Dictionary mapping each reported annotation to ``count`` (test proteins carrying it), ``test_count`` (the
+        same number), ``background_count`` (``K``), ``enrichment_ratio`` (``(count / n) / (K / N)``), ``p_value``
+        and ``proteins`` (the test proteins carrying it).
     """
-    import math
     from collections import defaultdict
+    from collections.abc import Iterable
 
     if background_proteins is None:
         background_proteins = list(ppi_network.graph.nodes())
 
-    # Get functional annotations for background
-    background_functions = defaultdict(list)
-    for protein in background_proteins:
-        node_data = ppi_network.get_protein_metadata(protein)
-        if function_key in node_data:
-            functions = node_data[function_key]
-            if isinstance(functions, str):
-                functions = [functions]
-            for func in functions:
-                background_functions[func].append(protein)
+    background = list(dict.fromkeys(background_proteins))  # distinct, in input order
+    background_set = set(background)
+    distinct_test = list(dict.fromkeys(protein_list))
+    test_proteins = [protein for protein in distinct_test if protein in background_set]
+    if len(test_proteins) < len(distinct_test):
+        logger.warning(
+            "%d of the %d distinct test proteins are not in the background and were left out of the enrichment test",
+            len(distinct_test) - len(test_proteins),
+            len(distinct_test),
+        )
 
-    # Get functional annotations for test set
-    test_functions = defaultdict(list)
-    for protein in protein_list:
-        node_data = ppi_network.get_protein_metadata(protein)
-        if function_key in node_data:
-            functions = node_data[function_key]
-            if isinstance(functions, str):
-                functions = [functions]
-            for func in functions:
-                test_functions[func].append(protein)
+    def annotations_of(protein: str) -> list[str]:
+        value = ppi_network.get_protein_metadata(protein).get(function_key)
+        if value is None:
+            return []
+        if isinstance(value, str) or not isinstance(value, Iterable):
+            return [value]
+        return list(dict.fromkeys(value))
 
-    # Calculate enrichment for each function
-    enrichment_results = {}
+    # Annotated proteins of the background (K for each annotation) and of the test set
+    background_functions: dict[Any, set[str]] = defaultdict(set)
+    for protein in background:
+        for func in annotations_of(protein):
+            background_functions[func].add(protein)
 
-    for func in test_functions:
-        if func not in background_functions:
+    test_functions: dict[Any, list[str]] = defaultdict(list)
+    for protein in test_proteins:
+        for func in annotations_of(protein):
+            test_functions[func].append(protein)
+
+    population = len(background)  # N
+    draws = len(test_proteins)  # n
+    enrichment_results: Dict[str, Dict[str, Any]] = {}
+
+    for func, annotated_test_proteins in test_functions.items():
+        overlap = len(annotated_test_proteins)
+        if overlap < min_overlap:
             continue
 
-        # Count overlaps
-        test_count = len(set(test_functions[func]))
-        background_count = len(set(background_functions[func]))
+        successes = len(background_functions[func])  # K; every test protein is in the background, so K >= overlap
 
-        if test_count < min_overlap:
+        # P(X >= overlap), X ~ Hypergeometric(N, K, n): exact, in integer arithmetic (math.comb cannot overflow)
+        p_value = _hypergeometric_upper_tail(overlap, population, successes, draws)
+        if p_value > max_p_value:
             continue
 
-        # Calculate enrichment statistics
-        overlap = len(set(test_functions[func]) & set(background_functions[func]))
-
-        # Hypergeometric test
-        # P(X >= overlap) where X ~ Hypergeometric(N, K, n)
-        # N = total background proteins
-        # K = proteins with this function in background
-        # n = test set size
-        N = len(background_proteins)
-        K = background_count
-        n = len(protein_list)
-
-        if K >= overlap and n >= overlap and N >= K and N >= n:
-            # Calculate p-value using hypergeometric distribution
-            p_value = 0.0
-            for k in range(overlap, min(K, n) + 1):
-                # P(X = k) = C(K,k) * C(N-K, n-k) / C(N,n)
-                try:
-                    p_k = (math.comb(K, k) * math.comb(N - K, n - k)) / math.comb(N, n)
-                    p_value += p_k
-                except (ValueError, OverflowError):
-                    # Fallback for large numbers
-                    p_value = 1e-10  # Very significant
-                    break
-
-            enrichment_ratio = (overlap / n) / (K / N) if (K / N) > 0 else float("inf")
-
-            if p_value <= max_p_value or enrichment_ratio >= 1.0:
-                enrichment_results[func] = {
-                    "count": overlap,
-                    "test_count": test_count,
-                    "background_count": background_count,
-                    "enrichment_ratio": enrichment_ratio,
-                    "p_value": p_value,
-                    "proteins": test_functions[func],
-                }
+        enrichment_results[func] = {
+            "count": overlap,
+            "test_count": overlap,
+            "background_count": successes,
+            "enrichment_ratio": (overlap / draws) / (successes / population),
+            "p_value": p_value,
+            "proteins": annotated_test_proteins,
+        }
 
     return enrichment_results
 

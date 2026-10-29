@@ -411,8 +411,14 @@ class TestFunctionalEnrichmentPPI:
         """Test enrichment analysis for protein complexes."""
         test_proteins = ["A1", "A2", "B1", "B2"]  # Two complexes represented
 
+        # Two proteins of each complex in a draw of four from six: P(X >= 2) = 6/15 = 0.4, not significant, so the
+        # default max_p_value=0.05 drops both; max_p_value=1.0 reports every tested annotation.
+        assert (
+            functional_enrichment_ppi(protein_list=test_proteins, ppi_network=self.ppi_network, function_key="complex")
+            == {}
+        )
         enrichment_results = functional_enrichment_ppi(
-            protein_list=test_proteins, ppi_network=self.ppi_network, function_key="complex"
+            protein_list=test_proteins, ppi_network=self.ppi_network, function_key="complex", max_p_value=1.0
         )
 
         # Should detect enrichment for both complexes
@@ -425,6 +431,7 @@ class TestFunctionalEnrichmentPPI:
             if complex_name in ["BRCA1_complex", "cyclin_complex"]:
                 assert result["count"] >= 2
                 assert result["enrichment_ratio"] >= 1.0
+                assert result["p_value"] == pytest.approx(0.4)
 
     def test_functional_enrichment_no_annotation(self):
         """Test enrichment when proteins lack functional annotations."""

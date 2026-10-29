@@ -1,8 +1,12 @@
 """Network analysis workflow orchestration.
 
 Provides a high-level workflow interface for running multi-step network
-analyses combining graph construction, community detection, pathway
-enrichment, and PPI analysis.
+analyses combining graph construction, community detection, network metrics
+and pathway enrichment. The workflow has no PPI or GRN step: no step reads the
+``ppi`` and ``grn`` sections of ``NetworkWorkflowConfig`` (nor ``network.weighted``,
+``network.max_nodes``, ``network.random_seed``, ``community.max_levels`` or
+``pathway.max_p_value``); pass the equivalent arguments to the functions in
+``networks.interaction`` and ``networks.regulatory`` directly.
 """
 
 from __future__ import annotations
@@ -14,6 +18,11 @@ from metainformant.core.utils import logging
 from metainformant.networks.config.config import NetworkWorkflowConfig
 
 logger = logging.get_logger(__name__)
+
+# Community detection methods that take a modularity resolution, and the keyword in which each one takes a target
+# number of communities
+_RESOLUTION_METHODS = frozenset({"louvain", "leiden", "greedy"})
+_N_COMMUNITIES_OPTION = {"fluid": "k", "girvan_newman": "n_communities"}
 
 
 class NetworkWorkflow:
@@ -99,15 +108,31 @@ class NetworkWorkflow:
         network = self.results["network"]
         cfg = self.config.community
 
+        # The configured seed reaches every stochastic method (Louvain, Leiden, asynchronous label propagation,
+        # fluid communities); deterministic ones ignore it. It used to be read by nothing.
+        seed_kwargs = {"random_state": cfg.random_state} if cfg.random_state is not None else {}
+
         if cfg.compare_methods:
-            comparison = compare_community_methods(network.graph, methods=cfg.methods_to_compare)
+            comparison = compare_community_methods(network.graph, methods=cfg.methods_to_compare, **seed_kwargs)
             self.results["community_comparison"] = comparison
         else:
-            kwargs = {}
+            kwargs: Dict[str, Any] = dict(seed_kwargs)
+            # Options a method does not take used to reach it anyway; ``detect_communities`` then caught the
+            # TypeError and silently ran greedy modularity, so the configured method and setting were both ignored.
             if cfg.resolution != 1.0:
+                if cfg.method not in _RESOLUTION_METHODS:
+                    raise ValueError(
+                        f"community.resolution={cfg.resolution} is not supported by method {cfg.method!r}; "
+                        f"use one of {sorted(_RESOLUTION_METHODS)} or leave the resolution at 1.0"
+                    )
                 kwargs["resolution"] = cfg.resolution
             if cfg.n_communities is not None:
-                kwargs["k"] = cfg.n_communities
+                if cfg.method not in _N_COMMUNITIES_OPTION:
+                    raise ValueError(
+                        f"community.n_communities={cfg.n_communities} is not supported by method {cfg.method!r}; "
+                        f"use one of {sorted(_N_COMMUNITIES_OPTION)} or leave it unset"
+                    )
+                kwargs[_N_COMMUNITIES_OPTION[cfg.method]] = cfg.n_communities
 
             communities = detect_communities(network.graph, method=cfg.method, **kwargs)
             self.results["communities"] = communities

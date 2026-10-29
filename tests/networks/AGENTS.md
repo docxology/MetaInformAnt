@@ -1,15 +1,19 @@
 # AGENTS.md — `MetaInformAnt/tests/networks/`
 
 tests for the networks module.
-Files (verified 2026-10-27): `__init__.py`, `test_community_fallback_kwargs.py`, `test_graph_algorithms.py`,
-`test_information_flow.py`, `test_louvain_global_state.py`, `test_network_summary_fallback.py`,
-`test_networks_community.py`, `test_networks_community_detection.py`, `test_networks_comprehensive.py`,
-`test_networks_graph.py`, `test_networks_graph_algorithms_depth.py`, `test_networks_grn_inference_depth.py`,
-`test_networks_pathway.py`, `test_networks_pathway_depth.py`, `test_networks_ppi.py`,
-`test_networks_ppi_impl_depth.py`, `test_networks_regulatory.py`, `test_networks_seeded_randomness.py`,
+Files (verified 2026-10-28): `__init__.py`, `test_community_fallback_kwargs.py`,
+`test_community_seeds_and_comparison.py`, `test_graph_algorithms.py`, `test_graph_core_directed_edges.py`,
+`test_grn_hypergeometric_exact.py`, `test_grn_motifs_self_loops.py`, `test_grn_tf_list.py`,
+`test_grn_validation_ties.py`, `test_information_flow.py`, `test_louvain_global_state.py`,
+`test_motif_binomial_exact.py`, `test_network_summary_fallback.py`, `test_networks_community.py`,
+`test_networks_community_detection.py`, `test_networks_comprehensive.py`, `test_networks_graph.py`,
+`test_networks_graph_algorithms_depth.py`, `test_networks_grn_inference_depth.py`, `test_networks_pathway.py`,
+`test_networks_pathway_depth.py`, `test_networks_ppi.py`, `test_networks_ppi_impl_depth.py`,
+`test_networks_regulatory.py`, `test_networks_seeded_randomness.py`, `test_pathway_correction_names.py`,
 `test_pathway_cosine_empty_sets.py`, `test_pathway_enrichment_fallbacks.py`, `test_pathway_fdr_correction.py`,
-`test_pathway_hypergeometric.py`, `test_ppi_centrality_and_json.py`, `test_regulatory_feed_forward_loops.py`,
-`test_regulatory_mutual_info_seed.py` (24 test files plus `__init__.py`).
+`test_pathway_hypergeometric.py`, `test_ppi_centrality_and_json.py`, `test_ppi_functional_enrichment_population.py`,
+`test_ppi_network_enrichment_exactness.py`, `test_regulatory_feed_forward_loops.py`,
+`test_regulatory_mutual_info_seed.py` (34 test files plus `__init__.py`).
 
 ## Coverage notes
 - `test_pathway_enrichment_fallbacks.py`: `pathway_enrichment` computes the exact upper-tail p-value (oracles
