@@ -132,3 +132,11 @@ bash scripts/package/verify.sh --mode all
 |----------|---------|
 | `PYTHONUNBUFFERED` | Real-time output |
 | `UV_CACHE_DIR` | UV package cache location |
+
+### Structural-variant diagnostics in full coverage
+
+The Ubuntu full-coverage job requires the native pysam import, then runs the PCA
+and translocation contract files with their own JUnit report. A failure stops the
+job with the complete diagnostic trace before the broad suite consumes its budget.
+These preliminary checks do not replace full coverage: after they pass, the same
+complete suite, coverage floor and 45-minute job limit remain required.

@@ -78,6 +78,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Rank-deficient structural-variant PCA returns exactly zero scores for
   undefined Gram-matrix components, matching its zero eigenvalues and loadings.
+- Full-coverage CI records native structural-variant contract failures before
+  the broad suite; its complete test scope, coverage floor and job limit remain.
 - RNA acquisition anchors its first-pass service deadline at admission, before
   synchronous logging. Admission queue time remains outside that budget.
 - Unknown pharmacogenomic alleles now produce Indeterminate calls, unsupported

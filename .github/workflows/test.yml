@@ -109,6 +109,17 @@ jobs:
       run: |
         bash scripts/package/verify.sh --mode setup
 
+    # Capture native-parser and numerical contract failures before a long full
+    # run can exhaust its job budget. This is preliminary to full coverage.
+    - name: Check structural-variant contracts before full coverage
+      if: matrix.test-type == 'all'
+      run: |
+        uv run --frozen --no-sync python -c "import pysam; print('pysam', pysam.__version__)"
+        uv run --frozen --no-sync python -m pytest -v --tb=short \
+          --junitxml=output/structural-contracts.xml \
+          tests/structural_variants/test_population_pca_scores.py \
+          tests/structural_variants/test_translocation_breakpoints.py
+
     - name: Run tests
       run: |
         case "${{ matrix.test-type }}" in
