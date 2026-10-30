@@ -133,7 +133,11 @@ jobs:
             bash scripts/package/test.sh --mode external
             ;;
           "all")
-            bash scripts/package/test.sh --mode coverage
+            # Keep the complete coverage gate within its existing job budget.
+            # Honor shared-service xdist groups and never restart a crashed worker.
+            PYTEST_ADDOPTS="${PYTEST_ADDOPTS:-} -n 2 --dist=loadgroup --max-worker-restart=0" \
+            OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 \
+              bash scripts/package/test.sh --mode coverage
             ;;
           *)
             bash scripts/package/test.sh --mode all

@@ -140,3 +140,14 @@ and translocation contract files with their own JUnit report. A failure stops th
 job with the complete diagnostic trace before the broad suite consumes its budget.
 These preliminary checks do not replace full coverage: after they pass, the same
 complete suite, coverage floor and 45-minute job limit remain required.
+
+The full-coverage invocation uses two xdist workers with `loadgroup` scheduling,
+which honors existing shared-service groups such as the Ollama tests. OpenMP,
+OpenBLAS, MKL and NumExpr each receive a one-thread budget per process. Worker
+restarts are disabled so a crashed worker cannot silently resume the run. The
+complete `tests/` selection, 60-second full-suite per-test timeout and 74.90%
+coverage floor are unchanged; worker coverage is combined by pytest-cov.
+
+A job cancelled at its time limit has no complete coverage result. The required
+summary continues to fail for a failed or cancelled matrix job, including a live
+network failure; parallel execution does not waive unavailable-service checks.
