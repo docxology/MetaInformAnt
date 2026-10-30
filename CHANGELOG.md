@@ -76,6 +76,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reports a stale core API reference.
 
 ### Changed
+- Native VCF parsing accepts absent optional CHR2/POS2 metadata for BND
+  records whose ALT supplies the mate, preserving native parser errors.
 - Rank-deficient structural-variant PCA returns exactly zero scores for
   undefined Gram-matrix components, matching its zero eigenvalues and loadings.
 - Full-coverage CI records native structural-variant contract failures before

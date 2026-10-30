@@ -870,12 +870,16 @@ def _load_vcf_variants(vcf_path: str) -> list[dict[str, Any]]:
                     "filter": list(record.filter),
                 }
                 if sv_type in TRANSLOCATION_TYPES:
-                    _set_translocation_breakpoints(
-                        variant,
-                        record.alts[0] if record.alts else None,
-                        record.info.get("CHR2"),
-                        record.info.get("POS2", record.info.get("END")),
-                    )
+                    alt = record.alts[0] if record.alts else None
+                    chrom2 = None
+                    pos2 = None
+                    # ALT already has precedence in the breakpoint helper.
+                    # Read fallback metadata only if it is actually needed.
+                    if not (alt and _BND_MATE.search(alt)):
+                        chrom2 = record.info.get("CHR2") if "CHR2" in record.info else None
+                        if "CHR2" in record.info or "POS2" in record.info:
+                            pos2 = record.info.get("POS2", record.info.get("END"))
+                    _set_translocation_breakpoints(variant, alt, chrom2, pos2)
                 genotype = _pysam_first_genotype(record)
                 if genotype is not None:
                     variant["genotype"] = genotype
