@@ -7,7 +7,7 @@ import os
 import stat
 from pathlib import Path
 from types import TracebackType
-from typing import Self
+from typing import Literal, Self
 
 FileIdentity = tuple[int, int, int, int, int, int, int, int]
 
@@ -120,7 +120,7 @@ class BoundReads:
         kind: type[BaseException] | None,
         error: BaseException | None,
         trace: TracebackType | None,
-    ) -> bool:
+    ) -> Literal[False]:
         if kind is None:
             self.finish()
         return False
