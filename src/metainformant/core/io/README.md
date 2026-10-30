@@ -12,6 +12,7 @@ Unified file I/O (JSON, YAML, TOML, CSV, Parquet, JSONL), path management with s
 | `cache.py` | TTL-based JSON cache with directory management |
 | `disk.py` | Disk usage monitoring, space checks, and cleanup utilities |
 | `atomic.py` | Atomic write/replace helpers and temp-directory contexts |
+| verification.py | Full-hash snapshots with physical-identity checks limited to one operation |
 | `checksums.py` | File and stream hashing (MD5/SHA-1/SHA-256) with verification |
 | `data_root.py` | Canonical `AMALGKIT_DATA_ROOT` resolution and prefix remapping |
 | `download_manager.py` | High-level download orchestration for batch operations |
@@ -46,3 +47,5 @@ io.dump_json(result, "output/result.json")
 resolved = paths.expand_and_resolve("~/data/input.txt")
 assert paths.is_within(resolved, parent="/safe/dir")
 ```
+
+[Verification contract and usage](../../../../docs/core/verification.md) documents BoundReads and its limits.

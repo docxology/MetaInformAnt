@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Physical-file verification snapshots (`core.io.verification.BoundReads`) and
+  conservative recovery process observations (`rna.engine.process_observation`),
+  with real file-change, PID-identity, denied-inspection and timeout controls.
 - Local RNA acquisition frontier (`metainformant.rna.engine.acquisition_frontier`,
   opt-in via `AMALGKIT_LOCAL_FRONTIER_SIZE`): separate acquisition, recovery and
   quantification pools bounded by a planned-identity frontier and frozen

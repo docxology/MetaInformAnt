@@ -5,7 +5,20 @@ downloads, and disk management."""
 
 from __future__ import annotations
 
-from . import atomic, cache, checksums, data_root, disk, download, download_manager, download_robust, errors, io, paths
+from . import (
+    atomic,
+    cache,
+    checksums,
+    data_root,
+    disk,
+    download,
+    download_manager,
+    download_robust,
+    errors,
+    io,
+    paths,
+    verification,
+)
 
 # Re-export download utilities
 from .download import DownloadResult, download_with_progress
@@ -72,6 +85,7 @@ __all__ = [
     "errors",
     "io",
     "paths",
+    "verification",
     # io.py functions
     "batch_download",
     "download_csv",
