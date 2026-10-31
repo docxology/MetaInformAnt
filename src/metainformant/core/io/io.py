@@ -4,10 +4,13 @@ import csv
 import gzip
 import io
 import json
+import os
+import stat
 from collections.abc import Sequence
 from pathlib import Path
 from typing import IO, Any, Iterable, Iterator, Mapping, cast
 
+from metainformant.core.io.atomic import atomic_write
 from metainformant.core.utils.errors import IOError as CoreIOError
 
 
@@ -63,6 +66,12 @@ def load_json(path: str | Path) -> Any:
 def dump_json(obj: Any, path: str | Path, *, indent: int | None = None, atomic: bool = True) -> None:
     """Write object to JSON file with optional atomic write.
 
+    Atomic writes use a private unique temporary file in the destination
+    directory, then replace the destination after closing the complete value.
+    Concurrent writers publish complete values; the last replacement wins.
+    Serialization failures preserve the previous destination. Existing regular
+    destinations retain their permission bits; new destinations are owner-only.
+
     Args:
         obj: Object to serialize (must be JSON-serializable)
         path: Output file path (supports .gz extension for gzip compression)
@@ -80,16 +89,20 @@ def dump_json(obj: Any, path: str | Path, *, indent: int | None = None, atomic: 
 
     try:
         if atomic:
-            # Atomic write: write to temp file, then rename.
-            # Keep the .gz suffix on the temp file so compression works.
-            temp_path = p.with_suffix(p.suffix + ".tmp")
-            if is_gzipped:
-                with gzip.open(temp_path, "wt", encoding="utf-8") as fh:
+            with atomic_write(p, mode="wb" if is_gzipped else "w") as fh:
+                if is_gzipped:
+                    with gzip.open(fh, "wt", encoding="utf-8") as compressed:
+                        json.dump(obj, compressed, indent=indent, sort_keys=True)
+                else:
                     json.dump(obj, fh, indent=indent, sort_keys=True)
-            else:
-                with open_text_auto(temp_path, mode="wt") as fh:
-                    json.dump(obj, fh, indent=indent, sort_keys=True)
-            temp_path.replace(p)  # Atomic rename
+                destination_mode: int | None
+                try:
+                    destination_mode = p.lstat().st_mode
+                except FileNotFoundError:
+                    destination_mode = None
+                if destination_mode is not None and stat.S_ISREG(destination_mode):
+                    fh.flush()
+                    os.fchmod(fh.fileno(), stat.S_IMODE(destination_mode))
         else:
             if is_gzipped:
                 with gzip.open(p, "wt", encoding="utf-8") as fh:
@@ -98,8 +111,6 @@ def dump_json(obj: Any, path: str | Path, *, indent: int | None = None, atomic: 
                 with open_text_auto(p, mode="wt") as fh:
                     json.dump(obj, fh, indent=indent, sort_keys=True)
     except Exception as e:
-        if atomic:
-            temp_path.unlink(missing_ok=True)
         raise CoreIOError(f"Failed to write JSON file {path}: {e}") from e
 
 

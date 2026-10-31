@@ -24,3 +24,15 @@ Core Input/Output utilities for METAINFORMANT.
 - `download_robust.py`
 - `errors.py`
 - ...
+
+## Atomic JSON publication contract
+
+`dump_json(..., atomic=True)` serializes plain or gzip JSON into a unique,
+initially owner-only temporary file in the destination directory. Complete data
+is closed before atomic replacement. Existing regular destination permission
+bits are retained; new destinations keep the helper's owner-only mode.
+
+Concurrent writers publish complete values with the last replacement winning.
+Serialization failure preserves the previous destination and unrelated sibling
+temporary files. This is publication atomicity, without read-modify-write
+coordination or file/directory fsync durability.

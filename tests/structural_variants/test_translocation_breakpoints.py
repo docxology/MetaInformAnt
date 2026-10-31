@@ -708,12 +708,40 @@ class TestVcfTranslocations:
         assert (record["start"], record["end"]) == (1_000, 5_001) and "chrom2" not in record
 
     def test_pysam_and_the_text_parser_read_breakends_alike(self, tmp_path: Path) -> None:
+        self._assert_pysam_text_parity(tmp_path)
+
+    @pytest.mark.parametrize("optional_fields", [("CHR2",), ("POS2",), ("CHR2", "POS2")])
+    def test_declared_optional_tags_may_be_absent(self, tmp_path: Path, optional_fields: tuple[str, ...]) -> None:
+        self._assert_pysam_text_parity(tmp_path, optional_fields)
+
+    def test_alt_mate_does_not_require_an_optional_position_header(self, tmp_path: Path) -> None:
+        self._assert_pysam_text_parity(tmp_path, ("CHR2",), with_mate_chromosome=True)
+
+    def test_incomplete_native_mate_header_is_not_silently_accepted(self, tmp_path: Path) -> None:
+        pytest.importorskip("pysam")
+        header = (
+            "##fileformat=VCFv4.2\n##contig=<ID=chr1,length=100000>\n##contig=<ID=chr2,length=100000>\n"
+            '##INFO=<ID=SVTYPE,Number=1,Type=String,Description="SV type">\n'
+            '##INFO=<ID=CHR2,Number=1,Type=String,Description="Mate chromosome">\n'
+            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+        )
+        path = tmp_path / "incomplete-native-mate.vcf"
+        path.write_text(header + "chr1\t1001\t.\tN\t<TRA>\t50\tPASS\tSVTYPE=TRA;CHR2=chr2\n")
+        with pytest.raises(ValueError, match="Invalid header"):
+            _load_vcf_variants(str(path))
+
+    def _assert_pysam_text_parity(
+        self, tmp_path: Path, optional_fields: tuple[str, ...] = (), with_mate_chromosome: bool = False
+    ) -> None:
         pytest.importorskip("pysam")  # not installed in every environment; the text parser above always runs
         header = (
             "##fileformat=VCFv4.2\n##contig=<ID=chr1,length=100000>\n##contig=<ID=chr2,length=100000>\n"
             '##INFO=<ID=SVTYPE,Number=1,Type=String,Description="SV type">\n'
-            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
         )
+        for field in optional_fields:
+            value_type = "String" if field == "CHR2" else "Integer"
+            header += f'##INFO=<ID={field},Number=1,Type={value_type},Description="Optional mate">\n'
+        header += "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
         records = (
             "chr1\t1001\tb1\tN\tN[chr2:5001[\t50\tPASS\tSVTYPE=BND",
             "chr2\t5011\tb2\tN\t]chr1:1011]N\t40\tPASS\tSVTYPE=BND",
@@ -721,6 +749,9 @@ class TestVcfTranslocations:
         )
         path = tmp_path / "breakends.vcf"
         path.write_text(header + "".join(record + "\n" for record in records))
+
+        if with_mate_chromosome:
+            path.write_text(header + records[0] + ";CHR2=chr2\n" + records[1] + ";CHR2=chr1\n" + records[2] + "\n")
 
         keys = ("chrom", "start", "end", "sv_type", "chrom2", "pos2")
         via_pysam = [{key: v.get(key) for key in keys} for v in _load_vcf_variants(str(path))]

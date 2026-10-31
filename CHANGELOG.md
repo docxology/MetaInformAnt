@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Physical-file verification snapshots (`core.io.verification.BoundReads`) and
+  conservative recovery process observations (`rna.engine.process_observation`),
+  with real file-change, PID-identity, denied-inspection and timeout controls.
 - Local RNA acquisition frontier (`metainformant.rna.engine.acquisition_frontier`,
   opt-in via `AMALGKIT_LOCAL_FRONTIER_SIZE`): separate acquisition, recovery and
   quantification pools bounded by a planned-identity frontier and frozen
@@ -73,6 +76,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reports a stale core API reference.
 
 ### Changed
+- Native VCF parsing accepts absent optional CHR2/POS2 metadata for BND
+  records whose ALT supplies the mate, preserving native parser errors.
+- Rank-deficient structural-variant PCA returns exactly zero scores for
+  undefined Gram-matrix components, matching its zero eigenvalues and loadings.
+- Full-coverage CI records native structural-variant contract failures before
+  the broad suite; its complete test scope, coverage floor and job limit remain.
 - RNA acquisition anchors its first-pass service deadline at admission, before
   synchronous logging. Admission queue time remains outside that budget.
 - Unknown pharmacogenomic alleles now produce Indeterminate calls, unsupported

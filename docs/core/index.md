@@ -21,6 +21,7 @@ Shared infrastructure and utilities used by all METAINFORMANT domain modules. Th
 | [Download](./download.md) | Robust HTTP/FTP downloads, retry, resume, heartbeat | `core.io.download` |
 | [Parallel Execution](./parallel.md) | Thread/process pools, resource-aware workers | `core.execution.parallel` |
 | [Database](./db.md) | PostgreSQL connectivity, connection pooling | `core.data.db` |
+| [Bound file verification](./verification.md) | One-operation hashes with physical-identity revalidation | core.io.verification |
 | [Hashing](./hash.md) | SHA256 file and content hashing | `core.utils.hash` |
 | [Text Processing](./text.md) | Text cleaning, slugify, gene name standardization | `core.utils.text` |
 | [Workflow](./workflow.md) | DAG orchestration, config-driven pipelines | `core.execution.workflow` |

@@ -465,6 +465,7 @@ def sv_population_structure(
         loadings = data_scaled.T @ u[:, :n_components]
         loadings[:, defined] /= singular[defined]
         loadings[:, ~defined] = 0.0
+        pcs[:, ~defined] = 0.0
     else:
         # Covariance matrix Xt X / dof (n_svs x n_svs).
         values, vectors = np.linalg.eigh(data_scaled.T @ data_scaled / dof)

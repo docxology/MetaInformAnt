@@ -53,6 +53,7 @@ serial probe attempts, including misses.
 |---|---|
 | `streaming_orchestrator.py` | ENA-first metadata, acquisition, integration, and quantification |
 | `preflight.py` | Mandatory start-of-run environment preflight (data-root write probe, amalgkit CLI resolution) |
+| process_observation.py | Native confirmed absence/zombie checks; live or denied processes remain unresolved |
 | `progress_db.py` | Concurrent-safe SQLite sample state, exclusions, and resume queries |
 | `campaign_status.py`, `campaign_status_io.py`, `campaign_status_cli.py` | Read-only frozen-inventory cloud/local status, complete stage marginals and per-sample transfer candidates; receipt/file presence is distinct from checksum validation |
 | `campaign_observation.py`, `campaign_observation_report.py`, `campaign_observation_cli.py` | Explicit manifest/phase journal capture, restore-bound new-output counts, isolated tables/figures/working supplement; operational evidence only |
@@ -257,3 +258,5 @@ network bytes; this policy does not alter validation, concurrency or deadlines.
 ### Frozen size supplements
 
 Local bounded frontiers can fill zero estimated compressed FASTQ weights from an independently reviewed size supplement without changing the frozen task manifest, task IDs, references, metadata inputs, or checkpoint identity. Configure both AMALGKIT_LOCAL_SIZE_OVERLAY_PATH (an existing absolute nonsymlink file) and AMALGKIT_LOCAL_SIZE_OVERLAY_SHA256. The overlay binds the exact frozen manifest hash, preserves run/layout/reference identity, and requires positive per-mate byte counts and advertised MD5s from HTTPS ENA file URLs. It cannot replace positive frozen weights. Global ordering and raw reservation use the same immutable size map; actual download/FASTQ validation and service deadlines remain unchanged. Overlay file metadata is a planning estimate, not new validation of downloaded payloads. The runtime, active scope, frontier events, and worker result record its path/hash/count. Missing or conflicting configuration refuses rather than silently falling back.
+
+[Recovery observations and preservation](../../../../docs/rna/recovery.md) separates native liveness, raw DB custody, fixture deadlines and launch authority.
