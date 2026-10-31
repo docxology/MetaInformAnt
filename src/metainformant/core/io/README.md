@@ -37,6 +37,16 @@ Unified file I/O (JSON, YAML, TOML, CSV, Parquet, JSONL), path management with s
 | `cleanup_old_files()` | Remove files older than a specified age |
 | `download_with_progress()` | HTTP(S)/FTP/file download with heartbeat file, retries and HTTP Range resume; a destination that already has the full size counts as downloaded, and a string ending in `/` names a directory (see [Downloads](../../../../docs/core/download.md)) |
 
+## Atomic JSON publication
+
+`dump_json(..., atomic=True)` uses the existing atomic helper's unique owner-only
+temporary file in the target directory. Plain and gzip writers close a complete
+value before replacing the destination. Existing regular destination permission
+bits are retained at publication; new destinations remain owner-only. Concurrent
+writes publish complete values with the last replacement winning; a serialization
+failure preserves the existing destination and unrelated sibling temporary files.
+This does not provide a read-modify-write transaction or a file/directory fsync durability guarantee.
+
 ## Usage
 
 ```python
