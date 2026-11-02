@@ -686,7 +686,7 @@ print(f"(Note: {cached_tajima_constants.cache_info().hits} of {len(sample_sizes)
 
 **Import Errors**: Ensure METAINFORMANT is properly installed with all dependencies:
 ```bash
-uv pip install metainformant[scientific,ml,networks]
+uv pip install -e ".[scientific,ml,networks]"
 ```
 
 **Memory Issues**: For large datasets, use chunked processing or increase system memory.

@@ -41,7 +41,7 @@ Reports and plots work with the core dependencies, so no optional extra is neede
 are no `pharmacogenomics` or `deconvolution` extras):
 
 ```bash
-uv pip install metainformant
+uv pip install -e .
 ```
 
 ## Data sources
