@@ -217,7 +217,7 @@ METAINFORMANT uses `uv` for Python package management. Install with `uv`, or ins
 
 ```bash
 # Install into the active environment
-uv pip install metainformant
+uv pip install -e .
 
 # From source
 git clone https://github.com/docxology/MetaInformAnt.git

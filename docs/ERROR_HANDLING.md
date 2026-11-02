@@ -259,7 +259,7 @@ raise ValueError(f"Sequence cannot be empty for correlation calculation")
 # Good
 raise ImportError(
     "scipy is required for fisher_exact_test(). "
-    "Install with: uv pip install metainformant[scientific] or uv pip install scipy"
+    "Install with: uv pip install -e .[scientific] (metainformant is not published on PyPI; install the checkout) or uv pip install scipy"
 )
 
 # Good

@@ -13,16 +13,16 @@ Common questions and answers about using METAINFORMANT for biological data analy
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Install METAINFORMANT
-uv pip install metainformant
+uv pip install -e .
 
 # For scientific computing features
-uv pip install metainformant[scientific]
+uv pip install -e ".[scientific]"
 
 # For machine learning features
-uv pip install metainformant[ml]
+uv pip install -e ".[ml]"
 
 # For all optional dependencies
-uv pip install metainformant[all]
+uv pip install -e ".[all]"
 ```
 
 ### Q: I'm getting import errors after installation. What should I do?
@@ -444,7 +444,7 @@ RUN apt-get update && apt-get install -y \
 # Install uv, then install METAINFORMANT
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:${PATH}"
-RUN uv pip install metainformant[scientific,ml]
+RUN uv pip install -e ".[scientific,ml]"
 
 # Set working directory
 WORKDIR /workspace
@@ -495,7 +495,7 @@ results = run_config_based_workflow(workflow)
 ```python-notebook
 # Install in notebook
 !curl -LsSf https://astral.sh/uv/install.sh | sh
-!uv pip install metainformant[scientific]
+!uv pip install -e ".[scientific]"
 
 # Use in cells
 import metainformant as mi

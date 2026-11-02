@@ -12,7 +12,7 @@ There is no `spatial` or `deconvolution` extra. The module needs NumPy, SciPy,
 scikit‑learn and matplotlib, which are core dependencies of `metainformant`:
 
 ```bash
-uv pip install metainformant
+uv pip install -e .
 ```
 
 Optional packages the module uses when they are importable:

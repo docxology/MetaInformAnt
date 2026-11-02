@@ -41,7 +41,7 @@ No extra is needed (there is no `pharmacogenomics` extra): the module uses only 
 standard library and core dependencies (numpy and matplotlib, for the plots).
 
 ```bash
-uv pip install metainformant          # or `uv pip install -e .` from a checkout
+uv pip install -e .          # metainformant is not published on PyPI; install the checkout
 ```
 
 ## Core public API
