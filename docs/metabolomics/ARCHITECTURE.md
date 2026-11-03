@@ -25,7 +25,7 @@ src/metainformant/metabolomics/
 ├── analysis/               # Analysis functions
 │   ├── __init__.py
 │   ├── identification.py   # Metabolite ID, adduct handling, normalization
-│   └── visualization/      # Plotting utilities (limited implementation)
+│   └── visualization/      # Plotting utilities (planned; not implemented yet)
 │
 ├── io/                     # Input/Output
 │   ├── __init__.py
