@@ -17,6 +17,9 @@ on:
 env:
   PYTHONUNBUFFERED: 1
 
+permissions:
+  contents: write
+
 jobs:
   release-validation:
     runs-on: ubuntu-latest
