@@ -10,6 +10,9 @@ on:
 env:
   PYTHONUNBUFFERED: 1
 
+permissions:
+  contents: read
+
 jobs:
   security-checks:
     # BLOCKING GATE: this job must pass before merge. Failures are resolved
