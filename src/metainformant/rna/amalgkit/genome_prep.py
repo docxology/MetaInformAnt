@@ -14,8 +14,8 @@ import subprocess
 import urllib.error
 import urllib.request
 from pathlib import Path
-from urllib.parse import urlparse
 from typing import Any, Dict, Optional
+from urllib.parse import urlparse
 
 from metainformant.core.utils import logging
 
