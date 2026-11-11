@@ -14,6 +14,7 @@ import subprocess
 import urllib.error
 import urllib.request
 from pathlib import Path
+from urllib.parse import urlparse
 from typing import Any, Dict, Optional
 
 from metainformant.core.utils import logging
@@ -70,6 +71,16 @@ def get_expected_index_path(work_dir: Path, species_name: str) -> Path:
     return index_path
 
 
+# Hosts whose FTP mirrors are allowed one retry without certificate checks.
+_INSECURE_RETRY_HOSTS = ("ftp.ncbi.nlm.nih.gov", "ftp.ncbi.nih.gov", "ebi.ac.uk")
+
+
+def _is_insecure_retry_host(url: str) -> bool:
+    """True when the URL's host is an NCBI FTP server or an EBI host (exact or subdomain)."""
+    host = (urlparse(url).hostname or "").lower()
+    return any(host == allowed or host.endswith("." + allowed) for allowed in _INSECURE_RETRY_HOSTS)
+
+
 def _download_url(url: str, output_path: Path, timeout: int = 600, verify_ssl: bool = True) -> bool:
     """Helper to download file from URL.
 
@@ -103,7 +114,7 @@ def _download_url(url: str, output_path: Path, timeout: int = 600, verify_ssl: b
         return True
     except ssl.SSLCertVerificationError as e:
         # Retry without SSL verification for FTP URLs from known scientific sources
-        if verify_ssl and ("ftp.ncbi" in url or "ebi.ac.uk" in url):
+        if verify_ssl and _is_insecure_retry_host(url):
             logger.warning(f"SSL verification failed for {url}, retrying without verification: {e}")
             return _download_url(url, output_path, timeout, verify_ssl=False)
         logger.error(f"SSL verification failed for {url}: {e}")
