@@ -56,7 +56,7 @@ class Issue:
 
 
 MODULE_HEADING = re.compile(r"^##\s+(metainformant\.core\.[^\s{]+)(?:\s+\{#[^}]+\})?\s*$")
-API_ROW = re.compile(r"^\|\s*`([^`]+)`\s*\|\s*([^|]+?)\s*\|\s*`((?:\\\||[^`])*)`\s*\|\s*(.*?)\s*\|\s*$")
+API_ROW = re.compile(r"^\|\s*`([^`]+)`\s*\|\s*([^|]+?)\s*\|\s*`((?:\\\||\\(?!\|)|[^`\\])*)`\s*\|\s*(.*?)\s*\|\s*$")
 TOPIC_HEADING = re.compile(r"^#{2,6}\s+`?([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\([^`]*\)`?\s*$")
 
 
