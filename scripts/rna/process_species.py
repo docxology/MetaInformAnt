@@ -4,7 +4,10 @@
 This is a convenience wrapper around the same orchestrator used by
 ``run_all_species.py``.  It intentionally accepts only current workflow
 parameters so single-species runs cannot drift onto a separate downloader,
-index contract, or quantification implementation.
+index contract, or quantification implementation. It takes the same campaign
+writer lock, logs INFO under ``<data-root>/logs`` and uses the same exit codes
+(0 drained, 75 retryable work remains, 73 lock busy, 69 environment, 70
+internal error).
 """
 
 from __future__ import annotations
@@ -24,8 +27,19 @@ from metainformant.rna.engine.cohort import (  # noqa: E402
     select_cohort_species,
     verify_cohort_configs,
 )
+from metainformant.rna.engine.campaign_lock import (  # noqa: E402
+    EXIT_ENVIRONMENT,
+    EXIT_LOCK_BUSY,
+    CampaignLockBusy,
+)
+from metainformant.rna.engine.campaign_lock import acquire as acquire_campaign_lock  # noqa: E402
 from metainformant.rna.engine.species import configured_data_root, discover_species_config_names  # noqa: E402
-from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator  # noqa: E402
+from metainformant.rna.engine.streaming_orchestrator import (  # noqa: E402
+    StreamingPipelineOrchestrator,
+    configure_producer_logging,
+    logger,
+    producer_exit_code_for_exception,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG_DIR = REPO_ROOT / "projects" / "hymenoptera_amalgkit" / "config" / "amalgkit"
@@ -90,6 +104,24 @@ def main() -> int:
         os.environ["AMALGKIT_DATA_ROOT"] = str(args.data_root.expanduser().resolve())
     data_root = configured_data_root()
 
+    lock = None
+    if not args.dry_run:
+        try:
+            lock = acquire_campaign_lock(data_root, "producer")
+        except CampaignLockBusy as busy:
+            print(f"Another writer holds the data root: {busy}", file=sys.stderr)
+            return EXIT_LOCK_BUSY
+        except (OSError, ValueError) as error:
+            print(f"Cannot take the campaign writer lock of {data_root}: {error}", file=sys.stderr)
+            return EXIT_ENVIRONMENT
+    try:
+        return _run(args, config_dir, data_root)
+    finally:
+        if lock is not None:
+            lock.release()
+
+
+def _run(args: argparse.Namespace, config_dir: Path, data_root: Path) -> int:
     try:
         cohort = producer_cohort_from_args(args)
         if cohort is not None:
@@ -115,25 +147,35 @@ def main() -> int:
     if args.dry_run:
         return 0
 
-    orchestrator = StreamingPipelineOrchestrator(
-        config_dir=config_dir,
-        log_dir=data_root / "logs",
-        db_path=data_root / "pipeline_progress.db",
-        cohort=cohort,
-        allow_metadata_refresh=args.refresh_metadata,
-    )
-    orchestrator.run_all(
-        [wanted],
-        args.max_gb,
-        args.workers,
-        args.threads,
-        fasterq_threads=args.fastq_threads,
-        fasterq_slots=args.fastq_slots,
-        compression_threads=args.compression_threads,
-        validation_slots=args.validation_slots,
-        max_in_flight=args.max_in_flight,
-    )
-    return 0
+    log_path = configure_producer_logging(data_root / "logs", prefix=f"process_species_{args.species}")
+    if log_path is not None:
+        print(f"Run log: {log_path}")
+    try:
+        orchestrator = StreamingPipelineOrchestrator(
+            config_dir=config_dir,
+            log_dir=data_root / "logs",
+            db_path=data_root / "pipeline_progress.db",
+            cohort=cohort,
+            allow_metadata_refresh=args.refresh_metadata,
+        )
+        summary = orchestrator.run_all(
+            [wanted],
+            args.max_gb,
+            args.workers,
+            args.threads,
+            fasterq_threads=args.fastq_threads,
+            fasterq_slots=args.fastq_slots,
+            compression_threads=args.compression_threads,
+            validation_slots=args.validation_slots,
+            max_in_flight=args.max_in_flight,
+        )
+    except (Exception, KeyboardInterrupt) as error:  # noqa: BLE001 - every failure maps to an exit code
+        code = producer_exit_code_for_exception(error)
+        logger.exception("Producer stopped (exit %d): %s", code, error)
+        print(f"Producer stopped (exit {code}): {type(error).__name__}: {error}", file=sys.stderr)
+        return code
+    print(f"Producer finished: {summary['status']} (exit {summary['exit_code']})")
+    return int(summary["exit_code"])
 
 
 if __name__ == "__main__":

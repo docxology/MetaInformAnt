@@ -25,11 +25,12 @@ import urllib.request
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Mapping, Optional, cast
 
 import yaml
 
 from metainformant.core.utils import logging as log_utils
+from metainformant.core.utils.hash import sha256_file
 from metainformant.rna.amalgkit.sra_environment import (
     build_sra_environment,
     ensure_ncbi_settings,
@@ -38,7 +39,16 @@ from metainformant.rna.amalgkit.sra_environment import (
 from metainformant.rna.amalgkit.tissue_normalizer import apply_tissue_normalization
 from metainformant.rna.core.sample_utils import find_quantification_file
 from metainformant.rna.engine.fastq_compression import compression_level, pigz_command
-from metainformant.rna.engine.preflight import PreflightError, run_campaign_preflight
+from metainformant.rna.engine.campaign_lock import (
+    EXIT_ENVIRONMENT,
+    EXIT_INTERNAL,
+    EXIT_LOCK_BUSY,
+    EXIT_OK,
+    EXIT_RETRYABLE,
+    CampaignLockBusy,
+)
+from metainformant.rna.engine.campaign_lock import acquire as acquire_campaign_lock
+from metainformant.rna.engine.preflight import PreflightError, ReuseProbe, reuse_dry_run, run_campaign_preflight
 from metainformant.rna.engine.cohort import (
     CohortError,
     FrozenCohort,
@@ -48,16 +58,25 @@ from metainformant.rna.engine.cohort import (
     verify_species_reference,
     write_cohort_task_table,
 )
-from metainformant.rna.engine.progress_db import ProgressDB
+from metainformant.rna.engine.progress_db import (
+    RETRYABLE_ENVIRONMENT_CLASSES,
+    ProgressDB,
+    ReconcileScope,
+    classify_sample_error,
+)
 from metainformant.rna.engine.provenance import (
     QUANT_STATUS_CURRENT,
     QUANT_STATUS_VERSION_DRIFT,
+    REFERENCE_MANIFEST_NAME,
     REUSABLE_QUANT_STATUSES,
     SpeciesReuseContext,
+    _durable_fsync,
+    _fsync_directory,
     build_species_reuse_context,
     classify_quantification,
     is_current_metadata,
     is_reusable_quantification,
+    pinned_amalgkit_runtime,
     write_metadata_provenance,
     write_quant_provenance,
 )
@@ -99,6 +118,185 @@ DEFAULT_DISCOVERY_WORKERS = 4
 
 _INDEX_CACHE_LOCK = threading.Lock()
 _SRA_VALIDATION_SCHEMA = 1
+
+# Revision of the resume-reconcile verdict rules; part of every ReconcileScope so a rule change re-judges outputs.
+RECONCILE_SCOPE_REVISION = "reconcile.v1"
+# Consecutive environment-class failures (EPERM, EACCES, EROFS, ENXIO, ENOSPC) that stop admission of new work.
+DEFAULT_ENVIRONMENT_FAILURE_TRIP = 5
+_ENVIRONMENT_ERRNO_CLASSES = {
+    errno.EPERM: "environment_write_denied",
+    errno.EACCES: "environment_access_denied",
+    errno.EROFS: "environment_read_only",
+    errno.ENXIO: "environment_device_unavailable",
+    errno.ENOSPC: "environment_no_space",
+}
+_MISSING_TOOL = re.compile(r"No such file or directory: '([^'/]+)'")
+_TRUTHY = frozenset({"1", "true", "yes", "on"})
+
+
+def _write_text_durably(destination: Path, text: str, temporary: Path) -> None:
+    """Write ``text`` to ``temporary``, fsync it, rename it over ``destination`` and fsync the directory."""
+
+    try:
+        with open(temporary, "w", encoding="utf-8") as handle:
+            handle.write(text)
+            handle.flush()
+            _durable_fsync(handle.fileno())
+        os.replace(temporary, destination)
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
+    _fsync_directory(destination.parent)
+
+
+def _path_is_under(path: str | os.PathLike[str], root: Path) -> bool:
+    try:
+        candidate = os.path.abspath(os.fspath(path))
+    except (TypeError, ValueError):
+        return False
+    base = os.path.abspath(os.fspath(root))
+    return candidate == base or candidate.startswith(base.rstrip(os.sep) + os.sep)
+
+
+def environment_failure_class(failure: BaseException | str | None, data_root: Path | None = None) -> str | None:
+    """The environment failure class of an exception or stored error message, else ``None``.
+
+    Environment failures are caused by the host, not the sample: EPERM (macOS
+    TCC denial), EACCES, EROFS, ENXIO (the volume dropped off the bus) and
+    ENOSPC, plus a missing executable. An ``OSError`` carrying a path counts
+    only when the path is under ``data_root``; one without a path always
+    counts (the 2026-09-03 TCC denials carried none).
+    """
+
+    if failure is None:
+        return None
+    if isinstance(failure, OSError) and failure.errno in _ENVIRONMENT_ERRNO_CLASSES:
+        paths = [path for path in (failure.filename, failure.filename2) if path not in (None, "")]
+        if data_root is None or not paths or any(_path_is_under(path, data_root) for path in paths):
+            return _ENVIRONMENT_ERRNO_CLASSES[failure.errno]
+        return None
+    text = str(failure)
+    failure_class = classify_sample_error(text)
+    if failure_class == "environment_missing_tool":
+        return failure_class if _MISSING_TOOL.search(text) else None
+    return failure_class if failure_class in RETRYABLE_ENVIRONMENT_CLASSES else None
+
+
+def data_root_unavailable(data_root: Path) -> str | None:
+    """A reason when the data root cannot be stat-ed as a directory (unmounted volume, TCC denial), else ``None``."""
+
+    try:
+        info = os.stat(data_root)
+    except OSError as exc:
+        return environment_failure_class(exc) or "environment_device_unavailable"
+    if not stat.S_ISDIR(info.st_mode):
+        return "environment_device_unavailable"
+    return None
+
+
+class EnvironmentCircuitBreaker:
+    """Stops admission after ``threshold`` consecutive environment-class failures.
+
+    A lost volume permission or a dropped USB volume fails every remaining
+    sample within minutes (2026-09-03: 6,173 rows). Rows hit by an environment
+    failure go back to ``pending``; after ``threshold`` in a row no new work is
+    admitted, in-flight work drains, and the producer exits with
+    ``EXIT_ENVIRONMENT`` so the operator fixes the host instead of the cohort.
+    """
+
+    def __init__(self, threshold: int) -> None:
+        if threshold < 1:
+            raise ValueError("environment failure threshold must be at least 1")
+        self.threshold = threshold
+        self.consecutive = 0
+        self.total = 0
+        self.tripped = False
+        self.events: list[dict[str, str]] = []
+        self._lock = threading.Lock()
+
+    def record_environment_failure(self, failure_class: str, detail: str) -> bool:
+        """Count one environment failure; return True when this one trips the breaker."""
+
+        with self._lock:
+            self.consecutive += 1
+            self.total += 1
+            self.events.append({"class": failure_class, "detail": detail[:300]})
+            del self.events[: -self.threshold * 2]
+            if not self.tripped and self.consecutive >= self.threshold:
+                self.tripped = True
+                return True
+            return False
+
+    def record_other_outcome(self) -> None:
+        with self._lock:
+            self.consecutive = 0
+
+    def state(self) -> dict[str, Any]:
+        with self._lock:
+            return {
+                "threshold": self.threshold,
+                "tripped": self.tripped,
+                "consecutive": self.consecutive,
+                "environment_failures": self.total,
+                "recent": list(self.events[-self.threshold :]),
+            }
+
+
+def configure_producer_logging(log_dir: Path, *, prefix: str, level: str | None = None) -> Path | None:
+    """Log INFO (``CORE_LOG_LEVEL`` overrides) from every module to ``<log_dir>/<prefix>_<utc>_<pid>.log``.
+
+    Module loggers keep their own console handlers; this sets the root level
+    (which they inherit) and adds one root file handler, so progress lines
+    (Phase timings, ``[n/N] ... Done``) are never dropped again. Returns the
+    log path, or ``None`` (with a warning) when the file cannot be created.
+    """
+
+    log_utils.configure_logging_from_env(level or "INFO")
+    try:
+        log_dir.mkdir(parents=True, exist_ok=True)
+        path = log_dir / f"{prefix}_{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}_{os.getpid()}.log"
+        handler = logging.FileHandler(path)
+    except OSError as exc:
+        logger.warning("Cannot open a run log under %s: %s", log_dir, exc)
+        return None
+    handler.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s | %(name)s | %(message)s"))
+    handler.set_name(f"metainformant-run-log:{path}")
+    logging.getLogger().addHandler(handler)
+    return path
+
+
+def _resume_verify_hashes() -> bool:
+    """``AMALGKIT_RESUME_VERIFY_HASHES``: re-judge and re-hash every output at startup (a deep audit)."""
+
+    return os.environ.get("AMALGKIT_RESUME_VERIFY_HASHES", "").strip().lower() in _TRUTHY
+
+
+def _reconcile_scope_label(mode: str) -> str:
+    """The non-content part of a reconcile scope: rule revision, mode and the pinned Amalgkit runtime."""
+
+    runtime = pinned_amalgkit_runtime()
+    return (
+        f"{RECONCILE_SCOPE_REVISION}|{mode}|amalgkit={runtime['amalgkit_version']}"
+        f"@{runtime['amalgkit_source_revision']}"
+    )
+
+
+class DiscoveryFailed(RuntimeError):
+    """One or more species could not be discovered; no sample task was submitted."""
+
+
+def producer_exit_code_for_exception(error: BaseException) -> int:
+    """Map an exception that ended a producer run to its exit code (73 busy, 69 environment, 75 interrupted, 70)."""
+
+    if isinstance(error, CampaignLockBusy):
+        return EXIT_LOCK_BUSY
+    if isinstance(error, (PreflightError, CohortError, DiscoveryFailed)):
+        return EXIT_ENVIRONMENT
+    if isinstance(error, KeyboardInterrupt):
+        return EXIT_RETRYABLE
+    if isinstance(error, OSError):
+        return EXIT_ENVIRONMENT
+    return EXIT_INTERNAL
 
 
 @dataclass(frozen=True)
@@ -627,10 +825,11 @@ def _write_raw_validation_marker(
         try:
             handle.write(json.dumps(payload, indent=2, sort_keys=True) + "\n")
             handle.flush()
-            os.fsync(handle.fileno())
+            _durable_fsync(handle.fileno())
             os.replace(temporary, marker)
         finally:
             temporary.unlink(missing_ok=True)
+    _fsync_directory(marker.parent)
 
 
 def _local_fastq_payload_is_valid(path: Path) -> bool:
@@ -711,14 +910,7 @@ def _write_sra_validation_result(
     # resume.  Recency lives in the orchestrator log and the progress DB.
     marker.parent.mkdir(parents=True, exist_ok=True)
     temporary = marker.with_name(f".{marker.name}.{os.getpid()}.{threading.get_ident()}.tmp")
-    try:
-        temporary.write_text(
-            json.dumps(payload, indent=2, sort_keys=True) + "\n",
-            encoding="utf-8",
-        )
-        os.replace(temporary, marker)
-    finally:
-        temporary.unlink(missing_ok=True)
+    _write_text_durably(marker, json.dumps(payload, indent=2, sort_keys=True) + "\n", temporary)
 
 
 def _campaign_cached_sra_path(accession: str) -> Path | None:
@@ -1274,10 +1466,8 @@ def _write_fastq_input_stats(sample_dir: Path, accession: str) -> bool:
     temporary = stats_path.with_name(f".{stats_path.name}.{os.getpid()}.tmp")
     try:
         sample_dir.mkdir(parents=True, exist_ok=True)
-        temporary.write_text(payload, encoding="utf-8")
-        os.replace(temporary, stats_path)
+        _write_text_durably(stats_path, payload, temporary)
     except OSError as exc:
-        temporary.unlink(missing_ok=True)
         logger.warning("Unable to persist FASTQ statistics for %s: %s", accession, exc)
         return False
     logger.info(
@@ -1725,12 +1915,7 @@ def _write_reference_alias_manifest(
         "kallisto_kmer_size": kallisto_kmer_size,
     }
     temporary = destination.with_name(f".{destination.name}.tmp")
-    try:
-        temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
-        os.replace(temporary, destination)
-    except OSError:
-        temporary.unlink(missing_ok=True)
-        raise
+    _write_text_durably(destination, json.dumps(payload, indent=2, sort_keys=True) + "\n", temporary)
     return destination
 
 
@@ -1963,8 +2148,7 @@ def _cache_index_directory(index_dir: str, species_name: str) -> str:
                 os.replace(temporary, destination)
             payload = {"schema": "metainformant.rna.index_cache.v1", "source": str(source), "files": expected}
             temporary_manifest = target / f".{manifest_path.name}.{os.getpid()}.tmp"
-            temporary_manifest.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
-            os.replace(temporary_manifest, manifest_path)
+            _write_text_durably(manifest_path, json.dumps(payload, indent=2, sort_keys=True) + "\n", temporary_manifest)
             logger.info("Using local reference-index cache for %s: %s", species_name, target)
             return str(target)
         except OSError as exc:
@@ -2280,7 +2464,8 @@ class StreamingPipelineOrchestrator:
         self.sra_validation_timeout_seconds = _duration_setting("AMALGKIT_PIPELINE_SRA_VALIDATE_TIMEOUT_SECONDS", 600)
         self.compression_timeout_seconds = _duration_setting("AMALGKIT_PIPELINE_COMPRESSION_TIMEOUT_SECONDS", 1800)
         self.quant_timeout_seconds = _duration_setting("AMALGKIT_PIPELINE_QUANT_TIMEOUT_SECONDS", 7200)
-        self.quant_stall_timeout_seconds = _duration_setting("AMALGKIT_PIPELINE_QUANT_STALL_TIMEOUT_SECONDS", 0)
+        # 0 (the default) disables the stall watchdog; it is a valid value, not a warning.
+        self.quant_stall_timeout_seconds = _nonnegative_int_setting("AMALGKIT_PIPELINE_QUANT_STALL_TIMEOUT_SECONDS", 0)
 
         local_quant_cache = os.environ.get("AMALGKIT_LOCAL_QUANT_SCRATCH_DIR", "").strip()
         self.local_quant_scratch_dir = Path(local_quant_cache).expanduser() if local_quant_cache else None
@@ -3905,6 +4090,61 @@ class StreamingPipelineOrchestrator:
                 srr_id,
             )
 
+    def _reconcile_legacy_species(self, species_name: str, config_path: Path, quant_dir: Path) -> Dict[str, Any]:
+        """One reconcile pass over every recorded run of a species (non-cohort discovery).
+
+        Replaces the former ``reconcile`` + ``_reset_non_current_quantified_states``
+        pair (two classifications of every quantified output and one commit per
+        row): the quant directory is listed once, unchanged outputs whose
+        sidecar fingerprint and scope match their audit are trusted with one
+        ``lstat``, new or changed ones are classified, and every change lands in
+        one transaction. Reusable outputs (current and version drift) become
+        ``quantified`` unless the requantification policy requeues them;
+        recorded ``quantified`` rows whose output is not reusable become
+        ``quarantined``.
+        """
+
+        reuse_kwargs = self._reuse_kwargs(species_name)
+        verify_content = _resume_verify_hashes()
+        context = self._reuse_context(species_name)
+        try:
+            config_sha256 = context.config_sha256 if context is not None else sha256_file(config_path)
+        except OSError as exc:
+            logger.warning("Cannot hash %s for %s; re-judging every output: %s", config_path, species_name, exc)
+            config_sha256 = None
+        manifest = quant_dir.parent / "reference" / REFERENCE_MANIFEST_NAME
+        try:
+            reference_sha256 = sha256_file(manifest)
+        except OSError:
+            reference_sha256 = "absent"
+        scope = (
+            ReconcileScope(
+                config_sha256=config_sha256,
+                reference_sha256=reference_sha256,
+                scope=_reconcile_scope_label("legacy:" + ("content" if context is not None else "path")),
+            )
+            if config_sha256 is not None
+            else None
+        )
+        policy = getattr(self, "requantification_policy", "preserve")
+        requeue = (
+            REUSABLE_QUANT_STATUSES
+            if policy == "all"
+            else frozenset({QUANT_STATUS_VERSION_DRIFT}) if policy == "version-drift" else frozenset()
+        )
+        recorded = [srr_id for srr_id, _ in self.db.states_for_species(species_name)]
+        profile = getattr(self, "_resource_profile", None)
+        return self.db.reconcile_outputs(
+            species_name,
+            quant_dir,
+            recorded,
+            lambda path, run: classify_quantification(path, run, verify_content=verify_content, **reuse_kwargs),
+            scope=scope,
+            requantify_statuses=requeue,
+            deep=verify_content,
+            workers=max(1, getattr(profile, "validation_slots", 1)),
+        )
+
     def _reset_non_current_quantified_states(self, species_name: str) -> int:
         """Audit quantified outputs without invalidating runtime-version drift."""
 
@@ -4321,19 +4561,20 @@ class StreamingPipelineOrchestrator:
             if policy == "all"
             else frozenset({QUANT_STATUS_VERSION_DRIFT}) if policy == "version-drift" else frozenset()
         )
-        verify_content = os.environ.get("AMALGKIT_RESUME_VERIFY_HASHES", "").strip().lower() in {
-            "1",
-            "true",
-            "yes",
-            "on",
-        }
+        verify_content = _resume_verify_hashes()
         profile = getattr(self, "_resource_profile", None)
-        reconciled = self.db.reconcile_cohort(
+        reconciled = self.db.reconcile_outputs(
             species_name,
             work_dir / "quant",
             [task.accession for task in schedulable],
             lambda path, run: context.classify(path, run, verify_content=verify_content),
+            scope=ReconcileScope(
+                config_sha256=context.config_sha256,
+                reference_sha256=entry.index_sha256,
+                scope=_reconcile_scope_label(f"cohort:{cohort.cohort_id}"),
+            ),
             requantify_statuses=requeue,
+            deep=verify_content,
             workers=max(1, getattr(profile, "validation_slots", 1)),
         )
 
@@ -4612,10 +4853,7 @@ class StreamingPipelineOrchestrator:
         self.db.prune_species(species_name, all_srr_ids)
 
         quant_dir = _species_work_dir(species_name) / "quant"
-        reconciled = self.db.reconcile(species_name, quant_dir, **self._reuse_kwargs(species_name))
-        if reconciled:
-            logger.info(f"Reconciled {reconciled} already-quantified samples from filesystem")
-        self._reset_non_current_quantified_states(species_name)
+        self._reconcile_legacy_species(species_name, config_path, quant_dir)
 
         # Mark all filtered samples as sampled so amalgkit quant processes them
         filtered["is_sampled"] = "yes"
@@ -4641,9 +4879,9 @@ class StreamingPipelineOrchestrator:
             return []
 
         fastq_dir = work_dir / "getfastq"
-        # ``reconcile`` has already established the current filesystem state
-        # in the progress database, and the non-current reset above has
-        # removed stale quantified states. Re-read that authoritative set
+        # ``_reconcile_legacy_species`` has already established the current
+        # filesystem state in the progress database and quarantined stale
+        # quantified states. Re-read that authoritative set
         # once instead of calling ``is_quantified`` for every accession. On
         # large external-volume cohorts, thousands of repeated directory/stat
         # calls here can delay execution before the first reusable sample is
@@ -4680,8 +4918,19 @@ class StreamingPipelineOrchestrator:
         validation_slots: Optional[int] = None,
         requantification_policy: Optional[str] = None,
         discovery_workers: Optional[int] = None,
-    ) -> None:
-        """Run the current pipeline with bounded, explicit stage resources.
+        reuse_dry_run_fraction: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """Run the current pipeline with bounded, explicit stage resources; return a run summary.
+
+        The whole run holds the campaign writer lock of the data root
+        (:mod:`metainformant.rna.engine.campaign_lock`, kind ``producer``);
+        another writer makes this raise :class:`CampaignLockBusy` before any
+        state is touched. Under the lock the preflight runs first (a broken
+        host changes nothing); then startup resets every in-flight row
+        (``downloading``/``downloaded``/``quantifying``) and every
+        environment-class failure to ``pending`` (``permanent_drop`` rows
+        stay excluded) and, when ``reuse_dry_run_fraction`` (or
+        ``AMALGKIT_PREFLIGHT_REUSE_DRY_RUN``) is set, runs the reuse dry-run.
 
         Species discovery/reference preparation is parallelized in an isolated
         phase. Sample execution starts only after every species discovery
@@ -4690,8 +4939,122 @@ class StreamingPipelineOrchestrator:
         complete cohort. The sample executor still uses a bounded submission
         window, and its active workers and total quantification budget remain
         separate from the fallback ``fasterq-dump`` and ``pigz`` budgets.
+
+        ``AMALGKIT_ENV_FAILURE_TRIP`` (default 5) consecutive environment-class
+        failures (EPERM, EACCES, EROFS, ENXIO, ENOSPC) stop admission; those
+        rows stay ``pending`` and the summary's ``exit_code`` is
+        ``EXIT_ENVIRONMENT`` (69). Otherwise ``exit_code`` is ``EXIT_OK`` (0)
+        when no scheduled task is left retryable and ``EXIT_RETRYABLE`` (75)
+        when the same command should be run again. The WAL is checkpointed at
+        exit.
         """
+
+        lock = acquire_campaign_lock(_data_root(), "producer")
+        logger.info(
+            "Holding the campaign writer lock %s (%s)",
+            lock.path,
+            "inherited from the launching process" if lock.inherited else f"pid {os.getpid()}",
+        )
+        try:
+            return self._run_all_locked(
+                species_list,
+                max_gb,
+                workers,
+                threads,
+                quant_slots=quant_slots,
+                fasterq_threads=fasterq_threads,
+                fasterq_slots=fasterq_slots,
+                compression_threads=compression_threads,
+                max_in_flight=max_in_flight,
+                validation_slots=validation_slots,
+                requantification_policy=requantification_policy,
+                discovery_workers=discovery_workers,
+                reuse_dry_run_fraction=reuse_dry_run_fraction,
+            )
+        finally:
+            try:
+                self.db.checkpoint_wal()
+            except Exception as exc:  # noqa: BLE001 - a dropped volume must not mask the run's own outcome
+                logger.warning("Final WAL checkpoint failed: %s", exc)
+            lock.release()
+
+    def _preflight_targets(self, species_list: List[str]) -> tuple[Dict[str, Path], Dict[str, Path]]:
+        """Per species: the quant directory (one run_info.json is compared with kallisto) and, in cohort mode,
+        the frozen index whose header carries the kallisto index format."""
+
+        quant_dirs: Dict[str, Path] = {}
+        index_paths: Dict[str, Path] = {}
+        cohort = getattr(self, "cohort", None)
+        for config_name in species_list:
+            try:
+                if cohort is not None:
+                    species_name = cohort.species_for_config(config_name)
+                    entry = cohort.entry(species_name)
+                    index_paths[species_name] = Path(cohort.root) / entry.index_relpath
+                    quant_dirs[species_name] = _data_root() / species_name / "work" / "quant"
+                else:
+                    species_name = _species_name_from_config(config_name)
+                    quant_dirs[species_name] = _species_work_dir(species_name) / "quant"
+            except (CohortError, OSError, KeyError) as exc:
+                logger.warning("Preflight skips %s: %s", config_name, exc)
+        return quant_dirs, index_paths
+
+    def _reuse_probes(self, species_list: List[str]) -> List[ReuseProbe]:
+        """The reuse dry-run inputs: each species' recorded-quantified runs and the resume classifier."""
+
+        probes: List[ReuseProbe] = []
+        cohort = getattr(self, "cohort", None)
+        for config_name in species_list:
+            source = self.config_dir / config_name
+            if cohort is not None:
+                species_name = cohort.species_for_config(config_name)
+                entry = cohort.entry(species_name)
+                context = build_species_reuse_context(
+                    species_name,
+                    source,
+                    cohort_id=cohort.cohort_id,
+                    reference_index_sha256=entry.index_sha256,
+                    reference_index_name=entry.index_name,
+                    index_digests=self._cohort_digests,
+                )
+                tasks = {task.accession for task in cohort.tasks_for(species_name)}
+                recorded = [run for run in self.db.get_samples(species_name, "quantified") if run in tasks]
+                quant_dir = _data_root() / species_name / "work" / "quant"
+                classify: Any = context.classify
+            else:
+                species_name = _species_name_from_config(config_name)
+                work_dir = _species_work_dir(species_name)
+                quant_dir = work_dir / "quant"
+                recorded = self.db.get_samples(species_name, "quantified")
+                if source.is_file() and work_dir.parent.name == species_name:
+                    classify = build_species_reuse_context(species_name, source).classify
+                else:
+                    classify = classify_quantification
+            probes.append(ReuseProbe(species_name, quant_dir, recorded, classify))
+        return probes
+
+    def _run_all_locked(
+        self,
+        species_list: List[str],
+        max_gb: float,
+        workers: int,
+        threads: int,
+        *,
+        quant_slots: Optional[int] = None,
+        fasterq_threads: Optional[int] = None,
+        fasterq_slots: Optional[int] = None,
+        compression_threads: Optional[int] = None,
+        max_in_flight: Optional[int] = None,
+        validation_slots: Optional[int] = None,
+        requantification_policy: Optional[str] = None,
+        discovery_workers: Optional[int] = None,
+        reuse_dry_run_fraction: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """:meth:`run_all` while the campaign writer lock is held."""
         from collections import defaultdict, deque
+
+        run_started = time.monotonic()
+        data_root = _data_root()
 
         if requantification_policy is not None:
             requantification_policy = requantification_policy.strip().lower()
@@ -4721,16 +5084,47 @@ class StreamingPipelineOrchestrator:
         # with EPERM because the process lacked external-volume write access,
         # and quant batches failed with ENOENT because 'amalgkit' was not on
         # PATH). Verify both before any discovery or scheduling work.
+        quant_dirs, index_paths = self._preflight_targets(species_list)
         try:
-            preflight_facts = run_campaign_preflight(_data_root())
+            preflight_facts = run_campaign_preflight(
+                data_root, kallisto_quant_dirs=quant_dirs, kallisto_index_paths=index_paths
+            )
         except PreflightError as exc:
             logger.error("Campaign preflight failed; refusing to start the producer.\n%s", exc)
             raise
         else:
             logger.info(
-                "Campaign preflight passed: data_root=%s amalgkit_cli=%s",
-                preflight_facts["data_root"],
-                preflight_facts["amalgkit_cli"],
+                "Campaign preflight passed: %s",
+                ", ".join(f"{key}={value}" for key, value in sorted(preflight_facts.items())),
+            )
+        # Under the exclusive writer lock no other producer exists: every in-flight row is orphaned, and an
+        # environment-class failure says nothing about its sample.
+        startup: Dict[str, Any] = {
+            "inflight_reset": self.db.reset_inflight_states(),
+            "environment_failures_reset": self.db.reset_environment_failures(),
+        }
+        if os.environ.get("AMALGKIT_PIPELINE_STALE_DOWNLOADING_SECONDS", "").strip() not in ("", "0"):
+            logger.info(
+                "AMALGKIT_PIPELINE_STALE_DOWNLOADING_SECONDS is ignored: under the campaign writer lock every "
+                "in-flight row is orphaned and was reset at startup."
+            )
+        if reuse_dry_run_fraction is None:
+            raw_fraction = os.environ.get("AMALGKIT_PREFLIGHT_REUSE_DRY_RUN", "").strip()
+            reuse_dry_run_fraction = float(raw_fraction) if raw_fraction else 0.0
+        if reuse_dry_run_fraction > 0:
+            try:
+                startup["reuse_dry_run"] = reuse_dry_run(
+                    self._reuse_probes(species_list), fraction=min(1.0, reuse_dry_run_fraction)
+                )
+            except PreflightError as exc:
+                logger.error("Reuse dry-run refused the resume; no state was changed by discovery.\n%s", exc)
+                raise
+            logger.info(
+                "Reuse dry-run passed: %s",
+                ", ".join(
+                    f"{species}={report['would_quarantine']}/{report['sampled']}"
+                    for species, report in sorted(startup["reuse_dry_run"].items())
+                ),
             )
 
         configured_discovery_workers: Any = discovery_workers
@@ -4750,16 +5144,6 @@ class StreamingPipelineOrchestrator:
             discovery_worker_count,
         )
         quantified_by_species: Dict[str, int] = defaultdict(int)
-
-        stale_seconds = int(os.environ.get("AMALGKIT_PIPELINE_STALE_DOWNLOADING_SECONDS", "0"))
-        if stale_seconds > 0:
-            reset_count = self.db.reset_stale_downloading(stale_seconds)
-            if reset_count:
-                logger.info(
-                    "Reset %d stale downloading rows older than %d seconds to pending before resume.",
-                    reset_count,
-                    stale_seconds,
-                )
 
         all_tasks: List[Dict[str, Any]] = []
         total_discovered = 0
@@ -4811,7 +5195,7 @@ class StreamingPipelineOrchestrator:
         )
         if discovery_failures:
             details = "; ".join(f"{name}: {message}" for name, message in sorted(discovery_failures.items()))
-            raise RuntimeError(
+            raise DiscoveryFailed(
                 "Species discovery failed for "
                 f"{len(discovery_failures)} of {len(species_list)} configurations; "
                 f"no sample tasks were submitted. {details}"
@@ -4823,6 +5207,17 @@ class StreamingPipelineOrchestrator:
         for config_name in species_list:
             all_tasks.extend(discovered_by_species.get(config_name, []))
 
+        breaker = EnvironmentCircuitBreaker(
+            _resource_int(
+                os.environ.get("AMALGKIT_ENV_FAILURE_TRIP"),
+                DEFAULT_ENVIRONMENT_FAILURE_TRIP,
+                "AMALGKIT_ENV_FAILURE_TRIP",
+            )
+        )
+        execution_started = time.monotonic()
+        completed = 0
+        successful = 0
+        environment_deferred = 0
         with (
             concurrent.futures.ThreadPoolExecutor(max_workers=profile.workers) as executor,
             concurrent.futures.ThreadPoolExecutor(max_workers=profile.fasterq_slots) as fallback_executor,
@@ -4879,6 +5274,8 @@ class StreamingPipelineOrchestrator:
 
             def submit_next_primary() -> bool:
                 nonlocal primary_exhausted
+                if breaker.tripped:
+                    return False
                 if ready_primary_tasks:
                     task = ready_primary_tasks.popleft()
                 elif not primary_exhausted:
@@ -4914,7 +5311,7 @@ class StreamingPipelineOrchestrator:
                 return True
 
             def submit_fallbacks() -> None:
-                while fallback_queue and len(fallback_futures) < profile.fasterq_slots:
+                while not breaker.tripped and fallback_queue and len(fallback_futures) < profile.fasterq_slots:
                     task = fallback_queue.popleft()
                     self.db.set_state(
                         task["species_name"],
@@ -4934,10 +5331,45 @@ class StreamingPipelineOrchestrator:
                 if not submit_next_primary():
                     break
 
-            completed = 0
-            successful = 0
-            execution_started = time.monotonic()
             fallback_error = "Download Failed (all sources: ENA FTP/HTTP, NCBI)"
+
+            def defer_for_environment(task: Dict[str, Any], failure_class: str, detail: str) -> None:
+                """An environment failure leaves the row pending and counts toward the circuit breaker."""
+
+                nonlocal environment_deferred
+                environment_deferred += 1
+                srr = task["srr"]
+                sp = task["species_name"]
+                message = f"environment-deferred[{failure_class}]: {detail[:500]}"
+                try:
+                    self.db.set_state(sp, srr, "pending", error=message)
+                except Exception as db_error:  # noqa: BLE001 - the DB may live on the volume that just failed
+                    logger.error("Cannot record %s %s as pending: %s", sp, srr, db_error)
+                    breaker.record_environment_failure("environment_progress_db_unwritable", str(db_error))
+                logger.error(
+                    "[%d/%d] %s %s: environment failure (%s), left pending — %s",
+                    completed,
+                    total_discovered,
+                    sp,
+                    srr,
+                    failure_class,
+                    detail[:300],
+                )
+                if breaker.record_environment_failure(failure_class, f"{sp}/{srr}: {detail}"):
+                    logger.critical(
+                        "Environment circuit breaker tripped after %d consecutive environment failures (last: %s). "
+                        "No new samples are admitted; in-flight samples drain and their rows stay pending. Fix the "
+                        "host (volume mounted and writable, Full Disk Access/Removable Volumes permission, free "
+                        "space, tools on PATH), then rerun the same command.",
+                        breaker.threshold,
+                        failure_class,
+                    )
+
+            def environment_class_for(failure: BaseException | str | None) -> str | None:
+                found = environment_failure_class(failure, data_root)
+                if found is None and failure is not None:
+                    found = data_root_unavailable(data_root)
+                return found
 
             def record_terminal(
                 task: Dict[str, Any], res: Dict[str, Any] | None, error: Exception | None = None
@@ -4947,6 +5379,11 @@ class StreamingPipelineOrchestrator:
                 srr = task["srr"]
                 sp = task["species_name"]
                 if error is not None:
+                    failure_class = environment_class_for(error)
+                    if failure_class is not None:
+                        defer_for_environment(task, failure_class, f"Unexpected sample task error: {error}")
+                        return
+                    breaker.record_other_outcome()
                     error_message = f"Unexpected sample task error: {error}"
                     self.db.set_state(sp, srr, "failed", error=error_message)
                     logger.error(
@@ -4967,6 +5404,12 @@ class StreamingPipelineOrchestrator:
                         srr,
                     )
                     return
+                if not res["quantified"] and res.get("error"):
+                    failure_class = environment_class_for(str(res["error"]))
+                    if failure_class is not None:
+                        defer_for_environment(task, failure_class, str(res["error"]))
+                        return
+                breaker.record_other_outcome()
                 if res["quantified"]:
                     successful += 1
                     quantified_by_species[sp] += 1
@@ -5000,7 +5443,7 @@ class StreamingPipelineOrchestrator:
 
                 active_futures = set(primary_futures) | set(fallback_futures)
                 if not active_futures:
-                    if primary_exhausted and not fallback_queue and not ready_primary_tasks:
+                    if breaker.tripped or (primary_exhausted and not fallback_queue and not ready_primary_tasks):
                         break
                     # This should be unreachable, but protects against a
                     # scheduler spin if future routing changes later.
@@ -5035,6 +5478,11 @@ class StreamingPipelineOrchestrator:
                             task["srr"],
                             exc,
                         )
+                        failure_class = environment_class_for(exc)
+                        if failure_class is not None:
+                            completed += 1
+                            defer_for_environment(task, failure_class, f"NCBI fallback error: {exc}")
+                            continue
                     if fallback_ready:
                         # Return the now-local sample to the ordinary lane.
                         # download_fastq() revalidates and reuses the FASTQ,
@@ -5057,10 +5505,30 @@ class StreamingPipelineOrchestrator:
                             },
                         )
 
-        logger.info(
-            "=== Acquisition and quantification complete for this invocation; "
-            "run the current downstream checkpoint launcher after the producer stops. ==="
-        )
+            # Samples admitted to neither lane when the breaker tripped keep no in-flight state.
+            for task in list(ready_primary_tasks) + list(fallback_queue):
+                try:
+                    self.db.set_state(
+                        task["species_name"],
+                        task["srr"],
+                        "pending",
+                        error="deferred: environment circuit breaker stopped admission",
+                    )
+                except Exception as exc:  # noqa: BLE001 - reset at the next startup in any case
+                    logger.error("Cannot return %s %s to pending: %s", task["species_name"], task["srr"], exc)
+
+        if breaker.tripped:
+            logger.critical(
+                "=== Stopped by the environment circuit breaker: %d environment failures, %d samples completed. "
+                "Nothing was marked failed for the environment; rerun after fixing the host. ===",
+                breaker.total,
+                completed,
+            )
+        else:
+            logger.info(
+                "=== Acquisition and quantification complete for this invocation; "
+                "run the current downstream checkpoint launcher after the producer stops. ==="
+            )
 
         # Global progress summary mapping
         logger.info("=== Final Results Summary ===")
@@ -5076,3 +5544,87 @@ class StreamingPipelineOrchestrator:
                 logger.info(f"{sp.ljust(30)} | {q}/{total} ({pct:3.0f}%) | " f"Fail: {f:3} | Pend: {p:3} | DL: {d:3}")
         except Exception as exc:
             logger.debug("Final results summary unavailable: %s", exc)
+
+        return self._run_summary(
+            all_tasks,
+            breaker=breaker,
+            startup=startup,
+            completed=completed,
+            successful=successful,
+            environment_deferred=environment_deferred,
+            discovery_seconds=discovery_elapsed,
+            execution_seconds=time.monotonic() - execution_started,
+            run_seconds=time.monotonic() - run_started,
+        )
+
+    def _run_summary(
+        self,
+        all_tasks: List[Dict[str, Any]],
+        *,
+        breaker: EnvironmentCircuitBreaker,
+        startup: Mapping[str, Any],
+        completed: int,
+        successful: int,
+        environment_deferred: int,
+        discovery_seconds: float,
+        execution_seconds: float,
+        run_seconds: float,
+    ) -> Dict[str, Any]:
+        """The run summary and its exit code: 69 breaker tripped, 75 retryable work left, 0 drained.
+
+        Retryable work is every scheduled task whose final row is not
+        ``quantified`` or ``quarantined`` and that is not a ``permanent_drop``:
+        the next run of the same command schedules it again.
+        """
+
+        keys = sorted({(str(task["species_name"]), str(task["srr"])) for task in all_tasks})
+        remaining: Dict[str, int] = {}
+        failed_by_class: Dict[str, int] = {}
+        database_error: str | None = None
+        try:
+            final_states = self.db.states_for(keys)
+            species_names = sorted({species for species, _ in keys})
+            dropped = {
+                (species, run)
+                for species in species_names
+                for run in self.db.get_excluded_srr_ids(species, reason_code="permanent_drop")
+            }
+            for key, state in final_states.items():
+                if key in dropped or state in ("quantified", "quarantined"):
+                    continue
+                label = state or "missing"
+                remaining[label] = remaining.get(label, 0) + 1
+            wanted = set(keys)
+            for species in species_names:
+                for row in self.db.get_failed(species):
+                    if (species, row["srr_id"]) in wanted and (species, row["srr_id"]) not in dropped:
+                        error_class = classify_sample_error(row["error"])
+                        failed_by_class[error_class] = failed_by_class.get(error_class, 0) + 1
+        except Exception as exc:  # noqa: BLE001 - the DB may have gone with the volume
+            database_error = str(exc)
+            logger.error("Cannot read final task states: %s", exc)
+        if breaker.tripped or database_error is not None:
+            status, exit_code = "environment_failure", EXIT_ENVIRONMENT
+        elif remaining:
+            status, exit_code = "retryable_work_remains", EXIT_RETRYABLE
+        else:
+            status, exit_code = "drained", EXIT_OK
+        summary: Dict[str, Any] = {
+            "status": status,
+            "exit_code": exit_code,
+            "cohort_id": getattr(getattr(self, "cohort", None), "cohort_id", None),
+            "tasks_scheduled": len(keys),
+            "completed": completed,
+            "quantified_this_run": successful,
+            "environment_deferred": environment_deferred,
+            "remaining_by_state": dict(sorted(remaining.items())),
+            "failed_by_class": dict(sorted(failed_by_class.items())),
+            "breaker": breaker.state(),
+            "startup": dict(startup),
+            "database_error": database_error,
+            "discovery_seconds": round(discovery_seconds, 1),
+            "execution_seconds": round(execution_seconds, 1),
+            "run_seconds": round(run_seconds, 1),
+        }
+        logger.info("=== Producer summary: %s ===", json.dumps(summary, sort_keys=True, default=str))
+        return summary

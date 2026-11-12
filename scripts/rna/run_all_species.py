@@ -13,6 +13,17 @@ metadata/select never runs and ``metadata_selected.tsv`` is never rewritten.
 Without a cohort, a missing or stale metadata table is an error unless
 ``--refresh-metadata`` explicitly allows the NCBI query.
 
+The producer holds the campaign writer lock of the data root for its whole
+life (``metainformant.rna.engine.campaign_lock``), logs INFO to
+``<data-root>/logs/run_all_species_<utc>_<pid>.log`` and exits with:
+
+* ``0``  every scheduled task is quantified, quarantined or permanently excluded;
+* ``75`` resumable work remains (rerun the same command);
+* ``73`` another writer holds the data root;
+* ``69`` environment or preflight failure (including the environment circuit
+  breaker, a refused reuse dry-run and a failed species discovery);
+* ``70`` internal error; ``2`` invalid arguments or cohort.
+
 Usage:
     python3 scripts/rna/run_all_species.py --cohort DIR [--cohort-definition-sha256 HEX]
         [--max-gb 1000] [--workers 4] [--threads 8] [--discovery-workers N]
@@ -38,8 +49,19 @@ from metainformant.rna.engine.cohort import (  # noqa: E402
     select_cohort_species,
     verify_cohort_configs,
 )
+from metainformant.rna.engine.campaign_lock import (  # noqa: E402
+    EXIT_ENVIRONMENT,
+    EXIT_LOCK_BUSY,
+    CampaignLockBusy,
+)
+from metainformant.rna.engine.campaign_lock import acquire as acquire_campaign_lock  # noqa: E402
 from metainformant.rna.engine.species import configured_data_root, discover_species_config_names  # noqa: E402
-from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator  # noqa: E402
+from metainformant.rna.engine.streaming_orchestrator import (  # noqa: E402
+    StreamingPipelineOrchestrator,
+    configure_producer_logging,
+    logger,
+    producer_exit_code_for_exception,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_DIR = REPO_ROOT / "projects" / "hymenoptera_amalgkit" / "config" / "amalgkit"
@@ -133,6 +155,14 @@ def main() -> int:
         default=os.environ.get("AMALGKIT_REQUANTIFICATION_POLICY", "preserve"),
         help="Handle contract-compatible version drift (default: preserve)",
     )
+    parser.add_argument(
+        "--reuse-dry-run",
+        type=float,
+        default=None,
+        metavar="FRACTION",
+        help="Before discovery, classify this fraction of each species' recorded-quantified outputs and refuse "
+        "(exit 69) if more than 1%% would be quarantined (default: AMALGKIT_PREFLIGHT_REUSE_DRY_RUN, else off)",
+    )
     add_producer_cohort_arguments(parser)
     args = parser.parse_args()
 
@@ -141,6 +171,25 @@ def main() -> int:
         os.environ["AMALGKIT_DATA_ROOT"] = str(args.data_root.expanduser().resolve())
     data_root = configured_data_root()
 
+    lock = None
+    if not args.dry_run:
+        # Claim the data root before any expensive verification so a second producer fails fast.
+        try:
+            lock = acquire_campaign_lock(data_root, "producer")
+        except CampaignLockBusy as busy:
+            print(f"Another writer holds the data root: {busy}", file=sys.stderr)
+            return EXIT_LOCK_BUSY
+        except (OSError, ValueError) as error:
+            print(f"Cannot take the campaign writer lock of {data_root}: {error}", file=sys.stderr)
+            return EXIT_ENVIRONMENT
+    try:
+        return _run(parser, args, config_dir, data_root)
+    finally:
+        if lock is not None:
+            lock.release()
+
+
+def _run(parser: argparse.ArgumentParser, args: argparse.Namespace, config_dir: Path, data_root: Path) -> int:
     try:
         cohort = producer_cohort_from_args(args)
         if cohort is not None:
@@ -179,28 +228,42 @@ def main() -> int:
     if args.dry_run:
         return 0
 
-    orchestrator = StreamingPipelineOrchestrator(
-        config_dir=config_dir,
-        log_dir=data_root / "logs",
-        db_path=data_root / "pipeline_progress.db",
-        cohort=cohort,
-        allow_metadata_refresh=args.refresh_metadata,
+    log_path = configure_producer_logging(data_root / "logs", prefix="run_all_species")
+    if log_path is not None:
+        print(f"Run log: {log_path}")
+    try:
+        orchestrator = StreamingPipelineOrchestrator(
+            config_dir=config_dir,
+            log_dir=data_root / "logs",
+            db_path=data_root / "pipeline_progress.db",
+            cohort=cohort,
+            allow_metadata_refresh=args.refresh_metadata,
+        )
+        summary = orchestrator.run_all(
+            config_names,
+            args.max_gb,
+            args.workers,
+            args.threads,
+            quant_slots=args.quant_slots,
+            fasterq_threads=args.fastq_threads,
+            fasterq_slots=args.fastq_slots,
+            compression_threads=args.compression_threads,
+            validation_slots=args.validation_slots,
+            max_in_flight=args.max_in_flight,
+            requantification_policy=args.requantification_policy,
+            discovery_workers=args.discovery_workers,
+            reuse_dry_run_fraction=args.reuse_dry_run,
+        )
+    except (Exception, KeyboardInterrupt) as error:  # noqa: BLE001 - every failure maps to an exit code
+        code = producer_exit_code_for_exception(error)
+        logger.exception("Producer stopped (exit %d): %s", code, error)
+        print(f"Producer stopped (exit {code}): {type(error).__name__}: {error}", file=sys.stderr)
+        return code
+    print(
+        f"Producer finished: {summary['status']} (exit {summary['exit_code']}); "
+        f"remaining={summary['remaining_by_state']} quantified_this_run={summary['quantified_this_run']}"
     )
-    orchestrator.run_all(
-        config_names,
-        args.max_gb,
-        args.workers,
-        args.threads,
-        quant_slots=args.quant_slots,
-        fasterq_threads=args.fastq_threads,
-        fasterq_slots=args.fastq_slots,
-        compression_threads=args.compression_threads,
-        validation_slots=args.validation_slots,
-        max_in_flight=args.max_in_flight,
-        requantification_policy=args.requantification_policy,
-        discovery_workers=args.discovery_workers,
-    )
-    return 0
+    return int(summary["exit_code"])
 
 
 if __name__ == "__main__":
