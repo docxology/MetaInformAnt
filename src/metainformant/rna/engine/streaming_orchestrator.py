@@ -96,7 +96,11 @@ from metainformant.rna.engine.provenance import (
     write_metadata_provenance,
     write_quant_provenance,
 )
-from metainformant.rna.engine.raw_cleanup import reclaim_sample_raw_inputs
+from metainformant.rna.engine.raw_cleanup import (
+    reclaim_sample_raw_inputs,
+    reclaim_sample_sra_cache,
+    sra_cache_root,
+)
 from metainformant.rna.engine.species import resolve_species_work_dir
 from metainformant.rna.engine.reference_digest import IndexDigestCache, file_signature
 from metainformant.rna.retrieval import process_groups
@@ -4911,12 +4915,44 @@ class StreamingPipelineOrchestrator:
             return context.classify(quant_dir, srr_id).get("status") in REUSABLE_QUANT_STATUSES
         return is_reusable_quantification(quant_dir, srr_id, **self._reuse_kwargs(species_name))
 
+    def _sra_cache_releasable(self, species_name: str, srr_id: str) -> bool:
+        """Return whether the shared VDB cache entry of *srr_id* is no longer needed by any cohort task.
+
+        The cache is keyed by accession only. Without a frozen cohort the task
+        universe is unknown, so the entry is retained (the historical
+        behaviour). With one, every other species whose task names the same
+        accession must already hold a reusable output or a permanent exclusion.
+        """
+
+        if self.cohort is None:
+            return False
+        cohort = self.cohort
+        owners = {task.species for task in cohort.tasks if task.accession == srr_id}
+        for owner in owners - {species_name}:
+            if cohort.is_excluded(owner, srr_id):
+                continue
+            if not self.is_quantified(owner, srr_id):
+                return False
+        return True
+
     def _reclaim_after_current_quantification(self, species_name: str, srr_id: str) -> None:
-        """Reclaim one sample's raw inputs only after current evidence exists."""
+        """Reclaim one sample's raw inputs only after reusable evidence exists.
+
+        Besides the ``getfastq`` raw files this clears the accession's orphaned
+        ``fasterq-dump`` workspace and, in frozen-cohort mode, its shared
+        ``.sra-cache`` entry: the cached archive is authoritative only until
+        quantification succeeds, and keeping it would let the cache grow by
+        one archive per NCBI-fallback task for the rest of the campaign.
+        """
 
         if not self.reclaim_raw_after_quant or not self.is_quantified(species_name, srr_id):
             return
-        cleanup = reclaim_sample_raw_inputs(_species_work_dir(species_name), srr_id)
+        cleanup = reclaim_sample_raw_inputs(_species_work_dir(species_name), srr_id, include_staging=True)
+        if self._sra_cache_releasable(species_name, srr_id):
+            cache = reclaim_sample_sra_cache(sra_cache_root(_data_root()), srr_id)
+            for key in ("files_deleted", "bytes_freed", "allocated_bytes_freed"):
+                cleanup[key] += cache[key]
+            cleanup["errors"].extend(cache["errors"])
         if cleanup["errors"]:
             logger.warning(
                 "Raw-input reclamation for %s/%s completed with %d errors: %s",
