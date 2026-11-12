@@ -5,12 +5,12 @@ import gzip
 import json
 import random
 import shutil
-import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 
+from metainformant.rna.amalgkit.genome_prep import run_kallisto_index
 from metainformant.rna.engine.acquisition_manifest import sha256_file
 
 
@@ -67,11 +67,8 @@ def native_acquisition_factory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         sequences = ["".join(rng.choice("ACGT") for _ in range(sequence_length)) for _ in range(3)]
         fasta = tmp_path / "transcripts.fa"
         fasta.write_text("".join(f">gene{i}\n{sequence}\n" for i, sequence in enumerate(sequences)))
-        subprocess.run(
-            ["kallisto", "index", "-i", str(index), str(fasta)],
-            check=True,
-            capture_output=True,
-        )
+        built = run_kallisto_index(fasta, index)
+        assert built.returncode == 0, built.stderr
         rows = []
         for accession in accessions:
             raw = work / "getfastq" / accession

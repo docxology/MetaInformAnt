@@ -3,12 +3,12 @@ from __future__ import annotations
 import os
 import random
 import shutil
-import subprocess
 from pathlib import Path
 
 import pytest
 import yaml
 
+from metainformant.rna.amalgkit.genome_prep import run_kallisto_index
 from metainformant.rna.engine.acquisition_manifest import sha256_file
 from metainformant.rna.engine.acquisition_references import (
     _IndexDigests,
@@ -77,7 +77,8 @@ def test_native_reference_aliases_and_frozen_corruption_rejection(
     rng = random.Random(151)
     fasta = tmp_path / "transcripts.fa"
     fasta.write_text(">gene\n" + "".join(rng.choice("ACGT") for _ in range(1000)) + "\n")
-    subprocess.run(["kallisto", "index", "-i", str(index), str(fasta)], check=True, capture_output=True)
+    built = run_kallisto_index(fasta, index)
+    assert built.returncode == 0, built.stderr
     configs = tmp_path / "configs"
     configs.mkdir()
     config = configs / "test.yaml"
