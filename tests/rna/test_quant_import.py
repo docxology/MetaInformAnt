@@ -9,6 +9,9 @@ from pathlib import Path
 
 import pytest
 
+from metainformant.rna.engine.campaign_lock import (
+    LOCK_FILENAME as CAMPAIGN_LOCK_FILENAME,
+)
 from metainformant.rna.engine.cohort import (
     DataRootBusy,
     install_cohort,
@@ -53,7 +56,13 @@ from tests.rna.frozen_cohort_support import (
 
 
 def _tree(root: Path) -> dict[str, bytes]:
-    return {str(path.relative_to(root)): path.read_bytes() for path in sorted(root.rglob("*")) if path.is_file()}
+    """Every file's bytes, except the writer lock whose owner record changes with each acquisition."""
+
+    return {
+        str(path.relative_to(root)): path.read_bytes()
+        for path in sorted(root.rglob("*"))
+        if path.is_file() and path.name != CAMPAIGN_LOCK_FILENAME
+    }
 
 
 class World:
