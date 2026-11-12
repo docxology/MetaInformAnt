@@ -53,7 +53,9 @@ serial probe attempts, including misses.
 |---|---|
 | `streaming_orchestrator.py` | ENA-first metadata, acquisition, integration, and quantification |
 | `preflight.py` | Mandatory start-of-run environment preflight (data-root write probe, amalgkit CLI resolution) |
-| `progress_db.py` | Concurrent-safe SQLite sample state, exclusions, and resume queries |
+| `progress_db.py` | Concurrent-safe SQLite sample state, exclusions, resume queries, and frozen-cohort migration |
+| `cohort.py` | Frozen cohort definition (`COHORT.json`), install, hash verification, producer task tables, data-root maintenance lock |
+| `quant_import.py` | Plan/execute import of verified quantifications from other data roots (never overwrites) |
 | `campaign_status.py`, `campaign_status_io.py`, `campaign_status_cli.py` | Read-only frozen-inventory cloud/local status, complete stage marginals and per-sample transfer candidates; receipt/file presence is distinct from checksum validation |
 | `campaign_observation.py`, `campaign_observation_report.py`, `campaign_observation_cli.py` | Explicit manifest/phase journal capture, restore-bound new-output counts, isolated tables/figures/working supplement; operational evidence only |
 | `progress_dashboard.py` | Mosaic PDF/PNG dashboard of per-species sample processing status rendered from the progress DB |
@@ -151,6 +153,7 @@ serial probe attempts, including misses.
 - `classify_sample_error()` (in `progress_db.py`) maps stored sample
   failure text to a durable class via the order-sensitive markers in
   `SAMPLE_ERROR_CLASSES` (first match wins): `environment_write_denied`,
+  `environment_access_denied`, `environment_read_only`, `environment_no_space`,
   `environment_missing_tool`, `transfer_all_sources_failed`,
   `extraction_timeout`, `quantification_timeout`, `quantification_failed`,
   `quantification_exception`; text matching no marker is `unclassified`,
@@ -202,6 +205,54 @@ orchestrator = StreamingPipelineOrchestrator(
 The project shell entrypoint supplies bounded resource budgets and owns the
 producer/downstream lock boundary. See the [running guide](../../../../projects/hymenoptera_amalgkit/doc/00_setup/04_running_the_pipeline.md)
 and [storage contract](../../../../projects/hymenoptera_amalgkit/doc/01_infrastructure/02_storage_contract.md).
+
+### Frozen cohort mode
+
+A frozen cohort (`cohort.py`) is a directory holding the frozen acquisition
+snapshot verbatim (`snapshot.json`, `manifest.jsonl`, `inventory.json`,
+`inputs/<species>/work/{metadata/metadata_selected.tsv,index/<Stem>.idx}`)
+plus `COHORT.json` (schema `metainformant.rna.frozen_cohort.v1`): sha256 and
+size of every file, per-species configuration/metadata/index digests and the
+`permanent_drop` exclusions. The definition has no timestamps of its own, so
+its sha256 can be pinned. `load_frozen_cohort()` re-hashes every file and
+checks manifest, inventory and that each task's `batch_index` is its row in
+the frozen table; any mismatch raises `CohortError`.
+
+```bash
+python -m metainformant.rna.engine.cohort define  --source FROZEN --cohort-id ID --output COHORT.json
+python -m metainformant.rna.engine.cohort install --source FROZEN --cohort-dir DIR --cohort-id ID
+python -m metainformant.rna.engine.cohort verify  --cohort DIR --config-dir CONFIGS
+python -m metainformant.rna.engine.cohort migrate-db --cohort DIR --db ROOT/pipeline_progress.db
+python3 scripts/rna/run_all_species.py --cohort DIR [--cohort-definition-sha256 HEX] ...
+```
+
+With `--cohort`, discovery builds tasks only from the cohort minus
+`permanent_drop` exclusions (cohort and DB) minus reusable, quarantined and
+size-deferred runs. It never runs Amalgkit metadata/select or tissue
+normalization, never writes `metadata_selected.tsv`, and prunes nothing.
+`amalgkit quant --metadata` receives `work/metadata/metadata_cohort_<ID>.tsv`
+(frozen rows of the schedulable tasks, written atomically only when its bytes
+change); every quantification refuses a batch whose row is not its run.
+Without a cohort the producer scripts refuse an NCBI metadata refresh unless
+`--refresh-metadata` is given; `--max-gb` defaults to `AMALGKIT_MAX_SAMPLE_GB`
+(the launcher's budget), then `PIPELINE_MAX_GB`, then 1000.
+
+`ProgressDB.prune_species()` no longer deletes rows outside the task universe;
+it reports them. `migrate_to_cohort()` adds missing task rows, records cohort
+exclusions, resets environment-class failures (`RETRYABLE_ENVIRONMENT_CLASSES`;
+transfer failures only on request) to `pending` with the old message after a
+`reset-by-cohort-migration[<class>]` prefix, and binds the store to the cohort
+in `campaign_meta`, all in one transaction.
+
+`scripts/rna/import_quantifications.py` (`quant_import.py`) imports outputs
+from other data roots: each sample is validated in its source context (reuse
+contract v2 with content hashes, numeric checks, and an optional reference-bound
+receipt store), must match the cohort configuration and index bytes that the
+destination itself uses (else `reference_mismatch`), and is copied into a
+staging directory, re-hashed, given a portable binding witness and published
+with one `rename`. Existing destination samples are never replaced
+(`exists_identical` / `exists_different`). Decisions go to a JSON-lines
+manifest; a dry run writes it only to an explicit `--manifest` path.
 
 ### Restored quantification inputs
 

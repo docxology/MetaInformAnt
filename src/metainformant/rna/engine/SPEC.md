@@ -50,7 +50,9 @@ probe miss before the success journal. The summary's
   failure-class contract: `classify_sample_error()` maps stored
   `samples.error` text via first-match order-sensitive markers
   (`SAMPLE_ERROR_CLASSES`) to `environment_write_denied`,
-  `environment_missing_tool`, `transfer_all_sources_failed`,
+  `environment_access_denied`, `environment_read_only`,
+  `environment_no_space`, `environment_missing_tool`,
+  `transfer_all_sources_failed`,
   `extraction_timeout`, `quantification_timeout`, `quantification_failed`,
   `quantification_exception`, `unrecorded` (no error stored), or
   `unclassified` (no marker matched); the campaign status report surfaces
@@ -60,7 +62,12 @@ probe miss before the success journal. The summary's
   durable failure-class reason codes. `streaming_orchestrator.py` runs the
   mandatory campaign preflight before discovery and supports the opt-in
   quant stall watchdog (`AMALGKIT_PIPELINE_QUANT_STALL_TIMEOUT_SECONDS`,
-  default 0/disabled) around each quantification subprocess.
+  default 0/disabled) around each quantification subprocess. In frozen
+  cohort mode (`cohort.py`) discovery consumes only the hash-verified cohort
+  and passes a separate task table to `amalgkit quant`; `prune_species()` is
+  report-only and `migrate_to_cohort()` binds a progress store to a cohort
+  without deleting rows. `quant_import.py` imports verified outputs from other
+  data roots without ever replacing a destination sample.
 
 ## 🔌 API Definition
 
