@@ -32,7 +32,6 @@ from __future__ import annotations
 import argparse
 import contextlib
 import csv
-import fcntl
 import json
 import os
 import re
@@ -47,6 +46,14 @@ from typing import Any
 
 from metainformant.core.utils.hash import sha256_bytes, sha256_file
 from metainformant.rna.engine.acquisition_manifest import load_snapshot
+from metainformant.rna.engine.campaign_lock import (
+    LEGACY_DIRECTORY_LOCKS,
+    CampaignLockBusy,
+    acquire_writer,
+)
+from metainformant.rna.engine.campaign_lock import (
+    LOCK_FILENAME as CAMPAIGN_LOCK_FILENAME,
+)
 from metainformant.rna.engine.provenance import (
     REFERENCE_MANIFEST_NAME,
     CohortExpectation,
@@ -62,10 +69,11 @@ SNAPSHOT_FILENAME = "snapshot.json"
 MANIFEST_FILENAME = "manifest.jsonl"
 INVENTORY_FILENAME = "inventory.json"
 PERMANENT_DROP = "permanent_drop"
-# Held (flock) by maintenance commands that write into a data root: import, seal, DB migration.
-DATA_ROOT_LOCK_FILENAME = ".metainformant_campaign.lock"
+# Maintenance commands that write into a data root (import, seal, DB migration) hold the campaign writer
+# flock, the same one the producer holds (see metainformant.rna.engine.campaign_lock).
+DATA_ROOT_LOCK_FILENAME = CAMPAIGN_LOCK_FILENAME
 # Directory locks created by the shell launchers; their presence means a producer may be writing.
-LEGACY_LAUNCHER_LOCKS = ("results/.full_campaign.lock", "results/.finalization.lock")
+LEGACY_LAUNCHER_LOCKS = LEGACY_DIRECTORY_LOCKS
 
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 _SPECIES = re.compile(r"^[a-z0-9][a-z0-9_]*$")
@@ -932,35 +940,24 @@ def install_cohort(source_root: str | Path, cohort_dir: str | Path, *, cohort_id
 # ---------------------------------------------------------------------------
 
 
-class DataRootBusy(RuntimeError):
-    """Another process (producer, finalization or maintenance) may be writing the data root."""
+DataRootBusy = CampaignLockBusy
+"""Another process (producer, finalization or maintenance) may be writing the data root."""
 
 
 @contextlib.contextmanager
 def data_root_maintenance_lock(data_root: str | Path, *, purpose: str) -> Iterator[Path]:
-    """Hold an exclusive ``flock`` on the data root for a maintenance write.
+    """Hold the campaign writer lock of the data root for a maintenance write.
 
-    Refuses while a shell launcher's directory lock exists, and while any other
-    holder of the flock is alive. The kernel releases the flock when the
-    process dies, so a crash never leaves a stale lock behind.
+    This is :func:`metainformant.rna.engine.campaign_lock.acquire_writer` with
+    ``kind=purpose``: it refuses while another writer (a producer, a live shell
+    launcher lock, the acquisition worker's flock, or another maintenance
+    command) holds the root. The kernel releases the flock when the process
+    dies, so a crash never leaves a stale lock behind. A command started under
+    ``campaign_lock run`` is inside its parent's lock.
     """
 
-    root = Path(data_root)
-    for relative in LEGACY_LAUNCHER_LOCKS:
-        if (root / relative).exists():
-            raise DataRootBusy(f"a campaign launcher lock exists: {root / relative}")
-    lock_path = root / DATA_ROOT_LOCK_FILENAME
-    fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o644)
-    try:
-        try:
-            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            raise DataRootBusy(f"data root is locked by another process: {lock_path}") from None
-        os.ftruncate(fd, 0)
-        os.write(fd, json.dumps({"pid": os.getpid(), "purpose": purpose}).encode() + b"\n")
-        yield lock_path
-    finally:
-        os.close(fd)
+    with acquire_writer(data_root, purpose) as lock:
+        yield lock.path
 
 
 def producer_pid_alive(data_root: str | Path) -> int | None:

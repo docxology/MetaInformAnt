@@ -17,6 +17,7 @@ from typing import Any
 import requests
 import yaml
 
+from metainformant.rna.engine.campaign_lock import writer_status
 from metainformant.rna.engine.durable_quant import (
     DirectoryStore,
     S3Store,
@@ -38,8 +39,12 @@ def freeze_inventory(
     data_root: Path, config_dir: Path, output_dir: Path, *, expected_species_count: int | None = 27
 ) -> dict[str, Any]:
     """Append newly discovered runs to frozen metadata, leaving canonical inputs untouched."""
-    if (data_root / ".full_campaign.lock").exists():
-        raise RuntimeError("cannot freeze inputs while the canonical producer lock exists")
+    status = writer_status(data_root)
+    if not status["quiescent"]:
+        raise RuntimeError(
+            "cannot freeze inputs while another writer holds the data root: "
+            f"owner={status['owner']} other_writers={status['other_writers']}"
+        )
     output_dir.mkdir(parents=True, exist_ok=True)
     destination = output_dir / "inventory.json"
     if destination.exists():
