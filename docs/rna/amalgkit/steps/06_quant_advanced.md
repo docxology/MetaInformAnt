@@ -41,6 +41,33 @@ uv run python scripts/rna/reclaim_quantified_raw.py \
   --data-root "$AMALGKIT_DATA_ROOT" --species apis_mellifera --execute
 ```
 
+The command classifies every quantification directory with the
+content-addressed reuse contract, so outputs whose sidecar records a moved or
+deleted configuration path still release their inputs when the configuration
+bytes match; `version_drift_compatible` outputs count as reusable. The default
+is a read-only dry run that prints a summary and writes a plan only when
+`--manifest` is given. `--execute` refuses while `orchestrator.pid` is alive or
+a launcher lock exists, holds the data-root maintenance lock, writes the
+planned manifest before removing anything and records the executed result in
+the same file (default `<data-root>/results/raw_reclamation_<UTC>.json`).
+
+For a frozen-cohort campaign, bind the pass to the cohort and widen the scope:
+
+```bash
+uv run python scripts/rna/reclaim_quantified_raw.py \
+  --data-root "$AMALGKIT_DATA_ROOT" --cohort "$AMALGKIT_DATA_ROOT/cohort/<cohort-id>" \
+  --include-staging --include-sra-cache --include-excluded --manifest /tmp/reclaim-plan.json
+```
+
+- `--include-staging` removes orphaned `getfastq/.fasterq_tmp/<run>` workspaces
+  (validation witnesses in `.fasterq_tmp/raw_validation` stay).
+- `--include-sra-cache` removes `.sra-cache/sra/<run>.*` and
+  `.sra-cache/prefetch/<run>/` only when every cohort task naming the
+  accession is reusable or permanently excluded; validation markers and the
+  `refseq` cache stay.
+- `--include-excluded` also releases the inputs of the cohort's permanent
+  exclusions.
+
 ### Batch Cleanup
 
 The `cleanup_unquantified_samples()` function processes all downloaded but unquantified samples:

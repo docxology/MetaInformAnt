@@ -408,9 +408,9 @@ stats.sort_stats('cumulative').print_stats(20)
 
 1. **Use cleanup options**:
 ```bash
-# RNA workflow cleanup
+# RNA workflow cleanup: a read-only dry run first, then --execute
 uv run python scripts/rna/reclaim_quantified_raw.py \
-  --data-root "$AMALGKIT_DATA_ROOT" --species <species> --report
+  --data-root "$AMALGKIT_DATA_ROOT" --species <species> --manifest /tmp/reclaim-plan.json
 ```
 
 2. **Set custom temp directory**:

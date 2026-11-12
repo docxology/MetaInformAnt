@@ -69,7 +69,8 @@ serial probe attempts, including misses.
 | `workflow_steps.py` | Individual current step implementations |
 | `workflow_cleanup.py` | Provenance-gated raw cleanup and disk checks |
 | `provenance.py` | Hash-bound metadata, quantification, and downstream receipts |
-| `raw_cleanup.py` | Provenance-gated per-sample reclamation of raw FASTQ/SRA inputs once a current-contract quantification exists |
+| `raw_cleanup.py` | Per-accession reclamation primitives: raw FASTQ/SRA and failed partials in `getfastq`, orphaned `.fasterq_tmp/<run>` staging, and the shared `.sra-cache` entries |
+| `raw_reclamation.py` | Audited reclamation pass (`scripts/rna/reclaim_quantified_raw.py`): releases inputs only for content-verified reusable outputs or cohort permanent exclusions; dry run by default, maintenance-locked `--execute` |
 | `species.py` | Shared config and data-root discovery |
 | `pipeline.py` | Matrix and downstream table helpers |
 | `discovery.py` | Read-only species and sample discovery utilities |

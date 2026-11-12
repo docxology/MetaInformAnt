@@ -159,7 +159,10 @@ After a non-empty abundance table and exact current quantification sidecar are
 written, the streaming orchestrator removes only that sample's validated raw
 FASTQ/SRA inputs. Set `AMALGKIT_RECLAIM_RAW_AFTER_QUANT=no` to retain them.
 Use `scripts/rna/reclaim_quantified_raw.py` for a separate dry-run or audited
-reclamation pass. Stale logs, heartbeats, and removed-stage directories are
+reclamation pass. With `--cohort` it binds reuse to the frozen cohort digests
+and can also clear orphaned `.fasterq_tmp/<run>` staging (`--include-staging`),
+the shared `.sra-cache` entries of released accessions (`--include-sra-cache`)
+and the inputs of permanent exclusions (`--include-excluded`). Stale logs, heartbeats, and removed-stage directories are
 archived by `scripts/rna/clean_external_artifacts.py`; they are not evidence
 of a current run.
 
