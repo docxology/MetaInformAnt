@@ -158,3 +158,14 @@ def test_auto_install_key_is_accepted_and_ignored_with_one_warning(
     absent = AmalgkitWorkflowConfig(work_dir=tmp_path / "work", threads=1, species_list=["Test_species"])
     assert first[0] == second[0] == check_step_dependencies("merge", {}, absent)[0]
 
+
+def test_container_takes_amalgkit_from_the_lock_and_pins_native_tools() -> None:
+    dockerfile = (REPO_ROOT / "Dockerfile").read_text(encoding="utf-8")
+    instructions = "\n".join(line for line in dockerfile.splitlines() if not line.lstrip().startswith("#"))
+    assert "uv sync --frozen" in instructions and "--extra rna" in instructions
+    assert "COPY pyproject.toml uv.lock" in instructions
+    # Bioconda cannot carry a commit-pinned patch build, so it must not provide Amalgkit.
+    assert not re.search(r"micromamba create[^\n]*amalgkit", instructions)
+    assert "KALLISTO_VERSION=0.52.0" in instructions and '"kallisto=${KALLISTO_VERSION}"' in instructions
+    assert "SRA_TOOLKIT_VERSION=3.4.1" in instructions
+    assert "verify_amalgkit_runtime.py" in instructions
