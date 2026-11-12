@@ -4950,11 +4950,13 @@ class StreamingPipelineOrchestrator:
         """
 
         lock = acquire_campaign_lock(_data_root(), "producer")
-        logger.info(
-            "Holding the campaign writer lock %s (%s)",
-            lock.path,
-            "inherited from the launching process" if lock.inherited else f"pid {os.getpid()}",
-        )
+        if not lock.inherited:
+            holder = f"pid {os.getpid()}"
+        elif lock.fd is not None:
+            holder = f"already held by this process, pid {os.getpid()}"
+        else:
+            holder = f"inherited from the launching process, pid {lock.owner.get('pid')}"
+        logger.info("Holding the campaign writer lock %s (%s)", lock.path, holder)
         try:
             return self._run_all_locked(
                 species_list,

@@ -34,6 +34,7 @@ from metainformant.rna.engine.campaign_lock import (
 )
 from metainformant.rna.engine.cohort import CohortError
 from metainformant.rna.engine.preflight import PreflightError
+from metainformant.rna.engine.progress_db import ProgressDB
 from metainformant.rna.engine.streaming_orchestrator import (
     DiscoveryFailed,
     EnvironmentCircuitBreaker,
@@ -293,6 +294,40 @@ def test_run_all_species_exit_codes_for_busy_root_and_broken_host(
     text = logs[0].read_text()
     assert "Holding the campaign writer lock" in text and "Campaign preflight failed" in text
     assert is_quiescent(campaign.data.base)  # the lock went with the process
+
+
+def test_run_all_species_exits_0_when_every_task_is_already_quantified(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    campaign = Campaign(tmp_path, monkeypatch, forbid_subprocess=False)
+    for run in TASKS:
+        campaign.data.write_sample(run, config=campaign.yaml)  # reusable under the cohort contract
+    tools = tmp_path / "tools"
+    tools.mkdir()
+    for tool in ("amalgkit", "kallisto", "fasterq-dump", "prefetch", "vdb-validate", "pigz"):
+        script = tools / tool
+        body = 'if [ "$1" = version ]; then echo "kallisto, version 0.52.0"; fi' if tool == "kallisto" else "exit 0"
+        script.write_text(f"#!/bin/sh\n{body}\n")
+        script.chmod(0o755)
+    result = _script(
+        "--config-dir",
+        str(campaign.config_dir),
+        "--data-root",
+        str(campaign.data.base),
+        "--cohort",
+        str(campaign.base / "cohort"),
+        "--species",
+        SPECIES,
+        path=f"{tools}{os.pathsep}/usr/bin{os.pathsep}/bin",
+    )
+    assert result.returncode == EXIT_OK, result.stdout + result.stderr
+    assert "Producer finished: drained (exit 0)" in result.stdout
+    log = next((campaign.data.base / "logs").glob("run_all_species_*.log")).read_text()
+    assert "Campaign preflight passed" in log and "kallisto_version=0.52.0" in log
+    assert "Producer summary" in log
+    with ProgressDB(campaign.data.base / "pipeline_progress.db") as db:
+        assert {db.get_state(SPECIES, run) for run in TASKS} == {"quantified"}
+    assert is_quiescent(campaign.data.base)
 
 
 def test_producer_logging_writes_info_to_a_per_run_file(tmp_path: Path) -> None:
