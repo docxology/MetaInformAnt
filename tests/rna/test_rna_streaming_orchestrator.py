@@ -1532,8 +1532,18 @@ def _stub_preflight(_data_root: object, **_kwargs: object) -> dict[str, str]:
     return {"data_root": "stub", "amalgkit_cli": "stub"}
 
 
+def _isolated_data_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """run_all takes the campaign writer lock of the data root; give each test its own existing root."""
+
+    data_root = tmp_path / "data_root"
+    data_root.mkdir(exist_ok=True)
+    monkeypatch.setenv("AMALGKIT_DATA_ROOT", str(data_root))
+    return data_root
+
+
 def test_run_all_keeps_submitted_sample_tasks_bounded(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A large task list never exceeds the configured in-flight window."""
+    _isolated_data_root(tmp_path, monkeypatch)
 
     from concurrent.futures import ThreadPoolExecutor as RealThreadPoolExecutor
 
@@ -1609,6 +1619,7 @@ def test_run_all_parallelizes_discovery_and_preserves_species_order(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Discovery overlaps, but the execution task list follows config order."""
+    _isolated_data_root(tmp_path, monkeypatch)
 
     orchestrator = StreamingPipelineOrchestrator(
         tmp_path / "config",
@@ -1658,6 +1669,7 @@ def test_run_all_aborts_before_execution_on_discovery_exception(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A failed species discovery cannot silently produce a partial campaign."""
+    _isolated_data_root(tmp_path, monkeypatch)
 
     orchestrator = StreamingPipelineOrchestrator(
         tmp_path / "config",
@@ -1694,6 +1706,7 @@ def test_run_all_routes_deferred_ncbi_acquisition_back_to_primary_lane(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A deferred extraction must finish acquisition before primary quantification resumes."""
+    _isolated_data_root(tmp_path, monkeypatch)
 
     task = {
         "srr": "SRR_DEFERRED",
@@ -1755,6 +1768,7 @@ def test_deferred_ncbi_fallback_does_not_starve_primary_executor(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A blocked one-slot fallback must not prevent the next ENA task from running."""
+    _isolated_data_root(tmp_path, monkeypatch)
 
     tasks = [
         {

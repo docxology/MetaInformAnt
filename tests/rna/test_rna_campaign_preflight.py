@@ -6,21 +6,64 @@ real progress-database classifier following the real-implementation policy.
 
 from __future__ import annotations
 
+import json
 import os
 import stat
+import struct
 from pathlib import Path
 
 import pytest
 
 from metainformant.rna.engine.preflight import (
     PROBE_FILE_NAME,
+    PRODUCER_TOOLS,
     PreflightError,
+    ReuseProbe,
+    check_free_space,
+    check_kallisto_compatibility,
+    kallisto_index_version,
     main,
     probe_data_root_writable,
     resolve_amalgkit_cli,
+    resolve_producer_tools,
+    reuse_dry_run,
     run_campaign_preflight,
 )
 from metainformant.rna.engine.progress_db import classify_sample_error
+
+
+def _fake_tools(bin_dir: Path, *, kallisto_version: str = "0.52.0", skip: tuple[str, ...] = ()) -> Path:
+    """Real executables for every producer tool; ``kallisto version`` prints ``kallisto_version``."""
+
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    for tool in PRODUCER_TOOLS:
+        if tool in skip:
+            continue
+        script = bin_dir / tool
+        if tool == "kallisto":
+            script.write_text(
+                f'#!/bin/sh\nif [ "$1" = version ]; then echo "kallisto, version {kallisto_version}"; fi\n'
+            )
+        else:
+            script.write_text("#!/bin/sh\nexit 0\n")
+        script.chmod(0o755)
+    return bin_dir
+
+
+def _run_info(quant_dir: Path, run: str, *, kallisto_version: str = "0.52.0", index_version: int = 13) -> Path:
+    sample = quant_dir / run
+    sample.mkdir(parents=True)
+    path = sample / f"{run}_run_info.json"
+    path.write_text(json.dumps({"kallisto_version": kallisto_version, "index_version": index_version}))
+    return path
+
+
+@pytest.fixture
+def no_space_floors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Tests that are not about free space must not depend on this host's disks."""
+
+    monkeypatch.setenv("AMALGKIT_MIN_EXTERNAL_FREE_GB", "0")
+    monkeypatch.setenv("AMALGKIT_MIN_SYSTEM_FREE_GB", "0")
 
 
 class TestDataRootProbe:
@@ -70,19 +113,104 @@ class TestAmalgkitResolution:
 class TestCampaignPreflight:
     """The combined preflight reports every failed check, not only the first."""
 
-    def test_happy_path_returns_resolved_facts(self, tmp_path: Path):
-        fake_bin = tmp_path / "bin"
-        fake_bin.mkdir()
-        cli = fake_bin / "amalgkit"
-        cli.write_text("#!/bin/sh\nexit 0\n")
-        cli.chmod(0o755)
+    def test_happy_path_returns_resolved_facts(self, tmp_path: Path, no_space_floors: None):
+        fake_bin = _fake_tools(tmp_path / "bin")
         data_root = tmp_path / "root"
         data_root.mkdir()
 
         facts = run_campaign_preflight(data_root, search_path=str(fake_bin))
 
         assert facts["data_root"] == str(data_root.resolve())
-        assert facts["amalgkit_cli"] == str(cli)
+        assert facts["amalgkit_cli"] == str(fake_bin / "amalgkit")
+        assert facts["tool_fasterq_dump"] == str(fake_bin / "fasterq-dump")
+        assert facts["tool_vdb_validate"] == str(fake_bin / "vdb-validate")
+        assert float(facts["data_root_free_gib"]) > 0
+        assert list(data_root.iterdir()) == []
+
+    def test_missing_binary_is_named(self, tmp_path: Path, no_space_floors: None):
+        fake_bin = _fake_tools(tmp_path / "bin", skip=("kallisto", "pigz"))
+        data_root = tmp_path / "root"
+        data_root.mkdir()
+
+        with pytest.raises(PreflightError, match="not on the effective PATH: kallisto, pigz") as excinfo:
+            run_campaign_preflight(data_root, search_path=str(fake_bin))
+        assert "amalgkit" not in str(excinfo.value).split("PATH:")[1].splitlines()[0]
+        with pytest.raises(PreflightError, match="fasterq-dump, prefetch, vdb-validate, pigz"):
+            resolve_producer_tools(search_path=str(tmp_path / "empty"))
+
+    def test_kallisto_must_match_the_recorded_outputs(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, no_space_floors: None
+    ):
+        data_root = tmp_path / "root"
+        data_root.mkdir()
+        quant = data_root / "species_a" / "work" / "quant"
+        _run_info(quant, "SRR1")
+        empty = data_root / "species_b" / "work" / "quant"
+        empty.mkdir(parents=True)
+        index = tmp_path / "a.idx"
+        index.write_bytes(struct.pack("<Q", 13) + b"rest of a kallisto index")
+        matching = _fake_tools(tmp_path / "bin_ok")
+        facts = check_kallisto_compatibility(
+            str(matching / "kallisto"), {"species_a": quant, "species_b": empty}, index_paths={"species_a": index}
+        )
+        assert facts["installed"] == "0.52.0"
+        assert facts["checked"]["species_a"]["index_header_version"] == 13
+        assert facts["without_outputs"] == ["species_b"]
+        assert kallisto_index_version(index) == 13
+
+        drifted = _fake_tools(tmp_path / "bin_new", kallisto_version="0.51.1")
+        with pytest.raises(PreflightError, match="installed kallisto 0.51.1 differs from 0.52.0"):
+            run_campaign_preflight(data_root, search_path=str(drifted), kallisto_quant_dirs={"species_a": quant})
+        monkeypatch.setenv("AMALGKIT_ALLOW_KALLISTO_DRIFT", "1")
+        facts = run_campaign_preflight(data_root, search_path=str(drifted), kallisto_quant_dirs={"species_a": quant})
+        assert facts["kallisto_drift_allowed"] == "yes"
+        monkeypatch.delenv("AMALGKIT_ALLOW_KALLISTO_DRIFT")
+
+        index.write_bytes(struct.pack("<Q", 12) + b"an older index format")
+        with pytest.raises(PreflightError, match="has format version 12, outputs recorded index_version 13"):
+            run_campaign_preflight(
+                data_root,
+                search_path=str(matching),
+                kallisto_quant_dirs={"species_a": quant},
+                kallisto_index_paths={"species_a": index},
+            )
+
+    def test_free_space_floors(self, tmp_path: Path):
+        data_root = tmp_path / "root"
+        data_root.mkdir()
+        facts = check_free_space(data_root, min_data_root_free_gb=0, min_system_free_gb=0, system_root=tmp_path)
+        assert float(facts["data_root_free_gib"]) > 0 and float(facts["system_free_gib"]) > 0
+        with pytest.raises(PreflightError, match="below the 1e\\+09 GiB floor \\(AMALGKIT_MIN_EXTERNAL_FREE_GB\\)"):
+            check_free_space(data_root, min_data_root_free_gb=1e9, min_system_free_gb=0, system_root=tmp_path)
+        with pytest.raises(PreflightError, match="AMALGKIT_MIN_SYSTEM_FREE_GB"):
+            check_free_space(data_root, min_data_root_free_gb=0, min_system_free_gb=1e9, system_root=tmp_path)
+        # A system root that does not exist (Linux, CI) is skipped.
+        facts = check_free_space(data_root, min_data_root_free_gb=0, system_root=tmp_path / "absent")
+        assert "system_free_gib" not in facts
+
+    def test_reuse_dry_run_refuses_a_mass_quarantine(self, tmp_path: Path):
+        quant = tmp_path / "quant"
+        runs = [f"SRR{i:04d}" for i in range(200)]
+        for run in runs:
+            (quant / run).mkdir(parents=True)
+            (quant / run / "verdict").write_text("current")
+        calls: list[str] = []
+
+        def classify(path: Path, run: str) -> dict[str, str]:
+            calls.append(run)
+            return {"status": (path / "verdict").read_text(), "reason": "fixture verdict file"}
+
+        report = reuse_dry_run([ReuseProbe("species_a", quant, runs, classify)], fraction=0.01)
+        assert report["species_a"] == {"recorded": 200, "sampled": 2, "would_quarantine": 0, "examples": []}
+        assert len(calls) == 2
+        again = reuse_dry_run([ReuseProbe("species_a", quant, runs, classify)], fraction=0.01)
+        assert again == report and calls[:2] == calls[2:]  # the sample is deterministic
+
+        for run in runs[:150]:
+            (quant / run / "verdict").write_text("invalid")
+        with pytest.raises(PreflightError, match="species_a: .* would be quarantined"):
+            reuse_dry_run([ReuseProbe("species_a", quant, runs, classify)], fraction=0.05)
+        assert reuse_dry_run([ReuseProbe("species_b", quant, [], classify)])["species_b"]["sampled"] == 0
 
     def test_collects_all_failures(self, tmp_path: Path):
         read_only = tmp_path / "read_only"
@@ -98,18 +226,14 @@ class TestCampaignPreflight:
         assert "not writable" in message
         assert "amalgkit" in message
 
-    def test_cli_exit_codes(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    def test_cli_exit_codes(self, tmp_path: Path, capsys: pytest.CaptureFixture[str], no_space_floors: None):
         data_root = tmp_path / "root"
         data_root.mkdir()
 
         assert main(["--data-root", str(data_root), "--search-path", ""]) == 1
         assert "PREFLIGHT FAILED" in capsys.readouterr().err
 
-        fake_bin = tmp_path / "bin"
-        fake_bin.mkdir()
-        cli = fake_bin / "amalgkit"
-        cli.write_text("#!/bin/sh\nexit 0\n")
-        cli.chmod(0o755)
+        fake_bin = _fake_tools(tmp_path / "bin")
 
         assert main(["--data-root", str(data_root), "--search-path", str(fake_bin)]) == 0
         out = capsys.readouterr().out
@@ -154,16 +278,40 @@ class TestOrchestratorPreflightWiring:
             raise PreflightError(f"simulated broken environment: {data_root}")
 
         monkeypatch.setattr(streaming_orchestrator, "run_campaign_preflight", _fail)
+        (tmp_path / "data").mkdir()
+        monkeypatch.setenv("AMALGKIT_DATA_ROOT", str(tmp_path / "data"))
         orchestrator = streaming_orchestrator.StreamingPipelineOrchestrator(
             config_dir=tmp_path / "configs",
             log_dir=tmp_path / "logs",
             db_path=tmp_path / "progress.db",
         )
+        orchestrator.db.init_species("test_species", ["SRR1"])
+        orchestrator.db.set_state("test_species", "SRR1", "quantifying")
 
-        with pytest.raises(PreflightError, match="simulated broken environment"):
+        with pytest.raises(PreflightError, match="simulated broken environment") as excinfo:
             orchestrator.run_all(["amalgkit_definitely_absent.yaml"], 1.0, 1, 1)
+        assert streaming_orchestrator.producer_exit_code_for_exception(excinfo.value) == 69
 
-        # Discovery never started: the invalid configuration was never parsed.
+        # Discovery never started (the invalid configuration was never parsed) and no startup reset ran.
+        assert orchestrator.db.get_total_counts() == {"test_species": 1}
+        assert orchestrator.db.get_state("test_species", "SRR1") == "quantifying"
+
+    def test_real_preflight_refuses_a_host_without_tools(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, no_space_floors: None
+    ):
+        from metainformant.rna.engine import streaming_orchestrator
+
+        data_root = tmp_path / "data"
+        data_root.mkdir()
+        monkeypatch.setenv("AMALGKIT_DATA_ROOT", str(data_root))
+        monkeypatch.setenv("PATH", str(_fake_tools(tmp_path / "bin", skip=("kallisto",))))
+        orchestrator = streaming_orchestrator.StreamingPipelineOrchestrator(
+            config_dir=tmp_path / "configs",
+            log_dir=tmp_path / "logs",
+            db_path=tmp_path / "progress.db",
+        )
+        with pytest.raises(PreflightError, match="not on the effective PATH: kallisto"):
+            orchestrator.run_all(["amalgkit_definitely_absent.yaml"], 1.0, 1, 1)
         assert orchestrator.db.get_total_counts() == {}
 
     def test_preflight_runs_with_configured_data_root(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -176,6 +324,7 @@ class TestOrchestratorPreflightWiring:
             return {"data_root": str(data_root), "amalgkit_cli": "fake"}
 
         monkeypatch.setattr(streaming_orchestrator, "run_campaign_preflight", _record)
+        (tmp_path / "data").mkdir()
         monkeypatch.setenv("AMALGKIT_DATA_ROOT", str(tmp_path / "data"))
         orchestrator = streaming_orchestrator.StreamingPipelineOrchestrator(
             config_dir=tmp_path / "configs",
