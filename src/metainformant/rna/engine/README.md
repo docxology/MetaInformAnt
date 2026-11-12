@@ -251,8 +251,11 @@ receipt store), must match the cohort configuration and index bytes that the
 destination itself uses (else `reference_mismatch`), and is copied into a
 staging directory, re-hashed, given a portable binding witness and published
 with one `rename`. Existing destination samples are never replaced
-(`exists_identical` / `exists_different`). Decisions go to a JSON-lines
-manifest; a dry run writes it only to an explicit `--manifest` path.
+(`exists_identical` / `exists_different`); a conflict records whether the
+abundance tables differ (`quantification`) and which side's evidence proves the
+index bytes rather than only the index name (`index_bytes_proven`). Decisions
+go to a JSON-lines manifest; a dry run writes it only to an explicit
+`--manifest` path.
 
 ### Restored quantification inputs
 
