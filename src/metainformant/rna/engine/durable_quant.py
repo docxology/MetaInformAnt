@@ -12,7 +12,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from metainformant.rna.engine.provenance import RESTORED_INPUTS_DIR
+from metainformant.rna.engine.provenance import RESTORED_INPUTS_DIR, _durable_fsync, _fsync_directory
 from metainformant.rna.engine.quant_storage import (
     ACCESSION as ACCESSION,
     IDENTIFIER as IDENTIFIER,
@@ -44,6 +44,15 @@ __all__ = [
     "safe_key",
     "validate_quantification",
 ]
+
+
+def _write_new_file_durably(path: Path, payload: bytes) -> None:
+    """Create ``path`` with ``payload`` and flush it to stable storage before publication."""
+
+    with path.open("xb") as handle:
+        handle.write(payload)
+        handle.flush()
+        _durable_fsync(handle.fileno())
 
 
 def bound_receipt_key(cohort: str, species: str, accession: str) -> str:
@@ -176,7 +185,7 @@ def restore_quantification(
             payload = store.get(record["key"])
             if _digest(payload) != record["sha256"] or len(payload) != record["size"]:
                 raise ValueError("stored blob checksum mismatch")
-            (staging / name).write_bytes(payload)
+            _write_new_file_durably(staging / name, payload)
         validate_quantification(
             staging,
             species,
@@ -189,9 +198,10 @@ def restore_quantification(
             if manifest is None:
                 raise ValueError("portable restoration lacks reference manifest")
             restored_inputs.mkdir()
-            (restored_inputs / "config.yaml").write_bytes(config_bytes)
-            (restored_inputs / "reference_manifest.json").write_bytes(manifest)
-            (restored_inputs / "manifest.json").write_bytes(
+            _write_new_file_durably(restored_inputs / "config.yaml", config_bytes)
+            _write_new_file_durably(restored_inputs / "reference_manifest.json", manifest)
+            _write_new_file_durably(
+                restored_inputs / "manifest.json",
                 _encode(
                     {
                         "schema": "metainformant.rna.restored_inputs.v1",
@@ -199,8 +209,9 @@ def restore_quantification(
                         "config_sha256": receipt["config_sha256"],
                         "reference_manifest_sha256": receipt["reference_manifest_sha256"],
                     }
-                )
+                ),
             )
+            _fsync_directory(restored_inputs)
         if destination.exists():
             for record in receipt["files"]:
                 if (
@@ -218,9 +229,13 @@ def restore_quantification(
                         if not target.is_file() or target.read_bytes() != path.read_bytes():
                             raise FileExistsError("restore would overwrite different input witness")
                 else:
+                    _fsync_directory(staging)
                     os.rename(restored_inputs, target_inputs)
+                    _fsync_directory(destination)
         else:
+            _fsync_directory(staging)
             os.rename(staging, destination)
+            _fsync_directory(destination.parent)
     finally:
         if staging.exists():
             shutil.rmtree(staging)
