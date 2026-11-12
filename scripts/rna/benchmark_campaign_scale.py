@@ -55,6 +55,7 @@ from typing import Any, Callable, Dict, List, Sequence, Tuple
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
+from metainformant.rna.amalgkit import AMALGKIT_RELEASE_TAG, REQUIRED_AMALGKIT_VERSION  # noqa: E402
 from metainformant.rna.engine.progress_db import ProgressDB, classify_sample_error  # noqa: E402
 from metainformant.rna.engine.provenance import (  # noqa: E402
     QUANT_STATUS_CURRENT,
@@ -360,8 +361,8 @@ def populate_progress_db(
                 status=QUANT_STATUS_CURRENT,
                 reason="exact current runtime",
                 contract_id=f"bench_{rng.randrange(16**32):032x}",
-                observed_amalgkit_version="0.16.60",
-                observed_release_tag="v0.16.60",
+                observed_amalgkit_version=REQUIRED_AMALGKIT_VERSION,
+                observed_release_tag=AMALGKIT_RELEASE_TAG,
                 observed_source_revision="bench-fixture",
             )
             audit_rows += 1

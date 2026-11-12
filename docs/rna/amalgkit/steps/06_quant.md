@@ -478,6 +478,6 @@ See **[06_quant_advanced.md](06_quant_advanced.md)** for:
 ---
 
 **Last Updated**: July 23, 2026
-**AMALGKIT Version**: 0.16.60 (`v0.16.60`)
+**AMALGKIT Version**: 0.16.108 (commit `1d1566638abe`)
 **kallisto Version**: record the executable and index-build version in the run manifest
 **Status**: Production-ready

@@ -35,9 +35,9 @@ Amalgkit release.
 
 **Solution:** install the pinned project extra:
 ```bash
-uv sync --extra rna
+uv sync --frozen --extra rna
 ```
-The `rna` extra pins `amalgkit` to the `v0.16.60` tag, and the Docker image installs `amalgkit=0.16.60` from bioconda. `scripts/cloud/vm_setup.sh` installs amalgkit from `git+https://github.com/kfuku52/amalgkit` without a tag.
+The `rna` extra pins `amalgkit` to upstream commit `1d1566638abe32e79ee262193bb88769c3482e76` (0.16.108; upstream only tags x.y.0 releases), and the Docker image installs it from `uv.lock` with `uv sync --frozen --extra rna`, never from bioconda. MetaInformAnt never installs Amalgkit at runtime; a missing or different build fails closed. `scripts/cloud/vm_setup.sh` installs amalgkit from `git+https://github.com/kfuku52/amalgkit` without a tag.
 
 ## 4. kallisto index Is Run Without Threads
 

@@ -161,7 +161,7 @@ gcloud compute ssh metainformant-pipeline --zone us-central1-a
 sudo -i
 cd /opt/MetaInformAnt
 
-# Install tools (the "rna" extra pins amalgkit to v0.16.60; kallisto and the SRA Toolkit must also be on PATH)
+# Install tools (the "rna" extra pins amalgkit to commit 1d1566638abe, 0.16.108; kallisto 0.52.0 and SRA Toolkit 3.4.1 must also be on PATH)
 apt-get install -y python3-pip r-base
 pip3 install --break-system-packages -e ".[rna]"
 wget -qO /usr/local/bin/fastp https://github.com/OpenGene/fastp/releases/download/v0.24.0/fastp && chmod +x /usr/local/bin/fastp
