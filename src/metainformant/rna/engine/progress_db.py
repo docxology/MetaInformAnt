@@ -24,6 +24,7 @@ from typing import Dict, List, Optional
 from metainformant.core.utils.logging import get_logger
 from metainformant.rna.core.sample_utils import find_quantification_file
 from metainformant.rna.engine.provenance import QUANT_STATUS_CURRENT, classify_quantification
+from metainformant.rna.engine.reference_digest import IndexDigestCache
 
 logger = get_logger(__name__)
 
@@ -553,6 +554,8 @@ class ProgressDB:
         verify_hashes: bool = False,
         config_path: Path | None = None,
         reference_manifest_path: Path | None = None,
+        expected_config_sha256: str | None = None,
+        index_digests: IndexDigestCache | None = None,
     ) -> int:
         """Reconcile only provenance-qualified current quantification outputs.
 
@@ -574,9 +577,17 @@ class ProgressDB:
         species) inside Phase-1 discovery stalled task submission for longer
         than the campaign stall watchdogs on every restart. Pass True only for
         an explicit deep audit.
+
+        ``expected_config_sha256`` binds the configuration by content (the
+        sha256 of the current runtime configuration, computed once per
+        species) instead of re-reading the path recorded in every sidecar, so
+        outputs whose original checkout moved or was deleted still reconcile.
+        One ``index_digests`` cache per species avoids re-hashing the shared
+        reference manifest for every sample.
         """
         if not quant_dir.exists():
             return 0
+        digests = index_digests if index_digests is not None else IndexDigestCache()
 
         reconciled = []
         rejected = []
@@ -592,6 +603,8 @@ class ProgressDB:
                     verify_content=verify_hashes,
                     expected_config_path=config_path,
                     expected_reference_manifest_path=reference_manifest_path,
+                    expected_config_sha256=expected_config_sha256,
+                    index_digests=digests,
                 )
                 if classification.get("status") == QUANT_STATUS_CURRENT:
                     reconciled.append(subdir.name)

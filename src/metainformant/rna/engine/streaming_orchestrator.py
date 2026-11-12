@@ -43,6 +43,8 @@ from metainformant.rna.engine.progress_db import ProgressDB
 from metainformant.rna.engine.provenance import (
     QUANT_STATUS_CURRENT,
     QUANT_STATUS_VERSION_DRIFT,
+    SpeciesReuseContext,
+    build_species_reuse_context,
     classify_quantification,
     is_current_metadata,
     is_reusable_quantification,
@@ -3781,13 +3783,49 @@ class StreamingPipelineOrchestrator:
         if cleanup_succeeded:
             self._release_local_fastq_stage_for_workspace(scratch_root)
 
+    def _register_reuse_context(
+        self,
+        species_name: str,
+        source_config_path: Path,
+        runtime_config_path: Path,
+    ) -> SpeciesReuseContext | None:
+        """Bind quantification reuse to the configuration bytes, hashed once per species.
+
+        Only the checked-in YAML is content-bound. An alias runtime YAML has
+        different bytes from the checked-in one, and outputs recorded under
+        either keep the historical path-based check.
+        """
+
+        if runtime_config_path != source_config_path:
+            return None
+        try:
+            context = build_species_reuse_context(species_name, runtime_config_path)
+        except OSError as exc:
+            logger.warning("Unable to hash runtime configuration for %s: %s", species_name, exc)
+            return None
+        contexts: dict[str, SpeciesReuseContext] | None = getattr(self, "_reuse_contexts", None)
+        if contexts is None:
+            contexts = {}
+            self._reuse_contexts = contexts
+        contexts[species_name] = context
+        return context
+
+    def _reuse_context(self, species_name: str) -> SpeciesReuseContext | None:
+        return getattr(self, "_reuse_contexts", {}).get(species_name)
+
+    def _reuse_kwargs(self, species_name: str) -> dict[str, Any]:
+        context = self._reuse_context(species_name)
+        if context is None:
+            return {}
+        return {"expected_config_sha256": context.config_sha256, "index_digests": context.index_digests}
+
     def is_quantified(self, species_name: str, srr_id: str) -> bool:
         """Check for a reusable quantification, including compatible version drift."""
         quant_dir = _species_work_dir(species_name) / "quant" / srr_id
         quant_file = find_quantification_file(quant_dir, srr_id)
         if not quant_dir.exists() or quant_file is None or not quant_file.is_file() or quant_file.stat().st_size <= 100:
             return False
-        return is_reusable_quantification(quant_dir, srr_id)
+        return is_reusable_quantification(quant_dir, srr_id, **self._reuse_kwargs(species_name))
 
     def _reclaim_after_current_quantification(self, species_name: str, srr_id: str) -> None:
         """Reclaim one sample's raw inputs only after current evidence exists."""
@@ -3840,11 +3878,13 @@ class StreamingPipelineOrchestrator:
             "on",
         }
 
+        reuse_kwargs = self._reuse_kwargs(species_name)
+
         def classify(srr_id: str) -> tuple[str, dict[str, Any]]:
             quant_dir = _species_work_dir(species_name) / "quant" / srr_id
             return (
                 srr_id,
-                classify_quantification(quant_dir, srr_id, verify_content=verify_resume_hashes),
+                classify_quantification(quant_dir, srr_id, verify_content=verify_resume_hashes, **reuse_kwargs),
             )
 
         if validation_slots == 1:
@@ -4151,6 +4191,7 @@ class StreamingPipelineOrchestrator:
 
         species_name = _species_name_from_config(config_name)
         config_path = _runtime_config_path(source_config_path, species_name)
+        self._register_reuse_context(species_name, source_config_path, config_path)
         logger.info(f"=== Processing {species_name} ===")
 
         # Autonomous Preprocessing Detection
@@ -4365,7 +4406,7 @@ class StreamingPipelineOrchestrator:
         self.db.prune_species(species_name, all_srr_ids)
 
         quant_dir = _species_work_dir(species_name) / "quant"
-        reconciled = self.db.reconcile(species_name, quant_dir)
+        reconciled = self.db.reconcile(species_name, quant_dir, **self._reuse_kwargs(species_name))
         if reconciled:
             logger.info(f"Reconciled {reconciled} already-quantified samples from filesystem")
         self._reset_non_current_quantified_states(species_name)
