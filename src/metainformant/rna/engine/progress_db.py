@@ -15,10 +15,13 @@ Sample state machine::
 from __future__ import annotations
 
 import concurrent.futures
+import json
 import os
 import sqlite3
+import stat as stat_module
 import threading
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Mapping, Optional
 
@@ -28,6 +31,7 @@ if TYPE_CHECKING:
 from metainformant.core.utils.logging import get_logger
 from metainformant.rna.core.sample_utils import find_quantification_file
 from metainformant.rna.engine.provenance import (
+    QUANT_PROVENANCE_FILENAME,
     QUANT_STATUS_CURRENT,
     REUSABLE_QUANT_STATUSES,
     classify_quantification,
@@ -82,6 +86,7 @@ SAMPLE_ERROR_CLASSES: dict[str, str] = {
     "environment_access_denied": "Permission denied",
     "environment_read_only": "Read-only file system",
     "environment_no_space": "No space left on device",
+    "environment_device_unavailable": "Device not configured",
     "environment_missing_tool": "No such file or directory: '",
     "transfer_all_sources_failed": "Download Failed (all sources",
     "extraction_timeout": "fasterq-dump timeout",
@@ -105,10 +110,11 @@ RETRYABLE_ENVIRONMENT_CLASSES = frozenset(
         "environment_access_denied",
         "environment_read_only",
         "environment_no_space",
+        "environment_device_unavailable",
         "environment_missing_tool",
     }
 )
-"""Failure classes caused by the producer's host (EPERM, EACCES, EROFS, ENOSPC, ENOENT), not by the sample."""
+"""Failure classes caused by the producer's host (EPERM, EACCES, EROFS, ENOSPC, ENXIO, ENOENT), not by the sample."""
 
 TRANSFER_RESET_CLASSES = frozenset({"transfer_all_sources_failed"})
 """Transfer failures: possibly per-sample, reset only on explicit request."""
@@ -116,6 +122,56 @@ TRANSFER_RESET_CLASSES = frozenset({"transfer_all_sources_failed"})
 RETRYABLE_RESET_CLASSES = RETRYABLE_ENVIRONMENT_CLASSES | TRANSFER_RESET_CLASSES
 
 COHORT_MIGRATION_ERROR_PREFIX = "reset-by-cohort-migration"
+
+INFLIGHT_STATES = ("downloading", "downloaded", "quantifying")
+"""States only a live producer may hold; under the exclusive campaign lock any such row is orphaned."""
+
+STARTUP_INFLIGHT_RESET_PREFIX = "reset-inflight-at-startup"
+STARTUP_ENVIRONMENT_RESET_PREFIX = "reset-environment-failure-at-startup"
+
+AUDIT_FINGERPRINT_COLUMNS: tuple[tuple[str, str], ...] = (
+    ("sidecar_ino", "INTEGER"),
+    ("sidecar_size", "INTEGER"),
+    ("sidecar_mtime_ns", "INTEGER"),
+    ("config_sha256", "TEXT"),
+    ("reference_sha256", "TEXT"),
+    ("scope", "TEXT"),
+    ("evidence", "TEXT"),
+)
+"""Nullable ``quantification_audit`` columns that let a restart trust an unchanged classified output."""
+
+RECONCILE_HEARTBEAT_EVERY = 1000
+
+
+@dataclass(frozen=True)
+class ReconcileScope:
+    """What a recorded classification was made against; a restart trusts it only under the same scope.
+
+    ``config_sha256`` is the species' runtime configuration bytes,
+    ``reference_sha256`` its reference identity (the cohort kallisto index
+    sha256, or the reference manifest bytes outside a cohort) and ``scope``
+    everything else the verdict depends on (cohort id, pinned Amalgkit
+    runtime, classifier revision).
+    """
+
+    config_sha256: str
+    reference_sha256: str
+    scope: str
+
+
+SidecarFingerprint = tuple[int, int, int]
+
+
+def sidecar_fingerprint(path: Path) -> SidecarFingerprint | None:
+    """``(st_ino, st_size, st_mtime_ns)`` of a regular, non-symlink file (one ``lstat``), else ``None``."""
+
+    try:
+        info = os.lstat(path)
+    except OSError:
+        return None
+    if not stat_module.S_ISREG(info.st_mode):
+        return None
+    return (info.st_ino, info.st_size, info.st_mtime_ns)
 
 
 def classify_sample_error(error: str | None) -> str:
@@ -343,6 +399,7 @@ class ProgressDB:
                     observed_source_revision,
                 ),
             )
+            self._clear_audit_fingerprint_locked(species, srr_id)
             if state is not None:
                 self._conn.execute(
                     "UPDATE samples SET state = ?, error = ?, updated_at = datetime('now') "
@@ -581,6 +638,141 @@ class ProgressDB:
             )
             self._conn.commit()
         return len(rows)
+
+    # ---- Startup (only under the exclusive campaign writer lock) ----
+
+    def reset_inflight_states(self) -> Dict[str, int]:
+        """Return every ``downloading``/``downloaded``/``quantifying`` row to ``pending``, with no age threshold.
+
+        Call this only while holding the campaign writer lock
+        (:mod:`metainformant.rna.engine.campaign_lock`): then no other producer
+        exists, so every in-flight row was orphaned by a previous producer that
+        died (SIGKILL, crash, USB drop, reboot). Raw inputs stay on disk and are
+        revalidated and reused. The previous error is kept after a
+        ``reset-inflight-at-startup[<state>]`` prefix. Returns counts by the
+        state each row was reset from.
+        """
+
+        placeholders = ",".join("?" for _ in INFLIGHT_STATES)
+        with self._lock:
+            self._conn.commit()
+            self._conn.execute("BEGIN IMMEDIATE")
+            try:
+                counts = {
+                    state: count
+                    for state, count in self._conn.execute(
+                        f"SELECT state, COUNT(*) FROM samples WHERE state IN ({placeholders}) GROUP BY state",
+                        INFLIGHT_STATES,
+                    )
+                }
+                self._conn.execute(
+                    "UPDATE samples SET state = 'pending', "
+                    f"error = '{STARTUP_INFLIGHT_RESET_PREFIX}[' || state || ']' "
+                    "|| CASE WHEN error IS NULL OR error = '' THEN '' ELSE ': ' || substr(error, 1, 500) END, "
+                    f"updated_at = datetime('now') WHERE state IN ({placeholders})",
+                    INFLIGHT_STATES,
+                )
+                self._conn.commit()
+            except BaseException:
+                self._conn.rollback()
+                raise
+        if counts:
+            logger.info(
+                "Reset %d orphaned in-flight rows to pending at startup (%s)",
+                sum(counts.values()),
+                ", ".join(f"{state}={count}" for state, count in sorted(counts.items())),
+            )
+        return dict(sorted(counts.items()))
+
+    def reset_environment_failures(self, classes: Iterable[str] = RETRYABLE_ENVIRONMENT_CLASSES) -> Dict[str, int]:
+        """Return ``failed`` rows whose error is environmental to ``pending``; ``permanent_drop`` rows stay failed.
+
+        An environmental failure (EPERM, EACCES, EROFS, ENOSPC, ENXIO, a
+        missing tool) says nothing about the sample, so it must never stay a
+        terminal state. The previous error is kept after a
+        ``reset-environment-failure-at-startup[<class>]`` prefix. Returns counts
+        by failure class. Call it only under the campaign writer lock.
+        """
+
+        wanted = frozenset(classes)
+        unknown = wanted - set(SAMPLE_ERROR_CLASSES)
+        if unknown:
+            raise ValueError(f"unknown error classes: {sorted(unknown)}")
+        counts: Dict[str, int] = {}
+        with self._lock:
+            self._conn.commit()
+            self._conn.execute("BEGIN IMMEDIATE")
+            try:
+                dropped = {
+                    (species, srr_id)
+                    for species, srr_id in self._conn.execute(
+                        "SELECT species, srr_id FROM sample_exclusions WHERE reason_code = 'permanent_drop'"
+                    )
+                }
+                updates: list[tuple[str, str, str]] = []
+                for species, srr_id, error in self._conn.execute(
+                    "SELECT species, srr_id, error FROM samples WHERE state = 'failed'"
+                ).fetchall():
+                    error_class = classify_sample_error(error)
+                    if error_class not in wanted or (species, srr_id) in dropped:
+                        continue
+                    counts[error_class] = counts.get(error_class, 0) + 1
+                    message = f"{STARTUP_ENVIRONMENT_RESET_PREFIX}[{error_class}]: {(error or '')[:500]}"
+                    updates.append((message, species, srr_id))
+                self._conn.executemany(
+                    "UPDATE samples SET state = 'pending', error = ?, updated_at = datetime('now') "
+                    "WHERE species = ? AND srr_id = ? AND state = 'failed'",
+                    updates,
+                )
+                self._conn.commit()
+            except BaseException:
+                self._conn.rollback()
+                raise
+        if counts:
+            logger.info(
+                "Reset %d environment-class failures to pending at startup (%s)",
+                sum(counts.values()),
+                ", ".join(f"{name}={count}" for name, count in sorted(counts.items())),
+            )
+        return dict(sorted(counts.items()))
+
+    def states_for_species(self, species: str) -> List[tuple[str, str]]:
+        """Every ``(srr_id, state)`` recorded for ``species``, in accession order."""
+
+        with self._lock:
+            return [
+                (srr_id, state)
+                for srr_id, state in self._conn.execute(
+                    "SELECT srr_id, state FROM samples WHERE species = ? ORDER BY srr_id", (species,)
+                )
+            ]
+
+    def states_for(self, keys: Iterable[tuple[str, str]]) -> Dict[tuple[str, str], Optional[str]]:
+        """The current state of each ``(species, srr_id)`` (``None`` when the row does not exist)."""
+
+        wanted = {(str(species), str(srr_id)) for species, srr_id in keys}
+        species_names = sorted({species for species, _ in wanted})
+        found: Dict[tuple[str, str], Optional[str]] = dict.fromkeys(wanted)
+        with self._lock:
+            for species in species_names:
+                for srr_id, state in self._conn.execute(
+                    "SELECT srr_id, state FROM samples WHERE species = ?", (species,)
+                ):
+                    if (species, srr_id) in found:
+                        found[(species, srr_id)] = state
+        return found
+
+    def checkpoint_wal(self) -> tuple[int, int, int] | None:
+        """``PRAGMA wal_checkpoint(TRUNCATE)`` so read-only observers of the file see every commit."""
+
+        with self._lock:
+            self._conn.commit()
+            try:
+                row = self._conn.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+            except sqlite3.OperationalError as exc:
+                logger.warning("WAL checkpoint of %s failed: %s", self.db_path, exc)
+                return None
+        return tuple(row) if row is not None else None  # type: ignore[return-value]
 
     # ---- Reconciliation ----
 
@@ -948,6 +1140,7 @@ class ProgressDB:
                 audit.get("observed_source_revision"),
             ),
         )
+        self._clear_audit_fingerprint_locked(species, srr_id)
 
     def adopt_quantified(self, species: str, entries: Iterable[Mapping[str, Any]]) -> Dict[str, List[str]]:
         """Mark verified imported outputs ``quantified`` (with their audit) in one transaction.
@@ -997,6 +1190,292 @@ class ProgressDB:
                 raise
         return {"adopted": adopted, "excluded": excluded}
 
+    def _audit_fingerprint_columns_present_locked(self) -> bool:
+        if getattr(self, "_audit_fingerprint_ready", False):
+            return True
+        present = {row[1] for row in self._conn.execute("PRAGMA table_info(quantification_audit)")}
+        ready = all(name in present for name, _ in AUDIT_FINGERPRINT_COLUMNS)
+        self._audit_fingerprint_ready = ready
+        return ready
+
+    def _ensure_audit_fingerprint_columns_locked(self) -> None:
+        """Add the nullable fingerprint columns to ``quantification_audit`` once (an additive migration)."""
+
+        if self._audit_fingerprint_columns_present_locked():
+            return
+        present = {row[1] for row in self._conn.execute("PRAGMA table_info(quantification_audit)")}
+        for name, column_type in AUDIT_FINGERPRINT_COLUMNS:
+            if name not in present:
+                self._conn.execute(f"ALTER TABLE quantification_audit ADD COLUMN {name} {column_type}")
+        self._audit_fingerprint_ready = True
+
+    def _clear_audit_fingerprint_locked(self, species: str, srr_id: str) -> None:
+        """An audit written without a fingerprint must never be trusted by a later reconcile."""
+
+        if self._audit_fingerprint_columns_present_locked():
+            self._conn.execute(
+                "UPDATE quantification_audit SET sidecar_ino = NULL, sidecar_size = NULL, sidecar_mtime_ns = NULL, "
+                "config_sha256 = NULL, reference_sha256 = NULL, scope = NULL, evidence = NULL "
+                "WHERE species = ? AND srr_id = ?",
+                (species, srr_id),
+            )
+
+    def reconcile_outputs(
+        self,
+        species: str,
+        quant_dir: Path,
+        accessions: Iterable[str],
+        classify: Callable[[Path, str], Mapping[str, Any]],
+        *,
+        scope: ReconcileScope | None = None,
+        requantify_statuses: Iterable[str] = (),
+        deep: bool = False,
+        workers: int = 1,
+        sidecar_name: str = QUANT_PROVENANCE_FILENAME,
+        heartbeat_every: int = RECONCILE_HEARTBEAT_EVERY,
+    ) -> Dict[str, Any]:
+        """Bring task states in line with the outputs on disk in one pass, proportional to what changed.
+
+        Only ``accessions`` are considered. The quantification directory is
+        listed once (one ``scandir``). For each listed task directory:
+
+        * **Unchanged, already judged.** When the row is recorded with an
+          audit whose sidecar fingerprint ``(st_ino, st_size, st_mtime_ns)``
+          equals the sidecar on disk (one ``lstat``) and whose
+          ``config_sha256``/``reference_sha256``/``scope`` equal ``scope``,
+          the recorded verdict is reused without reading the sidecar.
+        * **New or changed.** Otherwise ``classify(path, accession)`` judges
+          it and the verdict is recorded with the sidecar fingerprint.
+
+        A reusable verdict (current or version drift) makes the row
+        ``quantified`` (``pending`` when its status is in
+        ``requantify_statuses``); a non-reusable verdict for a row recorded
+        ``quantified`` makes it ``quarantined`` (the bytes stay on disk); a
+        row recorded ``quantified`` without a directory becomes ``pending``.
+        Other rows with a non-reusable output are left alone (the producer
+        re-quantifies them).
+
+        All writes happen in one transaction, and only for rows whose state,
+        error or audit actually changes: an unchanged row keeps its
+        ``updated_at`` and its audit ``checked_at``. ``deep=True`` (the
+        ``AMALGKIT_RESUME_VERIFY_HASHES`` audit) re-judges every directory.
+        Without ``scope`` nothing is trusted (and no fingerprint is recorded).
+        A heartbeat is logged every ``heartbeat_every`` directories.
+        """
+
+        started = time.monotonic()
+        wanted = {str(accession) for accession in accessions}
+        requeue = frozenset(requantify_statuses)
+        directories: Dict[str, Path] = {}
+        listed = 0
+        if quant_dir.is_dir():
+            with os.scandir(quant_dir) as entries:
+                for entry in entries:
+                    listed += 1
+                    if entry.name in wanted and entry.is_dir(follow_symlinks=False):
+                        directories[entry.name] = Path(entry.path)
+        with self._lock:
+            self._ensure_audit_fingerprint_columns_locked()
+            self._conn.commit()
+            states: Dict[str, str] = {}
+            errors: Dict[str, Optional[str]] = {}
+            for srr_id, state, error in self._conn.execute(
+                "SELECT srr_id, state, error FROM samples WHERE species = ?", (species,)
+            ):
+                if srr_id in wanted:
+                    states[srr_id] = state
+                    errors[srr_id] = error
+            audits: Dict[str, Dict[str, Any]] = {}
+            if scope is not None and not deep:
+                for row in self._conn.execute(
+                    "SELECT srr_id, status, reason, contract_id, observed_amalgkit_version, observed_release_tag, "
+                    "observed_source_revision, sidecar_ino, sidecar_size, sidecar_mtime_ns, config_sha256, "
+                    "reference_sha256, scope, evidence FROM quantification_audit WHERE species = ? "
+                    "AND sidecar_ino IS NOT NULL AND config_sha256 = ? AND reference_sha256 = ? AND scope = ?",
+                    (species, scope.config_sha256, scope.reference_sha256, scope.scope),
+                ):
+                    if row[0] in directories:
+                        audits[row[0]] = {
+                            "status": row[1],
+                            "reason": row[2],
+                            "contract_id": row[3],
+                            "observed_amalgkit_version": row[4],
+                            "observed_release_tag": row[5],
+                            "observed_source_revision": row[6],
+                            "fingerprint": (row[7], row[8], row[9]),
+                            "evidence": json.loads(row[13]) if row[13] else None,
+                        }
+
+        def judge(item: tuple[str, Path]) -> tuple[str, Mapping[str, Any], bool, SidecarFingerprint | None]:
+            accession, path = item
+            sidecar = path / sidecar_name
+            recorded = audits.get(accession)
+            if recorded is not None and sidecar_fingerprint(sidecar) == recorded["fingerprint"]:
+                return accession, recorded, False, recorded["fingerprint"]
+            before = sidecar_fingerprint(sidecar) if scope is not None else None
+            try:
+                verdict = dict(classify(path, accession))
+            except (OSError, ValueError) as error:
+                verdict = {"status": "invalid", "reason": f"classification failed: {error}"}
+            after = sidecar_fingerprint(sidecar) if scope is not None else None
+            return accession, verdict, True, before if before is not None and before == after else None
+
+        pairs = sorted(directories.items())
+        judged: list[tuple[str, Mapping[str, Any], bool, SidecarFingerprint | None]] = []
+        fresh_count = 0
+
+        def heartbeat(done: int) -> None:
+            if heartbeat_every > 0 and done % heartbeat_every == 0:
+                logger.info(
+                    "reconcile(%s): %d/%d output directories checked (%d re-judged) in %.1fs",
+                    species,
+                    done,
+                    len(pairs),
+                    fresh_count,
+                    time.monotonic() - started,
+                )
+
+        if workers > 1 and len(pairs) > 1:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=min(workers, len(pairs))) as pool:
+                for result in pool.map(judge, pairs, chunksize=32):
+                    judged.append(result)
+                    fresh_count += result[2]
+                    heartbeat(len(judged))
+        else:
+            for pair in pairs:
+                result = judge(pair)
+                judged.append(result)
+                fresh_count += result[2]
+                heartbeat(len(judged))
+
+        audit_rows: list[tuple[Any, ...]] = []
+        state_rows: list[tuple[str, Optional[str], str, str, str, Optional[str]]] = []
+        reusable: list[str] = []
+        requeued: list[str] = []
+        quarantined: list[str] = []
+        newly_quarantined: list[str] = []
+        for accession, verdict, fresh, fingerprint in judged:
+            status = verdict.get("status")
+            if fresh:
+                evidence = verdict.get("evidence")
+                keyed = scope is not None and fingerprint is not None
+                audit_rows.append(
+                    (
+                        species,
+                        accession,
+                        str(status),
+                        str(verdict.get("reason")),
+                        verdict.get("contract_id"),
+                        verdict.get("observed_amalgkit_version"),
+                        verdict.get("observed_release_tag"),
+                        verdict.get("observed_source_revision"),
+                        fingerprint[0] if keyed else None,
+                        fingerprint[1] if keyed else None,
+                        fingerprint[2] if keyed else None,
+                        scope.config_sha256 if keyed else None,
+                        scope.reference_sha256 if keyed else None,
+                        scope.scope if keyed else None,
+                        json.dumps(evidence, sort_keys=True, default=str) if evidence else None,
+                    )
+                )
+            target: Optional[str] = None
+            error: Optional[str] = None
+            if status in REUSABLE_QUANT_STATUSES:
+                if status in requeue:
+                    target, error = "pending", f"requantify: {status}"
+                    requeued.append(accession)
+                else:
+                    target = "quantified"
+                    reusable.append(accession)
+            elif states.get(accession) == "quantified":
+                target, error = "quarantined", str(verdict.get("reason"))
+                quarantined.append(accession)
+                newly_quarantined.append(accession)
+            elif states.get(accession) == "quarantined":
+                quarantined.append(accession)
+            if target is not None and (states.get(accession), errors.get(accession)) != (target, error):
+                state_rows.append((target, error, species, accession, target, error))
+        vanished = sorted(
+            accession for accession, state in states.items() if state == "quantified" and accession not in directories
+        )
+        for accession in vanished:
+            error = "reconcile: recorded quantification has no output directory"
+            state_rows.append(("pending", error, species, accession, "pending", error))
+
+        if audit_rows or state_rows:
+            with self._lock:
+                self._conn.commit()
+                self._conn.execute("BEGIN IMMEDIATE")
+                try:
+                    self._conn.executemany(
+                        "INSERT OR IGNORE INTO samples (species, srr_id, state) VALUES (?, ?, 'pending')",
+                        [(row[2], row[3]) for row in state_rows],
+                    )
+                    self._conn.executemany(
+                        """
+                        INSERT INTO quantification_audit (
+                            species, srr_id, status, reason, contract_id,
+                            observed_amalgkit_version, observed_release_tag, observed_source_revision,
+                            sidecar_ino, sidecar_size, sidecar_mtime_ns, config_sha256, reference_sha256,
+                            scope, evidence, checked_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                        ON CONFLICT(species, srr_id) DO UPDATE SET
+                            status = excluded.status,
+                            reason = excluded.reason,
+                            contract_id = excluded.contract_id,
+                            observed_amalgkit_version = excluded.observed_amalgkit_version,
+                            observed_release_tag = excluded.observed_release_tag,
+                            observed_source_revision = excluded.observed_source_revision,
+                            sidecar_ino = excluded.sidecar_ino,
+                            sidecar_size = excluded.sidecar_size,
+                            sidecar_mtime_ns = excluded.sidecar_mtime_ns,
+                            config_sha256 = excluded.config_sha256,
+                            reference_sha256 = excluded.reference_sha256,
+                            scope = excluded.scope,
+                            evidence = excluded.evidence,
+                            checked_at = excluded.checked_at
+                        """,
+                        audit_rows,
+                    )
+                    self._conn.executemany(
+                        "UPDATE samples SET state = ?, error = ?, updated_at = datetime('now') "
+                        "WHERE species = ? AND srr_id = ? AND NOT (state = ? AND error IS ?)",
+                        state_rows,
+                    )
+                    self._conn.commit()
+                except BaseException:
+                    self._conn.rollback()
+                    raise
+        summary: Dict[str, Any] = {
+            "listed": listed,
+            "scanned": len(judged),
+            "trusted": len(judged) - fresh_count,
+            "classified": fresh_count,
+            "quantified": len(reusable),
+            "requeued": len(requeued),
+            "quarantined": sorted(quarantined),
+            "newly_quarantined": sorted(newly_quarantined),
+            "vanished": vanished,
+            "rows_changed": len(state_rows),
+            "audits_written": len(audit_rows),
+            "seconds": round(time.monotonic() - started, 3),
+        }
+        logger.info(
+            "reconcile(%s): %d task directories (%d trusted unchanged, %d re-judged), %d reusable, %d requeued, "
+            "%d quarantined, %d vanished, %d rows changed in %.1fs",
+            species,
+            summary["scanned"],
+            summary["trusted"],
+            summary["classified"],
+            summary["quantified"],
+            summary["requeued"],
+            len(summary["quarantined"]),
+            len(vanished),
+            summary["rows_changed"],
+            summary["seconds"],
+        )
+        return summary
+
     def reconcile_cohort(
         self,
         species: str,
@@ -1006,122 +1485,23 @@ class ProgressDB:
         *,
         requantify_statuses: Iterable[str] = (),
         workers: int = 1,
+        scope: ReconcileScope | None = None,
+        deep: bool = False,
     ) -> Dict[str, Any]:
-        """Bring task states in line with the outputs on disk, in one transaction.
+        """Cohort reconcile (:meth:`reconcile_outputs`) reporting ``scanned``/``quantified``/``requeued``/
+        ``quarantined``/``vanished``; ``quarantined`` lists every task run whose output is quarantined."""
 
-        Only ``accessions`` (the species' schedulable cohort tasks) are
-        considered; nothing else is read or changed. For each task:
-
-        * a reusable output (``classify`` status current or version drift)
-          becomes ``quantified`` with its audit, unless its status is in
-          ``requantify_statuses`` (then ``pending``);
-        * a recorded ``quantified`` state whose output is not reusable becomes
-          ``quarantined`` with the reason (the bytes stay on disk);
-        * a recorded ``quantified`` state without an output directory becomes
-          ``pending``.
-
-        Rows in other states with a non-reusable output are left alone (the
-        producer re-quantifies them). Returns counts and the quarantined runs.
-        """
-
-        wanted = {str(accession) for accession in accessions}
-        requeue = frozenset(requantify_statuses)
-        directories: Dict[str, Path] = {}
-        if quant_dir.is_dir():
-            with os.scandir(quant_dir) as entries:
-                for entry in entries:
-                    if entry.name in wanted and entry.is_dir(follow_symlinks=False):
-                        directories[entry.name] = Path(entry.path)
-        with self._lock:
-            states = {
-                srr_id: state
-                for srr_id, state in self._conn.execute(
-                    "SELECT srr_id, state FROM samples WHERE species = ?", (species,)
-                )
-                if srr_id in wanted
-            }
-
-        def judge(item: tuple[str, Path]) -> tuple[str, Mapping[str, Any]]:
-            accession, path = item
-            try:
-                return accession, classify(path, accession)
-            except (OSError, ValueError) as error:
-                return accession, {"status": "invalid", "reason": f"classification failed: {error}"}
-
-        pairs = sorted(directories.items())
-        if workers > 1 and len(pairs) > 1:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=min(workers, len(pairs))) as pool:
-                judged = list(pool.map(judge, pairs))
-        else:
-            judged = [judge(pair) for pair in pairs]
-
-        quantified: List[tuple[str, Mapping[str, Any]]] = []
-        requeued: List[tuple[str, Mapping[str, Any]]] = []
-        quarantined: List[tuple[str, Mapping[str, Any]]] = []
-        for accession, audit in judged:
-            status = audit.get("status")
-            if status in REUSABLE_QUANT_STATUSES:
-                (requeued if status in requeue else quantified).append((accession, audit))
-            elif states.get(accession) == "quantified":
-                quarantined.append((accession, audit))
-        vanished = [
-            accession for accession, state in states.items() if state == "quantified" and accession not in directories
-        ]
-        with self._lock:
-            self._conn.commit()
-            self._conn.execute("BEGIN IMMEDIATE")
-            try:
-                for accession, audit in quantified + requeued + quarantined:
-                    self._conn.execute(
-                        "INSERT OR IGNORE INTO samples (species, srr_id, state) VALUES (?, ?, 'pending')",
-                        (species, accession),
-                    )
-                    self._upsert_audit_locked(species, accession, audit)
-                for accession, _ in quantified:
-                    self._conn.execute(
-                        "UPDATE samples SET state = 'quantified', error = NULL, updated_at = datetime('now') "
-                        "WHERE species = ? AND srr_id = ? AND state <> 'quantified'",
-                        (species, accession),
-                    )
-                for accession, audit in requeued:
-                    self._conn.execute(
-                        "UPDATE samples SET state = 'pending', error = ?, updated_at = datetime('now') "
-                        "WHERE species = ? AND srr_id = ?",
-                        (f"requantify: {audit.get('status')}", species, accession),
-                    )
-                for accession, audit in quarantined:
-                    self._conn.execute(
-                        "UPDATE samples SET state = 'quarantined', error = ?, updated_at = datetime('now') "
-                        "WHERE species = ? AND srr_id = ?",
-                        (str(audit.get("reason")), species, accession),
-                    )
-                for accession in vanished:
-                    self._conn.execute(
-                        "UPDATE samples SET state = 'pending', error = ?, updated_at = datetime('now') "
-                        "WHERE species = ? AND srr_id = ? AND state = 'quantified'",
-                        ("reconcile: recorded quantification has no output directory", species, accession),
-                    )
-                self._conn.commit()
-            except BaseException:
-                self._conn.rollback()
-                raise
-        summary: Dict[str, Any] = {
-            "scanned": len(judged),
-            "quantified": len(quantified),
-            "requeued": len(requeued),
-            "quarantined": sorted(accession for accession, _ in quarantined),
-            "vanished": sorted(vanished),
-        }
-        logger.info(
-            "reconcile_cohort(%s): %d outputs scanned, %d reusable, %d requeued, %d quarantined, %d vanished",
+        summary = self.reconcile_outputs(
             species,
-            summary["scanned"],
-            summary["quantified"],
-            summary["requeued"],
-            len(summary["quarantined"]),
-            len(summary["vanished"]),
+            quant_dir,
+            accessions,
+            classify,
+            scope=scope,
+            requantify_statuses=requantify_statuses,
+            deep=deep,
+            workers=workers,
         )
-        return summary
+        return {key: summary[key] for key in ("scanned", "quantified", "requeued", "quarantined", "vanished")}
 
     # ---- Lifecycle ----
 
