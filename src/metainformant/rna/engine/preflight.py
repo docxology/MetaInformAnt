@@ -27,9 +27,9 @@ The preflight performs real, minimal probes against the selected environment:
   quantified ones).
 - **Free-space floors.** The data root must have at least
   ``AMALGKIT_MIN_EXTERNAL_FREE_GB`` (default 8 GiB) free and the system volume
-  ``AMALGKIT_MIN_SYSTEM_FREE_GB`` (default 2 GiB: scratch lives on the data
-  root, so the internal disk only needs headroom for logs and the
-  environment).
+  ``AMALGKIT_MIN_SYSTEM_FREE_GB`` (default 4 GiB, the producer's own in-run
+  throttle floor: scratch lives on the data root, so the internal disk only
+  needs headroom for logs and the environment).
 - **Reuse dry-run (optional).** :func:`reuse_dry_run` classifies a small
   sample of recorded quantified outputs per species and refuses to start when
   more than 1% would be quarantined, before any state is changed.
@@ -66,7 +66,7 @@ PROBE_FILE_NAME = ".metainformant_preflight_probe"
 PRODUCER_TOOLS = ("amalgkit", "kallisto", "fasterq-dump", "prefetch", "vdb-validate", "pigz")
 """Executables the streaming producer runs; each must resolve on the producer's ``PATH``."""
 DEFAULT_MIN_DATA_ROOT_FREE_GB = 8.0
-DEFAULT_MIN_SYSTEM_FREE_GB = 2.0
+DEFAULT_MIN_SYSTEM_FREE_GB = 4.0  # equals the orchestrator's in-run system throttle
 DEFAULT_SYSTEM_ROOT = "/System/Volumes/Data"
 REUSE_DRY_RUN_SEED = 20261112
 _KALLISTO_VERSION = re.compile(r"kallisto,?\s+version\s+([0-9][0-9A-Za-z.+-]*)")
@@ -197,7 +197,7 @@ def check_free_space(
     """Check the data-root and system-volume free-space floors (GiB) in Python; return the measured values.
 
     Floors default to ``AMALGKIT_MIN_EXTERNAL_FREE_GB`` (8) and
-    ``AMALGKIT_MIN_SYSTEM_FREE_GB`` (2). The system root defaults to
+    ``AMALGKIT_MIN_SYSTEM_FREE_GB`` (4). The system root defaults to
     ``AMALGKIT_SYSTEM_ROOT`` or ``/System/Volumes/Data`` and is skipped when it
     does not exist (Linux, CI).
     """
