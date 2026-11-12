@@ -55,12 +55,16 @@ scientific = [
     "anndata>=0.10.0",  # Annotated data structures
 ]
 
-# Current RNA workflow toolchain. Amalgkit is sourced from its immutable
-# release tag. The runtime pin is separate from output reuse: compatible
-# quantifications remain eligible across version drift when their non-version
-# contract is unchanged.
+# Current RNA workflow toolchain. Amalgkit 0.16.108 is pinned by immutable
+# commit: upstream tags and bioconda only publish x.y.0 releases. Keep this
+# commit equal to the one in the `all` extra and to AMALGKIT_SOURCE_REVISION in
+# src/metainformant/rna/amalgkit/_amalgkit_impl.py (tests/rna/test_amalgkit_pin.py
+# enforces it). Provision with `uv sync --frozen --extra rna`; MetaInformAnt
+# never installs Amalgkit at runtime. The runtime pin is separate from output
+# reuse: compatible quantifications remain eligible across version drift when
+# their non-version contract is unchanged.
 rna = [
-    "amalgkit @ git+https://github.com/kfuku52/amalgkit@v0.16.60",
+    "amalgkit @ git+https://github.com/kfuku52/amalgkit@1d1566638abe32e79ee262193bb88769c3482e76",
 ]
 
 # Machine learning and advanced analytics
@@ -177,7 +181,7 @@ performance = [
 
 # All optional dependencies combined
 all = [
-    "amalgkit @ git+https://github.com/kfuku52/amalgkit@v0.16.60",
+    "amalgkit @ git+https://github.com/kfuku52/amalgkit@1d1566638abe32e79ee262193bb88769c3482e76",
     "scipy>=1.11.0",
     "scikit-learn>=1.3.0",
     "seaborn>=0.13.0",

@@ -75,8 +75,8 @@ wheels = [
 
 [[package]]
 name = "amalgkit"
-version = "0.16.60"
-source = { git = "https://github.com/kfuku52/amalgkit?rev=v0.16.60#c656a52aacdcee6fd3bf7e8031769ca957204ebc" }
+version = "0.16.108"
+source = { git = "https://github.com/kfuku52/amalgkit?rev=1d1566638abe32e79ee262193bb88769c3482e76#1d1566638abe32e79ee262193bb88769c3482e76" }
 dependencies = [
     { name = "biopython" },
     { name = "defusedxml" },
@@ -3458,8 +3458,8 @@ test-network = [
 requires-dist = [
     { name = "altair", marker = "extra == 'all'", specifier = ">=5.2.0" },
     { name = "altair", marker = "extra == 'visualization'", specifier = ">=5.2.0" },
-    { name = "amalgkit", marker = "extra == 'all'", git = "https://github.com/kfuku52/amalgkit?rev=v0.16.60" },
-    { name = "amalgkit", marker = "extra == 'rna'", git = "https://github.com/kfuku52/amalgkit?rev=v0.16.60" },
+    { name = "amalgkit", marker = "extra == 'all'", git = "https://github.com/kfuku52/amalgkit?rev=1d1566638abe32e79ee262193bb88769c3482e76" },
+    { name = "amalgkit", marker = "extra == 'rna'", git = "https://github.com/kfuku52/amalgkit?rev=1d1566638abe32e79ee262193bb88769c3482e76" },
     { name = "anndata", marker = "extra == 'all'", specifier = ">=0.10.0" },
     { name = "anndata", marker = "extra == 'scientific'", specifier = ">=0.10.0" },
     { name = "anndata", marker = "extra == 'singlecell'", specifier = ">=0.10.0" },

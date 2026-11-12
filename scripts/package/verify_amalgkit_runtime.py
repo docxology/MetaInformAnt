@@ -10,7 +10,9 @@ from typing import Any
 
 from metainformant.rna.amalgkit import (
     AMALGKIT_INSTALL_SPEC,
+    AMALGKIT_SOURCE_REVISION,
     REQUIRED_AMALGKIT_VERSION,
+    installed_amalgkit_distribution,
     validate_amalgkit_version,
 )
 
@@ -38,8 +40,12 @@ def inspect_runtime() -> dict[str, Any]:
 
 def main() -> int:
     version_ok, version_message = validate_amalgkit_version(REQUIRED_AMALGKIT_VERSION, exact=True)
+    installed = installed_amalgkit_distribution()
     payload: dict[str, Any] = {
         "required_version": REQUIRED_AMALGKIT_VERSION,
+        "required_revision": AMALGKIT_SOURCE_REVISION,
+        "installed_version": installed.version if installed is not None else None,
+        "installed_revision": installed.commit_id if installed is not None else None,
         "install_spec": AMALGKIT_INSTALL_SPEC,
         "version_ok": version_ok,
         "version_message": version_message,

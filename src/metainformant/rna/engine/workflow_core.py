@@ -106,7 +106,7 @@ class AmalgkitWorkflowConfig:
         max_samples: Optional[int] = None,
         genome: Optional[Dict[str, Any]] = None,
         taxon_id: Optional[str] = None,
-        auto_install_amalgkit: bool = True,
+        auto_install_amalgkit: bool = False,
         log_dir: Optional[str] = None,
         source_path: Optional[Union[str, Path]] = None,
         **kwargs: Any,

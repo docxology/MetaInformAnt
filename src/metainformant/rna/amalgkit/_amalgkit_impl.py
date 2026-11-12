@@ -16,7 +16,9 @@ from __future__ import annotations
 
 import concurrent.futures
 import csv
+import importlib.metadata
 import importlib.util
+import json
 import math
 import os
 import re
@@ -24,8 +26,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import uuid
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -35,19 +39,34 @@ from metainformant.core.io.download import (
     monitor_subprocess_sample_progress,
 )
 from metainformant.core.utils import logging
-from metainformant.rna.amalgkit.commands import NO_THREAD_STEPS, SUPPORTED_CLI_OPTIONS
+from metainformant.rna.amalgkit.commands import (
+    METAINFORMANT_ONLY_STEP_KEYS,
+    NO_THREAD_STEPS,
+    SUPPORTED_CLI_OPTIONS,
+    YES_NO_CLI_OPTIONS,
+)
 from metainformant.rna.amalgkit.sra_environment import build_sra_environment
 from metainformant.rna.core.sample_utils import read_sample_ids_from_metadata
 
 logger = logging.get_logger(__name__)
 
-# The Hymenoptera analysis and the MetaInformAnt wrapper are validated against
-# this exact release. Keep the source tag pinned so a fresh setup cannot drift
-# to a moving branch or a future CLI with a changed output contract.
-REQUIRED_AMALGKIT_VERSION = "0.16.60"
-AMALGKIT_RELEASE_TAG = f"v{REQUIRED_AMALGKIT_VERSION}"
-AMALGKIT_SOURCE_REVISION = "c656a52aacdcee6fd3bf7e8031769ca957204ebc"
-AMALGKIT_INSTALL_SPEC = f"git+https://github.com/kfuku52/amalgkit@{AMALGKIT_RELEASE_TAG}"
+# The MetaInformAnt wrapper is validated against exactly one upstream Amalgkit
+# build. Upstream tags (and bioconda) only publish x.y.0 releases, so a patch
+# build is pinned by its immutable commit, never by a tag or a moving branch.
+# The same commit appears in pyproject.toml (the ``rna`` and ``all`` extras)
+# and uv.lock; tests/rna/test_amalgkit_pin.py fails when the three disagree.
+# The version and revision are the only declared values; everything else below
+# is derived from them.
+AMALGKIT_REPOSITORY_URL = "https://github.com/kfuku52/amalgkit"
+REQUIRED_AMALGKIT_VERSION = "0.16.108"
+AMALGKIT_SOURCE_REVISION = "1d1566638abe32e79ee262193bb88769c3482e76"
+# Source label recorded in provenance sidecars. It is not a git tag: no
+# ``v0.16.108`` tag exists upstream.
+AMALGKIT_RELEASE_TAG = f"master@{AMALGKIT_SOURCE_REVISION[:12]}"
+AMALGKIT_INSTALL_SPEC = f"git+{AMALGKIT_REPOSITORY_URL}@{AMALGKIT_SOURCE_REVISION}"
+# The only supported way to obtain the pinned build: install it from uv.lock.
+# MetaInformAnt never installs or upgrades packages at runtime.
+AMALGKIT_SYNC_HINT = "uv sync --frozen --extra rna"
 YES_NO_CLI_FLAGS = {
     "redo",
     "resolve_names",
@@ -71,6 +90,63 @@ YES_NO_CLI_FLAGS = {
     "clip_negative",
     "maintain_zero",
 }
+_ALL_AMALGKIT_OPTIONS = frozenset().union(*SUPPORTED_CLI_OPTIONS.values())
+_warned_dropped_keys: set[tuple[str, str]] = set()
+_warning_lock = threading.Lock()
+_auto_install_warning_issued = False
+
+
+def _yes_no_flags(subcommand: str | None) -> frozenset[str] | set[str]:
+    """Return the yes/no-valued options for ``subcommand`` (all known ones when unknown)."""
+
+    if subcommand is not None and subcommand in YES_NO_CLI_OPTIONS:
+        return YES_NO_CLI_OPTIONS[subcommand]
+    return YES_NO_CLI_FLAGS
+
+
+def _report_dropped_key(subcommand: str, key: str) -> None:
+    """Log a key that ``build_cli_args`` leaves out of an Amalgkit command line.
+
+    MetaInformAnt-only keys and options that belong to a different Amalgkit
+    command are expected in shared parameter maps and are logged at debug level.
+    A key that no command of the pinned build accepts is a typo or an option
+    this build lacks; it is reported once per (command, key) as a warning so a
+    silently ignored configuration value cannot change results unnoticed.
+    """
+
+    if key in METAINFORMANT_ONLY_STEP_KEYS or key in _ALL_AMALGKIT_OPTIONS:
+        logger.debug("amalgkit %s: leaving out %r (not an option of this command)", subcommand, key)
+        return
+    with _warning_lock:
+        if (subcommand, key) in _warned_dropped_keys:
+            return
+        _warned_dropped_keys.add((subcommand, key))
+    logger.warning(
+        "amalgkit %s: dropping configuration key %r: no command of the pinned Amalgkit %s accepts it",
+        subcommand,
+        key,
+        REQUIRED_AMALGKIT_VERSION,
+    )
+
+
+def warn_auto_install_ignored(source: str = "auto_install_amalgkit") -> None:
+    """Log once per process that runtime Amalgkit installation was removed.
+
+    Configurations written for earlier releases still set
+    ``auto_install_amalgkit: true``; their bytes are hashed into existing
+    provenance, so the key stays accepted but has no effect.
+    """
+
+    global _auto_install_warning_issued
+    with _warning_lock:
+        if _auto_install_warning_issued:
+            return
+        _auto_install_warning_issued = True
+    logger.warning(
+        "%s is ignored: MetaInformAnt never installs Amalgkit at runtime. Provision the pinned build with `%s`.",
+        source,
+        AMALGKIT_SYNC_HINT,
+    )
 
 
 class AmalgkitParams:
@@ -133,6 +209,7 @@ def build_cli_args(
 
     if params is None:
         return args
+    yes_no_flags = _yes_no_flags(subcommand)
 
     # Handle dict parameters
     if isinstance(params, dict):
@@ -163,12 +240,13 @@ def build_cli_args(
             if key in skip_keys or value is None:
                 continue
 
-            # Skip arguments not supported by the installed current command.
-            # The planner carries a few metadata-only values for orchestration;
-            # they must never be emitted as raw CLI flags.
+            # Skip arguments not supported by the pinned command. The planner
+            # carries a few metadata-only values for orchestration; they must
+            # never be emitted as raw CLI flags. Unknown keys are reported.
             normalized_key = key.replace("-", "_")
             supported = SUPPORTED_CLI_OPTIONS.get(subcommand or "")
             if supported is not None and normalized_key not in supported:
+                _report_dropped_key(subcommand or "", normalized_key)
                 continue
 
             # Skip arguments with command-specific incompatibilities that are
@@ -184,12 +262,11 @@ def build_cli_args(
             if subcommand in ("getfastq", "metadata", "quant") and key == "jobs":
                 continue
 
-            # Amalgkit 0.16.60 uses underscores for its CLI flags.
-            # We'll normalize to underscores to ensure compatibility.
+            # Amalgkit spells every CLI flag with underscores.
             cli_key = normalized_key
 
             if isinstance(value, bool):
-                if cli_key in YES_NO_CLI_FLAGS:
+                if cli_key in yes_no_flags:
                     args.extend([f"--{cli_key}", "yes" if value else "no"])
                 elif value:
                     args.append(f"--{cli_key}")
@@ -236,9 +313,10 @@ def build_cli_args(
     for key, value in params.extra_params.items():
         cli_key = key.replace("-", "_")
         if supported is not None and cli_key not in supported:
+            _report_dropped_key(subcommand or "", cli_key)
             continue
         if isinstance(value, bool):
-            if cli_key in YES_NO_CLI_FLAGS:
+            if cli_key in yes_no_flags:
                 args.extend([f"--{cli_key}", "yes" if value else "no"])
             elif value:
                 args.append(f"--{cli_key}")
@@ -277,18 +355,21 @@ def _resolve_amalgkit_command() -> list[str] | None:
     Hosted runners can invoke pytest through ``uv`` while the package's CLI is
     installed in the project environment.  Relying only on the inherited PATH
     makes capability checks disagree with the subprocess that the workflow
-    actually owns.  Resolution remains read-only and bounded to PATH, the
-    active interpreter environment, and this checkout's ``.venv``.
-    """
-    candidates: list[str] = []
-    discovered = shutil.which("amalgkit")
-    if discovered:
-        candidates.append(discovered)
+    actually owns.  Resolution remains read-only and bounded to the active
+    interpreter environment, PATH, and this checkout's ``.venv``.
 
-    candidates.append(str(Path(sys.executable).with_name("amalgkit")))
+    The interpreter's own console script comes first: it belongs to the same
+    environment whose installed distribution :func:`verify_installed_amalgkit`
+    checks, so the command that runs is the build that was verified rather than
+    whichever ``amalgkit`` happens to be earlier on PATH.
+    """
+    candidates: list[str] = [str(Path(sys.executable).with_name("amalgkit"))]
     virtual_env = os.environ.get("VIRTUAL_ENV")
     if virtual_env:
         candidates.append(str(Path(virtual_env) / "bin" / "amalgkit"))
+    discovered = shutil.which("amalgkit")
+    if discovered:
+        candidates.append(discovered)
 
     repository_root = Path(__file__).resolve().parents[4]
     candidates.append(str(repository_root / ".venv" / "bin" / "amalgkit"))
@@ -357,7 +438,7 @@ def parse_and_check_version(
     if not output:
         return False, "Empty version output"
 
-    # Current Amalgkit emits ``amalgkit version 0.16.60``.
+    # Amalgkit emits ``amalgkit version X.Y.Z``.
     version_match = re.search(r"(?<!\d)(\d+(?:\.\d+){1,2})(?!\d)", output)
     if version_match is None:
         return False, f"Unexpected version format: {output}"
@@ -393,12 +474,113 @@ def parse_and_check_version(
         return False, f"Could not parse version {current_version}"
 
 
+@dataclass(frozen=True)
+class InstalledAmalgkit:
+    """Identity of the Amalgkit distribution installed in this interpreter.
+
+    ``commit_id`` and ``url`` come from the PEP 610 ``direct_url.json`` record
+    that uv writes for a git-sourced install; they are ``None`` for an install
+    whose origin was not recorded (for example a bioconda or index package).
+    """
+
+    version: str
+    url: str | None
+    commit_id: str | None
+    requested_revision: str | None
+    editable: bool
+
+
+def _normalize_repository_url(url: str) -> str:
+    normalized = url.strip().removeprefix("git+").rstrip("/")
+    return normalized.removesuffix(".git").lower()
+
+
+def installed_amalgkit_distribution() -> InstalledAmalgkit | None:
+    """Read the installed Amalgkit distribution's version and VCS origin.
+
+    Returns:
+        The distribution identity, or ``None`` when this interpreter has no
+        ``amalgkit`` distribution.
+    """
+
+    try:
+        distribution = importlib.metadata.distribution("amalgkit")
+    except importlib.metadata.PackageNotFoundError:
+        return None
+    payload: dict[str, Any] = {}
+    raw = distribution.read_text("direct_url.json")
+    if raw:
+        try:
+            loaded = json.loads(raw)
+        except json.JSONDecodeError:
+            loaded = {}
+        if isinstance(loaded, dict):
+            payload = loaded
+    raw_vcs, raw_dir = payload.get("vcs_info"), payload.get("dir_info")
+    vcs_info: dict[str, Any] = raw_vcs if isinstance(raw_vcs, dict) else {}
+    dir_info: dict[str, Any] = raw_dir if isinstance(raw_dir, dict) else {}
+    url = payload.get("url")
+    commit_id = vcs_info.get("commit_id")
+    requested_revision = vcs_info.get("requested_revision")
+    return InstalledAmalgkit(
+        version=str(distribution.version),
+        url=str(url) if isinstance(url, str) else None,
+        commit_id=str(commit_id) if isinstance(commit_id, str) else None,
+        requested_revision=str(requested_revision) if isinstance(requested_revision, str) else None,
+        editable=bool(dir_info.get("editable", False)),
+    )
+
+
+def verify_installed_amalgkit(installed: InstalledAmalgkit | None = None) -> Tuple[bool, str]:
+    """Fail closed unless this interpreter holds exactly the pinned Amalgkit build.
+
+    The installed distribution must report :data:`REQUIRED_AMALGKIT_VERSION`
+    and its ``direct_url.json`` must name :data:`AMALGKIT_REPOSITORY_URL` at
+    commit :data:`AMALGKIT_SOURCE_REVISION`. A version string alone is not
+    accepted: upstream does not tag patch builds, so two different commits can
+    report the same version.
+
+    Args:
+        installed: Distribution identity to check; read from this interpreter
+            when omitted.
+
+    Returns:
+        Tuple of (matches, message). A mismatch message ends with the
+        lock-based provisioning hint.
+    """
+
+    if installed is None:
+        installed = installed_amalgkit_distribution()
+    if installed is None:
+        return False, f"amalgkit is not installed for {sys.executable}. Run `{AMALGKIT_SYNC_HINT}`."
+    problems: list[str] = []
+    if installed.version != REQUIRED_AMALGKIT_VERSION:
+        problems.append(f"version {installed.version} is not {REQUIRED_AMALGKIT_VERSION}")
+    if installed.commit_id is None:
+        problems.append("no VCS commit is recorded in direct_url.json, so the build cannot be identified")
+    elif installed.commit_id != AMALGKIT_SOURCE_REVISION:
+        problems.append(f"commit {installed.commit_id} is not {AMALGKIT_SOURCE_REVISION}")
+    if installed.url is not None and _normalize_repository_url(installed.url) != _normalize_repository_url(
+        AMALGKIT_REPOSITORY_URL
+    ):
+        problems.append(f"source {installed.url} is not {AMALGKIT_REPOSITORY_URL}")
+    if installed.editable:
+        problems.append("it is an editable checkout, whose bytes can change after installation")
+    if problems:
+        return False, f"Installed amalgkit is not the pinned build ({'; '.join(problems)}). Run `{AMALGKIT_SYNC_HINT}`."
+    return True, f"amalgkit {installed.version} at commit {AMALGKIT_SOURCE_REVISION[:12]} matches the pin"
+
+
 def validate_amalgkit_version(
     min_version: str = REQUIRED_AMALGKIT_VERSION,
     *,
     exact: bool = True,
 ) -> Tuple[bool, str]:
     """Validate the installed Amalgkit CLI against the project contract.
+
+    For the pinned contract (``exact`` with the required version) the CLI's
+    reported version must match and the interpreter's installed distribution
+    must come from the pinned commit (:func:`verify_installed_amalgkit`).
 
     Args:
         min_version: Required version string.
@@ -410,108 +592,64 @@ def validate_amalgkit_version(
     """
     command_prefix = _resolve_amalgkit_command()
     if command_prefix is None:
-        return False, "amalgkit CLI not found in PATH or the project environment"
+        return False, f"amalgkit CLI not found in PATH or the project environment. Run `{AMALGKIT_SYNC_HINT}`."
 
     try:
         result = subprocess.run([*command_prefix, "--version"], capture_output=True, text=True, timeout=5)
-        if result.returncode != 0:
-            return False, f"Version check failed: {result.stderr}"
-
-        return parse_and_check_version(result.stdout, min_version, exact=exact)
-
     except (subprocess.SubprocessError, OSError, TimeoutError) as e:
         return False, f"Version check error: {e}"
+    if result.returncode != 0:
+        return False, f"Version check failed: {result.stderr}"
+
+    valid, message = parse_and_check_version(result.stdout, min_version, exact=exact)
+    if not valid or not exact or min_version != REQUIRED_AMALGKIT_VERSION:
+        return valid, message
+    return verify_installed_amalgkit()
 
 
 def ensure_cli_available(
-    *, auto_install: bool = True, min_version: str = REQUIRED_AMALGKIT_VERSION, exact: bool = True
+    *, auto_install: bool = False, min_version: str = REQUIRED_AMALGKIT_VERSION, exact: bool = True
 ) -> Tuple[bool, str, Dict | None]:
-    """Ensure amalgkit CLI is available and meets version requirements.
+    """Ensure the Amalgkit CLI is available and is the pinned build.
+
+    This check never installs, upgrades or downgrades anything: runtime
+    installs bypass ``uv.lock`` and have silently replaced Amalgkit and its
+    transitive dependencies in the past. A missing or different build fails
+    closed with the provisioning hint :data:`AMALGKIT_SYNC_HINT`.
 
     Args:
-        auto_install: Whether to attempt automatic installation
+        auto_install: Accepted for backward compatibility and ignored; passing
+            true logs a one-time warning.
         min_version: Required version
         exact: Require the pinned version by default.
 
     Returns:
-        Tuple of (success, message, version_info)
+        Tuple of (success, message, version_info). ``version_info`` reports the
+        observed version, whether it is valid, ``attempted: False`` and the
+        provisioning hint.
     """
+    if auto_install:
+        warn_auto_install_ignored("ensure_cli_available(auto_install=True)")
+
+    installed = installed_amalgkit_distribution()
+    version_info: Dict[str, Any] = {
+        "version": installed.version if installed is not None else None,
+        "commit_id": installed.commit_id if installed is not None else None,
+        "valid": False,
+        "attempted": False,
+        "install_hint": AMALGKIT_SYNC_HINT,
+    }
     available, message = check_cli_available()
+    if not available:
+        return False, f"{message}. Run `{AMALGKIT_SYNC_HINT}`.", version_info
 
-    if available:
-        # Check version
-        valid_version, version_msg = validate_amalgkit_version(min_version, exact=exact)
-        if not valid_version:
-            logger.warning(f"Amalgkit version issue: {version_msg}")
-            # If auto_install is True, we might want to upgrade?
-            # For now, just warn but allow strict checks to fail if needed by caller
-            # But if we really need a feature, we should fail.
-            # However, existing logic returns True if available.
-            # Let's verify if we should try to upgrade.
-            if auto_install:
-                logger.info("Attempting upgrade due to version mismatch...")
-                # Proceed to install block
-            else:
-                return (
-                    False,
-                    f"Amalgkit available but version mismatch: {version_msg}",
-                    {"version": "unknown", "valid": False},
-                )
-
-        # Get version info again for return
-        try:
-            command_prefix = _resolve_amalgkit_command()
-            if command_prefix is None:
-                raise FileNotFoundError("amalgkit executable is unavailable after installation")
-            result = subprocess.run([*command_prefix, "--version"], capture_output=True, text=True, timeout=5)
-            current_version = result.stdout.strip().split()[-1] if result.stdout.strip() else "unknown"
-            version_info = {"version": current_version, "valid": valid_version}
-        except Exception:
-            version_info = {"version": "unknown", "valid": False}
-
-        if valid_version:
-            return True, message, version_info
-
-    if not auto_install:
-        return False, message, None
-
-    # Attempt automatic installation using UV package manager
-    logger.info("Attempting to install/upgrade amalgkit from kfuku52/amalgkit via UV package manager...")
-    try:
-        # Use UV package manager (per METAINFORMANT policy)
-        # Note: subprocess is imported at module level
-        install_result = subprocess.run(
-            ["uv", "pip", "install", "--upgrade", "--python", sys.executable, AMALGKIT_INSTALL_SPEC],
-            capture_output=True,
-            text=True,
-            timeout=300,
-        )
-
-        if install_result.returncode == 0:
-            logger.info("Successfully installed/upgraded amalgkit from kfuku52/amalgkit via UV")
-            # Verify installation after install
-            return ensure_cli_available(auto_install=False, min_version=min_version, exact=exact)
-        else:
-            error_msg = install_result.stderr if install_result.stderr else "Installation failed with no error message"
-            logger.error(f"UV installation of amalgkit from {AMALGKIT_INSTALL_SPEC} failed: {error_msg}")
-            return (
-                False,
-                f"Installation failed for {AMALGKIT_INSTALL_SPEC}: {error_msg}",
-                {
-                    "attempted": True,
-                    "install_spec": AMALGKIT_INSTALL_SPEC,
-                    "return_code": install_result.returncode,
-                    "stdout": install_result.stdout,
-                    "stderr": install_result.stderr,
-                },
-            )
-    except subprocess.TimeoutExpired:
-        return False, "Installation timed out (timeout: 300s)", None
-    except FileNotFoundError:
-        return False, "UV package manager not found. Install UV to use automatic installation.", None
-    except Exception as e:
-        logger.error(f"Unexpected error during amalgkit installation: {e}")
-        return False, f"Installation failed with unexpected error: {e}", None
+    valid_version, version_msg = validate_amalgkit_version(min_version, exact=exact)
+    version_info["valid"] = valid_version
+    if not valid_version:
+        logger.warning(f"Amalgkit is not usable: {version_msg}")
+        hint = "" if AMALGKIT_SYNC_HINT in version_msg else f" Run `{AMALGKIT_SYNC_HINT}`."
+        return False, f"Amalgkit available but not the required build: {version_msg}{hint}", version_info
+    return True, message, version_info
 
 
 def run_amalgkit(

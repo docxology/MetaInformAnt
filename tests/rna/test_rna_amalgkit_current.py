@@ -1,6 +1,6 @@
 """Current Amalgkit command-contract tests.
 
-These tests exercise the supported Amalgkit 0.16.60 command surface without network
+These tests exercise the pinned Amalgkit command surface without network
 access. They deliberately keep optional cross-species commands separate from
 the per-species default workflow.
 """
@@ -250,17 +250,21 @@ def test_current_commands_have_allow_lists() -> None:
 
 
 def test_version_parser_accepts_installed_output() -> None:
-    valid, message = amalgkit.parse_and_check_version("amalgkit version 0.16.60", "0.16.60")
+    required = amalgkit.REQUIRED_AMALGKIT_VERSION
+    major, minor, patch = (int(part) for part in required.split("."))
+    valid, message = amalgkit.parse_and_check_version(f"amalgkit version {required}", required)
     assert valid, message
-    valid, message = amalgkit.parse_and_check_version("amalgkit version 0.16.60", "0.16.60", exact=True)
+    valid, message = amalgkit.parse_and_check_version(f"amalgkit version {required}", required, exact=True)
     assert valid, message
-    invalid, _ = amalgkit.parse_and_check_version("amalgkit version 0.16.99", "0.16.60", exact=True)
+    invalid, _ = amalgkit.parse_and_check_version(f"amalgkit version {major}.{minor}.{patch + 1}", required, exact=True)
     assert not invalid
-    invalid, _ = amalgkit.parse_and_check_version("amalgkit development build", "0.16.60", exact=True)
+    older, _ = amalgkit.parse_and_check_version(f"amalgkit version {major}.{minor}.{patch - 1}", required)
+    assert not older
+    invalid, _ = amalgkit.parse_and_check_version("amalgkit development build", required, exact=True)
     assert not invalid
-    assert amalgkit.REQUIRED_AMALGKIT_VERSION == "0.16.60"
-    assert amalgkit.AMALGKIT_RELEASE_TAG == "v0.16.60"
-    assert amalgkit.AMALGKIT_SOURCE_REVISION == "c656a52aacdcee6fd3bf7e8031769ca957204ebc"
+    # The constants are derived from one declared revision (see test_amalgkit_pin.py).
+    assert amalgkit.AMALGKIT_RELEASE_TAG == f"master@{amalgkit.AMALGKIT_SOURCE_REVISION[:12]}"
+    assert amalgkit.AMALGKIT_INSTALL_SPEC.endswith("@" + amalgkit.AMALGKIT_SOURCE_REVISION)
 
 
 @pytest.mark.external_tool
