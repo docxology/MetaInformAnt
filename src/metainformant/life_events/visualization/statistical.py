@@ -91,7 +91,8 @@ def plot_event_embeddings(
             try:
                 import umap
 
-                reducer = umap.UMAP(n_components=plot_components, random_state=42)
+                # Keep the 0.5.x layout explicitly (umap-learn >= 0.6 warns when it is implicit).
+                reducer = umap.UMAP(n_components=plot_components, random_state=42, compatibility_layout=True)
             except ImportError:
                 logger.warning("UMAP not available, using PCA (the axes are labelled PCA)")
                 from sklearn.decomposition import PCA

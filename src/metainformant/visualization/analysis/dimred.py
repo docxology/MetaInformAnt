@@ -191,7 +191,8 @@ def plot_umap(
     data_array = _prepare_embedding_data(data, n_components)
 
     # Perform UMAP
-    reducer = umap.UMAP(n_components=n_components, random_state=42)
+    # Keep the 0.5.x layout explicitly (umap-learn >= 0.6 warns when it is implicit).
+    reducer = umap.UMAP(n_components=n_components, random_state=42, compatibility_layout=True)
     umap_result = reducer.fit_transform(data_array)
 
     ax = _plot_embedding(

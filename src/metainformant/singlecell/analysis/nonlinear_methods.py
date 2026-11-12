@@ -254,6 +254,8 @@ def umap_reduction(
         "min_dist": min_dist,
         "random_state": random_state,
         "metric": metric,
+        # Keep the 0.5.x layout explicitly (umap-learn >= 0.6 warns when it is implicit).
+        "compatibility_layout": True,
     }
     if n_epochs is not None:
         umap_kwargs["n_epochs"] = n_epochs
