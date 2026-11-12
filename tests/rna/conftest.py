@@ -3,10 +3,15 @@ from __future__ import annotations
 import csv
 import gzip
 import json
+import os
 import random
 import shutil
+import stat
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 
@@ -142,3 +147,63 @@ def native_acquisition_factory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         return NativeAcquisitionFiles(data, work, index, metadata, config_dir, config, manifest)
 
     return build
+
+
+STAGING_BULK_ROOT_VARIABLE = "AMALGKIT_STAGING_TEST_BULK_ROOT"
+
+
+def _remove_test_tree(path: Path) -> None:
+    """Remove a test-created tree, including entries a test made read-only."""
+
+    if path.is_symlink() or path.is_file():
+        path.unlink()
+        return
+    if not path.exists():
+        return
+    for directory, _subdirs, _files in os.walk(path):
+        os.chmod(directory, stat.S_IRWXU)
+    shutil.rmtree(path)
+
+
+@contextmanager
+def bulk_staging_allocator() -> Iterator[Callable[[str], Path]]:
+    """Allocate uniquely named paths under ``$AMALGKIT_STAGING_TEST_BULK_ROOT``.
+
+    Cross-volume cases need a directory on a second (bulk) volume that the
+    operator names through the environment; allocation skips when it is unset.
+    Every path handed out is removed on exit whether the body passed, failed or
+    never created it, and exit fails if anything named by this allocator
+    remains: tests must not leave pilot directories on the operator's volume.
+    """
+
+    allocated: list[Path] = []
+
+    def allocate(prefix: str) -> Path:
+        bulk = os.environ.get(STAGING_BULK_ROOT_VARIABLE)
+        if not bulk:
+            pytest.skip(f"Set {STAGING_BULK_ROOT_VARIABLE} for an isolated cross-volume pilot")
+        path = Path(bulk) / f"{prefix}-{uuid4().hex}"
+        allocated.append(path)
+        return path
+
+    try:
+        yield allocate
+    finally:
+        for path in allocated:
+            _remove_test_tree(path)
+        leftovers = [str(path) for path in allocated if path.exists() or path.is_symlink()]
+        leftovers += [
+            str(sibling)
+            for path in allocated
+            if path.parent.is_dir()
+            for sibling in path.parent.glob(f"*{path.name.rsplit('-', 1)[-1]}*")
+        ]
+        assert leftovers == [], f"test left directories under the bulk root: {leftovers}"
+
+
+@pytest.fixture
+def staging_bulk_dir() -> Iterator[Callable[[str], Path]]:
+    """Fixture form of :func:`bulk_staging_allocator` (removal checked at teardown)."""
+
+    with bulk_staging_allocator() as allocate:
+        yield allocate
