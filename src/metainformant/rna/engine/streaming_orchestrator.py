@@ -39,10 +39,20 @@ from metainformant.rna.amalgkit.tissue_normalizer import apply_tissue_normalizat
 from metainformant.rna.core.sample_utils import find_quantification_file
 from metainformant.rna.engine.fastq_compression import compression_level, pigz_command
 from metainformant.rna.engine.preflight import PreflightError, run_campaign_preflight
+from metainformant.rna.engine.cohort import (
+    CohortError,
+    FrozenCohort,
+    cohort_task_table_name,
+    quant_batch_run,
+    verify_cohort_configs,
+    verify_species_reference,
+    write_cohort_task_table,
+)
 from metainformant.rna.engine.progress_db import ProgressDB
 from metainformant.rna.engine.provenance import (
     QUANT_STATUS_CURRENT,
     QUANT_STATUS_VERSION_DRIFT,
+    REUSABLE_QUANT_STATUSES,
     SpeciesReuseContext,
     build_species_reuse_context,
     classify_quantification,
@@ -52,6 +62,7 @@ from metainformant.rna.engine.provenance import (
     write_quant_provenance,
 )
 from metainformant.rna.engine.raw_cleanup import reclaim_sample_raw_inputs
+from metainformant.rna.engine.reference_digest import IndexDigestCache
 from metainformant.rna.retrieval.ena_downloader import (
     ENADownloader,
     _run_command_in_process_group,
@@ -2070,8 +2081,27 @@ def _build_sample_tasks(
 class StreamingPipelineOrchestrator:
     """Orchestrator for streaming ENA download -> Quant processing."""
 
-    def __init__(self, config_dir: Path = CONFIG_DIR, log_dir: Path = LOG_DIR, db_path: Optional[Path] = None):
+    def __init__(
+        self,
+        config_dir: Path = CONFIG_DIR,
+        log_dir: Path = LOG_DIR,
+        db_path: Optional[Path] = None,
+        *,
+        cohort: FrozenCohort | None = None,
+        allow_metadata_refresh: bool = True,
+    ):
+        """Create the orchestrator.
+
+        With ``cohort``, discovery builds tasks only from the frozen cohort (no
+        Amalgkit metadata/select, no rewritten selection table, no pruning).
+        Without it, ``allow_metadata_refresh=False`` refuses to query NCBI
+        (Amalgkit metadata/select) when a species' metadata is missing or stale.
+        """
         from metainformant.rna.engine.ehd_storage import capture_ehd_write_policy
+
+        self.cohort = cohort
+        self.allow_metadata_refresh = allow_metadata_refresh
+        self._cohort_digests = IndexDigestCache()
 
         # Validate every managed write root before logs or SQLite are opened.
         self._ehd_write_policy = capture_ehd_write_policy(Path(config_dir), Path(log_dir), db_path)
@@ -2118,6 +2148,11 @@ class StreamingPipelineOrchestrator:
 
         # SQLite progress database
         self.db = ProgressDB(db_path) if db_path else ProgressDB()
+        if cohort is not None:
+            bound = self.db.cohort_binding().get("cohort_id")
+            if bound not in (None, cohort.cohort_id):
+                self.db.close()
+                raise CohortError(f"progress database is bound to cohort {bound}, not {cohort.cohort_id}")
 
         # Raw reads are transient once the exact current-contract
         # quantification sidecar has been written.  Keep an explicit opt-out
@@ -3341,8 +3376,15 @@ class StreamingPipelineOrchestrator:
         threads: int,
         srr_id: str,
         expected_paired: bool | None = None,
+        *,
+        metadata_path: Path | None = None,
     ) -> tuple:
         """Run amalgkit quant for a single sample using --batch.
+
+        ``metadata_path`` (a frozen-cohort task table in the species'
+        ``work/metadata``) replaces the selected metadata table. Either way the
+        ``batch_index``-th sampled row must be ``srr_id``; otherwise the run is
+        refused instead of quantifying another sample.
 
         Returns:
             Tuple of (success: bool, error_msg: str or None).
@@ -3351,11 +3393,22 @@ class StreamingPipelineOrchestrator:
             cfg = yaml.safe_load(f)
 
         work_dir = _species_work_dir(species_name)
-        meta_path = _resolve_quant_metadata_path(work_dir)
+        if metadata_path is not None:
+            table = Path(metadata_path)
+            if table.parent != work_dir / "metadata" or table.is_symlink() or not table.is_file():
+                return False, f"Quant task table is not a regular file in {work_dir / 'metadata'}: {table}"
+            meta_path: Optional[str] = str(table)
+        else:
+            meta_path = _resolve_quant_metadata_path(work_dir)
 
         if not meta_path:
             logger.error(f"No metadata found for {species_name} batch {batch_index}")
             return False, f"No metadata found for {species_name}"
+        batch_run = quant_batch_run(Path(meta_path), batch_index)
+        if batch_run != srr_id:
+            return False, (
+                f"Quant batch mismatch: row {batch_index} of {Path(meta_path).name} is {batch_run!r}, not {srr_id}"
+            )
 
         # Direct ENA acquisition bypasses Amalgkit's getfastq stage.  For
         # public metadata rows with missing/zero spot statistics, derive the
@@ -3825,6 +3878,9 @@ class StreamingPipelineOrchestrator:
         quant_file = find_quantification_file(quant_dir, srr_id)
         if not quant_dir.exists() or quant_file is None or not quant_file.is_file() or quant_file.stat().st_size <= 100:
             return False
+        context = self._reuse_context(species_name)
+        if context is not None and context.is_cohort:
+            return context.classify(quant_dir, srr_id).get("status") in REUSABLE_QUANT_STATUSES
         return is_reusable_quantification(quant_dir, srr_id, **self._reuse_kwargs(species_name))
 
     def _reclaim_after_current_quantification(self, species_name: str, srr_id: str) -> None:
@@ -3965,8 +4021,9 @@ class StreamingPipelineOrchestrator:
         defer_ncbi_fallback: bool = False,
         acquisition_only: bool = False,
         quantification_only: bool = False,
+        metadata_path: Path | None = None,
     ) -> Dict[str, Any]:
-        """Processing unit for a single sample."""
+        """Processing unit for a single sample (``metadata_path``: frozen-cohort task table)."""
         if acquisition_only and quantification_only:
             raise ValueError("acquisition_only and quantification_only are mutually exclusive")
         result = {
@@ -4044,6 +4101,7 @@ class StreamingPipelineOrchestrator:
 
         # Quantify
         self.db.set_state(species_name, srr_id, "quantifying")
+        quant_kwargs: Dict[str, Any] = {"metadata_path": metadata_path} if metadata_path is not None else {}
         if self._quant_semaphore is None:
             success, quant_error = self.quant_sample(
                 config_path,
@@ -4052,6 +4110,7 @@ class StreamingPipelineOrchestrator:
                 threads,
                 srr_id,
                 expected_paired,
+                **quant_kwargs,
             )
         else:
             with self._quant_semaphore:
@@ -4062,6 +4121,7 @@ class StreamingPipelineOrchestrator:
                     threads,
                     srr_id,
                     expected_paired,
+                    **quant_kwargs,
                 )
         if success:
             self.db.set_state(species_name, srr_id, "quantified")
@@ -4180,10 +4240,149 @@ class StreamingPipelineOrchestrator:
                 temporary.unlink(missing_ok=True)
             return False
 
+    def _discover_cohort_species_tasks(self, config_name: str, max_gb: float) -> List[Dict[str, Any]]:
+        """Build one species' tasks from the frozen cohort, never from a metadata query.
+
+        Reads the cohort (already hash-verified), checks that the checked-in
+        configuration and the data root's reference index bytes are the
+        cohort's, reconciles outputs on disk against the cohort reuse contract,
+        and returns the schedulable tasks: cohort tasks minus ``permanent_drop``
+        exclusions (cohort and progress DB) minus quantified and quarantined
+        runs. It runs no Amalgkit metadata/select or tissue normalization,
+        never writes ``metadata_selected.tsv`` or the metadata witness, and
+        prunes nothing. ``amalgkit quant --metadata`` receives a separate task
+        table (frozen rows of the schedulable tasks, written atomically only
+        when its bytes change), and each task's batch index is its row in that
+        table. Any inconsistency raises, which fails the whole discovery phase.
+        """
+
+        cohort = cast(FrozenCohort, self.cohort)
+        species_name = cohort.species_for_config(config_name)
+        entry = cohort.entry(species_name)
+        source_config_path = self.config_dir / config_name
+        if source_config_path.is_symlink() or not source_config_path.is_file():
+            raise CohortError(f"cohort configuration is missing: {source_config_path}")
+        verify_cohort_configs(cohort, self.config_dir, [species_name])
+        work_dir = _species_work_dir(species_name)
+        if work_dir.parent.name != species_name or work_dir.parent.parent != _data_root():
+            raise CohortError(
+                f"{species_name}: cohort mode needs the canonical work directory {_data_root() / species_name}, "
+                f"not the alias {work_dir}"
+            )
+        logger.info("=== Discovering %s from frozen cohort %s ===", species_name, cohort.cohort_id)
+
+        try:
+            runtime_cfg = yaml.safe_load(source_config_path.read_text()) or {}
+        except (OSError, yaml.YAMLError) as exc:
+            raise CohortError(f"{species_name}: configuration is unreadable: {exc}") from exc
+        index_dir = _resolve_index_dir(runtime_cfg, species_name)
+        if not index_dir:
+            raise CohortError(f"{species_name}: no kallisto index directory resolves from the configuration")
+        reference = verify_species_reference(
+            cohort, _data_root(), species_name, index_digests=self._cohort_digests, index_dir=index_dir
+        )
+        if not reference.ok:
+            raise CohortError(f"{species_name}: {reference.reason} ({reference.manifest_relpath})")
+
+        context = build_species_reuse_context(
+            species_name,
+            source_config_path,
+            cohort_id=cohort.cohort_id,
+            reference_index_sha256=entry.index_sha256,
+            reference_index_name=entry.index_name,
+            index_digests=self._cohort_digests,
+        )
+        contexts: dict[str, SpeciesReuseContext] | None = getattr(self, "_reuse_contexts", None)
+        if contexts is None:
+            contexts = {}
+            self._reuse_contexts = contexts
+        contexts[species_name] = context
+
+        tasks = cohort.tasks_for(species_name)
+        self.db.init_species(species_name, [task.accession for task in tasks])
+        self.db.ensure_exclusions(
+            species_name,
+            [
+                {
+                    "srr_id": accession,
+                    "reason_code": reason,
+                    "reason_detail": f"frozen cohort {cohort.cohort_id}",
+                    "recorded_by": f"cohort:{cohort.cohort_id}",
+                }
+                for accession, reason in sorted(cohort.exclusions_for(species_name).items())
+            ],
+        )
+        dropped = self.db.get_excluded_srr_ids(species_name, reason_code="permanent_drop")
+        schedulable = [task for task in tasks if task.accession not in dropped]
+
+        policy = getattr(self, "requantification_policy", "preserve")
+        requeue = (
+            REUSABLE_QUANT_STATUSES
+            if policy == "all"
+            else frozenset({QUANT_STATUS_VERSION_DRIFT}) if policy == "version-drift" else frozenset()
+        )
+        verify_content = os.environ.get("AMALGKIT_RESUME_VERIFY_HASHES", "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+        profile = getattr(self, "_resource_profile", None)
+        reconciled = self.db.reconcile_cohort(
+            species_name,
+            work_dir / "quant",
+            [task.accession for task in schedulable],
+            lambda path, run: context.classify(path, run, verify_content=verify_content),
+            requantify_statuses=requeue,
+            workers=max(1, getattr(profile, "validation_slots", 1)),
+        )
+
+        metadata_path = work_dir / "metadata" / cohort_task_table_name(cohort.cohort_id)
+        positions = write_cohort_task_table(cohort, species_name, metadata_path, excluded=dropped)
+        done = set(self.db.get_samples(species_name, "quantified")) | set(
+            self.db.get_samples(species_name, "quarantined")
+        )
+        max_bases = max_gb * 1e9
+        deferred = [task for task in schedulable if task.accession not in done and task.total_bases > max_bases]
+        fastq_dir = work_dir / "getfastq"
+        built = [
+            {
+                "srr": task.accession,
+                "batch_idx": positions[task.accession],
+                "fastq_dir": fastq_dir,
+                "config_path": source_config_path,
+                "species_name": species_name,
+                "expected_paired": task.expected_paired,
+                "metadata_path": metadata_path,
+                "cohort_id": cohort.cohort_id,
+                "total_bases": task.total_bases,
+                "fastq_bytes": task.fastq_bytes,
+            }
+            for task in sorted(schedulable, key=lambda task: (task.total_bases, task.batch_index))
+            if task.accession not in done and task.total_bases <= max_bases
+        ]
+        logger.info(
+            "%s: cohort %s has %d tasks; %d permanently excluded, %d reusable on disk, %d quarantined, "
+            "%d above %.0f GB deferred, %d scheduled (task table %s)",
+            species_name,
+            cohort.cohort_id,
+            len(tasks),
+            len(tasks) - len(schedulable),
+            reconciled["quantified"],
+            len(reconciled["quarantined"]),
+            len(deferred),
+            max_gb,
+            len(built),
+            metadata_path.name,
+        )
+        return built
+
     def discover_species_tasks(self, config_name: str, max_gb: float, threads: int) -> List[Dict[str, Any]]:
         """Main processing loop for a species.
         Returns a list of tasks instead of executing them immediately.
         """
+        if getattr(self, "cohort", None) is not None:
+            return self._discover_cohort_species_tasks(config_name, max_gb)
         source_config_path = self.config_dir / config_name
         if not source_config_path.exists():
             logger.error(f"Config not found: {source_config_path}")
@@ -4199,6 +4398,11 @@ class StreamingPipelineOrchestrator:
         metadata_path = _resolve_metadata_path(work_dir)
 
         needs_metadata = not metadata_path.exists() or not is_current_metadata(work_dir)
+        if needs_metadata and not getattr(self, "allow_metadata_refresh", True):
+            raise RuntimeError(
+                f"Metadata for {species_name} is missing or not current and metadata refresh is disabled; "
+                "refusing to query NCBI (run with a frozen cohort, or pass --refresh-metadata explicitly)"
+            )
         needs_index = not self.verify_genome_index(config_path, species_name)
         needs_prep = needs_metadata or needs_index
         if needs_metadata:
@@ -4247,7 +4451,9 @@ class StreamingPipelineOrchestrator:
 
                 runtime_config = apply_step_defaults(load_workflow_config(config_path))
                 planned_steps = dict(plan_workflow(runtime_config))
-                for prep_step in ("metadata", "select"):
+                # Re-query NCBI only when the metadata itself is missing or stale: an index-only
+                # preparation must not silently change the selected run universe.
+                for prep_step in ("metadata", "select") if needs_metadata else ():
                     raw_params = planned_steps.get(prep_step)
                     if raw_params is None:
                         logger.error("Current workflow plan omitted %s for %s", prep_step, species_name)
@@ -4683,6 +4889,9 @@ class StreamingPipelineOrchestrator:
                         return False
                 else:
                     return False
+                cohort_kwargs: Dict[str, Any] = (
+                    {"metadata_path": task["metadata_path"]} if task.get("metadata_path") is not None else {}
+                )
                 future = executor.submit(
                     self.process_single_sample,
                     task["srr"],
@@ -4699,6 +4908,7 @@ class StreamingPipelineOrchestrator:
                     # acquisitions defer NCBI work so they never wait behind
                     # the single mounted-disk extraction slot.
                     defer_ncbi_fallback=not task["_uses_local_sra"],
+                    **cohort_kwargs,
                 )
                 primary_futures[future] = task
                 return True

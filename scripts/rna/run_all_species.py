@@ -7,9 +7,15 @@ species with robust error handling, retries, and resume capability. Downstream
 merge, wsfilter, finalize, and sanity are owned by the external-volume
 checkpoint runner after this producer stops.
 
+With ``--cohort DIR`` the species and their tasks come from a frozen,
+hash-verified cohort (see ``metainformant.rna.engine.cohort``): Amalgkit
+metadata/select never runs and ``metadata_selected.tsv`` is never rewritten.
+Without a cohort, a missing or stale metadata table is an error unless
+``--refresh-metadata`` explicitly allows the NCBI query.
+
 Usage:
-    python3 scripts/rna/run_all_species.py [--max-gb 50.0] [--workers 4] [--threads 8]
-        [--discovery-workers N]
+    python3 scripts/rna/run_all_species.py --cohort DIR [--cohort-definition-sha256 HEX]
+        [--max-gb 1000] [--workers 4] [--threads 8] [--discovery-workers N]
         [--quant-slots N] [--fastq-threads N] [--fastq-slots N]
         [--compression-threads N] [--validation-slots N] [--max-in-flight N]
         [--requantification-policy preserve|version-drift|all]
@@ -24,8 +30,16 @@ from pathlib import Path
 # Add src to python path to allow importing metainformant modules
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
 
-from metainformant.rna.engine.species import configured_data_root, discover_species_config_names
-from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator
+from metainformant.rna.engine.cohort import (  # noqa: E402
+    CohortError,
+    add_producer_cohort_arguments,
+    default_max_sample_gb,
+    producer_cohort_from_args,
+    select_cohort_species,
+    verify_cohort_configs,
+)
+from metainformant.rna.engine.species import configured_data_root, discover_species_config_names  # noqa: E402
+from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_DIR = REPO_ROOT / "projects" / "hymenoptera_amalgkit" / "config" / "amalgkit"
@@ -33,7 +47,8 @@ if not CONFIG_DIR.is_dir():
     CONFIG_DIR = REPO_ROOT / "config" / "amalgkit"
 
 DEFAULTS = {
-    "max_gb": float(os.environ.get("PIPELINE_MAX_GB", 50.0)),
+    # Same budget as the campaign launcher (AMALGKIT_MAX_SAMPLE_GB, default 1000 GB).
+    "max_gb": default_max_sample_gb(),
     "workers": int(os.environ.get("PIPELINE_WORKERS", 4)),
     "threads": int(os.environ.get("PIPELINE_THREADS", 8)),
 }
@@ -118,6 +133,7 @@ def main() -> int:
         default=os.environ.get("AMALGKIT_REQUANTIFICATION_POLICY", "preserve"),
         help="Handle contract-compatible version drift (default: preserve)",
     )
+    add_producer_cohort_arguments(parser)
     args = parser.parse_args()
 
     config_dir = args.config_dir.expanduser().resolve()
@@ -125,10 +141,21 @@ def main() -> int:
         os.environ["AMALGKIT_DATA_ROOT"] = str(args.data_root.expanduser().resolve())
     data_root = configured_data_root()
 
-    config_names = discover_species_config_names(config_dir)
-    if args.species:
-        wanted = set(args.species)
-        config_names = [name for name in config_names if name.removeprefix("amalgkit_").removesuffix(".yaml") in wanted]
+    try:
+        cohort = producer_cohort_from_args(args)
+        if cohort is not None:
+            selected = select_cohort_species(cohort, args.species)
+            verify_cohort_configs(cohort, config_dir, selected)
+            config_names = [cohort.entry(name).config_name for name in selected]
+        else:
+            config_names = discover_species_config_names(config_dir)
+            if args.species:
+                wanted = set(args.species)
+                config_names = [
+                    name for name in config_names if name.removeprefix("amalgkit_").removesuffix(".yaml") in wanted
+                ]
+    except CohortError as error:
+        parser.error(str(error))
     if not config_names:
         parser.error(f"no runnable species configurations found under {config_dir}")
 
@@ -141,6 +168,10 @@ def main() -> int:
 
     print(f"Config directory: {config_dir}")
     print(f"Data root: {data_root}")
+    if cohort is not None:
+        print(f"Frozen cohort: {cohort.cohort_id} (definition sha256 {cohort.definition_sha256})")
+    else:
+        print(f"Metadata refresh (NCBI): {'allowed' if args.refresh_metadata else 'refused'}")
     print("Species configs:")
     for config_name in config_names:
         print(f"  - {config_name}")
@@ -152,6 +183,8 @@ def main() -> int:
         config_dir=config_dir,
         log_dir=data_root / "logs",
         db_path=data_root / "pipeline_progress.db",
+        cohort=cohort,
+        allow_metadata_refresh=args.refresh_metadata,
     )
     orchestrator.run_all(
         config_names,
@@ -171,4 +204,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

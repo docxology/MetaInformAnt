@@ -16,8 +16,16 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.rna.engine.species import configured_data_root, discover_species_config_names
-from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator
+from metainformant.rna.engine.cohort import (  # noqa: E402
+    CohortError,
+    add_producer_cohort_arguments,
+    default_max_sample_gb,
+    producer_cohort_from_args,
+    select_cohort_species,
+    verify_cohort_configs,
+)
+from metainformant.rna.engine.species import configured_data_root, discover_species_config_names  # noqa: E402
+from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG_DIR = REPO_ROOT / "projects" / "hymenoptera_amalgkit" / "config" / "amalgkit"
@@ -30,7 +38,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--species", required=True, help="Configured species identifier, e.g. apis_mellifera")
     parser.add_argument("--config-dir", type=Path, default=DEFAULT_CONFIG_DIR)
     parser.add_argument("--data-root", type=Path, help="External Amalgkit data root")
-    parser.add_argument("--max-gb", type=float, default=float(os.environ.get("PIPELINE_MAX_GB", 50.0)))
+    parser.add_argument(
+        "--max-gb",
+        type=float,
+        default=default_max_sample_gb(),
+        help="Max sample size in GB (default: AMALGKIT_MAX_SAMPLE_GB, then PIPELINE_MAX_GB, then 1000)",
+    )
     parser.add_argument("--workers", type=int, default=int(os.environ.get("PIPELINE_WORKERS", 4)))
     parser.add_argument("--threads", type=int, default=int(os.environ.get("PIPELINE_THREADS", 6)))
     parser.add_argument(
@@ -64,7 +77,10 @@ def parse_args() -> argparse.Namespace:
         help="Maximum submitted sample tasks (default: two times active workers)",
     )
     parser.add_argument("--dry-run", action="store_true", help="List the selected species without executing")
-    return parser.parse_args()
+    add_producer_cohort_arguments(parser)
+    args = parser.parse_args()
+    args.parser = parser
+    return args
 
 
 def main() -> int:
@@ -74,14 +90,27 @@ def main() -> int:
         os.environ["AMALGKIT_DATA_ROOT"] = str(args.data_root.expanduser().resolve())
     data_root = configured_data_root()
 
-    config_names = discover_species_config_names(config_dir)
-    wanted = f"amalgkit_{args.species}.yaml"
-    if wanted not in config_names:
-        raise SystemExit(f"no runnable configuration found for {args.species!r} under {config_dir}")
+    try:
+        cohort = producer_cohort_from_args(args)
+        if cohort is not None:
+            (species,) = select_cohort_species(cohort, [args.species])
+            verify_cohort_configs(cohort, config_dir, [species])
+            wanted = cohort.entry(species).config_name
+    except CohortError as error:
+        args.parser.error(str(error))
+    if cohort is None:
+        config_names = discover_species_config_names(config_dir)
+        wanted = f"amalgkit_{args.species}.yaml"
+        if wanted not in config_names:
+            raise SystemExit(f"no runnable configuration found for {args.species!r} under {config_dir}")
 
     print(f"Species: {args.species}")
     print(f"Config directory: {config_dir}")
     print(f"Data root: {data_root}")
+    if cohort is not None:
+        print(f"Frozen cohort: {cohort.cohort_id} (definition sha256 {cohort.definition_sha256})")
+    else:
+        print(f"Metadata refresh (NCBI): {'allowed' if args.refresh_metadata else 'refused'}")
     print(f"Max sample size: {args.max_gb} GB | workers: {args.workers} | threads: {args.threads}")
     if args.dry_run:
         return 0
@@ -90,6 +119,8 @@ def main() -> int:
         config_dir=config_dir,
         log_dir=data_root / "logs",
         db_path=data_root / "pipeline_progress.db",
+        cohort=cohort,
+        allow_metadata_refresh=args.refresh_metadata,
     )
     orchestrator.run_all(
         [wanted],
