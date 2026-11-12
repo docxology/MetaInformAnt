@@ -2,8 +2,9 @@
 
 The engine implements the current Amalgkit workflow as a bounded producer,
 SQLite progress store, typed workflow planner, and hash-bound evidence layer.
-The producer refuses to start into a broken environment: `run_all()` executes
-the campaign preflight before any discovery or scheduling work.
+The producer refuses to start into a broken environment: `run_all()` holds
+the campaign writer lock of the data root and executes the campaign preflight
+before any discovery or scheduling work.
 
 ## Components
 
@@ -52,7 +53,8 @@ serial probe attempts, including misses.
 | Module | Purpose |
 |---|---|
 | `streaming_orchestrator.py` | ENA-first metadata, acquisition, integration, and quantification |
-| `preflight.py` | Mandatory start-of-run environment preflight (data-root write probe, amalgkit CLI resolution) |
+| `campaign_lock.py` | One `flock` writer per data root (`<root>/.campaign.flock`): producer, import, migration and seal exclude each other; `status`/`run` CLI; producer exit codes |
+| `preflight.py` | Mandatory start-of-run environment preflight (data-root write probe, producer tools, kallisto compatibility, free-space floors, optional reuse dry-run) |
 | `progress_db.py` | Concurrent-safe SQLite sample state, exclusions, resume queries, and frozen-cohort migration |
 | `cohort.py` | Frozen cohort definition (`COHORT.json`), install, hash verification, producer task tables, data-root maintenance lock |
 | `quant_import.py` | Plan/execute import of verified quantifications from other data roots (never overwrites) |
@@ -132,13 +134,44 @@ serial probe attempts, including misses.
   [deadline planning contract](../../../../docs/rna/GENERIC_ACQUISITION.md#deadline-planning-for-new-admissions).
 
 - `StreamingPipelineOrchestrator.run_all()` starts the bounded producer for a
-  declared config set. It first runs `run_campaign_preflight()`
-  (data-root write probe plus bare `amalgkit` PATH resolution) and refuses to
-  start on failure; the same check is available standalone via
+  declared config set and returns a run summary. It holds the campaign writer
+  lock (`campaign_lock.acquire(root, "producer")`) for the whole run and
+  raises `CampaignLockBusy` before touching state when another writer (a
+  producer, an import, a live shell launcher's `results/.full_campaign.lock`
+  or the acquisition worker's `.acquisition.lock`) holds the root. Under the
+  lock it runs `run_campaign_preflight()` (data-root write probe, every
+  producer tool on PATH, installed kallisto equal to the version and index
+  format recorded in one `run_info.json` per species, free-space floors) and
+  refuses to start on failure; the same check is available standalone via
   `python -m metainformant.rna.engine.preflight --data-root <root>`.
   A start-of-run preflight prevents the observed 2026-09-03 failure class in
   which a producer without external-volume write access failed thousands of
   tasks before its first successful write.
+  Startup then returns every `downloading`/`downloaded`/`quantifying` row and
+  every environment-class failure to `pending` (no age threshold:
+  `AMALGKIT_PIPELINE_STALE_DOWNLOADING_SECONDS` is ignored), keeps
+  `permanent_drop` rows excluded and, with `--reuse-dry-run FRACTION` or
+  `AMALGKIT_PREFLIGHT_REUSE_DRY_RUN`, refuses when more than 1% of a sample
+  of recorded-quantified outputs would be quarantined.
+- Resume reconcile (`ProgressDB.reconcile_outputs()`) lists each species'
+  quant directory once and trusts an output whose provenance sidecar
+  fingerprint `(st_ino, st_size, st_mtime_ns)` and scope (configuration
+  sha256, reference sha256, rule revision and pinned Amalgkit runtime) equal
+  its recorded audit: one `lstat`, no reads. Only new or changed outputs are
+  classified, and all changes land in one transaction that leaves unchanged
+  rows' `updated_at` alone. `AMALGKIT_RESUME_VERIFY_HASHES=1` re-judges and
+  re-hashes every output. A 10,000-output synthetic fixture restarts in
+  0.16 s with 10,000 `lstat` calls (cold first pass 2.3 s, internal SSD).
+- An environment circuit breaker stops admitting samples after
+  `AMALGKIT_ENV_FAILURE_TRIP` (default 5) consecutive EPERM, EACCES, EROFS,
+  ENXIO or ENOSPC failures under the data root; those rows stay `pending`
+  with an `environment-deferred[...]` note. The summary's `exit_code`, which
+  `scripts/rna/run_all_species.py` and `process_species.py` exit with, is
+  `0` (drained: every scheduled task quantified, quarantined or
+  permanently excluded), `75` (retryable work remains), `73` (another
+  writer holds the root), `69` (environment, preflight, cohort or discovery
+  failure, including the breaker) or `70` (internal error). The scripts log
+  INFO to `<root>/logs/<script>_<utc>_<pid>.log`.
 - `quant_sample()` bounds each quantification with
   `AMALGKIT_PIPELINE_QUANT_TIMEOUT_SECONDS` (default 7200) and, when
   `AMALGKIT_PIPELINE_QUANT_STALL_TIMEOUT_SECONDS` is set to a positive
@@ -154,7 +187,7 @@ serial probe attempts, including misses.
   failure text to a durable class via the order-sensitive markers in
   `SAMPLE_ERROR_CLASSES` (first match wins): `environment_write_denied`,
   `environment_access_denied`, `environment_read_only`, `environment_no_space`,
-  `environment_missing_tool`, `transfer_all_sources_failed`,
+  `environment_device_unavailable` (ENXIO), `environment_missing_tool`, `transfer_all_sources_failed`,
   `extraction_timeout`, `quantification_timeout`, `quantification_failed`,
   `quantification_exception`; text matching no marker is `unclassified`,
   and a missing/empty error is `unrecorded`. Terminal-failure audits can

@@ -59,6 +59,25 @@ producer holds it, and installs a single-campaign downstream runner
 (merge → wsfilter → finalize → sanity) that starts only after the producer
 exits cleanly.
 
+The producer itself (`scripts/rna/run_all_species.py`, `process_species.py`)
+holds the writer `flock` on `<data-root>/.campaign.flock` for its whole life;
+the kernel releases it on any death, so there is no stale lock to remove.
+Quantification imports and progress-DB migrations take the same lock, and
+`python -m metainformant.rna.engine.campaign_lock status --data-root <root>`
+reports the holder (exit 0 quiescent, 73 busy). Producer exit codes:
+
+| Code | Meaning |
+| --- | --- |
+| 0 | Drained: every scheduled task is quantified, quarantined or permanently excluded |
+| 75 | Retryable work remains (failed or pending tasks); rerun the same command |
+| 73 | Another writer holds the data root |
+| 69 | Environment failure: preflight, cohort or discovery refusal, or the environment circuit breaker (`AMALGKIT_ENV_FAILURE_TRIP`, default 5 consecutive EPERM/EACCES/EROFS/ENXIO/ENOSPC failures) |
+| 70 | Internal error |
+
+The launcher starts finalization only after exit 0, so a run that ends with
+retryable sample failures (75) leaves finalization to a later run. Each
+producer run logs INFO to `<data-root>/logs/run_all_species_<utc>_<pid>.log`.
+
 ## Disk-throttle behavior
 
 While the campaign runs, the orchestrator re-checks both volume floors. When

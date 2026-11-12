@@ -59,8 +59,13 @@ probe miss before the success journal. The summary's
   the counts as `db_failure_classes`, and
   `metainformant.rna.analysis.cohort_accounting.build_cohort_funnel()`
   consumes the DB read-only for fail-closed cohort funnel accounting with
-  durable failure-class reason codes. `streaming_orchestrator.py` runs the
-  mandatory campaign preflight before discovery and supports the opt-in
+  durable failure-class reason codes. `streaming_orchestrator.py` holds the
+  `campaign_lock.py` writer flock of the data root for the whole run, runs the
+  mandatory campaign preflight before discovery, resets orphaned in-flight
+  rows and environment failures at startup, reconciles outputs in one
+  change-proportional pass, stops admission through an environment circuit
+  breaker, returns a run summary with exit code 0/75/69 (73 for a busy
+  root, 70 internal) and supports the opt-in
   quant stall watchdog (`AMALGKIT_PIPELINE_QUANT_STALL_TIMEOUT_SECONDS`,
   default 0/disabled) around each quantification subprocess. In frozen
   cohort mode (`cohort.py`) discovery consumes only the hash-verified cohort
@@ -108,6 +113,7 @@ producer state. It does not certify receipt contents or biological readiness.
   grants execution permission or substitutes for runtime cost reservations.
 - `__init__.py`
 - `discovery.py`
+- `campaign_lock.py`
 - `exclusions.py`
 - `pipeline.py`
 - `preflight.py`
