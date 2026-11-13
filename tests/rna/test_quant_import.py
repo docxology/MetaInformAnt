@@ -215,6 +215,9 @@ def test_execute_imports_october_only_samples_portably_and_idempotently(world: W
     records = [json.loads(line) for line in manifest.read_text().splitlines()]
     assert [r["kind"] for r in (records[0], records[-1])] == ["header", "summary"]
     assert {r["accession"]: r["action"] for r in records if r["kind"] == "decision"}["SRR101"] == ACTION_IMPORTED
+    # The publication was announced (fsynced) before the rename, ahead of its decision record.
+    kinds = [(r["kind"], r.get("accession")) for r in records]
+    assert kinds.index(("publishing", "SRR101")) < kinds.index(("decision", "SRR101"))
 
     # Portable: the import classifies as current from its own witness even after the source is gone.
     shutil.rmtree(world.october.base)
@@ -324,3 +327,18 @@ def test_config_dir_must_match_the_cohort(world: World, tmp_path: Path) -> None:
 
 def test_index_fixture_bytes_are_the_cohort_index(world: World) -> None:
     assert world.cohort.entry(SPECIES).index_sha256 == sha(INDEX_BYTES)
+
+
+def test_staging_left_by_a_killed_import_is_removed_without_a_new_import_decision(world: World) -> None:
+    """The staging dir sits in a quantification directory this run imports nothing into: it is removed anyway."""
+
+    execute_imports(world.cohort, world.dest.base, [world.source], workers=1)
+    stale = world.dest.work / "quant" / ".import-SRR103-0badc0de"
+    (stale / "staged" / "SRR103").mkdir(parents=True)
+    (stale / STAGING_MARKER).write_text(json.dumps({"schema": STAGING_SCHEMA}))
+    (stale / "staged" / "SRR103" / "SRR103_abundance.tsv").write_bytes(b"partial copy")
+
+    plan, _, summary = execute_imports(world.cohort, world.dest.base, [world.source], workers=1)
+
+    assert not [decision for decision in plan.decisions if decision.action == ACTION_IMPORTED]
+    assert summary["stale_staging_removed"] == [stale.name] and not stale.exists()

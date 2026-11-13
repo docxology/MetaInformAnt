@@ -48,7 +48,7 @@ import shutil
 import stat as stat_module
 import sys
 import time
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -679,6 +679,24 @@ class _Manifest:
         _fsync_directory(self.path.parent)
 
 
+def _publishing_record(manifest: "_Manifest", decision: ImportDecision) -> Callable[[], None]:
+    """The intent record written (and fsynced) just before a staged copy is published."""
+
+    def announce() -> None:
+        manifest.write(
+            {
+                "kind": "publishing",
+                "species": decision.species,
+                "accession": decision.accession,
+                "source": decision.source,
+                "source_relpath": decision.source_relpath,
+                "destination_relpath": decision.destination_relpath,
+            }
+        )
+
+    return announce
+
+
 def _utc_stamp() -> str:
     return time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
 
@@ -784,8 +802,14 @@ def _stage_and_publish(
     source: ImportSource,
     decision: ImportDecision,
     sample_dir: Path,
+    announce: Callable[[], None] | None = None,
 ) -> dict[str, Any]:
-    """Copy one verified sample into the destination without ever replacing an existing directory."""
+    """Copy one verified sample into the destination without ever replacing an existing directory.
+
+    ``announce`` runs (and must have made its record durable) just before the
+    staged copy is renamed into place, so a kill between the rename and the
+    import's own record still leaves a record of the publication.
+    """
 
     quant_dir = destination_root / decision.species / "work" / "quant"
     quant_dir.mkdir(parents=True, exist_ok=True)
@@ -831,6 +855,8 @@ def _stage_and_publish(
             raise ValueError(f"staged copy does not classify as reusable: {check.get('reason')}")
         if final.exists() or final.is_symlink():
             raise FileExistsError(f"destination appeared before publishing: {decision.destination_relpath}")
+        if announce is not None:
+            announce()
         # rename(2) refuses a non-empty destination directory, so existing outputs can never be replaced.
         os.rename(staged, final)
         _fsync_directory(quant_dir)
@@ -859,14 +885,21 @@ def execute_imports(
     Each ``import`` decision is re-checked at copy time; a destination that
     appeared in the meantime is recorded as ``exists_different`` and left
     alone. With ``adopt_db``, imported runs are marked ``quantified`` in that
-    progress database in one transaction per species, unless a producer
-    (``orchestrator.pid``) is alive, in which case adoption is left to its
-    reconcile.
+    progress database in one transaction per species (no producer can be
+    running: the maintenance lock is the producer's writer lock).
     """
 
     root = Path(destination)
+    species = None if species is None else tuple(species)
     summary: dict[str, Any] = {"imported": 0, "failed": 0, "stale_staging_removed": [], "adopted": 0}
     with data_root_maintenance_lock(root, purpose="import"):
+        # A killed import leaves its staging directory (a full copy of the sample) behind: remove every one in the
+        # selected species now, whether or not this run imports into that quantification directory again.
+        cleaned: set[Path] = set()
+        for name in select_cohort_species(cohort, species):
+            quant_dir = root / name / "work" / "quant"
+            summary["stale_staging_removed"].extend(_clean_stale_staging(quant_dir))
+            cleaned.add(quant_dir)
         plan = plan_imports(
             cohort,
             root,
@@ -882,7 +915,6 @@ def execute_imports(
         _refuse_inside(path, [source.root for source in sources])
         manifest = _Manifest(path)
         by_label = {source.label: source for source in sources}
-        cleaned: set[Path] = set()
         adopted: dict[str, list[dict[str, Any]]] = {}
         try:
             manifest.write(_header(plan, sources, "execute"))
@@ -895,7 +927,9 @@ def execute_imports(
                         summary["stale_staging_removed"].extend(_clean_stale_staging(quant_dir))
                         cleaned.add(quant_dir)
                     try:
-                        decision.details["published"] = _stage_and_publish(cohort, root, source, decision, sample_dir)
+                        decision.details["published"] = _stage_and_publish(
+                            cohort, root, source, decision, sample_dir, announce=_publishing_record(manifest, decision)
+                        )
                         decision.action = ACTION_IMPORTED
                         summary["imported"] += 1
                         adopted.setdefault(decision.species, []).append({"srr_id": decision.accession})
