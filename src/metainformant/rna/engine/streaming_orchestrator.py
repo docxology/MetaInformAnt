@@ -91,6 +91,7 @@ from metainformant.rna.engine.provenance import (
     write_quant_provenance,
 )
 from metainformant.rna.engine.raw_cleanup import reclaim_sample_raw_inputs
+from metainformant.rna.engine.species import resolve_species_work_dir
 from metainformant.rna.engine.reference_digest import IndexDigestCache
 from metainformant.rna.retrieval.ena_downloader import (
     ENADownloader,
@@ -924,28 +925,9 @@ def _species_work_dir(species_name: str) -> Path:
     quantifications without copying or deleting data.
     """
 
-    root = _data_root()
-    candidates = [species_name]
-    if species_name == "apis_mellifera":
-        candidates.extend(["apis_mellifera_all", "amellifera"])
-    elif species_name == "pogonomyrmex_barbatus":
-        candidates.append("pbarbatus")
-
-    # A populated work tree is stronger evidence than directory existence.
-    # The marker set is intentionally limited to cheap existence checks; the
-    # orchestrator must remain responsive while discovering thousands of rows.
-    for candidate in candidates:
-        work_dir = root / candidate / "work"
-        if work_dir.is_dir() and any(
-            (work_dir / marker).exists() for marker in ("metadata", "index", "quant", "merge")
-        ):
-            return work_dir
-
-    for candidate in candidates:
-        species_dir = root / candidate
-        if species_dir.is_dir():
-            return species_dir / "work"
-    return root / species_name / "work"
+    # One rule for producers, finalization and reports (rna.engine.species.resolve_species_work_dir); the
+    # evidence markers are cheap existence checks so discovery stays responsive over thousands of rows.
+    return resolve_species_work_dir(_data_root(), species_name)
 
 
 def _remap_species_workspace_value(value: Any, species_name: str, active_dir_name: str) -> Any:
