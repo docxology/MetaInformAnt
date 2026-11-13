@@ -42,7 +42,7 @@ Memory: the allele, activity and guideline tables are small Python literals shar
 | `call_star_alleles()` | ~4 µs |
 | `determine_diplotype()` | ~1.4 µs |
 | `classify_phenotype()` | ~2.6 µs |
-| `predict_metabolizer()` | ~5 µs |
+| `predict_metabolizer_status()` | ~5 µs |
 | CPIC lookup | ~1 µs |
 
 Measured as described in [PERFORMANCE.md](PERFORMANCE.md); absolute numbers depend on the hardware.

@@ -26,7 +26,7 @@ Epigenetic data integrates with genomic annotation in two ways within this modul
 - **Multi-assay integration**: `workflow.workflow.integrate_epigenome_results` relates methylation sites to ChIP-seq and ATAC-seq peaks, and measures how much the ChIP-seq and ATAC-seq peak sets overlap (peak overlap in both directions and the base-pair Jaccard index)
 - **Functional annotation**: `chromatin_state.state_learning.interpret_states` labels chromatin states from histone mark patterns, and `compute_state_enrichment` tests the states against annotated bins
 
-Not implemented here: connecting methylation or accessibility to gene expression (the `metainformant.multiomics` module accepts an epigenome table through `analysis.integration.integrate_omics_data(..., epigenome_data=...)`), linking to 3D genome organization, and cross-species comparison.
+Not implemented here: connecting methylation or accessibility to gene expression (the `metainformant.multiomics` module accepts an epigenome table through `analysis.integration.integrate_omics_data(data={"epigenome": ...})`), linking to 3D genome organization, and cross-species comparison.
 
 ## Analysis Workflows
 

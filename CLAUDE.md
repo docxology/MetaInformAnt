@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-METAINFORMANT is a bioinformatics toolkit for multi-omic analysis (genomics, transcriptomics, proteomics, epigenomics, systems biology). Python 3.11+.
+METAINFORMANT is a bioinformatics toolkit for multi-omic analysis (genomics, transcriptomics, proteomics, epigenomics, systems biology). Python 3.14+.
 
 **Critical Rules:**
 
@@ -72,6 +72,8 @@ src/metainformant/
  rna/ # RNA-seq: amalgkit integration, workflow orchestration
  protein/ # Protein: sequences, structures, AlphaFold, UniProt
  gwas/ # GWAS: association, QC, visualization
+ eqtl/ # GWAS variants x RNA-seq expression integration
+ popgen/ # Population genetics statistics, neutrality tests, Fst, LD
  epigenome/ # Methylation, ChIP-seq, ATAC-seq
  networks/ # Biological networks, community detection
  multiomics/ # Multi-omic integration
@@ -93,7 +95,6 @@ src/metainformant/
  spatial/ # Spatial transcriptomics: Visium, MERFISH, Xenium
  pharmacogenomics/ # Clinical variants: CPIC, PharmGKB, ACMG
  metabolomics/ # Metabolite identification, MS data, pathway mapping
- cloud/ # GCP deployment, Docker pipelines
  mcp/ # MCP tools for AI-assisted analysis
 ```
 
@@ -168,7 +169,7 @@ def test_api_integration() -> None:
 
 ## Code Style
 
-- Python 3.11+, 120 char lines
+- Python 3.14+, 120 char lines
 - Black formatting, mypy type checking
 - Import order: `__future__` → stdlib → third-party → local → optional (try/except)
 - Always use type hints

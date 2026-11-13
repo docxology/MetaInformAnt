@@ -1,6 +1,6 @@
 # Performance: Spatial
 
-## Benchmarks (Apple silicon arm64, 14 logical cores, Python 3.12.15, NumPy 2.5.4, SciPy 1.18.1, scikit-learn 1.9.1, metainformant 0.4.0)
+## Benchmarks (Apple silicon arm64, 14 logical cores, NumPy 2.5.4, SciPy 1.18.1, scikit-learn 1.9.1, metainformant 0.4.0)
 
 Measured on synthetic data: one section of 5 000 spots × 2 000 genes (four spatial
 domains, SciPy CSR, ~4.5 % non-zero). Each figure is a median of 3–5 runs and the ranges

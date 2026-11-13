@@ -1,7 +1,7 @@
 # AGENTS.md — `MetaInformAnt/docs/archive/`
 
 Documentation for the `archive` area of METAINFORMANT
-(verified 2026-08-29; contents: (empty)).
+(contents: `historical_reports/`).
 
 ## Rules
 - Docs-only directory — no corresponding `src/metainformant/` module.

@@ -2,23 +2,23 @@
 
 **Comprehensive bioinformatics toolkit for multi-omic analysis**
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.14+](https://img.shields.io/badge/python-3.14+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Modules](https://img.shields.io/badge/modules-30-green.svg)](src/metainformant/)
+[![Modules](https://img.shields.io/badge/modules-29-green.svg)](src/metainformant/)
 [![Files](https://img.shields.io/badge/files-690%2B-brightgreen.svg)](src/metainformant/)
 
 ---
 
 ## Overview
 
-METAINFORMANT provides broad bioinformatics analysis modules across genomics, transcriptomics, proteomics, epigenomics, and systems biology. Built with Python 3.11+ and [`uv`](https://astral.sh/uv) for fast dependency management.
+METAINFORMANT provides broad bioinformatics analysis modules across genomics, transcriptomics, proteomics, epigenomics, and systems biology. Built with Python 3.14+ and [`uv`](https://astral.sh/uv) for fast dependency management.
 
 ### At a Glance
 
 | Metric | Value |
 |--------|-------|
-| **Modules** | 30 specialized analysis modules |
+| **Modules** | 29 specialized analysis modules |
 | **Python Files** | 690+ implementation files under `src/metainformant/` |
 | **Plot Types** | 70+ visualization methods |
 | **Documentation** | 792 project-owned `README.md` and `AGENTS.md` files |
@@ -35,10 +35,11 @@ METAINFORMANT provides broad bioinformatics analysis modules across genomics, tr
 | **ML** | Classification, regression, feature selection, LLM integration |
 | **Visualization** | Manhattan plots, heatmaps, networks, animations, publication-ready output |
 
-RNA campaigns support [durable per-sample quantification and bounded AWS completion](docs/rna/DURABLE_QUANT.md),
-including verified restoration, immutable output receipts, and explicit missing-sample ledgers.
-[Generic local/AWS acquisition](docs/rna/GENERIC_ACQUISITION.md) adds configurable
-parallelism, disjoint lane planning, and explicit cost/time scenarios.
+RNA campaigns run on one lane: the frozen-cohort streaming producer
+(`metainformant.rna.engine.streaming_orchestrator`), started by the project's
+`run_full_campaign.sh` under a single campaign writer lock ([campaign CLI](docs/rna/CAMPAIGN_CLI.md)).
+Each sample's quantification is [durable](docs/rna/DURABLE_QUANT.md): verified restoration,
+immutable output receipts, and explicit missing-sample ledgers.
 
 ### System Architecture
 
@@ -89,7 +90,6 @@ flowchart TB
         PHARMA["Pharmacogenomics"]
         METAB["Metabolomics"]
         MENU["Menu System"]
-        CLOUD["Cloud Deployment"]
     end
 
     CORE --> DNA
@@ -117,7 +117,6 @@ flowchart TB
     CORE --> PHARMA
     CORE --> METAB
     CORE --> MENU
-    CORE --> CLOUD
 ```
 
 ### Data Flow and Integration Architecture
@@ -352,12 +351,6 @@ from metainformant.visualization.plots.basic import heatmap
 ax = heatmap(np.array([[1.0, 0.5], [0.5, 1.0]]), output_path="output/figures/heatmap.png")
 ```
 
-**Deploy to cloud (GCP):**
-```bash
-# Inspect the GCP deployment subcommands
-uv run python scripts/cloud/deploy_gcp.py --help
-```
-
 ---
 
 
@@ -382,7 +375,6 @@ uv run python scripts/cloud/deploy_gcp.py --help
 | Information theory analysis | `information` | [docs/information/](docs/information/) |
 | Simulation/synthetic data | `simulation` | [docs/simulation/](docs/simulation/) |
 | Visualizations only | `visualization` | [docs/visualization/](docs/visualization/) |
-| GCP cloud deployment | `cloud` | [src/metainformant/cloud/README.md](src/metainformant/cloud/README.md) |
 
 **Not sure?** Read the [full module matrix](docs/index.md#module-overview-matrix).
 
@@ -406,7 +398,7 @@ local README/SPEC files as the source of truth for current behavior.
 
 | Area | Packages |
 |------|----------|
-| Core and utilities | `core`, `quality`, `visualization`, `menu`, `cloud` |
+| Core and utilities | `core`, `quality`, `visualization`, `menu` |
 | Molecular omics | `dna`, `rna`, `protein`, `epigenome`, `longread`, `structural_variants` |
 | Higher-order omics | `singlecell`, `spatial`, `multiomics`, `metabolomics`, `metagenomics`, `pharmacogenomics` |
 | Analysis and methods | `gwas`, `popgen`, `ml`, `networks`, `simulation`, `math`, `information`, `eqtl` |
@@ -455,11 +447,10 @@ All modules live in [`src/metainformant/`](src/metainformant/) with documentatio
 | [`spatial/`](src/metainformant/spatial/) | 21 | Spatial transcriptomics, tissue mapping, spatial statistics | [`analysis/`](src/metainformant/spatial/analysis/) | [README](src/metainformant/spatial/README.md) |
 | [`structural_variants/`](src/metainformant/structural_variants/) | 15 | SV detection, CNV analysis, breakpoint resolution | [`detection/`](src/metainformant/structural_variants/detection/) | [README](src/metainformant/structural_variants/README.md) |
 | [`metabolomics/`](src/metainformant/metabolomics/) | 9 | Metabolomic analysis, MS data processing, pathway mapping | [`analysis/`](src/metainformant/metabolomics/analysis/) | [README](src/metainformant/metabolomics/README.md) |
-| [`cloud/`](src/metainformant/cloud/) | 3 | Cloud deployment helpers, Docker/GCP workflow utilities | [`cloud/`](src/metainformant/cloud/) | [README](src/metainformant/cloud/README.md) |
 | [`mcp/`](src/metainformant/mcp/) | 15 | Model Context Protocol server: stdio JSON-RPC 2.0, schema-validated tool registry | [`tools/`](src/metainformant/mcp/tools/) | [README](src/metainformant/mcp/README.md) |
 | [`menu/`](src/metainformant/menu/) | 7 | Interactive CLI menu system, workflow navigation | [`ui/`](src/metainformant/menu/ui/) | [README](src/metainformant/menu/README.md) |
 
-**Total: 30 package directories, 690+ Python files**
+**Total: 29 package directories, 690+ Python files**
 
 ## Documentation
 
@@ -687,7 +678,7 @@ See [Testing Guide](docs/testing.md) for detailed testing documentation and cove
 
 ## Requirements
 
-- Python 3.11+
+- Python 3.14+ (CI runs every lane on 3.14 and a fast lane on 3.15; the full extras do not install on 3.15 because `ray` has no cp315 wheels)
 - Optional: SRA Toolkit, kallisto or oarfish (for RNA workflows)
 - Optional: samtools, bcftools, bwa (for GWAS)
 
@@ -711,7 +702,6 @@ Contributions are welcome! Please:
 - **NumPy Vectorization**: Optimized mathematical operations for 10-100x performance improvements
 - **Progress Tracking**: Real-time progress bars for long-running analyses
 - **Memory Optimization**: Efficient algorithms for large datasets
-- **Resilient Orchestration**: Engineered automatic recovery flows and VM-level hard reset protocols to survive catastrophic 100% Docker overlay lockups caused by hidden `fasterq-dump` caches.
 
 ### Enhanced Documentation
 
@@ -766,4 +756,4 @@ This project is licensed under the Apache License, Version 2.0 - see [LICENSE](L
 
 ---
 
-**Status**: Active Development | **Version**: 0.4.0 | **Python**: 3.11+ | **License**: Apache 2.0
+**Status**: Active Development | **Version**: 0.4.0 | **Python**: 3.14+ | **License**: Apache 2.0

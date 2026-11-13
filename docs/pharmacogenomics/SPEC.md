@@ -37,7 +37,7 @@ class MetabolizerPhenotype(str, Enum):   # alleles.phenotype
 
 `classify_phenotype` returns a plain dict with `gene`, `diplotype`, `activity_score`,
 `phenotype` (a `MetabolizerPhenotype`), `phenotype_abbreviation` and
-`clinical_significance` and `unknown_alleles`. `predict_metabolizer` returns a dict whose `phenotype` is a
+`clinical_significance` and `unknown_alleles`. `predict_metabolizer_status` returns a dict whose `phenotype` is a
 lowercase token (`'poor'` … `'ultrarapid'`, or `'indeterminate'`); see the contracts table below.
 
 ## Subset-matching engine (`call_star_alleles`)
@@ -140,15 +140,14 @@ no function, below 1 decreased, 1 normal, above 1 increased.
 one ends (the first at 0) and the last runs to infinity. The CYP2C19, SLCO1B1 and UGT1A1
 entries are the function rules restated on the score scale, for callers that hold only a
 score. `get_phenotype_thresholds(gene)` returns them as dicts with `lower_bound`,
-`upper_bound`, `lower_inclusive`, `upper_inclusive`, `phenotype`, `abbreviation` and
-`gene_specific`. A gene without its own supported definition (including CYP1A2) raises `ValueError`.
-Returned entries always have `gene_specific=True` and no fallback note.
+`upper_bound`, `lower_inclusive`, `upper_inclusive`, `phenotype` and `abbreviation`. A gene
+without its own supported definition (including CYP1A2) raises `ValueError`.
 `alleles.phenotype.predict_metabolizer_status(score, gene)` applies the bands to a score and
 cannot apply the function rules; use `classify_phenotype` when the diplotype is known.
 
 **One implementation.** `metabolism.metabolizer_status` holds no allele or phenotype data of
 its own: it reads the allele table above and delegates classification to
-`alleles.phenotype`, so `predict_metabolizer` and `classify_phenotype` return the same
+`alleles.phenotype`, so `predict_metabolizer_status` and `classify_phenotype` return the same
 phenotype for every diplotype. A diplotype carrying a custom `scoring_table` score is classified from that score.
 An unscored diplotype is scored from its alleles; unknown alleles yield an indeterminate phenotype,
 a `None` score and their names in `unknown_alleles`.
@@ -162,7 +161,7 @@ a `None` score and their names in `unknown_alleles`.
 | `determine_diplotype(allele1, allele2, gene, scoring_table=None)` | allele names or `StarAllele` objects | `Diplotype`, with score `None` when an allele has no value | unknown gene/alleles remain unscored with a warning |
 | `classify_phenotype(diplotype, gene)` | `Diplotype` or `"*X/*Y"` | dict including `unknown_alleles`; unknown allele gives Indeterminate and score `None` | `ValueError` for malformed strings, mismatched gene or a gene without a phenotype definition |
 | `alleles.phenotype.predict_metabolizer_status(activity_score, gene)` | score, gene | `MetabolizerPhenotype` | `ValueError` for negative, NaN or `None` score, or unsupported phenotype gene |
-| `predict_metabolizer(genotype, gene, activity_scores=None)` (`metabolism.metabolizer_status.predict_metabolizer_status`) | dict with `diplotype` or two `alleles` | dict: phenotype token, score, alleles, gene, diplotype, `unknown_alleles`, `thresholds_used` | `ValueError` for malformed genotype, unsupported phenotype gene, absent gene table or incompatible custom function values; unknown alleles return `indeterminate` |
+| `predict_metabolizer_status(genotype, gene, activity_scores=None)` (`metabolism.metabolizer_status.predict_metabolizer_status`) | dict with `diplotype` or two `alleles` | dict: phenotype token, score, alleles, gene, diplotype, `unknown_alleles`, `thresholds_used` | `ValueError` for malformed genotype, unsupported phenotype gene, absent gene table or incompatible custom function values; unknown alleles return `indeterminate` |
 | `dose_adjustment(metabolizer_status, drug, dose_guidelines=None)` | phenotype in any common form, drug | dict with `recommendation`, `adjusted_dose_fraction`, `evidence_level`, `guideline_source` | none; an unknown drug or phenotype returns standard dosing with evidence level `D` |
 | `generate_clinical_report(patient_data, genotypes, drugs=None)` | patient dict, `{gene: {"diplotype": ..., "phenotype": ...}}` | report dict | none for an unclassifiable diplotype: the gene is reported as Indeterminate |
 
@@ -204,7 +203,7 @@ All data are Python literals in the source files; nothing is downloaded or cache
 | Asset | Content | Override |
 |-------|---------|----------|
 | Allele calling definitions | 8 genes, 45 alleles | `load_allele_definitions(gene, filepath=...)`, passed as `allele_definitions=` |
-| Allele function table | 10 genes | `scoring_table=` of `determine_diplotype`, `activity_scores=` of `predict_metabolizer` |
+| Allele function table | 10 genes | `scoring_table=` of `determine_diplotype`, `activity_scores=` of `predict_metabolizer_status` |
 | CPIC guidelines | 9 guidelines, all level A | `load_cpic_guidelines(filepath=...)`, passed as `guidelines=` |
 | PharmGKB annotations | 9 clinical annotations, 10 variant annotations, 7 drug pathways | `parse_clinical_annotations(filepath)` on your own TSV export |
 

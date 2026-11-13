@@ -124,6 +124,6 @@ Environment variable prefix: `INFO_`
 ## Related Modules
 
 - `metainformant.information.metrics.core.syntactic` -- Shannon entropy, MI
-- `metainformant.information.metrics.advanced.geometry` -- Fisher-Rao, information geometry
+- `metainformant.information.metrics.advanced.fisher_rao` and `metainformant.information.metrics.advanced.information_projection` -- Fisher-Rao, information geometry
 - `metainformant.information.metrics.core.estimation` -- bias-corrected estimation
 - `metainformant.information.metrics.advanced.decomposition` -- PID

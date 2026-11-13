@@ -165,13 +165,12 @@ def cross_validate(
     cv: int = 5,
     scoring: str = "accuracy",
     classifier_func: Any = None,
-    cv_folds: int | None = None,
     random_state: int | None = None,
 ) -> Dict[str, Any]: ...
 ```
 This is a more general wrapper.
 
-A function named `cross_validate_biological` does exist, but in `models/classification.py`, with a different purpose and signature: `cross_validate_biological(X, y, method="rf", cv_folds=5, random_state=None, algorithm=None, parallel_jobs=-1, **kwargs)` cross-validates a classifier chosen by name (`'rf'`, `'gb'`, `'lr'` or `'ensemble'`) and returns a dict (`cross_validation` per-metric `mean`/`std`/`scores`, plus top-level `accuracy` and `mean_accuracy`). `random_state` seeds the folds and the model for every method, `'ensemble'` included. `parallel_jobs` sets the parallel jobs of the cross-validation and, for `method="ensemble"`, of the voting ensemble itself unless an explicit `n_jobs` keyword is passed; `parallel_jobs=1` starts no worker processes. A metric that cannot be computed raises instead of becoming a `None` or NaN entry: the original exception propagates with the failing metric named in an exception note, and non-finite fold scores raise a `ValueError`. `compare_classifiers(X, y, methods=None, cv_folds=5, random_state=None)` in the same module runs it per method and returns `{"comparison": ..., "best_method": ...}`; a failed method is reported as `{"error": message}` under `comparison`, is never selected, and `best_method` is `None` when every method failed.
+A function named `cross_validate_biological` does exist, but in `models/classification.py`, with a different purpose and signature: `cross_validate_biological(X, y, method="rf", cv_folds=5, random_state=None, parallel_jobs=-1, **kwargs)` cross-validates a classifier chosen by name (`'rf'`, `'gb'`, `'lr'` or `'ensemble'`) and returns a dict (`cross_validation` per-metric `mean`/`std`/`scores`, plus top-level `accuracy` and `mean_accuracy`). `random_state` seeds the folds and the model for every method, `'ensemble'` included. `parallel_jobs` sets the parallel jobs of the cross-validation and, for `method="ensemble"`, of the voting ensemble itself unless an explicit `n_jobs` keyword is passed; `parallel_jobs=1` starts no worker processes. A metric that cannot be computed raises instead of becoming a `None` or NaN entry: the original exception propagates with the failing metric named in an exception note, and non-finite fold scores raise a `ValueError`. `compare_classifiers(X, y, methods=None, cv_folds=5, random_state=None)` in the same module runs it per method and returns `{"comparison": ..., "best_method": ...}`; a failed method is reported as `{"error": message}` under `comparison`, is never selected, and `best_method` is `None` when every method failed.
 
 **Recommendation:** Either rename source to match docs or update docs to show actual function names.
 
@@ -189,7 +188,7 @@ Neither takes a fitted model: `bootstrap_validate` takes `model_func(X_train, y_
 
 **Documented:** Does not exist.
 
-**Source has:** `learning_curve(X, y, model_factory=None, train_sizes=None, cv=5, random_state=42, classifier_func=None, cv_folds=None)` returning `train_sizes`, `train_scores`, `validation_scores` and `cv_folds` (default `train_sizes` is `np.linspace(0.1, 1.0, 10)`).
+**Source has:** `learning_curve(X, y, model_factory=None, train_sizes=None, cv=5, random_state=42, classifier_func=None)` returning `train_sizes`, `train_scores`, `validation_scores` and `cv_folds` (default `train_sizes` is `np.linspace(0.1, 1.0, 10)`).
 
 ### permutation_test
 
@@ -378,7 +377,7 @@ Additional `step` parameter controls elimination step size.
 **Documented:** `LLMConfig`
 **Actual:** `OllamaConfig`
 
-**Fix:** Rename in docs or add alias `LLMConfig = OllamaConfig` in `llm/__init__.py`.
+**Fix:** Use `OllamaConfig` in the docs.
 
 ### Missing Methods on OllamaClient
 

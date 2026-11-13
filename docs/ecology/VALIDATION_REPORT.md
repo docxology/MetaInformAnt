@@ -14,7 +14,7 @@
 
 ✅ **Fully Implemented**: 95% of documented functions exist and formulas are correct.
 ⚠️ **Signature Mismatches**: 3 functions have parameter name differences (cosmetic only).
-⚠️ **Traits Duplication**: `traits/functional.py` is a separate, partially-inconsistent implementation.
+✅ **Functional Traits**: `analysis/functional.py` is the single functional diversity implementation.
 ❌ **Missing Functions**: 6 example/placeholder functions from `index.md` are not implemented.
 ℹ️ **Algorithm Notes**: One minor documentation clarification (PCA vs PCoA).
 
@@ -71,15 +71,9 @@
 | `trait_distance_matrix(trait_matrix, method)` | ✅ Implemented | Euclidean or Gower distance ✓ |
 | `functional_diversity_suite(trait_matrix, abundances)` | ✅ Implemented | Returns all seven metrics in one dict ✓ |
 
-### Alternate Implementation Warning
+### Single Implementation
 
-⚠️ **`src/metainformant/ecology/traits/functional.py`** is a separate implementation using:
-- NumPy arrays instead of Python lists
-- SciPy ConvexHull for FRic (vs manual 2-D convex hull + bounding-box)
-- Dataclass-based return types (`TraitDiversityResult`)
-- Different FEve calculation (MST-based but simplified)
-
-**Recommendation**: Documentation should clarify which implementation is canonical, or consolidate to a single module. Currently `analysis/functional.py` is the fully-featured pure-Python version; `traits/functional.py` is a specialized NumPy/Scipy variant.
+`analysis/functional.py` holds every functional diversity metric.
 
 ---
 
@@ -319,7 +313,7 @@ All documented return types match implementation:
 
 ```
 docs/ecology/          → src/metainformant/ecology/
-  README.md                 __init__.py  → exports: analysis, phylogenetic, traits, visualization
+  README.md                 __init__.py  → exports: analysis, phylogenetic, visualization
   index.md                  analysis/__init__.py → community, functional, indicators, ordination, macroecology
   community.md              community.py → diversity, rarefaction, beta, report
   functional.md             functional.py → FRic, FEve, FDiv, FDis, Rao's Q, CWM
@@ -327,7 +321,6 @@ docs/ecology/          → src/metainformant/ecology/
   ordination.md             ordination.py → distance_matrix, PCoA, NMDS, CCA, Procrustes
   visualization.md          visualization/visualization.py → 10+ matplotlib/plotly functions
   phylogenetic/            phylogenetic/diversity.py → Faith's PD, UniFrac, NRI/NTI, trees
-  traits/functional.py      ⚠️ Duplicate functional diversity implementation (NumPy-based)
 ```
 
 Integration is clean. No circular dependencies detected.
@@ -363,12 +356,11 @@ The implementation quality is high. Recommended test focus areas:
 
 | # | Issue | Severity | Recommendation |
 |---|-------|----------|----------------|
-| 1 | `traits/functional.py` duplicates `analysis/functional.py` with different API | Medium | Deprecate or merge; `analysis/functional.py` is canonical |
-| 2 | `index.md` lists 6 unimplemented example functions | Low | Mark as "illustrative" or delete to avoid confusion |
-| 3 | Seaborn imported but unused in visualization.py | Low | Remove conditional import or actually use seaborn styling |
-| 4 | `ECO_` environment variable prefix documented but not used in code | Low | Either implement config or remove docs |
-| 5 | Page 7 of ordination.md: "PCA" should be "PCoA" | Trivial | Correct terminology |
-| 6 | `plot_ecological_network` threshold param only in `**kwargs` (no explicit parameter) | Cosmetic | Fine as-is; kwargs flexible |
+| 1 | `index.md` lists 6 unimplemented example functions | Low | Mark as "illustrative" or delete to avoid confusion |
+| 2 | Seaborn imported but unused in visualization.py | Low | Remove conditional import or actually use seaborn styling |
+| 3 | `ECO_` environment variable prefix documented but not used in code | Low | Either implement config or remove docs |
+| 4 | Page 7 of ordination.md: "PCA" should be "PCoA" | Trivial | Correct terminology |
+| 5 | `plot_ecological_network` threshold param only in `**kwargs` (no explicit parameter) | Cosmetic | Fine as-is; kwargs flexible |
 
 ---
 
@@ -391,10 +383,8 @@ The implementation quality is high. Recommended test focus areas:
 
 1. **Fix PCA/PCoA terminology** in `ordination.md` line 7
 2. **Clarify `index.md` examples**: add note "illustrative usage" or convert to "Future Work" section
-3. **Resolve `traits/functional.py` duplication**: either integrate into analysis or mark as deprecated experimental
-4. **Remove or use seaborn import** in visualization.py
-5. **Document `ECO_` config** if it exists, or remove prefix mentions
-6. **Verify `traits/__init__.py`** exports — currently empty (`__all__: list[str] = []`), but module is referenced in AGENTS.md
+3. **Remove or use seaborn import** in visualization.py
+4. **Document `ECO_` config** if it exists, or remove prefix mentions
 
 ---
 

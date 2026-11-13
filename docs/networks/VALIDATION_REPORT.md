@@ -39,7 +39,7 @@ Parameters: `edges` - list of (source, target) tuples
 
 **Documented:**
 ```python
-add_edges_from_interactions(network, interactions, confidence_threshold=0.5)
+add_edges_from_interactions(network, interactions, weight_threshold=0.5)
 # interactions = [{"source": "TF1", "target": "gene1", "type": "regulation", "confidence": 0.9}]
 ```
 
@@ -51,7 +51,7 @@ def add_edges_from_interactions(
     weight_threshold: float = 0.0
 ) -> None
 ```
-Accepts list of `(source, target, weight)` tuples. Parameter name is `weight_threshold` not `confidence_threshold`. Edge attribute hardcoded as `interaction_type="protein_interaction"`.
+Accepts list of `(source, target, weight)` tuples. Edge attribute hardcoded as `interaction_type="protein_interaction"`.
 
 **Status:** ❌ **CRITICAL MISMATCH** - Different input format and parameter names
 
@@ -243,12 +243,12 @@ Returns dict keyed by pathway ID with keys: `overlap_size`, `pathway_size`, `que
 
 ---
 
-### 3.4 `network_enrichment_analysis()`
+### 3.4 Network-neighbourhood enrichment
 
-**Documented:** Exists as separate function
-**Actual Implementation** (`pathway.py:1057`): ✅ **Exists** but is just an alias for `pathway_enrichment()`
+**Documented:** `pathway_enrichment()` on a gene list expanded by its interaction partners
+**Actual Implementation**: ✅ `pathway_enrichment()` tests the list it is given
 
-**Status:** ✅ **PRESENT** (but redundant)
+**Status:** ✅ **PRESENT**
 
 ---
 
@@ -389,17 +389,17 @@ reg_network = infer_grn(expression_data, regulators=regulators,
 
 ---
 
-### 5.4 `get_targets()` and `get_regulators()`
+### 5.4 `get_targets()` and `get_target_regulators()`
 
 **Documented:** Standalone functions
 ```python
 targets = get_targets(reg_network, "TF1")
-regulators = get_regulators(reg_network, "gene1")
+regulators = get_target_regulators(reg_network, "gene1")
 ```
 
 **Actual:** Methods on `GeneRegulatoryNetwork`:
 - `grn.get_targets(tf=None)` (returns all targets if no tf)
-- `grn.get_regulators(target)` (alias for `get_target_regulators`)
+- `grn.get_target_regulators(target)`
 
 **No standalone functions exported.**
 
@@ -479,7 +479,7 @@ regulators = get_regulators(reg_network, "gene1")
 | Function | Documented Parameter | Actual Parameter | Issue |
 |----------|---------------------|------------------|-------|
 | `create_network` | `nodes` | `edges` | Wrong argument type |
-| `add_edges_from_interactions` | `confidence_threshold` | `weight_threshold` | Different semantics |
+| `add_edges_from_interactions` | dict interactions | `(source, target, weight)` tuples | Different input format |
 | `add_edges_from_correlation` | `node_features, method, max_edges` | `correlation_matrix` only | Missing params |
 | `detect_communities(louvain)` | `random_state` | `randomize: bool` | Different param |
 | `detect_communities(leiden)` | `n_iterations` | `n_iterations` | ✅ Matches |
@@ -515,7 +515,7 @@ regulators = get_regulators(reg_network, "gene1")
 6. **Update regulatory.md**:
    - Change `infer_grn()` parameter `regulators` to either `gene_names` or `tf_genes` to match code
    - Remove `max_targets` parameter (not present)
-   - Document that `get_targets()`, `get_regulators()`, `filter_by_confidence()`, `add_transcription_factor()` are **methods** on `GeneRegulatoryNetwork`, not module-level functions
+   - Document that `get_targets()`, `get_target_regulators()`, `filter_by_confidence()`, `add_transcription_factor()` are **methods** on `GeneRegulatoryNetwork`, not module-level functions
 7. **Update pathway.md**:
    - Remove `multi_omics_pathway_analysis()` and `pathway_activity_inference()` from documentation (not implemented)
    - Correct `load_pathway_database()` signature to match actual APIs
@@ -563,14 +563,12 @@ Breakdown by module:
 **Source Files Examined:**
 - `/home/trim/Documents/Git/MetaInformAnt/src/metainformant/networks/__init__.py`
 - `/home/trim/Documents/Git/MetaInformAnt/src/metainformant/networks/analysis/__init__.py`
-- `/home/trim/Documents/Git/MetaInformAnt/src/metainformant/networks/analysis/graph.py`
 - `/home/trim/Documents/Git/MetaInformAnt/src/metainformant/networks/analysis/graph_core.py`
 - `/home/trim/Documents/Git/MetaInformAnt/src/metainformant/networks/analysis/graph_algorithms.py`
 - `/home/trim/Documents/Git/MetaInformAnt/src/metainformant/networks/analysis/community.py`
 - `/home/trim/Documents/Git/MetaInformAnt/src/metainformant/networks/analysis/pathway.py`
 - `/home/trim/Documents/Git/MetaInformAnt/src/metainformant/networks/interaction/__init__.py`
 - `/home/trim/Documents/Git/MetaInformAnt/src/metainformant/networks/interaction/ppi.py`
-- `/home/trim/Documents/Git/MetaInformAnt/src/metainformant/networks/interaction/regulatory.py`
 - `/home/trim/Documents/Git/MetaInformAnt/src/metainformant/networks/interaction/regulatory_core.py`
 - `/home/trim/Documents/Git/MetaInformAnt/src/metainformant/networks/interaction/regulatory_analysis.py`
 - `/home/trim/Documents/Git/MetaInformAnt/src/metainformant/networks/regulatory/__init__.py`

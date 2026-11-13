@@ -10,7 +10,7 @@ The helpers implement mostly non-parametric methods that are useful for robust p
 
 ### Bootstrap Confidence Intervals
 
-**`bootstrap_confidence_interval(values, statistic_func=None, confidence_level=0.95, n_bootstrap=None, n_bootstraps=1000, random_state=None)`**
+**`bootstrap_confidence_interval(values, statistic_func=None, confidence_level=0.95, n_bootstraps=1000, random_state=None)`**
 
 Percentile bootstrap interval for any statistic.
 
@@ -18,7 +18,7 @@ Percentile bootstrap interval for any statistic.
 - `values`: Sequence of observed values
 - `statistic_func`: Function that computes the statistic from a sample (default: `numpy.mean`)
 - `confidence_level`: Confidence level (default: 0.95 for 95% CI)
-- `n_bootstraps`: Number of bootstrap resamples (default: 1000); `n_bootstrap` is an alias that takes precedence when given
+- `n_bootstraps`: Number of bootstrap resamples (default: 1000)
 - `random_state`: Integer seed for a private `numpy` generator. The same seed gives the same interval; `None` draws fresh entropy, so the interval varies between calls. numpy's global random state is not used
 
 **Returns:**

@@ -70,12 +70,11 @@ def cross_validate(
     cv: int = 5,
     scoring: str = "accuracy",
     classifier_func: Any = None,
-    cv_folds: int | None = None,
     random_state: int | None = None,
 ) -> Dict[str, Any]: ...
 ```
 
-Single-metric cross-validation. With an estimator (or a factory that returns one) the result holds `scores`, `mean_score`, `std_score`, `cv_folds` and `scoring`. With `classifier_func(X_train, y_train, X_val, y_val)` returning a dict, the result holds `mean_accuracy`, `std_accuracy`, `fold_results` and `cv_folds`. `cv_folds` is an alias for `cv`.
+Single-metric cross-validation. With an estimator (or a factory that returns one) the result holds `scores`, `mean_score`, `std_score`, `cv_folds` and `scoring`. With `classifier_func(X_train, y_train, X_val, y_val)` returning a dict, the result holds `mean_accuracy`, `std_accuracy`, `fold_results` and `cv_folds`.
 
 ### bootstrap_validate
 
@@ -119,7 +118,6 @@ def learning_curve(
     cv: int = 5,
     random_state: int = 42,
     classifier_func: Any = None,
-    cv_folds: int | None = None,
 ) -> Dict[str, Any]: ...
 ```
 
@@ -162,7 +160,7 @@ Returns `comparison` (each strategy mapped to `{"strategy", "score"}`, or to `{"
 
 ### cross_validate_biological
 
-`cross_validate_biological(X, y, method="rf", cv_folds=5, random_state=None, algorithm=None, parallel_jobs=-1, **kwargs)` lives in `metainformant.ml.models.classification`, next to the classifiers. It cross-validates a classifier chosen by name (`'rf'`, `'gb'`, `'lr'` or `'ensemble'`) over shuffled stratified folds.
+`cross_validate_biological(X, y, method="rf", cv_folds=5, random_state=None, parallel_jobs=-1, **kwargs)` lives in `metainformant.ml.models.classification`, next to the classifiers. It cross-validates a classifier chosen by name (`'rf'`, `'gb'`, `'lr'` or `'ensemble'`) over shuffled stratified folds.
 
 - `random_state` seeds the folds and the model, for `method="ensemble"` too (an integer `random_state` works with every method).
 - `parallel_jobs` is the number of parallel jobs for the cross-validation and, for `method="ensemble"`, for the voting ensemble itself. An explicit `n_jobs` keyword overrides it for the ensemble only. `parallel_jobs=1` starts no worker processes at all, so use it in restricted or resource-sensitive environments where process pools are unavailable.

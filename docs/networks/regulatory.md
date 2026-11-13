@@ -2,7 +2,7 @@
 
 The regulatory networks module provides tools for inferring and analyzing gene regulatory networks from expression data and other biological information.
 
-The classes and functions below live in `metainformant.networks.interaction.regulatory_core` (the `GeneRegulatoryNetwork` class and graph-level helpers) and `metainformant.networks.interaction.regulatory_analysis` (inference, motifs, cascades, validation). The `metainformant.networks.interaction.regulatory` facade re-exports both.
+The classes and functions below live in `metainformant.networks.interaction.regulatory_core` (the `GeneRegulatoryNetwork` class and graph-level helpers) and `metainformant.networks.interaction.regulatory_analysis` (inference, motifs, cascades, validation).
 
 ## Network Construction
 
@@ -127,13 +127,13 @@ for target in targets:
     print(f"  {target}: {effect:.2f} ({regulation_type})")
 ```
 
-### get_regulators()
+### get_target_regulators()
 
 Find regulators for a target gene (a `GeneRegulatoryNetwork` method):
 
 ```python
 # Get all regulators of a gene
-regulators = reg_network.get_regulators("gene1")
+regulators = reg_network.get_target_regulators("gene1")
 print(f"gene1 is regulated by {len(regulators)} transcription factors")
 
 # Get regulators with confidence scores (stored on the edges)

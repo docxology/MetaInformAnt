@@ -27,9 +27,9 @@ Documentation for the core domain in MetaInformAnt.
 ## Documentation Contract
 
 `API_REFERENCE.md` is generated from public classes, functions, and methods in
-the canonical implementation modules under `src/metainformant/core/`. The
-compatibility facade files are intentionally excluded so re-exported names do
-not create duplicate documentation. Run both commands below after changing
+the implementation modules under `src/metainformant/core/`. Package
+`__init__.py` files are excluded so re-exported names do not create duplicate
+documentation. Run both commands below after changing
 core source or signatures:
 
 ```bash

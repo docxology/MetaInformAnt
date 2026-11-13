@@ -96,7 +96,7 @@ CYP2D6 NM lower bound differs:
 
 This creates a 0.25 activity score window (1.0–1.25) that would be IM in phenotype.py but NM in metabolizer_status.
 
-**Impact:** Same gene, different module yields inconsistent phenotype classification. The public API `classify_phenotype` (phenotype.py) and `predict_metabolizer` (metabolism) can disagree.
+**Impact:** Same gene, different module yields inconsistent phenotype classification. The public API `classify_phenotype` (phenotype.py) and `predict_metabolizer_status` (metabolism) can disagree.
 
 ### 2.3 RM for CYP2C19
 
@@ -259,7 +259,7 @@ As noted in §4.3, docs describe YAML drug definition files and a `_DRUG_REGISTR
 
 ## 9. Performance Claims (Likely Accurate)
 
-`PERFORMANCE.md` and `PAI.md` detail benchmarks and scaling. Latency numbers (e.g., `predict_metabolizer` 7.1 ms) appear plausible given code simplicity. No direct measurement performed; assume they reflect profiling on development hardware. No contradictions found in code that would obviously invalidate these numbers.
+`PERFORMANCE.md` and `PAI.md` detail benchmarks and scaling. Latency numbers (e.g., `predict_metabolizer_status` 7.1 ms) appear plausible given code simplicity. No direct measurement performed; assume they reflect profiling on development hardware. No contradictions found in code that would obviously invalidate these numbers.
 
 ---
 

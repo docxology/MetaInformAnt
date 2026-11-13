@@ -6,7 +6,6 @@
 README
 analyze_dna
 data_conversion
-deploy_cloud
 run_gwas
 run_rna_pipeline
 visualize_results

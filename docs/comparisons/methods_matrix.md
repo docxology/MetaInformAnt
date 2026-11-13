@@ -1,12 +1,12 @@
-# Methods Matrix: Comprehensive Comparison of All 30 METAINFORMANT Modules
+# Methods Matrix: Comprehensive Comparison of All 29 METAINFORMANT Modules
 
 ## Overview
 
-This matrix provides a side-by-side comparison of all 30 modules in METAINFORMANT across key dimensions: data types, scale, computational characteristics, outputs, and best-use scenarios. Use this table to quickly identify which module(s) match your analysis needs.
+This matrix provides a side-by-side comparison of all 29 modules in METAINFORMANT across key dimensions: data types, scale, computational characteristics, outputs, and best-use scenarios. Use this table to quickly identify which module(s) match your analysis needs.
 
 ## Quick Navigation
 
-- **[Summary Table](#summary-table)** — 30-module overview at a glance
+- **[Summary Table](#summary-table)** — 29-module overview at a glance
 - **[By Data Type](#by-data-type-quick-reference)** — Find modules by input data
 - **[By Analysis Goal](#by-analysis-goal-decision-map)** — Find modules by research question
 - **[By Computational Scale](#by-computational-scale-resource-planning)** — Find modules by resource needs
@@ -44,11 +44,10 @@ This matrix provides a side-by-side comparison of all 30 modules in METAINFORMAN
 | 23 | **pharmacogenomics** | VCF, diplotype data | Patients (10–10⁴) | Star allele calling (CYP enzymes), metabolizer phenotype prediction, CPIC guideline integration, PharmGKB annotations, ACMG pathogenicity scoring, drug-gene interaction checking | Clinical reports, dosing recommendations, evidence tables | Medium | Clinical pharmacogenomics, drug response prediction, variant interpretation |
 | 24 | **metabolomics** | MGF, CSV | Samples (10–10³) | Metabolite identification (mz matching with ppm tolerance), intensity normalization (total-ion-count), fold change, differential abundance, metabolite set enrichment (hypergeometric + Benjamini-Hochberg) | Feature tables, identified metabolites, enrichment results | Medium | Mass spectrometry metabolomics (MGF spectra), differential abundance, metabolite set enrichment |
 | 25 | **menu** | Scripts (any) | Any | Script discovery, interactive CLI menus, breadcrumb navigation, argument prompting | Interactive terminal UI | Minimal | Interactive workflow discovery, script execution helper |
-| 26 | **cloud** | GCP resources | Any | GCP VM lifecycle (create/delete), Docker container build/run, file transfer (gsutil/SCP), cost estimation, preemptible VM management | Cloud resources, logs | Very High | Cloud deployment, large-scale pipeline orchestration, cost-optimized compute |
-| 27 | **eqtl** | VCF + expression | Samples (100–10⁴) | Input-data construction (synthetic/real), HISAT2+bcftools variant-calling wrappers, bcftools stats parsing, full pipeline orchestration | eQTL pipeline outputs and stats summaries | High | Expression–variant pipelines, GWAS→RNA integration |
-| 28 | **life_events** | Event sequences, time series | Individuals (10–10⁴) | Event sequence embedding, temporal pattern discovery, survival analysis, outcome prediction, life course modeling | Event embeddings, survival curves, predicted outcomes | Medium | Longitudinal life event analysis, survival modeling, temporal pattern mining |
-| 29 | **popgen** | FASTA sequence scenarios, genotype matrices | Populations (10²–10⁵) | Sequence summary statistics, neutrality tests, two-population Fst comparison, genotype-structure analysis (PCA, kinship, HWE), LD summaries, demographic model comparisons | Summary reports, comparison tables, visualizations | Low–Medium | Reusable population genetics statistics and neutrality testing |
-| 30 | **mcp** | JSON-RPC 2.0 messages (stdio) | Any | stdio JSON-RPC 2.0 MCP server (`initialize`, `tools/list`, `tools/call`, `resources/list`, `resources/read`), schema-validated tool registry (core/dna/gwas/math/protein/rna/visualization tools + amalgkit monitor) | JSON-RPC responses, capability resources (`metainformant://capabilities`, `metainformant://methods`) | Minimal | Agent/client integration over the Model Context Protocol |
+| 26 | **eqtl** | VCF + expression | Samples (100–10⁴) | Input-data construction (synthetic/real), HISAT2+bcftools variant-calling wrappers, bcftools stats parsing, full pipeline orchestration | eQTL pipeline outputs and stats summaries | High | Expression–variant pipelines, GWAS→RNA integration |
+| 27 | **life_events** | Event sequences, time series | Individuals (10–10⁴) | Event sequence embedding, temporal pattern discovery, survival analysis, outcome prediction, life course modeling | Event embeddings, survival curves, predicted outcomes | Medium | Longitudinal life event analysis, survival modeling, temporal pattern mining |
+| 28 | **popgen** | FASTA sequence scenarios, genotype matrices | Populations (10²–10⁵) | Sequence summary statistics, neutrality tests, two-population Fst comparison, genotype-structure analysis (PCA, kinship, HWE), LD summaries, demographic model comparisons | Summary reports, comparison tables, visualizations | Low–Medium | Reusable population genetics statistics and neutrality testing |
+| 29 | **mcp** | JSON-RPC 2.0 messages (stdio) | Any | stdio JSON-RPC 2.0 MCP server (`initialize`, `tools/list`, `tools/call`, `resources/list`, `resources/read`), schema-validated tool registry (core/dna/gwas/math/protein/rna/visualization tools + amalgkit monitor) | JSON-RPC responses, capability resources (`metainformant://capabilities`, `metainformant://methods`) | Minimal | Agent/client integration over the Model Context Protocol |
 
 ---
 
@@ -157,7 +156,6 @@ This matrix provides a side-by-side comparison of all 30 modules in METAINFORMAN
 | `spatial` (whole slide) | Domain detection + deconvolution | 3–7 days | 256 GB |
 | `longread` (nanopore run) | Basecalling + assembly of 1M reads | 3–10 days | 256 GB |
 | `gwas` (500K samples) | Large biobank GWAS | 1–2 weeks | 512 GB+ (cluster) |
-| `cloud` orchestration | 10,000 genome processing | 1–4 weeks | N/A (distributed) |
 | `metagenomics` (1000 metagenomes) | Aggregate analysis | 2–3 weeks | 512 GB+ |
 
 ---
@@ -759,28 +757,7 @@ uv run python -m metainformant menu
 
 ---
 
-### Module 26: cloud
-
-| Attribute | Details |
-|-----------|---------|
-| **Category** | Cloud Infrastructure |
-| **Data Types** | GCP resources (VMs, disks, buckets) |
-| **Scale** | VMs: 1 → 10,000+ |
-| **Key Methods** | VM lifecycle (create, delete, wait for SSH), Docker build & run, file transfer (SCP, `gsutil` rsync), cost estimation (per-VM per-hour), preemptible VM orchestration (70-80% savings), genome index caching (GCS `gs://metainformant-genomes/`), pipeline deployment (RNA amalgkit at scale), result collection (compress + download), status monitoring + streaming logs |
-| **Input** | Cloud configuration YAML (project, zone, machine type, Docker image, pipeline), input data location (GCS/local) |
-| **Output** | Running/completed VMs, output directories (local or GCS), cost logs, execution manifests |
-| **Submodules** | `cloud_config` (32-field dataclass), `gcp_deployer` (VM orchestration class) |
-| **External Deps** | `gcloud` CLI (thin wrapper), `docker`, `gsutil`, `ssh` |
-| **Typical Runtime** | VM create: 1–2 min; Pipeline run: hours–days; Download results: 10 min–hours |
-| **Primary Use Cases** | Large-scale genomic analysis at scale (e.g., the historical 10,312-sample RNA-seq target), cost-optimized compute (preemptible VMs), reproducible pipeline deployment, genome indexing at scale (gcp/prep_genomes.py) |
-
-**Economics**: Preemptible VMs cost ~$0.01–0.03 per CPU-hour vs. normal $0.05–0.15.
-
-**Key consumers**: `rna` module for ENA streaming workflows (orchestration), `gwas` for large cohorts.
-
----
-
-### Module 27: eqtl
+### Module 26: eqtl
 
 | Attribute | Details |
 |-----------|---------|
@@ -799,7 +776,7 @@ uv run python -m metainformant menu
 
 ---
 
-### Module 28: life_events
+### Module 27: life_events
 
 | Attribute | Details |
 |-----------|---------|
@@ -818,7 +795,7 @@ uv run python -m metainformant menu
 
 ---
 
-### Module 29: popgen
+### Module 28: popgen
 
 | Attribute | Details |
 |-----------|---------|
@@ -836,7 +813,7 @@ uv run python -m metainformant menu
 
 ---
 
-### Module 30: mcp
+### Module 29: mcp
 
 | Attribute | Details |
 |-----------|---------|
@@ -858,7 +835,7 @@ uv run python -m metainformant menu
 
 | From → To | Dependency Type | Example Use |
 |-----------|----------------|-------------|
-| `rna` → `dna` | Translation (DNA→RNA), ortholog mapping | `dna.transcription.transcribe_dna_to_rna()` |
+| `rna` → `dna` | Translation (DNA→RNA), ortholog mapping | `dna.expression.transcription.transcribe()` |
 | `eqtl` → `gwas` | Uses GWAS summary stats for coloc | `gwas.finemapping.colocalization.eqtl_coloc()` |
 | `eqtl` → `multiomics` | Shared integration logic | `multiomics.analysis.integration` |
 | `multiomics` → `gwas` | Variant data as DNA layer | `multiomics.analysis.integration.from_dna_variants(gwas_variants)` |
@@ -892,7 +869,7 @@ uv run python -m metainformant menu
 3. **Evaluate scale**:
    - Small (<1K samples): most modules OK
    - Medium (1K–100K): `rna`, `gwas`, `singlecell` OK with parallel
-   - Large (>100K, population biobank): need `cloud`, `parallel`, or HPC
+   - Large (>100K, population biobank): need parallel execution (`core.execution.parallel`) or HPC
 
 4. **Check integration needs**:
    - Single-omic: use domain module alone

@@ -29,14 +29,14 @@ Comprehensive documentation for the DNA sequence analysis domain in MetaInformAn
 - **Dependencies**:
   - Core: `metainformant.core.utils` (logging, errors, Newick helpers), `metainformant.core.io`, `metainformant.core.sequence`, `metainformant.core.ncbi`
   - Math: none imported by `dna`. `metainformant.math.population_genetics.coalescent` and `metainformant.math.population_genetics.fst` hold the theory-side counterparts (coalescent expectations, Weir and Cockerham's Fst from haplotype counts)
-  - Visualization: population genetics plots live in `metainformant.dna.population.visualization`; phylogenetic tree plots come from `metainformant.visualization.genomics.trees` (`plot_phylo_tree`)
+  - Visualization: population genetics plots live in `metainformant.dna.population.visualization_core` and `metainformant.dna.population.visualization_stats`; phylogenetic tree plots come from `metainformant.visualization.genomics.trees` (`plot_phylo_tree`)
 
 ## Key Functions (by submodule)
 
 | Submodule | Key Functions | Purpose |
 |-----------|---------------|---------|
 | sequence  | `read_fasta()`, `write_fasta()`, `reverse_complement()`, `gc_content()` (in `sequence.core`) | Basic sequence I/O and transformations |
-| expression | `transcribe_dna_to_rna()` (in `dna.transcription`), `translate_dna()` (in `expression.translation`) | Transcription and translation |
+| expression | `transcribe()` (in `expression.transcription`), `translate_dna()` (in `expression.translation`) | Transcription and translation |
 | alignment | `pairwise.global_align()`, `pairwise.local_align()`, `msa.align_msa()`, `distances.distance_matrix()` | Sequence alignment algorithms and distances |
 | phylogeny | `upgma_tree()`, `neighbor_joining_tree()`, `bootstrap_support()`, `to_newick()` | Distance-based tree construction, bootstrap support and Newick export |
 | population | `tajimas_d()`, `hudson_fst()`, `observed_heterozygosity()`, `nucleotide_diversity()` | Population genetic statistics |
@@ -75,7 +75,7 @@ for name, seq in seqs.items():
 
 # 2. Align two sequences (global)
 result = pairwise.global_align(seqs["seq1"], seqs["seq2"], match=2, mismatch=-1, gap=-2)
-aligned1, aligned2 = result.aligned_seq1, result.aligned_seq2
+aligned1, aligned2 = result.seq1_aligned, result.seq2_aligned
 
 # 3. Compute Fst between two populations (lists of aligned sequences)
 pop1 = ["ATGCGC", "ATGCGC", "ATGCGT", "ATGCGC"]

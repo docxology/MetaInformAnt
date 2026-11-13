@@ -1,6 +1,6 @@
 ### DNA: Translation
 
-Functions: `translate_dna`, `translate`, `find_orfs`, `six_frame_translation`
+Functions in `metainformant.dna.expression.translation`: `translate_dna`, `translate`, `find_orfs`, `six_frame_translation`
 
 ```mermaid
 flowchart TD
@@ -11,7 +11,7 @@ flowchart TD
 Example
 
 ```python
-from metainformant.dna import translation
+from metainformant.dna.expression import translation
 
 # Simple DNA translation
 dna = "ATGAAATTTAAATAG"

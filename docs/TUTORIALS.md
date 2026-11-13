@@ -461,7 +461,7 @@ Analyze biological networks including protein-protein interactions and pathways.
 #### Network Construction
 
 ```python
-from metainformant.networks.analysis import community, graph
+from metainformant.networks.analysis import community, graph_algorithms, graph_core
 
 # Create sample protein interaction network
 edges = [
@@ -474,19 +474,19 @@ edges = [
 ]
 
 # Build network
-G = graph.create_network(edges, directed=False)
+G = graph_core.create_network(edges, directed=False)
 
 print("Protein Interaction Network:")
 print(f"Nodes: {G.number_of_nodes()}")
 print(f"Edges: {G.number_of_edges()}")
-print(f"Connected components: {len(graph.get_connected_components(G))}")
+print(f"Connected components: {len(graph_algorithms.get_connected_components(G))}")
 ```
 
 #### Network Analysis
 
 ```python
 # Calculate centrality measures (a dict of {measure: {node: value}})
-centralities = graph.centrality_measures(G)
+centralities = graph_algorithms.centrality_measures(G)
 degree_cent = centralities["degree"]
 betweenness_cent = centralities["betweenness"]
 

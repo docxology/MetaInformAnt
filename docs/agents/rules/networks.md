@@ -26,21 +26,21 @@ src/metainformant/networks/
 
 ## Key Submodules
 
-### Graph (`graph`)
-- Graph construction and basic operations
+### Graph (`graph_core`, `graph_algorithms`)
+- Graph construction and basic operations (`graph_core`)
 - Node and edge operations
-- Graph metrics (degree, centrality, etc.)
+- Graph metrics (degree, centrality, etc.) (`graph_algorithms`)
 
 **Patterns**:
 ```python
-from metainformant.networks.analysis import graph
+from metainformant.networks.analysis import graph_algorithms, graph_core
 
 # Create a network from an edge list of (source, target) pairs
-G = graph.create_network(edges, directed=False)
+G = graph_core.create_network(edges, directed=False)
 # Calculate centralities: {"degree": {...}, "betweenness": {...}, "closeness": {...}, ...}
-centralities = graph.centrality_measures(G)
+centralities = graph_algorithms.centrality_measures(G)
 # Calculate summary metrics (density, average degree, clustering, ...)
-metrics = graph.network_metrics(G)
+metrics = graph_algorithms.network_metrics(G)
 ```
 
 ### PPI (`ppi`)

@@ -168,7 +168,7 @@ With only 2 vs. 3 samples, no metabolite reaches p < 0.05, so the significant-me
 
 | Component | Version | Purpose |
 |-----------|---------|---------|
-| Python | 3.11+ | Core runtime |
+| Python | 3.14+ | Core runtime |
 | NumPy | ≥1.24 (declared); every function runs on any supported version | Numerical arrays |
 | SciPy | ≥1.11 (declared) | Welch t-test p-values from Student's t distribution; without SciPy `differential_abundance` falls back to a normal approximation |
 | matplotlib | ≥3.8 (declared) | Drawing the plots in the examples |

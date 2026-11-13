@@ -301,7 +301,7 @@ if ckpt.get("viz_completed") is None:
     ckpt.set("viz_completed", True)
 ```
 
-### Pattern C: Distributed Processing (cloud/parallel)
+### Pattern C: Distributed Processing (parallel)
 
 Large cohorts and variant sets are easier to handle one chromosome at a time:
 
@@ -325,9 +325,6 @@ def gwas_chromosome(chrom: int):
 # are CPU-bound pure Python, so for a real speed-up run each chromosome in its own process with
 # process_map (it needs a top-level picklable function and sends each worker its own copy of the data).
 results_by_chrom = thread_map(gwas_chromosome, range(1, 23), max_workers=8)
-
-# To scale beyond one machine, deploy the pipeline to a GCP VM with
-# metainformant.cloud (CloudConfig, GCPDeployer).
 
 # Concatenate & visualize all chromosomes
 full_results = [r for chrom_results in results_by_chrom for r in chrom_results]
@@ -661,9 +658,8 @@ This guide intentionally couples real code snippets to the official module docum
 Now that you have a complete dna→gwas→visualization pipeline, consider:
 
 1. **Multi-omics integration**: Add RNA expression through the [multiomics module](multiomics/index.md) for joint analysis across layers (joint PCA, joint NMF, canonical correlation).
-2. **Cloud scaling**: Offload chromosome-parallel GWAS to [cloud/DEPLOYMENT.md](cloud/DEPLOYMENT.md) for biobank-scale datasets.
-3. **MCP deployment**: Make the pipeline callable as an MCP tool for Claude/Cursor — see the [mcp guide](mcp/index.md).
-4. **Database archiving**: Log every run via [core/db.md](core/db.md) for audit trails.
-5. **Results sharing**: Share the interactive HTML outputs, and see the [visualization examples gallery](visualization/examples.md) for more plots.
+2. **MCP deployment**: Make the pipeline callable as an MCP tool for Claude/Cursor — see the [mcp guide](mcp/index.md).
+3. **Database archiving**: Log every run via [core/db.md](core/db.md) for audit trails.
+4. **Results sharing**: Share the interactive HTML outputs, and see the [visualization examples gallery](visualization/examples.md) for more plots.
 
 Questions? Open an issue or consult the [FAQ.md](FAQ.md).

@@ -654,7 +654,7 @@ Returns:
 
 #### `deconvolve_spots()`
 
-**Signature**: `deconvolve_spots(spatial_expression, reference_profiles, method, *, cell_type_names, gene_names, spatial_gene_names, reference_gene_names, alpha)`
+**Signature**: `deconvolve_spots(spatial_expression, reference_profiles, method, *, cell_type_names, spatial_gene_names, reference_gene_names, alpha)`
 
 Deconvolve spatial spots to estimate cell type composition.
 
@@ -662,7 +662,7 @@ Supports multiple deconvolution methods:
 - "nnls": Non-negative least squares (fast, robust).
 - "nmf": Non-negative matrix factorization based approach.
 
-When gene_names are provided for both spatial and reference data, the function
+When spatial_gene_names and reference_gene_names are both provided, the function
 automatically intersects to shared genes.
 
 Args:
@@ -670,7 +670,6 @@ Args:
     reference_profiles: Reference cell type profiles (n_types x n_genes).
     method: Deconvolution method ("nnls" or "nmf").
     cell_type_names: Names of cell types (length n_types).
-    gene_names: Deprecated, use spatial_gene_names and reference_gene_names.
     spatial_gene_names: Gene names for spatial data.
     reference_gene_names: Gene names for reference profiles.
     alpha: Regularization parameter (for NMF).
@@ -2156,7 +2155,7 @@ Split an ``(n x 2)`` coordinate array into its horizontal and vertical plot coor
 Column convention of a dataset's coordinates: its own ``coordinate_order``, else ``"row_col"``.
 
 ``SpatialDataset`` (Visium) declares ``"row_col"``; ``XeniumDataset`` and ``MERFISHDataset`` declare
-``"xy"``. Duck-typed objects and bare arrays have no declaration and keep the legacy ``"row_col"``.
+``"xy"``. Duck-typed objects and bare arrays have no declaration and default to ``"row_col"``.
 
 #### `_save_figure()`
 

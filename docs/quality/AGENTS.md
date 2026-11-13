@@ -33,7 +33,6 @@ Quality control workflows:
 - **RNA**: `metainformant.rna.engine` — Reads pass QC before alignment; low-quality samples flagged
 - **DNA**: `metainformant.dna.variants` — BAM QC required before variant calling
 - **GWAS**: `metainformant.gwas.qc` — Sample/genotype missingness filters based on QC
-- **Cloud**: `metainformant.cloud` — QC checkpoints in deployment status
 
 ## Rule Constraints
 1. **Streaming required** — All QC operations must support `stream=True` for >100GB FASTQs.

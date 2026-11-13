@@ -233,7 +233,7 @@ The metagenomics documentation is highly accurate with minimal discrepancies. Al
 | `bin_contigs()` | `(contigs, coverage=None, method="composition", n_bins=None, min_contig_length=1000) -> BinningResult` | `(contigs: dict[str, str], coverage: ... | None = None, method: str = "composition", n_bins: int | None = None, min_contig_length: int = 1000, seed: int = 42) -> BinningResult` | ⚠️ EXTRA PARAM |
 | `calculate_tetranucleotide_freq()` | `(sequence, normalize=True) -> List[float]` | `(sequence: str, normalize: bool = True) -> list[float]` | ✅ EXACT |
 | `refine_bins()` | `(bins, contigs, completeness_threshold=0.5, contamination_threshold=0.1) -> List[GenomeBin]` | `(bins: list[GenomeBin], contigs: dict[str, str], completeness_threshold= float = 0.5, contamination_threshold: float = 0.1) -> list[GenomeBin]` | ✅ EXACT |
-| `assess_bin_quality()` | `(bins, contigs=None) -> List[GenomeBin]` | `(bins: list[GenomeBin], contigs: dict[str, str] | None = None) -> list[GenomeBin]` | ✅ EXACT |
+| `assess_bin_quality()` | `(bins, *, marker_genes=None, marker_set=None) -> List[GenomeBin]` | `(bins: list[GenomeBin], *, marker_genes: Mapping[str, Sequence[str]] | None = None, marker_set: Collection[str] | None = None) -> list[GenomeBin]` | ✅ EXACT |
 
 **Discrepancy:** `bin_contigs()` includes an additional `seed=42` parameter for reproducibility. This is a minor improvement but not documented.
 

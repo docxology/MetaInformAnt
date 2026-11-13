@@ -326,7 +326,7 @@ uv pip install -e .
 
 2. **Check Python version**:
 ```bash
-python --version  # Should be 3.11+
+python --version  # Should be 3.14+
 ```
 
 3. **Verify package installation**:

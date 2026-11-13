@@ -30,7 +30,7 @@ graph TD
         AL --> |msa.py| MS[Multiple Sequence Alignment]
         AL --> |pairwise.py| PW[Pairwise Alignment]
 
-        PH[phylogeny/] --> |tree.py| TR[NJ, UPGMA, Bootstrap]
+        PH[phylogeny/] --> |tree_construction.py| TR[NJ, UPGMA, Bootstrap]
 
         PO[population/] --> |analysis.py| FS[Fst, Selection Tests]
         PO --> |core.py| PG[Allele Frequencies]

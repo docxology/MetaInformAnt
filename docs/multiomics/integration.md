@@ -10,22 +10,21 @@ Container for multi-omics datasets with automatic sample alignment.
 
 ```python
 class MultiOmicsData:
-    genomics: Optional[pd.DataFrame] = None
-    transcriptomics: Optional[pd.DataFrame] = None
-    proteomics: Optional[pd.DataFrame] = None
-    metabolomics: Optional[pd.DataFrame] = None
-    epigenomics: Optional[pd.DataFrame] = None
-    metadata: Optional[pd.DataFrame] = None
+    def __init__(
+        self,
+        data: Dict[str, pd.DataFrame] | None = None,
+        sample_ids: List[str] | None = None,
+        feature_ids: Dict[str, List[str]] | None = None,
+        metadata: pd.DataFrame | None = None,
+    ): ...
 ```
 
-#### Attributes
+#### Constructor arguments
 
-- **genomics**: Genomic data (SNPs, mutations) as DataFrame (samples × features)
-- **transcriptomics**: Gene expression data as DataFrame (samples × genes)
-- **proteomics**: Protein abundance data as DataFrame (samples × proteins)
-- **metabolomics**: Metabolite data as DataFrame (samples × metabolites)
-- **epigenomics**: Epigenomic data as DataFrame (samples × epigenetic marks)
-- **metadata**: Sample metadata as DataFrame (samples × metadata columns)
+- **data**: Dictionary mapping each layer name (for example `"genomics"`, `"transcriptomics"`, `"proteomics"`, `"metabolomics"` or `"epigenomics"`) to a samples × features DataFrame. At least one layer is required. The layers are aligned to the samples they all share (sorted), with a `UserWarning` when some samples are dropped. Each layer is also readable as an attribute of the same name, for example `omics.transcriptomics`
+- **sample_ids**: Replaced by the aligned common samples
+- **feature_ids**: Optional feature identifiers per layer
+- **metadata**: Sample metadata as DataFrame (samples × metadata columns), aligned to the common samples
 
 #### Properties
 
@@ -122,25 +121,25 @@ Load and integrate multiple omics datasets into unified structure.
 
 ```python-snippet
 def integrate_omics_data(
-    data_dict: Dict[str, Union[pd.DataFrame, str, Path]],
-    sample_mapping: Optional[Dict[str, Dict[str, str]]] = None,
-    feature_mapping: Optional[Dict[str, Dict[str, str]]] = None,
-    metadata: Optional[Union[pd.DataFrame, str, Path]] = None,
+    data: Optional[Dict[str, Union[pd.DataFrame, str, Path]]] = None,
+    **kwargs: Any,
 ) -> MultiOmicsData:
 ```
 
 **Parameters:**
 
-- `data_dict` (Dict[str, Union[pd.DataFrame, str, Path]]): Dictionary mapping omics type names ("genomics", "transcriptomics", etc.) to either pandas DataFrame or file path. Supported file formats: CSV (.csv), TSV (.tsv, .txt), Excel (.xlsx, .xls). Gzip compression is automatically handled via core.io.
-- `sample_mapping` (Optional[Dict[str, Dict[str, str]]]): Optional nested dictionary mapping dataset names to sample ID transformation dictionaries for harmonizing sample IDs across datasets. Format: {omics_type: {old_id: new_id}}
-- `feature_mapping` (Optional[Dict[str, Dict[str, str]]]): Optional nested dictionary mapping dataset names to feature ID transformation dictionaries for harmonizing feature names. Format: {omics_type: {old_feature: new_feature}}
-- `metadata` (Optional[Union[pd.DataFrame, str, Path]]): Optional sample metadata as DataFrame or file path. Metadata is aligned to common samples after integration.
+- `data` (Dict[str, Union[pd.DataFrame, str, Path]]): Dictionary mapping layer names ("genomics", "transcriptomics", etc.) to either a pandas DataFrame or a file path. Supported file formats: CSV (.csv) and TSV (.tsv), read with the first column as the sample index, and Parquet (.parquet); any other suffix raises `ValidationError`, and so does a missing `data`.
+- `sample_mapping` (keyword, Optional[Dict[str, Dict[str, str]]]): Sample ID renames per layer, `{layer: {old_id: new_id}}`, for harmonizing sample IDs across datasets.
+- `feature_mapping` (keyword, Optional[Dict[str, Dict[str, str]]]): Feature renames per layer, `{layer: {old_feature: new_feature}}`.
+- `metadata` (keyword, Optional[Union[pd.DataFrame, str, Path]]): Optional sample metadata as DataFrame or as a .csv, .tsv or .parquet path. Metadata is aligned to the common samples.
+- Any other keyword is passed to the `MultiOmicsData` constructor.
 
 **Returns:**
 - MultiOmicsData object with all provided omics layers integrated and samples aligned to common set.
 
 **Raises:**
-- `ValueError`: If file format is unsupported or required columns are missing, or if no common samples found across datasets
+- `ValidationError`: If `data` is missing or a file format is unsupported
+- `ValueError`: If no common samples are found across datasets
 - `FileNotFoundError`: If file paths do not exist
 - `IOError`: If file read fails
 
@@ -214,7 +213,6 @@ Perform ridge-regularized canonical correlation analysis (CCA) between two omics
 def canonical_correlation(
     multiomics_data: Union[MultiOmicsData, Dict[str, pd.DataFrame]],
     layers: Optional[Tuple[str, str]] = None,
-    layer_pair: Optional[Tuple[str, str]] = None,
     n_components: int = 10,
     regularization: float = 0.0,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -226,7 +224,6 @@ Each layer is standardized first (columns centred and scaled to unit sample vari
 
 - `multiomics_data` (MultiOmicsData or Dict[str, pd.DataFrame]): Multi-omics data object, or a dictionary that maps layer names to samples × features DataFrames. A `MultiOmicsData` object is already sample-aligned. The rows of a plain dictionary are matched by position, so list the samples in the same order in both layers.
 - `layers` (Optional[Tuple[str, str]]): Names of the two layers to correlate; both must exist in the data. If omitted, the data must hold exactly two layers, which are used in their stored order.
-- `layer_pair` (Optional[Tuple[str, str]]): Alias for `layers`.
 - `n_components` (int): Number of canonical pairs to extract; must be at least 1. Default: 10. The number of pairs is capped at the smaller of the two layers' feature counts. Fewer pairs are also returned when the numerical rank of the layers supports fewer (the rank is at most `n_samples - 1`); that case logs a warning.
 - `regularization` (float): Ridge parameter `λ >= 0` on the scale of a correlation matrix, added to the diagonal of each within-layer covariance matrix. It must be finite. Default: 0.0, which is classical, unregularized CCA. Larger values shrink every canonical correlation, and each correlation is non-increasing in `λ`. Without regularization, when the ranks of the two layers add up to more than `n_samples - 1` (for example with far more features than samples), at least that excess number of canonical correlations equal exactly 1, a perfect in-sample fit, and `ValueError` is raised. Use `λ > 0` for such data. The same refusal applies when either layer alone has numerical rank `n_samples - 1`.
 

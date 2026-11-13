@@ -64,7 +64,7 @@ graph TD
         H5["ontology/, phenotype/, ecology/, life_events/"] -.-> D5
         H6["quality/, visualization/"] -.-> D6
         H7["longread/, metagenomics/, structural_variants/, spatial/, pharmacogenomics/, metabolomics/, menu/"] -.-> D4
-        H8["cloud/, mcp/"] -.-> D6
+        H8["mcp/"] -.-> D6
     end
 
     subgraph "Key Documents"
@@ -99,7 +99,6 @@ graph TD
 | **Life Events** | [life_events](life_events/) | Temporal event analysis | Life course modeling, embeddings |
 | **Quality** | [quality](quality/) | Data quality assessment | FASTQ analysis, assembly validation |
 | **Visualization** | [visualization](visualization/) | Plotting and graphics | 70+ specialized plotting modules |
-| **Cloud** | [cloud](cloud/) | Cloud deployment | GCP VM lifecycle, Docker pipelines, genome prep |
 | **Long-Read** | [longread](longread/) | Long-read sequencing | PacBio/ONT, assembly, error correction |
 | **Metagenomics** | [metagenomics](metagenomics/) | Metagenomic analysis | Taxonomic profiling, functional annotation |
 | **Structural Variants** | [structural_variants](structural_variants/) | SV/CNV analysis | Detection, breakpoint resolution |
@@ -330,7 +329,6 @@ visualization/index
 simulation/index
 life_events/index
 longread/index
-cloud/index
 mcp/index
 tasks/index
 metagenomics/index
@@ -449,7 +447,6 @@ graph TB
     PHARM[pharmacogenomics] --> Core
     METAB[metabolomics] --> Core
     MENUX[menuSystem] --> Core
-    CLOUD[cloudDeployment] --> Core
 ```
 
 ## Common Tasks & Quick Commands
@@ -461,7 +458,6 @@ graph TB
 tasks/analyze_dna
 tasks/run_rna_pipeline
 tasks/run_gwas
-tasks/deploy_cloud
 tasks/visualize_results
 tasks/mcp_integration
 tasks/performance_tuning

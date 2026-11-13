@@ -60,13 +60,14 @@ seq.get_events_by_type("job_start")   # filter by type
 ```python-snippet
 def extract_phenotypes_from_events(
     event_sequence: EventSequence,
-    trait_mapping: Optional[Dict[str, List[str]]] = None,
+    phenotype_categories: Optional[Dict[str, List[str]]] = None,
 ) -> Dict[str, Any]
 ```
 
 Extracts phenotypic traits (education level, career stability, health score,
-social connectivity, mobility) from an event sequence. The default trait
-mapping covers five domains; provide a custom mapping to override.
+social connectivity, mobility) from an event sequence. Pass
+`phenotype_categories` (category name -> event types) to add a
+`<category>_count` and `<category>_events` entry for each category.
 
 ### aggregate_temporal_phenotypes
 

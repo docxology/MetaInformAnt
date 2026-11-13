@@ -14,7 +14,7 @@ This module ships no benchmark suite, and the repository holds no whole-genome t
 | **Multi-caller merge** (`merge_callsets`, `survivor_merge`) | Sort, then a pairwise sweep within each chromosome that only compares variants whose starts fall inside the current variant's span plus 10 kb (`merge_callsets`) or `max_distance` (`survivor_merge`) |
 | **Population functions** | NumPy on dense matrices; PCA is an eigendecomposition of the smaller of the sample × sample and SV × SV covariance matrices |
 
-**Indicative timings** (synthetic data, single thread, Python 3.12.15 on an arm64 Mac; CPU time, best of three runs unless noted, so read the scaling rather than the absolute values):
+**Indicative timings** (synthetic data, single thread, on an arm64 Mac; CPU time, best of three runs unless noted, so read the scaling rather than the absolute values):
 
 | Operation | Input | Time |
 |-----------|-------|------|
@@ -245,14 +245,10 @@ for bam in bam_list:
 results = client.gather(futures)
 ```
 
-`metainformant.cloud` (`CloudConfig`, `GCPDeployer`) is GCP deployment infrastructure for pipelines; it has no structural-variant job runner.
+### Multi-machine runs
 
-### Cloud (GCP)
-
-See `docs/cloud/` for the GCP deployment and preemptible VM notes.
-
-- **Parallelize:** One sample per VM; collect the per-sample result files in object storage and merge them afterwards
-- **Size VMs by memory:** use the per-record estimate above and measure one region before choosing a machine type
+- **Parallelize:** One sample per machine; collect the per-sample result files in object storage and merge them afterwards
+- **Size machines by memory:** use the per-record estimate above and measure one region before choosing a machine type
 
 ---
 

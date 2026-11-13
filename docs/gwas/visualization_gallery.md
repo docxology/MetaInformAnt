@@ -210,7 +210,7 @@ Effect size vs significance scatter plot.
 
 Statistical power of a two-sample t-test as a contour map over sample size and effect size, with contours at 80% and 90% power.
 
-**Input**: `sample_sizes` (per group) and `effect_sizes` (standardized, Cohen's d) as lists, `alpha` (0.05), and `output_file` (or its alias `output_path`). Requires SciPy.
+**Input**: `sample_sizes` (per group) and `effect_sizes` (standardized, Cohen's d) as lists, `alpha` (0.05), and `output_file`. Requires SciPy.
 
 **Use Cases**:
 - Study design and planning
@@ -280,7 +280,7 @@ Regional association plot with a gene track below it.
 
 Recombination rate profile along each chromosome, with a Savitzky-Golay smoothed line (drawn when SciPy is installed and the chromosome has more than ten positions; without SciPy, or with ten or fewer positions, only the raw rate line is drawn).
 
-**Input**: keywords `recombination_rates` (`{chromosome: [rate in cM/Mb, ...]}`) and `positions` (`{chromosome: [bp, ...]}`, as many positions as rates), plus `output_file` and `title`. The first positional argument (`results`) is accepted for call compatibility and is not used to derive rates.
+**Input**: keywords `recombination_rates` (`{chromosome: [rate in cM/Mb, ...]}`) and `positions` (`{chromosome: [bp, ...]}`, as many positions as rates), plus `output_file` and `title`. The first positional argument (`results`) keeps the call shape of the other regional plots; rates are not derived from it.
 
 **Note**: requires recombination map data, which is neither bundled nor simulated. Unless both `recombination_rates` and `positions` are given, the function returns `status: "skipped"` with a `reason` and `output_path: None`, logs a warning and writes no file. To overlay a rate on an association plot, pass `recombination_rate` to `regional_plot`.
 

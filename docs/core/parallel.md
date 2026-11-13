@@ -934,7 +934,7 @@ def test_thread_map_timeout():
 ```python
 def test_concurrent_database_queries(tmp_path):
     """Test that parallel queries don't corrupt database."""
-    from metainformant.core import db
+    from metainformant.core.data import db
 
     def insert_and_query(i):
         with db.get_connection() as conn_wrapper:

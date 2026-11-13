@@ -448,7 +448,7 @@ All 8 functions signature-check PASS:
 
 | Function | Doc signature | Code signature | Match |
 |----------|--------------|----------------|-------|
-| extract_phenotypes_from_events | `(event_sequence, trait_mapping=None)` | `(event_sequence, phenotype_categories=None, trait_mapping=None)` | ✅ (backward-compatible) |
+| extract_phenotypes_from_events | `(event_sequence, phenotype_categories=None)` | `(event_sequence, phenotype_categories=None)` | ✅ |
 | aggregate_temporal_phenotypes | `(sequences, time_windows, trait_categories)` | `(sequences, time_window_years=5.0, time_windows=None, trait_categories=None)` | ✅ (flexible) |
 | analyze_life_course_trajectories | `(sequences, outcome_measures=None)` | `(sequences, outcome_measures=None)` | ✅ |
 | identify_critical_periods | `(sequences, age_ranges)` | `(sequences, age_ranges)` | ✅ |

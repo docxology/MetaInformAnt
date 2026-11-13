@@ -6,28 +6,31 @@ Visualization functions for population genetics analysis.
 
 ## Overview
 
-The `metainformant.dna.population.visualization` module provides matplotlib figures (seaborn heatmaps for three of them) for population genetics analysis, including diversity metrics, neutrality tests, population structure, and demographic summaries. It re-exports the 29 functions defined in `visualization_core` (11 core plots) and `visualization_stats` (18 statistical comparison plots), so one import path reaches all of them:
+The `metainformant.dna.population.visualization_core` and `metainformant.dna.population.visualization_stats` modules provide matplotlib figures (seaborn heatmaps for three of them) for population genetics analysis, including diversity metrics, neutrality tests, population structure, and demographic summaries. `visualization_core` holds 11 core plots (`plot_fst_matrix`, `plot_tajima_d_distribution`, `plot_selection_statistics`, `plot_population_diversity`, `plot_ld_decay`, `plot_population_structure`, `plot_demographic_history`, `create_population_summary_plot`, `plot_mutation_spectrum`, `plot_allele_frequency_spectrum`, `plot_bootstrap_distribution`); `visualization_stats` holds the 18 statistical comparison plots. Import each function from the module that defines it:
 
 ```python
-from metainformant.dna.population.visualization import plot_diversity_comparison, plot_pca_results
+from metainformant.dna.population.visualization_stats import (
+    plot_diversity_comparison,
+    plot_pca_results,
+)
 ```
 
 ### Common behavior
 
-- **Saving**: pass `output_file` to save the figure at 300 DPI with a tight bounding box. Fourteen functions also accept `output_path` as an alias for `output_file`: `plot_population_diversity` and thirteen in `visualization_stats` (their signatures below show it). `output_file` is the argument that works everywhere and wins when both are given. The output directory is not created for you.
+- **Saving**: pass `output_file` to save the figure at 300 DPI with a tight bounding box. The output directory is not created for you.
 - **Returns**: the `matplotlib.figure.Figure`, already closed in pyplot so it is not displayed (save it, or adjust it through `fig.axes`), or `None` when matplotlib (or seaborn / SciPy where noted) is not installed. Most functions also return `None` for empty input.
 - **Fixed titles and sizes**: none of the functions accept `title` or `figsize`; titles, labels and sizes are set inside each plot.
 - **Optional packages**: `plot_fst_matrix`, `plot_kinship_matrix` and `plot_statistic_correlation_matrix` need seaborn; `plot_bootstrap_distribution` needs SciPy, and `plot_ld_decay` adds its exponential fit only when SciPy is installed.
 
 ## Functions
 
-### `plot_diversity_comparison(diversity_data, output_file=None, output_path=None)`
+### `plot_diversity_comparison(diversity_data, output_file=None)`
 
 Bar chart comparing nucleotide diversity (π) across scenarios or populations, with the value written above each bar.
 
 **Parameters**:
 - `diversity_data`: Dictionary mapping scenario names to π values
-- `output_file`: Optional path to save the figure (alias `output_path`)
+- `output_file`: Optional path to save the figure 
 
 **Returns**: matplotlib Figure object
 
@@ -35,7 +38,7 @@ Bar chart comparing nucleotide diversity (π) across scenarios or populations, w
 ```python-snippet
 from pathlib import Path
 
-from metainformant.dna.population.visualization import plot_diversity_comparison
+from metainformant.dna.population.visualization_stats import plot_diversity_comparison
 
 Path("output").mkdir(exist_ok=True)  # the plot functions do not create directories
 
@@ -51,13 +54,13 @@ fig = plot_diversity_comparison(
 )
 ```
 
-### `plot_tajimas_d_comparison(tajima_d_values, output_file=None, output_path=None)`
+### `plot_tajimas_d_comparison(tajima_d_values, output_file=None)`
 
 Bar chart comparing Tajima's D across scenarios with color coding.
 
 **Parameters**:
 - `tajima_d_values`: Dictionary mapping scenario names to Tajima's D values
-- `output_file`: Optional path to save the figure (alias `output_path`)
+- `output_file`: Optional path to save the figure 
 
 **Returns**: matplotlib Figure object
 
@@ -69,7 +72,7 @@ Bar chart comparing Tajima's D across scenarios with color coding.
 ```python-snippet
 from pathlib import Path
 
-from metainformant.dna.population.visualization import plot_tajimas_d_comparison
+from metainformant.dna.population.visualization_stats import plot_tajimas_d_comparison
 
 Path("output").mkdir(exist_ok=True)
 
@@ -86,13 +89,13 @@ fig = plot_tajimas_d_comparison(
 )
 ```
 
-### `plot_fst_comparison(fst_data, output_file=None, output_path=None)`
+### `plot_fst_comparison(fst_data, output_file=None)`
 
 Bar chart comparing Fst values across loci or population pairs.
 
 **Parameters**:
 - `fst_data`: Dictionary mapping locus or comparison names to Fst values
-- `output_file`: Optional path to save the figure (alias `output_path`)
+- `output_file`: Optional path to save the figure 
 
 **Returns**: matplotlib Figure object
 
@@ -103,7 +106,7 @@ Bar chart comparing Fst values across loci or population pairs.
 ```python-snippet
 from pathlib import Path
 
-from metainformant.dna.population.visualization import plot_fst_comparison
+from metainformant.dna.population.visualization_stats import plot_fst_comparison
 
 Path("output").mkdir(exist_ok=True)
 
@@ -116,15 +119,14 @@ fst_values = {
 fig = plot_fst_comparison(fst_values, output_file="output/fst.png")
 ```
 
-### `plot_pca_results(pca_result, sample_names=None, output_file=None, output_path=None, n_components=None)`
+### `plot_pca_results(pca_result, sample_names=None, output_file=None)`
 
 Plot the first two principal components.
 
 **Parameters**:
 - `pca_result`: Result dictionary from `compute_pca` (coordinates under `pcs` or `coordinates`, explained variance as fractions of the total under `explained_variance_ratio` or `explained_variance`; a `labels` or `cluster_labels` entry colors the points), a `(coordinates, explained_variance, labels)` tuple, or a bare `(n_samples, n_components)` coordinate array or nested list, which is drawn without variance percentages on the axes and without colors
 - `sample_names`: Optional names drawn next to the points
-- `output_file`: Optional path to save the figure (alias `output_path`)
-- `n_components`: Accepted for compatibility but unused
+- `output_file`: Optional path to save the figure 
 
 **Returns**: matplotlib Figure object, or `None` (with a logged warning) when no coordinates are found or they are not two-dimensional with at least two columns, which includes a ragged or non-numeric array. A result dictionary whose `status` is `"failed"` raises `ValidationError`.
 
@@ -135,14 +137,14 @@ Plot the first two principal components.
 import random
 from pathlib import Path
 
-from metainformant.dna.population.visualization import plot_pca_results
+from metainformant.dna.population.visualization_stats import plot_pca_results
 from metainformant.gwas.analysis.structure import compute_pca
 from metainformant.simulation.models.popgen import generate_genotype_matrix
 
 Path("output").mkdir(exist_ok=True)
 
 # Individuals x sites matrix of 0/1/2 copies of the alternate allele
-genotype_matrix = generate_genotype_matrix(n_individuals=60, n_sites=200, rng=random.Random(1))
+genotype_matrix = generate_genotype_matrix(n_individuals=60, n_snps=200, rng=random.Random(1))
 
 pca_result = compute_pca(genotype_matrix, n_components=4)
 fig = plot_pca_results(
@@ -151,14 +153,14 @@ fig = plot_pca_results(
 )
 ```
 
-### `plot_kinship_matrix(kinship_matrix, sample_names=None, output_file=None, output_path=None, max_samples=None)`
+### `plot_kinship_matrix(kinship_matrix, sample_names=None, output_file=None, max_samples=None)`
 
 Plot a kinship matrix as a heatmap (requires seaborn).
 
 **Parameters**:
 - `kinship_matrix`: Result dictionary from `compute_kinship_matrix` (a `status` of `"failed"` raises `ValidationError`) or the kinship matrix itself as an array
 - `sample_names`: Optional axis labels (default `Sample_0`, `Sample_1`, ...)
-- `output_file`: Optional path to save the figure (alias `output_path`)
+- `output_file`: Optional path to save the figure 
 - `max_samples`: Plot only the first `max_samples` samples; applied only when a result dictionary is passed
 
 **Returns**: matplotlib Figure object
@@ -168,13 +170,13 @@ Plot a kinship matrix as a heatmap (requires seaborn).
 import random
 from pathlib import Path
 
-from metainformant.dna.population.visualization import plot_kinship_matrix
+from metainformant.dna.population.visualization_stats import plot_kinship_matrix
 from metainformant.gwas.analysis.structure import compute_kinship_matrix
 from metainformant.simulation.models.popgen import generate_genotype_matrix
 
 Path("output").mkdir(exist_ok=True)
 
-genotype_matrix = generate_genotype_matrix(n_individuals=60, n_sites=200, rng=random.Random(1))
+genotype_matrix = generate_genotype_matrix(n_individuals=60, n_snps=200, rng=random.Random(1))
 
 kinship_result = compute_kinship_matrix(genotype_matrix, method="vanraden")
 fig = plot_kinship_matrix(
@@ -184,13 +186,13 @@ fig = plot_kinship_matrix(
 )
 ```
 
-### `plot_site_frequency_spectrum(sfs_data, output_file=None, output_path=None)`
+### `plot_site_frequency_spectrum(sfs_data, output_file=None)`
 
 Bar chart of a site frequency spectrum.
 
 **Parameters**:
 - `sfs_data`: List of site counts, one per frequency class starting with class 1, as returned by `generate_site_frequency_spectrum`
-- `output_file`: Optional path to save the figure (alias `output_path`)
+- `output_file`: Optional path to save the figure 
 
 **Returns**: matplotlib Figure object
 
@@ -199,13 +201,13 @@ Bar chart of a site frequency spectrum.
 import random
 from pathlib import Path
 
-from metainformant.dna.population.visualization import plot_site_frequency_spectrum
+from metainformant.dna.population.visualization_stats import plot_site_frequency_spectrum
 from metainformant.simulation.models.popgen import generate_site_frequency_spectrum
 
 Path("output").mkdir(exist_ok=True)
 
 sfs = generate_site_frequency_spectrum(
-    sample_size=30,
+    n_samples=30,
     n_sites=100,
     rng=random.Random(1)
 )
@@ -215,13 +217,13 @@ fig = plot_site_frequency_spectrum(
 )
 ```
 
-### `plot_neutrality_test_summary(summary, output_file=None, output_path=None)`
+### `plot_neutrality_test_summary(summary, output_file=None)`
 
 One single-bar panel per neutrality test statistic, in two columns: a 2x2 grid for up to four tests, with one more row (of the same height) for every two further tests. An unused panel is left blank.
 
 **Parameters**:
 - `summary`: Dictionary mapping test names to a number, or to a dictionary with `statistic` (or `value`) and an optional `p_value`, which is added to the panel title. Every entry gets a panel.
-- `output_file`: Optional path to save the figure (alias `output_path`)
+- `output_file`: Optional path to save the figure 
 
 **Returns**: matplotlib Figure object
 
@@ -233,13 +235,13 @@ import random
 from pathlib import Path
 
 from metainformant.dna.population.analysis import neutrality_test_suite
-from metainformant.dna.population.visualization import plot_neutrality_test_summary
+from metainformant.dna.population.visualization_stats import plot_neutrality_test_summary
 from metainformant.simulation.models.popgen import generate_population_sequences
 
 Path("output").mkdir(exist_ok=True)
 
 sequences = generate_population_sequences(
-    n_sequences=20, sequence_length=500, nucleotide_diversity=0.01, rng=random.Random(1)
+    n_sequences=20, length=500, nucleotide_diversity=0.01, rng=random.Random(1)
 )
 suite = neutrality_test_suite(sequences)
 
@@ -254,14 +256,14 @@ fig = plot_neutrality_test_summary(
 )
 ```
 
-### `plot_demographic_comparison(pop1_data, pop2_data=None, output_file=None, output_path=None)`
+### `plot_demographic_comparison(pop1_data, pop2_data=None, output_file=None)`
 
 Two bar-chart panels, "Effective Population Size" and "Observed Diversity", one bar per label.
 
 **Parameters**:
 - `pop1_data`: Dictionary mapping labels to dictionaries with `estimated_ne` and `observed_diversity`
 - `pop2_data`: Optional second dictionary of the same shape. When given, the bars of both dictionaries are drawn side by side and labelled "Population 1" and "Population 2"; the tick labels come from `pop1_data`.
-- `output_file`: Optional path to save the figure (alias `output_path`)
+- `output_file`: Optional path to save the figure 
 
 **Returns**: matplotlib Figure object
 
@@ -269,7 +271,7 @@ Two bar-chart panels, "Effective Population Size" and "Observed Diversity", one 
 ```python-snippet
 from pathlib import Path
 
-from metainformant.dna.population.visualization import plot_demographic_comparison
+from metainformant.dna.population.visualization_stats import plot_demographic_comparison
 
 Path("output").mkdir(exist_ok=True)
 
@@ -290,13 +292,13 @@ fig = plot_demographic_comparison(
 )
 ```
 
-### `plot_summary_statistics_grid(stats_dict, output_file=None, output_path=None)`
+### `plot_summary_statistics_grid(stats_dict, output_file=None)`
 
 One bar-chart panel per summary statistic, one bar per scenario, in two columns: a 3x2 grid for up to six metrics, with one more row (of the same height) for every two further metrics. An unused panel is left blank.
 
 **Parameters**:
 - `stats_dict`: Dictionary mapping scenario names to `{metric: value}` dictionaries; the values must be numbers
-- `output_file`: Optional path to save the figure (alias `output_path`)
+- `output_file`: Optional path to save the figure 
 
 **Returns**: matplotlib Figure object
 
@@ -308,7 +310,7 @@ import random
 from pathlib import Path
 
 from metainformant.dna.population.analysis import calculate_summary_statistics
-from metainformant.dna.population.visualization import plot_summary_statistics_grid
+from metainformant.dna.population.visualization_stats import plot_summary_statistics_grid
 from metainformant.simulation.models.popgen import generate_population_sequences
 
 Path("output").mkdir(exist_ok=True)
@@ -317,7 +319,7 @@ METRICS = ("nucleotide_diversity", "segregating_sites", "watterson_theta", "taji
 
 def summarize(diversity, seed):
     sequences = generate_population_sequences(
-        n_sequences=20, sequence_length=500, nucleotide_diversity=diversity, rng=random.Random(seed)
+        n_sequences=20, length=500, nucleotide_diversity=diversity, rng=random.Random(seed)
     )
     stats = calculate_summary_statistics(sequences=sequences)
     return {metric: stats[metric] for metric in METRICS}
@@ -334,14 +336,14 @@ fig = plot_summary_statistics_grid(
 )
 ```
 
-### `plot_linkage_disequilibrium_decay(ld_data, distances=None, output_file=None, output_path=None)`
+### `plot_linkage_disequilibrium_decay(ld_data, distances=None, output_file=None)`
 
 Line plot of linkage disequilibrium (r²) against distance.
 
 **Parameters**:
 - `ld_data`: r² values, or `(distance, r²)` tuples such as those returned by `calculate_ld_decay`
 - `distances`: Distances for plain r² values (default: 0, 1, 2, ...)
-- `output_file`: Optional path to save the figure (alias `output_path`)
+- `output_file`: Optional path to save the figure 
 
 **Returns**: matplotlib Figure object, or `None` for empty input
 
@@ -351,7 +353,7 @@ import random
 from pathlib import Path
 
 from metainformant.dna.population.analysis import calculate_ld_decay
-from metainformant.dna.population.visualization import plot_linkage_disequilibrium_decay
+from metainformant.dna.population.visualization_stats import plot_linkage_disequilibrium_decay
 from metainformant.simulation.models.popgen import generate_population_sequences
 
 Path("output").mkdir(exist_ok=True)
@@ -367,7 +369,7 @@ fig = plot_linkage_disequilibrium_decay(
 
 # Or pass (distance, r²) tuples straight from calculate_ld_decay
 sequences = generate_population_sequences(
-    n_sequences=20, sequence_length=500, nucleotide_diversity=0.01, rng=random.Random(1)
+    n_sequences=20, length=500, nucleotide_diversity=0.01, rng=random.Random(1)
 )
 fig = plot_linkage_disequilibrium_decay(
     calculate_ld_decay(sequences, max_distance=50),
@@ -384,7 +386,7 @@ import random
 from pathlib import Path
 
 from metainformant.dna.population.analysis import calculate_summary_statistics, neutrality_test_suite
-from metainformant.dna.population.visualization import (
+from metainformant.dna.population.visualization_stats import (
     plot_diversity_comparison,
     plot_neutrality_test_summary,
 )
@@ -393,7 +395,7 @@ from metainformant.simulation.models.popgen import generate_population_sequences
 Path("output").mkdir(exist_ok=True)
 
 neutral_seqs = generate_population_sequences(
-    n_sequences=20, sequence_length=500, nucleotide_diversity=0.01, rng=random.Random(1)
+    n_sequences=20, length=500, nucleotide_diversity=0.01, rng=random.Random(1)
 )
 
 # Analyze data
@@ -422,7 +424,7 @@ import random
 from pathlib import Path
 
 from metainformant.dna.population import hudson_fst, nucleotide_diversity, tajimas_d
-from metainformant.dna.population.visualization import (
+from metainformant.dna.population.visualization_stats import (
     plot_diversity_comparison,
     plot_tajimas_d_comparison,
     plot_fst_comparison,
@@ -439,9 +441,9 @@ rng = random.Random(1)
 
 # Simulate the scenarios to compare
 scenarios = {
-    "neutral": generate_population_sequences(n_sequences=20, sequence_length=500, nucleotide_diversity=0.01, rng=rng),
-    "high_diversity": generate_population_sequences(n_sequences=20, sequence_length=500, nucleotide_diversity=0.05, rng=rng),
-    "low_diversity": generate_population_sequences(n_sequences=20, sequence_length=500, nucleotide_diversity=0.002, rng=rng),
+    "neutral": generate_population_sequences(n_sequences=20, length=500, nucleotide_diversity=0.01, rng=rng),
+    "high_diversity": generate_population_sequences(n_sequences=20, length=500, nucleotide_diversity=0.05, rng=rng),
+    "low_diversity": generate_population_sequences(n_sequences=20, length=500, nucleotide_diversity=0.002, rng=rng),
     "bottleneck": simulate_bottleneck_population(n_sequences=20, sequence_length=500, bottleneck_size=5, rng=rng),
     "expansion": simulate_population_expansion(n_sequences=20, sequence_length=500, expansion_factor=10.0, rng=rng),
 }
@@ -450,7 +452,7 @@ tajimas_d_values = {name: tajimas_d(seqs) for name, seqs in scenarios.items()}
 
 fst_values = {}
 for target in (0.05, 0.2, 0.5):
-    pop1, pop2 = generate_two_populations(n_pop1=10, n_pop2=10, sequence_length=500, fst=target, n_sites=250, rng=rng)
+    pop1, pop2 = generate_two_populations(n_pop1=10, n_pop2=10, length=500, f_st=target, n_sites=250, rng=rng)
     fst_values[f"target {target}"] = hudson_fst(pop1, pop2)
 
 # Generate all comparison plots
@@ -479,7 +481,7 @@ All functions support saving at 300 DPI for publication:
 ```python
 from pathlib import Path
 
-from metainformant.dna.population.visualization import plot_diversity_comparison
+from metainformant.dna.population.visualization_stats import plot_diversity_comparison
 
 Path("output").mkdir(exist_ok=True)
 diversity_values = {"Neutral": 0.01, "High Diversity": 0.05}
@@ -497,7 +499,7 @@ Functions return matplotlib Figure objects for further customization:
 ```python
 from pathlib import Path
 
-from metainformant.dna.population.visualization import plot_diversity_comparison
+from metainformant.dna.population.visualization_stats import plot_diversity_comparison
 
 Path("output").mkdir(exist_ok=True)
 diversity_values = {"Neutral": 0.01, "High Diversity": 0.05}
@@ -518,7 +520,10 @@ from pathlib import Path
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 
-from metainformant.dna.population.visualization import plot_diversity_comparison, plot_tajimas_d_comparison
+from metainformant.dna.population.visualization_stats import (
+    plot_diversity_comparison,
+    plot_tajimas_d_comparison,
+)
 
 Path("output").mkdir(exist_ok=True)
 
@@ -541,9 +546,9 @@ fig.savefig("output/combined.png", dpi=300)
 
 ### Comparison Plots
 
-#### `plot_population_diversity(diversity_data, output_file=None, output_path=None)`
+#### `plot_population_diversity(diversity_data, output_file=None)`
 
-Bar chart of π per population with the value (four decimals) above each bar. It draws the same kind of chart as `plot_diversity_comparison`. `output_path` is an alias for `output_file`; `output_file` wins when both are given.
+Bar chart of π per population with the value (four decimals) above each bar. It draws the same kind of chart as `plot_diversity_comparison`.
 
 **Parameters**:
 - `diversity_data`: Dictionary mapping population names to π values
@@ -558,7 +563,10 @@ One bar-chart panel per metric, stacked vertically in alphabetical order of the 
 ```python-snippet
 from pathlib import Path
 
-from metainformant.dna.population.visualization import create_population_summary_plot, plot_population_diversity
+from metainformant.dna.population.visualization_core import (
+    create_population_summary_plot,
+    plot_population_diversity,
+)
 
 Path("output").mkdir(exist_ok=True)
 
@@ -591,14 +599,13 @@ Histogram (20 bins) of heterozygosity values.
 **Parameters**:
 - `het_data`: List of per-site heterozygosity values, or a dictionary mapping population names to such lists (overlaid histograms with a legend)
 
-#### `plot_statistic_distribution(stat_values, stat_name="Statistic", output_file=None, plot_type="histogram")`
+#### `plot_statistic_distribution(stat_values, stat_name="Statistic", output_file=None)`
 
 Histogram (20 bins) of a statistic. For a single list, dashed lines mark the mean and the median.
 
 **Parameters**:
 - `stat_values`: List of values, or a dictionary mapping names to lists of values (overlaid histograms)
 - `stat_name`: Axis label and title text
-- `plot_type`: Accepted but unused; the plot is always a histogram
 
 #### `plot_tajima_d_distribution(tajima_d_values, output_file=None)`
 
@@ -618,18 +625,20 @@ Bar chart of mutation counts by type, with the count above each bar.
 import random
 
 from metainformant.dna.population import allele_frequencies, nucleotide_diversity, tajimas_d
-from metainformant.dna.population.visualization import (
+from metainformant.dna.population.visualization_core import (
     plot_allele_frequency_spectrum,
-    plot_heterozygosity_distribution,
     plot_mutation_spectrum,
-    plot_statistic_distribution,
     plot_tajima_d_distribution,
+)
+from metainformant.dna.population.visualization_stats import (
+    plot_heterozygosity_distribution,
+    plot_statistic_distribution,
 )
 from metainformant.dna.variation.mutations import calculate_substitution_matrix
 from metainformant.simulation.models.popgen import generate_genotype_matrix, simulate_bottleneck_population
 from metainformant.simulation.models.sequences import generate_random_dna, mutate_sequence
 
-genotypes = generate_genotype_matrix(n_individuals=100, n_sites=300, rng=random.Random(1))
+genotypes = generate_genotype_matrix(n_individuals=100, n_snps=300, rng=random.Random(1))
 by_site = list(zip(*genotypes))  # one row per site, as allele_frequencies expects
 
 fig = plot_allele_frequency_spectrum(allele_frequencies(by_site))
@@ -656,9 +665,9 @@ fig = plot_mutation_spectrum({f"{a}>{b}": count for (a, b), count in sorted(matr
 
 ### Correlation and Relationship Plots
 
-#### `plot_pi_vs_theta(pi_values, theta_values, locus_names=None, output_file=None)`
+#### `plot_pi_vs_theta(pi_values, theta_values, output_file=None)`
 
-Scatter plot of π (y-axis) against Watterson's θ (x-axis) with a dashed 1:1 line. `locus_names` is accepted but unused. Put both on the same per-site scale: `wattersons_theta` returns S / a_n for the whole alignment, so divide it by the sequence length.
+Scatter plot of π (y-axis) against Watterson's θ (x-axis) with a dashed 1:1 line. Put both on the same per-site scale: `wattersons_theta` returns S / a_n for the whole alignment, so divide it by the sequence length.
 
 **Parameters**:
 - `pi_values`: Nucleotide diversity (π) values
@@ -675,11 +684,14 @@ Annotated heatmap (seaborn) of the correlations between statistics.
 import random
 
 from metainformant.dna.population import nucleotide_diversity, segregating_sites, tajimas_d, wattersons_theta
-from metainformant.dna.population.visualization import plot_pi_vs_theta, plot_statistic_correlation_matrix
+from metainformant.dna.population.visualization_stats import (
+    plot_pi_vs_theta,
+    plot_statistic_correlation_matrix,
+)
 from metainformant.simulation.models.popgen import generate_population_sequences
 
 sequences = generate_population_sequences(
-    n_sequences=20, sequence_length=1000, nucleotide_diversity=0.01, rng=random.Random(1)
+    n_sequences=20, length=1000, nucleotide_diversity=0.01, rng=random.Random(1)
 )
 
 # Per-window statistics over 100 bp windows
@@ -724,19 +736,22 @@ import random
 
 import numpy as np
 
-from metainformant.dna.population.visualization import plot_fst_matrix, plot_population_structure
+from metainformant.dna.population.visualization_core import (
+    plot_fst_matrix,
+    plot_population_structure,
+)
 from metainformant.gwas.analysis.structure import compute_pca
 from metainformant.simulation.models.popgen import generate_genotype_matrix, generate_two_populations
 
 # Two simulated groups with different allele frequencies, stacked into one matrix
-group_a = generate_genotype_matrix(n_individuals=30, n_sites=200, rng=random.Random(1))
-group_b = generate_genotype_matrix(n_individuals=30, n_sites=200, rng=random.Random(2))
+group_a = generate_genotype_matrix(n_individuals=30, n_snps=200, rng=random.Random(1))
+group_b = generate_genotype_matrix(n_individuals=30, n_snps=200, rng=random.Random(2))
 pca_result = compute_pca(group_a + group_b, n_components=3)
 fig = plot_population_structure(np.array(pca_result["pcs"]), cluster_labels=[0] * 30 + [1] * 30)
 
 # Pairwise Fst from sequences, or from a precomputed matrix
 pop1, pop2 = generate_two_populations(
-    n_pop1=10, n_pop2=10, sequence_length=500, fst=0.3, n_sites=250, rng=random.Random(3)
+    n_pop1=10, n_pop2=10, length=500, f_st=0.3, n_sites=250, rng=random.Random(3)
 )
 fig = plot_fst_matrix({"Pop1": pop1, "Pop2": pop2, "Mixed": pop1[:5] + pop2[:5]})
 fig = plot_fst_matrix([[0, 0.1, 0.3], [0.1, 0, 0.2], [0.3, 0.2, 0]], pop_names=["A", "B", "C"])
@@ -744,7 +759,7 @@ fig = plot_fst_matrix([[0, 0.1, 0.3], [0.1, 0, 0.2], [0.3, 0.2, 0]], pop_names=[
 
 ### Statistical Test Visualizations
 
-#### `plot_neutrality_test_suite(results, output_file=None, output_path=None)`
+#### `plot_neutrality_test_suite(results, output_file=None)`
 
 Bar chart with one bar per test statistic, red when negative and blue otherwise, and a line at zero.
 
@@ -766,7 +781,7 @@ Density histogram (30 bins) of bootstrap replicates with a kernel density estima
 - `bootstrap_values`: List of bootstrap replicate values
 - `observed_value`: Observed statistic value to mark on the plot
 
-#### `plot_permutation_test(results, observed_value=None, p_value=None, output_file=None, output_path=None)`
+#### `plot_permutation_test(results, observed_value=None, p_value=None, output_file=None)`
 
 Histogram of permuted statistics with a dashed line at the observed value. The p-value is only shown in the legend when you pass it; it is not computed.
 
@@ -775,7 +790,7 @@ Histogram of permuted statistics with a dashed line at the observed value. The p
 - `observed_value`: Observed statistic value (overrides the dictionary entry)
 - `p_value`: p-value to display (overrides the dictionary entry)
 
-#### `plot_outlier_detection(results, outliers=None, output_file=None, output_path=None)`
+#### `plot_outlier_detection(results, outliers=None, output_file=None)`
 
 Scatter plot of statistic values by observation index, with the indices listed in `outliers` highlighted in red.
 
@@ -797,18 +812,20 @@ import numpy as np
 
 from metainformant.dna.population import nucleotide_diversity, tajimas_d
 from metainformant.dna.population.analysis import neutrality_test_suite
-from metainformant.dna.population.visualization import (
+from metainformant.dna.population.visualization_core import (
     plot_bootstrap_distribution,
+    plot_selection_statistics,
+)
+from metainformant.dna.population.visualization_stats import (
     plot_hardy_weinberg_test,
     plot_neutrality_test_suite,
     plot_outlier_detection,
     plot_permutation_test,
-    plot_selection_statistics,
 )
 from metainformant.simulation.models.popgen import generate_population_sequences
 
 rng = random.Random(1)
-sequences = generate_population_sequences(n_sequences=20, sequence_length=500, nucleotide_diversity=0.01, rng=rng)
+sequences = generate_population_sequences(n_sequences=20, length=500, nucleotide_diversity=0.01, rng=rng)
 
 suite = neutrality_test_suite(sequences)
 fig = plot_neutrality_test_suite(
@@ -882,11 +899,11 @@ Effective population size against generation on a logarithmic y-axis, with each 
 import random
 
 from metainformant.dna.population.analysis import calculate_ld_decay
-from metainformant.dna.population.visualization import plot_demographic_history, plot_ld_decay
+from metainformant.dna.population.visualization_core import plot_demographic_history, plot_ld_decay
 from metainformant.simulation.models.popgen import generate_population_sequences
 
 sequences = generate_population_sequences(
-    n_sequences=20, sequence_length=500, nucleotide_diversity=0.01, rng=random.Random(1)
+    n_sequences=20, length=500, nucleotide_diversity=0.01, rng=random.Random(1)
 )
 fig = plot_ld_decay(calculate_ld_decay(sequences, max_distance=100))
 
@@ -895,7 +912,7 @@ fig = plot_demographic_history([1000, 1200, 800, 1500], [0, 1000, 2000, 3000])
 
 ## Complete Function List
 
-The module provides **29 visualization functions** (11 in `visualization_core`, 18 in `visualization_stats`), all importable from `metainformant.dna.population.visualization`:
+The two modules provide **29 visualization functions**: 11 in `metainformant.dna.population.visualization_core` and 18 in `metainformant.dna.population.visualization_stats`:
 
 1. **Basic Comparisons**: Diversity (`plot_diversity_comparison`, `plot_population_diversity`), Tajima's D, Fst, summary statistics (`plot_summary_statistics_grid`, `create_population_summary_plot`)
 2. **Population Structure**: PCA (`plot_pca_results`, `plot_population_structure`), kinship matrices

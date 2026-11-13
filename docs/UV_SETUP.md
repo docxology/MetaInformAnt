@@ -178,10 +178,10 @@ bash scripts/package/test.sh --mode fast
 bash scripts/package/setup.sh
 
 # Select the interpreter explicitly in a matrix or disposable environment
-bash scripts/package/setup.sh --python 3.12 --skip-tests
+bash scripts/package/setup.sh --python 3.14 --skip-tests
 
 # Recreate an existing environment only after confirming no process depends on it
-bash scripts/package/setup.sh --python 3.12 --recreate-venv
+bash scripts/package/setup.sh --python 3.14 --recreate-venv
 
 # Skip amalgkit installation
 bash scripts/package/setup.sh --skip-amalgkit
@@ -273,7 +273,7 @@ bash scripts/package/verify.sh --mode setup
  Cache directory is writable: /tmp/uv-cache
 
 [4/7] Checking virtual environment location...
- Virtual environment found at: /tmp/metainformant_venv (Python 3.11.5)
+ Virtual environment found at: /tmp/metainformant_venv (Python 3.14.0)
 
 [5/7] Testing venv creation capability...
  Venv already exists, skipping creation test
@@ -458,7 +458,7 @@ echo "Venv location: ${venv_dir}"
 echo "pytest: $(get_pytest_cmd)"
 ```
 
-`tests/conftest.py` applies the same rule for test runs: its session fixture `configure_uv_environment` calls `_detect_filesystem_type` and sets `UV_CACHE_DIR`, `UV_PROJECT_ENVIRONMENT` and `METAINFORMANT_VENV` when they are not already set.
+`tests/conftest.py` applies the same rule for test runs: its session fixture `configure_uv_environment` calls `_detect_filesystem_type` and sets `UV_CACHE_DIR` and `UV_PROJECT_ENVIRONMENT` when they are not already set.
 
 ## Best Practices
 

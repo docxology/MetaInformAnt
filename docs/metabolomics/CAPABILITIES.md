@@ -731,7 +731,7 @@ for ps in pathway_scores[:5]:
 | `differential_abundance` | 5000 metabolites × 50 samples | ~10 ms | ~2 MB |
 | `metabolite_set_enrichment` | 100 query × 500 pathways | ~20 ms | ~1 MB |
 
-**Test environment**: Intel i7-12700K, 32 GB RAM, Python 3.11, NumPy 1.26.
+**Test environment**: Intel i7-12700K, 32 GB RAM, NumPy 1.26.
 
 ### Scaling Behavior
 

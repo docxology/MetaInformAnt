@@ -8,7 +8,7 @@ Metabolomics operations are generally **memory-light** and **CPU-light** compare
 
 ### Benchmark Reference
 
-Standard test case: **5,000 metabolites × 100 samples** on Intel i7-12700K, 32 GB RAM, Python 3.11, NumPy 1.26.
+Standard test case: **5,000 metabolites × 100 samples** on Intel i7-12700K, 32 GB RAM, NumPy 1.26.
 
 | Operation | Time | Memory | Relative Cost |
 |-----------|------|--------|---------------|
@@ -432,7 +432,7 @@ Before declaring a pipeline "production-ready":
 
 ---
 
-## Cloud & High-Performance Computing (HPC)
+## High-Performance Computing (HPC) and Containers
 
 ### SLURM Job Script Template
 
@@ -445,7 +445,7 @@ Before declaring a pipeline "production-ready":
 #SBATCH --time=02:00:00
 #SBATCH --output=metabo_%j.out
 
-module load python/3.11
+module load python/3.14
 source /path/to/venv/bin/activate
 
 # Task: run identification with parallel workers
@@ -455,7 +455,7 @@ python3 analyze.py --workers 8
 ### Docker Container
 
 ```dockerfile
-FROM python:3.11-slim
+FROM python:3.14-slim
 RUN pip install --no-cache-dir numpy scipy metainformant
 COPY . /app
 WORKDIR /app
@@ -477,7 +477,6 @@ docker run --rm -v /data:/data metainformant-metabo python3 analyze.py --input /
 | Laptop | i5-1135G7 (4c) | 16 GB | ~2–3 s |
 | Desktop | i7-12700K (12c) | 32 GB | ~0.8 s (parallel 8c) |
 | Server | Xeon Platinum (32c) | 128 GB | ~0.3 s (parallel 32c) |
-| Cloud (t2.large) | 2 vCPU | 8 GB | ~3–4 s |
 
 **Conclusion**: Metabolomics analysis is not computationally intensive; any modern hardware is sufficient. Bottlenecks are typically data volume (thousands of samples) or repeated runs (e.g., bootstrapping); use parallelism for those.
 

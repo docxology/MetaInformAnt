@@ -140,7 +140,7 @@ data_filtered = filter_cells(
 - `max_genes`: Maximum number of genes per cell
 - `min_counts`: Minimum total counts per cell
 - `max_counts`: Maximum total counts per cell
-- `max_pct_mt`: Maximum mitochondrial gene percentage (`max_mito_percent` is an alias)
+- `max_pct_mt`: Maximum mitochondrial gene percentage
 
 There is no ribosomal-percentage filter; apply one yourself on the `pct_ribo` column if needed. When `data.obs` has no `total_counts` column (the only column it checks), `filter_cells` runs `calculate_qc_metrics` first and logs a warning.
 
@@ -194,13 +194,13 @@ data_norm = normalize_counts(data, method='size_factors')
 ```
 
 **Methods:**
-- `'total_count'` (alias `'total'`): Scale each cell to `target_sum` total counts. If `target_sum` is omitted it defaults to the median library size of the cells with non-zero counts
+- `'total_count'`: Scale each cell to `target_sum` total counts. If `target_sum` is omitted it defaults to the median library size of the cells with non-zero counts
 - `'median'`: Scale each cell to the median total count of the cells with non-zero counts (`target_sum` is ignored)
 - `'size_factors'`: Divide each cell by a simplified median-of-ratios size factor, then multiply by `target_sum` (default: the median of the positive size factors)
 
 An unknown method raises `ValueError`; passing precomputed scaling factors is not supported. The result holds a dense array in `X` even for sparse input, and `data_norm.uns["normalization"]` records `method`, `target_sum` and `size_factors`.
 
-**The size factors are divisors, the same way for every method.** `uns["normalization"]["size_factors"]` holds one value per cell: the library size (the row sum of the counts) for `'total_count'`/`'total'` and `'median'`, and the median-of-ratios size factor for `'size_factors'`. Whichever method was used,
+**The size factors are divisors, the same way for every method.** `uns["normalization"]["size_factors"]` holds one value per cell: the library size (the row sum of the counts) for `'total_count'` and `'median'`, and the median-of-ratios size factor for `'size_factors'`. Whichever method was used,
 
 ```
 X_normalized == X / size_factors[:, None] * target_sum
@@ -288,7 +288,7 @@ print(f"  Genes: {data.n_vars}")
 data = normalize_counts(data, target_sum=1e4, method='total_count')
 data = log_transform(data, base=2)
 
-# 5. Scale data (optional: compute_pca standardizes the data itself by default)
+# 5. Scale data (optional: pca_reduction standardizes the data itself by default)
 data = scale_data(data)
 
 print("Preprocessing complete!")
