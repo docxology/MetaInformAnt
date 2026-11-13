@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `metainformant.rna.engine.quant_snapshot` (`scripts/rna/export_quant_snapshot.py`):
+  exports verified frozen-cohort quantifications (abundance, HDF5, run info,
+  provenance and binding witnesses; never indexes or reads) to a portable,
+  Git-comparable snapshot with a per-species inventory. Compares against a Git
+  tree (HDF5 as LFS pointers) so a sparse checkout can be extended; never
+  replaces existing bytes; plan by default.
+- `metainformant.rna.engine.cohort_host` (`scripts/rna/prepare_cohort_host.py`):
+  prepares a fresh data root for frozen-cohort species by placing the cohort's
+  exact kallisto index and writing the verified reference manifest; plan by
+  default, idempotent, refuses different index bytes.
 - Local RNA acquisition frontier (`metainformant.rna.engine.acquisition_frontier`,
   opt-in via `AMALGKIT_LOCAL_FRONTIER_SIZE`): separate acquisition, recovery and
   quantification pools bounded by a planned-identity frontier and frozen

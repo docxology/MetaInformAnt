@@ -88,14 +88,19 @@ uv run python scripts/rna/export_quant_snapshot.py \
   outputs of non-excluded cohort tasks are exported.
 - Only the abundance table and HDF5, run info, provenance sidecar, reference
   binding and restored-input witnesses are copied. Kallisto indexes and reads
-  are never part of a snapshot; indexes are rebuilt from the cohort.
+  are never part of a snapshot. Indexes come from the installed cohort, never
+  from a rebuild: `kallisto index` (0.52.0) output is not byte-reproducible,
+  and the reuse contract binds outputs to index bytes.
 - `--git-tree REPO:TREEISH` compares against committed blob ids (HDF5 files as
   LFS pointers), so a sparse checkout that leaves the snapshot unmaterialized
   can still be extended. Samples already committed are `present`; copied but
   uncommitted samples are `staged`.
-- Existing destination bytes are never replaced. A difference is a `conflict`
-  (exit 65); a destination that matches but lacks a newer witness file is
-  `extend`, and only that file is added.
+- Existing destination bytes are never replaced. Different payload bytes
+  (abundance, run info, provenance) are a `conflict` (exit 65). A witness file
+  whose bytes differ keeps the destination's copy and is reported under
+  `witnesses_kept`; a destination that matches but lacks a newer witness file
+  is `extend`, and only that file is added. The inventory lists only files
+  whose destination bytes equal the source's.
 - The inventory is per species, so hosts that export different species never
   edit the same files: `<species>.tsv` has size, sha256 and Git blob id per
   file, and `<species>.tasks.tsv` each cohort task's state (`present` when
@@ -104,6 +109,31 @@ uv run python scripts/rna/export_quant_snapshot.py \
   carried forward. There are no timestamps, so a rerun on unchanged inputs
   changes nothing.
 - The data root is only read. The default is a plan printed as JSON.
+
+### Preparing a fresh data root for cohort species
+
+A new host that quantifies some species of a frozen cohort first needs, per
+species, the cohort's exact kallisto index in the directory its configuration
+resolves under the new data root, and the reference manifest
+(`<species>/work/reference/reference_aliases.json`) that cohort discovery and
+the importer check. `scripts/rna/prepare_cohort_host.py`
+(`metainformant.rna.engine.cohort_host`) does both:
+
+```bash
+uv run python scripts/rna/prepare_cohort_host.py \
+  --data-root "$AMALGKIT_DATA_ROOT" --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --cohort "$AMALGKIT_DATA_ROOT/cohort/<cohort-id>" --cohort-definition-sha256 <sha256> \
+  --species <species> [--species ...] [--execute]
+```
+
+- The default is a plan; `--execute` copies each index through a re-hashed
+  temporary file, writes the manifest with the producer's own reference
+  resolution, and re-verifies with `cohort.verify_species_reference`.
+- An existing index file with different bytes is never replaced (state
+  `blocked`, exit 65). A species YAML that does not hash to the cohort's
+  configuration digest, or an unknown species, is a usage error (exit 2).
+- Rerunning is a no-op once a species is ready. Imports of finished outputs
+  (`python -m metainformant.rna.engine.quant_import`) need this step first.
 
 ### Batch Cleanup
 
