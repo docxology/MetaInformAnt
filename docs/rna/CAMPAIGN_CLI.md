@@ -3,8 +3,8 @@
 Current flags for the streaming producer and its campaign launcher, verified
 against `scripts/rna/run_all_species.py` and
 `projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh`. The launcher is a
-thin wrapper: it resolves resources and env defaults, then execs
-`run_all_species.py` with the same flags.
+thin wrapper: it resolves settings, runs preflight, then runs
+`run_all_species.py` (with retry passes) and finalization.
 
 ## Producer: `uv run python scripts/rna/run_all_species.py`
 
@@ -75,26 +75,42 @@ orchestrator rejects unknown values at startup.
 
 ## Launcher: `projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh`
 
-`AMALGKIT_DATA_ROOT` defaults to `/Volumes/external_drive/Data/amalgkit` and
-the launcher exits 2 when that directory does not exist; export it explicitly
-for any other location. It accepts any producer flag above (e.g.
-`--species apis_mellifera`) and adds:
+The Hymenoptera project's one-command lane. `AMALGKIT_DATA_ROOT` defaults to
+`/Volumes/external_drive/Data/amalgkit`; a run exits 69 when that directory
+does not exist (`--print-config` still works). It runs the producer above in
+frozen-cohort mode (`--cohort <data-root>/cohort/hymenoptera27-20261005` with the project's
+committed `COHORT.json` as `--cohort-definition` and its pinned sha256), with
+the host-derived profile and no shell clamps. It owns `--data-root`,
+`--config-dir` and the `--cohort*` options (set them through
+`AMALGKIT_CONFIG_DIR`, `AMALGKIT_COHORT_DIR`, `AMALGKIT_COHORT_DEFINITION` and
+`AMALGKIT_COHORT_DEFINITION_SHA256`); any other producer flag passes through,
+and `--species` also limits finalization.
 
-| Setting | Default | Meaning |
+| Mode or setting | Default | Meaning |
 | --- | --- | --- |
-| `AMALGKIT_PIPELINE_PROFILE` | `local-throughput` | `local-throughput` (workers 16–24, threads 8, quant-slots 4, fastq-slots 2, validation-slots 4) or `compat` (workers ≤ 8, fastq-slots 1) |
-| `--results-dir` / `--print-config` | — | Results directory; print resolved config and exit |
-| `AMALGKIT_MIN_SYSTEM_FREE_GB` | 32 | Startup floor on system-volume free space; the run is refused below it |
-| `AMALGKIT_MIN_EXTERNAL_FREE_GB` | 32 | Same floor for the external data volume |
-| `AMALGKIT_RECLAIM_RAW_AFTER_QUANT` | `yes` | Reclaim validated raw FASTQ/SRA after quant |
+| `--print-config` | — | Resolved settings, command lines and the producer's `--print-profile` JSON; no lock, no database, no writes |
+| `--dry-run` | — | Preflight plus the read-only plan (cohort and configuration digests, references, progress per species); exit 0/73/69/2 |
+| `--status` | — | Writer lock holder, launcher status file and per-species completion (read-only) |
+| `AMALGKIT_PIPELINE_RETRY_PASSES` | 1 | Extra producer passes after exit 75 |
+| `AMALGKIT_PIPELINE_RETRY_DELAY_SECONDS` | 300 | Pause before a retry pass |
+| `AMALGKIT_PIPELINE_WORKERS` / `_THREADS` and the other `AMALGKIT_PIPELINE_*` profile variables | host profile | Read by the producer's profile |
+| `AMALGKIT_MIN_EXTERNAL_FREE_GB` / `AMALGKIT_MIN_SYSTEM_FREE_GB` | 8 / 4 | Preflight free-space floors |
+| `AMALGKIT_FAST_FAIL_ENA` | `no` | `yes` adds `--fast-fail-ena` |
 | `AMALGKIT_NCBI_PREFETCH_FIRST` | `yes` | Resumable verified prefetch before fasterq fallback |
-| Per-stage timeouts (`AMALGKIT_PIPELINE_*_TIMEOUT_SECONDS`) | download 600 s low-speed window; fasterq 7200; pigz 1800; quant 7200 | curl/fasterq/pigz/kallisto bounds |
+| `AMALGKIT_TEMP_ROOT` / `AMALGKIT_CACHE_ROOT` | `<data-root>/.tmp` / `.cache` | Producer `TMPDIR` / `XDG_CACHE_HOME`; uv's cache stays at its default unless `AMALGKIT_UV_CACHE_DIR` is set |
+| `AMALGKIT_CAFFEINATE` | `yes` | Re-execute under `caffeinate -dims` unless already under `caffeinate` |
 
-The launcher takes the campaign lock at
-`<data-root>/results/.full_campaign.lock`, refuses to run while another
-producer holds it, and installs a single-campaign downstream runner
-(merge → wsfilter → finalize → sanity) that starts only after the producer
-exits cleanly.
+`AMALGKIT_PIPELINE_PROFILE` and `AMALGKIT_PIPELINE_HOST_CPUS` are retired (the
+launcher prints a note). One launch runs preflight, then the producer; exit 75
+leads to bounded retry passes, and only a drained producer (exit 0) is followed
+by merge → wsfilter → finalize → sanity under
+`python -m metainformant.rna.engine.campaign_lock run --kind finalization`. The
+launcher itself takes no lock: it refuses to start (73) while another writer
+holds `.campaign.flock` or another launcher is live in
+`<data-root>/results/full_campaign.status` (verified by PID and process start
+time), and keeps that status file only for humans and that check. Child
+processes start with default SIGINT/SIGQUIT handling; the launcher forwards
+INT/TERM/HUP after a grace period and exits 130/143/129.
 
 The producer itself (`scripts/rna/run_all_species.py`, `process_species.py`)
 holds the writer `flock` on `<data-root>/.campaign.flock` for its whole life;
@@ -111,8 +127,9 @@ reports the holder (exit 0 quiescent, 73 busy). Producer exit codes:
 | 69 | Environment failure: preflight, cohort refusal, or the environment circuit breaker (`AMALGKIT_ENV_FAILURE_TRIP`, default 5 consecutive EPERM/EACCES/EROFS/ENXIO/ENOSPC failures) |
 | 70 | Internal error |
 
-The launcher starts finalization only after exit 0, so a run that ends with
-retryable sample failures (75) leaves finalization to a later run. Each
+The launcher starts finalization only after exit 0, so a run that still ends
+with retryable work (75) after its retry passes leaves finalization to a later
+run. Each
 producer run logs INFO to `<data-root>/logs/run_all_species_<utc>_<pid>.log`.
 
 ## Disk-throttle behavior
@@ -128,9 +145,9 @@ wait.
 
 The orchestrator is resume-safe: SQLite progress DB (`PRAGMA quick_check` must
 pass), `.part` transfer files, and cached SRA inputs are all reused on restart.
-`scripts/checkpoint_full_campaign.sh` stops the launcher-managed producer tree
-at a resume-safe checkpoint (it reads the lock-dir PID; a bare
-`run_all_species.py` process has no lock and must be stopped manually). The
+`scripts/checkpoint_full_campaign.sh` stops the launcher recorded in
+`results/full_campaign.status` (or else the live writer-lock holder, such as a
+bare `run_all_species.py`) and its process tree at a resume-safe checkpoint. The
 resume sweep re-audits every recorded quantification under the `preserve`
 policy and re-queues what it cannot certify current; that is the audit working,
 not data loss. All hashed provenance artifacts are content-deterministic: the
