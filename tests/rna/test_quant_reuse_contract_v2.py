@@ -56,10 +56,19 @@ SPECIES = "test_species"
 ACCESSION = "SRR123"
 INDEX_BYTES = b"deterministic kallisto index fixture bytes\n" * 64
 CONFIG_BYTES = b"species_list: [Test_species]\nthreads: 1\n"
+# A hypothetical later Amalgkit build. It must never equal the real pin, or a
+# "bump" would be a no-op and every drift assertion below would test nothing.
 BUMPED_RUNTIME = {
-    "REQUIRED_AMALGKIT_VERSION": "0.16.108",
-    "AMALGKIT_RELEASE_TAG": "master@1d1566638abe",
-    "AMALGKIT_SOURCE_REVISION": "1d1566638abe32e79ee262193bb88769c3482e76",
+    "REQUIRED_AMALGKIT_VERSION": "0.16.999",
+    "AMALGKIT_RELEASE_TAG": "master@0123456789ab",
+    "AMALGKIT_SOURCE_REVISION": "0123456789ab" + "c" * 28,
+}
+# The runtime recorded by every sidecar on the canonical data root (the pin
+# before the 0.16.108 upgrade).
+PREVIOUS_PIN_RUNTIME = {
+    "amalgkit_version": "0.16.60",
+    "amalgkit_release_tag": "v0.16.60",
+    "amalgkit_source_revision": "c656a52aacdcee6fd3bf7e8031769ca957204ebc",
 }
 
 
@@ -69,7 +78,17 @@ def _sha(data: bytes) -> str:
 
 def _bump_runtime(monkeypatch: pytest.MonkeyPatch) -> None:
     for name, value in BUMPED_RUNTIME.items():
+        assert getattr(provenance, name) != value, f"BUMPED_RUNTIME[{name!r}] equals the real pin"
         monkeypatch.setattr(provenance, name, value)
+
+
+def _record_runtime(sample: Path, runtime: dict[str, str]) -> None:
+    """Rewrite a sidecar's runtime fields, as an output of an older Amalgkit build would carry them."""
+
+    sidecar = sample / QUANT_PROVENANCE_FILENAME
+    payload = json.loads(sidecar.read_text())
+    payload.update(runtime)
+    sidecar.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
 
 
 class Root:
@@ -718,6 +737,52 @@ def test_resume_keeps_outputs_whose_config_checkout_was_deleted(
     assert orchestrator._register_reuse_context("other_species", current, tmp_path / "alias.yaml") is None
 
 
+def test_previous_pin_outputs_resume_as_drift_without_requantification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Outputs of the previous pin (0.16.60, as on the canonical root) survive the upgrade to the current pin."""
+
+    from metainformant.rna.engine.streaming_orchestrator import (
+        StreamingPipelineOrchestrator,
+    )
+
+    assert provenance.pinned_amalgkit_runtime()["amalgkit_version"] != PREVIOUS_PIN_RUNTIME["amalgkit_version"]
+    root = Root(tmp_path, accessions=(ACCESSION, "SRR124"))
+    for accession in (ACCESSION, "SRR124"):
+        _record_runtime(root.sample(accession), PREVIOUS_PIN_RUNTIME)
+    config_dir = tmp_path / "current-checkout"
+    config_dir.mkdir()
+    current = config_dir / root.repo_config.name
+    current.write_bytes(CONFIG_BYTES)
+    root.repo_config.unlink()  # the recorded checkout is gone too, as for the canonical sidecars
+
+    cohort = classify_cohort_quantification(root.sample(), root.expectation(), verify_content=True)
+    assert cohort["status"] == QUANT_STATUS_VERSION_DRIFT
+    assert cohort["observed_amalgkit_version"] == "0.16.60"
+
+    monkeypatch.setenv("AMALGKIT_DATA_ROOT", str(root.data))
+    monkeypatch.delenv("AMALGKIT_REQUANTIFICATION_POLICY", raising=False)
+    orchestrator = StreamingPipelineOrchestrator(config_dir, tmp_path / "logs", db_path=tmp_path / "progress.db")
+    assert orchestrator.requantification_policy == "preserve"
+    orchestrator.db.init_species(SPECIES, [ACCESSION, "SRR124"])
+    quant_dir = root.data / SPECIES / "work" / "quant"
+    assert orchestrator._register_reuse_context(SPECIES, current, current) is not None
+    # The producer's one-pass resume reconcile...
+    summary = orchestrator._reconcile_legacy_species(SPECIES, current, quant_dir)
+    assert summary["classified"] == 2
+    assert sorted(orchestrator.db.get_samples(SPECIES, "quantified")) == [ACCESSION, "SRR124"]
+    # ...and the public ProgressDB.reconcile both promote drift outputs.
+    for accession in (ACCESSION, "SRR124"):
+        orchestrator.db.set_state(SPECIES, accession, "pending")
+    assert orchestrator.db.reconcile(SPECIES, quant_dir, **orchestrator._reuse_kwargs(SPECIES)) == 2
+    orchestrator._reset_non_current_quantified_states(SPECIES)
+    for accession in (ACCESSION, "SRR124"):
+        assert orchestrator.db.get_state(SPECIES, accession) == "quantified"
+        assert orchestrator.is_quantified(SPECIES, accession)
+        recorded = json.loads((root.sample(accession) / QUANT_PROVENANCE_FILENAME).read_text())
+        assert recorded["amalgkit_version"] == "0.16.60"  # the resume never rewrites the sidecar
+
+
 # ---------------------------------------------------------------------------
 # Real canonical outputs (copied fixtures; skipped when absent so CI stays hermetic)
 # ---------------------------------------------------------------------------
@@ -770,22 +835,25 @@ def test_real_legacy_outputs_are_reusable_under_the_current_repo_config(real_api
         sidecar = json.loads((sample / QUANT_PROVENANCE_FILENAME).read_text())
         assert sidecar["config_path"].startswith("/Volumes/external_drive/Git/")  # the retired, deleted checkout
         assert not (sample / provenance.RESTORED_INPUTS_DIR).exists()
+        assert {key: sidecar[key] for key in PREVIOUS_PIN_RUNTIME} == PREVIOUS_PIN_RUNTIME
         result = context.classify(sample, verify_content=True)
-        assert result["status"] == QUANT_STATUS_CURRENT, result
+        # Produced by the previous pin: reusable as drift under the current one, never re-quantified.
+        assert result["status"] == QUANT_STATUS_VERSION_DRIFT, result
         assert result["evidence"] == {
             "kind": EVIDENCE_REFERENCE_MANIFEST,
             "manifest": "relative",
             "index_paths": "rerooted",
         }
         legacy = classify_quantification(sample, run, expected_config_sha256=context.config_sha256)
-        assert legacy["status"] == QUANT_STATUS_CURRENT
+        assert legacy["status"] == QUANT_STATUS_VERSION_DRIFT
 
 
 def test_real_restored_witness_output_is_reusable(real_apis_root: Path) -> None:
     context = _apis_context(PROJECT_CONFIG_DIR / "amalgkit_apis_mellifera.yaml")
     sample = real_apis_root / "apis_mellifera/work/quant" / APIS_WITNESS_RUN
     result = context.classify(sample, verify_content=True)
-    assert result["status"] == QUANT_STATUS_CURRENT, result
+    assert result["observed_amalgkit_version"] == PREVIOUS_PIN_RUNTIME["amalgkit_version"]
+    assert result["status"] == QUANT_STATUS_VERSION_DRIFT, result
     assert result["evidence"] == {"kind": EVIDENCE_RESTORED_WITNESS}
 
 

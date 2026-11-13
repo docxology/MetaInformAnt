@@ -35,7 +35,6 @@ from metainformant.core.utils.logging import get_logger
 from metainformant.rna.core.sample_utils import find_quantification_file
 from metainformant.rna.engine.provenance import (
     QUANT_PROVENANCE_FILENAME,
-    QUANT_STATUS_CURRENT,
     REUSABLE_QUANT_STATUSES,
     classify_quantification,
 )
@@ -1179,10 +1178,15 @@ class ProgressDB:
         expected_config_sha256: str | None = None,
         index_digests: IndexDigestCache | None = None,
     ) -> int:
-        """Reconcile only provenance-qualified current quantification outputs.
+        """Reconcile only provenance-qualified reusable quantification outputs.
 
-        Readable abundance files without a current provenance sidecar remain
-        visible on disk but are not promoted to ``quantified`` in the DB.
+        Reusable means ``current`` or ``version_drift_compatible``: an output
+        whose contract verifies but which a different Amalgkit build produced
+        (for example every 0.16.60 output after the 0.16.108 pin) is promoted,
+        exactly as :meth:`reconcile_outputs` does, so an Amalgkit bump never
+        turns valid work back into pending tasks. Readable abundance files
+        without a reusable provenance sidecar remain visible on disk but are
+        not promoted to ``quantified`` in the DB.
 
         Args:
             species: Species name.
@@ -1228,7 +1232,7 @@ class ProgressDB:
                     expected_config_sha256=expected_config_sha256,
                     index_digests=digests,
                 )
-                if classification.get("status") == QUANT_STATUS_CURRENT:
+                if classification.get("status") in REUSABLE_QUANT_STATUSES:
                     reconciled.append(subdir.name)
                 else:
                     rejected.append((subdir.name, classification.get("status", "unknown")))
@@ -1241,7 +1245,7 @@ class ProgressDB:
             logger.info(f"Reconciled {len(reconciled)} quantified samples for {species}")
         if rejected:
             logger.info(
-                "Left %d readable but non-current quantifications visible for %s: %s",
+                "Left %d readable but non-reusable quantifications visible for %s: %s",
                 len(rejected),
                 species,
                 ", ".join(f"{sample}={status}" for sample, status in rejected[:10]),
