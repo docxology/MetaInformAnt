@@ -152,8 +152,6 @@ def _species_yaml(entry: SpeciesEntry, clade: str) -> str:
         f"log_dir: {base}/logs",
         "threads: 16",
         "",
-        "auto_install_amalgkit: true",
-        "",
         "filters:",
         "  require_tissue: false",
         "",

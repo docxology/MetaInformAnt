@@ -26,22 +26,33 @@ def check_amalgkit_availability() -> Tuple[bool, str]:
     return available, msg
 
 
-def ensure_required_amalgkit(auto_install: bool = True) -> Tuple[bool, str]:
-    """Ensure the required upstream amalgkit CLI is installed and current."""
+def ensure_required_amalgkit(auto_install: bool = False) -> Tuple[bool, str]:
+    """Check that the pinned upstream Amalgkit build is installed; never install it.
+
+    Args:
+        auto_install: Accepted for configurations written for earlier releases
+            and ignored. Passing true logs a one-time warning; nothing is ever
+            installed, upgraded or downgraded at runtime.
+
+    Returns:
+        Tuple of (ok, message). A failure message carries the provisioning hint
+        ``uv sync --frozen --extra rna``.
+    """
     from metainformant.rna.amalgkit.amalgkit import (
-        AMALGKIT_INSTALL_SPEC,
+        AMALGKIT_SYNC_HINT,
         REQUIRED_AMALGKIT_VERSION,
         ensure_cli_available,
+        warn_auto_install_ignored,
     )
 
-    ok, msg, install_record = ensure_cli_available(auto_install=auto_install, min_version=REQUIRED_AMALGKIT_VERSION)
+    if auto_install:
+        warn_auto_install_ignored()
+    ok, msg, _version_info = ensure_cli_available(min_version=REQUIRED_AMALGKIT_VERSION)
     if ok:
         return True, msg
-
-    install_hint = f"Install with: uv pip install --upgrade {AMALGKIT_INSTALL_SPEC}"
-    if install_record and install_record.get("attempted"):
-        return False, f"{msg}. Auto-install attempted from {AMALGKIT_INSTALL_SPEC}. {install_hint}"
-    return False, f"{msg}. {install_hint}"
+    if AMALGKIT_SYNC_HINT not in msg:
+        msg = f"{msg}. Run `{AMALGKIT_SYNC_HINT}`."
+    return False, msg
 
 
 def check_quantification_tools() -> Dict[str, Tuple[bool, str]]:
@@ -262,7 +273,7 @@ def check_step_dependencies(step_name: str, params: Dict[str, Any], config: Any)
         "sanity",
     }
     if step_name in amalgkit_steps:
-        ok, msg = ensure_required_amalgkit(auto_install=bool(getattr(config, "auto_install_amalgkit", True)))
+        ok, msg = ensure_required_amalgkit(auto_install=bool(getattr(config, "auto_install_amalgkit", False)))
         if not ok:
             return False, f"Required amalgkit CLI unavailable: {msg}"
 

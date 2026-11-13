@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import gzip
 import hashlib
-import os
 import random
 import threading
 import time
@@ -12,7 +11,6 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from uuid import uuid4
 
 import pytest
 
@@ -206,18 +204,17 @@ def test_publication_serialization_has_a_concurrent_negative_control(tmp_path: P
 @pytest.mark.external_tool
 def test_real_cross_volume_publication_preserves_source_and_replay(
     tmp_path: Path,
+    staging_bulk_dir: Callable[[str], Path],
 ) -> None:
     from metainformant.rna.retrieval.ena_staging import (
         StagingError,
         publish_verified_file,
     )
 
-    bulk = os.environ.get("AMALGKIT_STAGING_TEST_BULK_ROOT")
-    if not bulk:
-        pytest.skip("Set AMALGKIT_STAGING_TEST_BULK_ROOT for an isolated cross-volume pilot")
-    root = Path(bulk)
+    # The fixture removes this directory at teardown and fails if it remains.
+    destination_dir = staging_bulk_dir("ssd-publication-pilot")
+    root = destination_dir.parent
     assert root.is_dir() and root.stat().st_dev != tmp_path.stat().st_dev
-    destination_dir = root / f"ssd-publication-pilot-{uuid4().hex}"
     destination_dir.mkdir()
     source = tmp_path / "source.fastq.gz"
     source.write_bytes(gzip.compress(random.Random(71).randbytes(8 * 1024**2), mtime=0))

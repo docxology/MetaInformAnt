@@ -196,7 +196,7 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
         step_params: Dict[str, Any] = {
             "out_dir": str(config.work_dir),
         }
-        # Amalgkit 0.16.60's native NCBI taxonomy database is shared read-only
+        # Amalgkit's native NCBI taxonomy database is shared read-only
         # workflow infrastructure.  A campaign may provide one validated
         # directory through the environment so metadata/integrate/getfastq do
         # not rebuild the multi-million-row SQLite database once per species.
@@ -209,7 +209,7 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
         if config.extra_config.get("redo"):
             step_params["redo"] = "yes"
         # All current commands accept a thread budget except cstmm, which is
-        # deliberately single-process in Amalgkit 0.16.x.
+        # deliberately single-process in the pinned Amalgkit build.
         if step != "cstmm":
             step_params["threads"] = config.threads
         # Species is not a valid argument for commands operating on a single
@@ -631,7 +631,7 @@ def prepare_reference_genome(config: AmalgkitWorkflowConfig) -> bool:
 
         # 1. Define paths
         index_dir = config.work_dir / "index"
-        # Amalgkit 0.16.60 resolves kallisto indexes using the exact
+        # Amalgkit resolves kallisto indexes using the exact
         # ``<species>.idx`` stem (see ``_find_species_prefixed_files`` in
         # ``amalgkit.quant``), resolved against non-symlink real paths.
         index_file = index_dir / f"{species_name}.idx"
@@ -718,11 +718,10 @@ def prepare_reference_genome(config: AmalgkitWorkflowConfig) -> bool:
         index_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Building kallisto index at {index_file}...")
 
-        kallisto_cmd = ["kallisto", "index", "-i", str(index_file), str(dest_file)]
+        # A private -T directory keeps concurrent builds from sharing ./tmp.
+        from metainformant.rna.amalgkit.genome_prep import run_kallisto_index
 
-        import subprocess
-
-        result = subprocess.run(kallisto_cmd, capture_output=True, text=True)
+        result = run_kallisto_index(dest_file, index_file)
 
         if result.returncode == 0 and index_file.is_file() and index_file.stat().st_size > 0:
             logger.info("Genome index built successfully")

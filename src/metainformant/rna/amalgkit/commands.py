@@ -1,4 +1,4 @@
-"""Canonical command names for the supported Amalgkit release."""
+"""Canonical command names and CLI option tables for the pinned Amalgkit build."""
 
 from __future__ import annotations
 
@@ -19,10 +19,16 @@ CURRENT_AMALGKIT_STEPS = (
     "dataset",
 )
 
-# The supported Amalgkit release uses a shared output/metadata interface but
-# each command accepts a different subset of options. Keeping the allow-list
-# here prevents MetaInformAnt-only settings from leaking into the subprocess
-# command line and turning a valid workflow plan into an argparse failure.
+# The pinned Amalgkit build uses a shared output/metadata interface but each
+# command accepts a different subset of options. Keeping the allow-list here
+# prevents MetaInformAnt-only settings from leaking into the subprocess command
+# line and turning a valid workflow plan into an argparse failure.
+#
+# The lists mirror the installed parser (``amalgkit.main.build_main_parser``)
+# option for option, excluding hidden ``obsolete_*`` aliases.
+# tests/rna/test_amalgkit_cli_surface.py diffs them against the installed parser
+# in both directions, so a pin bump that adds, renames or removes an upstream
+# option fails until this table is updated deliberately.
 SUPPORTED_CLI_OPTIONS: dict[str, frozenset[str]] = {
     "metadata": frozenset(
         {
@@ -43,6 +49,11 @@ SUPPORTED_CLI_OPTIONS: dict[str, frozenset[str]] = {
             "entrez_email",
             "resolve_names",
             "ncbi_metadata_max_concurrency",
+            "accession",
+            "gsa_metadata_max_concurrency",
+            "gsa_metadata_timeout_seconds",
+            "ncbi_metadata_timeout_seconds",
+            "source",
         }
     ),
     "select": frozenset(
@@ -124,6 +135,17 @@ SUPPORTED_CLI_OPTIONS: dict[str, frozenset[str]] = {
             "read_name",
             "entrez_additional_search_term",
             "tol",
+            "contam_filter_chunk_spots",
+            "dependency_probe_timeout_seconds",
+            "gsa_download_max_concurrency",
+            "gsa_metadata_max_concurrency",
+            "gsa_metadata_timeout_seconds",
+            "ncbi_metadata_timeout_seconds",
+            "sampling_method",
+            "sampling_private",
+            "sampling_seed",
+            "tool_timeout_seconds",
+            "treat_identical_paired_as_single",
         }
     ),
     "quant": frozenset(
@@ -145,9 +167,17 @@ SUPPORTED_CLI_OPTIONS: dict[str, frozenset[str]] = {
             "build_index",
             "index_lock_poll",
             "index_lock_timeout",
+            "dependency_probe_timeout_seconds",
+            "fragment_length_file",
+            "fragment_length_mean",
+            "fragment_length_policy",
+            "fragment_length_sd",
+            "tool_timeout_seconds",
         }
     ),
-    "merge": frozenset({"out_dir", "metadata", "threads", "internal_jobs", "internal_cpu_budget"}),
+    "merge": frozenset(
+        {"out_dir", "metadata", "threads", "internal_jobs", "internal_cpu_budget", "legacy_kallisto_run_info"}
+    ),
     "busco": frozenset(
         {
             "out_dir",
@@ -166,6 +196,7 @@ SUPPORTED_CLI_OPTIONS: dict[str, frozenset[str]] = {
             "tool_args",
             "download_dir",
             "download_lock_dir",
+            "tool_timeout_seconds",
         }
     ),
     "wsfilter": frozenset(
@@ -188,9 +219,32 @@ SUPPORTED_CLI_OPTIONS: dict[str, frozenset[str]] = {
             "norm",
             "margin_threshold",
             "robust_z_threshold",
+            "max_filter_iterations",
+            "min_common_genes",
+            "reference_exclusion",
+            "small_group_policy",
+            "tau_balance_projects",
+            "tau_unit",
         }
     ),
-    "cstmm": frozenset({"out_dir", "metadata", "redo", "orthogroup_table", "dir_busco", "dir_count", "tmm_backend"}),
+    "cstmm": frozenset(
+        {
+            "out_dir",
+            "metadata",
+            "redo",
+            "orthogroup_table",
+            "dir_busco",
+            "dir_count",
+            "tmm_backend",
+            "single_copy_threshold",
+            "tmm_allow_unconverged",
+            "tmm_imputation_max_iter",
+            "tmm_imputation_rank",
+            "tmm_imputation_scale",
+            "tmm_imputation_tol",
+            "tmm_reference_diagnostics",
+        }
+    ),
     "csfilter": frozenset(
         {
             "out_dir",
@@ -209,6 +263,13 @@ SUPPORTED_CLI_OPTIONS: dict[str, frozenset[str]] = {
             "missing_strategy",
             "margin_threshold",
             "robust_z_threshold",
+            "min_common_genes",
+            "reference_exclusion",
+            "robust_z_scope",
+            "single_copy_threshold",
+            "small_group_policy",
+            "tau_balance_projects",
+            "tau_unit",
         }
     ),
     "finalize": frozenset(
@@ -244,6 +305,17 @@ SUPPORTED_CLI_OPTIONS: dict[str, frozenset[str]] = {
             "latent_k_max",
             "latent_max_iter",
             "latent_tol",
+            "batch_categorical_covariates",
+            "batch_continuous_covariates",
+            "batch_failure_policy",
+            "combatseq_group_model",
+            "latent_k_selection",
+            "ruvseq_control_file",
+            "ruvseq_k_selection",
+            "sva_estimation_method",
+            "sva_irw_iterations",
+            "tau_balance_projects",
+            "tau_unit",
         }
     ),
     "sanity": frozenset(
@@ -286,6 +358,7 @@ SUPPORTED_CLI_OPTIONS: dict[str, frozenset[str]] = {
             "output_metadata",
             "remove_tmp",
             "accurate_size",
+            "tool_timeout_seconds",
         }
     ),
     "rerun": frozenset(
@@ -324,3 +397,68 @@ PER_SPECIES_STEPS = (
 
 CROSS_SPECIES_STEPS = ("cstmm", "csfilter")
 NO_THREAD_STEPS = frozenset({"cstmm"})
+
+# Options whose parser type is Amalgkit's ``strtobool`` (``metavar yes|no``).
+# A boolean value for one of these is emitted as ``--option yes|no``; any other
+# boolean option is a ``store_true`` switch and is emitted bare when true. The
+# same name can differ by command (``metadata --merge yes|no`` versus
+# ``sanity --merge``), so the table is per command.
+YES_NO_CLI_OPTIONS: dict[str, frozenset[str]] = {
+    "metadata": frozenset({"merge", "redo", "resolve_names"}),
+    "select": frozenset(),
+    "getfastq": frozenset(
+        {
+            "aws",
+            "contam_filter",
+            "ddbj",
+            "dump_print",
+            "ena",
+            "fasterq_size_check",
+            "fastp",
+            "fastp_print",
+            "gcp",
+            "ncbi",
+            "redo",
+            "remove_sra",
+            "remove_tmp",
+            "rrna_filter",
+            "sampling_private",
+            "treat_identical_paired_as_single",
+        }
+    ),
+    "quant": frozenset({"build_index", "clean_fastq", "redo"}),
+    "merge": frozenset(),
+    "busco": frozenset({"redo"}),
+    "cstmm": frozenset({"redo", "tmm_allow_unconverged", "tmm_reference_diagnostics"}),
+    "wsfilter": frozenset({"one_outlier_per_iter", "plot_intermediate", "redo", "tau_balance_projects"}),
+    "csfilter": frozenset({"redo", "tau_balance_projects"}),
+    "finalize": frozenset({"clip_negative", "maintain_zero", "redo", "tau_balance_projects"}),
+    "sanity": frozenset({"quiet", "strict"}),
+    "rerun": frozenset({"dry_run", "include_warnings", "redo"}),
+    "integrate": frozenset({"accurate_size", "remove_tmp"}),
+    "dataset": frozenset({"overwrite"}),
+}
+
+# Keys that MetaInformAnt configurations and planners carry next to Amalgkit
+# options but that are never Amalgkit flags. The command builder drops them
+# quietly; any other key that no Amalgkit command accepts is dropped with a
+# warning, because it is either a typo or an option this build does not have.
+METAINFORMANT_ONLY_STEP_KEYS = frozenset(
+    {
+        "auto_install_amalgkit",
+        "extra_params",
+        "filters",
+        "genome",
+        "jobs",
+        "log_dir",
+        "num_download_workers",
+        "out",
+        "progress_style",
+        "progress_update_interval",
+        "show_progress",
+        "species_list",
+        "taxon_id",
+        "tissue",
+        "work_dir",
+    }
+)

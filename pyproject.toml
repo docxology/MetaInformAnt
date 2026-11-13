@@ -50,17 +50,21 @@ scientific = [
     "networkx>=3.2",
     "numba>=0.59.0",  # JIT compilation, must be >=0.59 for Python 3.12
     "llvmlite>=0.43.0",  # Required by numba, must be >=0.43 for Python 3.12
-    "umap-learn>=0.5.4",
+    "umap-learn>=0.6.0",
     "scanpy>=1.9.6",  # Single-cell analysis
     "anndata>=0.10.0",  # Annotated data structures
 ]
 
-# Current RNA workflow toolchain. Amalgkit is sourced from its immutable
-# release tag. The runtime pin is separate from output reuse: compatible
-# quantifications remain eligible across version drift when their non-version
-# contract is unchanged.
+# Current RNA workflow toolchain. Amalgkit 0.16.108 is pinned by immutable
+# commit: upstream tags and bioconda only publish x.y.0 releases. Keep this
+# commit equal to the one in the `all` extra and to AMALGKIT_SOURCE_REVISION in
+# src/metainformant/rna/amalgkit/_amalgkit_impl.py (tests/rna/test_amalgkit_pin.py
+# enforces it). Provision with `uv sync --frozen --extra rna`; MetaInformAnt
+# never installs Amalgkit at runtime. The runtime pin is separate from output
+# reuse: compatible quantifications remain eligible across version drift when
+# their non-version contract is unchanged.
 rna = [
-    "amalgkit @ git+https://github.com/kfuku52/amalgkit@v0.16.60",
+    "amalgkit @ git+https://github.com/kfuku52/amalgkit@1d1566638abe32e79ee262193bb88769c3482e76",
 ]
 
 # Machine learning and advanced analytics
@@ -68,7 +72,7 @@ ml = [
     "scipy>=1.11.0",
     "scikit-learn>=1.3.0",
     "numba>=0.59.0",  # Required by umap-learn, must be >=0.59 for Python 3.12
-    "umap-learn>=0.5.4",
+    "umap-learn>=0.6.0",
     "optuna>=3.4.0",  # Hyperparameter optimization
     "joblib>=1.3.0",  # Parallel processing
     "xgboost>=2.0.0",  # Gradient boosting
@@ -96,7 +100,7 @@ singlecell = [
     "scipy>=1.11.0",
     "scikit-learn>=1.3.0",
     "numba>=0.59.0",  # Required by umap-learn, must be >=0.59 for Python 3.12
-    "umap-learn>=0.5.4",
+    "umap-learn>=0.6.0",
     "seaborn>=0.13.0",
     "leidenalg>=0.10.0",  # Leiden clustering
     "python-louvain>=0.16",  # Louvain clustering (imported as `community`)
@@ -124,6 +128,7 @@ dev = [
     "black==26.10.1",
     "isort==8.0.1",
     "flake8==7.3.0",
+    "ruff==0.17.5",
     "mypy>=1.8.0",
     "types-defusedxml>=0.7.0.20240218",
     "types-psutil>=7.0.0",
@@ -177,13 +182,13 @@ performance = [
 
 # All optional dependencies combined
 all = [
-    "amalgkit @ git+https://github.com/kfuku52/amalgkit@v0.16.60",
+    "amalgkit @ git+https://github.com/kfuku52/amalgkit@1d1566638abe32e79ee262193bb88769c3482e76",
     "scipy>=1.11.0",
     "scikit-learn>=1.3.0",
     "seaborn>=0.13.0",
     "statsmodels>=0.14.0",
     "networkx>=3.2",
-    "umap-learn>=0.5.4",
+    "umap-learn>=0.6.0",
     "scanpy>=1.9.6",
     "anndata>=0.10.0",
     "python-louvain>=0.16",
@@ -235,8 +240,9 @@ filterwarnings = [
     "ignore::PendingDeprecationWarning",
     "ignore::UserWarning",
     "ignore::ImportWarning:umap.*",  # Ignore umap tensorflow import warning
-    # Leiden 0.10.2 docstring escapes: keep warnings visible until Louvain
-    # supports the igraph version required by the fixed Leiden release.
+    # leidenalg < 0.12 ships docstrings with invalid escape sequences. uv.lock
+    # resolves leidenalg 0.12.0 (igraph 1.0), whose sources compile without
+    # warnings; this entry only keeps an older install from failing at import.
     'default:invalid escape sequence:SyntaxWarning:.*leidenalg[\\/](VertexPartition|Optimiser)$',
     # Warn about any mock usage as it violates our policy
     "error::pytest.PytestUnraisableExceptionWarning:.*mock.*",
@@ -295,6 +301,18 @@ exclude = '''
   | dist
 )/
 '''
+
+# Ruff linting; the version is pinned in the dev extra and dev group, so
+# `uv run ruff check` uses the locked build.
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+# Ruff 0.17 widened its default rule set; keep the long-standing default
+# selection (pyflakes plus the E4/E7/E9 pycodestyle subset) that src and tests
+# already pass. Widen deliberately, one rule family at a time.
+select = ["E4", "E7", "E9", "F"]
 
 # Flake8 code quality
 [tool.flake8]
@@ -422,6 +440,7 @@ constraint-dependencies = [
 [dependency-groups]
 dev = [
     "pre-commit>=4.3.0",
+    "ruff==0.17.5",
 ]
 
 # Test dependency groups for different test scenarios

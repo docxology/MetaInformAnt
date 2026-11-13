@@ -113,12 +113,12 @@ class TestCompetingRisks:
         result = competing_risks(times=[5.0, 5.0, 10.0], events=[1, 1, 0], event_types=[1, 2, 0])
 
         ci = result["cumulative_incidence_per_type"]
-        assert set(ci) == {1, 2}
-        assert ci[1] == pytest.approx([(5.0, 1 / 3)])
-        assert ci[2] == pytest.approx([(5.0, 1 / 3)])
         hazards = result["cause_specific_hazards"]
-        assert hazards[1] == pytest.approx([(5.0, 1 / 3)])
-        assert hazards[2] == pytest.approx([(5.0, 1 / 3)])
+        assert set(ci) == set(hazards) == {1, 2}
+        # pytest >= 9.2 rejects approx() on nested containers; compare times exactly and values approximately.
+        for curve in (ci[1], ci[2], hazards[1], hazards[2]):
+            assert [time for time, _ in curve] == [5.0]
+            assert [value for _, value in curve] == pytest.approx([1 / 3])
         # Survival drops to 1/3 at t=5; the t=10 observation is censored-only,
         # so it is recorded with unchanged survival
         overall = result["overall_survival"]

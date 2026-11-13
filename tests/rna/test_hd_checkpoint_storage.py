@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import importlib.util
 import json
-import os
 import shutil
 import sys
 from collections.abc import Callable
 from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING
-from uuid import uuid4
 
 import pytest
 
@@ -44,16 +42,18 @@ def test_real_checkpoint_preserves_restore_contract_and_raw_order(
     checkpoint_module: ModuleType,
     bulk_restore: bool,
     monkeypatch: pytest.MonkeyPatch,
+    staging_bulk_dir: Callable[[str], Path],
 ) -> None:
     # Given a complete native input and an isolated operations/control tree.
-    if bulk_restore and "AMALGKIT_STAGING_TEST_BULK_ROOT" not in os.environ:
-        pytest.skip("AMALGKIT_STAGING_TEST_BULK_ROOT is required for cross-volume checkpoint qualification")
+    # The bulk copy is allocated (and skipped when the bulk root is unset)
+    # before any work; the fixture removes it at teardown and fails if it remains.
+    bulk_data = staging_bulk_dir("hd-checkpoint") if bulk_restore else None
     fixture = native_acquisition_factory()
     data, work = fixture.data, fixture.work
-    if bulk_restore:
-        parent = Path(os.environ["AMALGKIT_STAGING_TEST_BULK_ROOT"])
+    if bulk_data is not None:
+        parent = bulk_data.parent
         assert parent.is_dir() and parent.stat().st_dev != tmp_path.stat().st_dev
-        data = parent / ("hd-checkpoint-" + uuid4().hex)
+        data = bulk_data
         shutil.copytree(fixture.data, data)
         work = data / "test_species/work"
         monkeypatch.setenv("AMALGKIT_DATA_ROOT", str(data))

@@ -11,6 +11,7 @@ import gzip
 import shutil
 import ssl
 import subprocess
+import tempfile
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -240,6 +241,46 @@ def prepare_transcriptome_for_kallisto(transcriptome_fasta: Path, output_fasta: 
         return None
 
 
+def run_kallisto_index(
+    transcriptome_fasta: Path,
+    index_path: Path,
+    *,
+    kallisto: str = "kallisto",
+    kmer_size: int | None = None,
+    timeout: float | None = None,
+) -> subprocess.CompletedProcess[str]:
+    """Run ``kallisto index`` with a private temporary directory.
+
+    Without ``-T``, kallisto 0.50+ builds in ``./tmp`` under the current working
+    directory and deletes it afterwards, so concurrent builds started from the
+    same directory (parallel species preparation, xdist workers) remove each
+    other's files and fail with "could not create directory tmp". Each call
+    here gets a fresh directory next to the index, on the same filesystem, and
+    removes it whatever the outcome.
+
+    Args:
+        transcriptome_fasta: Transcript FASTA (plain or gzip).
+        index_path: Index file to write; its parent directory is created.
+        kallisto: kallisto executable.
+        kmer_size: Optional ``-k`` value; kallisto's default (31) when omitted.
+        timeout: Optional subprocess timeout in seconds.
+
+    Returns:
+        The completed process; the caller decides how to treat a non-zero exit.
+    """
+    index_path = Path(index_path)
+    index_path.parent.mkdir(parents=True, exist_ok=True)
+    scratch = Path(tempfile.mkdtemp(prefix=f".{index_path.name}.kallisto-tmp-", dir=index_path.parent))
+    command = [kallisto, "index", "-i", str(index_path), "-T", str(scratch / "tmp")]
+    if kmer_size is not None:
+        command.extend(["-k", str(kmer_size)])
+    command.append(str(transcriptome_fasta))
+    try:
+        return subprocess.run(command, capture_output=True, text=True, timeout=timeout)
+    finally:
+        shutil.rmtree(scratch, ignore_errors=True)
+
+
 def build_kallisto_index(transcriptome_fasta: Path, index_path: Path, **kwargs: Any) -> Optional[Path]:
     """Build Kallisto index."""
     transcriptome_fasta = Path(transcriptome_fasta)
@@ -254,19 +295,14 @@ def build_kallisto_index(transcriptome_fasta: Path, index_path: Path, **kwargs: 
         logger.error("kallisto not found in PATH")
         return None
 
-    kmer_size = kwargs.get("kmer_size", 31)
+    kmer_size = int(kwargs.get("kmer_size", 31))
 
-    index_path.parent.mkdir(parents=True, exist_ok=True)
-
-    cmd = [kallisto_cmd, "index", "-i", str(index_path), "-k", str(kmer_size), str(transcriptome_fasta)]
-
-    try:
-        logger.info(f"Running kallisto index on {transcriptome_fasta}")
-        subprocess.run(cmd, check=True, capture_output=True, text=True)
-        return index_path
-    except subprocess.CalledProcessError as e:
-        logger.error(f"kallisto index failed: {e.stderr}")
+    logger.info(f"Running kallisto index on {transcriptome_fasta}")
+    result = run_kallisto_index(transcriptome_fasta, index_path, kallisto=kallisto_cmd, kmer_size=kmer_size)
+    if result.returncode != 0:
+        logger.error(f"kallisto index failed: {result.stderr}")
         return None
+    return index_path
 
 
 def verify_genome_status(work_dir: Path, species_name: str) -> Dict[str, Any]:

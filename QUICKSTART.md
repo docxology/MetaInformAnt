@@ -227,7 +227,7 @@ Some workflows require external tools:
 
   ```bash
   # Install via UV (automatic with setup.sh --with-amalgkit)
-  uv sync --extra rna  # exact Amalgkit 0.16.60
+  uv sync --frozen --extra rna  # exact Amalgkit 0.16.108 (commit 1d1566638abe)
   ```
 
 ### GWAS Analysis

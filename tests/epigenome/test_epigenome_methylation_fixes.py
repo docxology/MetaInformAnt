@@ -250,9 +250,9 @@ class TestBedgraphLevelScale:
 
         data = load_methylation_bedgraph(path)
 
-        assert [(s.position, s.methylation_level) for s in data["chr1"]] == pytest.approx(
-            [(100, 0.8), (200, 0.2), (300, 0.55)]
-        )
+        # pytest >= 9.2 rejects approx() on nested containers; compare positions and levels separately.
+        assert [s.position for s in data["chr1"]] == [100, 200, 300]
+        assert [s.methylation_level for s in data["chr1"]] == pytest.approx([0.8, 0.2, 0.55])
 
     def test_a_fraction_file_is_left_alone(self, tmp_path: Path) -> None:
         path = _bedgraph(tmp_path, [(100, "0.8"), (200, "0.2"), (300, "1.0")])
@@ -291,7 +291,8 @@ class TestBedgraphLevelScale:
         forced = load_methylation_bedgraph(path, level_scale="fraction")
         automatic = load_methylation_bedgraph(path)
 
-        assert [(s.position, s.methylation_level) for s in forced["chr1"]] == pytest.approx([(100, 0.8), (300, 0.5)])
+        assert [s.position for s in forced["chr1"]] == [100, 300]
+        assert [s.methylation_level for s in forced["chr1"]] == pytest.approx([0.8, 0.5])
         assert [s.methylation_level for s in automatic["chr1"]] == pytest.approx([0.01, 0.02, 0.0])
 
     def test_percent_scale_can_be_forced(self, tmp_path: Path) -> None:

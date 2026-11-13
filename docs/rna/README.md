@@ -2,8 +2,8 @@
 
 MetaInformAnt provides a typed Python workflow layer over the installed
 Amalgkit command line interface. The active contract is discovered from the
-installed Amalgkit version; the local verified environment uses Amalgkit
-0.16.60 and the commands:
+installed Amalgkit version; the pinned environment uses Amalgkit
+0.16.108 (upstream commit 1d1566638abe) and the commands:
 
 `metadata → select → getfastq → integrate → quant → merge → wsfilter → finalize → sanity`
 

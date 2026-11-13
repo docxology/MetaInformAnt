@@ -3,9 +3,9 @@
 ## Context & Intent
 
 - **Path**: `docs/rna/amalgkit/steps` (relative to repo root)
-- **Purpose**: Per-command reference pages for the Amalgkit 0.16.60 workflow:
+- **Purpose**: Per-command reference pages for the pinned Amalgkit (0.16.108) workflow:
   inputs, outputs, options, and common issues per numbered stage.
-- **Domain**: `rna/amalgkit`. CLI source: pinned Amalgkit 0.16.60; Python
+- **Domain**: `rna/amalgkit`. CLI source: pinned Amalgkit 0.16.108; Python
   wrappers in `src/metainformant/rna/`.
 
 ## Virtual Hierarchy
@@ -34,7 +34,7 @@ From the sibling `AGENTS.md` / `README.md` / `SPEC.md`:
 
 - **Diagnose a failing stage**: open the matching numbered page (e.g.
   `06_quant_troubleshooting.md`) before touching `src/metainformant/rna/`.
-- **Document a new option**: confirm against 0.16.60 help output, then update
+- **Document a new option**: confirm against the pinned build's help output, then update
   the numbered page and the table in `README.md`.
 - **Validation**: repo docs checks (`scripts/verify_documentation_code.py`,
   internal-link validation); no dir-local test suite.

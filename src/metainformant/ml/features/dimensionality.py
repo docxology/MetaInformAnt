@@ -173,6 +173,11 @@ def umap_reduction(
     if not HAS_UMAP:
         raise ImportError("umap-learn required for UMAP")
 
+    # Keep the 0.5.x layout unless the caller chooses otherwise (umap-learn >= 0.6
+    # warns when it is implicit and will change the default in a future release).
+    if "optimizer" not in kwargs:
+        kwargs.setdefault("compatibility_layout", True)
+
     # Perform UMAP
     reducer = umap.UMAP(
         n_components=n_components,
