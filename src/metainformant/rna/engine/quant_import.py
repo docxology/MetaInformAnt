@@ -889,18 +889,20 @@ def _stage_and_publish(
         raise FileExistsError(f"destination appeared before publishing: {decision.destination_relpath}")
     staging = quant_dir / f"{STAGING_PREFIX}{decision.accession}-{secrets.token_hex(4)}"
     staging.mkdir()
-    marker = {
-        "schema": STAGING_SCHEMA,
-        "accession": decision.accession,
-        "source": source.label,
-        "pid": os.getpid(),
-        "created_at": _utc_stamp(),
-    }
-    (staging / STAGING_MARKER).write_text(json.dumps(marker, sort_keys=True) + "\n", encoding="utf-8")
-    _fsync_directory(quant_dir)
     staged = staging / decision.accession
-    staged.mkdir()
     try:
+        # Everything after the staging directory exists is inside the cleanup, so a failure (even
+        # writing the marker or creating the sample directory) never leaves a staging tree behind.
+        marker = {
+            "schema": STAGING_SCHEMA,
+            "accession": decision.accession,
+            "source": source.label,
+            "pid": os.getpid(),
+            "created_at": _utc_stamp(),
+        }
+        (staging / STAGING_MARKER).write_text(json.dumps(marker, sort_keys=True) + "\n", encoding="utf-8")
+        _fsync_directory(quant_dir)
+        staged.mkdir()
         copied: list[dict[str, Any]] = []
         for entry in decision.files:
             digest = _copy_verified(sample_dir / entry["name"], staged / entry["name"], entry.get("sha256"))
