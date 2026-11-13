@@ -1,6 +1,6 @@
 # Single-Cell Dimensionality Reduction
 
-The dimensionality-reduction functions live in two modules: `metainformant.singlecell.analysis.pca_methods` (highly variable genes, PCA, ICA, factor analysis) and `metainformant.singlecell.analysis.nonlinear_methods` (neighbor graph, UMAP, t-SNE, diffusion maps, MDS, embedding metrics). `analysis.dimensionality` re-exports both for older imports.
+The dimensionality-reduction functions live in two modules: `metainformant.singlecell.analysis.pca_methods` (highly variable genes, PCA, ICA, factor analysis) and `metainformant.singlecell.analysis.nonlinear_methods` (neighbor graph, UMAP, t-SNE, diffusion maps, MDS, embedding metrics).
 
 ## Conventions
 
@@ -21,7 +21,7 @@ from metainformant.singlecell.analysis.pca_methods import select_hvgs
 # Seurat-style selection (the default flavor)
 data = select_hvgs(data, n_top_genes=2000)
 
-# Other flavors; `method` is an alias of `flavor`
+# Other flavors
 data = select_hvgs(data, n_top_genes=2000, flavor="variance")
 data = select_hvgs(data, n_top_genes=2000, flavor="cell_ranger")
 
@@ -35,7 +35,7 @@ select_hvgs(data, n_top_genes=2000, inplace=True)
 **Parameters:**
 
 - `n_top_genes`: number of genes to flag (default 2000)
-- `flavor` (alias `method`): `"seurat"` (default), `"cell_ranger"`, `"seurat_v3"` or `"variance"`; anything else raises the built-in `ValueError` (this function does not use the package's `ValidationError`)
+- `flavor`: `"seurat"` (default), `"cell_ranger"`, `"seurat_v3"` or `"variance"`; anything else raises the built-in `ValueError` (this function does not use the package's `ValidationError`)
 - `inplace`: keyword-only, default `False`
 
 **Flavors:**
@@ -61,16 +61,16 @@ The function only flags genes; it does not subset the matrix. There are no `min_
 
 ## Principal Component Analysis (PCA)
 
-### compute_pca()
+### pca_reduction()
 
 ```python
-from metainformant.singlecell.analysis.pca_methods import compute_pca
+from metainformant.singlecell.analysis.pca_methods import pca_reduction
 
 # PCA on all genes
-data = compute_pca(data, n_components=50, random_state=42)
+data = pca_reduction(data, n_components=50, random_state=42)
 
 # PCA on the genes flagged by select_hvgs()
-data = compute_pca(data, n_components=50, random_state=42, use_hvgs=True)
+data = pca_reduction(data, n_components=50, random_state=42, use_hvgs=True)
 
 print(f"PC loadings shape: {data.varm['PCs'].shape}")           # genes x components
 print(f"Explained variance: {data.uns['pca']['explained_variance_ratio'][:5]}")
@@ -83,13 +83,11 @@ print(f"Explained variance: {data.uns['pca']['explained_variance_ratio'][:5]}")
 - `scale_data`: standardise every gene before the PCA (default `True`)
 - `use_hvgs`: keyword-only; restrict the PCA to the genes flagged in `data.var['highly_variable']`. It raises `ValueError` when that column is missing, not boolean (or 0/1), has missing values or flags no gene. Scaling, the variance ratios and the component clamp then refer to those genes only, and `varm['PCs']` keeps one row per gene with exact zeros for the genes that were left out
 
-`pca_reduction` is the same function, and `run_pca` is an alias that also accepts a raw `expression_matrix=` and then returns a dictionary.
-
 **Adds to data:**
 
 - `data.obsm['X_pca']` and the `obs` columns `PC1`, `PC2`, ...: cell coordinates
 - `data.varm['PCs']`: gene loadings (genes × components)
-- `data.uns['pca']`: `n_components`, `explained_variance_ratio`, `cumulative_explained_variance`, `singular_values`, `components_shape`, `random_state`, `scaled`, `use_hvgs` and `n_genes_used`. The keys `variance_ratio` and `variance` are aliases of `explained_variance_ratio` (both hold the ratio), and `cumulative_variance` is an alias of `cumulative_explained_variance`
+- `data.uns['pca']`: `n_components`, `explained_variance_ratio`, `cumulative_explained_variance`, `singular_values`, `components_shape`, `random_state`, `scaled`, `use_hvgs` and `n_genes_used`
 
 ### Choosing the Number of Components
 
@@ -141,7 +139,7 @@ compute_neighbors(data, n_neighbors=15, inplace=True)
 
 - `n_neighbors`: neighbors per cell (default 15; the row of each cell also contains the cell itself, as its first entry)
 - `metric`: distance metric passed to scikit-learn (default `"euclidean"`)
-- `use_rep`: with `"X_pca"` (the default) the graph is built on `data.obsm['X_pca']` when `compute_pca` has been run, and on `data.X` otherwise. Any other value also uses `data.X`; no other `obsm` key is looked up
+- `use_rep`: with `"X_pca"` (the default) the graph is built on `data.obsm['X_pca']` when `pca_reduction` has been run, and on `data.X` otherwise. Any other value also uses `data.X`; no other `obsm` key is looked up
 - `n_pcs`: keyword-only; use only the first `n_pcs` principal components
 - `method`: keyword-only; only `"sklearn"` is supported, anything else raises `ValueError`
 - `inplace`: keyword-only, default `False`
@@ -156,14 +154,14 @@ The graph is indexed by cell. `filter_cells` does not update it, so recompute it
 
 ## UMAP
 
-### compute_umap()
+### umap_reduction()
 
 Uniform Manifold Approximation and Projection:
 
 ```python
-from metainformant.singlecell.analysis.nonlinear_methods import compute_umap
+from metainformant.singlecell.analysis.nonlinear_methods import umap_reduction
 
-data = compute_umap(
+data = umap_reduction(
     data,
     n_components=2,        # 1 to 3
     n_neighbors=15,        # 5 to 100
@@ -176,7 +174,7 @@ umap_coords = data.obsm["X_umap"]    # also in data.obs as UMAP1, UMAP2
 
 **Parameters:** `n_components` (1–3), `n_neighbors` (5–100), `min_dist` (0–1), `random_state`, `metric` (default `"euclidean"`) and the keyword-only `n_epochs`. Values outside the ranges raise `ValidationError`. There is no `spread` parameter.
 
-UMAP is fitted on the expression matrix `data.X`, not on the PCA coordinates. When `data.uns['neighbors']` is missing the returned copy also gets a neighbor graph, which UMAP itself does not use. `data.uns['umap']` records the parameters. `umap_reduction` is the same function, and `run_umap` is a wrapper of it without the `n_epochs` argument.
+UMAP is fitted on the expression matrix `data.X`, not on the PCA coordinates. When `data.uns['neighbors']` is missing the returned copy also gets a neighbor graph, which UMAP itself does not use. `data.uns['umap']` records the parameters.
 
 **Note:** Requires the optional `umap-learn` package (installed by the `singlecell` extra); without it the call raises `ImportError`:
 
@@ -186,14 +184,14 @@ uv pip install umap-learn
 
 ## t-SNE
 
-### compute_tsne()
+### tsne_reduction()
 
 t-distributed Stochastic Neighbor Embedding:
 
 ```python
-from metainformant.singlecell.analysis.nonlinear_methods import compute_tsne
+from metainformant.singlecell.analysis.nonlinear_methods import tsne_reduction
 
-data = compute_tsne(
+data = tsne_reduction(
     data,
     n_components=2,
     perplexity=30,
@@ -204,9 +202,9 @@ data = compute_tsne(
 tsne_coords = data.obsm["X_tsne"]    # also in data.obs as tSNE1, tSNE2
 ```
 
-**Parameters:** `n_components`, `perplexity`, `random_state`, `learning_rate` (default 200), `max_iter` (default 1000) and the keyword-only `n_iter` (alias of `max_iter`).
+**Parameters:** `n_components`, `perplexity`, `random_state`, `learning_rate` (default 200), and `max_iter` (default 1000).
 
-t-SNE is fitted on `data.X`; with more than 5000 cells the matrix is first reduced to up to 50 principal components. The perplexity is lowered with a warning when it is not below `(n_cells - 1) / 3`, and `max_iter` is raised to at least 250. `data.uns['tsne']` records the values actually used (`perplexity`, `max_iter`) together with `kl_divergence` and `n_iter`. `tsne_reduction` is the same function without the `n_iter` alias, and `run_tsne` is a wrapper of it.
+t-SNE is fitted on `data.X`; with more than 5000 cells the matrix is first reduced to up to 50 principal components. The perplexity is lowered with a warning when it is not below `(n_cells - 1) / 3`, and `max_iter` is raised to at least 250. `data.uns['tsne']` records the values actually used (`perplexity`, `max_iter`) together with `kl_divergence` and `n_iter`, the number of iterations scikit-learn ran.
 
 ## Diffusion Maps
 
@@ -239,7 +237,7 @@ The edge weights are `1 / (1 + distance)`. The leading eigenvectors come from AR
 
 ### diffusion_map_reduction()
 
-A separate dense implementation that does not use the neighbor graph: a Gaussian kernel over all pairwise distances with the median distance as bandwidth. `diffusion_map_reduction(data, n_components=10, n_neighbors=15, alpha=1.0)` validates `n_components` (2–50), `n_neighbors` (5–100) and `alpha` (0–1), writes the coordinates to `obs` as `DC1`, `DC2`, ... and the parameters to `uns['diffusion_map']`; `n_neighbors` is recorded but not used by the computation. A failure of the eigendecomposition propagates as `numpy.linalg.LinAlgError`.
+A separate dense implementation that does not use the neighbor graph: a Gaussian kernel over all pairwise distances with the median distance as bandwidth. `diffusion_map_reduction(data, n_components=10, alpha=1.0)` validates `n_components` (2–50) and `alpha` (0–1), writes the coordinates to `obs` as `DC1`, `DC2`, ... and the parameters to `uns['diffusion_map']`. A failure of the eigendecomposition propagates as `numpy.linalg.LinAlgError`.
 
 ## Other Embeddings and Metrics
 
@@ -290,11 +288,11 @@ The distance correlation compares the original and embedded pairwise distances o
 ### Standard Dimensionality Reduction Pipeline
 
 ```python
-from metainformant.singlecell.analysis.pca_methods import compute_pca, select_hvgs
+from metainformant.singlecell.analysis.pca_methods import pca_reduction, select_hvgs
 from metainformant.singlecell.analysis.nonlinear_methods import (
     compute_neighbors,
-    compute_tsne,
-    compute_umap,
+    tsne_reduction,
+    umap_reduction,
 )
 
 # 1. Flag highly variable genes
@@ -302,15 +300,15 @@ data = select_hvgs(data, n_top_genes=2000, flavor="seurat")
 print(f"Selected {data.var['highly_variable'].sum()} HVGs")
 
 # 2. PCA on the flagged genes
-data = compute_pca(data, n_components=50, use_hvgs=True)
+data = pca_reduction(data, n_components=50, use_hvgs=True)
 print(f"Explained variance (first 10 PCs): {sum(data.uns['pca']['explained_variance_ratio'][:10]):.3f}")
 
 # 3. Neighbor graph on the first 40 PCs
 data = compute_neighbors(data, n_neighbors=15, n_pcs=40)
 
 # 4. UMAP and t-SNE embeddings (both are fitted on data.X)
-data = compute_umap(data, n_components=2, min_dist=0.5)
-data = compute_tsne(data, n_components=2, perplexity=30)
+data = umap_reduction(data, n_components=2, min_dist=0.5)
+data = tsne_reduction(data, n_components=2, perplexity=30)
 
 print(f"Available embeddings: {list(data.obsm.keys())}")
 ```
@@ -321,10 +319,10 @@ Diffusion pseudotime reads the neighbor graph in `data.uns['neighbors']` (and bu
 
 ```python
 from metainformant.singlecell.analysis.nonlinear_methods import compute_diffusion_map, compute_neighbors
-from metainformant.singlecell.analysis.pca_methods import compute_pca
+from metainformant.singlecell.analysis.pca_methods import pca_reduction
 from metainformant.singlecell.analysis.trajectory import compute_diffusion_pseudotime
 
-data = compute_pca(data, n_components=50)
+data = pca_reduction(data, n_components=50)
 data = compute_neighbors(data, n_neighbors=30, n_pcs=30)     # more neighbors for trajectories
 data = compute_diffusion_map(data, n_components=15)          # optional: coordinates for plotting
 data = compute_diffusion_pseudotime(data, root_cell=0)
@@ -346,16 +344,16 @@ def global_preservation(X_orig, X_embed, n=1000):
 ## Error Handling
 
 ```python
-from metainformant.singlecell.analysis.nonlinear_methods import compute_tsne, compute_umap
+from metainformant.singlecell.analysis.nonlinear_methods import tsne_reduction, umap_reduction
 
 try:
-    data = compute_umap(data)
+    data = umap_reduction(data)
 except ImportError:
     print("umap-learn not installed. Install with: uv pip install umap-learn")
-    data = compute_tsne(data)    # fall back to t-SNE
+    data = tsne_reduction(data)    # fall back to t-SNE
 ```
 
-`compute_pca(..., use_hvgs=True)` raises `ValueError` when `select_hvgs` has not been run, and the range checks of `compute_umap` and `diffusion_map_reduction` raise `ValidationError` (from `metainformant.core.utils.errors`).
+`pca_reduction(..., use_hvgs=True)` raises `ValueError` when `select_hvgs` has not been run, and the range checks of `umap_reduction` and `diffusion_map_reduction` raise `ValidationError` (from `metainformant.core.utils.errors`).
 
 ## Integration with Clustering
 

@@ -116,7 +116,7 @@ def _genetic_code(table_id: int) -> tuple[dict[str, str], frozenset[str], frozen
     """
     try:
         table = CodonTable.unambiguous_dna_by_id[table_id]
-    except (KeyError, TypeError):
+    except KeyError, TypeError:
         supported = sorted(CodonTable.unambiguous_dna_by_id)
         raise ValueError(f"Unsupported translation_table {table_id!r}; NCBI table ids: {supported}") from None
     codons: dict[str, str] = dict(table.forward_table)

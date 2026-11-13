@@ -93,7 +93,6 @@ YES_NO_CLI_FLAGS = {
 _ALL_AMALGKIT_OPTIONS = frozenset().union(*SUPPORTED_CLI_OPTIONS.values())
 _warned_dropped_keys: set[tuple[str, str]] = set()
 _warning_lock = threading.Lock()
-_auto_install_warning_issued = False
 
 
 def _yes_no_flags(subcommand: str | None) -> frozenset[str] | set[str]:
@@ -126,26 +125,6 @@ def _report_dropped_key(subcommand: str, key: str) -> None:
         subcommand,
         key,
         REQUIRED_AMALGKIT_VERSION,
-    )
-
-
-def warn_auto_install_ignored(source: str = "auto_install_amalgkit") -> None:
-    """Log once per process that runtime Amalgkit installation was removed.
-
-    Configurations written for earlier releases still set
-    ``auto_install_amalgkit: true``; their bytes are hashed into existing
-    provenance, so the key stays accepted but has no effect.
-    """
-
-    global _auto_install_warning_issued
-    with _warning_lock:
-        if _auto_install_warning_issued:
-            return
-        _auto_install_warning_issued = True
-    logger.warning(
-        "%s is ignored: MetaInformAnt never installs Amalgkit at runtime. Provision the pinned build with `%s`.",
-        source,
-        AMALGKIT_SYNC_HINT,
     )
 
 
@@ -231,7 +210,6 @@ def build_cli_args(
             "genome",
             "filters",
             "taxon_id",
-            "auto_install_amalgkit",
             "log_dir",
             "num_download_workers",
         }
@@ -608,7 +586,7 @@ def validate_amalgkit_version(
 
 
 def ensure_cli_available(
-    *, auto_install: bool = False, min_version: str = REQUIRED_AMALGKIT_VERSION, exact: bool = True
+    *, min_version: str = REQUIRED_AMALGKIT_VERSION, exact: bool = True
 ) -> Tuple[bool, str, Dict | None]:
     """Ensure the Amalgkit CLI is available and is the pinned build.
 
@@ -618,8 +596,6 @@ def ensure_cli_available(
     closed with the provisioning hint :data:`AMALGKIT_SYNC_HINT`.
 
     Args:
-        auto_install: Accepted for backward compatibility and ignored; passing
-            true logs a one-time warning.
         min_version: Required version
         exact: Require the pinned version by default.
 
@@ -628,9 +604,6 @@ def ensure_cli_available(
         observed version, whether it is valid, ``attempted: False`` and the
         provisioning hint.
     """
-    if auto_install:
-        warn_auto_install_ignored("ensure_cli_available(auto_install=True)")
-
     installed = installed_amalgkit_distribution()
     version_info: Dict[str, Any] = {
         "version": installed.version if installed is not None else None,
@@ -771,7 +744,7 @@ def run_amalgkit(
 
                         if tuple(map(int, tqdm.__version__.split("."))) < (4, 60, 0):
                             env["AMALGKIT_PROGRESS"] = "false"
-                    except (ImportError, ValueError, AttributeError):
+                    except ImportError, ValueError, AttributeError:
                         pass
 
                 proc_kwargs: dict[str, Any] = {"env": env}
@@ -1048,9 +1021,7 @@ def _run_getfastq_via_metainformant(
     logger.info(f"Downloading {len(run_ids)} samples using metainformant backend to {getfastq_dir}")
 
     # We pass work_dir as base_out_dir so it creates proper structure
-    success_count, fail_count = ena_downloader.download_sra_samples(
-        sra_ids=run_ids, base_out_dir=work_dir, sort_by_size=True, use_fallback=True
-    )
+    success_count, fail_count = ena_downloader.download_sra_samples(sra_ids=run_ids, base_out_dir=work_dir)
 
     if fail_count > 0:
         logger.warning(f"ENA/SRA download completed with {fail_count} failures")

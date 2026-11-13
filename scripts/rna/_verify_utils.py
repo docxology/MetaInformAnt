@@ -97,7 +97,7 @@ def check_doc_links(doc_file: Path, repo_root: Path, warnings: list[str] | None 
 
         try:
             target_file = target_file.resolve()
-        except (OSError, RuntimeError):
+        except OSError, RuntimeError:
             pass
 
         if not target_file.exists():

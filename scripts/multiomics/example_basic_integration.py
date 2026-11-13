@@ -73,9 +73,11 @@ print(f"   Saved data files to {output_dir}")
 # Method 1: Create MultiOmicsData from DataFrames
 print("\n5. Creating MultiOmicsData from DataFrames...")
 omics_data = MultiOmicsData(
-    genomics=genomics_data,
-    transcriptomics=transcriptomics_data,
-    proteomics=proteomics_data,
+    data={
+        "genomics": genomics_data,
+        "transcriptomics": transcriptomics_data,
+        "proteomics": proteomics_data,
+    },
 )
 print(f"   Integrated {omics_data.n_samples} samples")
 print(f"   Layers: {omics_data.layer_names}")

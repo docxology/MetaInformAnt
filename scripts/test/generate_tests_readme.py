@@ -46,11 +46,11 @@ NON_MODULE_DIRS = {
 
 # Human-facing description per module (module name -> description).
 DESCRIPTIONS = {
-    "cloud": "Cloud deployment helpers",
     "core": "Core utilities",
     "dna": "DNA analysis",
     "ecology": "Ecological analysis",
     "epigenome": "Epigenomics",
+    "eqtl": "Expression QTL",
     "gwas": "GWAS pipeline",
     "information": "Information theory",
     "life_events": "Life events",
@@ -66,6 +66,7 @@ DESCRIPTIONS = {
     "ontology": "Ontology / GO",
     "pharmacogenomics": "Pharmacogenomics",
     "phenotype": "Phenotype analysis",
+    "popgen": "Population genetics",
     "protein": "Protein analysis",
     "quality": "Quality control",
     "rna": "RNA-seq workflows",

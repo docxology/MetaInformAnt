@@ -23,7 +23,7 @@ The figure contains histograms of total counts, genes detected and mitochondrial
 
 ### plot_umap() / plot_tsne()
 
-Plot cells in reduced dimensional space (coordinates are read from the `obs` columns written by `compute_umap()` / `compute_tsne()`):
+Plot cells in reduced dimensional space (coordinates are read from the `obs` columns written by `umap_reduction()` / `tsne_reduction()`):
 
 ```python-snippet
 import matplotlib.pyplot as plt
@@ -53,7 +53,7 @@ plt.show()
 
 ### plot_pca()
 
-PCA scatter plot of the `PC1`, `PC2`, ... columns of `obs` (written by `compute_pca()`):
+PCA scatter plot of the `PC1`, `PC2`, ... columns of `obs` (written by `pca_reduction()`):
 
 ```python
 import matplotlib.pyplot as plt

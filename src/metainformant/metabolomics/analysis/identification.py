@@ -49,7 +49,7 @@ def _validated_ppm_tolerance(ppm_tolerance: float) -> float:
     """
     try:
         tolerance = float(ppm_tolerance)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         raise ValueError(f"ppm_tolerance must be a positive finite number, got {ppm_tolerance!r}") from None
     if not math.isfinite(tolerance) or tolerance <= 0:
         raise ValueError(f"ppm_tolerance must be a positive finite number, got {ppm_tolerance!r}")
@@ -59,7 +59,7 @@ def _validated_ppm_tolerance(ppm_tolerance: float) -> float:
 def _validated_observed_mz(observed_mz: Any) -> np.ndarray:
     """Return ``observed_mz`` as a float array, rejecting values that are not a positive, finite m/z.
 
-    A ppm error is divided by the observed m/z. A negative m/z turns every error negative, so it was
+    A ppm error is divided by the observed m/z. A negative m/z turns every error negative, so it would be
     "within tolerance" of every database entry at once (with scores above 1); zero divides by zero and
     NaN matches nothing without saying why.
     """

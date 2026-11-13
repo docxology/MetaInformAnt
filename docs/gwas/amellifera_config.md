@@ -4,10 +4,10 @@ This document describes the GWAS configuration setup for *Apis mellifera* (Weste
 
 > Current real-data work uses
 > `projects/apis_gwas/config/beewas_2026_full_guarded.yaml` and the
-> `/Volumes/external_drive/Data/beewas_2026` data root (current external data
-> volume; the BeeWAS 2026 dataset directory has not been re-established on it
-> since the `/Volumes/blue` volume was retired — verify before relying on it). The older `gwas_amellifera.yaml` profile is
-> now explicitly the generated/demo Apis workflow. See
+> `/Volumes/external_drive/Data/beewas_2026` data root (the external data
+> volume; the BeeWAS 2026 dataset directory is not established on it yet —
+> verify before relying on it). The `gwas_amellifera.yaml` profile is the
+> generated/demo Apis workflow. See
 > `projects/apis_gwas/doc/current/amellifera_real_genome_reads.md`.
 
 ## Configuration File

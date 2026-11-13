@@ -30,10 +30,6 @@ class TestBasicReproductionNumber:
         r0 = basic_reproduction_number(transmission_rate=0.05, recovery_rate=0.1)
         assert r0 < 1.0
 
-    def test_contact_rate_ignored(self):
-        r0 = basic_reproduction_number(transmission_rate=0.5, recovery_rate=0.25, contact_rate=10.0)
-        assert r0 == pytest.approx(2.0)
-
 
 # ---------------------------------------------------------------------------
 # effective_reproduction_number

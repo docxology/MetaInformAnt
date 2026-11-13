@@ -60,7 +60,11 @@ class NetworkWorkflow:
         Returns:
             self for method chaining
         """
-        from metainformant.networks.analysis.graph import BiologicalNetwork, add_edges_from_correlation, create_network
+        from metainformant.networks.analysis.graph_core import (
+            BiologicalNetwork,
+            add_edges_from_correlation,
+            create_network,
+        )
 
         if edges is not None:
             network = create_network(edges, directed=self.config.network.directed)
@@ -81,7 +85,7 @@ class NetworkWorkflow:
             network = BiologicalNetwork(directed=self.config.network.directed)
 
         if self.config.network.remove_isolates:
-            from metainformant.networks.analysis.graph import remove_isolated_nodes
+            from metainformant.networks.analysis.graph_core import remove_isolated_nodes
 
             remove_isolated_nodes(network.graph)
 
@@ -109,7 +113,7 @@ class NetworkWorkflow:
         cfg = self.config.community
 
         # The configured seed reaches every stochastic method (Louvain, Leiden, asynchronous label propagation,
-        # fluid communities); deterministic ones ignore it. It used to be read by nothing.
+        # fluid communities); deterministic ones ignore it.
         seed_kwargs = {"random_state": cfg.random_state} if cfg.random_state is not None else {}
 
         if cfg.compare_methods:
@@ -159,7 +163,7 @@ class NetworkWorkflow:
         if "network" not in self.results:
             raise RuntimeError("Must call build_network() before analyze_metrics()")
 
-        from metainformant.networks.analysis.graph import centrality_measures, network_metrics
+        from metainformant.networks.analysis.graph_algorithms import centrality_measures, network_metrics
 
         network = self.results["network"]
         self.results["metrics"] = network_metrics(network.graph)
@@ -230,7 +234,7 @@ class NetworkWorkflow:
         exported = {}
 
         if "network" in self.results:
-            from metainformant.networks.analysis.graph import export_network
+            from metainformant.networks.analysis.graph_algorithms import export_network
 
             network_file = out_dir / f"network.{self.config.export_format}"
             export_network(

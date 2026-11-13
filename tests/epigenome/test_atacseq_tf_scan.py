@@ -1,8 +1,7 @@
 """Transcription factor motif scan of ATAC-seq peaks.
 
-``find_tf_binding_sites`` used to be simulated: it reported every motif in every peak (``found_in_peak = True``),
-invented an expected frequency of 10%, ignored ``genome_fasta`` and returned no coordinates. It now scans the peak
-DNA for IUPAC consensus motifs on both strands.
+``find_tf_binding_sites`` scans the peak DNA from ``genome_fasta`` for IUPAC consensus motifs on both strands and
+returns their coordinates; it does not report every motif in every peak or invent an expected frequency.
 
 The sequences below are an ``A`` background with motifs planted at known offsets, so every expected site, count and
 coordinate is derived by hand in the comments. REAL IMPLEMENTATION.

@@ -8,7 +8,7 @@ Advanced information theory metrics.
 - **Component Type**: Source Code
 
 ## 💾 Data Structures
-- **Modules**: 8 Python modules
+- **Modules**: 7 Python modules
 - **Key Concepts**: Refer to Pydantic models in source.
 
 ## 🔌 API Definition
@@ -17,7 +17,6 @@ Advanced information theory metrics.
 - `channel.py`
 - `decomposition.py`
 - `fisher_rao.py`
-- `geometry.py`
 - `hypothesis.py`
 - `information_projection.py`
 - `semantic.py`

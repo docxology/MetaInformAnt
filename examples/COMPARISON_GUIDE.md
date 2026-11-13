@@ -347,15 +347,13 @@ All examples are validated for:
 -**Performance bounds**
 -**Documentation completeness**
 
-## Migration Guide
+## Updating Examples After API Changes
 
-### From Old API Versions
+If an example fails after an API change:
 
-If examples fail due to API changes:
-
-1. **Check error messages** for deprecated function names
-2. **Update imports** to new module locations
-3. **Modify function calls** to match new signatures
+1. **Check the error message** for the missing module, function or parameter name
+2. **Update imports** to the current module locations
+3. **Modify function calls** to match the current signatures
 4. **Test updated example** with validation script
 5. **Update documentation** if parameter names changed
 
@@ -401,7 +399,6 @@ To convert examples to production scripts:
 - **Domain-specific examples** for specialized fields
 - **Real dataset examples** (with appropriate licensing)
 - **Performance optimization examples**
-- **Cloud deployment examples**
 - **Reproducible research examples**
 
 ## Quick Reference

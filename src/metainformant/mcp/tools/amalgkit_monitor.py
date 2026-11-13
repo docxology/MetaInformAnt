@@ -69,7 +69,7 @@ def get_process_status() -> dict[str, Any]:
             cmdline = proc.info["cmdline"] or []
             if is_pipeline_cmdline(cmdline):
                 return {"running": True, "pid": proc.info["pid"], "cmd": " ".join(cmdline)}
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
+        except psutil.NoSuchProcess, psutil.AccessDenied:
             continue
     return {"running": False, "pid": None}
 
@@ -174,7 +174,7 @@ def _readiness_snapshot(data_root: Path) -> dict[str, object]:
             receipt_path = data_root / species_name / "work" / ".metainformant_downstream_provenance.json"
             try:
                 payload = json.loads(receipt_path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError):
+            except OSError, json.JSONDecodeError:
                 continue
             if (
                 isinstance(payload, dict)
@@ -212,9 +212,9 @@ def build_status(
     resolved_log = (log_file or (resolved_root / "results" / "full_campaign.log")).expanduser().resolve()
     process = get_process_status() if inspect_processes else {"scanned": False, "running": None, "pid": None}
     readiness = _readiness_snapshot(resolved_root)
-    writer_lock = any(
-        (resolved_root / "results" / name).exists() for name in (".full_campaign.lock", ".finalization.lock")
-    )
+    from metainformant.rna.engine.campaign_lock import writer_status
+
+    writer_lock = bool(writer_status(resolved_root)["held"])
     log_info = parse_log_progress(resolved_log)
     return {
         "status": "running" if writer_lock or process.get("running") else "stopped",

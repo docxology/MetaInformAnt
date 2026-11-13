@@ -1,7 +1,7 @@
 """Read-only progress snapshot and the downstream completion gate.
 
 Real SQLite databases written through :class:`ProgressDB` (and one minimal
-legacy schema), no mocks: the snapshot must count permanent exclusions as
+pre-retry schema), no mocks: the snapshot must count permanent exclusions as
 terminal, report retry holds, see a live writer's WAL, and never write.
 """
 
@@ -104,8 +104,8 @@ def test_snapshot_reads_a_live_writers_wal(tmp_path: Path) -> None:
         writer.close()
 
 
-def test_snapshot_tolerates_a_legacy_schema_and_unknown_species(tmp_path: Path) -> None:
-    db_path = tmp_path / "legacy.db"
+def test_snapshot_tolerates_a_pre_retry_schema_and_unknown_species(tmp_path: Path) -> None:
+    db_path = tmp_path / "pre_retry.db"
     connection = sqlite3.connect(db_path)
     connection.execute(
         "CREATE TABLE samples (species TEXT NOT NULL, srr_id TEXT NOT NULL, state TEXT NOT NULL, error TEXT, "

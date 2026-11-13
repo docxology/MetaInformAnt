@@ -513,7 +513,7 @@ class TestAddDisclaimer:
 class TestPhenotypeLabelsInDrugGeneAnalysis:
     """A poor metabolizer must be one whichever way the phenotype is written.
 
-    ``metabolism.predict_metabolizer_status`` returns the bare token ("poor"). That token used to
+    ``metabolism.predict_metabolizer_status`` returns the bare token ("poor"). That token must not
     become the made-up abbreviation "PO", match nothing, and produce no recommendation at all, or
     "No known contraindication", for a poor metabolizer.
     """
@@ -544,7 +544,7 @@ class TestPhenotypeLabelsInDrugGeneAnalysis:
 
     @pytest.mark.parametrize("label", ["superrapid", "", "Likely Poor Metabolizer", "xyz"])
     def test_check_contraindications_refuses_a_label_that_is_not_a_phenotype(self, label: str) -> None:
-        # It used to answer "No known contraindication for codeine with superrapid."
+        # not "No known contraindication for codeine with superrapid."
         with pytest.raises(ValueError, match="Unrecognised metabolizer phenotype"):
             check_contraindications("codeine", label)
 
@@ -556,7 +556,7 @@ class TestPhenotypeLabelsInDrugGeneAnalysis:
             check_contraindications("codeine", label)
 
     def test_abbreviations_are_never_made_up_from_the_first_letters(self) -> None:
-        # "poor" -> "PO", "Indeterminate" -> "IN" and "Likely Poor Metabolizer" -> "LI" used to be returned
+        # never "poor" -> "PO", "Indeterminate" -> "IN" or "Likely Poor Metabolizer" -> "LI"
         assert _abbreviate_phenotype("poor") == "PM"
         assert _abbreviate_phenotype("Extensive Metabolizer") == "NM"
         assert _abbreviate_phenotype("Indeterminate") == "IND"
@@ -584,7 +584,7 @@ class TestFrequencyCriteriaNeedAFrequency:
     """A variant with no allele frequency has not been seen to be absent from controls."""
 
     def test_a_missing_frequency_meets_none_of_the_frequency_criteria(self) -> None:
-        # PM2 used to be met because the missing frequency was read as 0.0
+        # PM2 is not met: a missing frequency is not read as 0.0
         criteria = apply_acmg_criteria({"consequence": "frameshift"})
         assert criteria["PM2"] is False
         assert criteria["BA1"] is False
@@ -596,7 +596,7 @@ class TestFrequencyCriteriaNeedAFrequency:
         assert criteria["PM2"] is False
 
     def test_a_null_variant_with_no_frequency_data_is_not_upgraded_by_invented_evidence(self) -> None:
-        # PVS1 alone is VUS. With a PM2 made from "no data" it used to be Likely Pathogenic.
+        # PVS1 alone is VUS. A PM2 made from "no data" would make it Likely Pathogenic.
         result = classify_variant_acmg({"consequence": "frameshift"})
         assert result["criteria_met"] == ["PVS1"]
         assert result["classification"] == ACMGClassification.VUS
@@ -650,7 +650,7 @@ class TestContradictoryEvidenceIsUncertain:
 
 class TestGnomadFrequencyInputs:
     def test_a_population_the_variant_has_no_frequency_for_raises(self) -> None:
-        # It used to be reported as a frequency of 0.0 (no BA1, no BS1), which a typo could produce
+        # not a frequency of 0.0 (no BA1, no BS1), which a typo could produce
         with pytest.raises(ValueError, match="East_Asian") as caught:
             check_gnomad_frequency({"allele_frequency": {"European": 0.2}}, population="East_Asian")
         assert "European" in str(caught.value)  # the populations it does have

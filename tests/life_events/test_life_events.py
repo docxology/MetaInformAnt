@@ -135,7 +135,7 @@ class TestEventSequence:
             Event("event3", datetime(2020, 3, 1), "occupation"),
         ]
         seq = EventSequence(person_id="person1", events=events)
-        filtered = seq.filter_by_time(start_time=datetime(2020, 1, 15), end_time=datetime(2020, 2, 15))
+        filtered = seq.filter_by_time_range(start=datetime(2020, 1, 15), end=datetime(2020, 2, 15))
         assert len(filtered.events) == 1
         assert filtered.events[0].event_type == "event2"
 
@@ -146,7 +146,7 @@ class TestEventSequence:
             Event("event2", 1580515200.0, "occupation"),  # 2020-02-01
         ]
         seq = EventSequence(person_id="person1", events=events)
-        filtered = seq.filter_by_time(start_time=1578000000.0, end_time=1580600000.0)
+        filtered = seq.filter_by_time_range(start=1578000000.0, end=1580600000.0)
         assert len(filtered.events) == 1
         assert filtered.events[0].event_type == "event2"
 

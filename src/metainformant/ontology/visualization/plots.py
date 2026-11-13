@@ -64,8 +64,6 @@ def enrichment_dotplot(
     alpha_threshold: float = 0.05,
     figsize: tuple[float, float] | None = None,
     ax: Optional[Any] = None,
-    style: Optional[Any] = None,
-    **kwargs: Any,
 ) -> Any:
     """Plot a GO/pathway enrichment dot plot.
 
@@ -83,10 +81,8 @@ def enrichment_dotplot(
         title: Plot title.
         alpha_threshold: FDR threshold, in ``(0, 1]``. A dashed line at ``-log10(alpha_threshold)`` on the colour bar
             separates the terms that pass it from those that do not (it is left out when no plotted term reaches it).
-            Earlier versions documented this argument and never drew the line.
         figsize: Figure size ``(width, height)`` in inches.
         ax: Existing axes to draw on (a new figure is created when omitted).
-        style: Accepted for interface symmetry with the other plots; it has no effect.
 
     Returns:
         ``matplotlib.figure.Figure``.
@@ -152,7 +148,7 @@ def enrichment_dotplot(
     max_ov = max(overlaps) if overlaps else 1
     dot_sizes = [40 + 200 * (ov / max_ov) for ov in overlaps]
 
-    fsize = figsize or kwargs.get("figsize", (8, max(4, 0.4 * len(top) + 2)))
+    fsize = figsize or (8, max(4, 0.4 * len(top) + 2))
     fig = None
     if ax is None:
         fig, ax = plt.subplots(figsize=fsize)
@@ -219,8 +215,6 @@ def pathway_network_plot(
     figsize: tuple[float, float] = (9, 9),
     layout_seed: int = 42,
     ax: Optional[Any] = None,
-    style: Optional[Any] = None,
-    **kwargs: Any,
 ) -> Any:
     """Plot a pathway similarity network.
 
@@ -333,7 +327,7 @@ def pathway_network_plot(
 
     fig = None
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.get("figsize", figsize))
+        fig, ax = plt.subplots(figsize=figsize)
 
     # Draw edges
     for e in visible_edges:
@@ -382,8 +376,6 @@ def enrichment_score_plot(
     output_path: str | Path | None = None,
     figsize: tuple[float, float] = (8, 4),
     axes: Optional[Any] = None,
-    style: Optional[Any] = None,
-    **kwargs: Any,
 ) -> Any:
     """Plot GSEA running enrichment score trace.
 
@@ -408,9 +400,7 @@ def enrichment_score_plot(
 
     fig = None
     if axes is None:
-        fig, (ax1, ax2) = plt.subplots(
-            2, 1, figsize=kwargs.get("figsize", figsize), gridspec_kw={"height_ratios": [3, 1]}, sharex=True
-        )
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={"height_ratios": [3, 1]}, sharex=True)
     else:
         ax1, ax2 = axes
 

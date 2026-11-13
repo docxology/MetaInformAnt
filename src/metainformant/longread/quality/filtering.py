@@ -48,11 +48,10 @@ Optional dependencies:
 from __future__ import annotations
 
 import math
-import warnings
 from dataclasses import dataclass, field
 from fractions import Fraction
 from functools import lru_cache
-from typing import Any, Callable, Mapping, NamedTuple, Sequence, TypeVar, cast, overload
+from typing import Any, Callable, NamedTuple, Sequence, TypeVar, cast
 
 from metainformant.core.sequence import reverse_complement
 from metainformant.core.utils.logging import get_logger
@@ -61,7 +60,6 @@ logger = get_logger(__name__)
 
 _ReadT = TypeVar("_ReadT")
 _ItemT = TypeVar("_ItemT")
-_DefaultT = TypeVar("_DefaultT")
 np: Any  # None when numpy is unavailable (optional dependency)
 try:
     import numpy as np
@@ -77,9 +75,9 @@ _DETECT_SEARCH_LENGTH = 300
 
 
 # Standard ONT adapter sequences. Every entry must be long enough to be searched with
-# a bounded false-positive rate (see minimum_adapter_length). The 8 bp ONT_LSK110_top
-# and ONT_LSK110_bottom entries (CAGCACCT and AGGTGCTG, reverse complements of each
-# other) were removed: they matched random sequence at about one offset in 240.
+# a bounded false-positive rate (see minimum_adapter_length). Short adapters such as the
+# 8 bp LSK110 top/bottom strands (CAGCACCT and AGGTGCTG, reverse complements of each
+# other) are not listed: they match random sequence at about one offset in 240.
 ONT_ADAPTERS: dict[str, str] = {
     "ONT_LSK109_top": "AATGTACTTCGTTCAGTTACGTATTGCT",
     "ONT_LSK109_bottom": "GCAATACGTAACTGAACGAAGT",
@@ -88,78 +86,16 @@ ONT_ADAPTERS: dict[str, str] = {
     "ONT_rapid_barcode": "AATGTACTTCGTTCAGTTACGTATTGCTAAGGTTAA",
 }
 
-#: Illumina Nextera transposase read-1 adapter (the Tn5 mosaic end with its Nextera overhang).
-#: It used to be listed as ``"PacBio_barcoded"``, but it is an Illumina sequence, not a PacBio one.
-_NEXTERA_READ1 = "TCGTCGGCAGCGTCAGATGTGTATAAGAGACAG"
-
-#: Names an adapter used to go by, mapped to ``(current name, sequence)``. The tables below answer to
-#: the old name with a DeprecationWarning (see :class:`_AdapterTable`).
-_RENAMED_ADAPTERS: dict[str, tuple[str, str]] = {"PacBio_barcoded": ("Illumina_Nextera_read1", _NEXTERA_READ1)}
-
-
-class _AdapterTable(dict[str, str]):
-    """Adapter name to sequence mapping that still answers to the names its entries used to have.
-
-    Looking an adapter up by a renamed name (``table["PacBio_barcoded"]``, ``table.get(...)``,
-    ``name in table``) returns the sequence the entry always had and emits a ``DeprecationWarning``
-    that names the current key. The old names are not keys: iteration, ``len``, ``keys()`` and
-    ``{**table}`` see the current names only, so a search over the table never runs an adapter twice.
-    A real key of the same name always wins over a renamed one.
-    """
-
-    def __init__(self, entries: Mapping[str, str], renamed: Mapping[str, tuple[str, str]] | None = None) -> None:
-        super().__init__(entries)
-        self._renamed: dict[str, tuple[str, str]] = dict(renamed or {})
-
-    def _renamed_sequence(self, name: object) -> str | None:
-        """Sequence behind a renamed ``name`` (with a DeprecationWarning), or None when ``name`` was not renamed."""
-        if not isinstance(name, str) or dict.__contains__(self, name) or name not in self._renamed:
-            return None
-        current, sequence = self._renamed[name]
-        warnings.warn(
-            f"Adapter name {name!r} is deprecated: the sequence is the Illumina Nextera read-1 adapter, not a "
-            f"PacBio adapter, and the entry is now called {current!r}",
-            DeprecationWarning,
-            stacklevel=3,
-        )
-        return sequence
-
-    def __getitem__(self, name: str) -> str:
-        sequence = self._renamed_sequence(name)
-        return sequence if sequence is not None else super().__getitem__(name)
-
-    def __contains__(self, name: object) -> bool:
-        return dict.__contains__(self, name) or self._renamed_sequence(name) is not None
-
-    @overload
-    def get(self, name: str, default: None = None, /) -> str | None: ...
-
-    @overload
-    def get(self, name: str, default: str, /) -> str: ...
-
-    @overload
-    def get(self, name: str, default: _DefaultT, /) -> str | _DefaultT: ...
-
-    def get(self, name: str, default: Any = None, /) -> Any:
-        sequence = self._renamed_sequence(name)
-        return sequence if sequence is not None else super().get(name, default)
-
-
 # Standard PacBio adapter sequences. Only the SMRTbell hairpin is listed: other SMRTbell and barcode
 # sequences have not been checked against primary sources and are deliberately absent.
-PACBIO_ADAPTERS: dict[str, str] = _AdapterTable(
-    {"PacBio_SMRTbell": "ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT"},
-    renamed=_RENAMED_ADAPTERS,
-)
+PACBIO_ADAPTERS: dict[str, str] = {"PacBio_SMRTbell": "ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT"}
 
-# Illumina adapters that can end up in long-read libraries (Tn5/Nextera tagmentation). The entry is part of
-# ALL_KNOWN_ADAPTERS, so the default search still looks for it.
-ILLUMINA_ADAPTERS: dict[str, str] = {"Illumina_Nextera_read1": _NEXTERA_READ1}
+# Illumina adapters that can end up in long-read libraries (Tn5/Nextera tagmentation): the Illumina Nextera
+# transposase read-1 adapter (the Tn5 mosaic end with its Nextera overhang). The entry is part of
+# ALL_KNOWN_ADAPTERS, so the default search looks for it.
+ILLUMINA_ADAPTERS: dict[str, str] = {"Illumina_Nextera_read1": "TCGTCGGCAGCGTCAGATGTGTATAAGAGACAG"}
 
-ALL_KNOWN_ADAPTERS: dict[str, str] = _AdapterTable(
-    {**ONT_ADAPTERS, **PACBIO_ADAPTERS, **ILLUMINA_ADAPTERS},
-    renamed=_RENAMED_ADAPTERS,
-)
+ALL_KNOWN_ADAPTERS: dict[str, str] = {**ONT_ADAPTERS, **PACBIO_ADAPTERS, **ILLUMINA_ADAPTERS}
 
 
 @dataclass
@@ -972,7 +908,7 @@ def _deduplicate_adapter_matches(matches: list[AdapterMatch]) -> list[AdapterMat
     """Reduce overlapping adapter matches to the preferred one, returned in position order.
 
     Preference follows :func:`_placement_rank`: the lower edit rate per adapter base, then the match that
-    covers more adapter bases. The old ``adapter length - edits`` score is not used: it let a longer
+    covers more adapter bases. An ``adapter length - edits`` score is not used: it would let a longer
     adapter win a shorter adapter's site as soon as the extra bases cost fewer edits than they added.
     """
     kept = _keep_preferred(

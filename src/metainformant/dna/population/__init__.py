@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from . import analysis, core, visualization, visualization_core, visualization_stats
+from . import analysis, core, visualization_core, visualization_stats
 
 # Re-export public functions from analysis.py
 from .analysis import (
@@ -42,7 +42,6 @@ from .core import (
 __all__ = [
     "analysis",
     "core",
-    "visualization",
     "visualization_core",
     "visualization_stats",
     # core.py

@@ -472,16 +472,15 @@ def validate_alphafold_structure(pdb_path: Path) -> Dict[str, Any]:
 def get_alphafold_coverage() -> Dict[str, Any]:
     """Get statistics on AlphaFold database coverage (not implemented).
 
-    The statistics would have to be queried from the AlphaFold Protein Structure Database. This function
-    used to return fixed numbers written into the source; those were not data, so it raises instead.
+    The statistics would have to be queried from the AlphaFold Protein Structure Database; fixed numbers
+    written into the source would not be data, so it raises instead.
 
     Raises:
         NotImplementedError: Always.
     """
     raise NotImplementedError(
         "get_alphafold_coverage is not implemented: database coverage statistics would have to be queried "
-        "from the AlphaFold Protein Structure Database (the figures this function used to return were fixed "
-        "approximations, not queried values)."
+        "from the AlphaFold Protein Structure Database."
     )
 
 

@@ -9,6 +9,7 @@ This document describes the CI/CD workflows for the MetaInformAnt project.
 | [Build Package](#build-package) | Push, PR, Manual | Build and validate package |
 | [Test Suite](#test-suite) | Push, PR, Manual | Run tests across platforms |
 | [Release](#release) | Release, Manual | Publish to PyPI |
+| Security Checks (`security.yml`) | Push and PR to `main`, Manual | Blocking Bandit, pip-audit and pattern audits |
 
 ---
 
@@ -26,7 +27,7 @@ This document describes the CI/CD workflows for the MetaInformAnt project.
 
 | Job | Description |
 |-----|-------------|
-| `build` | Build wheel/sdist for Python 3.11 & 3.12 |
+| `build` | Build wheel/sdist and install the wheel on Python 3.14 and 3.15 |
 | `build-validation` | Install and validate package in clean env |
 | `summary` | Report overall status |
 
@@ -50,7 +51,7 @@ This document describes the CI/CD workflows for the MetaInformAnt project.
 
 | Job | Description |
 |-----|-------------|
-| `test` | Matrix tests (ubuntu/macos × py3.11/3.12 × fast/network/external/all) |
+| `test` | Fast lane on ubuntu/macos × Python 3.14/3.15; network, external and all (coverage) lanes on ubuntu × Python 3.14 |
 | `test-infrastructure` | Validate test infrastructure itself |
 | `quality-checks` | Black, isort, flake8, bandit, pip-audit |
 | `test-examples` | Run example scripts |
@@ -67,6 +68,19 @@ Each pytest invocation inherits a five-minute per-test timeout. Test matrix and
 module-lane jobs have a 45-minute limit; other jobs use shorter limits. New runs
 cancel superseded runs for the same workflow and branch. A timeout fails the job
 and is reported as incomplete verification.
+
+### Python versions
+
+The supported floor is Python 3.14 (`requires-python = ">=3.14"`), and the
+repository's `.python-version` selects 3.14 for local uv commands. Every
+single-version job runs on 3.14. The `test` job sets `UV_PYTHON` to the matrix
+version so the re-sync inside `test.sh` stays on that interpreter.
+
+The fast lane installs only the core dependencies and the `test-fast` group
+(`uv sync --frozen --group test-fast`), which is the set `test.sh --mode fast`
+runs against. That install works on Python 3.15. The full extras do not install
+on 3.15 (ray has no cp315 wheels), so the network, external and all lanes run on
+3.14 only.
 
 ### Test Types
 
@@ -93,6 +107,7 @@ and is reported as incomplete verification.
 | `release-validation` | Extract and validate version |
 | `build-release` | Build distribution packages |
 | `build-docs` | Generate Sphinx documentation |
+| `install-smoke` | Install the built wheel in clean Python 3.14 and 3.15 environments |
 | `publish-test` | Upload to TestPyPI (prereleases) |
 | `publish-production` | Upload to PyPI (releases) |
 | `deploy-docs` | Deploy to GitHub Pages |

@@ -81,14 +81,14 @@ Post-migration expectations:
   appear with fresh `checked_at` timestamps. If new ones do, a restart-varying
   byte still feeds the manifest digest — stop and re-audit the writer.
 
-Distinguishing legacy-sidecar quarantines from new ones:
+Distinguishing older-sidecar quarantines from new ones:
 
 - `quantification_audit.checked_at` is the wall-clock time of the audit.
-  Rows predating the fix deploy are legacy artifacts of the timestamped
+  Rows predating the fix deploy are artifacts of the timestamped
   manifest; rows with post-deploy timestamps describe the sample's current
   state.
 - `quantification_audit.contract_id` is the content-deterministic
-  quantification contract digest. Legacy rows whose sidecars predate the
+  quantification contract digest. Rows whose sidecars predate the
   contract schema carry a different contract id than samples re-quantified
   after the deploy; group on `(species, contract_id)` to see which contract
   generation a quarantine belongs to:
@@ -102,7 +102,7 @@ sqlite3 "file:/Volumes/external_drive/Data/amalgkit/pipeline_progress.db?mode=ro
 
 A single dominant contract id per species after the sweep confirms all
 surviving quarantines share one cause (and one fix path), rather than a mix of
-legacy timestamp artifacts and fresh contract mismatches.
+older timestamp artifacts and fresh contract mismatches.
 
 ## The raw validation marker or SRA witness keeps re-validating
 

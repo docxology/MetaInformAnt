@@ -29,7 +29,6 @@ and an evidence bundle.
 | Spatial transcriptomics | `src/metainformant/spatial/` | Implemented / tested | Visium/MERFISH/Xenium I/O, spatial statistics, cell-cell communication, deconvolution; tests under `tests/spatial/` |
 | Structural variants | `src/metainformant/structural_variants/` | Implemented / tested | CBS-based CNV detection, split/discordant-read SV calling, annotation, population genotyping; tests under `tests/structural_variants/` |
 | Metabolomics | `src/metainformant/metabolomics/` | Implemented / tested | MGF/CSV readers and writers, metabolite identification, metabolite set enrichment, plots; no mzML/mzXML readers; tests under `tests/metabolomics/` |
-| Cloud deployment helpers | `src/metainformant/cloud/` | Implemented / tested | GCP VM lifecycle management for pipeline workloads; tests under `tests/cloud/`; external GCP access requires credentials |
 | MCP server | `src/metainformant/mcp/` | Implemented / tested | stdio JSON-RPC 2.0 server (initialize, tools/list, tools/call, resources), schema-validated tool registry; tests under `tests/mcp/` |
 | Menu system | `src/metainformant/menu/` | Implemented / tested | Interactive CLI menu, script discovery, navigation, execution; tests under `tests/menu/` |
 | Protein analysis | `src/metainformant/protein/` | Implemented / tested | Sequences, 3D structure, database integration, functional annotation; tests under `tests/protein/` |
@@ -42,7 +41,7 @@ and an evidence bundle.
 | eQTL pipelines | `src/metainformant/eqtl/` | Implemented / tested | Input construction, HISAT2+bcftools wrappers, stats parsing, pipeline orchestration; tests under `tests/eqtl/`; external tools must be present |
 | Optional integrations and external services | Module-specific `README.md`, `SPEC.md`, and dependency declarations | Experimental | Missing optional dependencies must follow the documented contract |
 | Scaffolds and placeholders | Source TODOs, explicit `NotImplementedError`, and module validation reports | Scaffold | Must not be presented as production or inference-ready |
-| Removed 0.4.0 surfaces | `docs/MIGRATION_0.4.md` | Removed | No runtime compatibility shims; migration documentation is the sole reference |
+| Removed 0.4.0 surfaces | `docs/MIGRATION_0.4.md` | Removed | Removed import paths raise `ImportError`; the migration guide lists their replacements |
 | Descriptive matrices and permutation scores | RNA analysis outputs and their provenance | Descriptive only | Must not be labeled conserved/divergent biological inference without the required evidence |
 | Biological inference and release claims | Current manifests, receipts, finalized matrices, and evidence bundle | Gated | Withheld while the producer is active or the cohort is partial |
 

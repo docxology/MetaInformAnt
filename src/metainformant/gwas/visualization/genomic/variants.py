@@ -539,7 +539,7 @@ def _parse_vcf_basic(vcf_file: Path) -> Dict[str, Any]:
                     try:
                         alleles = gt_val.replace("|", "/").split("/")
                         row.append(sum(int(a) for a in alleles))
-                    except (ValueError, TypeError):
+                    except ValueError, TypeError:
                         row.append(None)
             genotypes.append(row)
     return {"genotypes": genotypes}
@@ -555,8 +555,8 @@ def transition_transversion_plot(
     From variant records, only single-base substitutions between A, C, G and T (in either case) are classified:
     A<->G and C<->T are transitions and every other pair a transversion. An indel, a multi-allelic site, an
     ambiguity code, or a site whose REF and ALT are equal is classified as neither (and counted in
-    ``n_unclassified``); they used to be counted as transversions. The ratio is undefined without a
-    transversion, so ``ts_tv_ratio`` is then None and the title says so, where it used to be reported as 0.0.
+    ``n_unclassified``), not counted as a transversion. The ratio is undefined without a transversion, so
+    ``ts_tv_ratio`` is then None and the title says so.
     In the array form, a window without a transversion has no ratio: it is left out of the ratio panel and of
     its mean, and counted in ``n_windows_without_transversions``.
 
@@ -677,7 +677,7 @@ def transition_transversion_plot(
                 "n_unclassified": n_unclassified,
             }
 
-    # Legacy dict input format
+    # Windowed-count input: a dict of per-window transition and transversion arrays
     if isinstance(variants, dict):
         transitions_list = variants.get("transitions", [])
         transversions_list = variants.get("transversions", [])

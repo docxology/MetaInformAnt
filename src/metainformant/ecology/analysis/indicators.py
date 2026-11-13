@@ -458,8 +458,7 @@ def permanova(
         r_sq = ss_between / ss_total
         if ss_within <= 0.0:
             # No distance inside any group while some separate the groups: the groups explain everything and
-            # the ratio is infinite. (It used to be reported as F = 0, R2 = 0, p = 1: perfect separation read
-            # as no effect.)
+            # the ratio is infinite (reporting F = 0, R2 = 0, p = 1 would read perfect separation as no effect)
             return math.inf, r_sq
         f_stat = (ss_between / df_between) / (ss_within / df_within)
         return f_stat, r_sq
@@ -990,8 +989,8 @@ def multivariate_dispersion(
             return 0.0, group_means
         if ss_within <= 1e-20 * total:
             # Every observation sits as far from its centroid as the rest of its group (no spread inside
-            # groups) while the groups' distances differ: the ratio is infinite. (It used to be reported as 0,
-            # reading a perfect dispersion contrast as none.)
+            # groups) while the groups' distances differ: the ratio is infinite (0 would read a perfect dispersion
+            # contrast as none)
             return math.inf, group_means
 
         f_val = (ss_between / df_between) / (ss_within / df_within)

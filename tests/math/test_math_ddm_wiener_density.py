@@ -11,9 +11,9 @@ REAL IMPLEMENTATION POLICY: the real functions run against independent oracles, 
 - sampling error: a planted parameter set is recovered within four standard errors taken from the observed
   information of the likelihood, and a replicate study checks that the estimates are unbiased.
 
-``ddm_log_likelihood`` and ``fit_ddm_parameters`` used to approximate the first-passage time by a normal
-distribution that ignored the opposite boundary and the noise, gave a response against the sign of the drift
-a likelihood of ``-inf`` and returned invented default parameters when no fit was found.
+``ddm_log_likelihood`` and ``fit_ddm_parameters`` do not approximate the first-passage time by a normal
+distribution that ignores the opposite boundary and the noise: a response against the sign of the drift has a
+finite likelihood, and no invented default parameters are returned when no fit is found.
 """
 
 from __future__ import annotations
@@ -282,7 +282,7 @@ class TestSymmetriesAndShifts:
         assert values[0] == 0.0 and values[1] == 0.0 and values[2] > 0.0
 
     def test_a_response_against_the_drift_is_possible(self) -> None:
-        """The opposite boundary is modelled, so error responses have a finite likelihood (it used to be -inf)."""
+        """The opposite boundary is modelled, so error responses have a finite likelihood (not -inf)."""
         assert math.isfinite(ddm.ddm_log_likelihood(1.5, LOWER, 1.0, 2.0))
         assert math.isfinite(ddm.ddm_log_likelihood(1.5, UPPER, -1.0, 2.0))
         assert math.isfinite(ddm.ddm_log_likelihood(1.5, UPPER, 0.0, 2.0))

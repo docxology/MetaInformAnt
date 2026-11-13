@@ -82,7 +82,7 @@ from metainformant.singlecell.data.preprocessing import (
     normalize_counts,
 )
 from metainformant.singlecell.data.integration import integrate_multiple_batches
-from metainformant.singlecell.analysis.nonlinear_methods import compute_neighbors, compute_umap
+from metainformant.singlecell.analysis.nonlinear_methods import compute_neighbors, umap_reduction
 
 def integrate_datasets(datasets, batch_labels, method='scanorama'):
     """
@@ -115,7 +115,7 @@ def integrate_datasets(datasets, batch_labels, method='scanorama'):
     
     # 3. Neighbors and embedding (X now holds principal components)
     integrated = compute_neighbors(integrated)
-    integrated = compute_umap(integrated)
+    integrated = umap_reduction(integrated)
     
     print("Integration complete!")
     return integrated
@@ -156,7 +156,7 @@ print(f"  Clusters independent of batch: {metrics['cluster_batch_independence']}
 ```python
 import numpy as np
 from metainformant.singlecell.data.preprocessing import log_transform, normalize_counts
-from metainformant.singlecell.analysis.pca_methods import compute_pca, select_hvgs
+from metainformant.singlecell.analysis.pca_methods import pca_reduction, select_hvgs
 
 def integrate_multimodal_data(rna_data, adt_data, batch_key='batch'):
     """
@@ -179,8 +179,8 @@ def integrate_multimodal_data(rna_data, adt_data, batch_key='batch'):
     adt_processed = adt_data
     
     # 2. Dimensionality reduction per modality
-    rna_processed = compute_pca(rna_processed, n_components=50)
-    adt_processed = compute_pca(adt_processed, n_components=20)
+    rna_processed = pca_reduction(rna_processed, n_components=50)
+    adt_processed = pca_reduction(adt_processed, n_components=20)
     
     # 3. Joint embedding (simplified - would use more sophisticated methods)
     # Concatenate PCA coordinates

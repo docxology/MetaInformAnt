@@ -69,11 +69,10 @@ Keep `AMALGKIT_PIPELINE_FASTQ_SLOTS=1` while host system free space is below
 bottleneck and a fresh storage/I/O check; Blue free space alone is not enough
 because `fasterq-dump` temporary files use the host scratch volume.
 
-The worker loop pauses new downloads when the external root has less than
+The producer pauses new downloads when the external root has less than
 the configured external free-space floor (8 GiB by default) or the configured
-host-system reserve is reached. Existing
-quantification workers and provenance-gated reclamation can continue while
-the acquisition workers wait.
+host-system reserve is reached. Running quantifications and
+provenance-gated reclamation continue while new acquisitions wait.
 After metadata discovery, samples with existing final raw inputs are scheduled
 before shared SRA-cache databases, resumable partials, and new acquisitions,
 so a resumed campaign uses mounted data immediately and does not redownload

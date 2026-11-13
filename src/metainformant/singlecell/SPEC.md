@@ -28,9 +28,9 @@ cell type annotation, doublet detection, and RNA velocity analysis.
 
 ### Exports — `analysis/`
 
-- `compute_pca` — PCA with auto-clamping of n_components; `use_hvgs=True` restricts it to the genes flagged by `select_hvgs`
-- `compute_umap` — UMAP embedding
-- `compute_tsne` — t-SNE with automatic perplexity adjustment
+- `pca_reduction` — PCA with auto-clamping of n_components; `use_hvgs=True` restricts it to the genes flagged by `select_hvgs`
+- `umap_reduction` — UMAP embedding
+- `tsne_reduction` — t-SNE with automatic perplexity adjustment
 - `compute_neighbors` — k-NN graph in `uns["neighbors"]` (any scikit-learn metric; `use_rep` is `"X"` or any `obsm` key, an unknown one raises, and the default `"X_pca"` falls back to `X` without a PCA, recorded in `params["use_rep"]`; `inplace` supported)
 - `compute_diffusion_map` — diffusion map for trajectory analysis (`obsm["X_diffmap"]`; kNN edges that both cells list weigh once, the graph is symmetrized by the entrywise maximum; the solver is chosen by size, with a fixed ARPACK start vector; a stale neighbor graph raises `ValidationError`; `inplace` supported)
 - `diffusion_map_reduction` — dense Gaussian-kernel diffusion map: `obs["DC1"...]` are the right eigenvectors of the Markov matrix, from the symmetric `D^-1/2 W D^-1/2`; raises `ValidationError` for non-finite values or identical cells instead of substituting random vectors

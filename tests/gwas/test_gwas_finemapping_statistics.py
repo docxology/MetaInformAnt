@@ -102,8 +102,8 @@ class TestCredibleSetConstruction:
         """A second comparable signal forces more variants into the set.
 
         Comparable means a Bayes factor ratio of a few, not a 2-SD gap in z: with correctly
-        scaled Bayes factors z = 12 beats z = 10 by about exp(21), so the pair used to
-        look comparable only because the old Bayes factors were nearly flat.
+        scaled Bayes factors z = 12 beats z = 10 by about exp(21), so only nearly flat Bayes
+        factors would make that pair look comparable.
         """
         single = compute_credible_set([15.0], coverage=0.95)
         two = compute_credible_set([12.0, 11.9, 0.5, 0.5], coverage=0.95)

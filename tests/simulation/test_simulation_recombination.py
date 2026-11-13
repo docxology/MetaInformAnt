@@ -19,7 +19,6 @@ import pytest
 from scipy import stats
 
 from metainformant.core.utils.errors import ValidationError
-from metainformant.simulation.models import popgen
 from metainformant.simulation.models.popgen import (
     PopulationEpoch,
     RecombinantGenealogy,
@@ -707,10 +706,6 @@ class TestCoalescentLinkageDisequilibriumData:
         assert matrix == generate_linkage_disequilibrium_data(25, 60, model="coalescent", rng=random.Random(1))
         assert matrix != generate_linkage_disequilibrium_data(25, 60, model="coalescent", rng=random.Random(2))
 
-    def test_the_alias_for_the_number_of_sites_works(self) -> None:
-        matrix = generate_linkage_disequilibrium_data(10, n_sites=7, model="coalescent", rng=random.Random(1))
-        assert len(matrix[0]) == 7
-
     def test_allele_frequencies_follow_the_neutral_spectrum(self) -> None:
         """Mean derived allele frequency (n - 1) / (n a_n): rare derived alleles dominate, unlike the 0.5 default."""
         _, _, frequency = _mean_r_squared(1e-7, 300, reps=60)
@@ -755,21 +750,11 @@ class TestCoalescentLinkageDisequilibriumData:
         matrix = generate_linkage_disequilibrium_data(100, 10_000, model="coalescent", rng=random.Random(3))
         assert len(matrix) == 100 and all(len(row) == 10_000 for row in matrix)
 
-    def test_the_markov_model_stays_the_default_and_says_when_recombination_rate_is_ignored(
-        self, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_the_markov_model_stays_the_default(self) -> None:
         plain = generate_linkage_disequilibrium_data(30, 8, r_squared_target=0.4, rng=random.Random(21))
         assert plain == generate_linkage_disequilibrium_data(
             30, 8, r_squared_target=0.4, model="markov", rng=random.Random(21)
         )
-        with caplog.at_level("WARNING", logger=popgen.logger.name):
-            generate_linkage_disequilibrium_data(30, 8, r_squared_target=0.4, rng=random.Random(21))
-            assert not any("recombination_rate" in record.getMessage() for record in caplog.records)
-            ignored = generate_linkage_disequilibrium_data(
-                30, 8, r_squared_target=0.4, recombination_rate=0.2, rng=random.Random(21)
-            )
-        assert ignored == plain
-        assert any("no effect" in record.getMessage() for record in caplog.records)
 
     @pytest.mark.parametrize(
         "options, message",
@@ -790,7 +775,7 @@ class TestCoalescentLinkageDisequilibriumData:
             generate_linkage_disequilibrium_data(10, 5, model="coalescent", **options)
 
     def test_the_markov_model_rejects_coalescent_only_inputs_and_unknown_models(self) -> None:
-        for options in ({"effective_size": 100.0}, {"sequence_length": 500}):
+        for options in ({"recombination_rate": 0.2}, {"effective_size": 100.0}, {"sequence_length": 500}):
             with pytest.raises(ValidationError, match="coalescent"):
                 generate_linkage_disequilibrium_data(10, 5, **options)
         with pytest.raises(ValidationError, match="model"):

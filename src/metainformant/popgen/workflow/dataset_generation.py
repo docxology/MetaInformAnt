@@ -64,7 +64,7 @@ def generate_comprehensive_dataset(
     logger.info("Scenario 1: Neutral population (moderate diversity)")
     neutral_seqs = generate_population_sequences(
         n_sequences=n_sequences_per_scenario,
-        sequence_length=sequence_length,
+        length=sequence_length,
         nucleotide_diversity=0.01,
         mutation_rate=0.001,
         rng=rng,
@@ -82,7 +82,7 @@ def generate_comprehensive_dataset(
     logger.info("Scenario 2: High diversity population")
     high_div_seqs = generate_population_sequences(
         n_sequences=n_sequences_per_scenario,
-        sequence_length=sequence_length,
+        length=sequence_length,
         nucleotide_diversity=0.05,
         mutation_rate=0.005,
         rng=rng,
@@ -100,7 +100,7 @@ def generate_comprehensive_dataset(
     logger.info("Scenario 3: Low diversity population")
     low_div_seqs = generate_population_sequences(
         n_sequences=n_sequences_per_scenario,
-        sequence_length=sequence_length,
+        length=sequence_length,
         nucleotide_diversity=0.001,
         mutation_rate=0.0001,
         rng=rng,
@@ -159,8 +159,8 @@ def generate_comprehensive_dataset(
     pop1_low, pop2_low = generate_two_populations(
         n_pop1=n_sequences_per_scenario,
         n_pop2=n_sequences_per_scenario,
-        sequence_length=sequence_length,
-        fst=0.05,
+        length=sequence_length,
+        f_st=0.05,
         rng=rng,
     )
     pop1_low_file = output_dir / "scenario6_pop1_lowfst.fasta"
@@ -182,8 +182,8 @@ def generate_comprehensive_dataset(
     pop1_high, pop2_high = generate_two_populations(
         n_pop1=n_sequences_per_scenario,
         n_pop2=n_sequences_per_scenario,
-        sequence_length=sequence_length,
-        fst=0.3,
+        length=sequence_length,
+        f_st=0.3,
         rng=rng,
     )
     pop1_high_file = output_dir / "scenario7_pop1_highfst.fasta"
@@ -204,7 +204,7 @@ def generate_comprehensive_dataset(
     logger.info("Scenario 8: Large genotype matrix (1000 individuals, 10000 sites)")
     large_genotypes = generate_genotype_matrix(
         n_individuals=1000,
-        n_sites=10000,
+        n_snps=10000,
         maf_min=0.05,
         maf_max=0.5,
         hwe=True,
@@ -223,7 +223,7 @@ def generate_comprehensive_dataset(
     logger.info("Scenario 9: Linkage disequilibrium data")
     ld_genotypes = generate_linkage_disequilibrium_data(
         n_individuals=500,
-        n_sites=1000,
+        n_snps=1000,
         r_squared_target=0.5,
         rng=rng,
     )

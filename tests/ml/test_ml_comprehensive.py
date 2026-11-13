@@ -177,7 +177,7 @@ class TestBiologicalClassifier:
 
     def test_cross_validate_biological(self):
         """Test biological cross-validation."""
-        results = cross_validate_biological(X=self.X, y=self.y, algorithm="random_forest", cv_folds=3, random_state=42)
+        results = cross_validate_biological(X=self.X, y=self.y, method="rf", cv_folds=3, random_state=42)
 
         # Check results structure
         assert "accuracy" in results or "mean_accuracy" in results
@@ -194,7 +194,7 @@ class TestBiologicalClassifier:
         results = cross_validate_biological(
             X=self.X,
             y=labels,
-            algorithm="random_forest",
+            method="rf",
             cv_folds=3,
             n_estimators=7,
             random_state=42,
@@ -354,7 +354,7 @@ class TestDimensionalityReduction:
 
     def test_pca_basic(self):
         """Test basic PCA functionality."""
-        X_reduced, components, explained_var = reduce_dimensions_pca(X=self.X, n_components=10, standardize=True)
+        X_reduced, components, explained_var = reduce_dimensions_pca(X=self.X, n_components=10, scale_data=True)
 
         # Check output dimensions
         assert X_reduced.shape == (self.n_samples, 10)
@@ -382,10 +382,10 @@ class TestDimensionalityReduction:
     def test_pca_standardization_effect(self):
         """Test effect of standardization on PCA."""
         # With standardization
-        X_std, _, var_std = reduce_dimensions_pca(self.X, n_components=5, standardize=True)
+        X_std, _, var_std = reduce_dimensions_pca(self.X, n_components=5, scale_data=True)
 
         # Without standardization
-        X_raw, _, var_raw = reduce_dimensions_pca(self.X, n_components=5, standardize=False)
+        X_raw, _, var_raw = reduce_dimensions_pca(self.X, n_components=5, scale_data=False)
 
         # Results should be different
         assert not np.allclose(X_std, X_raw)
@@ -506,7 +506,7 @@ class TestValidation:
             accuracy = np.mean(predictions == y_val)
             return {"accuracy": accuracy, "predictions": predictions}
 
-        cv_results = cross_validate(X=self.X, y=self.y, classifier_func=simple_classifier, cv_folds=3, random_state=42)
+        cv_results = cross_validate(X=self.X, y=self.y, classifier_func=simple_classifier, cv=3, random_state=42)
 
         # Check results structure
         assert "mean_accuracy" in cv_results
@@ -564,7 +564,7 @@ class TestValidation:
             y=self.y,
             classifier_func=improving_classifier,
             train_sizes=np.array([0.2, 0.5, 0.8]),
-            cv_folds=3,
+            cv=3,
             random_state=42,
         )
 
@@ -615,7 +615,7 @@ class TestMLIntegration:
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
         # 3. Dimensionality reduction
-        X_train_pca, components, _ = reduce_dimensions_pca(X_train, n_components=50, standardize=True)
+        X_train_pca, components, _ = reduce_dimensions_pca(X_train, n_components=50, scale_data=True)
         X_test_pca = (X_test - np.mean(X_train, axis=0)) @ components
 
         # 4. Train classifier
@@ -630,7 +630,7 @@ class TestMLIntegration:
         importance = clf.get_feature_importance()
 
         # 7. Cross-validation
-        cv_results = cross_validate_biological(X_train_pca, y_train, algorithm="random_forest", cv_folds=3)
+        cv_results = cross_validate_biological(X_train_pca, y_train, method="rf", cv_folds=3)
 
         # Verify pipeline results
         assert accuracy > 0.6  # Should achieve reasonable performance
@@ -657,7 +657,7 @@ class TestMLIntegration:
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=123)
 
         # 3. Dimensionality reduction
-        X_train_pca, components, _ = reduce_dimensions_pca(X_train, n_components=30, standardize=True)
+        X_train_pca, components, _ = reduce_dimensions_pca(X_train, n_components=30, scale_data=True)
         X_test_pca = (X_test - np.mean(X_train, axis=0)) @ components
 
         # 4. Train regressor

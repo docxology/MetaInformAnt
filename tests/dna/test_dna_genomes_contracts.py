@@ -79,7 +79,7 @@ def test_package_rejects_non_assembly_accession_before_touching_the_disk(tmp_pat
 
 
 def test_package_rejects_unknown_file_types_before_touching_the_disk(tmp_path: Path) -> None:
-    """The ``include`` parameter used to be sent as ``include=...``, a name the v2 service ignores."""
+    """The ``include`` parameter is not sent as ``include=...``, a name the v2 service ignores."""
     target = tmp_path / "out"
 
     with pytest.raises(ValueError, match="Unsupported genome package file type"):

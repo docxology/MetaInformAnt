@@ -1,9 +1,9 @@
 """The diffusion maps return eigenvectors of the Markov matrix, built from one weight per kNN edge.
 
-``diffusion_map_reduction`` used to hand a non-symmetric matrix to ``numpy.linalg.eigh`` (which reads only its
-lower triangle and so decomposes some other matrix) and divide the result by the eigenvalues, and
-``compute_diffusion_map`` added the transpose of a directed kNN graph, which doubled the weight of every
-edge that both cells list. These tests compare against an explicit eigendecomposition of the Markov matrix
+``diffusion_map_reduction`` does not hand a non-symmetric matrix to ``numpy.linalg.eigh`` (which reads only
+its lower triangle and so decomposes some other matrix) or divide the result by the eigenvalues, and
+``compute_diffusion_map`` does not add the transpose of a directed kNN graph, which would double the weight of
+every edge that both cells list. These tests compare against an explicit eigendecomposition of the Markov matrix
 built independently here.
 
 Eigenvectors are only defined up to sign and scale (and, in a degenerate eigenspace, rotation), and a solver
@@ -69,7 +69,7 @@ class TestDiffusionMapReductionIsTheMarkovSpectrum:
     def test_the_components_are_right_eigenvectors_of_the_markov_matrix(self, alpha: float) -> None:
         data = _curve()
 
-        result = diffusion_map_reduction(data, n_components=N_COMPONENTS, n_neighbors=5, alpha=alpha)
+        result = diffusion_map_reduction(data, n_components=N_COMPONENTS, alpha=alpha)
 
         info = result.uns["diffusion_map"]
         markov, _ = _explicit_markov_matrix(data.X, info["sigma"], alpha)
@@ -89,14 +89,14 @@ class TestDiffusionMapReductionIsTheMarkovSpectrum:
     def test_the_kernel_width_is_the_median_pairwise_distance(self) -> None:
         data = _curve()
 
-        result = diffusion_map_reduction(data, n_components=N_COMPONENTS, n_neighbors=5)
+        result = diffusion_map_reduction(data, n_components=N_COMPONENTS)
 
         assert result.uns["diffusion_map"]["sigma"] == pytest.approx(float(np.median(squareform(pdist(data.X)))))
 
     def test_the_components_are_orthonormal_in_the_degree_weighted_inner_product(self) -> None:
         data = _curve()
 
-        result = diffusion_map_reduction(data, n_components=N_COMPONENTS, n_neighbors=5)
+        result = diffusion_map_reduction(data, n_components=N_COMPONENTS)
 
         _, degrees = _explicit_markov_matrix(data.X, result.uns["diffusion_map"]["sigma"])
         components = _components(result)
@@ -107,24 +107,22 @@ class TestDiffusionMapReductionIsTheMarkovSpectrum:
         np.testing.assert_allclose(degrees @ components, np.zeros(N_COMPONENTS), atol=1e-10)
 
     def test_each_component_has_its_largest_entry_positive(self) -> None:
-        components = _components(diffusion_map_reduction(_curve(), n_components=N_COMPONENTS, n_neighbors=5))
+        components = _components(diffusion_map_reduction(_curve(), n_components=N_COMPONENTS))
 
         pivot = np.argmax(np.abs(components), axis=0)
         assert np.all(components[pivot, np.arange(N_COMPONENTS)] > 0)
 
     def test_the_eigenvalues_are_decreasing_and_below_the_trivial_one(self) -> None:
         eigenvalues = np.array(
-            diffusion_map_reduction(_curve(), n_components=N_COMPONENTS, n_neighbors=5).uns["diffusion_map"][
-                "eigenvalues"
-            ]
+            diffusion_map_reduction(_curve(), n_components=N_COMPONENTS).uns["diffusion_map"]["eigenvalues"]
         )
 
         assert np.all(np.diff(eigenvalues) < 0)
         assert eigenvalues[0] < 1.0
 
     def test_repeated_runs_agree(self) -> None:
-        first = _components(diffusion_map_reduction(_curve(), n_components=N_COMPONENTS, n_neighbors=5))
-        second = _components(diffusion_map_reduction(_curve(), n_components=N_COMPONENTS, n_neighbors=5))
+        first = _components(diffusion_map_reduction(_curve(), n_components=N_COMPONENTS))
+        second = _components(diffusion_map_reduction(_curve(), n_components=N_COMPONENTS))
 
         np.testing.assert_allclose(first, second, rtol=1e-12, atol=1e-14)
 
@@ -134,24 +132,24 @@ class TestDiffusionMapReductionRejectsWhatItCannotDecompose:
         data = _curve(n_cells=8)
 
         with pytest.raises(errors.ValidationError, match="less than the number of cells"):
-            diffusion_map_reduction(data, n_components=8, n_neighbors=5)
+            diffusion_map_reduction(data, n_components=8)
 
     def test_identical_cells_have_no_kernel_width(self) -> None:
         data = SingleCellData(np.ones((12, 3)))
 
         with pytest.raises(errors.ValidationError, match="identical"):
-            diffusion_map_reduction(data, n_components=2, n_neighbors=5)
+            diffusion_map_reduction(data, n_components=2)
 
     def test_alpha_zero_would_be_the_identity_operator(self) -> None:
         with pytest.raises(errors.ValidationError, match="alpha"):
-            diffusion_map_reduction(_curve(), n_components=N_COMPONENTS, n_neighbors=5, alpha=0.0)
+            diffusion_map_reduction(_curve(), n_components=N_COMPONENTS, alpha=0.0)
 
     def test_infinite_values_are_rejected_before_the_solver(self) -> None:
         data = _curve()
         data.X[3, 1] = np.inf
 
         with pytest.raises(errors.ValidationError, match="non-finite"):
-            diffusion_map_reduction(data, n_components=N_COMPONENTS, n_neighbors=5)
+            diffusion_map_reduction(data, n_components=N_COMPONENTS)
 
 
 def _neighbor_data(n_cells: int = 60, n_neighbors: int = 8) -> SingleCellData:
@@ -221,7 +219,7 @@ class TestComputeDiffusionMapIsTheSymmetricNormalSpectrum:
             np.testing.assert_allclose(operator @ coordinates[:, k], values[k + 1] * coordinates[:, k], atol=1e-10)
 
     def test_the_reported_eigenvalues_are_not_shifted(self) -> None:
-        """A diagonal 'regularization' of 1e-6 used to be added, moving every reported eigenvalue."""
+        """No diagonal 'regularization' of 1e-6 is added, which would move every reported eigenvalue."""
         data = _neighbor_data()
         graph = data.uns["neighbors"]
         affinity = _explicit_affinities(graph["indices"], graph["distances"])

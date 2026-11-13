@@ -3,7 +3,7 @@
 The active RNA wrapper contract targets Amalgkit `0.16.108`, pinned to upstream
 commit `1d1566638abe32e79ee262193bb88769c3482e76` in `pyproject.toml` and `uv.lock`. Historical-version fixtures are
 retained to verify compatibility classification. The test suite must exercise the
-current command surface and must not describe retired command-line options or
+current command surface and must not describe unsupported command-line options or
 an older release as active functionality.
 
 ## Current coverage

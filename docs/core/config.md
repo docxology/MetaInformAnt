@@ -27,7 +27,7 @@ Base configuration files can be overridden by environment-specific configs throu
 Environment variables are strings; the module automatically converts them to `int`, `float`, `bool`, or `str` based on a type map.
 
 ### 5. **Graceful Degradation**
-Optional dependencies (PyYAML, tomllib) are handled gracefully with informative error messages.
+The optional dependency (PyYAML) is handled gracefully: without it, a built-in parser reads simple YAML mappings.
 
 ### 6. **No Global State**
 All functions are pure or accept explicit parameters. No global config singleton.
@@ -36,7 +36,7 @@ All functions are pure or accept explicit parameters. No global config singleton
 
 The `config` module is in `src/metainformant/core/utils/config.py`. It exposes:
 
-- **Core loaders**: `load_mapping_from_file()`, `load_config_file()`
+- **Core loader**: `load_mapping_from_file()`
 - **Merging**: `merge_configs()`
 - **Environment**: `apply_env_overrides()`, `load_typed_env()`, `load_postgres_config_from_env()`
 - **Type coercion**: `coerce_config_types()`
@@ -100,7 +100,7 @@ tool = "bwa"
 enabled = true
 ```
 
-Supported via Python 3.11+ `tomllib` (stdlib) or `tomli` backport.
+Supported via the standard-library `tomllib`.
 
 ### JSON (Machine-Generated Configs)
 
@@ -134,7 +134,6 @@ Load a configuration mapping from YAML, TOML, or JSON.
 **Raises**:
 - `FileNotFoundError` if file doesn't exist
 - `ValueError` if format unsupported or parsing fails
-- `RuntimeError` if required parser (PyYAML/tomllib) missing
 
 **Example**:
 ```python
@@ -145,10 +144,6 @@ pipeline_name = cfg["pipeline"]["name"]
 ```
 
 **Auto-detection**: Based on file suffix (`.yaml`, `.yml`, `.toml`, `.json`).
-
-#### `load_config_file(config_path: Path) -> dict[str, Any]`
-
-Compatibility wrapper that delegates to `load_mapping_from_file()` (older name; use `load_mapping_from_file()` for new code).
 
 ### Environment Variable Overrides
 
@@ -549,17 +544,6 @@ db_cfg["password"] = os.getenv("DB_PASSWORD", db_cfg.get("password"))
 
 Or use separate `config/production-secrets.yaml` (git-ignored) to load optionally.
 
-### Pitfall 6: TOML in Python < 3.11
-
-**Symptom**: `ImportError: tomllib not available`
-
-**Cause**: Using `.toml` files on Python 3.10 or earlier.
-
-**Fix**:
-- Upgrade to Python 3.11+
-- Or install `tomli` backport: `uv pip install tomli`
-- The module tries `importlib.import_module("tomllib")` and falls back gracefully
-
 ## Performance Considerations
 
 ### Config Loading Overhead
@@ -617,7 +601,7 @@ cursor.execute(query, (cfg["value"],))
 
 ### Secrets in Config Files
 
-Never commit passwords/tokens. Use environment variables or secret managers (AWS Secrets Manager, HashiCorp Vault).
+Never commit passwords/tokens. Use environment variables or a secret manager (for example HashiCorp Vault).
 
 ## Type-checking and Validation
 
@@ -675,8 +659,8 @@ logger.info(f"Running with {threads} threads on {input_dir}")
 
 ## Dependencies
 
-- **Required**: Python stdlib `os`, `pathlib`, `json`
-- **Optional**: `PyYAML` for full YAML support, `tomli`/`tomllib` for TOML (stdlib in Python 3.11+)
+- **Required**: Python stdlib `os`, `pathlib`, `json`, `tomllib`
+- **Optional**: `PyYAML` for full YAML support
 
 ## Testing
 

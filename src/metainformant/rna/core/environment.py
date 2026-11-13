@@ -75,7 +75,7 @@ def check_sra_toolkit() -> Tuple[bool, str]:
                 version = result.stdout.strip() or result.stderr.strip()
                 return True, f"{cmd}: {version}"
 
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+        except subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError:
             continue
 
     return False, "SRA Toolkit not found (fastq-dump/prefetch not available)"

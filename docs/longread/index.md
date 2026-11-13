@@ -27,7 +27,8 @@ Analysis tools for Oxford Nanopore (ONT) and PacBio long-read sequencing data.
 - **plots.py** - Read length histograms, dotplots, alignment views, methylation tracks
 
 ### Workflow (`workflow/`)
-- **orchestrator.py** - Pipeline orchestration (LongReadOrchestrator)
+- **orchestrator_core.py** - Pipeline orchestration (LongReadOrchestrator)
+- **pipeline_stages.py** - Step builders for the QC, assembly, methylation and SV pipelines
 - **pipelines.py** - Pre-configured analysis pipelines
 - **reporting.py** - QC report generation
 
@@ -37,5 +38,5 @@ Analysis tools for Oxford Nanopore (ONT) and PacBio long-read sequencing data.
 from metainformant.longread.io import fast5, bam
 from metainformant.longread.analysis import modified_bases, phasing
 from metainformant.longread.assembly import consensus, hybrid
-from metainformant.longread.workflow import orchestrator
+from metainformant.longread.workflow import orchestrator_core
 ```

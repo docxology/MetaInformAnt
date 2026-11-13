@@ -1,11 +1,10 @@
 """Ligand-receptor scoring matches genes to expression columns by name, and by nothing else.
 
-``compute_ligand_receptor_interactions`` used to take no gene names: a numeric ligand or receptor string
-selected that column, and every other name was hashed (CRC32) onto one of the columns. With real gene symbols
-the score of a pair therefore came from two arbitrary columns, whatever the data contained. The function now
-needs the names of the expression columns (or a dataset that carries them), scores only the database pairs
-whose two genes are among them, and raises when the names are missing or no pair is present. Real computation
-only; the expected scores are recomputed here by hand from the named columns.
+``compute_ligand_receptor_interactions`` does not select a column by a numeric ligand or receptor string or hash
+(CRC32) other names onto columns, which would score a pair of real gene symbols from two arbitrary columns whatever
+the data contain. The function needs the names of the expression columns (or a dataset that carries them), scores
+only the database pairs whose two genes are among them, and raises when the names are missing or no pair is present.
+Real computation only; the expected scores are recomputed here by hand from the named columns.
 """
 
 from __future__ import annotations

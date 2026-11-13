@@ -80,9 +80,7 @@ def test_a_non_root_seed_is_a_root_of_its_sub_ontology() -> None:
     sub = get_subontology(_ontology(SPEC), ["BP:a"])
 
     assert set(sub.terms) == {"BP:a", "BP:b", "BP:cross", "BP:leaf"}
-    assert sub.get_roots() == {
-        "BP:a"
-    }  # it used to be empty: BP:a still pointed at BP:root, which is not in the sub-ontology
+    assert sub.get_roots() == {"BP:a"}  # not empty: BP:a keeps no link to BP:root, which is not in the sub-ontology
     assert ancestors(sub, "BP:leaf") == {"BP:cross", "BP:b", "BP:a"}  # not BP:root, not MF:a, not MF:root
 
 

@@ -36,7 +36,6 @@ from .amalgkit import (
     select,
     validate_amalgkit_version,
     verify_installed_amalgkit,
-    warn_auto_install_ignored,
     wsfilter,
 )
 
@@ -77,6 +76,5 @@ __all__ = [
     "dataset",
     "validate_amalgkit_version",
     "verify_installed_amalgkit",
-    "warn_auto_install_ignored",
     "wsfilter",
 ]

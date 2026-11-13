@@ -123,12 +123,12 @@ uv lock
 
 ### Python Version
 
-**Requirement**: Python 3.11+ (uses `from __future__ import annotations`).
+**Requirement**: Python 3.14+ (`requires-python = ">=3.14"` in `pyproject.toml`).
 
 Check:
 
 ```bash
-python --version  # must be >= 3.11
+python --version  # must be >= 3.14
 ```
 
 ### System Dependencies
@@ -141,7 +141,7 @@ Some modules require external tools:
 | SRA toolkit | `sratoolkit` (NCBI) | `rna.retrieval` |
 | PLINK | `plink1.9` / `plink2` | `gwas` |
 | BWA | `bwa` (binary) | `dna` |
-| Docker (optional) | `docker` daemon | `cloud` |
+| Docker (optional) | `docker` daemon | `rna` (pipeline container, see the repository `Dockerfile`) |
 
 Install system packages via conda/apt/brew:
 
@@ -168,20 +168,21 @@ rna-pipeline --samples samples.tsv --output output/
 ### Strategy 2: Python API
 
 ```python-snippet
-from pathlib import Path
-from metainformant.core.engine.workflow_manager import BasePipelineManager, PipelinePhase, WorkflowManager
-from metainformant.rna.amalgkit import run_amalgkit
+from metainformant.core.engine.workflow_manager import BasePipelineManager, PipelineItem, PipelinePhase
 
-# Programmatic construction (the YAML config supplies work_dir and species)
-workflow = WorkflowManager(
-    config_path=Path("config/rna_pipeline.yaml"),
-    max_threads=8,
-    run_amalgkit=run_amalgkit,
-)
-workflow.add_sample(
+
+def download(manager: BasePipelineManager, items: list[PipelineItem]) -> None:
+    for item in items:
+        manager.mark_running(item, status="Downloading")
+        ...  # fetch item.metadata["sra_url"] to item.metadata["dest_path"]
+        manager.mark_done(item)
+
+
+# Programmatic construction: the phases are plain handler functions
+workflow = BasePipelineManager([PipelinePhase("Download", download)], max_threads=8)
+workflow.add_item(
     "SRR14740514",
-    sra_url="https://sra.example.com/SRR14740514",
-    dest_path=Path("output/rna_run1/SRR14740514.sra"),
+    metadata={"sra_url": "https://sra.example.com/SRR14740514", "dest_path": "output/rna_run1/SRR14740514.sra"},
 )
 results = workflow.run()
 
@@ -299,7 +300,7 @@ workers = resource_aware_workers(
           process(line)
   ```
 
-- **Delete large objects** explicitly when no longer needed:
+- **Delete large objects** explicitly once you are done with them:
 
   ```python
   del large_dataframe
@@ -504,7 +505,7 @@ sudo journalctl -u metainformant-rna -f  # follow logs
 ### Docker Container
 
 ```dockerfile
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 RUN apt-get update && apt-get install -y \
     kallisto \
@@ -537,7 +538,7 @@ docker run -v /data:/data -v /config:/config metainformant/rna --config /config/
 #SBATCH --time=24:00:00
 #SBATCH --output=slurm-%j.out
 
-module load python/3.11
+module load python/3.14
 source /path/to/venv/bin/activate
 
 python -m metainformant.rna.amalgkit --config $1
@@ -588,7 +589,7 @@ user_config = load_mapping_from_file(f"/home/{user}/.metainformant/config.yaml")
 Never store credentials in config files. Use:
 
 - **Environment variables**: `export NCBI_API_KEY=xxx`
-- **Secret managers**: HashiCorp Vault, AWS Secrets Manager
+- **Secret managers**: for example HashiCorp Vault
 - **Protected files**: `~/.netrc` with restrictive permissions (`chmod 600`)
 
 Access:

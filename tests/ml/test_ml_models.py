@@ -413,7 +413,7 @@ class TestCrossValidateBiologicalFailuresSurface:
     """A metric that cannot be computed is an error, not a ``None`` or NaN entry in the results."""
 
     def test_invalid_estimator_parameter_raises(self, clf_data):
-        """Regression: every metric used to be recorded as None and the call returned normally."""
+        """Regression: the call raises instead of recording every metric as None and returning normally."""
         X, y = clf_data
 
         with pytest.raises(ValueError, match="n_estimators"):
@@ -426,7 +426,7 @@ class TestCrossValidateBiologicalFailuresSurface:
             cross_validate_biological(X, y, method="rf", cv_folds=5, random_state=0, parallel_jobs=1)
 
     def test_non_finite_features_raise_instead_of_nan_scores(self):
-        """sklearn's default error_score=nan used to turn failed folds into silent NaN means."""
+        """Failed folds raise; sklearn's default error_score=nan would turn them into silent NaN means."""
         rng = np.random.default_rng(5)
         X = rng.standard_normal((40, 4))
         X[3, 1] = np.nan
@@ -438,8 +438,8 @@ class TestCrossValidateBiologicalFailuresSurface:
     def test_undefined_roc_auc_raises(self):
         """ROC-AUC is undefined in a fold without positives.
 
-        scikit-learn reports it as NaN with a warning rather than an exception; that used to reach the
-        caller as ``roc_auc: {"mean": nan, ...}`` and must be rejected as a non-finite metric.
+        scikit-learn reports it as NaN with a warning rather than an exception; instead of reaching the
+        caller as ``roc_auc: {"mean": nan, ...}`` it is rejected as a non-finite metric.
         """
         rng = np.random.default_rng(9)
         X = rng.standard_normal((40, 4))

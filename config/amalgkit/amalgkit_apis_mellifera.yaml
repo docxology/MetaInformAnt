@@ -12,8 +12,6 @@ log_dir: output/amalgkit/apis_mellifera/logs
 threads: 60
 
 
-auto_install_amalgkit: true
-
 
 # Pre-selection filtering rules
 filters:

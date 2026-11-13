@@ -132,7 +132,7 @@ def _redirect_target(current_url: str, status_code: int, location: Optional[str]
         return None
     try:  # http.client decodes headers as latin-1, but servers send UTF-8 (same repair requests applies)
         location = location.encode("latin1").decode("utf-8")
-    except (UnicodeEncodeError, UnicodeDecodeError):
+    except UnicodeEncodeError, UnicodeDecodeError:
         pass
     return urljoin(current_url, location)
 
@@ -150,20 +150,16 @@ def _species_output_path(species_dir: Path, data: Dict[str, Any]) -> Path:
 class AntWikiScraperConfig:
     """Configuration for AntWiki scraper.
 
-    ``delay_between_requests`` / ``delay_seconds`` and ``timeout`` / ``timeout_seconds`` are two spellings of the
-    same two settings: reading or assigning either spelling reads or assigns one shared value, and every assignment is
-    validated.
+    ``delay_seconds`` and ``timeout_seconds`` are validated on every assignment.
     """
 
     def __init__(
         self,
         base_url: str = "https://www.antwiki.org/wiki/",
-        delay_between_requests: float | None = None,
-        timeout: int | None = None,
+        delay_seconds: float = 2.0,
+        timeout_seconds: int = 30,
         max_retries: int = 3,
         user_agent: str = "MetaInformant/1.0 (research@metainformant.org)",
-        delay_seconds: float | None = None,
-        timeout_seconds: int | None = None,
         check_robots: bool = True,
         output_dir: Any = None,
     ):
@@ -171,38 +167,20 @@ class AntWikiScraperConfig:
 
         Args:
             base_url: Base URL for AntWiki
-            delay_between_requests: Minimum seconds to wait between requests (raised to the site's robots.txt
+            delay_seconds: Minimum seconds to wait between requests (raised to the site's robots.txt
                 ``Crawl-delay`` when that is larger and ``check_robots`` is true)
-            timeout: Request timeout in seconds
+            timeout_seconds: Request timeout in seconds
             max_retries: Maximum number of retries for failed requests
             user_agent: User agent string for requests. robots.txt groups are matched against its leading product
                 token (the text before the first ``/``), so keep the token that identifies this scraper first.
-            delay_seconds: Alias for delay_between_requests (wins if both are given)
-            timeout_seconds: Alias for timeout (wins if both are given)
             check_robots: Consult robots.txt (default True): it is downloaded once per origin per scraper, URLs it
                 disallows raise ``RobotsDisallowedError`` and its ``Crawl-delay`` raises the delay between requests.
                 ``False`` is an explicit opt-out: robots.txt is neither requested nor applied.
             output_dir: Default output directory
         """
         self.base_url = base_url
-
-        # Handle parameter aliases (the *_seconds spelling wins when both are given)
-        if delay_seconds is not None:
-            delay = float(delay_seconds)
-        elif delay_between_requests is not None:
-            delay = float(delay_between_requests)
-        else:
-            delay = 2.0
-
-        if timeout_seconds is not None:
-            timeout_value = int(timeout_seconds)
-        elif timeout is not None:
-            timeout_value = int(timeout)
-        else:
-            timeout_value = 30
-
-        self.delay_between_requests = delay  # validated by the property setter
-        self.timeout = timeout_value  # validated by the property setter
+        self.delay_seconds = delay_seconds  # validated by the property setter
+        self.timeout_seconds = timeout_seconds  # validated by the property setter
         self.max_retries = max_retries
         self.user_agent = user_agent
         self.check_robots = check_robots
@@ -211,44 +189,26 @@ class AntWikiScraperConfig:
         validation.validate_range(max_retries, min_val=0, name="max_retries")
 
     @property
-    def delay_between_requests(self) -> float:
-        """Minimum seconds between requests (``delay_seconds`` is the same setting)."""
-        return self._delay
-
-    @delay_between_requests.setter
-    def delay_between_requests(self, value: float) -> None:
-        validation.validate_type(value, (int, float), "delay_between_requests")
-        validation.validate_range(value, min_val=0.1, name="delay_between_requests")
-        self._delay = float(value)
-
-    @property
     def delay_seconds(self) -> float:
-        """Alias for delay_between_requests (readable and assignable)."""
-        return self.delay_between_requests
+        """Minimum seconds between requests (at least 0.1)."""
+        return self._delay
 
     @delay_seconds.setter
     def delay_seconds(self, value: float) -> None:
-        self.delay_between_requests = value
-
-    @property
-    def timeout(self) -> int:
-        """Request timeout in seconds (``timeout_seconds`` is the same setting)."""
-        return self._timeout
-
-    @timeout.setter
-    def timeout(self, value: int) -> None:
-        validation.validate_type(value, (int, float), "timeout")
-        validation.validate_range(value, min_val=1, name="timeout")
-        self._timeout = int(value)
+        validation.validate_type(value, (int, float), "delay_seconds")
+        validation.validate_range(value, min_val=0.1, name="delay_seconds")
+        self._delay = float(value)
 
     @property
     def timeout_seconds(self) -> int:
-        """Alias for timeout (readable and assignable)."""
-        return self.timeout
+        """Request timeout in seconds (at least 1)."""
+        return self._timeout
 
     @timeout_seconds.setter
     def timeout_seconds(self, value: int) -> None:
-        self.timeout = value
+        validation.validate_type(value, (int, float), "timeout_seconds")
+        validation.validate_range(value, min_val=1, name="timeout_seconds")
+        self._timeout = int(value)
 
 
 class AntWikiScraper:
@@ -306,7 +266,7 @@ class AntWikiScraper:
             site_url: Any URL on the site the rules belong to; defaults to ``config.base_url``.
 
         Returns:
-            The parser now in force for that origin. It is ignored while ``check_robots`` is false.
+            The parser in force for that origin. It is ignored while ``check_robots`` is false.
         """
         origin = _origin(site_url or self.config.base_url)
         parser = build_robots_parser(robots, f"{origin}/robots.txt")
@@ -333,7 +293,7 @@ class AntWikiScraper:
         for attempt in range(self.config.max_retries + 1):
             try:
                 logger.debug(f"Requesting {robots_url} (attempt {attempt + 1})")
-                response = self.session.get(robots_url, timeout=self.config.timeout)
+                response = self.session.get(robots_url, timeout=self.config.timeout_seconds)
             except requests.RequestException as e:
                 problem = str(e)
             else:
@@ -387,7 +347,7 @@ class AntWikiScraper:
 
         Downloads the site's robots.txt on first use (unless ``check_robots`` is false).
         """
-        return max(self.config.delay_between_requests, self.crawl_delay(url) or 0.0)
+        return max(self.config.delay_seconds, self.crawl_delay(url) or 0.0)
 
     def _get(self, url: str) -> requests.Response:
         """GET ``url`` with robots.txt enforced on it and on every redirect hop.
@@ -406,7 +366,7 @@ class AntWikiScraper:
             if first_contact:
                 # robots.txt was just downloaded from this host: that was a request too
                 self._respectful_delay(current)
-            response = self.session.get(current, timeout=self.config.timeout, allow_redirects=False)
+            response = self.session.get(current, timeout=self.config.timeout_seconds, allow_redirects=False)
             target = _redirect_target(current, response.status_code, response.headers.get("Location"))
             if target is None:
                 return response
@@ -470,7 +430,7 @@ class AntWikiScraper:
 
     def _respectful_delay(self, url: Optional[str] = None) -> None:
         """Wait between requests: the configured delay, raised to the site's ``Crawl-delay`` when ``url`` is given."""
-        time.sleep(self.config.delay_between_requests if url is None else self.effective_delay(url))
+        time.sleep(self.config.delay_seconds if url is None else self.effective_delay(url))
 
     def _species_url(self, species_name_or_url: str) -> str:
         """Absolute page URL for a species name (e.g. ``Formica_rufa``) or a full URL."""
@@ -795,15 +755,12 @@ class AntWikiScraper:
 
         return sum(score_components)
 
-    def scrape_species_list(self, limit: Optional[int] = None) -> Iterator[str]:
+    def scrape_species_list(self) -> Iterator[str]:
         """Yield species page URLs from the AntWiki species index.
 
         Species-index retrieval is **not implemented**. How AntWiki exposes its species directory (category pages,
-        ``Special:AllPages``, a sitemap) has not been verified against the live site, and this method no longer
-        substitutes a fixed five-species sample for it: that stand-in made "all species" silently mean five species.
-
-        Args:
-            limit: Accepted for API compatibility; unused.
+        ``Special:AllPages``, a sitemap) has not been verified against the live site, and this method does not
+        substitute a fixed sample of species for it, which would make "all species" silently mean a handful.
 
         Raises:
             NotImplementedError: Always. Name the species instead: ``scrape_all_species(species=[...])``,
@@ -922,24 +879,21 @@ class AntWikiScraper:
         soup = BeautifulSoup(html, "html.parser")
         return self._extract_taxonomy(soup)
 
-    def get_species_list(self, limit: Optional[int] = None) -> List[str]:
+    def get_species_list(self) -> List[str]:
         """Get the species page URLs listed in the AntWiki species index.
 
         Returns page URLs, not bare species names. Species-index retrieval is not implemented, so this raises
         ``NotImplementedError`` (see :meth:`scrape_species_list`).
 
-        Args:
-            limit: Accepted for API compatibility; unused.
-
         Returns:
-            List of species page URLs (never returned today: the call raises).
+            List of species page URLs (never returned: the call raises).
         """
-        return list(self.scrape_species_list(limit=limit))
+        return list(self.scrape_species_list())
 
     def _species_urls_to_scrape(self, species: Optional[Iterable[str]], limit: Optional[int]) -> List[str]:
         """Resolve the species to scrape into distinct absolute URLs, in order, capped at ``limit``."""
         if species is None:
-            return list(self.scrape_species_list(limit=limit))  # raises NotImplementedError
+            return list(self.scrape_species_list())  # raises NotImplementedError
         if isinstance(species, str):
             species = [species]  # a bare name is one species, not a sequence of characters
         if limit is not None:
@@ -1062,8 +1016,8 @@ def create_default_scraper_config(output_path: str | Path) -> None:
     config = AntWikiScraperConfig()
     config_dict = {
         "base_url": config.base_url,
-        "delay_between_requests": config.delay_between_requests,
-        "timeout": config.timeout,
+        "delay_seconds": config.delay_seconds,
+        "timeout_seconds": config.timeout_seconds,
         "max_retries": config.max_retries,
         "user_agent": config.user_agent,
         "check_robots": config.check_robots,

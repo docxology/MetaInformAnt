@@ -55,21 +55,21 @@ def generate_visualizations(
     logger.info("Generating diversity comparison plot")
     plot_diversity_comparison(
         comp["diversity_comparison"],
-        output_path=str(plots_dir / "diversity_comparison.png"),
+        output_file=str(plots_dir / "diversity_comparison.png"),
     )
 
     # 2. Tajima's D comparison
     logger.info("Generating Tajima's D comparison plot")
     plot_tajimas_d_comparison(
         comp["tajimas_d_comparison"],
-        output_path=str(plots_dir / "tajimas_d_comparison.png"),
+        output_file=str(plots_dir / "tajimas_d_comparison.png"),
     )
 
     # 3. Fst comparison
     logger.info("Generating Fst comparison plot")
     plot_fst_comparison(
         comp["fst_comparison"],
-        output_path=str(plots_dir / "fst_comparison.png"),
+        output_file=str(plots_dir / "fst_comparison.png"),
     )
 
     # 4. Neutrality test summary
@@ -90,7 +90,7 @@ def generate_visualizations(
     if neutrality_data:
         plot_neutrality_test_summary(
             neutrality_data,
-            output_path=str(plots_dir / "neutrality_test_summary.png"),
+            output_file=str(plots_dir / "neutrality_test_summary.png"),
         )
 
     # 5. PCA plots (if available)
@@ -100,8 +100,7 @@ def generate_visualizations(
         if "full_result" in pca_data:
             plot_pca_results(
                 pca_data["full_result"],
-                output_path=str(plots_dir / "pca_analysis.png"),
-                n_components=10,
+                output_file=str(plots_dir / "pca_analysis.png"),
             )
 
     # 6. Kinship matrix (if available)
@@ -111,7 +110,7 @@ def generate_visualizations(
         if "full_result" in kinship_data:
             plot_kinship_matrix(
                 kinship_data["full_result"],
-                output_path=str(plots_dir / "kinship_matrix.png"),
+                output_file=str(plots_dir / "kinship_matrix.png"),
                 max_samples=100,
             )
 
@@ -119,14 +118,14 @@ def generate_visualizations(
     logger.info("Generating site frequency spectrum example")
 
     example_sfs = generate_site_frequency_spectrum(
-        sample_size=30,
+        n_samples=30,
         n_sites=100,
         folded=True,
         rng=random.Random(42),
     )
     plot_site_frequency_spectrum(
         example_sfs,
-        output_path=str(plots_dir / "site_frequency_spectrum_example.png"),
+        output_file=str(plots_dir / "site_frequency_spectrum_example.png"),
     )
 
     # 8. Demographic model comparison
@@ -134,7 +133,7 @@ def generate_visualizations(
         logger.info("Generating demographic model comparison plot")
         plot_demographic_comparison(
             demo,
-            output_path=str(plots_dir / "demographic_model_comparison.png"),
+            output_file=str(plots_dir / "demographic_model_comparison.png"),
         )
 
     # 9. Summary statistics grid
@@ -155,7 +154,7 @@ def generate_visualizations(
     if summary_stats_data:
         plot_summary_statistics_grid(
             summary_stats_data,
-            output_path=str(plots_dir / "summary_statistics_grid.png"),
+            output_file=str(plots_dir / "summary_statistics_grid.png"),
         )
 
     # 10. Linkage disequilibrium decay (if available)
@@ -166,7 +165,7 @@ def generate_visualizations(
             plot_linkage_disequilibrium_decay(
                 ld_data["r_squared_values"],
                 distances=list(range(len(ld_data["r_squared_values"]))),
-                output_path=str(plots_dir / "linkage_disequilibrium_decay.png"),
+                output_file=str(plots_dir / "linkage_disequilibrium_decay.png"),
             )
 
     # Additional statistical test visualizations
@@ -195,7 +194,7 @@ def generate_visualizations(
         logger.info("Generating comprehensive neutrality test suite plot")
         plot_neutrality_test_suite(
             neutrality_test_results,
-            output_path=str(plots_dir / "comprehensive_neutrality_test_suite.png"),
+            output_file=str(plots_dir / "comprehensive_neutrality_test_suite.png"),
         )
 
     # Generate correlation matrix for statistics

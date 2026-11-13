@@ -566,13 +566,13 @@ def test_include_aliases_agree_with_service_command_lines() -> None:
     ]
 
 
-def test_legacy_include_parameter_changes_nothing_on_the_service() -> None:
-    """The old code sent ``include=genome,gff3``; the service answered as if nothing had been asked."""
+def test_include_query_parameter_changes_nothing_on_the_service() -> None:
+    """An ``include=genome,gff3`` query parameter is ignored by the service, so the client does not send one."""
     default = load(f"download_summary_{AMEL}_default.json")
-    legacy = load(f"download_summary_{AMEL}_legacy_include_ignored.json")
+    ignored = load(f"download_summary_{AMEL}_include_param_ignored.json")
     proper = load(f"download_summary_{AMEL}_genome_gff3.json")
 
-    assert legacy == default
+    assert ignored == default
     assert proper != default
     assert "include" not in ncbi_datasets.build_package_request(AMEL, ["genome", "gff3"]).params
 
@@ -964,7 +964,7 @@ def test_chromosome_lengths_keep_the_contact_policy(
 
 
 # --------------------------------------------------------------------------------------
-# Public functions: a failed query raises, it no longer returns an empty result
+# Public functions: a failed query raises; it does not return an empty result
 # --------------------------------------------------------------------------------------
 
 

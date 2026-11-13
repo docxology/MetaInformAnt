@@ -36,7 +36,7 @@ def _as_real_number(value: Any) -> float:
         return math.nan
     try:
         return float(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return math.nan
 
 

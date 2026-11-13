@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import base64
 import hashlib
 import json
 import os
 import re
 import tempfile
-import time
 from pathlib import Path, PurePosixPath
 from typing import Any, Protocol
 
@@ -81,82 +79,3 @@ class DirectoryStore:
                 os.close(directory_fd)
         finally:
             temporary.unlink(missing_ok=True)
-
-
-class S3Store:
-    """S3 conditional writes with server checksum and explicit readback."""
-
-    def __init__(
-        self,
-        bucket: str,
-        prefix: str,
-        *,
-        profile: str | None = None,
-        region: str | None = None,
-    ):
-        import boto3
-        from botocore.config import Config
-
-        self.bucket = bucket
-        self.prefix = safe_key(prefix.strip("/"))
-        self._published: set[str] = set()
-        self.client = boto3.Session(profile_name=profile, region_name=region).client(
-            "s3",
-            config=Config(
-                connect_timeout=10,
-                read_timeout=60,
-                retries={"mode": "standard", "max_attempts": 5},
-            ),
-        )
-
-    def _key(self, key: str) -> str:
-        return f"{self.prefix}/{safe_key(key)}"
-
-    def get(self, key: str) -> bytes:
-        for attempt in range(6):
-            try:
-                response = self.client.get_object(Bucket=self.bucket, Key=self._key(key))
-            except self.client.exceptions.NoSuchKey as exc:
-                if key not in self._published or attempt == 5:
-                    raise FileNotFoundError(key) from exc
-                time.sleep(min(4.0, 0.25 * 2**attempt))
-            else:
-                break
-        with response["Body"] as body:
-            payload = body.read()
-        if not isinstance(payload, bytes):
-            raise TypeError("S3 object body must contain bytes")
-        return payload
-
-    def put(self, key: str, data: bytes) -> None:
-        try:
-            self.client.put_object(
-                Bucket=self.bucket,
-                Key=self._key(key),
-                Body=data,
-                IfNoneMatch="*",
-                ChecksumSHA256=base64.b64encode(hashlib.sha256(data).digest()).decode(),
-                ServerSideEncryption="AES256",
-            )
-        except self.client.exceptions.ClientError as exc:
-            # S3 does not model conditional-write failures as typed exceptions.
-            # Only a failed precondition is an idempotence check; all other errors propagate.
-            if exc.response["ResponseMetadata"]["HTTPStatusCode"] != 412:
-                raise
-            self._published.add(key)
-            if self.get(key) != data:
-                raise FileExistsError(f"immutable object conflict: {key}") from exc
-        self._published.add(key)
-        for attempt in range(6):
-            try:
-                written = self.get(key)
-            except FileNotFoundError:
-                # Production readback occasionally returned NoSuchKey immediately
-                # after a successful PUT. Retry boundedly; never publish on absence.
-                if attempt == 5:
-                    raise
-                time.sleep(min(4.0, 0.25 * 2**attempt))
-                continue
-            if written != data:
-                raise ValueError(f"S3 object readback mismatch: {key}")
-            break

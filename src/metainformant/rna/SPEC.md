@@ -16,7 +16,6 @@ downstream analysis for the pinned Amalgkit 0.16.108 contract.
 | `retrieval/` | ENA/SRA retrieval helpers |
 | `splicing/` | Alternative-splicing analysis |
 | `deconvolution/` | Cell-type deconvolution from bulk RNA-seq |
-| `integration/` | Cross-domain adapters (campaign observation figures) behind the package boundary |
 
 ## Current stages
 
@@ -35,11 +34,7 @@ are project checkpoints and require the producer lock to be released.
 - `engine.workflow` — `AmalgkitWorkflowConfig`, `load_workflow_config`,
   `plan_workflow`, and `execute_workflow`
 - `engine.provenance` — current hash-bound receipt writers and validators
-- `engine.durable_quant` — immutable local/S3 output receipts and verified restoration
-- `engine.completion_inventory` — frozen configured-taxon inventory and local output sealing
-- `engine.acquisition_cli` — unified local/worker/AWS acquisition entry point
-- `engine.aws_completion` — budget-bound generic AWS processing with explicit frozen
-  configurations and full-cohort quantification verification
+- `engine.durable_quant` — immutable local output receipts and verified restoration
 - `engine.preflight` — mandatory start-of-run campaign preflight
   (`run_campaign_preflight`): data-root write probe and Amalgkit CLI
   resolution; runnable as `python -m metainformant.rna.engine.preflight`
@@ -65,10 +60,10 @@ are project checkpoints and require the producer lock to be released.
 - Biological claims are made only from regenerated, source-bound evidence.
 
 - Acquisition compression defaults to lossless level 1; temporary byte and disk
-  reservations remain mandatory for cloud work.
+  reservations remain mandatory.
 - ENA file overlap is explicitly bounded to one or two transfers per run and
   does not expand admitted sample ownership or raw-byte reservations.
-- Existing campaign schemas and original billing records remain readable on resume.
+- Existing campaign schemas remain readable on resume.
 
 ## Recovery process observations
 

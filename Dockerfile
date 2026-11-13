@@ -14,7 +14,7 @@
 # Run:    docker run -v $(pwd)/output:/app/output metainformant-pipeline
 # ─────────────────────────────────────────────────────────────────────────
 
-FROM python:3.13-slim AS base
+FROM python:3.14-slim AS base
 
 LABEL maintainer="docxology"
 LABEL description="MetaInformAnt amalgkit RNA-seq pipeline"

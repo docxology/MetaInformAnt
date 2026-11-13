@@ -38,16 +38,6 @@ class AlignmentResult:
     traceback_matrix: np.ndarray = field(default_factory=lambda: np.empty((0, 0), dtype=int))
     start_positions: Optional[Tuple[int, int]] = None
 
-    @property
-    def aligned_seq1(self) -> str:
-        """Backward-compatible alias for ``seq1_aligned``."""
-        return self.seq1_aligned
-
-    @property
-    def aligned_seq2(self) -> str:
-        """Backward-compatible alias for ``seq2_aligned``."""
-        return self.seq2_aligned
-
 
 def global_align(seq1: str, seq2: str, match: int = 1, mismatch: int = -1, gap: int = -2) -> AlignmentResult:
     """Perform global sequence alignment using Needleman-Wunsch algorithm.

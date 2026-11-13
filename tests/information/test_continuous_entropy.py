@@ -41,8 +41,8 @@ class TestHistogramDifferentialEntropy:
         rng = np.random.default_rng(42)
         samples = rng.normal(0, 1, 10000)
         h = differential_entropy(samples, method="histogram", bins=64)
-        # previously this returned the discrete entropy of bin masses
-        # (no log-volume term), which is ~0.55 nats too low here
+        # the discrete entropy of the bin masses (without the log-volume term)
+        # would be ~0.55 nats too low here
         assert h == pytest.approx(TRUE_NORMAL_NATS, abs=0.02)
 
     def test_normal_default_sturges_bins(self) -> None:
@@ -82,8 +82,8 @@ class TestKozachenkoLeonenkoEntropy:
         rng = np.random.default_rng(42)
         samples = rng.normal(0, 1, 5000)
         h = differential_entropy(samples, method="knn")
-        # previously implemented mean(log eps) + log(2) + gamma with the k-th
-        # NN distance, which is not the KL/KSG estimator
+        # the estimator is Kozachenko-Leonenko; mean(log eps) + log(2) + gamma
+        # with the k-th NN distance is not the KL/KSG estimator
         assert h == pytest.approx(TRUE_NORMAL_NATS, abs=0.05)
 
     def test_uniform_support_entropy_near_zero(self) -> None:

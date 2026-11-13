@@ -445,7 +445,7 @@ def load_pipeline_config(config_path: Path | str) -> dict[str, Any]:
         from metainformant.core.utils.config import apply_env_overrides
 
         raw_config = apply_env_overrides(raw_config, prefix="LR")
-    except (ImportError, AttributeError):
+    except ImportError, AttributeError:
         pass
 
     logger.info("Loaded pipeline config from %s: pipeline=%s", config_path, raw_config.get("pipeline_name", "unknown"))

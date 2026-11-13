@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from metainformant.networks.analysis.graph import BiologicalNetwork
+from metainformant.networks.analysis.graph_core import BiologicalNetwork
 from metainformant.networks.interaction.ppi import (
     ProteinNetwork,
     functional_enrichment_ppi,
@@ -257,7 +257,7 @@ class TestLoadStringInteractions:
         try:
             ppi_network = load_string_interactions(interactions_df=invalid_data)
             assert isinstance(ppi_network, ProteinNetwork)
-        except (ValueError, KeyError):
+        except ValueError, KeyError:
             # Acceptable to raise error for invalid format
             pass
 
@@ -308,34 +308,27 @@ class TestPredictInteractions:
 
     def test_predict_interactions_different_methods(self):
         """Test interaction prediction with different methods."""
-        methods = ["similarity", "coexpression", "domain"]
+        methods = ["similarity", "correlation", "guilt-by-association"]
 
         for method in methods:
-            try:
-                predictions = predict_interactions(
-                    target_proteins=["P7"], known_network=self.known_network, method=method
-                )
+            predictions = predict_interactions(target_proteins=["P7"], known_network=self.known_network, method=method)
 
-                # All methods should return valid predictions
-                assert isinstance(predictions, dict)
+            # Every method returns a dict (empty when it lacks its inputs)
+            assert isinstance(predictions, dict)
 
-            except ValueError as e:
-                if "Unknown method" in str(e):
-                    # Some methods might not be implemented
-                    continue
-                else:
-                    raise
+        with pytest.raises(ValueError, match="Unknown prediction method"):
+            predict_interactions(target_proteins=["P7"], known_network=self.known_network, method="coexpression")
 
     def test_predict_interactions_confidence_threshold(self):
         """Test prediction with confidence threshold."""
         # High threshold (strict predictions)
         strict_predictions = predict_interactions(
-            target_proteins=["P7"], known_network=self.known_network, confidence_threshold=0.8
+            target_proteins=["P7"], known_network=self.known_network, threshold=0.8
         )
 
         # Low threshold (permissive predictions)
         permissive_predictions = predict_interactions(
-            target_proteins=["P7"], known_network=self.known_network, confidence_threshold=0.3
+            target_proteins=["P7"], known_network=self.known_network, threshold=0.3
         )
 
         # Should return predictions (might be empty with high threshold)

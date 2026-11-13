@@ -412,8 +412,8 @@ class TestDosingRecommendationPhenotypeForms:
         ],
     )
     def test_codeine_recommendation_for_any_form(self, label: str, expected: str) -> None:
-        # The bare tokens ("poor", "ultrarapid") are what metabolism.predict_metabolizer_status returns;
-        # they used to match nothing
+        # The bare tokens ("poor", "ultrarapid") are what metabolism.predict_metabolizer_status returns,
+        # so they must match
         result = get_dosing_recommendation("codeine", label)
         assert result is not None
         assert result["phenotype"] == expected
@@ -505,7 +505,7 @@ class TestParseCpicAlleleDefinitionsAreStrict:
 
 
 class TestParseDrugLabelClassifiesFromText:
-    """A label file with no ``label_type`` used to be reported "informational" whatever it said."""
+    """A label file with no ``label_type`` is classified from its text, not reported "informational" regardless."""
 
     def _label(self, tmp_path: Path, **sections: str) -> Path:
         path = tmp_path / "label.json"
@@ -557,7 +557,7 @@ class TestParseDrugLabelClassifiesFromText:
         assert parse_drug_label(path)["label_type"] == "required"
 
     def test_sections_are_kept_only_when_they_are_about_pharmacogenomics(self, tmp_path: Path) -> None:
-        # "General" contains "gene": it used to make this renal-dosing paragraph a PGx section
+        # "General" contains "gene", which must not make this renal-dosing paragraph a PGx section
         path = self._label(
             tmp_path,
             dosage_and_administration="General guidance: use dose reduction in renal impairment.",

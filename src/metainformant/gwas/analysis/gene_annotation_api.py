@@ -1,8 +1,7 @@
 """Gene region annotation using live NCBI E-utilities for Apis mellifera.
 
-Replaces the Ensembl-based lookup which does not serve Apis mellifera
-(a non-vertebrate; hosted in Ensembl Metazoa but no public REST API for region
-queries at the time of writing). Uses NCBI E-utilities to:
+Ensembl's public REST API has no region queries for Ensembl Metazoa genomes such
+as Apis mellifera, so the lookups use NCBI E-utilities to:
 
 1. Convert chromosome accession + position to gene IDs via ``elink/esearch``.
 2. Fetch gene details (symbol, description, genomic location) via ``esummary``.
@@ -250,55 +249,3 @@ def annotate_top_hits_ncbi(
         taxon_id,
     )
     return annotated
-
-
-# ---------------------------------------------------------------------------
-# Backwards-compatible wrapper kept for existing callers of Ensembl function
-# ---------------------------------------------------------------------------
-
-
-def annotate_top_hits_ensembl(
-    association_results: list[dict[str, Any]],
-    radius_bp: int = 100_000,
-    species: str = "apis_mellifera",
-    top_n: int = 10,
-    rate_limit_s: float = 0.15,
-) -> list[dict[str, Any]]:
-    """Backwards-compatible wrapper — delegates to :func:`annotate_top_hits_ncbi`.
-
-    The original Ensembl REST API does not serve non-vertebrate genomes
-    (*Apis mellifera* is in Ensembl Metazoa, which has no public region-query
-    REST endpoint).  This wrapper falls through to the NCBI implementation.
-
-    Args:
-        association_results: GWAS result dicts.
-        radius_bp: Search radius in bp.
-        species: Ensembl species name (used only to infer taxon_id).
-        top_n: Number of top hits to annotate.
-        rate_limit_s: Passed to NCBI annotation; bumped to 0.34 minimum.
-
-    Returns:
-        Same format as :func:`annotate_top_hits_ncbi`.
-    """
-    # Derive taxon_id from species name
-    _TAXON_MAP = {
-        "apis_mellifera": 7460,
-        "homo_sapiens": 9606,
-        "mus_musculus": 10090,
-        "drosophila_melanogaster": 7227,
-        "danio_rerio": 7955,
-        "caenorhabditis_elegans": 6239,
-    }
-    taxon_id = _TAXON_MAP.get(species, 7460)
-    logger.info(
-        "annotate_top_hits_ensembl: delegating to NCBI (taxon=%d, species=%s)",
-        taxon_id,
-        species,
-    )
-    return annotate_top_hits_ncbi(
-        association_results,
-        radius_bp=radius_bp,
-        taxon_id=taxon_id,
-        top_n=top_n,
-        rate_limit_s=max(rate_limit_s, 0.34),
-    )

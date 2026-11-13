@@ -69,7 +69,6 @@ graph TB
         PHARMA["Pharmacogenomics<br/>drug-gene | pharmacokinetics | variants"]
         METAB["Metabolomics<br/>MS processing | pathway mapping"]
         MENU["Menu System<br/>interactive CLI | workflow navigation"]
-        CLOUD["Cloud Deployment<br/>GCP | Docker | VM lifecycle"]
     end
 
     %% Data Flow
@@ -98,7 +97,6 @@ graph TB
     CORE --> PHARMA
     CORE --> METAB
     CORE --> MENU
-    CORE --> CLOUD
 
     DNA --> RNA
     DNA --> PROTEIN
@@ -412,7 +410,6 @@ flowchart LR
     SP5["pharmacogenomics"]
     SP6["metabolomics"]
     SP7["menu"]
-    SP8["cloud"]
   end
   A --> D1 & D2 & D3 & D4 & D5
   A --> R1 & R2
@@ -493,7 +490,7 @@ All modules depend on `core` utilities:
 
 - **Depends on**: `core` (all utilities)
 - **Used by**: `gwas`, `rna` (for genomic coordinates), `information` (sequence analysis)
-- **Integrates with**: `visualization` (phylogenetic trees), `math.popgen` (population genetics theory)
+- **Integrates with**: `visualization` (phylogenetic trees), `math.population_genetics` (population genetics theory)
 
 #### RNA Module
 
@@ -503,7 +500,7 @@ All modules depend on `core` utilities:
 
 #### GWAS Module
 
-- **Depends on**: `core`, `dna.variants`, `dna.population`, `math.popgen`, `ml.regression`
+- **Depends on**: `core`, `dna.variants`, `dna.population`, `math.population_genetics`, `ml.regression`
 - **Used by**: `multiomics` (genomics integration)
 - **Integrates with**: `visualization` (Manhattan plots, Q-Q plots), external tools (bcftools, GATK)
 

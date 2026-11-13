@@ -3,21 +3,13 @@ from __future__ import annotations
 import csv
 import gzip
 import json
-import os
-import subprocess
-import sys
 from pathlib import Path
 from typing import TypedDict
 
 import pytest
 
-from metainformant.rna.engine.acquisition_allocation import (
-    allocate_tasks,
-    write_allocation,
-)
 from metainformant.rna.engine.acquisition_manifest import sha256_file
 from metainformant.rna.engine.acquisition_order import plan_acquisition_order
-from metainformant.rna.engine.acquisition_worker import run_manifest
 
 MIB = 1024**2
 GIB = 1024**3
@@ -132,48 +124,11 @@ def test_malformed_size_is_refused_instead_of_silently_treated_as_small() -> Non
         plan_acquisition_order(malformed, [], global_size_bands=True)
 
 
-def test_continuous_cli_refuses_unknown_order_before_control_writes(
-    tmp_path: Path,
-) -> None:
-    repo = Path(__file__).resolve().parents[2]
-    operations = repo / "output/hymenoptera_local_20261019"
-    if not (operations / "continuous.py").is_file():
-        pytest.skip("operator-local continuous CLI is absent; output/ is not versioned")
-    paths = [operations / name for name in (".run.lock", "active_runtime.json", "active_scope.json")]
-    before = {str(path): path.read_bytes() if path.exists() else None for path in paths}
-    completed = subprocess.run(
-        [
-            sys.executable,
-            str(operations / "continuous.py"),
-            "--data-root",
-            str(tmp_path / "data"),
-            "--config-dir",
-            str(tmp_path / "config"),
-        ],
-        env={**os.environ, "AMALGKIT_LOCAL_ACQUISITION_ORDER": "broken"},
-        capture_output=True,
-        text=True,
-    )
-    assert completed.returncode != 0
-    assert "AMALGKIT_LOCAL_ACQUISITION_ORDER must be species_fair, size_bands or smallest_first" in completed.stderr
-    assert {str(path): path.read_bytes() if path.exists() else None for path in paths} == before
-
-
 @pytest.mark.external_tool
-def test_size_ordered_native_partition_executes_in_order_and_replays_without_rewrite(
-    tmp_path: Path, native_acquisition_factory
+@pytest.mark.parametrize("strict", [False, True], ids=["size_bands", "smallest_first"])
+def test_native_samples_quantify_in_planned_order_and_replay_without_rewrite(
+    tmp_path: Path, native_acquisition_factory, strict: bool
 ) -> None:
-    _exercise_native_order_and_replay(tmp_path, native_acquisition_factory, strict=False)
-
-
-@pytest.mark.external_tool
-def test_global_smallest_first_native_partition_executes_and_replays_without_rewrite(
-    tmp_path: Path, native_acquisition_factory
-) -> None:
-    _exercise_native_order_and_replay(tmp_path, native_acquisition_factory, strict=True)
-
-
-def _exercise_native_order_and_replay(tmp_path: Path, native_acquisition_factory, *, strict: bool) -> None:
     fixture = native_acquisition_factory(accessions=("SRR125", "SRR123", "SRR124"))
     counts = {"SRR123": 20, "SRR124": 40, "SRR125": 90}
     raw = {}
@@ -201,56 +156,21 @@ def _exercise_native_order_and_replay(tmp_path: Path, native_acquisition_factory
     for task in tasks:
         task["fastq_bytes"] = raw[task["accession"]].stat().st_size
     fixture.manifest.write_text("".join(json.dumps(task) + "\n" for task in tasks))
-    snapshot_path = fixture.manifest.with_name("snapshot.json")
-    snapshot = json.loads(snapshot_path.read_text())
-    snapshot["manifest_sha256"] = sha256_file(fixture.manifest)
-    for record in snapshot["input_files"]:
-        record["sha256"] = sha256_file(tmp_path / record["path"])
-    snapshot_path.write_text(json.dumps(snapshot))
     ordered = plan_acquisition_order(tasks, [], global_size_bands=not strict, global_size_order=strict)
     assert ordered == [
         "test_species/SRR123",
         "test_species/SRR124",
         "test_species/SRR125",
     ]
-    allocation = write_allocation(allocate_tasks(fixture.manifest, backend="local"), tmp_path / "allocation")
-    selection = allocation.parent / "small-first.json"
-    selection.write_text(
-        json.dumps(
-            {
-                "schema": "metainformant.rna.acquisition_partition.v1",
-                "manifest_sha256": sha256_file(fixture.manifest),
-                "snapshot_sha256": sha256_file(snapshot_path),
-                "task_ids": ordered,
-                "task_count": len(ordered),
-                "backend": "local",
-                "allocation_sha256": sha256_file(allocation),
-            }
-        )
-    )
-    source_bytes = fixture.manifest.read_bytes(), selection.read_bytes()
-    kwargs = {
-        "manifest_path": fixture.manifest,
-        "data_root": fixture.data,
-        "config_dir": fixture.config_dir,
-        "task_selection": selection,
-        "workers": 1,
-        "threads": 2,
-        "max_in_flight": 1,
-        "fastq_threads": 1,
-        "compression_threads": 1,
-        "validation_slots": 1,
-        "quant_slots": 1,
-        "fasterq_slots": 1,
-    }
-    first = run_manifest(**kwargs)
-    assert all(row["quantified"] and not row.get("skipped") for row in first["results"])
-    journal = next((fixture.data / "acquisition_runs").glob("*/task_results.jsonl"))
-    assert [json.loads(line)["task_id"] for line in journal.read_text().splitlines()] == ordered
+    accessions = [task_id.split("/", 1)[1] for task_id in ordered]
+    source_bytes = fixture.manifest.read_bytes()
+    first = [fixture.produce(accession) for accession in accessions]
+    assert [row["srr"] for row in first] == accessions
+    assert all(row["quantified"] and not row["skipped"] and row["error"] is None for row in first), first
     protected = [*raw.values(), *fixture.work.glob("quant/*/*abundance.tsv")]
     assert len(protected) == 6
     before = {str(path): (sha256_file(path), path.stat().st_mtime_ns) for path in protected}
-    replay = run_manifest(**kwargs)
-    assert all(row["quantified"] and row["skipped"] for row in replay["results"])
+    replay = [fixture.produce(accession) for accession in accessions]
+    assert all(row["quantified"] and row["skipped"] for row in replay), replay
     assert {str(path): (sha256_file(path), path.stat().st_mtime_ns) for path in protected} == before
-    assert (fixture.manifest.read_bytes(), selection.read_bytes()) == source_bytes
+    assert fixture.manifest.read_bytes() == source_bytes

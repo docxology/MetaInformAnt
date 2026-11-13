@@ -15,7 +15,7 @@ from metainformant.rna.amalgkit.commands import CURRENT_AMALGKIT_STEPS, SUPPORTE
 
 EXCLUSIONS = {"amalgkit_template.yaml", "amalgkit_cross_species.yaml", "amalgkit_test.yaml"}
 REQUIRED_TOP_LEVEL_KEYS = {"work_dir", "species_list", "genome", "steps"}
-RETIRED_DIRECT_STEP_KEYS = {
+UNSUPPORTED_DIRECT_STEP_KEYS = {
     "config_dir",
     "keep_fastq",
     "mark_missing_rank",
@@ -119,7 +119,7 @@ def validate_config(config_path: Path) -> list[str]:
         supported = SUPPORTED_CLI_OPTIONS.get(step, frozenset())
         for key in params:
             normalized = str(key).replace("-", "_")
-            if normalized in RETIRED_DIRECT_STEP_KEYS:
+            if normalized in UNSUPPORTED_DIRECT_STEP_KEYS:
                 errors.append(
                     f"steps.{step}.{key} is not a direct Amalgkit {REQUIRED_AMALGKIT_VERSION} option; "
                     "encode selection policy in select_rules.tsv"

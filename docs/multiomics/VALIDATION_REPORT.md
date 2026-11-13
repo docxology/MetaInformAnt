@@ -54,7 +54,7 @@
 
 | Feature | Documented | Implemented | Status | Notes |
 |---------|-----------|-------------|--------|-------|
-| Attributes (genomics, transcriptomics, proteomics, metabolomics, epigenomics, metadata) | ✅ | ✅ | PASS | All present via __init__ |
+| Layers (genomics, transcriptomics, proteomics, metabolomics, epigenomics) and metadata | ✅ | ✅ | PASS | Layers passed in the `data` dict; each is also readable as an attribute |
 | Property: samples | ✅ | ✅ | PASS | Returns List[str] of aligned samples |
 | Property: n_samples | ✅ | ✅ | PASS | Returns int count |
 | Property: layer_names | ✅ | ✅ | PASS | Returns List[str] |
@@ -66,7 +66,6 @@
 | Method: load(input_path) [classmethod] | ✅ | ❌ | **MISSING** | Not in source code |
 | Extra: add_metadata(key, value) | ⚠️ not doc'd | ✅ | EXTRA | Not documented but useful |
 | Extra: get_metadata(key) | ⚠️ not doc'd | ✅ | EXTRA | Not documented but useful |
-| Extra: get_common_samples() | ⚠️ not doc'd | ✅ | EXTRA | Alias for .samples |
 
 **Gaps - MultiOmicsData:**
 - `to_dict()`: Serialization to dict format not implemented
@@ -79,10 +78,10 @@
 
 | Function | Doc Signature | impl Signature | Return (doc) | Return (impl) | Status | Notes |
 |----------|--------------|---------------|--------------|---------------|--------|-------|
-| `integrate_omics_data` | `(data_dict, sample_mapping, feature_mapping, metadata)` | `(data=None, dna_data, rna_data, protein_data, epigenome_data, metabolomics_data, **kwargs)` | MultiOmicsData | MultiOmicsData | ⚠️ PARTIAL | Missing sample_mapping & feature_mapping support; no separate metabolomics_data param in doc |
+| `integrate_omics_data` | `(data_dict, sample_mapping, feature_mapping, metadata)` | `(data=None, **kwargs)` | MultiOmicsData | MultiOmicsData | ⚠️ PARTIAL | Missing sample_mapping & feature_mapping support |
 | `joint_pca` | `(omics_data, n_components=50, layer_weights=None, standardize=True)` | `(multiomics_data, n_components=50, standardize=True, layer_weights=None, **kwargs)` | `(embeddings, loadings, explained_variance)` | `(embeddings, loadings, explained_variance_ratio)` | ⚠️ PARTIAL | Param name: `weights` in doc vs `layer_weights` in impl; return field name differs (explained_variance vs explained_variance_ratio) |
 | `joint_nmf` | `(omics_data, n_components=20, max_iter=200, regularization=0.01, random_state=None, tolerance=1e-6)` | `(multiomics_data, n_components=50, max_iter=200, regularization=0.0, random_state=None, **kwargs)` | `(W, H)` | `(W, H)` | ⚠️ PARTIAL | Default n_components: doc=20, impl=50; default regularization: doc=0.01, impl=0.0; `tolerance` param missing in impl |
-| `canonical_correlation` | `(omics_data, layer_pair, n_components=10, regularization=0.01)` | `(multiomics_data, layers=None, layer_pair=None, n_components=10, regularization=0.0, **kwargs)` | `(X_c, Y_c, X_weights, Y_weights, correlations)` | `(X_c, Y_c, x_weights_, y_weights_, correlations)` | ✅ PASS | Supports both `layers` and `layer_pair`; regularization default differs (0.01 vs 0.0) |
+| `canonical_correlation` | `(multiomics_data, layers=None, n_components=10, regularization=0.0)` | `(multiomics_data, layers=None, n_components=10, regularization=0.0)` | `(X_c, Y_c, X_weights, Y_weights, correlations)` | `(X_c, Y_c, x_weights_, y_weights_, correlations)` | ✅ PASS | Signature matches |
 | `from_dna_variants` | `(vcf_path, sample_ids, variant_ids)` | `(vcf_data: pd.DataFrame, **kwargs)` | DataFrame | DataFrame | ❌ MISMATCH | Doc expects file path; impl takes DataFrame; sample_ids/variant_ids not supported; implementation is a placeholder |
 | `from_rna_expression` | `(expression_path, sample_ids, gene_ids, transpose)` | `(expression_data: pd.DataFrame, normalize=True, **kwargs)` | DataFrame | DataFrame | ⚠️ PARTIAL | Doc expects file path; impl takes DataFrame; sample_ids/gene_ids/transpose params not present |
 | `from_protein_abundance` | `(protein_path, sample_ids, protein_ids, transpose)` | `(protein_data: pd.DataFrame, normalize=True, **kwargs)` | DataFrame | DataFrame | ⚠️ PARTIAL | Doc expects file path; impl takes DataFrame; sample_ids/protein_ids/transpose params not present |
@@ -127,7 +126,7 @@ for omics_type, components in nmf_results["omics_components"].items():
 | `joint_nmf` (module-level) | `(data_matrices, k=10, max_iter=200, tol=1e-4)` | `(data_matrices, k=10, max_iter=200, tol=1e-4)` | `{"W", "H_dict", "reconstruction_error", "n_iter", "converged"}` | Same | ✅ PASS | Matches exactly; note `tol` param exists but not in joint_nmf (the higher-level wrapper) |
 | `mofa_simple` | `(data_matrices, k=10, max_iter=100, tol=1e-3)` | `(data_matrices, k=10, max_iter=100, tol=1e-3)` | `{"factors", "weights_per_view", "variance_explained", "active_factors"}` | Same | ✅ PASS | Complete implementation with EM algorithm + ARD |
 | `tensor_decomposition` | `(tensor, rank=5, method="cp", max_iter=100)` | `(tensor, rank=5, method="cp", max_iter=100)` | `{"factors", "fit", "core_consistency"}` | Same | ✅ PASS | CP-ALS implementation complete |
-| `similarity_network_fusion` | `(networks, k_neighbors=20, n_iter=20, alpha=0.5)` | `(networks, k_neighbors=20, n_iter=20, alpha=0.5)` | `{"fused_network", "cluster_labels", "silhouette_score"}` | Same | ✅ PASS | Full SNF with spectral clustering |
+| `similarity_network_fusion` | `(networks, k_neighbors=20, n_iter=20)` | `(networks, k_neighbors=20, n_iter=20)` | `{"fused_network", "cluster_labels", "silhouette_score"}` | Same | ✅ PASS | Full SNF with spectral clustering |
 | `canonical_correlation` (module-level) | `(X, Y, n_components=2, regularization=0.1)` | `(X, Y, n_components=2, regularization=0.1)` | `{"x_scores", "y_scores", "correlations", "x_loadings", "y_loadings"}` | Same | ✅ PASS | SVD-based regularized CCA, separate from sklearn wrapper |
 
 ---
@@ -174,7 +173,6 @@ for omics_type, components in nmf_results["omics_components"].items():
 | `compute_multiomics_similarity()` | analysis/integration.py | Compute sample similarity from multi-omics data (correlation/euclidean/cosine) | **YES** |
 | `find_multiomics_modules()` | analysis/integration.py | Identify co-regulated feature modules via joint NMF (but has critical bug) | **YES** (after fixing) |
 | `add_metadata()` / `get_metadata()` | MultiOmicsData class | Metadata management helpers | Maybe (utility methods) |
-| `get_common_samples()` | MultiOmicsData class | Alias for .samples | No (redundant) |
 
 ---
 

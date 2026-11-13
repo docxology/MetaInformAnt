@@ -444,9 +444,6 @@ Returns:
         - "upper_inclusive": Whether a score equal to the upper bound is in the band
         - "phenotype": MetabolizerPhenotype value
         - "abbreviation": Phenotype abbreviation (PM, IM, NM, RM, UM)
-        - "gene_specific": Always True. It used to be False for the default (CYP2D6) bands
-          returned for a gene with none of its own; such a gene now raises. The key is kept
-          so callers written before that still work.
 
 Raises:
     ValueError: If the gene has no CPIC phenotype definition; the message names the gene
@@ -2132,5 +2129,5 @@ Returns:
 | `ACMGClassification` | `clinical.pathogenicity` | ACMG 5-tier classification (a `str` enum) | `.value` |
 | `ACMGCriteria` | `clinical.pathogenicity` | Individual ACMG evidence criteria (a `str` enum) | `.value` |
 
-`classify_phenotype`, `predict_metabolizer`, `generate_clinical_report` and the `annotations`
+`classify_phenotype`, `predict_metabolizer_status`, `generate_clinical_report` and the `annotations`
 functions return plain dictionaries; their keys are listed with each function above.

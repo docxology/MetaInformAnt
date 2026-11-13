@@ -141,7 +141,7 @@ def _plot_venn3(ax: Axes, sets: Dict[str, set]) -> None:
     """Built-in Venn diagram for 3 sets: the count of each of the seven regions, in the region itself.
 
     The numbers are exclusive counts (an element is counted in the one region that lists exactly the sets it
-    belongs to), as in matplotlib-venn. The old drawing printed whole-set and pairwise-overlap totals instead.
+    belongs to), as in matplotlib-venn, not whole-set or pairwise-overlap totals.
     """
     set_names = list(sets.keys())
     set1, set2, set3 = [sets[name] for name in set_names]
@@ -276,7 +276,7 @@ def plot_sankey_diagram(
         ax.set_yticks(list(source_positions.values()))
         ax.set_yticklabels(list(source_positions.keys()))
         # The targets are plotted at their own heights on the right: label those heights with the target names (the
-        # left labels used to be read for both columns, so a target was named after the source at the same height)
+        # left labels would name a target after the source at the same height)
         right = ax.twinx()
         right.set_ylim(ax.get_ylim())
         right.set_yticks(list(target_positions.values()))
@@ -350,8 +350,7 @@ def plot_chord_diagram(
     ``i`` of proportional width, and a ribbon joins the sub-arc of ``i`` for ``j`` to the sub-arc of ``j`` for ``i``
     (so a symmetric matrix gives ribbons that are as wide at both ends, and an asymmetric one a different width
     at each end, one per direction). The diagonal widens its node's arc but has no ribbon. Both triangles of the
-    matrix are used: the upper triangle alone used to be read, and the ribbons were distorted shapes (a Bezier path
-    with the wrong number of control points, in angle/radius coordinates).
+    matrix are used, and each ribbon is a proper Bezier path in Cartesian coordinates.
 
     Args:
         matrix: Square matrix of non-negative relationships
@@ -506,7 +505,6 @@ def _plot_simple_alluvial(ax: Axes, data: pd.DataFrame, stages: List[str], **kwa
     A bar is as tall as the number of rows that have its category at that stage (missing values form a "missing"
     category), and the ribbon between a category of one stage and a category of the next is as tall as the number of
     rows that go from one to the other, so the bars and ribbons at both ends of a ribbon account for every row.
-    The old drawing was a parallel-coordinates line plot with one line per row, which showed no flow at all.
     """
     if kwargs:
         logger.warning(f"The built-in alluvial drawing ignores {sorted(kwargs)}")

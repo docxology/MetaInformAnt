@@ -165,7 +165,7 @@ class TestFunctionalRichness:
     def test_fric_3d_convex_hull(self, trait_3d: List[List[float]]) -> None:
         """In 3D, FRic is the convex hull volume: the tetrahedron with legs 2, 3, 4 holds 2 * 3 * 4 / 6 = 4.
 
-        It used to be the bounding-box volume 2 * 3 * 4 = 24, six times the hull (see ``test_ecology_r4_fixes.py``).
+        It is not the bounding-box volume 2 * 3 * 4 = 24, six times the hull (see ``test_ecology_r4_fixes.py``).
         """
         fric = functional_richness(trait_3d)
         assert abs(fric - 4.0) < 1e-10

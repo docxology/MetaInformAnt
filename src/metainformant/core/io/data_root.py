@@ -1,11 +1,10 @@
 """Canonical, deterministic data-root and Amalgkit-prefix path resolution.
 
 The campaign data root may live on a separate volume from the repository and is
-selected via the ``AMALGKIT_DATA_ROOT`` environment variable.  Several modules
-previously re-implemented this resolution with slightly different semantics
-(some resolved to absolute, some did not, and the prefix remap lived only in
-the RNA workflow layer).  This module is the single shared implementation so
-that launchers, monitors, reports, and the clade-replication recipe all agree.
+selected via the ``AMALGKIT_DATA_ROOT`` environment variable.  This module is
+the single shared implementation of that resolution (including the prefix
+remap), so that launchers, monitors, reports, and the clade-replication recipe
+all agree.
 
 Resolution order (deterministic, no implicit cwd dependence beyond the
 documented relative-path defaults):

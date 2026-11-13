@@ -6,9 +6,7 @@ Protein-protein interaction (PPI) networks and gene regulatory network construct
 
 | File | Purpose |
 |------|---------|
-| `ppi.py` | Compatibility facade re-exporting the PPI implementation below |
-| `_ppi_impl.py` | PPI network loading/saving, hub detection, comparison, enrichment, interaction prediction, `ProteinNetwork` |
-| `regulatory.py` | Backward-compatible facade re-exporting `regulatory_core` and `regulatory_analysis` |
+| `ppi.py` | PPI network loading/saving, hub detection, comparison, enrichment, interaction prediction, `ProteinNetwork` |
 | `regulatory_core.py` | `GeneRegulatoryNetwork` class and network-level regulatory operations |
 | `regulatory_analysis.py` | GRN inference from expression, motif/cascade detection, validation |
 

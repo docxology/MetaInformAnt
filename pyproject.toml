@@ -7,11 +7,11 @@ name = "metainformant"
 version = "0.4.0"
 description = "Comprehensive bioinformatics toolkit for multi-domain analysis"
 readme = "README.md"
-requires-python = ">=3.11.5"
+requires-python = ">=3.14"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
@@ -39,8 +39,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-aws = ["boto3>=1.43.108,<2"]
-
 # Core scientific dependencies
 scientific = [
     "scipy>=1.11.0",
@@ -48,8 +46,8 @@ scientific = [
     "seaborn>=0.13.0",
     "statsmodels>=0.14.0",
     "networkx>=3.2",
-    "numba>=0.59.0",  # JIT compilation, must be >=0.59 for Python 3.12
-    "llvmlite>=0.43.0",  # Required by numba, must be >=0.43 for Python 3.12
+    "numba>=0.59.0",  # JIT compilation
+    "llvmlite>=0.43.0",  # Required by numba
     "umap-learn>=0.6.0",
     "scanpy>=1.9.6",  # Single-cell analysis
     "anndata>=0.10.0",  # Annotated data structures
@@ -71,7 +69,7 @@ rna = [
 ml = [
     "scipy>=1.11.0",
     "scikit-learn>=1.3.0",
-    "numba>=0.59.0",  # Required by umap-learn, must be >=0.59 for Python 3.12
+    "numba>=0.59.0",  # Required by umap-learn
     "umap-learn>=0.6.0",
     "optuna>=3.4.0",  # Hyperparameter optimization
     "joblib>=1.3.0",  # Parallel processing
@@ -99,7 +97,7 @@ singlecell = [
     "anndata>=0.10.0",
     "scipy>=1.11.0",
     "scikit-learn>=1.3.0",
-    "numba>=0.59.0",  # Required by umap-learn, must be >=0.59 for Python 3.12
+    "numba>=0.59.0",  # Required by umap-learn
     "umap-learn>=0.6.0",
     "seaborn>=0.13.0",
     "leidenalg>=0.10.0",  # Leiden clustering
@@ -147,7 +145,6 @@ dev = [
     "nbsphinx>=0.9.0",  # Jupyter notebook integration
     "twine>=5.0.0",  # Package publishing
     "build>=1.0.0",  # Package building
-    "boto3-stubs>=1.43.109",
     "types-jsonschema>=4.26.0.20261006",
 ]
 
@@ -174,7 +171,7 @@ scraping = [
 
 # Performance and parallel computing
 performance = [
-    "numba>=0.59.0",  # JIT compilation, must be >=0.59 for Python 3.12
+    "numba>=0.59.0",  # JIT compilation
     "dask>=2022.8.0",  # Parallel computing
     "ray>=2.0.0",  # Distributed computing
     "joblib>=1.2.0",  # Parallel processing
@@ -287,7 +284,7 @@ output = "output/coverage.xml"
 # Black code formatting
 [tool.black]
 line-length = 120
-target-version = ['py311', 'py312']
+target-version = ['py314']
 include = '\.pyi?$'
 exclude = '''
 /(
@@ -306,7 +303,7 @@ exclude = '''
 # `uv run ruff check` uses the locked build.
 [tool.ruff]
 line-length = 120
-target-version = "py311"
+target-version = "py314"
 
 [tool.ruff.lint]
 # Ruff 0.17 widened its default rule set; keep the long-standing default
@@ -353,7 +350,7 @@ combine_as_imports = true
 
 # MyPy type checking
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.14"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -414,13 +411,13 @@ where = ["src"]
 
 # UV configuration for fast, reliable dependency management
 [tool.uv]
-# Use the system's Python interpreter if needed
+# Prefer uv-managed interpreters over system ones; .python-version selects 3.14.
 python-preference = "managed"
 
 # Enable dependency caching for faster installs
 # Note: On FAT filesystems (exFAT, FAT32) without symlink support, setup scripts
 # automatically override this to use /tmp/uv-cache via UV_CACHE_DIR environment variable.
-# The filesystem detection utilities in metainformant.core.filesystem handle this automatically.
+# detect_filesystem and configure_uv_cache in scripts/package/_common.sh do the detection.
 cache-dir = ".uv-cache"
 
 # Security floors for transitive dependencies (Dependabot advisories, 2026-10-24).

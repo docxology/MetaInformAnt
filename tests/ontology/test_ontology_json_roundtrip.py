@@ -102,7 +102,7 @@ def test_an_obo_parsed_ontology_survives_a_json_round_trip(tmp_path: Path) -> No
     obo_path = tmp_path / "demo.obo"
     obo_path.write_text(OBO_TEXT)
     original = parse_obo(obo_path)
-    assert original.terms["GO:0000002"].metadata["relationships"], "scenario needs the metadata key that used to clash"
+    assert original.terms["GO:0000002"].metadata["relationships"], "scenario needs the relationships metadata key"
     json_path = tmp_path / "demo.json"
 
     save_ontology(original, json_path, format="json")

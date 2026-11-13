@@ -148,7 +148,7 @@ def _installed_amalgkit() -> tuple[str | None, str | None, str | None]:
     requested: str | None = None
     try:
         direct_url = json.loads(distribution.read_text("direct_url.json") or "{}")
-    except (OSError, json.JSONDecodeError, TypeError):
+    except OSError, json.JSONDecodeError, TypeError:
         direct_url = {}
     vcs_info = direct_url.get("vcs_info") if isinstance(direct_url, dict) else None
     if isinstance(vcs_info, dict):
@@ -197,7 +197,7 @@ def _observed_kallisto(sample_path: Path, run_accession: str) -> dict[str, Any]:
     for name in (f"{run_accession}_run_info.json", "run_info.json"):
         try:
             info = json.loads((sample_path / name).read_text())
-        except (OSError, json.JSONDecodeError, TypeError, UnicodeDecodeError):
+        except OSError, json.JSONDecodeError, TypeError, UnicodeDecodeError:
             continue
         if not isinstance(info, dict):
             continue
@@ -265,7 +265,7 @@ def _atomic_write_bytes(destination: Path, data: bytes) -> None:
 
 
 def _json_document_bytes(payload: Mapping[str, Any]) -> bytes:
-    """Serialize a sidecar the way every historical sidecar was serialized."""
+    """Serialize a sidecar as indented, key-sorted UTF-8 JSON with a trailing newline."""
 
     return (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode("utf-8")
 
@@ -311,7 +311,7 @@ def digest_file(path: Path) -> str | None:
     """Return a SHA-256 digest for a readable file, or ``None``.
 
     Delegates to the canonical :func:`metainformant.core.utils.hash.sha256_file`;
-    this wrapper preserves the historical ``None``-on-unreadable contract.
+    this wrapper returns ``None`` for an unreadable file.
     """
 
     from metainformant.core.utils.hash import sha256_file
@@ -535,7 +535,7 @@ def read_quant_provenance(sample_dir: str | Path) -> dict[str, Any] | None:
     path = quant_provenance_path(sample_dir)
     try:
         payload = json.loads(path.read_text())
-    except (OSError, json.JSONDecodeError, TypeError):
+    except OSError, json.JSONDecodeError, TypeError:
         return None
     return payload if isinstance(payload, dict) else None
 
@@ -589,7 +589,7 @@ def _read_sidecar(sample_path: Path) -> tuple[bytes | None, dict[str, Any] | Non
     except OSError as error:
         _raise_if_unreadable(error, quant_provenance_path(sample_path))
         return None, None
-    except (json.JSONDecodeError, TypeError, UnicodeDecodeError):
+    except json.JSONDecodeError, TypeError, UnicodeDecodeError:
         return None, None
     return (data, payload) if isinstance(payload, dict) else (None, None)
 
@@ -604,7 +604,7 @@ def _read_json_object(path: Path) -> dict[str, Any] | None:
     except OSError as error:
         _raise_if_unreadable(error, path)
         return None
-    except (json.JSONDecodeError, TypeError, UnicodeDecodeError):
+    except json.JSONDecodeError, TypeError, UnicodeDecodeError:
         return None
     return payload if isinstance(payload, dict) else None
 
@@ -667,7 +667,7 @@ def _find_reference_manifest(
         except OSError as error:
             _raise_if_unreadable(error, candidate)
             digest = None
-        except (ValueError, RuntimeError):
+        except ValueError, RuntimeError:
             digest = None
         if digest == expected:
             return candidate, mode
@@ -1410,7 +1410,7 @@ def read_metadata_provenance(work_dir: str | Path) -> dict[str, Any] | None:
 
     try:
         payload = json.loads(metadata_provenance_path(work_dir).read_text())
-    except (OSError, json.JSONDecodeError, TypeError, UnicodeDecodeError):
+    except OSError, json.JSONDecodeError, TypeError, UnicodeDecodeError:
         return None
     return payload if isinstance(payload, dict) else None
 
@@ -1536,7 +1536,7 @@ def read_downstream_provenance(work_dir: str | Path) -> dict[str, Any] | None:
 
     try:
         payload = json.loads(downstream_provenance_path(work_dir).read_text())
-    except (OSError, json.JSONDecodeError, TypeError):
+    except OSError, json.JSONDecodeError, TypeError:
         return None
     return payload if isinstance(payload, dict) else None
 
@@ -1660,7 +1660,7 @@ def is_current_downstream(
     try:
         if not _output_manifest_matches(work_path, output_manifest, declared_steps):
             return False
-    except (OSError, ValueError, TypeError):
+    except OSError, ValueError, TypeError:
         return False
     return True
 
@@ -1757,7 +1757,7 @@ def write_quant_provenance(
     The sidecar records the Amalgkit runtime actually installed and the
     kallisto version from the run's ``run_info.json``, plus portable fields
     (``config_name`` and ``reference_manifest_relpath``) next to the
-    historical absolute paths. None of these enter the quantification
+    absolute paths. None of these enter the quantification
     contract, so contract ids are unchanged. The quantification outputs in
     the sample directory (abundance table, ``.h5``, run info) are flushed to
     stable storage first, so a crash can never leave a sidecar that vouches
@@ -1786,7 +1786,7 @@ def write_quant_provenance(
     quant_file_sha256: str | None = None
     try:
         relative_quant_file = quant_file.resolve().relative_to(sample_path.resolve())
-    except (OSError, ValueError):
+    except OSError, ValueError:
         relative_quant_file = Path(quant_file.name)
     if relative_quant_file.parent != Path(".") or not quant_file.is_file():
         raise OSError(f"Quantification file must be a file directly in {sample_path}")
@@ -1861,7 +1861,7 @@ def bind_produced_output(
 
     The output is first judged with content verification against the
     cohort task; the witness then records the sidecar's sha256 and the cohort
-    index sha256, so later reuse no longer depends on the mutable
+    index sha256, so later reuse does not depend on the mutable
     ``reference_aliases.json`` staying byte-identical. Raises ``ValueError``
     when the output does not verify (no witness is written).
     """

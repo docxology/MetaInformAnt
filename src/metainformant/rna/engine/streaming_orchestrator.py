@@ -38,7 +38,6 @@ from metainformant.core.utils import logging as log_utils
 from metainformant.core.utils.hash import sha256_file
 from metainformant.rna.amalgkit.sra_environment import (
     build_sra_environment,
-    ensure_ncbi_settings,
     resolve_data_root,
 )
 from metainformant.rna.amalgkit.tissue_normalizer import apply_tissue_normalization
@@ -191,7 +190,7 @@ def _write_text_durably(destination: Path, text: str, temporary: Path) -> None:
 def _path_is_under(path: str | os.PathLike[str], root: Path) -> bool:
     try:
         candidate = os.path.abspath(os.fspath(path))
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return False
     base = os.path.abspath(os.fspath(root))
     return candidate == base or candidate.startswith(base.rstrip(os.sep) + os.sep)
@@ -372,7 +371,7 @@ class PipelineResourceProfile:
     max_in_flight: int
     host_cpu_count: int
     # The fields below are resolved by :func:`build_host_resource_profile`; an explicit
-    # ``build_pipeline_resource_profile`` keeps the historical behavior (0 = not managed by the profile).
+    # ``build_pipeline_resource_profile`` leaves them at 0 (not managed by the profile).
     acquisition_slots: int = 0
     ena_file_workers: int = 1
     ena_max_connections: int = 0
@@ -419,7 +418,7 @@ def _resource_int(value: Any, default: int, label: str) -> int:
         return default
     try:
         parsed = int(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         logger.warning("Invalid %s=%r; using %d", label, value, default)
         return default
     if parsed <= 0:
@@ -604,7 +603,7 @@ def build_pipeline_resource_profile(
 
 SCHEDULING_ORDERS = ("size_bands", "smallest_first", "species_order")
 """Fresh-acquisition order: global size bands with species round-robin (the measured default), one global
-smallest-first queue, or the historical species-by-species order."""
+smallest-first queue, or the species-by-species discovery order."""
 
 # Measured host and workload facts behind the host profile (the campaign host: 8 cores as 4P+4E, 16 GiB RAM,
 # USB APFS data volume, about 270 Mbit/s downlink):
@@ -664,7 +663,7 @@ def _darwin_sysctl_int(name: str) -> int | None:
         if libc.sysctlbyname(name.encode(), ctypes.byref(value), ctypes.byref(size), None, ctypes.c_size_t(0)):
             return None
         return int(value.value)
-    except (OSError, AttributeError, ValueError):
+    except OSError, AttributeError, ValueError:
         return None
 
 
@@ -676,7 +675,7 @@ def detect_host_facts() -> HostFacts:
     memory: int | None = None
     try:
         memory = int(os.sysconf("SC_PAGE_SIZE")) * int(os.sysconf("SC_PHYS_PAGES"))
-    except (ValueError, OSError, AttributeError):
+    except ValueError, OSError, AttributeError:
         memory = _darwin_sysctl_int("hw.memsize")
     return HostFacts(
         cpu_count=cpu_count,
@@ -707,7 +706,7 @@ def _nonnegative_profile_int(value: Any, default: int, label: str, maximum: int 
 
     try:
         parsed = int(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         logger.warning("Invalid %s=%r; using %d", label, value, default)
         return default
     if parsed < 0 or (maximum is not None and parsed > maximum):
@@ -774,7 +773,7 @@ def build_host_resource_profile(
         memory_cap = max(1, int(facts.memory_bytes * HOST_QUANT_MEMORY_FRACTION) // per_slot)
     default_quant_slots = max(1, min(cpu_count, HOST_MAX_QUANT_SLOTS, memory_cap or HOST_MAX_QUANT_SLOTS))
 
-    # 0 keeps the orchestrator's historical "unbounded" meaning for acquisitions and ENA connections.
+    # 0 means "unbounded" for acquisitions and ENA connections.
     resolved_acquisition = _nonnegative_profile_int(
         _explicit_env_or(acquisition_slots, "AMALGKIT_PIPELINE_ACQUISITION_SLOTS", HOST_ACQUISITION_SLOTS),
         HOST_ACQUISITION_SLOTS,
@@ -966,12 +965,6 @@ def _data_root() -> Path:
     """Return the streaming data root, honoring the external volume override."""
 
     return resolve_data_root()
-
-
-def _ensure_ncbi_settings_for_data_root(data_root: Path) -> Path:
-    """Compatibility facade for the centralized campaign SRA environment."""
-
-    return ensure_ncbi_settings(data_root)
 
 
 def _species_work_dir(species_name: str) -> Path:
@@ -1172,7 +1165,7 @@ def _raw_validation_marker_matches(
         if marker.is_symlink() or not marker.is_file() or marker_stat.st_size > 65536:
             return False
         payload = json.loads(marker.read_text())
-    except (OSError, ValueError, TypeError):
+    except OSError, ValueError, TypeError:
         return False
     if not isinstance(payload, dict) or payload.get("schema") != _RAW_VALIDATION_SCHEMA:
         return False
@@ -1187,7 +1180,7 @@ def _raw_validation_marker_matches(
     if recorded_effective_layout is not None and recorded_effective_layout != effective_layout:
         return False
     expected_reconciliation = (
-        # Historical witness name retained for compatibility. This records
+        # A fixed witness value (named after Amalgkit 0.16.38): it records
         # the observed layout, not an invalidating runtime version.
         "amalgkit_0.16.38_paired_metadata_single_fastq"
         if declared_layout == "paired" and effective_layout == "single"
@@ -1318,7 +1311,7 @@ def _cached_sra_validation_result(source: Path) -> bool | None:
             return None
         result = payload.get("valid")
         return result if isinstance(result, bool) else None
-    except (OSError, ValueError, TypeError):
+    except OSError, ValueError, TypeError:
         return None
 
 
@@ -1432,7 +1425,6 @@ def _validated_local_fastq_inputs(
     assume_payload_valid: bool = False,
     deadline_at: float | None = None,
     require_records: bool | None = None,
-    fresh_record_scan: bool = False,
 ) -> list[Path]:
     """Find validated local FASTQs without making an ENA metadata request.
 
@@ -1483,20 +1475,17 @@ def _validated_local_fastq_inputs(
             "yes",
             "true",
         } or bool(os.environ.get("AMALGKIT_LOCAL_ENA_SCRATCH_DIR"))
-    record_proof = fresh_record_scan or require_records or (deadline_at is not None and not assume_payload_valid)
+    record_proof = require_records or (deadline_at is not None and not assume_payload_valid)
     marker = _raw_validation_marker(sample_dir, accession)
-    if not fresh_record_scan and _raw_validation_marker_matches(
-        marker, candidates, expected_paired, require_records=record_proof
-    ):
+    if _raw_validation_marker_matches(marker, candidates, expected_paired, require_records=record_proof):
         return candidates
-    if not fresh_record_scan:
-        rejected = _raw_rejection_reason(sample_dir, accession, candidates)
-        if rejected is not None:
-            # The same bytes failed layout validation before: rescanning them
-            # (a full multi-gigabyte read on the USB volume) cannot change the
-            # answer. Any rewrite of the files invalidates this witness.
-            logger.info("Skipping the rescan of %s: unchanged inputs were rejected before (%s)", accession, rejected)
-            return []
+    rejected = _raw_rejection_reason(sample_dir, accession, candidates)
+    if rejected is not None:
+        # The same bytes failed layout validation before: rescanning them
+        # (a full multi-gigabyte read on the USB volume) cannot change the
+        # answer. Any rewrite of the files invalidates this witness.
+        logger.info("Skipping the rescan of %s: unchanged inputs were rejected before (%s)", accession, rejected)
+        return []
     try:
         before_scan = [_raw_validation_identity(path) for path in candidates]
         if record_proof and not validate_fastq_records(candidates, deadline_at=deadline_at):
@@ -1619,7 +1608,7 @@ def _raw_rejection_reason(sample_dir: Path, accession: str, candidates: list[Pat
         if marker.is_symlink() or not marker.is_file() or marker.stat().st_size > 65536:
             return None
         payload = json.loads(marker.read_text(encoding="utf-8"))
-    except (OSError, ValueError, TypeError):
+    except OSError, ValueError, TypeError:
         return None
     if not isinstance(payload, dict) or payload.get("schema") != _RAW_REJECTION_SCHEMA:
         return None
@@ -1723,7 +1712,7 @@ def _promote_validated_fastq_inputs(
         if expected_paired is True and mate is None:
             try:
                 _validate_single_fastq_stream(existing)
-            except (OSError, EOFError, ValueError):
+            except OSError, EOFError, ValueError:
                 continue
         stem = f"{accession}_{mate}" if mate is not None else accession
         prospective_by_stem[stem] = existing
@@ -1973,12 +1962,12 @@ def _metadata_requires_fastq_input_stats(metadata_path: Path, accession: str) ->
                 for column in ("total_spots", "total_bases"):
                     try:
                         value = float(row.get(column, ""))
-                    except (TypeError, ValueError):
+                    except TypeError, ValueError:
                         return True
                     if not math.isfinite(value) or value <= 0:
                         return True
                 return False
-    except (OSError, csv.Error):
+    except OSError, csv.Error:
         return False
     return False
 
@@ -2024,9 +2013,9 @@ def _write_fastq_input_stats(sample_dir: Path, accession: str) -> bool:
                     try:
                         if float(row.get("num_written", "")) > 0:
                             return True
-                    except (TypeError, ValueError):
+                    except TypeError, ValueError:
                         break
-    except (OSError, csv.Error):
+    except OSError, csv.Error:
         logger.debug("Unable to inspect existing FASTQ statistics for %s", accession)
 
     try:
@@ -2201,7 +2190,7 @@ def task_acquisition_weight(task: Mapping[str, Any]) -> int:
     for key, scale in (("fastq_bytes", None), ("total_bases", True)):
         try:
             value = int(task.get(key) or 0)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             value = 0
         if value > 0:
             if scale:
@@ -2296,13 +2285,13 @@ def order_campaign_tasks(
     def tie_break(task: Mapping[str, Any]) -> tuple[str, int, str]:
         # Independent of which species' discovery finished first: species, its
         # discovery position, then the run. ``species_order`` keeps the
-        # historical stable input order (the sort is stable).
+        # input order (the sort is stable).
         if order == "species_order":
             return "", 0, ""
         species = str(task.get("species_name") or task.get("species") or "")
         try:
             position = int(task.get("batch_idx") or 0)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             position = 0
         return species, position, str(task["srr"]).strip()
 
@@ -2452,7 +2441,7 @@ def _normalized_reference_stem(value: Any) -> str:
 
 
 def _find_reference_index(index_dir: Path, stem: str) -> Optional[Path]:
-    """Find a non-empty current or compatibility index for one stem."""
+    """Find a non-empty ``<stem>.idx`` or ``<stem>_transcripts.idx`` index for one stem."""
 
     for candidate in (index_dir / f"{stem}.idx", index_dir / f"{stem}_transcripts.idx"):
         try:
@@ -2892,7 +2881,7 @@ def _cache_index_directory(index_dir: str, species_name: str) -> str:
     with _INDEX_CACHE_LOCK:
         try:
             manifest = json.loads(manifest_path.read_text()) if manifest_path.is_file() else {}
-        except (OSError, json.JSONDecodeError, TypeError):
+        except OSError, json.JSONDecodeError, TypeError:
             manifest = {}
         cached_files = manifest.get("files") if isinstance(manifest, dict) else None
         if (
@@ -2999,7 +2988,7 @@ def _staged_exact_index_dir(index_dir: str, species_name: str) -> str:
         try:
             try:
                 records = json.loads(manifest_path.read_bytes()).get("copies")
-            except (OSError, ValueError, AttributeError):
+            except OSError, ValueError, AttributeError:
                 records = None
             if _index_copies_current(target, selected, records):
                 return str(target)
@@ -3030,7 +3019,7 @@ def _build_sample_tasks(
             library_layout = row.get("library_layout")
         try:
             total_bases = max(0, int(float(row.get("total_bases", 0) or 0)))
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             total_bases = 0
         tasks.append(
             {
@@ -3752,7 +3741,6 @@ class StreamingPipelineOrchestrator:
         *,
         assume_payload_valid: bool = False,
         require_records: bool | None = None,
-        fresh_record_scan: bool = False,
     ) -> list[Path]:
         _check_deadline(deadline)
         semaphore = self._raw_validation_semaphore
@@ -3772,7 +3760,6 @@ class StreamingPipelineOrchestrator:
                 assume_payload_valid=assume_payload_valid,
                 deadline_at=deadline,
                 require_records=require_records,
-                fresh_record_scan=fresh_record_scan,
             )
         finally:
             if semaphore is not None:
@@ -3861,11 +3848,13 @@ class StreamingPipelineOrchestrator:
                 raise StagingError("ENA destination conflicts with a non-directory")
             _plain_path(_raw_validation_marker(sample_dir, srr_id))
             marker = _raw_validation_marker(sample_dir, srr_id)
-            legacy_temporary = marker.with_name(f".{marker.name}.tmp")
-            _plain_path(legacy_temporary)
+            # A symlink or oversized object at the marker's fixed temporary name refuses the
+            # acquisition instead of being followed or read.
+            fixed_temporary = marker.with_name(f".{marker.name}.tmp")
+            _plain_path(fixed_temporary)
             if any(
                 path.exists() and (not path.is_file() or path.stat().st_size > 65536)
-                for path in (marker, legacy_temporary)
+                for path in (marker, fixed_temporary)
             ):
                 raise StagingError("Unsafe raw validation witness object; existing inputs preserved")
             if sample_dir.is_dir() and any(path.is_symlink() for path in sample_dir.iterdir()):
@@ -4076,9 +4065,8 @@ class StreamingPipelineOrchestrator:
                 # ENA's transfer validator proves the downloaded payload is a
                 # readable gzip stream, but the current-contract witness also
                 # needs to bind the accession to the expected single/paired
-                # FASTQ layout.  Direct ENA success used to return before this
-                # marker was written, leaving an otherwise valid cloud result
-                # non-promotable after raw-input reclamation.
+                # FASTQ layout; without the marker an otherwise valid ENA result
+                # would be non-promotable after raw-input reclamation.
                 validated_fastqs = self._validate_acquisition_fastqs(
                     sample_dir,
                     srr_id,
@@ -4173,10 +4161,10 @@ class StreamingPipelineOrchestrator:
         """Delete resumable ``.part`` payloads that no active writer owns.
 
         ``.part`` files exist to resume interrupted multi-gigabyte transfers
-        across invocations that share the disk. On ephemeral cloud scratch
-        (and on any disk under space pressure) a terminal-failed row's
-        partial payload is pure disk debt: its retry budget is exhausted, so
-        a recovery pass restarts the transfer from byte 0 regardless.
+        across invocations that share the disk. On scratch under space
+        pressure a terminal-failed row's partial payload is pure disk debt:
+        its retry budget is exhausted, so a recovery pass restarts the
+        transfer from byte 0 regardless.
         Accumulated ``.part`` debt is what exhausted the 256 GB scratch on
         the 2026-09-28/29 production tail lanes (~250 failed rows x 1-3 GB).
 
@@ -4879,7 +4867,7 @@ class StreamingPipelineOrchestrator:
 
         Only the checked-in YAML is content-bound. An alias runtime YAML has
         different bytes from the checked-in one, and outputs recorded under
-        either keep the historical path-based check.
+        either use the path-based check.
         """
 
         if runtime_config_path != source_config_path:
@@ -4920,8 +4908,7 @@ class StreamingPipelineOrchestrator:
         """Return whether the shared VDB cache entry of *srr_id* is no longer needed by any cohort task.
 
         The cache is keyed by accession only. Without a frozen cohort the task
-        universe is unknown, so the entry is retained (the historical
-        behaviour). With one, every other species whose task names the same
+        universe is unknown, so the entry is retained. With one, every other species whose task names the same
         accession must already hold a reusable output or a permanent exclusion.
         """
 
@@ -4970,12 +4957,10 @@ class StreamingPipelineOrchestrator:
                 srr_id,
             )
 
-    def _reconcile_legacy_species(self, species_name: str, config_path: Path, quant_dir: Path) -> Dict[str, Any]:
+    def _reconcile_discovered_species(self, species_name: str, config_path: Path, quant_dir: Path) -> Dict[str, Any]:
         """One reconcile pass over every recorded run of a species (non-cohort discovery).
 
-        Replaces the former ``reconcile`` + ``_reset_non_current_quantified_states``
-        pair (two classifications of every quantified output and one commit per
-        row): the quant directory is listed once, unchanged outputs whose
+        The quant directory is listed once, unchanged outputs whose
         sidecar fingerprint and scope match their audit are trusted with one
         ``lstat``, new or changed ones are classified, and every change lands in
         one transaction. Reusable outputs (current and version drift) become
@@ -5001,7 +4986,7 @@ class StreamingPipelineOrchestrator:
             ReconcileScope(
                 config_sha256=config_sha256,
                 reference_sha256=reference_sha256,
-                scope=_reconcile_scope_label("legacy:" + ("content" if context is not None else "path")),
+                scope=_reconcile_scope_label("discovery:" + ("content" if context is not None else "path")),
             )
             if config_sha256 is not None
             else None
@@ -5139,8 +5124,6 @@ class StreamingPipelineOrchestrator:
         expected_paired: bool | None = None,
         *,
         defer_ncbi_fallback: bool = False,
-        acquisition_only: bool = False,
-        quantification_only: bool = False,
         metadata_path: Path | None = None,
         requantify: bool = False,
     ) -> Dict[str, Any]:
@@ -5151,8 +5134,6 @@ class StreamingPipelineOrchestrator:
         sample with a reusable output on disk is recorded ``quantified`` and
         skipped.
         """
-        if acquisition_only and quantification_only:
-            raise ValueError("acquisition_only and quantification_only are mutually exclusive")
         result = {
             "srr": srr_id,
             "batch": batch_idx,
@@ -5173,29 +5154,15 @@ class StreamingPipelineOrchestrator:
             return result
 
         # Download
-        if not quantification_only:
-            self.db.set_state(species_name, srr_id, "downloading")
+        self.db.set_state(species_name, srr_id, "downloading")
         download_outcome: bool | None  # None: NCBI fallback queued after ENA failure
         try:
-            if quantification_only:
-                deadline = time.monotonic() + self.quant_timeout_seconds if self.quant_timeout_seconds else None
-                download_outcome = bool(
-                    self._validate_acquisition_fastqs(
-                        fastq_dir / srr_id,
-                        srr_id,
-                        expected_paired,
-                        deadline,
-                        require_records=True,
-                        fresh_record_scan=True,
-                    )
-                )
-            else:
-                download_outcome = self.download_fastq(
-                    srr_id,
-                    fastq_dir,
-                    expected_paired,
-                    defer_ncbi_fallback=defer_ncbi_fallback,
-                )
+            download_outcome = self.download_fastq(
+                srr_id,
+                fastq_dir,
+                expected_paired,
+                defer_ncbi_fallback=defer_ncbi_fallback,
+            )
         except (FirstPassDeferred, StagingDeadline) as exc:
             result.update(
                 status="deferred_download",
@@ -5218,11 +5185,7 @@ class StreamingPipelineOrchestrator:
             result["fallback_deferred"] = True
             return result
         if not download_outcome:
-            error_msg = (
-                "Acquired FASTQs missing or invalid; no network attempted in quantification stage"
-                if quantification_only
-                else "Download Failed (all sources: ENA FTP/HTTP, NCBI)" + self._layout_failure_suffix(srr_id)
-            )
+            error_msg = "Download Failed (all sources: ENA FTP/HTTP, NCBI)" + self._layout_failure_suffix(srr_id)
             self.db.set_state(species_name, srr_id, "failed", error=error_msg)
             result["error"] = error_msg
             return result
@@ -5230,9 +5193,6 @@ class StreamingPipelineOrchestrator:
         result["downloaded"] = True
         # Measured before quantification reclaims the reads: the run's FASTQ GB/hour.
         result["input_bytes"] = _acquired_input_bytes(fastq_dir / srr_id, srr_id)
-        if acquisition_only:
-            result["ready_for_quant"] = True
-            return result
 
         # Quantify
         self.db.set_state(species_name, srr_id, "quantifying")
@@ -5574,9 +5534,9 @@ class StreamingPipelineOrchestrator:
                 species_name,
             )
 
-            # Amalgkit 0.16.60 builds the quantification index through the
-            # reference-preparation helper; it no longer exposes the removed
-            # `config` or `index` CLI stages.
+            # The pinned Amalgkit has no `config` or `index` CLI stage; the
+            # quantification index is built through the reference-preparation
+            # helper.
             if needs_index:
                 try:
                     from metainformant.rna.engine.workflow import load_workflow_config
@@ -5770,9 +5730,9 @@ class StreamingPipelineOrchestrator:
         self.db.prune_species(species_name, all_srr_ids)
 
         quant_dir = _species_work_dir(species_name) / "quant"
-        legacy_reconciled = self._reconcile_legacy_species(species_name, config_path, quant_dir)
-        requantify = set(legacy_reconciled.get("requeued_accessions") or ())
-        self._record_discovery(species_name, unavailable=list(legacy_reconciled.get("unavailable") or ()))
+        reconciled = self._reconcile_discovered_species(species_name, config_path, quant_dir)
+        requantify = set(reconciled.get("requeued_accessions") or ())
+        self._record_discovery(species_name, unavailable=list(reconciled.get("unavailable") or ()))
 
         # Mark all filtered samples as sampled so amalgkit quant processes them
         filtered["is_sampled"] = "yes"
@@ -5798,7 +5758,7 @@ class StreamingPipelineOrchestrator:
             return []
 
         fastq_dir = work_dir / "getfastq"
-        # ``_reconcile_legacy_species`` has already established the current
+        # ``_reconcile_discovered_species`` has already established the current
         # filesystem state in the progress database and quarantined stale
         # quantified states. Re-read that authoritative set
         # once instead of calling ``is_quantified`` for every accession. On
@@ -5858,7 +5818,7 @@ class StreamingPipelineOrchestrator:
         off otherwise (:func:`reuse_dry_run_fraction_setting`; ``0`` opts out).
 
         Resources: ``resource_profile`` if given; else explicit ``workers``
-        and ``threads`` build the historical profile
+        and ``threads`` build an explicit profile
         (:func:`build_pipeline_resource_profile`); else the profile is derived
         from this host (:func:`build_host_resource_profile`: measured c19
         defaults, which also set the acquisition slots and the ENA
@@ -6014,7 +5974,7 @@ class StreamingPipelineOrchestrator:
         max_in_flight: Optional[int] = None,
         validation_slots: Optional[int] = None,
     ) -> PipelineResourceProfile:
-        """Explicit ``workers`` and ``threads`` keep the historical profile; either one missing derives it
+        """Explicit ``workers`` and ``threads`` build an explicit profile; either one missing derives it
         from this host (:func:`build_host_resource_profile`)."""
 
         if workers is not None and threads is not None:
@@ -6199,11 +6159,6 @@ class StreamingPipelineOrchestrator:
             "inflight_reset": self.db.reset_inflight_states(),
             "environment_failures_reset": self.db.reset_environment_failures(),
         }
-        if os.environ.get("AMALGKIT_PIPELINE_STALE_DOWNLOADING_SECONDS", "").strip() not in ("", "0"):
-            logger.info(
-                "AMALGKIT_PIPELINE_STALE_DOWNLOADING_SECONDS is ignored: under the campaign writer lock every "
-                "in-flight row is orphaned and was reset at startup."
-            )
         reuse_dry_run_fraction = reuse_dry_run_fraction_setting(
             reuse_dry_run_fraction, cohort_mode=getattr(self, "cohort", None) is not None
         )

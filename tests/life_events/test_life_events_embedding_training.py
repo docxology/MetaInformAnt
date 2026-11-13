@@ -1,8 +1,8 @@
 """Regression tests for real word2vec training in ``learn_event_embeddings``.
 
-``learn_event_embeddings`` used to return seeded random vectors plus keyword offsets: it never read
-``window_size``, ``epochs``, ``sg``/``method`` or the sequences' co-occurrence structure. These tests
-pin the behaviour of the NumPy skip-gram / CBOW negative-sampling implementation: deterministic
+``learn_event_embeddings`` trains on the sequences' co-occurrence structure and reads ``window_size``,
+``epochs`` and ``sg``/``method``; it does not return seeded random vectors plus keyword offsets. These
+tests pin the behaviour of the NumPy skip-gram / CBOW negative-sampling implementation: deterministic
 output for a seed, every hyper-parameter changes the result, and events that co-occur end up closer
 than events that never do.
 """
@@ -55,13 +55,6 @@ def test_same_seed_gives_identical_embeddings(method):
     second = learn_event_embeddings(PAIR_CORPUS, embedding_dim=16, epochs=5, method=method, random_state=7)
 
     assert same_embeddings(first, second)
-
-
-def test_seed_keyword_is_an_alias_for_random_state():
-    via_random_state = learn_event_embeddings(PAIR_CORPUS, embedding_dim=16, epochs=3, random_state=11)
-    via_seed = learn_event_embeddings(PAIR_CORPUS, embedding_dim=16, epochs=3, seed=11)
-
-    assert same_embeddings(via_random_state, via_seed)
 
 
 def test_different_seeds_give_different_embeddings():
@@ -144,10 +137,8 @@ def test_sg_flag_selects_the_training_algorithm():
 def test_learning_rate_is_honoured():
     slow = learn_event_embeddings(PAIR_CORPUS, embedding_dim=16, epochs=3, random_state=2, learning_rate=0.0005)
     fast = learn_event_embeddings(PAIR_CORPUS, embedding_dim=16, epochs=3, random_state=2, learning_rate=0.1)
-    aliased = learn_event_embeddings(PAIR_CORPUS, embedding_dim=16, epochs=3, random_state=2, alpha=0.1)
 
     assert not same_embeddings(slow, fast)
-    assert same_embeddings(fast, aliased)
 
 
 def test_min_count_restricts_the_vocabulary():
@@ -161,7 +152,7 @@ def test_min_count_restricts_the_vocabulary():
 
 
 def test_min_count_removes_rare_events_from_the_contexts():
-    # "R" occurs once. Dropped by min_count, it no longer separates A and B, so training sees (A, B)
+    # "R" occurs once. Dropped by min_count, it does not separate A and B, so training sees (A, B)
     # as neighbours exactly as in a corpus that never contained R.
     with_rare = [["A", "R", "B"]] + [["A", "B"]] * 9 + [["C", "D"]] * 10
     without_rare = [["A", "B"]] * 10 + [["C", "D"]] * 10
@@ -442,7 +433,7 @@ def test_verbose_reports_every_epoch(capsys):
 def test_domain_specific_embeddings_learn_from_events_that_share_a_domain():
     """Events of one domain that co-occur in a sequence must train each other's embeddings.
 
-    Every event used to be fed to the learner as its own one-event sequence, so nothing was learned.
+    The learner sees each sequence whole, not every event as its own one-event sequence that teaches nothing.
     """
     sequences = [["a1", "a2", "z"]] * 8 + [["a3", "a4", "z"]] * 8
     domains = [["d", "d", "other"]] * 16

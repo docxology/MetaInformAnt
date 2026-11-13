@@ -218,20 +218,6 @@ setup_environment() {
     export PYTHONPATH="${repo_root}/src:${PYTHONPATH:-}"
 }
 
-# Show deprecation warning and redirect to new command
-show_deprecation_warning() {
-    local old_script="$1"
-    local new_command="$2"
-
-    print_status "WARN" "Script '$old_script' is deprecated"
-    echo "       Please use: $new_command"
-    echo "       This script will be removed in a future version."
-    echo ""
-
-    # Execute the new command
-    eval "$new_command"
-}
-
 # Export functions so they can be used when sourced
 export -f print_status
 export -f check_uv
@@ -242,4 +228,3 @@ export -f get_pytest_cmd
 export -f sync_dependencies
 export -f get_repo_root
 export -f setup_environment
-export -f show_deprecation_warning

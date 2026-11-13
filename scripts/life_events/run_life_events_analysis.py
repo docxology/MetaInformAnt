@@ -320,7 +320,6 @@ def generate_visualizations(
     # Imported outside the try block so a broken import fails loudly instead of reading as a missing dependency
     from metainformant.life_events.analysis.interpretability import event_importance
     from metainformant.life_events.core.utils import convert_sequences_to_tokens
-    from metainformant.life_events.models.embeddings import learn_event_embeddings
     from metainformant.life_events.models.predictor import EventSequencePredictor
     from metainformant.life_events.visualization.statistical import plot_event_embeddings, plot_prediction_importance
     from metainformant.life_events.visualization.timeline import plot_event_timeline
@@ -374,21 +373,10 @@ def generate_visualizations(
                     predictor = EventSequencePredictor.load_model(model_path)
                     sequences_tokens = convert_sequences_to_tokens(sequences)
 
-                    # Get embeddings
-                    if predictor.embeddings:
-                        embeddings = predictor.embeddings
-                    else:
-                        embeddings = learn_event_embeddings(
-                            sequences_tokens,
-                            embedding_dim=results.get("embedding_dim", 100),
-                            random_state=42,
-                        )
-
                     # Compute importance
                     importance = event_importance(
                         predictor,
                         sequences_tokens,
-                        embeddings,
                         method="permutation",
                     )
 

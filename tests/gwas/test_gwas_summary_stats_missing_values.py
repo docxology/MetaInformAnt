@@ -74,7 +74,7 @@ class TestQFdr:
         assert q == pytest.approx([2.5e-6, 0.5, 5e-10, 0.2 / 3.0, 0.375], rel=1e-5)
 
     def test_highly_significant_hit_is_not_given_q_one(self, tmp_path: Path) -> None:
-        """Regression: p = 1e-10 used to be written with Q_FDR = 1."""
+        """Regression: p = 1e-10 is not written with Q_FDR = 1."""
         out = write_summary_statistics(_gwas_results([1e-10, 0.4, 0.8]), _variants(3), tmp_path / "stats.tsv")
         rows = _read_table(out)
 

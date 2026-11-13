@@ -1,6 +1,7 @@
 """Immutable quant receipt publication and verified restoration.
 
-Storage and numerical validation are separate; legacy imports remain public.
+Storage (``quant_storage``) and numerical validation (``quant_validation``) live
+in their own modules.
 """
 
 from __future__ import annotations
@@ -13,36 +14,16 @@ from pathlib import Path
 from typing import Any
 
 from metainformant.rna.engine.provenance import RESTORED_INPUTS_DIR, _durable_fsync, _fsync_directory
-from metainformant.rna.engine.quant_storage import (
-    ACCESSION as ACCESSION,
-    IDENTIFIER as IDENTIFIER,
-    DirectoryStore as DirectoryStore,
-    ObjectStore as ObjectStore,
-    S3Store as S3Store,
-    _digest as _digest,
-    _encode as _encode,
-    receipt_key as receipt_key,
-    safe_key as safe_key,
-)
-from metainformant.rna.engine.quant_validation import (
-    validate_quantification as validate_quantification,
-)
+from metainformant.rna.engine.quant_storage import ObjectStore, _digest, _encode, receipt_key
+from metainformant.rna.engine.quant_validation import validate_quantification
 
 SCHEMA = "metainformant.rna.locked_quant.v1"
 
 __all__ = [
-    "ACCESSION",
-    "IDENTIFIER",
-    "DirectoryStore",
-    "ObjectStore",
-    "S3Store",
     "SCHEMA",
     "bound_receipt_key",
     "lock_quantification",
     "restore_quantification",
-    "receipt_key",
-    "safe_key",
-    "validate_quantification",
 ]
 
 

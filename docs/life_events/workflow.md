@@ -80,7 +80,7 @@ result = compare_populations(
 )
 ```
 
-**Returns:** `{"group1_name", "group2_name", "group1_stats", "group2_stats", "group1", "group2", "comparison", "visualizations", "visualization_errors", "output_dir"}`.
+**Returns:** `{"group1_name", "group2_name", "group1_stats", "group2_stats", "comparison", "visualizations", "visualization_errors", "output_dir"}`.
 `comparison` includes `length_comparison` (mean and median sequence length per group), `event_types` (unique counts,
 overlap, and Jaccard similarity of the event-type sets), `common_event_types`, `unique_to_group1`, and
 `unique_to_group2`. The function writes `comparison_results.json` and, when the comparison plot can be drawn,

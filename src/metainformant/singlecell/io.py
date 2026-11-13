@@ -73,7 +73,7 @@ def _compress_fastq(path: Path) -> None:
     try:
         subprocess.run(["pigz", "--version"], capture_output=True, check=True)
         compressor = "pigz"
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except subprocess.CalledProcessError, FileNotFoundError:
         logger.warning("pigz not found, using standard gzip...")
         compressor = "gzip"
 

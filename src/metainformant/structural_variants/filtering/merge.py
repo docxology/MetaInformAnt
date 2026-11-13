@@ -895,7 +895,7 @@ def _pysam_first_genotype(record: Any) -> str | None:
     """Genotype of the first sample of a pysam record, or None when it has no ``GT``."""
     try:
         return _format_genotype(record.samples[0]["GT"])
-    except (IndexError, KeyError, TypeError, ValueError):
+    except IndexError, KeyError, TypeError, ValueError:
         return None
 
 

@@ -8,7 +8,7 @@ Population genetics analysis sub-package.
 - **Component Type**: Source Code
 
 ## 💾 Data Structures
-- **Modules**: 6 Python modules
+- **Modules**: 5 Python modules
 - **Key Concepts**: Refer to Pydantic models in source.
 
 ## 🔌 API Definition
@@ -16,7 +16,6 @@ Population genetics analysis sub-package.
 - `__init__.py`
 - `analysis.py`
 - `core.py`
-- `visualization.py`
 - `visualization_core.py`
 - `visualization_stats.py`
 

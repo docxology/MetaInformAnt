@@ -283,7 +283,7 @@ class TestDestinationInference:
         assert _infer_dest_path(self.SRC_URL, tmp_path) == tmp_path / "reads.fastq.gz"
 
     def test_missing_directory_with_a_trailing_separator_is_a_directory(self, tmp_path: Path) -> None:
-        """``"out/"`` used to become a file called ``out`` because the directory did not exist yet."""
+        """``"out/"`` names a directory even before it exists; it does not become a file called ``out``."""
         missing = tmp_path / "not_yet_created"
         assert _infer_dest_path(self.SRC_URL, str(missing) + "/") == missing / "reads.fastq.gz"
 

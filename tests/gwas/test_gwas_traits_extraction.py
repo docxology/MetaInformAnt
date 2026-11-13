@@ -52,7 +52,7 @@ class TestLoadTraitsWithIds:
         assert vals == pytest.approx([0.9, 0.95])
 
     def test_missing_id_column_is_an_error(self, tmp_path) -> None:
-        """An explicitly requested ID column that is not in the file used to give two empty lists, silently."""
+        """An explicitly requested ID column that is not in the file raises instead of giving two empty lists."""
         f = tmp_path / "pheno.csv"
         f.write_text("a,b\n1,2\n")
         with pytest.raises(ValueError, match="id_column 'nonexistent' is not a column"):

@@ -61,8 +61,6 @@ def _genotypes() -> dict[str, Any]:
 
 
 def _plot_calls(tmp_path: Path) -> dict[str, Callable[[Path], Any]]:
-    gff = tmp_path / "annotation.gff3"
-    gff.write_text("##gff-version 3\nchr1\tsrc\tgene\t1\t5000\t.\t+\t.\tID=gene1\n", encoding="utf-8")
     pca_result, variance = _pca()
     significant = [{"chrom": "1", "pos": 1000 * (i + 1), "p_value": 1e-9 / (i + 1)} for i in range(5)]
     weak = [{"chrom": "1", "pos": 1000 * (i + 1), "p_value": 0.01} for i in range(5)]  # none genome-wide significant
@@ -74,12 +72,8 @@ def _plot_calls(tmp_path: Path) -> dict[str, Callable[[Path], Any]]:
         "kinship_heatmap": lambda path: general.kinship_heatmap(_kinship(), output_path=path),
         "effect_size_plot": lambda path: general.effect_size_plot(_results(), output_path=path),
         "missingness_plot": lambda path: general.missingness_plot(_genotypes(), output_path=path),
-        "functional_enrichment_plot": lambda path: general.functional_enrichment_plot(
-            significant, gff, output_path=path
-        ),
-        "functional_enrichment_plot_no_hits": lambda path: general.functional_enrichment_plot(
-            weak, gff, output_path=path
-        ),
+        "functional_enrichment_plot": lambda path: general.functional_enrichment_plot(significant, output_path=path),
+        "functional_enrichment_plot_no_hits": lambda path: general.functional_enrichment_plot(weak, output_path=path),
     }
 
 

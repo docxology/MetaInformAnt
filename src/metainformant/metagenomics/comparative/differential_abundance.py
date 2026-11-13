@@ -565,7 +565,7 @@ def biomarker_discovery(
     if HAS_SKLEARN:
         return _sklearn_biomarker(clr_data, groups, taxa_names, n_estimators, cv_folds, seed)
     else:
-        return _pure_python_biomarker(clr_data, groups, taxa_names, seed)
+        return _pure_python_biomarker(clr_data, groups, taxa_names)
 
 
 # ---------------------------------------------------------------------------
@@ -952,7 +952,6 @@ def _pure_python_biomarker(
     clr_data: list[list[float]],
     groups: list[int],
     taxa_names: list[str],
-    seed: int | None,
 ) -> dict:
     """Pure Python fallback for biomarker discovery using effect sizes.
 
@@ -964,7 +963,6 @@ def _pure_python_biomarker(
         clr_data: CLR-transformed data matrix.
         groups: Group labels.
         taxa_names: Taxon names.
-        seed: Random seed (unused in this fallback).
 
     Returns:
         Biomarker discovery results.

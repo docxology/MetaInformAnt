@@ -299,8 +299,8 @@ class TestPhasedDiplotype:
     def test_a_haplotype_matching_two_alleles_is_called_by_its_most_impaired_one(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
-        # rs3892097 (*4, no function) and rs16947 (*2, normal function) on the same haplotype used to be
-        # called "*2": the calls come back in name order and the first was taken, dropping the no-function allele.
+        # rs3892097 (*4, no function) and rs16947 (*2, normal function) on the same haplotype are not called
+        # "*2": the calls come back in name order, and taking the first would drop the no-function allele.
         with caplog.at_level("WARNING"):
             dip = phased_diplotype({"rs3892097", "rs16947"}, {"rs3892097": 0, "rs16947": 0}, "CYP2D6")
         assert dip.diplotype_string == "*1/*4"
@@ -458,7 +458,7 @@ class TestHandleCYP2D6CNV:
         self, copy_number: int, caplog: pytest.LogCaptureFixture
     ) -> None:
         # *10, *2 and *4 are all called; sorted by name the first two (or one) are kept. The ignored
-        # no-function *4 used to vanish without a trace.
+        # no-function *4 is logged, not dropped without a trace.
         with caplog.at_level("WARNING"):
             result = handle_cyp2d6_cnv({"rs1065852", "rs16947", "rs3892097"}, copy_number)
         carried = 1 if copy_number == 1 else 2
@@ -474,7 +474,7 @@ class TestHandleCYP2D6CNV:
 
     @pytest.mark.parametrize("bad", [-1, -3, -2.0, 2.5, True, "2", None, float("nan"), float("inf")])
     def test_a_copy_number_that_is_not_a_non_negative_integer_raises(self, bad: object) -> None:
-        # A negative count used to be read as a homozygous deletion and 2.5 as "*1x1.5"
+        # A negative count is not a homozygous deletion and 2.5 is not "*1x1.5"
         with pytest.raises(ValueError, match="non-negative integer"):
             handle_cyp2d6_cnv(set(), bad)  # type: ignore[arg-type]
 

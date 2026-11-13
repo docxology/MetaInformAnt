@@ -1,19 +1,18 @@
 """Tests: sequence properties use complete published tables, and alignment results are what they say they are.
 
-Defects:
+Contracts:
 
-- ``instability_index`` and ``function.prediction_core._compute_instability_index`` each carried an 80-entry "subset of
-  the most impactful pairs" of the Guruprasad dipeptide table: 16 of the entries had wrong values and 118 dipeptides
-  whose true weight is not 1.0 were silently weighted 1.0, so the index of a 45-residue test sequence was 41.27
-  where the published table gives 52.56. The complete 400-entry table is used, from one place.
-- ``molecular_weight`` summed residue masses and left out the water of the termini (a tripeptide of glycine came out
-  at 171.16 Da instead of 189.17), while ``compute_physicochemical`` added it.
-- The ER retrieval signal pattern ``KKXX$`` contained a literal ``X`` and could never match.
-- ``read_fasta`` kept only the last of two records with the same ID.
-- ``matrix_align`` reported ``"matrix": "BLOSUM62"`` whatever matrix it was given.
-- ``multi_sequence_alignment`` claimed a guide tree, aligned each new sequence to the first row only, inserted gaps into
-  the other rows at positions of the ungapped first sequence (so rows no longer spelled their sequences), and returned
-  the rows in the order of insertion, not of the input.
+- ``instability_index`` and ``function.prediction_core._compute_instability_index`` use the complete 400-entry
+  Guruprasad dipeptide table, from one place. An 80-entry "subset of the most impactful pairs" would weight 118
+  dipeptides whose true weight is not 1.0 as 1.0 and give a 45-residue test sequence an index of 41.27 where the
+  published table gives 52.56.
+- ``molecular_weight`` includes the water of the termini, as ``compute_physicochemical`` does (a tripeptide of glycine
+  weighs 189.17 Da, not the 171.16 Da of the summed residue masses).
+- The ER retrieval signal pattern ``KKXX$`` finds a C-terminal dilysine signal: ``X`` is any residue, not a literal.
+- ``read_fasta`` rejects two records with the same ID instead of keeping only the last.
+- ``matrix_align`` reports the matrix it was given, not always ``"matrix": "BLOSUM62"``.
+- ``multi_sequence_alignment`` inserts gaps so that every row still spells its sequence, keeps the insertions of every
+  sequence, and returns the rows in the order of the input.
 
 Oracles: Biopython's ProtParam (instability index, molecular weight) and its copy of the Guruprasad table when it is
 installed, hand-computed sums from the published weights, and invariants of a multiple alignment (each row without its
@@ -102,7 +101,7 @@ def test_the_index_equals_biopythons(sequence: str) -> None:
     assert _compute_instability_index(sequence) == pytest.approx(expected, abs=1e-9)
 
 
-def test_random_sequences_agree_with_biopython_and_the_old_subset_does_not_matter_any_more() -> None:
+def test_random_sequences_agree_with_biopython() -> None:
     pytest.importorskip("Bio")
     from Bio.SeqUtils.ProtParam import ProteinAnalysis
 
@@ -112,14 +111,14 @@ def test_random_sequences_agree_with_biopython_and_the_old_subset_does_not_matte
         assert instability_index(sequence) == pytest.approx(ProteinAnalysis(sequence).instability_index(), abs=1e-9)
 
 
-def test_the_value_of_the_defect_report() -> None:
+def test_the_index_of_the_reported_sequence() -> None:
     sequence = SEQUENCES[0]
 
-    assert instability_index(sequence) == pytest.approx(52.5578, abs=1e-3)  # the published table; the subset gave 41.27
+    assert instability_index(sequence) == pytest.approx(52.5578, abs=1e-3)  # the published table; a subset gives 41.27
     assert compute_physicochemical(sequence)["instability_index"] == pytest.approx(52.56, abs=0.006)
     assert (
         compute_physicochemical(sequence)["is_stable"] is False
-    )  # > 40; the subset's 41.27 also said so, but not by this much
+    )  # > 40, as the subset's 41.27 is, but by a wider margin
 
 
 def test_pairs_with_a_non_standard_residue_count_as_neutral() -> None:

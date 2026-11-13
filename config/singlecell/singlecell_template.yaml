@@ -12,7 +12,7 @@ input:
 qc:
   min_genes: 200  # Minimum genes per cell
   min_cells: 3  # Minimum cells per gene
-  max_mito_percent: 5.0  # Maximum mitochondrial gene percentage
+  max_pct_mt: 5.0  # Maximum mitochondrial gene percentage
   max_ribo_percent: 50.0  # Maximum ribosomal gene percentage
 
 # Normalization

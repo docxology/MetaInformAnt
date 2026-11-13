@@ -36,8 +36,7 @@ Population genetics submodule.
 - `weirs_fst(population_counts)` — Weir & Cockerham (1984) single-locus
   variance components (`a`, `b`, `c`) from per-population haplotype (gene-copy)
   counts; `c = 0` because haplotype counts carry no diploid heterozygosity, and
-  `theta = sum_u a_u / sum_u (a_u + b_u + c_u)` clamped to [0, 1]. The legacy
-  `(counts, labels)` CRC32-jitter signature was removed.
+  `theta = sum_u a_u / sum_u (a_u + b_u + c_u)` clamped to [0, 1].
 
 #### `ld.py`
 - `ld_coefficients(pA, pa, pB, pb, pAB)` — frequency mode returns signed `(D, D')`; `pA` may be
@@ -63,9 +62,8 @@ Population genetics submodule.
   `r2_start * (1 - c) ** (2 * t)`.
 
 #### `effective_size.py`
-- `effective_size_sex_ratio(male_size, female_size, sex_ratio=0.5)` — always
-  `4 * Nm * Nf / (Nm + Nf)`. `sex_ratio` must lie strictly between 0 and 1 but does not
-  change the result, because the breeding sex ratio is already given by `Nm` and `Nf`.
+- `effective_size_sex_ratio(male_size, female_size)` — `4 * Nm * Nf / (Nm + Nf)`; the
+  breeding sex ratio is given by `Nm` and `Nf`.
 
 #### `statistics.py`
 - `effective_size_from_family_size_variance(family_sizes, Vk=None)` — with `Vk`,
@@ -87,10 +85,10 @@ Population genetics submodule.
   Dictionaries of summary statistics support only `"ttest"`.
 - `permutation_test(values1, values2, n_permutations=1000, random_state=None)` — p-value
   `(1 + k) / (1 + n_permutations)`, so it is never 0; an empty group or `n_permutations < 1` raises
-  `ValueError` (it used to answer an empty group with p = 1.0).
+  `ValueError`.
 - `compare_population_statistic(pop1_stats, pop2_stats, name)` — a rough normal approximation that
   assumes 10 observations per population and uses the `variance` entries (default 1.0); zero or
-  negative variances raise `ValueError` (a zero standard error used to give p = 1.0).
+  negative variances raise `ValueError` rather than reporting p = 1.0 for a zero standard error.
 - `expected_pairwise_diversity(sample_size, theta)` — `theta` for two or more sequences (E[pi] =
   theta whatever n is), 0.0 for fewer. `expected_coalescent_waiting_times(sample_size, Ne)` returns
   `4 Ne / (k (k - 1))` generations per interval (it delegates to the coalescent module).
@@ -98,11 +96,11 @@ Population genetics submodule.
 
 #### `core.py`
 - `hardy_weinberg_genotype_freqs(p)` — `(p^2, 2pq, q^2)`; a frequency outside [0, 1] (NaN included)
-  raises `ValueError` (it used to return zeros).
+  raises `ValueError`.
 
 #### `coalescent.py`
 - `expected_time_to_mrca(n_samples, effective_size)` — raises `ValueError` for fewer than two
-  samples or a non-positive effective size (it used to return 0.0 for the latter).
+  samples or a non-positive effective size.
 - `watterson_theta` and `expected_total_branch_length` use the exact harmonic number
   (`math.fsum`), never `log(n) + gamma`; `expected_total_branch_length` raises for a non-positive
   effective size and `watterson_theta` for a non-positive `sequence_length`.

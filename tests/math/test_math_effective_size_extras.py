@@ -37,7 +37,7 @@ def test_sex_ratio_equal_reduces_to_wright_formula():
 def test_sex_ratio_unequal_sexes_follow_wright_formula():
     # The breeding sex ratio (here 0.25) is fixed by the two counts, so Wright's formula
     # 4 Nm Nf / (Nm + Nf) applies as it stands: 4 * 100 * 300 / 400 = 300, below the census size 400.
-    val = effective_size_sex_ratio(100.0, 300.0, sex_ratio=0.25)
+    val = effective_size_sex_ratio(100.0, 300.0)
     assert val == pytest.approx(4 * 100.0 * 300.0 / (100.0 + 300.0))
     assert val < 100.0 + 300.0
 
@@ -45,8 +45,6 @@ def test_sex_ratio_unequal_sexes_follow_wright_formula():
 def test_sex_ratio_validation():
     with pytest.raises(ValueError, match="positive"):
         effective_size_sex_ratio(0.0, 100.0)
-    with pytest.raises(ValueError, match="between 0 and 1"):
-        effective_size_sex_ratio(100.0, 100.0, sex_ratio=1.0)
 
 
 def test_harmonic_mean_effective_size_known_value():

@@ -266,8 +266,7 @@ def _binomial_count(trials: int, probability: float, source: Any) -> int:
     jumping from one success to the next: the number of failures before a success is geometric,
     ``floor(ln(1 - U) / ln(1 - p))`` for ``U`` uniform on [0, 1). The draw is exact and costs about
     ``trials * probability + 1`` random numbers rather than ``trials``, and it uses only ``random()``,
-    so a seeded generator gives the same count on every Python version (``Random.binomialvariate``
-    exists only from Python 3.12).
+    so a seeded generator gives the same count on every Python version.
 
     Args:
         trials: Number of Bernoulli trials, non-negative

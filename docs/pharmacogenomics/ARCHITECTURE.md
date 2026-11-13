@@ -10,7 +10,7 @@ flowchart LR
 
 ## Layer cake
 
-1. **Public API**: `predict_metabolizer()` plus the functions of each submodule
+1. **Public API**: `predict_metabolizer_status()` plus the functions of each submodule
    (`call_star_alleles`, `classify_phenotype`, CPIC helpers, ...), imported from the module
    that defines them
 2. **Core logic** (`alleles/`): star-allele matching, diplotype scoring, phenotype assignment
@@ -31,7 +31,7 @@ flowchart LR
 - **One allele table, one phenotype implementation**: `alleles.diplotype._ACTIVITY_SCORE_TABLES`
   holds every allele value, `alleles.phenotype` holds every phenotype definition, and
   `metabolism.metabolizer_status` copies the former and delegates to the latter, so
-  `predict_metabolizer` and `classify_phenotype` cannot disagree.
+  `predict_metabolizer_status` and `classify_phenotype` cannot disagree.
 - **Phenotypes as CPIC defines them**: genes CPIC defines by activity score use score bands;
   CYP2C19, SLCO1B1 and UGT1A1 use pairs of allele functions (see
   [Phenotype definitions](SPEC.md#phenotype-definitions)).
@@ -60,7 +60,7 @@ classify_phenotype(diplotype, gene)          ← score bands, or allele-function
   → recommendation dict
 ```
 
-`predict_metabolizer(genotype, gene)` is the front end for the middle steps: it takes the
+`predict_metabolizer_status(genotype, gene)` is the front end for the middle steps: it takes the
 diplotype from a dict (`{"diplotype": "*1/*4"}`) and returns the same phenotype as a lowercase
 token, with the activity score and the bands it used. `generate_clinical_report` runs the
 classification and the CPIC lookup for every gene in one call.
@@ -104,7 +104,7 @@ sample so the file is read once.
 |------|---------|------------|
 | Custom allele file | Add or replace star-allele definitions | `load_allele_definitions(gene='XYZ', filepath='~/xyz.json')`, passed as `allele_definitions=` |
 | CPIC guidelines | Use newer or additional guidelines | `load_cpic_guidelines(filepath='cpic_2025.json')`, passed as `guidelines=` |
-| Activity scoring | Non-standard allele values | `determine_diplotype(..., scoring_table=...)`, `predict_metabolizer(..., activity_scores=...)` |
+| Activity scoring | Non-standard allele values | `determine_diplotype(..., scoring_table=...)`, `predict_metabolizer_status(..., activity_scores=...)` |
 | Phenotype bands | New gene or revised CPIC definition | edit `_PHENOTYPE_THRESHOLDS` in `alleles/phenotype.py` (see [AGENTS.md](AGENTS.md)); there is no runtime override argument |
 
 ## Testing strategy
@@ -113,7 +113,7 @@ Tests in `tests/pharmacogenomics/` use real implementations with small determini
 - Allele matching and definition loading (empty set, overlapping definitions, the `source` and
   `filepath` contract, genes without calling definitions)
 - Phenotype classification checked against CPIC diplotype tables written out in the test, band
-  tiling, and agreement of `predict_metabolizer` with `classify_phenotype` for every diplotype
+  tiling, and agreement of `predict_metabolizer_status` with `classify_phenotype` for every diplotype
 - CPIC guideline lookup, PharmGKB queries, ACMG classification
 - Report generation: genotype results, recommendations, actions and the exported text/HTML/JSON
 - Randomness audit and `PYTHONHASHSEED` independence of complete analyses

@@ -1,7 +1,7 @@
 """Campaign scheduling and throughput: global order, streaming discovery, retry bookkeeping, host profile.
 
 Real ProgressDB files, real FASTQ bytes and real orchestrator runs; only the
-per-species discovery and the per-sample worker are replaced by small
+per-species discovery and the per-sample processing are replaced by small
 deterministic functions (they are the scheduler's inputs, not the code under
 test).
 """
@@ -411,7 +411,7 @@ def test_layout_mismatch_is_quarantined_and_not_retried_at_every_start(
     second = orchestrator.run_all(["amalgkit_apis.yaml"], max_gb=1.0, workers=1, threads=1)
     assert calls == ["SRR_LAYOUT"]
     assert second["exit_code"] == 0
-    # A discovery that still lists the quarantined row (the legacy metadata path) meets the retry gate instead.
+    # A discovery that still lists the quarantined row (the non-cohort metadata path) meets the retry gate instead.
     monkeypatch.setattr(orchestrator, "discover_species_tasks", _discoverer(orchestrator, tasks, exclude_done=False))
     third = orchestrator.run_all(["amalgkit_apis.yaml"], max_gb=1.0, workers=1, threads=1)
     assert calls == ["SRR_LAYOUT"]
@@ -855,7 +855,7 @@ def test_a_bounded_requeue_leaves_a_task_pending_for_the_next_start(
     summary = orchestrator.run_all(["amalgkit_apis.yaml"], max_gb=1000.0)
 
     states = orchestrator.db.states_for([("apis", run) for run in runs])
-    assert "pending" in states.values()  # no requeue allowed: the old behaviour, still never counted as a failure
+    assert "pending" in states.values()  # no requeue allowed: never counted as a failure
     assert summary["exit_code"] == 75 and summary["failed_by_class"] == {}
 
 

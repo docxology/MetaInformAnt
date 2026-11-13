@@ -535,7 +535,6 @@ def log_sum_exp(values: Iterable[float]) -> float:
 def colocalization(
     z_scores_1: list[float],
     z_scores_2: list[float],
-    ld_matrix: list[list[float]] | None = None,
     prior_p1: float = 1e-4,
     prior_p2: float = 1e-4,
     prior_p12: float = 1e-5,
@@ -573,8 +572,6 @@ def colocalization(
     Args:
         z_scores_1: Z-scores for trait 1 at each variant.
         z_scores_2: Z-scores for trait 2 at each variant.
-        ld_matrix: Optional LD matrix. Currently used for future LD-aware
-            extensions but does not modify the core coloc computation.
         prior_p1: Prior probability a variant is causal for trait 1 only.
         prior_p2: Prior probability a variant is causal for trait 2 only.
         prior_p12: Prior probability a variant is causal for both traits.

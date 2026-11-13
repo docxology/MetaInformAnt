@@ -687,11 +687,6 @@ class TestGridWorld:
             assert isinstance(pos, tuple)
             assert len(pos) == 2
 
-    def test_get_agent_positions_alias(self) -> None:
-        """get_agent_positions() returns the same result as positions()."""
-        world = GridWorld(width=10, height=10, num_agents=3, rng=random.Random(42))
-        assert world.get_agent_positions() == world.positions()
-
     def test_get_agent_energies(self) -> None:
         """get_agent_energies() returns a list of floats for each agent."""
         world = GridWorld(width=10, height=10, num_agents=3, rng=random.Random(42))

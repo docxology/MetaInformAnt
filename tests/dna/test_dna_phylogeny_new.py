@@ -14,22 +14,20 @@ from __future__ import annotations
 
 import pytest
 
-from metainformant.dna.phylogeny.tree import (
-    Tree,
+from metainformant.dna.phylogeny.tree_analysis import (
     _find_root,
     _get_all_leaves,
     _get_bipartitions,
     basic_tree_stats,
     from_newick,
     is_monophyletic,
-    neighbor_joining_tree,
     prune_tree,
     robinson_foulds_distance,
     to_newick,
     total_branch_length,
     tree_diameter,
-    upgma_tree,
 )
+from metainformant.dna.phylogeny.tree_construction import Tree, neighbor_joining_tree, upgma_tree
 
 # ---------------------------------------------------------------------------
 # Fixtures: hand-built trees for deterministic testing

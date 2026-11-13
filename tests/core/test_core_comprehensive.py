@@ -17,7 +17,7 @@ from metainformant.core.io import cache, paths
 from metainformant.core.utils import config, hash, logging, text
 
 try:
-    from metainformant.core import db
+    from metainformant.core.data import db
 
     DB_AVAILABLE = True
 except ImportError:
@@ -96,7 +96,7 @@ class TestCoreConfig:
         config_file.write_text(config_data)
 
         # Test loading YAML config
-        loaded_config = config.load_config_file(config_file)
+        loaded_config = config.load_mapping_from_file(config_file)
         assert "database" in loaded_config
         assert loaded_config["database"]["host"] == "localhost"
         assert loaded_config["analysis"]["threads"] == 4
@@ -331,7 +331,7 @@ class TestCoreText:
     def test_text_cleaning(self):
         """Test text cleaning utilities."""
         dirty_text = "  \t\nExtra   whitespace\n\n  "
-        clean_text = text.clean_whitespace(dirty_text)
+        clean_text = text.normalize_whitespace(dirty_text)
         assert clean_text == "Extra whitespace"
 
         # Test removing control characters

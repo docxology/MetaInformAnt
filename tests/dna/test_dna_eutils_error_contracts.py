@@ -1,8 +1,8 @@
 """Offline tests for the E-utilities clients (``dna.external.entrez`` and ``dna.external.ncbi``).
 
-Two defects are covered.  A failed call used to be logged and answered with ``{}``, ``""``, ``[]`` or
-``None``, so an outage looked like "no hits"; and a field missing from a record was filled with ``""`` or
-``0``, so a record of unknown length looked like an empty sequence.
+Two contracts are covered.  A failed call raises instead of being logged and answered with ``{}``, ``""``,
+``[]`` or ``None``, so an outage never looks like "no hits"; and a field missing from a record is not filled
+with ``""`` or ``0``, so a record of unknown length never looks like an empty sequence.
 
 Failures are produced for real, without a stub: a client whose base URL has no scheme is refused by
 ``requests`` before any I/O, and a client pointed at the discard port of the local host gets a refused
@@ -117,7 +117,7 @@ def test_refused_connection_is_reported_without_the_key_or_contact(entrez_client
 
 
 def test_api_key_falls_back_to_the_environment_variable(monkeypatch: pytest.MonkeyPatch) -> None:
-    """docs/dna/ncbi.md tells users to set ``NCBI_API_KEY``; the clients used to ignore it."""
+    """docs/dna/ncbi.md tells users to set ``NCBI_API_KEY``, and the clients read it."""
     monkeypatch.setenv("NCBI_API_KEY", " env-key ")
     clients = [
         entrez.EntrezClient(email=CLIENT_EMAIL),
@@ -163,7 +163,7 @@ def test_result_limits_must_be_positive_integers(
 def test_result_limits_above_the_client_maximum_are_refused_not_truncated(
     entrez_client: entrez.EntrezClient, general_client: ncbi.NCBIClient
 ) -> None:
-    """Asking for 5000 records used to return at most 1000 (or 10000) without saying so."""
+    """Asking for more records than the service returns raises instead of truncating without saying so."""
     with pytest.raises(ValueError, match="at most 10000"):
         entrez_client.search("nucleotide", "x", 10001)
     for call in (
@@ -290,6 +290,6 @@ def test_empty_fasta_records_give_none() -> None:
     ],
 )
 def test_bodies_that_are_not_one_fasta_record_raise(body: str) -> None:
-    """An error text with two or more lines used to be joined into a 'sequence'."""
+    """An error text with two or more lines is not joined into a 'sequence'."""
     with pytest.raises(requests.RequestException):
         entrez.parse_fasta_sequence(body)

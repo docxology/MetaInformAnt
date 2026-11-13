@@ -27,7 +27,7 @@ def _check_network_connectivity(url: str = "https://rest.uniprot.org") -> bool:
     try:
         response = requests.head(url, timeout=5)
         return response.status_code in (200, 302, 301)
-    except (requests.RequestException, requests.Timeout):
+    except requests.RequestException, requests.Timeout:
         return False
 
 
@@ -327,7 +327,7 @@ class TestDownloadProteomeFasta:
             # This should fail due to permission error
             result = download_proteome_fasta("9606", output_file)
             assert result is False
-        except (PermissionError, OSError):
+        except PermissionError, OSError:
             # This is also acceptable
             pass
         finally:
@@ -396,7 +396,7 @@ class TestProteomesNetworkConnectivity:
             import requests
 
             requests.get("https://httpbin.org/delay/10", timeout=0.001)
-        except (requests.Timeout, requests.RequestException):
+        except requests.Timeout, requests.RequestException:
             # This is expected
             pass
 

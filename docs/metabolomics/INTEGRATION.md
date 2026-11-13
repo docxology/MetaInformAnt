@@ -93,7 +93,7 @@ from metainformant.multiomics.analysis.integration import MultiOmicsData, canoni
 
 # Metabolite matrix (samples × metabolites) and gene expression matrix (samples × genes),
 # as DataFrames that share sample IDs
-omics = MultiOmicsData(metabolomics=metabolite_df, transcriptomics=expression_df)
+omics = MultiOmicsData({"metabolomics": metabolite_df, "transcriptomics": expression_df})
 
 # Wide layers can force perfect in-sample correlations without a ridge.
 # Unregularized CCA raises when their combined numerical rank exceeds n_samples - 1.
@@ -128,7 +128,7 @@ P = from_protein_abundance("protein_abundance.csv", transpose=True)
 
 # Association between the metabolite and protein layers
 # (metabolite_df: samples × metabolites DataFrame with the same sample IDs)
-omics = MultiOmicsData(metabolomics=metabolite_df, proteomics=P)
+omics = MultiOmicsData({"metabolomics": metabolite_df, "proteomics": P})
 X_c, Y_c, x_weights, y_weights, corr = canonical_correlation(
     omics, layers=("metabolomics", "proteomics"), n_components=5, regularization=0.1
 )

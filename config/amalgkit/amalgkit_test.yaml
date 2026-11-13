@@ -5,8 +5,6 @@ work_dir: output/amalgkit/test/work
 log_dir: output/amalgkit/test/logs
 threads: 6
 
-auto_install_amalgkit: false
-
 # Species configuration
 species_list:
   - Test_species

@@ -79,7 +79,7 @@ class TestDifferentialExpressionSignedFoldChanges:
             assert p_value < 1e-6, f"fold change {fold_change}: group 1 should be {'lower' if decreases else 'higher'}"
 
     def test_single_negative_fold_change_lowers_the_gene(self) -> None:
-        """The reported case: ``fold_changes=[-4.0]`` used to raise the gene fourfold."""
+        """The reported case: ``fold_changes=[-4.0]`` lowers the gene; it does not raise it fourfold."""
         expr, labels = simulate_differential_expression(4000, 10, np.array([-4.0]), rng=random.Random(11))
         group0, group1 = expr[labels == 0, 0], expr[labels == 1, 0]
         assert group0.mean() > 0
@@ -105,7 +105,7 @@ class TestDifferentialExpressionSignedFoldChanges:
 
     @pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf")])
     def test_non_finite_fold_change_is_rejected(self, bad: float) -> None:
-        """NaN used to fall through both branches and silently mean 'no change'."""
+        """NaN is rejected; it does not fall through both branches and silently mean 'no change'."""
         with pytest.raises(errors.ValidationError, match="finite"):
             simulate_differential_expression(10, 5, np.array([2.0, bad]), rng=random.Random(1))
 
@@ -125,7 +125,7 @@ def _r_squared(genotypes: list[list[int]], left: int, right: int) -> float:
 class TestLinkageDisequilibriumGenerator:
     @pytest.mark.parametrize("target", [0.1, 0.5, 0.8])
     def test_adjacent_r_squared_hits_the_target(self, target: float) -> None:
-        """The realised r-squared between adjacent sites equals ``r_squared_target`` (it used to be its square)."""
+        """The realised r-squared between adjacent sites equals ``r_squared_target`` (not its square)."""
         genotypes = generate_linkage_disequilibrium_data(30000, 2, r_squared_target=target, rng=random.Random(101))
         # Sampling error of r-squared is about 2 r (1 - r^2) / sqrt(n) <= 0.01 here; 0.02 is a wide margin
         assert _r_squared(genotypes, 0, 1) == pytest.approx(target, abs=0.02)
@@ -148,7 +148,7 @@ class TestLinkageDisequilibriumGenerator:
         assert _r_squared(genotypes, 0, 1) == pytest.approx(0.25, abs=0.02)
 
     def test_requested_allele_frequencies_are_preserved(self) -> None:
-        """Each site keeps its own frequency; the copy chain used to blend in the previous site's."""
+        """Each site keeps its own frequency; the copy chain does not blend in the previous site's."""
         freqs = [0.3, 0.4, 0.2, 0.5, 0.1]
         n = 40000
         genotypes = generate_linkage_disequilibrium_data(n, allele_frequencies=freqs, rng=random.Random(2))
@@ -196,12 +196,10 @@ class TestLinkageDisequilibriumGenerator:
         )
         assert math.sqrt(_r_squared(genotypes, 0, 1)) == pytest.approx(0.4, abs=0.02)
 
-    def test_recombination_rate_is_validated_but_does_not_change_the_output(self) -> None:
-        """The documented contract: the rate is accepted and checked, but the model has no recombination step."""
-        kwargs = dict(n_sites=12, r_squared_target=0.5)
-        low = generate_linkage_disequilibrium_data(200, recombination_rate=0.0, rng=random.Random(12), **kwargs)
-        high = generate_linkage_disequilibrium_data(200, recombination_rate=0.4, rng=random.Random(12), **kwargs)
-        assert low == high
+    def test_the_markov_model_takes_no_recombination_rate(self) -> None:
+        """The Markov chain has no recombination step, so it rejects a recombination rate."""
+        with pytest.raises(errors.ValidationError, match="recombination_rate"):
+            generate_linkage_disequilibrium_data(200, 12, r_squared_target=0.5, recombination_rate=0.0)
         with pytest.raises(errors.ValidationError, match="recombination_rate"):
             generate_linkage_disequilibrium_data(10, 3, recombination_rate=-0.1)
 

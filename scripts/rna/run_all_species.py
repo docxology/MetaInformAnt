@@ -289,8 +289,8 @@ def _host_overrides(args: argparse.Namespace) -> bool:
 
 
 def _resolve_profile(args: argparse.Namespace, data_root: Path) -> PipelineResourceProfile:
-    """The profile ``run_all`` uses for these arguments: explicit workers and threads keep the historical
-    profile unless acquisition budgets are given; everything else is derived from the host."""
+    """The profile ``run_all`` uses for these arguments: explicit workers and threads select the fixed
+    worker/thread profile unless acquisition budgets are given; everything else is derived from the host."""
 
     if args.workers is not None and args.threads is not None and not _host_overrides(args):
         profile = build_pipeline_resource_profile(

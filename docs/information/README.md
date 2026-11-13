@@ -18,7 +18,8 @@ graph TD
         MC --> |continuous.py| DE[Differential Entropy]
         MC --> |estimation.py| EST[Estimators]
 
-        MA[metrics/advanced/] --> |geometry.py| FG[Fisher-Rao, Hellinger]
+        MA[metrics/advanced/] --> |fisher_rao.py| FG[Fisher-Rao, Hellinger]
+        MA --> |information_projection.py| IP[Projection, Divergences]
         MA --> |channel.py| CH[Channel Capacity]
         MA --> |decomposition.py| DC[PID, Synergy]
         MA --> |semantic.py| SEM[Semantic Similarity]

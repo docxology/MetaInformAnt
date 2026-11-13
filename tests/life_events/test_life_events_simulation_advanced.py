@@ -1,10 +1,9 @@
 """Tests for simulation functions in life_events module.
 
-``generate_synthetic_life_events`` used to accept ``transition_probabilities``, ``seasonal_patterns``,
-``rare_event_probability``, ``temporal_noise``, ``missing_data_probability`` and
-``cooccurrence_patterns`` through ``**kwargs`` and ignore all of them, and the tests that passed them
-asserted nothing about them. ``rare_event_probability``, ``missing_data_probability`` and
-``temporal_noise`` are implemented now; any other keyword argument raises ``TypeError``.
+``generate_synthetic_life_events`` implements ``rare_event_probability``, ``missing_data_probability``
+and ``temporal_noise``, and the tests assert their effect. Any other keyword argument, such as
+``transition_probabilities``, ``seasonal_patterns`` or ``cooccurrence_patterns``, raises ``TypeError``
+instead of being ignored.
 """
 
 from __future__ import annotations

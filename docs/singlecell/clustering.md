@@ -44,7 +44,7 @@ The Leiden stack (`networkx`, `igraph` and `leidenalg`) is optional. The `single
 
 #### Matrix input and the k-means fallback
 
-`leiden_clustering` also accepts a plain cells × features matrix (dense, sparse or array-like, passed as `data` or as `feature_matrix=`) and then returns a label array instead of a `SingleCellData`. With the Leiden stack installed this is the same Leiden clustering. Without it the call raises `ImportError`, unless `allow_kmeans_fallback=True`:
+`leiden_clustering` also accepts a plain cells × features matrix (dense, sparse or array-like, passed as `data`) and then returns a label array instead of a `SingleCellData`. With the Leiden stack installed this is the same Leiden clustering. Without it the call raises `ImportError`, unless `allow_kmeans_fallback=True`:
 
 ```python
 from metainformant.singlecell.analysis.clustering import leiden_clustering
@@ -278,7 +278,7 @@ Plot the clusters on an embedding with the plotting functions (see [Visualizatio
 ```python
 from metainformant.singlecell.visualization.visualization import plot_cluster_comparison, plot_umap
 
-fig = plot_umap(data, color="leiden_cluster")            # needs the UMAP columns written by compute_umap
+fig = plot_umap(data, color="leiden_cluster")            # needs the UMAP columns written by umap_reduction
 fig = plot_cluster_comparison(data, cluster_cols=["leiden_cluster", "kmeans_cluster"])
 ```
 

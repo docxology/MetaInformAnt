@@ -204,13 +204,13 @@ def test_differential_expression_honours_the_point_size_argument() -> None:
     sized = expression.plot_differential_expression(_de_frame([10.0, 100.0, 1000.0, 55.0]), s=77)
 
     assert sorted(scaled.collections[0].get_sizes())[0] == 20 and sorted(scaled.collections[0].get_sizes())[-1] == 100
-    assert set(sized.collections[0].get_sizes()) == {77.0}  # ``s`` used to be overwritten by the baseMean scaling
+    assert set(sized.collections[0].get_sizes()) == {77.0}  # ``s`` is not overwritten by the baseMean scaling
 
 
 def test_differential_expression_with_a_constant_mean_column_has_finite_sizes() -> None:
     ax = expression.plot_differential_expression(_de_frame([5.0, 5.0, 5.0, 5.0]))
 
-    assert set(ax.collections[0].get_sizes()) == {20.0}  # a zero range used to divide by zero (NaN sizes)
+    assert set(ax.collections[0].get_sizes()) == {20.0}  # a zero range does not divide by zero (NaN sizes)
 
 
 # ---------------------------------------------------------------------------
@@ -235,7 +235,7 @@ def test_parallel_coordinates_colours_by_group_with_one_legend_entry_per_group()
     colours = [line.get_color() for line in ax.lines]
     assert len(ax.lines) == 6
     assert colours[0] == colours[1] and colours[2] == colours[3] and colours[4] == colours[5]
-    assert len(set(colours)) == 3  # rows used to cycle through the default colours whatever their group
+    assert len(set(colours)) == 3  # colours follow the group, not the default cycle
     assert [text.get_text() for text in ax.get_legend().get_texts()] == ["A", "B", "C"]  # one entry per row before
     assert ax.get_legend().get_title().get_text() == "species"
 

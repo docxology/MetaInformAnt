@@ -36,9 +36,8 @@ Resolution order of `ensure_metainformant()`:
 Hand-rolled `sys.path.insert` hacks are a contract violation. The canonical
 shim lives at `projects/hymenoptera_amalgkit/scripts/metainformant_import.py`;
 copy it verbatim into `<new_clade>/scripts/`. Scripts in nested subpackages
-(e.g. `scripts/cloud/`) add the project's `scripts/` directory to `sys.path`
-once for sibling imports, exactly as the existing cloud scripts do for
-`amalgkit_paths`.
+add the project's `scripts/` directory to `sys.path` once for sibling imports
+(for example to import `amalgkit_paths`).
 
 ## 2. Repository template
 

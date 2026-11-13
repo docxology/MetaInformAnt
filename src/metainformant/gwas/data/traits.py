@@ -19,7 +19,6 @@ def load_traits(
     phenotype_path: str | Path,
     *,
     trait_column: Optional[str] = None,
-    id_column: Optional[str] = None,
 ) -> List[float]:
     """Load numeric trait values from a CSV phenotype file.
 
@@ -30,8 +29,6 @@ def load_traits(
         phenotype_path: Path to a CSV file with a header row.
         trait_column: Explicit column name to use as trait values. It must be a column of the file: a
             name that is not in the header is an error, not a cue to pick another column.
-        id_column: Column name for sample IDs (unused by this function
-            but reserved for future ``load_traits_with_ids``).
 
     Returns:
         List of float trait values (rows with non-numeric values are skipped, and their number is
@@ -75,7 +72,7 @@ def load_traits(
         for row in reader:
             try:
                 traits.append(float(row[col]))
-            except (ValueError, KeyError, TypeError):
+            except ValueError, KeyError, TypeError:
                 n_skipped += 1
 
     if n_skipped:
@@ -97,7 +94,7 @@ def load_traits_with_ids(
     Args:
         phenotype_path: Path to CSV with header.
         trait_column: Column for trait values (auto-detected if None). A name that is not in the header
-            is an error: every row used to be skipped and the result was an empty pair of lists.
+            is an error, rather than skipping every row and returning an empty pair of lists.
         id_column: Column for sample IDs (auto-detected if None). Same rule.
 
     Returns:
@@ -148,7 +145,7 @@ def load_traits_with_ids(
                 val = float(row[trait_col])
                 sample_ids.append(row[id_col])
                 trait_values.append(val)
-            except (ValueError, KeyError, TypeError):
+            except ValueError, KeyError, TypeError:
                 n_skipped += 1
 
     if n_skipped:

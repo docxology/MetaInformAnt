@@ -561,7 +561,7 @@ def refine_bins(
     logger.info(f"Refining {len(bins)} bins")
 
     # Assess quality for each bin
-    assessed_bins = assess_bin_quality(bins, contigs, marker_genes=marker_genes, marker_set=marker_set)
+    assessed_bins = assess_bin_quality(bins, marker_genes=marker_genes, marker_set=marker_set)
 
     def acceptable(candidate: GenomeBin) -> bool:
         completeness, contamination = _quality_values(candidate)
@@ -674,7 +674,7 @@ def _split_contaminated_bin(
 
 def assess_bin_quality(
     bins: list[GenomeBin],
-    contigs: dict[str, str] | None = None,
+    *,
     marker_genes: Mapping[str, Sequence[str]] | None = None,
     marker_set: Collection[str] | None = None,
 ) -> list[GenomeBin]:
@@ -695,8 +695,6 @@ def assess_bin_quality(
 
     Args:
         bins: List of GenomeBin objects (updated in place).
-        contigs: Accepted for backward compatibility and unused: no marker search is
-            performed on sequences.
         marker_genes: Marker gene annotations per contig (contig ID -> marker names found
             on that contig; a marker listed twice counts as two copies). Contigs that are
             not in the mapping are treated as carrying no markers.

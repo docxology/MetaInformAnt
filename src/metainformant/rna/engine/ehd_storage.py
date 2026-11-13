@@ -101,7 +101,7 @@ def capture_ehd_write_policy(
     log: Path,
     database: Path | None,
 ) -> EHDWritePolicy | None:
-    """Exempt only a fully validated EHD mode from the legacy host-space gate.
+    """Exempt only a fully validated EHD mode from the host-disk free-space gate.
 
     The production launcher additionally applies the independently qualified
     native write sandbox. This function is a path/capacity contract, not a grant
@@ -169,9 +169,6 @@ def capture_ehd_write_policy(
     for key in ("AMALGKIT_RUNTIME_SOURCE_MANIFEST", "AMALGKIT_TOOLCHAIN_MANIFEST"):
         _contained(Path(os.environ[key]), namespace, directory=False)
     _contained(Path(os.environ["AMALGKIT_FROZEN_ROOT"]), namespace, directory=True)
-    overlay = os.environ.get("AMALGKIT_LOCAL_SIZE_OVERLAY_PATH")
-    if overlay:
-        _contained(Path(overlay), namespace, directory=False)
     minimum = float(os.environ.get("AMALGKIT_MIN_EXTERNAL_FREE_GB", "256"))
     if not math.isfinite(minimum) or minimum < 256:
         raise ValueError("Validated EHD mode retains at least 256 GiB external headroom")
@@ -188,8 +185,6 @@ def capture_ehd_write_policy(
         "AMALGKIT_FROZEN_ROOT",
         "AMALGKIT_RUNTIME_SOURCE_MANIFEST",
         "AMALGKIT_TOOLCHAIN_MANIFEST",
-        "AMALGKIT_LOCAL_SIZE_OVERLAY_PATH",
-        "AMALGKIT_LOCAL_SIZE_OVERLAY_SHA256",
         "AMALGKIT_PROGRESS_DB_JOURNAL_MODE",
         "AMALGKIT_LOCAL_QUANT_SCRATCH_DIR",
         "AMALGKIT_LOCAL_FASTERQ_SCRATCH_DIR",

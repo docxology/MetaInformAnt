@@ -198,7 +198,7 @@ class TestDashboardNetworkPanel:
 
 
 class TestPlotsAreReproducible:
-    """Set iteration order and the unseeded spring layout used to change the figures from run to run."""
+    """Neither set iteration order nor an unseeded spring layout changes the figures from run to run."""
 
     @staticmethod
     def _network() -> tuple[nx.Graph, dict[str, str]]:

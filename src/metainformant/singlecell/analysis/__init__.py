@@ -1,12 +1,11 @@
-"""Single-cell analysis sub-package (clustering, dimensionality, trajectory)."""
+"""Single-cell analysis sub-package (clustering, dimensionality reduction, trajectory)."""
 
 from __future__ import annotations
 
-from . import clustering, dimensionality, nonlinear_methods, pca_methods, trajectory
+from . import clustering, nonlinear_methods, pca_methods, trajectory
 
 __all__ = [
     "clustering",
-    "dimensionality",
     "nonlinear_methods",
     "pca_methods",
     "trajectory",

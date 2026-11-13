@@ -103,10 +103,10 @@ def main() -> int:
     config_path = Path(args.config) if args.config else None
     config = load_scraper_config(config_path)
 
-    # Override config with CLI arguments (delay_seconds and delay_between_requests are the same setting)
+    # Override config with CLI arguments
     if args.delay is not None:
         try:
-            config.delay_between_requests = args.delay
+            config.delay_seconds = args.delay
         except ValidationError as e:
             parser.error(f"--delay: {e}")
 
@@ -151,7 +151,7 @@ def main() -> int:
             # Scrape all species
             print(f"Scraping all species (limit: {args.limit or 'none'})")
             print(f"Output directory: {config.output_dir}")
-            print(f"Delay between requests: {config.delay_between_requests} seconds")
+            print(f"Delay between requests: {config.delay_seconds} seconds")
             if config.check_robots:
                 print("Check robots.txt: True (disallowed pages are refused; a larger Crawl-delay replaces the delay)")
             else:

@@ -1,4 +1,4 @@
-"""Top-level import and compatibility facade checks."""
+"""Top-level package imports and public split-module re-exports."""
 
 from __future__ import annotations
 
@@ -7,11 +7,11 @@ import importlib
 import pytest
 
 TOP_LEVEL_PACKAGES = [
-    "metainformant.cloud",
     "metainformant.core",
     "metainformant.dna",
     "metainformant.ecology",
     "metainformant.epigenome",
+    "metainformant.eqtl",
     "metainformant.gwas",
     "metainformant.information",
     "metainformant.life_events",
@@ -27,6 +27,7 @@ TOP_LEVEL_PACKAGES = [
     "metainformant.ontology",
     "metainformant.pharmacogenomics",
     "metainformant.phenotype",
+    "metainformant.popgen",
     "metainformant.protein",
     "metainformant.quality",
     "metainformant.rna",
@@ -46,19 +47,17 @@ def test_top_level_package_imports(module_name: str) -> None:
     assert module.__name__ == module_name
 
 
-def test_split_module_facades_preserve_public_imports() -> None:
-    """Oversized modules keep their public import paths as facades."""
+def test_split_modules_reexport_their_implementations() -> None:
+    """Public split modules re-export the functions of their private implementation modules."""
     from metainformant.gwas.visualization import _general_impl, general
-    from metainformant.networks.interaction import _ppi_impl, ppi
     from metainformant.rna.amalgkit import _amalgkit_impl, amalgkit
 
     assert general.manhattan_plot is _general_impl.manhattan_plot
     assert amalgkit.run_amalgkit is _amalgkit_impl.run_amalgkit
-    assert ppi.load_ppi_network is _ppi_impl.load_ppi_network
 
 
 def test_gwas_top_level_convenience_export_is_lazy_accessible() -> None:
-    """The lazy GWAS barrel preserves the historical convenience API."""
+    """The lazy GWAS barrel exposes the convenience API at the package top level."""
     from metainformant import gwas
 
     assert callable(gwas.association_test_linear)

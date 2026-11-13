@@ -2,16 +2,14 @@
 
 Three defects are pinned here, each with real reads and real calls (no test doubles):
 
-* A translocation joins loci on two chromosomes. It used to be reported with ``start`` and ``end`` taken
-  from the two breakpoints and sorted as if they were one interval, so ``start`` could be the position on
-  the *second* chromosome, and ``plot_circos`` then used ``end`` as the second chromosome's position. A
-  call now carries ``chrom``/``start`` for the first breakpoint and ``chrom2``/``pos2`` for the second, and
-  ``plot_circos`` draws the chord to ``pos2``.
+* A translocation joins loci on two chromosomes. A call carries ``chrom``/``start`` for the first breakpoint
+  and ``chrom2``/``pos2`` for the second, not a ``start``/``end`` pair sorted as if it were one interval (where
+  ``start`` could be the position on the *second* chromosome), and ``plot_circos`` draws the chord to ``pos2``.
 * An insertion's two breakpoints coincide (split reads at one junction), so its breakpoint distance is
-  always under 50 and the default ``min_sv_size=50`` dropped every insertion call. The inserted length is
-  not measured by that evidence, so insertions are no longer filtered on a size that is not measured.
-* ``genotype_sv`` scanned every read for every call. A ``ReadIndex`` answers the same question from a
-  position index, so a call costs a binary search instead of a pass over all reads.
+  always under 50 and the default ``min_sv_size=50`` would drop every insertion call. The inserted length is
+  not measured by that evidence, so insertions are not filtered on a size that is not measured.
+* ``genotype_sv`` answers from a ``ReadIndex`` position index, so a call costs a binary search instead of a pass
+  over all reads.
 """
 
 from __future__ import annotations

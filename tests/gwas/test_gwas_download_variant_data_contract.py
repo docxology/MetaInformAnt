@@ -4,8 +4,8 @@ Defect: for ``data_type`` ``"vcf"`` (the default) and ``"both"`` the function wr
 holding a README ("This would typically involve downloading from dbSNP ... For now, create a placeholder
 structure"), listed that directory among the *downloaded files* of the study metadata and returned the study
 directory as if data had been fetched. The GWAS Catalog REST API publishes association records, not study-level
-genotype files, so there is nothing to download: the function now raises ``NotImplementedError`` for those types.
-An unrecognised ``data_type`` used to be a silent no-op that still wrote the metadata file; it is a ``ValueError``.
+genotype files, so there is nothing to download: the function raises ``NotImplementedError`` for those types.
+An unrecognised ``data_type`` is a ``ValueError``, not a silent no-op that still writes the metadata file.
 
 Everything here is decided before the function touches the disk or the network, so the tests run offline. The
 module also points the HTTP proxy variables at a closed local port while it runs: a regression that reached for

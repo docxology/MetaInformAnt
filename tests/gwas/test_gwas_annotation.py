@@ -27,21 +27,21 @@ class TestClassifyVariantLocation:
 
     def test_intragenic(self, sample_genes: list) -> None:
         """Variant inside a gene should be classified as intragenic."""
-        result = classify_variant_location(1, 2000, sample_genes)
+        result = classify_variant_location(2000, sample_genes)
         assert result["location"] == "intragenic"
         assert result["nearest_gene"] == "gene-LOC1"
         assert result["distance"] == 0
 
     def test_upstream_of_plus_strand(self, sample_genes: list) -> None:
         """Variant upstream (5') of a + strand gene."""
-        result = classify_variant_location(1, 800, sample_genes)
+        result = classify_variant_location(800, sample_genes)
         assert result["location"] == "upstream"
         assert result["nearest_gene"] == "gene-LOC1"
         assert result["distance"] == 200
 
     def test_downstream_of_plus_strand(self, sample_genes: list) -> None:
         """Variant downstream (3') of a + strand gene."""
-        result = classify_variant_location(1, 3500, sample_genes)
+        result = classify_variant_location(3500, sample_genes)
         assert result["location"] == "downstream"
         assert result["nearest_gene"] == "gene-LOC1"
         assert result["distance"] == 500
@@ -49,25 +49,25 @@ class TestClassifyVariantLocation:
     def test_upstream_of_minus_strand(self, sample_genes: list) -> None:
         """Variant upstream (3' in genomic coords) of a - strand gene."""
         # For - strand gene at 5000-7000, variant at 7500 is upstream
-        result = classify_variant_location(1, 7500, sample_genes)
+        result = classify_variant_location(7500, sample_genes)
         assert result["location"] == "upstream"
         assert result["nearest_gene"] == "gene-LOC2"
 
     def test_between_genes(self, sample_genes: list) -> None:
         """Variant between two genes should find nearest."""
-        result = classify_variant_location(1, 4000, sample_genes)
+        result = classify_variant_location(4000, sample_genes)
         assert result["nearest_gene"] is not None
         assert result["distance"] > 0
 
     def test_no_genes(self) -> None:
         """No genes should return intergenic with None."""
-        result = classify_variant_location(1, 1000, [])
+        result = classify_variant_location(1000, [])
         assert result["location"] == "intergenic"
         assert result["nearest_gene"] is None
 
     def test_beyond_window(self, sample_genes: list) -> None:
         """Variant far from any gene should be intergenic."""
-        result = classify_variant_location(1, 1000000, sample_genes, window_bp=1000)
+        result = classify_variant_location(1000000, sample_genes, window_bp=1000)
         assert result["location"] == "intergenic"
         # Still reports nearest gene but distance > window
         assert result["distance"] is not None

@@ -5,7 +5,7 @@ This document provides a comprehensive overview of dependencies required by META
 ## Dependency Overview
 
 ### Core Dependencies (Required by All)
-- **Python**: 3.11+ (3.12 recommended)
+- **Python**: 3.14+
 - **METAINFORMANT**: Core package (automatically installed)
 - **Standard Library**: pathlib, json, typing (built-in)
 
@@ -216,7 +216,7 @@ uv pip install networkx numpy
 
 ```bash
 # Create environment
-conda create -n metainformant python=3.12
+conda create -n metainformant python=3.14
 conda activate metainformant
 
 # Install conda packages
@@ -416,10 +416,10 @@ python scripts/test_examples/test_examples.py --continue-on-error
 - **BioPython 2.0**: Enhanced sequence analysis
 - **Scanpy 2.0**: Improved single-cell analysis
 
-### Deprecation Warnings
-- **Python 3.8-3.10**: Will be deprecated in future versions
-- **Old NumPy versions**: < 1.20 may cause issues
-- **Legacy BioPython**: < 1.80 may have compatibility issues
+### Version Floors
+- **Python**: 3.14 or newer (`requires-python` in `pyproject.toml`)
+- **NumPy**: 1.24 or newer
+- **BioPython**: 1.81 or newer
 
 ## Contributing Dependencies
 

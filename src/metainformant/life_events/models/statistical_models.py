@@ -29,8 +29,8 @@ if TYPE_CHECKING:
 logger = logging.get_logger(__name__)
 
 _TASK_TYPES = ("classification", "regression")
-# Survival method name -> the model that implements it ("baseline" is the Kaplan-Meier estimator).
-_SURVIVAL_METHODS = {"cox": "cox", "exponential": "exponential", "baseline": "baseline", "kaplan_meier": "baseline"}
+# Survival methods ("baseline" is the Kaplan-Meier estimator).
+_SURVIVAL_METHODS = ("baseline", "cox", "exponential")
 _MIN_SCALE = 1e-12  # standard deviations below this are treated as zero (constant features)
 _RANK_TOLERANCE = 1e-8  # singular values below this fraction of the largest are treated as zero
 _SINGULARITY_TOLERANCE = 1e-12  # eigenvalues below this fraction of the largest are numerical noise
@@ -643,7 +643,7 @@ class SurvivalPredictor:
       Breslow's estimate, so survival functions are ``S(t | x) = exp(-H0(t) exp(x . beta))``.
     - ``"exponential"``: exponential proportional hazards model ``hazard = exp(intercept + x . beta)``
       fitted by maximum likelihood (Newton-Raphson). The hazard is constant over time.
-    - ``"baseline"`` (alias ``"kaplan_meier"``): the Kaplan-Meier estimate, the same for every sequence.
+    - ``"baseline"``: the Kaplan-Meier estimate, the same for every sequence.
 
     A model that is not fitted refuses to predict. Unknown methods are rejected.
 
@@ -655,8 +655,6 @@ class SurvivalPredictor:
     def __init__(
         self,
         method: str = "cox",
-        embedding_dim: int = 50,
-        random_state: Optional[int] = None,
         penalizer: float = 0.1,
         max_iter: int = 50,
         tol: float = 1e-9,
@@ -665,10 +663,7 @@ class SurvivalPredictor:
         """Initialize survival predictor.
 
         Args:
-            method: Survival analysis method: 'cox', 'exponential' or 'baseline' ('kaplan_meier')
-            embedding_dim: Retained for backward compatibility; the survival models use event-count
-                covariates, so this has no effect
-            random_state: Retained for backward compatibility; the fits are deterministic
+            method: Survival analysis method: 'cox', 'exponential' or 'baseline' (Kaplan-Meier)
             penalizer: Strength of the ridge penalty on the Cox / exponential coefficients (not on the
                 exponential intercept). It keeps the fit finite for rare or perfectly predictive events and
                 for collinear counts; use 0 for the unpenalised maximum-likelihood estimate.
@@ -690,8 +685,6 @@ class SurvivalPredictor:
             logger.warning(f"SurvivalPredictor ignores unsupported options: {sorted(kwargs)}")
 
         self.method = method
-        self.embedding_dim = embedding_dim
-        self.random_state = random_state
         self.penalizer = penalizer
         self.max_iter = max_iter
         self.tol = tol
@@ -719,7 +712,7 @@ class SurvivalPredictor:
                 occurred. A Newton-Raphson fit that does not converge emits a ``RuntimeWarning``.
         """
         times, occurred = _validate_survival_data(len(sequences), event_times, event_occurred)
-        kind = _SURVIVAL_METHODS[self.method]
+        kind = self.method
         vocabulary = _event_vocabulary(list(sequences))
         if kind != "baseline" and not vocabulary:
             raise ValueError("The training sequences contain no events, so there are no covariates to fit")

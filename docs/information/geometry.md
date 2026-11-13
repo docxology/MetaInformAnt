@@ -87,10 +87,11 @@ Estimate the correlation dimension d_2 from point-cloud data using the Grassberg
 
 ```python
 import numpy as np
-from metainformant.information.metrics.advanced.geometry import (
-    fisher_rao_distance, natural_gradient, information_projection,
-    statistical_divergence, exponential_family_entropy,
-    hellinger_distance, entropy_power_inequality, information_dimension,
+from metainformant.information.metrics.advanced.fisher_rao import (
+    exponential_family_entropy, fisher_rao_distance, hellinger_distance, natural_gradient,
+)
+from metainformant.information.metrics.advanced.information_projection import (
+    entropy_power_inequality, information_dimension, information_projection, statistical_divergence,
 )
 
 # Fisher-Rao distance between nucleotide frequency profiles

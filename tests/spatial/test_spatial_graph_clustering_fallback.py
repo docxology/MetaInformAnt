@@ -1,11 +1,11 @@
 """Spatial Leiden and Louvain never substitute the greedy modularity optimization silently.
 
-``leiden_clustering`` and ``louvain_clustering`` used to run an in-package greedy optimization when
-python-igraph/leidenalg or python-louvain/networkx could not be imported, logging one INFO line, and
-``spatial_cluster`` then labelled the result ``method="leiden"`` or ``"louvain"`` anyway. Without the packages
-the functions now raise unless ``allow_greedy_fallback=True``, which warns, and the result records the method
-that ran. The environment decides which half of the contract can be observed, so each half is gated on what is
-installed and the other half is skipped. Real data and real library calls only.
+When python-igraph/leidenalg or python-louvain/networkx cannot be imported, ``leiden_clustering`` and
+``louvain_clustering`` do not run an in-package greedy optimization behind one INFO line, and ``spatial_cluster``
+does not label such a result ``method="leiden"`` or ``"louvain"``. Without the packages the functions raise unless
+``allow_greedy_fallback=True``, which warns, and the result records the method that ran. The environment decides
+which half of the contract can be observed, so each half is gated on what is installed and the other half is
+skipped. Real data and real library calls only.
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ def _importable(*names: str) -> bool:
     for name in names:
         try:
             importlib.import_module(name)
-        except (ImportError, SyntaxError):
+        except ImportError, SyntaxError:
             return False
     return True
 

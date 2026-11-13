@@ -233,12 +233,6 @@ class TestGetQuantifiedSamples:
         assert len(result) == 0
 
 
-# NOTE: TestDiscoverConfigs, TestDownloadEnaTimeout, and TestDoubleDownloadFix
-# were removed because those helpers are no longer part of the active script
-# surface. Download logic now lives in the streaming orchestrator; config
-# discovery is handled by run_all_species.py.
-
-
 # ===========================================================================
 # sanitize_params_for_cli – strips MetaInformAnt-only defaults
 # ===========================================================================

@@ -68,7 +68,6 @@ Genome-Wide Association Studies (GWAS) module for METAINFORMANT. Provides end-to
 
 | Module | Key Functions |
 |--------|---------------|
-| `workflow` | Re-exports from `workflow_config` and `workflow_execution` |
 | `workflow_config` | `GWASWorkflowConfig`, `load_gwas_config()`, `validate_gwas_config()` |
 | `workflow_execution` | `execute_gwas_workflow()`, `run_gwas()`, `run_multi_trait_gwas()` |
 
@@ -146,7 +145,7 @@ Approximate Bayes factors, credible sets and colocalization follow the model in 
 
 ### Module test coverage (Round-4 audit 2026-09-01; Round-5 additions 2026-09-05)
 
-Zero-mocks suites added for the previously untested modules:
+Zero-mocks suites for these modules:
 
 | Module | Test file | Notes |
 |--------|-----------|-------|

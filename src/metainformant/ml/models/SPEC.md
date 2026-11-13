@@ -20,8 +20,8 @@ ML models sub-package (classification, regression).
 ### Behavior Contracts
 
 #### `classification.py`
-- `cross_validate_biological(X, y, method="rf", cv_folds=5, random_state=None, algorithm=None, parallel_jobs=-1, **kwargs)`
-  — `method` is `'rf'`, `'gb'`, `'lr'` or `'ensemble'` (`algorithm` is an alias using the long names). The folds are
+- `cross_validate_biological(X, y, method="rf", cv_folds=5, random_state=None, parallel_jobs=-1, **kwargs)`
+  — `method` is `'rf'`, `'gb'`, `'lr'` or `'ensemble'`. The folds are
   `StratifiedKFold(cv_folds, shuffle=True, random_state=random_state)`. For `'ensemble'`, `random_state` goes to
   `train_ensemble_classifier` as its own argument and not also through the member options, so a seeded ensemble run
   works. `parallel_jobs` is the `n_jobs` of the cross-validation and, for `'ensemble'`, of the voting ensemble unless

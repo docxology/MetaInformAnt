@@ -1,6 +1,6 @@
 """Diffusion pseudotime (Haghverdi et al., 2016) follows the cell graph, not the straight line to the root.
 
-The pseudotime used to be the Euclidean distance from the root cell (a shortest path over the complete
+The pseudotime is not the Euclidean distance from the root cell (a shortest path over the complete
 distance graph is the direct edge), which turns back on any curved trajectory. These tests pin the real
 algorithm down against a curved trajectory, scale invariance, the paper's brute-force definition and
 the graph bookkeeping. Real data and real linear algebra only.

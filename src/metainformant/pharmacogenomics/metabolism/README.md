@@ -16,7 +16,7 @@ Metabolizer status prediction from pharmacogenomic genotype data, providing CPIC
 | `metabolizer_status.default_allele_function_table()` | Get an independent copy of the built-in CPIC allele function assignments |
 | `metabolizer_status.compute_activity_score()` | Compute activity score from a diplotype string and an allele table |
 | `metabolizer_status.classify_metabolizer()` | Classify a gene's metabolizer phenotype token from an activity score (negative or NaN raises `ValueError`, as does a gene CPIC defines no phenotype for) |
-| `metabolizer_status.predict_metabolizer_status()` | End-to-end metabolizer prediction from a genotype dict (also exported as `pharmacogenomics.predict_metabolizer`). An allele with no value in the table gives `"indeterminate"`, an activity score of `None` and `unknown_alleles` naming it |
+| `metabolizer_status.predict_metabolizer_status()` | End-to-end metabolizer prediction from a genotype dict (also exported as `pharmacogenomics.predict_metabolizer_status`). An allele with no value in the table gives `"indeterminate"`, an activity score of `None` and `unknown_alleles` naming it |
 | `metabolizer_status.dose_adjustment()` | Get the dose adjustment for a phenotype (any common form: `"poor"`, `"Poor Metabolizer"`, `"PM"`) and a drug; an `"indeterminate"` status gets no dose (`adjusted_dose_fraction` is `None`) |
 
 ## Usage

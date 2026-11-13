@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.rna.engine.progress_db import ProgressDB, configured_progress_db_path
+from metainformant.rna.engine.progress_db import ProgressDB
 
 
 @pytest.mark.parametrize("mode", ["WAL", "DELETE"])
@@ -60,37 +60,6 @@ def test_default_wal_is_retained(tmp_path: Path) -> None:
         assert db._conn.execute("PRAGMA journal_mode").fetchone() == ("wal",)
 
 
-def test_existing_override_and_default_paths(tmp_path: Path) -> None:
-    default = tmp_path / "default.db"
-    assert configured_progress_db_path(default, None) == default
-    migrated = tmp_path / "migrated.db"
-    with ProgressDB(migrated, journal_mode="DELETE"):
-        pass
-    assert configured_progress_db_path(default, str(migrated)) == migrated
-
-
-@pytest.mark.parametrize("kind", ["relative", "empty", "missing", "directory", "symlink", "parent-symlink", "dotdot"])
-def test_bad_override_paths_refuse_without_creating(tmp_path: Path, kind: str) -> None:
-    good = tmp_path / "existing.db"
-    good.write_text("Existing input is not opened by path resolution.")
-    default = tmp_path / "unused.db"
-    paths = {
-        "relative": "relative.db",
-        "empty": "",
-        "missing": str(tmp_path / "missing.db"),
-        "directory": str(tmp_path),
-        "symlink": str(tmp_path / "link.db"),
-        "parent-symlink": str(tmp_path / "link-dir/existing.db"),
-        "dotdot": str(tmp_path / "unused/../existing.db"),
-    }
-    (tmp_path / "link.db").symlink_to(good)
-    (tmp_path / "link-dir").symlink_to(tmp_path, target_is_directory=True)
-    with pytest.raises(ValueError, match="progress"):
-        configured_progress_db_path(default, paths[kind])
-    assert not default.exists()
-    assert not (tmp_path / "missing.db").exists()
-
-
 def test_native_sqlite_backup_keeps_all_schema_and_rows(tmp_path: Path) -> None:
     old, migrated = tmp_path / "old.db", tmp_path / "migrated.db"
     with ProgressDB(old) as db:
@@ -106,33 +75,16 @@ def test_native_sqlite_backup_keeps_all_schema_and_rows(tmp_path: Path) -> None:
 
 
 @pytest.mark.external_tool
-def test_native_worker_uses_migrated_store_and_replays(
+def test_native_producer_uses_migrated_store_and_replays(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, native_acquisition_factory
 ) -> None:
-    from metainformant.rna.engine.acquisition_worker import run_manifest
-
     fixture = native_acquisition_factory()
     migrated = tmp_path / "migrated-progress.db"
     with ProgressDB(migrated, journal_mode="DELETE"):
         pass
-    monkeypatch.setenv("AMALGKIT_PROGRESS_DB_PATH", str(migrated))
     monkeypatch.setenv("AMALGKIT_PROGRESS_DB_JOURNAL_MODE", "DELETE")
-    args = dict(
-        manifest_path=fixture.manifest,
-        data_root=fixture.data,
-        config_dir=fixture.config_dir,
-        workers=1,
-        threads=1,
-        fastq_threads=1,
-        compression_threads=1,
-        validation_slots=1,
-        quant_slots=1,
-        fasterq_slots=1,
-        max_in_flight=1,
-    )
-    first = run_manifest(**args)
-    assert first["counts"].get("failed", 0) == 0, first
-    assert first["counts"]["newly_quantified"] == 1
+    first = fixture.produce(db_path=migrated)
+    assert first["quantified"] and not first["skipped"] and first["error"] is None, first
     assert not (fixture.data / "pipeline_progress.db").exists()
     connection = sqlite3.connect(migrated.as_uri() + "?mode=ro", uri=True)
     try:
@@ -142,8 +94,8 @@ def test_native_worker_uses_migrated_store_and_replays(
         connection.close()
     abundance = next((fixture.work / "quant/SRR123").glob("*abundance.tsv"))
     preserved = abundance.read_bytes(), abundance.stat().st_mtime_ns
-    replay = run_manifest(**args)
-    assert replay["counts"]["reused"] == 1
+    replay = fixture.produce(db_path=migrated)
+    assert replay["quantified"] and replay["skipped"], replay
     assert (abundance.read_bytes(), abundance.stat().st_mtime_ns) == preserved
     assert not Path(str(migrated) + "-shm").exists()
     assert not Path(str(migrated) + "-wal").exists()

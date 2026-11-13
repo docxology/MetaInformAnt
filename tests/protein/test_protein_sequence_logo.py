@@ -2,8 +2,8 @@
 
 A logo column is ``log2(20) - H`` bits tall, where ``H`` is the Shannon entropy of
 the residue frequencies, and each residue's letter is its frequency times that
-height.  The heights used to be ``log2(20) + H``, so the *more variable* a column
-was the taller it was drawn.
+height.  A height of ``log2(20) + H`` would draw the *more variable* column the
+taller one.
 """
 
 from __future__ import annotations

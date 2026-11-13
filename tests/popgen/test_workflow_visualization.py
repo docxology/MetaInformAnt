@@ -60,7 +60,7 @@ def _small_dataset_info(data_dir: Path) -> dict[str, Any]:
     ):
         sequences = generate_population_sequences(
             n_sequences=n_sequences,
-            sequence_length=length,
+            length=length,
             nucleotide_diversity=diversity,
             mutation_rate=mutation_rate,
             rng=rng,
@@ -88,20 +88,18 @@ def _small_dataset_info(data_dir: Path) -> dict[str, Any]:
     scenarios["expansion"] = {"file": _write_fasta(expansion, data_dir / "expansion.fasta")}
 
     for name, fst in (("two_populations_low_fst", 0.05), ("two_populations_high_fst", 0.3)):
-        pop1, pop2 = generate_two_populations(
-            n_pop1=10, n_pop2=10, sequence_length=length, n_sites=length, fst=fst, rng=rng
-        )
+        pop1, pop2 = generate_two_populations(n_pop1=10, n_pop2=10, length=length, n_sites=length, f_st=fst, rng=rng)
         scenarios[name] = {
             "file_pop1": _write_fasta(pop1, data_dir / f"{name}_pop1.fasta"),
             "file_pop2": _write_fasta(pop2, data_dir / f"{name}_pop2.fasta"),
         }
 
-    genotypes = generate_genotype_matrix(n_individuals=40, n_sites=120, maf_min=0.05, maf_max=0.5, hwe=True, rng=rng)
+    genotypes = generate_genotype_matrix(n_individuals=40, n_snps=120, maf_min=0.05, maf_max=0.5, hwe=True, rng=rng)
     genotype_file = data_dir / "genotypes.json"
     dump_json(genotypes, str(genotype_file))
     scenarios["large_genotypes"] = {"file": str(genotype_file)}
 
-    ld_genotypes = generate_linkage_disequilibrium_data(n_individuals=40, n_sites=60, r_squared_target=0.5, rng=rng)
+    ld_genotypes = generate_linkage_disequilibrium_data(n_individuals=40, n_snps=60, r_squared_target=0.5, rng=rng)
     ld_file = data_dir / "ld_genotypes.json"
     dump_json(ld_genotypes, str(ld_file))
     scenarios["linkage_disequilibrium"] = {"file": str(ld_file)}

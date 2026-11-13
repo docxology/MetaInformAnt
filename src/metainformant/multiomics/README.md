@@ -103,8 +103,10 @@ All methods are species-agnostic. Example with *Apis mellifera*:
 ```python
 # Works with any species - just provide the data
 multiomics = integration.integrate_omics_data(
-    dna_data=apis_variants_df,      # Any species VCF data
-    rna_data=apis_expression_df,    # Any species expression
+    data={
+        "dna": apis_variants_df,  # Any species VCF data
+        "rna": apis_expression_df,  # Any species expression
+    }
 )
 ```
 

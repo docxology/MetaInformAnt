@@ -386,7 +386,7 @@ For new functions, ensure:
 2. **Add proper validation**: Raise ValueError for invalid inputs
 3. **Update tests**: Add tests for new exception behavior
 4. **Update documentation**: Document new error conditions
-5. **Consider backward compatibility**: Use deprecation warnings if needed
+5. **Update callers in the same change**: Fix every in-repo caller and its tests together with the new error behavior
 
 #### Example Migration
 ```python

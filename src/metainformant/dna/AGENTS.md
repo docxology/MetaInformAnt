@@ -9,13 +9,13 @@ This module provides functionality organized into the following structure:
 ## Subpackages
 
 - `alignment/` — exports: `distances`, `msa`, `pairwise`
-- `annotation/` — modules: `functional`, `gene_annotation`, `gene_finding`, `gene_prediction` (package `__init__` re-exports `functional` and `gene_prediction`)
+- `annotation/` — exports: `functional`, `gene_annotation`, `gene_finding`
 - `expression/` — exports: `codon`, `transcription`, `translation`
 - `external/` — exports: `entrez`, `genomes`, `ncbi`
 - `integration/` — exports: `rna`
-- `io/` — exports: `fasta`, `fastq`
-- `phylogeny/` — exports: `tree`, `tree_analysis`, `tree_construction`
-- `population/` — exports: `analysis`, `core`, `visualization`, `visualization_core`, `visualization_stats`
+- `io/` — exports: `fastq`
+- `phylogeny/` — exports: `tree_analysis`, `tree_construction`
+- `population/` — exports: `analysis`, `core`, `visualization_core`, `visualization_stats`
 - `sequence/` — exports: `composition`, `consensus`, `core`, `kmer`, `motifs`, `restriction`
 - `variation/` — exports: `calling`, `mutations`, `variants`
 

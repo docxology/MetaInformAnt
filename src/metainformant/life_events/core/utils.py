@@ -26,9 +26,8 @@ def add_temporal_noise(
     noise_level: float = 0.1,
     rng: random.Random | None = None,
     max_days_shift: float | None = None,
-    random_seed: int | None = None,
+    random_state: int | None = None,
     missing_probability: float = 0.0,
-    **kwargs: Any,
 ) -> EventSequence:
     """Add temporal noise to event timestamps.
 
@@ -36,18 +35,16 @@ def add_temporal_noise(
         sequence: Input event sequence
         noise_level: Fraction of total duration to use as noise scale
         rng: Random number generator (optional)
-        max_days_shift: Maximum days to shift (alias for noise_level as days)
-        random_seed: Random seed for reproducibility (alternative to rng)
-        **kwargs: Additional parameters (ignored)
+        max_days_shift: Noise scale in days (the standard deviation of the shift; in timestamp units for
+            numeric timestamps). When given, it replaces the ``noise_level`` scale.
+        random_state: Seed for a private generator, used when ``rng`` is not given
+        missing_probability: Probability of dropping each event
 
     Returns:
         New EventSequence with added noise
     """
-    # Handle parameter aliases
-    if random_seed is not None and rng is None:
-        rng = random.Random(random_seed)
     if rng is None:
-        rng = random.Random()
+        rng = random.Random(random_state)
     if not sequence.events:
         return sequence
 
@@ -328,9 +325,7 @@ def generate_cohort_sequences(
     end_year: int = 2020,
     n_cohorts: int | None = None,
     n_sequences_per_cohort: int | None = None,
-    random_seed: int | None = None,
     random_state: int | None = None,
-    **kwargs: Any,
 ) -> List[EventSequence] | Dict[str, List[EventSequence]]:
     """Generate synthetic cohort sequences for testing and simulation.
 
@@ -345,9 +340,7 @@ def generate_cohort_sequences(
         end_year: End year for event timestamps
         n_cohorts: Number of cohorts to generate (returns dict of cohorts if set)
         n_sequences_per_cohort: Number of sequences per cohort (required if n_cohorts set)
-        random_seed: Random seed for reproducibility
-        random_state: Alias for random_seed (sklearn convention)
-        **kwargs: Additional generation parameters
+        random_state: Random seed for reproducibility
 
     Returns:
         If n_cohorts is None: List of generated EventSequence objects
@@ -367,12 +360,8 @@ def generate_cohort_sequences(
         total_sequences = n_sequences
         per_cohort_size = None
 
-    # Parameter aliases
-    if random_state is not None and random_seed is None:
-        random_seed = random_state
-    # A private generator: seeding the module-level one changed the caller's global random state, and the
-    # output depended on it. random.Random(seed) draws the same stream random.seed(seed) used to start.
-    rng = random.Random(random_seed)
+    # A private generator: the caller's global random state is left alone and does not affect the output.
+    rng = random.Random(random_state)
 
     # Default event types and domains
     if event_types is None:
@@ -495,7 +484,7 @@ def _sequence_to_tokens(sequence: Any) -> List[str]:
 
 def sequence_embeddings(
     sequences: List[Any],
-    embedding_dict: Optional[Dict[str, np.ndarray] | str] = None,
+    embedding_dict: Optional[Dict[str, np.ndarray]] = None,
     method: str = "mean",
     **kwargs: Any,
 ) -> np.ndarray:
@@ -505,19 +494,12 @@ def sequence_embeddings(
         sequences: List of EventSequence objects or token lists
         embedding_dict: Dictionary mapping event tokens to embeddings
         method: Aggregation method ('mean', 'average', 'sum', 'max', 'attention')
-        embedding_dict: Dictionary mapping event types to embeddings
         **kwargs: Additional parameters
 
     Returns:
         Array with one sequence embedding per row
     """
-    embedding_map: Dict[str, np.ndarray] | None
-    if isinstance(embedding_dict, str):
-        # Legacy call form: second positional arg is the method name.
-        method = embedding_dict
-        embedding_map = None
-    else:
-        embedding_map = embedding_dict
+    embedding_map: Dict[str, np.ndarray] | None = embedding_dict
 
     method = "mean" if method == "average" else method
     token_sequences = [_sequence_to_tokens(seq) for seq in sequences]
@@ -588,7 +570,6 @@ def generate_event_chain(
     n_events: int,
     transition_matrix: Optional[Dict[str, Dict[str, float]]] = None,
     event_types: Optional[List[str]] = None,
-    random_seed: int | None = None,
     random_state: int | None = None,
     **kwargs: Any,
 ) -> List[Any]:
@@ -599,9 +580,10 @@ def generate_event_chain(
         n_events: Number of events to generate
         transition_matrix: Dictionary of transition probabilities
         event_types: List of possible event types
-        random_seed: Random seed for reproducibility
-        random_state: Alias for random_seed (sklearn convention)
-        **kwargs: Additional parameters
+        random_state: Random seed for reproducibility
+        **kwargs: Rule-based chain options: ``chain_rules`` (mapping ``"domain:event"`` to weighted next
+            tokens), ``start_domain``, ``start_timestamp``, ``time_span`` and ``event_types_by_domain``.
+            With ``chain_rules`` the result is a list of Event objects.
 
     Returns:
         List of event types in sequence
@@ -614,9 +596,7 @@ def generate_event_chain(
         start_timestamp = kwargs.get("start_timestamp", datetime.now().timestamp())
         time_span = kwargs.get("time_span", max(1, n_events - 1))
 
-        if random_state is not None and random_seed is None:
-            random_seed = random_state
-        rng = random.Random(random_seed)
+        rng = random.Random(random_state)
         step = time_span / max(1, n_events - 1)
 
         events: list[Event] = []
@@ -652,10 +632,7 @@ def generate_event_chain(
 
         return events
 
-    # Handle parameter aliases
-    if random_state is not None and random_seed is None:
-        random_seed = random_state
-    rng = random.Random(random_seed)  # private generator; the global random state is left alone
+    rng = random.Random(random_state)  # private generator; the global random state is left alone
 
     if event_types is None:
         event_types = [
@@ -826,8 +803,7 @@ def generate_synthetic_life_events(
 
     Rare events are part of the generated life; missing data and temporal noise only change what is observed
     of it. Each optional feature (and a non-default ``temporal_patterns``) draws from its own random stream,
-    so for a given ``random_state`` switching one on leaves the underlying generated events untouched, and
-    with all defaults the output is exactly what it was before these options existed.
+    so for a given ``random_state`` switching one on leaves the underlying generated events untouched.
 
     Args:
         n_sequences: Number of sequences to generate
@@ -865,9 +841,7 @@ def generate_synthetic_life_events(
     Raises:
         ValueError: If ``outcome_relationship`` or ``temporal_patterns`` is not one of the values above,
             a probability is outside [0, 1] or ``temporal_noise`` is negative.
-        TypeError: For any keyword argument that is not listed above. Earlier versions accepted and
-            ignored further options (``transition_probabilities``, ``seasonal_patterns``,
-            ``cooccurrence_patterns``); they are not implemented, so passing them is an error.
+        TypeError: For any keyword argument that is not listed above.
     """
     import random
 

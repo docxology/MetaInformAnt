@@ -73,11 +73,10 @@ End-to-end GWAS pipelines for social insect genomics: VCF parsing, QC, associati
 | `interactive/` | Plotly dashboards (`interactive_manhattan()`, `interactive_pca()`, `interactive_volcano()`), fine-mapping plots, composite panels |
 | `general.py` | `manhattan_plot()`, `qq_plot()`, `regional_plot()`, `generate_all_plots()` |
 
-### workflow/ (4 files)
+### workflow/ (3 files)
 
 | File | Key Functions |
 |------|---------------|
-| `workflow.py` | Re-export facade for backward compatibility |
 | `workflow_config.py` | `GWASWorkflowConfig`, `load_gwas_config()`, `validate_gwas_config()` |
 | `workflow_execution.py` | `execute_gwas_workflow()`, `run_gwas()`, `run_multi_trait_gwas()` |
 | `rna_quantification.py` | `find_quantification_file()` — adapter to RNA quantification discovery |

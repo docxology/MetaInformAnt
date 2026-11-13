@@ -21,27 +21,29 @@ from metainformant.networks.analysis.community import (
     label_propagation_communities,
     modularity,
 )
-from metainformant.networks.analysis.graph import (
+from metainformant.networks.analysis.graph_algorithms import (
+    centrality_measures,
+    export_network,
+    extract_subgraph,
+    filter_network,
+    get_connected_components,
+    import_network,
+    network_intersection,
+    network_metrics,
+    network_similarity,
+    network_union,
+    shortest_paths,
+)
+from metainformant.networks.analysis.graph_core import (
     BiologicalNetwork,
     add_edges_from_correlation,
     add_edges_from_dataframe,
     add_edges_from_interactions,
     add_nodes_from_dataframe,
-    centrality_measures,
     create_network,
-    export_network,
-    extract_subgraph,
-    filter_network,
-    get_connected_components,
     get_network_summary,
-    import_network,
     load_network,
-    network_intersection,
-    network_metrics,
-    network_similarity,
-    network_union,
     save_network,
-    shortest_paths,
     validate_network,
 )
 from metainformant.networks.analysis.pathway import (
@@ -63,11 +65,8 @@ from metainformant.networks.interaction.ppi import (
     ppi_network_analysis,
     predict_interactions,
 )
-from metainformant.networks.interaction.regulatory import (
-    GeneRegulatoryNetwork,
-    infer_grn,
-    regulatory_motifs,
-)
+from metainformant.networks.interaction.regulatory_analysis import infer_grn, regulatory_motifs
+from metainformant.networks.interaction.regulatory_core import GeneRegulatoryNetwork
 from metainformant.networks.workflow.workflow import NetworkWorkflow
 
 # ---------------------------------------------------------------------------

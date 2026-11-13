@@ -191,7 +191,7 @@ def validate_all(data: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return validated
 
 # ----------------------------------------------------------------------
-# Step 6: Database storage (using core.db)
+# Step 6: Database storage (using core.data.db)
 # ----------------------------------------------------------------------
 def store_in_database(data: list[dict[str, Any]]) -> None:
     """Store validated data in PostgreSQL database."""

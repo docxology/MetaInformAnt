@@ -137,18 +137,18 @@ def _terminate_monitored_process(process: "Any") -> None:
 
     try:
         process.terminate()
-    except (AttributeError, OSError):
+    except AttributeError, OSError:
         return
     try:
         process.wait(timeout=5)
-    except (AttributeError, OSError, TimeoutError, TypeError):
+    except AttributeError, OSError, TimeoutError, TypeError:
         try:
             process.kill()
-        except (AttributeError, OSError):
+        except AttributeError, OSError:
             return
         try:
             process.wait(timeout=5)
-        except (AttributeError, OSError, TimeoutError, TypeError):
+        except AttributeError, OSError, TimeoutError, TypeError:
             pass
 
 
@@ -396,9 +396,8 @@ def download_with_progress(
         bar = progress.progress_bar(total=total_for_bar, desc=desc, unit="B", unit_scale=True)
 
     # Initialise start_time BEFORE defining _progress_cb so the closure
-    # captures an already-initialised variable (previously it was set after
-    # the closure definition, which worked by accident of late binding but
-    # was fragile).
+    # captures an already-initialised variable instead of relying on late
+    # binding.
     start_time = time.time()
 
     def _progress_cb(*, bytes_written: int, total_bytes: int | None) -> None:

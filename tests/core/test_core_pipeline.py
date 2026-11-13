@@ -7,13 +7,10 @@ Tests cover:
 - BasePipelineManager: add_item, mark_running, mark_done, mark_failed
 - BasePipelineManager: run() with custom phases, failing phases, filters
 - BasePipelineManager: edge cases (empty pipeline, no phases)
-- WorkflowManager backward compatibility: SampleStage, SampleState, add_sample
 """
 
 from __future__ import annotations
 
-from dataclasses import fields
-from pathlib import Path
 from typing import Any, Dict, List
 
 import pytest
@@ -22,10 +19,7 @@ from metainformant.core.engine.workflow_manager import (
     BasePipelineManager,
     PipelineItem,
     PipelinePhase,
-    SampleStage,
-    SampleState,
     Stage,
-    WorkflowManager,
 )
 from metainformant.core.ui.tui import CYAN
 
@@ -467,199 +461,6 @@ class TestBasePipelineManagerTUIOptional:
         # run() internally calls ui.start() and ui.stop() -- we do not.
         results = manager.run()
         assert results["auto1"] is True
-
-
-# ---------------------------------------------------------------------------
-# WorkflowManager backward compatibility
-# ---------------------------------------------------------------------------
-
-
-class TestSampleStageEnum:
-    """Tests for SampleStage enum backward compatibility."""
-
-    def test_pending_value(self) -> None:
-        assert SampleStage.PENDING.value == "Pending"
-
-    def test_downloading_value(self) -> None:
-        assert SampleStage.DOWNLOADING.value == "Downloading"
-
-    def test_downloaded_value(self) -> None:
-        assert SampleStage.DOWNLOADED.value == "Downloaded"
-
-    def test_extracting_value(self) -> None:
-        assert SampleStage.EXTRACTING.value == "Extracting"
-
-    def test_extracted_value(self) -> None:
-        assert SampleStage.EXTRACTED.value == "Extracted"
-
-    def test_quantifying_value(self) -> None:
-        assert SampleStage.QUANTIFYING.value == "Quantifying"
-
-    def test_done_value(self) -> None:
-        assert SampleStage.DONE.value == "Done"
-
-    def test_failed_value(self) -> None:
-        assert SampleStage.FAILED.value == "Failed"
-
-    def test_truncated_value(self) -> None:
-        assert SampleStage.TRUNCATED.value == "Truncated"
-
-    def test_all_members_count(self) -> None:
-        """SampleStage has exactly nine members."""
-        assert len(list(SampleStage)) == 9
-
-
-class TestSampleStateDataclass:
-    """Tests for SampleState dataclass backward compatibility."""
-
-    def test_required_fields(self) -> None:
-        """SampleState requires sample_id, sra_url, dest_path."""
-        state = SampleState(
-            sample_id="SRR123",
-            sra_url="https://example.com/SRR123",
-            dest_path=Path("/tmp/SRR123.sra"),
-        )
-        assert state.sample_id == "SRR123"
-        assert state.sra_url == "https://example.com/SRR123"
-        assert state.dest_path == Path("/tmp/SRR123.sra")
-
-    def test_default_values(self) -> None:
-        """SampleState defaults: PENDING stage, 0 bytes, empty error."""
-        state = SampleState(
-            sample_id="SRR999",
-            sra_url="https://example.com/SRR999",
-            dest_path=Path("/tmp/SRR999.sra"),
-        )
-        assert state.stage == SampleStage.PENDING
-        assert state.current_bytes == 0
-        assert state.total_bytes == 0
-        assert state.error == ""
-
-    def test_field_names_unchanged(self) -> None:
-        """SampleState has the expected set of field names."""
-        field_names = {f.name for f in fields(SampleState)}
-        expected = {"sample_id", "sra_url", "dest_path", "stage", "current_bytes", "total_bytes", "error"}
-        assert field_names == expected
-
-
-class TestWorkflowManagerInstantiation:
-    """Tests for WorkflowManager creation with a real config file."""
-
-    def test_instantiation_with_minimal_config(self, tmp_path: Path) -> None:
-        """WorkflowManager loads a YAML config and sets work_dir/species."""
-        config_file = tmp_path / "workflow.yaml"
-        config_file.write_text("work_dir: output/test_wf\nspecies: apis_mellifera\nthreads: 4\n")
-
-        wm = WorkflowManager(config_path=config_file, max_threads=2)
-
-        assert wm.config["species"] == "apis_mellifera"
-        assert wm.config["threads"] == 4
-        assert wm.species == "apis_mellifera"
-        assert wm.work_dir == Path("output/test_wf")
-        assert wm.max_threads == 2
-
-    def test_instantiation_default_work_dir(self, tmp_path: Path) -> None:
-        """WorkflowManager uses default work_dir when config omits it."""
-        config_file = tmp_path / "minimal.yaml"
-        config_file.write_text("species: drosophila\n")
-
-        wm = WorkflowManager(config_path=config_file)
-
-        assert wm.work_dir == Path("output/amalgkit")
-        assert wm.species == "drosophila"
-
-    def test_instantiation_default_species(self, tmp_path: Path) -> None:
-        """WorkflowManager uses 'unknown' species when config omits it."""
-        config_file = tmp_path / "bare.yaml"
-        config_file.write_text("threads: 1\n")
-
-        wm = WorkflowManager(config_path=config_file)
-
-        assert wm.species == "unknown"
-
-    def test_has_three_phases(self, tmp_path: Path) -> None:
-        """WorkflowManager creates exactly three RNA-seq phases."""
-        config_file = tmp_path / "wf.yaml"
-        config_file.write_text("species: test\n")
-
-        wm = WorkflowManager(config_path=config_file)
-
-        assert len(wm.phases) == 3
-        phase_names = [p.name for p in wm.phases]
-        assert phase_names == ["Download", "getfastq", "quant"]
-
-
-class TestWorkflowManagerAddSample:
-    """Tests for WorkflowManager.add_sample() backward-compatible method."""
-
-    def test_add_sample_creates_sample_state(self, tmp_path: Path) -> None:
-        """add_sample registers a SampleState in the samples dict."""
-        config_file = tmp_path / "wf.yaml"
-        config_file.write_text("species: honeybee\n")
-
-        wm = WorkflowManager(config_path=config_file)
-        dest = tmp_path / "SRR001.sra"
-        wm.add_sample("SRR001", "https://sra.example.com/SRR001", dest)
-
-        assert "SRR001" in wm.samples
-        state = wm.samples["SRR001"]
-        assert state.sample_id == "SRR001"
-        assert state.sra_url == "https://sra.example.com/SRR001"
-        assert state.dest_path == dest
-        assert state.stage == SampleStage.PENDING
-
-    def test_add_sample_also_creates_pipeline_item(self, tmp_path: Path) -> None:
-        """add_sample registers both a SampleState AND a PipelineItem."""
-        config_file = tmp_path / "wf.yaml"
-        config_file.write_text("species: test\n")
-
-        wm = WorkflowManager(config_path=config_file)
-        dest = tmp_path / "SRR002.sra"
-        wm.add_sample("SRR002", "https://sra.example.com/SRR002", dest)
-
-        # Pipeline item should exist in the generic items dict.
-        assert "SRR002" in wm.items
-        pi = wm.items["SRR002"]
-        assert pi.item_id == "SRR002"
-        assert pi.metadata["sra_url"] == "https://sra.example.com/SRR002"
-        assert pi.metadata["dest_path"] == str(dest)
-
-    def test_add_multiple_samples(self, tmp_path: Path) -> None:
-        """Multiple samples can be added and tracked."""
-        config_file = tmp_path / "wf.yaml"
-        config_file.write_text("species: test\n")
-
-        wm = WorkflowManager(config_path=config_file)
-        for i in range(5):
-            sid = f"SRR{i:03d}"
-            wm.add_sample(sid, f"https://sra.example.com/{sid}", tmp_path / f"{sid}.sra")
-
-        assert len(wm.samples) == 5
-        assert len(wm.items) == 5
-
-
-class TestWorkflowManagerStageColors:
-    """Tests for WorkflowManager.STAGE_COLORS backward compatibility."""
-
-    def test_stage_colors_mapping_exists(self, tmp_path: Path) -> None:
-        """STAGE_COLORS maps all SampleStage values."""
-        config_file = tmp_path / "wf.yaml"
-        config_file.write_text("species: test\n")
-
-        wm = WorkflowManager(config_path=config_file)
-
-        for stage in SampleStage:
-            assert stage in wm.STAGE_COLORS, f"Missing color for {stage}"
-
-    def test_stage_colors_are_strings(self, tmp_path: Path) -> None:
-        """Every value in STAGE_COLORS is a string (ANSI code)."""
-        config_file = tmp_path / "wf.yaml"
-        config_file.write_text("species: test\n")
-
-        wm = WorkflowManager(config_path=config_file)
-
-        for stage, color in wm.STAGE_COLORS.items():
-            assert isinstance(color, str), f"Color for {stage} is not a string: {type(color)}"
 
 
 # ---------------------------------------------------------------------------

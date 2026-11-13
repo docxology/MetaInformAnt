@@ -349,7 +349,7 @@ print(f"Observed heterozygosity: {h_obs:.4f}")
 
 ### With Math Module
 
-For more advanced population genetics calculations, combine with `math.popgen`:
+For more advanced population genetics calculations, combine with `math.population_genetics`:
 
 ```python
 from metainformant.dna import population

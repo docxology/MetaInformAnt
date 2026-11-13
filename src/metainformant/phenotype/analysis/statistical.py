@@ -124,7 +124,7 @@ def get_comprehensive_pairwise_ttests(df: pd.DataFrame, value_col: str, group_co
     for i in range(len(groups)):
         for j in range(i + 1, len(groups)):
             # The labels are passed on as they are: str() of an integer label never equals the column's values,
-            # so every pair of a numerically labelled factor used to be dropped without a word
+            # so converting them would drop every pair of a numerically labelled factor without a word
             test_res = perform_ttest(df, value_col, group_col, groups[i], groups[j])
             if "error" not in test_res:
                 results.append(test_res)

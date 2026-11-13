@@ -81,7 +81,7 @@ def _dataset_coordinate_order(spatial_data: Any) -> CoordinateOrder:
     """Column convention of a dataset's coordinates: its own ``coordinate_order``, else ``"row_col"``.
 
     ``SpatialDataset`` (Visium) declares ``"row_col"``; ``XeniumDataset`` and ``MERFISHDataset`` declare
-    ``"xy"``. Duck-typed objects and bare arrays have no declaration and keep the legacy ``"row_col"``.
+    ``"xy"``. Duck-typed objects and bare arrays have no declaration and default to ``"row_col"``.
     """
     order = getattr(spatial_data, "coordinate_order", "row_col")
     if order not in ("row_col", "xy"):

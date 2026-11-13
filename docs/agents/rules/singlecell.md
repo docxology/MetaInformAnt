@@ -11,7 +11,7 @@ Single-cell transcriptomic analysis: quality control, normalization, dimensional
 ```
 src/metainformant/singlecell/
  analysis/
- clustering.py, dimensionality.py, trajectory.py
+ clustering.py, pca_methods.py, nonlinear_methods.py, trajectory.py
  data/
  integration.py, preprocessing.py
  visualization/
@@ -38,16 +38,16 @@ src/metainformant/singlecell/
 
 **Patterns**:
 ```python
-from metainformant.singlecell.analysis import dimensionality
+from metainformant.singlecell.analysis import nonlinear_methods, pca_methods
 from metainformant.ml.features import dimensionality as ml_dimensionality
 
 # Single-cell PCA on a SingleCellData object: returns the data with obsm["X_pca"] and PC columns in obs
-data = dimensionality.pca_reduction(data, n_components=50)
+data = pca_methods.pca_reduction(data, n_components=50)
 
 # Shared dimensionality reduction on a plain cells x genes matrix: (transformed data, fitted PCA model)
 transformed, pca_model = ml_dimensionality.pca_reduction(expression_matrix, n_components=50)
 
-# Nonlinear embeddings: dimensionality.umap_reduction(data), dimensionality.tsne_reduction(data)
+# Nonlinear embeddings: nonlinear_methods.umap_reduction(data), nonlinear_methods.tsne_reduction(data)
 ```
 
 ### Clustering
@@ -191,7 +191,7 @@ def normalize_data(data):
 - Visualizations: `output/singlecell/<analysis>/plots/`
 
 ### Dimensionality Reduction
-- `singlecell.analysis.dimensionality` provides PCA, t-SNE and UMAP for `SingleCellData`; `ml.features.dimensionality` offers the same methods for plain matrices
+- `singlecell.analysis.pca_methods` and `singlecell.analysis.nonlinear_methods` provide PCA, t-SNE and UMAP for `SingleCellData`; `ml.features.dimensionality` offers the same methods for plain matrices
 - Support both scanpy and scikit-learn APIs
 - Return consistent data structures
 

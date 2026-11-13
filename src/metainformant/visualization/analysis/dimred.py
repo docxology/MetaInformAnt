@@ -374,8 +374,7 @@ def biplot(
     scores = pca_model.transform(data_array)
     loadings = pca_model.components_[:2].T
 
-    # scaling_factor belongs to the arrows: left in kwargs it was passed to scatter(), which rejects it, so the
-    # option could never be used
+    # scaling_factor belongs to the arrows, not to scatter(), which rejects it
     default_scaling = scores.std() / loadings.std() * 0.8
     scaling_factor = kwargs.pop("scaling_factor", None)
     if scaling_factor is None:

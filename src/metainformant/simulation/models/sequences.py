@@ -467,7 +467,7 @@ def deterministic_evolution_replicates(
     """Evolve independent, fully reproducible replicates of one sequence.
 
     Each replicate gets its own seed derived via
-    :func:`metainformant.math.population_genetics.statistics.deterministic_replicate_seeds`,
+    :func:`metainformant.core.utils.seeds.deterministic_replicate_seeds`,
     so the full replicate set is byte-identical across runs, processes, and
     platforms regardless of execution order or parallel distribution. This is
     the deterministic-sweep entry point for campaign simulation design docs;

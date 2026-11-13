@@ -366,8 +366,8 @@ def create_genome_browser_track(
             - n_features: Number of features.
 
     Raises:
-        ValueError: If a feature lacks ``start``, ``end`` or ``name``. They used to be replaced by position 0,
-            ``start + 1`` and "unnamed", which drew features that were never in the input.
+        ValueError: If a feature lacks ``start``, ``end`` or ``name``. Replacing them by position 0, ``start + 1``
+            and "unnamed" would draw features that were never in the input.
     """
     processed = []
     min_start = float("inf")
@@ -453,8 +453,8 @@ def create_interactive_volcano(
             - thresholds: Applied threshold values.
 
     Raises:
-        ValueError: If a result has no fold change or no p-value. A missing p-value used to count as 1.0 and a
-            missing fold change as 0.0, which reported genes as "not significant" that were never tested.
+        ValueError: If a result has no fold change or no p-value. Counting a missing p-value as 1.0 and a missing
+            fold change as 0.0 would report genes as "not significant" that were never tested.
     """
     points = []
     counts = {"up": 0, "down": 0, "not_significant": 0}
@@ -703,8 +703,8 @@ def create_dashboard(
             - layout: Layout used.
 
     Raises:
-        ValueError: If ``layout`` is not ``"grid"``, ``"rows"`` or ``"columns"`` (it used to fall back to
-            ``"grid"`` without a word).
+        ValueError: If ``layout`` is not ``"grid"``, ``"rows"`` or ``"columns"`` (there is no silent fallback to
+            ``"grid"``).
     """
     if layout not in _DASHBOARD_LAYOUTS:
         raise ValueError(f"Unknown dashboard layout {layout!r}; expected one of {list(_DASHBOARD_LAYOUTS)}")

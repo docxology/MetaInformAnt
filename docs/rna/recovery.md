@@ -54,13 +54,13 @@ frozen biological cohort denominator.
   Never archive an unowned or later pause.
 - Verify frozen inputs/IDs, protected outputs, resumable parts, real file and
   directory fsync, publication and actual blob-directory readback.
-- Admit at most one producer. Bind a unique new selection and journal against
-  that launch's inventories. Separate startup, reuse and new restore-bound
-  outputs.
+- Admit at most one producer; the campaign writer flock
+  (`<root>/.campaign.flock`) enforces this. Separate startup, reuse and new
+  restore-bound outputs.
 
 Validated EHD-only operation checks its actual external write roots and
 capacity. Managed RNA files must not stage on another disk or depend on an
-unrelated internal-space requirement. Legacy modes retain their own guards.
+unrelated internal-space requirement. The `ssd_compute` and `hd_first` modes keep their own guards.
 Moving retained evidence or changing storage policy needs separate review;
 these observation primitives perform neither.
 
@@ -81,6 +81,5 @@ native operator qualification. No check here establishes full-input
 throughput or resolves historical storage, quantification, metadata or
 FASTQ failures.
 
-See [external data roots](EXTERNAL_DRIVE_SETUP.md),
-[local observations](LOCAL_PROCESSING_RATE.md), and
+See [external data roots](EXTERNAL_DRIVE_SETUP.md) and
 [filesystem verification](../core/verification.md).

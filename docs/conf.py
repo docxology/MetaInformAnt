@@ -63,9 +63,9 @@ source_suffix = {
     '.md': 'markdown',
 }
 
-# The repository retains historical examples using these project-local lexer
-# names. Map them to stable built-in lexers so strict documentation builds do
-# not fail merely because a legacy code-fence label is unknown.
+# Documentation code fences use these project-local lexer names. Map them to
+# stable built-in lexers so strict documentation builds do not fail on an
+# unknown code-fence label.
 lexers['python-snippet'] = get_lexer_by_name('python')
 lexers['mermaid'] = get_lexer_by_name('text')
 for _lexer_name in ('cron', 'csv', 'snakemake', 'tsv'):

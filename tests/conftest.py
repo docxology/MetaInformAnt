@@ -120,7 +120,8 @@ def setup_test_environment():
     - PYTHONPATH includes src/ so metainformant can be imported
     - User local bin is in PATH for CLI tools
     - Environment variables are set appropriately
-    - UV cache and venv directories are configured for filesystem compatibility
+
+    ``configure_uv_environment`` sets the UV cache and venv locations.
     """
     # Ensure src/ is in PYTHONPATH for module imports
     repo_root = Path(__file__).parent.parent
@@ -142,76 +143,6 @@ def setup_test_environment():
             os.environ["PYTHONPATH"] = f"{src_dir}:{pythonpath}"
         else:
             os.environ["PYTHONPATH"] = str(src_dir)
-
-    # Auto-configure UV environment variables for filesystem compatibility
-    # This handles FAT filesystems that don't support symlinks
-    try:
-        from metainformant.core.filesystem import get_uv_cache_dir, get_venv_location
-
-        # Get UV cache directory (respects existing UV_CACHE_DIR if set)
-        uv_cache_dir = get_uv_cache_dir(repo_root)
-        if "UV_CACHE_DIR" not in os.environ:
-            os.environ["UV_CACHE_DIR"] = str(uv_cache_dir)
-
-        # Get venv location (respects existing UV_PROJECT_ENVIRONMENT or METAINFORMANT_VENV if set)
-        venv_location = get_venv_location(repo_root)
-        if "UV_PROJECT_ENVIRONMENT" not in os.environ:
-            os.environ["UV_PROJECT_ENVIRONMENT"] = str(venv_location)
-        # Also set METAINFORMANT_VENV for compatibility with existing scripts
-        if "METAINFORMANT_VENV" not in os.environ:
-            os.environ["METAINFORMANT_VENV"] = str(venv_location)
-    except ImportError:
-        # If metainformant.core.filesystem is not available (e.g., package not installed),
-        # fall back to manual detection using the same logic
-        try:
-            import platform
-            import subprocess
-
-            # Detect filesystem type
-            fs_type = "unknown"
-            system = platform.system().lower()
-            if system == "linux" or system == "darwin":
-                try:
-                    result = subprocess.run(
-                        ["df", "-T", str(repo_root)],
-                        capture_output=True,
-                        text=True,
-                        timeout=5,
-                    )
-                    if result.returncode == 0:
-                        lines = result.stdout.strip().split("\n")
-                        if len(lines) > 1:
-                            parts = lines[1].split()
-                            if len(parts) >= 2:
-                                fs_type = parts[1].lower()
-                except Exception:
-                    pass
-
-            # Check if FAT filesystem (no symlink support)
-            no_symlink_fs = {"exfat", "fat32", "fat", "vfat", "msdos"}
-            if fs_type in no_symlink_fs:
-                # FAT filesystem - use /tmp locations
-                if "UV_CACHE_DIR" not in os.environ:
-                    os.environ["UV_CACHE_DIR"] = "/tmp/uv-cache"
-                    Path("/tmp/uv-cache").mkdir(parents=True, exist_ok=True)
-                if "UV_PROJECT_ENVIRONMENT" not in os.environ:
-                    os.environ["UV_PROJECT_ENVIRONMENT"] = "/tmp/metainformant_venv"
-                if "METAINFORMANT_VENV" not in os.environ:
-                    os.environ["METAINFORMANT_VENV"] = "/tmp/metainformant_venv"
-            else:
-                # Standard filesystem - use repo locations
-                if "UV_CACHE_DIR" not in os.environ:
-                    cache_dir = repo_root / ".uv-cache"
-                    cache_dir.mkdir(parents=True, exist_ok=True)
-                    os.environ["UV_CACHE_DIR"] = str(cache_dir)
-                if "UV_PROJECT_ENVIRONMENT" not in os.environ:
-                    os.environ["UV_PROJECT_ENVIRONMENT"] = str(repo_root / ".venv")
-                if "METAINFORMANT_VENV" not in os.environ:
-                    os.environ["METAINFORMANT_VENV"] = str(repo_root / ".venv")
-        except Exception:
-            # If all detection fails, continue without setting UV vars
-            # User can set them manually if needed
-            pass
 
 
 @pytest.fixture(scope="session")
@@ -410,7 +341,7 @@ def _check_uv_availability() -> bool:
             timeout=5,
         )
         return result.returncode == 0
-    except (subprocess.TimeoutExpired, FileNotFoundError):
+    except subprocess.TimeoutExpired, FileNotFoundError:
         return False
 
 
@@ -478,7 +409,6 @@ def uv_environment_info():
         "uv_cache_dir": os.environ.get("UV_CACHE_DIR"),
         "uv_project_env": os.environ.get("UV_PROJECT_ENVIRONMENT"),
         "virtual_env": os.environ.get("VIRTUAL_ENV"),
-        "metainformant_venv": os.environ.get("METAINFORMANT_VENV"),
         "python_path": sys.executable,
         "test_data_dir": TEST_DATA_DIR.exists(),
         "output_dir": Path("output").exists(),
@@ -545,11 +475,7 @@ def configure_uv_environment():
             os.environ["UV_CACHE_DIR"] = str(cache_dir)
 
         if "UV_PROJECT_ENVIRONMENT" not in os.environ:
-            venv_dir = Path("/tmp/metainformant_venv")
-            os.environ["UV_PROJECT_ENVIRONMENT"] = str(venv_dir)
-
-        if "METAINFORMANT_VENV" not in os.environ:
-            os.environ["METAINFORMANT_VENV"] = str(venv_dir)
+            os.environ["UV_PROJECT_ENVIRONMENT"] = "/tmp/metainformant_venv"
     else:
         # Standard filesystem - use repo locations
         if "UV_CACHE_DIR" not in os.environ:
@@ -559,9 +485,6 @@ def configure_uv_environment():
 
         if "UV_PROJECT_ENVIRONMENT" not in os.environ:
             os.environ["UV_PROJECT_ENVIRONMENT"] = str(repo_root / ".venv")
-
-        if "METAINFORMANT_VENV" not in os.environ:
-            os.environ["METAINFORMANT_VENV"] = str(repo_root / ".venv")
 
 
 # Test result reporting

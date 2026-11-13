@@ -137,7 +137,7 @@ class TestBedInput:
         ]
 
     def test_atac_bed_peaks_with_no_score_are_kept(self, tmp_path: Path) -> None:
-        # The accessibility-score floor (0.05, the q-value threshold) used to remove every peak scored 0
+        # The q-value threshold (0.05) is not an accessibility-score floor that removes every peak scored 0
         _write(tmp_path / "in", "open.bed", "chr1\t1000\t1100\tp1\t0\t.\nchr1\t2000\t2100\tp2\t0\t.\n")
 
         results = run_atacseq_workflow(tmp_path / "in", tmp_path / "out", EpigenomeConfig())
@@ -177,7 +177,7 @@ class TestQValueFilterIsNotAScoreFilter:
         assert [p["start"] for p in results["peaks"]] == [1000, 2000, 3000]
 
     def test_kept_peaks_stay_in_file_order(self, tmp_path: Path) -> None:
-        # Peaks used to come back sorted by descending score as a side effect of the score filter
+        # The score filter does not reorder the peaks by descending score
         text = (
             _narrowpeak_line("chr1", 1000, 1200, 10, 5.0, 3.0, 3, 100)
             + _narrowpeak_line("chr1", 2000, 2200, 800, 5.0, 3.0, 3, 100)
@@ -336,7 +336,7 @@ class TestQValuesAboveOneAreFlagged:
 
 class TestWorkflowOutputFilesRoundTrip:
     def test_the_saved_peak_file_loads_back_as_the_kept_peaks(self, tmp_path: Path) -> None:
-        # The workflow saves with save_chip_peaks; the file used to come back empty from load_chip_peaks.
+        # The workflow saves with save_chip_peaks, and load_chip_peaks reads the file back in full.
         # -log10 columns: p 3 and 4 (1e-3, 1e-4), q 3 and 2.7 (1e-3, about 2e-3)
         _write(
             tmp_path / "in",

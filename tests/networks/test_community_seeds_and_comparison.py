@@ -317,7 +317,7 @@ class TestModularity:
         listed = [nodes[:8], nodes[8:16]]
         completed = listed + [[node] for node in nodes[16:]]
 
-        # a partial assignment used to get an unweighted edge-count approximation of only the listed communities
+        # a partial assignment is completed with singletons, not approximated by an unweighted edge count
         assert modularity(graph, listed) == pytest.approx(nx_community.modularity(graph, completed))
         assert modularity(graph, listed + [["not_a_node", "neither"]]) == pytest.approx(
             nx_community.modularity(graph, completed)

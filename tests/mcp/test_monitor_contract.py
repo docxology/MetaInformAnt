@@ -9,7 +9,9 @@ fully finalized campaign fixture is present.
 
 from __future__ import annotations
 
+import fcntl
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -262,15 +264,19 @@ def test_unreadable_database_is_reported_not_raised(tmp_path: Path) -> None:
 
 
 def test_writer_lock_reports_running_without_process_scan(tmp_path: Path) -> None:
-    """Writer locks flip status deterministically with process inspection off."""
+    """A held campaign writer flock flips status deterministically with process inspection off."""
 
     root = tmp_path / "campaign"
-    results = root / "results"
-    results.mkdir(parents=True)
+    (root / "results").mkdir(parents=True)
 
     assert _snapshot(root)["status"] == "stopped"
-    (results / ".full_campaign.lock").write_text("", encoding="utf-8")
-    snapshot = _snapshot(root)
+    # Another writer's flock (a separate open file description conflicts like another process).
+    holder = os.open(root / ".campaign.flock", os.O_RDWR | os.O_CREAT, 0o644)
+    try:
+        fcntl.flock(holder, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        snapshot = _snapshot(root)
+    finally:
+        os.close(holder)
     assert snapshot["status"] == "running"
     evidence = snapshot["evidence"]
     assert isinstance(evidence, dict)

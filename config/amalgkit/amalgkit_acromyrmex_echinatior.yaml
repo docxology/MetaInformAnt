@@ -15,8 +15,6 @@ work_dir: output/amalgkit/acromyrmex_echinatior/work
 log_dir: output/amalgkit/acromyrmex_echinatior/logs
 threads: 16
 
-auto_install_amalgkit: true
-
 # Pre-selection filtering rules
 filters:
   require_tissue: false

@@ -1,10 +1,9 @@
-"""DNA sequence I/O sub-package (FASTA, FASTQ formats)."""
+"""DNA sequence I/O sub-package (FASTQ format; FASTA I/O lives in ``dna.sequence.core``)."""
 
 from __future__ import annotations
 
-from . import fasta, fastq
+from . import fastq
 
 __all__ = [
-    "fasta",
     "fastq",
 ]

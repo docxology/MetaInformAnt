@@ -449,7 +449,7 @@ def _handle_life_events(args: argparse.Namespace) -> int:
         if predictor.task_type == "classification":
             try:
                 probabilities = predictor.predict_proba(tokens)
-            except (AttributeError, ValueError):
+            except AttributeError, ValueError:
                 probabilities = None
 
         entries = []
@@ -501,7 +501,7 @@ def _handle_life_events(args: argparse.Namespace) -> int:
 
         embeddings = predictor.embeddings
         try:
-            importance = event_importance(predictor, tokens, embeddings, method="permutation")
+            importance = event_importance(predictor, tokens, method="permutation")
         except ValueError:
             importance = event_importance(tokens)
         temporal = temporal_patterns(tokens, predictions)
@@ -708,6 +708,8 @@ def _list_modules() -> None:
         ("rna", "RNA-seq workflows and amalgkit integration"),
         ("protein", "Protein sequence and structure analysis"),
         ("gwas", "Genome-wide association studies"),
+        ("eqtl", "Expression QTL and transcriptome-variant pipelines"),
+        ("popgen", "Population genetics statistics and neutrality tests"),
         ("math", "Mathematical biology and theoretical modeling"),
         ("information", "Information-theoretic analysis"),
         ("life_events", "Life course and temporal analysis"),
@@ -728,7 +730,6 @@ def _list_modules() -> None:
         ("metagenomics", "Microbiome and metagenomic analysis"),
         ("pharmacogenomics", "Clinical pharmacogenomic variant analysis"),
         ("metabolomics", "Metabolite identification and pathway analysis"),
-        ("cloud", "Cloud deployment helpers and GCP workflow utilities"),
         (
             "mcp",
             "MCP stdio JSON-RPC 2.0 server (`python -m metainformant.mcp.server`) and tool registry",

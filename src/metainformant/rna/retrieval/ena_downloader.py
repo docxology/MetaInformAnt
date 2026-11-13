@@ -86,7 +86,7 @@ def _run_command_in_process_group(
             for signum in (signal.SIGTERM, signal.SIGKILL):
                 try:
                     os.killpg(process.pid, signum)
-                except (OSError, ProcessLookupError):
+                except OSError, ProcessLookupError:
                     break
                 try:
                     process.wait(timeout=10)
@@ -109,14 +109,14 @@ def _wait_process_group(
     def _terminate_group() -> tuple[str, str]:
         try:
             os.killpg(process.pid, signal.SIGTERM)
-        except (OSError, ProcessLookupError):
+        except OSError, ProcessLookupError:
             process.terminate()
         try:
             stdout, stderr = process.communicate(timeout=10)
         except subprocess.TimeoutExpired:
             try:
                 os.killpg(process.pid, signal.SIGKILL)
-            except (OSError, ProcessLookupError):
+            except OSError, ProcessLookupError:
                 process.kill()
             stdout, stderr = process.communicate()
         return stdout or "", stderr or ""
@@ -238,7 +238,7 @@ def _remote_content_length(url: str, *, timeout: float = 30) -> int | None:
             return None
         length = int(header)
         return length if length >= 0 else None
-    except (OSError, ValueError, subprocess.SubprocessError):
+    except OSError, ValueError, subprocess.SubprocessError:
         return None
 
 
@@ -376,7 +376,7 @@ def verify_gzip_integrity(file_path: Path, *, deadline_at: float | None = None) 
     # an integrity failure so a stale/corrupt FASTQ is quarantined and the
     # caller can retry or use the NCBI fallback instead of losing the worker
     # to an uncaught exception.
-    except (gzip.BadGzipFile, OSError, EOFError, zlib.error):
+    except gzip.BadGzipFile, OSError, EOFError, zlib.error:
         return False
 
 
@@ -977,26 +977,19 @@ def download_sra_samples(
     sra_ids: List[str],
     base_out_dir: Path,
     *,
-    sort_by_size: bool = True,
-    use_fallback: bool = True,
     downloader: ENADownloader | None = None,
 ) -> Tuple[int, int]:
-    """Download a batch of SRA run accessions into amalgkit getfastq layout.
+    """Download a batch of SRA run accessions from ENA into amalgkit getfastq layout.
 
     Args:
-        sra_ids: Run accessions to download.
+        sra_ids: Run accessions to download, in the given order.
         base_out_dir: Amalgkit work directory. Files are written under
             ``base_out_dir/getfastq/{run_id}/``.
-        sort_by_size: Reserved for compatibility with callers that may pass
-            size-sorted IDs. The current ENA API path does not pre-fetch sizes.
-        use_fallback: Reserved for compatibility; direct ENA download is the
-            only implementation in this helper.
         downloader: Optional downloader instance for tests or custom timeouts.
 
     Returns:
         Tuple of ``(success_count, fail_count)``.
     """
-    _ = sort_by_size, use_fallback
     base_out_dir = Path(base_out_dir)
     getfastq_dir = base_out_dir / "getfastq"
     getfastq_dir.mkdir(parents=True, exist_ok=True)

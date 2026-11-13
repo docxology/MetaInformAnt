@@ -99,8 +99,8 @@ def test_live_query_for_one_result_terminates() -> None:
     assert len(collected.reports) == collected.total_count >= 1
 
 
-def test_live_old_listing_endpoint_is_gone_and_reported_loudly() -> None:
-    """The endpoint ``list_genome_assemblies`` used to call answers 404, which the client now raises."""
+def test_live_genome_listing_endpoint_is_gone_and_reported_loudly() -> None:
+    """NCBI's ``/genome`` listing endpoint answers 404, and the client raises it."""
     with NCBIDatasetsClient() as client:
         try:
             client.get_json(DatasetsRequest("/genome", {"taxon": "Apis mellifera", "page_size": "1"}))

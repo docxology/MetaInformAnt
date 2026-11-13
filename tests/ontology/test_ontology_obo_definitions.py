@@ -1,8 +1,9 @@
 """Regression tests for OBO ``def:`` parsing.
 
 An OBO definition is a quoted string followed by a bracketed dbxref list: ``def: "text" [GOC:mah, PMID:123]``.
-The parser used to strip the quote characters from both ends of the whole value, which left ``." [GOC:mah, PMID:123]``
-glued to the definition, kept ``\\"`` escapes undecoded, and cut definitions that contain `` ! `` short.
+The parser reads the quoted string itself. Stripping the quote characters from both ends of the whole value would
+leave ``." [GOC:mah, PMID:123]`` glued to the definition, keep ``\\"`` escapes undecoded, and cut definitions that
+contain `` ! `` short.
 """
 
 from __future__ import annotations
@@ -63,7 +64,7 @@ from metainformant.ontology.query.serialize import load_ontology, save_ontology
         ('"Text." [ , GOC:a, ]', "Text.", ["GOC:a"]),
         ('"Text." [GOC:a\\]b, GOC:c]', "Text.", ["GOC:a]b", "GOC:c"]),
         ('"" []', "", []),
-        # older versions of this package wrote definitions without escaping inner quotes; they still read back whole
+        # definitions written without escaping inner quotes read back whole
         ('"A "special" process"', 'A "special" process', []),
         ('"A "special" process" []', 'A "special" process', []),
         # malformed input is read leniently, not rejected

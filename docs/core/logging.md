@@ -208,7 +208,7 @@ Standard Python levels (increasing severity):
 |-------|---------|-------------|
 | `DEBUG` | 10 | Fine-grained diagnostic info (variable values, SQL queries) |
 | `INFO` | 20 | High-level progress (startup, completion, counts) |
-| `WARNING` | 30 | Unexpected but non-critical (missing optional file, deprecated config) |
+| `WARNING` | 30 | Unexpected but non-critical (missing optional file, unrecognized config key) |
 | `ERROR` | 40 | Operation failed but pipeline continues or fails gracefully |
 | `CRITICAL` | 50 | Fatal error causing immediate shutdown |
 

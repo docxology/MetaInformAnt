@@ -4,7 +4,7 @@ This file is operational guidance for AI-assisted work in METAINFORMANT. Treat t
 
 ## Project Context
 
-METAINFORMANT is a Python 3.11+ bioinformatics toolkit with modules under `src/metainformant/` for genomics, transcriptomics, GWAS, visualization, machine learning, ecology, ontology, and related domains.
+METAINFORMANT is a Python 3.14+ bioinformatics toolkit with modules under `src/metainformant/` for genomics, transcriptomics, GWAS, visualization, machine learning, ecology, ontology, and related domains.
 
 Use the nearest nested `AGENTS.md` for folder-specific rules. Important entry points:
 
@@ -32,10 +32,9 @@ Use the current package layout in examples and new code:
 - Logging helpers: `metainformant.core.utils.logging`
 - Validation helpers: `metainformant.core.data.validation`
 
-The 0.4.0 package surface removed obsolete imports such as `core.config`,
-`core.paths`, and the old top-level DNA `sequences` alias. Use the canonical
-modules below; callers of removed paths should follow
-[the migration guide](docs/MIGRATION_0.4.md).
+These are the only import paths for these helpers. The
+[0.4.0 migration guide](docs/MIGRATION_0.4.md) maps each removed path to its
+replacement.
 
 ## Documentation Rules
 

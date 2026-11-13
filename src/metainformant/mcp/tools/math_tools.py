@@ -7,14 +7,15 @@ from typing import Any
 
 def _handle_popgen_summary(allele_freq_p: float) -> dict:
     """Descriptive population-genetics summary from an allele frequency p."""
-    from metainformant.math.popgen import fst_from_freqs, hardy_weinberg_allele_freqs
+    from metainformant.math.population_genetics.core import hardy_weinberg_genotype_freqs
+    from metainformant.math.population_genetics.fst import fst_from_allele_freqs
 
-    aa, het, qq = hardy_weinberg_allele_freqs(allele_freq_p)
+    aa, het, qq = hardy_weinberg_genotype_freqs(allele_freq_p)
     return {
         "freq_AA": aa,
         "freq_Aa": het,
         "freq_aa": qq,
-        "fst_example_p_vs_1_minus_p": fst_from_freqs([allele_freq_p], [1 - allele_freq_p]),
+        "fst_example_p_vs_1_minus_p": fst_from_allele_freqs([allele_freq_p], [1 - allele_freq_p]),
         "note": "descriptive summary only; no inferential tests",
     }
 

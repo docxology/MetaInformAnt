@@ -326,7 +326,7 @@ class TestDoubletDetectionInputs:
             detect_doublets(np.ones(shape))
 
     def test_no_exception_is_swallowed_around_the_svd(self) -> None:
-        """A failed SVD used to be replaced by the first raw gene columns, which are not principal components."""
+        """A failed SVD is not replaced by the first raw gene columns, which are not principal components."""
         tree = ast.parse(textwrap.dedent(inspect.getsource(detection.detect_doublets)))
 
         assert not [node for node in ast.walk(tree) if isinstance(node, ast.ExceptHandler)]

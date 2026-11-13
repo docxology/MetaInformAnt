@@ -62,34 +62,22 @@ class EventSequencePredictor:
         self,
         model_type: str = "embedding",
         embedding_dim: int = 100,
-        random_seed: int = 42,
-        # Parameter aliases for compatibility
+        random_state: int = 42,
         task_type: str | None = None,
-        embedding: int | None = None,
-        random_state: int | None = None,
-        **kwargs: Any,
     ):
         """Initialize predictor.
 
         Args:
             model_type: Type of model ('embedding' or 'simple')
             embedding_dim: Dimensionality for embeddings
-            random_seed: Random seed for reproducibility
+            random_state: Random seed for reproducibility
             task_type: Task type ('classification' or 'regression')
-            embedding: Alias for embedding_dim (backward compatibility)
-            random_state: Alias for random_seed (sklearn convention)
-            **kwargs: Additional parameters (ignored)
         """
-        if embedding is not None:
-            embedding_dim = embedding
-        if random_state is not None:
-            random_seed = random_state
-
         # Store task_type separately — do NOT conflate with model_type
         self.task_type = task_type  # 'classification', 'regression', or None
         self.model_type = model_type
         self.embedding_dim = embedding_dim
-        self.random_seed = random_seed
+        self.random_state = random_state
         self.is_fitted = False
 
         # Model components
@@ -226,7 +214,7 @@ class EventSequencePredictor:
             "model_type": self.model_type,
             "task_type": self.task_type or "classification",
             "embedding_dim": self.embedding_dim,
-            "random_seed": self.random_seed,
+            "random_state": self.random_state,
             "is_fitted": self.is_fitted,
             "event_embeddings": embeddings_serializable,
             "vocab": self.event_vocab,
@@ -286,7 +274,7 @@ class EventSequencePredictor:
         model = cls(
             model_type=model_data["model_type"],
             embedding_dim=model_data.get("embedding_dim", 100),
-            random_seed=model_data.get("random_seed", 42),
+            random_state=model_data.get("random_state", 42),
             task_type=model_data.get("task_type"),
         )
 
@@ -332,15 +320,9 @@ class EventSequencePredictor:
                 constant is never returned.
         """
         table = model_data.get("sequence_length_model")
-        if table is None:
-            # Classification files written before the table was saved separately keep it here.
-            classifier = model_data.get("classifier")
-            if isinstance(classifier, dict) and isinstance(classifier.get("model"), dict):
-                table = classifier["model"]
         if not isinstance(table, dict) or not table:
             raise ValueError(
-                "Simple model file contains no sequence-length table (it was written by a version that did "
-                "not save it); re-train the model and save it again"
+                "Simple model file contains no sequence-length table; re-train the model and save it again"
             )
         return {int(length): float(value) for length, value in table.items()}
 
@@ -365,9 +347,8 @@ class EventSequencePredictor:
         self.reverse_vocab = {i: event for event, i in self.event_vocab.items()}
 
         # Use pre-computed or randomly initialized embeddings. The generator is private and seeded from
-        # random_seed at every fit, so the same seed gives the same embeddings however many predictors were built
-        # before (the module-level numpy generator was reseeded in __init__ and drawn from here).
-        rng = np.random.default_rng(self.random_seed)
+        # random_state at every fit, so the same seed gives the same embeddings however many predictors are built.
+        rng = np.random.default_rng(self.random_state)
         for event in all_events:
             if event_embeddings and event in event_embeddings:
                 self.embeddings[event] = event_embeddings[event]

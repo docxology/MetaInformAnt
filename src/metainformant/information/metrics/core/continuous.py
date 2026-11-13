@@ -377,11 +377,6 @@ def _kl_divergence_kde(p_samples: np.ndarray, q_samples: np.ndarray) -> float:
     return max(0.0, float(kl_div))
 
 
-def entropy_estimation(samples: np.ndarray, method: str = "histogram", bins: Optional[int] = None) -> float:
-    """Unified interface for entropy estimation in nats (alias for differential_entropy)."""
-    return differential_entropy(samples, method=method, bins=bins)
-
-
 def copula_entropy(samples: np.ndarray, method: str = "histogram") -> float:
     """Calculate copula entropy in nats (normalized entropy for dependence analysis).
 

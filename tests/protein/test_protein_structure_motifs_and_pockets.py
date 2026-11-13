@@ -152,8 +152,8 @@ def test_a_helix_between_two_strands_is_located_exactly() -> None:
     assert motifs == EXPECTED_STRAND_HELIX_STRAND
 
 
-def test_a_random_coil_has_no_helix_and_none_of_the_old_fabricated_entries() -> None:
-    """A 40-residue random walk used to yield a 'potential_helix' for each of its 30 windows of ten coordinates."""
+def test_a_random_coil_has_no_helix_and_no_fabricated_entries() -> None:
+    """A 40-residue random walk yields no 'potential_helix' for any of its 30 windows of ten coordinates."""
     rng = np.random.default_rng(3)
     steps = rng.normal(size=(39, 3))
     steps = 3.8 * steps / np.linalg.norm(steps, axis=1, keepdims=True)

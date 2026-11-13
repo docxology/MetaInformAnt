@@ -15,7 +15,7 @@ from typing import Any
 
 import pytest
 
-from metainformant.longread.workflow.orchestrator import (
+from metainformant.longread.workflow.orchestrator_core import (
     LongReadOrchestrator,
     PipelineResult,
     PipelineStep,

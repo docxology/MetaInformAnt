@@ -9,7 +9,6 @@ Clustering, dimensionality reduction, and trajectory inference for single-cell t
 | `clustering.py` | Leiden, Louvain, k-means, hierarchical clustering, marker genes, cluster evaluation |
 | `pca_methods.py` | PCA, ICA, factor analysis, highly variable gene selection |
 | `nonlinear_methods.py` | t-SNE, UMAP, diffusion maps, MDS, neighbor graphs, embedding quality metrics |
-| `dimensionality.py` | Backward-compatibility shim re-exporting `pca_methods` and `nonlinear_methods` |
 | `trajectory.py` | Pseudotime inference: diffusion pseudotime, embedding pseudotime, simplified PAGA and Slingshot approximations, pseudotime grouping |
 
 ## Conventions
@@ -31,7 +30,7 @@ Clustering, dimensionality reduction, and trajectory inference for single-cell t
 | `compute_cluster_silhouette()` | Silhouette and cluster-quality metrics (`random_state` seeds the optional subsample) |
 | `evaluate_clustering_performance()` | Cluster evaluation against optional ground truth |
 | `select_hvgs()` | Highly variable gene selection (`seurat`, `cell_ranger`, `seurat_v3`, `variance`; `seurat_v3` expects raw counts); flags genes in `var["highly_variable"]` and stores a flavor-dependent standardised variance in `var["variances_norm"]` |
-| `pca_reduction()` / `compute_pca()` | PCA dimensionality reduction (`use_hvgs=True` restricts it to the flagged genes) |
+| `pca_reduction()` | PCA dimensionality reduction (`use_hvgs=True` restricts it to the flagged genes) |
 | `ica_reduction()` | Independent component analysis |
 | `factor_analysis_reduction()` | Factor analysis |
 | `tsne_reduction()` / `umap_reduction()` | t-SNE and UMAP nonlinear embeddings |

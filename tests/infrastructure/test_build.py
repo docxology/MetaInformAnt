@@ -80,7 +80,7 @@ class TestBuildArtifacts:
             )
             assert result.returncode == 0
             assert "metainformant" in result.stdout.lower()
-        except (subprocess.TimeoutExpired, FileNotFoundError):
+        except subprocess.TimeoutExpired, FileNotFoundError:
             pytest.fail("CLI command not available or timed out")
 
 

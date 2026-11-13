@@ -1,8 +1,8 @@
 """Allele definition loading: the ``source`` / ``filepath`` contract and genes without definitions.
 
-``load_allele_definitions`` used to ignore ``filepath`` unless ``source="file"`` and to fall back
-to the built-in table whenever ``filepath`` was None, whatever ``source`` said, so a custom
-file could be silently dropped. UGT1A1 has activity scores but no calling definitions; that gap
+``load_allele_definitions`` loads ``filepath`` whenever one is given and the built-in table otherwise;
+``source="file"`` without a file and ``source="cpic"`` with one raise, so a custom file is never silently
+dropped. UGT1A1 has activity scores but no calling definitions; that gap
 must be stated, not look like a typo.
 
 Definition files are real JSON/TSV files written to ``tmp_path``.
@@ -201,10 +201,10 @@ class TestGenesWithoutCallingDefinitions:
 
 
 class TestActivityValuesAreRequiredInDefinitionFiles:
-    """A definition without an activity value used to score 1.0, normal function.
+    """A definition without an activity value raises; it does not score 1.0, normal function.
 
-    That made a "No function" allele with no value read as fully functional, and gave any allele
-    a missing column an activity of 1.0.
+    A default of 1.0 would make a "No function" allele with no value read as fully functional, and
+    give any allele a missing column an activity of 1.0.
     """
 
     def test_a_json_allele_without_an_activity_value_raises(self, tmp_path: Path) -> None:
@@ -255,7 +255,7 @@ class TestActivityValuesAreRequiredInDefinitionFiles:
             load_allele_definitions("CYP2E1", filepath=path)
 
     def test_a_tsv_blank_cell_raises_with_a_message_naming_the_allele(self, tmp_path: Path) -> None:
-        # It used to raise the bare "could not convert string to float: ''"
+        # not the bare "could not convert string to float: ''"
         path = tmp_path / "blank.tsv"
         path.write_text(
             "allele\tdefining_variants\tfunction\tactivity_value\n*1\t\tNormal function\t1.0\n"
@@ -304,7 +304,7 @@ class TestGeneKeyedDefinitionFiles:
     def test_a_gene_missing_from_the_file_raises_instead_of_reading_gene_entries_as_alleles(
         self, multi_gene: Path
     ) -> None:
-        # It used to return the alleles "*CYP2E1" and "*CYP2B6", each with activity 1.0
+        # not the alleles "*CYP2E1" and "*CYP2B6", each with activity 1.0
         with pytest.raises(ValueError, match="CYP3A4") as caught:
             load_allele_definitions("CYP3A4", filepath=multi_gene)
         assert "CYP2B6" in str(caught.value) and "CYP2E1" in str(caught.value)

@@ -13,7 +13,7 @@ Comprehensive bioinformatics toolkit for multi-omic analysis. Domain-driven, mod
 
 ```
 metainformant/
- src/metainformant/ # Source code (30 packages: 27 domain modules + core + cloud + mcp server)
+ src/metainformant/ # Source code (29 packages: 27 domain modules + core + mcp server)
  core/ # Shared infrastructure (I/O, config, logging)
  dna/ # Genomic analysis, alignment, population genetics
  rna/ # Transcriptomic workflows, Amalgkit integration
@@ -36,7 +36,6 @@ metainformant/
  simulation/ # Synthetic data generation
  life_events/ # Event sequence analysis
  menu/ # Interactive menu and discovery system
- cloud/ # GCP VM lifecycle for pipeline workloads
  mcp/ # Model Context Protocol (MCP) tool server
  longread/ # PacBio/Nanopore long-read analysis
  metagenomics/ # Microbiome and metagenomic analysis
@@ -81,7 +80,7 @@ All program-generated results go to `output/`. Never create documentation or rep
 
 ### Code Quality
 
-- Python 3.11+ minimum
+- Python 3.14+ minimum
 - Black formatting (120 char lines)
 - mypy 2.3.1 (locked in `uv.lock`): 0 errors across the 693-file source tree, enforced by the error-budget gate `scripts/quality/check_mypy_budget.py` (budget `config/quality/mypy_error_budget.txt` = 0; CI runs it scoped to `src/metainformant/rna`)
 - All functions must have type hints

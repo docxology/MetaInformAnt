@@ -155,7 +155,7 @@ class TestChecksumRoundTrips:
         assert sidecar.read_text().split()[1] == "sample.fa"
         assert verify_checksum_file(target) is True
 
-        # Tamper: content no longer matches the sidecar digest.
+        # Tamper: the content stops matching the sidecar digest.
         target.write_text("ACGTACGA")
         assert verify_checksum_file(target) is False
 

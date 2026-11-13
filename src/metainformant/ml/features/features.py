@@ -233,9 +233,8 @@ def select_features_stability(
 
     Raises:
         ImportError: If scikit-learn not available
-        ValueError: If ``method`` is not one of the base methods. (It used to be accepted: every bootstrap iteration
-            raised inside the loop, was logged and skipped, and the all-zero frequencies then ranked the *last*
-            features as "top-ranked", with only a warning.)
+        ValueError: If ``method`` is not one of the base methods. (Accepting it would make every bootstrap
+            iteration fail, and all-zero frequencies would rank the *last* features as "top-ranked".)
         RuntimeError: If every bootstrap iteration failed, so no selection frequency exists
     """
     if not HAS_SKLEARN:

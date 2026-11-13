@@ -81,8 +81,8 @@ def test_the_message_explains_that_pre_comes_before_post(tmp_path: Path) -> None
     assert "pre-intervention sequence followed by one per post-intervention sequence" in message
 
 
-def test_outcomes_for_the_pre_sequences_only_are_no_longer_accepted_silently(tmp_path: Path) -> None:
-    """Two outcomes for two pre-intervention sequences used to be taken as pre outcomes with no post outcomes."""
+def test_outcomes_for_the_pre_sequences_only_are_rejected(tmp_path: Path) -> None:
+    """Two outcomes for two pre-intervention sequences are rejected, not taken as pre outcomes with no post outcomes."""
     with pytest.raises(ValueError, match="got 2"):
         intervention_analysis(_sequences(), T, output_dir=tmp_path, outcomes=[0.2, 0.4])
 

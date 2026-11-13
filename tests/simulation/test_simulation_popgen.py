@@ -50,13 +50,13 @@ class TestGenotypeMatrixAlleleFrequencyConsistency:
 
     def test_samples_one_frequency_per_site_not_per_genotype(self):
         rng = _UniformCountingRandom(7)
-        generate_genotype_matrix(n_individuals=5, n_sites=3, rng=rng)
+        generate_genotype_matrix(n_individuals=5, n_snps=3, rng=rng)
         # Exactly one frequency draw per SNP (3), not per (individual, SNP) pair (15).
         assert rng.uniform_calls == 3
 
     def test_seed_reproducibility(self):
-        g1 = generate_genotype_matrix(n_individuals=20, n_sites=5, rng=random.Random(11))
-        g2 = generate_genotype_matrix(n_individuals=20, n_sites=5, rng=random.Random(11))
+        g1 = generate_genotype_matrix(n_individuals=20, n_snps=5, rng=random.Random(11))
+        g2 = generate_genotype_matrix(n_individuals=20, n_snps=5, rng=random.Random(11))
         assert g1 == g2
 
 
@@ -66,13 +66,13 @@ class TestGeneratePopulationSequences:
     def test_basic_generation(self):
         """Test basic sequence generation.
 
-        ``mutation_rate=0.01`` used to be fine for the star-shaped generator, but theta = 4 * n * mu
+        ``mutation_rate=0.01`` is too high for this test: theta = 4 * n * mu
         is 0.4 per site here: about 113 expected segregating sites on 100 positions, which the
         infinite-sites coalescent rejects (see ``test_infinite_sites_capacity_is_enforced``).
         """
         seqs = generate_population_sequences(
             n_sequences=10,
-            sequence_length=100,
+            length=100,
             mutation_rate=0.001,
             rng=random.Random(1),
         )
@@ -83,7 +83,7 @@ class TestGeneratePopulationSequences:
         """Test generation with target nucleotide diversity."""
         seqs = generate_population_sequences(
             n_sequences=10,
-            sequence_length=1000,
+            length=1000,
             nucleotide_diversity=0.01,
             rng=random.Random(2),
         )
@@ -97,7 +97,7 @@ class TestGeneratePopulationSequences:
         """Test generation with target Watterson's theta."""
         seqs = generate_population_sequences(
             n_sequences=10,
-            sequence_length=1000,
+            length=1000,
             wattersons_theta=0.01,
             rng=random.Random(3),
         )
@@ -108,7 +108,7 @@ class TestGeneratePopulationSequences:
         ref_seq = "A" * 100
         seqs = generate_population_sequences(
             n_sequences=5,
-            sequence_length=100,
+            length=100,
             reference_sequence=ref_seq,
             mutation_rate=0.005,
             rng=random.Random(4),
@@ -124,13 +124,13 @@ class TestGeneratePopulationSequences:
 
         seqs1 = generate_population_sequences(
             n_sequences=5,
-            sequence_length=100,
+            length=100,
             mutation_rate=0.01,
             rng=rng1,
         )
         seqs2 = generate_population_sequences(
             n_sequences=5,
-            sequence_length=100,
+            length=100,
             mutation_rate=0.01,
             rng=rng2,
         )
@@ -146,8 +146,8 @@ class TestGenerateTwoPopulations:
         pop1, pop2 = generate_two_populations(
             n_pop1=10,
             n_pop2=10,
-            sequence_length=1000,
-            fst=0.1,
+            length=1000,
+            f_st=0.1,
         )
         assert len(pop1) == 10
         assert len(pop2) == 10
@@ -158,8 +158,8 @@ class TestGenerateTwoPopulations:
         pop1, pop2 = generate_two_populations(
             n_pop1=10,
             n_pop2=10,
-            sequence_length=1000,
-            fst=0.5,  # High differentiation
+            length=1000,
+            f_st=0.5,  # High differentiation
         )
 
         # Check that populations are different
@@ -175,8 +175,8 @@ class TestGenerateTwoPopulations:
         pop1, pop2 = generate_two_populations(
             n_pop1=10,
             n_pop2=10,
-            sequence_length=1000,
-            fst=0.8,  # Very high differentiation
+            length=1000,
+            f_st=0.8,  # Very high differentiation
         )
         assert len(pop1) == 10
         assert len(pop2) == 10
@@ -187,20 +187,20 @@ class TestGenerateTwoPopulations:
         estimates = []
         for seed in range(4):
             pop1, pop2 = generate_two_populations(
-                n_pop1=50, n_pop2=50, sequence_length=2000, n_sites=500, fst=target, rng=random.Random(seed)
+                n_pop1=50, n_pop2=50, length=2000, n_sites=500, f_st=target, rng=random.Random(seed)
             )
             estimates.append(hudson_fst(pop1, pop2))
         assert statistics.mean(estimates) == pytest.approx(target, abs=0.04 if target else 0.01)
 
     def test_complete_differentiation_fixes_each_population(self):
         pop1, pop2 = generate_two_populations(
-            n_pop1=10, n_pop2=10, sequence_length=400, n_sites=100, fst=1.0, rng=random.Random(5)
+            n_pop1=10, n_pop2=10, length=400, n_sites=100, f_st=1.0, rng=random.Random(5)
         )
         assert len(set(pop1)) == 1 and len(set(pop2)) == 1
         assert hudson_fst(pop1, pop2) == 1.0
 
     def test_default_site_count_follows_watterson(self):
-        pop1, pop2 = generate_two_populations(n_pop1=10, n_pop2=10, sequence_length=1000, fst=0.1, rng=random.Random(3))
+        pop1, pop2 = generate_two_populations(n_pop1=10, n_pop2=10, length=1000, f_st=0.1, rng=random.Random(3))
         variable = sum(len(set(column)) > 1 for column in zip(*(pop1 + pop2)))
         expected_sites = round(0.01 * 1000 * sum(1 / i for i in range(1, 20)))  # 35
         assert 0 < variable <= expected_sites
@@ -213,7 +213,7 @@ class TestGenerateGenotypeMatrix:
         """Test basic genotype matrix generation."""
         genotypes = generate_genotype_matrix(
             n_individuals=10,
-            n_sites=5,
+            n_snps=5,
         )
         assert len(genotypes) == 10
         assert all(len(row) == 5 for row in genotypes)
@@ -224,7 +224,7 @@ class TestGenerateGenotypeMatrix:
         freqs = [0.2, 0.3, 0.4, 0.1, 0.5]
         genotypes = generate_genotype_matrix(
             n_individuals=100,
-            n_sites=5,
+            n_snps=5,
             allele_frequencies=freqs,
         )
         assert len(genotypes) == 100
@@ -241,13 +241,13 @@ class TestGenerateGenotypeMatrix:
         """Test Hardy-Weinberg equilibrium vs non-HWE."""
         genotypes_hwe = generate_genotype_matrix(
             n_individuals=100,
-            n_sites=1,
+            n_snps=1,
             allele_frequencies=[0.5],
             hwe=True,
         )
         genotypes_non_hwe = generate_genotype_matrix(
             n_individuals=100,
-            n_sites=1,
+            n_snps=1,
             allele_frequencies=[0.5],
             hwe=False,
         )
@@ -264,7 +264,7 @@ class TestGenerateGenotypeMatrix:
         """Test haploid genotype generation."""
         genotypes = generate_genotype_matrix(
             n_individuals=10,
-            n_sites=5,
+            n_snps=5,
             ploidy=1,
         )
         assert len(genotypes) == 10
@@ -438,13 +438,6 @@ class TestCoalescentPopulationSequences:
         assert variable and all(reference[i] not in "Nn" for i in variable)  # only A/C/G/T positions mutate
         assert all(set(column) == {reference[i]} for i, column in enumerate(columns) if i not in variable)
 
-    def test_n_sites_is_accepted_but_no_longer_limits_the_variation(self):
-        """n_sites used to cap the candidate positions; the number of variable sites is now an outcome of theta."""
-        kwargs: dict[str, Any] = dict(n_sequences=20, length=1000, nucleotide_diversity=0.01)
-        sequences = generate_population_sequences(**kwargs, n_sites=5, rng=random.Random(1))
-        assert segregating_sites(sequences) > 5
-        assert sequences == generate_population_sequences(**kwargs, rng=random.Random(1))
-
     def test_infinite_sites_capacity_is_enforced(self):
         # theta = 4 * 10 * 0.01 = 0.4 per site: about 113 expected segregating sites on 100 positions.
         with pytest.raises(ValueError, match="infinite-sites"):
@@ -471,18 +464,11 @@ class TestCoalescentPopulationSequences:
         assert abs(identical / replicates - expected) <= Z * math.sqrt(expected * (1 - expected) / replicates)
         assert len(set(generate_population_sequences(10, 100, theta=0.0, rng=random.Random(1)))) == 1
 
-    def test_random_seed_alias_matches_rng(self):
-        assert generate_population_sequences(10, 200, random_seed=5) == generate_population_sequences(
-            10, 200, rng=random.Random(5)
-        )
-
     def test_invalid_parameters_are_rejected(self):
         with pytest.raises(ValidationError):
             generate_population_sequences(1, 100)
         with pytest.raises(ValidationError):
             generate_population_sequences(10, 100, theta=-0.1)
-        with pytest.raises(ValidationError):
-            generate_population_sequences(10, 100, n_sites=0)
         with pytest.raises(ValueError, match="length"):
             generate_population_sequences(10)
         with pytest.raises(ValueError, match="finite"):
@@ -623,7 +609,7 @@ class TestGenerateSiteFrequencySpectrum:
     def test_folded_sfs(self):
         """Test folded SFS generation."""
         sfs = generate_site_frequency_spectrum(
-            sample_size=10,
+            n_samples=10,
             n_sites=100,
             folded=True,
         )
@@ -633,7 +619,7 @@ class TestGenerateSiteFrequencySpectrum:
     def test_unfolded_sfs(self):
         """Test unfolded SFS generation."""
         sfs = generate_site_frequency_spectrum(
-            sample_size=10,
+            n_samples=10,
             n_sites=100,
             folded=False,
         )
@@ -643,7 +629,7 @@ class TestGenerateSiteFrequencySpectrum:
     def test_sfs_rare_alleles(self):
         """Test that SFS has more rare alleles."""
         sfs = generate_site_frequency_spectrum(
-            sample_size=10,
+            n_samples=10,
             n_sites=100,
             folded=True,
         )
@@ -659,7 +645,7 @@ class TestGenerateLinkageDisequilibriumData:
         """Test basic LD data generation."""
         genotypes = generate_linkage_disequilibrium_data(
             n_individuals=100,
-            n_sites=10,
+            n_snps=10,
             r_squared_target=0.5,
         )
         assert len(genotypes) == 100
@@ -671,7 +657,7 @@ class TestGenerateLinkageDisequilibriumData:
         freqs = [0.3, 0.4, 0.2, 0.5, 0.1]
         genotypes = generate_linkage_disequilibrium_data(
             n_individuals=100,
-            n_sites=5,
+            n_snps=5,
             allele_frequencies=freqs,
         )
         assert len(genotypes) == 100
@@ -680,8 +666,8 @@ class TestGenerateLinkageDisequilibriumData:
 class TestBottleneckStatsInterface:
     """Test the statistics interface of simulate_bottleneck_population.
 
-    Regression tests: this interface previously called ``rng.poisson`` on a
-    ``random.Random`` and raised AttributeError at runtime.
+    Regression tests: this interface draws from a ``random.Random`` without
+    calling ``rng.poisson``, which ``random.Random`` lacks.
     """
 
     def test_stats_interface_returns_trajectory(self):
@@ -713,8 +699,8 @@ class TestBottleneckStatsInterface:
 class TestExpansionStatsInterface:
     """Test the statistics interface of simulate_population_expansion.
 
-    Regression tests: this interface previously called ``rng.poisson`` on a
-    ``random.Random`` and raised AttributeError at runtime.
+    Regression tests: this interface draws from a ``random.Random`` without
+    calling ``rng.poisson``, which ``random.Random`` lacks.
     """
 
     def test_stats_interface_returns_trajectory(self):
@@ -748,8 +734,8 @@ def _singleton_share(spectrum: list[int]) -> float:
 class TestSiteFrequencySpectrumModels:
     """generate_site_frequency_spectrum draws each site's class from the coalescent of the demographic model.
 
-    Expansion and bottleneck used to be heuristics (a Zipf draw, and a coin between two uniform ranges). They are now
-    the expected branch-length spectrum of seeded coalescent genealogies, and the constant model is its closed form.
+    Expansion and bottleneck use the expected branch-length spectrum of seeded coalescent genealogies, not a heuristic
+    (a Zipf draw, or a coin between two uniform ranges); the constant model uses its closed form.
     """
 
     N = 20  # chromosomes
@@ -933,17 +919,17 @@ class TestSiteFrequencySpectrumModels:
     def test_unknown_models_and_missing_sizes_are_rejected(self) -> None:
         with pytest.raises(ValidationError, match="Unknown demographic model"):
             generate_site_frequency_spectrum(10, 100, demographic_model="migration")
-        with pytest.raises(ValueError, match="n_samples"):
-            generate_site_frequency_spectrum(n_sites=10)
-        with pytest.raises(ValueError, match="n_sites"):
-            generate_site_frequency_spectrum(10)
+        with pytest.raises(TypeError, match="n_samples"):
+            generate_site_frequency_spectrum(n_sites=10)  # type: ignore[call-arg]
+        with pytest.raises(TypeError, match="n_sites"):
+            generate_site_frequency_spectrum(10)  # type: ignore[call-arg]
 
 
 class TestSimulateAdmixture:
     """Test population admixture simulation.
 
-    Regression tests: the drift step previously called ``rng.normal`` on a
-    ``random.Random`` and raised AttributeError at runtime.
+    Regression tests: the drift step draws from a ``random.Random`` without
+    calling ``rng.normal``, which ``random.Random`` lacks.
     """
 
     def test_basic_admixture(self):
@@ -1172,11 +1158,11 @@ class TestNoSilentTruncationOrOverride:
 
     def test_more_polymorphic_sites_than_positions_is_an_error_not_a_truncation(self) -> None:
         with pytest.raises(ValidationError, match="do not fit"):
-            generate_two_populations(5, 5, 50, n_sites=80, fst=0.1, rng=random.Random(1))
+            generate_two_populations(5, 5, 50, n_sites=80, f_st=0.1, rng=random.Random(1))
         # the Watterson default for theta = 1 on 10 positions is about 35 sites
         with pytest.raises(ValidationError, match="do not fit"):
-            generate_two_populations(10, 10, 10, theta=1.0, fst=0.1, rng=random.Random(1))
-        pop1, pop2 = generate_two_populations(5, 5, 50, n_sites=50, fst=0.1, rng=random.Random(1))
+            generate_two_populations(10, 10, 10, theta=1.0, f_st=0.1, rng=random.Random(1))
+        pop1, pop2 = generate_two_populations(5, 5, 50, n_sites=50, f_st=0.1, rng=random.Random(1))
         assert len(pop1[0]) == 50
 
     def test_an_explicit_hwe_deviation_is_honoured_when_hwe_is_off(self) -> None:

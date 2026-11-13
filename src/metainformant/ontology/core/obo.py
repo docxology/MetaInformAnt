@@ -79,7 +79,7 @@ def _closing_quote_index(value: str, synonym: bool = False) -> int:
     An unescaped quote only closes the string when what follows it is the end of the value, the ``[`` of the dbxref
     list, the ``{`` of trailing modifiers or a ``!`` comment (for a ``synonym:`` value, also the scope word that comes
     before the list). Any other unescaped quote is kept as literal text, so definitions and synonyms written without
-    escaping (as older versions of this package did) still read back whole.
+    escaping read back whole.
     """
     start = 1
     while True:
@@ -257,7 +257,7 @@ def parse_obo(path: str | Path) -> Ontology:
                 if stanza_type == "Term":
                     term = _parse_term_stanza(stanza_lines)
                     if term:
-                        terms[term.id] = term
+                        terms[term.term_id] = term
                 elif stanza_type == "Typedef":
                     # Handle typedefs (relationship types)
                     typedef_info = _parse_typedef_stanza(stanza_lines)
@@ -283,7 +283,7 @@ def parse_obo(path: str | Path) -> Ontology:
         if stanza_type == "Term":
             term = _parse_term_stanza(stanza_lines)
             if term:
-                terms[term.id] = term
+                terms[term.term_id] = term
         elif stanza_type == "Typedef":
             typedef_info = _parse_typedef_stanza(stanza_lines)
             if typedef_info:
@@ -477,7 +477,7 @@ def _extract_relationships_from_terms(terms: Dict[str, Term]) -> List[Relationsh
     for term in terms.values():
         if "relationships" in term.metadata:
             for rel_type, target_id in term.metadata["relationships"]:
-                relationship = create_relationship(source=term.id, target=target_id, relation_type=rel_type)
+                relationship = create_relationship(source=term.term_id, target=target_id, relation_type=rel_type)
                 relationships.append(relationship)
 
     return relationships

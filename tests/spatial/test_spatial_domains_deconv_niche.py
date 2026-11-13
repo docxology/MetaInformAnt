@@ -1,6 +1,6 @@
 """Round-4 test-depth tests for spatial analysis, deconvolution, and niche identification.
 
-Covers previously untested public APIs:
+Covers these public APIs:
 - analysis.clustering: spatial_domains, spatial_cluster (all methods),
   build_spatial_graph (knn/delaunay/radius)
 - deconvolution.spatial_deconvolution: deconvolve_spots, build_reference_profiles,
@@ -271,7 +271,7 @@ class TestNichesThatNoSpotJoins:
             assert np.isfinite(result.niche_diversity[k])
 
     def test_niche_identification_survives_fewer_distinct_spots_than_niches(self) -> None:
-        """k-means++ used to hand numpy all-zero sampling weights here ('probabilities do not sum to 1')."""
+        """k-means++ does not hand numpy all-zero sampling weights here ('probabilities do not sum to 1')."""
         proportions, coordinates = self._two_distinct_profiles()
 
         result = niche_identification(proportions, [tuple(c) for c in coordinates], n_niches=3, seed=0)

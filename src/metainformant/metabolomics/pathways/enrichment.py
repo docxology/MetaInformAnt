@@ -112,8 +112,8 @@ def _hypergeometric_pvalue(k: int, K: int, n: int, N: int) -> float:
 
     Raises:
         ValueError: If the arguments do not describe a draw from a population (``K`` or ``n``
-            negative or larger than ``N``). Such a call used to return 0.0, the most
-            significant p-value possible, for what is really an invalid ``background_size``.
+            negative or larger than ``N``), rather than returning 0.0, the most significant
+            p-value possible, for what is really an invalid ``background_size``.
     """
     if N < 0 or not 0 <= K <= N or not 0 <= n <= N:
         raise ValueError(

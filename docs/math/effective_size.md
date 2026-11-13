@@ -40,20 +40,19 @@ ne = harmonic_mean_effective_size(sizes)
 # Returns: ~842.1 (harmonic mean)
 ```
 
-### `effective_size_sex_ratio(male_size, female_size, sex_ratio=0.5)`
+### `effective_size_sex_ratio(male_size, female_size)`
 
 Calculate effective population size for unequal numbers of breeding males and females.
 
 **Parameters**:
 - `male_size`: Number of breeding males (Nm; must be positive)
 - `female_size`: Number of breeding females (Nf; must be positive)
-- `sex_ratio`: Proportion of the population that is male (default 0.5; must be strictly between 0 and 1). It is validated but does not enter the formula: the breeding sex ratio is already given by `male_size` and `female_size`, so every `sex_ratio` returns the same Ne
 
 **Returns**: Effective population size (float)
 
-**Raises**: `ValueError` if either size is not positive or `sex_ratio` is not strictly between 0 and 1
+**Raises**: `ValueError` if either size is not positive
 
-**Formula**: Ne = 4 × Nm × Nf / (Nm + Nf) (Wright 1931), whatever the `sex_ratio` argument. It equals the census size Nm + Nf when Nm = Nf, falls below it as the sexes diverge, never exceeds it, and is symmetric in the two sexes.
+**Formula**: Ne = 4 × Nm × Nf / (Nm + Nf) (Wright 1931). It equals the census size Nm + Nf when Nm = Nf, falls below it as the sexes diverge, never exceeds it, and is symmetric in the two sexes.
 
 **Example**:
 ```python
@@ -66,10 +65,6 @@ ne_equal = effective_size_sex_ratio(100, 100)
 # Unequal sex ratio (more females)
 ne_unequal = effective_size_sex_ratio(10, 90)
 # Returns: 36.0 (much smaller than census size of 100)
-
-# sex_ratio is checked but ignored by the formula
-ne_same = effective_size_sex_ratio(100, 100, sex_ratio=0.3)
-# Returns: 200.0
 ```
 
 ### `effective_population_size_from_heterozygosity(heterozygosity, mutation_rate=1e-8)`

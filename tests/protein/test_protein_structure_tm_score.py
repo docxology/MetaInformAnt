@@ -369,7 +369,7 @@ def test_chain_and_insertion_code_are_part_of_the_residue_label() -> None:
         calculate_structural_similarity(first, second)
 
     with_icode = ca_structure(coords)
-    with_icode["atoms"][5]["icode"] = "A"  # residue 6 becomes 6A: it no longer pairs with residue 6
+    with_icode["atoms"][5]["icode"] = "A"  # residue 6 becomes 6A, which does not pair with residue 6
     assert calculate_structural_similarity(first, with_icode)["n_aligned"] == 29
 
 

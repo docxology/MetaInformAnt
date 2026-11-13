@@ -32,7 +32,6 @@ from metainformant.rna.engine.campaign_lock import (
     read_owner,
     writer_status,
 )
-from metainformant.rna.engine.completion_inventory import freeze_inventory
 from metainformant.rna.engine.streaming_orchestrator import (
     StreamingPipelineOrchestrator,
     producer_exit_code_for_exception,
@@ -54,14 +53,6 @@ from metainformant.rna.engine.campaign_lock import acquire, writer_status
 lock = acquire(sys.argv[1], "producer")
 status = writer_status(sys.argv[1])
 print("inside", os.getpid(), lock.inherited, status["inside_lock"], status["quiescent"], flush=True)
-time.sleep(600)
-"""
-
-ACQUISITION_FLOCK = """
-import fcntl, sys, time
-handle = open(sys.argv[1], "a")
-fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-print("held", flush=True)
 time.sleep(600)
 """
 
@@ -261,69 +252,6 @@ def test_run_wrapper_propagates_the_child_exit_code(data_root: Path) -> None:
     assert is_quiescent(data_root)
 
 
-def test_live_launcher_directory_lock_blocks_and_stale_or_ancestor_ones_do_not(data_root: Path) -> None:
-    lock_dir = data_root / "results" / ".full_campaign.lock"
-    lock_dir.mkdir(parents=True)
-    sleeper = _python("import time; print('up', flush=True); time.sleep(600)")
-    try:
-        _first_line(sleeper)
-        (lock_dir / "pid").write_text(f"{sleeper.pid}\n")
-        with pytest.raises(CampaignLockBusy, match=r"full_campaign\.lock \(live launcher process, pid"):
-            acquire(data_root, "producer")
-        assert not (data_root / LOCK_FILENAME).exists()  # refused before anything was created
-        status = writer_status(data_root)
-        assert not status["quiescent"] and status["other_writers"][0]["pid"] == sleeper.pid
-        assert _lock_cli("status", "--data-root", str(data_root)).returncode == EXIT_LOCK_BUSY
-    finally:
-        _kill(sleeper)
-    # A dead launcher's leftover directory is not a writer.
-    with acquire_writer(data_root, "producer"):
-        pass
-    # The launcher that started this producer (an ancestor) is not another writer.
-    (lock_dir / "pid").write_text(f"{os.getppid()}\n")
-    with acquire_writer(data_root, "producer"):
-        pass
-    # Between the launcher's mkdir and its pid write: busy for a grace period, then ignored.
-    (lock_dir / "pid").unlink()
-    os.utime(lock_dir, None)
-    with pytest.raises(CampaignLockBusy, match="without a pid file"):
-        acquire(data_root, "producer")
-    old = time.time() - 3600
-    os.utime(lock_dir, (old, old))
-    with acquire_writer(data_root, "producer"):
-        pass
-
-
-def test_held_acquisition_worker_flock_blocks_the_root(data_root: Path) -> None:
-    worker = _python(ACQUISITION_FLOCK, str(data_root / ".acquisition.lock"))
-    try:
-        assert _first_line(worker) == "held"
-        with pytest.raises(CampaignLockBusy, match=r"\.acquisition\.lock"):
-            acquire(data_root, "producer")
-        assert not is_quiescent(data_root)
-    finally:
-        _kill(worker)
-    assert (data_root / ".acquisition.lock").exists()  # an unheld lock file is not a writer
-    assert is_quiescent(data_root)
-    with acquire_writer(data_root, "producer"):
-        pass
-
-
-def test_freeze_inventory_refuses_while_another_writer_holds_the_root(data_root: Path, tmp_path: Path) -> None:
-    holder = _python(HOLDER, str(data_root), "producer")
-    try:
-        _first_line(holder)
-        with pytest.raises(RuntimeError, match="another writer holds the data root"):
-            freeze_inventory(data_root, tmp_path / "config", tmp_path / "snapshot", expected_species_count=None)
-        assert not (tmp_path / "snapshot").exists()
-    finally:
-        _kill(holder)
-    # The former check looked for ``<root>/.full_campaign.lock``; the launcher's lock lives under results/.
-    (data_root / "results" / ".full_campaign.lock").mkdir(parents=True)
-    with pytest.raises(RuntimeError, match="another writer holds the data root"):
-        freeze_inventory(data_root, tmp_path / "config", tmp_path / "snapshot", expected_species_count=None)
-
-
 KIND_CHILD = """
 import os, sys
 from metainformant.rna.engine.campaign_lock import FD_ENV, CampaignLockBusy, acquire, lock_path
@@ -375,26 +303,3 @@ def test_a_token_does_not_let_another_kind_write_inside_a_producer(data_root: Pa
     assert result.returncode == EXIT_LOCK_BUSY
     assert "may not run inside it" in result.stdout
     assert is_quiescent(data_root)
-
-
-def test_the_acquisition_worker_refuses_a_root_another_writer_holds(data_root: Path) -> None:
-    from metainformant.rna.engine.acquisition_worker import run_manifest
-
-    holder = _python(HOLDER, str(data_root), "producer")
-    try:
-        _first_line(holder)
-        with pytest.raises(CampaignLockBusy, match="locked by another writer"):
-            run_manifest(
-                manifest_path=data_root / "manifest.jsonl",
-                data_root=data_root,
-                config_dir=data_root,
-                workers=1,
-                threads=1,
-                fastq_threads=1,
-                compression_threads=1,
-                validation_slots=1,
-            )
-        # Refused before it touched anything: not even its own flock file was created.
-        assert not (data_root / ".acquisition.lock").exists()
-    finally:
-        _kill(holder)

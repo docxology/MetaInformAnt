@@ -191,14 +191,13 @@ class TestMultiOmicsData:
         rna_data = pd.DataFrame({"g1": [1, 3], "g2": [2, 4]}, index=["s1", "s2"])
         protein_data = pd.DataFrame({"p1": [0.5, 1.5], "p2": [1.0, 2.0]}, index=["s1", "s2"])
 
-        mo = MultiOmicsData(rna_data=rna_data, protein_data=protein_data)
+        mo = MultiOmicsData(data={"transcriptomics": rna_data, "proteomics": protein_data})
 
-        assert mo is not None
-        # Check that data was stored (attribute names may vary)
-        assert hasattr(mo, "data") or hasattr(mo, "rna_data") or hasattr(mo, "_rna_data")
+        assert sorted(mo.layer_names) == ["proteomics", "transcriptomics"]
+        assert mo.samples == ["s1", "s2"]
 
-    def test_get_common_samples(self):
-        """Test getting common samples across omics."""
+    def test_common_samples(self):
+        """Test that samples lists the samples common to all omics layers."""
         import pandas as pd
 
         from metainformant.multiomics.analysis.integration import MultiOmicsData
@@ -207,11 +206,9 @@ class TestMultiOmicsData:
         rna_data = pd.DataFrame({"g1": [1, 3, 5], "g2": [2, 4, 6]}, index=["s1", "s2", "s3"])
         protein_data = pd.DataFrame({"p1": [0.5, 1.5], "p2": [1.0, 2.0]}, index=["s1", "s2"])
 
-        mo = MultiOmicsData(rna_data=rna_data, protein_data=protein_data)
-        common = mo.get_common_samples()
-
+        mo = MultiOmicsData(data={"transcriptomics": rna_data, "proteomics": protein_data})
         # Should find s1, s2 as common
-        assert len(common) >= 2
+        assert sorted(mo.samples) == ["s1", "s2"]
 
 
 if __name__ == "__main__":

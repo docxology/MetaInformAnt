@@ -5,9 +5,9 @@ dependency and carry a pure-Python branch for installs without it. Both branches
 must compute the same statistics. The numpy branch uses the true median (the mean
 of the two middle values for an even count), a sample standard deviation that
 defaults to 100 for a single observation, and median-centred log2 ratios with
-optional GC correction. The pure-Python branches used to take the upper median,
-reported a zero standard deviation for a single insert size and returned raw,
-uncorrected log2 ratios.
+optional GC correction. The pure-Python branches do the same: they do not take
+the upper median, report a zero standard deviation for a single insert size or
+return raw, uncorrected log2 ratios.
 
 Every scenario runs the real code twice: in this process (numpy available) and in
 a fresh interpreter in which the four modules are imported while ``import numpy``

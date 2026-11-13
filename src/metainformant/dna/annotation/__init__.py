@@ -8,9 +8,10 @@ scoring, domain identification).
 
 from __future__ import annotations
 
-from . import functional, gene_prediction
+from . import functional, gene_annotation, gene_finding
 
 __all__ = [
-    "gene_prediction",
     "functional",
+    "gene_annotation",
+    "gene_finding",
 ]

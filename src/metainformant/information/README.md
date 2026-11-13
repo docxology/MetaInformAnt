@@ -27,7 +27,8 @@ graph TD
         MC --> |continuous.py| DE[Differential Entropy]
         MC --> |estimation.py| EST[Estimators]
 
-        MA[metrics/advanced/] --> |geometry.py| FG[Fisher-Rao, Hellinger]
+        MA[metrics/advanced/] --> |fisher_rao.py| FG[Fisher-Rao, Hellinger]
+        MA --> |information_projection.py| IP[Projection, Divergences]
         MA --> |channel.py| CH[Channel Capacity]
         MA --> |hypothesis.py| HT[Permutation Tests]
         MA --> |decomposition.py| DC[PID, Synergy]
@@ -60,10 +61,10 @@ graph TD
 
 | Function | Module | Description |
 |----------|--------|-------------|
-| `fisher_rao_distance` | `metrics.advanced.geometry` | Geodesic distance on statistical manifolds |
-| `channel_capacity` | `metrics.advanced.geometry` | Blahut-Arimoto channel capacity |
-| `information_bottleneck` | `metrics.advanced.geometry` | Information bottleneck compression |
-| `hellinger_distance` | `metrics.advanced.geometry` | Hellinger distance between distributions |
+| `fisher_rao_distance` | `metrics.advanced.fisher_rao` | Geodesic distance on statistical manifolds |
+| `channel_capacity` | `metrics.advanced.information_projection` | Blahut-Arimoto channel capacity |
+| `information_bottleneck` | `metrics.advanced.information_projection` | Information bottleneck compression |
+| `hellinger_distance` | `metrics.advanced.fisher_rao` | Hellinger distance between distributions |
 | `jensen_shannon_divergence` | `metrics.core.syntactic` | Symmetric divergence measure |
 
 ## Submodules
@@ -80,7 +81,7 @@ graph TD
 ```python
 from metainformant.information.metrics.core.syntactic import shannon_entropy, mutual_information, kl_divergence
 from metainformant.information.metrics.core.continuous import differential_entropy
-from metainformant.information.metrics.advanced.geometry import fisher_rao_distance
+from metainformant.information.metrics.advanced.fisher_rao import fisher_rao_distance
 from metainformant.information.workflow.workflows import batch_entropy_analysis
 
 # Shannon entropy of a nucleotide distribution

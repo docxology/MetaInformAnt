@@ -26,7 +26,7 @@ Comprehensive GWAS plotting organized into subpackages: core plots (Manhattan, Q
 | `effect_size_plot()` | Beta coefficient forest plot with confidence intervals |
 | `generate_all_plots()` | Manhattan and Q-Q plots from association results (records, a DataFrame, or a `.json`, `.tsv`, `.txt` or `.csv` file) plus PCA and kinship plots from JSON files; returns a `{plot name: path}` mapping. The larger suite is `interactive/suite.py` |
 | `missingness_plot()` | Sample/variant missingness rate visualization |
-| `functional_enrichment_plot()` | Bar chart of the genome-wide significant variants per chromosome (`gff_path` is accepted but not read). The category-based plot, which uses annotations you supply, is `statistical/effects.py::functional_enrichment_plot` |
+| `functional_enrichment_plot()` | Bar chart of the genome-wide significant variants per chromosome. The category-based plot, which uses annotations you supply, is `statistical/effects.py::functional_enrichment_plot` |
 
 ## Usage
 

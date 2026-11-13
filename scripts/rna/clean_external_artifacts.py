@@ -135,14 +135,15 @@ def _legacy_quant_candidates(data_root: Path, keep_paths: set[Path]) -> list[Pat
     return selected
 
 
-def _active_writer_lock(data_root: Path) -> Path | None:
-    """Return an active campaign/finalization lock, if one exists."""
+def _active_writer(data_root: Path) -> str | None:
+    """Describe the campaign writer holding ``data_root``, or ``None`` when it is quiescent."""
 
-    for lock_name in (".full_campaign.lock", ".finalization.lock"):
-        lock_dir = data_root / "results" / lock_name
-        if lock_dir.exists():
-            return lock_dir
-    return None
+    from metainformant.rna.engine.campaign_lock import writer_status
+
+    status = writer_status(data_root)
+    if status["quiescent"]:
+        return None
+    return str(status["lock_path"])
 
 
 def _size(path: Path) -> int:
@@ -184,9 +185,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.legacy_quant_only and (args.clear_stale_results or args.archive_superseded_alias):
         raise SystemExit("--legacy-quant-only cannot be combined with stale-results or alias archival")
     if args.archive_legacy_quant and args.execute:
-        active_lock = _active_writer_lock(data_root)
+        active_lock = _active_writer(data_root)
         if active_lock is not None:
-            raise SystemExit("refusing legacy quant archival while an active writer lock exists: " f"{active_lock}")
+            raise SystemExit(f"refusing legacy quant archival while an active writer lock exists: {active_lock}")
 
     candidates = [] if args.legacy_quant_only else _candidates(data_root, args.clear_stale_results, keep_paths)
     if args.archive_legacy_quant:

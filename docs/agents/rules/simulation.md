@@ -103,7 +103,7 @@ from metainformant.simulation.models.popgen import (
 
 sequences = generate_population_sequences(
     n_sequences=50,
-    sequence_length=1000,
+    length=1000,
     nucleotide_diversity=0.01
 )
 ```

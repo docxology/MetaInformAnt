@@ -5,7 +5,7 @@ hypothesis testing, channel capacity, and information geometry modules.
 
 Subpackages:
     core/       - syntactic, continuous, estimation
-    advanced/   - semantic, geometry, channel, hypothesis, decomposition
+    advanced/   - semantic, fisher_rao, information_projection, channel, hypothesis, decomposition
     analysis/   - analysis, advanced_analysis"""
 
 from __future__ import annotations

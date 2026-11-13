@@ -94,7 +94,7 @@ def load_epigenome_config(config_path: str | Path | None = None) -> EpigenomeCon
 
     if config_path:
         try:
-            config_data = config.load_config_file(Path(config_path))
+            config_data = config.load_mapping_from_file(config_path)
             return EpigenomeConfig(**config_data)
         except Exception as e:
             logger.warning(f"Failed to load config from {config_path}: {e}")
@@ -688,7 +688,7 @@ def _first_data_line_columns(file_path: Path) -> Optional[int]:
                 if not line or line.startswith(("#", "track", "browser")):
                     continue
                 return len(line.split("\t"))
-    except (OSError, EOFError, UnicodeDecodeError):
+    except OSError, EOFError, UnicodeDecodeError:
         return None
     return None
 
@@ -789,9 +789,8 @@ def _peak_extent(peak: Dict[str, Any]) -> Optional[Tuple[Any, Any, Any]]:
     """The ``(chromosome, start, end)`` of a peak dict, or ``None`` when it cannot be placed on a chromosome.
 
     The chromosome is ``chrom`` or ``chromosome``, the start ``start`` or ``position``. A peak without an ``end`` is
-    a single position and spans ``start`` to ``start + 1`` (a ``start`` of 0 included: it used to crash the
-    analysis). A peak is unplaceable when it has no chromosome, a start or end that is not a finite number, or an
-    end before its start.
+    a single position and spans ``start`` to ``start + 1`` (a ``start`` of 0 included). A peak is unplaceable when
+    it has no chromosome, a start or end that is not a finite number, or an end before its start.
     """
     chromosome = peak.get("chrom", peak.get("chromosome"))
     start = peak.get("start", peak.get("position"))

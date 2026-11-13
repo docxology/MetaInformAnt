@@ -55,10 +55,8 @@ class TestDNAAlignment:
             alignment.local_align("ACGT", "")
 
     def test_alignment_result_dataclass(self):
-        """AlignmentResult exposes aligned/seq1_aligned style accessors."""
+        """AlignmentResult exposes the gapped sequences and the score."""
         result = alignment.AlignmentResult("ATCG", "ATCG", 4.0)
         assert result.seq1_aligned == "ATCG"
         assert result.seq2_aligned == "ATCG"
         assert result.score == 4.0
-        assert result.aligned_seq1 == "ATCG"
-        assert result.aligned_seq2 == "ATCG"

@@ -21,7 +21,6 @@ Scripts are **thin wrappers** around `src/metainformant/` modules:
 
 ```
 scripts/
- cloud/           # Cloud deployment and sync utilities
  core/            # Core utility scripts
  dna/             # DNA analysis workflows
  ecology/         # Ecology analysis scripts

@@ -27,23 +27,8 @@ def breeders_equation_response(heritability: float, selection_differential: floa
     return heritability * selection_differential
 
 
-def kin_selection_response(
-    relatedness: float | None = None,
-    benefit: float | None = None,
-    cost: float | None = None,
-    *,
-    r: float | None = None,
-    b: float | None = None,
-    c: float | None = None,
-    individual_fitness: float | None = None,
-    kin_fitness: float | None = None,
-) -> float:
+def kin_selection_response(relatedness: float, benefit: float, cost: float) -> float:
     """Calculate kin selection response using Hamilton's rule.
-
-    Supports multiple calling conventions:
-    - kin_selection_response(r, b, c) - relatedness, benefit, cost
-    - kin_selection_response(relatedness=r, benefit=b, cost=c)
-    - kin_selection_response(individual_fitness=cost, kin_fitness=benefit) - legacy keyword form
 
     Hamilton's rule: r*b - c > 0 for altruism to evolve
 
@@ -51,39 +36,18 @@ def kin_selection_response(
         relatedness: Coefficient of relatedness (r)
         benefit: Fitness benefit to kin (b)
         cost: Fitness cost to individual (c)
-        r, b, c: Aliases for relatedness, benefit, cost
-        individual_fitness: Legacy alias for cost
-        kin_fitness: Legacy alias for benefit
 
     Returns:
         Net selection response (r*b - c)
     """
-    # Handle parameter aliases
-    if r is not None:
-        relatedness = r
-    if b is not None:
-        benefit = b
-    if c is not None:
-        cost = c
-    if individual_fitness is not None and cost is None:
-        cost = individual_fitness
-    if kin_fitness is not None and benefit is None:
-        benefit = kin_fitness
-
-    if relatedness is None or benefit is None or cost is None:
-        raise ValueError("Must provide relatedness, benefit, and cost")
-
     # Hamilton's rule: rb - c > 0
     return relatedness * benefit - cost
 
 
 def mutation_update(
     allele_frequency: float,
-    mutation_rate_forward: float | None = None,
-    mutation_rate_backward: float | None = None,
-    *,
-    mu: float | None = None,
-    nu: float | None = None,
+    mutation_rate_forward: float,
+    mutation_rate_backward: float,
 ) -> float:
     """Update allele frequency due to mutation.
 
@@ -97,12 +61,6 @@ def mutation_update(
     """
     if not (0 <= allele_frequency <= 1):
         raise ValueError("Allele frequency must be between 0 and 1")
-    if mu is not None:
-        mutation_rate_forward = mu
-    if nu is not None:
-        mutation_rate_backward = nu
-    if mutation_rate_forward is None or mutation_rate_backward is None:
-        raise ValueError("Forward and backward mutation rates are required")
 
     # Mutation balance: Δp = -u*p + v*(1-p)
     delta_p = -mutation_rate_forward * allele_frequency + mutation_rate_backward * (1 - allele_frequency)

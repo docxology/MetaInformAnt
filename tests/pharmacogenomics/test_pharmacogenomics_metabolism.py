@@ -2,7 +2,7 @@
 
 Tests metabolizer classification from activity scores, activity score computation
 from diplotype strings, the built-in allele function table, dose adjustment
-recommendations, and the predict_metabolizer alias.
+recommendations, and the package-level export of predict_metabolizer_status.
 
 REAL IMPLEMENTATION -- all tests use real implementations.
 """
@@ -11,8 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-# Also test the alias from the package __init__
-from metainformant.pharmacogenomics import predict_metabolizer
+import metainformant.pharmacogenomics as pharmacogenomics
 from metainformant.pharmacogenomics.metabolism.metabolizer_status import (
     classify_metabolizer,
     compute_activity_score,
@@ -198,17 +197,9 @@ class TestPredictMetabolizerStatus:
         assert result["phenotype"] == "rapid"
 
 
-class TestPredictMetabolizerAlias:
-    """Tests that predict_metabolizer alias works the same as predict_metabolizer_status."""
+class TestPackageExport:
+    """The package exports the metabolism module's predict_metabolizer_status."""
 
-    def test_alias_returns_same_result(self) -> None:
-        genotype = {"diplotype": "*1/*4"}
-        result_alias = predict_metabolizer(genotype, "CYP2D6")
-        result_orig = predict_metabolizer_status(genotype, "CYP2D6")
-        assert result_alias == result_orig
-
-    def test_alias_is_callable(self) -> None:
-        assert callable(predict_metabolizer)
-        genotype = {"diplotype": "*4/*4"}
-        result = predict_metabolizer(genotype, "CYP2D6")
-        assert result["phenotype"] == "poor"
+    def test_package_export_is_the_metabolism_function(self) -> None:
+        assert pharmacogenomics.predict_metabolizer_status is predict_metabolizer_status
+        assert pharmacogenomics.predict_metabolizer_status({"diplotype": "*4/*4"}, "CYP2D6")["phenotype"] == "poor"

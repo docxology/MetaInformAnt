@@ -112,8 +112,8 @@ def call_methylation_from_signal(
 
     Raises:
         ValueError: If model is unrecognized, an entry has no
-            ``log_likelihood_ratio`` (a missing LLR used to count as 0.0, a probability
-            of 0.5, which the default threshold calls methylated), or (``"bayesian"`` only)
+            ``log_likelihood_ratio`` (counting a missing LLR as 0.0, a probability of
+            0.5, would make the default threshold call it methylated), or (``"bayesian"`` only)
             a prior parameter is below 0.25.
         ImportError: If model is ``"bayesian"`` and numpy is not installed.
     """
@@ -184,9 +184,9 @@ def aggregate_methylation(
             - ``mean_coverage``: Mean coverage across reported sites.
 
     Raises:
-        ValueError: If min_coverage < 1, or a call has no ``position`` or no ``methylated`` (they
-            used to default to position 0 and unmethylated, which put the call at a site it was
-            never made at, or counted a missing call as unmethylated).
+        ValueError: If min_coverage < 1, or a call has no ``position`` or no ``methylated`` (defaults
+            of position 0 and unmethylated would put the call at a site it was never made at, or
+            count a missing call as unmethylated).
     """
     if min_coverage < 1:
         raise ValueError("min_coverage must be at least 1")

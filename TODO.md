@@ -138,9 +138,6 @@ runs where that tree exists.
   `uv run python -m beewas.gwas.guarded ...`.
 - Keep runtime outputs under `output/`, `results/`, or documented data/output
   directories.
-- For the live Hymenoptera cloud campaign, reattach an interrupted controller
-  with `--skip-bundle-upload` and the original state/source/input IDs; never
-  rebuild or overwrite an immutable source object under an existing run ID.
 - Do not convert curation evidence into biological, causal, gene-function,
   replication, breeding, or final heritability claims without a reviewed
   decision artifact.
@@ -165,7 +162,7 @@ for fn in (replicator_derivative,replicator_step):
  try: fn([0.0,0.0],A)
  except ValueError: pass
  else: raise AssertionError(f"{fn.__name__} accepted zero total frequency")'`. Dependencies/constraints: coordinate with WFZ-20261110-01 because both change the same functions; retain normalization for valid nonzero inputs and avoid changing the documented return type.
-- [ ] **WFZ-20261110-03 — P2: Enforce the dominant mutation-selection equilibrium domain.** Observable outcome: nonpositive selection, negative mutation/selection inputs, and non-finite results are rejected explicitly; the zero-selection case no longer escapes as a raw `ZeroDivisionError`, and estimates above frequency 1 are not returned as valid probabilities. Evidence: `src/metainformant/math/population_genetics/core.py:92-106` documents q=μ/s but returns the division without validation, unlike the explicit domain checks at `src/metainformant/math/population_genetics/core.py:57-62` and `src/metainformant/math/population_genetics/core.py:79-82`. Acceptance probe from repository root: `uv run python -c 'from metainformant.math.population_genetics.core import mutation_selection_balance_dominant as f; import math; assert f(0.01,0.1)==0.1;
+- [ ] **WFZ-20261110-03 — P2: Enforce the dominant mutation-selection equilibrium domain.** Observable outcome: nonpositive selection, negative mutation/selection inputs, and non-finite results are rejected explicitly; the zero-selection case raises a clear `ValueError` instead of escaping as a raw `ZeroDivisionError`, and estimates above frequency 1 are not returned as valid probabilities. Evidence: `src/metainformant/math/population_genetics/core.py:92-106` documents q=μ/s but returns the division without validation, unlike the explicit domain checks at `src/metainformant/math/population_genetics/core.py:57-62` and `src/metainformant/math/population_genetics/core.py:79-82`. Acceptance probe from repository root: `uv run python -c 'from metainformant.math.population_genetics.core import mutation_selection_balance_dominant as f; import math; assert f(0.01,0.1)==0.1;
 for args in ((0.01,0.0),(0.01,-0.1),(-0.01,0.1),(0.2,0.1),(float("nan"),0.1)):
  try: f(*args)
  except ValueError: pass

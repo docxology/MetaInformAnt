@@ -250,5 +250,5 @@ ne_model = bottleneck_effective_size(10000, 100, 10000)
 
 - [`math.effective_size`](effective_size.md) - Effective population size estimators
 - [`math.population_genetics.coalescent`](coalescent.md) - Coalescent theory and expected diversity
-- [`math.popgen`](../math/popgen.md) - Population genetics models
+- [Math population genetics](../math/popgen.md) - Population genetics models
 

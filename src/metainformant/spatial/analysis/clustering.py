@@ -235,7 +235,7 @@ def _leiden(
     try:
         import igraph as ig
         import leidenalg
-    except (ImportError, SyntaxError):
+    except ImportError, SyntaxError:
         # Some leidenalg releases fail during import because of an invalid escape in an upstream docstring
         return _greedy_fallback(
             adj,

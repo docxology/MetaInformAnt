@@ -305,13 +305,6 @@ class TestAssessBinQuality:
         assert assessed[0].contamination is None
         assert assessed[0].quality_score is None
 
-    def test_sequences_alone_do_not_yield_quality(self) -> None:
-        contigs = {"c1": "ATCGATCGATCG" * 1000}
-        bins = [GenomeBin(bin_id="b1", contig_ids=["c1"], total_length=12000, num_contigs=1)]
-        assessed = assess_bin_quality(bins, contigs)
-        assert assessed[0].completeness is None
-        assert assessed[0].quality_score is None
-
     def test_empty(self) -> None:
         assert assess_bin_quality([]) == []
 
@@ -493,10 +486,9 @@ class TestBinQualityFromMarkerGenes:
     """Completeness and contamination come only from supplied marker annotations."""
 
     def test_three_kb_bin_is_never_scored_complete_without_markers(self) -> None:
-        """Any 3 kb bin of ordinary sequence used to score completeness 1.0 from composition alone."""
-        contigs = {"c1": _random_dna(3000, random.Random(1))}
+        """A 3 kb bin of ordinary sequence gets no completeness score from its size or composition."""
         genome_bin = GenomeBin("b1", ["c1"], total_length=3000, num_contigs=1)
-        assess_bin_quality([genome_bin], contigs)
+        assess_bin_quality([genome_bin])
         assert genome_bin.completeness is None
         assert genome_bin.contamination is None
         assert genome_bin.quality_score is None
@@ -563,7 +555,7 @@ class TestBinQualityFromMarkerGenes:
 
 
 class TestHighQualityBinCount:
-    """BinningResult.high_quality_bins used to stay at 0 regardless of the bins."""
+    """BinningResult.high_quality_bins counts the high-quality bins; it does not stay at 0."""
 
     CONTIGS = {"c1": "ATCG" * 500, "c2": "GCTA" * 500, "c3": "AAAA" * 500}
 
@@ -779,7 +771,7 @@ class TestAssemblyIsDeterministic:
 
 
 class TestProfileNoCommonAncestor:
-    """A read whose k-mers span taxa with no shared rank used to be counted as classified."""
+    """A read whose k-mers span taxa with no shared rank is not counted as classified."""
 
     @staticmethod
     def _references() -> tuple[dict[str, str], dict[str, list[tuple[str, str]]], str, str, str]:
