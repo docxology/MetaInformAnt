@@ -12,8 +12,8 @@ capacity checks; they are not remaining network-byte estimates. Stage journals
 remain operational evidence. Reused outputs are excluded from new-sample rate,
 and neither a larger frontier nor local fixtures establish a campaign speedup.
 
-The [working observation protocol](../../projects/hymenoptera_amalgkit/docs/manuscript/working_operational_update.md)
-describes explicit phase-bound tables, figures and an operational manuscript
+The observation bundle ([`scripts/rna/observe_acquisition.py`](../../scripts/rna/observe_acquisition.py))
+writes explicit phase-bound tables, figures and an operational manuscript
 supplement. These report producer startup counts separately from newly
 restore-verified outputs; they do not satisfy the full manuscript release gates.
 

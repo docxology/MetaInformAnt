@@ -85,7 +85,6 @@ serial probe attempts, including misses.
   `write_observation_bundle()` refuses live-root destinations and existing outputs.
   The thin entry point is `scripts/rna/observe_acquisition.py`; optional transfer
   observations are explicit inputs, never selected by modification time.
-  [Working observation protocol](../../../../projects/hymenoptera_amalgkit/docs/manuscript/working_operational_update.md).
 
 - `acquisition_*` implements generic frozen local/AWS manifest acquisition,
   disjoint allocations, stage-resource controls, replay journals, live regional
