@@ -22,6 +22,19 @@ killed while the child still writes) and exports the owner's random token as
 recorded token of the live holder is *inside* the lock: :func:`acquire_writer`
 returns an inherited handle and :func:`is_quiescent` reports quiescent.
 
+Inheritance also checks the kind: a child may request the holder's own kind,
+or a kind the holder's kind explicitly admits (:data:`INHERITABLE_KINDS`: a
+``launcher`` admits its ``producer`` and ``finalization`` passes). Anything
+else, for example a producer started from a shell that inherited a
+finalization holder's token, is refused as busy.
+
+**Writers outlive their own process.** The locked descriptor number is also
+exported (``METAINFORMANT_CAMPAIGN_LOCK_FD``) and :attr:`CampaignLock.child_fd`
+names it, so a writer can hand the descriptor to the tools it starts (the
+producer passes it to every transfer and quantification process group). The
+kernel keeps the flock while any of those processes lives, so an orphaned
+download or ``kallisto`` keeps the root locked after its parent is SIGKILLed.
+
 **In-process nesting.** A second :func:`acquire_writer` of the same ``kind``
 in the process that already holds the lock nests (reference counted); a
 different ``kind`` is refused, exactly as another process would be.
@@ -61,6 +74,10 @@ from typing import Any, Self
 LOCK_FILENAME = ".campaign.flock"
 LOCK_SCHEMA = "metainformant.rna.campaign_lock.v1"
 TOKEN_ENV = "METAINFORMANT_CAMPAIGN_LOCK_TOKEN"
+# The locked descriptor a child inherited from the holder (validated against the lock file before use).
+FD_ENV = "METAINFORMANT_CAMPAIGN_LOCK_FD"
+# Kinds a holder admits as token-inheriting children besides its own kind.
+INHERITABLE_KINDS: Mapping[str, frozenset[str]] = {"launcher": frozenset({"producer", "finalization"})}
 # Directory locks created by the shell launchers (mkdir + pid file).
 LEGACY_DIRECTORY_LOCKS = ("results/.full_campaign.lock", "results/.finalization.lock")
 # The manifest acquisition worker's flock (acquisition_worker.run_manifest).
@@ -69,6 +86,8 @@ FOREIGN_FLOCKS = (".acquisition.lock",)
 LEGACY_PIDLESS_GRACE_SECONDS = 60.0
 
 EXIT_OK = 0
+# Cohort mode: nothing more can run, but some cohort rows are held, quarantined or above max_gb (EX_DATAERR).
+EXIT_NEEDS_OPERATOR = 65
 EXIT_ENVIRONMENT = 69
 EXIT_INTERNAL = 70
 EXIT_LOCK_BUSY = 73
@@ -109,6 +128,7 @@ class CampaignLock:
     inherited: bool
     _key: str | None = field(default=None, repr=False)
     _released: bool = field(default=False, repr=False)
+    _inherited_fd: int | None = field(default=None, repr=False)
 
     @property
     def fd(self) -> int | None:
@@ -119,11 +139,31 @@ class CampaignLock:
         held = _HELD.get(self._key)
         return held.fd if held is not None else None
 
+    @property
+    def child_fd(self) -> int | None:
+        """A descriptor of the locked file this process can hand to children (own or inherited), else ``None``.
+
+        Passing it to a child (``pass_fds``) keeps the kernel flock held for as
+        long as that child lives, even after this process has died.
+        """
+
+        own = self.fd
+        if own is not None:
+            return own
+        if self._inherited_fd is not None and _descriptor_names_file(self._inherited_fd, self.path):
+            return self._inherited_fd
+        return None
+
     def child_environment(self, base: Mapping[str, str] | None = None) -> dict[str, str]:
-        """An environment whose processes are inside this lock (carries the holder token)."""
+        """An environment whose processes are inside this lock (carries the holder token and descriptor)."""
 
         environment = dict(os.environ if base is None else base)
         environment[TOKEN_ENV] = self.token
+        descriptor = self.child_fd
+        if descriptor is not None:
+            environment[FD_ENV] = str(descriptor)
+        else:
+            environment.pop(FD_ENV, None)
         return environment
 
     def release(self) -> None:
@@ -191,6 +231,35 @@ def read_owner(data_root: str | Path) -> dict[str, Any] | None:
         return _read_owner_fd(fd)
     finally:
         os.close(fd)
+
+
+def _descriptor_names_file(descriptor: int, path: Path) -> bool:
+    """True when ``descriptor`` is open in this process on the same file (device and inode) as ``path``."""
+
+    try:
+        opened = os.fstat(descriptor)
+        named = os.stat(path)
+    except OSError:
+        return False
+    return (opened.st_dev, opened.st_ino) == (named.st_dev, named.st_ino)
+
+
+def _inherited_descriptor(environment: Mapping[str, str], path: Path) -> int | None:
+    """The locked descriptor a holder handed to this process (``FD_ENV``), validated against the lock file."""
+
+    text = environment.get(FD_ENV, "").strip()
+    if not text.isdigit():
+        return None
+    descriptor = int(text)
+    return descriptor if _descriptor_names_file(descriptor, path) else None
+
+
+def may_inherit(owner_kind: str | None, kind: str) -> bool:
+    """Whether a token-carrying child may join a holder of ``owner_kind`` as a writer of ``kind``."""
+
+    if not owner_kind:
+        return False
+    return kind == owner_kind or kind in INHERITABLE_KINDS.get(owner_kind, frozenset())
 
 
 def _pid_alive(pid: int) -> bool:
@@ -342,8 +411,24 @@ def acquire(
         except BlockingIOError:
             owner = _read_owner_fd(fd)
             if token and owner is not None and secrets.compare_digest(str(owner.get("token", "")), token):
+                owner_kind = str(owner.get("kind") or "")
+                if not may_inherit(owner_kind, kind):
+                    raise CampaignLockBusy(
+                        f"campaign data root is held by a {owner_kind!r} writer whose token this process inherited; "
+                        f"a {kind!r} writer may not run inside it ({_describe(owner)}): {path}",
+                        holder=owner,
+                        path=path,
+                    ) from None
                 os.close(fd)
-                return CampaignLock(root, path, kind, token, owner, inherited=True)
+                return CampaignLock(
+                    root,
+                    path,
+                    kind,
+                    token,
+                    owner,
+                    inherited=True,
+                    _inherited_fd=_inherited_descriptor(environment, path),
+                )
             raise CampaignLockBusy(
                 f"campaign data root is locked by another writer ({_describe(owner)}): {path}", holder=owner, path=path
             ) from None
@@ -457,14 +542,15 @@ def _default_data_root() -> str | None:
 def _run_child(lock: CampaignLock, command: Sequence[str]) -> int:
     """Run ``command`` inside ``lock``: the child inherits the locked descriptor and the holder token."""
 
-    descriptor = lock.fd
+    descriptor = lock.child_fd
     pass_fds = (descriptor,) if descriptor is not None else ()
+    was_inheritable = os.get_inheritable(descriptor) if descriptor is not None else False
     if descriptor is not None:
         os.set_inheritable(descriptor, True)
     try:
         child = subprocess.Popen(list(command), env=lock.child_environment(), pass_fds=pass_fds)
     finally:
-        if descriptor is not None:
+        if descriptor is not None and not was_inheritable:
             os.set_inheritable(descriptor, False)
 
     def forward(signum: int, _frame: object) -> None:

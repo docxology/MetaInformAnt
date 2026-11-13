@@ -322,3 +322,56 @@ def test_freeze_inventory_refuses_while_another_writer_holds_the_root(data_root:
     (data_root / "results" / ".full_campaign.lock").mkdir(parents=True)
     with pytest.raises(RuntimeError, match="another writer holds the data root"):
         freeze_inventory(data_root, tmp_path / "config", tmp_path / "snapshot", expected_species_count=None)
+
+
+KIND_CHILD = """
+import os, sys
+from metainformant.rna.engine.campaign_lock import FD_ENV, CampaignLockBusy, acquire, lock_path
+try:
+    lock = acquire(sys.argv[1], sys.argv[2])
+except CampaignLockBusy as busy:
+    print("busy", busy)
+    sys.exit(73)
+descriptor = lock.child_fd
+same = descriptor is not None and os.fstat(descriptor).st_ino == os.stat(lock_path(sys.argv[1])).st_ino
+print("inherited", lock.inherited, "fd", same, "env", os.environ.get(FD_ENV) is not None)
+"""
+
+
+@pytest.mark.parametrize(
+    ("owner", "kind", "allowed"),
+    [
+        ("launcher", "producer", True),
+        ("launcher", "finalization", True),
+        ("launcher", "launcher", True),
+        ("producer", "producer", True),
+        ("producer", "import", False),
+        ("producer", "finalization", False),
+        ("launcher", "import", False),
+        (None, "producer", False),
+    ],
+)
+def test_token_inheritance_is_limited_by_kind(owner: str | None, kind: str, allowed: bool) -> None:
+    from metainformant.rna.engine.campaign_lock import may_inherit
+
+    assert may_inherit(owner, kind) is allowed
+
+
+def test_a_launcher_hands_its_locked_descriptor_to_the_producer_it_runs(data_root: Path) -> None:
+    result = _lock_cli(
+        "run", "--data-root", str(data_root), "--kind", "launcher", "--", sys.executable, "-c", KIND_CHILD,
+        str(data_root), "producer",
+    )  # fmt: skip
+    assert result.returncode == 0, result.stderr
+    # The producer joined the launcher's lock and holds a valid descriptor of it to pass to its own children.
+    assert result.stdout.strip() == "inherited True fd True env True"
+
+
+def test_a_token_does_not_let_another_kind_write_inside_a_producer(data_root: Path) -> None:
+    result = _lock_cli(
+        "run", "--data-root", str(data_root), "--kind", "producer", "--", sys.executable, "-c", KIND_CHILD,
+        str(data_root), "import",
+    )  # fmt: skip
+    assert result.returncode == EXIT_LOCK_BUSY
+    assert "may not run inside it" in result.stdout
+    assert is_quiescent(data_root)

@@ -35,6 +35,7 @@ from urllib.parse import urlsplit
 
 from metainformant.core.utils.hash import md5_file
 from metainformant.core.utils.logging import get_logger
+from metainformant.rna.retrieval import process_groups
 from metainformant.rna.retrieval.ena_transport import (
     ena_request_slot,
     validate_connection_budgets,
@@ -68,16 +69,42 @@ def _run_command_in_process_group(
     slot for the full ``timeout``. The raised
     :class:`subprocess.TimeoutExpired` carries ``output=b"stalled"`` so
     callers can distinguish a stall from a plain timeout.
+
+    Every group is registered in :mod:`metainformant.rna.retrieval.process_groups`
+    for its lifetime, so a stopping producer can signal it, and it inherits
+    the descriptors named there (the campaign writer lock). After the
+    producer began shutting down, no new group starts
+    (:class:`~metainformant.rna.retrieval.process_groups.ProcessGroupsStopping`).
     """
 
-    process = subprocess.Popen(
-        command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        start_new_session=True,
-        env=dict(env) if env is not None else None,
-    )
+    process = process_groups.spawn(command, env=env)
+    try:
+        return _wait_process_group(process, command, timeout, output_dirs=output_dirs, stall_timeout=stall_timeout)
+    finally:
+        if process.poll() is None:
+            # An exception (for example KeyboardInterrupt) left the group running: never orphan it.
+            for signum in (signal.SIGTERM, signal.SIGKILL):
+                try:
+                    os.killpg(process.pid, signum)
+                except (OSError, ProcessLookupError):
+                    break
+                try:
+                    process.wait(timeout=10)
+                    break
+                except subprocess.TimeoutExpired:
+                    continue
+        process_groups.unregister(process.pid)
+
+
+def _wait_process_group(
+    process: subprocess.Popen[str],
+    command: list[str],
+    timeout: float,
+    *,
+    output_dirs: list[Path] | None,
+    stall_timeout: int,
+) -> subprocess.CompletedProcess[str]:
+    """Wait for a registered process group (see :func:`_run_command_in_process_group`)."""
 
     def _terminate_group() -> tuple[str, str]:
         try:
