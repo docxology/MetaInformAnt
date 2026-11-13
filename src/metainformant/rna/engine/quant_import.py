@@ -705,6 +705,77 @@ def default_manifest_path(destination: Path, label: str) -> Path:
     return destination / "results" / "imports" / f"{_utc_stamp()}-{label}-{secrets.token_hex(3)}.jsonl"
 
 
+def _source_key(root: str | Path) -> str:
+    return os.path.normpath(os.path.abspath(os.path.expanduser(str(root))))
+
+
+def executed_imports(destination: str | Path, *, definition_sha256: str | None = None) -> dict[str, Any]:
+    """The ``--execute`` imports recorded in ``<destination>/results/imports/*.jsonl``; reads only.
+
+    Returns ``{"finished": {source_root: record}, "unfinished": [manifest, ...]}``.
+    ``finished`` maps each source root (absolute, normalised) to the latest
+    execute manifest that listed it and ran to its summary record: ``manifest``,
+    ``label``, ``cohort_definition_sha256``, ``finished_at`` and that run's
+    ``imported`` and ``failed`` counts. An execute manifest without a summary
+    (a killed import) is listed under ``unfinished``. With
+    ``definition_sha256`` only manifests of that cohort definition count. A
+    launcher uses this to refuse a first producer run that would recompute
+    outputs an import should have brought in.
+    """
+
+    directory = Path(destination) / "results" / "imports"
+    finished: dict[str, dict[str, Any]] = {}
+    unfinished: list[str] = []
+    try:
+        manifests = sorted(directory.glob("*.jsonl"))
+    except OSError:
+        manifests = []
+    for manifest in manifests:
+        header: dict[str, Any] | None = None
+        summary: dict[str, Any] | None = None
+        try:
+            with manifest.open("r", encoding="utf-8") as handle:
+                for line in handle:
+                    try:
+                        record = json.loads(line)
+                    except ValueError:
+                        continue  # a killed import can leave a partial last line
+                    if not isinstance(record, dict):
+                        continue
+                    if header is None:
+                        if record.get("kind") != "header" or record.get("mode") != "execute":
+                            break
+                        header = record
+                    elif record.get("kind") == "summary" and isinstance(record.get("execution"), dict):
+                        summary = record
+        except OSError:
+            continue
+        if header is None or header.get("schema") != IMPORT_SCHEMA:
+            continue
+        if definition_sha256 is not None and header.get("cohort_definition_sha256") != definition_sha256:
+            continue
+        if summary is None:
+            unfinished.append(str(manifest))
+            continue
+        execution = summary["execution"]
+        for source in header.get("sources") or ():
+            if not isinstance(source, dict) or not source.get("root"):
+                continue
+            key = _source_key(source["root"])
+            record = {
+                "manifest": str(manifest),
+                "label": source.get("label"),
+                "cohort_definition_sha256": header.get("cohort_definition_sha256"),
+                "finished_at": summary.get("finished_at"),
+                "imported": int(execution.get("imported", 0) or 0),
+                "failed": int(execution.get("failed", 0) or 0),
+            }
+            previous = finished.get(key)
+            if previous is None or str(record["finished_at"] or "") >= str(previous["finished_at"] or ""):
+                finished[key] = record
+    return {"finished": finished, "unfinished": unfinished}
+
+
 def _refuse_inside(path: Path, roots: Iterable[Path]) -> None:
     resolved = path.absolute().resolve()
     for root in roots:

@@ -37,6 +37,7 @@ from metainformant.rna.engine.quant_import import (
     ImportSource,
     ReceiptStore,
     execute_imports,
+    executed_imports,
     main,
     parse_receipt_store,
     parse_source,
@@ -342,3 +343,28 @@ def test_staging_left_by_a_killed_import_is_removed_without_a_new_import_decisio
 
     assert not [decision for decision in plan.decisions if decision.action == ACTION_IMPORTED]
     assert summary["stale_staging_removed"] == [stale.name] and not stale.exists()
+
+
+def test_executed_imports_lists_finished_runs_per_source_root(world: World, tmp_path: Path) -> None:
+    assert executed_imports(world.dest.base) == {"finished": {}, "unfinished": []}
+    # A dry run (plan manifest), even one written under the destination, is not an executed import.
+    plan = world.plan()
+    write_plan_manifest(plan, world.dest.base / "results" / "imports" / "dry-run.jsonl", [world.source])
+    assert executed_imports(world.dest.base)["finished"] == {}
+
+    _, manifest, summary = execute_imports(world.cohort, world.dest.base, [world.source], workers=1)
+    found = executed_imports(world.dest.base, definition_sha256=world.cohort.definition_sha256)
+    record = found["finished"][os.path.normpath(str(world.october.base.absolute()))]
+    assert record["manifest"] == str(manifest) and record["label"] == "october"
+    assert (record["imported"], record["failed"]) == (summary["imported"], summary["failed"]) == (1, 0)
+    assert found["unfinished"] == []
+    # Another cohort definition does not count.
+    assert executed_imports(world.dest.base, definition_sha256="0" * 64)["finished"] == {}
+
+    # A killed import: its manifest has a header and decisions but no summary (and maybe a torn last line).
+    lines = manifest.read_text(encoding="utf-8").splitlines()
+    killed = manifest.with_name("killed.jsonl")
+    killed.write_text("\n".join(lines[:-1]) + '\n{"kind": "deci', encoding="utf-8")
+    again = executed_imports(world.dest.base)
+    assert again["unfinished"] == [str(killed)]
+    assert again["finished"][os.path.normpath(str(world.october.base.absolute()))]["manifest"] == str(manifest)
