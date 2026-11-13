@@ -18,6 +18,7 @@ bytes still match. A different Amalgkit runtime is recorded as observed drift
 
 from __future__ import annotations
 
+import errno
 import functools
 import hashlib
 import importlib.metadata
@@ -26,6 +27,9 @@ import os
 import stat as stat_module
 import sys
 import tempfile
+import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -63,6 +67,55 @@ EVIDENCE_BINDING_WITNESS = "binding_witness"
 EVIDENCE_RESTORED_WITNESS = "restored_witness"
 EVIDENCE_LOCAL_RESTORE_PROOF = "local_restore_proof"
 EVIDENCE_REFERENCE_MANIFEST = "reference_manifest"
+# Not a verdict: a file the classification needed could not be read (I/O error, permission).
+QUANT_STATUS_UNAVAILABLE = "unavailable"
+# errnos that describe the content (nothing there, or not a regular file), never the medium.
+_ABSENT_ERRNOS = frozenset({errno.ENOENT, errno.ENOTDIR, errno.ELOOP, errno.EISDIR, errno.ENAMETOOLONG})
+_STRICT_READS = threading.local()
+
+
+class QuantificationReadError(OSError):
+    """A file a classification needs exists but could not be read: no verdict about the output is possible."""
+
+
+def is_unreadable_error(error: BaseException) -> bool:
+    """True for an ``OSError`` about the medium or permissions (EIO, EACCES, ...), not about absent content."""
+
+    if isinstance(error, QuantificationReadError):
+        return True
+    return isinstance(error, OSError) and error.errno is not None and error.errno not in _ABSENT_ERRNOS
+
+
+@contextmanager
+def strict_reads() -> Iterator[None]:
+    """In this thread, make classification raise :class:`QuantificationReadError` instead of judging unreadable files.
+
+    By default an unreadable sidecar, witness, manifest or index is folded
+    into a verdict (``legacy_unverified``, ``invalid``), which is right for a
+    one-off check but wrong for a recorded verdict: a USB hiccup during a
+    reconcile pass would quarantine a valid output. Reconcile classifies
+    inside this context and records nothing for an unreadable output.
+    """
+
+    previous = getattr(_STRICT_READS, "active", False)
+    _STRICT_READS.active = True
+    try:
+        yield
+    finally:
+        _STRICT_READS.active = previous
+
+
+def _raise_if_unreadable(error: BaseException, path: Path | str) -> None:
+    """Inside :func:`strict_reads`, turn an I/O or permission error on ``path`` into :class:`QuantificationReadError`."""
+
+    if not getattr(_STRICT_READS, "active", False) or not is_unreadable_error(error):
+        return
+    if isinstance(error, QuantificationReadError):
+        raise error
+    assert isinstance(error, OSError)
+    raise QuantificationReadError(
+        error.errno, f"cannot read {Path(path).name}: {error.strerror or error}", str(path)
+    ) from error
 
 
 # ---------------------------------------------------------------------------
@@ -262,7 +315,8 @@ def digest_file(path: Path) -> str | None:
 
     try:
         return sha256_file(path)
-    except OSError:
+    except OSError as error:
+        _raise_if_unreadable(error, path)
         return None
 
 
@@ -529,7 +583,10 @@ def _read_sidecar(sample_path: Path) -> tuple[bytes | None, dict[str, Any] | Non
     try:
         data = quant_provenance_path(sample_path).read_bytes()
         payload = json.loads(data)
-    except (OSError, json.JSONDecodeError, TypeError, UnicodeDecodeError):
+    except OSError as error:
+        _raise_if_unreadable(error, quant_provenance_path(sample_path))
+        return None, None
+    except (json.JSONDecodeError, TypeError, UnicodeDecodeError):
         return None, None
     return (data, payload) if isinstance(payload, dict) else (None, None)
 
@@ -541,7 +598,10 @@ def _read_json_object(path: Path) -> dict[str, Any] | None:
         if not stat_module.S_ISREG(path.lstat().st_mode):
             return None
         payload = json.loads(path.read_bytes())
-    except (OSError, json.JSONDecodeError, TypeError, UnicodeDecodeError):
+    except OSError as error:
+        _raise_if_unreadable(error, path)
+        return None
+    except (json.JSONDecodeError, TypeError, UnicodeDecodeError):
         return None
     return payload if isinstance(payload, dict) else None
 
@@ -599,7 +659,14 @@ def _find_reference_manifest(
     if not isinstance(expected, str):
         return None
     for candidate, mode in _reference_manifest_candidates(sample_path, payload):
-        if digests.digest_or_none(candidate) == expected:
+        try:
+            digest: str | None = digests.digest(candidate)
+        except OSError as error:
+            _raise_if_unreadable(error, candidate)
+            digest = None
+        except (ValueError, RuntimeError):
+            digest = None
+        if digest == expected:
             return candidate, mode
     return None
 
@@ -655,6 +722,7 @@ def _manifest_index_digests(
     try:
         key = ("manifest_index_digests", file_signature(manifest_path), mapping)
     except OSError as unreadable:
+        _raise_if_unreadable(unreadable, manifest_path)
         return frozenset(), f"reference manifest unreadable: {unreadable}"
     outcome: tuple[frozenset[str], str | None]
     cached = digests.memo.get(key)
@@ -684,7 +752,8 @@ def _manifest_index_digests(
                 digest = digests.digest(index)
                 if file_signature(index) != signature:
                     raise ValueError("index changed while hashing")
-            except (OSError, ValueError, RuntimeError):
+            except (OSError, ValueError, RuntimeError) as failure:
+                _raise_if_unreadable(failure, index)
                 error = f"reference index unavailable: {index.name}"
                 break
             signatures_seen.append((index, signature))
@@ -769,6 +838,7 @@ def classify_quantification(
     if Path(quant_name).is_absolute() or Path(quant_name).parent != Path("."):
         result.update(status=QUANT_STATUS_INVALID, reason="quantification file escapes sample directory")
         return result
+    result["quantification_file"] = quant_name
     if not quant_path.is_file():
         result.update(status=QUANT_STATUS_INVALID, reason="quantification file is missing")
         return result
@@ -804,6 +874,7 @@ def classify_quantification(
         try:
             local_config, local_reference = quantification_input_paths(sample_path, payload)
         except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError) as error:
+            _raise_if_unreadable(error, sample_path / RESTORED_INPUTS_DIR)
             result.update(status=QUANT_STATUS_INVALID, reason=f"invalid restored input witness: {error}")
             return result
         if digest_file(local_config.expanduser().resolve()) != config_hash:
@@ -974,6 +1045,7 @@ def _cohort_reference_evidence(
         try:
             local_config, local_reference = quantification_input_paths(sample_path, payload)
         except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError) as error:
+            _raise_if_unreadable(error, sample_path / RESTORED_INPUTS_DIR)
             return None, f"invalid restored input witness: {error}"
         if digest_file(local_config.resolve()) != expectation.config_sha256:
             return None, "restored configuration differs from the cohort configuration"
@@ -1069,9 +1141,11 @@ def classify_cohort_quantification(
         result.update(status=QUANT_STATUS_INVALID, reason="quantification file escapes sample directory")
         return result
     quant_path = sample_path / quant_name
+    result["quantification_file"] = quant_name
     try:
         quant_stat = quant_path.lstat()
-    except OSError:
+    except OSError as error:
+        _raise_if_unreadable(error, quant_path)
         result.update(status=QUANT_STATUS_INVALID, reason="quantification file is missing")
         return result
     if not stat_module.S_ISREG(quant_stat.st_mode):
@@ -1679,8 +1753,11 @@ def write_quant_provenance(
     kallisto version from the run's ``run_info.json``, plus portable fields
     (``config_name`` and ``reference_manifest_relpath``) next to the
     historical absolute paths. None of these enter the quantification
-    contract, so contract ids are unchanged. The file is fsynced before it
-    replaces the previous sidecar, and the directory entry is fsynced after.
+    contract, so contract ids are unchanged. The quantification outputs in
+    the sample directory (abundance table, ``.h5``, run info) are flushed to
+    stable storage first, so a crash can never leave a sidecar that vouches
+    for bytes still in the page cache. The sidecar is fsynced before it
+    replaces the previous one, and the directory entry is fsynced after.
     """
 
     sample_path = Path(sample_dir)
@@ -1739,6 +1816,77 @@ def write_quant_provenance(
         "command": command,
     }
     payload["quant_contract_id"] = quantification_contract_id(payload)
+    sync_sample_outputs(sample_path)
     destination = quant_provenance_path(sample_path)
     _atomic_write_bytes(destination, _json_document_bytes(payload))
     return destination
+
+
+def sync_sample_outputs(sample_dir: str | Path) -> int:
+    """Flush every regular file directly in ``sample_dir`` (not dot files) and the directory; return the count.
+
+    Raises ``OSError`` when a file cannot be flushed: a sidecar must not be
+    published over outputs that may not be on the disk.
+    """
+
+    sample_path = Path(sample_dir)
+    synced = 0
+    with os.scandir(sample_path) as entries:
+        names = sorted(
+            entry.name for entry in entries if not entry.name.startswith(".") and entry.is_file(follow_symlinks=False)
+        )
+    for name in names:
+        fd = os.open(sample_path / name, os.O_RDONLY)
+        try:
+            _durable_fsync(fd)
+        finally:
+            os.close(fd)
+        synced += 1
+    _fsync_directory(sample_path)
+    return synced
+
+
+def bind_produced_output(
+    sample_dir: str | Path,
+    expectation: CohortExpectation,
+    *,
+    index_digests: IndexDigestCache | None = None,
+) -> Path:
+    """Write the reference-binding witness for an output this producer just quantified under a cohort task.
+
+    The output is first judged with content verification against the
+    cohort task; the witness then records the sidecar's sha256 and the cohort
+    index sha256, so later reuse no longer depends on the mutable
+    ``reference_aliases.json`` staying byte-identical. Raises ``ValueError``
+    when the output does not verify (no witness is written).
+    """
+
+    sample_path = Path(sample_dir)
+    verdict = classify_cohort_quantification(sample_path, expectation, verify_content=True, index_digests=index_digests)
+    if verdict["status"] not in REUSABLE_QUANT_STATUSES:
+        raise ValueError(f"produced output does not verify against cohort {expectation.cohort_id}: {verdict['reason']}")
+    sidecar_bytes = quant_provenance_path(sample_path).read_bytes()
+    evidence = verdict.get("evidence") or {}
+    payload = reference_binding_payload(
+        sidecar_bytes,
+        json.loads(sidecar_bytes),
+        expectation,
+        {"kind": "produced", "verified_by": str(evidence.get("kind") or "unknown")},
+    )
+    return write_reference_binding(sample_path, payload)
+
+
+def discard_reference_binding(sample_dir: str | Path) -> bool:
+    """Remove the binding witness of an output that is about to be replaced; True when one was removed.
+
+    A witness names one sidecar's sha256: once quantification rewrites the
+    sidecar, the old witness would make the new output invalid.
+    """
+
+    destination = Path(sample_dir) / REFERENCE_BINDING_FILENAME
+    try:
+        destination.unlink()
+    except FileNotFoundError:
+        return False
+    _fsync_directory(Path(sample_dir))
+    return True

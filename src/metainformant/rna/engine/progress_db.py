@@ -19,6 +19,7 @@ import concurrent.futures
 import json
 import math
 import os
+import re
 import sqlite3
 import stat as stat_module
 import sys
@@ -35,8 +36,11 @@ from metainformant.core.utils.logging import get_logger
 from metainformant.rna.core.sample_utils import find_quantification_file
 from metainformant.rna.engine.provenance import (
     QUANT_PROVENANCE_FILENAME,
+    QUANT_STATUS_UNAVAILABLE,
     REUSABLE_QUANT_STATUSES,
     classify_quantification,
+    is_unreadable_error,
+    strict_reads,
 )
 from metainformant.rna.engine.reference_digest import IndexDigestCache
 
@@ -111,6 +115,16 @@ matching class wins, so more specific markers precede generic ones.
 """
 
 
+NON_ENVIRONMENT_OS_ERROR = "non_environment_os_error"
+"""``last_error_class`` the producer records when an attempt's message reads like an environment failure
+(``Permission denied``, ``No such file or directory: '...'``) but its own classifier decided otherwise (a
+path outside the data root, a missing input file). A transient class: counted, backed off, finally held."""
+
+# A missing *executable* is reported by a bare name ("No such file or directory: 'amalgkit'"); a missing file
+# carries a path and says something about the sample, not the host.
+_MISSING_TOOL_MESSAGE = re.compile(r"No such file or directory: '([^'/]+)'")
+
+
 RETRYABLE_ENVIRONMENT_CLASSES = frozenset(
     {
         "environment_write_denied",
@@ -144,6 +158,7 @@ AUDIT_FINGERPRINT_COLUMNS: tuple[tuple[str, str], ...] = (
     ("reference_sha256", "TEXT"),
     ("scope", "TEXT"),
     ("evidence", "TEXT"),
+    ("output_fingerprint", "TEXT"),
 )
 """Nullable ``quantification_audit`` columns that let a restart trust an unchanged classified output."""
 
@@ -339,6 +354,31 @@ def sidecar_fingerprint(path: Path) -> SidecarFingerprint | None:
     return (info.st_ino, info.st_size, info.st_mtime_ns)
 
 
+def output_fingerprint(sample_dir: Path, quantification_file: Any) -> str | None:
+    """``name:ino:size:mtime_ns`` of the abundance table a verdict covered (one ``lstat``), else ``None``.
+
+    Recorded next to the sidecar fingerprint, so a trusted verdict also
+    notices an abundance table that was truncated, replaced or removed after
+    it was judged.
+    """
+
+    if not isinstance(quantification_file, str) or Path(quantification_file).name != quantification_file:
+        return None
+    if quantification_file in ("", ".", ".."):
+        return None
+    fingerprint = sidecar_fingerprint(sample_dir / quantification_file)
+    if fingerprint is None:
+        return None
+    return f"{quantification_file}:{fingerprint[0]}:{fingerprint[1]}:{fingerprint[2]}"
+
+
+def _recorded_output_matches(sample_dir: Path, recorded: Any) -> bool:
+    if not isinstance(recorded, str) or recorded.count(":") < 3:
+        return False
+    name = recorded.rsplit(":", 3)[0]
+    return output_fingerprint(sample_dir, name) == recorded
+
+
 def classify_sample_error(error: str | None) -> str:
     """Classify a stored sample failure message into a coarse retry class."""
 
@@ -346,6 +386,9 @@ def classify_sample_error(error: str | None) -> str:
         return "unrecorded"
     for class_name, marker in SAMPLE_ERROR_CLASSES.items():
         if marker in error:
+            if class_name == "environment_missing_tool" and not _MISSING_TOOL_MESSAGE.search(error):
+                # A path (not a bare executable name) is missing: per-sample, not the host.
+                continue
             return class_name
     return "unclassified"
 
@@ -865,6 +908,7 @@ class ProgressDB:
             raise ValueError(f"unknown error classes: {sorted(unknown)}")
         counts: Dict[str, int] = {}
         with self._lock:
+            self._ensure_retry_columns_locked()
             self._conn.commit()
             self._conn.execute("BEGIN IMMEDIATE")
             try:
@@ -875,11 +919,16 @@ class ProgressDB:
                     )
                 }
                 updates: list[tuple[str, str, str]] = []
-                for species, srr_id, error in self._conn.execute(
-                    "SELECT species, srr_id, error FROM samples WHERE state = 'failed'"
+                for species, srr_id, error, recorded_class in self._conn.execute(
+                    "SELECT species, srr_id, error, last_error_class FROM samples WHERE state = 'failed'"
                 ).fetchall():
                     error_class = classify_sample_error(error)
                     if error_class not in wanted or (species, srr_id) in dropped:
+                        continue
+                    if recorded_class is not None and recorded_class not in RETRYABLE_ENVIRONMENT_CLASSES:
+                        # The producer classified this attempt as not environmental when it happened (for
+                        # example EPERM on a path outside the data root); re-reading its text would retry it
+                        # at every start without ever counting an attempt.
                         continue
                     counts[error_class] = counts.get(error_class, 0) + 1
                     message = f"{STARTUP_ENVIRONMENT_RESET_PREFIX}[{error_class}]: {(error or '')[:500]}"
@@ -972,8 +1021,15 @@ class ProgressDB:
         *,
         policy: RetryPolicy,
         now: Optional[float] = None,
+        error_class: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Account one finished sample attempt and return the scheduling decision.
+
+        ``error_class`` overrides the text classification of ``error`` (the
+        producer passes :data:`NON_ENVIRONMENT_OS_ERROR` when its own classifier
+        decided an environment-looking message is not environmental); the
+        override is stored in ``last_error_class``, which the startup reset
+        then trusts.
 
         ``error=None`` (quantified) clears the bookkeeping. Otherwise the error
         text is classified (:func:`classify_sample_error`, :func:`retry_class_for`):
@@ -1017,7 +1073,7 @@ class ProgressDB:
                     "attempts": 0,
                     "next_attempt_at": None,
                 }
-            error_class = classify_sample_error(error)
+            error_class = error_class or classify_sample_error(error)
             retry_class = retry_class_for(error_class)
             attempts = int(row[1] or 0)
             next_attempt: Optional[float] = None
@@ -1154,13 +1210,20 @@ class ProgressDB:
                         found[(species, srr_id)] = state
         return found
 
-    def checkpoint_wal(self) -> tuple[int, int, int] | None:
-        """``PRAGMA wal_checkpoint(TRUNCATE)`` so read-only observers of the file see every commit."""
+    def checkpoint_wal(self, mode: str = "TRUNCATE") -> tuple[int, int, int] | None:
+        """``PRAGMA wal_checkpoint(<mode>)`` so read-only observers of the file see every commit.
 
+        ``TRUNCATE`` (the default, at exit) also empties the WAL file; the
+        producer's periodic in-run checkpoint uses ``PASSIVE``, which never
+        waits for readers or writers.
+        """
+
+        if mode not in ("PASSIVE", "FULL", "RESTART", "TRUNCATE"):
+            raise ValueError(f"unknown WAL checkpoint mode: {mode!r}")
         with self._lock:
             self._conn.commit()
             try:
-                row = self._conn.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+                row = self._conn.execute(f"PRAGMA wal_checkpoint({mode})").fetchone()
             except sqlite3.OperationalError as exc:
                 logger.warning("WAL checkpoint of %s failed: %s", self.db_path, exc)
                 return None
@@ -1612,8 +1675,8 @@ class ProgressDB:
         if self._audit_fingerprint_columns_present_locked():
             self._conn.execute(
                 "UPDATE quantification_audit SET sidecar_ino = NULL, sidecar_size = NULL, sidecar_mtime_ns = NULL, "
-                "config_sha256 = NULL, reference_sha256 = NULL, scope = NULL, evidence = NULL "
-                "WHERE species = ? AND srr_id = ?",
+                "config_sha256 = NULL, reference_sha256 = NULL, scope = NULL, evidence = NULL, "
+                "output_fingerprint = NULL WHERE species = ? AND srr_id = ?",
                 (species, srr_id),
             )
 
@@ -1638,11 +1701,18 @@ class ProgressDB:
 
         * **Unchanged, already judged.** When the row is recorded with an
           audit whose sidecar fingerprint ``(st_ino, st_size, st_mtime_ns)``
-          equals the sidecar on disk (one ``lstat``) and whose
+          equals the sidecar on disk (one ``lstat``), whose abundance-table
+          fingerprint equals the table on disk (one more ``lstat``) and whose
           ``config_sha256``/``reference_sha256``/``scope`` equal ``scope``,
           the recorded verdict is reused without reading the sidecar.
         * **New or changed.** Otherwise ``classify(path, accession)`` judges
-          it and the verdict is recorded with the sidecar fingerprint.
+          it and the verdict is recorded with both fingerprints.
+        * **Unreadable.** ``classify`` runs under
+          :func:`~metainformant.rna.engine.provenance.strict_reads`; an output
+          whose files cannot be read (EIO, EACCES, a dropped volume) gets no
+          verdict: its row and audit are left as they were, nothing is cached,
+          and it is listed under ``unavailable`` so the caller can report an
+          incomplete pass. The next pass judges it again.
 
         A reusable verdict (current or version drift) makes the row
         ``quantified`` (``pending`` when its status is in
@@ -1687,8 +1757,9 @@ class ProgressDB:
                 for row in self._conn.execute(
                     "SELECT srr_id, status, reason, contract_id, observed_amalgkit_version, observed_release_tag, "
                     "observed_source_revision, sidecar_ino, sidecar_size, sidecar_mtime_ns, config_sha256, "
-                    "reference_sha256, scope, evidence FROM quantification_audit WHERE species = ? "
-                    "AND sidecar_ino IS NOT NULL AND config_sha256 = ? AND reference_sha256 = ? AND scope = ?",
+                    "reference_sha256, scope, evidence, output_fingerprint FROM quantification_audit "
+                    "WHERE species = ? AND sidecar_ino IS NOT NULL AND output_fingerprint IS NOT NULL "
+                    "AND config_sha256 = ? AND reference_sha256 = ? AND scope = ?",
                     (species, scope.config_sha256, scope.reference_sha256, scope.scope),
                 ):
                     if row[0] in directories:
@@ -1701,20 +1772,31 @@ class ProgressDB:
                             "observed_source_revision": row[6],
                             "fingerprint": (row[7], row[8], row[9]),
                             "evidence": json.loads(row[13]) if row[13] else None,
+                            "output_fingerprint": row[14],
                         }
 
         def judge(item: tuple[str, Path]) -> tuple[str, Mapping[str, Any], bool, SidecarFingerprint | None]:
             accession, path = item
             sidecar = path / sidecar_name
             recorded = audits.get(accession)
-            if recorded is not None and sidecar_fingerprint(sidecar) == recorded["fingerprint"]:
+            if (
+                recorded is not None
+                and sidecar_fingerprint(sidecar) == recorded["fingerprint"]
+                and _recorded_output_matches(path, recorded["output_fingerprint"])
+            ):
                 return accession, recorded, False, recorded["fingerprint"]
             before = sidecar_fingerprint(sidecar) if scope is not None else None
             try:
-                verdict = dict(classify(path, accession))
+                with strict_reads():
+                    verdict = dict(classify(path, accession))
             except (OSError, ValueError) as error:
+                if is_unreadable_error(error):
+                    # No verdict: an I/O or permission failure says nothing about the output's content.
+                    return accession, {"status": QUANT_STATUS_UNAVAILABLE, "reason": f"unreadable: {error}"}, True, None
                 verdict = {"status": "invalid", "reason": f"classification failed: {error}"}
             after = sidecar_fingerprint(sidecar) if scope is not None else None
+            if scope is not None:
+                verdict["output_fingerprint"] = output_fingerprint(path, verdict.get("quantification_file"))
             return accession, verdict, True, before if before is not None and before == after else None
 
         pairs = sorted(directories.items())
@@ -1751,11 +1833,16 @@ class ProgressDB:
         requeued: list[str] = []
         quarantined: list[str] = []
         newly_quarantined: list[str] = []
+        unavailable: list[str] = []
         for accession, verdict, fresh, fingerprint in judged:
             status = verdict.get("status")
+            if status == QUANT_STATUS_UNAVAILABLE:
+                unavailable.append(accession)
+                logger.warning("reconcile(%s): %s left as %s: %s", species, accession, states.get(accession), verdict)
+                continue
             if fresh:
                 evidence = verdict.get("evidence")
-                keyed = scope is not None and fingerprint is not None
+                keyed = scope is not None and fingerprint is not None and verdict.get("output_fingerprint") is not None
                 audit_rows.append(
                     (
                         species,
@@ -1773,6 +1860,7 @@ class ProgressDB:
                         scope.reference_sha256 if keyed else None,
                         scope.scope if keyed else None,
                         json.dumps(evidence, sort_keys=True, default=str) if evidence else None,
+                        verdict.get("output_fingerprint") if keyed else None,
                     )
                 )
             target: Optional[str] = None
@@ -1814,8 +1902,8 @@ class ProgressDB:
                             species, srr_id, status, reason, contract_id,
                             observed_amalgkit_version, observed_release_tag, observed_source_revision,
                             sidecar_ino, sidecar_size, sidecar_mtime_ns, config_sha256, reference_sha256,
-                            scope, evidence, checked_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                            scope, evidence, output_fingerprint, checked_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
                         ON CONFLICT(species, srr_id) DO UPDATE SET
                             status = excluded.status,
                             reason = excluded.reason,
@@ -1830,6 +1918,7 @@ class ProgressDB:
                             reference_sha256 = excluded.reference_sha256,
                             scope = excluded.scope,
                             evidence = excluded.evidence,
+                            output_fingerprint = excluded.output_fingerprint,
                             checked_at = excluded.checked_at
                         """,
                         audit_rows,
@@ -1850,6 +1939,8 @@ class ProgressDB:
             "classified": fresh_count,
             "quantified": len(reusable),
             "requeued": len(requeued),
+            "requeued_accessions": sorted(requeued),
+            "unavailable": sorted(unavailable),
             "quarantined": sorted(quarantined),
             "newly_quarantined": sorted(newly_quarantined),
             "vanished": vanished,
@@ -1859,7 +1950,7 @@ class ProgressDB:
         }
         logger.info(
             "reconcile(%s): %d task directories (%d trusted unchanged, %d re-judged), %d reusable, %d requeued, "
-            "%d quarantined, %d vanished, %d rows changed in %.1fs",
+            "%d quarantined, %d vanished, %d unreadable (left unjudged), %d rows changed in %.1fs",
             species,
             summary["scanned"],
             summary["trusted"],
@@ -1868,6 +1959,7 @@ class ProgressDB:
             summary["requeued"],
             len(summary["quarantined"]),
             len(vanished),
+            len(unavailable),
             summary["rows_changed"],
             summary["seconds"],
         )

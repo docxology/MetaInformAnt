@@ -7,6 +7,7 @@ System calls are counted by wrappers that delegate to the real functions.
 
 from __future__ import annotations
 
+import hashlib
 import os
 import sqlite3
 from collections.abc import Callable, Mapping
@@ -24,7 +25,7 @@ from metainformant.rna.engine.progress_db import (
     sidecar_fingerprint,
 )
 from metainformant.rna.engine.provenance import build_species_reuse_context
-from tests.rna.frozen_cohort_support import SPECIES, DataRoot
+from tests.rna.frozen_cohort_support import INDEX_BYTES, INDEX_NAME, SPECIES, DataRoot
 
 EPERM = "Unexpected sample task error: [Errno 1] Operation not permitted: '/data/x'"
 ENXIO = "Unexpected sample task error: [Errno 6] Device not configured: '/data/test_species/work'"
@@ -215,9 +216,10 @@ def test_fingerprint_columns_are_added_once_and_unfingerprinted_audits_are_never
     db.close()
 
 
-def test_restart_stat_cost_is_one_listing_and_one_lstat_per_output(
+def test_restart_stat_cost_is_one_listing_and_two_lstats_per_output(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """A trusted restart costs one listing plus one ``lstat`` of the sidecar and one of the abundance table."""
     runs = [f"SRR{i:04d}" for i in range(300)]
     outputs = Outputs(tmp_path, runs)
     db = ProgressDB(tmp_path / "p.db")
@@ -241,6 +243,113 @@ def test_restart_stat_cost_is_one_listing_and_one_lstat_per_output(
 
     assert restart["trusted"] == 300 and outputs.judged == []
     assert calls["scandir"] == 1
-    assert calls["lstat"] <= len(runs) + 5
+    assert calls["lstat"] <= 2 * len(runs) + 5
     assert calls["stat"] <= 5
+    db.close()
+
+
+def _touch(path: Path) -> None:
+    """Give a file a new mtime (a rewrite) without changing its bytes."""
+
+    info = path.stat()
+    os.utime(path, ns=(info.st_atime_ns, info.st_mtime_ns + 1_000_000_000))
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads files whatever their mode")
+def test_an_unreadable_output_is_left_unjudged_and_judged_again_once_readable(tmp_path: Path) -> None:
+    runs = ["SRR001", "SRR002", "SRR003"]
+    outputs = Outputs(tmp_path, runs)
+    db = ProgressDB(tmp_path / "p.db")
+    db.init_species(SPECIES, runs)
+    assert outputs.reconcile(db)["quantified"] == 3
+    sidecar = outputs.quant / "SRR002" / QUANT_PROVENANCE_FILENAME
+    _touch(sidecar)  # the fingerprint changed, so the next pass must read it
+    os.chmod(sidecar, 0)  # EACCES, like a USB hiccup (EIO) on the read
+    try:
+        flaky = outputs.reconcile(db)
+    finally:
+        os.chmod(sidecar, 0o644)
+
+    assert flaky["unavailable"] == ["SRR002"] and flaky["newly_quarantined"] == []
+    assert db.get_state(SPECIES, "SRR002") == "quantified"  # no verdict, no quarantine
+    assert flaky["audits_written"] == 0 and flaky["rows_changed"] == 0
+    readable = outputs.reconcile(db)
+    assert outputs.judged == ["SRR002"]  # nothing was cached for the unreadable pass
+    assert readable["unavailable"] == [] and db.get_state(SPECIES, "SRR002") == "quantified"
+    assert outputs.reconcile(db)["classified"] == 0
+    db.close()
+
+
+def _cohort_classifier(outputs: Outputs) -> Callable[[Path, str], Mapping[str, Any]]:
+    """The cohort reuse contract for ``outputs`` (index bytes bound through the root's reference manifest)."""
+
+    context = build_species_reuse_context(
+        SPECIES,
+        outputs.data.config,
+        cohort_id="cohort-under-test",
+        reference_index_sha256=hashlib.sha256(INDEX_BYTES).hexdigest(),
+        reference_index_name=INDEX_NAME,
+    )
+    return context.classify
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads files whatever their mode")
+@pytest.mark.parametrize("unreadable", ["reference_manifest", "reference_index"])
+def test_an_unreadable_reference_quarantines_nothing(tmp_path: Path, unreadable: str) -> None:
+    runs = ["SRR001", "SRR002"]
+    outputs = Outputs(tmp_path, runs)
+    db = ProgressDB(tmp_path / "p.db")
+    db.init_species(SPECIES, runs)
+    for run in runs:
+        db.set_state(SPECIES, run, "quantified")
+    target = outputs.data.manifest if unreadable == "reference_manifest" else outputs.data.index
+    os.chmod(target, 0)
+    try:
+        # A fresh classifier per pass: nothing memoised, every output needs the reference bytes.
+        summary = db.reconcile_outputs(SPECIES, outputs.quant, runs, _cohort_classifier(outputs), scope=outputs.scope)
+    finally:
+        os.chmod(target, 0o644)
+    assert summary["unavailable"] == runs and summary["newly_quarantined"] == []
+    assert all(db.get_state(SPECIES, run) == "quantified" for run in runs)
+    readable = db.reconcile_outputs(SPECIES, outputs.quant, runs, _cohort_classifier(outputs), scope=outputs.scope)
+    assert readable["unavailable"] == [] and readable["quantified"] == 2
+    db.close()
+
+
+def test_a_truncated_or_removed_abundance_table_is_judged_again_behind_an_unchanged_sidecar(tmp_path: Path) -> None:
+    runs = ["SRR001", "SRR002", "SRR003"]
+    outputs = Outputs(tmp_path, runs)
+    classify = _cohort_classifier(outputs)
+    judged: list[str] = []
+
+    def counting(path: Path, run: str) -> Mapping[str, Any]:
+        judged.append(run)
+        return classify(path, run)
+
+    db = ProgressDB(tmp_path / "p.db")
+    db.init_species(SPECIES, runs)
+    assert db.reconcile_outputs(SPECIES, outputs.quant, runs, counting, scope=outputs.scope)["quantified"] == 3
+    assert db.reconcile_outputs(SPECIES, outputs.quant, runs, counting, scope=outputs.scope)["trusted"] == 3
+    sidecar = outputs.quant / "SRR001" / QUANT_PROVENANCE_FILENAME
+    before = sidecar_fingerprint(sidecar)
+    (outputs.quant / "SRR001" / "SRR001_abundance.tsv").write_bytes(b"target_id\n")  # a torn write
+    (outputs.quant / "SRR002" / "SRR002_abundance.tsv").unlink()
+    judged.clear()
+
+    after = db.reconcile_outputs(SPECIES, outputs.quant, runs, counting, scope=outputs.scope)
+
+    assert sidecar_fingerprint(sidecar) == before  # the sidecar alone says nothing changed
+    assert sorted(judged) == ["SRR001", "SRR002"]
+    assert after["newly_quarantined"] == ["SRR001", "SRR002"]
+    assert db.get_state(SPECIES, "SRR003") == "quantified"
+    db.close()
+
+
+def test_requeued_accessions_are_listed_for_the_scheduler(tmp_path: Path) -> None:
+    runs = ["SRR001", "SRR002"]
+    outputs = Outputs(tmp_path, runs)
+    db = ProgressDB(tmp_path / "p.db")
+    db.init_species(SPECIES, runs)
+    assert outputs.reconcile(db, requantify_statuses={"current"})["requeued_accessions"] == runs
+    assert outputs.reconcile(db)["requeued_accessions"] == []
     db.close()
