@@ -32,6 +32,7 @@ from metainformant.rna.engine.acquisition_prerequisites import (
 )
 from metainformant.rna.engine.acquisition_references import prepare_reference_inputs
 from metainformant.rna.engine.acquisition_sample import execute_manifest_task, reuse_manifest_quantification
+from metainformant.rna.engine.campaign_lock import acquire_writer
 from metainformant.rna.engine.fastq_compression import compression_level
 from metainformant.rna.engine.progress_db import configured_progress_db_path
 from metainformant.rna.engine.streaming_orchestrator import (
@@ -40,6 +41,7 @@ from metainformant.rna.engine.streaming_orchestrator import (
     _local_sra_path,
     build_pipeline_resource_profile,
 )
+from metainformant.rna.retrieval import process_groups
 
 
 def _run_manifest_owned(
@@ -486,21 +488,31 @@ def _run_with_root_lock(
     should_stop: Callable[[], bool] | None = None,
 ) -> dict[str, Any]:
     data_root.mkdir(parents=True, exist_ok=True)
-    with (data_root / ".acquisition.lock").open("a") as owned_lock:
+    # The campaign writer lock first (kind "acquisition"): the worker rewrites reference_aliases.json and the
+    # progress database, so it refuses while a producer, import or migration holds the root, and they refuse
+    # while it runs. Its transfer and quantification children inherit the lock like a producer's.
+    with (
+        acquire_writer(data_root, "acquisition") as campaign_lock,
+        (data_root / ".acquisition.lock").open("a") as owned_lock,
+    ):
         fcntl.flock(owned_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        return _run_manifest_owned(
-            manifest_path=manifest_path,
-            data_root=data_root,
-            config_dir=config_dir,
-            workers=workers,
-            threads=threads,
-            fastq_threads=fastq_threads,
-            compression_threads=compression_threads,
-            validation_slots=validation_slots,
-            quant_slots=quant_slots,
-            fasterq_slots=fasterq_slots,
-            max_in_flight=max_in_flight,
-            task_selection=task_selection,
-            on_quantified=on_quantified,
-            should_stop=should_stop,
-        )
+        process_groups.set_inherited_fds([campaign_lock.child_fd])
+        try:
+            return _run_manifest_owned(
+                manifest_path=manifest_path,
+                data_root=data_root,
+                config_dir=config_dir,
+                workers=workers,
+                threads=threads,
+                fastq_threads=fastq_threads,
+                compression_threads=compression_threads,
+                validation_slots=validation_slots,
+                quant_slots=quant_slots,
+                fasterq_slots=fasterq_slots,
+                max_in_flight=max_in_flight,
+                task_selection=task_selection,
+                on_quantified=on_quantified,
+                should_stop=should_stop,
+            )
+        finally:
+            process_groups.set_inherited_fds(())

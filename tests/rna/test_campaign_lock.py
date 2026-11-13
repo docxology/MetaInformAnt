@@ -375,3 +375,26 @@ def test_a_token_does_not_let_another_kind_write_inside_a_producer(data_root: Pa
     assert result.returncode == EXIT_LOCK_BUSY
     assert "may not run inside it" in result.stdout
     assert is_quiescent(data_root)
+
+
+def test_the_acquisition_worker_refuses_a_root_another_writer_holds(data_root: Path) -> None:
+    from metainformant.rna.engine.acquisition_worker import run_manifest
+
+    holder = _python(HOLDER, str(data_root), "producer")
+    try:
+        _first_line(holder)
+        with pytest.raises(CampaignLockBusy, match="locked by another writer"):
+            run_manifest(
+                manifest_path=data_root / "manifest.jsonl",
+                data_root=data_root,
+                config_dir=data_root,
+                workers=1,
+                threads=1,
+                fastq_threads=1,
+                compression_threads=1,
+                validation_slots=1,
+            )
+        # Refused before it touched anything: not even its own flock file was created.
+        assert not (data_root / ".acquisition.lock").exists()
+    finally:
+        _kill(holder)
