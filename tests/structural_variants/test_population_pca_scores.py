@@ -159,6 +159,14 @@ class TestTheOldDefectsDirectly:
 
 
 class TestDegenerateData:
+    def test_repeated_svs_have_exactly_zero_undefined_scores(self) -> None:
+        genotypes = np.tile(np.array([0, 0, 1, 1, 2, 2]), (20, 1))
+        oracle = _svd_oracle(genotypes)
+        assert oracle["rank"] == 1
+        result = sv_population_structure(genotypes, n_components=6)
+        assert np.asarray(result["pcs"]).shape == (6, 6)
+        assert np.all(np.asarray(result["pcs"])[:, 1:] == 0.0)
+
     def test_constant_svs_add_no_dimensions(self) -> None:
         # 20 SVs of which 8 are constant, 30 samples: the standardised matrix has rank at most 12.
         genotypes = _genotypes(20, 30, seed=5)

@@ -69,3 +69,12 @@ are project checkpoints and require the producer lock to be released.
 - ENA file overlap is explicitly bounded to one or two transfers per run and
   does not expand admitted sample ownership or raw-byte reservations.
 - Existing campaign schemas and original billing records remain readable on resume.
+
+## Recovery process observations
+
+`engine.process_observation.process_is_confirmed_inert(pid, expected_create_time)`
+accepts only fresh kernel absence or two same-identity zombie observations.
+Live and inaccessible processes remain unresolved; PID identity drift raises
+`ProcessIdentityChangedError`. This primitive does not establish complete
+writer absence or grant a restart. See the
+[recovery contract](../../../docs/rna/recovery.md).

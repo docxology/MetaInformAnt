@@ -55,6 +55,7 @@ serial probe attempts, including misses.
 | `streaming_orchestrator.py` | ENA-first metadata, acquisition, integration, and quantification |
 | `campaign_lock.py` | One `flock` writer per data root (`<root>/.campaign.flock`): producer, import, migration and seal exclude each other; `status`/`run` CLI; producer exit codes |
 | `preflight.py` | Mandatory start-of-run environment preflight (data-root write probe, producer tools, kallisto compatibility, free-space floors, optional reuse dry-run) |
+| `process_observation.py` | Native confirmed absence/zombie checks for recovery observers; live or denied processes remain unresolved |
 | `progress_db.py` | Concurrent-safe SQLite sample state, exclusions, resume queries, and frozen-cohort migration |
 | `cohort.py` | Frozen cohort definition (`COHORT.json`), install, hash verification, producer task tables, data-root maintenance lock |
 | `quant_import.py` | Plan/execute import of verified quantifications from other data roots (never overwrites) |
@@ -357,3 +358,5 @@ network bytes; this policy does not alter validation, concurrency or deadlines.
 ### Frozen size supplements
 
 Local bounded frontiers can fill zero estimated compressed FASTQ weights from an independently reviewed size supplement without changing the frozen task manifest, task IDs, references, metadata inputs, or checkpoint identity. Configure both AMALGKIT_LOCAL_SIZE_OVERLAY_PATH (an existing absolute nonsymlink file) and AMALGKIT_LOCAL_SIZE_OVERLAY_SHA256. The overlay binds the exact frozen manifest hash, preserves run/layout/reference identity, and requires positive per-mate byte counts and advertised MD5s from HTTPS ENA file URLs. It cannot replace positive frozen weights. Global ordering and raw reservation use the same immutable size map; actual download/FASTQ validation and service deadlines remain unchanged. Overlay file metadata is a planning estimate, not new validation of downloaded payloads. The runtime, active scope, frontier events, and worker result record its path/hash/count. Missing or conflicting configuration refuses rather than silently falling back.
+
+[Recovery observations and preservation](../../../../docs/rna/recovery.md) separates native liveness, raw DB custody, fixture deadlines and launch authority.

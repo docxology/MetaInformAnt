@@ -32,3 +32,7 @@ assoc = sv_population.sv_association_test(gt_matrix[0], phenotypes)  # one SV at
 pca = sv_population.sv_population_structure(gt_matrix, n_components=10)
 ld = sv_population.sv_ld_analysis(sv_gt_matrix, snp_gt_matrix, sv_positions, snp_positions)
 ```
+
+PCA returns sample scores and unit covariance loadings for defined components.
+Components below numerical rank have exactly zero scores, loadings and eigenvalues,
+including when repeated SVs make the sample Gram matrix rank deficient.

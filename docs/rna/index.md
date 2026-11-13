@@ -12,6 +12,7 @@ Amalgkit integration.
 - [Architecture](ARCHITECTURE.md)
 - [API](API.md)
 - [Validation](VALIDATION.md)
+- [Recovery observations and preservation](recovery.md)
 - [End-to-end validation](END_TO_END_VALIDATION.md)
 - [Troubleshooting](TROUBLESHOOTING_RNA.md)
 - [External data-root setup](EXTERNAL_DRIVE_SETUP.md)

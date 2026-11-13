@@ -20,6 +20,7 @@ _SUBMODULES = (
     "discovery",
     "evidence_bundle",
     "pipeline",
+    "process_observation",
     "progress_db",
     "sra_extraction",
     "streaming_orchestrator",
