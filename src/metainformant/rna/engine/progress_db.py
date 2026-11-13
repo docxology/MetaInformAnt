@@ -23,6 +23,7 @@ import re
 import sqlite3
 import stat as stat_module
 import sys
+import tempfile
 import threading
 import time
 from dataclasses import dataclass
@@ -352,6 +353,17 @@ def sidecar_fingerprint(path: Path) -> SidecarFingerprint | None:
     if not stat_module.S_ISREG(info.st_mode):
         return None
     return (info.st_ino, info.st_size, info.st_mtime_ns)
+
+
+def _unused_sibling(path: Path, stamp: str) -> Path:
+    """``<path>.<stamp>``, or ``<path>.<stamp>.<n>`` when that is taken too."""
+
+    candidate = path.with_name(f"{path.name}.{stamp}")
+    counter = 1
+    while candidate.exists() or candidate.is_symlink():
+        candidate = path.with_name(f"{path.name}.{stamp}.{counter}")
+        counter += 1
+    return candidate
 
 
 def output_fingerprint(sample_dir: Path, quantification_file: Any) -> str | None:
@@ -1343,6 +1355,34 @@ class ProgressDB:
             counts[state] = count
         return counts
 
+    def _write_backup_locked(self, target: Path) -> None:
+        """Copy the database to ``target`` through a fsynced temp file and a hard link (never overwrites)."""
+
+        descriptor, temporary_name = tempfile.mkstemp(prefix=f".{target.name}.", suffix=".tmp", dir=target.parent)
+        os.close(descriptor)
+        temporary = Path(temporary_name)
+        try:
+            copy = sqlite3.connect(str(temporary))
+            try:
+                self._conn.backup(copy)
+            finally:
+                copy.close()
+            fd = os.open(temporary, os.O_RDONLY)
+            try:
+                os.fsync(fd)
+            finally:
+                os.close(fd)
+            os.link(temporary, target)
+        finally:
+            temporary.unlink(missing_ok=True)
+        directory = os.open(target.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory)
+        except OSError:
+            pass
+        finally:
+            os.close(directory)
+
     def migrate_to_cohort(
         self,
         cohort: "FrozenCohort",
@@ -1369,8 +1409,13 @@ class ProgressDB:
         quarantines, in-flight rows and rows outside the cohort keep their state
         and are reported. A store already bound to a different cohort is
         refused. With ``backup_path`` the database is first copied there with
-        SQLite's online backup API (an existing backup is never overwritten).
-        Re-running the migration is idempotent.
+        SQLite's online backup API, into a temp file that is fsynced and then
+        linked into place (a kill never leaves a truncated backup under the
+        final name, and an existing file is never overwritten). When the name
+        is taken and the store is still unbound (a migration interrupted after
+        its backup), the backup gets a timestamped sibling name instead, so
+        the migration can always be re-run. Re-running a completed migration
+        is idempotent.
         """
 
         from metainformant.rna.engine.cohort import CohortError, PERMANENT_DROP
@@ -1407,15 +1452,16 @@ class ProgressDB:
         backup: str | None = None
         if backup_path is not None:
             target = Path(backup_path)
-            if target.exists() or target.is_symlink():
-                if binding.get("cohort_id") != cohort.cohort_id:
-                    raise FileExistsError(f"backup already exists: {target}")
+            if (target.exists() or target.is_symlink()) and binding.get("cohort_id") == cohort.cohort_id:
                 backup = f"kept existing {target}"
             else:
+                if target.exists() or target.is_symlink():
+                    # An earlier migration was interrupted after its backup (the store is still unbound), or the
+                    # name is taken by something else: keep that file and back up the current state beside it.
+                    target = _unused_sibling(target, time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()))
                 target.parent.mkdir(parents=True, exist_ok=True)
-                with self._lock, sqlite3.connect(str(target)) as copy:
-                    self._conn.backup(copy)
-                copy.close()
+                with self._lock:
+                    self._write_backup_locked(target)
                 backup = str(target)
 
         task_rows = [(task.species, task.accession) for task in cohort.tasks]

@@ -960,24 +960,6 @@ def data_root_maintenance_lock(data_root: str | Path, *, purpose: str) -> Iterat
         yield lock.path
 
 
-def producer_pid_alive(data_root: str | Path) -> int | None:
-    """Return the pid in ``<data_root>/orchestrator.pid`` when that process is alive, else ``None``."""
-
-    try:
-        pid = int((Path(data_root) / "orchestrator.pid").read_text().strip())
-    except (OSError, ValueError):
-        return None
-    if pid <= 0:
-        return None
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return None
-    except PermissionError:
-        return pid
-    return pid
-
-
 # ---------------------------------------------------------------------------
 # Producer command-line support (scripts/rna/run_all_species.py, process_species.py)
 # ---------------------------------------------------------------------------
@@ -1150,9 +1132,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             TRANSFER_RESET_CLASSES if args.reset_transfer_failures else frozenset()
         )
         extra = _read_exclusions_tsv(args.extra_exclusions) if args.extra_exclusions else []
-        producer = producer_pid_alive(db_path.parent)
-        if producer is not None:
-            raise DataRootBusy(f"a producer (orchestrator.pid {producer}) is alive; stop it before migrating")
+        # The maintenance lock is the producer's own writer lock: a running producer (or any other writer) makes
+        # it raise DataRootBusy before anything is read or written.
         with data_root_maintenance_lock(db_path.parent, purpose="migrate-db"), ProgressDB(db_path) as db:
             summary = db.migrate_to_cohort(
                 cohort, backup_path=backup, reset_classes=reset_classes, extra_exclusions=extra

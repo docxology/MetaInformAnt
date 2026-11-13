@@ -62,7 +62,6 @@ from metainformant.rna.engine.cohort import (
     ReferenceCheck,
     data_root_maintenance_lock,
     load_frozen_cohort,
-    producer_pid_alive,
     select_cohort_species,
     verify_cohort_configs,
     verify_species_reference,
@@ -907,12 +906,8 @@ def execute_imports(
                         summary["failed"] += 1
                 manifest.write(decision.as_record())
             if adopt_db is not None and adopted:
-                pid = producer_pid_alive(root)
-                if pid is not None:
-                    summary["adoption"] = f"left to reconcile: producer pid {pid} is alive"
-                else:
-                    summary["adopted"] = _adopt(cohort, root, adopt_db, adopted)
-                    summary["adoption"] = "adopted"
+                summary["adopted"] = _adopt(cohort, root, adopt_db, adopted)
+                summary["adoption"] = "adopted"
             manifest.write({**_footer(plan), "execution": {k: v for k, v in summary.items()}})
         finally:
             manifest.close()

@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 import shutil
 import sqlite3
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -22,6 +24,14 @@ from metainformant.rna.engine.progress_db import (
     classify_sample_error,
 )
 from tests.rna.frozen_cohort_support import COHORT_ID, SPECIES, build_frozen_source
+
+PRODUCER_LOCK_HOLDER = """
+import sys, time
+from metainformant.rna.engine.campaign_lock import acquire
+lock = acquire(sys.argv[1], "producer")
+print("held", flush=True)
+time.sleep(600)
+"""
 
 EPERM = "Unexpected sample task error: [Errno 1] Operation not permitted: '/Volumes/external_drive/x'"
 TRANSFER = "Download Failed (all sources: ENA FTP/HTTP, NCBI)"
@@ -145,12 +155,25 @@ def test_migration_refuses_a_store_bound_to_another_cohort(cohort, tmp_path: Pat
     db.close()
 
 
-def test_backup_is_never_overwritten(cohort, tmp_path: Path) -> None:
-    (tmp_path / "backup.db").write_bytes(b"older backup")
+def test_a_migration_interrupted_after_its_backup_can_be_rerun(cohort, tmp_path: Path) -> None:
+    """The first attempt wrote its backup and died before committing: the rerun keeps it and backs up anew."""
+
+    (tmp_path / "backup.db").write_bytes(b"backup of an interrupted attempt")
     db = ProgressDB(tmp_path / "p.db")
-    with pytest.raises(FileExistsError):
-        db.migrate_to_cohort(cohort, backup_path=tmp_path / "backup.db")
-    assert (tmp_path / "backup.db").read_bytes() == b"older backup"
+    db.init_species(SPECIES, ["SRR101"])
+    assert db.cohort_binding() == {}
+
+    summary = db.migrate_to_cohort(cohort, backup_path=tmp_path / "backup.db")
+
+    assert (tmp_path / "backup.db").read_bytes() == b"backup of an interrupted attempt"  # never overwritten
+    fresh = Path(summary["backup"])
+    assert fresh.parent == tmp_path and fresh.name.startswith("backup.db.") and fresh != tmp_path / "backup.db"
+    with sqlite3.connect(fresh) as backup:
+        assert backup.execute("SELECT COUNT(*) FROM samples").fetchone()[0] == 1
+    assert db.cohort_binding()["cohort_id"] == COHORT_ID
+    assert not [path.name for path in tmp_path.iterdir() if path.name.endswith(".tmp")]
+    # Once bound, a rerun keeps the existing backup and changes nothing.
+    assert db.migrate_to_cohort(cohort, backup_path=tmp_path / "backup.db")["backup"].startswith("kept existing")
     db.close()
 
 
@@ -253,7 +276,7 @@ def test_real_canonical_db_copy_keeps_every_row_when_pruned(tmp_path: Path) -> N
     db.close()
 
 
-def test_migrate_db_cli_backs_up_and_refuses_while_a_producer_is_alive(
+def test_migrate_db_cli_backs_up_and_refuses_while_a_producer_holds_the_root(
     cohort, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     from metainformant.rna.engine.cohort import main
@@ -266,12 +289,21 @@ def test_migrate_db_cli_backs_up_and_refuses_while_a_producer_is_alive(
         db.set_state(SPECIES, "SRR102", "failed", error=EPERM)
     (root / "extra.tsv").write_text("species\taccession\treason_detail\n" f"{SPECIES}\tSRR105\tkallisto exit 1\n")
     args = ["migrate-db", "--cohort", str(tmp_path / "cohort"), "--db", str(db_path)]
-    (root / "orchestrator.pid").write_text(f"{os.getpid()}\n")
-    assert main(args) == 2
-    assert "producer" in capsys.readouterr().err
+    # A live producer holds the campaign writer lock of the data root (a separate process, like the real one).
+    holder = subprocess.Popen(
+        [sys.executable, "-c", PRODUCER_LOCK_HOLDER, str(root)], stdout=subprocess.PIPE, text=True
+    )
+    try:
+        assert holder.stdout is not None and holder.stdout.readline().strip() == "held"
+        assert main(args) == 2
+        assert "locked by another writer" in capsys.readouterr().err
+    finally:
+        holder.kill()
+        holder.wait(timeout=30)
+        if holder.stdout is not None:
+            holder.stdout.close()
     with ProgressDB(db_path) as db:
         assert db.get_state(SPECIES, "SRR102") == "failed"
-    (root / "orchestrator.pid").unlink()
     assert main([*args, "--extra-exclusions", str(root / "extra.tsv")]) == 0
     printed = capsys.readouterr().out
     assert '"inserted_task_rows": 3' in printed
