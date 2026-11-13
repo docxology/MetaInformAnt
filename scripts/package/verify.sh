@@ -1,6 +1,5 @@
 #!/bin/bash
 # METAINFORMANT Unified Verification Script
-# Merges verify_uv_setup.sh and verify_test_deps.sh with mode support
 # Verifies UV setup, test dependencies, and environment configuration
 
 set -euo pipefail
@@ -98,10 +97,10 @@ check_python() {
     if ! uv run python --version >/dev/null 2>&1; then
         print_status "ERROR" "Python not available in uv environment"
         if [[ $FIX_MODE -eq 1 ]]; then
-            print_status "INFO" "Attempting to install Python 3.11..."
-            uv python install 3.11
+            print_status "INFO" "Attempting to install Python 3.14..."
+            uv python install 3.14
             if uv run python --version >/dev/null 2>&1; then
-                print_status "FIXED" "Python 3.11 installed"
+                print_status "FIXED" "Python 3.14 installed"
             else
                 print_status "ERROR" "Failed to install Python"
                 return 1

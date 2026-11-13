@@ -19,10 +19,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SRC_ROOT = REPO_ROOT / "src" / "metainformant" / "core"
 DEFAULT_OUTPUT = REPO_ROOT / "docs" / "core" / "API_REFERENCE.md"
 
-# These modules are compatibility facades for the canonical package layout.
-# Their re-exported names are documented through the implementation modules,
-# avoiding duplicate entries in the generated reference.
-EXCLUDED_SOURCE_FILES = frozenset({"__init__.py", "config.py", "db.py", "paths.py"})
+# Package initialisers only re-export names that the implementation modules document.
+EXCLUDED_SOURCE_FILES = frozenset({"__init__.py"})
 
 
 @dataclass(frozen=True)
@@ -210,8 +208,8 @@ def render(symbols: list[Symbol], *, src_root: Path) -> str:
         "This inventory is generated from the canonical public symbols under",
         f"`{src_root.relative_to(REPO_ROOT).as_posix()}/`. It is intentionally concise:",
         "topic guides contain behavioral guidance, examples, and caveats.",
-        "Compatibility facades are excluded from the inventory and remain",
-        "supported through the import paths described in [index.md](index.md).",
+        "Package `__init__.py` re-exports are documented through their implementation modules;",
+        "see [index.md](index.md) for the package layout.",
         "",
         f"**Public symbols:** {len(symbols)}",
         f"**Canonical modules:** {len(modules)}",

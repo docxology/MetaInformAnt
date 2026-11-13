@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# METAINFORMANT repo setup using uv and Python 3.11+
+# METAINFORMANT repo setup using uv and Python 3.14+
 # - Creates/uses .venv (or /tmp/metainformant_venv on FAT filesystems)
 # - Installs project with dev and scientific dependencies via uv
 # - Installs amalgkit via uv (default, use --skip-amalgkit to disable)
@@ -19,7 +19,7 @@ usage() {
 Usage: bash scripts/package/setup.sh [--python VERSION] [--recreate-venv] [--skip-amalgkit] [--with-deps] [--with-all] [--with-scraping] [--ncbi-email EMAIL] [--skip-tests] [--dev]
 
 Options:
-  --python VERSION      Use a specific Python interpreter (default: available 3.12, then 3.11)
+  --python VERSION      Use a specific Python interpreter (default: 3.14, from .python-version)
   --recreate-venv       Recreate the selected virtual environment; otherwise reuse it when compatible
   --skip-amalgkit       Skip AMALGKIT installation (installed by default for RNA workflows)
   --with-deps           Install external CLI deps through the system package manager where available
@@ -41,7 +41,6 @@ RECORD_NCBI_EMAIL=0
 RECREATE_VENV=0
 SKIP_TESTS=0
 WITH_DEPS=0
-WITH_SCIENTIFIC=0
 WITH_ALL=0
 WITH_SCRAPING=0
 WITH_DEV=0  # Development environment setup
@@ -70,18 +69,8 @@ while [[ $# -gt 0 ]]; do
       WITH_AMALGKIT=0
       shift
       ;;
-    --with-amalgkit)
-      # Keep for backward compatibility, but it's now default
-      WITH_AMALGKIT=1
-      shift
-      ;;
     --with-deps)
       WITH_DEPS=1
-      shift
-      ;;
-    --with-scientific)
-      # Keep for backward compatibility, but it's now default
-      WITH_SCIENTIFIC=1
       shift
       ;;
     --with-all)
@@ -223,15 +212,12 @@ fi
 
 echo "[2/5] Creating/using virtual environment ($VENV_DIR)"
 if [[ -z "$REQUESTED_PYTHON" ]]; then
-  # Scientific dependencies are currently best covered by Python 3.11/3.12.
-  # Prefer an interpreter already installed through uv, without forcing a
-  # network download; fall back to uv's default only when neither is present.
-  for candidate_python in 3.12 3.11; do
-    if uv python find "$candidate_python" >/dev/null 2>&1; then
-      REQUESTED_PYTHON="$candidate_python"
-      break
-    fi
-  done
+  # The full extras install on Python 3.14 (ray has no cp315 wheels), and
+  # .python-version selects 3.14 as well. Use an installed 3.14 when uv finds
+  # one; otherwise uv resolves the .python-version request itself.
+  if uv python find 3.14 >/dev/null 2>&1; then
+    REQUESTED_PYTHON="3.14"
+  fi
 fi
 
 if [[ "$PYTHON_WAS_EXPLICIT" -eq 1 ]]; then
@@ -239,7 +225,12 @@ if [[ "$PYTHON_WAS_EXPLICIT" -eq 1 ]]; then
 elif [[ -n "$REQUESTED_PYTHON" ]]; then
   echo "  → Preferred available Python interpreter: $REQUESTED_PYTHON"
 else
-  echo "  ⚠️ Python 3.11/3.12 was not found; uv will select its default interpreter." >&2
+  echo "  ⚠️ Python 3.14 was not found; uv will select the .python-version interpreter (3.14)." >&2
+fi
+if [[ -n "$REQUESTED_PYTHON" ]]; then
+  # Keep uv sync and uv run on the selected interpreter. Without UV_PYTHON they
+  # follow .python-version and replace an environment built on another version.
+  export UV_PYTHON="$REQUESTED_PYTHON"
 fi
 
 create_venv() {
@@ -348,8 +339,7 @@ if [[ "$WITH_DEPS" -eq 1 ]]; then
     brew install sratoolkit || brew install --cask sratoolkit || true
     echo "Attempting to install MongoDB community server (best-effort)"
     brew install mongodb/brew/mongodb-community || true
-    echo "Attempting to install cloud/container CLIs (best-effort)"
-    brew install --cask gcloud-cli || true
+    echo "Attempting to install the container CLI (best-effort)"
     brew install --cask docker-desktop || true
     if [[ -d "/opt/homebrew/bin" ]]; then
       export PATH="/opt/homebrew/bin:$PATH"
@@ -379,7 +369,7 @@ if [[ "$WITH_DEPS" -eq 1 ]]; then
     fi
   else
     echo "No supported package manager found (brew/apt)." >&2
-    echo "Please install manually: amalgkit, kallisto, SRA Toolkit, seqkit, samtools, bcftools, bwa, bowtie2, hisat2, fastqc, multiqc, MUSCLE, BLAST, R, PostgreSQL, Redis, MongoDB, Docker, and gcloud" >&2
+    echo "Please install manually: amalgkit, kallisto, SRA Toolkit, seqkit, samtools, bcftools, bwa, bowtie2, hisat2, fastqc, multiqc, MUSCLE, BLAST, R, PostgreSQL, Redis, MongoDB, and Docker" >&2
   fi
 fi
 

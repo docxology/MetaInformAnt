@@ -8,17 +8,15 @@ Package management, build, and testing infrastructure scripts.
 ### Environment Setup
 - `setup.sh` - Complete environment setup
 - `uv_dev_setup.sh` - UV-based development setup
-- `verify_uv_setup.sh` - Verify UV installation
 - `verify_amalgkit_runtime.py` - Read-only check of the pinned Amalgkit runtime contract
 
 ### Testing
 - `test.sh` - Main test runner (supports modes: ultra-fast, coverage, parallel)
-- `verify_test_deps.sh` - Verify test dependencies
 
 ### Building
 - `build.sh` - Build package
 - `validate_build.sh` - Validate build artifacts
-- `verify.sh` - Verify installation
+- `verify.sh` - Verify installation: UV setup (`--mode setup`) and test dependencies (`--mode deps`)
 
 ### Code Quality
 - `uv_quality.sh` - Run format, lint, typecheck
@@ -37,7 +35,7 @@ Package management, build, and testing infrastructure scripts.
 bash scripts/package/setup.sh
 
 # Recreate an existing environment only after confirming no process depends on it
-bash scripts/package/setup.sh --recreate-venv --python 3.12
+bash scripts/package/setup.sh --recreate-venv --python 3.14
 
 # Testing
 bash scripts/package/test.sh --mode ultra-fast
