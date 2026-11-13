@@ -1989,8 +1989,202 @@ def retry_status(db_path: Path, *, policy: Optional[RetryPolicy] = None, now: Op
     }
 
 
+PROGRESS_SNAPSHOT_SCHEMA = "metainformant.rna.progress_snapshot.v1"
+EXCLUDED_STATE = "excluded"
+"""Effective state of a ``permanent_drop`` row in :func:`progress_snapshot` (whatever its recorded state)."""
+EXIT_COMPLETE = 0
+EXIT_INCOMPLETE = 3
+EXIT_NO_DATABASE = 2
+
+
+def _readonly_connection(db_path: Path) -> sqlite3.Connection:
+    """Open an existing progress DB for reading only: no schema runs, nothing migrates, nothing checkpoints.
+
+    A WAL-mode database with a ``-wal`` file (a live or crashed writer) is
+    opened ``mode=ro`` so the un-checkpointed rows are read (``immutable=1``
+    would ignore them). Without a ``-wal`` file every committed row is in the
+    main file, and ``mode=ro`` would *create* empty ``-wal``/``-shm`` files
+    next to it (a write on the data volume, and a failure on a read-only
+    mount), so that case reads the main file with ``immutable=1``. A
+    rollback-journal database is opened ``mode=ro``, which creates nothing.
+    """
+
+    path = Path(db_path).absolute()
+    if not path.is_file():
+        raise FileNotFoundError(f"progress database does not exist: {path}")
+    with path.open("rb") as handle:
+        header = handle.read(20)
+    # SQLite header bytes 18/19 (file format write/read version) are 2 in WAL mode.
+    wal_mode = len(header) == 20 and header[18] == 2 and header[19] == 2
+    has_wal = path.with_name(path.name + "-wal").exists()
+    mode = "immutable=1" if wal_mode and not has_wal else "mode=ro"
+    connection = sqlite3.connect(f"{path.as_uri()}?{mode}", uri=True, timeout=5.0)
+    connection.execute("PRAGMA busy_timeout=5000")
+    return connection
+
+
+def _table_columns(connection: sqlite3.Connection, table: str) -> set[str]:
+    return {row[1] for row in connection.execute(f"PRAGMA table_info({table})")}
+
+
+def progress_snapshot(
+    db_path: Path,
+    *,
+    species: Optional[Iterable[str]] = None,
+    policy: Optional[RetryPolicy] = None,
+    now: Optional[float] = None,
+) -> Dict[str, Any]:
+    """Read-only per-species completion and failure summary of a progress database.
+
+    Safe while a producer runs (``mode=ro``); tolerates databases written by
+    older schemas (no ``sample_exclusions`` table, no retry columns). For
+    every species (or only ``species``):
+
+    * ``states``: recorded row states; ``effective_states`` moves every
+      ``permanent_drop`` exclusion to ``excluded`` (it is not part of the
+      analysable cohort, whatever its recorded state);
+    * ``failure_classes``: :func:`classify_sample_error` over the failed rows
+      that are not excluded;
+    * ``held_by_reason`` / ``backoff``: the retry bookkeeping
+      (:func:`retry_gate`) of the non-excluded, non-quantified rows;
+    * ``nonterminal``: rows neither quantified nor excluded, and ``complete``
+      (rows exist and none is nonterminal) -- the gate downstream merging uses.
+
+    Raises :class:`FileNotFoundError` when the database does not exist.
+    """
+
+    active = policy or RetryPolicy.from_environment()
+    moment = time.time() if now is None else now
+    wanted = None if species is None else list(dict.fromkeys(species))
+    path = Path(db_path).absolute()
+    connection = _readonly_connection(path)
+    try:
+        columns = _table_columns(connection, "samples")
+        retry_columns = all(name in columns for name, _ in RETRY_COLUMNS)
+        select = "species, srr_id, state, error, updated_at" + (
+            ", attempts, last_error_class, next_attempt_at" if retry_columns else ""
+        )
+        if wanted is None:
+            rows = connection.execute(f"SELECT {select} FROM samples").fetchall()
+        else:
+            rows = []
+            for name in wanted:
+                rows.extend(connection.execute(f"SELECT {select} FROM samples WHERE species = ?", (name,)).fetchall())
+        exclusions: Dict[tuple[str, str], str] = {}
+        if _table_columns(connection, "sample_exclusions"):
+            for name, srr_id, reason_code in connection.execute(
+                "SELECT species, srr_id, reason_code FROM sample_exclusions"
+            ):
+                exclusions[(name, srr_id)] = reason_code
+        binding: Dict[str, str] = {}
+        if _table_columns(connection, "campaign_meta"):
+            binding = {key: value for key, value in connection.execute("SELECT key, value FROM campaign_meta")}
+    finally:
+        connection.close()
+
+    per_species: Dict[str, Dict[str, Any]] = {}
+    for name in wanted or []:
+        per_species[name] = {}
+    latest: Optional[str] = None
+    for row in rows:
+        name, srr_id, state, error, updated_at = row[:5]
+        entry = per_species.setdefault(name, {})
+        entry.setdefault("rows", 0)
+        entry["rows"] += 1
+        states = entry.setdefault("states", {})
+        states[state] = states.get(state, 0) + 1
+        excluded = exclusions.get((name, srr_id)) == "permanent_drop"
+        effective = EXCLUDED_STATE if excluded else state
+        effective_states = entry.setdefault("effective_states", {})
+        effective_states[effective] = effective_states.get(effective, 0) + 1
+        if updated_at is not None and (latest is None or updated_at > latest):
+            latest = updated_at
+        if excluded or state == "quantified":
+            continue
+        if state == "failed":
+            failure_class = classify_sample_error(error)
+            classes = entry.setdefault("failure_classes", {})
+            classes[failure_class] = classes.get(failure_class, 0) + 1
+        if retry_columns:
+            record = RetryRecord(name, srr_id, state, int(row[5] or 0), row[6], _utc_epoch(row[7]))
+            gate, reason = retry_gate(record, active, moment)
+            if gate == GATE_HELD:
+                kind = (reason or "held").split(":", 1)[0]
+                held = entry.setdefault("held_by_reason", {})
+                held[kind] = held.get(kind, 0) + 1
+            elif gate == GATE_BACKOFF:
+                entry["backoff"] = entry.get("backoff", 0) + 1
+
+    totals: Dict[str, int] = {}
+    effective_totals: Dict[str, int] = {}
+    failure_totals: Dict[str, int] = {}
+    for name, entry in per_species.items():
+        rows_count = int(entry.get("rows", 0))
+        effective_states = dict(sorted(entry.get("effective_states", {}).items()))
+        nonterminal = rows_count - effective_states.get("quantified", 0) - effective_states.get(EXCLUDED_STATE, 0)
+        per_species[name] = {
+            "rows": rows_count,
+            "states": dict(sorted(entry.get("states", {}).items())),
+            "effective_states": effective_states,
+            "quantified": effective_states.get("quantified", 0),
+            "excluded": effective_states.get(EXCLUDED_STATE, 0),
+            "nonterminal": nonterminal,
+            "failure_classes": dict(sorted(entry.get("failure_classes", {}).items())),
+            "held_by_reason": dict(sorted(entry.get("held_by_reason", {}).items())),
+            "backoff": int(entry.get("backoff", 0)),
+            "complete": rows_count > 0 and nonterminal == 0,
+        }
+        for state, count in per_species[name]["states"].items():
+            totals[state] = totals.get(state, 0) + count
+        for state, count in effective_states.items():
+            effective_totals[state] = effective_totals.get(state, 0) + count
+        for failure_class, count in per_species[name]["failure_classes"].items():
+            failure_totals[failure_class] = failure_totals.get(failure_class, 0) + count
+    exclusions_by_reason: Dict[str, int] = {}
+    for (name, _), reason_code in exclusions.items():
+        if wanted is None or name in per_species:
+            exclusions_by_reason[reason_code] = exclusions_by_reason.get(reason_code, 0) + 1
+    return {
+        "schema": PROGRESS_SNAPSHOT_SCHEMA,
+        "db_path": str(path),
+        "cohort_id": binding.get("cohort_id"),
+        "rows": sum(entry["rows"] for entry in per_species.values()),
+        "states": dict(sorted(totals.items())),
+        "effective_states": dict(sorted(effective_totals.items())),
+        "nonterminal": sum(entry["nonterminal"] for entry in per_species.values()),
+        "failure_classes": dict(sorted(failure_totals.items())),
+        "exclusions_by_reason": dict(sorted(exclusions_by_reason.items())),
+        "latest_update": latest,
+        "species": dict(sorted(per_species.items())),
+    }
+
+
+def completion_message(species: str, entry: Mapping[str, Any]) -> str:
+    """One human line explaining a species' completion gate (see :func:`progress_snapshot`)."""
+
+    if not entry.get("rows"):
+        return f"{species}: no progress rows; refusing untracked downstream work"
+    if entry.get("complete"):
+        return (
+            f"{species}: complete ({entry['quantified']} quantified, {entry['excluded']} permanently excluded "
+            f"of {entry['rows']} rows)"
+        )
+    waiting = {
+        state: count
+        for state, count in entry.get("effective_states", {}).items()
+        if state not in ("quantified", EXCLUDED_STATE)
+    }
+    detail = ", ".join(f"{state} {count}" for state, count in sorted(waiting.items()))
+    held = entry.get("held_by_reason") or {}
+    held_text = f"; held {sum(held.values())} ({', '.join(f'{k} {v}' for k, v in held.items())})" if held else ""
+    return (
+        f"{species}: incomplete, {entry['nonterminal']} of {entry['rows']} rows neither quantified nor "
+        f"permanently excluded ({detail}){held_text}"
+    )
+
+
 def main(argv: Optional[Iterable[str]] = None) -> int:
-    """``python -m metainformant.rna.engine.progress_db {retry-status,release-holds}``."""
+    """``python -m metainformant.rna.engine.progress_db {retry-status,snapshot,completion,release-holds}``."""
 
     import argparse
 
@@ -2001,6 +2195,15 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     commands = parser.add_subparsers(dest="command", required=True)
     status = commands.add_parser("retry-status", help="Held and backed-off rows (read-only)")
     status.add_argument("--db", type=Path, required=True)
+    snapshot = commands.add_parser("snapshot", help="Per-species states, exclusions and completion as JSON (read-only)")
+    snapshot.add_argument("--db", type=Path, required=True)
+    snapshot.add_argument("--species", action="append", help="Only this species (repeatable)")
+    completion = commands.add_parser(
+        "completion",
+        help="Exit 0 when every row of the species is quantified or permanently excluded, else 3 (read-only)",
+    )
+    completion.add_argument("--db", type=Path, required=True)
+    completion.add_argument("--species", action="append", required=True, help="Species to check (repeatable)")
     release = commands.add_parser(
         "release-holds", help="Return held rows to pending (under the campaign writer lock of the DB's data root)"
     )
@@ -2017,7 +2220,22 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     db_path = args.db.expanduser().absolute()
     if not db_path.is_file():
         print(f"error: progress database does not exist: {db_path}", file=sys.stderr)
-        return 2
+        return EXIT_NO_DATABASE
+    if args.command in ("snapshot", "completion"):
+        try:
+            summary = progress_snapshot(db_path, species=args.species)
+        except sqlite3.Error as error:
+            print(f"error: progress database is unreadable: {db_path} ({error})", file=sys.stderr)
+            return EXIT_NO_DATABASE
+        if args.command == "snapshot":
+            print(json.dumps(summary, indent=2, sort_keys=True))
+            return 0
+        complete = True
+        for name in args.species:
+            entry = summary["species"][name]
+            print(completion_message(name, entry))
+            complete = complete and bool(entry["complete"])
+        return EXIT_COMPLETE if complete else EXIT_INCOMPLETE
     if args.command == "retry-status":
         print(json.dumps(retry_status(db_path), indent=2, sort_keys=True))
         return 0
