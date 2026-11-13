@@ -140,13 +140,12 @@ def test_execute_copies_exact_bytes_writes_inventory_and_is_idempotent(
     h5_bytes = (published / "SRR101_abundance.h5").read_bytes()
     assert h5_row[5] == git_blob_oid(lfs_pointer(sha(h5_bytes), len(h5_bytes))), "HDF5 rows carry the LFS pointer id"
     tasks = dict(
-        (line.split("\t")[1], line.split("\t")[3])
-        for line in (campaign.inventory / "tasks.tsv").read_text().splitlines()[1:]
+        (line.split("\t")[0], line.split("\t")[2])
+        for line in (campaign.inventory / f"{SPECIES}.tasks.tsv").read_text().splitlines()[1:]
     )
     assert tasks == {"SRR101": "present", "SRR102": "pending", "SRR103": "not_reusable", "SRR105": "pending"}
-    summary = json.loads((campaign.inventory / "SUMMARY.json").read_text())
-    assert summary["exported_samples"] == 1 and summary["cohort_id"] == COHORT_ID
-    assert "generated_at" not in summary and str(campaign.base) not in json.dumps(summary)
+    assert sorted(path.name for path in campaign.inventory.iterdir()) == [f"{SPECIES}.tasks.tsv", f"{SPECIES}.tsv"]
+    assert str(campaign.base) not in (campaign.inventory / f"{SPECIES}.tsv").read_text(), "no host paths"
 
     snapshot_before = _tree(campaign.repo)
     assert main(args) == 0
@@ -246,9 +245,36 @@ def test_destination_inside_the_data_root_is_refused(campaign: Campaign) -> None
         main(campaign.args())
 
 
-def test_inventory_needs_the_whole_cohort(campaign: Campaign) -> None:
-    with pytest.raises(SystemExit, match="whole cohort"):
-        main(campaign.args("--species", SPECIES, "--inventory-dir", str(campaign.inventory)))
+@pytest.mark.skipif(shutil.which("git") is None, reason="git is not installed")
+def test_inventory_keeps_committed_rows_another_host_produced(
+    campaign: Campaign, capsys: pytest.CaptureFixture[str]
+) -> None:
+    campaign.repo.mkdir()
+    _git(campaign.repo, "init", "-q")
+    (campaign.repo / "README.md").write_text("snapshot repository\n")
+    _git(campaign.repo, "add", "README.md")
+    _git(campaign.repo, "commit", "-q", "-m", "init")
+    args = campaign.args("--git-tree", f"{campaign.repo}:HEAD", "--inventory-dir", str(campaign.inventory), "--execute")
+    assert main(args) == 0
+    capsys.readouterr()
+    _git(campaign.repo, "add", "-A")
+    _git(campaign.repo, "commit", "-q", "-m", "SRR101 from host A")
+    rows_a = [
+        row for row in (campaign.inventory / f"{SPECIES}.tsv").read_text().splitlines() if row.startswith("SRR101")
+    ]
+    assert len(rows_a) == len(SNAPSHOT_FILES)
+
+    # Host B: a data root without SRR101 (it was produced elsewhere) that produced SRR102.
+    shutil.rmtree(campaign.root.sample("SRR101"))
+    campaign.root.write_sample("SRR102")
+    assert main(args) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["published"] == 1 and report["task_states"]["present"] == 2
+    inventory = (campaign.inventory / f"{SPECIES}.tsv").read_text().splitlines()
+    assert [row for row in inventory if row.startswith("SRR101")] == rows_a, "host A's rows are carried forward"
+    assert any(row.startswith("SRR102") for row in inventory)
+    tasks = (campaign.inventory / f"{SPECIES}.tasks.tsv").read_text()
+    assert "SRR101\ttask\tpresent" in tasks and "SRR102\ttask\tpresent" in tasks
 
 
 def _digest(relpath: str, oid: str) -> FileDigest:

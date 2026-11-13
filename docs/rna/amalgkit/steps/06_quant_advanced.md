@@ -96,9 +96,13 @@ uv run python scripts/rna/export_quant_snapshot.py \
 - Existing destination bytes are never replaced. A difference is a `conflict`
   (exit 65); a destination that matches but lacks a newer witness file is
   `extend`, and only that file is added.
-- The inventory (`<species>.tsv` with size, sha256 and Git blob id per file,
-  `tasks.tsv` with each cohort task's snapshot state, and `SUMMARY.json`) has
-  no timestamps, so a rerun on unchanged inputs changes nothing.
+- The inventory is per species, so hosts that export different species never
+  edit the same files: `<species>.tsv` has size, sha256 and Git blob id per
+  file, and `<species>.tasks.tsv` each cohort task's state (`present` when
+  exported or already in the Git tree, else `pending`, `not_reusable` or
+  `conflict`). Rows of runs the tree holds but this data root lacks are
+  carried forward. There are no timestamps, so a rerun on unchanged inputs
+  changes nothing.
 - The data root is only read. The default is a plan printed as JSON.
 
 ### Batch Cleanup

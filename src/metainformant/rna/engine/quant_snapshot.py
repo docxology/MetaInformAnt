@@ -26,9 +26,12 @@ Idempotent and conservative:
   published with one rename; added witness files are published one rename each.
   Source files are only read. Leftover staging from an interrupted run is
   removed at the start of the next ``--execute``.
-* The inventory (``<species>.tsv`` per species, ``tasks.tsv`` and
-  ``SUMMARY.json``) has no timestamps: re-running on unchanged inputs rewrites
-  identical bytes. Inventory rows are the files verified at the data root.
+* The inventory is per species, so hosts that export different species never
+  touch the same files: ``<species>.tsv`` lists every file (size, sha256, Git
+  blob id) verified at a data root, and ``<species>.tasks.tsv`` each cohort
+  task's state (``present`` when exported here or already in the Git tree).
+  Rows of runs the Git tree holds but this data root lacks are carried forward.
+  No timestamps: re-running on unchanged inputs rewrites identical bytes.
 
 The default is a read-only plan printed as JSON; ``--execute`` copies and
 writes the inventory. Exit codes: 0 consistent, 65 conflicts need an owner
@@ -73,7 +76,7 @@ WITNESS_RELPATHS = frozenset(
 )
 EXPORTED_STATES = frozenset({"present", "staged", "new", "extend"})
 INVENTORY_COLUMNS = ("run", "status", "file", "size", "sha256", "git_oid")
-TASK_COLUMNS = ("species", "run", "cohort", "snapshot")
+TASK_COLUMNS = ("run", "cohort", "snapshot")
 STAGING_SUFFIX = ".snapshot-staging"
 TEMPORARY_SUFFIX = ".snapshot-tmp"
 _CHUNK = 1 << 20
@@ -161,9 +164,11 @@ def read_git_tree(repo: Path, treeish: str, prefix: str) -> dict[tuple[str, str]
     prefix = prefix.strip("/")
     result = subprocess.run(
         ["git", "-C", str(repo), "ls-tree", "-r", "-z", "--full-tree", treeish, "--", prefix],
-        check=True,
+        check=False,
         capture_output=True,
     )
+    if result.returncode != 0:
+        raise SystemExit(f"git ls-tree {treeish} in {repo} failed: {result.stderr.decode(errors='replace').strip()}")
     grouped: dict[tuple[str, str], dict[str, str]] = {}
     base = f"{prefix}/"
     for record in result.stdout.split(b"\0"):
@@ -349,67 +354,103 @@ def _write_text_if_changed(path: Path, text: str) -> bool:
     return True
 
 
-def _inventory_text(items: Iterable[SampleExport]) -> str:
-    rows = ["\t".join(INVENTORY_COLUMNS)]
-    for item in sorted(items, key=lambda entry: entry.run):
-        for digest in sorted(item.files, key=lambda entry: entry.relpath):
-            rows.append(
-                "\t".join((item.run, item.status, digest.relpath, str(digest.size), digest.sha256, digest.git_oid))
-            )
-    return "\n".join(rows) + "\n"
+def _digest_rows(item: SampleExport) -> list[str]:
+    return [
+        "\t".join((item.run, item.status, digest.relpath, str(digest.size), digest.sha256, digest.git_oid))
+        for digest in sorted(item.files, key=lambda entry: entry.relpath)
+    ]
 
 
-def task_state(cohort: FrozenCohort, items: Mapping[tuple[str, str], SampleExport], species: str, run: str) -> str:
-    """The snapshot state of one cohort task, as recorded in ``tasks.tsv``."""
+def _previous_rows(path: Path) -> dict[str, list[str]]:
+    """Rows of an existing species inventory, grouped by run (empty when there is none)."""
+
+    grouped: dict[str, list[str]] = {}
+    if not path.is_file():
+        return grouped
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if not lines or lines[0] != "\t".join(INVENTORY_COLUMNS):
+        raise ValueError(f"{path} is not a {SCHEMA} species inventory")
+    for line in lines[1:]:
+        grouped.setdefault(line.split("\t", 1)[0], []).append(line)
+    return grouped
+
+
+def task_state(
+    cohort: FrozenCohort,
+    items: Mapping[tuple[str, str], SampleExport],
+    tree: Mapping[tuple[str, str], Mapping[str, str]],
+    species: str,
+    run: str,
+) -> str:
+    """The snapshot state of one cohort task, as recorded in ``<species>.tasks.tsv``.
+
+    ``present`` when this data root exports it or the Git tree already holds
+    it (another host may have produced it); otherwise the reason it is not in
+    the snapshot, or ``pending`` when this data root has no output for it.
+    """
 
     if cohort.is_excluded(species, run):
         return "excluded"
     item = items.get((species, run))
-    if item is None:
-        return "pending"
-    return "present" if item.snapshot in EXPORTED_STATES else item.snapshot
+    if item is not None and (item.snapshot in EXPORTED_STATES or item.snapshot == "conflict"):
+        return "present" if item.snapshot != "conflict" else "conflict"
+    if (species, run) in tree:
+        return "present"
+    return "pending" if item is None else item.snapshot
 
 
 def write_inventory(
     inventory_dir: Path,
     cohort: FrozenCohort,
     items: Mapping[tuple[str, str], SampleExport],
-    summary: Mapping[str, Any],
+    tree: Mapping[tuple[str, str], Mapping[str, str]],
+    species_names: Iterable[str],
 ) -> list[str]:
-    """Write the per-species file inventories, the task table and the summary; return what changed."""
+    """Write ``<species>.tsv`` (files) and ``<species>.tasks.tsv`` (task states) per species.
+
+    Rows of runs the Git tree holds but this data root does not export are
+    carried forward from the previous inventory, so a host that only produced
+    part of a species never drops another host's records.
+    """
 
     changed: list[str] = []
-    for species in sorted(cohort.species_names):
-        text = _inventory_text(
-            item for (owner, _), item in items.items() if owner == species and item.snapshot in EXPORTED_STATES
-        )
-        if _write_text_if_changed(inventory_dir / f"{species}.tsv", text):
-            changed.append(f"{species}.tsv")
-    task_rows = ["\t".join(TASK_COLUMNS)]
-    for task in sorted(cohort.tasks, key=lambda entry: (entry.species, entry.accession)):
-        cohort_state = "excluded" if cohort.is_excluded(task.species, task.accession) else "task"
-        task_rows.append(
-            "\t".join(
-                (task.species, task.accession, cohort_state, task_state(cohort, items, task.species, task.accession))
+    for species in sorted(species_names):
+        inventory = inventory_dir / f"{species}.tsv"
+        previous = _previous_rows(inventory)
+        exported = {
+            run: item for (owner, run), item in items.items() if owner == species and item.snapshot in EXPORTED_STATES
+        }
+        committed = {run for owner, run in tree if owner == species}
+        rows = ["\t".join(INVENTORY_COLUMNS)]
+        for run in sorted(set(exported) | (committed & set(previous))):
+            rows.extend(_digest_rows(exported[run]) if run in exported else previous[run])
+        if _write_text_if_changed(inventory, "\n".join(rows) + "\n"):
+            changed.append(inventory.name)
+        task_rows = ["\t".join(TASK_COLUMNS)]
+        for task in sorted(cohort.tasks_for(species), key=lambda entry: entry.accession):
+            cohort_state = "excluded" if cohort.is_excluded(species, task.accession) else "task"
+            task_rows.append(
+                "\t".join((task.accession, cohort_state, task_state(cohort, items, tree, species, task.accession)))
             )
-        )
-    if _write_text_if_changed(inventory_dir / "tasks.tsv", "\n".join(task_rows) + "\n"):
-        changed.append("tasks.tsv")
-    if _write_text_if_changed(inventory_dir / "SUMMARY.json", json.dumps(summary, indent=2, sort_keys=True) + "\n"):
-        changed.append("SUMMARY.json")
+        tasks = inventory_dir / f"{species}.tasks.tsv"
+        if _write_text_if_changed(tasks, "\n".join(task_rows) + "\n"):
+            changed.append(tasks.name)
     return changed
 
 
 def build_summary(
-    cohort: FrozenCohort, items: Mapping[tuple[str, str], SampleExport], species_names: Iterable[str]
+    cohort: FrozenCohort,
+    items: Mapping[tuple[str, str], SampleExport],
+    tree: Mapping[tuple[str, str], Mapping[str, str]],
+    species_names: Iterable[str],
 ) -> dict[str, Any]:
-    """Deterministic counts of the snapshot (no timestamps, no host paths)."""
+    """Counts of the snapshot after this export (task states as ``<species>.tasks.tsv`` records them)."""
 
     by_species: dict[str, dict[str, int]] = {}
     totals: Counter[str] = Counter()
     for species in species_names:
         counts: Counter[str] = Counter(
-            task_state(cohort, items, species, task.accession) for task in cohort.tasks_for(species)
+            task_state(cohort, items, tree, species, task.accession) for task in cohort.tasks_for(species)
         )
         totals.update(counts)
         by_species[species] = dict(sorted(counts.items()))
@@ -434,7 +475,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--cohort", type=Path, required=True, help="Installed frozen cohort directory")
     parser.add_argument("--cohort-definition-sha256", help="Refuse unless COHORT.json has this sha256")
     parser.add_argument("--dest", type=Path, required=True, help="Snapshot directory: <dest>/<species>/<run>/")
-    parser.add_argument("--inventory-dir", type=Path, help="Write the inventory here on --execute (whole cohort only)")
+    parser.add_argument("--inventory-dir", type=Path, help="Write per-species inventories here on --execute")
     parser.add_argument(
         "--git-tree",
         metavar="REPO:TREEISH",
@@ -476,8 +517,6 @@ def _run(args: argparse.Namespace) -> int:
     dest = args.dest.expanduser().resolve()
     if dest == data_root or data_root in dest.parents:
         raise SystemExit(f"--dest {dest} lies inside the data root; refusing to write into it")
-    if args.inventory_dir is not None and args.species:
-        raise SystemExit("--inventory-dir describes the whole cohort; omit --species to write it")
     cohort = load_frozen_cohort(args.cohort.expanduser(), expected_definition_sha256=args.cohort_definition_sha256)
     lfs_globs = tuple(args.lfs_glob or ["*.h5"])
     requested = set(args.species or [])
@@ -535,7 +574,7 @@ def _run(args: argparse.Namespace) -> int:
         (item for item in items.values() if item.snapshot in {"new", "extend"}),
         key=lambda entry: (entry.species, entry.run),
     )
-    summary = build_summary(cohort, items, species_names)
+    summary = build_summary(cohort, items, tree, species_names)
     report: dict[str, Any] = {
         **summary,
         "mode": "execute" if args.execute else "plan",
@@ -564,7 +603,7 @@ def _run(args: argparse.Namespace) -> int:
         report["published"] = len(to_publish)
         if args.inventory_dir is not None:
             report["inventory_changed"] = write_inventory(
-                args.inventory_dir.expanduser().resolve(), cohort, items, summary
+                args.inventory_dir.expanduser().resolve(), cohort, items, tree, species_names
             )
     print(json.dumps(report, indent=2, sort_keys=True))
     return EXIT_CONFLICT if report["conflicts"] else EXIT_OK
