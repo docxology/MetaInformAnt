@@ -201,7 +201,14 @@ class TestCampaignPreflight:
             return {"status": (path / "verdict").read_text(), "reason": "fixture verdict file"}
 
         report = reuse_dry_run([ReuseProbe("species_a", quant, runs, classify)], fraction=0.01)
-        assert report["species_a"] == {"recorded": 200, "sampled": 2, "would_quarantine": 0, "examples": []}
+        assert report["species_a"] == {
+            "recorded": 200,
+            "sampled": 2,
+            "would_quarantine": 0,
+            "unreadable": 0,
+            "examples": [],
+            "unreadable_examples": [],
+        }
         assert len(calls) == 2
         again = reuse_dry_run([ReuseProbe("species_a", quant, runs, classify)], fraction=0.01)
         assert again == report and calls[:2] == calls[2:]  # the sample is deterministic
@@ -211,6 +218,36 @@ class TestCampaignPreflight:
         with pytest.raises(PreflightError, match="species_a: .* would be quarantined"):
             reuse_dry_run([ReuseProbe("species_a", quant, runs, classify)], fraction=0.05)
         assert reuse_dry_run([ReuseProbe("species_b", quant, [], classify)])["species_b"]["sampled"] == 0
+
+    @pytest.mark.skipif(os.geteuid() == 0, reason="root reads files without read permission")
+    def test_reuse_dry_run_reports_unreadable_outputs_without_counting_them(self, tmp_path: Path):
+        from metainformant.rna.engine.provenance import QUANT_PROVENANCE_FILENAME, classify_quantification
+
+        quant = tmp_path / "quant"
+        runs = ["SRR0001", "SRR0002"]
+        for run in runs:
+            (quant / run).mkdir(parents=True)
+            (quant / run / QUANT_PROVENANCE_FILENAME).write_text("{}")
+        unreadable = quant / runs[0] / QUANT_PROVENANCE_FILENAME
+        os.chmod(unreadable, 0)
+        try:
+            # Both outputs are sampled; the unreadable sidecar is a medium or permission problem, like reconcile it
+            # gets no verdict: the one judged output decides (here it is not reusable, so the check refuses).
+            with pytest.raises(PreflightError) as excinfo:
+                reuse_dry_run([ReuseProbe("species_a", quant, runs, classify_quantification)], fraction=1.0)
+            message = str(excinfo.value)
+            assert "1 of 1 readable sampled" in message and "1 unreadable sampled output(s) were not judged" in message
+            assert runs[0] not in message
+
+            # With only the unreadable output recorded nothing is judged and nothing would be quarantined.
+            report = reuse_dry_run([ReuseProbe("species_a", quant, runs[:1], classify_quantification)], fraction=1.0)
+            assert report["species_a"]["would_quarantine"] == 0 and report["species_a"]["unreadable"] == 1
+            assert report["species_a"]["unreadable_examples"][0].startswith(f"{runs[0]}: ")
+        finally:
+            os.chmod(unreadable, 0o644)
+        # Once readable it is judged like any other output (an empty sidecar is not reusable).
+        with pytest.raises(PreflightError, match="1 of 1 sampled"):
+            reuse_dry_run([ReuseProbe("species_a", quant, runs[:1], classify_quantification)], fraction=1.0)
 
     def test_collects_all_failures(self, tmp_path: Path):
         read_only = tmp_path / "read_only"

@@ -225,7 +225,8 @@ def main() -> int:
         default=None,
         metavar="FRACTION",
         help="Before discovery, classify this fraction of each species' recorded-quantified outputs and refuse "
-        "(exit 69) if more than 1%% would be quarantined (default: AMALGKIT_PREFLIGHT_REUSE_DRY_RUN, else off)",
+        "(exit 69) if more than 1%% would be quarantined (default: AMALGKIT_PREFLIGHT_REUSE_DRY_RUN, else 0.01 "
+        "with --cohort and off without; 0 turns it off)",
     )
     add_producer_cohort_arguments(parser)
     args = parser.parse_args()

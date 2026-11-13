@@ -410,8 +410,18 @@ def test_rows_only_the_operator_can_move_exit_65_with_counts_instead_of_drained(
     calls: list[str] = []
     orchestrator.process_single_sample = _quantify(campaign, db, calls)  # type: ignore[method-assign]
 
+    # In cohort mode the reuse dry-run is on by default: the only recorded output would be quarantined, so the
+    # producer refuses before discovery changes anything.
+    with pytest.raises(PreflightError, match="1 of 1 sampled quantified outputs would be quarantined"):
+        orchestrator.run_all([CONFIG_NAME], 1000.0, workers=1, threads=1, discovery_workers=1)
+    assert calls == [] and db.get_state(SPECIES, "SRR102") == "quantified"
+
+    # The operator has looked at it and opts out (as AMALGKIT_PREFLIGHT_REUSE_DRY_RUN=0 does).
     # SRR105 has 5,000 Gbases: above --max-gb 1000 it is never scheduled.
-    summary = orchestrator.run_all([CONFIG_NAME], 1000.0, workers=1, threads=1, discovery_workers=1)
+    summary = orchestrator.run_all(
+        [CONFIG_NAME], 1000.0, workers=1, threads=1, discovery_workers=1, reuse_dry_run_fraction=0
+    )
+    assert summary["startup"]["reuse_dry_run_fraction"] == 0
 
     assert sorted(calls) == ["SRR101", "SRR103"]
     assert summary["exit_code"] == EXIT_NEEDS_OPERATOR and summary["status"] == "needs_operator"
@@ -423,6 +433,49 @@ def test_rows_only_the_operator_can_move_exit_65_with_counts_instead_of_drained(
     drained = orchestrator.run_all([CONFIG_NAME], 10_000.0, workers=1, threads=1, discovery_workers=1)
     assert sorted(calls) == ["SRR101", "SRR103", "SRR105"]
     assert drained["exit_code"] == EXIT_OK and drained["needs_operator"] == {}
+    db.close()
+
+
+@pytest.mark.parametrize(
+    ("explicit", "env", "cohort_mode", "expected"),
+    [
+        (None, None, True, 0.01),  # cohort producer: on by default
+        (None, None, False, 0.0),  # legacy lane: off by default
+        (None, "0", True, 0.0),  # explicit opt-out
+        (None, "0.05", False, 0.05),
+        (None, "not-a-number", True, 0.01),
+        (None, "-1", True, 0.01),
+        (0.0, "0.5", True, 0.0),  # the flag wins over the environment
+        (0.2, None, False, 0.2),
+    ],
+)
+def test_reuse_dry_run_fraction_defaults_on_in_cohort_mode(
+    monkeypatch: pytest.MonkeyPatch, explicit: float | None, env: str | None, cohort_mode: bool, expected: float
+) -> None:
+    if env is None:
+        monkeypatch.delenv("AMALGKIT_PREFLIGHT_REUSE_DRY_RUN", raising=False)
+    else:
+        monkeypatch.setenv("AMALGKIT_PREFLIGHT_REUSE_DRY_RUN", env)
+    assert orchestrator_module.reuse_dry_run_fraction_setting(explicit, cohort_mode=cohort_mode) == expected
+
+
+def test_a_cohort_producer_runs_the_reuse_dry_run_by_default(campaign: Campaign) -> None:
+    for run in TASKS:
+        campaign.data.write_sample(run, config=campaign.yaml)
+    orchestrator = campaign.orchestrator()
+    db = orchestrator.db
+    db.init_species(SPECIES, TASKS)
+    for run in TASKS:
+        db.set_state(SPECIES, run, "quantified")
+    calls: list[str] = []
+    orchestrator.process_single_sample = _quantify(campaign, db, calls)  # type: ignore[method-assign]
+
+    summary = orchestrator.run_all([CONFIG_NAME], 10_000.0, workers=1, threads=1, discovery_workers=1)
+
+    assert summary["startup"]["reuse_dry_run_fraction"] == 0.01
+    assert summary["startup"]["reuse_dry_run"][SPECIES]["sampled"] == 1  # ceil(1% of 4)
+    assert summary["startup"]["reuse_dry_run"][SPECIES]["would_quarantine"] == 0
+    assert summary["exit_code"] == EXIT_OK and calls == []
     db.close()
 
 

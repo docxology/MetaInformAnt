@@ -49,6 +49,7 @@ import os
 import random
 import re
 import shutil
+import stat
 import struct
 import subprocess
 import sys
@@ -370,17 +371,19 @@ def reuse_dry_run(
     """Classify a deterministic sample of each species' recorded-quantified outputs; refuse a mass quarantine.
 
     Samples ``ceil(fraction * n)`` (at least one) of the runs each probe
-    records as quantified and classifies them exactly as resume would. If the
-    share that would be quarantined (not reusable, or no output directory)
-    exceeds ``max_quarantine_fraction`` in any species, raises
+    records as quantified and classifies them exactly as resume would
+    (strict reads: an output whose files exist but cannot be read is reported
+    as ``unreadable`` and, as in reconcile, never counted). If the share of
+    the judged sample that would be quarantined (not reusable, or no output
+    directory) exceeds ``max_quarantine_fraction`` in any species, raises
     :class:`PreflightError` naming examples: a provenance or path change must
     never silently send thousands of finished samples back to the network.
     Reads only.
     """
 
-    if reusable_statuses is None:
-        from metainformant.rna.engine.provenance import REUSABLE_QUANT_STATUSES
+    from metainformant.rna.engine.provenance import REUSABLE_QUANT_STATUSES, is_unreadable_error, strict_reads
 
+    if reusable_statuses is None:
         reusable_statuses = REUSABLE_QUANT_STATUSES
     if not 0 < fraction <= 1:
         raise ValueError("fraction must be in (0, 1]")
@@ -394,29 +397,48 @@ def reuse_dry_run(
             continue
         sample = rng.sample(runs, min(len(runs), max(1, math.ceil(fraction * len(runs)))))
         bad: list[str] = []
+        unreadable: list[str] = []
         for run in sorted(sample):
             path = Path(probe.quant_dir) / run
-            if not path.is_dir():
-                bad.append(f"{run}: no output directory")
-                continue
             try:
-                verdict = probe.classify(path, run)
-            except (OSError, ValueError) as exc:
+                # Like reconcile: an output whose files exist but cannot be read (EIO, EACCES) gets no verdict and
+                # would not be quarantined, so it is reported, not counted.
+                with strict_reads():
+                    try:
+                        is_directory = stat.S_ISDIR(path.stat().st_mode)
+                    except (FileNotFoundError, NotADirectoryError):
+                        is_directory = False
+                    if not is_directory:
+                        bad.append(f"{run}: no output directory")
+                        continue
+                    verdict = probe.classify(path, run)
+            except OSError as exc:
+                if is_unreadable_error(exc):
+                    unreadable.append(f"{run}: {exc}")
+                else:
+                    bad.append(f"{run}: classification failed: {exc}")
+                continue
+            except ValueError as exc:
                 bad.append(f"{run}: classification failed: {exc}")
                 continue
             if verdict.get("status") not in reusable_statuses:
                 bad.append(f"{run}: {verdict.get('status')} ({verdict.get('reason')})")
-        share = len(bad) / len(sample)
+        judged = len(sample) - len(unreadable)
+        share = len(bad) / judged if judged else 0.0
         report[probe.species] = {
             "recorded": len(runs),
             "sampled": len(sample),
             "would_quarantine": len(bad),
+            "unreadable": len(unreadable),
             "examples": bad[:5],
+            "unreadable_examples": unreadable[:5],
         }
         if share > max_quarantine_fraction:
+            judged_text = f"{judged} readable" if unreadable else str(judged)
             failures.append(
-                f"{probe.species}: {len(bad)} of {len(sample)} sampled quantified outputs would be quarantined "
+                f"{probe.species}: {len(bad)} of {judged_text} sampled quantified outputs would be quarantined "
                 f"({share:.1%} > {max_quarantine_fraction:.1%}); e.g. {'; '.join(bad[:3])}"
+                + (f"; {len(unreadable)} unreadable sampled output(s) were not judged" if unreadable else "")
             )
     if failures:
         raise PreflightError("Reuse dry-run refused the resume:\n  " + "\n  ".join(failures))

@@ -135,6 +135,9 @@ REQUANTIFICATION_POLICIES = frozenset({"preserve", "version-drift", "all"})
 DEFAULT_DISCOVERY_WORKERS = 4
 # How often one run queues a task again after its acquisition admission or staging deadline expired.
 DEFAULT_DEFERRAL_REQUEUES = 20
+# Share of each species' recorded-quantified outputs a cohort producer classifies before it changes any state
+# (AMALGKIT_PREFLIGHT_REUSE_DRY_RUN or --reuse-dry-run; "0" turns the check off). Without a cohort it is off.
+DEFAULT_COHORT_REUSE_DRY_RUN_FRACTION = 0.01
 
 _INDEX_CACHE_LOCK = threading.Lock()
 _INDEX_STAGE_LOCK = threading.Lock()
@@ -419,6 +422,32 @@ def _resource_int(value: Any, default: int, label: str) -> int:
         logger.warning("Invalid %s=%r; using %d", label, value, default)
         return default
     return parsed
+
+
+def reuse_dry_run_fraction_setting(explicit: Optional[float], *, cohort_mode: bool) -> float:
+    """The reuse dry-run fraction a run uses: ``explicit``, else ``AMALGKIT_PREFLIGHT_REUSE_DRY_RUN``, else the default.
+
+    The default is :data:`DEFAULT_COHORT_REUSE_DRY_RUN_FRACTION` for a cohort
+    producer (a systematic evidence break must not quarantine thousands of
+    finished outputs in one reconcile) and ``0`` (off) otherwise. ``0`` turns
+    the check off; a value above 1 means every recorded output.
+    """
+
+    if explicit is not None:
+        return max(0.0, float(explicit))
+    default = DEFAULT_COHORT_REUSE_DRY_RUN_FRACTION if cohort_mode else 0.0
+    raw = os.environ.get("AMALGKIT_PREFLIGHT_REUSE_DRY_RUN", "").strip()
+    if not raw:
+        return default
+    try:
+        value = float(raw)
+    except ValueError:
+        logger.warning("Invalid AMALGKIT_PREFLIGHT_REUSE_DRY_RUN=%r; using %g", raw, default)
+        return default
+    if value != value or value < 0:  # NaN or negative
+        logger.warning("Invalid AMALGKIT_PREFLIGHT_REUSE_DRY_RUN=%r; using %g", raw, default)
+        return default
+    return value
 
 
 def _format_duration(seconds: int) -> str:
@@ -5787,8 +5816,9 @@ class StreamingPipelineOrchestrator:
         host changes nothing); then startup resets every in-flight row
         (``downloading``/``downloaded``/``quantifying``) and every
         environment-class failure to ``pending`` (``permanent_drop`` rows
-        stay excluded) and, when ``reuse_dry_run_fraction`` (or
-        ``AMALGKIT_PREFLIGHT_REUSE_DRY_RUN``) is set, runs the reuse dry-run.
+        stay excluded) and runs the reuse dry-run: ``reuse_dry_run_fraction``,
+        else ``AMALGKIT_PREFLIGHT_REUSE_DRY_RUN``, else 1% in cohort mode and
+        off otherwise (:func:`reuse_dry_run_fraction_setting`; ``0`` opts out).
 
         Resources: ``resource_profile`` if given; else explicit ``workers``
         and ``threads`` build the historical profile
@@ -6137,9 +6167,10 @@ class StreamingPipelineOrchestrator:
                 "AMALGKIT_PIPELINE_STALE_DOWNLOADING_SECONDS is ignored: under the campaign writer lock every "
                 "in-flight row is orphaned and was reset at startup."
             )
-        if reuse_dry_run_fraction is None:
-            raw_fraction = os.environ.get("AMALGKIT_PREFLIGHT_REUSE_DRY_RUN", "").strip()
-            reuse_dry_run_fraction = float(raw_fraction) if raw_fraction else 0.0
+        reuse_dry_run_fraction = reuse_dry_run_fraction_setting(
+            reuse_dry_run_fraction, cohort_mode=getattr(self, "cohort", None) is not None
+        )
+        startup["reuse_dry_run_fraction"] = reuse_dry_run_fraction
         if reuse_dry_run_fraction > 0:
             try:
                 startup["reuse_dry_run"] = reuse_dry_run(

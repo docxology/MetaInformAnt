@@ -150,9 +150,13 @@ serial probe attempts, including misses.
   Startup then returns every `downloading`/`downloaded`/`quantifying` row and
   every environment-class failure to `pending` (no age threshold:
   `AMALGKIT_PIPELINE_STALE_DOWNLOADING_SECONDS` is ignored), keeps
-  `permanent_drop` rows excluded and, with `--reuse-dry-run FRACTION` or
-  `AMALGKIT_PREFLIGHT_REUSE_DRY_RUN`, refuses when more than 1% of a sample
-  of recorded-quantified outputs would be quarantined.
+  `permanent_drop` rows excluded and runs the reuse dry-run: it classifies a
+  deterministic sample (`--reuse-dry-run FRACTION`, else
+  `AMALGKIT_PREFLIGHT_REUSE_DRY_RUN`, else 1% with `--cohort` and off
+  without; `0` turns it off) of each species' recorded-quantified outputs and
+  refuses (exit 69) when more than 1% of the readable sample would be
+  quarantined. An output whose files exist but cannot be read is reported as
+  unreadable, not counted, as in reconcile.
 - Resume reconcile (`ProgressDB.reconcile_outputs()`) lists each species'
   quant directory once and trusts an output whose provenance sidecar
   fingerprint `(st_ino, st_size, st_mtime_ns)` and scope (configuration
