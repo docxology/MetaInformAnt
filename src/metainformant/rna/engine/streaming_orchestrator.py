@@ -10,6 +10,8 @@ import concurrent.futures
 import csv
 import errno
 import gzip
+import heapq
+import itertools
 import json
 import logging
 import math
@@ -22,7 +24,9 @@ import tempfile
 import threading
 import time
 import urllib.request
-from dataclasses import dataclass
+from collections.abc import Iterator, MutableMapping
+from contextlib import contextmanager
+from dataclasses import dataclass, fields, replace
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, cast
@@ -48,6 +52,7 @@ from metainformant.rna.engine.campaign_lock import (
     CampaignLockBusy,
 )
 from metainformant.rna.engine.campaign_lock import acquire as acquire_campaign_lock
+from metainformant.rna.engine.acquisition_order import plan_acquisition_order
 from metainformant.rna.engine.preflight import PreflightError, ReuseProbe, reuse_dry_run, run_campaign_preflight
 from metainformant.rna.engine.cohort import (
     CohortError,
@@ -59,10 +64,15 @@ from metainformant.rna.engine.cohort import (
     write_cohort_task_table,
 )
 from metainformant.rna.engine.progress_db import (
+    GATE_BACKOFF,
+    GATE_HELD,
     RETRYABLE_ENVIRONMENT_CLASSES,
     ProgressDB,
     ReconcileScope,
+    RetryPolicy,
+    RetryRecord,
     classify_sample_error,
+    retry_gate,
 )
 from metainformant.rna.engine.provenance import (
     QUANT_STATUS_CURRENT,
@@ -327,6 +337,29 @@ class PipelineResourceProfile:
     validation_slots: int
     max_in_flight: int
     host_cpu_count: int
+    # The fields below are resolved by :func:`build_host_resource_profile`; an explicit
+    # ``build_pipeline_resource_profile`` keeps the historical behavior (0 = not managed by the profile).
+    acquisition_slots: int = 0
+    ena_file_workers: int = 1
+    ena_max_connections: int = 0
+    ena_api_connections: int = 0
+    scheduling_order: str = "size_bands"
+    raw_reservation_bytes: int = 0
+    host_memory_bytes: int | None = None
+    host_performance_cores: int | None = None
+    host_efficiency_cores: int | None = None
+    kallisto_index_bytes: int | None = None
+    quant_memory_bytes_per_slot: int | None = None
+    memory_quant_slot_cap: int | None = None
+    source: str = "explicit"
+
+    def as_dict(self) -> Dict[str, Any]:
+        """The resolved profile, including derived totals, for logs and ``--print-profile``."""
+
+        payload: Dict[str, Any] = {field.name: getattr(self, field.name) for field in fields(self)}
+        payload["effective_quant_threads"] = self.effective_quant_threads
+        payload["peak_stage_threads"] = self.peak_stage_threads
+        return payload
 
     @property
     def effective_quant_threads(self) -> int:
@@ -505,6 +538,365 @@ def build_pipeline_resource_profile(
     return profile
 
 
+# ---------------------------------------------------------------------------
+# Host-derived campaign profile
+# ---------------------------------------------------------------------------
+
+SCHEDULING_ORDERS = ("size_bands", "smallest_first", "species_order")
+"""Fresh-acquisition order: global size bands with species round-robin (the measured default), one global
+smallest-first queue, or the historical species-by-species order."""
+
+# Measured host and workload facts behind the host profile (the campaign host: 8 cores as 4P+4E, 16 GiB RAM,
+# USB APFS data volume, about 270 Mbit/s downlink):
+#
+# * c19 run cfba5dce (2026-10-24 22:06Z to 10-25 23:04Z, 24.97 h): 808 new + 843 reused quantifications from
+#   504.6 GiB of validated FASTQ, 32.4 samples/h and 6.03 MB/s on average, best 6 h 46.5 samples/h at 9.23 MB/s,
+#   with 8 whole-sample acquisitions, 16 ENA file connections, 2 ENA API connections, 8 quant slots x 1 kallisto
+#   thread, 2 record validators, 1 recovery (NCBI extraction) slot, a 48-task frontier, a 256 GiB raw
+#   reservation, size-band ordering and scratch on the data root.
+# * Profiles with 4 acquisitions (control-plan 76e1dea0, 20c86570, 21364178) gave 6.3-10 samples/h; 12 workers
+#   with max_in_flight 24 and no frontier (e64e2c1a) gave 3.4 samples/h with 16 admission-queue exhaustions;
+#   internal-SSD scratch with under 20 GiB internal free (6acba5f4) collapsed to 1.5 samples/h.
+# * Quantification is not the bottleneck: on 2026-10-25, 433 single-thread kallisto runs had a median of 51 s
+#   (mean 103.5 s), 12.45 thread-hours in 24 h, at most 5 running at once. The 2026-10-10 shadow benchmark
+#   (SRR25343810) took 121.3 s at 2 threads, 50.3 s at 4 and 36.6 s at 8: extra threads per run buy little,
+#   so slots get one thread each and the slot count, not the thread count, uses the cores.
+# * kallisto 0.52.0 peak memory (``/usr/bin/time -l``, index load plus a small read set, 2026-11-12): 322 MB
+#   for the 31.8 MB Apis index, 484-485 MB for the 71.5 MB Linepithema and 80.8 MB Temnothorax nylanderi
+#   indexes (the largest of the 27 frozen indexes), i.e. about 216 MB + 3.3 x index bytes.
+HOST_ACQUISITION_SLOTS = 8
+HOST_ENA_FILE_WORKERS = 2
+HOST_ENA_API_CONNECTIONS = 2
+HOST_VALIDATION_SLOTS = 2
+HOST_RECOVERY_SLOTS = 1
+HOST_MAX_QUANT_SLOTS = 8
+HOST_RAW_RESERVATION_BYTES = 256 * 1024**3
+HOST_RAW_RESERVATION_FREE_FRACTION = 0.25
+# Memory guard: concurrent kallisto runs may use at most this share of physical memory, each estimated at
+# 256 MiB + 4 x index bytes (above the measured 216 MB + 3.3 x, for the EM over real read sets).
+HOST_QUANT_MEMORY_FRACTION = 0.5
+QUANT_MEMORY_BASE_BYTES = 256 * 1024**2
+QUANT_MEMORY_PER_INDEX_BYTE = 4
+DEFAULT_KALLISTO_INDEX_BYTES = 96 * 1024**2
+
+
+@dataclass(frozen=True)
+class HostFacts:
+    """CPU and memory of the host the producer runs on (``None`` when the platform does not say)."""
+
+    cpu_count: int
+    memory_bytes: int | None = None
+    performance_cores: int | None = None
+    efficiency_cores: int | None = None
+
+
+def _darwin_sysctl_int(name: str) -> int | None:
+    """One integer ``sysctlbyname`` value on macOS, else ``None`` (no subprocess)."""
+
+    if os.uname().sysname != "Darwin":
+        return None
+    try:
+        import ctypes
+
+        libc = ctypes.CDLL(None)
+        value = ctypes.c_int64(0)
+        size = ctypes.c_size_t(ctypes.sizeof(value))
+        if libc.sysctlbyname(name.encode(), ctypes.byref(value), ctypes.byref(size), None, ctypes.c_size_t(0)):
+            return None
+        return int(value.value)
+    except (OSError, AttributeError, ValueError):
+        return None
+
+
+def detect_host_facts() -> HostFacts:
+    """Logical CPUs (``os.process_cpu_count``), physical memory and, on Apple silicon, P/E core counts."""
+
+    counter = getattr(os, "process_cpu_count", None) or os.cpu_count
+    cpu_count = max(1, counter() or 1)
+    memory: int | None = None
+    try:
+        memory = int(os.sysconf("SC_PAGE_SIZE")) * int(os.sysconf("SC_PHYS_PAGES"))
+    except (ValueError, OSError, AttributeError):
+        memory = _darwin_sysctl_int("hw.memsize")
+    return HostFacts(
+        cpu_count=cpu_count,
+        memory_bytes=memory if memory and memory > 0 else None,
+        performance_cores=_darwin_sysctl_int("hw.perflevel0.physicalcpu"),
+        efficiency_cores=_darwin_sysctl_int("hw.perflevel1.physicalcpu"),
+    )
+
+
+def quant_memory_bytes_per_slot(kallisto_index_bytes: int | None) -> int:
+    """The memory one kallisto run is budgeted for (see :data:`QUANT_MEMORY_BASE_BYTES`)."""
+
+    index_bytes = kallisto_index_bytes if kallisto_index_bytes and kallisto_index_bytes > 0 else None
+    return QUANT_MEMORY_BASE_BYTES + QUANT_MEMORY_PER_INDEX_BYTE * (index_bytes or DEFAULT_KALLISTO_INDEX_BYTES)
+
+
+def _explicit_env_or(explicit: Any, variable: str, default: Any) -> Any:
+    """Precedence: an explicit argument, then a set environment variable, then the host ``default``."""
+
+    if explicit is not None:
+        return explicit
+    configured = os.environ.get(variable, "").strip()
+    return configured if configured else default
+
+
+def _nonnegative_profile_int(value: Any, default: int, label: str, maximum: int | None = None) -> int:
+    """Parse a setting where 0 means unbounded; invalid values fall back to ``default`` with a warning."""
+
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        logger.warning("Invalid %s=%r; using %d", label, value, default)
+        return default
+    if parsed < 0 or (maximum is not None and parsed > maximum):
+        logger.warning("Invalid %s=%r; using %d", label, value, default)
+        return default
+    return parsed
+
+
+def build_host_resource_profile(
+    *,
+    host: HostFacts | None = None,
+    kallisto_index_bytes: int | None = None,
+    data_root_free_bytes: int | None = None,
+    workers: int | None = None,
+    threads: int | None = None,
+    quant_slots: int | None = None,
+    fasterq_threads: int | None = None,
+    fasterq_slots: int | None = None,
+    compression_threads: int | None = None,
+    validation_slots: int | None = None,
+    max_in_flight: int | None = None,
+    acquisition_slots: int | None = None,
+    ena_file_workers: int | None = None,
+    ena_max_connections: int | None = None,
+    ena_api_connections: int | None = None,
+    scheduling_order: str | None = None,
+    raw_reservation_bytes: int | None = None,
+) -> PipelineResourceProfile:
+    """The campaign profile for this host: measured defaults, overridable per value.
+
+    Each value comes from its argument, else its environment variable, else
+    the host default below (measurement sources in the comment above
+    :data:`HOST_ACQUISITION_SLOTS`):
+
+    * ``quant_slots`` = min(logical CPUs, 8, memory cap), one kallisto thread
+      each, so total kallisto threads never exceed the cores. The memory cap
+      is ``50% of RAM / (256 MiB + 4 x largest index bytes)`` (16 GiB and the
+      80.8 MB nylanderi index: 13 slots, so 8 stands).
+    * ``acquisition_slots`` = 8 whole-sample acquisitions
+      (``AMALGKIT_PIPELINE_ACQUISITION_SLOTS``); ``ena_file_workers`` = 2, so
+      both mates of a paired run transfer at once
+      (``AMALGKIT_PIPELINE_ENA_FILE_WORKERS``); ``ena_max_connections`` = 16
+      file and ``ena_api_connections`` = 2 metadata requests
+      (``AMALGKIT_ENA_MAX_CONNECTIONS``/``AMALGKIT_ENA_API_CONNECTIONS``).
+    * ``workers`` = acquisition slots + quant slots: every acquisition slot
+      can be busy while each quant slot holds a sample whose inputs are
+      ready; more threads would only queue on the acquisition semaphore.
+      ``max_in_flight`` = ``workers``, so nothing waits pre-submitted and a
+      newly discovered species re-sorts the whole unsubmitted queue.
+    * ``validation_slots`` = 2 full FASTQ scans, ``fasterq_slots`` = 1
+      recovery (NCBI extraction) with ``fasterq_threads`` = min(4, CPUs/2):
+      both are USB-disk bound and compete with downloads.
+    * ``raw_reservation_bytes`` = min(256 GiB, 25% of the data root's free
+      space): the compressed FASTQ bytes all admitted samples may hold at once
+      (``AMALGKIT_PIPELINE_RAW_RESERVATION_GB``).
+    * ``scheduling_order`` = ``size_bands`` (``AMALGKIT_PIPELINE_SCHEDULING_ORDER``).
+    """
+
+    facts = host or detect_host_facts()
+    cpu_count = max(1, facts.cpu_count)
+    per_slot = quant_memory_bytes_per_slot(kallisto_index_bytes)
+    memory_cap: int | None = None
+    if facts.memory_bytes:
+        memory_cap = max(1, int(facts.memory_bytes * HOST_QUANT_MEMORY_FRACTION) // per_slot)
+    default_quant_slots = max(1, min(cpu_count, HOST_MAX_QUANT_SLOTS, memory_cap or HOST_MAX_QUANT_SLOTS))
+
+    # 0 keeps the orchestrator's historical "unbounded" meaning for acquisitions and ENA connections.
+    resolved_acquisition = _nonnegative_profile_int(
+        _explicit_env_or(acquisition_slots, "AMALGKIT_PIPELINE_ACQUISITION_SLOTS", HOST_ACQUISITION_SLOTS),
+        HOST_ACQUISITION_SLOTS,
+        "AMALGKIT_PIPELINE_ACQUISITION_SLOTS",
+        256,
+    )
+    resolved_file_workers = _resource_int(
+        _explicit_env_or(ena_file_workers, "AMALGKIT_PIPELINE_ENA_FILE_WORKERS", HOST_ENA_FILE_WORKERS),
+        HOST_ENA_FILE_WORKERS,
+        "AMALGKIT_PIPELINE_ENA_FILE_WORKERS",
+    )
+    if resolved_file_workers not in (1, 2):
+        raise ValueError("ENA file workers must be 1 or 2")
+    resolved_quant_slots = _resource_int(
+        _explicit_env_or(quant_slots, "AMALGKIT_PIPELINE_QUANT_SLOTS", default_quant_slots),
+        default_quant_slots,
+        "AMALGKIT_PIPELINE_QUANT_SLOTS",
+    )
+    if memory_cap is not None and resolved_quant_slots > memory_cap:
+        logger.warning(
+            "Capping quant slots from %d to %d: concurrent kallisto runs budgeted at %.0f MiB each may use at "
+            "most %.0f%% of %.1f GiB RAM",
+            resolved_quant_slots,
+            memory_cap,
+            per_slot / 1024**2,
+            HOST_QUANT_MEMORY_FRACTION * 100,
+            (facts.memory_bytes or 0) / 1024**3,
+        )
+        resolved_quant_slots = memory_cap
+    # One kallisto thread per slot unless a total thread budget was asked for; the total never exceeds the cores
+    # through the default, and build_pipeline_resource_profile warns when an explicit budget does.
+    resolved_threads = threads if threads is not None else resolved_quant_slots
+    # Every acquisition slot busy plus one sample per quant slot whose inputs are ready.
+    resolved_workers = workers if workers is not None else max(1, resolved_acquisition) + resolved_quant_slots
+    profile = build_pipeline_resource_profile(
+        resolved_workers,
+        resolved_threads,
+        quant_slots=resolved_quant_slots,
+        fasterq_threads=_explicit_env_or(
+            fasterq_threads, "AMALGKIT_PIPELINE_FASTQ_THREADS", max(1, min(4, cpu_count // 2))
+        ),
+        fasterq_slots=_explicit_env_or(fasterq_slots, "AMALGKIT_PIPELINE_FASTQ_SLOTS", HOST_RECOVERY_SLOTS),
+        compression_threads=_explicit_env_or(
+            compression_threads, "AMALGKIT_PIPELINE_COMPRESSION_THREADS", max(1, min(2, cpu_count // 4))
+        ),
+        validation_slots=_explicit_env_or(
+            validation_slots, "AMALGKIT_PIPELINE_VALIDATION_SLOTS", HOST_VALIDATION_SLOTS
+        ),
+        max_in_flight=_explicit_env_or(max_in_flight, "AMALGKIT_PIPELINE_MAX_IN_FLIGHT", resolved_workers),
+        cpu_count=cpu_count,
+    )
+    order = str(_explicit_env_or(scheduling_order, "AMALGKIT_PIPELINE_SCHEDULING_ORDER", SCHEDULING_ORDERS[0]))
+    if order not in SCHEDULING_ORDERS:
+        raise ValueError(f"scheduling order must be one of {SCHEDULING_ORDERS}, not {order!r}")
+    if raw_reservation_bytes is None:
+        configured_gb = os.environ.get("AMALGKIT_PIPELINE_RAW_RESERVATION_GB", "").strip()
+        if configured_gb:
+            raw_reservation_bytes = int(float(configured_gb) * 1024**3)
+        else:
+            raw_reservation_bytes = HOST_RAW_RESERVATION_BYTES
+            if data_root_free_bytes is not None:
+                raw_reservation_bytes = min(
+                    raw_reservation_bytes, int(data_root_free_bytes * HOST_RAW_RESERVATION_FREE_FRACTION)
+                )
+    if raw_reservation_bytes < 0:
+        raise ValueError("raw reservation must be nonnegative")
+    # Both mates of every admitted acquisition may hold an ENA file connection (8 x 2 = 16 in c19).
+    default_connections = resolved_acquisition * resolved_file_workers
+    connections = _nonnegative_profile_int(
+        _explicit_env_or(ena_max_connections, "AMALGKIT_ENA_MAX_CONNECTIONS", default_connections),
+        default_connections,
+        "AMALGKIT_ENA_MAX_CONNECTIONS",
+        256,
+    )
+    api_connections = _nonnegative_profile_int(
+        _explicit_env_or(ena_api_connections, "AMALGKIT_ENA_API_CONNECTIONS", HOST_ENA_API_CONNECTIONS),
+        HOST_ENA_API_CONNECTIONS,
+        "AMALGKIT_ENA_API_CONNECTIONS",
+        256,
+    )
+    return replace(
+        profile,
+        acquisition_slots=resolved_acquisition,
+        ena_file_workers=resolved_file_workers,
+        ena_max_connections=connections,
+        ena_api_connections=api_connections,
+        scheduling_order=order,
+        raw_reservation_bytes=raw_reservation_bytes,
+        host_memory_bytes=facts.memory_bytes,
+        host_performance_cores=facts.performance_cores,
+        host_efficiency_cores=facts.efficiency_cores,
+        kallisto_index_bytes=kallisto_index_bytes,
+        quant_memory_bytes_per_slot=per_slot,
+        memory_quant_slot_cap=memory_cap,
+        source="host",
+    )
+
+
+PROFILE_ENVIRONMENT = (
+    ("acquisition_slots", "AMALGKIT_PIPELINE_ACQUISITION_SLOTS"),
+    ("ena_file_workers", "AMALGKIT_PIPELINE_ENA_FILE_WORKERS"),
+    ("ena_max_connections", "AMALGKIT_ENA_MAX_CONNECTIONS"),
+    ("ena_api_connections", "AMALGKIT_ENA_API_CONNECTIONS"),
+)
+"""Profile fields the acquisition code reads from the environment (the ENA transport gates are process-wide)."""
+
+
+@contextmanager
+def resource_profile_environment(profile: PipelineResourceProfile) -> Iterator[None]:
+    """Export a host profile's acquisition budgets for the duration of a run, restoring the previous values."""
+
+    if profile.source != "host":
+        yield
+        return
+    previous = {variable: os.environ.get(variable) for _, variable in PROFILE_ENVIRONMENT}
+    try:
+        for name, variable in PROFILE_ENVIRONMENT:
+            os.environ[variable] = str(getattr(profile, name))
+        yield
+    finally:
+        for variable, value in previous.items():
+            if value is None:
+                os.environ.pop(variable, None)
+            else:
+                os.environ[variable] = value
+
+
+FAST_FAIL_ENA_ENVIRONMENT: Mapping[str, str] = {
+    "AMALGKIT_PIPELINE_ENA_RETRIES": "0",
+    "AMALGKIT_NCBI_PREFETCH_FIRST": "yes",
+    "AMALGKIT_PIPELINE_DOWNLOAD_SPEED_LIMIT_BYTES": str(64 * 1024),
+    "AMALGKIT_PIPELINE_DOWNLOAD_SPEED_TIME_SECONDS": "20",
+}
+"""The opt-in fast-fail ENA profile: no ENA retries, NCBI prefetch first, and a 64 KiB/s floor over 20 s.
+
+ENA connections already give up after 30 s (curl ``--connect-timeout 30`` and
+the 30 s ENA API timeout). It is not the default: every ENA hiccup then goes
+straight to the single recovery (NCBI prefetch + fasterq-dump) slot, whose
+extraction on the USB volume is slower than an ENA resume, and a 20 s stall
+window ends transfers that the default (1 KiB/s over 600 s, 5 resumable
+retries) completes. The c19 measurements used the default transfer settings.
+"""
+
+
+def apply_fast_fail_ena_environment(environ: MutableMapping[str, str] | None = None) -> Dict[str, str]:
+    """Set the :data:`FAST_FAIL_ENA_ENVIRONMENT` values that are not already set; return what was applied."""
+
+    target = os.environ if environ is None else environ
+    applied: Dict[str, str] = {}
+    for variable, value in FAST_FAIL_ENA_ENVIRONMENT.items():
+        if not target.get(variable, "").strip():
+            target[variable] = value
+            applied[variable] = value
+    return applied
+
+
+def format_resource_profile(profile: PipelineResourceProfile) -> str:
+    """One log line describing every resolved budget."""
+
+    memory = f"{profile.host_memory_bytes / 1024**3:.1f} GiB" if profile.host_memory_bytes else "unknown"
+    cores = (
+        f"{profile.host_cpu_count} CPUs ({profile.host_performance_cores}P+{profile.host_efficiency_cores}E)"
+        if profile.host_performance_cores is not None
+        else f"{profile.host_cpu_count} CPUs"
+    )
+    per_slot = profile.quant_memory_bytes_per_slot
+    quant_memory = f"{per_slot / 1024**2:.0f} MiB/slot" if per_slot else "unguarded"
+    reservation = profile.raw_reservation_bytes
+    raw_reservation = f"{reservation / 1024**3:.0f} GiB" if reservation else "off"
+    return (
+        f"resource profile [{profile.source}]: host {cores}, {memory} RAM; workers={profile.workers}, "
+        f"max_in_flight={profile.max_in_flight}, acquisition_slots={profile.acquisition_slots or 'unbounded'}, "
+        f"ena_file_workers={profile.ena_file_workers}, ena_connections={profile.ena_max_connections or 'unbounded'} "
+        f"file/{profile.ena_api_connections or 'unbounded'} api, quant={profile.quant_slots}x"
+        f"{profile.quant_threads_per_worker} threads ({profile.effective_quant_threads} total), "
+        f"quant_memory={quant_memory} cap={profile.memory_quant_slot_cap or '-'}, "
+        f"validation_slots={profile.validation_slots}, recovery={profile.fasterq_slots}x{profile.fasterq_threads} "
+        f"threads, compression_threads={profile.compression_threads}, raw_reservation={raw_reservation}, "
+        f"order={profile.scheduling_order}"
+    )
+
+
 def _species_name_from_config(config_name: str) -> str:
     """Derive the output species key from an amalgkit config filename."""
     return config_name.replace("amalgkit_", "").replace(".yaml", "")
@@ -649,10 +1041,15 @@ _RUN_ACCESSION_PATTERN = re.compile(r"^(?:SRR|ERR|DRR)\d+$")
 # ``.part`` file is intentionally a separate scheduler tier: it is not a
 # valid quantification input, but resuming it is cheaper and safer than
 # starting a new transfer.
-_RAW_INPUT_SUFFIXES = (".fastq.gz", ".fastq", ".fq.gz", ".fq", ".sra", ".sra.cache")
+# ``prefetch`` (sra-tools 3.4.1) writes ``<accession>.sralite`` instead of ``<accession>.sra`` when NCBI serves the
+# SRA Lite normalized-quality form (its output-name format ``%s.sralite``); fasterq-dump reads both, and kallisto
+# ignores base qualities, so a lite archive is a complete local source.
+_SRA_ARCHIVE_SUFFIXES = (".sra", ".sra.cache", ".sralite")
+_RAW_INPUT_SUFFIXES = (".fastq.gz", ".fastq", ".fq.gz", ".fq", *_SRA_ARCHIVE_SUFFIXES)
 _RAW_PARTIAL_SUFFIXES = tuple(f"{suffix}.part" for suffix in _RAW_INPUT_SUFFIXES)
 _FASTQ_INPUT_SUFFIXES = (".fastq.gz", ".fastq", ".fq.gz", ".fq")
 _RAW_VALIDATION_SCHEMA = "metainformant.rna.raw_validation.v2"
+_RAW_REJECTION_SCHEMA = "metainformant.rna.raw_validation_rejected.v1"
 
 
 def _library_layout_is_paired(value: Any) -> bool | None:
@@ -917,7 +1314,7 @@ def _campaign_cached_sra_path(accession: str) -> Path | None:
     """Return a complete-looking accession file in the campaign VDB cache."""
 
     cache_dir = _data_root() / ".sra-cache" / "sra"
-    for suffix in (".sra", ".sra.cache"):
+    for suffix in _SRA_ARCHIVE_SUFFIXES:
         candidate = cache_dir / f"{accession}{suffix}"
         try:
             if candidate.is_file() and candidate.stat().st_size > 0:
@@ -944,9 +1341,11 @@ def _local_sra_path(sample_dir: Path, out_dir: Path, accession: str) -> Path | N
         root / nested / f"{accession}{suffix}"
         for root in roots
         for nested in ("", accession)
-        for suffix in (".sra", ".sra.cache")
+        for suffix in _SRA_ARCHIVE_SUFFIXES
     ]
-    candidates.extend((sample_dir / f"{accession}.sra", out_dir / f"{accession}.sra"))
+    candidates.extend(
+        directory / f"{accession}{suffix}" for directory in (sample_dir, out_dir) for suffix in (".sra", ".sralite")
+    )
     cached_sra = _campaign_cached_sra_path(accession)
     if cached_sra is not None:
         candidates.append(cached_sra)
@@ -961,6 +1360,27 @@ def _local_sra_path(sample_dir: Path, out_dir: Path, accession: str) -> Path | N
         except OSError:
             continue
     return None
+
+
+def _prefetch_no_archive_reason(output: str, cached: Path | None) -> str:
+    """Explain a zero-exit ``prefetch`` that wrote nothing, from sra-tools 3.4.1's own messages.
+
+    prefetch exits 0 without writing when it resolves the accession to a copy
+    it already has (``'<acc>' is found locally``: the user-repository cache
+    under ``<data root>/.sra-cache``) or when the run exceeds ``--max-size``
+    (``... is larger than maximum allowed: skipped``).
+    """
+
+    if "is found locally" in output:
+        if cached is not None:
+            return (
+                f": prefetch resolved its local copy {cached}, which this campaign's vdb-validate witness rejects; "
+                "remove or rename that cache file to let prefetch fetch it again"
+            )
+        return ": prefetch resolved a local copy outside the campaign output directory"
+    if "larger than maximum allowed" in output:
+        return ": the run is larger than the free-space bound passed as --max-size"
+    return ""
 
 
 def _validated_local_fastq_inputs(
@@ -1028,6 +1448,14 @@ def _validated_local_fastq_inputs(
         marker, candidates, expected_paired, require_records=record_proof
     ):
         return candidates
+    if not fresh_record_scan:
+        rejected = _raw_rejection_reason(sample_dir, accession, candidates)
+        if rejected is not None:
+            # The same bytes failed layout validation before: rescanning them
+            # (a full multi-gigabyte read on the USB volume) cannot change the
+            # answer. Any rewrite of the files invalidates this witness.
+            logger.info("Skipping the rescan of %s: unchanged inputs were rejected before (%s)", accession, rejected)
+            return []
     try:
         before_scan = [_raw_validation_identity(path) for path in candidates]
         if record_proof and not validate_fastq_records(candidates, deadline_at=deadline_at):
@@ -1054,12 +1482,30 @@ def _validated_local_fastq_inputs(
                 expected_paired,
                 deadline_at=deadline_at,
             )
-        except (OSError, ValueError, EOFError) as exc:
+        except OSError as exc:
+            # I/O errors (a dropped USB volume, a truncated gzip member) may not repeat: no negative witness.
             logger.warning(
                 "Rejecting one-file paired input for %s after layout validation: %s",
                 accession,
                 exc,
             )
+            return []
+        except (ValueError, EOFError) as exc:
+            logger.warning(
+                "Rejecting one-file paired input for %s after layout validation: %s",
+                accession,
+                exc,
+            )
+            try:
+                _write_raw_rejection_marker(
+                    sample_dir,
+                    accession,
+                    candidates,
+                    expected_paired,
+                    f"one-file paired input failed layout validation: {exc}",
+                )
+            except OSError as marker_error:
+                logger.debug("Could not persist the raw rejection witness for %s: %s", accession, marker_error)
             return []
         candidates = normalized
         layout_proved_payload = True
@@ -1084,7 +1530,111 @@ def _validated_local_fastq_inputs(
         # A validation cache is an optimization, never a reason to reject a
         # usable read.  The next run will conservatively revalidate it.
         logger.debug("Could not persist raw validation marker %s: %s", marker, exc)
+    try:
+        _raw_rejection_marker(sample_dir, accession).unlink(missing_ok=True)
+    except OSError:
+        pass
     return candidates
+
+
+def _acquired_input_bytes(sample_dir: Path, accession: str) -> int:
+    """Bytes of the canonical FASTQ inputs present for ``accession`` (0 when none or unreadable)."""
+
+    total = 0
+    for mate in (None, 1, 2):
+        path = _raw_fastq_path(sample_dir, accession, mate)
+        if path is None:
+            continue
+        try:
+            total += path.stat().st_size
+        except OSError:
+            continue
+    return total
+
+
+def _raw_rejection_marker(sample_dir: Path, accession: str) -> Path:
+    """The negative witness beside :func:`_raw_validation_marker`: these exact files failed layout validation."""
+
+    return sample_dir.parent.parent / "raw_validation" / f"{accession}.rejected.json"
+
+
+def _raw_rejection_identity(path: Path) -> dict[str, int]:
+    identity = path.lstat()
+    if not stat.S_ISREG(identity.st_mode):
+        raise OSError(f"Refusing non-regular FASTQ validation input: {path}")
+    return {"inode": identity.st_ino, "size": identity.st_size, "mtime_ns": identity.st_mtime_ns}
+
+
+def _raw_rejection_reason(sample_dir: Path, accession: str, candidates: list[Path] | None = None) -> str | None:
+    """The recorded reason when a negative witness still describes the files on disk, else ``None``.
+
+    The witness is keyed by each file's ``(inode, size, mtime_ns)``: replacing
+    or rewriting a file (a new download, an extraction, an operator repair)
+    invalidates it, so only byte-identical inputs skip the rescan.
+    """
+
+    marker = _raw_rejection_marker(sample_dir, accession)
+    try:
+        if marker.is_symlink() or not marker.is_file() or marker.stat().st_size > 65536:
+            return None
+        payload = json.loads(marker.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return None
+    if not isinstance(payload, dict) or payload.get("schema") != _RAW_REJECTION_SCHEMA:
+        return None
+    recorded = payload.get("files")
+    if not isinstance(recorded, list) or not recorded:
+        return None
+    names = [entry.get("name") for entry in recorded if isinstance(entry, dict)]
+    if len(names) != len(recorded) or not all(isinstance(name, str) and "/" not in name for name in names):
+        return None
+    if candidates is not None and sorted(str(name) for name in names) != sorted(path.name for path in candidates):
+        return None
+    for entry in recorded:
+        name = entry["name"]
+        try:
+            identity = _raw_rejection_identity(sample_dir / name)
+        except OSError:
+            return None
+        if any(entry.get(key) != value for key, value in identity.items()):
+            return None
+    reason = payload.get("reason")
+    return reason if isinstance(reason, str) and reason else "layout validation rejected these files"
+
+
+def _write_raw_rejection_marker(
+    sample_dir: Path, accession: str, candidates: list[Path], expected_paired: bool | None, reason: str
+) -> None:
+    """Atomically record that ``candidates`` failed layout validation (a deterministic, content-only payload)."""
+
+    marker = _raw_rejection_marker(sample_dir, accession)
+    payload = {
+        "schema": _RAW_REJECTION_SCHEMA,
+        "accession": accession,
+        "declared_library_layout": (
+            "paired" if expected_paired is True else "single" if expected_paired is False else "unknown"
+        ),
+        "files": [{"name": path.name, **_raw_rejection_identity(path)} for path in candidates],
+        "reason": reason[:500],
+    }
+    marker.parent.mkdir(exist_ok=True)
+    if marker.is_symlink() or (marker.exists() and not marker.is_file()):
+        raise OSError(f"Refusing unsafe raw validation witness: {marker}")
+    temporary = marker.with_name(f".{marker.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    _write_text_durably(marker, json.dumps(payload, indent=2, sort_keys=True) + "\n", temporary)
+
+
+def _layout_contradiction(files: list[Path], accession: str, expected_paired: bool | None) -> str | None:
+    """Describe downloaded FASTQ names that cannot satisfy the declared layout, else ``None``."""
+
+    names = sorted(path.name for path in files)
+    numbered = [name for name in names if re.match(rf"^{re.escape(accession)}_[12]\.", name)]
+    unnumbered = [name for name in names if name.startswith(f"{accession}.")]
+    if expected_paired is False and numbered and not unnumbered:
+        return f"declared single, source delivered mate files {', '.join(numbered)}"
+    if expected_paired is True and len(numbered) == 1 and not unnumbered:
+        return f"declared paired, source delivered one mate {numbered[0]}"
+    return None
 
 
 def _promote_staged_fastq_file(staged: Path, destination: Path) -> None:
@@ -1588,19 +2138,39 @@ def _task_has_local_sra(task: Dict[str, Any]) -> bool:
     return not has_fastq and _local_sra_path(sample_dir, fastq_dir, accession) is not None
 
 
-def _prioritize_tasks_by_raw_state(
-    tasks: List[Dict[str, Any]],
-    *,
-    workers: int | None = None,
-    fasterq_slots: int | None = None,
-) -> List[Dict[str, Any]]:
-    """Prioritize reusable inputs without blocking network workers on SRA I/O.
+# Median gzip-FASTQ bytes per sequenced base across the 18,167 frozen Hymenoptera tasks with both values (0.498):
+# the acquisition weight of a task whose metadata has total_bases but no ENA fastq_bytes.
+FASTQ_BYTES_PER_BASE_NUMERATOR = 1
+FASTQ_BYTES_PER_BASE_DENOMINATOR = 2
 
-    Reusable FASTQs remain first. Local SRA databases are admitted in bounded
-    fallback-sized chunks, interleaved with partial and new acquisitions, so
-    the extraction semaphore does not leave every sample worker waiting on a
-    mounted-disk conversion while ENA work could continue independently.
+
+def task_identity(task: Mapping[str, Any]) -> str:
+    """The scheduling identity ``species/run`` (also the deterministic tie-break)."""
+
+    return f"{task.get('species_name') or task.get('species') or ''}/{str(task['srr']).strip()}"
+
+
+def task_acquisition_weight(task: Mapping[str, Any]) -> int:
+    """Estimated compressed FASTQ bytes a fresh acquisition writes (0 when unknown).
+
+    Uses the frozen cohort's ENA ``fastq_bytes`` when present, else
+    ``total_bases`` x 0.5 (see :data:`FASTQ_BYTES_PER_BASE_NUMERATOR`).
     """
+
+    for key, scale in (("fastq_bytes", None), ("total_bases", True)):
+        try:
+            value = int(task.get(key) or 0)
+        except (TypeError, ValueError):
+            value = 0
+        if value > 0:
+            if scale:
+                return value * FASTQ_BYTES_PER_BASE_NUMERATOR // FASTQ_BYTES_PER_BASE_DENOMINATOR
+            return value
+    return 0
+
+
+def _annotate_raw_input_state(tasks: List[Dict[str, Any]]) -> None:
+    """Record each task's raw-input tier and payload from bounded directory scans."""
 
     accessions_by_dir: dict[Path, set[str]] = {}
     for task in tasks:
@@ -1620,21 +2190,89 @@ def _prioritize_tasks_by_raw_state(
         task["_raw_input_bytes"] = payload_bytes
         task["_uses_local_sra"] = _task_has_local_sra(task)
 
-    def scheduling_key(task: Dict[str, Any]) -> tuple[int, int]:
-        priority = task["_raw_input_priority"]
-        payload_bytes = task["_raw_input_bytes"]
-        if priority == 0:
-            # Shortest reusable reads first improves time-to-first-results and
-            # prevents a few multi-gigabyte libraries from monopolizing every
-            # quant slot while smaller validated samples wait.
-            return priority, payload_bytes
-        if priority == 1:
-            # A larger partial has more acquired data and is usually closer to
-            # becoming reusable; finish the most complete resumptions first.
-            return priority, -payload_bytes
-        return priority, 0
 
-    ordered = sorted(tasks, key=scheduling_key)
+def _fresh_acquisition_order(tasks: List[Dict[str, Any]], order: str) -> List[Dict[str, Any]]:
+    """Order tier-2 (fresh) tasks with the validated acquisition planner.
+
+    ``size_bands`` (the c19 default) visits global size bands smallest first
+    and round-robins species inside a band, so every species advances;
+    ``smallest_first`` is one global size queue; ``species_order`` keeps the
+    discovery order. Ties break on ``species/run``; unknown sizes go last.
+    """
+
+    if order == "species_order" or len(tasks) < 2:
+        return list(tasks)
+    by_identity: dict[str, Dict[str, Any]] = {}
+    duplicates: List[Dict[str, Any]] = []
+    entries = []
+    for task in tasks:
+        identity = task_identity(task)
+        if identity in by_identity:
+            duplicates.append(task)
+            continue
+        by_identity[identity] = task
+        entries.append(
+            {
+                "task_id": identity,
+                "species": task.get("species_name") or task.get("species") or "",
+                "fastq_bytes": task_acquisition_weight(task),
+            }
+        )
+    planned = plan_acquisition_order(
+        entries,
+        (),
+        global_size_bands=order == "size_bands",
+        global_size_order=order == "smallest_first",
+    )
+    return [by_identity[identity] for identity in planned] + duplicates
+
+
+def order_campaign_tasks(
+    tasks: List[Dict[str, Any]],
+    *,
+    workers: int | None = None,
+    fasterq_slots: int | None = None,
+    order: str = "size_bands",
+) -> List[Dict[str, Any]]:
+    """Order annotated tasks: reusable inputs, then partials, then fresh acquisitions.
+
+    Tier 0 (valid local FASTQs) runs smallest first; tier 1 (resumable
+    partials) runs most complete first; tier 2 (fresh) follows ``order``.
+    Local SRA databases are admitted in bounded fallback-sized chunks,
+    interleaved with partial and new acquisitions, so the extraction
+    semaphore does not leave every sample worker waiting on a mounted-disk
+    conversion while ENA work could continue independently. Pure: reads only
+    the ``_raw_input_*`` annotations, so a campaign can re-order its pending
+    queue whenever a species' discovery completes.
+    """
+
+    if order not in SCHEDULING_ORDERS:
+        raise ValueError(f"scheduling order must be one of {SCHEDULING_ORDERS}, not {order!r}")
+    reusable = [task for task in tasks if task.get("_raw_input_priority", 2) == 0]
+    partial = [task for task in tasks if task.get("_raw_input_priority", 2) == 1]
+    fresh = [task for task in tasks if task.get("_raw_input_priority", 2) not in (0, 1)]
+
+    def tie_break(task: Mapping[str, Any]) -> tuple[str, int, str]:
+        # Independent of which species' discovery finished first: species, its
+        # discovery position, then the run. ``species_order`` keeps the
+        # historical stable input order (the sort is stable).
+        if order == "species_order":
+            return "", 0, ""
+        species = str(task.get("species_name") or task.get("species") or "")
+        try:
+            position = int(task.get("batch_idx") or 0)
+        except (TypeError, ValueError):
+            position = 0
+        return species, position, str(task["srr"]).strip()
+
+    # Shortest reusable reads first improves time-to-first-results and
+    # prevents a few multi-gigabyte libraries from monopolizing every
+    # quant slot while smaller validated samples wait.
+    reusable.sort(key=lambda task: (task.get("_raw_input_bytes", 0), tie_break(task)))
+    # A larger partial has more acquired data and is usually closer to
+    # becoming reusable; finish the most complete resumptions first.
+    partial.sort(key=lambda task: (-task.get("_raw_input_bytes", 0), tie_break(task)))
+    ordered = reusable + partial + _fresh_acquisition_order(fresh, order)
     if not ordered:
         return ordered
 
@@ -1642,9 +2280,9 @@ def _prioritize_tasks_by_raw_state(
     # interleave at most one fallback-sized cache chunk with the non-cache
     # queue. This preserves the preference for downloaded material while
     # keeping network/partial-transfer workers useful during long extraction.
-    reusable_fastq = [task for task in ordered if task["_raw_input_priority"] == 0 and not task["_uses_local_sra"]]
-    cached_sra = [task for task in ordered if task["_raw_input_priority"] == 0 and task["_uses_local_sra"]]
-    non_cached = [task for task in ordered if task["_raw_input_priority"] != 0]
+    reusable_fastq = [task for task in reusable if not task.get("_uses_local_sra")]
+    cached_sra = [task for task in reusable if task.get("_uses_local_sra")]
+    non_cached = ordered[len(reusable) :]
     if not cached_sra or not non_cached:
         return ordered
 
@@ -1660,6 +2298,19 @@ def _prioritize_tasks_by_raw_state(
         result.extend(non_cached[non_cached_index : non_cached_index + non_cached_chunk])
         non_cached_index += non_cached_chunk
     return result
+
+
+def _prioritize_tasks_by_raw_state(
+    tasks: List[Dict[str, Any]],
+    *,
+    workers: int | None = None,
+    fasterq_slots: int | None = None,
+    order: str = "size_bands",
+) -> List[Dict[str, Any]]:
+    """Annotate raw-input state, then order with :func:`order_campaign_tasks`."""
+
+    _annotate_raw_input_state(tasks)
+    return order_campaign_tasks(tasks, workers=workers, fasterq_slots=fasterq_slots, order=order)
 
 
 def _filter_valid_run_rows(df: Any, species_name: str, metadata_path: Path) -> Any:
@@ -2249,6 +2900,10 @@ def _build_sample_tasks(
         library_layout = row.get("lib_layout")
         if not isinstance(library_layout, str):
             library_layout = row.get("library_layout")
+        try:
+            total_bases = max(0, int(float(row.get("total_bases", 0) or 0)))
+        except (TypeError, ValueError):
+            total_bases = 0
         tasks.append(
             {
                 "srr": row[srr_col],
@@ -2257,6 +2912,8 @@ def _build_sample_tasks(
                 "config_path": config_path,
                 "species_name": species_name,
                 "expected_paired": _library_layout_is_paired(library_layout),
+                # Carried for global smallest-first scheduling across species.
+                "total_bases": total_bases,
             }
         )
     return tasks
@@ -2300,6 +2957,9 @@ class StreamingPipelineOrchestrator:
         self._acquisition_semaphore = (
             threading.BoundedSemaphore(self.acquisition_slots) if self.acquisition_slots else None
         )
+        # Why an accession's acquired files contradict its declared layout (see _note_layout_mismatch).
+        self._acquisition_notes: Dict[str, str] = {}
+        self._acquisition_notes_lock = threading.Lock()
         self.record_validation_required = os.environ.get(
             "AMALGKIT_PIPELINE_VALIDATE_FASTQ_RECORDS", "no"
         ).strip().lower() in {"1", "yes", "true"}
@@ -2930,6 +3590,30 @@ class StreamingPipelineOrchestrator:
         scratch_dir = cast(Path, self.local_ena_scratch_dir)
         return self._reserve_local_scratch(scratch_dir, size, purpose=f"ENA staging {accession}")
 
+    def _note_layout_mismatch(self, srr_id: str, reason: str) -> None:
+        """Remember that ``srr_id``'s acquired files contradict its declared layout, for its failure message."""
+
+        logger.warning("Layout mismatch for %s: %s", srr_id, reason)
+        with self._acquisition_notes_lock:
+            self._acquisition_notes[srr_id] = reason[:300]
+
+    def _layout_failure_suffix(self, srr_id: str) -> str:
+        """``"; layout_mismatch: <reason>"`` when this run saw a layout contradiction for ``srr_id``, else ``""``.
+
+        Appended to the acquisition failure message, it makes the progress DB
+        classify the row ``layout_mismatch`` (quarantined for reconciliation,
+        never re-downloaded at every start) instead of a transient transfer
+        failure.
+        """
+
+        with self._acquisition_notes_lock:
+            reason = self._acquisition_notes.get(srr_id)
+        return f"; layout_mismatch: {reason}" if reason else ""
+
+    def _forget_acquisition_note(self, srr_id: str) -> None:
+        with self._acquisition_notes_lock:
+            self._acquisition_notes.pop(srr_id, None)
+
     def _validate_acquisition_fastqs(
         self,
         directory: Path,
@@ -3097,6 +3781,9 @@ class StreamingPipelineOrchestrator:
                 srr_id,
             )
             return True
+        rejected_inputs = _raw_rejection_reason(sample_dir, srr_id)
+        if rejected_inputs is not None:
+            self._note_layout_mismatch(srr_id, f"local inputs: {rejected_inputs}")
 
         local_sra = _local_sra_path(sample_dir, out_dir, srr_id)
         local_sra_attempted = False
@@ -3281,6 +3968,11 @@ class StreamingPipelineOrchestrator:
                         "Downloaded FASTQ layout for %s does not match the declared library layout",
                         srr_id,
                     )
+                    contradiction = _raw_rejection_reason(sample_dir, srr_id) or _layout_contradiction(
+                        downloaded_files, srr_id, expected_paired
+                    )
+                    if contradiction is not None:
+                        self._note_layout_mismatch(srr_id, f"ENA files: {contradiction}")
                     success = False
                 else:
                     downloaded_files = validated_fastqs
@@ -3298,7 +3990,7 @@ class StreamingPipelineOrchestrator:
                 if (
                     f.is_file()
                     and not _is_diagnostic_transfer_artifact(f)
-                    and not f.name.endswith(".sra")
+                    and not f.name.endswith((".sra", ".sralite"))
                     and not _is_accession_fastq_file(f, srr_id)
                 ):
                     f.unlink(missing_ok=True)
@@ -3334,7 +4026,7 @@ class StreamingPipelineOrchestrator:
                 if (
                     f.is_file()
                     and not _is_diagnostic_transfer_artifact(f)
-                    and not f.name.endswith(".sra")
+                    and not f.name.endswith((".sra", ".sralite"))
                     and not _is_accession_fastq_file(f, srr_id)
                 ):
                     f.unlink(missing_ok=True)
@@ -3440,7 +4132,9 @@ class StreamingPipelineOrchestrator:
         if available < 1024:
             logger.error("Insufficient bulk capacity to prefetch %s", srr_id)
             return None
-        for rejected in (root / f"{srr_id}.sra", root / srr_id / f"{srr_id}.sra"):
+        for rejected in (
+            root / nested / f"{srr_id}{suffix}" for nested in ("", srr_id) for suffix in (".sra", ".sralite")
+        ):
             if rejected.is_file() and _cached_sra_validation_result(rejected) is False:
                 rejected.rename(rejected.with_name(f"{rejected.name}.invalid-{time.time_ns()}"))
         command = [
@@ -3472,7 +4166,9 @@ class StreamingPipelineOrchestrator:
             logger.error("NCBI prefetch failed for %s (exit %d): %s", srr_id, result.returncode, detail[:300])
             return None
 
-        candidates = [root / f"{srr_id}.sra", root / f"{srr_id}.sra.cache", root / srr_id / f"{srr_id}.sra"]
+        candidates = [
+            root / nested / f"{srr_id}{suffix}" for nested in ("", srr_id) for suffix in _SRA_ARCHIVE_SUFFIXES
+        ]
         for candidate in candidates:
             if candidate.is_file() and candidate.stat().st_size > 0:
                 logger.info("Prefetch completed for %s: %s", srr_id, candidate)
@@ -3480,7 +4176,11 @@ class StreamingPipelineOrchestrator:
         cached = _campaign_cached_sra_path(srr_id)
         if cached is not None and _cached_sra_validation_result(cached) is not False:
             return cached
-        logger.error("NCBI prefetch reported success but produced no SRA archive for %s", srr_id)
+        logger.error(
+            "NCBI prefetch reported success but produced no SRA archive for %s%s",
+            srr_id,
+            _prefetch_no_archive_reason(f"{result.stdout or ''}\n{result.stderr or ''}", cached),
+        )
         return None
 
     def _download_fastq_ncbi_only(
@@ -3533,6 +4233,11 @@ class StreamingPipelineOrchestrator:
             or _raw_fastq_path(sample_dir, srr_id) is not None
         ):
             logger.error("Recovery refuses invalid complete FASTQs for %s; inputs preserved", srr_id)
+            rejected_inputs = _raw_rejection_reason(sample_dir, srr_id)
+            if rejected_inputs is not None:
+                # Deterministic: the same bytes failed layout validation. Other rejections (an I/O error during
+                # the scan) stay transient and go through the backoff budget.
+                self._note_layout_mismatch(srr_id, f"recovery refuses rejected complete FASTQs: {rejected_inputs}")
             return False
 
         local_sra = _local_sra_path(sample_dir, out_dir, srr_id)
@@ -4328,13 +5033,15 @@ class StreamingPipelineOrchestrator:
             error_msg = (
                 "Acquired FASTQs missing or invalid; no network attempted in quantification stage"
                 if quantification_only
-                else "Download Failed (all sources: ENA FTP/HTTP, NCBI)"
+                else "Download Failed (all sources: ENA FTP/HTTP, NCBI)" + self._layout_failure_suffix(srr_id)
             )
             self.db.set_state(species_name, srr_id, "failed", error=error_msg)
             result["error"] = error_msg
             return result
         self.db.set_state(species_name, srr_id, "downloaded")
         result["downloaded"] = True
+        # Measured before quantification reclaims the reads: the run's FASTQ GB/hour.
+        result["input_bytes"] = _acquired_input_bytes(fastq_dir / srr_id, srr_id)
         if acquisition_only:
             result["ready_for_quant"] = True
             return result
@@ -4907,8 +5614,8 @@ class StreamingPipelineOrchestrator:
         self,
         species_list: List[str],
         max_gb: float,
-        workers: int,
-        threads: int,
+        workers: Optional[int] = None,
+        threads: Optional[int] = None,
         *,
         quant_slots: Optional[int] = None,
         fasterq_threads: Optional[int] = None,
@@ -4919,6 +5626,8 @@ class StreamingPipelineOrchestrator:
         requantification_policy: Optional[str] = None,
         discovery_workers: Optional[int] = None,
         reuse_dry_run_fraction: Optional[float] = None,
+        resource_profile: Optional[PipelineResourceProfile] = None,
+        scheduling_order: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Run the current pipeline with bounded, explicit stage resources; return a run summary.
 
@@ -4932,21 +5641,44 @@ class StreamingPipelineOrchestrator:
         stay excluded) and, when ``reuse_dry_run_fraction`` (or
         ``AMALGKIT_PREFLIGHT_REUSE_DRY_RUN``) is set, runs the reuse dry-run.
 
-        Species discovery/reference preparation is parallelized in an isolated
-        phase. Sample execution starts only after every species discovery
-        future has completed, preserving a single global task-prioritization
-        boundary and preventing partial discovery from being mistaken for a
-        complete cohort. The sample executor still uses a bounded submission
-        window, and its active workers and total quantification budget remain
+        Resources: ``resource_profile`` if given; else explicit ``workers``
+        and ``threads`` build the historical profile
+        (:func:`build_pipeline_resource_profile`); else the profile is derived
+        from this host (:func:`build_host_resource_profile`: measured c19
+        defaults, which also set the acquisition slots and the ENA
+        connection budgets for the run). The resolved profile is logged.
+
+        Discovery streams: each species' tasks join the queue as soon as its
+        own discovery finishes, so execution starts before the slowest
+        species is discovered. The unsubmitted queue is re-ordered on every
+        arrival (:func:`order_campaign_tasks`): reusable local inputs first,
+        then resumable partials, then fresh acquisitions in
+        ``scheduling_order`` (default global size bands with species
+        round-robin), ties broken by species and run. A species whose
+        discovery raises is skipped for this run and the exit code becomes
+        ``EXIT_RETRYABLE`` (75); the other species proceed. The sample
+        executor uses a bounded submission window, a raw-byte reservation
+        when the profile has one, and its quantification budget stays
         separate from the fallback ``fasterq-dump`` and ``pigz`` budgets.
+
+        Retry bookkeeping (:class:`~metainformant.rna.engine.progress_db.RetryPolicy`):
+        each finished attempt is classified. Environment failures are
+        retried at the next start; transient failures back off
+        exponentially (re-queued in this run when the backoff elapses,
+        skipped by later starts until then); layout mismatches are
+        quarantined and kallisto exit-1 failures and spent attempt budgets
+        are held for the operator
+        (:meth:`~metainformant.rna.engine.progress_db.ProgressDB.release_retry_holds`).
+        Held rows do not count as remaining work.
 
         ``AMALGKIT_ENV_FAILURE_TRIP`` (default 5) consecutive environment-class
         failures (EPERM, EACCES, EROFS, ENXIO, ENOSPC) stop admission; those
         rows stay ``pending`` and the summary's ``exit_code`` is
         ``EXIT_ENVIRONMENT`` (69). Otherwise ``exit_code`` is ``EXIT_OK`` (0)
         when no scheduled task is left retryable and ``EXIT_RETRYABLE`` (75)
-        when the same command should be run again. The WAL is checkpointed at
-        exit.
+        when the same command should be run again (``next_attempt_due_at`` in
+        the summary says when backed-off work becomes due). The WAL is
+        checkpointed at exit.
         """
 
         lock = acquire_campaign_lock(_data_root(), "producer")
@@ -4972,6 +5704,8 @@ class StreamingPipelineOrchestrator:
                 requantification_policy=requantification_policy,
                 discovery_workers=discovery_workers,
                 reuse_dry_run_fraction=reuse_dry_run_fraction,
+                resource_profile=resource_profile,
+                scheduling_order=scheduling_order,
             )
         finally:
             try:
@@ -5035,12 +5769,93 @@ class StreamingPipelineOrchestrator:
             probes.append(ReuseProbe(species_name, quant_dir, recorded, classify))
         return probes
 
+    def _resolve_resource_profile(
+        self,
+        workers: Optional[int],
+        threads: Optional[int],
+        *,
+        index_paths: Mapping[str, Path],
+        data_root: Path,
+        quant_slots: Optional[int] = None,
+        fasterq_threads: Optional[int] = None,
+        fasterq_slots: Optional[int] = None,
+        compression_threads: Optional[int] = None,
+        max_in_flight: Optional[int] = None,
+        validation_slots: Optional[int] = None,
+    ) -> PipelineResourceProfile:
+        """Explicit ``workers`` and ``threads`` keep the historical profile; either one missing derives it
+        from this host (:func:`build_host_resource_profile`)."""
+
+        if workers is not None and threads is not None:
+            profile = build_pipeline_resource_profile(
+                workers,
+                threads,
+                quant_slots=quant_slots,
+                fasterq_threads=fasterq_threads,
+                fasterq_slots=fasterq_slots,
+                compression_threads=compression_threads,
+                validation_slots=validation_slots,
+                max_in_flight=max_in_flight,
+            )
+            order = os.environ.get("AMALGKIT_PIPELINE_SCHEDULING_ORDER", "").strip() or SCHEDULING_ORDERS[0]
+            if order not in SCHEDULING_ORDERS:
+                raise ValueError(f"scheduling order must be one of {SCHEDULING_ORDERS}, not {order!r}")
+            reservation_gb = os.environ.get("AMALGKIT_PIPELINE_RAW_RESERVATION_GB", "").strip()
+            return replace(
+                profile,
+                scheduling_order=order,
+                raw_reservation_bytes=int(float(reservation_gb) * 1024**3) if reservation_gb else 0,
+            )
+        index_sizes = []
+        for path in index_paths.values():
+            try:
+                index_sizes.append(path.stat().st_size)
+            except OSError:
+                continue
+        try:
+            free_bytes: int | None = shutil.disk_usage(data_root).free
+        except OSError:
+            free_bytes = None
+        return build_host_resource_profile(
+            kallisto_index_bytes=max(index_sizes) if index_sizes else None,
+            data_root_free_bytes=free_bytes,
+            workers=workers,
+            threads=threads,
+            quant_slots=quant_slots,
+            fasterq_threads=fasterq_threads,
+            fasterq_slots=fasterq_slots,
+            compression_threads=compression_threads,
+            validation_slots=validation_slots,
+            max_in_flight=max_in_flight,
+        )
+
+    def _apply_resource_profile(self, profile: PipelineResourceProfile) -> None:
+        """Install the profile's stage semaphores; a host profile also sets the acquisition budgets."""
+
+        self._resource_profile = profile
+        self._quant_semaphore = threading.BoundedSemaphore(profile.quant_slots)
+        self._fasterq_semaphore = threading.BoundedSemaphore(profile.fasterq_slots)
+        self._raw_validation_semaphore = threading.BoundedSemaphore(profile.validation_slots)
+        if profile.source == "host":
+            self.acquisition_slots = profile.acquisition_slots
+            self._acquisition_semaphore = (
+                threading.BoundedSemaphore(profile.acquisition_slots) if profile.acquisition_slots else None
+            )
+            self.ena_file_workers = profile.ena_file_workers
+
+    def _discover_and_annotate(self, config_name: str, max_gb: float, threads: int) -> List[Dict[str, Any]]:
+        """One species' discovery plus its raw-input scan, both off the scheduling thread."""
+
+        tasks = self.discover_species_tasks(config_name, max_gb, threads)
+        _annotate_raw_input_state(tasks)
+        return tasks
+
     def _run_all_locked(
         self,
         species_list: List[str],
         max_gb: float,
-        workers: int,
-        threads: int,
+        workers: Optional[int],
+        threads: Optional[int],
         *,
         quant_slots: Optional[int] = None,
         fasterq_threads: Optional[int] = None,
@@ -5051,9 +5866,10 @@ class StreamingPipelineOrchestrator:
         requantification_policy: Optional[str] = None,
         discovery_workers: Optional[int] = None,
         reuse_dry_run_fraction: Optional[float] = None,
+        resource_profile: Optional[PipelineResourceProfile] = None,
+        scheduling_order: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """:meth:`run_all` while the campaign writer lock is held."""
-        from collections import defaultdict, deque
+        """:meth:`run_all` while the campaign writer lock is held: resolve the profile, then run under it."""
 
         run_started = time.monotonic()
         data_root = _data_root()
@@ -5067,26 +5883,72 @@ class StreamingPipelineOrchestrator:
                 )
             self.requantification_policy = requantification_policy
 
-        profile = build_pipeline_resource_profile(
+        quant_dirs, index_paths = self._preflight_targets(species_list)
+        profile = resource_profile or self._resolve_resource_profile(
             workers,
             threads,
+            index_paths=index_paths,
+            data_root=data_root,
             quant_slots=quant_slots,
             fasterq_threads=fasterq_threads,
             fasterq_slots=fasterq_slots,
             compression_threads=compression_threads,
-            validation_slots=validation_slots,
             max_in_flight=max_in_flight,
+            validation_slots=validation_slots,
         )
-        self._resource_profile = profile
-        self._quant_semaphore = threading.BoundedSemaphore(profile.quant_slots)
-        self._fasterq_semaphore = threading.BoundedSemaphore(profile.fasterq_slots)
-        self._raw_validation_semaphore = threading.BoundedSemaphore(profile.validation_slots)
+        if scheduling_order is not None:
+            if scheduling_order not in SCHEDULING_ORDERS:
+                raise ValueError(f"scheduling order must be one of {SCHEDULING_ORDERS}, not {scheduling_order!r}")
+            profile = replace(profile, scheduling_order=scheduling_order)
+        if profile.source != "host":
+            # An explicit profile leaves acquisition to the environment the orchestrator read; record what applies.
+            profile = replace(
+                profile,
+                acquisition_slots=self.acquisition_slots,
+                ena_file_workers=self.ena_file_workers,
+                ena_max_connections=_nonnegative_profile_int(
+                    os.environ.get("AMALGKIT_ENA_MAX_CONNECTIONS", "0") or 0, 0, "AMALGKIT_ENA_MAX_CONNECTIONS"
+                ),
+                ena_api_connections=_nonnegative_profile_int(
+                    os.environ.get("AMALGKIT_ENA_API_CONNECTIONS", "0") or 0, 0, "AMALGKIT_ENA_API_CONNECTIONS"
+                ),
+            )
+        self._apply_resource_profile(profile)
+        logger.info(format_resource_profile(profile))
+        with resource_profile_environment(profile):
+            return self._run_with_profile(
+                species_list,
+                max_gb,
+                profile,
+                data_root=data_root,
+                quant_dirs=quant_dirs,
+                index_paths=index_paths,
+                discovery_workers=discovery_workers,
+                reuse_dry_run_fraction=reuse_dry_run_fraction,
+                run_started=run_started,
+            )
+
+    def _run_with_profile(
+        self,
+        species_list: List[str],
+        max_gb: float,
+        profile: PipelineResourceProfile,
+        *,
+        data_root: Path,
+        quant_dirs: Dict[str, Path],
+        index_paths: Dict[str, Path],
+        discovery_workers: Optional[int],
+        reuse_dry_run_fraction: Optional[float],
+        run_started: float,
+    ) -> Dict[str, Any]:
+        """Preflight, startup resets, then streaming discovery and bounded sample execution."""
+        from collections import defaultdict, deque
+
         # A producer that starts into a broken environment poisons the cohort
         # instead of processing it (observed 2026-09-03: 7,291 tasks failed
         # with EPERM because the process lacked external-volume write access,
         # and quant batches failed with ENOENT because 'amalgkit' was not on
         # PATH). Verify both before any discovery or scheduling work.
-        quant_dirs, index_paths = self._preflight_targets(species_list)
         try:
             preflight_facts = run_campaign_preflight(
                 data_root, kallisto_quant_dirs=quant_dirs, kallisto_index_paths=index_paths
@@ -5129,6 +5991,15 @@ class StreamingPipelineOrchestrator:
                 ),
             )
 
+        retry_policy = RetryPolicy.from_environment()
+        # How long a producer whose only remaining work is in backoff waits in-process for the earliest retry
+        # before exiting 75 (default 0: exit at once and report next_attempt_due_at to the supervisor).
+        try:
+            retry_wait_max = max(0.0, float(os.environ.get("AMALGKIT_RETRY_WAIT_MAX_SECONDS", "0") or 0))
+        except ValueError:
+            logger.warning("Invalid AMALGKIT_RETRY_WAIT_MAX_SECONDS; not waiting for backoffs")
+            retry_wait_max = 0.0
+
         configured_discovery_workers: Any = discovery_workers
         if configured_discovery_workers is None:
             configured_discovery_workers = os.environ.get("AMALGKIT_PIPELINE_DISCOVERY_WORKERS")
@@ -5139,75 +6010,44 @@ class StreamingPipelineOrchestrator:
         )
         discovery_worker_count = min(max(1, discovery_worker_count), max(1, len(species_list)))
         logger.info(
-            "=== Phase 1 & 2: Parallel Species Discovery & Bounded Sample Execution "
-            "(requested workers=%d, active workers=%d, discovery workers=%d) ===",
-            profile.requested_workers,
-            profile.workers,
+            "=== Streaming discovery and bounded sample execution: %d species, discovery workers=%d, "
+            "workers=%d (requested %d), quant_slots=%d, quant_threads=%d total/%d per worker, "
+            "validation_slots=%d, fasterq_threads=%d, fasterq_slots=%d in a dedicated fallback queue, "
+            "compression_threads=%d, peak_stage_threads=%d, max_in_flight=%d, host_cpus=%d, order=%s, "
+            "retry backoff %ds..%ds over %d attempts ===",
+            len(species_list),
             discovery_worker_count,
+            profile.workers,
+            profile.requested_workers,
+            profile.quant_slots,
+            profile.effective_quant_threads,
+            profile.quant_threads_per_worker,
+            profile.validation_slots,
+            profile.fasterq_threads,
+            profile.fasterq_slots,
+            profile.compression_threads,
+            profile.peak_stage_threads,
+            profile.max_in_flight,
+            profile.host_cpu_count,
+            profile.scheduling_order,
+            retry_policy.base_seconds,
+            retry_policy.cap_seconds,
+            retry_policy.max_attempts,
         )
         quantified_by_species: Dict[str, int] = defaultdict(int)
 
         all_tasks: List[Dict[str, Any]] = []
         total_discovered = 0
-
         discovery_started = time.monotonic()
+        discovery_elapsed = 0.0
         discovery_failures: Dict[str, str] = {}
-        discovered_by_species: Dict[str, List[Dict[str, Any]]] = {}
-        logger.info(
-            "=== Phase 1 start: discovering %d species with %d bounded workers; "
-            "metadata/reference writes remain species-isolated ===",
-            len(species_list),
-            discovery_worker_count,
-        )
-        with concurrent.futures.ThreadPoolExecutor(max_workers=discovery_worker_count) as discovery_executor:
-            futures: Dict[concurrent.futures.Future[Any], str] = {}
-            discovery_start_times: Dict[str, float] = {}
-            for config_name in species_list:
-                discovery_start_times[config_name] = time.monotonic()
-                futures[discovery_executor.submit(self.discover_species_tasks, config_name, max_gb, threads)] = (
-                    config_name
-                )
-            for future in concurrent.futures.as_completed(futures):
-                config_name = futures[future]
-                try:
-                    discovered_by_species[config_name] = future.result()
-                except Exception as exc:
-                    discovery_failures[config_name] = str(exc)
-                    logger.exception("Fatal error discovering tasks for %s", config_name)
-                    continue
-                tasks = discovered_by_species[config_name]
-                total_discovered += len(tasks)
-                logger.info(
-                    "Discovery complete for %s: %d tasks in %.1fs (total discovered: %d)",
-                    config_name,
-                    len(tasks),
-                    time.monotonic() - discovery_start_times[config_name],
-                    total_discovered,
-                )
-
-        discovery_elapsed = max(time.monotonic() - discovery_started, 1e-9)
-        logger.info(
-            "=== Phase 1 complete: %d species, %d tasks, %.1fs wall time, %.2f species/hour; "
-            "discovery workers=%d ===",
-            len(species_list) - len(discovery_failures),
-            total_discovered,
-            discovery_elapsed,
-            len(species_list) / discovery_elapsed * 3600,
-            discovery_worker_count,
-        )
-        if discovery_failures:
-            details = "; ".join(f"{name}: {message}" for name, message in sorted(discovery_failures.items()))
-            raise DiscoveryFailed(
-                "Species discovery failed for "
-                f"{len(discovery_failures)} of {len(species_list)} configurations; "
-                f"no sample tasks were submitted. {details}"
-            )
-
-        # Completion order is nondeterministic under parallel discovery. Keep
-        # configured species order for stable task batches and reproducible
-        # raw-input prioritization.
-        for config_name in species_list:
-            all_tasks.extend(discovered_by_species.get(config_name, []))
+        held_keys: set[tuple[str, str]] = set()
+        held_by_reason: Dict[str, int] = defaultdict(int)
+        # (due POSIX time, sequence, task): transient failures waiting out their backoff.
+        deferred_heap: List[tuple[float, int, Dict[str, Any]]] = []
+        sequence = itertools.count()
+        # The unsubmitted queue, kept in order_campaign_tasks order as species arrive.
+        pending: deque[Dict[str, Any]] = deque()
 
         breaker = EnvironmentCircuitBreaker(
             _resource_int(
@@ -5219,73 +6059,107 @@ class StreamingPipelineOrchestrator:
         execution_started = time.monotonic()
         completed = 0
         successful = 0
+        reused = 0
+        quantified_input_bytes = 0
+        quantified_bases = 0
         environment_deferred = 0
+        inflight_raw_bytes = 0
+
+        def task_key(task: Mapping[str, Any]) -> tuple[str, str]:
+            return str(task["species_name"]), str(task["srr"])
+
+        def gate_tasks(tasks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+            """Split freshly discovered tasks into ready, backoff (heap) and held (counted, never scheduled)."""
+
+            records: Dict[tuple[str, str], RetryRecord] = {}
+            for species in sorted({str(task["species_name"]) for task in tasks}):
+                records.update(self.db.retry_records(species))
+            now = time.time()
+            ready: List[Dict[str, Any]] = []
+            for task in tasks:
+                record = records.get(task_key(task))
+                gate, reason = retry_gate(record, retry_policy, now)
+                if gate == GATE_HELD:
+                    held_keys.add(task_key(task))
+                    held_by_reason[(reason or "held").split(":", 1)[0]] += 1
+                elif gate == GATE_BACKOFF and record is not None and record.next_attempt_at is not None:
+                    heapq.heappush(deferred_heap, (record.next_attempt_at, next(sequence), task))
+                else:
+                    ready.append(task)
+            return ready
+
+        def enqueue(tasks: List[Dict[str, Any]]) -> None:
+            """Merge tasks into the unsubmitted queue and re-order it (in-flight work is never preempted)."""
+
+            nonlocal pending
+            if tasks:
+                pending = deque(
+                    order_campaign_tasks(
+                        [*pending, *tasks],
+                        workers=profile.workers,
+                        fasterq_slots=profile.fasterq_slots,
+                        order=profile.scheduling_order,
+                    )
+                )
+
+        def promote_due_retries() -> None:
+            now = time.time()
+            due: List[Dict[str, Any]] = []
+            while deferred_heap and deferred_heap[0][0] <= now:
+                due.append(heapq.heappop(deferred_heap)[2])
+            if due:
+                # Raw inputs may have changed while the task waited (a partial grew, a fallback finished).
+                _annotate_raw_input_state(due)
+                logger.info("Backoff elapsed for %d task(s); re-queued", len(due))
+                enqueue(due)
+
+        def raw_weight(task: Mapping[str, Any]) -> int:
+            """Compressed FASTQ bytes a task may add to the data root (local complete inputs add none)."""
+
+            return 0 if task.get("_raw_input_priority") == 0 else task_acquisition_weight(task)
+
         with (
+            concurrent.futures.ThreadPoolExecutor(max_workers=discovery_worker_count) as discovery_executor,
             concurrent.futures.ThreadPoolExecutor(max_workers=profile.workers) as executor,
             concurrent.futures.ThreadPoolExecutor(max_workers=profile.fasterq_slots) as fallback_executor,
         ):
+            # Each species' tasks join the queue as soon as its own discovery finishes: a slow metadata or
+            # reference step for one species never idles the acquisition and quantification slots.
+            discovery_futures: Dict[concurrent.futures.Future[Any], str] = {}
+            discovery_start_times: Dict[str, float] = {}
+            discovery_threads = profile.requested_quant_threads
+            for config_name in species_list:
+                discovery_start_times[config_name] = time.monotonic()
+                discovery_futures[
+                    discovery_executor.submit(self._discover_and_annotate, config_name, max_gb, discovery_threads)
+                ] = config_name
 
-            logger.info("=== Phase 2 start: all metadata parsed; execution continuing until queue exhaustion ===")
-
-            # Schedule the global executor by raw-input state so mounted data
-            # already acquired by earlier campaigns is quantitated and
-            # reclaimed first.
-            # The sort is stable, retaining metadata size order inside each
-            # tier and preserving the original quant batch index.
-            prioritized_tasks = _prioritize_tasks_by_raw_state(
-                all_tasks,
-                workers=profile.workers,
-                fasterq_slots=profile.fasterq_slots,
-            )
-            reusable_count = sum(task["_raw_input_priority"] == 0 for task in prioritized_tasks)
-            resumable_count = sum(task["_raw_input_priority"] == 1 for task in prioritized_tasks)
-            logger.info(
-                "Scheduling %d tasks: %d with existing raw inputs, %d resumable partials, %d new acquisitions; "
-                "workers=%d (requested %d), quant_slots=%d, quant_threads=%d total/%d per worker, "
-                "validation_slots=%d, fasterq_threads=%d, fasterq_slots=%d in a dedicated fallback queue, "
-                "compression_threads=%d, peak_stage_threads=%d, max_in_flight=%d, host_cpus=%d.",
-                len(prioritized_tasks),
-                reusable_count,
-                resumable_count,
-                len(prioritized_tasks) - reusable_count - resumable_count,
-                profile.workers,
-                profile.requested_workers,
-                profile.quant_slots,
-                profile.effective_quant_threads,
-                profile.quant_threads_per_worker,
-                profile.validation_slots,
-                profile.fasterq_threads,
-                profile.fasterq_slots,
-                profile.compression_threads,
-                profile.peak_stage_threads,
-                profile.max_in_flight,
-                profile.host_cpu_count,
-            )
-
-            # Keep only a bounded number of futures submitted to the executor.
-            # The old implementation queued the entire cohort at once; for a
-            # 12,000-sample campaign that increased scheduler memory and made
-            # interruption/recovery needlessly noisy without increasing
-            # concurrency.
-            task_iter = iter(prioritized_tasks)
             ready_primary_tasks: deque[Dict[str, Any]] = deque()
             fallback_queue: deque[Dict[str, Any]] = deque()
             primary_futures: Dict[concurrent.futures.Future[Any], Dict[str, Any]] = {}
             fallback_futures: Dict[concurrent.futures.Future[Any], Dict[str, Any]] = {}
-            primary_exhausted = False
 
             def submit_next_primary() -> bool:
-                nonlocal primary_exhausted
+                nonlocal inflight_raw_bytes
                 if breaker.tripped:
                     return False
                 if ready_primary_tasks:
                     task = ready_primary_tasks.popleft()
-                elif not primary_exhausted:
-                    try:
-                        task = next(task_iter)
-                    except StopIteration:
-                        primary_exhausted = True
+                    task["_admitted_raw_bytes"] = 0
+                elif pending:
+                    weight = raw_weight(pending[0])
+                    if (
+                        profile.raw_reservation_bytes
+                        and primary_futures
+                        and inflight_raw_bytes + weight > profile.raw_reservation_bytes
+                    ):
+                        # The raw reservation is full: wait for an in-flight sample to finish (and reclaim its
+                        # reads) instead of skipping ahead, so the size order holds. An oversized task still runs
+                        # alone.
                         return False
+                    task = pending.popleft()
+                    task["_admitted_raw_bytes"] = weight
+                    inflight_raw_bytes += weight
                 else:
                     return False
                 cohort_kwargs: Dict[str, Any] = (
@@ -5306,7 +6180,7 @@ class StreamingPipelineOrchestrator:
                     # expensive local extraction in this invocation. Network
                     # acquisitions defer NCBI work so they never wait behind
                     # the single mounted-disk extraction slot.
-                    defer_ncbi_fallback=not task["_uses_local_sra"],
+                    defer_ncbi_fallback=not task.get("_uses_local_sra", False),
                     **cohort_kwargs,
                 )
                 primary_futures[future] = task
@@ -5328,10 +6202,6 @@ class StreamingPipelineOrchestrator:
                         task.get("expected_paired"),
                     )
                     fallback_futures[future] = task
-
-            for _ in range(min(profile.max_in_flight, len(prioritized_tasks))):
-                if not submit_next_primary():
-                    break
 
             fallback_error = "Download Failed (all sources: ENA FTP/HTTP, NCBI)"
 
@@ -5373,10 +6243,58 @@ class StreamingPipelineOrchestrator:
                     found = data_root_unavailable(data_root)
                 return found
 
+            def account_attempt(task: Dict[str, Any], error: str | None) -> None:
+                """Retry bookkeeping for one finished attempt: clear, back off (in-run heap), or hold."""
+
+                self._forget_acquisition_note(str(task["srr"]))
+                try:
+                    outcome = self.db.record_attempt_outcome(
+                        task["species_name"], str(task["srr"]), error, policy=retry_policy
+                    )
+                except Exception as exc:  # noqa: BLE001 - bookkeeping must not abort the campaign
+                    logger.error("Cannot record the attempt of %s %s: %s", task["species_name"], task["srr"], exc)
+                    return
+                decision = outcome.get("decision")
+                if decision == "backoff" and outcome.get("next_attempt_at") is not None:
+                    heapq.heappush(deferred_heap, (float(outcome["next_attempt_at"]), next(sequence), task))
+                    logger.info(
+                        "%s %s: %s failure %d/%d; next attempt after %s UTC",
+                        task["species_name"],
+                        task["srr"],
+                        outcome.get("error_class"),
+                        outcome.get("attempts"),
+                        retry_policy.max_attempts,
+                        time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(float(outcome["next_attempt_at"]))),
+                    )
+                elif decision == "held":
+                    reason = {"layout_mismatch": "layout_mismatch", "permanent": "permanent"}.get(
+                        str(outcome.get("retry_class")), "attempts_exhausted"
+                    )
+                    held_keys.add(task_key(task))
+                    held_by_reason[reason] += 1
+                    logger.warning(
+                        "%s %s: held (%s, %s) after %d attempt(s); not retried automatically",
+                        task["species_name"],
+                        task["srr"],
+                        reason,
+                        outcome.get("error_class"),
+                        outcome.get("attempts", 0),
+                    )
+
+            def progress_rates() -> str:
+                elapsed = max(time.monotonic() - execution_started, 1e-9)
+                hours = elapsed / 3600
+                return (
+                    f"{successful - reused} quantified + {reused} reused this run; "
+                    f"{(successful - reused) / hours:.1f} samples/h, "
+                    f"{quantified_input_bytes / 1e9 / hours:.2f} GB/h FASTQ, "
+                    f"{quantified_bases / 1e9 / hours:.2f} Gbases/h"
+                )
+
             def record_terminal(
                 task: Dict[str, Any], res: Dict[str, Any] | None, error: Exception | None = None
             ) -> None:
-                nonlocal completed, successful
+                nonlocal completed, successful, reused, quantified_input_bytes, quantified_bases
                 completed += 1
                 srr = task["srr"]
                 sp = task["species_name"]
@@ -5388,6 +6306,7 @@ class StreamingPipelineOrchestrator:
                     breaker.record_other_outcome()
                     error_message = f"Unexpected sample task error: {error}"
                     self.db.set_state(sp, srr, "failed", error=error_message)
+                    account_attempt(task, error_message)
                     logger.error(
                         "[%d/%d] %s %s: Unexpected error — %s",
                         completed,
@@ -5415,19 +6334,25 @@ class StreamingPipelineOrchestrator:
                 if res["quantified"]:
                     successful += 1
                     quantified_by_species[sp] += 1
+                    if res.get("skipped"):
+                        reused += 1
+                    else:
+                        quantified_input_bytes += int(res.get("input_bytes") or 0)
+                        quantified_bases += int(task.get("total_bases") or 0)
+                    account_attempt(task, None)
                     status = "Skipped (Done)" if res.get("skipped") else "Done"
-                    elapsed = max(time.monotonic() - execution_started, 1e-9)
-                    rate = successful / elapsed * 3600
                     logger.info(
-                        "[%d/%d] %s %s: %s (finished-task rate %.2f/hour)",
+                        "[%d/%d] %s %s: %s (%s)",
                         completed,
                         total_discovered,
                         sp,
                         srr,
                         status,
-                        rate,
+                        progress_rates(),
                     )
                 elif res["error"]:
+                    if not res.get("download_deferred"):
+                        account_attempt(task, str(res["error"]))
                     logger.warning(
                         "[%d/%d] %s %s: Failed (%s)",
                         completed,
@@ -5437,27 +6362,86 @@ class StreamingPipelineOrchestrator:
                         res["error"],
                     )
 
-            while primary_futures or fallback_futures or fallback_queue or ready_primary_tasks or not primary_exhausted:
+            def finish_discovery(future: concurrent.futures.Future[Any]) -> None:
+                nonlocal total_discovered, discovery_elapsed
+                config_name = discovery_futures.pop(future)
+                try:
+                    tasks = future.result()
+                except Exception as exc:  # noqa: BLE001 - one species never aborts the campaign
+                    discovery_failures[config_name] = str(exc)[:500]
+                    logger.exception(
+                        "Discovery failed for %s; skipping this species for this run (exit code 75)", config_name
+                    )
+                else:
+                    all_tasks.extend(tasks)
+                    total_discovered += len(tasks)
+                    ready = gate_tasks(tasks)
+                    enqueue(ready)
+                    logger.info(
+                        "Discovery complete for %s: %d tasks (%d ready, %d held, %d in backoff overall) in %.1fs; "
+                        "total discovered %d, queued %d",
+                        config_name,
+                        len(tasks),
+                        len(ready),
+                        sum(1 for task in tasks if task_key(task) in held_keys),
+                        len(deferred_heap),
+                        time.monotonic() - discovery_start_times[config_name],
+                        total_discovered,
+                        len(pending),
+                    )
+                if not discovery_futures:
+                    discovery_elapsed = max(time.monotonic() - discovery_started, 1e-9)
+                    reusable_count = sum(task.get("_raw_input_priority") == 0 for task in all_tasks)
+                    resumable_count = sum(task.get("_raw_input_priority") == 1 for task in all_tasks)
+                    logger.info(
+                        "=== Discovery complete: %d of %d species, %d tasks (%d with existing raw inputs, %d "
+                        "resumable partials), %d held, %d in backoff, %.1fs wall time ===",
+                        len(species_list) - len(discovery_failures),
+                        len(species_list),
+                        total_discovered,
+                        reusable_count,
+                        resumable_count,
+                        len(held_keys),
+                        len(deferred_heap),
+                        discovery_elapsed,
+                    )
+
+            while True:
+                promote_due_retries()
                 submit_fallbacks()
                 while len(primary_futures) < profile.max_in_flight:
                     if not submit_next_primary():
                         break
 
-                active_futures = set(primary_futures) | set(fallback_futures)
+                active_futures = set(primary_futures) | set(fallback_futures) | set(discovery_futures)
                 if not active_futures:
-                    if breaker.tripped or (primary_exhausted and not fallback_queue and not ready_primary_tasks):
+                    if breaker.tripped:
                         break
-                    # This should be unreachable, but protects against a
-                    # scheduler spin if future routing changes later.
-                    logger.error("Execution queues are non-empty but no futures are active; stopping safely.")
-                    break
+                    if pending or ready_primary_tasks or fallback_queue:
+                        # This should be unreachable, but protects against a
+                        # scheduler spin if future routing changes later.
+                        logger.error("Execution queues are non-empty but no futures are active; stopping safely.")
+                        break
+                    if not deferred_heap:
+                        break
+                    wait_seconds = deferred_heap[0][0] - time.time()
+                    if wait_seconds > retry_wait_max:
+                        break
+                    time.sleep(max(0.0, min(wait_seconds, 60.0)))
+                    continue
+                timeout = max(0.0, deferred_heap[0][0] - time.time()) if deferred_heap else None
                 done, _ = concurrent.futures.wait(
                     active_futures,
+                    timeout=timeout,
                     return_when=concurrent.futures.FIRST_COMPLETED,
                 )
                 for future in done:
+                    if future in discovery_futures:
+                        finish_discovery(future)
+                        continue
                     if future in primary_futures:
                         task = primary_futures.pop(future)
+                        inflight_raw_bytes -= int(task.pop("_admitted_raw_bytes", 0) or 0)
                         try:
                             res = future.result()
                         except Exception as exc:
@@ -5493,19 +6477,9 @@ class StreamingPipelineOrchestrator:
                         # starts the next extraction.
                         ready_primary_tasks.appendleft(task)
                     else:
-                        self.db.set_state(
-                            task["species_name"],
-                            task["srr"],
-                            "failed",
-                            error=fallback_error,
-                        )
-                        record_terminal(
-                            task,
-                            {
-                                "quantified": False,
-                                "error": fallback_error,
-                            },
-                        )
+                        failure = fallback_error + self._layout_failure_suffix(str(task["srr"]))
+                        self.db.set_state(task["species_name"], task["srr"], "failed", error=failure)
+                        record_terminal(task, {"quantified": False, "error": failure})
 
             # Samples admitted to neither lane when the breaker tripped keep no in-flight state.
             for task in list(ready_primary_tasks) + list(fallback_queue):
@@ -5519,6 +6493,8 @@ class StreamingPipelineOrchestrator:
                 except Exception as exc:  # noqa: BLE001 - reset at the next startup in any case
                     logger.error("Cannot return %s %s to pending: %s", task["species_name"], task["srr"], exc)
 
+        if not discovery_elapsed:
+            discovery_elapsed = max(time.monotonic() - discovery_started, 1e-9)
         if breaker.tripped:
             logger.critical(
                 "=== Stopped by the environment circuit breaker: %d environment failures, %d samples completed. "
@@ -5528,8 +6504,9 @@ class StreamingPipelineOrchestrator:
             )
         else:
             logger.info(
-                "=== Acquisition and quantification complete for this invocation; "
-                "run the current downstream checkpoint launcher after the producer stops. ==="
+                "=== Acquisition and quantification complete for this invocation (%s); "
+                "run the current downstream checkpoint launcher after the producer stops. ===",
+                progress_rates(),
             )
 
         # Global progress summary mapping
@@ -5547,6 +6524,8 @@ class StreamingPipelineOrchestrator:
         except Exception as exc:
             logger.debug("Final results summary unavailable: %s", exc)
 
+        execution_seconds = time.monotonic() - execution_started
+        hours = max(execution_seconds, 1e-9) / 3600
         return self._run_summary(
             all_tasks,
             breaker=breaker,
@@ -5555,8 +6534,21 @@ class StreamingPipelineOrchestrator:
             successful=successful,
             environment_deferred=environment_deferred,
             discovery_seconds=discovery_elapsed,
-            execution_seconds=time.monotonic() - execution_started,
+            execution_seconds=execution_seconds,
             run_seconds=time.monotonic() - run_started,
+            held_keys=held_keys,
+            held_by_reason=dict(held_by_reason),
+            deferred_backoff=len(deferred_heap),
+            next_attempt_due_at=min((entry[0] for entry in deferred_heap), default=None),
+            discovery_failures=discovery_failures,
+            throughput={
+                "quantified_new": successful - reused,
+                "reused": reused,
+                "samples_per_hour": round((successful - reused) / hours, 2),
+                "fastq_gb_per_hour": round(quantified_input_bytes / 1e9 / hours, 3),
+                "gbases_per_hour": round(quantified_bases / 1e9 / hours, 3),
+            },
+            resource_profile=profile,
         )
 
     def _run_summary(
@@ -5571,14 +6563,25 @@ class StreamingPipelineOrchestrator:
         discovery_seconds: float,
         execution_seconds: float,
         run_seconds: float,
+        held_keys: Optional[set[tuple[str, str]]] = None,
+        held_by_reason: Optional[Mapping[str, int]] = None,
+        deferred_backoff: int = 0,
+        next_attempt_due_at: Optional[float] = None,
+        discovery_failures: Optional[Mapping[str, str]] = None,
+        throughput: Optional[Mapping[str, Any]] = None,
+        resource_profile: Optional[PipelineResourceProfile] = None,
     ) -> Dict[str, Any]:
         """The run summary and its exit code: 69 breaker tripped, 75 retryable work left, 0 drained.
 
         Retryable work is every scheduled task whose final row is not
-        ``quantified`` or ``quarantined`` and that is not a ``permanent_drop``:
-        the next run of the same command schedules it again.
+        ``quantified`` or ``quarantined``, that is not a ``permanent_drop``
+        and that is not held by the retry bookkeeping (a layout mismatch, a
+        kallisto exit-1 failure or a spent attempt budget): the next run of
+        the same command schedules it again. A species whose discovery
+        failed also leaves the run retryable.
         """
 
+        held = held_keys or set()
         keys = sorted({(str(task["species_name"]), str(task["srr"])) for task in all_tasks})
         remaining: Dict[str, int] = {}
         failed_by_class: Dict[str, int] = {}
@@ -5592,14 +6595,18 @@ class StreamingPipelineOrchestrator:
                 for run in self.db.get_excluded_srr_ids(species, reason_code="permanent_drop")
             }
             for key, state in final_states.items():
-                if key in dropped or state in ("quantified", "quarantined"):
+                if key in dropped or key in held or state in ("quantified", "quarantined"):
                     continue
                 label = state or "missing"
                 remaining[label] = remaining.get(label, 0) + 1
             wanted = set(keys)
             for species in species_names:
                 for row in self.db.get_failed(species):
-                    if (species, row["srr_id"]) in wanted and (species, row["srr_id"]) not in dropped:
+                    if (
+                        (species, row["srr_id"]) in wanted
+                        and (species, row["srr_id"]) not in dropped
+                        and (species, row["srr_id"]) not in held
+                    ):
                         error_class = classify_sample_error(row["error"])
                         failed_by_class[error_class] = failed_by_class.get(error_class, 0) + 1
         except Exception as exc:  # noqa: BLE001 - the DB may have gone with the volume
@@ -5607,7 +6614,7 @@ class StreamingPipelineOrchestrator:
             logger.error("Cannot read final task states: %s", exc)
         if breaker.tripped or database_error is not None:
             status, exit_code = "environment_failure", EXIT_ENVIRONMENT
-        elif remaining:
+        elif remaining or discovery_failures:
             status, exit_code = "retryable_work_remains", EXIT_RETRYABLE
         else:
             status, exit_code = "drained", EXIT_OK
@@ -5621,6 +6628,16 @@ class StreamingPipelineOrchestrator:
             "environment_deferred": environment_deferred,
             "remaining_by_state": dict(sorted(remaining.items())),
             "failed_by_class": dict(sorted(failed_by_class.items())),
+            "held_by_reason": dict(sorted((held_by_reason or {}).items())),
+            "deferred_backoff": deferred_backoff,
+            "next_attempt_due_at": (
+                time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(next_attempt_due_at))
+                if next_attempt_due_at is not None
+                else None
+            ),
+            "discovery_failures": dict(sorted((discovery_failures or {}).items())),
+            "throughput": dict(throughput or {}),
+            "resource_profile": resource_profile.as_dict() if resource_profile is not None else None,
             "breaker": breaker.state(),
             "startup": dict(startup),
             "database_error": database_error,

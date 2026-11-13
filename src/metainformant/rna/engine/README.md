@@ -167,10 +167,11 @@ serial probe attempts, including misses.
   ENXIO or ENOSPC failures under the data root; those rows stay `pending`
   with an `environment-deferred[...]` note. The summary's `exit_code`, which
   `scripts/rna/run_all_species.py` and `process_species.py` exit with, is
-  `0` (drained: every scheduled task quantified, quarantined or
-  permanently excluded), `75` (retryable work remains), `73` (another
-  writer holds the root), `69` (environment, preflight, cohort or discovery
-  failure, including the breaker) or `70` (internal error). The scripts log
+  `0` (drained: every scheduled task quantified, quarantined, held by the
+  retry bookkeeping or permanently excluded), `75` (retryable work remains,
+  including backed-off tasks and species whose discovery failed this run),
+  `73` (another writer holds the root), `69` (environment, preflight or
+  cohort failure, including the breaker) or `70` (internal error). The scripts log
   INFO to `<root>/logs/<script>_<utc>_<pid>.log`.
 - `quant_sample()` bounds each quantification with
   `AMALGKIT_PIPELINE_QUANT_TIMEOUT_SECONDS` (default 7200) and, when

@@ -17,25 +17,40 @@ The producer holds the campaign writer lock of the data root for its whole
 life (``metainformant.rna.engine.campaign_lock``), logs INFO to
 ``<data-root>/logs/run_all_species_<utc>_<pid>.log`` and exits with:
 
-* ``0``  every scheduled task is quantified, quarantined or permanently excluded;
-* ``75`` resumable work remains (rerun the same command);
+* ``0``  every scheduled task is quantified, quarantined, held by the retry
+  bookkeeping (layout mismatch, kallisto exit 1, spent attempts) or
+  permanently excluded;
+* ``75`` resumable work remains, including tasks in retry backoff (the summary
+  names ``next_attempt_due_at``) and species whose discovery failed this run
+  (rerun the same command);
 * ``73`` another writer holds the data root;
 * ``69`` environment or preflight failure (including the environment circuit
-  breaker, a refused reuse dry-run and a failed species discovery);
+  breaker and a refused reuse dry-run);
 * ``70`` internal error; ``2`` invalid arguments or cohort.
+
+Resources: without ``--workers``/``--threads`` (or ``PIPELINE_WORKERS``/
+``PIPELINE_THREADS``) the profile is derived from this host and the measured
+c19 campaign (``build_host_resource_profile``); ``--print-profile`` prints the
+resolved profile as JSON and exits without taking the lock or opening the
+progress database.
 
 Usage:
     python3 scripts/rna/run_all_species.py --cohort DIR [--cohort-definition-sha256 HEX]
-        [--max-gb 1000] [--workers 4] [--threads 8] [--discovery-workers N]
+        [--max-gb 1000] [--workers N] [--threads N] [--discovery-workers N]
         [--quant-slots N] [--fastq-threads N] [--fastq-slots N]
         [--compression-threads N] [--validation-slots N] [--max-in-flight N]
-        [--requantification-policy preserve|version-drift|all]
+        [--acquisition-slots N] [--ena-file-workers 1|2]
+        [--scheduling-order size_bands|smallest_first|species_order] [--fast-fail-ena]
+        [--requantification-policy preserve|version-drift|all] [--print-profile]
     python3 scripts/rna/run_all_species.py --species solenopsis_invicta --dry-run
 """
 
 import argparse
+import json
 import os
+import shutil
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 # Add src to python path to allow importing metainformant modules
@@ -57,7 +72,12 @@ from metainformant.rna.engine.campaign_lock import (  # noqa: E402
 from metainformant.rna.engine.campaign_lock import acquire as acquire_campaign_lock  # noqa: E402
 from metainformant.rna.engine.species import configured_data_root, discover_species_config_names  # noqa: E402
 from metainformant.rna.engine.streaming_orchestrator import (  # noqa: E402
+    SCHEDULING_ORDERS,
+    PipelineResourceProfile,
     StreamingPipelineOrchestrator,
+    apply_fast_fail_ena_environment,
+    build_host_resource_profile,
+    build_pipeline_resource_profile,
     configure_producer_logging,
     logger,
     producer_exit_code_for_exception,
@@ -68,11 +88,18 @@ CONFIG_DIR = REPO_ROOT / "projects" / "hymenoptera_amalgkit" / "config" / "amalg
 if not CONFIG_DIR.is_dir():
     CONFIG_DIR = REPO_ROOT / "config" / "amalgkit"
 
+
+def _optional_env_int(name: str) -> int | None:
+    value = os.environ.get(name, "").strip()
+    return int(value) if value else None
+
+
 DEFAULTS = {
     # Same budget as the campaign launcher (AMALGKIT_MAX_SAMPLE_GB, default 1000 GB).
     "max_gb": default_max_sample_gb(),
-    "workers": int(os.environ.get("PIPELINE_WORKERS", 4)),
-    "threads": int(os.environ.get("PIPELINE_THREADS", 8)),
+    # None: derive both from this host (build_host_resource_profile).
+    "workers": _optional_env_int("PIPELINE_WORKERS"),
+    "threads": _optional_env_int("PIPELINE_THREADS"),
 }
 
 
@@ -102,10 +129,47 @@ def main() -> int:
         help=f"Max sample size in GB (default: {DEFAULTS['max_gb']})",
     )
     parser.add_argument(
-        "--workers", type=int, default=DEFAULTS["workers"], help=f"Parallel workers (default: {DEFAULTS['workers']})"
+        "--workers",
+        type=int,
+        default=DEFAULTS["workers"],
+        help="Parallel sample workers (default: PIPELINE_WORKERS, else acquisition + quant slots of the host profile)",
     )
     parser.add_argument(
-        "--threads", type=int, default=DEFAULTS["threads"], help=f"Total threads (default: {DEFAULTS['threads']})"
+        "--threads",
+        type=int,
+        default=DEFAULTS["threads"],
+        help="Total kallisto threads (default: PIPELINE_THREADS, else one per quant slot of the host profile)",
+    )
+    parser.add_argument(
+        "--acquisition-slots",
+        type=int,
+        default=None,
+        help="Concurrent whole-sample acquisitions, 0 unbounded (host default 8, the measured c19 setting)",
+    )
+    parser.add_argument(
+        "--ena-file-workers",
+        type=int,
+        choices=(1, 2),
+        default=None,
+        help="Concurrent ENA files per paired run (host default 2)",
+    )
+    parser.add_argument(
+        "--scheduling-order",
+        choices=SCHEDULING_ORDERS,
+        default=None,
+        help="Fresh-acquisition order across species (default: size_bands, global size bands with species "
+        "round-robin; AMALGKIT_PIPELINE_SCHEDULING_ORDER)",
+    )
+    parser.add_argument(
+        "--fast-fail-ena",
+        action="store_true",
+        help="Opt in to fast-fail ENA: no ENA retries, NCBI prefetch first, 64 KiB/s floor over 20 s "
+        "(only for variables not already set)",
+    )
+    parser.add_argument(
+        "--print-profile",
+        action="store_true",
+        help="Print the resolved resource profile as JSON and exit (no lock, no progress database)",
     )
     parser.add_argument(
         "--discovery-workers",
@@ -170,6 +234,16 @@ def main() -> int:
     if args.data_root:
         os.environ["AMALGKIT_DATA_ROOT"] = str(args.data_root.expanduser().resolve())
     data_root = configured_data_root()
+    if args.fast_fail_ena:
+        applied = apply_fast_fail_ena_environment()
+        print(f"Fast-fail ENA settings applied: {applied or 'none (all already set)'}")
+    if args.print_profile:
+        try:
+            profile = _resolve_profile(args, data_root)
+        except ValueError as error:
+            parser.error(str(error))
+        print(json.dumps(profile.as_dict(), indent=2, sort_keys=True))
+        return 0
 
     lock = None
     if not args.dry_run:
@@ -187,6 +261,69 @@ def main() -> int:
     finally:
         if lock is not None:
             lock.release()
+
+
+def _cohort_index_bytes(args: argparse.Namespace) -> int | None:
+    """The largest frozen kallisto index of the selected cohort species (the quant memory guard input)."""
+
+    try:
+        cohort = producer_cohort_from_args(args)
+    except CohortError:
+        return None
+    if cohort is None:
+        return None
+    sizes = []
+    for name in select_cohort_species(cohort, args.species):
+        try:
+            sizes.append((Path(cohort.root) / cohort.entry(name).index_relpath).stat().st_size)
+        except OSError:
+            continue
+    return max(sizes) if sizes else None
+
+
+def _host_overrides(args: argparse.Namespace) -> bool:
+    """Acquisition budgets exist only in the host profile."""
+
+    return args.acquisition_slots is not None or args.ena_file_workers is not None
+
+
+def _resolve_profile(args: argparse.Namespace, data_root: Path) -> PipelineResourceProfile:
+    """The profile ``run_all`` uses for these arguments: explicit workers and threads keep the historical
+    profile unless acquisition budgets are given; everything else is derived from the host."""
+
+    if args.workers is not None and args.threads is not None and not _host_overrides(args):
+        profile = build_pipeline_resource_profile(
+            args.workers,
+            args.threads,
+            quant_slots=args.quant_slots,
+            fasterq_threads=args.fastq_threads,
+            fasterq_slots=args.fastq_slots,
+            compression_threads=args.compression_threads,
+            validation_slots=args.validation_slots,
+            max_in_flight=args.max_in_flight,
+        )
+        if args.scheduling_order is not None:
+            profile = replace(profile, scheduling_order=args.scheduling_order)
+        return profile
+    try:
+        free_bytes: int | None = shutil.disk_usage(data_root).free
+    except OSError:
+        free_bytes = None
+    return build_host_resource_profile(
+        kallisto_index_bytes=_cohort_index_bytes(args),
+        data_root_free_bytes=free_bytes,
+        workers=args.workers,
+        threads=args.threads,
+        quant_slots=args.quant_slots,
+        fasterq_threads=args.fastq_threads,
+        fasterq_slots=args.fastq_slots,
+        compression_threads=args.compression_threads,
+        validation_slots=args.validation_slots,
+        max_in_flight=args.max_in_flight,
+        acquisition_slots=args.acquisition_slots,
+        ena_file_workers=args.ena_file_workers,
+        scheduling_order=args.scheduling_order,
+    )
 
 
 def _run(parser: argparse.ArgumentParser, args: argparse.Namespace, config_dir: Path, data_root: Path) -> int:
@@ -210,8 +347,10 @@ def _run(parser: argparse.ArgumentParser, args: argparse.Namespace, config_dir: 
 
     print("╔══════════════════════════════════════════════════════════╗")
     print("║  ENA-First Sample-by-Sample Pipeline (Current)          ║")
+    workers_text = args.workers if args.workers is not None else "host"
+    threads_text = args.threads if args.threads is not None else "host"
     print(
-        f"║  Species: {len(config_names)} | Max: {args.max_gb}GB | Workers: {args.workers} | Threads: {args.threads}  ║"
+        f"║  Species: {len(config_names)} | Max: {args.max_gb}GB | Workers: {workers_text} | Threads: {threads_text}  ║"
     )
     print("╚══════════════════════════════════════════════════════════╝")
 
@@ -253,6 +392,9 @@ def _run(parser: argparse.ArgumentParser, args: argparse.Namespace, config_dir: 
             requantification_policy=args.requantification_policy,
             discovery_workers=args.discovery_workers,
             reuse_dry_run_fraction=args.reuse_dry_run,
+            # Acquisition overrides only exist in the host profile; resolve it here so they apply.
+            resource_profile=_resolve_profile(args, data_root) if _host_overrides(args) else None,
+            scheduling_order=args.scheduling_order,
         )
     except (Exception, KeyboardInterrupt) as error:  # noqa: BLE001 - every failure maps to an exit code
         code = producer_exit_code_for_exception(error)
@@ -261,7 +403,9 @@ def _run(parser: argparse.ArgumentParser, args: argparse.Namespace, config_dir: 
         return code
     print(
         f"Producer finished: {summary['status']} (exit {summary['exit_code']}); "
-        f"remaining={summary['remaining_by_state']} quantified_this_run={summary['quantified_this_run']}"
+        f"remaining={summary['remaining_by_state']} quantified_this_run={summary['quantified_this_run']} "
+        f"held={summary.get('held_by_reason', {})} next_attempt_due_at={summary.get('next_attempt_due_at')} "
+        f"discovery_failures={sorted(summary.get('discovery_failures', {}))}"
     )
     return int(summary["exit_code"])
 

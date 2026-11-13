@@ -15,7 +15,7 @@ thin wrapper: it resolves resources and env defaults, then execs
 | `--data-root PATH` | `AMALGKIT_DATA_ROOT` or repo-local | Data root for work files and the progress DB; also sets `AMALGKIT_DATA_ROOT` |
 | `--dry-run` | off | List resolved species configs without running |
 | `--max-gb FLOAT` | built-in default | Max single-sample size in GB |
-| `--workers N` / `--threads N` | built-in defaults | Parallel workers / total threads |
+| `--workers N` / `--threads N` | `PIPELINE_WORKERS`/`PIPELINE_THREADS`, else the host profile | Parallel workers / total kallisto threads; leaving either out derives the whole profile from the host (below) |
 | `--discovery-workers N` | 4 | Concurrent species discovery (1 = serial diagnostics) |
 | `--quant-slots N` | bounded by workers/threads | Concurrent Kallisto quantifications |
 | `--fastq-threads N` / `--fastq-slots N` | bounded / up to 4 | fasterq-dump fallback threads and concurrency (limits external-disk contention) |
@@ -23,6 +23,43 @@ thin wrapper: it resolves resources and env defaults, then execs
 | `--validation-slots N` | up to 4 | Concurrent full local FASTQ validations |
 | `--max-in-flight N` | 2 × workers | Maximum submitted sample tasks |
 | `--requantification-policy {preserve,version-drift,all}` | `$AMALGKIT_REQUANTIFICATION_POLICY` or `preserve` | Re-quantification trigger policy |
+| `--acquisition-slots N` | host profile: 8 | Concurrent whole-sample acquisitions (0 unbounded) |
+| `--ena-file-workers {1,2}` | host profile: 2 | Concurrent ENA files of one paired run |
+| `--scheduling-order {size_bands,smallest_first,species_order}` | `size_bands` | Fresh-acquisition order across species (`AMALGKIT_PIPELINE_SCHEDULING_ORDER`) |
+| `--fast-fail-ena` | off | No ENA retries, NCBI prefetch first, 64 KiB/s floor over 20 s (only for unset variables) |
+| `--print-profile` | off | Print the resolved resource profile as JSON and exit (no lock, no progress DB) |
+
+### Host resource profile
+
+Without explicit `--workers` and `--threads`, `build_host_resource_profile`
+derives the budgets from the host and the measured c19 run (8 cores 4P+4E,
+16 GiB, USB data volume: 32.4 samples/h average, 46.5/h best 6 h): 8
+acquisitions with 2 ENA files each (16 ENA file connections, 2 API
+connections), quant slots = min(CPUs, 8, memory guard) with one kallisto
+thread each (the memory guard budgets 256 MiB + 4 x the largest index per
+run against half of RAM), 2 full FASTQ validations, 1 NCBI recovery slot,
+workers = acquisitions + quant slots, `max_in_flight` = workers, and a raw
+reservation of min(256 GiB, 25% of the data root's free space)
+(`AMALGKIT_PIPELINE_RAW_RESERVATION_GB` overrides). Every value can be
+overridden by its flag or environment variable; the resolved profile is logged
+at startup.
+
+### Scheduling and retries
+
+Each species' tasks join the queue when its own discovery finishes, so work
+starts before the slowest species is discovered; a species whose discovery
+fails is skipped for that run (exit 75). The queue is ordered reusable local
+inputs, resumable partials, then fresh acquisitions in global size bands with
+species round-robin (ties by species and run). Every finished attempt is
+classified in the progress DB (`attempts`, `last_error_class`,
+`next_attempt_at`): environment failures retry at the next start, transient
+failures back off 1 h, 2 h, 4 h ... (cap 24 h, `AMALGKIT_RETRY_BACKOFF_*`) and
+are held after 6 attempts (`AMALGKIT_MAX_SAMPLE_ATTEMPTS`), layout mismatches
+are quarantined, and kallisto exit-1 failures are held. Held rows are not
+retried until `python -m metainformant.rna.engine.progress_db release-holds
+--db <root>/pipeline_progress.db` (under the writer lock); `retry-status`
+reports them read-only. `AMALGKIT_RETRY_WAIT_MAX_SECONDS` (default 0) lets a
+producer whose only work left is in backoff wait for it instead of exiting 75.
 
 ### Requantification policy
 
@@ -68,10 +105,10 @@ reports the holder (exit 0 quiescent, 73 busy). Producer exit codes:
 
 | Code | Meaning |
 | --- | --- |
-| 0 | Drained: every scheduled task is quantified, quarantined or permanently excluded |
-| 75 | Retryable work remains (failed or pending tasks); rerun the same command |
+| 0 | Drained: every scheduled task is quantified, quarantined, held by the retry bookkeeping or permanently excluded |
+| 75 | Retryable work remains (failed, pending or backed-off tasks, or a species whose discovery failed); rerun the same command (the summary's `next_attempt_due_at` says when backed-off work is due) |
 | 73 | Another writer holds the data root |
-| 69 | Environment failure: preflight, cohort or discovery refusal, or the environment circuit breaker (`AMALGKIT_ENV_FAILURE_TRIP`, default 5 consecutive EPERM/EACCES/EROFS/ENXIO/ENOSPC failures) |
+| 69 | Environment failure: preflight, cohort refusal, or the environment circuit breaker (`AMALGKIT_ENV_FAILURE_TRIP`, default 5 consecutive EPERM/EACCES/EROFS/ENXIO/ENOSPC failures) |
 | 70 | Internal error |
 
 The launcher starts finalization only after exit 0, so a run that ends with
