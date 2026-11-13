@@ -229,7 +229,20 @@ def _describe_writers(status: dict[str, Any]) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run the reclamation CLI; ``--data-root`` is exported only for the duration of the call."""
+
     args = _parser().parse_args(argv)
+    previous = os.environ.get("AMALGKIT_DATA_ROOT")
+    try:
+        return _run(args)
+    finally:
+        if previous is None:
+            os.environ.pop("AMALGKIT_DATA_ROOT", None)
+        else:
+            os.environ["AMALGKIT_DATA_ROOT"] = previous
+
+
+def _run(args: argparse.Namespace) -> int:
     if (args.include_sra_cache or args.include_excluded) and args.cohort is None:
         raise SystemExit("--include-sra-cache and --include-excluded need --cohort (the full task universe)")
     if args.cohort is None and (args.cohort_definition or args.cohort_definition_sha256):

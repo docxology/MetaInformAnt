@@ -43,7 +43,7 @@ from metainformant.rna.amalgkit.sra_environment import (
 )
 from metainformant.rna.amalgkit.tissue_normalizer import apply_tissue_normalization
 from metainformant.rna.core.sample_utils import find_quantification_file
-from metainformant.rna.engine.fastq_compression import compression_level, pigz_command
+from metainformant.rna.engine.acquisition_order import plan_acquisition_order
 from metainformant.rna.engine.campaign_lock import (
     EXIT_ENVIRONMENT,
     EXIT_INTERNAL,
@@ -52,11 +52,8 @@ from metainformant.rna.engine.campaign_lock import (
     EXIT_OK,
     EXIT_RETRYABLE,
     CampaignLockBusy,
+    acquire as acquire_campaign_lock,
 )
-from metainformant.rna.engine.campaign_lock import acquire as acquire_campaign_lock
-from metainformant.rna.engine.acquisition_order import plan_acquisition_order
-from metainformant.rna.engine.preflight import PreflightError, ReuseProbe, reuse_dry_run, run_campaign_preflight
-from metainformant.rna.engine.producer_stop import ProducerStop
 from metainformant.rna.engine.cohort import (
     CohortError,
     FrozenCohort,
@@ -66,6 +63,9 @@ from metainformant.rna.engine.cohort import (
     verify_species_reference,
     write_cohort_task_table,
 )
+from metainformant.rna.engine.fastq_compression import compression_level, pigz_command
+from metainformant.rna.engine.preflight import PreflightError, ReuseProbe, reuse_dry_run, run_campaign_preflight
+from metainformant.rna.engine.producer_stop import ProducerStop
 from metainformant.rna.engine.progress_db import (
     GATE_BACKOFF,
     GATE_HELD,
@@ -101,8 +101,8 @@ from metainformant.rna.engine.raw_cleanup import (
     reclaim_sample_sra_cache,
     sra_cache_root,
 )
-from metainformant.rna.engine.species import resolve_species_work_dir
 from metainformant.rna.engine.reference_digest import IndexDigestCache, file_signature
+from metainformant.rna.engine.species import resolve_species_work_dir
 from metainformant.rna.retrieval import process_groups
 from metainformant.rna.retrieval.ena_downloader import (
     ENADownloader,
@@ -3069,6 +3069,7 @@ class StreamingPipelineOrchestrator:
         from metainformant.rna.engine.ehd_storage import capture_ehd_write_policy
 
         self.cohort = cohort
+        self._producer_stop: Optional[ProducerStop] = None
         self.allow_metadata_refresh = allow_metadata_refresh
         self._cohort_digests = IndexDigestCache()
 
@@ -6102,7 +6103,7 @@ class StreamingPipelineOrchestrator:
         """:meth:`run_all` while the campaign writer lock is held: resolve the profile, then run under it."""
 
         run_started = time.monotonic()
-        self._cohort_discovered = {}
+        self._cohort_discovered: Dict[str, Dict[str, Any]] = {}
         data_root = _data_root()
 
         if requantification_policy is not None:

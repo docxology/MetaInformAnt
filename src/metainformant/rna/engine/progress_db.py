@@ -878,16 +878,14 @@ class ProgressDB:
             self._conn.commit()
             self._conn.execute("BEGIN IMMEDIATE")
             try:
-                counts = {
-                    state: count
-                    for state, count in self._conn.execute(
-                        f"SELECT state, COUNT(*) FROM samples WHERE state IN ({placeholders}) GROUP BY state",
-                        INFLIGHT_STATES,
-                    )
-                }
+                # Only "?" placeholders for the constant INFLIGHT_STATES and a module constant are interpolated.
+                count_sql = (
+                    f"SELECT state, COUNT(*) FROM samples WHERE state IN ({placeholders}) GROUP BY state"  # nosec B608
+                )
+                counts = {state: count for state, count in self._conn.execute(count_sql, INFLIGHT_STATES)}
                 self._conn.execute(
                     "UPDATE samples SET state = 'pending', "
-                    f"error = '{STARTUP_INFLIGHT_RESET_PREFIX}[' || state || ']' "
+                    f"error = '{STARTUP_INFLIGHT_RESET_PREFIX}[' || state || ']' "  # nosec B608
                     "|| CASE WHEN error IS NULL OR error = '' THEN '' ELSE ': ' || substr(error, 1, 500) END, "
                     f"updated_at = datetime('now') WHERE state IN ({placeholders})",
                     INFLIGHT_STATES,
@@ -1007,7 +1005,10 @@ class ProgressDB:
             logger.info("Retry bookkeeping added to %s; %d failed rows classified", self.db_path, len(failed))
 
     def retry_records(self, species: Optional[str] = None) -> Dict[tuple[str, str], RetryRecord]:
-        """Rows that carry retry bookkeeping (attempts, a failure class or a backoff), keyed by ``(species, srr_id)``."""
+        """Rows that carry retry bookkeeping, keyed by ``(species, srr_id)``.
+
+        A row qualifies when it has attempts, a failure class or a backoff.
+        """
 
         query = (
             "SELECT species, srr_id, state, attempts, last_error_class, next_attempt_at FROM samples "
@@ -1239,7 +1240,7 @@ class ProgressDB:
             except sqlite3.OperationalError as exc:
                 logger.warning("WAL checkpoint of %s failed: %s", self.db_path, exc)
                 return None
-        return tuple(row) if row is not None else None  # type: ignore[return-value]
+        return tuple(row) if row is not None else None
 
     # ---- Reconciliation ----
 
@@ -1418,7 +1419,7 @@ class ProgressDB:
         is idempotent.
         """
 
-        from metainformant.rna.engine.cohort import CohortError, PERMANENT_DROP
+        from metainformant.rna.engine.cohort import PERMANENT_DROP, CohortError
 
         resets = frozenset(reset_classes)
         unknown = resets - set(SAMPLE_ERROR_CLASSES)
@@ -1792,12 +1793,12 @@ class ProgressDB:
             self._conn.commit()
             states: Dict[str, str] = {}
             errors: Dict[str, Optional[str]] = {}
-            for srr_id, state, error in self._conn.execute(
+            for srr_id, state, recorded_error in self._conn.execute(
                 "SELECT srr_id, state, error FROM samples WHERE species = ?", (species,)
             ):
                 if srr_id in wanted:
                     states[srr_id] = state
-                    errors[srr_id] = error
+                    errors[srr_id] = recorded_error
             audits: Dict[str, Dict[str, Any]] = {}
             if scope is not None and not deep:
                 for row in self._conn.execute(
@@ -1889,6 +1890,8 @@ class ProgressDB:
             if fresh:
                 evidence = verdict.get("evidence")
                 keyed = scope is not None and fingerprint is not None and verdict.get("output_fingerprint") is not None
+                key_fp = fingerprint if keyed else None
+                key_scope = scope if keyed else None
                 audit_rows.append(
                     (
                         species,
@@ -1899,12 +1902,12 @@ class ProgressDB:
                         verdict.get("observed_amalgkit_version"),
                         verdict.get("observed_release_tag"),
                         verdict.get("observed_source_revision"),
-                        fingerprint[0] if keyed else None,
-                        fingerprint[1] if keyed else None,
-                        fingerprint[2] if keyed else None,
-                        scope.config_sha256 if keyed else None,
-                        scope.reference_sha256 if keyed else None,
-                        scope.scope if keyed else None,
+                        key_fp[0] if key_fp is not None else None,
+                        key_fp[1] if key_fp is not None else None,
+                        key_fp[2] if key_fp is not None else None,
+                        key_scope.config_sha256 if key_scope is not None else None,
+                        key_scope.reference_sha256 if key_scope is not None else None,
+                        key_scope.scope if key_scope is not None else None,
                         json.dumps(evidence, sort_keys=True, default=str) if evidence else None,
                         verdict.get("output_fingerprint") if keyed else None,
                     )
@@ -1978,10 +1981,11 @@ class ProgressDB:
                 except BaseException:
                     self._conn.rollback()
                     raise
+        unchanged_count = len(judged) - fresh_count
         summary: Dict[str, Any] = {
             "listed": listed,
             "scanned": len(judged),
-            "trusted": len(judged) - fresh_count,
+            "trusted": unchanged_count,
             "classified": fresh_count,
             "quantified": len(reusable),
             "requeued": len(requeued),
@@ -1998,15 +2002,15 @@ class ProgressDB:
             "reconcile(%s): %d task directories (%d trusted unchanged, %d re-judged), %d reusable, %d requeued, "
             "%d quarantined, %d vanished, %d unreadable (left unjudged), %d rows changed in %.1fs",
             species,
-            summary["scanned"],
-            summary["trusted"],
-            summary["classified"],
-            summary["quantified"],
-            summary["requeued"],
-            len(summary["quarantined"]),
+            len(judged),
+            unchanged_count,
+            fresh_count,
+            len(reusable),
+            len(requeued),
+            len(quarantined),
             len(vanished),
             len(unavailable),
-            summary["rows_changed"],
+            len(state_rows),
             summary["seconds"],
         )
         return summary
@@ -2207,12 +2211,14 @@ def progress_snapshot(
         select = "species, srr_id, state, error, updated_at" + (
             ", attempts, last_error_class, next_attempt_at" if retry_columns else ""
         )
+        # ``select`` is one of two fixed column lists; species names are bound parameters.
         if wanted is None:
-            rows = connection.execute(f"SELECT {select} FROM samples").fetchall()
+            rows = connection.execute(f"SELECT {select} FROM samples").fetchall()  # nosec B608
         else:
             rows = []
+            by_species = f"SELECT {select} FROM samples WHERE species = ?"  # nosec B608
             for name in wanted:
-                rows.extend(connection.execute(f"SELECT {select} FROM samples WHERE species = ?", (name,)).fetchall())
+                rows.extend(connection.execute(by_species, (name,)).fetchall())
         exclusions: Dict[tuple[str, str], str] = {}
         if _table_columns(connection, "sample_exclusions"):
             for name, srr_id, reason_code in connection.execute(

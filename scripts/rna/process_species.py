@@ -19,6 +19,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
+from metainformant.rna.engine.campaign_lock import (  # noqa: E402
+    EXIT_ENVIRONMENT,
+    EXIT_LOCK_BUSY,
+    CampaignLockBusy,
+    acquire as acquire_campaign_lock,
+)
 from metainformant.rna.engine.cohort import (  # noqa: E402
     CohortError,
     add_producer_cohort_arguments,
@@ -27,12 +33,6 @@ from metainformant.rna.engine.cohort import (  # noqa: E402
     select_cohort_species,
     verify_cohort_configs,
 )
-from metainformant.rna.engine.campaign_lock import (  # noqa: E402
-    EXIT_ENVIRONMENT,
-    EXIT_LOCK_BUSY,
-    CampaignLockBusy,
-)
-from metainformant.rna.engine.campaign_lock import acquire as acquire_campaign_lock  # noqa: E402
 from metainformant.rna.engine.species import configured_data_root, discover_species_config_names  # noqa: E402
 from metainformant.rna.engine.streaming_orchestrator import (  # noqa: E402
     StreamingPipelineOrchestrator,

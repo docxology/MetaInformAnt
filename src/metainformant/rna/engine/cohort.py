@@ -48,11 +48,9 @@ from metainformant.core.utils.hash import sha256_bytes, sha256_file
 from metainformant.rna.engine.acquisition_manifest import load_snapshot
 from metainformant.rna.engine.campaign_lock import (
     LEGACY_DIRECTORY_LOCKS,
+    LOCK_FILENAME as CAMPAIGN_LOCK_FILENAME,
     CampaignLockBusy,
     acquire_writer,
-)
-from metainformant.rna.engine.campaign_lock import (
-    LOCK_FILENAME as CAMPAIGN_LOCK_FILENAME,
 )
 from metainformant.rna.engine.provenance import (
     REFERENCE_MANIFEST_NAME,

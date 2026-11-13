@@ -210,7 +210,9 @@ def test_sigterm_stops_children_before_the_lock_is_released(producers) -> None: 
 
 
 @pytest.mark.timeout(240)
-def test_a_second_sigint_kills_the_children_without_waiting_for_the_grace(producers) -> None:  # type: ignore[no-untyped-def]
+def test_a_second_sigint_kills_the_children_without_waiting_for_the_grace(  # type: ignore[no-untyped-def]
+    producers,
+) -> None:
     producer = producers("stubborn", grace_seconds=600.0)
     children = producer.child_pids(2)
     started = time.monotonic()
@@ -229,7 +231,9 @@ def test_a_second_sigint_kills_the_children_without_waiting_for_the_grace(produc
 
 
 @pytest.mark.timeout(240)
-def test_children_of_a_killed_producer_keep_the_root_locked_until_they_exit(producers) -> None:  # type: ignore[no-untyped-def]
+def test_children_of_a_killed_producer_keep_the_root_locked_until_they_exit(  # type: ignore[no-untyped-def]
+    producers,
+) -> None:
     producer = producers("obedient")
     children = producer.child_pids(2)
     producer.process.kill()  # kill -9: no handler runs, nothing is stopped

@@ -106,7 +106,10 @@ def strict_reads() -> Iterator[None]:
 
 
 def _raise_if_unreadable(error: BaseException, path: Path | str) -> None:
-    """Inside :func:`strict_reads`, turn an I/O or permission error on ``path`` into :class:`QuantificationReadError`."""
+    """Inside :func:`strict_reads`, raise :class:`QuantificationReadError` for an unreadable ``path``.
+
+    Absence is not an error here; I/O and permission errors are.
+    """
 
     if not getattr(_STRICT_READS, "active", False) or not is_unreadable_error(error):
         return
@@ -1168,9 +1171,11 @@ def classify_cohort_quantification(
         return result
 
     digests = index_digests if index_digests is not None else IndexDigestCache()
-    evidence, error = _cohort_reference_evidence(sample_path, payload, sidecar_bytes, contract_id, expectation, digests)
-    if error is not None:
-        result.update(status=QUANT_STATUS_INVALID, reason=error)
+    evidence, evidence_error = _cohort_reference_evidence(
+        sample_path, payload, sidecar_bytes, contract_id, expectation, digests
+    )
+    if evidence_error is not None:
+        result.update(status=QUANT_STATUS_INVALID, reason=evidence_error)
         return result
     if evidence is None:
         result.update(status=QUANT_STATUS_INVALID, reason="no reference-index binding evidence")

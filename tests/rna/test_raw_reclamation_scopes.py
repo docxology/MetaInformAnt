@@ -8,6 +8,7 @@ fixtures, and the CLI is the production entry point.
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -393,7 +394,9 @@ def test_cli_without_cohort_binds_configuration_by_content(tmp_path: Path, capsy
         _write(data / species / "work" / "getfastq" / run / f"{run}.fastq.gz", b"r" * 10)
     shutil.rmtree(tmp_path / "old-checkout")  # recorded config paths no longer exist
 
+    previous_root = os.environ.get("AMALGKIT_DATA_ROOT")
     assert main(["--data-root", str(data), "--config-dir", str(config_dir), "--execute", "--workers", "1"]) == 0
+    assert os.environ.get("AMALGKIT_DATA_ROOT") == previous_root, "the CLI must not leak its data root"
     summary = json.loads(capsys.readouterr().out)
     assert summary["raw_files"] == 1
     assert not (data / species / "work" / "getfastq" / "SRR201").exists()

@@ -379,9 +379,13 @@ def test_durable_text_write_replaces_atomically_and_cleans_up(tmp_path: Path) ->
     _write_text_durably(destination, '{"a": 2}\n', tmp_path / ".marker.json.tmp")
     assert destination.read_text() == '{"a": 2}\n'
     assert sorted(path.name for path in tmp_path.iterdir()) == ["marker.json"]
-    with pytest.raises(IsADirectoryError):
-        _write_text_durably(tmp_path, "x", tmp_path / ".dir.tmp")
-    assert sorted(path.name for path in tmp_path.iterdir()) == ["marker.json"]
+    # A failed rename (here onto a directory: EISDIR on Linux and macOS) leaves no temporary behind.
+    occupied = tmp_path / "occupied"
+    occupied.mkdir()
+    with pytest.raises(OSError):
+        _write_text_durably(occupied, "x", tmp_path / ".dir.tmp")
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["marker.json", "occupied"]
+    assert not any(occupied.iterdir())
 
 
 # ---------------------------------------------------------------------------
