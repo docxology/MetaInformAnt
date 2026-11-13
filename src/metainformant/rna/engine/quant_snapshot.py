@@ -13,9 +13,11 @@ indexes, raw reads and logs are never part of a snapshot.
 
 Idempotent and conservative:
 
-* A sample whose destination already holds identical bytes is ``present`` and is
-  not copied again. A destination that differs is a ``conflict`` and is never
-  overwritten (exit 65). A destination that matches but lacks witness files the
+* A sample whose destination already holds identical payload bytes is
+  ``present`` and is not copied again; a witness file the destination already
+  has is kept even when its bytes differ (it binds the same payload). A
+  destination whose payload differs is a ``conflict`` and is never overwritten
+  (exit 65). A destination that matches but lacks witness files the
   source now has (a reference binding, restored inputs) is ``extend``: only the
   missing witness files are added.
 * ``--git-tree REPO:TREEISH`` takes presence from a Git tree as well as the
@@ -218,17 +220,21 @@ def compare_destination(
     if not combined:
         return "new", "", list(expected)
     changed = [d.relpath for d in expected if d.relpath in combined and combined[d.relpath] != d.git_oid]
-    if changed:
-        return "conflict", f"different bytes: {', '.join(changed)}", []
+    payload_changed = [relpath for relpath in changed if relpath not in WITNESS_RELPATHS]
+    if payload_changed:
+        return "conflict", f"different bytes: {', '.join(payload_changed)}", []
+    # A witness the destination already has stays as it is: it binds the same,
+    # byte-identical payload (for example a re-serialized portable copy).
+    kept = f"destination keeps its own {', '.join(changed)}" if changed else ""
     missing = [d for d in expected if d.relpath not in combined]
     if missing:
         names = [d.relpath for d in missing]
         if all(name in WITNESS_RELPATHS for name in names):
-            return "extend", f"adds witnesses: {', '.join(names)}", missing
+            return "extend", "; ".join(filter(None, (f"adds witnesses: {', '.join(names)}", kept))), missing
         return "conflict", f"destination lacks payload files: {', '.join(names)}", []
-    if tree_mode and any(d.relpath not in committed for d in expected):
-        return "staged", "", []
-    return "present", "", []
+    if tree_mode and any(d.relpath not in committed for d in expected if d.relpath not in changed):
+        return "staged", kept, []
+    return "present", kept, []
 
 
 def classify_sample(
@@ -543,9 +549,14 @@ def _run(args: argparse.Namespace) -> int:
         if item.snapshot:
             return item
         on_disk = working_tree_oids(dest / species / run, run, lfs_globs)
+        committed = tree.get((species, run), {})
         item.snapshot, item.reason, item.to_copy = compare_destination(
-            item.files, tree.get((species, run), {}), on_disk, tree_mode=tree_mode
+            item.files, committed, on_disk, tree_mode=tree_mode
         )
+        if item.snapshot in EXPORTED_STATES:
+            # The inventory lists only files whose snapshot bytes are the verified source bytes.
+            combined = {**on_disk, **committed}
+            item.files = [d for d in item.files if combined.get(d.relpath, d.git_oid) == d.git_oid]
         return item
 
     items: dict[tuple[str, str], SampleExport] = {}
@@ -585,6 +596,7 @@ def _run(args: argparse.Namespace) -> int:
             "extend": sum(1 for item in to_publish if item.snapshot == "extend"),
             "bytes": sum(digest.size for item in to_publish for digest in item.to_copy),
         },
+        "witnesses_kept": sum(1 for item in items.values() if "keeps its own" in item.reason),
         "conflicts": [
             {"species": item.species, "run": item.run, "reason": item.reason}
             for item in sorted(items.values(), key=lambda entry: (entry.species, entry.run))

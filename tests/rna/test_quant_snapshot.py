@@ -298,6 +298,16 @@ def test_compare_destination_states(
     assert compare_destination([_digest("a.tsv", "1")], committed, on_disk, tree_mode=tree_mode)[0] == state
 
 
+def test_compare_destination_keeps_a_destination_witness_with_other_bytes() -> None:
+    expected = [_digest("a.tsv", "1"), _digest(REFERENCE_BINDING_FILENAME, "2")]
+    state, reason, to_copy = compare_destination(
+        expected, {"a.tsv": "1", REFERENCE_BINDING_FILENAME: "9"}, {}, tree_mode=True
+    )
+    assert state == "present" and "keeps its own" in reason and to_copy == []
+    state, _, _ = compare_destination(expected, {"a.tsv": "8", REFERENCE_BINDING_FILENAME: "9"}, {}, tree_mode=True)
+    assert state == "conflict"
+
+
 def test_compare_destination_adds_only_witnesses() -> None:
     expected = [_digest("a.tsv", "1"), _digest(REFERENCE_BINDING_FILENAME, "2")]
     state, _, to_copy = compare_destination(expected, {"a.tsv": "1"}, {}, tree_mode=True)
