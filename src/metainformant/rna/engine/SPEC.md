@@ -114,6 +114,7 @@ producer state. It does not certify receipt contents or biological readiness.
 - `__init__.py`
 - `discovery.py`
 - `campaign_lock.py`
+- `cohort_host.py`
 - `exclusions.py`
 - `pipeline.py`
 - `preflight.py`

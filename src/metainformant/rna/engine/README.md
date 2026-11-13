@@ -71,6 +71,7 @@ serial probe attempts, including misses.
 | `provenance.py` | Hash-bound metadata, quantification, and downstream receipts |
 | `raw_cleanup.py` | Per-accession reclamation primitives: raw FASTQ/SRA and failed partials in `getfastq`, orphaned `.fasterq_tmp/<run>` staging, and the shared `.sra-cache` entries |
 | `raw_reclamation.py` | Audited reclamation pass (`scripts/rna/reclaim_quantified_raw.py`): releases inputs only for content-verified reusable outputs or cohort permanent exclusions; dry run by default, maintenance-locked `--execute` |
+| `cohort_host.py` | Fresh-host preparation (`scripts/rna/prepare_cohort_host.py`): places the frozen cohort's exact kallisto index bytes where each species configuration resolves them and writes the reference manifest cohort discovery and imports require; never replaces different bytes (a rebuilt index is not byte-identical); plan by default |
 | `quant_snapshot.py` | Portable snapshot export (`scripts/rna/export_quant_snapshot.py`): copies only content-verified reusable cohort outputs (allowlisted payload and witness files, never indexes or reads), compares against a destination or a Git tree (LFS pointers for HDF5), never overwrites, and writes a timestamp-free inventory; plan by default |
 | `species.py` | Shared config and data-root discovery |
 | `pipeline.py` | Matrix and downstream table helpers |
