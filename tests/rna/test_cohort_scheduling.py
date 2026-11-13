@@ -12,6 +12,7 @@ import gzip
 import json
 import logging
 import os
+import sqlite3
 import subprocess
 import sys
 import threading
@@ -788,3 +789,107 @@ def test_process_single_sample_reports_layout_mismatch_and_input_bytes(
     assert orchestrator.db.get_failed("apis")[0]["error"] == bad["error"]
     assert good["quantified"] is True
     assert good["input_bytes"] == 1234
+
+
+def test_a_sample_whose_admission_wait_expires_is_queued_again_in_the_same_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """More workers than acquisition slots: a task that times out waiting for a slot is not dropped for the run."""
+
+    monkeypatch.setenv("AMALGKIT_PIPELINE_ACQUISITION_SLOTS", "1")
+    monkeypatch.setenv("AMALGKIT_PIPELINE_QUANT_SLOTS", "1")  # two workers, one acquisition permit
+    monkeypatch.setenv("AMALGKIT_PIPELINE_ACQUISITION_QUEUE_TIMEOUT_SECONDS", "0.3")
+    orchestrator = _orchestrator(tmp_path, monkeypatch)
+    runs = ["SRR_A1", "SRR_A2", "SRR_A3", "SRR_A4"]
+    tasks = {
+        "amalgkit_apis.yaml": [
+            _species_task(tmp_path, "apis", run, fastq_bytes=1000 * (index + 1)) for index, run in enumerate(runs)
+        ]
+    }
+    orchestrator.discover_species_tasks = _discoverer(orchestrator, tasks)  # type: ignore[method-assign]
+    transferred: list[str] = []
+
+    def transfer(srr: str, *_args: object, **_kwargs: object) -> bool:
+        time.sleep(0.6)  # each transfer outlasts the admission timeout of the task waiting behind it
+        transferred.append(srr)
+        return True
+
+    def quant(*_args: object, **_kwargs: object) -> tuple[bool, None]:
+        return True, None
+
+    # The admission semaphore, the deferral and the requeue are the production code; only the transfer and
+    # the kallisto run are replaced.
+    orchestrator._download_fastq_admitted = transfer  # type: ignore[method-assign]
+    orchestrator.quant_sample = quant  # type: ignore[method-assign]
+
+    summary = orchestrator.run_all(["amalgkit_apis.yaml"], max_gb=1000.0)
+
+    assert summary["resource_profile"]["acquisition_slots"] == 1 and summary["resource_profile"]["workers"] == 2
+    assert sorted(transferred) == runs
+    assert summary["exit_code"] == 0 and summary["remaining_by_state"] == {}
+    assert all(orchestrator.db.get_state("apis", run) == "quantified" for run in runs)
+
+
+def test_a_bounded_requeue_leaves_a_task_pending_for_the_next_start(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("AMALGKIT_PIPELINE_ACQUISITION_SLOTS", "1")
+    monkeypatch.setenv("AMALGKIT_PIPELINE_QUANT_SLOTS", "1")
+    monkeypatch.setenv("AMALGKIT_PIPELINE_ACQUISITION_QUEUE_TIMEOUT_SECONDS", "0.2")
+    monkeypatch.setenv("AMALGKIT_PIPELINE_DEFERRAL_REQUEUES", "0")
+    orchestrator = _orchestrator(tmp_path, monkeypatch)
+    runs = ["SRR_B1", "SRR_B2", "SRR_B3"]
+    tasks = {"amalgkit_apis.yaml": [_species_task(tmp_path, "apis", run) for run in runs]}
+    orchestrator.discover_species_tasks = _discoverer(orchestrator, tasks)  # type: ignore[method-assign]
+
+    def transfer(srr: str, *_args: object, **_kwargs: object) -> bool:
+        time.sleep(0.6)
+        return True
+
+    def quant(*_args: object, **_kwargs: object) -> tuple[bool, None]:
+        return True, None
+
+    orchestrator._download_fastq_admitted = transfer  # type: ignore[method-assign]
+    orchestrator.quant_sample = quant  # type: ignore[method-assign]
+
+    summary = orchestrator.run_all(["amalgkit_apis.yaml"], max_gb=1000.0)
+
+    states = orchestrator.db.states_for([("apis", run) for run in runs])
+    assert "pending" in states.values()  # no requeue allowed: the old behaviour, still never counted as a failure
+    assert summary["exit_code"] == 75 and summary["failed_by_class"] == {}
+
+
+@pytest.mark.parametrize(("interval", "visible"), [("0", True), (None, False)])
+def test_periodic_wal_checkpoints_let_an_immutable_reader_see_progress(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, interval: str | None, visible: bool
+) -> None:
+    if interval is None:
+        monkeypatch.delenv("AMALGKIT_WAL_CHECKPOINT_SECONDS", raising=False)
+    else:
+        monkeypatch.setenv("AMALGKIT_WAL_CHECKPOINT_SECONDS", interval)
+    orchestrator = _orchestrator(tmp_path, monkeypatch)
+    tasks = {
+        "amalgkit_apis.yaml": [
+            _species_task(tmp_path, "apis", "SRR_W1", fastq_bytes=1),
+            _species_task(tmp_path, "apis", "SRR_W2", fastq_bytes=2),
+        ]
+    }
+    orchestrator.discover_species_tasks = _discoverer(orchestrator, tasks)  # type: ignore[method-assign]
+    seen: dict[str, str | None] = {}
+
+    def worker(srr: str, *_args: object, **_kwargs: object) -> dict[str, Any]:
+        if srr == "SRR_W2":
+            # An observer that never reads the WAL (immutable=1), like a snapshot of the database file.
+            try:
+                with sqlite3.connect(f"file:{orchestrator.db.db_path}?mode=ro&immutable=1", uri=True) as reader:
+                    row = reader.execute("SELECT state FROM samples WHERE srr_id = 'SRR_W1'").fetchone()
+                seen["SRR_W1"] = row[0] if row else None
+            except sqlite3.OperationalError:  # not even the schema has reached the database file yet
+                seen["SRR_W1"] = None
+        orchestrator.db.set_state("apis", srr, "quantified")
+        return {"quantified": True, "skipped": False, "error": None}
+
+    orchestrator.process_single_sample = worker  # type: ignore[method-assign]
+    orchestrator.run_all(["amalgkit_apis.yaml"], max_gb=1000.0, workers=1, threads=1)
+
+    assert (seen["SRR_W1"] == "quantified") is visible

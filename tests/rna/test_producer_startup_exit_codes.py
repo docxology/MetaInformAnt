@@ -13,6 +13,8 @@ from __future__ import annotations
 import errno
 import logging
 import os
+import shutil
+import sqlite3
 import stat
 import subprocess
 import sys
@@ -26,6 +28,7 @@ from metainformant.rna.engine.campaign_lock import (
     EXIT_ENVIRONMENT,
     EXIT_INTERNAL,
     EXIT_LOCK_BUSY,
+    EXIT_NEEDS_OPERATOR,
     EXIT_OK,
     EXIT_RETRYABLE,
     TOKEN_ENV,
@@ -34,7 +37,8 @@ from metainformant.rna.engine.campaign_lock import (
 )
 from metainformant.rna.engine.cohort import CohortError
 from metainformant.rna.engine.preflight import PreflightError
-from metainformant.rna.engine.progress_db import ProgressDB
+from metainformant.rna.engine.progress_db import NON_ENVIRONMENT_OS_ERROR, ProgressDB, classify_sample_error
+from metainformant.rna.engine.provenance import QUANT_PROVENANCE_FILENAME, REFERENCE_BINDING_FILENAME
 from metainformant.rna.engine.streaming_orchestrator import (
     DiscoveryFailed,
     EnvironmentCircuitBreaker,
@@ -377,3 +381,210 @@ def test_durable_text_write_replaces_atomically_and_cleans_up(tmp_path: Path) ->
     with pytest.raises(IsADirectoryError):
         _write_text_durably(tmp_path, "x", tmp_path / ".dir.tmp")
     assert sorted(path.name for path in tmp_path.iterdir()) == ["marker.json"]
+
+
+# ---------------------------------------------------------------------------
+# Cohort completeness, requantification, unreadable outputs, error mapping
+# ---------------------------------------------------------------------------
+
+
+def _quantify(campaign: Campaign, db: ProgressDB, calls: list[str]) -> Any:
+    """A worker that writes what a real quantification leaves: a cohort-valid output and the quantified row."""
+
+    def worker(srr: str, *_args: object, **_kwargs: object) -> dict[str, Any]:
+        calls.append(srr)
+        if not campaign.data.sample(srr).exists():
+            campaign.data.write_sample(srr, config=campaign.yaml)
+        db.set_state(SPECIES, srr, "quantified")
+        return {"quantified": True, "skipped": False, "error": None}
+
+    return worker
+
+
+def test_rows_only_the_operator_can_move_exit_65_with_counts_instead_of_drained(campaign: Campaign) -> None:
+    campaign.data.write_sample("SRR102", config=campaign.data.config)  # other configuration bytes: quarantined
+    orchestrator = campaign.orchestrator()
+    db = orchestrator.db
+    db.init_species(SPECIES, ["SRR102"])
+    db.set_state(SPECIES, "SRR102", "quantified")
+    calls: list[str] = []
+    orchestrator.process_single_sample = _quantify(campaign, db, calls)  # type: ignore[method-assign]
+
+    # SRR105 has 5,000 Gbases: above --max-gb 1000 it is never scheduled.
+    summary = orchestrator.run_all([CONFIG_NAME], 1000.0, workers=1, threads=1, discovery_workers=1)
+
+    assert sorted(calls) == ["SRR101", "SRR103"]
+    assert summary["exit_code"] == EXIT_NEEDS_OPERATOR and summary["status"] == "needs_operator"
+    assert summary["needs_operator"] == {"deferred_max_gb": 1, "quarantined": 1}
+    assert summary["remaining_by_state"] == {}
+
+    # The operator raises the budget and drops the quarantined run: the cohort is complete.
+    db.record_exclusions(SPECIES, [{"srr_id": "SRR102", "reason_code": "permanent_drop"}])
+    drained = orchestrator.run_all([CONFIG_NAME], 10_000.0, workers=1, threads=1, discovery_workers=1)
+    assert sorted(calls) == ["SRR101", "SRR103", "SRR105"]
+    assert drained["exit_code"] == EXIT_OK and drained["needs_operator"] == {}
+    db.close()
+
+
+def _rewrite_output(campaign: Campaign, srr: str) -> None:
+    sample = campaign.data.sample(srr)
+    shutil.rmtree(sample)
+    campaign.data.write_sample(srr, config=campaign.yaml, counts_offset=1)
+
+
+def test_requantification_policy_all_requantifies_then_drains(campaign: Campaign) -> None:
+    for run in TASKS:
+        campaign.data.write_sample(run, config=campaign.yaml)
+    orchestrator = campaign.orchestrator()
+    db = orchestrator.db
+    quantified: list[str] = []
+
+    def download(srr: str, *_args: object, **_kwargs: object) -> bool:
+        return True
+
+    def quant(_config: Path, _batch: int, _species: str, _threads: int, srr: str, *_a: object, **_k: object) -> Any:
+        quantified.append(srr)
+        _rewrite_output(campaign, srr)
+        return True, None
+
+    # The real per-sample worker runs; only the network transfer and the kallisto run are replaced.
+    orchestrator.download_fastq = download  # type: ignore[method-assign]
+    orchestrator.quant_sample = quant  # type: ignore[method-assign]
+
+    first = orchestrator.run_all(
+        [CONFIG_NAME], 10_000.0, workers=1, threads=1, discovery_workers=1, requantification_policy="all"
+    )
+    assert sorted(quantified) == TASKS  # every verified output was quantified again, none skipped
+    assert first["exit_code"] == EXIT_OK and first["status"] == "drained"
+    assert all(db.get_state(SPECIES, run) == "quantified" for run in TASKS)
+
+    quantified.clear()
+    preserved = orchestrator.run_all(
+        [CONFIG_NAME], 10_000.0, workers=1, threads=1, discovery_workers=1, requantification_policy="preserve"
+    )
+    assert quantified == [] and preserved["exit_code"] == EXIT_OK
+    db.close()
+
+
+def test_a_reusable_output_found_by_the_worker_is_recorded_quantified(campaign: Campaign) -> None:
+    orchestrator = campaign.orchestrator()
+    db = orchestrator.db
+    orchestrator.discover_species_tasks(CONFIG_NAME, max_gb=10_000.0, threads=1)  # registers the reuse contract
+    assert db.get_state(SPECIES, "SRR101") == "pending"
+    campaign.data.write_sample("SRR101", config=campaign.yaml)  # appeared after discovery (an import, a peer)
+
+    result = orchestrator.process_single_sample("SRR101", 2, campaign.data.work / "getfastq", campaign.yaml, SPECIES, 1)
+
+    assert result["skipped"] is True and db.get_state(SPECIES, "SRR101") == "quantified"
+    db.close()
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads files whatever their mode")
+def test_an_unreadable_output_leaves_the_run_retryable_and_is_never_quarantined(campaign: Campaign) -> None:
+    for run in TASKS:
+        campaign.data.write_sample(run, config=campaign.yaml)
+    orchestrator = campaign.orchestrator()
+    db = orchestrator.db
+    db.init_species(SPECIES, TASKS)
+    for run in TASKS:
+        db.set_state(SPECIES, run, "quantified")  # recorded before any fingerprinted audit, like the canonical DB
+    calls: list[str] = []
+    orchestrator.process_single_sample = _quantify(campaign, db, calls)  # type: ignore[method-assign]
+    sidecar = campaign.data.sample("SRR102") / QUANT_PROVENANCE_FILENAME
+    os.chmod(sidecar, 0)
+    try:
+        flaky = orchestrator.run_all([CONFIG_NAME], 10_000.0, workers=1, threads=1, discovery_workers=1)
+    finally:
+        os.chmod(sidecar, 0o644)
+
+    assert flaky["exit_code"] == EXIT_RETRYABLE and flaky["unverified_outputs"] == 1
+    assert db.get_state(SPECIES, "SRR102") == "quantified" and calls == []
+    readable = orchestrator.run_all([CONFIG_NAME], 10_000.0, workers=1, threads=1, discovery_workers=1)
+    assert readable["exit_code"] == EXIT_OK and readable["unverified_outputs"] == 0
+    assert db.get_state(SPECIES, "SRR102") == "quantified"
+    db.close()
+
+
+def test_an_os_error_outside_the_data_root_is_counted_and_never_reset_at_startup(campaign: Campaign) -> None:
+    orchestrator = campaign.orchestrator()
+    db = orchestrator.db
+    calls: list[str] = []
+    outside = "/nonexistent-outside-root/SRR103_1.fastq.gz"
+
+    quantify = _quantify(campaign, db, calls)
+
+    def worker(srr: str, *args: object, **kwargs: object) -> dict[str, Any]:
+        if srr == "SRR103":
+            calls.append(srr)
+            raise PermissionError(errno.EPERM, "Operation not permitted", outside)
+        return quantify(srr, *args, **kwargs)
+
+    orchestrator.process_single_sample = worker  # type: ignore[method-assign]
+    first = orchestrator.run_all([CONFIG_NAME], 10_000.0, workers=1, threads=1, discovery_workers=1)
+    assert first["breaker"]["environment_failures"] == 0  # the producer said: not the host
+    record = db.retry_records(SPECIES)[(SPECIES, "SRR103")]
+    assert record.attempts == 1 and record.last_error_class == NON_ENVIRONMENT_OS_ERROR
+
+    calls.clear()
+    second = orchestrator.run_all([CONFIG_NAME], 10_000.0, workers=1, threads=1, discovery_workers=1)
+    # The DB's own text classifier would call the message environmental; the recorded verdict wins.
+    assert second["startup"]["environment_failures_reset"] == {}
+    assert calls == [] and second["deferred_backoff"] == 1 and second["exit_code"] == EXIT_RETRYABLE
+    db.close()
+
+
+def test_a_missing_file_path_is_not_a_missing_tool_in_either_classifier(tmp_path: Path) -> None:
+    path_missing = f"Unexpected sample task error: [Errno 2] No such file or directory: '{tmp_path}/SRR1_1.fastq.gz'"
+    tool_missing = "Unexpected sample task error: [Errno 2] No such file or directory: 'kallisto'"
+    assert environment_failure_class(path_missing, tmp_path) is None
+    assert classify_sample_error(path_missing) != "environment_missing_tool"
+    assert environment_failure_class(tool_missing) == classify_sample_error(tool_missing) == "environment_missing_tool"
+
+
+@pytest.mark.parametrize(
+    ("message", "expected"),
+    [
+        ("disk I/O error", EXIT_ENVIRONMENT),
+        ("unable to open database file", EXIT_ENVIRONMENT),
+        ("attempt to write a readonly database", EXIT_ENVIRONMENT),
+        ("database or disk is full", EXIT_ENVIRONMENT),
+        ("no such table: samples", EXIT_INTERNAL),
+    ],
+)
+def test_a_lost_database_volume_maps_to_69_not_70(message: str, expected: int) -> None:
+    assert producer_exit_code_for_exception(sqlite3.OperationalError(message)) == expected
+
+
+def test_a_produced_cohort_output_gets_a_binding_witness(campaign: Campaign) -> None:
+    from metainformant.rna.engine.provenance import bind_produced_output, read_reference_binding
+
+    orchestrator = campaign.orchestrator()
+    orchestrator.discover_species_tasks(CONFIG_NAME, max_gb=10_000.0, threads=1)
+    context = orchestrator._reuse_context(SPECIES)
+    assert context is not None and context.is_cohort
+    sample = campaign.data.write_sample("SRR101", config=campaign.yaml)
+
+    bind_produced_output(sample, context.expectation("SRR101"), index_digests=context.index_digests)
+
+    binding = read_reference_binding(sample)
+    assert binding is not None and binding["cohort_id"] == campaign.cohort.cohort_id
+    assert binding["evidence"] == {"kind": "produced", "verified_by": "reference_manifest"}
+    # Reuse no longer depends on the reference manifest's bytes.
+    campaign.data.manifest.write_text(campaign.data.manifest.read_text() + "\n")
+    assert context.classify(sample, "SRR101")["status"] == "current"
+    assert (sample / REFERENCE_BINDING_FILENAME).is_file()
+    orchestrator.db.close()
+
+
+def test_an_output_that_does_not_verify_gets_no_witness(campaign: Campaign) -> None:
+    from metainformant.rna.engine.provenance import bind_produced_output
+
+    orchestrator = campaign.orchestrator()
+    orchestrator.discover_species_tasks(CONFIG_NAME, max_gb=10_000.0, threads=1)
+    context = orchestrator._reuse_context(SPECIES)
+    assert context is not None
+    sample = campaign.data.write_sample("SRR101", config=campaign.data.config)  # not the cohort configuration
+    with pytest.raises(ValueError, match="does not verify"):
+        bind_produced_output(sample, context.expectation("SRR101"), index_digests=context.index_digests)
+    assert not (sample / REFERENCE_BINDING_FILENAME).exists()
+    orchestrator.db.close()

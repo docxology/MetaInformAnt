@@ -5,6 +5,7 @@ real configuration files, and real class methods.
 """
 
 import gzip
+import hashlib
 import json
 import subprocess
 import sys
@@ -1924,6 +1925,7 @@ def test_reference_alias_manifest_is_byte_idempotent(tmp_path: Path, monkeypatch
         [],
     )
     first_bytes = first.read_bytes()
+    first_identity = (first.stat().st_ino, first.stat().st_mtime_ns)
     time.sleep(1.1)
     second = _write_reference_alias_manifest(
         "test_species",
@@ -1942,6 +1944,9 @@ def test_reference_alias_manifest_is_byte_idempotent(tmp_path: Path, monkeypatch
         [],
     )
     assert second.read_bytes() == first_bytes
+    # Identical bytes are not rewritten at all: the file keeps its inode and mtime.
+    assert (second.stat().st_ino, second.stat().st_mtime_ns) == first_identity
+    assert sorted(path.name for path in second.parent.iterdir()) == ["reference_aliases.json"]
 
 
 def _raw_validation_marker_is_byte_idempotent(tmp_path: Path) -> None:
@@ -2110,7 +2115,8 @@ def test_build_quant_command_uses_atomic_local_index_cache(tmp_path: Path, monke
     assert cmd[cmd.index("--index_dir") + 1] == str(cached_dir)
     assert (cached_dir / "genome.idx").read_bytes() == source.read_bytes()
     manifest = yaml.safe_load((cached_dir / ".metainformant_index_cache.json").read_text())
-    assert manifest["schema"] == "metainformant.rna.index_cache.v1"
+    assert manifest["schema"] == "metainformant.rna.index_cache.v2"
+    assert manifest["copies"]["genome.idx"]["sha256"] == hashlib.sha256(b"reference-index").hexdigest()
     assert manifest["source"] == str(source_dir)
 
     source.write_bytes(b"updated-reference-index")

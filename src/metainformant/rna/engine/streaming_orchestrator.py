@@ -18,6 +18,7 @@ import math
 import os
 import re
 import shutil
+import sqlite3
 import stat
 import subprocess
 import tempfile
@@ -29,7 +30,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, fields, replace
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, cast
+from typing import Any, Dict, List, Mapping, Optional, Sequence, cast
 
 import yaml
 
@@ -47,6 +48,7 @@ from metainformant.rna.engine.campaign_lock import (
     EXIT_ENVIRONMENT,
     EXIT_INTERNAL,
     EXIT_LOCK_BUSY,
+    EXIT_NEEDS_OPERATOR,
     EXIT_OK,
     EXIT_RETRYABLE,
     CampaignLockBusy,
@@ -54,6 +56,7 @@ from metainformant.rna.engine.campaign_lock import (
 from metainformant.rna.engine.campaign_lock import acquire as acquire_campaign_lock
 from metainformant.rna.engine.acquisition_order import plan_acquisition_order
 from metainformant.rna.engine.preflight import PreflightError, ReuseProbe, reuse_dry_run, run_campaign_preflight
+from metainformant.rna.engine.producer_stop import ProducerStop
 from metainformant.rna.engine.cohort import (
     CohortError,
     FrozenCohort,
@@ -66,6 +69,7 @@ from metainformant.rna.engine.cohort import (
 from metainformant.rna.engine.progress_db import (
     GATE_BACKOFF,
     GATE_HELD,
+    NON_ENVIRONMENT_OS_ERROR,
     RETRYABLE_ENVIRONMENT_CLASSES,
     ProgressDB,
     ReconcileScope,
@@ -82,8 +86,10 @@ from metainformant.rna.engine.provenance import (
     SpeciesReuseContext,
     _durable_fsync,
     _fsync_directory,
+    bind_produced_output,
     build_species_reuse_context,
     classify_quantification,
+    discard_reference_binding,
     is_current_metadata,
     is_reusable_quantification,
     pinned_amalgkit_runtime,
@@ -92,7 +98,8 @@ from metainformant.rna.engine.provenance import (
 )
 from metainformant.rna.engine.raw_cleanup import reclaim_sample_raw_inputs
 from metainformant.rna.engine.species import resolve_species_work_dir
-from metainformant.rna.engine.reference_digest import IndexDigestCache
+from metainformant.rna.engine.reference_digest import IndexDigestCache, file_signature
+from metainformant.rna.retrieval import process_groups
 from metainformant.rna.retrieval.ena_downloader import (
     ENADownloader,
     _run_command_in_process_group,
@@ -126,8 +133,12 @@ logger = log_utils.get_logger(__name__)
 
 REQUANTIFICATION_POLICIES = frozenset({"preserve", "version-drift", "all"})
 DEFAULT_DISCOVERY_WORKERS = 4
+# How often one run queues a task again after its acquisition admission or staging deadline expired.
+DEFAULT_DEFERRAL_REQUEUES = 20
 
 _INDEX_CACHE_LOCK = threading.Lock()
+_INDEX_STAGE_LOCK = threading.Lock()
+INDEX_STAGE_MANIFEST = ".metainformant_index_stage.json"
 _SRA_VALIDATION_SCHEMA = 1
 
 # Revision of the resume-reconcile verdict rules; part of every ReconcileScope so a rule change re-judges outputs.
@@ -142,6 +153,16 @@ _ENVIRONMENT_ERRNO_CLASSES = {
     errno.ENOSPC: "environment_no_space",
 }
 _MISSING_TOOL = re.compile(r"No such file or directory: '([^'/]+)'")
+# sqlite3.OperationalError texts that mean the database's volume, not the producer, failed.
+_SQLITE_ENVIRONMENT_MARKERS = (
+    "disk i/o error",
+    "unable to open database file",
+    "attempt to write a readonly database",
+    "database or disk is full",
+)
+# Seconds between PASSIVE WAL checkpoints during a run (AMALGKIT_WAL_CHECKPOINT_SECONDS): a killed producer then
+# leaves at most this much WAL, and immutable read-only observers of the database file lag by at most this much.
+WAL_CHECKPOINT_INTERVAL_SECONDS = 600.0
 _TRUTHY = frozenset({"1", "true", "yes", "on"})
 
 
@@ -306,6 +327,11 @@ def producer_exit_code_for_exception(error: BaseException) -> int:
     if isinstance(error, KeyboardInterrupt):
         return EXIT_RETRYABLE
     if isinstance(error, OSError):
+        return EXIT_ENVIRONMENT
+    if isinstance(error, sqlite3.OperationalError) and any(
+        marker in str(error).lower() for marker in _SQLITE_ENVIRONMENT_MARKERS
+    ):
+        # The progress database lives on the data volume: a dropped or full volume is an environment failure.
         return EXIT_ENVIRONMENT
     return EXIT_INTERNAL
 
@@ -2547,8 +2573,23 @@ def _write_reference_alias_manifest(
         "kallisto_index": str(kallisto_index) if kallisto_index else None,
         "kallisto_kmer_size": kallisto_kmer_size,
     }
-    temporary = destination.with_name(f".{destination.name}.tmp")
-    _write_text_durably(destination, json.dumps(payload, indent=2, sort_keys=True) + "\n", temporary)
+    text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+    try:
+        if destination.read_bytes() == text.encode("utf-8"):
+            # Identical bytes: never touch the file. Outputs bound to it through their sidecar's
+            # reference_manifest_sha256 stay valid, and the file's identity (inode, mtime) is unchanged.
+            return destination
+    except FileNotFoundError:
+        pass
+    else:
+        logger.warning(
+            "%s: reference manifest %s changes; outputs bound only to its old bytes (no binding witness) will "
+            "no longer verify through it",
+            species_name,
+            destination,
+        )
+    temporary = destination.with_name(f".{destination.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    _write_text_durably(destination, text, temporary)
     return destination
 
 
@@ -2723,6 +2764,66 @@ def _build_quant_command(
     return cmd
 
 
+def _copy_index_verified(source_file: Path, destination: Path) -> dict[str, Any]:
+    """Copy an index through a unique, fsynced temp file, verify its sha256 against the source, then promote it.
+
+    Returns the copy's record for the stage manifest: the source's identity
+    (device, inode, size, mtime, ctime), the sha256 of both, and the copy's
+    own ``(inode, size, mtime_ns, ctime_ns)`` so a later rewrite, replacement
+    or truncation of the copy is noticed without re-hashing it (``copy2``
+    gives the copy the source's mtime, and ``utime`` can restore an mtime,
+    but no write leaves the ctime unchanged).
+    """
+
+    source_signature = file_signature(source_file)
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{destination.name}.", suffix=".tmp", dir=destination.parent)
+    os.close(descriptor)
+    temporary = Path(temporary_name)
+    try:
+        shutil.copy2(source_file, temporary)
+        with open(temporary, "rb") as handle:
+            _durable_fsync(handle.fileno())
+        source_sha256 = sha256_file(source_file)
+        copy_sha256 = sha256_file(temporary)
+        if copy_sha256 != source_sha256 or file_signature(source_file) != source_signature:
+            raise OSError(f"index copy of {source_file} does not match its source bytes")
+        os.replace(temporary, destination)
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
+    _fsync_directory(destination.parent)
+    info = destination.lstat()
+    return {
+        "source": str(source_file),
+        "source_signature": list(source_signature),
+        "sha256": copy_sha256,
+        "copy": [info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns],
+    }
+
+
+def _index_copies_current(target: Path, sources: Sequence[Path], records: Any) -> bool:
+    """True when every copy in ``target`` is the one recorded for its unchanged source."""
+
+    if not isinstance(records, dict):
+        return False
+    try:
+        for source_file in sources:
+            record = records.get(source_file.name)
+            if not isinstance(record, dict) or record.get("source_signature") != list(file_signature(source_file)):
+                return False
+            info = (target / source_file.name).lstat()
+            if record.get("copy") != [info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns]:
+                return False
+    except OSError:
+        return False
+    return True
+
+
+def _write_index_records(manifest_path: Path, payload: Mapping[str, Any]) -> None:
+    temporary = manifest_path.with_name(f".{manifest_path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    _write_text_durably(manifest_path, json.dumps(payload, indent=2, sort_keys=True) + "\n", temporary)
+
+
 def _cache_index_directory(index_dir: str, species_name: str) -> str:
     """Return a validated local copy of a reference index when configured.
 
@@ -2765,23 +2866,23 @@ def _cache_index_directory(index_dir: str, species_name: str) -> str:
             isinstance(cached_files, dict)
             and manifest.get("source") == str(source)
             and cached_files == expected
-            and all(
-                (target / name).is_file() and (target / name).stat().st_size == details["size"]
-                for name, details in expected.items()
-            )
+            and _index_copies_current(target, source_files, manifest.get("copies"))
         ):
             return str(target)
 
         try:
             target.mkdir(parents=True, exist_ok=True)
-            for source_file in source_files:
-                destination = target / source_file.name
-                temporary = target / f".{source_file.name}.{os.getpid()}.tmp"
-                shutil.copy2(source_file, temporary)
-                os.replace(temporary, destination)
-            payload = {"schema": "metainformant.rna.index_cache.v1", "source": str(source), "files": expected}
-            temporary_manifest = target / f".{manifest_path.name}.{os.getpid()}.tmp"
-            _write_text_durably(manifest_path, json.dumps(payload, indent=2, sort_keys=True) + "\n", temporary_manifest)
+            copies = {
+                source_file.name: _copy_index_verified(source_file, target / source_file.name)
+                for source_file in source_files
+            }
+            payload = {
+                "schema": "metainformant.rna.index_cache.v2",
+                "source": str(source),
+                "files": expected,
+                "copies": copies,
+            }
+            _write_index_records(manifest_path, payload)
             logger.info("Using local reference-index cache for %s: %s", species_name, target)
             return str(target)
         except OSError as exc:
@@ -2801,8 +2902,11 @@ def _staged_exact_index_dir(index_dir: str, species_name: str) -> str:
     the exact ``{stem}.idx`` file exists, it (plus a matching
     ``{stem}_transcripts.idx``) is staged alone into
     ``<index_dir>_exact_stem/<stem>/index/`` so Amalgkit and Kallisto can never
-    pick the wrong index by prefix.  Each file is
-    promoted atomically with a temporary name and ``os.replace``.  When no
+    pick the wrong index by prefix.  Each file is copied to a unique temp
+    name, fsynced, verified by sha256 against its source and promoted with
+    ``os.replace``; a stage manifest records the source identity and the
+    copy's identity, and a copy is reused only while both are unchanged (a
+    rebuilt source or a damaged copy is staged again).  When no
     usable index can be isolated, the original directory is returned unchanged
     and the failure is left to worker triage instead of raising here.
     """
@@ -2857,18 +2961,27 @@ def _staged_exact_index_dir(index_dir: str, species_name: str) -> str:
         selected.append(transcripts_file)
 
     target = Path(f"{source}_exact_stem") / stem / "index"
-    try:
-        if all((target / path.name).is_file() and (target / path.name).stat().st_size > 0 for path in selected):
-            return str(target)
-        target.mkdir(parents=True, exist_ok=True)
-        for source_file in selected:
-            destination = target / source_file.name
-            temporary = target / f".{source_file.name}.{os.getpid()}.tmp"
-            shutil.copy2(source_file, temporary)
-            os.replace(temporary, destination)
-    except OSError as exc:
-        logger.warning("Unable to stage exact-stem indexes for %s; using %s: %s", species_name, source, exc)
-        return index_dir
+    manifest_path = target / INDEX_STAGE_MANIFEST
+    with _INDEX_STAGE_LOCK:
+        try:
+            try:
+                records = json.loads(manifest_path.read_bytes()).get("copies")
+            except (OSError, ValueError, AttributeError):
+                records = None
+            if _index_copies_current(target, selected, records):
+                return str(target)
+            # Missing, stale (the source changed) or tampered (the copy changed): copy again, verified.
+            target.mkdir(parents=True, exist_ok=True)
+            copies = {
+                source_file.name: _copy_index_verified(source_file, target / source_file.name)
+                for source_file in selected
+            }
+            _write_index_records(
+                manifest_path, {"schema": "metainformant.rna.index_stage.v1", "source": str(source), "copies": copies}
+            )
+        except OSError as exc:
+            logger.warning("Unable to stage exact-stem indexes for %s; using %s: %s", species_name, source, exc)
+            return index_dir
     logger.info("Staged exact-stem Kallisto index for %s: %s", species_name, target)
     return str(target)
 
@@ -4345,8 +4458,13 @@ class StreamingPipelineOrchestrator:
                 quantification_file = find_quantification_file(sample_dir, srr_id)
                 if quantification_file is None:
                     return False, f"No abundance output produced for {srr_id}"
+                context = self._reuse_context(species_name)
+                cohort_context = context if context is not None and context.is_cohort else None
                 try:
                     reference_manifest = work_dir / "reference" / "reference_aliases.json"
+                    if cohort_context is not None:
+                        # The previous output's witness names the sidecar about to be replaced.
+                        discard_reference_binding(sample_dir)
                     write_quant_provenance(
                         sample_dir,
                         species=species_name,
@@ -4358,6 +4476,15 @@ class StreamingPipelineOrchestrator:
                     )
                 except OSError as exc:
                     return False, f"Unable to write current-method provenance: {exc}"
+                if cohort_context is not None:
+                    # Bind the new output to the cohort index bytes now, while the reference is known to match,
+                    # so its reuse never depends on reference_aliases.json staying byte-identical.
+                    try:
+                        bind_produced_output(
+                            sample_dir, cohort_context.expectation(srr_id), index_digests=cohort_context.index_digests
+                        )
+                    except (OSError, ValueError) as exc:
+                        return False, f"Unable to bind the output to cohort {cohort_context.cohort_id}: {exc}"
                 return True, None
 
             # Extract meaningful error from amalgkit output
@@ -4949,8 +5076,15 @@ class StreamingPipelineOrchestrator:
         acquisition_only: bool = False,
         quantification_only: bool = False,
         metadata_path: Path | None = None,
+        requantify: bool = False,
     ) -> Dict[str, Any]:
-        """Processing unit for a single sample (``metadata_path``: frozen-cohort task table)."""
+        """Processing unit for a single sample (``metadata_path``: frozen-cohort task table).
+
+        ``requantify`` (a row the requantification policy requeued) bypasses
+        the reuse shortcut so the sample is quantified again; any other
+        sample with a reusable output on disk is recorded ``quantified`` and
+        skipped.
+        """
         if acquisition_only and quantification_only:
             raise ValueError("acquisition_only and quantification_only are mutually exclusive")
         result = {
@@ -4963,7 +5097,11 @@ class StreamingPipelineOrchestrator:
             "error": None,
         }
 
-        if self.is_quantified(species_name, srr_id):
+        if not requantify and self.is_quantified(species_name, srr_id):
+            # The row may be pending (a reconcile that has not seen this output yet): record what is on disk,
+            # or the run summary counts it as remaining work and the producer never drains.
+            if self.db.get_state(species_name, srr_id) != "quantified":
+                self.db.set_state(species_name, srr_id, "quantified")
             self._reclaim_after_current_quantification(species_name, srr_id)
             result.update({"downloaded": True, "quantified": True, "skipped": True})
             return result
@@ -4996,6 +5134,8 @@ class StreamingPipelineOrchestrator:
             result.update(
                 status="deferred_download",
                 download_deferred=True,
+                # A first-pass deferral waits for a later pass by design; a staging deadline is only a full queue.
+                deferral="first_pass" if isinstance(exc, FirstPassDeferred) else "staging_deadline",
                 error=str(exc),
                 acquisition_budget_seconds=self.download_first_pass_seconds,
                 deferred_at_epoch=time.time(),
@@ -5274,6 +5414,13 @@ class StreamingPipelineOrchestrator:
         )
         max_bases = max_gb * 1e9
         deferred = [task for task in schedulable if task.accession not in done and task.total_bases > max_bases]
+        requantify = set(reconciled.get("requeued_accessions") or ())
+        self._record_discovery(
+            species_name,
+            accessions=[task.accession for task in schedulable],
+            deferred_max_gb=[task.accession for task in deferred],
+            unavailable=list(reconciled.get("unavailable") or ()),
+        )
         fastq_dir = work_dir / "getfastq"
         built = [
             {
@@ -5287,6 +5434,7 @@ class StreamingPipelineOrchestrator:
                 "cohort_id": cohort.cohort_id,
                 "total_bases": task.total_bases,
                 "fastq_bytes": task.fastq_bytes,
+                **({"requantify": True} if task.accession in requantify else {}),
             }
             for task in sorted(schedulable, key=lambda task: (task.total_bases, task.batch_index))
             if task.accession not in done and task.total_bases <= max_bases
@@ -5306,6 +5454,20 @@ class StreamingPipelineOrchestrator:
             metadata_path.name,
         )
         return built
+
+    def _record_discovery(self, species_name: str, **fields: Sequence[str]) -> None:
+        """Remember what one species' discovery found for the run summary.
+
+        ``accessions``: cohort tasks after exclusions; ``deferred_max_gb``:
+        tasks above ``max_gb``; ``unavailable``: outputs reconcile could not
+        read (left unjudged).
+        """
+
+        lock = self.__dict__.setdefault("_discovery_record_lock", threading.Lock())
+        with lock:
+            record = self.__dict__.setdefault("_cohort_discovered", {}).setdefault(species_name, {})
+            for name, values in fields.items():
+                record[name] = tuple(sorted(values))
 
     def discover_species_tasks(self, config_name: str, max_gb: float, threads: int) -> List[Dict[str, Any]]:
         """Main processing loop for a species.
@@ -5542,7 +5704,9 @@ class StreamingPipelineOrchestrator:
         self.db.prune_species(species_name, all_srr_ids)
 
         quant_dir = _species_work_dir(species_name) / "quant"
-        self._reconcile_legacy_species(species_name, config_path, quant_dir)
+        legacy_reconciled = self._reconcile_legacy_species(species_name, config_path, quant_dir)
+        requantify = set(legacy_reconciled.get("requeued_accessions") or ())
+        self._record_discovery(species_name, unavailable=list(legacy_reconciled.get("unavailable") or ()))
 
         # Mark all filtered samples as sampled so amalgkit quant processes them
         filtered["is_sampled"] = "yes"
@@ -5589,6 +5753,9 @@ class StreamingPipelineOrchestrator:
             if str(task["srr"]).strip() not in quantified_accessions
             and str(task["srr"]).strip() not in permanently_excluded
         ]
+        for task in tasks:
+            if str(task["srr"]).strip() in requantify:
+                task["requantify"] = True
 
         return tasks
 
@@ -5671,25 +5838,40 @@ class StreamingPipelineOrchestrator:
         else:
             holder = f"inherited from the launching process, pid {lock.owner.get('pid')}"
         logger.info("Holding the campaign writer lock %s (%s)", lock.path, holder)
+        # Every transfer/extraction/quant process group inherits the locked descriptor: the kernel keeps the
+        # root locked while any of them lives, even if this process is SIGKILLed.
+        process_groups.reset()
+        process_groups.set_inherited_fds([lock.child_fd])
+        stop = ProducerStop()
+        self._producer_stop = stop
         try:
-            return self._run_all_locked(
-                species_list,
-                max_gb,
-                workers,
-                threads,
-                quant_slots=quant_slots,
-                fasterq_threads=fasterq_threads,
-                fasterq_slots=fasterq_slots,
-                compression_threads=compression_threads,
-                max_in_flight=max_in_flight,
-                validation_slots=validation_slots,
-                requantification_policy=requantification_policy,
-                discovery_workers=discovery_workers,
-                reuse_dry_run_fraction=reuse_dry_run_fraction,
-                resource_profile=resource_profile,
-                scheduling_order=scheduling_order,
-            )
+            with stop.installed():
+                return self._run_all_locked(
+                    species_list,
+                    max_gb,
+                    workers,
+                    threads,
+                    quant_slots=quant_slots,
+                    fasterq_threads=fasterq_threads,
+                    fasterq_slots=fasterq_slots,
+                    compression_threads=compression_threads,
+                    max_in_flight=max_in_flight,
+                    validation_slots=validation_slots,
+                    requantification_policy=requantification_policy,
+                    discovery_workers=discovery_workers,
+                    reuse_dry_run_fraction=reuse_dry_run_fraction,
+                    resource_profile=resource_profile,
+                    scheduling_order=scheduling_order,
+                )
         finally:
+            # The executors are joined inside _run_with_profile; never release the lock while a child group lives.
+            if process_groups.registered():
+                stop.request(0)
+                while not process_groups.wait_until_empty(1.0):
+                    stop.stop_children()
+            process_groups.set_inherited_fds(())
+            process_groups.reset()
+            self._producer_stop = None
             try:
                 self.db.checkpoint_wal()
             except Exception as exc:  # noqa: BLE001 - a dropped volume must not mask the run's own outcome
@@ -5854,6 +6036,7 @@ class StreamingPipelineOrchestrator:
         """:meth:`run_all` while the campaign writer lock is held: resolve the profile, then run under it."""
 
         run_started = time.monotonic()
+        self._cohort_discovered = {}
         data_root = _data_root()
 
         if requantification_policy is not None:
@@ -6100,6 +6283,37 @@ class StreamingPipelineOrchestrator:
 
             return 0 if task.get("_raw_input_priority") == 0 else task_acquisition_weight(task)
 
+        # A stop request (SIGINT/SIGTERM/SIGHUP via run_all, or an internal error) drains instead of exiting.
+        stop: ProducerStop = getattr(self, "_producer_stop", None) or ProducerStop()
+        interrupted_tasks: List[Dict[str, Any]] = []
+        # Tasks whose acquisition slot or staging deadline expired are queued again in this run (bounded).
+        deferral_requeues: Dict[tuple[str, str], int] = defaultdict(int)
+        # AMALGKIT_PIPELINE_DEFERRAL_REQUEUES (default 20; 0 disables): how often one task whose admission or staging
+        # deadline expired is queued again in the same run before it is left pending for the next start.
+        deferral_requeue_limit = DEFAULT_DEFERRAL_REQUEUES
+        raw_requeues = os.environ.get("AMALGKIT_PIPELINE_DEFERRAL_REQUEUES", "").strip()
+        if raw_requeues:
+            try:
+                deferral_requeue_limit = int(raw_requeues)
+            except ValueError:
+                deferral_requeue_limit = -1
+            if deferral_requeue_limit < 0:
+                logger.warning(
+                    "Invalid AMALGKIT_PIPELINE_DEFERRAL_REQUEUES=%r; using %d", raw_requeues, DEFAULT_DEFERRAL_REQUEUES
+                )
+                deferral_requeue_limit = DEFAULT_DEFERRAL_REQUEUES
+        deferred_left_pending = 0
+        last_wal_checkpoint = time.monotonic()
+        wal_checkpoint_seconds = WAL_CHECKPOINT_INTERVAL_SECONDS
+        raw_interval = os.environ.get("AMALGKIT_WAL_CHECKPOINT_SECONDS", "").strip()
+        if raw_interval:
+            try:
+                wal_checkpoint_seconds = max(0.0, float(raw_interval))
+            except ValueError:
+                logger.warning(
+                    "Invalid AMALGKIT_WAL_CHECKPOINT_SECONDS=%r; using %.0f", raw_interval, wal_checkpoint_seconds
+                )
+
         with (
             concurrent.futures.ThreadPoolExecutor(max_workers=discovery_worker_count) as discovery_executor,
             concurrent.futures.ThreadPoolExecutor(max_workers=profile.workers) as executor,
@@ -6147,6 +6361,8 @@ class StreamingPipelineOrchestrator:
                 cohort_kwargs: Dict[str, Any] = (
                     {"metadata_path": task["metadata_path"]} if task.get("metadata_path") is not None else {}
                 )
+                if task.get("requantify"):
+                    cohort_kwargs["requantify"] = True
                 future = executor.submit(
                     self.process_single_sample,
                     task["srr"],
@@ -6198,8 +6414,8 @@ class StreamingPipelineOrchestrator:
                 try:
                     self.db.set_state(sp, srr, "pending", error=message)
                 except Exception as db_error:  # noqa: BLE001 - the DB may live on the volume that just failed
+                    # Counted once below with the original failure: one failed sample is one breaker step.
                     logger.error("Cannot record %s %s as pending: %s", sp, srr, db_error)
-                    breaker.record_environment_failure("environment_progress_db_unwritable", str(db_error))
                 logger.error(
                     "[%d/%d] %s %s: environment failure (%s), left pending — %s",
                     completed,
@@ -6229,9 +6445,15 @@ class StreamingPipelineOrchestrator:
                 """Retry bookkeeping for one finished attempt: clear, back off (in-run heap), or hold."""
 
                 self._forget_acquisition_note(str(task["srr"]))
+                error_class: str | None = None
+                if error is not None and classify_sample_error(error) in RETRYABLE_ENVIRONMENT_CLASSES:
+                    # This attempt reached account_attempt, so environment_class_for already said it is NOT an
+                    # environment failure (for example ENOENT/EPERM on a path outside the data root). Record that
+                    # verdict so the startup reset never re-reads the message as environmental and loops forever.
+                    error_class = NON_ENVIRONMENT_OS_ERROR
                 try:
                     outcome = self.db.record_attempt_outcome(
-                        task["species_name"], str(task["srr"]), error, policy=retry_policy
+                        task["species_name"], str(task["srr"]), error, policy=retry_policy, error_class=error_class
                     )
                 except Exception as exc:  # noqa: BLE001 - bookkeeping must not abort the campaign
                     logger.error("Cannot record the attempt of %s %s: %s", task["species_name"], task["srr"], exc)
@@ -6388,92 +6610,187 @@ class StreamingPipelineOrchestrator:
                         discovery_elapsed,
                     )
 
-            while True:
-                promote_due_retries()
-                submit_fallbacks()
-                while len(primary_futures) < profile.max_in_flight:
-                    if not submit_next_primary():
-                        break
+            def requeue_deferred(task: Dict[str, Any], res: Mapping[str, Any]) -> bool:
+                """Queue a task whose admission or staging deadline expired again in this run (bounded)."""
 
-                active_futures = set(primary_futures) | set(fallback_futures) | set(discovery_futures)
-                if not active_futures:
-                    if breaker.tripped:
-                        break
-                    if pending or ready_primary_tasks or fallback_queue:
-                        # This should be unreachable, but protects against a
-                        # scheduler spin if future routing changes later.
-                        logger.error("Execution queues are non-empty but no futures are active; stopping safely.")
-                        break
-                    if not deferred_heap:
-                        break
-                    wait_seconds = deferred_heap[0][0] - time.time()
-                    if wait_seconds > retry_wait_max:
-                        break
-                    time.sleep(max(0.0, min(wait_seconds, 60.0)))
-                    continue
-                timeout = max(0.0, deferred_heap[0][0] - time.time()) if deferred_heap else None
-                done, _ = concurrent.futures.wait(
-                    active_futures,
-                    timeout=timeout,
-                    return_when=concurrent.futures.FIRST_COMPLETED,
+                nonlocal deferred_left_pending
+                key = task_key(task)
+                if res.get("deferral") == "first_pass":
+                    return False
+                if stop.requested or deferral_requeues[key] >= deferral_requeue_limit:
+                    deferred_left_pending += 1
+                    return False
+                deferral_requeues[key] += 1
+                _annotate_raw_input_state([task])
+                enqueue([task])
+                logger.info(
+                    "%s %s: %s; queued again in this run (%d/%d)",
+                    task["species_name"],
+                    task["srr"],
+                    res.get("error"),
+                    deferral_requeues[key],
+                    deferral_requeue_limit,
                 )
-                for future in done:
-                    if future in discovery_futures:
-                        finish_discovery(future)
-                        continue
-                    if future in primary_futures:
-                        task = primary_futures.pop(future)
-                        inflight_raw_bytes -= int(task.pop("_admitted_raw_bytes", 0) or 0)
-                        try:
-                            res = future.result()
-                        except Exception as exc:
-                            record_terminal(task, None, exc)
-                            continue
-                        if res.get("fallback_deferred"):
-                            fallback_queue.append(task)
-                        else:
-                            record_terminal(task, res)
-                        continue
+                return True
 
-                    task = fallback_futures.pop(future)
-                    try:
-                        fallback_ready = bool(future.result())
-                    except Exception as exc:
-                        fallback_ready = False
-                        logger.error(
-                            "Dedicated NCBI fallback raised for %s %s: %s",
-                            task["species_name"],
-                            task["srr"],
-                            exc,
-                        )
-                        failure_class = environment_class_for(exc)
-                        if failure_class is not None:
-                            completed += 1
-                            defer_for_environment(task, failure_class, f"NCBI fallback error: {exc}")
-                            continue
-                    if fallback_ready:
-                        # Return the now-local sample to the ordinary lane.
-                        # download_fastq() revalidates and reuses the FASTQ,
-                        # then quantification competes under the shared CPU
-                        # semaphore while the fallback executor immediately
-                        # starts the next extraction.
-                        ready_primary_tasks.appendleft(task)
+            def drain_after_stop() -> None:
+                """Cancel queued work, stop child process groups and wait for every running future."""
+
+                for futures in (primary_futures, fallback_futures, discovery_futures):
+                    for future in list(futures):
+                        future.cancel()
+                for pool in (discovery_executor, executor, fallback_executor):
+                    pool.shutdown(wait=False, cancel_futures=True)
+                stop.stop_children()
+                running = {
+                    future
+                    for future in (*primary_futures, *fallback_futures, *discovery_futures)
+                    if not future.cancelled()
+                }
+                while running:
+                    finished, running = concurrent.futures.wait(running, timeout=1.0)
+                    stop.stop_children()
+                for future, task in [*primary_futures.items(), *fallback_futures.items()]:
+                    if not future.cancelled():
+                        interrupted_tasks.append(task)
                     else:
-                        failure = fallback_error + self._layout_failure_suffix(str(task["srr"]))
-                        self.db.set_state(task["species_name"], task["srr"], "failed", error=failure)
-                        record_terminal(task, {"quantified": False, "error": failure})
+                        ready_primary_tasks.append(task)
+                primary_futures.clear()
+                fallback_futures.clear()
+                discovery_futures.clear()
+                logger.warning(
+                    "Stopped (%s): %d in-flight sample(s) interrupted; every worker and child process has exited",
+                    stop.signal_name,
+                    len(interrupted_tasks),
+                )
 
-            # Samples admitted to neither lane when the breaker tripped keep no in-flight state.
+            try:
+                while True:
+                    if stop.requested:
+                        break
+                    if time.monotonic() - last_wal_checkpoint >= wal_checkpoint_seconds:
+                        last_wal_checkpoint = time.monotonic()
+                        try:
+                            self.db.checkpoint_wal(mode="PASSIVE")
+                        except Exception as exc:  # noqa: BLE001 - a periodic checkpoint never stops the run
+                            logger.warning("Periodic WAL checkpoint failed: %s", exc)
+                    promote_due_retries()
+                    submit_fallbacks()
+                    while len(primary_futures) < profile.max_in_flight:
+                        if not submit_next_primary():
+                            break
+
+                    active_futures = set(primary_futures) | set(fallback_futures) | set(discovery_futures)
+                    if not active_futures:
+                        if breaker.tripped:
+                            break
+                        if pending or ready_primary_tasks or fallback_queue:
+                            # This should be unreachable, but protects against a
+                            # scheduler spin if future routing changes later.
+                            logger.error("Execution queues are non-empty but no futures are active; stopping safely.")
+                            break
+                        if not deferred_heap:
+                            break
+                        wait_seconds = deferred_heap[0][0] - time.time()
+                        if wait_seconds > retry_wait_max:
+                            break
+                        # Short sleeps: a stop request is noticed within a second.
+                        time.sleep(max(0.0, min(wait_seconds, 1.0)))
+                        continue
+                    timeout = min(1.0, max(0.0, deferred_heap[0][0] - time.time())) if deferred_heap else 1.0
+                    done, _ = concurrent.futures.wait(
+                        active_futures,
+                        timeout=timeout,
+                        return_when=concurrent.futures.FIRST_COMPLETED,
+                    )
+                    for future in done:
+                        if future in discovery_futures:
+                            finish_discovery(future)
+                            continue
+                        if future in primary_futures:
+                            task = primary_futures.pop(future)
+                            inflight_raw_bytes -= int(task.pop("_admitted_raw_bytes", 0) or 0)
+                            try:
+                                res = future.result()
+                            except Exception as exc:
+                                record_terminal(task, None, exc)
+                                continue
+                            if res.get("fallback_deferred"):
+                                fallback_queue.append(task)
+                            elif res.get("download_deferred") and requeue_deferred(task, res):
+                                continue
+                            else:
+                                record_terminal(task, res)
+                            continue
+
+                        task = fallback_futures.pop(future)
+                        try:
+                            fallback_ready = bool(future.result())
+                        except Exception as exc:
+                            fallback_ready = False
+                            logger.error(
+                                "Dedicated NCBI fallback raised for %s %s: %s",
+                                task["species_name"],
+                                task["srr"],
+                                exc,
+                            )
+                            failure_class = environment_class_for(exc)
+                            if failure_class is not None:
+                                completed += 1
+                                defer_for_environment(task, failure_class, f"NCBI fallback error: {exc}")
+                                continue
+                        if fallback_ready:
+                            # Return the now-local sample to the ordinary lane.
+                            # download_fastq() revalidates and reuses the FASTQ,
+                            # then quantification competes under the shared CPU
+                            # semaphore while the fallback executor immediately
+                            # starts the next extraction.
+                            ready_primary_tasks.appendleft(task)
+                        else:
+                            failure = fallback_error + self._layout_failure_suffix(str(task["srr"]))
+                            self.db.set_state(task["species_name"], task["srr"], "failed", error=failure)
+                            record_terminal(task, {"quantified": False, "error": failure})
+
+            except BaseException:
+                # An error in the scheduling loop must not leave queued samples running without the lock.
+                if not stop.requested:
+                    stop.request(0)
+                drain_after_stop()
+                raise
+            if stop.requested:
+                drain_after_stop()
+
+            # Samples admitted to neither lane when the breaker tripped (or a stop arrived) keep no in-flight state.
+            admission_note = (
+                f"deferred: producer stopped by {stop.signal_name}"
+                if stop.requested
+                else "deferred: environment circuit breaker stopped admission"
+            )
             for task in list(ready_primary_tasks) + list(fallback_queue):
                 try:
-                    self.db.set_state(
-                        task["species_name"],
-                        task["srr"],
-                        "pending",
-                        error="deferred: environment circuit breaker stopped admission",
-                    )
+                    self.db.set_state(task["species_name"], task["srr"], "pending", error=admission_note)
                 except Exception as exc:  # noqa: BLE001 - reset at the next startup in any case
                     logger.error("Cannot return %s %s to pending: %s", task["species_name"], task["srr"], exc)
+            # Samples interrupted by the stop: whatever their worker recorded (a killed download looks like a
+            # failure), the attempt never counts and the row is pending again unless it finished.
+            if interrupted_tasks:
+                try:
+                    interrupted_states = self.db.states_for([task_key(task) for task in interrupted_tasks])
+                except Exception as exc:  # noqa: BLE001 - reset_inflight_states covers in-flight rows at startup
+                    logger.error("Cannot read interrupted task states: %s", exc)
+                    interrupted_states = {}
+                for task in interrupted_tasks:
+                    if interrupted_states.get(task_key(task)) in ("quantified", "quarantined", None):
+                        continue
+                    try:
+                        self.db.set_state(
+                            task["species_name"],
+                            task["srr"],
+                            "pending",
+                            error=f"interrupted: producer stopped by {stop.signal_name}",
+                        )
+                    except Exception as exc:  # noqa: BLE001 - reset at the next startup in any case
+                        logger.error("Cannot return %s %s to pending: %s", task["species_name"], task["srr"], exc)
 
         if not discovery_elapsed:
             discovery_elapsed = max(time.monotonic() - discovery_started, 1e-9)
@@ -6531,6 +6848,7 @@ class StreamingPipelineOrchestrator:
                 "gbases_per_hour": round(quantified_bases / 1e9 / hours, 3),
             },
             resource_profile=profile,
+            stopped=stop.signal_name if stop.requested else None,
         )
 
     def _run_summary(
@@ -6552,15 +6870,25 @@ class StreamingPipelineOrchestrator:
         discovery_failures: Optional[Mapping[str, str]] = None,
         throughput: Optional[Mapping[str, Any]] = None,
         resource_profile: Optional[PipelineResourceProfile] = None,
+        stopped: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """The run summary and its exit code: 69 breaker tripped, 75 retryable work left, 0 drained.
+        """The run summary and its exit code.
 
-        Retryable work is every scheduled task whose final row is not
-        ``quantified`` or ``quarantined``, that is not a ``permanent_drop``
-        and that is not held by the retry bookkeeping (a layout mismatch, a
-        kallisto exit-1 failure or a spent attempt budget): the next run of
-        the same command schedules it again. A species whose discovery
-        failed also leaves the run retryable.
+        * 69 ``environment_failure``: the breaker tripped or the database
+          could not be read;
+        * 75 ``stopped``: a signal (or an internal error) stopped the run
+          before it drained; interrupted rows are pending;
+        * 75 ``retryable_work_remains``: a scheduled task whose final row is
+          not ``quantified`` or ``quarantined``, is not a ``permanent_drop``
+          and is not held by the retry bookkeeping (a layout mismatch, a
+          kallisto exit-1 failure or a spent attempt budget), a species whose
+          discovery failed, or an output reconcile could not read
+          (``unverified_outputs``): the same command should run again;
+        * 65 ``needs_operator`` (cohort mode): nothing is left to run, but
+          cohort rows are held, quarantined or above ``max_gb``
+          (``needs_operator`` counts them); finalization would refuse them;
+        * 0 ``drained``: every cohort row (cohort mode) or every scheduled
+          task is quantified or excluded.
         """
 
         held = held_keys or set()
@@ -6591,13 +6919,19 @@ class StreamingPipelineOrchestrator:
                     ):
                         error_class = classify_sample_error(row["error"])
                         failed_by_class[error_class] = failed_by_class.get(error_class, 0) + 1
+            needs_operator, unverified = self._cohort_completeness(held)
         except Exception as exc:  # noqa: BLE001 - the DB may have gone with the volume
             database_error = str(exc)
+            needs_operator, unverified = {}, 0
             logger.error("Cannot read final task states: %s", exc)
         if breaker.tripped or database_error is not None:
             status, exit_code = "environment_failure", EXIT_ENVIRONMENT
-        elif remaining or discovery_failures:
+        elif stopped is not None:
+            status, exit_code = "stopped", EXIT_RETRYABLE
+        elif remaining or discovery_failures or unverified:
             status, exit_code = "retryable_work_remains", EXIT_RETRYABLE
+        elif needs_operator:
+            status, exit_code = "needs_operator", EXIT_NEEDS_OPERATOR
         else:
             status, exit_code = "drained", EXIT_OK
         summary: Dict[str, Any] = {
@@ -6611,6 +6945,9 @@ class StreamingPipelineOrchestrator:
             "remaining_by_state": dict(sorted(remaining.items())),
             "failed_by_class": dict(sorted(failed_by_class.items())),
             "held_by_reason": dict(sorted((held_by_reason or {}).items())),
+            "needs_operator": dict(sorted(needs_operator.items())),
+            "unverified_outputs": unverified,
+            "stopped_by": stopped,
             "deferred_backoff": deferred_backoff,
             "next_attempt_due_at": (
                 time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(next_attempt_due_at))
@@ -6629,3 +6966,39 @@ class StreamingPipelineOrchestrator:
         }
         logger.info("=== Producer summary: %s ===", json.dumps(summary, sort_keys=True, default=str))
         return summary
+
+    def _cohort_completeness(self, held: set[tuple[str, str]]) -> tuple[Dict[str, int], int]:
+        """Cohort rows nothing will run without the operator, by kind, and the outputs reconcile could not read.
+
+        Kinds: ``quarantined`` (reuse contract or layout mismatch), ``held``
+        (kallisto exit 1, spent attempt budget) and ``deferred_max_gb``
+        (``total_bases`` above ``--max-gb``). Only cohort mode defines the
+        complete set; elsewhere the first value is empty.
+        """
+
+        discovered: Mapping[str, Mapping[str, Sequence[str]]] = dict(getattr(self, "_cohort_discovered", {}) or {})
+        unverified = sum(len(record.get("unavailable", ())) for record in discovered.values())
+        counts: Dict[str, int] = {}
+        if getattr(self, "cohort", None) is None:
+            return counts, unverified
+        for species, record in sorted(discovered.items()):
+            accessions = record.get("accessions")
+            if not accessions:
+                continue
+            deferred_max_gb = set(record.get("deferred_max_gb", ()))
+            excluded = set(self.db.get_excluded_srr_ids(species, reason_code="permanent_drop"))
+            states = self.db.states_for([(species, accession) for accession in accessions])
+            for accession in accessions:
+                state = states.get((species, accession))
+                if accession in excluded or state == "quantified":
+                    continue
+                if state == "quarantined":
+                    kind = "quarantined"
+                elif (species, accession) in held:
+                    kind = "held"
+                elif accession in deferred_max_gb:
+                    kind = "deferred_max_gb"
+                else:
+                    continue  # scheduled work: counted under remaining_by_state
+                counts[kind] = counts.get(kind, 0) + 1
+        return counts, unverified
