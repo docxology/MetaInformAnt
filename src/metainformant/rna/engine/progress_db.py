@@ -14,11 +14,14 @@ Sample state machine::
 
 from __future__ import annotations
 
+import calendar
 import concurrent.futures
 import json
+import math
 import os
 import sqlite3
 import stat as stat_module
+import sys
 import threading
 import time
 from dataclasses import dataclass
@@ -88,9 +91,13 @@ SAMPLE_ERROR_CLASSES: dict[str, str] = {
     "environment_no_space": "No space left on device",
     "environment_device_unavailable": "Device not configured",
     "environment_missing_tool": "No such file or directory: '",
+    # Before the transfer marker: a layout note is appended to "Download Failed (all sources ...)".
+    "layout_mismatch": "layout_mismatch:",
     "transfer_all_sources_failed": "Download Failed (all sources",
     "extraction_timeout": "fasterq-dump timeout",
     "quantification_timeout": "Quant timeout",
+    # Amalgkit 0.16.60 reports a failed kallisto run as "ERROR: kallisto quant failed with exit code 1 for <run>.".
+    "quantification_kallisto_exit_1": "kallisto quant failed with exit code 1",
     "quantification_failed": "Quantification Failed",
     "quantification_exception": "Quant exception",
 }
@@ -141,6 +148,164 @@ AUDIT_FINGERPRINT_COLUMNS: tuple[tuple[str, str], ...] = (
 """Nullable ``quantification_audit`` columns that let a restart trust an unchanged classified output."""
 
 RECONCILE_HEARTBEAT_EVERY = 1000
+
+# ---------- Retry bookkeeping ----------
+
+RETRY_COLUMNS: tuple[tuple[str, str], ...] = (
+    ("attempts", "INTEGER NOT NULL DEFAULT 0"),
+    ("last_error_class", "TEXT"),
+    ("next_attempt_at", "TEXT"),
+)
+"""Additive ``samples`` columns: counted sample attempts, the last failure class and the UTC
+(``YYYY-MM-DD HH:MM:SS``, the ``datetime('now')`` format) time before which the scheduler must not retry."""
+
+RETRY_ENVIRONMENT = "environment"
+RETRY_TRANSIENT = "transient"
+RETRY_LAYOUT_MISMATCH = "layout_mismatch"
+RETRY_PERMANENT = "permanent"
+
+PERMANENT_ERROR_CLASSES = frozenset({"quantification_kallisto_exit_1"})
+"""Failures that repeat byte-for-byte on every attempt: never retried automatically.
+
+kallisto exits 1 for the same accessions on every run (canonical root: the
+106 apis ``permanent_drop`` rows; October root: apis SRR21601882-SRR21601887
+and 13 bombus SRR237263xx/SRR237264xx, each failing again in every launch).
+"""
+
+LAYOUT_MISMATCH_ERROR_CLASSES = frozenset({"layout_mismatch"})
+"""The acquired files contradict the frozen library layout. Downloading again yields the same files
+(2026-09-25..27 logs: SRR7704201, SRR18219008, SRR15496110 re-downloaded and rescanned at every start),
+so the row is quarantined for reconciliation instead of being retried."""
+
+RETRY_RELEASED_PREFIX = "released-by-operator"
+
+
+def retry_class_for(error_class: str | None) -> str:
+    """The retry class of a :func:`classify_sample_error` class.
+
+    ``environment`` (the host, not the sample: retried immediately at the next
+    start), ``layout_mismatch`` and ``permanent`` (held until an operator
+    releases them) or ``transient`` (network, source, timeouts and anything
+    unrecognized: exponential backoff, then held once the attempt budget is
+    spent).
+    """
+
+    if error_class in RETRYABLE_ENVIRONMENT_CLASSES:
+        return RETRY_ENVIRONMENT
+    if error_class in LAYOUT_MISMATCH_ERROR_CLASSES:
+        return RETRY_LAYOUT_MISMATCH
+    if error_class in PERMANENT_ERROR_CLASSES:
+        return RETRY_PERMANENT
+    return RETRY_TRANSIENT
+
+
+def _setting_int(name: str, default: int, minimum: int) -> int:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        logger.warning("Invalid %s=%r; using %d", name, raw, default)
+        return default
+    if value < minimum:
+        logger.warning("Invalid %s=%r; using %d", name, raw, default)
+        return default
+    return value
+
+
+@dataclass(frozen=True)
+class RetryPolicy:
+    """Exponential backoff for transient sample failures, capped, with a bounded attempt budget.
+
+    Defaults: the first retry waits 1 h, then 2 h, 4 h, 8 h, 16 h (cap 24 h);
+    the 6th failed attempt holds the row for the operator, 31 h after the
+    first. The window is wider than an overnight network or ENA outage (a
+    sample failing every hour of an 8 h outage spends 4 attempts), but a
+    source that is really gone (the 27 rows that failed "Download Failed (all
+    sources)" from 2026-09-14 to 09-29 and were re-attempted at every start)
+    stops consuming acquisition slots. Overrides:
+    ``AMALGKIT_RETRY_BACKOFF_BASE_SECONDS``,
+    ``AMALGKIT_RETRY_BACKOFF_CAP_SECONDS``, ``AMALGKIT_MAX_SAMPLE_ATTEMPTS``.
+    """
+
+    base_seconds: int = 3600
+    cap_seconds: int = 86400
+    max_attempts: int = 6
+
+    def __post_init__(self) -> None:
+        if self.base_seconds < 1 or self.cap_seconds < self.base_seconds or self.max_attempts < 1:
+            raise ValueError("retry policy needs 1 <= base <= cap seconds and at least one attempt")
+
+    @classmethod
+    def from_environment(cls) -> "RetryPolicy":
+        base = _setting_int("AMALGKIT_RETRY_BACKOFF_BASE_SECONDS", cls.base_seconds, 1)
+        cap = max(base, _setting_int("AMALGKIT_RETRY_BACKOFF_CAP_SECONDS", cls.cap_seconds, 1))
+        return cls(base, cap, _setting_int("AMALGKIT_MAX_SAMPLE_ATTEMPTS", cls.max_attempts, 1))
+
+    def backoff_seconds(self, attempts: int) -> int:
+        """Delay after ``attempts`` counted failures: ``base * 2**(attempts - 1)``, at most ``cap``."""
+
+        if attempts <= 0:
+            return 0
+        return min(self.cap_seconds, self.base_seconds * (1 << min(attempts - 1, 40)))
+
+
+def _utc_text(epoch: float) -> str:
+    return time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(epoch))
+
+
+def _utc_epoch(text: str | None) -> float | None:
+    if not text:
+        return None
+    try:
+        return float(calendar.timegm(time.strptime(text, "%Y-%m-%d %H:%M:%S")))
+    except ValueError:
+        return None
+
+
+@dataclass(frozen=True)
+class RetryRecord:
+    """One row's retry bookkeeping (``next_attempt_at`` as POSIX seconds)."""
+
+    species: str
+    srr_id: str
+    state: str
+    attempts: int
+    last_error_class: Optional[str]
+    next_attempt_at: Optional[float]
+
+    @property
+    def retry_class(self) -> str | None:
+        return retry_class_for(self.last_error_class) if self.last_error_class else None
+
+
+GATE_READY = "ready"
+GATE_BACKOFF = "backoff"
+GATE_HELD = "held"
+
+
+def retry_gate(record: RetryRecord | None, policy: RetryPolicy, now: float) -> tuple[str, str | None]:
+    """Whether a task may run now: ``(ready|backoff|held, reason)``.
+
+    Held: a layout mismatch, a permanent failure, or a transient failure whose
+    attempt budget is spent. Backoff: a transient failure whose
+    ``next_attempt_at`` is still in the future. Environment failures and rows
+    without bookkeeping are ready.
+    """
+
+    if record is None:
+        return GATE_READY, None
+    retry_class = record.retry_class
+    if retry_class == RETRY_LAYOUT_MISMATCH:
+        return GATE_HELD, RETRY_LAYOUT_MISMATCH
+    if retry_class == RETRY_PERMANENT:
+        return GATE_HELD, f"{RETRY_PERMANENT}:{record.last_error_class}"
+    if retry_class == RETRY_TRANSIENT and record.attempts >= policy.max_attempts:
+        return GATE_HELD, f"attempts_exhausted:{record.last_error_class}"
+    if retry_class != RETRY_ENVIRONMENT and record.next_attempt_at is not None and record.next_attempt_at > now:
+        return GATE_BACKOFF, f"backoff:{record.last_error_class}"
+    return GATE_READY, None
 
 
 @dataclass(frozen=True)
@@ -731,6 +896,233 @@ class ProgressDB:
         if counts:
             logger.info(
                 "Reset %d environment-class failures to pending at startup (%s)",
+                sum(counts.values()),
+                ", ".join(f"{name}={count}" for name, count in sorted(counts.items())),
+            )
+        return dict(sorted(counts.items()))
+
+    # ---- Retry bookkeeping (attempts, failure class, backoff) ----
+
+    def _retry_columns_present_locked(self) -> bool:
+        if getattr(self, "_retry_columns_ready", False):
+            return True
+        present = {row[1] for row in self._conn.execute("PRAGMA table_info(samples)")}
+        ready = all(name in present for name, _ in RETRY_COLUMNS)
+        self._retry_columns_ready = ready
+        return ready
+
+    def _ensure_retry_columns_locked(self) -> None:
+        """Add :data:`RETRY_COLUMNS` to ``samples`` once and backfill the failed rows (an additive migration).
+
+        Readers that select named columns are unaffected. Each ``failed`` row
+        gets the class of its stored error and one counted attempt, without a
+        backoff: it has waited since it failed, so a transient failure is due
+        at once, while a permanent or layout failure is held at once instead
+        of spending another acquisition on it.
+        """
+
+        if self._retry_columns_present_locked():
+            return
+        self._conn.commit()
+        self._conn.execute("BEGIN IMMEDIATE")
+        try:
+            present = {row[1] for row in self._conn.execute("PRAGMA table_info(samples)")}
+            for name, column_type in RETRY_COLUMNS:
+                if name not in present:
+                    self._conn.execute(f"ALTER TABLE samples ADD COLUMN {name} {column_type}")
+            failed = self._conn.execute(
+                "SELECT species, srr_id, error FROM samples WHERE state = 'failed' AND last_error_class IS NULL"
+            ).fetchall()
+            self._conn.executemany(
+                "UPDATE samples SET attempts = MAX(attempts, 1), last_error_class = ? WHERE species = ? AND srr_id = ?",
+                [(classify_sample_error(error), species, srr_id) for species, srr_id, error in failed],
+            )
+            self._conn.commit()
+        except BaseException:
+            self._conn.rollback()
+            raise
+        self._retry_columns_ready = True
+        if failed:
+            logger.info("Retry bookkeeping added to %s; %d failed rows classified", self.db_path, len(failed))
+
+    def retry_records(self, species: Optional[str] = None) -> Dict[tuple[str, str], RetryRecord]:
+        """Rows that carry retry bookkeeping (attempts, a failure class or a backoff), keyed by ``(species, srr_id)``."""
+
+        query = (
+            "SELECT species, srr_id, state, attempts, last_error_class, next_attempt_at FROM samples "
+            "WHERE (attempts > 0 OR last_error_class IS NOT NULL OR next_attempt_at IS NOT NULL)"
+        )
+        with self._lock:
+            self._ensure_retry_columns_locked()
+            rows = (
+                self._conn.execute(query + " AND species = ?", (species,)).fetchall()
+                if species is not None
+                else self._conn.execute(query).fetchall()
+            )
+        return {
+            (row[0], row[1]): RetryRecord(row[0], row[1], row[2], int(row[3] or 0), row[4], _utc_epoch(row[5]))
+            for row in rows
+        }
+
+    def record_attempt_outcome(
+        self,
+        species: str,
+        srr_id: str,
+        error: Optional[str],
+        *,
+        policy: RetryPolicy,
+        now: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """Account one finished sample attempt and return the scheduling decision.
+
+        ``error=None`` (quantified) clears the bookkeeping. Otherwise the error
+        text is classified (:func:`classify_sample_error`, :func:`retry_class_for`):
+
+        * ``environment``: no attempt is counted (the host failed, not the
+          sample); decision ``retry_next_start``;
+        * ``transient``: one more attempt; ``next_attempt_at`` is ``now`` plus
+          the policy backoff (decision ``backoff``), or, once
+          ``policy.max_attempts`` attempts are spent, decision ``held``;
+        * ``layout_mismatch``: one more attempt, the row becomes
+          ``quarantined`` with the error kept (decision ``held``): the inputs
+          stay on disk for reconciliation and are never re-downloaded at
+          every start;
+        * ``permanent`` (kallisto exit 1): one more attempt, decision ``held``.
+
+        The state written by the worker is otherwise kept. Returns
+        ``{decision, error_class, retry_class, attempts, next_attempt_at}``
+        (``next_attempt_at`` in POSIX seconds or ``None``).
+        """
+
+        moment = time.time() if now is None else now
+        with self._lock:
+            self._ensure_retry_columns_locked()
+            row = self._conn.execute(
+                "SELECT state, attempts FROM samples WHERE species = ? AND srr_id = ?", (species, srr_id)
+            ).fetchone()
+            if row is None:
+                return {"decision": "missing", "error_class": None, "retry_class": None, "attempts": 0}
+            if error is None:
+                self._conn.execute(
+                    "UPDATE samples SET attempts = 0, last_error_class = NULL, next_attempt_at = NULL "
+                    "WHERE species = ? AND srr_id = ? "
+                    "AND (attempts != 0 OR last_error_class IS NOT NULL OR next_attempt_at IS NOT NULL)",
+                    (species, srr_id),
+                )
+                self._conn.commit()
+                return {
+                    "decision": "succeeded",
+                    "error_class": None,
+                    "retry_class": None,
+                    "attempts": 0,
+                    "next_attempt_at": None,
+                }
+            error_class = classify_sample_error(error)
+            retry_class = retry_class_for(error_class)
+            attempts = int(row[1] or 0)
+            next_attempt: Optional[float] = None
+            state = row[0]
+            if retry_class == RETRY_ENVIRONMENT:
+                decision = "retry_next_start"
+            else:
+                attempts += 1
+                if retry_class == RETRY_TRANSIENT and attempts < policy.max_attempts:
+                    # Rounded up: the stored text has whole seconds and must never shorten the backoff.
+                    next_attempt = float(math.ceil(moment + policy.backoff_seconds(attempts)))
+                    decision = "backoff"
+                else:
+                    decision = "held"
+                if retry_class == RETRY_LAYOUT_MISMATCH:
+                    state = "quarantined"
+            self._conn.execute(
+                "UPDATE samples SET attempts = ?, last_error_class = ?, next_attempt_at = ?, state = ?, "
+                "error = CASE WHEN ? THEN ? ELSE error END, updated_at = datetime('now') "
+                "WHERE species = ? AND srr_id = ?",
+                (
+                    attempts,
+                    error_class,
+                    _utc_text(next_attempt) if next_attempt is not None else None,
+                    state,
+                    state != row[0],
+                    error[:2000],
+                    species,
+                    srr_id,
+                ),
+            )
+            self._conn.commit()
+        return {
+            "decision": decision,
+            "error_class": error_class,
+            "retry_class": retry_class,
+            "attempts": attempts,
+            # Stored at whole-second resolution; report what a later start will read.
+            "next_attempt_at": _utc_epoch(_utc_text(next_attempt)) if next_attempt is not None else None,
+        }
+
+    def release_retry_holds(
+        self,
+        *,
+        policy: RetryPolicy,
+        species: Optional[str] = None,
+        accessions: Optional[Iterable[str]] = None,
+        reasons: Iterable[str] = (RETRY_LAYOUT_MISMATCH, RETRY_PERMANENT, "attempts_exhausted"),
+    ) -> Dict[str, int]:
+        """Operator action: clear the bookkeeping of held rows so the next start schedules them again.
+
+        A held ``failed`` row, and a ``quarantined`` row held for a layout
+        mismatch, become ``pending`` with the previous error kept after a
+        ``released-by-operator[<reason>]`` prefix. Quarantined rows whose
+        output on disk failed the reuse contract are never touched. Only rows
+        whose hold reason (``layout_mismatch``, ``permanent`` or
+        ``attempts_exhausted``) is in ``reasons`` are released. Call it only
+        under the campaign writer lock. Returns counts by hold reason.
+        """
+
+        wanted_reasons = frozenset(reasons)
+        wanted_runs = None if accessions is None else {str(run) for run in accessions}
+        counts: Dict[str, int] = {}
+        moment = time.time()
+        with self._lock:
+            self._ensure_retry_columns_locked()
+            self._conn.commit()
+            self._conn.execute("BEGIN IMMEDIATE")
+            try:
+                query = (
+                    "SELECT species, srr_id, state, attempts, last_error_class, next_attempt_at, error FROM samples "
+                    "WHERE last_error_class IS NOT NULL"
+                )
+                parameters: tuple[Any, ...] = ()
+                if species is not None:
+                    query += " AND species = ?"
+                    parameters = (species,)
+                updates: list[tuple[Any, ...]] = []
+                for row in self._conn.execute(query, parameters).fetchall():
+                    if wanted_runs is not None and row[1] not in wanted_runs:
+                        continue
+                    record = RetryRecord(row[0], row[1], row[2], int(row[3] or 0), row[4], _utc_epoch(row[5]))
+                    gate, reason = retry_gate(record, policy, moment)
+                    kind = (reason or "").split(":", 1)[0]
+                    if gate != GATE_HELD or kind not in wanted_reasons:
+                        continue
+                    releasable_state = row[2] == "failed" or (row[2] == "quarantined" and kind == RETRY_LAYOUT_MISMATCH)
+                    new_state = "pending" if releasable_state else row[2]
+                    message = (
+                        f"{RETRY_RELEASED_PREFIX}[{reason}]: {(row[6] or '')[:500]}" if releasable_state else row[6]
+                    )
+                    updates.append((new_state, message, row[0], row[1]))
+                    counts[kind] = counts.get(kind, 0) + 1
+                self._conn.executemany(
+                    "UPDATE samples SET attempts = 0, last_error_class = NULL, next_attempt_at = NULL, state = ?, "
+                    "error = ?, updated_at = datetime('now') WHERE species = ? AND srr_id = ?",
+                    updates,
+                )
+                self._conn.commit()
+            except BaseException:
+                self._conn.rollback()
+                raise
+        if counts:
+            logger.info(
+                "Released %d held rows (%s)",
                 sum(counts.values()),
                 ", ".join(f"{name}={count}" for name, count in sorted(counts.items())),
             )
@@ -1544,3 +1936,111 @@ def get_db(db_path: Optional[Path] = None) -> ProgressDB:
         if _db_instance is None:
             _db_instance = ProgressDB()
         return _db_instance
+
+
+# ---------- Retry bookkeeping CLI ----------
+
+
+def retry_status(db_path: Path, *, policy: Optional[RetryPolicy] = None, now: Optional[float] = None) -> Dict[str, Any]:
+    """Read-only summary of the retry bookkeeping: held rows by reason and rows in backoff.
+
+    Opens the database with ``mode=ro`` (no schema creation, no migration), so
+    it is safe while a producer runs. A database without the retry columns
+    reports nothing held.
+    """
+
+    active = policy or RetryPolicy.from_environment()
+    moment = time.time() if now is None else now
+    held: Dict[str, int] = {}
+    backoff = 0
+    earliest: Optional[float] = None
+    connection = sqlite3.connect(f"file:{Path(db_path).absolute()}?mode=ro", uri=True)
+    try:
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(samples)")}
+        rows = (
+            connection.execute(
+                "SELECT species, srr_id, state, attempts, last_error_class, next_attempt_at FROM samples "
+                "WHERE last_error_class IS NOT NULL OR next_attempt_at IS NOT NULL"
+            ).fetchall()
+            if all(name in columns for name, _ in RETRY_COLUMNS)
+            else []
+        )
+    finally:
+        connection.close()
+    for row in rows:
+        record = RetryRecord(row[0], row[1], row[2], int(row[3] or 0), row[4], _utc_epoch(row[5]))
+        gate, reason = retry_gate(record, active, moment)
+        if gate == GATE_HELD:
+            kind = (reason or "held").split(":", 1)[0]
+            held[kind] = held.get(kind, 0) + 1
+        elif gate == GATE_BACKOFF:
+            backoff += 1
+            if record.next_attempt_at is not None:
+                earliest = record.next_attempt_at if earliest is None else min(earliest, record.next_attempt_at)
+    return {
+        "held_by_reason": dict(sorted(held.items())),
+        "backoff": backoff,
+        "next_attempt_due_at": _utc_text(earliest) if earliest is not None else None,
+        "policy": {
+            "base_seconds": active.base_seconds,
+            "cap_seconds": active.cap_seconds,
+            "max_attempts": active.max_attempts,
+        },
+    }
+
+
+def main(argv: Optional[Iterable[str]] = None) -> int:
+    """``python -m metainformant.rna.engine.progress_db {retry-status,release-holds}``."""
+
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog="python -m metainformant.rna.engine.progress_db",
+        description="Retry bookkeeping of a campaign progress database",
+    )
+    commands = parser.add_subparsers(dest="command", required=True)
+    status = commands.add_parser("retry-status", help="Held and backed-off rows (read-only)")
+    status.add_argument("--db", type=Path, required=True)
+    release = commands.add_parser(
+        "release-holds", help="Return held rows to pending (under the campaign writer lock of the DB's data root)"
+    )
+    release.add_argument("--db", type=Path, required=True)
+    release.add_argument("--species")
+    release.add_argument("--accession", action="append", help="Only these runs (repeatable)")
+    release.add_argument(
+        "--reason",
+        action="append",
+        choices=(RETRY_LAYOUT_MISMATCH, RETRY_PERMANENT, "attempts_exhausted"),
+        help="Only rows held for this reason (repeatable; default: all three)",
+    )
+    args = parser.parse_args(list(argv) if argv is not None else None)
+    db_path = args.db.expanduser().absolute()
+    if not db_path.is_file():
+        print(f"error: progress database does not exist: {db_path}", file=sys.stderr)
+        return 2
+    if args.command == "retry-status":
+        print(json.dumps(retry_status(db_path), indent=2, sort_keys=True))
+        return 0
+    from metainformant.rna.engine.cohort import DataRootBusy, data_root_maintenance_lock
+
+    try:
+        with data_root_maintenance_lock(db_path.parent, purpose="release-holds"), ProgressDB(db_path) as db:
+            released = db.release_retry_holds(
+                policy=RetryPolicy.from_environment(),
+                species=args.species,
+                accessions=args.accession,
+                reasons=(
+                    tuple(args.reason)
+                    if args.reason
+                    else (RETRY_LAYOUT_MISMATCH, RETRY_PERMANENT, "attempts_exhausted")
+                ),
+            )
+    except (DataRootBusy, OSError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+    print(json.dumps({"released": released}, indent=2, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
