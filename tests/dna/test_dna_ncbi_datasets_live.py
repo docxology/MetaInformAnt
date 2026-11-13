@@ -105,7 +105,7 @@ def test_live_genome_listing_endpoint_is_gone_and_reported_loudly() -> None:
         try:
             client.get_json(DatasetsRequest("/genome", {"taxon": "Apis mellifera", "page_size": "1"}))
         except NCBIDatasetsError as exc:
-            if exc.status_code is None or exc.status_code >= 500:
+            if exc.status_code is None or exc.status_code >= 500 or exc.status_code == 429:
                 pytest.skip(f"NCBI Datasets unavailable: {exc}")
             assert exc.status_code == 404
         else:
