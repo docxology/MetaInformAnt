@@ -406,7 +406,9 @@ def _run(parser: argparse.ArgumentParser, args: argparse.Namespace, config_dir: 
         f"Producer finished: {summary['status']} (exit {summary['exit_code']}); "
         f"remaining={summary['remaining_by_state']} quantified_this_run={summary['quantified_this_run']} "
         f"held={summary.get('held_by_reason', {})} next_attempt_due_at={summary.get('next_attempt_due_at')} "
-        f"discovery_failures={sorted(summary.get('discovery_failures', {}))}"
+        f"discovery_failures={sorted(summary.get('discovery_failures', {}))} "
+        f"needs_operator={json.dumps(summary.get('needs_operator', {}), sort_keys=True)} "
+        f"unverified_outputs={summary.get('unverified_outputs', 0)}"
     )
     return int(summary["exit_code"])
 

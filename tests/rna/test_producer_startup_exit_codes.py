@@ -326,6 +326,7 @@ def test_run_all_species_exits_0_when_every_task_is_already_quantified(
     )
     assert result.returncode == EXIT_OK, result.stdout + result.stderr
     assert "Producer finished: drained (exit 0)" in result.stdout
+    assert "needs_operator={} unverified_outputs=0" in result.stdout  # the launcher copies these counts
     log = next((campaign.data.base / "logs").glob("run_all_species_*.log")).read_text()
     assert "Campaign preflight passed" in log and "kallisto_version=0.52.0" in log
     assert "Producer summary" in log

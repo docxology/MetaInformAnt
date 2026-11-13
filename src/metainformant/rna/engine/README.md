@@ -171,12 +171,18 @@ serial probe attempts, including misses.
   ENXIO or ENOSPC failures under the data root; those rows stay `pending`
   with an `environment-deferred[...]` note. The summary's `exit_code`, which
   `scripts/rna/run_all_species.py` and `process_species.py` exit with, is
-  `0` (drained: every scheduled task quantified, quarantined, held by the
-  retry bookkeeping or permanently excluded), `75` (retryable work remains,
-  including backed-off tasks and species whose discovery failed this run),
-  `73` (another writer holds the root), `69` (environment, preflight or
-  cohort failure, including the breaker) or `70` (internal error). The scripts log
-  INFO to `<root>/logs/<script>_<utc>_<pid>.log`.
+  `0` (drained: every scheduled task, and in cohort mode every cohort row,
+  quantified or permanently excluded; without a cohort quarantined and held
+  tasks also count as drained), `65` (cohort mode only: nothing is left to
+  run, but rows are held by the retry bookkeeping, quarantined or above
+  `--max-gb`; the summary's `needs_operator` counts them and finalization
+  would refuse them), `75` (retryable work remains, including backed-off
+  tasks, species whose discovery failed this run, outputs reconcile could not
+  read and a run stopped by SIGINT/SIGTERM/SIGHUP), `73` (another writer
+  holds the root), `69` (environment, preflight or cohort failure, including
+  the breaker and a lost database volume) or `70` (internal error). The
+  scripts log INFO to `<root>/logs/<script>_<utc>_<pid>.log`; the final
+  `Producer finished:` line carries the `needs_operator` counts.
 - `quant_sample()` bounds each quantification with
   `AMALGKIT_PIPELINE_QUANT_TIMEOUT_SECONDS` (default 7200) and, when
   `AMALGKIT_PIPELINE_QUANT_STALL_TIMEOUT_SECONDS` is set to a positive
