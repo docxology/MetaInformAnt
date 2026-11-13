@@ -95,6 +95,24 @@ def test_install_copies_read_only_and_loads_verified(tmp_path: Path) -> None:
     assert again["copied"] == 0 and again["identical"] == 6
 
 
+def test_install_removes_the_temporaries_of_a_killed_install(tmp_path: Path) -> None:
+    source = build_frozen_source(tmp_path / "frozen")
+    install_cohort(source.root, tmp_path / "cohort", cohort_id=COHORT_ID)
+    index_dir = tmp_path / "cohort" / "inputs" / SPECIES / "work" / "index"
+    current = index_dir / f".{INDEX_NAME}.a1b2c3d4.cohort-install.tmp"
+    legacy = index_dir / f".{INDEX_NAME}.k9x8w7v6"  # mkstemp's shape before the suffix existed
+    foreign = index_dir / ".operator-notes"  # not a temp of a listed file: left alone
+    for path in (current, legacy, foreign):
+        path.write_bytes(INDEX_BYTES[:100])
+
+    again = install_cohort(source.root, tmp_path / "cohort", cohort_id=COHORT_ID)
+
+    relative = f"inputs/{SPECIES}/work/index"
+    assert again["stale_temporaries_removed"] == sorted([f"{relative}/{current.name}", f"{relative}/{legacy.name}"])
+    assert not current.exists() and not legacy.exists() and foreign.exists()
+    assert again["copied"] == 0 and again["identical"] == 6
+
+
 def test_install_never_replaces_a_different_existing_file(tmp_path: Path) -> None:
     source = build_frozen_source(tmp_path / "frozen")
     target = tmp_path / "cohort" / "snapshot.json"

@@ -856,6 +856,43 @@ def write_cohort_task_table(
 # ---------------------------------------------------------------------------
 
 
+INSTALL_TEMP_SUFFIX = ".cohort-install.tmp"
+# mkstemp's random part (8 characters) after ".<name>." is how temps written before INSTALL_TEMP_SUFFIX look.
+_LEGACY_INSTALL_TEMP = re.compile(r"^\.(?P<name>.+)\.[A-Za-z0-9_]{8}$")
+
+
+def _remove_install_temporaries(target: Path, expected: Iterable[str]) -> list[str]:
+    """Remove temp files a killed install left in ``target``; return their relative paths.
+
+    Only files this module names are touched: ``*.cohort-install.tmp`` temps,
+    and ``.<name>.<8 random characters>`` temps of a file the definition
+    lists in the same directory (the shape before the suffix existed).
+    """
+
+    if not target.is_dir():
+        return []
+    expected_by_dir: dict[Path, set[str]] = {}
+    for relpath in [*expected, COHORT_DEFINITION_FILENAME]:
+        path = target / relpath
+        expected_by_dir.setdefault(path.parent, set()).add(path.name)
+    removed: list[str] = []
+    for directory in sorted({target, *expected_by_dir}):
+        if not directory.is_dir():
+            continue
+        names = expected_by_dir.get(directory, set())
+        with os.scandir(directory) as entries:
+            for entry in entries:
+                if not entry.name.startswith(".") or not entry.is_file(follow_symlinks=False):
+                    continue
+                legacy = _LEGACY_INSTALL_TEMP.match(entry.name)
+                if entry.name.endswith(INSTALL_TEMP_SUFFIX) or (legacy is not None and legacy["name"] in names):
+                    os.unlink(entry.path)
+                    removed.append(str(Path(entry.path).relative_to(target)))
+        if removed:
+            _fsync_directory(directory)
+    return sorted(removed)
+
+
 def _link_new_file(source: Path, destination: Path, expected_sha256: str) -> str:
     """Copy ``source`` to a new ``destination`` (temp + fsync + link); return ``copied`` or ``identical``."""
 
@@ -864,7 +901,9 @@ def _link_new_file(source: Path, destination: Path, expected_sha256: str) -> str
             return "identical"
         raise FileExistsError(f"a different file already exists: {destination}")
     destination.parent.mkdir(parents=True, exist_ok=True)
-    fd, temporary = tempfile.mkstemp(prefix=f".{destination.name}.", dir=str(destination.parent))
+    fd, temporary = tempfile.mkstemp(
+        prefix=f".{destination.name}.", suffix=INSTALL_TEMP_SUFFIX, dir=str(destination.parent)
+    )
     try:
         with os.fdopen(fd, "wb") as handle, source.open("rb") as reader:
             shutil.copyfileobj(reader, handle, 4 * 1024 * 1024)
@@ -893,7 +932,8 @@ def install_cohort(source_root: str | Path, cohort_dir: str | Path, *, cohort_id
     link, so an existing file is never replaced: identical files are skipped
     and a different existing file raises ``FileExistsError``. Files are made
     read-only. The installed directory is then loaded and fully verified.
-    Re-running the install is a no-op.
+    Re-running the install is a no-op, except that temp files a killed
+    install left behind are removed first (``stale_temporaries_removed``).
     """
 
     source = Path(source_root)
@@ -902,6 +942,7 @@ def install_cohort(source_root: str | Path, cohort_dir: str | Path, *, cohort_id
         raise CohortError("cohort directory must differ from the frozen source")
     digests = IndexDigestCache()
     definition = build_cohort_definition(source, cohort_id=cohort_id, index_digests=digests)
+    stale = _remove_install_temporaries(target, [record["path"] for record in definition["files"]])
     counts = {"copied": 0, "identical": 0}
     for record in definition["files"]:
         outcome = _link_new_file(_regular_file(source, record["path"]), target / record["path"], record["sha256"])
@@ -913,7 +954,9 @@ def install_cohort(source_root: str | Path, cohort_dir: str | Path, *, cohort_id
             raise FileExistsError(f"a different cohort definition already exists: {definition_path}")
         counts["identical"] += 1
     else:
-        fd, temporary = tempfile.mkstemp(prefix=f".{COHORT_DEFINITION_FILENAME}.", dir=str(target))
+        fd, temporary = tempfile.mkstemp(
+            prefix=f".{COHORT_DEFINITION_FILENAME}.", suffix=INSTALL_TEMP_SUFFIX, dir=str(target)
+        )
         try:
             with os.fdopen(fd, "wb") as handle:
                 handle.write(data)
@@ -932,6 +975,7 @@ def install_cohort(source_root: str | Path, cohort_dir: str | Path, *, cohort_id
         "definition_sha256": cohort.definition_sha256,
         "files": len(definition["files"]) + 1,
         **counts,
+        "stale_temporaries_removed": stale,
     }
 
 
