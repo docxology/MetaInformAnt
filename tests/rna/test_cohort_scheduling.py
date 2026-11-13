@@ -890,6 +890,8 @@ def test_periodic_wal_checkpoints_let_an_immutable_reader_see_progress(
         return {"quantified": True, "skipped": False, "error": None}
 
     orchestrator.process_single_sample = worker  # type: ignore[method-assign]
-    orchestrator.run_all(["amalgkit_apis.yaml"], max_gb=1000.0, workers=1, threads=1)
+    # One task in flight: SRR_W2 is submitted only after the loop has seen SRR_W1 finish (and, with interval 0,
+    # checkpointed at the top of that iteration), so what the reader sees does not depend on thread timing.
+    orchestrator.run_all(["amalgkit_apis.yaml"], max_gb=1000.0, workers=1, threads=1, max_in_flight=1)
 
     assert (seen["SRR_W1"] == "quantified") is visible
