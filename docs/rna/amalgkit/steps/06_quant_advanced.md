@@ -46,8 +46,8 @@ content-addressed reuse contract, so outputs whose sidecar records a moved or
 deleted configuration path still release their inputs when the configuration
 bytes match; `version_drift_compatible` outputs count as reusable. The default
 is a read-only dry run that prints a summary and writes a plan only when
-`--manifest` is given. `--execute` refuses while `orchestrator.pid` is alive or
-a launcher lock exists, holds the data-root maintenance lock, writes the
+`--manifest` is given. `--execute` refuses while another writer holds the campaign
+writer lock (`<data-root>/.campaign.flock`), holds that lock for the pass, writes the
 planned manifest before removing anything and records the executed result in
 the same file (default `<data-root>/results/raw_reclamation_<UTC>.json`).
 
@@ -67,6 +67,39 @@ uv run python scripts/rna/reclaim_quantified_raw.py \
   `refseq` cache stay.
 - `--include-excluded` also releases the inputs of the cohort's permanent
   exclusions.
+
+### Exporting a portable snapshot
+
+`scripts/rna/export_quant_snapshot.py` copies verified outputs out of a data
+root into a snapshot directory, typically inside a Git repository with Git LFS
+for `*.h5`:
+
+```bash
+uv run python scripts/rna/export_quant_snapshot.py \
+  --data-root "$AMALGKIT_DATA_ROOT" --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --cohort "$AMALGKIT_DATA_ROOT/cohort/<cohort-id>" --cohort-definition-sha256 <sha256> \
+  --dest projects/hymenoptera_amalgkit/quant/completed/<cohort-id> \
+  --git-tree projects/hymenoptera_amalgkit:HEAD \
+  --inventory-dir projects/hymenoptera_amalgkit/quant/inventory/<cohort-id> --execute
+```
+
+- Each sample is classified with the same content-addressed reuse contract,
+  with content verification; only `current` and `version_drift_compatible`
+  outputs of non-excluded cohort tasks are exported.
+- Only the abundance table and HDF5, run info, provenance sidecar, reference
+  binding and restored-input witnesses are copied. Kallisto indexes and reads
+  are never part of a snapshot; indexes are rebuilt from the cohort.
+- `--git-tree REPO:TREEISH` compares against committed blob ids (HDF5 files as
+  LFS pointers), so a sparse checkout that leaves the snapshot unmaterialized
+  can still be extended. Samples already committed are `present`; copied but
+  uncommitted samples are `staged`.
+- Existing destination bytes are never replaced. A difference is a `conflict`
+  (exit 65); a destination that matches but lacks a newer witness file is
+  `extend`, and only that file is added.
+- The inventory (`<species>.tsv` with size, sha256 and Git blob id per file,
+  `tasks.tsv` with each cohort task's snapshot state, and `SUMMARY.json`) has
+  no timestamps, so a rerun on unchanged inputs changes nothing.
+- The data root is only read. The default is a plan printed as JSON.
 
 ### Batch Cleanup
 

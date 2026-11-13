@@ -120,6 +120,7 @@ producer state. It does not certify receipt contents or biological readiness.
 - `progress_dashboard.py`
 - `progress_db.py`
 - `provenance.py`
+- `quant_snapshot.py`
 - `raw_cleanup.py`
 - `raw_reclamation.py`
 - `species.py`
