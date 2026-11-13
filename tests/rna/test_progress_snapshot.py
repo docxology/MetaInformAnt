@@ -42,7 +42,9 @@ def _campaign_db(path: Path) -> Path:
         db.set_state("apis_mellifera", "SRR1", "quantified")
         db.set_state("apis_mellifera", "SRR2", "failed", KALLISTO_EXIT_1)
         db.record_exclusions("apis_mellifera", [{"srr_id": "SRR2", "reason_code": "permanent_drop"}])
-        db.set_state("apis_mellifera", "SRR3", "failed", "Unexpected sample task error: [Errno 1] Operation not permitted")
+        db.set_state(
+            "apis_mellifera", "SRR3", "failed", "Unexpected sample task error: [Errno 1] Operation not permitted"
+        )
         db.set_state("apis_mellifera", "SRR4", "failed", KALLISTO_EXIT_1)
         db.record_attempt_outcome("apis_mellifera", "SRR4", KALLISTO_EXIT_1, policy=RetryPolicy())
         db.record_exclusions("apis_mellifera", [{"srr_id": "SRR5", "reason_code": "re_download"}])
@@ -139,7 +141,9 @@ def test_completion_and_snapshot_cli_exit_codes(tmp_path: Path) -> None:
     assert complete.returncode == EXIT_COMPLETE, complete.stderr
     assert "bombus_terrestris: complete" in complete.stdout
 
-    incomplete = _cli("completion", "--db", str(db_path), "--species", "bombus_terrestris", "--species", "apis_mellifera")
+    incomplete = _cli(
+        "completion", "--db", str(db_path), "--species", "bombus_terrestris", "--species", "apis_mellifera"
+    )
     assert incomplete.returncode == EXIT_INCOMPLETE
     assert "apis_mellifera: incomplete" in incomplete.stdout
 
@@ -162,3 +166,19 @@ def test_snapshot_of_a_rollback_journal_database_creates_nothing(tmp_path: Path)
 
     assert progress_snapshot(db_path)["species"]["apis_mellifera"]["effective_states"] == {"pending": 1}
     assert {path.name: _sha(path) for path in tmp_path.iterdir()} == before
+
+
+def test_kallisto_exit_1_marker_matches_the_pinned_amalgkit_message() -> None:
+    """The permanent kallisto exit-1 class must keep matching what the pinned Amalgkit actually prints."""
+
+    import inspect
+
+    from metainformant.rna.engine.progress_db import SAMPLE_ERROR_CLASSES, classify_sample_error
+
+    quant = pytest.importorskip("amalgkit.quant", reason="the rna extra (pinned Amalgkit) is not installed")
+    template = "kallisto quant failed with exit code {} for {}."
+    assert template in inspect.getsource(quant)  # the message format of the installed (pinned) build
+    message = "ERROR: " + template.format(1, "SRR21601882")
+    assert SAMPLE_ERROR_CLASSES["quantification_kallisto_exit_1"] in message
+    assert classify_sample_error(f"Quant exception batch 3: {message}") == "quantification_kallisto_exit_1"
+    assert classify_sample_error("ERROR: " + template.format(2, "SRR21601882")) != "quantification_kallisto_exit_1"

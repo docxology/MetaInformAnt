@@ -95,7 +95,8 @@ SAMPLE_ERROR_CLASSES: dict[str, str] = {
     "transfer_all_sources_failed": "Download Failed (all sources",
     "extraction_timeout": "fasterq-dump timeout",
     "quantification_timeout": "Quant timeout",
-    # Amalgkit 0.16.60 reports a failed kallisto run as "ERROR: kallisto quant failed with exit code 1 for <run>.".
+    # Amalgkit 0.16.60 and the 0.16.108 pin (quant.py) both report a failed kallisto run as
+    # "kallisto quant failed with exit code 1 for <run>.".
     "quantification_kallisto_exit_1": "kallisto quant failed with exit code 1",
     "quantification_failed": "Quantification Failed",
     "quantification_exception": "Quant exception",
