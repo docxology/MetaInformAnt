@@ -35,12 +35,12 @@ from pathlib import Path
 from typing import Any
 
 from metainformant.rna.core.sample_utils import find_quantification_file
+from metainformant.rna.engine.campaign_lock import writer_status
 from metainformant.rna.engine.cohort import (
     DataRootBusy,
     FrozenCohort,
     data_root_maintenance_lock,
     load_frozen_cohort,
-    producer_pid_alive,
 )
 from metainformant.rna.engine.provenance import (
     REUSABLE_QUANT_STATUSES,
@@ -218,6 +218,16 @@ def _remaining_cache(cache_root: Path) -> dict[str, int]:
     return remaining
 
 
+def _describe_writers(status: dict[str, Any]) -> str:
+    owner = status.get("owner") or {}
+    parts = []
+    if status.get("held") and not status.get("inside_lock"):
+        parts.append(f"campaign lock held by {owner.get('kind', 'unknown')} pid {owner.get('pid', '?')}")
+    for holder in status.get("other_writers") or []:
+        parts.append(f"{holder.get('lock')}: {holder.get('reason')} (pid {holder.get('pid')})")
+    return "; ".join(parts) or "unknown writer"
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     if (args.include_sra_cache or args.include_excluded) and args.cohort is None:
@@ -239,9 +249,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     pairs = _species_plan(config_dir, cohort, set(args.species or []))
     if args.execute:
-        pid = producer_pid_alive(data_root)
-        if pid is not None:
-            raise SystemExit(f"a producer is alive (orchestrator.pid {pid}); refusing to reclaim while it runs")
+        # Refuse before the (long) classification pass; the writer lock below is the binding guard.
+        status = writer_status(data_root)
+        if not status["quiescent"]:
+            raise SystemExit(f"refusing to reclaim: another writer holds the data root ({_describe_writers(status)})")
 
     contexts: dict[str, SpeciesReuseContext] = {}
     work_dirs: dict[str, Path] = {}
@@ -351,8 +362,6 @@ def main(argv: list[str] | None = None) -> int:
     else:
         try:
             with data_root_maintenance_lock(data_root, purpose="raw-reclamation"):
-                if producer_pid_alive(data_root) is not None:
-                    raise SystemExit("a producer started while the maintenance lock was being taken; refusing")
                 assert manifest_path is not None
                 _write_json_atomic(manifest_path, payload)
                 payload.update(run_pass())

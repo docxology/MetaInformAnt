@@ -8,12 +8,14 @@ fixtures, and the CLI is the production entry point.
 from __future__ import annotations
 
 import json
-import os
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
+from metainformant.rna.engine.campaign_lock import LOCK_FILENAME, writer_status
 from metainformant.rna.engine.cohort import install_cohort
 from metainformant.rna.engine.provenance import write_quant_provenance
 from metainformant.rna.engine.raw_cleanup import (
@@ -32,13 +34,27 @@ from tests.rna.frozen_cohort_support import (
 
 
 def _tree(root: Path) -> dict[str, bytes]:
-    return {str(path.relative_to(root)): path.read_bytes() for path in sorted(root.rglob("*")) if path.is_file()}
+    # The writer lock's owner record is rewritten by every holder; everything else must be byte-stable.
+    return {
+        str(path.relative_to(root)): path.read_bytes()
+        for path in sorted(root.rglob("*"))
+        if path.is_file() and path.name != LOCK_FILENAME
+    }
 
 
 def _write(path: Path, data: bytes = b"payload") -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(data)
     return path
+
+
+PRODUCER_LOCK_HOLDER = """
+import sys, time
+from metainformant.rna.engine.campaign_lock import acquire
+lock = acquire(sys.argv[1], "producer")
+print("held", flush=True)
+time.sleep(600)
+"""
 
 
 @pytest.mark.parametrize(
@@ -266,26 +282,14 @@ def test_cli_execute_is_exact_audited_and_idempotent(root: Root, capsys: pytest.
     assert record["mode"] == "execute" and record["cohort_id"] == COHORT_ID
     assert record["released"][SPECIES] == {"SRR101": "reusable_quantification", "SRR104": "permanent_exclusion"}
     assert record["totals"]["raw_files"] == 4 and record["totals"]["sra_cache_files"] == 2
-    assert not (root.data / ".metainformant_campaign.lock").exists() or not _lock_held(root.data)
+    assert (root.data / LOCK_FILENAME).exists(), "--execute ran under the campaign writer lock"
+    assert not writer_status(root.data)["held"], "the lock is released when the pass ends"
 
     after = _tree(root.data)
     assert main(root.args(*ALL_SCOPES, "--execute", "--manifest", str(root.base / "audit" / "again.json"))) == 0
     again = json.loads(capsys.readouterr().out)
     assert again["raw_files"] == 0 and again["sra_cache_files"] == 0
     assert _tree(root.data) == after
-
-
-def _lock_held(data_root: Path) -> bool:
-    import fcntl
-
-    fd = os.open(data_root / ".metainformant_campaign.lock", os.O_RDWR)
-    try:
-        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except BlockingIOError:
-        return True
-    finally:
-        os.close(fd)
-    return False
 
 
 def test_cli_execute_default_manifest_lives_under_results(root: Root, capsys: pytest.CaptureFixture[str]) -> None:
@@ -307,17 +311,27 @@ def test_cli_refuses_while_a_launcher_or_producer_holds_the_root(root: Root) -> 
     lock = root.data / "results" / ".full_campaign.lock"
     lock.mkdir(parents=True)
     before = _tree(root.data)
-    with pytest.raises(SystemExit, match="launcher lock"):
+    with pytest.raises(SystemExit, match="another writer holds the data root"):
         main(root.args("--execute", "--manifest", str(root.base / "a.json")))
     assert _tree(root.data) == before
     lock.rmdir()
 
-    (root.data / "orchestrator.pid").write_text(f"{os.getpid()}\n")
-    before = _tree(root.data)
-    with pytest.raises(SystemExit, match="producer is alive"):
-        main(root.args("--execute", "--manifest", str(root.base / "b.json")))
-    assert _tree(root.data) == before
-    assert not (root.base / "b.json").exists()
+    # A live producer holds the campaign writer lock (a separate process, like the real one).
+    holder = subprocess.Popen(
+        [sys.executable, "-c", PRODUCER_LOCK_HOLDER, str(root.data)], stdout=subprocess.PIPE, text=True
+    )
+    try:
+        assert holder.stdout is not None and holder.stdout.readline().strip() == "held"
+        before = _tree(root.data)
+        with pytest.raises(SystemExit, match="campaign lock held by producer"):
+            main(root.args("--execute", "--manifest", str(root.base / "b.json")))
+        assert _tree(root.data) == before
+        assert not (root.base / "b.json").exists()
+    finally:
+        holder.kill()
+        holder.wait(timeout=30)
+        if holder.stdout is not None:
+            holder.stdout.close()
 
 
 def test_cli_refuses_cache_scope_without_cohort_and_config_drift(root: Root, tmp_path: Path) -> None:
