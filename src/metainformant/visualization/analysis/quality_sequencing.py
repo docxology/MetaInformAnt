@@ -68,7 +68,7 @@ def plot_quality_metrics(
     * ``gc_content_distribution``: ``{"bins": [bin edges], "counts": [one per bin]}``, bars as wide as their bins
     * ``sequence_length_distribution``: ``{"lengths": [...], "counts": [...]}``, bars
     * ``basic_statistics``: any of ``num_reads``, ``total_bases``, ``min_length``, ``max_length``, ``mean_length``;
-      a statistic that is absent is not drawn (it used to be drawn as a bar of 0)
+      a statistic that is absent is not drawn (not as a bar of 0)
 
     Args:
         qc_data: Dictionary containing various QC metrics.

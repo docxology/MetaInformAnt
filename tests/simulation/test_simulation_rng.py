@@ -1,13 +1,10 @@
 """Regression tests for the shared RNG coercion helpers in simulation.rng.
 
-These pin the seeding contract that 30 simulator call sites rely on after the
-Round-5 consolidation (commits e4c5014c5, 3c9d7e56a):
+These pin the seeding contract that the simulator call sites rely on:
 
-- ``coerce_rng(None)`` returns a fresh ``random.Random`` (unseeded behavior
-  preserved from the original inline blocks).
-- ``seed_numpy_from_rng`` seeds the legacy numpy global RNG with
-  ``rng.randint(0, 2**32)`` — byte-identical to the pre-refactor idiom, so a
-  given ``random.Random`` state produces the same numpy stream as before.
+- ``coerce_rng(None)`` returns a fresh, unseeded ``random.Random``.
+- ``seed_numpy_from_rng`` seeds numpy's global RNG with ``rng.randint(0, 2**32)``,
+  so a given ``random.Random`` state always produces the same numpy stream.
 """
 
 from __future__ import annotations

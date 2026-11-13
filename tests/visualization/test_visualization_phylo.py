@@ -46,7 +46,7 @@ def test_bio_phylo_tree_conversion_to_networkx():
     assert isinstance(G, nx.DiGraph)
     assert {"A", "B", "C"} <= set(G.nodes())
     assert G.number_of_edges() == G.number_of_nodes() - 1  # tree is acyclic
-    # The neighbor-joining branch to A has length (0.1 + 0.2 - 0.3) / 2 = 0: it stays 0.0 (it used to become 1.0)
+    # The neighbor-joining branch to A has length (0.1 + 0.2 - 0.3) / 2 = 0: it stays 0.0, not 1.0
     weights = {child: data["weight"] for _, child, data in G.edges(data=True)}
     assert weights["A"] == 0.0
     assert weights["B"] == pytest.approx(0.1)

@@ -15,9 +15,8 @@ Defects, each reproduced from the code before it was fixed:
 
 * ``forest_plot`` drew a result without an effect, standard error or p-value as an effect of 0 with a zero-width
   interval and ``p=1.0e+00`` (or crashed on ``None``);
-* the general ``functional_enrichment_plot`` is not an enrichment analysis (the GFF file is never read and no
-  category is assigned): it counted significant variants per chromosome, read the p-value under one spelling, and
-  crashed on ``None``;
+* the general ``functional_enrichment_plot`` is not an enrichment analysis (no category is assigned): it counted
+  significant variants per chromosome, read the p-value under one spelling, and crashed on ``None``;
 * ``generate_html_report`` ignored its ``n_samples`` argument.
 
 Oracles are the figures' artists and the returned metadata, with hand-counted values.
@@ -232,7 +231,7 @@ class TestConcordance:
         result = concordance_plot(study1, study2, tmp_path / "c.png")
 
         assert result["status"] == "success"
-        assert result["n_overlapping_snps"] == 1  # 1:100 only; they used to collapse into one "None:None" variant
+        assert result["n_overlapping_snps"] == 1  # 1:100 only; they do not collapse into one "None:None" variant
         assert (result["study1_snps"], result["study2_snps"]) == (2, 2)
 
     def test_records_that_cannot_be_identified_fail_naming_the_accepted_keys(self) -> None:
@@ -423,31 +422,20 @@ class TestGeneralFunctionalEnrichmentPlot:
             {"chrom": 1, "p_value": 1e-9},
             {"chrom": 1.0, "pvalue": 1e-10},
             {"CHR": 2, "P": 1e-12},
-            {"chrom": 2, "p_value": None},  # no p-value: not significant (None used to raise TypeError)
+            {"chrom": 2, "p_value": None},  # no p-value: not significant (None does not raise TypeError)
             {"chrom": 3, "p_value": 0.5},
             {"chrom": 3},
         ]
 
-        fig = general.functional_enrichment_plot(results, "annotation.gff")
+        fig = general.functional_enrichment_plot(results)
 
         ax = fig.axes[0]
         assert ax.get_title() == "Significant Variants by Chromosome (n=3)"
         assert [text.get_text() for text in ax.get_xticklabels()] == ["1", "2"]
         assert [patch.get_height() for patch in ax.patches] == [2, 1]
 
-    def test_the_gff_file_is_not_read_and_the_warning_says_so(
-        self, caplog: pytest.LogCaptureFixture, tmp_path: Path
-    ) -> None:
-        missing = tmp_path / "does_not_exist.gff"
-
-        with caplog.at_level(logging.WARNING):
-            fig = general.functional_enrichment_plot([{"chrom": 1, "p_value": 1e-9}], missing)
-
-        assert fig is not None  # a file that does not exist is not an error: nothing is read from it
-        assert any("does not read the GFF file" in r.getMessage() for r in caplog.records)
-
     def test_without_significant_variants_the_title_does_not_claim_an_enrichment(self) -> None:
-        fig = general.functional_enrichment_plot([{"chrom": 1, "p_value": 0.5}], "annotation.gff")
+        fig = general.functional_enrichment_plot([{"chrom": 1, "p_value": 0.5}])
 
         assert fig.axes[0].get_title() == "Significant Variants by Chromosome"
 

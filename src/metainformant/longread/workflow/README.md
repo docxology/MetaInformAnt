@@ -6,8 +6,7 @@ End-to-end pipeline orchestration for long-read sequencing analysis, providing D
 
 | File | Purpose |
 |------|---------|
-| `__init__.py` | Exports orchestrator, orchestrator_core, pipeline_stages, pipelines, reporting |
-| `orchestrator.py` | Re-export module aggregating public API from core and stages |
+| `__init__.py` | Exports orchestrator_core, pipeline_stages, pipelines, reporting |
 | `orchestrator_core.py` | LongReadOrchestrator class with DAG execution engine |
 | `pipeline_stages.py` | Step builders for QC, assembly, methylation, and SV pipelines |
 | `pipelines.py` | Pre-defined pipeline configurations with validation |
@@ -31,10 +30,10 @@ End-to-end pipeline orchestration for long-read sequencing analysis, providing D
 ## Usage
 
 ```python
-from metainformant.longread.workflow import orchestrator, pipelines, reporting
+from metainformant.longread.workflow import orchestrator_core, pipelines, reporting
 
 config = pipelines.get_qc_pipeline_config(min_length=1000, min_quality=7.0)
-orch = orchestrator.LongReadOrchestrator(config=config, output_dir="output/lr")
+orch = orchestrator_core.LongReadOrchestrator(config=config, output_dir="output/lr")
 result = orch.run_qc_pipeline(reads)
 report = reporting.generate_qc_report(result)
 reporting.export_report(report, "output/lr/qc_report.json", format="json")

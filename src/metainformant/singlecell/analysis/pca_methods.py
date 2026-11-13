@@ -8,7 +8,6 @@ variable gene (HVG) selection.
 from __future__ import annotations
 
 import warnings
-from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
@@ -170,10 +169,7 @@ def pca_reduction(
     result.uns["pca"] = {
         "n_components": n_components,
         "explained_variance_ratio": explained_variance.tolist(),
-        "variance_ratio": explained_variance.tolist(),  # Alias
-        "variance": explained_variance.tolist(),  # Alias
         "cumulative_explained_variance": cumulative_variance.tolist(),
-        "cumulative_variance": cumulative_variance.tolist(),  # Alias
         "singular_values": pca.singular_values_.tolist(),
         "components_shape": loadings.T.shape,
         "random_state": random_state,
@@ -319,81 +315,6 @@ def factor_analysis_reduction(
     return result
 
 
-def run_pca(
-    data: SingleCellData | None = None,
-    n_components: int = 50,
-    random_state: int | None = None,
-    scale_data: bool = True,
-    *,
-    expression_matrix: np.ndarray | None = None,
-) -> SingleCellData | Dict[str, Any]:
-    """Run PCA dimensionality reduction.
-
-    Args:
-        data: SingleCellData object (preferred)
-        n_components: Number of components
-        random_state: Random seed
-        scale_data: Whether to scale data
-        expression_matrix: Raw expression matrix (alternative input, returns dict)
-
-    Returns:
-        SingleCellData with PCA results if data provided, or dict if expression_matrix provided
-    """
-    # Handle expression_matrix input (returns dict format for test compatibility)
-    if expression_matrix is not None:
-        from sklearn.decomposition import PCA as SklearnPCA
-
-        X = expression_matrix
-        n_comp = min(n_components, X.shape[0], X.shape[1])
-
-        if scale_data:
-            X_scaled = (X - X.mean(axis=0)) / (X.std(axis=0) + 1e-10)
-        else:
-            X_scaled = X
-
-        pca = SklearnPCA(n_components=n_comp, random_state=random_state)
-        embedding = pca.fit_transform(X_scaled)
-
-        return {
-            "embedding": embedding,
-            "components": pca.components_.T,  # (n_features, n_components)
-            "explained_variance": pca.explained_variance_ratio_,
-        }
-
-    # Handle SingleCellData input (original behavior)
-    if data is None:
-        raise ValueError("Either data or expression_matrix must be provided")
-    return pca_reduction(data, n_components, random_state, scale_data)
-
-
-def compute_pca(
-    data: SingleCellData,
-    n_components: int = 50,
-    random_state: int | None = None,
-    scale_data: bool = True,
-    *,
-    use_hvgs: bool = False,
-) -> SingleCellData:
-    """Compute PCA dimensionality reduction (alias for pca_reduction).
-
-    Args:
-        data: SingleCellData object
-        n_components: Number of components
-        random_state: Random seed
-        scale_data: Whether to scale data
-        use_hvgs: Restrict PCA to the genes flagged in ``data.var["highly_variable"]``
-            (run :func:`select_hvgs` first)
-
-    Returns:
-        SingleCellData with PCA results
-
-    Raises:
-        ValueError: If ``use_hvgs`` is set but ``data.var`` has no usable
-            ``highly_variable`` annotation
-    """
-    return pca_reduction(data, n_components, random_state, scale_data, use_hvgs=use_hvgs)
-
-
 # Fraction of the genes that every local fit of the seurat_v3 mean-variance trend uses (scanpy's default).
 _SEURAT_V3_SPAN = 0.3
 
@@ -519,9 +440,8 @@ def _seurat_v3_normalized_variance(counts: np.ndarray, span: float = _SEURAT_V3_
 def select_hvgs(
     data: SingleCellData,
     n_top_genes: int = 2000,
-    flavor: str | None = None,
+    flavor: str = "seurat",
     *,
-    method: str | None = None,
     inplace: bool = False,
 ) -> SingleCellData:
     """Select highly variable genes from single-cell data.
@@ -544,7 +464,6 @@ def select_hvgs(
             scanpy gets it from scikit-misc, which interpolates between kd-tree vertices, so its values
             differ slightly from these. That difference has not been measured here (scikit-misc is not
             installed), and genes right at the ``n_top_genes`` cut-off can rank differently.
-        method: Alias for flavor
         inplace: Write the annotations into ``data`` and return ``data`` itself instead of a copy.
 
     Returns:
@@ -557,12 +476,6 @@ def select_hvgs(
             ``int(0.3 * n)`` or more of those ``n`` genes with exactly the same mean. This function raises the
             built-in ``ValueError`` (not the package's ``ValidationError``).
     """
-    # Handle parameter alias
-    if method is not None and flavor is None:
-        flavor = method
-    if flavor is None:
-        flavor = "seurat"
-
     if not hasattr(data, "X") or data.X is None:
         raise ValueError("Data must contain expression matrix X")
 

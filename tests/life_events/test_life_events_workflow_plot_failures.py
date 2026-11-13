@@ -144,7 +144,7 @@ def test_an_exception_raised_by_the_plot_function_itself_is_recorded(tmp_path: P
 
 
 def test_a_plot_that_returns_no_figure_is_recorded(tmp_path: Path):
-    """A plot function that has nothing to draw returns None; that used to vanish without a trace.
+    """A plot function that has nothing to draw returns None, and the workflow records it.
 
     The length plot of an empty list of sequences is such a case (without matplotlib, every plot function
     returns None as well).

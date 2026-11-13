@@ -28,18 +28,6 @@ def safe_filename(name: str) -> str:
     return f"{stem}{suffix}"
 
 
-def clean_whitespace(text: str) -> str:
-    """Clean excessive whitespace from text.
-
-    Args:
-        text: Text to clean
-
-    Returns:
-        Text with normalized whitespace
-    """
-    return normalize_whitespace(text)
-
-
 # ASCII control-category characters, precompiled. For pure-ASCII input this
 # regex path is exactly equivalent to the general Unicode loop below
 # (Cc is the only Unicode category-C class present in ASCII) and runs an

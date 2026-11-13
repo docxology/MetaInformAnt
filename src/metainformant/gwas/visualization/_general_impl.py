@@ -129,7 +129,7 @@ def _as_finite_float(value: Any) -> float:
         return float("nan")
     try:
         number = float(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return float("nan")
     return number if math.isfinite(number) else float("nan")
 
@@ -266,7 +266,7 @@ def manhattan_plot(
         chrom = str(result.get("chrom", result.get("chromosome", "1")))
         try:
             pos = float(result.get("pos", result.get("position", 0)))
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             pos = 0.0
         chrom_extent[chrom] = max(chrom_extent.get(chrom, 0.0), pos)
 
@@ -294,7 +294,7 @@ def manhattan_plot(
 
         try:
             pos = float(pos)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             pos = 0.0
         global_pos = chrom_offsets[chrom] + pos
         color_idx = chrom_index[chrom] % len(chrom_colors)
@@ -723,7 +723,7 @@ def regional_plot(
 
     Raises:
         ValueError: If a result has no chromosome or no position (the error names the accepted keys). Such a
-            result used to be dropped (no chromosome) or placed at position 0 (no position).
+            result is neither dropped nor placed at position 0.
     """
     if not HAS_MATPLOTLIB or not HAS_NUMPY:
         logger.warning("matplotlib or numpy not available, cannot create regional plot")
@@ -1340,7 +1340,7 @@ def _number_or_text(cell: Any) -> Any:
     """A table cell as a float when it is a number, otherwise unchanged ("NA" stays text and reads as missing)."""
     try:
         return float(cell)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return cell
 
 
@@ -1613,19 +1613,17 @@ def missingness_plot(vcf_data: Dict[str, Any], output_path: Optional[Union[str, 
 
 def functional_enrichment_plot(
     results: List[Dict[str, Any]],
-    gff_path: Union[str, Path],
     output_path: Optional[Union[str, Path]] = None,
 ) -> Any:
     """Plot the number of genome-wide significant variants (p < 5e-8) on each chromosome.
 
     Despite the name, this does not compute functional enrichment: no functional category is assigned to any
-    variant and the GFF file is **not read** (a warning is logged if one is given). For enrichment in functional
-    categories use :func:`metainformant.gwas.visualization.statistical.effects.functional_enrichment_plot`, which
-    counts the categories the caller supplies. A result without a p-value is not significant and is not counted.
+    variant. For enrichment in functional categories use
+    :func:`metainformant.gwas.visualization.statistical.effects.functional_enrichment_plot`, which counts the
+    categories the caller supplies. A result without a p-value is not significant and is not counted.
 
     Args:
         results: GWAS results with a chromosome and a p-value
-        gff_path: Not used; accepted for API compatibility
         output_path: Path to save the plot (optional)
 
     Returns:
@@ -1636,10 +1634,6 @@ def functional_enrichment_plot(
         return None
 
     logger.info("Creating significant-variants-by-chromosome plot")
-    if gff_path:
-        logger.warning(
-            f"functional_enrichment_plot does not read the GFF file {gff_path}; it counts by chromosome only"
-        )
 
     # Count significant variants
     significant = [r for r in results if _record_p_value(r) < 5e-8]
@@ -1713,8 +1707,8 @@ def forest_plot(
     GW-significant hits shown in red; sub-threshold in blue.
 
     A result needs a p-value, an effect (``beta``/``BETA``) and a standard error (``se``/``SE``) to be drawn. One
-    that lacks any of them is left out and counted in a warning: it used to be drawn as an effect of 0 with a
-    zero-width interval and p = 1.
+    that lacks any of them is left out and counted in a warning, not drawn as an effect of 0 with a zero-width
+    interval and p = 1.
     """
     if not HAS_MATPLOTLIB:
         logger.warning("matplotlib not available for forest plot")

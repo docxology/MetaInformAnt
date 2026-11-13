@@ -90,9 +90,9 @@ class TestShortestPaths:
         assert shortest_paths(g, source=0, target=0) == {0: {0: 0}}
 
     def test_unreachable_pair_returns_empty_dict(self) -> None:
-        # Regression: NetworkXNoPath is not a NetworkXError subclass, so an
-        # unreachable pair previously raised instead of returning the
-        # documented empty dict.
+        # Regression: NetworkXNoPath is not a NetworkXError subclass; an
+        # unreachable pair returns the documented empty dict instead of
+        # raising.
         g = nx.Graph()
         g.add_edge(0, 1)
         g.add_edge(2, 3)

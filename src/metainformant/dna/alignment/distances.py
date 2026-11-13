@@ -48,7 +48,7 @@ def _pairwise_matrix(
                 # Handle infinite distances
                 if value == float("inf"):
                     value = np.nan
-            except (ValueError, ZeroDivisionError):
+            except ValueError, ZeroDivisionError:
                 value = np.nan
 
             matrix[i, j] = value
@@ -281,32 +281,6 @@ def distance_matrix(sequences: Dict[str, str] | Sequence[str], method: str = "ju
     return _pairwise_matrix(sequences, distance_func)
 
 
-def jc69_distance(seq1: str, seq2: str) -> float:
-    """Jukes-Cantor 1969 distance (alias for jukes_cantor_distance).
-
-    Args:
-        seq1: First DNA sequence
-        seq2: Second DNA sequence
-
-    Returns:
-        Jukes-Cantor distance
-    """
-    return jukes_cantor_distance(seq1, seq2)
-
-
-def kimura_2p_distance(seq1: str, seq2: str) -> float:
-    """Kimura 2-parameter distance (alias for kimura_distance).
-
-    Args:
-        seq1: First DNA sequence
-        seq2: Second DNA sequence
-
-    Returns:
-        Kimura 2-parameter distance
-    """
-    return kimura_distance(seq1, seq2)
-
-
 def kmer_distance(seq1: str, seq2: str, k: int = 3) -> float:
     """Calculate k-mer based distance between sequences.
 
@@ -344,20 +318,6 @@ def kmer_distance(seq1: str, seq2: str, k: int = 3) -> float:
 
     # Return distance (1 - similarity)
     return 1.0 - cosine_similarity
-
-
-def tajima_nei_distance(seq1: str, seq2: str, kappa: float = 2.0) -> float:
-    """Alias for tamura_nei_distance (Tajima-Nei distance model).
-
-    Args:
-        seq1: First DNA sequence
-        seq2: Second DNA sequence
-        kappa: Transition/transversion rate ratio
-
-    Returns:
-        Tajima-Nei distance
-    """
-    return tamura_nei_distance(seq1, seq2, kappa)
 
 
 def tamura_nei_distance(seq1: str, seq2: str, kappa: float = 2.0) -> float:
@@ -428,7 +388,7 @@ def tamura_nei_distance(seq1: str, seq2: str, kappa: float = 2.0) -> float:
 
         distance = term1 + term2
         return distance
-    except (ValueError, ZeroDivisionError):
+    except ValueError, ZeroDivisionError:
         return float("inf")
 
 

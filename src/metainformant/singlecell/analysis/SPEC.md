@@ -1,7 +1,7 @@
 # Specification: analysis
 
 ## 🎯 Scope
-Single-cell analysis sub-package (clustering, dimensionality, trajectory).
+Single-cell analysis sub-package (clustering, dimensionality reduction, trajectory).
 
 ## 🧱 Architecture
 - **Dependency Level**: Domain
@@ -15,7 +15,6 @@ Single-cell analysis sub-package (clustering, dimensionality, trajectory).
 ### Exports
 - `__init__.py`
 - `clustering.py`
-- `dimensionality.py`
 - `nonlinear_methods.py`
 - `pca_methods.py`
 - `trajectory.py`

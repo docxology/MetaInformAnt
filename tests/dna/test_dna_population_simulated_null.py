@@ -406,7 +406,7 @@ def test_detect_selection_refuses_a_simulated_null_for_the_mk_test_and_checks_ev
 
 
 def test_detect_selection_without_sequences_reports_the_keys_of_the_method_asked_for() -> None:
-    """It used to answer {'tajima_d': 0.0, 'p_value': 1.0} to every method, and to a method that does not exist."""
+    """Without sequences each method reports its own keys, and an unknown method raises."""
     for method_options in ({}, {"p_value_method": "simulation", "n_simulations": 20}):
         assert analysis.detect_selection([], "tajima_d", **method_options) == {"tajima_d": 0.0, "p_value": 1.0}
         assert analysis.detect_selection([], "fu_li_d", **method_options) == {"fu_li_d": 0.0, "p_value": 1.0}
@@ -473,7 +473,7 @@ def test_summary_statistics_fst_is_the_mean_over_all_pairs_of_populations_in_any
     with pytest.raises(ValueError, match="populations has 11 entries for 12 sequences"):
         analysis.calculate_summary_statistics(sequences=sequences, populations=labels[:-1])
 
-    # It used to compare the first two populations of a set(), whose order for strings changes with the hash seed
+    # It does not compare the first two populations of a set(), whose order for strings changes with the hash seed
     code = (
         "import json, sys\n"
         "from metainformant.dna.population import analysis\n"

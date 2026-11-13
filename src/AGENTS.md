@@ -50,7 +50,7 @@ Always use `metainformant.core` for:
 
 ### Type Hints
 
-- Python 3.11+ required
+- Python 3.14+ required
 - All functions must have type hints
 - Use `from __future__ import annotations`
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib.util
 import os
 from pathlib import Path
 
@@ -93,10 +92,7 @@ def test_load_life_events_config_json(tmp_path: Path) -> None:
 
 
 def test_load_life_events_config_toml(tmp_path: Path) -> None:
-    """Test loading config from TOML format (if available)."""
-    if importlib.util.find_spec("tomllib") is None:
-        pytest.skip("TOML support not available (requires Python 3.11+)")
-
+    """Test loading config from TOML format."""
     config_file = tmp_path / "test_config.toml"
     config_content = """
 work_dir = "output/life_events/test"
@@ -221,3 +217,21 @@ output:
     assert config.model["random_state"] == 42
     assert config.workflow["save_embeddings"] is True
     assert config.output["output_dir"] == "output/results"
+
+
+def test_a_scalar_section_is_rejected(tmp_path: Path) -> None:
+    """The nested sections are mappings; a scalar in their place is a configuration error."""
+    with pytest.raises(ValueError, match="'embedding' must be a mapping"):
+        LifeEventsWorkflowConfig(work_dir=tmp_path, embedding=64)  # type: ignore[arg-type]
+
+    config_file = tmp_path / "scalar_model.yaml"
+    config_file.write_text(f"work_dir: {tmp_path}\nmodel: simple\n")
+    with pytest.raises(ValueError, match="'model' must be a mapping"):
+        load_life_events_config(config_file)
+
+
+def test_an_empty_section_is_an_empty_mapping(tmp_path: Path) -> None:
+    config_file = tmp_path / "empty_workflow.yaml"
+    config_file.write_text(f"work_dir: {tmp_path}\nworkflow:\n")
+
+    assert load_life_events_config(config_file).workflow == {}

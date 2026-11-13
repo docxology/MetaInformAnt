@@ -219,7 +219,7 @@ def test_forecast_interval_must_have_one_row_per_forecast_value_and_a_valid_leve
 @pytest.mark.parametrize(
     ("values", "word"),
     [
-        (np.full(30, 4.0), "flat"),  # a slope of exactly 0.0 used to read "decreasing"
+        (np.full(30, 4.0), "flat"),  # a slope of exactly 0.0 is "flat", not "decreasing"
         (np.linspace(0.0, 5.0, 30), "increasing"),
         (np.linspace(5.0, 0.0, 30), "decreasing"),
     ],
@@ -476,7 +476,7 @@ def test_quality_metrics_does_not_draw_missing_statistics_as_zero() -> None:
     (panel,) = first.figure.axes
     first.figure.canvas.draw()  # categorical tick labels are formatted at draw time
     assert [label.get_text() for label in panel.get_xticklabels()] == ["num_reads", "mean_length"]
-    assert [patch.get_height() for patch in panel.patches] == [5000, 150.5]  # three more bars of 0 used to be drawn
+    assert [patch.get_height() for patch in panel.patches] == [5000, 150.5]  # no extra bars of 0 are drawn
     with pytest.raises(ValueError, match="none of the statistics"):
         quality_sequencing.plot_quality_metrics({"basic_statistics": {"unrelated": 1}})
 

@@ -94,7 +94,7 @@ class TestLoadEpigenomeConfig:
     def test_nonexistent_path_falls_back_to_default(self) -> None:
         try:
             cfg = load_epigenome_config(config_path="/nonexistent/path/config.yaml")
-        except (AttributeError, Exception):
+        except AttributeError, Exception:
             cfg = EpigenomeConfig()
         assert isinstance(cfg, EpigenomeConfig)
 
@@ -118,7 +118,7 @@ class TestDetectPeakFormat:
         assert _detect_peak_format(Path("sample.txt")) == "narrowpeak"
 
     def test_bed_extension_is_bed(self) -> None:
-        # Reading a plain BED file as narrowPeak (which needs ten columns) used to give no peaks at all
+        # A plain BED file is not read as narrowPeak (which needs ten columns), which would give no peaks at all
         assert _detect_peak_format(Path("sample.bed")) == "bed"
 
     def test_case_insensitive(self) -> None:

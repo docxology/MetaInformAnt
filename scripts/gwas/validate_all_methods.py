@@ -654,7 +654,7 @@ def main() -> int:
     try:
         import numpy as np
 
-        from metainformant.gwas.visualization.population.population import pca_plot
+        from metainformant.gwas.visualization.population.population_pca import pca_plot
 
         if pca_result and pca_result.get("status") == "success":
             pca_data = {

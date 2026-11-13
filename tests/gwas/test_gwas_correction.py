@@ -30,8 +30,8 @@ def test_bonferroni_correction_basic() -> None:
     assert result["n_tests"] == n_tests
     assert result["corrected_alpha"] == 0.05 / n_tests
     assert result["corrected_alpha"] < 0.05
-    assert result["significant_count"] >= 0
-    assert result["significant_count"] <= n_tests
+    assert result["n_significant"] >= 0
+    assert result["n_significant"] <= n_tests
 
 
 def test_bonferroni_correction_no_significant() -> None:
@@ -41,7 +41,7 @@ def test_bonferroni_correction_no_significant() -> None:
     result = bonferroni_correction(pvalues, alpha=0.05)
 
     assert result["status"] == "success"
-    assert result["significant_count"] == 0
+    assert result["n_significant"] == 0
 
 
 def test_bonferroni_correction_all_significant() -> None:
@@ -53,7 +53,7 @@ def test_bonferroni_correction_all_significant() -> None:
 
     assert result["status"] == "success"
     # With very small p-values, some should still be significant after correction
-    assert result["significant_count"] >= 0
+    assert result["n_significant"] >= 0
 
 
 def test_fdr_correction_basic() -> None:
@@ -63,10 +63,10 @@ def test_fdr_correction_basic() -> None:
     result = fdr_correction(pvalues, alpha=0.05)
 
     assert result["status"] == "success"
-    assert "corrected_pvalues" in result
-    assert len(result["corrected_pvalues"]) == len(pvalues)
-    assert all(0 <= p <= 1 for p in result["corrected_pvalues"])
-    assert result["significant_count"] >= 0
+    assert "adjusted_p_values" in result
+    assert len(result["adjusted_p_values"]) == len(pvalues)
+    assert all(0 <= p <= 1 for p in result["adjusted_p_values"])
+    assert result["n_significant"] >= 0
 
 
 def test_fdr_correction_properties() -> None:
@@ -76,7 +76,7 @@ def test_fdr_correction_properties() -> None:
     result = fdr_correction(pvalues, alpha=0.05)
 
     assert result["status"] == "success"
-    corrected = np.array(result["corrected_pvalues"])
+    corrected = np.array(result["adjusted_p_values"])
 
     # FDR-corrected p-values should be >= original p-values
     assert all(corrected[i] >= pvalues[i] for i in range(len(pvalues)))
@@ -92,7 +92,7 @@ def test_genomic_control_from_pvalues() -> None:
     # Create p-values that would give chi-square statistics
     pvalues = [0.001, 0.01, 0.05, 0.1, 0.5, 0.8, 0.9]
 
-    result = genomic_control(pvalues=pvalues)
+    result = genomic_control(p_values=pvalues)
 
     assert result["status"] == "success"
     assert "lambda_gc" in result
@@ -114,7 +114,7 @@ def test_genomic_control_from_chi2() -> None:
 
 def test_genomic_control_no_data() -> None:
     """Test genomic control with no valid data."""
-    result = genomic_control(pvalues=[])
+    result = genomic_control(p_values=[])
     assert result["status"] == "failed"
     assert "error" in result
 
@@ -126,7 +126,7 @@ def test_genomic_control_inflation() -> None:
     # With inflation, median chi2 > 0.456, so lambda_GC > 1
     pvalues = [1e-10] * 50 + [0.5] * 50  # Many significant, many not
 
-    result = genomic_control(pvalues=pvalues)
+    result = genomic_control(p_values=pvalues)
 
     assert result["status"] == "success"
     # Lambda_GC might be > 1 if there's real signal or inflation
@@ -177,7 +177,7 @@ def test_genomic_control_uses_one_df_chi_square_transform() -> None:
     chi2_stats = np.array([0.05, 0.20, 0.60, 1.40, 3.20, 8.00])
     pvalues = scipy_stats.chi2.sf(chi2_stats, 1).tolist()
 
-    result = genomic_control(pvalues=pvalues)
+    result = genomic_control(p_values=pvalues)
 
     expected_median = float(np.median(chi2_stats))
     assert result["status"] == "success"
@@ -188,7 +188,7 @@ def test_genomic_control_uses_one_df_chi_square_transform() -> None:
 
 @pytest.mark.parametrize("method", ["bonferroni", "fdr", "genomic_control", "qvalue"])
 def test_adjust_p_values_wrapper_returns_adjusted_values(method: str) -> None:
-    """Generic p-value adjustment should use legacy tuple paths internally."""
+    """Generic p-value adjustment returns one adjusted value per input p-value."""
     adjusted = adjust_p_values([0.001, 0.01, 0.2, 0.8], method=method)
 
     assert len(adjusted) == 4
@@ -230,7 +230,7 @@ def test_qvalue_with_pi0_one_equals_bh() -> None:
     p_values = [0.001, 0.008, 0.039, 0.11, 0.34, 0.62, 0.9]
 
     q_values, pi0 = qvalue_estimation(p_values, pi0=1.0)
-    _, adjusted = fdr_correction(p_values, return_dict=False)
+    adjusted = fdr_correction(p_values)["adjusted_p_values"]
 
     assert pi0 == 1.0
     assert q_values == adjusted
@@ -242,7 +242,7 @@ def test_qvalue_estimated_pi0_never_exceeds_bh() -> None:
     p_values = [1e-10] * 40 + rng.uniform(0.0, 1.0, 460).tolist()
 
     q_values, pi0 = qvalue_estimation(p_values)
-    _, adjusted = fdr_correction(p_values, return_dict=False)
+    adjusted = fdr_correction(p_values)["adjusted_p_values"]
 
     assert 0.0 < pi0 <= 1.0
     assert pi0 < 0.95

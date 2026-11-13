@@ -112,7 +112,7 @@ class TestDegenerateFeatures:
 
         report = detect_batch_effects(data, LABELS, alpha=0.001)
 
-        assert report.n_significant_features == 1  # the perfectly separated feature; its F used to be set to 0
+        assert report.n_significant_features == 1  # the perfectly separated feature; its F is not set to 0
 
     def test_a_feature_that_is_constant_everywhere_is_not_associated_with_the_batch(self) -> None:
         data = np.hstack([np.full((2 * N_PER_BATCH, 1), 3.0), _shifted_features([8.0])])

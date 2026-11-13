@@ -382,7 +382,7 @@ def get_subontology(onto: Ontology, root_terms: Iterable[str], relation_type: st
     ]
 
     # Building the result through add_term would take every parent from Term.is_a_parents, including parents that are
-    # not in the sub-ontology: those dangling links made a non-root seed look like it had a parent, so it was no root.
+    # not in the sub-ontology: those dangling links would make a non-root seed look like it had a parent.
     parents_of, children_of = _induced_hierarchy(
         onto, sub_terms, sub_relationships, use_source_links=relation_type == "is_a"
     )
@@ -443,7 +443,7 @@ def _find_terms_matching_name(
         if not case_sensitive:
             name = name.lower()
         if pattern in name:
-            matches.append(term.id)
+            matches.append(term.term_id)
 
     return matches
 
@@ -464,7 +464,7 @@ def find_terms_by_namespace(onto: Ontology, namespace: str) -> List[str]:
     validation.validate_type(onto, Ontology, "onto")
     validation.validate_not_empty(namespace, "namespace")
 
-    return [term.id for term in onto.terms.values() if term.namespace == namespace]
+    return [term.term_id for term in onto.terms.values() if term.namespace == namespace]
 
 
 def get_roots(onto: Ontology, relation_type: str = "is_a") -> Set[str]:

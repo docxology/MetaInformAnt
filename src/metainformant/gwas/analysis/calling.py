@@ -46,7 +46,7 @@ def call_variants_bcftools(
     # Check if bcftools is available
     try:
         subprocess.run(["bcftools", "--version"], capture_output=True, check=True)
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except subprocess.CalledProcessError, FileNotFoundError:
         raise FileNotFoundError("bcftools not found on PATH")
 
     output_vcf = Path(output_vcf)
@@ -161,7 +161,7 @@ def call_variants_gatk(
 
     try:
         subprocess.run(gatk_cmd, capture_output=True, check=True)
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except subprocess.CalledProcessError, FileNotFoundError:
         raise FileNotFoundError("GATK not found on PATH")
 
     # Build GATK command
@@ -278,7 +278,7 @@ def call_variants_freebayes(
     # Check if freebayes is available
     try:
         subprocess.run(["freebayes", "--version"], capture_output=True, check=True)
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except subprocess.CalledProcessError, FileNotFoundError:
         raise FileNotFoundError("freebayes not found on PATH")
 
     cmd = [
@@ -488,7 +488,7 @@ def check_bcftools_available() -> bool:
     try:
         result = subprocess.run(["bcftools", "--version"], capture_output=True, text=True, timeout=10)
         return result.returncode == 0
-    except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError):
+    except subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError:
         return False
 
 
@@ -502,7 +502,7 @@ def check_gatk_available() -> bool:
         # Try common GATK commands
         result = subprocess.run(["gatk", "--version"], capture_output=True, text=True, timeout=10)
         return result.returncode == 0
-    except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError):
+    except subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError:
         try:
             # Try java -jar gatk.jar
             result = subprocess.run(

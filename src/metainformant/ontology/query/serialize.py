@@ -166,7 +166,7 @@ def graph_to_ontology(graph: Any, metadata: Dict[str, Any] | None = None) -> Ont
     terms = {}
     for node_id, node_attrs in graph.nodes(data=True):
         term = Term(
-            id=node_id,
+            term_id=node_id,
             name=node_attrs.get("name"),
             definition=node_attrs.get("definition"),
             namespace=node_attrs.get("namespace"),
@@ -216,7 +216,7 @@ def _save_obo_format(onto: Ontology, path: Path) -> None:
     # Write terms
     for term in onto.terms.values():
         lines.append("[Term]")
-        lines.append(f"id: {term.id}")
+        lines.append(f"id: {term.term_id}")
 
         if term.name:
             lines.append(f"name: {term.name}")
@@ -245,7 +245,7 @@ def _save_obo_format(onto: Ontology, path: Path) -> None:
             lines.append("is_obsolete: true")
 
         # Add relationships for this term
-        for rel in rels_by_source.get(term.id, []):
+        for rel in rels_by_source.get(term.term_id, []):
             lines.append(f"{rel.relation_type}: {rel.target}")
 
         lines.append("")  # Empty line after term
@@ -263,7 +263,7 @@ def _save_json_format(onto: Ontology, path: Path) -> None:
     # Convert terms
     for term_id, term in onto.terms.items():
         term_dict = {
-            "id": term.id,
+            "id": term.term_id,
             "name": term.name,
             "definition": term.definition,
             "namespace": term.namespace,

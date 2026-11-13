@@ -111,7 +111,7 @@ class TestSizeFactorDirection:
         rng = np.random.default_rng(2)
         return rng.poisson(lam=rng.uniform(1.0, 20.0, size=(30, 1)) * rng.uniform(0.5, 2.0, size=(1, 15))) + 1.0
 
-    @pytest.mark.parametrize("method", ["total_count", "total", "median", "size_factors"])
+    @pytest.mark.parametrize("method", ["total_count", "median", "size_factors"])
     def test_every_method_normalises_as_x_over_size_factor_times_target(self, counts: np.ndarray, method: str) -> None:
         result = normalize_counts(SingleCellData(counts.copy()), method=method)
 

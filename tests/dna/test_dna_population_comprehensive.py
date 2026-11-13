@@ -19,7 +19,7 @@ class TestAlleleFrequencies:
         try:
             result = population.allele_frequencies(seqs)
             assert isinstance(result, (list, dict))
-        except (TypeError, AttributeError):
+        except TypeError, AttributeError:
             # Function may have different signature
             pytest.skip("allele_frequencies API differs")
 
@@ -28,7 +28,7 @@ class TestAlleleFrequencies:
         try:
             freqs = population.allele_frequencies([])
             assert isinstance(freqs, (list, dict))
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             pass  # May raise on empty input
 
 

@@ -77,7 +77,7 @@ def compute_ld_decay(
             only pairs on the same chromosome are evaluated.
         seed: Seed of the draw used when there are more than 100000 candidate pairs and 100000 of them are
             sampled. The draw has its own generator: the same inputs and seed always give the same curve,
-            and the module-level ``random`` state is neither read nor changed (it used to be reseeded to 42).
+            and the module-level ``random`` state is neither read nor changed.
 
     Returns:
         Dictionary with status, bin_centers, mean_r2, n_pairs per bin, and total_pairs.

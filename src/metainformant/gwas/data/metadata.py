@@ -256,7 +256,7 @@ def get_geographic_coordinates(
         try:
             lat = float(lat_raw)
             lon = float(lon_raw)
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             logger.debug(f"Skipping non-numeric coordinates for {sample_id}: " f"lat={lat_raw!r}, lon={lon_raw!r}")
             continue
 

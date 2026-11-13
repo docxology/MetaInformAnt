@@ -96,8 +96,8 @@ class TestEntropyCountsFullyMethylatedSites:
         assert self._profile([10]) == pytest.approx([0.0] * len(self._profile([10])))
 
     def test_a_site_just_below_one_shares_the_last_bin_with_one(self) -> None:
-        # 0.9 and 1.0 are both in the last bin [0.8, 1.0], so a window of them has one occupied bin: 0 bits. The 1.0
-        # sites used to be dropped, leaving the 0.9 sites at p = 0.5 and an entropy of 0.5 bits.
+        # 0.9 and 1.0 are both in the last bin [0.8, 1.0], so a window of them has one occupied bin: 0 bits. Dropping
+        # the 1.0 sites would leave the 0.9 sites at p = 0.5 and an entropy of 0.5 bits.
         entropies = self._profile([9, 10])
 
         assert entropies == pytest.approx([0.0] * len(entropies))

@@ -5,7 +5,6 @@ Executable scripts and utilities for running METAINFORMANT workflows.
 
 ## Directory Structure
 Domain-specific scripts organized by module:
-- `cloud/` - Cloud deployment and sync utilities
 - `core/` - Core infrastructure utilities
 - `dna/` - DNA analysis scripts
 - `ecology/` - Ecology analysis scripts

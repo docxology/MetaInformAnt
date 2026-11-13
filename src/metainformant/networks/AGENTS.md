@@ -8,9 +8,9 @@ This module provides functionality organized into the following structure:
 
 ## Subpackages
 
-- `analysis/` — exports: `community`, `graph`, `pathway`
+- `analysis/` — exports: `community`, `graph_algorithms`, `graph_core`, `pathway`
 - `config/` — exports: `config`
-- `interaction/` — exports: `ppi`, `regulatory`
+- `interaction/` — exports: `ppi`, `regulatory_analysis`, `regulatory_core`
 - `regulatory/` — exports: `grn_inference`, `motif_analysis`
 - `workflow/` — exports: `workflow`
 

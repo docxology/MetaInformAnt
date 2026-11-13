@@ -1,15 +1,15 @@
 """Genes, alleles and diplotypes CPIC has no answer for: they raise or are indeterminate, never normal.
 
-Four rules, each pinned by tests that fail on the code before them:
+Four rules, each pinned by tests:
 
 1. A gene CPIC defines no phenotype for raises ``ValueError`` naming the gene and listing the
-   supported genes. It used to be classified with the CYP2D6 score bands. CYP1A2 has activity
+   supported genes; it is not classified with the CYP2D6 score bands. CYP1A2 has activity
    values (it can be scored) but no CPIC phenotype (it cannot be classified).
 2. An allele with no activity value is uncharacterized. CPIC calls a diplotype that carries one
    indeterminate, so it is ``MetabolizerPhenotype.INDETERMINATE`` with an activity score of
-   ``None`` and the allele named. It used to score 1.0 and read as normal. The ``alleles`` and
+   ``None`` and the allele named, not a score of 1.0 that reads as normal. The ``alleles`` and
    ``metabolism`` APIs say the same thing.
-3. ``Diplotype.activity_score`` defaults to ``None`` (not scored), not 0.0, which read as a poor
+3. ``Diplotype.activity_score`` defaults to ``None`` (not scored), not 0.0, which reads as a poor
    metabolizer. Classifying an unscored diplotype scores it from its alleles.
 4. CYP1A2's activity values have no CPIC source, which the gene's registry entry states.
 
@@ -44,12 +44,12 @@ from metainformant.pharmacogenomics.alleles.phenotype import (
     population_phenotype_frequencies,
     predict_metabolizer_status,
 )
+from metainformant.pharmacogenomics.metabolism import metabolizer_status
 from metainformant.pharmacogenomics.metabolism.metabolizer_status import (
     classify_metabolizer,
     compute_activity_score,
     default_allele_function_table,
     dose_adjustment,
-    predict_metabolizer_status as predict_metabolizer,
 )
 
 PM = MetabolizerPhenotype.POOR
@@ -70,7 +70,7 @@ PHENOTYPE_CALLS: dict[str, Callable[[str], Any]] = {
     "classify_phenotype_object": lambda gene: classify_phenotype(Diplotype("*1", "*2", gene, 2.0), gene),
     "population_phenotype_frequencies": lambda gene: population_phenotype_frequencies({"*1": 0.5, "*2": 0.5}, gene),
     "classify_metabolizer": lambda gene: classify_metabolizer(1.0, gene),
-    "facade_predict_metabolizer_status": lambda gene: predict_metabolizer(
+    "facade_predict_metabolizer_status": lambda gene: metabolizer_status.predict_metabolizer_status(
         {"diplotype": "*1/*2"}, gene, activity_scores={"*1": 1.0, "*2": 0.0}
     ),
 }
@@ -146,12 +146,12 @@ class TestUncharacterizedAllelesAreIndeterminate:
     """Rule 2: an allele with no activity value is never normal function."""
 
     def test_activity_score_is_none_not_one_per_unknown_allele(self) -> None:
-        assert calculate_activity_score_from_alleles("*1", "*999", "CYP2D6") is None  # used to be 2.0
-        assert calculate_activity_score_from_alleles("*998", "*999", "CYP2D6") is None  # used to be 2.0
+        assert calculate_activity_score_from_alleles("*1", "*999", "CYP2D6") is None  # not 2.0
+        assert calculate_activity_score_from_alleles("*998", "*999", "CYP2D6") is None  # not 2.0
         assert determine_diplotype("*1", "*999", "CYP2D6").activity_score is None
 
     def test_an_unknown_gene_has_no_alleles_to_score(self) -> None:
-        assert calculate_activity_score_from_alleles("*1", "*2", "NOTAGENE") is None  # used to be 2.0
+        assert calculate_activity_score_from_alleles("*1", "*2", "NOTAGENE") is None  # not 2.0
 
     @pytest.mark.parametrize(
         ("diplotype", "unknown"),
@@ -185,7 +185,7 @@ class TestUncharacterizedAllelesAreIndeterminate:
         assert result["unknown_alleles"] == []
 
     def test_unknown_alleles_are_never_scored_as_the_reference(self) -> None:
-        # Both used to read as Normal Metabolizer with an activity score of 2.0
+        # Neither reads as Normal Metabolizer with an activity score of 2.0
         for diplotype in ("*1/*999", "*998/*999"):
             result = classify_phenotype(diplotype, "CYP2D6")
             assert result["phenotype"] != NM
@@ -225,7 +225,7 @@ class TestUncharacterizedAllelesAreIndeterminate:
 class TestPopulationFrequenciesCountUncharacterizedAllelesAsIndeterminate:
     def test_mass_on_an_unknown_allele_is_indeterminate_not_normal(self) -> None:
         freqs = population_phenotype_frequencies({"*1": 0.5, "*999": 0.5}, "CYP2D6")
-        # *1/*1 (0.25) is NM; *1/*999 (0.5) and *999/*999 (0.25) are indeterminate. It used to be {"NM": 1.0}.
+        # *1/*1 (0.25) is NM; *1/*999 (0.5) and *999/*999 (0.25) are indeterminate, not {"NM": 1.0}.
         assert freqs == {"NM": 0.25, "IND": 0.75}
         assert sum(freqs.values()) == pytest.approx(1.0)
 
@@ -235,7 +235,7 @@ class TestPopulationFrequenciesCountUncharacterizedAllelesAsIndeterminate:
         assert sum(freqs.values()) == pytest.approx(1.0)
 
     def test_names_that_normalize_to_the_same_allele_add_up(self) -> None:
-        # "4" and "*4" are one allele: the second used to overwrite the first
+        # "4" and "*4" are one allele: the second adds to the first instead of overwriting it
         assert population_phenotype_frequencies({"*1": 0.8, "4": 0.1, "*4": 0.1}, "CYP2D6") == (
             population_phenotype_frequencies({"*1": 0.8, "*4": 0.2}, "CYP2D6")
         )
@@ -255,7 +255,7 @@ class TestMetabolismFacadeAgreesWithTheAllelesPipeline:
     """Rule 2 in the string/dict front end."""
 
     def test_unknown_allele_is_indeterminate_with_no_score_and_is_named(self) -> None:
-        result = predict_metabolizer({"diplotype": "*1/*999"}, "CYP2D6")
+        result = metabolizer_status.predict_metabolizer_status({"diplotype": "*1/*999"}, "CYP2D6")
         assert result["phenotype"] == "indeterminate"
         assert result["activity_score"] is None
         assert result["unknown_alleles"] == ["*999"]
@@ -264,23 +264,25 @@ class TestMetabolismFacadeAgreesWithTheAllelesPipeline:
         assert "poor" in result["thresholds_used"]  # the gene's bands are still reported
 
     def test_alleles_key_form_is_handled_alike(self) -> None:
-        result = predict_metabolizer({"alleles": ["*998", "*999"]}, "CYP2D6")
+        result = metabolizer_status.predict_metabolizer_status({"alleles": ["*998", "*999"]}, "CYP2D6")
         assert result["phenotype"] == "indeterminate" and result["unknown_alleles"] == ["*998", "*999"]
 
     def test_both_apis_give_the_same_answer_for_unknown_alleles(self) -> None:
         for gene in CPIC_PHENOTYPE_GENES:
             classified = classify_phenotype("*1/*999", gene)
-            predicted = predict_metabolizer({"diplotype": "*1/*999"}, gene)
+            predicted = metabolizer_status.predict_metabolizer_status({"diplotype": "*1/*999"}, gene)
             assert classified["phenotype"].value.split()[0].lower() == predicted["phenotype"] == "indeterminate"
             assert classified["activity_score"] is None and predicted["activity_score"] is None
             assert classified["unknown_alleles"] == predicted["unknown_alleles"] == ["*999"]
 
     def test_known_alleles_report_no_unknown_alleles(self) -> None:
-        result = predict_metabolizer({"diplotype": "*1/*4"}, "CYP2D6")
+        result = metabolizer_status.predict_metabolizer_status({"diplotype": "*1/*4"}, "CYP2D6")
         assert result["unknown_alleles"] == [] and result["activity_score"] == 1.0
 
     def test_a_custom_table_characterizes_the_allele(self) -> None:
-        result = predict_metabolizer({"diplotype": "*1/*999"}, "CYP2D6", activity_scores={"*1": 1.0, "*999": 0.0})
+        result = metabolizer_status.predict_metabolizer_status(
+            {"diplotype": "*1/*999"}, "CYP2D6", activity_scores={"*1": 1.0, "*999": 0.0}
+        )
         assert result["activity_score"] == 1.0 and result["phenotype"] == "intermediate"
         assert result["unknown_alleles"] == []
 
@@ -292,11 +294,11 @@ class TestMetabolismFacadeAgreesWithTheAllelesPipeline:
 
     def test_a_malformed_diplotype_still_raises(self) -> None:
         with pytest.raises(ValueError, match="Invalid diplotype format"):
-            predict_metabolizer({"diplotype": "*1"}, "CYP2D6")
+            metabolizer_status.predict_metabolizer_status({"diplotype": "*1"}, "CYP2D6")
 
     def test_unknown_gene_without_a_table_names_the_supported_genes(self) -> None:
         with pytest.raises(ValueError, match="No allele function table") as caught:
-            predict_metabolizer({"diplotype": "*1/*1"}, "INVALID_GENE")
+            metabolizer_status.predict_metabolizer_status({"diplotype": "*1/*1"}, "INVALID_GENE")
         assert "INVALID_GENE" in str(caught.value)
         assert "CYP2D6" in str(caught.value) and "CYP1A2" not in str(caught.value)
 
@@ -305,9 +307,9 @@ class TestIndeterminateIsNeverStandardDosing:
     """The indeterminate status must not come out of dose_adjustment as a normal metabolizer."""
 
     def test_a_facade_result_with_an_unknown_allele_gets_no_dose(self) -> None:
-        status = predict_metabolizer({"diplotype": "*1/*999"}, "CYP2D6")["phenotype"]
+        status = metabolizer_status.predict_metabolizer_status({"diplotype": "*1/*999"}, "CYP2D6")["phenotype"]
         result = dose_adjustment(status, "codeine")
-        assert result["adjusted_dose_fraction"] is None  # used to be 1.0, "use standard dosing"
+        assert result["adjusted_dose_fraction"] is None  # not 1.0, "use standard dosing"
         assert "indeterminate" in result["recommendation"].lower()
         assert result["metabolizer_status"] == "indeterminate"
         assert result["guideline_source"] == "None"
@@ -343,7 +345,7 @@ class TestUnscoredDiplotypes:
     """Rule 3: no score is not a score of zero."""
 
     def test_the_default_activity_score_is_none(self) -> None:
-        assert Diplotype("*1", "*4", "CYP2D6").activity_score is None  # used to be 0.0
+        assert Diplotype("*1", "*4", "CYP2D6").activity_score is None  # not 0.0
 
     def test_an_unscored_diplotype_is_not_a_poor_metabolizer(self) -> None:
         for alleles, expected, score in [(("*1", "*1"), NM, 2.0), (("*1", "*4"), IM, 1.0), (("*4", "*4"), PM, 0.0)]:
@@ -400,8 +402,8 @@ class TestUnscoredDiplotypes:
 
     @pytest.mark.parametrize("missing", [None])
     def test_a_missing_score_cannot_be_mapped_to_a_phenotype(self, missing: None) -> None:
-        # Diplotype.activity_score fed straight to the score mapping used to raise TypeError
-        # (and, before None, mapped 0.0 to Poor Metabolizer)
+        # Diplotype.activity_score fed straight to the score mapping raises ValueError, not TypeError,
+        # and a missing score is never mapped to Poor Metabolizer as 0.0 would be
         with pytest.raises(ValueError, match="non-negative"):
             predict_metabolizer_status(missing, "CYP2D6")  # type: ignore[arg-type]
 

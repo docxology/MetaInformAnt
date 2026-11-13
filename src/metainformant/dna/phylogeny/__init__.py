@@ -2,26 +2,22 @@
 
 from __future__ import annotations
 
-from . import tree, tree_analysis, tree_construction
-from .tree import (
-    Tree,
+from . import tree_analysis, tree_construction
+from .tree_analysis import (
     basic_tree_stats,
     bootstrap_support,
     from_newick,
     is_monophyletic,
-    neighbor_joining_tree,
-    nj_tree_from_kmer,
     prune_tree,
     robinson_foulds_distance,
     to_ascii,
     to_newick,
     total_branch_length,
     tree_diameter,
-    upgma_tree,
 )
+from .tree_construction import Tree, neighbor_joining_tree, nj_tree_from_kmer, upgma_tree
 
 __all__ = [
-    "tree",
     "tree_analysis",
     "tree_construction",
     "Tree",

@@ -178,7 +178,7 @@ def bootstrap_ci(
         y_sample = [y[i] for i in indices]
         try:
             stats.append(statistic_fn(x_sample, y_sample))
-        except (ValueError, ZeroDivisionError):
+        except ValueError, ZeroDivisionError:
             continue
 
     if not stats:
@@ -417,9 +417,7 @@ def fit_lognormal(abundances: List[float]) -> Dict[str, Any]:
 def _normal_cdf(z: float) -> float:
     """Standard normal CDF, P(Z <= z), from the complementary error function.
 
-    ``0.5 * erfc(-z / sqrt(2))`` is exact to machine precision in both tails. (The Abramowitz & Stegun 7.1.26
-    polynomial this replaces was applied to ``z`` where it needs ``z / sqrt(2)``: it was off by up to 0.037,
-    not the 1e-7 it claimed.)
+    ``0.5 * erfc(-z / sqrt(2))`` is exact to machine precision in both tails.
 
     Args:
         z: Standard normal deviate.

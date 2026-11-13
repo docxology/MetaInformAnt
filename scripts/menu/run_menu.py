@@ -51,7 +51,7 @@ def check_uv_available() -> bool:
     try:
         result = subprocess.run(["uv", "--version"], capture_output=True, text=True, timeout=5)
         return result.returncode == 0
-    except (subprocess.TimeoutExpired, FileNotFoundError):
+    except subprocess.TimeoutExpired, FileNotFoundError:
         return False
 
 
@@ -152,7 +152,7 @@ def ensure_dependencies() -> bool:
                         return response in ("y", "yes")
                 else:
                     print("Please enter 'y' or 'n'")
-            except (KeyboardInterrupt, EOFError):
+            except KeyboardInterrupt, EOFError:
                 print("\nℹ️  Continuing without optional dependencies")
                 return True
     else:
@@ -195,7 +195,7 @@ def run_interactive_menu(menu_system: MenuSystem) -> None:
             # Get user choice
             try:
                 choice = get_choice("Select option: ").strip()
-            except (KeyboardInterrupt, EOFError):
+            except KeyboardInterrupt, EOFError:
                 print("\n\n👋 Goodbye!")
                 return
 
@@ -353,7 +353,7 @@ def main() -> int:
 
         return 0
 
-    except (KeyboardInterrupt, EOFError):
+    except KeyboardInterrupt, EOFError:
         print("\n\n👋 Goodbye!")
         return 0
     except Exception as e:

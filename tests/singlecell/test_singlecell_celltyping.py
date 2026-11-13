@@ -183,9 +183,9 @@ class TestAnnotateByMarkers:
         assert len(result["cell_labels"]) == 30
 
     def test_correlation_method_recovers_known_types(self) -> None:
-        """Regression: the correlation method used to return 0.0 for every
-        cell with >= 2 markers, making it useless for annotation. Marker
-        structure must now be recoverable via method="correlation"."""
+        """Regression: the correlation method does not return 0.0 for every
+        cell with >= 2 markers, which would make it useless for annotation.
+        Marker structure must be recoverable via method="correlation"."""
         matrix, gene_names, marker_genes = _make_expression_matrix(seed=5)
         result = annotate_by_markers(matrix, marker_genes, gene_names=gene_names, method="correlation")
         unique_labels = set(result["cell_labels"])

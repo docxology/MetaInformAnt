@@ -53,32 +53,13 @@ def _harmonic_number(m: int) -> float:
     return math.fsum(1.0 / i for i in range(1, m + 1))
 
 
-def watterson_theta(
-    S: int | None = None,
-    n: int | None = None,
-    sequence_length: int = 1,
-    *,
-    n_sites: int | None = None,
-    n_segregating_sites: int | None = None,
-    n_sequences: int | None = None,
-    num_segregating_sites: int | None = None,
-    sample_size: int | None = None,
-) -> float:
+def watterson_theta(S: int, n: int, sequence_length: int = 1) -> float:
     """Calculate Watterson's θ estimator.
 
-    Supports multiple calling conventions:
-    - watterson_theta(S, n) - S = segregating sites, n = number of sequences
-    - watterson_theta(n_sites=N, n_segregating_sites=S) - explicit names
-
     Args:
-        S: Number of segregating sites (positional)
-        n: Number of sequences sampled (positional)
+        S: Number of segregating sites
+        n: Number of sequences sampled
         sequence_length: Length of sequence (default 1 for per-site)
-        n_sites: Alias for n (number of sequences)
-        n_segregating_sites: Alias for S
-        n_sequences: Alias for n
-        num_segregating_sites: Alias for S
-        sample_size: Alias for n
 
     Returns:
         Watterson's θ, ``S / (a_n * sequence_length)`` with ``a_n = sum(1/i for i in 1 .. n-1)``
@@ -86,36 +67,14 @@ def watterson_theta(
     Raises:
         ValueError: If parameters are invalid
     """
-    # Handle parameter aliases
-    # When called as watterson_theta(S, n), S goes to first positional, n to second
-    segregating = S
-    num_seqs = n
-
-    # Check for keyword aliases
-    if n_segregating_sites is not None:
-        segregating = n_segregating_sites
-    if num_segregating_sites is not None:
-        segregating = num_segregating_sites
-    if n_sites is not None:
-        num_seqs = n_sites
-    if n_sequences is not None:
-        num_seqs = n_sequences
-    if sample_size is not None:
-        num_seqs = sample_size
-
-    if segregating is None:
-        raise ValueError("Number of segregating sites must be provided")
-    if num_seqs is None:
-        raise ValueError("Number of sequences must be provided")
-
-    if num_seqs <= 1:
+    if n <= 1:
         raise ValueError("Number of sequences must be > 1")
-    if segregating < 0:
+    if S < 0:
         raise ValueError("Number of segregating sites cannot be negative")
     if sequence_length <= 0:
         raise ValueError("Sequence length must be positive")
 
-    return segregating / (_harmonic_number(num_seqs - 1) * sequence_length)
+    return S / (_harmonic_number(n - 1) * sequence_length)
 
 
 def expected_coalescent_waiting_times(n_samples: int, effective_size: float) -> List[float]:
@@ -161,11 +120,6 @@ def expected_pairwise_diversity(effective_size: float, mutation_rate: float) -> 
         raise ValueError("Mutation rate cannot be negative")
 
     return 4 * effective_size * mutation_rate
-
-
-def expected_pairwise_diversity_from_theta(theta: float) -> float:
-    """Alias for expected_pairwise_diversity with fixed n_samples."""
-    return theta
 
 
 def expected_segregating_sites(n_samples: int, theta: float, sequence_length: int = 1) -> float:
@@ -271,12 +225,8 @@ def tajimas_D(pi: float, s: int, n: int, constants: Dict[str, float] | None = No
         constants: Pre-computed :func:`tajima_constants` for ``n`` (optional)
 
     Returns:
-        Tajima's D value; a non-integral ``s`` with integral ``pi`` is read as
-        the legacy ``(s, pi, n)`` argument order
+        Tajima's D value
     """
-    if isinstance(s, float) and not float(s).is_integer():
-        pi, s = s, int(pi)
-
     if n < 2 or s == 0:
         return 0.0
 
@@ -385,8 +335,3 @@ def simulate_coalescent(
     }
 
     return results
-
-
-def coalescent_time_to_mrca(n_samples: int, effective_size: float) -> float:
-    """Alias for expected_time_to_mrca for backward compatibility."""
-    return expected_time_to_mrca(n_samples, effective_size)

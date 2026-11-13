@@ -87,9 +87,7 @@ class TestLeidenReceivesTheEdgeWeights:
                 seed=problem.seed,
             )
 
-            labels = leiden_clustering(
-                feature_matrix=X, resolution=1.0, n_neighbors=8, random_state=11, use_weights=use_weights
-            )
+            labels = leiden_clustering(X, resolution=1.0, n_neighbors=8, random_state=11, use_weights=use_weights)
 
             np.testing.assert_array_equal(labels, np.array(direct.membership))
 

@@ -596,7 +596,6 @@ def cross_validate(
     cv: int = 5,
     scoring: str = "accuracy",
     classifier_func: Any = None,
-    cv_folds: int | None = None,
     random_state: int | None = None,
 ) -> Dict[str, Any]:
     """Perform cross-validation with specified scoring metric.
@@ -612,7 +611,6 @@ def cross_validate(
         cv: Number of cross-validation folds
         scoring: Scoring metric
         classifier_func: Function taking (X_train, y_train, X_val, y_val) returning dict
-        cv_folds: Alias for cv
         random_state: Random state for reproducibility
 
     Returns:
@@ -624,9 +622,6 @@ def cross_validate(
     """
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for cross-validation")
-
-    if cv_folds is not None:
-        cv = cv_folds
 
     if classifier_func is not None:
         # Manual CV with classifier function
@@ -721,7 +716,6 @@ def learning_curve(
     cv: int = 5,
     random_state: int = 42,
     classifier_func: Any = None,
-    cv_folds: int | None = None,
 ) -> Dict[str, Any]:
     """Generate learning curves for model evaluation.
 
@@ -738,16 +732,12 @@ def learning_curve(
         random_state: Random seed for the folds and the training-set subsampling (the global NumPy random state is
             neither seeded nor consumed)
         classifier_func: Function taking (X_train, y_train, X_val, y_val) returning dict
-        cv_folds: Alias for cv
 
     Returns:
         Dictionary with learning curve results
     """
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for learning curves")
-
-    if cv_folds is not None:
-        cv = cv_folds
 
     if train_sizes is None:
         train_sizes = np.linspace(0.1, 1.0, 10)

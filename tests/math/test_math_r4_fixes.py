@@ -219,7 +219,7 @@ class TestPermutationTest:
 
 class TestComparePopulationStatistic:
     def test_zero_standard_error_is_an_error_not_a_p_value_of_one(self) -> None:
-        """Two populations with no variance used to give t = 0 and p = 1.0 however far apart their statistics were."""
+        """Two populations with no variance do not give t = 0 and p = 1.0 however far apart their statistics are."""
         with pytest.raises(ValueError, match="zero"):
             compare_population_statistic({"pi": 0.9, "variance": 0.0}, {"pi": 0.1, "variance": 0.0}, "pi")
 
@@ -247,12 +247,12 @@ class TestComparePopulationStatistic:
 
 class TestConjugateNormalInventsNoVariance:
     def test_one_observation_has_no_sample_variance(self) -> None:
-        """A variance of 1.0 used to be substituted for it."""
+        """No variance of 1.0 is substituted for it."""
         with pytest.raises(ValueError, match="known_var"):
             conjugate_normal([4.0])
 
     def test_identical_observations_have_a_zero_sample_variance(self) -> None:
-        """A variance of 1e-10 used to be substituted for it, giving a posterior sd of 1e-5."""
+        """No variance of 1e-10 is substituted for it, which would give a posterior sd of 1e-5."""
         with pytest.raises(ValueError, match="known_var"):
             conjugate_normal([4.0, 4.0, 4.0])
 
@@ -326,7 +326,7 @@ class TestMetropolisHastingsGuards:
         return -0.5 * params[0] ** 2 if abs(params[0]) < 1.0 else float("nan")
 
     def test_a_nan_log_posterior_is_an_error_not_an_improvement(self) -> None:
-        """NaN used to pass the acceptance test and be accepted, so the chain wandered off through undefined values."""
+        """NaN does not pass the acceptance test, so the chain cannot wander off through undefined values."""
         with pytest.raises(ValueError, match="nan"):
             metropolis_hastings(
                 self._log_posterior_nan_outside, [0.0], n_samples=200, burn_in=10, proposal_scale=1.0, random_state=1
@@ -353,7 +353,7 @@ class TestMetropolisHastingsGuards:
             metropolis_hastings(lambda p: -0.5 * p[0] ** 2, [0.0], n_samples=50, burn_in=5, proposal_scale=scale)
 
     def test_burn_in_must_not_be_negative(self) -> None:
-        """A negative burn-in used to keep only the last |burn_in| draws (a slice from the end)."""
+        """A negative burn-in raises instead of keeping only the last |burn_in| draws (a slice from the end)."""
         with pytest.raises(ValueError, match="burn_in"):
             metropolis_hastings(lambda p: -0.5 * p[0] ** 2, [0.0], n_samples=50, burn_in=-5)
 
@@ -433,7 +433,7 @@ class TestInputTypesAreNotAssertions:
 class TestHardyWeinberg:
     @pytest.mark.parametrize("frequency", [-0.1, 1.5, float("nan"), float("inf")])
     def test_a_frequency_outside_the_unit_interval_raises(self, frequency: float) -> None:
-        """Zeros summing to 0 used to be returned, which is not a genotype distribution."""
+        """No zeros summing to 0 are returned; that is not a genotype distribution."""
         with pytest.raises(ValueError, match="between 0 and 1"):
             hardy_weinberg_genotype_freqs(frequency)
 
@@ -447,7 +447,7 @@ class TestHardyWeinberg:
 
 class TestReplicatorDynamics:
     def test_derivative_with_zero_mean_fitness_is_x_times_f(self) -> None:
-        """dx_i/dt = x_i (f_i - mean f) has no division by the mean; zeros used to be returned at mean fitness 0."""
+        """dx_i/dt = x_i (f_i - mean f) has no division by the mean, so mean fitness 0 does not give zeros."""
         assert egt.replicator_derivative([1.0, -1.0], [0.5, 0.5]) == [0.5, -0.5]
         # mean fitness 0.25 * 3 + 0.75 * (-1) = 0
         assert egt.replicator_derivative([3.0, -1.0], [0.25, 0.75]) == [0.75, -0.75]
@@ -478,7 +478,7 @@ class TestReplicatorDynamics:
 
 class TestSignalDetection:
     def test_empty_trial_classes_leave_the_rates_undefined(self) -> None:
-        """One trial used to be assumed for an empty class, giving a hit or false-alarm rate of 0 and a made-up d'."""
+        """No trial is assumed for an empty class, which would give a hit or false-alarm rate of 0 and a made-up d'."""
         with pytest.raises(ValueError, match="No noise trials"):
             sdt_metrics(hits=8, misses=2, false_alarms=0, correct_rejections=0)
         with pytest.raises(ValueError, match="No signal trials"):
@@ -490,7 +490,7 @@ class TestSignalDetection:
 
     @pytest.mark.parametrize("rate", [-0.1, 1.5, float("nan")])
     def test_rates_must_be_proportions(self, rate: float) -> None:
-        """Rates above 1 or below 0 used to be clipped silently to a finite d'."""
+        """Rates above 1 or below 0 raise instead of being clipped silently to a finite d'."""
         with pytest.raises(ValueError, match="proportion"):
             d_prime(rate, 0.2)
         with pytest.raises(ValueError, match="proportion"):
@@ -573,7 +573,7 @@ class TestCoalescentExpectations:
         assert statistics.expected_segregating_sites(5, 2.0) == pytest.approx(2.0 * _harmonic(4))
 
     def test_waiting_times_use_the_effective_size(self) -> None:
-        """4 Ne / (k (k - 1)) generations for k = 4, 3, 2 lineages; the effective size used to be ignored."""
+        """4 Ne / (k (k - 1)) generations for k = 4, 3, 2 lineages; the effective size is part of the result."""
         assert statistics.expected_coalescent_waiting_times(4, 100.0) == pytest.approx([400 / 12, 400 / 6, 400 / 2])
         assert statistics.expected_coalescent_waiting_times(4, 200.0) == pytest.approx([800 / 12, 800 / 6, 800 / 2])
 

@@ -160,11 +160,9 @@ def power_curve(
 def subsample_convergence(
     genotype_matrix: Union[List[List[int]], "np.ndarray"],
     traits: List[float],
-    variants_info: Optional[List[Dict[str, Any]]] = None,
     fractions: Optional[List[float]] = None,
     n_replicates: int = 5,
     alpha: float = 5e-8,
-    config: Optional[Dict[str, Any]] = None,
     seed: int = 42,
 ) -> Dict[str, Any]:
     """Assess GWAS result stability by subsampling variants at different fractions.
@@ -187,11 +185,9 @@ def subsample_convergence(
     Args:
         genotype_matrix: Variant × sample genotype matrix (0/1/2/-1).
         traits: Phenotype values per sample.
-        variants_info: Not used; accepted for API compatibility.
         fractions: Data fractions to evaluate (default 10% to 100%).
         n_replicates: Number of random replicates per fraction.
         alpha: Significance threshold.
-        config: Not used; accepted for API compatibility.
         seed: Seed of the generator that draws the variant subsamples.
 
     Returns:

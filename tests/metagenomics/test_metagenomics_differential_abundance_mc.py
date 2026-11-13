@@ -51,7 +51,7 @@ def test_strong_difference_is_detected() -> None:
 
 
 def test_result_contract_preserved() -> None:
-    """Output keys stay backward compatible and values stay sane."""
+    """Each result row carries the documented keys with sane values."""
     results = differential_abundance(COUNTS, GROUPS, TAXA, n_monte_carlo=32, seed=3)
 
     assert len(results) == 3

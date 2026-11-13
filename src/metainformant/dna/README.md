@@ -32,7 +32,7 @@ graph TD
         AL --> |msa.py| MS[Multiple Sequence Alignment]
         AL --> |pairwise.py| PW[Pairwise Alignment]
 
-        PH[phylogeny/] --> |tree.py| TR[NJ, UPGMA, Bootstrap]
+        PH[phylogeny/] --> |tree_construction.py| TR[NJ, UPGMA, Bootstrap]
 
         PO[population/] --> |analysis.py| FS[Fst, Selection Tests]
         PO --> |core.py| PG[Allele Frequencies]
@@ -100,7 +100,7 @@ dist = jukes_cantor_distance("ATCGATCG", "ATCGATCC")
 ```python
 from metainformant.dna.sequence.core import read_fasta
 from metainformant.dna.alignment.distances import jukes_cantor_distance
-from metainformant.dna.phylogeny.tree import neighbor_joining_tree, to_newick
+from metainformant.dna.phylogeny import neighbor_joining_tree, to_newick
 
 # Load sequences and build phylogeny
 seqs = read_fasta("data/aligned.fasta")

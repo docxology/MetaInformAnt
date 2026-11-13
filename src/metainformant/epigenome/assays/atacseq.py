@@ -95,11 +95,6 @@ class ATACPeak:
         """Get peak center position."""
         return (self.start + self.end) // 2
 
-    @property
-    def accessibility_score(self) -> float:
-        """Get accessibility score (alias for signal_value)."""
-        return self.signal_value
-
     def to_bed_format(self, format: str = "narrowpeak") -> str:
         """Convert to one line of a standard peak file.
 
@@ -162,7 +157,6 @@ class ATACPeak:
             "score": self.score,
             "strand": self.strand,
             "signal_value": self.signal_value,
-            "accessibility_score": self.accessibility_score,
             "p_value": self.p_value,
             "q_value": self.q_value,
             "summit": self.summit,
@@ -352,7 +346,7 @@ def calculate_atac_statistics(peaks: List[ATACPeak]) -> Dict[str, Any]:
     # Accessibility score distribution
     accessibility_bins: Dict[str, int] = defaultdict(int)
     for peak in peaks:
-        accessibility = peak.accessibility_score
+        accessibility = peak.signal_value
         if accessibility < 10:
             accessibility_bins["<10"] += 1
         elif accessibility < 50:
@@ -392,8 +386,8 @@ def calculate_atac_specific_metrics(peaks: List[ATACPeak]) -> Dict[str, Any]:
     lengths = [p.length for p in peaks]
 
     # Typical ATAC-seq peaks should be around nucleosome-free regions (~100-200bp)
-    # Half-open classes: a peak of exactly 150 or 250 bp used to be in two classes at once, so the fractions could
-    # add up to more than 1
+    # Half-open classes: a peak of exactly 150 or 250 bp is in one class only, so the fractions never add up to
+    # more than 1
     nfr_peaks = sum(1 for length in lengths if 50 <= length < 150)  # Nucleosome-free region
     mono_peaks = sum(1 for length in lengths if 150 <= length < 250)  # Mononucleosome
     di_peaks = sum(1 for length in lengths if 250 <= length < 350)  # Dinucleosome
@@ -471,8 +465,8 @@ def identify_tss_enrichment(
     fraction is high needs a chance expectation, and the expectation needs the size of the genome the peaks and TSS
     sit in, which the peaks cannot tell: ``expected_ratio`` is the chance that a window placed at random meets at
     least one of the peaks, ``1 - exp(-N (W + L) / G)`` for N peaks of mean length L, a window of W bp and a genome
-    of G bp (a window meets a peak whose start lies within W + L bp of it). The function used to assume G = 3e9, the
-    human genome, for every species, and to leave the peak length out of the expectation.
+    of G bp (a window meets a peak whose start lies within W + L bp of it). G is ``genome_size``, the species' own
+    genome size.
 
     Args:
         peaks: List of ATACPeak objects
@@ -721,7 +715,7 @@ def calculate_chromatin_accessibility_index(
                 ATACPeak(region_chrom, region_start, region_end), min_overlap=1
             ):
                 overlapping_peaks.append(peak)
-                total_signal += peak.accessibility_score
+                total_signal += peak.signal_value
 
         # Calculate accessibility index
         region_length = region_end - region_start

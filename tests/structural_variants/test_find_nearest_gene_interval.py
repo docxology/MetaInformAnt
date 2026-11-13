@@ -1,11 +1,10 @@
 """Regression tests: ``find_nearest_gene`` measures from the variant interval, and indexes the genes once.
 
-The distance used to run from the variant's *midpoint* to the gene, so a 100 bp variant 1,000 bp past a gene was
-reported 1,050 bp away, a 6 kb variant 100 bp from a gene was reported 3,100 bp away, and a gene that abutted the
-variant was not "at distance 0". It is now the gap between the two intervals, as ``bedtools closest`` measures
-distance (0 for overlapping features), in half-open coordinates. Every expected value below is worked out by hand
-from the coordinates. The function also rebuilt its interval index on every call; it now accepts a prebuilt
-``IntervalIndex``.
+The distance is the gap between the two intervals, as ``bedtools closest`` measures distance (0 for overlapping
+features), in half-open coordinates, not the distance from the variant's *midpoint*: a 100 bp variant 1,000 bp past
+a gene is 1,000 bp away, not 1,050, and a gene that abuts the variant is at distance 0. Every expected value below
+is worked out by hand from the coordinates. The function accepts a prebuilt ``IntervalIndex`` instead of
+rebuilding one on every call.
 """
 
 from __future__ import annotations

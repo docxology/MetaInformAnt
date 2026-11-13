@@ -132,7 +132,7 @@ def _integer_position(value: Any) -> Optional[int]:
     """Convert a base-pair position to ``int``; None if absent or not a finite number."""
     try:
         number = float(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
     return int(number) if math.isfinite(number) else None
 
@@ -141,7 +141,7 @@ def _positive_p_value(value: Any) -> Optional[float]:
     """Convert a p-value to ``float``; None unless it is finite and positive."""
     try:
         number = float(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
     return number if math.isfinite(number) and number > 0 else None
 

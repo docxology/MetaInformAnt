@@ -1,6 +1,6 @@
 """Round-4 test-depth tests for singlecell clustering and trajectory analysis.
 
-Covers previously untested public APIs:
+Covers these public APIs:
 - analysis.clustering: kmeans_clustering, louvain_clustering (dependency-aware),
   find_marker_genes, compute_cluster_composition, compute_cluster_silhouette,
   evaluate_clustering_performance
@@ -169,9 +169,8 @@ class TestComputeClusterComposition:
 
 
 # ---------------------------------------------------------------------------
-# compute_cluster_silhouette (regression: previously crashed with
-# "'float' object is not subscriptable" because silhouette_score was indexed
-# like silhouette_samples)
+# compute_cluster_silhouette (regression: silhouette_score is not indexed
+# like silhouette_samples, which raises "'float' object is not subscriptable")
 # ---------------------------------------------------------------------------
 
 
@@ -315,14 +314,13 @@ class TestHierarchicalClustering:
 
 
 # ---------------------------------------------------------------------------
-# Graph-based clustering (dependency-aware) and networkx-3 regression
+# Graph-based clustering (dependency-aware) and graph construction
 # ---------------------------------------------------------------------------
 
 
 class TestGraphConstruction:
     def test_graph_from_sparse_adjacency(self) -> None:
-        """networkx 3.x removed from_scipy_sparse_matrix/from_numpy_matrix;
-        the module must build graphs through a supported constructor."""
+        """Graphs are built with networkx's array-based constructors (sparse and dense)."""
         adjacency = sparse.csr_matrix(np.array([[0.0, 2.0], [2.0, 0.0]]))
         graph = _graph_from_adjacency(adjacency)
         assert graph.number_of_nodes() == 2

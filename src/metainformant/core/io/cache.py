@@ -252,7 +252,7 @@ class JsonCache:
                     else:
                         valid_entries += 1
 
-                except (json.JSONDecodeError, KeyError, ValueError):
+                except json.JSONDecodeError, KeyError, ValueError:
                     corrupted_files += 1
 
             return {
@@ -382,5 +382,5 @@ def load_cached_json(
 
             return entry.value
 
-        except (json.JSONDecodeError, KeyError, ValueError, OSError):
+        except json.JSONDecodeError, KeyError, ValueError, OSError:
             return default

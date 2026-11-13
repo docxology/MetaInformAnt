@@ -716,7 +716,7 @@ class TestRecombinationSmoothing:
         rates, positions = self._series(n_points)
         out = tmp_path / "recombination.png"
 
-        result = regional.recombination_rate_plot([], out, recombination_rates={"1": rates}, positions={"1": positions})
+        result = regional.recombination_rate_plot(out, recombination_rates={"1": rates}, positions={"1": positions})
 
         assert result["status"] == "success"
         assert out.stat().st_size > 0
@@ -727,7 +727,6 @@ class TestRecombinationSmoothing:
         series = {chrom: self._series(n) for chrom, n in lengths.items()}
 
         result = regional.recombination_rate_plot(
-            [],
             tmp_path / "recombination.png",
             recombination_rates={chrom: rates for chrom, (rates, _) in series.items()},
             positions={chrom: positions for chrom, (_, positions) in series.items()},

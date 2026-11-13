@@ -194,7 +194,7 @@ class TestCoalescent:
         a1 = sum(1.0 / i for i in range(1, n))
         expected_pi = S / a1
 
-        D = tajimas_D(S, expected_pi, n)
+        D = tajimas_D(expected_pi, S, n)
 
         # Should be close to zero for neutral expectation
         assert abs(D) < 1.0
@@ -331,12 +331,12 @@ class TestEdgeCases:
         assert cov == 0.0 and trans == 0.0 and total == 0.0
 
     def test_zero_population_size(self):
-        """A zero population size has no coalescent time (it used to be reported as 0.0)."""
+        """A zero population size has no coalescent time (not 0.0)."""
         with pytest.raises(ValueError, match="positive"):
             expected_time_to_mrca(10, 0.0)
 
     def test_invalid_frequencies(self):
-        """An allele frequency outside [0, 1] is an error (it used to be answered with zeros)."""
+        """An allele frequency outside [0, 1] is an error (not zeros)."""
         with pytest.raises(ValueError, match="between 0 and 1"):
             hardy_weinberg_genotype_freqs(-0.1)
 

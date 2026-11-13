@@ -43,7 +43,7 @@ from metainformant.ontology.query.serialize import load_ontology, save_ontology
         ('"x" []', "x", None, []),
         ('"just text"', "just text", None, []),
         ('""  EXACT []', "", "EXACT", []),
-        # older versions of this package wrote synonyms without escaping inner quotes; they still read back whole
+        # synonyms written without escaping inner quotes read back whole
         ('"A "special" process" EXACT []', 'A "special" process', "EXACT", []),
         ('"say "EXACT" twice" EXACT []', 'say "EXACT" twice', "EXACT", []),
         # malformed input is read leniently, not rejected
@@ -91,7 +91,7 @@ SYNONYMS = ['say "hi"', "back\\slash", "multi\nline", "A ! B", "tab\there", "end
 
 def test_synonyms_survive_an_obo_round_trip(tmp_path: Path) -> None:
     term = create_term(id="GO:0000001", name="demo process", synonyms=list(SYNONYMS))
-    original = create_ontology(terms={term.id: term})
+    original = create_ontology(terms={term.term_id: term})
     path = tmp_path / "saved.obo"
 
     save_ontology(original, path, format="obo")
@@ -104,7 +104,7 @@ def test_written_synonym_lines_are_quoted_with_the_obo_escapes(tmp_path: Path) -
     term = create_term(id="GO:0000001", name="demo process", synonyms=['say "hi"', "multi\nline"])
     path = tmp_path / "saved.obo"
 
-    save_ontology(create_ontology(terms={term.id: term}), path, format="obo")
+    save_ontology(create_ontology(terms={term.term_id: term}), path, format="obo")
 
     lines = path.read_text().splitlines()
     quoted = quote_obo_string('say "hi"')

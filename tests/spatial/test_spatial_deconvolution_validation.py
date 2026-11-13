@@ -1,8 +1,7 @@
 """``validate_deconvolution`` reports the correlation between estimated proportions and marker expression.
 
-Its ``marker_correlations`` used to be ``min(1, 10 x the variance of the type's proportions)``: no expression
-data reached the function, so the number was not a correlation and said nothing about whether the markers
-agree with the estimate (it was never negative, and was the same for any markers). It is now the Pearson
+Its ``marker_correlations`` is not ``min(1, 10 x the variance of the type's proportions)``, a number that sees
+no expression data, is never negative and is the same for any markers. It is the Pearson
 (default) or Spearman correlation across spots between the estimated proportion of a cell type and the mean
 expression of that type's markers, and the expected values below come from scipy. Real computation only: the
 spots are real mixtures of reference profiles, deconvolved by the real NNLS routine.

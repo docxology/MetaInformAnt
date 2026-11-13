@@ -6,7 +6,6 @@ Phylogenetic tree construction (Neighbor-Joining, UPGMA, k-mer based) and tree a
 
 | File | Purpose |
 |------|---------|
-| `tree.py` | Re-exports all public symbols from construction and analysis submodules |
 | `tree_construction.py` | NJ, UPGMA, and k-mer tree building from `{name: sequence}` dicts (the distance matrices are computed internally) |
 | `tree_analysis.py` | Newick parsing, bootstrap, topology metrics, and tree manipulation |
 
@@ -38,7 +37,7 @@ to each internal node. `metainformant.visualization.genomics.trees` draws this d
 ## Usage
 
 ```python
-from metainformant.dna.phylogeny.tree import neighbor_joining_tree, to_newick, bootstrap_support
+from metainformant.dna.phylogeny import bootstrap_support, neighbor_joining_tree, to_newick
 
 sequences = {  # aligned sequences of equal length
     "seq1": "ACGTACGTACGT",

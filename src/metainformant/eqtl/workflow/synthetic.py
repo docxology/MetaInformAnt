@@ -45,8 +45,7 @@ def create_synthetic_data(
             remaining ``n_variants - 5 * n_genes`` as background variants. A background
             variant influences no gene and lies 10 Mb or more beyond the last TSS (on
             chromosomes 1-5 in turn), so it is outside every cis window and only a trans scan
-            tests it. Their number used to be ignored: asking for more than ``5 * n_genes``
-            variants still gave ``5 * n_genes``.
+            tests it.
         n_samples: Number of samples.
         seed: Random seed for reproducibility.
 

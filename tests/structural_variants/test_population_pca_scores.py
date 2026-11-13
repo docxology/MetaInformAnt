@@ -197,7 +197,7 @@ class TestDegenerateData:
 class TestInputs:
     @pytest.mark.parametrize("n_components", [0, -1, -5])
     def test_fewer_than_one_component_is_refused(self, n_components: int) -> None:
-        # A negative count used to slice off the last components instead of failing.
+        # A negative count fails instead of slicing off the last components.
         with pytest.raises(ValueError, match="n_components"):
             sv_population_structure(_genotypes(10, 6, seed=7), n_components=n_components)
 

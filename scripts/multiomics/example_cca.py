@@ -54,8 +54,10 @@ print(f"   Proteomics shape: {proteomics_data.shape}")
 
 # Create MultiOmicsData
 omics_data = MultiOmicsData(
-    transcriptomics=transcriptomics_data,
-    proteomics=proteomics_data,
+    data={
+        "transcriptomics": transcriptomics_data,
+        "proteomics": proteomics_data,
+    },
 )
 print(f"   Integrated {omics_data.n_samples} samples")
 
@@ -63,7 +65,7 @@ print(f"   Integrated {omics_data.n_samples} samples")
 print("\n2. Performing Canonical Correlation Analysis...")
 X_c, Y_c, X_w, Y_w, correlations = canonical_correlation(
     omics_data,
-    layer_pair=("transcriptomics", "proteomics"),
+    layers=("transcriptomics", "proteomics"),
     n_components=10,
     regularization=0.01,
 )
@@ -129,7 +131,7 @@ print("\n5. Testing different regularization values...")
 for reg in [0.001, 0.01, 0.1]:
     _, _, _, _, corr = canonical_correlation(
         omics_data,
-        layer_pair=("transcriptomics", "proteomics"),
+        layers=("transcriptomics", "proteomics"),
         n_components=5,
         regularization=reg,
     )

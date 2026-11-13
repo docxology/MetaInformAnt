@@ -105,7 +105,7 @@ def _is_tool_available(tool: str) -> bool:
         else:
             return False
         return True
-    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+    except subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired:
         return False
 
 

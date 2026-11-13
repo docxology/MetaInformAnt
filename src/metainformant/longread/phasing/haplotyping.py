@@ -118,7 +118,7 @@ def phase_reads(
             if key in var_index:
                 allele = a.get("allele")
                 if allele not in (0, 1):
-                    # a missing or no-call allele says nothing about the haplotype (it used to count as 0, ref)
+                    # a missing or no-call allele says nothing about the haplotype (it does not count as 0, ref)
                     uncalled += 1
                     continue
                 obs.append((var_index[key], int(allele)))
@@ -233,10 +233,10 @@ def build_phase_blocks(
             - ``end`` (int): Block end position.
             - ``n_variants`` (int): Number of variants in the block.
             - ``n_reads`` (None): The number of reads is not known here, because no
-              reads are given (it used to be reported as 0).
+              reads are given (it is not reported as 0).
             - ``phase_quality`` (float | None): Mean ``quality`` of the block's variants
-              that have one; None when none does (it used to count a variant without a
-              quality as 1.0, a perfect score nobody measured).
+              that have one; None when none does (a variant without a quality does not
+              count as 1.0, a perfect score nobody measured).
             - ``variant_haplotypes`` (dict[int, int]): position -> allele (0 ref
               or 1 alt) that haplotype 1 carries, the map :func:`haplotag_reads`
               votes against (it also takes the text keys JSON turns these ints
@@ -440,7 +440,7 @@ def haplotag_reads(
                 if pos in var_haps:
                     allele = a.get("allele")
                     if allele not in (0, 1):
-                        # no call, or no allele at all: not a vote for haplotype 2 (it used to be one)
+                        # no call, or no allele at all: not a vote for haplotype 2
                         uncalled += 1
                         continue
                     if var_haps[pos] == allele:
@@ -786,7 +786,7 @@ def _normalise_variant_haplotypes(variant_haplotypes: Any, block_index: int) -> 
             if isinstance(key, float) and not key.is_integer():
                 raise ValueError(key)
             position = int(key.strip()) if isinstance(key, str) else int(key)
-        except (TypeError, ValueError, AttributeError):
+        except TypeError, ValueError, AttributeError:
             raise ValueError(
                 f"phase block {block_index}: variant_haplotypes key {key!r} is not an integer position"
             ) from None

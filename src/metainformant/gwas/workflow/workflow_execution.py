@@ -333,9 +333,9 @@ def _apply_full_correction_outputs(
 
     ``correction_method`` selects which correction produces outputs and row
     annotations: "bonferroni", "fdr", or "genomic_control". ``None`` (no
-    ``[correction][method]`` configured) runs the full stack for backward
-    compatibility. Unrecognized values fall back to the full stack with a
-    warning; config validation rejects invalid methods earlier.
+    ``[correction][method]`` configured) runs all three corrections.
+    Unrecognized values fall back to all three with a warning; config
+    validation rejects invalid methods earlier.
 
     The family of tests is the rows that have a p-value. A row whose test failed
     (NaN p-value) is left out of the family rather than counted as p = 1: it is
@@ -385,8 +385,8 @@ def _apply_full_correction_outputs(
         lambda_gc = gc_result.get("lambda_gc", 1.0) if isinstance(gc_result, dict) else 1.0
         logger.info(f"Genomic control: λ_GC = {lambda_gc:.4f}")
         outputs["genomic_control"] = {"lambda_gc": lambda_gc}
-        # Legacy full-stack runs report only lambda_GC; per-variant corrected
-        # p-values appear only when genomic_control is the selected method.
+        # A run without a selected method reports only lambda_GC; per-variant
+        # GC-corrected p-values appear only when genomic_control is selected.
         if method:
             gc_corrected = gc_result.get("corrected_p_values", []) if isinstance(gc_result, dict) else []
             for idx, row in enumerate(association_results):

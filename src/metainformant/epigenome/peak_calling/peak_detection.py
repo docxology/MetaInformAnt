@@ -780,15 +780,15 @@ def _peak_extents(peaks: list[dict], label: str) -> list[tuple[str, int, int]]:
         label: Name of the peak set, for error messages.
 
     Raises:
-        ValueError: If a peak has no integer ``start`` and ``end``, starts below 0 or has no extent (``end <= start``).
-            Such a peak used to give zero signal means and a significant-looking row instead of an error.
+        ValueError: If a peak has no integer ``start`` and ``end``, starts below 0 or has no extent (``end <= start``),
+            rather than giving zero signal means and a significant-looking row.
     """
     extents: list[tuple[str, int, int]] = []
     for position, peak in enumerate(peaks):
         try:
             start = operator.index(peak["start"])
             end = operator.index(peak["end"])
-        except (KeyError, TypeError):
+        except KeyError, TypeError:
             raise ValueError(
                 f"Peak {position} of {label} needs integer 'start' and 'end' values, got {peak!r}"
             ) from None

@@ -98,7 +98,7 @@ def _load_tsv(path: Path) -> list[dict]:
 def _coerce_float(val: str | float, default: float = 1.0) -> float:
     try:
         return float(val)
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return default
 
 

@@ -233,8 +233,8 @@ class TestWakefieldAbfAgainstOracles:
         flat = credible_sets.compute_log_bayes_factors([6.0, 0.0], 1e-14, standard_errors=0.1)
         assert flat == pytest.approx([0.0, 0.0], abs=1e-9)
 
-    def test_old_flat_default_is_gone(self) -> None:
-        """Regression: z = 7.5 used to score ABF = 2.9 against about 1 for a null variant."""
+    def test_strong_signal_dwarfs_a_null_variant(self) -> None:
+        """Regression: z = 7.5 scores far above a null variant, not ABF = 2.9 against about 1."""
         strong, null = credible_sets.compute_bayes_factors([7.5, 0.0])
         assert strong > 1e9
         assert strong / null > 1e9
@@ -304,7 +304,7 @@ class TestCredibleSetsAreInformative:
     """A strong signal among nulls must yield a tight credible set."""
 
     def test_single_strong_signal_gives_a_tiny_credible_set(self) -> None:
-        """Regression: this region used to need 285 of 300 variants."""
+        """Regression: this region needs at most three variants, not 285 of 300."""
         for seed in range(25):
             z = _region_with_signals(seed, 300, {137: 7.5})
             result = credible_sets.compute_credible_set(z, coverage=0.95)

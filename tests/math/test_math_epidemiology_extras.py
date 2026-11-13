@@ -19,12 +19,12 @@ def test_seir_step_and_herd_immunity_threshold():
 
 
 def test_sir_step_missing_rates_raise():
-    with pytest.raises(ValueError, match="required"):
+    with pytest.raises(TypeError):
         sir_step(0.99, 0.01, 0.0)
 
 
-def test_sir_step_beta_gamma_keywords_accepted():
-    Sn, In, Rn = sir_step(0.99, 0.01, 0.0, beta=0.5, gamma=0.25, dt=0.1)
+def test_sir_step_rate_keywords():
+    Sn, In, Rn = sir_step(0.99, 0.01, 0.0, transmission_rate=0.5, recovery_rate=0.25, dt=0.1)
     assert Sn >= 0.0 and In >= 0.0 and Rn >= 0.0
     # Population is conserved by the step (up to clipping)
     assert abs((Sn + In + Rn) - 1.0) < 1e-9

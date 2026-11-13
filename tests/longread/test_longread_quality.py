@@ -294,7 +294,7 @@ class TestGenerateRunSummary:
 
     def test_run_summary_multiple_runs(self) -> None:
         """generate_run_summary aggregates across multiple pipeline results."""
-        from metainformant.longread.workflow.orchestrator import PipelineResult, PipelineStep
+        from metainformant.longread.workflow.orchestrator_core import PipelineResult, PipelineStep
 
         results = [
             PipelineResult(

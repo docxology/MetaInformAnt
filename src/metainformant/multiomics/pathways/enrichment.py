@@ -428,7 +428,7 @@ def active_module_detection(
             mapping that :func:`multi_omic_enrichment` takes as ``omic_results``. It does not
             change which modules are found or how they are scored; it only supplies the data for
             ``omic_contributions``, because the combined ``scores`` carry no per-omic information.
-        random_state: Seed of the permutation test (default 42, the value that used to be fixed).
+        random_state: Seed of the permutation test (default 42).
             Every module starts a generator from this seed, so equally sized modules are tested
             against the same random node sets; ``None`` seeds each module's generator from the
             operating system, which makes the p-values vary from run to run.
@@ -589,7 +589,7 @@ def pathway_topology_analysis(
         pathway_graph: Adjacency list {gene: [downstream_genes]}.
         gene_scores: Per-gene scores {gene: p_value}.
         n_permutations: Number of permutations behind ``p_value``; an integer >= 1.
-        random_state: Seed of the permutation test (default 42, the value that used to be fixed);
+        random_state: Seed of the permutation test (default 42);
             ``None`` seeds it from the operating system, which makes ``p_value`` vary from run to run.
 
     Returns:

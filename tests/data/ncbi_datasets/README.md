@@ -39,7 +39,7 @@ identical, and `test_honey_bee_report_is_identical_across_endpoints` asserts it.
 | `dataset_report_bioproject_PRJNA000000_error_message.json` | `/genome/bioproject/PRJNA000000/dataset_report` | HTTP 200 whose only content is `messages[].error` (same page schema) |
 | `sequence_reports_GCF_003254395.2_page1.json` | `/genome/accession/GCF_003254395.2/sequence_reports?page_size=3` | Sequence rows (`chr_name`, `refseq_accession`, `length`, `role`), 3 of 177, with token |
 | `download_summary_GCF_003254395.2_default.json` | `/genome/accession/GCF_003254395.2/download_summary` | NCBI's own description of the default package and its `download` URL |
-| `download_summary_GCF_003254395.2_legacy_include_ignored.json` | `/genome/accession/GCF_003254395.2/download_summary?include=genome,gff3` | Byte-for-byte the default summary: the `include` parameter is ignored |
+| `download_summary_GCF_003254395.2_include_param_ignored.json` | `/genome/accession/GCF_003254395.2/download_summary?include=genome,gff3` | Byte-for-byte the default summary: the `include` parameter is ignored |
 | `download_summary_GCF_003254395.2_genome_gff3.json` | `/genome/accession/GCF_003254395.2/download_summary?include_annotation_type=GENOME_FASTA&include_annotation_type=GENOME_GFF` | NCBI echoes the repeated-parameter URL and `--include gff3,genome` |
 | `download_summary_GCF_003254395.2_rna_protein_cds_gtf_gbff_seqreport.json` | `/genome/accession/GCF_003254395.2/download_summary?include_annotation_type=RNA_FASTA&include_annotation_type=PROT_FASTA&include_annotation_type=CDS_FASTA&include_annotation_type=GENOME_GTF&include_annotation_type=GENOME_GBFF&include_annotation_type=SEQUENCE_REPORT` | NCBI's CLI name for each API file type: `--include gbff,gtf,rna,cds,protein,seq-report` |
 

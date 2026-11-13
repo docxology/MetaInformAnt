@@ -340,7 +340,7 @@ class TestPredictOrfsReportsEachOrfOnce:
 
 
 class TestTranslationTable:
-    """`translation_table` used to be ignored (always the standard stop codons)."""
+    """`translation_table` selects the stop codons; it is not always the standard table."""
 
     # ATG, 20 Ala, TGA, 20 Ala, TAA: TGA is a stop in table 11 but tryptophan in table 4
     SEQ = "ATG" + "GCT" * 20 + "TGA" + "GCT" * 20 + "TAA"

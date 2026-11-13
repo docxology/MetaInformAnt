@@ -135,7 +135,7 @@ class TestFilters:
         drawn = ["A1", "A2", "B1", "B2"]
         # DNA repair: 2 of its 3 proteins in a draw of 4 from 6, P(X >= 2) = 12/15 = 0.8 (ratio 1.0);
         # cell cycle: both of its 2 proteins, P(X >= 2) = 6/15 = 0.4 (ratio 1.5). Both have a ratio of at least 1,
-        # which used to keep them whatever the threshold.
+        # which does not keep them whatever the threshold.
         assert functional_enrichment_ppi(drawn, network, max_p_value=0.05) == {}
         assert set(functional_enrichment_ppi(drawn, network, max_p_value=0.5)) == {"cell cycle"}
 

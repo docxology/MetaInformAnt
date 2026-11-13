@@ -1,14 +1,6 @@
 """Regression tests: AlphaFold helpers read local model files and refuse to invent service data.
 
-Defect: four functions of ``protein/structure/alphafold.py`` were placeholders:
-
-* ``get_alphafold_metadata`` returned a fixed dictionary with ``confidence_score: None  # Would need to parse
-  B-factor column``;
-* ``find_alphafold_models_by_sequence`` and ``search_alphafold_by_keyword`` logged "not fully implemented" and
-  returned ``[]``, which reads as "no model matches";
-* ``get_alphafold_coverage`` returned numbers typed into the source ("Approximate as of 2024").
-
-What can be known offline is now read from the local files (pLDDT from the B-factor column of a model, PAE from the
+What can be known offline is read from the local files (pLDDT from the B-factor column of a model, PAE from the
 JSON file), and what needs the AlphaFold service raises ``NotImplementedError``. Nothing here touches the network.
 
 Oracles: the model and PAE files are written by hand in the formats of the AlphaFold database and every expected
@@ -94,7 +86,7 @@ def test_the_coverage_statistics_are_not_implemented_instead_of_hard_coded() -> 
     with pytest.raises(NotImplementedError, match="get_alphafold_coverage is not implemented") as excinfo:
         get_alphafold_coverage()
 
-    assert "not queried values" in str(excinfo.value)
+    assert "AlphaFold Protein Structure Database" in str(excinfo.value)
 
 
 def test_arguments_make_no_difference_to_the_not_implemented_functions() -> None:

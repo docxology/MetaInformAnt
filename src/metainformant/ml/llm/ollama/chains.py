@@ -400,7 +400,8 @@ class TransformChain(Chain[T, R]):
 
         Args:
             transform_fn: Function to apply.
-            client: Ollama client (unused but kept for interface).
+            client: Ollama client that chains built with :meth:`then` share; the transform itself
+                makes no LLM call.
         """
         super().__init__(client)
         self.transform_fn = transform_fn

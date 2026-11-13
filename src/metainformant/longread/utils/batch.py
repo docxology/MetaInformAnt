@@ -55,7 +55,6 @@ def process_batch(
     processor: Callable[[str, Any], Any],
     max_workers: int | None = None,
     continue_on_error: bool = True,
-    timeout_per_item: float | None = None,
 ) -> BatchResult:
     """Process multiple items using a provided function.
 
@@ -67,21 +66,12 @@ def process_batch(
         processor: Function taking (item_id, item_data) -> result.
         max_workers: Maximum parallel workers. None = sequential.
             Set from LR_BATCH_WORKERS env var if not specified.
-        continue_on_error: If True, continue processing after failures.
-        timeout_per_item: Must be None: a per-item timeout cannot be enforced (a running Python
-            function cannot be interrupted), and the parameter used to be accepted and ignored.
+        continue_on_error: If True, continue processing after failures. There is no per-item timeout: a
+            running Python function cannot be interrupted.
 
     Returns:
         BatchResult with aggregated results and statistics.
-
-    Raises:
-        ValueError: If ``timeout_per_item`` is not None.
     """
-    if timeout_per_item is not None:
-        raise ValueError(
-            "timeout_per_item is not supported: a running item cannot be interrupted, so no timeout would apply"
-        )
-
     if max_workers is None:
         env_workers = os.environ.get(f"{_ENV_PREFIX}BATCH_WORKERS")
         if env_workers:

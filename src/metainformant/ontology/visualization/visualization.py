@@ -87,7 +87,7 @@ def plot_go_dag(
     # Use hierarchical layout
     try:
         pos = nx.spring_layout(go_graph, k=1, iterations=50, seed=layout_seed)
-    except (ValueError, nx.NetworkXError):
+    except ValueError, nx.NetworkXError:
         pos = nx.random_layout(go_graph, seed=layout_seed)
 
     # Draw nodes

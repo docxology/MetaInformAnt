@@ -132,7 +132,7 @@ class TestRecursiveEliminationContract:
     """RFE contract, including the fail-fast model-contract regression."""
 
     def test_rejects_non_estimator_with_typeerror(self) -> None:
-        # Regression: a string model previously degraded silently into
+        # Regression: a string model raises instead of degrading silently into
         # correlation-based importances with only a log warning.
         with pytest.raises(TypeError, match="fit.*predict|estimator"):
             recursive_elimination(model="ridge", X=[[1.0, 2.0], [3.0, 4.0]], y=[0, 1], n_features=1)

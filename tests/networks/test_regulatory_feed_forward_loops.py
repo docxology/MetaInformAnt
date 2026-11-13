@@ -85,7 +85,7 @@ def test_motifs_match_a_brute_force_triple_count_on_random_networks() -> None:
 def _advertised_methods(function) -> list[str]:
     """Method names listed in the ``method:`` entry of a docstring, e.g. ``('correlation' or 'mutual_info')``."""
     match = re.search(r"method: Inference method \(([^)]*)\)", function.__doc__ or "")
-    assert match, f"{function.__name__} no longer documents its methods in the expected form"
+    assert match, f"{function.__name__} does not document its methods in the expected form"
     return re.findall(r"'(\w+)'", match.group(1))
 
 

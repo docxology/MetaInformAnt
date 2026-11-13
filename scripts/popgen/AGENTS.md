@@ -15,7 +15,6 @@ Thin orchestrator scripts for the population genetics workflow
 - Scripts are thin wrappers: analysis business logic lives in
   `metainformant.popgen`; generators in
   `metainformant.simulation.models.popgen`
-- Keep import paths in sync with the actual module homes (this directory
-  previously imported from defunct `metainformant.dna.population_analysis`
-  and `metainformant.simulation.popgen` paths)
+- Keep import paths in sync with the actual module homes
+  (`metainformant.popgen` and `metainformant.simulation.models.popgen`)
 - Follow REAL IMPLEMENTATION policy; use `uv` for Python dependencies

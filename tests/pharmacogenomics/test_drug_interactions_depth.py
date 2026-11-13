@@ -81,8 +81,8 @@ class TestPredictDrugInteraction:
         assert "No known interaction" in result["description"]
 
     def test_clopidogrel_omeprazole_is_major(self) -> None:
-        # The database previously contained a duplicate moderate entry for this
-        # pair that silently overwrote the major record.
+        # The database holds one entry for this pair; a duplicate moderate entry
+        # would silently overwrite the major record.
         result = predict_drug_interaction("clopidogrel", "omeprazole")
         assert result["severity"] == "major"
         assert result["evidence_level"] == "A"

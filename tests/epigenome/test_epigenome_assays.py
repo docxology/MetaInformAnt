@@ -409,7 +409,7 @@ class TestATACPeak:
         peak = ATACPeak("chr1", 1000, 2000, score=50.0, signal_value=25.0)
         assert peak.chromosome == "chr1"
         assert peak.length == 1000
-        assert peak.accessibility_score == 25.0
+        assert peak.signal_value == 25.0
 
     def test_overlap_detection(self) -> None:
         peak1 = ATACPeak("chr1", 100, 200)
@@ -419,7 +419,7 @@ class TestATACPeak:
     def test_to_dict(self) -> None:
         peak = ATACPeak("chr1", 100, 500, score=50.0, signal_value=30.0)
         d = peak.to_dict()
-        assert d["accessibility_score"] == 30.0
+        assert d["signal_value"] == 30.0
         assert d["length"] == 400
 
 

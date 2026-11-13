@@ -6,8 +6,7 @@ Protein function prediction from sequence properties including domain-based func
 
 | File | Purpose |
 |------|---------|
-| `__init__.py` | Re-exports `prediction` module |
-| `prediction.py` | Backward-compatible re-export of core and analysis functions |
+| `__init__.py` | Exports the `prediction_core` and `prediction_analysis` modules |
 | `prediction_core.py` | Domain-function mapping, localization, solubility, physicochemical properties |
 | `prediction_analysis.py` | Disordered regions, active sites, PTM site prediction |
 
@@ -26,9 +25,10 @@ Protein function prediction from sequence properties including domain-based func
 ## Usage
 
 ```python
-from metainformant.protein.function import prediction
+from metainformant.protein.function import prediction_analysis, prediction_core
 
-funcs = prediction.predict_function_from_domains(domain_list)
-loc = prediction.predict_localization(sequence)
-props = prediction.compute_physicochemical(sequence)
+funcs = prediction_core.predict_function_from_domains(domain_list)
+loc = prediction_core.predict_localization(sequence)
+props = prediction_core.compute_physicochemical(sequence)
+sites = prediction_analysis.find_active_sites(sequence)
 ```

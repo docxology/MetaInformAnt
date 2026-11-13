@@ -50,9 +50,8 @@ correction uses the POSSIBLE joint alphabet `|X|*|Y|`:
 `I_corrected = I_plugin + (|X||Y| - |X| - |Y| + 1)/(2n*ln2)` bits; result
 clipped at 0.
 
-**`estimation.bias_correction(entropy, n, d)`** — canonical additive
-Miller-Madow helper; `effective_sample_size_correction` is a
-backward-compatible alias of it.
+**`estimation.bias_correction(entropy, n, d)`** — additive Miller-Madow
+helper.
 
 **`estimation.panzeri_treves_bias_correction(entropy, n, d, freqs)`** — real
 PT (1996) correction: Bayesian support estimate `R` (occupied responses plus

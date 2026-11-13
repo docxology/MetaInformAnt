@@ -91,7 +91,7 @@ def infer_regulatory_network_from_expression(
                     corr = reg_expr.corr(target_expr)
                     if abs(corr) >= threshold:
                         G.add_edge(regulator, target, weight=corr, method="correlation")
-                except (ValueError, TypeError):
+                except ValueError, TypeError:
                     continue
 
     elif method == "mutual_info":
@@ -377,7 +377,7 @@ def detect_regulatory_cascades(
                                         "type": "regulatory_cascade",
                                     }
                                 )
-                except (nx.NetworkXNoPath, nx.NodeNotFound):
+                except nx.NetworkXNoPath, nx.NodeNotFound:
                     continue
     return cascades
 

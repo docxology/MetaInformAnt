@@ -59,7 +59,7 @@ class TestXeniumTranscriptQuality:
 
         transcripts = read_transcripts(path, min_quality=20.0)
 
-        # t1 has an empty quality (it used to become Q20 and pass), t2 is below the threshold
+        # t1 has an empty quality (it does not become Q20 and pass), t2 is below the threshold
         assert [t.gene for t in transcripts] == ["G0", "G3"]
         assert [t.quality_value for t in transcripts] == [30.0, 25.0]
 

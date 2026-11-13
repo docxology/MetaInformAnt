@@ -185,7 +185,6 @@ def tsne_reduction(
             "perplexity": actual_perplexity,
             "learning_rate": learning_rate,
             "max_iter": actual_max_iter,
-            "n_iter": actual_max_iter,  # Alias for max_iter (consistent with param name)
         },
         "perplexity": actual_perplexity,
         "learning_rate": learning_rate,
@@ -297,9 +296,7 @@ def umap_reduction(
     return result
 
 
-def diffusion_map_reduction(
-    data: SingleCellData, n_components: int = 10, n_neighbors: int = 15, alpha: float = 1.0
-) -> SingleCellData:
+def diffusion_map_reduction(data: SingleCellData, n_components: int = 10, alpha: float = 1.0) -> SingleCellData:
     """Perform diffusion map dimensionality reduction.
 
     The cells are the nodes of a complete graph whose edge weights are the Gaussian kernel
@@ -311,9 +308,8 @@ def diffusion_map_reduction(
 
     Args:
         data: SingleCellData object with expression matrix
-        n_components: Number of diffusion components (less than the number of cells)
-        n_neighbors: Accepted and validated for compatibility, but not used: the kernel is dense over all cell
-            pairs, so every cell is a neighbor of every other.
+        n_components: Number of diffusion components (less than the number of cells). The kernel is dense over
+            all cell pairs, so every cell is a neighbor of every other.
         alpha: Weight of the random-walk step in the lazy walk ``alpha * P + (1 - alpha) * I``; 1 is the plain
             random walk. The eigenvectors do not depend on it, the eigenvalues do (``alpha * lambda + 1 - alpha``).
             Must be greater than 0: with 0 the operator is the identity, whose eigenvectors are arbitrary.
@@ -327,13 +323,12 @@ def diffusion_map_reduction(
         to ``sigma`` and the parameters.
 
     Raises:
-        ValidationError: If data is not SingleCellData; if n_components, n_neighbors or alpha is out of range;
+        ValidationError: If data is not SingleCellData; if n_components or alpha is out of range;
             if n_components is not below the number of cells; if the expression matrix has a non-finite value;
             or if all cells are identical (the kernel width would be zero)
     """
     validation.validate_type(data, SingleCellData, "data")
     validation.validate_range(n_components, min_val=2, max_val=50, name="n_components")
-    validation.validate_range(n_neighbors, min_val=5, max_val=100, name="n_neighbors")
     validation.validate_range(alpha, min_val=0.0, max_val=1.0, name="alpha")
     if alpha == 0:
         raise errors.ValidationError("alpha must be greater than 0: with alpha = 0 the operator is the identity")
@@ -391,7 +386,6 @@ def diffusion_map_reduction(
     # Store diffusion map metadata
     result.uns["diffusion_map"] = {
         "n_components": n_components,
-        "n_neighbors": n_neighbors,
         "alpha": alpha,
         "sigma": sigma,
         "eigenvalues": eigenvals[1 : n_components + 1].tolist(),
@@ -574,111 +568,6 @@ def _compute_trustworthiness_continuity(original: np.ndarray, embedding: np.ndar
         "continuity": float(trustworthiness(embedding, original, n_neighbors=k)),
         "neighborhood_size": k,
     }
-
-
-def run_tsne(
-    data: SingleCellData,
-    n_components: int = 2,
-    perplexity: float = 30.0,
-    random_state: int | None = None,
-    learning_rate: float = 200.0,
-    max_iter: int = 1000,
-) -> SingleCellData:
-    """Alias for tsne_reduction - run t-SNE dimensionality reduction.
-
-    Args:
-        data: SingleCellData object
-        n_components: Number of components
-        perplexity: t-SNE perplexity
-        random_state: Random seed
-        learning_rate: Learning rate
-        max_iter: Maximum iterations
-
-    Returns:
-        SingleCellData with t-SNE results
-    """
-    return tsne_reduction(data, n_components, perplexity, random_state, learning_rate, max_iter)
-
-
-def run_umap(
-    data: SingleCellData,
-    n_components: int = 2,
-    n_neighbors: int = 15,
-    min_dist: float = 0.1,
-    random_state: int | None = None,
-    metric: str = "euclidean",
-) -> SingleCellData:
-    """Alias for umap_reduction - run UMAP dimensionality reduction.
-
-    Args:
-        data: SingleCellData object
-        n_components: Number of components
-        n_neighbors: Number of neighbors
-        min_dist: Minimum distance
-        random_state: Random seed
-        metric: Distance metric
-
-    Returns:
-        SingleCellData with UMAP results
-    """
-    return umap_reduction(data, n_components, n_neighbors, min_dist, random_state, metric)
-
-
-def compute_tsne(
-    data: SingleCellData,
-    n_components: int = 2,
-    perplexity: float = 30.0,
-    random_state: int | None = None,
-    learning_rate: float = 200.0,
-    max_iter: int = 1000,
-    *,
-    n_iter: int | None = None,
-) -> SingleCellData:
-    """Compute t-SNE dimensionality reduction (alias for tsne_reduction).
-
-    Args:
-        data: SingleCellData object
-        n_components: Number of components
-        perplexity: t-SNE perplexity
-        random_state: Random seed
-        learning_rate: Learning rate
-        max_iter: Maximum iterations
-        n_iter: Alias for max_iter
-
-    Returns:
-        SingleCellData with t-SNE results
-    """
-    # Handle alias
-    if n_iter is not None:
-        max_iter = n_iter
-    return tsne_reduction(data, n_components, perplexity, random_state, learning_rate, max_iter)
-
-
-def compute_umap(
-    data: SingleCellData,
-    n_components: int = 2,
-    n_neighbors: int = 15,
-    min_dist: float = 0.1,
-    random_state: int | None = None,
-    metric: str = "euclidean",
-    *,
-    n_epochs: int | None = None,
-) -> SingleCellData:
-    """Compute UMAP dimensionality reduction (alias for umap_reduction).
-
-    Args:
-        data: SingleCellData object
-        n_components: Number of components
-        n_neighbors: Number of neighbors
-        min_dist: Minimum distance
-        random_state: Random seed
-        metric: Distance metric
-        n_epochs: Number of training epochs (optional)
-
-    Returns:
-        SingleCellData with UMAP results
-    """
-    return umap_reduction(data, n_components, n_neighbors, min_dist, random_state, metric, n_epochs=n_epochs)
 
 
 def compute_neighbors(

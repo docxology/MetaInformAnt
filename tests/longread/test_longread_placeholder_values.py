@@ -1,23 +1,20 @@
-"""Regression tests for placeholder values, silent defaults and unkept promises in the longread package.
+"""Regression tests for placeholder values and silent defaults in the longread package.
 
-Each class pins one defect found while fixing the base-modification, adapter and read-length defects.
-All of them ran without an error and returned a plausible number:
+Each class pins one rule; none of these inputs may run through to a plausible number:
 
-* a signal entry without a log-likelihood ratio counted as LLR 0.0, a probability of 0.5, which the default
-  threshold calls methylated;
-* ``aggregate_methylation`` put a call without a position at position 0 and a call without ``methylated``
-  among the unmethylated;
-* ``compute_methylation_stats`` reported the minimum as the first quartile and the maximum as the third for four
-  sites;
-* ``calculate_phase_block_stats`` turned block quality q into a switch error rate by an invented curve
-  ``1 / (1 + 10 q)``;
-* ``build_phase_blocks`` scored a variant without a quality as 1.0 and reported 0 supporting reads;
-* ``allele_specific_analysis`` took a read without a signal as signal 0.0;
-* a single read became a consensus of Q30, and ``polish_consensus`` with no reads claimed coverage 1 and Q30 for
-  zero reads; ``_simple_align`` paired base i of two unrelated sequences when it found no anchor;
-* the differential step of the methylation pipeline tested the first half of a list of calls against the second;
-* clustered SV calls were all genotyped 0/1; ``generate_qc_report`` counted trimmed reads by their start only;
-  ``process_batch`` accepted and ignored ``timeout_per_item``.
+* a signal entry without a log-likelihood ratio is an error, not LLR 0.0 (a probability of 0.5, which the default
+  threshold calls methylated);
+* ``aggregate_methylation`` refuses a call without a position or without ``methylated``;
+* ``compute_methylation_stats`` reports real quartiles, also for four sites;
+* ``calculate_phase_block_stats`` derives no switch error rate from block quality;
+* ``build_phase_blocks`` scores a variant without a quality as unknown and does not report 0 supporting reads;
+* ``allele_specific_analysis`` does not take a read without a signal as signal 0.0;
+* a single read is not a consensus of Q30, ``polish_consensus`` with no reads claims no coverage or quality, and
+  ``_simple_align`` does not pair base i of two unrelated sequences when it finds no anchor;
+* the differential step of the methylation pipeline compares two labelled samples, never two halves of one;
+* clustered SV calls are not genotyped from read support alone; ``generate_qc_report`` counts a read trimmed at
+  either end;
+  ``process_batch`` runs every item.
 
 All tests run the real functions on small hand-built inputs; there are no mocks.
 """
@@ -66,8 +63,8 @@ class TestMissingLogLikelihoodRatio:
         with pytest.raises(ValueError, match=r"signal_data\[1\] has no 'log_likelihood_ratio'"):
             calling.call_methylation_from_signal(_signal(range(1), 2.0) + [entry], model=model)
 
-    def test_the_old_default_made_a_blank_entry_a_methylated_call_at_confidence_zero(self) -> None:
-        # logistic(0.0) = 0.5 >= the 0.5 threshold; this is what the missing LLR used to turn into
+    def test_an_llr_of_zero_is_a_methylated_call_at_confidence_zero(self) -> None:
+        # logistic(0.0) = 0.5 >= the 0.5 threshold, which is why a missing LLR is not read as 0.0
         (called,) = calling.call_methylation_from_signal([{"position": 5, "log_likelihood_ratio": 0.0}])
         assert called["methylated"] is True and called["confidence"] == 0.0
 
@@ -166,7 +163,7 @@ class TestBuildPhaseBlocksPlaceholders:
 
     def test_no_quality_is_unknown_not_a_perfect_one(self) -> None:
         (block,) = haplotyping.build_phase_blocks(self.VARIANTS)
-        assert block["phase_quality"] is None  # a variant without a quality used to count as 1.0
+        assert block["phase_quality"] is None  # a variant without a quality does not count as 1.0
 
     def test_the_mean_is_over_the_variants_that_have_a_quality(self) -> None:
         variants = [dict(v) for v in self.VARIANTS]
@@ -267,7 +264,7 @@ class TestSvGenotype:
         calls = detect_sv_from_long_reads([_deletion_alignment(f"r{i}") for i in range(3)], min_size=50, min_support=2)
         (deletion,) = calls
         assert deletion.supporting_reads == 3
-        assert deletion.genotype == "./."  # every supported call used to be 0/1
+        assert deletion.genotype == "./."  # not 0/1 for every supported call
 
     def test_phasing_still_assigns_a_genotype(self) -> None:
         (deletion,) = detect_sv_from_long_reads(
@@ -290,20 +287,16 @@ class TestQcReportAdapterTrimmed:
             ReadRecord("both", "ACGT", metadata={"trimmed_start": 28, "trimmed_end": 22}),
             ReadRecord("none", "ACGT", metadata={"trimmed_start": 0, "trimmed_end": 0}),
         ]
-        assert generate_qc_report(self._result(records)).adapter_trimmed == 3  # 2 before: end-only was missed
+        assert generate_qc_report(self._result(records)).adapter_trimmed == 3  # an end-only trim counts too
 
     def test_dict_records_count_too(self) -> None:
         result = self._result([{"metadata": {"trimmed_end": 5}}, {"metadata": {}}])  # type: ignore[list-item]
         assert generate_qc_report(result).adapter_trimmed == 1
 
 
-class TestBatchTimeout:
-    def test_a_timeout_that_cannot_be_enforced_is_refused(self) -> None:
-        with pytest.raises(ValueError, match="timeout_per_item is not supported"):
-            process_batch({"a": 1}, lambda item_id, item: item, timeout_per_item=5.0)
-
-    def test_no_timeout_still_runs(self) -> None:
-        result = process_batch({"a": 1, "b": 2}, lambda item_id, item: item * 2, timeout_per_item=None)
+class TestBatch:
+    def test_every_item_runs(self) -> None:
+        result = process_batch({"a": 1, "b": 2}, lambda item_id, item: item * 2)
         assert result.results == {"a": 2, "b": 4}
 
 

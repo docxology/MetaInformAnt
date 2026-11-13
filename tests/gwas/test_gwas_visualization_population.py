@@ -6,11 +6,13 @@ from pathlib import Path
 
 import numpy as np
 
-from metainformant.gwas.visualization.population.population import (
+from metainformant.gwas.visualization.population.population_admixture import (
     admixture_plot,
     kinship_clustermap,
     kinship_dendrogram,
     kinship_heatmap,
+)
+from metainformant.gwas.visualization.population.population_pca import (
     pca_3d,
     pca_multi_panel,
     pca_plot,

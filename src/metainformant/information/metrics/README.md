@@ -26,7 +26,8 @@ Information theory library: core measures (entropy, MI, KL divergence), advanced
 | `decomposition.py` | `partial_information_decomposition()`, `co_information()`, `o_information()` |
 | `hypothesis.py` | `mi_permutation_test()`, `independence_test()`, `entropy_confidence_interval()` |
 | `semantic.py` | `semantic_similarity()`, `information_content()`, `semantic_entropy()` |
-| `geometry.py` | Re-exports from `fisher_rao.py` and `information_projection.py` |
+| `fisher_rao.py` | `fisher_rao_distance()`, `natural_gradient()`, `exponential_family_entropy()`, `hellinger_distance()` |
+| `information_projection.py` | `information_projection()`, `statistical_divergence()`, `channel_capacity()`, `rate_distortion_function()`, `information_bottleneck()`, `entropy_power_inequality()`, `information_dimension()` |
 
 ### analysis/
 

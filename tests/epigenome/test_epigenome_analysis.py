@@ -392,7 +392,7 @@ class TestMergeTracksUnionMergesOverlaps:
 
 
 class TestNormalizeValuesGuards:
-    """Regression: zscore no longer crashes on a single feature."""
+    """Regression: zscore does not crash on a single feature."""
 
     def test_zscore_single_feature_is_noop(self) -> None:
         track = GenomicTrack()

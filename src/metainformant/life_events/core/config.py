@@ -67,24 +67,14 @@ class LifeEventsWorkflowConfig:
         """Post-initialization validation and setup."""
         self.work_dir = self.work_dir.expanduser().resolve()
 
-        # Older callers passed scalar aliases. Preserve them while normalizing
-        # the public config sections to dictionaries.
-        # Older callers passed scalar aliases (declared type is Dict, so go through
-        # Any to avoid unreachable-branch diagnostics while keeping runtime compat).
-        embedding_any: Any = self.embedding
-        model_any: Any = self.model
-        workflow_any: Any = self.workflow
-        output_any: Any = self.output
-        if not isinstance(embedding_any, dict):
-            self.embedding_dim = int(embedding_any)
-            self.embedding = {"embedding_dim": self.embedding_dim}
-        if not isinstance(model_any, dict):
-            self.model_type = str(model_any)
-            self.model = {"model_type": self.model_type}
-        if not isinstance(workflow_any, dict):
-            self.workflow = {}
-        if not isinstance(output_any, dict):
-            self.output = {}
+        # The nested sections are mappings; an empty YAML section (None) is an empty mapping.
+        # The declared type is Dict, so the check goes through Any.
+        for section in ("embedding", "model", "workflow", "output"):
+            value: Any = getattr(self, section)
+            if value is None:
+                setattr(self, section, {})
+            elif not isinstance(value, dict):
+                raise ValueError(f"Config section '{section}' must be a mapping, got {type(value).__name__}")
 
         if self.embedding:
             self.embedding_dim = int(self.embedding.get("embedding_dim", self.embedding_dim))
@@ -153,7 +143,7 @@ class LifeEventsWorkflowConfig:
         if "threads" in data:
             try:
                 data["threads"] = int(data["threads"])
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 data["threads"] = cls.__dataclass_fields__["threads"].default
 
         return cls(**data)

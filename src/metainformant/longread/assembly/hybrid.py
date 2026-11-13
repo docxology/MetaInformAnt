@@ -224,7 +224,6 @@ def correct_with_short_reads(
     short_reads: Sequence[str | dict[str, Any]],
     kmer_size: int = 21,
     min_kmer_support: int = 3,
-    window_size: int = 50,
 ) -> list[CorrectedRead]:
     """Correct long-read errors using short-read k-mer evidence.
 
@@ -243,7 +242,6 @@ def correct_with_short_reads(
         short_reads: Sequence of short-read sequences.
         kmer_size: K-mer size for error correction.
         min_kmer_support: Minimum short-read k-mer count to consider trusted.
-        window_size: Not used (kept for compatibility); every k-mer position is checked.
 
     Returns:
         List of CorrectedRead objects.

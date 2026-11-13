@@ -6,16 +6,15 @@ Files (verified 2026-10-28): `__init__.py`, `test_get_subontology_hierarchy.py`,
 `test_obo_synonyms.py`, `test_ontology_annotation_regression.py`, `test_ontology_api.py`,
 `test_ontology_comprehensive.py`, `test_ontology_enrichment.py`, `test_ontology_go_basic.py`,
 `test_ontology_json_roundtrip.py`, `test_ontology_layout_and_workflow_seeds.py`, `test_ontology_obo_definitions.py`,
-`test_ontology_obo_parser.py`, `test_ontology_query.py`, `test_ontology_query_exports.py`,
+`test_ontology_obo_parser.py`, `test_ontology_query.py`,
 `test_ontology_query_semantics.py`, `test_ontology_query_subsets_and_cache.py`,
 `test_ontology_relation_roots_leaves.py`, `test_ontology_seeded_randomness.py`, `test_ontology_serialization.py`,
 `test_ontology_serialize.py`, `test_ontology_types.py`, `test_ontology_visualization.py`,
-`test_ora_correction_names.py`, `test_ora_exact_log_factorials.py` (26 test files plus `__init__.py`).
+`test_ora_correction_names.py`, `test_ora_exact_log_factorials.py` (25 test files plus `__init__.py`).
 
 ## Coverage notes
 - `test_ontology_obo_definitions.py`: `def:` parsing (quoted text, dbxref list, escapes, trailing modifiers, malformed values), `metadata["definition_xrefs"]`, `[Typedef]` definitions, and OBO save/load round trips of definitions and dbxrefs.
 - `test_obo_synonyms.py`: `parse_obo_synonym` (text, scope, dbxrefs, escapes, a `!` inside the quotes, synonym types, malformed values), synonyms read whole from `[Term]` stanzas, and OBO save/load round trips of synonyms written with `quote_obo_string`.
-- `test_ontology_query_exports.py`: every public function of `query.py` and `serialize.py` is re-exported by the `metainformant.ontology.query` package and listed in `__all__`; named imports, star imports and the submodules stay importable.
 - `test_ontology_query_semantics.py`: `ancestors`, `descendants` and `common_ancestors` exclude the queried term itself, for `is_a` and other relation types; the docstring examples run and give the documented results.
 - `test_ontology_query_subsets_and_cache.py`: `filter_by_namespace` and `subgraph` carry the induced parent/child links (roots, parents and ancestors checked against an independent `networkx` digraph); the `ancestors`/`descendants` cache is tied to its ontology by weak reference and structure stamp, refreshes on `add_term`/`add_relationship` and disappears with the ontology.
 - `test_get_subontology_hierarchy.py`: `get_subontology` keeps only the hierarchy inside the sub-ontology (a seed whose parents were left out is a root, `get_ancestors` stays inside, no dangling or duplicated `is_a` relationships) and accepts a generator for `root_terms`.

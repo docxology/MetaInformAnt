@@ -11,6 +11,13 @@ def test_translate_basic() -> None:
     assert translation.translate_dna("ATGGCC") == "MA"
 
 
+def test_translate_dna_to_stop_truncates_at_first_stop() -> None:
+    """``to_stop=True`` keeps only the residues before the first stop codon."""
+    assert translation.translate_dna("ATGTAA") == "M*"
+    assert translation.translate_dna("ATGTAA", to_stop=True) == "M"
+    assert translation.translate_dna("ATGAAATTTAAATAG", to_stop=True) == "MKFK"
+
+
 def test_translate_empty() -> None:
     """Test translation of empty sequence."""
     assert translation.translate_dna("") == ""
@@ -30,8 +37,8 @@ def test_find_orfs_simple() -> None:
 
 
 def test_find_orfs_reports_each_orf_once_in_its_own_frame() -> None:
-    # The only start is at index 1 (frame +2); unaligned matching used to
-    # report it again as frame +1.
+    # The only start is at index 1 (frame +2); it is not reported again
+    # as frame +1.
     assert translation.find_orfs("CAUGAAAUAA", min_length=1) == [(1, 10, "+2")]
     rna = "AUGAAAUUUUAAAUGGGCCCCUAGAUGAAAUUUAAA"
     assert translation.find_orfs(rna, min_length=3) == [(0, 12, "+1"), (12, 24, "+1"), (24, 36, "+1")]

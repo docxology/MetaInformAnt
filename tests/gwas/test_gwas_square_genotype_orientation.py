@@ -5,9 +5,9 @@ told them apart from variant-major ones (``n_samples != n_variants``). With as m
 left untransposed, so ``execute_gwas_workflow`` ran every association test (and wrote every MAF) on a *sample's*
 genotypes across variants while labelling it with a *variant's* id. Nothing failed: the output was simply wrong.
 
-A square matrix cannot be oriented by its shape, so the shape is no longer asked to. The caller that knows the
-layout says so (``layout="sample_major"``, used by ``execute_gwas_workflow``); without ``layout`` a square matrix is
-still returned unchanged (existing behaviour, now documented) but a warning is logged.
+A square matrix cannot be oriented by its shape, so the shape is not asked to. The caller that knows the layout
+says so (``layout="sample_major"``, used by ``execute_gwas_workflow``); without ``layout`` a square matrix is
+returned unchanged (as documented) and a warning is logged.
 
 Oracles: the genotype text of a hand-written VCF is counted with plain string handling; the transposition of the small
 matrices is written out by hand.
@@ -181,7 +181,7 @@ def test_the_docstring_states_the_assumption_for_square_matrices() -> None:
 
 
 # ---------------------------------------------------------------------------
-# The workflow that used to mislabel the data
+# The workflow labels every result with the right variant
 # ---------------------------------------------------------------------------
 
 

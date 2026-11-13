@@ -292,7 +292,7 @@ def aggregate_sample_qc(sample_metrics: list[dict[str, Any]]) -> dict[str, Any]:
                     if not math.isnan(v):
                         values.append(v)
                         sample_ids.append(sm.get("sample_id", "unknown"))
-                except (TypeError, ValueError):
+                except TypeError, ValueError:
                     continue
 
         if not values:
@@ -467,7 +467,7 @@ def qc_trend_analysis(
         if metric_name in entry:
             try:
                 values.append(float(entry[metric_name]))
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 continue
 
     n = len(values)

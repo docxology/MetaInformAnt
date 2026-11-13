@@ -1,10 +1,10 @@
 """Spatial statistics that cannot be computed are NaN with a status, never a made-up value.
 
-Moran's I, Geary's C, local Moran's I and Getis-Ord G* used to return I = 0 (or C = 1, G* = 0) and p = 1 for
-constant values or an empty weights matrix, local Moran's I clamped a non-positive variance to 1e-20 (so an
-observation without neighbors got a z-score near 1e9 and p = 0), and the variogram reported a semivariance of 0
-for bins that hold no pair. A made-up p of 1 also entered the Benjamini-Hochberg family of the spatially variable
-genes. Real data and real calls only; the definitions are re-derived here with numpy for the regular cases.
+Moran's I, Geary's C, local Moran's I and Getis-Ord G* do not return I = 0 (or C = 1, G* = 0) and p = 1 for constant
+values or an empty weights matrix, local Moran's I does not clamp a non-positive variance to 1e-20 (which would give
+an observation without neighbors a z-score near 1e9 and p = 0), and the variogram reports no semivariance of 0 for
+bins that hold no pair. No made-up p of 1 enters the Benjamini-Hochberg family of the spatially variable genes. Real
+data and real calls only; the definitions are re-derived here with numpy for the regular cases.
 """
 
 from __future__ import annotations

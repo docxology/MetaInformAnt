@@ -446,7 +446,7 @@ class TestMinVariantQuality:
         assert blocks[0].variants == [100, 140, 160, 180]
 
     def test_reads_at_an_excluded_variant_do_not_phase_through_it(self) -> None:
-        # the middle variant is excluded, so reads linking only through it can no longer connect the others
+        # the middle variant is excluded, so reads linking only through it cannot connect the others
         variants = self._variants_with_quality([50.0, 50.0, 1.0, 50.0, 50.0])
         reads = [_variant_read(f"a{i}", {100: 0, 120: 1, 140: 0}) for i in range(6)]
         reads += [_variant_read(f"b{i}", {140: 0, 160: 1, 180: 0}) for i in range(6)]
@@ -474,7 +474,7 @@ def _phase_block(block_id: int, variants: list[int], haplotype1: list[int]) -> a
 
 class TestTagReadsByHaplotypeBlockSelection:
     def test_every_read_of_interleaved_phase_reads_blocks_is_tagged(self) -> None:
-        # two components whose spans overlap: the second one's reads used to stay HP=0
+        # two components whose spans overlap: the second one's reads do not stay HP=0
         x_positions, y_positions = [100, 300, 500], [200, 400, 600]
         reads = []
         for i in range(6):

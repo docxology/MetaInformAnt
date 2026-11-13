@@ -82,7 +82,7 @@ def network_metrics(graph: Any) -> Dict[str, Any]:
                 metrics["clustering_coeff"] = metrics["avg_clustering"]
                 try:
                     metrics["transitivity"] = nx.transitivity(graph)
-                except (nx.NetworkXError, ZeroDivisionError):
+                except nx.NetworkXError, ZeroDivisionError:
                     metrics["transitivity"] = None
             else:
                 metrics["clustering_coeff"] = None
@@ -527,30 +527,30 @@ def centrality_measures(graph: Any) -> Dict[str, Dict[str, float]]:
     try:
         # Degree centrality
         results["degree"] = dict(nx.degree_centrality(graph))
-    except (nx.NetworkXError, ZeroDivisionError):
+    except nx.NetworkXError, ZeroDivisionError:
         results["degree"] = {}
 
     try:
         # Betweenness centrality
         results["betweenness"] = dict(nx.betweenness_centrality(graph))
-    except (nx.NetworkXError, ZeroDivisionError):
+    except nx.NetworkXError, ZeroDivisionError:
         results["betweenness"] = {}
 
     try:
         # Closeness centrality
         results["closeness"] = dict(nx.closeness_centrality(graph))
-    except (nx.NetworkXError, ZeroDivisionError):
+    except nx.NetworkXError, ZeroDivisionError:
         results["closeness"] = {}
 
     try:
         # Eigenvector centrality
         results["eigenvector"] = dict(nx.eigenvector_centrality(graph, max_iter=100))
-    except (nx.NetworkXError, nx.PowerIterationFailedConvergence, ZeroDivisionError):
+    except nx.NetworkXError, nx.PowerIterationFailedConvergence, ZeroDivisionError:
         results["eigenvector"] = {}
 
     try:
         results["pagerank"] = dict(nx.pagerank(graph))
-    except (nx.NetworkXError, ZeroDivisionError):
+    except nx.NetworkXError, ZeroDivisionError:
         results["pagerank"] = {}
 
     return results

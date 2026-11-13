@@ -115,7 +115,7 @@ class TestRandomSource:
         assert random.getstate() == before
 
     def test_without_rng_the_global_state_still_controls_the_result(self) -> None:
-        """Back-compatible default: ``random.seed`` makes a call without ``rng`` reproducible."""
+        """Without ``rng`` the call uses the global ``random`` module, so ``random.seed`` makes it reproducible."""
         random.seed(7)
         first = generate_point_mutations("ACGTACGTACGT", num_mutations=4)
         random.seed(7)

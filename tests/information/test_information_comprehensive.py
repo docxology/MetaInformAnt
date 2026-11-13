@@ -561,14 +561,6 @@ class TestContinuousInformation:
         kl = kl_divergence_continuous(p, q, method="histogram")
         assert kl >= 0.0
 
-    def test_entropy_estimation_alias(self) -> None:
-        from metainformant.information.metrics.core.continuous import entropy_estimation
-
-        rng = np.random.default_rng(42)
-        samples = rng.normal(0, 1, 100)
-        h = entropy_estimation(samples)
-        assert isinstance(h, float)
-
     def test_copula_entropy(self) -> None:
         from metainformant.information.metrics.core.continuous import copula_entropy
 
@@ -1061,7 +1053,7 @@ class TestIntegrationFunctions:
         rng = np.random.default_rng(42)
         X = rng.random((50, 10))
         y = rng.integers(0, 2, 50)
-        result = ml_integration(X, y, method="mutual_info")
+        result = ml_integration(X, y, method="feature_mi")
         assert "feature_scores" in result
 
 

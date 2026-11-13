@@ -52,7 +52,7 @@ def report(tmp_path_factory: pytest.TempPathFactory) -> tuple[str, dict[str, Any
     ):
         scenarios[name] = {"file": _write_fasta(list(sequences), out / f"{name}.fasta")}
     for name, fst in (("two_populations_low_fst", 0.05), ("two_populations_high_fst", 0.3)):
-        pop1, pop2 = generate_two_populations(10, 10, length, n_sites=length, fst=fst, rng=rng)
+        pop1, pop2 = generate_two_populations(10, 10, length, n_sites=length, f_st=fst, rng=rng)
         scenarios[name] = {
             "file_pop1": _write_fasta(pop1, out / f"{name}_1.fasta"),
             "file_pop2": _write_fasta(pop2, out / f"{name}_2.fasta"),

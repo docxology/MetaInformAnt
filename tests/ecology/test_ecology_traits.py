@@ -1,10 +1,9 @@
-"""Regression tests for the consolidated ecology functional diversity API.
+"""Regression tests for the ecology functional diversity API.
 
-The numpy-based duplicate ``metainformant.ecology.traits.functional`` was
-consolidated into ``metainformant.ecology.analysis.functional`` (the
-Villeger et al. 2008 MST-based FEve/FDiv implementation). These tests keep
-the zero-sum abundance regression guards and pin CWM, Rao's Q and FRic on
-the consolidated API. Real implementations only.
+``metainformant.ecology.analysis.functional`` holds the functional diversity
+metrics (with the Villeger et al. 2008 MST-based FEve/FDiv implementation).
+These tests keep the zero-sum abundance regression guards and pin CWM,
+Rao's Q and FRic. Real implementations only.
 """
 
 from __future__ import annotations

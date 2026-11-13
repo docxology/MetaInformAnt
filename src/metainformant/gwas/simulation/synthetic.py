@@ -73,7 +73,7 @@ def calculate_power(
         var_g = 2 * maf * (1 - maf)
         ncp = abs(beta) * math.sqrt(n * var_g) / noise_sd
         return 1.0 - normal_cdf(z_alpha - ncp)
-    except (ValueError, OverflowError):
+    except ValueError, OverflowError:
         return 0.0
 
 
@@ -204,7 +204,7 @@ def create_synthetic_data(
         n_samples = len(sample_ids)
 
     # Assign causal variant positions near known genes
-    # No causal variant at all in the pure-null mode (it used to report one, with an effect of 0)
+    # No causal variant at all in the pure-null mode (not one with an effect of 0)
     n_causal = max(1, int(n_variants * mode["target_gw_sig_pct"] / 100)) if mode["h2"] > 0 else 0
     causal_indices = set(rng.sample(range(n_variants), min(n_causal, n_variants)))
 

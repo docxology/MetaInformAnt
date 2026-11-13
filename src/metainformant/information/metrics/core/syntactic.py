@@ -448,16 +448,14 @@ def renyi_entropy(probs: Sequence[float], alpha: float = 2.0, base: float = 2.0)
             return 0.0
 
 
-def tsallis_entropy(probs: Sequence[float], q: float = 2.0, base: float = 2.0) -> float:
+def tsallis_entropy(probs: Sequence[float], q: float = 2.0) -> float:
     """Calculate Tsallis entropy of order q.
 
-    ``S_q = (1 - sum(p^q)) / (q - 1)``. The Tsallis entropy contains no logarithm, so ``base`` has no effect on the
-    result; it is accepted for a uniform signature with the other entropy functions.
+    ``S_q = (1 - sum(p^q)) / (q - 1)``. The Tsallis entropy contains no logarithm, so it takes no ``base``.
 
     Args:
         probs: Probability distribution
         q: Entropic index (q != 1)
-        base: Accepted for interface symmetry; not used
 
     Returns:
         Tsallis entropy value
@@ -481,7 +479,7 @@ def tsallis_entropy(probs: Sequence[float], q: float = 2.0, base: float = 2.0) -
     probs_array = probs_array[probs_array > 0]
 
     # Tsallis entropy: S_q = (1 - sum(p^q)) / (q - 1). At q = 0 this is the support size minus one, not the Hartley
-    # entropy log(support size) (that is Renyi's order-0 entropy), which this function used to return there.
+    # entropy log(support size) (that is Renyi's order-0 entropy).
     sum_p_q = float(np.sum(probs_array**q))
     return (1.0 - sum_p_q) / (q - 1.0)
 

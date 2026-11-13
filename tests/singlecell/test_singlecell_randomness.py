@@ -161,7 +161,7 @@ class TestMarkerHeatmapSubsample:
 
 
 class TestDiffusionMapReduction:
-    """A failed eigendecomposition used to be replaced by random vectors and a re-seeded global RNG.
+    """A failed eigendecomposition is never replaced by random vectors and a re-seeded global RNG.
 
     A non-finite expression value makes every entry of the kernel NaN. Whether LAPACK raises or silently
     returns NaN for such a matrix depends on the library build, so the function checks its input itself and
@@ -180,18 +180,18 @@ class TestDiffusionMapReduction:
         data = self._non_finite_data()
 
         with pytest.raises(ValidationError, match="non-finite"):
-            diffusion_map_reduction(data, n_components=2, n_neighbors=5)
+            diffusion_map_reduction(data, n_components=2)
 
     def test_the_global_random_state_is_not_reseeded_by_the_failure(self) -> None:
         data = self._non_finite_data()
 
         def run() -> None:
             with pytest.raises(ValidationError):
-                diffusion_map_reduction(data, n_components=2, n_neighbors=5)
+                diffusion_map_reduction(data, n_components=2)
 
         assert _leaves_global_state_alone(run)
 
     def test_the_global_random_state_is_not_touched_by_a_successful_run(self) -> None:
         data = _structureless(20, n_genes=4)
 
-        assert _leaves_global_state_alone(lambda: diffusion_map_reduction(data, n_components=3, n_neighbors=5))
+        assert _leaves_global_state_alone(lambda: diffusion_map_reduction(data, n_components=3))

@@ -19,9 +19,10 @@ from metainformant.gwas.analysis.correction import bonferroni_correction, fdr_co
 from metainformant.gwas.analysis.quality import apply_qc_filters, parse_vcf_full
 from metainformant.gwas.analysis.structure import compute_kinship_matrix, compute_pca
 from metainformant.gwas.data.config import load_gwas_config
-from metainformant.gwas.visualization._general_impl import manhattan_plot, qq_plot
+from metainformant.gwas.visualization.general import manhattan_plot, qq_plot
 from metainformant.gwas.visualization.genomic.variants import maf_distribution
-from metainformant.gwas.visualization.population.population import kinship_heatmap, pca_plot
+from metainformant.gwas.visualization.population.population_admixture import kinship_heatmap
+from metainformant.gwas.visualization.population.population_pca import pca_plot
 from metainformant.gwas.workflow.workflow_config import _phenotypes_in_sample_order
 
 
@@ -167,8 +168,8 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
         fdr_result = fdr_correction(p_values, alpha=0.05)
         gc_result = genomic_control(p_values)
 
-        n_bonf = bonf_result.get("significant_count", 0)
-        n_fdr = fdr_result.get("significant_count", 0)
+        n_bonf = bonf_result.get("n_significant", 0)
+        n_fdr = fdr_result.get("n_significant", 0)
         lambda_gc = gc_result.get("lambda_gc", 1.0)
 
         print(f"  Bonferroni significant (α=0.05): {n_bonf:,}")

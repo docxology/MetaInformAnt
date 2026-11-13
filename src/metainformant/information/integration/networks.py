@@ -122,10 +122,10 @@ def _von_neumann_entropy(G: Any) -> float:
     :func:`metainformant.information.network_info.information_flow.network_entropy`; this function only converts the
     NetworkX graph to its weighted adjacency matrix (a missing ``weight`` counts as 1, parallel edges add up).
 
-    An earlier version took the eigenvalues of the row-normalised adjacency (random-walk transition) matrix and kept
-    the positive ones. That matrix is not a density matrix: its spectrum sums to ``trace(P)`` rather than 1 and its
-    top eigenvalue is always 1, which contributes ``-1 * log2(1) = 0``. Every complete graph and every star came out
-    at 0 instead of ``log2(n - 1)`` and the closed form for a star.
+    The row-normalised adjacency (random-walk transition) matrix is not a density matrix: its spectrum sums to
+    ``trace(P)`` rather than 1 and its top eigenvalue is always 1, which contributes ``-1 * log2(1) = 0``, so its
+    eigenvalues would put every complete graph and every star at 0 instead of ``log2(n - 1)`` and the closed form
+    for a star.
 
     Raises:
         ValueError: If ``G`` is directed. The density matrix is defined for symmetric weights; convert explicitly
@@ -144,8 +144,8 @@ def _flow_nodes(G: Any, names: Optional[List[Any]], role: str) -> List[Any]:
     """The graph nodes named in ``names`` (every node when ``names`` is None), without duplicates.
 
     Raises:
-        ValueError: If ``names`` is empty or names a node that is not in the graph. Unknown names used to be skipped
-            silently: with no valid source the diffusion signal was all zeros and its renormalisation produced NaN.
+        ValueError: If ``names`` is empty or names a node that is not in the graph. Unknown names are not skipped:
+            with no valid source the diffusion signal would be all zeros and its renormalisation NaN.
     """
     if names is None:
         return list(G.nodes())
@@ -209,9 +209,8 @@ def _random_walk_information_flow(
     """Calculate information flow using random walk model.
 
     Each source is walked separately: ``flow_matrix[s][t]`` is the sum over ``steps`` steps of the probability that a
-    walk started at ``s`` is at ``t``. (An earlier version walked the mixture of all sources, so every source got the
-    same flow to a target, and it recorded nothing at all unless ``target_nodes`` was given or the sources were
-    listed, returning an all-zero matrix and a path-length entropy of 0 for the default arguments.)
+    walk started at ``s`` is at ``t``, so different sources get different flows to a target, and the default
+    arguments record every source and target.
     """
     node_list = list(G.nodes())
     node_to_idx = {node: i for i, node in enumerate(node_list)}
@@ -633,8 +632,8 @@ def network_motif_information(
     motif_counts, n_examined, sampled = _count_motifs(G, motif_size, rng, max_subgraphs)
 
     # Null model: randomized graphs preserving the (in/out) degree sequence
-    # (The old loop wrapped this in ``except Exception: continue``: a failure was skipped, and with every graph
-    # skipped the z-scores below came out 0.0. NetworkX can realise any degree sequence of a graph that exists.)
+    # A failure is not skipped: with every graph skipped the z-scores below would come out 0.0. NetworkX can
+    # realise any degree sequence of a graph that exists.
     random_counts_list = []
     for _ in range(n_random):
         graph_seed = int(rng.integers(0, 2**31 - 1))
@@ -742,9 +741,9 @@ def _count_motifs(
     total_combinations = math.comb(n, motif_size)
     sampled = total_combinations > max_subgraphs
     if sampled:
-        # Draw distinct random combinations without ever materialising all of them (the old code listed every
-        # combination first: 166 million tuples for a 1000-node graph) and from a generator the caller controls (it
-        # used a fixed seed, so every call, and every random graph, was examined at the same positions).
+        # Draw distinct random combinations without ever materialising all of them (166 million tuples for a
+        # 1000-node graph) and from a generator the caller controls, so different calls and random graphs are
+        # examined at different positions.
         rng = rng if rng is not None else np.random.default_rng()
         chosen: set = set()
         while len(chosen) < max_subgraphs:

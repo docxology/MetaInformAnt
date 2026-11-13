@@ -28,11 +28,11 @@ from metainformant.pharmacogenomics.alleles.phenotype import (
     predict_metabolizer_status,
 )
 from metainformant.pharmacogenomics.alleles.star_allele import _BUILTIN_ALLELE_DEFINITIONS
+from metainformant.pharmacogenomics.metabolism import metabolizer_status
 from metainformant.pharmacogenomics.metabolism.metabolizer_status import (
     classify_metabolizer,
     default_allele_function_table,
     dose_adjustment,
-    predict_metabolizer_status as predict_metabolizer,
 )
 
 PM = MetabolizerPhenotype.POOR
@@ -152,13 +152,16 @@ class TestKnownDiplotypes:
 
     @pytest.mark.parametrize(("gene", "diplotype", "expected"), CPIC_DIPLOTYPES, ids=_IDS)
     def test_predict_metabolizer_matches_cpic(self, gene: str, diplotype: str, expected: MetabolizerPhenotype) -> None:
-        result = predict_metabolizer({"diplotype": diplotype}, gene)
+        result = metabolizer_status.predict_metabolizer_status({"diplotype": diplotype}, gene)
         assert result["phenotype"] == _token(expected)
 
     def test_cyp2d6_star1_star4_is_intermediate_in_both_apis(self) -> None:
-        # The original defect: classify_phenotype said Normal, predict_metabolizer said intermediate.
+        # classify_phenotype and metabolizer_status.predict_metabolizer_status both call *1/*4 intermediate.
         assert classify_phenotype("*1/*4", "CYP2D6")["phenotype"] == IM
-        assert predict_metabolizer({"diplotype": "*1/*4"}, "CYP2D6")["phenotype"] == "intermediate"
+        assert (
+            metabolizer_status.predict_metabolizer_status({"diplotype": "*1/*4"}, "CYP2D6")["phenotype"]
+            == "intermediate"
+        )
 
     def test_cyp2c19_star1_star1_is_normal_not_rapid(self) -> None:
         assert classify_phenotype("*1/*1", "CYP2C19")["phenotype"] == NM
@@ -318,7 +321,9 @@ class TestSingleSourceOfTruth:
     def test_cyp2d6_star10_uses_the_2019_consensus_value(self) -> None:
         # The metabolism table used the pre-2019 value 0.5.
         assert default_allele_function_table()["CYP2D6"]["*10"] == 0.25
-        assert predict_metabolizer({"diplotype": "*4/*10"}, "CYP2D6")["activity_score"] == 0.25
+        assert (
+            metabolizer_status.predict_metabolizer_status({"diplotype": "*4/*10"}, "CYP2D6")["activity_score"] == 0.25
+        )
 
     def test_every_calling_definition_carries_the_canonical_activity_value(self) -> None:
         for gene, alleles in _BUILTIN_ALLELE_DEFINITIONS.items():
@@ -336,7 +341,7 @@ class TestSingleSourceOfTruth:
             for first, second in itertools.combinations_with_replacement(sorted(table), 2):
                 diplotype = f"{first}/{second}"
                 classified = classify_phenotype(diplotype, gene)
-                predicted = predict_metabolizer({"diplotype": diplotype}, gene)
+                predicted = metabolizer_status.predict_metabolizer_status({"diplotype": diplotype}, gene)
                 assert predicted["activity_score"] == classified["activity_score"], f"{gene} {diplotype}"
                 assert predicted["phenotype"] == _token(classified["phenotype"]), f"{gene} {diplotype}"
                 checked += 1
@@ -348,15 +353,18 @@ class TestSingleSourceOfTruth:
                 assert classify_metabolizer(score, gene) == _token(predict_metabolizer_status(score, gene))
 
     def test_thresholds_reported_by_the_front_end_are_the_ones_applied(self) -> None:
-        reported = predict_metabolizer({"diplotype": "*1/*4"}, "CYP2D6")["thresholds_used"]
+        reported = metabolizer_status.predict_metabolizer_status({"diplotype": "*1/*4"}, "CYP2D6")["thresholds_used"]
         assert reported["intermediate"]["high"] == 1.25
         assert reported["normal"]["low"] == 1.25 and reported["normal"]["low_inclusive"] is True
         assert reported["ultrarapid"]["low"] == 2.25 and reported["ultrarapid"]["low_inclusive"] is False
 
     def test_front_end_covers_every_gene_with_alleles(self) -> None:
         # SLCO1B1 and NUDT15 had no table in the metabolism module.
-        assert predict_metabolizer({"diplotype": "*1/*5"}, "SLCO1B1")["phenotype"] == "intermediate"
-        assert predict_metabolizer({"diplotype": "*2/*3"}, "NUDT15")["phenotype"] == "poor"
+        assert (
+            metabolizer_status.predict_metabolizer_status({"diplotype": "*1/*5"}, "SLCO1B1")["phenotype"]
+            == "intermediate"
+        )
+        assert metabolizer_status.predict_metabolizer_status({"diplotype": "*2/*3"}, "NUDT15")["phenotype"] == "poor"
 
 
 class TestScoreBands:
@@ -371,7 +379,6 @@ class TestScoreBands:
             assert current["lower_bound"] == previous["upper_bound"]
             # exactly one of the two bands owns the shared boundary score
             assert current["lower_inclusive"] != previous["upper_inclusive"]
-        assert all(band["gene_specific"] for band in bands)
 
     @pytest.mark.parametrize("gene", sorted(_PHENOTYPE_THRESHOLDS))
     def test_phenotype_never_decreases_as_activity_rises(self, gene: str) -> None:
@@ -382,7 +389,7 @@ class TestScoreBands:
     def test_cyp2d6_boundaries(self) -> None:
         expected = {
             0.0: PM,
-            0.1: IM,  # between 0 and 0.25: used to fall through to ultrarapid
+            0.1: IM,  # between 0 and 0.25: IM, not a fall-through to ultrarapid
             0.25: IM,
             1.0: IM,
             1.1: IM,
@@ -417,8 +424,8 @@ class TestScoreBands:
             classify_metabolizer(bad_score, "CYP2D6")
 
     def test_unknown_gene_raises_instead_of_applying_the_cyp2d6_bands(self) -> None:
-        # A gene CPIC defines no phenotype for used to be classified with the CYP2D6 bands (a score
-        # of 1.0 read as intermediate); it now raises, naming the gene and the supported genes.
+        # A gene CPIC defines no phenotype for is not classified with the CYP2D6 bands (a score
+        # of 1.0 would read as intermediate); it raises, naming the gene and the supported genes.
         for call in (
             lambda: get_phenotype_thresholds("NOTAGENE"),
             lambda: predict_metabolizer_status(1.0, "NOTAGENE"),
@@ -452,14 +459,16 @@ class TestFunctionRulesVersusSums:
     def test_increased_function_slco1b1_allele_has_no_phenotype_and_raises(self) -> None:
         table = {"*1": 1.0, "*X": 1.5}
         with pytest.raises(ValueError, match="No SLCO1B1 phenotype"):
-            predict_metabolizer({"diplotype": "*1/*X"}, "SLCO1B1", activity_scores=table)
+            metabolizer_status.predict_metabolizer_status({"diplotype": "*1/*X"}, "SLCO1B1", activity_scores=table)
 
     def test_ugt1a1_star37_with_star1_is_intermediate_whether_recorded_as_decreased_or_no_function(self) -> None:
         # CPIC (Gammal 2016) calls *1/*37 intermediate. Going by function class keeps that true
         # for either recorded value of *37 (0.5 decreased, 0.0 no function).
         for value in (0.0, 0.5):
             table = {"*1": 1.0, "*37": value}
-            result = predict_metabolizer({"diplotype": "*1/*37"}, "UGT1A1", activity_scores=table)
+            result = metabolizer_status.predict_metabolizer_status(
+                {"diplotype": "*1/*37"}, "UGT1A1", activity_scores=table
+            )
             assert result["phenotype"] == "intermediate", value
 
 

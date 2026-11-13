@@ -43,17 +43,10 @@ def _sigmoid(values: np.ndarray) -> np.ndarray:
     return np.asarray(1.0 / (1.0 + np.exp(-np.clip(values, -_MAX_EXP, _MAX_EXP))))
 
 
-def _take_option(options: Dict[str, Any], names: Tuple[str, ...], default: Any) -> Any:
-    """Remove ``names`` from ``options`` and return the first non-None value, or ``default``.
-
-    Earlier names take precedence over later aliases.
-    """
-    found = default
-    for name in reversed(names):
-        value = options.pop(name, None)
-        if value is not None:
-            found = value
-    return found
+def _take_option(options: Dict[str, Any], name: str, default: Any) -> Any:
+    """Remove ``name`` from ``options`` and return its value, or ``default`` when it is missing or None."""
+    value = options.pop(name, None)
+    return default if value is None else value
 
 
 def _train_word2vec(
@@ -226,9 +219,8 @@ def learn_event_embeddings(
         method: ``"skipgram"`` or ``"cbow"``; takes precedence over ``sg``.
         random_state: Seed; identical seeds give identical embeddings.
         verbose: Print progress to stdout.
-        **kwargs: ``seed`` (alias for ``random_state``), ``negative`` (negative samples per positive
-            example, default 5), ``learning_rate`` / ``alpha`` (initial rate, default 0.025),
-            ``min_learning_rate`` / ``min_alpha`` (final rate, default 1e-4), ``ns_exponent``
+        **kwargs: ``negative`` (negative samples per positive example, default 5), ``learning_rate``
+            (initial rate, default 0.025), ``min_learning_rate`` (final rate, default 1e-4), ``ns_exponent``
             (noise distribution exponent, default 0.75), ``cbow_mean`` (average rather than sum the
             context vectors in CBOW, default True) and ``combine`` (``"sum"`` or ``"input"``,
             default ``"sum"``). Other keywords are ignored with a warning.
@@ -254,15 +246,12 @@ def learn_event_embeddings(
         raise ValueError("method must be 'skipgram' or 'cbow'")
 
     options = dict(kwargs)
-    seed = _take_option(options, ("seed",), None)
-    if random_state is None:
-        random_state = seed
-    negative = int(_take_option(options, ("negative",), _DEFAULT_NEGATIVE_SAMPLES))
-    learning_rate = float(_take_option(options, ("learning_rate", "alpha"), _DEFAULT_LEARNING_RATE))
-    min_learning_rate = float(_take_option(options, ("min_learning_rate", "min_alpha"), _DEFAULT_MIN_LEARNING_RATE))
-    ns_exponent = float(_take_option(options, ("ns_exponent",), _DEFAULT_NS_EXPONENT))
-    cbow_mean = bool(_take_option(options, ("cbow_mean",), True))
-    combine = str(_take_option(options, ("combine",), "sum"))
+    negative = int(_take_option(options, "negative", _DEFAULT_NEGATIVE_SAMPLES))
+    learning_rate = float(_take_option(options, "learning_rate", _DEFAULT_LEARNING_RATE))
+    min_learning_rate = float(_take_option(options, "min_learning_rate", _DEFAULT_MIN_LEARNING_RATE))
+    ns_exponent = float(_take_option(options, "ns_exponent", _DEFAULT_NS_EXPONENT))
+    cbow_mean = bool(_take_option(options, "cbow_mean", True))
+    combine = str(_take_option(options, "combine", "sum"))
     if options:
         logger.warning(f"learn_event_embeddings ignores unsupported options: {sorted(options)}")
     if negative < 1:
@@ -337,7 +326,7 @@ def biological_embedding(
             embedding summarises the intervals, in days, between consecutive events (see
             ``_create_temporal_embeddings``); its ``embedding_dim`` must be at least 6.
         random_state: Seed for the random variation of the ``'domain'`` embeddings; different seeds give
-            different variations. ``seed`` is accepted as an alias. Defaults to a fixed seed.
+            different variations. Defaults to a fixed seed.
         **kwargs: Additional parameters (``embedding_dim`` for every type)
 
     Returns:
@@ -345,10 +334,6 @@ def biological_embedding(
         ``random_state`` that was used.
     """
     logger.info(f"Creating biological embeddings: {embedding_type}")
-
-    seed = kwargs.pop("seed", None)
-    if random_state is None:
-        random_state = seed
 
     if embedding_type == "event_type":
         return _create_event_type_embeddings(sequences, **kwargs)

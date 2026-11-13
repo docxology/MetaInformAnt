@@ -1,16 +1,14 @@
-"""Round-4 regression tests for ``metainformant.life_events``.
+"""Regression tests for ``metainformant.life_events``.
 
-- ``models.predictor``: ``EventSequencePredictor`` reseeded numpy's *global* generator in its constructor and drew
-  its embeddings from it, in the iteration order of a ``set`` of strings. Two predictors built before fitting
-  therefore overwrote each other's seed, and the same seed gave different embeddings in different interpreter
-  processes (hash randomization). ``load_model`` also ran ``pickle.loads`` on any non-JSON ``classifier`` /
-  ``regressor`` string in a model file, i.e. executed arbitrary code from the file.
-- ``core.utils``: three synthetic-data generators seeded and consumed the interpreter's global ``random`` module,
-  changing the caller's random state (their seeded output is unchanged by the fix).
-- ``analysis.interpretability.attention_weights`` returned the string ``"attention_layer_present"`` per encoder
-  layer as "attention weights" of a transformer, flagged supported.
-- ``survival.recurrent_events`` crashed for a subject with no recorded times; ``visualization.statistical``
-  labelled any projection as the method that was asked for, even when PCA was drawn.
+- ``models.predictor``: ``EventSequencePredictor`` draws its embeddings from a private generator seeded by
+  ``random_state``, in sorted event order, so the same seed gives the same embeddings however many predictors
+  are built and in every interpreter process (hash randomization). ``load_model`` never unpickles a
+  ``classifier`` / ``regressor`` string from a model file.
+- ``core.utils``: the synthetic-data generators use private generators and leave the caller's global ``random``
+  state alone; their seeded output is pinned.
+- ``analysis.interpretability.attention_weights`` reports no attention weights for encoder layers.
+- ``survival.recurrent_events`` handles a subject with no recorded times; ``visualization.statistical``
+  labels a projection with the method that is actually drawn.
 """
 
 from __future__ import annotations
@@ -69,28 +67,28 @@ class TestPredictorRandomness:
         np.random.seed(123)
         before = np.random.get_state()[1].copy()
 
-        predictor = EventSequencePredictor(model_type="embedding", embedding_dim=8, random_seed=7)
+        predictor = EventSequencePredictor(model_type="embedding", embedding_dim=8, random_state=7)
         predictor.fit(_sequences(), OUTCOMES)
 
         np.testing.assert_array_equal(np.random.get_state()[1], before)
 
     def test_embeddings_depend_on_the_seed_only(self) -> None:
         def embeddings(seed: int) -> dict:
-            predictor = EventSequencePredictor(model_type="embedding", embedding_dim=8, random_seed=seed)
+            predictor = EventSequencePredictor(model_type="embedding", embedding_dim=8, random_state=seed)
             predictor.fit(_sequences(), OUTCOMES)
             return {event: vector.tolist() for event, vector in predictor.embeddings.items()}
 
         alone = embeddings(7)
         # building (and fitting) predictors with other seeds in between must not change what seed 7 gives
-        first = EventSequencePredictor(model_type="embedding", embedding_dim=8, random_seed=7)
-        EventSequencePredictor(model_type="embedding", embedding_dim=8, random_seed=8).fit(_sequences(), OUTCOMES)
+        first = EventSequencePredictor(model_type="embedding", embedding_dim=8, random_state=7)
+        EventSequencePredictor(model_type="embedding", embedding_dim=8, random_state=8).fit(_sequences(), OUTCOMES)
         first.fit(_sequences(), OUTCOMES)
 
         assert {event: vector.tolist() for event, vector in first.embeddings.items()} == alone
         assert embeddings(8) != alone
 
     def test_vocabulary_indices_are_in_sorted_event_order(self) -> None:
-        predictor = EventSequencePredictor(model_type="embedding", embedding_dim=4, random_seed=1)
+        predictor = EventSequencePredictor(model_type="embedding", embedding_dim=4, random_state=1)
         predictor.fit(_sequences(), OUTCOMES)
         assert list(predictor.event_vocab) == sorted(predictor.event_vocab)
         assert list(predictor.event_vocab.values()) == list(range(len(predictor.event_vocab)))
@@ -105,7 +103,7 @@ class TestPredictorRandomness:
             "['marriage','child','job','retirement'],['degree','marriage','child'],['job','retirement']]\n"
             "seqs = [EventSequence(f'p{i}', [Event(k, datetime(2000 + j, 1, 1), 'life') for j, k in enumerate(s)])"
             " for i, s in enumerate(streams)]\n"
-            "model = EventSequencePredictor(model_type='embedding', embedding_dim=6, random_seed=3)\n"
+            "model = EventSequencePredictor(model_type='embedding', embedding_dim=6, random_state=3)\n"
             "model.fit(seqs, [1, 0, 0, 1, 1, 0])\n"
             "print(json.dumps({k: v.tolist() for k, v in sorted(model.embeddings.items())}))\n"
         )
@@ -132,7 +130,7 @@ class _WritesAFile:
 class TestModelFilesAreNotUnpickled:
     @staticmethod
     def _saved_model(tmp_path: Path) -> dict:
-        predictor = EventSequencePredictor(model_type="embedding", embedding_dim=4, random_seed=1)
+        predictor = EventSequencePredictor(model_type="embedding", embedding_dim=4, random_state=1)
         predictor.fit(_sequences(), OUTCOMES)
         path = tmp_path / "model.json"
         predictor.save_model(path)
@@ -152,7 +150,7 @@ class TestModelFilesAreNotUnpickled:
         assert not marker.exists()
 
     def test_a_saved_model_still_round_trips(self, tmp_path: Path) -> None:
-        predictor = EventSequencePredictor(model_type="embedding", embedding_dim=4, random_seed=1)
+        predictor = EventSequencePredictor(model_type="embedding", embedding_dim=4, random_state=1)
         predictor.fit(_sequences(), OUTCOMES)
         path = tmp_path / "model.json"
         predictor.save_model(path)
@@ -171,22 +169,22 @@ class TestGeneratorsLeaveTheGlobalRandomState:
         return random.getstate() == before
 
     def test_cohort_sequences(self) -> None:
-        assert self._global_state_after(lambda: generate_cohort_sequences(n_sequences=3, random_seed=5))
+        assert self._global_state_after(lambda: generate_cohort_sequences(n_sequences=3, random_state=5))
 
     def test_event_chain(self) -> None:
-        assert self._global_state_after(lambda: generate_event_chain("started_school", n_events=6, random_seed=3))
+        assert self._global_state_after(lambda: generate_event_chain("started_school", n_events=6, random_state=3))
 
     def test_synthetic_life_events(self) -> None:
         assert self._global_state_after(lambda: generate_synthetic_life_events(n_sequences=2, random_state=4))
 
     def test_seeded_output_is_unchanged_by_the_private_generator(self) -> None:
-        cohort = generate_cohort_sequences(n_sequences=3, random_seed=5)
+        cohort = generate_cohort_sequences(n_sequences=3, random_state=5)
         assert [(e.event_type, e.domain, e.timestamp.isoformat()) for e in cohort[0].events][:3] == [
             ("diagnosis", "health", "1980-12-27T00:00:00"),
             ("moved_house", "housing", "1986-11-17T00:00:00"),
             ("started_school", "education", "1993-08-25T00:00:00"),
         ]
-        chain = generate_event_chain("started_school", n_events=6, random_seed=3)
+        chain = generate_event_chain("started_school", n_events=6, random_state=3)
         assert [getattr(e, "event_type", e) for e in chain] == [
             "started_school",
             "graduated_high_school",
@@ -204,7 +202,7 @@ class TestGeneratorsLeaveTheGlobalRandomState:
 
     def test_unseeded_calls_differ_and_seeded_calls_repeat(self) -> None:
         def types(seed: Any) -> list:
-            sequences = generate_cohort_sequences(n_sequences=4, random_seed=seed)
+            sequences = generate_cohort_sequences(n_sequences=4, random_state=seed)
             return [e.event_type for s in sequences for e in s.events]
 
         assert types(11) == types(11)

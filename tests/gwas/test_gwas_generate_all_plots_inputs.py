@@ -205,7 +205,7 @@ def test_results_without_a_p_value_leave_the_plots_exactly_as_they_were(tmp_path
 
     with_gaps = render(with_missing(rows()), tmp_path / "gaps")
 
-    assert sorted(with_gaps) == ["manhattan", "qq"]  # the Q-Q plot used to raise on "NA" and None
+    assert sorted(with_gaps) == ["manhattan", "qq"]  # the Q-Q plot does not raise on "NA" and None
     assert with_gaps == clean
 
 
@@ -282,7 +282,7 @@ def test_manhattan_reads_the_p_value_under_every_spelling(key: str) -> None:
     finally:
         plt.close(fig)
 
-    assert drawn[:, 1] == pytest.approx([1.0, 2.0, 3.0, 4.0, 5.0])  # used to be 0 for pvalue and P (p defaulted to 1)
+    assert drawn[:, 1] == pytest.approx([1.0, 2.0, 3.0, 4.0, 5.0])  # not 0 for pvalue and P (p does not default to 1)
 
 
 def test_manhattan_accepts_a_dataframe() -> None:

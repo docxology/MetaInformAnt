@@ -31,7 +31,8 @@ except ImportError:
 
 try:
     from metainformant.singlecell.analysis import nonlinear_methods as nonlinear_methods_module
-    from metainformant.singlecell.analysis.dimensionality import run_pca, run_tsne, run_umap
+    from metainformant.singlecell.analysis.nonlinear_methods import tsne_reduction, umap_reduction
+    from metainformant.singlecell.analysis.pca_methods import pca_reduction
 
     DIMENSIONALITY_AVAILABLE = True
 except ImportError:
@@ -255,31 +256,26 @@ class TestSingleCellDimensionality:
             )
             self.cell_types.extend(["Type_0"] * remaining)
 
-    def test_run_pca_basic(self):
+    def test_pca_reduction_basic(self):
         """Test PCA dimensionality reduction."""
-        pca_result = run_pca(expression_matrix=self.expression_matrix, n_components=10)
-
-        # Check result structure
-        assert "embedding" in pca_result
-        assert "components" in pca_result
-        assert "explained_variance" in pca_result
+        pca_result = pca_reduction(SingleCellData(X=self.expression_matrix), n_components=10)
 
         # Check dimensions
-        embedding = pca_result["embedding"]
+        embedding = pca_result.obsm["X_pca"]
         assert embedding.shape == (self.n_cells, 10)
 
-        components = pca_result["components"]
+        components = pca_result.varm["PCs"]
         assert components.shape == (self.n_genes, 10)
 
-        explained_var = pca_result["explained_variance"]
+        explained_var = np.array(pca_result.uns["pca"]["explained_variance_ratio"])
         assert len(explained_var) == 10
         assert np.all(explained_var >= 0)
         assert np.sum(explained_var) <= 1.0
 
-    def test_run_tsne_basic(self):
+    def test_tsne_reduction_basic(self):
         """Test t-SNE dimensionality reduction."""
         data = SingleCellData(X=self.expression_matrix)
-        tsne_result = run_tsne(data, n_components=2, perplexity=30, random_state=123)
+        tsne_result = tsne_reduction(data, n_components=2, perplexity=30, random_state=123)
 
         assert "X_tsne" in tsne_result.obsm
         embedding = tsne_result.obsm["X_tsne"]
@@ -289,10 +285,10 @@ class TestSingleCellDimensionality:
         nonlinear_methods_module is None or not nonlinear_methods_module.HAS_UMAP,
         reason="umap-learn not installed",
     )
-    def test_run_umap_basic(self):
+    def test_umap_reduction_basic(self):
         """Test UMAP dimensionality reduction."""
         data = SingleCellData(X=self.expression_matrix)
-        umap_result = run_umap(data, n_components=2, n_neighbors=15, random_state=123)
+        umap_result = umap_reduction(data, n_components=2, n_neighbors=15, random_state=123)
 
         assert "X_umap" in umap_result.obsm
         embedding = umap_result.obsm["X_umap"]
@@ -342,7 +338,7 @@ class TestSingleCellClustering:
     def test_leiden_clustering_basic(self):
         """Leiden clustering of a feature matrix (skipped where the Leiden stack is not installed)."""
         try:
-            cluster_labels = leiden_clustering(feature_matrix=self.feature_matrix, resolution=0.5)
+            cluster_labels = leiden_clustering(self.feature_matrix, resolution=0.5)
         except ImportError:
             # Only a missing dependency skips; any other failure (including a failed assertion) is real
             pytest.skip("Leiden clustering dependencies not available")
@@ -426,17 +422,18 @@ class TestSingleCellIntegration:
         log_data = log_transform(normalized_data, base=np.e)
 
         # 3. Dimensionality reduction
-        pca_result = run_pca(expression_matrix=log_data.X, n_components=5)
+        pca_result = pca_reduction(log_data, n_components=5)
+        embedding = pca_result.obsm["X_pca"]
 
         # 4. Verify workflow integrity
         assert log_data.X.shape[0] <= n_cells
         assert log_data.X.shape[1] == n_genes
-        assert pca_result["embedding"].shape[0] == log_data.X.shape[0]
-        assert pca_result["embedding"].shape[1] == 5
+        assert embedding.shape[0] == log_data.X.shape[0]
+        assert embedding.shape[1] == 5
 
         # All results should be finite
         assert np.all(np.isfinite(log_data.X))
-        assert np.all(np.isfinite(pca_result["embedding"]))
+        assert np.all(np.isfinite(embedding))
 
 
 class TestSingleCellEdgeCases:
@@ -461,7 +458,7 @@ class TestSingleCellEdgeCases:
                 filtered_data = filter_cells(data, min_genes=1)
                 assert filtered_data.X.shape == (0, 5)
                 assert len(filtered_data.obs) == 0
-        except (ValueError, IndexError, RuntimeWarning):
+        except ValueError, IndexError, RuntimeWarning:
             # Acceptable to raise error for empty data
             pass
 
@@ -480,7 +477,7 @@ class TestSingleCellEdgeCases:
             normalized_data = normalize_counts(data, target_sum=1000)
             # Should remain all zeros
             assert np.allclose(normalized_data.X, 0)
-        except (ValueError, ZeroDivisionError):
+        except ValueError, ZeroDivisionError:
             # Acceptable to raise error for all-zero data
             pass
 

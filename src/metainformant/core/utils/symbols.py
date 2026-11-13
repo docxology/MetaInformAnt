@@ -212,7 +212,7 @@ def index_functions(repo_root: str | Path, use_cache: bool = True) -> dict[str, 
         try:
             with open(py_file, "rt", encoding="utf-8") as f:
                 tree = ast.parse(f.read(), filename=str(py_file))
-        except (SyntaxError, OSError, UnicodeDecodeError):
+        except SyntaxError, OSError, UnicodeDecodeError:
             continue
 
         # Extract module name
@@ -301,7 +301,7 @@ def index_classes(repo_root: str | Path, use_cache: bool = True) -> dict[str, li
         try:
             with open(py_file, "rt", encoding="utf-8") as f:
                 tree = ast.parse(f.read(), filename=str(py_file))
-        except (SyntaxError, OSError, UnicodeDecodeError):
+        except SyntaxError, OSError, UnicodeDecodeError:
             continue
 
         # Extract module name
@@ -407,7 +407,7 @@ def get_symbol_signature(symbol_path: str | Path, symbol_name: str) -> str | Non
     try:
         with open(symbol_path, "rt", encoding="utf-8") as f:
             tree = ast.parse(f.read(), filename=str(symbol_path))
-    except (SyntaxError, OSError):
+    except SyntaxError, OSError:
         return None
 
     for node in ast.walk(tree):
@@ -453,7 +453,7 @@ def find_symbol_references(symbol_name: str, repo_root: str | Path) -> list[Symb
                 content = f.read()
                 lines = content.splitlines()
                 tree = ast.parse(content, filename=str(py_file))
-        except (SyntaxError, OSError, UnicodeDecodeError):
+        except SyntaxError, OSError, UnicodeDecodeError:
             continue
 
         class ReferenceVisitor(ast.NodeVisitor):
@@ -496,7 +496,7 @@ def get_symbol_metadata(symbol_path: str | Path, symbol_name: str) -> dict[str, 
     try:
         with open(symbol_path, "rt", encoding="utf-8") as f:
             tree = ast.parse(f.read(), filename=str(symbol_path))
-    except (SyntaxError, OSError):
+    except SyntaxError, OSError:
         return {}
 
     for node in ast.walk(tree):

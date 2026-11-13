@@ -1,4 +1,4 @@
-"""Regression tests: GWAS code that used to substitute a value, or silently pick another input, now says so.
+"""Regression tests: GWAS code says so instead of substituting a value or silently picking another input.
 
 Each class covers one defect found while hunting for fabricated values and silent fallbacks:
 
@@ -145,7 +145,7 @@ class TestSyntheticGenerator:
         synthetic.create_synthetic_data(tmp_path, n_samples=8, n_variants=40, seed=9)
         after = [random.random() for _ in range(3)]
 
-        assert after == expected  # it used to restart the stream from its own seed
+        assert after == expected  # it does not restart the stream from its own seed
 
     def test_the_output_does_not_depend_on_the_global_random_state(self, tmp_path: Path) -> None:
         random.seed(1)
@@ -205,7 +205,7 @@ class TestVisualizationLdDecay:
         ld.compute_ld_decay(genotypes, positions, max_distance=500_000, n_bins=5)
         after = random.random()
 
-        assert after == expected  # it used to be reseeded to 42
+        assert after == expected  # it is not reseeded to 42
 
 
 # ---------------------------------------------------------------------------

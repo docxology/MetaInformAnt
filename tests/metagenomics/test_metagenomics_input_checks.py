@@ -1,8 +1,8 @@
 """Silent fallbacks and placeholder behaviour found while fixing the metagenomics defect list.
 
-Each class pins one behaviour that used to give a plausible but wrong result without saying so: a blank
+Each class pins one behaviour that must not give a plausible but wrong result without saying so: a blank
 Krona chart for count data, reverse-strand reads that never classify, output order that follows the string
-hash seed, a mismatched error model input that was ignored, and an empty pathway result for a database
+hash seed, a mismatched error model input that is ignored, and an empty pathway result for a database
 that has no definitions. Real implementations.
 """
 
@@ -180,7 +180,7 @@ class TestErrorModelInputs:
     def test_sequences_must_match_the_quality_scores(self) -> None:
         scores = [[30, 30, 30, 30], [30, 30, 30, 20]]
         with pytest.raises(ValueError, match="one entry per read"):
-            estimate_error_rates(scores, sequences=["ACGT"])  # used to be ignored without a word
+            estimate_error_rates(scores, sequences=["ACGT"])  # not ignored without a word
         with pytest.raises(ValueError, match="one entry per read"):
             estimate_error_rates(scores, sequences=["ACGT", "ACGT", "ACGT"])
 

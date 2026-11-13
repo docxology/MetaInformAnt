@@ -70,16 +70,18 @@ class TestMultiOmicsData:
     def test_multiomics_data_initialization(self):
         """Test basic MultiOmicsData initialization."""
         # Single omics layer
-        omics_data = MultiOmicsData(transcriptomics=self.transcriptomics_data)
+        omics_data = MultiOmicsData(data={"transcriptomics": self.transcriptomics_data})
         assert len(omics_data.layer_names) == 1
         assert "transcriptomics" in omics_data.layer_names
         assert omics_data.n_samples == 4
 
         # Multiple omics layers
         omics_data = MultiOmicsData(
-            genomics=self.genomics_data,
-            transcriptomics=self.transcriptomics_data,
-            proteomics=self.proteomics_data,
+            data={
+                "genomics": self.genomics_data,
+                "transcriptomics": self.transcriptomics_data,
+                "proteomics": self.proteomics_data,
+            },
             metadata=self.metadata,
         )
 
@@ -100,7 +102,7 @@ class TestMultiOmicsData:
         data3 = pd.DataFrame(np.random.randn(3, 15), index=samples_3)
 
         # Should align to common samples: B, C
-        omics_data = MultiOmicsData(genomics=data1, transcriptomics=data2, proteomics=data3)
+        omics_data = MultiOmicsData(data={"genomics": data1, "transcriptomics": data2, "proteomics": data3})
 
         expected_common = {"B", "C"}
         assert set(omics_data.samples) == expected_common
@@ -117,7 +119,7 @@ class TestMultiOmicsData:
         data2 = pd.DataFrame(np.random.randn(2, 10), index=["C", "D"])
 
         with pytest.raises(ValueError, match="No common samples"):
-            MultiOmicsData(genomics=data1, transcriptomics=data2)
+            MultiOmicsData(data={"genomics": data1, "transcriptomics": data2})
 
     def test_empty_omics_error(self):
         """Test error when no omics data provided."""
@@ -127,11 +129,13 @@ class TestMultiOmicsData:
     def test_invalid_data_type_error(self):
         """Test error with invalid data types."""
         with pytest.raises(TypeError, match="must be pandas DataFrame"):
-            MultiOmicsData(transcriptomics="not_a_dataframe")
+            MultiOmicsData(data={"transcriptomics": "not_a_dataframe"})
 
     def test_get_layer(self):
         """Test getting specific omics layers."""
-        omics_data = MultiOmicsData(transcriptomics=self.transcriptomics_data, proteomics=self.proteomics_data)
+        omics_data = MultiOmicsData(
+            data={"transcriptomics": self.transcriptomics_data, "proteomics": self.proteomics_data}
+        )
 
         # Get existing layer
         transcr_data = omics_data.get_layer("transcriptomics")
@@ -144,7 +148,11 @@ class TestMultiOmicsData:
     def test_subset_samples(self):
         """Test subsetting by samples."""
         omics_data = MultiOmicsData(
-            transcriptomics=self.transcriptomics_data, proteomics=self.proteomics_data, metadata=self.metadata
+            data={
+                "transcriptomics": self.transcriptomics_data,
+                "proteomics": self.proteomics_data,
+            },
+            metadata=self.metadata,
         )
 
         # Subset to 2 samples
@@ -163,7 +171,9 @@ class TestMultiOmicsData:
 
     def test_subset_features(self):
         """Test subsetting by features."""
-        omics_data = MultiOmicsData(transcriptomics=self.transcriptomics_data, proteomics=self.proteomics_data)
+        omics_data = MultiOmicsData(
+            data={"transcriptomics": self.transcriptomics_data, "proteomics": self.proteomics_data}
+        )
 
         # Subset features
         feature_dict = {"transcriptomics": ["Gene_0", "Gene_1", "Gene_5"], "proteomics": ["Protein_0", "Protein_2"]}
@@ -182,7 +192,7 @@ class TestMultiOmicsData:
 
     def test_to_dict_returns_copy_safe_dataframes(self):
         """Serialization dictionary should not expose mutable internal DataFrames."""
-        omics_data = MultiOmicsData(transcriptomics=self.transcriptomics_data, metadata=self.metadata)
+        omics_data = MultiOmicsData(data={"transcriptomics": self.transcriptomics_data}, metadata=self.metadata)
 
         payload = omics_data.to_dict()
         payload["data"]["transcriptomics"].iloc[0, 0] = -999
@@ -195,8 +205,10 @@ class TestMultiOmicsData:
     def test_save_load_round_trip(self, tmp_path):
         """MultiOmicsData persists layers, metadata, and labels through core I/O."""
         omics_data = MultiOmicsData(
-            genomics=self.genomics_data,
-            transcriptomics=self.transcriptomics_data,
+            data={
+                "genomics": self.genomics_data,
+                "transcriptomics": self.transcriptomics_data,
+            },
             metadata=self.metadata,
         )
         output_dir = tmp_path / "multiomics"
@@ -451,8 +463,10 @@ class TestJointPCA:
         transcr_data = base_signal @ transcr_loadings + np.random.randn(20, 50) * 0.5
 
         self.omics_data = MultiOmicsData(
-            genomics=pd.DataFrame(genomics_data, index=samples, columns=[f"SNP_{i}" for i in range(100)]),
-            transcriptomics=pd.DataFrame(transcr_data, index=samples, columns=[f"Gene_{i}" for i in range(50)]),
+            data={
+                "genomics": pd.DataFrame(genomics_data, index=samples, columns=[f"SNP_{i}" for i in range(100)]),
+                "transcriptomics": pd.DataFrame(transcr_data, index=samples, columns=[f"Gene_{i}" for i in range(50)]),
+            },
         )
 
     def test_joint_pca_basic(self):
@@ -510,7 +524,7 @@ class TestJointPCA:
 
     def test_joint_pca_single_layer(self):
         """Test joint PCA with single omics layer."""
-        single_omics = MultiOmicsData(transcriptomics=self.omics_data.transcriptomics)
+        single_omics = MultiOmicsData(data={"transcriptomics": self.omics_data.transcriptomics})
 
         embeddings, loadings, explained_var = joint_pca(single_omics, n_components=5)
 
@@ -529,16 +543,18 @@ class TestJointNMF:
 
         # Create non-negative data
         self.omics_data = MultiOmicsData(
-            transcriptomics=pd.DataFrame(
-                np.random.exponential(2, (15, 30)),  # Non-negative
-                index=samples,
-                columns=[f"Gene_{i}" for i in range(30)],
-            ),
-            proteomics=pd.DataFrame(
-                np.random.exponential(1, (15, 20)),  # Non-negative
-                index=samples,
-                columns=[f"Protein_{i}" for i in range(20)],
-            ),
+            data={
+                "transcriptomics": pd.DataFrame(
+                    np.random.exponential(2, (15, 30)),  # Non-negative
+                    index=samples,
+                    columns=[f"Gene_{i}" for i in range(30)],
+                ),
+                "proteomics": pd.DataFrame(
+                    np.random.exponential(1, (15, 20)),  # Non-negative
+                    index=samples,
+                    columns=[f"Protein_{i}" for i in range(20)],
+                ),
+            },
         )
 
     def test_joint_nmf_basic(self):
@@ -638,14 +654,16 @@ class TestCanonicalCorrelation:
         transcr_data = latent_factors @ np.random.randn(3, 25) + np.random.randn(30, 25) * 0.3
 
         self.omics_data = MultiOmicsData(
-            genomics=pd.DataFrame(genomics_data, index=samples, columns=[f"SNP_{i}" for i in range(40)]),
-            transcriptomics=pd.DataFrame(transcr_data, index=samples, columns=[f"Gene_{i}" for i in range(25)]),
+            data={
+                "genomics": pd.DataFrame(genomics_data, index=samples, columns=[f"SNP_{i}" for i in range(40)]),
+                "transcriptomics": pd.DataFrame(transcr_data, index=samples, columns=[f"Gene_{i}" for i in range(25)]),
+            },
         )
 
     def test_canonical_correlation_basic(self):
         """Test basic CCA functionality (40 features on 30 samples need a ridge; see test_multiomics_cca_degenerate)."""
         X_can, Y_can, X_weights, Y_weights, correlations = canonical_correlation(
-            self.omics_data, layer_pair=("genomics", "transcriptomics"), n_components=5, regularization=0.1
+            self.omics_data, layers=("genomics", "transcriptomics"), n_components=5, regularization=0.1
         )
 
         # Check output dimensions
@@ -665,7 +683,7 @@ class TestCanonicalCorrelation:
     def test_canonical_correlation_actual_correlation(self):
         """Test that canonical variables achieve expected correlations."""
         X_can, Y_can, X_weights, Y_weights, correlations = canonical_correlation(
-            self.omics_data, layer_pair=("genomics", "transcriptomics"), n_components=3, regularization=0.1
+            self.omics_data, layers=("genomics", "transcriptomics"), n_components=3, regularization=0.1
         )
 
         # Check actual correlations between canonical variables
@@ -679,18 +697,18 @@ class TestCanonicalCorrelation:
     def test_canonical_correlation_invalid_layers(self):
         """Test error handling for invalid layer names."""
         with pytest.raises(ValueError, match="Layer nonexistent not found"):
-            canonical_correlation(self.omics_data, layer_pair=("nonexistent", "transcriptomics"))
+            canonical_correlation(self.omics_data, layers=("nonexistent", "transcriptomics"))
 
     def test_canonical_correlation_regularization(self):
         """Test CCA with different regularization values."""
         # Low regularization
         X_can1, Y_can1, _, _, corr1 = canonical_correlation(
-            self.omics_data, layer_pair=("genomics", "transcriptomics"), n_components=3, regularization=0.001
+            self.omics_data, layers=("genomics", "transcriptomics"), n_components=3, regularization=0.001
         )
 
         # High regularization
         X_can2, Y_can2, _, _, corr2 = canonical_correlation(
-            self.omics_data, layer_pair=("genomics", "transcriptomics"), n_components=3, regularization=0.1
+            self.omics_data, layers=("genomics", "transcriptomics"), n_components=3, regularization=0.1
         )
 
         # Both should work and produce valid results
@@ -756,7 +774,7 @@ class TestCanonicalCorrelationRidge:
     """canonical_correlation must honour its ``regularization`` (ridge) parameter."""
 
     def test_regularization_is_applied(self):
-        """Regression: correlations used to be identical for lambda = 0, 0.001, 10 and 1000."""
+        """Regression: correlations differ between lambda = 0, 0.001, 10 and 1000."""
         x, y = _cca_inputs()
         corr = {
             lam: canonical_correlation(_cca_layers(x, y), layers=("a", "b"), n_components=3, regularization=lam)[4]
@@ -896,7 +914,7 @@ class TestCanonicalCorrelationRidge:
         for bad in (-0.1, float("nan"), float("inf")):
             with pytest.raises(errors.ValidationError, match="regularization"):
                 canonical_correlation(data, layers=("a", "b"), n_components=2, regularization=bad)
-        # sklearn-only iteration options no longer exist; rejecting them beats silently ignoring them.
+        # sklearn-only iteration options do not exist here; rejecting them beats silently ignoring them.
         with pytest.raises(TypeError):
             canonical_correlation(data, layers=("a", "b"), n_components=2, max_iter=10)
 
@@ -928,13 +946,13 @@ class TestIntegrationEdgeCases:
         empty_df = pd.DataFrame(index=["S1", "S2"], columns=[])
 
         with pytest.raises(ValueError, match="has no features"):  # Should raise ValueError about empty columns
-            MultiOmicsData(transcriptomics=empty_df)
+            MultiOmicsData(data={"transcriptomics": empty_df})
 
     def test_single_sample(self):
         """Test with single sample."""
         single_sample_data = pd.DataFrame([[1, 2, 3, 4, 5]], index=["S1"], columns=["F1", "F2", "F3", "F4", "F5"])
 
-        omics_data = MultiOmicsData(transcriptomics=single_sample_data)
+        omics_data = MultiOmicsData(data={"transcriptomics": single_sample_data})
         assert omics_data.n_samples == 1
 
         # PCA should handle single sample gracefully
@@ -950,7 +968,7 @@ class TestIntegrationEdgeCases:
         data2 = pd.DataFrame(np.random.randn(3, 15), index=["A", "B", "C"])  # Missing D, E
 
         with pytest.warns(UserWarning, match="Only 3 samples are common"):
-            omics_data = MultiOmicsData(genomics=data1, transcriptomics=data2)
+            omics_data = MultiOmicsData(data={"genomics": data1, "transcriptomics": data2})
             assert omics_data.n_samples == 3
 
 
@@ -1055,7 +1073,7 @@ class TestMultiOmicsDataMetadataHelpers:
     def test_add_and_get_metadata(self):
         """Metadata columns can be added after construction and read back."""
         data = pd.DataFrame(np.random.randn(3, 2), index=["A", "B", "C"])
-        omics_data = MultiOmicsData(transcriptomics=data)
+        omics_data = MultiOmicsData(data={"transcriptomics": data})
         assert omics_data.get_metadata("batch") is None
         omics_data.add_metadata("batch", [1, 2, 1])
         assert list(omics_data.get_metadata("batch")) == [1, 2, 1]

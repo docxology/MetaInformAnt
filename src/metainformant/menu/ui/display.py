@@ -95,7 +95,7 @@ def get_choice(prompt: str, valid_choices: list[str] | None = None) -> str:
                 return choice
 
             print(f"Invalid choice. Valid options: {', '.join(valid_choices)}")
-        except (KeyboardInterrupt, EOFError):
+        except KeyboardInterrupt, EOFError:
             print("\n")
             raise
 

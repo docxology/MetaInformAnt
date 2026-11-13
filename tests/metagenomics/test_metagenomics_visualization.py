@@ -230,7 +230,7 @@ def _plotted_points(fig: object, n_samples: int) -> np.ndarray:
 
 
 class TestPlotOrdinationMethod:
-    """`method` used to change only the title; the plot was always PCoA."""
+    """`method` changes the ordination, not only the title."""
 
     DM = {
         "s1": {"s1": 0.0, "s2": 0.2, "s3": 0.9, "s4": 0.4, "s5": 0.7},

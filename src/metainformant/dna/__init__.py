@@ -12,8 +12,6 @@ from . import (
     phylogeny,
     population,
     sequence,
-    transcription,
-    translation,
     variation,
 )
 from .alignment import msa
@@ -28,8 +26,6 @@ __all__ = [
     "phylogeny",
     "population",
     "sequence",
-    "transcription",
-    "translation",
     "variation",
     "msa",
 ]

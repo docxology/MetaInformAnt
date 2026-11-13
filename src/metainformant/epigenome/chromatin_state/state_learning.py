@@ -901,9 +901,9 @@ def _fisher_or_chi2(a: int, b: int, c: int, d: int) -> float:
     """Compute the one-sided enrichment p-value of a 2x2 contingency table.
 
     Uses scipy's Fisher exact test when available, otherwise the same test in pure Python
-    (:func:`_fisher_exact_greater`). The fallback used to be a chi-squared approximation that squared the deviation
-    from the expected overlap, so a state *depleted* in an annotation got as small a p-value as an enriched one and
-    was reported as enriched whenever SciPy was missing.
+    (:func:`_fisher_exact_greater`), so the test is one-sided either way: a state *depleted* in an annotation never
+    gets as small a p-value as an enriched one (a chi-squared approximation that squares the deviation from the
+    expected overlap would give it one).
 
     Args:
         a: Overlap count.
@@ -1165,8 +1165,7 @@ def compute_state_transition_rates(
         imply. A state that only ever transitions to itself has an infinite mean segment length.
 
     Raises:
-        ValueError: If assignments is empty, n_states < 1, or an assignment is not in ``[0, n_states)`` (such a
-            transition used to be left out of the counts while still being counted in ``n_transitions``).
+        ValueError: If assignments is empty, n_states < 1, or an assignment is not in ``[0, n_states)``.
     """
     if not assignments:
         raise ValueError("assignments must not be empty")

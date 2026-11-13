@@ -9,7 +9,6 @@ from . import (
     epidemiology,
     evolutionary_dynamics,
     perception,
-    popgen,
     population_genetics,
     quantitative_genetics,
 )
@@ -21,7 +20,6 @@ __all__ = [
     "epidemiology",
     "evolutionary_dynamics",
     "perception",
-    "popgen",
     "population_genetics",
     "quantitative_genetics",
 ]

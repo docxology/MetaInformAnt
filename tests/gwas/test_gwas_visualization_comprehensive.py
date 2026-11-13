@@ -20,18 +20,11 @@ try:
         variants as visualization_variants,
     )
     from metainformant.gwas.visualization.interactive import suite as visualization_suite
-    from metainformant.gwas.visualization.population import population as visualization_population
     from metainformant.gwas.visualization.statistical import (
         comparison as visualization_comparison,
         effects as visualization_effects,
         statistical as visualization_statistical,
     )
-
-    # visualization_enhanced does not have a new canonical path; keep trying old import
-    try:
-        from metainformant.gwas import visualization_enhanced
-    except ImportError:
-        visualization_enhanced = None  # type: ignore[assignment]
 except ImportError:
     # If modules don't exist, skip tests
     pytest.skip("GWAS visualization modules not available", allow_module_level=True)
@@ -136,21 +129,6 @@ class TestRegionalVisualization:
             assert isinstance(result, dict)
 
 
-class TestPopulationVisualization:
-    """Tests for visualization_population.py module."""
-
-    def test_population_plot(self, tmp_path):
-        """Test population-specific plot."""
-        results = [
-            {"CHROM": "1", "POS": 1000, "p_value": 1e-6, "population": "pop1"},
-            {"CHROM": "1", "POS": 2000, "p_value": 1e-5, "population": "pop2"},
-        ]
-        output_path = tmp_path / "population.png"
-        if hasattr(visualization_population, "population_comparison_plot"):
-            result = visualization_population.population_comparison_plot(results, output_path)
-            assert isinstance(result, dict)
-
-
 class TestVariantsVisualization:
     """Tests for visualization_variants.py module."""
 
@@ -198,21 +176,6 @@ class TestComparisonVisualization:
         output_path = tmp_path / "comparison.png"
         if hasattr(visualization_comparison, "study_comparison_plot"):
             result = visualization_comparison.study_comparison_plot(results1, results2, output_path)
-            assert isinstance(result, dict)
-
-
-class TestVisualization:
-    """Tests for visualization_enhanced.py module."""
-
-    def test_enhanced_plot(self, tmp_path):
-        """Test enhanced visualization features."""
-        results = [
-            {"CHROM": "1", "POS": 1000, "p_value": 1e-6},
-        ]
-        output_path = tmp_path / "enhanced.png"
-        # Test any enhanced plotting function
-        if visualization_enhanced is not None and hasattr(visualization_enhanced, "enhanced_manhattan_plot"):
-            result = visualization_enhanced.enhanced_manhattan_plot(results, output_path)
             assert isinstance(result, dict)
 
 

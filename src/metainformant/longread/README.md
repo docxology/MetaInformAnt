@@ -41,7 +41,7 @@ graph TD
 
         PHA[phasing/] --> |haplotyping.py| HT[Phase Block Construction]
 
-        W[workflow/] --> |orchestrator.py| OR[Pipeline Orchestration]
+        W[workflow/] --> |orchestrator_core.py| OR[Pipeline Orchestration]
         W --> |pipelines.py| PI[Pre-defined Pipelines]
         W --> |reporting.py| RE[QC Reports]
 
@@ -94,7 +94,7 @@ graph TD
 ```python
 import random
 
-from metainformant.longread.workflow.orchestrator import LongReadOrchestrator
+from metainformant.longread.workflow.orchestrator_core import LongReadOrchestrator
 from metainformant.longread.workflow.pipelines import get_qc_pipeline_config
 
 # Run the QC pipeline over a list of read dictionaries. A Path to a single

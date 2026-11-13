@@ -1,8 +1,8 @@
 """The AntWiki scraping script says only what the scraper really does.
 
-The script used to import a module that does not exist, pass ``resume=`` to a method without that parameter, assign a
-read-only config alias, read a ``failed_species`` key nothing produced, and print "Check robots.txt: True" while
-robots.txt was never consulted. Every case below runs the real script and needs no network: the paths exercised here
+The script imports only modules that exist, passes only parameters the scraper methods take, leaves the read-only
+config attributes alone, reads only result keys the scraper produces, and reports a robots.txt check only when it
+consults robots.txt. Every case below runs the real script and needs no network: the paths exercised here
 stop before any request would be sent.
 """
 
@@ -73,6 +73,6 @@ def test_invalid_delay_is_a_usage_error_not_a_traceback() -> None:
 
 
 def test_delay_override_reaches_the_config(tmp_path: Path) -> None:
-    # --delay assigns config.delay_between_requests; the script must echo the value it will really use
+    # --delay assigns config.delay_seconds; the script must echo the value it will really use
     result = _run_script("--all", "--delay", "3.5", "--output", str(tmp_path / "out"))
     assert "Delay between requests: 3.5 seconds" in result.stdout

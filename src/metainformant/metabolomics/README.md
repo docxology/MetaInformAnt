@@ -86,8 +86,8 @@ The readers and matchers report bad input instead of repairing it silently.
   `NaN` retention time, not `0.0` (`filter_spectra(rt_range=...)` then drops it, and `write_mgf` leaves the line
   out). `MassSpectrum.total_ion_current` is computed from the intensities when it is not given.
 - `formats.extract_chromatogram` / `visualization.plots.prepare_spectrum_plot`: `ppm_tolerance` must be a finite
-  number >= 0 (zero keeps only an exact match; a negative or NaN window used to return an all-zero chromatogram
-  or no annotation), `target_mz` a positive finite number, `top_n` a positive integer, and the two spectrum
+  number >= 0 (zero keeps only an exact match; a negative or NaN window raises instead of returning an all-zero
+  chromatogram or no annotation), `target_mz` a positive finite number, `top_n` a positive integer, and the two spectrum
   arrays 1D and of one length. An empty spectrum has a `NaN` base peak, not an invented `0.0`.
 - `visualization.plots.volcano_plot_data` / `pca_metabolomics`: a p-value outside [0, 1] (NaN is allowed and never
   significant) and a `n_components` beyond `min(n_samples, n_metabolites)` or non-finite intensities raise
@@ -96,7 +96,7 @@ The readers and matchers report bad input instead of repairing it silently.
   number and every observed m/z positive and finite; in `identify_with_adducts`, `ion_mode` is `"positive"` or
   `"negative"` in any case and anything else raises `ValueError`, even when `adducts` is given.
 - `identification.differential_abundance`: Welch's test needs at least two samples per group; fewer raises
-  `ValueError` (one observation per group used to give `p = 0.0`). `missing_value_imputation(method="knn")` only
+  `ValueError` rather than reporting `p = 0.0`. `missing_value_imputation(method="knn")` only
   averages metabolites that share at least two observed samples with the one being filled.
 - `enrichment.metabolite_set_enrichment`: a `background_size` smaller than the query or a pathway raises
   `ValueError`, because it cannot be a universe that contains them.

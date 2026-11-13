@@ -82,7 +82,7 @@ def test_power_plot(tmp_path: Path) -> None:
     output_path = tmp_path / "power.png"
     result = power_plot(
         sample_sizes=[100, 500, 1000, 5000],
-        output_path=output_path,
+        output_file=output_path,
         effect_sizes=[0.1, 0.2, 0.5],
         alpha=5e-8,
     )

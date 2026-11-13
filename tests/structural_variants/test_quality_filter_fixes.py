@@ -1,11 +1,10 @@
 """Regression tests for ``filter_by_frequency`` and ``apply_blacklist``.
 
-* A population database in a layout the filter cannot read used to be dropped without a word: the lookup came
-  out empty, no variant was ever matched, and every variant passed as if the database had said "rare".
-  A database none of whose entries can be read now raises; a mostly usable one is read, and the entries that
-  cannot be are counted in a logged warning.
+* A population database in a layout the filter cannot read is not dropped without a word, which would match no
+  variant and pass every variant as if the database had said "rare". A database none of whose entries can be
+  read raises; a mostly usable one is read, and the entries that cannot be are counted in a logged warning.
 * A zero-length variant (an insertion point, ``start == end``) has no bases to overlap, so a blacklist region
-  that contained it never counted it as overlapping and the variant was kept.
+  that contains it removes it by position.
 """
 
 from __future__ import annotations
@@ -144,7 +143,7 @@ class TestZeroLengthVariantsAndBlacklists:
         assert [v["start"] for v in kept] == [500, 9_000]
         assert stats.filtered_count == 3
 
-    def test_intervals_are_judged_as_before(self) -> None:
+    def test_intervals_are_judged_by_their_overlap(self) -> None:
         inside = {"chrom": "chr1", "start": 1_500, "end": 2_500, "sv_type": "DEL"}
         abutting = {"chrom": "chr1", "start": 3_000, "end": 3_500, "sv_type": "DEL"}
         kept, _ = apply_blacklist([inside, abutting], self.REGION)

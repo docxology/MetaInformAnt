@@ -85,7 +85,8 @@ Pinned by `tests/simulation/test_simulation_popgen.py` and
   r-squared equals `r_squared_target` (default 0.25), capped at the attainable value with
   a logged warning when the frequencies cannot reach it. A non-zero
   `selection_coefficient` replaces the correlation `r` by its absolute value.
-  `recombination_rate` is validated and does not change the output.
+  `model="coalescent"` instead draws the sample from the coalescent with recombination;
+  `recombination_rate`, `effective_size` and `sequence_length` are coalescent-only inputs.
 - `generate_site_frequency_spectrum`: `"constant"` draws each site's class from the
   neutral `1 / i` expectation; `"expansion"` and `"bottleneck"` are heuristic shapes, not
   coalescent-derived. `generate_two_populations` (Balding-Nichols) is a model of allele

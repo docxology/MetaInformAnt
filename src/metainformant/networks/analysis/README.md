@@ -8,7 +8,6 @@ Community detection, graph topology analysis, and pathway enrichment for biologi
 |------|---------|
 | `graph_core.py` | `BiologicalNetwork` class, network construction from edge lists/DataFrames, file I/O, adjacency conversion, validation |
 | `graph_algorithms.py` | Network metrics, similarity, union/intersection, filtering, centrality, shortest paths |
-| `graph.py` | Re-export facade combining `graph_core` and `graph_algorithms` for backward compatibility |
 | `community.py` | Community detection: Louvain, Leiden, Girvan-Newman, label propagation |
 | `pathway.py` | Pathway enrichment, topology analysis, and pathway network construction |
 

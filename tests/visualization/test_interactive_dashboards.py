@@ -114,7 +114,7 @@ def test_dashboard_marks_an_undrawable_panel_and_says_when_it_truncates() -> Non
     dashboard = d.create_dashboard([{"title": "Raw", "plot_data": huge}, {"title": "Small", "plot_data": {"a": 1}}])
 
     assert dashboard["html"].count("not drawn: unsupported plot structure") == 2
-    assert "... (truncated)" in dashboard["html"]  # the 2000-character cut used to land mid-token without a word
+    assert "... (truncated)" in dashboard["html"]  # the 2000-character cut is marked, not left mid-token without a word
     assert dashboard["html"].count("... (truncated)") == 1  # only the long one
 
 

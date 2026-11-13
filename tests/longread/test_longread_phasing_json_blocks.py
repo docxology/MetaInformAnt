@@ -1,12 +1,11 @@
 """Regression tests for phase blocks that went through JSON and for read alleles that are not calls.
 
 ``variant_haplotypes`` maps integer variant positions to alleles. JSON object keys are always text, so a
-block written to JSON and read back had ``"1000"`` where ``haplotag_reads`` looked up ``1000``: no read
-position matched, every read kept HP=0, and nothing said why. The keys are normalised to integers on input
-now, so reloaded blocks tag exactly the reads the originals tag.
+block written to JSON and read back has ``"1000"`` where ``haplotag_reads`` looks up ``1000``. The keys are
+normalised to integers on input, so reloaded blocks tag exactly the reads the originals tag.
 
-An allele that is neither 0 nor 1 (a missing ``allele`` key, a no-call) used to be a vote for haplotype 2 in
-``haplotag_reads`` and a reference observation in ``phase_reads``.
+An allele that is neither 0 nor 1 (a missing ``allele`` key, a no-call) is neither a vote for haplotype 2 in
+``haplotag_reads`` nor a reference observation in ``phase_reads``.
 
 All tests run the real functions on small synthetic datasets and on real JSON text; there are no mocks.
 """
@@ -73,7 +72,7 @@ class TestBlocksReloadedFromJson:
         reloaded = haplotyping.haplotag_reads(reads, _through_json(blocks))
 
         assert {hp for hp, _ in _hp_ps(original)} == {1, 2}  # the originals do tag
-        assert _hp_ps(reloaded) == _hp_ps(original)  # and so do the reloaded blocks: they used to tag nothing
+        assert _hp_ps(reloaded) == _hp_ps(original)  # and so do the reloaded blocks
 
     def test_reloaded_build_phase_blocks_blocks_tag_the_same_reads_as_the_originals(self) -> None:
         phased = [
@@ -219,7 +218,7 @@ class TestAllelesThatAreNotCalls:
     def test_haplotag_does_not_count_a_missing_or_no_call_allele_as_a_vote_for_haplotype_two(
         self, uncalled: dict[str, Any]
     ) -> None:
-        # one real vote for haplotype 1 and one uncalled observation: it used to be a 1-1 tie, HP 0
+        # one real vote for haplotype 1 and one uncalled observation: HP 1, not a 1-1 tie with HP 0
         (tagged,) = haplotyping.haplotag_reads([self._read([uncalled, {"position": 300, "allele": 0}])], [self.BLOCK])
         assert (tagged["HP"], tagged["PS"]) == (1, 0)
 
@@ -234,7 +233,7 @@ class TestAllelesThatAreNotCalls:
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
         variants = _variants("chr1", [100, 200])
-        # allele-less observations used to read as allele 0 and link the two variants as in phase
+        # allele-less observations do not read as allele 0 and link the two variants as in phase
         reads = [
             {
                 "read_id": f"r{i}",

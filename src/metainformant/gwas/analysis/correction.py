@@ -14,7 +14,7 @@ with the input list.
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Literal, Optional, Tuple, overload
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple
 
 from metainformant.core.utils import logging
 
@@ -42,7 +42,7 @@ def as_p_value(value: Any) -> Optional[float]:
         return None
     try:
         p_value = float(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
     return p_value if math.isfinite(p_value) else None
 
@@ -51,7 +51,7 @@ def _valid_p_value(p_value: Any) -> bool:
     """Return True for finite p-values in the closed interval (0, 1]."""
     try:
         p = float(p_value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return False
     return math.isfinite(p) and 0 < p <= 1
 
@@ -126,53 +126,30 @@ def lambda_gc_from_p_values(p_values: Iterable[float]) -> Optional[float]:
     return lambda_gc
 
 
-@overload
-def bonferroni_correction(
-    p_values: List[float], alpha: float = ..., return_dict: Literal[True] = ...
-) -> Dict[str, Any]: ...
-
-
-@overload
-def bonferroni_correction(
-    p_values: List[float], alpha: float = ..., *, return_dict: Literal[False]
-) -> Tuple[List[bool], float]: ...
-
-
-@overload
-def bonferroni_correction(
-    p_values: List[float], alpha: float = ..., return_dict: bool = ...
-) -> Dict[str, Any] | Tuple[List[bool], float]: ...
-
-
-def bonferroni_correction(
-    p_values: List[float], alpha: float = 0.05, return_dict: bool = True
-) -> Dict[str, Any] | Tuple[List[bool], float]:
+def bonferroni_correction(p_values: List[float], alpha: float = 0.05) -> Dict[str, Any]:
     """Apply Bonferroni correction for multiple testing.
 
     Args:
         p_values: List of p-values to correct. A missing p-value (NaN or None: a test that failed) is left out
             of the family; it is not counted as p = 1.
         alpha: Family-wise error rate
-        return_dict: If True, return dict (default); if False, return tuple (legacy)
 
     Returns:
-        Dictionary with correction results or tuple of (significant_flags, corrected_alpha).
-        ``significant`` is aligned with ``p_values`` (False for a missing p-value). ``n_tests`` counts the
-        p-values that are present, and ``corrected_alpha`` is ``alpha / n_tests``; ``n_excluded`` counts the
-        missing ones.
+        Dictionary with the correction results. ``significant`` is aligned with ``p_values`` (False for a
+        missing p-value). ``n_tests`` counts the p-values that are present, and ``corrected_alpha`` is
+        ``alpha / n_tests``; ``n_significant`` counts the significant tests and ``n_excluded`` the missing
+        p-values.
     """
     if not p_values:
-        if return_dict:
-            return {
-                "status": "success",
-                "significant": [],
-                "corrected_alpha": alpha,
-                "method": "bonferroni",
-                "n_tests": 0,
-                "n_significant": 0,
-                "n_excluded": 0,
-            }
-        return [], alpha
+        return {
+            "status": "success",
+            "significant": [],
+            "corrected_alpha": alpha,
+            "method": "bonferroni",
+            "n_tests": 0,
+            "n_significant": 0,
+            "n_excluded": 0,
+        }
 
     present = [as_p_value(p) for p in p_values]
     n_tests = sum(1 for p in present if p is not None)
@@ -185,45 +162,19 @@ def bonferroni_correction(
     if n_excluded:
         logger.info(f"Bonferroni correction: {n_excluded} missing p-value(s) left out of the family")
 
-    if return_dict:
-        return {
-            "status": "success",
-            "significant": significant,
-            "corrected_alpha": corrected_alpha,
-            "method": "bonferroni",
-            "n_tests": n_tests,
-            "n_significant": sum(significant),
-            "significant_count": sum(significant),  # Alias for backward compatibility
-            "alpha": alpha,
-            "n_excluded": n_excluded,
-        }
-    return significant, corrected_alpha
+    return {
+        "status": "success",
+        "significant": significant,
+        "corrected_alpha": corrected_alpha,
+        "method": "bonferroni",
+        "n_tests": n_tests,
+        "n_significant": sum(significant),
+        "alpha": alpha,
+        "n_excluded": n_excluded,
+    }
 
 
-@overload
-def fdr_correction(
-    p_values: List[float], alpha: float = ..., method: str = ..., return_dict: Literal[True] = ...
-) -> Dict[str, Any]: ...
-
-
-@overload
-def fdr_correction(
-    p_values: List[float], alpha: float = ..., method: str = ..., *, return_dict: Literal[False]
-) -> Tuple[List[bool], List[float]]: ...
-
-
-@overload
-def fdr_correction(
-    p_values: List[float], alpha: float = ..., method: str = ..., return_dict: bool = ...
-) -> Dict[str, Any] | Tuple[List[bool], List[float]]: ...
-
-
-def fdr_correction(
-    p_values: List[float],
-    alpha: float = 0.05,
-    method: str = "bh",
-    return_dict: bool = True,
-) -> Dict[str, Any] | Tuple[List[bool], List[float]]:
+def fdr_correction(p_values: List[float], alpha: float = 0.05, method: str = "bh") -> Dict[str, Any]:
     """Apply false discovery rate correction.
 
     Args:
@@ -231,26 +182,23 @@ def fdr_correction(
             of the family; it is not counted as p = 1.
         alpha: False discovery rate threshold
         method: Correction method ('bh' for Benjamini-Hochberg, 'by' for Benjamini-Yekutieli)
-        return_dict: If True, return dict (default); if False, return tuple (legacy)
 
     Returns:
-        Dictionary with correction results or tuple of (significant_flags, adjusted_p_values).
-        Both lists are aligned with ``p_values``: a missing p-value is never significant and its adjusted value
-        is NaN. ``n_tests`` counts the p-values that are present (the ``m`` of the procedure); ``n_excluded``
-        counts the missing ones.
+        Dictionary with the correction results. ``significant`` and ``adjusted_p_values`` are aligned with
+        ``p_values``: a missing p-value is never significant and its adjusted value is NaN. ``n_tests``
+        counts the p-values that are present (the ``m`` of the procedure); ``n_significant`` counts the
+        significant tests and ``n_excluded`` the missing p-values.
     """
     if not p_values:
-        if return_dict:
-            return {
-                "status": "success",
-                "significant": [],
-                "adjusted_p_values": [],
-                "method": f"fdr_{method}",
-                "n_tests": 0,
-                "n_significant": 0,
-                "n_excluded": 0,
-            }
-        return [], []
+        return {
+            "status": "success",
+            "significant": [],
+            "adjusted_p_values": [],
+            "method": f"fdr_{method}",
+            "n_tests": 0,
+            "n_significant": 0,
+            "n_excluded": 0,
+        }
 
     if method.lower() not in ["bh", "by"]:
         raise ValueError("Method must be 'bh' (Benjamini-Hochberg) or 'by' (Benjamini-Yekutieli)")
@@ -296,82 +244,41 @@ def fdr_correction(
     if n_excluded:
         logger.info(f"FDR correction ({method}): {n_excluded} missing p-value(s) left out of the family")
 
-    if return_dict:
-        return {
-            "status": "success",
-            "significant": significant,
-            "adjusted_p_values": original_adjusted,
-            "corrected_pvalues": original_adjusted,  # Alias for backward compatibility
-            "method": f"fdr_{method}",
-            "n_tests": n,
-            "n_significant": sum(significant),
-            "significant_count": sum(significant),  # Alias for backward compatibility
-            "alpha": alpha,
-            "n_excluded": n_excluded,
-        }
-    return significant, original_adjusted
-
-
-@overload
-def genomic_control(
-    p_values: List[float] | None = ...,
-    chi2_stats: List[float] | None = ...,
-    return_dict: Literal[True] = ...,
-    pvalues: List[float] | None = ...,
-) -> Dict[str, Any]: ...
-
-
-@overload
-def genomic_control(
-    p_values: List[float] | None = ...,
-    chi2_stats: List[float] | None = ...,
-    *,
-    return_dict: Literal[False],
-    pvalues: List[float] | None = ...,
-) -> Tuple[List[float], float]: ...
-
-
-@overload
-def genomic_control(
-    p_values: List[float] | None = ...,
-    chi2_stats: List[float] | None = ...,
-    return_dict: bool = ...,
-    pvalues: List[float] | None = ...,
-) -> Dict[str, Any] | Tuple[List[float], float]: ...
+    return {
+        "status": "success",
+        "significant": significant,
+        "adjusted_p_values": original_adjusted,
+        "method": f"fdr_{method}",
+        "n_tests": n,
+        "n_significant": sum(significant),
+        "alpha": alpha,
+        "n_excluded": n_excluded,
+    }
 
 
 def genomic_control(
     p_values: List[float] | None = None,
     chi2_stats: List[float] | None = None,
-    return_dict: bool = True,
-    # Legacy parameter alias
-    pvalues: List[float] | None = None,
-) -> Dict[str, Any] | Tuple[List[float], float]:
+) -> Dict[str, Any]:
     """Apply genomic control correction.
 
     Args:
         p_values: List of p-values to correct
         chi2_stats: List of chi-squared statistics (alternative to p_values)
-        return_dict: If True, return dict (default); if False, return tuple (legacy)
-        pvalues: Alias for p_values (backward compatibility)
 
     Returns:
-        Dictionary with correction results or tuple of (corrected_p_values, inflation_factor).
-        ``corrected_p_values`` is aligned to the input list for both p-value
-        and chi-square inputs (chi-square statistics are converted to 1-df
-        upper-tail p-values, lambda-corrected, and converted back).
+        Dictionary with the correction results, including ``corrected_p_values`` and the inflation factor
+        (``lambda_gc``, also given as ``inflation_factor``). ``corrected_p_values`` is aligned to the input
+        list for both p-value and chi-square inputs (chi-square statistics are converted to 1-df upper-tail
+        p-values, lambda-corrected, and converted back).
     """
-    # Handle parameter aliases
-    if pvalues is not None and p_values is None:
-        p_values = pvalues
-
     # If chi2_stats provided, use those directly
     if chi2_stats is not None:
         chi_squared_stats = []
         for stat in chi2_stats:
             try:
                 chi2 = float(stat)
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 continue
             if math.isfinite(chi2) and chi2 >= 0:
                 chi_squared_stats.append(chi2)
@@ -384,32 +291,28 @@ def genomic_control(
         chi_squared_stats = [_chi2_from_p_value(float(p)) for p in p_values if _valid_p_value(p)]
     else:
         # No data provided
-        if return_dict:
-            return {
-                "status": "failed",
-                "error": "No p-values or chi-squared statistics provided",
-                "corrected_p_values": [],
-                "inflation_factor": 1.0,
-                "lambda_gc": 1.0,
-                "median_chi2": 0.0,
-                "method": "genomic_control",
-                "n_tests": 0,
-            }
-        return [], 1.0
+        return {
+            "status": "failed",
+            "error": "No p-values or chi-squared statistics provided",
+            "corrected_p_values": [],
+            "inflation_factor": 1.0,
+            "lambda_gc": 1.0,
+            "median_chi2": 0.0,
+            "method": "genomic_control",
+            "n_tests": 0,
+        }
 
     if not chi_squared_stats:
-        if return_dict:
-            return {
-                "status": "failed",
-                "error": "No valid p-values or chi-squared statistics (all values out of range)",
-                "corrected_p_values": p_values if p_values else [],
-                "inflation_factor": 1.0,
-                "lambda_gc": 1.0,
-                "median_chi2": 0.0,
-                "method": "genomic_control",
-                "n_tests": len(p_values) if p_values else 0,
-            }
-        return p_values if p_values else [], 1.0
+        return {
+            "status": "failed",
+            "error": "No valid p-values or chi-squared statistics (all values out of range)",
+            "corrected_p_values": p_values if p_values else [],
+            "inflation_factor": 1.0,
+            "lambda_gc": 1.0,
+            "median_chi2": 0.0,
+            "method": "genomic_control",
+            "n_tests": len(p_values) if p_values else 0,
+        }
 
     # Calculate median chi-squared
     sorted_chi2 = sorted(chi_squared_stats)
@@ -441,7 +344,7 @@ def genomic_control(
         for stat in chi2_stats:
             try:
                 chi2 = float(stat)
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 corrected_p_values.append(float("nan"))
                 continue
             if math.isfinite(chi2) and chi2 >= 0:
@@ -451,20 +354,17 @@ def genomic_control(
 
     logger.info(f"Genomic control: λ={lambda_gc:.3f}, corrected {len(corrected_p_values)} p-values")
 
-    if return_dict:
-        return {
-            "status": "success",
-            "corrected_p_values": corrected_p_values,
-            "corrected_pvalues": corrected_p_values,
-            "inflation_factor": lambda_gc,
-            "method": "genomic_control",
-            "n_tests": len(chi2_stats) if chi2_stats is not None else len(p_values or []),
-            "lambda_gc": lambda_gc,
-            "median_chi2": median_chi2,
-            "expected_median_chi2": EXPECTED_MEDIAN_CHI2_1DF,
-            "p_values_provided": p_values_provided,
-        }
-    return corrected_p_values, lambda_gc
+    return {
+        "status": "success",
+        "corrected_p_values": corrected_p_values,
+        "inflation_factor": lambda_gc,
+        "method": "genomic_control",
+        "n_tests": len(chi2_stats) if chi2_stats is not None else len(p_values or []),
+        "lambda_gc": lambda_gc,
+        "median_chi2": median_chi2,
+        "expected_median_chi2": EXPECTED_MEDIAN_CHI2_1DF,
+        "p_values_provided": p_values_provided,
+    }
 
 
 def qvalue_estimation(p_values: List[float], pi0: Optional[float] = None) -> Tuple[List[float], float]:
@@ -620,17 +520,11 @@ def adjust_p_values(p_values: List[float], method: str = "bonferroni", **kwargs:
         return [min(p * n_tests, 1.0) if p is not None else float("nan") for p in present]
 
     elif method.lower() == "fdr":
-        _, adjusted_p = fdr_correction(
-            p_values,
-            kwargs.get("alpha", 0.05),
-            kwargs.get("fdr_method", "bh"),
-            return_dict=False,
-        )
-        return adjusted_p
+        fdr_result = fdr_correction(p_values, kwargs.get("alpha", 0.05), kwargs.get("fdr_method", "bh"))
+        return list(fdr_result["adjusted_p_values"])
 
     elif method.lower() == "genomic_control":
-        adjusted_p, _ = genomic_control(p_values, return_dict=False)
-        return adjusted_p
+        return list(genomic_control(p_values)["corrected_p_values"])
 
     elif method.lower() == "qvalue":
         q_vals, _ = qvalue_estimation(p_values, kwargs.get("pi0"))

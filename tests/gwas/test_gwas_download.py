@@ -28,7 +28,7 @@ def test_download_reference_genome_real_or_graceful_failure(tmp_path: Path) -> N
             timeout=10,
         )
         api_accessible = response.status_code in (200, 302, 404)
-    except (requests.RequestException, requests.Timeout):
+    except requests.RequestException, requests.Timeout:
         api_accessible = False
 
     dest_dir = tmp_path / "genome"
@@ -66,7 +66,7 @@ def test_download_reference_genome_real_or_graceful_failure(tmp_path: Path) -> N
             )
             # If it returns at all, it should report failure status
             assert result["status"] == "failed"
-        except (requests.RequestException, OSError, Exception):
+        except requests.RequestException, OSError, Exception:
             # Network/download error is the expected behavior when API is down
             pass
 
@@ -83,7 +83,7 @@ def test_download_variant_data_unsupported_source(tmp_path: Path) -> None:
         )
         # If it somehow returns, it should be a Path
         assert isinstance(result, Path)
-    except (ValueError, Exception):
+    except ValueError, Exception:
         pass  # Expected - API call fails for invalid accession
 
 
@@ -94,7 +94,7 @@ def test_download_variant_data_missing_dest(tmp_path: Path) -> None:
             study_accession="GCST000001",
             output_dir="/nonexistent/path/that/cannot/be/created\0invalid",
         )
-    except (ValueError, OSError, Exception):
+    except ValueError, OSError, Exception:
         pass  # Expected - invalid path or API failure
 
 

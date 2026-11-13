@@ -1,10 +1,10 @@
 """PAGA connectivity is computed from the kNN graph, not from which row follows which.
 
-``paga_trajectory`` used to count transitions between adjacent rows of the data, so its "connectivity" was a
-property of how the rows happened to be sorted. The connectivity of Wolf et al. (2019) compares the number of
-kNN edges between two groups with the number expected if the same edges ended at random cells. These tests
-check the formula on a graph small enough to count by hand, then planted groups on a trajectory whose cells
-are shuffled. Real data and real kNN searches only.
+``paga_trajectory`` does not count transitions between adjacent rows of the data, which would make its
+"connectivity" a property of how the rows happen to be sorted. The connectivity of Wolf et al. (2019) compares the
+number of kNN edges between two groups with the number expected if the same edges ended at random cells. These tests
+check the formula on a graph small enough to count by hand, then planted groups on a trajectory whose cells are
+shuffled. Real data and real kNN searches only.
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Real-implementation tests for metainformant.networks.interaction._ppi_impl.
+"""Real-implementation tests for metainformant.networks.interaction.ppi.
 
 Covers file I/O (load/save across formats), module-level analysis functions
 (hubs, clustering, disease associations, comparison, enrichment), the
@@ -11,7 +11,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from metainformant.networks.interaction._ppi_impl import (
+from metainformant.networks.interaction.ppi import (
     ProteinNetwork,
     analyze_ppi_disease_associations,
     construct_ppi_network_from_interactions,
@@ -519,12 +519,6 @@ class TestPredictInteractions:
     def test_guilt_by_association_requires_network(self) -> None:
         assert predict_interactions(["A"], known_network=None, method="guilt-by-association") == {}
 
-    def test_method_aliases(self) -> None:
-        features = {"A": [1.0, 2.0], "B": [1.0, 2.0]}
-        coexpr = predict_interactions(["A"], features=features, method="coexpression", threshold=0.5)
-        corr = predict_interactions(["A"], features=features, method="correlation", threshold=0.5)
-        assert coexpr == corr
-
     def test_ml_method_falls_back_to_correlation(self) -> None:
         features = {"A": [1.0, 2.0, 3.0], "B": [1.0, 2.0, 3.0], "C": [9.0, 1.0, 5.0]}
         net = self._network()
@@ -539,9 +533,9 @@ class TestPredictInteractions:
         with pytest.raises(ValueError, match="Unknown prediction method"):
             predict_interactions(["A"], method="telepathy")
 
-    def test_confidence_threshold_alias_kwarg(self) -> None:
+    def test_a_high_threshold_keeps_a_perfect_correlation(self) -> None:
         features = {"A": [1.0, 2.0], "B": [1.0, 2.0]}
-        preds = predict_interactions(["A"], features=features, method="correlation", confidence_threshold=0.99)
+        preds = predict_interactions(["A"], features=features, method="correlation", threshold=0.99)
         # threshold 0.99 still passes (correlation = 1.0)
         assert preds["A"][0]["partner"] == "B"
 
